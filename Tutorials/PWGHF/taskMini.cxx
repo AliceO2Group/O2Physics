@@ -14,23 +14,33 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
-// O2
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-// O2Physics
+#include "Tutorials/PWGHF/DataModelMini.h"
+//
+#include "PWGHF/Core/HfHelper.h"
+//
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelectorPID.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
-// PWGHF
-#include "PWGHF/Core/HfHelper.h"
-#include "Tutorials/PWGHF/DataModelMini.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/WorkflowSpec.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TString.h>
+
+#include <array>
 
 using namespace o2;
 using namespace o2::aod;
@@ -314,8 +324,8 @@ struct HfTaskMiniD0 {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfTaskMiniCandidateCreator2Prong>(cfgc, TaskName{"hf-task-mini-candidate-creator-2prong"}),                        // o2-linter: disable=name/o2-task
-    adaptAnalysisTask<HfTaskMiniCandidateCreator2ProngExpressions>(cfgc, TaskName{"hf-task-mini-candidate-creator-2prong-expressions"}), // o2-linter: disable=name/o2-task
+    adaptAnalysisTask<HfTaskMiniCandidateCreator2Prong>(cfgc, TaskName{"hf-task-mini-candidate-creator-2prong"}),                        // o2-linter: disable=name/o2-task (wrong hyphenation)
+    adaptAnalysisTask<HfTaskMiniCandidateCreator2ProngExpressions>(cfgc, TaskName{"hf-task-mini-candidate-creator-2prong-expressions"}), // o2-linter: disable=name/o2-task (wrong hyphenation)
     adaptAnalysisTask<HfTaskMiniCandidateSelectorD0>(cfgc),
     adaptAnalysisTask<HfTaskMiniD0>(cfgc)};
 }
