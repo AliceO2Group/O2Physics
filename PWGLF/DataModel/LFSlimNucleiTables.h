@@ -14,9 +14,10 @@
 /// \brief Slim nuclei tables
 ///
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/Centrality.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
 
 #ifndef PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_
 #define PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_
@@ -31,6 +32,7 @@ DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(TPCInnerParam, tpcInnerParam, float);
 DECLARE_SOA_COLUMN(Beta, beta, float);
 DECLARE_SOA_COLUMN(Zvertex, zVertex, float);
+DECLARE_SOA_COLUMN(NContrib, nContrib, int);
 DECLARE_SOA_COLUMN(DCAxy, dcaxy, float);
 DECLARE_SOA_COLUMN(DCAz, dcaz, float);
 DECLARE_SOA_COLUMN(TPCsignal, tpcSignal, float);
@@ -102,6 +104,7 @@ DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
                   NucleiTableNS::TPCInnerParam,
                   NucleiTableNS::Beta,
                   NucleiTableNS::Zvertex,
+                  NucleiTableNS::NContrib,
                   NucleiTableNS::DCAxy,
                   NucleiTableNS::DCAz,
                   NucleiTableNS::TPCsignal,
@@ -139,6 +142,7 @@ DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
                   NucleiTableNS::TPCInnerParam,
                   NucleiTableNS::Beta,
                   NucleiTableNS::Zvertex,
+                  NucleiTableNS::NContrib,
                   NucleiTableNS::DCAxy,
                   NucleiTableNS::DCAz,
                   NucleiTableNS::TPCsignal,
