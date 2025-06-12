@@ -54,7 +54,7 @@ o2physics_add_dpl_workflow(hf-filter-prepare-ml-samples
 
 o2physics_add_dpl_workflow(cf-filter
     SOURCES PWGCF/CFFilterAll.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle O2::ReconstructionDataFormats O2::DetectorsBase
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(cf-filter-qa
@@ -109,7 +109,7 @@ o2physics_add_dpl_workflow(heavy-neutral-meson-filter
 
 o2physics_add_dpl_workflow(lf-f1proton-filter
     SOURCES PWGLF/filterf1proton.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle O2::DetectorsBase
     COMPONENT_NAME Analysis)
 
  o2physics_add_dpl_workflow(lf-doublephi-filter

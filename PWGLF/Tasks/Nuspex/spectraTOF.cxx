@@ -1889,7 +1889,7 @@ struct tofSpectra {
     }
 
     const auto& mcCollision = collision.mcCollision_as<GenMCCollisions>();
-    const float multiplicity = getMultiplicityMC(mcCollision);
+    const float multiplicity = getMultiplicity(collision);
     const int occupancy = collision.trackOccupancyInTimeRange();
     //************************************RD**************************************************
     const float impParam = mcCollision.impactParameter();

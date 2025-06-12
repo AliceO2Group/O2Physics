@@ -13,6 +13,9 @@
 // Task producing basic tracking qa histograms
 //
 
+#include <utility> // std::swap
+#include <vector>
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -101,7 +104,7 @@ struct TrackQa {
     histos.fill(HIST("TrackPar/signed1Pt"), track.signed1Pt());
     histos.fill(HIST("TrackPar/snp"), track.snp());
     histos.fill(HIST("TrackPar/tgl"), track.tgl());
-    for (unsigned int i = 0; i < 64; i++) {
+    for (unsigned int i = 0; i < 32; i++) {
       if (track.flags() & (1 << i)) {
         histos.fill(HIST("TrackPar/flags"), i);
       }
@@ -161,13 +164,13 @@ struct TrackQaMc {
 
   HistogramRegistry resolution{"Resolution", {}, OutputObjHandlingPolicy::QAObject};
 
-  void init(o2::framework::InitContext&){
+  void init(o2::framework::InitContext&)
+  {
+  }
 
-  };
-
-  void process(soa::Join<aod::FullTracks, aod::McTrackLabels>::iterator const&){
-
-  };
+  void process(soa::Join<aod::FullTracks, aod::McTrackLabels>::iterator const&)
+  {
+  }
 };
 
 //****************************************************************************************

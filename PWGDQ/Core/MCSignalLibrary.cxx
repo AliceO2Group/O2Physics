@@ -126,6 +126,11 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Inclusive jpsi", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("Helium3")) {
+    MCProng prong(1, {1000020030}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "Helium3", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("Helium3Primary")) {
     MCProng prong(1, {1000020030}, {true}, {false}, {0}, {0}, {false});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
@@ -605,19 +610,16 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
   if (!nameStr.compare("eFromPromptLM")) {
     MCProng prong(2, {11, 101}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502, 402}, {true, true});
-    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "Electrons from light mesons without B/D in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromHbtoLM")) {
     MCProng prong(2, {11, 101}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false});
-    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "Electrons from light mesons with B hadron in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromHctoLM")) {
     MCProng prong(2, {11, 101, 402}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false, {502}, {true});
-    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "Electrons from light mesons from D hadron decays and no B in decay history", {prong}, {-1});
     return signal;
   }
@@ -650,44 +652,37 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
   if (!nameStr.compare("muFromHb")) {
     MCProng prong(2, {13, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
-    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "muons from b->mu", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("muFromPromptHc")) {
     MCProng prong(2, {13, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
-    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "muons from c->mu, without beauty in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("muFromHbtoHc")) {
     MCProng prong(3, {13, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
-    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "muons from b->c->mu", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("secondaryMuon")) {
-    MCProng prong(1);
-    prong.SetPDGcode(0, 13, true);
+    MCProng prong(1, {13}, {true}, {false}, {0}, {0}, {false});
     prong.SetSourceBit(0, MCProng::kProducedInTransport);
     signal = new MCSignal(name, "muons produced during transport in detector", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("muFromPromptLM")) {
     MCProng prong(2, {13, 101}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502, 402}, {true, true});
-    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "muons from light mesons without B/D in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("muFromHbtoLM")) {
     MCProng prong(2, {13, 101}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false});
-    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "muons from light mesons with B hadron in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("muFromHctoLM")) {
     MCProng prong(2, {13, 101, 402}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false, {502}, {true});
-    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "muons from light mesons from D hadron decays and no B in decay history", {prong}, {-1});
     return signal;
   }
@@ -1466,10 +1461,27 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "D0", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("nonPromptD0")) {
+    MCProng prong(2, {Pdg::kD0, 503}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Non-prompt D0", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("D0FS")) {
+    MCProng prong(1, {Pdg::kD0}, {true}, {false}, {0}, {0}, {false});
+    prong.SetSourceBit(0, MCProng::kHEPMCFinalState);
+    signal = new MCSignal(name, "D0", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("KPiFromD0")) {
     MCProng prongKaon(2, {321, Pdg::kD0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     MCProng prongPion(2, {211, Pdg::kD0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Kaon and pion pair from D0", {prongKaon, prongPion}, {1, 1});
+    return signal;
+  }
+  if (!nameStr.compare("KPiFromD0Reflected")) {
+    MCProng prongFalseKaon(2, {211, Pdg::kD0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongFalsePion(2, {321, Pdg::kD0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon and pion pair from D0 with reflected mass assumption", {prongFalseKaon, prongFalsePion}, {1, 1});
     return signal;
   }
   if (!nameStr.compare("Dcharged")) {
@@ -1752,7 +1764,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
 
-  if (!nameStr.compare("eFromPsi2S")) {
+  if (!nameStr.compare("eFromJpsiFromPsi2S")) {
     MCProng prong(3, {11, 443, 100443}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     signal = new MCSignal(name, "Electron from Jpsi from Psi2S", {prong}, {1});
     return signal;

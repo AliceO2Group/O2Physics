@@ -79,15 +79,15 @@ struct HfDerivedDataCreatorDplusToPiKPi {
   using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   using CollisionsWMcCentMult = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
-  using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
-  using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>>;
-  using SelectedCandidatesMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
-  using SelectedCandidatesMcMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
+  using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDplusToPiKPi>>;
+  using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>>;
+  using SelectedCandidatesMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
+  using SelectedCandidatesMcMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
   using TypeMcCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi & static_cast<int8_t>(BIT(aod::SelectionStep::RecoMl - 1))) != 0; // select candidates which passed all cuts at least up to RecoMl - 1
-  Filter filterMcGenMatching = nabs(aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi));
+  Filter filterMcGenMatching = nabs(aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi);
 
   Preslice<SelectedCandidates> candidatesPerCollision = aod::hf_cand::collisionId;
   Preslice<SelectedCandidatesMc> candidatesMcPerCollision = aod::hf_cand::collisionId;
@@ -101,10 +101,10 @@ struct HfDerivedDataCreatorDplusToPiKPi {
   Partition<SelectedCandidatesMl> candidatesMlAll = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= 0;
   Partition<SelectedCandidatesMcMl> candidatesMcMlAll = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= 0;
   // partitions for signal and background
-  Partition<SelectedCandidatesMc> candidatesMcSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi));
-  Partition<SelectedCandidatesMc> candidatesMcBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi));
-  Partition<SelectedCandidatesMcMl> candidatesMcMlSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi));
-  Partition<SelectedCandidatesMcMl> candidatesMcMlBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi));
+  Partition<SelectedCandidatesMc> candidatesMcSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi);
+  Partition<SelectedCandidatesMc> candidatesMcBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi);
+  Partition<SelectedCandidatesMcMl> candidatesMcMlSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi);
+  Partition<SelectedCandidatesMcMl> candidatesMcMlBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi);
 
   void init(InitContext const&)
   {
@@ -115,8 +115,8 @@ struct HfDerivedDataCreatorDplusToPiKPi {
     rowsCommon.init(confDerData);
   }
 
-  template <typename T, typename U>
-  void fillTablesCandidate(const T& candidate, const U& prong0, const U& prong1, const U& prong2, int candFlag, double invMass,
+  template <typename T>
+  void fillTablesCandidate(const T& candidate, int candFlag, double invMass,
                            double ct, double y, int8_t flagMc, int8_t origin, int8_t swapping, int8_t flagDecayChan, const std::vector<float>& mlScores)
   {
     rowsCommon.fillTablesCandidate(candidate, invMass, y);
@@ -139,15 +139,15 @@ struct HfDerivedDataCreatorDplusToPiKPi {
         candidate.impactParameterNormalised0(),
         candidate.impactParameterNormalised1(),
         candidate.impactParameterNormalised2(),
-        prong0.tpcNSigmaPi(),
-        prong0.tofNSigmaPi(),
-        prong0.tpcTofNSigmaPi(),
-        prong1.tpcNSigmaKa(),
-        prong1.tofNSigmaKa(),
-        prong1.tpcTofNSigmaKa(),
-        prong2.tpcNSigmaPi(),
-        prong2.tofNSigmaPi(),
-        prong2.tpcTofNSigmaPi());
+        candidate.nSigTpcPi0(),
+        candidate.nSigTofPi0(),
+        candidate.tpcTofNSigmaPi0(),
+        candidate.nSigTpcKa1(),
+        candidate.nSigTofKa1(),
+        candidate.tpcTofNSigmaKa1(),
+        candidate.nSigTpcPi2(),
+        candidate.nSigTofPi2(),
+        candidate.tpcTofNSigmaPi2());
     }
     if (fillCandidateParE) {
       rowCandidateParE(
@@ -253,7 +253,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
           swapping = candidate.isCandidateSwapped();
           flagDecayChanRec = candidate.flagMcDecayChanRec();
           if constexpr (onlyBkg) {
-            if (TESTBIT(std::abs(flagMcRec), aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
+            if (std::abs(flagMcRec) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
               continue;
             }
             if (downSampleBkgFactor < 1.) {
@@ -264,14 +264,11 @@ struct HfDerivedDataCreatorDplusToPiKPi {
             }
           }
           if constexpr (onlySig) {
-            if (!TESTBIT(std::abs(flagMcRec), aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
+            if (std::abs(flagMcRec) != hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
               continue;
             }
           }
         }
-        auto prong0 = candidate.template prong0_as<TracksWPid>();
-        auto prong1 = candidate.template prong1_as<TracksWPid>();
-        auto prong2 = candidate.template prong2_as<TracksWPid>();
         double ct = hfHelper.ctDplus(candidate);
         double y = hfHelper.yDplus(candidate);
         float massDplusToPiKPi = hfHelper.invMassDplusToPiKPi(candidate);
@@ -279,7 +276,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
         if constexpr (isMl) {
           std::copy(candidate.mlProbDplusToPiKPi().begin(), candidate.mlProbDplusToPiKPi().end(), std::back_inserter(mlScoresDplusToPiKPi));
         }
-        fillTablesCandidate(candidate, prong0, prong1, prong2, 0, massDplusToPiKPi, ct, y, flagMcRec, origin, swapping, flagDecayChanRec, mlScoresDplusToPiKPi);
+        fillTablesCandidate(candidate, 0, massDplusToPiKPi, ct, y, flagMcRec, origin, swapping, flagDecayChanRec, mlScoresDplusToPiKPi);
       }
     }
   }

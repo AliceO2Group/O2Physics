@@ -22,6 +22,7 @@
 #include "Common/Core/RecoDecay.h"
 
 // #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 
 using namespace o2;

@@ -40,7 +40,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
 #include "PWGUD/DataModel/UDTables.h"
-#include "PWGUD/DataModel/UDIndex.h" // for UDMcParticles2UDTracks table
+#include "PWGUD/DataModel/TauEventTables.h"
 #include "PWGUD/Core/SGSelector.h"
 
 // ROOT headers
@@ -52,82 +52,9 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-namespace o2::aod
-{
-namespace tau_tree
-{
-// event info
-DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
-DECLARE_SOA_COLUMN(Bc, bc, int);
-DECLARE_SOA_COLUMN(TotalTracks, totalTracks, int);
-DECLARE_SOA_COLUMN(NumContrib, numContrib, int);
-DECLARE_SOA_COLUMN(GlobalNonPVtracks, globalNonPVtracks, int);
-DECLARE_SOA_COLUMN(PosX, posX, float);
-DECLARE_SOA_COLUMN(PosY, posY, float);
-DECLARE_SOA_COLUMN(PosZ, posZ, float);
-DECLARE_SOA_COLUMN(RecoMode, recoMode, int);
-DECLARE_SOA_COLUMN(OccupancyInTime, occupancyInTime, int);
-DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, double);
-DECLARE_SOA_COLUMN(Trs, trs, int);
-DECLARE_SOA_COLUMN(Trofs, trofs, int);
-DECLARE_SOA_COLUMN(Hmpr, hmpr, int);
-DECLARE_SOA_COLUMN(Tfb, tfb, int);
-DECLARE_SOA_COLUMN(ItsRofb, itsRofb, int);
-DECLARE_SOA_COLUMN(Sbp, sbp, int);
-DECLARE_SOA_COLUMN(ZvtxFT0vsPv, zvtxFT0vsPv, int);
-DECLARE_SOA_COLUMN(VtxITSTPC, vtxITSTPC, int);
-// FIT info
-DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);
-DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float);
-DECLARE_SOA_COLUMN(TotalFV0AmplitudeA, totalFV0AmplitudeA, float);
-DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float);
-DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float);
-DECLARE_SOA_COLUMN(TimeFT0A, timeFT0A, float);
-DECLARE_SOA_COLUMN(TimeFT0C, timeFT0C, float);
-DECLARE_SOA_COLUMN(TimeFV0A, timeFV0A, float);
-DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);
-DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);
-// tracks
-DECLARE_SOA_COLUMN(TrkPx, trkPx, float[2]);
-DECLARE_SOA_COLUMN(TrkPy, trkPy, float[2]);
-DECLARE_SOA_COLUMN(TrkPz, trkPz, float[2]);
-DECLARE_SOA_COLUMN(TrkSign, trkSign, int[2]);
-DECLARE_SOA_COLUMN(TrkDCAxy, trkDCAxy, float[2]);
-DECLARE_SOA_COLUMN(TrkDCAz, trkDCAz, float[2]);
-DECLARE_SOA_COLUMN(TrkTimeRes, trkTimeRes, float[2]);
-DECLARE_SOA_COLUMN(Trk1ITSclusterSizes, trk1ITSclusterSizes, uint32_t);
-DECLARE_SOA_COLUMN(Trk2ITSclusterSizes, trk2ITSclusterSizes, uint32_t);
-DECLARE_SOA_COLUMN(TrkTPCsignal, trkTPCsignal, float[2]);
-DECLARE_SOA_COLUMN(TrkTPCnSigmaEl, trkTPCnSigmaEl, float[2]);
-DECLARE_SOA_COLUMN(TrkTPCnSigmaMu, trkTPCnSigmaMu, float[2]);
-DECLARE_SOA_COLUMN(TrkTPCnSigmaPi, trkTPCnSigmaPi, float[2]);
-DECLARE_SOA_COLUMN(TrkTPCnSigmaKa, trkTPCnSigmaKa, float[2]);
-DECLARE_SOA_COLUMN(TrkTPCnSigmaPr, trkTPCnSigmaPr, float[2]);
-DECLARE_SOA_COLUMN(TrkTPCinnerParam, trkTPCinnerParam, float[2]);
-DECLARE_SOA_COLUMN(TrkTOFsignal, trkTOFsignal, float[2]);
-DECLARE_SOA_COLUMN(TrkTOFnSigmaEl, trkTOFnSigmaEl, float[2]);
-DECLARE_SOA_COLUMN(TrkTOFnSigmaMu, trkTOFnSigmaMu, float[2]);
-DECLARE_SOA_COLUMN(TrkTOFnSigmaPi, trkTOFnSigmaPi, float[2]);
-DECLARE_SOA_COLUMN(TrkTOFnSigmaKa, trkTOFnSigmaKa, float[2]);
-DECLARE_SOA_COLUMN(TrkTOFnSigmaPr, trkTOFnSigmaPr, float[2]);
-DECLARE_SOA_COLUMN(TrkTOFexpMom, trkTOFexpMom, float[2]);
-
-} // namespace tau_tree
-DECLARE_SOA_TABLE(TauTwoTracks, "AOD", "TAUTWOTRACK",
-                  tau_tree::RunNumber, tau_tree::Bc, tau_tree::TotalTracks, tau_tree::NumContrib, tau_tree::GlobalNonPVtracks, tau_tree::PosX, tau_tree::PosY, tau_tree::PosZ,
-                  tau_tree::RecoMode, tau_tree::OccupancyInTime, tau_tree::HadronicRate,
-                  tau_tree::Trs, tau_tree::Trofs, tau_tree::Hmpr, tau_tree::Tfb, tau_tree::ItsRofb, tau_tree::Sbp, tau_tree::ZvtxFT0vsPv, tau_tree::VtxITSTPC,
-                  tau_tree::TotalFT0AmplitudeA, tau_tree::TotalFT0AmplitudeC, tau_tree::TotalFV0AmplitudeA, tau_tree::EnergyCommonZNA, tau_tree::EnergyCommonZNC,
-                  tau_tree::TimeFT0A, tau_tree::TimeFT0C, tau_tree::TimeFV0A, tau_tree::TimeZNA, tau_tree::TimeZNC,
-                  tau_tree::TrkPx, tau_tree::TrkPy, tau_tree::TrkPz, tau_tree::TrkSign, tau_tree::TrkDCAxy, tau_tree::TrkDCAz, tau_tree::TrkTimeRes,
-                  tau_tree::Trk1ITSclusterSizes, tau_tree::Trk2ITSclusterSizes,
-                  tau_tree::TrkTPCsignal, tau_tree::TrkTPCnSigmaEl, tau_tree::TrkTPCnSigmaMu, tau_tree::TrkTPCnSigmaPi, tau_tree::TrkTPCnSigmaKa, tau_tree::TrkTPCnSigmaPr, tau_tree::TrkTPCinnerParam,
-                  tau_tree::TrkTOFsignal, tau_tree::TrkTOFnSigmaEl, tau_tree::TrkTOFnSigmaMu, tau_tree::TrkTOFnSigmaPi, tau_tree::TrkTOFnSigmaKa, tau_tree::TrkTOFnSigmaPr, tau_tree::TrkTOFexpMom);
-
-} // namespace o2::aod
-
 struct TauEventTableProducer {
   Produces<o2::aod::TauTwoTracks> tauTwoTracks;
+  Produces<o2::aod::TrueTauTwoTracks> trueTauTwoTracks;
 
   // Global varialbes
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -197,9 +124,6 @@ struct TauEventTableProducer {
   using FullMCUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags, aod::UDMcTrackLabels>;
   using FullMCSGUDCollisions = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions, aod::UDMcCollsLabels>;
   using FullMCSGUDCollision = FullMCSGUDCollisions::iterator;
-  using UDMcParticlesWithUDTracks = soa::Join<aod::UDMcParticles, aod::UDMcParticlesToUDTracks>;
-  using UDMcCollisionsWithUDCollisions = soa::Join<aod::UDMcCollisions, aod::UDMcCollisionsToUDCollisions>;
-  using UDMcCollisionsWithUDCollision = UDMcCollisionsWithUDCollisions::iterator;
 
   // init
   void init(InitContext&)
@@ -208,6 +132,8 @@ struct TauEventTableProducer {
       printMediumMessage("INIT METHOD");
 
     mySetITShitsRule(cutGlobalTrack.cutITShitsRule);
+
+    histos.add("Truth/hTroubles", "Counter of unwanted issues;;Number of  troubles (-)", HistType::kTH1D, {{15, 0.5, 15.5}});
 
   } // end init
 
@@ -480,16 +406,270 @@ struct TauEventTableProducer {
   }
   PROCESS_SWITCH(TauEventTableProducer, processDataSG, "Iterate UD tables with measured data created by SG-Candidate-Producer.", false);
 
-  void processMonteCarlo(UDMcCollisionsWithUDCollision const& mccollision,
-                         FullMCSGUDCollisions const&,
-                         FullUDTracks const&,
-                         UDMcParticlesWithUDTracks const&)
+  PresliceUnsorted<aod::UDMcParticles> partPerMcCollision = aod::udmcparticle::udMcCollisionId;
+  PresliceUnsorted<FullMCSGUDCollisions> colPerMcCollision = aod::udcollision::udMcCollisionId;
+  PresliceUnsorted<FullMCUDTracks> trackPerMcParticle = aod::udmctracklabel::udMcParticleId;
+  Preslice<FullMCUDTracks> trackPerCollision = aod::udtrack::udCollisionId; // sorted preslice used because the pair track-collision is already sorted in processDataSG function
+
+  void processMonteCarlo(aod::UDMcCollisions const& mccollisions,
+                         aod::UDMcParticles const& parts,
+                         FullMCSGUDCollisions const& recolls,
+                         FullMCUDTracks const& trks)
   {
-    LOGF(info, "mccollision idx %i", mccollision.globalIndex());
-    if (mccollision.has_udcollisions()) {
-      auto const& collFromMcColl = mccollision.udcollisions_as<FullMCSGUDCollisions>();
-      LOGF(info, "collision size %i ", collFromMcColl.size());
-    }
+    // start loop over generated collisions
+    for (const auto& mccoll : mccollisions) {
+
+      // prepare local variables for output table
+      int32_t runNumber = -999;
+      int bc = -999;
+      int nTrks[3] = {-999, -999, -999}; // totalTracks, numContrib, globalNonPVtracks
+      float vtxPos[3] = {-999., -999., -999.};
+      int recoMode = -999;
+      int occupancy = -999.;
+      double hadronicRate = -999.;
+      int bcSels[8] = {-999, -999, -999, -999, -999, -999, -999, -999};
+      float amplitudesFIT[3] = {-999., -999., -999.}; // FT0A, FT0C, FV0
+      float timesFIT[3] = {-999., -999., -999.};      // FT0A, FT0C, FV0
+
+      float px[2] = {-999., -999.};
+      float py[2] = {-999., -999.};
+      float pz[2] = {-999., -999.};
+      int sign[2] = {-999, -999};
+      float dcaxy[2] = {-999., -999.};
+      float dcaz[2] = {-999., -999.};
+      float trkTimeRes[2] = {-999., -999.};
+      uint32_t itsClusterSizesTrk1 = 4294967295;
+      uint32_t itsClusterSizesTrk2 = 4294967295;
+      float tpcSignal[2] = {-999, -999};
+      float tpcEl[2] = {-999, -999};
+      float tpcMu[2] = {-999, -999};
+      float tpcPi[2] = {-999, -999};
+      float tpcKa[2] = {-999, -999};
+      float tpcPr[2] = {-999, -999};
+      float tpcIP[2] = {-999, -999};
+      float tofSignal[2] = {-999, -999};
+      float tofEl[2] = {-999, -999};
+      float tofMu[2] = {-999, -999};
+      float tofPi[2] = {-999, -999};
+      float tofKa[2] = {-999, -999};
+      float tofPr[2] = {-999, -999};
+      float tofEP[2] = {-999, -999};
+
+      int trueChannel = -1;
+      bool trueHasRecoColl = false;
+      float trueTauX[2] = {-999., -999.};
+      float trueTauY[2] = {-999., -999.};
+      float trueTauZ[2] = {-999., -999.};
+      float trueDaugX[2] = {-999., -999.};
+      float trueDaugY[2] = {-999., -999.};
+      float trueDaugZ[2] = {-999., -999.};
+      int trueDaugPdgCode[2] = {-999, -999};
+      bool problem = false;
+
+      // find reconstructed collisions associated to the generated collision
+      auto const& collFromMcColls = recolls.sliceBy(colPerMcCollision, mccoll.globalIndex());
+      // check the generated collision was reconstructed
+      if (collFromMcColls.size() > 0) { // get the truth and reco-level info
+        trueHasRecoColl = true;
+        // check there is exactly one reco-level collision associated to generated collision
+        if (collFromMcColls.size() > 1) {
+          if (verboseInfo)
+            printLargeMessage("Truth collision has more than 1 reco collision. Skipping this event.");
+          histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(1);
+          problem = true;
+          continue;
+        }
+        // grap reco-level collision
+        auto const& collFromMcColl = collFromMcColls.iteratorAt(0);
+        // grab tracks from the reco-level collision to get info to match measured data tables (processDataSG function)
+        auto const& trksFromColl = trks.sliceBy(trackPerCollision, collFromMcColl.globalIndex());
+        int countTracksPerCollision = 0;
+        int countGoodNonPVtracks = 0;
+        for (auto const& trkFromColl : trksFromColl) {
+          countTracksPerCollision++;
+          if (!trkFromColl.isPVContributor()) {
+            countGoodNonPVtracks++;
+            continue;
+          }
+        }
+
+        // fill info for reconstructed collision
+        runNumber = collFromMcColl.runNumber();
+        bc = collFromMcColl.globalBC();
+        nTrks[0] = countTracksPerCollision;
+        nTrks[1] = collFromMcColl.numContrib();
+        nTrks[2] = countGoodNonPVtracks;
+        vtxPos[0] = collFromMcColl.posX();
+        vtxPos[1] = collFromMcColl.posY();
+        vtxPos[2] = collFromMcColl.posZ();
+        recoMode = collFromMcColl.flags();
+        occupancy = collFromMcColl.occupancyInTime();
+        hadronicRate = collFromMcColl.hadronicRate();
+        bcSels[0] = collFromMcColl.trs();
+        bcSels[1] = collFromMcColl.trofs();
+        bcSels[2] = collFromMcColl.hmpr();
+        bcSels[3] = collFromMcColl.tfb();
+        bcSels[4] = collFromMcColl.itsROFb();
+        bcSels[5] = collFromMcColl.sbp();
+        bcSels[6] = collFromMcColl.zVtxFT0vPV();
+        bcSels[7] = collFromMcColl.vtxITSTPC();
+        amplitudesFIT[0] = collFromMcColl.totalFT0AmplitudeA();
+        amplitudesFIT[1] = collFromMcColl.totalFT0AmplitudeC();
+        amplitudesFIT[2] = collFromMcColl.totalFV0AmplitudeA();
+        timesFIT[0] = collFromMcColl.timeFT0A();
+        timesFIT[1] = collFromMcColl.timeFT0C();
+        timesFIT[2] = collFromMcColl.timeFV0A();
+
+        // get particles associated to generated collision
+        auto const& partsFromMcColl = parts.sliceBy(partPerMcCollision, mccoll.globalIndex());
+        int countMothers = 0;
+        for (const auto& particle : partsFromMcColl) {
+          // select only tauons with checking if particle has no mother
+          if (particle.has_mothers())
+            continue;
+          countMothers++;
+          // check the generated collision does not have more than 2 tauons
+          if (countMothers > 2) {
+            if (verboseInfo)
+              printLargeMessage("Truth collision has more than 2 no mother particles. Breaking the particle loop.");
+            histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(2);
+            problem = true;
+            break;
+          }
+          // fill info for each tau
+          trueTauX[countMothers - 1] = particle.px();
+          trueTauY[countMothers - 1] = particle.py();
+          trueTauZ[countMothers - 1] = particle.pz();
+
+          // get daughters of the tau
+          const auto& daughters = particle.daughters_as<aod::UDMcParticles>();
+          int countDaughters = 0;
+          for (const auto& daughter : daughters) {
+            // check if it is the charged particle (= no pi0 or neutrino)
+            if (enumMyParticle(daughter.pdgCode()) == -1)
+              continue;
+            countDaughters++;
+            // check there is only 1 charged daughter related to 1 tau
+            if (countDaughters > 1) {
+              if (verboseInfo)
+                printLargeMessage("Truth collision has more than 1 charged daughters of no mother particles. Breaking the daughter loop.");
+              histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(3);
+              problem = true;
+              break;
+            }
+            // fill info for each daughter
+            trueDaugX[countMothers - 1] = daughter.px();
+            trueDaugY[countMothers - 1] = daughter.py();
+            trueDaugZ[countMothers - 1] = daughter.pz();
+            trueDaugPdgCode[countMothers - 1] = daughter.pdgCode();
+
+            // get tracks associated to MC daughter (how well the daughter was reconstructed)
+            auto const& tracksFromDaughter = trks.sliceBy(trackPerMcParticle, daughter.globalIndex());
+            // check there is exactly 1 track per 1 particle
+            if (tracksFromDaughter.size() > 1) {
+              if (verboseInfo)
+                printLargeMessage("Daughter has more than 1 associated track. Skipping this daughter.");
+              histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(4);
+              problem = true;
+              continue;
+            }
+            // grab the track and fill info for reconstructed track (should be done twice)
+            const auto& trk = tracksFromDaughter.iteratorAt(0);
+            px[countMothers - 1] = trk.px();
+            py[countMothers - 1] = trk.py();
+            pz[countMothers - 1] = trk.pz();
+            sign[countMothers - 1] = trk.sign();
+            dcaxy[countMothers - 1] = trk.dcaXY();
+            dcaz[countMothers - 1] = trk.dcaZ();
+            trkTimeRes[countMothers - 1] = trk.trackTimeRes();
+            if (countMothers == 1) {
+              itsClusterSizesTrk1 = trk.itsClusterSizes();
+            } else {
+              itsClusterSizesTrk2 = trk.itsClusterSizes();
+            }
+            tpcSignal[countMothers - 1] = trk.tpcSignal();
+            tpcEl[countMothers - 1] = trk.tpcNSigmaEl();
+            tpcMu[countMothers - 1] = trk.tpcNSigmaMu();
+            tpcPi[countMothers - 1] = trk.tpcNSigmaPi();
+            tpcKa[countMothers - 1] = trk.tpcNSigmaKa();
+            tpcPr[countMothers - 1] = trk.tpcNSigmaPr();
+            tpcIP[countMothers - 1] = trk.tpcInnerParam();
+            tofSignal[countMothers - 1] = trk.tofSignal();
+            tofEl[countMothers - 1] = trk.tofNSigmaEl();
+            tofMu[countMothers - 1] = trk.tofNSigmaMu();
+            tofPi[countMothers - 1] = trk.tofNSigmaPi();
+            tofKa[countMothers - 1] = trk.tofNSigmaKa();
+            tofPr[countMothers - 1] = trk.tofNSigmaPr();
+            tofEP[countMothers - 1] = trk.tofExpMom();
+          } // daughters
+        } // particles
+      } else { // get only the truth information. The reco-level info is left on default
+        // get particles associated to generated collision
+        auto const& partsFromMcColl = parts.sliceBy(partPerMcCollision, mccoll.globalIndex());
+        int countMothers = 0;
+        for (const auto& particle : partsFromMcColl) {
+          // select only tauons with checking if particle has no mother
+          if (particle.has_mothers())
+            continue;
+          countMothers++;
+          // check the generated collision does not have more than 2 tauons
+          if (countMothers > 2) {
+            if (verboseInfo)
+              printLargeMessage("Truth collision has more than 2 no mother particles. Breaking the particle loop.");
+            histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(12);
+            problem = true;
+            break;
+          }
+          // fill info for each tau
+          trueTauX[countMothers - 1] = particle.px();
+          trueTauY[countMothers - 1] = particle.py();
+          trueTauZ[countMothers - 1] = particle.pz();
+
+          // get daughters of the tau
+          const auto& daughters = particle.daughters_as<aod::UDMcParticles>();
+          int countDaughters = 0;
+          for (const auto& daughter : daughters) {
+            // select only the charged particle (= no pi0 or neutrino)
+            if (enumMyParticle(daughter.pdgCode()) == -1)
+              continue;
+            countDaughters++;
+            // check there is only 1 charged daughter related to 1 tau
+            if (countDaughters > 1) {
+              if (verboseInfo)
+                printLargeMessage("Truth collision has more than 1 charged daughters of no mother particles. Breaking the daughter loop.");
+              histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(13);
+              problem = true;
+              break;
+            }
+            // fill info for each daughter
+            trueDaugX[countMothers - 1] = daughter.px();
+            trueDaugY[countMothers - 1] = daughter.py();
+            trueDaugZ[countMothers - 1] = daughter.pz();
+            trueDaugPdgCode[countMothers - 1] = daughter.pdgCode();
+          } // daughters
+        } // particles
+      } // collisions
+
+      // decide the channel and set the variable. Only two cahnnels suported now.
+      if ((enumMyParticle(trueDaugPdgCode[0]) == P_ELECTRON) && (enumMyParticle(trueDaugPdgCode[1]) == P_ELECTRON))
+        trueChannel = CH_EE;
+      if ((enumMyParticle(trueDaugPdgCode[0]) == P_ELECTRON) && ((enumMyParticle(trueDaugPdgCode[1]) == P_PION) || (enumMyParticle(trueDaugPdgCode[1]) == P_MUON)))
+        trueChannel = CH_EMUPI;
+      if ((enumMyParticle(trueDaugPdgCode[1]) == P_ELECTRON) && ((enumMyParticle(trueDaugPdgCode[0]) == P_PION) || (enumMyParticle(trueDaugPdgCode[0]) == P_MUON)))
+        trueChannel = CH_EMUPI;
+
+      trueTauTwoTracks(runNumber, bc, nTrks[0], nTrks[1], nTrks[2], vtxPos[0], vtxPos[1], vtxPos[2],
+                       recoMode, occupancy, hadronicRate, bcSels[0], bcSels[1], bcSels[2],
+                       bcSels[3], bcSels[4], bcSels[5], bcSels[6], bcSels[7],
+                       amplitudesFIT[0], amplitudesFIT[1], amplitudesFIT[2], -999., -999., // no ZDC info in MC
+                       timesFIT[0], timesFIT[1], timesFIT[2], -999., -999.,                // no ZDC info in MC
+                       px, py, pz, sign, dcaxy, dcaz, trkTimeRes,
+                       itsClusterSizesTrk1, itsClusterSizesTrk2,
+                       tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr, tpcIP,
+                       tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr, tofEP,
+                       trueChannel, trueHasRecoColl, mccoll.posX(), mccoll.posY(), mccoll.posZ(),
+                       trueTauX, trueTauY, trueTauZ, trueDaugX, trueDaugY, trueDaugZ, trueDaugPdgCode, problem);
+    } // mccollisions
   }
   PROCESS_SWITCH(TauEventTableProducer, processMonteCarlo, "Iterate UD tables with simulated data created by SG-Candidate-Producer.", false);
 };

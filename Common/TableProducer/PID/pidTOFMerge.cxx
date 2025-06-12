@@ -1083,72 +1083,63 @@ struct tofPidMerge {
         if (fullTable) {
           tablePIDFullEl(-999.f, -999.f);
         } else {
-          aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                                tablePIDEl);
+          aod::pidtof_tiny::binning::packInTable(-999.f, tablePIDEl);
         }
         break;
       case kIdxMu:
         if (fullTable) {
           tablePIDFullMu(-999.f, -999.f);
         } else {
-          aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                                tablePIDMu);
+          aod::pidtof_tiny::binning::packInTable(-999.f, tablePIDMu);
         }
         break;
       case kIdxPi:
         if (fullTable) {
           tablePIDFullPi(-999.f, -999.f);
         } else {
-          aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                                tablePIDPi);
+          aod::pidtof_tiny::binning::packInTable(-999.f, tablePIDPi);
         }
         break;
       case kIdxKa:
         if (fullTable) {
           tablePIDFullKa(-999.f, -999.f);
         } else {
-          aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                                tablePIDKa);
+          aod::pidtof_tiny::binning::packInTable(-999.f, tablePIDKa);
         }
         break;
       case kIdxPr:
         if (fullTable) {
           tablePIDFullPr(-999.f, -999.f);
         } else {
-          aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                                tablePIDPr);
+          aod::pidtof_tiny::binning::packInTable(-999.f, tablePIDPr);
         }
         break;
       case kIdxDe:
         if (fullTable) {
           tablePIDFullDe(-999.f, -999.f);
         } else {
-          aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                                tablePIDDe);
+          aod::pidtof_tiny::binning::packInTable(-999.f, tablePIDDe);
         }
         break;
       case kIdxTr:
         if (fullTable) {
           tablePIDFullTr(-999.f, -999.f);
         } else {
-          aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                                tablePIDTr);
+          aod::pidtof_tiny::binning::packInTable(-999.f, tablePIDTr);
         }
         break;
       case kIdxHe:
         if (fullTable) {
           tablePIDFullHe(-999.f, -999.f);
         } else {
-          aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                                tablePIDHe);
+          aod::pidtof_tiny::binning::packInTable(-999.f, tablePIDHe);
         }
         break;
       case kIdxAl:
         if (fullTable) {
           tablePIDFullAl(-999.f, -999.f);
         } else {
-          aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
-                                                                tablePIDAl);
+          aod::pidtof_tiny::binning::packInTable(-999.f, tablePIDAl);
         }
         break;
       default:
@@ -1202,47 +1193,47 @@ struct tofPidMerge {
         switch (pidId) {
           case kIdxEl: {
             nsigma = responseEl.GetSeparation(mRespParamsV3, trk);
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDEl);
+            aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDEl);
             break;
           }
           case kIdxMu: {
             nsigma = responseMu.GetSeparation(mRespParamsV3, trk);
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDMu);
+            aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDMu);
             break;
           }
           case kIdxPi: {
             nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDPi);
+            aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDPi);
             break;
           }
           case kIdxKa: {
             nsigma = responseKa.GetSeparation(mRespParamsV3, trk);
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDKa);
+            aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDKa);
             break;
           }
           case kIdxPr: {
             nsigma = responsePr.GetSeparation(mRespParamsV3, trk);
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDPr);
+            aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDPr);
             break;
           }
           case kIdxDe: {
             nsigma = responseDe.GetSeparation(mRespParamsV3, trk);
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDDe);
+            aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDDe);
             break;
           }
           case kIdxTr: {
             nsigma = responseTr.GetSeparation(mRespParamsV3, trk);
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDTr);
+            aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDTr);
             break;
           }
           case kIdxHe: {
             nsigma = responseHe.GetSeparation(mRespParamsV3, trk);
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDHe);
+            aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDHe);
             break;
           }
           case kIdxAl: {
             nsigma = responseAl.GetSeparation(mRespParamsV3, trk);
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDAl);
+            aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDAl);
             break;
           }
           default:
@@ -1364,47 +1355,47 @@ struct tofPidMerge {
         switch (pidId) {
           case kIdxEl: {
             nsigma = responseEl.GetSeparation(mRespParamsV3, trk);
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDEl);
+            aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDEl);
             break;
           }
           case kIdxMu: {
             nsigma = responseMu.GetSeparation(mRespParamsV3, trk);
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDMu);
+            aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDMu);
             break;
           }
           case kIdxPi: {
             nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDPi);
+            aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDPi);
             break;
           }
           case kIdxKa: {
             nsigma = responseKa.GetSeparation(mRespParamsV3, trk);
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDKa);
+            aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDKa);
             break;
           }
           case kIdxPr: {
             nsigma = responsePr.GetSeparation(mRespParamsV3, trk);
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDPr);
+            aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDPr);
             break;
           }
           case kIdxDe: {
             nsigma = responseDe.GetSeparation(mRespParamsV3, trk);
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDDe);
+            aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDDe);
             break;
           }
           case kIdxTr: {
             nsigma = responseTr.GetSeparation(mRespParamsV3, trk);
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDTr);
+            aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDTr);
             break;
           }
           case kIdxHe: {
             nsigma = responseHe.GetSeparation(mRespParamsV3, trk);
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDHe);
+            aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDHe);
             break;
           }
           case kIdxAl: {
             nsigma = responseAl.GetSeparation(mRespParamsV3, trk);
-            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDAl);
+            aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDAl);
             break;
           }
           default:

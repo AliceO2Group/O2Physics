@@ -113,6 +113,16 @@ struct FlowTask {
 
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex) && (aod::cent::centFT0C > cfgCentFT0CMin) && (aod::cent::centFT0C < cfgCentFT0CMax);
   Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+  using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
+  using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
+  // Filter for MCcollisions
+  Filter mccollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
+  using FilteredMcCollisions = soa::Filtered<aod::McCollisions>;
+  // Filter for MCParticle
+  Filter particleFilter = (nabs(aod::mcparticle::eta) < cfgCutEta) && (aod::mcparticle::pt > cfgCutPtMin) && (aod::mcparticle::pt < cfgCutPtMax);
+  using FilteredMcParticles = soa::Filtered<aod::McParticles>;
+
+  using FilteredSmallGroupMcCollisions = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
 
   // Corrections
   TH1D* mEfficiency = nullptr;
@@ -122,11 +132,11 @@ struct FlowTask {
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   // Define output
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
+  OutputObj<FlowContainer> fFCgen{FlowContainer("FlowContainer_gen")};
   OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
   HistogramRegistry registry{"registry"};
 
@@ -143,6 +153,10 @@ struct FlowTask {
     // Count the total number of enum
     kCount_CentEstimators
   };
+  enum DataType {
+    kReco,
+    kGen
+  };
   int mRunNumber{-1};
   uint64_t mSOR{0};
   double mMinSeconds{-1.};
@@ -156,9 +170,6 @@ struct FlowTask {
   TF1* funcV2;
   TF1* funcV3;
   TF1* funcV4;
-
-  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
-  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
 
   // Track selection
   TrackSelection myTrackSel;
@@ -184,7 +195,8 @@ struct FlowTask {
 
     ccdb->setURL(ccdbUrl.value);
     ccdb->setCaching(true);
-    ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
+    auto now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    ccdb->setCreatedNotAfter(now);
 
     // Add some output objects to the histogram registry
     // Event QA
@@ -222,6 +234,11 @@ struct FlowTask {
     registry.add("hMult", "Multiplicity distribution", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     std::string hCentTitle = "Centrality distribution, Estimator " + std::to_string(cfgCentEstimator);
     registry.add("hCent", hCentTitle.c_str(), {HistType::kTH1D, {{90, 0, 90}}});
+    if (doprocessMCGen) {
+      registry.add("MCGen/MChVtxZ", "Vexter Z distribution", {HistType::kTH1D, {axisVertex}});
+      registry.add("MCGen/MChMult", "Multiplicity distribution", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
+      registry.add("MCGen/MChCent", hCentTitle.c_str(), {HistType::kTH1D, {{90, 0, 90}}});
+    }
     if (!cfgUseSmallMemory) {
       registry.add("BeforeSel8_globalTracks_centT0C", "before sel8;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
       registry.add("BeforeCut_globalTracks_centT0C", "before cut;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
@@ -256,6 +273,11 @@ struct FlowTask {
     registry.add("hDCAz", "DCAz after cuts; DCAz (cm); Pt", {HistType::kTH2D, {{200, -0.5, 0.5}, {200, 0, 5}}});
     registry.add("hDCAxy", "DCAxy after cuts; DCAxy (cm); Pt", {HistType::kTH2D, {{200, -0.5, 0.5}, {200, 0, 5}}});
     registry.add("hTrackCorrection2d", "Correlation table for number of tracks table; uncorrected track; corrected track", {HistType::kTH2D, {axisNch, axisNch}});
+    if (doprocessMCGen) {
+      registry.add("MCGen/MChPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
+      registry.add("MCGen/MChEta", "#eta distribution", {HistType::kTH1D, {axisEta}});
+      registry.add("MCGen/MChPtRef", "p_{T} distribution after cut", {HistType::kTH1D, {axisPtHist}});
+    }
 
     o2::framework::AxisSpec axis = axisPt;
     int nPtBins = axis.binEdges.size() - 1;
@@ -327,6 +349,11 @@ struct FlowTask {
     fFC->SetName("FlowContainer");
     fFC->SetXAxis(fPtAxis);
     fFC->Initialize(oba, axisIndependent, cfgNbootstrap);
+    if (doprocessMCGen) {
+      fFCgen->SetName("FlowContainer_gen");
+      fFCgen->SetXAxis(fPtAxis);
+      fFCgen->Initialize(oba, axisIndependent, cfgNbootstrap);
+    }
     delete oba;
 
     // eta region
@@ -471,6 +498,7 @@ struct FlowTask {
     return;
   }
 
+  template <DataType dt>
   void fillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
   {
     double dnx, val;
@@ -479,8 +507,9 @@ struct FlowTask {
       if (dnx == 0)
         return;
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (std::fabs(val) < 1)
-        fFC->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
+      if (std::fabs(val) < 1) {
+        (dt == kGen) ? fFCgen->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm) : fFC->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
+      }
       return;
     }
     for (auto i = 1; i <= fPtAxis->GetNbins(); i++) {
@@ -488,8 +517,9 @@ struct FlowTask {
       if (dnx == 0)
         continue;
       val = fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
-      if (std::fabs(val) < 1)
-        fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
+      if (std::fabs(val) < 1) {
+        (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
+      }
     }
     return;
   }
@@ -610,7 +640,8 @@ struct FlowTask {
       registry.fill(HIST("hEventCountSpecific"), 8.5);
 
     // V0A T0A 5 sigma cut
-    if (cfgEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A())))
+    float sigma = 5.0;
+    if (cfgEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > sigma * fT0AV0ASigma->Eval(collision.multFT0A())))
       return 0;
     if (cfgEvSelV0AT0ACut)
       registry.fill(HIST("hEventCountSpecific"), 9.5);
@@ -641,7 +672,8 @@ struct FlowTask {
       registry.fill(HIST("hEventCountTentative"), 7.5);
     if (!((multNTracksPV < fMultPVCutLow->Eval(centrality)) || (multNTracksPV > fMultPVCutHigh->Eval(centrality)) || (multTrk < fMultCutLow->Eval(centrality)) || (multTrk > fMultCutHigh->Eval(centrality))))
       registry.fill(HIST("hEventCountTentative"), 8.5);
-    if (!(std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A())))
+    float sigma = 5.0;
+    if (!(std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > sigma * fT0AV0ASigma->Eval(collision.multFT0A())))
       registry.fill(HIST("hEventCountTentative"), 9.5);
   }
 
@@ -675,7 +707,30 @@ struct FlowTask {
     gCurrentHadronicRate = gHadronicRate[mRunNumber];
   }
 
-  void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
+  template <typename TCollision>
+  float getCentrality(TCollision const& collision)
+  {
+    float cent;
+    switch (cfgCentEstimator) {
+      case kCentFT0C:
+        cent = collision.centFT0C();
+        break;
+      case kCentFT0CVariant1:
+        cent = collision.centFT0CVariant1();
+        break;
+      case kCentFT0M:
+        cent = collision.centFT0M();
+        break;
+      case kCentFV0A:
+        cent = collision.centFV0A();
+        break;
+      default:
+        cent = collision.centFT0C();
+    }
+    return cent;
+  }
+
+  void process(FilteredCollisions::iterator const& collision, aod::BCsWithTimestamps const&, FilteredTracks const& tracks)
   {
     registry.fill(HIST("hEventCount"), 0.5);
     if (!cfgUseSmallMemory && tracks.size() >= 1) {
@@ -703,23 +758,8 @@ struct FlowTask {
       registry.fill(HIST("BeforeCut_multV0A_multT0A"), collision.multFT0A(), collision.multFV0A());
       registry.fill(HIST("BeforeCut_multT0C_centT0C"), collision.centFT0C(), collision.multFT0C());
     }
-    float cent;
-    switch (cfgCentEstimator) {
-      case kCentFT0C:
-        cent = collision.centFT0C();
-        break;
-      case kCentFT0CVariant1:
-        cent = collision.centFT0CVariant1();
-        break;
-      case kCentFT0M:
-        cent = collision.centFT0M();
-        break;
-      case kCentFV0A:
-        cent = collision.centFV0A();
-        break;
-      default:
-        cent = collision.centFT0C();
-    }
+    float cent = getCentrality(collision);
+
     if (cfgUseTentativeEventCounter)
       eventCounterQA(collision, tracks.size(), cent);
     if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent))
@@ -844,9 +884,56 @@ struct FlowTask {
 
     // Filling Flow Container
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
-      fillFC(corrconfigs.at(l_ind), independent, lRandom);
+      fillFC<kReco>(corrconfigs.at(l_ind), independent, lRandom);
     }
   }
+
+  void processMCGen(FilteredMcCollisions::iterator const& mcCollision, FilteredSmallGroupMcCollisions const& collisions, FilteredMcParticles const& mcParticles)
+  {
+    if (collisions.size() != 1)
+      return;
+
+    float cent = -1.;
+    for (const auto& collision : collisions) {
+      cent = getCentrality(collision);
+    }
+
+    float lRandom = fRndm->Rndm();
+    float vtxz = mcCollision.posZ();
+    registry.fill(HIST("MCGen/MChVtxZ"), vtxz);
+    registry.fill(HIST("MCGen/MChMult"), mcParticles.size());
+    registry.fill(HIST("MCGen/MChCent"), cent);
+    float independent = cent;
+    if (cfgUseNch)
+      independent = static_cast<float>(mcParticles.size());
+
+    fGFW->Clear();
+
+    for (const auto& mcParticle : mcParticles) {
+      if (!mcParticle.isPhysicalPrimary())
+        continue;
+      bool withinPtPOI = (cfgCutPtPOIMin < mcParticle.pt()) && (mcParticle.pt() < cfgCutPtPOIMax); // within POI pT range
+      bool withinPtRef = (cfgCutPtRefMin < mcParticle.pt()) && (mcParticle.pt() < cfgCutPtRefMax); // within RF pT range
+
+      if (withinPtRef) {
+        registry.fill(HIST("MCGen/MChPhi"), mcParticle.phi());
+        registry.fill(HIST("MCGen/MChEta"), mcParticle.eta());
+        registry.fill(HIST("MCGen/MChPtRef"), mcParticle.pt());
+      }
+      if (withinPtRef)
+        fGFW->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), 1., 1);
+      if (withinPtPOI)
+        fGFW->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), 1., 2);
+      if (withinPtPOI && withinPtRef)
+        fGFW->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), 1., 4);
+    }
+
+    // Filling Flow Container
+    for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
+      fillFC<kGen>(corrconfigs.at(l_ind), independent, lRandom);
+    }
+  }
+  PROCESS_SWITCH(FlowTask, processMCGen, "Process analysis for MC generated events", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

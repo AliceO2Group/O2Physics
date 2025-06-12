@@ -72,6 +72,8 @@ struct SecondaryVertexReconstruction {
   Configurable<float> ptMinTrack{"ptMinTrack", -1., "min. track pT"};
   Configurable<float> etaMinTrack{"etaMinTrack", -99999., "min. pseudorapidity"};
   Configurable<float> etaMaxTrack{"etaMaxTrack", 4., "max. pseudorapidity"};
+  Configurable<float> maxIPxy{"maxIPxy", 10, "maximum track DCA in xy plane"};
+  Configurable<float> maxIPz{"maxIPz", 10, "maximum track DCA in z direction"};
   Configurable<bool> fillHistograms{"fillHistograms", true, "do validation plots"};
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -288,7 +290,7 @@ struct SecondaryVertexReconstruction {
     for (size_t iprong = prongIndex; iprong < particles.size(); ++iprong) {
 
       const auto& testTrack = particles[iprong].template track_as<OriginalTracks>();
-      if (testTrack.pt() < ptMinTrack || testTrack.eta() < etaMinTrack || testTrack.eta() > etaMaxTrack) {
+      if (testTrack.pt() < ptMinTrack || testTrack.eta() < etaMinTrack || testTrack.eta() > etaMaxTrack || std::abs(testTrack.dcaXY()) > maxIPxy || std::abs(testTrack.dcaZ()) > maxIPz) {
         continue;
       }
 

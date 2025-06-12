@@ -1012,6 +1012,14 @@ DECLARE_SOA_TABLE(V0Bits, "AOD", "V0BITS", //!
 // iterators
 using V0Bit = V0Bits::iterator;
 
+namespace v0mapID
+{
+DECLARE_SOA_COLUMN(V0AddID, v0addid, int8_t); //!
+} // namespace v0mapID
+
+DECLARE_SOA_TABLE(V0MapID, "AOD", "V0MAPID", //!
+                  v0mapID::V0AddID);
+
 namespace DalBits
 {
 DECLARE_SOA_COLUMN(DALITZBits, dalitzBits, uint8_t); //!

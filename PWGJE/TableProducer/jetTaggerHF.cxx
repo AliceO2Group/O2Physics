@@ -64,7 +64,11 @@ struct JetTaggerHFTask {
   Configurable<bool> trackProbQA{"trackProbQA", false, "fill track probability histograms separately for geometric positive and negative tracks for QA"};
   Configurable<int> numCount{"numCount", 3, "number of track counting"};
   Configurable<int> resoFuncMatching{"resoFuncMatching", 0, "matching parameters of resolution function as MC samble (0: custom, 1: custom & inc, 2: MB, 3: MB & inc, 4: JJ, 5: JJ & inc)"};
-  Configurable<std::vector<std::string>> pathsCCDBforIPparamer{"pathsCCDBforIPparamer", std::vector<std::string>{"Users/l/leehy/LHC24g4/f_inclusive_0"}, "Paths for fitting parameters of resolution functions for IP method on CCDB"};
+  Configurable<std::vector<std::string>> pathsCCDBforIPDataparameter{"pathsCCDBforIPDataparameter", std::vector<std::string>{"Users/l/leehy/LHC24g4/f_inclusive_0"}, "Paths for fitting parameters of resolution functions of data for IP method on CCDB"};
+  Configurable<std::vector<std::string>> pathsCCDBforIPIncparameter{"pathsCCDBforIPIncparameter", std::vector<std::string>{"Users/l/leehy/LHC24g4/f_inclusive_0"}, "Paths for fitting parameters of resolution functions of inclusive for IP method on CCDB"};
+  Configurable<std::vector<std::string>> pathsCCDBforIPBeautyparameter{"pathsCCDBforIPBeautyparameter", std::vector<std::string>{"Users/l/leehy/LHC24g4/f_inclusive_0"}, "Paths for fitting parameters of resolution functions of beauty for IP method on CCDB"};
+  Configurable<std::vector<std::string>> pathsCCDBforIPCharmparameter{"pathsCCDBforIPCharmparameter", std::vector<std::string>{"Users/l/leehy/LHC24g4/f_inclusive_0"}, "Paths for fitting parameters of resolution functions of charm for IP method on CCDB"};
+  Configurable<std::vector<std::string>> pathsCCDBforIPLfparameter{"pathsCCDBforIPLfparameter", std::vector<std::string>{"Users/l/leehy/LHC24g4/f_inclusive_0"}, "Paths for fitting parameters of resolution functions of light flavour for IP method on CCDB"};
   Configurable<bool> usepTcategorize{"usepTcategorize", false, "p_T categorize TF1 function with Inclusive jet"};
   Configurable<std::vector<float>> paramsResoFuncData{"paramsResoFuncData", std::vector<float>{-1.0}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7))"};
   Configurable<std::vector<float>> paramsResoFuncIncJetMC{"paramsResoFuncIncJetMC", std::vector<float>{-1.0}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7)))"};
@@ -90,6 +94,7 @@ struct JetTaggerHFTask {
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {DefaultCutsMl[0], 1, 2, {"pT bin 0"}, {"score for default b-jet tagging", "uncer 1"}}, "ML selections per pT bin"};
   Configurable<int> nClassesMl{"nClassesMl", 2, "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
+  Configurable<bool> useDb{"useDb", false, "Flag to use DB for ML model instead of the score"};
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/h/hahassan"}, "Paths of models on CCDB"};
@@ -135,8 +140,17 @@ struct JetTaggerHFTask {
   std::unique_ptr<TF1> fSignImpXYSigBeautyJetMC = nullptr;
   std::unique_ptr<TF1> fSignImpXYSigLfJetMC = nullptr;
 
+  std::vector<std::vector<float>> vecParamsDataJetCCDB;
   std::vector<std::vector<float>> vecParamsIncJetMcCCDB;
+  std::vector<std::vector<float>> vecParamsBeautyJetMcCCDB;
+  std::vector<std::vector<float>> vecParamsCharmJetMcCCDB;
+  std::vector<std::vector<float>> vecParamsLfJetMcCCDB;
+
+  std::vector<std::unique_ptr<TF1>> vecfSignImpXYSigDataJetCCDB;
   std::vector<std::unique_ptr<TF1>> vecfSignImpXYSigIncJetMcCCDB;
+  std::vector<std::unique_ptr<TF1>> vecfSignImpXYSigCharmJetMcCCDB;
+  std::vector<std::unique_ptr<TF1>> vecfSignImpXYSigBeautyJetMcCCDB;
+  std::vector<std::unique_ptr<TF1>> vecfSignImpXYSigLfJetMcCCDB;
 
   std::vector<uint16_t> decisionNonML;
   std::vector<float> scoreML;
@@ -148,7 +162,11 @@ struct JetTaggerHFTask {
   {
     float jetProb = -1.0;
     if (!isMC) {
-      jetProb = jettaggingutilities::getJetProbability(fSignImpXYSigData, jet, tracks, trackDcaXYMax, trackDcaZMax, minSignImpXYSig);
+      if (usepTcategorize) {
+        jetProb = jettaggingutilities::getJetProbability(vecfSignImpXYSigDataJetCCDB, jet, tracks, trackDcaXYMax, trackDcaZMax, minSignImpXYSig);
+      } else {
+        jetProb = jettaggingutilities::getJetProbability(fSignImpXYSigData, jet, tracks, trackDcaXYMax, trackDcaZMax, minSignImpXYSig);
+      }
     } else {
       if (useResoFuncFromIncJet) {
         if (usepTcategorize) {
@@ -158,11 +176,23 @@ struct JetTaggerHFTask {
         }
       } else {
         if (origin == JetTaggingSpecies::charm) {
-          jetProb = jettaggingutilities::getJetProbability(fSignImpXYSigCharmJetMC, jet, tracks, trackDcaXYMax, trackDcaZMax, minSignImpXYSig);
+          if (usepTcategorize) {
+            jetProb = jettaggingutilities::getJetProbability(vecfSignImpXYSigCharmJetMcCCDB, jet, tracks, trackDcaXYMax, trackDcaZMax, minSignImpXYSig);
+          } else {
+            jetProb = jettaggingutilities::getJetProbability(fSignImpXYSigCharmJetMC, jet, tracks, trackDcaXYMax, trackDcaZMax, minSignImpXYSig);
+          }
         } else if (origin == JetTaggingSpecies::beauty) {
-          jetProb = jettaggingutilities::getJetProbability(fSignImpXYSigBeautyJetMC, jet, tracks, trackDcaXYMax, trackDcaZMax, minSignImpXYSig);
+          if (usepTcategorize) {
+            jetProb = jettaggingutilities::getJetProbability(vecfSignImpXYSigBeautyJetMcCCDB, jet, tracks, trackDcaXYMax, trackDcaZMax, minSignImpXYSig);
+          } else {
+            jetProb = jettaggingutilities::getJetProbability(fSignImpXYSigBeautyJetMC, jet, tracks, trackDcaXYMax, trackDcaZMax, minSignImpXYSig);
+          }
         } else {
-          jetProb = jettaggingutilities::getJetProbability(fSignImpXYSigLfJetMC, jet, tracks, trackDcaXYMax, trackDcaZMax, minSignImpXYSig);
+          if (usepTcategorize) {
+            jetProb = jettaggingutilities::getJetProbability(vecfSignImpXYSigLfJetMcCCDB, jet, tracks, trackDcaXYMax, trackDcaZMax, minSignImpXYSig);
+          } else {
+            jetProb = jettaggingutilities::getJetProbability(fSignImpXYSigLfJetMC, jet, tracks, trackDcaXYMax, trackDcaZMax, minSignImpXYSig);
+          }
         }
       }
     }
@@ -215,12 +245,12 @@ struct JetTaggerHFTask {
     }
     if (useJetProb) {
       if constexpr (isMC) {
-        jetProb = calculateJetProbability(origin, jet, tracks);
+        jetProb = calculateJetProbability(origin, jet, tracks, isMC);
         if (trackProbQA) {
           evaluateTrackProbQA(origin, jet, tracks, isMC);
         }
       } else {
-        jetProb = calculateJetProbability(0, jet, tracks);
+        jetProb = calculateJetProbability(0, jet, tracks, isMC);
         if (trackProbQA) {
           evaluateTrackProbQA(0, jet, tracks, isMC);
         }
@@ -256,21 +286,59 @@ struct JetTaggerHFTask {
     std::vector<float> vecParamsCharmJetMC;
     std::vector<float> vecParamsBeautyJetMC;
     std::vector<float> vecParamsLfJetMC;
-    std::vector<TF1*> resoFuncCCDB;
+
+    std::vector<TF1*> resoFuncDataCCDB;
+    std::vector<TF1*> resoFuncIncCCDB;
+    std::vector<TF1*> resoFuncBeautyCCDB;
+    std::vector<TF1*> resoFuncCharmCCDB;
+    std::vector<TF1*> resoFuncLfCCDB;
 
     ccdbApi.init(ccdbUrl);
+
+    std::map<std::string, std::string> metadata;
+    resoFuncMatch = resoFuncMatching;
+
+    const int mIPmethodResolutionFunctionSize = 7;
+
+    auto loadCCDBforIP = [&](const std::vector<std::string>& paths, std::vector<TF1*>& targetVec, const std::string& name) {
+      if (paths.size() != mIPmethodResolutionFunctionSize) {
+        usepTcategorize.value = false;
+        LOG(info) << name << " does not have 7 entries. Disabling pT categorization (usepTcategorize = false).";
+        resoFuncMatch = 0;
+        return;
+      }
+      for (int i = 0; i < mIPmethodResolutionFunctionSize; i++) {
+        targetVec.push_back(ccdbApi.retrieveFromTFileAny<TF1>(paths[i], metadata, -1));
+      }
+    };
+
     if (usepTcategorize) {
-      std::map<std::string, std::string> metadata; // dummy meta data (will be updated)
-                                                   // fill the timestamp directly of each TF1 according to p_T track range (0, 0.5, 1, 2, 4, 6, 9)
-      for (int i = 0; i < 7; i++) {
-        resoFuncCCDB.push_back(ccdbApi.retrieveFromTFileAny<TF1>(pathsCCDBforIPparamer->at(i), metadata, -1));
+      switch (resoFuncMatch) {
+        case 6:
+          loadCCDBforIP(pathsCCDBforIPIncparameter, resoFuncIncCCDB, "pathsCCDBforIPIncparameter");
+          break;
+
+        case 7:
+          loadCCDBforIP(pathsCCDBforIPBeautyparameter, resoFuncBeautyCCDB, "pathsCCDBforIPBeautyparameter");
+          loadCCDBforIP(pathsCCDBforIPCharmparameter, resoFuncCharmCCDB, "pathsCCDBforIPCharmparameter");
+          loadCCDBforIP(pathsCCDBforIPLfparameter, resoFuncLfCCDB, "pathsCCDBforIPLfparameter");
+          break;
+
+        case 8:
+          loadCCDBforIP(pathsCCDBforIPDataparameter, resoFuncDataCCDB, "pathsCCDBforIPDataparameter");
+          break;
+
+        default:
+          LOG(info) << "resoFuncMatching is neither 6 nor 7, although usepTcategorize is set to true. Resetting resoFuncMatching to 0.";
+          resoFuncMatch = 0;
+          break;
       }
     }
 
     maxOrder = numCount + 1; // 0: untagged, >1 : N ordering
+    const int mIPmethodNumOfParameters = 9;
 
     // Set up the resolution function
-    resoFuncMatch = resoFuncMatching;
     switch (resoFuncMatch) {
       case 0:
         vecParamsData = (std::vector<float>)paramsResoFuncData;
@@ -313,18 +381,60 @@ struct JetTaggerHFTask {
         break;
       case 6: // TODO
         vecParamsData = (std::vector<float>)paramsResoFuncData;
-        vecParamsIncJetMC = (std::vector<float>)paramsResoFuncData;
-        for (size_t j = 0; j < resoFuncCCDB.size(); j++) {
+        for (size_t j = 0; j < resoFuncIncCCDB.size(); j++) {
           std::vector<float> params;
-          if (resoFuncCCDB[j]) {
-            for (int i = 0; i < 9; i++) {
-              params.emplace_back(resoFuncCCDB[j]->GetParameter(i));
+          if (resoFuncIncCCDB[j]) {
+            for (int i = 0; i < mIPmethodNumOfParameters; i++) {
+              params.emplace_back(resoFuncIncCCDB[j]->GetParameter(i));
             }
           }
           vecParamsIncJetMcCCDB.emplace_back(params);
         }
         LOG(info) << "defined parameters of resolution function from CCDB";
         useResoFuncFromIncJet = true;
+        break;
+      case 7: // TODO
+        vecParamsData = (std::vector<float>)paramsResoFuncData;
+        for (size_t j = 0; j < resoFuncBeautyCCDB.size(); j++) {
+          std::vector<float> params;
+          if (resoFuncBeautyCCDB[j]) {
+            for (int i = 0; i < mIPmethodNumOfParameters; i++) {
+              params.emplace_back(resoFuncBeautyCCDB[j]->GetParameter(i));
+            }
+          }
+          vecParamsBeautyJetMcCCDB.emplace_back(params);
+        }
+        for (size_t j = 0; j < resoFuncCharmCCDB.size(); j++) {
+          std::vector<float> params;
+          if (resoFuncCharmCCDB[j]) {
+            for (int i = 0; i < mIPmethodNumOfParameters; i++) {
+              params.emplace_back(resoFuncCharmCCDB[j]->GetParameter(i));
+            }
+          }
+          vecParamsCharmJetMcCCDB.emplace_back(params);
+        }
+        for (size_t j = 0; j < resoFuncLfCCDB.size(); j++) {
+          std::vector<float> params;
+          if (resoFuncLfCCDB[j]) {
+            for (int i = 0; i < mIPmethodNumOfParameters; i++) {
+              params.emplace_back(resoFuncLfCCDB[j]->GetParameter(i));
+            }
+          }
+          vecParamsLfJetMcCCDB.emplace_back(params);
+        }
+        LOG(info) << "defined parameters of resolution function from CCDB for each flavour";
+        break;
+      case 8:
+        for (size_t j = 0; j < resoFuncDataCCDB.size(); j++) {
+          std::vector<float> params;
+          if (resoFuncDataCCDB[j]) {
+            for (int i = 0; i < mIPmethodNumOfParameters; i++) {
+              params.emplace_back(resoFuncDataCCDB[j]->GetParameter(i));
+            }
+          }
+          vecParamsDataJetCCDB.emplace_back(params);
+        }
+        LOG(info) << "defined parameters of resolution function from CCDB for data";
         break;
       default:
         LOG(fatal) << "undefined parameters of resolution function. Fix it!";
@@ -337,8 +447,20 @@ struct JetTaggerHFTask {
     fSignImpXYSigBeautyJetMC = jettaggingutilities::setResolutionFunction(vecParamsBeautyJetMC);
     fSignImpXYSigLfJetMC = jettaggingutilities::setResolutionFunction(vecParamsLfJetMC);
 
+    for (const auto& params : vecParamsDataJetCCDB) {
+      vecfSignImpXYSigDataJetCCDB.emplace_back(jettaggingutilities::setResolutionFunction(params));
+    }
     for (const auto& params : vecParamsIncJetMcCCDB) {
       vecfSignImpXYSigIncJetMcCCDB.emplace_back(jettaggingutilities::setResolutionFunction(params));
+    }
+    for (const auto& params : vecParamsBeautyJetMcCCDB) {
+      vecfSignImpXYSigBeautyJetMcCCDB.emplace_back(jettaggingutilities::setResolutionFunction(params));
+    }
+    for (const auto& params : vecParamsCharmJetMcCCDB) {
+      vecfSignImpXYSigCharmJetMcCCDB.emplace_back(jettaggingutilities::setResolutionFunction(params));
+    }
+    for (const auto& params : vecParamsLfJetMcCCDB) {
+      vecfSignImpXYSigLfJetMcCCDB.emplace_back(jettaggingutilities::setResolutionFunction(params));
     }
 
     // Use QA for effectivness of track probability
@@ -386,7 +508,7 @@ struct JetTaggerHFTask {
       std::vector<jettaggingutilities::BJetSVParams> svsParams;
 
       jettaggingutilities::analyzeJetSVInfo4ML(analysisJet, allTracks, allSVs, svsParams, svPtMin, svReductionFactor);
-      jettaggingutilities::analyzeJetTrackInfo4ML(analysisJet, allTracks, allSVs, tracksParams, trackPtMin);
+      jettaggingutilities::analyzeJetTrackInfo4ML(analysisJet, allTracks, allSVs, tracksParams, trackPtMin, trackDcaXYMax, trackDcaZMax);
 
       int nSVs = analysisJet.template secondaryVertices_as<SecondaryVertices>().size();
 
@@ -404,7 +526,15 @@ struct JetTaggerHFTask {
         bMlResponse.isSelectedMl(inputML, analysisJet.pt(), output);
       }
 
-      scoreML[analysisJet.globalIndex()] = output[0];
+      if (bMlResponse.getOutputNodes() > 1) {
+        auto mDb = [](std::vector<float> scores, float fC) {
+          return std::log(scores[2] / (fC * scores[1] + (1 - fC) * scores[0]));
+        };
+
+        scoreML[analysisJet.globalIndex()] = useDb ? mDb(output, fC) : output[2]; // 2 is the b-jet index
+      } else {
+        scoreML[analysisJet.globalIndex()] = output[0];
+      }
     }
   }
 
@@ -416,7 +546,7 @@ struct JetTaggerHFTask {
       std::vector<jettaggingutilities::BJetTrackParams> tracksParams;
       std::vector<jettaggingutilities::BJetSVParams> svsParams;
 
-      jettaggingutilities::analyzeJetTrackInfo4MLnoSV(analysisJet, allTracks, tracksParams, trackPtMin);
+      jettaggingutilities::analyzeJetTrackInfo4MLnoSV(analysisJet, allTracks, tracksParams, trackPtMin, trackDcaXYMax, trackDcaZMax);
 
       jettaggingutilities::BJetParams jetparam = {analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), static_cast<int>(tracksParams.size()), 0, analysisJet.mass()};
       tracksParams.resize(nJetConst); // resize to the number of inputs of the ML

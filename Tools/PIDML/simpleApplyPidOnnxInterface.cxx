@@ -9,12 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file simpleApplyPidInterface
+/// \file simpleApplyPidOnnxInterface.cxx
 /// \brief A simple example for using PID obtained from the PID ML ONNX Interface. See README.md for more detailed instructions.
 ///
 /// \author Maja Kabus <mkabus@cern.ch>
 
 #include <string>
+#include <vector>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -38,21 +39,19 @@ DECLARE_SOA_COLUMN(Accepted, accepted, bool); //! Whether the model accepted par
 DECLARE_SOA_TABLE(MlPidResults, "AOD", "MLPIDRESULTS", o2::soa::Index<>, mlpidresult::TrackId, mlpidresult::Pid, mlpidresult::Accepted);
 } // namespace o2::aod
 
-struct SimpleApplyOnnxInterface {
-  PidONNXInterface pidInterface; // One instance to manage all needed ONNX models
+struct SimpleApplyPidOnnxInterface {
+  Configurable<LabeledArray<double>> ptCuts{"ptCuts", {pidml_pt_cuts::Cuts[0], pidml_pt_cuts::NPids, pidml_pt_cuts::NCutVars, pidml_pt_cuts::pidLabels, pidml_pt_cuts::cutVarLabels}, "pT cuts for each output pid and each detector configuration"};
+  Configurable<std::vector<int>> pdgPids{"pdgPids", std::vector<int>{pidml_pt_cuts::pidsV}, "PIDs to predict"};
+  Configurable<std::vector<double>> mlIdentCertaintyThresholds{"mlIdentCertaintyThresholds", std::vector<double>{pidml_pt_cuts::certaintiesV}, "Min certainties of the models to accept given particle to be of given kind"};
+  Configurable<bool> autoMode{"autoMode", true, "Use automatic model matching: default pT cuts and min certainties"};
 
-  Configurable<LabeledArray<double>> cfgPTCuts{"pT_cuts", {pidml_pt_cuts::cuts[0], pidml_pt_cuts::nPids, pidml_pt_cuts::nCutVars, pidml_pt_cuts::pidLabels, pidml_pt_cuts::cutVarLabels}, "pT cuts for each output pid and each detector configuration"};
-  Configurable<std::vector<int>> cfgPids{"pids", std::vector<int>{pidml_pt_cuts::pids_v}, "PIDs to predict"};
-  Configurable<std::vector<double>> cfgCertainties{"certainties", std::vector<double>{pidml_pt_cuts::certainties_v}, "Min certainties of the models to accept given particle to be of given kind"};
-  Configurable<bool> cfgAutoMode{"autoMode", true, "Use automatic model matching: default pT cuts and min certainties"};
+  Configurable<std::string> ccdbPath{"ccdbPath", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
+  Configurable<bool> useCcdb{"useCcdb", true, "Whether to autofetch ML model from CCDB. If false, local file will be used."};
+  Configurable<std::string> localPath{"localPath", "/home/mkabus/PIDML/", "base path to the local directory with ONNX models"};
 
-  Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
-  Configurable<std::string> cfgCCDBURL{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
-  Configurable<bool> cfgUseCCDB{"useCCDB", true, "Whether to autofetch ML model from CCDB. If false, local file will be used."};
-  Configurable<std::string> cfgPathLocal{"local-path", "/home/mkabus/PIDML/", "base path to the local directory with ONNX models"};
-
-  Configurable<bool> cfgUseFixedTimestamp{"use-fixed-timestamp", false, "Whether to use fixed timestamp from configurable instead of timestamp calculated from the data"};
-  Configurable<uint64_t> cfgTimestamp{"timestamp", 1524176895000, "Hardcoded timestamp for tests"};
+  Configurable<bool> useFixedTimestamp{"useFixedTimestamp", false, "Whether to use fixed timestamp from configurable instead of timestamp calculated from the data"};
+  Configurable<uint64_t> fixedTimestamp{"fixedTimestamp", 1524176895000, "Hardcoded timestamp for tests"};
 
   o2::ccdb::CcdbApi ccdbApi;
   int currentRunNumber = -1;
@@ -65,25 +64,27 @@ struct SimpleApplyOnnxInterface {
   // Filter on isGlobalTrack (TracksSelection)
   using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal>>;
 
+  PidONNXInterface<BigTracks> pidInterface; // One instance to manage all needed ONNX models
+
   void init(InitContext const&)
   {
-    if (cfgUseCCDB) {
-      ccdbApi.init(cfgCCDBURL);
+    if (useCcdb) {
+      ccdbApi.init(ccdbUrl);
     } else {
-      pidInterface = PidONNXInterface(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, cfgPids.value, cfgPTCuts.value, cfgCertainties.value, cfgAutoMode.value);
+      pidInterface = PidONNXInterface<BigTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, -1, pdgPids.value, ptCuts.value, mlIdentCertaintyThresholds.value, autoMode.value);
     }
   }
 
   void processCollisions(aod::Collisions const& collisions, BigTracks const& tracks, aod::BCsWithTimestamps const&)
   {
     auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
-    if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
-      uint64_t timestamp = cfgUseFixedTimestamp ? cfgTimestamp.value : bc.timestamp();
-      pidInterface = PidONNXInterface(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, timestamp, cfgPids.value, cfgPTCuts.value, cfgCertainties.value, cfgAutoMode.value);
+    if (useCcdb && bc.runNumber() != currentRunNumber) {
+      uint64_t timestamp = useFixedTimestamp ? fixedTimestamp.value : bc.timestamp();
+      pidInterface = PidONNXInterface<BigTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, timestamp, pdgPids.value, ptCuts.value, mlIdentCertaintyThresholds.value, autoMode.value);
     }
 
-    for (auto& track : tracks) {
-      for (int pid : cfgPids.value) {
+    for (const auto& track : tracks) {
+      for (const int& pid : pdgPids.value) {
         bool accepted = pidInterface.applyModelBoolean(track, pid);
         LOGF(info, "collision id: %d track id: %d pid: %d accepted: %d p: %.3f; x: %.3f, y: %.3f, z: %.3f",
              track.collisionId(), track.index(), pid, accepted, track.p(), track.x(), track.y(), track.z());
@@ -91,12 +92,12 @@ struct SimpleApplyOnnxInterface {
       }
     }
   }
-  PROCESS_SWITCH(SimpleApplyOnnxInterface, processCollisions, "Process with collisions and bcs for CCDB", true);
+  PROCESS_SWITCH(SimpleApplyPidOnnxInterface, processCollisions, "Process with collisions and bcs for CCDB", true);
 
   void processTracksOnly(BigTracks const& tracks)
   {
-    for (auto& track : tracks) {
-      for (int pid : cfgPids.value) {
+    for (const auto& track : tracks) {
+      for (const int& pid : pdgPids.value) {
         bool accepted = pidInterface.applyModelBoolean(track, pid);
         LOGF(info, "collision id: %d track id: %d pid: %d accepted: %d p: %.3f; x: %.3f, y: %.3f, z: %.3f",
              track.collisionId(), track.index(), pid, accepted, track.p(), track.x(), track.y(), track.z());
@@ -104,11 +105,11 @@ struct SimpleApplyOnnxInterface {
       }
     }
   }
-  PROCESS_SWITCH(SimpleApplyOnnxInterface, processTracksOnly, "Process with tracks only -- faster but no CCDB", false);
+  PROCESS_SWITCH(SimpleApplyPidOnnxInterface, processTracksOnly, "Process with tracks only -- faster but no CCDB", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<SimpleApplyOnnxInterface>(cfgc)};
+    adaptAnalysisTask<SimpleApplyPidOnnxInterface>(cfgc)};
 }

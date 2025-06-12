@@ -94,7 +94,8 @@ struct myAnalysis {
   Configurable<float> nsigmaTOFmax{"nsigmaTOFmax", +5.0f, "Maximum nsigma TOF"};
   Configurable<float> yMin{"yMin", -0.5f, "minimum y"};
   Configurable<float> yMax{"yMax", +0.5f, "maximum y"};
-  Configurable<float> v0rejLambda{"v0rejLambda", 0.01, "V0 rej K0s"};
+  Configurable<float> v0rejLambda{"v0rejLambda", 0.01, "V0 rej Lambda"};
+  Configurable<float> v0rejK0s{"v0rejK0s", 0.075, "V0 rej K0s"};
   Configurable<float> CtauLambda{"ctauLambda", 30, "C tau Lambda (cm)"};
   Configurable<bool> ifpasslambda{"passedLambdaSelection", 1, "passedLambdaSelection"};
   Configurable<bool> ifpassantilambda{"passedAntiLambdaSelection", 1, "passedAntiLambdaSelection"};
@@ -405,7 +406,6 @@ struct myAnalysis {
     if (TMath::Abs(v0.mLambda() - o2::constants::physics::MassLambda0) > 0.075) {
       return false;
     }
-
     return true;
   }
   // AntiLambda Selections
@@ -574,6 +574,7 @@ struct myAnalysis {
         maxJetpT = chargedjet.pt();
         collisionId = chargedjet.collisionId();
         lastindex = outputCollisions.lastIndex();
+        maxJetPt = maxJetpT;
       }
     }
     if (maxJetpT > 0) {

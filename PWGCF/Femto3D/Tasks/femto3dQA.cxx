@@ -45,6 +45,8 @@ struct QAHistograms {
   /// Construct a registry object with direct declaration
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  Configurable<bool> _isMC{"isMC", false, ""};
+
   Configurable<bool> _removeSameBunchPileup{"removeSameBunchPileup", false, ""};
   Configurable<bool> _requestGoodZvtxFT0vsPV{"requestGoodZvtxFT0vsPV", false, ""};
   Configurable<bool> _requestVertexITSTPC{"requestVertexITSTPC", false, ""};
@@ -101,6 +103,10 @@ struct QAHistograms {
 
   void init(o2::framework::InitContext&)
   {
+
+    if (_isMC.value)
+      o2::aod::ITSResponse::setMCDefaultParameters(); // set MC parametrisation for the ITS PID
+
     TPCcuts = std::make_pair(_particlePDG, _tpcNSigma);
     TOFcuts = std::make_pair(_particlePDG, _tofNSigma);
 

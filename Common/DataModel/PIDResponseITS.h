@@ -73,9 +73,9 @@ struct ITSResponse {
     // static constexpr float charge = static_cast<float>(o2::track::pid_constants::sCharges[id]);
     const float bg = momentum * inverseMass;
     if (id == o2::track::PID::Helium3 || id == o2::track::PID::Alpha) {
-      return mResolutionParamsZ2[0] * std::erf((bg - mResolutionParamsZ2[1]) / mResolutionParamsZ2[2]);
+      return mResolutionParamsZ2[1] > -999.0 ? mResolutionParamsZ2[0] * std::erf((bg - mResolutionParamsZ2[1]) / mResolutionParamsZ2[2]) : mResolutionParamsZ2[0];
     }
-    return mResolutionParams[0] * std::erf((bg - mResolutionParams[1]) / mResolutionParams[2]);
+    return mResolutionParams[1] > -999.0 ? mResolutionParams[0] * std::erf((bg - mResolutionParams[1]) / mResolutionParams[2]) : mResolutionParams[0];
   }
 
   template <o2::track::PID::ID id>
@@ -117,6 +117,14 @@ struct ITSResponse {
     mResolutionParamsZ2[2] = p2_res_Z2;
   }
 
+  static void setMCDefaultParameters()
+  {
+    setParameters(1.63806, 1.58847, 2.52275,
+                  2.66505, 1.48405, 6.90453,
+                  1.40487e-01, -4.31078e-01, 1.50052,
+                  0.09, -999., -999.);
+  }
+
  private:
   static std::array<float, 3> mITSRespParams;
   static std::array<float, 3> mITSRespParamsZ2;
@@ -129,7 +137,7 @@ std::array<float, 3> ITSResponse::mITSRespParams = {1.18941, 1.53792, 1.69961};
 std::array<float, 3> ITSResponse::mITSRespParamsZ2 = {2.35117, 1.80347, 5.14355};
 // relative resolution is modelled with an erf function: [0]*TMath::Erf((x-[1])/[2])
 std::array<float, 3> ITSResponse::mResolutionParams = {1.94669e-01, -2.08616e-01, 1.30753};
-std::array<float, 3> ITSResponse::mResolutionParamsZ2 = {8.74371e-02, -1.82804, 5.06449e-01};
+std::array<float, 3> ITSResponse::mResolutionParamsZ2 = {0.09, -999., -999.};
 bool ITSResponse::mIsInitialized = false;
 
 namespace pidits

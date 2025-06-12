@@ -62,6 +62,11 @@ o2physics_add_dpl_workflow(track-propagation
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(track-dca-cov-filler-run2
+                    SOURCES trackDcaCovFillerRun2.cxx
+                    PUBLIC_LINK_LIBRARIES O2::DetectorsBase O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(track-propagation-tester
                     SOURCES trackPropagationTester.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::trackSelectionRequest
@@ -120,8 +125,8 @@ o2physics_add_dpl_workflow(match-mft-ft0
                                           O2::DetectorsBase O2::DetectorsCommonDataFormats
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(zdc-task-intercalib
-                    SOURCES zdc-task-intercalib.cxx
+o2physics_add_dpl_workflow(zdc-task-inter-calib
+                    SOURCES zdcTaskInterCalib.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -132,7 +137,7 @@ o2physics_add_dpl_workflow(ese-table-producer
 
 o2physics_add_dpl_workflow(mftmch-matching-data
                     SOURCES match-mft-mch-data.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCCDB O2Physics::PWGDQCore O2Physics::EventFilteringUtils
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::GlobalTracking
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(occ-table-producer
@@ -142,16 +147,11 @@ o2physics_add_dpl_workflow(occ-table-producer
 
 o2physics_add_dpl_workflow(mftmch-matching-data-mc
                     SOURCES match-mft-mch-data-mc.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCCDB O2Physics::PWGDQCore O2Physics::EventFilteringUtils
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::GlobalTracking
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(muon-realignment
                     SOURCES muonRealignment.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2::DetectorsCommonDataFormats O2::MathUtils O2::MCHTracking O2::DataFormatsMCH O2::GlobalTracking O2::MCHBase O2::MCHGeometryTransformer O2::CommonUtils
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(fwdtrack-propagation
-                    SOURCES fwdtrackPropagation.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::GlobalTracking
                     COMPONENT_NAME Analysis)
 

@@ -28,6 +28,7 @@
 #include "Framework/runDataProcessing.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -47,8 +48,13 @@ struct HfTaskXic {
   Configurable<float> dcaZTrackMax{"dcaZTrackMax", 0.0025, "max. DCAz for track"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_to_p_k_pi::vecBinsPt}, "pT bin limits"};
 
-  // THnSparse for ML outputScores and Vars
   Configurable<bool> enableTHn{"enableTHn", false, "enable THn for Xic"};
+  HfHelper hfHelper;
+  Service<o2::framework::O2DatabasePDG> pdg;
+
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
+
+  // THnSparse for ML outputScores and Vars
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {36, 0, 36}, ""};
   ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {300, 1.98, 2.58}, ""};
   ConfigurableAxis thnConfigAxisPtProng{"thnConfigAxisPtProng", {100, 0, 20}, ""};
@@ -60,18 +66,9 @@ struct HfTaskXic {
   ConfigurableAxis thnConfigAxisBdtScoreSignal{"thnConfigAxisBdtScoreSignal", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisYMC{"thnConfigAxisYMC", {100, -2., 2.}, ""};
   //
-  Service<o2::framework::O2DatabasePDG> pdg;
-  HfHelper hfHelper;
 
   float etaMaxAcceptance = 0.8;
   float ptMinAcceptance = 0.1;
-
-  using TracksWPid = soa::Join<aod::TracksWDca,
-                               aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr>;
-
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
-
-  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>> selectedMCXicCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
 
   HistogramRegistry registry{
     "registry", // histo not in pt bins
@@ -256,7 +253,7 @@ struct HfTaskXic {
   template <bool useMl, typename Cands>
   void analysisData(aod::Collision const& collision,
                     Cands const& candidates,
-                    TracksWPid const& tracks)
+                    aod::TracksWDca const& tracks)
   {
     int nTracks = 0;
 
@@ -316,48 +313,49 @@ struct HfTaskXic {
       registry.fill(HIST("Data/hChi2PCA"), candidate.chi2PCA(), ptCandidate);
 
       // PID histos
-      auto trackProng0 = candidate.template prong0_as<TracksWPid>();
-      auto trackProng1 = candidate.template prong1_as<TracksWPid>();
-      auto trackProng2 = candidate.template prong2_as<TracksWPid>();
+      auto trackProng0 = candidate.template prong0_as<aod::TracksWDca>();
+      auto trackProng1 = candidate.template prong1_as<aod::TracksWDca>();
+      auto trackProng2 = candidate.template prong2_as<aod::TracksWDca>();
 
       auto momentumProng0 = trackProng0.p();
       auto momentumProng1 = trackProng1.p();
       auto momentumProng2 = trackProng2.p();
 
       // TPC nSigma histograms
-      registry.fill(HIST("Data/hPVsTPCNSigmaPr_Prong0"), momentumProng0, trackProng0.tpcNSigmaPr());
-      registry.fill(HIST("Data/hPVsTPCNSigmaPi_Prong0"), momentumProng0, trackProng0.tpcNSigmaPi());
-      registry.fill(HIST("Data/hPVsTPCNSigmaKa_Prong0"), momentumProng0, trackProng0.tpcNSigmaKa());
+      registry.fill(HIST("Data/hPVsTPCNSigmaPr_Prong0"), momentumProng0, candidate.nSigTpcPr0());
+      registry.fill(HIST("Data/hPVsTPCNSigmaPi_Prong0"), momentumProng0, candidate.nSigTpcPi0());
+      registry.fill(HIST("Data/hPVsTPCNSigmaKa_Prong0"), momentumProng0, candidate.nSigTpcKa0());
 
-      registry.fill(HIST("Data/hPVsTPCNSigmaPr_Prong1"), momentumProng1, trackProng1.tpcNSigmaPr());
-      registry.fill(HIST("Data/hPVsTPCNSigmaPi_Prong1"), momentumProng1, trackProng1.tpcNSigmaPi());
-      registry.fill(HIST("Data/hPVsTPCNSigmaKa_Prong1"), momentumProng1, trackProng1.tpcNSigmaKa());
+      registry.fill(HIST("Data/hPVsTPCNSigmaPr_Prong1"), momentumProng1, candidate.nSigTpcPr1());
+      registry.fill(HIST("Data/hPVsTPCNSigmaPi_Prong1"), momentumProng1, candidate.nSigTpcPi1());
+      registry.fill(HIST("Data/hPVsTPCNSigmaKa_Prong1"), momentumProng1, candidate.nSigTpcKa1());
 
-      registry.fill(HIST("Data/hPVsTPCNSigmaPr_Prong2"), momentumProng2, trackProng2.tpcNSigmaPr());
-      registry.fill(HIST("Data/hPVsTPCNSigmaPi_Prong2"), momentumProng2, trackProng2.tpcNSigmaPi());
-      registry.fill(HIST("Data/hPVsTPCNSigmaKa_Prong2"), momentumProng2, trackProng2.tpcNSigmaKa());
+      registry.fill(HIST("Data/hPVsTPCNSigmaPr_Prong2"), momentumProng2, candidate.nSigTpcPr2());
+      registry.fill(HIST("Data/hPVsTPCNSigmaPi_Prong2"), momentumProng2, candidate.nSigTpcPi2());
+      registry.fill(HIST("Data/hPVsTPCNSigmaKa_Prong2"), momentumProng2, candidate.nSigTpcKa2());
 
       // TOF nSigma histograms
-      registry.fill(HIST("Data/hPVsTOFNSigmaPr_Prong0"), momentumProng0, trackProng0.tofNSigmaPr());
-      registry.fill(HIST("Data/hPVsTOFNSigmaPi_Prong0"), momentumProng0, trackProng0.tofNSigmaPi());
-      registry.fill(HIST("Data/hPVsTOFNSigmaKa_Prong0"), momentumProng0, trackProng0.tofNSigmaKa());
+      registry.fill(HIST("Data/hPVsTOFNSigmaPr_Prong0"), momentumProng0, candidate.nSigTofPr0());
+      registry.fill(HIST("Data/hPVsTOFNSigmaPi_Prong0"), momentumProng0, candidate.nSigTofPi0());
+      registry.fill(HIST("Data/hPVsTOFNSigmaKa_Prong0"), momentumProng0, candidate.nSigTofKa0());
 
-      registry.fill(HIST("Data/hPVsTOFNSigmaPr_Prong1"), momentumProng1, trackProng1.tofNSigmaPr());
-      registry.fill(HIST("Data/hPVsTOFNSigmaPi_Prong1"), momentumProng1, trackProng1.tofNSigmaPi());
-      registry.fill(HIST("Data/hPVsTOFNSigmaKa_Prong1"), momentumProng1, trackProng1.tofNSigmaKa());
+      registry.fill(HIST("Data/hPVsTOFNSigmaPr_Prong1"), momentumProng1, candidate.nSigTofPr1());
+      registry.fill(HIST("Data/hPVsTOFNSigmaPi_Prong1"), momentumProng1, candidate.nSigTofPi1());
+      registry.fill(HIST("Data/hPVsTOFNSigmaKa_Prong1"), momentumProng1, candidate.nSigTofKa1());
 
-      registry.fill(HIST("Data/hPVsTOFNSigmaPr_Prong2"), momentumProng2, trackProng2.tofNSigmaPr());
-      registry.fill(HIST("Data/hPVsTOFNSigmaPi_Prong2"), momentumProng2, trackProng2.tofNSigmaPi());
-      registry.fill(HIST("Data/hPVsTOFNSigmaKa_Prong2"), momentumProng2, trackProng2.tofNSigmaKa());
+      registry.fill(HIST("Data/hPVsTOFNSigmaPr_Prong2"), momentumProng2, candidate.nSigTofPr2());
+      registry.fill(HIST("Data/hPVsTOFNSigmaPi_Prong2"), momentumProng2, candidate.nSigTofPi2());
+      registry.fill(HIST("Data/hPVsTOFNSigmaKa_Prong2"), momentumProng2, candidate.nSigTofKa2());
 
       // THnSparse
       if (enableTHn) {
         double massXic(-1);
         double outputBkg(-1), outputPrompt(-1), outputFD(-1);
+        const int ternaryCl = 3;
         if (candidate.isSelXicToPKPi() >= selectionFlagXic) {
           massXic = hfHelper.invMassXicToPKPi(candidate);
           if constexpr (useMl) {
-            if (candidate.mlProbXicToPKPi().size() == 3) {
+            if (candidate.mlProbXicToPKPi().size() == ternaryCl) {
               outputBkg = candidate.mlProbXicToPKPi()[0];    /// bkg score
               outputPrompt = candidate.mlProbXicToPKPi()[1]; /// prompt score
               outputFD = candidate.mlProbXicToPKPi()[2];     /// non-prompt score
@@ -371,7 +369,7 @@ struct HfTaskXic {
         if (candidate.isSelXicToPiKP() >= selectionFlagXic) {
           massXic = hfHelper.invMassXicToPiKP(candidate);
           if constexpr (useMl) {
-            if (candidate.mlProbXicToPiKP().size() == 3) {
+            if (candidate.mlProbXicToPiKP().size() == ternaryCl) {
               outputBkg = candidate.mlProbXicToPiKP()[0];    /// bkg score
               outputPrompt = candidate.mlProbXicToPiKP()[1]; /// prompt score
               outputFD = candidate.mlProbXicToPiKP()[2];     /// non-prompt score
@@ -383,19 +381,19 @@ struct HfTaskXic {
           }
         }
       } // thn for Xic
-    }   // loop candidates
-  }     // end process data
+    } // loop candidates
+  } // end process data
 
   void processDataStd(aod::Collision const& collision,
-                      soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>> const& candidates,
-                      TracksWPid const& tracks)
+                      soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelXicToPKPi>> const& candidates,
+                      aod::TracksWDca const& tracks)
   {
     analysisData<false>(collision, candidates, tracks);
   }
   PROCESS_SWITCH(HfTaskXic, processDataStd, "Process Data with the standard method", true);
 
   void processDataWithMl(aod::Collision const& collision,
-                         soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfMlXicToPKPi>> const& candidatesMl, TracksWPid const& tracks)
+                         soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelXicToPKPi, aod::HfMlXicToPKPi>> const& candidatesMl, aod::TracksWDca const& tracks)
   {
     analysisData<true>(collision, candidatesMl, tracks);
   }
@@ -428,7 +426,7 @@ struct HfTaskXic {
         massXicToPiKP = hfHelper.invMassXicToPiKP(candidate); // mass conjugate
       }
 
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::XicToPKPi) {
+      if (std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::XicToPKPi) {
         // Get the corresponding MC particle.
         auto mcParticleProng0 = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
         auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
@@ -493,6 +491,7 @@ struct HfTaskXic {
         if (enableTHn) {
           double massXic(-1);
           double outputBkg(-1), outputPrompt(-1), outputFD(-1);
+          const int ternaryCl = 3;
           bool allProngsInAcceptance = false;
           if ((candidate.isSelXicToPKPi() >= selectionFlagXic) && pdgCodeProng0 == kProton) {
             massXic = hfHelper.invMassXicToPKPi(candidate);
@@ -504,7 +503,7 @@ struct HfTaskXic {
             }
             allProngsInAcceptance = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]) && isProngInAcceptance(etaProngs[2], ptProngs[2]);
             if constexpr (useMl) {
-              if (candidate.mlProbXicToPKPi().size() == 3) {
+              if (candidate.mlProbXicToPKPi().size() == ternaryCl) {
                 outputBkg = candidate.mlProbXicToPKPi()[0];    /// bkg score
                 outputPrompt = candidate.mlProbXicToPKPi()[1]; /// prompt score
                 outputFD = candidate.mlProbXicToPKPi()[2];     /// non-prompt score
@@ -525,7 +524,7 @@ struct HfTaskXic {
             }
             allProngsInAcceptance = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]) && isProngInAcceptance(etaProngs[2], ptProngs[2]);
             if constexpr (useMl) {
-              if (candidate.mlProbXicToPiKP().size() == 3) {
+              if (candidate.mlProbXicToPiKP().size() == ternaryCl) {
                 outputBkg = candidate.mlProbXicToPiKP()[0];    /// bkg score
                 outputPrompt = candidate.mlProbXicToPiKP()[1]; /// prompt score
                 outputFD = candidate.mlProbXicToPiKP()[2];     /// non-prompt score
@@ -567,11 +566,11 @@ struct HfTaskXic {
         registry.fill(HIST("MC/reconstructed/background/hDecLenErrBg"), candidate.errorDecayLength(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hChi2PCARecBg"), candidate.chi2PCA(), ptCandidate);
       } // Xic background
-    }   // candidate loop
+    } // candidate loop
 
     // MC gen.
     for (const auto& particle : mcParticles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::XicToPKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::XicToPKPi) {
         auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus);
         if (yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) {
           continue;
@@ -600,7 +599,7 @@ struct HfTaskXic {
       }
     }
   }
-  void processMcStd(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>> const& selectedCandidatesMc,
+  void processMcStd(soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>> const& selectedCandidatesMc,
                     soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                     aod::TracksWMc const& tracksWithMc)
   {
@@ -608,7 +607,7 @@ struct HfTaskXic {
   }
   PROCESS_SWITCH(HfTaskXic, processMcStd, "Process MC with the standard method", false);
 
-  void processMcWithMl(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfMlXicToPKPi, aod::HfCand3ProngMcRec>> const& selectedCandidatesMlMc,
+  void processMcWithMl(soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelXicToPKPi, aod::HfMlXicToPKPi, aod::HfCand3ProngMcRec>> const& selectedCandidatesMlMc,
                        soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                        aod::TracksWMc const& tracksWithMc)
   {

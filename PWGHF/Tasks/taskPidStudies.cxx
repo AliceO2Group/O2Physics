@@ -18,6 +18,7 @@
 /// \author Luca Aglietta <luca.aglietta@unito.it>, Università and INFN Torino
 
 #include <string>
+#include <memory>
 
 #include "TPDGCode.h"
 
@@ -26,6 +27,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
 
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -42,14 +44,25 @@ using namespace o2::framework::expressions;
 using namespace o2::hf_evsel;
 using namespace o2::hf_centrality;
 
-namespace o2::aod
-{
-namespace pid_studies
-{
 enum Particle { NotMatched = 0,
                 K0s,
                 Lambda,
                 Omega };
+
+enum TrackCuts { All = 0,
+                 HasIts,
+                 HasTpc,
+                 TpcNClsCrossedRows,
+                 Eta,
+                 Pt,
+                 TpcChi2NCls,
+                 ItsChi2NCls,
+                 NCuts };
+
+namespace o2::aod
+{
+namespace pid_studies
+{
 // V0s
 DECLARE_SOA_COLUMN(MassK0, massK0, float);                 //! Candidate mass
 DECLARE_SOA_COLUMN(MassLambda, massLambda, float);         //! Candidate mass
@@ -86,17 +99,12 @@ DECLARE_SOA_COLUMN(NSigmaTpcBachKa, nSigmaTpcBachKa, float); //! nSigmaTPC of ba
 DECLARE_SOA_COLUMN(NSigmaTofBachKa, nSigmaTofBachKa, float); //! nSigmaTOF of bachelor with kaon hypothesis
 
 // Common columns
-DECLARE_SOA_COLUMN(OccupancyFt0c, occupancyFt0c, float);   //! Occupancy from FT0C
-DECLARE_SOA_COLUMN(OccupancyIts, occupancyIts, float);     //! Occupancy from ITS
-DECLARE_SOA_COLUMN(CentralityFT0C, centralityFT0C, float); //! Centrality from FT0C
-DECLARE_SOA_COLUMN(CentralityFT0M, centralityFT0M, float); //! Centrality from FT0M
-DECLARE_SOA_COLUMN(CandFlag, candFlag, int);               //! Flag for MC matching
-
-const int minTpcNClsCrossedRows = 70; // Minimum number of crossed rows in TPC
-const float maxEta = 0.8;             // Maximum pseudorapidity
-const float minPt = 0.1;              // Minimum transverse momentum
-const float maxTpcChi2NCl = 4;        // Maximum TPC chi2 per number of TPC clusters
-const float maxItsChi2NCl = 36;       // Maximum ITS chi2 per number of ITS clusters
+DECLARE_SOA_COLUMN(OccupancyFt0c, occupancyFt0c, float);      //! Occupancy from FT0C
+DECLARE_SOA_COLUMN(OccupancyIts, occupancyIts, float);        //! Occupancy from ITS
+DECLARE_SOA_COLUMN(CentralityFT0C, centralityFT0C, float);    //! Centrality from FT0C
+DECLARE_SOA_COLUMN(CentralityFT0M, centralityFT0M, float);    //! Centrality from FT0M
+DECLARE_SOA_COLUMN(InteractionRate, interactionRate, double); //! Centrality from FT0M
+DECLARE_SOA_COLUMN(CandFlag, candFlag, int);                  //! Flag for MC matching
 } // namespace pid_studies
 
 DECLARE_SOA_TABLE(PidV0s, "AOD", "PIDV0S", //! Table with PID information
@@ -126,6 +134,7 @@ DECLARE_SOA_TABLE(PidV0s, "AOD", "PIDV0S", //! Table with PID information
                   pid_studies::OccupancyIts,
                   pid_studies::CentralityFT0C,
                   pid_studies::CentralityFT0M,
+                  pid_studies::InteractionRate,
                   pid_studies::CandFlag);
 
 DECLARE_SOA_TABLE(PidCascades, "AOD", "PIDCASCADES", //! Table with PID information
@@ -146,6 +155,7 @@ DECLARE_SOA_TABLE(PidCascades, "AOD", "PIDCASCADES", //! Table with PID informat
                   pid_studies::OccupancyIts,
                   pid_studies::CentralityFT0C,
                   pid_studies::CentralityFT0M,
+                  pid_studies::InteractionRate,
                   pid_studies::CandFlag);
 } // namespace o2::aod
 
@@ -155,12 +165,19 @@ struct HfTaskPidStudies {
 
   Configurable<bool> applyEvSels{"applyEvSels", true, "Apply event selections"};
   Configurable<bool> applyTrackSels{"applyTrackSels", true, "Apply track selections"};
+  Configurable<float> tpcNClsCrossedRowsTrackMin{"tpcNClsCrossedRowsTrackMin", 70, "Minimum number of crossed rows in TPC"};
+  Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "Maximum pseudorapidity"};
+  Configurable<float> ptTrackMin{"ptTrackMin", 0.1, "Minimum transverse momentum"};
+  Configurable<float> tpcChi2NClTrackMax{"tpcChi2NClTrackMax", 4, "Maximum TPC chi2 per number of TPC clusters"};
+  Configurable<float> itsChi2NClTrackMax{"itsChi2NClTrackMax", 36, "Maximum ITS chi2 per number of ITS clusters"};
   Configurable<float> massK0Min{"massK0Min", 0.4, "Minimum mass for K0"};
   Configurable<float> massK0Max{"massK0Max", 0.6, "Maximum mass for K0"};
   Configurable<float> massLambdaMin{"massLambdaMin", 1.0, "Minimum mass for lambda"};
   Configurable<float> massLambdaMax{"massLambdaMax", 1.3, "Maximum mass for lambda"};
   Configurable<float> massOmegaMin{"massOmegaMin", 1.5, "Minimum mass for omega"};
   Configurable<float> massOmegaMax{"massOmegaMax", 1.8, "Maximum mass for omega"};
+  Configurable<float> interactionRateMin{"interactionRateMin", -1, "Minimum interaction rate (kHz)"};
+  Configurable<float> interactionRateMax{"interactionRateMax", 1.e20, "Maximum interaction rate (kHz)"};
   Configurable<float> radiusMax{"radiusMax", 2.3, "Maximum decay radius (cm)"};
   Configurable<float> cosPaMin{"cosPaMin", 0.98, "Minimum cosine of pointing angle"};
   Configurable<float> dcaV0DaughtersMax{"dcaV0DaughtersMax", 0.2, "Maximum DCA among the V0 daughters (cm)"};
@@ -170,6 +187,7 @@ struct HfTaskPidStudies {
   Configurable<float> qtArmenterosMaxForLambda{"qtArmenterosMaxForLambda", 0.12, "Minimum Armenteros' qt for (anti)Lambda"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to keep"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
+  Configurable<std::string> ctpFetcherSource{"ctpFetcherSource", "T0VTX", "Source for CTP rate fetching, e.g. T0VTX, T0CE, T0SC, ZNC (hadronic)"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   using PidTracks = soa::Join<aod::Tracks, aod::TracksExtra,
@@ -180,8 +198,10 @@ struct HfTaskPidStudies {
   using V0sMcRec = soa::Join<aod::V0Datas, aod::V0CoreMCLabels>;
   using CascsMcRec = soa::Join<aod::CascDatas, aod::CascCoreMCLabels>;
 
+  ctpRateFetcher rateFetcher;
   HfEventSelection hfEvSel;
   HfEventSelectionMc hfEvSelMc;
+  double interactionRate{-1.};
 
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry registry{"registry", {}};
@@ -195,6 +215,18 @@ struct HfTaskPidStudies {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     hfEvSel.addHistograms(registry);
+
+    std::shared_ptr<TH1> hTrackSel = registry.add<TH1>("hTrackSel", "Track selection;;Counts", {HistType::kTH1F, {{TrackCuts::NCuts, 0, TrackCuts::NCuts}}});
+
+    // Set Labels for hTrackSel
+    hTrackSel->GetXaxis()->SetBinLabel(TrackCuts::All + 1, "All");
+    hTrackSel->GetXaxis()->SetBinLabel(TrackCuts::HasIts + 1, "HasITS");
+    hTrackSel->GetXaxis()->SetBinLabel(TrackCuts::HasTpc + 1, "HasTPC");
+    hTrackSel->GetXaxis()->SetBinLabel(TrackCuts::TpcNClsCrossedRows + 1, "TPC NCls/CrossedRows");
+    hTrackSel->GetXaxis()->SetBinLabel(TrackCuts::Eta + 1, "#eta");
+    hTrackSel->GetXaxis()->SetBinLabel(TrackCuts::Pt + 1, "#it{p}_{T}");
+    hTrackSel->GetXaxis()->SetBinLabel(TrackCuts::TpcChi2NCls + 1, "TPC #chi^{2}/NCls");
+    hTrackSel->GetXaxis()->SetBinLabel(TrackCuts::ItsChi2NCls + 1, "ITS #chi^{2}/NCls");
   }
 
   template <bool isV0, typename Coll, typename Cand>
@@ -236,6 +268,7 @@ struct HfTaskPidStudies {
         coll.trackOccupancyInTimeRange(),
         coll.centFT0C(),
         coll.centFT0M(),
+        interactionRate,
         flag);
     } else {
       const auto& bachTrack = candidate.template bachelor_as<PidTracks>();
@@ -257,6 +290,7 @@ struct HfTaskPidStudies {
         coll.trackOccupancyInTimeRange(),
         coll.centFT0C(),
         coll.centFT0M(),
+        interactionRate,
         flag);
     }
   }
@@ -266,22 +300,22 @@ struct HfTaskPidStudies {
   {
     if constexpr (std::is_same<T1, V0sMcRec::iterator>::value) {
       if (!cand.has_v0MCCore()) {
-        return aod::pid_studies::Particle::NotMatched;
+        return Particle::NotMatched;
       }
       auto v0MC = cand.template v0MCCore_as<aod::V0MCCores>();
       if (v0MC.pdgCode() == kK0Short && v0MC.pdgCodeNegative() == -kPiPlus && v0MC.pdgCodePositive() == kPiPlus) {
-        return aod::pid_studies::Particle::K0s;
+        return Particle::K0s;
       }
       if (v0MC.pdgCode() == kLambda0 && v0MC.pdgCodeNegative() == -kPiPlus && v0MC.pdgCodePositive() == kProton) {
-        return aod::pid_studies::Particle::Lambda;
+        return Particle::Lambda;
       }
       if (v0MC.pdgCode() == -kLambda0 && v0MC.pdgCodeNegative() == -kProton && v0MC.pdgCodePositive() == kPiPlus) {
-        return -aod::pid_studies::Particle::Lambda;
+        return -Particle::Lambda;
       }
     }
     if constexpr (std::is_same<T1, CascsMcRec::iterator>::value) {
       if (!cand.has_cascMCCore()) {
-        return aod::pid_studies::Particle::NotMatched;
+        return Particle::NotMatched;
       }
       auto cascMC = cand.template cascMCCore_as<aod::CascMCCores>();
       if (cascMC.pdgCode() == kOmegaMinus &&
@@ -289,22 +323,28 @@ struct HfTaskPidStudies {
           cascMC.pdgCodeV0() == kLambda0 &&
           cascMC.pdgCodePositive() == kProton &&
           cascMC.pdgCodeNegative() == -kPiPlus) {
-        return aod::pid_studies::Particle::Omega;
+        return Particle::Omega;
       }
       if (cascMC.pdgCode() == -kOmegaMinus &&
           cascMC.pdgCodeBachelor() == kKPlus &&
           cascMC.pdgCodeV0() == -kLambda0 &&
           cascMC.pdgCodePositive() == kPiPlus &&
           cascMC.pdgCodeNegative() == -kProton) {
-        return -aod::pid_studies::Particle::Omega;
+        return -Particle::Omega;
       }
     }
-    return aod::pid_studies::Particle::NotMatched;
+    return Particle::NotMatched;
   }
 
   template <typename Coll>
   bool isCollSelected(const Coll& coll)
   {
+    auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
+    interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), ctpFetcherSource.value) * 1.e-3; // convert to kHz
+    if (interactionRate < interactionRateMin || interactionRate > interactionRateMax) {
+      return false;
+    }
+
     float cent{-1.f};
     const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(coll, cent, ccdb, registry);
     /// monitor the satisfied event selections
@@ -317,38 +357,66 @@ struct HfTaskPidStudies {
   {
     const auto& posTrack = candidate.template posTrack_as<PidTracks>();
     const auto& negTrack = candidate.template negTrack_as<PidTracks>();
-    if (posTrack.tpcNClsCrossedRows() < o2::aod::pid_studies::minTpcNClsCrossedRows || negTrack.tpcNClsCrossedRows() < o2::aod::pid_studies::minTpcNClsCrossedRows) {
-      return false;
-    }
-    if (std::abs(posTrack.eta()) > o2::aod::pid_studies::maxEta || std::abs(negTrack.eta()) > o2::aod::pid_studies::maxEta) {
-      return false;
-    }
-    if (posTrack.pt() < o2::aod::pid_studies::minPt || negTrack.pt() < o2::aod::pid_studies::minPt) {
-      return false;
-    }
-    if (posTrack.tpcChi2NCl() > o2::aod::pid_studies::maxTpcChi2NCl || negTrack.tpcChi2NCl() > o2::aod::pid_studies::maxTpcChi2NCl) {
-      return false;
-    }
-    if (posTrack.itsChi2NCl() > o2::aod::pid_studies::maxItsChi2NCl || negTrack.itsChi2NCl() > o2::aod::pid_studies::maxItsChi2NCl) {
-      return false;
-    }
-    if constexpr (!isV0) {
+    registry.fill(HIST("hTrackSel"), TrackCuts::All);
+    if constexpr (isV0) {
+      if (!posTrack.hasITS() || !negTrack.hasITS()) {
+        return false;
+      }
+      registry.fill(HIST("hTrackSel"), TrackCuts::HasIts);
+      if (!posTrack.hasTPC() || !negTrack.hasTPC()) {
+        return false;
+      }
+      registry.fill(HIST("hTrackSel"), TrackCuts::HasTpc);
+      if (posTrack.tpcNClsCrossedRows() < tpcNClsCrossedRowsTrackMin || negTrack.tpcNClsCrossedRows() < tpcNClsCrossedRowsTrackMin) {
+        return false;
+      }
+      registry.fill(HIST("hTrackSel"), TrackCuts::TpcNClsCrossedRows);
+      if (std::abs(posTrack.eta()) > etaTrackMax || std::abs(negTrack.eta()) > etaTrackMax) {
+        return false;
+      }
+      registry.fill(HIST("hTrackSel"), TrackCuts::Eta);
+      if (posTrack.pt() < ptTrackMin || negTrack.pt() < ptTrackMin) {
+        return false;
+      }
+      registry.fill(HIST("hTrackSel"), TrackCuts::Pt);
+      if (posTrack.tpcChi2NCl() > tpcChi2NClTrackMax || negTrack.tpcChi2NCl() > tpcChi2NClTrackMax) {
+        return false;
+      }
+      registry.fill(HIST("hTrackSel"), TrackCuts::TpcChi2NCls);
+      if (posTrack.itsChi2NCl() > itsChi2NClTrackMax || negTrack.itsChi2NCl() > itsChi2NClTrackMax) {
+        return false;
+      }
+      registry.fill(HIST("hTrackSel"), TrackCuts::ItsChi2NCls);
+    } else {
       const auto& bachTrack = candidate.template bachelor_as<PidTracks>();
-      if (bachTrack.tpcNClsCrossedRows() < o2::aod::pid_studies::minTpcNClsCrossedRows) {
+      if (!posTrack.hasITS() || !negTrack.hasITS() || !bachTrack.hasITS()) {
         return false;
       }
-      if (std::abs(bachTrack.eta()) > o2::aod::pid_studies::maxEta) {
+      registry.fill(HIST("hTrackSel"), TrackCuts::HasIts);
+      if (!posTrack.hasTPC() || !negTrack.hasTPC() || !bachTrack.hasTPC()) {
         return false;
       }
-      if (bachTrack.pt() < o2::aod::pid_studies::minPt) {
+      registry.fill(HIST("hTrackSel"), TrackCuts::HasTpc);
+      if (posTrack.tpcNClsCrossedRows() < tpcNClsCrossedRowsTrackMin || negTrack.tpcNClsCrossedRows() < tpcNClsCrossedRowsTrackMin || bachTrack.tpcNClsCrossedRows() < tpcNClsCrossedRowsTrackMin) {
         return false;
       }
-      if (bachTrack.tpcChi2NCl() > o2::aod::pid_studies::maxTpcChi2NCl) {
+      registry.fill(HIST("hTrackSel"), TrackCuts::TpcNClsCrossedRows);
+      if (std::abs(posTrack.eta()) > etaTrackMax || std::abs(negTrack.eta()) > etaTrackMax || std::abs(bachTrack.eta()) > etaTrackMax) {
         return false;
       }
-      if (bachTrack.itsChi2NCl() > o2::aod::pid_studies::maxItsChi2NCl) {
+      registry.fill(HIST("hTrackSel"), TrackCuts::Eta);
+      if (posTrack.pt() < ptTrackMin || negTrack.pt() < ptTrackMin || bachTrack.pt() < ptTrackMin) {
         return false;
       }
+      registry.fill(HIST("hTrackSel"), TrackCuts::Pt);
+      if (posTrack.tpcChi2NCl() > tpcChi2NClTrackMax || negTrack.tpcChi2NCl() > tpcChi2NClTrackMax || bachTrack.tpcChi2NCl() > tpcChi2NClTrackMax) {
+        return false;
+      }
+      registry.fill(HIST("hTrackSel"), TrackCuts::TpcChi2NCls);
+      if (posTrack.itsChi2NCl() > itsChi2NClTrackMax || negTrack.itsChi2NCl() > itsChi2NClTrackMax || bachTrack.itsChi2NCl() > itsChi2NClTrackMax) {
+        return false;
+      }
+      registry.fill(HIST("hTrackSel"), TrackCuts::ItsChi2NCls);
     }
     return true;
   }
@@ -439,14 +507,14 @@ struct HfTaskPidStudies {
   {
     for (const auto& v0 : V0s) {
       if (applyEvSels && !isCollSelected(v0.collision_as<CollisionsMc>())) {
-        return;
+        continue;
       }
       if (applyTrackSels && !isTrackSelected<true>(v0)) {
-        return;
+        continue;
       }
       if (isSelectedV0AsK0s(v0) || isSelectedV0AsLambda(v0)) {
         int matched = isMatched(v0);
-        if (matched != aod::pid_studies::Particle::NotMatched) {
+        if (matched != Particle::NotMatched) {
           fillTree<true, CollisionsMc>(v0, matched);
         }
       }
@@ -461,13 +529,13 @@ struct HfTaskPidStudies {
   {
     for (const auto& v0 : V0s) {
       if (applyEvSels && !isCollSelected(v0.collision_as<CollSels>())) {
-        return;
+        continue;
       }
       if (applyTrackSels && !isTrackSelected<true>(v0)) {
-        return;
+        continue;
       }
       if (isSelectedV0AsK0s(v0) || isSelectedV0AsLambda(v0)) {
-        fillTree<true, CollSels>(v0, aod::pid_studies::Particle::NotMatched);
+        fillTree<true, CollSels>(v0, Particle::NotMatched);
       }
     }
   }
@@ -482,14 +550,14 @@ struct HfTaskPidStudies {
   {
     for (const auto& casc : cascades) {
       if (applyEvSels && !isCollSelected(casc.collision_as<CollisionsMc>())) {
-        return;
+        continue;
       }
       if (applyTrackSels && !isTrackSelected<false>(casc)) {
-        return;
+        continue;
       }
       if (isSelectedCascAsOmega<CollisionsMc>(casc)) {
         int matched = isMatched(casc);
-        if (matched != aod::pid_studies::Particle::NotMatched) {
+        if (matched != Particle::NotMatched) {
           fillTree<false, CollisionsMc>(casc, matched);
         }
       }
@@ -504,13 +572,13 @@ struct HfTaskPidStudies {
   {
     for (const auto& casc : cascades) {
       if (applyEvSels && !isCollSelected(casc.collision_as<CollSels>())) {
-        return;
+        continue;
       }
       if (applyTrackSels && !isTrackSelected<false>(casc)) {
-        return;
+        continue;
       }
       if (isSelectedCascAsOmega<CollSels>(casc)) {
-        fillTree<false, CollSels>(casc, aod::pid_studies::Particle::NotMatched);
+        fillTree<false, CollSels>(casc, Particle::NotMatched);
       }
     }
   }

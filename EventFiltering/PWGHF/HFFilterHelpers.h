@@ -51,8 +51,11 @@
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
+
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
 #include "EventFiltering/filterTables.h"
 
 namespace o2::aod
@@ -278,7 +281,7 @@ constexpr float massJPsi = o2::constants::physics::MassJPsi;
 
 static const o2::framework::AxisSpec ptAxis{50, 0.f, 50.f};
 static const o2::framework::AxisSpec pAxis{50, 0.f, 10.f};
-static const o2::framework::AxisSpec kstarAxis{100, 0.f, 1.f};
+static const o2::framework::AxisSpec kstarAxis{200, 0.f, 2.f};
 static const o2::framework::AxisSpec etaAxis{30, -1.5f, 1.5f};
 static const o2::framework::AxisSpec nSigmaAxis{100, -10.f, 10.f};
 static const o2::framework::AxisSpec alphaAxis{100, -1.f, 1.f};
@@ -298,9 +301,9 @@ constexpr float cutsPtThresholdsForFemto[1][2] = {{8., 1.4}}; // proton, deutero
 static const std::vector<std::string> labelsColumnsPtThresholdsForFemto = {"Proton", "Deuteron"};
 
 // min and max pT for all tracks combined  (except for V0 and cascades)
-constexpr float cutsPt[2][9] = {{1., 0.1, 0.8, 0.5, 0.1, 0.2, 0.4, 0.5, 0.3},
-                                {100000., 100000., 5., 100000., 100000., 100000., 100000., 100000., 100000.}}; // beauty, D*, femto, SigmaC, Xic*+ -> SigmaC++K-, beauty to JPsi, Lc*->D0p
-static const std::vector<std::string> labelsColumnsCutsPt = {"Beauty", "DstarPlus", "PrForFemto", "CharmBaryon", "SoftPiSigmaC", "SoftKaonXicResoToSigmaC", "DeForFemto", "BeautyToJPsi", "PrForLcReso"};
+constexpr float cutsPt[2][10] = {{1., 0.1, 0.8, 0.5, 0.1, 0.2, 0.4, 0.5, 0.3, 0.3},
+                                 {100000., 100000., 5., 100000., 100000., 100000., 100000., 100000., 100000., 100000.}}; // beauty, D*, femto, SigmaC, Xic*+ -> SigmaC++K-, beauty to JPsi, Lc*->D0p
+static const std::vector<std::string> labelsColumnsCutsPt = {"Beauty", "DstarPlus", "PrForFemto", "CharmBaryon", "SoftPiSigmaC", "SoftKaonXicResoToSigmaC", "DeForFemto", "BeautyToJPsi", "PrForLcReso", "PrForThetaC"};
 static const std::vector<std::string> labelsRowsCutsPt = {"Minimum", "Maximum"};
 
 // PID cuts
@@ -312,6 +315,11 @@ constexpr float cutsNsigma[4][8] = {
 };
 static const std::vector<std::string> labelsColumnsNsigma = {"PrFromLc", "PiKaFromDZero", "KaFrom3Prong", "PrForFemto", "PiKaFromCharmBaryon", "SoftKaonFromXicResoToSigmaC", "DeForFemto", "KaPrFromBeautyToJPsi"};
 static const std::vector<std::string> labelsRowsNsigma = {"TPC", "TOF", "Comb", "ITS"};
+
+// track cut
+constexpr float cutsTrackQuality[2][7] = {{0., 0., 0., 999., 999., 0., 0.},
+                                          {90, 80, 0.83, 160., 1., 5., 0.}};
+static const std::vector<std::string> labelsColumnsTrackQuality = {"minTpcCluster", "minTpcRow", "minTpcCrossedOverFound", "maxTpcShared", "maxTpcFracShared", "minItsCluster", "minItsIbCluster"};
 
 // high pt
 constexpr float cutsHighPtThresholds[1][2] = {{8., 8.}}; // 2-prongs, 3-prongs
@@ -481,9 +489,26 @@ class HfFilterHelper
     mPtMinLcResonanceBachelor = minPt;
     mPtMaxLcResonanceBachelor = maxPt;
   }
+  void setPtLimitsThetaCBachelor(float minPt, float maxPt)
+  {
+    mPtMinThetaCBachelor = minPt;
+    mPtMaxThetaCBachelor = maxPt;
+  }
 
   void setNsigmaProtonCutsForFemto(std::array<float, 4> nSigmaCuts) { mNSigmaPrCutsForFemto = nSigmaCuts; }
   void setNsigmaDeuteronCutsForFemto(std::array<float, 4> nSigmaCuts) { mNSigmaDeCutsForFemto = nSigmaCuts; }
+
+  void setDeuteronTrackSelectionForFemto(float minTpcCluster, float minTpcRow, float minTpcCrossedOverFound, float maxTpcShared, float maxTpcFracShared, float minItsCluster, float minItsIbCluster)
+  {
+    mMinTpcCluster = minTpcCluster;
+    mMinTpcRow = minTpcRow;
+    mMinTpcCrossedOverFound = minTpcCrossedOverFound;
+    mMaxTpcShared = maxTpcShared;
+    mMaxTpcFracShared = maxTpcFracShared;
+    mMinItsCluster = minItsCluster;
+    mMinItsIbCluster = minItsIbCluster;
+  }
+
   void setNsigmaProtonCutsForCharmBaryons(float nSigmaTpc, float nSigmaTof)
   {
     mNSigmaTpcPrCutForCharmBaryons = nSigmaTpc;
@@ -628,8 +653,8 @@ class HfFilterHelper
   bool isSelectedXiBach(T const& trackParCasc, T const& trackParBachelor, int8_t isSelBachelor, C const& collision, o2::vertexing::DCAFitterN<2>& dcaFitter, const int& activateQA, H2 hMassVsPtXiPi, H2 hMassVsPtXiKa);
   template <int Nprongs, typename T, typename C, typename H2>
   bool isSelectedXiBachBach(T const& trackParCasc, std::array<T, 2> const& trackParBachelor, C const& collision, o2::vertexing::DCAFitterN<Nprongs>& dcaFitter, const int& activateQA, H2 hMassVsPtXiPiPi);
-  template <typename T>
-  bool isSelectedProtonFromLcReso(const T& track);
+  template <bool is4ThetaC = false, typename T>
+  bool isSelectedProtonFromLcResoOrThetaC(const T& track);
   // helpers
   template <typename T>
   T computeRelativeMomentum(const std::array<T, 3>& pTrack, const std::array<T, 3>& CharmCandMomentum, const T& CharmMass);
@@ -682,6 +707,7 @@ class HfFilterHelper
   float mPtMinDeuteronForFemto{0.8};                                              // minimum pt for the deuteron for femto
   float mPtMinCharmBaryonBachelor{0.5};                                           // minimum pt for the bachelor pion from Xic/Omegac decays
   float mPtMinLcResonanceBachelor{0.3};                                           // minimum pt for the bachelor proton from Lc resonance decays
+  float mPtMinThetaCBachelor{0.3};                                                // minimum pt for the bachelor proton from ThetaC decays
   float mPtMaxSoftPionForDstar{2.};                                               // maximum pt for the D*+ soft pion
   float mPtMaxBeautyBachelor{100000.};                                            // maximum pt for the b-hadron pion daughter
   float mPtMaxBeautyToJPsiBachelor{100000.};                                      // maximum pt for the b-hadron -> JPsi X daughters (not the muons)
@@ -689,6 +715,7 @@ class HfFilterHelper
   float mPtMaxDeuteronForFemto{5.0};                                              // maximum pt for the deuteron for femto
   float mPtMaxCharmBaryonBachelor{100000.};                                       // maximum pt for the bachelor pion from Xic/Omegac decays
   float mPtMaxLcResonanceBachelor{100000.};                                       // maximum pt for the bachelor proton from Lc resonance decays
+  float mPtMaxThetaCBachelor{100000.};                                            // maximum pt for the bachelor proton from ThetaC decays
   float mPtThresholdProtonForFemto{8.};                                           // pt threshold to change strategy for proton PID for femto
   float mPtThresholdDeuteronForFemto{1.4};                                        // pt threshold to change strategy for deuteron PID for femto
   float mPtMinSigmaCZero{0.f};                                                    // pt min SigmaC0 candidate
@@ -747,7 +774,13 @@ class HfFilterHelper
   std::array<float, 2> mCosPaMinXiBach{-2.f, -2.f};                               // minimum cosine of pointing angle for XiBachelor candidates
   std::array<o2::framework::LabeledArray<double>, kNBeautyParticles> mCutsBhad{}; // selections for B-hadron candidates (DeltaMass, CPA, DecayLength, ImpactParameterProduct)
   o2::framework::LabeledArray<double> mCutsBhadToJPsi{};                          // selections for B->JPsi candidates (PtMinMu, DeltaMass, CPA, DecayLength)
-
+  float mMinTpcCluster{90.};                                                      // Minimum number of TPC clusters required on a track
+  float mMinTpcRow{80.};                                                          // Minimum number of TPC rows (pad rows) traversed by the track
+  float mMinTpcCrossedOverFound{0.83};                                            // Minimum ratio of crossed TPC rows over findable clusters
+  float mMaxTpcShared{160.};                                                      // Maximum allowed number of shared TPC clusters between tracks
+  float mMaxTpcFracShared{1.};                                                    // Maximum allowed fraction of shared TPC clusters relative to total clusters
+  float mMinItsCluster{1.};                                                       // Minimum required number of ITS clusters
+  float mMinItsIbCluster{1.};                                                     // Minimum required number of ITS clusters for IB
   // PID recalibrations
   int mTpcPidCalibrationOption{0};                          // Option for TPC PID calibration (0 -> AO2D, 1 -> postcalibrations, 2 -> alternative bethe bloch parametrisation)
   std::array<TH3F*, 8> mHistMapPiPrKaDe{};                  // Map for TPC PID postcalibrations for pions, kaon, protons and deuterons
@@ -934,9 +967,9 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
   }
 
   float NSigma = std::sqrt(NSigmaTPC * NSigmaTPC + NSigmaTOF * NSigmaTOF);
-
+  float momentum = track.p();
   if (trackSpecies == kProtonForFemto) {
-    if (pt <= ptThresholdPidStrategy) {
+    if (momentum <= ptThresholdPidStrategy) {
       if (NSigma > nSigmaCuts[2]) {
         return false;
       }
@@ -948,14 +981,37 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
   }
   // For deuterons: Determine whether to apply TOF based on pt threshold
   if (trackSpecies == kDeuteronForFemto) {
+
+    if (track.tpcNClsFound() < mMinTpcCluster) {
+      return false;
+    }
+    if (track.tpcNClsCrossedRows() < mMinTpcRow) {
+      return false;
+    }
+    if (track.tpcCrossedRowsOverFindableCls() < mMinTpcCrossedOverFound) {
+      return false;
+    }
+    if (track.tpcNClsShared() > mMaxTpcShared) {
+      return false;
+    }
+    if (track.tpcFractionSharedCls() > mMaxTpcFracShared) {
+      return false;
+    }
+    if (track.itsNCls() < mMinItsCluster) {
+      return false;
+    }
+    if (track.itsNClsInnerBarrel() < mMinItsIbCluster) {
+      return false;
+    }
+
     // Apply different PID strategy in different pt range
     // one side selection only
-    if (pt <= ptThresholdPidStrategy) {
-      if (NSigmaTPC < -nSigmaCuts[0] || NSigmaITS < -nSigmaCuts[3]) { // Use TPC and ITS below the threshold, NSigmaITS for deuteron with a lower limit
+    if (momentum <= ptThresholdPidStrategy) {
+      if (std::fabs(NSigmaTPC) > nSigmaCuts[0] || NSigmaITS < -nSigmaCuts[3]) { // Use TPC and ITS below the threshold, NSigmaITS for deuteron with a lower limit
         return false;
       }
     } else {
-      if (NSigmaTOF < -nSigmaCuts[1] || NSigmaTPC < -nSigmaCuts[0]) { // Use combined TPC and TOF above the threshold
+      if (NSigma > nSigmaCuts[2]) { // Use combined TPC and TOF above the threshold
         return false;
       }
     }
@@ -963,11 +1019,11 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
 
   if (activateQA > 1) {
     hTPCPID->Fill(track.p(), NSigmaTPC);
-    if ((forceTof || track.hasTOF())) {
+    if ((!forceTof || track.hasTOF())) {
       if (trackSpecies == kProtonForFemto)
-        hTOFPID->Fill(track.p(), NSigmaTOF);
-      else if (trackSpecies == kDeuteronForFemto && pt > ptThresholdPidStrategy)
-        hTOFPID->Fill(track.p(), NSigmaTOF);
+        hTOFPID->Fill(momentum, NSigmaTOF);
+      else if (trackSpecies == kDeuteronForFemto && momentum > ptThresholdPidStrategy)
+        hTOFPID->Fill(momentum, NSigmaTOF);
     }
   }
 
@@ -1945,18 +2001,21 @@ inline bool HfFilterHelper::isSelectedKaon4Charm3ProngOrBeautyToJPsi(const T& tr
 /// Basic selection of proton candidates forLc and ThetaC decays
 /// \param track is a track
 /// \return true if track passes all cuts
-template <typename T>
-inline bool HfFilterHelper::isSelectedProtonFromLcReso(const T& track)
+template <bool is4ThetaC, typename T>
+inline bool HfFilterHelper::isSelectedProtonFromLcResoOrThetaC(const T& track)
 {
 
   // pt selections
   float pt = track.pt();
-  if (pt < mPtMinLcResonanceBachelor || pt > mPtMaxLcResonanceBachelor) {
-    return false;
+  if constexpr (is4ThetaC) {
+    if (pt < mPtMinThetaCBachelor || pt > mPtMaxThetaCBachelor) {
+      return false;
+    }
+  } else {
+    if (pt < mPtMinLcResonanceBachelor || pt > mPtMaxLcResonanceBachelor) {
+      return false;
+    }
   }
-
-  /// PID selection
-  return isSelectedProton4CharmOrBeautyBaryons<false>(track);
 
   return true;
 }
@@ -2575,7 +2634,7 @@ inline bool HfFilterHelper::buildV0(V const& v0Indices, T const& tracks, C const
   auto trackParCovPos = getTrackParCov(trackPos);
   auto trackParCovNeg = getTrackParCov(trackNeg);
   std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
-  gpu::gpustd::array<float, 2> dcaInfoPos, dcaInfoNeg;
+  std::array<float, 2> dcaInfoPos, dcaInfoNeg;
   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovPos, 2.f, dcaFitter.getMatCorrType(), &dcaInfoPos);
   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovNeg, 2.f, dcaFitter.getMatCorrType(), &dcaInfoNeg);
 
@@ -2645,7 +2704,7 @@ inline bool HfFilterHelper::buildV0(V const& v0Indices, T const& tracks, C const
   auto trackParV0 = dcaFitter.createParentTrackParCov();
   trackParV0.setAbsCharge(0);
   trackParV0.setPID(o2::track::PID::K0);
-  gpu::gpustd::array<float, 2> dcaInfoV0;
+  std::array<float, 2> dcaInfoV0;
   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParV0, 2.f, dcaFitter.getMatCorrType(), &dcaInfoV0);
   v0Cand.dcav0topv = dcaInfoV0[0];
 
@@ -2697,7 +2756,7 @@ inline bool HfFilterHelper::buildCascade(Casc const& cascIndices, V const& v0Ind
     return false;
   }
 
-  gpu::gpustd::array<float, 2> dcaInfoBach;
+  std::array<float, 2> dcaInfoBach;
   auto bachTrackParCov = getTrackParCov(trackBachelor);
   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, bachTrackParCov, 2.f, dcaFitter.getMatCorrType(), &dcaInfoBach);
 
@@ -2771,7 +2830,7 @@ inline bool HfFilterHelper::buildCascade(Casc const& cascIndices, V const& v0Ind
   auto trackParCasc = dcaFitter.createParentTrackParCov();
   trackParCasc.setAbsCharge(1);
   trackParCasc.setPID(o2::track::PID::XiMinus);
-  gpu::gpustd::array<float, 2> dcaInfoCasc;
+  std::array<float, 2> dcaInfoCasc;
   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCasc, 2.f, dcaFitter.getMatCorrType(), &dcaInfoCasc);
   cascCand.dcaXYCascToPV = dcaInfoCasc[0];
   cascCand.dcacascdaughters = std::sqrt(dcaFitter.getChi2AtPCACandidate());

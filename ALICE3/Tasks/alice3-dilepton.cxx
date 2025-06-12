@@ -531,9 +531,9 @@ struct Alice3Dilepton {
       FillPairGen<PairType::kLSnn>(neg_mcParticles_coll, neg_mcParticles_coll, mcParticles);
 
     } // end of mc collision loop
-  }   // end of processGen
+  } // end of processGen
 
-  using MyTracksMC = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::McTrackLabels, aod::UpgradeTofs, aod::UpgradeRichs, aod::TracksAlice3>;
+  using MyTracksMC = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::McTrackLabels, aod::UpgradeTofs, aod::UpgradeTofMCs, aod::UpgradeRichs, aod::TracksAlice3>;
   // Filter trackFilter = etaMin < o2::aod::track::eta &&
   //                      o2::aod::track::eta < etaMax &&
   //                      ptMin < o2::aod::track::pt &&
@@ -616,7 +616,7 @@ struct Alice3Dilepton {
       FillPairRec<PairType::kLSnn>(negTracks_coll, negTracks_coll, mcParticles);
 
     } // end of collision loop
-  }   // end of processRec
+  } // end of processRec
 
   PROCESS_SWITCH(Alice3Dilepton, processGen, "Run for generated particle", true);
   PROCESS_SWITCH(Alice3Dilepton, processRec, "Run for reconstructed track", false);

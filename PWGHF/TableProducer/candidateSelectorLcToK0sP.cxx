@@ -29,6 +29,7 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponse.h"
 #include "PWGHF/Core/HfMlResponseLcToK0sP.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -146,6 +147,10 @@ struct HfCandidateSelectorLcToK0sP {
 
     if (candPt < ptCandMin || candPt >= ptCandMax) {
       return false; // check that the candidate pT is within the analysis range
+    }
+
+    if (std::abs(hfHelper.invMassLcToK0sP(hfCandCascade) - o2::constants::physics::MassLambdaCPlus) > cuts->get(ptBin, "mLc")) {
+      return false; // mass of the Lambda c
     }
 
     if (std::abs(hfCandCascade.mK0Short() - o2::constants::physics::MassK0Short) > cuts->get(ptBin, "mK0s")) {

@@ -102,6 +102,7 @@ struct nucleiFilter {
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 3, "Max DCAxy"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 10, "Max DCAz"};
   Configurable<float> cfgCutKstar{"cfgCutKstar", 1.f, "Kstar cut for triton femto trigger"};
+  Configurable<double> cfgCutCosPAheV0{"cfgCutCosPAheV0", 0.99, "CosPA cut for HeV0"};
 
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], nNuclei, 6, nucleiNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
   Configurable<LabeledArray<double>> cfgMomentumScalingBetheBloch{"cfgMomentumScalingBetheBloch", {bbMomScalingDefault[0], nNuclei, 2, nucleiNames, matterOrNot}, "TPC Bethe-Bloch momentum scaling for light nuclei"};
@@ -112,18 +113,19 @@ struct nucleiFilter {
 
   // variable/tool for hypertriton 3body decay
   int mRunNumber;
-  float d_bz;
+  float mBz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TrackSelection, aod::TracksDCA, aod::EvTimeTOFFT0ForTrack, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>; // FIXME: positio has been changed
   o2::aod::pidtofgeneric::TofPidNewCollision<TrackCandidates::iterator> bachelorTOFPID;
   o2::base::MatLayerCylSet* lut = nullptr;
+  o2::vertexing::DCAFitterN<2> fitter2body;
   o2::vertexing::DCAFitterN<3> fitter3body;
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
   // configurable for hypertriton 3body decay
   struct : ConfigurableGroup {
-    Configurable<double> d_bz_input{"trgH3L3Body.d_bz", -999, "bz field, -999 is automatic"};
+    Configurable<double> bFieldInput{"trgH3L3Body.mBz", -999, "bz field, -999 is automatic"};
     Configurable<float> minCosPA3body{"trgH3L3Body.minCosPA3body", 0.9995, "minCosPA3body"};
-    Configurable<float> dcavtxdau{"trgH3L3Body.dcavtxdau", 0.02, "meen DCA among Daughters"};
+    Configurable<float> dcavtxdau{"trgH3L3Body.dcavtxdau", 0.15, "meen DCA among Daughters"};
     Configurable<float> dcapiontopv{"trgH3L3Body.dcapiontopv", 0.05, "DCA Pion To PV"};
     Configurable<float> tofPIDNSigmaMin{"trgH3L3Body.tofPIDNSigmaMin", -5, "tofPIDNSigmaMin"};
     Configurable<float> tofPIDNSigmaMax{"trgH3L3Body.tofPIDNSigmaMax", 5, "tofPIDNSigmaMax"};
@@ -136,7 +138,7 @@ struct nucleiFilter {
     Configurable<float> maxPionPt{"trgH3L3Body.maxPionPt", 1.2, "maxPionPt"};
     Configurable<float> minDeuteronPt{"trgH3L3Body.minDeuteronPt", 0.6, "minDeuteronPt"};
     Configurable<float> maxDeuteronPt{"trgH3L3Body.maxDeuteronPt", 10, "maxDeuteronPt"};
-    Configurable<float> minDeuteronPUseTOF{"trgH3L3Body.minDeuteronPUseTOF", 1, "minDeuteronPt Enable TOF PID"};
+    Configurable<float> minDeuteronPUseTOF{"trgH3L3Body.minDeuteronPUseTOF", 999, "minDeuteronPt Enable TOF PID"};
     Configurable<float> h3LMassLowerlimit{"trgH3L3Body.h3LMassLowerlimit", 2.96, "Hypertriton mass lower limit"};
     Configurable<float> h3LMassUpperlimit{"trgH3L3Body.h3LMassUpperlimit", 3.04, "Hypertriton mass upper limit"};
     Configurable<float> minP3Body{"trgH3L3Body.minP3Body", 1.5, "min P3Body"};
@@ -200,6 +202,14 @@ struct nucleiFilter {
     fitter3body.setMaxChi2(1e9);
     fitter3body.setUseAbsDCA(true);
 
+    fitter2body.setPropagateToPCA(true);
+    fitter2body.setMaxR(200.);
+    fitter2body.setMinParamChange(1e-3);
+    fitter2body.setMinRelChi2Change(0.9);
+    fitter2body.setMaxDZIni(1e9);
+    fitter2body.setMaxChi2(1e9);
+    fitter2body.setUseAbsDCA(true);
+
     ccdb->setURL(trgH3L3Body.ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -213,12 +223,11 @@ struct nucleiFilter {
     }
 
     // In case override, don't proceed, please - no CCDB access required
-    if (trgH3L3Body.d_bz_input > -990) {
-      d_bz = trgH3L3Body.d_bz_input;
-      fitter3body.setBz(d_bz);
+    if (trgH3L3Body.bFieldInput > -990) {
+      mBz = trgH3L3Body.bFieldInput;
       o2::parameters::GRPMagField grpmag;
-      if (std::fabs(d_bz) > 1e-5) {
-        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      if (std::fabs(mBz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (mBz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
       mRunNumber = bc.runNumber();
@@ -231,8 +240,8 @@ struct nucleiFilter {
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
       // Fetch magnetic field from ccdb for current collision
-      d_bz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+      mBz = grpo->getNominalL3Field();
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << mBz << " kZG";
     } else {
       grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(trgH3L3Body.grpmagPath, run3grp_timestamp);
       if (!grpmag) {
@@ -240,13 +249,14 @@ struct nucleiFilter {
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
       // Fetch magnetic field from ccdb for current collision
-      // d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      d_bz = o2::base::Propagator::Instance()->getNominalBz();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+      // mBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+      mBz = o2::base::Propagator::Instance()->getNominalBz();
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << mBz << " kZG";
     }
     mRunNumber = bc.runNumber();
     // Set magnetic field value once known
-    fitter3body.setBz(d_bz);
+    fitter2body.setBz(mBz);
+    fitter3body.setBz(mBz);
 
     if (trgH3L3Body.useMatCorrType == 2) {
       // setMatLUT only after magfield has been initalized
@@ -421,55 +431,86 @@ struct nucleiFilter {
           h2TPCsignal[iN]->Fill(track.sign() * track.tpcInnerParam() * fixTPCrigidity, track.tpcSignal());
         }
       }
-
-      for (const auto& track : tracks) {
-        if (track.itsNCls() < cfgCutNclusITS ||
-            track.tpcNClsFound() < cfgCutNclusTPC ||
-            std::abs(track.dcaXY()) > cfgCutDCAxy ||
-            std::abs(track.dcaZ()) > cfgCutDCAz ||
-            std::abs(track.eta()) > cfgCutEta) {
-          continue;
-        }
-        const ROOT::Math::PtEtaPhiMVector trackVector(track.pt(), track.eta(), track.phi(), constants::physics::MassPiMinus);
-        for (size_t iH3{0}; iH3 < h3vectors.size(); ++iH3) {
-          if (h3indices[iH3] == track.globalIndex()) {
-            continue;
-          }
-          const auto& h3vector = h3vectors[iH3];
-          auto pivector = trackVector;
-          auto cm = h3vector + trackVector;
-          const ROOT::Math::Boost boost(cm.BoostToCM());
-          boost(pivector);
-          if (pivector.P() < cfgCutKstar) {
-            keepEvent[kTritonFemto] = true;
-            break;
-          }
-        }
-      }
-
-      for (const auto& v0 : v0s) {
-        const auto& posTrack = tracks.rawIteratorAt(v0.posTrackId());
-        const auto& negTrack = tracks.rawIteratorAt(v0.negTrackId());
-        if ((posTrack.itsNCls() < cfgCutNclusITS || posTrack.tpcNClsFound() < cfgCutNclusTPC) &&
-            (negTrack.itsNCls() < cfgCutNclusITS || negTrack.tpcNClsFound() < cfgCutNclusTPC)) {
-          continue;
-        }
-        float nSigmas[2]{
-          cfgBetheBlochParams->get(2, 5u) > 0.f ? getNsigma(posTrack, 2, 0) : posTrack.tpcNSigmaHe(),
-          cfgBetheBlochParams->get(2, 5u) > 0.f ? getNsigma(negTrack, 2, 1) : negTrack.tpcNSigmaHe()};
-        if ((nSigmas[0] > cfgCutsPID->get(2, 0u) && nSigmas[0] < cfgCutsPID->get(2, 1u)) ||
-            (nSigmas[1] > cfgCutsPID->get(2, 0u) && nSigmas[1] < cfgCutsPID->get(2, 1u))) {
-          keepEvent[kHeV0] = true;
-          break;
-        }
-      }
-
       //
       // fill QA histograms
       //
       qaHists.fill(HIST("fTPCsignal"), track.sign() * track.tpcInnerParam() * fixTPCrigidity, track.tpcSignal());
 
     } // end loop over tracks
+
+    for (const auto& track : tracks) {
+      if (track.itsNCls() < cfgCutNclusITS ||
+          track.tpcNClsFound() < cfgCutNclusTPC ||
+          std::abs(track.dcaXY()) > cfgCutDCAxy ||
+          std::abs(track.dcaZ()) > cfgCutDCAz ||
+          std::abs(track.eta()) > cfgCutEta) {
+        continue;
+      }
+      const ROOT::Math::PtEtaPhiMVector trackVector(track.pt(), track.eta(), track.phi(), constants::physics::MassPiMinus);
+      for (size_t iH3{0}; iH3 < h3vectors.size(); ++iH3) {
+        if (h3indices[iH3] == track.globalIndex()) {
+          continue;
+        }
+        const auto& h3vector = h3vectors[iH3];
+        auto pivector = trackVector;
+        auto cm = h3vector + trackVector;
+        const ROOT::Math::Boost boost(cm.BoostToCM());
+        boost(pivector);
+        if (pivector.P() < cfgCutKstar) {
+          keepEvent[kTritonFemto] = true;
+          break;
+        }
+      }
+    }
+
+    for (const auto& v0 : v0s) {
+      const auto& posTrack = v0.posTrack_as<TrackCandidates>();
+      const auto& negTrack = v0.negTrack_as<TrackCandidates>();
+      if ((posTrack.itsNCls() < cfgCutNclusITS || posTrack.tpcNClsFound() < cfgCutNclusTPC) &&
+          (negTrack.itsNCls() < cfgCutNclusITS || negTrack.tpcNClsFound() < cfgCutNclusTPC)) {
+        continue;
+      }
+      float nSigmas[2]{
+        cfgBetheBlochParams->get(2, 5u) > 0.f ? getNsigma(posTrack, 2, 0) : posTrack.tpcNSigmaHe(),
+        cfgBetheBlochParams->get(2, 5u) > 0.f ? getNsigma(negTrack, 2, 1) : negTrack.tpcNSigmaHe()};
+
+      bool isHe3 = nSigmas[0] > cfgCutsPID->get(2, 0u) && nSigmas[0] < cfgCutsPID->get(2, 1u);
+      bool isAntiHe3 = nSigmas[1] > cfgCutsPID->get(2, 0u) && nSigmas[1] < cfgCutsPID->get(2, 1u);
+      if (!isHe3 && !isAntiHe3) {
+        continue;
+      }
+      auto& he3Track = isHe3 ? posTrack : negTrack;
+      auto& piTrack = isHe3 ? negTrack : posTrack;
+
+      int n2bodyVtx = fitter2body.process(getTrackParCov(he3Track), getTrackParCov(piTrack));
+      if (n2bodyVtx == 0) {
+        continue;
+      }
+      auto vtxXYZ = fitter2body.getPCACandidate();
+      vtxXYZ[0] -= collision.posX();
+      vtxXYZ[1] -= collision.posY();
+      vtxXYZ[2] -= collision.posZ();
+
+      std::array<float, 3> momHe3 = {0.};
+      std::array<float, 3> momPi = {0.};
+      std::array<float, 3> momTot = {0.};
+      auto& hePropTrack = fitter2body.getTrack(0);
+      auto& piPropTrack = fitter2body.getTrack(1);
+      hePropTrack.getPxPyPzGlo(momHe3);
+      piPropTrack.getPxPyPzGlo(momPi);
+      for (int i = 0; i < 3; ++i) {
+        momHe3[i] *= 2;
+        momTot[i] = momHe3[i] + momPi[i];
+      }
+      double cosPA = (vtxXYZ[0] * momTot[0] + vtxXYZ[1] * momTot[1] + vtxXYZ[2] * momTot[2]) /
+                     std::sqrt((vtxXYZ[0] * vtxXYZ[0] + vtxXYZ[1] * vtxXYZ[1] + vtxXYZ[2] * vtxXYZ[2]) *
+                               (momTot[0] * momTot[0] + momTot[1] * momTot[1] + momTot[2] * momTot[2]));
+      if (cosPA < cfgCutCosPAheV0) {
+        continue;
+      }
+      keepEvent[kHeV0] = true;
+      break;
+    }
 
     // fH3L3Body trigger
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -549,7 +590,7 @@ struct nucleiFilter {
       }
 
       // Calculate DCA with respect to the collision associated to the SV, not individual tracks
-      gpu::gpustd::array<float, 2> dcaInfo;
+      std::array<float, 2> dcaInfo;
 
       auto track0Par = getTrackPar(track0);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
@@ -577,7 +618,7 @@ struct nucleiFilter {
         continue;
       }
 
-      float dcaDaughters = fitter3body.getChi2AtPCACandidate();
+      float dcaDaughters = std::sqrt(fitter3body.getChi2AtPCACandidate());
       if (dcaDaughters > trgH3L3Body.dcavtxdau) {
         continue;
       }
