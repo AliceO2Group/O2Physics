@@ -501,11 +501,11 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
       continue;
 
     eff *= iGoodHit;
-    }
-    if (mApplyEffCorrection) {
-      if (gRandom->Uniform() > eff)
-        return -8;
-    }
+  }
+  if (mApplyEffCorrection) {
+    if (gRandom->Uniform() > eff)
+      return -8;
+  }
 
   outputTrack.setCov(inwardTrack.getCov());
   outputTrack.checkCovariance();
