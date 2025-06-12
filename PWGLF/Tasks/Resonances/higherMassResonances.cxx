@@ -577,8 +577,8 @@ struct HigherMassResonances {
   void fillInvMass(const T2& lv3, const T3& lv5, float multiplicity, const T4& daughter1, bool isMix)
   {
 
-    // polarization calculations
-    z_beam = ROOT::Math::XYZVector(0.f, 0.f, 1.f); // ẑ: beam direction in lab frame
+    // //polarization calculations
+    // z_beam = ROOT::Math::XYZVector(0.f, 0.f, 1.f); // ẑ: beam direction in lab frame
 
     fourVecDau1 = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), o2::constants::physics::MassK0Short);
 
@@ -589,20 +589,41 @@ struct HigherMassResonances {
     // define y = z_beam x z: Normal to the production plane
     // ẑ: mother direction in lab, boosted into mother's rest frame
 
-    auto motherLabDirection = ROOT::Math::XYZVector(0, 0, fourVecMother.Vect().Z()); // ẑ axis in lab frame
+    // auto motherLabDirection = ROOT::Math::XYZVector(0, 0, fourVecMother.Vect().Z()); // ẑ axis in lab frame
 
-    // ŷ = z_beam × ẑ
-    auto y_axis = z_beam.Cross(motherLabDirection).Unit();
+    // // ŷ = z_beam × ẑ
+    // auto y_axis = z_beam.Cross(motherLabDirection).Unit();
 
-    // x̂ = ŷ × ẑ
-    auto x_axis = y_axis.Cross(motherLabDirection).Unit();
+    // // x̂ = ŷ × ẑ
+    // auto x_axis = y_axis.Cross(motherLabDirection).Unit();
 
-    // Project daughter momentum onto x–y plane
-    auto p_proj_x = threeVecDauCM.Dot(x_axis);
-    auto p_proj_y = threeVecDauCM.Dot(y_axis);
+    // // Project daughter momentum onto x–y plane
+    // auto p_proj_x = threeVecDauCM.Dot(x_axis);
+    // auto p_proj_y = threeVecDauCM.Dot(y_axis);
 
-    // Calculate φ in [-π, π]
-    auto angle_phi = std::atan2(p_proj_y, p_proj_x); // φ in radians
+    // // Calculate φ in [-π, π]
+    // auto angle_phi = std::atan2(p_proj_y, p_proj_x); // φ in radians
+
+    double BeamMomentum = TMath::Sqrt(13600 * 13600 / 4 - 0.938 * 0.938); // GeV
+    ROOT::Math::PxPyPzEVector Beam1(0., 0., -BeamMomentum, 13600 / 2);
+    ROOT::Math::PxPyPzEVector Beam2(0., 0., BeamMomentum, 13600 / 2);
+    ROOT::Math::XYZVectorF v1_CM{(boost(fourVecDau1).Vect()).Unit()};
+    // ROOT::Math::XYZVectorF v2_CM{(boost(fourVecDau1).Vect()).Unit()};
+    ROOT::Math::XYZVectorF Beam1_CM{(boost(Beam1).Vect()).Unit()};
+    ROOT::Math::XYZVectorF Beam2_CM{(boost(Beam2).Vect()).Unit()};
+    // using positive sign convention for the first track
+    // ROOT::Math::XYZVectorF v_CM = (t1.sign() > 0 ? v1_CM : v2_CM); // here selected decay daughter momentum is intested. here you can choose one decay daughter no need to check both case as it is neutral particle for our case
+    // Helicity frame
+    ROOT::Math::XYZVectorF zaxis_HE{(fourVecMother.Vect()).Unit()};
+    ROOT::Math::XYZVectorF yaxis_HE{(Beam1_CM.Cross(Beam2_CM)).Unit()};
+    ROOT::Math::XYZVectorF xaxis_HE{(yaxis_HE.Cross(zaxis_HE)).Unit()};
+
+    // CosThetaHE = zaxis_HE.Dot(v_CM);
+
+    auto angle_phi = TMath::ATan2(yaxis_HE.Dot(v1_CM), xaxis_HE.Dot(v1_CM));
+    if (angle_phi < 0) {
+      angle_phi += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
+    }
 
     if (std::abs(lv3.Rapidity()) < 0.5) {
       if (config.activateTHnSparseCosThStarHelicity) {
