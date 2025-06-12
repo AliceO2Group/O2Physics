@@ -62,7 +62,8 @@ struct DiHadronCor {
   O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 10.0f, "maximum accepted track pT")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta cut")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5f, "max chi2 per TPC clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 70.0f, "minimum TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 50.0f, "minimum TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgCutTPCCrossedRows, float, 70.0f, "minimum TPC crossed rows")
   O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum ITS clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
   O2_DEFINE_CONFIGURABLE(cfgCutMerging, float, 0.0, "Merging cut on track merge")
@@ -242,7 +243,11 @@ struct DiHadronCor {
       LOGF(fatal, "Full simulation and on-the-fly processing of mixed event not supported");
     }
     if (doprocessMCSame || doprocessOntheflySame) {
-      registry.add("MCTrue/MCeventcount", "MCeventcount", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
+      registry.add("MCTrue/MCeventcount", "MCeventcount", {HistType::kTH1F, {{5, 0, 5, "bin"}}}); // histogram to see how many events are in the same and mixed event
+      registry.get<TH1>(HIST("MCTrue/MCeventcount"))->GetXaxis()->SetBinLabel(2, "same all");
+      registry.get<TH1>(HIST("MCTrue/MCeventcount"))->GetXaxis()->SetBinLabel(3, "same reco");
+      registry.get<TH1>(HIST("MCTrue/MCeventcount"))->GetXaxis()->SetBinLabel(4, "mixed all");
+      registry.get<TH1>(HIST("MCTrue/MCeventcount"))->GetXaxis()->SetBinLabel(5, "mixed reco");
       registry.add("MCTrue/MCCentrality", hCentTitle.c_str(), {HistType::kTH1D, {axisCentrality}});
       registry.add("MCTrue/MCNch", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}});
       registry.add("MCTrue/MCzVtx", "MCzVtx", {HistType::kTH1D, {axisVertex}});
@@ -254,13 +259,15 @@ struct DiHadronCor {
       registry.add("MCTrue/MCdeltaEta_deltaPhi_mixed", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}});
     }
     if (doprocessMCEfficiency) {
-      registry.add("MCEffeventcount", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}});
-      registry.get<TH1>(HIST("MCEffeventcount"))->GetXaxis()->SetBinLabel(1, "MC");
-      registry.get<TH1>(HIST("MCEffeventcount"))->GetXaxis()->SetBinLabel(2, "Reco Primary");
-      registry.get<TH1>(HIST("MCEffeventcount"))->GetXaxis()->SetBinLabel(3, "Reco All");
-      registry.get<TH1>(HIST("MCEffeventcount"))->GetXaxis()->SetBinLabel(4, "Fake");
+      registry.add("MCEffeventcount", "bin", {HistType::kTH1F, {{5, 0, 5, "bin"}}});
+      registry.get<TH1>(HIST("MCEffeventcount"))->GetXaxis()->SetBinLabel(1, "All");
+      registry.get<TH1>(HIST("MCEffeventcount"))->GetXaxis()->SetBinLabel(2, "MC");
+      registry.get<TH1>(HIST("MCEffeventcount"))->GetXaxis()->SetBinLabel(3, "Reco Primary");
+      registry.get<TH1>(HIST("MCEffeventcount"))->GetXaxis()->SetBinLabel(4, "Reco All");
+      registry.get<TH1>(HIST("MCEffeventcount"))->GetXaxis()->SetBinLabel(5, "Fake");
     }
 
+    LOGF(info, "Initializing correlation container");
     std::vector<AxisSpec> corrAxis = {{axisSample, "Sample"},
                                       {axisVertex, "z-vtx (cm)"},
                                       {axisPtTrigger, "p_{T} (GeV/c)"},
@@ -276,6 +283,8 @@ struct DiHadronCor {
 
     same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
     mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, userAxis));
+
+    LOGF(info, "End of init");
   }
 
   int getMagneticField(uint64_t timestamp)
@@ -319,7 +328,7 @@ struct DiHadronCor {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
-    return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.itsNCls() >= cfgCutITSclu));
+    return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgCutITSclu));
   }
 
   template <typename TTrack>
@@ -727,13 +736,14 @@ struct DiHadronCor {
 
   void processMCEfficiency(FilteredMcCollisions::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, FilteredMcParticles const& mcParticles, FilteredTracksWithMCLabels const& tracks)
   {
-    if (cfgSelCollByNch && (tracks.size() < cfgCutMultMin || tracks.size() >= cfgCutMultMax)) {
+    registry.fill(HIST("MCEffeventcount"), 0.5);
+    if (cfgSelCollByNch && (mcParticles.size() < cfgCutMultMin || mcParticles.size() >= cfgCutMultMax)) {
       return;
     }
     // Primaries
     for (const auto& mcParticle : mcParticles) {
       if (mcParticle.isPhysicalPrimary()) {
-        registry.fill(HIST("MCEffeventcount"), 0.5);
+        registry.fill(HIST("MCEffeventcount"), 1.5);
         same->getTrackHistEfficiency()->Fill(CorrelationContainer::MC, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), 0., mcCollision.posZ());
       }
     }
@@ -746,16 +756,16 @@ struct DiHadronCor {
 
       for (const auto& track : groupedTracks) {
         if (track.has_mcParticle()) {
-          const auto& mcParticle = track.mcParticle();
+          auto mcParticle = track.mcParticle();
           if (mcParticle.isPhysicalPrimary()) {
-            registry.fill(HIST("MCEffeventcount"), 1.5);
+            registry.fill(HIST("MCEffeventcount"), 2.5);
             same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoPrimaries, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), 0., mcCollision.posZ());
           }
-          registry.fill(HIST("MCEffeventcount"), 2.5);
+          registry.fill(HIST("MCEffeventcount"), 3.5);
           same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoAll, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), 0., mcCollision.posZ());
         } else {
           // fake track
-          registry.fill(HIST("MCEffeventcount"), 3.5);
+          registry.fill(HIST("MCEffeventcount"), 4.5);
           same->getTrackHistEfficiency()->Fill(CorrelationContainer::Fake, track.eta(), track.pt(), 0, 0., mcCollision.posZ());
         }
       }
@@ -858,6 +868,7 @@ struct DiHadronCor {
         continue;
       }
 
+      registry.fill(HIST("MCTrue/MCeventcount"), 4.5);
       fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(tracks1, tracks2, collision1.posZ(), MixedEvent, eventWeight);
     }
   }
