@@ -249,10 +249,10 @@ namespace o2
       DECLARE_SOA_COLUMN(TpcNumSigmaKa, tpcNumSigmaKa, int8_t); //! compressed NsigmaTPC for kaons
       DECLARE_SOA_COLUMN(TofNumSigmaPi, tofNumSigmaPi, int8_t); //! compressed NsigmaTOF for pions
       DECLARE_SOA_COLUMN(TofNumSigmaKa, tofNumSigmaKa, int8_t); //! compressed NsigmaTOF for kaons
-      DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, uint8_t); //! compressed NsigmaTOF for kaons
-      DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, uint8_t); //! compressed NsigmaTOF for kaons
-      DECLARE_SOA_COLUMN(TRDChi2, trdChi2, uint8_t); //! compressed NsigmaTOF for kaons
-      DECLARE_SOA_COLUMN(TOFChi2, tofChi2, uint8_t); //! compressed NsigmaTOF for kaons
+      DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, uint8_t); //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
+      DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, uint8_t); //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
+      DECLARE_SOA_COLUMN(TRDChi2, trdChi2, uint8_t); //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
+      DECLARE_SOA_COLUMN(TOFChi2, tofChi2, uint8_t); //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
     } // namespace hf_calib
 
     DECLARE_SOA_TABLE(D0CalibTrack, "AOD", "D0CALIBTRACKS",
