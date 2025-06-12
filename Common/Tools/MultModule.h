@@ -1211,7 +1211,7 @@ class MultModule
       }
 
       // populate centralities per BC
-      for (size_t ibc = 0; ibc < bcs.size(); ibc++) {
+      for (size_t ibc = 0; ibc < static_cast<size_t>(bcs.size()); ibc++) {
         float bcMultFT0A = 0;
         float bcMultFT0C = 0;
 

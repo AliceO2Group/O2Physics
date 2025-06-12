@@ -165,7 +165,7 @@ struct MultCentTable {
     // it is thus safer to always keep the actual process function for centrality
     // generation to true, since the requisites for being in this context are
     // always fulfilled
-    if (collisions.size() != mults.size()) {
+    if (collisions.size() != static_cast<size_t>(mults.size())) {
       LOGF(fatal, "Size of collisions doesn't match size of multiplicity buffer!");
     }
     module.generateCentralitiesRun2(ccdb, metadataInfo, bcs, mults, products);
@@ -180,7 +180,7 @@ struct MultCentTable {
     // it is thus safer to always keep the actual process function for centrality
     // generation to true, since the requisites for being in this context are
     // always fulfilled
-    if (collisions.size() != mults.size()) {
+    if (collisions.size() != static_cast<size_t>(mults.size())) {
       LOGF(fatal, "Size of collisions doesn't match size of multiplicity buffer!");
     }
     module.generateCentralitiesRun3(ccdb, metadataInfo, bcs, mults, products);
