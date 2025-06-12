@@ -107,7 +107,6 @@ struct FlowPbpbPikp {
   O2_DEFINE_CONFIGURABLE(cfgUseStrictPID, bool, true, "Use strict PID cuts for TPC")
   O2_DEFINE_CONFIGURABLE(cfgV0AT0Acut, int, 5, "V0AT0A cut")
   O2_DEFINE_CONFIGURABLE(cfgUseAsymmetricPID, bool, false, "Use asymmetric PID cuts");
-  
 
   Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.7217476707, 0.7384792571, 0.7542625668, 0.7640680200, 0.7701951667, 0.7755299053, 0.7805901710, 0.7849446786, 0.7957356586, 0.8113039262, 0.8211968966, 0.8280558878, 0.8329342135}, "parameter 0 for track density efficiency correction"};
   Configurable<std::vector<double>> cfgTrackDensityP1{"cfgTrackDensityP1", std::vector<double>{-2.169488e-05, -2.191913e-05, -2.295484e-05, -2.556538e-05, -2.754463e-05, -2.816832e-05, -2.846502e-05, -2.843857e-05, -2.705974e-05, -2.477018e-05, -2.321730e-05, -2.203315e-05, -2.109474e-05}, "parameter 1 for track density efficiency correction"};
@@ -135,7 +134,7 @@ struct FlowPbpbPikp {
   std::vector<double> tpcNsigmaCut = cfgTofNsigmaCut;
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+  Filter trackFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>;
   using AodTracksWithoutBayes = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
@@ -440,7 +439,6 @@ struct FlowPbpbPikp {
       return 0;
     }
     histos.fill(HIST("hTrackCount"), 6.5); // After TPC crossed rows selection
-  
     return 1;
   }
 
@@ -514,7 +512,7 @@ struct FlowPbpbPikp {
   }
 
   template <typename TTrack>
-  int getNsigmaPIDTpcTof_assymmetric(TTrack track)
+  int getNsigmaPIDTpcTof_Assymmetric(TTrack track)
   {
     // Computing Nsigma arrays for pion, kaon, and protons
     std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
@@ -522,13 +520,13 @@ struct FlowPbpbPikp {
     int pid = -1;
 
     bool isPion, isKaon, isProton;
-    bool isTpcPion = nSigmaTPC[0] < tpcNsigmaCut[0] && nSigmaTPC[0] > tpcNsigmaCut[0+3];
-    bool isTpcKaon = nSigmaTPC[1] < tpcNsigmaCut[1] && nSigmaTPC[1] > tpcNsigmaCut[1+3];
-    bool isTpcProton = nSigmaTPC[2] < tpcNsigmaCut[2] && nSigmaTPC[2] > tpcNsigmaCut[2+3];
+    bool isTpcPion = nSigmaTPC[0] < tpcNsigmaCut[0] && nSigmaTPC[0] > tpcNsigmaCut[0 + 3];
+    bool isTpcKaon = nSigmaTPC[1] < tpcNsigmaCut[1] && nSigmaTPC[1] > tpcNsigmaCut[1 + 3];
+    bool isTpcProton = nSigmaTPC[2] < tpcNsigmaCut[2] && nSigmaTPC[2] > tpcNsigmaCut[2 + 3];
 
-    bool isTofPion = nSigmaTOF[0] < tofNsigmaCut[0] && nSigmaTOF[0] > tofNsigmaCut[0+3];
-    bool isTofKaon = nSigmaTOF[1] < tofNsigmaCut[1] && nSigmaTOF[1] > tofNsigmaCut[1+3];
-    bool isTofProton = nSigmaTOF[2] < tofNsigmaCut[2] && nSigmaTOF[2] > tofNsigmaCut[2+3];
+    bool isTofPion = nSigmaTOF[0] < tofNsigmaCut[0] && nSigmaTOF[0] > tofNsigmaCut[0 + 3];
+    bool isTofKaon = nSigmaTOF[1] < tofNsigmaCut[1] && nSigmaTOF[1] > tofNsigmaCut[1 + 3];
+    bool isTofProton = nSigmaTOF[2] < tofNsigmaCut[2] && nSigmaTOF[2] > tofNsigmaCut[2 + 3];
 
     if (track.pt() > cfgTofPtCut && !track.hasTOF()) {
       return 0;
@@ -922,7 +920,7 @@ struct FlowPbpbPikp {
       bool withinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
       bool withinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);       // within RF pT range
 
-      pidIndex = cfgUseAsymmetricPID ? getNsigmaPIDTpcTof_assymmetric(track) : getNsigmaPIDTpcTof(track);
+      pidIndex = cfgUseAsymmetricPID ? getNsigmaPIDTpcTof_Assymmetric(track) : getNsigmaPIDTpcTof(track);
 
       weff = 1; // Initializing weff for each track
       // NUA weights
