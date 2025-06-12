@@ -35,8 +35,6 @@
 namespace hf_mc_gen
 {
 
-using namespace o2::hf_corrbkg;
-
 template <bool matchCorrBkgs = false, typename T, typename U, typename V>
 void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V& rowMcMatchGen, bool rejectBackground)
 {
@@ -59,7 +57,7 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
     if (matchCorrBkgs) {
       bool matched = false;
 
-      for (const auto& [chn, finalState] : o2::hf_corrbkg::hf_chns_2prong::finalStates2Prongs) {
+      for (const auto& [chn, finalState] : o2::hf_decay::hf_cand_2prong::finalStates2Prongs) {
         if (finalState.size() == 3) { // Partly Reco 3-prong decays
           std::array<int, 3> finalStateParts = std::array{finalState[0], finalState[1], finalState[2]};
           if (particle.pdgCode() < 0) {
@@ -78,7 +76,7 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
           continue;
         }
         if (matched) {
-          flag = sign * chn;
+          flag = sign * (1 << chn);
 
           // Flag the resonant decay channel
           int resoMaxDepth = 1;
@@ -90,7 +88,7 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
               auto daughI = mcParticles.rawIteratorAt(arrResoDaughIndex[iProng]);
               arrPDGDaugh[iProng] = daughI.pdgCode();
             }
-            flagResonantDecay(Pdg::kD0, &channel, arrPDGDaugh);
+            o2::hf_decay::flagResonantDecay(Pdg::kD0, &channel, arrPDGDaugh);
           }
           break;
         }
@@ -159,7 +157,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
         if (std::abs(particle.pdgCode()) != motherPdgCode) {
           continue; // Skip if the particle PDG code does not match the mother PDG code
         }
-        auto finalStates = getDecayChannel3Prong(motherPdgCode);
+        auto finalStates = o2::hf_decay::hf_cand_3prong::getDecayChannel3Prong(motherPdgCode);
         int maxDepth = 2;
         bool matched = false;
         if (motherPdgCode == Pdg::kDStar) {
@@ -224,7 +222,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
                 auto daughI = mcParticles.rawIteratorAt(arrResoDaughIndex[iProng]);
                 arrPDGDaugh[iProng] = daughI.pdgCode();
               }
-              flagResonantDecay<true>(motherPdgCode, &channel, arrPDGDaugh);
+              o2::hf_decay::flagResonantDecay<true>(motherPdgCode, &channel, arrPDGDaugh);
             }
             break; // Exit loop if a match is found
           }

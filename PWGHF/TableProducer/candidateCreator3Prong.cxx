@@ -59,6 +59,7 @@ using namespace o2;
 using namespace o2::hf_evsel;
 using namespace o2::hf_trkcandsel;
 using namespace o2::aod::hf_cand_3prong;
+using namespace o2::hf_decay;
 using namespace o2::hf_decay::hf_cand_3prong;
 using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
@@ -66,7 +67,6 @@ using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::pid_tpc_tof_utils;
-using namespace o2::hf_corrbkg;
 
 /// Reconstruction of heavy-flavour 3-prong decay candidates
 struct HfCandidateCreator3Prong {

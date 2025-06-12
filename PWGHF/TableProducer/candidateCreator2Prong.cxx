@@ -61,8 +61,8 @@ using namespace o2::analysis;
 using namespace o2::hf_evsel;
 using namespace o2::hf_trkcandsel;
 using namespace o2::aod::hf_cand_2prong;
+using namespace o2::hf_decay;
 using namespace o2::hf_decay::hf_cand_2prong;
-using namespace o2::hf_corrbkg;
 using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
 using namespace o2::constants::physics;
@@ -779,7 +779,7 @@ struct HfCandidateCreator2ProngExpressions {
       if (matchCorrBkgs) {
         indexRec = -1; // Index of the matched reconstructed candidate
         int depth = 2;
-        for (const auto& [chn, finalState] : hf_chns_2prong::finalStates2Prongs) {
+        for (const auto& [chn, finalState] : hf_cand_2prong::finalStates2Prongs) {
           std::array<int, 2> finalStateParts2Prong = std::array{finalState[0], finalState[1]};
           if (finalState.size() == 3) { // Partly Reco 2-prong decays
             if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
@@ -821,7 +821,7 @@ struct HfCandidateCreator2ProngExpressions {
             continue;
           }
           if (indexRec > -1) {
-            flag = sign * chn;
+            flag = sign * (1 << chn);
 
             // Flag the resonant decay channel
             int resoMaxDepth = 1;
