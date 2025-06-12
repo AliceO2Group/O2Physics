@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -21,7 +21,7 @@
 #include "Framework/HistogramRegistry.h"
 
 using namespace o2::framework;
-namespace o2::analysis::femtoUniverse
+namespace o2::analysis::femto_universe
 {
 /// \class FemtoUniverseEventHisto
 /// \brief Class for histogramming event properties
@@ -35,11 +35,11 @@ class FemtoUniverseEventHisto
   void init(HistogramRegistry* registry)
   {
     mHistogramRegistry = registry;
-    mHistogramRegistry->add("Event/zvtxhist", "; vtx_{z} (cm); Entries", kTH1F, {{300, -12.5, 12.5}});
-    mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", kTH1F, {{16384, 0, 32768}});
-    mHistogramRegistry->add("Event/MultNTr", "; vMultNTr; Entries", kTH1F, {{200, 0, 200}});
-    mHistogramRegistry->add("Event/MultNTrVSMultV0M", "; vMultNTr; MultV0M", kTH2F, {{4000, 0, 4000}, {32768, 0, 32768}});
-    mHistogramRegistry->add("Event/zvtxhist_MultNTr", "; zvtxhist; MultNTr", kTH2F, {{300, -12.5, 12.5}, {200, 0, 200}});
+    mHistogramRegistry->add("Event/zvtxhist", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});
+    mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", kTH1F, {{2000, 0, 20000}});
+    mHistogramRegistry->add("Event/MultNTr", "; vMultNTr; Entries", kTH1F, {{20, 0, 200}});
+    mHistogramRegistry->add("Event/MultNTrVSMultV0M", "; vMultNTr; MultV0M", kTH2F, {{200, 0, 4000}, {2000, 0, 20000}});
+    mHistogramRegistry->add("Event/zvtxhist_MultNTr", "; zvtxhist; MultNTr", kTH2F, {{250, -12.5, 12.5}, {20, 0, 200}});
   }
 
   /// Some basic QA of the event
@@ -60,6 +60,6 @@ class FemtoUniverseEventHisto
  private:
   HistogramRegistry* mHistogramRegistry; ///< For QA output
 };
-} // namespace o2::analysis::femtoUniverse
+} // namespace o2::analysis::femto_universe
 
 #endif // PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEVENTHISTO_H_

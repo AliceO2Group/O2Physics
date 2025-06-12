@@ -60,6 +60,9 @@ DECLARE_SOA_COLUMN(F1d3Py, f1d3Py, float);                                 //! F
 DECLARE_SOA_COLUMN(F1d3Pz, f1d3Pz, float);                                 //! F1 d3 Pz
 DECLARE_SOA_COLUMN(F1d1TOFHit, f1d1TOFHit, int);                           //! TOF hit pion
 DECLARE_SOA_COLUMN(F1d2TOFHit, f1d2TOFHit, int);                           //! TOF hit pion
+DECLARE_SOA_COLUMN(F1d1TPC, f1d1TPC, float);                               //! TPC nsigma pion
+DECLARE_SOA_COLUMN(F1d2TPC, f1d2TPC, float);                               //! TPC nsigma kaon
+DECLARE_SOA_COLUMN(F1d2TPCPionHypo, f1d2TPCPionHypo, float);               //! TPC nsigma kaon
 DECLARE_SOA_COLUMN(F1Mass, f1Mass, float);                                 //! F1 mass
 DECLARE_SOA_COLUMN(F1MassKaonKshort, f1MassKaonKshort, float);             //! F1 mass kaon kshort
 DECLARE_SOA_COLUMN(F1PionIndex, f1PionIndex, int64_t);                     //! F1 pion index
@@ -93,6 +96,9 @@ DECLARE_SOA_TABLE(F1Tracks, "AOD", "F1TRACK",
                   f1protondaughter::F1d3Pz,
                   f1protondaughter::F1d1TOFHit,
                   f1protondaughter::F1d2TOFHit,
+                  f1protondaughter::F1d1TPC,
+                  f1protondaughter::F1d2TPC,
+                  f1protondaughter::F1d2TPCPionHypo,
                   f1protondaughter::F1Mass,
                   f1protondaughter::F1MassKaonKshort,
                   f1protondaughter::F1PionIndex,

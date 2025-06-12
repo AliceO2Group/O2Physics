@@ -18,10 +18,14 @@
 #define PWGHF_CORE_HFHELPER_H_
 
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h>
-#include <TPDGCode.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 
-#include "CommonConstants/PhysicsConstants.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+
+#include <array>
+#include <cmath>
+#include <vector>
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelectorPID.h"
@@ -839,6 +843,16 @@ class HfHelper
       return false;
     }
 
+    // d0 of pi
+    if (std::abs(candBp.impactParameter1()) < cuts->get(pTBin, "d0 Pi")) {
+      return false;
+    }
+
+    // d0 of D
+    if (std::abs(candBp.impactParameter0()) < cuts->get(pTBin, "d0 D0")) {
+      return false;
+    }
+
     return true;
   }
 
@@ -946,33 +960,139 @@ class HfHelper
     return true;
   }
 
+  /// Apply topological cuts as defined in SelectorCuts.h
+  /// \param candLb Lb candidate
+  /// \param cuts Lb candidate selection per pT bin"
+  /// \param binsPt pT bin limits
+  /// \return true if candidate passes all selections
+  template <typename T1, typename T2, typename T3>
+  bool selectionLbToLcPiTopol(const T1& candLb, const T2& cuts, const T3& binsPt)
+  {
+    auto ptCandLb = candLb.pt();
+    auto ptLc = candLb.ptProng0();
+    auto ptPi = candLb.ptProng1();
+
+    int pTBin = o2::analysis::findBin(binsPt, ptCandLb);
+    if (pTBin == -1) {
+      return false;
+    }
+
+    // Lb mass cut
+    if (std::abs(invMassLbToLcPi(candLb) - o2::constants::physics::MassLambdaB0) > cuts->get(pTBin, "m")) {
+      return false;
+    }
+
+    // pion pt
+    if (ptPi < cuts->get(pTBin, "pT Pi")) {
+      return false;
+    }
+
+    // Lc pt
+    if (ptLc < cuts->get(pTBin, "pT Lc")) {
+      return false;
+    }
+
+    // Lb Decay length
+    if (candLb.decayLength() < cuts->get(pTBin, "Lb decLen")) {
+      return false;
+    }
+
+    // Lb Decay length XY
+    if (candLb.decayLengthXY() < cuts->get(pTBin, "Lb decLenXY")) {
+      return false;
+    }
+
+    // Lb chi2PCA cut
+    if (candLb.chi2PCA() > cuts->get(pTBin, "Chi2PCA")) {
+      return false;
+    }
+
+    // Lb CPA cut
+    if (candLb.cpa() < cuts->get(pTBin, "CPA")) {
+      return false;
+    }
+
+    // d0 of pi
+    if (std::abs(candLb.impactParameter1()) < cuts->get(pTBin, "d0 Pi")) {
+      return false;
+    }
+
+    // d0 of Lc
+    if (std::abs(candLb.impactParameter0()) < cuts->get(pTBin, "d0 Lc")) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// \param pidTrackPi PID status of trackPi (prong1 of Lb candidate)
+  /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
+  /// \return true if prong1 of Lb candidate passes all selections
+  template <typename T1 = int, typename T2 = bool>
+  bool selectionLbToLcPiPid(const T1& pidTrackPi, const T2& acceptPIDNotApplicable)
+  {
+    if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Accepted) {
+      return false;
+    }
+    if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Rejected) {
+      return false;
+    }
+
+    return true;
+  }
+
   /// Apply selection on ML scores for charm-hadron daughter in b-hadron decays (common for all the beauty channels)
-  /// \param candB b-hadron candidates
   /// \param cuts ML score selection per bin of charm-hadron pT
   /// \param binsPtC pT bin limits of charm hadron
+  /// \param mlScores vector with ml scores of charm hadron (position 0:bkg 1:prompt 2:nonprompt)
   /// \return true if b-hadron candidate passes all selections
-  template <typename T1, typename T2, typename T3>
-  bool selectionDmesMlScoresForB(const T1& candB, const T2& cuts, const T3& binsPtC)
+  template <typename T1, typename T2>
+  bool applySelectionDmesMlScoresForB(const T1& cuts, const T2& binsPtC, float ptC, std::vector<float> mlScores)
   {
-    auto ptC = RecoDecay::pt(candB.pxProng0(), candB.pyProng0()); // the first daughter is the charm hadron
     int pTBin = o2::analysis::findBin(binsPtC, ptC);
     if (pTBin == -1) {
       return false;
     }
 
-    if (candB.prong0MlScoreBkg() > cuts->get(pTBin, "ML score charm bkg")) {
+    if (mlScores[0] > cuts->get(pTBin, "ML score charm bkg")) {
       return false;
     }
 
-    if (candB.prong0MlScorePrompt() > cuts->get(pTBin, "ML score charm prompt")) { // we want non-prompt for beauty
+    if (mlScores[1] > cuts->get(pTBin, "ML score charm prompt")) { // we want non-prompt for beauty
       return false;
     }
 
-    if (candB.prong0MlScoreNonprompt() < cuts->get(pTBin, "ML score charm nonprompt")) { // we want non-prompt for beauty
+    if (mlScores[2] < cuts->get(pTBin, "ML score charm nonprompt")) { // we want non-prompt for beauty
       return false;
     }
 
     return true;
+  }
+
+  /// Apply selection on ML scores for charm-hadron daughter in b-hadron decays (could be common for all the beauty channels)
+  /// \param candB b-hadron candidates
+  /// \param cuts ML score selection per bin of charm-hadron pT
+  /// \param binsPtC pT bin limits of charm hadron
+  /// \return true if b-hadron candidate passes all selections
+  template <typename T1, typename T2, typename T3>
+  bool selectionDmesMlScoresForB(const T1& candD, const T2& cuts, const T3& binsPtC, const std::vector<float>& mlScores)
+  {
+    return applySelectionDmesMlScoresForB(cuts, binsPtC, candD.pt(), mlScores);
+  }
+
+  /// Apply selection on ML scores for charm-hadron daughter in b-hadron decays in reduced format (common for all the beauty channels)
+  /// \param candB b-hadron candidates
+  /// \param cuts ML score selection per bin of charm-hadron pT
+  /// \param binsPtC pT bin limits of charm hadron
+  /// \return true if b-hadron candidate passes all selections
+  template <typename T1, typename T2, typename T3>
+  bool selectionDmesMlScoresForBReduced(const T1& candB, const T2& cuts, const T3& binsPtC)
+  {
+    std::vector<float> mlScores;
+    mlScores.push_back(candB.prong0MlScoreBkg());
+    mlScores.push_back(candB.prong0MlScorePrompt());
+    mlScores.push_back(candB.prong0MlScoreNonprompt()); // we want non-prompt for beauty
+    return applySelectionDmesMlScoresForB(cuts, binsPtC, RecoDecay::pt(candB.pxProng0(), candB.pyProng0()), mlScores);
   }
 
  private:

@@ -10,18 +10,20 @@
 // or submit itself to any jurisdiction.
 
 // Header files.
+#include <vector>
 
 // O2 headers.
 
 // O2 Physics headers.
 #include "PWGCF/JCorran/Core/FlowJHistManager.h"
+#include "CommonConstants/MathConstants.h"
 
 // Namespaces.
 using namespace o2;
 using namespace o2::framework;
 
 /// \brief Create the histograms in the QA registry.
-void FlowJHistManager::CreateHistQA()
+void FlowJHistManager::createHistQA()
 {
   // Security checks for proper use of the method.
   if (!mHistRegistryQA) {
@@ -60,7 +62,7 @@ void FlowJHistManager::CreateHistQA()
   mHistRegistryQA->add("Centrality_00-01/After/histEta", "Pseudorapidity",
                        HistType::kTH1F, {axisEta}, true);
 
-  const AxisSpec axisPhi = {100, 0., 2. * M_PI, "#varphi"};
+  const AxisSpec axisPhi = {100, 0., o2::constants::math::TwoPI, "#varphi"};
   mHistRegistryQA->add("Centrality_00-01/After/histPhi", "Azimuthal angles (no NUA)",
                        HistType::kTH1F, {axisPhi}, true);
 
@@ -145,7 +147,7 @@ void FlowJHistManager::CreateHistQA()
 
   // Clone the first centrality class into the other classes.
   for (int iBin = 1; iBin < mNcentBins; iBin++) {
-    mHistRegistryQA->addClone("Centrality_00-01/", mCentClasses[iBin].data());
+    mHistRegistryQA->addClone("Centrality_00-01/", MCentClasses[iBin].data());
   }
 
   LOGF(info, "QA histograms created.");
@@ -154,9 +156,9 @@ void FlowJHistManager::CreateHistQA()
 /// \brief Get the centrality bin value corresponding to the percentile.
 /// \param Centrality percentile of the collision.
 /// \return Bin for the histograms,...
-int FlowJHistManager::GetCentBin(float cValue)
+int FlowJHistManager::getCentBin(float cValue)
 {
-  const float centClasses[] = {0., 1., 2., 5., 10., 20., 30., 40., 50., 60., 70.};
+  const float centClasses[] = {0., 5., 10., 20., 30., 40., 50., 60., 70., 100.};
 
   for (int i = 0; i < mNcentBins + 1; i++) {
     if (cValue >= centClasses[i]) {

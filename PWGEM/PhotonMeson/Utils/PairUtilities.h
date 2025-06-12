@@ -18,6 +18,17 @@
 #include <TVector2.h>
 #include <cmath>
 
+namespace o2::aod::pwgem::photonmeson::utils::pairutil
+{
+enum class PhotonPrefilterBitDerived : int {
+  kPhotonFromPi0gg = 0,  // photon from pi0->gg
+  kPhotonFromPi0eeg = 1, // photon from pi0->eeg
+};
+enum class ElectronPrefilterBitDerived : int {
+  kElectronFromPi0eeg = 0, // electron from pi0->eeg
+  kElectronFromFakePC = 1, // electron from photon->ee, misidentified photon conversion as virtual photon
+};
+} // namespace o2::aod::pwgem::photonmeson::utils::pairutil
 namespace o2::aod::pwgem::photonmeson::photonpair
 {
 enum PairType {

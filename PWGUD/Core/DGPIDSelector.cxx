@@ -8,7 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
+#include <vector>
 #include <string>
 #include "CommonConstants/PhysicsConstants.h"
 #include "DGPIDSelector.h"
@@ -144,7 +144,7 @@ void DGAnaparHolder::Print()
   LOGF(info, "    max alpha:         %f", mMaxAlpha);
   LOGF(info, "    min system pT:     %f", mMinptsys);
   LOGF(info, "    max system pT:     %f", mMaxptsys);
-  LOGF(info, "    nCombine:          %d", mNCombine);
+  LOGF(info, "    nCombine:          %zu", mNCombine);
   LOGF(info, "    unlike charges");
   for (auto ch : mUnlikeCharges) {
     LOGF(info, "      %i", ch);
@@ -236,7 +236,7 @@ void DGAnaparHolder::Setptsys(float min, float max)
   mMaxptsys = max;
 }
 
-void DGAnaparHolder::SetnCombine(int nComb)
+void DGAnaparHolder::SetnCombine(std::size_t nComb)
 {
   mNCombine = nComb;
 }
@@ -300,7 +300,7 @@ void DGAnaparHolder::makeUniquePermutations()
     auto hash = hasher(std::string(hashstr));
     if (std::find(hashes.begin(), hashes.end(), hash) == hashes.end()) {
       hashes.push_back(hash);
-      for (auto ii = 0; ii < mNCombine; ii++) {
+      for (std::size_t ii = 0; ii < mNCombine; ii++) {
         muniquePerms.push_back(perm[ii]);
       }
     }
@@ -523,7 +523,7 @@ std::vector<std::vector<int>> DGPIDSelector::combinations(int nPool)
   for (auto comb : combs) {
     for (auto ii = 0u; ii < numUniquePerms; ii++) {
       std::vector<int> cope(mAnaPars.nCombine(), 0);
-      for (auto jj = 0; jj < mAnaPars.nCombine(); jj++) {
+      for (std::size_t jj = 0; jj < mAnaPars.nCombine(); jj++) {
         auto ind = ii * mAnaPars.nCombine() + jj;
         cope[uniquePerms[ind]] = comb[jj];
       }

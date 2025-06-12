@@ -19,6 +19,8 @@
 /// \author Himanshu Sharma <himanshu.sharma@cern.ch>, University and INFN Padova
 /// \author Cristina Terrevoli <cristina.terrevoli@cern.ch>, INFN Bari
 
+#include <vector>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -26,6 +28,7 @@
 #include "Framework/runDataProcessing.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -45,8 +48,13 @@ struct HfTaskXic {
   Configurable<float> dcaZTrackMax{"dcaZTrackMax", 0.0025, "max. DCAz for track"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_to_p_k_pi::vecBinsPt}, "pT bin limits"};
 
-  // THnSparse for ML outputScores and Vars
   Configurable<bool> enableTHn{"enableTHn", false, "enable THn for Xic"};
+  HfHelper hfHelper;
+  Service<o2::framework::O2DatabasePDG> pdg;
+
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
+
+  // THnSparse for ML outputScores and Vars
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {36, 0, 36}, ""};
   ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {300, 1.98, 2.58}, ""};
   ConfigurableAxis thnConfigAxisPtProng{"thnConfigAxisPtProng", {100, 0, 20}, ""};
@@ -58,36 +66,35 @@ struct HfTaskXic {
   ConfigurableAxis thnConfigAxisBdtScoreSignal{"thnConfigAxisBdtScoreSignal", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisYMC{"thnConfigAxisYMC", {100, -2., 2.}, ""};
   //
-  Service<o2::framework::O2DatabasePDG> pdg;
-  HfHelper hfHelper;
 
   float etaMaxAcceptance = 0.8;
   float ptMinAcceptance = 0.1;
 
-  using TracksWPid = soa::Join<aod::TracksWDca,
-                               aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr>;
-
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
-
-  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>> selectedMCXicCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
-
   HistogramRegistry registry{
     "registry", // histo not in pt bins
     {
-      {"Data/hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},    // pt Xic
-      {"Data/hEta", "3-prong candidates;candidate #it{eta};entries", {HistType::kTH1F, {{100, -5., 5.}}}},                  // eta Xic
-      {"Data/hPhi", "3-prong candidates;candidate #varphi;entries", {HistType::kTH1F, {{72, 0., constants::math::TwoPI}}}}, // phi Xic
-      {"Data/hMass", "3-prong candidates; inv. mass (p K #pi) (GeV/#it{c}^{2})", {HistType::kTH1F, {{600, 2.18, 2.58}}}},   // mass Xic
-      {"Data/hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{1000, 0., 1000.}}}},
-
-      {"MC/reconstructed/signal/hPtRecSig", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}}, // pt Xic
-      {"MC/reconstructed/background/hPtRecBg", "3-prong candidates (unmatched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
-      {"MC/generated/hPtGen", "MC particles (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
-      {"MC/generated/hPtGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance); #it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}},
-      {"MC/generated/hEtaGen", "MC particles; #it{eta}^{gen} ;#it{p}_{T}^{gen.};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-      {"MC/generated/hYGen", "MC particles;  #it{y}^{gen} ;#it{p}_{T}^{gen.} ;entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-      // add generated in acceptance!!
-    }};
+      {"Data/hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{360, 0., 36.}}}},    // pt Xic
+      {"Data/hEta", "3-prong candidates;candidate #it{eta};entries", {HistType::kTH1D, {{100, -2., 2.}}}},                  // eta Xic
+      {"Data/hPhi", "3-prong candidates;candidate #varphi;entries", {HistType::kTH1D, {{72, 0., constants::math::TwoPI}}}}, // phi Xic
+      {"Data/hMass", "3-prong candidates; inv. mass (p K #pi) (GeV/#it{c}^{2})", {HistType::kTH1D, {{600, 1.98, 2.58}}}},   // mass Xic
+      {"Data/hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1D, {{1000, 0., 1000.}}}},
+      {"MC/generated/signal/hPtGenSig", "3-prong candidates (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1D, {{360, 0., 36.}}}},
+      {"MC/generated/signal/hPtGen", "MC particles (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1D, {{360, 0., 36.}}}},
+      {"MC/generated/prompt/hPtGenPrompt", "MC particles (matched, prompt);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1D, {{360, 0., 36.}}}},
+      {"MC/generated/nonprompt/hPtGenNonPrompt", "MC particles (matched, non-prompt);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1D, {{360, 0., 36.}}}},
+      {"MC/generated/signal/hEtaGen", "MC particles (matched);#it{#eta};entries", {HistType::kTH1D, {{100, -2., 2.}}}},
+      {"MC/generated/prompt/hEtaGenPrompt", "MC particles (matched, prompt);#it{#eta};entries", {HistType::kTH1D, {{100, -2., 2.}}}},
+      {"MC/generated/nonprompt/hEtaGenNonPrompt", "MC particles (matched, non-prompt);#it{#eta};entries", {HistType::kTH1D, {{100, -2., 2.}}}},
+      {"MC/generated/signal/hYGen", "MC particles (matched);#it{y};entries", {HistType::kTH1D, {{100, -2., 2.}}}},
+      {"MC/generated/prompt/hYGenPrompt", "MC particles (matched, prompt);#it{y};entries", {HistType::kTH1D, {{100, -2., 2.}}}},
+      {"MC/generated/nonprompt/hYGenNonPrompt", "MC particles (matched, non-prompt);#it{y};entries", {HistType::kTH1D, {{100, -2., 2.}}}},
+      {"MC/reconstructed/signal/hMassRecSig", "3-prong candidates (matched);inv. mass (p K #pi) (GeV/#it{c}^{2})", {HistType::kTH1D, {{600, 2.18, 2.58}}}},
+      {"MC/reconstructed/prompt/hMassRecSigPrompt", "3-prong candidates (matched, prompt);inv. mass (p K #pi) (GeV/#it{c}^{2})", {HistType::kTH1D, {{600, 2.18, 2.58}}}},
+      {"MC/reconstructed/nonprompt/hMassRecSigNonPrompt", "3-prong candidates (matched, non-prompt);inv. mass (p K #pi) (GeV/#it{c}^{2})", {HistType::kTH1D, {{600, 2.18, 2.58}}}},
+      {"MC/reconstructed/signal/hPtRecSig", "3-prong candidates (matched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1D, {{360, 0., 36.}}}},
+      {"MC/reconstructed/prompt/hPtRecSigPrompt", "3-prong candidates (matched, prompt);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1D, {{360, 0., 36.}}}},
+      {"MC/reconstructed/nonprompt/hPtRecSigNonPrompt", "3-prong candidates (matched, non-prompt);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1D, {{360, 0., 36.}}}},
+      {"MC/reconstructed/background/hPtRecBg", "3-prong candidates (unmatched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1D, {{100, 0., 10.}}}}}};
 
   void init(InitContext&)
   {
@@ -174,6 +181,22 @@ struct HfTaskXic {
     registry.add("MC/reconstructed/signal/hPtProng2RecSig", "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});;entries", {HistType::kTH2F, {{100, 0., 10.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/signal/hChi2PCARecSig", "3-prong candidates;prong Chi2PCA to sec.  vertex (cm);; entries", {HistType::kTH2F, {{100, 0, 120}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
 
+    registry.add("MC/reconstructed/signal/hMassVsPtRecSig", "3-prong candidates (matched);inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}", {HistType::kTH2F, {{600, 2.18, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("MC/reconstructed/prompt/hMassVsPtRecSigPrompt", "3-prong candidates (matched, prompt);inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}", {HistType::kTH2F, {{600, 2.18, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("MC/reconstructed/nonprompt/hMassVsPtRecSigNonPrompt", "3-prong candidates (matched, non-prompt);inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}", {HistType::kTH2F, {{600, 2.18, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+
+    registry.add("MC/reconstructed/signal/hEtaVsPtRecSig", "3-prong candidates (matched);candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("MC/reconstructed/prompt/hEtaVsPtRecSigPrompt", "3-prong candidates (matched, prompt);candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("MC/reconstructed/nonprompt/hEtaVsPtRecSigNonPrompt", "3-prong candidates (matched, non-prompt);candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+
+    registry.add("MC/generated/signal/hEtaVsPtGenSig", "3-prong candidates (matched);candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("MC/generated/prompt/hEtaVsPtGenSigPrompt", "3-prong candidates (matched, prompt);candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("MC/generated/nonprompt/hEtaVsPtGenSigNonPrompt", "3-prong candidates (matched, non-prompt);candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+
+    registry.add("MC/generated/signal/hYVsPtGenSig", "3-prong candidates (matched);candidate #it{y};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("MC/generated/prompt/hYVsPtGenSigPrompt", "3-prong candidates (matched, prompt);candidate #it{y};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("MC/generated/nonprompt/hYVsPtGenSigNonPrompt", "3-prong candidates (matched, non-prompt);candidate #it{y};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+
     // background
     registry.add("MC/reconstructed/background/hMassBg", "Invariant mass (unmatched);m (p K #pi) (GeV/#it{c}^{2});;entries", {HistType::kTH2F, {{500, 1.6, 3.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/background/hDecLengthRecBg", "3-prong candidates;decay length (cm);;entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -230,7 +253,7 @@ struct HfTaskXic {
   template <bool useMl, typename Cands>
   void analysisData(aod::Collision const& collision,
                     Cands const& candidates,
-                    TracksWPid const& tracks)
+                    aod::TracksWDca const& tracks)
   {
     int nTracks = 0;
 
@@ -290,48 +313,49 @@ struct HfTaskXic {
       registry.fill(HIST("Data/hChi2PCA"), candidate.chi2PCA(), ptCandidate);
 
       // PID histos
-      auto trackProng0 = candidate.template prong0_as<TracksWPid>();
-      auto trackProng1 = candidate.template prong1_as<TracksWPid>();
-      auto trackProng2 = candidate.template prong2_as<TracksWPid>();
+      auto trackProng0 = candidate.template prong0_as<aod::TracksWDca>();
+      auto trackProng1 = candidate.template prong1_as<aod::TracksWDca>();
+      auto trackProng2 = candidate.template prong2_as<aod::TracksWDca>();
 
       auto momentumProng0 = trackProng0.p();
       auto momentumProng1 = trackProng1.p();
       auto momentumProng2 = trackProng2.p();
 
       // TPC nSigma histograms
-      registry.fill(HIST("Data/hPVsTPCNSigmaPr_Prong0"), momentumProng0, trackProng0.tpcNSigmaPr());
-      registry.fill(HIST("Data/hPVsTPCNSigmaPi_Prong0"), momentumProng0, trackProng0.tpcNSigmaPi());
-      registry.fill(HIST("Data/hPVsTPCNSigmaKa_Prong0"), momentumProng0, trackProng0.tpcNSigmaKa());
+      registry.fill(HIST("Data/hPVsTPCNSigmaPr_Prong0"), momentumProng0, candidate.nSigTpcPr0());
+      registry.fill(HIST("Data/hPVsTPCNSigmaPi_Prong0"), momentumProng0, candidate.nSigTpcPi0());
+      registry.fill(HIST("Data/hPVsTPCNSigmaKa_Prong0"), momentumProng0, candidate.nSigTpcKa0());
 
-      registry.fill(HIST("Data/hPVsTPCNSigmaPr_Prong1"), momentumProng1, trackProng1.tpcNSigmaPr());
-      registry.fill(HIST("Data/hPVsTPCNSigmaPi_Prong1"), momentumProng1, trackProng1.tpcNSigmaPi());
-      registry.fill(HIST("Data/hPVsTPCNSigmaKa_Prong1"), momentumProng1, trackProng1.tpcNSigmaKa());
+      registry.fill(HIST("Data/hPVsTPCNSigmaPr_Prong1"), momentumProng1, candidate.nSigTpcPr1());
+      registry.fill(HIST("Data/hPVsTPCNSigmaPi_Prong1"), momentumProng1, candidate.nSigTpcPi1());
+      registry.fill(HIST("Data/hPVsTPCNSigmaKa_Prong1"), momentumProng1, candidate.nSigTpcKa1());
 
-      registry.fill(HIST("Data/hPVsTPCNSigmaPr_Prong2"), momentumProng2, trackProng2.tpcNSigmaPr());
-      registry.fill(HIST("Data/hPVsTPCNSigmaPi_Prong2"), momentumProng2, trackProng2.tpcNSigmaPi());
-      registry.fill(HIST("Data/hPVsTPCNSigmaKa_Prong2"), momentumProng2, trackProng2.tpcNSigmaKa());
+      registry.fill(HIST("Data/hPVsTPCNSigmaPr_Prong2"), momentumProng2, candidate.nSigTpcPr2());
+      registry.fill(HIST("Data/hPVsTPCNSigmaPi_Prong2"), momentumProng2, candidate.nSigTpcPi2());
+      registry.fill(HIST("Data/hPVsTPCNSigmaKa_Prong2"), momentumProng2, candidate.nSigTpcKa2());
 
       // TOF nSigma histograms
-      registry.fill(HIST("Data/hPVsTOFNSigmaPr_Prong0"), momentumProng0, trackProng0.tofNSigmaPr());
-      registry.fill(HIST("Data/hPVsTOFNSigmaPi_Prong0"), momentumProng0, trackProng0.tofNSigmaPi());
-      registry.fill(HIST("Data/hPVsTOFNSigmaKa_Prong0"), momentumProng0, trackProng0.tofNSigmaKa());
+      registry.fill(HIST("Data/hPVsTOFNSigmaPr_Prong0"), momentumProng0, candidate.nSigTofPr0());
+      registry.fill(HIST("Data/hPVsTOFNSigmaPi_Prong0"), momentumProng0, candidate.nSigTofPi0());
+      registry.fill(HIST("Data/hPVsTOFNSigmaKa_Prong0"), momentumProng0, candidate.nSigTofKa0());
 
-      registry.fill(HIST("Data/hPVsTOFNSigmaPr_Prong1"), momentumProng1, trackProng1.tofNSigmaPr());
-      registry.fill(HIST("Data/hPVsTOFNSigmaPi_Prong1"), momentumProng1, trackProng1.tofNSigmaPi());
-      registry.fill(HIST("Data/hPVsTOFNSigmaKa_Prong1"), momentumProng1, trackProng1.tofNSigmaKa());
+      registry.fill(HIST("Data/hPVsTOFNSigmaPr_Prong1"), momentumProng1, candidate.nSigTofPr1());
+      registry.fill(HIST("Data/hPVsTOFNSigmaPi_Prong1"), momentumProng1, candidate.nSigTofPi1());
+      registry.fill(HIST("Data/hPVsTOFNSigmaKa_Prong1"), momentumProng1, candidate.nSigTofKa1());
 
-      registry.fill(HIST("Data/hPVsTOFNSigmaPr_Prong2"), momentumProng2, trackProng2.tofNSigmaPr());
-      registry.fill(HIST("Data/hPVsTOFNSigmaPi_Prong2"), momentumProng2, trackProng2.tofNSigmaPi());
-      registry.fill(HIST("Data/hPVsTOFNSigmaKa_Prong2"), momentumProng2, trackProng2.tofNSigmaKa());
+      registry.fill(HIST("Data/hPVsTOFNSigmaPr_Prong2"), momentumProng2, candidate.nSigTofPr2());
+      registry.fill(HIST("Data/hPVsTOFNSigmaPi_Prong2"), momentumProng2, candidate.nSigTofPi2());
+      registry.fill(HIST("Data/hPVsTOFNSigmaKa_Prong2"), momentumProng2, candidate.nSigTofKa2());
 
       // THnSparse
       if (enableTHn) {
         double massXic(-1);
         double outputBkg(-1), outputPrompt(-1), outputFD(-1);
+        const int ternaryCl = 3;
         if (candidate.isSelXicToPKPi() >= selectionFlagXic) {
           massXic = hfHelper.invMassXicToPKPi(candidate);
           if constexpr (useMl) {
-            if (candidate.mlProbXicToPKPi().size() == 3) {
+            if (candidate.mlProbXicToPKPi().size() == ternaryCl) {
               outputBkg = candidate.mlProbXicToPKPi()[0];    /// bkg score
               outputPrompt = candidate.mlProbXicToPKPi()[1]; /// prompt score
               outputFD = candidate.mlProbXicToPKPi()[2];     /// non-prompt score
@@ -345,7 +369,7 @@ struct HfTaskXic {
         if (candidate.isSelXicToPiKP() >= selectionFlagXic) {
           massXic = hfHelper.invMassXicToPiKP(candidate);
           if constexpr (useMl) {
-            if (candidate.mlProbXicToPiKP().size() == 3) {
+            if (candidate.mlProbXicToPiKP().size() == ternaryCl) {
               outputBkg = candidate.mlProbXicToPiKP()[0];    /// bkg score
               outputPrompt = candidate.mlProbXicToPiKP()[1]; /// prompt score
               outputFD = candidate.mlProbXicToPiKP()[2];     /// non-prompt score
@@ -357,19 +381,19 @@ struct HfTaskXic {
           }
         }
       } // thn for Xic
-    }   // loop candidates
-  }     // end process data
+    } // loop candidates
+  } // end process data
 
   void processDataStd(aod::Collision const& collision,
-                      soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>> const& candidates,
-                      TracksWPid const& tracks)
+                      soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelXicToPKPi>> const& candidates,
+                      aod::TracksWDca const& tracks)
   {
     analysisData<false>(collision, candidates, tracks);
   }
   PROCESS_SWITCH(HfTaskXic, processDataStd, "Process Data with the standard method", true);
 
   void processDataWithMl(aod::Collision const& collision,
-                         soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfMlXicToPKPi>> const& candidatesMl, TracksWPid const& tracks)
+                         soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelXicToPKPi, aod::HfMlXicToPKPi>> const& candidatesMl, aod::TracksWDca const& tracks)
   {
     analysisData<true>(collision, candidatesMl, tracks);
   }
@@ -402,7 +426,7 @@ struct HfTaskXic {
         massXicToPiKP = hfHelper.invMassXicToPiKP(candidate); // mass conjugate
       }
 
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::XicToPKPi) {
+      if (std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::XicToPKPi) {
         // Get the corresponding MC particle.
         auto mcParticleProng0 = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
         auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
@@ -413,12 +437,13 @@ struct HfTaskXic {
         registry.fill(HIST("MC/reconstructed/signal/hPtRecSig"), ptCandidate); // rec. level pT
 
         if (massXicToPKPi != 0.) {
-          registry.fill(HIST("MC/reconstructed/signal/hMassSig"), massXicToPKPi, ptCandidate);
+          registry.fill(HIST("MC/reconstructed/signal/hMassVsPtRecSig"), massXicToPKPi, ptCandidate);
+          registry.fill(HIST("MC/reconstructed/signal/hMassRecSig"), massXicToPKPi);
         }
         if (massXicToPiKP != 0.) {
-          registry.fill(HIST("MC/reconstructed/signal/hMassSig"), massXicToPiKP, ptCandidate);
+          registry.fill(HIST("MC/reconstructed/signal/hMassVsPtRecSig"), massXicToPiKP, ptCandidate);
+          registry.fill(HIST("MC/reconstructed/signal/hMassRecSig"), massXicToPiKP);
         }
-
         registry.fill(HIST("MC/reconstructed/signal/hDecLengthRecSig"), candidate.decayLength(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/signal/hDecLengthXYRecSig"), candidate.decayLengthXY(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/signal/hNormalisedDecayLengthXYRecSig"), candidate.decayLengthXYNormalised(), ptCandidate);
@@ -436,10 +461,37 @@ struct HfTaskXic {
         registry.fill(HIST("MC/reconstructed/signal/hImpParErrSig"), candidate.errorImpactParameter0(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/signal/hDecLenErrSig"), candidate.errorDecayLength(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/signal/hChi2PCARecSig"), candidate.chi2PCA(), ptCandidate);
+        registry.fill(HIST("MC/reconstructed/signal/hEtaVsPtRecSig"), candidate.eta(), ptCandidate);
+
+        /// reconstructed signal prompt
+        if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
+          if ((candidate.isSelXicToPKPi() >= selectionFlagXic) && pdgCodeProng0 == kProton) {
+            registry.fill(HIST("MC/reconstructed/prompt/hMassRecSigPrompt"), massXicToPKPi);
+            registry.fill(HIST("MC/reconstructed/prompt/hMassVsPtRecSigPrompt"), massXicToPKPi, ptCandidate);
+          }
+          if ((candidate.isSelXicToPiKP() >= selectionFlagXic) && pdgCodeProng0 == kPiPlus) {
+            registry.fill(HIST("MC/reconstructed/prompt/hMassRecSigPrompt"), massXicToPiKP);
+            registry.fill(HIST("MC/reconstructed/prompt/hMassVsPtRecSigPrompt"), massXicToPiKP, ptCandidate);
+          }
+          registry.fill(HIST("MC/reconstructed/prompt/hEtaVsPtRecSigPrompt"), candidate.eta(), ptCandidate);
+          registry.fill(HIST("MC/reconstructed/prompt/hPtRecSigPrompt"), ptCandidate);
+        } else {
+          if ((candidate.isSelXicToPKPi() >= selectionFlagXic) && pdgCodeProng0 == kProton) {
+            registry.fill(HIST("MC/reconstructed/nonprompt/hMassRecSigNonPrompt"), massXicToPKPi);
+            registry.fill(HIST("MC/reconstructed/nonprompt/hMassVsPtRecSigNonPrompt"), massXicToPKPi, ptCandidate);
+          }
+          if ((candidate.isSelXicToPiKP() >= selectionFlagXic) && pdgCodeProng0 == kPiPlus) {
+            registry.fill(HIST("MC/reconstructed/nonprompt/hMassRecSigNonPrompt"), massXicToPiKP);
+            registry.fill(HIST("MC/reconstructed/nonprompt/hMassVsPtRecSigNonPrompt"), massXicToPiKP, ptCandidate);
+          }
+          registry.fill(HIST("MC/reconstructed/nonprompt/hEtaVsPtRecSigNonPrompt"), candidate.eta(), ptCandidate);
+          registry.fill(HIST("MC/reconstructed/nonprompt/hPtRecSigNonPrompt"), ptCandidate);
+        }
 
         if (enableTHn) {
           double massXic(-1);
           double outputBkg(-1), outputPrompt(-1), outputFD(-1);
+          const int ternaryCl = 3;
           bool allProngsInAcceptance = false;
           if ((candidate.isSelXicToPKPi() >= selectionFlagXic) && pdgCodeProng0 == kProton) {
             massXic = hfHelper.invMassXicToPKPi(candidate);
@@ -451,7 +503,7 @@ struct HfTaskXic {
             }
             allProngsInAcceptance = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]) && isProngInAcceptance(etaProngs[2], ptProngs[2]);
             if constexpr (useMl) {
-              if (candidate.mlProbXicToPKPi().size() == 3) {
+              if (candidate.mlProbXicToPKPi().size() == ternaryCl) {
                 outputBkg = candidate.mlProbXicToPKPi()[0];    /// bkg score
                 outputPrompt = candidate.mlProbXicToPKPi()[1]; /// prompt score
                 outputFD = candidate.mlProbXicToPKPi()[2];     /// non-prompt score
@@ -472,7 +524,7 @@ struct HfTaskXic {
             }
             allProngsInAcceptance = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]) && isProngInAcceptance(etaProngs[2], ptProngs[2]);
             if constexpr (useMl) {
-              if (candidate.mlProbXicToPiKP().size() == 3) {
+              if (candidate.mlProbXicToPiKP().size() == ternaryCl) {
                 outputBkg = candidate.mlProbXicToPiKP()[0];    /// bkg score
                 outputPrompt = candidate.mlProbXicToPiKP()[1]; /// prompt score
                 outputFD = candidate.mlProbXicToPiKP()[2];     /// non-prompt score
@@ -514,40 +566,40 @@ struct HfTaskXic {
         registry.fill(HIST("MC/reconstructed/background/hDecLenErrBg"), candidate.errorDecayLength(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hChi2PCARecBg"), candidate.chi2PCA(), ptCandidate);
       } // Xic background
-    }   // candidate loop
+    } // candidate loop
 
     // MC gen.
     for (const auto& particle : mcParticles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::XicToPKPi) {
-        auto yParticle = RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus);
-        if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
+      if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::XicToPKPi) {
+        auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus);
+        if (yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) {
           continue;
         }
-        auto ptParticle = particle.pt();
-        std::array<float, 3> ptProngs;
-        std::array<float, 3> yProngs;
-        std::array<float, 3> etaProngs;
-        int counter = 0;
-        for (const auto& daught : particle.daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>()) {
-          ptProngs[counter] = daught.pt();
-          etaProngs[counter] = daught.eta();
-          yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
-          counter++;
+        auto ptGen = particle.pt();
+        registry.fill(HIST("MC/generated/signal/hPtGen"), ptGen);
+        registry.fill(HIST("MC/generated/signal/hEtaGen"), particle.eta());
+        registry.fill(HIST("MC/generated/signal/hYGen"), yGen);
+        registry.fill(HIST("MC/generated/signal/hEtaVsPtGenSig"), particle.eta(), ptGen);
+        registry.fill(HIST("MC/generated/signal/hYVsPtGenSig"), yGen, ptGen);
+
+        if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
+          registry.fill(HIST("MC/generated/prompt/hPtGenPrompt"), ptGen);
+          registry.fill(HIST("MC/generated/prompt/hEtaGenPrompt"), particle.eta());
+          registry.fill(HIST("MC/generated/prompt/hYGenPrompt"), yGen);
+          registry.fill(HIST("MC/generated/prompt/hEtaVsPtGenSigPrompt"), particle.eta(), ptGen);
+          registry.fill(HIST("MC/generated/prompt/hYVsPtGenSigPrompt"), yGen, ptGen);
         }
-        registry.fill(HIST("MC/generated/hPtGen"), ptParticle);
-        registry.fill(HIST("MC/generated/hEtaGen"), particle.eta(), ptParticle);
-        registry.fill(HIST("MC/generated/hYGen"), yParticle, ptParticle);
-        // reject Xic daughters that are not in geometrical acceptance
-        if (!isProngInAcceptance(etaProngs[0], ptProngs[0]) || !isProngInAcceptance(etaProngs[1], ptProngs[1]) || !isProngInAcceptance(etaProngs[2], ptProngs[2])) {
-          continue;
+        if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
+          registry.fill(HIST("MC/generated/nonprompt/hPtGenNonPrompt"), ptGen);
+          registry.fill(HIST("MC/generated/nonprompt/hEtaGenNonPrompt"), particle.eta());
+          registry.fill(HIST("MC/generated/nonprompt/hYGenNonPrompt"), yGen);
+          registry.fill(HIST("MC/generated/nonprompt/hEtaVsPtGenSigNonPrompt"), particle.eta(), ptGen);
+          registry.fill(HIST("MC/generated/nonprompt/hYVsPtGenSigNonPrompt"), yGen, ptGen);
         }
-        registry.fill(HIST("MC/generated/hPtGenWithProngsInAcceptance"), ptParticle);
-        registry.fill(HIST("MC/generated/hYGenWithProngsInAcceptance"), yParticle, ptParticle);
-        registry.fill(HIST("MC/generated/hEtaGenWithProngsInAcceptance"), particle.eta(), ptParticle);
       }
     }
   }
-  void processMcStd(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>> const& selectedCandidatesMc,
+  void processMcStd(soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>> const& selectedCandidatesMc,
                     soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                     aod::TracksWMc const& tracksWithMc)
   {
@@ -555,7 +607,7 @@ struct HfTaskXic {
   }
   PROCESS_SWITCH(HfTaskXic, processMcStd, "Process MC with the standard method", false);
 
-  void processMcWithMl(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfMlXicToPKPi, aod::HfCand3ProngMcRec>> const& selectedCandidatesMlMc,
+  void processMcWithMl(soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelXicToPKPi, aod::HfMlXicToPKPi, aod::HfCand3ProngMcRec>> const& selectedCandidatesMlMc,
                        soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                        aod::TracksWMc const& tracksWithMc)
   {

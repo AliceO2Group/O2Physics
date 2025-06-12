@@ -22,6 +22,7 @@
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "PWGLF/DataModel/SPCalibrationTables.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 namespace o2::aod
@@ -62,9 +63,19 @@ DECLARE_SOA_DYNAMIC_COLUMN(EnergyCommonZNC, energyCommonZNC, //! get the total s
 // if required (for 2pc, etc)
 DECLARE_SOA_TABLE(StraCollisions, "AOD", "STRACOLLISION", //! basic collision properties: position
                   o2::soa::Index<>, collision::PosX, collision::PosY, collision::PosZ);
-DECLARE_SOA_TABLE(StraCents, "AOD", "STRACENTS", //! centrality percentiles
+DECLARE_SOA_TABLE(StraCents_000, "AOD", "STRACENTS", //! centrality percentiles
                   cent::CentFT0M, cent::CentFT0A,
                   cent::CentFT0C, cent::CentFV0A);
+DECLARE_SOA_TABLE_VERSIONED(StraCents_001, "AOD", "STRACENTS", 1, //! centrality percentiles in Run 3
+                            cent::CentFT0M, cent::CentFT0A,
+                            cent::CentFT0C, cent::CentFV0A,
+                            cent::CentFT0CVariant1, cent::CentMFT,
+                            cent::CentNGlobal);
+
+DECLARE_SOA_TABLE(StraCentsRun2, "AOD", "STRACENTSRUN2", //! centrality percentiles in Run 2
+                  cent::CentRun2V0M, cent::CentRun2V0A,
+                  cent::CentRun2SPDTracklets, cent::CentRun2SPDClusters);
+
 // !!! DEPRECATED TABLE: StraRawCents_000 !!! All info in StraEvSels_001, in order to group all event characteristics in a unique table. Please use StraEvSels_001
 DECLARE_SOA_TABLE(StraRawCents_000, "AOD", "STRARAWCENTS", //! debug information
                   mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, mult::MultNTracksPVeta1);
@@ -128,15 +139,6 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_001, "AOD", "STRAEVSELS", 1,         //! 
                             udcollision::TotalFDDAmplitudeC, // UPC info: re-assigned FDD-C amplitude, in case of SG event, from the most active bc
                             udzdc::EnergyCommonZNA,          // UPC info: re-assigned ZN-A amplitude, in case of SG event, from the most active bc
                             udzdc::EnergyCommonZNC,          // UPC info: re-assigned ZN-C amplitude, in case of SG event, from the most active bc
-
-                            // Dynamic columns for manipulating information
-                            // stracollision::TotalFV0AmplitudeA<mult::MultFV0A>,
-                            // stracollision::TotalFT0AmplitudeA<mult::MultFT0A>,
-                            // stracollision::TotalFT0AmplitudeC<mult::MultFT0C>,
-                            // stracollision::TotalFDDAmplitudeA<mult::MultFDDA>,
-                            // stracollision::TotalFDDAmplitudeC<mult::MultFDDC>,
-                            // stracollision::EnergyCommonZNA<mult::MultZNA>,
-                            // stracollision::EnergyCommonZNC<mult::MultZNC>,
                             stracollision::IsUPC<udcollision::GapSide>);
 
 DECLARE_SOA_TABLE_VERSIONED(StraEvSels_002, "AOD", "STRAEVSELS", 2,         //! debug information
@@ -151,7 +153,57 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_002, "AOD", "STRAEVSELS", 2,         //! 
                             mult::MultAllTracksITSTPC,                    // ITSTPC track multiplicities, all, no eta cut
                             mult::MultZNA, mult::MultZNC, mult::MultZEM1, // ZDC signals
                             mult::MultZEM2, mult::MultZPA, mult::MultZPC,
-                            evsel::NumTracksInTimeRange,     // add occupancy as extra
+                            evsel::NumTracksInTimeRange,     // add occupancy in specified time interval by a number of tracks from nearby collisions
+                            udcollision::GapSide,            // UPC info: 0 for side A, 1 for side C, 2 for both sides, 3 neither A or C, 4 not enough or too many pv contributors
+                            udcollision::TotalFT0AmplitudeA, // UPC info: re-assigned FT0-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFT0AmplitudeC, // UPC info: re-assigned FT0-C amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFV0AmplitudeA, // UPC info: re-assigned FV0-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFDDAmplitudeA, // UPC info: re-assigned FDD-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFDDAmplitudeC, // UPC info: re-assigned FDD-C amplitude, in case of SG event, from the most active bc
+                            udzdc::EnergyCommonZNA,          // UPC info: re-assigned ZN-A amplitude, in case of SG event, from the most active bc
+                            udzdc::EnergyCommonZNC,          // UPC info: re-assigned ZN-C amplitude, in case of SG event, from the most active bc
+                            collision::Flags,                // Contains Vertex::Flags, with most notably the UPCMode to know whether the vertex has been found using UPC settings
+                            stracollision::IsUPC<udcollision::GapSide>);
+
+DECLARE_SOA_TABLE_VERSIONED(StraEvSels_003, "AOD", "STRAEVSELS", 3,         //! debug information
+                            evsel::Sel8, evsel::Selection,                  //! event selection: sel8
+                            mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, // FIT detectors
+                            mult::MultFDDA, mult::MultFDDC,
+                            mult::MultNTracksPVeta1,                      // track multiplicities with eta cut for INEL>0
+                            mult::MultPVTotalContributors,                // number of PV contribs total
+                            mult::MultNTracksGlobal,                      // global track multiplicities
+                            mult::MultNTracksITSTPC,                      // track multiplicities, PV contribs, no eta cut
+                            mult::MultAllTracksTPCOnly,                   // TPConly track multiplicities, all, no eta cut
+                            mult::MultAllTracksITSTPC,                    // ITSTPC track multiplicities, all, no eta cut
+                            mult::MultZNA, mult::MultZNC, mult::MultZEM1, // ZDC signals
+                            mult::MultZEM2, mult::MultZPA, mult::MultZPC,
+                            evsel::NumTracksInTimeRange,     // add occupancy in specified time interval by a number of tracks from nearby collisions
+                            evsel::SumAmpFT0CInTimeRange,    // add occupancy in specified time interval by a sum of FT0C amplitudes from nearby collisions
+                            udcollision::GapSide,            // UPC info: 0 for side A, 1 for side C, 2 for both sides, 3 neither A or C, 4 not enough or too many pv contributors
+                            udcollision::TotalFT0AmplitudeA, // UPC info: re-assigned FT0-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFT0AmplitudeC, // UPC info: re-assigned FT0-C amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFV0AmplitudeA, // UPC info: re-assigned FV0-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFDDAmplitudeA, // UPC info: re-assigned FDD-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFDDAmplitudeC, // UPC info: re-assigned FDD-C amplitude, in case of SG event, from the most active bc
+                            udzdc::EnergyCommonZNA,          // UPC info: re-assigned ZN-A amplitude, in case of SG event, from the most active bc
+                            udzdc::EnergyCommonZNC,          // UPC info: re-assigned ZN-C amplitude, in case of SG event, from the most active bc
+                            collision::Flags,                // Contains Vertex::Flags, with most notably the UPCMode to know whether the vertex has been found using UPC settings
+                            stracollision::IsUPC<udcollision::GapSide>);
+
+DECLARE_SOA_TABLE_VERSIONED(StraEvSels_004, "AOD", "STRAEVSELS", 4,         //! debug information
+                            evsel::Sel8, evsel::Selection,                  //! event selection: sel8
+                            mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, // FIT detectors
+                            mult::MultFDDA, mult::MultFDDC,
+                            mult::MultNTracksPVeta1,                      // track multiplicities with eta cut for INEL>0
+                            mult::MultPVTotalContributors,                // number of PV contribs total
+                            mult::MultNTracksGlobal,                      // global track multiplicities
+                            mult::MultNTracksITSTPC,                      // track multiplicities, PV contribs, no eta cut
+                            mult::MultAllTracksTPCOnly,                   // TPConly track multiplicities, all, no eta cut
+                            mult::MultAllTracksITSTPC,                    // ITSTPC track multiplicities, all, no eta cut
+                            mult::MultZNA, mult::MultZNC, mult::MultZEM1, // ZDC signals
+                            mult::MultZEM2, mult::MultZPA, mult::MultZPC,
+                            evsel::NumTracksInTimeRange,     // add occupancy in specified time interval by a number of tracks from nearby collisions
+                            evsel::SumAmpFT0CInTimeRange,    // add occupancy in specified time interval by a sum of FT0C amplitudes from nearby collisions
                             udcollision::GapSide,            // UPC info: 0 for side A, 1 for side C, 2 for both sides, 3 neither A or C, 4 not enough or too many pv contributors
                             udcollision::TotalFT0AmplitudeA, // UPC info: re-assigned FT0-A amplitude, in case of SG event, from the most active bc
                             udcollision::TotalFT0AmplitudeC, // UPC info: re-assigned FT0-C amplitude, in case of SG event, from the most active bc
@@ -162,6 +214,7 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_002, "AOD", "STRAEVSELS", 2,         //! 
                             udzdc::EnergyCommonZNC,          // UPC info: re-assigned ZN-C amplitude, in case of SG event, from the most active bc
 
                             collision::Flags, // Contains Vertex::Flags, with most notably the UPCMode to know whether the vertex has been found using UPC settings
+                            evsel::Alias,     // trigger aliases (e.g. kTVXinTRD for v2)
 
                             // Dynamic columns for manipulating information
                             // stracollision::TotalFV0AmplitudeA<mult::MultFV0A>,
@@ -172,6 +225,60 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_002, "AOD", "STRAEVSELS", 2,         //! 
                             // stracollision::EnergyCommonZNA<mult::MultZNA>,
                             // stracollision::EnergyCommonZNC<mult::MultZNC>,
                             stracollision::IsUPC<udcollision::GapSide>);
+
+DECLARE_SOA_TABLE_VERSIONED(StraEvSels_005, "AOD", "STRAEVSELS", 5,         //! debug information
+                            evsel::Sel8, evsel::Selection,                  //! event selection: sel8
+                            mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, // FIT detectors
+                            mult::MultFDDA, mult::MultFDDC,
+                            mult::MultNTracksPVeta1,                      // track multiplicities with eta cut for INEL>0
+                            mult::MultPVTotalContributors,                // number of PV contribs total
+                            mult::MultNTracksGlobal,                      // global track multiplicities
+                            mult::MultNTracksITSTPC,                      // track multiplicities, PV contribs, no eta cut
+                            mult::MultAllTracksTPCOnly,                   // TPConly track multiplicities, all, no eta cut
+                            mult::MultAllTracksITSTPC,                    // ITSTPC track multiplicities, all, no eta cut
+                            mult::MultZNA, mult::MultZNC, mult::MultZEM1, // ZDC signals
+                            mult::MultZEM2, mult::MultZPA, mult::MultZPC,
+                            evsel::NumTracksInTimeRange,     // add occupancy in specified time interval by a number of tracks from nearby collisions
+                            evsel::SumAmpFT0CInTimeRange,    // add occupancy in specified time interval by a sum of FT0C amplitudes from nearby collisions
+                            udcollision::GapSide,            // UPC info: 0 for side A, 1 for side C, 2 for both sides, 3 neither A or C, 4 not enough or too many pv contributors
+                            udcollision::TotalFT0AmplitudeA, // UPC info: re-assigned FT0-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFT0AmplitudeC, // UPC info: re-assigned FT0-C amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFV0AmplitudeA, // UPC info: re-assigned FV0-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFDDAmplitudeA, // UPC info: re-assigned FDD-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFDDAmplitudeC, // UPC info: re-assigned FDD-C amplitude, in case of SG event, from the most active bc
+                            udzdc::EnergyCommonZNA,          // UPC info: re-assigned ZN-A amplitude, in case of SG event, from the most active bc
+                            udzdc::EnergyCommonZNC,          // UPC info: re-assigned ZN-C amplitude, in case of SG event, from the most active bc
+
+                            collision::Flags, // Contains Vertex::Flags, with most notably the UPCMode to know whether the vertex has been found using UPC settings
+                            evsel::Alias,     // trigger aliases (e.g. kTVXinTRD for v2)
+                            evsel::Rct,       // Bitmask of RCT flags
+
+                            // Dynamic columns for manipulating information
+                            // stracollision::TotalFV0AmplitudeA<mult::MultFV0A>,
+                            // stracollision::TotalFT0AmplitudeA<mult::MultFT0A>,
+                            // stracollision::TotalFT0AmplitudeC<mult::MultFT0C>,
+                            // stracollision::TotalFDDAmplitudeA<mult::MultFDDA>,
+                            // stracollision::TotalFDDAmplitudeC<mult::MultFDDC>,
+                            // stracollision::EnergyCommonZNA<mult::MultZNA>,
+                            // stracollision::EnergyCommonZNC<mult::MultZNC>,
+                            stracollision::IsUPC<udcollision::GapSide>);
+
+DECLARE_SOA_TABLE(StraEvSelsRun2, "AOD", "STRAEVSELSRUN2",    //! debug information
+                  evsel::Sel8, evsel::Sel7, evsel::Selection, //! event selection: sel8
+                  mult::MultFT0A, mult::MultFT0C,             // FIT detectors
+                  mult::MultFV0A, mult::MultFV0C,
+                  mult::MultFDDA, mult::MultFDDC,
+                  run2::SPDClustersL0, run2::SPDClustersL1,     // SPD detectors
+                  mult::MultNTracksPVeta1,                      // track multiplicities with eta cut for INEL>0
+                  mult::MultTracklets,                          // multiplicity with tracklets (only Run2)
+                  mult::MultPVTotalContributors,                // number of PV contribs total
+                  mult::MultNTracksGlobal,                      // global track multiplicities
+                  mult::MultNTracksITSTPC,                      // track multiplicities, PV contribs, no eta cut
+                  mult::MultAllTracksTPCOnly,                   // TPConly track multiplicities, all, no eta cut
+                  mult::MultAllTracksITSTPC,                    // ITSTPC track multiplicities, all, no eta cut
+                  mult::MultZNA, mult::MultZNC, mult::MultZEM1, // ZDC signals
+                  mult::MultZEM2, mult::MultZPA, mult::MultZPC,
+                  evsel::Alias); // trigger aliases (e.g. kTVXinTRD for v2)
 
 DECLARE_SOA_TABLE(StraFT0AQVs, "AOD", "STRAFT0AQVS", //! t0a Qvec
                   qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::SumAmplFT0A);
@@ -186,29 +293,54 @@ DECLARE_SOA_TABLE(StraTPCQVs, "AOD", "STRATPCQVS", //! tpc Qvec
                   qvec::QvecBPosRe, qvec::QvecBPosIm, epcalibrationtable::QTPCR);
 DECLARE_SOA_TABLE(StraFT0CQVsEv, "AOD", "STRAFT0CQVSEv", //! events used to compute t0c Qvec
                   epcalibrationtable::TriggerEventEP);
-DECLARE_SOA_TABLE(StraStamps, "AOD", "STRASTAMPS", //! information for ID-ing mag field if needed
+DECLARE_SOA_TABLE(StraZDCSP, "AOD", "STRAZDCSP", //! ZDC SP information
+                  spcalibrationtable::TriggerEventSP,
+                  spcalibrationtable::PsiZDCA, spcalibrationtable::PsiZDCC, spcalibrationtable::QXZDCA, spcalibrationtable::QXZDCC, spcalibrationtable::QYZDCA, spcalibrationtable::QYZDCC);
+DECLARE_SOA_TABLE(StraStamps_000, "AOD", "STRASTAMPS", //! information for ID-ing mag field if needed
                   bc::RunNumber, timestamp::Timestamp);
+DECLARE_SOA_TABLE_VERSIONED(StraStamps_001, "AOD", "STRASTAMPS", 1, //! information for ID-ing mag field if needed
+                            bc::RunNumber, timestamp::Timestamp, bc::GlobalBC);
 
 using StraRawCents = StraRawCents_004;
-using StraEvSels = StraEvSels_002;
+using StraCents = StraCents_001;
+using StraEvSels = StraEvSels_005;
+using StraStamps = StraStamps_001;
 using StraCollision = StraCollisions::iterator;
-using StraCent = StraCents::iterator;
+using StraCent = StraCents_001::iterator;
+
+namespace stramccollision
+{
+DECLARE_SOA_COLUMN(TotalMultMCParticles, totalMultMCParticles, int); //! total number of MC particles in a generated collision
+} // namespace stramccollision
 
 //______________________________________________________
 // for correlating information with MC
 // also allows for collision association cross-checks
-DECLARE_SOA_TABLE(StraMCCollisions, "AOD", "STRAMCCOLLISION", //! MC collision properties
+DECLARE_SOA_TABLE(StraMCCollisions_000, "AOD", "STRAMCCOLLISION", //! MC collision properties
                   o2::soa::Index<>, mccollision::PosX, mccollision::PosY, mccollision::PosZ,
                   mccollision::ImpactParameter);
-DECLARE_SOA_TABLE(StraMCCollMults, "AOD", "STRAMCCOLLMULTS", //! MC collision multiplicities
-                  mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, o2::soa::Marker<2>);
-
+DECLARE_SOA_TABLE_VERSIONED(StraMCCollisions_001, "AOD", "STRAMCCOLLISION", 1, //! debug information
+                            o2::soa::Index<>, mccollision::PosX, mccollision::PosY, mccollision::PosZ,
+                            mccollision::ImpactParameter, mccollision::EventPlaneAngle);
+DECLARE_SOA_TABLE_VERSIONED(StraMCCollisions_002, "AOD", "STRAMCCOLLISION", 2, //! debug information
+                            o2::soa::Index<>, mccollision::PosX, mccollision::PosY, mccollision::PosZ,
+                            mccollision::ImpactParameter, mccollision::EventPlaneAngle, mccollision::GeneratorsID);
+using StraMCCollisions = StraMCCollisions_002;
 using StraMCCollision = StraMCCollisions::iterator;
+
+DECLARE_SOA_TABLE(StraMCCollMults_000, "AOD", "STRAMCCOLLMULTS", //! MC collision multiplicities
+                  mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, o2::soa::Marker<2>);
+DECLARE_SOA_TABLE_VERSIONED(StraMCCollMults_001, "AOD", "STRAMCCOLLMULTS", 1, //! MC collision multiplicities
+                            mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, stramccollision::TotalMultMCParticles);
+
+using StraMCCollMults = StraMCCollMults_001;
 
 namespace dautrack
 {
 //______________________________________________________
 // Daughter track declarations for derived data analysis
+// These definitions are for the first version of the table
+// The latest version will inherit most properties from TracksExtra
 DECLARE_SOA_COLUMN(ITSChi2PerNcl, itsChi2PerNcl, float);        //! ITS chi2 per N cluster
 DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t);          //! detector map for reference (see DetectorMapEnum)
 DECLARE_SOA_COLUMN(ITSClusterSizes, itsClusterSizes, uint32_t); //! ITS cluster sizes per layer
@@ -253,6 +385,18 @@ DECLARE_SOA_DYNAMIC_COLUMN(HasITSTracker, hasITSTracker, //! Flag to check if tr
                            [](uint8_t detectorMap, float itsChi2PerNcl) -> bool { return (detectorMap & o2::aod::track::ITS) ? (itsChi2PerNcl > -1e-3f) : false; });
 DECLARE_SOA_DYNAMIC_COLUMN(HasITSAfterburner, hasITSAfterburner, //! Flag to check if track is from ITS AB
                            [](uint8_t detectorMap, float itsChi2PerNcl) -> bool { return (detectorMap & o2::aod::track::ITS) ? (itsChi2PerNcl < -1e-3f) : false; });
+
+// sub-namespace for compatibility purposes
+namespace compatibility
+{                                                    // adds dynamics that ensure full backwards compatibility with previous getters
+DECLARE_SOA_DYNAMIC_COLUMN(TPCClusters, tpcClusters, //! number of TPC clusters
+                           [](uint8_t tpcNClsFindable, int8_t tpcNClsFindableMinusFound) -> int16_t { return (int16_t)tpcNClsFindable - tpcNClsFindableMinusFound; });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCCrossedRows, tpcCrossedRows, //! Number of crossed TPC Rows
+                           [](uint8_t tpcNClsFindable, int8_t TPCNClsFindableMinusCrossedRows) -> int16_t { return (int16_t)tpcNClsFindable - TPCNClsFindableMinusCrossedRows; });
+DECLARE_SOA_DYNAMIC_COLUMN(ITSChi2PerNcl, itsChi2PerNcl, //! simple equivalent return
+                           [](float itsChi2NCl) -> float { return (float)itsChi2NCl; });
+} // namespace compatibility
+
 } // namespace dautrack
 
 DECLARE_SOA_TABLE(DauTrackExtras_000, "AOD", "DAUTRACKEXTRA", //! detector properties of decay daughters
@@ -284,10 +428,77 @@ DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_001, "AOD", "DAUTRACKEXTRA", 1, //! d
                             dautrack::HasITSTracker<dautrack::DetectorMap, dautrack::ITSChi2PerNcl>,
                             dautrack::HasITSAfterburner<dautrack::DetectorMap, dautrack::ITSChi2PerNcl>);
 
+DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_002, "AOD", "DAUTRACKEXTRA", 2, //! detector properties of decay daughters
+                            track::ITSChi2NCl,
+                            dautrack::DetectorMap, // here we don´t save everything so we simplify this
+                            track::ITSClusterSizes,
+                            track::TPCNClsFindable,
+                            track::TPCNClsFindableMinusFound,
+                            track::TPCNClsFindableMinusCrossedRows,
+
+                            // Dynamics for ITS matching TracksExtra
+                            track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
+                            track::v001::ITSClsSizeInLayer<track::ITSClusterSizes>,
+                            track::v001::ITSClusterMap<track::ITSClusterSizes>,
+                            track::v001::ITSNCls<track::ITSClusterSizes>,
+                            track::v001::IsITSAfterburner<track::v001::DetectorMap, track::ITSChi2NCl>,
+                            /*compatibility*/ dautrack::HasITSTracker<dautrack::DetectorMap, track::ITSChi2NCl>,
+                            /*compatibility*/ dautrack::HasITSAfterburner<dautrack::DetectorMap, track::ITSChi2NCl>,
+
+                            // dynamics for TPC tracking properties matching main data model
+                            track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            /*compatibility*/ dautrack::compatibility::TPCClusters<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            /*compatibility*/ dautrack::compatibility::TPCCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            /*compatibility*/ dautrack::compatibility::ITSChi2PerNcl<track::ITSChi2NCl>,
+
+                            // dynamics to identify detectors
+                            dautrack::HasITS<dautrack::DetectorMap>,
+                            dautrack::HasTPC<dautrack::DetectorMap>,
+                            dautrack::HasTRD<dautrack::DetectorMap>,
+                            dautrack::HasTOF<dautrack::DetectorMap>);
+
+DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_003, "AOD", "DAUTRACKEXTRA", 3, //! detector properties of decay daughters
+                            track::ITSChi2NCl,
+                            track::TPCChi2NCl,
+                            dautrack::DetectorMap, // here we don´t save everything so we simplify this
+                            track::ITSClusterSizes,
+                            track::TPCNClsFindable,
+                            track::TPCNClsFindableMinusFound,
+                            track::TPCNClsFindableMinusCrossedRows,
+                            track::TPCNClsShared,
+
+                            // Dynamics for ITS matching TracksExtra
+                            track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
+                            track::v001::ITSClsSizeInLayer<track::ITSClusterSizes>,
+                            track::v001::ITSClusterMap<track::ITSClusterSizes>,
+                            track::v001::ITSNCls<track::ITSClusterSizes>,
+                            track::v001::IsITSAfterburner<track::v001::DetectorMap, track::ITSChi2NCl>,
+                            /*compatibility*/ dautrack::HasITSTracker<dautrack::DetectorMap, track::ITSChi2NCl>,
+                            /*compatibility*/ dautrack::HasITSAfterburner<dautrack::DetectorMap, track::ITSChi2NCl>,
+
+                            // dynamics for TPC tracking properties matching main data model
+                            track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            /*compatibility*/ dautrack::compatibility::TPCClusters<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            /*compatibility*/ dautrack::compatibility::TPCCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            /*compatibility*/ dautrack::compatibility::ITSChi2PerNcl<track::ITSChi2NCl>,
+
+                            // dynamics to identify detectors
+                            dautrack::HasITS<dautrack::DetectorMap>,
+                            dautrack::HasTPC<dautrack::DetectorMap>,
+                            dautrack::HasTRD<dautrack::DetectorMap>,
+                            dautrack::HasTOF<dautrack::DetectorMap>);
+
 DECLARE_SOA_TABLE(DauTrackMCIds, "AOD", "DAUTRACKMCID", // index table when using AO2Ds
                   dautrack::ParticleMCId);
 
-using DauTrackExtras = DauTrackExtras_001;
+using DauTrackExtras = DauTrackExtras_003;
 using DauTrackExtra = DauTrackExtras::iterator;
 
 namespace motherParticle
@@ -364,7 +575,7 @@ DECLARE_SOA_COLUMN(DCAV0Daughters, dcaV0daughters, float); //! DCA between V0 da
 DECLARE_SOA_COLUMN(DCAPosToPV, dcapostopv, float);         //! DCA positive prong to PV
 DECLARE_SOA_COLUMN(DCANegToPV, dcanegtopv, float);         //! DCA negative prong to PV
 DECLARE_SOA_COLUMN(V0CosPA, v0cosPA, float);               //! V0 CosPA
-DECLARE_SOA_COLUMN(DCAV0ToPV, dcav0topv, float);           //! DCA V0 to PV
+DECLARE_SOA_COLUMN(DCAV0ToPV, dcav0topv, float);           //! DCA V0 to PV (3D)
 
 // Type of V0 from the svertexer (photon, regular, from cascade)
 DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t); //! type of V0. 0: built solely for cascades (does not pass standard V0 cuts), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1.
@@ -408,41 +619,27 @@ DECLARE_SOA_COLUMN(GeneratedLambda, generatedLambda, std::vector<uint32_t>);    
 DECLARE_SOA_COLUMN(GeneratedAntiLambda, generatedAntiLambda, std::vector<uint32_t>); //! AntiLambda binned generated data
 
 //______________________________________________________
-// EXPRESSION COLUMNS
-DECLARE_SOA_EXPRESSION_COLUMN(Px, px, //! V0 px
-                              float, 1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg);
-DECLARE_SOA_EXPRESSION_COLUMN(Py, py, //! V0 py
-                              float, 1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg);
-DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //! V0 pz
-                              float, 1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg);
-DECLARE_SOA_EXPRESSION_COLUMN(Pt, pt, float, //! Transverse momentum in GeV/c
-                              nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) *
-                                      (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
-                                    (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg)));
-DECLARE_SOA_EXPRESSION_COLUMN(P, p, float, //! Total momentum in GeV/c
-                              nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) *
-                                      (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
-                                    (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) +
-                                    (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) * (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)));
-DECLARE_SOA_EXPRESSION_COLUMN(Phi, phi, float, //! Phi in the range [0, 2pi)
-                              o2::constants::math::PI + natan2(-1.0f * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg), -1.0f * (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg)));
-DECLARE_SOA_EXPRESSION_COLUMN(Eta, eta, float, //! Pseudorapidity, conditionally defined to avoid FPEs
-                              ifnode((nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) * (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
-                                            (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) +
-                                            (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) * (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)) -
-                                      (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)) < static_cast<float>(1e-7),
-                                     ifnode((1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) < 0.f, -100.f, 100.f),
-                                     0.5f * nlog((nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) * (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
-                                                        (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) +
-                                                        (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) * (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)) +
-                                                  (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)) /
-                                                 (nsqrt((1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) * (1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg) +
-                                                        (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) * (1.f * aod::v0data::pypos + 1.f * aod::v0data::pyneg) +
-                                                        (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg) * (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)) -
-                                                  (1.f * aod::v0data::pzpos + 1.f * aod::v0data::pzneg)))));
-
-//______________________________________________________
 // DYNAMIC COLUMNS
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //! V0 px
+                           [](float pxPos, float pxNeg) -> float { return pxPos + pxNeg; });
+DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //! V0 py
+                           [](float pyPos, float pyNeg) -> float { return pyPos + pyNeg; });
+DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! V0 pz
+                           [](float pzPos, float pzNeg) -> float { return pzPos + pzNeg; });
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! Transverse momentum in GeV/c
+                           [](float pxPos, float pyPos, float pxNeg, float pyNeg) -> float {
+                             return RecoDecay::sqrtSumOfSquares(pxPos + pxNeg, pyPos + pyNeg);
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! Total momentum in GeV/c
+                           [](float pxPos, float pyPos, float pzPos, float pxNeg, float pyNeg, float pzNeg) -> float {
+                             return RecoDecay::sqrtSumOfSquares(pxPos + pxNeg, pyPos + pyNeg, pzPos + pzNeg);
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //! Phi in the range [0, 2pi)
+                           [](float pxPos, float pyPos, float pxNeg, float pyNeg) -> float { return RecoDecay::phi(pxPos + pxNeg, pyPos + pyNeg); });
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, //! Pseudorapidity, conditionally defined to avoid FPEs
+                           [](float pxPos, float pyPos, float pzPos, float pxNeg, float pyNeg, float pzNeg) -> float {
+                             return RecoDecay::eta(std::array{pxPos + pxNeg, pyPos + pyNeg, pzPos + pzNeg});
+                           });
 // Account for rigidity in case of hypertriton
 DECLARE_SOA_DYNAMIC_COLUMN(PtHypertriton, ptHypertriton, //! V0 pT
                            [](float pxpos, float pypos, float pxneg, float pyneg) -> float { return RecoDecay::sqrtSumOfSquares(2.0f * pxpos + pxneg, 2.0f * pypos + pyneg); });
@@ -455,8 +652,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(V0Radius, v0radius, //! V0 decay radius (2D, centered
 
 // Distance Over To Mom
 DECLARE_SOA_DYNAMIC_COLUMN(DistOverTotMom, distovertotmom, //! PV to V0decay distance over total momentum
-                           [](float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ) {
-                             float P = RecoDecay::sqrtSumOfSquares(Px, Py, Pz);
+                           [](float X, float Y, float Z, float pxPos, float pyPos, float pzPos, float pxNeg, float pyNeg, float pzNeg, float pvX, float pvY, float pvZ) {
+                             float P = RecoDecay::sqrtSumOfSquares(pxPos + pxNeg, pyPos + pyNeg, pzPos + pzNeg);
                              return std::sqrt(std::pow(X - pvX, 2) + std::pow(Y - pvY, 2) + std::pow(Z - pvZ, 2)) / (P + 1E-10);
                            });
 
@@ -535,19 +732,23 @@ DECLARE_SOA_DYNAMIC_COLUMN(M, m, //! mass under a certain hypothesis (0:K0, 1:L,
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(YK0Short, yK0Short, //! V0 y with K0short hypothesis
-                           [](float Px, float Py, float Pz) -> float { return RecoDecay::y(std::array{Px, Py, Pz}, o2::constants::physics::MassKaonNeutral); });
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float {
+                             return RecoDecay::y(std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}, o2::constants::physics::MassKaonNeutral);
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(YLambda, yLambda, //! V0 y with lambda or antilambda hypothesis
-                           [](float Px, float Py, float Pz) -> float { return RecoDecay::y(std::array{Px, Py, Pz}, o2::constants::physics::MassLambda); });
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float {
+                             return RecoDecay::y(std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}, o2::constants::physics::MassLambda);
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(YHypertriton, yHypertriton, //! V0 y with hypertriton hypothesis
                            [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::y(std::array{2.0f * pxpos + pxneg, 2.0f * pypos + pyneg, 2.0f * pzpos + pzneg}, o2::constants::physics::MassHyperTriton); });
 DECLARE_SOA_DYNAMIC_COLUMN(YAntiHypertriton, yAntiHypertriton, //! V0 y with antihypertriton hypothesis
                            [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::y(std::array{pxpos + 2.0f * pxneg, pypos + 2.0f * pyneg, pzpos + 2.0f * pzneg}, o2::constants::physics::MassHyperTriton); });
 DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity, //! rapidity (0:K0, 1:L, 2:Lbar)
-                           [](float Px, float Py, float Pz, int value) -> float {
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg, int value) -> float {
                              if (value == 0)
-                               return RecoDecay::y(std::array{Px, Py, Pz}, o2::constants::physics::MassKaonNeutral);
+                               return RecoDecay::y(std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}, o2::constants::physics::MassKaonNeutral);
                              if (value == 1 || value == 2)
-                               return RecoDecay::y(std::array{Px, Py, Pz}, o2::constants::physics::MassLambda);
+                               return RecoDecay::y(std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}, o2::constants::physics::MassLambda);
                              return 0.0f;
                            });
 
@@ -594,110 +795,69 @@ DECLARE_SOA_TABLE(V0Indices, "AOD", "V0INDEX", //! index table when using AO2Ds
 DECLARE_SOA_TABLE(V0CollRefs, "AOD", "V0COLLREF", //! optional table to refer back to a collision
                   o2::soa::Index<>, v0data::StraCollisionId);
 
-DECLARE_SOA_TABLE(V0Extras, "AOD", "V0EXTRA", //! optional table to refer to custom track extras
-                  o2::soa::Index<>, v0data::PosTrackExtraId, v0data::NegTrackExtraId);
-
-DECLARE_SOA_TABLE(StoredV0Extras, "AOD1", "V0EXTRA", //! optional table to refer to custom track extras
-                  o2::soa::Index<>, v0data::PosTrackExtraId, v0data::NegTrackExtraId, soa::Marker<1>);
+DECLARE_SOA_TABLE_STAGED(V0Extras, "V0EXTRA", //! optional table to refer to custom track extras
+                         o2::soa::Index<>, v0data::PosTrackExtraId, v0data::NegTrackExtraId);
 
 DECLARE_SOA_TABLE(V0TrackXs, "AOD", "V0TRACKX", //! track X positions at minima when using AO2Ds
                   v0data::PosX, v0data::NegX, o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE_FULL(V0CoresBase, "V0Cores", "AOD", "V0CORE", //! core information about decay, viable with AO2Ds or derived
-                       o2::soa::Index<>,
-                       v0data::X, v0data::Y, v0data::Z,
-                       v0data::PxPos, v0data::PyPos, v0data::PzPos,
-                       v0data::PxNeg, v0data::PyNeg, v0data::PzNeg,
-                       v0data::DCAV0Daughters, v0data::DCAPosToPV, v0data::DCANegToPV,
-                       v0data::V0CosPA, v0data::DCAV0ToPV, v0data::V0Type,
+DECLARE_SOA_TABLE_STAGED(V0CoresBase, "V0CORE", //! core information about decay, viable with AO2Ds or derived
+                         o2::soa::Index<>,
+                         v0data::X, v0data::Y, v0data::Z,
+                         v0data::PxPos, v0data::PyPos, v0data::PzPos,
+                         v0data::PxNeg, v0data::PyNeg, v0data::PzNeg,
+                         v0data::DCAV0Daughters, v0data::DCAPosToPV, v0data::DCANegToPV,
+                         v0data::V0CosPA, v0data::DCAV0ToPV, v0data::V0Type,
 
-                       // Dynamic columns
-                       v0data::PtHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
-                       v0data::PtAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
-                       v0data::V0Radius<v0data::X, v0data::Y>,
-                       v0data::DistOverTotMom<v0data::X, v0data::Y, v0data::Z, v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::Alpha<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::QtArm<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::PsiPair<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::PFracPos<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::PFracNeg<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>, // 24
+                         // Dynamic columns
+                         v0data::Px<v0data::PxPos, v0data::PxNeg>,
+                         v0data::Py<v0data::PyPos, v0data::PyNeg>,
+                         v0data::Pz<v0data::PzPos, v0data::PzNeg>,
+                         v0data::Pt<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
+                         v0data::P<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::Phi<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
+                         v0data::Eta<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::PtHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
+                         v0data::PtAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
+                         v0data::V0Radius<v0data::X, v0data::Y>,
+                         v0data::DistOverTotMom<v0data::X, v0data::Y, v0data::Z, v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::Alpha<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::QtArm<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::PsiPair<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::PFracPos<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::PFracNeg<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>, // 24
 
-                       // Invariant masses
-                       v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MAntiLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MK0Short<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MGamma<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::M<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         // Invariant masses
+                         v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::MAntiLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::MK0Short<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::MGamma<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::MHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::MAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::M<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
 
-                       // Longitudinal
-                       v0data::YK0Short<v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::YLambda<v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::YHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::YAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::Rapidity<v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::NegativePt<v0data::PxNeg, v0data::PyNeg>,
-                       v0data::PositivePt<v0data::PxPos, v0data::PyPos>,
-                       v0data::NegativeEta<v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::NegativePhi<v0data::PxNeg, v0data::PyNeg>,
-                       v0data::PositiveEta<v0data::PxPos, v0data::PyPos, v0data::PzPos>,
-                       v0data::PositivePhi<v0data::PxPos, v0data::PyPos>,
-                       v0data::IsStandardV0<v0data::V0Type>,
-                       v0data::IsPhotonTPConly<v0data::V0Type>,
-                       o2::soa::Marker<1>);
-
-// extended table with expression columns that can be used as arguments of dynamic columns
-DECLARE_SOA_EXTENDED_TABLE_USER(V0Cores, V0CoresBase, "V0COREEXT",                                                    //!
-                                v0data::Px, v0data::Py, v0data::Pz, v0data::Pt, v0data::P, v0data::Phi, v0data::Eta); // the table name has here to be the one with EXT which is not nice and under study
-
-DECLARE_SOA_TABLE_FULL(StoredV0CoresBase, "V0Cores", "AOD1", "V0CORE", //! core information about decay, viable with AO2Ds or derived
-                       o2::soa::Index<>,
-                       v0data::X, v0data::Y, v0data::Z,
-                       v0data::PxPos, v0data::PyPos, v0data::PzPos,
-                       v0data::PxNeg, v0data::PyNeg, v0data::PzNeg,
-                       v0data::DCAV0Daughters, v0data::DCAPosToPV, v0data::DCANegToPV,
-                       v0data::V0CosPA, v0data::DCAV0ToPV, v0data::V0Type,
-
-                       // Dynamic columns
-                       v0data::PtHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
-                       v0data::PtAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
-                       v0data::V0Radius<v0data::X, v0data::Y>,
-                       v0data::DistOverTotMom<v0data::X, v0data::Y, v0data::Z, v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::Alpha<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::QtArm<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::PsiPair<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::PFracPos<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::PFracNeg<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>, // 24
-
-                       // Invariant masses
-                       v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MAntiLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MK0Short<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MGamma<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::M<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-
-                       // Longitudinal
-                       v0data::YK0Short<v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::YLambda<v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::YHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::YAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::Rapidity<v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::NegativePt<v0data::PxNeg, v0data::PyNeg>,
-                       v0data::PositivePt<v0data::PxPos, v0data::PyPos>,
-                       v0data::NegativeEta<v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::NegativePhi<v0data::PxNeg, v0data::PyNeg>,
-                       v0data::PositiveEta<v0data::PxPos, v0data::PyPos, v0data::PzPos>,
-                       v0data::PositivePhi<v0data::PxPos, v0data::PyPos>,
-                       v0data::IsStandardV0<v0data::V0Type>,
-                       v0data::IsPhotonTPConly<v0data::V0Type>,
-                       o2::soa::Marker<3>);
+                         // Longitudinal
+                         v0data::YK0Short<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::YLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::YHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::YAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::Rapidity<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::NegativePt<v0data::PxNeg, v0data::PyNeg>,
+                         v0data::PositivePt<v0data::PxPos, v0data::PyPos>,
+                         v0data::NegativeEta<v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::NegativePhi<v0data::PxNeg, v0data::PyNeg>,
+                         v0data::PositiveEta<v0data::PxPos, v0data::PyPos, v0data::PzPos>,
+                         v0data::PositivePhi<v0data::PxPos, v0data::PyPos>,
+                         v0data::IsStandardV0<v0data::V0Type>,
+                         v0data::IsPhotonTPConly<v0data::V0Type>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
-DECLARE_SOA_EXTENDED_TABLE_USER(StoredV0Cores, StoredV0CoresBase, "V0COREEXT",                                                            //!
-                                v0data::Px, v0data::Py, v0data::Pz, v0data::Pt, v0data::P, v0data::Phi, v0data::Eta, o2::soa::Marker<2>); // the table name has here to be the one with EXT which is not nice and under study
+// DECLARE_SOA_EXTENDED_TABLE_USER(V0Cores, V0CoresBase, "V0COREEXT",                                                    //!
+// v0data::Px, v0data::Py, v0data::Pz, v0data::Pt, v0data::P, v0data::Phi, v0data::Eta); // the table name has here to be the one with EXT which is not nice and under study
+
+// // extended table with expression columns that can be used as arguments of dynamic columns
+// DECLARE_SOA_EXTENDED_TABLE_USER(StoredV0Cores, StoredV0CoresBase, "V0COREEXT",                                                            //!
+//                                 v0data::Px, v0data::Py, v0data::Pz, v0data::Pt, v0data::P, v0data::Phi, v0data::Eta, o2::soa::Marker<2>); // the table name has here to be the one with EXT which is not nice and under study
 
 DECLARE_SOA_TABLE(V0TraPosAtDCAs, "AOD", "V0TRAPOSATDCAs", //! positions of tracks at their DCA for debug
                   v0data::XPosAtDCA, v0data::YPosAtDCA, v0data::ZPosAtDCA,
@@ -731,10 +891,17 @@ DECLARE_SOA_TABLE_FULL(StoredV0fCCores, "V0fCCores", "AOD", "V0FCCORE", //! core
                        v0data::V0CosPA, v0data::DCAV0ToPV, v0data::V0Type,
 
                        // Dynamic columns
+                       v0data::Px<v0data::PxPos, v0data::PxNeg>,
+                       v0data::Py<v0data::PyPos, v0data::PyNeg>,
+                       v0data::Pz<v0data::PzPos, v0data::PzNeg>,
+                       v0data::Pt<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
+                       v0data::P<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                       v0data::Phi<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
+                       v0data::Eta<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::PtHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
                        v0data::PtAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
                        v0data::V0Radius<v0data::X, v0data::Y>,
-                       v0data::DistOverTotMom<v0data::X, v0data::Y, v0data::Z, v0data::Px, v0data::Py, v0data::Pz>,
+                       v0data::DistOverTotMom<v0data::X, v0data::Y, v0data::Z, v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::Alpha<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::QtArm<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::PsiPair<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
@@ -751,11 +918,11 @@ DECLARE_SOA_TABLE_FULL(StoredV0fCCores, "V0fCCores", "AOD", "V0FCCORE", //! core
                        v0data::M<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
 
                        // Longitudinal
-                       v0data::YK0Short<v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::YLambda<v0data::Px, v0data::Py, v0data::Pz>,
+                       v0data::YK0Short<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                       v0data::YLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::YHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::YAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::Rapidity<v0data::Px, v0data::Py, v0data::Pz>,
+                       v0data::Rapidity<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
                        v0data::NegativePt<v0data::PxNeg, v0data::PyNeg>,
                        v0data::PositivePt<v0data::PxPos, v0data::PyPos>,
                        v0data::NegativeEta<v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
@@ -767,66 +934,66 @@ DECLARE_SOA_TABLE_FULL(StoredV0fCCores, "V0fCCores", "AOD", "V0FCCORE", //! core
                        o2::soa::Marker<2>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
-DECLARE_SOA_EXTENDED_TABLE_USER(V0fCCores, StoredV0fCCores, "V0FCCOREEXT",                                            //!
-                                v0data::Px, v0data::Py, v0data::Pz, v0data::Pt, v0data::P, v0data::Phi, v0data::Eta); // the table name has here to be the one with EXT which is not nice and under study
+// DECLARE_SOA_EXTENDED_TABLE_USER(V0fCCores, StoredV0fCCores, "V0FCCOREEXT",                                            //!
+//                                 v0data::Px, v0data::Py, v0data::Pz, v0data::Pt, v0data::P, v0data::Phi, v0data::Eta); // the table name has here to be the one with EXT which is not nice and under study
 
 DECLARE_SOA_TABLE_FULL(V0fCCovs, "V0fCCovs", "AOD", "V0FCCOVS", //! V0 covariance matrices
                        v0data::PositionCovMat, v0data::MomentumCovMat, o2::soa::Marker<2>);
 
-DECLARE_SOA_TABLE(V0MCCores_000, "AOD", "V0MCCORE", //! MC properties of the V0 for posterior analysis
-                  v0data::PDGCode, v0data::PDGCodeMother,
-                  v0data::PDGCodePositive, v0data::PDGCodeNegative,
-                  v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
-                  v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
-                  v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC);
+DECLARE_SOA_TABLE_STAGED(V0MCCores_000, "V0MCCORE", //! MC properties of the V0 for posterior analysis
+                         v0data::PDGCode, v0data::PDGCodeMother,
+                         v0data::PDGCodePositive, v0data::PDGCodeNegative,
+                         v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
+                         v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
+                         v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC);
 
-DECLARE_SOA_TABLE_VERSIONED(V0MCCores_001, "AOD", "V0MCCORE", 1, //! debug information
-                            v0data::ParticleIdMC,                //! MC properties of the V0 for posterior analysis
-                            v0data::PDGCode, v0data::PDGCodeMother,
-                            v0data::PDGCodePositive, v0data::PDGCodeNegative,
-                            v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
-                            v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
-                            v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC);
+DECLARE_SOA_TABLE_STAGED_VERSIONED(V0MCCores_001, "V0MCCORE", 1, //! debug information
+                                   v0data::ParticleIdMC,         //! MC properties of the V0 for posterior analysis
+                                   v0data::PDGCode, v0data::PDGCodeMother,
+                                   v0data::PDGCodePositive, v0data::PDGCodeNegative,
+                                   v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
+                                   v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
+                                   v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC);
 
-DECLARE_SOA_TABLE_VERSIONED(V0MCCores_002, "AOD", "V0MCCORE", 2, //! debug information
-                            v0data::ParticleIdMC,                //! MC properties of the V0 for posterior analysis
-                            v0data::PDGCode, v0data::PDGCodeMother,
-                            v0data::PDGCodePositive, v0data::PDGCodeNegative,
-                            v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
-                            v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
-                            v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC,
-                            v0data::PxMC, v0data::PyMC, v0data::PzMC,
-                            v0data::RapidityMC<v0data::PxMC, v0data::PyMC, v0data::PzMC>,
-                            v0data::NegativePtMC<v0data::PxNegMC, v0data::PyNegMC>,
-                            v0data::PositivePtMC<v0data::PxPosMC, v0data::PyPosMC>,
-                            v0data::PtMC<v0data::PxMC, v0data::PyMC>);
+DECLARE_SOA_TABLE_STAGED_VERSIONED(V0MCCores_002, "V0MCCORE", 2, //! debug information
+                                   v0data::ParticleIdMC,         //! MC properties of the V0 for posterior analysis
+                                   v0data::PDGCode, v0data::PDGCodeMother,
+                                   v0data::PDGCodePositive, v0data::PDGCodeNegative,
+                                   v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
+                                   v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
+                                   v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC,
+                                   v0data::PxMC, v0data::PyMC, v0data::PzMC,
+                                   v0data::RapidityMC<v0data::PxMC, v0data::PyMC, v0data::PzMC>,
+                                   v0data::NegativePtMC<v0data::PxNegMC, v0data::PyNegMC>,
+                                   v0data::PositivePtMC<v0data::PxPosMC, v0data::PyPosMC>,
+                                   v0data::PtMC<v0data::PxMC, v0data::PyMC>);
 
-DECLARE_SOA_TABLE(StoredV0MCCores_000, "AOD", "V0MCCORE", //! MC properties of the V0 for posterior analysis
-                  v0data::PDGCode, v0data::PDGCodeMother,
-                  v0data::PDGCodePositive, v0data::PDGCodeNegative,
-                  v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
-                  v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
-                  v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC,
-                  o2::soa::Marker<1>);
+// DECLARE_SOA_TABLE(StoredV0MCCores_000, "AOD", "V0MCCORE", //! MC properties of the V0 for posterior analysis
+//                   v0data::PDGCode, v0data::PDGCodeMother,
+//                   v0data::PDGCodePositive, v0data::PDGCodeNegative,
+//                   v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
+//                   v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
+//                   v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC,
+//                   o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE_VERSIONED(StoredV0MCCores_001, "AOD", "V0MCCORE", 1, //! debug information
-                            v0data::ParticleIdMC,                      //! MC properties of the V0 for posterior analysis
-                            v0data::PDGCode, v0data::PDGCodeMother,
-                            v0data::PDGCodePositive, v0data::PDGCodeNegative,
-                            v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
-                            v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
-                            v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC,
-                            o2::soa::Marker<1>);
+// DECLARE_SOA_TABLE_VERSIONED(StoredV0MCCores_001, "AOD", "V0MCCORE", 1, //! debug information
+//                             v0data::ParticleIdMC,                      //! MC properties of the V0 for posterior analysis
+//                             v0data::PDGCode, v0data::PDGCodeMother,
+//                             v0data::PDGCodePositive, v0data::PDGCodeNegative,
+//                             v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
+//                             v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
+//                             v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC,
+//                             o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE_VERSIONED(StoredV0MCCores_002, "AOD", "V0MCCORE", 2, //! debug information
-                            v0data::ParticleIdMC,                      //! MC properties of the V0 for posterior analysis
-                            v0data::PDGCode, v0data::PDGCodeMother,
-                            v0data::PDGCodePositive, v0data::PDGCodeNegative,
-                            v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
-                            v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
-                            v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC,
-                            v0data::PxMC, v0data::PyMC, v0data::PzMC,
-                            o2::soa::Marker<1>);
+// DECLARE_SOA_TABLE_VERSIONED(StoredV0MCCores_002, "AOD", "V0MCCORE", 2, //! debug information
+//                             v0data::ParticleIdMC,                      //! MC properties of the V0 for posterior analysis
+//                             v0data::PDGCode, v0data::PDGCodeMother,
+//                             v0data::PDGCodePositive, v0data::PDGCodeNegative,
+//                             v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
+//                             v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
+//                             v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC,
+//                             v0data::PxMC, v0data::PyMC, v0data::PzMC,
+//                             o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(V0MCCollRefs, "AOD", "V0MCCOLLREF", //! refers MC candidate back to proper MC Collision
                   o2::soa::Index<>, v0data::StraMCCollisionId, o2::soa::Marker<2>);
@@ -835,11 +1002,11 @@ DECLARE_SOA_TABLE(GeK0Short, "AOD", "GeK0Short", v0data::GeneratedK0Short);
 DECLARE_SOA_TABLE(GeLambda, "AOD", "GeLambda", v0data::GeneratedLambda);
 DECLARE_SOA_TABLE(GeAntiLambda, "AOD", "GeAntiLambda", v0data::GeneratedAntiLambda);
 
-DECLARE_SOA_TABLE(V0MCMothers, "AOD", "V0MCMOTHER", //! optional table for MC mothers
-                  o2::soa::Index<>, v0data::MotherMCPartId);
+DECLARE_SOA_TABLE_STAGED(V0MCMothers, "V0MCMOTHER", //! optional table for MC mothers
+                         o2::soa::Index<>, v0data::MotherMCPartId);
 
-DECLARE_SOA_TABLE(StoredV0MCMothers, "AOD1", "V0MCMOTHER", //! optional table for MC mothers
-                  o2::soa::Index<>, v0data::MotherMCPartId, o2::soa::Marker<1>);
+using V0fCCores = StoredV0fCCores;
+using V0Cores = V0CoresBase;
 
 using V0MCCores = V0MCCores_002;
 using StoredV0MCCores = StoredV0MCCores_002;
@@ -1008,12 +1175,21 @@ DECLARE_SOA_COLUMN(BachX, bachX, float); //! bachelor track X at min
 //______________________________________________________
 // REGULAR COLUMNS FOR CASCCOVS
 // Saved from finding: covariance matrix of parent track (on request)
-DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]);                //! covariance matrix elements
-DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]);                //! covariance matrix elements
+DECLARE_SOA_DYNAMIC_COLUMN(PositionCovMat, positionCovMat, //! for transparent handling
+                           [](const float covMat[21]) -> std::vector<float> {
+                            std::vector<float> posCovMat { covMat[0], covMat[1], covMat[2], covMat[3], covMat[4], covMat[5] };
+                            return posCovMat; });
+DECLARE_SOA_DYNAMIC_COLUMN(MomentumCovMat, momentumCovMat, //! for transparent handling
+                           [](const float covMat[21]) -> std::vector<float> {
+                            std::vector<float> momCovMat { covMat[9], covMat[13], covMat[14], covMat[18], covMat[19], covMat[20] };
+                            return momCovMat; });
 DECLARE_SOA_COLUMN(KFTrackCovMat, kfTrackCovMat, float[21]);                 //! covariance matrix elements for KF method (Cascade)
 DECLARE_SOA_COLUMN(KFTrackCovMatV0, kfTrackCovMatV0, float[21]);             //! covariance matrix elements for KF method (V0)
 DECLARE_SOA_COLUMN(KFTrackCovMatV0DauPos, kfTrackCovMatV0DauPos, float[21]); //! covariance matrix elements for KF method (V0 pos daughter)
 DECLARE_SOA_COLUMN(KFTrackCovMatV0DauNeg, kfTrackCovMatV0DauNeg, float[21]); //! covariance matrix elements for KF method (V0 neg daughter)
+
+// for CascCovs / TraCascCovs, meant to provide consistent interface everywhere
+DECLARE_SOA_COLUMN(CovMat, covMat, float[21]); //! covariance matrix elements
 
 //______________________________________________________
 // REGULAR COLUMNS FOR CASCBBS
@@ -1094,13 +1270,20 @@ DECLARE_SOA_DYNAMIC_COLUMN(CascRadius, cascradius, //!
 
 // CosPAs
 DECLARE_SOA_DYNAMIC_COLUMN(V0CosPA, v0cosPA, //!
-                           [](float Xlambda, float Ylambda, float Zlambda, float PxLambda, float PyLambda, float PzLambda, float pvX, float pvY, float pvZ) -> float { return RecoDecay::cpa(std::array{pvX, pvY, pvZ}, std::array{Xlambda, Ylambda, Zlambda}, std::array{PxLambda, PyLambda, PzLambda}); });
+                           [](float Xlambda, float Ylambda, float Zlambda, float pxPos, float pyPos, float pzPos, float pxNeg, float pyNeg, float pzNeg, float pvX, float pvY, float pvZ) -> float {
+                             return RecoDecay::cpa(std::array{pvX, pvY, pvZ}, std::array{Xlambda, Ylambda, Zlambda}, std::array{pxPos + pxNeg, pyPos + pyNeg, pzPos + pzNeg});
+                           });
 // DECLARE_SOA_DYNAMIC_COLUMN(CascCosPA, casccosPA, //!
 //                            [](float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ) -> float { return RecoDecay::cpa(std::array{pvX, pvY, pvZ}, std::array{X, Y, Z}, std::array{Px, Py, Pz}); });
 DECLARE_SOA_DYNAMIC_COLUMN(CascCosPA, casccosPA, //!
                            [](float X, float Y, float Z, float PxBach, float PxPos, float PxNeg, float PyBach, float PyPos, float PyNeg, float PzBach, float PzPos, float PzNeg, float pvX, float pvY, float pvZ) -> float { return RecoDecay::cpa(std::array{pvX, pvY, pvZ}, std::array{X, Y, Z}, std::array{PxBach + PxPos + PxNeg, PyBach + PyPos + PyNeg, PzBach + PzPos + PzNeg}); });
 DECLARE_SOA_DYNAMIC_COLUMN(DCAV0ToPV, dcav0topv, //!
-                           [](float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ) -> float { return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz)); });
+                           [](float X, float Y, float Z, float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg, float pvX, float pvY, float pvZ) -> float {
+                             float px = pxpos + pxneg;
+                             float py = pypos + pyneg;
+                             float pz = pzpos + pzneg;
+                             return std::sqrt((std::pow((pvY - Y) * pz - (pvZ - Z) * py, 2) + std::pow((pvX - X) * pz - (pvZ - Z) * px, 2) + std::pow((pvX - X) * py - (pvY - Y) * px, 2)) / (px * px + py * py + pz * pz));
+                           });
 
 // Calculated on the fly with mass assumption + dynamic tables
 DECLARE_SOA_DYNAMIC_COLUMN(MLambda, mLambda, //!
@@ -1163,42 +1346,22 @@ DECLARE_SOA_DYNAMIC_COLUMN(BachelorPtMC, bachelorptMC, //! bachelor daughter pT
                            [](float pxBachMC, float pyBachMC) -> float { return RecoDecay::sqrtSumOfSquares(pxBachMC, pyBachMC); });
 DECLARE_SOA_DYNAMIC_COLUMN(PtMC, ptMC, //! cascade pT
                            [](float pxMC, float pyMC) -> float { return RecoDecay::sqrtSumOfSquares(pxMC, pyMC); });
-} // namespace cascdata
 
-//______________________________________________________
-// EXPRESSION COLUMNS FOR TRACASCCORES
-namespace cascdataext
-{
-DECLARE_SOA_EXPRESSION_COLUMN(PxLambda, pxlambda, //!
-                              float, 1.f * aod::cascdata::pxpos + 1.f * aod::cascdata::pxneg);
-DECLARE_SOA_EXPRESSION_COLUMN(PyLambda, pylambda, //!
-                              float, 1.f * aod::cascdata::pypos + 1.f * aod::cascdata::pyneg);
-DECLARE_SOA_EXPRESSION_COLUMN(PzLambda, pzlambda, //!
-                              float, 1.f * aod::cascdata::pzpos + 1.f * aod::cascdata::pzneg);
-DECLARE_SOA_EXPRESSION_COLUMN(Pt, pt, float, //! Transverse momentum in GeV/c
-                              nsqrt(aod::cascdata::px* aod::cascdata::px +
-                                    aod::cascdata::py * aod::cascdata::py));
-DECLARE_SOA_EXPRESSION_COLUMN(P, p, float, //! Total momentum in GeV/c
-                              nsqrt(aod::cascdata::px* aod::cascdata::px +
-                                    aod::cascdata::py * aod::cascdata::py +
-                                    aod::cascdata::pz * aod::cascdata::pz));
-DECLARE_SOA_EXPRESSION_COLUMN(Phi, phi, float, //! Phi in the range [0, 2pi)
-                              o2::constants::math::PI + natan2(-1.0f * aod::cascdata::py, -1.0f * aod::cascdata::px));
-DECLARE_SOA_EXPRESSION_COLUMN(Eta, eta, float, //! Pseudorapidity, conditionally defined to avoid FPEs
-                              ifnode((nsqrt(aod::cascdata::px * aod::cascdata::px +
-                                            aod::cascdata::py * aod::cascdata::py +
-                                            aod::cascdata::pz * aod::cascdata::pz) -
-                                      aod::cascdata::pz) < static_cast<float>(1e-7),
-                                     ifnode(aod::cascdata::pz < 0.f, -100.f, 100.f),
-                                     0.5f * nlog((nsqrt(aod::cascdata::px * aod::cascdata::px +
-                                                        aod::cascdata::py * aod::cascdata::py +
-                                                        aod::cascdata::pz * aod::cascdata::pz) +
-                                                  aod::cascdata::pz) /
-                                                 (nsqrt(aod::cascdata::px * aod::cascdata::px +
-                                                        aod::cascdata::py * aod::cascdata::py +
-                                                        aod::cascdata::pz * aod::cascdata::pz) -
-                                                  aod::cascdata::pz))));
-} // namespace cascdataext
+DECLARE_SOA_DYNAMIC_COLUMN(PxLambda, pxlambda, //! Lambda daughter px
+                           [](float pxPos, float pxNeg) -> float { return pxPos + pxNeg; });
+DECLARE_SOA_DYNAMIC_COLUMN(PyLambda, pylambda, //! Lambda daughter py
+                           [](float pyPos, float pyNeg) -> float { return pyPos + pyNeg; });
+DECLARE_SOA_DYNAMIC_COLUMN(PzLambda, pzlambda, //! Lambda daughter pz
+                           [](float pzPos, float pzNeg) -> float { return pzPos + pzNeg; });
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! Cascade transverse momentum in GeV/c
+                           [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! Cascade total momentum in GeV/c
+                           [](float px, float py, float pz) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz); });
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //! Cascade phi in the range [0, 2pi)
+                           [](float px, float py) -> float { return RecoDecay::phi(px, py); });
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, //! Cascade pseudorapidity
+                           [](float px, float py, float pz) -> float { return RecoDecay::eta(std::array{px, py, pz}); });
+} // namespace cascdata
 
 //______________________________________________________
 // Cascade data model:
@@ -1244,11 +1407,18 @@ DECLARE_SOA_TABLE(StoredCascCores, "AOD", "CASCCORE", //! core information about
                   cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV, cascdata::DCAXYCascToPV, cascdata::DCAZCascToPV,
 
                   // Dynamic columns
+                  cascdata::PxLambda<cascdata::PxPos, cascdata::PxNeg>,
+                  cascdata::PyLambda<cascdata::PyPos, cascdata::PyNeg>,
+                  cascdata::PzLambda<cascdata::PzPos, cascdata::PzNeg>,
+                  cascdata::Pt<cascdata::Px, cascdata::Py>,
+                  cascdata::P<cascdata::Px, cascdata::Py, cascdata::Pz>,
+                  cascdata::Phi<cascdata::Px, cascdata::Py>,
+                  cascdata::Eta<cascdata::Px, cascdata::Py, cascdata::Pz>,
                   cascdata::V0Radius<cascdata::Xlambda, cascdata::Ylambda>,
                   cascdata::CascRadius<cascdata::X, cascdata::Y>,
-                  cascdata::V0CosPA<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
+                  cascdata::V0CosPA<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg>,
                   cascdata::CascCosPA<cascdata::X, cascdata::Y, cascdata::Z, cascdata::PxBach, cascdata::PxPos, cascdata::PxNeg, cascdata::PyBach, cascdata::PyPos, cascdata::PyNeg, cascdata::PzBach, cascdata::PzPos, cascdata::PzNeg>,
-                  cascdata::DCAV0ToPV<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
+                  cascdata::DCAV0ToPV<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg>,
 
                   // Invariant masses
                   cascdata::MLambda<cascdata::Sign, cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg>,
@@ -1287,11 +1457,18 @@ DECLARE_SOA_TABLE(StoredKFCascCores, "AOD", "KFCASCCORE", //!
                   kfcascdata::MLambda, cascdata::KFV0Chi2, cascdata::KFCascadeChi2,
 
                   // Dynamic columns
+                  cascdata::PxLambda<cascdata::PxPos, cascdata::PxNeg>,
+                  cascdata::PyLambda<cascdata::PyPos, cascdata::PyNeg>,
+                  cascdata::PzLambda<cascdata::PzPos, cascdata::PzNeg>,
+                  cascdata::Pt<cascdata::Px, cascdata::Py>,
+                  cascdata::P<cascdata::Px, cascdata::Py, cascdata::Pz>,
+                  cascdata::Phi<cascdata::Px, cascdata::Py>,
+                  cascdata::Eta<cascdata::Px, cascdata::Py, cascdata::Pz>,
                   cascdata::V0Radius<cascdata::Xlambda, cascdata::Ylambda>,
                   cascdata::CascRadius<cascdata::X, cascdata::Y>,
-                  cascdata::V0CosPA<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
+                  cascdata::V0CosPA<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg>,
                   cascdata::CascCosPA<cascdata::X, cascdata::Y, cascdata::Z, cascdata::PxBach, cascdata::PxPos, cascdata::PxNeg, cascdata::PyBach, cascdata::PyPos, cascdata::PyNeg, cascdata::PzBach, cascdata::PzPos, cascdata::PzNeg>,
-                  cascdata::DCAV0ToPV<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
+                  cascdata::DCAV0ToPV<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg>,
 
                   // Invariant masses
                   cascdata::M<cascdata::MXi, cascdata::MOmega>,
@@ -1325,11 +1502,18 @@ DECLARE_SOA_TABLE(StoredTraCascCores, "AOD", "TRACASCCORE", //!
                   cascdata::MatchingChi2, cascdata::TopologyChi2, cascdata::ItsClsSize,
 
                   // Dynamic columns
+                  cascdata::PxLambda<cascdata::PxPos, cascdata::PxNeg>,
+                  cascdata::PyLambda<cascdata::PyPos, cascdata::PyNeg>,
+                  cascdata::PzLambda<cascdata::PzPos, cascdata::PzNeg>,
+                  cascdata::Pt<cascdata::Px, cascdata::Py>,
+                  cascdata::P<cascdata::Px, cascdata::Py, cascdata::Pz>,
+                  cascdata::Phi<cascdata::Px, cascdata::Py>,
+                  cascdata::Eta<cascdata::Px, cascdata::Py, cascdata::Pz>,
                   cascdata::V0Radius<cascdata::Xlambda, cascdata::Ylambda>,
                   cascdata::CascRadius<cascdata::X, cascdata::Y>,
-                  cascdata::V0CosPA<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
+                  cascdata::V0CosPA<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg>,
                   cascdata::CascCosPA<cascdata::X, cascdata::Y, cascdata::Z, cascdata::PxBach, cascdata::PxPos, cascdata::PxNeg, cascdata::PyBach, cascdata::PyPos, cascdata::PyNeg, cascdata::PzBach, cascdata::PzPos, cascdata::PzNeg>,
-                  cascdata::DCAV0ToPV<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda>,
+                  cascdata::DCAV0ToPV<cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda, cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg>,
 
                   // Invariant masses
                   cascdata::MLambda<cascdata::Sign, cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg>,
@@ -1384,25 +1568,24 @@ DECLARE_SOA_TABLE(CascMCMothers, "AOD", "CASCMCMOTHER", //! optional table for M
 DECLARE_SOA_TABLE(CascBBs, "AOD", "CASCBB", //! bachelor-baryon correlation variables
                   cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV)
 
-DECLARE_SOA_TABLE_FULL(CascCovs, "CascCovs", "AOD", "CASCCOVS", //!
-                       cascdata::PositionCovMat, cascdata::MomentumCovMat);
+DECLARE_SOA_TABLE(CascCovs, "AOD", "CASCCOVS", //!
+                  cascdata::CovMat,
+                  cascdata::PositionCovMat<cascdata::CovMat>,
+                  cascdata::MomentumCovMat<cascdata::CovMat>,
+                  o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE_FULL(KFCascCovs, "KFCascCovs", "AOD", "KFCASCCOVS", //!
-                       cascdata::KFTrackCovMat, cascdata::KFTrackCovMatV0, cascdata::KFTrackCovMatV0DauPos, cascdata::KFTrackCovMatV0DauNeg);
+DECLARE_SOA_TABLE(KFCascCovs, "AOD", "KFCASCCOVS", //!
+                  cascdata::KFTrackCovMat, cascdata::KFTrackCovMatV0, cascdata::KFTrackCovMatV0DauPos, cascdata::KFTrackCovMatV0DauNeg);
 
-// extended table with expression columns that can be used as arguments of dynamic columns
-DECLARE_SOA_EXTENDED_TABLE_USER(CascCores, StoredCascCores, "CascDATAEXT", //!
-                                cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda, cascdataext::Pt, cascdataext::P, cascdataext::Eta, cascdataext::Phi);
+DECLARE_SOA_TABLE(TraCascCovs, "AOD", "TRACASCCOVS", //!
+                  cascdata::CovMat,
+                  cascdata::PositionCovMat<cascdata::CovMat>,
+                  cascdata::MomentumCovMat<cascdata::CovMat>,
+                  o2::soa::Marker<2>);
 
-// extended table with expression columns that can be used as arguments of dynamic columns
-DECLARE_SOA_EXTENDED_TABLE_USER(KFCascCores, StoredKFCascCores, "KFCascDATAEXT", //!
-                                cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda,
-                                cascdataext::Pt, cascdataext::P, cascdataext::Eta, cascdataext::Phi);
-
-// extended table with expression columns that can be used as arguments of dynamic columns
-DECLARE_SOA_EXTENDED_TABLE_USER(TraCascCores, StoredTraCascCores, "TraCascDATAEXT", //!
-                                cascdataext::PxLambda, cascdataext::PyLambda, cascdataext::PzLambda,
-                                cascdataext::Pt, cascdataext::P, cascdataext::Eta, cascdataext::Phi);
+using CascCores = StoredCascCores;
+using KFCascCores = StoredKFCascCores;
+using TraCascCores = StoredTraCascCores;
 
 namespace cascdata
 {
@@ -1464,6 +1647,8 @@ using CascadesLinked = soa::Join<Cascades, CascDataLink>;
 using CascadeLinked = CascadesLinked::iterator;
 using KFCascadesLinked = soa::Join<Cascades, KFCascDataLink>;
 using KFCascadeLinked = KFCascadesLinked::iterator;
+using TraCascadesLinked = soa::Join<Cascades, TraCascDataLink>;
+using TraCascadeLinked = TraCascadesLinked::iterator;
 
 namespace cascdata
 {
@@ -1582,6 +1767,38 @@ DECLARE_SOA_TABLE(Tracked3BodyColls, "AOD", "TRA3BODYCOLL", //! Table joinable w
 using Tracked3BodyColl = Tracked3BodyColls::iterator;
 using AssignedTracked3Bodys = soa::Join<aod::Tracked3Bodys, aod::Tracked3BodyColls>;
 using AssignedTracked3Body = AssignedTracked3Bodys::iterator;
+
+namespace zdcneutrons
+{
+// FOR DERIVED
+DECLARE_SOA_INDEX_COLUMN(StraMCCollision, straMCCollision); //!
+// DYNAMIC COLUMNS
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! neutron transverse momentum (GeV/c)
+                           [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! neutron total momentum (GeV/c)
+                           [](float px, float py, float pz) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz); });
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //! neutron phi in the range [0, 2pi)
+                           [](float px, float py) -> float { return RecoDecay::phi(px, py); });
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, //! neutron pseudorapidity
+                           [](float px, float py, float pz) -> float { return RecoDecay::eta(std::array{px, py, pz}); });
+DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! neutron rapidity
+                           [](float pz, float e) -> float { return std::atanh(pz / e); });
+} // namespace zdcneutrons
+
+DECLARE_SOA_TABLE(ZDCNeutrons, "AOD", "ZDCNEUTRON", //! MC properties of the neutrons within ZDC acceptance (for UPC analysis)
+                  mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
+                  mcparticle::Vx, mcparticle::Vy, mcparticle::Vz, mcparticle::Vt,
+                  mcparticle::Px, mcparticle::Py, mcparticle::Pz, mcparticle::E,
+                  // Dynamic columns for manipulating information
+                  zdcneutrons::Pt<mcparticle::Px, mcparticle::Py>,
+                  zdcneutrons::P<mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
+                  zdcneutrons::Phi<mcparticle::Px, mcparticle::Py>,
+                  zdcneutrons::Eta<mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
+                  zdcneutrons::Y<mcparticle::Pz, mcparticle::E>);
+
+DECLARE_SOA_TABLE(ZDCNMCCollRefs, "AOD", "ZDCNMCCOLLREF", //! refers MC candidate back to proper MC Collision
+                  o2::soa::Index<>, zdcneutrons::StraMCCollisionId, o2::soa::Marker<4>);
+
 } // namespace o2::aod
 
 //______________________________________________________

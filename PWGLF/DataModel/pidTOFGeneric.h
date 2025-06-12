@@ -51,7 +51,7 @@ namespace pidtofgeneric
 
 static constexpr float kCSPEED = TMath::C() * 1.0e2f * 1.0e-12f; // c in cm/ps
 
-template <typename TCollision, typename TTrack>
+template <typename TTrack>
 class TofPidNewCollision
 {
  public:
@@ -83,34 +83,19 @@ class TofPidNewCollision
     pidType = pidId;
   }
 
-  float GetTOFNSigma(o2::track::PID::ID pidId, TTrack const& track, TCollision const& originalcol, TCollision const& correctedcol, bool EnableBCAO2D = true)
+  template <typename TCollision>
+  float GetTOFNSigma(o2::track::PID::ID pidId, TTrack const& track, TCollision const& originalcol, TCollision const& correctedcol, bool EnableBCAO2D = true);
+
+  template <typename TCollision>
+  float GetTOFNSigma(TTrack const& track, TCollision const& originalcol, TCollision const& correctedcol, bool EnableBCAO2D = true);
+
+  float GetTOFNSigma(TTrack const& track);
+  float GetTOFNSigma(o2::track::PID::ID pidId, TTrack const& track);
+
+  float CalculateTOFNSigma(o2::track::PID::ID pidId, TTrack const& track, double tofsignal, double evTime, double evTimeErr)
   {
-    float mMassHyp = o2::track::pid_constants::sMasses2Z[track.pidForTracking()];
-    float expTime = track.length() * sqrt((mMassHyp * mMassHyp) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
 
-    float evTime = correctedcol.evTime();
-    float evTimeErr = correctedcol.evTimeErr();
-    float tofsignal = track.trackTime() * 1000 + expTime; // in ps
-    float expSigma, tofNsigma;
-
-    if (originalcol.globalIndex() == correctedcol.globalIndex()) {
-      evTime = track.evTimeForTrack();
-      evTimeErr = track.evTimeErrForTrack();
-    } else {
-      if (EnableBCAO2D) {
-        auto originalbc = originalcol.template bc_as<o2::aod::BCsWithTimestamps>();
-        auto correctedbc = correctedcol.template bc_as<o2::aod::BCsWithTimestamps>();
-        o2::InteractionRecord originalIR = o2::InteractionRecord::long2IR(originalbc.globalBC());
-        o2::InteractionRecord correctedIR = o2::InteractionRecord::long2IR(correctedbc.globalBC());
-        tofsignal += originalIR.differenceInBCNS(correctedIR) * 1000;
-      } else {
-        auto originalbc = originalcol.template foundBC_as<o2::aod::BCsWithTimestamps>();
-        auto correctedbc = correctedcol.template foundBC_as<o2::aod::BCsWithTimestamps>();
-        o2::InteractionRecord originalIR = o2::InteractionRecord::long2IR(originalbc.globalBC());
-        o2::InteractionRecord correctedIR = o2::InteractionRecord::long2IR(correctedbc.globalBC());
-        tofsignal += originalIR.differenceInBCNS(correctedIR) * 1000;
-      }
-    }
+    float expSigma, tofNsigma = -999;
 
     switch (pidId) {
       case 0:
@@ -156,12 +141,78 @@ class TofPidNewCollision
 
     return tofNsigma;
   }
-
-  float GetTOFNSigma(TTrack const& track, TCollision const& originalcol, TCollision const& correctedcol, bool EnableBCAO2D = true)
-  {
-    return GetTOFNSigma(pidType, track, originalcol, correctedcol, EnableBCAO2D);
-  }
 };
+
+template <typename TTrack>
+template <typename TCollision>
+float TofPidNewCollision<TTrack>::GetTOFNSigma(o2::track::PID::ID pidId, TTrack const& track, TCollision const& originalcol, TCollision const& correctedcol, bool EnableBCAO2D)
+{
+
+  if (!track.has_collision() || !track.hasTOF()) {
+    return -999;
+  }
+
+  float mMassHyp = o2::track::pid_constants::sMasses2Z[track.pidForTracking()];
+  float expTime = track.length() * sqrt((mMassHyp * mMassHyp) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
+
+  float evTime = correctedcol.evTime();
+  float evTimeErr = correctedcol.evTimeErr();
+  float tofsignal = track.trackTime() * 1000 + expTime; // in ps
+
+  if (originalcol.globalIndex() == correctedcol.globalIndex()) {
+    evTime = track.evTimeForTrack();
+    evTimeErr = track.evTimeErrForTrack();
+  } else {
+    if (EnableBCAO2D) {
+      auto originalbc = originalcol.template bc_as<o2::aod::BCsWithTimestamps>();
+      auto correctedbc = correctedcol.template bc_as<o2::aod::BCsWithTimestamps>();
+      o2::InteractionRecord originalIR = o2::InteractionRecord::long2IR(originalbc.globalBC());
+      o2::InteractionRecord correctedIR = o2::InteractionRecord::long2IR(correctedbc.globalBC());
+      tofsignal += originalIR.differenceInBCNS(correctedIR) * 1000;
+    } else {
+      auto originalbc = originalcol.template foundBC_as<o2::aod::BCsWithTimestamps>();
+      auto correctedbc = correctedcol.template foundBC_as<o2::aod::BCsWithTimestamps>();
+      o2::InteractionRecord originalIR = o2::InteractionRecord::long2IR(originalbc.globalBC());
+      o2::InteractionRecord correctedIR = o2::InteractionRecord::long2IR(correctedbc.globalBC());
+      tofsignal += originalIR.differenceInBCNS(correctedIR) * 1000;
+    }
+  }
+
+  float tofNsigma = CalculateTOFNSigma(pidId, track, tofsignal, evTime, evTimeErr);
+  return tofNsigma;
+}
+
+template <typename TTrack>
+template <typename TCollision>
+float TofPidNewCollision<TTrack>::GetTOFNSigma(TTrack const& track, TCollision const& originalcol, TCollision const& correctedcol, bool EnableBCAO2D)
+{
+  return GetTOFNSigma(pidType, track, originalcol, correctedcol, EnableBCAO2D);
+}
+
+template <typename TTrack>
+float TofPidNewCollision<TTrack>::GetTOFNSigma(o2::track::PID::ID pidId, TTrack const& track)
+{
+
+  if (!track.has_collision() || !track.hasTOF()) {
+    return -999;
+  }
+
+  float mMassHyp = o2::track::pid_constants::sMasses2Z[track.pidForTracking()];
+  float expTime = track.length() * sqrt((mMassHyp * mMassHyp) + (track.tofExpMom() * track.tofExpMom())) / (kCSPEED * track.tofExpMom()); // L*E/(p*c) = L/v
+
+  float evTime = track.evTimeForTrack();
+  float evTimeErr = track.evTimeErrForTrack();
+  float tofsignal = track.trackTime() * 1000 + expTime; // in ps
+
+  float tofNsigma = CalculateTOFNSigma(pidId, track, tofsignal, evTime, evTimeErr);
+  return tofNsigma;
+}
+
+template <typename TTrack>
+float TofPidNewCollision<TTrack>::GetTOFNSigma(TTrack const& track)
+{
+  return GetTOFNSigma(pidType, track);
+}
 
 } // namespace pidtofgeneric
 } // namespace o2::aod

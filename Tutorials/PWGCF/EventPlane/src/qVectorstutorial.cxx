@@ -161,7 +161,7 @@ struct qVectorstutorial {
     if (!SelEvent(collision)) {
       return;
     }
-    for (auto i = 0; i < cfgnMods->size(); i++) {
+    for (std::size_t i = 0; i < cfgnMods->size(); i++) {
       fillHistosQvec(collision, cfgnMods->at(i));
       fillHistosFlow(collision, tracks, cfgnMods->at(i));
     }

@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   approve:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     # Only run if the PR author enabled auto-merge, not someone else.
     # Also run if a new approval was created, as this affects whether we can
     # auto-approve. There is a risk of infinite loops here, though -- when we

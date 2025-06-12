@@ -36,6 +36,8 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
+#include <string>
+#include <vector>
 #include <cmath>
 #include <array>
 #include <cstdlib>
@@ -263,6 +265,7 @@ struct lambdakzeroBuilder {
   static constexpr float defaultLambdaWindowParameters[1][4] = {{1.17518e-03, 1.24099e-04, 5.47937e-03, 3.08009e-01}};
   Configurable<LabeledArray<float>> massCutK0{"massCutK0", {defaultK0MassWindowParameters[0], 4, {"constant", "linear", "expoConstant", "expoRelax"}}, "mass parameters for K0"};
   Configurable<LabeledArray<float>> massCutLambda{"massCutLambda", {defaultLambdaWindowParameters[0], 4, {"constant", "linear", "expoConstant", "expoRelax"}}, "mass parameters for Lambda"};
+  Configurable<float> massCutPhoton{"massCutPhoton", 0.2, "Photon max mass"};
   Configurable<float> massWindownumberOfSigmas{"massWindownumberOfSigmas", 5e+6, "number of sigmas around mass peaks to keep"};
   Configurable<bool> massWindowWithTPCPID{"massWindowWithTPCPID", false, "when checking mass windows, correlate with TPC dE/dx"};
   Configurable<float> massWindowSafetyMargin{"massWindowSafetyMargin", 0.001, "Extra mass window safety margin"};
@@ -540,9 +543,7 @@ struct lambdakzeroBuilder {
       }
     }
     if (dcaFitterConfigurations.useMatCorrType == 2) {
-      LOGF(info, "LUT correction requested, loading LUT");
-      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbConfigurations.lutPath));
-      LOGF(info, "LUT load done!");
+      LOGF(info, "LUT correction requested, will load LUT when initializing with timestamp...");
     }
 
     if (doprocessRun2 == false && doprocessRun3 == false && doprocessFindableRun3 == false) {
@@ -736,9 +737,11 @@ struct lambdakzeroBuilder {
     // Set magnetic field value once known
     fitter.setBz(d_bz);
 
-    if (dcaFitterConfigurations.useMatCorrType == 2) {
+    if (dcaFitterConfigurations.useMatCorrType == 2 && !lut) {
       // setMatLUT only after magfield has been initalized
       // (setMatLUT has implicit and problematic init field call if not)
+      LOG(info) << "Loading material look-up table for timestamp: " << timestamp;
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForTimeStamp<o2::base::MatLayerCylSet>(ccdbConfigurations.lutPath, timestamp));
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
   }
@@ -835,7 +838,7 @@ struct lambdakzeroBuilder {
       statisticsRegistry.v0statsUnassociated[kV0TPCrefit]++;
 
     // Calculate DCA with respect to the collision associated to the V0, not individual tracks
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
 
     auto posTrackPar = getTrackPar(posTrack);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, posTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
@@ -977,15 +980,18 @@ struct lambdakzeroBuilder {
     bool desiredMassK0Short = false;
     bool desiredMassLambda = false;
     bool desiredMassAntiLambda = false;
+    bool desiredMassGamma = false;
 
     if (massWindownumberOfSigmas > 1e+3) {
       desiredMassK0Short = true;    // safety fallback
       desiredMassLambda = true;     // safety fallback
       desiredMassAntiLambda = true; // safety fallback
+      desiredMassGamma = true;      // safety fallback
     } else {
       desiredMassK0Short = TMath::Abs(v0candidate.k0ShortMass - o2::constants::physics::MassKaonNeutral) < massWindownumberOfSigmas * getMassSigmaK0Short(lPt) + massWindowSafetyMargin;
       desiredMassLambda = TMath::Abs(v0candidate.lambdaMass - o2::constants::physics::MassLambda) < massWindownumberOfSigmas * getMassSigmaLambda(lPt) + massWindowSafetyMargin;
       desiredMassAntiLambda = TMath::Abs(v0candidate.antiLambdaMass - o2::constants::physics::MassLambda) < massWindownumberOfSigmas * getMassSigmaLambda(lPt) + massWindowSafetyMargin;
+      desiredMassGamma = TMath::Abs(lGammaMass) < massCutPhoton;
     }
 
     // check if user requested to correlate mass requirement with TPC PID
@@ -993,6 +999,7 @@ struct lambdakzeroBuilder {
     bool dEdxK0Short = V0.isdEdxK0Short() || !massWindowWithTPCPID;
     bool dEdxLambda = V0.isdEdxLambda() || !massWindowWithTPCPID;
     bool dEdxAntiLambda = V0.isdEdxAntiLambda() || !massWindowWithTPCPID;
+    bool dEdxGamma = V0.isdEdxGamma() || !massWindowWithTPCPID;
 
     // check proper lifetime if asked for
     bool passML2P_K0Short = lML2P_K0Short < lifetimecut->get("lifetimecutK0S") || lifetimecut->get("lifetimecutK0S") > 1000;
@@ -1003,6 +1010,8 @@ struct lambdakzeroBuilder {
     if (passML2P_Lambda && dEdxLambda && desiredMassLambda)
       keepCandidate = true;
     if (passML2P_Lambda && dEdxAntiLambda && desiredMassAntiLambda)
+      keepCandidate = true;
+    if (dEdxGamma && desiredMassGamma)
       keepCandidate = true;
 
     if (!keepCandidate)
@@ -1208,7 +1217,7 @@ struct lambdakzeroBuilder {
         if (createV0PosAtDCAs)
           v0dauPositions(v0candidate.posPosition[0], v0candidate.posPosition[1], v0candidate.posPosition[2],
                          v0candidate.negPosition[0], v0candidate.negPosition[1], v0candidate.negPosition[2]);
-        if (createV0PosAtDCAs) {
+        if (createV0PosAtIUs) {
           std::array<float, 3> posPositionIU;
           std::array<float, 3> negPositionIU;
           lPositiveTrackIU.getXYZGlo(posPositionIU);
@@ -1371,6 +1380,9 @@ struct lambdakzeroPreselector {
   Configurable<bool> forceITSOnlyMesons{"forceITSOnlyMesons", false, "force meson-like daughters to be ITS-only to pass Lambda/AntiLambda selections (yes/no)"};
   Configurable<int> minITSCluITSOnly{"minITSCluITSOnly", 0, "minimum number of ITS clusters to ask for if daughter track does not have TPC"};
 
+  // qa coll assoc directly from AO2D (MC mode exclusive)
+  Configurable<bool> qaCollisionAssociation{"qaCollisionAssociation", false, "QA collision association"};
+
   // for bit-packed maps
   std::vector<uint32_t> selectionMask;
   enum v0bit { bitInteresting = 0,
@@ -1410,6 +1422,30 @@ struct lambdakzeroPreselector {
     h->GetXaxis()->SetBinLabel(4, "dEdx OK");
     h->GetXaxis()->SetBinLabel(5, "Used in Casc");
     h->GetXaxis()->SetBinLabel(6, "Used in Tra-Casc");
+
+    if (qaCollisionAssociation) {
+      auto hCollAssocQA = histos.add<TH2>("hCollAssocQA", "hCollAssocQA", kTH2D, {{6, -0.5f, 5.5f}, {2, -0.5f, 1.5f}});
+      hCollAssocQA->GetXaxis()->SetBinLabel(1, "K0");
+      hCollAssocQA->GetXaxis()->SetBinLabel(2, "Lambda");
+      hCollAssocQA->GetXaxis()->SetBinLabel(3, "AntiLambda");
+      hCollAssocQA->GetXaxis()->SetBinLabel(4, "Gamma");
+      hCollAssocQA->GetYaxis()->SetBinLabel(1, "Wrong collision");
+      hCollAssocQA->GetYaxis()->SetBinLabel(2, "Correct collision");
+
+      auto h2dPtVsCollAssocK0Short = histos.add<TH2>("h2dPtVsCollAssocK0Short", "h2dPtVsCollAssocK0Short", kTH2D, {{100, 0.0f, 10.0f}, {2, -0.5f, 1.5f}});
+      auto h2dPtVsCollAssocLambda = histos.add<TH2>("h2dPtVsCollAssocLambda", "h2dPtVsCollAssocLambda", kTH2D, {{100, 0.0f, 10.0f}, {2, -0.5f, 1.5f}});
+      auto h2dPtVsCollAssocAntiLambda = histos.add<TH2>("h2dPtVsCollAssocAntiLambda", "h2dPtVsCollAssocAntiLambda", kTH2D, {{100, 0.0f, 10.0f}, {2, -0.5f, 1.5f}});
+      auto h2dPtVsCollAssocGamma = histos.add<TH2>("h2dPtVsCollAssocGamma", "h2dPtVsCollAssocGamma", kTH2D, {{100, 0.0f, 10.0f}, {2, -0.5f, 1.5f}});
+
+      h2dPtVsCollAssocK0Short->GetYaxis()->SetBinLabel(1, "Wrong collision");
+      h2dPtVsCollAssocK0Short->GetYaxis()->SetBinLabel(2, "Correct collision");
+      h2dPtVsCollAssocLambda->GetYaxis()->SetBinLabel(1, "Wrong collision");
+      h2dPtVsCollAssocLambda->GetYaxis()->SetBinLabel(2, "Correct collision");
+      h2dPtVsCollAssocAntiLambda->GetYaxis()->SetBinLabel(1, "Wrong collision");
+      h2dPtVsCollAssocAntiLambda->GetYaxis()->SetBinLabel(2, "Correct collision");
+      h2dPtVsCollAssocGamma->GetYaxis()->SetBinLabel(1, "Wrong collision");
+      h2dPtVsCollAssocGamma->GetYaxis()->SetBinLabel(2, "Correct collision");
+    }
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -1458,9 +1494,11 @@ struct lambdakzeroPreselector {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check PDG association
   template <class TTrackTo, typename TV0Object>
-  void checkPDG(TV0Object const& lV0Candidate, uint32_t& maskElement)
+  void checkPDG(TV0Object const& lV0Candidate, uint32_t& maskElement, int mcCollisionId)
   {
     int lPDG = -1;
+    int correctMcCollisionIndex = -1;
+    float mcpt = -1.0;
     bool physicalPrimary = false;
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
     auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
@@ -1475,7 +1513,9 @@ struct lambdakzeroPreselector {
           for (auto& lPosMother : lMCPosTrack.template mothers_as<aod::McParticles>()) {
             if (lNegMother.globalIndex() == lPosMother.globalIndex() && (!dIfMCselectPhysicalPrimary || lNegMother.isPhysicalPrimary())) {
               lPDG = lNegMother.pdgCode();
+              correctMcCollisionIndex = lNegMother.mcCollisionId();
               physicalPrimary = lNegMother.isPhysicalPrimary();
+              mcpt = lNegMother.pt();
 
               // additionally check PDG of the mother particle if requested
               if (dIfMCselectV0MotherPDG != 0) {
@@ -1493,14 +1533,40 @@ struct lambdakzeroPreselector {
         }
       }
     } // end association check
-    if (lPDG == 310)
+
+    bool collisionAssociationOK = false;
+    if (correctMcCollisionIndex > -1 && correctMcCollisionIndex == mcCollisionId) {
+      collisionAssociationOK = true;
+    }
+
+    if (lPDG == 310) {
       bitset(maskElement, bitTrueK0Short);
-    if (lPDG == 3122)
+      if (qaCollisionAssociation) {
+        histos.fill(HIST("hCollAssocQA"), 0.0f, collisionAssociationOK);
+        histos.fill(HIST("h2dPtVsCollAssocK0Short"), mcpt, collisionAssociationOK);
+      }
+    }
+    if (lPDG == 3122) {
       bitset(maskElement, bitTrueLambda);
-    if (lPDG == -3122)
+      if (qaCollisionAssociation) {
+        histos.fill(HIST("hCollAssocQA"), 1.0f, collisionAssociationOK);
+        histos.fill(HIST("h2dPtVsCollAssocLambda"), mcpt, collisionAssociationOK);
+      }
+    }
+    if (lPDG == -3122) {
       bitset(maskElement, bitTrueAntiLambda);
-    if (lPDG == 22)
+      if (qaCollisionAssociation) {
+        histos.fill(HIST("hCollAssocQA"), 2.0f, collisionAssociationOK);
+        histos.fill(HIST("h2dPtVsCollAssocAntiLambda"), mcpt, collisionAssociationOK);
+      }
+    }
+    if (lPDG == 22) {
       bitset(maskElement, bitTrueGamma);
+      if (qaCollisionAssociation) {
+        histos.fill(HIST("hCollAssocQA"), 3.0f, collisionAssociationOK);
+        histos.fill(HIST("h2dPtVsCollAssocGamma"), mcpt, collisionAssociationOK);
+      }
+    }
     if (lPDG == 1010010030)
       bitset(maskElement, bitTrueHypertriton);
     if (lPDG == -1010010030)
@@ -1555,7 +1621,7 @@ struct lambdakzeroPreselector {
   void checkAndFinalize()
   {
     // parse + publish tag table now
-    for (int ii = 0; ii < selectionMask.size(); ii++) {
+    for (std::size_t ii = 0; ii < selectionMask.size(); ii++) {
       histos.fill(HIST("hPreselectorStatistics"), 0.0f); // all V0s
       bool validV0 = bitcheck(selectionMask[ii], bitTrackQuality);
       if (validV0) {
@@ -1613,11 +1679,12 @@ struct lambdakzeroPreselector {
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildMCAssociated(aod::Collisions const& /*collisions*/, aod::V0s const& v0table, LabeledTracksExtra const&, aod::McParticles const& /*particlesMC*/)
+  void processBuildMCAssociated(soa::Join<aod::Collisions, aod::McCollisionLabels> const& /*collisions*/, aod::V0s const& v0table, LabeledTracksExtra const&, aod::McParticles const& /*particlesMC*/)
   {
     initializeMasks(v0table.size());
     for (auto const& v0 : v0table) {
-      checkPDG<LabeledTracksExtra>(v0, selectionMask[v0.globalIndex()]);
+      auto collision = v0.collision_as<soa::Join<aod::Collisions, aod::McCollisionLabels>>();
+      checkPDG<LabeledTracksExtra>(v0, selectionMask[v0.globalIndex()], collision.mcCollisionId());
       checkTrackQuality<LabeledTracksExtra>(v0, selectionMask[v0.globalIndex()], true);
     }
     if (!doprocessSkipV0sNotUsedInCascades && !doprocessSkipV0sNotUsedInTrackedCascades)
@@ -1635,11 +1702,12 @@ struct lambdakzeroPreselector {
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdxMCAssociated(aod::Collisions const& /*collisions*/, aod::V0s const& v0table, TracksExtraWithPIDandLabels const&, aod::McParticles const&)
+  void processBuildValiddEdxMCAssociated(soa::Join<aod::Collisions, aod::McCollisionLabels> const& /*collisions*/, aod::V0s const& v0table, TracksExtraWithPIDandLabels const&, aod::McParticles const&)
   {
     initializeMasks(v0table.size());
     for (auto const& v0 : v0table) {
-      checkPDG<TracksExtraWithPIDandLabels>(v0, selectionMask[v0.globalIndex()]);
+      auto collision = v0.collision_as<soa::Join<aod::Collisions, aod::McCollisionLabels>>();
+      checkPDG<TracksExtraWithPIDandLabels>(v0, selectionMask[v0.globalIndex()], collision.mcCollisionId());
       checkdEdx<TracksExtraWithPIDandLabels>(v0, selectionMask[v0.globalIndex()]);
       checkTrackQuality<TracksExtraWithPIDandLabels>(v0, selectionMask[v0.globalIndex()]);
     }
@@ -1740,18 +1808,10 @@ struct lambdakzeroV0DataLinkBuilder {
   PROCESS_SWITCH(lambdakzeroV0DataLinkBuilder, processFindable, "process findable V0s", false);
 };
 
-// Extends the v0data table with expression columns
-struct lambdakzeroInitializer {
-  Spawns<aod::V0Cores> v0cores;
-  Spawns<aod::V0fCCores> v0fccores;
-  void init(InitContext const&) {}
-};
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<lambdakzeroBuilder>(cfgc),
     adaptAnalysisTask<lambdakzeroPreselector>(cfgc),
-    adaptAnalysisTask<lambdakzeroV0DataLinkBuilder>(cfgc),
-    adaptAnalysisTask<lambdakzeroInitializer>(cfgc)};
+    adaptAnalysisTask<lambdakzeroV0DataLinkBuilder>(cfgc)};
 }

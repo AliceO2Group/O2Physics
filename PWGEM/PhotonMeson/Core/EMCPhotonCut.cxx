@@ -13,13 +13,20 @@
 // Class for EMCal cluster selection
 //
 
+#include <string>
 #include "Framework/Logger.h"
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
 
 ClassImp(EMCPhotonCut);
 
-const char* EMCPhotonCut::mCutNames[static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts)] = {"Energy", "NCell", "M02", "Timing", "TrackMatching", "Exotic"};
+const char* EMCPhotonCut::mCutNames[static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts)] = {"Definition", "Energy", "NCell", "M02", "Timing", "TrackMatching", "Exotic"};
 
+void EMCPhotonCut::SetClusterizer(std::string clusterDefinitionString)
+{
+  mDefinition = static_cast<int>(o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionString));
+  LOG(info) << "EMCal Photon Cut, set cluster definition to: " << mDefinition << " (" << clusterDefinitionString << ")";
+}
 void EMCPhotonCut::SetMinE(float min)
 {
   mMinE = min;
@@ -61,12 +68,20 @@ void EMCPhotonCut::SetUseExoticCut(bool flag)
   mUseExoticCut = flag;
   LOG(info) << "EMCal Photon Cut, set usage of exotic cluster cut to: " << mUseExoticCut;
 }
+void EMCPhotonCut::SetUseTM(bool flag)
+{
+  mUseTM = flag;
+  LOG(info) << "EM Photon Cluster Cut, using TM cut is set to : " << mUseTM;
+}
 
 void EMCPhotonCut::print() const
 {
   LOG(info) << "EMCal Photon Cut:";
   for (int i = 0; i < static_cast<int>(EMCPhotonCuts::kNCuts); i++) {
     switch (static_cast<EMCPhotonCuts>(i)) {
+      case EMCPhotonCuts::kDefinition:
+        LOG(info) << mCutNames[i] << " > " << mDefinition;
+        break;
       case EMCPhotonCuts::kEnergy:
         LOG(info) << mCutNames[i] << " > " << mMinE;
         break;

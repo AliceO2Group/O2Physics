@@ -17,10 +17,11 @@
 #ifndef PWGHF_HFC_MACROS_DHCORRELATIONFITTER_H_
 #define PWGHF_HFC_MACROS_DHCORRELATIONFITTER_H_
 
-#include <TFile.h>
-#include <TH1F.h>
-#include <TCanvas.h>
-#include <TLatex.h>
+#include <cstdio>
+
+#include <RtypesCore.h>
+#include <TF1.h>
+#include <TH1.h>
 
 class DhCorrelationFitter
 {

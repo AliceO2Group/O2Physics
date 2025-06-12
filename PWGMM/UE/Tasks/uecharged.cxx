@@ -53,7 +53,7 @@ struct ueCharged {
     selectedTracks.SetRequireTPCRefit(true);
     // selectedTracks.SetRequireGoldenChi2(true);
     selectedTracks.SetMinNCrossedRowsTPC(70);
-    selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.4f);
+    selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
     selectedTracks.SetMaxChi2PerClusterTPC(4.f);
     selectedTracks.SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
     selectedTracks.SetMaxChi2PerClusterITS(36.f);
@@ -70,7 +70,7 @@ struct ueCharged {
     selectedTracks.SetRequireTPCRefit(true);
     // selectedTracks.SetRequireGoldenChi2(true);
     selectedTracks.SetMinNCrossedRowsTPC(70);
-    selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.4f);
+    selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
     selectedTracks.SetMaxChi2PerClusterTPC(4.f);
     selectedTracks.SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
     selectedTracks.SetMaxChi2PerClusterITS(36.f);
@@ -86,9 +86,11 @@ struct ueCharged {
   float DeltaPhi(float phia, float phib, float rangeMin, float rangeMax);
   // Configurable for event selection
   Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
-  Configurable<bool> timeEvsel{"timeEvsel", true, "TPC Time frame boundary cut"};
   Configurable<bool> piluprejection{"piluprejection", true, "Pileup rejection"};
   Configurable<bool> goodzvertex{"goodzvertex", true, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference."};
+  Configurable<bool> sel8{"sel8", true, "Apply the sel8 event selection"};
+  Configurable<bool> removeITSROFBorder{"removeITSROFBorder", false, "Remove ITS Read-Out Frame border and only apply kIsTriggerTVX & kNoTimeFrameBorder (recommended for MC)"};
+  Configurable<bool> manuallyApplysel8{"manuallyApplysel8", false, "Apply manually the event selection criteria considered in sel8, ie. kIsTriggerTVX & kNoTimeFrameBorder & kNoITSROFrameBorder"};
 
   // acceptance cuts
   Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 0.8f, "Eta range for tracks"};
@@ -199,7 +201,7 @@ void ueCharged::init(InitContext const&)
   ConfigurableAxis ptBinning{"ptBinning", {0, 0.0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 25.0, 30.0, 40.0, 50.0}, "pTassoc bin limits"};
   AxisSpec ptAxis = {ptBinning, "#it{p}_{T}^{assoc} (GeV/#it{c})"};
 
-  f_Eff.setObject(new TF1("fpara", "(x<0.3)*((0.221456)+x*(3.4271)+x*x*(-6.7668))+(x>=0.3&&x<2.1)*((0.610649)+(0.148627)*x+(-0.0772185)*x*x+(0.0157586)*x*x*x)+(x>=2.1)*(0.726557)", 0., 1e5));
+  f_Eff.setObject(new TF1("fpara", "(x<0.3)*((0.283781)+x*(3.0492)+x*x*(-6.17018)) + (x>=0.3&&x<1.8)*((0.597121)+(0.200737)*x+(-0.11255)*x*x+(0.0242807)*x*x*x) + (x>=1.8&&x<14.)*((0.729892)+(0.0018516)*x+(0.000257896)*x*x+(-2.05202e-05)*x*x*x) + (x>=14)*(0.749313)", 0., 1e5));
 
   if (doprocessMC) {
     ue.add("hPtOut", "pT all rec; pT; Nch", HistType::kTH1D, {ptAxis});
@@ -425,27 +427,30 @@ void ueCharged::processMeas(const C& collision, const T& tracks)
 
   ue.fill(HIST("hCounter"), 0);
 
-  if (!collision.sel8()) {
+  if (sel8 && !collision.sel8()) {
+    return;
+  }
+
+  if (removeITSROFBorder && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))) {
+    return;
+  }
+
+  if (manuallyApplysel8 && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
     return;
   }
 
   ue.fill(HIST("hCounter"), 1);
 
-  if (timeEvsel && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
-    return;
-  }
-
-  ue.fill(HIST("hCounter"), 2);
   if (piluprejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
     return;
   }
 
-  ue.fill(HIST("hCounter"), 3);
+  ue.fill(HIST("hCounter"), 2);
   if (goodzvertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
     return;
   }
 
-  ue.fill(HIST("hCounter"), 4);
+  ue.fill(HIST("hCounter"), 3);
 
   ue.fill(HIST("hStat"), collision.size());
   auto vtxZ = collision.posZ();
@@ -454,7 +459,7 @@ void ueCharged::processMeas(const C& collision, const T& tracks)
     return;
   }
 
-  ue.fill(HIST("hCounter"), 5);
+  ue.fill(HIST("hCounter"), 4);
 
   ue.fill(HIST("hvtxZ"), vtxZ);
 
@@ -726,28 +731,35 @@ void ueCharged::processMeasMC(const C& collision, const T& tracks, const P& part
   phiArrayTrue.clear();
   indexArrayTrue.clear();
 
-  if (!collision.sel8()) {
+  if (sel8 && !collision.sel8()) {
     return;
   }
+
+  if (removeITSROFBorder && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))) {
+    return;
+  }
+
+  if (manuallyApplysel8 && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+    return;
+  }
+
   ue.fill(HIST("hCounter"), 1);
-  // TODO:Implement time frame selection (only if MC includes this effect)
-  ue.fill(HIST("hCounter"), 2);
 
   if (piluprejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
     return;
   }
+  ue.fill(HIST("hCounter"), 2);
 
-  ue.fill(HIST("hCounter"), 3);
   if (goodzvertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
     return;
   }
-  ue.fill(HIST("hCounter"), 4);
+  ue.fill(HIST("hCounter"), 3);
 
   // only PS
   if ((std::abs(collision.posZ()) >= 10.f)) {
     return;
   }
-  ue.fill(HIST("hCounter"), 5);
+  ue.fill(HIST("hCounter"), 4);
 
   ue.fill(HIST(pNumDenTruePS[0]), flPtTrue, ue_true[0]);
   ue.fill(HIST(pSumPtTruePS[0]), flPtTrue, ue_true[3]);

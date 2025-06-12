@@ -10,11 +10,13 @@ Script for the (non-)prompt fraction calculation with the cut-variation method
 import argparse
 import json
 import os
+import sys
 
 import numpy as np  # pylint: disable=import-error
 import ROOT  # pylint: disable=import-error
+sys.path.insert(0, '..')
 from cut_variation import CutVarMinimiser
-from style_formatter import set_object_style
+from utils.style_formatter import set_object_style
 
 # pylint: disable=no-member,too-many-locals,too-many-statements
 
@@ -176,24 +178,39 @@ def main(config):
         canv_cov.Write()
         histo_cov.Write()
 
+        canv_combined = ROOT.TCanvas("canv_combined", "", 1000, 1000)
+        canv_combined.Divide(2, 2)
+        canv_combined.cd(1)
+        canv_rawy.DrawClonePad()
+        canv_combined.cd(2)
+        canv_eff.DrawClonePad()
+        canv_combined.cd(3)
+        canv_frac.DrawClonePad()
+        canv_combined.cd(4)
+        canv_cov.DrawClonePad()
+
         output_name_rawy_pdf = f"Distr_{cfg['output']['file'].replace('.root', '.pdf')}"
         output_name_eff_pdf = f"Eff_{cfg['output']['file'].replace('.root', '.pdf')}"
         output_name_frac_pdf = f"Frac_{cfg['output']['file'].replace('.root', '.pdf')}"
         output_name_covmat_pdf = f"CovMatrix_{cfg['output']['file'].replace('.root', '.pdf')}"
+        output_name_pdf = f"{cfg['output']['file'].replace('.root', '.pdf')}"
         if ipt == 0:
             canv_rawy.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_rawy_pdf)}[")
             canv_eff.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_eff_pdf)}[")
             canv_frac.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_frac_pdf)}[")
             canv_cov.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_covmat_pdf)}[")
+            canv_combined.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_pdf)}[")
         canv_rawy.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_rawy_pdf)}")
         canv_eff.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_eff_pdf)}")
         canv_frac.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_frac_pdf)}")
         canv_cov.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_covmat_pdf)}")
+        canv_combined.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_pdf)}")
         if ipt == hist_rawy[0].GetNbinsX() - 1:
             canv_rawy.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_rawy_pdf)}]")
             canv_eff.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_eff_pdf)}]")
             canv_frac.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_frac_pdf)}]")
             canv_cov.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_covmat_pdf)}]")
+            canv_combined.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_pdf)}]")
 
     output.cd()
     hist_corry_prompt.Write()

@@ -23,7 +23,7 @@ using namespace o2::framework;
 class JFFlucAnalysisO2Hist : public JFFlucAnalysis
 {
  public:
-  JFFlucAnalysisO2Hist(HistogramRegistry&, AxisSpec&, AxisSpec&, AxisSpec&, AxisSpec&, const TString&);
+  JFFlucAnalysisO2Hist(HistogramRegistry&, AxisSpec&, AxisSpec&, AxisSpec&, AxisSpec&, AxisSpec&, AxisSpec&, const TString&);
   ~JFFlucAnalysisO2Hist();
 };
 

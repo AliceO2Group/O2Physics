@@ -8,7 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
+#include <map>
+#include <string>
+#include <unordered_set>
+#include <vector>
+#include <unordered_map>
+#include <memory>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -376,12 +381,12 @@ struct UpcVetoAnalysis {
         for (auto r = 0; r <= 10; ++r) {
           auto maxAmpV0A = -999.f;
           auto maxAmpT0A = -999.f;
-          auto s = gbc - r;
-          auto e = gbc + r;
+          int64_t s = gbc - r;
+          int64_t e = gbc + r;
           auto lower = std::lower_bound(gbcs.begin(), gbcs.end(), s);
           if (lower != gbcs.end()) {
             auto idx = std::distance(gbcs.begin(), lower);
-            while (gbcs[idx] >= s && gbcs[idx] <= e && idx < gbcs.size()) {
+            while (gbcs[idx] >= s && gbcs[idx] <= e && idx < std::ssize(gbcs)) {
               auto aV0A = vBcIdsWithV0A[idx];
               auto aT0A = vBcIdsWithT0A[idx];
               if (aV0A > maxAmpV0A)

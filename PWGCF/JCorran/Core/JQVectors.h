@@ -44,9 +44,11 @@ class JQVectors : public std::conditional_t<gap, JQVectorsGapBase<Q, nh, nk>, JQ
   using hasWeightNUA = decltype(std::declval<T&>().weightNUA());
   template <class T>
   using hasWeightEff = decltype(std::declval<T&>().weightEff());
+  template <class T>
+  using hasInvMass = decltype(std::declval<T&>().invMass());
 
   template <class JInputClass>
-  inline void Calculate(JInputClass& inputInst, float etamin, float etamax)
+  inline void Calculate(JInputClass& inputInst, float etamin, float etamax, float massMin = 0.0f, float massMax = 999.9f)
   {
     // calculate Q-vector for QC method ( no subgroup )
     for (UInt_t ih = 0; ih < nh; ++ih) {
@@ -61,6 +63,11 @@ class JQVectors : public std::conditional_t<gap, JQVectorsGapBase<Q, nh, nk>, JQ
     for (auto& track : inputInst) {
       if (track.eta() < -etamax || track.eta() > etamax)
         continue;
+      using JInputClassIter = typename JInputClass::iterator;
+      if constexpr (std::experimental::is_detected<hasInvMass, const JInputClassIter>::value) {
+        if (track.invMass() < massMin || track.invMass() >= massMax)
+          continue;
+      }
 
       UInt_t isub = (UInt_t)(track.eta() > 0.0);
       for (UInt_t ih = 0; ih < nh; ++ih) {
@@ -74,7 +81,6 @@ class JQVectors : public std::conditional_t<gap, JQVectorsGapBase<Q, nh, nk>, JQ
               this->QvectorQCgap[isub][ih][ik] += q;
           }
 
-          using JInputClassIter = typename JInputClass::iterator;
           if constexpr (std::experimental::is_detected<hasWeightNUA, const JInputClassIter>::value)
             tf /= track.weightNUA();
           if constexpr (std::experimental::is_detected<hasWeightEff, const JInputClassIter>::value)

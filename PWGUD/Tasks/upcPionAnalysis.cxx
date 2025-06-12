@@ -9,11 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-
+#include <vector>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-#include "iostream"
+#include <iostream>
 #include "PWGUD/DataModel/UDTables.h"
 #include <TString.h>
 #include <TTree.h>
@@ -484,9 +484,9 @@ struct UPCPionAnalysis {
         if (!trackselector(t, parameters))
           continue;
 
-        int NFindable = t.tpcNClsFindable();
-        int NMinusFound = t.tpcNClsFindableMinusFound();
-        int NCluster = NFindable - NMinusFound;
+        // int NFindable = t.tpcNClsFindable();
+        // int NMinusFound = t.tpcNClsFindableMinusFound();
+        // int NCluster = NFindable - NMinusFound;
 
         /*if (NCluster < TPC_cluster) {
            continue;

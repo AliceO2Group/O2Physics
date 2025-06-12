@@ -333,9 +333,9 @@ struct AnalysisTrackSelection {
             fHistMan->FillHistClass(fHistNamesMCMatched[j][i].Data(), VarManager::fgValues);
           }
         } // end loop over cuts
-      }   // end loop over MC signals
-    }     // end loop over tracks
-  }
+      } // end loop over MC signals
+    } // end loop over tracks
+  } // end runTrackSelection
 
   template <typename TTracksMC>
   void runMCGenTrack(TTracksMC const& groupedMCTracks)
@@ -604,7 +604,7 @@ struct AnalysisSameEventPairing {
           checked = sig.CheckSignal(true, t1, t2);
         }
         if (checked) {
-          VarManager::FillPairMC(t1, t2);
+          VarManager::FillPairMC<VarManager::kDecayToEE>(t1, t2);
           fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig.GetName()), VarManager::fgValues);
         }
       }

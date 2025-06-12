@@ -115,7 +115,7 @@ struct DGAnaparHolder {
                  float mineta = -2.0, float maxeta = 2.0,
                  float minalpha = 0.0, float maxalpha = 3.2,
                  float minptsys = 0.0, float maxptsys = 100.0,
-                 int nCombine = 2,
+                 std::size_t nCombine = 2,
                  std::vector<int> netCharges = {0},
                  std::vector<int> unlikeCharges = {0},
                  std::vector<int> likeCharges = {-2, 2},
@@ -152,7 +152,7 @@ struct DGAnaparHolder {
   void Seteta(float, float);
   void SetAlpha(float, float);
   void Setptsys(float, float);
-  void SetnCombine(int);
+  void SetnCombine(std::size_t);
   void SetnetCharges(std::vector<int>);
   void SetunlikeCharges(std::vector<int>);
   void SetlikeCharges(std::vector<int>);
@@ -180,7 +180,7 @@ struct DGAnaparHolder {
   float maxAlpha() const { return mMaxAlpha; }
   float minptsys() const { return mMinptsys; }
   float maxptsys() const { return mMaxptsys; }
-  int nCombine() const { return mNCombine; }
+  std::size_t nCombine() const { return mNCombine; }
   std::vector<int> netCharges() const { return mNetCharges; }
   std::vector<int> unlikeCharges() const { return mUnlikeCharges; }
   std::vector<int> likeCharges() const { return mLikeCharges; }
@@ -216,7 +216,7 @@ struct DGAnaparHolder {
   float mMaxAlpha;
   float mMinptsys;
   float mMaxptsys;
-  int mNCombine;
+  std::size_t mNCombine;
   std::vector<int> mNetCharges;    // all PV tracks
   std::vector<int> mUnlikeCharges; // selected PV tracks
   std::vector<int> mLikeCharges;   // selected PV tracks

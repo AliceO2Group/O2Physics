@@ -22,6 +22,7 @@
 #include <cstdlib>
 #include <map>
 #include <iterator>
+#include <vector>
 #include <utility>
 
 #include "Framework/runDataProcessing.h"
@@ -44,7 +45,7 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "ALICE3/DataModel/OTFTOF.h"
-#include "ALICE3/DataModel/RICH.h"
+#include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
 
 using namespace o2;
@@ -62,7 +63,7 @@ using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov>;
 // For MC association in pre-selection
 using labeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 using tofTracks = soa::Join<aod::Tracks, aod::UpgradeTofs>;
-using richTracks = soa::Join<aod::Tracks, aod::RICHs>;
+using richTracks = soa::Join<aod::Tracks, aod::UpgradeRichs>;
 
 struct alice3decaypreselector {
   Produces<aod::Alice3DecayMaps> a3decayMaps;
@@ -111,9 +112,9 @@ struct alice3decaypreselector {
   Partition<tofTracks> pOuterTOFPi = nabs(aod::upgrade_tof::nSigmaPionOuterTOF) > nSigmaTOF;
   Partition<tofTracks> pOuterTOFKa = nabs(aod::upgrade_tof::nSigmaKaonOuterTOF) > nSigmaTOF;
   Partition<tofTracks> pOuterTOFPr = nabs(aod::upgrade_tof::nSigmaProtonOuterTOF) > nSigmaTOF;
-  Partition<richTracks> pRICHPi = nabs(aod::alice3rich::richNsigmaPi) > nSigmaRICH;
-  Partition<richTracks> pRICHKa = nabs(aod::alice3rich::richNsigmaKa) > nSigmaRICH;
-  Partition<richTracks> pRICHPr = nabs(aod::alice3rich::richNsigmaPr) > nSigmaRICH;
+  Partition<richTracks> pRICHPi = nabs(aod::upgrade_rich::nSigmaPionRich) > nSigmaRICH;
+  Partition<richTracks> pRICHKa = nabs(aod::upgrade_rich::nSigmaKaonRich) > nSigmaRICH;
+  Partition<richTracks> pRICHPr = nabs(aod::upgrade_rich::nSigmaProtonRich) > nSigmaRICH;
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// Initialization of mask vectors if uninitialized

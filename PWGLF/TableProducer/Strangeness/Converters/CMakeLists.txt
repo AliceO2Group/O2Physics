@@ -14,6 +14,16 @@ o2physics_add_dpl_workflow(stradautrackstofpidconverter
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(stradautracksextraconverter2
+                    SOURCES stradautracksextraconverter2.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(stradautracksextraconverter3
+                    SOURCES stradautracksextraconverter3.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(strarawcentsconverter
                     SOURCES strarawcentsconverter.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -31,11 +41,36 @@ o2physics_add_dpl_workflow(straevselsconverter
 
 o2physics_add_dpl_workflow(straevselsconverter2
                     SOURCES straevselsconverter2.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::ITStracking
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::ReconstructionDataFormats
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(straevselsconverter3
+                    SOURCES straevselsconverter3.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::ReconstructionDataFormats
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(straevselsconverter4
+                    SOURCES straevselsconverter4.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(straevselsconverter5
+                    SOURCES straevselsconverter5.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(straevselsconverter2rawcents
                     SOURCES straevselsconverter2rawcents.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(straevselsconverter2rawcents2
+                    SOURCES straevselsconverter2rawcents2.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(straevselsconverter2rawcents3
+                    SOURCES straevselsconverter2rawcents3.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -51,5 +86,35 @@ o2physics_add_dpl_workflow(v0coresconverter2
 
 o2physics_add_dpl_workflow(v0mlscoresconverter
                     SOURCES v0mlscoresconverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(stramccollisionconverter
+                    SOURCES stramccollisionconverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(strastampsconverter
+                    SOURCES strastampsconverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(stracentconverter
+                    SOURCES stracentconverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(stramccollmultconverter
+                    SOURCES stramccollmultconverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(stramccollisionconverter2
+                    SOURCES stramccollisionconverter2.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(zdcneutronsconverter
+                    SOURCES zdcneutronsconverter.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

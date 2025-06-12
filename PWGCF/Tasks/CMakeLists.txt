@@ -9,18 +9,18 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(dptdptcorrelations
-                    SOURCES dptdptcorrelations.cxx
+o2physics_add_dpl_workflow(dpt-dpt-correlations
+                    SOURCES dptDptCorrelations.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(dptdpt-filter-qa
-                    SOURCES dptdptfilterqa.cxx
+o2physics_add_dpl_workflow(dpt-dpt-filter-qa
+                    SOURCES dptDptFilterQa.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(match-reco-gen
-                    SOURCES match-reco-gen.cxx
+                    SOURCES matchRecoGen.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 

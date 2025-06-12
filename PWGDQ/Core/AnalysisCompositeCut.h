@@ -26,8 +26,8 @@ class AnalysisCompositeCut : public AnalysisCut
  public:
   AnalysisCompositeCut(bool useAND = kTRUE);
   AnalysisCompositeCut(const char* name, const char* title, bool useAND = kTRUE);
-  AnalysisCompositeCut(const AnalysisCompositeCut& c) = default;
-  AnalysisCompositeCut& operator=(const AnalysisCompositeCut& c) = default;
+  AnalysisCompositeCut(const AnalysisCompositeCut& c);
+  AnalysisCompositeCut& operator=(const AnalysisCompositeCut& c);
   ~AnalysisCompositeCut() override;
 
   void AddCut(AnalysisCut* cut)

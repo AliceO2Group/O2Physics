@@ -249,7 +249,7 @@ struct hyhefourbuilder {
 
     //---/---/---/---/---/---/---/---/---/---/---/---/---/
     // Calculate DCA with respect to the collision associated to the V0, not individual tracks
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lHelium3TrackForDCA, 2.f, fitter.getMatCorrType(), &dcaInfo);
     hyHe4Candidate.dcaXY3He = dcaInfo[0];
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lProtonTrackForDCA, 2.f, fitter.getMatCorrType(), &dcaInfo);

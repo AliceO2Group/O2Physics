@@ -14,108 +14,138 @@ add_subdirectory(Duplicates)
 if(FastJet_FOUND)
 
 o2physics_add_dpl_workflow(jet-finder-data-charged
-                    SOURCES jetfinderdatacharged.cxx
+                    SOURCES jetFinderDataCharged.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-finder-mcd-charged
-                    SOURCES jetfindermcdcharged.cxx
+                    SOURCES jetFinderMCDCharged.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-finder-mcp-charged
-                    SOURCES jetfindermcpcharged.cxx
+                    SOURCES jetFinderMCPCharged.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-finder-data-full
-                    SOURCES jetfinderdatafull.cxx
+                    SOURCES jetFinderDataFull.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-finder-mcd-full
-                    SOURCES jetfindermcdfull.cxx
+                    SOURCES jetFinderMCDFull.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-finder-mcp-full
-                    SOURCES jetfindermcpfull.cxx
+                    SOURCES jetFinderMCPFull.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-finder-data-neutral
-                    SOURCES jetfinderdataneutral.cxx
+                    SOURCES jetFinderDataNeutral.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-finder-mcd-neutral
-                    SOURCES jetfindermcdneutral.cxx
+                    SOURCES jetFinderMCDNeutral.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-finder-mcp-neutral
-                    SOURCES jetfindermcpneutral.cxx
+                    SOURCES jetFinderMCPNeutral.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 
 o2physics_add_dpl_workflow(jet-finder-d0-data-charged
-                    SOURCES jetfinderD0datacharged.cxx
+                    SOURCES jetFinderD0DataCharged.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-finder-d0-mcd-charged
-                    SOURCES jetfinderD0mcdcharged.cxx
+                    SOURCES jetFinderD0MCDCharged.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-finder-d0-mcp-charged
-                    SOURCES jetfinderD0mcpcharged.cxx
+                    SOURCES jetFinderD0MCPCharged.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(jet-finder-dplus-data-charged
+                    SOURCES jetFinderDplusDataCharged.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(jet-finder-dplus-mcd-charged
+                    SOURCES jetFinderDplusMCDCharged.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(jet-finder-dplus-mcp-charged
+                    SOURCES jetFinderDplusMCPCharged.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-finder-lc-data-charged
-                    SOURCES jetfinderLcdatacharged.cxx
+                    SOURCES jetFinderLcDataCharged.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-finder-lc-mcd-charged
-                    SOURCES jetfinderLcmcdcharged.cxx
+                    SOURCES jetFinderLcMCDCharged.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-finder-lc-mcp-charged
-                    SOURCES jetfinderLcmcpcharged.cxx
+                    SOURCES jetFinderLcMCPCharged.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(jet-finder-bplus-data-charged
+                    SOURCES jetFinderBplusDataCharged.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(jet-finder-bplus-mcd-charged
+                    SOURCES jetFinderBplusMCDCharged.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(jet-finder-bplus-mcp-charged
+                    SOURCES jetFinderBplusMCPCharged.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-finder-v0-data-charged
-                    SOURCES jetfinderV0datacharged.cxx
+                    SOURCES jetFinderV0DataCharged.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-finder-v0-mcd-charged
-                    SOURCES jetfinderV0mcdcharged.cxx
+                    SOURCES jetFinderV0MCDCharged.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-finder-v0-mcp-charged
-                    SOURCES jetfinderV0mcpcharged.cxx
+                    SOURCES jetFinderV0MCPCharged.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-finder-dielectron-data-charged
-                    SOURCES jetfinderDielectrondatacharged.cxx
+                    SOURCES jetFinderDielectronDataCharged.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-finder-dielectron-mcd-charged
-                    SOURCES jetfinderDielectronmcdcharged.cxx
+                    SOURCES jetFinderDielectronMCDCharged.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-finder-dielectron-mcp-charged
-                    SOURCES jetfinderDielectronmcpcharged.cxx
+                    SOURCES jetFinderDielectronMCPCharged.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 

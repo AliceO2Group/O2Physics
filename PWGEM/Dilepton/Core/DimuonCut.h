@@ -59,6 +59,8 @@ class DimuonCut : public TNamed
     kMatchingChi2MCHMID,
     kRabs,
     kPDCA,
+    kMFTHitMap,
+    kDPtDEtaDPhiwrtMCHMID,
     kNCuts
   };
 
@@ -79,7 +81,7 @@ class DimuonCut : public TNamed
     return true;
   }
 
-  template <typename TTrack1, typename TTrack2>
+  template <bool dont_require_rapidity = false, typename TTrack1, typename TTrack2>
   bool IsSelectedPair(TTrack1 const& t1, TTrack2 const& t2) const
   {
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassMuon);
@@ -94,11 +96,7 @@ class DimuonCut : public TNamed
       return false;
     }
 
-    if (v12.Pt() < mMinPairPt || mMaxPairPt < v12.Pt()) {
-      return false;
-    }
-
-    if (v12.Rapidity() < mMinPairY || mMaxPairY < v12.Rapidity()) {
+    if (!dont_require_rapidity && (v12.Rapidity() < mMinPairY || mMaxPairY < v12.Rapidity())) {
       return false;
     }
 
@@ -116,17 +114,20 @@ class DimuonCut : public TNamed
     return true;
   }
 
-  template <typename TTrack>
+  template <bool dont_require_pteta = false, typename TTrack>
   bool IsSelectedTrack(TTrack const& track) const
   {
     if (!IsSelectedTrack(track, DimuonCuts::kTrackType)) {
       return false;
     }
-    if (!IsSelectedTrack(track, DimuonCuts::kTrackPtRange)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, DimuonCuts::kTrackEtaRange)) {
-      return false;
+
+    if (!dont_require_pteta) {
+      if (!IsSelectedTrack(track, DimuonCuts::kTrackPtRange)) {
+        return false;
+      }
+      if (!IsSelectedTrack(track, DimuonCuts::kTrackEtaRange)) {
+        return false;
+      }
     }
     if (!IsSelectedTrack(track, DimuonCuts::kTrackPhiRange)) {
       return false;
@@ -153,6 +154,12 @@ class DimuonCut : public TNamed
       return false;
     }
     if (!IsSelectedTrack(track, DimuonCuts::kRabs)) {
+      return false;
+    }
+    if (mApplyMFTHitMap && track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && !IsSelectedTrack(track, DimuonCuts::kMFTHitMap)) {
+      return false;
+    }
+    if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && !IsSelectedTrack(track, DimuonCuts::kDPtDEtaDPhiwrtMCHMID)) {
       return false;
     }
 
@@ -199,6 +206,19 @@ class DimuonCut : public TNamed
       case DimuonCuts::kRabs:
         return mMinRabs < track.rAtAbsorberEnd() && track.rAtAbsorberEnd() < mMaxRabs;
 
+      case DimuonCuts::kMFTHitMap: {
+        std::vector<bool> mftHitMap{checkMFTHitMap<0, 1>(track), checkMFTHitMap<2, 3>(track), checkMFTHitMap<4, 5>(track), checkMFTHitMap<6, 7>(track), checkMFTHitMap<8, 9>(track)};
+        for (const auto& iDisk : mRequiredMFTDisks) {
+          if (!mftHitMap[iDisk]) {
+            return false;
+          }
+        }
+        return true;
+      }
+
+      case DimuonCuts::kDPtDEtaDPhiwrtMCHMID:
+        return std::fabs(track.ptMatchedMCHMID() - track.pt()) / track.pt() < mMaxReldPtwrtMCHMID && std::sqrt(std::pow((track.etaMatchedMCHMID() - track.eta()) / mMaxdEtawrtMCHMID, 2) + std::pow((track.phiMatchedMCHMID() - track.phi()) / mMaxdPhiwrtMCHMID, 2)) < 1.f;
+
       default:
         return false;
     }
@@ -223,6 +243,8 @@ class DimuonCut : public TNamed
   void SetDCAxy(float min, float max); // in cm
   void SetRabs(float min, float max);  // in cm
   void SetMaxPDCARabsDep(std::function<float(float)> RabsDepCut);
+  void SetMFTHitMap(bool flag, std::vector<int> hitMap);
+  void SetMaxdPtdEtadPhiwrtMCHMID(float reldPtMax, float dEtaMax, float dPhiMax); // this is relevant for global muons
 
  private:
   // pair cuts
@@ -250,6 +272,9 @@ class DimuonCut : public TNamed
 
   float mMinRabs{17.6}, mMaxRabs{89.5};
   float mMinDcaXY{0.0f}, mMaxDcaXY{1e10f};
+  float mMaxReldPtwrtMCHMID{1e10f}, mMaxdEtawrtMCHMID{1e10f}, mMaxdPhiwrtMCHMID{1e10f};
+  bool mApplyMFTHitMap{false};
+  std::vector<int> mRequiredMFTDisks{};
 
   ClassDef(DimuonCut, 1);
 };

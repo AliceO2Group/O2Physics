@@ -339,7 +339,7 @@ struct qaLamMomResolution {
       return;
     }
     hist.fill(HIST("hEventSelectionFlow"), 1.f);
-    if (collSelection && (abs(collision.posZ()) >= 10.)) {
+    if (collSelection && (std::abs(collision.posZ()) >= 10.)) {
       return;
     }
     hist.fill(HIST("hEventSelectionFlow"), 2.f);

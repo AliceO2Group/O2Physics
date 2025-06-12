@@ -394,36 +394,36 @@ struct JetChCorr {
     }
   }
 
-  void processDummy(JetTracks const&)
+  void processDummy(aod::JetTracks const&)
   {
   }
   PROCESS_SWITCH(JetChCorr, processDummy, "Dummy process function turned on by default", true);
 
-  void processChargedJetsData(soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>::iterator const& jet, JetTracks const& tracks)
+  void processChargedJetsData(soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>::iterator const& jet, aod::JetTracks const& tracks)
   {
     analyseCharged<false>(jet, tracks);
   }
   PROCESS_SWITCH(JetChCorr, processChargedJetsData, "charged jet substructure", false);
 
   void processChargedJetsEventWiseSubData(soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents>::iterator const& jet,
-                                          JetTracksSub const& tracks)
+                                          aod::JetTracksSub const& tracks)
   {
     analyseCharged<true>(jet, tracks);
   }
   PROCESS_SWITCH(JetChCorr, processChargedJetsEventWiseSubData, "eventwise-constituent subtracted charged jet substructure", false);
 
   void processChargedJetsMCD(typename soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>::iterator const& jet,
-                             JetTracks const& tracks)
+                             aod::JetTracks const& tracks)
   {
     analyseCharged<false>(jet, tracks);
   }
   PROCESS_SWITCH(JetChCorr, processChargedJetsMCD, "charged jet substructure", false);
 
   void processChargedJetsMCP(typename soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet,
-                             JetParticles const&)
+                             aod::JetParticles const&)
   {
     jetConstituents.clear();
-    for (auto& jetConstituent : jet.template tracks_as<JetParticles>()) {
+    for (auto& jetConstituent : jet.template tracks_as<aod::JetParticles>()) {
       fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::track), pdg->Mass(jetConstituent.pdgCode()));
     }
     jetReclustering<true, false>(jet);

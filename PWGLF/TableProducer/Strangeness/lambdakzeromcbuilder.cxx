@@ -55,6 +55,8 @@ struct lambdakzeromcbuilder {
   Configurable<bool> addGeneratedAntiLambda{"addGeneratedAntiLambda", false, "add V0MCCore entry for generated, not-recoed AntiLambda"};
   Configurable<bool> addGeneratedGamma{"addGeneratedGamma", false, "add V0MCCore entry for generated, not-recoed Gamma"};
 
+  Configurable<bool> treatPiToMuDecays{"treatPiToMuDecays", true, "if true, will correctly capture pi -> mu and V0 label will still point to originating V0 decay in those cases. Nota bene: prong info will still be for the muon!"};
+
   Configurable<float> rapidityWindow{"rapidityWindow", 0.5, "rapidity window to save non-recoed candidates"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -111,15 +113,38 @@ struct lambdakzeromcbuilder {
     std::array<float, 3> posP;
     std::array<float, 3> negP;
     std::array<float, 3> momentum;
-    uint64_t packedMcParticleIndices;
   };
   mcV0info thisInfo;
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
-  // prong index combiner
-  uint64_t combineProngIndices(uint32_t low, uint32_t high)
+  // kink handling
+  template <typename mcpart>
+  int getOriginatingParticle(mcpart const& part, int& indexForPositionOfDecay)
   {
-    return (((uint64_t)high) << 32) | ((uint64_t)low);
+    int returnValue = -1;
+    if (part.has_mothers()) {
+      auto const& motherList = part.template mothers_as<aod::McParticles>();
+      if (motherList.size() == 1) {
+        for (const auto& mother : motherList) {
+          if (std::abs(part.pdgCode()) == 13 && treatPiToMuDecays) {
+            // muon decay, de-ref mother twice
+            if (mother.has_mothers()) {
+              auto grandMotherList = mother.template mothers_as<aod::McParticles>();
+              if (grandMotherList.size() == 1) {
+                for (const auto& grandMother : grandMotherList) {
+                  returnValue = grandMother.globalIndex();
+                  indexForPositionOfDecay = mother.globalIndex(); // for V0 decay position: grab muon
+                }
+              }
+            }
+          } else {
+            returnValue = mother.globalIndex();
+            indexForPositionOfDecay = part.globalIndex();
+          }
+        }
+      }
+    }
+    return returnValue;
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -131,7 +156,6 @@ struct lambdakzeromcbuilder {
     std::vector<bool> mcParticleIsReco(mcParticles.size(), false); // mc Particle not recoed by V0s
 
     for (auto& v0 : v0table) {
-      thisInfo.packedMcParticleIndices = 0; // not de-referenced properly yet
       thisInfo.label = -1;
       thisInfo.motherLabel = -1;
       thisInfo.pdgCode = 0;
@@ -152,7 +176,6 @@ struct lambdakzeromcbuilder {
         auto lMCNegTrack = lNegTrack.mcParticle_as<aod::McParticles>();
         auto lMCPosTrack = lPosTrack.mcParticle_as<aod::McParticles>();
 
-        thisInfo.packedMcParticleIndices = combineProngIndices(lPosTrack.mcParticleId(), lNegTrack.mcParticleId());
         thisInfo.pdgCodePositive = lMCPosTrack.pdgCode();
         thisInfo.pdgCodeNegative = lMCNegTrack.pdgCode();
         thisInfo.processPositive = lMCPosTrack.getProcess();
@@ -163,65 +186,71 @@ struct lambdakzeromcbuilder {
         thisInfo.negP[0] = lMCNegTrack.px();
         thisInfo.negP[1] = lMCNegTrack.py();
         thisInfo.negP[2] = lMCNegTrack.pz();
-        if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
-          for (auto& lNegMother : lMCNegTrack.mothers_as<aod::McParticles>()) {
-            for (auto& lPosMother : lMCPosTrack.mothers_as<aod::McParticles>()) {
-              if (lNegMother.globalIndex() == lPosMother.globalIndex()) {
-                thisInfo.label = lNegMother.globalIndex();
-                thisInfo.xyz[0] = lMCPosTrack.vx();
-                thisInfo.xyz[1] = lMCPosTrack.vy();
-                thisInfo.xyz[2] = lMCPosTrack.vz();
 
-                // MC pos. and neg. daughters are the same! Looking for replacement...
-                if (lMCPosTrack.globalIndex() == lMCNegTrack.globalIndex()) {
-                  auto const& daughters = lNegMother.daughters_as<aod::McParticles>();
-                  for (auto& ldau : daughters) {
-                    // check if the candidate originate from a decay
-                    // if not, this is not a suitable candidate for one of the decay daughters
-                    if (ldau.getProcess() != 4) // see TMCProcess.h
-                      continue;
+        // check for pi -> mu + antineutrino decay
+        // if present, de-reference original V0 correctly and provide label to original object
+        // NOTA BENE: the prong info will still correspond to a muon, treat carefully!
+        int negOriginating = -1, posOriginating = -1, particleForDecayPositionIdx = -1;
+        negOriginating = getOriginatingParticle(lMCNegTrack, particleForDecayPositionIdx);
+        posOriginating = getOriginatingParticle(lMCPosTrack, particleForDecayPositionIdx);
 
-                    if (lMCPosTrack.pdgCode() < 0 && ldau.pdgCode() > 0) { // the positive track needs to be changed
-                      thisInfo.pdgCodePositive = ldau.pdgCode();
-                      thisInfo.processPositive = ldau.getProcess();
-                      thisInfo.posP[0] = ldau.px();
-                      thisInfo.posP[1] = ldau.py();
-                      thisInfo.posP[2] = ldau.pz();
-                      thisInfo.xyz[0] = ldau.vx();
-                      thisInfo.xyz[1] = ldau.vy();
-                      thisInfo.xyz[2] = ldau.vz();
-                    }
-                    if (lMCNegTrack.pdgCode() > 0 && ldau.pdgCode() < 0) { // the negative track needs to be changed
-                      thisInfo.pdgCodeNegative = ldau.pdgCode();
-                      thisInfo.processNegative = ldau.getProcess();
-                      thisInfo.negP[0] = ldau.px();
-                      thisInfo.negP[1] = ldau.py();
-                      thisInfo.negP[2] = ldau.pz();
-                    }
-                  }
-                }
+        if (negOriginating > -1 && negOriginating == posOriginating) {
+          auto originatingV0 = mcParticles.rawIteratorAt(negOriginating);
+          auto particleForDecayPosition = mcParticles.rawIteratorAt(particleForDecayPositionIdx);
 
-                if (lNegMother.has_mcCollision()) {
-                  thisInfo.mcCollision = lNegMother.mcCollisionId(); // save this reference, please
-                }
+          thisInfo.label = originatingV0.globalIndex();
+          thisInfo.xyz[0] = particleForDecayPosition.vx();
+          thisInfo.xyz[1] = particleForDecayPosition.vy();
+          thisInfo.xyz[2] = particleForDecayPosition.vz();
 
-                // acquire information
-                thisInfo.pdgCode = lNegMother.pdgCode();
-                thisInfo.isPhysicalPrimary = lNegMother.isPhysicalPrimary();
-                thisInfo.momentum[0] = lNegMother.px();
-                thisInfo.momentum[1] = lNegMother.py();
-                thisInfo.momentum[2] = lNegMother.pz();
+          // MC pos. and neg. daughters are the same! Looking for replacement...
+          // if (lMCPosTrack.globalIndex() == lMCNegTrack.globalIndex()) {
+          //   auto const& daughters = lNegMother.daughters_as<aod::McParticles>();
+          //   for (auto& ldau : daughters) {
+          //     // check if the candidate originates from a decay
+          //     // if not, this is not a suitable candidate for one of the decay daughters
+          //     if (ldau.getProcess() != 4) // see TMCProcess.h
+          //       continue;
 
-                if (lNegMother.has_mothers()) {
-                  for (auto& lNegGrandMother : lNegMother.mothers_as<aod::McParticles>()) {
-                    thisInfo.pdgCodeMother = lNegGrandMother.pdgCode();
-                    thisInfo.motherLabel = lNegGrandMother.globalIndex();
-                  }
-                }
-              }
+          //     if (lMCPosTrack.pdgCode() < 0 && ldau.pdgCode() > 0) { // the positive track needs to be changed
+          //       thisInfo.pdgCodePositive = ldau.pdgCode();
+          //       thisInfo.processPositive = ldau.getProcess();
+          //       thisInfo.posP[0] = ldau.px();
+          //       thisInfo.posP[1] = ldau.py();
+          //       thisInfo.posP[2] = ldau.pz();
+          //       thisInfo.xyz[0] = ldau.vx();
+          //       thisInfo.xyz[1] = ldau.vy();
+          //       thisInfo.xyz[2] = ldau.vz();
+          //     }
+          //     if (lMCNegTrack.pdgCode() > 0 && ldau.pdgCode() < 0) { // the negative track needs to be changed
+          //       thisInfo.pdgCodeNegative = ldau.pdgCode();
+          //       thisInfo.processNegative = ldau.getProcess();
+          //       thisInfo.negP[0] = ldau.px();
+          //       thisInfo.negP[1] = ldau.py();
+          //       thisInfo.negP[2] = ldau.pz();
+          //     }
+          //   }
+          // }
+
+          if (originatingV0.has_mcCollision()) {
+            thisInfo.mcCollision = originatingV0.mcCollisionId(); // save this reference, please
+          }
+
+          // acquire information
+          thisInfo.pdgCode = originatingV0.pdgCode();
+          thisInfo.isPhysicalPrimary = originatingV0.isPhysicalPrimary();
+          thisInfo.momentum[0] = originatingV0.px();
+          thisInfo.momentum[1] = originatingV0.py();
+          thisInfo.momentum[2] = originatingV0.pz();
+
+          if (originatingV0.has_mothers()) {
+            for (auto& lV0Mother : originatingV0.mothers_as<aod::McParticles>()) {
+              thisInfo.pdgCodeMother = lV0Mother.pdgCode();
+              thisInfo.motherLabel = lV0Mother.globalIndex();
             }
           }
         }
+
       } // end association check
       // Construct label table (note: this will be joinable with V0Datas!)
       v0labels(
@@ -308,7 +337,6 @@ struct lambdakzeromcbuilder {
     if (populateV0MCCoresAsymmetric) {
       // first step: add any un-recoed v0mmcores that were requested
       for (auto& mcParticle : mcParticles) {
-        thisInfo.packedMcParticleIndices = 0;
         thisInfo.label = -1;
         thisInfo.motherLabel = -1;
         thisInfo.pdgCode = 0;

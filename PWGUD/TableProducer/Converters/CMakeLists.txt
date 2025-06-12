@@ -20,3 +20,12 @@ o2physics_add_dpl_workflow(collisions-converter
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(collisionselextras-converter
+                           SOURCES UDCollisionSelExtrasConverter.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(collisionselextras-converter-v002
+        SOURCES UDCollisionSelExtrasV002Converter.cxx
+        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+        COMPONENT_NAME Analysis)

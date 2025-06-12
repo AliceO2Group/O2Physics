@@ -17,6 +17,9 @@
 ///
 
 // O2 includes
+#include <memory>
+#include <vector>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -24,6 +27,7 @@
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -35,6 +39,7 @@
 #include "TEfficiency.h"
 #include "THashList.h"
 
+using namespace o2;
 using namespace o2::framework;
 
 // Indices for the track cut histogram
@@ -66,12 +71,14 @@ static constexpr int trkCutIdxN = 23;
 static constexpr int nSpecies = o2::track::PID::NIDs; // One per PDG
 static constexpr int nCharges = 2;
 static constexpr int nParticles = nSpecies * nCharges;
-static constexpr const char* particleTitle[nParticles] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha",
-                                                          "e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha"};
+static constexpr const char* particleTitle[nParticles] = {"e^{-}", "#mu^{-}", "#pi^{+}",
+                                                          "K^{+}", "p", "d",
+                                                          "t", "^{3}He", "#alpha",
+                                                          "e^{+}", "#mu^{+}", "#pi^{-}",
+                                                          "K^{-}", "#bar{p}", "#bar{d}",
+                                                          "#bar{t}", "^{3}#bar{He}", "#bar{#alpha}"};
 static constexpr int PDGs[nParticles] = {11, 13, 211, 321, 2212, 1000010020, 1000010030, 1000020030, 1000020040,
                                          -11, -13, -211, -321, -2212, -1000010020, -1000010030, -1000020030, -1000020040};
-
-// Histograms
 
 // Pt
 std::array<std::shared_ptr<TH1>, nParticles> hPtIts;
@@ -100,6 +107,8 @@ std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcStr;
 std::array<std::shared_ptr<TH1>, nParticles> hPtTrkItsTpcStr;
 std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcTofStr;
 std::array<std::shared_ptr<TH1>, nParticles> hPtGeneratedStr;
+std::array<std::shared_ptr<TH1>, nParticles> hPtmotherGenerated; // histogram to store pT of mother
+std::array<std::shared_ptr<TH1>, nParticles> hdecaylengthmother; // histogram to store decaylength of mother
 
 // Pt for secondaries from material
 std::array<std::shared_ptr<TH1>, nParticles> hPtItsTpcMat;
@@ -198,6 +207,7 @@ struct QaEfficiency {
   Configurable<bool> checkForMothers{"checkForMothers", false, "Flag to use the array of mothers to check if the particle of interest come from any of those particles"};
   Configurable<std::vector<int>> mothersPDGs{"mothersPDGs", std::vector<int>{3312, -3312}, "PDGs of origin of the particle under study"};
   Configurable<bool> keepOnlyHfParticles{"keepOnlyHfParticles", false, "Flag to decide wheter to consider only HF particles"};
+  Configurable<int> eventGeneratorType{"eventGeneratorType", -1, "Flag to check specific event generator (for HF): -1 -> no check, 0 -> MB events, 4 -> charm triggered, 5 -> beauty triggered"};
   // Track only selection, options to select only specific tracks
   Configurable<bool> trackSelection{"trackSelection", true, "Local track selection"};
   Configurable<int> globalTrackSelection{"globalTrackSelection", 0, "Global track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks, 6 -> custom track cuts via Configurable"};
@@ -213,12 +223,15 @@ struct QaEfficiency {
   ConfigurableAxis etaBins{"etaBins", {200, -3.f, 3.f}, "Eta binning"};
   ConfigurableAxis phiBins{"phiBins", {200, 0.f, 6.284f}, "Phi binning"};
   ConfigurableAxis yBins{"yBins", {200, -0.5f, 0.5f}, "Y binning"};
+  ConfigurableAxis occBins{"occBins", {100, 0.f, 14000.f}, "Occupancy binning"};
+  ConfigurableAxis centBins{"centBins", {110, 0.f, 110.f}, "Centrality binning"};
   ConfigurableAxis radiusBins{"radiusBins", {200, 0.f, 100.f}, "Radius binning"};
   // Task configuration
   Configurable<bool> makeEff{"make-eff", false, "Flag to produce the efficiency with TEfficiency"};
   Configurable<bool> doPtEta{"doPtEta", false, "Flag to produce the efficiency vs pT and Eta"};
   Configurable<bool> doPtRadius{"doPtRadius", false, "Flag to produce the efficiency vs pT and Radius"};
   Configurable<int> applyEvSel{"applyEvSel", 0, "Flag to apply event selection: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
+  Configurable<bool> applyTimeFrameBorderCut{"applyTimeFrameBorderCut", false, "Flag to apply the TF border cut"};
   // Custom track cuts for debug purposes
   TrackSelection customTrackCuts;
   struct : ConfigurableGroup {
@@ -241,14 +254,18 @@ struct QaEfficiency {
   Configurable<float> minDcaZ{"minDcaZ", -2.f, "Additional cut on the minimum abs value of the DCA z"};
   Configurable<float> minDcaXY{"minDcaXY", -1.f, "Additional cut on the minimum abs value of the DCA xy"};
 
+  Configurable<bool> doOccupancy{"doOccupancyStudy", false, "Flag to store Occupancy-related information"};
+  Configurable<bool> useFT0OccEstimator{"useFT0OccEstimator", false, "Flag to adopt FT0c to estimate occupancy instead of ITS"};
+
   // Output objects for TEfficiency
   OutputObj<THashList> listEfficiencyMC{"EfficiencyMC"};
   OutputObj<THashList> listEfficiencyData{"EfficiencyData"};
 
-  using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
+  using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, aod::CentFT0Cs>;
   using CollisionCandidatesMC = o2::soa::Join<CollisionCandidates, o2::aod::McCollisionLabels>;
   using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension, o2::aod::TracksDCA>;
   using TrackCandidatesMC = o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels>;
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -281,6 +298,7 @@ struct QaEfficiency {
       LOG(fatal) << "Can't interpret pdgSign " << pdgSign;
     }
 
+    AxisSpec axisDecayLength{100, 0.0, 10.0, "Decay Length (cm)"};
     AxisSpec axisPt{ptBins, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec axisP{ptBins, "#it{p} (GeV/#it{c})"};
     if (logPt) {
@@ -291,6 +309,7 @@ struct QaEfficiency {
     const AxisSpec axisY{yBins, "#it{y}"};
     const AxisSpec axisPhi{phiBins, "#it{#varphi} (rad)"};
     const AxisSpec axisRadius{radiusBins, "Radius (cm)"};
+    const AxisSpec axisOcc{occBins, "Occupancy"};
 
     const char* partName = particleName(pdgSign, id);
     LOG(info) << "Preparing histograms for particle: " << partName << " pdgSign " << pdgSign;
@@ -352,6 +371,8 @@ struct QaEfficiency {
     hPtTrkItsTpcStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/trk/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (reco from weak decays) " + tagPt, kTH1D, {axisPt});
     hPtItsTpcTofStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (from weak decays) " + tagPt, kTH1D, {axisPt});
     hPtGeneratedStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/generated", PDGs[histogramIndex]), "Generated (from weak decays) " + tagPt, kTH1D, {axisPt});
+    hPtmotherGenerated[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/generated_mother", PDGs[histogramIndex]), "Generated Mother " + tagPt, kTH1D, {axisPt});
+    hdecaylengthmother[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/decayLength", PDGs[histogramIndex]), "Decay Length of mother particle" + tagPt, kTH1D, {axisDecayLength});
 
     // Ter
     hPtItsTpcTer[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/ter/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (from secondary weak decays) " + tagPt, kTH1D, {axisPt});
@@ -630,6 +651,24 @@ struct QaEfficiency {
 
     listEfficiencyMC.setObject(new THashList);
 
+    if (doOccupancy) {
+      const AxisSpec axisPt{ptBins, "#it{p}_{T} (GeV/#it{c})"};
+      const AxisSpec axisOcc{occBins, "Occupancy"};
+      const AxisSpec axisCent{centBins, "Centrality"};
+
+      histos.add("MC/occ_cent/gen/pos", "Generated Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("MC/occ_cent/gen/neg", "Generated Negative ", kTH3D, {axisOcc, axisCent, axisPt});
+
+      histos.add("MC/occ_cent/reco/pos/its_tpc_tof", "ITS-TPC-TOF Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("MC/occ_cent/reco/neg/its_tpc_tof", "ITS-TPC-TOF Negative ", kTH3D, {axisOcc, axisCent, axisPt});
+
+      histos.add("MC/occ_cent/reco/pos/its_tpc", "ITS-TPC Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("MC/occ_cent/reco/neg/its_tpc", "ITS-TPC Negative ", kTH3D, {axisOcc, axisCent, axisPt});
+
+      histos.add("MC/occ_cent/reco/pos/its", "ITS Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("MC/occ_cent/reco/neg/its", "ITS Negative ", kTH3D, {axisOcc, axisCent, axisPt});
+    }
+
     static_for<0, 1>([&](auto pdgSign) {
       makeMCHistograms<pdgSign, o2::track::PID::Electron>(doEl);
       makeMCHistograms<pdgSign, o2::track::PID::Muon>(doMu);
@@ -734,6 +773,8 @@ struct QaEfficiency {
                                 ptMin, ptMax,
                                 phiMin, phiMax);
     const AxisSpec axisEta{etaBins, "#it{#eta}"};
+    const AxisSpec axisOcc{occBins, "Occupancy"};
+    const AxisSpec axisCent{centBins, "Centrality"};
 
     const TString tagPhi = Form("#it{#eta} [%.2f,%.2f] #it{p}_{T} [%.2f,%.2f]",
                                 etaMin, etaMax,
@@ -744,6 +785,20 @@ struct QaEfficiency {
                                    ptMin, ptMax);
 
     histos.add("Data/trackLength", "Track length;Track length (cm)", kTH1D, {{2000, -1000, 1000}});
+
+    if (doOccupancy) {
+      histos.add("Data/occ_cent/pos/its_tpc_tof", "ITS-TPC-TOF Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("Data/occ_cent/neg/its_tpc_tof", "ITS-TPC-TOF Negative ", kTH3D, {axisOcc, axisCent, axisPt});
+
+      histos.add("Data/occ_cent/pos/its_tpc", "ITS-TPC Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("Data/occ_cent/neg/its_tpc", "ITS-TPC Negative ", kTH3D, {axisOcc, axisCent, axisPt});
+
+      histos.add("Data/occ_cent/pos/tpc", "TPC Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("Data/occ_cent/neg/tpc", "TPC Negative ", kTH3D, {axisOcc, axisCent, axisPt});
+
+      histos.add("Data/occ_cent/pos/its", "ITS Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("Data/occ_cent/neg/its", "ITS Negative ", kTH3D, {axisOcc, axisCent, axisPt});
+    }
 
     // ITS-TPC-TOF
     histos.add("Data/pos/pt/its_tpc_tof", "ITS-TPC-TOF Positive " + tagPt, kTH1D, {axisPt});
@@ -919,6 +974,7 @@ struct QaEfficiency {
 
     histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(3, "Passed Contrib.");
     histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(4, "Passed Position");
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(5, "Passed Time Frame border cut");
 
     if (doprocessMC) {
       histos.add("MC/generatedCollisions", "Generated Collisions", kTH1D, {{10, 0.5, 10.5, "Generated collisions"}});
@@ -1108,6 +1164,9 @@ struct QaEfficiency {
           for (const auto& pdgToCheck : mothersPDGs.value) {
             if (mother.pdgCode() == pdgToCheck) {
               motherIsAccepted = true;
+              // Calculate the decay length
+              double decayLength = std::sqrt(std::pow(mother.vx() - mother.mcCollision().posX(), 2) + std::pow(mother.vy() - mother.mcCollision().posY(), 2) + std::pow(mother.vz() - mother.mcCollision().posZ(), 2));
+              hdecaylengthmother[histogramIndex]->Fill(decayLength);
               break;
             }
             if (motherIsAccepted) {
@@ -1200,15 +1259,17 @@ struct QaEfficiency {
       }
     } else {
       if (mcParticle.getProcess() == 4) { // Particle decay
-        // Checking mothers
         bool motherIsAccepted = true;
+        // Check for mothers if needed
         if (checkForMothers.value && mothersPDGs.value.size() > 0 && mcParticle.has_mothers()) {
           motherIsAccepted = false;
           auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
+          // Loop over mother particles
           for (const auto& mother : mothers) {
             for (const auto& pdgToCheck : mothersPDGs.value) {
               if (mother.pdgCode() == pdgToCheck) {
-                motherIsAccepted = true;
+                motherIsAccepted = true;                               // Mother matches the list of specified PDGs
+                hPtmotherGenerated[histogramIndex]->Fill(mother.pt()); // Fill generated pT for mother
                 break;
               }
               if (motherIsAccepted) {
@@ -1395,6 +1456,12 @@ struct QaEfficiency {
     }
     if constexpr (doFillHistograms) {
       histos.fill(HIST("eventSelection"), 4);
+    }
+    if (applyTimeFrameBorderCut && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+    if constexpr (doFillHistograms) {
+      histos.fill(HIST("eventSelection"), 5);
     }
     return true;
   }
@@ -1627,6 +1694,54 @@ struct QaEfficiency {
     return true;
   }
 
+  /// \brief Function to get MC collision occupancy
+  /// \param collSlice collection of reconstructed collisions
+  /// \return collision occupancy
+  template <typename CCs>
+  int getOccupancyColl(CCs const& collSlice)
+  {
+    float multiplicity{0.f};
+    int occupancy = 0;
+    for (const auto& collision : collSlice) {
+      float collMult{0.f};
+      collMult = collision.numContrib();
+
+      if (collMult > multiplicity) {
+        if (useFT0OccEstimator) {
+          /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
+          occupancy = collision.ft0cOccupancyInTimeRange();
+        } else {
+          /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
+          occupancy = static_cast<float>(collision.trackOccupancyInTimeRange());
+        }
+        multiplicity = collMult;
+      }
+    } // end loop over collisions
+
+    return occupancy;
+  }
+
+  /// \brief Function to get MC collision centrality
+  /// \param collSlice collection of reconstructed collisions
+  /// \return collision centrality
+  template <typename CCs>
+  int getCentralityColl(CCs const& collSlice)
+  {
+    float multiplicity{0.f};
+    int centrality = 0;
+    for (const auto& collision : collSlice) {
+      float collMult{0.f};
+      collMult = collision.numContrib();
+
+      if (collMult > multiplicity) {
+        centrality = collision.centFT0C();
+        multiplicity = collMult;
+      }
+    } // end loop over collisions
+
+    return centrality;
+  }
+
   // MC process
   // Single-track efficiency calculated only for MC collisions with at least 1 reco. collision
   SliceCache cache;
@@ -1637,7 +1752,8 @@ struct QaEfficiency {
                  // o2::soa::SmallGroups<CollisionCandidatesMC> const& collisions,
                  CollisionCandidatesMC const& collisions,
                  TrackCandidatesMC const& tracks,
-                 o2::aod::McParticles const& mcParticles)
+                 o2::aod::McParticles const& mcParticles,
+                 BCsInfo const&)
   {
 
     /// loop over generated collisions
@@ -1651,6 +1767,12 @@ struct QaEfficiency {
 
       if (groupedCollisions.size() < 1) { // Skipping MC events that have no reconstructed collisions
         continue;
+      }
+      float centrality = -1.;
+      float occupancy = -1.;
+      if (doOccupancy) {
+        centrality = getCentralityColl(groupedCollisions);
+        occupancy = getOccupancyColl(groupedCollisions);
       }
       histos.fill(HIST("MC/generatedCollisions"), 2);
       if (skipEventsWithoutTPCTracks) {
@@ -1671,6 +1793,11 @@ struct QaEfficiency {
       }
       histos.fill(HIST("MC/generatedCollisions"), 3);
 
+      if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+        LOG(debug) << "Skipping event with different type of generator than the one requested";
+        continue;
+      }
+
       /// loop over reconstructed collisions
       for (const auto& collision : groupedCollisions) {
         histos.fill(HIST("MC/generatedCollisions"), 4);
@@ -1678,6 +1805,14 @@ struct QaEfficiency {
           continue;
         }
         histos.fill(HIST("MC/generatedCollisions"), 5);
+        if (useFT0OccEstimator) {
+          /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
+          occupancy = collision.ft0cOccupancyInTimeRange();
+        } else {
+          /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
+          occupancy = static_cast<float>(collision.trackOccupancyInTimeRange());
+        }
+        centrality = collision.centFT0C();
 
         const auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
 
@@ -1692,6 +1827,33 @@ struct QaEfficiency {
           const auto& particle = track.mcParticle();
           if (keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, particle, /*searchUpToQuark*/ true)) {
             continue;
+          }
+
+          if (doOccupancy) {
+            float trackPt = track.pt();
+            float trackSign = track.sign();
+            if (trackSign > 0) {
+              if (passedTOF && passedTPC && passedITS) {
+                histos.fill(HIST("MC/occ_cent/reco/pos/its_tpc_tof"), occupancy, centrality, trackPt);
+              }
+              if (passedTPC && passedITS) {
+                histos.fill(HIST("MC/occ_cent/reco/pos/its_tpc"), occupancy, centrality, trackPt);
+              }
+              if (passedITS) {
+                histos.fill(HIST("MC/occ_cent/reco/pos/its"), occupancy, centrality, trackPt);
+              }
+            }
+            if (trackSign < 0) {
+              if (passedTOF && passedTPC && passedITS) {
+                histos.fill(HIST("MC/occ_cent/reco/neg/its_tpc_tof"), occupancy, centrality, trackPt);
+              }
+              if (passedTPC && passedITS) {
+                histos.fill(HIST("MC/occ_cent/reco/neg/its_tpc"), occupancy, centrality, trackPt);
+              }
+              if (passedITS) {
+                histos.fill(HIST("MC/occ_cent/reco/neg/its"), occupancy, centrality, trackPt);
+              }
+            }
           }
 
           // Filling variable histograms
@@ -1722,6 +1884,13 @@ struct QaEfficiency {
               continue;
             }
           }
+          // apply time-frame border cut also to the generated collision
+          if (applyTimeFrameBorderCut) {
+            auto bc = mcCollision.bc_as<BCsInfo>();
+            if (!bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+              continue;
+            }
+          }
         }
 
         /// only to fill denominator of ITS-TPC matched primary tracks only in MC events with at least 1 reco. vtx
@@ -1735,6 +1904,17 @@ struct QaEfficiency {
           // search for particles from HF decays
           if (keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, particle, /*searchUpToQuark*/ true)) {
             continue;
+          }
+
+          if (doOccupancy) {
+            float partSign = particle.pdgCode();
+            float mcPartPt = particle.pt();
+            if (partSign > 0) {
+              histos.fill(HIST("MC/occ_cent/gen/pos"), occupancy, centrality, mcPartPt);
+            }
+            if (partSign < 0) {
+              histos.fill(HIST("MC/occ_cent/gen/neg"), occupancy, centrality, mcPartPt);
+            }
           }
 
           static_for<0, 1>([&](auto pdgSign) {
@@ -1756,6 +1936,13 @@ struct QaEfficiency {
       if (applyPvZCutGenColl) {
         const float genPvZ = mcCollision.posZ();
         if (genPvZ < vertexZMin || genPvZ > vertexZMax) {
+          continue;
+        }
+      }
+      // apply time-frame border cut also to the generated collision
+      if (applyTimeFrameBorderCut) {
+        auto bc = mcCollision.bc_as<BCsInfo>();
+        if (!bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
           continue;
         }
       }
@@ -1813,7 +2000,8 @@ struct QaEfficiency {
   void processMCWithoutCollisions(TrackCandidatesMC const& tracks,
                                   o2::aod::Collisions const&,
                                   o2::aod::McParticles const& mcParticles,
-                                  o2::aod::McCollisions const&)
+                                  o2::aod::McCollisions const&,
+                                  BCsInfo const&)
   {
     // Track loop
     for (const auto& track : tracks) {
@@ -1862,6 +2050,14 @@ struct QaEfficiency {
         const auto mcCollision = mcParticle.mcCollision();
         const float posZ = mcCollision.posZ();
         if (posZ < vertexZMin || posZ > vertexZMax) {
+          continue;
+        }
+      }
+      // apply time-frame border cut also to the generated collision
+      if (applyTimeFrameBorderCut) {
+        const auto mcCollision = mcParticle.mcCollision();
+        auto bc = mcCollision.bc_as<BCsInfo>();
+        if (!bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
           continue;
         }
       }
@@ -1914,76 +2110,124 @@ struct QaEfficiency {
 
       histos.fill(HIST("Data/trackLength"), track.length());
 
-      if (passedITS) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/its"), track.pt());
-          histos.fill(HIST("Data/pos/eta/its"), track.eta());
-          histos.fill(HIST("Data/pos/phi/its"), track.phi());
-          histos.fill(HIST("Data/pos/etaphi/its"), track.eta(), track.phi());
+      float trackPt = track.pt();
+      float trackEta = track.eta();
+      float trackPhi = track.phi();
+      float trackSign = track.sign();
+      float occupancy{};
+      float centrality{};
+      if (doOccupancy) {
+        centrality = collision.centFT0C();
+        if (useFT0OccEstimator) {
+          /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
+          occupancy = collision.ft0cOccupancyInTimeRange();
         } else {
-          histos.fill(HIST("Data/neg/pt/its"), track.pt());
-          histos.fill(HIST("Data/neg/eta/its"), track.eta());
-          histos.fill(HIST("Data/neg/phi/its"), track.phi());
-          histos.fill(HIST("Data/neg/etaphi/its"), track.eta(), track.phi());
+          /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
+          occupancy = static_cast<float>(collision.trackOccupancyInTimeRange());
+        }
+      }
+      if (passedITS) {
+        if (trackSign > 0) {
+          histos.fill(HIST("Data/pos/pt/its"), trackPt);
+          histos.fill(HIST("Data/pos/eta/its"), trackEta);
+          histos.fill(HIST("Data/pos/phi/its"), trackPhi);
+          histos.fill(HIST("Data/pos/etaphi/its"), trackEta, trackPhi);
+
+          if (doOccupancy) {
+            histos.fill(HIST("Data/occ_cent/pos/its"), occupancy, centrality, trackPt);
+          }
+        } else {
+          histos.fill(HIST("Data/neg/pt/its"), trackPt);
+          histos.fill(HIST("Data/neg/eta/its"), trackEta);
+          histos.fill(HIST("Data/neg/phi/its"), trackPhi);
+          histos.fill(HIST("Data/neg/etaphi/its"), trackEta, trackPhi);
+
+          if (doOccupancy) {
+            histos.fill(HIST("Data/occ_cent/neg/its"), occupancy, centrality, trackPt);
+          }
         }
       }
 
       if (passedTPC) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/tpc"), track.pt());
-          histos.fill(HIST("Data/pos/eta/tpc"), track.eta());
-          histos.fill(HIST("Data/pos/phi/tpc"), track.phi());
-          histos.fill(HIST("Data/pos/etaphi/tpc"), track.eta(), track.phi());
+        if (trackSign > 0) {
+          histos.fill(HIST("Data/pos/pt/tpc"), trackPt);
+          histos.fill(HIST("Data/pos/eta/tpc"), trackEta);
+          histos.fill(HIST("Data/pos/phi/tpc"), trackPhi);
+          histos.fill(HIST("Data/pos/etaphi/tpc"), trackEta, trackPhi);
+
+          if (doOccupancy) {
+            histos.fill(HIST("Data/occ_cent/pos/tpc"), occupancy, centrality, trackPt);
+          }
         } else {
-          histos.fill(HIST("Data/neg/pt/tpc"), track.pt());
-          histos.fill(HIST("Data/neg/eta/tpc"), track.eta());
-          histos.fill(HIST("Data/neg/phi/tpc"), track.phi());
-          histos.fill(HIST("Data/neg/etaphi/tpc"), track.eta(), track.phi());
+          histos.fill(HIST("Data/neg/pt/tpc"), trackPt);
+          histos.fill(HIST("Data/neg/eta/tpc"), trackEta);
+          histos.fill(HIST("Data/neg/phi/tpc"), trackPhi);
+          histos.fill(HIST("Data/neg/etaphi/tpc"), trackEta, trackPhi);
+
+          if (doOccupancy) {
+            histos.fill(HIST("Data/occ_cent/neg/tpc"), occupancy, centrality, trackPt);
+          }
         }
       }
 
       if (passedITS && passedTPC) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/its_tpc"), track.pt());
-          histos.fill(HIST("Data/pos/eta/its_tpc"), track.eta());
-          histos.fill(HIST("Data/pos/phi/its_tpc"), track.phi());
-          histos.fill(HIST("Data/pos/etaphi/its_tpc"), track.eta(), track.phi());
+        if (trackSign > 0) {
+          histos.fill(HIST("Data/pos/pt/its_tpc"), trackPt);
+          histos.fill(HIST("Data/pos/eta/its_tpc"), trackEta);
+          histos.fill(HIST("Data/pos/phi/its_tpc"), trackPhi);
+          histos.fill(HIST("Data/pos/etaphi/its_tpc"), trackEta, trackPhi);
+
+          if (doOccupancy) {
+            histos.fill(HIST("Data/occ_cent/pos/its_tpc"), occupancy, centrality, trackPt);
+          }
         } else {
-          histos.fill(HIST("Data/neg/pt/its_tpc"), track.pt());
-          histos.fill(HIST("Data/neg/eta/its_tpc"), track.eta());
-          histos.fill(HIST("Data/neg/phi/its_tpc"), track.phi());
-          histos.fill(HIST("Data/neg/etaphi/its_tpc"), track.eta(), track.phi());
+          histos.fill(HIST("Data/neg/pt/its_tpc"), trackPt);
+          histos.fill(HIST("Data/neg/eta/its_tpc"), trackEta);
+          histos.fill(HIST("Data/neg/phi/its_tpc"), trackPhi);
+          histos.fill(HIST("Data/neg/etaphi/its_tpc"), trackEta, trackPhi);
+
+          if (doOccupancy) {
+            histos.fill(HIST("Data/occ_cent/neg/its_tpc"), occupancy, centrality, trackPt);
+          }
         }
       }
 
       if (passedITS && passedTPC && passedTOF) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/its_tpc_tof"), track.pt());
-          histos.fill(HIST("Data/pos/eta/its_tpc_tof"), track.eta());
-          histos.fill(HIST("Data/pos/phi/its_tpc_tof"), track.phi());
-          histos.fill(HIST("Data/pos/etaphi/its_tpc_tof"), track.eta(), track.phi());
+        if (trackSign > 0) {
+          histos.fill(HIST("Data/pos/pt/its_tpc_tof"), trackPt);
+          histos.fill(HIST("Data/pos/eta/its_tpc_tof"), trackEta);
+          histos.fill(HIST("Data/pos/phi/its_tpc_tof"), trackPhi);
+          histos.fill(HIST("Data/pos/etaphi/its_tpc_tof"), trackEta, trackPhi);
+
+          if (doOccupancy) {
+            histos.fill(HIST("Data/occ_cent/pos/its_tpc_tof"), occupancy, centrality, trackPt);
+          }
         } else {
-          histos.fill(HIST("Data/neg/pt/its_tpc_tof"), track.pt());
-          histos.fill(HIST("Data/neg/eta/its_tpc_tof"), track.eta());
-          histos.fill(HIST("Data/neg/phi/its_tpc_tof"), track.phi());
-          histos.fill(HIST("Data/neg/etaphi/its_tpc_tof"), track.eta(), track.phi());
+          histos.fill(HIST("Data/neg/pt/its_tpc_tof"), trackPt);
+          histos.fill(HIST("Data/neg/eta/its_tpc_tof"), trackEta);
+          histos.fill(HIST("Data/neg/phi/its_tpc_tof"), trackPhi);
+          histos.fill(HIST("Data/neg/etaphi/its_tpc_tof"), trackEta, trackPhi);
+
+          if (doOccupancy) {
+            histos.fill(HIST("Data/occ_cent/neg/its"), occupancy, centrality, trackPt);
+          }
         }
       }
 
       if (makeEff) {
         if (passedITS) {
-          effITSTPCMatchingVsPt->Fill(passedTPC, track.pt());
+          effITSTPCMatchingVsPt->Fill(passedTPC, trackPt);
         }
         if (passedTPC) {
-          effTPCITSMatchingVsPt->Fill(passedITS, track.pt());
+          effTPCITSMatchingVsPt->Fill(passedITS, trackPt);
         }
         if (passedITS && passedTPC) {
-          effTPCTOFMatchingVsPt->Fill(passedTOF, track.pt());
+          effTPCTOFMatchingVsPt->Fill(passedTOF, trackPt);
           effTPCTOFMatchingVsP->Fill(passedTOF, track.p());
-          effTPCTOFMatchingVsEta->Fill(passedTOF, track.eta());
-          effTPCTOFMatchingVsPhi->Fill(passedTOF, track.phi());
-          effTPCTOFMatchingVsPtVsEta->Fill(passedTOF, track.pt(), track.eta());
-          effTPCTOFMatchingVsPtVsPhi->Fill(passedTOF, track.pt(), track.phi());
+          effTPCTOFMatchingVsEta->Fill(passedTOF, trackEta);
+          effTPCTOFMatchingVsPhi->Fill(passedTOF, trackPhi);
+          effTPCTOFMatchingVsPtVsEta->Fill(passedTOF, trackPt, trackEta);
+          effTPCTOFMatchingVsPtVsPhi->Fill(passedTOF, trackPt, trackPhi);
         }
       }
     }
@@ -2002,7 +2246,7 @@ struct QaEfficiency {
       if (!isTrackSelected<false>(track, HIST("Data/trackSelection"))) {
         continue;
       }
-      if (abs(track.tpcNSigmaDe()) > nsigmaTPCDe) {
+      if (std::abs(track.tpcNSigmaDe()) > nsigmaTPCDe) {
         continue;
       }
       histos.fill(HIST("Data/trackLength"), track.length());

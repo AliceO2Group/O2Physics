@@ -12,4 +12,5 @@
 add_subdirectory(Combined)
 add_subdirectory(TOF)
 add_subdirectory(TPC)
+add_subdirectory(ITS)
 add_subdirectory(HMPID)

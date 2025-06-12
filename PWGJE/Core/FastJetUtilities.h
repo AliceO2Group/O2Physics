@@ -103,11 +103,27 @@ void fillTracks(const T& constituent, std::vector<fastjet::PseudoJet>& constitue
  */
 
 template <typename T>
-void fillClusters(const T& constituent, std::vector<fastjet::PseudoJet>& constituents, int index = -99999999, int status = static_cast<int>(JetConstituentStatus::cluster))
+void fillClusters(const T& constituent, std::vector<fastjet::PseudoJet>& constituents, int index = -99999999, int hadronicCorrectionType = 0, int status = static_cast<int>(JetConstituentStatus::cluster))
 {
   if (status == static_cast<int>(JetConstituentStatus::cluster)) {
-    double clusterpt = constituent.energy() / std::cosh(constituent.eta());
-    constituents.emplace_back(clusterpt * std::cos(constituent.phi()), clusterpt * std::sin(constituent.phi()), clusterpt * std::sinh(constituent.eta()), constituent.energy());
+    float constituentEnergy = 0.0;
+    if (hadronicCorrectionType == 0) {
+      constituentEnergy = constituent.energy();
+    }
+    if (hadronicCorrectionType == 1) {
+      constituentEnergy = constituent.energyCorrectedOneTrack1();
+    }
+    if (hadronicCorrectionType == 2) {
+      constituentEnergy = constituent.energyCorrectedOneTrack2();
+    }
+    if (hadronicCorrectionType == 3) {
+      constituentEnergy = constituent.energyCorrectedAllTracks1();
+    }
+    if (hadronicCorrectionType == 4) {
+      constituentEnergy = constituent.energyCorrectedAllTracks2();
+    }
+    float constituentPt = constituentEnergy / std::cosh(constituent.eta());
+    constituents.emplace_back(constituentPt * std::cos(constituent.phi()), constituentPt * std::sin(constituent.phi()), constituentPt * std::sinh(constituent.eta()), constituentEnergy);
   }
   setFastJetUserInfo(constituents, index, status);
 }

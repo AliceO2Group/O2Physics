@@ -26,7 +26,7 @@ struct v0mlscoresconverter {
 
   void process(aod::V0Cores const& v0cores)
   {
-    for (auto& values : v0cores) {
+    for (int64_t i = 0; i < v0cores.size(); ++i) {
       gammaMLSelections(-1);
       lambdaMLSelections(-1);
       antiLambdaMLSelections(-1);

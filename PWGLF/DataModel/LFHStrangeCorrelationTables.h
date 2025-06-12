@@ -42,34 +42,56 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Trigger"); //!
 DECLARE_SOA_COLUMN(MCOriginalPt, mcOriginalPt, float);                // true generated pt
 } // namespace triggerTracks
 DECLARE_SOA_TABLE(TriggerTracks, "AOD", "TRIGGERTRACKS", o2::soa::Index<>, triggerTracks::CollisionId, triggerTracks::MCPhysicalPrimary, triggerTracks::TrackId, triggerTracks::MCOriginalPt);
+namespace triggerTrackExtras
+{
+DECLARE_SOA_COLUMN(Extra, extra, int); // true physical primary flag
+} // namespace triggerTrackExtras
+DECLARE_SOA_TABLE(TriggerTrackExtras, "AOD", "TRIGGERTRACKEXTRAs", triggerTrackExtras::Extra);
 /// _________________________________________
 /// Table for storing assoc track indices
-namespace assocPions
+namespace assocHadrons
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                     //!
+DECLARE_SOA_COLUMN(MCPhysicalPrimary, mcPhysicalPrimary, bool);     // true physical primary flag
 DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Assoc"); //!
-} // namespace assocPions
-DECLARE_SOA_TABLE(AssocPions, "AOD", "ASSOCPIONS", o2::soa::Index<>, assocPions::CollisionId, assocPions::TrackId);
+DECLARE_SOA_COLUMN(MCOriginalPt, mcOriginalPt, float);              // true generated pt
+} // namespace assocHadrons
+DECLARE_SOA_TABLE(AssocHadrons, "AOD", "ASSOCHADRONS", o2::soa::Index<>, assocHadrons::CollisionId, assocHadrons::MCPhysicalPrimary, assocHadrons::TrackId, assocHadrons::MCOriginalPt);
+/// _________________________________________
+/// Table for storing assoc track PID
+namespace assocPID
+{
+DECLARE_SOA_COLUMN(NSigmaTPCPi, nSigmaTPCPi, float);
+DECLARE_SOA_COLUMN(NSigmaTPCKa, nSigmaTPCKa, float);
+DECLARE_SOA_COLUMN(NSigmaTPCPr, nSigmaTPCPr, float);
+DECLARE_SOA_COLUMN(NSigmaTPCEl, nSigmaTPCEl, float);
+DECLARE_SOA_COLUMN(NSigmaTOFPi, nSigmaTOFPi, float);
+DECLARE_SOA_COLUMN(NSigmaTOFKa, nSigmaTOFKa, float);
+DECLARE_SOA_COLUMN(NSigmaTOFPr, nSigmaTOFPr, float);
+DECLARE_SOA_COLUMN(NSigmaTOFEl, nSigmaTOFEl, float);
+} // namespace assocPID
+DECLARE_SOA_TABLE(AssocPID, "AOD", "ASSOCPID", assocPID::NSigmaTPCPi, assocPID::NSigmaTPCKa, assocPID::NSigmaTPCPr, assocPID::NSigmaTPCEl, assocPID::NSigmaTOFPi, assocPID::NSigmaTOFKa, assocPID::NSigmaTOFPr, assocPID::NSigmaTOFEl);
+
 /// _________________________________________
 /// Table for storing associated V0 indices
 namespace assocV0s
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                       //!
-DECLARE_SOA_INDEX_COLUMN(V0Core, v0Core);                             //!
+DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
+DECLARE_SOA_INDEX_COLUMN(V0Core, v0Core);       //!
 
 // dEdx compatibility is done via encoded integer: 0: passes loose; 1: passes normal, 2: passes tight; definition of loose/normal/tight is in hStrangeCorrelationFilter
 DECLARE_SOA_COLUMN(CompatibleK0Short, compatibleK0Short, int);       // compatible with K0Short dEdx, encoded syst checks
 DECLARE_SOA_COLUMN(CompatibleLambda, compatibleLambda, int);         // compatible with Lambda dEdx, encoded syst checks
 DECLARE_SOA_COLUMN(CompatibleAntiLambda, compatibleAntiLambda, int); // compatible with AntiLambda dEdx, encoded syst checks
 
-DECLARE_SOA_COLUMN(MCTrueK0Short, mcTrueK0Short, bool);               // true K0Short in MC
-DECLARE_SOA_COLUMN(MCTrueLambda, mcTrueLambda, bool);                 // true Lambda in MC
-DECLARE_SOA_COLUMN(MCTrueAntiLambda, mcTrueAntiLambda, bool);         // true AntiLambda in MC
-DECLARE_SOA_COLUMN(MCPhysicalPrimary, mcPhysicalPrimary, bool);       // true physical primary flag
-DECLARE_SOA_COLUMN(NSigmaMassK0Short, nSigmaMassK0Short, float);      //
-DECLARE_SOA_COLUMN(NSigmaMassLambda, nSigmaMassLambda, float);        //
+DECLARE_SOA_COLUMN(MCTrueK0Short, mcTrueK0Short, bool);                // true K0Short in MC
+DECLARE_SOA_COLUMN(MCTrueLambda, mcTrueLambda, bool);                  // true Lambda in MC
+DECLARE_SOA_COLUMN(MCTrueAntiLambda, mcTrueAntiLambda, bool);          // true AntiLambda in MC
+DECLARE_SOA_COLUMN(MCPhysicalPrimary, mcPhysicalPrimary, bool);        // true physical primary flag
+DECLARE_SOA_COLUMN(NSigmaMassK0Short, nSigmaMassK0Short, float);       //
+DECLARE_SOA_COLUMN(NSigmaMassLambda, nSigmaMassLambda, float);         //
 DECLARE_SOA_COLUMN(NSigmaMassAntiLambda, nSigmaMassAntiLambda, float); //
-DECLARE_SOA_DYNAMIC_COLUMN(Compatible, compatible,                    //! check compatibility with a hypothesis of a certain number (0 - K0, 1 - L, 2 - Lbar)
+DECLARE_SOA_DYNAMIC_COLUMN(Compatible, compatible,                     //! check compatibility with a hypothesis of a certain number (0 - K0, 1 - L, 2 - Lbar)
                            [](int cK0Short, int cLambda, int cAntiLambda, int value, int compatibilityLevel) -> bool {
                              if (value == 0 && bitcheck(cK0Short, compatibilityLevel))
                                return true;
@@ -119,8 +141,8 @@ DECLARE_SOA_TABLE(AssocV0s, "AOD", "ASSOCV0S", o2::soa::Index<>,
 /// Table for storing associated casc indices
 namespace assocCascades
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                       //!
-DECLARE_SOA_INDEX_COLUMN(CascData, cascData);                         //!
+DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
+DECLARE_SOA_INDEX_COLUMN(CascData, cascData);   //!
 
 // dEdx compatibility is done via encoded integer: 0: passes loose; 1: passes normal, 2: passes tight; definition of loose/normal/tight is in hStrangeCorrelationFilter
 DECLARE_SOA_COLUMN(CompatibleXiMinus, compatibleXiMinus, int);       // compatible with XiMinus
@@ -128,14 +150,14 @@ DECLARE_SOA_COLUMN(CompatibleXiPlus, compatibleXiPlus, int);         // compatib
 DECLARE_SOA_COLUMN(CompatibleOmegaMinus, compatibleOmegaMinus, int); // compatible with OmegaMinus
 DECLARE_SOA_COLUMN(CompatibleOmegaPlus, compatibleOmegaPlus, int);   // compatible with OmegaPlus
 
-DECLARE_SOA_COLUMN(MCTrueXiMinus, mcTrueXiMinus, bool);               // true XiMinus in mc
-DECLARE_SOA_COLUMN(MCTrueXiPlus, mcTrueXiPlus, bool);                 // true XiPlus in mc
-DECLARE_SOA_COLUMN(MCTrueOmegaMinus, mcTrueOmegaMinus, bool);         // true OmegaMinus in mc
-DECLARE_SOA_COLUMN(MCTrueOmegaPlus, mcTrueOmegaPlus, bool);           // true OmegaPlus in mc
-DECLARE_SOA_COLUMN(MCPhysicalPrimary, mcPhysicalPrimary, bool);       // physical primary in MC
-DECLARE_SOA_COLUMN(NSigmaMassXi, nSigmaMassXi, float);                //
-DECLARE_SOA_COLUMN(NSigmaMassOmega, nSigmaMassOmega, float);          //
-DECLARE_SOA_DYNAMIC_COLUMN(Compatible, compatible,                    //! check compatibility with a hypothesis of a certain number (0 - K0, 1 - L, 2 - Lbar)
+DECLARE_SOA_COLUMN(MCTrueXiMinus, mcTrueXiMinus, bool);         // true XiMinus in mc
+DECLARE_SOA_COLUMN(MCTrueXiPlus, mcTrueXiPlus, bool);           // true XiPlus in mc
+DECLARE_SOA_COLUMN(MCTrueOmegaMinus, mcTrueOmegaMinus, bool);   // true OmegaMinus in mc
+DECLARE_SOA_COLUMN(MCTrueOmegaPlus, mcTrueOmegaPlus, bool);     // true OmegaPlus in mc
+DECLARE_SOA_COLUMN(MCPhysicalPrimary, mcPhysicalPrimary, bool); // physical primary in MC
+DECLARE_SOA_COLUMN(NSigmaMassXi, nSigmaMassXi, float);          //
+DECLARE_SOA_COLUMN(NSigmaMassOmega, nSigmaMassOmega, float);    //
+DECLARE_SOA_DYNAMIC_COLUMN(Compatible, compatible,              //! check compatibility with a hypothesis of a certain number (0 - K0, 1 - L, 2 - Lbar)
                            [](int cXiMinus, int cXiPlus, int cOmegaMinus, int cOmegaPlus, int value, int compatibilityLevel) -> bool {
                              if (value == 0 && bitcheck(cXiMinus, compatibilityLevel))
                                return true;

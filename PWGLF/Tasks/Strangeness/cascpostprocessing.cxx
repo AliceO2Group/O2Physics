@@ -216,8 +216,8 @@ struct cascpostprocessing {
     registry.add("hPtCascPlusTrueRec", "hPtCascPlusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
     registry.add("hPtCascMinusTrueRec", "hPtCascMinusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
 
-    registry.add("hCascMinusMassvsPtTrueRec", "hCascMinusMassvsPtTrueRec", {HistType::kTH2F, {ptAxis, massAxis}});
-    registry.add("hCascPlusMassvsPtTrueRec", "hCascPlusMassvsPtTrueRec", {HistType::kTH2F, {ptAxis, massAxis}});
+    registry.add("hCascMinusMassvsPtTrueRec", "hCascMinusMassvsPtTrueRec", {HistType::kTH3F, {ptAxis, massAxis, centFT0MAxis}});
+    registry.add("hCascPlusMassvsPtTrueRec", "hCascPlusMassvsPtTrueRec", {HistType::kTH3F, {ptAxis, massAxis, centFT0MAxis}});
     registry.add("hCascMinusMassvsPtBG", "hCascMinusMassvsPtBG", {HistType::kTH2F, {ptAxis, massAxis}});
     registry.add("hCascPlusMassvsPtBG", "hCascPlusMassvsPtBG", {HistType::kTH2F, {ptAxis, massAxis}});
     if (isMC) {
@@ -489,7 +489,7 @@ struct cascpostprocessing {
       if (candidate.sign() < 0) {
         if (isCorrectlyRec) {
           registry.fill(HIST("hPtCascMinusTrueRec"), candidate.pt(), rapidity, candidate.centFT0M()); // 3rd axis is from MC calibration
-          registry.fill(HIST("hCascMinusMassvsPtTrueRec"), candidate.pt(), invmass);
+          registry.fill(HIST("hCascMinusMassvsPtTrueRec"), candidate.pt(), invmass, candidate.centFT0M());
         } else {
           registry.fill(HIST("hCascMinusMassvsPtBG"), candidate.pt(), invmass);
         }
@@ -500,7 +500,7 @@ struct cascpostprocessing {
       if (candidate.sign() > 0) {
         if (isCorrectlyRec) {
           registry.fill(HIST("hPtCascPlusTrueRec"), candidate.pt(), rapidity, candidate.centFT0M()); // 3rd axis is from MC calibration
-          registry.fill(HIST("hCascPlusMassvsPtTrueRec"), candidate.pt(), invmass);
+          registry.fill(HIST("hCascPlusMassvsPtTrueRec"), candidate.pt(), invmass, candidate.centFT0M());
         } else {
           registry.fill(HIST("hCascPlusMassvsPtBG"), candidate.pt(), invmass);
         }

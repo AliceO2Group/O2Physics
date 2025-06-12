@@ -15,6 +15,10 @@
 /// \author Deependra Sharma <deependra.sharma@cern.ch>, IITB
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
+#include <algorithm>
+#include <string>
+#include <vector>
+
 // O2
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisDataModel.h"
@@ -26,6 +30,7 @@
 // PWGHF
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseDstarToD0Pi.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
@@ -44,7 +49,7 @@ struct HfCandidateSelectorDstarToD0Pi {
   Configurable<double> ptD0CandMin{"ptD0CandMin", 0., "Minimum D0 candidate pT"};
   Configurable<double> ptD0CandMax{"ptD0CandMax", 50., "Maximum D0 candidate pT"};
   Configurable<std::vector<double>> binsPtD0{"binsPtD0", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for D0"};
-  Configurable<LabeledArray<double>> cutsD0{"cutsD0", {hf_cuts_d0_to_pi_k::cuts[0], hf_cuts_d0_to_pi_k::nBinsPt, hf_cuts_d0_to_pi_k::nCutVars, hf_cuts_d0_to_pi_k::labelsPt, hf_cuts_d0_to_pi_k::labelsCutVar}, "D0 candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cutsD0{"cutsD0", {hf_cuts_d0_to_pi_k::Cuts[0], hf_cuts_d0_to_pi_k::NBinsPt, hf_cuts_d0_to_pi_k::NCutVars, hf_cuts_d0_to_pi_k::labelsPt, hf_cuts_d0_to_pi_k::labelsCutVar}, "D0 candidate selection per pT bin"};
   // Mass Cut for trigger analysis
   Configurable<bool> useTriggerMassCut{"useTriggerMassCut", false, "Flag to enable parametrize pT differential mass cut for triggered data"};
 
@@ -52,7 +57,7 @@ struct HfCandidateSelectorDstarToD0Pi {
   Configurable<double> ptDstarCandMin{"ptDstarCandMin", 0., "Minimum Dstar candidate pT"};
   Configurable<double> ptDstarCandMax{"ptDstarCandMax", 50., "Maximum Dstar candidate pT"};
   Configurable<std::vector<double>> binsPtDstar{"binsPtDstar", std::vector<double>{hf_cuts_dstar_to_d0_pi::vecBinsPt}, "pT bin limits for Dstar"};
-  Configurable<LabeledArray<double>> cutsDstar{"cutsDstar", {hf_cuts_dstar_to_d0_pi::cuts[0], hf_cuts_dstar_to_d0_pi::nBinsPt, hf_cuts_dstar_to_d0_pi::nCutVars, hf_cuts_dstar_to_d0_pi::labelsPt, hf_cuts_dstar_to_d0_pi::labelsCutVar}, "Dstar candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cutsDstar{"cutsDstar", {hf_cuts_dstar_to_d0_pi::Cuts[0], hf_cuts_dstar_to_d0_pi::NBinsPt, hf_cuts_dstar_to_d0_pi::NCutVars, hf_cuts_dstar_to_d0_pi::labelsPt, hf_cuts_dstar_to_d0_pi::labelsCutVar}, "Dstar candidate selection per pT bin"};
 
   // common Configurable
   // TPC PID
@@ -80,8 +85,8 @@ struct HfCandidateSelectorDstarToD0Pi {
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
-  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
-  Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
 
   // CCDB configuration
@@ -104,7 +109,7 @@ struct HfCandidateSelectorDstarToD0Pi {
 
   using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
   // using TracksSel = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa>;
-  using HfFullDstarCandidate = soa::Join<aod::HfD0FromDstar, aod::HfCandDstars>;
+  using HfFullDstarCandidate = soa::Join<aod::HfD0FromDstar, aod::HfCandDstarsWPid>;
 
   AxisSpec axisBdtScore{100, 0.f, 1.f};
   AxisSpec axisSelStatus{2, -0.5f, 1.5f};
@@ -211,8 +216,7 @@ struct HfCandidateSelectorDstarToD0Pi {
     // decay exponentail law, with tau = beta*gamma*ctau
     // decay length > ctau retains (1-1/e)
 
-    double decayLengthCut = std::min((candidate.pD0() * 0.0066) + 0.01, cutsD0->get(binPt, "min decay length"));
-    if (candidate.decayLengthD0() * candidate.decayLengthD0() < decayLengthCut * decayLengthCut) {
+    if (candidate.decayLengthD0() < cutsD0->get(binPt, "min decay length")) {
       return false;
     }
     if (candidate.decayLengthD0() > cutsD0->get(binPt, "max decay length")) {
@@ -362,10 +366,6 @@ struct HfCandidateSelectorDstarToD0Pi {
       outputMlDstarToD0Pi.clear();
       auto ptCand = candDstar.pt();
 
-      auto prongPi = candDstar.prongPi_as<TracksSel>();
-      auto prong0 = candDstar.prong0_as<TracksSel>();
-      auto prong1 = candDstar.prong1_as<TracksSel>();
-
       if (!TESTBIT(candDstar.hfflag(), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         hfSelDstarCandidate(statusDstar, statusD0Flag, statusTopol, statusCand, statusPID);
         if (applyMl) {
@@ -414,16 +414,18 @@ struct HfCandidateSelectorDstarToD0Pi {
       int pidTrackNegKaon = -1;
       int pidTrackNegPion = -1;
 
+      auto prong0 = candDstar.prong0_as<TracksSel>();
+      auto prong1 = candDstar.prong1_as<TracksSel>();
       if (usePidTpcAndTof) {
-        pidTrackPosKaon = selectorKaon.statusTpcAndTof(candDstar.prong0_as<TracksSel>());
-        pidTrackPosPion = selectorPion.statusTpcAndTof(candDstar.prong0_as<TracksSel>());
-        pidTrackNegKaon = selectorKaon.statusTpcAndTof(candDstar.prong1_as<TracksSel>());
-        pidTrackNegPion = selectorPion.statusTpcAndTof(candDstar.prong1_as<TracksSel>());
+        pidTrackPosKaon = selectorKaon.statusTpcAndTof(prong0, candDstar.nSigTpcKa0(), candDstar.nSigTofKa0());
+        pidTrackPosPion = selectorPion.statusTpcAndTof(prong0, candDstar.nSigTpcPi0(), candDstar.nSigTofPi0());
+        pidTrackNegKaon = selectorKaon.statusTpcAndTof(prong1, candDstar.nSigTpcKa1(), candDstar.nSigTofKa1());
+        pidTrackNegPion = selectorPion.statusTpcAndTof(prong1, candDstar.nSigTpcPi1(), candDstar.nSigTofPi1());
       } else {
-        pidTrackPosKaon = selectorKaon.statusTpcOrTof(candDstar.prong0_as<TracksSel>());
-        pidTrackPosPion = selectorPion.statusTpcOrTof(candDstar.prong0_as<TracksSel>());
-        pidTrackNegKaon = selectorKaon.statusTpcOrTof(candDstar.prong1_as<TracksSel>());
-        pidTrackNegPion = selectorPion.statusTpcOrTof(candDstar.prong1_as<TracksSel>());
+        pidTrackPosKaon = selectorKaon.statusTpcOrTof(prong0, candDstar.nSigTpcKa0(), candDstar.nSigTofKa0());
+        pidTrackPosPion = selectorPion.statusTpcOrTof(prong0, candDstar.nSigTpcPi0(), candDstar.nSigTofPi0());
+        pidTrackNegKaon = selectorKaon.statusTpcOrTof(prong1, candDstar.nSigTpcKa1(), candDstar.nSigTofKa1());
+        pidTrackNegPion = selectorPion.statusTpcOrTof(prong1, candDstar.nSigTpcPi1(), candDstar.nSigTofPi1());
       }
 
       int pidDstar = -1;
@@ -462,7 +464,7 @@ struct HfCandidateSelectorDstarToD0Pi {
         // ML selections
         bool isSelectedMlDstar = false;
 
-        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candDstar, prong0, prong1, prongPi);
+        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candDstar);
         isSelectedMlDstar = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMlDstarToD0Pi);
 
         hfMlDstarCandidate(outputMlDstarToD0Pi);

@@ -14,6 +14,12 @@
 ///
 /// \author Jan Fiete Grosse-Oetringhaus, CERN
 
+#include <algorithm>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -381,9 +387,9 @@ struct HfTaskMcEfficiency {
         /// put two 32-bit indices in a 64-bit integer
         int64_t hash = 0;
         if (candidate.prong0Id() < candidate.prong1Id()) {
-          hash = ((int64_t)candidate.prong0Id() << 32) | candidate.prong1Id();
+          hash = (static_cast<int64_t>(candidate.prong0Id()) << 32) | candidate.prong1Id();
         } else {
-          hash = ((int64_t)candidate.prong1Id() << 32) | candidate.prong0Id();
+          hash = (static_cast<int64_t>(candidate.prong1Id()) << 32) | candidate.prong0Id();
         }
         if (duplicates.find(hash) != duplicates.end()) {
           hCandidates->Fill(kHFStepTrackedDuplicates, pt, mass, pdgCode, cpa, collisionMatched, origin);

@@ -36,8 +36,8 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
-#include "string"
-#include "vector"
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -1562,7 +1562,7 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     histos.fill(HIST("Tracks/signed1Pt"), track.signed1Pt());
     histos.fill(HIST("Tracks/snp"), track.snp());
     histos.fill(HIST("Tracks/tgl"), track.tgl());
-    for (unsigned int i = 0; i < 64; i++) {
+    for (unsigned int i = 0; i < 32; i++) {
       if (track.flags() & (1 << i)) {
         histos.fill(HIST("Tracks/flags"), i);
       }
@@ -1618,7 +1618,7 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
           sign = pdgInfo->Charge() / abs(pdgInfo->Charge());
         }
         // resolution plots
-        if (doExtraPIDqa && track.pidForTracking() != std::abs(PartIdentifier)) {
+        if (doExtraPIDqa && track.pidForTracking() != static_cast<unsigned int>(std::abs(PartIdentifier))) {
           // full eta range
           histos.fill(HIST("Tracks/Kine/resoPtVsptmcWrongPIDinTrk"), track.pt() - particle.pt(), particle.pt());
           histos.fill(HIST("Tracks/Kine/resoPtVsptmcScaledWrongPIDinTrk"), (track.pt() - particle.pt()) / particle.pt(), particle.pt());
@@ -1651,7 +1651,7 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
         }
 
         // optionally check for PID in tracking: select tracks with correct PID in tracking
-        if (checkPIDforTracking && track.pidForTracking() != std::abs(PartIdentifier)) {
+        if (checkPIDforTracking && track.pidForTracking() != static_cast<unsigned int>(std::abs(PartIdentifier))) {
           continue;
         }
 

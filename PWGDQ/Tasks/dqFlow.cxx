@@ -16,11 +16,13 @@
 ///       o2-analysis-timestamp --aod-file AO2D.root -b | o2-analysis-event-selection -b | o2-analysis-multiplicity-table -b | o2-analysis-centrality-table -b | o2-analysis-fdd-converter -b | o2-analysis-trackselection -b | o2-analysis-trackextension -b | o2-analysis-pid-tpc-full -b | o2-analysis-pid-tof-full -b | o2-analysis-pid-tof-base -b | o2-analysis-pid-tof-beta -b | o2-analysis-dq-flow -b
 ///       tested (June 2, 2022) on AO2D.root files from train production 242
 
+#include <iostream>
+#include <vector>
+#include <string>
+#include <memory>
 #include <TH1F.h>
 #include <THashList.h>
 #include <TString.h>
-#include <iostream>
-#include <vector>
 #include <TRandom3.h>
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/runDataProcessing.h"
@@ -69,15 +71,18 @@ using MyEventsWithCentRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT
 // using MyEventsWithCentQvectRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorFV0AVecs, aod::QvectorTPCposVecs, aod::QvectorTPCnegVecs, aod::QvectorTPCallVecs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
 using MyEventsWithCentQvectRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorTPCposs, aod::QvectorTPCnegs, aod::QvectorTPCalls, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
 
-using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension,
-                                 aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
-                                 aod::pidTPCFullKa, aod::pidTPCFullPr,
-                                 aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-                                 aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
-using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
-                                        aod::pidTPCFullKa, aod::pidTPCFullPr,
-                                        aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-                                        aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
+// using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension,
+//                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+//                                  aod::pidTPCFullKa, aod::pidTPCFullPr,
+//                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+//                                  aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
+// using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+//                                         aod::pidTPCFullKa, aod::pidTPCFullPr,
+//                                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+//                                         aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>i;
+
+using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>;
+using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>;
 using MyTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
 using MyMuons = aod::FwdTracks;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
@@ -103,8 +108,6 @@ struct DQEventQvector {
   Produces<ReducedEventsQvectorCentrExtra> eventQvectorCentrExtra;
   Produces<ReducedEventsRefFlow> eventRefFlow;
   Produces<ReducedEventsQvectorZN> eventQvectorZN;
-  Produces<ReducedZdc> eventReducedZdc;
-  Produces<ReducedZdcExtra> eventReducedZdcExtra;
 
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<bool> fConfigQA{"cfgQA", true, "If true, fill QA histograms"};
@@ -117,7 +120,7 @@ struct DQEventQvector {
   Configurable<int> fConfigCutTPCNClMin{"cfgCutTPCNclMin", 0, "Min requirement for number of TPC clusters"};
   Configurable<float> fConfigEtaLimitMin{"cfgEtaLimitMin", -0.4f, "Eta gap min separation, only if using subEvents"};
   Configurable<float> fConfigEtaLimitMax{"cfgEtaLimitMax", 0.4f, "Eta gap max separation, only if using subEvents"};
-  // Configurable<uint8_t> fConfigNPow{"cfgNPow", 0, "Power of weights for Q vector"};
+  // Configurable<uint> fConfigNPow{"cfgNPow", 0, "Power of weights for Q vector"};
   // Configurable<GFWBinningCuts> cfgGFWBinning{"cfgGFWBinning", {40, 16, 72, 300, 0, 3000, 0.2, 10.0, 0.2, 3.0, {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}}, "Configuration for binning"};
 
   // Access to the efficiencies and acceptances from CCDB
@@ -189,7 +192,7 @@ struct DQEventQvector {
     fPtAxis = new TAxis(ptbins, &ptbinning[0]);
     if (fConfigFillWeights) {
       // fWeights->SetPtBins(ptbins, &ptbinning[0]); // in the default case, it will accept everything
-      fWeights->Init(true, false); // true for data, false for MC
+      fWeights->init(true, false); // true for data, false for MC
     }
 
     // Reference flow
@@ -383,7 +386,7 @@ struct DQEventQvector {
 
       // Fill weights for Q-vector correction: this should be enabled for a first run to get weights
       if (fConfigFillWeights) {
-        fWeights->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), centrality, 0);
+        fWeights->fill(track.phi(), track.eta(), collision.posZ(), track.pt(), centrality, 0);
       }
 
       if (cfg.mEfficiency) {
@@ -396,7 +399,7 @@ struct DQEventQvector {
       }
       weff = 1. / weff;
       if (cfg.mAcceptance) {
-        wacc = cfg.mAcceptance->GetNUA(track.phi(), track.eta(), collision.posZ());
+        wacc = cfg.mAcceptance->getNUA(track.phi(), track.eta(), collision.posZ());
       } else {
         wacc = 1.0;
       }
@@ -507,7 +510,7 @@ struct DQEventQvector {
     if (fEventCut->IsSelected(VarManager::fgValues)) {
       eventQvector(VarManager::fgValues[VarManager::kQ1X0A], VarManager::fgValues[VarManager::kQ1Y0A], VarManager::fgValues[VarManager::kQ1X0B], VarManager::fgValues[VarManager::kQ1Y0B], VarManager::fgValues[VarManager::kQ1X0C], VarManager::fgValues[VarManager::kQ1Y0C], VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A], VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B], VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C], VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kMultB], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kQ3X0A], VarManager::fgValues[VarManager::kQ3Y0A], VarManager::fgValues[VarManager::kQ3X0B], VarManager::fgValues[VarManager::kQ3Y0B], VarManager::fgValues[VarManager::kQ3X0C], VarManager::fgValues[VarManager::kQ3Y0C], VarManager::fgValues[VarManager::kQ4X0A], VarManager::fgValues[VarManager::kQ4Y0A], VarManager::fgValues[VarManager::kQ4X0B], VarManager::fgValues[VarManager::kQ4Y0B], VarManager::fgValues[VarManager::kQ4X0C], VarManager::fgValues[VarManager::kQ4Y0C]);
       eventQvectorExtra(VarManager::fgValues[VarManager::kQ42XA], VarManager::fgValues[VarManager::kQ42YA], VarManager::fgValues[VarManager::kQ23XA], VarManager::fgValues[VarManager::kQ23YA], VarManager::fgValues[VarManager::kS11A], VarManager::fgValues[VarManager::kS12A], VarManager::fgValues[VarManager::kS13A], VarManager::fgValues[VarManager::kS31A]);
-      eventRefFlow(VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM1111REF], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], centrality);
+      eventRefFlow(VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM11REFetagap], VarManager::fgValues[VarManager::kM1111REF], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR2REFetagap], VarManager::fgValues[VarManager::kCORR4REF], centrality);
     }
 
     if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvectCentr) > 0) {
@@ -532,14 +535,8 @@ struct DQEventQvector {
         eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
         if (bc.has_zdc()) {
           eventQvectorZN(VarManager::fgValues[VarManager::kQ1ZNAX], VarManager::fgValues[VarManager::kQ1ZNAY], VarManager::fgValues[VarManager::kQ1ZNCX], VarManager::fgValues[VarManager::kQ1ZNCY]);
-          eventReducedZdc(VarManager::fgValues[VarManager::kEnergyCommonZNA], VarManager::fgValues[VarManager::kEnergyCommonZNC], VarManager::fgValues[VarManager::kEnergyCommonZPA], VarManager::fgValues[VarManager::kEnergyCommonZPC],
-                          VarManager::fgValues[VarManager::kTimeZNA], VarManager::fgValues[VarManager::kTimeZNC], VarManager::fgValues[VarManager::kTimeZPA], VarManager::fgValues[VarManager::kTimeZPC]);
-          eventReducedZdcExtra(VarManager::fgValues[VarManager::kEnergyZNA1], VarManager::fgValues[VarManager::kEnergyZNA2], VarManager::fgValues[VarManager::kEnergyZNA3], VarManager::fgValues[VarManager::kEnergyZNA4],
-                               VarManager::fgValues[VarManager::kEnergyZNC1], VarManager::fgValues[VarManager::kEnergyZNC2], VarManager::fgValues[VarManager::kEnergyZNC3], VarManager::fgValues[VarManager::kEnergyZNC4]);
         } else {
           eventQvectorZN(-999, -999, -999, -999);
-          eventReducedZdc(-999, -999, -999, -999, -999, -999, -999, -999);
-          eventReducedZdcExtra(-999, -999, -999, -999, -999, -999, -999, -999);
         }
       }
     }

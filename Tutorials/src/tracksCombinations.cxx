@@ -30,7 +30,7 @@ namespace hash
 {
 DECLARE_SOA_COLUMN(Bin, bin, int);
 } // namespace hash
-DECLARE_SOA_TABLE(Hashes, "AOD", "HASH", hash::Bin);
+DECLARE_SOA_TABLE(MixingHashes, "AOD", "HASH", hash::Bin);
 
 } // namespace o2::aod
 
@@ -116,7 +116,7 @@ struct BinnedTrackPartitionsCombinations {
 struct HashTask {
   std::vector<float> xBins{-0.064f, -0.062f, -0.060f, 0.066f, 0.068f, 0.070f, 0.072};
   std::vector<float> yBins{-0.320f, -0.301f, -0.300f, 0.330f, 0.340f, 0.350f, 0.360};
-  Produces<aod::Hashes> hashes;
+  Produces<aod::MixingHashes> hashes;
 
   // Calculate hash for an element based on 2 properties and their bins.
   int getHash(const std::vector<float>& xBins, const std::vector<float>& yBins, float colX, float colY)
@@ -154,7 +154,7 @@ struct HashTask {
 struct BinnedTrackCombinationsWithHashTable {
   NoBinningPolicy<aod::hash::Bin> hashBin;
 
-  void process(soa::Join<aod::Hashes, aod::Tracks> const& hashedTracks)
+  void process(soa::Join<aod::MixingHashes, aod::Tracks> const& hashedTracks)
   {
     int count = 0;
     // Strictly upper categorised tracks

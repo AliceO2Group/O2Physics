@@ -16,7 +16,10 @@
 /// \since  03/05/2024
 ///
 
-#include "Common/DataModel/PIDResponse.h"
+#include <string>
+
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "TH1F.h"
 #include "TCanvas.h"
 #include "TRandom.h"
@@ -32,7 +35,7 @@ bool process(std::string outputName, int nevents = 100000)
     NsigmaContainer() {}
     void operator()(const int8_t& packed) { mPacked = packed; }
     int8_t mPacked = 0;
-    float unpack() { return aod::pidutils::unPackInTable<T>(mPacked); }
+    float unpack() { return T::unPackInTable(mPacked); }
   } container;
 
   TH1F* hgaus = new TH1F("hgaus", "", 20 / T::bin_width,
@@ -55,12 +58,12 @@ bool process(std::string outputName, int nevents = 100000)
   for (int i = 0; i < nevents; i++) {
     float nsigma = gRandom->Gaus(0, 1);
     hgaus->Fill(nsigma);
-    aod::pidutils::packInTable<T>(nsigma, container);
+    T::packInTable(nsigma, container);
     hgausPacked->Fill(container.unpack());
 
     nsigma = gRandom->Uniform(-10, 10);
     huniform->Fill(nsigma);
-    aod::pidutils::packInTable<T>(nsigma, container);
+    T::packInTable(nsigma, container);
     huniformPacked->Fill(container.unpack());
   }
 

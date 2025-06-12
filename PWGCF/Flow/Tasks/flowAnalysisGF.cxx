@@ -214,8 +214,8 @@ struct flowAnalysisGF {
     fPtAxis = new TAxis(ptbins, &ptbinning[0]);
 
     if (cfgFillWeights) {
-      fWeights->SetPtBins(ptbins, &ptbinning[0]);
-      fWeights->Init(true, false);
+      fWeights->setPtBins(ptbins, &ptbinning[0]);
+      fWeights->init(true, false);
     }
 
     if (doprocessMCGen) {
@@ -286,7 +286,7 @@ struct flowAnalysisGF {
     fFC->Initialize(oba, multAxis, cfgNbootstrap);
 
     delete oba;
-    fFCpt->Initialise(multAxis, cfgMpar, configs, cfgNbootstrap);
+    fFCpt->initialise(multAxis, cfgMpar, configs, cfgNbootstrap);
 
     // Event selection - Alex
     if (cfgUseAdditionalEventCut) {
@@ -388,7 +388,7 @@ struct flowAnalysisGF {
       return false;
     weight_nue = 1. / eff;
     if (cfg.mAcceptance)
-      weight_nua = cfg.mAcceptance->GetNUA(phi, eta, vtxz);
+      weight_nua = cfg.mAcceptance->getNUA(phi, eta, vtxz);
     else
       weight_nua = 1;
     return true;
@@ -497,9 +497,9 @@ struct flowAnalysisGF {
 
   void FillOutputContainers(datatype dt, const float& centmult, const double& rndm)
   {
-    fFCpt->CalculateCorrelations();
-    fFCpt->FillPtProfiles(centmult, rndm);
-    fFCpt->FillCMProfiles(centmult, rndm);
+    fFCpt->calculateCorrelations();
+    fFCpt->fillPtProfiles(centmult, rndm);
+    fFCpt->fillCMProfiles(centmult, rndm);
     for (uint l_ind = 0; l_ind < corrconfigs.size(); ++l_ind) {
       auto dnx = fGFW->Calculate(corrconfigs.at(l_ind), 0, kTRUE).real();
       if (dnx == 0)
@@ -508,7 +508,7 @@ struct flowAnalysisGF {
         auto val = fGFW->Calculate(corrconfigs.at(l_ind), 0, kFALSE).real() / dnx;
         if (TMath::Abs(val) < 1) {
           (dt == kGen) ? fFC_gen->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, dnx, rndm) : fFC->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, dnx, rndm);
-          fFCpt->FillVnPtProfiles(centmult, val, dnx, rndm, configs.GetpTCorrMasks()[l_ind]);
+          fFCpt->fillVnPtProfiles(centmult, val, dnx, rndm, configs.GetpTCorrMasks()[l_ind]);
         }
         continue;
       }
@@ -535,7 +535,7 @@ struct flowAnalysisGF {
     registry.fill(HIST("hEventCount"), 9.5);
     float vtxz = collision.posZ();
     fGFW->Clear();
-    fFCpt->ClearVector();
+    fFCpt->clearVector();
     float l_Random = fRndm->Rndm();
 
     std::vector<int> ITS_TPC_tracks(6, 0);
@@ -582,7 +582,7 @@ struct flowAnalysisGF {
         return false;
 
       if (cfgFillWeights)
-        fWeights->Fill(particle.phi(), particle.eta(), vtxz, particle.pt(), centrality, 0);
+        fWeights->fill(particle.phi(), particle.eta(), vtxz, particle.pt(), centrality, 0);
 
       if (!setCurrentParticleWeights(weff, wacc, particle.phi(), particle.eta(), particle.pt(), vtxz))
         return false;
@@ -630,7 +630,7 @@ struct flowAnalysisGF {
   template <typename TrackObject>
   inline void FillGFW(TrackObject track, float weff, float wacc)
   {
-    fFCpt->Fill(weff, track.pt());
+    fFCpt->fill(weff, track.pt());
     bool WithinPtPOI = (ptpoilow < track.pt()) && (track.pt() < ptpoiup); // within POI pT range
     bool WithinPtRef = (ptreflow < track.pt()) && (track.pt() < ptrefup); // within RF pT range
     if (WithinPtRef)

@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -22,7 +22,7 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
-using namespace o2::analysis::femtoUniverse;
+using namespace o2::analysis::femto_universe;
 
 /// The function takes the path to the dpl-config.json as a argument and the
 /// does a Q&A session for the user to find the appropriate selection criteria
@@ -55,8 +55,8 @@ int main(int /*argc*/, char* argv[])
       return 2;
     }
     /// \todo factor out the pid here
-    /// cut.setTrackSelection(femtoUniverseTrackSelection::kPIDnSigmaMax,
-    /// femtoUniverseSelection::kAbsUpperLimit, "ConfTrk");
+    /// cut.setTrackSelection(femto_universe_track_selection::kPIDnSigmaMax,
+    /// femto_universe_selection::kAbsUpperLimit, "ConfTrk");
 
     std::cout << "Do you want to manually select cuts or create systematic "
                  "variations(M/V)? >";

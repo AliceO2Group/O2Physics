@@ -19,6 +19,9 @@
 
 #include "qaEventTrack.h"
 
+#include <vector>
+
+#include "TRandom.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
@@ -38,7 +41,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::dataformats;
 
-struct qaEventTrackLiteProducer {
+struct QaEventTrackLiteProducer {
   // Tables to produce
   Produces<o2::aod::DPGCollisions> tableCollisions;
   Produces<o2::aod::DPGCollsBig> tableCollsBig;
@@ -178,7 +181,7 @@ struct qaEventTrackLiteProducer {
   {
     fillDerivedTable<false>(collision, tracks, 0, bcs);
   }
-  PROCESS_SWITCH(qaEventTrackLiteProducer, processTableData, "Process data for table producing", true);
+  PROCESS_SWITCH(QaEventTrackLiteProducer, processTableData, "Process data for table producing", true);
 
   void processTableMC(CollisionTableMC::iterator const& collision,
                       soa::Filtered<soa::Join<TrackTableMC, aod::TOFSignal, aod::TOFEvTime>> const& tracks,
@@ -188,7 +191,7 @@ struct qaEventTrackLiteProducer {
   {
     fillDerivedTable<true>(collision, tracks, mcParticles, bcs);
   }
-  PROCESS_SWITCH(qaEventTrackLiteProducer, processTableMC, "Process MC for table producing", false);
+  PROCESS_SWITCH(QaEventTrackLiteProducer, processTableMC, "Process MC for table producing", false);
 
   //**************************************************************************************************
   /**
@@ -202,10 +205,10 @@ struct qaEventTrackLiteProducer {
     if (!isSelectedCollision(collision)) {
       return;
     }
-    if (abs(collision.posZ()) > selectMaxVtxZ) {
+    if (std::abs(collision.posZ()) > selectMaxVtxZ) {
       return;
     }
-    if (fractionOfSampledEvents < 1.f && (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) > fractionOfSampledEvents) { // Skip events that are not sampled
+    if (fractionOfSampledEvents < 1.f && (gRandom->Uniform()) > fractionOfSampledEvents) { // Skip events that are not sampled
       return;
     }
     if (nTableEventCounter > targetNumberOfEvents) { // Skip events if target is reached
@@ -310,9 +313,9 @@ struct qaEventTrackLiteProducer {
     if (nTableEventCounter > targetNumberOfEvents) { // Skip events if target is reached
       return;
     }
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
 
-      if (fractionOfSampledEvents < 1.f && (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) > fractionOfSampledEvents) { // Skip events that are not sampled
+      if (fractionOfSampledEvents < 1.f && (gRandom->Uniform()) > fractionOfSampledEvents) { // Skip events that are not sampled
         return;
       }
       nTableEventCounter++;
@@ -407,7 +410,7 @@ struct qaEventTrackLiteProducer {
     /// Let's update the DF counter
     counterDF++;
   }
-  PROCESS_SWITCH(qaEventTrackLiteProducer, processTableDataCollsBig, "Process data for big collision table producing", false);
+  PROCESS_SWITCH(QaEventTrackLiteProducer, processTableDataCollsBig, "Process data for big collision table producing", false);
 
   /// Processing MC
   void processTableMCCollsBig(CollsBigTableMC const& collisions,
@@ -423,10 +426,10 @@ struct qaEventTrackLiteProducer {
     /// Let's update the DF counter
     counterDF++;
   }
-  PROCESS_SWITCH(qaEventTrackLiteProducer, processTableMCCollsBig, "Process MC for big collision table producing", false);
+  PROCESS_SWITCH(QaEventTrackLiteProducer, processTableMCCollsBig, "Process MC for big collision table producing", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<qaEventTrackLiteProducer>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<QaEventTrackLiteProducer>(cfgc)};
 }

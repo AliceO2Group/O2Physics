@@ -9,11 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// Task to produce a SV indices table joinable to the jet tables and 3/2-prong SV for hf jet tagging
-//
+/// \file secondaryVertexReconstruction.cxx
+/// \brief Task to produce a SV indices table joinable to the jet tables and 3/2-prong SV for hf jet tagging
 /// \author Hadi Hassan <hadi.hassan@cern.ch>
 
 #include <type_traits>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <TF1.h>
 #include <TH1.h>
@@ -69,6 +72,8 @@ struct SecondaryVertexReconstruction {
   Configurable<float> ptMinTrack{"ptMinTrack", -1., "min. track pT"};
   Configurable<float> etaMinTrack{"etaMinTrack", -99999., "min. pseudorapidity"};
   Configurable<float> etaMaxTrack{"etaMaxTrack", 4., "max. pseudorapidity"};
+  Configurable<float> maxIPxy{"maxIPxy", 10, "maximum track DCA in xy plane"};
+  Configurable<float> maxIPz{"maxIPz", 10, "maximum track DCA in z direction"};
   Configurable<bool> fillHistograms{"fillHistograms", true, "do validation plots"};
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -124,9 +129,9 @@ struct SecondaryVertexReconstruction {
 
   Filter trackCuts = (aod::jtrack::pt > ptMinTrack && aod::jtrack::eta > etaMinTrack && aod::jtrack::eta < etaMaxTrack);
 
-  using JetCollisionwPIs = soa::Join<JetCollisions, aod::JCollisionPIs>;
-  using JetTracksData = soa::Filtered<soa::Join<JetTracks, aod::JTrackPIs>>;
-  using JetTracksMCDwPIs = soa::Filtered<soa::Join<JetTracksMCD, aod::JTrackPIs>>;
+  using JetCollisionwPIs = soa::Join<aod::JetCollisions, aod::JCollisionPIs>;
+  using JetTracksData = soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackPIs>>;
+  using JetTracksMCDwPIs = soa::Filtered<soa::Join<aod::JetTracksMCD, aod::JTrackPIs>>;
   using OriginalTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TrackSelection, aod::TracksDCA, aod::TracksDCACov>;
 
   template <unsigned int numProngs, bool externalMagneticField, typename AnyCollision, typename AnyJet, typename AnyParticles>
@@ -269,12 +274,12 @@ struct SecondaryVertexReconstruction {
 
       // fill histograms
       if (fillHistograms) {
-        double DecayLengthNormalised = RecoDecay::distance(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, std::array{secondaryVertex[0], secondaryVertex[1], secondaryVertex[2]}) / errorDecayLength;
-        double DecayLengthXYNormalised = RecoDecay::distanceXY(std::array{primaryVertex.getX(), primaryVertex.getY()}, std::array{secondaryVertex[0], secondaryVertex[1]}) / errorDecayLengthXY;
+        double decayLengthNormalised = RecoDecay::distance(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, std::array{secondaryVertex[0], secondaryVertex[1], secondaryVertex[2]}) / errorDecayLength;
+        double decayLengthXYNormalised = RecoDecay::distanceXY(std::array{primaryVertex.getX(), primaryVertex.getY()}, std::array{secondaryVertex[0], secondaryVertex[1]}) / errorDecayLengthXY;
 
         registry.fill(HIST("hMassNProngs"), massSV, numProngs);
-        registry.fill(HIST("hLxySNProngs"), DecayLengthXYNormalised, numProngs);
-        registry.fill(HIST("hLSNProngs"), DecayLengthNormalised, numProngs);
+        registry.fill(HIST("hLxySNProngs"), decayLengthXYNormalised, numProngs);
+        registry.fill(HIST("hLSNProngs"), decayLengthNormalised, numProngs);
         registry.fill(HIST("hFeNProngs"), energySV / analysisJet.energy() > 1. ? 0.99 : energySV / analysisJet.energy(), numProngs);
       }
 
@@ -285,7 +290,7 @@ struct SecondaryVertexReconstruction {
     for (size_t iprong = prongIndex; iprong < particles.size(); ++iprong) {
 
       const auto& testTrack = particles[iprong].template track_as<OriginalTracks>();
-      if (testTrack.pt() < ptMinTrack || testTrack.eta() < etaMinTrack || testTrack.eta() > etaMaxTrack) {
+      if (testTrack.pt() < ptMinTrack || testTrack.eta() < etaMinTrack || testTrack.eta() > etaMaxTrack || std::abs(testTrack.dcaXY()) > maxIPxy || std::abs(testTrack.dcaZ()) > maxIPz) {
         continue;
       }
 
@@ -301,81 +306,81 @@ struct SecondaryVertexReconstruction {
   }
   PROCESS_SWITCH(SecondaryVertexReconstruction, processDummy, "Dummy process", true);
 
-  void processData3Prongs(JetCollisionwPIs::iterator const& collision, aod::Collisions const& /*realColl*/, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, JetTracksData const& jtracks, OriginalTracks const& /*tracks*/, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  void processData3Prongs(JetCollisionwPIs::iterator const& collision, aod::Collisions const& /*realColl*/, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, JetTracksData const& tracks, OriginalTracks const& /*tracks*/, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
-    for (auto& jet : jets) {
+    for (const auto& jet : jets) {
       std::vector<int> svIndices;
-      runCreatorNProng<3, false>(collision.template collision_as<aod::Collisions>(), jet, jtracks, svIndices, df3);
+      runCreatorNProng<3, false>(collision.template collision_as<aod::Collisions>(), jet, tracks, svIndices, df3);
       sv3prongIndicesTableData(svIndices);
     }
   }
   PROCESS_SWITCH(SecondaryVertexReconstruction, processData3Prongs, "Reconstruct the data 3-prong secondary vertex", false);
 
-  void processData3ProngsExternalMagneticField(JetCollisionwPIs::iterator const& collision, aod::Collisions const& /*realColl*/, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, JetTracksData const& jtracks, OriginalTracks const& /*tracks*/)
+  void processData3ProngsExternalMagneticField(JetCollisionwPIs::iterator const& collision, aod::Collisions const& /*realColl*/, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, JetTracksData const& tracks, OriginalTracks const& /*tracks*/)
   {
-    for (auto& jet : jets) {
+    for (const auto& jet : jets) {
       std::vector<int> svIndices;
-      runCreatorNProng<3, true>(collision.template collision_as<aod::Collisions>(), jet, jtracks, svIndices, df3);
+      runCreatorNProng<3, true>(collision.template collision_as<aod::Collisions>(), jet, tracks, svIndices, df3);
       sv3prongIndicesTableData(svIndices);
     }
   }
   PROCESS_SWITCH(SecondaryVertexReconstruction, processData3ProngsExternalMagneticField, "Reconstruct the data 3-prong secondary vertex with external magnetic field", false);
 
-  void processData2Prongs(JetCollisionwPIs::iterator const& collision, aod::Collisions const& /*realColl*/, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, JetTracksData const& jtracks, OriginalTracks const& /*tracks*/, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  void processData2Prongs(JetCollisionwPIs::iterator const& collision, aod::Collisions const& /*realColl*/, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, JetTracksData const& tracks, OriginalTracks const& /*tracks*/, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
-    for (auto& jet : jets) {
+    for (const auto& jet : jets) {
       std::vector<int> svIndices;
-      runCreatorNProng<2, false>(collision.template collision_as<aod::Collisions>(), jet, jtracks, svIndices, df2);
+      runCreatorNProng<2, false>(collision.template collision_as<aod::Collisions>(), jet, tracks, svIndices, df2);
       sv2prongIndicesTableData(svIndices);
     }
   }
   PROCESS_SWITCH(SecondaryVertexReconstruction, processData2Prongs, "Reconstruct the data 2-prong secondary vertex", false);
 
-  void processData2ProngsExternalMagneticField(JetCollisionwPIs::iterator const& collision, aod::Collisions const& /*realColl*/, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, JetTracksData const& jtracks, OriginalTracks const& /*tracks*/)
+  void processData2ProngsExternalMagneticField(JetCollisionwPIs::iterator const& collision, aod::Collisions const& /*realColl*/, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, JetTracksData const& tracks, OriginalTracks const& /*tracks*/)
   {
-    for (auto& jet : jets) {
+    for (const auto& jet : jets) {
       std::vector<int> svIndices;
-      runCreatorNProng<2, true>(collision.template collision_as<aod::Collisions>(), jet, jtracks, svIndices, df2);
+      runCreatorNProng<2, true>(collision.template collision_as<aod::Collisions>(), jet, tracks, svIndices, df2);
       sv2prongIndicesTableData(svIndices);
     }
   }
   PROCESS_SWITCH(SecondaryVertexReconstruction, processData2ProngsExternalMagneticField, "Reconstruct the data 2-prong secondary vertex with extrernal magnetic field", false);
 
-  void processMCD3Prongs(JetCollisionwPIs::iterator const& collision, aod::Collisions const& /*realColl*/, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& mcdjets, JetTracksMCDwPIs const& jtracks, OriginalTracks const& /*tracks*/, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  void processMCD3Prongs(JetCollisionwPIs::iterator const& collision, aod::Collisions const& /*realColl*/, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& mcdjets, JetTracksMCDwPIs const& tracks, OriginalTracks const& /*tracks*/, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
-    for (auto& jet : mcdjets) {
+    for (const auto& jet : mcdjets) {
       std::vector<int> svIndices;
-      runCreatorNProng<3, false>(collision.template collision_as<aod::Collisions>(), jet, jtracks, svIndices, df3);
+      runCreatorNProng<3, false>(collision.template collision_as<aod::Collisions>(), jet, tracks, svIndices, df3);
       sv3prongIndicesTableMCD(svIndices);
     }
   }
   PROCESS_SWITCH(SecondaryVertexReconstruction, processMCD3Prongs, "Reconstruct the MCD 3-prong secondary vertex", false);
 
-  void processMCD3ProngsExternalMagneticField(JetCollisionwPIs::iterator const& collision, aod::Collisions const& /*realColl*/, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& mcdjets, JetTracksMCDwPIs const& jtracks, OriginalTracks const& /*tracks*/)
+  void processMCD3ProngsExternalMagneticField(JetCollisionwPIs::iterator const& collision, aod::Collisions const& /*realColl*/, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& mcdjets, JetTracksMCDwPIs const& tracks, OriginalTracks const& /*tracks*/)
   {
-    for (auto& jet : mcdjets) {
+    for (const auto& jet : mcdjets) {
       std::vector<int> svIndices;
-      runCreatorNProng<3, true>(collision.template collision_as<aod::Collisions>(), jet, jtracks, svIndices, df3);
+      runCreatorNProng<3, true>(collision.template collision_as<aod::Collisions>(), jet, tracks, svIndices, df3);
       sv3prongIndicesTableMCD(svIndices);
     }
   }
   PROCESS_SWITCH(SecondaryVertexReconstruction, processMCD3ProngsExternalMagneticField, "Reconstruct the MCD 3-prong secondary vertex with external magnetic field", false);
 
-  void processMCD2Prongs(JetCollisionwPIs::iterator const& collision, aod::Collisions const& /*realColl*/, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& mcdjets, JetTracksMCDwPIs const& jtracks, OriginalTracks const& /*tracks*/, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  void processMCD2Prongs(JetCollisionwPIs::iterator const& collision, aod::Collisions const& /*realColl*/, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& mcdjets, JetTracksMCDwPIs const& tracks, OriginalTracks const& /*tracks*/, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
-    for (auto& jet : mcdjets) {
+    for (const auto& jet : mcdjets) {
       std::vector<int> svIndices;
-      runCreatorNProng<2, false>(collision.template collision_as<aod::Collisions>(), jet, jtracks, svIndices, df2);
+      runCreatorNProng<2, false>(collision.template collision_as<aod::Collisions>(), jet, tracks, svIndices, df2);
       sv2prongIndicesTableMCD(svIndices);
     }
   }
   PROCESS_SWITCH(SecondaryVertexReconstruction, processMCD2Prongs, "Reconstruct the MCD 2-prong secondary vertex", false);
 
-  void processMCD2ProngsExternalMagneticField(JetCollisionwPIs::iterator const& collision, aod::Collisions const& /*realColl*/, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& mcdjets, JetTracksMCDwPIs const& jtracks, OriginalTracks const& /*tracks*/)
+  void processMCD2ProngsExternalMagneticField(JetCollisionwPIs::iterator const& collision, aod::Collisions const& /*realColl*/, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& mcdjets, JetTracksMCDwPIs const& tracks, OriginalTracks const& /*tracks*/)
   {
-    for (auto& jet : mcdjets) {
+    for (const auto& jet : mcdjets) {
       std::vector<int> svIndices;
-      runCreatorNProng<2, true>(collision.template collision_as<aod::Collisions>(), jet, jtracks, svIndices, df2);
+      runCreatorNProng<2, true>(collision.template collision_as<aod::Collisions>(), jet, tracks, svIndices, df2);
       sv2prongIndicesTableMCD(svIndices);
     }
   }
@@ -384,5 +389,5 @@ struct SecondaryVertexReconstruction {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<SecondaryVertexReconstruction>(cfgc, TaskName{"jet-sv-reconstruction-charged"})};
+  return WorkflowSpec{adaptAnalysisTask<SecondaryVertexReconstruction>(cfgc, TaskName{"jet-sv-reconstruction-charged"})}; // o2-linter: disable=name/o2-task
 }

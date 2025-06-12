@@ -12,9 +12,10 @@
 // Quick and dirty task to correlate MC <-> data
 //
 
-#include <cmath>
 #include <array>
+#include <cmath>
 #include <cstdlib>
+#include <vector>
 
 #include "Math/Vector4D.h"
 #include <TFile.h>
@@ -38,7 +39,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -135,8 +135,8 @@ struct mcCollisionExtra {
       auto iter = std::find(sortedIndices.begin(), sortedIndices.end(), mcCollision.index());
       if (iter != sortedIndices.end()) {
         auto index = std::distance(iter, sortedIndices.begin());
-        for (size_t iMcColl = index + 1; iMcColl < index + 17; iMcColl++) {
-          if (iMcColl >= sortedIndices.size())
+        for (auto iMcColl = index + 1; iMcColl < index + 17; iMcColl++) {
+          if (iMcColl >= std::ssize(sortedIndices))
             continue;
           if (mcCollisionHasPoI[sortedIndices[iMcColl]])
             bitset(forwardHistory, iMcColl - index - 1);
