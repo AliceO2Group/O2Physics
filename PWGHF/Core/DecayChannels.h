@@ -177,13 +177,13 @@ enum DecayChannelResonant : int8_t {
 /// @brief beauty candidates: beauty to J/ψ decay channels
 enum DecayChannelToJpsiMain : int8_t {
   // B0
-  B0ToJpsiPiK, // J/ψ π- K+
+  B0ToJpsiPiK = 1, // J/ψ π- K+
   // Bs0
   BsToJpsiKK, // J/ψ K+ K-
   // Λb0
   LbToJpsiPK, // J/ψ p K-
   // B+
-  BplusToJpsiK = 1, // J/ψ K+
+  BplusToJpsiK, // J/ψ K+
   // Bc+
   BcToJpsiPi, // J/ψ π+
   //
