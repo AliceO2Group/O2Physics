@@ -286,6 +286,7 @@ float FastTracker::ProbGoodChiSqHit(float radius, float searchRadiusRPhi, float 
 // returns number of intercepts (generic for now)
 int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackParCov& outputTrack, const float nch)
 {
+  dNdEtaCent = nch; // set the number of charged particles per unit rapidity
   hits.clear();
   nIntercepts = 0;
   nSiliconPoints = 0;
@@ -427,8 +428,8 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
     // towards adding cluster: move to track alpha
     float alpha = inwardTrack.getAlpha();
     float xyz1[3]{
-      TMath::Cos(alpha) * spacePoint[0] + TMath::Sin(alpha) * spacePoint[1],
-      -TMath::Sin(alpha) * spacePoint[0] + TMath::Cos(alpha) * spacePoint[1],
+      std::cos(alpha) * spacePoint[0] + std::sin(alpha) * spacePoint[1],
+      -std::sin(alpha) * spacePoint[0] + std::cos(alpha) * spacePoint[1],
       spacePoint[2]};
     if (!inwardTrack.propagateTo(xyz1[0], magneticField))
       continue;
