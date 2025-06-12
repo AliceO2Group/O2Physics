@@ -111,13 +111,14 @@ namespace o2
       return getCompressedUint8(cosPa - 0.25, 0.001); // in the range from 0.75 to 1
     }
 
-    /// It compresses the chi2 (0.1 precision)
+    /// It compresses the chi2
     ///\param chi2 is the chi2
-    ///\return The chi2 compressed to a uint8_t with 0.1 precision
+    ///\return The chi2 compressed to a uint8_t
     template<typename T>
     int8_t getCompressedChi2(T chi2)
     {
-      return getCompressedUint8(chi2, 0.1);
+      uint8_t compressedChi2 = static_cast<uint8_t>(codeSqrtScaling(chi2, 0.015, 0.015, 0, 255));
+      return compressedChi2;
     }
 
     /// It compresses the number of sigma
@@ -136,7 +137,7 @@ namespace o2
     template<typename T>
     uint8_t getCompressedOccupancy(T occupancy)
     {
-      uint8_t compressedOcc = static_cast<uint8_t>(codeSqrtScaling(occupancy, 0.04, 0.04, 0, 256));
+      uint8_t compressedOcc = static_cast<uint8_t>(codeSqrtScaling(occupancy, 0.04, 0.04, 0, 255));
       return compressedOcc;
     }
 
@@ -248,6 +249,10 @@ namespace o2
       DECLARE_SOA_COLUMN(TpcNumSigmaKa, tpcNumSigmaKa, int8_t); //! compressed NsigmaTPC for kaons
       DECLARE_SOA_COLUMN(TofNumSigmaPi, tofNumSigmaPi, int8_t); //! compressed NsigmaTOF for pions
       DECLARE_SOA_COLUMN(TofNumSigmaKa, tofNumSigmaKa, int8_t); //! compressed NsigmaTOF for kaons
+      DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, uint8_t); //! compressed NsigmaTOF for kaons
+      DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, uint8_t); //! compressed NsigmaTOF for kaons
+      DECLARE_SOA_COLUMN(TRDChi2, trdChi2, uint8_t); //! compressed NsigmaTOF for kaons
+      DECLARE_SOA_COLUMN(TOFChi2, tofChi2, uint8_t); //! compressed NsigmaTOF for kaons
     } // namespace hf_calib
 
     DECLARE_SOA_TABLE(D0CalibTrack, "AOD", "D0CALIBTRACKS",
@@ -287,10 +292,10 @@ namespace o2
                       track::TPCNClsFindableMinusCrossedRows,
                       track::TPCNClsShared,
                       track::TRDPattern,
-                      track::ITSChi2NCl,
-                      track::TPCChi2NCl,
-                      track::TRDChi2,
-                      track::TOFChi2,
+                      hf_calib::ITSChi2NCl,
+                      hf_calib::TPCChi2NCl,
+                      hf_calib::TRDChi2,
+                      hf_calib::TOFChi2,
                       track::TPCSignal,
                       track::TRDSignal,
                       track::Length,

@@ -51,7 +51,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_calib;
 
-struct HfDerivedDataCreatorD0Calibration {
+struct DerivedDataCreatorD0Calibration {
 
   Produces<aod::D0CalibColl> collTable;
   Produces<aod::D0CalibTrack> trackTable;
@@ -94,9 +94,10 @@ struct HfDerivedDataCreatorD0Calibration {
 
   int runNumber{0};
   double bz{0.};
+  const float zVtxMax{10.f};
   // tolerances for preselections before vertex reconstruction
-  float ptTolerance{0.1f};
-  float invMassTolerance{0.05f};
+  const float ptTolerance{0.1f};
+  const float invMassTolerance{0.05f};
 
   void init(InitContext const&)
   {
@@ -131,7 +132,7 @@ struct HfDerivedDataCreatorD0Calibration {
         continue;
       }
       auto primaryVertex = getPrimaryVertex(collision);
-      if (std::abs(primaryVertex.getZ()) > 10.f) {
+      if (std::abs(primaryVertex.getZ()) > zVtxMax) {
         continue;
       }
       // TODO: add pileup cuts?
@@ -374,7 +375,7 @@ struct HfDerivedDataCreatorD0Calibration {
             trackTable(selectedCollisions[collision.globalIndex()],
                       trackPos.x(), trackPos.alpha(), trackPos.y(), trackPos.z(), trackPos.snp(), trackPos.tgl(), trackPos.signed1Pt(), // stored at PV
                       trackPos.cYY(), trackPos.cZY(), trackPos.cZZ(), trackPos.cSnpY(), trackPos.cSnpZ(), trackPos.cSnpSnp(), trackPos.cTglY(), trackPos.cTglZ(), trackPos.cTglSnp(), trackPos.cTglTgl(), trackPos.c1PtY(), trackPos.c1PtZ(), trackPos.c1PtSnp(), trackPos.c1PtTgl(), trackPos.c1Pt21Pt2(),
-                      trackPos.tpcInnerParam(), trackPos.flags(), trackPos.itsClusterSizes(), trackPos.tpcNClsFindable(), trackPos.tpcNClsFindableMinusFound(), trackPos.tpcNClsFindableMinusCrossedRows(), trackPos.tpcNClsShared(), trackPos.trdPattern(), trackPos.itsChi2NCl(), trackPos.tpcChi2NCl(), trackPos.trdChi2(), trackPos.tofChi2(), trackPos.tpcSignal(), trackPos.trdSignal(), trackPos.length(), trackPos.tofExpMom(), trackPos.trackTime(), trackPos.trackTimeRes(),
+                      trackPos.tpcInnerParam(), trackPos.flags(), trackPos.itsClusterSizes(), trackPos.tpcNClsFindable(), trackPos.tpcNClsFindableMinusFound(), trackPos.tpcNClsFindableMinusCrossedRows(), trackPos.tpcNClsShared(), trackPos.trdPattern(), getCompressedChi2(trackPos.itsChi2NCl()), getCompressedChi2(trackPos.tpcChi2NCl()), getCompressedChi2(trackPos.trdChi2()), getCompressedChi2(trackPos.tofChi2()), trackPos.tpcSignal(), trackPos.trdSignal(), trackPos.length(), trackPos.tofExpMom(), trackPos.trackTime(), trackPos.trackTimeRes(),
                       dcaPos.getY(), dcaPos.getZ(), getCompressedNumSigmaPid(trackPos.tpcNSigmaPi()), getCompressedNumSigmaPid(trackPos.tpcNSigmaKa()), getCompressedNumSigmaPid(trackPos.tofNSigmaPi()), getCompressedNumSigmaPid(trackPos.tofNSigmaKa()));
             selectedTracks[trackPos.globalIndex()] = trackTable.lastIndex();
           }
@@ -383,7 +384,7 @@ struct HfDerivedDataCreatorD0Calibration {
             trackTable(selectedCollisions[collision.globalIndex()],
                       trackNeg.x(), trackNeg.alpha(), trackNeg.y(), trackNeg.z(), trackNeg.snp(), trackNeg.tgl(), trackNeg.signed1Pt(), // stored at PV
                       trackNeg.cYY(), trackNeg.cZY(), trackNeg.cZZ(), trackNeg.cSnpY(), trackNeg.cSnpZ(), trackNeg.cSnpSnp(), trackNeg.cTglY(), trackNeg.cTglZ(), trackNeg.cTglSnp(), trackNeg.cTglTgl(), trackNeg.c1PtY(), trackNeg.c1PtZ(), trackNeg.c1PtSnp(), trackNeg.c1PtTgl(), trackNeg.c1Pt21Pt2(),
-                      trackNeg.tpcInnerParam(), trackNeg.flags(), trackNeg.itsClusterSizes(), trackNeg.tpcNClsFindable(), trackNeg.tpcNClsFindableMinusFound(), trackNeg.tpcNClsFindableMinusCrossedRows(), trackNeg.tpcNClsShared(), trackNeg.trdPattern(), trackNeg.itsChi2NCl(), trackNeg.tpcChi2NCl(), trackNeg.trdChi2(), trackNeg.tofChi2(), trackNeg.tpcSignal(), trackNeg.trdSignal(), trackNeg.length(), trackNeg.tofExpMom(), trackNeg.trackTime(), trackNeg.trackTimeRes(),
+                      trackNeg.tpcInnerParam(), trackNeg.flags(), trackNeg.itsClusterSizes(), trackNeg.tpcNClsFindable(), trackNeg.tpcNClsFindableMinusFound(), trackNeg.tpcNClsFindableMinusCrossedRows(), trackNeg.tpcNClsShared(), trackNeg.trdPattern(), getCompressedChi2(trackNeg.itsChi2NCl()), getCompressedChi2(trackNeg.tpcChi2NCl()), getCompressedChi2(trackNeg.trdChi2()), getCompressedChi2(trackNeg.tofChi2()), trackNeg.tpcSignal(), trackNeg.trdSignal(), trackNeg.length(), trackNeg.tofExpMom(), trackNeg.trackTime(), trackNeg.trackTimeRes(),
                       dcaNeg.getY(), dcaNeg.getZ(), getCompressedNumSigmaPid(trackNeg.tpcNSigmaPi()), getCompressedNumSigmaPid(trackNeg.tpcNSigmaKa()), getCompressedNumSigmaPid(trackNeg.tofNSigmaPi()), getCompressedNumSigmaPid(trackNeg.tofNSigmaKa()));
             selectedTracks[trackNeg.globalIndex()] = trackTable.lastIndex();
           }
@@ -400,5 +401,5 @@ struct HfDerivedDataCreatorD0Calibration {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfDerivedDataCreatorD0Calibration>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<DerivedDataCreatorD0Calibration>(cfgc)};
 }
