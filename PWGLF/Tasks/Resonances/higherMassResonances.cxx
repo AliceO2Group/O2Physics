@@ -591,7 +591,7 @@ struct HigherMassResonances {
 
     auto motherLabDirection = ROOT::Math::XYZVector(0, 0, fourVecMother.Vect().Z()); // ẑ axis in lab frame
 
-    // ŷ = z_beam × ẑ 
+    // ŷ = z_beam × ẑ
     auto y_axis = z_beam.Cross(motherLabDirection).Unit();
 
     // x̂ = ŷ × ẑ
