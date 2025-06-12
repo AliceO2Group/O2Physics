@@ -172,6 +172,8 @@ struct HigherMassResonances {
   float theta2;
   ROOT::Math::PxPyPzMVector daughter1, daughter2, fourVecDau1, fourVecMother, fourVecDauCM;
   ROOT::Math::XYZVector threeVecDauCM, helicityVec, randomVec, beamVec, normalVec;
+  ROOT::Math::XYZVector z_beam; // ẑ: beam direction in lab frame
+
   // const double massK0s = o2::constants::physics::MassK0Short;
   bool isMix = false;
 
@@ -576,8 +578,8 @@ struct HigherMassResonances {
   {
 
     // polarization calculations
+    z_beam = ROOT::Math::XYZVector(0.f, 0.f, 1.f); // ẑ: beam direction in lab frame
 
-    ROOT::Math::XYZVector z_beam(0, 0, 1);
     fourVecDau1 = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), o2::constants::physics::MassK0Short);
 
     fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // 4 vector of mother particle
@@ -586,21 +588,18 @@ struct HigherMassResonances {
     threeVecDauCM = fourVecDauCM.Vect();                                              // get the 3 vector of daughter in the frame of mother
     // define y = z_beam x z: Normal to the production plane
     // ẑ: mother direction in lab, boosted into mother's rest frame
-    ROOT::Math::Boost boostToMotherCM{fourVecMother.BoostToCM()};
-    auto p_dau_CM = fourVecDauCM.Vect();                   // 3-momentum of daughter in mother rest frame
-    auto motherLabDirection = fourVecMother.Vect().Unit(); // unit vector in lab
-    ROOT::Math::PxPyPzMVector dummyZ(motherLabDirection.X(), motherLabDirection.Y(), motherLabDirection.Z(), 0.0);
-    auto boostedZ = boostToMotherCM(dummyZ).Vect().Unit(); // ẑ axis in mother rest frame
 
-    // ŷ = z_beam × ẑ (normal to production plane)
-    auto y_axis = z_beam.Cross(boostedZ).Unit();
+    auto motherLabDirection = ROOT::Math::XYZVector(0, 0, fourVecMother.Vect().Z()); // ẑ axis in lab frame
+
+    // ŷ = z_beam × ẑ 
+    auto y_axis = z_beam.Cross(motherLabDirection).Unit();
 
     // x̂ = ŷ × ẑ
-    auto x_axis = y_axis.Cross(boostedZ).Unit();
+    auto x_axis = y_axis.Cross(motherLabDirection).Unit();
 
     // Project daughter momentum onto x–y plane
-    auto p_proj_x = p_dau_CM.Dot(x_axis);
-    auto p_proj_y = p_dau_CM.Dot(y_axis);
+    auto p_proj_x = threeVecDauCM.Dot(x_axis);
+    auto p_proj_y = threeVecDauCM.Dot(y_axis);
 
     // Calculate φ in [-π, π]
     auto angle_phi = std::atan2(p_proj_y, p_proj_x); // φ in radians
