@@ -503,8 +503,7 @@ struct JetHadronRecoil {
       trigNumber = rand->Integer(nTT);
       phiTT = phiTTAr[trigNumber];
       phiTTPart = phiTTAr[trigNumber];
-    }
-    else {
+    } else {
       return;
     }
 
