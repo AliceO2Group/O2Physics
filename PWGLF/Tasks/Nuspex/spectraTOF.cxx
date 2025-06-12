@@ -761,7 +761,7 @@ struct tofSpectra {
           hDcaXYWrongCollisionPrm[i] = histos.add<TH2>("dcaxywrongcollprm" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
           hDcaXYWrongCollisionStr[i] = histos.add<TH2>("dcaxywrongcollstr" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
           hDcaXYWrongCollisionMat[i] = histos.add<TH2>("dcaxywrongcollmat" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
-        
+
           histos.add(hdcaxyprm[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
           histos.add(hdcazprm[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
           histos.add(hdcaxystr[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
@@ -1060,7 +1060,7 @@ struct tofSpectra {
           }
         }
       }
-    } 
+    }
     const bool isInPtRangeForPhi = track.pt() < 1.1f && track.pt() > 0.9f;
     if (track.sign() > 0) {
       histos.fill(HIST(hdcaxy[id]), track.pt(), track.dcaXY());
@@ -1070,8 +1070,7 @@ struct tofSpectra {
           histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY());
         }
       }
-    } 
-    else {
+    } else {
       histos.fill(HIST(hdcaxy[id + Np]), track.pt(), track.dcaXY());
       histos.fill(HIST(hdcaz[id + Np]), track.pt(), track.dcaZ());
       if (isInPtRangeForPhi) {
@@ -1912,7 +1911,7 @@ struct tofSpectra {
 
     const auto& nsigmaTOFKa = o2::aod::pidutils::tofNSigma<3>(track);
     const bool isKaonTOF = std::abs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
-    if (enablepuredcahist){
+    if (enablepuredcahist) {
       // Filling DCA info with the TPC+TOF PID
       bool isDCAPureSample = (std::sqrt(nsigmaTOFKa * nsigmaTOFKa + nsigmaTPCKa * nsigmaTPCKa) < 2.f);
       if (track.pt() <= 0.4) {
@@ -2052,7 +2051,7 @@ struct tofSpectra {
       } else {
         hDcaXYWrongCollisionPrm[i]->Fill(track.pt(), track.dcaXY());
       }
-    } 
+    }
 
     if (!passesDCAxyCut(track)) { // Skipping tracks that don't pass the standard cuts
       return;
