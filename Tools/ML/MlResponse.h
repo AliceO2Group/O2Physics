@@ -23,14 +23,17 @@
 #include <onnxruntime_cxx_api.h>
 #endif
 
+#include "Tools/ML/model.h"
+
+#include <CCDB/CcdbApi.h>
+#include <Framework/Array2D.h>
+#include <Framework/Logger.h>
+
+#include <cstddef>
+#include <cstdint>
 #include <map>
 #include <string>
 #include <vector>
-
-#include "CCDB/CcdbApi.h"
-#include "Framework/Array2D.h"
-
-#include "Tools/ML/model.h"
 
 namespace o2
 {

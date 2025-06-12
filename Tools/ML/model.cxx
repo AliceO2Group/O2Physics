@@ -17,8 +17,26 @@
 /// \brief    A general-purpose class with functions for ONNX model applications
 ///
 
-// ONNX includes
 #include "Tools/ML/model.h"
+
+#include <onnxruntime_c_api.h>
+#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
+#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
+#else
+#include <onnxruntime_cxx_api.h>
+#endif
+
+#include <Framework/Logger.h>
+
+#include <TSystem.h>
+
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <vector>
 
 namespace o2
 {
