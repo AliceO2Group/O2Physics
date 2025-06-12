@@ -15,20 +15,37 @@
 /// \author Fabrizio Chinu <fabrizio.chinu@cern.ch>, Università degli Studi and INFN Torino
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
+#include "TrackSelectorPID.h"
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseBsToJpsiPhiReduced.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsPid.h"
 
 #include "Common/Core/RecoDecay.h"
 
+#include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Array2D.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/InitContext.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/WorkflowSpec.h>
 #include <Framework/runDataProcessing.h>
+#include <TString.h>
+#include <fairlogger/Logger.h>
+#include <Rtypes.h>
 
+#include <cstdint>
+#include <array>
+#include <numeric>
 #include <string>
 #include <vector>
 

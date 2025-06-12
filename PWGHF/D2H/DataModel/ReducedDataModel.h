@@ -39,7 +39,9 @@
 #include "Framework/AnalysisDataModel.h"
 
 #include <array>
+#include <cmath>
 #include <cstdint>
+#include <cstdlib>
 
 namespace o2
 {
