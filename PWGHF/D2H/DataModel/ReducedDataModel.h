@@ -681,7 +681,7 @@ namespace hf_cand_bplus_reduced
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed2Prongs, "_0");    //! Prong0 index
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1"); //! Prong1 index
-DECLARE_SOA_INDEX_COLUMN_FULL(Jpsi, jPsi, int, HfRedJpsis, "_0");          //! J/Psi index
+DECLARE_SOA_INDEX_COLUMN_FULL(Jpsi, jpsi, int, HfRedJpsis, "_0");          //! J/Psi index
 DECLARE_SOA_INDEX_COLUMN_FULL(BachKa, bachKa, int, HfRedBach0Bases, "_0"); //! J/Psi index
 DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);             //! Bkg ML score of the D daughter
 DECLARE_SOA_COLUMN(Prong0MlScorePrompt, prong0MlScorePrompt, float);       //! Prompt ML score of the D daughter
@@ -707,7 +707,7 @@ namespace hf_cand_bs_reduced
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3Prongs, "_0");          //! Prong0 index
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1");       //! Prong1 index
-DECLARE_SOA_INDEX_COLUMN_FULL(Jpsi, jPsi, int, HfRedJpsis, "_0");                //! J/Psi index
+DECLARE_SOA_INDEX_COLUMN_FULL(Jpsi, jpsi, int, HfRedJpsis, "_0");                //! J/Psi index
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0Phi, prong0Phi, int, HfRedBach0Bases, "_0"); //! J/Psi index
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong1Phi, prong1Phi, int, HfRedBach1Bases, "_0"); //! J/Psi index
 DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);                   //! Bkg ML score of the D daughter

@@ -1084,9 +1084,9 @@ class HfHelper
   {
     auto ptCandBs = candBs.pt();
     auto mCandBs = invMassBsToJpsiPhi(candBs);
-    std::array<float, 3> pVecKa0 = {candKa0.px(), candKa0.py(), candKa0.pz()};
-    std::array<float, 3> pVecKa1 = {candKa1.px(), candKa1.py(), candKa1.pz()};
-    auto mcandPhi = RecoDecay::m(std::array{pVecKa0, pVecKa1}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
+    std::array<float, 3> pVecKa0 = candKa0.pVector();
+    std::array<float, 3> pVecKa1 = candKa1.pVector();
+    auto mCandPhi = RecoDecay::m(std::array{pVecKa0, pVecKa1}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
     auto ptJpsi = RecoDecay::pt(candBs.pxProng0(), candBs.pyProng0());
     auto candJpsi = candBs.jPsi();
     float pseudoPropDecLen = candBs.decayLengthXY() * mCandBs / ptCandBs;
@@ -1113,7 +1113,7 @@ class HfHelper
     }
 
     // phi mass
-    if (std::abs(mcandPhi - o2::constants::physics::MassPhi) < cuts->get(binPt, "DeltaM phi")) {
+    if (std::abs(mCandPhi - o2::constants::physics::MassPhi) < cuts->get(binPt, "DeltaM phi")) {
       return false;
     }
 

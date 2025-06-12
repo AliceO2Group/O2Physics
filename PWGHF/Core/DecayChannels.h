@@ -176,20 +176,27 @@ enum DecayChannelResonant : int8_t {
 };
 /// @brief beauty candidates: beauty to J/ψ decay channels
 enum DecayChannelToJpsiMain : int8_t {
+  // B0
+  B0ToJpsiPiK, // J/ψ π- K+
+  // Bs0
+  BsToJpsiKK, // J/ψ K+ K-
+  // Λb0
+  LbToJpsiPK, // J/ψ p K-
+  // B+
   BplusToJpsiK = 1, // J/ψ K+
-  B0ToJpsiPiK,      // J/ψ π- K+
-  BsToJpsiKK,       // J/ψ K+ K-
-  BcToJPsiPi,       // J/ψ π+
-  LbToJpsipK,       // J/ψ p K-
+  // Bc+
+  BcToJpsiPi, // J/ψ π+
   //
-  LastChannelBeautyToJpsi
+  LastChannelToJpsiMain
 };
 /// @brief beauty candidates: beauty to J/ψ resonant decay channels
 enum DecayChannelToJpsiResonant : int8_t {
-  B0ToJpsiKStar0 = 1, // J/ψ K*0(892)
-  BsToJpsiPhi,        // J/ψ φ
+  // B0
+  B0ToJpsiKstar0 = 1, // J/ψ K*0(892)
+  // Bs0
+  BsToJpsiPhi, // J/ψ φ
   //
-  LastChannelBeautyToJpsiResonant
+  LastChannelToJpsiResonant
 };
 } // namespace hf_cand_beauty
 } // namespace o2::hf_decay

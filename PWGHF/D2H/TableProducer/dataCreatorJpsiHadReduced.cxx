@@ -551,7 +551,7 @@ struct HfDataCreatorJpsiHadReduced {
         }
 
         // save information for Bs task
-        if (abs(flag) != o2::hf_decay::hf_cand_beauty::BsToJpsiKK) {
+        if (std::abs(flag) != o2::hf_decay::hf_cand_beauty::BsToJpsiKK) {
           continue;
         }
 

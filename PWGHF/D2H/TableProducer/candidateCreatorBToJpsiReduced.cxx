@@ -67,8 +67,8 @@ struct HfCandidateCreatorBToJpsiReduced {
   double massBplus{0.}, massBs{0.};
   double bz{0.};
   o2::vertexing::DCAFitterN<2> df2; // fitter for B vertex (2-prong vertex fitter)
-  o2::vertexing::DCAFitterN<3> df3; // fitter for B vertex (2-prong vertex fitter)
-  o2::vertexing::DCAFitterN<4> df4; // fitter for B vertex (2-prong vertex fitter)
+  o2::vertexing::DCAFitterN<3> df3; // fitter for B vertex (3-prong vertex fitter)
+  o2::vertexing::DCAFitterN<4> df4; // fitter for B vertex (4-prong vertex fitter)
 
   using HfRedCollisionsWithExtras = soa::Join<aod::HfRedCollisions, aod::HfRedCollExtras>;
 
@@ -139,8 +139,8 @@ struct HfCandidateCreatorBToJpsiReduced {
                             Cands const& candsJpsiThisColl,
                             TTracks0 const& tracksLfDau0ThisCollision,
                             TTracks1 const& tracksLfDau1ThisCollision,
-                            const float& invMass2JpsiHadMin,
-                            const float& invMass2JpsiHadMax)
+                            const float invMass2JpsiHadMin,
+                            const float invMass2JpsiHadMax)
   {
     auto primaryVertex = getPrimaryVertex(collision);
     auto covMatrixPV = primaryVertex.getCov();
