@@ -14,30 +14,34 @@
 /// \since  10/01/2024
 /// \brief  task to evaluate flow and neutron skin with information from ZDC
 
-#include <CCDB/BasicCCDBManager.h>
-#include <cmath>
-#include <vector>
-#include <complex>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
 
 #include "TList.h"
-#include <TProfile.h>
-#include <TRandom3.h>
+#include <TComplex.h>
 #include <TF1.h>
+#include <TMath.h>
+#include <TProfile.h>
 #include <TProfile2D.h>
 #include <TRandom3.h>
-#include <TMath.h>
-#include <TComplex.h>
+
+#include <cmath>
+#include <complex>
+#include <string>
+#include <vector>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -98,7 +102,10 @@ struct FlowZdcTask {
   Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "T0C Occu cut?"};
   Configurable<bool> isTDCcut{"isTDCcut", false, "Use TDC cut?"};
   Configurable<bool> isZEMcut{"isZEMcut", true, "Use ZEM cut?"};
+  Configurable<bool> useMidRapNchSel{"useMidRapNchSel", true, "Use mid-rapidit Nch selection"};
+  Configurable<bool> applyEff{"applyEff", true, "Apply track-by-track efficiency correction"};
 
+  Configurable<float> nSigmaNchCut{"nSigmaNchCut", 1., "nSigma Nch selection"};
   Configurable<double> minNchSel{"minNchSel", 5., "min Nch Selection"};
   Configurable<float> znBasedCut{"znBasedCut", 100, "ZN-based cut"};
   Configurable<float> zemCut{"zemCut", 1000., "ZEM cut"};
@@ -106,6 +113,11 @@ struct FlowZdcTask {
   Configurable<float> minOccCut{"minOccCut", 0, "min Occu cut"};
   Configurable<float> maxOccCut{"maxOccCut", 500, "max Occu cut"};
   Configurable<int> minITSnCls{"minITSnCls", 5, "min ITSnCls"};
+  Configurable<float> minPt{"minPt", 0.1, "minimum pt of the tracks"};
+  Configurable<float> maxPt{"maxPt", 3., "maximum pt of the tracks"};
+  Configurable<float> maxPtSpectra{"maxPtSpectra", 50., "maximum pt of the tracks"};
+  Configurable<float> minEta{"minEta", -0.8, "minimum eta"};
+  Configurable<float> maxEta{"maxEta", +0.8, "maximum eta"};
   // axis configs
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -138,9 +150,12 @@ struct FlowZdcTask {
   using CollisionDataTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms>;
   using TrackDataTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
   using FilTrackDataTable = soa::Filtered<TrackDataTable>;
-  std::complex<double> qTPC;       // init q TPC
-  std::complex<double> qZNA{0, 0}; // init qZNA
-  std::complex<double> qZNC{0, 0}; // init qZNC
+
+  // CCDB paths
+  Configurable<std::string> paTH{"paTH", "Users/s/sahernan/test", "base path to the ccdb object"};
+  Configurable<std::string> paTHmeanNch{"paTHmeanNch", "Users/s/shernan/test", "base path to the ccdb object"};
+  Configurable<std::string> paTHsigmaNch{"paTHsigmaNch", "Users/s/shernan/testSigma", "base path to the ccdb object"};
+  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   enum EvCutLabel {
     All = 1,
@@ -164,8 +179,7 @@ struct FlowZdcTask {
   // Begin Histogram Registry
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  OutputObj<TProfile> pCosPsiDifferences{TProfile("pCosPsiDifferences", "Differences in cos(psi) vs Centrality;Centrality;Mean cos(psi) Difference", 200, 0, 100, -1, 1)};
-  OutputObj<TProfile> pSinPsiDifferences{TProfile("pSinPsiDifferences", "Differences in sin(psi) vs Centrality;Centrality;Mean sin(psi) Difference", 200, 0, 100, -1, 1)};
+  Service<ccdb::BasicCCDBManager> ccdb;
   OutputObj<TProfile> pZNvsFT0Ccent{TProfile("pZNvsFT0Ccent", "ZN Energy vs FT0C Centrality", 100, 0, 100, 0, 500)};
   OutputObj<TProfile> pZPvsFT0Ccent{TProfile("pZPvsFT0Ccent", "ZP Energy vs FT0C Centrality", 100, 0, 100, 0, 500)};
   OutputObj<TProfile> pZNratiovscent{TProfile("pZNratiovscent", "Ratio ZNC/ZNA vs FT0C Centrality", 100, 0, 100, 0, 5)};
@@ -337,6 +351,24 @@ struct FlowZdcTask {
       histos.add("ZNVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA+ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZn}}});
       histos.add("ZNDifVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA-ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {100, -50., 50.}}});
     }
+    LOG(info) << "\tccdbNoLaterThan=" << ccdbNoLaterThan.value;
+    LOG(info) << "\tapplyEff=" << applyEff.value;
+    LOG(info) << "\tpaTH=" << paTH.value;
+    LOG(info) << "\tuseMidRapNchSel=" << useMidRapNchSel.value;
+    LOG(info) << "\tpaTHmeanNch=" << paTHmeanNch.value;
+    LOG(info) << "\tpaTHsigmaNch=" << paTHsigmaNch.value;
+    LOG(info) << "\tminPt=" << minPt.value;
+    LOG(info) << "\tmaxPt=" << maxPt.value;
+    LOG(info) << "\tmaxPtSpectra=" << maxPtSpectra.value;
+
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    // Enabling object caching, otherwise each call goes to the CCDB server
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
+    // Not later than now, will be replaced by the value of the train creation
+    // This avoids that users can replace objects **while** a train is running
+    ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
   }
   template <typename EventCuts>
   bool isEventSelected(EventCuts const& col)
@@ -480,6 +512,7 @@ struct FlowZdcTask {
       histos.fill(HIST("hEventCounter"), EvCutLabel::Zem);
     }
 
+    const double normT0M{(aT0A + aT0C) / 100.};
     float znA = zdc.amplitudeZNA() / cfgCollisionEnergy;
     float znC = zdc.amplitudeZNC() / cfgCollisionEnergy;
     float zpA = zdc.amplitudeZPA() / cfgCollisionEnergy;
@@ -506,7 +539,50 @@ struct FlowZdcTask {
       }
       glbTracks++;
     }
+    bool skipEvent{false};
+    if (useMidRapNchSel) {
+      auto hMeanNch = ccdb->getForTimeStamp<TH1F>(paTHmeanNch.value, foundBC.timestamp());
+      auto hSigmaNch = ccdb->getForTimeStamp<TH1F>(paTHsigmaNch.value, foundBC.timestamp());
+      if (!hMeanNch) {
+        LOGF(info, "hMeanNch NOT LOADED!");
+        return;
+      }
+      if (!hSigmaNch) {
+        LOGF(info, "hSigmaNch NOT LOADED!");
+        return;
+      }
 
+      const int binT0M{hMeanNch->FindBin(normT0M)};
+      const double meanNch{hMeanNch->GetBinContent(binT0M)};
+      const double sigmaNch{hSigmaNch->GetBinContent(binT0M)};
+      const double nSigmaSelection{nSigmaNchCut * sigmaNch};
+      const double diffMeanNch{meanNch - glbTracks};
+
+      if (!(std::abs(diffMeanNch) < nSigmaSelection)) {
+        histos.fill(HIST("ExcludedEvtVsNch"), glbTracks);
+      } else {
+        skipEvent = true;
+      }
+    }
+    if (!skipEvent) {
+      return;
+    }
+
+    for (const auto& track : tracks) {
+      // Track Selection
+      if (!track.isGlobalTrack()) {
+        continue;
+      }
+      if ((track.pt() < minPt) || (track.pt() > maxPtSpectra)) {
+        continue;
+      }
+
+      histos.fill(HIST("ZposVsEta"), collision.posZ(), track.eta());
+      histos.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
+      histos.fill(HIST("dcaXYvspT"), track.dcaXY(), track.pt());
+      et += std::sqrt(std::pow(track.pt(), 2.) + std::pow(o2::constants::physics::MassPionCharged, 2.));
+      meanpt += track.pt();
+    }
     histos.fill(HIST("zPos"), collision.posZ());
     histos.fill(HIST("T0Ccent"), collision.centFT0C());
 
@@ -574,18 +650,12 @@ struct FlowZdcTask {
     int globalTracks = tracks.size();
     if (globalTracks < 1)
       return;
-    // this is the q vector for the TPC data. it is a complex function
-    double qTpcReal = 0.0; // Initialize qTPC_real
-    double qTpcIm = 0.0;   // init qTPC_imaginary
-    std::complex<double> qTPC(0, 0); // Starting with a q-vector of zero
     int nTot{0};                     // Tracks are already filtered with GlobalTrack || GlobalTrackSDD
     for (const auto& track : tracks) {
-      double phi = track.phi();
       nTot++;
       histos.fill(HIST("etaHistogram"), track.eta());
       histos.fill(HIST("phiHistogram"), track.phi());
       histos.fill(HIST("ptHistogram"), track.pt());
-      qTPC += std::complex<double>(std::cos(2.0 * phi), std::sin(2.0 * phi));
     } // end track loop 1
     double pT{0};
     for (const auto& track : tracks) {
@@ -599,16 +669,9 @@ struct FlowZdcTask {
     histos.fill(HIST("multvsCent"), cent, nTot);
     histos.fill(HIST("hYield"), nTot, pT);
     histos.fill(HIST("multHistogram"), nTot);
-    qTpcReal = qTPC.real() / nTot; // normalize these vectors by the total number of particles
-    qTpcIm = qTPC.imag() / nTot;
-
-    histos.fill(HIST("REqHistogram"), qTpcReal);
-    histos.fill(HIST("IMqHistogram"), qTpcIm);
 
     histos.fill(HIST("TPCmultiplicity"), multTPC);
     histos.fill(HIST("hGlobalTracks"), globalTracks);
-
-    histos.fill(HIST("revsimag"), qTpcReal, qTpcIm);
   }
   void processZdcCollAssoc(
     AodCollisions::iterator const& collision,
