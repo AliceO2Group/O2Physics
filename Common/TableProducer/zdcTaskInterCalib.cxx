@@ -9,12 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file zdc-task-intercalib.cxx
+/// \file zdcTaskInterCalib.cxx
 /// \brief Task for ZDC tower inter-calibration
 /// \author chiara.oppedisano@cern.ch
 
-// o2-linter: disable=name/workflow-file
-// o2-linter: disable=name/file-cpp
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/HistogramRegistry.h"
@@ -35,9 +33,9 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::evsel;
 
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
-using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;
+using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
 
-struct ZDCCalibTower {
+struct ZdcTaskInterCalib {
 
   Produces<aod::ZDCInterCalib> zTab;
 
@@ -48,8 +46,31 @@ struct ZDCCalibTower {
   Configurable<bool> tdcCut{"tdcCut", false, "Flag for TDC cut"};
   Configurable<float> tdcZNmincut{"tdcZNmincut", -2.5, "Min ZN TDC cut"};
   Configurable<float> tdcZNmaxcut{"tdcZNmaxcut", -2.5, "Max ZN TDC cut"};
+  // Event selections
+  Configurable<bool> cfgEvSelSel8{"cfgEvSelSel8", true, "Event selection: sel8"};
+  Configurable<float> cfgEvSelVtxZ{"cfgEvSelVtxZ", 10, "Event selection: zVtx"};
+  Configurable<bool> cfgEvSelsDoOccupancySel{"cfgEvSelsDoOccupancySel", true, "Event selection: do occupancy selection"};
+  Configurable<float> cfgEvSelsMaxOccupancy{"cfgEvSelsMaxOccupancy", 10000, "Event selection: set max occupancy"};
+  Configurable<bool> cfgEvSelsNoSameBunchPileupCut{"cfgEvSelsNoSameBunchPileupCut", true, "Event selection: no same bunch pileup cut"};
+  Configurable<bool> cfgEvSelsIsGoodZvtxFT0vsPV{"cfgEvSelsIsGoodZvtxFT0vsPV", true, "Event selection: is good ZVTX FT0 vs PV"};
+  Configurable<bool> cfgEvSelsNoCollInTimeRangeStandard{"cfgEvSelsNoCollInTimeRangeStandard", true, "Event selection: no collision in time range standard"};
+  Configurable<bool> cfgEvSelsIsVertexITSTPC{"cfgEvSelsIsVertexITSTPC", true, "Event selection: is vertex ITSTPC"};
+  Configurable<bool> cfgEvSelsIsGoodITSLayersAll{"cfgEvSelsIsGoodITSLayersAll", true, "Event selection: is good ITS layers all"};
   //
   HistogramRegistry registry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  enum SelectionCriteria {
+    evSel_zvtx,
+    evSel_sel8,
+    evSel_occupancy,
+    evSel_kNoSameBunchPileup,
+    evSel_kIsGoodZvtxFT0vsPV,
+    evSel_kNoCollInTimeRangeStandard,
+    evSel_kIsVertexITSTPC,
+    evSel_kIsGoodITSLayersAll,
+    evSel_allEvents,
+    nEventSelections
+  };
 
   void init(InitContext const&)
   {
@@ -65,15 +86,92 @@ struct ZDCCalibTower {
     registry.add("ZNCpm4", "ZNCpm4; ZNC PM4; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
     registry.add("ZNAsumq", "ZNAsumq; ZNA uncalib. sum PMQ; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
     registry.add("ZNCsumq", "ZNCsumq; ZNC uncalib. sum PMQ; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
+
+    registry.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_allEvents + 1, "All events");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_zvtx + 1, "vtxZ");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_sel8 + 1, "Sel8");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_occupancy + 1, "kOccupancy");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoSameBunchPileup + 1, "kNoSameBunchPileup");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodZvtxFT0vsPV + 1, "kIsGoodZvtxFT0vsPV");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoCollInTimeRangeStandard + 1, "kNoCollInTimeRangeStandard");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsVertexITSTPC + 1, "kIsVertexITSTPC");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kkIsGoodITSLayersAll");
+  }
+
+  template <typename TCollision>
+  uint8_t eventSelected(TCollision collision)
+  {
+    uint8_t selectionBits = 0;
+    bool selected;
+
+    registry.fill(HIST("hEventCount"), evSel_allEvents);
+
+    selected = std::fabs(collision.posZ()) < cfgEvSelVtxZ;
+    if (selected) {
+      selectionBits |= (uint8_t)(0x1u << evSel_zvtx);
+      registry.fill(HIST("hEventCount"), evSel_zvtx);
+    }
+
+    selected = collision.sel8();
+    if (selected) {
+      selectionBits |= (uint8_t)(0x1u << evSel_sel8);
+      registry.fill(HIST("hEventCount"), evSel_sel8);
+    }
+
+    auto occupancy = collision.trackOccupancyInTimeRange();
+    selected = occupancy <= cfgEvSelsMaxOccupancy;
+    if (selected) {
+      selectionBits |= (uint8_t)(0x1u << evSel_occupancy);
+      registry.fill(HIST("hEventCount"), evSel_occupancy);
+    }
+
+    selected = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
+    if (selected) {
+      selectionBits |= (uint8_t)(0x1u << evSel_kNoSameBunchPileup);
+      registry.fill(HIST("hEventCount"), evSel_kNoSameBunchPileup);
+    }
+
+    selected = collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
+    if (selected) {
+      selectionBits |= (uint8_t)(0x1u << evSel_kIsGoodZvtxFT0vsPV);
+      registry.fill(HIST("hEventCount"), evSel_kIsGoodZvtxFT0vsPV);
+    }
+
+    selected = collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard);
+    if (selected) {
+      selectionBits |= (uint8_t)(0x1u << evSel_kNoCollInTimeRangeStandard);
+      registry.fill(HIST("hEventCount"), evSel_kNoCollInTimeRangeStandard);
+    }
+
+    selected = collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC);
+    if (selected) {
+      selectionBits |= (uint8_t)(0x1u << evSel_kIsVertexITSTPC);
+      registry.fill(HIST("hEventCount"), evSel_kIsVertexITSTPC);
+    }
+
+    selected = collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll);
+    if (selected) {
+      selectionBits |= (uint8_t)(0x1u << evSel_kIsGoodITSLayersAll);
+      registry.fill(HIST("hEventCount"), evSel_kIsGoodITSLayersAll);
+    }
+
+    return selectionBits;
   }
 
   void process(ColEvSels const& cols, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/)
   {
     // collision-based event selection
+    int nTowers = 4; // number of ZDC towers
+
     for (auto const& collision : cols) {
       const auto& foundBC = collision.foundBC_as<BCsRun3>();
       if (foundBC.has_zdc()) {
         const auto& zdc = foundBC.zdc();
+
+        uint8_t evSelection = eventSelected(collision);
+
+        float centrality = collision.centFT0C();
 
         // To assure that ZN have a genuine signal (tagged by the relative TDC)
         // we can check that the amplitude is >0 or that ADC is NOT very negative (-inf)
@@ -117,7 +215,7 @@ struct ZDCCalibTower {
         };
         //
         if (isZNChit) {
-          for (int it = 0; it < 4; it++) {
+          for (int it = 0; it < nTowers; it++) {
             pmqZNC[it] = (zdc.energySectorZNC())[it];
             sumZNC += pmqZNC[it];
           }
@@ -129,7 +227,7 @@ struct ZDCCalibTower {
           registry.get<TH1>(HIST("ZNCsumq"))->Fill(sumZNC);
         }
         if (isZNAhit) {
-          for (int it = 0; it < 4; it++) {
+          for (int it = 0; it < nTowers; it++) {
             pmqZNA[it] = (zdc.energySectorZNA())[it];
             sumZNA += pmqZNA[it];
           }
@@ -142,7 +240,7 @@ struct ZDCCalibTower {
           registry.get<TH1>(HIST("ZNAsumq"))->Fill(sumZNA);
         }
         if (isZNAhit || isZNChit)
-          zTab(pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3], tdcZNC, pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3], tdcZNA);
+          zTab(pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3], tdcZNC, pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3], tdcZNA, centrality, foundBC.timestamp(), evSelection);
       }
     }
   }
@@ -151,5 +249,5 @@ struct ZDCCalibTower {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) // o2-linter: disable=name/file-cpp
 {
   return WorkflowSpec{
-    adaptAnalysisTask<ZDCCalibTower>(cfgc)};
+    adaptAnalysisTask<ZdcTaskInterCalib>(cfgc)};
 }
