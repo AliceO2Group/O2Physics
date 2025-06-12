@@ -279,7 +279,7 @@ struct HfCandidateCreatorSigmac0plusplus {
     if (!softPiCuts.IsSelected(trackSoftPi)) {
       return;
     }
-    std::array<float, 2> softPiDca = {-999f, -999f};
+    std::array<float, 2> softPiDca = {-999.f, -999.f};
     if constexpr (withTimeAssoc) {
       /// dcaXY, dcaZ selections
       /// To be done separately from the others, because for reassigned tracks the dca must be recalculated
