@@ -485,7 +485,7 @@ struct PhotonChargedTriggerCorrelation {
   Configurable<int> nTriggerMixingPi0PCM{"nTriggerMixingPi0PCM", 64, "number of triggers that are saved for pi0PCM mixing"};
   Configurable<int> nNeighboursMixingPi0PCMPair{"nNeighboursMixingPi0PCMPair", 64, "number neighbours used for for pi0PCM pair mixing"};
   Configurable<std::vector<double>> pi0PCMMassRange{"pi0PCMMassRange", {0.10, 0.15}, "photon-pair mass integration range for pi0PCM"};
-  Configurable<std::vector<double>> pi0PCMSideMassRange{"pi0PCMSideMassRange", {0.15, 0.25}, "photon-pair mass integration range outside outside pi0PCM region"};
+  Configurable<std::vector<double>> pi0PCMSideMassRange{"pi0PCMSideMassRange", {0.16, 0.24}, "photon-pair mass integration range outside outside pi0PCM region"};
 
   Configurable<bool> requireSingleCollisionPurity{"requireSingleCollisionPurity", true, "whether particle from single chosen MC-col associated to reco-col (else just type/kin match)"};
 
@@ -498,7 +498,7 @@ struct PhotonChargedTriggerCorrelation {
 
   Configurable<int> nBinsPhi{"nBinsPhi", 72, "number phi bins"};
   Configurable<int> nBinsEta{"nBinsEta", 40, "number eta bins"};
-  Configurable<int> nBinsMgg{"nBinsMgg", 60, "number mass-photon-pair bins"};
+  Configurable<int> nBinsMgg{"nBinsMgg", 160, "number mass-photon-pair bins"};
 
   Configurable<std::vector<double>> binsPtTrig{"binsPtTrig", {5, 10, 25, 50}, "correlation ptTrig bins"};
   Configurable<std::vector<double>> binsPtAssoc{"binsPtAssoc",
@@ -669,7 +669,7 @@ struct PhotonChargedTriggerCorrelation {
 
     const AxisSpec axisPhi{nBinsPhi, 0, constants::math::TwoPI, "#it{#varphi}"};
     const AxisSpec axisEta{nBinsEta, -etaMax, etaMax, "#it{#eta}"};
-    const AxisSpec axisMgg{nBinsMgg, 0, 0.3, "#it{m}_{#gamma#gamma}"};
+    const AxisSpec axisMgg{nBinsMgg, 0, 0.8, "#it{m}_{#gamma#gamma}"};
 
     const AxisSpec axisPtTrig{binsPtTrig, "#it{p}_{T}^{trig}"};
     const AxisSpec axisPtAssoc{binsPtAssoc, "#it{p}_{T}^{assoc}"};
@@ -713,24 +713,25 @@ struct PhotonChargedTriggerCorrelation {
                kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
     histos.add("reco/corr/h6_mix_photonPCM", "h6_mix_photonPCM",
                kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
-    // pi0PCM
-    histos.add("reco/plain/h3_ptPhiEta_pi0PCM", "h3_ptPhiEta_pi0PCM", kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
-    histos.add("reco/plain/h4_ptMggZPvMult_pi0PCM", "h4_ptMggZPvMult_pi0PCM", kTHnSparseD, {axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
-    histos.add("reco/corr/h3_ptPhiEta_assoc_pi0PCM", "h3_ptPhiEta_assoc_pi0PCM", kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
-    histos.add("reco/corr/h4_ptMggZPvMult_assoc_pi0PCM", "h4_ptMggZPvMult_assoc_pi0PCM", kTHnSparseD, {axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
-    histos.add("reco/corr/h6_corr_pi0PCM", "h6_corr_pi0PCM",
+    // photonPCM pairs
+    histos.add("reco/plain/h4_ptMggZPvMult_photonPCMPair", "h4_ptMggZPvMult_photonPCMPair", kTHnSparseD, {axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
+    histos.add("reco/plain/h3_ptPhiEta_pi0PCMPeak", "h3_ptPhiEta_pi0PCMPeak", kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
+    histos.add("reco/corr/h4_ptMggZPvMult_assoc_photonPCMPair", "h4_ptMggZPvMult_assoc_photonPCMPair", kTHnSparseD, {axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
+    histos.add("reco/corr/h3_ptPhiEta_assoc_pi0PCMPeak", "h3_ptPhiEta_assoc_pi0PCMPeak", kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
+    // peak (mgg)
+    histos.add("reco/corr/h6_corr_pi0PCMPeak", "h6_corr_pi0PCMPeak",
                kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
-    histos.add("reco/corr/h6_mix_pi0PCM", "h6_mix_pi0PCM",
+    histos.add("reco/corr/h6_mix_pi0PCMPeak", "h6_mix_pi0PCMPeak",
                kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
-    // side band (mgg)
+    // side (mgg)
     histos.add("reco/corr/h6_corr_pi0PCMSide", "h6_corr_pi0PCMSide",
                kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
     histos.add("reco/corr/h6_mix_pi0PCMSide", "h6_mix_pi0PCMSide",
                kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
     // event mixing for photon pairs
-    histos.add("reco/plain/h2_zPvMult_pi0PCMMix", "h2_zPvMult_pi0PCMMix", kTHnSparseD, {axisZPv, axisMult}, true);
-    histos.add("reco/plain/h3_ptPhiEta_pi0PCMMix", "h3_ptPhiEta_pi0PCMMix", kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
-    histos.add("reco/plain/h4_ptMggZPvMult_pi0PCMMix", "h4_ptMggZPvMult_pi0PCMMix", kTHnSparseD, {axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
+    histos.add("reco/plain/h2_zPvMult_photonPCMPair_evMix", "h2_zPvMult_photonPCMPair_evMix", kTHnSparseD, {axisZPv, axisMult}, true);
+    histos.add("reco/plain/h4_ptMggZPvMult_photonPCMPair_evMix", "h4_ptMggZPvMult_photonPCMPair_evMix", kTHnSparseD, {axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
+    histos.add("reco/plain/h3_ptPhiEta_pi0PCMPeak_evMix", "h3_ptPhiEta_pi0PCMPeak_evMix", kTHnSparseD, {axisPtAssoc, axisPhi, axisEta}, true);
 
     // mc info
     histos.add("mc/info/h1_nEvents_mcTrue", "h1_nEvents_mcTrue", kTH1D, {axisN});
@@ -1212,10 +1213,10 @@ struct PhotonChargedTriggerCorrelation {
       return;
 
     auto const funcPlain = [this](auto const& collision, auto const& associated) {
-      histos.fill(HIST("reco/plain/h4_ptMggZPvMult_pi0PCM"), associated.pt(), associated.mgg(), collision.posZ(), collision.multNTracksGlobal());
+      histos.fill(HIST("reco/plain/h4_ptMggZPvMult_photonPCMPair"), associated.pt(), associated.mgg(), collision.posZ(), collision.multNTracksGlobal());
       // pi0 mass range
       if (associated.mgg() > pi0PCMMassRange.value[0] && associated.mgg() < pi0PCMMassRange.value[1]) {
-        histos.fill(HIST("reco/plain/h3_ptPhiEta_pi0PCM"), associated.pt(), associated.phi(), associated.eta());
+        histos.fill(HIST("reco/plain/h3_ptPhiEta_pi0PCMPeak"), associated.pt(), associated.phi(), associated.eta());
       }
     };
     corrProcessPlain(collision, photonPCMPairs, funcPlain);
@@ -1226,16 +1227,16 @@ struct PhotonChargedTriggerCorrelation {
           trigger.jetTrackId() == associated.negTrack2Id() || trigger.jetTrackId() == associated.posTrack2Id())
         return;
 
-      histos.fill(HIST("reco/corr/h4_ptMggZPvMult_assoc_pi0PCM"),
+      histos.fill(HIST("reco/corr/h4_ptMggZPvMult_assoc_photonPCMPair"),
                   associated.pt(), associated.mgg(), collision.posZ(), collision.multNTracksGlobal(),
                   getInvEff<ParticleType::Trigger>(trigger.pt()));
 
       if (associated.mgg() > pi0PCMMassRange.value[0] && associated.mgg() < pi0PCMMassRange.value[1]) {
         // pi0 mass range
-        histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_pi0PCM"),
+        histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_pi0PCMPeak"),
                     associated.pt(), associated.phi(), associated.eta(),
                     getInvEff<ParticleType::Trigger>(trigger.pt()));
-        histos.fill(HIST("reco/corr/h6_corr_pi0PCM"),
+        histos.fill(HIST("reco/corr/h6_corr_pi0PCMPeak"),
                     getDeltaPhi(trigger.phi(), associated.phi()),
                     trigger.eta() - associated.eta(),
                     trigger.pt(), associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
@@ -1255,7 +1256,7 @@ struct PhotonChargedTriggerCorrelation {
                                    float const mixingTriggerPt, float const mixingTriggerPhi, float const mixingTriggerEta, auto const& associated, auto const perTriggerWeight) {
       if (associated.mgg() > pi0PCMMassRange.value[0] && associated.mgg() < pi0PCMMassRange.value[1]) {
         // pi0 mass range
-        histos.fill(HIST("reco/corr/h6_mix_pi0PCM"),
+        histos.fill(HIST("reco/corr/h6_mix_pi0PCMPeak"),
                     getDeltaPhi(mixingTriggerPhi, associated.phi()),
                     mixingTriggerEta - associated.eta(),
                     mixingTriggerPt, associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
@@ -1297,7 +1298,7 @@ struct PhotonChargedTriggerCorrelation {
         continue;
 
       // event info
-      histos.fill(HIST("reco/plain/h2_zPvMult_pi0PCMMix"), collision1.posZ(), collision1.multNTracksGlobal());
+      histos.fill(HIST("reco/plain/h2_zPvMult_photonPCMPair_evMix"), collision1.posZ(), collision1.multNTracksGlobal());
 
       // mixing loop
       for (auto const& [photonPCM1, photonPCM2] : soa::combinations(soa::CombinationsFullIndexPolicy(photonPCMs1, photonPCMs2))) {
@@ -1306,8 +1307,11 @@ struct PhotonChargedTriggerCorrelation {
         ROOT::Math::PtEtaPhiMVector const p4photonPCMPair = p4photonPCM1 + p4photonPCM2;
 
         // plain
-        histos.fill(HIST("reco/plain/h3_ptPhiEta_pi0PCMMix"), p4photonPCMPair.pt(), p4photonPCMPair.phi() + constants::math::PI, p4photonPCMPair.eta());
-        histos.fill(HIST("reco/plain/h4_ptMggZPvMult_pi0PCMMix"), p4photonPCMPair.pt(), p4photonPCMPair.M(), collision1.posZ(), collision1.multNTracksGlobal());
+        histos.fill(HIST("reco/plain/h4_ptMggZPvMult_photonPCMPair_evMix"), p4photonPCMPair.pt(), p4photonPCMPair.M(), collision1.posZ(), collision1.multNTracksGlobal());
+        // pi0 mass range
+        if (p4photonPCMPair.M() > pi0PCMMassRange.value[0] && p4photonPCMPair.M() < pi0PCMMassRange.value[1]) {
+          histos.fill(HIST("reco/plain/h3_ptPhiEta_pi0PCMPeak_evMix"), p4photonPCMPair.pt(), p4photonPCMPair.phi() + constants::math::PI, p4photonPCMPair.eta());
+        }
       }
     }
   }
