@@ -16,11 +16,13 @@
 #ifndef COMMON_TOOLS_MULTMODULE_H_
 #define COMMON_TOOLS_MULTMODULE_H_
 
+#include <vector>
 #include <memory>
 #include <cstdlib>
 #include <cmath>
 #include <array>
 #include <string>
+#include <map>
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/Configurable.h"
 #include "Framework/HistogramSpec.h"
