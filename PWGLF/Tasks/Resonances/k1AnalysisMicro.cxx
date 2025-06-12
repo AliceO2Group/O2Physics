@@ -14,7 +14,6 @@
 /// \author Su-Jeong Ji <su-jeong.ji@cern.ch>, Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 ///
 
-
 #include <vector>
 #include <TLorentzVector.h>
 #include <TDatabasePDG.h> // FIXME
