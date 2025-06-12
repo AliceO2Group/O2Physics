@@ -15,6 +15,14 @@
 /// \author Fabrizio Chinu <fabrizio.chinu@cern.ch>, Università degli Studi and INFN Torino
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
+#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsTrkCandHf.h"
+
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
 #include <Framework/AnalysisTask.h>
@@ -22,14 +30,6 @@
 #include <ReconstructionDataFormats/DCA.h>
 
 #include <memory>
-
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
-#include "PWGHF/Utils/utilsTrkCandHf.h"
 
 using namespace o2;
 using namespace o2::aod;

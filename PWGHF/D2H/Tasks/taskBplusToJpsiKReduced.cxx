@@ -15,20 +15,21 @@
 /// \author Fabrizio Chinu <fabrizio.chinu@cern.ch>, Università degli Studi and INFN Torino
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/HfMlResponseBplusToJpsiKReduced.h"
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsPid.h"
+
+#include "Common/Core/RecoDecay.h"
+
 #include <Framework/AnalysisTask.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/runDataProcessing.h>
 
-#include <vector>
 #include <string>
-
-#include "Common/Core/RecoDecay.h"
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/HfMlResponseBplusToJpsiKReduced.h"
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
-#include "PWGHF/Utils/utilsPid.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;

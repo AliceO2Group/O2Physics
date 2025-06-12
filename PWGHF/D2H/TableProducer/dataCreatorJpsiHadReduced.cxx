@@ -15,6 +15,22 @@
 /// \author Fabrizio Chinu <fabrizio.chinu@cern.ch>, Università degli Studi and INFN Torino
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
+#include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
+#include "PWGHF/D2H/Utils/utilsRedDataFormat.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGHF/Utils/utilsTrkCandHf.h"
+
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/Qvectors.h"
+
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
 #include <Framework/AnalysisTask.h>
@@ -27,22 +43,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Qvectors.h"
-
-#include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Utils/utilsBfieldCCDB.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
-#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
-#include "PWGHF/Utils/utilsTrkCandHf.h"
-#include "PWGHF/D2H/Utils/utilsRedDataFormat.h"
 
 using namespace o2;
 using namespace o2::analysis;
