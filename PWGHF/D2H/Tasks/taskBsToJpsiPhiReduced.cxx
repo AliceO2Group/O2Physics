@@ -324,7 +324,7 @@ struct HfTaskBsToJpsiPhiReduced {
   {
     auto ptCandBs = candidate.pt();
     auto invMassBs = hfHelper.invMassBsToJpsiPhi(candidate);
-    auto candJpsi = candidate.template jPsi_as<aod::HfRedJpsis>();
+    auto candJpsi = candidate.template jpsi_as<aod::HfRedJpsis>();
     auto candKa0 = candidate.template prong0Phi_as<aod::HfRedBach0Tracks>();
     auto candKa1 = candidate.template prong1Phi_as<aod::HfRedBach1Tracks>();
     std::array<float, 3> pVecKa0 = {candKa0.px(), candKa0.py(), candKa0.pz()};

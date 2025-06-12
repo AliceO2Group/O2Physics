@@ -298,7 +298,7 @@ struct HfTaskBplusToJpsiKReduced {
   {
     auto ptCandBplus = candidate.pt();
     auto invMassBplus = hfHelper.invMassBplusToJpsiK(candidate);
-    auto candJpsi = candidate.template jPsi_as<aod::HfRedJpsis>();
+    auto candJpsi = candidate.template jpsi_as<aod::HfRedJpsis>();
     auto candKa = candidate.template bachKa_as<aod::HfRedBach0Tracks>();
     auto ptJpsi = candidate.ptProng0();
     auto invMassJpsi = candJpsi.m();

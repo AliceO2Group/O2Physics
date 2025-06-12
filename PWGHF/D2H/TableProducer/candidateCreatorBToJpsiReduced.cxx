@@ -419,7 +419,7 @@ struct HfCandidateCreatorBToJpsiReducedExpressions {
       bool filledMcInfo{false};
       if constexpr (decChannel == DecayChannel::BplusToJpsiK) {
         for (const auto& rowJpsiHadMcRec : rowsJpsiHadMcRec) {
-          if ((rowJpsiHadMcRec.jPsiId() != candB.jPsiId()) || (rowJpsiHadMcRec.prong1Id() != candB.bachKaId())) {
+          if ((rowJpsiHadMcRec.jpsiId() != candB.jpsiId()) || (rowJpsiHadMcRec.prong1Id() != candB.bachKaId())) {
             continue;
           }
           rowBplusMcRec(rowJpsiHadMcRec.flagMcMatchRec(), rowJpsiHadMcRec.channelMcMatchRec(), rowJpsiHadMcRec.flagWrongCollision(), rowJpsiHadMcRec.debugMcRec(), rowJpsiHadMcRec.ptMother());
@@ -431,7 +431,7 @@ struct HfCandidateCreatorBToJpsiReducedExpressions {
         }
       } else if constexpr (decChannel == DecayChannel::BsToJpsiPhi) {
         for (const auto& rowJpsiHadMcRec : rowsJpsiHadMcRec) {
-          if ((rowJpsiHadMcRec.jPsiId() != candB.jPsiId()) || (rowJpsiHadMcRec.prong0PhiId() != candB.prong0PhiId()) || (rowJpsiHadMcRec.prong1PhiId() != candB.prong1PhiId())) {
+          if ((rowJpsiHadMcRec.jpsiId() != candB.jpsiId()) || (rowJpsiHadMcRec.prong0PhiId() != candB.prong0PhiId()) || (rowJpsiHadMcRec.prong1PhiId() != candB.prong1PhiId())) {
             continue;
           }
           rowBsMcRec(rowJpsiHadMcRec.flagMcMatchRec(), rowJpsiHadMcRec.channelMcMatchRec(), rowJpsiHadMcRec.flagWrongCollision(), rowJpsiHadMcRec.debugMcRec(), rowJpsiHadMcRec.ptMother());

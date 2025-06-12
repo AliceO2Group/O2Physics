@@ -897,7 +897,7 @@ class HfHelper
     auto mCandBp = invMassBplusToJpsiK(candBp);
     auto ptJpsi = RecoDecay::pt(candBp.pxProng0(), candBp.pyProng0());
     auto ptKa = RecoDecay::pt(candBp.pxProng1(), candBp.pyProng1());
-    auto candJpsi = candBp.jPsi();
+    auto candJpsi = candBp.jpsi();
     float pseudoPropDecLen = candBp.decayLengthXY() * mCandBp / ptCandBp;
 
     int binPt = o2::analysis::findBin(binsPt, ptCandBp);
@@ -1088,7 +1088,7 @@ class HfHelper
     std::array<float, 3> pVecKa1 = candKa1.pVector();
     auto mCandPhi = RecoDecay::m(std::array{pVecKa0, pVecKa1}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
     auto ptJpsi = RecoDecay::pt(candBs.pxProng0(), candBs.pyProng0());
-    auto candJpsi = candBs.jPsi();
+    auto candJpsi = candBs.jpsi();
     float pseudoPropDecLen = candBs.decayLengthXY() * mCandBs / ptCandBs;
 
     int binPt = o2::analysis::findBin(binsPt, ptCandBs);
