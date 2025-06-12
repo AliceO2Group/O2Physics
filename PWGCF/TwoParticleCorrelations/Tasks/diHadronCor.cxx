@@ -267,6 +267,7 @@ struct DiHadronCor {
       registry.get<TH1>(HIST("MCEffeventcount"))->GetXaxis()->SetBinLabel(5, "Fake");
     }
 
+    LOGF(info, "Initializing correlation container");
     std::vector<AxisSpec> corrAxis = {{axisSample, "Sample"},
                                       {axisVertex, "z-vtx (cm)"},
                                       {axisPtTrigger, "p_{T} (GeV/c)"},
@@ -282,6 +283,8 @@ struct DiHadronCor {
 
     same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
     mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, userAxis));
+
+    LOGF(info, "End of init");
   }
 
   int getMagneticField(uint64_t timestamp)
