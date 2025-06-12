@@ -16,12 +16,7 @@
 #ifndef PWGJE_CORE_MLRESPONSEHFTAGGING_H_
 #define PWGJE_CORE_MLRESPONSEHFTAGGING_H_
 
-#include <map>
-#include <string>
-#include <vector>
-
 #include "Tools/ML/MlResponse.h"
-#include "PWGJE/Core/JetTaggingUtilities.h"
 
 #if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
@@ -29,13 +24,21 @@
 #include <onnxruntime_cxx_api.h>
 #endif
 
+#include <Framework/Logger.h>
+
+#include <onnxruntime_c_api.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <utility>
+#include <vector>
+
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_BJET(FEATURE)                                 \
-  {                                                            \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesBTag::FEATURE) \
-  }
+#define FILL_MAP_BJET(FEATURE) \
+  {                            \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesBTag::FEATURE)}
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
