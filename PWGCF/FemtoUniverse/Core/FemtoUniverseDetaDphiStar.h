@@ -154,7 +154,6 @@ class FemtoUniverseDetaDphiStar
     }
   }
 
-
   ///  Check if pair is close or not
   template <typename Part, typename Parts>
   bool isClosePair(Part const& part1, Part const& part2, Parts const& particles, float lmagfield, uint8_t ChosenEventType)
