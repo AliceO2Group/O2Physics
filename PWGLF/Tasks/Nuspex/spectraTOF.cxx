@@ -2052,7 +2052,7 @@ struct tofSpectra {
         hDcaXYWrongCollisionPrm[i]->Fill(track.pt(), track.dcaXY());
       }
     }
-    
+
     if (!passesDCAxyCut(track)) { // Skipping tracks that don't pass the standard cuts
       return;
     }
