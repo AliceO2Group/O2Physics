@@ -12,44 +12,47 @@
 /// \file taskElectronWeakBoson.cxx
 /// \brief task for WeakBoson (W/Z) based on electron in mid-rapidity
 /// \author S. Sakai & S. Ito (Univ. of Tsukuba)
+
 #ifndef HomogeneousField
 #define HomogeneousField // o2-linter: disable=name/macro (required by KFParticle)
 #endif
 
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsEMCAL/AnalysisCluster.h"
-#include "DataFormatsEMCAL/Cell.h"
-#include "DataFormatsEMCAL/Constants.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "EMCALBase/Geometry.h"
-#include "EMCALCalib/BadChannelMap.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TPDGCode.h"
+#include <TPDGCode.h>
 
-#include "KFPTrack.h"
-#include "KFPVertex.h"
-#include "KFParticle.h"
-#include "KFParticleBase.h"
-#include "KFVertex.h"
+#include <KFPTrack.h>
+#include <KFParticle.h>
 
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <string>
 #include <vector>
 

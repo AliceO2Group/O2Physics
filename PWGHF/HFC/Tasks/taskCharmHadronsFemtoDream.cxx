@@ -14,24 +14,35 @@
 /// \author Ravindra SIngh, GSI, ravindra.singh@cern.ch
 /// \author Biao Zhang, Heidelberg University, biao.zhang@cern.ch
 
-#include <vector>
-#include <string>
-
-#include "Framework/Expressions.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-
 #include "PWGCF/DataModel/FemtoDerived.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamPairCleaner.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamContainer.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamDetaDphiStar.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamMath.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamPairCleaner.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
+
+#include "Framework/Expressions.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TMath.h>
+
+#include <array>
+#include <cstdint>
+#include <string>
 
 using namespace o2;
 using namespace o2::aod;
