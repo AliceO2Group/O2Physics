@@ -34,9 +34,9 @@
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CommonConstants/GeomConstants.h"
 
-#include "iostream"
-#include "vector"
-#include "set"
+#include <iostream>
+#include <vector>
+#include <set>
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;

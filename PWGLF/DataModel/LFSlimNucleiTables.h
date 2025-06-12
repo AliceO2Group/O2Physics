@@ -14,9 +14,10 @@
 /// \brief Slim nuclei tables
 ///
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/Centrality.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
 
 #ifndef PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_
 #define PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_
@@ -31,6 +32,7 @@ DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(TPCInnerParam, tpcInnerParam, float);
 DECLARE_SOA_COLUMN(Beta, beta, float);
 DECLARE_SOA_COLUMN(Zvertex, zVertex, float);
+DECLARE_SOA_COLUMN(NContrib, nContrib, int);
 DECLARE_SOA_COLUMN(DCAxy, dcaxy, float);
 DECLARE_SOA_COLUMN(DCAz, dcaz, float);
 DECLARE_SOA_COLUMN(TPCsignal, tpcSignal, float);
@@ -44,12 +46,13 @@ DECLARE_SOA_COLUMN(ITSclsMap, itsClsMap, uint8_t);
 DECLARE_SOA_COLUMN(TPCnCls, tpcNCls, uint8_t);
 DECLARE_SOA_COLUMN(TPCnClsShared, tpcNClsShared, uint8_t);
 DECLARE_SOA_COLUMN(ITSclusterSizes, itsClusterSizes, uint32_t);
+DECLARE_SOA_COLUMN(SurvivedEventSelection, survivedEventSelection, bool);
 DECLARE_SOA_COLUMN(gPt, genPt, float);
 DECLARE_SOA_COLUMN(gEta, genEta, float);
 DECLARE_SOA_COLUMN(gPhi, genPhi, float);
 DECLARE_SOA_COLUMN(PDGcode, pdgCode, int);
 DECLARE_SOA_COLUMN(MotherPDGcode, MotherpdgCode, int);
-DECLARE_SOA_COLUMN(SurvivedEventSelection, survivedEventSelection, bool);
+DECLARE_SOA_COLUMN(MotherDecRad, motherDecRad, float);
 DECLARE_SOA_COLUMN(AbsoDecL, absoDecL, float);
 
 } // namespace NucleiTableNS
@@ -101,6 +104,7 @@ DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
                   NucleiTableNS::TPCInnerParam,
                   NucleiTableNS::Beta,
                   NucleiTableNS::Zvertex,
+                  NucleiTableNS::NContrib,
                   NucleiTableNS::DCAxy,
                   NucleiTableNS::DCAz,
                   NucleiTableNS::TPCsignal,
@@ -138,6 +142,7 @@ DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
                   NucleiTableNS::TPCInnerParam,
                   NucleiTableNS::Beta,
                   NucleiTableNS::Zvertex,
+                  NucleiTableNS::NContrib,
                   NucleiTableNS::DCAxy,
                   NucleiTableNS::DCAz,
                   NucleiTableNS::TPCsignal,
@@ -151,12 +156,13 @@ DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
                   NucleiTableNS::TPCnCls,
                   NucleiTableNS::TPCnClsShared,
                   NucleiTableNS::ITSclusterSizes,
+                  NucleiTableNS::SurvivedEventSelection,
                   NucleiTableNS::gPt,
                   NucleiTableNS::gEta,
                   NucleiTableNS::gPhi,
                   NucleiTableNS::PDGcode,
                   NucleiTableNS::MotherPDGcode,
-                  NucleiTableNS::SurvivedEventSelection,
+                  NucleiTableNS::MotherDecRad,
                   NucleiTableNS::AbsoDecL);
 
 DECLARE_SOA_TABLE(NucleiPairTable, "AOD", "NUCLEIPAIRTABLE",

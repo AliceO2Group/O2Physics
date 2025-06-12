@@ -49,7 +49,8 @@ struct ThreeParticleCorrelations {
   float pionPtMin = 0.3, pionPtMax = 2.3, kaonPtMin = 0.5, kaonPtMax = 2.5, protonPtMin = 0.5, protonPtMax = 2.5;
   float pionPtMid = 1.5, kaonPtMid1 = 1.5, kaonPtMid2 = 2.0, protonPtMid = 0.7;
 
-  float dEtaMin = 0.05, dPhiStarMin = 0.11;
+  float dEtaMax = 0.05, dEtaMin = 0.022;
+  float dPhiStarMinOS = 0.075, dPhiStarMinSS = 0.12;
   float rMin = 0.8, rMax = 2.5;
 
   // Lambda invariant mass fit
@@ -68,10 +69,6 @@ struct ThreeParticleCorrelations {
   Filter mcCollZvtx = nabs(aod::mccollision::posZ) < zvtxMax;
   Filter evSelect = aod::evsel::sel8 == true;
 
-  // V0 filters
-  Filter v0Pt = aod::v0data::pt > v0PtMin&& aod::v0data::pt < v0PtMax;
-  Filter v0Eta = nabs(aod::v0data::eta) < v0EtaMax;
-
   // Track filters
   Filter trackPt = aod::track::pt > trackPtMin&& aod::track::pt < trackPtMax;
   Filter trackEta = nabs(aod::track::eta) < trackEtaMax;
@@ -83,7 +80,6 @@ struct ThreeParticleCorrelations {
   // Table aliases - Data
   using MyFilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>>;
   using MyFilteredCollision = MyFilteredCollisions::iterator;
-  using MyFilteredV0s = soa::Filtered<aod::V0Datas>;
   using MyFilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
                                                    aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
                                                    aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>>;
@@ -96,7 +92,7 @@ struct ThreeParticleCorrelations {
   // Table aliases - MC Rec
   using MCRecCollisions = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels, aod::McCollisionLabels>;
   using MyFilteredMCRecCollisions = soa::Filtered<MCRecCollisions>;
-  using MyFilteredMCV0s = soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>>;
+  using MyMCV0s = soa::Join<aod::V0Datas, aod::McV0Labels>;
   using MyFilteredMCTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::McTrackLabels,
                                                      aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
                                                      aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>>;
@@ -122,7 +118,7 @@ struct ThreeParticleCorrelations {
 
   BinningType collBinning{{confCentBins, confZvtxBins}, true};
   BinningTypeMC collBinningMC{{confCentBins, confZvtxBins}, true};
-  Pair<MyFilteredCollisions, MyFilteredV0s, MyFilteredTracks, BinningType> pairData{collBinning, 5, -1, &cache};
+  Pair<MyFilteredCollisions, aod::V0Datas, MyFilteredTracks, BinningType> pairData{collBinning, 5, -1, &cache};
   SameKindPair<MyFilteredMCGenCollisions, MyFilteredMCParticles, BinningTypeMC> pairMC{collBinningMC, 5, -1, &cache};
 
   // Process configurables
@@ -210,6 +206,10 @@ struct ThreeParticleCorrelations {
     rPhiStarRegistry.add("hSEProtonPostCut_SS", "hSEProtonPostCut_SS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
     rPhiStarRegistry.add("hSEProtonPostCut_SSP", "hSEProtonPostCut_SSP", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
     rPhiStarRegistry.add("hSEProtonPostCut_SSN", "hSEProtonPostCut_SSN", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hSEPhiStarMean_OS", "hSEPhiStarMean_OS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hSEPhiStarMean_SS", "hSEPhiStarMean_SS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hSEPhiStarMean_SSP", "hSEPhiStarMean_SSP", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hSEPhiStarMean_SSN", "hSEPhiStarMean_SSN", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
 
     rPhiStarRegistry.add("hMEProtonPreCut_OS", "hMEProtonPreCut_OS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
     rPhiStarRegistry.add("hMEProtonPreCut_SS", "hMEProtonPreCut_SS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
@@ -219,6 +219,10 @@ struct ThreeParticleCorrelations {
     rPhiStarRegistry.add("hMEProtonPostCut_SS", "hMEProtonPostCut_SS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
     rPhiStarRegistry.add("hMEProtonPostCut_SSP", "hMEProtonPostCut_SSP", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
     rPhiStarRegistry.add("hMEProtonPostCut_SSN", "hMEProtonPostCut_SSN", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hMEPhiStarMean_OS", "hMEPhiStarMean_OS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hMEPhiStarMean_SS", "hMEPhiStarMean_SS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hMEPhiStarMean_SSP", "hMEPhiStarMean_SSP", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hMEPhiStarMean_SSN", "hMEPhiStarMean_SSN", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
 
     // Efficiency
     rMCRegistry.add("hGenerated", "hGenerated", {HistType::kTH3D, {{trackPtAxis}, {trackEtaAxis}, {centralityAxis}}});
@@ -313,7 +317,7 @@ struct ThreeParticleCorrelations {
 
   //==========================================================================================================================================================================================================================================================================
 
-  void processSame(MyFilteredCollision const& collision, MyFilteredV0s const& v0s, MyFilteredTracks const& tracks, aod::BCsWithTimestamps const&)
+  void processSame(MyFilteredCollision const& collision, aod::V0Datas const& v0s, MyFilteredTracks const& tracks, aod::BCsWithTimestamps const&)
   {
 
     if (!acceptEvent(collision, true)) {
@@ -425,7 +429,7 @@ struct ThreeParticleCorrelations {
     // End of the Same-Event correlations
   }
 
-  void processMixed(MyFilteredCollisions const&, MyFilteredV0s const&, MyFilteredTracks const&, aod::BCsWithTimestamps const&)
+  void processMixed(MyFilteredCollisions const&, aod::V0Datas const&, MyFilteredTracks const&, aod::BCsWithTimestamps const&)
   {
 
     // Start of the Mixed-Event correlations
@@ -663,7 +667,7 @@ struct ThreeParticleCorrelations {
     // End of the Monte-Carlo generated QA
   }
 
-  void processMCRec(MyFilteredMCRecCollisions::iterator const& collision, MyFilteredMCV0s const& v0s, MyFilteredMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
+  void processMCRec(MyFilteredMCRecCollisions::iterator const& collision, MyMCV0s const& v0s, MyFilteredMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
   {
 
     if (!acceptEvent(collision, false) || !collision.has_mcCollision()) {
@@ -754,7 +758,7 @@ struct ThreeParticleCorrelations {
 
     for (const auto& v0 : v0s) {
 
-      if (!v0.has_mcParticle()) {
+      if (!v0.has_mcParticle() || v0.pt() < v0PtMin || v0.pt() > v0PtMax || std::abs(v0.eta()) > v0EtaMax) {
         continue;
       }
       auto particle = v0.mcParticle();
@@ -892,25 +896,30 @@ struct ThreeParticleCorrelations {
     }
 
     if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) { // kNoSameBunchPileup
-      return false;
+      return kFALSE;
     }
     if (FillHist) {
       rQARegistry.fill(HIST("hNEvents"), 1.5);
     }
 
     if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) { // kIsGoodZvtxFT0vsPV
-      return false;
+      return kFALSE;
     }
     if (FillHist) {
       rQARegistry.fill(HIST("hNEvents"), 2.5);
     }
 
-    return true;
+    return kTRUE;
   }
 
   template <class V0Cand>
   bool v0Filters(const V0Cand& v0, bool MCRec) // V0 filter
   {
+
+    if (v0.pt() < v0PtMin || v0.pt() > v0PtMax)
+      return kFALSE;
+    if (std::abs(v0.eta()) > v0EtaMax)
+      return kFALSE;
 
     if (!MCRec) { // Data
       if (v0Sign(v0) == 1) {
@@ -1072,6 +1081,7 @@ struct ThreeParticleCorrelations {
   bool radialDistanceFilter(const V0Cand& v0, const TrackCand& track, double B, bool Mix)
   {
 
+    bool pass = true;
     if (confRDSwitch) {
 
       auto proton = v0.template posTrack_as<MyFilteredTracks>();
@@ -1080,8 +1090,8 @@ struct ThreeParticleCorrelations {
       }
 
       double dEta = proton.eta() - track.eta();
-      if (std::abs(dEta) > dEtaMin) {
-        return kTRUE;
+      if (std::abs(dEta) > dEtaMax) {
+        return pass;
       }
 
       double dPhiStar;
@@ -1089,6 +1099,9 @@ struct ThreeParticleCorrelations {
       double phaseProton = (-0.3 * B * proton.sign()) / (2 * proton.pt());
       double phaseTrack = (-0.3 * B * track.sign()) / (2 * track.pt());
 
+      double dPhiStarMean = 0;
+
+      // Start of the TPC radius loop
       for (double r = rMin; r <= rMax; r += 0.01) {
         dPhiStar = RecoDecay::constrainAngle(dPhi + std::asin(phaseProton * r) - std::asin(phaseTrack * r), -constants::math::PIHalf);
 
@@ -1119,11 +1132,19 @@ struct ThreeParticleCorrelations {
           }
         }
 
-        if (std::abs(dPhiStar) < dPhiStarMin) {
-          return kFALSE;
+        if (std::abs(dEta) < dEtaMin) {
+          if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
+            if (std::abs(dPhiStar) < dPhiStarMinOS) {
+              pass = false;
+            }
+          } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
+            if (std::abs(dPhiStar) < dPhiStarMinSS) {
+              pass = false;
+            }
+          }
         }
 
-        if (r == rMin) {
+        if (r == rMin && pass) {
           if (!Mix) {                                 // Same-event
             if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
               rPhiStarRegistry.fill(HIST("hSEProtonPostCut_OS"), dPhiStar, dEta);
@@ -1149,10 +1170,38 @@ struct ThreeParticleCorrelations {
             }
           }
         }
+
+        dPhiStarMean += (dPhiStar / 170);
+      }
+      // End of the TPC radius loop
+
+      if (!Mix) {                                 // Same-event
+        if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
+          rPhiStarRegistry.fill(HIST("hSEPhiStarMean_OS"), dPhiStarMean, dEta);
+        } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
+          rPhiStarRegistry.fill(HIST("hSEPhiStarMean_SS"), dPhiStarMean, dEta);
+          if (proton.sign() == 1) { // Positive
+            rPhiStarRegistry.fill(HIST("hSEPhiStarMean_SSP"), dPhiStarMean, dEta);
+          } else if (proton.sign() == -1) { // Negative
+            rPhiStarRegistry.fill(HIST("hSEPhiStarMean_SSN"), dPhiStarMean, dEta);
+          }
+        }
+
+      } else {                                    // Mixed-event
+        if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
+          rPhiStarRegistry.fill(HIST("hMEPhiStarMean_OS"), dPhiStarMean, dEta);
+        } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
+          rPhiStarRegistry.fill(HIST("hMEPhiStarMean_SS"), dPhiStarMean, dEta);
+          if (proton.sign() == 1) { // Positive
+            rPhiStarRegistry.fill(HIST("hMEPhiStarMean_SSP"), dPhiStarMean, dEta);
+          } else if (proton.sign() == -1) { // Negative
+            rPhiStarRegistry.fill(HIST("hMEPhiStarMean_SSN"), dPhiStarMean, dEta);
+          }
+        }
       }
     }
 
-    return kTRUE;
+    return pass;
   }
 };
 

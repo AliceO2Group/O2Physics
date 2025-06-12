@@ -31,6 +31,7 @@
 #include <array>
 #include <cstdlib>
 #include <vector>
+#include <string>
 
 #include "TRandom3.h"
 #include "Math/Vector3D.h"
@@ -63,8 +64,16 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
-struct phianalysisrun3_PbPb {
+using namespace o2::aod::rctsel;
 
+struct phianalysisrun3_PbPb {
+  struct : ConfigurableGroup {
+    Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", true, "Check event quality in run condition table"};
+    Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
+    Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
+    Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
+  } rctCut;
+  RCTFlagsChecker rctChecker;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
@@ -110,12 +119,14 @@ struct phianalysisrun3_PbPb {
   Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", false, "avoid split track in MC"};
   void init(o2::framework::InitContext&)
   {
+    rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
     AxisSpec impactParAxis = {binsImpactPar, "Impact Parameter"};
     AxisSpec ptAxis = {binsPt, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec centAxis = {binsCent, "V0M (%)"};
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{200, 0.0, 200.0}});
     histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
     histos.add("hOccupancy", "Occupancy distribution", kTH1F, {{500, 0, 50000}});
+    histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{10, 0, 10.0}});
     if (!isMC) {
       histos.add("h3PhiInvMassUnlikeSign", "Invariant mass of Phi meson Unlike Sign", kTH3F, {{200, 0.0, 200.0}, {200, 0.0f, 20.0f}, {200, 0.9, 1.1}});
       histos.add("h3PhiInvMassMixed", "Invariant mass of Phi meson Mixed", kTH3F, {{200, 0.0, 200.0}, {200, 0.0f, 20.0f}, {200, 0.9, 1.1}});
@@ -168,18 +179,35 @@ struct phianalysisrun3_PbPb {
     }
 
     // DCA QA
-    histos.add("QAbefore/trkDCAxy", "DCAxy distribution of kaon track candidates", HistType::kTH1F, {{150, 0.0f, 1.0f}});
-    histos.add("QAbefore/trkDCAz", "DCAz distribution of kaon track candidates", HistType::kTH1F, {{150, 0.0f, 1.0f}});
-    histos.add("QAafter/trkDCAxy", "DCAxy distribution of kaon track candidates", HistType::kTH1F, {{150, 0.0f, 1.0f}});
-    histos.add("QAafter/trkDCAz", "DCAz distribution of kaon track candidates", HistType::kTH1F, {{150, 0.0f, 1.0f}});
+    // DCA histograms: separate for positive and negative kaons, range [-1.0, 1.0]
+    histos.add("QAbefore/trkDCAxy_pos", "DCAxy distribution of positive kaon track candidates", HistType::kTH1F, {{150, -1.0f, 1.0f}});
+    histos.add("QAbefore/trkDCAxy_neg", "DCAxy distribution of negative kaon track candidates", HistType::kTH1F, {{150, -1.0f, 1.0f}});
+    histos.add("QAbefore/trkDCAz_pos", "DCAz distribution of positive kaon track candidates", HistType::kTH1F, {{150, -1.0f, 1.0f}});
+    histos.add("QAbefore/trkDCAz_neg", "DCAz distribution of negative kaon track candidates", HistType::kTH1F, {{150, -1.0f, 1.0f}});
+
+    histos.add("QAafter/trkDCAxy_pos", "DCAxy distribution of positive kaon track candidates", HistType::kTH1F, {{150, -1.0f, 1.0f}});
+    histos.add("QAafter/trkDCAxy_neg", "DCAxy distribution of negative kaon track candidates", HistType::kTH1F, {{150, -1.0f, 1.0f}});
+    histos.add("QAafter/trkDCAz_pos", "DCAz distribution of positive kaon track candidates", HistType::kTH1F, {{150, -1.0f, 1.0f}});
+    histos.add("QAafter/trkDCAz_neg", "DCAz distribution of negative kaon track candidates", HistType::kTH1F, {{150, -1.0f, 1.0f}});
     // PID QA before cuts
-    histos.add("QAbefore/TOF_TPC_Mapka_all", "TOF + TPC Combined PID for Kaon;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTH2D, {{100, -6, 6}, {100, -6, 6}}});
-    histos.add("QAbefore/TOF_Nsigma_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH3D, {{200, -12, 12}, {200, 0.0, 200.0}, {200, 0.0f, 20.0f}}});
-    histos.add("QAbefore/TPC_Nsigma_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH3D, {{200, -12, 12}, {200, 0.0, 200.0}, {200, 0.0f, 20.0f}}});
+    histos.add("QAbefore/TOF_TPC_Mapka_all_pos", "TOF + TPC Combined PID for positive Kaon;#sigma_{TOF}^{K^{+}};#sigma_{TPC}^{K^{+}}", {HistType::kTH2D, {{100, -6, 6}, {100, -6, 6}}});
+    histos.add("QAbefore/TOF_TPC_Mapka_all_neg", "TOF + TPC Combined PID for negative Kaon;#sigma_{TOF}^{K^{-}};#sigma_{TPC}^{K^{-}}", {HistType::kTH2D, {{100, -6, 6}, {100, -6, 6}}});
+
+    histos.add("QAbefore/TOF_Nsigma_all_pos", "TOF NSigma for positive Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{K^{+}}", {HistType::kTH3D, {{200, -12, 12}, {200, 0.0, 200.0}, {200, 0.0f, 20.0f}}});
+    histos.add("QAbefore/TOF_Nsigma_all_neg", "TOF NSigma for negative Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{K^{-}}", {HistType::kTH3D, {{200, -12, 12}, {200, 0.0, 200.0}, {200, 0.0f, 20.0f}}});
+
+    histos.add("QAbefore/TPC_Nsigma_all_pos", "TPC NSigma for positive Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{K^{+}}", {HistType::kTH3D, {{200, -12, 12}, {200, 0.0, 200.0}, {200, 0.0f, 20.0f}}});
+    histos.add("QAbefore/TPC_Nsigma_all_neg", "TPC NSigma for negative Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{K^{-}}", {HistType::kTH3D, {{200, -12, 12}, {200, 0.0, 200.0}, {200, 0.0f, 20.0f}}});
+
     // PID QA after cuts
-    histos.add("QAafter/TOF_TPC_Mapka_all", "TOF + TPC Combined PID for Kaon;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTH2D, {{100, -6, 6}, {100, -6, 6}}});
-    histos.add("QAafter/TOF_Nsigma_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH3D, {{200, -12, 12}, {200, 0.0, 200.0}, {200, 0.0f, 20.0f}}});
-    histos.add("QAafter/TPC_Nsigma_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH3D, {{200, -12, 12}, {200, 0.0, 200.0}, {200, 0.0f, 20.0f}}});
+    histos.add("QAafter/TOF_TPC_Mapka_all_pos", "TOF + TPC Combined PID for positive Kaon;#sigma_{TOF}^{K^{+}};#sigma_{TPC}^{K^{+}}", {HistType::kTH2D, {{100, -6, 6}, {100, -6, 6}}});
+    histos.add("QAafter/TOF_TPC_Mapka_all_neg", "TOF + TPC Combined PID for negative Kaon;#sigma_{TOF}^{K^{-}};#sigma_{TPC}^{K^{-}}", {HistType::kTH2D, {{100, -6, 6}, {100, -6, 6}}});
+
+    histos.add("QAafter/TOF_Nsigma_all_pos", "TOF NSigma for positive Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{K^{+}}", {HistType::kTH3D, {{200, -12, 12}, {200, 0.0, 200.0}, {200, 0.0f, 20.0f}}});
+    histos.add("QAafter/TOF_Nsigma_all_neg", "TOF NSigma for negative Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{K^{-}}", {HistType::kTH3D, {{200, -12, 12}, {200, 0.0, 200.0}, {200, 0.0f, 20.0f}}});
+
+    histos.add("QAafter/TPC_Nsigma_all_pos", "TPC NSigma for positive Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{K^{+}}", {HistType::kTH3D, {{200, -12, 12}, {200, 0.0, 200.0}, {200, 0.0f, 20.0f}}});
+    histos.add("QAafter/TPC_Nsigma_all_neg", "TPC NSigma for negative Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{K^{-}}", {HistType::kTH3D, {{200, -12, 12}, {200, 0.0, 200.0}, {200, 0.0f, 20.0f}}});
   }
 
   double massKa = o2::constants::physics::MassKPlus;
@@ -314,19 +342,28 @@ struct phianalysisrun3_PbPb {
   ROOT::Math::PxPyPzMVector PhiMesonMother, KaonPlus, KaonMinus;
   void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
+    histos.fill(HIST("hEvtSelInfo"), 0.5);
+    if (rctCut.requireRCTFlagChecker && !rctChecker(collision)) {
+      return;
+    }
+    histos.fill(HIST("hEvtSelInfo"), 1.5);
     if (!collision.sel8()) {
       return;
     }
+    histos.fill(HIST("hEvtSelInfo"), 2.5);
     if (additionalEvSel2 && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
       return;
     }
+    histos.fill(HIST("hEvtSelInfo"), 3.5);
     if (additionalEvSel3 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
       return;
     }
+    histos.fill(HIST("hEvtSelInfo"), 4.5);
     int occupancy = collision.trackOccupancyInTimeRange();
     if (fillOccupancy && (occupancy > cfgCutOccupancy)) {
       return;
     }
+    histos.fill(HIST("hEvtSelInfo"), 5.5);
     float multiplicity{-1};
     if (cfgMultFT0)
       multiplicity = collision.centFT0C();
@@ -337,11 +374,21 @@ struct phianalysisrun3_PbPb {
       if (!selectionTrack(track1)) {
         continue;
       }
-      histos.fill(HIST("QAbefore/TPC_Nsigma_all"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
-      histos.fill(HIST("QAbefore/TOF_Nsigma_all"), track1.tofNSigmaKa(), multiplicity, track1.pt());
-      histos.fill(HIST("QAbefore/trkDCAxy"), track1.dcaXY());
-      histos.fill(HIST("QAbefore/trkDCAz"), track1.dcaZ());
-      histos.fill(HIST("QAbefore/TOF_TPC_Mapka_all"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
+      int track1Sign = track1.sign(); // or track1.charge(), assuming it returns ±1
+
+      if (track1Sign > 0) { // Positive kaon
+        histos.fill(HIST("QAbefore/TPC_Nsigma_all_pos"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
+        histos.fill(HIST("QAbefore/TOF_Nsigma_all_pos"), track1.tofNSigmaKa(), multiplicity, track1.pt());
+        histos.fill(HIST("QAbefore/trkDCAxy_pos"), track1.dcaXY());
+        histos.fill(HIST("QAbefore/trkDCAz_pos"), track1.dcaZ());
+        histos.fill(HIST("QAbefore/TOF_TPC_Mapka_all_pos"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
+      } else if (track1Sign < 0) { // Negative kaon
+        histos.fill(HIST("QAbefore/TPC_Nsigma_all_neg"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
+        histos.fill(HIST("QAbefore/TOF_Nsigma_all_neg"), track1.tofNSigmaKa(), multiplicity, track1.pt());
+        histos.fill(HIST("QAbefore/trkDCAxy_neg"), track1.dcaXY());
+        histos.fill(HIST("QAbefore/trkDCAz_neg"), track1.dcaZ());
+        histos.fill(HIST("QAbefore/TOF_TPC_Mapka_all_neg"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
+      }
 
       auto track1ID = track1.globalIndex();
       for (auto track2 : tracks) {
@@ -358,19 +405,42 @@ struct phianalysisrun3_PbPb {
         bool unlike = true;
         bool mix = false;
         if (!ispTdepPID && selectionPID(track1) && selectionPID(track2)) {
-          histos.fill(HIST("QAafter/TPC_Nsigma_all"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
-          histos.fill(HIST("QAafter/TOF_Nsigma_all"), track1.tofNSigmaKa(), multiplicity, track1.pt());
-          histos.fill(HIST("QAafter/trkDCAxy"), track1.dcaXY());
-          histos.fill(HIST("QAafter/trkDCAz"), track1.dcaZ());
-          histos.fill(HIST("QAafter/TOF_TPC_Mapka_all"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
+          int track1Sign = track1.sign(); // Assuming `charge()` gives +1 or -1
+
+          if (track1Sign > 0) { // Positive kaon
+            histos.fill(HIST("QAafter/TPC_Nsigma_all_pos"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
+            histos.fill(HIST("QAafter/TOF_Nsigma_all_pos"), track1.tofNSigmaKa(), multiplicity, track1.pt());
+            histos.fill(HIST("QAafter/trkDCAxy_pos"), track1.dcaXY());
+            histos.fill(HIST("QAafter/trkDCAz_pos"), track1.dcaZ());
+            histos.fill(HIST("QAafter/TOF_TPC_Mapka_all_pos"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
+          } else if (track1Sign < 0) { // Negative kaon
+            histos.fill(HIST("QAafter/TPC_Nsigma_all_neg"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
+            histos.fill(HIST("QAafter/TOF_Nsigma_all_neg"), track1.tofNSigmaKa(), multiplicity, track1.pt());
+            histos.fill(HIST("QAafter/trkDCAxy_neg"), track1.dcaXY());
+            histos.fill(HIST("QAafter/trkDCAz_neg"), track1.dcaZ());
+            histos.fill(HIST("QAafter/TOF_TPC_Mapka_all_neg"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
+          }
+
           FillinvMass(track1, track2, multiplicity, unlike, mix, massKa, massKa);
         }
+
         if (ispTdepPID && selectionPIDpTdependent(track1) && selectionPIDpTdependent(track2)) {
-          histos.fill(HIST("QAafter/TPC_Nsigma_all"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
-          histos.fill(HIST("QAafter/TOF_Nsigma_all"), track1.tofNSigmaKa(), multiplicity, track1.pt());
-          histos.fill(HIST("QAafter/trkDCAxy"), track1.dcaXY());
-          histos.fill(HIST("QAafter/trkDCAz"), track1.dcaZ());
-          histos.fill(HIST("QAafter/TOF_TPC_Mapka_all"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
+          int track1Sign = track1.sign(); // Same assumption as above
+
+          if (track1Sign > 0) { // Positive kaon
+            histos.fill(HIST("QAafter/TPC_Nsigma_all_pos"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
+            histos.fill(HIST("QAafter/TOF_Nsigma_all_pos"), track1.tofNSigmaKa(), multiplicity, track1.pt());
+            histos.fill(HIST("QAafter/trkDCAxy_pos"), track1.dcaXY());
+            histos.fill(HIST("QAafter/trkDCAz_pos"), track1.dcaZ());
+            histos.fill(HIST("QAafter/TOF_TPC_Mapka_all_pos"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
+          } else if (track1Sign < 0) { // Negative kaon
+            histos.fill(HIST("QAafter/TPC_Nsigma_all_neg"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
+            histos.fill(HIST("QAafter/TOF_Nsigma_all_neg"), track1.tofNSigmaKa(), multiplicity, track1.pt());
+            histos.fill(HIST("QAafter/trkDCAxy_neg"), track1.dcaXY());
+            histos.fill(HIST("QAafter/trkDCAz_neg"), track1.dcaZ());
+            histos.fill(HIST("QAafter/TOF_TPC_Mapka_all_neg"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
+          }
+
           FillinvMass(track1, track2, multiplicity, unlike, mix, massKa, massKa);
         }
       }
@@ -385,6 +455,12 @@ struct phianalysisrun3_PbPb {
     BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
+      if (rctCut.requireRCTFlagChecker && !rctChecker(c1)) {
+        continue;
+      }
+      if (rctCut.requireRCTFlagChecker && !rctChecker(c2)) {
+        continue;
+      }
       if (!c1.sel8()) {
         continue;
       }

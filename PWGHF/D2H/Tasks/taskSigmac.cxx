@@ -726,13 +726,13 @@ struct HfTaskSigmac {
 
     /// loop over Lc generated particles
     for (const auto& particle : mcParticlesLc) {
-      if (std::abs(particle.flagMcMatchGen()) != BIT(aod::hf_cand_3prong::DecayType::LcToPKPi)) {
+      if (std::abs(particle.flagMcMatchGen()) != hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
         continue;
       }
       if (yCandGenMax >= 0. && std::abs(RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus)) > yCandGenMax) {
         continue;
       }
-      double ptGenLc(-1.), ptGenLcBMother(-1.);
+      double ptGenLc(particle.pt()), ptGenLcBMother(-1.);
       int origin = particle.originMcGen();
       int channel = particle.flagMcDecayChanGen();
       if (origin == RecoDecay::OriginType::Prompt) {
@@ -1149,7 +1149,7 @@ struct HfTaskSigmac {
     if (enableTHn) {
       /// loop over Λc+ candidates w/o Σc0,++ mass-window cut
       for (const auto& candidateLc : candidatesLc) {
-        if (!TESTBIT(std::abs(candidateLc.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::LcToPKPi)) {
+        if (std::abs(candidateLc.flagMcMatchRec()) != hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
           continue;
         }
         double massLc(-1.);
