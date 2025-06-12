@@ -18,6 +18,7 @@
 ///
 
 // O2 includes
+// o2-linter: disable=all
 #include <string>
 #include <vector>
 #include "ReconstructionDataFormats/Track.h"
@@ -40,7 +41,6 @@
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "Common/Core/RecoDecay.h"
 #include "TPDGCode.h"
-#include "Framework/PhysicsConstants.h"
 using namespace o2;
 using namespace o2::track;
 using namespace o2::framework;
@@ -1060,23 +1060,23 @@ struct tofSpectra {
             }
           }
         }
-      }
-    }
-    const bool isInPtRangeForPhi = track.pt() < 1.1f && track.pt() > 0.9f;
-    if (track.sign() > 0) {
-      histos.fill(HIST(hdcaxy[id]), track.pt(), track.dcaXY());
-      histos.fill(HIST(hdcaz[id]), track.pt(), track.dcaZ());
-      if (isInPtRangeForPhi) {
-        if (enableDCAxyphiHistograms) {
-          histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY());
-        }
-      }
-    } else {
-      histos.fill(HIST(hdcaxy[id + Np]), track.pt(), track.dcaXY());
-      histos.fill(HIST(hdcaz[id + Np]), track.pt(), track.dcaZ());
-      if (isInPtRangeForPhi) {
-        if (enableDCAxyphiHistograms) {
-          histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY());
+      } else {
+        if (track.sign() > 0) {
+          histos.fill(HIST(hdcaxy[id]), track.pt(), track.dcaXY());
+          histos.fill(HIST(hdcaz[id]), track.pt(), track.dcaZ());
+          if (isInPtRangeForPhi) {
+            if (enableDCAxyphiHistograms) {
+              histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY());
+            }
+          }
+        } else {
+          histos.fill(HIST(hdcaxy[id + Np]), track.pt(), track.dcaXY());
+          histos.fill(HIST(hdcaz[id + Np]), track.pt(), track.dcaZ());
+          if (isInPtRangeForPhi) {
+            if (enableDCAxyphiHistograms) {
+              histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY());
+            }
+          }
         }
       }
     }
@@ -1491,9 +1491,9 @@ struct tofSpectra {
       if (mcParticle.isPhysicalPrimary()) {
         if (isTPCPion && rapidityPi <= trkselOptions.cfgCutY) {
           if (usePDGcode) {
-            if (pdgCode == o2::constants::physics::Pdg::kPiPlus) {
+            if (pdgCode == 211) {
               histos.fill(HIST("nsigmatpc/mc_closure/pos/pi"), track.pt(), nsigmaTPCPi, multiplicity);
-            } else if (pdgCode == o2::constants::physics::Pdg::kPiMinus) {
+            } else if (pdgCode == -211) {
               histos.fill(HIST("nsigmatpc/mc_closure/neg/pi"), track.pt(), nsigmaTPCPi, multiplicity);
             }
           } else {
@@ -1503,9 +1503,9 @@ struct tofSpectra {
         }
         if (isTPCKaon && rapidityKa <= trkselOptions.cfgCutY) {
           if (usePDGcode) {
-            if (pdgCode == o2::constants::physics::Pdg::kKPlus) {
+            if (pdgCode == 321) {
               histos.fill(HIST("nsigmatpc/mc_closure/pos/ka"), track.pt(), nsigmaTPCKa, multiplicity);
-            } else if (pdgCode == o2::constants::physics::Pdg::kKMinus) {
+            } else if (pdgCode == -321) {
               histos.fill(HIST("nsigmatpc/mc_closure/neg/ka"), track.pt(), nsigmaTPCKa, multiplicity);
             }
           } else {
@@ -1515,9 +1515,9 @@ struct tofSpectra {
         }
         if (isTPCProton && rapidityPr <= trkselOptions.cfgCutY) {
           if (usePDGcode) {
-            if (pdgCode == o2::constants::physics::Pdg::kProton) {
+            if (pdgCode == 2212) {
               histos.fill(HIST("nsigmatpc/mc_closure/pos/pr"), track.pt(), nsigmaTPCPr, multiplicity);
-            } else if (pdgCode == o2::constants::physics::Pdg::kProtonBar) {
+            } else if (pdgCode == -2212) {
               histos.fill(HIST("nsigmatpc/mc_closure/neg/pr"), track.pt(), nsigmaTPCPr, multiplicity);
             }
           } else {
@@ -1529,9 +1529,9 @@ struct tofSpectra {
         // TOF Selection and Histogram Filling
         if (isTOFPion && rapidityPi <= trkselOptions.cfgCutY) {
           if (usePDGcode) {
-            if (pdgCode == o2::constants::physics::Pdg::kPiPlus) {
+            if (pdgCode == 211) {
               histos.fill(HIST("nsigmatof/mc_closure/pos/pi"), track.pt(), nsigmaTOFPi, multiplicity);
-            } else if (pdgCode == o2::constants::physics::Pdg::kPiMinus) {
+            } else if (pdgCode == -211) {
               histos.fill(HIST("nsigmatof/mc_closure/neg/pi"), track.pt(), nsigmaTOFPi, multiplicity);
             }
           } else {
@@ -1541,9 +1541,9 @@ struct tofSpectra {
         }
         if (isTOFKaon && rapidityKa <= trkselOptions.cfgCutY) {
           if (usePDGcode) {
-            if (pdgCode == o2::constants::physics::Pdg::kKPlus) {
+            if (pdgCode == 321) {
               histos.fill(HIST("nsigmatof/mc_closure/pos/ka"), track.pt(), nsigmaTOFKa, multiplicity);
-            } else if (pdgCode == o2::constants::physics::Pdg::kKMinus) {
+            } else if (pdgCode == -321) {
               histos.fill(HIST("nsigmatof/mc_closure/neg/ka"), track.pt(), nsigmaTOFKa, multiplicity);
             }
           } else {
@@ -1553,9 +1553,9 @@ struct tofSpectra {
         }
         if (isTOFProton && rapidityPr <= trkselOptions.cfgCutY) {
           if (usePDGcode) {
-            if (pdgCode == o2::constants::physics::Pdg::kProton) {
+            if (pdgCode == 2212) {
               histos.fill(HIST("nsigmatof/mc_closure/pos/pr"), track.pt(), nsigmaTOFPr, multiplicity);
-            } else if (pdgCode == o2::constants::physics::Pdg::kProtonBar) {
+            } else if (pdgCode == -2212) {
               histos.fill(HIST("nsigmatof/mc_closure/neg/pr"), track.pt(), nsigmaTOFPr, multiplicity);
             }
           } else {
@@ -1906,18 +1906,19 @@ struct tofSpectra {
     if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
       return;
     }
-
-    const auto& nsigmaTPCKa = o2::aod::pidutils::tpcNSigma<3>(track);
-    const bool isKaonTPC = std::abs(nsigmaTPCKa) < trkselOptions.cfgCutNsigma;
-
-    const auto& nsigmaTOFKa = o2::aod::pidutils::tofNSigma<3>(track);
-    const bool isKaonTOF = std::abs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
     if (enablePureDCAHistogram) {
+      const auto& nsigmaTPCKa = o2::aod::pidutils::tpcNSigma<3>(track);
+      const bool isKaonTPC = std::abs(nsigmaTPCKa) < trkselOptions.cfgCutNsigma;
+
+      const auto& nsigmaTOFKa = o2::aod::pidutils::tofNSigma<3>(track);
+      const bool isKaonTOF = std::abs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
+
       // Filling DCA info with the TPC+TOF PID
       bool isDCAPureSample = (std::sqrt(nsigmaTOFKa * nsigmaTOFKa + nsigmaTPCKa * nsigmaTPCKa) < 2.f);
       if (track.pt() <= 0.4) {
         isDCAPureSample = (nsigmaTPCKa < 1.f);
       }
+
       if (isDCAPureSample) {
         if (enableDCAvsmotherHistograms) {
           hDcaXYMC[i]->Fill(track.pt(), track.dcaXY());
@@ -2110,7 +2111,7 @@ struct tofSpectra {
         histos.fill(HIST(hpt_num_prm[i]), track.pt(), multiplicity);
       }
       if (isPionTPC || isKaonTPC || isProtonTPC) {
-        if (pdgCode == o2::constants::physics::Pdg::kProton) {
+        if (pdgCode == 2212) {
           if (isImpactParam) {
             histos.fill(HIST("MC/withPID/pr/pos/prm/pt/num"), track.pt(), impParam);
             if (!mcParticle.isPhysicalPrimary()) {
@@ -2130,7 +2131,7 @@ struct tofSpectra {
               }
             }
           }
-        } else if (pdgCode == o2::constants::physics::Pdg::kProtonBar) {
+        } else if (pdgCode == -2212) {
           if (isImpactParam) {
             histos.fill(HIST("MC/withPID/pr/neg/prm/pt/num"), track.pt(), impParam);
             if (!mcParticle.isPhysicalPrimary()) {
@@ -2150,7 +2151,7 @@ struct tofSpectra {
               }
             }
           }
-        } else if (pdgCode == o2::constants::physics::Pdg::kPiPlus) {
+        } else if (pdgCode == 211) {
           if (isImpactParam) {
             histos.fill(HIST("MC/withPID/pi/pos/prm/pt/num"), track.pt(), impParam);
             if (!mcParticle.isPhysicalPrimary()) {
@@ -2170,7 +2171,7 @@ struct tofSpectra {
               }
             }
           }
-        } else if (pdgCode == o2::constants::physics::Pdg::kPiMinus) {
+        } else if (pdgCode == -211) {
           if (isImpactParam) {
             histos.fill(HIST("MC/withPID/pi/neg/prm/pt/num"), track.pt(), impParam);
             if (!mcParticle.isPhysicalPrimary()) {
@@ -2190,7 +2191,7 @@ struct tofSpectra {
               }
             }
           }
-        } else if (pdgCode == o2::constants::physics::Pdg::kKPlus) {
+        } else if (pdgCode == 321) {
           if (isImpactParam) {
             histos.fill(HIST("MC/withPID/ka/pos/prm/pt/num"), track.pt(), impParam);
             if (!mcParticle.isPhysicalPrimary()) {
@@ -2210,7 +2211,7 @@ struct tofSpectra {
               }
             }
           }
-        } else if (pdgCode == o2::constants::physics::Pdg::kKMinus) {
+        } else if (pdgCode == -321) {
           if (isImpactParam) {
             histos.fill(HIST("MC/withPID/ka/neg/prm/pt/num"), track.pt(), impParam);
             if (!mcParticle.isPhysicalPrimary()) {
@@ -2247,7 +2248,7 @@ struct tofSpectra {
       if (track.hasTOF()) {
         if (isPionTOF || isKaonTOF || isProtonTOF) {
           // Proton (positive)
-          if (pdgCode == o2::constants::physics::Pdg::kProton) {
+          if (pdgCode == 2212) {
             if (isImpactParam) {
               histos.fill(HIST("MC/withPID/pr/pos/prm/pt/numtof"), track.pt(), impParam);
             } else {
@@ -2261,7 +2262,7 @@ struct tofSpectra {
                 histos.fill(HIST("MC/withPID/pr/pos/prm/pt/numtof_matched"), track.pt(), multiplicity);
               }
             }
-          } else if (pdgCode == o2::constants::physics::Pdg::kProtonBar) {
+          } else if (pdgCode == -2212) {
             if (isImpactParam) {
               histos.fill(HIST("MC/withPID/pr/neg/prm/pt/numtof"), track.pt(), impParam);
             } else {
@@ -2274,7 +2275,7 @@ struct tofSpectra {
                 histos.fill(HIST("MC/withPID/pr/neg/prm/pt/numtof_matched"), track.pt(), multiplicity);
               }
             }
-          } else if (pdgCode == o2::constants::physics::Pdg::kPiPlus) {
+          } else if (pdgCode == 211) {
             if (isImpactParam) {
               histos.fill(HIST("MC/withPID/pi/pos/prm/pt/numtof"), track.pt(), impParam);
             } else {
@@ -2288,7 +2289,7 @@ struct tofSpectra {
                 histos.fill(HIST("MC/withPID/pi/pos/prm/pt/numtof_matched"), track.pt(), multiplicity);
               }
             }
-          } else if (pdgCode == o2::constants::physics::Pdg::kPiMinus) {
+          } else if (pdgCode == -211) {
             if (isImpactParam) {
               histos.fill(HIST("MC/withPID/pi/neg/prm/pt/numtof"), track.pt(), impParam);
             } else {
@@ -2302,7 +2303,7 @@ struct tofSpectra {
                 histos.fill(HIST("MC/withPID/pi/neg/prm/pt/numtof_matched"), track.pt(), multiplicity);
               }
             }
-          } else if (pdgCode == o2::constants::physics::Pdg::kKPlus) {
+          } else if (pdgCode == 321) {
             if (isImpactParam) {
               histos.fill(HIST("MC/withPID/ka/pos/prm/pt/numtof"), track.pt(), impParam);
             } else {
@@ -2316,7 +2317,7 @@ struct tofSpectra {
                 histos.fill(HIST("MC/withPID/ka/pos/prm/pt/numtof_matched"), track.pt(), multiplicity);
               }
             }
-          } else if (pdgCode == o2::constants::physics::Pdg::kKMinus) {
+          } else if (pdgCode == -321) {
             if (isImpactParam) {
               histos.fill(HIST("MC/withPID/ka/neg/prm/pt/numtof"), track.pt(), impParam);
             } else {
@@ -2660,17 +2661,17 @@ struct tofSpectra {
         continue;
       }
 
-      if (pdgCode == o2::constants::physics::Pdg::kProton) {
+      if (pdgCode == 2212) {
         histos.fill(HIST("MC/test/pr/pos/prm/pt/den"), pt, multiplicity);
-      } else if (pdgCode == o2::constants::physics::Pdg::kProtonBar) {
+      } else if (pdgCode == -2212) {
         histos.fill(HIST("MC/test/pr/neg/prm/pt/den"), pt, multiplicity);
-      } else if (pdgCode == o2::constants::physics::Pdg::kPiPlus) {
+      } else if (pdgCode == 211) {
         histos.fill(HIST("MC/test/pi/pos/prm/pt/den"), pt, multiplicity);
-      } else if (pdgCode == o2::constants::physics::Pdg::kPiMinus) {
+      } else if (pdgCode == -211) {
         histos.fill(HIST("MC/test/pi/neg/prm/pt/den"), pt, multiplicity);
-      } else if (pdgCode == o2::constants::physics::Pdg::kKPlus) {
+      } else if (pdgCode == 321) {
         histos.fill(HIST("MC/test/ka/pos/prm/pt/den"), pt, multiplicity);
-      } else if (pdgCode == o2::constants::physics::Pdg::kKMinus) {
+      } else if (pdgCode == -321) {
         histos.fill(HIST("MC/test/ka/neg/prm/pt/den"), pt, multiplicity);
       }
     }
@@ -2741,33 +2742,33 @@ struct tofSpectra {
         const bool isProtonTOF = track.hasTOF() && std::abs(nsigmaTOFPr) < trkselOptions.cfgCutNsigma;
 
         if (isPionTPC || isKaonTPC || isProtonTPC) {
-          if (pdgCode == o2::constants::physics::Pdg::kProton) {
+          if (pdgCode == 2212) {
             histos.fill(HIST("MC/test/RecoEvs/pr/pos/prm/pt/num"), pt, multiplicity);
-          } else if (pdgCode == o2::constants::physics::Pdg::kProtonBar) {
+          } else if (pdgCode == -2212) {
             histos.fill(HIST("MC/test/RecoEvs/pr/neg/prm/pt/num"), pt, multiplicity);
-          } else if (pdgCode == o2::constants::physics::Pdg::kPiPlus) {
+          } else if (pdgCode == 211) {
             histos.fill(HIST("MC/test/RecoEvs/pi/pos/prm/pt/num"), pt, multiplicity);
-          } else if (pdgCode == o2::constants::physics::Pdg::kPiMinus) {
+          } else if (pdgCode == -211) {
             histos.fill(HIST("MC/test/RecoEvs/pi/neg/prm/pt/num"), pt, multiplicity);
-          } else if (pdgCode == o2::constants::physics::Pdg::kKPlus) {
+          } else if (pdgCode == 321) {
             histos.fill(HIST("MC/test/RecoEvs/ka/pos/prm/pt/num"), pt, multiplicity);
-          } else if (pdgCode == o2::constants::physics::Pdg::kKMinus) {
+          } else if (pdgCode == -321) {
             histos.fill(HIST("MC/test/RecoEvs/ka/neg/prm/pt/num"), pt, multiplicity);
           }
         }
 
         if (isPionTOF || isKaonTOF || isProtonTOF) {
-          if (pdgCode == o2::constants::physics::Pdg::kProton) {
+          if (pdgCode == 2212) {
             histos.fill(HIST("MC/test/RecoEvs/pr/pos/prm/pt/numtof"), pt, multiplicity);
-          } else if (pdgCode == o2::constants::physics::Pdg::kProtonBar) {
+          } else if (pdgCode == -2212) {
             histos.fill(HIST("MC/test/RecoEvs/pr/neg/prm/pt/numtof"), pt, multiplicity);
-          } else if (pdgCode == o2::constants::physics::Pdg::kPiPlus) {
+          } else if (pdgCode == 211) {
             histos.fill(HIST("MC/test/RecoEvs/pi/pos/prm/pt/numtof"), pt, multiplicity);
-          } else if (pdgCode == o2::constants::physics::Pdg::kPiMinus) {
+          } else if (pdgCode == -211) {
             histos.fill(HIST("MC/test/RecoEvs/pi/neg/prm/pt/numtof"), pt, multiplicity);
-          } else if (pdgCode == o2::constants::physics::Pdg::kKPlus) {
+          } else if (pdgCode == 321) {
             histos.fill(HIST("MC/test/RecoEvs/ka/pos/prm/pt/numtof"), pt, multiplicity);
-          } else if (pdgCode == o2::constants::physics::Pdg::kKMinus) {
+          } else if (pdgCode == -321) {
             histos.fill(HIST("MC/test/RecoEvs/ka/neg/prm/pt/numtof"), pt, multiplicity);
           }
         }
