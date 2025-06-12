@@ -512,7 +512,7 @@ struct FlowPbpbPikp {
   }
 
   template <typename TTrack>
-  int getNsigmaPIDTpcTof_Assymmetric(TTrack track)
+  int getNsigmaPIDTpcTofAssymmetric(TTrack track)
   {
     // Computing Nsigma arrays for pion, kaon, and protons
     std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
@@ -920,7 +920,7 @@ struct FlowPbpbPikp {
       bool withinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
       bool withinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);       // within RF pT range
 
-      pidIndex = cfgUseAsymmetricPID ? getNsigmaPIDTpcTof_Assymmetric(track) : getNsigmaPIDTpcTof(track);
+      pidIndex = cfgUseAsymmetricPID ? getNsigmaPIDTpcTofAssymmetric(track) : getNsigmaPIDTpcTof(track);
 
       weff = 1; // Initializing weff for each track
       // NUA weights
