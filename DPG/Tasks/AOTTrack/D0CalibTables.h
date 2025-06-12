@@ -283,7 +283,7 @@ namespace o2
                       track::C1PtSnp,
                       track::C1PtTgl,
                       track::C1Pt21Pt2,
-                      /// *** track extra (static) TODO: check if also dynamic columns are needed
+                      /// *** track extra (static)
                       track::TPCInnerParam,
                       track::Flags,
                       track::ITSClusterSizes,

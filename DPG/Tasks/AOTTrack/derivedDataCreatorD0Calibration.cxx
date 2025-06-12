@@ -153,7 +153,6 @@ struct DerivedDataCreatorD0Calibration {
       if (std::abs(primaryVertex.getZ()) > zVtxMax) {
         continue;
       }
-      // TODO: add pileup cuts?
 
       auto covMatrixPV = primaryVertex.getCov();
 
