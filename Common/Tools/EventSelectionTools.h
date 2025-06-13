@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file EventSelectionModule.h
-/// \brief 
+/// \brief
 /// \author ALICE
 
 #ifndef COMMON_TOOLS_EVENTSELECTIONTOOLS_H_
@@ -348,15 +348,15 @@ class BcSelectionModule
       // }
 
       uint32_t rct = 0;
-    
+
       // initialize properties
       o2::common::eventselection::bcselEntry entry;
-      entry.alias = alias; 
-      entry.selection = selection; 
-      entry.rct = rct; 
+      entry.alias = alias;
+      entry.selection = selection;
+      entry.rct = rct;
       entry.foundFT0Id = foundFT0;
       entry.foundFV0Id = foundFV0;
-      entry.foundFDDId = foundFDD; 
+      entry.foundFDDId = foundFDD;
       entry.foundZDCId = foundZDC;
       bcselEntries.push_back(entry);
 
@@ -364,14 +364,14 @@ class BcSelectionModule
       bcsel(alias, selection, rct, foundFT0, foundFV0, foundFDD, foundZDC);
     } // end bc loop
     return bcselEntries;
-  } // end processRun2 
+  } // end processRun2
 
   //__________________________________________________
   template <typename TCCDB, typename THistoRegistry, typename TBCs, typename TBcSelBuffer, typename TBcSelCursor>
   std::vector<o2::common::eventselection::bcselEntry> processRun3(TCCDB const& ccdb, THistoRegistry& histos, TBCs const& bcs, TBcSelBuffer const& bcselbuffer, TBcSelCursor& bcsel)
   {
     std::vector<o2::common::eventselection::bcselEntry> bcselEntries;
-    if(!configure(ccdb, bcs))
+    if (!configure(ccdb, bcs))
       return bcselEntries; // don't do anything in case configuration reported not ok
 
     int run = bcs.iteratorAt(0).runNumber();
@@ -382,7 +382,7 @@ class BcSelectionModule
     }
 
     int triggerBcShift = bcselOpts.confTriggerBcShift;
-    if (bcselOpts.confTriggerBcShift == 999) {                                                                                                                                         // o2-linter: disable=magic-number (special shift for early 2022 data)
+    if (bcselOpts.confTriggerBcShift == 999) {                                                                                                                               // o2-linter: disable=magic-number (special shift for early 2022 data)
       triggerBcShift = (run <= 526766 || (run >= 526886 && run <= 527237) || (run >= 527259 && run <= 527518) || run == 527523 || run == 527734 || run >= 534091) ? 0 : 294; // o2-linter: disable=magic-number (magic list of runs)
     }
 
@@ -533,12 +533,12 @@ class BcSelectionModule
 
       // initialize properties
       o2::common::eventselection::bcselEntry entry;
-      entry.alias = alias; 
-      entry.selection = selection; 
-      entry.rct = rct; 
+      entry.alias = alias;
+      entry.selection = selection;
+      entry.rct = rct;
       entry.foundFT0Id = foundFT0;
       entry.foundFV0Id = foundFV0;
-      entry.foundFDDId = foundFDD; 
+      entry.foundFDDId = foundFDD;
       entry.foundZDCId = foundZDC;
       bcselEntries.push_back(entry);
 
@@ -659,7 +659,7 @@ class EventSelectionModule
       nBCsPerTF = evselOpts.confNumberOfOrbitsPerTF < 0 ? runInfo.orbitsPerTF * nBCsPerOrbit : evselOpts.confNumberOfOrbitsPerTF * nBCsPerOrbit;
       // colliding bc pattern
       int64_t ts = bcs.iteratorAt(0).timestamp();
-      // getForTimeStamp replaced with getSpecific to set metadata to zero 
+      // getForTimeStamp replaced with getSpecific to set metadata to zero
       // avoids crash related to specific run number
       auto grplhcif = ccdb->template getSpecific<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
       bcPatternB = grplhcif->getBunchFilling().getBCPattern();
@@ -751,13 +751,13 @@ class EventSelectionModule
     }
   } // end processRun2
 
-//__________________________________________________
+  //__________________________________________________
   template <typename TCCDB, typename THistoRegistry, typename TBCs, typename TCollisions, typename TPVTracks, typename TFT0s, typename TSlicecache, typename TBcSelBuffer, typename TEvselCursor>
   void processRun3(TCCDB const& ccdb, THistoRegistry& histos, TBCs const& bcs, TCollisions const& cols, TPVTracks const& pvTracks, TFT0s const& ft0s, TSlicecache& cache, TBcSelBuffer const& bcselbuffer, TEvselCursor& evsel)
   {
-    if(!configure(ccdb, bcs))
+    if (!configure(ccdb, bcs))
       return; // don't do anything in case configuration reported not ok
-    
+
     int run = bcs.iteratorAt(0).runNumber();
     // create maps from globalBC to bc index for TVX-fired bcs
     // to be used for closest TVX searches
@@ -791,15 +791,15 @@ class EventSelectionModule
       }
       return;
     }
-    std::vector<int> vTracksITS567perColl(cols.size(), 0);                                    // counter of tracks per collision for occupancy studies
-    std::vector<float> vAmpFT0CperColl(cols.size(), 0);                                       // amplitude FT0C per collision
-    std::vector<float> vCollVz(cols.size(), 0);                                               // vector with vZ positions for each collision
-    std::vector<bool> vIsFullInfoForOccupancy(cols.size(), 0);                                // info for occupancy in +/- windows is available (i.e. a given coll is not too close to the TF borders)
+    std::vector<int> vTracksITS567perColl(cols.size(), 0);                                              // counter of tracks per collision for occupancy studies
+    std::vector<float> vAmpFT0CperColl(cols.size(), 0);                                                 // amplitude FT0C per collision
+    std::vector<float> vCollVz(cols.size(), 0);                                                         // vector with vZ positions for each collision
+    std::vector<bool> vIsFullInfoForOccupancy(cols.size(), 0);                                          // info for occupancy in +/- windows is available (i.e. a given coll is not too close to the TF borders)
     const float timeWinOccupancyCalcMinNS = evselOpts.confTimeIntervalForOccupancyCalculationMin * 1e3; // ns
     const float timeWinOccupancyCalcMaxNS = evselOpts.confTimeIntervalForOccupancyCalculationMax * 1e3; // ns
-    std::vector<bool> vIsVertexITSTPC(cols.size(), 0);                                        // at least one of vertex contributors is ITS-TPC track
-    std::vector<bool> vIsVertexTOFmatched(cols.size(), 0);                                    // at least one of vertex contributors is matched to TOF
-    std::vector<bool> vIsVertexTRDmatched(cols.size(), 0);                                    // at least one of vertex contributors is matched to TRD
+    std::vector<bool> vIsVertexITSTPC(cols.size(), 0);                                                  // at least one of vertex contributors is ITS-TPC track
+    std::vector<bool> vIsVertexTOFmatched(cols.size(), 0);                                              // at least one of vertex contributors is matched to TOF
+    std::vector<bool> vIsVertexTRDmatched(cols.size(), 0);                                              // at least one of vertex contributors is matched to TRD
 
     std::vector<int> vCollisionsPerBc(bcs.size(), 0);    // counter of collisions per found bc for pileup checks
     std::vector<int> vFoundBCindex(cols.size(), -1);     // indices of found bcs
@@ -941,12 +941,11 @@ class EventSelectionModule
       int32_t colIndex = col.globalIndex();
       int64_t foundGlobalBC = vFoundGlobalBC[colIndex];
       auto bcselEntr = bcselbuffer[vFoundBCindex[colIndex]];
-      if (bcselEntr.foundFT0Id>-1){
+      if (bcselEntr.foundFT0Id > -1) {
         // required: explicit ft0s table
         auto foundFT0 = ft0s.rawIteratorAt(bcselEntr.foundFT0Id);
         vAmpFT0CperColl[colIndex] = foundFT0.sumAmpC();
       }
-        
 
       int64_t tfId = (foundGlobalBC - bcSOR) / nBCsPerTF;
       int64_t rofId = (foundGlobalBC + nBCsPerOrbit - rofOffset) / rofLength;
@@ -1165,7 +1164,7 @@ class EventSelectionModule
 
       // compare zVtx from FT0 and from PV
       bool isGoodZvtxFT0vsPV = 0;
-      if(bcselEntry.foundFT0Id>-1){ 
+      if (bcselEntry.foundFT0Id > -1) {
         auto foundFT0 = ft0s.rawIteratorAt(bcselEntry.foundFT0Id);
         isGoodZvtxFT0vsPV = std::fabs(foundFT0.posZ() - col.posZ()) < evselOpts.maxDiffZvtxFT0vsPV;
       }
@@ -1204,7 +1203,7 @@ class EventSelectionModule
 
       // fill counters
       histos.template get<TH1>(HIST("eventselection/hColCounterAll"))->Fill(Form("%d", bc.runNumber()), 1);
-      if (bitcheck64(bcselEntry.selection,aod::evsel::kIsTriggerTVX)) {
+      if (bitcheck64(bcselEntry.selection, aod::evsel::kIsTriggerTVX)) {
         histos.template get<TH1>(HIST("eventselection/hColCounterTVX"))->Fill(Form("%d", bc.runNumber()), 1);
       }
       if (sel8) {
@@ -1430,14 +1429,14 @@ class LumiModule
       mPileupCorrectionZNC.push_back(mPileupCorrectionZNC.back());
       mPileupCorrectionZEM.push_back(mPileupCorrectionZEM.back());
     } // access ccdb once per run
-    return true; // carry on, please 
+    return true; // carry on, please
   }
 
   //__________________________________________________
   template <typename TCCDB, typename THistoRegistry, typename TBCs, typename TBcSelBuffer>
   void process(TCCDB& ccdb, THistoRegistry& histos, TBCs const& bcs, TBcSelBuffer const& bcselBuffer)
   {
-    if(!configure(ccdb, bcs))
+    if (!configure(ccdb, bcs))
       return; // don't do anything in case configuration reported not ok
 
     int run = bcs.iteratorAt(0).runNumber();

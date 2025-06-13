@@ -71,7 +71,7 @@ struct eventselectionRun2 {
   // this: a stopgap solution to avoid spawning yet another device
   std::vector<o2::common::eventselection::bcselEntry> bcselsbuffer;
 
-  // auxiliary 
+  // auxiliary
   Partition<FullTracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
   Preslice<FullTracks> perCollision = aod::track::collisionId;
 
@@ -126,7 +126,7 @@ struct eventselectionRun3 {
   // this: a stopgap solution to avoid spawning yet another device
   std::vector<o2::common::eventselection::bcselEntry> bcselsbuffer;
 
-  // auxiliary 
+  // auxiliary
   Partition<FullTracksIU> pvTracks = ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
   Preslice<FullTracksIU> perCollisionIU = aod::track::collisionId;
 
@@ -143,7 +143,7 @@ struct eventselectionRun3 {
     lumimodule.init(histos);
   }
 
-  void process(aod::Collisions const& collisions, 
+  void process(aod::Collisions const& collisions,
                BCsWithRun3Matchings const& bcs,
                aod::Zdcs const&,
                aod::FV0As const&,
@@ -171,16 +171,16 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   }
 
   LOGF(info, "Event selection autoconfiguring from metadata. Availability of info for Run 2/3 is %i", hasRunInfo);
-  if(!hasRunInfo){
+  if (!hasRunInfo) {
     LOGF(info, "Metadata info missing or incomplete. Make sure --aod-file is provided at the end of the last workflow and that the AO2D has metadata stored.");
     LOGF(info, "Initializing with Run 3 data as default. Please note you will not be able to change settings manually.");
     LOGF(info, "You should instead make sure the metadata is read in correctly.");
     return WorkflowSpec{adaptAnalysisTask<eventselectionRun3>(cfgc)};
-  }else{
+  } else {
     LOGF(info, "Metadata successfully read in. Is this Run 3? %i - will self-configure.", isRun3);
-    if(isRun3){ 
+    if (isRun3) {
       return WorkflowSpec{adaptAnalysisTask<eventselectionRun3>(cfgc)};
-    }else{
+    } else {
       return WorkflowSpec{adaptAnalysisTask<eventselectionRun2>(cfgc)};
     }
   }
