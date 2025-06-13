@@ -23,6 +23,7 @@
 #include <utility>
 #include <algorithm>
 #include <complex>
+#include <cstdio>
 
 class GFW
 {

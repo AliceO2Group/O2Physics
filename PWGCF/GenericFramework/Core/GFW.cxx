@@ -10,6 +10,10 @@
 // or submit itself to any jurisdiction.
 
 #include "GFW.h"
+#include <cstdio>
+#include <utility>
+#include <vector>
+#include <string>
 
 using std::complex;
 using std::pair;
