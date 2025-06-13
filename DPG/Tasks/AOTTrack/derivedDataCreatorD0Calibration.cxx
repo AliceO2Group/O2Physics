@@ -168,7 +168,7 @@ struct DerivedDataCreatorD0Calibration {
                aod::BCsWithTimestamps const&)
   {
     std::map<int, int> selectedCollisions; // map with indices of selected collisions (key: original AOD Collision table index, value: D0 collision index)
-    std::map<int, int> selectedTracks; // map with indices of selected tracks (key: original AOD Track table index, value: D0 daughter track index)
+    std::map<int, int> selectedTracks;     // map with indices of selected tracks (key: original AOD Track table index, value: D0 daughter track index)
 
     for (auto const& collision : collisions) {
 
@@ -391,12 +391,12 @@ struct DerivedDataCreatorD0Calibration {
           float phi{0.f}, theta{0.f};
           getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
           float errorDecayLengthD0 = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
-          if (decLenD0/errorDecayLengthD0 < cfgCandCuts.topologicalCuts->get(ptBinD0, "min norm decay length")) {
+          if (decLenD0 / errorDecayLengthD0 < cfgCandCuts.topologicalCuts->get(ptBinD0, "min norm decay length")) {
             continue;
           }
           // normalised decay length XY
           float errorDecayLengthXYD0 = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.f) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.f));
-          if (decLenXYD0/errorDecayLengthXYD0 < cfgCandCuts.topologicalCuts->get(ptBinD0, "min norm decay length XY")) {
+          if (decLenXYD0 / errorDecayLengthXYD0 < cfgCandCuts.topologicalCuts->get(ptBinD0, "min norm decay length XY")) {
             continue;
           }
 
@@ -408,9 +408,9 @@ struct DerivedDataCreatorD0Calibration {
               massHypo -= D0MassHypo::D0;
               bdtScoresD0 = std::vector<float>{1.f, 0.f, 0.f};
             } else {
-            // apply BDT models
-            std::vector<float> featuresCandD0 = {dcaPos.getY(), dcaNeg.getY(), chi2PCA, cosPaD0, cosPaXYD0, decLenXYD0, decLenD0, dcaPos.getY() * dcaNeg.getY(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaPi(), trackPos.tofNSigmaPi()), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaKa()), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaKa(), trackPos.tofNSigmaKa()), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaPi(), trackNeg.tofNSigmaPi())};
-            mlResponse.isSelectedMl(featuresCandD0, ptD0, bdtScoresD0);
+              // apply BDT models
+              std::vector<float> featuresCandD0 = {dcaPos.getY(), dcaNeg.getY(), chi2PCA, cosPaD0, cosPaXYD0, decLenXYD0, decLenD0, dcaPos.getY() * dcaNeg.getY(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaPi(), trackPos.tofNSigmaPi()), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaKa()), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaKa(), trackPos.tofNSigmaKa()), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaPi(), trackNeg.tofNSigmaPi())};
+              mlResponse.isSelectedMl(featuresCandD0, ptD0, bdtScoresD0);
             }
           }
           if (massHypo >= D0MassHypo::D0Bar) {
@@ -444,25 +444,25 @@ struct DerivedDataCreatorD0Calibration {
           if (!selectedTracks.count(trackPos.globalIndex())) {
             // fill track table with positive track if not yet present
             trackTable(selectedCollisions[collision.globalIndex()],
-                      trackPos.x(), trackPos.alpha(), trackPos.y(), trackPos.z(), trackPos.snp(), trackPos.tgl(), trackPos.signed1Pt(), // stored at PV
-                      trackPos.cYY(), trackPos.cZY(), trackPos.cZZ(), trackPos.cSnpY(), trackPos.cSnpZ(), trackPos.cSnpSnp(), trackPos.cTglY(), trackPos.cTglZ(), trackPos.cTglSnp(), trackPos.cTglTgl(), trackPos.c1PtY(), trackPos.c1PtZ(), trackPos.c1PtSnp(), trackPos.c1PtTgl(), trackPos.c1Pt21Pt2(),
-                      trackPos.tpcInnerParam(), trackPos.flags(), trackPos.itsClusterSizes(), trackPos.tpcNClsFindable(), trackPos.tpcNClsFindableMinusFound(), trackPos.tpcNClsFindableMinusCrossedRows(), trackPos.tpcNClsShared(), trackPos.trdPattern(), getCompressedChi2(trackPos.itsChi2NCl()), getCompressedChi2(trackPos.tpcChi2NCl()), getCompressedChi2(trackPos.trdChi2()), getCompressedChi2(trackPos.tofChi2()), trackPos.tpcSignal(), trackPos.trdSignal(), trackPos.length(), trackPos.tofExpMom(), trackPos.trackTime(), trackPos.trackTimeRes(),
-                      dcaPos.getY(), dcaPos.getZ(), getCompressedNumSigmaPid(trackPos.tpcNSigmaPi()), getCompressedNumSigmaPid(trackPos.tpcNSigmaKa()), getCompressedNumSigmaPid(trackPos.tofNSigmaPi()), getCompressedNumSigmaPid(trackPos.tofNSigmaKa()));
+                       trackPos.x(), trackPos.alpha(), trackPos.y(), trackPos.z(), trackPos.snp(), trackPos.tgl(), trackPos.signed1Pt(), // stored at PV
+                       trackPos.cYY(), trackPos.cZY(), trackPos.cZZ(), trackPos.cSnpY(), trackPos.cSnpZ(), trackPos.cSnpSnp(), trackPos.cTglY(), trackPos.cTglZ(), trackPos.cTglSnp(), trackPos.cTglTgl(), trackPos.c1PtY(), trackPos.c1PtZ(), trackPos.c1PtSnp(), trackPos.c1PtTgl(), trackPos.c1Pt21Pt2(),
+                       trackPos.tpcInnerParam(), trackPos.flags(), trackPos.itsClusterSizes(), trackPos.tpcNClsFindable(), trackPos.tpcNClsFindableMinusFound(), trackPos.tpcNClsFindableMinusCrossedRows(), trackPos.tpcNClsShared(), trackPos.trdPattern(), getCompressedChi2(trackPos.itsChi2NCl()), getCompressedChi2(trackPos.tpcChi2NCl()), getCompressedChi2(trackPos.trdChi2()), getCompressedChi2(trackPos.tofChi2()), trackPos.tpcSignal(), trackPos.trdSignal(), trackPos.length(), trackPos.tofExpMom(), trackPos.trackTime(), trackPos.trackTimeRes(),
+                       dcaPos.getY(), dcaPos.getZ(), getCompressedNumSigmaPid(trackPos.tpcNSigmaPi()), getCompressedNumSigmaPid(trackPos.tpcNSigmaKa()), getCompressedNumSigmaPid(trackPos.tofNSigmaPi()), getCompressedNumSigmaPid(trackPos.tofNSigmaKa()));
             selectedTracks[trackPos.globalIndex()] = trackTable.lastIndex();
           }
           if (!selectedTracks.count(trackNeg.globalIndex())) {
             // fill track table with negative track if not yet present
             trackTable(selectedCollisions[collision.globalIndex()],
-                      trackNeg.x(), trackNeg.alpha(), trackNeg.y(), trackNeg.z(), trackNeg.snp(), trackNeg.tgl(), trackNeg.signed1Pt(), // stored at PV
-                      trackNeg.cYY(), trackNeg.cZY(), trackNeg.cZZ(), trackNeg.cSnpY(), trackNeg.cSnpZ(), trackNeg.cSnpSnp(), trackNeg.cTglY(), trackNeg.cTglZ(), trackNeg.cTglSnp(), trackNeg.cTglTgl(), trackNeg.c1PtY(), trackNeg.c1PtZ(), trackNeg.c1PtSnp(), trackNeg.c1PtTgl(), trackNeg.c1Pt21Pt2(),
-                      trackNeg.tpcInnerParam(), trackNeg.flags(), trackNeg.itsClusterSizes(), trackNeg.tpcNClsFindable(), trackNeg.tpcNClsFindableMinusFound(), trackNeg.tpcNClsFindableMinusCrossedRows(), trackNeg.tpcNClsShared(), trackNeg.trdPattern(), getCompressedChi2(trackNeg.itsChi2NCl()), getCompressedChi2(trackNeg.tpcChi2NCl()), getCompressedChi2(trackNeg.trdChi2()), getCompressedChi2(trackNeg.tofChi2()), trackNeg.tpcSignal(), trackNeg.trdSignal(), trackNeg.length(), trackNeg.tofExpMom(), trackNeg.trackTime(), trackNeg.trackTimeRes(),
-                      dcaNeg.getY(), dcaNeg.getZ(), getCompressedNumSigmaPid(trackNeg.tpcNSigmaPi()), getCompressedNumSigmaPid(trackNeg.tpcNSigmaKa()), getCompressedNumSigmaPid(trackNeg.tofNSigmaPi()), getCompressedNumSigmaPid(trackNeg.tofNSigmaKa()));
+                       trackNeg.x(), trackNeg.alpha(), trackNeg.y(), trackNeg.z(), trackNeg.snp(), trackNeg.tgl(), trackNeg.signed1Pt(), // stored at PV
+                       trackNeg.cYY(), trackNeg.cZY(), trackNeg.cZZ(), trackNeg.cSnpY(), trackNeg.cSnpZ(), trackNeg.cSnpSnp(), trackNeg.cTglY(), trackNeg.cTglZ(), trackNeg.cTglSnp(), trackNeg.cTglTgl(), trackNeg.c1PtY(), trackNeg.c1PtZ(), trackNeg.c1PtSnp(), trackNeg.c1PtTgl(), trackNeg.c1Pt21Pt2(),
+                       trackNeg.tpcInnerParam(), trackNeg.flags(), trackNeg.itsClusterSizes(), trackNeg.tpcNClsFindable(), trackNeg.tpcNClsFindableMinusFound(), trackNeg.tpcNClsFindableMinusCrossedRows(), trackNeg.tpcNClsShared(), trackNeg.trdPattern(), getCompressedChi2(trackNeg.itsChi2NCl()), getCompressedChi2(trackNeg.tpcChi2NCl()), getCompressedChi2(trackNeg.trdChi2()), getCompressedChi2(trackNeg.tofChi2()), trackNeg.tpcSignal(), trackNeg.trdSignal(), trackNeg.length(), trackNeg.tofExpMom(), trackNeg.trackTime(), trackNeg.trackTimeRes(),
+                       dcaNeg.getY(), dcaNeg.getZ(), getCompressedNumSigmaPid(trackNeg.tpcNSigmaPi()), getCompressedNumSigmaPid(trackNeg.tpcNSigmaKa()), getCompressedNumSigmaPid(trackNeg.tofNSigmaPi()), getCompressedNumSigmaPid(trackNeg.tofNSigmaKa()));
             selectedTracks[trackNeg.globalIndex()] = trackTable.lastIndex();
           }
 
           // candidate
           candTable(selectedCollisions[collision.globalIndex()], selectedTracks[trackPos.globalIndex()], selectedTracks[trackNeg.globalIndex()], massHypo, ptD0, etaD0, phiD0, invMassD0, invMassD0bar,
-                    getCompressedDecayLength(decLenD0), getCompressedDecayLength(decLenXYD0), getCompressedNormDecayLength(decLenD0/errorDecayLengthD0), getCompressedNormDecayLength(decLenXYD0/errorDecayLengthXYD0),
+                    getCompressedDecayLength(decLenD0), getCompressedDecayLength(decLenXYD0), getCompressedNormDecayLength(decLenD0 / errorDecayLengthD0), getCompressedNormDecayLength(decLenXYD0 / errorDecayLengthXYD0),
                     getCompressedCosPa(cosPaD0), getCompressedCosPa(cosPaXYD0), getCompressedPointingAngle(paD0), getCompressedPointingAngle(paXYD0), getCompressedChi2(chi2PCA), getCompressedBdtScoreBkg(bdtScoresD0[0]), getCompressedBdtScoreSgn(bdtScoresD0[1]), getCompressedBdtScoreSgn(bdtScoresD0[2]), getCompressedBdtScoreBkg(bdtScoresD0bar[0]), getCompressedBdtScoreSgn(bdtScoresD0bar[1]), getCompressedBdtScoreSgn(bdtScoresD0bar[2]));
         } // end loop over negative tracks
       } // end loop over positive tracks
