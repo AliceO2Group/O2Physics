@@ -62,6 +62,8 @@ int countOnesInBinary(uint8_t num)
 /// Single-track cuts on dcaXY
 /// \param trackPar is the track parametrisation
 /// \param dca is the 2-D array with track DCAs
+/// \param binsPtTrack is the array of pt bins for track selection
+/// \param cutsTrackDCA are the cuts for track DCA selection
 /// \return true if track passes all cuts
 template <typename T1, typename T2, typename C1, typename C2>
 bool isSelectedTrackDCA(const T1& trackPar, const T2& dca, const C1& binsPtTrack, const C2& cutsTrackDCA)
