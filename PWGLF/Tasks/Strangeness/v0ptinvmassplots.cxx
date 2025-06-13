@@ -20,6 +20,9 @@ for different pt ranges (constituting bins). The values are inserted as configur
 Also feed-down matrices for the Lambda and Anti-Lambda are produced.
 This analysis includes three processes, one for Real Data and two for MC at the Generated and Reconstructed level*/
 
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/Utils/inelGt.h"
+
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 
@@ -28,9 +31,6 @@ This analysis includes three processes, one for Real Data and two for MC at the 
 #include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
-
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/Utils/inelGt.h"
 
 #include "TPDGCode.h"
 
