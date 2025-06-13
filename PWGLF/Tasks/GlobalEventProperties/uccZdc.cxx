@@ -83,6 +83,7 @@ struct UccZdc {
   Configurable<bool> isZEMcut{"isZEMcut", true, "Use ZEM cut"};
   Configurable<bool> useMidRapNchSel{"useMidRapNchSel", true, "Use mid-rapidit Nch selection"};
   Configurable<bool> applyEff{"applyEff", true, "Apply track-by-track efficiency correction"};
+  Configurable<bool> applyFD{"applyFD", false, "Apply track-by-track feed down correction"};
   Configurable<bool> correctNch{"correctNch", true, "Correct also Nch"};
 
   // Event selection
@@ -164,6 +165,8 @@ struct UccZdc {
   // Histograms: Data
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   Service<ccdb::BasicCCDBManager> ccdb;
+
+  TH1F* fd = nullptr;
 
   void init(InitContext const&)
   {
@@ -299,6 +302,7 @@ struct UccZdc {
 
     LOG(info) << "\tccdbNoLaterThan=" << ccdbNoLaterThan.value;
     LOG(info) << "\tapplyEff=" << applyEff.value;
+    LOG(info) << "\tapplyFD=" << applyFD.value;
     LOG(info) << "\tcorrectNch=" << correctNch.value;
     LOG(info) << "\tpaTHEff=" << paTHEff.value;
     LOG(info) << "\tpaTHFD=" << paTHFD.value;
@@ -318,6 +322,11 @@ struct UccZdc {
     // Not later than now, will be replaced by the value of the train creation
     // This avoids that users can replace objects **while** a train is running
     ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
+    // Feed Down is the same for all runs -> use a global object
+    fd = ccdb->getForTimeStamp<TH1F>(paTHFD.value, ccdbNoLaterThan.value);
+    if (!fd) {
+      LOGF(fatal, "Feed Down object not found!");
+    }
   }
 
   template <typename CheckCol>
@@ -697,8 +706,7 @@ struct UccZdc {
     }
 
     auto efficiency = ccdb->getForTimeStamp<TH1F>(paTHEff.value, foundBC.timestamp());
-    auto fd = ccdb->getForTimeStamp<TH1F>(paTHFD.value, foundBC.timestamp());
-    if (!efficiency || !fd) {
+    if (!efficiency) {
       return;
     }
 
@@ -755,6 +763,9 @@ struct UccZdc {
       if (applyEff) {
         effValue = efficiency->GetBinContent(efficiency->FindBin(pt));
         fdValue = fd->GetBinContent(fd->FindBin(pt));
+      }
+      if (applyEff && !applyFD) {
+        fdValue = 1.0;
       }
       if ((effValue > 0.) && (fdValue > 0.)) {
         pTs.emplace_back(pt);
@@ -844,8 +855,7 @@ struct UccZdc {
         // To use run-by-run efficiency
         const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
         auto efficiency = ccdb->getForTimeStamp<TH1F>(paTHEff.value, foundBC.timestamp());
-        auto fd = ccdb->getForTimeStamp<TH1F>(paTHFD.value, foundBC.timestamp());
-        if (!efficiency || !fd) {
+        if (!efficiency) {
           return;
         }
 
@@ -930,7 +940,7 @@ struct UccZdc {
         }
 
         double nchMC{0};
-        nchMult = std::accumulate(vecFullEff.begin(), vecFullEff.end(), 0);
+        nchMC = std::accumulate(vecFullEff.begin(), vecFullEff.end(), 0);
         if (nchMC < minNchSel) {
           continue;
         }
