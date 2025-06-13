@@ -138,7 +138,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     float centrality = -1.;
     uint32_t rejectionMask;
 
-    if (applyUPCSel) {
+    if constexpr (applyUPCSel) {
       rejectionMask = hfEvSel.getHfCollisionRejectionMask<applyTrigSel, centEstimator, BCs>(
         collision, centrality, ccdb, registry, bcs);
     } else {
