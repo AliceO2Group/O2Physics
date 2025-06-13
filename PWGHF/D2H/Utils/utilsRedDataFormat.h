@@ -16,16 +16,16 @@
 #ifndef PWGHF_D2H_UTILS_UTILSREDDATAFORMAT_H_
 #define PWGHF_D2H_UTILS_UTILSREDDATAFORMAT_H_
 
-#include <cmath>
-
-#include <Rtypes.h>
+#include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisHelpers.h"
 #include "Framework/HistogramRegistry.h"
 
-#include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
+#include <Rtypes.h>
+
+#include <cmath>
 
 namespace o2::hf_evsel
 {
@@ -78,6 +78,31 @@ float getTpcTofNSigmaPi1(const T1& prong1)
   }
   if (hasTof) {
     return std::abs(prong1.tofNSigmaPi());
+  }
+  return defaultNSigma;
+}
+
+/// Helper function to retrive PID information of bachelor kaon from b-hadron decay
+/// \param prong1 kaon track from reduced data format, aod::HfRedBachProng0Tracks
+/// \return the combined TPC and TOF n-sigma for kaon
+template <typename T1>
+float getTpcTofNSigmaKa1(const T1& prong1)
+{
+  float defaultNSigma = -999.f; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
+
+  bool hasTpc = prong1.hasTPC();
+  bool hasTof = prong1.hasTOF();
+
+  if (hasTpc && hasTof) {
+    float tpcNSigma = prong1.tpcNSigmaKa();
+    float tofNSigma = prong1.tofNSigmaKa();
+    return std::sqrt(.5f * tpcNSigma * tpcNSigma + .5f * tofNSigma * tofNSigma);
+  }
+  if (hasTpc) {
+    return std::abs(prong1.tpcNSigmaKa());
+  }
+  if (hasTof) {
+    return std::abs(prong1.tofNSigmaKa());
   }
   return defaultNSigma;
 }
