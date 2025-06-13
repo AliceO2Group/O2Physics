@@ -655,7 +655,7 @@ struct FlowZdcTask {
     znA /= cfgCollisionEnergy;
     znC /= cfgCollisionEnergy;
     zpA /= cfgCollisionEnergy;
-    zpC /= cfgCollisionEnergy; 
+    zpC /= cfgCollisionEnergy;
     // ZEM cut
     if (isZEMcut) {
       if (sumZEM < zemCut) {
