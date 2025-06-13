@@ -52,22 +52,23 @@ int32_t nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
 // const int nBCinTF = 114048;         /// CCDB value // to be obtained from CCDB in future
 const int nBCinDrift = 114048 / 32; /// to get from ccdb in future
 
-template<typename T, std::size_t N>
-void sortVectorOfArray(std::vector<std::array<T,N>> &myVector, const int &myIDX){
-  std::sort(myVector.begin(), myVector.end(), [myIDX](const std::array<T,N>& a, const std::array<T,N>& b){
-    return a[myIDX] < b[myIDX]; //sort at the required index
+template <typename T, std::size_t N>
+void sortVectorOfArray(std::vector<std::array<T, N>>& myVector, const int& myIDX)
+{
+  std::sort(myVector.begin(), myVector.end(), [myIDX](const std::array<T, N>& a, const std::array<T, N>& b) {
+    return a[myIDX] < b[myIDX]; // sort at the required index
   });
 }
 
-template<typename T, std::size_t N>
-void checkUniqueness(const std::vector<std::array<T,N>>& myVector, const int &myIDX){
-  for(size_t i = 1; i < myVector.size(); i++){
-    if (myVector[i][myIDX] <= myVector[i - 1][myIDX]){
-      LOG(error)<<"Duplicate Entries while creating Index tables :: (vec["<<i<<"]["<<myIDX<<"]) "<<myVector[i][myIDX]<<" >= "<<myVector[i - 1][myIDX]<<" (vec["<<i-1<<"]["<<myIDX<<"])";
+template <typename T, std::size_t N>
+void checkUniqueness(const std::vector<std::array<T, N>>& myVector, const int& myIDX)
+{
+  for (size_t i = 1; i < myVector.size(); i++) {
+    if (myVector[i][myIDX] <= myVector[i - 1][myIDX]) {
+      LOG(error) << "Duplicate Entries while creating Index tables :: (vec[" << i << "][" << myIDX << "]) " << myVector[i][myIDX] << " >= " << myVector[i - 1][myIDX] << " (vec[" << i - 1 << "][" << myIDX << "])";
     }
   }
 }
-
 
 struct OccupancyTableProducer {
 
@@ -1749,7 +1750,7 @@ struct TrackMeanOccTableProducer {
     fillWeightMeanOccTable
   };
 
-  std::vector<std::array<int64_t,2>> trackQAGIListforTMOList;
+  std::vector<std::array<int64_t, 2>> trackQAGIListforTMOList;
   template <int processMode, int meanTableMode, int weightMeanTableMode, int qaMode, typename B, typename C, typename T, typename U, typename O, typename V>
   void executeTrackOccProducerProcessing(B const& BCs, C const& collisions, T const& tracks, U const& tracksQA, O const& occsRobustT0V0Prim, V const& occs, bool const& executeInThisBlock)
   {
@@ -2349,43 +2350,47 @@ struct TrackMeanOccTableProducer {
         }
       } // end of trackQA loop
 
-      //build the IndexTables here
+      // build the IndexTables here
       if (executeInThisBlock) {
-        if(buildPointerTrackQAToTMOTable){
-          //create pointer table from trackQA to TrackMeanOcc
-          sortVectorOfArray(trackQAGIListforTMOList, 0);//sort the list //Its easy to search in a sorted list
-          checkUniqueness(trackQAGIListforTMOList, 0); //check the uniqueness of track.globalIndex()
+        if (buildPointerTrackQAToTMOTable) {
+          // create pointer table from trackQA to TrackMeanOcc
+          sortVectorOfArray(trackQAGIListforTMOList, 0); // sort the list //Its easy to search in a sorted list
+          checkUniqueness(trackQAGIListforTMOList, 0);   // check the uniqueness of track.globalIndex()
 
           int currentIDXforCheck = 0;
           int listSize = trackQAGIListforTMOList.size();
-          for(const auto& trackQA : tracksQA){
-            while (trackQA.globalIndex() > trackQAGIListforTMOList[currentIDXforCheck][0]){
+          for (const auto& trackQA : tracksQA) {
+            while (trackQA.globalIndex() > trackQAGIListforTMOList[currentIDXforCheck][0]) {
               currentIDXforCheck++; // increment the currentIDXforCheck for missing or invalid cases e.g. value = -1;
-              if(currentIDXforCheck >= listSize) {break;}
+              if (currentIDXforCheck >= listSize) {
+                break;
+              }
             }
-            if(trackQA.globalIndex() == trackQAGIListforTMOList[currentIDXforCheck][0]){
+            if (trackQA.globalIndex() == trackQAGIListforTMOList[currentIDXforCheck][0]) {
               genTrackQAToTmo(trackQAGIListforTMOList[currentIDXforCheck][1]);
-            } else{
-              genTrackQAToTmo(-1); //put a dummy index when track is not found in trackQA
+            } else {
+              genTrackQAToTmo(-1); // put a dummy index when track is not found in trackQA
             }
           }
         }
-        if(buildPointerTMOToTrackQATable){
-          //create pointer table from TrackMeanOcc to trackQA
-          sortVectorOfArray(trackQAGIListforTMOList, 1);//sort the list //Its easy to search in a sorted list
-          checkUniqueness(trackQAGIListforTMOList, 1); //check the uniqueness of track.globalIndex()
+        if (buildPointerTMOToTrackQATable) {
+          // create pointer table from TrackMeanOcc to trackQA
+          sortVectorOfArray(trackQAGIListforTMOList, 1); // sort the list //Its easy to search in a sorted list
+          checkUniqueness(trackQAGIListforTMOList, 1);   // check the uniqueness of track.globalIndex()
 
           int currentIDXforCheck = 0;
           int listSize = trackQAGIListforTMOList.size();
-          for(int iCounter = 0 ; iCounter <= trackTMOcounter ; iCounter++){
-            while (iCounter > trackQAGIListforTMOList[currentIDXforCheck][1]){
+          for (int iCounter = 0; iCounter <= trackTMOcounter; iCounter++) {
+            while (iCounter > trackQAGIListforTMOList[currentIDXforCheck][1]) {
               currentIDXforCheck++; // increment the currentIDXforCheck for missing or invalid cases e.g. value = -1;
-              if(currentIDXforCheck >= listSize) {break;}
+              if (currentIDXforCheck >= listSize) {
+                break;
+              }
             }
-            if(iCounter == trackQAGIListforTMOList[currentIDXforCheck][1]){
+            if (iCounter == trackQAGIListforTMOList[currentIDXforCheck][1]) {
               genTmoToTrackQA(trackQAGIListforTMOList[currentIDXforCheck][0]);
-            } else{
-              genTmoToTrackQA(-1); //put a dummy index when track is not found in trackQA
+            } else {
+              genTmoToTrackQA(-1); // put a dummy index when track is not found in trackQA
             }
           }
         }
@@ -2672,7 +2677,7 @@ struct TrackMeanOccTableProducer {
   PROCESS_SWITCH(TrackMeanOccTableProducer, processFullOccTableProduer, "processFullOccTableProduer", false);
 };
 
-struct CreatePointerTables{
+struct CreatePointerTables {
 
   Produces<aod::TrackToTracksQA> genTrackToTracksQA;
   Produces<aod::TrackToTmo> genTrackToTmo;
@@ -2683,7 +2688,7 @@ struct CreatePointerTables{
   }
   PROCESS_SWITCH(CreatePointerTables, processNothing, "process Nothing", true);
 
-  std::vector<std::array<int64_t,2>> trackGIForTrackQAIndexList;
+  std::vector<std::array<int64_t, 2>> trackGIForTrackQAIndexList;
   using MyTracksQA = aod::TracksQAVersion;
   void processTrackToTrackQAPointer(aod::Tracks const& tracks, MyTracksQA const& tracksQA)
   {
@@ -2693,28 +2698,30 @@ struct CreatePointerTables{
       trackGIForTrackQAIndexList.push_back({track.globalIndex(), trackQA.globalIndex()});
     }
 
-    sortVectorOfArray(trackGIForTrackQAIndexList, 0);//sort the list //Its easy to search in a sorted list
-    checkUniqueness(trackGIForTrackQAIndexList, 0); //check the uniqueness of track.globalIndex()
+    sortVectorOfArray(trackGIForTrackQAIndexList, 0); // sort the list //Its easy to search in a sorted list
+    checkUniqueness(trackGIForTrackQAIndexList, 0);   // check the uniqueness of track.globalIndex()
 
-    //create pointer table
+    // create pointer table
     int currentIDXforCheck = 0;
     int listSize = trackGIForTrackQAIndexList.size();
 
-    for(const auto& track : tracks){
-      while (track.globalIndex() > trackGIForTrackQAIndexList[currentIDXforCheck][0]){
+    for (const auto& track : tracks) {
+      while (track.globalIndex() > trackGIForTrackQAIndexList[currentIDXforCheck][0]) {
         currentIDXforCheck++; // increment the currentIDXforCheck for missing or invalid cases e.g. value = -1;
-        if(currentIDXforCheck >= listSize) {break;}
+        if (currentIDXforCheck >= listSize) {
+          break;
+        }
       }
-      if(track.globalIndex() == trackGIForTrackQAIndexList[currentIDXforCheck][0]){
+      if (track.globalIndex() == trackGIForTrackQAIndexList[currentIDXforCheck][0]) {
         genTrackToTracksQA(trackGIForTrackQAIndexList[currentIDXforCheck][1]);
-      } else{
-        genTrackToTracksQA(-1); //put a dummy index when track is not found in trackQA
+      } else {
+        genTrackToTracksQA(-1); // put a dummy index when track is not found in trackQA
       }
     }
   }
   PROCESS_SWITCH(CreatePointerTables, processTrackToTrackQAPointer, "processTrackToTrackQAPointer", false);
 
-  std::vector<std::array<int64_t,2>> trackGIForTMOIndexList;
+  std::vector<std::array<int64_t, 2>> trackGIForTMOIndexList;
   void processTrackToTrackMeanOccsPointer(aod::Tracks const& tracks, aod::TmoTrackIds const& tmoTrackIds)
   {
     trackGIForTMOIndexList.clear();
@@ -2722,24 +2729,26 @@ struct CreatePointerTables{
     for (const auto& tmoTrackId : tmoTrackIds) {
       tmoCounter++;
       auto const& track = tmoTrackId.template track_as<aod::Tracks>();
-      trackGIForTMOIndexList.push_back({track.globalIndex(), tmoCounter}); //tmoTrackId Global Index is not working :: tmoTrackId.globalIndex()});
+      trackGIForTMOIndexList.push_back({track.globalIndex(), tmoCounter}); // tmoTrackId Global Index is not working :: tmoTrackId.globalIndex()});
     }
-    sortVectorOfArray(trackGIForTMOIndexList, 0);//sort the list //Its easy to search in a sorted list
-    checkUniqueness(trackGIForTMOIndexList, 0); //check the uniqueness of track.globalIndex()
+    sortVectorOfArray(trackGIForTMOIndexList, 0); // sort the list //Its easy to search in a sorted list
+    checkUniqueness(trackGIForTMOIndexList, 0);   // check the uniqueness of track.globalIndex()
 
-    //create pointer table
+    // create pointer table
     int currentIDXforCheck = 0;
     int listSize = trackGIForTMOIndexList.size();
 
-    for(const auto& track : tracks){
-      while (track.globalIndex() > trackGIForTMOIndexList[currentIDXforCheck][0]){
+    for (const auto& track : tracks) {
+      while (track.globalIndex() > trackGIForTMOIndexList[currentIDXforCheck][0]) {
         currentIDXforCheck++; // increment the currentIDXforCheck for missing or invalid cases e.g. value = -1;
-        if(currentIDXforCheck >= listSize) {break;}
+        if (currentIDXforCheck >= listSize) {
+          break;
+        }
       }
-      if(track.globalIndex() == trackGIForTMOIndexList[currentIDXforCheck][0]){
+      if (track.globalIndex() == trackGIForTMOIndexList[currentIDXforCheck][0]) {
         genTrackToTmo(trackGIForTMOIndexList[currentIDXforCheck][1]);
-      } else{
-        genTrackToTmo(-1); //put a dummy index when track is not found in trackQA
+      } else {
+        genTrackToTmo(-1); // put a dummy index when track is not found in trackQA
       }
     }
   }
