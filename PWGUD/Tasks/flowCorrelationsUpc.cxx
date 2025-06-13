@@ -14,29 +14,31 @@
 /// \author Mingrui Zhao (mingrui.zhao@cern.ch, mingrui.zhao@mail.labz0.org)
 /// copied from Thor Jensen (thor.kjaersgaard.jensen@cern.ch) and Debojit Sarkar (debojit.sarkar@cern.ch)
 
-#include <vector>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/ASoA.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "CommonConstants/MathConstants.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/Core/RecoDecay.h"
-
-#include "PWGUD/DataModel/UDTables.h"
-#include "PWGUD/Core/SGSelector.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
+#include "PWGCF/DataModel/CorrelationsDerived.h"
+#include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/DataModel/UDTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/MathConstants.h"
+#include "Framework/ASoA.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+
+#include "TRandom3.h"
+
+#include <vector>
 
 namespace o2::aod
 {
@@ -98,6 +100,7 @@ struct FlowCorrelationsUpc {
   O2_DEFINE_CONFIGURABLE(cfgMinMixEventNum, int, 5, "Minimum number of events to mix")
   O2_DEFINE_CONFIGURABLE(cfgMinMult, int, 0, "Minimum multiplicity for collision")
   O2_DEFINE_CONFIGURABLE(cfgMaxMult, int, 10, "Maximum multiplicity for collision")
+  O2_DEFINE_CONFIGURABLE(cfgSampleSize, double, 10, "Sample size for mixed event")
 
   ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
@@ -114,6 +117,7 @@ struct FlowCorrelationsUpc {
   ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
   ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
+  ConfigurableAxis axisSample{"axisSample", {cfgSampleSize, 0, cfgSampleSize}, "sample axis for histograms"};
 
   // Added UPC Cuts
   SGSelector sgSelector;
@@ -149,11 +153,11 @@ struct FlowCorrelationsUpc {
     registry.add("Nch", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}});
     registry.add("zVtx", "zVtx", {HistType::kTH1D, {axisVertex}});
 
-    registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisMultiplicity, axisVertex, axisPtTrigger}}});
+    registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
 
     registry.add("eventcount", "bin", {HistType::kTH1F, {{3, 0, 3, "bin"}}}); // histogram to see how many events are in the same and mixed event
 
-    std::vector<AxisSpec> corrAxis = {{axisMultiplicity, "Nch"},
+    std::vector<AxisSpec> corrAxis = {{axisSample, "Sample"},
                                       {axisVertex, "z-vtx (cm)"},
                                       {axisPtTrigger, "p_{T} (GeV/c)"},
                                       {axisPtAssoc, "p_{T} (GeV/c)"},
@@ -190,13 +194,16 @@ struct FlowCorrelationsUpc {
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks>
-  void fillCorrelations(TTracks tracks1, TTracks tracks2, float posZ, int system, float Nch) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelations(TTracks tracks1, TTracks tracks2, float posZ, int system) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
+
+    int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
+
     // loop over all tracks
     for (auto const& track1 : tracks1) {
 
       if (system == SameEvent) {
-        registry.fill(HIST("Trig_hist"), Nch, posZ, track1.pt());
+        registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, track1.pt());
       }
 
       for (auto const& track2 : tracks2) {
@@ -213,10 +220,10 @@ struct FlowCorrelationsUpc {
 
         // fill the right sparse and histograms
         if (system == SameEvent) {
-          same->getPairHist()->Fill(step, Nch, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta);
+          same->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta);
           registry.fill(HIST("deltaEta_deltaPhi_same"), deltaPhi, deltaEta);
         } else if (system == MixedEvent) {
-          mixed->getPairHist()->Fill(step, Nch, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta);
+          mixed->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta);
           registry.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta);
         }
       }
@@ -247,7 +254,7 @@ struct FlowCorrelationsUpc {
 
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
     fillYield(collision, tracks);
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, tracks.size()); // fill the SE histogram and Sparse
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent); // fill the SE histogram and Sparse
   }
   PROCESS_SWITCH(FlowCorrelationsUpc, processSame, "Process same event", true);
 
@@ -265,7 +272,7 @@ struct FlowCorrelationsUpc {
 
     for (auto const& [collision1, tracks1, collision2, tracks2] : pairs) {
       registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
-      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent, tracks1.size());
+      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent);
     }
   }
   PROCESS_SWITCH(FlowCorrelationsUpc, processMixed, "Process mixed events", true);
