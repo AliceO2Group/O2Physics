@@ -60,71 +60,71 @@ namespace hf_cand_3prong
 /// @brief 3-prong candidates: main channels
 enum DecayChannelMain : int8_t {
   // D+
-  DplusToPiKPi = 1, // 1, π+ K− π+
-  DplusToPiKPiPi0,  // 2, π+ K− π+ π0
-  DplusToPiPiPi,    // 3, π+ π− π+
-  DplusToPiKK,      // 4, π+ K− K+
+  DplusToPiKPi = 1, // π+ K− π+
+  DplusToPiKPiPi0,  // π+ K− π+ π0
+  DplusToPiPiPi,    // π+ π− π+
+  DplusToPiKK,      // π+ K− K+
   // Ds+
-  DsToPiKK,      // 5, π+ K− K+
-  DsToPiKKPi0,   // 6, π+ K− K+ π0
-  DsToPiPiK,     // 7, π+ π− K+
-  DsToPiPiPi,    // 8, π+ π− π+
-  DsToPiPiPiPi0, // 9, π+ π− π+ π0
+  DsToPiKK,      // π+ K− K+
+  DsToPiKKPi0,   // π+ K− K+ π0
+  DsToPiPiK,     // π+ π− K+
+  DsToPiPiPi,    // π+ π− π+
+  DsToPiPiPiPi0, // π+ π− π+ π0
   // D*+
-  DstarToPiKPi,       // 10, π+ K− π+ (from [(D0 → π+ K−) π+])
-  DstarToPiKPiPi0,    // 11, π+ K− π+ π0
-  DstarToPiKPiPi0Pi0, // 12, π+ K− π+ π0 π0
-  DstarToPiKK,        // 13, π+ K− K+
-  DstarToPiKKPi0,     // 14, π+ K− K+ π0
-  DstarToPiPiPi,      // 15, π+ π− π+
-  DstarToPiPiPiPi0,   // 16, π+ π− π+ π0
+  DstarToPiKPi,       // π+ K− π+ (from [(D0 → π+ K−) π+])
+  DstarToPiKPiPi0,    // π+ K− π+ π0
+  DstarToPiKPiPi0Pi0, // π+ K− π+ π0 π0
+  DstarToPiKK,        // π+ K− K+
+  DstarToPiKKPi0,     // π+ K− K+ π0
+  DstarToPiPiPi,      // π+ π− π+
+  DstarToPiPiPiPi0,   // π+ π− π+ π0
   // Λc+
-  LcToPKPi,    // 17, p K− π+
-  LcToPKPiPi0, // 18, p K− π+ π0
-  LcToPPiPi,   // 19, p π− π+
-  LcToPKK,     // 20, p K− K+
+  LcToPKPi,    // p K− π+
+  LcToPKPiPi0, // p K− π+ π0
+  LcToPPiPi,   // p π− π+
+  LcToPKK,     // p K− K+
   // Ξc+
-  XicToPKPi,  // 21, p K− π+
-  XicToPKK,   // 22, p K− K+
-  XicToSPiPi, // 23, Σ+ π− π+
+  XicToPKPi,  // p K− π+
+  XicToPKK,   // p K− K+
+  XicToSPiPi, // Σ+ π− π+
   //
   LastChannelMain
 };
 /// @brief 3-prong candidates: resonant channels
 enum DecayChannelResonant : int8_t {
   // D+
-  DplusToPhiPi = 1,    // 1, φ π+
-  DplusToKstar0K,      // 2, anti-K*0 K+
-  DplusToKstar1430_0K, // 3, anti-K*0(1430) K+
-  DplusToRho0Pi,       // 4, ρ0 π+
-  DplusToF2_1270Pi,    // 5, f2(1270) π+
+  DplusToPhiPi = 1,    // φ π+
+  DplusToKstar0K,      // anti-K*0 K+
+  DplusToKstar1430_0K, // anti-K*0(1430) K+
+  DplusToRho0Pi,       // ρ0 π+
+  DplusToF2_1270Pi,    // f2(1270) π+
   // Ds+
-  DsToPhiPi,      // 6, φ π+
-  DsToPhiRhoplus, // 7, φ ρ+
-  DsToKstar0K,    // 8, anti-K*0 K+
-  DsToKstar0Pi,   // 9, anti-K*0 π+
-  DsToRho0Pi,     // 10, ρ0 π+
-  DsToRho0K,      // 11, ρ0 K+
-  DsToF2_1270Pi,  // 12, f2(1270) π+
-  DsToF0_1370K,   // 13, f0(1370) K+
-  DsToEtaPi,      // 14, η π+
+  DsToPhiPi,      // φ π+
+  DsToPhiRhoplus, // φ ρ+
+  DsToKstar0K,    // anti-K*0 K+
+  DsToKstar0Pi,   // anti-K*0 π+
+  DsToRho0Pi,     // ρ0 π+
+  DsToRho0K,      // ρ0 K+
+  DsToF2_1270Pi,  // f2(1270) π+
+  DsToF0_1370K,   // f0(1370) K+
+  DsToEtaPi,      // η π+
   // D*+
-  DstarToD0ToRhoplusPi,       // 15, ρ+ π−
-  DstarToD0ToRhoplusK,        // 16, ρ+ K−
-  DstarToD0ToKstar0Pi0,       // 17, anti-K*0 π0
-  DstarToD0ToKstarPi,         // 18, K*− π+
-  DstarToDplusToPhiPi,        // 19, φ π+
-  DstarToDplusToKstar0K,      // 20, anti-K*0 K+
-  DstarToDplusToKstar1430_0K, // 21, anti-K*0(1430) K+
-  DstarToDplusToRho0Pi,       // 22, ρ0 π+
-  DstarToDplusToF2_1270Pi,    // 23, f2(1270) π+
+  DstarToD0ToRhoplusPi,       // ρ+ π−
+  DstarToD0ToRhoplusK,        // ρ+ K−
+  DstarToD0ToKstar0Pi0,       // anti-K*0 π0
+  DstarToD0ToKstarPi,         // K*− π+
+  DstarToDplusToPhiPi,        // φ π+
+  DstarToDplusToKstar0K,      // anti-K*0 K+
+  DstarToDplusToKstar1430_0K, // anti-K*0(1430) K+
+  DstarToDplusToRho0Pi,       // ρ0 π+
+  DstarToDplusToF2_1270Pi,    // f2(1270) π+
   // Λc+
-  LcToPKstar0,        // 24, p K*0(892)
-  LcToDeltaplusplusK, // 25, Δ++ K−
-  LcToL1520Pi,        // 26, Λ(1520) π+
+  LcToPKstar0,        // p K*0(892)
+  LcToDeltaplusplusK, // Δ++ K−
+  LcToL1520Pi,        // Λ(1520) π+
   // Ξc+
-  XicToPKstar0, // 27, p anti-K*0(892)
-  XicToPPhi,    // 28, p φ
+  XicToPKstar0, // p anti-K*0(892)
+  XicToPPhi,    // p φ
   //
   LastChannelResonant
 };
