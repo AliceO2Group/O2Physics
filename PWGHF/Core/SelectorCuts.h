@@ -896,6 +896,53 @@ static const std::vector<std::string> labelsPt = {
 static const std::vector<std::string> labelsCutVar = {"m", "DCA_xy", "DCA_z", "pT El", "chi2PCA"};
 } // namespace hf_cuts_jpsi_to_e_e
 
+namespace hf_cuts_jpsi_to_mu_mu
+{
+static constexpr int NBinsPt = 9;
+static constexpr int NCutVars = 8;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// offset by 1 from the bin numbers in cuts array
+constexpr double BinsPt[NBinsPt + 1] = {
+  0,
+  0.5,
+  1.0,
+  2.0,
+  3.0,
+  4.0,
+  5.0,
+  6.0,
+  10.0,
+  16.0,
+};
+auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+
+// default values for the cuts
+constexpr double Cuts[NBinsPt][NCutVars] = {{0.6, 1.0, 0.2, 0.2, 0.9, 0.9, 0., 0.},  /* 0   < pT < 0.5 */
+                                            {0.6, 1.0, 0.2, 0.2, 0.9, 0.9, 0., 0.},  /* 0.5 < pT < 1   */
+                                            {0.6, 1.0, 0.2, 0.2, 0.9, 0.9, 0., 0.},  /* 1   < pT < 2   */
+                                            {0.6, 1.0, 0.2, 0.2, 0.9, 0.9, 0., 0.},  /* 2   < pT < 3   */
+                                            {0.6, 1.0, 0.2, 0.2, 0.9, 0.9, 0., 0.},  /* 3   < pT < 4   */
+                                            {0.6, 1.0, 0.2, 0.2, 0.9, 0.9, 0., 0.},  /* 4   < pT < 5   */
+                                            {0.8, 1.0, 0.3, 0.3, 0.9, 0.9, 0., 0.},  /* 5   < pT < 6   */
+                                            {0.8, 1.0, 0.3, 0.3, 0.9, 0.9, 1., 0.},  /* 6   < pT < 10  */
+                                            {0.8, 1.0, 0.3, 0.3, 0.9, 0.9, 1., 0.}}; /* 10  < pT < 16  */
+
+// row labels
+static const std::vector<std::string> labelsPt = {
+  "pT bin 0",
+  "pT bin 1",
+  "pT bin 2",
+  "pT bin 3",
+  "pT bin 4",
+  "pT bin 5",
+  "pT bin 6",
+  "pT bin 7",
+  "pT bin 8"};
+
+// column labels
+static const std::vector<std::string> labelsCutVar = {"m", "pT mu", "decay length", "decay length xy", "cpa", "cpa xy", "d0xd0", "pseudoprop. decay length"};
+} // namespace hf_cuts_jpsi_to_mu_mu
+
 namespace hf_cuts_b0_to_d_pi
 {
 static constexpr int NBinsPt = 12;
@@ -1003,6 +1050,62 @@ static const std::vector<std::string> labelsPt = {
 static const std::vector<std::string> labelsCutVar = {"m", "CPA", "Chi2PCA", "d0 Ds", "d0 Pi", "pT Ds", "pT Pi", "Bs decLen", "Bs decLenXY", "Imp. Par. Product"};
 } // namespace hf_cuts_bs_to_ds_pi
 
+namespace hf_cuts_bs_to_jpsi_phi
+{
+static constexpr int NBinsPt = 12;
+static constexpr int NCutVars = 13;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// offset by 1 from the bin numbers in cuts array
+constexpr double BinsPt[NBinsPt + 1] = {
+  0,
+  0.5,
+  1.0,
+  2.0,
+  3.0,
+  4.0,
+  5.0,
+  7.0,
+  10.0,
+  13.0,
+  16.0,
+  20.0,
+  24.0};
+
+auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+
+// default values for the cuts
+// DeltaM CPA d0Jpsi d0K pTJpsi pTK BDecayLength BDecayLengthXY BIPProd DeltaMJpsi JpsiIPProd
+constexpr double Cuts[NBinsPt][NCutVars] = {{1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.02, 0.},  /* 0 < pt < 0.5 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.02, 0.},  /* 0.5 < pt < 1 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.02, 0.},  /* 1 < pt < 2 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.02, 0.},  /* 2 < pt < 3 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.02, 0.},  /* 3 < pt < 4 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.02, 0.},  /* 4 < pt < 5 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.02, 0.},  /* 5 < pt < 7 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.02, 0.},  /* 7 < pt < 10 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.02, 0.},  /* 10 < pt < 13 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.02, 0.},  /* 13 < pt < 16 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.02, 0.},  /* 16 < pt < 20 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.02, 0.}}; /* 20 < pt < 24 */
+// row labels
+static const std::vector<std::string> labelsPt = {
+  "pT bin 0",
+  "pT bin 1",
+  "pT bin 2",
+  "pT bin 3",
+  "pT bin 4",
+  "pT bin 5",
+  "pT bin 6",
+  "pT bin 7",
+  "pT bin 8",
+  "pT bin 9",
+  "pT bin 10",
+  "pT bin 11"};
+
+// column labels
+static const std::vector<std::string> labelsCutVar = {"m", "CPA", "CPAXY", "d0 J/Psi", "d0 phi", "pT J/Psi", "pT K", "B decLen", "B decLenXY", "B Imp. Par. Product", "DeltaM J/Psi", "DeltaM phi", "B pseudoprop. decLen"};
+} // namespace hf_cuts_bs_to_jpsi_phi
+
 namespace hf_cuts_bplus_to_d0_pi
 {
 static constexpr int NBinsPt = 12;
@@ -1058,6 +1161,62 @@ static const std::vector<std::string> labelsPt = {
 // column labels
 static const std::vector<std::string> labelsCutVar = {"m", "CPA", "d0 D0", "d0 Pi", "pT D0", "pT Pi", "B decLen", "B decLenXY", "Imp. Par. Product", "DeltaMD0", "Cos ThetaStar"};
 } // namespace hf_cuts_bplus_to_d0_pi
+
+namespace hf_cuts_bplus_to_jpsi_k
+{
+static constexpr int NBinsPt = 12;
+static constexpr int NCutVars = 12;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// offset by 1 from the bin numbers in cuts array
+constexpr double BinsPt[NBinsPt + 1] = {
+  0,
+  0.5,
+  1.0,
+  2.0,
+  3.0,
+  4.0,
+  5.0,
+  7.0,
+  10.0,
+  13.0,
+  16.0,
+  20.0,
+  24.0};
+
+auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+
+// default values for the cuts
+// DeltaM CPA d0Jpsi d0K pTJpsi pTK BDecayLength BDecayLengthXY BIPProd DeltaMJpsi JpsiIPProd
+constexpr double Cuts[NBinsPt][NCutVars] = {{1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.},  /* 0 < pt < 0.5 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.},  /* 0.5 < pt < 1 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.},  /* 1 < pt < 2 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.},  /* 2 < pt < 3 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.},  /* 3 < pt < 4 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.},  /* 4 < pt < 5 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.},  /* 5 < pt < 7 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.},  /* 7 < pt < 10 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.},  /* 10 < pt < 13 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.},  /* 13 < pt < 16 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.},  /* 16 < pt < 20 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.}}; /* 20 < pt < 24 */
+// row labels
+static const std::vector<std::string> labelsPt = {
+  "pT bin 0",
+  "pT bin 1",
+  "pT bin 2",
+  "pT bin 3",
+  "pT bin 4",
+  "pT bin 5",
+  "pT bin 6",
+  "pT bin 7",
+  "pT bin 8",
+  "pT bin 9",
+  "pT bin 10",
+  "pT bin 11"};
+
+// column labels
+static const std::vector<std::string> labelsCutVar = {"m", "CPA", "CPAXY", "d0 J/Psi", "d0 K", "pT J/Psi", "pT K", "B decLen", "B decLenXY", "B Imp. Par. Product", "DeltaM J/Psi", "B pseudoprop. decLen"};
+} // namespace hf_cuts_bplus_to_jpsi_k
 
 namespace hf_cuts_lb_to_lc_pi
 {
