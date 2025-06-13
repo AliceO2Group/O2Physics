@@ -18,7 +18,7 @@
 ///
 
 // O2 includes
-// o2-linter: disable=all
+
 #include <string>
 #include <vector>
 #include "ReconstructionDataFormats/Track.h"
@@ -1908,11 +1908,8 @@ struct tofSpectra {
     }
     if (enablePureDCAHistogram) {
       const auto& nsigmaTPCKa = o2::aod::pidutils::tpcNSigma<3>(track);
-      const bool isKaonTPC = std::abs(nsigmaTPCKa) < trkselOptions.cfgCutNsigma;
-
       const auto& nsigmaTOFKa = o2::aod::pidutils::tofNSigma<3>(track);
-      const bool isKaonTOF = std::abs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
-
+      
       // Filling DCA info with the TPC+TOF PID
       bool isDCAPureSample = (std::sqrt(nsigmaTOFKa * nsigmaTOFKa + nsigmaTPCKa * nsigmaTPCKa) < 2.f);
       if (track.pt() <= 0.4) {
@@ -2060,16 +2057,21 @@ struct tofSpectra {
     }
     const int pdgCode = mcParticle.pdgCode();
     const auto& nsigmaTPCPi = o2::aod::pidutils::tpcNSigma<2>(track);
+    const auto& nsigmaTPCKa = o2::aod::pidutils::tpcNSigma<3>(track);
     const auto& nsigmaTPCPr = o2::aod::pidutils::tpcNSigma<4>(track);
 
     const bool isPionTPC = std::abs(nsigmaTPCPi) < trkselOptions.cfgCutNsigma;
+    const bool isKaonTPC = std::abs(nsigmaTPCKa) < trkselOptions.cfgCutNsigma;
     const bool isProtonTPC = std::abs(nsigmaTPCPr) < trkselOptions.cfgCutNsigma;
 
     const auto& nsigmaTOFPi = o2::aod::pidutils::tofNSigma<2>(track);
+    const auto& nsigmaTOFKa = o2::aod::pidutils::tofNSigma<3>(track);
     const auto& nsigmaTOFPr = o2::aod::pidutils::tofNSigma<4>(track);
 
     const bool isPionTOF = std::abs(nsigmaTOFPi) < trkselOptions.cfgCutNsigma;
+    const bool isKaonTOF = std::abs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
     const bool isProtonTOF = std::abs(nsigmaTOFPr) < trkselOptions.cfgCutNsigma;
+
 
     if (!mcParticle.isPhysicalPrimary()) { // Is not physical primary
       if (mcParticle.getProcess() == 4) {  // Is from decay
