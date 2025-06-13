@@ -13,36 +13,37 @@
 /// \brief task for the correlation calculations with CF-filtered tracks for O2 analysis
 /// \author Jan Fiete Grosse-Oetringhaus <jan.fiete.grosse-oetringhaus@cern.ch>, Jasper Parkkila <jasper.parkkila@cern.ch>
 
-#include <experimental/type_traits>
-#include <vector>
-#include <string>
-
-#include <TH1F.h>
-#include <cmath>
-#include <TDirectory.h>
-#include <THn.h>
-#include <TFile.h>
-#include <TVector2.h>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/StepTHn.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "CommonConstants/MathConstants.h"
-#include "Common/Core/RecoDecay.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
-#include "DataFormatsParameters/GRPObject.h"
+#include "PWGCF/DataModel/CorrelationsDerived.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/MathConstants.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+
+#include <TDirectory.h>
+#include <TFile.h>
+#include <TH1F.h>
+#include <THn.h>
+#include <TVector2.h>
+
+#include <cmath>
+#include <experimental/type_traits>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -1065,17 +1066,21 @@ struct CorrelationTask {
 
       for (const auto& p2track : grouped2ProngTracks) {
         // Check if the mc particles of the prongs are found.
+        if (p2track.cfTrackProng0Id() < 0 || p2track.cfTrackProng1Id() < 0) {
+          // fake track
+          same->getTrackHistEfficiency()->Fill(CorrelationContainer::Fake, p2track.eta(), p2track.pt(), 0, multiplicity, mcCollision.posZ());
+        }
         const auto& p0 = p2track.cfTrackProng0_as<aod::CFTracksWithLabel>();
         const auto& p1 = p2track.cfTrackProng1_as<aod::CFTracksWithLabel>();
         if (p0.has_cfMCParticle() && p1.has_cfMCParticle()) {
           // find the 2-prong MC particle by the daughter MC particle IDs
           auto m = std::find_if(p2indexCache.begin(), p2indexCache.end(), [&](const auto& t) -> bool {
-            const auto& mcParticle = mcParticles.iteratorAt(t);
+            const auto& mcParticle = mcParticles.iteratorAt(t - mcParticles.begin().globalIndex());
             return p0.cfMCParticleId() == mcParticle.cfParticleDaugh0Id() && p1.cfMCParticleId() == mcParticle.cfParticleDaugh1Id();
           });
           if (m == p2indexCache.end())
             continue;
-          const auto& mcParticle = mcParticles.iteratorAt(*m);
+          const auto& mcParticle = mcParticles.iteratorAt(*m - mcParticles.begin().globalIndex());
           if (mcParticle.isPhysicalPrimary()) {
             same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoPrimaries, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), multiplicity, mcCollision.posZ());
           }
