@@ -16,8 +16,8 @@
 #include "PWGCF/Femto3D/Core/femto3dPairTask.h"
 #include "PWGCF/Femto3D/DataModel/singletrackselector.h"
 
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Multiplicity.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
@@ -206,7 +206,7 @@ struct hadronnucleicorrelation {
     AxisSpec pTAxis_small = {100, -5.f, 5.f, "p_{T} GeV/c"};
 
     AxisSpec DeltaEtaAxis = {100, -1.5, 1.5, "#Delta#eta"};
-    AxisSpec DeltaPhiAxis = {60, -1* o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf, "#Delta#phi (rad)"};
+    AxisSpec DeltaPhiAxis = {60, -1 * o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf, "#Delta#phi (rad)"};
 
     registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{5, 0.f, 5.f}}});
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "Selected");
