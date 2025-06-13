@@ -250,19 +250,23 @@ DECLARE_SOA_TABLE(HfMlB0ToDPi, "AOD", "HFMLB0", //!
 
 namespace hf_sel_candidate_bs
 {
-DECLARE_SOA_COLUMN(IsSelBsToDsPi, isSelBsToDsPi, int);                  //!
-DECLARE_SOA_COLUMN(MlProbBsToDsPi, mlProbBsToDsPi, std::vector<float>); //!
+DECLARE_SOA_COLUMN(IsSelBsToDsPi, isSelBsToDsPi, int);                        //!
+DECLARE_SOA_COLUMN(MlProbBsToDsPi, mlProbBsToDsPi, std::vector<float>);       //!
+DECLARE_SOA_COLUMN(MlProbBsToJpsiPhi, mlProbBsToJpsiPhi, std::vector<float>); //!
 } // namespace hf_sel_candidate_bs
 
 DECLARE_SOA_TABLE(HfSelBsToDsPi, "AOD", "HFSELBS", //!
                   hf_sel_candidate_bs::IsSelBsToDsPi);
 DECLARE_SOA_TABLE(HfMlBsToDsPi, "AOD", "HFMLBS", //!
                   hf_sel_candidate_bs::MlProbBsToDsPi);
+DECLARE_SOA_TABLE(HfMlBsToJpsiPhi, "AOD", "HFMLBSTOJPSIPHI", //!
+                  hf_sel_candidate_bs::MlProbBsToDsPi);
 
 namespace hf_sel_candidate_bplus
 {
-DECLARE_SOA_COLUMN(IsSelBplusToD0Pi, isSelBplusToD0Pi, int);     //! selection flag on B+ candidate
-DECLARE_SOA_COLUMN(MlProbBplusToD0Pi, mlProbBplusToD0Pi, float); //! ML score of B+ candidate for signal class
+DECLARE_SOA_COLUMN(IsSelBplusToD0Pi, isSelBplusToD0Pi, int);       //! selection flag on B+ candidate
+DECLARE_SOA_COLUMN(MlProbBplusToD0Pi, mlProbBplusToD0Pi, float);   //! ML score of B+ candidate for signal class
+DECLARE_SOA_COLUMN(MlProbBplusToJpsiK, mlProbBplusToJpsiK, float); //! ML score of B+ candidate for signal class
 } // namespace hf_sel_candidate_bplus
 
 DECLARE_SOA_TABLE(HfSelBplusToD0Pi, "AOD", "HFSELBPLUS", //!
@@ -271,6 +275,8 @@ DECLARE_SOA_TABLE(HfSelBplusToD0Pi, "AOD", "HFSELBPLUS", //!
 DECLARE_SOA_TABLE(HfMlBplusToD0Pi, "AOD", "HFMLBPLUS", //!
                   hf_sel_candidate_bplus::MlProbBplusToD0Pi);
 
+DECLARE_SOA_TABLE(HfMlBplusToJpsiK, "AOD", "HFMLBPLUSTOJPSIK", //!
+                  hf_sel_candidate_bplus::MlProbBplusToJpsiK);
 namespace hf_sel_candidate_lb
 {
 DECLARE_SOA_COLUMN(IsSelLbToLcPi, isSelLbToLcPi, int);     //! selection flag on Lb candidate

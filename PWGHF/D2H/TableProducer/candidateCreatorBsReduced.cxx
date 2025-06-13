@@ -14,7 +14,13 @@
 ///
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, CERN
 
-#include <memory>
+#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsTrkCandHf.h"
+
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
@@ -22,13 +28,7 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
 
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
-#include "PWGHF/Utils/utilsTrkCandHf.h"
+#include <memory>
 
 using namespace o2;
 using namespace o2::aod;
@@ -292,7 +292,7 @@ struct HfCandidateCreatorBsReducedExpressions {
         if ((rowDPiMcRec.prong0Id() != candB.prong0Id()) || (rowDPiMcRec.prong1Id() != candB.prong1Id())) {
           continue;
         }
-        rowBsMcRec(rowDPiMcRec.flagMcMatchRec(), rowDPiMcRec.flagWrongCollision(), rowDPiMcRec.debugMcRec(), rowDPiMcRec.ptMother());
+        rowBsMcRec(rowDPiMcRec.flagMcMatchRec(), -1 /*channel*/, rowDPiMcRec.flagWrongCollision(), rowDPiMcRec.debugMcRec(), rowDPiMcRec.ptMother());
         filledMcInfo = true;
         if constexpr (checkDecayTypeMc) {
           rowBsMcCheck(rowDPiMcRec.pdgCodeBeautyMother(),
@@ -305,7 +305,7 @@ struct HfCandidateCreatorBsReducedExpressions {
         break;
       }
       if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the DsPi creator
-        rowBsMcRec(0, -1, -1, -1.f);
+        rowBsMcRec(0, -1, -1, -1, -1.f);
         if constexpr (checkDecayTypeMc) {
           rowBsMcCheck(-1, -1, -1, -1, -1, -1);
         }
