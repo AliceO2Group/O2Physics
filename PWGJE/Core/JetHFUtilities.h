@@ -283,13 +283,13 @@ constexpr bool isMatchedHFCandidate(T const& candidate)
       return false;
     }
   } else if constexpr (isDplusCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == 1 << o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
+    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
       return true;
     } else {
       return false;
     }
   } else if constexpr (isLcCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == 1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi) {
+    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
       return true;
     } else {
       return false;
@@ -307,13 +307,13 @@ constexpr bool isMatchedHFCandidate(T const& candidate)
       return false;
     }
   } else if constexpr (isDplusMcCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchGen()) == 1 << o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
+    if (std::abs(candidate.flagMcMatchGen()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
       return true;
     } else {
       return false;
     }
   } else if constexpr (isLcMcCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchGen()) == 1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi) {
+    if (std::abs(candidate.flagMcMatchGen()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
       return true;
     } else {
       return false;

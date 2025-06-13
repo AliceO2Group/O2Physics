@@ -16,20 +16,22 @@
 
 #include <fairlogger/Logger.h>
 #include <cstdint>
-#include <iostream>
 #include <vector>
+#include <TDatabasePDG.h>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StepTHn.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "DataFormatsParameters/GRPObject.h"
 
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
 #include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseMath.h"
 
 using namespace o2;
 using namespace o2::analysis::femto_universe;
@@ -37,72 +39,85 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-struct femtoUniverseDebugV0 {
+struct FemtoUniverseDebugV0 {
+
+  Service<o2::framework::O2DatabasePDG> pdg;
+
   SliceCache cache;
 
-  Configurable<int> ConfPDGCodeV0{"ConfPDGCodePartOne", 3122, "V0 - PDG code"};
-  Configurable<int> ConfPDGCodeChildPos{"ConfPDGCodeChildPos", 2212, "Positive Child - PDG code"};
-  Configurable<int> ConfPDGCodeChildNeg{"ConfPDGCodeChildNeg", 211, "Negative Child- PDG code"};
-  Configurable<uint32_t> ConfCutV0{"ConfCutV0", 338, "V0 - Selection bit from cutCulator"};
-  ConfigurableAxis ConfV0TempFitVarBins{"ConfV0TempFitVarBins", {300, 0.95, 1.}, "V0: binning of the TempFitVar in the pT vs. TempFitVar plot"};
-  ConfigurableAxis ConfV0TempFitVarpTBins{"ConfV0TempFitVarpTBins", {20, 0.5, 4.05}, "V0: pT binning of the pT vs. TempFitVar plot"};
+  Configurable<int> confPDGCodeV0{"confPDGCodeV0", 3122, "V0 -- PDG code"};
+  Configurable<int> confPDGCodePositiveChild{"confPDGCodePositiveChild", 2212, "Positive Child -- PDG code"};
+  Configurable<int> confPDGCodeNegativeChild{"confPDGCodeNegativeChild", 211, "Negative Child -- PDG code"};
+  Configurable<uint32_t> confCutV0{"confCutV0", 338, "V0 -- Selection bit from cutCulator"};
+  ConfigurableAxis confV0TempFitVarBins{"confV0TempFitVarBins", {300, 0.95, 1.}, "V0: binning of the TempFitVar in the pT vs. TempFitVar plot"};
+  ConfigurableAxis confV0TempFitVarpTBins{"confV0TempFitVarpTBins", {20, 0.5, 4.05}, "V0: pT binning of the pT vs. TempFitVar plot"};
 
-  Configurable<uint32_t> ConfCutChildPos{"ConfCutChildPos", 150, "Positive Child of V0 - Selection bit from cutCulator"};
-  Configurable<uint32_t> ConfCutChildNeg{"ConfCutChildNeg", 149, "Negative Child of V0 - Selection bit from cutCulator"};
-  Configurable<float> ConfChildPosPidnSigmaMax{"ConfChildPosPidnSigmaMax", 3.f, "Positive Child of V0 - Selection bit from cutCulator"};
-  Configurable<float> ConfChildNegPidnSigmaMax{"ConfChildNegPidnSigmaMax", 3.f, "Negative Child of V0 - Selection bit from cutCulator"};
-  Configurable<int> ConfChildPosIndex{"ConfChildPosIndex", 1, "Positive Child of V0 - Index from cutCulator"};
-  Configurable<int> ConfChildNegIndex{"ConfChildNegIndex", 0, "Negative Child of V0 - Index from cutCulator"};
-  Configurable<std::vector<float>> ConfChildPIDnSigmaMax{"ConfChildPIDnSigmaMax", std::vector<float>{4.f, 3.f}, "V0 child sel: Max. PID nSigma TPC"};
-  Configurable<int> ConfChildnSpecies{"ConfChildnSpecies", 2, "Number of particle spieces (for V0 children) with PID info"};
-  ConfigurableAxis ConfChildTempFitVarBins{"ConfChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
-  ConfigurableAxis ConfChildTempFitVarpTBins{"ConfChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
+  Configurable<uint32_t> confCutPositiveChild{"confCutPositiveChild", 150, "Positive Child of V0 -- Selection bit from cutCulator"};
+  Configurable<uint32_t> confCutNegativeChild{"confCutNegativeChild", 149, "Negative Child of V0 -- Selection bit from cutCulator"};
+  Configurable<float> confPositiveChildPIDnSigmaMax{"confPositiveChildPIDnSigmaMax", 3.f, "Positive Child of V0 -- Selection bit from cutCulator"};
+  Configurable<float> confNegativeChildPIDnSigmaMax{"confNegativeChildPIDnSigmaMax", 3.f, "Negative Child of V0 -- Selection bit from cutCulator"};
+  Configurable<int> confPositiveChildIndex{"confPositiveChildIndex", 1, "Positive Child of V0 -- Index from cutCulator"};
+  Configurable<int> confNegativeChildIndex{"confNegativeChildIndex", 0, "Negative Child of V0 -- Index from cutCulator"};
+  Configurable<std::vector<float>> confChildPIDnSigmaMax{"confChildPIDnSigmaMax", std::vector<float>{4.f, 3.f}, "V0 child selection: max. PID nSigma TPC"};
+  Configurable<int> confChildnSpecies{"confChildnSpecies", 2, "Number of particle spieces (for V0 children) with PID info"};
+  ConfigurableAxis confChildTempFitVarBins{"confChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
+  ConfigurableAxis confChildTempFitVarpTBins{"confChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
 
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
-  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) && ((aod::femtouniverseparticle::cut & ConfCutV0) == ConfCutV0);
+  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) && ((aod::femtouniverseparticle::cut & confCutV0) == confCutV0);
   Preslice<FemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
 
   /// Histogramming
   FemtoUniverseEventHisto eventHisto;
-  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0Child, 3> posChildHistos;
-  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0Child, 4> negChildHistos;
+  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0Child, 3> positiveChildHistos;
+  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0Child, 4> negativeChildHistos;
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0> V0Histos;
 
   /// Histogram output
   HistogramRegistry EventRegistry{"Event", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry V0Registry{"FullV0QA", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry thetaRegistry{"ThetaQA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
   {
     eventHisto.init(&EventRegistry);
-    posChildHistos.init(&V0Registry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, ConfPDGCodeChildPos.value, true);
-    negChildHistos.init(&V0Registry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, ConfPDGCodeChildNeg, true);
-    V0Histos.init(&V0Registry, ConfV0TempFitVarpTBins, ConfV0TempFitVarBins, false, ConfPDGCodeV0.value, true);
+    positiveChildHistos.init(&V0Registry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, confPDGCodePositiveChild.value, true);
+    negativeChildHistos.init(&V0Registry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, confPDGCodeNegativeChild, true);
+    V0Histos.init(&V0Registry, confV0TempFitVarpTBins, confV0TempFitVarBins, false, confPDGCodeV0.value, true);
+
+    thetaRegistry.add("Theta/hTheta", " ; p (GeV/#it{c}); cos(#theta)", kTH2F, {{100, 0, 10}, {110, -1.1, 1.1}});
   }
 
-  /// Porduce QA plots for V0 selection in FemtoUniverse framework
+  /// Produce QA plots for V0 selection in FemtoUniverse framework
   void process(o2::aod::FdCollision const& col, FemtoFullParticles const& parts)
   {
     auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     eventHisto.fillQA(col);
-    for (auto& part : groupPartsOne) {
+    for (const auto& part : groupPartsOne) {
       if (!part.has_children()) {
         continue;
       }
-      const auto& posChild = parts.iteratorAt(part.index() - 2);
-      const auto& negChild = parts.iteratorAt(part.index() - 1);
-      if (posChild.globalIndex() != part.childrenIds()[0] || negChild.globalIndex() != part.childrenIds()[1]) {
+      const auto& positiveChild = parts.iteratorAt(part.index() - 2);
+      const auto& negativeChild = parts.iteratorAt(part.index() - 1);
+      if (positiveChild.globalIndex() != part.childrenIds()[0] || negativeChild.globalIndex() != part.childrenIds()[1]) {
         LOG(warn) << "Indices of V0 children do not match";
         continue;
       }
-      // check cuts on V0 children
-      if ((posChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) && (posChild.cut() & ConfCutChildPos) == ConfCutChildPos) &&
-          (negChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) && (negChild.cut() & ConfCutChildNeg) == ConfCutChildNeg) &&
-          isFullPIDSelected(posChild.pidCut(), posChild.p(), 999.f, ConfChildPosIndex.value, ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfChildPosPidnSigmaMax.value, 1.f) &&
-          isFullPIDSelected(negChild.pidCut(), negChild.p(), 999.f, ConfChildNegIndex.value, ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfChildNegPidnSigmaMax.value, 1.f)) {
+
+      // Check cuts on V0 children
+      if (positiveChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) &&
+          negativeChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) &&
+          isFullPIDSelected(positiveChild.pidCut(), positiveChild.p(), 999.f, confPositiveChildIndex.value, confChildnSpecies.value, confChildPIDnSigmaMax.value, confPositiveChildPIDnSigmaMax.value, 1.f) &&
+          isFullPIDSelected(negativeChild.pidCut(), negativeChild.p(), 999.f, confNegativeChildIndex.value, confChildnSpecies.value, confChildPIDnSigmaMax.value, confNegativeChildPIDnSigmaMax.value, 1.f)) {
+        auto positiveChildMass = pdg->Mass(confPDGCodePositiveChild);
+        auto negativeChildMass = pdg->Mass(confPDGCodeNegativeChild);
+        auto positiveChildBoosted = FemtoUniverseMath::boostPRF<decltype(positiveChild)>(positiveChild, positiveChildMass, negativeChild, negativeChildMass);
+        auto cosineTheta = (positiveChildBoosted.Px() * part.px() + positiveChildBoosted.Py() * part.py() + positiveChildBoosted.Pz() * part.pz()) / (positiveChildBoosted.P() * part.p());
+
         V0Histos.fillQA<false, true>(part);
-        posChildHistos.fillQA<false, true>(posChild);
-        negChildHistos.fillQA<false, true>(negChild);
+        positiveChildHistos.fillQA<false, true>(positiveChild);
+        negativeChildHistos.fillQA<false, true>(negativeChild);
+        thetaRegistry.fill(HIST("Theta/hTheta"), part.p(), cosineTheta);
       }
     }
   }
@@ -112,7 +127,7 @@ WorkflowSpec
   defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<femtoUniverseDebugV0>(cfgc),
+    adaptAnalysisTask<FemtoUniverseDebugV0>(cfgc),
   };
   return workflow;
 }

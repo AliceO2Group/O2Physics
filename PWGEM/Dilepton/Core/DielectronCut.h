@@ -359,13 +359,13 @@ class DielectronCut : public TNamed
   {
     switch (cut) {
       case DielectronCuts::kTrackPtRange:
-        return track.pt() >= mMinTrackPt && track.pt() <= mMaxTrackPt;
+        return track.pt() > mMinTrackPt && track.pt() < mMaxTrackPt;
 
       case DielectronCuts::kTrackEtaRange:
-        return track.eta() >= mMinTrackEta && track.eta() <= mMaxTrackEta;
+        return track.eta() > mMinTrackEta && track.eta() < mMaxTrackEta;
 
       case DielectronCuts::kTrackPhiRange:
-        return track.phi() >= mMinTrackPhi && track.phi() <= mMaxTrackPhi;
+        return track.phi() > mMinTrackPhi && track.phi() < mMaxTrackPhi;
 
       case DielectronCuts::kTPCNCls:
         return track.tpcNClsFound() >= mMinNClustersTPC;
@@ -374,10 +374,10 @@ class DielectronCut : public TNamed
         return track.tpcNClsCrossedRows() >= mMinNCrossedRowsTPC;
 
       case DielectronCuts::kTPCCrossedRowsOverNCls:
-        return track.tpcCrossedRowsOverFindableCls() >= mMinNCrossedRowsOverFindableClustersTPC;
+        return track.tpcCrossedRowsOverFindableCls() > mMinNCrossedRowsOverFindableClustersTPC;
 
       case DielectronCuts::kTPCFracSharedClusters:
-        return track.tpcFractionSharedCls() <= mMaxFracSharedClustersTPC;
+        return track.tpcFractionSharedCls() < mMaxFracSharedClustersTPC;
 
       case DielectronCuts::kRelDiffPin:
         return mMinRelDiffPin < (track.tpcInnerParam() - track.p()) / track.p() && (track.tpcInnerParam() - track.p()) / track.p() < mMaxRelDiffPin;
@@ -386,13 +386,13 @@ class DielectronCut : public TNamed
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
 
       case DielectronCuts::kDCA3Dsigma:
-        return mMinDca3D <= dca3DinSigma(track) && dca3DinSigma(track) <= mMaxDca3D; // in sigma for single leg
+        return mMinDca3D < dca3DinSigma(track) && dca3DinSigma(track) < mMaxDca3D; // in sigma for single leg
 
       case DielectronCuts::kDCAxy:
-        return std::fabs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
+        return std::fabs(track.dcaXY()) < ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
 
       case DielectronCuts::kDCAz:
-        return std::fabs(track.dcaZ()) <= mMaxDcaZ;
+        return std::fabs(track.dcaZ()) < mMaxDcaZ;
 
       case DielectronCuts::kITSNCls:
         return mMinNClustersITS <= track.itsNCls() && track.itsNCls() <= mMaxNClustersITS;

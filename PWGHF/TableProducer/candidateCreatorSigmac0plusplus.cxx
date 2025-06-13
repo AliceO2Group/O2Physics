@@ -36,6 +36,7 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h" // for dca recalculation
@@ -471,7 +472,7 @@ struct HfCandidateSigmac0plusplusMc {
 
       /// skip immediately the candidate Σc0,++ w/o a Λc+ matched to MC
       auto candLc = candSigmac.prongLc_as<LambdacMc>();
-      if (!(std::abs(candLc.flagMcMatchRec()) == BIT(aod::hf_cand_3prong::DecayType::LcToPKPi))) { /// (*)
+      if (std::abs(candLc.flagMcMatchRec()) != hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) { /// (*)
         rowMCMatchScRec(flag, origin, -1.f, 0, -1);
         continue;
       }

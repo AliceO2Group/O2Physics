@@ -429,8 +429,6 @@ struct ZdcQVectors {
         cal.atStep = 5;
         cal.atIteration = 5;
       }
-    } else {
-      LOGF(info, "No ccdb path given for calibration histos. Do not recenter.");
     }
   }
 

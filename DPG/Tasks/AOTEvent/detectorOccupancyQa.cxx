@@ -15,7 +15,7 @@
 /// \author Igor Altsybeev <Igor.Altsybeev@cern.ch>
 
 #include <vector>
-#include "map"
+#include <map>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"

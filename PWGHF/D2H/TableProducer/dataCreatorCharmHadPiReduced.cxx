@@ -37,13 +37,14 @@
 #include "Common/DataModel/Qvectors.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
+#include "PWGHF/D2H/Utils/utilsRedDataFormat.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
-#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
-#include "PWGHF/D2H/Utils/utilsRedDataFormat.h"
 
 using namespace o2;
 using namespace o2::analysis;

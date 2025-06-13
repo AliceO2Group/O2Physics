@@ -621,11 +621,15 @@ class VarManager : public TObject
 
     // MC pair variables
     kMCCosThetaHE,
-    kMCCosThetaCS,
-    kMCCosThetaPP,
     kMCPhiHE,
+    kMCPhiTildeHE,
+    kMCCosThetaCS,
     kMCPhiCS,
+    kMCPhiTildeCS,
+    kMCCosThetaPP,
     kMCPhiPP,
+    kMCPhiTildePP,
+    kMCCosThetaRM,
 
     // Pair variables
     kCandidateId,
@@ -654,11 +658,15 @@ class VarManager : public TObject
     kVertexingProcCode,
     kVertexingChi2PCA,
     kCosThetaHE,
-    kCosThetaCS,
-    kCosThetaPP,
     kPhiHE,
+    kPhiTildeHE,
+    kCosThetaCS,
     kPhiCS,
+    kPhiTildeCS,
+    kCosThetaPP,
     kPhiPP,
+    kPhiTildePP,
+    kCosThetaRM,
     kCosPhiVP,
     kPhiVP,
     kDeltaPhiPair2,
@@ -1098,15 +1106,19 @@ class VarManager : public TObject
     // Check whether all the needed objects for TPC postcalibration are available
     if (fgCalibs.find(kTPCElectronMean) != fgCalibs.end() && fgCalibs.find(kTPCElectronSigma) != fgCalibs.end()) {
       fgRunTPCPostCalibration[0] = true;
+      fgUsedVars[kTPCnSigmaEl_Corr] = true;
     }
     if (fgCalibs.find(kTPCPionMean) != fgCalibs.end() && fgCalibs.find(kTPCPionSigma) != fgCalibs.end()) {
       fgRunTPCPostCalibration[1] = true;
+      fgUsedVars[kTPCnSigmaPi_Corr] = true;
     }
     if (fgCalibs.find(kTPCKaonMean) != fgCalibs.end() && fgCalibs.find(kTPCKaonSigma) != fgCalibs.end()) {
       fgRunTPCPostCalibration[2] = true;
+      fgUsedVars[kTPCnSigmaKa_Corr] = true;
     }
     if (fgCalibs.find(kTPCProtonMean) != fgCalibs.end() && fgCalibs.find(kTPCProtonSigma) != fgCalibs.end()) {
       fgRunTPCPostCalibration[3] = true;
+      fgUsedVars[kTPCnSigmaPr_Corr] = true;
     }
   }
   static TObject* GetCalibrationObject(CalibObjects calib)
@@ -2368,7 +2380,7 @@ void VarManager::FillTrack(T const& track, float* values)
   }
 
   // Quantities based on the barrel PID tables
-  if constexpr ((fillMap & TrackPID) > 0 || (fillMap & ReducedTrackBarrelPID) > 0) {
+  if constexpr ((fillMap & TrackPID) > 0 || (fillMap & TrackTPCPID) > 0 || (fillMap & ReducedTrackBarrelPID) > 0) {
     values[kTPCnSigmaEl] = track.tpcNSigmaEl();
     values[kTPCnSigmaPi] = track.tpcNSigmaPi();
     values[kTPCnSigmaKa] = track.tpcNSigmaKa();
@@ -2471,10 +2483,13 @@ void VarManager::FillTrack(T const& track, float* values)
         values[kTPCnSigmaPr_Corr] = track.tpcNSigmaPr();
       }
     }
-    values[kTOFnSigmaEl] = track.tofNSigmaEl();
-    values[kTOFnSigmaPi] = track.tofNSigmaPi();
-    values[kTOFnSigmaKa] = track.tofNSigmaKa();
-    values[kTOFnSigmaPr] = track.tofNSigmaPr();
+
+    if constexpr ((fillMap & TrackPID) > 0 || (fillMap & ReducedTrackBarrelPID) > 0) {
+      values[kTOFnSigmaEl] = track.tofNSigmaEl();
+      values[kTOFnSigmaPi] = track.tofNSigmaPi();
+      values[kTOFnSigmaKa] = track.tofNSigmaKa();
+      values[kTOFnSigmaPr] = track.tofNSigmaPr();
+    }
 
     if (fgUsedVars[kTPCsignalRandomized] || fgUsedVars[kTPCnSigmaElRandomized] || fgUsedVars[kTPCnSigmaPiRandomized] || fgUsedVars[kTPCnSigmaPrRandomized]) {
       // NOTE: this is needed temporarily for the study of the impact of TPC pid degradation on the quarkonium triggers in high lumi pp
@@ -2814,53 +2829,128 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     }
   }
 
-  // TO DO: get the correct values from CCDB
-  double BeamMomentum = TMath::Sqrt(fgCenterOfMassEnergy * fgCenterOfMassEnergy / 4 - fgMassofCollidingParticle * fgMassofCollidingParticle); // GeV
-  ROOT::Math::PxPyPzEVector Beam1(0., 0., -BeamMomentum, fgCenterOfMassEnergy / 2);
-  ROOT::Math::PxPyPzEVector Beam2(0., 0., BeamMomentum, fgCenterOfMassEnergy / 2);
+  // polarization parameters
+  bool useHE = fgUsedVars[kCosThetaHE] || fgUsedVars[kPhiHE]; // helicity frame
+  bool useCS = fgUsedVars[kCosThetaCS] || fgUsedVars[kPhiCS]; // Collins-Soper frame
+  bool usePP = fgUsedVars[kCosThetaPP];                       // production plane frame
+  bool useRM = fgUsedVars[kCosThetaRM];                       // Random frame
 
-  // Boost to center of mass frame
-  ROOT::Math::Boost boostv12{v12.BoostToCM()};
-  ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
-  ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
-  ROOT::Math::XYZVectorF Beam1_CM{(boostv12(Beam1).Vect()).Unit()};
-  ROOT::Math::XYZVectorF Beam2_CM{(boostv12(Beam2).Vect()).Unit()};
+  if (useHE || useCS || usePP || useRM) {
+    // TO DO: get the correct values from CCDB
+    double BeamMomentum = TMath::Sqrt(fgCenterOfMassEnergy * fgCenterOfMassEnergy / 4 - fgMassofCollidingParticle * fgMassofCollidingParticle); // GeV
+    ROOT::Math::PxPyPzEVector Beam1(0., 0., -BeamMomentum, fgCenterOfMassEnergy / 2);
+    ROOT::Math::PxPyPzEVector Beam2(0., 0., BeamMomentum, fgCenterOfMassEnergy / 2);
 
-  // Helicity frame
-  ROOT::Math::XYZVectorF zaxis_HE{(v12.Vect()).Unit()};
-  ROOT::Math::XYZVectorF yaxis_HE{(Beam1_CM.Cross(Beam2_CM)).Unit()};
-  ROOT::Math::XYZVectorF xaxis_HE{(yaxis_HE.Cross(zaxis_HE)).Unit()};
+    ROOT::Math::Boost boostv12{v12.BoostToCM()};
+    ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
+    ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
+    ROOT::Math::XYZVectorF Beam1_CM{(boostv12(Beam1).Vect()).Unit()};
+    ROOT::Math::XYZVectorF Beam2_CM{(boostv12(Beam2).Vect()).Unit()};
 
-  // Collins-Soper frame
-  ROOT::Math::XYZVectorF zaxis_CS{((Beam1_CM.Unit() - Beam2_CM.Unit()).Unit())};
-  ROOT::Math::XYZVectorF yaxis_CS{(Beam1_CM.Cross(Beam2_CM)).Unit()};
-  ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
+    // using positive sign convention for the first track
+    ROOT::Math::XYZVectorF v_CM = (t1.sign() > 0 ? v1_CM : v2_CM);
 
-  // Production frame
-  ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(v12.Py(), -v12.Px(), 0.f);
+    if (useHE) {
+      ROOT::Math::XYZVectorF zaxis_HE{(v12.Vect()).Unit()};
+      ROOT::Math::XYZVectorF yaxis_HE{(Beam1_CM.Cross(Beam2_CM)).Unit()};
+      ROOT::Math::XYZVectorF xaxis_HE{(yaxis_HE.Cross(zaxis_HE)).Unit()};
+      if (fgUsedVars[kCosThetaHE])
+        values[kCosThetaHE] = zaxis_HE.Dot(v_CM);
+      if (fgUsedVars[kPhiHE]) {
+        values[kPhiHE] = TMath::ATan2(yaxis_HE.Dot(v_CM), xaxis_HE.Dot(v_CM));
+        if (values[kPhiHE] < 0) {
+          values[kPhiHE] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
+        }
+      }
+      if (fgUsedVars[kPhiTildeHE]) {
+        if (fgUsedVars[kCosThetaHE] && fgUsedVars[kPhiHE]) {
+          if (values[kCosThetaHE] > 0) {
+            values[kPhiTildeHE] = values[kPhiHE] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
+            if (values[kPhiTildeHE] < 0) {
+              values[kPhiTildeHE] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          } else {
+            values[kPhiTildeHE] = values[kPhiHE] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
+            if (values[kPhiTildeHE] < 0) {
+              values[kPhiTildeHE] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          }
+        } else {
+          values[kPhiTildeHE] = -999; // not computable
+        }
+      }
+    }
 
-  if (fgUsedVars[kCosThetaHE]) {
-    values[kCosThetaHE] = (t1.sign() > 0 ? zaxis_HE.Dot(v1_CM) : zaxis_HE.Dot(v2_CM));
-  }
+    if (useCS) {
+      ROOT::Math::XYZVectorF zaxis_CS{(Beam1_CM - Beam2_CM).Unit()};
+      ROOT::Math::XYZVectorF yaxis_CS{(Beam1_CM.Cross(Beam2_CM)).Unit()};
+      ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
+      if (fgUsedVars[kCosThetaCS])
+        values[kCosThetaCS] = zaxis_CS.Dot(v_CM);
+      if (fgUsedVars[kPhiCS]) {
+        values[kPhiCS] = TMath::ATan2(yaxis_CS.Dot(v_CM), xaxis_CS.Dot(v_CM));
+        if (values[kPhiCS] < 0) {
+          values[kPhiCS] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
+        }
+      }
+      if (fgUsedVars[kPhiTildeCS]) {
+        if (fgUsedVars[kCosThetaCS] && fgUsedVars[kPhiCS]) {
+          if (values[kCosThetaCS] > 0) {
+            values[kPhiTildeCS] = values[kPhiCS] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
+            if (values[kPhiTildeCS] < 0) {
+              values[kPhiTildeCS] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          } else {
+            values[kPhiTildeCS] = values[kPhiCS] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
+            if (values[kPhiTildeCS] < 0) {
+              values[kPhiTildeCS] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          }
+        } else {
+          values[kPhiTildeCS] = -999; // not computable
+        }
+      }
+    }
 
-  if (fgUsedVars[kPhiHE]) {
-    values[kPhiHE] = (t1.sign() > 0 ? TMath::ATan2(yaxis_HE.Dot(v1_CM), xaxis_HE.Dot(v1_CM)) : TMath::ATan2(yaxis_HE.Dot(v2_CM), xaxis_HE.Dot(v2_CM)));
-  }
+    if (usePP) {
+      ROOT::Math::XYZVector zaxis_PP = ROOT::Math::XYZVector(v12.Py(), -v12.Px(), 0.f);
+      ROOT::Math::XYZVector yaxis_PP{(v12.Vect()).Unit()};
+      ROOT::Math::XYZVector xaxis_PP{(yaxis_PP.Cross(zaxis_PP)).Unit()};
+      if (fgUsedVars[kCosThetaPP]) {
+        values[kCosThetaPP] = zaxis_PP.Dot(v_CM) / std::sqrt(zaxis_PP.Mag2());
+      }
+      if (fgUsedVars[kPhiPP]) {
+        values[kPhiPP] = TMath::ATan2(yaxis_PP.Dot(v_CM), xaxis_PP.Dot(v_CM));
+        if (values[kPhiPP] < 0) {
+          values[kPhiPP] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
+        }
+      }
+      if (fgUsedVars[kPhiTildePP]) {
+        if (fgUsedVars[kCosThetaPP] && fgUsedVars[kPhiPP]) {
+          if (values[kCosThetaPP] > 0) {
+            values[kPhiTildePP] = values[kPhiPP] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
+            if (values[kPhiTildePP] < 0) {
+              values[kPhiTildePP] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          } else {
+            values[kPhiTildePP] = values[kPhiPP] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
+            if (values[kPhiTildePP] < 0) {
+              values[kPhiTildePP] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          }
+        } else {
+          values[kPhiTildePP] = -999; // not computable
+        }
+      }
+    }
 
-  if (fgUsedVars[kCosThetaCS]) {
-    values[kCosThetaCS] = (t1.sign() > 0 ? zaxis_CS.Dot(v1_CM) : zaxis_CS.Dot(v2_CM));
-  }
-
-  if (fgUsedVars[kPhiCS]) {
-    values[kPhiCS] = (t1.sign() > 0 ? TMath::ATan2(yaxis_CS.Dot(v1_CM), xaxis_CS.Dot(v1_CM)) : TMath::ATan2(yaxis_CS.Dot(v2_CM), xaxis_CS.Dot(v2_CM)));
-  }
-
-  if (fgUsedVars[kCosThetaPP]) {
-    values[kCosThetaPP] = (t1.sign() > 0 ? normalVec.Dot(v1_CM) : normalVec.Dot(v2_CM));
-  }
-
-  if (fgUsedVars[kPhiPP]) {
-    values[kPhiPP] = (t1.sign() > 0 ? TMath::ATan2((normalVec.Dot(v1_CM)), zaxis_HE.Dot(v1_CM)) : TMath::ATan2((normalVec.Dot(v2_CM)), zaxis_HE.Dot(v2_CM)));
+    if (useRM) {
+      double randomCostheta = gRandom->Uniform(-1., 1.);
+      double randomPhi = gRandom->Uniform(0., 2. * TMath::Pi());
+      ROOT::Math::XYZVectorF zaxis_RM(randomCostheta, std::sqrt(1 - randomCostheta * randomCostheta) * std::cos(randomPhi), std::sqrt(1 - randomCostheta * randomCostheta) * std::sin(randomPhi));
+      if (fgUsedVars[kCosThetaRM])
+        values[kCosThetaRM] = zaxis_RM.Dot(v_CM);
+    }
   }
 
   if constexpr ((pairType == kDecayToEE) && ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0)) {
@@ -3253,38 +3343,129 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
   values[kMCEta] = v12.Eta();
   values[kMCPhi] = v12.Phi();
   values[kMCY] = -v12.Rapidity();
-  double BeamMomentum = TMath::Sqrt(fgCenterOfMassEnergy * fgCenterOfMassEnergy / 4 - fgMassofCollidingParticle * fgMassofCollidingParticle); // GeV
-  ROOT::Math::PxPyPzEVector Beam1(0., 0., -BeamMomentum, fgCenterOfMassEnergy / 2);
-  ROOT::Math::PxPyPzEVector Beam2(0., 0., BeamMomentum, fgCenterOfMassEnergy / 2);
 
-  // Boost to center of mass frame
-  ROOT::Math::Boost boostv12{v12.BoostToCM()};
-  ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
-  ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
-  ROOT::Math::XYZVectorF Beam1_CM{(boostv12(Beam1).Vect()).Unit()};
-  ROOT::Math::XYZVectorF Beam2_CM{(boostv12(Beam2).Vect()).Unit()};
+  // polarization parameters
+  bool useHE = fgUsedVars[kMCCosThetaHE] || fgUsedVars[kMCPhiHE]; // helicity frame
+  bool useCS = fgUsedVars[kMCCosThetaCS] || fgUsedVars[kMCPhiCS]; // Collins-Soper frame
+  bool usePP = fgUsedVars[kMCCosThetaPP];                         // production plane frame
+  bool useRM = fgUsedVars[kMCCosThetaRM];                         // Random frame
 
-  if (fgUsedVars[kMCCosThetaHE] || fgUsedVars[kMCPhiHE]) {
-    ROOT::Math::XYZVectorF zaxis_HE{(v12.Vect()).Unit()};
-    ROOT::Math::XYZVectorF yaxis_HE{(Beam1_CM.Cross(Beam2_CM)).Unit()};
-    ROOT::Math::XYZVectorF xaxis_HE{(yaxis_HE.Cross(zaxis_HE)).Unit()};
-    values[kMCCosThetaHE] = (t1.pdgCode() < 0 ? zaxis_HE.Dot(v1_CM) : zaxis_HE.Dot(v2_CM));
-    values[kMCPhiHE] = (t1.pdgCode() < 0 ? TMath::ATan2(yaxis_HE.Dot(v1_CM), xaxis_HE.Dot(v1_CM)) : TMath::ATan2(yaxis_HE.Dot(v2_CM), xaxis_HE.Dot(v2_CM)));
-  }
+  if (useHE || useCS || usePP || useRM) {
+    // TO DO: get the correct values from CCDB
+    double BeamMomentum = TMath::Sqrt(fgCenterOfMassEnergy * fgCenterOfMassEnergy / 4 - fgMassofCollidingParticle * fgMassofCollidingParticle); // GeV
+    ROOT::Math::PxPyPzEVector Beam1(0., 0., -BeamMomentum, fgCenterOfMassEnergy / 2);
+    ROOT::Math::PxPyPzEVector Beam2(0., 0., BeamMomentum, fgCenterOfMassEnergy / 2);
 
-  if (fgUsedVars[kMCCosThetaCS] || fgUsedVars[kMCPhiCS]) {
-    ROOT::Math::XYZVectorF zaxis_CS{((Beam1_CM.Unit() - Beam2_CM.Unit()).Unit())};
-    ROOT::Math::XYZVectorF yaxis_CS{(Beam1_CM.Cross(Beam2_CM)).Unit()};
-    ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
-    values[kMCCosThetaCS] = (t1.pdgCode() < 0 ? zaxis_CS.Dot(v1_CM) : zaxis_CS.Dot(v2_CM));
-    values[kMCPhiCS] = (t1.pdgCode() < 0 ? TMath::ATan2(yaxis_CS.Dot(v1_CM), xaxis_CS.Dot(v1_CM)) : TMath::ATan2(yaxis_CS.Dot(v2_CM), xaxis_CS.Dot(v2_CM)));
-  }
+    ROOT::Math::Boost boostv12{v12.BoostToCM()};
+    ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
+    ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
+    ROOT::Math::XYZVectorF Beam1_CM{(boostv12(Beam1).Vect()).Unit()};
+    ROOT::Math::XYZVectorF Beam2_CM{(boostv12(Beam2).Vect()).Unit()};
 
-  if (fgUsedVars[kMCCosThetaPP] || fgUsedVars[kMCPhiPP]) {
-    ROOT::Math::XYZVectorF zaxis_HE{(v12.Vect()).Unit()};
-    ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(v12.Py(), -v12.Px(), 0.f);
-    values[kMCCosThetaPP] = (t1.pdgCode() < 0 ? normalVec.Dot(v1_CM) : normalVec.Dot(v2_CM));
-    values[kMCPhiPP] = (t1.pdgCode() < 0 ? TMath::ATan2((normalVec.Dot(v1_CM)), zaxis_HE.Dot(v1_CM)) : TMath::ATan2((normalVec.Dot(v2_CM)), zaxis_HE.Dot(v2_CM)));
+    // using positive sign convention for the first track
+    ROOT::Math::XYZVectorF v_CM = (t1.pdgCode() > 0 ? v1_CM : v2_CM);
+
+    if (useHE) {
+      ROOT::Math::XYZVectorF zaxis_HE{(v12.Vect()).Unit()};
+      ROOT::Math::XYZVectorF yaxis_HE{(Beam1_CM.Cross(Beam2_CM)).Unit()};
+      ROOT::Math::XYZVectorF xaxis_HE{(yaxis_HE.Cross(zaxis_HE)).Unit()};
+      if (fgUsedVars[kMCCosThetaHE])
+        values[kMCCosThetaHE] = zaxis_HE.Dot(v_CM);
+      if (fgUsedVars[kMCPhiHE]) {
+        values[kMCPhiHE] = TMath::ATan2(yaxis_HE.Dot(v_CM), xaxis_HE.Dot(v_CM));
+        if (values[kMCPhiHE] < 0) {
+          values[kMCPhiHE] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
+        }
+      }
+      if (fgUsedVars[kMCPhiTildeHE]) {
+        if (fgUsedVars[kMCCosThetaHE] && fgUsedVars[kMCPhiHE]) {
+          if (values[kMCCosThetaHE] > 0) {
+            values[kMCPhiTildeHE] = values[kMCPhiHE] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
+            if (values[kMCPhiTildeHE] < 0) {
+              values[kMCPhiTildeHE] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          } else {
+            values[kMCPhiTildeHE] = values[kMCPhiHE] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
+            if (values[kMCPhiTildeHE] < 0) {
+              values[kMCPhiTildeHE] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          }
+        } else {
+          values[kMCPhiTildeHE] = -999; // not computable
+        }
+      }
+    }
+
+    if (useCS) {
+      ROOT::Math::XYZVectorF zaxis_CS{(Beam1_CM - Beam2_CM).Unit()};
+      ROOT::Math::XYZVectorF yaxis_CS{(Beam1_CM.Cross(Beam2_CM)).Unit()};
+      ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
+      if (fgUsedVars[kMCCosThetaCS])
+        values[kMCCosThetaCS] = zaxis_CS.Dot(v_CM);
+      if (fgUsedVars[kMCPhiCS]) {
+        values[kMCPhiCS] = TMath::ATan2(yaxis_CS.Dot(v_CM), xaxis_CS.Dot(v_CM));
+        if (values[kMCPhiCS] < 0) {
+          values[kMCPhiCS] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
+        }
+      }
+      if (fgUsedVars[kMCPhiTildeCS]) {
+        if (fgUsedVars[kMCCosThetaCS] && fgUsedVars[kMCPhiCS]) {
+          if (values[kMCCosThetaCS] > 0) {
+            values[kMCPhiTildeCS] = values[kMCPhiCS] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
+            if (values[kMCPhiTildeCS] < 0) {
+              values[kMCPhiTildeCS] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          } else {
+            values[kMCPhiTildeCS] = values[kMCPhiCS] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
+            if (values[kMCPhiTildeCS] < 0) {
+              values[kMCPhiTildeCS] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          }
+        } else {
+          values[kMCPhiTildeCS] = -999; // not computable
+        }
+      }
+    }
+
+    if (usePP) {
+      ROOT::Math::XYZVector zaxis_PP = ROOT::Math::XYZVector(v12.Py(), -v12.Px(), 0.f);
+      ROOT::Math::XYZVector yaxis_PP{v12.Vect().Unit()};
+      ROOT::Math::XYZVector xaxis_PP{(yaxis_PP.Cross(zaxis_PP)).Unit()};
+      if (fgUsedVars[kMCCosThetaPP]) {
+        values[kMCCosThetaPP] = zaxis_PP.Dot(v_CM);
+      }
+      if (fgUsedVars[kMCPhiPP]) {
+        values[kMCPhiPP] = TMath::ATan2(yaxis_PP.Dot(v_CM), xaxis_PP.Dot(v_CM));
+        if (values[kMCPhiPP] < 0) {
+          values[kMCPhiPP] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
+        }
+      }
+      if (fgUsedVars[kMCPhiTildePP]) {
+        if (fgUsedVars[kMCCosThetaPP] && fgUsedVars[kMCPhiPP]) {
+          if (values[kMCCosThetaPP] > 0) {
+            values[kMCPhiTildePP] = values[kMCPhiPP] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
+            if (values[kMCPhiTildePP] < 0) {
+              values[kMCPhiTildePP] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          } else {
+            values[kMCPhiTildePP] = values[kMCPhiPP] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
+            if (values[kMCPhiTildePP] < 0) {
+              values[kMCPhiTildePP] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          }
+        } else {
+          values[kMCPhiTildePP] = -999; // not computable
+        }
+      }
+    }
+
+    if (useRM) {
+      double randomCostheta = gRandom->Uniform(-1., 1.);
+      double randomPhi = gRandom->Uniform(0., 2. * TMath::Pi());
+      ROOT::Math::XYZVectorF zaxis_RM(randomCostheta, std::sqrt(1 - randomCostheta * randomCostheta) * std::cos(randomPhi), std::sqrt(1 - randomCostheta * randomCostheta) * std::sin(randomPhi));
+      if (fgUsedVars[kMCCosThetaRM])
+        values[kMCCosThetaRM] = zaxis_RM.Dot(v_CM);
+    }
   }
 }
 
@@ -3798,6 +3979,7 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
     values[VarManager::kVertexingProcCode] = procCode;
     if (procCode == 0) {
       // TODO: set the other variables to appropriate values and return
+      values[kVertexingChi2PCA] = -999.;
       values[kVertexingLxy] = -999.;
       values[kVertexingLxyz] = -999.;
       values[kVertexingLz] = -999.;
@@ -3831,6 +4013,11 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
       std::array<float, 6> vtxCov{collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()};
       o2::dataformats::VertexBase primaryVertex = {std::move(vtxXYZ), std::move(vtxCov)};
       auto covMatrixPV = primaryVertex.getCov();
+
+      if (fgUsedVars[kVertexingChi2PCA]) {
+        auto chi2PCA = fgFitterThreeProngBarrel.getChi2AtPCACandidate();
+        values[VarManager::kVertexingChi2PCA] = chi2PCA;
+      }
 
       double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
       double theta = std::atan2(secondaryVertex[2] - collision.posZ(),
@@ -4098,9 +4285,10 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
         covMatrixPCA = fgFitterThreeProngFwd.calcPCACovMatrixFlat();
       }
 
-      auto chi2PCA = fgFitterThreeProngBarrel.getChi2AtPCACandidate();
-      if (fgUsedVars[kVertexingChi2PCA])
+      if (fgUsedVars[kVertexingChi2PCA]) {
+        auto chi2PCA = fgFitterThreeProngBarrel.getChi2AtPCACandidate();
         values[VarManager::kVertexingChi2PCA] = chi2PCA;
+      }
 
       double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
       double theta = std::atan2(secondaryVertex[2] - collision.posZ(),

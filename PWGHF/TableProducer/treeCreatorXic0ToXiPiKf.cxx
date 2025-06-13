@@ -14,12 +14,15 @@
 ///        In this file are defined and filled the output tables
 ///
 /// \author Ran Tu <ran.tu@cern.ch>, Fudan University
+/// \author Tao Fang <tao.fang@cern.ch>, Central China Normal University
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
 #include "Common/Core/RecoDecay.h"
 
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -30,6 +33,7 @@ namespace o2::aod
 {
 namespace full
 {
+DECLARE_SOA_COLUMN(Centrality, centrality, float);
 DECLARE_SOA_COLUMN(InvMassLambda, invMassLambda, float);
 DECLARE_SOA_COLUMN(InvMassCascade, invMassCascade, float);
 DECLARE_SOA_COLUMN(InvMassCharmBaryon, invMassCharmBaryon, float);
@@ -97,6 +101,7 @@ DECLARE_SOA_COLUMN(MassCascChi2OverNdf, massCascChi2OverNdf, float);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfKfXicFulls, "AOD", "HFKFXICFULL",
+                  full::Centrality,
                   full::TpcNSigmaPiFromCharmBaryon, full::TofNSigmaPiFromCharmBaryon, full::TpcNSigmaPiFromCasc, full::TofNSigmaPiFromCasc,
                   full::TpcNSigmaPiFromLambda, full::TofNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda, full::TofNSigmaPrFromLambda,
                   full::KfDcaXYPiFromXic, full::DcaCascDau, full::DcaCharmBaryonDau, full::KfDcaXYCascToPv,
@@ -127,18 +132,29 @@ struct HfTreeCreatorXic0ToXiPiKf {
   Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
 
   using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>;
+  using MyEventTable = soa::Join<aod::Collisions, aod::EvSels>;
+  using MyEventTableWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
+  using MyEventTableWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
+  using MyEventTableWithNTracksPV = soa::Join<aod::Collisions, aod::EvSels, aod::CentNTPVs>;
 
   void init(InitContext const&)
   {
   }
 
-  template <typename T>
+  template <bool useCentrality, typename MyEventTableType, typename T>
   void fillKfCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc, bool collisionMatched)
   {
 
     if (candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
 
+      float centrality = -999.f;
+      if constexpr (useCentrality) {
+        auto const& collision = candidate.template collision_as<MyEventTableType>();
+        centrality = o2::hf_centrality::getCentralityColl(collision);
+      }
+
       rowKfCandidate(
+        centrality,
         candidate.tpcNSigmaPiFromCharmBaryon(),
         candidate.tofNSigmaPiFromCharmBaryon(),
         candidate.tpcNSigmaPiFromCasc(),
@@ -202,26 +218,85 @@ struct HfTreeCreatorXic0ToXiPiKf {
     }
   }
 
-  void processKfData(MyTrackTable const&,
+  void processKfData(MyTrackTable const&, MyEventTable const&,
                      soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf> const& candidates)
   {
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillKfCandidate(candidate, -7, -7, RecoDecay::OriginType::None, false);
+      fillKfCandidate<false, MyEventTable>(candidate, -7, -7, RecoDecay::OriginType::None, false);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processKfData, "Process KF data", false);
+
+  void processKfDataWithFT0C(MyTrackTable const&, MyEventTableWithFT0C const&,
+                             soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf> const& candidates)
+  {
+    rowKfCandidate.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillKfCandidate<true, MyEventTableWithFT0C>(candidate, -7, -7, RecoDecay::OriginType::None, false);
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processKfDataWithFT0C, "Process KF data with FT0C", false);
+
+  void processKfDataWithFT0M(MyTrackTable const&, MyEventTableWithFT0M const&,
+                             soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf> const& candidates)
+  {
+    rowKfCandidate.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillKfCandidate<true, MyEventTableWithFT0M>(candidate, -7, -7, RecoDecay::OriginType::None, false);
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processKfDataWithFT0M, "Process KF data with FT0M", false);
+
+  void processDataLiteWithNTracksPV(MyTrackTable const&,
+                                    soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf> const& candidates)
+  {
+    rowKfCandidate.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillKfCandidate<true, MyEventTableWithNTracksPV>(candidate, -7, -7, RecoDecay::OriginType::None, false);
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processDataLiteWithNTracksPV, "Process KF data with Ntracks", false);
 
   void processKfMcXic0(MyTrackTable const&,
                        soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates)
   {
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillKfCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+      fillKfCandidate<false, MyEventTable>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
     }
   }
   PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processKfMcXic0, "Process MC with information for xic0", false);
 
+  void processKfMCWithFT0C(MyTrackTable const&,
+                           soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates)
+  {
+    rowKfCandidate.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillKfCandidate<true, MyEventTableWithFT0C>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processKfMCWithFT0C, "Process MC with information for xic0 at FT0C", false);
+
+  void processKfMCWithFT0M(MyTrackTable const&,
+                           soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates)
+  {
+    rowKfCandidate.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillKfCandidate<true, MyEventTableWithFT0M>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processKfMCWithFT0M, "Process MC with information for xic0 at FT0M", false);
+
+  void processMCLiteWithNTracksPV(MyTrackTable const&,
+                                  soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates)
+  {
+    rowKfCandidate.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillKfCandidate<true, MyEventTableWithNTracksPV>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processMCLiteWithNTracksPV, "Process MC with information for xic0 at Ntrack", false);
 }; // end of struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
