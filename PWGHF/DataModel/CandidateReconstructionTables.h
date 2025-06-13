@@ -18,13 +18,9 @@
 #ifndef PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_
 #define PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_
 
-#include <CommonConstants/PhysicsConstants.h>
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/ASoA.h>
-
-#include <array>
-#include <cstdint>
-#include <vector>
+#include "PWGHF/Core/DecayChannels.h" // FIXME: temporary until propagated where needed
+#include "PWGHF/Utils/utilsPid.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "ALICE3/DataModel/ECAL.h"
 #include "Common/Core/RecoDecay.h"
@@ -32,10 +28,13 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 
-#include "PWGHF/Utils/utilsPid.h"
-#include "PWGHF/Core/DecayChannels.h" // FIXME: temporary until propagated where needed
+#include <array>
+#include <cstdint>
+#include <vector>
 
 namespace o2::aod
 {

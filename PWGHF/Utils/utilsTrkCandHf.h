@@ -16,12 +16,13 @@
 #ifndef PWGHF_UTILS_UTILSTRKCANDHF_H_
 #define PWGHF_UTILS_UTILSTRKCANDHF_H_
 
-#include <Rtypes.h>
+#include "PWGHF/Utils/utilsAnalysis.h"
 
 #include <Framework/HistogramSpec.h>
-#include <cstdint>
 
-#include "PWGHF/Utils/utilsAnalysis.h"
+#include <Rtypes.h>
+
+#include <cstdint>
 
 namespace o2::hf_trkcandsel
 {

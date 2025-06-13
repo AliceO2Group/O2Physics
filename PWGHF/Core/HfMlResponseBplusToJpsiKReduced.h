@@ -16,10 +16,10 @@
 #ifndef PWGHF_CORE_HFMLRESPONSEBPLUSTOJPSIKREDUCED_H_
 #define PWGHF_CORE_HFMLRESPONSEBPLUSTOJPSIKREDUCED_H_
 
-#include <vector>
-
 #include "PWGHF/Core/HfMlResponse.h"
 #include "PWGHF/D2H/Utils/utilsRedDataFormat.h"
+
+#include <vector>
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)
