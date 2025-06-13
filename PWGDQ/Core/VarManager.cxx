@@ -39,6 +39,7 @@ uint64_t VarManager::fgSOR = 0;
 uint64_t VarManager::fgEOR = 0;
 o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
 o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
+o2::vertexing::DCAFitterN<4> VarManager::fgFitterFourProngBarrel;
 o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
 o2::vertexing::FwdDCAFitterN<3> VarManager::fgFitterThreeProngFwd;
 o2::globaltracking::MatchGlobalFwd VarManager::mMatching;
