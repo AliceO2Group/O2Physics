@@ -19,12 +19,6 @@
 
 #include "Tools/ML/model.h"
 
-#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
-#else
-#include <onnxruntime_cxx_api.h>
-#endif
-
 #include <CCDB/CcdbApi.h>
 #include <Framework/Array2D.h>
 #include <Framework/Logger.h>
