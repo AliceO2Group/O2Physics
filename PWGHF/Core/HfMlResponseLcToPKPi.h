@@ -16,13 +16,12 @@
 #ifndef PWGHF_CORE_HFMLRESPONSELCTOPKPI_H_
 #define PWGHF_CORE_HFMLRESPONSELCTOPKPI_H_
 
+#include "PWGHF/Core/HfMlResponse.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+
 #include <map>
 #include <string>
 #include <vector>
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-
-#include "PWGHF/Core/HfMlResponse.h"
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)

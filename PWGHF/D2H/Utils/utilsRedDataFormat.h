@@ -16,16 +16,16 @@
 #ifndef PWGHF_D2H_UTILS_UTILSREDDATAFORMAT_H_
 #define PWGHF_D2H_UTILS_UTILSREDDATAFORMAT_H_
 
-#include <cmath>
+#include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
+
+#include "Framework/AnalysisHelpers.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/HistogramRegistry.h>
 
 #include <Rtypes.h>
 
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
+#include <cmath>
 
 namespace o2::hf_evsel
 {

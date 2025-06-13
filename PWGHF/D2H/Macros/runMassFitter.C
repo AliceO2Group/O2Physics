@@ -22,6 +22,10 @@
 #include "HFInvMassFitter.h"
 
 // if .h file not found, please include your local rapidjson/document.h and rapidjson/filereadstream.h here
+#include <TDatabasePDG.h>
+#include <TFile.h>
+#include <TH2F.h>
+
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
 
@@ -29,10 +33,6 @@
 #include <stdexcept>
 #include <string> // std::string
 #include <vector> // std::vector
-
-#include <TDatabasePDG.h>
-#include <TFile.h>
-#include <TH2F.h>
 
 #endif
 

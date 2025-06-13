@@ -16,17 +16,16 @@
 #ifndef PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
 #define PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
 
-#include <TPDGCode.h>
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
-#include <fairlogger/Logger.h>
+#include <CommonConstants/MathConstants.h>
+#include <Framework/Logger.h>
+
+#include <TPDGCode.h>
 
 #include <cmath>
 #include <cstddef>
-
-#include "CommonConstants/MathConstants.h"
-
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/PIDResponseTOF.h"
 
 namespace o2::analysis::hf_correlations
 {

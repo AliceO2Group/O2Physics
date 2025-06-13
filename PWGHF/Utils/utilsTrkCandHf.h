@@ -16,9 +16,9 @@
 #ifndef PWGHF_UTILS_UTILSTRKCANDHF_H_
 #define PWGHF_UTILS_UTILSTRKCANDHF_H_
 
-#include <Rtypes.h>
-
 #include <Framework/HistogramSpec.h>
+
+#include <Rtypes.h>
 
 #include <cstdint>
 

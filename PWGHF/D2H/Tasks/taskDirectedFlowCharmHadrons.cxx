@@ -15,24 +15,36 @@
 /// \author Prottay Das, prottay.das@cern.ch
 /// \author Biao Zhang, biao.zhanng@cern.ch
 
-#include <string>
-#include <vector>
-#include <TMath.h>
-#include <cstdlib>
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/EventPlaneHelper.h"
+#include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGLF/DataModel/SPCalibrationTables.h"
 
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
+#include "Common/Core/EventPlaneHelper.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <numeric>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;

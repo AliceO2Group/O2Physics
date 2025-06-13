@@ -14,15 +14,21 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
-#include <string>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 #include "Common/Core/TableHelper.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;

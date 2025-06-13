@@ -17,19 +17,21 @@
 #ifndef PWGHF_UTILS_UTILSMCGEN_H_
 #define PWGHF_UTILS_UTILSMCGEN_H_
 
-#include <Rtypes.h>
-#include <TPDGCode.h>
-
-#include <CommonConstants/PhysicsConstants.h>
-
-#include <array>
-#include <cstdint>
-#include <vector>
+#include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 #include "Common/Core/RecoDecay.h"
 
-#include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include <CommonConstants/PhysicsConstants.h>
+
+#include <TPDGCode.h>
+
+#include <Rtypes.h>
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <vector>
 
 namespace hf_mc_gen
 {

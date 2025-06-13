@@ -14,18 +14,34 @@
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH3.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+
+#include <array>
+#include <cstdint>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -186,7 +202,7 @@ struct HfTaskB0 {
       registry.fill(HIST("hDecLenXYErr"), candidate.errorDecayLengthXY(), ptCandB0);
       registry.fill(HIST("hInvMassD"), hfHelper.invMassDplusToPiKPi(candD), ptCandB0);
     } // candidate loop
-  }   // process
+  } // process
 
   /// B0 MC analysis and fill histograms
   void processMc(soa::Filtered<soa::Join<aod::HfCandB0, aod::HfSelB0ToDPi, aod::HfCandB0McRec>> const& candidates,
@@ -308,7 +324,7 @@ struct HfTaskB0 {
         registry.fill(HIST("hEtaGenWithProngsInAcceptance"), particle.eta(), ptParticle);
       }
     } // gen
-  }   // process
+  } // process
   PROCESS_SWITCH(HfTaskB0, processMc, "Process MC", false);
 }; // struct
 

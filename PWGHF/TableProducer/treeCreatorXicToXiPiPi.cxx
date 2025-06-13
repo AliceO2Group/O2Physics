@@ -16,14 +16,29 @@
 /// \author Carolina Reetz <c.reetz@cern.ch>, Heidelberg University
 /// \author Jaeyoon Cho <jaeyoon.cho@cern.ch>, Inha University
 
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TPDGCode.h>
+
+#include <Rtypes.h>
+
+#include <array>
+#include <cstdint>
+#include <stdexcept>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

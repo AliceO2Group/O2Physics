@@ -15,18 +15,34 @@
 ///
 /// \author Phil Stahlhut <phil.lennart.stahlhut@cern.ch>
 
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH3.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+
+#include <array>
+#include <cstdint>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -183,7 +199,7 @@ struct HfTaskBs {
       registry.fill(HIST("hIPProd"), candidate.impactParameterProduct(), ptCandBs);
       registry.fill(HIST("hInvMassDs"), hfHelper.invMassDsToKKPi(candDs), ptCandBs);
     } // candidate loop
-  }   // process
+  } // process
 
   /// Bs MC analysis and fill histograms
   void processMc(soa::Filtered<soa::Join<aod::HfCandBs, aod::HfSelBsToDsPi, aod::HfCandBsMcRec>> const& candidates,
@@ -304,7 +320,7 @@ struct HfTaskBs {
         registry.fill(HIST("hYGenWithProngsInAcceptance"), yParticle, ptParticle);
       }
     } // gen
-  }   // process
+  } // process
   PROCESS_SWITCH(HfTaskBs, processMc, "Process MC", false);
 }; // struct
 

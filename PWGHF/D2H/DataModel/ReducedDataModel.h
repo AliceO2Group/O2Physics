@@ -23,12 +23,8 @@
 #ifndef PWGHF_D2H_DATAMODEL_REDUCEDDATAMODEL_H_
 #define PWGHF_D2H_DATAMODEL_REDUCEDDATAMODEL_H_
 
-#include <array>
-#include <cstdint>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/Utils/utilsPid.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
@@ -37,8 +33,12 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"
 
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/Utils/utilsPid.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+
+#include <array>
+#include <cstdint>
 
 namespace o2
 {
@@ -1053,7 +1053,7 @@ DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                       // deb
 DECLARE_SOA_COLUMN(Origin, origin, int8_t);                               // Flag for origin of MC particle 1=promt, 2=FD
 DECLARE_SOA_COLUMN(SignD0, signD0, int8_t);                               // Sign of the D0 in the channels with D* -> D0 pi, needed in case of non-matched D*
 DECLARE_SOA_COLUMN(InvMassGen, invMassGen, float);                        //! Invariant mass at generation level in GeV/c2
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //!
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                                        //!
                            [](float pxProng0, float pxProng1, float pyProng0, float pyProng1) -> float { return RecoDecay::pt((1.f * pxProng0 + 1.f * pxProng1), (1.f * pyProng0 + 1.f * pyProng1)); });
 DECLARE_SOA_DYNAMIC_COLUMN(PtProng0, ptProng0, //!
                            [](float pxProng0, float pyProng0) -> float { return RecoDecay::pt(pxProng0, pyProng0); });

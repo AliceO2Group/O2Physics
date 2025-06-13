@@ -23,13 +23,13 @@
 #include <RooPlot.h>
 #include <RooRealVar.h>
 #include <RooWorkspace.h>
-#include <Rtypes.h>
-#include <RtypesCore.h>
-
 #include <TF1.h>
 #include <TH1.h>
 #include <TNamed.h>
 #include <TVirtualPad.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 #include <cstdio>
 
