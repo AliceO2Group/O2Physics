@@ -11,25 +11,23 @@
 
 /// \author Jasper Parkkila <jasper.parkkila@cern.ch>
 
-#include <experimental/type_traits>
-#include <vector>
-#include <string>
-#include <memory>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-
-#include "MathUtils/detail/TypeTruncation.h"
-
 #include "PWGCF/DataModel/CorrelationsDerived.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "MathUtils/detail/TypeTruncation.h"
+
 #include <TFormula.h>
+
+#include <experimental/type_traits>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -143,11 +141,11 @@ struct Filter2Prong {
   }
   PROCESS_SWITCH(Filter2Prong, processData, "Process data D0 candidates", true);
 
-  void processMC(aod::McCollisions::iterator const&, aod::CFMcParticleRefs const& cfmcparticles, aod::McParticles const& mcparticles)
+  void processMC(aod::McCollisions::iterator const&, aod::CFMcParticleRefs const& cfmcparticles, [[maybe_unused]] aod::McParticles const& mcparticles)
   {
     // The main filter outputs the primary MC particles. Here we just resolve the daughter indices that are needed for the efficiency matching.
     for (const auto& r : cfmcparticles) {
-      const auto& mcParticle = mcparticles.iteratorAt(r.mcParticleId());
+      const auto& mcParticle = r.mcParticle();
       if (mcParticle.daughtersIds().size() != 2) {
         output2ProngMcParts(-1, -1);
         continue;
