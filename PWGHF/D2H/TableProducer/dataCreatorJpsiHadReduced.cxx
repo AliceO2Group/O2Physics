@@ -29,38 +29,40 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
-#include <Framework/AnalysisHelpers.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/Propagator.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
-#include <DetectorsBase/Propagator.h>
-#include <DataFormatsParameters/GRPMagField.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
 #include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/InitContext.h>
 #include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/WorkflowSpec.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
-#include <fairlogger/Logger.h>
-#include <TH2.h>
-#include <TH1.h>
-#include <TPDGCode.h>
 #include <ReconstructionDataFormats/Track.h>
 
-#include <cstdint>
+#include <TH1.h>
+#include <TH2.h>
+#include <TPDGCode.h>
+
+#include <fairlogger/Logger.h>
+
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <numeric>

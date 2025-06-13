@@ -24,25 +24,27 @@
 
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
-#include <Framework/AnalysisHelpers.h>
-#include <Framework/ASoA.h>
 #include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/InitContext.h>
 #include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/WorkflowSpec.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
-#include <TH1.h>
-#include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 #include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/TrackParametrizationWithError.h>
+
+#include <TH1.h>
+
 #include <fairlogger/Logger.h>
 
-#include <cstdint>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <memory>
 #include <stdexcept>
 
