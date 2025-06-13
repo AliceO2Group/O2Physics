@@ -18,11 +18,13 @@
 
 #include "GFWCumulant.h"
 #include "GFWPowerArray.h"
-#include <vector>
-#include <string>
-#include <utility>
+
 #include <algorithm>
 #include <complex>
+#include <cstdio>
+#include <string>
+#include <utility>
+#include <vector>
 
 class GFW
 {

@@ -11,6 +11,8 @@
 
 #include "GFWCumulant.h"
 
+#include <vector>
+
 using std::complex;
 using std::vector;
 

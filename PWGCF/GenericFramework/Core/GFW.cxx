@@ -11,6 +11,11 @@
 
 #include "GFW.h"
 
+#include <cstdio>
+#include <string>
+#include <utility>
+#include <vector>
+
 using std::complex;
 using std::pair;
 using std::string;
