@@ -17,13 +17,13 @@
 #ifndef TOOLS_ML_MLRESPONSE_H_
 #define TOOLS_ML_MLRESPONSE_H_
 
+#include "Tools/ML/model.h"
+
 #if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
 #else
 #include <onnxruntime_cxx_api.h>
 #endif
-
-#include "Tools/ML/model.h"
 
 #include <CCDB/CcdbApi.h>
 #include <Framework/Array2D.h>
