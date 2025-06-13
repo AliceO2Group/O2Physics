@@ -15,18 +15,6 @@
 /// \author Omar Vazquez (omar.vazquez.rueda@cern.ch)
 /// \since January 29, 2025
 
-#include <CCDB/BasicCCDBManager.h>
-
-#include <chrono>
-#include <cmath>
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
-#include <string>
-#include <string_view>
-#include <vector>
-#include <TRandom.h>
-
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/TrackSelection.h"
@@ -34,6 +22,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
 #include "CommonConstants/MathConstants.h"
 #include "CommonConstants/ZDCConstants.h"
 #include "Framework/ASoAHelpers.h" // required for Filter op.
@@ -44,7 +33,20 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+
 #include "TPDGCode.h"
+#include <TRandom.h>
+
+#include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <numeric>
+#include <string>
+#include <string_view>
+#include <vector>
 
 using namespace std;
 using namespace o2;
@@ -81,6 +83,7 @@ struct UccZdc {
   Configurable<bool> isZEMcut{"isZEMcut", true, "Use ZEM cut"};
   Configurable<bool> useMidRapNchSel{"useMidRapNchSel", true, "Use mid-rapidit Nch selection"};
   Configurable<bool> applyEff{"applyEff", true, "Apply track-by-track efficiency correction"};
+  Configurable<bool> correctNch{"correctNch", true, "Correct also Nch"};
 
   // Event selection
   Configurable<float> posZcut{"posZcut", +10.0, "z-vertex position cut"};
@@ -126,7 +129,8 @@ struct UccZdc {
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.}, "T0C binning"};
 
   // CCDB paths
-  Configurable<std::string> paTH{"paTH", "Users/o/omvazque/TrackingEfficiency", "base path to the ccdb object"};
+  Configurable<std::string> paTHEff{"paTHEff", "Users/o/omvazque/MCcorrection/perTimeStamp/TrackingEff", "base path to the ccdb object"};
+  Configurable<std::string> paTHFD{"paTHFD", "Users/o/omvazque/MCcorrection/perTimeStamp/FeedDown", "base path to the ccdb object"};
   Configurable<std::string> paTHmeanNch{"paTHmeanNch", "Users/o/omvazque/FitMeanNch_9May2025", "base path to the ccdb object"};
   Configurable<std::string> paTHsigmaNch{"paTHsigmaNch", "Users/o/omvazque/FitSigmaNch_9May2025", "base path to the ccdb object"};
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
@@ -238,6 +242,9 @@ struct UccZdc {
       registry.add("NchVsThreeParCorr", "MC closure;#it{N}_{ch} (|#eta| < 0.8, Corrected);#LT[#it{p}_{T}^{(3)}]#GT", kTProfile, {{nBinsNch, minNch, maxNch}});
       registry.add("NchVsFourParCorr", "MC closure;#it{N}_{ch} (|#eta| < 0.8, Corrected);#LT[#it{p}_{T}^{(4)}]#GT", kTProfile, {{nBinsNch, minNch, maxNch}});
       // Corrections
+      registry.add("NchRec", "Corrections;#it{N}_{ch} (|#eta| < 0.8);Entries;", kTH1F, {{nBinsNch, minNch, maxNch}});
+      registry.add("NchTrue", "Corrections;#it{N}_{ch} (|#eta| < 0.8);Entries;", kTH1F, {{nBinsNch, minNch, maxNch}});
+
       registry.add("zPosMC", "Filled at MC closure + Corrections;;Entries;", kTH1F, {axisZpos});
       registry.add("hEventCounterMC", "Event counter", kTH1F, {axisEvent});
       registry.add("nRecColvsCent", "", kTH2F, {{6, -0.5, 5.5}, {{axisCent}}});
@@ -292,8 +299,11 @@ struct UccZdc {
 
     LOG(info) << "\tccdbNoLaterThan=" << ccdbNoLaterThan.value;
     LOG(info) << "\tapplyEff=" << applyEff.value;
-    LOG(info) << "\tpaTH=" << paTH.value;
+    LOG(info) << "\tcorrectNch=" << correctNch.value;
+    LOG(info) << "\tpaTHEff=" << paTHEff.value;
+    LOG(info) << "\tpaTHFD=" << paTHFD.value;
     LOG(info) << "\tuseMidRapNchSel=" << useMidRapNchSel.value;
+    LOG(info) << "\tnSigmaNchCut=" << nSigmaNchCut.value;
     LOG(info) << "\tpaTHmeanNch=" << paTHmeanNch.value;
     LOG(info) << "\tpaTHsigmaNch=" << paTHsigmaNch.value;
     LOG(info) << "\tminPt=" << minPt.value;
@@ -681,19 +691,55 @@ struct UccZdc {
       }
     }
 
+    // Skip event based on number of Nch sigmas
     if (!skipEvent) {
       return;
     }
 
-    auto efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, foundBC.timestamp());
-    // auto efficiency = ccdb->getForRun<TH1F>(paTH.value, foundBC.runNumber());
-    if (!efficiency) {
+    auto efficiency = ccdb->getForTimeStamp<TH1F>(paTHEff.value, foundBC.timestamp());
+    auto fd = ccdb->getForTimeStamp<TH1F>(paTHFD.value, foundBC.timestamp());
+    if (!efficiency || !fd) {
       return;
     }
 
     std::vector<float> pTs;
-    std::vector<float> wIs;
-    // Calculates the event weight, W_k
+    std::vector<float> vecFD;
+    std::vector<float> vecOneOverEff;
+
+    // Calculates the Nch multiplicity
+    for (const auto& track : tracks) {
+      // Track Selection
+      if (!track.isGlobalTrack()) {
+        continue;
+      }
+      if ((track.pt() < minPt) || (track.pt() > maxPt)) {
+        continue;
+      }
+
+      float pt{track.pt()};
+      float effValue{1.0};
+      if (applyEff) {
+        effValue = efficiency->GetBinContent(efficiency->FindBin(pt));
+      }
+      if (effValue > 0.) {
+        vecOneOverEff.emplace_back(1. / effValue);
+      }
+    }
+
+    double nchMult{0.};
+    nchMult = std::accumulate(vecOneOverEff.begin(), vecOneOverEff.end(), 0);
+    if (!applyEff)
+      nchMult = static_cast<double>(glbTracks);
+    if (applyEff && !correctNch)
+      nchMult = static_cast<double>(glbTracks);
+    if (nchMult < minNchSel) {
+      return;
+    }
+
+    // Fill vectors for [pT] measurement
+    pTs.clear();
+    vecFD.clear();
+    vecOneOverEff.clear();
     for (const auto& track : tracks) {
       // Track Selection
       if (!track.isGlobalTrack()) {
@@ -704,35 +750,24 @@ struct UccZdc {
       }
 
       float pt{track.pt()};
-      double weight{1.};
+      float effValue{1.};
+      float fdValue{1.};
       if (applyEff) {
-        weight = efficiency->GetBinContent(efficiency->FindBin(pt));
+        effValue = efficiency->GetBinContent(efficiency->FindBin(pt));
+        fdValue = fd->GetBinContent(fd->FindBin(pt));
       }
-      if (weight > 0.) {
+      if ((effValue > 0.) && (fdValue > 0.)) {
         pTs.emplace_back(pt);
-        wIs.emplace_back(weight);
+        vecOneOverEff.emplace_back(1. / effValue);
+        vecFD.emplace_back(fdValue);
       }
+      // To calculate event-averaged <pt>
+      registry.fill(HIST("NchVsZNVsPt"), nchMult, sumZNs, track.pt());
     }
 
     double p1, p2, p3, p4, w1, w2, w3, w4;
     p1 = p2 = p3 = p4 = w1 = w2 = w3 = w4 = 0.0;
-    getPTpowers(pTs, wIs, p1, w1, p2, w2, p3, w3, p4, w4);
-    const double nch{static_cast<double>(pTs.size())};
-    if (nch < minNchSel) {
-      return;
-    }
-
-    // To calculate event-averaged <pt>
-    for (const auto& track : tracks) {
-      // Track Selection
-      if (!track.isGlobalTrack()) {
-        continue;
-      }
-      if ((track.pt() < minPt) || (track.pt() > maxPtSpectra)) {
-        continue;
-      }
-      registry.fill(HIST("NchVsZNVsPt"), w1, sumZNs, track.pt());
-    }
+    getPTpowers(pTs, vecOneOverEff, vecFD, p1, w1, p2, w2, p3, w3, p4, w4);
 
     // EbE one-particle pT correlation
     double oneParCorr{p1 / w1};
@@ -752,20 +787,20 @@ struct UccZdc {
     double numFourParCorr{std::pow(p1, 4.) - 6. * p2 * std::pow(p1, 2.) + 3. * std::pow(p2, 2.) + 8 * p3 * p1 - 6. * p4};
     double fourParCorr{numFourParCorr / denFourParCorr};
 
-    registry.fill(HIST("Nch"), w1);
+    registry.fill(HIST("Nch"), nchMult);
     registry.fill(HIST("ZNamp"), sumZNs);
-    registry.fill(HIST("NchVsZN"), w1, sumZNs);
-    registry.fill(HIST("NchVsZP"), w1, sumZPs);
+    registry.fill(HIST("NchVsZN"), nchMult, sumZNs);
+    registry.fill(HIST("NchVsZP"), nchMult, sumZPs);
     registry.fill(HIST("NITSTacksVsZN"), itsTracks, sumZNs);
     registry.fill(HIST("NITSTacksVsZP"), itsTracks, sumZPs);
     registry.fill(HIST("T0MVsZN"), normT0M, sumZNs);
     registry.fill(HIST("T0MVsZP"), normT0M, sumZPs);
     registry.fill(HIST("NchUncorrected"), glbTracks);
-    registry.fill(HIST("NchVsOneParCorr"), w1, oneParCorr, w1);
-    registry.fill(HIST("NchVsOneParCorrVsZN"), w1, sumZNs, oneParCorr, w1);
-    registry.fill(HIST("NchVsTwoParCorrVsZN"), w1, sumZNs, twoParCorr, denTwoParCorr);
-    registry.fill(HIST("NchVsThreeParCorrVsZN"), w1, sumZNs, threeParCorr, denThreeParCorr);
-    registry.fill(HIST("NchVsFourParCorrVsZN"), w1, sumZNs, fourParCorr, denFourParCorr);
+    registry.fill(HIST("NchVsOneParCorr"), nchMult, oneParCorr, w1);
+    registry.fill(HIST("NchVsOneParCorrVsZN"), nchMult, sumZNs, oneParCorr, w1);
+    registry.fill(HIST("NchVsTwoParCorrVsZN"), nchMult, sumZNs, twoParCorr, denTwoParCorr);
+    registry.fill(HIST("NchVsThreeParCorrVsZN"), nchMult, sumZNs, threeParCorr, denThreeParCorr);
+    registry.fill(HIST("NchVsFourParCorrVsZN"), nchMult, sumZNs, fourParCorr, denFourParCorr);
   }
   PROCESS_SWITCH(UccZdc, processZdcCollAss, "Process ZDC W/Coll Ass.", true);
 
@@ -774,7 +809,6 @@ struct UccZdc {
   TRandom* randPointer = new TRandom();
   void processMCclosure(aod::McCollisions::iterator const& mccollision, soa::SmallGroups<o2::aod::SimCollisions> const& collisions, o2::aod::BCsRun3 const& /*bcs*/, aod::McParticles const& mcParticles, TheFilteredSimTracks const& simTracks)
   {
-
     float rndNum = randPointer->Uniform(0.0, 1.0);
     registry.fill(HIST("RandomNumber"), rndNum);
 
@@ -809,14 +843,17 @@ struct UccZdc {
 
         // To use run-by-run efficiency
         const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
-        // auto efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, foundBC.timestamp());
-        auto efficiency = ccdb->getForRun<TH1F>(paTH.value, foundBC.runNumber());
-        if (!efficiency) {
-          continue;
+        auto efficiency = ccdb->getForTimeStamp<TH1F>(paTHEff.value, foundBC.timestamp());
+        auto fd = ccdb->getForTimeStamp<TH1F>(paTHFD.value, foundBC.timestamp());
+        if (!efficiency || !fd) {
+          return;
         }
 
+        int nchRaw{0};
         std::vector<float> pTs;
-        std::vector<float> wIs;
+        std::vector<float> vecFD;
+        std::vector<float> vecOneOverEff;
+        // std::vector<float> wIs;
         const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
         // Calculates the event weight, W_k
         for (const auto& track : groupedTracks) {
@@ -826,22 +863,29 @@ struct UccZdc {
           }
 
           float pt{track.pt()};
-          double weight{efficiency->GetBinContent(efficiency->FindBin(pt))};
-          if (!(weight > 0.)) {
-            continue;
+          float effValue{1.};
+          float fdValue{1.};
+          nchRaw++;
+          if (applyEff) {
+            effValue = efficiency->GetBinContent(efficiency->FindBin(pt));
+            fdValue = fd->GetBinContent(fd->FindBin(pt));
           }
-          pTs.emplace_back(pt);
-          wIs.emplace_back(weight);
+          if ((effValue > 0.) && (fdValue > 0.)) {
+            pTs.emplace_back(pt);
+            vecOneOverEff.emplace_back(1. / effValue);
+            vecFD.emplace_back(fdValue);
+          }
         }
 
-        const double nch{static_cast<double>(pTs.size())};
-        if (nch < minNchSel) {
-          continue;
+        double nchMult{0.};
+        nchMult = std::accumulate(vecOneOverEff.begin(), vecOneOverEff.end(), 0);
+        if (nchMult < minNchSel) {
+          return;
         }
 
         double p1, p2, p3, p4, w1, w2, w3, w4;
         p1 = p2 = p3 = p4 = w1 = w2 = w3 = w4 = 0.0;
-        getPTpowers(pTs, wIs, p1, w1, p2, w2, p3, w3, p4, w4);
+        getPTpowers(pTs, vecOneOverEff, vecFD, p1, w1, p2, w2, p3, w3, p4, w4);
 
         const double denTwoParCorr{std::pow(w1, 2.) - w2};
         const double numTwoParCorr{std::pow(p1, 2.) - p2};
@@ -855,16 +899,18 @@ struct UccZdc {
         const double threeParCorr{numThreeParCorr / denThreeParCorr};
         const double fourParCorr{numFourParCorr / denFourParCorr};
 
-        registry.fill(HIST("Nch"), w1);
-        registry.fill(HIST("NchUncorrected"), nch);
-        registry.fill(HIST("NchVsOneParCorr"), w1, oneParCorr, w1);
-        registry.fill(HIST("NchVsTwoParCorr"), w1, twoParCorr, denTwoParCorr);
-        registry.fill(HIST("NchVsThreeParCorr"), w1, threeParCorr, denThreeParCorr);
-        registry.fill(HIST("NchVsFourParCorr"), w1, fourParCorr, denFourParCorr);
+        registry.fill(HIST("Nch"), nchMult);
+        registry.fill(HIST("NchUncorrected"), nchRaw);
+        registry.fill(HIST("NchVsOneParCorr"), nchMult, oneParCorr, w1);
+        registry.fill(HIST("NchVsTwoParCorr"), nchMult, twoParCorr, denTwoParCorr);
+        registry.fill(HIST("NchVsThreeParCorr"), nchMult, threeParCorr, denThreeParCorr);
+        registry.fill(HIST("NchVsFourParCorr"), nchMult, fourParCorr, denFourParCorr);
 
         //--------------------------- Generated MC ---------------------------
         std::vector<float> pTsMC;
-        std::vector<float> wIsMC;
+        std::vector<float> vecFullEff;
+        std::vector<float> vecFDEqualOne;
+
         // Calculates the event weight, W_k
         for (const auto& particle : mcParticles) {
           if (particle.eta() < minEta || particle.eta() > maxEta) {
@@ -879,17 +925,19 @@ struct UccZdc {
 
           float pt{particle.pt()};
           pTsMC.emplace_back(pt);
-          wIsMC.emplace_back(1.);
+          vecFullEff.emplace_back(1.);
+          vecFDEqualOne.emplace_back(1.);
         }
 
-        const double nchMC{static_cast<double>(pTsMC.size())};
+        double nchMC{0};
+        nchMult = std::accumulate(vecFullEff.begin(), vecFullEff.end(), 0);
         if (nchMC < minNchSel) {
           continue;
         }
 
         double p1MC, p2MC, p3MC, p4MC, w1MC, w2MC, w3MC, w4MC;
         p1MC = p2MC = p3MC = p4MC = w1MC = w2MC = w3MC = w4MC = 0.0;
-        getPTpowers(pTsMC, wIsMC, p1MC, w1MC, p2MC, w2MC, p3MC, w3MC, p4MC, w4MC);
+        getPTpowers(pTsMC, vecFullEff, vecFDEqualOne, p1MC, w1MC, p2MC, w2MC, p3MC, w3MC, p4MC, w4MC);
 
         const double denTwoParCorrMC{std::pow(w1MC, 2.) - w2MC};
         const double numTwoParCorrMC{std::pow(p1MC, 2.) - p2MC};
@@ -911,6 +959,8 @@ struct UccZdc {
       } else { // Correction with the remaining half of the sample
         registry.fill(HIST("EvtsDivided"), 1);
         //----- MC reconstructed -----//
+        int nchTrue{0};
+        int nchRec{0};
         const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
         for (const auto& track : groupedTracks) {
           // Track Selection
@@ -932,6 +982,7 @@ struct UccZdc {
             continue;
           }
 
+          nchRec++;
           registry.fill(HIST("Pt_ch"), cent, track.pt());
           if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
             registry.fill(HIST("Pt_pi"), cent, track.pt());
@@ -960,6 +1011,7 @@ struct UccZdc {
             continue;
           }
 
+          nchTrue++;
           registry.fill(HIST("PtMC_ch"), cent, particle.pt());
           if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) { // pion
             registry.fill(HIST("PtMC_pi"), cent, particle.pt());
@@ -975,18 +1027,23 @@ struct UccZdc {
             registry.fill(HIST("PtMC_re"), cent, particle.pt());
           }
         }
+
+        registry.fill(HIST("NchRec"), nchRec);
+        registry.fill(HIST("NchTrue"), nchTrue);
       } // Half of statistics for corrections
     } // Collisions
   }
   PROCESS_SWITCH(UccZdc, processMCclosure, "Process MC closure", false);
 
   template <typename T, typename U>
-  void getPTpowers(const T& pTs, const T& wIs, U& pOne, U& wOne, U& pTwo, U& wTwo, U& pThree, U& wThree, U& pFour, U& wFour)
+  void getPTpowers(const T& pTs, const T& vecOneOverEff, const T& vecFD, U& pOne, U& wOne, U& pTwo, U& wTwo, U& pThree, U& wThree, U& pFour, U& wFour)
   {
     pOne = wOne = pTwo = wTwo = pThree = wThree = pFour = wFour = 0.;
     for (std::size_t i = 0; i < pTs.size(); ++i) {
       const float pTi{pTs.at(i)};
-      const float wEighti{wIs.at(i)};
+      const float eFFi{vecOneOverEff.at(i)};
+      const float fDi{vecFD.at(i)};
+      const float wEighti{eFFi * fDi};
       pOne += wEighti * pTi;
       wOne += wEighti;
       pTwo += std::pow(wEighti * pTi, 2.);
