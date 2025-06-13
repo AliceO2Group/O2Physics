@@ -61,6 +61,17 @@ namespace o2
       return static_cast<uint8_t>(std::clamp(roundValue, 0, 255));
     }
 
+    /// It compresses a value to a uint16_t with a given precision
+    ///\param origValue is the original values
+    ///\param precision is the desired precision
+    ///\return The value compressed to a uint16_t
+    template<typename T>
+    uint16_t getCompressedUint16(T origValue, double precision)
+    {
+      int roundValue = static_cast<int>(std::round(origValue / precision));
+      return static_cast<uint16_t>(std::clamp(roundValue, 0, 65535));
+    }
+
     /// It uses a sinh-based scaling function, which provides a compromise between fixed-step and relative quantization.
     // This approach reflects typical resolution formulas and is well-suited for detector calibration data.
     ///\param origValue is the original value
@@ -108,7 +119,7 @@ namespace o2
     template<typename T>
     int8_t getCompressedCosPa(T cosPa)
     {
-      return getCompressedUint8(cosPa - 0.25, 0.001); // in the range from 0.75 to 1
+      return getCompressedUint8(cosPa - 0.75, 0.001); // in the range from 0.75 to 1
     }
 
     /// It compresses the chi2
@@ -129,6 +140,24 @@ namespace o2
     {
       int8_t compressedNumSigma = static_cast<int8_t>(codeSqrtScaling(numSigma, 0.05, 0.05, -128, 128));
       return compressedNumSigma;
+    }
+
+    /// It compresses the bdt score (1./65535 precision)
+    ///\param bdtScore is the bdt score
+    ///\return The bdt score compressed to a uint16_t with 1./65535 precision
+    template<typename T>
+    uint16_t getCompressedBdtScoreBkg(T bdtScore)
+    {
+      return getCompressedUint16(bdtScore, 1./65535);
+    }
+
+    /// It compresses the bdt score (1./255 precision)
+    ///\param bdtScore is the bdt score
+    ///\return The bdt score compressed to a uint8_t with 1./255 precision
+    template<typename T>
+    uint8_t getCompressedBdtScoreSgn(T bdtScore)
+    {
+      return getCompressedUint8(bdtScore, 1./255);
     }
 
     /// It compresses the number of sigma (0.1 sigma precision)
@@ -174,11 +203,11 @@ namespace o2
       0,
       1.0,
       2.0,
+      3.0,
       4.0,
       6.0,
       8.0,
       12.0,
-      16.0,
       24.0,
       50.0,
       1000.0};
@@ -187,12 +216,12 @@ namespace o2
     // default values for the cuts
     constexpr float CutsCand[NBinsPtCand][NCutVarsCand] = {{0.400, 0., 10., 10., 0.97, 0.97, 0, 2, 0.01, 0.01},   /* 0  < pT < 1    */
                                                            {0.400, 0., 10., 10., 0.97, 0.97, 0, 2, 0.01, 0.01},   /* 1  < pT < 2    */
-                                                           {0.400, 0., 10., 10., 0.95, 0.95, 0, 2, 0.01, 0.01},   /* 2  < pT < 4    */
+                                                           {0.400, 0., 10., 10., 0.95, 0.95, 0, 2, 0.01, 0.01},   /* 2  < pT < 3    */
+                                                           {0.400, 0., 10., 10., 0.95, 0.95, 0, 2, 0.01, 0.01},   /* 3  < pT < 4    */
                                                            {0.400, 0., 10., 10., 0.95, 0.95, 0, 2, 0.01, 0.01},   /* 4  < pT < 6    */
                                                            {0.400, 0., 10., 10., 0.95, 0.95, 0, 2, 0.01, 0.01},   /* 6  < pT < 8    */
                                                            {0.400, 0., 10., 10., 0.95, 0.95, 0, 2, 0.01, 0.01},   /* 8  < pT < 12   */
-                                                           {0.400, 0., 10., 10., 0.95, 0.95, 0, 2, 0.01, 0.01},   /* 12 < pT < 16   */
-                                                           {0.400, 0., 10., 10., 0.95, 0.95, 0, 2, 0.01, 0.01},   /* 16 < pT < 24   */
+                                                           {0.400, 0., 10., 10., 0.95, 0.95, 0, 2, 0.01, 0.01},   /* 12 < pT < 24   */
                                                            {0.400, 0., 10., 10., 0.95, 0.95, 0, 2, 0.01, 0.01},   /* 24 < pT < 50   */
                                                            {0.400, 0., 10., 10., 0.95, 0.95, 0, 2, 0.01, 0.01}};  /* 50 < pT < 1000 */
 
@@ -211,6 +240,51 @@ namespace o2
 
     // column labels
     static const std::vector<std::string> labelsCutVarCand = {"delta inv. mass", "max d0d0", "max pointing angle", "max pointing angle XY", "min cos pointing angle", "min cos pointing angle xy", "min norm decay length", "min norm decay length XY", "min decay length", "min decay length XY"};
+
+    static constexpr int NBinsPtMl = 10;
+    // default values for the pT bin edges (can be used to configure histogram axis)
+    // offset by 1 from the bin numbers in cuts array
+    constexpr double BinsPtMl[NBinsPtMl + 1] = {
+      0,
+      1.0,
+      2.0,
+      3.0,
+      4.0,
+      6.0,
+      8.0,
+      12.0,
+      24.0,
+      50.0,
+      1000.0};
+    auto vecBinsPtMl = std::vector<double>{BinsPtMl, BinsPtMl + NBinsPtMl + 1};
+
+    // default values for the cuts
+    constexpr double CutsMl[NBinsPtMl][3] = {{1., 0., 0.},   /* 0  < pT < 1    */
+                                             {1., 0., 0.},   /* 1  < pT < 2    */
+                                             {1., 0., 0.},   /* 2  < pT < 3    */
+                                             {1., 0., 0.},   /* 3  < pT < 4    */
+                                             {1., 0., 0.},   /* 4  < pT < 6    */
+                                             {1., 0., 0.},   /* 6  < pT < 8    */
+                                             {1., 0., 0.},   /* 8  < pT < 12   */
+                                             {1., 0., 0.},   /* 12 < pT < 24   */
+                                             {1., 0., 0.},   /* 24 < pT < 50   */
+                                             {1., 0., 0.}};  /* 50 < pT < 1000 */
+
+    // row labels
+    static const std::vector<std::string> labelsPtMl = {
+      "pT bin 0",
+      "pT bin 1",
+      "pT bin 2",
+      "pT bin 3",
+      "pT bin 4",
+      "pT bin 5",
+      "pT bin 6",
+      "pT bin 7",
+      "pT bin 8",
+      "pT bin 9"};
+
+    // column labels
+    static const std::vector<std::string> labelsCutMl = {"max BDT score bkg", "min BDT score prompt", "min BDT score nonprompt"};
   } // namespace hf_calib
 
   namespace aod
@@ -330,6 +404,12 @@ namespace o2
       DECLARE_SOA_COLUMN(PointingAngle, pointingAngle, uint8_t); //! compressed pointing angle
       DECLARE_SOA_COLUMN(PointingAngleXY, pointingAngleXY, uint8_t); //! compressed pointing angle XY
       DECLARE_SOA_COLUMN(DecVtxChi2, decVtxChi2, uint8_t); //! compressed decay vertex chi2
+      DECLARE_SOA_COLUMN(BdtScoreBkgD0, bdtScoreBkgD0, uint16_t); //! compressed BDT score (bkg, D0 mass hypo)
+      DECLARE_SOA_COLUMN(BdtScorePromptD0, bdtScorePromptD0, uint8_t); //! compressed BDT score (prompt, D0 mass hypo)
+      DECLARE_SOA_COLUMN(BdtScoreNonpromptD0, bdtScoreNonpromptD0, uint8_t); //! compressed BDT score (non-prompt, D0 mass hypo)
+      DECLARE_SOA_COLUMN(BdtScoreBkgD0bar, bdtScoreBkgD0bar, uint16_t); //! compressed BDT score (bkg, D0bar mass hypo)
+      DECLARE_SOA_COLUMN(BdtScorePromptD0bar, bdtScorePromptD0bar, uint8_t); //! compressed BDT score (prompt, D0bar mass hypo)
+      DECLARE_SOA_COLUMN(BdtScoreNonpromptD0bar, bdtScoreNonpromptD0bar, uint8_t); //! compressed BDT score (non-prompt, D0bar mass hypo)
     } // namespace hf_calib
 
     DECLARE_SOA_TABLE(D0CalibCand, "AOD", "D0CALIBCANDS",
@@ -351,7 +431,13 @@ namespace o2
                       hf_calib::CosPaXY,
                       hf_calib::PointingAngle,
                       hf_calib::PointingAngleXY,
-                      hf_calib::DecVtxChi2);
+                      hf_calib::DecVtxChi2,
+                      hf_calib::BdtScoreBkgD0,
+                      hf_calib::BdtScorePromptD0,
+                      hf_calib::BdtScoreNonpromptD0,
+                      hf_calib::BdtScoreBkgD0bar,
+                      hf_calib::BdtScorePromptD0bar,
+                      hf_calib::BdtScoreNonpromptD0bar);
   } // namespace aod
 } // namespace o2
 #endif // D0CALIBTABLES_H_

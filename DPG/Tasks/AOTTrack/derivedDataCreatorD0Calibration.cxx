@@ -14,23 +14,11 @@
 ///
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
-#include <algorithm>
-#include <array>
-#include <cmath>
-#include <map>
-#include <string>
-
-#include <TH1D.h>
-#include <TRandom3.h>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "ReconstructionDataFormats/DCA.h"
-
 #include "D0CalibTables.h"
+
+#include "PWGHF/Utils/utilsAnalysis.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsPid.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelectorPID.h"
@@ -42,9 +30,23 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "CommonDataFormat/InteractionRecord.h"
+#include "Tools/ML/MlResponse.h"
 
-#include "PWGHF/Utils/utilsAnalysis.h"
-#include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <ReconstructionDataFormats/DCA.h>
+
+#include <TH1D.h>
+#include <TRandom3.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <map>
+#include <string>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -86,7 +88,18 @@ struct DerivedDataCreatorD0Calibration {
   struct : ConfigurableGroup {
     Configurable<bool> apply{"apply", false, "flag to apply downsampling"};
     Configurable<std::string> pathCcdbWeights{"pathCcdbWeights", "", "CCDB path containing pT-differential weights"};
+    std::string prefix = "downsampling";
   } cfgDownsampling;
+
+  struct : ConfigurableGroup {
+    Configurable<bool> apply{"apply", false, "flag to apply downsampling"};
+    Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_calib::vecBinsPtMl}, "pT bin limits for ML models inference"};
+    Configurable<LabeledArray<double>> thresholdMlScores{"thresholdMlScores", {hf_calib::CutsMl[0], hf_calib::NBinsPtMl, 3, hf_calib::labelsPtMl, hf_calib::labelsCutMl}, "Threshold values for Ml output scores of D0 candidates"};
+    Configurable<bool> loadMlModelsFromCCDB{"loadMlModelsFromCCDB", true, "Flag to enable or disable the loading of ML models from CCDB"};
+    Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/f/fgrosa/D0Calib/BDT/Pt0_1"}, "Paths of models on CCDB"};
+    Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_pT_0_1.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+    std::string prefix = "ml";
+  } cfgMl;
 
   using TracksWCovExtraPid = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using CollisionsWEvSel = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
@@ -95,6 +108,8 @@ struct DerivedDataCreatorD0Calibration {
 
   o2::vertexing::DCAFitterN<2> df; // 2-prong vertex fitter
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::ccdb::CcdbApi ccdbApi;
+  o2::analysis::MlResponse<float> mlResponse;
 
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
@@ -117,6 +132,18 @@ struct DerivedDataCreatorD0Calibration {
 
     if (cfgDownsampling.apply) {
       histDownSampl.setObject(reinterpret_cast<TH1D*>(ccdb->getSpecific<TH1D>(cfgDownsampling.pathCcdbWeights)));
+    }
+
+    if (cfgMl.apply) {
+      std::vector<int> cutDir = {o2::cuts_ml::CutDirection::CutGreater, o2::cuts_ml::CutDirection::CutSmaller, o2::cuts_ml::CutDirection::CutSmaller};
+      mlResponse.configure(cfgMl.binsPt, cfgMl.thresholdMlScores, cutDir, 3);
+      if (cfgMl.loadMlModelsFromCCDB) {
+        ccdbApi.init("http://alice-ccdb.cern.ch");
+        mlResponse.setModelPathsCCDB(cfgMl.onnxFileNames, ccdbApi, cfgMl.modelPathsCCDB, -1);
+      } else {
+        mlResponse.setModelPathsLocal(cfgMl.onnxFileNames);
+      }
+      mlResponse.init();
     }
 
     df.setPropagateToPCA(true);
@@ -374,16 +401,26 @@ struct DerivedDataCreatorD0Calibration {
           }
 
           float invMassD0{0.f}, invMassD0bar{0.f};
+          std::vector<float> bdtScoresD0{0.f, 1.f, 1.f}, bdtScoresD0bar{0.f, 1.f, 1.f}; // always selected a priori
           if (massHypo == D0MassHypo::D0 || massHypo == D0MassHypo::D0AndD0Bar) {
             invMassD0 = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
             if (std::abs(invMassD0 - o2::constants::physics::MassD0) > cfgCandCuts.topologicalCuts->get(ptBinD0, "delta inv. mass")) {
               massHypo -= D0MassHypo::D0;
+              bdtScoresD0 = std::vector<float>{1.f, 0.f, 0.f};
+            } else {
+            // apply BDT models
+            std::vector<float> featuresCandD0 = {dcaPos.getY(), dcaNeg.getY(), chi2PCA, cosPaD0, cosPaXYD0, decLenXYD0, decLenD0, dcaPos.getY() * dcaNeg.getY(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaPi(), trackPos.tofNSigmaPi()), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaKa()), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaKa(), trackPos.tofNSigmaKa()), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaPi(), trackNeg.tofNSigmaPi())};
+            mlResponse.isSelectedMl(featuresCandD0, ptD0, bdtScoresD0);
             }
           }
           if (massHypo >= D0MassHypo::D0Bar) {
             invMassD0bar = RecoDecay::m(std::array{pVecNeg, pVecPos}, std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
             if (std::abs(invMassD0bar - o2::constants::physics::MassD0) > cfgCandCuts.topologicalCuts->get(ptBinD0, "delta inv. mass")) {
               massHypo -= D0MassHypo::D0Bar;
+              bdtScoresD0bar = std::vector<float>{1.f, 0.f, 0.f};
+            } else {
+              std::vector<float> featuresCandD0bar = {dcaPos.getY(), dcaNeg.getY(), chi2PCA, cosPaD0, cosPaXYD0, decLenXYD0, decLenD0, dcaPos.getY() * dcaNeg.getY(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaPi(), trackNeg.tofNSigmaPi()), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaKa(), trackPos.tofNSigmaKa()), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaKa()), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaPi(), trackPos.tofNSigmaPi())};
+              mlResponse.isSelectedMl(featuresCandD0bar, ptD0, bdtScoresD0bar);
             }
           }
           if (massHypo == 0) {
@@ -426,7 +463,7 @@ struct DerivedDataCreatorD0Calibration {
           // candidate
           candTable(selectedCollisions[collision.globalIndex()], selectedTracks[trackPos.globalIndex()], selectedTracks[trackNeg.globalIndex()], massHypo, ptD0, etaD0, phiD0, invMassD0, invMassD0bar,
                     getCompressedDecayLength(decLenD0), getCompressedDecayLength(decLenXYD0), getCompressedNormDecayLength(decLenD0/errorDecayLengthD0), getCompressedNormDecayLength(decLenXYD0/errorDecayLengthXYD0),
-                    getCompressedCosPa(cosPaD0), getCompressedCosPa(cosPaXYD0), getCompressedPointingAngle(paD0), getCompressedPointingAngle(paXYD0), getCompressedChi2(chi2PCA));
+                    getCompressedCosPa(cosPaD0), getCompressedCosPa(cosPaXYD0), getCompressedPointingAngle(paD0), getCompressedPointingAngle(paXYD0), getCompressedChi2(chi2PCA), getCompressedBdtScoreBkg(bdtScoresD0[0]), getCompressedBdtScoreSgn(bdtScoresD0[1]), getCompressedBdtScoreSgn(bdtScoresD0[2]), getCompressedBdtScoreBkg(bdtScoresD0bar[0]), getCompressedBdtScoreSgn(bdtScoresD0bar[1]), getCompressedBdtScoreSgn(bdtScoresD0bar[2]));
         } // end loop over negative tracks
       } // end loop over positive tracks
     } // end loop over collisions tracks
