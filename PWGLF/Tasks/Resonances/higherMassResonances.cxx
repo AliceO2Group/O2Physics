@@ -76,7 +76,7 @@ struct HigherMassResonances {
     // Configurable<bool> invMass1D{"invMass1D", false, "1D invariant mass histograms"};
     Configurable<bool> correlation2Dhist{"correlation2Dhist", true, "Lamda K0 mass correlation"};
     Configurable<bool> cDCAv0topv{"cDCAv0topv", false, "DCA V0 to PV"};
-    Configurable<bool> armcut{"armcut", false, "arm cut"};
+    // Configurable<bool> armcut{"armcut", false, "arm cut"};
     Configurable<bool> globalTracks{"globalTracks", false, "Global tracks"};
     Configurable<bool> hasTPC{"hasTPC", false, "TPC"};
     Configurable<bool> selectTWOKsOnly{"selectTWOKsOnly", true, "Select only events with two K0s"};
@@ -84,11 +84,11 @@ struct HigherMassResonances {
     // Configurables for event selection
     Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
     Configurable<float> cfgETAcut{"cfgETAcut", 0.8f, "Track ETA cut"};
-    Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
-    Configurable<bool> piluprejection{"piluprejection", false, "Pileup rejection"};
-    Configurable<bool> goodzvertex{"goodzvertex", false, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference."};
-    Configurable<bool> itstpctracks{"itstpctracks", false, "selects collisions with at least one ITS-TPC track,"};
-    Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
+    Configurable<bool> timFrameEvsel{"timFrameEvsel", true, "TPC Time frame boundary cut"};
+    // Configurable<bool> piluprejection{"piluprejection", false, "Pileup rejection"};
+    // Configurable<bool> goodzvertex{"goodzvertex", false, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference."};
+    // Configurable<bool> itstpctracks{"itstpctracks", false, "selects collisions with at least one ITS-TPC track,"};
+    // Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
     // Configurable<bool> applyOccupancyCut{"applyOccupancyCut", false, "Apply occupancy cut"};
     // Configurable<int> occupancyCut{"occupancyCut", 1000, "Mimimum Occupancy cut"};
 
@@ -109,7 +109,7 @@ struct HigherMassResonances {
     Configurable<float> confDaughEta{"confDaughEta", 0.8f, "V0 Daugh sel: max eta"};
     Configurable<float> confDaughTPCnclsMin{"confDaughTPCnclsMin", 70.f, "V0 Daugh sel: Min. nCls TPC"};
     Configurable<float> confDaughPIDCuts{"confDaughPIDCuts", 5, "PID selections for KS0 daughters"};
-    Configurable<float> confarmcut{"confarmcut", 0.2f, "Armenteros cut"};
+    // Configurable<float> confarmcut{"confarmcut", 0.2f, "Armenteros cut"};
     Configurable<float> confKsrapidity{"confKsrapidity", 0.5f, "Rapidity cut on K0s"};
     // Configurable<float> lowmasscutks0{"lowmasscutks0", 0.497 - 4 * 0.005, "Low mass cut on K0s"};
     // Configurable<float> highmasscutks0{"highmasscutks0", 0.497 + 4 * 0.005, "High mass cut on K0s"};
@@ -127,6 +127,7 @@ struct HigherMassResonances {
     Configurable<bool> cTVXEvsel{"cTVXEvsel", true, "Triggger selection"};
     Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", false, "avoid split track in MC"};
     Configurable<int> selectMCparticles{"selectMCparticles", 1, "0: f0(1710), 1: f2(1525), 2: a2(1320), 3: f0(1370), 4: f0(1500)"};
+    Configurable<bool> apply_rapidityMC{"apply_rapidityMC", true, "Apply rapidity cut on generated and reconstructed particles"};
     std::vector<int> pdgCodes = {10331, 335, 115, 10221, 9030221};
 
     // output THnSparses
@@ -140,7 +141,7 @@ struct HigherMassResonances {
     // Configurable<bool> rapidityks{"rapidityks", true, "rapidity cut on K0s"};
     Configurable<bool> applyCompetingcut{"applyCompetingcut", false, "Competing cascade rejection cut"};
     Configurable<float> competingcascrejlambda{"competingcascrejlambda", 0.005, "rejecting competing cascade lambda"};
-    Configurable<float> competingcascrejlambdaanti{"competingcascrejlambdaanti", 0.005, "rejecting competing cascade anti-lambda"}; // If one of the pions is misidentified as a proton, then instead of Ks we reconstruct lambda, therefore the competing cascade rejection cut is applied in which if the reconstrcted mass of a pion and proton (which we are assuming to be misidentified as proton) is close to lambda or anti-lambda, then the track is rejected
+    // Configurable<float> competingcascrejlambdaanti{"competingcascrejlambdaanti", 0.005, "rejecting competing cascade anti-lambda"}; // If one of the pions is misidentified as a proton, then instead of Ks we reconstruct lambda, therefore the competing cascade rejection cut is applied in which if the reconstrcted mass of a pion and proton (which we are assuming to be misidentified as proton) is close to lambda or anti-lambda, then the track is rejected
     Configurable<int> tpcCrossedrows{"tpcCrossedrows", 70, "TPC crossed rows"};
     Configurable<float> tpcCrossedrowsOverfcls{"tpcCrossedrowsOverfcls", 0.8, "TPC crossed rows over findable clusters"};
 
@@ -330,20 +331,20 @@ struct HigherMassResonances {
     }
     hglue.fill(HIST("heventscheck"), 3.5);
 
-    if (config.piluprejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-      return false;
-    }
-    hglue.fill(HIST("heventscheck"), 4.5);
+    // if (config.piluprejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    //   return false;
+    // }
+    // hglue.fill(HIST("heventscheck"), 4.5);
 
-    if (config.goodzvertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-      return false;
-    }
-    hglue.fill(HIST("heventscheck"), 5.5);
+    // if (config.goodzvertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    //   return false;
+    // }
+    // hglue.fill(HIST("heventscheck"), 5.5);
 
-    if (config.itstpctracks && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
-      return false;
-    }
-    hglue.fill(HIST("heventscheck"), 6.5);
+    // if (config.itstpctracks && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+    //   return false;
+    // }
+    // hglue.fill(HIST("heventscheck"), 6.5);
 
     return true;
   }
@@ -351,9 +352,9 @@ struct HigherMassResonances {
   template <typename Collision, typename V0>
   bool selectionV0(Collision const& collision, V0 const& candidate, float /*multiplicity*/)
   {
-    const float qtarm = candidate.qtarm();
-    const float alph = candidate.alpha();
-    float arm = qtarm / alph;
+    // const float qtarm = candidate.qtarm();
+    // const float alph = candidate.alpha();
+    // float arm = qtarm / alph;
     const float pT = candidate.pt();
     const float tranRad = candidate.v0radius();
     const float dcaDaughv0 = candidate.dcaV0daughters();
@@ -447,15 +448,15 @@ struct HigherMassResonances {
     // if (config.correlation2Dhist)
     //   rKzeroShort.fill(HIST("mass_lambda_kshort_after8"), candidate.mK0Short(), candidate.mLambda());
 
-    if (config.armcut && arm < config.confarmcut) {
-      return false;
-    }
+    // if (config.armcut && arm < config.confarmcut) {
+    //   return false;
+    // }
     hglue.fill(HIST("htrackscheck_v0"), 9.5);
     // if (config.correlation2Dhist)
     //   rKzeroShort.fill(HIST("mass_lambda_kshort_after9"), candidate.mK0Short(), candidate.mLambda());
 
     // if (config.applyCompetingcut && (std::abs(candidate.mLambda() - PDGdatabase->Mass(3122)) <= config.competingcascrejlambda || std::abs(candidate.mAntiLambda() - PDGdatabase->Mass(-3122)) <= config.competingcascrejlambdaanti))
-    if (config.applyCompetingcut && (std::abs(candidate.mLambda() - o2::constants::physics::MassLambda0) <= config.competingcascrejlambda || std::abs(candidate.mAntiLambda() - o2::constants::physics::MassLambda0) <= config.competingcascrejlambdaanti)) {
+    if (config.applyCompetingcut && (std::abs(candidate.mLambda() - o2::constants::physics::MassLambda0) <= config.competingcascrejlambda || std::abs(candidate.mAntiLambda() - o2::constants::physics::MassLambda0) <= config.competingcascrejlambda)) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 10.5);
@@ -1025,7 +1026,7 @@ struct HigherMassResonances {
       // hMChists.fill(HIST("GenPy"), mcParticle.py());
       // hMChists.fill(HIST("GenPz"), mcParticle.pz());
 
-      if (std::abs(mcParticle.y()) >= 0.5) {
+      if (config.apply_rapidityMC && std::abs(mcParticle.y()) >= 0.5) {
         continue;
       }
       hMChists.fill(HIST("events_check"), 6.5);
@@ -1205,7 +1206,7 @@ struct HigherMassResonances {
             }
             hMChists.fill(HIST("events_checkrec"), 17.5);
 
-            if (std::abs(mothertrack1.y()) >= 0.5) {
+            if (config.apply_rapidityMC && std::abs(mothertrack1.y()) >= 0.5) {
               continue;
             }
             hMChists.fill(HIST("events_checkrec"), 18.5);
