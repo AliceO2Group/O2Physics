@@ -1909,7 +1909,7 @@ struct tofSpectra {
     if (enablePureDCAHistogram) {
       const auto& nsigmaTPCKa = o2::aod::pidutils::tpcNSigma<3>(track);
       const auto& nsigmaTOFKa = o2::aod::pidutils::tofNSigma<3>(track);
-      
+
       // Filling DCA info with the TPC+TOF PID
       bool isDCAPureSample = (std::sqrt(nsigmaTOFKa * nsigmaTOFKa + nsigmaTPCKa * nsigmaTPCKa) < 2.f);
       if (track.pt() <= 0.4) {
@@ -2071,7 +2071,6 @@ struct tofSpectra {
     const bool isPionTOF = std::abs(nsigmaTOFPi) < trkselOptions.cfgCutNsigma;
     const bool isKaonTOF = std::abs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
     const bool isProtonTOF = std::abs(nsigmaTOFPr) < trkselOptions.cfgCutNsigma;
-
 
     if (!mcParticle.isPhysicalPrimary()) { // Is not physical primary
       if (mcParticle.getProcess() == 4) {  // Is from decay
