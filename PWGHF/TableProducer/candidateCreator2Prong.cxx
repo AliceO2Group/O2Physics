@@ -779,7 +779,7 @@ struct HfCandidateCreator2ProngExpressions {
       if (matchCorrBkgs) {
         indexRec = -1; // Index of the matched reconstructed candidate
         int depth = 2;
-        for (const auto& [chn, finalState] : hf_cand_2prong::finalStates2Prongs) {
+        for (const auto& [chn, finalState] : hf_cand_2prong::DaughtersD0Main) {
           std::array<int, 2> finalStateParts2Prong = std::array{finalState[0], finalState[1]};
           if (finalState.size() == 3) { // Partly Reco 2-prong decays
             if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {

@@ -57,7 +57,7 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
     if (matchCorrBkgs) {
       bool matched = false;
 
-      for (const auto& [chn, finalState] : o2::hf_decay::hf_cand_2prong::finalStates2Prongs) {
+      for (const auto& [chn, finalState] : o2::hf_decay::hf_cand_2prong::DaughtersD0Main) {
         if (finalState.size() == 3) { // Partly Reco 3-prong decays
           std::array<int, 3> finalStateParts = std::array{finalState[0], finalState[1], finalState[2]};
           if (particle.pdgCode() < 0) {
