@@ -187,7 +187,6 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
   //  SG selector
   SGSelector sgSelector;
-  SGCutParHolder sgCuts = SGCutParHolder();
 
   // histogram names
   static constexpr char NameHistCollisions[] = "hCollisions";
@@ -224,18 +223,19 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   int currentRun{-1};
 
   /// Set standard preselection gap trigger (values taken from UD group)
-  void setSGPreselection(SGCutParHolder& sgCuts)
+  SGCutParHolder setSGPreselection()
   {
+    SGCutParHolder sgCuts;
     sgCuts.SetNDtcoll(MinNDtColl);
     sgCuts.SetMinNBCs(MinNBCs);
     sgCuts.SetNTracks(MinNTracks, MaxNTracks);
     sgCuts.SetMaxFITtime(MaxFITTimeNs);
-
     sgCuts.SetFITAmpLimits({FITAmpFV0,
                             FITAmpFT0A,
                             FITAmpFT0C,
                             FITAmpFDDA,
                             FITAmpFDDC});
+    return sgCuts;
   }
 
   /// \brief Adds collision monitoring histograms in the histogram registry.
@@ -403,7 +403,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     /// upc selection
     if constexpr (useEvSel) {
       if (useUpcTrigger) {
-        setSGPreselection(sgCuts);
+        SGCutParHolder sgCuts = setSGPreselection();
         auto bc = collision.template foundBC_as<BCs>();
         auto bcRange = udhelpers::compatibleBCs(collision, sgCuts.NDtcoll(), bcs, sgCuts.minNBCs());
         auto isSGEvent = sgSelector.IsSelected(sgCuts, collision, bcRange, bc);
