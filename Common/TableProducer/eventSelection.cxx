@@ -1223,7 +1223,7 @@ struct LumiTask {
     LOGP(debug, "Dummy process function for Run 2");
   }
 
-  PROCESS_SWITCH(LumiTask, processRun2, "Process Run2 lumi task", false);
+  PROCESS_SWITCH(LumiTask, processRun2, "Process Run2 lumi task", true);
 
   void processRun3(BCsWithBcSelsRun3 const& bcs, aod::FT0s const&)
   {
