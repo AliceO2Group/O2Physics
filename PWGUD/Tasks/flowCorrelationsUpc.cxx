@@ -253,7 +253,7 @@ struct FlowCorrelationsUpc {
 
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
     fillYield(collision, tracks);
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, tracks.size()); // fill the SE histogram and Sparse
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent); // fill the SE histogram and Sparse
   }
   PROCESS_SWITCH(FlowCorrelationsUpc, processSame, "Process same event", true);
 
@@ -271,7 +271,7 @@ struct FlowCorrelationsUpc {
 
     for (auto const& [collision1, tracks1, collision2, tracks2] : pairs) {
       registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
-      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent, tracks1.size());
+      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent);
     }
   }
   PROCESS_SWITCH(FlowCorrelationsUpc, processMixed, "Process mixed events", true);
