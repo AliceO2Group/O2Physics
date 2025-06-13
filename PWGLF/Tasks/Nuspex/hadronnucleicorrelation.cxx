@@ -208,7 +208,7 @@ struct hadronnucleicorrelation {
     AxisSpec DeltaEtaAxis = {100, -1.5, 1.5, "#Delta#eta"};
     AxisSpec DeltaPhiAxis = {60, -1 * o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf, "#Delta#phi (rad)"};
 
-    registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{5, 0.f, 5.f}}});
+    registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{7, 0.f, 7.f}}});
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "Selected");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "events with #bar{d}-#bar{p}");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "events with d-p");
