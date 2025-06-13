@@ -55,7 +55,7 @@ const int nBCinDrift = 114048 / 32; /// to get from ccdb in future
 template<typename T, std::size_t N>
 void sortVectorOfArray(std::vector<std::array<T,N>> &myVector, const int &myIDX){
   std::sort(myVector.begin(), myVector.end(), [myIDX](const std::array<T,N>& a, const std::array<T,N>& b){
-    return a[myIDX] < b[myIDX]; //sort at the required index 
+    return a[myIDX] < b[myIDX]; //sort at the required index
   });
 }
 
@@ -1893,7 +1893,7 @@ struct TrackMeanOccTableProducer {
       float weightMeanOccRobustFDDT0V0PrimUnfm80 = 0;
       float weightMeanOccRobustNtrackDetUnfm80 = 0;
       float weightMeanOccRobustMultTableUnfm80 = 0;
-      
+
       int trackTMOcounter = -1;
       trackQAGIListforTMOList.clear();
 
@@ -2686,7 +2686,7 @@ struct CreatePointerTables{
   std::vector<std::array<int64_t,2>> trackGIForTrackQAIndexList;
   using MyTracksQA = aod::TracksQAVersion;
   void processTrackToTrackQAPointer(aod::Tracks const& tracks, MyTracksQA const& tracksQA)
-  { 
+  {
     trackGIForTrackQAIndexList.clear();
     for (const auto& trackQA : tracksQA) {
       auto const& track = trackQA.template track_as<aod::Tracks>();
@@ -2722,7 +2722,7 @@ struct CreatePointerTables{
     for (const auto& tmoTrackId : tmoTrackIds) {
       tmoCounter++;
       auto const& track = tmoTrackId.template track_as<aod::Tracks>();
-      trackGIForTMOIndexList.push_back({track.globalIndex(), tmoCounter}); //tmoTrackId Global Index is not working :: tmoTrackId.globalIndex()}); 
+      trackGIForTMOIndexList.push_back({track.globalIndex(), tmoCounter}); //tmoTrackId Global Index is not working :: tmoTrackId.globalIndex()});
     }
     sortVectorOfArray(trackGIForTMOIndexList, 0);//sort the list //Its easy to search in a sorted list
     checkUniqueness(trackGIForTMOIndexList, 0); //check the uniqueness of track.globalIndex()
