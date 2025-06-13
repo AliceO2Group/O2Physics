@@ -32,6 +32,11 @@ o2physics_add_dpl_workflow(multiplicity-table
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(multcenttable
+                    SOURCES multCentTable.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(multiplicity-extra-table
                     SOURCES multiplicityExtraTable.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -125,8 +130,8 @@ o2physics_add_dpl_workflow(match-mft-ft0
                                           O2::DetectorsBase O2::DetectorsCommonDataFormats
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(zdc-task-intercalib
-                    SOURCES zdc-task-intercalib.cxx
+o2physics_add_dpl_workflow(zdc-task-inter-calib
+                    SOURCES zdcTaskInterCalib.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
