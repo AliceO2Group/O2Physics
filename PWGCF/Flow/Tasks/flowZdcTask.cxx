@@ -710,6 +710,7 @@ struct FlowZdcTask {
       histos.get<TH2>(HIST("ZNvsZEMcoll"))->Fill(zdcread.amplitudeZEM1() + zdcread.amplitudeZEM2(), zdcread.amplitudeZNA() + zdcread.amplitudeZNC());
       histos.get<TH2>(HIST("ZNAvsZNCcoll"))->Fill(zdcread.amplitudeZNC(), zdcread.amplitudeZNA());
 
+<<<<<<< HEAD
       histos.get<TH1>(HIST("ZEM1coll"))->Fill(zdcread.amplitudeZEM1());
       histos.get<TH1>(HIST("ZEM2coll"))->Fill(zdcread.amplitudeZEM2());
 
@@ -724,6 +725,31 @@ struct FlowZdcTask {
         if (sumZEM < zemCut) {
           return;
         }
+=======
+    // ZDC data and histogram filling
+    float znA = zdcread.amplitudeZNA();
+    float znC = zdcread.amplitudeZNC();
+    float zpA = zdcread.amplitudeZPA();
+    float zpC = zdcread.amplitudeZPC();
+    float tZNA{zdcread.timeZNA()};
+    float tZNC{zdcread.timeZNC()};
+    float tZPA{zdcread.timeZPA()};
+    float tZPC{zdcread.timeZPC()};
+    float sumZNC = (zdcread.energySectorZNC())[0] + (zdcread.energySectorZNC())[1] + (zdcread.energySectorZNC())[2] + (zdcread.energySectorZNC())[3];
+    float sumZNA = (zdcread.energySectorZNA())[0] + (zdcread.energySectorZNA())[1] + (zdcread.energySectorZNA())[2] + (zdcread.energySectorZNA())[3];
+    float sumZPC = (zdcread.energySectorZPC())[0] + (zdcread.energySectorZPC())[1] + (zdcread.energySectorZPC())[2] + (zdcread.energySectorZPC())[3];
+    float sumZPA = (zdcread.energySectorZPA())[0] + (zdcread.energySectorZPA())[1] + (zdcread.energySectorZPA())[2] + (zdcread.energySectorZPA())[3];
+    float sumZDC = sumZPA + sumZPC + sumZNA + sumZNC;
+    float sumZEM = zdcread.amplitudeZEM1() + zdcread.amplitudeZEM2();
+    znA /= cfgCollisionEnergy;
+    znC /= cfgCollisionEnergy;
+    zpA /= cfgCollisionEnergy;
+    zpC /= cfgCollisionEnergy;
+    // ZEM cut
+    if (isZEMcut) {
+      if (sumZEM < zemCut) {
+        return;
+>>>>>>> 44d8a54d0 (remove obsolete variables)
       }
       // common energies
       float commonSumZnc = (zdcread.energyCommonZNC());
