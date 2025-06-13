@@ -96,8 +96,8 @@ struct eventselectionRun2 {
                aod::FDDs const&,
                FullTracks const&)
   {
-    auto bcselbuffer = bcselmodule.processRun2(ccdb, bcs, bcsel);
-    evselmodule.processRun2(ccdb, histos, collisions, tracklets, cache, bcselbuffer, evsel);
+    bcselmodule.processRun2(ccdb, bcs, bcselsbuffer, bcsel);
+    evselmodule.processRun2(ccdb, histos, collisions, tracklets, cache, bcselsbuffer, evsel);
   }
 };
 
@@ -151,9 +151,9 @@ struct eventselectionRun3 {
                aod::FDDs const&,
                FullTracksIU const&)
   {
-    auto bcselbuffer = bcselmodule.processRun3(ccdb, histos, bcs, bcsel);
-    evselmodule.processRun3(ccdb, histos, bcs, collisions, pvTracks, ft0s, cache, bcselbuffer, evsel);
-    lumimodule.process(ccdb, histos, bcs, bcselbuffer);
+    bcselmodule.processRun3(ccdb, histos, bcs, bcselsbuffer, bcsel);
+    evselmodule.processRun3(ccdb, histos, bcs, collisions, pvTracks, ft0s, cache, bcselsbuffer, evsel);
+    lumimodule.process(ccdb, histos, bcs, bcselsbuffer);
   }
 };
 

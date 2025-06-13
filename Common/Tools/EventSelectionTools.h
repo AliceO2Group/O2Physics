@@ -233,8 +233,8 @@ class BcSelectionModule
   }
 
   //__________________________________________________
-  template <typename TCCDB, typename TBCs, typename TBcSelCursor>
-  std::vector<o2::common::eventselection::bcselEntry> processRun2(TCCDB const& ccdb, TBCs const& bcs, TBcSelCursor& bcsel)
+  template <typename TCCDB, typename TBCs, typename TBcSelBuffer, typename TBcSelCursor>
+  std::vector<o2::common::eventselection::bcselEntry> processRun2(TCCDB const& ccdb, TBCs const& bcs, TBcSelBuffer const& bcselbuffer, TBcSelCursor& bcsel)
   {
     std::vector<o2::common::eventselection::bcselEntry> bcselEntries;
     for (const auto& bc : bcs) {
@@ -367,8 +367,8 @@ class BcSelectionModule
   } // end processRun2 
 
   //__________________________________________________
-  template <typename TCCDB, typename THistoRegistry, typename TBCs, typename TBcSelCursor>
-  std::vector<o2::common::eventselection::bcselEntry> processRun3(TCCDB const& ccdb, THistoRegistry& histos, TBCs const& bcs, TBcSelCursor& bcsel)
+  template <typename TCCDB, typename THistoRegistry, typename TBCs, typename TBcSelBuffer, typename TBcSelCursor>
+  std::vector<o2::common::eventselection::bcselEntry> processRun3(TCCDB const& ccdb, THistoRegistry& histos, TBCs const& bcs, TBcSelBuffer const& bcselbuffer, TBcSelCursor& bcsel)
   {
     std::vector<o2::common::eventselection::bcselEntry> bcselEntries;
     if(!configure(ccdb, bcs))
@@ -741,9 +741,9 @@ class EventSelectionModule
 
       // fill counters
       if (evselOpts.isMC == 1 || (!isINT1period && bitcheck(alias, kINT7)) || (isINT1period && bitcheck(alias, kINT1))) {
-        histos.template get<TH1>(HIST("hColCounterAll"))->Fill(Form("%d", bc.runNumber()), 1);
+        histos.template get<TH1>(HIST("eventselection/hColCounterAll"))->Fill(Form("%d", bc.runNumber()), 1);
         if ((!isINT1period && sel7) || (isINT1period && sel1)) {
-          histos.template get<TH1>(HIST("hColCounterAcc"))->Fill(Form("%d", bc.runNumber()), 1);
+          histos.template get<TH1>(HIST("eventselection/hColCounterAcc"))->Fill(Form("%d", bc.runNumber()), 1);
         }
       }
 
