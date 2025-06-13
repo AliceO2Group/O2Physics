@@ -664,7 +664,7 @@ struct HfCorrelatorDsHadrons {
             listDaughters.clear();
             RecoDecay::getDaughters(particle, &listDaughters, arrDaughDsPDG, 2);
             int counterDaughters = 0;
-            if (listDaughters.size() == nDsDaughters) {
+            if (listDaughters.size() == static_cast<std::size_t>(nDsDaughters)) {
               for (const auto& dauIdx : listDaughters) {
                 // auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
                 auto daughI = groupedMcParticles.rawIteratorAt(dauIdx - groupedMcParticles.offset());
