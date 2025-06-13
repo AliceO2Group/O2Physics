@@ -16,13 +16,12 @@
 #ifndef PWGHF_CORE_HFMLRESPONSELCTOPKPI_H_
 #define PWGHF_CORE_HFMLRESPONSELCTOPKPI_H_
 
+#include "PWGHF/Core/HfMlResponse.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+
 #include <map>
 #include <string>
 #include <vector>
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-
-#include "PWGHF/Core/HfMlResponse.h"
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)
@@ -128,12 +127,12 @@ enum class InputFeaturesLcToPKPi : uint8_t {
   tpcTofNSigmaPr0,
   tpcTofNSigmaPr1,
   tpcTofNSigmaPr2,
-  tpcNSigmaPrExpPr0,
-  tpcNSigmaPiExpPi2,
-  tofNSigmaPrExpPr0,
-  tofNSigmaPiExpPi2,
-  tpcTofNSigmaPrExpPr0,
-  tpcTofNSigmaPiExpPi2,
+  tpcNSigmaPrExpPr,
+  tpcNSigmaPiExpPi,
+  tofNSigmaPrExpPr,
+  tofNSigmaPiExpPi,
+  tpcTofNSigmaPrExpPr,
+  tpcTofNSigmaPiExpPi,
   kfChi2PrimProton,
   kfChi2PrimKaon,
   kfChi2PrimPion,
@@ -195,8 +194,8 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcNSigmaPr2, nSigTpcPr2);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcNSigmaKa2, nSigTpcKa2);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcNSigmaPi2, nSigTpcPi2);
-        CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tpcNSigmaPrExpPr0, nSigTpcPr0, nSigTpcPr2);
-        CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tpcNSigmaPiExpPi2, nSigTpcPi2, nSigTpcPi0);
+        CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tpcNSigmaPrExpPr, nSigTpcPr0, nSigTpcPr2);
+        CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tpcNSigmaPiExpPi, nSigTpcPi2, nSigTpcPi0);
         // TOF PID variables
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaPr0, nSigTofPr0);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaKa0, nSigTofKa0);
@@ -207,8 +206,8 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaPr2, nSigTofPr2);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaKa2, nSigTofKa2);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaPi2, nSigTofPi2);
-        CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tofNSigmaPrExpPr0, nSigTofPr0, nSigTofPr2);
-        CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tofNSigmaPiExpPi2, nSigTofPi2, nSigTofPi0);
+        CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tofNSigmaPrExpPr, nSigTofPr0, nSigTofPr2);
+        CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tofNSigmaPiExpPi, nSigTofPi2, nSigTofPi0);
         // Combined PID variables
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcTofNSigmaPi0, tpcTofNSigmaPi0);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcTofNSigmaPi1, tpcTofNSigmaPi1);
@@ -219,8 +218,8 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcTofNSigmaPr0, tpcTofNSigmaPr0);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcTofNSigmaPr1, tpcTofNSigmaPr1);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcTofNSigmaPr2, tpcTofNSigmaPr2);
-        CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tpcTofNSigmaPrExpPr0, tpcTofNSigmaPr0, tpcTofNSigmaPr2);
-        CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tpcTofNSigmaPiExpPi2, tpcTofNSigmaPi2, tpcTofNSigmaPi0);
+        CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tpcTofNSigmaPrExpPr, tpcTofNSigmaPr0, tpcTofNSigmaPr2);
+        CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tpcTofNSigmaPiExpPi, tpcTofNSigmaPi2, tpcTofNSigmaPi0);
       }
       if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
         switch (idx) {
@@ -275,8 +274,8 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_LCTOPKPI(tpcNSigmaPr2),
       FILL_MAP_LCTOPKPI(tpcNSigmaKa2),
       FILL_MAP_LCTOPKPI(tpcNSigmaPi2),
-      FILL_MAP_LCTOPKPI(tpcNSigmaPrExpPr0),
-      FILL_MAP_LCTOPKPI(tpcNSigmaPiExpPi2),
+      FILL_MAP_LCTOPKPI(tpcNSigmaPrExpPr),
+      FILL_MAP_LCTOPKPI(tpcNSigmaPiExpPi),
       // TOF PID variables
       FILL_MAP_LCTOPKPI(tofNSigmaPr0),
       FILL_MAP_LCTOPKPI(tofNSigmaKa0),
@@ -287,8 +286,8 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_LCTOPKPI(tofNSigmaPr2),
       FILL_MAP_LCTOPKPI(tofNSigmaKa2),
       FILL_MAP_LCTOPKPI(tofNSigmaPi2),
-      FILL_MAP_LCTOPKPI(tofNSigmaPrExpPr0),
-      FILL_MAP_LCTOPKPI(tofNSigmaPiExpPi2),
+      FILL_MAP_LCTOPKPI(tofNSigmaPrExpPr),
+      FILL_MAP_LCTOPKPI(tofNSigmaPiExpPi),
       // Combined PID variables
       FILL_MAP_LCTOPKPI(tpcTofNSigmaPi0),
       FILL_MAP_LCTOPKPI(tpcTofNSigmaPi1),
@@ -299,8 +298,8 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_LCTOPKPI(tpcTofNSigmaPr0),
       FILL_MAP_LCTOPKPI(tpcTofNSigmaPr1),
       FILL_MAP_LCTOPKPI(tpcTofNSigmaPr2),
-      FILL_MAP_LCTOPKPI(tpcTofNSigmaPrExpPr0),
-      FILL_MAP_LCTOPKPI(tpcTofNSigmaPiExpPi2)};
+      FILL_MAP_LCTOPKPI(tpcTofNSigmaPrExpPr),
+      FILL_MAP_LCTOPKPI(tpcTofNSigmaPiExpPi)};
     if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
       std::map<std::string, uint8_t> mapKfFeatures{
         // KFParticle variables
