@@ -174,7 +174,7 @@ struct HfCorrelatorDsHadrons {
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", {1., 1., 1., 1., 1., 1.}, "efficiency values for Ds meson"};
 
   int hfcReducedCollisionIndex = 0;
-  const int nDsDaughters = 3;
+  int nDsDaughters = 3;
 
   HfHelper hfHelper;
   SliceCache cache;
