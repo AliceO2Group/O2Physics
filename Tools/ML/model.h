@@ -20,7 +20,6 @@
 #ifndef TOOLS_ML_MODEL_H_
 #define TOOLS_ML_MODEL_H_
 
-#include <onnxruntime_c_api.h>
 #if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
 #else
