@@ -130,7 +130,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   std::vector<float> kNsigma;
 
   /// Event part
-Configurable<float> ConfV0MLow{"ConfV0MLow", 0.0, "Lower limit for V0M multiplicity"};
+  Configurable<float> ConfV0MLow{"ConfV0MLow", 0.0, "Lower limit for V0M multiplicity"};
   Configurable<float> ConfV0MHigh{"ConfV0MHigh", 25000.0, "Upper limit for V0M multiplicity"};
   Configurable<int> ConfTPCOccupancyLow{"ConfTPCOccupancyLow", 0, "Lower limit for TPC occupancy"};
   Configurable<int> ConfTPCOccupancyHigh{"ConfTPCOccupancyHigh", 500, "Higher limit for TPC occupancy"};
@@ -707,7 +707,7 @@ Configurable<float> ConfV0MLow{"ConfV0MLow", 0.0, "Lower limit for V0M multiplic
             f3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
           } else {
             mixedEventMultContMM.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, ConfIsIden);
-            f3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);       
+            f3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);
           }
           if (ConfIsFillAngqLCMS) {
             kv = std::sqrt(f3d[1] * f3d[1] + f3d[2] * f3d[2] + f3d[3] * f3d[3]);
