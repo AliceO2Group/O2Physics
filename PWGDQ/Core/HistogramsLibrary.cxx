@@ -84,11 +84,11 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     if (subGroupStr.Contains("mult")) {
       if (subGroupStr.Contains("pp")) {
         hm->AddHistogram(histClass, "MultTPC", "MultTPC", false, 250, 0.0, 500.0, VarManager::kMultTPC);
-        hm->AddHistogram(histClass, "MultFV0A", "MultFV0A", false, 250, 0.0, 500.0, VarManager::kMultFV0A);
-        hm->AddHistogram(histClass, "MultFT0A", "MultFT0A", false, 300, 0.0, 300.0, VarManager::kMultFT0A);
-        hm->AddHistogram(histClass, "MultFT0C", "MultFT0C", false, 300, 0.0, 300.0, VarManager::kMultFT0C);
-        hm->AddHistogram(histClass, "MultFDDA", "MultFDDA", false, 300, 0.0, 300.0, VarManager::kMultFDDA);
-        hm->AddHistogram(histClass, "MultFDDC", "MultFDDC", false, 50, 0.0, 50.0, VarManager::kMultFDDC);
+        hm->AddHistogram(histClass, "MultFV0A", "MultFV0A", false, 1000, 0.0, 25000.0, VarManager::kMultFV0A);
+        hm->AddHistogram(histClass, "MultFT0A", "MultFT0A", false, 1000, 0.0, 25000.0, VarManager::kMultFT0A);
+        hm->AddHistogram(histClass, "MultFT0C", "MultFT0C", false, 1000, 0.0, 25000.0, VarManager::kMultFT0C);
+        hm->AddHistogram(histClass, "MultFDDA", "MultFDDA", false, 1000, 0.0, 25000.0, VarManager::kMultFDDA);
+        hm->AddHistogram(histClass, "MultFDDC", "MultFDDC", false, 1000, 0.0, 25000.0, VarManager::kMultFDDC);
         hm->AddHistogram(histClass, "MultTracklets", "MultTracklets", false, 250, 0.0, 250.0, VarManager::kMultTracklets);
         hm->AddHistogram(histClass, "VtxNContribReal", "Vtx n contributors", false, 150, 0.0, 150.0, VarManager::kVtxNcontribReal);
         hm->AddHistogram(histClass, "VtxNContrib", "Vtx n contributors", false, 100, 0.0, 100.0, VarManager::kVtxNcontrib);
@@ -115,6 +115,11 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "VtxZ_VtxNcontribReal", "VtxZ vs VtxNcontribReal", false, 100, -10.0, 10.0, VarManager::kVtxZ, 150, 0, 150.0, VarManager::kVtxNcontribReal);
         hm->AddHistogram(histClass, "VtxZ_MultNTracksPVeta1", "VtxZ vs MultNTracksPVeta1", false, 100, -10.0, 10.0, VarManager::kVtxZ, 150, 0, 150.0, VarManager::kMultNTracksPVeta1);
         hm->AddHistogram(histClass, "VtxZ_MultNTracksPVetaHalf", "VtxZ vs MultNTracksPVetaHalf", false, 100, -10.0, 10.0, VarManager::kVtxZ, 150, 0, 150.0, VarManager::kMultNTracksPVetaHalf);
+        hm->AddHistogram(histClass, "VtxZ_MultFV0A", "VtxZ vs MultFV0A", false, 20, -10.0, 10.0, VarManager::kVtxZ, 200, 0, 25000.0, VarManager::kMultFV0A);
+        hm->AddHistogram(histClass, "VtxZ_MultFT0A", "VtxZ vs MultFT0A", false, 20, -10.0, 10.0, VarManager::kVtxZ, 200, 0, 25000.0, VarManager::kMultFT0A);
+        hm->AddHistogram(histClass, "VtxZ_MultFT0C", "VtxZ vs MultFT0C", false, 20, -10.0, 10.0, VarManager::kVtxZ, 200, 0, 25000.0, VarManager::kMultFT0C);
+        hm->AddHistogram(histClass, "VtxZ_MultFDDA", "VtxZ vs MultFDDA", false, 20, -10.0, 10.0, VarManager::kVtxZ, 200, 0, 25000.0, VarManager::kMultFDDA);
+        hm->AddHistogram(histClass, "VtxZ_MultFDDC", "VtxZ vs MultFDDC", false, 20, -10.0, 10.0, VarManager::kVtxZ, 200, 0, 25000.0, VarManager::kMultFDDC);
 
       } else {
         hm->AddHistogram(histClass, "MultTPC", "MultTPC", false, 200, 0.0, 50000.0, VarManager::kMultTPC);
@@ -943,6 +948,13 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "Mass_VtxNcontribReal", "Mass vs VtxNcontribReal", false, 200, 2.0, 5.0, VarManager::kMass, 150, 0, 150.0, VarManager::kVtxNcontribReal);
       hm->AddHistogram(histClass, "Mass_MultNTracksPVetaHalf", "Mass vs MultNTracksPVetaHalf", false, 200, 2.0, 5.0, VarManager::kMass, 150, 0, 150.0, VarManager::kMultNTracksPVetaHalf);
       hm->AddHistogram(histClass, "Mass_MultNTracksPVeta1", "Mass vs MultNTracksPVeta1", false, 200, 2.0, 5.0, VarManager::kMass, 150, 0, 150.0, VarManager::kMultNTracksPVeta1);
+    }
+    if (subGroupStr.Contains("dimuon_fwdmult")) {
+      hm->AddHistogram(histClass, "Mass_MultFV0A", "Mass vs MultFV0A", false, 200, 2.0, 5.0, VarManager::kMass, 1000, 0, 25000.0, VarManager::kMultFV0A);
+      hm->AddHistogram(histClass, "Mass_MultFT0A", "Mass vs MultFT0A", false, 200, 2.0, 5.0, VarManager::kMass, 1000, 0, 25000.0, VarManager::kMultFT0A);
+      hm->AddHistogram(histClass, "Mass_MultFT0C", "Mass vs MultFT0C", false, 200, 2.0, 5.0, VarManager::kMass, 1000, 0, 25000.0, VarManager::kMultFT0C);
+      hm->AddHistogram(histClass, "Mass_MultFDDA", "Mass vs MultFDDA", false, 200, 2.0, 5.0, VarManager::kMass, 1000, 0, 25000.0, VarManager::kMultFDDA);
+      hm->AddHistogram(histClass, "Mass_MultFDDC", "Mass vs MultFDDC", false, 200, 2.0, 5.0, VarManager::kMass, 1000, 0, 25000.0, VarManager::kMultFDDC);
     }
     if (subGroupStr.Contains("barrel")) {
       hm->AddHistogram(histClass, "Mass", "", false, 500, 0.0, 5.0, VarManager::kMass);
