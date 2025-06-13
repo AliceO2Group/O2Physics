@@ -302,7 +302,7 @@ struct FlowGfwOmegaXi {
 
     // QA
     if (cfgOutputQA) {
-    // V0 QA
+      // V0 QA
       registry.add("QAhisto/V0/hqaV0radiusbefore", "", {HistType::kTH1D, {{200, 0, 200}}});
       registry.add("QAhisto/V0/hqaV0radiusafter", "", {HistType::kTH1D, {{200, 0, 200}}});
       registry.add("QAhisto/V0/hqaV0cosPAbefore", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
@@ -491,19 +491,21 @@ struct FlowGfwOmegaXi {
     fGFW->CreateRegions(); // finalize the initialization
 
     // used for event selection
-    if (cfgMultPVCut == 4) {
+    int caseapass4 = 4;
+    int caseapass5 = 5;
+    if (cfgMultPVCut == caseapass4) {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
       fMultPVCutLow->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
       fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
       fMultPVCutHigh->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
     }
-    if (cfgMultPVCut == 5) {
+    if (cfgMultPVCut == caseapass5) {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
       fMultPVCutLow->SetParameters(3074.43, -106.192, 1.46176, -0.00968364, 2.61923e-05, 182.128, -7.43492, 0.193901, -0.00256715, 1.22594e-05);
       fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
       fMultPVCutHigh->SetParameters(3074.43, -106.192, 1.46176, -0.00968364, 2.61923e-05, 182.128, -7.43492, 0.193901, -0.00256715, 1.22594e-05);
     }
- 
+
     fT0AV0AMean = new TF1("fT0AV0AMean", "[0]+[1]*x", 0, 200000);
     fT0AV0AMean->SetParameters(-1601.0581, 9.417652e-01);
     fT0AV0ASigma = new TF1("fT0AV0ASigma", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 200000);
@@ -802,7 +804,9 @@ struct FlowGfwOmegaXi {
 
     if (std::fabs(vtxz) > cfgCutVertex)
       return false;
-    if (cfgMultPVCut == 4 || cfgMultPVCut == 5) {
+    int caseapass4 = 4;
+    int caseapass5 = 5;
+    if (cfgMultPVCut == caseapass4 || cfgMultPVCut == caseapass5) {
       if (multNTracksPV < fMultPVCutLow->Eval(centrality))
         return false;
       if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
@@ -905,7 +909,7 @@ struct FlowGfwOmegaXi {
       // check daughter TPC and TOF
       // K0short
       if (v0.pt() > trkQualityOpts.cfgCutPtK0sMin.value && v0.pt() < trkQualityOpts.cfgCutPtK0sMax.value) {
-        if (v0.qtarm() / std::fabs(v0.alpha()) > v0BuilderOpts.cfgv0_ArmPodocut.value && 
+        if (v0.qtarm() / std::fabs(v0.alpha()) > v0BuilderOpts.cfgv0_ArmPodocut.value &&
             std::fabs(v0.mK0Short() - o2::constants::physics::MassK0Short) < v0BuilderOpts.cfgv0_mk0swindow.value &&
             (std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(v0negdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
             ((std::fabs(v0posdau.tofNSigmaPi()) < cfgNSigma[3] || v0posdau.pt() < lowpt) && (std::fabs(v0negdau.tofNSigmaPi()) < cfgNSigma[3] || v0negdau.pt() < lowpt)) &&
@@ -928,9 +932,9 @@ struct FlowGfwOmegaXi {
           isLambda = true;
           candNumAll[1] = candNumAll[1] + 1;
         } else if (std::fabs(v0.mLambda() - o2::constants::physics::MassLambda) < v0BuilderOpts.cfgv0_mlambdawindow.value &&
-                  (std::fabs(v0negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
-                  ((std::fabs(v0negdau.tofNSigmaPr()) < cfgNSigma[4] || v0negdau.pt() < lowpt) && (std::fabs(v0posdau.tofNSigmaPi()) < cfgNSigma[3] || v0posdau.pt() < lowpt)) &&
-                  ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(v0posdau)) < cfgNSigma[7]) || v0posdau.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(v0negdau)) < cfgNSigma[6]) || v0negdau.pt() < lowpt)) {
+                   (std::fabs(v0negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
+                   ((std::fabs(v0negdau.tofNSigmaPr()) < cfgNSigma[4] || v0negdau.pt() < lowpt) && (std::fabs(v0posdau.tofNSigmaPi()) < cfgNSigma[3] || v0posdau.pt() < lowpt)) &&
+                   ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(v0posdau)) < cfgNSigma[7]) || v0posdau.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(v0negdau)) < cfgNSigma[6]) || v0negdau.pt() < lowpt)) {
           registry.fill(HIST("InvMassLambda_all"), v0.pt(), v0.mLambda(), v0.eta(), cent);
           isLambda = true;
           candNumAll[1] = candNumAll[1] + 1;
@@ -1049,9 +1053,9 @@ struct FlowGfwOmegaXi {
           isOmega = true;
           candNumAll[3] = candNumAll[3] + 1;
         } else if (casc.sign() > 0 && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
-                  (std::fabs(bachelor.tpcNSigmaKa()) < cfgNSigma[2] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
-                  ((std::fabs(bachelor.tofNSigmaKa()) < cfgNSigma[5] || bachelor.pt() < lowpt) && (std::fabs(negdau.tofNSigmaPr()) < cfgNSigma[4] || negdau.pt() < lowpt) && (std::fabs(posdau.tofNSigmaPi()) < cfgNSigma[3] || posdau.pt() < lowpt)) &&
-                  ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Kaon>(bachelor)) < cfgNSigma[8]) || bachelor.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(posdau)) < cfgNSigma[7]) || posdau.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(negdau)) < cfgNSigma[6]) || negdau.pt() < lowpt)) {
+                   (std::fabs(bachelor.tpcNSigmaKa()) < cfgNSigma[2] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
+                   ((std::fabs(bachelor.tofNSigmaKa()) < cfgNSigma[5] || bachelor.pt() < lowpt) && (std::fabs(negdau.tofNSigmaPr()) < cfgNSigma[4] || negdau.pt() < lowpt) && (std::fabs(posdau.tofNSigmaPi()) < cfgNSigma[3] || posdau.pt() < lowpt)) &&
+                   ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Kaon>(bachelor)) < cfgNSigma[8]) || bachelor.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(posdau)) < cfgNSigma[7]) || posdau.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(negdau)) < cfgNSigma[6]) || negdau.pt() < lowpt)) {
           registry.fill(HIST("InvMassOmega_all"), casc.pt(), casc.mOmega(), casc.eta(), cent);
           isOmega = true;
           candNumAll[3] = candNumAll[3] + 1;
@@ -1067,9 +1071,9 @@ struct FlowGfwOmegaXi {
           isXi = true;
           candNumAll[2] = candNumAll[2] + 1;
         } else if (casc.sign() > 0 && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
-                  (std::fabs(bachelor.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
-                  ((std::fabs(bachelor.tofNSigmaPi()) < cfgNSigma[3] || bachelor.pt() < lowpt) && (std::fabs(negdau.tofNSigmaPr()) < cfgNSigma[4] || negdau.pt() < lowpt) && (std::fabs(posdau.tofNSigmaPi()) < cfgNSigma[3] || posdau.pt() < lowpt)) &&
-                  ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(bachelor)) < cfgNSigma[6]) || bachelor.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(posdau)) < cfgNSigma[7]) || posdau.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(negdau)) < cfgNSigma[6]) || negdau.pt() < lowpt)) {
+                   (std::fabs(bachelor.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
+                   ((std::fabs(bachelor.tofNSigmaPi()) < cfgNSigma[3] || bachelor.pt() < lowpt) && (std::fabs(negdau.tofNSigmaPr()) < cfgNSigma[4] || negdau.pt() < lowpt) && (std::fabs(posdau.tofNSigmaPi()) < cfgNSigma[3] || posdau.pt() < lowpt)) &&
+                   ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(bachelor)) < cfgNSigma[6]) || bachelor.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(posdau)) < cfgNSigma[7]) || posdau.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(negdau)) < cfgNSigma[6]) || negdau.pt() < lowpt)) {
           registry.fill(HIST("InvMassXi_all"), casc.pt(), casc.mXi(), casc.eta(), cent);
           isXi = true;
           candNumAll[2] = candNumAll[2] + 1;
