@@ -166,6 +166,7 @@ struct HfCorrelatorDsHadrons {
   Configurable<float> ptCandMax{"ptCandMax", 50., "max. cand pT"};
   Configurable<float> ptTrackMin{"ptTrackMin", 0.3, "min. track pT"};
   Configurable<float> ptTrackMax{"ptTrackMax", 50., "max. track pT"};
+  Configurable<float> posZmax{"posZmax", 10., "max. position-z of the reconstructed collision"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
   Configurable<std::vector<double>> binsPtD{"binsPtD", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots"};
   Configurable<std::vector<double>> binsPtHadron{"binsPtHadron", std::vector<double>{0.3, 2., 4., 8., 12., 50.}, "pT bin limits for assoc particle"};
@@ -173,6 +174,7 @@ struct HfCorrelatorDsHadrons {
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", {1., 1., 1., 1., 1., 1.}, "efficiency values for Ds meson"};
 
   int hfcReducedCollisionIndex = 0;
+  const int nDsDaughters = 3;
 
   HfHelper hfHelper;
   SliceCache cache;
@@ -629,7 +631,7 @@ struct HfCorrelatorDsHadrons {
         if (useSel8 && !collision.sel8()) {
           continue;
         }
-        if (std::abs(collision.posZ()) > 10.) {
+        if (std::abs(collision.posZ()) > posZmax) {
           continue;
         }
         if (selNoSameBunchPileUpColl && !(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
@@ -662,7 +664,7 @@ struct HfCorrelatorDsHadrons {
             listDaughters.clear();
             RecoDecay::getDaughters(particle, &listDaughters, arrDaughDsPDG, 2);
             int counterDaughters = 0;
-            if (listDaughters.size() == 3) {
+            if (listDaughters.size() == nDsDaughters) {
               for (const auto& dauIdx : listDaughters) {
                 // auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
                 auto daughI = groupedMcParticles.rawIteratorAt(dauIdx - groupedMcParticles.offset());
