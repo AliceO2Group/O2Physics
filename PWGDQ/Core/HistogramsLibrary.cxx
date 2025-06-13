@@ -115,11 +115,11 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "VtxZ_VtxNcontribReal", "VtxZ vs VtxNcontribReal", false, 100, -10.0, 10.0, VarManager::kVtxZ, 150, 0, 150.0, VarManager::kVtxNcontribReal);
         hm->AddHistogram(histClass, "VtxZ_MultNTracksPVeta1", "VtxZ vs MultNTracksPVeta1", false, 100, -10.0, 10.0, VarManager::kVtxZ, 150, 0, 150.0, VarManager::kMultNTracksPVeta1);
         hm->AddHistogram(histClass, "VtxZ_MultNTracksPVetaHalf", "VtxZ vs MultNTracksPVetaHalf", false, 100, -10.0, 10.0, VarManager::kVtxZ, 150, 0, 150.0, VarManager::kMultNTracksPVetaHalf);
-        hm->AddHistogram(histClass, "VtxZ_MultFV0A", "VtxZ vs MultFV0A", false, 100, -10.0, 10.0, VarManager::kVtxZ, 1000, 0, 25000.0, VarManager::kMultFV0A);
-        hm->AddHistogram(histClass, "VtxZ_MultFT0A", "VtxZ vs MultFT0A", false, 100, -10.0, 10.0, VarManager::kVtxZ, 1000, 0, 25000.0, VarManager::kMultFT0A);
-        hm->AddHistogram(histClass, "VtxZ_MultFT0C", "VtxZ vs MultFT0C", false, 100, -10.0, 10.0, VarManager::kVtxZ, 1000, 0, 25000.0, VarManager::kMultFT0C);
-        hm->AddHistogram(histClass, "VtxZ_MultFDDA", "VtxZ vs MultFDDA", false, 100, -10.0, 10.0, VarManager::kVtxZ, 1000, 0, 25000.0, VarManager::kMultFDDA);
-        hm->AddHistogram(histClass, "VtxZ_MultFDDC", "VtxZ vs MultFDDC", false, 100, -10.0, 10.0, VarManager::kVtxZ, 1000, 0, 25000.0, VarManager::kMultFDDC);
+        hm->AddHistogram(histClass, "VtxZ_MultFV0A", "VtxZ vs MultFV0A", false, 20, -10.0, 10.0, VarManager::kVtxZ, 200, 0, 25000.0, VarManager::kMultFV0A);
+        hm->AddHistogram(histClass, "VtxZ_MultFT0A", "VtxZ vs MultFT0A", false, 20, -10.0, 10.0, VarManager::kVtxZ, 200, 0, 25000.0, VarManager::kMultFT0A);
+        hm->AddHistogram(histClass, "VtxZ_MultFT0C", "VtxZ vs MultFT0C", false, 20, -10.0, 10.0, VarManager::kVtxZ, 200, 0, 25000.0, VarManager::kMultFT0C);
+        hm->AddHistogram(histClass, "VtxZ_MultFDDA", "VtxZ vs MultFDDA", false, 20, -10.0, 10.0, VarManager::kVtxZ, 200, 0, 25000.0, VarManager::kMultFDDA);
+        hm->AddHistogram(histClass, "VtxZ_MultFDDC", "VtxZ vs MultFDDC", false, 20, -10.0, 10.0, VarManager::kVtxZ, 200, 0, 25000.0, VarManager::kMultFDDC);
 
       } else {
         hm->AddHistogram(histClass, "MultTPC", "MultTPC", false, 200, 0.0, 50000.0, VarManager::kMultTPC);
