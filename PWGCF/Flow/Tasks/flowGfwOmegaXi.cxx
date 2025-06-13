@@ -1403,7 +1403,6 @@ struct FlowGfwOmegaXi {
     float wacc = 1;
     float wloc = 1;
     double nch = 0;
-    double nchMC = 0;
 
     for (const auto& track : tracks) {
       if (track.pt() < trkQualityOpts.cfgCutPtPOIMin.value || track.pt() > trkQualityOpts.cfgCutPtPOIMax.value)
@@ -1436,7 +1435,6 @@ struct FlowGfwOmegaXi {
         if (cfgDoLocDenCorr) {
           hLocalDensity->Fill(mcParticle.phi(), wacc * weff);
           hLocalDensity->Fill(RecoDecay::constrainAngle(mcParticle.phi(), -constants::math::TwoPI), wacc * weff);
-          nchMC += wacc * weff;
         }
       }
     }
