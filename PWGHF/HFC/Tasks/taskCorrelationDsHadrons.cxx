@@ -87,9 +87,9 @@ struct HfTaskCorrelationDsHadrons {
   Configurable<std::string> fdEffCcdbPath{"fdEffCcdbPath", "", "CCDB path for trigger efficiency"};
   Configurable<int64_t> timestampCcdb{"timestampCcdb", -1, "timestamp of the efficiency files used to query in CCDB"};
 
-  std::shared_ptr<TH1> mEfficiencyD = nullptr;
-  std::shared_ptr<TH1> mEfficiencyAssociated = nullptr;
-  const float epsilon = 1.e-12;
+  std::shared_ptr<TH1> hEfficiencyD = nullptr;
+  std::shared_ptr<TH1> hEfficiencyAssociated = nullptr;
+  const float epsilon = 1.e-8;
 
   enum CandidateStep {
     kCandidateStepMcGenDsToKKPi = 0,
@@ -255,14 +255,14 @@ struct HfTaskCorrelationDsHadrons {
       ccdb->setLocalObjectValidityChecking();
       ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
-      mEfficiencyD = std::shared_ptr<TH1>(ccdb->getForTimeStamp<TH1F>(promptEffCcdbPath, timestampCcdb));
-      if (mEfficiencyD == nullptr) {
+      hEfficiencyD = std::shared_ptr<TH1>(ccdb->getForTimeStamp<TH1F>(promptEffCcdbPath, timestampCcdb));
+      if (hEfficiencyD == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", promptEffCcdbPath.value.c_str());
       }
       LOGF(info, "Loaded trigger efficiency (prompt D) histogram from %s", promptEffCcdbPath.value.c_str());
 
-      mEfficiencyAssociated = std::shared_ptr<TH1>(ccdb->getForTimeStamp<TH1F>(associatedEffCcdbPath, timestampCcdb));
-      if (mEfficiencyAssociated == nullptr) {
+      hEfficiencyAssociated = std::shared_ptr<TH1>(ccdb->getForTimeStamp<TH1F>(associatedEffCcdbPath, timestampCcdb));
+      if (hEfficiencyAssociated == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for associated particles from %s", associatedEffCcdbPath.value.c_str());
       }
       LOGF(info, "Loaded associated efficiency histogram from %s", associatedEffCcdbPath.value.c_str());
@@ -292,10 +292,10 @@ struct HfTaskCorrelationDsHadrons {
     switch (mode) {
       case EfficiencyMode::DsOnly:
         if (loadAccXEffFromCCDB) {
-          if (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) <= epsilon) {
+          if (hEfficiencyD->GetBinContent(hEfficiencyD->FindBin(ptD)) <= epsilon) {
             LOG(fatal) << "A bin content in Ds-meson efficiency histogram is zero!";
           }
-          weight = 1. / mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD));
+          weight = 1. / hEfficiencyD->GetBinContent(hEfficiencyD->FindBin(ptD));
         } else {
           if (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) <= epsilon) {
             LOG(fatal) << "A bin content in Ds-meson efficiency vector is zero!";
@@ -305,11 +305,11 @@ struct HfTaskCorrelationDsHadrons {
         break;
       case EfficiencyMode::DsHadronPair:
         if (loadAccXEffFromCCDB) {
-          if (ptAssoc && mEfficiencyAssociated) {
-            if (mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(*ptAssoc)) <= epsilon) {
+          if (ptAssoc && hEfficiencyAssociated) {
+            if (hEfficiencyAssociated->GetBinContent(hEfficiencyAssociated->FindBin(*ptAssoc)) <= epsilon) {
               LOG(fatal) << "A bin content in associated particle efficiency histogram is zero!";
             }
-            weight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(*ptAssoc)));
+            weight = 1. / (hEfficiencyD->GetBinContent(hEfficiencyD->FindBin(ptD)) * hEfficiencyAssociated->GetBinContent(hEfficiencyAssociated->FindBin(*ptAssoc)));
           }
         } else {
           if (ptAssoc) {
