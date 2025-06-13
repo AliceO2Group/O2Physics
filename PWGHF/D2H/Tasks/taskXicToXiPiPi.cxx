@@ -17,7 +17,9 @@
 /// \author Carolina Reetz <c.reetz@cern.ch>, Heidelberg University
 /// \author Jaeyoon Cho <jaeyoon.cho@cern.ch>, Inha University
 
-#include <vector>
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
@@ -25,9 +27,7 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -47,6 +47,8 @@ struct HfTaskXicToXiPiPi {
   Configurable<bool> checkDecayTypeMc{"checkDecayTypeMc", false, "Flag to enable DecayType histogram"};
   // THnSparese for ML selection check
   Configurable<bool> enableTHn{"enableTHn", false, "Fill THnSparse for Xic"};
+
+  const int nVarsMultiClass = 3;
 
   Service<o2::framework::O2DatabasePDG> pdg;
 
@@ -130,10 +132,9 @@ struct HfTaskXicToXiPiPi {
       registry.add("hMassXiPi2", "#Xi^{#plus}_{c} candidates;inv. mass #Xi^{#mp} #pi^{#pm} (prong 2) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisMassXiRes, axisPt}});
       // KFParticle
       if (doprocessWithKFParticle || doprocessWithKFParticleAndML) {
-        registry.add("hChi2geoXi", "#Xi^{#plus}_{c} candidates;#Xi^{#mp} #chi^{2}_{geo};entries", {HistType::kTH2F, {axisChi2, axisPt}});
-        registry.add("hChi2geoLam", "#Xi^{#plus}_{c} candidates;#Lambda #chi^{2}_{geo};entries", {HistType::kTH2F, {axisChi2, axisPt}});
-        registry.add("hChi2topoToPV", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate #chi^{2}_{topo} to PV;entries", {HistType::kTH2F, {axisChi2, axisPt}});
-        registry.add("hChi2topoXiToXicPlus", "#Xi^{#plus}_{c} candidates;#Xi^{#mp} candidate #chi^{2}_{topo} to #Xi^{#plus}_{c};entries", {HistType::kTH2F, {axisChi2, axisPt}});
+        registry.add("hChi2GeoXi", "#Xi^{#plus}_{c} candidates;#chi^{2}_{geo} (#Xi^{#mp});entries", {HistType::kTH2F, {axisChi2, axisPt}});
+        registry.add("hChi2GeoLam", "#Xi^{#plus}_{c} candidates;#chi^{2}_{geo} (#Lambda);entries", {HistType::kTH2F, {axisChi2, axisPt}});
+        registry.add("hChi2TopoXicPlusToPV", "#Xi^{#plus}_{c} candidates;#chi^{2}_{topo} (#Xi^{#plus}_{c} #rightarrow PV);entries", {HistType::kTH2F, {axisChi2, axisPt}});
       }
     }
 
@@ -202,14 +203,12 @@ struct HfTaskXicToXiPiPi {
       registry.add("hMassXiPi2RecBg", "#Xi^{#plus}_{c} candidates (unmatched);inv. mass #Xi^{#mp} #pi^{#pm} (prong 2) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{300, 1.0, 2.0}, axisPt}});
       // MC reconstructed with KFParticle
       if (doprocessMcWithKFParticle || doprocessMcWithKFParticleAndML) {
-        registry.add("hChi2topoToPVRecSig", "#Xi^{#plus}_{c} candidates (matched);#Xi^{#plus}_{c} candidate #chi^{2}_{topo} to PV;entries", {HistType::kTH2F, {axisChi2, axisPt}});
-        registry.add("hChi2topoToPVRecBg", "#Xi^{#plus}_{c} candidates (unmatched);#Xi^{#plus}_{c} candidate #chi^{2}_{topo} to PV;entries", {HistType::kTH2F, {axisChi2, axisPt}});
-        registry.add("hChi2geoXiRecSig", "#Xi^{#plus}_{c} candidates (matched);#Xi^{#mp} #chi^{2}_{geo};entries", {HistType::kTH2F, {axisChi2, axisPt}});
-        registry.add("hChi2geoXiRecBg", "#Xi^{#plus}_{c} candidates (unmatched);#Xi^{#mp} #chi^{2}_{geo};entries", {HistType::kTH2F, {axisChi2, axisPt}});
-        registry.add("hChi2geoLamRecSig", "#Xi^{#plus}_{c} candidates (matched);#Lambda #chi^{2}_{geo};entries", {HistType::kTH2F, {axisChi2, axisPt}});
-        registry.add("hChi2geoLamRecBg", "#Xi^{#plus}_{c} candidates (unmatched);#Lambda #chi^{2}_{geo};entries", {HistType::kTH2F, {axisChi2, axisPt}});
-        registry.add("hChi2topoXiToXicPlusRecSig", "#Xi^{#plus}_{c} candidates (matched);#Xi^{#mp} candidate #chi^{2}_{topo} to #Xi^{#plus}_{c};entries", {HistType::kTH2F, {axisChi2, axisPt}});
-        registry.add("hChi2topoXiToXicPlusRecBg", "#Xi^{#plus}_{c} candidates (unmatched);#Xi^{#mp} candidate #chi^{2}_{topo} to #Xi^{#plus}_{c};entries", {HistType::kTH2F, {axisChi2, axisPt}});
+        registry.add("hChi2GeoXiRecSig", "#Xi^{#plus}_{c} candidates (matched);#chi^{2}_{geo} (#Xi^{#mp});entries", {HistType::kTH2F, {axisChi2, axisPt}});
+        registry.add("hChi2GeoXiRecBg", "#Xi^{#plus}_{c} candidates (unmatched);#chi^{2}_{geo} (#Xi^{#mp});entries", {HistType::kTH2F, {axisChi2, axisPt}});
+        registry.add("hChi2GeoLamRecSig", "#Xi^{#plus}_{c} candidates (matched);#chi^{2}_{geo} (#Lambda);entries", {HistType::kTH2F, {axisChi2, axisPt}});
+        registry.add("hChi2GeoLamRecBg", "#Xi^{#plus}_{c} candidates (unmatched);#chi^{2}_{geo} (#Lambda);entries", {HistType::kTH2F, {axisChi2, axisPt}});
+        registry.add("hChi2TopoXicPlusToPVRecSig", "#Xi^{#plus}_{c} candidates (matched);#chi^{2}_{topo} (#Xi^{#plus}_{c} #rightarrow PV);entries", {HistType::kTH2F, {axisChi2, axisPt}});
+        registry.add("hChi2TopoXicPlusToPVRecBg", "#Xi^{#plus}_{c} candidates (unmatched);#chi^{2}_{topo} (#Xi^{#plus}_{c} #rightarrow PV);entries", {HistType::kTH2F, {axisChi2, axisPt}});
       }
       // MC generated
       registry.add("hPtProng0Gen", "MC particles (generated);prong 0 (#Xi^{#mp}) #it{p}_{T}^{gen} (GeV/#it{c});entries", {HistType::kTH2F, {{300, 0., 30.}, axisPt}});
@@ -284,7 +283,7 @@ struct HfTaskXicToXiPiPi {
       if (scoreSize > 0) {
         outputBkg = candidate.mlProbXicToXiPiPi()[0];
         outputPrompt = candidate.mlProbXicToXiPiPi()[1];
-        if (scoreSize == 3) {
+        if (scoreSize == nVarsMultiClass) {
           outputFD = candidate.mlProbXicToXiPiPi()[2];
         }
       }
@@ -343,19 +342,18 @@ struct HfTaskXicToXiPiPi {
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter1(), ptCandXic);
       registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter2(), ptCandXic);
       registry.fill(HIST("hChi2PCA"), candidate.chi2PCA(), ptCandXic);
-      registry.fill(HIST("hCPAXi"), candidate.cosPaXi(), ptCandXic);
-      registry.fill(HIST("hCPAxyXi"), candidate.cosPaXYXi(), ptCandXic);
-      registry.fill(HIST("hCPALambda"), candidate.cosPaLambda(), ptCandXic);
-      registry.fill(HIST("hCPAxyLambda"), candidate.cosPaLambda(), ptCandXic);
+      registry.fill(HIST("hCPAXi"), candidate.cpaXi(), ptCandXic);
+      registry.fill(HIST("hCPAxyXi"), candidate.cpaXYXi(), ptCandXic);
+      registry.fill(HIST("hCPALambda"), candidate.cpaLambda(), ptCandXic);
+      registry.fill(HIST("hCPAxyLambda"), candidate.cpaLambda(), ptCandXic);
       registry.fill(HIST("hMassXiPi1"), candidate.invMassXiPi0(), ptCandXic);
       registry.fill(HIST("hMassXiPi2"), candidate.invMassXiPi1(), ptCandXic);
 
       // fill KFParticle specific histograms
       if constexpr (useKfParticle) {
-        registry.fill(HIST("hChi2topoToPV"), candidate.chi2TopoXicPlusToPV(), ptCandXic);
-        registry.fill(HIST("hChi2topoXiToXicPlus"), candidate.chi2TopoXiToXicPlus(), ptCandXic);
-        registry.fill(HIST("hChi2geoXi"), candidate.kfCascadeChi2(), ptCandXic);
-        registry.fill(HIST("hChi2geoLam"), candidate.kfV0Chi2(), ptCandXic);
+        registry.fill(HIST("hChi2GeoXi"), candidate.kfCascadeChi2(), ptCandXic);
+        registry.fill(HIST("hChi2GeoLam"), candidate.kfV0Chi2(), ptCandXic);
+        registry.fill(HIST("hChi2TopoXicPlusToPV"), candidate.chi2TopoXicPlusToPV(), ptCandXic);
       }
 
       // fill THnSparse
@@ -418,17 +416,16 @@ struct HfTaskXicToXiPiPi {
         registry.fill(HIST("hImpParErrRecSig"), candidate.errorImpactParameter1(), ptCandXic);
         registry.fill(HIST("hImpParErrRecSig"), candidate.errorImpactParameter2(), ptCandXic);
         registry.fill(HIST("hChi2PCARecSig"), candidate.chi2PCA(), ptCandXic);
-        registry.fill(HIST("hCPAXiRecSig"), candidate.cosPaXi(), ptCandXic);
-        registry.fill(HIST("hCPAxyXiRecSig"), candidate.cosPaXYXi(), ptCandXic);
-        registry.fill(HIST("hCPALambdaRecSig"), candidate.cosPaLambda(), ptCandXic);
-        registry.fill(HIST("hCPAxyLambdaRecSig"), candidate.cosPaLambda(), ptCandXic);
+        registry.fill(HIST("hCPAXiRecSig"), candidate.cpaXi(), ptCandXic);
+        registry.fill(HIST("hCPAxyXiRecSig"), candidate.cpaXYXi(), ptCandXic);
+        registry.fill(HIST("hCPALambdaRecSig"), candidate.cpaLambda(), ptCandXic);
+        registry.fill(HIST("hCPAxyLambdaRecSig"), candidate.cpaLambda(), ptCandXic);
 
         // fill KFParticle specific histograms
         if constexpr (useKfParticle) {
-          registry.fill(HIST("hChi2topoToPVRecSig"), candidate.chi2TopoXicPlusToPV(), ptCandXic);
-          registry.fill(HIST("hChi2topoXiToXicPlusRecSig"), candidate.chi2TopoXiToXicPlus(), ptCandXic);
           registry.fill(HIST("hChi2geoXiRecSig"), candidate.kfCascadeChi2(), ptCandXic);
           registry.fill(HIST("hChi2geoLamRecSig"), candidate.kfV0Chi2(), ptCandXic);
+          registry.fill(HIST("hChi2TopoXicPlusToPVRecSig"), candidate.chi2TopoXicPlusToPV(), ptCandXic);
         }
       } else {
         registry.fill(HIST("hPtRecBg"), ptCandXic);
@@ -457,17 +454,16 @@ struct HfTaskXicToXiPiPi {
         registry.fill(HIST("hImpParErrRecBg"), candidate.errorImpactParameter1(), ptCandXic);
         registry.fill(HIST("hImpParErrRecBg"), candidate.errorImpactParameter2(), ptCandXic);
         registry.fill(HIST("hChi2PCARecBg"), candidate.chi2PCA(), ptCandXic);
-        registry.fill(HIST("hCPAXiRecBg"), candidate.cosPaXi(), ptCandXic);
-        registry.fill(HIST("hCPAxyXiRecBg"), candidate.cosPaXYXi(), ptCandXic);
-        registry.fill(HIST("hCPALambdaRecBg"), candidate.cosPaLambda(), ptCandXic);
-        registry.fill(HIST("hCPAxyLambdaRecBg"), candidate.cosPaLambda(), ptCandXic);
+        registry.fill(HIST("hCPAXiRecBg"), candidate.cpaXi(), ptCandXic);
+        registry.fill(HIST("hCPAxyXiRecBg"), candidate.cpaXYXi(), ptCandXic);
+        registry.fill(HIST("hCPALambdaRecBg"), candidate.cpaLambda(), ptCandXic);
+        registry.fill(HIST("hCPAxyLambdaRecBg"), candidate.cpaLambda(), ptCandXic);
 
         // fill KFParticle specific histograms
         if constexpr (useKfParticle) {
-          registry.fill(HIST("hChi2topoToPVRecBg"), candidate.chi2TopoXicPlusToPV(), ptCandXic);
-          registry.fill(HIST("hChi2topoXiToXicPlusRecBg"), candidate.chi2TopoXiToXicPlus(), ptCandXic);
           registry.fill(HIST("hChi2geoXiRecBg"), candidate.kfCascadeChi2(), ptCandXic);
           registry.fill(HIST("hChi2geoLamRecBg"), candidate.kfV0Chi2(), ptCandXic);
+          registry.fill(HIST("hChi2TopoXicPlusToPVRecBg"), candidate.chi2TopoXicPlusToPV(), ptCandXic);
         }
       }
 

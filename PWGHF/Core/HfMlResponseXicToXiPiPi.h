@@ -16,11 +16,11 @@
 #ifndef PWGHF_CORE_HFMLRESPONSEXICTOXIPIPI_H_
 #define PWGHF_CORE_HFMLRESPONSEXICTOXIPIPI_H_
 
+#include "PWGHF/Core/HfMlResponse.h"
+
 #include <map>
 #include <string>
 #include <vector>
-
-#include "PWGHF/Core/HfMlResponse.h"
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)
@@ -62,10 +62,10 @@ enum class InputFeaturesXicToXiPiPi : uint8_t {
   decayLengthXYNormalised,
   cpa,
   cpaXY,
-  cosPaXi,
-  cosPaXYXi,
-  cosPaLambda,
-  cosPaXYLambda,
+  cpaXi,
+  cpaXYXi,
+  cpaLambda,
+  cpaXYLambda,
   impactParameterXi,
   impactParameterPi0,
   impactParameterPi1,
@@ -119,10 +119,10 @@ class HfMlResponseXicToXiPiPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_XICTOXIPIPI(decayLengthXYNormalised);
         CHECK_AND_FILL_VEC_XICTOXIPIPI(cpa);
         CHECK_AND_FILL_VEC_XICTOXIPIPI(cpaXY);
-        CHECK_AND_FILL_VEC_XICTOXIPIPI(cosPaXi);
-        CHECK_AND_FILL_VEC_XICTOXIPIPI(cosPaXYXi);
-        CHECK_AND_FILL_VEC_XICTOXIPIPI(cosPaLambda);
-        CHECK_AND_FILL_VEC_XICTOXIPIPI(cosPaXYLambda);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(cpaXi);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(cpaXYXi);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(cpaLambda);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(cpaXYLambda);
         CHECK_AND_FILL_VEC_XICTOXIPIPI_FULL(candidate, impactParameterXi, impactParameter0);
         CHECK_AND_FILL_VEC_XICTOXIPIPI_FULL(candidate, impactParameterPi0, impactParameter1);
         CHECK_AND_FILL_VEC_XICTOXIPIPI_FULL(candidate, impactParameterPi1, impactParameter2);
@@ -166,10 +166,10 @@ class HfMlResponseXicToXiPiPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_XICTOXIPIPI(decayLengthXYNormalised),
       FILL_MAP_XICTOXIPIPI(cpa),
       FILL_MAP_XICTOXIPIPI(cpaXY),
-      FILL_MAP_XICTOXIPIPI(cosPaXi),
-      FILL_MAP_XICTOXIPIPI(cosPaXYXi),
-      FILL_MAP_XICTOXIPIPI(cosPaLambda),
-      FILL_MAP_XICTOXIPIPI(cosPaXYLambda),
+      FILL_MAP_XICTOXIPIPI(cpaXi),
+      FILL_MAP_XICTOXIPIPI(cpaXYXi),
+      FILL_MAP_XICTOXIPIPI(cpaLambda),
+      FILL_MAP_XICTOXIPIPI(cpaXYLambda),
       FILL_MAP_XICTOXIPIPI(impactParameterXi),
       FILL_MAP_XICTOXIPIPI(impactParameterPi0),
       FILL_MAP_XICTOXIPIPI(impactParameterPi1),
