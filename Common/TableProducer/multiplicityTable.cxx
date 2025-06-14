@@ -739,10 +739,10 @@ struct MultiplicityTable {
   {
     for (auto const& hepmchi : hepmchis) {
       multHepMCHIs(hepmchi.mcCollisionId(),
-                   hepmchi.ncollHard(), 
-                   hepmchi.npartProj(), 
-                   hepmchi.npartTarg(), 
-                   hepmchi.ncoll(), 
+                   hepmchi.ncollHard(),
+                   hepmchi.npartProj(),
+                   hepmchi.npartTarg(),
+                   hepmchi.ncoll(),
                    hepmchi.impactParameter());
     }
   }
