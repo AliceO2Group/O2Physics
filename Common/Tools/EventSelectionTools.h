@@ -234,9 +234,9 @@ class BcSelectionModule
 
   //__________________________________________________
   template <typename TCCDB, typename TBCs, typename TBcSelBuffer, typename TBcSelCursor>
-  std::vector<o2::common::eventselection::bcselEntry> processRun2(TCCDB const& ccdb, TBCs const& bcs, TBcSelBuffer const& bcselbuffer, TBcSelCursor& bcsel)
+  std::vector<o2::common::eventselection::bcselEntry> processRun2(TCCDB const& ccdb, TBCs const& bcs, TBcSelBuffer& bcselbuffer, TBcSelCursor& bcsel)
   {
-    std::vector<o2::common::eventselection::bcselEntry> bcselEntries;
+    bcselbuffer.clear();
     for (const auto& bc : bcs) {
       par = ccdb->template getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
       aliases = ccdb->template getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", bc.timestamp());
@@ -358,21 +358,20 @@ class BcSelectionModule
       entry.foundFV0Id = foundFV0;
       entry.foundFDDId = foundFDD;
       entry.foundZDCId = foundZDC;
-      bcselEntries.push_back(entry);
+      bcselbuffer.push_back(entry);
 
       // Fill bc selection columns
       bcsel(alias, selection, rct, foundFT0, foundFV0, foundFDD, foundZDC);
     } // end bc loop
-    return bcselEntries;
   } // end processRun2
 
   //__________________________________________________
   template <typename TCCDB, typename THistoRegistry, typename TBCs, typename TBcSelBuffer, typename TBcSelCursor>
-  std::vector<o2::common::eventselection::bcselEntry> processRun3(TCCDB const& ccdb, THistoRegistry& histos, TBCs const& bcs, TBcSelBuffer const& bcselbuffer, TBcSelCursor& bcsel)
+  void processRun3(TCCDB const& ccdb, THistoRegistry& histos, TBCs const& bcs, TBcSelBuffer& bcselbuffer, TBcSelCursor& bcsel)
   {
-    std::vector<o2::common::eventselection::bcselEntry> bcselEntries;
+    bcselbuffer.clear();
     if (!configure(ccdb, bcs))
-      return bcselEntries; // don't do anything in case configuration reported not ok
+      return; // don't do anything in case configuration reported not ok
 
     int run = bcs.iteratorAt(0).runNumber();
     // map from GlobalBC to BcId needed to find triggerBc
@@ -540,12 +539,11 @@ class BcSelectionModule
       entry.foundFV0Id = foundFV0;
       entry.foundFDDId = foundFDD;
       entry.foundZDCId = foundZDC;
-      bcselEntries.push_back(entry);
+      bcselbuffer.push_back(entry);
 
       // Fill bc selection columns
       bcsel(alias, selection, rct, foundFT0, foundFV0, foundFDD, foundZDC);
     } // end bc loop
-    return bcselEntries;
   } // end processRun3
 }; // end BcSelectionModule
 
