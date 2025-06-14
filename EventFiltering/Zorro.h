@@ -9,11 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Zero Obstacles Results Retriever for Offline trigger selections
 
 ///
 /// \file Zorro.h
-/// \brief OTS trigger normalisation
+/// \brief Zero Obstacles Results Retriever for Offline trigger selections
 /// \author M Puccio
 ///
 
