@@ -166,7 +166,7 @@ struct HfCorrelatorDsHadrons {
   Configurable<float> ptCandMax{"ptCandMax", 50., "max. cand pT"};
   Configurable<float> ptTrackMin{"ptTrackMin", 0.3, "min. track pT"};
   Configurable<float> ptTrackMax{"ptTrackMax", 50., "max. track pT"};
-  Configurable<float> posZmax{"posZmax", 10., "max. position-z of the reconstructed collision"};
+  Configurable<float> zVtxMax{"zVtxMax", 10., "max. position-z of the reconstructed collision"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
   Configurable<std::vector<double>> binsPtD{"binsPtD", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots"};
   Configurable<std::vector<double>> binsPtHadron{"binsPtHadron", std::vector<double>{0.3, 2., 4., 8., 12., 50.}, "pT bin limits for assoc particle"};
