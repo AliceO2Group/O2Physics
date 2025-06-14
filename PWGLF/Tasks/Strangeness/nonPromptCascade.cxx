@@ -306,7 +306,7 @@ struct NonPromptCascadeTask {
         if (sel) {
           std::vector<bool> toivect = mZorro.getTriggerOfInterestResults();
           uint32_t toiMask = 0;
-          for (int i{0}; i < toivect.size(); i++) {
+          for (size_t i{0}; i < toivect.size(); i++) {
             toiMask += toivect[i] << i;
           }
           toiMap[bc.globalBC()] = toiMask;
