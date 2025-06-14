@@ -85,3 +85,8 @@ o2physics_add_dpl_workflow(tag-and-probe-dmesons
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing O2Physics::MLCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(derived-data-creator-d0-calibration
+    SOURCES derivedDataCreatorD0Calibration.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCore O2::DCAFitter O2Physics::MLCore
+    COMPONENT_NAME Analysis)
+
