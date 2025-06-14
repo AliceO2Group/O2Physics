@@ -184,9 +184,14 @@ DECLARE_SOA_TABLE_VERSIONED(MultMCExtras_001, "AOD", "MULTMCEXTRA", 1, //! Table
                             mult::IsInelGt1<mult::MultMCNParticlesEta10>,
                             o2::soa::Marker<1>);
 
+DECLARE_SOA_TABLE(MultHepMCHIs, "AOD", "MULTHEPMCHI", //! complementary table for heavy-ion mc info (subset of HepMCHeavyIons)
+                  o2::soa::Index<>, hepmcheavyion::McCollisionId, hepmcheavyion::NcollHard, hepmcheavyion::NpartProj, hepmcheavyion::NpartTarg,
+                  hepmcheavyion::Ncoll, hepmcheavyion::ImpactParameter);
+
 using MultMCExtras = MultMCExtras_001;
 using MultMCExtra = MultMCExtras::iterator;
 using MultsExtraMC = MultMCExtras; // for backwards compatibility with previous naming scheme
+using MultHepMCHI = MultHepMCHIs::iterator;
 
 // crosslinks
 namespace mult
