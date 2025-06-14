@@ -16,9 +16,9 @@
 #ifndef PWGJE_DATAMODEL_EMCALMATCHEDTRACKS_H_
 #define PWGJE_DATAMODEL_EMCALMATCHEDTRACKS_H_
 
-#include <string>
-#include "Framework/AnalysisDataModel.h"
-#include "EMCALClusterDefinition.h"
+#include <Framework/ASoA.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {

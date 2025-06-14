@@ -17,10 +17,17 @@
 #ifndef PWGJE_CORE_JETDERIVEDDATAUTILITIES_H_
 #define PWGJE_CORE_JETDERIVEDDATAUTILITIES_H_
 
-#include <vector>
-#include <string>
-#include "Common/CCDB/TriggerAliases.h"
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
+
+#include <Rtypes.h>
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 namespace jetderiveddatautilities
 {
@@ -153,9 +160,9 @@ uint16_t setEventSelectionBit(T const& collision)
   if (collision.sel7()) {
     SETBIT(bit, JCollisionSel::sel7);
   }
-    if (collision.alias_bit(kINT7)) {
-      SETBIT(bit, JCollisionSel::selKINT7);
-    }
+  if (collision.alias_bit(kINT7)) {
+    SETBIT(bit, JCollisionSel::selKINT7);
+  }
   if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
     SETBIT(bit, JCollisionSel::selTVX);
   }

@@ -17,22 +17,26 @@
 #ifndef PWGJE_DATAMODEL_JETSUBSTRUCTURE_H_
 #define PWGJE_DATAMODEL_JETSUBSTRUCTURE_H_
 
-#include <cmath>
-#include <vector>
-#include "Framework/AnalysisDataModel.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGJE/DataModel/Jet.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "PWGHF/DataModel/DerivedTables.h"
+#include "PWGJE/DataModel/Jet.h" // IWYU pragma: keep
 #include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetReducedDataDQ.h"
+
+#include <Framework/ASoA.h>
+
+#include <cmath>
+#include <cstdint>
+#include <vector>
 
 namespace o2::aod
 {
 
 namespace jetcollision
-{                                                  //!
-DECLARE_SOA_COLUMN(PosZ, posZ, float);             //!
-DECLARE_SOA_COLUMN(Centrality, centrality, float); //!
-DECLARE_SOA_COLUMN(EventSel, eventSel, uint8_t);   //!
+{                                                    //!
+DECLARE_SOA_COLUMN(PosZ, posZ, float);               //!
+DECLARE_SOA_COLUMN(Centrality, centrality, float);   //!
+DECLARE_SOA_COLUMN(EventSel, eventSel, uint8_t);     //!
 DECLARE_SOA_COLUMN(EventWeight, eventWeight, float); //!
 } // namespace jetcollision
 
@@ -47,15 +51,15 @@ DECLARE_SOA_COLUMN(EventWeight, eventWeight, float); //!
 } // namespace jetmccollision
 
 namespace jetsubstructure
-{                                                                   //!
-DECLARE_SOA_COLUMN(EnergyMother, energyMother, std::vector<float>); //!
-DECLARE_SOA_COLUMN(PtLeading, ptLeading, std::vector<float>);       //!
-DECLARE_SOA_COLUMN(PtSubLeading, ptSubLeading, std::vector<float>); //!
-DECLARE_SOA_COLUMN(Theta, theta, std::vector<float>);               //!
-DECLARE_SOA_COLUMN(NSub2DR, nSub2DR, float);                        //!
-DECLARE_SOA_COLUMN(NSub1, nSub1, float);                            //!
-DECLARE_SOA_COLUMN(NSub2, nSub2, float);                            //!
-DECLARE_SOA_COLUMN(PairJetPt, pairJetPt, std::vector<float>);       //!
+{                                                                                                   //!
+DECLARE_SOA_COLUMN(EnergyMother, energyMother, std::vector<float>);                                 //!
+DECLARE_SOA_COLUMN(PtLeading, ptLeading, std::vector<float>);                                       //!
+DECLARE_SOA_COLUMN(PtSubLeading, ptSubLeading, std::vector<float>);                                 //!
+DECLARE_SOA_COLUMN(Theta, theta, std::vector<float>);                                               //!
+DECLARE_SOA_COLUMN(NSub2DR, nSub2DR, float);                                                        //!
+DECLARE_SOA_COLUMN(NSub1, nSub1, float);                                                            //!
+DECLARE_SOA_COLUMN(NSub2, nSub2, float);                                                            //!
+DECLARE_SOA_COLUMN(PairJetPt, pairJetPt, std::vector<float>);                                       //!
 DECLARE_SOA_COLUMN(PairJetEnergy, pairJetEnergy, std::vector<float>);                               //!
 DECLARE_SOA_COLUMN(PairJetTheta, pairJetTheta, std::vector<float>);                                 //!
 DECLARE_SOA_COLUMN(PairJetPerpCone1Pt, pairJetPerpCone1Pt, std::vector<float>);                     //!
@@ -67,13 +71,13 @@ DECLARE_SOA_COLUMN(PairPerpCone1PerpCone1Theta, pairPerpCone1PerpCone1Theta, std
 DECLARE_SOA_COLUMN(PairPerpCone1PerpCone2Pt, pairPerpCone1PerpCone2Pt, std::vector<float>);         //!
 DECLARE_SOA_COLUMN(PairPerpCone1PerpCone2Energy, pairPerpCone1PerpCone2Energy, std::vector<float>); //!
 DECLARE_SOA_COLUMN(PairPerpCone1PerpCone2Theta, pairPerpCone1PerpCone2Theta, std::vector<float>);   //!
-DECLARE_SOA_COLUMN(Angularity, angularity, float);                  //!
-DECLARE_SOA_COLUMN(PtLeadingConstituent, ptLeadingConstituent, float); //!
-DECLARE_SOA_COLUMN(PerpConeRho, perpConeRho, float);                   //!
-DECLARE_SOA_COLUMN(SplittingMatchingGeo, splittingMatchingGeo, std::vector<int>); //!
-DECLARE_SOA_COLUMN(SplittingMatchingPt, splittingMatchingPt, std::vector<int>);   //!
-DECLARE_SOA_COLUMN(SplittingMatchingHF, splittingMatchingHF, std::vector<int>);   //!
-DECLARE_SOA_COLUMN(PairMatching, pairMatching, std::vector<int32_t>);             //!
+DECLARE_SOA_COLUMN(Angularity, angularity, float);                                                  //!
+DECLARE_SOA_COLUMN(PtLeadingConstituent, ptLeadingConstituent, float);                              //!
+DECLARE_SOA_COLUMN(PerpConeRho, perpConeRho, float);                                                //!
+DECLARE_SOA_COLUMN(SplittingMatchingGeo, splittingMatchingGeo, std::vector<int>);                   //!
+DECLARE_SOA_COLUMN(SplittingMatchingPt, splittingMatchingPt, std::vector<int>);                     //!
+DECLARE_SOA_COLUMN(SplittingMatchingHF, splittingMatchingHF, std::vector<int>);                     //!
+DECLARE_SOA_COLUMN(PairMatching, pairMatching, std::vector<int32_t>);                               //!
 } // namespace jetsubstructure
 
 namespace splitting

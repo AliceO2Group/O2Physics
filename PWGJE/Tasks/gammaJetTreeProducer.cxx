@@ -9,53 +9,48 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// C++ system headers first
-#include <string>
-#include <unordered_map>
-#include <vector>
-
-// Framework and other headers after
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetUtilities.h"
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/GammaJetAnalysisTree.h"
-
-#include "EMCALBase/Geometry.h"
-#include "EMCALCalib/BadChannelMap.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
-#include "DataFormatsEMCAL/Cell.h"
-#include "DataFormatsEMCAL/Constants.h"
-#include "DataFormatsEMCAL/AnalysisCluster.h"
-#include "TVector2.h"
-
-#include "CommonDataFormat/InteractionRecord.h"
-
-#include "EventFiltering/filterTables.h"
-
-// \struct GammaJetTreeProducer
+/// \struct GammaJetTreeProducer
 /// \brief Task to produce a tree for gamma-jet analysis, including photons (and information of isolation) and charged and full jets
 /// \author Florian Jonas <florian.jonas@cern.ch>, UC Berkeley/LBNL
 /// \since 02.08.2024
 ///
+
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/DataModel/GammaJetAnalysisTree.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include "TVector2.h"
+#include <TMath.h>
+
+#include <sys/types.h>
+
+#include <cstdint>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include <math.h>
+
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using emcClusters = o2::soa::Join<o2::aod::JClusters, o2::aod::JClusterTracks>;
-
-#include "Framework/runDataProcessing.h"
 
 struct GammaJetTreeProducer {
   // analysis tree

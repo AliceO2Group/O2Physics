@@ -17,23 +17,16 @@
 #ifndef PWGJE_CORE_JETBKGSUBUTILS_H_
 #define PWGJE_CORE_JETBKGSUBUTILS_H_
 
-#include <string>
-#include <memory>
+#include <fastjet/AreaDefinition.hh>
+#include <fastjet/GhostedAreaSpec.hh>
+#include <fastjet/JetDefinition.hh>
+#include <fastjet/PseudoJet.hh>
+#include <fastjet/Selector.hh>
+
 #include <tuple>
 #include <vector>
-#include <TMath.h>
 
-#include "PWGJE/Core/FastJetUtilities.h"
-
-#include "fastjet/PseudoJet.hh"
-#include "fastjet/ClusterSequenceArea.hh"
-#include "fastjet/AreaDefinition.hh"
-#include "fastjet/JetDefinition.hh"
-#include "fastjet/tools/JetMedianBackgroundEstimator.hh"
-#include "fastjet/tools/Subtractor.hh"
-#include "fastjet/contrib/ConstituentSubtractor.hh"
-
-#include "Framework/Logger.h"
+#include <math.h>
 
 enum class BkgSubEstimator { none = 0,
                              medianRho = 1,
