@@ -71,7 +71,13 @@ enum DecayChannelMain : int8_t {
   DsToPiPiPi,    // π+ π− π+
   DsToPiPiPiPi0, // π+ π− π+ π0
   // D*+
-  DstarToPiKPi, // π+ K− π+ (from [(D0 → π+ K−) π+])
+  DstarToPiKPi,       // π+ K− π+ (from [(D0 → π+ K−) π+])
+  DstarToPiKPiPi0,    // π+ K− π+ π0
+  DstarToPiKPiPi0Pi0, // π+ K− π+ π0 π0
+  DstarToPiKK,        // π+ K− K+
+  DstarToPiKKPi0,     // π+ K− K+ π0
+  DstarToPiPiPi,      // π+ π− π+
+  DstarToPiPiPiPi0,   // π+ π− π+ π0
   // Λc+
   LcToPKPi,    // p K− π+
   LcToPKPiPi0, // p K− π+ π0
@@ -102,6 +108,16 @@ enum DecayChannelResonant : int8_t {
   DsToF2_1270Pi,  // f2(1270) π+
   DsToF0_1370K,   // f0(1370) K+
   DsToEtaPi,      // η π+
+  // D*+
+  DstarToD0ToRhoplusPi,       // ρ+ π−
+  DstarToD0ToRhoplusK,        // ρ+ K−
+  DstarToD0ToKstar0Pi0,       // anti-K*0 π0
+  DstarToD0ToKstarPi,         // K*− π+
+  DstarToDplusToPhiPi,        // φ π+
+  DstarToDplusToKstar0K,      // anti-K*0 K+
+  DstarToDplusToKstar1430_0K, // anti-K*0(1430) K+
+  DstarToDplusToRho0Pi,       // ρ0 π+
+  DstarToDplusToF2_1270Pi,    // f2(1270) π+
   // Λc+
   LcToPKstar0,        // p K*0(892)
   LcToDeltaplusplusK, // Δ++ K−
