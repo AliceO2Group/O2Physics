@@ -94,6 +94,7 @@ struct DiHadronCor {
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, bool, false, "Use local efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgVerbosity, bool, false, "Verbose output")
   O2_DEFINE_CONFIGURABLE(cfgUseEventWeights, bool, false, "Use event weights for mixed event")
+  O2_DEFINE_CONFIGURABLE(cfgUsePtDiff, bool, false, "To enable pt differential vn, one needs to set this to true and set the pt bins accordingly")
 
   SliceCache cache;
 
@@ -472,8 +473,10 @@ struct DiHadronCor {
           associatedWeight = efficiencyAssociatedCache[track2.filteredIndex()];
         }
 
-        if (track1.pt() <= track2.pt())
-          continue; // skip if the trigger pt is less than the associate pt
+        if (cfgUsePtDiff && track1.globalIndex() == track2.globalIndex())
+          continue; // For pt-differential correlations, skip if the trigger and associate are the same track
+        if (!cfgUsePtDiff && track1.pt() <= track2.pt())
+          continue; // Without pt-differential correlations, skip if the trigger pt is less than the associate pt
 
         float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi(), -PIHalf);
         float deltaEta = track1.eta() - track2.eta();
@@ -537,8 +540,10 @@ struct DiHadronCor {
         if (doprocessOntheflyMixed && !genTrackSelected(track2))
           continue;
 
-        if (track1.pt() <= track2.pt())
-          continue; // skip if the trigger pt is less than the associate pt
+        if (cfgUsePtDiff && track1.globalIndex() == track2.globalIndex())
+          continue; // For pt-differential correlations, skip if the trigger and associate are the same track
+        if (!cfgUsePtDiff && track1.pt() <= track2.pt())
+          continue; // Without pt-differential correlations, skip if the trigger pt is less than the associate pt
 
         float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi(), -PIHalf);
         float deltaEta = track1.eta() - track2.eta();
