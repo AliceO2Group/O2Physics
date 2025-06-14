@@ -13,48 +13,46 @@
 /// \brief PID flow using the generic framework
 /// \author Preet Bhanjan Pati <preet.bhanjan.pati@cern.ch>
 
-#include <CCDB/BasicCCDBManager.h>
-#include <cmath>
-#include <vector>
-#include <utility>
-#include <array>
-#include <string>
-#include <map>
-
-#include "Math/Vector4D.h"
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/StepTHn.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/PIDResponseITS.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "CommonConstants/PhysicsConstants.h"
-
-#include "PWGCF/GenericFramework/Core/GFWPowerArray.h"
-#include "PWGCF/GenericFramework/Core/GFW.h"
-#include "PWGCF/GenericFramework/Core/GFWCumulant.h"
 #include "PWGCF/GenericFramework/Core/FlowContainer.h"
+#include "PWGCF/GenericFramework/Core/GFW.h"
+#include "PWGCF/GenericFramework/Core/GFWConfig.h"
+#include "PWGCF/GenericFramework/Core/GFWCumulant.h"
+#include "PWGCF/GenericFramework/Core/GFWPowerArray.h"
 #include "PWGCF/GenericFramework/Core/GFWWeights.h"
 #include "PWGCF/GenericFramework/Core/GFWWeightsList.h"
-#include "PWGCF/GenericFramework/Core/GFWConfig.h"
 
-#include "ReconstructionDataFormats/Track.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/PID.h"
+#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
 
+#include "Math/Vector4D.h"
+#include <TF1.h>
 #include <TProfile.h>
 #include <TRandom3.h>
-#include <TF1.h>
+
+#include <array>
+#include <cmath>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -72,6 +70,7 @@ GFWCorrConfigs configs;
 using namespace o2::analysis::genericframework;
 
 struct FlowPbpbPikp {
+  o2::aod::ITSResponse itsResponse;
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<int64_t> noLaterThan{"noLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -107,11 +106,12 @@ struct FlowPbpbPikp {
   O2_DEFINE_CONFIGURABLE(cfgUseStrictPID, bool, true, "Use strict PID cuts for TPC")
   O2_DEFINE_CONFIGURABLE(cfgV0AT0Acut, int, 5, "V0AT0A cut")
   O2_DEFINE_CONFIGURABLE(cfgUseAsymmetricPID, bool, false, "Use asymmetric PID cuts");
+  O2_DEFINE_CONFIGURABLE(cfgUseItsPID, bool, true, "Use ITS PID for particle identification");
 
   Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.7217476707, 0.7384792571, 0.7542625668, 0.7640680200, 0.7701951667, 0.7755299053, 0.7805901710, 0.7849446786, 0.7957356586, 0.8113039262, 0.8211968966, 0.8280558878, 0.8329342135}, "parameter 0 for track density efficiency correction"};
   Configurable<std::vector<double>> cfgTrackDensityP1{"cfgTrackDensityP1", std::vector<double>{-2.169488e-05, -2.191913e-05, -2.295484e-05, -2.556538e-05, -2.754463e-05, -2.816832e-05, -2.846502e-05, -2.843857e-05, -2.705974e-05, -2.477018e-05, -2.321730e-05, -2.203315e-05, -2.109474e-05}, "parameter 1 for track density efficiency correction"};
   Configurable<std::vector<double>> cfgTofNsigmaCut{"cfgTofNsigmaCut", std::vector<double>{1.5, 1.5, 1.5, -1.5, -1.5, -1.5}, "TOF n-sigma cut for pions_posNsigma, kaons_posNsigma, protons_posNsigma, pions_negNsigma, kaons_negNsigma, protons_negNsigma"};
-  Configurable<std::vector<double>> cfgItsNsigmaCut{"cfgItsNsigmaCut", std::vector<double>{3, 2.5, 2, 3, 2.5, 2}, "ITS n-sigma cut for pions_posNsigma, kaons_posNsigma, protons_posNsigma, pions_negNsigma, kaons_negNsigma, protons_negNsigma"};
+  Configurable<std::vector<double>> cfgItsNsigmaCut{"cfgItsNsigmaCut", std::vector<double>{3, 3, 3, -3, -3, -3}, "ITS n-sigma cut for pions_posNsigma, kaons_posNsigma, protons_posNsigma, pions_negNsigma, kaons_negNsigma, protons_negNsigma"};
   Configurable<std::vector<double>> cfgTpcNsigmaCut{"cfgTpcNsigmaCut", std::vector<double>{1.5, 1.5, 1.5, -1.5, -1.5, -1.5}, "TOF n-sigma cut for pions_posNsigma, kaons_posNsigma, protons_posNsigma, pions_negNsigma, kaons_negNsigma, protons_negNsigma"};
   Configurable<std::vector<int>> cfgUseEventCuts{"cfgUseEventCuts", std::vector<int>{1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0}, "Switch for various event cuts [kNoTimeFrameBorder, kNoITSROFrameBorder, kNoSameBunchPileup, kIsGoodZvtxFT0vsPV, kNoCollInTimeRangeStandard, kIsGoodITSLayersAll, kNoCollInRofStandard, kNoHighMultCollInPrevRof, Occupancy, Multiplicity correlation, T0AV0A 3 sigma cut, kIsVertexITSTPC, kTVXinTRD]"};
 
@@ -125,6 +125,7 @@ struct FlowPbpbPikp {
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "centrality axis for histograms"};
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {80, -5, 5}, "nsigmaTPC axis"};
   ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {80, -5, 5}, "nsigmaTOF axis"};
+  ConfigurableAxis axisNsigmaITS{"axisNsigmaITS", {80, -5, 5}, "nsigmaITS axis"};
   ConfigurableAxis axisParticles{"axisParticles", {3, 0, 3}, "axis for different hadrons"};
   ConfigurableAxis axisTPCsignal{"axisTPCsignal", {10000, 0, 1000}, "axis for TPC signal"};
   ConfigurableAxis axisTOFbeta{"axisTOFbeta", {200, 0, 2}, "axis for TOF beta"};
@@ -249,8 +250,13 @@ struct FlowPbpbPikp {
     histos.add("TofBeta", "", {HistType::kTH2D, {axisPt, axisTOFbeta}});
 
     histos.add("TofTpcNsigma_before", "", {HistType::kTHnSparseD, {{axisParticles, axisNsigmaTPC, axisNsigmaTOF, axisPt}}});
-    histos.add("TofTpcNsigma_after", "", {HistType::kTHnSparseD, {{axisParticles, axisNsigmaTPC, axisNsigmaTOF, axisPt}}});
+    if (!cfgUseItsPID)
+      histos.add("TofTpcNsigma_after", "", {HistType::kTHnSparseD, {{axisParticles, axisNsigmaTPC, axisNsigmaTOF, axisPt}}});
     histos.add("partCount", "", {HistType::kTHnSparseD, {{axisParticles, axisMultiplicity, axisPt}}});
+
+    histos.add("TofItsNsigma_before", "", {HistType::kTHnSparseD, {{axisParticles, axisNsigmaITS, axisNsigmaTOF, axisPt}}});
+    if (cfgUseItsPID)
+      histos.add("TofItsNsigma_after", "", {HistType::kTHnSparseD, {{axisParticles, axisNsigmaITS, axisNsigmaTOF, axisPt}}});
 
     histos.add("hEventCount", "Number of Events;; Count", {HistType::kTH1D, {{15, 0, 15}}});
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
@@ -448,7 +454,10 @@ struct FlowPbpbPikp {
     histos.fill(HIST("partCount"), pidIndex - 1, collision.centFT0C(), track.pt());
     switch (pidIndex) {
       case 1:
-        histos.fill(HIST("TofTpcNsigma_after"), pidIndex - 1, track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
+        if (!cfgUseItsPID)
+          histos.fill(HIST("TofTpcNsigma_after"), pidIndex - 1, track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
+        if (cfgUseItsPID)
+          histos.fill(HIST("TofItsNsigma_after"), pidIndex - 1, itsResponse.nSigmaITS<o2::track::PID::Pion>(track), track.tofNSigmaPi(), track.pt());
         histos.fill(HIST("hTrackCount"), 7.5); // Pion count
         if (!cfgAcceptance.value.empty() && cfgUseWeightPhiEtaVtxz)
           histos.fill(HIST("PhiCorrected/hPhiEtaVtxz_pi_corrd"), track.phi(), track.eta(), collision.posZ(), wacc); // pion weights
@@ -458,7 +467,10 @@ struct FlowPbpbPikp {
           histos.fill(HIST("PhiCorrected/hPhiEtaPt_pi_corrd"), track.phi(), track.eta(), track.pt(), wacc);
         break;
       case 2:
-        histos.fill(HIST("TofTpcNsigma_after"), pidIndex - 1, track.tpcNSigmaKa(), track.tofNSigmaKa(), track.pt());
+        if (!cfgUseItsPID)
+          histos.fill(HIST("TofTpcNsigma_after"), pidIndex - 1, track.tpcNSigmaKa(), track.tofNSigmaKa(), track.pt());
+        if (cfgUseItsPID)
+          histos.fill(HIST("TofItsNsigma_after"), pidIndex - 1, itsResponse.nSigmaITS<o2::track::PID::Kaon>(track), track.tofNSigmaKa(), track.pt());
         histos.fill(HIST("hTrackCount"), 8.5); // Kaon count
         if (!cfgAcceptance.value.empty() && cfgUseWeightPhiEtaVtxz)
           histos.fill(HIST("PhiCorrected/hPhiEtaVtxz_ka_corrd"), track.phi(), track.eta(), collision.posZ(), wacc); // kaon weights
@@ -468,7 +480,10 @@ struct FlowPbpbPikp {
           histos.fill(HIST("PhiCorrected/hPhiEtaPt_ka_corrd"), track.phi(), track.eta(), track.pt(), wacc);
         break;
       case 3:
-        histos.fill(HIST("TofTpcNsigma_after"), pidIndex - 1, track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
+        if (!cfgUseItsPID)
+          histos.fill(HIST("TofTpcNsigma_after"), pidIndex - 1, track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
+        if (cfgUseItsPID)
+          histos.fill(HIST("TofItsNsigma_after"), pidIndex - 1, itsResponse.nSigmaITS<o2::track::PID::Proton>(track), track.tofNSigmaPr(), track.pt());
         histos.fill(HIST("hTrackCount"), 9.5); // Proton count
         if (!cfgAcceptance.value.empty() && cfgUseWeightPhiEtaVtxz)
           histos.fill(HIST("PhiCorrected/hPhiEtaVtxz_pr_corrd"), track.phi(), track.eta(), collision.posZ(), wacc); // proton weights
@@ -512,17 +527,21 @@ struct FlowPbpbPikp {
   }
 
   template <typename TTrack>
-  int getNsigmaPIDTpcTofAssymmetric(TTrack track)
+  int getNsigmaPIDAssymmetric(TTrack track)
   {
     // Computing Nsigma arrays for pion, kaon, and protons
     std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
     std::array<float, 3> nSigmaTOF = {track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr()};
+    std::array<float, 3> nSigmaITS = {itsResponse.nSigmaITS<o2::track::PID::Pion>(track), itsResponse.nSigmaITS<o2::track::PID::Kaon>(track), itsResponse.nSigmaITS<o2::track::PID::Proton>(track)};
     int pid = -1;
 
+    std::array<float, 3> nSigmaToUse = cfgUseItsPID ? nSigmaITS : nSigmaTPC;            // Choose which nSigma to use: TPC or ITS
+    std::vector<double> detectorNsigmaCut = cfgUseItsPID ? itsNsigmaCut : tpcNsigmaCut; // Choose which nSigma to use: TPC or ITS
+
     bool isPion, isKaon, isProton;
-    bool isTpcPion = nSigmaTPC[0] < tpcNsigmaCut[0] && nSigmaTPC[0] > tpcNsigmaCut[0 + 3];
-    bool isTpcKaon = nSigmaTPC[1] < tpcNsigmaCut[1] && nSigmaTPC[1] > tpcNsigmaCut[1 + 3];
-    bool isTpcProton = nSigmaTPC[2] < tpcNsigmaCut[2] && nSigmaTPC[2] > tpcNsigmaCut[2 + 3];
+    bool isDetectedPion = nSigmaToUse[0] < detectorNsigmaCut[0] && nSigmaToUse[0] > detectorNsigmaCut[0 + 3];
+    bool isDetectedKaon = nSigmaToUse[1] < detectorNsigmaCut[1] && nSigmaToUse[1] > detectorNsigmaCut[1 + 3];
+    bool isDetectedProton = nSigmaToUse[2] < detectorNsigmaCut[2] && nSigmaToUse[2] > detectorNsigmaCut[2 + 3];
 
     bool isTofPion = nSigmaTOF[0] < tofNsigmaCut[0] && nSigmaTOF[0] > tofNsigmaCut[0 + 3];
     bool isTofKaon = nSigmaTOF[1] < tofNsigmaCut[1] && nSigmaTOF[1] > tofNsigmaCut[1 + 3];
@@ -531,13 +550,13 @@ struct FlowPbpbPikp {
     if (track.pt() > cfgTofPtCut && !track.hasTOF()) {
       return 0;
     } else if (track.pt() > cfgTofPtCut && track.hasTOF()) {
-      isPion = isTofPion && isTpcPion;
-      isKaon = isTofKaon && isTpcKaon;
-      isProton = isTofProton && isTpcProton;
+      isPion = isTofPion && isDetectedPion;
+      isKaon = isTofKaon && isDetectedKaon;
+      isProton = isTofProton && isDetectedProton;
     } else {
-      isPion = isTpcPion;
-      isKaon = isTpcKaon;
-      isProton = isTpcProton;
+      isPion = isDetectedPion;
+      isKaon = isDetectedKaon;
+      isProton = isDetectedProton;
     }
 
     if ((isPion && isKaon) || (isPion && isProton) || (isKaon && isProton)) {
@@ -917,10 +936,14 @@ struct FlowPbpbPikp {
       histos.fill(HIST("TofTpcNsigma_before"), KAONS, track.tpcNSigmaKa(), track.tofNSigmaKa(), pt);
       histos.fill(HIST("TofTpcNsigma_before"), PROTONS, track.tpcNSigmaPr(), track.tofNSigmaPr(), pt);
 
+      histos.fill(HIST("TofItsNsigma_before"), PIONS, itsResponse.nSigmaITS<o2::track::PID::Pion>(track), track.tofNSigmaPi(), pt);
+      histos.fill(HIST("TofItsNsigma_before"), KAONS, itsResponse.nSigmaITS<o2::track::PID::Kaon>(track), track.tofNSigmaKa(), pt);
+      histos.fill(HIST("TofItsNsigma_before"), PROTONS, itsResponse.nSigmaITS<o2::track::PID::Proton>(track), track.tofNSigmaPr(), pt);
+
       bool withinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
       bool withinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);       // within RF pT range
 
-      pidIndex = cfgUseAsymmetricPID ? getNsigmaPIDTpcTofAssymmetric(track) : getNsigmaPIDTpcTof(track);
+      pidIndex = cfgUseAsymmetricPID ? getNsigmaPIDAssymmetric(track) : getNsigmaPIDTpcTof(track);
 
       weff = 1; // Initializing weff for each track
       // NUA weights
