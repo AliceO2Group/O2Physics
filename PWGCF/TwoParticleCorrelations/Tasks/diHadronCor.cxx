@@ -473,7 +473,7 @@ struct DiHadronCor {
           associatedWeight = efficiencyAssociatedCache[track2.filteredIndex()];
         }
 
-        if (cfgUsePtDiff && track1.globalIndex()  == track2.globalIndex())
+        if (cfgUsePtDiff && track1.globalIndex() == track2.globalIndex())
           continue; // For pt-differential correlations, skip if the trigger and associate are the same track
         if (!cfgUsePtDiff && track1.pt() <= track2.pt())
           continue; // Without pt-differential correlations, skip if the trigger pt is less than the associate pt
@@ -540,7 +540,7 @@ struct DiHadronCor {
         if (doprocessOntheflyMixed && !genTrackSelected(track2))
           continue;
 
-        if (cfgUsePtDiff && track1.globalIndex()  == track2.globalIndex())
+        if (cfgUsePtDiff && track1.globalIndex() == track2.globalIndex())
           continue; // For pt-differential correlations, skip if the trigger and associate are the same track
         if (!cfgUsePtDiff && track1.pt() <= track2.pt())
           continue; // Without pt-differential correlations, skip if the trigger pt is less than the associate pt
