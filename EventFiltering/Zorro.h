@@ -11,6 +11,12 @@
 //
 // Zero Obstacles Results Retriever for Offline trigger selections
 
+///
+/// \file Zorro.h
+/// \brief OTS trigger normalisation
+/// \author M Puccio
+///
+
 #ifndef EVENTFILTERING_ZORRO_H_
 #define EVENTFILTERING_ZORRO_H_
 
