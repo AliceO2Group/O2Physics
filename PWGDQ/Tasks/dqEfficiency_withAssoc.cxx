@@ -2105,12 +2105,12 @@ struct AnalysisSameEventPairing {
         if (sig->CheckSignal(true, mctrack)) {
           mcDecision |= (static_cast<uint32_t>(1) << isig);
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig->GetName()), VarManager::fgValues);
-	  if (useMiniTree.fConfigMiniTree) {
+          if (useMiniTree.fConfigMiniTree) {
             auto mcEvent = mcEvents.rawIteratorAt(mctrack.reducedMCeventId());
             dileptonMiniTreeGen(mcDecision, mcEvent.impactParameter(), mctrack.pt(), mctrack.eta(), mctrack.phi(), -999, -999, -999);
           }
         }
-	isig++;
+        isig++;
       }
     }
 
