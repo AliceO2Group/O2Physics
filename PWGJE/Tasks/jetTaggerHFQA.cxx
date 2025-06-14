@@ -125,6 +125,8 @@ struct JetTaggerHFQA {
     // Axis
     AxisSpec axisJetFlavour = {binJetFlavour, "Jet flavour"};
     AxisSpec axisJetPt = {binJetPt, "#it{p}_{T, jet}"};
+    AxisSpec axisMCDJetPt = {binJetPt, "#it{p}_{T, jet}^{rec}"};
+    AxisSpec axisMCPJetPt = {binJetPt, "#it{p}_{T, jet}^{gen}"};
     AxisSpec axisEta = {binEta, "#eta"};
     AxisSpec axisPhi = {binPhi, "#phi"};
     AxisSpec axisNTracks = {binNtracks, "#it{N}_{tracks}"};
@@ -269,7 +271,7 @@ struct JetTaggerHFQA {
       registry.add("h2_jet_phi_part_flavour", "", {HistType::kTH2F, {{axisPhi}, {axisJetFlavour}}});
     }
     if (doprocessIPsMCPMCDMatched || doprocessIPsMCPMCDMatchedWeighted) {
-      registry.add("h3_jet_pt_jet_pt_part_matchedgeo_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisJetPt}, {axisJetFlavour}}});
+      registry.add("h3_jet_pt_jet_pt_part_matchedgeo_flavour", "", {HistType::kTH3F, {{axisMCDJetPt}, {axisMCPJetPt}, {axisJetFlavour}}});
     }
     if (doprocessJPData) {
       if (!doprocessIPsData && !doprocessSV2ProngData && !doprocessSV3ProngData) {
