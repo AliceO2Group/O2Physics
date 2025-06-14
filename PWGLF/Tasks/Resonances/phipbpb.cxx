@@ -11,52 +11,54 @@
 // Phi meson spin alignment task
 // sourav.kundu@cern.ch
 
-#include <TH1F.h>
+#include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "PWGLF/DataModel/SPCalibrationTables.h"
+#include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include "Math/GenVector/Boost.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "TF1.h"
+#include "TRandom3.h"
+#include <TDatabasePDG.h>
 #include <TDirectory.h>
+#include <TFile.h>
+#include <TH1F.h>
+#include <TH2F.h>
 #include <THn.h>
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TLorentzVector.h>
 #include <TPDGCode.h>
-#include <TDatabasePDG.h>
-#include <cmath>
+
 #include <array>
+#include <cmath>
 #include <cstdlib>
-#include <vector>
 #include <string>
-
-#include "TRandom3.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "Math/GenVector/Boost.h"
-#include "TF1.h"
-
-#include "PWGLF/DataModel/EPCalibrationTables.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/TrackSelection.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "Common/DataModel/PIDResponseITS.h"
-#include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -92,6 +94,9 @@ struct phipbpb {
   Configurable<float> cfgCutCentrality{"cfgCutCentrality", 80.0f, "Accepted maximum Centrality"};
   Configurable<int> cfgCutOccupancy{"cfgCutOccupancy", 3000, "Occupancy cut"};
   // track
+  Configurable<bool> cqvas{"cqvas", false, "change q vectors after shift correction"};
+  Configurable<bool> fillv1{"fillv1", false, "flag to fill v1 histograms"};
+  Configurable<bool> fillLOCC{"fillLOCC", false, "flag to fill LOCC histograms"};
   Configurable<bool> useSP{"useSP", false, "use SP"};
   Configurable<bool> useDcaSyst{"useDcaSyst", false, "useDcaSyst"};
   Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
@@ -117,15 +122,17 @@ struct phipbpb {
   Configurable<bool> checkAllCharge{"checkAllCharge", true, "check all charge for MC weight"};
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
   Configurable<double> confRapidity{"confRapidity", 0.5, "Rapidity cut"};
-  ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {120, 0.98, 1.1}, "#it{M} (GeV/#it{c}^{2})"};
-  ConfigurableAxis configThnAxisPt{"configThnAxisPt", {100, 0.0, 10.}, "#it{p}_{T} (GeV/#it{c})"};
-  ConfigurableAxis configThnAxisCosThetaStar{"configThnAxisCosThetaStar", {10, -1.0, 1.}, "cos(#vartheta)"};
-  ConfigurableAxis configThnAxisCentrality{"configThnAxisCentrality", {8, 0., 80}, "Centrality"};
-  ConfigurableAxis configThnAxisPhiminusPsi{"configThnAxisPhiminusPsi", {6, 0.0, TMath::Pi()}, "#phi - #psi"};
-  ConfigurableAxis configThnAxisV2{"configThnAxisV2", {200, -6, 6}, "V2"};
-  ConfigurableAxis configThnAxisRapidity{"configThnAxisRapidity", {8, 0, 0.8}, "Rapidity"};
-  ConfigurableAxis configThnAxisSA{"configThnAxisSA", {200, -1, 1}, "SA"};
-  ConfigurableAxis configThnAxiscosthetaSA{"configThnAxiscosthetaSA", {200, 0, 1}, "costhetaSA"};
+  struct : ConfigurableGroup {
+    ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {120, 0.98, 1.1}, "#it{M} (GeV/#it{c}^{2})"};
+    ConfigurableAxis configThnAxisPt{"configThnAxisPt", {100, 0.0, 10.}, "#it{p}_{T} (GeV/#it{c})"};
+    ConfigurableAxis configThnAxisCosThetaStar{"configThnAxisCosThetaStar", {10, -1.0, 1.}, "cos(#vartheta)"};
+    ConfigurableAxis configThnAxisCentrality{"configThnAxisCentrality", {8, 0., 80}, "Centrality"};
+    ConfigurableAxis configThnAxisPhiminusPsi{"configThnAxisPhiminusPsi", {6, 0.0, TMath::Pi()}, "#phi - #psi"};
+    ConfigurableAxis configThnAxisV2{"configThnAxisV2", {200, -6, 6}, "V2"};
+    ConfigurableAxis configThnAxisRapidity{"configThnAxisRapidity", {8, 0, 0.8}, "Rapidity"};
+    ConfigurableAxis configThnAxisSA{"configThnAxisSA", {200, -1, 1}, "SA"};
+    ConfigurableAxis configThnAxiscosthetaSA{"configThnAxiscosthetaSA", {200, 0, 1}, "costhetaSA"};
+  } cnfgaxis;
   ConfigurableAxis axisPtKaonWeight{"axisPtKaonWeight", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f}, "pt axis"};
   Configurable<bool> isMC{"isMC", false, "use MC"};
   Configurable<bool> genacceptancecut{"genacceptancecut", true, "use acceptance cut for generated"};
@@ -133,6 +140,9 @@ struct phipbpb {
   Configurable<bool> islike{"islike", false, "use like"};
   Configurable<bool> useWeight{"useWeight", true, "use EP dep effi weight"};
   Configurable<std::string> ConfWeightPath{"ConfWeightPath", "Users/s/skundu/My/Object/mcweight", "Path to gain calibration"};
+  Configurable<int> spNbins{"spNbins", 2000, "Number of bins in sp"};
+  Configurable<float> lbinsp{"lbinsp", -1.0, "lower bin value in sp histograms"};
+  Configurable<float> hbinsp{"hbinsp", 1.0, "higher bin value in sp histograms"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter centralityFilter = nabs(aod::cent::centFT0C) < cfgCutCentrality;
@@ -141,6 +151,7 @@ struct phipbpb {
   Filter PIDcutFilter = nabs(aod::pidtpc::tpcNSigmaKa) < nsigmaCutTPC;
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::EPCalibrationTables, aod::Mults>>;
+  using EventCandidatesv1 = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::SPCalibrationTables, aod::Mults>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCFullKa, aod::pidTOFFullKa>>;
 
   using CollisionMCTrueTable = aod::McCollisions;
@@ -168,13 +179,13 @@ struct phipbpb {
   {
     // std::vector<double> occupancyBinning = {0.0, 500.0, 1000.0, 3000.0, 6000.0, 50000.0};
     std::vector<double> occupancyBinning = {-0.5, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
-    const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
-    const AxisSpec thnAxisPt{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec thnAxisCosThetaStar{configThnAxisCosThetaStar, "cos(#vartheta_{OP})"};
-    const AxisSpec thnAxisCentrality{configThnAxisCentrality, "Centrality (%)"};
-    const AxisSpec thnAxisV2{configThnAxisV2, "V2"};
-    const AxisSpec thnAxisRapidity{configThnAxisRapidity, "Rapidity"};
-    const AxisSpec thnAxisSA{configThnAxisSA, "SA"};
+    const AxisSpec thnAxisInvMass{cnfgaxis.configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisPt{cnfgaxis.configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec thnAxisCosThetaStar{cnfgaxis.configThnAxisCosThetaStar, "cos(#vartheta_{OP})"};
+    const AxisSpec thnAxisCentrality{cnfgaxis.configThnAxisCentrality, "Centrality (%)"};
+    const AxisSpec thnAxisV2{cnfgaxis.configThnAxisV2, "V2"};
+    const AxisSpec thnAxisRapidity{cnfgaxis.configThnAxisRapidity, "Rapidity"};
+    const AxisSpec thnAxisSA{cnfgaxis.configThnAxisSA, "SA"};
     AxisSpec cumulantAxis = {200, -1, 1, "phi"};
     AxisSpec itsAxis = {8, -0.5, 7.5, "its"};
     AxisSpec tpcAxis = {130, 69.5, 199.5, "its"};
@@ -184,133 +195,166 @@ struct phipbpb {
     AxisSpec resAxisSquare = {800, -1, 1, "Res"};
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
     AxisSpec occupancyAxis = {occupancyBinning, "Occupancy"};
+    AxisSpec spAxis = {spNbins, lbinsp, hbinsp, "Sp"};
 
-    histos.add("hTPCglobalmomcorr", "Momentum correlation", kTH3F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}, {8, 0.0f, 80.0f}});
-    histos.add("hpTvsRapidity", "pT vs Rapidity", kTH2F, {{100, 0.0f, 10.0f}, {300, -1.5f, 1.5f}});
-    histos.add("hFTOCvsTPCNoCut", "Mult correlation FT0C vs. TPC without any cut", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
-    histos.add("hFTOCvsTPC", "Mult correlation FT0C vs. TPC", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
-    histos.add("hFTOCvsTPCSelected", "Mult correlation FT0C vs. TPC after selection", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
+    if (fillv1) {
+      histos.add("hpQxtQxpvscent", "hpQxtQxpvscent", HistType::kTHnSparseF, {cnfgaxis.configThnAxisCentrality, spAxis}, true);
+      histos.add("hpQytQypvscent", "hpQytQypvscent", HistType::kTHnSparseF, {cnfgaxis.configThnAxisCentrality, spAxis}, true);
+      histos.add("hpQxytpvscent", "hpQxytpvscent", HistType::kTHnSparseF, {cnfgaxis.configThnAxisCentrality, spAxis}, true);
+      histos.add("hpQxtQypvscent", "hpQxtQypvscent", HistType::kTHnSparseF, {cnfgaxis.configThnAxisCentrality, spAxis}, true);
+      histos.add("hpQxpQytvscent", "hpQxpQytvscent", HistType::kTHnSparseF, {cnfgaxis.configThnAxisCentrality, spAxis}, true);
+
+      histos.add("hpQxpvscent", "hpQxpvscent", HistType::kTHnSparseF, {cnfgaxis.configThnAxisCentrality, spAxis}, true);
+      histos.add("hpQxtvscent", "hpQxtvscent", HistType::kTHnSparseF, {cnfgaxis.configThnAxisCentrality, spAxis}, true);
+      histos.add("hpQypvscent", "hpQypvscent", HistType::kTHnSparseF, {cnfgaxis.configThnAxisCentrality, spAxis}, true);
+      histos.add("hpQytvscent", "hpQytvscent", HistType::kTHnSparseF, {cnfgaxis.configThnAxisCentrality, spAxis}, true);
+
+      histos.add("hpoddvscentpteta", "hpoddvscentpteta", HistType::kTHnSparseF, {cnfgaxis.configThnAxisInvMass, cnfgaxis.configThnAxisCentrality, cnfgaxis.configThnAxisPt, cnfgaxis.configThnAxisRapidity, spAxis}, true);
+      histos.add("hpuxyQxypvscentpteta", "hpuxyQxypvscentpteta", HistType::kTHnSparseF, {cnfgaxis.configThnAxisInvMass, cnfgaxis.configThnAxisCentrality, cnfgaxis.configThnAxisPt, cnfgaxis.configThnAxisRapidity, spAxis}, true);
+      histos.add("hpuxyQxytvscentpteta", "hpuxyQxytvscentpteta", HistType::kTHnSparseF, {cnfgaxis.configThnAxisInvMass, cnfgaxis.configThnAxisCentrality, cnfgaxis.configThnAxisPt, cnfgaxis.configThnAxisRapidity, spAxis}, true);
+      histos.add("hpuxvscentpteta", "hpuxvscentpteta", HistType::kTHnSparseF, {cnfgaxis.configThnAxisInvMass, cnfgaxis.configThnAxisCentrality, cnfgaxis.configThnAxisPt, cnfgaxis.configThnAxisRapidity, spAxis}, true);
+      histos.add("hpuyvscentpteta", "hpuyvscentpteta", HistType::kTHnSparseF, {cnfgaxis.configThnAxisInvMass, cnfgaxis.configThnAxisCentrality, cnfgaxis.configThnAxisPt, cnfgaxis.configThnAxisRapidity, spAxis}, true);
+      histos.add("hpoddvscentptetamixacc", "hpoddvscentptetamixacc", HistType::kTHnSparseF, {cnfgaxis.configThnAxisInvMass, cnfgaxis.configThnAxisCentrality, cnfgaxis.configThnAxisPt, cnfgaxis.configThnAxisRapidity, spAxis}, true);
+      histos.add("hpuxyQxypvscentptetamixacc", "hpuxyQxypvscentptetamixacc", HistType::kTHnSparseF, {cnfgaxis.configThnAxisInvMass, cnfgaxis.configThnAxisCentrality, cnfgaxis.configThnAxisPt, cnfgaxis.configThnAxisRapidity, spAxis}, true);
+      histos.add("hpuxyQxytvscentptetamixacc", "hpuxyQxytvscentptetamixacc", HistType::kTHnSparseF, {cnfgaxis.configThnAxisInvMass, cnfgaxis.configThnAxisCentrality, cnfgaxis.configThnAxisPt, cnfgaxis.configThnAxisRapidity, spAxis}, true);
+      histos.add("hpuxvscentptetamixacc", "hpuxvscentptetamixacc", HistType::kTHnSparseF, {cnfgaxis.configThnAxisInvMass, cnfgaxis.configThnAxisCentrality, cnfgaxis.configThnAxisPt, cnfgaxis.configThnAxisRapidity, spAxis}, true);
+      histos.add("hpuyvscentptetamixacc", "hpuyvscentptetamixacc", HistType::kTHnSparseF, {cnfgaxis.configThnAxisInvMass, cnfgaxis.configThnAxisCentrality, cnfgaxis.configThnAxisPt, cnfgaxis.configThnAxisRapidity, spAxis}, true);
+      histos.add("hpoddvscentptetamixopti", "hpoddvscentptetamixopti", HistType::kTHnSparseF, {cnfgaxis.configThnAxisInvMass, cnfgaxis.configThnAxisCentrality, cnfgaxis.configThnAxisPt, cnfgaxis.configThnAxisRapidity, spAxis}, true);
+      histos.add("hpuxyQxypvscentptetamixopti", "hpuxyQxypvscentptetamixopti", HistType::kTHnSparseF, {cnfgaxis.configThnAxisInvMass, cnfgaxis.configThnAxisCentrality, cnfgaxis.configThnAxisPt, cnfgaxis.configThnAxisRapidity, spAxis}, true);
+      histos.add("hpuxyQxytvscentptetamixopti", "hpuxyQxytvscentptetamixopti", HistType::kTHnSparseF, {cnfgaxis.configThnAxisInvMass, cnfgaxis.configThnAxisCentrality, cnfgaxis.configThnAxisPt, cnfgaxis.configThnAxisRapidity, spAxis}, true);
+      histos.add("hpuxvscentptetamixopti", "hpuxvscentptetamixopti", HistType::kTHnSparseF, {cnfgaxis.configThnAxisInvMass, cnfgaxis.configThnAxisCentrality, cnfgaxis.configThnAxisPt, cnfgaxis.configThnAxisRapidity, spAxis}, true);
+      histos.add("hpuyvscentptetamixopti", "hpuyvscentptetamixopti", HistType::kTHnSparseF, {cnfgaxis.configThnAxisInvMass, cnfgaxis.configThnAxisCentrality, cnfgaxis.configThnAxisPt, cnfgaxis.configThnAxisRapidity, spAxis}, true);
+    }
+
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{200, 0.0, 200.0}});
     histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
-    histos.add("hEta", "Eta distribution", kTH1F, {{200, -1.0f, 1.0f}});
-    histos.add("hDcaxy", "Dcaxy distribution", kTH1F, {{200, -1.0f, 1.0f}});
-    histos.add("hDcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
 
-    histos.add("hITS", "ITS cluster", kTH2F, {{10, -0.5f, 9.5f}, {200, -1.0, 1.0}});
-    histos.add("hTPC", "TPC crossed rows", kTH2F, {{90, 69.5f, 159.5f}, {200, -1.0, 1.0}});
-    histos.add("hTPCScls", "TPC Shared cluster", kTH2F, {{16, -0.5f, 159.5f}, {200, -1.0, 1.0}});
-    histos.add("hTPCSclsFrac", "Fraction of TPC Shared cluster", kTH2F, {{100, -0.0f, 2.0f}, {200, -1.0, 1.0}});
+    if (!fillv1) {
+      histos.add("hTPCglobalmomcorr", "Momentum correlation", kTH3F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}, {8, 0.0f, 80.0f}});
+      histos.add("hpTvsRapidity", "pT vs Rapidity", kTH2F, {{100, 0.0f, 10.0f}, {300, -1.5f, 1.5f}});
+      histos.add("hFTOCvsTPCNoCut", "Mult correlation FT0C vs. TPC without any cut", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
+      histos.add("hFTOCvsTPC", "Mult correlation FT0C vs. TPC", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
+      histos.add("hFTOCvsTPCSelected", "Mult correlation FT0C vs. TPC after selection", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
+      histos.add("hEta", "Eta distribution", kTH1F, {{200, -1.0f, 1.0f}});
+      histos.add("hDcaxy", "Dcaxy distribution", kTH1F, {{200, -1.0f, 1.0f}});
+      histos.add("hDcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
 
-    histos.add("hNsigmaKaonTPC", "NsigmaKaon TPC distribution", kTH1F, {{200, -10.0f, 10.0f}});
-    histos.add("hNsigmaKaonTOF", "NsigmaKaon TOF distribution", kTH1F, {{200, -10.0f, 10.0f}});
-    histos.add("hPsiFT0C", "PsiFT0C", kTH3F, {centAxis, occupancyAxis, phiAxis});
-    histos.add("hPsiFT0A", "PsiFT0A", kTH3F, {centAxis, occupancyAxis, phiAxis});
-    histos.add("hPsiTPC", "PsiTPC", kTH3F, {centAxis, occupancyAxis, phiAxis});
-    histos.add("hPsiTPCR", "PsiTPCR", kTH3F, {centAxis, occupancyAxis, phiAxis});
-    histos.add("hPsiTPCL", "PsiTPCL", kTH3F, {centAxis, occupancyAxis, phiAxis});
+      histos.add("hITS", "ITS cluster", kTH2F, {{10, -0.5f, 9.5f}, {200, -1.0, 1.0}});
+      histos.add("hTPC", "TPC crossed rows", kTH2F, {{90, 69.5f, 159.5f}, {200, -1.0, 1.0}});
+      histos.add("hTPCScls", "TPC Shared cluster", kTH2F, {{16, -0.5f, 159.5f}, {200, -1.0, 1.0}});
+      histos.add("hTPCSclsFrac", "Fraction of TPC Shared cluster", kTH2F, {{100, -0.0f, 2.0f}, {200, -1.0, 1.0}});
 
-    histos.add("hSparseV2SameEventCosPhi", "hSparseV2SameEventCosPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
-    histos.add("hSparseV2SameEventSinPhi", "hSparseV2SameEventSinPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
-    histos.add("hSparseV2SameEventCosPsi", "hSparseV2SameEventCosPsi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
-    histos.add("hSparseV2SameEventSinPsi", "hSparseV2SameEventSinPsi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
+      histos.add("hNsigmaKaonTPC", "NsigmaKaon TPC distribution", kTH1F, {{200, -10.0f, 10.0f}});
+      histos.add("hNsigmaKaonTOF", "NsigmaKaon TOF distribution", kTH1F, {{200, -10.0f, 10.0f}});
+      histos.add("hPsiFT0C", "PsiFT0C", kTH3F, {centAxis, occupancyAxis, phiAxis});
+      histos.add("hPsiFT0A", "PsiFT0A", kTH3F, {centAxis, occupancyAxis, phiAxis});
+      histos.add("hPsiTPC", "PsiTPC", kTH3F, {centAxis, occupancyAxis, phiAxis});
+      histos.add("hPsiTPCR", "PsiTPCR", kTH3F, {centAxis, occupancyAxis, phiAxis});
+      histos.add("hPsiTPCL", "PsiTPCL", kTH3F, {centAxis, occupancyAxis, phiAxis});
 
-    histos.add("hSparseV2SameEventCosDeltaPhi", "hSparseV2SameEventCosDeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
-    histos.add("hSparseV2MixedEventCosDeltaPhi", "hSparseV2MixedEventCosDeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
-    histos.add("hSparseV2MixEPAngleCosDeltaPhi", "hSparseV2MixEPAngleCosDeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+      histos.add("hSparseV2SameEventCosPhi", "hSparseV2SameEventCosPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
+      histos.add("hSparseV2SameEventSinPhi", "hSparseV2SameEventSinPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
+      histos.add("hSparseV2SameEventCosPsi", "hSparseV2SameEventCosPsi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
+      histos.add("hSparseV2SameEventSinPsi", "hSparseV2SameEventSinPsi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
 
-    histos.add("hSparseV2SameEventCos2DeltaPhi", "hSparseV2SameEventCos2DeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
-    histos.add("hSparseV2MixedEventCos2DeltaPhi", "hSparseV2MixedEventCos2DeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+      histos.add("hSparseV2SameEventCosDeltaPhi", "hSparseV2SameEventCosDeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+      histos.add("hSparseV2MixedEventCosDeltaPhi", "hSparseV2MixedEventCosDeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+      histos.add("hSparseV2MixEPAngleCosDeltaPhi", "hSparseV2MixEPAngleCosDeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
 
-    histos.add("hSparseV2SameEventCosDeltaPhiSquare", "hSparseV2SameEventCosDeltaPhiSquare", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, squareAxis, thnAxisCentrality});
-    histos.add("hSparseV2SameEventCosDeltaPhiCube", "hSparseV2SameEventCosDeltaPhiCube", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
-    histos.add("hSparseV2MixedEventCosDeltaPhiSquare", "hSparseV2MixedEventCosDeltaPhiSquare", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, squareAxis, thnAxisCentrality});
+      histos.add("hSparseV2SameEventCos2DeltaPhi", "hSparseV2SameEventCos2DeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+      histos.add("hSparseV2MixedEventCos2DeltaPhi", "hSparseV2MixedEventCos2DeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
 
-    histos.add("hSparseV2SameEventSinDeltaPhi", "hSparseV2SameEventSinDeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
-    histos.add("hSparseV2MixedEventSinDeltaPhi", "hSparseV2MixedEventSinDeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+      histos.add("hSparseV2SameEventCosDeltaPhiSquare", "hSparseV2SameEventCosDeltaPhiSquare", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, squareAxis, thnAxisCentrality});
+      histos.add("hSparseV2SameEventCosDeltaPhiCube", "hSparseV2SameEventCosDeltaPhiCube", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+      histos.add("hSparseV2MixedEventCosDeltaPhiSquare", "hSparseV2MixedEventCosDeltaPhiSquare", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, squareAxis, thnAxisCentrality});
 
-    if (fillSA) {
-      histos.add("hSparseV2SameEventSA", "hSparseV2SameEventSA", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
-      histos.add("hSparseV2MixedEventSA", "hSparseV2MixedEventSA", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
-      histos.add("hSparseV2SameEventCosThetaStar", "hSparseV2SameEventCosThetaStar", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
-      histos.add("hSparseV2MixedEventCosThetaStar", "hSparseV2MixedEventCosThetaStar", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
-    }
-    // histogram for resolution
-    histos.add("ResFT0CTPC", "ResFT0CTPC", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("ResFT0CTPCR", "ResFT0CTPCR", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("ResFT0CTPCL", "ResFT0CTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("ResTPCRTPCL", "ResTPCRTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("ResFT0CFT0A", "ResFT0CFT0A", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("ResFT0ATPC", "ResFT0ATPC", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("hSparseV2SameEventSinDeltaPhi", "hSparseV2SameEventSinDeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+      histos.add("hSparseV2MixedEventSinDeltaPhi", "hSparseV2MixedEventSinDeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
 
-    histos.add("Res4FT0CTPC", "Res4FT0CTPC", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("Res4FT0CTPCR", "Res4FT0CTPCR", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("Res4FT0CTPCL", "Res4FT0CTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("Res4TPCRTPCL", "Res4TPCRTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("Res4FT0CFT0A", "Res4FT0CFT0A", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("Res4FT0ATPC", "Res4FT0ATPC", kTH3F, {centAxis, occupancyAxis, resAxis});
+      if (fillSA) {
+        histos.add("hSparseV2SameEventSA", "hSparseV2SameEventSA", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
+        histos.add("hSparseV2MixedEventSA", "hSparseV2MixedEventSA", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
+        histos.add("hSparseV2SameEventCosThetaStar", "hSparseV2SameEventCosThetaStar", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
+        histos.add("hSparseV2MixedEventCosThetaStar", "hSparseV2MixedEventCosThetaStar", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
+      }
+      // histogram for resolution
+      histos.add("ResFT0CTPC", "ResFT0CTPC", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("ResFT0CTPCR", "ResFT0CTPCR", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("ResFT0CTPCL", "ResFT0CTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("ResTPCRTPCL", "ResTPCRTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("ResFT0CFT0A", "ResFT0CFT0A", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("ResFT0ATPC", "ResFT0ATPC", kTH3F, {centAxis, occupancyAxis, resAxis});
 
-    histos.add("ResFT0CTPCSquare", "ResFT0CTPCSquare", kTH3F, {centAxis, occupancyAxis, resAxisSquare});
-    histos.add("ResFT0CTPCRSquare", "ResFT0CTPCRSquare", kTH3F, {centAxis, occupancyAxis, resAxisSquare});
-    histos.add("ResFT0CTPCLSquare", "ResFT0CTPCLSquare", kTH3F, {centAxis, occupancyAxis, resAxisSquare});
-    histos.add("ResTPCRTPCLSquare", "ResTPCRTPCLSquare", kTH3F, {centAxis, occupancyAxis, resAxisSquare});
-    histos.add("ResFT0CFT0ASquare", "ResFT0CFT0ASquare", kTH3F, {centAxis, occupancyAxis, resAxisSquare});
-    histos.add("ResFT0ATPCSquare", "ResFT0ATPCSquare", kTH3F, {centAxis, occupancyAxis, resAxisSquare});
+      histos.add("Res4FT0CTPC", "Res4FT0CTPC", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("Res4FT0CTPCR", "Res4FT0CTPCR", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("Res4FT0CTPCL", "Res4FT0CTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("Res4TPCRTPCL", "Res4TPCRTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("Res4FT0CFT0A", "Res4FT0CFT0A", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("Res4FT0ATPC", "Res4FT0ATPC", kTH3F, {centAxis, occupancyAxis, resAxis});
 
-    histos.add("ResSPFT0CTPC", "ResSPFT0CTPC", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("ResSPFT0CTPCR", "ResSPFT0CTPCR", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("ResSPFT0CTPCL", "ResSPFT0CTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("ResSPTPCRTPCL", "ResSPTPCRTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("ResSPFT0CFT0A", "ResSPFT0CFT0A", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("ResSPFT0ATPC", "ResSPFT0ATPC", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("ResFT0CTPCSquare", "ResFT0CTPCSquare", kTH3F, {centAxis, occupancyAxis, resAxisSquare});
+      histos.add("ResFT0CTPCRSquare", "ResFT0CTPCRSquare", kTH3F, {centAxis, occupancyAxis, resAxisSquare});
+      histos.add("ResFT0CTPCLSquare", "ResFT0CTPCLSquare", kTH3F, {centAxis, occupancyAxis, resAxisSquare});
+      histos.add("ResTPCRTPCLSquare", "ResTPCRTPCLSquare", kTH3F, {centAxis, occupancyAxis, resAxisSquare});
+      histos.add("ResFT0CFT0ASquare", "ResFT0CFT0ASquare", kTH3F, {centAxis, occupancyAxis, resAxisSquare});
+      histos.add("ResFT0ATPCSquare", "ResFT0ATPCSquare", kTH3F, {centAxis, occupancyAxis, resAxisSquare});
 
-    histos.add("Res4SPFT0CTPC", "Res4SPFT0CTPC", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("Res4SPFT0CTPCR", "Res4SPFT0CTPCR", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("Res4SPFT0CTPCL", "Res4SPFT0CTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("Res4SPTPCRTPCL", "Res4SPTPCRTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("Res4SPFT0CFT0A", "Res4SPFT0CFT0A", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("Res4SPFT0ATPC", "Res4SPFT0ATPC", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("ResSPFT0CTPC", "ResSPFT0CTPC", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("ResSPFT0CTPCR", "ResSPFT0CTPCR", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("ResSPFT0CTPCL", "ResSPFT0CTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("ResSPTPCRTPCL", "ResSPTPCRTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("ResSPFT0CFT0A", "ResSPFT0CFT0A", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("ResSPFT0ATPC", "ResSPFT0ATPC", kTH3F, {centAxis, occupancyAxis, resAxis});
 
-    histos.add("ResTrackSPFT0CTPC", "ResTrackSPFT0CTPC", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("ResTrackSPFT0CTPCR", "ResTrackSPFT0CTPCR", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("ResTrackSPFT0CTPCL", "ResTrackSPFT0CTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("ResTrackSPTPCRTPCL", "ResTrackSPTPCRTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("ResTrackSPFT0CFT0A", "ResTrackSPFT0CFT0A", kTH3F, {centAxis, occupancyAxis, resAxis});
-    histos.add("ResTrackSPFT0ATPC", "ResTrackSPFT0ATPC", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("Res4SPFT0CTPC", "Res4SPFT0CTPC", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("Res4SPFT0CTPCR", "Res4SPFT0CTPCR", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("Res4SPFT0CTPCL", "Res4SPFT0CTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("Res4SPTPCRTPCL", "Res4SPTPCRTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("Res4SPFT0CFT0A", "Res4SPFT0CFT0A", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("Res4SPFT0ATPC", "Res4SPFT0ATPC", kTH3F, {centAxis, occupancyAxis, resAxis});
 
-    // MC histogram
-    if (isMC) {
-      histos.add("hMC", "MC Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
-      histos.add("h1PhiRecsplit", "Phi meson Rec split", kTH1F, {{100, 0.0f, 10.0f}});
-      histos.add("CentPercentileMCRecHist", "MC Centrality", kTH1F, {{100, 0.0f, 100.0f}});
+      histos.add("ResTrackSPFT0CTPC", "ResTrackSPFT0CTPC", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("ResTrackSPFT0CTPCR", "ResTrackSPFT0CTPCR", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("ResTrackSPFT0CTPCL", "ResTrackSPFT0CTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("ResTrackSPTPCRTPCL", "ResTrackSPTPCRTPCL", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("ResTrackSPFT0CFT0A", "ResTrackSPFT0CFT0A", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("ResTrackSPFT0ATPC", "ResTrackSPFT0ATPC", kTH3F, {centAxis, occupancyAxis, resAxis});
 
-      histos.add("hSparseV2MCGenSA", "hSparseV2SameEventSA", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
-      histos.add("hSparseV2MCGenCosThetaStar_effy", "hSparseV2SameEventCosThetaStar_effy", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
+      // MC histogram
+      if (isMC) {
+        histos.add("hMC", "MC Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
+        histos.add("h1PhiRecsplit", "Phi meson Rec split", kTH1F, {{100, 0.0f, 10.0f}});
+        histos.add("CentPercentileMCRecHist", "MC Centrality", kTH1F, {{100, 0.0f, 100.0f}});
 
-      histos.add("hSparseV2MCRecSA", "hSparseV2SameEventSA", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
-      histos.add("hSparseV2MCRecCosThetaStar_effy", "hSparseV2SameEventCosThetaStar_effy", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
+        histos.add("hSparseV2MCGenSA", "hSparseV2SameEventSA", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
+        histos.add("hSparseV2MCGenCosThetaStar_effy", "hSparseV2SameEventCosThetaStar_effy", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
 
-      // weight
+        histos.add("hSparseV2MCRecSA", "hSparseV2SameEventSA", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
+        histos.add("hSparseV2MCRecCosThetaStar_effy", "hSparseV2SameEventCosThetaStar_effy", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStar, thnAxisRapidity, thnAxisCentrality});
 
-      histos.add("hSparsePhiMCGenWeight", "hSparsePhiMCGenWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, -1.0, 1}, thnAxisPt, {8, -0.8, 0.8}});
-      histos.add("hSparsePhiMCRecWeight", "hSparsePhiMCRecWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, -1.0, 1}, thnAxisPt, {8, -0.8, 0.8}});
-      histos.add("hSparsePhiMCGenKaonWeight", "hSparsePhiMCGenKaonWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, -1.0, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
-      histos.add("hSparsePhiMCRecKaonWeight", "hSparsePhiMCRecKaonWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, -1.0, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
-      histos.add("hSparsePhiMCRecKaonMissMatchWeight", "hSparsePhiMCRecKaonMissMatchWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, -1.0, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
+        // weight
 
-      histos.add("hSparseMCGenWeight", "hSparseMCGenWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, -1.0, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
-      histos.add("hSparseMCRecWeight", "hSparseMCRecWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, -1.0, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
-      histos.add("hSparseMCRecAllTrackWeight", "hSparseMCRecAllTrackWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0, TMath::Pi()}, {400, -1.0, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
+        histos.add("hSparsePhiMCGenWeight", "hSparsePhiMCGenWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, -1.0, 1}, thnAxisPt, {8, -0.8, 0.8}});
+        histos.add("hSparsePhiMCRecWeight", "hSparsePhiMCRecWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, -1.0, 1}, thnAxisPt, {8, -0.8, 0.8}});
+        histos.add("hSparsePhiMCGenKaonWeight", "hSparsePhiMCGenKaonWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, -1.0, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
+        histos.add("hSparsePhiMCRecKaonWeight", "hSparsePhiMCRecKaonWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, -1.0, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
+        histos.add("hSparsePhiMCRecKaonMissMatchWeight", "hSparsePhiMCRecKaonMissMatchWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, -1.0, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
 
-      histos.add("hImpactParameter", "Impact parameter", kTH1F, {{200, 0.0f, 20.0f}});
-      histos.add("hEventPlaneAngle", "hEventPlaneAngle", kTH1F, {{200, -2.0f * TMath::Pi(), 2.0f * TMath::Pi()}});
-      histos.add("hEventPlaneAngleRec", "hEventPlaneAngleRec", kTH1F, {{200, -2.0f * TMath::Pi(), 2.0f * TMath::Pi()}});
-      histos.add("hNchVsImpactParameter", "hNchVsImpactParameter", kTH2F, {{200, 0.0f, 20.0f}, {500, -0.5f, 5000.5f}});
-      histos.add("hSparseMCGenV2", "hSparseMCGenV2", HistType::kTHnSparseD, {thnAxisCentrality, {200, -1.0, 1.0}, axisPtKaonWeight});
-      histos.add("hSparseMCRecV2", "hSparseMCRecV2", HistType::kTHnSparseD, {thnAxisCentrality, {200, -1.0, 1.0}, axisPtKaonWeight});
-      // histos.add("hSparseMCGenV2Square", "hSparseMCGenV2Square", HistType::kTHnSparseD, {thnAxisCentrality, {1000, 0.0, 1.0}, axisPtKaonWeight});
-      // histos.add("hSparseMCRecV2Square", "hSparseMCRecV2Square", HistType::kTHnSparseD, {thnAxisCentrality, {1000, 0.0, 1.0}, axisPtKaonWeight});
-      histos.add("hSparseMCGenV2Square", "hSparseMCGenV2Square", HistType::kTH3D, {thnAxisCentrality, {1000, 0.0, 1.0}, axisPtKaonWeight});
-      histos.add("hSparseMCRecV2Square", "hSparseMCRecV2Square", HistType::kTH3D, {thnAxisCentrality, {1000, 0.0, 1.0}, axisPtKaonWeight});
+        histos.add("hSparseMCGenWeight", "hSparseMCGenWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, -1.0, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
+        histos.add("hSparseMCRecWeight", "hSparseMCRecWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, -1.0, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
+        histos.add("hSparseMCRecAllTrackWeight", "hSparseMCRecAllTrackWeight", HistType::kTHnSparseD, {thnAxisCentrality, {36, 0.0, TMath::Pi()}, {400, -1.0, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
+
+        histos.add("hImpactParameter", "Impact parameter", kTH1F, {{200, 0.0f, 20.0f}});
+        histos.add("hEventPlaneAngle", "hEventPlaneAngle", kTH1F, {{200, -2.0f * TMath::Pi(), 2.0f * TMath::Pi()}});
+        histos.add("hEventPlaneAngleRec", "hEventPlaneAngleRec", kTH1F, {{200, -2.0f * TMath::Pi(), 2.0f * TMath::Pi()}});
+        histos.add("hNchVsImpactParameter", "hNchVsImpactParameter", kTH2F, {{200, 0.0f, 20.0f}, {500, -0.5f, 5000.5f}});
+        histos.add("hSparseMCGenV2", "hSparseMCGenV2", HistType::kTHnSparseD, {thnAxisCentrality, {200, -1.0, 1.0}, axisPtKaonWeight});
+        histos.add("hSparseMCRecV2", "hSparseMCRecV2", HistType::kTHnSparseD, {thnAxisCentrality, {200, -1.0, 1.0}, axisPtKaonWeight});
+        // histos.add("hSparseMCGenV2Square", "hSparseMCGenV2Square", HistType::kTHnSparseD, {thnAxisCentrality, {1000, 0.0, 1.0}, axisPtKaonWeight});
+        // histos.add("hSparseMCRecV2Square", "hSparseMCRecV2Square", HistType::kTHnSparseD, {thnAxisCentrality, {1000, 0.0, 1.0}, axisPtKaonWeight});
+        histos.add("hSparseMCGenV2Square", "hSparseMCGenV2Square", HistType::kTH3D, {thnAxisCentrality, {1000, 0.0, 1.0}, axisPtKaonWeight});
+        histos.add("hSparseMCRecV2Square", "hSparseMCRecV2Square", HistType::kTH3D, {thnAxisCentrality, {1000, 0.0, 1.0}, axisPtKaonWeight});
+      }
     }
     // Event selection cut additional - Alex
     if (additionalEvsel) {
@@ -460,10 +504,12 @@ struct phipbpb {
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {20, 0, 100}, "multiplicity percentile for bin"};
   ConfigurableAxis axisEPAngle{"axisEPAngle", {6, -TMath::Pi() / 2, TMath::Pi() / 2}, "event plane angle"};
+  ConfigurableAxis axisSPAngle{"axisSPAngle", {6, -TMath::Pi(), TMath::Pi()}, "spectator plane angle"};
   ConfigurableAxis axisOccup{"axisOccup", {20, -0.5, 40000.0}, "occupancy axis"};
 
   // using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, o2::aod::evsel::NumTracksInTimeRange>;
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, o2::aod::epcalibrationtable::PsiFT0C>;
+  using BinningTypeVertexContributorv1 = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, o2::aod::spcalibrationtable::PsiZDCC>;
   ROOT::Math::PxPyPzMVector PhiMesonMother, KaonPlus, KaonMinus, fourVecDauCM;
   ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY, eventplaneVec, eventplaneVecNorm, beamvector;
   int currentRunNumber = -999;
@@ -557,6 +603,7 @@ struct phipbpb {
       hweight = ccdb->getForTimeStamp<TH2D>(ConfWeightPath.value, bc.timestamp());
     }
     lastRunNumber = currentRunNumber;
+
     int Npostrack = 0;
     float weight1 = 1.0;
     float weight2 = 1.0;
@@ -653,6 +700,7 @@ struct phipbpb {
         if (totalweight <= 0.0000005) {
           totalweight = 1.0;
         }
+
         // LOGF(info, Form("weight %f    %f",weight1, weight2));
         if (TMath::Abs(PhiMesonMother.Rapidity()) < confRapidity) {
           histos.fill(HIST("ResTrackSPFT0CTPC"), centrality, occupancy, QFT0C * QTPC * TMath::Cos(2.0 * (psiFT0C - psiTPC)));
@@ -690,6 +738,7 @@ struct phipbpb {
             histos.fill(HIST("hSparseV2SameEventSinPsi"), PhiMesonMother.M(), PhiMesonMother.Pt(), TMath::Sin(2.0 * psiFT0C), centrality);
           }
         }
+
         if (fillSA) {
           ROOT::Math::Boost boost{PhiMesonMother.BoostToCM()};
           fourVecDauCM = boost(KaonMinus);
@@ -714,7 +763,153 @@ struct phipbpb {
   }
   PROCESS_SWITCH(phipbpb, processSameEvent, "Process Same event", true);
 
+  void processSameEventv1(EventCandidatesv1::iterator const& collision, TrackCandidates const& /*tracks, aod::BCs const&*/, aod::BCsWithTimestamps const&)
+  {
+    if (!collision.sel8() || !collision.triggereventsp() || !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+      return;
+    }
+    auto centrality = collision.centFT0C();
+    auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    int occupancy = collision.trackOccupancyInTimeRange();
+    o2::aod::ITSResponse itsResponse;
+    if (occupancy > cfgCutOccupancy) {
+      return;
+    }
+    if (additionalEvsel && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      return;
+    }
+    if (additionalEvselITS && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      return;
+    }
+
+    histos.fill(HIST("hCentrality"), centrality);
+    histos.fill(HIST("hVtxZ"), collision.posZ());
+
+    auto qxZDCA = collision.qxZDCA();
+    auto qxZDCC = collision.qxZDCC();
+    auto qyZDCA = collision.qyZDCA();
+    auto qyZDCC = collision.qyZDCC();
+    auto psiZDCC = collision.psiZDCC();
+    auto psiZDCA = collision.psiZDCA();
+
+    double modqxZDCA;
+    double modqyZDCA;
+    double modqxZDCC;
+    double modqyZDCC;
+
+    if (cqvas) {
+      modqxZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Cos(psiZDCA);
+      modqyZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Sin(psiZDCA);
+      modqxZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Cos(psiZDCC);
+      modqyZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Sin(psiZDCC);
+    } else {
+      modqxZDCA = qxZDCA;
+      modqyZDCA = qyZDCA;
+      modqxZDCC = qxZDCC;
+      modqyZDCC = qyZDCC;
+    }
+
+    auto QxtQxp = modqxZDCA * modqxZDCC;
+    auto QytQyp = modqyZDCA * modqyZDCC;
+    auto Qxytp = QxtQxp + QytQyp;
+    auto QxpQyt = modqxZDCA * modqyZDCC;
+    auto QxtQyp = modqxZDCC * modqyZDCA;
+
+    if (fillv1) {
+      histos.fill(HIST("hpQxtQxpvscent"), centrality, QxtQxp);
+      histos.fill(HIST("hpQytQypvscent"), centrality, QytQyp);
+      histos.fill(HIST("hpQxytpvscent"), centrality, Qxytp);
+      histos.fill(HIST("hpQxpQytvscent"), centrality, QxpQyt);
+      histos.fill(HIST("hpQxtQypvscent"), centrality, QxtQyp);
+      histos.fill(HIST("hpQxpvscent"), centrality, modqxZDCA);
+      histos.fill(HIST("hpQxtvscent"), centrality, modqxZDCC);
+      histos.fill(HIST("hpQypvscent"), centrality, modqyZDCA);
+      histos.fill(HIST("hpQytvscent"), centrality, modqyZDCC);
+    }
+
+    int Npostrack = 0;
+    for (auto track1 : posThisColl) {
+      // track selection
+      if (!selectionTrack(track1)) {
+        continue;
+      }
+      // PID check
+      if (ispTdepPID && !isTOFOnly && !selectionPIDpTdependent(track1)) {
+        continue;
+      }
+      if (!ispTdepPID && !isTOFOnly && !selectionPID(track1)) {
+        continue;
+      }
+      if (isTOFOnly && !selectionPID2(track1)) {
+        continue;
+      }
+      if (useGlobalTrack && track1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) < 2.5)) {
+        continue;
+      }
+      auto track1ID = track1.globalIndex();
+      for (auto track2 : negThisColl) {
+        // track selection
+        if (!selectionTrack(track2)) {
+          continue;
+        }
+        // PID check
+        if (ispTdepPID && !isTOFOnly && !selectionPIDpTdependent(track2)) {
+          continue;
+        }
+        if (!ispTdepPID && !isTOFOnly && !selectionPID(track2)) {
+          continue;
+        }
+        if (isTOFOnly && !selectionPID2(track2)) {
+          continue;
+        }
+        auto track2ID = track2.globalIndex();
+        if (track2ID == track1ID) {
+          continue;
+        }
+        if (!selectionPair(track1, track2)) {
+          continue;
+        }
+        if (removefaketrak && isFakeKaon(track1)) {
+          continue;
+        }
+        if (removefaketrak && isFakeKaon(track2)) {
+          continue;
+        }
+        if (useGlobalTrack && track2.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) < 2.5)) {
+          continue;
+        }
+        KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+        KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+        PhiMesonMother = KaonPlus + KaonMinus;
+
+        if (fillv1) {
+          auto ux = TMath::Cos(GetPhiInRange(PhiMesonMother.Phi()));
+          auto uy = TMath::Sin(GetPhiInRange(PhiMesonMother.Phi()));
+          auto uxQxp = ux * modqxZDCA;
+          auto uyQyp = uy * modqyZDCA; // correlations of particle and ZDC q vectors
+          auto uxyQxyp = uxQxp + uyQyp;
+          auto uxQxt = ux * modqxZDCC;
+          auto uyQyt = uy * modqyZDCC;
+          auto uxyQxyt = uxQxt + uyQyt;
+          auto oddv1 = ux * (modqxZDCA - modqxZDCC) + uy * (modqyZDCA - modqyZDCC);
+
+          histos.fill(HIST("hpoddvscentpteta"), PhiMesonMother.M(), centrality, PhiMesonMother.Pt(), PhiMesonMother.Rapidity(), oddv1);
+          if (fillLOCC) {
+            histos.fill(HIST("hpuxyQxypvscentpteta"), PhiMesonMother.M(), centrality, PhiMesonMother.Pt(), PhiMesonMother.Rapidity(), uxyQxyp);
+            histos.fill(HIST("hpuxyQxytvscentpteta"), PhiMesonMother.M(), centrality, PhiMesonMother.Pt(), PhiMesonMother.Rapidity(), uxyQxyt);
+            histos.fill(HIST("hpuxvscentpteta"), PhiMesonMother.M(), centrality, PhiMesonMother.Pt(), PhiMesonMother.Rapidity(), ux);
+            histos.fill(HIST("hpuyvscentpteta"), PhiMesonMother.M(), centrality, PhiMesonMother.Pt(), PhiMesonMother.Rapidity(), uy);
+          }
+        }
+      }
+      Npostrack = Npostrack + 1;
+    }
+  }
+  PROCESS_SWITCH(phipbpb, processSameEventv1, "Process Same event for v1", false);
+
   BinningTypeVertexContributor binningOnEPAngle{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
+  BinningTypeVertexContributorv1 binningOnSPAngle{{axisVertex, axisMultiplicityClass, axisSPAngle}, true};
   Preslice<aod::Tracks> tracksPerCollision = aod::track::collisionId;
   void processMEAcc(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
@@ -749,6 +944,7 @@ struct phipbpb {
       auto centrality = collision1.centFT0C();
       auto psiFT0C = collision1.psiFT0C();
       auto QFT0C = collision1.qFT0C();
+
       o2::aod::ITSResponse itsResponse;
       auto grouptrack1 = tracks.sliceBy(tracksPerCollision, collision2.globalIndex());
       auto grouptrack2 = tracks.sliceBy(tracksPerCollision, collision2.globalIndex());
@@ -809,6 +1005,7 @@ struct phipbpb {
         if (TMath::Abs(PhiMesonMother.Rapidity()) > confRapidity) {
           continue;
         }
+
         if (useSP) {
           histos.fill(HIST("hSparseV2MixEPAngleCosDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * QFT0C, centrality);
         } else {
@@ -818,6 +1015,143 @@ struct phipbpb {
     }
   }
   PROCESS_SWITCH(phipbpb, processMEAcc, "Process ME Acceptance", true);
+
+  void processMEAccv1(EventCandidatesv1 const& collisions, TrackCandidates const& tracks)
+  {
+    for (auto& [collision1, collision2] : selfCombinations(binningOnSPAngle, cfgNoMixedEvents, -1, collisions, collisions)) {
+
+      if (!collision1.sel8() || !collision1.triggereventsp() || !collision1.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+        continue;
+      }
+      if (!collision2.sel8() || !collision2.triggereventsp() || !collision2.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+        continue;
+      }
+      int occupancy1 = collision1.trackOccupancyInTimeRange();
+      int occupancy2 = collision2.trackOccupancyInTimeRange();
+      if (occupancy1 > cfgCutOccupancy) {
+        continue;
+      }
+      if (occupancy2 > cfgCutOccupancy) {
+        continue;
+      }
+      if (additionalEvsel && !collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        continue;
+      }
+      if (additionalEvsel && !collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        continue;
+      }
+      if (additionalEvselITS && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+      if (additionalEvselITS && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+      auto centrality = collision1.centFT0C();
+
+      auto qxZDCA = collision1.qxZDCA();
+      auto qxZDCC = collision1.qxZDCC();
+      auto qyZDCA = collision1.qyZDCA();
+      auto qyZDCC = collision1.qyZDCC();
+      auto psiZDCC = collision1.psiZDCC();
+      auto psiZDCA = collision1.psiZDCA();
+
+      double modqxZDCA;
+      double modqyZDCA;
+      double modqxZDCC;
+      double modqyZDCC;
+
+      if (cqvas) {
+        modqxZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Cos(psiZDCA);
+        modqyZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Sin(psiZDCA);
+        modqxZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Cos(psiZDCC);
+        modqyZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Sin(psiZDCC);
+      } else {
+        modqxZDCA = qxZDCA;
+        modqyZDCA = qyZDCA;
+        modqxZDCC = qxZDCC;
+        modqyZDCC = qyZDCC;
+      }
+
+      o2::aod::ITSResponse itsResponse;
+      auto grouptrack1 = tracks.sliceBy(tracksPerCollision, collision1.globalIndex());
+      auto grouptrack2 = tracks.sliceBy(tracksPerCollision, collision2.globalIndex());
+      for (auto& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(grouptrack1, grouptrack2))) {
+        if (t2.index() <= t1.index()) {
+          continue;
+        }
+        if (t1.sign() * t2.sign() > 0) {
+          continue;
+        }
+        if (!selectionTrack(t1)) {
+          continue;
+        }
+        if (ispTdepPID && !isTOFOnly && !selectionPIDpTdependent(t1)) {
+          continue;
+        }
+        if (!ispTdepPID && !isTOFOnly && !selectionPID(t1)) {
+          continue;
+        }
+        if (isTOFOnly && !selectionPID2(t1)) {
+          continue;
+        }
+        if (useGlobalTrack && t1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(t1) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(t1) < 2.5)) {
+          continue;
+        }
+
+        if (!selectionTrack(t2)) {
+          continue;
+        }
+        if (ispTdepPID && !isTOFOnly && !selectionPIDpTdependent(t2)) {
+          continue;
+        }
+        if (!ispTdepPID && !isTOFOnly && !selectionPID(t2)) {
+          continue;
+        }
+        if (isTOFOnly && !selectionPID2(t2)) {
+          continue;
+        }
+        if (useGlobalTrack && t2.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(t2) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(t2) < 2.5)) {
+          continue;
+        }
+
+        if (!selectionPair(t1, t2)) {
+          continue;
+        }
+        if (removefaketrak && isFakeKaon(t1)) {
+          continue;
+        }
+        if (removefaketrak && isFakeKaon(t2)) {
+          continue;
+        }
+
+        KaonPlus = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), massKa);
+        KaonMinus = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), massKa);
+        PhiMesonMother = KaonPlus + KaonMinus;
+
+        if (fillv1) {
+          auto ux = TMath::Cos(GetPhiInRange(PhiMesonMother.Phi()));
+          auto uy = TMath::Sin(GetPhiInRange(PhiMesonMother.Phi()));
+          auto uxQxp = ux * modqxZDCA;
+          auto uyQyp = uy * modqyZDCA; // correlations of particle and ZDC q vectors
+          auto uxyQxyp = uxQxp + uyQyp;
+          auto uxQxt = ux * modqxZDCC;
+          auto uyQyt = uy * modqyZDCC;
+          auto uxyQxyt = uxQxt + uyQyt;
+          auto oddv1 = ux * (modqxZDCA - modqxZDCC) + uy * (modqyZDCA - modqyZDCC);
+
+          histos.fill(HIST("hpoddvscentptetamixacc"), PhiMesonMother.M(), centrality, PhiMesonMother.Pt(), PhiMesonMother.Rapidity(), oddv1);
+          if (fillLOCC) {
+            histos.fill(HIST("hpuxyQxypvscentptetamixacc"), PhiMesonMother.M(), centrality, PhiMesonMother.Pt(), PhiMesonMother.Rapidity(), uxyQxyp);
+            histos.fill(HIST("hpuxyQxytvscentptetamixacc"), PhiMesonMother.M(), centrality, PhiMesonMother.Pt(), PhiMesonMother.Rapidity(), uxyQxyt);
+            histos.fill(HIST("hpuxvscentptetamixacc"), PhiMesonMother.M(), centrality, PhiMesonMother.Pt(), PhiMesonMother.Rapidity(), ux);
+            histos.fill(HIST("hpuyvscentptetamixacc"), PhiMesonMother.M(), centrality, PhiMesonMother.Pt(), PhiMesonMother.Rapidity(), uy);
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(phipbpb, processMEAccv1, "Process ME Acceptance v1", false);
+
   void processMixedEventOpti(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
@@ -864,6 +1198,7 @@ struct phipbpb {
       if (additionalEvselITS && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         continue;
       }
+
       for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         if (track1.sign() * track2.sign() > 0) {
           continue;
@@ -909,6 +1244,7 @@ struct phipbpb {
         auto v2acc = TMath::Cos(4.0 * phiminuspsi);
         auto v2sin = TMath::Sin(2.0 * phiminuspsi);
         histos.fill(HIST("hpTvsRapidity"), PhiMesonMother.Pt(), PhiMesonMother.Rapidity());
+
         if (TMath::Abs(PhiMesonMother.Rapidity()) < confRapidity) {
           if (useSP) {
             histos.fill(HIST("hSparseV2MixedEventCosDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * QFT0C, centrality);
@@ -937,6 +1273,132 @@ struct phipbpb {
     }
   }
   PROCESS_SWITCH(phipbpb, processMixedEventOpti, "Process Mixed event new", true);
+
+  void processMixedEventOptiv1(EventCandidatesv1 const& collisions, TrackCandidates const& tracks)
+  {
+    auto tracksTuple = std::make_tuple(tracks);
+    BinningTypeVertexContributorv1 binningOnPositions{{axisVertex, axisMultiplicityClass, axisSPAngle}, true};
+    SameKindPair<EventCandidatesv1, TrackCandidates, BinningTypeVertexContributorv1> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
+    for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
+      if (!collision1.sel8() || !collision1.triggereventsp() || !collision1.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+        continue;
+      }
+      if (!collision2.sel8() || !collision2.triggereventsp() || !collision2.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+        continue;
+      }
+      o2::aod::ITSResponse itsResponse;
+      int occupancy1 = collision1.trackOccupancyInTimeRange();
+      int occupancy2 = collision2.trackOccupancyInTimeRange();
+      if (occupancy1 > cfgCutOccupancy) {
+        continue;
+      }
+      if (occupancy2 > cfgCutOccupancy) {
+        continue;
+      }
+      auto centrality = collision1.centFT0C();
+
+      if (additionalEvsel && !collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        continue;
+      }
+      if (additionalEvsel && !collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        continue;
+      }
+      if (additionalEvselITS && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+      if (additionalEvselITS && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+
+      auto qxZDCA = collision1.qxZDCA();
+      auto qxZDCC = collision1.qxZDCC();
+      auto qyZDCA = collision1.qyZDCA();
+      auto qyZDCC = collision1.qyZDCC();
+      auto psiZDCC = collision1.psiZDCC();
+      auto psiZDCA = collision1.psiZDCA();
+
+      double modqxZDCA;
+      double modqyZDCA;
+      double modqxZDCC;
+      double modqyZDCC;
+
+      if (cqvas) {
+        modqxZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Cos(psiZDCA);
+        modqyZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Sin(psiZDCA);
+        modqxZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Cos(psiZDCC);
+        modqyZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Sin(psiZDCC);
+      } else {
+        modqxZDCA = qxZDCA;
+        modqyZDCA = qyZDCA;
+        modqxZDCC = qxZDCC;
+        modqyZDCC = qyZDCC;
+      }
+
+      for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+        if (track1.sign() * track2.sign() > 0) {
+          continue;
+        }
+        if (useGlobalTrack && track1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) < 2.5)) {
+          continue;
+        }
+        if (useGlobalTrack && track2.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) < 2.5)) {
+          continue;
+        }
+        if (!selectionTrack(track1) || !selectionTrack(track2)) {
+          continue;
+        }
+        // PID check
+        if (ispTdepPID && !isTOFOnly && (!selectionPIDpTdependent(track1) || !selectionPIDpTdependent(track2))) {
+          continue;
+        }
+        if (!ispTdepPID && !isTOFOnly && (!selectionPID(track1) || !selectionPID(track2))) {
+          continue;
+        }
+        if (isTOFOnly && (!selectionPID2(track1) || !selectionPID2(track2))) {
+          continue;
+        }
+        if (!selectionPair(track1, track2)) {
+          continue;
+        }
+        if (removefaketrak && isFakeKaon(track1)) {
+          continue;
+        }
+        if (removefaketrak && isFakeKaon(track2)) {
+          continue;
+        }
+        if (track1.sign() > 0 && track2.sign() < 0) {
+          KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+          KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+        } else if (track1.sign() < 0 && track2.sign() > 0) {
+          KaonMinus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+          KaonPlus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+        }
+        PhiMesonMother = KaonPlus + KaonMinus;
+
+        if (fillv1) {
+          auto ux = TMath::Cos(GetPhiInRange(PhiMesonMother.Phi()));
+          auto uy = TMath::Sin(GetPhiInRange(PhiMesonMother.Phi()));
+          auto uxQxp = ux * modqxZDCA;
+          auto uyQyp = uy * modqyZDCA; // correlations of particle and ZDC q vectors
+          auto uxyQxyp = uxQxp + uyQyp;
+          auto uxQxt = ux * modqxZDCC;
+          auto uyQyt = uy * modqyZDCC;
+          auto uxyQxyt = uxQxt + uyQyt;
+          auto oddv1 = ux * (modqxZDCA - modqxZDCC) + uy * (modqyZDCA - modqyZDCC);
+
+          histos.fill(HIST("hpoddvscentptetamixopti"), PhiMesonMother.M(), centrality, PhiMesonMother.Pt(), PhiMesonMother.Rapidity(), oddv1);
+          if (fillLOCC) {
+            histos.fill(HIST("hpuxyQxypvscentptetamixopti"), PhiMesonMother.M(), centrality, PhiMesonMother.Pt(), PhiMesonMother.Rapidity(), uxyQxyp);
+            histos.fill(HIST("hpuxyQxytvscentptetamixopti"), PhiMesonMother.M(), centrality, PhiMesonMother.Pt(), PhiMesonMother.Rapidity(), uxyQxyt);
+            histos.fill(HIST("hpuxvscentptetamixopti"), PhiMesonMother.M(), centrality, PhiMesonMother.Pt(), PhiMesonMother.Rapidity(), ux);
+            histos.fill(HIST("hpuyvscentptetamixopti"), PhiMesonMother.M(), centrality, PhiMesonMother.Pt(), PhiMesonMother.Rapidity(), uy);
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(phipbpb, processMixedEventOptiv1, "Process Mixed event new v1", false);
+
   void processMC(CollisionMCTrueTable::iterator const& /*TrueCollision*/, CollisionMCRecTableCentFT0C const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
   {
     histos.fill(HIST("hMC"), 0);
