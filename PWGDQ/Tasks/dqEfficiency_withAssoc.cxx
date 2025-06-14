@@ -2091,7 +2091,7 @@ struct AnalysisSameEventPairing {
 
   PresliceUnsorted<ReducedMCTracks> perReducedMcGenEvent = aod::reducedtrackMC::reducedMCeventId;
 
-  void processMCGen(soa::Filtered<MyEventsVtxCovSelected> const& events, ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& mcTracks)
+  void processMCGen(soa::Filtered<MyEventsVtxCovSelected> const& events, ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
   {
     // Fill Generated histograms taking into account all generated tracks
     for (auto& mctrack : mcTracks) {
@@ -2099,10 +2099,18 @@ struct AnalysisSameEventPairing {
       // NOTE: Signals are checked here mostly based on the skimmed MC stack, so depending on the requested signal, the stack could be incomplete.
       // NOTE: However, the working model is that the decisions on MC signals are precomputed during skimming and are stored in the mcReducedFlags member.
       // TODO:  Use the mcReducedFlags to select signals
+      uint32_t mcDecision = static_cast<uint32_t>(0);
+      int isig = 0;
       for (auto& sig : fGenMCSignals) {
         if (sig->CheckSignal(true, mctrack)) {
+          mcDecision |= (static_cast<uint32_t>(1) << isig);
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig->GetName()), VarManager::fgValues);
+	  if (useMiniTree.fConfigMiniTree) {
+            auto mcEvent = mcEvents.rawIteratorAt(mctrack.reducedMCeventId());
+            dileptonMiniTreeGen(mcDecision, mcEvent.impactParameter(), mctrack.pt(), mctrack.eta(), mctrack.phi(), -999, -999, -999);
+          }
         }
+	isig++;
       }
     }
 
