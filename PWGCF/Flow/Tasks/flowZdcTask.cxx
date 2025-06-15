@@ -189,10 +189,6 @@ struct FlowZdcTask {
   {
     // define axes
     const AxisSpec axisCounter{1, 0, +1, ""};
-    const AxisSpec axisQ{100, -1, 1, "Q"};
-    const AxisSpec axisQZNA{100, -1, 1, "Q"};
-    const AxisSpec axisREQ{100, -1, 1, "real Q"};
-    const AxisSpec axisIMQ{100, -1, 1, "imag Q"};
     const AxisSpec axisEvent{18, 0.5, 18.5, ""};
     const AxisSpec axisZpos{48, -12., 12., "Vtx_{z} (cm)"};
 
@@ -203,33 +199,15 @@ struct FlowZdcTask {
     // create histograms
     histos.add("hEventCounter", "Event counter", kTH1F, {axisEvent});
     histos.add("zPos", ";;Entries;", kTH1F, {axisZpos});
-    histos.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
-    histos.add("ptHistogram", "ptHistogram", kTH1F, {axisPt});
 
     histos.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
     histos.add("centHistogram", "centHistogram", kTH1F, {axisCent});
     histos.add("multHistogram", "multHistogram", kTH1F, {axisMultiplicity});
-    histos.add("multvsCent", "centrality vs multiplicity", kTH2F, {axisCent, axisMultiplicity});
     histos.add("phiHistogram", "phiHistogram", kTH1F, {axisPhi});
-    histos.add("TPCmultiplicity", "TPCmultiplicity", kTH1F, {axisMultTpc});
-
-    histos.add("REqHistogram", "REqHistogram", kTH1F, {axisQ});
-    histos.add("IMqHistogram", "IMqHistogram", kTH1F, {axisQ});
-
-    histos.add("REqHistogramZNA", "REqHistogramZNA", kTH1F, {axisQZNA});
-    histos.add("IMqHistogramZNA", "IMqHistogramZNA", kTH1F, {axisQZNA});
-
-    histos.add("REqHistogramZNC", "REqHistogramZNC", kTH1F, {axisQZNA});
-    histos.add("IMqHistogramZNC", "IMqHistogramZNC", kTH1F, {axisQZNA});
-
-    histos.add("EnergyZNA", "ZNA Sector Energy", kTH1F, {axisEnergy});
-    histos.add("EnergyZNC", "ZNC Sector Energy", kTH1F, {axisEnergy});
-    histos.add("hCentFT0C", "FT0C Centrality Distribution", kTH1F, {{100, 0, 105}});
     histos.add("hZNvsFT0Ccent",
                "ZN Energy vs FT0C Centrality",
                kTH2F,
                {axisCent, axisZN});
-
     histos.add("hZPvsFT0Ccent",
                "ZP Energy vs FT0C Centrality;Centrality [%];ZP Energy",
                kTH2F,
@@ -237,7 +215,6 @@ struct FlowZdcTask {
     histos.add("hNchvsNPV", ";NPVTracks (|#eta|<1);N_{ch} (|#eta|<0.8);",
                kTH2F,
                {{{nBinsNch, -0.5, maxNch}, {nBinsNch, -0.5, maxNch}}});
-    histos.add("revsimag", "revsimag", kTH2F, {axisREQ, axisIMQ}); // for q vector recentering
     histos.add("hYield", "Nch vs pT", kTH2F, {axisMultiplicity, axisPt});
     histos.add("hGlobalTracks", "hGlobalTracks", kTH1F, {axisMultiplicity});
     // event selection steps
@@ -268,17 +245,13 @@ struct FlowZdcTask {
     if (doprocessZdcCollAssoc) { // Check if the process function for ZDCCollAssoc is enabled
       histos.add("ZNAcoll", "ZNAcoll; ZNA amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZn}}});
       histos.add("ZNCcoll", "ZNCcoll; ZNC amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZn}}});
+      histos.add("ZPCcoll", "ZPCcoll; ZPC amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZn}}});
+      histos.add("ZPAcoll", "ZPAcoll; ZPA amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZn}}});
       histos.add("ZEM1coll", "ZEM1coll; ZEM1 amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZem}}});
       histos.add("ZEM2coll", "ZEM2coll; ZEM2 amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZem}}});
       histos.add("ZNvsZEMcoll", "ZNvsZEMcoll; ZEM; ZNA+ZNC", {HistType::kTH2F, {{{nBinsAmp, -0.5, maxZem}, {nBinsAmp, -0.5, 2. * maxZn}}}});
       histos.add("ZNAvsZNCcoll", "ZNAvsZNCcoll; ZNC; ZNA", {HistType::kTH2F, {{{nBinsAmp, -0.5, maxZn}, {nBinsAmp, -0.5, maxZn}}}});
 
-      histos.add("RealQHistogramZNA", "RealQHistogramZNA", kTH1F, {axisQZNA});
-      histos.add("ImagQHistogramZNA", "ImagQHistogramZNA", kTH1F, {axisQZNA});
-      histos.add("RealQHistogramZNC", "RealQHistogramZNC", kTH1F, {axisQZNA});
-      histos.add("ImagQHistogramZNC", "ImagQHistogramZNC", kTH1F, {axisQZNA});
-
-      histos.add("Acorrelations", "Acorrelations", kTH2F, {{axisQZNA}, {axisQZNA}});
       histos.add("SPAngleZNA", "Spectator Plane Angle ZNA;Angle (radians);Entries", {HistType::kTH1F, {{100, -o2::constants::math::PI, o2::constants::math::PI}}});
       histos.add("SPAngleZNC", "Spectator Plane Angle ZNC;Angle (radians);Entries", {HistType::kTH1F, {{100, -o2::constants::math::PI, o2::constants::math::PI}}});
 
@@ -351,15 +324,6 @@ struct FlowZdcTask {
       histos.add("ZNVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA+ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZn}}});
       histos.add("ZNDifVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA-ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {100, -50., 50.}}});
     }
-    LOG(info) << "\tccdbNoLaterThan=" << ccdbNoLaterThan.value;
-    LOG(info) << "\tapplyEff=" << applyEff.value;
-    LOG(info) << "\tpaTH=" << paTH.value;
-    LOG(info) << "\tuseMidRapNchSel=" << useMidRapNchSel.value;
-    LOG(info) << "\tpaTHmeanNch=" << paTHmeanNch.value;
-    LOG(info) << "\tpaTHsigmaNch=" << paTHsigmaNch.value;
-    LOG(info) << "\tminPt=" << minPt.value;
-    LOG(info) << "\tmaxPt=" << maxPt.value;
-    LOG(info) << "\tmaxPtSpectra=" << maxPtSpectra.value;
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     // Enabling object caching, otherwise each call goes to the CCDB server
@@ -491,6 +455,17 @@ struct FlowZdcTask {
     float tZPC{zdc.timeZPC()};
     float tZDCdif{tZNC + tZPC - tZNA - tZPA};
     float tZDCsum{tZNC + tZPC + tZNA + tZPA};
+    const double normT0M{(aT0A + aT0C) / 100.};
+    float znA = zdc.amplitudeZNA() / cfgCollisionEnergy;
+    float znC = zdc.amplitudeZNC() / cfgCollisionEnergy;
+    float zpA = zdc.amplitudeZPA() / cfgCollisionEnergy;
+    float zpC = zdc.amplitudeZPC() / cfgCollisionEnergy;
+    float aZEM1{zdc.amplitudeZEM1()};
+    float aZEM2{zdc.amplitudeZEM2()};
+    float sumZEMs{aZEM1 + aZEM2};
+    float tZEM1{zdc.timeZEM1()};
+    float tZEM2{zdc.timeZEM2()};
+    float sumZNs{znA + znC};
 
     // TDC cut
     if (isTDCcut) {
@@ -500,10 +475,6 @@ struct FlowZdcTask {
       histos.fill(HIST("hEventCounter"), EvCutLabel::Tdc);
     }
 
-    float aZEM1{zdc.amplitudeZEM1()};
-    float aZEM2{zdc.amplitudeZEM2()};
-    float sumZEMs{aZEM1 + aZEM2};
-
     // ZEM cut
     if (isZEMcut) {
       if (sumZEMs < zemCut) {
@@ -512,29 +483,22 @@ struct FlowZdcTask {
       histos.fill(HIST("hEventCounter"), EvCutLabel::Zem);
     }
 
-    const double normT0M{(aT0A + aT0C) / 100.};
-    float znA = zdc.amplitudeZNA() / cfgCollisionEnergy;
-    float znC = zdc.amplitudeZNC() / cfgCollisionEnergy;
-    float zpA = zdc.amplitudeZPA() / cfgCollisionEnergy;
-    float zpC = zdc.amplitudeZPC() / cfgCollisionEnergy;
-
-    float tZEM1{zdc.timeZEM1()};
-    float tZEM2{zdc.timeZEM2()};
-    float sumZNs{znA + znC};
-
     float sumZNC = (zdc.energySectorZNC())[0] + (zdc.energySectorZNC())[1] + (zdc.energySectorZNC())[2] + (zdc.energySectorZNC())[3];
     float sumZNA = (zdc.energySectorZNA())[0] + (zdc.energySectorZNA())[1] + (zdc.energySectorZNA())[2] + (zdc.energySectorZNA())[3];
     float sumZPC = (zdc.energySectorZPC())[0] + (zdc.energySectorZPC())[1] + (zdc.energySectorZPC())[2] + (zdc.energySectorZPC())[3];
     float sumZPA = (zdc.energySectorZPA())[0] + (zdc.energySectorZPA())[1] + (zdc.energySectorZPA())[2] + (zdc.energySectorZPA())[3];
 
-    int itsTracks = 0, glbTracks = 0;
     float et = 0., meanpt = 0.;
+    int itsTracks = 0, glbTracks = 0;
     for (const auto& track : tracks) {
-      if (track.hasITS() && track.itsNCls() >= minITSnCls) {
+      if (track.hasITS()) {
         itsTracks++;
       }
       // Track Selection
-      if (track.isGlobalTrack()) {
+      if (!track.isGlobalTrack()) {
+        continue;
+      }
+      if ((track.pt() < minPt) || (track.pt() > maxPt)) {
         continue;
       }
       glbTracks++;
@@ -637,42 +601,6 @@ struct FlowZdcTask {
     }
   }
 
-  void processQVector(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, aod::ZDCMults const& /*zdcMults*/)
-  {
-    if (!isEventSelected(collision)) {
-      return;
-    }
-    histos.fill(HIST("eventCounter"), 0.5);
-    histos.fill(HIST("centHistogram"), collision.centFT0C());
-    const auto& tracksGrouped = tracksIUWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    const int multTPC = tracksGrouped.size();
-    const auto cent = collision.centFT0C();
-    int globalTracks = tracks.size();
-    if (globalTracks < 1)
-      return;
-    int nTot{0};                     // Tracks are already filtered with GlobalTrack || GlobalTrackSDD
-    for (const auto& track : tracks) {
-      nTot++;
-      histos.fill(HIST("etaHistogram"), track.eta());
-      histos.fill(HIST("phiHistogram"), track.phi());
-      histos.fill(HIST("ptHistogram"), track.pt());
-    } // end track loop 1
-    double pT{0};
-    for (const auto& track : tracks) {
-      if (track.tpcNClsCrossedRows() < minTpcNcrossedRows)
-        continue;
-      if (std::fabs(track.dcaXY()) > cfgCutDCAxy)
-        continue;
-      pT = track.pt();
-      pT++;
-    } // end track loop 2
-    histos.fill(HIST("multvsCent"), cent, nTot);
-    histos.fill(HIST("hYield"), nTot, pT);
-    histos.fill(HIST("multHistogram"), nTot);
-
-    histos.fill(HIST("TPCmultiplicity"), multTPC);
-    histos.fill(HIST("hGlobalTracks"), globalTracks);
-  }
   void processZdcCollAssoc(
     AodCollisions::iterator const& collision,
     AodTracks const& tracks,
@@ -683,10 +611,10 @@ struct FlowZdcTask {
     if (!isEventSelected(collision)) {
       return;
     }
+    const auto& foundBC = collision.foundBC_as<BCsRun3>();
     int nTot = tracks.size();
     double ft0aAmp = 0;
     double ft0cAmp = 0;
-    const auto& foundBC = collision.foundBC_as<BCsRun3>();
     if (collision.has_foundFT0()) {
       auto ft0 = collision.foundFT0();
       for (const auto& amplitude : ft0.amplitudeA()) {
@@ -696,66 +624,89 @@ struct FlowZdcTask {
         ft0cAmp += amplitude;
       }
     }
+    const double normT0M{(ft0aAmp + ft0aAmp) / 100.};
     histos.fill(HIST("hFT0AAmp"), ft0aAmp);
-    histos.fill(HIST("hFT0CAmp"), ft0cAmp);
-    double ft0mAmp = ft0aAmp + ft0cAmp;
-    histos.fill(HIST("hFT0MAmp"), ft0mAmp);
-    if (foundBC.has_zdc()) {
-      const auto& zdcread = foundBC.zdc();
-      const auto cent = collision.centFT0C();
+    histos.fill(HIST("hFT0CAmp"), ft0aAmp);
+    histos.fill(HIST("hFT0MAmp"), normT0M);
 
-      // ZDC data and histogram filling
-      histos.get<TH1>(HIST("ZNAcoll"))->Fill(zdcread.amplitudeZNA());
-      histos.get<TH1>(HIST("ZNCcoll"))->Fill(zdcread.amplitudeZNC());
-      histos.get<TH2>(HIST("ZNvsZEMcoll"))->Fill(zdcread.amplitudeZEM1() + zdcread.amplitudeZEM2(), zdcread.amplitudeZNA() + zdcread.amplitudeZNC());
-      histos.get<TH2>(HIST("ZNAvsZNCcoll"))->Fill(zdcread.amplitudeZNC(), zdcread.amplitudeZNA());
-
-      histos.get<TH1>(HIST("ZEM1coll"))->Fill(zdcread.amplitudeZEM1());
-      histos.get<TH1>(HIST("ZEM2coll"))->Fill(zdcread.amplitudeZEM2());
-
-      float sumZNC = (zdcread.energySectorZNC())[0] + (zdcread.energySectorZNC())[1] + (zdcread.energySectorZNC())[2] + (zdcread.energySectorZNC())[3];
-      float sumZNA = (zdcread.energySectorZNA())[0] + (zdcread.energySectorZNA())[1] + (zdcread.energySectorZNA())[2] + (zdcread.energySectorZNA())[3];
-      float sumZPC = (zdcread.energySectorZPC())[0] + (zdcread.energySectorZPC())[1] + (zdcread.energySectorZPC())[2] + (zdcread.energySectorZPC())[3];
-      float sumZPA = (zdcread.energySectorZPA())[0] + (zdcread.energySectorZPA())[1] + (zdcread.energySectorZPA())[2] + (zdcread.energySectorZPA())[3];
-      float sumZDC = sumZPA + sumZPC + sumZNA + sumZNC;
-      float sumZEM = zdcread.amplitudeZEM1() + zdcread.amplitudeZEM2();
-      // ZEM cut
-      if (isZEMcut) {
-        if (sumZEM < zemCut) {
-          return;
-        }
-      }
-      // common energies
-      float commonSumZnc = (zdcread.energyCommonZNC());
-      float commonSumZna = (zdcread.energyCommonZNA());
-      float commonSumZpc = (zdcread.energyCommonZPC());
-      float commonSumZpa = (zdcread.energyCommonZPA());
-      float sumZN = (sumZNC) + (sumZNA);
-      float sumZP = (sumZPC) + (sumZPA);
-
-      histos.fill(HIST("ZNenergy"), sumZN);
-      histos.fill(HIST("ZPenergy"), sumZP);
-      histos.fill(HIST("ZNCenergy"), commonSumZnc);
-      histos.fill(HIST("ZNAenergy"), commonSumZna);
-      histos.fill(HIST("ZPAenergy"), commonSumZpa);
-      histos.fill(HIST("ZPCenergy"), commonSumZpc);
-      histos.fill(HIST("hZNvsFT0Ccent"), cent, sumZN);
-      histos.fill(HIST("hZPvsFT0Ccent"), cent, sumZP);
-      histos.fill(HIST("hZNvsFT0CAmp"), ft0cAmp, sumZN);
-      histos.fill(HIST("hZPvsFT0CAmp"), ft0cAmp, sumZP);
-      histos.fill(HIST("hZNvsMult"), nTot, sumZN);
-      histos.fill(HIST("hZPvsMult"), nTot, sumZP);
-      histos.fill(HIST("hNchvsNPV"), collision.multNTracksPVeta1(), nTot);
-
-      float ratioZN = sumZNC / sumZNA;
-      float ratioZP = sumZPC / sumZPA;
-      pZNratiovscent->Fill(cent, ratioZN);
-      pZPratiovscent->Fill(cent, ratioZP);
-      pZNvsFT0Ccent->Fill(cent, sumZN);
-      pZPvsFT0Ccent->Fill(cent, sumZP);
-
-      histos.get<TH2>(HIST("ZDC_energy_vs_ZEM"))->Fill(sumZEM, sumZDC);
+    if (!foundBC.has_zdc()) {
+      return;
     }
+    const auto& zdcread = foundBC.zdc();
+    const auto cent = collision.centFT0C();
+
+    // ZDC data and histogram filling
+    float znA = zdcread.amplitudeZNA();
+    float znC = zdcread.amplitudeZNC();
+    float zpA = zdcread.amplitudeZPA();
+    float zpC = zdcread.amplitudeZPC();
+    float tZNA{zdcread.timeZNA()};
+    float tZNC{zdcread.timeZNC()};
+    float tZPA{zdcread.timeZPA()};
+    float tZPC{zdcread.timeZPC()};
+    float tZDCdif{tZNC + tZPC - tZNA - tZPA};
+    float tZDCsum{tZNC + tZPC + tZNA + tZPA};
+    float sumZNC = (zdcread.energySectorZNC())[0] + (zdcread.energySectorZNC())[1] + (zdcread.energySectorZNC())[2] + (zdcread.energySectorZNC())[3];
+    float sumZNA = (zdcread.energySectorZNA())[0] + (zdcread.energySectorZNA())[1] + (zdcread.energySectorZNA())[2] + (zdcread.energySectorZNA())[3];
+    float sumZPC = (zdcread.energySectorZPC())[0] + (zdcread.energySectorZPC())[1] + (zdcread.energySectorZPC())[2] + (zdcread.energySectorZPC())[3];
+    float sumZPA = (zdcread.energySectorZPA())[0] + (zdcread.energySectorZPA())[1] + (zdcread.energySectorZPA())[2] + (zdcread.energySectorZPA())[3];
+    float sumZDC = sumZPA + sumZPC + sumZNA + sumZNC;
+    float sumZEM = zdcread.amplitudeZEM1() + zdcread.amplitudeZEM2();
+    znA /= cfgCollisionEnergy;
+    znC /= cfgCollisionEnergy;
+    zpA /= cfgCollisionEnergy;
+    zpC /= cfgCollisionEnergy;
+    // TDC cut
+    if (isTDCcut) {
+      if (std::sqrt(std::pow(tZDCdif, 2.) + std::pow(tZDCsum, 2.)) > tdcCut) {
+        return;
+      }
+      histos.fill(HIST("hEventCounter"), EvCutLabel::Tdc);
+    }
+    // ZEM cut
+    if (isZEMcut) {
+      if (sumZEM < zemCut) {
+        return;
+      }
+    }
+    // common energies
+    float commonSumZnc = (zdcread.energyCommonZNC());
+    float commonSumZna = (zdcread.energyCommonZNA());
+    float commonSumZpc = (zdcread.energyCommonZPC());
+    float commonSumZpa = (zdcread.energyCommonZPA());
+    float sumZN = (sumZNC) + (sumZNA);
+    float sumZP = (sumZPC) + (sumZPA);
+    histos.fill(HIST("zPos"), collision.posZ());
+    histos.fill(HIST("T0Ccent"), collision.centFT0C());
+    histos.fill(HIST("ZNAcoll"), znA);
+    histos.fill(HIST("ZNCcoll"), znC);
+    histos.fill(HIST("ZPAcoll"), zpA);
+    histos.fill(HIST("ZPCcoll"), zpC);
+    histos.get<TH2>(HIST("ZNvsZEMcoll"))->Fill(zdcread.amplitudeZEM1() + zdcread.amplitudeZEM2(), zdcread.amplitudeZNA() + zdcread.amplitudeZNC());
+    histos.get<TH2>(HIST("ZNAvsZNCcoll"))->Fill(zdcread.amplitudeZNC(), zdcread.amplitudeZNA());
+    histos.get<TH1>(HIST("ZEM1coll"))->Fill(zdcread.amplitudeZEM1());
+    histos.get<TH1>(HIST("ZEM2coll"))->Fill(zdcread.amplitudeZEM2());
+    histos.fill(HIST("ZNenergy"), sumZN);
+    histos.fill(HIST("ZPenergy"), sumZP);
+    histos.fill(HIST("ZNCenergy"), commonSumZnc);
+    histos.fill(HIST("ZNAenergy"), commonSumZna);
+    histos.fill(HIST("ZPAenergy"), commonSumZpa);
+    histos.fill(HIST("ZPCenergy"), commonSumZpc);
+    histos.fill(HIST("hZNvsFT0Ccent"), cent, sumZN);
+    histos.fill(HIST("hZPvsFT0Ccent"), cent, sumZP);
+    histos.fill(HIST("hZNvsFT0CAmp"), ft0cAmp, sumZN);
+    histos.fill(HIST("hZPvsFT0CAmp"), ft0cAmp, sumZP);
+    histos.fill(HIST("hZNvsMult"), nTot, sumZN);
+    histos.fill(HIST("hZPvsMult"), nTot, sumZP);
+    histos.fill(HIST("hNchvsNPV"), collision.multNTracksPVeta1(), nTot);
+
+    float ratioZN = sumZNC / sumZNA;
+    float ratioZP = sumZPC / sumZPA;
+    pZNratiovscent->Fill(cent, ratioZN);
+    pZPratiovscent->Fill(cent, ratioZP);
+    pZNvsFT0Ccent->Fill(cent, sumZN);
+    pZPvsFT0Ccent->Fill(cent, sumZP);
+    histos.get<TH2>(HIST("ZDC_energy_vs_ZEM"))->Fill(sumZEM, sumZDC);
   }
 
   void processCorrelation(CollisionDataTable::iterator const& collision, FilTrackDataTable const& tracks)
@@ -779,7 +730,6 @@ struct FlowZdcTask {
 
   PROCESS_SWITCH(FlowZdcTask, processZdcCollAssoc, "Processing ZDC w. collision association", true);
   PROCESS_SWITCH(FlowZdcTask, processQA, "Process QA", true);
-  PROCESS_SWITCH(FlowZdcTask, processQVector, "Process before recentering", true);
   PROCESS_SWITCH(FlowZdcTask, processCorrelation, "Process correlations", true);
 
 }; // end of struct function

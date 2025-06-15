@@ -2027,7 +2027,7 @@ struct StrangenessInJets {
           case kXiPlusBar: // Xi Pos
             registryMC.fill(HIST("XiPos_generated_jet"), multiplicity, mcParticle.pt(), wXiPosJet);
             registryMC.fill(HIST("XiPos_generated_ue"), multiplicity, mcParticle.pt(), wXiPosUe);
-            registryMC.fill(HIST("Xi_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+            registryMC.fill(HIST("XiPos_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
           case kXiMinus: // Xi Neg
             registryMC.fill(HIST("XiNeg_generated_jet"), multiplicity, mcParticle.pt(), wXiNegJet);

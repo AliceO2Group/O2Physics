@@ -61,6 +61,8 @@ DECLARE_SOA_COLUMN(TTpcChi2NCl, tTpcChi2NCl, float);
 DECLARE_SOA_COLUMN(TItsChi2NCl, tItsChi2NCl, float);
 DECLARE_SOA_COLUMN(TRigidity, tRigidity, float);
 DECLARE_SOA_COLUMN(TItsClusterSize, tItsClusterSize, float);
+DECLARE_SOA_COLUMN(THasTof, tHasTof, bool);
+DECLARE_SOA_COLUMN(TDetectorMap, tDetectorMap, int8_t);
 } // namespace h3_data
 DECLARE_SOA_TABLE(H3Data, "AOD", "h3_data", h3_data::TPt, h3_data::TEta,
                   h3_data::TPhi, h3_data::TCharge, h3_data::TH3DeDx,
@@ -69,7 +71,7 @@ DECLARE_SOA_TABLE(H3Data, "AOD", "h3_data", h3_data::TPt, h3_data::TEta,
                   h3_data::TSigmaZ, h3_data::TnTpcCluster,
                   h3_data::TnItsCluster, h3_data::TTpcChi2NCl,
                   h3_data::TItsChi2NCl, h3_data::TRigidity,
-                  h3_data::TItsClusterSize);
+                  h3_data::TItsClusterSize, h3_data::THasTof, h3_data::TDetectorMap);
 namespace he_data
 {
 DECLARE_SOA_COLUMN(TPt, tPt, float);
@@ -91,6 +93,8 @@ DECLARE_SOA_COLUMN(TTpcChi2NCl, tTpcChi2NCl, float);
 DECLARE_SOA_COLUMN(TItsChi2NCl, tItsChi2NCl, float);
 DECLARE_SOA_COLUMN(TRigidity, tRigidity, float);
 DECLARE_SOA_COLUMN(TItsClusterSize, tItsClusterSize, float);
+DECLARE_SOA_COLUMN(THasTof, tHasTof, bool);
+DECLARE_SOA_COLUMN(TDetectorMap, tDetectorMap, int8_t);
 } // namespace he_data
 DECLARE_SOA_TABLE(HeData, "AOD", "he_data", he_data::TPt, he_data::TEta,
                   he_data::TPhi, he_data::TCharge, he_data::THeDeDx,
@@ -99,7 +103,7 @@ DECLARE_SOA_TABLE(HeData, "AOD", "he_data", he_data::TPt, he_data::TEta,
                   he_data::TSigmaZ, he_data::TnTpcCluster,
                   he_data::TnItsCluster, he_data::TTpcChi2NCl,
                   he_data::TItsChi2NCl, he_data::TRigidity,
-                  he_data::TItsClusterSize);
+                  he_data::TItsClusterSize, he_data::THasTof, he_data::TDetectorMap);
 } // namespace o2::aod
 namespace
 {
@@ -189,6 +193,7 @@ struct TrHeAnalysis {
 
   Configurable<bool> cfgTPCPidMethod{"cfgTPCPidMethod", false, "Using own or built in bethe parametrization"}; // false for built in
   Configurable<int> cfgMassMethod{"cfgMassMethod", 0, "0: Using built in 1: mass calculated with beta 2: mass calculated with the event time"};
+  Configurable<bool> cfgEnableItsClusterSizeCut{"cfgEnableItsClusterSizeCut", false, "Enable ITS cluster size cut"};
   // Set the multiplity event limits
   Configurable<float> cfgLowMultCut{"cfgLowMultCut", 0.0f, "Accepted multiplicity percentage lower limit"};
   Configurable<float> cfgHighMultCut{"cfgHighMultCut", 100.0f, "Accepted multiplicity percentage higher limit"};
@@ -387,10 +392,12 @@ struct TrHeAnalysis {
               histos.fill(HIST("histogram/cuts"), 7);
               continue;
             }
-            if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeH3 ||
-                getMeanItsClsSize(track) / std::cosh(track.eta()) >= cfgCutMaxItsClusterSizeH3) {
-              histos.fill(HIST("histogram/cuts"), 12);
-              continue;
+            if (cfgEnableItsClusterSizeCut) {
+              if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeHe ||
+                  getMeanItsClsSize(track) / std::cosh(track.eta()) >= cfgCutMaxItsClusterSizeHe) {
+                histos.fill(HIST("histogram/cuts"), 12);
+                continue;
+              }
             }
             if (getMass(track) < cfgCutMinTofMassH3 || getMass(track) > cfgCutMaxTofMassH3) {
               histos.fill(HIST("histogram/cuts"), 13);
@@ -421,10 +428,12 @@ struct TrHeAnalysis {
             float tRigidity = getRigidity(track);
             float tItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
+            bool tHasTof = track.hasTOF();
+            int8_t tDetectorMap = track.detectorMap();
             h3Data(tPt, tEta, tPhi, tCharge, tH3DeDx, tnSigmaTpc, tTofSignalH3,
                    tDcaXY, tDcaZ, tSigmaYX, tSigmaXYZ, tSigmaZ, tnTpcCluster,
                    tnItsCluster, tTpcChi2NCl, tItsChi2NCl, tRigidity,
-                   tItsClusterSize);
+                   tItsClusterSize, tHasTof, tDetectorMap);
           }
         }
         if (enableHe && heRapCut) {
@@ -438,10 +447,12 @@ struct TrHeAnalysis {
               histos.fill(HIST("histogram/cuts"), 7);
               continue;
             }
-            if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeHe ||
-                getMeanItsClsSize(track) / std::cosh(track.eta()) >= cfgCutMaxItsClusterSizeHe) {
-              histos.fill(HIST("histogram/cuts"), 12);
-              continue;
+            if (cfgEnableItsClusterSizeCut) {
+              if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeHe ||
+                  getMeanItsClsSize(track) / std::cosh(track.eta()) >= cfgCutMaxItsClusterSizeHe) {
+                histos.fill(HIST("histogram/cuts"), 12);
+                continue;
+              }
             }
             histos.fill(HIST("histogram/He/He-TPCsignVsTPCmomentum"),
                         getRigidity(track) * track.sign(),
@@ -468,10 +479,12 @@ struct TrHeAnalysis {
             float tRigidity = getRigidity(track);
             float tItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
+            bool tHasTof = track.hasTOF();
+            int8_t tDetectorMap = track.detectorMap();
             heData(tPt, tEta, tPhi, tCharge, tHeDeDx, tnSigmaTpc, tTofSignalHe,
                    tDcaXY, tDcaZ, tSigmaYX, tSigmaXYZ, tSigmaZ, tnTpcCluster,
                    tnItsCluster, tTpcChi2NCl, tItsChi2NCl, tRigidity,
-                   tItsClusterSize);
+                   tItsClusterSize, tHasTof, tDetectorMap);
           }
         }
       }
@@ -542,10 +555,12 @@ struct TrHeAnalysis {
               histos.fill(HIST("histogram/cuts"), 7);
               continue;
             }
-            if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeH3 ||
-                getMeanItsClsSize(track) / std::cosh(track.eta()) >= cfgCutMaxItsClusterSizeH3) {
-              histos.fill(HIST("histogram/cuts"), 12);
-              continue;
+            if (cfgEnableItsClusterSizeCut) {
+              if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeH3 ||
+                  getMeanItsClsSize(track) / std::cosh(track.eta()) >= cfgCutMaxItsClusterSizeH3) {
+                histos.fill(HIST("histogram/cuts"), 12);
+                continue;
+              }
             }
             if (getMass(track) < cfgCutMinTofMassH3 || getMass(track) > cfgCutMaxTofMassH3) {
               histos.fill(HIST("histogram/cuts"), 13);
@@ -576,10 +591,12 @@ struct TrHeAnalysis {
             float tRigidity = getRigidity(track);
             float tItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
+            bool tHasTof = track.hasTOF();
+            int8_t tDetectorMap = track.detectorMap();
             h3Data(tPt, tEta, tPhi, tCharge, tH3DeDx, tnSigmaTpc, tTofSignalH3,
                    tDcaXY, tDcaZ, tSigmaYX, tSigmaXYZ, tSigmaZ, tnTpcCluster,
                    tnItsCluster, tTpcChi2NCl, tItsChi2NCl, tRigidity,
-                   tItsClusterSize);
+                   tItsClusterSize, tHasTof, tDetectorMap);
           }
         }
         if (enableHe && heRapCut) {
@@ -592,10 +609,12 @@ struct TrHeAnalysis {
               histos.fill(HIST("histogram/cuts"), 7);
               continue;
             }
-            if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeHe ||
-                getMeanItsClsSize(track) / std::cosh(track.eta()) >= cfgCutMaxItsClusterSizeHe) {
-              histos.fill(HIST("histogram/cuts"), 12);
-              continue;
+            if (cfgEnableItsClusterSizeCut) {
+              if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeHe ||
+                  getMeanItsClsSize(track) / std::cosh(track.eta()) >= cfgCutMaxItsClusterSizeHe) {
+                histos.fill(HIST("histogram/cuts"), 12);
+                continue;
+              }
             }
             histos.fill(HIST("histogram/He/He-TPCsignVsTPCmomentum"),
                         getRigidity(track) * track.sign(),
@@ -622,10 +641,12 @@ struct TrHeAnalysis {
             float tRigidity = getRigidity(track);
             float tItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
+            bool tHasTof = track.hasTOF();
+            int8_t tDetectorMap = track.detectorMap();
             heData(tPt, tEta, tPhi, tCharge, tHeDeDx, tnSigmaTpc, tTofSignalHe,
                    tDcaXY, tDcaZ, tSigmaYX, tSigmaXYZ, tSigmaZ, tnTpcCluster,
                    tnItsCluster, tTpcChi2NCl, tItsChi2NCl, tRigidity,
-                   tItsClusterSize);
+                   tItsClusterSize, tHasTof, tDetectorMap);
           }
         }
       }

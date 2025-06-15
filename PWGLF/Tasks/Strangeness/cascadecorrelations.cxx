@@ -1080,7 +1080,7 @@ struct CascadeCorrelations {
   } // process mixed events
 
   Configurable<float> etaGenCascades{"etaGenCascades", 0.8, "min/max of eta for generated cascades"};
-  Filter genCascadesFilter = (nabs(aod::mcparticle::pdgCode) == 3312 && nabs(aod::mcparticle::eta) < etaGenCascades);
+  Filter genCascadesFilter = nabs(aod::mcparticle::pdgCode) == 3312;
 
   void processMC(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, MyCollisionsMult>> const& collisions, soa::Filtered<aod::McParticles> const& genCascades, aod::McParticles const& mcParticles)
   {
@@ -1122,10 +1122,12 @@ struct CascadeCorrelations {
       auto trigger = *triggerAddress;
       auto assoc = *assocAddress;
 
-      double dphi = RecoDecay::constrainAngle(trigger.phi() - assoc.phi(), -PIHalf);
-
       if (!trigger.isPhysicalPrimary() || !assoc.isPhysicalPrimary())
         continue; // require the cascades to be primaries
+      if (trigger.eta() > etaGenCascades)
+        continue; // only apply eta cut to trigger - trigger normalization still valid without introducing 2-particle-acceptance effects
+
+      double dphi = RecoDecay::constrainAngle(trigger.phi() - assoc.phi(), -PIHalf);
 
       if (trigger.pdgCode() < 0) { // anti-trigg --> Plus
         if (assoc.pdgCode() < 0) { // anti-assoc --> Plus
