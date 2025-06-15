@@ -9,27 +9,26 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file NchCumulantsId.cxx
+/// \file nchCumulantsId.cxx
 /// \brief Event by Event conserved charges fluctuations
-///        it is meant to be a blank page for further developments.
-/// \author Pravata Panigrahi <pravata.panigrahi@cern.ch>:: Sadhana Dash (sadhana@phy.iitb.ac.in) and Rahul Verma (rahul.verma@iitb.ac.in)
+/// \author Pravata Panigrahi <pravata.panigrahi@cern.ch> :: Sadhana Dash(sadhana@phy.iitb.ac.in)
+
 #include <algorithm>
 #include <vector>
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/HistogramSpec.h"
 #include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
 
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
-#include "TLorentzVector.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -48,6 +47,58 @@ struct NchCumulantsId {
   Configurable<float> cfgCutDcaXY{"cfgCutDcaXY", 0.12, "cut for dcaXY"};
   Configurable<float> cfgCutDcaZ{"cfgCutDcaZ", 0.3, "cut for dcaZ"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "cut for eta"};
+  Configurable<float> cfgCutPtMax{"cfgCutPtMax", 3.0, "max cut for pT"};
+  Configurable<float> cfgCutPtMin{"cfgCutPtMin", 0.15, "min cut for pT"};
+
+  // Configurables for particle Identification
+  Configurable<bool> cfgId01CheckVetoCut{"cfgId01CheckVetoCut", false, "cfgId01CheckVetoCut"};
+  Configurable<bool> cfgId02DoElRejection{"cfgId02DoElRejection", true, "cfgId02DoElRejection"};
+  Configurable<bool> cfgId03DoDeRejection{"cfgId03DoDeRejection", false, "cfgId03DoDeRejection"};
+  Configurable<bool> cfgId04DoPdependentId{"cfgId04DoPdependentId", true, "cfgId04DoPdependentId"};
+  Configurable<bool> cfgId05DoTpcInnerParamId{"cfgId05DoTpcInnerParamId", false, "cfgId05DoTpcInnerParamId"};
+
+  Configurable<float> cfgIdPi01ThrPforTOF{"cfgIdPi01ThrPforTOF", 0.7, "cfgIdPi01ThrPforTOF"};
+  Configurable<int> cfgIdPi02IdCutTypeLowP{"cfgIdPi02IdCutTypeLowP", 0, "cfgIdPi02IdCutTypeLowP"};
+  Configurable<float> cfgIdPi03NSigmaTPCLowP{"cfgIdPi03NSigmaTPCLowP", 2.0, "cfgIdPi03NSigmaTPCLowP"};
+  Configurable<float> cfgIdPi04NSigmaTOFLowP{"cfgIdPi04NSigmaTOFLowP", 2.0, "cfgIdPi04NSigmaTOFLowP"};
+  Configurable<float> cfgIdPi05NSigmaRadLowP{"cfgIdPi05NSigmaRadLowP", 4.0, "cfgIdPi05NSigmaRadLowP"};
+  Configurable<int> cfgIdPi06IdCutTypeHighP{"cfgIdPi06IdCutTypeHighP", 0, "cfgIdPi06IdCutTypeHighP"};
+  Configurable<float> cfgIdPi07NSigmaTPCHighP{"cfgIdPi07NSigmaTPCHighP", 2.0, "cfgIdPi07NSigmaTPCHighP"};
+  Configurable<float> cfgIdPi08NSigmaTOFHighP{"cfgIdPi08NSigmaTOFHighP", 2.0, "cfgIdPi08NSigmaTOFHighP"};
+  Configurable<float> cfgIdPi09NSigmaRadHighP{"cfgIdPi09NSigmaRadHighP", 4.0, "cfgIdPi09NSigmaRadHighP"};
+
+  Configurable<float> cfgIdKa01ThrPforTOF{"cfgIdKa01ThrPforTOF", 0.8, "cfgIdKa01ThrPforTOF"};
+  Configurable<int> cfgIdKa02IdCutTypeLowP{"cfgIdKa02IdCutTypeLowP", 0, "cfgIdKa02IdCutTypeLowP"};
+  Configurable<float> cfgIdKa03NSigmaTPCLowP{"cfgIdKa03NSigmaTPCLowP", 2.0, "cfgIdKa03NSigmaTPCLowP"};
+  Configurable<float> cfgIdKa04NSigmaTOFLowP{"cfgIdKa04NSigmaTOFLowP", 2.0, "cfgIdKa04NSigmaTOFLowP"};
+  Configurable<float> cfgIdKa05NSigmaRadLowP{"cfgIdKa05NSigmaRadLowP", 4.0, "cfgIdKa05NSigmaRadLowP"};
+  Configurable<int> cfgIdKa06IdCutTypeHighP{"cfgIdKa06IdCutTypeHighP", 0, "cfgIdKa06IdCutTypeHighP"};
+  Configurable<float> cfgIdKa07NSigmaTPCHighP{"cfgIdKa07NSigmaTPCHighP", 2.0, "cfgIdKa07NSigmaTPCHighP"};
+  Configurable<float> cfgIdKa08NSigmaTOFHighP{"cfgIdKa08NSigmaTOFHighP", 2.0, "cfgIdKa08NSigmaTOFHighP"};
+  Configurable<float> cfgIdKa09NSigmaRadHighP{"cfgIdKa09NSigmaRadHighP", 4.0, "cfgIdKa09NSigmaRadHighP"};
+
+  Configurable<float> cfgIdPr01ThrPforTOF{"cfgIdPr01ThrPforTOF", 0.8, "cfgIdPr01ThrPforTOF"};
+  Configurable<int> cfgIdPr02IdCutTypeLowP{"cfgIdPr02IdCutTypeLowP", 0, "cfgIdPr02IdCutTypeLowP"};
+  Configurable<float> cfgIdPr03NSigmaTPCLowP{"cfgIdPr03NSigmaTPCLowP", 2.0, "cfgIdPr03NSigmaTPCLowP"};
+  Configurable<float> cfgIdPr04NSigmaTOFLowP{"cfgIdPr04NSigmaTOFLowP", 2.0, "cfgIdPr04NSigmaTOFLowP"};
+  Configurable<float> cfgIdPr05NSigmaRadLowP{"cfgIdPr05NSigmaRadLowP", 4.0, "cfgIdPr05NSigmaRadLowP"};
+  Configurable<int> cfgIdPr06IdCutTypeHighP{"cfgIdPr06IdCutTypeHighP", 0, "cfgIdPr06IdCutTypeHighP"};
+  Configurable<float> cfgIdPr07NSigmaTPCHighP{"cfgIdPr07NSigmaTPCHighP", 2.0, "cfgIdPr07NSigmaTPCHighP"};
+  Configurable<float> cfgIdPr08NSigmaTOFHighP{"cfgIdPr08NSigmaTOFHighP", 2.0, "cfgIdPr08NSigmaTOFHighP"};
+  Configurable<float> cfgIdPr09NSigmaRadHighP{"cfgIdPr09NSigmaRadHighP", 4.0, "cfgIdPr09NSigmaRadHighP"};
+
+  struct : ConfigurableGroup {
+    Configurable<float> cfgVetoId01PiTPC{"cfgVetoId01PiTPC", 3.0, "cfgVetoId01PiTPC"};
+    Configurable<float> cfgVetoId02PiTOF{"cfgVetoId02PiTOF", 3.0, "cfgVetoId02PiTOF"};
+    Configurable<float> cfgVetoId03KaTPC{"cfgVetoId03KaTPC", 3.0, "cfgVetoId03KaTPC"};
+    Configurable<float> cfgVetoId04KaTOF{"cfgVetoId04KaTOF", 3.0, "cfgVetoId04KaTOF"};
+    Configurable<float> cfgVetoId05PrTPC{"cfgVetoId05PrTPC", 3.0, "cfgVetoId05PrTPC"};
+    Configurable<float> cfgVetoId06PrTOF{"cfgVetoId06PrTOF", 3.0, "cfgVetoId06PrTOF"};
+    Configurable<float> cfgVetoId07ElTPC{"cfgVetoId07ElTPC", 3.0, "cfgVetoId07ElTPC"};
+    Configurable<float> cfgVetoId08ElTOF{"cfgVetoId08ElTOF", 3.0, "cfgVetoId08ElTOF"};
+    Configurable<float> cfgVetoId09DeTPC{"cfgVetoId09DeTPC", 3.0, "cfgVetoId09DeTPC"};
+    Configurable<float> cfgVetoId10DeTOF{"cfgVetoId10DeTOF", 3.0, "cfgVetoId10DeTOF"};
+  } cfgVetoIdCut;
 
   void init(InitContext const&)
   {
@@ -164,7 +215,7 @@ struct NchCumulantsId {
     hist.add("QA/tracks/Idfd/Pi/tpcId/tofExpMom_tofNSigma", "tofExpMom_tofNSigma", histTofExpMomTofNSigma);
     hist.add("QA/tracks/Idfd/Pi/tpcId/tpcNSigma_tofNSigma", "tpcNSigma_tofNSigma", histTpcNSigmaTofNSigma);
 
-    hist.addClone("QA/tracks/Idfd/Pi/tpcId/", "QA/tracks/Idfd/Pi/tofId/");
+    hist.addClone("QA/tracks/Idfd/Pi/tpcId/", "QA/tracks/Idfd/Pi/tpctofId/");
     hist.addClone("QA/tracks/Idfd/Pi/", "QA/tracks/Idfd/Ka/");
     hist.addClone("QA/tracks/Idfd/Pi/", "QA/tracks/Idfd/Pr/");
 
@@ -172,268 +223,31 @@ struct NchCumulantsId {
     hist.add("sparse2", "sparse2", qnHist2);
   } // init ends
 
-  // particle identifications
-  //  tpc Selections
-  template <typename T>
-  bool selPionTPCInnerParam(T track)
-  {
-    if (std::abs(track.tpcNSigmaEl()) > 3.0 && std::abs(track.tpcNSigmaKa()) > 3.0 && std::abs(track.tpcNSigmaPr()) > 3.0 && std::abs(track.tpcNSigmaDe()) > 3.0) {
-      if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 0.70 && std::abs(track.tpcNSigmaPi()) < 3.0) {
-        return true;
-      }
-      if (0.70 <= track.tpcInnerParam() && std::abs(track.tpcNSigmaPi()) < 2.0) {
-        return true;
-      }
-    }
-    return false;
-  }
+  enum IdentificationType {
+    kTPCidentified = 0,
+    kTOFidentified,
+    kTPCTOFidentified,
+    kUnidentified
+  };
 
-  template <typename T>
-  bool selKaonTPCInnerParam(T track)
-  {
-    // p dependent cuts
-    if (std::abs(track.tpcNSigmaEl()) > 3.0 && std::abs(track.tpcNSigmaPi()) > 3.0 && std::abs(track.tpcNSigmaPr()) > 3.0 && std::abs(track.tpcNSigmaDe()) > 3.0) {
-      if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 0.70 && std::abs(track.tpcNSigmaKa()) < 3.0) {
-        return true;
-      }
-      if (0.70 <= track.tpcInnerParam() && std::abs(track.tpcNSigmaKa()) < 2.0) {
-        return true;
-      }
-    }
-    return false;
-  }
+  enum TpcTofCutType {
+    kRectangularCut = 0,
+    kCircularCut,
+    kEllipsoidalCut
+  };
 
-  template <typename T>
-  bool selProtonTPCInnerParam(T track)
-  {
-    if (std::abs(track.tpcNSigmaEl()) > 3.0 && std::abs(track.tpcNSigmaPi()) > 3.0 && std::abs(track.tpcNSigmaKa()) > 3.0 && std::abs(track.tpcNSigmaDe()) > 3.0) {
-      if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 1.60 && std::abs(track.tpcNSigmaPr()) < 3.0) {
-        return true;
-      }
-      if (1.60 <= track.tpcInnerParam() && std::abs(track.tpcNSigmaPr()) < 2.0) {
-        return true;
-      }
-    }
-    return false;
-  }
+  enum DetEnum {
+    tpcId = 0,
+    tofId,
+    tpctofId,
+    NoId
+  };
 
-  template <typename T>
-  bool selDeuteronTPCInnerParam(T track)
-  {
-    if (std::abs(track.tpcNSigmaEl()) > 3.0 && std::abs(track.tpcNSigmaPi()) > 3.0 && std::abs(track.tpcNSigmaKa()) > 3.0 && std::abs(track.tpcNSigmaPr()) > 3.0) {
-      if (0.05 <= track.tpcInnerParam() && track.tpcInnerParam() < 1.80 && std::abs(track.tpcNSigmaDe()) < 3.0) {
-        return true;
-      }
-      if (1.80 <= track.tpcInnerParam() && std::abs(track.tpcNSigmaDe()) < 2.0) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  template <typename T>
-  bool selElectronTPCInnerParam(T track)
-  {
-    if (track.tpcNSigmaEl() < 3.0 && track.tpcNSigmaPi() > 3.0 && track.tpcNSigmaKa() > 3.0 && track.tpcNSigmaPr() > 3.0 && track.tpcNSigmaDe() > 3.0) {
-      return true;
-    }
-    return false;
-  }
-  //
-
-  // TOF Selections
-  // Pion
-  template <typename T>
-  bool selPionTOF(T track)
-  {
-    if (track.p() <= 0.75 && std::abs(track.tpcNSigmaPi()) < 3.0 && std::abs(track.tofNSigmaPi()) < 3.0 && std::abs(track.tofNSigmaEl()) > 3.0) {
-      return true;
-    } else if (0.75 < track.p() // after p = 0.75, Pi and Ka lines of nSigma 3.0 will start intersecting
-               && std::abs(track.tpcNSigmaPi()) < 2.0 && std::abs(track.tofNSigmaPi()) < 2.0 && std::abs(track.tofNSigmaEl()) > 3.0 && std::abs(track.tofNSigmaKa()) > 3.0 && std::abs(track.tofNSigmaPr()) > 3.0 && std::abs(track.tofNSigmaDe()) > 3.0) {
-      return true;
-    }
-    return false;
-  }
-
-  // Kaon
-  template <typename T>
-  bool selKaonTOF(T track)
-  {
-    if (track.p() <= 0.75 && std::abs(track.tpcNSigmaKa()) < 3.0 && std::abs(track.tofNSigmaKa()) < 3.0) {
-      return true;
-    }
-    if (0.75 < track.p() && track.p() <= 1.30 // after 0.75 Pi and Ka lines of nSigma 3.0 will start intersecting
-        && std::abs(track.tpcNSigmaKa()) < 3.0 && std::abs(track.tofNSigmaKa()) < 3.0 && std::abs(track.tofNSigmaPi()) > 3.0 && std::abs(track.tofNSigmaEl()) > 3.0) {
-      return true;
-    }
-    if (1.30 < track.p() // after 1.30 Pr and Ka lines of nSigma 3.0 will start intersecting
-        && std::abs(track.tpcNSigmaKa()) < 2.0 && std::abs(track.tofNSigmaKa()) < 2.0 && std::abs(track.tofNSigmaEl()) > 3.0 && std::abs(track.tofNSigmaPi()) > 3.0 && std::abs(track.tofNSigmaPr()) > 3.0 && std::abs(track.tofNSigmaDe()) > 3.0) {
-      return true;
-    }
-    return false;
-  }
-
-  // Proton
-  template <typename T>
-  bool selProtonTOF(T track)
-  {
-    if (track.p() <= 1.30 && std::abs(track.tpcNSigmaPr()) < 3.0 && std::abs(track.tofNSigmaPr()) < 3.0) {
-      return true;
-    }
-    if (1.30 < track.p() && track.p() <= 3.10                                                                                                                                                                                                     // after 1.30 Pr and Ka lines of nSigma 3.0 will start intersecting
-        && std::abs(track.tpcNSigmaPr()) < 3.0 && std::abs(track.tofNSigmaPr()) < 3.0 && std::abs(track.tofNSigmaEl()) > 3.0 && std::abs(track.tofNSigmaPi()) > 3.0 && std::abs(track.tofNSigmaKa()) > 3.0 && std::abs(track.tofNSigmaDe()) > 3.0 // Some Deuteron contamination is still coming in p dependent cuts
-    ) {
-      return true;
-    }
-    if (3.10 < track.p() // after 3.10 Pr and De lines of nSigma 3.0 will start intersecting
-        && std::abs(track.tpcNSigmaPr()) < 2.0 && std::abs(track.tofNSigmaPr()) < 2.0 && std::abs(track.tofNSigmaEl()) > 3.0 && std::abs(track.tofNSigmaPi()) > 3.0 && std::abs(track.tofNSigmaKa()) > 3.0 && std::abs(track.tofNSigmaDe()) > 3.0) {
-      return true;
-    }
-    return false;
-  }
-
-  // Deuteron
-  template <typename T>
-  bool selDeuteronTOF(T track)
-  {
-    if (track.p() <= 3.10 && std::abs(track.tpcNSigmaDe()) < 3.0 && std::abs(track.tofNSigmaDe()) < 3.0 && std::abs(track.tofNSigmaEl()) > 3.0 && std::abs(track.tofNSigmaPi()) > 3.0 && std::abs(track.tofNSigmaKa()) > 3.0 && std::abs(track.tofNSigmaPr()) > 3.0) {
-      return true;
-    }
-    if (3.10 < track.p() // after 3.10 De and Pr lines of nSigma 3.0 will start intersecting
-        && std::abs(track.tpcNSigmaDe()) < 2.0 && std::abs(track.tofNSigmaDe()) < 2.0 && std::abs(track.tofNSigmaEl()) > 3.0 && std::abs(track.tofNSigmaPi()) > 3.0 && std::abs(track.tofNSigmaKa()) > 3.0 && std::abs(track.tofNSigmaPr()) > 3.0) {
-      return true;
-    }
-    return false;
-  }
-
-  // Electron
-  template <typename T>
-  bool selElectronTOF(T track)
-  {
-    if (
-      (std::pow(track.tpcNSigmaEl(), 2) + std::pow(track.tofNSigmaEl(), 2)) < 9.00 && std::abs(track.tofNSigmaPi()) > 3.0 && std::abs(track.tofNSigmaKa()) > 3.0 && std::abs(track.tofNSigmaPr()) > 3.0 && std::abs(track.tofNSigmaDe()) > 3.0) {
-      return true;
-    }
-    return false;
-  }
-  //
-
-  // SelectionFunctions
-  // Pion
-  template <typename T>
-  bool selPion(T track, int& IdMethod)
-  {
-    if (!track.hasTOF() && selPionTPCInnerParam(track)) {
-      IdMethod = 0;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() < 0.0 && selPionTPCInnerParam(track)) {
-      IdMethod = 0;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() > 0.0 && selPionTPCInnerParam(track)) {
-      IdMethod = 0;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() > 0.0 && !selPionTPCInnerParam(track)) {
-      IdMethod = 1;
-      return selPionTOF(track);
-    }
-    return false;
-  }
-
-  // Kaon
-  template <typename T>
-  bool selKaon(T track, int& IdMethod)
-  {
-    if (!track.hasTOF() && selKaonTPCInnerParam(track)) {
-      IdMethod = 0;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() < 0.0 && selKaonTPCInnerParam(track)) {
-      IdMethod = 0;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() > 0.0 && selKaonTPCInnerParam(track)) {
-      IdMethod = 0;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() > 0.0 && !selKaonTPCInnerParam(track)) {
-      IdMethod = 1;
-      return selKaonTOF(track);
-    }
-    return false;
-  }
-
-  // Proton
-  template <typename T>
-  bool selProton(T track, int& IdMethod)
-  {
-    if (!track.hasTOF() && selProtonTPCInnerParam(track)) {
-      IdMethod = 0;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() < 0.0 && selProtonTPCInnerParam(track)) {
-      IdMethod = 0;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() > 0.0 && selProtonTPCInnerParam(track)) {
-      IdMethod = 0;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() > 0.0 && !selProtonTPCInnerParam(track)) {
-      IdMethod = 1;
-      return selProtonTOF(track);
-    }
-    return false;
-  }
-
-  // Deuteron
-  template <typename T>
-  bool selDeuteron(T track, int& IdMethod)
-  {
-    if (!track.hasTOF() && selDeuteronTPCInnerParam(track)) {
-      IdMethod = 0;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() < 0.0 && selDeuteronTPCInnerParam(track)) {
-      IdMethod = 0;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() > 0.0 && selDeuteronTPCInnerParam(track)) {
-      IdMethod = 0;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() > 0.0 && !selDeuteronTPCInnerParam(track)) {
-      IdMethod = 1;
-      return selDeuteronTOF(track);
-    }
-    return false;
-  }
-
-  // Electron
-  template <typename T>
-  bool selElectron(T track, int& IdMethod)
-  {
-    if (!track.hasTOF() && selElectronTPCInnerParam(track)) {
-      IdMethod = 0;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() < 0.0 && selElectronTPCInnerParam(track)) {
-      IdMethod = 0;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() > 0.0 && selElectronTPCInnerParam(track)) {
-      IdMethod = 0;
-      return true;
-    }
-    if (track.hasTOF() && track.beta() > 0.0 && !selElectronTPCInnerParam(track)) {
-      IdMethod = 1;
-      return selElectronTOF(track);
-    }
-    return false;
-  }
-  //
+  static constexpr std::string_view DetDire[] = {
+    "tpcId/",
+    "tofId/",
+    "tpctofId/",
+    "NoId/"};
 
   enum HistRegEnum {
     qaEventPreSel = 0,
@@ -465,16 +279,291 @@ struct NchCumulantsId {
     "El/",
     "De/"};
 
-  enum DetEnum {
-    tpcId = 0,
-    tofId,
-    NoId
-  };
+  // particle identifications
+  //  tpc Selections
 
-  static constexpr std::string_view DetDire[] = {
-    "tpcId/",
-    "tofId/",
-    "NoId/"};
+  template <int pidMode, typename T>
+  bool vetoIdOthersTPC(const T& track)
+  {
+    if (pidMode != kPi) {
+      if (std::fabs(track.tpcNSigmaPi()) < cfgVetoIdCut.cfgVetoId01PiTPC)
+        return false;
+    }
+    if (pidMode != kKa) {
+      if (std::fabs(track.tpcNSigmaKa()) < cfgVetoIdCut.cfgVetoId03KaTPC)
+        return false;
+    }
+    if (pidMode != kPr) {
+      if (std::fabs(track.tpcNSigmaPr()) < cfgVetoIdCut.cfgVetoId05PrTPC)
+        return false;
+    }
+    if (cfgId02DoElRejection) {
+      if (pidMode != kEl) {
+        if (std::fabs(track.tpcNSigmaEl()) < cfgVetoIdCut.cfgVetoId07ElTPC)
+          return false;
+      }
+    }
+    if (cfgId03DoDeRejection) {
+      if (pidMode != kDe) {
+        if (std::fabs(track.tpcNSigmaDe()) < cfgVetoIdCut.cfgVetoId09DeTPC)
+          return false;
+      }
+    }
+    return true;
+  }
+
+  template <int pidMode, typename T>
+  bool vetoIdOthersTOF(const T& track)
+  {
+    if (pidMode != kPi) {
+      if (std::fabs(track.tofNSigmaPi()) < cfgVetoIdCut.cfgVetoId02PiTOF)
+        return false;
+    }
+    if (pidMode != kKa) {
+      if (std::fabs(track.tofNSigmaKa()) < cfgVetoIdCut.cfgVetoId04KaTOF)
+        return false;
+    }
+    if (pidMode != kPr) {
+      if (std::fabs(track.tofNSigmaPr()) < cfgVetoIdCut.cfgVetoId06PrTOF)
+        return false;
+    }
+    if (cfgId02DoElRejection) {
+      if (pidMode != kEl) {
+        if (std::fabs(track.tofNSigmaEl()) < cfgVetoIdCut.cfgVetoId08ElTOF)
+          return false;
+      }
+    }
+    if (cfgId03DoDeRejection) {
+      if (pidMode != kDe) {
+        if (std::fabs(track.tofNSigmaDe()) < cfgVetoIdCut.cfgVetoId10DeTOF)
+          return false;
+      }
+    }
+    return true;
+  }
+
+  template <int pidMode, typename T>
+  bool vetoIdOthersTPCTOF(const T& track)
+  {
+    if (pidMode != kPi) {
+      if (std::fabs(track.tpcNSigmaPi()) < cfgVetoIdCut.cfgVetoId01PiTPC && std::fabs(track.tofNSigmaPi()) < cfgVetoIdCut.cfgVetoId02PiTOF)
+        return false;
+    }
+    if (pidMode != kKa) {
+      if (std::fabs(track.tpcNSigmaKa()) < cfgVetoIdCut.cfgVetoId03KaTPC && std::fabs(track.tofNSigmaKa()) < cfgVetoIdCut.cfgVetoId04KaTOF)
+        return false;
+    }
+    if (pidMode != kPr) {
+      if (std::fabs(track.tpcNSigmaPr()) < cfgVetoIdCut.cfgVetoId05PrTPC && std::fabs(track.tofNSigmaPr()) < cfgVetoIdCut.cfgVetoId06PrTOF)
+        return false;
+    }
+    if (cfgId02DoElRejection) {
+      if (pidMode != kEl) {
+        if (std::fabs(track.tpcNSigmaEl()) < cfgVetoIdCut.cfgVetoId07ElTPC && std::fabs(track.tofNSigmaEl()) < cfgVetoIdCut.cfgVetoId08ElTOF)
+          return false;
+      }
+    }
+    if (cfgId03DoDeRejection) {
+      if (pidMode != kDe) {
+        if (std::fabs(track.tpcNSigmaDe()) < cfgVetoIdCut.cfgVetoId09DeTPC && std::fabs(track.tofNSigmaDe()) < cfgVetoIdCut.cfgVetoId10DeTOF)
+          return false;
+      }
+    }
+    return true;
+  }
+
+  template <int pidMode, typename T>
+  bool selIdRectangularCut(const T& track, const float& nSigmaTPC, const float& nSigmaTOF)
+  {
+    switch (pidMode) {
+      case kPi:
+        if (std::fabs(track.tpcNSigmaPi()) < nSigmaTPC &&
+            std::fabs(track.tofNSigmaPi()) < nSigmaTOF) {
+          return true;
+        }
+        break;
+      case kKa:
+        if (std::fabs(track.tpcNSigmaKa()) < nSigmaTPC &&
+            std::fabs(track.tofNSigmaKa()) < nSigmaTOF) {
+          return true;
+        }
+        break;
+      case kPr:
+        if (std::fabs(track.tpcNSigmaPr()) < nSigmaTPC &&
+            std::fabs(track.tofNSigmaPr()) < nSigmaTOF) {
+          return true;
+        }
+        break;
+      default:
+        return false;
+        break;
+    }
+    return false;
+  }
+
+  template <int pidMode, typename T>
+  bool selIdEllipsoidalCut(const T& track, const float& nSigmaTPC, const float& nSigmaTOF)
+  {
+    switch (pidMode) {
+      case kPi:
+        if (std::pow(track.tpcNSigmaPi() / nSigmaTPC, 2) + std::pow(track.tofNSigmaPi() / nSigmaTOF, 2) < 1.0)
+          return true;
+        break;
+      case kKa:
+        if (std::pow(track.tpcNSigmaKa() / nSigmaTPC, 2) + std::pow(track.tofNSigmaKa() / nSigmaTOF, 2) < 1.0)
+          return true;
+        break;
+      case kPr:
+        if (std::pow(track.tpcNSigmaPr() / nSigmaTPC, 2) + std::pow(track.tofNSigmaPr() / nSigmaTOF, 2) < 1.0)
+          return true;
+        break;
+      default:
+        return false;
+        break;
+    }
+    return false;
+  }
+
+  template <int pidMode, typename T>
+  bool selIdCircularCut(const T& track, const float& nSigmaSquaredRad)
+  {
+    switch (pidMode) {
+      case kPi:
+        if (std::pow(track.tpcNSigmaPi(), 2) + std::pow(track.tofNSigmaPi(), 2) < nSigmaSquaredRad)
+          return true;
+        break;
+      case kKa:
+        if (std::pow(track.tpcNSigmaKa(), 2) + std::pow(track.tofNSigmaKa(), 2) < nSigmaSquaredRad)
+          return true;
+        break;
+      case kPr:
+        if (std::pow(track.tpcNSigmaPr(), 2) + std::pow(track.tofNSigmaPr(), 2) < nSigmaSquaredRad)
+          return true;
+        break;
+      default:
+        return false;
+        break;
+    }
+    return false;
+  }
+
+  template <typename T>
+  bool checkReliableTOF(const T& track)
+  {
+    if (track.hasTOF())
+      return true; // which check makes the information of TOF relaiable? should track.beta() be checked?
+    else
+      return false;
+  }
+
+  template <int pidMode, typename T>
+  bool idTPC(const T& track, const float& nSigmaTPC)
+  {
+    if (cfgId01CheckVetoCut && !vetoIdOthersTPC<pidMode>(track))
+      return false;
+    switch (pidMode) {
+      case kPi:
+        if (std::fabs(track.tpcNSigmaPi()) < nSigmaTPC)
+          return true;
+        break;
+      case kKa:
+        if (std::fabs(track.tpcNSigmaKa()) < nSigmaTPC)
+          return true;
+        break;
+      case kPr:
+        if (std::fabs(track.tpcNSigmaPr()) < nSigmaTPC)
+          return true;
+        break;
+      default:
+        return false;
+        break;
+    }
+    return false;
+  }
+
+  template <int pidMode, typename T>
+  bool idTPCTOF(const T& track, const int& pidCutType, const float& nSigmaTPC, const float& nSigmaTOF, const float& nSigmaSquaredRad)
+  {
+    if (cfgId01CheckVetoCut && !vetoIdOthersTPCTOF<pidMode>(track))
+      return false;
+    if (pidCutType == kRectangularCut) {
+      return selIdRectangularCut<pidMode>(track, nSigmaTPC, nSigmaTOF);
+    } else if (pidCutType == kCircularCut) {
+      return selIdCircularCut<pidMode>(track, nSigmaSquaredRad);
+    } else if (pidCutType == kEllipsoidalCut) {
+      return selIdEllipsoidalCut<pidMode>(track, nSigmaTPC, nSigmaTOF);
+    }
+    return false;
+  }
+
+  template <int pidMode, typename T>
+  bool selPdependent(const T& track, int& IdMethod, const float& cfgIdThrPforTOF,
+                     const int& idCutTypeLowP, const float& nSigmaTPCLowP, const float& nSigmaTOFLowP, const float& nSigmaRadLowP,
+                     const int& idCutTypeHighP, const float& nSigmaTPCHighP, const float& nSigmaTOFHighP, const float& nSigmaRadHighP)
+  {
+    if (track.p() < cfgIdThrPforTOF) {
+      if (checkReliableTOF(track)) {
+        if (idTPCTOF<pidMode>(track, idCutTypeLowP, nSigmaTPCLowP, nSigmaTOFLowP, nSigmaRadLowP)) {
+          IdMethod = kTPCTOFidentified;
+          return true;
+        }
+        return false;
+      } else {
+        if (idTPC<pidMode>(track, nSigmaTPCLowP)) {
+          IdMethod = kTPCidentified;
+          return true;
+        }
+        return false;
+      }
+    } else {
+      if (checkReliableTOF(track)) {
+        if (idTPCTOF<pidMode>(track, idCutTypeHighP, nSigmaTPCHighP, nSigmaTOFHighP, nSigmaRadHighP)) {
+          IdMethod = kTPCTOFidentified;
+          return true;
+        }
+        return false;
+      }
+      return false;
+    }
+  }
+
+  //
+  //______________________________Identification Functions________________________________________________________________
+  // Pion
+  template <typename T>
+  bool selPion(const T& track, int& IdMethod)
+  {
+    if (cfgId04DoPdependentId) {
+      return selPdependent<kPi>(track, IdMethod,
+                                cfgIdPi01ThrPforTOF, cfgIdPi02IdCutTypeLowP, cfgIdPi03NSigmaTPCLowP, cfgIdPi04NSigmaTOFLowP, cfgIdPi05NSigmaRadLowP,
+                                cfgIdPi06IdCutTypeHighP, cfgIdPi07NSigmaTPCHighP, cfgIdPi08NSigmaTOFHighP, cfgIdPi09NSigmaRadHighP);
+    }
+    return false;
+  }
+
+  // Kaon
+  template <typename T>
+  bool selKaon(const T& track, int& IdMethod)
+  {
+    if (cfgId04DoPdependentId) {
+      return selPdependent<kKa>(track, IdMethod,
+                                cfgIdKa01ThrPforTOF, cfgIdKa02IdCutTypeLowP, cfgIdKa03NSigmaTPCLowP, cfgIdKa04NSigmaTOFLowP, cfgIdKa05NSigmaRadLowP,
+                                cfgIdKa06IdCutTypeHighP, cfgIdKa07NSigmaTPCHighP, cfgIdKa08NSigmaTOFHighP, cfgIdKa09NSigmaRadHighP);
+    }
+    return false;
+  }
+
+  // Proton
+  template <typename T>
+  bool selProton(const T& track, int& IdMethod)
+  {
+    if (cfgId04DoPdependentId) {
+      return selPdependent<kPr>(track, IdMethod,
+                                cfgIdPr01ThrPforTOF, cfgIdPr02IdCutTypeLowP, cfgIdPr03NSigmaTPCLowP, cfgIdPr04NSigmaTOFLowP, cfgIdPr05NSigmaRadLowP,
+                                cfgIdPr06IdCutTypeHighP, cfgIdPr07NSigmaTPCHighP, cfgIdPr08NSigmaTOFHighP, cfgIdPr09NSigmaRadHighP);
+    }
+    return false;
+  }
 
   template <int Mode, int pidMode, int detMode, typename H, typename T>
   void fillIdentificationQA(H histReg, const T& track)
@@ -566,7 +655,7 @@ struct NchCumulantsId {
   Filter col = aod::evsel::sel8 == true;
   Filter colFilter = nabs(aod::collision::posZ) < cfgCutPosZ;
   Filter trackFilter = requireGlobalTrackInFilter();
-  Filter trackPt = (aod::track::pt > 0.15f) && (aod::track::pt < 2.0f);
+  Filter trackPt = (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax);
   Filter trackDCAxy = nabs(aod::track::dcaXY) < cfgCutDcaXY;
   Filter trackDCAz = nabs(aod::track::dcaZ) < cfgCutDcaZ;
   Filter tracketa = nabs(aod::track::eta) < cfgCutEta;
@@ -617,10 +706,10 @@ struct NchCumulantsId {
             nAPi++;
           }
 
-          if (idMethod == 0)
+          if (idMethod == kTPCidentified)
             fillIdentificationQA<qaTracksIdfd, kPi, tpcId>(hist, track);
-          if (idMethod == 1)
-            fillIdentificationQA<qaTracksIdfd, kPi, tofId>(hist, track);
+          if (idMethod == kTPCTOFidentified)
+            fillIdentificationQA<qaTracksIdfd, kPi, tpctofId>(hist, track);
         }
         // kaon
         if (selKaon(track, idMethod)) {
@@ -631,10 +720,10 @@ struct NchCumulantsId {
             nAKa++;
           }
 
-          if (idMethod == 0)
+          if (idMethod == kTPCidentified)
             fillIdentificationQA<qaTracksIdfd, kKa, tpcId>(hist, track);
-          if (idMethod == 1)
-            fillIdentificationQA<qaTracksIdfd, kKa, tofId>(hist, track);
+          if (idMethod == kTPCTOFidentified)
+            fillIdentificationQA<qaTracksIdfd, kKa, tpctofId>(hist, track);
         }
         // proton
         if (selProton(track, idMethod)) {
@@ -645,10 +734,10 @@ struct NchCumulantsId {
             nAPr++;
           }
 
-          if (idMethod == 0)
+          if (idMethod == kTPCidentified)
             fillIdentificationQA<qaTracksIdfd, kPr, tpcId>(hist, track);
-          if (idMethod == 1)
-            fillIdentificationQA<qaTracksIdfd, kPr, tofId>(hist, track);
+          if (idMethod == kTPCTOFidentified)
+            fillIdentificationQA<qaTracksIdfd, kPr, tpctofId>(hist, track);
         }
 
       } // track itteration ends

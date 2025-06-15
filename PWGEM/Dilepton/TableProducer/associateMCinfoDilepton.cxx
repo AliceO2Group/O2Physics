@@ -14,6 +14,10 @@
 // This code produces reduced events for photon analyses.
 //    Please write to: daiki.sekihata@cern.ch
 
+#include <map>
+#include <vector>
+#include <iostream>
+
 #include <random>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -29,16 +33,16 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-using MyCollisionsMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::EMEvSels>;
-using TracksMC = soa::Join<aod::TracksIU, aod::McTrackLabels>;
-using FwdTracksMC = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels>;
-
 struct AssociateMCInfoDilepton {
   enum SubSystem {
     kElectron = 0x1,
     kFwdMuon = 0x2,
     kPCM = 0x4,
   };
+
+  using MyCollisionsMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::EMEvSels>;
+  using TracksMC = soa::Join<aod::TracksIU, aod::McTrackLabels>;
+  using FwdTracksMC = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels>;
 
   Produces<o2::aod::EMMCEvents> mcevents;
   Produces<o2::aod::EMMCEventLabels> mceventlabels;
@@ -47,13 +51,15 @@ struct AssociateMCInfoDilepton {
   Produces<o2::aod::V0LegMCLabels> v0legmclabels;
   Produces<o2::aod::EMPrimaryElectronMCLabels> emprimaryelectronmclabels;
   Produces<o2::aod::EMPrimaryMuonMCLabels> emprimarymuonmclabels;
+  Produces<o2::aod::EMDummyDatas> emdummydata;
 
-  Configurable<float> down_scaling_omega{"down_scaling_omega", 1.0, "down scaling factor to store omega"};
-  Configurable<float> down_scaling_phi{"down_scaling_phi", 1.0, "down scaling factor to store phi"};
-  Configurable<float> min_eta_gen_primary{"min_eta_gen_primary", -1.2, "min rapidity Y to store generated information"};  // smearing might be applied at analysis stage. set wider value.
-  Configurable<float> max_eta_gen_primary{"max_eta_gen_primary", +1.2, "max rapidity Y to store generated information"};  // smearing might be applied at analysis stage. set wider value.
-  Configurable<float> min_eta_gen_primary_fwd{"min_eta_gen_primary_fwd", -4.5, "min eta to store generated information"}; // smearing might be applied at analysis stage. set wider value.
-  Configurable<float> max_eta_gen_primary_fwd{"max_eta_gen_primary_fwd", -2.0, "max eta to store generated information"}; // smearing might be applied at analysis stage. set wider value.
+  Configurable<int> n_dummy_loop{"n_dummy_loop", 0, "for loop runs over n times"};
+  Configurable<float> down_scaling_omega{"down_scaling_omega", 1.1, "down scaling factor to store omega"};
+  Configurable<float> down_scaling_phi{"down_scaling_phi", 1.1, "down scaling factor to store phi"};
+  Configurable<float> min_eta_gen_primary{"min_eta_gen_primary", -1.5, "min rapidity Y to store generated information"};  // smearing is applied at analysis stage. set wider value.
+  Configurable<float> max_eta_gen_primary{"max_eta_gen_primary", +1.5, "max rapidity Y to store generated information"};  // smearing is applied at analysis stage. set wider value.
+  Configurable<float> min_eta_gen_primary_fwd{"min_eta_gen_primary_fwd", -5.0, "min eta to store generated information"}; // smearing is applied at analysis stage. set wider value.
+  Configurable<float> max_eta_gen_primary_fwd{"max_eta_gen_primary_fwd", -1.5, "max eta to store generated information"}; // smearing is applied at analysis stage. set wider value.
 
   HistogramRegistry registry{"EMMCEvent"};
   std::mt19937 engine;
@@ -141,7 +147,7 @@ struct AssociateMCInfoDilepton {
     int fCounters[2] = {0, 0}; //! [0] - particle counter, [1] - event counter
 
     // first, run loop over mc collisions to create map between aod::McCollisions and aod::EMMCEvents
-    for (auto& mcCollision : mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       // make an entry for this MC event only if it was not already added to the table
       if (!(fEventLabels.find(mcCollision.globalIndex()) != fEventLabels.end())) {
         mcevents(mcCollision.globalIndex(), mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
@@ -150,7 +156,7 @@ struct AssociateMCInfoDilepton {
       }
     } // end of mc collision loop
 
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 1);
 
       // TODO: investigate the collisions without corresponding mcCollision
@@ -168,13 +174,13 @@ struct AssociateMCInfoDilepton {
 
     } // end of reconstructed collision loop
 
-    for (auto& mcCollision : mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       // store MC true information
       auto mcelectrons_per_mccollision = mcelectrons.sliceBy(perMcCollision, mcCollision.globalIndex());
       auto mcmuons_per_mccollision = mcmuons.sliceBy(perMcCollision, mcCollision.globalIndex());
       auto mcvectormesons_per_mccollision = mcvectormesons.sliceBy(perMcCollision, mcCollision.globalIndex());
 
-      for (auto& mctrack : mcelectrons_per_mccollision) { // store necessary information for denominator of efficiency
+      for (const auto& mctrack : mcelectrons_per_mccollision) { // store necessary information for denominator of efficiency
         if (!mctrack.isPhysicalPrimary() && !mctrack.producedByGenerator()) {
           continue;
         }
@@ -226,7 +232,7 @@ struct AssociateMCInfoDilepton {
         } // end of ndau protection
       } // end of mc electron loop
 
-      for (auto& mctrack : mcmuons_per_mccollision) { // store necessary information for denominator of efficiency
+      for (const auto& mctrack : mcmuons_per_mccollision) { // store necessary information for denominator of efficiency
         if (!mctrack.isPhysicalPrimary() && !mctrack.producedByGenerator()) {
           continue;
         }
@@ -278,7 +284,7 @@ struct AssociateMCInfoDilepton {
         } // end of ndau protection
       } // end of mc muon loop
 
-      for (auto& mctrack : mcvectormesons_per_mccollision) { // store necessary information for denominator of efficiency
+      for (const auto& mctrack : mcvectormesons_per_mccollision) { // store necessary information for denominator of efficiency
         // Be careful!! dilepton rapidity is different from meson rapidity! No acceptance cut here.
 
         if (!mctrack.isPhysicalPrimary() && !mctrack.producedByGenerator()) {
@@ -309,7 +315,7 @@ struct AssociateMCInfoDilepton {
               // TODO: remove this check as soon as issues with MC production are fixed
               if (d < mcTracks.size()) { // protect against bad daughter indices
                 auto daughter = mcTracks.iteratorAt(d);
-                if (abs(daughter.pdgCode()) == 11 || abs(daughter.pdgCode()) == 13) {
+                if (std::abs(daughter.pdgCode()) == 11 || std::abs(daughter.pdgCode()) == 13) {
                   is_lepton_involved = true;
                   break;
                 }
@@ -346,7 +352,7 @@ struct AssociateMCInfoDilepton {
     } // end of mc collision loop
 
     if constexpr (static_cast<bool>(system & kPCM)) {
-      for (auto& v0 : v0photons) {
+      for (const auto& v0 : v0photons) {
         auto collision_from_v0 = collisions.iteratorAt(v0.collisionId());
         if (!collision_from_v0.has_mcCollision()) {
           continue;
@@ -362,7 +368,7 @@ struct AssociateMCInfoDilepton {
           continue; // If no MC particle is found, skip the v0
         }
 
-        for (auto& leg : {pos, ele}) { // be carefull of order {pos, ele}!
+        for (const auto& leg : {pos, ele}) { // be carefull of order {pos, ele}!
           auto o2track = o2tracks.iteratorAt(leg.trackId());
           auto mctrack = o2track.template mcParticle_as<aod::McParticles>();
           // LOGF(info, "mctrack.globalIndex() = %d, mctrack.index() = %d", mctrack.globalIndex(), mctrack.index()); // these are exactly the same.
@@ -410,7 +416,7 @@ struct AssociateMCInfoDilepton {
 
     if constexpr (static_cast<bool>(system & kElectron)) {
       // auto emprimaryelectrons_coll = emprimaryelectrons.sliceBy(perCollision_el, collision.globalIndex());
-      for (auto& emprimaryelectron : emprimaryelectrons) {
+      for (const auto& emprimaryelectron : emprimaryelectrons) {
         auto collision_from_el = collisions.iteratorAt(emprimaryelectron.collisionId());
         if (!collision_from_el.has_mcCollision()) {
           continue;
@@ -465,7 +471,7 @@ struct AssociateMCInfoDilepton {
 
     if constexpr (static_cast<bool>(system & kFwdMuon)) {
       // auto emprimarymuons_coll = emprimarymuons.sliceBy(perCollision_mu, collision.globalIndex());
-      for (auto& emprimarymuon : emprimarymuons) {
+      for (const auto& emprimarymuon : emprimarymuons) {
         auto collision_from_mu = collisions.iteratorAt(emprimarymuon.collisionId());
         if (!collision_from_mu.has_mcCollision()) {
           continue;
@@ -525,7 +531,7 @@ struct AssociateMCInfoDilepton {
 
       std::vector<int> mothers;
       if (mctrack.has_mothers()) {
-        for (auto& m : mctrack.mothersIds()) {
+        for (const auto& m : mctrack.mothersIds()) {
           if (m < mcTracks.size()) { // protect against bad mother indices
             if (fNewLabels.find(m) != fNewLabels.end()) {
               mothers.push_back(fNewLabels.find(m)->second);
@@ -575,9 +581,9 @@ struct AssociateMCInfoDilepton {
     } // end loop over labels
 
     // only for omega, phi mesons
-    for (auto& mcCollision : mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       auto mcvectormesons_per_mccollision = mcvectormesons.sliceBy(perMcCollision, mcCollision.globalIndex());
-      for (auto& mctrack : mcvectormesons_per_mccollision) { // store necessary information for denominator of efficiency
+      for (const auto& mctrack : mcvectormesons_per_mccollision) { // store necessary information for denominator of efficiency
         if (!mctrack.isPhysicalPrimary() && !mctrack.producedByGenerator()) {
           continue;
         }
@@ -638,6 +644,19 @@ struct AssociateMCInfoDilepton {
     skimmingMC<kPCM>(collisions, bcs, mccollisions, mcTracks, o2tracks, nullptr, v0photons, v0legs, nullptr, nullptr);
   }
 
+  void processGenDummy(MyCollisionsMC const&)
+  {
+    for (int i = 0; i < n_dummy_loop; i++) {
+      emdummydata(
+        0.f, 0.f, 0.f, 0.f, 0.f,
+        0.f, 0.f, 0.f, 0.f, 0.f,
+        0.f, 0.f, 0.f, 0.f, 0.f,
+        0.f, 0.f, 0.f, 0.f, 0.f,
+        0.f, 0.f, 0.f, 0.f, 0.f,
+        0.f);
+    }
+  }
+
   void processDummy(MyCollisionsMC const&) {}
 
   PROCESS_SWITCH(AssociateMCInfoDilepton, processMC_Electron, "create em mc event table for Electron", false);
@@ -646,6 +665,7 @@ struct AssociateMCInfoDilepton {
   PROCESS_SWITCH(AssociateMCInfoDilepton, processMC_Electron_FwdMuon_PCM, "create em mc event table for PCM, Electron, FwdMuon", false);
   PROCESS_SWITCH(AssociateMCInfoDilepton, processMC_Electron_PCM, "create em mc event table for PCM, Electron", false);
   PROCESS_SWITCH(AssociateMCInfoDilepton, processMC_PCM, "create em mc event table for PCM", false);
+  PROCESS_SWITCH(AssociateMCInfoDilepton, processGenDummy, "produce dummy data", false);
   PROCESS_SWITCH(AssociateMCInfoDilepton, processDummy, "processDummy", true);
 };
 

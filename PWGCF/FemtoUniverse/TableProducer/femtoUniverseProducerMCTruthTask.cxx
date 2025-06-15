@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -168,9 +168,11 @@ struct femtoUniverseProducerMCTruthTask {
         bool pass = false;
         std::vector<int> tmpPDGCodes = ConfPDGCodes; // necessary due to some features of the Configurable
         for (uint32_t pdg : tmpPDGCodes) {
-          if (pdgCode == 333) {
+          if (pdgCode == 333) { // phi meson
             pass = true;
-          } else if (pdgCode == 421) {
+          } else if (pdgCode == 421) { // D0 meson
+            pass = true;
+          } else if (pdgCode == 411) { // D+ meson
             pass = true;
           } else if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
             if (particle.isPhysicalPrimary())

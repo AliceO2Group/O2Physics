@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file multiparticle-correlations-ab.cxx
+/// \brief ... TBI 20250425
+/// \author Ante.Bilandzic@cern.ch
+
 // O2:
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/CCDB/ctpRateFetcher.h"
@@ -25,9 +29,9 @@ using namespace o2;
 using namespace o2::framework;
 
 // *) Run 3:
-using BCs_Run3 = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>; // TBI 20241126 under testing
-// Remark 1: I have already timestamp in workflow, due to track-propagation. With Run3MatchedToBCSparse, I can use bc.has_zdc() TBI 20250112 is this redundant, I nowhere use bc.has_zdc()
-// Remark 2: For consistency with notation below, drop _Run3 and instead use _Run2 and _Run1
+using BCs_Run3 = soa::Join<aod::BCs, aod::Timestamps>; // TBI 20241126 under testing
+// Remark 1: I have already timestamp in workflow, due to track-propagation.
+// Remark 2: For consistency with notation below, drop _Run3 and instead use _Run2 and _Run1 TBI 20250401 not sure any longer what I wanted to say here...
 
 // using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::MultsGlobal, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>; // TBI 20241209 validating "MultsGlobal"
 //  for using collision.multNTracksGlobal() TBI 20250128 do i still need this?
@@ -58,6 +62,15 @@ using EventSelection_Run1 = soa::Join<aod::EvSels, aod::Mults>; // TBI 20240205 
 using CollisionRec_Run1 = soa::Join<aod::Collisions, EventSelection_Run1>::iterator;
 using CollisionRecSim_Run1 = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection_Run1>::iterator;
 // Remark: For tracks, I can use everything same as in Run 3
+
+// *) QA:
+//    Remark: This is Run 3 "Rec" + subscription to additional few tables (otherwise unnecessary in my analysis, e.g. some specific detector tables), used only for QA purposes.
+//            Therefore, I start all definitions from what I have defined for Run 3 "Rec", and on top of it join these additional tables for QA.
+using BCs_QA = soa::Join<BCs_Run3, aod::BcSels, aod::Run3MatchedToBCSparse>;
+//             *) BcSels => bc.has_foundFT0(), etc.
+//             *) Run3MatchedToBCSparse => bc.has_zdc(), etc. TBI 20250401 at the moment, I do not use this one
+using Collision_QA = CollisionRec; // if I would need additional tables for QA, just join 'em here with CollisionRec
+using TracksRec_QA = TracksRec;    // if I would need additional tables for QA, just join 'em here with TracksRec
 
 // *) ROOT:
 #include <TList.h>
@@ -126,6 +139,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     DefaultCuts();                                // here default values for cuts are either hardwired, or defined through default binning to ease bookeeping,
                                                   // or values for cuts provided via configurables are taken into account
                                                   // Remark: DefaultCuts() has to be called after DefaultBinning()
+
     // *) Specific cuts:
     if (tc.fUseSpecificCuts) {
       SpecificCuts(tc.fWhichSpecificCuts); // after default cuts are applied, on top of them apply analysis-specific cuts. Has to be called after DefaultBinning() and DefaultCuts()
@@ -143,7 +157,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
 
     // *) Book all remaining objects;
     BookAndNestAllLists();
-    BookResultsHistograms(); // yes, this one has to be booked first, because it defines the commong binning for other groups of histograms
+    BookResultsHistograms(); // yes, this one has to be booked first, because it defines the common binning for other groups of histograms TBI 20250412 this is true only if I can use Clone()
     BookQAHistograms();
     BookEventHistograms();
     BookEventCutsHistograms();
@@ -158,7 +172,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     BookInternalValidationHistograms();
     BookTest0Histograms();
     BookEtaSeparationsHistograms();
-    BookTheRest(); // here I book everything that was not sorted (yet) in the specific functions above
+    BookTheRest(); // I book everything that was not sorted (yet) in the specific functions above
 
     // *) Insanity checks after booking:
     InsanityChecksAfterBooking(); // pointers of all local histograms, etc., are available, so I can do insanity checks directly on all booked objects
@@ -282,6 +296,66 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     Steer<eTest>(collision, bcs, tracks);
   }
   PROCESS_SWITCH(MultiparticleCorrelationsAB, processTest, "test processing", false);
+
+  // -------------------------------------------
+
+  // K) Process data with more than necessary subscriptions to the tables, only for QA purposes:
+  //    Remark 1: This is basically the main "processRec" switch, merely enhanced with subscription to few more tables (e.g. detector specific), only for QA purposes.
+  //    Remark 2: Ideally, i use the same workflow for "processRec" and "processQA", but most likely at some point I will have to establish separate workflow for "processQA"
+  void processQA(Collision_QA const& collision, BCs_QA const& bcs, TracksRec_QA const& tracks, aod::FT0s const&)
+  {
+    // Summary for additional tables subscribed to directly here:
+    // *) FT0s => bc.foundFT0().sumAmpC(), etc.
+    Steer<eQA>(collision, bcs, tracks);
+  }
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processQA, "QA processing", false);
+
+  // -------------------------------------------
+
+  // L) Process extra Monte Carlo info the from table HepMCHeavyIons:
+  //    Remark 1: Under testing, merge eventually this process switch with processRecSim, processRecSim_Run2, and processRecSim_Run1 above;
+  //              This switch does everything the same as processRecSim (so it works only for Run 3 at the moment), except extra info is processed from table HepMCHeavyIons with dedicated function call
+  //              ProcessHepMCHeavyIons(hepMChi). I use this dedicated function, in order not to modify call to Steer(...) by adding the fourth argument.
+  //              TBI 20250429 see if I can circumvent this with templates (i can NOT join HepMCHeavyIons and McParticles), in order to keep call to Steer(...) as simple as it is now
+  //    Remark 2: In MC LHC24g3 and LHC24e2c, for HepMCHeavyIons only impact parameter is filled;
+  //              As soon as HepMCHeavyIons is correctly filled in MC productions, merge this switch with processRecSim, processRecSim_Run2, and processRecSim_Run1 above.
+  //              Most notably, I will need hep.centrality() (centrality at generated level), and hep.sigmaInelNN()
+  void processHepMChi(CollisionRecSim const& collision, aod::BCs const& bcs, TracksRecSim const& tracks, aod::HepMCHeavyIons const& hepMChi, aod::McParticles const&, aod::McCollisions const&)
+  {
+    // Comment the weather here...
+
+    // *) Check if this collision has the corresponding MC collision:
+    if (!collision.has_mcCollision()) {
+      LOGF(warning, "\033[1;31m%s at line %d : No MC collision for this collision, skip... \033[0m", __FUNCTION__, __LINE__);
+      return;
+    }
+
+    // *) For this collision, get the corresponding mcCollision, and then profit from the fact that HepMCHeavyIons have index to mcCollision by default (no need to join with McCollisionLabels):
+    auto hep = hepMChi.iteratorAt(collision.mcCollision().globalIndex());
+
+    // *) Quick insanity check that HepMCHeavyIons and McCollisions refer to the same MC collision:
+    //    Since both of them provide getter impactParameter(), i simply check if it gives the same value in both cases:
+    if (std::abs(hep.impactParameter() - collision.mcCollision().impactParameter()) > tc.fFloatingPointPrecision) {
+      LOGF(fatal, "\033[1;31m%s at line %d : impactParameter accessed from HepMCHeavyIons and McCollisions is not the same, they do not correspond to the same MC event \033[0m", __FUNCTION__, __LINE__);
+    }
+
+    // *) Okay, extract all extra info from HepMCHeavyIons:
+    ProcessHepMCHeavyIons(hep);
+
+    // *) Call the Steer(...)
+    //    TBI 20250429 For the time being, only Run 3 call for Steer(...) is supported. When generalizing to Run 2 and Run 1 process switches, perhaps the better strategy is
+    //                 just to inject ProcessHepMCHeavyIons(hep); , and keep call to Steer(...) as it is now?
+    Steer<eRecAndSim>(collision, bcs, tracks); // TBI 20250429 remember that I have hardwired here eRecAndSim, so this now works only for Run 3
+
+  } // void processHepMChi( ... )
+
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processHepMChi, "HepMCHeavyIons processing", false);
+
+  // -------------------------------------------
+
+  // ... ctd. here with further process switches ...
+
+  // -------------------------------------------
 
 }; // struct MultiparticleCorrelationsAB
 

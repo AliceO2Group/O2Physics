@@ -838,7 +838,7 @@ struct lambdakzeroBuilder {
       statisticsRegistry.v0statsUnassociated[kV0TPCrefit]++;
 
     // Calculate DCA with respect to the collision associated to the V0, not individual tracks
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
 
     auto posTrackPar = getTrackPar(posTrack);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, posTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
@@ -1808,18 +1808,10 @@ struct lambdakzeroV0DataLinkBuilder {
   PROCESS_SWITCH(lambdakzeroV0DataLinkBuilder, processFindable, "process findable V0s", false);
 };
 
-// Extends the v0data table with expression columns
-struct lambdakzeroInitializer {
-  Spawns<aod::V0Cores> v0cores;
-  Spawns<aod::V0fCCores> v0fccores;
-  void init(InitContext const&) {}
-};
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<lambdakzeroBuilder>(cfgc),
     adaptAnalysisTask<lambdakzeroPreselector>(cfgc),
-    adaptAnalysisTask<lambdakzeroV0DataLinkBuilder>(cfgc),
-    adaptAnalysisTask<lambdakzeroInitializer>(cfgc)};
+    adaptAnalysisTask<lambdakzeroV0DataLinkBuilder>(cfgc)};
 }

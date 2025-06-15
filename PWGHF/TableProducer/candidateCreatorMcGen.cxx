@@ -30,7 +30,6 @@
 #include "PWGHF/Utils/utilsMcGen.h"
 
 using namespace o2;
-using namespace o2::analysis;
 using namespace o2::framework;
 
 /// Reconstruction of heavy-flavour 2-prong decay candidates

@@ -508,7 +508,7 @@ struct lnnRecoTask {
       }
 
       // if survived all selections, propagate decay daughters to PV
-      gpu::gpustd::array<float, 2> dcaInfo;
+      std::array<float, 2> dcaInfo;
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, h3PropTrack, 2.f, fitter.getMatCorrType(), &dcaInfo);
       lnnCand.h3DCAXY = dcaInfo[0];
 

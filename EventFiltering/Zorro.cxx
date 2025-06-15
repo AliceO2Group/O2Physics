@@ -113,7 +113,7 @@ void Zorro::populateExternalHists(int runNumber, TH2* ZorroHisto, TH2* ToiHisto)
   }
   if (!ToiHisto) {
     LOGF(info, "TOI histogram not set, creating a new one");
-    ToiHisto = new TH2D("TOI", "TOI", 1, -0.5, 0.5, mTOIs.size(), -0.5, mTOIs.size() - 0.5);
+    ToiHisto = new TH2D("TOI", "TOI", 1, -0.5, 0.5, mTOIs.size() * 2, -0.5, mTOIs.size() * 2 - 0.5);
   }
   // if it is the first run, initialize the histogram
   if (mRunNumberHistos.size() == 0) {
@@ -126,10 +126,11 @@ void Zorro::populateExternalHists(int runNumber, TH2* ZorroHisto, TH2* ToiHisto)
       ZorroHisto->GetYaxis()->SetBinLabel(i + 2 + mTOIs.size(), Form("%s scalers", mTOIs[i].data()));
     }
     // TOI histogram
-    ToiHisto->SetBins(1, -0.5, 0.5, mTOIs.size(), -0.5, mTOIs.size() - 0.5);
+    ToiHisto->SetBins(1, -0.5, 0.5, mTOIs.size() * 2, -0.5, mTOIs.size() * 2 - 0.5);
     ToiHisto->GetXaxis()->SetBinLabel(1, Form("%d", runNumber));
     for (size_t i{0}; i < mTOIs.size(); ++i) {
-      ToiHisto->GetYaxis()->SetBinLabel(i + 1, mTOIs[i].data());
+      ToiHisto->GetYaxis()->SetBinLabel(i * 2 + 1, mTOIs[i].data());
+      ToiHisto->GetYaxis()->SetBinLabel(i * 2 + 2, Form("%s AnalysedTriggers", mTOIs[i].data()));
     }
   }
   if (mInspectedTVX) {
@@ -137,6 +138,10 @@ void Zorro::populateExternalHists(int runNumber, TH2* ZorroHisto, TH2* ToiHisto)
     ZorroHisto->SetBinError(mRunNumberHistos.size() + 1, 1, mInspectedTVX->GetBinError(1));
   }
   if (mSelections) {
+    mAnalysedTriggers = new TH1D("AnalysedTriggers", "", mSelections->GetNbinsX() - 2, -0.5, mSelections->GetNbinsX() - 2.5);
+    for (int iBin{2}; iBin < mSelections->GetNbinsX(); ++iBin) { // Exclude first and last bins as they are total number of analysed and selected events, respectively
+      mAnalysedTriggers->GetXaxis()->SetBinLabel(iBin - 1, mSelections->GetXaxis()->GetBinLabel(iBin));
+    }
     for (size_t i{0}; i < mTOIs.size(); ++i) {
       int bin = findBin(mSelections, mTOIs[i]);
       ZorroHisto->Fill(Form("%d", runNumber), Form("%s selections", mTOIs[i].data()), mSelections->GetBinContent(bin));
@@ -248,6 +253,11 @@ bool Zorro::isSelected(uint64_t bcGlobalId, uint64_t tolerance, TH2* ToiHisto)
     if (mTOIidx[i] < 0) {
       continue;
     } else if (mLastResult.test(mTOIidx[i])) {
+      if (ToiHisto && mAnalysedTriggers) {
+        int binX = ToiHisto->GetXaxis()->FindBin(Form("%d", mRunNumber));
+        int binY = ToiHisto->GetYaxis()->FindBin(Form("%s AnalysedTriggers", mTOIs[i].data()));
+        ToiHisto->SetBinContent(binX, binY, mAnalysedTriggers->GetBinContent(mAnalysedTriggers->GetXaxis()->FindBin(mTOIs[i].data())));
+      }
       mTOIcounts[i] += (lastSelectedIdx != mLastSelectedIdx); /// Avoid double counting
       if (mAnalysedTriggersOfInterest && lastSelectedIdx != mLastSelectedIdx) {
         mAnalysedTriggersOfInterest->Fill(i);

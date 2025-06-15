@@ -34,7 +34,7 @@ void DimuonCut::SetPairYRange(float minY, float maxY)
 {
   mMinPairY = minY;
   mMaxPairY = maxY;
-  LOG(info) << "Dimuon Cut, set pair eta range: " << mMinPairY << " - " << mMaxPairY;
+  LOG(info) << "Dimuon Cut, set pair rapidity range: " << mMinPairY << " - " << mMaxPairY;
 }
 void DimuonCut::SetPairDCAxyRange(float min, float max)
 {
@@ -118,4 +118,23 @@ void DimuonCut::SetMaxPDCARabsDep(std::function<float(float)> RabsDepCut)
 {
   mMaxPDCARabsDep = RabsDepCut;
   LOG(info) << "Dimuon Cut, set max pDCA as a function of Rabs: " << mMaxPDCARabsDep(10.0);
+}
+void DimuonCut::SetMFTHitMap(bool flag, std::vector<int> hitMap)
+{
+  mApplyMFTHitMap = flag;
+  mRequiredMFTDisks = hitMap;
+  if (mApplyMFTHitMap) {
+    for (const auto& iDisk : mRequiredMFTDisks) {
+      LOG(info) << "Dimuon Cut, require MFT hit on Disk: " << iDisk;
+    }
+  }
+}
+void DimuonCut::SetMaxdPtdEtadPhiwrtMCHMID(float reldPtMax, float dEtaMax, float dPhiMax)
+{
+  mMaxReldPtwrtMCHMID = reldPtMax;
+  mMaxdEtawrtMCHMID = dEtaMax;
+  mMaxdPhiwrtMCHMID = dPhiMax;
+  LOG(info) << "Dimuon Cut, set max rel. dpt between MFT-MCH-MID and associated MCH-MID: " << mMaxReldPtwrtMCHMID;
+  LOG(info) << "Dimuon Cut, set max deta between MFT-MCH-MID and associated MCH-MID: " << mMaxdEtawrtMCHMID;
+  LOG(info) << "Dimuon Cut, set max dphi between MFT-MCH-MID and associated MCH-MID: " << mMaxdPhiwrtMCHMID;
 }

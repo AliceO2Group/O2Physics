@@ -1,4 +1,4 @@
-// Copyright 2020-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2020-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -123,7 +123,7 @@ struct PseudorapidityDensityMFT {
        {HistType::kTH2F, {PtAxis, EtaAxis}}}, //
       {"EventSelection",
        ";status;events",
-       {HistType::kTH1F, {{10, 0.5, 10.5}}}},
+       {HistType::kTH1F, {{15, 0.5, 15.5}}}},
       {"EventCounts",
        ";status;events",
        {HistType::kTH1F, {{2, 0.5, 2.5}}}},
@@ -146,17 +146,32 @@ struct PseudorapidityDensityMFT {
     auto* x = hstat->GetXaxis();
     x->SetBinLabel(1, "All");
     x->SetBinLabel(2, "Selected");
-    x->SetBinLabel(3, "Selected INEL>0");
-    x->SetBinLabel(4, "Vz cut Sel INEL>0");
+    x->SetBinLabel(3, "Selected Vz Cut");
+    x->SetBinLabel(4, "Sel8+Vz+INEL>0");
     x->SetBinLabel(5, "Sel INEL,INEL_fwd>0");
     x->SetBinLabel(6, "Rejected");
     x->SetBinLabel(7, "Good BCs");
     x->SetBinLabel(8, "BCs with collisions");
     x->SetBinLabel(9, "BCs with pile-up/splitting");
+    x->SetBinLabel(10, "midtracks>0");
+    x->SetBinLabel(11, "percollisionSample>0");
+    x->SetBinLabel(12, "midtracks+percollisionSample>0");
     registry.add({"EventsNtrkZvtx",
                   "; N_{trk}; #it{z}_{vtx} (cm); events",
                   {HistType::kTH2F, {MultAxis, ZAxis}}});
     registry.add({"EventsNtrkZvtx_gt0",
+                  "; N_{trk}; #it{z}_{vtx} (cm); events",
+                  {HistType::kTH2F, {MultAxis, ZAxis}}});
+    registry.add({"Tracks/2Danalysis/EventsNtrkZvtx_all",
+                  "; N_{trk}; #it{z}_{vtx} (cm); events",
+                  {HistType::kTH2F, {MultAxis, ZAxis}}});
+    registry.add({"Tracks/2Danalysis/EventsNtrkZvtx_sel8",
+                  "; N_{trk}; #it{z}_{vtx} (cm); events",
+                  {HistType::kTH2F, {MultAxis, ZAxis}}});
+    registry.add({"Tracks/2Danalysis/EventsNtrkZvtx_sel8_inelgt0",
+                  "; N_{trk}; #it{z}_{vtx} (cm); events",
+                  {HistType::kTH2F, {MultAxis, ZAxis}}});
+    registry.add({"Tracks/2Danalysis/EventsNtrkZvtx_sel8_inelfwdgt0",
                   "; N_{trk}; #it{z}_{vtx} (cm); events",
                   {HistType::kTH2F, {MultAxis, ZAxis}}});
     registry.add({"Tracks/Control/DCAXY",
@@ -316,7 +331,18 @@ struct PseudorapidityDensityMFT {
       registry.add({"Tracks/Control/woOrp/woOrpEtaZvtx_gt0",
                     "; #eta; #it{z}_{vtx} (cm); tracks",
                     {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
-
+      registry.add({"Tracks/2Danalysis/EtaZvtx",
+                    "; #eta; #it{z}_{vtx} (cm); tracks",
+                    {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
+      registry.add({"Tracks/2Danalysis/EtaZvtx_sel8",
+                    "; #eta; #it{z}_{vtx} (cm); tracks",
+                    {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
+      registry.add({"Tracks/2Danalysis/EtaZvtx_sel8_inelgt0",
+                    "; #eta; #it{z}_{vtx} (cm); tracks",
+                    {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
+      registry.add({"Tracks/2Danalysis/EtaZvtx_sel8_inelfwdgt0",
+                    "; #eta; #it{z}_{vtx} (cm); tracks",
+                    {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
       registry.add({"Tracks/Control/woOrp/woOrpTracksPhiEta",
                     "; #varphi; #eta; tracks",
                     {HistType::kTH2F, {PhiAxis, EtaAxis}}}); //
@@ -452,7 +478,7 @@ struct PseudorapidityDensityMFT {
   Partition<aod::MFTTracks> sample =
     (aod::fwdtrack::eta < -2.8f) && (aod::fwdtrack::eta > -3.2f);
 
-  Partition<aod::Tracks> sampleCentral = (nabs(aod::track::eta) < 1.1f);
+  Partition<aod::Tracks> sampleCentral = (nabs(aod::track::eta) < 1.f);
 
   expressions::Filter atrackFilter =
     (aod::fwdtrack::bestCollisionId >= 0) && (aod::fwdtrack::eta < -2.0f) &&
@@ -536,29 +562,57 @@ struct PseudorapidityDensityMFT {
                           FiCentralTracks const& midtracks, aod::Tracks const&)
   {
     registry.fill(HIST("EventSelection"), 1.);
-    if (!useEvSel || (useEvSel && collision.sel8())) {
-      registry.fill(HIST("EventSelection"), 2.);
-      auto z = collision.posZ();
-      if ((z >= cfgVzCut1) && (z <= cfgVzCut2)) {
+    auto perCollisionSample = sampleCentral->sliceByCached(
+      o2::aod::track::collisionId, collision.globalIndex(), cache);
+    auto Ntrk = perCollisionSample.size();
+    auto z = collision.posZ();
+    registry.fill(HIST("EventsNtrkZvtx"), Ntrk, z);
+    if ((z >= cfgVzCut1) && (z <= cfgVzCut2)) {
+      registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_all"), Ntrk, z);
+      for (auto& retrack : retracks) {
+        auto track = retrack.mfttrack();
+        if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0) {
+          registry.fill(HIST("Tracks/2Danalysis/EtaZvtx"), track.eta(), z);
+        }
+      }
+      if (!useEvSel || (useEvSel && collision.sel8())) {
+        registry.fill(HIST("EventSelection"), 2.);
+        registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_sel8"), Ntrk, z);
         registry.fill(HIST("EventSelection"), 3.);
-        auto perCollisionSample = sampleCentral->sliceByCached(
-          o2::aod::track::collisionId, collision.globalIndex(), cache);
-        auto Ntrk = perCollisionSample.size();
         std::unordered_set<int> uniqueEvents;
         std::unordered_set<int> uniqueEventsAmb;
         std::unordered_set<int> uniqueCollisions;
         std::unordered_set<int> uniqueCollisionsAmb;
         std::unordered_set<int> eventsInelMFT;
         std::unordered_set<int> eventsInel;
-        registry.fill(HIST("EventsNtrkZvtx"), Ntrk, z);
         if (midtracks.size() > 0) {
           registry.fill(HIST("EventSelection"), 4.);
+          registry.fill(HIST("EventSelection"), 10.);
           registry.fill(HIST("EventsNtrkZvtx_gt0"), Ntrk, z);
+          registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_sel8_inelgt0"), Ntrk, z);
           eventsInel.insert(collision.globalIndex());
         }
+        if (perCollisionSample.size() > 0) {
+          registry.fill(HIST("EventSelection"), 11.);
+        }
+        if (midtracks.size() > 0 && perCollisionSample.size() > 0) {
+          registry.fill(HIST("EventSelection"), 12.);
+        }
         int64_t i = 0.0, j = 0.0, k = 0.0;
+        for (auto& retrack : retracks) {
+          auto track = retrack.mfttrack();
+          if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0) {
+            registry.fill(HIST("Tracks/2Danalysis/EtaZvtx_sel8"), track.eta(), z);
+            if (midtracks.size() > 0 && retrack.ambDegree() > 0) {
+              registry.fill(HIST("Tracks/2Danalysis/EtaZvtx_sel8_inelgt0"), track.eta(), z);
+            }
+          }
+        }
         if (retracks.size() > 0) {
           registry.fill(HIST("EventSelection"), 5.);
+          if (midtracks.size() > 0) {
+            registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_sel8_inelfwdgt0"), Ntrk, z);
+          }
           for (auto& retrack : retracks) {
             auto track = retrack.mfttrack();
 
@@ -566,6 +620,7 @@ struct PseudorapidityDensityMFT {
               registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
               if (midtracks.size() > 0 && retrack.ambDegree() > 0) {
                 registry.fill(HIST("Tracks/EtaZvtx_gt0"), track.eta(), z);
+                registry.fill(HIST("Tracks/2Danalysis/EtaZvtx_sel8_inelfwdgt0"), track.eta(), z);
                 eventsInelMFT.insert(retrack.bestCollisionId());
               }
               if (retrack.ambDegree() != 0) {
@@ -842,29 +897,30 @@ struct PseudorapidityDensityMFT {
         if (std::abs(charge) < 3.) {
           continue;
         }
-
-        registry.fill(HIST("TracksEtaZvtxGen_t"), particle.eta(),
-                      mcCollision.posZ());
-        if (perCollisionMCSampleCentral.size() > 0) {
-          registry.fill(HIST("TracksEtaZvtxGen_gt0t"), particle.eta(),
+        if (cfgnEta1 < particle.eta() && particle.eta() < cfgnEta2) {
+          registry.fill(HIST("TracksEtaZvtxGen_t"), particle.eta(),
                         mcCollision.posZ());
-          registry.fill(HIST("TracksPhiEtaGen_gt0t"), particle.phi(), particle.eta());
-        }
-        if (atLeastOne) {
-          registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(),
-                        mcCollision.posZ());
-          registry.fill(HIST("TracksPtEtaGen"), particle.pt(), particle.eta());
-          if (atLeastOne_gt0) {
-            registry.fill(HIST("TracksEtaZvtxGen_gt0"), particle.eta(),
+          if (perCollisionMCSampleCentral.size() > 0) {
+            registry.fill(HIST("TracksEtaZvtxGen_gt0t"), particle.eta(),
                           mcCollision.posZ());
-            registry.fill(HIST("TracksPhiEtaGen_gt0"), particle.phi(), particle.eta());
+            registry.fill(HIST("TracksPhiEtaGen_gt0t"), particle.phi(), particle.eta());
           }
-        }
+          if (atLeastOne) {
+            registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(),
+                          mcCollision.posZ());
+            registry.fill(HIST("TracksPtEtaGen"), particle.pt(), particle.eta());
+            if (atLeastOne_gt0) {
+              registry.fill(HIST("TracksEtaZvtxGen_gt0"), particle.eta(),
+                            mcCollision.posZ());
+              registry.fill(HIST("TracksPhiEtaGen_gt0"), particle.phi(), particle.eta());
+            }
+          }
 
-        registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
-        registry.fill(HIST("TracksPhiZvtxGen"), particle.phi(),
-                      mcCollision.posZ());
-        registry.fill(HIST("TracksPtEtaGen_t"), particle.pt(), particle.eta());
+          registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
+          registry.fill(HIST("TracksPhiZvtxGen"), particle.phi(),
+                        mcCollision.posZ());
+          registry.fill(HIST("TracksPtEtaGen_t"), particle.pt(), particle.eta());
+        }
       }
     }
   }
