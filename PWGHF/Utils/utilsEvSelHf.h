@@ -276,14 +276,13 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
   /// \brief Applies event selection
   /// \tparam useEvSel use information from the EvSel table
-  /// \tparam useUpcTrigger add upc event selection
   /// \tparam centEstimator centrality estimator
   /// \param collision collision to test against the selection criteria
   /// \param centrality collision centrality variable to be set in this function
   /// \param ccdb ccdb service needed to retrieve the needed info for zorro
   /// \param registry reference to the histogram registry needed for zorro
   /// \return bitmask with the event selection criteria not satisfied by the collision
-  template <bool useEvSel, bool useUpcTrigger, o2::hf_centrality::CentralityEstimator centEstimator, typename BCs, typename Coll>
+  template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename BCs, typename Coll>
   uint32_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, o2::framework::HistogramRegistry& registry,
                                        const BCs* bcs = nullptr)
   {
