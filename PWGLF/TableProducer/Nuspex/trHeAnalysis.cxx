@@ -193,6 +193,7 @@ struct TrHeAnalysis {
 
   Configurable<bool> cfgTPCPidMethod{"cfgTPCPidMethod", false, "Using own or built in bethe parametrization"}; // false for built in
   Configurable<int> cfgMassMethod{"cfgMassMethod", 0, "0: Using built in 1: mass calculated with beta 2: mass calculated with the event time"};
+  Configurable<bool> cfgEnableItsClusterSizeCut{"cfgEnableItsClusterSizeCut", false, "Enable ITS cluster size cut"}; 
   // Set the multiplity event limits
   Configurable<float> cfgLowMultCut{"cfgLowMultCut", 0.0f, "Accepted multiplicity percentage lower limit"};
   Configurable<float> cfgHighMultCut{"cfgHighMultCut", 100.0f, "Accepted multiplicity percentage higher limit"};
@@ -391,10 +392,13 @@ struct TrHeAnalysis {
               histos.fill(HIST("histogram/cuts"), 7);
               continue;
             }
-            if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeH3 ||
-                getMeanItsClsSize(track) / std::cosh(track.eta()) >= cfgCutMaxItsClusterSizeH3) {
+            if (cfgEnableItsClusterSizeCut)
+            {
+              if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeHe ||
+                getMeanItsClsSize(track) / std::cosh(track.eta()) >= cfgCutMaxItsClusterSizeHe) {
               histos.fill(HIST("histogram/cuts"), 12);
               continue;
+              }
             }
             if (getMass(track) < cfgCutMinTofMassH3 || getMass(track) > cfgCutMaxTofMassH3) {
               histos.fill(HIST("histogram/cuts"), 13);
@@ -444,10 +448,13 @@ struct TrHeAnalysis {
               histos.fill(HIST("histogram/cuts"), 7);
               continue;
             }
-            if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeHe ||
+            if (cfgEnableItsClusterSizeCut)
+            {
+              if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeHe ||
                 getMeanItsClsSize(track) / std::cosh(track.eta()) >= cfgCutMaxItsClusterSizeHe) {
               histos.fill(HIST("histogram/cuts"), 12);
               continue;
+              }
             }
             histos.fill(HIST("histogram/He/He-TPCsignVsTPCmomentum"),
                         getRigidity(track) * track.sign(),
@@ -550,10 +557,13 @@ struct TrHeAnalysis {
               histos.fill(HIST("histogram/cuts"), 7);
               continue;
             }
-            if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeH3 ||
+            if (cfgEnableItsClusterSizeCut)
+            {
+              if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeH3 ||
                 getMeanItsClsSize(track) / std::cosh(track.eta()) >= cfgCutMaxItsClusterSizeH3) {
               histos.fill(HIST("histogram/cuts"), 12);
               continue;
+              }
             }
             if (getMass(track) < cfgCutMinTofMassH3 || getMass(track) > cfgCutMaxTofMassH3) {
               histos.fill(HIST("histogram/cuts"), 13);
@@ -602,10 +612,13 @@ struct TrHeAnalysis {
               histos.fill(HIST("histogram/cuts"), 7);
               continue;
             }
-            if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeHe ||
+            if (cfgEnableItsClusterSizeCut)
+            {
+              if (getMeanItsClsSize(track) / std::cosh(track.eta()) <= cfgCutMinItsClusterSizeHe ||
                 getMeanItsClsSize(track) / std::cosh(track.eta()) >= cfgCutMaxItsClusterSizeHe) {
               histos.fill(HIST("histogram/cuts"), 12);
               continue;
+              }
             }
             histos.fill(HIST("histogram/He/He-TPCsignVsTPCmomentum"),
                         getRigidity(track) * track.sign(),
