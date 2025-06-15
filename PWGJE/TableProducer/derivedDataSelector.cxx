@@ -16,21 +16,26 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 /// \author Jochen Klein <jochen.klein@cern.ch>
 
-#include <MathUtils/Utils.h>
-#include <algorithm>
-#include <string>
-#include <vector>
-
-#include <TRandom3.h>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/runDataProcessing.h"
+#include "JetDerivedDataUtilities.h"
 
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetReducedDataSelector.h"
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisTask.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataProcessorSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TRandom3.h>
+
+#include <cstdlib>
+#include <string>
+#include <type_traits>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

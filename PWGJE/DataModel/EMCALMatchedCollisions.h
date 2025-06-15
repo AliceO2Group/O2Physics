@@ -18,9 +18,8 @@
 #ifndef PWGJE_DATAMODEL_EMCALMATCHEDCOLLISIONS_H_
 #define PWGJE_DATAMODEL_EMCALMATCHEDCOLLISIONS_H_
 
-#include <string>
-#include "Framework/AnalysisDataModel.h"
-#include "EMCALClusterDefinition.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h> // IWYU pragma: keep
 
 namespace o2::aod
 {

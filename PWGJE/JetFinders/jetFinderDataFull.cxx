@@ -15,6 +15,15 @@
 
 #include "PWGJE/JetFinders/jetFinder.cxx"
 
+#include "PWGJE/DataModel/Jet.h"
+
+#include <Framework/AnalysisTask.h>
+#include <Framework/ConfigContext.h>
+#include <Framework/DataProcessorSpec.h>
+#include <Framework/runDataProcessing.h>
+
+#include <vector>
+
 using JetFinderDataFull = JetFinderTask<aod::FullJets, aod::FullJetConstituents, aod::FullEventWiseSubtractedJets, aod::FullEventWiseSubtractedJetConstituents>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

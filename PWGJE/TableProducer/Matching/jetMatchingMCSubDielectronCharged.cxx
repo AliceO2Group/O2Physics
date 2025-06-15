@@ -15,6 +15,16 @@
 
 #include "PWGJE/TableProducer/Matching/jetMatchingMCSub.cxx"
 
+#include "PWGJE/DataModel/Jet.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/ConfigContext.h>
+#include <Framework/DataProcessorSpec.h>
+#include <Framework/runDataProcessing.h>
+
+#include <vector>
+
 using DielectronChargedJetMatchingMCSub = JetMatchingMcSub<soa::Join<aod::DielectronChargedMCDetectorLevelJets, aod::DielectronChargedMCDetectorLevelJetConstituents>,
                                                            soa::Join<aod::DielectronChargedMCDetectorLevelEventWiseSubtractedJets, aod::DielectronChargedMCDetectorLevelEventWiseSubtractedJetConstituents>,
                                                            aod::DielectronChargedMCDetectorLevelJetsMatchedToDielectronChargedMCDetectorLevelEventWiseSubtractedJets,

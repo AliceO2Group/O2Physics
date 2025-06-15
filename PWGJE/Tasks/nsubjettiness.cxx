@@ -15,23 +15,27 @@
 /// \author Aimeric Landou <aimeric.landou@cern.ch>
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/runDataProcessing.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/Logger.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/Core/JetSubstructureUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TH2.h>
+
 #include "fastjet/contrib/AxesDefinition.hh"
-#include "fastjet/contrib/MeasureDefinition.hh"
+#include <fastjet/JetDefinition.hh>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

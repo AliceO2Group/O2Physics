@@ -16,18 +16,22 @@
 #ifndef PWGJE_CORE_MLRESPONSEHFTAGGING_H_
 #define PWGJE_CORE_MLRESPONSEHFTAGGING_H_
 
-#include <map>
-#include <string>
-#include <vector>
-
 #include "Tools/ML/MlResponse.h"
-#include "PWGJE/Core/JetTaggingUtilities.h"
 
 #if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
 #else
 #include <onnxruntime_cxx_api.h>
 #endif
+
+#include <Framework/Logger.h>
+
+#include <onnxruntime_c_api.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <utility>
+#include <vector>
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)

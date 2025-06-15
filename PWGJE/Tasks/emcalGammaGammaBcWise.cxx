@@ -16,17 +16,29 @@
 /// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) - Goethe University Frankfurt
 ///
 
+#include "PWGJE/DataModel/EMCALClusters.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include "EMCALBase/Geometry.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
 #include <CommonConstants/MathConstants.h>
-#include <vector>
+#include <EMCALBase/GeometryBase.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
 #include "TLorentzVector.h"
 #include "TVector3.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Common/DataModel/EventSelection.h"
-#include "EMCALBase/Geometry.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
+#include <cmath>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

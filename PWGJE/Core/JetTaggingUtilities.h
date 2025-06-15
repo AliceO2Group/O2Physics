@@ -18,25 +18,31 @@
 #ifndef PWGJE_CORE_JETTAGGINGUTILITIES_H_
 #define PWGJE_CORE_JETTAGGINGUTILITIES_H_
 
-#include <cmath>
-#include <limits>
-#include <numeric>
-#include <tuple>
-#include <vector>
+#include "PWGJE/Core/JetUtilities.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/Logger.h>
+
+#include <TF1.h>
+#include <TMath.h>
+
+#include <Rtypes.h>
+
 #include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <string>
+#include <tuple>
 #include <unordered_map>
-
-#include <TPDGCode.h>
-#include "CommonConstants/PhysicsConstants.h"
-
-#include "TF1.h"
-#include "Framework/Logger.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGJE/Core/JetUtilities.h"
+#include <utility>
+#include <vector>
 
 enum JetTaggingSpecies {
   none = 0,

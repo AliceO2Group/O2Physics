@@ -15,6 +15,17 @@
 
 #include "PWGJE/TableProducer/Matching/jetMatchingMC.cxx"
 
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/ConfigContext.h>
+#include <Framework/DataProcessorSpec.h>
+#include <Framework/runDataProcessing.h>
+
+#include <vector>
+
 using DplusChargedJetMatchingMC = JetMatchingMc<soa::Join<aod::DplusChargedMCDetectorLevelJets, aod::DplusChargedMCDetectorLevelJetConstituents>,
                                                 soa::Join<aod::DplusChargedMCParticleLevelJets, aod::DplusChargedMCParticleLevelJetConstituents>,
                                                 aod::DplusChargedMCDetectorLevelJetsMatchedToDplusChargedMCParticleLevelJets,

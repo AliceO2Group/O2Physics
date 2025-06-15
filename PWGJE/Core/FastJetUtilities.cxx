@@ -11,6 +11,10 @@
 
 #include "FastJetUtilities.h"
 
+#include <fastjet/PseudoJet.hh>
+
+#include <vector>
+
 void fastjetutilities::setFastJetUserInfo(std::vector<fastjet::PseudoJet>& constituents, int index, int status)
 {
   fastjet_user_info* user_info = new fastjet_user_info(status, index); // FIXME: can setting this as a pointer be avoided?

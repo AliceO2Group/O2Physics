@@ -13,25 +13,41 @@
 //
 /// \author Gijs van Weelden <g.van.weelden@cern.ch>
 //
-#include <bitset>
-#include <utility>
-
-#include "TH1F.h"
-#include "TTree.h"
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/RunningWorkflowInfo.h"
-
-#include "Common/DataModel/EventSelection.h"
-
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetFinder.h"
+#include "PWGJE/DataModel/EMCALClusterDefinition.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
 
-#include "EventFiltering/filterTables.h"
+#include "Common/CCDB/TriggerAliases.h"
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisTask.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include "TTree.h"
+#include <TH2.h>
+#include <TH3.h>
+#include <THn.h>
+#include <TString.h>
+
+#include <fastjet/JetDefinition.hh>
+#include <fastjet/PseudoJet.hh>
+
+#include <algorithm>
+#include <array>
+#include <bitset>
+#include <cmath>
+#include <cstddef>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

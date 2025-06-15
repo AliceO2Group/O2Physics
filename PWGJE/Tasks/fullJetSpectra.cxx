@@ -13,46 +13,42 @@
 /// \brief Task for full jet spectra studies in pp collisions.
 /// \author Archita Rani Dash <archita.rani.dash@cern.ch>
 
-#include <vector>
-#include <utility>
-#include <string>
-#include <cmath>
-#include <TRandom3.h>
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetFindingUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/DataModel/EMCALClusterDefinition.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
 
-#include "CommonConstants/PhysicsConstants.h"
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/Multiplicity.h"
+
 #include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/Logger.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include <TH1.h>
 
-#include "PWGHF/Core/HfHelper.h"
+#include <cmath>
+#include <cstddef>
+#include <string>
+#include <type_traits>
+#include <vector>
 
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
-#include "PWGJE/DataModel/EMCALMatchedCollisions.h"
-#include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/Core/JetUtilities.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetFindingUtilities.h"
-
-#include "EventFiltering/filterTables.h"
+#include <math.h>
 
 using namespace std;
 using namespace o2;
-using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-// using namespace jetderiveddatautilities;
 
 struct FullJetSpectra {
 
