@@ -57,7 +57,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using multicharmtracks = soa::Join<aod::MCharmIndices, aod::MCharmCores>;
+// using multicharmtracks = soa::Join<aod::MCharmIndices, aod::MCharmCores>;
 
 struct alice3multicharm {
   SliceCache cache;
@@ -134,7 +134,7 @@ struct alice3multicharm {
     histos.add("h3dXicc", "h3dXicc; Xicc pT (GeV/#it(c)); Xicc #eta; Xicc mass (GeV/#it(c)^{2})", kTH3D, {axisPt, axisEta, axisXiccMass});
   }
 
-  void processXicc(multicharmtracks const& multiCharmTracks)
+  void processXicc(aod::MCharmCores const& multiCharmTracks)
   {
     for (const auto& xiccCand : multiCharmTracks) {
       if (xiccCand.xicDauDCA() > xicMaxDauDCA || xiccCand.xiccDauDCA() > xiccMaxDauDCA)

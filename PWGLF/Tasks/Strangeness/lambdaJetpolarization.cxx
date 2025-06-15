@@ -29,6 +29,9 @@
 #include <TMatrixD.h>
 #include "TProfile2D.h"
 #include "PWGLF/DataModel/lambdaJetpolarization.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "Math/GenVector/Boost.h"
 
 #include <fastjet/ClusterSequence.hh>
 #include <fastjet/ClusterSequenceArea.hh>
@@ -351,6 +354,8 @@ struct LfMyV0s {
   }
   double massPr = o2::constants::physics::MassProton;
   double massLambda = o2::constants::physics::MassLambda;
+  double massPi = o2::constants::physics::MassPionCharged;
+  ROOT::Math::PxPyPzMVector ProtonVec, PionVec, LambdaVec, ProtonBoostedVec, LambdaBoostedVec;
 
   TMatrixD LorentzTransInV0frame(double ELambda, double Lambdapx, double Lambdapy, double Lambdapz)
   {
@@ -1233,32 +1238,20 @@ struct LfMyV0s {
       if (passedLambdaSelection(v0, pos, neg) && ctauLambda < CtauLambda && ifpasslambda) {
         V0NumbersPerEventsel++;
         registryLongitudinalPolarization.fill(HIST("hMassVsPtLambda"), v0.pt(), v0.mLambda());
-        double PLambda = sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
-        double ELambda = sqrt(v0.mLambda() * v0.mLambda() + PLambda * PLambda);
-        double protonE = sqrt(massPr * massPr + pos.px() * pos.px() + pos.py() * pos.py() + pos.pz() * pos.pz());
-        TMatrixD pLabV0(4, 1);
-        pLabV0(0, 0) = ELambda;
-        pLabV0(1, 0) = v0.px();
-        pLabV0(2, 0) = v0.py();
-        pLabV0(3, 0) = v0.pz();
 
-        TMatrixD pLabproton(4, 1);
-        pLabproton(0, 0) = protonE;
-        pLabproton(1, 0) = pos.px();
-        pLabproton(2, 0) = pos.py();
-        pLabproton(3, 0) = pos.pz();
+        ProtonVec = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
+        PionVec = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
+        LambdaVec = ProtonVec + PionVec;
+        LambdaVec.SetM(massLambda);
+        ROOT::Math::Boost boost{LambdaVec.BoostToCM()};
+        ProtonBoostedVec = boost(ProtonVec);
+        LambdaBoostedVec = boost(LambdaVec);
 
-        TMatrixD V0InV0(4, 1);
-        V0InV0 = LorentzTransInV0frame(ELambda, v0.px(), v0.py(), v0.pz()) * pLabV0;
-        registryLongitudinalPolarization.fill(HIST("V0pxInRest_frame"), V0InV0(1, 0));
-        registryLongitudinalPolarization.fill(HIST("V0pyInRest_frame"), V0InV0(2, 0));
-        registryLongitudinalPolarization.fill(HIST("V0pzInRest_frame"), V0InV0(3, 0));
+        registryLongitudinalPolarization.fill(HIST("V0pxInRest_frame"), LambdaBoostedVec.Px());
+        registryLongitudinalPolarization.fill(HIST("V0pyInRest_frame"), LambdaBoostedVec.Py());
+        registryLongitudinalPolarization.fill(HIST("V0pzInRest_frame"), LambdaBoostedVec.Pz());
 
-        TMatrixD protonInV0(4, 1);
-        protonInV0 = LorentzTransInV0frame(ELambda, v0.px(), v0.py(), v0.pz()) * pLabproton;
-        double protonPInV0 = sqrt(protonInV0(1, 0) * protonInV0(1, 0) + protonInV0(2, 0) * protonInV0(2, 0) + protonInV0(3, 0) * protonInV0(3, 0));
-
-        double protonCosThetainV0 = protonInV0(3, 0) / protonPInV0;
+        double protonCosThetainV0 = ProtonBoostedVec.Pz() / ProtonBoostedVec.P();
 
         registryLongitudinalPolarization.fill(HIST("hprotoncosthetainV0"), protonCosThetainV0);
         registryLongitudinalPolarization.fill(HIST("hprotoncosSquarethetainV0"), protonCosThetainV0 * protonCosThetainV0);
@@ -1272,21 +1265,15 @@ struct LfMyV0s {
       if (passedAntiLambdaSelection(v0, pos, neg) && ctauAntiLambda < CtauLambda && ifpasslambda) {
         registryLongitudinalPolarization.fill(HIST("hMassVsPtAntiLambda"), v0.pt(), v0.mAntiLambda());
 
-        double PLambda = sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
-        double ELambda = sqrt(v0.mAntiLambda() * v0.mAntiLambda() + PLambda * PLambda);
-        double protonE = sqrt(massPr * massPr + neg.px() * neg.px() + neg.py() * neg.py() + neg.pz() * neg.pz());
+        ProtonVec = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
+        PionVec = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
+        LambdaVec = ProtonVec + PionVec;
+        LambdaVec.SetM(massLambda);
+        ROOT::Math::Boost boost{LambdaVec.BoostToCM()};
+        ProtonBoostedVec = boost(ProtonVec);
+        LambdaBoostedVec = boost(LambdaVec);
 
-        TMatrixD pLabproton(4, 1);
-        pLabproton(0, 0) = protonE;
-        pLabproton(1, 0) = neg.px();
-        pLabproton(2, 0) = neg.py();
-        pLabproton(3, 0) = neg.pz();
-
-        TMatrixD protonInV0(4, 1);
-        protonInV0 = LorentzTransInV0frame(ELambda, v0.px(), v0.py(), v0.pz()) * pLabproton;
-        double protonPInV0 = sqrt(protonInV0(1, 0) * protonInV0(1, 0) + protonInV0(2, 0) * protonInV0(2, 0) + protonInV0(3, 0) * protonInV0(3, 0));
-
-        double protonCosThetainV0 = protonInV0(3, 0) / protonPInV0;
+        double protonCosThetainV0 = ProtonBoostedVec.Pz() / ProtonBoostedVec.P();
 
         registryLongitudinalPolarization.fill(HIST("hantiprotoncosthetainV0"), protonCosThetainV0);
         registryLongitudinalPolarization.fill(HIST("hantiprotoncosSquarethetainV0"), protonCosThetainV0 * protonCosThetainV0);

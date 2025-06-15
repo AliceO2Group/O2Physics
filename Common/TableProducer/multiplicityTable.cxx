@@ -100,6 +100,7 @@ struct MultiplicityTable {
   Produces<aod::PVMultZeqs> tablePVZeqs;        // 12
   Produces<aod::MultMCExtras> tableExtraMc;     // 13
   Produces<aod::Mult2MCExtras> tableExtraMult2MCExtras;
+  Produces<aod::MultHepMCHIs> multHepMCHIs;     // Not accounted for, produced using custom process function to avoid dependencies
   Produces<aod::MFTMults> mftMults;             // Not accounted for, produced using custom process function to avoid dependencies
   Produces<aod::MultsGlobal> multsGlobal;       // Not accounted for, produced based on process function processGlobalTrackingCounters
 
@@ -734,6 +735,18 @@ struct MultiplicityTable {
   using Run3Tracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
   Partition<Run3Tracks> pvContribGlobalTracksEta1 = (minPtGlobalTrack < aod::track::pt && aod::track::pt < maxPtGlobalTrack) && (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor)) && requireQualityTracksInFilter();
 
+  void processHepMCHeavyIons(aod::HepMCHeavyIons const& hepmchis)
+  {
+    for (auto const& hepmchi : hepmchis) {
+      multHepMCHIs(hepmchi.mcCollisionId(),
+                   hepmchi.ncollHard(),
+                   hepmchi.npartProj(),
+                   hepmchi.npartTarg(),
+                   hepmchi.ncoll(),
+                   hepmchi.impactParameter());
+    }
+  }
+
   void processGlobalTrackingCounters(aod::Collision const& collision, soa::Join<Run3TracksIU, aod::TrackSelection, aod::TrackSelectionExtension> const& tracksIU, Run3Tracks const&)
   {
     // counter from Igor
@@ -808,6 +821,7 @@ struct MultiplicityTable {
   PROCESS_SWITCH(MultiplicityTable, processGlobalTrackingCounters, "Produce Run 3 global counters", false);
   PROCESS_SWITCH(MultiplicityTable, processMC, "Produce MC multiplicity tables", false);
   PROCESS_SWITCH(MultiplicityTable, processMC2Mults, "Produce MC -> Mult map", false);
+  PROCESS_SWITCH(MultiplicityTable, processHepMCHeavyIons, "Produce MultHepMCHIs tables", false);
   PROCESS_SWITCH(MultiplicityTable, processRun3MFT, "Produce MFT mult tables", false);
 };
 

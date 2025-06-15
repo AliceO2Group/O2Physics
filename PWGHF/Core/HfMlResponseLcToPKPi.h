@@ -16,7 +16,11 @@
 #ifndef PWGHF_CORE_HFMLRESPONSELCTOPKPI_H_
 #define PWGHF_CORE_HFMLRESPONSELCTOPKPI_H_
 
+#include <map>
+#include <string>
 #include <vector>
+
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 #include "PWGHF/Core/HfMlResponse.h"
 
@@ -129,10 +133,22 @@ enum class InputFeaturesLcToPKPi : uint8_t {
   tofNSigmaPrExpPr0,
   tofNSigmaPiExpPi2,
   tpcTofNSigmaPrExpPr0,
-  tpcTofNSigmaPiExpPi2
+  tpcTofNSigmaPiExpPi2,
+  kfChi2PrimProton,
+  kfChi2PrimKaon,
+  kfChi2PrimPion,
+  kfChi2GeoKaonPion,
+  kfChi2GeoProtonPion,
+  kfChi2GeoProtonKaon,
+  kfDcaKaonPion,
+  kfDcaProtonPion,
+  kfDcaProtonKaon,
+  kfChi2Geo,
+  kfChi2Topo,
+  kfDecayLengthNormalised
 };
 
-template <typename TypeOutputScore = float>
+template <typename TypeOutputScore = float, aod::hf_cand::VertexerType reconstructionType = aod::hf_cand::VertexerType::DCAFitter>
 class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
 {
  public:
@@ -179,8 +195,6 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcNSigmaPr2, nSigTpcPr2);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcNSigmaKa2, nSigTpcKa2);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcNSigmaPi2, nSigTpcPi2);
-        // CHECK_AND_FILL_VEC_LCTOPKPI_OBJECT_SIGNED(prong0, prong2, tpcNSigmaPrExpPr0, tpcNSigmaPr);
-        // CHECK_AND_FILL_VEC_LCTOPKPI_OBJECT_SIGNED(prong2, prong0, tpcNSigmaPiExpPi2, tpcNSigmaPi);
         CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tpcNSigmaPrExpPr0, nSigTpcPr0, nSigTpcPr2);
         CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tpcNSigmaPiExpPi2, nSigTpcPi2, nSigTpcPi0);
         // TOF PID variables
@@ -193,8 +207,6 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaPr2, nSigTofPr2);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaKa2, nSigTofKa2);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaPi2, nSigTofPi2);
-        // CHECK_AND_FILL_VEC_LCTOPKPI_OBJECT_SIGNED(prong0, prong2, tofNSigmaPrExpPr0, tofNSigmaPr);
-        // CHECK_AND_FILL_VEC_LCTOPKPI_OBJECT_SIGNED(prong2, prong0, tofNSigmaPiExpPi2, tofNSigmaPi);
         CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tofNSigmaPrExpPr0, nSigTofPr0, nSigTofPr2);
         CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tofNSigmaPiExpPi2, nSigTofPi2, nSigTofPi0);
         // Combined PID variables
@@ -207,13 +219,29 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcTofNSigmaPr0, tpcTofNSigmaPr0);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcTofNSigmaPr1, tpcTofNSigmaPr1);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcTofNSigmaPr2, tpcTofNSigmaPr2);
-        // CHECK_AND_FILL_VEC_LCTOPKPI_OBJECT_SIGNED(prong0, prong2, tpcTofNSigmaPrExpPr0, tpcTofNSigmaPr);
-        // CHECK_AND_FILL_VEC_LCTOPKPI_OBJECT_SIGNED(prong2, prong0, tpcTofNSigmaPiExpPi2, tpcTofNSigmaPi);
         CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tpcTofNSigmaPrExpPr0, tpcTofNSigmaPr0, tpcTofNSigmaPr2);
         CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tpcTofNSigmaPiExpPi2, tpcTofNSigmaPi2, tpcTofNSigmaPi0);
       }
+      if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+        switch (idx) {
+          CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, kfChi2PrimProton, kfChi2PrimProng0, kfChi2PrimProng2);
+          CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, kfChi2PrimKaon, kfChi2PrimProng1);
+          CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, kfChi2PrimPion, kfChi2PrimProng2, kfChi2PrimProng0);
+          CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, kfChi2GeoKaonPion, kfChi2GeoProng1Prong2, kfChi2GeoProng0Prong1);
+          CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, kfChi2GeoProtonPion, kfChi2GeoProng0Prong2);
+          CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, kfChi2GeoProtonKaon, kfChi2GeoProng0Prong1, kfChi2GeoProng1Prong2);
+          CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, kfDcaKaonPion, kfDcaProng1Prong2, kfDcaProng0Prong1);
+          CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, kfDcaProtonPion, kfDcaProng0Prong2);
+          CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, kfDcaProtonKaon, kfDcaProng0Prong1, kfDcaProng1Prong2);
+          CHECK_AND_FILL_VEC_LCTOPKPI(kfChi2Geo);
+          CHECK_AND_FILL_VEC_LCTOPKPI(kfChi2Topo);
+          case static_cast<uint8_t>(InputFeaturesLcToPKPi::kfDecayLengthNormalised): {
+            inputFeatures.emplace_back(candidate.kfDecayLength() / candidate.kfDecayLengthError());
+            break;
+          }
+        }
+      }
     }
-
     return inputFeatures;
   }
 
@@ -273,6 +301,23 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_LCTOPKPI(tpcTofNSigmaPr2),
       FILL_MAP_LCTOPKPI(tpcTofNSigmaPrExpPr0),
       FILL_MAP_LCTOPKPI(tpcTofNSigmaPiExpPi2)};
+    if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+      std::map<std::string, uint8_t> mapKfFeatures{
+        // KFParticle variables
+        FILL_MAP_LCTOPKPI(kfChi2PrimProton),
+        FILL_MAP_LCTOPKPI(kfChi2PrimKaon),
+        FILL_MAP_LCTOPKPI(kfChi2PrimPion),
+        FILL_MAP_LCTOPKPI(kfChi2GeoKaonPion),
+        FILL_MAP_LCTOPKPI(kfChi2GeoProtonPion),
+        FILL_MAP_LCTOPKPI(kfChi2GeoProtonKaon),
+        FILL_MAP_LCTOPKPI(kfDcaKaonPion),
+        FILL_MAP_LCTOPKPI(kfDcaProtonPion),
+        FILL_MAP_LCTOPKPI(kfDcaProtonKaon),
+        FILL_MAP_LCTOPKPI(kfChi2Geo),
+        FILL_MAP_LCTOPKPI(kfChi2Topo),
+        FILL_MAP_LCTOPKPI(kfDecayLengthNormalised)};
+      MlResponse<TypeOutputScore>::mAvailableInputFeatures.insert(mapKfFeatures.begin(), mapKfFeatures.end());
+    }
   }
 };
 

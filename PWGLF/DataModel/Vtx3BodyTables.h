@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file Vtx3BodyTables.h
-/// \brief Definitions of reduced tables for 3body decayed hypertriton
+/// \brief Definitions of analysis tables for 3body decayed hypertriton
 /// \author Yuanzhe Wang <yuanzhe.wang@cern.ch>
 /// \author Carolina Reetz <c.reetz@cern.ch>
 
@@ -26,48 +26,117 @@ namespace o2::aod
 {
 namespace vtx3body
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Track0, track0, int, Tracks, "_0"); //!
-DECLARE_SOA_INDEX_COLUMN_FULL(Track1, track1, int, Tracks, "_1"); //!
-DECLARE_SOA_INDEX_COLUMN_FULL(Track2, track2, int, Tracks, "_2"); //!
+// indices
+DECLARE_SOA_INDEX_COLUMN_FULL(TrackPr, trackPr, int, Tracks, "_pr"); //!
+DECLARE_SOA_INDEX_COLUMN_FULL(TrackPi, trackPi, int, Tracks, "_pi"); //!
+DECLARE_SOA_INDEX_COLUMN_FULL(TrackDe, trackDe, int, Tracks, "_de"); //!
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                   //!
 DECLARE_SOA_INDEX_COLUMN(Decay3Body, decay3body);                 //!
 
-// General 3 body Vtx properties: position, momentum
-DECLARE_SOA_COLUMN(PxTrack0, pxtrack0, float); //! track0 px at min
-DECLARE_SOA_COLUMN(PyTrack0, pytrack0, float); //! track0 py at min
-DECLARE_SOA_COLUMN(PzTrack0, pztrack0, float); //! track0 pz at min
-DECLARE_SOA_COLUMN(PxTrack1, pxtrack1, float); //! track1 px at min
-DECLARE_SOA_COLUMN(PyTrack1, pytrack1, float); //! track1 py at min
-DECLARE_SOA_COLUMN(PzTrack1, pztrack1, float); //! track1 pz at min
-DECLARE_SOA_COLUMN(PxTrack2, pxtrack2, float); //! track2 px at min
-DECLARE_SOA_COLUMN(PyTrack2, pytrack2, float); //! track2 py at min
-DECLARE_SOA_COLUMN(PzTrack2, pztrack2, float); //! track2 pz at min
-DECLARE_SOA_COLUMN(X, x, float);               //! decay position X
-DECLARE_SOA_COLUMN(Y, y, float);               //! decay position Y
-DECLARE_SOA_COLUMN(Z, z, float);               //! decay position Z
+// General 3 body Vtx properties
+DECLARE_SOA_COLUMN(Mass, mass, float); //! candidate mass (with H3L or Anti-H3L mass hypothesis depending on deuteron charge)
+DECLARE_SOA_COLUMN(Sign, sign, float); //! candidate sign
+DECLARE_SOA_COLUMN(X, x, float);       //! decay position X
+DECLARE_SOA_COLUMN(Y, y, float);       //! decay position Y
+DECLARE_SOA_COLUMN(Z, z, float);       //! decay position Z
+DECLARE_SOA_COLUMN(Px, px, float);     //! momentum X
+DECLARE_SOA_COLUMN(Py, py, float);     //! momentum Y
+DECLARE_SOA_COLUMN(Pz, pz, float);     //! momentum Z
+DECLARE_SOA_COLUMN(Chi2, chi2, float); //! KFParticle: chi2geo/ndf or chi2topo/ndf of vertex fit, DCA fitter: Chi2AtPCACandidate value
 
-// Saved from finding: DCAs
-DECLARE_SOA_COLUMN(DCAVtxDaughters, dcaVtxdaughters, float); //! DCA among daughters
-DECLARE_SOA_COLUMN(DCAXYTrack0ToPV, dcaXYtrack0topv, float); //! DCAXY of prong0 to PV
-DECLARE_SOA_COLUMN(DCAXYTrack1ToPV, dcaXYtrack1topv, float); //! DCAXY of prong1 to PV
-DECLARE_SOA_COLUMN(DCAXYTrack2ToPV, dcaXYtrack2topv, float); //! DCAXY of prong2 to PV
-DECLARE_SOA_COLUMN(DCATrack0ToPV, dcatrack0topv, float);     //! DCA of prong0 to PV
-DECLARE_SOA_COLUMN(DCATrack1ToPV, dcatrack1topv, float);     //! DCA of prong1 to PV
-DECLARE_SOA_COLUMN(DCATrack2ToPV, dcatrack2topv, float);     //! DCA of prong2 to PV
+// daughter properties
+DECLARE_SOA_COLUMN(MassV0, massV0, float);       //! V0 mass (with H3L or Anti-H3L mass hypothesis depending on deuteron charge)
+DECLARE_SOA_COLUMN(PxTrackPr, pxTrackPr, float); //! track0 px at min
+DECLARE_SOA_COLUMN(PyTrackPr, pyTrackPr, float); //! track0 py at min
+DECLARE_SOA_COLUMN(PzTrackPr, pzTrackPr, float); //! track0 pz at min
+DECLARE_SOA_COLUMN(PxTrackPi, pxTrackPi, float); //! track1 px at min
+DECLARE_SOA_COLUMN(PyTrackPi, pyTrackPi, float); //! track1 py at min
+DECLARE_SOA_COLUMN(PzTrackPi, pzTrackPi, float); //! track1 pz at min
+DECLARE_SOA_COLUMN(PxTrackDe, pxTrackDe, float); //! track2 px at min
+DECLARE_SOA_COLUMN(PyTrackDe, pyTrackDe, float); //! track2 py at min
+DECLARE_SOA_COLUMN(PzTrackDe, pzTrackDe, float); //! track2 pz at min
 
-// Recalculated TOF PID information of bachelor
-DECLARE_SOA_COLUMN(TOFNSigmaBachDe, tofNSigmaBachDe, float); //! Recalculated Nsigma seperation with TOF for deuteron
+// DCAs to PV
+DECLARE_SOA_COLUMN(DCAXYTrackPrToPV, dcaXYtrackPrToPv, float); //! DCAXY of proton to PV
+DECLARE_SOA_COLUMN(DCAXYTrackPiToPV, dcaXYtrackPiToPv, float); //! DCAXY of pion to PV
+DECLARE_SOA_COLUMN(DCAXYTrackDeToPV, dcaXYtrackDeToPv, float); //! DCAXY of deuteron to PV
+DECLARE_SOA_COLUMN(DCAZTrackPrToPV, dcaZtrackPrToPv, float);   //! DCAZ of proton to PV
+DECLARE_SOA_COLUMN(DCAZTrackPiToPV, dcaZtrackPiToPv, float);   //! DCAZ of pion to PV
+DECLARE_SOA_COLUMN(DCAZTrackDeToPV, dcaZtrackDeToPv, float);   //! DCAZ of deuteron to PV
+
+// DCAs to SV
+DECLARE_SOA_COLUMN(DCATrackPrToSV, dcaTrackPrToSv, float);   //! DCA of proton to SV
+DECLARE_SOA_COLUMN(DCATrackPiToSV, dcaTrackPiToSv, float);   //! DCA of pion to SV
+DECLARE_SOA_COLUMN(DCATrackDeToSV, dcaTrackDeToSv, float);   //! DCA of deuteron to SV
+DECLARE_SOA_COLUMN(DCAVtxDaughters, dcaVtxdaughters, float); //! Quadratic sum of DCA between daughters at SV
+
+// Strangeness tracking
+DECLARE_SOA_COLUMN(TrackedClSize, trackedClSize, float); //! Average ITS cluster size of strangeness tracked 3body
+
+// PID
+DECLARE_SOA_COLUMN(TPCNSigmaPr, tpcNSigmaPr, float);         //! nsigma proton of TPC PID of the proton daughter
+DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, float);         //! nsigma pion of TPC PID of the pion daughter
+DECLARE_SOA_COLUMN(TPCNSigmaDe, tpcNSigmaDe, float);         //! nsigma deuteron of TPC PID of the bachelor daughter
+DECLARE_SOA_COLUMN(TPCNSigmaPiBach, tpcNSigmaPiBach, float); //! nsigma pion of TPC PID of the bachelor daughter
+DECLARE_SOA_COLUMN(TOFNSigmaDe, tofNSigmaDe, float);         //! nsigma deuteron of TOF PID of the bachelor daughter
+DECLARE_SOA_COLUMN(PIDTrackingDe, pidTrackingDe, uint32_t);  //! PID during tracking of bachelor daughter
+
+// Daughter track quality
+DECLARE_SOA_COLUMN(TPCNClTrackPr, tpcNClTrackPr, int); //! Number of TPC clusters of proton daughter
+DECLARE_SOA_COLUMN(TPCNClTrackPi, tpcNClTrackPi, int); //! Number of TPC clusters of pion daughter
+DECLARE_SOA_COLUMN(TPCNClTrackDe, tpcNClTrackDe, int); //! Number of TPC clusters of deuteron daughter
+DECLARE_SOA_COLUMN(ITSClSizePr, itsClsizePr, double);  //! average ITS cluster size of proton daughter
+DECLARE_SOA_COLUMN(ITSClSizePi, itsClsizePi, double);  //! average ITS cluster size of pion daughter
+DECLARE_SOA_COLUMN(ITSClSizeDe, itsClsizeDe, double);  //! average ITS cluster size of deuteron daughter
+
+// Covariance matrices
+DECLARE_SOA_COLUMN(CovProton, covProton, float[21]);     //! covariance matrix elements of proton daughter track
+DECLARE_SOA_COLUMN(CovPion, covPion, float[21]);         //! covariance matrix elements of pion daughter track
+DECLARE_SOA_COLUMN(CovDeuteron, covDeuteron, float[21]); //! covariance matrix elements of deuteron daughter track
+DECLARE_SOA_COLUMN(VtxCovMat, vtxCovMat, float[21]);     //! covariance matrix elements of candidate
+
+// Monte Carlo info
+DECLARE_SOA_COLUMN(GenPx, genPx, float);                // generated Px of the hypertriton in GeV/c
+DECLARE_SOA_COLUMN(GenPy, genPy, float);                // generated Py of the hypertriton in GeV/c
+DECLARE_SOA_COLUMN(GenPz, genPz, float);                // generated Pz of the hypertriton in GeV/c
+DECLARE_SOA_COLUMN(GenX, genX, float);                  // generated decay vtx position X of the hypertriton
+DECLARE_SOA_COLUMN(GenY, genY, float);                  // generated decay vtx position Y of the hypertriton
+DECLARE_SOA_COLUMN(GenZ, genZ, float);                  // generated decay vtx position Z of the hypertriton
+DECLARE_SOA_COLUMN(GenCt, genCt, float);                // generated Ct of the hypertriton
+DECLARE_SOA_COLUMN(GenPhi, genPhi, float);              // generated Phi of the hypertriton
+DECLARE_SOA_COLUMN(GenEta, genEta, float);              // Eta of the hypertriton
+DECLARE_SOA_COLUMN(GenRap, genRap, float);              // generated rapidity of the hypertriton
+DECLARE_SOA_COLUMN(GenPPr, genPPr, float);              //! generated momentum proton daughter particle
+DECLARE_SOA_COLUMN(GenPPi, genPPi, float);              //! generated momentum pion daughter particle
+DECLARE_SOA_COLUMN(GenPDe, genPDe, float);              //! generated momentum deuteron daughter particle
+DECLARE_SOA_COLUMN(GenPtPr, genPtPr, float);            //! generated transverse momentum proton daughter particle
+DECLARE_SOA_COLUMN(GenPtPi, genPtPi, float);            //! generated transverse momentum pion daughter particle
+DECLARE_SOA_COLUMN(GenPtDe, genPtDe, float);            //! generated transverse momentum deuteron daughter particle
+DECLARE_SOA_COLUMN(IsTrueH3L, isTrueH3l, bool);         //! flag for true hypertriton candidate
+DECLARE_SOA_COLUMN(IsTrueAntiH3L, isTrueAntiH3l, bool); //! flag for true anti-hypertriton candidate
+DECLARE_SOA_COLUMN(PrPdgCode, prPdgCode, int);          //! MC particle proton PDG code
+DECLARE_SOA_COLUMN(PiPdgCode, piPdgCode, int);          //! MC particle pion PDG code
+DECLARE_SOA_COLUMN(DePdgCode, dePdgCode, int);          //! MC particle deuteron PDG code
+DECLARE_SOA_COLUMN(IsDePrimary, isDePrimary, bool);     //! flag for deuteron daughter primary
+DECLARE_SOA_COLUMN(IsSurvEvSel, isSurvEvSel, int);      //! flag if reco collision survived event selection
+DECLARE_SOA_COLUMN(IsReco, isreco, int);                //! flag if candidate was reconstructed
 
 // Derived expressions
 // Momenta
-DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! 3 body p
-                           [](float pxtrack0, float pytrack0, float pztrack0, float pxtrack1, float pytrack1, float pztrack1, float pxtrack2, float pytrack2, float pztrack2) -> float { return RecoDecay::sqrtSumOfSquares(pxtrack0 + pxtrack1 + pxtrack2, pytrack0 + pytrack1 + pytrack2, pztrack0 + pztrack1 + pztrack2); });
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! 3 body pT
-                           [](float pxtrack0, float pytrack0, float pxtrack1, float pytrack1, float pxtrack2, float pytrack2) -> float { return RecoDecay::sqrtSumOfSquares(pxtrack0 + pxtrack1 + pxtrack2, pytrack0 + pytrack1 + pytrack2); });
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! 3 body pT in GeV/c
+                           [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! 3 body total momentum in GeV/c
+                           [](float px, float py, float pz) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz); });
+DECLARE_SOA_DYNAMIC_COLUMN(GenPt, genPt, //! 3 body pT in GeV/c
+                           [](float genPx, float genPy) -> float { return RecoDecay::sqrtSumOfSquares(genPx, genPy); });
+DECLARE_SOA_DYNAMIC_COLUMN(GenP, genP, //! 3 body total momentum in GeV/c
+                           [](float genPx, float genPy, float genPz) -> float { return RecoDecay::sqrtSumOfSquares(genPx, genPy, genPz); });
 
 // Length quantities
 DECLARE_SOA_DYNAMIC_COLUMN(VtxRadius, vtxradius, //! 3 body decay radius (2D, centered at zero)
                            [](float x, float y) -> float { return RecoDecay::sqrtSumOfSquares(x, y); });
+DECLARE_SOA_DYNAMIC_COLUMN(GenRadius, genRadius, //! 3 body decay radius (2D, centered at zero)
+                           [](float genX, float genY) -> float { return RecoDecay::sqrtSumOfSquares(genX, genY); });
 
 // Distance Over To Mom
 DECLARE_SOA_DYNAMIC_COLUMN(DistOverTotMom, distovertotmom, //! PV to 3 body decay distance over total momentum
@@ -79,6 +148,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(DistOverTotMom, distovertotmom, //! PV to 3 body deca
 // CosPA
 DECLARE_SOA_DYNAMIC_COLUMN(VtxCosPA, vtxcosPA, //! 3 body vtx CosPA
                            [](float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ) -> float { return RecoDecay::cpa(std::array{pvX, pvY, pvZ}, std::array{X, Y, Z}, std::array{Px, Py, Pz}); });
+
 // Dca to PV
 DECLARE_SOA_DYNAMIC_COLUMN(DCAVtxToPV, dcavtxtopv, //! DCA of 3 body vtx to PV
                            [](float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ) -> float { return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz)); });
@@ -89,532 +159,151 @@ DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, //! 3 body vtx eta
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //! 3 body vtx phi
                            [](float Px, float Py) -> float { return RecoDecay::phi(Px, Py); });
 
-// Calculated on the fly with mother particle hypothesis
-DECLARE_SOA_DYNAMIC_COLUMN(MHypertriton, mHypertriton, //! mass under Hypertriton hypothesis
-                           [](float pxtrack0, float pytrack0, float pztrack0, float pxtrack1, float pytrack1, float pztrack1, float pxtrack2, float pytrack2, float pztrack2) -> float { return RecoDecay::m(std::array{std::array{pxtrack0, pytrack0, pztrack0}, std::array{pxtrack1, pytrack1, pztrack1}, std::array{pxtrack2, pytrack2, pztrack2}}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron}); });
-DECLARE_SOA_DYNAMIC_COLUMN(MAntiHypertriton, mAntiHypertriton, //! mass under antiHypertriton hypothesis
-                           [](float pxtrack0, float pytrack0, float pztrack0, float pxtrack1, float pytrack1, float pztrack1, float pxtrack2, float pytrack2, float pztrack2) -> float { return RecoDecay::m(std::array{std::array{pxtrack0, pytrack0, pztrack0}, std::array{pxtrack1, pytrack1, pztrack1}, std::array{pxtrack2, pytrack2, pztrack2}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron}); });
-
-DECLARE_SOA_DYNAMIC_COLUMN(MHyperHelium4, mHyperHelium4, //! mass under HyperHelium4 hypothesis
-                           [](float pxtrack0, float pytrack0, float pztrack0, float pxtrack1, float pytrack1, float pztrack1, float pxtrack2, float pytrack2, float pztrack2) -> float { return RecoDecay::m(std::array{std::array{pxtrack0, pytrack0, pztrack0}, std::array{pxtrack1, pytrack1, pztrack1}, std::array{pxtrack2, pytrack2, pztrack2}}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassHelium3}); });
-DECLARE_SOA_DYNAMIC_COLUMN(MAntiHyperHelium4, mAntiHyperHelium4, //! mass under antiHyperHelium4 hypothesis
-                           [](float pxtrack0, float pytrack0, float pztrack0, float pxtrack1, float pytrack1, float pztrack1, float pxtrack2, float pytrack2, float pztrack2) -> float { return RecoDecay::m(std::array{std::array{pxtrack0, pytrack0, pztrack0}, std::array{pxtrack1, pytrack1, pztrack1}, std::array{pxtrack2, pytrack2, pztrack2}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton, o2::constants::physics::MassHelium3}); });
-
-DECLARE_SOA_DYNAMIC_COLUMN(YHypertriton, yHypertriton, //! 3 body vtx y with hypertriton or antihypertriton hypothesis
+// Rapidity
+DECLARE_SOA_DYNAMIC_COLUMN(Rap, rap, //! 3 body vtx y with hypertriton or antihypertriton hypothesis
                            [](float Px, float Py, float Pz) -> float { return RecoDecay::y(std::array{Px, Py, Pz}, o2::constants::physics::MassHyperTriton); });
-DECLARE_SOA_DYNAMIC_COLUMN(YHyperHelium4, yHyperHelium4, //! 3 body vtx y with hyperhelium4 or antihyperhelium4 hypothesis
-                           [](float Px, float Py, float Pz) -> float { return RecoDecay::y(std::array{Px, Py, Pz}, o2::constants::physics::MassHyperHelium4); });
 
-// kinematic information of daughter tracks
-DECLARE_SOA_DYNAMIC_COLUMN(Track0Pt, track0pt, //! daughter0 pT
-                           [](float pxtrack0, float pytrack0) -> float { return RecoDecay::sqrtSumOfSquares(pxtrack0, pytrack0); });
-DECLARE_SOA_DYNAMIC_COLUMN(Track1Pt, track1pt, //! daughter1 pT
-                           [](float pxtrack1, float pytrack1) -> float { return RecoDecay::sqrtSumOfSquares(pxtrack1, pytrack1); });
-DECLARE_SOA_DYNAMIC_COLUMN(Track2Pt, track2pt, //! daughter2 pT
-                           [](float pxtrack2, float pytrack2) -> float { return RecoDecay::sqrtSumOfSquares(pxtrack2, pytrack2); });
-DECLARE_SOA_DYNAMIC_COLUMN(Track0Eta, track0eta, //! daughter0 eta
-                           [](float pxtrack0, float pytrack0, float pztrack0) -> float { return RecoDecay::eta(std::array{pxtrack0, pytrack0, pztrack0}); });
-DECLARE_SOA_DYNAMIC_COLUMN(Track0Phi, track0phi, //! daughter0 phi
-                           [](float pxtrack0, float pytrack0) -> float { return RecoDecay::phi(pxtrack0, pytrack0); });
-DECLARE_SOA_DYNAMIC_COLUMN(Track1Eta, track1eta, //! daughter1 eta
-                           [](float pxtrack1, float pytrack1, float pztrack1) -> float { return RecoDecay::eta(std::array{pxtrack1, pytrack1, pztrack1}); });
-DECLARE_SOA_DYNAMIC_COLUMN(Track1Phi, track1phi, //! daughter1 phi
-                           [](float pxtrack1, float pytrack1) -> float { return RecoDecay::phi(pxtrack1, pytrack1); });
-DECLARE_SOA_DYNAMIC_COLUMN(Track2Eta, track2eta, //! daughter2 eta
-                           [](float pxtrack2, float pytrack2, float pztrack2) -> float { return RecoDecay::eta(std::array{pxtrack2, pytrack2, pztrack2}); });
-DECLARE_SOA_DYNAMIC_COLUMN(Track2Phi, track2phi, //! daughter2 phi
-                           [](float pxtrack2, float pytrack2) -> float { return RecoDecay::phi(pxtrack2, pytrack2); });
-
-DECLARE_SOA_EXPRESSION_COLUMN(Px, px, //! 3 body vtx px
-                              float, 1.f * aod::vtx3body::pxtrack0 + 1.f * aod::vtx3body::pxtrack1 + 1.f * aod::vtx3body::pxtrack2);
-DECLARE_SOA_EXPRESSION_COLUMN(Py, py, //! 3 body vtx py
-                              float, 1.f * aod::vtx3body::pytrack0 + 1.f * aod::vtx3body::pytrack1 + 1.f * aod::vtx3body::pytrack2);
-DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //! 3 body vtx pz
-                              float, 1.f * aod::vtx3body::pztrack0 + 1.f * aod::vtx3body::pztrack1 + 1.f * aod::vtx3body::pztrack2);
+// Kinematic information of daughter tracks
+DECLARE_SOA_DYNAMIC_COLUMN(TrackPrPt, trackPrPt, //! daughter0 pT
+                           [](float pxTrackPr, float pyTrackPr) -> float { return RecoDecay::sqrtSumOfSquares(pxTrackPr, pyTrackPr); });
+DECLARE_SOA_DYNAMIC_COLUMN(TrackPiPt, trackPiPt, //! daughter1 pT
+                           [](float pxTrackPi, float pyTrackPi) -> float { return RecoDecay::sqrtSumOfSquares(pxTrackPi, pyTrackPi); });
+DECLARE_SOA_DYNAMIC_COLUMN(TrackDePt, trackDePt, //! daughter2 pT
+                           [](float pxTrackDe, float pyTrackDe) -> float { return RecoDecay::sqrtSumOfSquares(pxTrackDe, pyTrackDe); });
+DECLARE_SOA_DYNAMIC_COLUMN(TrackPrEta, trackPrEta, //! daughter0 eta
+                           [](float pxTrackPr, float pyTrackPr, float pzTrackPr) -> float { return RecoDecay::eta(std::array{pxTrackPr, pyTrackPr, pzTrackPr}); });
+DECLARE_SOA_DYNAMIC_COLUMN(TrackPrPhi, trackPrPhi, //! daughter0 phi
+                           [](float pxTrackPr, float pyTrackPr) -> float { return RecoDecay::phi(pxTrackPr, pyTrackPr); });
+DECLARE_SOA_DYNAMIC_COLUMN(TrackPiEta, trackPiEta, //! daughter1 eta
+                           [](float pxTrackPi, float pyTrackPi, float pzTrackPi) -> float { return RecoDecay::eta(std::array{pxTrackPi, pyTrackPi, pzTrackPi}); });
+DECLARE_SOA_DYNAMIC_COLUMN(TrackPiPhi, trackPiPhi, //! daughter1 phi
+                           [](float pxTrackPi, float pyTrackPi) -> float { return RecoDecay::phi(pxTrackPi, pyTrackPi); });
+DECLARE_SOA_DYNAMIC_COLUMN(TrackDeEta, trackDeEta, //! daughter2 eta
+                           [](float pxTrackDe, float pyTrackDe, float pzTrackDe) -> float { return RecoDecay::eta(std::array{pxTrackDe, pyTrackDe, pzTrackDe}); });
+DECLARE_SOA_DYNAMIC_COLUMN(TrackDePhi, trackDePhi, //! daughter2 phi
+                           [](float pxTrackDe, float pyTrackDe) -> float { return RecoDecay::phi(pxTrackDe, pyTrackDe); });
 } // namespace vtx3body
 
-DECLARE_SOA_TABLE_FULL(StoredVtx3BodyDatas, "Vtx3BodyDatas", "AOD", "Vtx3BodyDATA", //!
-                       o2::soa::Index<>, vtx3body::Track0Id, vtx3body::Track1Id, vtx3body::Track2Id, vtx3body::CollisionId, vtx3body::Decay3BodyId,
-                       vtx3body::X, vtx3body::Y, vtx3body::Z,
-                       vtx3body::PxTrack0, vtx3body::PyTrack0, vtx3body::PzTrack0,
-                       vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1,
-                       vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2,
-                       vtx3body::DCAVtxDaughters,
-                       vtx3body::DCAXYTrack0ToPV, vtx3body::DCAXYTrack1ToPV, vtx3body::DCAXYTrack2ToPV,
-                       vtx3body::DCATrack0ToPV, vtx3body::DCATrack1ToPV, vtx3body::DCATrack2ToPV,
-                       vtx3body::TOFNSigmaBachDe,
-
-                       // Dynamic columns
-                       vtx3body::P<vtx3body::PxTrack0, vtx3body::PyTrack0, vtx3body::PzTrack0, vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1, vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2>,
-                       vtx3body::Pt<vtx3body::PxTrack0, vtx3body::PyTrack0, vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PxTrack2, vtx3body::PyTrack2>,
-                       vtx3body::VtxRadius<vtx3body::X, vtx3body::Y>,
-                       vtx3body::DistOverTotMom<vtx3body::X, vtx3body::Y, vtx3body::Z, vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
-                       vtx3body::VtxCosPA<vtx3body::X, vtx3body::Y, vtx3body::Z, vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
-                       vtx3body::DCAVtxToPV<vtx3body::X, vtx3body::Y, vtx3body::Z, vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
-
-                       // Invariant masses
-                       vtx3body::MHypertriton<vtx3body::PxTrack0, vtx3body::PyTrack0, vtx3body::PzTrack0, vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1, vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2>,
-                       vtx3body::MAntiHypertriton<vtx3body::PxTrack0, vtx3body::PyTrack0, vtx3body::PzTrack0, vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1, vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2>,
-                       vtx3body::MHyperHelium4<vtx3body::PxTrack0, vtx3body::PyTrack0, vtx3body::PzTrack0, vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1, vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2>,
-                       vtx3body::MAntiHyperHelium4<vtx3body::PxTrack0, vtx3body::PyTrack0, vtx3body::PzTrack0, vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1, vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2>,
-
-                       // Longitudinal
-                       vtx3body::YHypertriton<vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
-                       vtx3body::YHyperHelium4<vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
-                       vtx3body::Eta<vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
-                       vtx3body::Phi<vtx3body::Px, vtx3body::Py>,
-                       vtx3body::Track0Pt<vtx3body::PxTrack0, vtx3body::PyTrack0>,
-                       vtx3body::Track0Eta<vtx3body::PxTrack0, vtx3body::PyTrack0, vtx3body::PzTrack0>,
-                       vtx3body::Track0Phi<vtx3body::PxTrack0, vtx3body::PyTrack0>,
-                       vtx3body::Track1Pt<vtx3body::PxTrack1, vtx3body::PyTrack1>,
-                       vtx3body::Track1Eta<vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1>,
-                       vtx3body::Track1Phi<vtx3body::PxTrack1, vtx3body::PyTrack1>,
-                       vtx3body::Track2Pt<vtx3body::PxTrack2, vtx3body::PyTrack2>,
-                       vtx3body::Track2Eta<vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2>,
-                       vtx3body::Track2Phi<vtx3body::PxTrack2, vtx3body::PyTrack2>);
-
-// extended table with expression columns that can be used as arguments of dynamic columns
-DECLARE_SOA_EXTENDED_TABLE_USER(Vtx3BodyDatas, StoredVtx3BodyDatas, "Vtx3BodyDATAEXT", //!
-                                vtx3body::Px, vtx3body::Py, vtx3body::Pz);
-
-using Vtx3BodyData = Vtx3BodyDatas::iterator;
-namespace vtx3body
-{
-DECLARE_SOA_INDEX_COLUMN(Vtx3BodyData, vtx3BodyData); //! Index to Vtx3BodyData entry
-}
-
-DECLARE_SOA_TABLE(Decay3BodyDataLink, "AOD", "DECAY3BODYLINK", //! Joinable table with Decay3bodys which links to Vtx3BodyData which is not produced for all entries
-                  vtx3body::Vtx3BodyDataId);
-
-using Decay3BodysLinked = soa::Join<Decay3Bodys, Decay3BodyDataLink>;
-using Decay3BodyLinked = Decay3BodysLinked::iterator;
-
-// Definition of labels for Vtx3BodyDatas
-namespace mcvtx3bodylabel
-{
-DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for Vtx3BodyDatas
-} // namespace mcvtx3bodylabel
-
-DECLARE_SOA_TABLE(McVtx3BodyLabels, "AOD", "MCVTXLABEL", //! Table joinable with Vtx3BodyData containing the MC labels
-                  mcvtx3bodylabel::McParticleId);
-using McVtx3BodyLabel = McVtx3BodyLabels::iterator;
-
-// Definition of labels for Decay3Bodys // Full table, joinable with Decay3Bodys (CAUTION: NOT WITH Vtx3BodyDATA)
-namespace mcfullvtx3bodylabel
-{
-DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for Decay3Bodys
-} // namespace mcfullvtx3bodylabel
-
-DECLARE_SOA_TABLE(McFullVtx3BodyLabels, "AOD", "MCFULLVTXLABEL", //! Table joinable with Decay3Bodys
-                  mcfullvtx3bodylabel::McParticleId);
-using McFullVtx3BodyLabel = McFullVtx3BodyLabels::iterator;
-
-// output table for ML studies
-namespace hyp3body
-{
-// collision
-DECLARE_SOA_COLUMN(Centrality, centrality, float); //! centrality
-// reconstruced candidate
-DECLARE_SOA_COLUMN(IsMatter, isMatter, bool); //! bool: true for matter
-DECLARE_SOA_COLUMN(M, m, float);              //! invariant mass
-DECLARE_SOA_COLUMN(P, p, float);              //! p
-DECLARE_SOA_COLUMN(Pt, pt, float);            //! pT
-DECLARE_SOA_COLUMN(Ct, ct, float);            //! ct
-DECLARE_SOA_COLUMN(CosPA, cospa, float);
-DECLARE_SOA_COLUMN(DCADaughters, dcaDaughters, float); //! DCA among daughters
-DECLARE_SOA_COLUMN(DCACandToPV, dcaCandtopv, float);   //! DCA of the reconstructed track to pv
-DECLARE_SOA_COLUMN(VtxRadius, vtxRadius, float);       //! Radius of SV
-// kinematic infomation of daughter tracks
-DECLARE_SOA_COLUMN(PtProton, ptProton, float);             //! pT of the proton daughter
-DECLARE_SOA_COLUMN(EtaProton, etaProton, float);           //! eta of the proton daughter
-DECLARE_SOA_COLUMN(PhiProton, phiProton, float);           //! phi of the proton daughter
-DECLARE_SOA_COLUMN(RadiusProton, radiusProton, float);     //! radius of innermost hit of the proton daughter
-DECLARE_SOA_COLUMN(PtPion, ptPion, float);                 //! pT of the pion daughter
-DECLARE_SOA_COLUMN(EtaPion, etaPion, float);               //! eta of the pion daughter
-DECLARE_SOA_COLUMN(PhiPion, phiPion, float);               //! phi of the pion daughter
-DECLARE_SOA_COLUMN(RadiusPion, radiusPion, float);         //! radius of innermost hit of the pion daughter
-DECLARE_SOA_COLUMN(PtBachelor, ptBachelor, float);         //! pT of the bachelor daughter
-DECLARE_SOA_COLUMN(EtaBachelor, etaBachelor, float);       //! eta of the bachelor daughter
-DECLARE_SOA_COLUMN(PhiBachelor, phiBachelor, float);       //! phi of the bachelor daughter
-DECLARE_SOA_COLUMN(RadiusBachelor, radiusBachelor, float); //! radius of innermost hit of the bachelor daughter
-// track quality
-DECLARE_SOA_COLUMN(TPCNclusProton, tpcNclusProton, uint8_t);             //! number of TPC clusters of the proton daughter
-DECLARE_SOA_COLUMN(TPCNclusPion, tpcNclusPion, uint8_t);                 //! number of TPC clusters of the pion daughter
-DECLARE_SOA_COLUMN(TPCNclusBachelor, tpcNclusBachelor, uint8_t);         //! number of TPC clusters of the bachelor daughter
-DECLARE_SOA_COLUMN(ITSNclusSizeProton, itsNclusSizeProton, uint8_t);     //! average ITS cluster size of the proton daughter
-DECLARE_SOA_COLUMN(ITSNclusSizePion, itsNclusSizePion, uint8_t);         //! average ITS cluster size of the pion daughter
-DECLARE_SOA_COLUMN(ITSNclusSizeBachelor, itsNclusSizeBachelor, uint8_t); //! average ITS cluster size of the bachelor daughter
-// PID
-DECLARE_SOA_COLUMN(TPCNSigmaProton, tpcNSigmaProton, float);     //! nsigma of TPC PID of the proton daughter
-DECLARE_SOA_COLUMN(TPCNSigmaPion, tpcNSigmaPion, float);         //! nsigma of TPC PID of the pion daughter
-DECLARE_SOA_COLUMN(TPCNSigmaBachelor, tpcNSigmaBachelor, float); //! nsigma of TPC PID of the bachelor daughter
-DECLARE_SOA_COLUMN(TOFNSigmaBachelor, tofNSigmaBachelor, float); //! nsigma of TOF PID of the bachelor daughter
-// DCA to PV
-DECLARE_SOA_COLUMN(DCAXYProtonToPV, dcaxyProtontoPV, float);     //! DCAXY of the proton daughter to pv
-DECLARE_SOA_COLUMN(DCAXYPionToPV, dcaxyPiontoPV, float);         //! DCAXY of the pion daughter to pv
-DECLARE_SOA_COLUMN(DCAXYBachelorToPV, dcaxyBachelortoPV, float); //! DCAXY of the bachelor daughter to pv
-DECLARE_SOA_COLUMN(DCAProtonToPV, dcaProtontoPV, float);         //! DCA of the proton daughter to pv
-DECLARE_SOA_COLUMN(DCAPionToPV, dcaPiontoPV, float);             //! DCA of the pion daughter to pv
-DECLARE_SOA_COLUMN(DCABachelorToPV, dcaBachelortoPV, float);     //! DCA of the bachelor daughter to pv
-DECLARE_SOA_COLUMN(IsBachPrimary, isbachprimary, bool);          //! flag for bachelor daughter primary
-// for MC
-DECLARE_SOA_COLUMN(GenP, genP, float);                                    // P of the hypertriton
-DECLARE_SOA_COLUMN(GenPt, genPt, float);                                  // pT of the hypertriton
-DECLARE_SOA_COLUMN(GenCt, genCt, float);                                  // ct of the hypertriton
-DECLARE_SOA_COLUMN(GenPhi, genPhi, float);                                // Phi of the hypertriton
-DECLARE_SOA_COLUMN(GenEta, genEta, float);                                // Eta of the hypertriton
-DECLARE_SOA_COLUMN(GenRapidity, genRapidity, float);                      // Rapidity of the hypertriton
-DECLARE_SOA_COLUMN(IsReco, isReco, bool);                                 // bool: true for reco
-DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                             // bool: true for signal
-DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);                                // pdgCode of the mcparticle, -1 for fake pair
-DECLARE_SOA_COLUMN(SurvivedEventSelection, survivedEventSelection, bool); // bool: true for survived event selection
-} // namespace hyp3body
-
-// output table for data
-DECLARE_SOA_TABLE(Hyp3BodyCands, "AOD", "HYP3BODYCANDS",
+// index table
+DECLARE_SOA_TABLE(Decay3BodyIndices, "AOD", "3BodyINDEX", //!
                   o2::soa::Index<>,
-                  hyp3body::Centrality,
-                  // secondary vertex and reconstruced candidate
-                  hyp3body::IsMatter,
-                  hyp3body::M,
-                  hyp3body::P,
-                  hyp3body::Pt,
-                  hyp3body::Ct,
-                  hyp3body::CosPA,
-                  hyp3body::DCADaughters,
-                  hyp3body::DCACandToPV,
-                  hyp3body::VtxRadius,
-                  // daughter tracks
-                  hyp3body::PtProton, hyp3body::EtaProton, hyp3body::PhiProton, hyp3body::RadiusProton,
-                  hyp3body::PtPion, hyp3body::EtaPion, hyp3body::PhiPion, hyp3body::RadiusPion,
-                  hyp3body::PtBachelor, hyp3body::EtaBachelor, hyp3body::PhiBachelor, hyp3body::RadiusBachelor,
-                  hyp3body::TPCNclusProton, hyp3body::TPCNclusPion, hyp3body::TPCNclusBachelor,
-                  hyp3body::ITSNclusSizeProton, hyp3body::ITSNclusSizePion, hyp3body::ITSNclusSizeBachelor,
-                  hyp3body::TPCNSigmaProton, hyp3body::TPCNSigmaPion, hyp3body::TPCNSigmaBachelor,
-                  hyp3body::TOFNSigmaBachelor,
-                  hyp3body::DCAXYProtonToPV, hyp3body::DCAXYPionToPV, hyp3body::DCAXYBachelorToPV,
-                  hyp3body::DCAProtonToPV, hyp3body::DCAPionToPV, hyp3body::DCABachelorToPV);
+                  vtx3body::Decay3BodyId,
+                  vtx3body::TrackPrId, vtx3body::TrackPiId, vtx3body::TrackDeId,
+                  vtx3body::CollisionId);
 
-// output table for MC
-DECLARE_SOA_TABLE(MCHyp3BodyCands, "AOD", "MCHYP3BODYCANDS",
+// reconstructed candidate table for analysis
+DECLARE_SOA_TABLE(Vtx3BodyDatas, "AOD", "VTX3BODYDATA", //!
                   o2::soa::Index<>,
-                  hyp3body::Centrality,
-                  // secondary vertex and reconstruced candidate
-                  hyp3body::IsMatter,
-                  hyp3body::M,
-                  hyp3body::P,
-                  hyp3body::Pt,
-                  hyp3body::Ct,
-                  hyp3body::CosPA,
-                  hyp3body::DCADaughters,
-                  hyp3body::DCACandToPV,
-                  hyp3body::VtxRadius,
-                  // daughter tracks
-                  hyp3body::PtProton, hyp3body::EtaProton, hyp3body::PhiProton, hyp3body::RadiusProton,
-                  hyp3body::PtPion, hyp3body::EtaPion, hyp3body::PhiPion, hyp3body::RadiusPion,
-                  hyp3body::PtBachelor, hyp3body::EtaBachelor, hyp3body::PhiBachelor, hyp3body::RadiusBachelor,
-                  hyp3body::TPCNclusProton, hyp3body::TPCNclusPion, hyp3body::TPCNclusBachelor,
-                  hyp3body::ITSNclusSizeProton, hyp3body::ITSNclusSizePion, hyp3body::ITSNclusSizeBachelor,
-                  hyp3body::TPCNSigmaProton, hyp3body::TPCNSigmaPion, hyp3body::TPCNSigmaBachelor,
-                  hyp3body::TOFNSigmaBachelor,
-                  hyp3body::DCAXYProtonToPV, hyp3body::DCAXYPionToPV, hyp3body::DCAXYBachelorToPV,
-                  hyp3body::DCAProtonToPV, hyp3body::DCAPionToPV, hyp3body::DCABachelorToPV,
-                  hyp3body::IsBachPrimary,
-                  // MC information
-                  hyp3body::GenP,
-                  hyp3body::GenPt,
-                  hyp3body::GenCt,
-                  hyp3body::GenPhi,
-                  hyp3body::GenEta,
-                  hyp3body::GenRapidity,
-                  hyp3body::IsSignal,
-                  hyp3body::IsReco,
-                  hyp3body::PdgCode,
-                  hyp3body::SurvivedEventSelection);
-
-//______________________________________________________
-// DATAMODEL FOR KFPARTICLE DECAY3BODYS
-
-namespace kfvtx3body
-{
-// General 3 body Vtx properties: mass, momentum, charge
-DECLARE_SOA_COLUMN(Mass, mass, float);   //! candidate mass (PID hypothesis depending on bachelor charge)
-DECLARE_SOA_COLUMN(XErr, xerr, float);   //! candidate position x error at decay position
-DECLARE_SOA_COLUMN(YErr, yerr, float);   //! candidate position y error at decay position
-DECLARE_SOA_COLUMN(ZErr, zerr, float);   //! candidate position z error at decay position
-DECLARE_SOA_COLUMN(Px, px, float);       //! candidate px at decay position
-DECLARE_SOA_COLUMN(Py, py, float);       //! candidate py at decay position
-DECLARE_SOA_COLUMN(Pz, pz, float);       //! candidate pz at decay position
-DECLARE_SOA_COLUMN(Pt, pt, float);       //! candidate pt at decay position
-DECLARE_SOA_COLUMN(PxErr, pxerr, float); //! candidate px error at decay position
-DECLARE_SOA_COLUMN(PyErr, pyerr, float); //! candidate py error at decay position
-DECLARE_SOA_COLUMN(PzErr, pzerr, float); //! candidate pz error at decay position
-DECLARE_SOA_COLUMN(PtErr, pterr, float); //! candidate pt error at decay position
-DECLARE_SOA_COLUMN(Sign, sign, float);   //! candidate sign
-
-// topological properties
-DECLARE_SOA_COLUMN(VtxCosPAKF, vtxcospakf, float);             //! 3 body vtx CosPA from KFParticle (using kfpPV)
-DECLARE_SOA_COLUMN(VtxCosXYPAKF, vtxcosxypakf, float);         //! 3 body vtx CosPA from KFParticle (using kfpPV)
-DECLARE_SOA_COLUMN(VtxCosPAKFtopo, vtxcospakftopo, float);     //! 3 body vtx CosPA from KFParticle after topological constraint (using kfpPV)
-DECLARE_SOA_COLUMN(VtxCosXYPAKFtopo, vtxcosxypakftopo, float); //! 3 body vtx CosPA from KFParticle after topological constraint (using kfpPV)
-DECLARE_SOA_COLUMN(DCAVtxToPVKF, dcavtxtopvkf, float);         //! 3 body vtx DCA to PV from KFParticle (using kfpPV)
-DECLARE_SOA_COLUMN(DCAXYVtxToPVKF, dcaxyvtxtopvkf, float);     //! 3 body vtx DCAxy to PV from KFParticle (using kfpPV)
-DECLARE_SOA_COLUMN(DecayLKF, decaylkf, float);                 //! 3 body vtx decay length from KFParticle (using kfpPV after topological constraint)
-DECLARE_SOA_COLUMN(DecayLXYKF, decaylxykf, float);             //! 3 body vtx decay length XY from KFParticle (using kfpPV after topological constraint)
-DECLARE_SOA_COLUMN(DecayLDeltaL, decayldeltal, float);         //! 3 body vtx l/dl from KFParticle (using kfpPV after topological constraint)
-DECLARE_SOA_COLUMN(Chi2geoNDF, chi2geondf, float);             //! 3 body vtx chi2geo from geometrical KFParticle fit
-DECLARE_SOA_COLUMN(Chi2topoNDF, chi2topondf, float);           //! 3 body vtx chi2topo from KFParticle topological constraint to the PV (using kfpPV)
-DECLARE_SOA_COLUMN(CTauKFtopo, ctaukftopo, float);             //! 3 body vtx ctau from KFParticle after topological constraint
-
-// Strangeness tracking
-DECLARE_SOA_COLUMN(TrackedClSize, trackedclsize, int); //! Cluster size of strangeness tracked 3body
-
-// daughters
-DECLARE_SOA_COLUMN(DCATrack0ToPVKF, dcatrack0topvkf, float);         //! DCA of proton prong to PV from KFParticle
-DECLARE_SOA_COLUMN(DCATrack1ToPVKF, dcatrack1topvkf, float);         //! DCA of pion prong to PV from KFParticle
-DECLARE_SOA_COLUMN(DCATrack2ToPVKF, dcatrack2topvkf, float);         //! DCA of deuteron prong to PV from KFParticle
-DECLARE_SOA_COLUMN(DCAxyTrack0ToPVKF, dcaxytrack0topvkf, float);     //! DCAxy of proton prong to PV from KFParticle
-DECLARE_SOA_COLUMN(DCAxyTrack1ToPVKF, dcaxytrack1topvkf, float);     //! DCAxy of pion prong to PV from KFParticle
-DECLARE_SOA_COLUMN(DCAxyTrack2ToPVKF, dcaxytrack2topvkf, float);     //! DCAxy of deuteron prong to PV from KFParticle
-DECLARE_SOA_COLUMN(DCATrackPosToPV, dcatrackpostopv, float);         //! DCA of positive track to PV (propagated before vtx fit)
-DECLARE_SOA_COLUMN(DCATrackNegToPV, dcatracknegtopv, float);         //! DCA of negative track to PV (propagated before vtx fit)
-DECLARE_SOA_COLUMN(DCATrackBachToPV, dcatrackbachtopv, float);       //! DCA of bachelor track to PV (propagated before vtx fit)
-DECLARE_SOA_COLUMN(DCAxyTrackPosToPV, dcaxytrackpostopv, float);     //! DCAxy of positive track to PV (propagated before vtx fit)
-DECLARE_SOA_COLUMN(DCAxyTrackNegToPV, dcaxytracknegtopv, float);     //! DCAxy of negative track to PV (propagated before vtx fit)
-DECLARE_SOA_COLUMN(DCAxyTrackBachToPV, dcaxytrackbachtopv, float);   //! DCAxy of bachelor track to PV (propagated before vtx fit)
-DECLARE_SOA_COLUMN(DCAxyTrack0ToSVKF, dcaxytrack0tosvkf, float);     //! DCAxy of proton prong to SV from KFParticle
-DECLARE_SOA_COLUMN(DCAxyTrack1ToSVKF, dcaxytrack1tosvkf, float);     //! DCAxy of pion prong to SV from KFParticle
-DECLARE_SOA_COLUMN(DCAxyTrack2ToSVKF, dcaxytrack2tosvkf, float);     //! DCAxy of deuteron prong to SV from KFParticle
-DECLARE_SOA_COLUMN(DCATrack0ToTrack1KF, dcatrack0totrack1kf, float); //! DCAxy of proton prong to pion from KFParticle
-DECLARE_SOA_COLUMN(DCATrack0ToTrack2KF, dcatrack0totrack2kf, float); //! DCAxy of proton prong to deuteron from KFParticle
-DECLARE_SOA_COLUMN(DCATrack1ToTrack2KF, dcatrack1totrack2kf, float); //! DCAxy of pion prong to deuteron from KFParticle
-DECLARE_SOA_COLUMN(DCAVtxDaughtersKF, dcavtxdaughterskf, float);     //! sum of DCAs between daughters in 3D from KFParticle
-DECLARE_SOA_COLUMN(Track0Sign, track0sign, float);                   //! sign of proton daughter track
-DECLARE_SOA_COLUMN(Track1Sign, track1sign, float);                   //! sign of pion daughter track
-DECLARE_SOA_COLUMN(Track2Sign, track2sign, float);                   //! sign of deuteron daughter track
-DECLARE_SOA_COLUMN(TPCInnerParamTrack0, tpcinnerparamtrack0, float); //! momentum at inner wall of TPC of proton daughter
-DECLARE_SOA_COLUMN(TPCInnerParamTrack1, tpcinnerparamtrack1, float); //! momentum at inner wall of TPC of pion daughter
-DECLARE_SOA_COLUMN(TPCInnerParamTrack2, tpcinnerparamtrack2, float); //! momentum at inner wall of TPC of deuteron daughter
-DECLARE_SOA_COLUMN(TPCNClTrack0, tpcncltrack0, int);                 //! Number of TPC clusters of proton daughter
-DECLARE_SOA_COLUMN(TPCNClTrack1, tpcncltrack1, int);                 //! Number of TPC clusters of pion daughter
-DECLARE_SOA_COLUMN(TPCNClTrack2, tpcncltrack2, int);                 //! Number of TPC clusters of deuteron daughter
-DECLARE_SOA_COLUMN(TPCChi2NClDeuteron, tpcchi2ncldeuteron, float);   //! TPC Chi2 / cluster of deuteron daughter
-DECLARE_SOA_COLUMN(DeltaPhiDeuteron, deltaphideuteron, float);       //! phi before track rotation - phi after track rotation for deuteron track
-DECLARE_SOA_COLUMN(DeltaPhiProton, deltaphiproton, float);           //! phi before track rotation - phi after track rotation for proton track
-// PID
-DECLARE_SOA_COLUMN(TPCNSigmaProton, tpcnsigmaproton, float);            //! nsigma proton of TPC PID of the proton daughter
-DECLARE_SOA_COLUMN(TPCNSigmaPion, tpcnsigmapion, float);                //! nsigma pion of TPC PID of the pion daughter
-DECLARE_SOA_COLUMN(TPCNSigmaDeuteron, tpcnsigmadeuteron, float);        //! nsigma deuteron of TPC PID of the bachelor daughter
-DECLARE_SOA_COLUMN(TPCNSigmaPionBach, tpcnsigmapionbach, float);        //! nsigma pion of TPC PID of the bachelor daughter
-DECLARE_SOA_COLUMN(TPCdEdxProton, tpcdedxproton, float);                //! TPC dEdx of the proton daughter
-DECLARE_SOA_COLUMN(TPCdEdxPion, tpcdedxpion, float);                    //! TPC dEdx of the pion daughter
-DECLARE_SOA_COLUMN(TPCdEdxDeuteron, tpcdedxdeuteron, float);            //! TPC dEdx of the bachelor daughter
-DECLARE_SOA_COLUMN(TOFNSigmaDeuteron, tofnsigmadeuteron, float);        //! nsigma of TOF PID of the bachelor daughter
-DECLARE_SOA_COLUMN(ITSClusSizeDeuteron, itsclussizedeuteron, double);   //! average ITS cluster size of bachelor daughter
-DECLARE_SOA_COLUMN(PIDTrackingDeuteron, pidtrackingdeuteron, uint32_t); //! PID during tracking of bachelor daughter
-
-// Monte Carlo
-DECLARE_SOA_COLUMN(GenP, genp, float);                  //! generated momentum
-DECLARE_SOA_COLUMN(GenPt, genpt, float);                //! generated transverse momentum
-DECLARE_SOA_COLUMN(GenDecVtxX, gendecvtxx, double);     //! generated decay vertex position x
-DECLARE_SOA_COLUMN(GenDecVtxY, gendecvtxy, double);     //! generated decay vertex position y
-DECLARE_SOA_COLUMN(GenDecVtxZ, gendecvtxz, double);     //! generated decay vertex position z
-DECLARE_SOA_COLUMN(GenCtau, genctau, double);           //! generated ctau
-DECLARE_SOA_COLUMN(GenPhi, genphi, float);              //! generated phi
-DECLARE_SOA_COLUMN(GenEta, geneta, float);              //! generated eta
-DECLARE_SOA_COLUMN(GenRapidity, genrapidity, float);    //! generated rapidity
-DECLARE_SOA_COLUMN(GenPosP, genposp, float);            //! generated momentum pos daughter particle
-DECLARE_SOA_COLUMN(GenPosPt, genpospt, float);          //! generated transverse momentum pos daughter particle
-DECLARE_SOA_COLUMN(GenNegP, gennegp, float);            //! generated momentum neg daughter particle
-DECLARE_SOA_COLUMN(GenNegPt, gennegpt, float);          //! generated transverse momentum neg daughter particle
-DECLARE_SOA_COLUMN(GenBachP, genbachp, float);          //! generated momentum bachelor daughter particle
-DECLARE_SOA_COLUMN(GenBachPt, genbachpt, float);        //! generated transverse momentum bachelor daughter particle
-DECLARE_SOA_COLUMN(IsTrueH3L, istrueh3l, bool);         //! flag for true hypertriton candidate
-DECLARE_SOA_COLUMN(IsTrueAntiH3L, istrueantih3l, bool); //! flag for true anti-hypertriton candidate
-DECLARE_SOA_COLUMN(PdgCodeDau0, pdgcodedau0, int);      //! MC particle daughter 0 PDG code
-DECLARE_SOA_COLUMN(PdgCodeDau1, pdgcodedau1, int);      //! MC particle daughter 1 PDG code
-DECLARE_SOA_COLUMN(PdgCodeDau2, pdgcodedau2, int);      //! MC particle daughter 2 PDG code
-DECLARE_SOA_COLUMN(IsBachPrimary, isbachprimary, bool); //! flag for bachelor daughter primary
-DECLARE_SOA_COLUMN(SurvEvSel, survevsel, int);          //! flag if reco collision survived event selection
-DECLARE_SOA_COLUMN(IsReco, isreco, int);                //! flag if candidate was reconstructed
-
-// V0
-DECLARE_SOA_COLUMN(MassV0, massv0, float);         //! proton, pion vertex mass
-DECLARE_SOA_COLUMN(Chi2MassV0, chi2massv0, float); //! chi2 of proton, pion mass constraint to Lambda mass
-DECLARE_SOA_COLUMN(CosPAV0, cospav0, float);       //! proton, pion vertex mass
-
-} // namespace kfvtx3body
-
-DECLARE_SOA_TABLE(KFVtx3BodyDatas, "AOD", "KFVTX3BODYDATA",
-                  o2::soa::Index<>, vtx3body::CollisionId, vtx3body::Track0Id, vtx3body::Track1Id, vtx3body::Track2Id, vtx3body::Decay3BodyId,
-
-                  // hypertriton candidate
-                  kfvtx3body::Mass,
+                  vtx3body::Sign,
+                  vtx3body::Mass, vtx3body::MassV0,
                   vtx3body::X, vtx3body::Y, vtx3body::Z,
-                  kfvtx3body::XErr, kfvtx3body::YErr, kfvtx3body::ZErr,
-                  kfvtx3body::Px, kfvtx3body::Py, kfvtx3body::Pz, kfvtx3body::Pt,
-                  kfvtx3body::PxErr, kfvtx3body::PyErr, kfvtx3body::PzErr, kfvtx3body::PtErr,
-                  kfvtx3body::Sign,
-                  kfvtx3body::DCAVtxToPVKF, kfvtx3body::DCAXYVtxToPVKF,
-                  kfvtx3body::VtxCosPAKF, kfvtx3body::VtxCosXYPAKF,
-                  kfvtx3body::VtxCosPAKFtopo, kfvtx3body::VtxCosXYPAKFtopo,
-                  kfvtx3body::DecayLKF, kfvtx3body::DecayLXYKF, kfvtx3body::DecayLDeltaL,
-                  kfvtx3body::Chi2geoNDF, kfvtx3body::Chi2topoNDF,
-                  kfvtx3body::CTauKFtopo, kfvtx3body::TrackedClSize,
+                  vtx3body::Px, vtx3body::Py, vtx3body::Pz,
+                  vtx3body::Chi2,
+                  vtx3body::TrackedClSize,
+                  vtx3body::PxTrackPr, vtx3body::PyTrackPr, vtx3body::PzTrackPr,
+                  vtx3body::PxTrackPi, vtx3body::PyTrackPi, vtx3body::PzTrackPi,
+                  vtx3body::PxTrackDe, vtx3body::PyTrackDe, vtx3body::PzTrackDe,
+                  vtx3body::DCAXYTrackPrToPV, vtx3body::DCAXYTrackPiToPV, vtx3body::DCAXYTrackDeToPV,
+                  vtx3body::DCAZTrackPrToPV, vtx3body::DCAZTrackPiToPV, vtx3body::DCAZTrackDeToPV,
+                  vtx3body::DCATrackPrToSV, vtx3body::DCATrackPiToSV, vtx3body::DCATrackDeToSV,
+                  vtx3body::DCAVtxDaughters,
+                  vtx3body::TPCNSigmaPr, vtx3body::TPCNSigmaPi, vtx3body::TPCNSigmaDe, vtx3body::TPCNSigmaPiBach,
+                  vtx3body::TOFNSigmaDe,
+                  vtx3body::ITSClSizePr, vtx3body::ITSClSizePi, vtx3body::ITSClSizeDe,
+                  vtx3body::TPCNClTrackPr, vtx3body::TPCNClTrackPi, vtx3body::TPCNClTrackDe,
+                  vtx3body::PIDTrackingDe,
 
-                  // V0
-                  kfvtx3body::MassV0, kfvtx3body::Chi2MassV0,
-                  kfvtx3body::CosPAV0,
+                  // Dynamic columns
+                  vtx3body::P<vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
+                  vtx3body::Pt<vtx3body::Px, vtx3body::Py>,
+                  vtx3body::VtxRadius<vtx3body::X, vtx3body::Y>,
+                  vtx3body::DistOverTotMom<vtx3body::X, vtx3body::Y, vtx3body::Z, vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
+                  vtx3body::VtxCosPA<vtx3body::X, vtx3body::Y, vtx3body::Z, vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
+                  vtx3body::DCAVtxToPV<vtx3body::X, vtx3body::Y, vtx3body::Z, vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
 
-                  // daughters
-                  vtx3body::PxTrack0, vtx3body::PyTrack0, vtx3body::PzTrack0,                                        // proton
-                  vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1,                                        // pion
-                  vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2,                                        // deuteron
-                  kfvtx3body::TPCInnerParamTrack0, kfvtx3body::TPCInnerParamTrack1, kfvtx3body::TPCInnerParamTrack2, // proton, pion, deuteron
-                  kfvtx3body::TPCNClTrack0, kfvtx3body::TPCNClTrack1, kfvtx3body::TPCNClTrack2,                      // proton, pion, deuteron
-                  kfvtx3body::TPCChi2NClDeuteron,
-                  kfvtx3body::DeltaPhiDeuteron, kfvtx3body::DeltaPhiProton,
-                  kfvtx3body::DCATrack0ToPVKF, kfvtx3body::DCATrack1ToPVKF, kfvtx3body::DCATrack2ToPVKF, kfvtx3body::DCAxyTrack0ToPVKF, kfvtx3body::DCAxyTrack1ToPVKF, kfvtx3body::DCAxyTrack2ToPVKF,
-                  kfvtx3body::DCAxyTrack0ToSVKF, kfvtx3body::DCAxyTrack1ToSVKF, kfvtx3body::DCAxyTrack2ToSVKF,
-                  kfvtx3body::DCATrack0ToTrack1KF, kfvtx3body::DCATrack0ToTrack2KF, kfvtx3body::DCATrack1ToTrack2KF,
-                  kfvtx3body::DCAVtxDaughtersKF,
-                  kfvtx3body::DCAxyTrackPosToPV, kfvtx3body::DCAxyTrackNegToPV, kfvtx3body::DCAxyTrackBachToPV,
-                  kfvtx3body::DCATrackPosToPV, kfvtx3body::DCATrackNegToPV, kfvtx3body::DCATrackBachToPV,
-                  kfvtx3body::Track0Sign, kfvtx3body::Track1Sign, kfvtx3body::Track2Sign, // track sing: proton, pion, deuteron
-                  kfvtx3body::TPCNSigmaProton, kfvtx3body::TPCNSigmaPion, kfvtx3body::TPCNSigmaDeuteron, kfvtx3body::TPCNSigmaPionBach,
-                  kfvtx3body::TPCdEdxProton, kfvtx3body::TPCdEdxPion, kfvtx3body::TPCdEdxDeuteron,
-                  kfvtx3body::TOFNSigmaDeuteron,
-                  kfvtx3body::ITSClusSizeDeuteron,
-                  kfvtx3body::PIDTrackingDeuteron);
+                  // Longitudinal
+                  vtx3body::Rap<vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
+                  vtx3body::Eta<vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
+                  vtx3body::Phi<vtx3body::Px, vtx3body::Py>,
+                  vtx3body::TrackPrPt<vtx3body::PxTrackPr, vtx3body::PyTrackPr>,
+                  vtx3body::TrackPrEta<vtx3body::PxTrackPr, vtx3body::PyTrackPr, vtx3body::PzTrackPr>,
+                  vtx3body::TrackPrPhi<vtx3body::PxTrackPr, vtx3body::PyTrackPr>,
+                  vtx3body::TrackPiPt<vtx3body::PxTrackPi, vtx3body::PyTrackPi>,
+                  vtx3body::TrackPiEta<vtx3body::PxTrackPi, vtx3body::PyTrackPi, vtx3body::PzTrackPi>,
+                  vtx3body::TrackPiPhi<vtx3body::PxTrackPi, vtx3body::PyTrackPi>,
+                  vtx3body::TrackDePt<vtx3body::PxTrackDe, vtx3body::PyTrackDe>,
+                  vtx3body::TrackDeEta<vtx3body::PxTrackDe, vtx3body::PyTrackDe, vtx3body::PzTrackDe>,
+                  vtx3body::TrackDePhi<vtx3body::PxTrackDe, vtx3body::PyTrackDe>);
 
-using KFVtx3BodyData = KFVtx3BodyDatas::iterator;
-namespace kfvtx3body
-{
-DECLARE_SOA_INDEX_COLUMN(KFVtx3BodyData, kfvtx3BodyData); //! Index to KFVtx3BodyData entry
-}
-
-DECLARE_SOA_TABLE(KFDecay3BodyDataLink, "AOD", "KF3BODYLINK", //! Joinable table with Decay3bodys which links to KFVtx3BodyData which is not produced for all entries
-                  kfvtx3body::KFVtx3BodyDataId);
-
-using KFDecay3BodysLinked = soa::Join<Decay3Bodys, KFDecay3BodyDataLink>;
-using KFDecay3BodyLinked = KFDecay3BodysLinked::iterator;
-
-// Lite data candidate table for analysis
-DECLARE_SOA_TABLE(KFVtx3BodyDatasLite, "AOD", "KF3BODYLITE",
-                  o2::soa::Index<>,
-                  // hypertriton candidate
-                  kfvtx3body::Mass,
-                  vtx3body::X, vtx3body::Y, vtx3body::Z,
-                  kfvtx3body::Px, kfvtx3body::Py, kfvtx3body::Pz, kfvtx3body::Pt,
-                  kfvtx3body::Sign,
-                  kfvtx3body::DCAVtxToPVKF, kfvtx3body::DCAXYVtxToPVKF,
-                  kfvtx3body::VtxCosPAKF, kfvtx3body::VtxCosXYPAKF,
-                  kfvtx3body::DecayLKF, kfvtx3body::DecayLXYKF, kfvtx3body::DecayLDeltaL,
-                  kfvtx3body::Chi2geoNDF, kfvtx3body::Chi2topoNDF,
-                  kfvtx3body::CTauKFtopo, kfvtx3body::TrackedClSize,
-
-                  // V0
-                  kfvtx3body::MassV0,
-                  kfvtx3body::CosPAV0,
-
-                  // daughters
-                  vtx3body::PxTrack0, vtx3body::PyTrack0, vtx3body::PzTrack0,                                        // proton
-                  vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1,                                        // pion
-                  vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2,                                        // deuteron
-                  kfvtx3body::TPCInnerParamTrack0, kfvtx3body::TPCInnerParamTrack1, kfvtx3body::TPCInnerParamTrack2, // proton, pion, deuteron
-                  kfvtx3body::TPCNClTrack0, kfvtx3body::TPCNClTrack1, kfvtx3body::TPCNClTrack2,                      // proton, pion, deuteron
-                  kfvtx3body::TPCChi2NClDeuteron,
-                  kfvtx3body::DeltaPhiDeuteron, kfvtx3body::DeltaPhiProton,
-                  kfvtx3body::DCATrack0ToPVKF, kfvtx3body::DCATrack1ToPVKF, kfvtx3body::DCATrack2ToPVKF, kfvtx3body::DCAxyTrack0ToPVKF, kfvtx3body::DCAxyTrack1ToPVKF, kfvtx3body::DCAxyTrack2ToPVKF,
-                  kfvtx3body::DCAxyTrack0ToSVKF, kfvtx3body::DCAxyTrack1ToSVKF, kfvtx3body::DCAxyTrack2ToSVKF,
-                  kfvtx3body::DCATrack0ToTrack1KF, kfvtx3body::DCATrack0ToTrack2KF, kfvtx3body::DCATrack1ToTrack2KF,
-                  kfvtx3body::DCAVtxDaughtersKF,
-                  kfvtx3body::Track0Sign, kfvtx3body::Track1Sign, kfvtx3body::Track2Sign, // track sing: proton, pion, deuteron
-                  kfvtx3body::TPCNSigmaProton, kfvtx3body::TPCNSigmaPion, kfvtx3body::TPCNSigmaDeuteron, kfvtx3body::TPCNSigmaPionBach,
-                  kfvtx3body::TOFNSigmaDeuteron,
-                  kfvtx3body::ITSClusSizeDeuteron,
-                  kfvtx3body::PIDTrackingDeuteron);
-
-using KFVtx3BodyDataLite = KFVtx3BodyDatasLite::iterator;
+// covariance matrix table
+DECLARE_SOA_TABLE(Vtx3BodyCovs, "AOD", "VTX3BODYCOV", //!
+                  vtx3body::CovProton, vtx3body::CovPion, vtx3body::CovDeuteron,
+                  vtx3body::VtxCovMat);
 
 // MC candidate table for analysis
-DECLARE_SOA_TABLE(McKFVtx3BodyDatas, "AOD", "MCKF3BODYDATAS",
+DECLARE_SOA_TABLE(McVtx3BodyDatas, "AOD", "MC3BODYDATA", //!
                   o2::soa::Index<>,
-                  // hypertriton candidate
-                  kfvtx3body::Mass,
+                  vtx3body::Sign,
+                  vtx3body::Mass, vtx3body::MassV0,
                   vtx3body::X, vtx3body::Y, vtx3body::Z,
-                  kfvtx3body::XErr, kfvtx3body::YErr, kfvtx3body::ZErr,
-                  kfvtx3body::Px, kfvtx3body::Py, kfvtx3body::Pz, kfvtx3body::Pt,
-                  kfvtx3body::PxErr, kfvtx3body::PyErr, kfvtx3body::PzErr, kfvtx3body::PtErr,
-                  kfvtx3body::Sign,
-                  kfvtx3body::DCAVtxToPVKF, kfvtx3body::DCAXYVtxToPVKF,
-                  kfvtx3body::VtxCosPAKF, kfvtx3body::VtxCosXYPAKF,
-                  kfvtx3body::VtxCosPAKFtopo, kfvtx3body::VtxCosXYPAKFtopo,
-                  kfvtx3body::DecayLKF, kfvtx3body::DecayLXYKF, kfvtx3body::DecayLDeltaL,
-                  kfvtx3body::Chi2geoNDF, kfvtx3body::Chi2topoNDF,
-                  kfvtx3body::CTauKFtopo, kfvtx3body::TrackedClSize,
+                  vtx3body::Px, vtx3body::Py, vtx3body::Pz,
+                  vtx3body::Chi2,
+                  vtx3body::TrackedClSize,
+                  vtx3body::PxTrackPr, vtx3body::PyTrackPr, vtx3body::PzTrackPr,
+                  vtx3body::PxTrackPi, vtx3body::PyTrackPi, vtx3body::PzTrackPi,
+                  vtx3body::PxTrackDe, vtx3body::PyTrackDe, vtx3body::PzTrackDe,
+                  vtx3body::DCAXYTrackPrToPV, vtx3body::DCAXYTrackPiToPV, vtx3body::DCAXYTrackDeToPV,
+                  vtx3body::DCAZTrackPrToPV, vtx3body::DCAZTrackPiToPV, vtx3body::DCAZTrackDeToPV,
+                  vtx3body::DCATrackPrToSV, vtx3body::DCATrackPiToSV, vtx3body::DCATrackDeToSV,
+                  vtx3body::DCAVtxDaughters,
+                  vtx3body::TPCNSigmaPr, vtx3body::TPCNSigmaPi, vtx3body::TPCNSigmaDe, vtx3body::TPCNSigmaPiBach,
+                  vtx3body::TOFNSigmaDe,
+                  vtx3body::ITSClSizePr, vtx3body::ITSClSizePi, vtx3body::ITSClSizeDe,
+                  vtx3body::TPCNClTrackPr, vtx3body::TPCNClTrackPi, vtx3body::TPCNClTrackDe,
+                  vtx3body::PIDTrackingDe,
 
-                  // V0
-                  kfvtx3body::MassV0, kfvtx3body::Chi2MassV0,
-                  kfvtx3body::CosPAV0,
+                  // Monte Carlo information
+                  vtx3body::GenPx, vtx3body::GenPy, vtx3body::GenPz,
+                  vtx3body::GenX, vtx3body::GenY, vtx3body::GenZ,
+                  vtx3body::GenCt,
+                  vtx3body::GenPhi, vtx3body::GenEta, vtx3body::GenRap,
+                  vtx3body::GenPPr, vtx3body::GenPPi, vtx3body::GenPDe,
+                  vtx3body::GenPtPr, vtx3body::GenPtPi, vtx3body::GenPtDe,
+                  vtx3body::IsTrueH3L, vtx3body::IsTrueAntiH3L,
+                  vtx3body::IsReco,
+                  vtx3body::PrPdgCode, vtx3body::PiPdgCode, vtx3body::DePdgCode,
+                  vtx3body::IsDePrimary,
+                  vtx3body::IsSurvEvSel,
 
-                  // daughters
-                  vtx3body::PxTrack0, vtx3body::PyTrack0, vtx3body::PzTrack0,                                        // proton
-                  vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1,                                        // pion
-                  vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2,                                        // deuteron
-                  kfvtx3body::TPCInnerParamTrack0, kfvtx3body::TPCInnerParamTrack1, kfvtx3body::TPCInnerParamTrack2, // proton, pion, deuteron
-                  kfvtx3body::TPCNClTrack0, kfvtx3body::TPCNClTrack1, kfvtx3body::TPCNClTrack2,                      // proton, pion, deuteron
-                  kfvtx3body::TPCChi2NClDeuteron,
-                  kfvtx3body::DeltaPhiDeuteron, kfvtx3body::DeltaPhiProton,
-                  kfvtx3body::DCATrack0ToPVKF, kfvtx3body::DCATrack1ToPVKF, kfvtx3body::DCATrack2ToPVKF, kfvtx3body::DCAxyTrack0ToPVKF, kfvtx3body::DCAxyTrack1ToPVKF, kfvtx3body::DCAxyTrack2ToPVKF,
-                  kfvtx3body::DCAxyTrack0ToSVKF, kfvtx3body::DCAxyTrack1ToSVKF, kfvtx3body::DCAxyTrack2ToSVKF,
-                  kfvtx3body::DCATrack0ToTrack1KF, kfvtx3body::DCATrack0ToTrack2KF, kfvtx3body::DCATrack1ToTrack2KF,
-                  kfvtx3body::DCAVtxDaughtersKF,
-                  kfvtx3body::DCAxyTrackPosToPV, kfvtx3body::DCAxyTrackNegToPV, kfvtx3body::DCAxyTrackBachToPV,
-                  kfvtx3body::DCATrackPosToPV, kfvtx3body::DCATrackNegToPV, kfvtx3body::DCATrackBachToPV,
-                  kfvtx3body::Track0Sign, kfvtx3body::Track1Sign, kfvtx3body::Track2Sign, // track sing: proton, pion, deuteron
-                  kfvtx3body::TPCNSigmaProton, kfvtx3body::TPCNSigmaPion, kfvtx3body::TPCNSigmaDeuteron, kfvtx3body::TPCNSigmaPionBach,
-                  kfvtx3body::TPCdEdxProton, kfvtx3body::TPCdEdxPion, kfvtx3body::TPCdEdxDeuteron,
-                  kfvtx3body::TOFNSigmaDeuteron,
-                  kfvtx3body::ITSClusSizeDeuteron,
-                  kfvtx3body::PIDTrackingDeuteron,
+                  // Dynamic columns
+                  vtx3body::P<vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
+                  vtx3body::Pt<vtx3body::Px, vtx3body::Py>,
+                  vtx3body::GenP<vtx3body::GenPx, vtx3body::GenPy, vtx3body::GenPz>,
+                  vtx3body::GenPt<vtx3body::GenPx, vtx3body::GenPy>,
+                  vtx3body::VtxRadius<vtx3body::X, vtx3body::Y>,
+                  vtx3body::GenRadius<vtx3body::GenX, vtx3body::GenY>,
+                  vtx3body::DistOverTotMom<vtx3body::X, vtx3body::Y, vtx3body::Z, vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
+                  vtx3body::VtxCosPA<vtx3body::X, vtx3body::Y, vtx3body::Z, vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
+                  vtx3body::DCAVtxToPV<vtx3body::X, vtx3body::Y, vtx3body::Z, vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
 
-                  // MC information
-                  kfvtx3body::GenP,
-                  kfvtx3body::GenPt,
-                  kfvtx3body::GenDecVtxX, kfvtx3body::GenDecVtxY, kfvtx3body::GenDecVtxZ,
-                  kfvtx3body::GenCtau,
-                  kfvtx3body::GenPhi,
-                  kfvtx3body::GenEta,
-                  kfvtx3body::GenRapidity,
-                  kfvtx3body::GenPosP, kfvtx3body::GenPosPt,
-                  kfvtx3body::GenNegP, kfvtx3body::GenNegPt,
-                  kfvtx3body::GenBachP, kfvtx3body::GenBachPt,
-                  kfvtx3body::IsTrueH3L, kfvtx3body::IsTrueAntiH3L,
-                  kfvtx3body::PdgCodeDau0, kfvtx3body::PdgCodeDau1, kfvtx3body::PdgCodeDau2,
-                  kfvtx3body::IsBachPrimary,
-                  kfvtx3body::IsReco,
-                  kfvtx3body::SurvEvSel);
+                  // Longitudinal
+                  vtx3body::Rap<vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
+                  vtx3body::Eta<vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
+                  vtx3body::Phi<vtx3body::Px, vtx3body::Py>,
+                  vtx3body::TrackPrPt<vtx3body::PxTrackPr, vtx3body::PyTrackPr>,
+                  vtx3body::TrackPrEta<vtx3body::PxTrackPr, vtx3body::PyTrackPr, vtx3body::PzTrackPr>,
+                  vtx3body::TrackPrPhi<vtx3body::PxTrackPr, vtx3body::PyTrackPr>,
+                  vtx3body::TrackPiPt<vtx3body::PxTrackPi, vtx3body::PyTrackPi>,
+                  vtx3body::TrackPiEta<vtx3body::PxTrackPi, vtx3body::PyTrackPi, vtx3body::PzTrackPi>,
+                  vtx3body::TrackPiPhi<vtx3body::PxTrackPi, vtx3body::PyTrackPi>,
+                  vtx3body::TrackDePt<vtx3body::PxTrackDe, vtx3body::PyTrackDe>,
+                  vtx3body::TrackDeEta<vtx3body::PxTrackDe, vtx3body::PyTrackDe, vtx3body::PzTrackDe>,
+                  vtx3body::TrackDePhi<vtx3body::PxTrackDe, vtx3body::PyTrackDe>);
 
-// Definition of labels for KFVtx3BodyDatas
-namespace mckfvtx3bodylabel
-{
-DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for KF Vtx3BodyDatas
-} // namespace mckfvtx3bodylabel
+// Define joins
+using Vtx3BodyDatasCovs = soa::Join<Vtx3BodyDatas, Vtx3BodyCovs>;
+using Vtx3BodyDatasCovsIndexed = soa::Join<Vtx3BodyDatas, Vtx3BodyCovs, Decay3BodyIndices>;
 
-DECLARE_SOA_TABLE(McKFVtx3BodyLabels, "AOD", "MCKFVTXLABEL", //! Table joinable with KFVtx3BodyData containing the MC labels
-                  mckfvtx3bodylabel::McParticleId);
-using McKFVtx3BodyLabel = McKFVtx3BodyLabels::iterator;
-
-// Definition of labels for KFDecay3Bodys // Full table, joinable with KFDecay3Bodys (CAUTION: NOT WITH Vtx3BodyDATA)
-namespace mcfullkfvtx3bodylabel
-{
-DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for Decay3Bodys
-} // namespace mcfullkfvtx3bodylabel
-
-DECLARE_SOA_TABLE(McFullKFVtx3BodyLabels, "AOD", "MCFULLKFLABEL", //! Table joinable with Decay3Bodys (CAUTION: NOT WITH Vtx3BodyDATA)
-                  mcfullkfvtx3bodylabel::McParticleId);
-using McFullKFVtx3BodyLabel = McFullKFVtx3BodyLabels::iterator;
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_VTX3BODYTABLES_H_
