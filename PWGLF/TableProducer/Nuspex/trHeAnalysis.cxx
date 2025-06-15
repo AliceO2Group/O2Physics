@@ -71,7 +71,7 @@ DECLARE_SOA_TABLE(H3Data, "AOD", "h3_data", h3_data::TPt, h3_data::TEta,
                   h3_data::TSigmaZ, h3_data::TnTpcCluster,
                   h3_data::TnItsCluster, h3_data::TTpcChi2NCl,
                   h3_data::TItsChi2NCl, h3_data::TRigidity,
-                  h3_data::TItsClusterSize, he_data::THasTof, h3_data::TDetectorMap);
+                  h3_data::TItsClusterSize, h3_data::THasTof, h3_data::TDetectorMap);
 namespace he_data
 {
 DECLARE_SOA_COLUMN(TPt, tPt, float);
