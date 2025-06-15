@@ -69,6 +69,8 @@ struct UDQC {
   using ATs = aod::AmbiguousTracks;
   using AFTs = aod::AmbiguousFwdTracks;
 
+  Partition<TCs> goodTracks = requireGlobalTrackInFilter();
+
   void init(InitContext& context)
   {
     // initialize global variables
@@ -220,7 +222,7 @@ struct UDQC {
     // vertex tracks normally gives PV contributors from collisions
     registry.get<TH1>(HIST("collisions/vtxTracks"))->Fill(collision.numContrib());
     // global tracks
-    Partition<TCs> goodTracks = requireGlobalTrackInFilter();
+    // Partition<TCs> goodTracks = requireGlobalTrackInFilter();
     goodTracks.bindTable(tracks);
     registry.get<TH1>(HIST("collisions/globalTracks"))->Fill(goodTracks.size());
 
