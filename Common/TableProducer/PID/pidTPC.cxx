@@ -55,11 +55,48 @@ using namespace o2::ml;
 
 MetadataHelper metadataInfo; // Metadata helper
 
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  std::vector<ConfigParamSpec> options{{"add-qa", VariantType::Int, 0, {"Legacy. No effect."}}};
-  std::swap(workflowOptions, options);
-}
+struct pidMultiplicity {
+  SliceCache cache;
+  Produces<aod::PIDMults> mult;
+
+  bool enableTable = false;
+  void init(InitContext& initContext)
+  {
+    LOG(info) << "Initializing PID Mult Task";
+    // Checking that the table is requested in the workflow and enabling it
+    enableTable = isTableRequiredInWorkflow(initContext, "PIDMults");
+    if (enableTable) {
+      LOG(info) << "Table TPC PID Multiplicity enabled!";
+    }
+    if (doprocessStandard == true && doprocessIU == true) {
+      LOG(fatal) << "Both processStandard and processIU are enabled, pick one!";
+    }
+  }
+
+  using TrksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
+  Partition<TrksIU> tracksWithTPCIU = (aod::track::tpcNClsFindable > (uint8_t)0);
+  void processIU(aod::Collision const& collision, TrksIU const&)
+  {
+    if (!enableTable) {
+      return;
+    }
+    auto tracksGrouped = tracksWithTPCIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    mult(tracksGrouped.size());
+  }
+  PROCESS_SWITCH(pidMultiplicity, processIU, "Process with IU tracks, faster but works on Run3 only", false);
+
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
+  Partition<Trks> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
+  void processStandard(aod::Collision const& collision, Trks const&)
+  {
+    if (!enableTable) {
+      return;
+    }
+    auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    mult(tracksGrouped.size());
+  }
+  PROCESS_SWITCH(pidMultiplicity, processStandard, "Process with tracks, needs propagated tracks", true);
+};
 
 /// Task to produce the response table
 struct tpcPid {
@@ -678,5 +715,8 @@ struct tpcPid {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   metadataInfo.initMetadata(cfgc); // Parse AO2D metadata
-  return WorkflowSpec{adaptAnalysisTask<tpcPid>(cfgc)};
+  auto workflow = WorkflowSpec{};
+  workflow.push_back(adaptAnalysisTask<pidMultiplicity>(cfgc));
+  workflow.push_back(adaptAnalysisTask<tpcPid>(cfgc));
+  return workflow;
 }
