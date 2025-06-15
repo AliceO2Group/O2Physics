@@ -64,6 +64,8 @@ struct UDQCmid {
   using ATs = aod::AmbiguousTracks;
   using AFTs = aod::AmbiguousFwdTracks;
 
+  Partition<TCs> goodTracks = requireGlobalTrackInFilter();
+
   void init(InitContext& context)
   {
     // initialize global variables
@@ -132,7 +134,7 @@ struct UDQCmid {
     }
   }
 
-  // ...............................................................................................................................................
+  //...............................................................................................................................................
   void processMain(CC const& collision, BCs const& bct0s,
                    TCs const& tracks, FWs const& fwdtracks, ATs const& /*ambtracks*/, AFTs const& /*ambfwdtracks*/,
                    aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/,
@@ -150,7 +152,7 @@ struct UDQCmid {
     // vertex tracks normally gives PV contributors from collisions
     registry.get<TH1>(HIST("collisions/vtxTracks"))->Fill(collision.numContrib());
     // global tracks
-    Partition<TCs> goodTracks = requireGlobalTrackInFilter();
+
     goodTracks.bindTable(tracks);
     registry.get<TH1>(HIST("collisions/globalTracks"))->Fill(goodTracks.size());
 
@@ -223,7 +225,7 @@ struct UDQCmid {
             registry.get<TH1>(HIST("DG/hMassAll"))->Fill(ivm.M());
         }
       } // coll
-    }   // dgcand
+    } // dgcand
 
     // loop over all tracks
     float rgtrwTOF = 0.;
@@ -322,7 +324,7 @@ struct UDQCmid {
           if (track.hasTOF()) {
             registry.get<TH2>(HIST("DG/dEdxTOF"))->Fill(track.p() / track.sign(), track.beta());
           } // fill TOF
-        }   // pv contributor
+        } // pv contributor
       }
     } // Inavariant mass after FIT
 
@@ -489,7 +491,7 @@ struct UDQCmid {
           // update #PV contributors in collisions with empty FT0 && FV0&& FDCC
           registry.get<TH1>(HIST("fpPVC2"))->Fill(collision.numContrib(), 1.);
         } // fdd
-      }   // fvo
+      } // fvo
 
     } // ft0
   }
