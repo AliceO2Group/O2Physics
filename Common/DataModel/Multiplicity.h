@@ -198,7 +198,7 @@ DECLARE_SOA_TABLE(Mult2MCExtras, "AOD", "Mult2MCEXTRA", //! Relate reco mult ent
                   o2::soa::Index<>, mult::MultMCExtraId);
 
 DECLARE_SOA_TABLE(MultHepMCHIs, "AOD", "MULTHEPMCHI", //! complementary table for heavy-ion mc info (subset of HepMCHeavyIons)
-                  o2::soa::Index<>, hepmcheavyion::MultMCExtraId, hepmcheavyion::NcollHard, hepmcheavyion::NpartProj, hepmcheavyion::NpartTarg,
+                  o2::soa::Index<>, mult::MultMCExtraId, hepmcheavyion::NcollHard, hepmcheavyion::NpartProj, hepmcheavyion::NpartTarg,
                   hepmcheavyion::Ncoll, hepmcheavyion::ImpactParameter);
 
 using MultHepMCHI = MultHepMCHIs::iterator;
