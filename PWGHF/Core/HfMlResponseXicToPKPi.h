@@ -16,11 +16,11 @@
 #ifndef PWGHF_CORE_HFMLRESPONSEXICTOPKPI_H_
 #define PWGHF_CORE_HFMLRESPONSEXICTOPKPI_H_
 
+#include "PWGHF/Core/HfMlResponse.h"
+
 #include <map>
 #include <string>
 #include <vector>
-
-#include "PWGHF/Core/HfMlResponse.h"
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)
@@ -119,12 +119,12 @@ enum class InputFeaturesXicToPKPi : uint8_t {
   tpcTofNSigmaPr0,
   tpcTofNSigmaPr1,
   tpcTofNSigmaPr2,
-  tpcNSigmaPrExpPr0,
-  tpcNSigmaPiExpPi2,
-  tofNSigmaPrExpPr0,
-  tofNSigmaPiExpPi2,
-  tpcTofNSigmaPrExpPr0,
-  tpcTofNSigmaPiExpPi2
+  tpcNSigmaPrExpPr,
+  tpcNSigmaPiExpPi,
+  tofNSigmaPrExpPr,
+  tofNSigmaPiExpPi,
+  tpcTofNSigmaPrExpPr,
+  tpcTofNSigmaPiExpPi
 };
 
 template <typename TypeOutputScore = float>
@@ -174,8 +174,8 @@ class HfMlResponseXicToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tpcNSigmaPr2, nSigTpcPr2);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tpcNSigmaKa2, nSigTpcKa2);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tpcNSigmaPi2, nSigTpcPi2);
-        CHECK_AND_FILL_VEC_XIC_SIGNED(candidate, tpcNSigmaPrExpPr0, nSigTpcPr0, nSigTpcPr2);
-        CHECK_AND_FILL_VEC_XIC_SIGNED(candidate, tpcNSigmaPiExpPi2, nSigTpcPi2, nSigTpcPi0);
+        CHECK_AND_FILL_VEC_XIC_SIGNED(candidate, tpcNSigmaPrExpPr, nSigTpcPr0, nSigTpcPr2);
+        CHECK_AND_FILL_VEC_XIC_SIGNED(candidate, tpcNSigmaPiExpPi, nSigTpcPi2, nSigTpcPi0);
         // TOF PID variables
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tofNSigmaPr0, nSigTofPr0);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tofNSigmaKa0, nSigTofKa0);
@@ -186,8 +186,8 @@ class HfMlResponseXicToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tofNSigmaPr2, nSigTofPr2);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tofNSigmaKa2, nSigTofKa2);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tofNSigmaPi2, nSigTofPi2);
-        CHECK_AND_FILL_VEC_XIC_SIGNED(candidate, tofNSigmaPrExpPr0, nSigTofPr0, nSigTofPr2);
-        CHECK_AND_FILL_VEC_XIC_SIGNED(candidate, tofNSigmaPiExpPi2, nSigTofPi2, nSigTofPi0);
+        CHECK_AND_FILL_VEC_XIC_SIGNED(candidate, tofNSigmaPrExpPr, nSigTofPr0, nSigTofPr2);
+        CHECK_AND_FILL_VEC_XIC_SIGNED(candidate, tofNSigmaPiExpPi, nSigTofPi2, nSigTofPi0);
         // Combined PID variables
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tpcTofNSigmaPi0, tpcTofNSigmaPi0);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tpcTofNSigmaPi1, tpcTofNSigmaPi1);
@@ -198,8 +198,8 @@ class HfMlResponseXicToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tpcTofNSigmaPr0, tpcTofNSigmaPr0);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tpcTofNSigmaPr1, tpcTofNSigmaPr1);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tpcTofNSigmaPr2, tpcTofNSigmaPr2);
-        CHECK_AND_FILL_VEC_XIC_SIGNED(candidate, tpcTofNSigmaPrExpPr0, tpcTofNSigmaPr0, tpcTofNSigmaPr2);
-        CHECK_AND_FILL_VEC_XIC_SIGNED(candidate, tpcTofNSigmaPiExpPi2, tpcTofNSigmaPi2, tpcTofNSigmaPi0);
+        CHECK_AND_FILL_VEC_XIC_SIGNED(candidate, tpcTofNSigmaPrExpPr, tpcTofNSigmaPr0, tpcTofNSigmaPr2);
+        CHECK_AND_FILL_VEC_XIC_SIGNED(candidate, tpcTofNSigmaPiExpPi, tpcTofNSigmaPi2, tpcTofNSigmaPi0);
       }
     }
 
@@ -236,8 +236,8 @@ class HfMlResponseXicToPKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_XIC(tpcNSigmaPr2),
       FILL_MAP_XIC(tpcNSigmaKa2),
       FILL_MAP_XIC(tpcNSigmaPi2),
-      FILL_MAP_XIC(tpcNSigmaPrExpPr0),
-      FILL_MAP_XIC(tpcNSigmaPiExpPi2),
+      FILL_MAP_XIC(tpcNSigmaPrExpPr),
+      FILL_MAP_XIC(tpcNSigmaPiExpPi),
       // TOF PID variables
       FILL_MAP_XIC(tofNSigmaPr0),
       FILL_MAP_XIC(tofNSigmaKa0),
@@ -248,8 +248,8 @@ class HfMlResponseXicToPKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_XIC(tofNSigmaPr2),
       FILL_MAP_XIC(tofNSigmaKa2),
       FILL_MAP_XIC(tofNSigmaPi2),
-      FILL_MAP_XIC(tofNSigmaPrExpPr0),
-      FILL_MAP_XIC(tofNSigmaPiExpPi2),
+      FILL_MAP_XIC(tofNSigmaPrExpPr),
+      FILL_MAP_XIC(tofNSigmaPiExpPi),
       // Combined PID variables
       FILL_MAP_XIC(tpcTofNSigmaPi0),
       FILL_MAP_XIC(tpcTofNSigmaPi1),
@@ -260,8 +260,8 @@ class HfMlResponseXicToPKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_XIC(tpcTofNSigmaPr0),
       FILL_MAP_XIC(tpcTofNSigmaPr1),
       FILL_MAP_XIC(tpcTofNSigmaPr2),
-      FILL_MAP_XIC(tpcTofNSigmaPrExpPr0),
-      FILL_MAP_XIC(tpcTofNSigmaPiExpPi2)};
+      FILL_MAP_XIC(tpcTofNSigmaPrExpPr),
+      FILL_MAP_XIC(tpcTofNSigmaPiExpPi)};
   }
 };
 
