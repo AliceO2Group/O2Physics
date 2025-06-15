@@ -139,11 +139,11 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     uint32_t rejectionMask;
 
     if constexpr (applyUPCSel) {
-      rejectionMask = hfEvSel.getHfCollisionRejectionMask<applyTrigSel, centEstimator, BCs>(
-        collision, centrality, ccdb, registry, bcs);
+      rejectionMask = hfEvSel.getHfCollisionRejectionMask<applyTrigSel, applyUPCSel, centEstimator, BCs>(
+        collision, centrality, ccdb, registry, &bcs);
     } else {
-      rejectionMask = hfEvSel.getHfCollisionRejectionMask<applyTrigSel, centEstimator, BCs>(
-        collision, centrality, ccdb, registry);
+      rejectionMask = hfEvSel.getHfCollisionRejectionMask<applyTrigSel, applyUPCSel, centEstimator, BCs>(
+        collision, centrality, ccdb, registry, nullptr);
     }
 
     if (fillHistograms) {

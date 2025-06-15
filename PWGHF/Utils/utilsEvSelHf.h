@@ -282,8 +282,9 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   /// \param ccdb ccdb service needed to retrieve the needed info for zorro
   /// \param registry reference to the histogram registry needed for zorro
   /// \return bitmask with the event selection criteria not satisfied by the collision
-  template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename BCs, typename Coll>
-  uint32_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, o2::framework::HistogramRegistry& registry)
+  template <bool useEvSel, bool useUpcTrigger, o2::hf_centrality::CentralityEstimator centEstimator, typename BCs, typename Coll>
+  uint32_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, o2::framework::HistogramRegistry& registry,
+                                       const BCs* bcs = nullptr)
   {
     uint32_t rejectionMask{0}; // 32 bits, in case new ev. selections will be added
 
@@ -342,6 +343,28 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
           SETBIT(rejectionMask, EventRejection::Occupancy);
         }
       }
+
+      if (useUpcTrigger) {
+        if (!bcs) {
+          throw std::runtime_error("UPC selection requested but no BC table provided!");
+        }
+        SGCutParHolder sgCuts = setSGPreselection();
+        auto bc = collision.template foundBC_as<BCs>();
+        auto bcRange = udhelpers::compatibleBCs(collision, sgCuts.NDtcoll(), *bcs, sgCuts.minNBCs());
+        auto isSGEvent = sgSelector.IsSelected(sgCuts, collision, bcRange, bc);
+        int issgevent = isSGEvent.value;
+        if (issgevent > EventTypeUpc::DoubleGap) {
+          SETBIT(rejectionMask, EventRejection::UpcEventCut);
+        } else {
+          if (issgevent == EventTypeUpc::SingleGapA) {
+            hUPCollisions->Fill(EventTypeUpc::SingleGapA);
+          } else if (issgevent == EventTypeUpc::SingleGapC) {
+            hUPCollisions->Fill(EventTypeUpc::SingleGapC);
+          } else if (issgevent == EventTypeUpc::DoubleGap) {
+            hUPCollisions->Fill(EventTypeUpc::DoubleGap);
+          }
+        }
+      }
     }
 
     /// number of PV contributors
@@ -383,44 +406,6 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
       }
     }
 
-    return rejectionMask;
-  }
-
-  /// \brief Applies event selection with upc flag and bc para
-  /// \tparam useEvSel use information from the EvSel table
-  /// \tparam centEstimator centrality estimator
-  /// \param collision collision to test against the selection criteria
-  /// \param centrality collision centrality variable to be set in this function
-  /// \param ccdb ccdb service needed to retrieve the needed info for zorro
-  /// \param registry reference to the histogram registry needed for zorro
-  /// \return bitmask with the event selection criteria not satisfied by the collision
-  template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename BCs, typename Coll>
-  uint32_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, o2::framework::HistogramRegistry& registry, const BCs& bcs)
-  {
-
-    auto rejectionMask = getHfCollisionRejectionMask<useEvSel, centEstimator, BCs>(collision, centrality, ccdb, registry);
-
-    /// upc selection
-    if constexpr (useEvSel) {
-      if (useUpcTrigger) {
-        SGCutParHolder sgCuts = setSGPreselection();
-        auto bc = collision.template foundBC_as<BCs>();
-        auto bcRange = udhelpers::compatibleBCs(collision, sgCuts.NDtcoll(), bcs, sgCuts.minNBCs());
-        auto isSGEvent = sgSelector.IsSelected(sgCuts, collision, bcRange, bc);
-        int issgevent = isSGEvent.value;
-        if (issgevent > EventTypeUpc::DoubleGap) {
-          SETBIT(rejectionMask, EventRejection::UpcEventCut);
-        } else {
-          if (issgevent == EventTypeUpc::SingleGapA) {
-            hUPCollisions->Fill(EventTypeUpc::SingleGapA);
-          } else if (issgevent == EventTypeUpc::SingleGapC) {
-            hUPCollisions->Fill(EventTypeUpc::SingleGapC);
-          } else if (issgevent == EventTypeUpc::DoubleGap) {
-            hUPCollisions->Fill(EventTypeUpc::DoubleGap);
-          }
-        }
-      }
-    }
     return rejectionMask;
   }
 

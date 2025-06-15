@@ -382,7 +382,7 @@ struct HfTaskFlowCharmHadrons {
                       float& centrality)
   {
     float occupancy = getOccupancyColl(collision, occEstimator);
-    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, false, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, centrality, ccdb, registry, nullptr);
     centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
 
     /// monitor the satisfied event selections
@@ -455,7 +455,7 @@ struct HfTaskFlowCharmHadrons {
     if (occEstimator != 0) {
       occupancy = getOccupancyColl(collision, occEstimator);
       registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
-      hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
+      hfevflag = hfEvSel.getHfCollisionRejectionMask<true, false, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, cent, ccdb, registry, nullptr);
     }
 
     std::vector<float> qVecs = getQvec(collision);
@@ -708,7 +708,7 @@ struct HfTaskFlowCharmHadrons {
       float occupancy{-1.f};
       occupancy = getOccupancyColl(collision, occEstimator);
       registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
-      uint16_t hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+      uint16_t hfevflag = hfEvSel.getHfCollisionRejectionMask<true, false, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, centrality, ccdb, registry, nullptr);
       std::vector<int> evtSelFlags = getEventSelectionFlags(hfevflag);
       registry.fill(HIST("spReso/hSparseReso"), centrality, xQVecFT0c * xQVecFV0a + yQVecFT0c * yQVecFV0a,
                     xQVecFT0c * xQVecBTot + yQVecFT0c * yQVecBTot,

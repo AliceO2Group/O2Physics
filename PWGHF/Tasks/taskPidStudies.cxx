@@ -37,7 +37,6 @@
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/Core/CentralityEstimation.h"
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -346,7 +345,7 @@ struct HfTaskPidStudies {
     }
 
     float cent{-1.f};
-    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(coll, cent, ccdb, registry);
+    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, false, o2::hf_centrality::CentralityEstimator::None, soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>>(coll, cent, ccdb, registry, nullptr);
     /// monitor the satisfied event selections
     hfEvSel.fillHistograms(coll, rejectionMask, cent);
     return rejectionMask == 0;

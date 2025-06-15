@@ -410,7 +410,7 @@ struct HfFemtoDreamProducer {
       multNtr = col.multTracklets();
     }
 
-    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(col, mult, ccdb, qaRegistry);
+    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, false, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(col, mult, ccdb, qaRegistry, nullptr);
 
     qaRegistry.fill(HIST("hEventQA"), 1 + Event::All);
 

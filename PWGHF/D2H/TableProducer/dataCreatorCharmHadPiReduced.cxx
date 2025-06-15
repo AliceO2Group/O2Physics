@@ -1279,7 +1279,7 @@ struct HfDataCreatorCharmHadPiReduced {
     }
     registry.fill(HIST("hEvents"), 1 + Event::CharmHadPiSelected);
     float centrality = -1.f;
-    uint16_t hfRejMap = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+    uint32_t hfRejMap = hfEvSel.getHfCollisionRejectionMask<true, false, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, centrality, ccdb, registry, nullptr);
     // fill collision table if it contains a DPi pair a minima
     hfReducedCollision(collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), hfRejMap, bz);
     hfReducedCollExtra(collision.covXX(), collision.covXY(), collision.covYY(),
@@ -1501,7 +1501,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsDplusPerCollision, thisCollId);
@@ -1531,7 +1531,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsDplusPerCollisionWithMl, thisCollId);
@@ -1561,7 +1561,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsDplusPerCollision, thisCollId);
@@ -1591,7 +1591,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsDplusPerCollisionWithMl, thisCollId);
@@ -1621,7 +1621,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsDplusPerCollision, thisCollId);
@@ -1651,7 +1651,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsDplusPerCollisionWithMl, thisCollId);
@@ -1681,7 +1681,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsDplusPerCollision, thisCollId);
@@ -1711,7 +1711,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsDplusPerCollisionWithMl, thisCollId);
@@ -1741,7 +1741,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsD0PerCollision, thisCollId);
@@ -1771,7 +1771,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsD0PerCollisionWithMl, thisCollId);
@@ -1801,7 +1801,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsD0PerCollision, thisCollId);
@@ -1831,7 +1831,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsD0PerCollisionWithMl, thisCollId);
@@ -1861,7 +1861,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsLcPerCollision, thisCollId);
@@ -1891,7 +1891,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsLcPerCollisionWithMl, thisCollId);
@@ -1926,7 +1926,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsDplusPerCollision, thisCollId);
@@ -1961,7 +1961,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsDplusPerCollisionWithMl, thisCollId);
@@ -1996,7 +1996,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsDplusPerCollision, thisCollId);
@@ -2031,7 +2031,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsDplusPerCollisionWithMl, thisCollId);
@@ -2066,7 +2066,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsD0PerCollision, thisCollId);
@@ -2101,7 +2101,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsD0PerCollisionWithMl, thisCollId);
@@ -2136,7 +2136,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsLcPerCollision, thisCollId);
@@ -2171,7 +2171,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int zvtxAndSel8CollAndSoftTrig{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsLcPerCollisionWithMl, thisCollId);

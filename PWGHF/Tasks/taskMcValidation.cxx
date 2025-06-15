@@ -818,7 +818,7 @@ struct HfTaskMcValidationRec {
     }
 
     float centrality{-1.f};
-    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, false, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, centrality, ccdb, registry, nullptr);
     if (rejectionMask != 0) {
       /// at least one event selection not satisfied --> reject the candidate
       return;
@@ -848,7 +848,7 @@ struct HfTaskMcValidationRec {
       // check that collision is selected by hf-track-index-skim-creator-tag-sel-collisions
 
       float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, false, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, centrality, ccdb, registry, nullptr);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
@@ -1049,7 +1049,7 @@ struct HfTaskMcValidationRec {
       // apply event selection
       float centrality{105.f};
       int occupancy = collision.trackOccupancyInTimeRange();
-      hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry); // only needed to update centrality, no bitmask selection applied
+      hfEvSel.getHfCollisionRejectionMask<true, false, o2::hf_centrality::CentralityEstimator::None, aod::BCFullInfos>(collision, centrality, ccdb, registry, nullptr); // only needed to update centrality, no bitmask selection applied
       if (!collision.has_mcCollision()) {
         return;
       }
