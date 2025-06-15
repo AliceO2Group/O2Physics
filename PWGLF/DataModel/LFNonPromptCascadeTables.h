@@ -119,6 +119,7 @@ DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);
 DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
 DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float);
 DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
+DECLARE_SOA_COLUMN(ToiMask, toiMask, uint32_t);
 
 } // namespace NPCascadeTable
 DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
@@ -183,7 +184,8 @@ DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
                   NPCascadeTable::MultFT0M,
                   NPCascadeTable::CentFT0C,
                   NPCascadeTable::CentFT0A,
-                  NPCascadeTable::CentFT0M)
+                  NPCascadeTable::CentFT0M,
+                  NPCascadeTable::ToiMask)
 
 DECLARE_SOA_TABLE(NPCascTableNT, "AOD", "NPCASCTABLENT",
                   NPCascadeTable::MatchingChi2,
@@ -247,7 +249,8 @@ DECLARE_SOA_TABLE(NPCascTableNT, "AOD", "NPCASCTABLENT",
                   NPCascadeTable::MultFT0M,
                   NPCascadeTable::CentFT0C,
                   NPCascadeTable::CentFT0A,
-                  NPCascadeTable::CentFT0M)
+                  NPCascadeTable::CentFT0M,
+                  NPCascadeTable::ToiMask)
 
 DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::MatchingChi2,
@@ -330,7 +333,8 @@ DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::DCAzMC,
                   NPCascadeTable::MCcollisionMatch,
                   NPCascadeTable::HasFakeReassociation,
-                  NPCascadeTable::MotherDecayDaughters)
+                  NPCascadeTable::MotherDecayDaughters,
+                  NPCascadeTable::ToiMask)
 
 DECLARE_SOA_TABLE(NPCascTableMCNT, "AOD", "NPCASCTABLEMCNT",
                   NPCascadeTable::MatchingChi2,
@@ -413,7 +417,8 @@ DECLARE_SOA_TABLE(NPCascTableMCNT, "AOD", "NPCASCTABLEMCNT",
                   NPCascadeTable::DCAzMC,
                   NPCascadeTable::MCcollisionMatch,
                   NPCascadeTable::HasFakeReassociation,
-                  NPCascadeTable::MotherDecayDaughters)
+                  NPCascadeTable::MotherDecayDaughters,
+                  NPCascadeTable::ToiMask)
 
 DECLARE_SOA_TABLE(NPCascTableGen, "AOD", "NPCASCTABLEGen",
                   NPCascadeTable::gPt,
