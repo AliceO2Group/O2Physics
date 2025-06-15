@@ -255,7 +255,7 @@ struct K1AnalysisMicro {
   double massKa = MassKaonCharged;
   double massPi = MassPionCharged;
   double massRho770 = 0.77526;
-  double massK892 = 0.892;
+  double massK892 = MassK0Star892;
 
   // PDG code
   int kPDGRho770 = 113;
