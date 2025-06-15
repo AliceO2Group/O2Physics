@@ -274,8 +274,9 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     addHistograms(registry);
   }
 
-  /// \brief Applies event selection without upc flag and bc para
+  /// \brief Applies event selection
   /// \tparam useEvSel use information from the EvSel table
+  /// \tparam useUpcTrigger add upc event selection
   /// \tparam centEstimator centrality estimator
   /// \param collision collision to test against the selection criteria
   /// \param centrality collision centrality variable to be set in this function
