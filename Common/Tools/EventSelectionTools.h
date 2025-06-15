@@ -19,29 +19,32 @@
 #define bitcheck(var, nbit) ((var) & (static_cast<uint32_t>(1) << (nbit)))
 #define bitcheck64(var, nbit) ((var) & (static_cast<uint64_t>(1) << (nbit)))
 
-#include <memory>
-#include <cstdlib>
-#include <cmath>
-#include <array>
-#include <string>
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/EventSelection.h"
+#include "MetadataHelper.h"
+
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/EventSelection.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
-#include "Framework/HistogramRegistry.h"
-#include "DataFormatsFT0/Digit.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "DataFormatsParameters/GRPECSObject.h"
-#include "ITSMFTBase/DPLAlpideParam.h"
-#include "MetadataHelper.h"
-#include "DataFormatsParameters/AggregatedRunInfo.h"
-#include "DataFormatsITSMFT/NoiseMap.h" // missing include in TimeDeadMap.h
-#include "DataFormatsITSMFT/TimeDeadMap.h"
-#include "ITSMFTReconstruction/ChipMappingITS.h"
 #include "DataFormatsCTP/Configuration.h"
 #include "DataFormatsCTP/Scalers.h"
+#include "DataFormatsFT0/Digit.h"
+#include "DataFormatsITSMFT/NoiseMap.h" // missing include in TimeDeadMap.h
+#include "DataFormatsITSMFT/TimeDeadMap.h"
+#include "DataFormatsParameters/AggregatedRunInfo.h"
+#include "DataFormatsParameters/GRPECSObject.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/HistogramRegistry.h"
+#include "ITSMFTBase/DPLAlpideParam.h"
+#include "ITSMFTReconstruction/ChipMappingITS.h"
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <memory>
+#include <string>
 
 //__________________________________________
 // MultModule
