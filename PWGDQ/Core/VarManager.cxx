@@ -1113,7 +1113,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kCentVZERO"] = kCentVZERO;
   fgVarNamesMap["kCentFT0C"] = kCentFT0C;
   fgVarNamesMap["kCentFT0A"] = kCentFT0A;
-  fgVarNamesMap["kCentV0M"] = kCentV0M;
+  fgVarNamesMap["kCentFT0M"] = kCentFT0M;
   fgVarNamesMap["kMultTPC"] = kMultTPC;
   fgVarNamesMap["kMultFV0A"] = kMultFV0A;
   fgVarNamesMap["kMultFV0C"] = kMultFV0C;
