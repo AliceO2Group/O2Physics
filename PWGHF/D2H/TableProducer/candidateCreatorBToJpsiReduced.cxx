@@ -436,7 +436,7 @@ struct HfCandidateCreatorBToJpsiReducedExpressions {
       bool filledMcInfo{false};
       if constexpr (decChannel == DecayChannel::BplusToJpsiK) {
         for (const auto& rowJpsiHadMcRec : rowsJpsiHadMcRec) {
-          if ((rowJpsiHadMcRec.jpsiId() != candB.jpsiId()) || (rowJpsiHadMcRec.prong1Id() != candB.bachKaId())) {
+          if ((rowJpsiHadMcRec.jpsiId() != candB.jpsiId()) || (rowJpsiHadMcRec.bachKaId() != candB.bachKaId())) {
             continue;
           }
           rowBplusMcRec(rowJpsiHadMcRec.flagMcMatchRec(), rowJpsiHadMcRec.channelMcMatchRec(), rowJpsiHadMcRec.flagWrongCollision(), rowJpsiHadMcRec.debugMcRec(), rowJpsiHadMcRec.ptMother());
