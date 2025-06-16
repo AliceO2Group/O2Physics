@@ -160,34 +160,34 @@ struct FlowPbpbPikp {
   };
 
   enum EventCutTypes {
-    filteredEvents = 0,
-    afterSel8,
-    useNoTimeFrameBorder,
-    useNoITSROFrameBorder,
-    useNoSameBunchPileup,
-    useGoodZvtxFT0vsPV,
-    useNoCollInTimeRangeStandard,
-    useGoodITSLayersAll,
-    useNoCollInRofStandard,
-    useNoHighMultCollInPrevRof,
-    useOccupancy,
-    useMultCorrCut,
-    useT0AV0ACut,
-    useVertexITSTPC,
-    useTVXinTRD
+    kFilteredEvents = 0,
+    kAfterSel8,
+    kUseNoTimeFrameBorder,
+    kUseNoITSROFrameBorder,
+    kUseNoSameBunchPileup,
+    kUseGoodZvtxFT0vsPV,
+    kUseNoCollInTimeRangeStandard,
+    kUseGoodITSLayersAll,
+    kUseNoCollInRofStandard,
+    kUseNoHighMultCollInPrevRof,
+    kUseOccupancy,
+    kUseMultCorrCut,
+    kUseT0AV0ACut,
+    kUseVertexITSTPC,
+    kUseTVXinTRD
   };
 
   enum TrackCutTypes {
-    filteredTracks = 0,
-    useGlobalTracks,
-    usePvContributor,
-    itsClustersCut,
-    hasTpcSignal,
-    tpcClustersCut,
-    tpcCrossedRowsCut,
-    numPions,
-    numKaons,
-    numProtons
+    kFilteredTracks = 0,
+    kUseGlobalTracks,
+    kUsePvContributor,
+    kItsClustersCut,
+    kHasTpcSignal,
+    kTpcClustersCut,
+    kTpcCrossedRowsCut,
+    kNumPions,
+    kNumKaons,
+    kNumProtons
   };
 
   int lastRunNumer = -1;
@@ -270,33 +270,33 @@ struct FlowPbpbPikp {
     histos.add("partCount", "", {HistType::kTHnSparseD, {{axisParticles, axisMultiplicity, axisPt}}});
 
     histos.add("hEventCount", "Number of Events;; Count", {HistType::kTH1D, {{15, -0.5, 14.5}}});
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(filteredEvents + 1, "Filtered event");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(afterSel8 + 1, "After sel8");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(useNoTimeFrameBorder + 1, "kNoTimeFrameBorder");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(useNoITSROFrameBorder + 1, "kNoITSROFrameBorder");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(useNoSameBunchPileup + 1, "kNoSameBunchPileup");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(useGoodZvtxFT0vsPV + 1, "kIsGoodZvtxFT0vsPV");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(useNoCollInRofStandard + 1, "kNoCollInTimeRangeStandard");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(useGoodITSLayersAll + 1, "kIsGoodITSLayersAll");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(useNoCollInRofStandard + 1, "kNoCollInRofStandard");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(useNoHighMultCollInPrevRof + 1, "kNoHighMultCollInPrevRof");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(useOccupancy + 1, "Occupancy Cut");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(useMultCorrCut + 1, "Multiplicity correlation Cut");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(useT0AV0ACut + 1, "T0AV0A cut");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(useVertexITSTPC + 1, "kIsVertexITSTPC");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(useTVXinTRD + 1, "kTVXinTRD");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kFilteredEvents + 1, "Filtered event");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kAfterSel8 + 1, "After sel8");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseNoTimeFrameBorder + 1, "kNoTimeFrameBorder");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseNoITSROFrameBorder + 1, "kNoITSROFrameBorder");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseNoSameBunchPileup + 1, "kNoSameBunchPileup");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseGoodZvtxFT0vsPV + 1, "kIsGoodZvtxFT0vsPV");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseNoCollInRofStandard + 1, "kNoCollInTimeRangeStandard");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseGoodITSLayersAll + 1, "kIsGoodITSLayersAll");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseNoCollInRofStandard + 1, "kNoCollInRofStandard");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseNoHighMultCollInPrevRof + 1, "kNoHighMultCollInPrevRof");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseOccupancy + 1, "Occupancy Cut");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseMultCorrCut + 1, "Multiplicity correlation Cut");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseT0AV0ACut + 1, "T0AV0A cut");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseVertexITSTPC + 1, "kIsVertexITSTPC");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseTVXinTRD + 1, "kTVXinTRD");
 
     histos.add("hTrackCount", "Number of Tracks;; Count", {HistType::kTH1D, {{10, -0.5, 9.5}}});
-    histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(filteredTracks + 1, "Filtered track");
-    histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(useGlobalTracks + 1, "Global tracks");
-    histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(usePvContributor + 1, "PV contributor");
-    histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(itsClustersCut + 1, "ITS clusters");
-    histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(hasTpcSignal + 1, "TPC signal");
-    histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(tpcClustersCut + 1, "TPC clusters");
-    histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(tpcCrossedRowsCut + 1, "TPC crossed rows");
-    histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(numPions + 1, "Pions");
-    histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(numKaons + 1, "Kaons");
-    histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(numProtons + 1, "Protons");
+    histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(kFilteredTracks + 1, "Filtered track");
+    histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(kUseGlobalTracks + 1, "Global tracks");
+    histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(kUsePvContributor + 1, "PV contributor");
+    histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(kItsClustersCut + 1, "ITS clusters");
+    histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(kHasTpcSignal + 1, "TPC signal");
+    histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(kTpcClustersCut + 1, "TPC clusters");
+    histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(kTpcCrossedRowsCut + 1, "TPC crossed rows");
+    histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(kNumPions + 1, "Pions");
+    histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(kNumKaons + 1, "Kaons");
+    histos.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(kNumProtons + 1, "Protons");
 
     if (cfgOutputNUAWeights && !cfgOutputRunByRun) {
       histos.add<TH3>("NUA/hPhiEtaVtxz_ref", ";#varphi;#eta;v_{z}", {HistType::kTH3D, {axisPhi, axisEta, axisVertex}});
@@ -363,7 +363,7 @@ struct FlowPbpbPikp {
     fFC->Initialize(oba, axisMultiplicity, cfgNbootstrap);
     delete oba;
 
-    if (eventCuts[useMultCorrCut]) {
+    if (eventCuts[kUseMultCorrCut]) {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
       fMultPVCutLow->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
       fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
@@ -374,7 +374,7 @@ struct FlowPbpbPikp {
       fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
       fMultCutHigh->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
     }
-    if (eventCuts[useT0AV0ACut]) {
+    if (eventCuts[kUseT0AV0ACut]) {
       fT0AV0AMean = new TF1("fT0AV0AMean", "[0]+[1]*x", 0, 200000);
       fT0AV0AMean->SetParameters(-1601.0581, 9.417652e-01);
       fT0AV0ASigma = new TF1("fT0AV0ASigma", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 200000);
@@ -429,37 +429,37 @@ struct FlowPbpbPikp {
   template <typename TTrack>
   bool selectionTrack(const TTrack& track)
   {
-    histos.fill(HIST("hTrackCount"), filteredTracks); // Filtered tracks
+    histos.fill(HIST("hTrackCount"), kFilteredTracks); // Filtered tracks
     if (cfgUseGlobalTrack && !(track.isGlobalTrack())) {
       return 0;
     }
     if (cfgUseGlobalTrack)
-      histos.fill(HIST("hTrackCount"), useGlobalTracks); // After global track selection
+      histos.fill(HIST("hTrackCount"), kUseGlobalTracks); // After global track selection
 
     if (!(track.isPVContributor())) {
       return 0;
     }
-    histos.fill(HIST("hTrackCount"), usePvContributor); // After PV contributor selection
+    histos.fill(HIST("hTrackCount"), kUsePvContributor); // After PV contributor selection
 
     if (!(track.itsNCls() > cfgITScluster)) {
       return 0;
     }
-    histos.fill(HIST("hTrackCount"), itsClustersCut); // After ITS cluster selection
+    histos.fill(HIST("hTrackCount"), kItsClustersCut); // After ITS cluster selection
 
     if (!(track.hasTPC())) {
       return 0;
     }
-    histos.fill(HIST("hTrackCount"), hasTpcSignal); // If track has TPC signal
+    histos.fill(HIST("hTrackCount"), kHasTpcSignal); // If track has TPC signal
 
     if (!(track.tpcNClsFound() > cfgTpcCluster)) {
       return 0;
     }
-    histos.fill(HIST("hTrackCount"), tpcClustersCut); // After TPC cluster selection
+    histos.fill(HIST("hTrackCount"), kTpcClustersCut); // After TPC cluster selection
 
     if (!(track.tpcNClsCrossedRows() > cfgTpcCrossRows)) {
       return 0;
     }
-    histos.fill(HIST("hTrackCount"), tpcCrossedRowsCut); // After TPC crossed rows selection
+    histos.fill(HIST("hTrackCount"), kTpcCrossedRowsCut); // After TPC crossed rows selection
     return 1;
   }
 
@@ -473,7 +473,7 @@ struct FlowPbpbPikp {
           histos.fill(HIST("TofTpcNsigma_after"), pidIndex - 1, track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
         if (cfgUseItsPID)
           histos.fill(HIST("TofItsNsigma_after"), pidIndex - 1, itsResponse.nSigmaITS<o2::track::PID::Pion>(track), track.tofNSigmaPi(), track.pt());
-        histos.fill(HIST("hTrackCount"), numPions); // Pion count
+        histos.fill(HIST("hTrackCount"), kNumPions); // Pion count
         if (!cfgAcceptance.value.empty() && cfgUseWeightPhiEtaVtxz)
           histos.fill(HIST("PhiCorrected/hPhiEtaVtxz_pi_corrd"), track.phi(), track.eta(), collision.posZ(), wacc); // pion weights
         if (!cfgAcceptance.value.empty() && cfgUseWeightPhiPtCent)
@@ -486,7 +486,7 @@ struct FlowPbpbPikp {
           histos.fill(HIST("TofTpcNsigma_after"), pidIndex - 1, track.tpcNSigmaKa(), track.tofNSigmaKa(), track.pt());
         if (cfgUseItsPID)
           histos.fill(HIST("TofItsNsigma_after"), pidIndex - 1, itsResponse.nSigmaITS<o2::track::PID::Kaon>(track), track.tofNSigmaKa(), track.pt());
-        histos.fill(HIST("hTrackCount"), numKaons); // Kaon count
+        histos.fill(HIST("hTrackCount"), kNumKaons); // Kaon count
         if (!cfgAcceptance.value.empty() && cfgUseWeightPhiEtaVtxz)
           histos.fill(HIST("PhiCorrected/hPhiEtaVtxz_ka_corrd"), track.phi(), track.eta(), collision.posZ(), wacc); // kaon weights
         if (!cfgAcceptance.value.empty() && cfgUseWeightPhiPtCent)
@@ -499,7 +499,7 @@ struct FlowPbpbPikp {
           histos.fill(HIST("TofTpcNsigma_after"), pidIndex - 1, track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
         if (cfgUseItsPID)
           histos.fill(HIST("TofItsNsigma_after"), pidIndex - 1, itsResponse.nSigmaITS<o2::track::PID::Proton>(track), track.tofNSigmaPr(), track.pt());
-        histos.fill(HIST("hTrackCount"), numProtons); // Proton count
+        histos.fill(HIST("hTrackCount"), kNumProtons); // Proton count
         if (!cfgAcceptance.value.empty() && cfgUseWeightPhiEtaVtxz)
           histos.fill(HIST("PhiCorrected/hPhiEtaVtxz_pr_corrd"), track.phi(), track.eta(), collision.posZ(), wacc); // proton weights
         if (!cfgAcceptance.value.empty() && cfgUseWeightPhiPtCent)
@@ -775,70 +775,70 @@ struct FlowPbpbPikp {
   template <typename TCollision>
   bool selectionEvent(TCollision collision, const int mult, const float cent)
   {
-    histos.fill(HIST("hEventCount"), filteredEvents);
+    histos.fill(HIST("hEventCount"), kFilteredEvents);
     if (!collision.sel8()) {
       return 0;
     }
-    histos.fill(HIST("hEventCount"), afterSel8);
+    histos.fill(HIST("hEventCount"), kAfterSel8);
 
-    if (eventCuts[useNoTimeFrameBorder] && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+    if (eventCuts[kUseNoTimeFrameBorder] && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return 0;
     }
-    if (eventCuts[useNoTimeFrameBorder])
-      histos.fill(HIST("hEventCount"), useNoTimeFrameBorder);
+    if (eventCuts[kUseNoTimeFrameBorder])
+      histos.fill(HIST("hEventCount"), kUseNoTimeFrameBorder);
 
-    if (eventCuts[useNoITSROFrameBorder] && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+    if (eventCuts[kUseNoITSROFrameBorder] && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return 0;
     }
-    if (eventCuts[useNoITSROFrameBorder])
-      histos.fill(HIST("hEventCount"), useNoITSROFrameBorder);
+    if (eventCuts[kUseNoITSROFrameBorder])
+      histos.fill(HIST("hEventCount"), kUseNoITSROFrameBorder);
 
-    if (eventCuts[useNoSameBunchPileup] && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+    if (eventCuts[kUseNoSameBunchPileup] && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return 0;
     }
-    if (eventCuts[useNoSameBunchPileup])
-      histos.fill(HIST("hEventCount"), useNoSameBunchPileup);
+    if (eventCuts[kUseNoSameBunchPileup])
+      histos.fill(HIST("hEventCount"), kUseNoSameBunchPileup);
 
-    if (eventCuts[useGoodZvtxFT0vsPV] && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (eventCuts[kUseGoodZvtxFT0vsPV] && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return 0;
     }
-    if (eventCuts[useGoodZvtxFT0vsPV])
-      histos.fill(HIST("hEventCount"), useGoodZvtxFT0vsPV);
+    if (eventCuts[kUseGoodZvtxFT0vsPV])
+      histos.fill(HIST("hEventCount"), kUseGoodZvtxFT0vsPV);
 
-    if (eventCuts[useNoCollInTimeRangeStandard] && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    if (eventCuts[kUseNoCollInTimeRangeStandard] && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return 0;
     }
-    if (eventCuts[useNoCollInTimeRangeStandard])
-      histos.fill(HIST("hEventCount"), useNoCollInTimeRangeStandard);
+    if (eventCuts[kUseNoCollInTimeRangeStandard])
+      histos.fill(HIST("hEventCount"), kUseNoCollInTimeRangeStandard);
 
-    if (eventCuts[useGoodITSLayersAll] && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (eventCuts[kUseGoodITSLayersAll] && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return 0;
     }
-    if (eventCuts[useGoodITSLayersAll])
-      histos.fill(HIST("hEventCount"), useGoodITSLayersAll);
+    if (eventCuts[kUseGoodITSLayersAll])
+      histos.fill(HIST("hEventCount"), kUseGoodITSLayersAll);
 
-    if (eventCuts[useNoCollInRofStandard] && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+    if (eventCuts[kUseNoCollInRofStandard] && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       return 0;
     }
-    if (eventCuts[useNoCollInRofStandard])
-      histos.fill(HIST("hEventCount"), useNoCollInRofStandard);
+    if (eventCuts[kUseNoCollInRofStandard])
+      histos.fill(HIST("hEventCount"), kUseNoCollInRofStandard);
 
-    if (eventCuts[useNoHighMultCollInPrevRof] && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+    if (eventCuts[kUseNoHighMultCollInPrevRof] && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
       return 0;
     }
-    if (eventCuts[useNoHighMultCollInPrevRof])
-      histos.fill(HIST("hEventCount"), useNoHighMultCollInPrevRof);
+    if (eventCuts[kUseNoHighMultCollInPrevRof])
+      histos.fill(HIST("hEventCount"), kUseNoHighMultCollInPrevRof);
 
     auto multNTracksPV = collision.multNTracksPV();
     auto occupancy = collision.trackOccupancyInTimeRange();
 
-    if (eventCuts[useOccupancy] && (occupancy < cfgCutOccupancyMin || occupancy > cfgCutOccupancyMax)) {
+    if (eventCuts[kUseOccupancy] && (occupancy < cfgCutOccupancyMin || occupancy > cfgCutOccupancyMax)) {
       return 0;
     }
-    if (eventCuts[useOccupancy])
-      histos.fill(HIST("hEventCount"), useOccupancy);
+    if (eventCuts[kUseOccupancy])
+      histos.fill(HIST("hEventCount"), kUseOccupancy);
 
-    if (eventCuts[useMultCorrCut]) {
+    if (eventCuts[kUseMultCorrCut]) {
       if (multNTracksPV < fMultPVCutLow->Eval(cent))
         return 0;
       if (multNTracksPV > fMultPVCutHigh->Eval(cent))
@@ -848,25 +848,25 @@ struct FlowPbpbPikp {
       if (mult > fMultCutHigh->Eval(cent))
         return 0;
     }
-    if (eventCuts[useMultCorrCut])
-      histos.fill(HIST("hEventCount"), useMultCorrCut);
+    if (eventCuts[kUseMultCorrCut])
+      histos.fill(HIST("hEventCount"), kUseMultCorrCut);
 
     // V0A T0A 5 sigma cut
-    if (eventCuts[useT0AV0ACut] && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > cfgV0AT0Acut * fT0AV0ASigma->Eval(collision.multFT0A())))
+    if (eventCuts[kUseT0AV0ACut] && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > cfgV0AT0Acut * fT0AV0ASigma->Eval(collision.multFT0A())))
       return 0;
-    if (eventCuts[useT0AV0ACut])
-      histos.fill(HIST("hEventCount"), useT0AV0ACut);
+    if (eventCuts[kUseT0AV0ACut])
+      histos.fill(HIST("hEventCount"), kUseT0AV0ACut);
 
-    if (eventCuts[useVertexITSTPC] && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC))
+    if (eventCuts[kUseVertexITSTPC] && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC))
       return 0;
-    if (eventCuts[useVertexITSTPC])
-      histos.fill(HIST("hEventCount"), useVertexITSTPC);
+    if (eventCuts[kUseVertexITSTPC])
+      histos.fill(HIST("hEventCount"), kUseVertexITSTPC);
 
-    if (eventCuts[useTVXinTRD] && collision.alias_bit(kTVXinTRD)) {
+    if (eventCuts[kUseTVXinTRD] && collision.alias_bit(kTVXinTRD)) {
       return 0;
     }
-    if (eventCuts[useTVXinTRD])
-      histos.fill(HIST("hEventCount"), useTVXinTRD);
+    if (eventCuts[kUseTVXinTRD])
+      histos.fill(HIST("hEventCount"), kUseTVXinTRD);
 
     return 1;
   }
