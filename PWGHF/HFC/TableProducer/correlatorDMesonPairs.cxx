@@ -75,6 +75,7 @@ struct HfCorrelatorDMesonPairs {
   Configurable<float> massCut{"massCut", 0.05, "Maximum deviation from PDG peak allowed for signal region"};
   Configurable<bool> daughterTracksCutFlag{"daughterTracksCutFlag", false, "Flag to add cut on daughter tracks"};
   Configurable<bool> removeAmbiguous{"removeAmbiguous", false, "Flag to remove ambiguous candidates"};
+  Configurable<float> ptMaxRemoveAmbiguous{"ptMaxRemoveAmbiguous", 5.0, "Max. pT to remove the ambiguous candidates"};
 
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
@@ -612,7 +613,7 @@ struct HfCorrelatorDMesonPairs {
       }
 
       // Remove ambiguous D0 candidates if flag is true
-      if (removeAmbiguous && (isDCand1 && isDbarCand1)) {
+      if (removeAmbiguous && (isDCand1 && isDbarCand1) && candidate1.pt() < ptMaxRemoveAmbiguous) {
         continue;
       }
 
@@ -687,7 +688,7 @@ struct HfCorrelatorDMesonPairs {
           }
 
           // Remove ambiguous D0 candidates if flag is true
-          if (removeAmbiguous && (isDCand2 && isDbarCand2)) {
+          if (removeAmbiguous && (isDCand2 && isDbarCand2) && candidate2.pt() < ptMaxRemoveAmbiguous) {
             continue;
           }
 
@@ -776,7 +777,7 @@ struct HfCorrelatorDMesonPairs {
       }
 
       // Remove ambiguous D0 candidates if flag is true
-      if (removeAmbiguous && (isDCand1 && isDbarCand1)) {
+      if (removeAmbiguous && (isDCand1 && isDbarCand1) && candidate1.pt() < ptMaxRemoveAmbiguous) {
         continue;
       }
 
@@ -893,7 +894,7 @@ struct HfCorrelatorDMesonPairs {
           }
 
           // Remove ambiguous D0 candidates if flag is true
-          if (removeAmbiguous && (isDCand2 && isDbarCand2)) {
+          if (removeAmbiguous && (isDCand2 && isDbarCand2) && candidate2.pt() < ptMaxRemoveAmbiguous) {
             continue;
           }
 
