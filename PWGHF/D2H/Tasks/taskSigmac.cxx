@@ -1112,6 +1112,8 @@ struct HfTaskSigmac {
           /// THn for candidate Σc0,++ cut variation
           if (enableTHn) {
             int8_t particleAntiparticle = candSc.particleAntiparticle();
+            const float softPiAbsDcaXY = std::abs(candSc.softPiDcaXY());
+            const float softPiAbsDcaZ = std::abs(candSc.softPiDcaZ());
             if constexpr (useMl) {
               /// fill with ML information
               /// BDT index 0: bkg score; BDT index 2: non-prompt score
@@ -1120,10 +1122,18 @@ struct HfTaskSigmac {
                 outputMl.at(0) = candidateLc.mlProbLcToPKPi()[0]; /// bkg score
                 outputMl.at(1) = candidateLc.mlProbLcToPKPi()[2]; /// non-prompt score
               }
-              registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+              if (addSoftPiDcaToSigmacSparse) {
+                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ);
+              } else {
+                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+              }
             } else {
               /// fill w/o BDT information
-              registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+              if (addSoftPiDcaToSigmacSparse) {
+                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ);
+              } else {
+                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+              }
             }
           }
 
@@ -1185,6 +1195,8 @@ struct HfTaskSigmac {
           /// THn for candidate Σc0,++ cut variation
           if (enableTHn) {
             int8_t particleAntiparticle = candSc.particleAntiparticle();
+            const float softPiAbsDcaXY = std::abs(candSc.softPiDcaXY());
+            const float softPiAbsDcaZ = std::abs(candSc.softPiDcaZ());
             if constexpr (useMl) {
               /// fill with ML information
               /// BDT index 0: bkg score; BDT index 2: non-prompt score
@@ -1193,10 +1205,18 @@ struct HfTaskSigmac {
                 outputMl.at(0) = candidateLc.mlProbLcToPiKP()[0]; /// bkg score
                 outputMl.at(1) = candidateLc.mlProbLcToPiKP()[2]; /// non-prompt score
               }
-              registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+              if (addSoftPiDcaToSigmacSparse) {
+                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ);
+              } else {
+                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+              }
             } else {
               /// fill w/o BDT information
-              registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+              if (addSoftPiDcaToSigmacSparse) {
+                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle, softPiAbsDcaXY, softPiAbsDcaZ);
+              } else {
+                registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc), candSc.ptBhadMotherPart(), sigmacSpecies, particleAntiparticle);
+              }
             }
           }
 
