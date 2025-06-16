@@ -16,27 +16,43 @@
 /// \author Hanseo Park <hanseo.park@cern.ch>
 /// \author Hadi Hassan <hadi.hassan@cern.ch>, University of Jyväskylä
 
-#include <string>
-#include <memory>
-#include <vector>
-#include <map>
-#include <utility>
+#include "MlResponse.h"
+
+#include "PWGJE/Core/JetTaggingUtilities.h"
+#include "PWGJE/Core/MlResponseHfTagging.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetTagging.h"
+
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include <CCDB/CcdbApi.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
 #include <TF1.h>
 #include <TH1.h>
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "Common/Core/trackUtilities.h"
+#include <onnxruntime_cxx_api.h>
 
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/JetTagging.h"
-#include "PWGJE/Core/JetTaggingUtilities.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/MlResponseHfTagging.h"
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <string>
+#include <type_traits>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
