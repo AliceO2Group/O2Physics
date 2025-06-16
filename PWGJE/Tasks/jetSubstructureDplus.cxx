@@ -13,8 +13,19 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include <vector>
 #include "PWGJE/Tasks/jetSubstructureHF.cxx"
+
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetSubstructure.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/ConfigContext.h>
+#include <Framework/DataProcessorSpec.h>
+#include <Framework/runDataProcessing.h>
+
+#include <vector>
 
 using JetSubstructureDplus = JetSubstructureHFTask<soa::Join<aod::DplusChargedJets, aod::DplusChargedJetConstituents>, soa::Join<aod::DplusChargedMCDetectorLevelJets, aod::DplusChargedMCDetectorLevelJetConstituents>, soa::Join<aod::DplusChargedMCParticleLevelJets, aod::DplusChargedMCParticleLevelJetConstituents>, soa::Join<aod::DplusChargedEventWiseSubtractedJets, aod::DplusChargedEventWiseSubtractedJetConstituents>, aod::CandidatesDplusData, aod::CandidatesDplusMCP, aod::DplusCJetSSs, aod::DplusChargedSPs, aod::DplusChargedPRs, aod::DplusCMCDJetSSs, aod::DplusChargedMCDetectorLevelSPs, aod::DplusChargedMCDetectorLevelPRs, aod::DplusCMCPJetSSs, aod::DplusChargedMCParticleLevelSPs, aod::DplusChargedMCParticleLevelPRs, aod::DplusCEWSJetSSs, aod::DplusChargedEventWiseSubtractedSPs, aod::DplusChargedEventWiseSubtractedPRs, aod::JTrackDplusSubs>;
 

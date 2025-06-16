@@ -13,20 +13,29 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include <vector>
-#include <string>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetFindingUtilities.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/Core/JetBkgSubUtils.h"
-#include "Framework/runDataProcessing.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetFindingUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <fastjet/JetDefinition.hh>
+#include <fastjet/PseudoJet.hh>
+
+#include <string>
+#include <type_traits>
+#include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -308,34 +317,34 @@ struct RhoEstimatorTask {
       rhoBplusTable(rho, rhoM);
     }
   }
-    PROCESS_SWITCH(RhoEstimatorTask, processBplusCollisions, "Fill rho tables for collisions with Bplus candidates", false);
+  PROCESS_SWITCH(RhoEstimatorTask, processBplusCollisions, "Fill rho tables for collisions with Bplus candidates", false);
 
-    void processBplusMcCollisions(aod::JetMcCollision const&, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesBplusMCP const& candidates)
-    {
-      for (auto& candidate : candidates) {
-        inputParticles.clear();
-        jetfindingutilities::analyseParticles<true>(inputParticles, particleSelection, 1, particles, pdgDatabase, &candidate);
+  void processBplusMcCollisions(aod::JetMcCollision const&, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesBplusMCP const& candidates)
+  {
+    for (auto& candidate : candidates) {
+      inputParticles.clear();
+      jetfindingutilities::analyseParticles<true>(inputParticles, particleSelection, 1, particles, pdgDatabase, &candidate);
 
-        auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
-        rhoBplusMcTable(rho, rhoM);
-      }
+      auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
+      rhoBplusMcTable(rho, rhoM);
     }
-    PROCESS_SWITCH(RhoEstimatorTask, processBplusMcCollisions, "Fill rho tables for collisions with Bplus MCP candidates", false);
+  }
+  PROCESS_SWITCH(RhoEstimatorTask, processBplusMcCollisions, "Fill rho tables for collisions with Bplus MCP candidates", false);
 
-    void processDielectronCollisions(aod::JetCollision const& collision, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesDielectronData const& candidates)
-    {
-      for (auto& candidate : candidates) {
-        if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || collision.centrality() < config.centralityMin || collision.centrality() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
-          rhoDielectronTable(0.0, 0.0);
-          continue;
-        }
-        inputParticles.clear();
-        jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.trackingEfficiency, &candidate);
-
-        auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
-        rhoDielectronTable(rho, rhoM);
+  void processDielectronCollisions(aod::JetCollision const& collision, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesDielectronData const& candidates)
+  {
+    for (auto& candidate : candidates) {
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || collision.centrality() < config.centralityMin || collision.centrality() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
+        rhoDielectronTable(0.0, 0.0);
+        continue;
       }
+      inputParticles.clear();
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.trackingEfficiency, &candidate);
+
+      auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
+      rhoDielectronTable(rho, rhoM);
     }
+  }
   PROCESS_SWITCH(RhoEstimatorTask, processDielectronCollisions, "Fill rho tables for collisions with Dielectron candidates", false);
 
   void processDielectronMcCollisions(aod::JetMcCollision const&, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesDielectronMCP const& candidates)

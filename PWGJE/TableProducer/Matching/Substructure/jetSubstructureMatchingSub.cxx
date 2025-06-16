@@ -15,35 +15,21 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 //
 
-#include <vector>
-
-#include "fastjet/PseudoJet.hh"
-#include "fastjet/ClusterSequenceArea.hh"
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
+#include "PWGJE/Core/JetMatchingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetSubstructure.h"
-#include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetUtilities.h"
-#include "PWGJE/Core/JetSubstructureUtilities.h"
-#include "PWGJE/Core/JetMatchingUtilities.h"
+
+#include "Framework/ASoA.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h> // IWYU pragma: export
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-#include "Framework/runDataProcessing.h"
 
 template <typename JetsBase, typename JetsTag, typename SplittingsBasetoTagMatchingTable, typename SplittingsTagtoBaseMatchingTable, typename PairsBasetoTagMatchingTable, typename PairsTagtoBaseMatchingTable, typename SplittingsBase, typename SplittingsTag, typename PairsBase, typename PairsTag, typename Candidates, typename TracksBase, typename TracksTag, typename ClustersBase>
 struct JetSubstructureMatchingSub {
