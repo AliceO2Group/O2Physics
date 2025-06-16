@@ -38,6 +38,8 @@
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
 #include "PWGHF/HFC/Utils/utilsCorrelations.h"
 
+#include "PWGHF/Core/CentralityEstimation.h"
+
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::constants::physics;
@@ -45,6 +47,9 @@ using namespace o2::constants::math;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::hf_correlations;
+
+using namespace o2::hf_centrality;
+
 ///
 /// Returns deltaPhi values in range [-pi/2., 3.*pi/2.], typically used for correlation studies
 ///
@@ -71,13 +76,21 @@ struct HfCorrelatorLcHadronsSelection {
   HfHelper hfHelper;
   SliceCache cache;
 
-  using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+  //using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+  using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
   using CandidatesLcData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
   using CandidatesLcMcRec = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>;
   using CandidatesLcMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
+ 
 
   // filter on selection of Lc and decay channel Lc->PKPi
   Filter lcFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) != static_cast<uint8_t>(0)) && (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
+
+  template <typename Coll>
+  float evaluateCentralityColl(const Coll& collision)
+  {
+    return o2::hf_centrality::getCentralityColl<Coll>(collision);
+  }
 
   /// Code to select collisions with at least one Lc - for real data and data-like analysis
   void processLcSelectionData(SelCollisions::iterator const& collision,
@@ -87,6 +100,7 @@ struct HfCorrelatorLcHadronsSelection {
     bool isLcFound = true;
     bool isSel8 = true;
     bool isNosameBunchPileUp = true;
+    bool isCentInRange = false;
     if (doSelLcCollision) {
       for (const auto& candidate : candidates) {
         if (std::abs(hfHelper.yLc(candidate)) > yCandMax || candidate.pt() < ptCandMin) {
@@ -97,13 +111,19 @@ struct HfCorrelatorLcHadronsSelection {
         break;
       }
     }
+
+    float cent=evaluateCentralityColl(collision);
+    
     if (useSel8) {
       isSel8 = collision.sel8();
     }
     if (selNoSameBunchPileUpColl) {
       isNosameBunchPileUp = static_cast<bool>(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup));
     }
-    isSelColl = isLcFound && isSel8 && isNosameBunchPileUp;
+    //isSelColl = isLcFound && isSel8 && isNosameBunchPileUp;
+    //lcSel(isSelColl);
+    isCentInRange = cent >= 0. && cent < 100.;  // adjust percentile as needed
+    isSelColl = isLcFound && isSel8 && isNosameBunchPileUp && isCentInRange;
     lcSel(isSelColl);
   }
   PROCESS_SWITCH(HfCorrelatorLcHadronsSelection, processLcSelectionData, "Process Lc Collision Selection Data", true);
@@ -161,6 +181,7 @@ struct HfCorrelatorLcHadronsSelection {
 // Lc-Hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via Mc truth)
 struct HfCorrelatorLcHadrons {
   Produces<aod::LcHadronPair> entryLcHadronPair;
+  Produces<aod::LcHadronPairC> entryLcHadronPairC;
   Produces<aod::LcHadronPairY> entryLcHadronPairY;
   Produces<aod::LcHadronPairTrkPID> entryLcHadronPairTrkPID;
   Produces<aod::LcHadronRecoInfo> entryLcHadronRecoInfo;
@@ -173,7 +194,7 @@ struct HfCorrelatorLcHadrons {
   Produces<aod::Hadron> entryHadron;
   Produces<aod::LcHadronTrkPID> entryTrkPID;
 
-  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
+  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc in mult"};
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "number of events mixed in ME process"};
   Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying Lc efficiency weights"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
@@ -215,7 +236,9 @@ struct HfCorrelatorLcHadrons {
   TRandom3* rnd = new TRandom3(0);
 
   // Event Mixing for the Data Mode
-  using SelCollisionsWithLc = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::LcSelection>>;
+  using SelCollisionsWithLc = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::LcSelection, aod::CentFT0Ms>>;
+
+  //using SelCollisionsWithLc = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::LcSelection>>;
   using SelCollisionsWithLcMc = soa::Filtered<soa::Join<aod::McCollisions, aod::LcSelection, aod::MultsExtraMC>>; // collisionFilter applied
   using CandidatesLcData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfMlLcToPKPi>>;
   // Event Mixing for the MCRec Mode
@@ -244,6 +267,9 @@ struct HfCorrelatorLcHadrons {
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 6000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsMassLc{"binsMassLc", {200, 1.98, 2.58}, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
+  ConfigurableAxis binsCentFT0M{"binsCentFT0M", {100, 0., 100.}, "Centrality percentile (FT0M)"};
+  
+
 
   BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
 
@@ -263,6 +289,7 @@ struct HfCorrelatorLcHadrons {
     AxisSpec axisPoolBin = {binsPoolBin, "PoolBin"};
     AxisSpec axisRapidity = {100, -2, 2, "Rapidity"};
     AxisSpec axisSign = {2, -1, 1, "Sign"};
+    AxisSpec axisCent = {binsCentFT0M,"Centrality"};
 
     registry.add("hPtCand", "Lc,Hadron candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtLc}});
     registry.add("hPtProng0", "Lc,Hadron candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtLc}});
@@ -280,7 +307,9 @@ struct HfCorrelatorLcHadrons {
     registry.add("hZvtx", "z vertex;z vertex;entries", {HistType::kTH1F, {{200, -20., 20.}}});
     registry.add("hLcBin", "Lc selected in pool Bin;pool Bin;entries", {HistType::kTH1F, {{9, 0., 9.}}});
     registry.add("hTracksBin", "Tracks selected in pool Bin;pool Bin;entries", {HistType::kTH1F, {{9, 0., 9.}}});
-    registry.add("hMassLcVsPt", "Lc candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{axisMassLc}, {axisPtLc}}});
+    registry.add("hMassLcVsPtvsmult", "Lc candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH3F, {{axisMassLc}, {axisPtLc}, {axisCent}}});
+
+    //registry.add("hMassLcVsPt", "Lc candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{axisMassLc}, {axisPtLc}}});
     registry.add("hMassLcData", "Lc candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{axisMassLc}}});
     registry.add("hLcPoolBin", "Lc candidates pool bin", {HistType::kTH1F, {axisPoolBin}});
     registry.add("hTracksPoolBin", "Particles associated pool bin", {HistType::kTH1F, {axisPoolBin}});
@@ -323,8 +352,14 @@ struct HfCorrelatorLcHadrons {
     registry.add("hEtaMcGen", "Lc,Hadron particles - MC Gen", {HistType::kTH1F, {axisEta}});
     registry.add("hPhiMcGen", "Lc,Hadron particles - MC Gen", {HistType::kTH1F, {axisPhi}});
     registry.add("hMultFT0AMcGen", "Lc,Hadron multiplicity FT0A - MC Gen", {HistType::kTH1F, {axisMultiplicity}});
-
     corrBinning = {{binsZVtx, binsMultiplicity}, true};
+  }
+
+
+  template <typename Coll>
+  float evaluateCentralityColl(const Coll& collision)
+  {
+    return o2::hf_centrality::getCentralityColl<Coll>(collision);
   }
 
   /// Lc-hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
@@ -350,6 +385,9 @@ struct HfCorrelatorLcHadrons {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int gCollisionId = collision.globalIndex();
     int64_t timeStamp = bc.timestamp();
+
+    float cent=evaluateCentralityColl(collision);
+    float zv=collision.posZ();
 
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
     int nTracks = 0;
@@ -389,8 +427,10 @@ struct HfCorrelatorLcHadrons {
       registry.fill(HIST("hPhi"), RecoDecay::constrainAngle(candidate.phi(), -PIHalf));
       registry.fill(HIST("hY"), hfHelper.yLc(candidate));
       registry.fill(HIST("hLcBin"), poolBin);
+      
       if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
-        registry.fill(HIST("hMassLcVsPt"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), efficiencyWeightLc);
+	registry.fill(HIST("hMassLcVsPtvsmult"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), cent, efficiencyWeightLc);
+	//registry.fill(HIST("hMassLcVsPt"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), efficiencyWeightLc);
         registry.fill(HIST("hMassLcData"), hfHelper.invMassLcToPKPi(candidate), efficiencyWeightLc);
         registry.fill(HIST("hSelectionStatusLcToPKPi"), candidate.isSelLcToPKPi());
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -400,7 +440,8 @@ struct HfCorrelatorLcHadrons {
         entryLc(candidate.phi(), candidate.eta(), candidate.pt() * chargeLc, hfHelper.invMassLcToPKPi(candidate), poolBin, gCollisionId, timeStamp);
       }
       if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
-        registry.fill(HIST("hMassLcVsPt"), hfHelper.invMassLcToPiKP(candidate), candidate.pt(), efficiencyWeightLc);
+	registry.fill(HIST("hMassLcVsPtvsmult"), hfHelper.invMassLcToPiKP(candidate), candidate.pt(), cent, efficiencyWeightLc);
+	//registry.fill(HIST("hMassLcVsPt"), hfHelper.invMassLcToPiKP(candidate), candidate.pt(), efficiencyWeightLc);
         registry.fill(HIST("hMassLcData"), hfHelper.invMassLcToPiKP(candidate), efficiencyWeightLc);
         registry.fill(HIST("hSelectionStatusLcToPiKP"), candidate.isSelLcToPiKP());
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -435,12 +476,14 @@ struct HfCorrelatorLcHadrons {
           }
         }
         if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
-          entryLcHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
+          entryLcHadronPairC(getDeltaPhi(track.phi(), candidate.phi()),
                             track.eta() - candidate.eta(),
                             candidate.pt() * chargeLc,
                             track.pt() * track.sign(),
                             poolBin,
-                            correlationStatus);
+                            correlationStatus,
+			    cent,
+			    zv);
           entryLcHadronPairY(track.y() - hfHelper.yLc(candidate));
           entryLcHadronRecoInfo(hfHelper.invMassLcToPKPi(candidate), false);
           entryLcHadronGenInfo(false, false, 0);
@@ -451,12 +494,14 @@ struct HfCorrelatorLcHadrons {
           }
         }
         if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
-          entryLcHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
+          entryLcHadronPairC(getDeltaPhi(track.phi(), candidate.phi()),
                             track.eta() - candidate.eta(),
                             candidate.pt() * chargeLc,
                             track.pt() * track.sign(),
                             poolBin,
-                            correlationStatus);
+                            correlationStatus,
+			    cent,
+			    zv);
           entryLcHadronPairY(track.y() - hfHelper.yLc(candidate));
           entryLcHadronRecoInfo(hfHelper.invMassLcToPiKP(candidate), false);
           entryLcHadronGenInfo(false, false, 0);
