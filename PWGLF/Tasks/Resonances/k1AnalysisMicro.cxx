@@ -252,11 +252,6 @@ struct K1AnalysisMicro {
     histos.print();
   } // init
 
-  double massKa = MassKaonCharged;
-  double massPi = MassPionCharged;
-  double massRho770 = 0.77526;
-  double massK892 = MassK0Star892;
-
   // PDG code
   int kPDGRho770 = 113;
   int kK1Plus = 10323;
@@ -497,8 +492,8 @@ struct K1AnalysisMicro {
       }
 
       // Resonance reconstruction
-      lDecayDaughter1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
-      lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
+      lDecayDaughter1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), MassPionCharged);
+      lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), MassPionCharged);
       lResonanceSecondary = lDecayDaughter1 + lDecayDaughter2;
 
       if (lResonanceSecondary.Pt() < cMinSecondaryPtCut)
@@ -529,7 +524,7 @@ struct K1AnalysisMicro {
           continue;
 
         // K1 reconstruction
-        lDecayDaughter_bach.SetXYZM(bTrack.px(), bTrack.py(), bTrack.pz(), massKa);
+        lDecayDaughter_bach.SetXYZM(bTrack.px(), bTrack.py(), bTrack.pz(), MassKaonCharged);
         lResonanceK1 = lResonanceSecondary + lDecayDaughter_bach;
 
         // Cuts
