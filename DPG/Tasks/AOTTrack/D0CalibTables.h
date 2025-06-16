@@ -239,7 +239,7 @@ static const std::vector<std::string> labelsPtCand = {
   "pT bin 9"};
 
 // column labels
-static const std::vector<std::string> labelsCutVarCand = {"delta inv. mass", "max d0d0", "max pointing angle", "max pointing angle XY", "min cos pointing angle", "min cos pointing angle xy", "min norm decay length", "min norm decay length XY", "min decay length", "min decay length XY"};
+static const std::vector<std::string> labelsCutVarCand = {"delta inv. mass", "max d0d0", "max pointing angle", "max pointing angle XY", "min cos pointing angle", "min cos pointing angle XY", "min norm decay length", "min norm decay length XY", "min decay length", "min decay length XY"};
 
 static constexpr int NBinsPtMl = 10;
 // default values for the pT bin edges (can be used to configure histogram axis)
