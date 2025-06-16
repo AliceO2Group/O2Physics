@@ -631,7 +631,7 @@ struct HfCorrelatorDsHadrons {
         if (useSel8 && !collision.sel8()) {
           continue;
         }
-        if (std::abs(collision.posZ()) > posZmax) {
+        if (std::abs(collision.posZ()) > zVtxMax) {
           continue;
         }
         if (selNoSameBunchPileUpColl && !(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
