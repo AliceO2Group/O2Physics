@@ -201,6 +201,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCentVZERO] = "%";
   fgVariableNames[kCentFT0C] = "Centrality FT0C";
   fgVariableUnits[kCentFT0C] = "%";
+  fgVariableNames[kCentFT0A] = "Centrality FT0A";
+  fgVariableUnits[kCentFT0A] = "%";
+  fgVariableNames[kCentFT0M] = "Centrality FT0M";
+  fgVariableUnits[kCentFT0M] = "%";
   fgVariableNames[kMultTPC] = "Multiplicity TPC";
   fgVariableUnits[kMultTPC] = "";
   fgVariableNames[kMultFV0A] = "Multiplicity FV0A";
