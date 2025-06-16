@@ -15,31 +15,33 @@
 #ifndef PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_
 #define PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_
 
-#include <cmath>
-#include <vector>
+#include "PWGHF/Utils/utilsPid.h"
+
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/Qvectors.h"
+
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Qvectors.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "MathUtils/Utils.h"
 
-#include "PWGHF/Utils/utilsPid.h"
+#include <cmath>
+#include <vector>
 
 namespace o2::aod
 {
 
 namespace dqppfilter
 {
-DECLARE_SOA_COLUMN(EventFilter, eventFilter, uint64_t); //! Bit-field used for the high level event triggering
+DECLARE_SOA_COLUMN(EventFilter, eventFilter, uint64_t);  //! Bit-field used for the high level event triggering
 DECLARE_SOA_COLUMN(NewBcMultFT0A, newBcMultFT0A, float); //! sum of amplitudes on A side of FT0
 DECLARE_SOA_COLUMN(NewBcMultFT0C, newBcMultFT0C, float); //! sum of amplitudes on C side of FT0
 DECLARE_SOA_COLUMN(NewBcMultFDDA, newBcMultFDDA, float); //! sum of amplitudes on A side of FDD
 DECLARE_SOA_COLUMN(NewBcMultFDDC, newBcMultFDDC, float); //! sum of amplitudes on C side of FDD
 DECLARE_SOA_COLUMN(NewBcMultFV0A, newBcMultFV0A, float); //! sum of amplitudes on A side of FDD
-}
+} // namespace dqppfilter
 
 DECLARE_SOA_TABLE(DQEventFilter, "AOD", "EVENTFILTER", //! Store event-level decisions (DQ high level triggers)
                   dqppfilter::EventFilter);
@@ -64,11 +66,11 @@ namespace reducedevent
 {
 
 // basic event information
-DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
-DECLARE_SOA_BITMAP_COLUMN(Tag, tag, 64);       //!  Bit-field for storing event information (e.g. high level info, cut decisions)
-DECLARE_SOA_COLUMN(MCPosX, mcPosX, float);     //!  MC event position X
-DECLARE_SOA_COLUMN(MCPosY, mcPosY, float);     //!  MC event position Y
-DECLARE_SOA_COLUMN(MCPosZ, mcPosZ, float);     //!  MC event position Z
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                  //!
+DECLARE_SOA_BITMAP_COLUMN(Tag, tag, 64);                                         //!  Bit-field for storing event information (e.g. high level info, cut decisions)
+DECLARE_SOA_COLUMN(MCPosX, mcPosX, float);                                       //!  MC event position X
+DECLARE_SOA_COLUMN(MCPosY, mcPosY, float);                                       //!  MC event position Y
+DECLARE_SOA_COLUMN(MCPosZ, mcPosZ, float);                                       //!  MC event position Z
 DECLARE_SOA_COLUMN(NTPCoccupContribLongA, nTPCoccupContribLongA, int);           //!  TPC pileup occupancy on A side (long time range)
 DECLARE_SOA_COLUMN(NTPCoccupContribLongC, nTPCoccupContribLongC, int);           //!  TPC pileup occupancy on C side (long time range)
 DECLARE_SOA_COLUMN(NTPCoccupMeanTimeLongA, nTPCoccupMeanTimeLongA, float);       //!  TPC pileup mean time on A side (long time range)
@@ -93,51 +95,51 @@ DECLARE_SOA_COLUMN(NTrkBPos, nTrkBPos, int);
 DECLARE_SOA_COLUMN(NTrkBNeg, nTrkBNeg, int);
 DECLARE_SOA_COLUMN(NTrkBAll, nTrkBAll, int);
 
-DECLARE_SOA_COLUMN(Q1ZNAX, q1znax, float);     //!  Q-vector x component, evaluated with ZNA (harmonic 1 and power 1)
-DECLARE_SOA_COLUMN(Q1ZNAY, q1znay, float);     //!  Q-vector y component, evaluated with ZNA (harmonic 1 and power 1)
-DECLARE_SOA_COLUMN(Q1ZNCX, q1zncx, float);     //!  Q-vector x component, evaluated with ZNC (harmonic 1 and power 1)
-DECLARE_SOA_COLUMN(Q1ZNCY, q1zncy, float);     //!  Q-vector y component, evaluated with ZNC (harmonic 1 and power 1)
-DECLARE_SOA_COLUMN(Q1X0A, q1x0a, float);       //!  Q-vector x component, with event eta gap A (harmonic 1 and power 1)
-DECLARE_SOA_COLUMN(Q1Y0A, q1y0a, float);       //!  Q-vector y component, with event eta gap A (harmonic 1 and power 1)
-DECLARE_SOA_COLUMN(Q1X0B, q1x0b, float);       //!  Q-vector x component, with event eta gap B (harmonic 1 and power 1)
-DECLARE_SOA_COLUMN(Q1Y0B, q1y0b, float);       //!  Q-vector y component, with event eta gap B (harmonic 1 and power 1)
-DECLARE_SOA_COLUMN(Q1X0C, q1x0c, float);       //!  Q-vector x component, with event eta gap C (harmonic 1 and power 1)
-DECLARE_SOA_COLUMN(Q1Y0C, q1y0c, float);       //!  Q-vector y component, with event eta gap C (harmonic 1 and power 1)
-DECLARE_SOA_COLUMN(Q2X0A, q2x0a, float);       //!  Q-vector x component, with event eta gap A (harmonic 2 and power 1)
-DECLARE_SOA_COLUMN(Q2Y0A, q2y0a, float);       //!  Q-vector y component, with event eta gap A (harmonic 2 and power 1)
-DECLARE_SOA_COLUMN(Q2X0B, q2x0b, float);       //!  Q-vector x component, with event eta gap B (harmonic 2 and power 1)
-DECLARE_SOA_COLUMN(Q2Y0B, q2y0b, float);       //!  Q-vector y component, with event eta gap B (harmonic 2 and power 1)
-DECLARE_SOA_COLUMN(Q2X0C, q2x0c, float);       //!  Q-vector x component, with event eta gap C (harmonic 2 and power 1)
-DECLARE_SOA_COLUMN(Q2Y0C, q2y0c, float);       //!  Q-vector y component, with event eta gap C (harmonic 2 and power 1)
-DECLARE_SOA_COLUMN(MultA, multa, float);       //!  Event multiplicity eta gap A
-DECLARE_SOA_COLUMN(MultB, multb, float);       //!  Event multiplicity eta gap B
-DECLARE_SOA_COLUMN(MultC, multc, float);       //!  Event multiplicity eta gap C
-DECLARE_SOA_COLUMN(Q3X0A, q3x0a, float);       //!  Q-vector x component, with event eta gap A (harmonic 3 and power 1)
-DECLARE_SOA_COLUMN(Q3Y0A, q3y0a, float);       //!  Q-vector y component, with event eta gap A (harmonic 3 and power 1)
-DECLARE_SOA_COLUMN(Q3X0B, q3x0b, float);       //!  Q-vector x component, with event eta gap B (harmonic 3 and power 1)
-DECLARE_SOA_COLUMN(Q3Y0B, q3y0b, float);       //!  Q-vector y component, with event eta gap B (harmonic 3 and power 1)
-DECLARE_SOA_COLUMN(Q3X0C, q3x0c, float);       //!  Q-vector x component, with event eta gap C (harmonic 3 and power 1)
-DECLARE_SOA_COLUMN(Q3Y0C, q3y0c, float);       //!  Q-vector y component, with event eta gap C (harmonic 3 and power 1)
-DECLARE_SOA_COLUMN(Q4X0A, q4x0a, float);       //!  Q-vector x component, with event eta gap A (harmonic 4 and power 1)
-DECLARE_SOA_COLUMN(Q4Y0A, q4y0a, float);       //!  Q-vector y component, with event eta gap A (harmonic 4 and power 1)
-DECLARE_SOA_COLUMN(Q4X0B, q4x0b, float);       //!  Q-vector x component, with event eta gap B (harmonic 4 and power 1)
-DECLARE_SOA_COLUMN(Q4Y0B, q4y0b, float);       //!  Q-vector y component, with event eta gap B (harmonic 4 and power 1)
-DECLARE_SOA_COLUMN(Q4X0C, q4x0c, float);       //!  Q-vector x component, with event eta gap C (harmonic 4 and power 1)
-DECLARE_SOA_COLUMN(Q4Y0C, q4y0c, float);       //!  Q-vector y component, with event eta gap C (harmonic 4 and power 1)
-DECLARE_SOA_COLUMN(Q42XA, q42xa, float);       //!  Q-vector x component, with event eta gap A (harmonic 4 and power 2)
-DECLARE_SOA_COLUMN(Q42YA, q42ya, float);       //!  Q-vector y component, with event eta gap A (harmonic 4 and power 2)
-DECLARE_SOA_COLUMN(Q23XA, q23xa, float);       //!  Q-vector x component, with event eta gap A (harmonic 2 and power 3)
-DECLARE_SOA_COLUMN(Q23YA, q23ya, float);       //!  Q-vector y component, with event eta gap A (harmonic 2 and power 3)
-DECLARE_SOA_COLUMN(S11A, s11a, float);         //! Weighted multiplicity (p = 1, k = 1)
-DECLARE_SOA_COLUMN(S12A, s12a, float);         //! Weighted multiplicity (p = 1, k = 2)
-DECLARE_SOA_COLUMN(S13A, s13a, float);         //! Weighted multiplicity (p = 1, k = 3)
-DECLARE_SOA_COLUMN(S31A, s31a, float);         //! Weighted multiplicity (p = 3, k = 1)
-DECLARE_SOA_COLUMN(CORR2REF, corr2ref, float); //!  Ref Flow correlator <2>
+DECLARE_SOA_COLUMN(Q1ZNAX, q1znax, float);                 //!  Q-vector x component, evaluated with ZNA (harmonic 1 and power 1)
+DECLARE_SOA_COLUMN(Q1ZNAY, q1znay, float);                 //!  Q-vector y component, evaluated with ZNA (harmonic 1 and power 1)
+DECLARE_SOA_COLUMN(Q1ZNCX, q1zncx, float);                 //!  Q-vector x component, evaluated with ZNC (harmonic 1 and power 1)
+DECLARE_SOA_COLUMN(Q1ZNCY, q1zncy, float);                 //!  Q-vector y component, evaluated with ZNC (harmonic 1 and power 1)
+DECLARE_SOA_COLUMN(Q1X0A, q1x0a, float);                   //!  Q-vector x component, with event eta gap A (harmonic 1 and power 1)
+DECLARE_SOA_COLUMN(Q1Y0A, q1y0a, float);                   //!  Q-vector y component, with event eta gap A (harmonic 1 and power 1)
+DECLARE_SOA_COLUMN(Q1X0B, q1x0b, float);                   //!  Q-vector x component, with event eta gap B (harmonic 1 and power 1)
+DECLARE_SOA_COLUMN(Q1Y0B, q1y0b, float);                   //!  Q-vector y component, with event eta gap B (harmonic 1 and power 1)
+DECLARE_SOA_COLUMN(Q1X0C, q1x0c, float);                   //!  Q-vector x component, with event eta gap C (harmonic 1 and power 1)
+DECLARE_SOA_COLUMN(Q1Y0C, q1y0c, float);                   //!  Q-vector y component, with event eta gap C (harmonic 1 and power 1)
+DECLARE_SOA_COLUMN(Q2X0A, q2x0a, float);                   //!  Q-vector x component, with event eta gap A (harmonic 2 and power 1)
+DECLARE_SOA_COLUMN(Q2Y0A, q2y0a, float);                   //!  Q-vector y component, with event eta gap A (harmonic 2 and power 1)
+DECLARE_SOA_COLUMN(Q2X0B, q2x0b, float);                   //!  Q-vector x component, with event eta gap B (harmonic 2 and power 1)
+DECLARE_SOA_COLUMN(Q2Y0B, q2y0b, float);                   //!  Q-vector y component, with event eta gap B (harmonic 2 and power 1)
+DECLARE_SOA_COLUMN(Q2X0C, q2x0c, float);                   //!  Q-vector x component, with event eta gap C (harmonic 2 and power 1)
+DECLARE_SOA_COLUMN(Q2Y0C, q2y0c, float);                   //!  Q-vector y component, with event eta gap C (harmonic 2 and power 1)
+DECLARE_SOA_COLUMN(MultA, multa, float);                   //!  Event multiplicity eta gap A
+DECLARE_SOA_COLUMN(MultB, multb, float);                   //!  Event multiplicity eta gap B
+DECLARE_SOA_COLUMN(MultC, multc, float);                   //!  Event multiplicity eta gap C
+DECLARE_SOA_COLUMN(Q3X0A, q3x0a, float);                   //!  Q-vector x component, with event eta gap A (harmonic 3 and power 1)
+DECLARE_SOA_COLUMN(Q3Y0A, q3y0a, float);                   //!  Q-vector y component, with event eta gap A (harmonic 3 and power 1)
+DECLARE_SOA_COLUMN(Q3X0B, q3x0b, float);                   //!  Q-vector x component, with event eta gap B (harmonic 3 and power 1)
+DECLARE_SOA_COLUMN(Q3Y0B, q3y0b, float);                   //!  Q-vector y component, with event eta gap B (harmonic 3 and power 1)
+DECLARE_SOA_COLUMN(Q3X0C, q3x0c, float);                   //!  Q-vector x component, with event eta gap C (harmonic 3 and power 1)
+DECLARE_SOA_COLUMN(Q3Y0C, q3y0c, float);                   //!  Q-vector y component, with event eta gap C (harmonic 3 and power 1)
+DECLARE_SOA_COLUMN(Q4X0A, q4x0a, float);                   //!  Q-vector x component, with event eta gap A (harmonic 4 and power 1)
+DECLARE_SOA_COLUMN(Q4Y0A, q4y0a, float);                   //!  Q-vector y component, with event eta gap A (harmonic 4 and power 1)
+DECLARE_SOA_COLUMN(Q4X0B, q4x0b, float);                   //!  Q-vector x component, with event eta gap B (harmonic 4 and power 1)
+DECLARE_SOA_COLUMN(Q4Y0B, q4y0b, float);                   //!  Q-vector y component, with event eta gap B (harmonic 4 and power 1)
+DECLARE_SOA_COLUMN(Q4X0C, q4x0c, float);                   //!  Q-vector x component, with event eta gap C (harmonic 4 and power 1)
+DECLARE_SOA_COLUMN(Q4Y0C, q4y0c, float);                   //!  Q-vector y component, with event eta gap C (harmonic 4 and power 1)
+DECLARE_SOA_COLUMN(Q42XA, q42xa, float);                   //!  Q-vector x component, with event eta gap A (harmonic 4 and power 2)
+DECLARE_SOA_COLUMN(Q42YA, q42ya, float);                   //!  Q-vector y component, with event eta gap A (harmonic 4 and power 2)
+DECLARE_SOA_COLUMN(Q23XA, q23xa, float);                   //!  Q-vector x component, with event eta gap A (harmonic 2 and power 3)
+DECLARE_SOA_COLUMN(Q23YA, q23ya, float);                   //!  Q-vector y component, with event eta gap A (harmonic 2 and power 3)
+DECLARE_SOA_COLUMN(S11A, s11a, float);                     //! Weighted multiplicity (p = 1, k = 1)
+DECLARE_SOA_COLUMN(S12A, s12a, float);                     //! Weighted multiplicity (p = 1, k = 2)
+DECLARE_SOA_COLUMN(S13A, s13a, float);                     //! Weighted multiplicity (p = 1, k = 3)
+DECLARE_SOA_COLUMN(S31A, s31a, float);                     //! Weighted multiplicity (p = 3, k = 1)
+DECLARE_SOA_COLUMN(CORR2REF, corr2ref, float);             //!  Ref Flow correlator <2>
 DECLARE_SOA_COLUMN(CORR2REFetagap, corr2refetagap, float); //!  Ref Flow correlator <2>
-DECLARE_SOA_COLUMN(CORR4REF, corr4ref, float); //!  Ref Flow correlator <4>
-DECLARE_SOA_COLUMN(M11REF, m11ref, float);     //!  Weighted multiplicity of <<2>> for reference flow
-DECLARE_SOA_COLUMN(M1111REF, m1111ref, float); //!  Weighted multiplicity of <<4>> for reference flow
-DECLARE_SOA_COLUMN(M11REFetagap, m11refetagap, float); //!  Weighted multiplicity of <<2>>  etagap for reference flow
+DECLARE_SOA_COLUMN(CORR4REF, corr4ref, float);             //!  Ref Flow correlator <4>
+DECLARE_SOA_COLUMN(M11REF, m11ref, float);                 //!  Weighted multiplicity of <<2>> for reference flow
+DECLARE_SOA_COLUMN(M1111REF, m1111ref, float);             //!  Weighted multiplicity of <<4>> for reference flow
+DECLARE_SOA_COLUMN(M11REFetagap, m11refetagap, float);     //!  Weighted multiplicity of <<2>>  etagap for reference flow
 } // namespace reducedevent
 
 DECLARE_SOA_TABLE_STAGED(ReducedEvents, "REDUCEDEVENT", //!   Main event information table
@@ -153,10 +155,10 @@ DECLARE_SOA_TABLE(ReducedEventsExtended_000, "AOD", "REEXTENDED", //!  Extended 
                   cent::CentFT0C);
 
 DECLARE_SOA_TABLE_VERSIONED(ReducedEventsExtended_001, "AOD", "REEXTENDED", 1, //!  Extended event information
-                  bc::GlobalBC, evsel::Alias, evsel::Selection, timestamp::Timestamp, cent::CentRun2V0M,
-                  mult::MultTPC, mult::MultFV0A, mult::MultFV0C, mult::MultFT0A, mult::MultFT0C,
-                  mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC, mult::MultTracklets, mult::MultNTracksPV,
-                  cent::CentFT0C, cent::CentFT0A, cent::CentFT0M);
+                            bc::GlobalBC, evsel::Alias, evsel::Selection, timestamp::Timestamp, cent::CentRun2V0M,
+                            mult::MultTPC, mult::MultFV0A, mult::MultFV0C, mult::MultFT0A, mult::MultFT0C,
+                            mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC, mult::MultTracklets, mult::MultNTracksPV,
+                            cent::CentFT0C, cent::CentFT0A, cent::CentFT0M);
 
 using ReducedEventsExtended = ReducedEventsExtended_001;
 
@@ -622,42 +624,42 @@ DECLARE_SOA_COLUMN(Vt2, vt2, float); //! Production vertex time
 DECLARE_SOA_COLUMN(IsAmbig1, isAmbig1, int); //!
 DECLARE_SOA_COLUMN(IsAmbig2, isAmbig2, int); //!
 
-DECLARE_SOA_COLUMN(FwdDcaX1, fwdDcaX1, float); //! X component of forward DCA
-DECLARE_SOA_COLUMN(FwdDcaY1, fwdDcaY1, float); //! Y component of forward DCA
-DECLARE_SOA_COLUMN(FwdDcaX2, fwdDcaX2, float); //! X component of forward DCA
-DECLARE_SOA_COLUMN(FwdDcaY2, fwdDcaY2, float); //! Y component of forward DCA
-DECLARE_SOA_COLUMN(ITSNCls1, itsNCls1, int);   //! Number of ITS clusters
+DECLARE_SOA_COLUMN(FwdDcaX1, fwdDcaX1, float);               //! X component of forward DCA
+DECLARE_SOA_COLUMN(FwdDcaY1, fwdDcaY1, float);               //! Y component of forward DCA
+DECLARE_SOA_COLUMN(FwdDcaX2, fwdDcaX2, float);               //! X component of forward DCA
+DECLARE_SOA_COLUMN(FwdDcaY2, fwdDcaY2, float);               //! Y component of forward DCA
+DECLARE_SOA_COLUMN(ITSNCls1, itsNCls1, int);                 //! Number of ITS clusters
 DECLARE_SOA_COLUMN(ITSClusterMap1, itsClusterMap1, uint8_t); //! ITS clusters map
 DECLARE_SOA_COLUMN(ITSChi2NCl1, itsChi2NCl1, float);         //! ITS chi2/Ncls
-DECLARE_SOA_COLUMN(TPCNClsFound1, tpcNClsFound1, float); //! Number of TPC clusters found
-DECLARE_SOA_COLUMN(TPCNClsCR1, tpcNClsCR1, float);       //! Number of TPC crossed rows
-DECLARE_SOA_COLUMN(TPCChi2NCl1, tpcChi2NCl1, float);     //! TPC chi2/Ncls
-DECLARE_SOA_COLUMN(DcaXY1, dcaXY1, float);               //! DCA in XY plane
-DECLARE_SOA_COLUMN(DcaZ1, dcaZ1, float);                 //! DCA in Z
-DECLARE_SOA_COLUMN(TPCSignal1, tpcSignal1, float);       //! TPC dE/dx signal
-DECLARE_SOA_COLUMN(TPCNSigmaEl1, tpcNSigmaEl1, float);   //! TPC nSigma electron
-DECLARE_SOA_COLUMN(TPCNSigmaPi1, tpcNSigmaPi1, float);   //! TPC nSigma pion
-DECLARE_SOA_COLUMN(TPCNSigmaPr1, tpcNSigmaPr1, float);   //! TPC nSigma proton
-DECLARE_SOA_COLUMN(TOFBeta1, tofBeta1, float);           //! TOF beta
-DECLARE_SOA_COLUMN(TOFNSigmaEl1, tofNSigmaEl1, float);   //! TOF nSigma electron
-DECLARE_SOA_COLUMN(TOFNSigmaPi1, tofNSigmaPi1, float);   //! TOF nSigma pion
-DECLARE_SOA_COLUMN(TOFNSigmaPr1, tofNSigmaPr1, float);   //! TOF nSigma proton
-DECLARE_SOA_COLUMN(ITSNCls2, itsNCls2, int);             //! Number of ITS clusters
+DECLARE_SOA_COLUMN(TPCNClsFound1, tpcNClsFound1, float);     //! Number of TPC clusters found
+DECLARE_SOA_COLUMN(TPCNClsCR1, tpcNClsCR1, float);           //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(TPCChi2NCl1, tpcChi2NCl1, float);         //! TPC chi2/Ncls
+DECLARE_SOA_COLUMN(DcaXY1, dcaXY1, float);                   //! DCA in XY plane
+DECLARE_SOA_COLUMN(DcaZ1, dcaZ1, float);                     //! DCA in Z
+DECLARE_SOA_COLUMN(TPCSignal1, tpcSignal1, float);           //! TPC dE/dx signal
+DECLARE_SOA_COLUMN(TPCNSigmaEl1, tpcNSigmaEl1, float);       //! TPC nSigma electron
+DECLARE_SOA_COLUMN(TPCNSigmaPi1, tpcNSigmaPi1, float);       //! TPC nSigma pion
+DECLARE_SOA_COLUMN(TPCNSigmaPr1, tpcNSigmaPr1, float);       //! TPC nSigma proton
+DECLARE_SOA_COLUMN(TOFBeta1, tofBeta1, float);               //! TOF beta
+DECLARE_SOA_COLUMN(TOFNSigmaEl1, tofNSigmaEl1, float);       //! TOF nSigma electron
+DECLARE_SOA_COLUMN(TOFNSigmaPi1, tofNSigmaPi1, float);       //! TOF nSigma pion
+DECLARE_SOA_COLUMN(TOFNSigmaPr1, tofNSigmaPr1, float);       //! TOF nSigma proton
+DECLARE_SOA_COLUMN(ITSNCls2, itsNCls2, int);                 //! Number of ITS clusters
 DECLARE_SOA_COLUMN(ITSClusterMap2, itsClusterMap2, uint8_t); //! ITS clusters map
 DECLARE_SOA_COLUMN(ITSChi2NCl2, itsChi2NCl2, float);         //! ITS chi2/Ncls
-DECLARE_SOA_COLUMN(TPCNClsFound2, tpcNClsFound2, float); //! Number of TPC clusters found
-DECLARE_SOA_COLUMN(TPCNClsCR2, tpcNClsCR2, float);       //! Number of TPC crossed rows
-DECLARE_SOA_COLUMN(TPCChi2NCl2, tpcChi2NCl2, float);     //! TPC chi2/Ncls
-DECLARE_SOA_COLUMN(DcaXY2, dcaXY2, float);               //! DCA in XY plane
-DECLARE_SOA_COLUMN(DcaZ2, dcaZ2, float);                 //! DCA in Z
-DECLARE_SOA_COLUMN(TPCSignal2, tpcSignal2, float);       //! TPC dE/dx signal
-DECLARE_SOA_COLUMN(TPCNSigmaEl2, tpcNSigmaEl2, float);   //! TPC nSigma electron
-DECLARE_SOA_COLUMN(TPCNSigmaPi2, tpcNSigmaPi2, float);   //! TPC nSigma pion
-DECLARE_SOA_COLUMN(TPCNSigmaPr2, tpcNSigmaPr2, float);   //! TPC nSigma proton
-DECLARE_SOA_COLUMN(TOFBeta2, tofBeta2, float);           //! TOF beta
-DECLARE_SOA_COLUMN(TOFNSigmaEl2, tofNSigmaEl2, float);   //! TOF nSigma electron
-DECLARE_SOA_COLUMN(TOFNSigmaPi2, tofNSigmaPi2, float);   //! TOF nSigma pion
-DECLARE_SOA_COLUMN(TOFNSigmaPr2, tofNSigmaPr2, float);   //! TOF nSigma proton
+DECLARE_SOA_COLUMN(TPCNClsFound2, tpcNClsFound2, float);     //! Number of TPC clusters found
+DECLARE_SOA_COLUMN(TPCNClsCR2, tpcNClsCR2, float);           //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(TPCChi2NCl2, tpcChi2NCl2, float);         //! TPC chi2/Ncls
+DECLARE_SOA_COLUMN(DcaXY2, dcaXY2, float);                   //! DCA in XY plane
+DECLARE_SOA_COLUMN(DcaZ2, dcaZ2, float);                     //! DCA in Z
+DECLARE_SOA_COLUMN(TPCSignal2, tpcSignal2, float);           //! TPC dE/dx signal
+DECLARE_SOA_COLUMN(TPCNSigmaEl2, tpcNSigmaEl2, float);       //! TPC nSigma electron
+DECLARE_SOA_COLUMN(TPCNSigmaPi2, tpcNSigmaPi2, float);       //! TPC nSigma pion
+DECLARE_SOA_COLUMN(TPCNSigmaPr2, tpcNSigmaPr2, float);       //! TPC nSigma proton
+DECLARE_SOA_COLUMN(TOFBeta2, tofBeta2, float);               //! TOF beta
+DECLARE_SOA_COLUMN(TOFNSigmaEl2, tofNSigmaEl2, float);       //! TOF nSigma electron
+DECLARE_SOA_COLUMN(TOFNSigmaPi2, tofNSigmaPi2, float);       //! TOF nSigma pion
+DECLARE_SOA_COLUMN(TOFNSigmaPr2, tofNSigmaPr2, float);       //! TOF nSigma proton
 
 DECLARE_SOA_COLUMN(DCAxyzTrk0KF, dcaxyztrk0KF, float); //! 3D DCA to primary vertex of the first track
 DECLARE_SOA_COLUMN(DCAxyzTrk1KF, dcaxyztrk1KF, float); //! 3D DCA to primary vertex of the second track
@@ -717,16 +719,16 @@ DECLARE_SOA_COLUMN(M01POI, m01poi, float);                               //! POI
 DECLARE_SOA_COLUMN(M0111POI, m0111poi, float);                           //! POI event weight for <4'>
 DECLARE_SOA_COLUMN(MultDimuons, multdimuons, int);                       //! Dimuon multiplicity
 DECLARE_SOA_COLUMN(CentFT0C, centft0c, float);                           //! Centrality information from FT0C
-DECLARE_SOA_COLUMN(CentFT0A, centft0a, float);                           //! Centrality information from FT0A
-DECLARE_SOA_COLUMN(CentFT0M, centft0m, float);                           //! Centrality information from FT0M
-DECLARE_SOA_COLUMN(CollisionId, collisionId, int32_t);                   //!
-DECLARE_SOA_COLUMN(IsFirst, isfirst, int);                               //! Flag for the first dilepton in the collision
-DECLARE_SOA_COLUMN(DCAxyzBetweenTrksKF, dcaxyzbetweentrksKF, float);     //! DCAxyz between the two tracks
-DECLARE_SOA_COLUMN(DCAxyBetweenTrksKF, dcaxybetweentrksKF, float);       //! DCAxy between the two tracks
-DECLARE_SOA_COLUMN(MassKFGeo, massKFGeo, float);                         //! Pair mass from KFParticle
-DECLARE_SOA_COLUMN(CosPAKFGeo, cosPAKFGeo, float);                       //! Cosine of the pointing angle from KFParticle
-DECLARE_SOA_COLUMN(Chi2OverNDFKFGeo, chi2overndfKFGeo, float);           //! Chi2 over NDF from KFParticle
-DECLARE_SOA_COLUMN(DecayLengthKFGeo, decaylengthKFGeo, float);           //! Decay length from KFParticle
+// DECLARE_SOA_COLUMN(CentFT0A, centft0a, float);                           //! Centrality information from FT0A
+// DECLARE_SOA_COLUMN(CentFT0M, centft0m, float);                           //! Centrality information from FT0M
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int32_t);                                   //!
+DECLARE_SOA_COLUMN(IsFirst, isfirst, int);                                               //! Flag for the first dilepton in the collision
+DECLARE_SOA_COLUMN(DCAxyzBetweenTrksKF, dcaxyzbetweentrksKF, float);                     //! DCAxyz between the two tracks
+DECLARE_SOA_COLUMN(DCAxyBetweenTrksKF, dcaxybetweentrksKF, float);                       //! DCAxy between the two tracks
+DECLARE_SOA_COLUMN(MassKFGeo, massKFGeo, float);                                         //! Pair mass from KFParticle
+DECLARE_SOA_COLUMN(CosPAKFGeo, cosPAKFGeo, float);                                       //! Cosine of the pointing angle from KFParticle
+DECLARE_SOA_COLUMN(Chi2OverNDFKFGeo, chi2overndfKFGeo, float);                           //! Chi2 over NDF from KFParticle
+DECLARE_SOA_COLUMN(DecayLengthKFGeo, decaylengthKFGeo, float);                           //! Decay length from KFParticle
 DECLARE_SOA_COLUMN(DecayLengthOverErrKFGeo, decaylengthovererrKFGeo, float);             //! Decay length over error from KFParticle
 DECLARE_SOA_COLUMN(DecayLengthXYKFGeo, decaylengthxyKFGeo, float);                       //! Decay length XY from KFParticle
 DECLARE_SOA_COLUMN(DecayLengthXYOverErrKFGeo, decaylengthxyovererrKFGeo, float);         //! Decay length XY over error from KFParticle
