@@ -871,7 +871,7 @@ DECLARE_SOA_TABLE(HfMcRecRedD0Pis, "AOD", "HFMCRECREDD0PI", //! Table with recon
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfMcRecRedJPKs, "AOD", "HFMCRECREDJPK", //! Table with reconstructed MC information on J/PsiK(<-B+) pairs for reduced workflow
                   hf_cand_bplus_reduced::JpsiId,
-                  hf_cand_bplus_reduced::Prong1Id,
+                  hf_cand_bplus_reduced::BachKaId,
                   hf_cand_bplus::FlagMcMatchRec,
                   hf_cand_bplus::ChannelMcMatchRec,
                   hf_cand_bplus::FlagWrongCollision,
