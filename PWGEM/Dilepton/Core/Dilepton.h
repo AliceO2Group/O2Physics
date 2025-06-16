@@ -17,47 +17,48 @@
 #ifndef PWGEM_DILEPTON_CORE_DILEPTON_H_
 #define PWGEM_DILEPTON_CORE_DILEPTON_H_
 
-#include <array>
-#include <iterator>
-#include <string>
-#include <algorithm>
-#include <map>
-#include <vector>
-#include <tuple>
-#include <utility>
-#include "TH1D.h"
-#include "TString.h"
-#include "Math/Vector4D.h"
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "DataFormatsParameters/GRPECSObject.h"
-#include "MathUtils/Utils.h"
-
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Tools/ML/MlResponse.h"
-#include "Common/CCDB/RCTSelectionFlags.h"
-
-#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Core/DielectronCut.h"
 #include "PWGEM/Dilepton/Core/DimuonCut.h"
 #include "PWGEM/Dilepton/Core/EMEventCut.h"
-#include "PWGEM/Dilepton/Utils/EMTrack.h"
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Utils/EMFwdTrack.h"
-#include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
-#include "PWGEM/Dilepton/Utils/EventHistograms.h"
+#include "PWGEM/Dilepton/Utils/EMTrack.h"
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
-#include "PWGEM/Dilepton/Utils/PairUtilities.h"
+#include "PWGEM/Dilepton/Utils/EventHistograms.h"
+#include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
 #include "PWGEM/Dilepton/Utils/MlResponseDielectronSingleTrack.h"
+#include "PWGEM/Dilepton/Utils/PairUtilities.h"
+
+#include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Tools/ML/MlResponse.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/LHCConstants.h"
+#include "DataFormatsParameters/GRPECSObject.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "MathUtils/Utils.h"
+
+#include "Math/Vector4D.h"
+#include "TH1D.h"
+#include "TString.h"
+
+#include <algorithm>
+#include <array>
+#include <iterator>
+#include <map>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -139,7 +140,8 @@ struct Dilepton {
     Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", false, "require No time frame border in event cut"};
     Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", false, "require no ITS readout frame border in event cut"};
     Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
-    Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"}; // ITS-TPC matched track contributes PV.
+    Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"};             // ITS-TPC matched track contributes PV.
+    Configurable<bool> cfgRequireVertexTOFmatched{"cfgRequireVertexTOFmatched", false, "require Vertex TOFmatched in event cut"}; // ITS-TPC-TOF matched track contributes PV.
     Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
     Configurable<int> cfgTrackOccupancyMin{"cfgTrackOccupancyMin", -2, "min. occupancy"};
     Configurable<int> cfgTrackOccupancyMax{"cfgTrackOccupancyMax", 1000000000, "max. occupancy"};
@@ -642,6 +644,7 @@ struct Dilepton {
     fEMEventCut.SetRequireNoITSROFB(eventcuts.cfgRequireNoITSROFB);
     fEMEventCut.SetRequireNoSameBunchPileup(eventcuts.cfgRequireNoSameBunchPileup);
     fEMEventCut.SetRequireVertexITSTPC(eventcuts.cfgRequireVertexITSTPC);
+    fEMEventCut.SetRequireVertexTOFmatched(eventcuts.cfgRequireVertexTOFmatched);
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetRequireNoCollInTimeRangeStandard(eventcuts.cfgRequireNoCollInTimeRangeStandard);
     fEMEventCut.SetRequireNoCollInTimeRangeStrict(eventcuts.cfgRequireNoCollInTimeRangeStrict);
