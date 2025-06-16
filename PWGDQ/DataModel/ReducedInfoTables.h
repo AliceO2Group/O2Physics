@@ -675,52 +675,50 @@ DECLARE_SOA_COLUMN(DeviationxyTrk1KF, deviationxyTrk1KF, float); //! 2D chi2 dev
 // pair information
 namespace reducedpair
 {
-DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent);                    //!
-DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, ReducedTracks, "_0"); //! Index to first prong
-DECLARE_SOA_INDEX_COLUMN_FULL(Index1, index1, int, ReducedTracks, "_1"); //! Index to second prong
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, Tracks, "_0");        //! Index of first prong in Tracks table
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, Tracks, "_1");        //! Index of second prong in Tracks table
-DECLARE_SOA_BITMAP_COLUMN(EventSelection, evSelection, 8);               //! Event selection bits (ambiguity, splitting candidate)
-DECLARE_SOA_COLUMN(Mass, mass, float);                                   //!
-DECLARE_SOA_COLUMN(Pt, pt, float);                                       //!
-DECLARE_SOA_COLUMN(Eta, eta, float);                                     //!
-DECLARE_SOA_COLUMN(Phi, phi, float);                                     //!
-DECLARE_SOA_COLUMN(Sign, sign, int);                                     //!
-DECLARE_SOA_BITMAP_COLUMN(FilterMap, filterMap, 32);                     //!
-DECLARE_SOA_BITMAP_COLUMN(PairFilterMap, pairFilterMap, 32);             //!
-DECLARE_SOA_BITMAP_COLUMN(CommonFilterMap, commonFilterMap, 32);         //!
-DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t);                    //!
-DECLARE_SOA_COLUMN(Tauz, tauz, float);                                   //! Longitudinal pseudo-proper time of lepton pair (in ns)
-DECLARE_SOA_COLUMN(TauzErr, tauzErr, float);                             //! Error on longitudinal pseudo-proper time of lepton pair (in ns)
-DECLARE_SOA_COLUMN(VertexPz, vertexPz, float);                           //! Longitudinal projection of impulsion
-DECLARE_SOA_COLUMN(SVertex, sVertex, float);                             //! Secondary vertex of lepton pair
-DECLARE_SOA_COLUMN(Tauxy, tauxy, float);                                 //! Transverse pseudo-proper time of lepton pair (in ns)
-DECLARE_SOA_COLUMN(TauxyErr, tauxyErr, float);                           //! Error on transverse pseudo-proper time of lepton pair (in ns)
-DECLARE_SOA_COLUMN(Lz, lz, float);                                       //! Longitudinal projection of decay length
-DECLARE_SOA_COLUMN(Lxy, lxy, float);                                     //! Transverse projection of decay length
-DECLARE_SOA_COLUMN(Chi2pca, chi2pca, float);                             //! Chi2 for PCA of the dilepton
-DECLARE_SOA_COLUMN(CosPointingAngle, cosPointingAngle, float);           //! Cosine of the pointing angle
-DECLARE_SOA_COLUMN(U2Q2, u2q2, float);                                   //! Scalar product between unitary vector with event flow vector (harmonic 2)
-DECLARE_SOA_COLUMN(U3Q3, u3q3, float);                                   //! Scalar product between unitary vector with event flow vector (harmonic 3)
-DECLARE_SOA_COLUMN(Cos2DeltaPhi, cos2deltaphi, float);                   //! Cosinus term using event plane angle (harmonic 2)
-DECLARE_SOA_COLUMN(Cos3DeltaPhi, cos3deltaphi, float);                   //! Cosinus term using event plane angle (harmonic 3)
-DECLARE_SOA_COLUMN(R2SP_AB, r2spab, float);                              //! Event plane resolution for SP method n=2 (A,B) TPC-FT0A
-DECLARE_SOA_COLUMN(R2SP_AC, r2spac, float);                              //! Event plane resolution for SP method n=2 (A,C) TPC-FT0C
-DECLARE_SOA_COLUMN(R2SP_BC, r2spbc, float);                              //! Event plane resolution for SP method n=2 (B,C) FT0A-FT0C
-DECLARE_SOA_COLUMN(R3SP, r3sp, float);                                   //! Event plane resolution for SP method n=3
-DECLARE_SOA_COLUMN(R2EP, r2ep, float);                                   //! Event plane resolution for EP method n=2
-DECLARE_SOA_COLUMN(R2EP_AB, r2epab, float);                              //! Event plane resolution for EP method n=2 (A,B) TPC-FT0A
-DECLARE_SOA_COLUMN(R2EP_AC, r2epac, float);                              //! Event plane resolution for EP method n=2 (A,C) TPC-FT0C
-DECLARE_SOA_COLUMN(R2EP_BC, r2epbc, float);                              //! Event plane resolution for EP method n=2 (B,C) FT0A-FT0C
-DECLARE_SOA_COLUMN(R3EP, r3ep, float);                                   //! Event plane resolution for EP method n=3
-DECLARE_SOA_COLUMN(CORR2POI, corr2poi, float);                           //! POI FLOW CORRELATOR <2'>
-DECLARE_SOA_COLUMN(CORR4POI, corr4poi, float);                           //! POI FLOW CORRELATOR <4'>
-DECLARE_SOA_COLUMN(M01POI, m01poi, float);                               //! POI event weight for <2'>
-DECLARE_SOA_COLUMN(M0111POI, m0111poi, float);                           //! POI event weight for <4'>
-DECLARE_SOA_COLUMN(MultDimuons, multdimuons, int);                       //! Dimuon multiplicity
-DECLARE_SOA_COLUMN(CentFT0C, centft0c, float);                           //! Centrality information from FT0C
-// DECLARE_SOA_COLUMN(CentFT0A, centft0a, float);                           //! Centrality information from FT0A
-// DECLARE_SOA_COLUMN(CentFT0M, centft0m, float);                           //! Centrality information from FT0M
+DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent);                                    //!
+DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, ReducedTracks, "_0");                 //! Index to first prong
+DECLARE_SOA_INDEX_COLUMN_FULL(Index1, index1, int, ReducedTracks, "_1");                 //! Index to second prong
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, Tracks, "_0");                        //! Index of first prong in Tracks table
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, Tracks, "_1");                        //! Index of second prong in Tracks table
+DECLARE_SOA_BITMAP_COLUMN(EventSelection, evSelection, 8);                               //! Event selection bits (ambiguity, splitting candidate)
+DECLARE_SOA_COLUMN(Mass, mass, float);                                                   //!
+DECLARE_SOA_COLUMN(Pt, pt, float);                                                       //!
+DECLARE_SOA_COLUMN(Eta, eta, float);                                                     //!
+DECLARE_SOA_COLUMN(Phi, phi, float);                                                     //!
+DECLARE_SOA_COLUMN(Sign, sign, int);                                                     //!
+DECLARE_SOA_BITMAP_COLUMN(FilterMap, filterMap, 32);                                     //!
+DECLARE_SOA_BITMAP_COLUMN(PairFilterMap, pairFilterMap, 32);                             //!
+DECLARE_SOA_BITMAP_COLUMN(CommonFilterMap, commonFilterMap, 32);                         //!
+DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t);                                    //!
+DECLARE_SOA_COLUMN(Tauz, tauz, float);                                                   //! Longitudinal pseudo-proper time of lepton pair (in ns)
+DECLARE_SOA_COLUMN(TauzErr, tauzErr, float);                                             //! Error on longitudinal pseudo-proper time of lepton pair (in ns)
+DECLARE_SOA_COLUMN(VertexPz, vertexPz, float);                                           //! Longitudinal projection of impulsion
+DECLARE_SOA_COLUMN(SVertex, sVertex, float);                                             //! Secondary vertex of lepton pair
+DECLARE_SOA_COLUMN(Tauxy, tauxy, float);                                                 //! Transverse pseudo-proper time of lepton pair (in ns)
+DECLARE_SOA_COLUMN(TauxyErr, tauxyErr, float);                                           //! Error on transverse pseudo-proper time of lepton pair (in ns)
+DECLARE_SOA_COLUMN(Lz, lz, float);                                                       //! Longitudinal projection of decay length
+DECLARE_SOA_COLUMN(Lxy, lxy, float);                                                     //! Transverse projection of decay length
+DECLARE_SOA_COLUMN(Chi2pca, chi2pca, float);                                             //! Chi2 for PCA of the dilepton
+DECLARE_SOA_COLUMN(CosPointingAngle, cosPointingAngle, float);                           //! Cosine of the pointing angle
+DECLARE_SOA_COLUMN(U2Q2, u2q2, float);                                                   //! Scalar product between unitary vector with event flow vector (harmonic 2)
+DECLARE_SOA_COLUMN(U3Q3, u3q3, float);                                                   //! Scalar product between unitary vector with event flow vector (harmonic 3)
+DECLARE_SOA_COLUMN(Cos2DeltaPhi, cos2deltaphi, float);                                   //! Cosinus term using event plane angle (harmonic 2)
+DECLARE_SOA_COLUMN(Cos3DeltaPhi, cos3deltaphi, float);                                   //! Cosinus term using event plane angle (harmonic 3)
+DECLARE_SOA_COLUMN(R2SP_AB, r2spab, float);                                              //! Event plane resolution for SP method n=2 (A,B) TPC-FT0A
+DECLARE_SOA_COLUMN(R2SP_AC, r2spac, float);                                              //! Event plane resolution for SP method n=2 (A,C) TPC-FT0C
+DECLARE_SOA_COLUMN(R2SP_BC, r2spbc, float);                                              //! Event plane resolution for SP method n=2 (B,C) FT0A-FT0C
+DECLARE_SOA_COLUMN(R3SP, r3sp, float);                                                   //! Event plane resolution for SP method n=3
+DECLARE_SOA_COLUMN(R2EP, r2ep, float);                                                   //! Event plane resolution for EP method n=2
+DECLARE_SOA_COLUMN(R2EP_AB, r2epab, float);                                              //! Event plane resolution for EP method n=2 (A,B) TPC-FT0A
+DECLARE_SOA_COLUMN(R2EP_AC, r2epac, float);                                              //! Event plane resolution for EP method n=2 (A,C) TPC-FT0C
+DECLARE_SOA_COLUMN(R2EP_BC, r2epbc, float);                                              //! Event plane resolution for EP method n=2 (B,C) FT0A-FT0C
+DECLARE_SOA_COLUMN(R3EP, r3ep, float);                                                   //! Event plane resolution for EP method n=3
+DECLARE_SOA_COLUMN(CORR2POI, corr2poi, float);                                           //! POI FLOW CORRELATOR <2'>
+DECLARE_SOA_COLUMN(CORR4POI, corr4poi, float);                                           //! POI FLOW CORRELATOR <4'>
+DECLARE_SOA_COLUMN(M01POI, m01poi, float);                                               //! POI event weight for <2'>
+DECLARE_SOA_COLUMN(M0111POI, m0111poi, float);                                           //! POI event weight for <4'>
+DECLARE_SOA_COLUMN(MultDimuons, multdimuons, int);                                       //! Dimuon multiplicity
+DECLARE_SOA_COLUMN(CentFT0C, centft0c, float);                                           //! Centrality information from FT0C
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int32_t);                                   //!
 DECLARE_SOA_COLUMN(IsFirst, isfirst, int);                                               //! Flag for the first dilepton in the collision
 DECLARE_SOA_COLUMN(DCAxyzBetweenTrksKF, dcaxyzbetweentrksKF, float);                     //! DCAxyz between the two tracks
