@@ -146,11 +146,19 @@ DECLARE_SOA_TABLE_STAGED(ReducedEvents, "REDUCEDEVENT", //!   Main event informa
                          collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
                          collision::CollisionTime, collision::CollisionTimeRes);
 
-DECLARE_SOA_TABLE(ReducedEventsExtended, "AOD", "REEXTENDED", //!  Extended event information
+DECLARE_SOA_TABLE(ReducedEventsExtended_000, "AOD", "REEXTENDED", //!  Extended event information
                   bc::GlobalBC, evsel::Alias, evsel::Selection, timestamp::Timestamp, cent::CentRun2V0M,
                   mult::MultTPC, mult::MultFV0A, mult::MultFV0C, mult::MultFT0A, mult::MultFT0C,
                   mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC, mult::MultTracklets, mult::MultNTracksPV,
                   cent::CentFT0C);
+
+DECLARE_SOA_TABLE_VERSIONED(ReducedEventsExtended_001, "AOD", "REEXTENDED", 1, //!  Extended event information
+                  bc::GlobalBC, evsel::Alias, evsel::Selection, timestamp::Timestamp, cent::CentRun2V0M,
+                  mult::MultTPC, mult::MultFV0A, mult::MultFV0C, mult::MultFT0A, mult::MultFT0C,
+                  mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC, mult::MultTracklets, mult::MultNTracksPV,
+                  cent::CentFT0C, cent::CentFT0A, cent::CentFT0M);
+
+using ReducedEventsExtended = ReducedEventsExtended_001;
 
 DECLARE_SOA_TABLE(ReducedEventsMultPV_000, "AOD", "REMULTPV", //!  Multiplicity information for primary vertex
                   mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,
@@ -709,6 +717,8 @@ DECLARE_SOA_COLUMN(M01POI, m01poi, float);                               //! POI
 DECLARE_SOA_COLUMN(M0111POI, m0111poi, float);                           //! POI event weight for <4'>
 DECLARE_SOA_COLUMN(MultDimuons, multdimuons, int);                       //! Dimuon multiplicity
 DECLARE_SOA_COLUMN(CentFT0C, centft0c, float);                           //! Centrality information from FT0C
+DECLARE_SOA_COLUMN(CentFT0A, centft0a, float);                           //! Centrality information from FT0A
+DECLARE_SOA_COLUMN(CentFT0M, centft0m, float);                           //! Centrality information from FT0M
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int32_t);                   //!
 DECLARE_SOA_COLUMN(IsFirst, isfirst, int);                               //! Flag for the first dilepton in the collision
 DECLARE_SOA_COLUMN(DCAxyzBetweenTrksKF, dcaxyzbetweentrksKF, float);     //! DCAxyz between the two tracks
