@@ -309,7 +309,7 @@ void CorrelationContainer::resetBinLimits(THnBase* grid, int max_dimension)
 
   for (Int_t i = 0; i < max_dimension; i++) {
     if (grid->GetAxis(i)->TestBit(TAxis::kAxisRange)) {
-      grid->GetAxis(i)->SetRangeUser(0, -1);
+      grid->GetAxis(i)->SetRange(0, 0); // reset range
     }
   }
 }
