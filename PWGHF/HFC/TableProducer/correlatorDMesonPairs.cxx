@@ -53,12 +53,6 @@ enum PairTypeOfSelMassSel {
   DDbar,    // This is a D0-D0bar pair
   DbarD     // This is a D0bar-D0 pair
 };
-
-enum Origin {
-  Unassigned = 0,
-  Prompt,
-  NonPrompt
-};
 } // namespace
 
 using McParticlesPlus2Prong = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
@@ -810,10 +804,10 @@ struct HfCorrelatorDMesonPairs {
           registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
           registry.fill(HIST("hPtVsYVsNContribMcRec"), candidate1.pt(), hfHelper.yD0(candidate1), collision.numContrib());
           registry.fill(HIST("hNContribMcRec"), collision.numContrib());
-          if (originRec1 == Prompt) {
+          if (originRec1 == RecoDecay::Prompt) {
             registry.fill(HIST("hMassMcRecPrompt"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
             registry.fill(HIST("hPtVsYVsNContribMcRecPrompt"), candidate1.pt(), hfHelper.yD0(candidate1), collision.numContrib());
-          } else if (originRec1 == NonPrompt) {
+          } else if (originRec1 == RecoDecay::NonPrompt) {
             registry.fill(HIST("hMassMcRecNonPrompt"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
             registry.fill(HIST("hPtVsYVsNContribMcRecNonPrompt"), candidate1.pt(), hfHelper.yD0(candidate1), collision.numContrib());
           }
@@ -831,9 +825,9 @@ struct HfCorrelatorDMesonPairs {
           registry.fill(HIST("hMass"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
           registry.fill(HIST("hPtVsYVsNContribMcRec"), candidate1.pt(), hfHelper.yD0(candidate1), collision.numContrib());
           registry.fill(HIST("hNContribMcRec"), collision.numContrib());
-          if (originRec1 == Prompt) {
+          if (originRec1 == RecoDecay::Prompt) {
             registry.fill(HIST("hMassMcRecPrompt"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
-          } else if (originRec1 == NonPrompt) {
+          } else if (originRec1 == RecoDecay::NonPrompt) {
             registry.fill(HIST("hMassMcRecNonPrompt"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
           }
         } else if (isTrueDCand1) {
@@ -1018,10 +1012,10 @@ struct HfCorrelatorDMesonPairs {
       }
 
       registry.fill(HIST("hPtVsYVsNContribMcGen"), particle1.pt(), particle1.y(), numPvContributorsGen);
-      if (originGen1 == Prompt) {
+      if (originGen1 == RecoDecay::Prompt) {
         registry.fill(HIST("hPtVsYVsNContribMcGenPrompt"), particle1.pt(), particle1.y(), numPvContributorsGen);
       }
-      if (originGen1 == NonPrompt) {
+      if (originGen1 == RecoDecay::NonPrompt) {
         registry.fill(HIST("hPtVsYVsNContribMcGenNonPrompt"), particle1.pt(), particle1.y(), numPvContributorsGen);
       }
       registry.fill(HIST("hNContribMcGen"), numPvContributorsGen);
