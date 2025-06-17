@@ -290,7 +290,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     }
   }
 
-  void processCascades(const FilteredFDCollision& col, const FemtoFullParticles& parts, const aod::FDCascParticles& fdcascs)
+  void processCascades([[maybe_unused]] const FilteredFDCollision& col, const FemtoFullParticles& parts, const aod::FDCascParticles& fdcascs)
   {
     // auto groupCascs = cascs->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     //  const int multCol = col.multNtr();
