@@ -15,15 +15,17 @@
 // the conflict with the old data model.
 
 // other includes
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
 #include <THashList.h>
 #include <TList.h>
 #include <TString.h>
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -36,10 +38,10 @@ struct eventExtendedConverter000_001 {
   void process(aod::ReducedEventsExtended_000 const& events)
   {
     for (const auto& event : events) {
-        eventExtended_001(event.globalBC(), event.alias_raw(), event.selection_raw(), event.timestamp(), event.centRun2V0M(),
-            event.multTPC(), event.multFV0A(), event.multFV0C(), event.multFT0A(), event.multFT0C(),
-            event.multFDDA(), event.multFDDC(), event.multZNA(), event.multZNC(), event.multTracklets(), event.multNTracksPV(),
-            event.centFT0C(), -1.0f, -1.0f);
+      eventExtended_001(event.globalBC(), event.alias_raw(), event.selection_raw(), event.timestamp(), event.centRun2V0M(),
+                        event.multTPC(), event.multFV0A(), event.multFV0C(), event.multFT0A(), event.multFT0C(),
+                        event.multFDDA(), event.multFDDC(), event.multZNA(), event.multZNC(), event.multTracklets(), event.multNTracksPV(),
+                        event.centFT0C(), -1.0f, -1.0f);
     }
   }
 };
