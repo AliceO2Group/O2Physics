@@ -18,14 +18,11 @@
 
 #include "PWGHF/Core/DecayChannels.h"
 
-// O2 includes
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/Logger.h>
 
-// ROOT includes
 #include <TPDGCode.h>
 
-// C++ includes
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -145,7 +142,7 @@ static const std::unordered_map<DecayChannelMain, const std::vector<int>> Daught
 /// Returns a map of the possible final states for a specific 3-prong particle specie
 /// \param pdgMother PDG code of the mother particle
 /// \return a map of final states with their corresponding PDG codes
-static const std::unordered_map<DecayChannelMain, const std::vector<int>> getDecayChannel3Prong(int pdgMother)
+inline std::unordered_map<DecayChannelMain, const std::vector<int>> getDecayChannel3Prong(int pdgMother)
 {
   switch (pdgMother) {
     case o2::constants::physics::Pdg::kDPlus:
@@ -167,7 +164,7 @@ static const std::unordered_map<DecayChannelMain, const std::vector<int>> getDec
 /// Returns a map of the resonant decay channels for a specific 3-prong particle specie
 /// \param pdgMother PDG code of the mother particle
 /// \return a map of resonant decay channels with their corresponding PDG codes
-std::unordered_map<DecayChannelResonant, const std::array<int, 2>> getResoChannels3Prong(int pdgMother)
+inline std::unordered_map<DecayChannelResonant, const std::array<int, 2>> getResoChannels3Prong(int pdgMother)
 {
   switch (pdgMother) {
     case o2::constants::physics::Pdg::kDPlus:
@@ -194,7 +191,7 @@ std::unordered_map<DecayChannelResonant, const std::array<int, 2>> getResoChanne
 /// \param arrPdgDaugs array of PDG codes for the resonant decay
 /// \return true if the resonant channel is matched, false otherwise
 template <std::size_t N>
-bool checkResonantDecay(std::array<int, N> const& arrPdgResoChn, std::array<int, N> arrPdgDaugs)
+inline bool checkResonantDecay(std::array<int, N> const& arrPdgResoChn, std::array<int, N> arrPdgDaugs)
 {
   for (std::size_t i = 0; i < N; i++) {
     bool findDaug = false;
@@ -220,7 +217,7 @@ bool checkResonantDecay(std::array<int, N> const& arrPdgResoChn, std::array<int,
 /// \param channel decay channel flag to be set
 /// \param arrDaughPdgs array of daughter PDG codes
 template <bool is3Prong = false, std::size_t N>
-void flagResonantDecay(int motherPdg, int8_t* channel, std::array<int, N> const& arrDaughPdgs)
+inline void flagResonantDecay(int motherPdg, int8_t* channel, std::array<int, N> const& arrDaughPdgs)
 {
   if constexpr (is3Prong) {
     std::unordered_map<o2::hf_decay::hf_cand_3prong::DecayChannelResonant, const std::array<int, 2>> resoStates = o2::hf_decay::hf_cand_3prong::getResoChannels3Prong(motherPdg);
