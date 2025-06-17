@@ -160,6 +160,8 @@ struct HfTaskElectronWeakBoson {
     const AxisSpec axisM02{100, 0, 1, "M02"};
     const AxisSpec axisdPhi{100, -0.5, 0.5, "dPhi"};
     const AxisSpec axisdEta{100, -0.5, 0.5, "dEta"};
+    const AxisSpec axisdR{20, 0.0, 0.2, "dR"};
+    const AxisSpec axisNcell{50, 0.0, 50.0, "Ncell"};
     const AxisSpec axisPhi{350, 0, 7, "Phi"};
     const AxisSpec axisEop{200, 0, 2, "Eop"};
     const AxisSpec axisChi2{250, 0.0, 25.0, "#chi^{2}"};
@@ -184,7 +186,8 @@ struct HfTaskElectronWeakBoson {
     registry.add("hPt", "track pt", kTH1F, {axisPt});
     registry.add("hTPCNsigma", "TPC electron Nsigma", kTH2F, {{axisPt}, {axisNsigma}});
     registry.add("hEnergy", "EMC cluster energy", kTH1F, {axisE});
-    registry.add("hTrMatch", "Track EMC Match", kTH2F, {{axisdPhi}, {axisdEta}});
+    registry.add("hEnergyNcell", "EMC cluster energy and cell", kTH2F, {{axisE}, {axisNcell}});
+    registry.add("hTrMatchR", "Track EMC Match in radius", kTH2F, {{axisPt}, {axisdR}});
     registry.add("hTrMatch_mim", "Track EMC Match minimu minimumm", kTH2F, {{axisdPhi}, {axisdEta}});
     registry.add("hMatchPhi", "Match in Phi", kTH2F, {{axisPhi}, {axisPhi}});
     registry.add("hMatchEta", "Match in Eta", kTH2F, {{axisEta}, {axisEta}});
@@ -198,6 +201,7 @@ struct HfTaskElectronWeakBoson {
     registry.add("hInvMassZeeLs", "invariant mass for Z LS pair", kTH2F, {{axisPt}, {axisInvMassZ}});
     registry.add("hInvMassZeeUls", "invariant mass for Z ULS pair", kTH2F, {{axisPt}, {axisInvMassZ}});
     registry.add("hTHnElectrons", "electron info", HistType::kTHnSparseF, {axisPt, axisNsigma, axisM02, axisEop, axisIsoEnergy, axisIsoTrack});
+    registry.add("hTHnTrMatch", "Track EMC Match", HistType::kTHnSparseF, {axisPt, axisdPhi, axisdEta});
 
     // hisotgram for EMCal trigger
     registry.add("hEMCalTrigger", "EMCal trigger", kTH1F, {axisTrigger});
@@ -298,7 +302,7 @@ struct HfTaskElectronWeakBoson {
       registry.fill(HIST("hEMCalTrigger"), isTriggered ? 1 : 0);
 
       // Skip event if not triggered and we're processing skimmed data
-      if (!isTriggered && cfgSkimmedProcessing) {
+      if (!isTriggered) {
         return;
       }
     }
@@ -397,12 +401,15 @@ struct HfTaskElectronWeakBoson {
               dPhiMin = dPhi;
               dEtaMin = dEta;
             }
-            registry.fill(HIST("hTrMatch"), dPhi, dEta);
+            registry.fill(HIST("hTHnTrMatch"), match.track_as<TrackEle>().pt(), dPhi, dEta);
             registry.fill(HIST("hEMCtime"), timeEmc);
             registry.fill(HIST("hEnergy"), energyEmc);
 
-            if (r > rMatchMax)
+            if (std::abs(dPhi) > rMatchMax || std::abs(dEta) > rMatchMax)
               continue;
+
+            registry.fill(HIST("hTrMatchR"), match.track_as<TrackEle>().pt(), r);
+            registry.fill(HIST("hEnergyNcell"), energyEmc, match.emcalcluster_as<SelectedClusters>().nCells());
 
             const auto& cluster = match.emcalcluster_as<SelectedClusters>();
 

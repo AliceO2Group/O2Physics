@@ -13,36 +13,38 @@
 /// \author Francesca Ercolessi
 /// \since 21 April 2024
 
-#include <TParameter.h>
+#include "PWGCF/Femto3D/Core/femto3dPairTask.h"
+#include "PWGCF/Femto3D/DataModel/singletrackselector.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Multiplicity.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/DataTypes.h"
+#include "Framework/Expressions.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/StaticFor.h"
+#include "Framework/runDataProcessing.h"
+#include "MathUtils/Utils.h"
+
+#include "TGrid.h"
 #include <TFile.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TList.h>
-#include <vector>
-#include <string>
-#include <map>
-#include <memory>
-#include <utility>
+#include <TParameter.h>
 #include <TVector2.h>
 #include <TVector3.h>
-#include "TGrid.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Framework/ASoA.h"
-#include "MathUtils/Utils.h"
-#include "Framework/DataTypes.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/Expressions.h"
-
-#include "Framework/StaticFor.h"
-#include "PWGCF/Femto3D/DataModel/singletrackselector.h"
-#include "PWGCF/Femto3D/Core/femto3dPairTask.h"
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::soa;
@@ -55,6 +57,8 @@ struct hadronnucleicorrelation {
   // PDG codes and masses used in this analysis
   static constexpr int pdgProton = 2212;
   static constexpr int pdgDeuteron = 1000010020;
+
+  Configurable<int> mode{"mode", 0, "0: antid-antip, 1: d-p, 2: antid-p, 3: d-antip, 4: antip-p, 5: antip-antip, 6: p-p"};
 
   Configurable<bool> doQA{"doQA", true, "save QA histograms"};
   Configurable<bool> doMCQA{"doMCQA", false, "save MC QA histograms"};
@@ -143,16 +147,21 @@ struct hadronnucleicorrelation {
 
   // key: pair of an integer and a float - value: vector of colType objects
   // for each key I have a vector of collisions
-  std::map<std::pair<int, float>, std::vector<colType>> mixbins_antidantip;
+  std::map<std::pair<int, float>, std::vector<colType>> mixbins_antid;
+  std::map<std::pair<int, float>, std::vector<colType>> mixbins_d;
+  std::map<std::pair<int, float>, std::vector<colType>> mixbins_antip;
+  std::map<std::pair<int, float>, std::vector<colType>> mixbins_p;
   std::map<std::pair<int, float>, std::vector<colType>> mixbinsPID_antidantip;
   std::map<float, std::vector<MCcolType>> mixbinsMC_antidantip;
   std::map<float, std::vector<MCcolType>> mixbinsMC_dp;
 
-  std::vector<std::shared_ptr<TH3>> hEtaPhi_AntiDeAntiPr_SE;
-  std::vector<std::shared_ptr<TH3>> hEtaPhi_AntiDeAntiPr_ME;
-  std::vector<std::shared_ptr<TH3>> hCorrEtaPhi_AntiDeAntiPr_SE;
-  std::vector<std::shared_ptr<TH3>> hCorrEtaPhi_AntiDeAntiPr_ME;
+  // Data histograms
+  std::vector<std::shared_ptr<TH3>> hEtaPhi_SE;
+  std::vector<std::shared_ptr<TH3>> hEtaPhi_ME;
+  std::vector<std::shared_ptr<TH3>> hCorrEtaPhi_SE;
+  std::vector<std::shared_ptr<TH3>> hCorrEtaPhi_ME;
 
+  // MC histograms
   std::vector<std::shared_ptr<TH3>> hEtaPhiRec_AntiDeAntiPr_SE;
   std::vector<std::shared_ptr<TH3>> hEtaPhiGen_AntiDeAntiPr_SE;
   std::vector<std::shared_ptr<TH3>> hEtaPhiRec_AntiDeAntiPr_ME;
@@ -161,7 +170,6 @@ struct hadronnucleicorrelation {
   std::vector<std::shared_ptr<TH3>> hPIDEtaPhiGen_AntiDeAntiPr_SE;
   std::vector<std::shared_ptr<TH3>> hPIDEtaPhiRec_AntiDeAntiPr_ME;
   std::vector<std::shared_ptr<TH3>> hPIDEtaPhiGen_AntiDeAntiPr_ME;
-
   std::vector<std::shared_ptr<TH3>> hEtaPhiGen_AntiPrAntiPr_SE;
   std::vector<std::shared_ptr<TH3>> hEtaPhiGen_AntiPrAntiPr_ME;
 
@@ -193,19 +201,21 @@ struct hadronnucleicorrelation {
 
     AxisSpec ptBinnedAxis = {pTBins, "#it{p}_{T} of #bar{p} (GeV/c)"};
     AxisSpec etaAxis = {100, -1., 1., "#eta"};
-    AxisSpec phiAxis = {157, 0., 2 * o2::constants::math::PI, "#phi (rad)"};
+    AxisSpec phiAxis = {157, 0., o2::constants::math::TwoPI, "#phi (rad)"};
     AxisSpec pTAxis = {200, -10.f, 10.f, "p_{T} GeV/c"};
     AxisSpec pTAxis_small = {100, -5.f, 5.f, "p_{T} GeV/c"};
 
     AxisSpec DeltaEtaAxis = {100, -1.5, 1.5, "#Delta#eta"};
-    AxisSpec DeltaPhiAxis = {60, -o2::constants::math::PI / 2, 1.5 * o2::constants::math::PI, "#Delta#phi (rad)"};
+    AxisSpec DeltaPhiAxis = {60, -1 * o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf, "#Delta#phi (rad)"};
 
-    registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{5, 0.f, 5.f}}});
+    registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{7, 0.f, 7.f}}});
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "Selected");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "events with #bar{d}-#bar{p}");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "events with d-p");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(4, "events with #bar{d}");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(5, "events with d");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(6, "events with #bar{p}");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(7, "events with p");
 
     nBinspT = pTBins.value.size() - 1;
 
@@ -251,17 +261,40 @@ struct hadronnucleicorrelation {
       }
     }
 
+    TString name = "AntiDeAntiPr";
+    switch (mode) {
+      case 1:
+        name = "DePr";
+        break;
+      case 2:
+        name = "AntiDePr";
+        break;
+      case 3:
+        name = "DeAntiPr";
+        break;
+      case 4:
+        name = "AntiPrPr";
+        break;
+      case 5:
+        name = "AntiPrAntiPr";
+        break;
+      case 6:
+        name = "PrPr";
+        break;
+    }
+
     if (!isMC) {
       for (int i = 0; i < nBinspT; i++) {
-        auto htempSE_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_AntiDeAntiPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("Raw #Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        auto htempME_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_AntiDeAntiPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("Raw #Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        hEtaPhi_AntiDeAntiPr_SE.push_back(std::move(htempSE_AntiDeAntiPr));
-        hEtaPhi_AntiDeAntiPr_ME.push_back(std::move(htempME_AntiDeAntiPr));
 
-        auto hCorrtempSE_AntiDeAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_AntiDeAntiPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        auto hCorrtempME_AntiDeAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_AntiDeAntiPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
-        hCorrEtaPhi_AntiDeAntiPr_SE.push_back(std::move(hCorrtempSE_AntiDeAntiPr));
-        hCorrEtaPhi_AntiDeAntiPr_ME.push_back(std::move(hCorrtempME_AntiDeAntiPr));
+        auto htempSE_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_%s_SE_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("Raw #Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+        auto htempME_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_%s_ME_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("Raw #Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+        hEtaPhi_SE.push_back(std::move(htempSE_AntiDeAntiPr));
+        hEtaPhi_ME.push_back(std::move(htempME_AntiDeAntiPr));
+
+        auto hCorrtempSE_AntiDeAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_%s_SE_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+        auto hCorrtempME_AntiDeAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_%s_ME_pt%02.0f%02.0f", name.Data(), pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+        hCorrEtaPhi_SE.push_back(std::move(hCorrtempSE_AntiDeAntiPr));
+        hCorrEtaPhi_ME.push_back(std::move(hCorrtempME_AntiDeAntiPr));
       }
     }
 
@@ -329,12 +362,12 @@ struct hadronnucleicorrelation {
       if (doMCQA) {
         registry.add("hResEta_Proton", "; #eta(gen); #eta(reco) - #eta(gen)  ", {HistType::kTH2F, {{100, -1.f, 1.f, "#eta(gen)"}, {200, -0.5f, 0.5f, "#eta(reco) - #eta(gen) "}}});
         registry.add("hResEta_Deuteron", "; #eta(gen); #eta(reco) - #eta(gen) ", {HistType::kTH2F, {{100, -1.f, 1.f, "#eta(gen)"}, {200, -0.5f, 0.5f, "#eta(reco) - #eta(gen) "}}});
-        registry.add("hResPhi_Proton", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, 2 * o2::constants::math::PI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
-        registry.add("hResPhi_Deuteron", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, 2 * o2::constants::math::PI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
+        registry.add("hResPhi_Proton", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, o2::constants::math::TwoPI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
+        registry.add("hResPhi_Deuteron", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, o2::constants::math::TwoPI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
         registry.add("hResEta_AntiProton", "; #eta(gen); #eta(reco) - #eta(gen)  ", {HistType::kTH2F, {{100, -1.f, 1.f, "#eta(gen)"}, {200, -0.5f, 0.5f, "#eta(reco) - #eta(gen) "}}});
         registry.add("hResEta_AntiDeuteron", "; #eta(gen); #eta(reco) - #eta(gen) ", {HistType::kTH2F, {{100, -1.f, 1.f, "#eta(gen)"}, {200, -0.5f, 0.5f, "#eta(reco) - #eta(gen) "}}});
-        registry.add("hResPhi_AntiProton", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, 2 * o2::constants::math::PI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
-        registry.add("hResPhi_AntiDeuteron", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, 2 * o2::constants::math::PI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
+        registry.add("hResPhi_AntiProton", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, o2::constants::math::TwoPI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
+        registry.add("hResPhi_AntiDeuteron", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, o2::constants::math::TwoPI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
 
         registry.add("hNumeratorPurity_Proton_TPC", " p(#bar{p}); p_{T} (GeV/c);S", {HistType::kTH1F, {pTAxis_small}});
         registry.add("hNumeratorPurity_Deuteron_TPC", " d(#bar{d}); p_{T} (GeV/c);S", {HistType::kTH1F, {pTAxis_small}});
@@ -521,7 +554,7 @@ struct hadronnucleicorrelation {
   }
 
   template <int ME, bool doMC, typename Type>
-  void mixTracks(Type const& tracks1, Type const& tracks2, bool isMCPID)
+  void mixTracks(Type const& tracks1, Type const& tracks2, bool isIdentical, bool isMCPID)
   { // last value: 0 -- SE; 1 -- ME
     for (auto it1 : tracks1) {
       for (auto it2 : tracks2) {
@@ -529,7 +562,7 @@ struct hadronnucleicorrelation {
         // Calculate Delta-eta Delta-phi (reco)
         float deltaEta = it2->eta() - it1->eta();
         float deltaPhi = it2->phi() - it1->phi();
-        deltaPhi = getDeltaPhi(deltaPhi);
+        deltaPhi = RecoDecay::constrainAngle(deltaPhi, -1 * o2::constants::math::PIHalf);
 
         // Calculate Delta-eta Delta-phi (gen)
         float deltaEtaGen = -999.;
@@ -537,24 +570,52 @@ struct hadronnucleicorrelation {
         if constexpr (doMC) {
           deltaEtaGen = it2->eta_MC() - it1->eta_MC();
           deltaPhiGen = it2->phi_MC() - it1->phi_MC();
-          deltaPhiGen = getDeltaPhi(deltaPhiGen);
+          deltaPhiGen = RecoDecay::constrainAngle(deltaPhiGen, -1 * o2::constants::math::PIHalf);
         }
-
-        float antipcorr = 1, antidcorr = 1;
 
         for (int k = 0; k < nBinspT; k++) {
 
           if (it1->pt() >= pTBins.value.at(k) && it1->pt() < pTBins.value.at(k + 1)) {
 
+            float corr1 = 1, corr2 = 1;
+
             if (docorrection) { // Apply corrections
-              antipcorr = hEffpTEta_antiproton->Interpolate(it2->pt(), it2->eta());
-              antidcorr = hEffpTEta_antideuteron->Interpolate(it1->pt(), it1->eta());
+              switch (mode) {
+                case 0:
+                  corr1 = hEffpTEta_antideuteron->Interpolate(it1->pt(), it1->eta());
+                  corr2 = hEffpTEta_antiproton->Interpolate(it2->pt(), it2->eta());
+                  break;
+                case 1:
+                  corr1 = hEffpTEta_deuteron->Interpolate(it1->pt(), it1->eta());
+                  corr2 = hEffpTEta_proton->Interpolate(it2->pt(), it2->eta());
+                  break;
+                case 2:
+                  corr1 = hEffpTEta_antideuteron->Interpolate(it1->pt(), it1->eta());
+                  corr2 = hEffpTEta_proton->Interpolate(it2->pt(), it2->eta());
+                  break;
+                case 3:
+                  corr1 = hEffpTEta_deuteron->Interpolate(it1->pt(), it1->eta());
+                  corr2 = hEffpTEta_antiproton->Interpolate(it2->pt(), it2->eta());
+                  break;
+                case 4:
+                  corr1 = hEffpTEta_antiproton->Interpolate(it1->pt(), it1->eta());
+                  corr2 = hEffpTEta_proton->Interpolate(it2->pt(), it2->eta());
+                  break;
+                case 5:
+                  corr1 = hEffpTEta_antiproton->Interpolate(it1->pt(), it1->eta());
+                  corr2 = hEffpTEta_antiproton->Interpolate(it2->pt(), it2->eta());
+                  break;
+                case 6:
+                  corr1 = hEffpTEta_proton->Interpolate(it1->pt(), it1->eta());
+                  corr2 = hEffpTEta_proton->Interpolate(it2->pt(), it2->eta());
+                  break;
+              }
             }
 
             if (ME) {
               if constexpr (!doMC) { // Data
-                hEtaPhi_AntiDeAntiPr_ME[k]->Fill(deltaEta, deltaPhi, it2->pt());
-                hCorrEtaPhi_AntiDeAntiPr_ME[k]->Fill(deltaEta, deltaPhi, it2->pt(), 1. / (antipcorr * antidcorr));
+                hEtaPhi_ME[k]->Fill(deltaEta, deltaPhi, it2->pt());
+                hCorrEtaPhi_ME[k]->Fill(deltaEta, deltaPhi, it2->pt(), 1. / (corr1 * corr2));
               } else { // MC
                 if (isMCPID) {
                   hPIDEtaPhiRec_AntiDeAntiPr_ME[k]->Fill(deltaEta, deltaPhi, it2->pt());
@@ -566,8 +627,12 @@ struct hadronnucleicorrelation {
               }
             } else {
               if constexpr (!doMC) { // Data
-                hEtaPhi_AntiDeAntiPr_SE[k]->Fill(deltaEta, deltaPhi, it2->pt());
-                hCorrEtaPhi_AntiDeAntiPr_SE[k]->Fill(deltaEta, deltaPhi, it2->pt(), 1. / (antipcorr * antidcorr));
+                // is Identical (pp and antip-antip)?
+                if (isIdentical && std::abs(deltaPhi) < 0.001 && std::abs(deltaEta) < 0.001) {
+                  continue;
+                }
+                hEtaPhi_SE[k]->Fill(deltaEta, deltaPhi, it2->pt());
+                hCorrEtaPhi_SE[k]->Fill(deltaEta, deltaPhi, it2->pt(), 1. / (corr1 * corr2));
               } else { // MC
                 if (isMCPID) {
                   hPIDEtaPhiRec_AntiDeAntiPr_SE[k]->Fill(deltaEta, deltaPhi, it2->pt());
@@ -591,7 +656,7 @@ struct hadronnucleicorrelation {
       for (auto it2 : particles2) {
         // Calculate Delta-eta Delta-phi (gen)
         float deltaEtaGen = it2->eta() - it1->eta();
-        float deltaPhiGen = getDeltaPhi(it2->phi() - it1->phi());
+        float deltaPhiGen = RecoDecay::constrainAngle(it2->phi() - it1->phi(), -1 * o2::constants::math::PIHalf);
 
         // Loop over pT bins
         for (int k = 0; k < nBinspT; k++) {
@@ -615,7 +680,7 @@ struct hadronnucleicorrelation {
       for (auto it2 : particles2) {
         // Calculate Delta-eta Delta-phi (gen)
         float deltaEtaGen = it2->eta() - it1->eta();
-        float deltaPhiGen = getDeltaPhi(it2->phi() - it1->phi());
+        float deltaPhiGen = RecoDecay::constrainAngle(it2->phi() - it1->phi(), -1 * o2::constants::math::PIHalf);
 
         if (!ME && std::abs(deltaPhiGen) < 0.001 && std::abs(deltaEtaGen) < 0.001) {
           continue;
@@ -634,16 +699,6 @@ struct hadronnucleicorrelation {
         }
       }
     }
-  }
-
-  float getDeltaPhi(float deltaPhi)
-  {
-    if (deltaPhi < -o2::constants::math::PI / 2) {
-      return deltaPhi += 2 * o2::constants::math::PI;
-    } else if (deltaPhi >= 3 * o2::constants::math::PI / 2) {
-      return deltaPhi -= 2 * o2::constants::math::PI;
-    }
-    return deltaPhi;
   }
 
   void GetCorrection(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString histname)
@@ -793,14 +848,25 @@ struct hadronnucleicorrelation {
 
       if (selectedtracks_antid.find(collision.globalIndex()) != selectedtracks_antid.end()) {
         registry.fill(HIST("hNEvents"), 3.5);
-
-        mixbins_antidantip[std::pair<int, float>{vertexBinToMix, centBinToMix}].push_back(std::make_shared<decltype(collision)>(collision));
+        mixbins_antid[std::pair<int, float>{vertexBinToMix, centBinToMix}].push_back(std::make_shared<decltype(collision)>(collision));
+      }
+      if (selectedtracks_d.find(collision.globalIndex()) != selectedtracks_d.end()) {
+        registry.fill(HIST("hNEvents"), 4.5);
+        mixbins_d[std::pair<int, float>{vertexBinToMix, centBinToMix}].push_back(std::make_shared<decltype(collision)>(collision));
+      }
+      if (selectedtracks_antip.find(collision.globalIndex()) != selectedtracks_antip.end()) {
+        registry.fill(HIST("hNEvents"), 5.5);
+        mixbins_antip[std::pair<int, float>{vertexBinToMix, centBinToMix}].push_back(std::make_shared<decltype(collision)>(collision));
+      }
+      if (selectedtracks_p.find(collision.globalIndex()) != selectedtracks_p.end()) {
+        registry.fill(HIST("hNEvents"), 6.5);
+        mixbins_p[std::pair<int, float>{vertexBinToMix, centBinToMix}].push_back(std::make_shared<decltype(collision)>(collision));
       }
     }
 
-    if (!mixbins_antidantip.empty()) {
+    if (mode == 0 && !mixbins_antid.empty()) {
 
-      for (auto i = mixbins_antidantip.begin(); i != mixbins_antidantip.end(); i++) { // iterating over all vertex&mult bins
+      for (auto i = mixbins_antid.begin(); i != mixbins_antid.end(); i++) { // iterating over all vertex&mult bins
 
         std::vector<colType> value = i->second;
         int EvPerBin = value.size(); // number of collisions in each vertex&mult bin
@@ -810,7 +876,7 @@ struct hadronnucleicorrelation {
           auto col1 = value[indx1];
 
           if (selectedtracks_antip.find(col1->index()) != selectedtracks_antip.end()) {
-            mixTracks<0, 0>(selectedtracks_antid[col1->index()], selectedtracks_antip[col1->index()], 0); // mixing SE
+            mixTracks<0, 0>(selectedtracks_antid[col1->index()], selectedtracks_antip[col1->index()], 0, 0); // mixing SE
           }
 
           for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
@@ -822,7 +888,193 @@ struct hadronnucleicorrelation {
             }
 
             if (selectedtracks_antip.find(col2->index()) != selectedtracks_antip.end()) {
-              mixTracks<1, 0>(selectedtracks_antid[col1->index()], selectedtracks_antip[col2->index()], 0); // mixing ME
+              mixTracks<1, 0>(selectedtracks_antid[col1->index()], selectedtracks_antip[col2->index()], 0, 0); // mixing ME
+            }
+          }
+        }
+      }
+    }
+
+    if (mode == 1 && !mixbins_d.empty()) {
+
+      for (auto i = mixbins_d.begin(); i != mixbins_d.end(); i++) { // iterating over all vertex&mult bins
+
+        std::vector<colType> value = i->second;
+        int EvPerBin = value.size(); // number of collisions in each vertex&mult bin
+
+        for (int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
+
+          auto col1 = value[indx1];
+
+          if (selectedtracks_p.find(col1->index()) != selectedtracks_p.end()) {
+            mixTracks<0, 0>(selectedtracks_d[col1->index()], selectedtracks_p[col1->index()], 0, 0); // mixing SE
+          }
+
+          for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+
+            auto col2 = value[indx2];
+
+            if (col1 == col2) {
+              continue;
+            }
+
+            if (selectedtracks_p.find(col2->index()) != selectedtracks_p.end()) {
+              mixTracks<1, 0>(selectedtracks_d[col1->index()], selectedtracks_p[col2->index()], 0, 0); // mixing ME
+            }
+          }
+        }
+      }
+    }
+
+    if (mode == 2 && !mixbins_antid.empty()) {
+
+      for (auto i = mixbins_antid.begin(); i != mixbins_antid.end(); i++) { // iterating over all vertex&mult bins
+
+        std::vector<colType> value = i->second;
+        int EvPerBin = value.size(); // number of collisions in each vertex&mult bin
+
+        for (int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
+
+          auto col1 = value[indx1];
+
+          if (selectedtracks_p.find(col1->index()) != selectedtracks_p.end()) {
+            mixTracks<0, 0>(selectedtracks_antid[col1->index()], selectedtracks_p[col1->index()], 0, 0); // mixing SE
+          }
+
+          for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+
+            auto col2 = value[indx2];
+
+            if (col1 == col2) {
+              continue;
+            }
+
+            if (selectedtracks_p.find(col2->index()) != selectedtracks_p.end()) {
+              mixTracks<1, 0>(selectedtracks_antid[col1->index()], selectedtracks_p[col2->index()], 0, 0); // mixing ME
+            }
+          }
+        }
+      }
+    }
+
+    if (mode == 3 && !mixbins_d.empty()) {
+
+      for (auto i = mixbins_d.begin(); i != mixbins_d.end(); i++) { // iterating over all vertex&mult bins
+
+        std::vector<colType> value = i->second;
+        int EvPerBin = value.size(); // number of collisions in each vertex&mult bin
+
+        for (int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
+
+          auto col1 = value[indx1];
+
+          if (selectedtracks_antip.find(col1->index()) != selectedtracks_antip.end()) {
+            mixTracks<0, 0>(selectedtracks_d[col1->index()], selectedtracks_antip[col1->index()], 0, 0); // mixing SE
+          }
+
+          for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+
+            auto col2 = value[indx2];
+
+            if (col1 == col2) {
+              continue;
+            }
+
+            if (selectedtracks_antip.find(col2->index()) != selectedtracks_antip.end()) {
+              mixTracks<1, 0>(selectedtracks_d[col1->index()], selectedtracks_antip[col2->index()], 0, 0); // mixing ME
+            }
+          }
+        }
+      }
+    }
+
+    if (mode == 4 && !mixbins_antip.empty()) {
+
+      for (auto i = mixbins_antip.begin(); i != mixbins_antip.end(); i++) { // iterating over all vertex&mult bins
+
+        std::vector<colType> value = i->second;
+        int EvPerBin = value.size(); // number of collisions in each vertex&mult bin
+
+        for (int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
+
+          auto col1 = value[indx1];
+
+          if (selectedtracks_p.find(col1->index()) != selectedtracks_p.end()) {
+            mixTracks<0, 0>(selectedtracks_antip[col1->index()], selectedtracks_p[col1->index()], 0, 0); // mixing SE
+          }
+
+          for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+
+            auto col2 = value[indx2];
+
+            if (col1 == col2) {
+              continue;
+            }
+
+            if (selectedtracks_p.find(col2->index()) != selectedtracks_p.end()) {
+              mixTracks<1, 0>(selectedtracks_antip[col1->index()], selectedtracks_p[col2->index()], 0, 0); // mixing ME
+            }
+          }
+        }
+      }
+    }
+
+    if (mode == 5 && !mixbins_antip.empty()) {
+
+      for (auto i = mixbins_antip.begin(); i != mixbins_antip.end(); i++) { // iterating over all vertex&mult bins
+
+        std::vector<colType> value = i->second;
+        int EvPerBin = value.size(); // number of collisions in each vertex&mult bin
+
+        for (int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
+
+          auto col1 = value[indx1];
+
+          if (selectedtracks_antip.find(col1->index()) != selectedtracks_antip.end()) {
+            mixTracks<0, 0>(selectedtracks_antip[col1->index()], selectedtracks_antip[col1->index()], 1, 0); // mixing SE
+          }
+
+          for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+
+            auto col2 = value[indx2];
+
+            if (col1 == col2) {
+              continue;
+            }
+
+            if (selectedtracks_antip.find(col2->index()) != selectedtracks_antip.end()) {
+              mixTracks<1, 0>(selectedtracks_antip[col1->index()], selectedtracks_antip[col2->index()], 1, 0); // mixing ME
+            }
+          }
+        }
+      }
+    }
+
+    if (mode == 6 && !mixbins_p.empty()) {
+
+      for (auto i = mixbins_p.begin(); i != mixbins_p.end(); i++) { // iterating over all vertex&mult bins
+
+        std::vector<colType> value = i->second;
+        int EvPerBin = value.size(); // number of collisions in each vertex&mult bin
+
+        for (int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
+
+          auto col1 = value[indx1];
+
+          if (selectedtracks_p.find(col1->index()) != selectedtracks_p.end()) {
+            mixTracks<0, 0>(selectedtracks_p[col1->index()], selectedtracks_p[col1->index()], 1, 0); // mixing SE
+          }
+
+          for (int indx2 = 0; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+
+            auto col2 = value[indx2];
+
+            if (col1 == col2) {
+              continue;
+            }
+
+            if (selectedtracks_p.find(col2->index()) != selectedtracks_p.end()) {
+              mixTracks<1, 0>(selectedtracks_p[col1->index()], selectedtracks_p[col2->index()], 1, 0); // mixing ME
             }
           }
         }
@@ -846,10 +1098,25 @@ struct hadronnucleicorrelation {
       (i->second).clear();
     selectedtracks_d.clear();
 
-    for (auto& pair : mixbins_antidantip) {
+    for (auto& pair : mixbins_antid) {
       pair.second.clear(); // Clear the vector associated with the key
     }
-    mixbins_antidantip.clear(); // Then clear the map itself
+    mixbins_antid.clear(); // Then clear the map itself
+
+    for (auto& pair : mixbins_d) {
+      pair.second.clear(); // Clear the vector associated with the key
+    }
+    mixbins_d.clear(); // Then clear the map itself
+
+    for (auto& pair : mixbins_antip) {
+      pair.second.clear(); // Clear the vector associated with the key
+    }
+    mixbins_antip.clear(); // Then clear the map itself
+
+    for (auto& pair : mixbins_p) {
+      pair.second.clear(); // Clear the vector associated with the key
+    }
+    mixbins_p.clear(); // Then clear the map itself
   }
   PROCESS_SWITCH(hadronnucleicorrelation, processData, "processData", true);
 
@@ -1222,7 +1489,7 @@ struct hadronnucleicorrelation {
       int centBinToMix = std::floor(collision.multPerc() / (100.0 / _multNsubBins));
 
       if (selectedtracksMC_antid.find(collision.globalIndex()) != selectedtracksMC_antid.end()) {
-        mixbins_antidantip[std::pair<int, float>{vertexBinToMix, centBinToMix}].push_back(std::make_shared<decltype(collision)>(collision));
+        mixbins_antid[std::pair<int, float>{vertexBinToMix, centBinToMix}].push_back(std::make_shared<decltype(collision)>(collision));
       }
 
       if (selectedtracksPIDMC_antid.find(collision.globalIndex()) != selectedtracksPIDMC_antid.end()) {
@@ -1230,9 +1497,9 @@ struct hadronnucleicorrelation {
       }
     } // coll
 
-    if (!mixbins_antidantip.empty()) {
+    if (!mixbins_antid.empty()) {
 
-      for (auto i = mixbins_antidantip.begin(); i != mixbins_antidantip.end(); i++) { // iterating over all vertex&mult bins
+      for (auto i = mixbins_antid.begin(); i != mixbins_antid.end(); i++) { // iterating over all vertex&mult bins
 
         std::vector<colType> value = i->second;
         int EvPerBin = value.size(); // number of collisions in each vertex&mult bin
@@ -1242,7 +1509,7 @@ struct hadronnucleicorrelation {
           auto col1 = value[indx1];
 
           if (selectedtracksMC_antip.find(col1->index()) != selectedtracksMC_antip.end()) {
-            mixTracks<0, 1>(selectedtracksMC_antid[col1->index()], selectedtracksMC_antip[col1->index()], 0); // mixing SE
+            mixTracks<0, 1>(selectedtracksMC_antid[col1->index()], selectedtracksMC_antip[col1->index()], 0, 0); // mixing SE
           }
 
           for (int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
@@ -1254,7 +1521,7 @@ struct hadronnucleicorrelation {
             }
 
             if (selectedtracksMC_antip.find(col2->index()) != selectedtracksMC_antip.end()) {
-              mixTracks<1, 1>(selectedtracksMC_antid[col1->index()], selectedtracksMC_antip[col2->index()], 0); // mixing ME
+              mixTracks<1, 1>(selectedtracksMC_antid[col1->index()], selectedtracksMC_antip[col2->index()], 0, 0); // mixing ME
             }
           }
         }
@@ -1273,7 +1540,7 @@ struct hadronnucleicorrelation {
           auto col1 = value[indx1];
 
           if (selectedtracksPIDMC_antip.find(col1->index()) != selectedtracksPIDMC_antip.end()) {
-            mixTracks<0, 1>(selectedtracksPIDMC_antid[col1->index()], selectedtracksPIDMC_antip[col1->index()], 1); // mixing SE
+            mixTracks<0, 1>(selectedtracksPIDMC_antid[col1->index()], selectedtracksPIDMC_antip[col1->index()], 0, 1); // mixing SE
           }
 
           for (int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
@@ -1285,7 +1552,7 @@ struct hadronnucleicorrelation {
             }
 
             if (selectedtracksPIDMC_antip.find(col2->index()) != selectedtracksPIDMC_antip.end()) {
-              mixTracks<1, 1>(selectedtracksPIDMC_antid[col1->index()], selectedtracksPIDMC_antip[col2->index()], 1); // mixing ME
+              mixTracks<1, 1>(selectedtracksPIDMC_antid[col1->index()], selectedtracksPIDMC_antip[col2->index()], 0, 1); // mixing ME
             }
           }
         }
@@ -1330,10 +1597,10 @@ struct hadronnucleicorrelation {
     }
     mixbinsPID_antidantip.clear(); // clear the map
 
-    for (auto& pair : mixbins_antidantip) {
+    for (auto& pair : mixbins_antid) {
       pair.second.clear(); // clear the vector associated with the key
     }
-    mixbins_antidantip.clear(); // clear the map
+    mixbins_antid.clear(); // clear the map
   }
   PROCESS_SWITCH(hadronnucleicorrelation, processMC, "processMC", false);
 

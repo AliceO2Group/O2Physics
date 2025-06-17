@@ -2399,7 +2399,7 @@ struct muonQa {
 
       mch::Track mchrealigned1, mchrealigned2;
       VarClusters fgValuesCls1, fgValuesCls2;
-      if (!FillClusters(muonTrack1, clusters, fgValuesCls1, mchrealigned1) || !FillClusters(muonTrack2, clusters, fgValuesCls2, mchrealigned2)) {
+      if (!FillClusters(mchTrack1, clusters, fgValuesCls1, mchrealigned1) || !FillClusters(mchTrack2, clusters, fgValuesCls2, mchrealigned2)) {
         continue; // Refit is not valid
       }
 

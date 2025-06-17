@@ -24,16 +24,6 @@ o2physics_add_dpl_workflow(nuclei-hist
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hypertriton3bodyanalysis
-    SOURCES hypertriton3bodyanalysis.cxx
-    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
-    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(hypertriton3bodymcqa
-    SOURCES hypertriton3bodyMcqa.cxx
-    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore O2::TOFBase
-    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(helium-flow
     SOURCES helium_flow.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

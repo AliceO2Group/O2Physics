@@ -174,6 +174,30 @@ enum DecayChannelResonant : int8_t {
   //
   LastChannelResonant
 };
+/// @brief beauty candidates: beauty to J/ψ decay channels
+enum DecayChannelToJpsiMain : int8_t {
+  // B0
+  B0ToJpsiPiK = 1, // J/ψ π- K+
+  // Bs0
+  BsToJpsiKK, // J/ψ K+ K-
+  // Λb0
+  LbToJpsiPK, // J/ψ p K-
+  // B+
+  BplusToJpsiK, // J/ψ K+
+  // Bc+
+  BcToJpsiPi, // J/ψ π+
+  //
+  LastChannelToJpsiMain
+};
+/// @brief beauty candidates: beauty to J/ψ resonant decay channels
+enum DecayChannelToJpsiResonant : int8_t {
+  // B0
+  B0ToJpsiKstar0 = 1, // J/ψ K*0(892)
+  // Bs0
+  BsToJpsiPhi, // J/ψ φ
+  //
+  LastChannelToJpsiResonant
+};
 } // namespace hf_cand_beauty
 } // namespace o2::hf_decay
 

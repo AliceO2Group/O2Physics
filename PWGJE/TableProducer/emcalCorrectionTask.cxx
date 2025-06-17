@@ -18,54 +18,52 @@
 /// \author Raymond Ehlers (raymond.ehlers@cern.ch) ORNL, Florian Jonas (florian.jonas@cern.ch)
 ///
 
-#include <gsl/span>
-#include <fairlogger/Logger.h>
-#include <cstdint>
-#include <cstddef>
-#include <memory>
-#include <sstream>
-#include <unordered_map>
-#include <cmath>
-#include <string>
-#include <tuple>
-#include <utility>
-#include <vector>
-#include <random>
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/ASoA.h"
-#include "Framework/Configurable.h"
-#include "Framework/Expressions.h"
-#include "Framework/HistogramSpec.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/InitContext.h"
-#include "Framework/WorkflowSpec.h"
-
-#include "DetectorsBase/GeometryManager.h"
-
+#include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/EMCALClusterDefinition.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/EMCALMatchedCollisions.h"
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "DataFormatsEMCAL/ClusterLabel.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsEMCAL/AnalysisCluster.h"
 #include "DataFormatsEMCAL/Cell.h"
 #include "DataFormatsEMCAL/CellLabel.h"
 #include "DataFormatsEMCAL/Constants.h"
-#include "DataFormatsEMCAL/AnalysisCluster.h"
-#include "EMCALBase/Geometry.h"
+#include "DetectorsBase/GeometryManager.h"
 #include "EMCALBase/ClusterFactory.h"
+#include "EMCALBase/Geometry.h"
 #include "EMCALBase/NonlinearityHandler.h"
 #include "EMCALReconstruction/Clusterizer.h"
-#include "PWGJE/Core/JetUtilities.h"
-#include "GPUROOTCartesianFwd.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include <DataFormatsEMCAL/ClusterLabel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
 #include "TVector2.h"
-#include "TH1.h"
+#include <TH1.h>
+
+#include <GPUROOTCartesianFwd.h>
+
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <random>
+#include <sstream>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

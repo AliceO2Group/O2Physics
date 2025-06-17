@@ -15,6 +15,15 @@
 
 #include "PWGJE/JetFinders/jetFinderV0.cxx"
 
+#include "PWGJE/DataModel/Jet.h"
+
+#include <Framework/AnalysisTask.h>
+#include <Framework/ConfigContext.h>
+#include <Framework/DataProcessorSpec.h>
+#include <Framework/runDataProcessing.h>
+
+#include <vector>
+
 using JetFinderV0MCParticleLevelCharged = JetFinderV0Task<aod::CandidatesV0Data, aod::CandidatesV0MCD, aod::CandidatesV0MCP, aod::V0ChargedMCParticleLevelJets, aod::V0ChargedMCParticleLevelJetConstituents>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

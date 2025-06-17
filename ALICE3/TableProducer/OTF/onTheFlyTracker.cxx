@@ -23,48 +23,42 @@
 /// \author Roberto Preghenella preghenella@bo.infn.it
 ///
 
-#include <utility>
-#include <array>
-#include <string>
-#include <map>
-#include <vector>
-
-#include <TGeoGlobalMagField.h>
-#include <TGenPhaseSpace.h>
-#include <TLorentzVector.h>
-#include <TRandom3.h>
-
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include <TPDGCode.h>
-#include "DCAFitter/DCAFitterN.h"
-#include "Common/Core/RecoDecay.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "DetectorsBase/Propagator.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsVertexing/PVertexer.h"
-#include "DetectorsVertexing/PVertexerHelpers.h"
-#include "SimulationDataFormat/InteractionSampler.h"
-#include "Field/MagneticField.h"
-
-#include "ITSMFTSimulation/Hit.h"
-#include "ITStracking/Configuration.h"
-#include "ITStracking/IOUtils.h"
-#include "ITStracking/Tracker.h"
-#include "ITStracking/Vertexer.h"
-#include "ITStracking/VertexerTraits.h"
-
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
-#include "ALICE3/Core/FastTracker.h"
 #include "ALICE3/Core/DetLayer.h"
+#include "ALICE3/Core/FastTracker.h"
 #include "ALICE3/Core/TrackUtilities.h"
+#include "ALICE3/DataModel/OTFStrangeness.h"
 #include "ALICE3/DataModel/collisionAlice3.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
-#include "ALICE3/DataModel/OTFStrangeness.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CommonConstants/MathConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/Propagator.h"
+#include "DetectorsVertexing/PVertexer.h"
+#include "DetectorsVertexing/PVertexerHelpers.h"
+#include "Field/MagneticField.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/DCA.h"
+#include "SimulationDataFormat/InteractionSampler.h"
+
+#include <TGenPhaseSpace.h>
+#include <TGeoGlobalMagField.h>
+#include <TLorentzVector.h>
+#include <TPDGCode.h>
+#include <TRandom3.h>
+
+#include <array>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -808,7 +802,7 @@ struct OnTheFlyTracker {
                     std::array<float, 3> posClusterCandidate;
                     trackParCov.getXYZGlo(posClusterCandidate);
                     float r{std::hypot(posClusterCandidate[0], posClusterCandidate[1])};
-                    float phi{std::atan2(-posClusterCandidate[1], -posClusterCandidate[0]) + o2::its::constants::math::Pi};
+                    float phi{std::atan2(-posClusterCandidate[1], -posClusterCandidate[0]) + o2::constants::math::PI};
                     o2::fastsim::DetLayer currentTrackingLayer = fastTracker.GetLayer(i);
 
                     if (currentTrackingLayer.getResolutionRPhi() > 1e-8 && currentTrackingLayer.getResolutionZ() > 1e-8) { // catch zero (though should not really happen...)
