@@ -85,7 +85,7 @@ struct skimmerPrimaryMuon {
   Configurable<float> maxPDCAforSmallR{"maxPDCAforSmallR", 594.f, "max. pDCA for small R at absorber end"};
   Configurable<float> maxMatchingChi2MCHMFT{"maxMatchingChi2MCHMFT", 50.f, "max. chi2 for MCH-MFT matching"};
   Configurable<float> maxChi2SA{"maxChi2SA", 1e+6, "max. chi2 for standalone muon"};
-  Configurable<float> maxChi2GL{"maxChi2GL", 50.f, "max. chi2 for global muon"};
+  Configurable<float> maxChi2GL{"maxChi2GL", 1e+6, "max. chi2 for global muon"};
   Configurable<bool> refitGlobalMuon{"refitGlobalMuon", true, "flag to refit global muon"};
 
   o2::ccdb::CcdbApi ccdbApi;
@@ -147,11 +147,10 @@ struct skimmerPrimaryMuon {
     fRegistry.add("MFTMCHMID/hNclustersMFT", "NclustersMFT;Nclusters MFT", kTH1F, {{11, -0.5f, 10.5}}, false);
     fRegistry.add("MFTMCHMID/hRatAbsorberEnd", "R at absorber end;R at absorber end (cm)", kTH1F, {{100, 0.0f, 100}}, false);
     fRegistry.add("MFTMCHMID/hPDCA_Rabs", "pDCA vs. Rabs;R at absorber end (cm);p #times DCA (GeV/c #upoint cm)", kTH2F, {{100, 0, 100}, {100, 0.0f, 1000}}, false);
-    fRegistry.add("MFTMCHMID/hChi2", "chi2;chi2", kTH1F, {{100, 0.0f, 100}}, false);
-    fRegistry.add("MFTMCHMID/hChi2MFT", "chi2 MFT;chi2 MFT/ndf", kTH1F, {{100, 0.0f, 100}}, false);
-    fRegistry.add("MFTMCHMID/hChi2MatchMCHMID", "chi2 match MCH-MID;chi2", kTH1F, {{100, 0.0f, 10}}, false);
-    fRegistry.add("MFTMCHMID/hChi2MatchMCHMFT", "chi2 match MCH-MFT;chi2/ndf", kTH1F, {{100, 0.0f, 10}}, false);
-    fRegistry.add("MFTMCHMID/hMatchScoreMCHMFT", "match score MCH-MFT;score", kTH1F, {{100, 0.0f, 100}}, false);
+    fRegistry.add("MFTMCHMID/hChi2", "chi2;chi2/ndf", kTH1F, {{100, 0.0f, 10}}, false);
+    fRegistry.add("MFTMCHMID/hChi2MFT", "chi2 MFT;chi2 MFT/ndf", kTH1F, {{100, 0.0f, 10}}, false);
+    fRegistry.add("MFTMCHMID/hChi2MatchMCHMID", "chi2 match MCH-MID;chi2", kTH1F, {{100, 0.0f, 100}}, false);
+    fRegistry.add("MFTMCHMID/hChi2MatchMCHMFT", "chi2 match MCH-MFT;chi2", kTH1F, {{100, 0.0f, 100}}, false);
     fRegistry.add("MFTMCHMID/hDCAxy2D", "DCA x vs. y;DCA_{x} (cm);DCA_{y} (cm)", kTH2F, {{200, -1, 1}, {200, -1, +1}}, false);
     fRegistry.add("MFTMCHMID/hDCAxy2DinSigma", "DCA x vs. y in sigma;DCA_{x} (#sigma);DCA_{y} (#sigma)", kTH2F, {{200, -10, 10}, {200, -10, +10}}, false);
     fRegistry.add("MFTMCHMID/hDCAxy", "DCAxy;DCA_{xy} (cm);", kTH1F, {{100, 0, 1}}, false);
@@ -207,7 +206,7 @@ struct skimmerPrimaryMuon {
   template <typename TCollision, typename TFwdTrack, typename TFwdTracks, typename TMFTTracks>
   void fillFwdTrackTable(TCollision const& collision, TFwdTrack fwdtrack, TFwdTracks const&, TMFTTracks const&, const bool isAmbiguous)
   {
-    if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && fwdtrack.chi2() > maxChi2GL) {
+    if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && fwdtrack.chi2MatchMCHMFT() > maxMatchingChi2MCHMFT) {
       return;
     } // Users have to decide the best match between MFT and MCH-MID at analysis level. The same global muon is repeatedly stored.
 
@@ -273,10 +272,6 @@ struct skimmerPrimaryMuon {
       mftClusterSizesAndTrackFlags = mfttrack.mftClusterSizesAndTrackFlags();
       chi2mft = mfttrack.chi2() / (2.f * nClustersMFT - 5.f);
       ndf_mchmft = 2.f * (mchtrack.nClusters() + nClustersMFT) - 5.f;
-
-      if (fwdtrack.chi2MatchMCHMFT() / ndf_mchmft > maxMatchingChi2MCHMFT) {
-        return;
-      }
 
       if (refitGlobalMuon) {
         eta = mfttrack.eta();
@@ -346,11 +341,10 @@ struct skimmerPrimaryMuon {
         fRegistry.fill(HIST("MFTMCHMID/hNclustersMFT"), nClustersMFT);
         fRegistry.fill(HIST("MFTMCHMID/hPDCA_Rabs"), rAtAbsorberEnd, pDCA);
         fRegistry.fill(HIST("MFTMCHMID/hRatAbsorberEnd"), rAtAbsorberEnd);
-        fRegistry.fill(HIST("MFTMCHMID/hChi2"), fwdtrack.chi2());
+        fRegistry.fill(HIST("MFTMCHMID/hChi2"), fwdtrack.chi2() / ndf_mchmft);
         fRegistry.fill(HIST("MFTMCHMID/hChi2MFT"), chi2mft);
         fRegistry.fill(HIST("MFTMCHMID/hChi2MatchMCHMID"), fwdtrack.chi2MatchMCHMID());
-        fRegistry.fill(HIST("MFTMCHMID/hChi2MatchMCHMFT"), fwdtrack.chi2MatchMCHMFT() / ndf_mchmft);
-        fRegistry.fill(HIST("MFTMCHMID/hMatchScoreMCHMFT"), fwdtrack.matchScoreMCHMFT());
+        fRegistry.fill(HIST("MFTMCHMID/hChi2MatchMCHMFT"), fwdtrack.chi2MatchMCHMFT());
         fRegistry.fill(HIST("MFTMCHMID/hDCAxy2D"), dcaX, dcaY);
         fRegistry.fill(HIST("MFTMCHMID/hDCAxy2DinSigma"), dcaX / std::sqrt(cXXatDCA), dcaY / std::sqrt(cYYatDCA));
         fRegistry.fill(HIST("MFTMCHMID/hDCAxy"), dcaXY);
@@ -373,8 +367,7 @@ struct skimmerPrimaryMuon {
         fRegistry.fill(HIST("MCHMID/hChi2"), fwdtrack.chi2());
         fRegistry.fill(HIST("MCHMID/hChi2MFT"), chi2mft);
         fRegistry.fill(HIST("MCHMID/hChi2MatchMCHMID"), fwdtrack.chi2MatchMCHMID());
-        fRegistry.fill(HIST("MCHMID/hChi2MatchMCHMFT"), 0.f);
-        fRegistry.fill(HIST("MCHMID/hMatchScoreMCHMFT"), 0.f);
+        fRegistry.fill(HIST("MCHMID/hChi2MatchMCHMFT"), fwdtrack.chi2MatchMCHMFT());
         fRegistry.fill(HIST("MCHMID/hDCAxy2D"), dcaX, dcaY);
         fRegistry.fill(HIST("MCHMID/hDCAxy2DinSigma"), dcaX / std::sqrt(cXXatDCA), dcaY / std::sqrt(cYYatDCA));
         fRegistry.fill(HIST("MCHMID/hDCAxy"), dcaXY);
