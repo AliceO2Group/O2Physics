@@ -73,7 +73,7 @@ struct MultCentTable {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setURL(ccdburl.value);
     ccdb->setFatalWhenNull(false); // please never crash on your own, all exceptions captured (as they always should)
-  
+
     // task-specific
     module.init(opts, initContext);
   }
