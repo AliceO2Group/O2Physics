@@ -23,11 +23,12 @@
 #include <experimental/type_traits>
 
 // O2 includes
+#include "Common/Core/PID/PIDTOF.h"
+
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
-#include "ReconstructionDataFormats/PID.h"
 #include "Framework/Logger.h"
-#include "Common/Core/PID/PIDTOF.h"
+#include "ReconstructionDataFormats/PID.h"
 
 namespace o2::aod
 {

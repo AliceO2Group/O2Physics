@@ -25,19 +25,24 @@
 
 // ROOT includes
 #include "Rtypes.h"
-#include "TMath.h"
-#include "TGraph.h"
-#include "TFile.h"
+
 #include "TF2.h"
+#include "TFile.h"
+#include "TGraph.h"
+#include "TMath.h"
 
 // O2 includes
-#include "DataFormatsTOF/ParameterContainers.h"
-#include "Framework/Logger.h"
-#include "ReconstructionDataFormats/PID.h"
-#include "Framework/DataTypes.h"
+#include "Common/Core/MetadataHelper.h"
+#include "Common/Core/TableHelper.h"
+
+#include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include "Framework/Plugins.h"
+#include "DataFormatsTOF/ParameterContainers.h"
+#include "Framework/DataTypes.h"
+#include "Framework/Logger.h"
 #include "Framework/PID.h"
+#include "Framework/Plugins.h"
+#include "ReconstructionDataFormats/PID.h"
 
 namespace o2::pid::tof
 {
@@ -626,13 +631,21 @@ class TOFSignal
 
 struct TOFResponseImpl {
   static o2::pid::tof::TOFResoParamsV3 parameters;
+  static MetadataHelper metadataInfo;
+
+  void inheritFromBaseTask(o2::framework::InitContext& initContext, const std::string task = "tof-signal");
+
+  void initSetup(o2::ccdb::BasicCCDBManager* ccdb,
+                 o2::framework::InitContext& initContext);
+  void processSetup(const int runNumber, const int64_t timeStamp);
 
   template <o2::track::PID::ID id>
   static float expectedSigma(const float tofSignal,
                              const float tofExpMom,
                              const float momentum,
                              const float eta,
-                             const float tofEvTimeErr)
+                             const float tofEvTimeErr,
+                             const o2::pid::tof::TOFResoParamsV3& params = parameters)
   {
     if (tofExpMom <= 0.f) {
       return o2::pid::tof::defaultReturnValue;
@@ -640,27 +653,28 @@ struct TOFResponseImpl {
     if (momentum <= 0) {
       return o2::pid::tof::defaultReturnValue;
     }
-    const float trackingReso = TOFResponseImpl::parameters.getResolution<id>(momentum, eta);
+    const float trackingReso = params.getResolution<id>(momentum, eta);
+    const float tofReso = params.getParameter(4);
     if (trackingReso > 0) {
       return std::sqrt(trackingReso * trackingReso +
-                       TOFResponseImpl::parameters[4] * TOFResponseImpl::parameters[4] +
+                       tofReso * tofReso +
                        tofEvTimeErr * tofEvTimeErr);
     }
     constexpr float massSquared = o2::track::pid_constants::sMasses2[id];
-    const float dpp = TOFResponseImpl::parameters[0] +
-                      TOFResponseImpl::parameters[1] * momentum +
-                      TOFResponseImpl::parameters[2] * o2::constants::physics::MassElectron / momentum;
+    const float dpp = params.getParameter(0) +
+                      params.getParameter(1) * momentum +
+                      params.getParameter(2) * o2::constants::physics::MassElectron / momentum;
     const float sigma = dpp * tofSignal / (1. + momentum * momentum / (massSquared));
     return std::sqrt(sigma * sigma +
-                     TOFResponseImpl::parameters[3] * TOFResponseImpl::parameters[3] / momentum / momentum +
-                     TOFResponseImpl::parameters[4] * TOFResponseImpl::parameters[4] +
+                     params.getParameter(3) * params.getParameter(3) / momentum / momentum +
+                     tofReso * tofReso +
                      tofEvTimeErr * tofEvTimeErr);
   }
 
   template <o2::track::PID::ID id, typename TrackType>
-  static float expectedSigma(const TrackType& track)
+  static float expectedSigma(const TrackType& track, const o2::pid::tof::TOFResoParamsV3& params = parameters)
   {
-    return expectedSigma<id>(track.tofSignal(), track.tofExpMom(), track.p(), track.eta(), track.tofEvTimeErr());
+    return expectedSigma<id>(track.tofSignal(), track.tofExpMom(), track.p(), track.eta(), track.tofEvTimeErr(), params);
   }
 
   template <o2::track::PID::ID id>
@@ -670,9 +684,10 @@ struct TOFResponseImpl {
                       const float momentum,
                       const float eta,
                       const float tofEvTime,
-                      const float tofEvTimeErr)
+                      const float tofEvTimeErr,
+                      const o2::pid::tof::TOFResoParamsV3& params = parameters)
   {
-    const float resolution = expectedSigma<id>(tofSignal, tofExpMom, momentum, eta, tofEvTimeErr);
+    const float resolution = expectedSigma<id>(tofSignal, tofExpMom, momentum, eta, tofEvTimeErr, params);
     const float expTime = o2::framework::pid::tof::MassToExpTime(tofExpMom,
                                                                  length,
                                                                  o2::track::pid_constants::sMasses2[id]);
@@ -681,9 +696,9 @@ struct TOFResponseImpl {
   }
 
   template <o2::track::PID::ID id, typename TrackType>
-  static float nSigma(const TrackType& track)
+  static float nSigma(const TrackType& track, const o2::pid::tof::TOFResoParamsV3& params = parameters)
   {
-    return nSigma<id>(track.tofSignal(), track.tofExpMom(), track.length(), track.p(), track.eta(), track.tofEvTime(), track.tofEvTimeErr());
+    return nSigma<id>(track.tofSignal(), track.tofExpMom(), track.length(), track.p(), track.eta(), track.tofEvTime(), track.tofEvTimeErr(), params);
   }
 
   static void setInit(bool value = true) { mIsInit = value; } //! Set the initialization flag
@@ -691,6 +706,35 @@ struct TOFResponseImpl {
 
  private:
   static bool mIsInit; //! Flag to check if the parameters are initialized
+
+  o2::ccdb::BasicCCDBManager* mCcdb = nullptr; // Pointer to the CCDB manager
+
+  int mLastRunNumber = -1; // Last run number for which the calibration was loaded
+
+  // Configurable options
+  std::string mUrl = "undefined";
+  std::string mPathGrpLhcIf = "undefined";
+  int64_t mTimestamp = -1;
+  std::string mTimeShiftCCDBPathPos = "undefined";
+  std::string mTimeShiftCCDBPathNeg = "undefined";
+  std::string mTimeShiftCCDBPathPosMC = "undefined";
+  std::string mTimeShiftCCDBPathNegMC = "undefined";
+  std::string mParamFileName = "undefined";
+  std::string mParametrizationPath = "undefined";
+  std::string mReconstructionPass = "undefined";
+  std::string mReconstructionPassDefault = "undefined";
+  bool mFatalOnPassNotAvailable = false;
+  bool mEnableTimeDependentResponse = false;
+  int mCollisionSystem = -1;
+  bool mAutoSetProcessFunctions = false;
+
+  template <typename VType>
+  void getCfg(o2::framework::InitContext& initContext, const std::string name, VType& v, const std::string task)
+  {
+    if (!getTaskOptionValue(initContext, task, name, v, false)) {
+      LOG(fatal) << "Could not get " << name << " from " << task << " task";
+    }
+  }
 };
 
 struct TOFResponse : o2::framework::LoadableServicePlugin<TOFResponseImpl> {

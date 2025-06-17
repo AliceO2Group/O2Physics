@@ -15,29 +15,30 @@
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 ///
 
+#include <map>
+#include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
-#include <string>
-#include <map>
-#include <unordered_map>
 
 // O2 includes
-#include "Framework/runDataProcessing.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "CCDB/BasicCCDBManager.h"
 #include "TOFBase/EventTimeMaker.h"
 
 // O2Physics includes
-#include "TableHelper.h"
-#include "MetadataHelper.h"
 #include "CollisionTypeHelper.h"
+#include "MetadataHelper.h"
+#include "TableHelper.h"
 #include "pidTOFBase.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -1158,7 +1159,7 @@ struct tofPidMerge {
   using ResponseImplementation = o2::pid::tof::ExpTimes<Run3TrksWtofWevTime::iterator, pid>;
   void processRun3(Run3TrksWtofWevTime const& tracks,
                    aod::Collisions const&,
-                   aod::BCsWithTimestamps const& bcs)
+                   aod::BCsWithTimestamps const&)
   {
     constexpr auto responseEl = ResponseImplementation<PID::Electron>();
     constexpr auto responseMu = ResponseImplementation<PID::Muon>();
@@ -1320,7 +1321,7 @@ struct tofPidMerge {
   using ResponseImplementationRun2 = o2::pid::tof::ExpTimes<Run2TrksWtofWevTime::iterator, pid>;
   void processRun2(Run2TrksWtofWevTime const& tracks,
                    aod::Collisions const&,
-                   aod::BCsWithTimestamps const& bcs)
+                   aod::BCsWithTimestamps const&)
   {
     constexpr auto responseEl = ResponseImplementationRun2<PID::Electron>();
     constexpr auto responseMu = ResponseImplementationRun2<PID::Muon>();
