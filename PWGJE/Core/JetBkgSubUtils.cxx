@@ -160,7 +160,7 @@ std::tuple<double, double> JetBkgSubUtils::estimateRhoPerpCone(const std::vector
   return std::make_tuple(perpPtDensity, perpMdDensity);
 }
 
-fastjet::PseudoJet JetBkgSubUtils::doRhoAreaSub(fastjet::PseudoJet& jet, double rhoParam, double rhoMParam)
+fastjet::PseudoJet JetBkgSubUtils::doRhoAreaSub(const fastjet::PseudoJet& jet, double rhoParam, double rhoMParam)
 {
 
   fastjet::Subtractor sub = fastjet::Subtractor(rhoParam, rhoMParam);

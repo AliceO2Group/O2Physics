@@ -79,7 +79,7 @@ class JetBkgSubUtils
   /// @param rhoParam the underlying evvent density vs pT (to be set)
   /// @param rhoParam the underlying evvent density vs jet mass (to be set)
   /// @return jet, background subtracted jet
-  fastjet::PseudoJet doRhoAreaSub(fastjet::PseudoJet& jet, double rhoParam, double rhoMParam);
+  fastjet::PseudoJet doRhoAreaSub(const fastjet::PseudoJet& jet, double rhoParam, double rhoMParam);
 
   /// @brief method that subtracts the background from the input particles using the event-wise cosntituent subtractor
   /// @param inputParticles (all the tracks/clusters/particles in the event)
