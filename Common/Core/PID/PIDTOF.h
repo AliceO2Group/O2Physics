@@ -631,7 +631,7 @@ class TOFSignal
 
 struct TOFResponseImpl {
   static o2::pid::tof::TOFResoParamsV3 parameters;
-  static MetadataHelper metadataInfo;
+  static o2::common::core::MetadataHelper metadataInfo;
 
   void inheritFromBaseTask(o2::framework::InitContext& initContext, const std::string task = "tof-signal");
 

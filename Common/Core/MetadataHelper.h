@@ -18,9 +18,13 @@
 #ifndef COMMON_CORE_METADATAHELPER_H_
 #define COMMON_CORE_METADATAHELPER_H_
 
-#include <string>
-#include <map>
 #include "Framework/ConfigContext.h"
+
+#include <map>
+#include <string>
+
+namespace o2::common::core
+{
 
 struct MetadataHelper {
   /// @brief Constructor for the MetadataHelper. Defines the all the metadata keys that will be looked for and accessible
@@ -63,5 +67,9 @@ struct MetadataHelper {
   std::map<std::string, std::string> mMetadata; /// < The metadata map
   bool mIsInitialized = false;                  /// < Flag to check if the metadata has been initialized
 };
+
+} // namespace o2::common::core
+
+using MetadataHelper = o2::common::core::MetadataHelper; // Alias for the MetadataHelper
 
 #endif // COMMON_CORE_METADATAHELPER_H_

@@ -122,6 +122,8 @@ float TOFResoParamsV3::getTimeShift(float eta, int16_t sign) const
 using namespace o2::framework;
 
 o2::pid::tof::TOFResoParamsV3 o2::pid::tof::TOFResponseImpl::parameters;
+o2::common::core::MetadataHelper o2::pid::tof::TOFResponseImpl::metadataInfo;
+
 bool o2::pid::tof::TOFResponseImpl::mIsInit = false;
 
 void o2::pid::tof::TOFResponseImpl::inheritFromBaseTask(o2::framework::InitContext& initContext, const std::string task)

@@ -34,10 +34,11 @@ using namespace o2::track;
 /// Task to produce the TOF QA plots
 struct tofSimple {
   Service<o2::pid::tof::TOFResponse> tofResponse;
-  void init(o2::framework::InitContext&)
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  void init(o2::framework::InitContext& initContext)
   {
     LOG(info) << "tofSimple >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ";
-    tofResponse->setInit();
+    tofResponse->initSetup(ccdb, initContext);
   }
   void process(aod::BCs const&) {}
 };
