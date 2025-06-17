@@ -949,11 +949,13 @@ struct HfCandidateCreator3ProngExpressions {
 
       if (matchCorrBkgs) {
         indexRec = -1; // Index of the matched reconstructed candidate
+        constexpr int MaxDepth = 2;       // Depth for final state matching
+        constexpr int ResoMaxDepth = 1;   // Depth for resonant decay matching
 
         for (const auto& pdg : mothersCorrBkgsPdgs.value) {
-          int depth = 2;
+          int depth = MaxDepth;
           if (pdg == Pdg::kDStar) {
-            depth = 3; // D0 resonant decays are active
+            depth = MaxDepth+1; // D0 resonant decays are active
           }
           auto finalStates = getDecayChannel3Prong(pdg);
           for (const auto& [chn, finalState] : finalStates) {
@@ -1008,7 +1010,7 @@ struct HfCandidateCreator3ProngExpressions {
                 indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, false>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth);
               }
             } else {
-              LOG(info) << "Final state size not supported: " << finalState.size();
+              LOG(fatal) << "Final state size not supported: " << finalState.size();
               continue; // Skip unsupported final states
             }
             if (indexRec > -1) {
