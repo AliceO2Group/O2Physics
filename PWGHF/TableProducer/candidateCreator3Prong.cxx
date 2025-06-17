@@ -959,7 +959,7 @@ struct HfCandidateCreator3ProngExpressions {
           auto finalStates = getDecayChannelMain(pdg);
           for (const auto& [chn, finalState] : finalStates) {
             std::array<int, 3> finalStateParts3Prong = std::array{finalState[0], finalState[1], finalState[2]};
-            if (finalState.size() > 3) { // Partly Reco decays with 4 or 5 final state particles, o2-linter: disable=magic-number 
+            if (finalState.size() > 3) { // Partly Reco decays with 4 or 5 final state particles, o2-linter: disable=magic-number
               if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
                 indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, true>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth, &nKinkedTracks, &nInteractionsWithMaterial);
               } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
