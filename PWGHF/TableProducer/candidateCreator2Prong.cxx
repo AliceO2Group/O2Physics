@@ -20,41 +20,40 @@
 #define HomogeneousField // o2-linter: disable=name/macro (required by KFParticle)
 #endif
 
-#include <memory>
-#include <string>
-#include <vector>
+#include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGHF/Utils/utilsMcGen.h"
+#include "PWGHF/Utils/utilsMcMatching.h"
+#include "PWGHF/Utils/utilsPid.h"
+#include "PWGHF/Utils/utilsTrkCandHf.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 
-#include <KFParticleBase.h>
-#include <KFParticle.h>
-#include <KFPTrack.h>
-#include <KFPVertex.h>
-#include <KFVertex.h>
-
-#include <TPDGCode.h>
+#include "Common/Core/trackUtilities.h"
+#include "Tools/KFparticle/KFUtilities.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
 
-#include "Common/Core/trackUtilities.h"
-#include "Tools/KFparticle/KFUtilities.h"
+#include <TPDGCode.h>
 
-#include "PWGLF/DataModel/mcCentrality.h"
+#include <KFPTrack.h>
+#include <KFPVertex.h>
+#include <KFParticle.h>
+#include <KFParticleBase.h>
+#include <KFVertex.h>
 
-#include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/Utils/utilsBfieldCCDB.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
-#include "PWGHF/Utils/utilsMcGen.h"
-#include "PWGHF/Utils/utilsPid.h"
-#include "PWGHF/Utils/utilsTrkCandHf.h"
-#include "PWGHF/Utils/utilsMcMatching.h"
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;

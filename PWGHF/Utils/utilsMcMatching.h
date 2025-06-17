@@ -57,11 +57,11 @@ namespace hf_cand_3prong
 
 // D±
 static const std::unordered_map<DecayChannelMain, const std::vector<int>> daughtersDplusMain{
-    {DecayChannelMain::DplusToPiKPi, {+kKMinus, +kKPlus, +kPiPlus}},
-    {DecayChannelMain::DplusToPiKK, {+kKMinus, +kPiPlus, +kPiPlus}},
-    {DecayChannelMain::DplusToPiKPiPi0, {+kKMinus, +kPiPlus, +kPiPlus, +kPi0}},
-    {DecayChannelMain::DplusToPiPiPi, {+kPiMinus, +kPiPlus, +kPiPlus}},
-  };
+  {DecayChannelMain::DplusToPiKPi, {+kKMinus, +kKPlus, +kPiPlus}},
+  {DecayChannelMain::DplusToPiKK, {+kKMinus, +kPiPlus, +kPiPlus}},
+  {DecayChannelMain::DplusToPiKPiPi0, {+kKMinus, +kPiPlus, +kPiPlus, +kPi0}},
+  {DecayChannelMain::DplusToPiPiPi, {+kPiMinus, +kPiPlus, +kPiPlus}},
+};
 
 static const std::unordered_map<DecayChannelResonant, const std::array<int, 2>> daughtersDplusResonant{
   {DecayChannelResonant::DplusToPhiPi, {+o2::constants::physics::kPhi, +kPiPlus}},
@@ -120,8 +120,7 @@ static const std::unordered_map<DecayChannelMain, const std::vector<int>> daught
   {DecayChannelMain::LcToPKPi, {+kProton, +kKMinus, +kPiPlus}},
   {DecayChannelMain::LcToPKPiPi0, {+kProton, +kKMinus, +kPiPlus, +kPi0}},
   {DecayChannelMain::LcToPPiPi, {+kProton, +kPiMinus, +kPiPlus}},
-  {DecayChannelMain::LcToPKK, {+kProton, +kKMinus, +kKPlus}}
-};
+  {DecayChannelMain::LcToPKK, {+kProton, +kKMinus, +kKPlus}}};
 
 static const std::unordered_map<DecayChannelResonant, const std::array<int, 2>> daughtersLcResonant{
   {DecayChannelResonant::LcToPKstar0, {+o2::constants::physics::kK0Star892, +kProton}},
@@ -257,7 +256,7 @@ template <std::size_t N>
 inline void convertPi0ToAntiPi0(const int partPdgCode, std::array<int, N>& arrPdgIndexes)
 {
   if (partPdgCode < 0) {
-    for (auto& part : arrPdgIndexes) {  // o2-linter: disable=const-ref-in-for-loop (int elements)
+    for (auto& part : arrPdgIndexes) { // o2-linter: disable=const-ref-in-for-loop (int elements)
       if (part == kPi0) {
         part = -part; // The Pi0 pdg code does not change between particle and antiparticle
       }

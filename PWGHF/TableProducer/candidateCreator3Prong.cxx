@@ -19,41 +19,40 @@
 #define HomogeneousField // o2-linter: disable=name/macro (required by KFParticle)
 #endif
 
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
-
-#include <KFParticleBase.h>
-#include <KFParticle.h>
-#include <KFPTrack.h>
-#include <KFPVertex.h>
-#include <KFVertex.h>
-
-#include <TPDGCode.h>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "ReconstructionDataFormats/DCA.h"
-
-#include "Common/Core/trackUtilities.h"
-#include "Tools/KFparticle/KFUtilities.h"
-
-#include "PWGLF/DataModel/mcCentrality.h"
-
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/Utils/utilsMcGen.h"
+#include "PWGHF/Utils/utilsMcMatching.h"
 #include "PWGHF/Utils/utilsPid.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
-#include "PWGHF/Utils/utilsMcMatching.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+
+#include "Common/Core/trackUtilities.h"
+#include "Tools/KFparticle/KFUtilities.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/DCA.h"
+
+#include <TPDGCode.h>
+
+#include <KFPTrack.h>
+#include <KFPVertex.h>
+#include <KFParticle.h>
+#include <KFParticleBase.h>
+#include <KFVertex.h>
+
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::hf_evsel;
@@ -948,14 +947,14 @@ struct HfCandidateCreator3ProngExpressions {
       }
 
       if (matchCorrBkgs) {
-        indexRec = -1; // Index of the matched reconstructed candidate
-        constexpr int MaxDepth = 2;       // Depth for final state matching
-        constexpr int ResoMaxDepth = 1;   // Depth for resonant decay matching
+        indexRec = -1;                  // Index of the matched reconstructed candidate
+        constexpr int MaxDepth = 2;     // Depth for final state matching
+        constexpr int ResoMaxDepth = 1; // Depth for resonant decay matching
 
         for (const auto& pdg : mothersCorrBkgsPdgs.value) {
           int depth = MaxDepth;
           if (pdg == Pdg::kDStar) {
-            depth = MaxDepth+1; // D0 resonant decays are active
+            depth = MaxDepth + 1; // D0 resonant decays are active
           }
           auto finalStates = getDecayChannelMain(pdg);
           for (const auto& [chn, finalState] : finalStates) {
