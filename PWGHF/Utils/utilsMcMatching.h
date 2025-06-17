@@ -247,7 +247,7 @@ inline int8_t flagResonantDecay(const int motherPdg, std::array<int, N> const& a
   return 0;
 }
 
-/// Flip the sign of a specific PDG code in an array 
+/// Flip the sign of a specific PDG code in an array
 /// of PDG codes representing either a final or a resonant state
 /// \tparam N size of the array of PDG codes
 /// \param motherPdgCode PDG code of the mother particle
