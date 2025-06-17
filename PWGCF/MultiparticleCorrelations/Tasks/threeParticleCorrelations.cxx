@@ -43,12 +43,22 @@ struct ThreeParticleCorrelations {
   float trackPtMin = 0.2, trackPtMax = 3.0;
   float trackEtaMax = 0.8;
 
+  // Track PID parameters
   double pionID = 0.0, kaonID = 1.0, protonID = 2.0;
-  float nSigma0 = 0.0, nSigma2 = 2.0, nSigma4 = 4.0;
+  float nSigma0 = 0.0, nSigma2 = 2.0, nSigma4 = 4.0, nSigma5 = 5.0;
 
+  // V0 filter parameters
+  float tpcNCrossedRowsMin = 70.0;
+  float decayRMin = 1.2, ctauMax = 30.0;
+  float cosPAMin = 0.995;
+  float dcaProtonMin = 0.05, dcaPionMin = 0.2;
+  int dcaV0DauMax = 1;
+  
+  // Track filter parameters
   float pionPtMin = 0.3, pionPtMax = 2.3, kaonPtMin = 0.5, kaonPtMax = 2.5, protonPtMin = 0.5, protonPtMax = 2.5;
   float pionPtMid = 1.5, kaonPtMid1 = 1.5, kaonPtMid2 = 2.0, protonPtMid = 0.7;
 
+  // RD filter parameters
   float dEtaMax = 0.05, dEtaMin = 0.022;
   float dPhiStarMinOS = 0.075, dPhiStarMinSS = 0.12;
   float rMin = 0.8, rMax = 2.5;
@@ -64,13 +74,13 @@ struct ThreeParticleCorrelations {
   HistogramRegistry rQARegistry{"QARegistry", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   // Collision & Event filters
-  Filter collCent = aod::cent::centFT0C > centMin&& aod::cent::centFT0C < centMax;
+  Filter collCent = aod::cent::centFT0C > centMin && aod::cent::centFT0C < centMax;
   Filter collZvtx = nabs(aod::collision::posZ) < zvtxMax;
   Filter mcCollZvtx = nabs(aod::mccollision::posZ) < zvtxMax;
   Filter evSelect = aod::evsel::sel8 == true;
 
   // Track filters
-  Filter trackPt = aod::track::pt > trackPtMin&& aod::track::pt < trackPtMax;
+  Filter trackPt = aod::track::pt > trackPtMin && aod::track::pt < trackPtMax;
   Filter trackEta = nabs(aod::track::eta) < trackEtaMax;
   Filter globalTracks = requireGlobalTrackInFilter();
 
@@ -98,8 +108,8 @@ struct ThreeParticleCorrelations {
                                                      aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>>;
 
   // Partitions
-  Partition<MyFilteredMCParticles> mcTracks = aod::mcparticle::pt > trackPtMin&& aod::mcparticle::pt < trackPtMax;
-  Partition<MyFilteredMCParticles> mcV0s = aod::mcparticle::pt > v0PtMin&& aod::mcparticle::pt < v0PtMax&& nabs(aod::mcparticle::eta) < v0EtaMax;
+  Partition<MyFilteredMCParticles> mcTracks = aod::mcparticle::pt > trackPtMin && aod::mcparticle::pt < trackPtMax;
+  Partition<MyFilteredMCParticles> mcV0s = aod::mcparticle::pt > v0PtMin && aod::mcparticle::pt < v0PtMax && nabs(aod::mcparticle::eta) < v0EtaMax;
   Partition<MyFilteredMCParticles> mcTriggers = ((aod::mcparticle::pdgCode == static_cast<int>(kLambda0) || aod::mcparticle::pdgCode == static_cast<int>(kLambda0Bar)) &&
                                                  aod::mcparticle::pt > v0PtMin && aod::mcparticle::pt < v0PtMax && nabs(aod::mcparticle::eta) < v0EtaMax);
   Partition<MyFilteredMCParticles> mcAssociates = (((aod::mcparticle::pdgCode == static_cast<int>(kPiPlus) || aod::mcparticle::pdgCode == static_cast<int>(kPiMinus)) && aod::mcparticle::pt > pionPtMin && aod::mcparticle::pt < pionPtMax) ||
@@ -156,8 +166,8 @@ struct ThreeParticleCorrelations {
     // QA & PID
     rQARegistry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{3, 0, 3}}});
     rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "All");
-    rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "kNoSameBunchPileup");
-    rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "kIsGoodZvtxFT0vsPV");
+    rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "kIsGoodZvtxFT0vsPV");
+    rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "kNoSameBunchPileup");
 
     rQARegistry.add("hEventCentrality", "hEventCentrality", {HistType::kTH1D, {{centralityAxis}}});
     rQARegistry.add("hEventCentrality_MC", "hEventCentrality_MC", {HistType::kTH1D, {{centralityAxis}}});
@@ -366,7 +376,7 @@ struct ThreeParticleCorrelations {
 
     // Start of the Same-Event correlations
     for (const auto& trigger : v0s) {
-      if (v0Filters(trigger, false)) {
+      if (v0Filters(collision, trigger, tracks)) {
 
         rQARegistry.fill(HIST("hPtV0"), trigger.pt(), collision.centFT0C());
         triggSign = v0Sign(trigger);
@@ -429,7 +439,7 @@ struct ThreeParticleCorrelations {
     // End of the Same-Event correlations
   }
 
-  void processMixed(MyFilteredCollisions const&, aod::V0Datas const&, MyFilteredTracks const&, aod::BCsWithTimestamps const&)
+  void processMixed(MyFilteredCollisions const&, aod::V0Datas const&, MyFilteredTracks const& tracks, aod::BCsWithTimestamps const&)
   {
 
     // Start of the Mixed-Event correlations
@@ -441,7 +451,7 @@ struct ThreeParticleCorrelations {
       auto bc = coll_1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());
       for (const auto& [trigger, associate] : soa::combinations(soa::CombinationsFullIndexPolicy(v0_1, track_2))) {
-        if (v0Filters(trigger, false) && trackFilters(associate)) {
+        if (v0Filters(coll_1, trigger, tracks) && trackFilters(associate)) {
           if (radialDistanceFilter(trigger, associate, bField, true) && fakeV0Filter(trigger, associate)) {
 
             triggSign = v0Sign(trigger);
@@ -758,7 +768,7 @@ struct ThreeParticleCorrelations {
 
     for (const auto& v0 : v0s) {
 
-      if (!v0.has_mcParticle() || v0.pt() < v0PtMin || v0.pt() > v0PtMax || std::abs(v0.eta()) > v0EtaMax) {
+      if (!v0.has_mcParticle() || v0.pt() <= v0PtMin || v0.pt() >= v0PtMax || std::abs(v0.eta()) >= v0EtaMax) {
         continue;
       }
       auto particle = v0.mcParticle();
@@ -772,7 +782,7 @@ struct ThreeParticleCorrelations {
           rMCRegistry.fill(HIST("hRecLambdaN"), v0.pt(), v0.eta(), collision.centFT0C());
         }
 
-        if (v0Filters(v0, true)) {
+        if (v0Filters(collision, v0, tracks)) {
 
           // V0 efficiency - Reconstructed
           if (v0Sign(v0) == 1) { // Lambdas
@@ -887,67 +897,81 @@ struct ThreeParticleCorrelations {
 
   //==========================================================================================================================================================================================================================================================================
 
-  template <class CollCand>
-  bool acceptEvent(const CollCand& collision, bool FillHist) // Event filter
+  template <class Col>
+  bool acceptEvent(const Col& col, bool FillHist) // Event filter
   {
 
     if (FillHist) {
       rQARegistry.fill(HIST("hNEvents"), 0.5);
     }
 
-    if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) { // kNoSameBunchPileup
-      return kFALSE;
+    if (!col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) { // kIsGoodZvtxFT0vsPV
+      return false;
     }
     if (FillHist) {
       rQARegistry.fill(HIST("hNEvents"), 1.5);
     }
 
-    if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) { // kIsGoodZvtxFT0vsPV
-      return kFALSE;
+    if (!col.selection_bit(aod::evsel::kNoSameBunchPileup)) { // kNoSameBunchPileup
+      return false;
     }
     if (FillHist) {
       rQARegistry.fill(HIST("hNEvents"), 2.5);
     }
-
-    return kTRUE;
+    
+    return true;
   }
 
-  template <class V0Cand>
-  bool v0Filters(const V0Cand& v0, bool MCRec) // V0 filter
+  template <class Col, class V0Cand, typename T>
+  bool v0Filters(const Col& col, const V0Cand& v0, T const&) // V0 filter
   {
+    
+    // Kinematic cuts
+    if (v0.pt() <= v0PtMin || v0.pt() >= v0PtMax || std::abs(v0.eta()) >= v0EtaMax) {
+      return false;
+    }
 
-    if (v0.pt() < v0PtMin || v0.pt() > v0PtMax)
-      return kFALSE;
-    if (std::abs(v0.eta()) > v0EtaMax)
-      return kFALSE;
-
-    if (!MCRec) { // Data
-      if (v0Sign(v0) == 1) {
-        const auto& posDaughter = v0.template posTrack_as<MyFilteredTracks>();
-        if (std::abs(posDaughter.tpcNSigmaPr()) > nSigma4) {
-          return kFALSE;
-        }
-      } else if (v0Sign(v0) == -1) {
-        const auto& negDaughter = v0.template negTrack_as<MyFilteredTracks>();
-        if (std::abs(negDaughter.tpcNSigmaPr()) > nSigma4) {
-          return kFALSE;
-        }
+    // Daughter cuts
+    auto posDaughter = v0.template posTrack_as<T>();
+    auto negDaughter = v0.template negTrack_as<T>();
+    if (std::abs(posDaughter.eta()) >= trackEtaMax || std::abs(negDaughter.eta()) >= trackEtaMax) {
+      return false;
+    }
+    if (posDaughter.tpcNClsCrossedRows() <= tpcNCrossedRowsMin || negDaughter.tpcNClsCrossedRows() <= tpcNCrossedRowsMin) {
+      return false;
+    }
+    if (v0Sign(v0) == 1) {
+      if (std::abs(posDaughter.tpcNSigmaPr()) >= nSigma5 || std::abs(negDaughter.tpcNSigmaPi()) >= nSigma5) {
+	return false;
       }
-    } else { // MC Reconstructed
-      if (v0Sign(v0) == 1) {
-        const auto& posDaughter = v0.template posTrack_as<MyFilteredMCTracks>();
-        if (std::abs(posDaughter.tpcNSigmaPr()) > nSigma4) {
-          return kFALSE;
-        }
-      } else if (v0Sign(v0) == -1) {
-        const auto& negDaughter = v0.template negTrack_as<MyFilteredMCTracks>();
-        if (std::abs(negDaughter.tpcNSigmaPr()) > nSigma4) {
-          return kFALSE;
-        }
+      if (std::abs(v0.dcapostopv()) <= dcaProtonMin || std::abs(v0.dcanegtopv()) <= dcaPionMin) {
+	return false;
+      }
+    } else if (v0Sign(v0) == -1) {
+      if (std::abs(posDaughter.tpcNSigmaPi()) >= nSigma5 || std::abs(negDaughter.tpcNSigmaPr()) >= nSigma5) {
+	return false;
+      }
+      if (std::abs(v0.dcapostopv()) <= dcaPionMin || std::abs(v0.dcanegtopv()) <= dcaProtonMin) {
+	return false;
       }
     }
 
-    return kTRUE;
+    // Topological cuts
+    float ctau = v0.distovertotmom(col.posX(), col.posY(), col.posZ()) * MassLambda0;
+    if (v0.v0radius() <= decayRMin) {
+      return false;
+    }
+    if (ctau >= ctauMax) {
+      return false;
+    }
+    if (v0.v0cosPA() <= cosPAMin) {
+      return false;
+    }
+    if (v0.dcaV0daughters() >= dcaV0DauMax) {
+      return false;
+    }
+
+    return true;
   }
 
   template <class TrackCand>
@@ -955,71 +979,71 @@ struct ThreeParticleCorrelations {
   {
 
     if (!track.hasTOF()) {
-      return kFALSE;
+      return false;
     }
 
     if (trackPID(track)[0] == pionID) { // Pions
-      if (std::abs(track.tpcNSigmaPi()) > nSigma4) {
-        return kFALSE;
+      if (std::abs(track.tpcNSigmaPi()) >= nSigma4) {
+        return false;
       }
       if (track.pt() < pionPtMin) {
-        return kFALSE;
+        return false;
       } else if (track.pt() > pionPtMin && track.pt() < pionPtMid) {
-        if (std::abs(track.tofNSigmaPi()) > nSigma4) {
-          return kFALSE;
+        if (std::abs(track.tofNSigmaPi()) >= nSigma4) {
+          return false;
         }
       } else if (track.pt() > pionPtMid && track.pt() < pionPtMax) {
-        if (track.tofNSigmaPi() < -nSigma4 || track.tofNSigmaPi() > nSigma0) {
-          return kFALSE;
+        if (track.tofNSigmaPi() <= -nSigma4 || track.tofNSigmaPi() >= nSigma0) {
+          return false;
         }
       } else if (track.pt() > pionPtMax) {
-        return kFALSE;
+        return false;
       }
 
     } else if (trackPID(track)[0] == kaonID) { // Kaons
-      if (std::abs(track.tpcNSigmaKa()) > nSigma4) {
-        return kFALSE;
+      if (std::abs(track.tpcNSigmaKa()) >= nSigma4) {
+        return false;
       }
       if (track.pt() < kaonPtMin) {
-        return kFALSE;
+        return false;
       } else if (track.pt() > kaonPtMin && track.pt() < kaonPtMid1) {
-        if (std::abs(track.tofNSigmaKa()) > nSigma4) {
-          return kFALSE;
+        if (std::abs(track.tofNSigmaKa()) >= nSigma4) {
+          return false;
         }
       } else if (track.pt() > kaonPtMid1 && track.pt() < kaonPtMid2) {
-        if (track.tofNSigmaKa() < -nSigma2 || track.tofNSigmaKa() > nSigma4) {
-          return kFALSE;
+        if (track.tofNSigmaKa() <= -nSigma2 || track.tofNSigmaKa() >= nSigma4) {
+          return false;
         }
       } else if (track.pt() > kaonPtMid2 && track.pt() < kaonPtMax) {
-        if (track.tofNSigmaKa() < nSigma0 || track.tofNSigmaKa() > nSigma4) {
-          return kFALSE;
+        if (track.tofNSigmaKa() <= nSigma0 || track.tofNSigmaKa() >= nSigma4) {
+          return false;
         }
       } else if (track.pt() > kaonPtMax) {
-        return kFALSE;
+        return false;
       }
 
     } else if (trackPID(track)[0] == protonID) { // Protons
-      if (std::abs(track.tpcNSigmaPr()) > nSigma4) {
-        return kFALSE;
+      if (std::abs(track.tpcNSigmaPr()) >= nSigma4) {
+        return false;
       }
       if (track.pt() < protonPtMin) {
-        return kFALSE;
+        return false;
       } else if (track.pt() > protonPtMin && track.pt() < protonPtMid) {
-        if (track.tofNSigmaPr() < -nSigma2 || track.tofNSigmaPr() > nSigma4) {
-          return kFALSE;
+        if (track.tofNSigmaPr() <= -nSigma2 || track.tofNSigmaPr() >= nSigma4) {
+          return false;
         }
       } else if (track.pt() > protonPtMid && track.pt() < protonPtMax) {
-        if (std::abs(track.tofNSigmaPr()) > nSigma4) {
-          return kFALSE;
+        if (std::abs(track.tofNSigmaPr()) >= nSigma4) {
+          return false;
         }
       } else if (track.pt() > protonPtMax) {
-        if (track.tofNSigmaPr() < -nSigma2 || track.tofNSigmaPr() > nSigma4) {
-          return kFALSE;
+        if (track.tofNSigmaPr() <= -nSigma2 || track.tofNSigmaPr() >= nSigma4) {
+          return false;
         }
       }
     }
 
-    return kTRUE;
+    return true;
   }
 
   template <class V0Cand, class TrackCand>
@@ -1027,10 +1051,10 @@ struct ThreeParticleCorrelations {
   {
 
     if (track.globalIndex() == v0.posTrackId() || track.globalIndex() == v0.negTrackId()) {
-      return kFALSE;
+      return false;
     }
 
-    return kTRUE;
+    return true;
   }
 
   template <class V0Cand, class TrackCand>
@@ -1040,7 +1064,7 @@ struct ThreeParticleCorrelations {
     if (confFakeV0Switch) {
 
       if (trackPID(track)[0] == kaonID) { // Kaons
-        return kTRUE;
+        return true;
       }
 
       std::array<float, 2> massArray;
@@ -1070,11 +1094,11 @@ struct ThreeParticleCorrelations {
 
       double invMass = RecoDecay::m(std::array{dMomArray, aMomArray}, massArray);
       if (invMass >= MassLambda0 - 4 * dGaussSigma && invMass <= MassLambda0 + 4 * dGaussSigma) {
-        return kFALSE;
+        return false;
       }
     }
 
-    return kTRUE;
+    return true;
   }
 
   template <class V0Cand, class TrackCand>
@@ -1132,13 +1156,13 @@ struct ThreeParticleCorrelations {
           }
         }
 
-        if (std::abs(dEta) < dEtaMin) {
+        if (std::abs(dEta) <= dEtaMin) {
           if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
-            if (std::abs(dPhiStar) < dPhiStarMinOS) {
+            if (std::abs(dPhiStar) <= dPhiStarMinOS) {
               pass = false;
             }
           } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
-            if (std::abs(dPhiStar) < dPhiStarMinSS) {
+            if (std::abs(dPhiStar) <= dPhiStarMinSS) {
               pass = false;
             }
           }
