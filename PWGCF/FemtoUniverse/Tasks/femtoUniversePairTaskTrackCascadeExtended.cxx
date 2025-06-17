@@ -42,10 +42,10 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
   Service<o2::framework::O2DatabasePDG> pdgMC;
   SliceCache cache;
-  using FemtoFullParticles = soa::Join<aod::FDCascParticles, aod::FDExtParticles>;
+  using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
   Preslice<FemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
 
-  using FemtoRecoParticles = soa::Join<aod::FDCascParticles, aod::FDExtParticles, aod::FDMCLabels>;
+  using FemtoRecoParticles = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels>;
   Preslice<FemtoRecoParticles> perColReco = aod::femtouniverseparticle::fdCollisionId;
 
   ConfigurableAxis confChildTempFitVarpTBins{"confChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
@@ -290,20 +290,21 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     }
   }
 
-  void processCascades(const FilteredFDCollision& col, const FemtoFullParticles& parts)
+  void processCascades([[maybe_unused]] const FilteredFDCollision& col, const FemtoFullParticles& parts, const aod::FDCascParticles& fdcascs)
   {
-    auto groupCascs = cascs->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    // const int multCol = col.multNtr();
+    // auto groupCascs = cascs->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    //  const int multCol = col.multNtr();
 
-    for (const auto& casc : groupCascs) {
-      rXiQA.fill(HIST("hMassXi"), casc.mLambda());
+    for (const auto& casc : fdcascs) {
+      const auto& part = casc.fdParticle_as<FemtoFullParticles>();
+      rXiQA.fill(HIST("hMassXi"), part.mLambda());
 
       // if (!invMCascade(casc.mLambda(), casc.mAntiLambda()))
       //   continue;
 
-      const auto& posChild = parts.iteratorAt(casc.index() - 3);
-      const auto& negChild = parts.iteratorAt(casc.index() - 2);
-      const auto& bachelor = parts.iteratorAt(casc.index() - 1);
+      const auto& posChild = parts.iteratorAt(part.globalIndex() - 3 - parts.begin().globalIndex());
+      const auto& negChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
+      const auto& bachelor = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
 
       // if (casc.transRadius() < confCascTranRad)
       //   continue;
@@ -311,7 +312,8 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       // std::cout<<"TYPE:"<<std::endl;
       // std::cout<<casc.partType()<<std::endl;
       //  nSigma selection for daughter and bachelor tracks
-      if (casc.sign() < 0) {
+
+      if (part.sign() < 0) {
         if (std::abs(posChild.tpcNSigmaPr()) > confNSigmaTPCProton) {
           continue;
         }
@@ -330,10 +332,10 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         continue;
       }
 
-      rXiQA.fill(HIST("hPtXi"), casc.pt());
-      rXiQA.fill(HIST("hEtaXi"), casc.eta());
-      rXiQA.fill(HIST("hPhiXi"), casc.phi());
-      rXiQA.fill(HIST("hMassXiSelected"), casc.mLambda());
+      rXiQA.fill(HIST("hPtXi"), part.pt());
+      rXiQA.fill(HIST("hEtaXi"), part.eta());
+      rXiQA.fill(HIST("hPhiXi"), part.phi());
+      rXiQA.fill(HIST("hMassXiSelected"), part.mLambda());
       rXiQA.fill(HIST("hDCAV0Daughters"), casc.dcaV0daughters());
       rXiQA.fill(HIST("hV0CosPA"), casc.cpav0());
       rXiQA.fill(HIST("hV0TranRad"), casc.v0radius());
@@ -344,7 +346,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       rXiQA.fill(HIST("hDcaNegtoPV"), casc.dcanegtopv());
       rXiQA.fill(HIST("hDcaBachtoPV"), casc.dcabachtopv());
       rXiQA.fill(HIST("hDcaV0toPV"), casc.dcav0topv());
-      rXiQA.fill(HIST("hInvMpT"), casc.pt(), casc.mLambda());
+      rXiQA.fill(HIST("hInvMpT"), part.pt(), part.mLambda());
 
       posChildHistos.fillQA<false, true>(posChild);
       negChildHistos.fillQA<false, true>(negChild);
@@ -702,7 +704,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processMixedEventMCgen, "Enable processing mixed event MC truth for track - cascade", false);
 
   /// This function fills MC truth particles from derived MC table
-  void processMCgen(aod::FDCascParticles const& parts)
+  void processMCgen(aod::FDParticles const& parts)
   {
     for (const auto& part : parts) {
       if (part.partType() != uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack))
