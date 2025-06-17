@@ -45,9 +45,11 @@ struct tofSimple {
 
 struct tofSimpleASD {
   Service<o2::pid::tof::TOFResponse> tofResponse;
-  void init(o2::framework::InitContext&)
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  void init(o2::framework::InitContext& initContext)
   {
     LOG(info) << "tofSimpleASD >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ";
+    tofResponse->initSetup(ccdb, initContext);
     if (!tofResponse->isInit()) {
       LOG(fatal) << "TOF response not initialized";
     } else {
@@ -59,6 +61,7 @@ struct tofSimpleASD {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  o2::pid::tof::TOFResponseImpl::metadataInfo.initMetadata(cfgc);
   auto workflow = WorkflowSpec{adaptAnalysisTask<tofSimple>(cfgc)};
   workflow.push_back(adaptAnalysisTask<tofSimpleASD>(cfgc));
   return workflow;

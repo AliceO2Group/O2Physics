@@ -630,13 +630,15 @@ class TOFSignal
 };
 
 struct TOFResponseImpl {
-  static o2::pid::tof::TOFResoParamsV3 parameters;
-  static o2::common::core::MetadataHelper metadataInfo;
+  static o2::pid::tof::TOFResoParamsV3 parameters;      // TOF response parameters for the expected resolution
+  static o2::common::core::MetadataHelper metadataInfo; // Metadata information used for the TOF response
 
-  void inheritFromBaseTask(o2::framework::InitContext& initContext, const std::string task = "tof-signal");
-
-  void initSetup(o2::ccdb::BasicCCDBManager* ccdb,
-                 o2::framework::InitContext& initContext);
+  void initSetup(o2::ccdb::BasicCCDBManager* ccdb, o2::framework::InitContext& initContext);
+  template <typename T>
+  void initSetup(T ccdb, o2::framework::InitContext& initContext)
+  {
+    initSetup(ccdb.operator->(), initContext);
+  }
   void processSetup(const int runNumber, const int64_t timeStamp);
 
   template <o2::track::PID::ID id>
@@ -705,6 +707,8 @@ struct TOFResponseImpl {
   static bool isInit() { return mIsInit; }                    //! Get the initialization flag
 
  private:
+  void inheritFromBaseTask(o2::framework::InitContext& initContext, const std::string task = "tof-signal");
+
   static bool mIsInit; //! Flag to check if the parameters are initialized
 
   o2::ccdb::BasicCCDBManager* mCcdb = nullptr; // Pointer to the CCDB manager
