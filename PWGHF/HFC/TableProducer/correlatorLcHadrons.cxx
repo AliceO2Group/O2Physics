@@ -92,11 +92,12 @@ struct HfCorrelatorLcHadronsSelection {
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
+  Configurable<float> centMin{"centMin", 0., "Minimum Centrality"};
+  Configurable<float> centMax{"centMax", 100.,"Maximum Centrality"};
 
   HfHelper hfHelper;
   SliceCache cache;
 
-  //using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
   using CandidatesLcData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
   using CandidatesLcMcRec = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>;
@@ -140,9 +141,8 @@ struct HfCorrelatorLcHadronsSelection {
     if (selNoSameBunchPileUpColl) {
       isNosameBunchPileUp = static_cast<bool>(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup));
     }
-    //isSelColl = isLcFound && isSel8 && isNosameBunchPileUp;
-    //lcSel(isSelColl);
-    isCentInRange = cent >= 0. && cent < 100.;  // adjust percentile as needed
+    
+    isCentInRange = cent >= centMin && cent < centMax;  
     isSelColl = isLcFound && isSel8 && isNosameBunchPileUp && isCentInRange;
     lcSel(isSelColl);
   }
@@ -214,7 +214,7 @@ struct HfCorrelatorLcHadrons {
   Produces<aod::Hadron> entryHadron;
   Produces<aod::LcHadronTrkPID> entryTrkPID;
 
-  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc in mult"};
+  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "number of events mixed in ME process"};
   Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying Lc efficiency weights"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
@@ -257,8 +257,6 @@ struct HfCorrelatorLcHadrons {
 
   // Event Mixing for the Data Mode
   using SelCollisionsWithLc = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::LcSelection, aod::CentFT0Ms>>;
-
-  //using SelCollisionsWithLc = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::LcSelection>>;
   using SelCollisionsWithLcMc = soa::Filtered<soa::Join<aod::McCollisions, aod::LcSelection, aod::MultsExtraMC>>; // collisionFilter applied
   using CandidatesLcData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfMlLcToPKPi>>;
   // Event Mixing for the MCRec Mode
@@ -327,6 +325,7 @@ struct HfCorrelatorLcHadrons {
     registry.add("hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}});
     registry.add("hMultFT0M", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}});
     registry.add("hZvtx", "z vertex;z vertex;entries", {HistType::kTH1F, {{200, -20., 20.}}});
+    registry.add("hCentFT0M","Centrality FT0M; Centrality;entries", {HistType::kTH1F, {{100, 0., 100.}}});
     registry.add("hLcBin", "Lc selected in pool Bin;pool Bin;entries", {HistType::kTH1F, {{9, 0., 9.}}});
     registry.add("hTracksBin", "Tracks selected in pool Bin;pool Bin;entries", {HistType::kTH1F, {{9, 0., 9.}}});
     registry.add("hMassLcVsPtvsmult", "Lc candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH3F, {{axisMassLc}, {axisPtLc}, {axisCent}}});
@@ -452,7 +451,6 @@ struct HfCorrelatorLcHadrons {
       
       if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
 	registry.fill(HIST("hMassLcVsPtvsmult"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), cent, efficiencyWeightLc);
-	//registry.fill(HIST("hMassLcVsPt"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), efficiencyWeightLc);
         registry.fill(HIST("hMassLcData"), hfHelper.invMassLcToPKPi(candidate), efficiencyWeightLc);
         registry.fill(HIST("hSelectionStatusLcToPKPi"), candidate.isSelLcToPKPi());
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -463,7 +461,6 @@ struct HfCorrelatorLcHadrons {
       }
       if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
 	registry.fill(HIST("hMassLcVsPtvsmult"), hfHelper.invMassLcToPiKP(candidate), candidate.pt(), cent, efficiencyWeightLc);
-	//registry.fill(HIST("hMassLcVsPt"), hfHelper.invMassLcToPiKP(candidate), candidate.pt(), efficiencyWeightLc);
         registry.fill(HIST("hMassLcData"), hfHelper.invMassLcToPiKP(candidate), efficiencyWeightLc);
         registry.fill(HIST("hSelectionStatusLcToPiKP"), candidate.isSelLcToPiKP());
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -547,6 +544,7 @@ struct HfCorrelatorLcHadrons {
     } // end outer Lc loop
     registry.fill(HIST("hZvtx"), collision.posZ());
     registry.fill(HIST("hMultFT0M"), collision.multFT0M());
+    registry.fill(HIST("hCentFT0M"), cent);
   }
   PROCESS_SWITCH(HfCorrelatorLcHadrons, processData, "Process data", true);
 
