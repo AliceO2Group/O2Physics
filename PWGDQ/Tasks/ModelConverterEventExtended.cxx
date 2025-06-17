@@ -16,7 +16,7 @@ using namespace o2::aod;
 struct eventExtendedConverter000_001 {
   Produces<aod::ReducedEventsExtended_001> eventExtended_001;
 
-  void processExtendedConverting(aod::ReducedEventsExtended_000 const& events)
+  void process(aod::ReducedEventsExtended_000 const& events)
   {
     for (const auto& event : events) {
         eventExtended_001(event.globalBC(), event.alias_raw(), event.selection_raw(), event.timestamp(), event.centRun2V0M(),
@@ -25,14 +25,6 @@ struct eventExtendedConverter000_001 {
             event.centFT0C(), -1.0f, -1.0f);
     }
   }
-
-  void processDummy(aod::ReducedEvents& /*events*/)
-  {
-    // do nothing
-  }
-
-  PROCESS_SWITCH(eventExtendedConverter000_001, processExtendedConverting, "Convert Table EventsExtended_000 to Table EventsExtended_001", false);
-  PROCESS_SWITCH(eventExtendedConverter000_001, processDummy, "do nothing", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
