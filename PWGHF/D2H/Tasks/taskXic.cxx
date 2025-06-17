@@ -497,7 +497,7 @@ struct HfTaskXic {
                 outputFD = candidate.mlProbXicToPKPi()[2];     /// non-prompt score
               }
               /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
-              registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXicToPiKP, ptCandidate, outputBkg, outputPrompt, outputFD, origin);
+              registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXicToPKPi, ptCandidate, outputBkg, outputPrompt, outputFD, origin);
             } else {
               registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXicToPiKP, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), origin);
             }
