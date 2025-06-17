@@ -17,20 +17,21 @@
 #ifndef PWGHF_UTILS_UTILSMCGEN_H_
 #define PWGHF_UTILS_UTILSMCGEN_H_
 
-#include <Rtypes.h>
-#include <TPDGCode.h>
+#include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/Utils/utilsMcMatching.h"
+
+#include "Common/Core/RecoDecay.h"
 
 #include <CommonConstants/PhysicsConstants.h>
+
+#include <TPDGCode.h>
+
+#include <Rtypes.h>
 
 #include <array>
 #include <cstdint>
 #include <vector>
-
-#include "Common/Core/RecoDecay.h"
-
-#include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/Utils/utilsMcMatching.h"
 
 namespace hf_mc_gen
 {
@@ -54,8 +55,8 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
       continue;
     }
     if (matchCorrBkgs) {
-      constexpr int MaxDepth = 2;       // Depth for final state matching
-      constexpr int ResoMaxDepth = 1;   // Depth for resonant decay matching
+      constexpr int MaxDepth = 2;     // Depth for final state matching
+      constexpr int ResoMaxDepth = 1; // Depth for resonant decay matching
       bool matched = false;
 
       for (const auto& [chn, finalState] : o2::hf_decay::hf_cand_2prong::daughtersD0Main) {
@@ -152,13 +153,13 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
           continue; // Skip if the particle PDG code does not match the mother PDG code
         }
         auto finalStates = o2::hf_decay::hf_cand_3prong::getDecayChannelMain(motherPdgCode);
-        constexpr int MaxDepth = 2;       // Depth for final state matching
-        constexpr int ResoMaxDepth = 1;   // Depth for resonant decay matching
+        constexpr int MaxDepth = 2;     // Depth for final state matching
+        constexpr int ResoMaxDepth = 1; // Depth for resonant decay matching
 
         int maxDepth = MaxDepth;
         bool matched = false;
         if (motherPdgCode == Pdg::kDStar) {
-          maxDepth = MaxDepth+1; // D0 resonant decays are switched on
+          maxDepth = MaxDepth + 1; // D0 resonant decays are switched on
         }
 
         std::vector<int> arrAllDaughtersIndex;
@@ -170,7 +171,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
             matched = RecoDecay::isMatchedMCGen(mcParticles, particle, motherPdgCode, finalStateParts, true, &sign, -1);
           } else if (finalState.size() == 4) { // Partly Reco 3-prong decays from 4-prong decays
             std::array<int, 4> finalStateParts = std::array{finalState[0], finalState[1], finalState[2], finalState[3]};
-            o2::hf_decay::convertPi0ToAntiPi0(particle.pdgCode(), finalStateParts);      
+            o2::hf_decay::convertPi0ToAntiPi0(particle.pdgCode(), finalStateParts);
             RecoDecay::getDaughters<false>(particle, &arrAllDaughtersIndex, finalStateParts, maxDepth);
             matched = RecoDecay::isMatchedMCGen(mcParticles, particle, motherPdgCode, finalStateParts, true, &sign, -1);
           } else if (finalState.size() == 3) { // Fully Reco 3-prong decays
