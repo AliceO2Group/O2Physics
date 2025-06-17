@@ -194,8 +194,8 @@ inline bool checkDecayChannel(std::array<int, N> const& arrPdgResoChn, std::arra
 /// \param motherPdg PDG code of the mother particle
 /// \param channel decay channel flag to be set
 /// \param arrDaughPdgs array of daughter PDG codes
-template <bool is3Prong = false, std::size_t N>
-inline int8_t flagResonantDecay(int motherPdg, std::array<int, N> const& arrDaughPdgs)
+template <std::size_t N>
+inline int8_t flagResonantDecay(const int motherPdg, std::array<int, N> const& arrDaughPdgs)
 {
   switch (motherPdg) {
     case o2::constants::physics::Pdg::kD0:
@@ -242,24 +242,25 @@ inline int8_t flagResonantDecay(int motherPdg, std::array<int, N> const& arrDaug
       break;
     default:
       LOG(fatal) << "Unknown PDG code for 3-prong final states: " << motherPdg;
-      return {};
+      return -1;
   }
   return 0;
 }
 
-/// Convert Pi0 to AntiPi0 in the array of PDG codes for antiparticles since
-/// the Pi0s stemming from antiparticle decays keep the pdg code 111.
+/// Flip the sign of a specific PDG code in an array 
+/// of PDG codes representing either a final or a resonant state
 /// \tparam N size of the array of PDG codes
-/// \param partPdgCode PDG code of the particle
-/// \param arrPdgIndexes array of PDG codes to be modified
+/// \param motherPdgCode PDG code of the mother particle
+/// \param partPdgCode PDG code of the target particle
+/// \param arrFinalStatePdgs array of PDG codes to be modified
 template <std::size_t N>
-inline void convertPi0ToAntiPi0(const int partPdgCode, std::array<int, N>& arrPdgIndexes)
+inline void changeFinalStatePdgSign(const int motherPdgCode, const int partPdgCode, std::array<int, N>& arrFinalStatePdgs)
 {
-  if (partPdgCode < 0) {
-    for (auto& part : arrPdgIndexes) { // o2-linter: disable=const-ref-in-for-loop (int elements)
-      if (part == kPi0) {
-        part = -part; // The Pi0 pdg code does not change between particle and antiparticle
-      }
+  if (motherPdgCode >= 0)
+    return;
+  for (auto& part : arrFinalStatePdgs) { // o2-linter: disable=const-ref-in-for-loop (arrFinalStatePdgs entries are modified)
+    if (part == partPdgCode) {
+      part = -part;
     }
   }
 }

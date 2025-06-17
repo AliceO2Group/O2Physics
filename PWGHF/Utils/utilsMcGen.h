@@ -60,11 +60,11 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
       bool matched = false;
 
       for (const auto& [chn, finalState] : o2::hf_decay::hf_cand_2prong::daughtersD0Main) {
-        if (finalState.size() == 3) { // Partly Reco 3-prong decays
+        if (finalState.size() == 3) { // Partly Reco 3-prong decays, o2-linter: disable=magic-number
           std::array<int, 3> finalStateParts = std::array{finalState[0], finalState[1], finalState[2]};
-          o2::hf_decay::convertPi0ToAntiPi0(particle.pdgCode(), finalStateParts);
+          o2::hf_decay::changeFinalStatePdgSign(particle.pdgCode(), +kPi0, finalStateParts);
           matched = RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, finalStateParts, true, &sign, MaxDepth);
-        } else if (finalState.size() == 2) { // Fully Reco 2-prong decays
+        } else if (finalState.size() == 2) { // Fully Reco 2-prong decays, o2-linter: disable=magic-number
           std::array<int, 2> finalStateParts = std::array{finalState[0], finalState[1]};
           matched = RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, finalStateParts, true, &sign, MaxDepth);
         } else {
@@ -164,17 +164,17 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
 
         std::vector<int> arrAllDaughtersIndex;
         for (const auto& [chn, finalState] : finalStates) {
-          if (finalState.size() == 5) { // Partly Reco 3-prong decays from 5-prong decays
+          if (finalState.size() == 5) { // Partly Reco 3-prong decays from 5-prong decays, o2-linter: disable=magic-number
             std::array<int, 5> finalStateParts = std::array{finalState[0], finalState[1], finalState[2], finalState[3], finalState[4]};
-            o2::hf_decay::convertPi0ToAntiPi0(particle.pdgCode(), finalStateParts);
+            o2::hf_decay::changeFinalStatePdgSign(particle.pdgCode(), +kPi0, finalStateParts);
             RecoDecay::getDaughters<false>(particle, &arrAllDaughtersIndex, finalStateParts, maxDepth);
             matched = RecoDecay::isMatchedMCGen(mcParticles, particle, motherPdgCode, finalStateParts, true, &sign, -1);
-          } else if (finalState.size() == 4) { // Partly Reco 3-prong decays from 4-prong decays
-            std::array<int, 4> finalStateParts = std::array{finalState[0], finalState[1], finalState[2], finalState[3]};
-            o2::hf_decay::convertPi0ToAntiPi0(particle.pdgCode(), finalStateParts);
+          } else if (finalState.size() == 4) { // Partly Reco 3-prong decays from 4-prong decays, o2-linter: disable=magic-number
+            std::array<int, 4> finalStateParts = std::array{finalState[0], finalState[1], finalState[2], finalState[3]}; 
+            o2::hf_decay::changeFinalStatePdgSign(particle.pdgCode(), +kPi0, finalStateParts);
             RecoDecay::getDaughters<false>(particle, &arrAllDaughtersIndex, finalStateParts, maxDepth);
             matched = RecoDecay::isMatchedMCGen(mcParticles, particle, motherPdgCode, finalStateParts, true, &sign, -1);
-          } else if (finalState.size() == 3) { // Fully Reco 3-prong decays
+          } else if (finalState.size() == 3) { // Fully Reco 3-prong decays, o2-linter: disable=magic-number
             std::array<int, 3> finalStateParts = std::array{finalState[0], finalState[1], finalState[2]};
             RecoDecay::getDaughters<false>(particle, &arrAllDaughtersIndex, finalStateParts, maxDepth);
             matched = RecoDecay::isMatchedMCGen(mcParticles, particle, motherPdgCode, finalStateParts, true, &sign, maxDepth);
@@ -207,7 +207,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
                 auto daughI = mcParticles.rawIteratorAt(arrResoDaughIndex[iProng]);
                 arrPDGDaugh[iProng] = daughI.pdgCode();
               }
-              channel = o2::hf_decay::flagResonantDecay<true>(motherPdgCode, arrPDGDaugh);
+              channel = o2::hf_decay::flagResonantDecay(motherPdgCode, arrPDGDaugh);
             }
             break; // Exit loop if a match is found
           }
@@ -240,7 +240,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
         }
         if (flag != 0) {
           RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
-          if (arrDaughIndex.size() == 2) {
+          if (arrDaughIndex.size() == NDaughtersResonant) {
             for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
               auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
               arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
