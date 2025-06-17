@@ -506,7 +506,7 @@ struct HfTaskB0Reduced {
       }
     }
     if (fillSparses) {
-      if constexpr (withDmesMl) {
+      if constexpr (doMc) {
         if (isSignal) {
           if constexpr (withDmesMl) {
             registry.fill(HIST("hMassPtCutVarsRecSig"), invMassB0, ptCandB0, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassD, ptD, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());

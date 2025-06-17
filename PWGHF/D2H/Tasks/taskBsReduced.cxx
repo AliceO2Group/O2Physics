@@ -453,7 +453,7 @@ struct HfTaskBsReduced {
       }
     }
     if (fillSparses) {
-      if constexpr (withDmesMl) {
+      if constexpr (doMc) {
         if (isSignal) {
           if constexpr (withDmesMl) {
             registry.fill(HIST("hMassPtCutVarsRecSig"), invMassBs, ptCandBs, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassDs, ptDs, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());
