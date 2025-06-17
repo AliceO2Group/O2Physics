@@ -244,11 +244,10 @@ class decay3bodyBuilderHelper
       if (!acceptTPCOnly) {
         if (askOnlyITSMatch) {
           if (!trackProton.hasITS() || !trackPion.hasITS() || !trackDeuteron.hasITS()) {
-          decay3body = {};
-          return false;
+            decay3body = {};
+            return false;
           }
-        }
-        else {
+        } else {
           bool isProtonTPCOnly = !trackProton.hasITS() && !trackProton.hasTOF() && !trackProton.hasTRD();
           bool isPionTPCOnly = !trackPion.hasITS() && !trackPion.hasTOF() && !trackPion.hasTRD();
           bool isDeuteronTPCOnly = !trackDeuteron.hasITS() && !trackDeuteron.hasTOF() && !trackDeuteron.hasTRD();
