@@ -223,6 +223,8 @@ class VarManager : public TObject
     kVtxChi2,
     kCentVZERO,
     kCentFT0C,
+    kCentFT0A,
+    kCentFT0M,
     kMultTPC,
     kMultFV0A,
     kMultFV0C,
@@ -1574,6 +1576,8 @@ void VarManager::FillEvent(T const& event, float* values)
 
   if constexpr ((fillMap & CollisionCent) > 0 || (fillMap & ReducedEventExtended) > 0) {
     values[kCentFT0C] = event.centFT0C();
+    values[kCentFT0A] = event.centFT0A();
+    values[kCentFT0M] = event.centFT0M();
   }
 
   if constexpr ((fillMap & CollisionMult) > 0 || (fillMap & ReducedEventExtended) > 0) {
