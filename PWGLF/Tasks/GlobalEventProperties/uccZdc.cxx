@@ -173,7 +173,7 @@ struct UccZdc {
     // define axes you want to use
     const AxisSpec axisZpos{48, -12., 12., "Vtx_{z} (cm)"};
     const AxisSpec axisEvent{18, 0.5, 18.5, ""};
-    const AxisSpec axisEta{30, -1.05, +1.05, "#eta"};
+    const AxisSpec axisEta{40, -1., +1., "#eta"};
     const AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisDeltaPt{100, -1.0, +1.0, "#Delta(p_{T})"};
     const AxisSpec axisCent{binsCent, "T0C centrality"};
@@ -245,27 +245,25 @@ struct UccZdc {
       registry.add("NchVsThreeParCorr", "MC closure;#it{N}_{ch} (|#eta| < 0.8, Corrected);#LT[#it{p}_{T}^{(3)}]#GT", kTProfile, {{nBinsNch, minNch, maxNch}});
       registry.add("NchVsFourParCorr", "MC closure;#it{N}_{ch} (|#eta| < 0.8, Corrected);#LT[#it{p}_{T}^{(4)}]#GT", kTProfile, {{nBinsNch, minNch, maxNch}});
       // Corrections
-      registry.add("NchRec", "Corrections;#it{N}_{ch} (|#eta| < 0.8);Entries;", kTH1F, {{nBinsNch, minNch, maxNch}});
-      registry.add("NchTrue", "Corrections;#it{N}_{ch} (|#eta| < 0.8);Entries;", kTH1F, {{nBinsNch, minNch, maxNch}});
-
       registry.add("zPosMC", "Filled at MC closure + Corrections;;Entries;", kTH1F, {axisZpos});
       registry.add("hEventCounterMC", "Event counter", kTH1F, {axisEvent});
       registry.add("nRecColvsCent", "", kTH2F, {{6, -0.5, 5.5}, {{axisCent}}});
-      registry.add("Pt_all_ch", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
-      registry.add("Pt_ch", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
-      registry.add("Pt_pi", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
-      registry.add("Pt_ka", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
-      registry.add("Pt_pr", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
-      registry.add("Pt_sigpos", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
-      registry.add("Pt_signeg", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
-      registry.add("Pt_re", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
-      registry.add("PtMC_ch", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
-      registry.add("PtMC_pi", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
-      registry.add("PtMC_ka", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
-      registry.add("PtMC_pr", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
-      registry.add("PtMC_sigpos", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
-      registry.add("PtMC_signeg", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
-      registry.add("PtMC_re", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
+      registry.add("Pt_all_ch", "Corrections;#it{N}_{ch} (|#eta|<0.8);;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("Pt_ch", "Corrections;#it{N}_{ch} (|#eta|<0.8);;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("Pt_pi", "Corrections;#it{N}_{ch} (|#eta|<0.8);;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("Pt_ka", "Corrections;#it{N}_{ch} (|#eta|<0.8);;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("Pt_pr", "Corrections;#it{N}_{ch} (|#eta|<0.8);;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("Pt_sigpos", "Corrections;;;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("Pt_signeg", "Corrections;;;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("Pt_re", "Corrections;;;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("PtMC_ch", "Corrections;;;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("PtMC_pi", "Corrections;;;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("PtMC_ka", "Corrections;;;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("PtMC_pr", "Corrections;;;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("PtMC_sigpos", "Corrections;;;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("PtMC_signeg", "Corrections;;;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("PtMC_re", "Corrections;;;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("McNchVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsNch, minNch, maxNch}}});
 
       auto hECMC = registry.get<TH1>(HIST("hEventCounterMC"));
       auto* x = hECMC->GetXaxis();
@@ -818,7 +816,7 @@ struct UccZdc {
   // Preslice<aod::McParticles> perMCCollision = aod::mcparticle::mcCollisionId;
   Preslice<TheFilteredSimTracks> perCollision = aod::track::collisionId;
   TRandom* randPointer = new TRandom();
-  void processMCclosure(aod::McCollisions::iterator const& mccollision, soa::SmallGroups<o2::aod::SimCollisions> const& collisions, o2::aod::BCsRun3 const& /*bcs*/, aod::McParticles const& mcParticles, TheFilteredSimTracks const& simTracks)
+  void processMCclosure(aod::McCollisions::iterator const& mccollision, soa::SmallGroups<o2::aod::SimCollisions> const& collisions, o2::aod::BCsRun3 const& /*bcs*/, aod::FT0s const& /*ft0s*/, aod::McParticles const& mcParticles, TheFilteredSimTracks const& simTracks)
   {
     float rndNum = randPointer->Uniform(0.0, 1.0);
     registry.fill(HIST("RandomNumber"), rndNum);
@@ -840,6 +838,25 @@ struct UccZdc {
         continue;
       }
 
+      const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
+
+      float aT0A = 0., aT0C = 0.;
+      if (foundBC.has_ft0()) {
+        for (const auto& amplitude : foundBC.ft0().amplitudeA()) {
+          aT0A += amplitude;
+        }
+        for (const auto& amplitude : foundBC.ft0().amplitudeC()) {
+          aT0C += amplitude;
+        }
+      } else {
+        return;
+      }
+
+      double nchRaw{0.};
+      double nchMult{0.};
+      double normT0M{0.};
+      normT0M = (aT0A + aT0C) / 100.;
+
       registry.fill(HIST("zPos"), collision.posZ());
       registry.fill(HIST("zPosMC"), mccollision.posZ());
       registry.fill(HIST("hEventCounterMC"), EvCutLabel::VtxZ);
@@ -853,13 +870,11 @@ struct UccZdc {
         registry.fill(HIST("EvtsDivided"), 0);
 
         // To use run-by-run efficiency
-        const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
         auto efficiency = ccdb->getForTimeStamp<TH1F>(paTHEff.value, foundBC.timestamp());
         if (!efficiency) {
           return;
         }
 
-        int nchRaw{0};
         std::vector<float> pTs;
         std::vector<float> vecFD;
         std::vector<float> vecOneOverEff;
@@ -876,6 +891,7 @@ struct UccZdc {
           float effValue{1.};
           float fdValue{1.};
           nchRaw++;
+
           if (applyEff) {
             effValue = efficiency->GetBinContent(efficiency->FindBin(pt));
             fdValue = fd->GetBinContent(fd->FindBin(pt));
@@ -887,7 +903,6 @@ struct UccZdc {
           }
         }
 
-        double nchMult{0.};
         nchMult = std::accumulate(vecOneOverEff.begin(), vecOneOverEff.end(), 0);
         if (nchMult < minNchSel) {
           return;
@@ -969,9 +984,18 @@ struct UccZdc {
       } else { // Correction with the remaining half of the sample
         registry.fill(HIST("EvtsDivided"), 1);
         //----- MC reconstructed -----//
-        int nchTrue{0};
-        int nchRec{0};
         const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
+        for (const auto& track : groupedTracks) {
+          // Track Selection
+          if (!track.isGlobalTrack()) {
+            continue;
+          }
+          registry.fill(HIST("ZposVsEta"), collision.posZ(), track.eta());
+          registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
+          registry.fill(HIST("dcaXYvspT"), track.dcaXY(), track.pt());
+          nchRaw++;
+        }
+
         for (const auto& track : groupedTracks) {
           // Track Selection
           if (!track.isGlobalTrack()) {
@@ -981,31 +1005,26 @@ struct UccZdc {
           if (!track.has_mcParticle()) {
             continue;
           }
+          registry.fill(HIST("Pt_all_ch"), nchRaw, track.pt());
 
           const auto& particle{track.mcParticle()};
-          registry.fill(HIST("Pt_all_ch"), cent, track.pt());
-          registry.fill(HIST("ZposVsEta"), collision.posZ(), track.eta());
-          registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
-          registry.fill(HIST("dcaXYvspT"), track.dcaXY(), track.pt());
-
           if (!particle.isPhysicalPrimary()) {
             continue;
           }
 
-          nchRec++;
-          registry.fill(HIST("Pt_ch"), cent, track.pt());
+          registry.fill(HIST("Pt_ch"), nchRaw, track.pt());
           if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
-            registry.fill(HIST("Pt_pi"), cent, track.pt());
+            registry.fill(HIST("Pt_pi"), nchRaw, track.pt());
           } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
-            registry.fill(HIST("Pt_ka"), cent, track.pt());
+            registry.fill(HIST("Pt_ka"), nchRaw, track.pt());
           } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
-            registry.fill(HIST("Pt_pr"), cent, track.pt());
+            registry.fill(HIST("Pt_pr"), nchRaw, track.pt());
           } else if (particle.pdgCode() == PDG_t::kSigmaPlus || particle.pdgCode() == PDG_t::kSigmaBarMinus) {
-            registry.fill(HIST("Pt_sigpos"), cent, track.pt());
+            registry.fill(HIST("Pt_sigpos"), nchRaw, track.pt());
           } else if (particle.pdgCode() == PDG_t::kSigmaMinus || particle.pdgCode() == PDG_t::kSigmaBarPlus) {
-            registry.fill(HIST("Pt_signeg"), cent, track.pt());
+            registry.fill(HIST("Pt_signeg"), nchRaw, track.pt());
           } else {
-            registry.fill(HIST("Pt_re"), cent, track.pt());
+            registry.fill(HIST("Pt_re"), nchRaw, track.pt());
           }
         }
 
@@ -1021,26 +1040,23 @@ struct UccZdc {
             continue;
           }
 
-          nchTrue++;
-          registry.fill(HIST("PtMC_ch"), cent, particle.pt());
+          registry.fill(HIST("PtMC_ch"), nchRaw, particle.pt());
           if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) { // pion
-            registry.fill(HIST("PtMC_pi"), cent, particle.pt());
+            registry.fill(HIST("PtMC_pi"), nchRaw, particle.pt());
           } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) { // kaon
-            registry.fill(HIST("PtMC_ka"), cent, particle.pt());
+            registry.fill(HIST("PtMC_ka"), nchRaw, particle.pt());
           } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) { // proton
-            registry.fill(HIST("PtMC_pr"), cent, particle.pt());
+            registry.fill(HIST("PtMC_pr"), nchRaw, particle.pt());
           } else if (particle.pdgCode() == PDG_t::kSigmaPlus || particle.pdgCode() == PDG_t::kSigmaBarMinus) { // positive sigma
-            registry.fill(HIST("PtMC_sigpos"), cent, particle.pt());
+            registry.fill(HIST("PtMC_sigpos"), nchRaw, particle.pt());
           } else if (particle.pdgCode() == PDG_t::kSigmaMinus || particle.pdgCode() == PDG_t::kSigmaBarPlus) { // negative sigma
-            registry.fill(HIST("PtMC_signeg"), cent, particle.pt());
+            registry.fill(HIST("PtMC_signeg"), nchRaw, particle.pt());
           } else { // rest
-            registry.fill(HIST("PtMC_re"), cent, particle.pt());
+            registry.fill(HIST("PtMC_re"), nchRaw, particle.pt());
           }
         }
-
-        registry.fill(HIST("NchRec"), nchRec);
-        registry.fill(HIST("NchTrue"), nchTrue);
       } // Half of statistics for corrections
+      registry.fill(HIST("McNchVsFT0M"), normT0M, nchRaw);
     } // Collisions
   }
   PROCESS_SWITCH(UccZdc, processMCclosure, "Process MC closure", false);
