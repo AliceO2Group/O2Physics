@@ -15,49 +15,45 @@
 ///
 ///  \author Adrian Fereydon Nassirpour <adrian.fereydon.nassirpour@cern.ch>
 
-#include <CCDB/BasicCCDBManager.h>
-
-#include <iostream>
-#include <vector>
-#include <string>
-#include <optional>
-
-#include <TLorentzVector.h>
-#include <TVector2.h>
-
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGJE/DataModel/Jet.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "CommonConstants/PhysicsConstants.h"
-
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
-#include "EMCALBase/Geometry.h"
-#include "EMCALCalib/BadChannelMap.h"
-
+#include "CommonDataFormat/InteractionRecord.h"
+#include "DataFormatsEMCAL/AnalysisCluster.h"
 #include "DataFormatsEMCAL/Cell.h"
 #include "DataFormatsEMCAL/Constants.h"
-#include "DataFormatsEMCAL/AnalysisCluster.h"
-#include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
-
+#include "DataFormatsParameters/GRPObject.h"
 #include "DetectorsBase/Propagator.h"
+#include "EMCALBase/Geometry.h"
+#include "EMCALCalib/BadChannelMap.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
 
-#include "CommonDataFormat/InteractionRecord.h"
+#include <TLorentzVector.h>
+#include <TVector2.h>
+
+#include <iostream>
+#include <optional>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -106,7 +102,7 @@ struct statPromptPhoton {
   Configurable<bool> cfgSkimmedTrigger{"cfgSkimmedTrigger", false, "Enables trigger for skimmied datasets (2023 onwards)"};
   Configurable<std::string> cfgTriggerMasks{"cfgTriggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
   Configurable<bool> cfgDebug{"cfgDebug", false, "Enables debug information for local running"};
-  
+
   int trackFilter = -1;
   std::vector<int> triggerMaskBits;
 
@@ -259,10 +255,10 @@ struct statPromptPhoton {
   using jMCClusters = o2::soa::Join<o2::aod::JMcClusterLbs, o2::aod::JClusters, o2::aod::JClusterTracks>;
   using jClusters = o2::soa::Join<o2::aod::JClusters, o2::aod::JClusterTracks>;
   using jselectedCollisions = soa::Join<aod::JCollisions, aod::JCollisionBCs, aod::JCollisionPIs, aod::EvSels, aod::JEMCCollisionLbs, aod::JMcCollisionLbs>;
-  using jselectedDataCollisions = soa::Join<aod::JCollisions, aod::JCollisionBCs, aod::JCollisionPIs, aod::EvSels, aod::JEMCCollisionLbs>;  
-  //  using jselectedDataCollisions = soa::Join<aod::JCollisions, aod::JCollisionBCs, aod::JCollisionPIs, aod::JCollisionMcInfos, aod::EvSels, aod::JEMCCollisionLbs>;  
+  using jselectedDataCollisions = soa::Join<aod::JCollisions, aod::JCollisionBCs, aod::JCollisionPIs, aod::EvSels, aod::JEMCCollisionLbs>;
+  //  using jselectedDataCollisions = soa::Join<aod::JCollisions, aod::JCollisionBCs, aod::JCollisionPIs, aod::JCollisionMcInfos, aod::EvSels, aod::JEMCCollisionLbs>;
   using jfilteredCollisions = soa::Filtered<jselectedCollisions>;
-  using jfilteredDataCollisions = soa::Filtered<jselectedDataCollisions>; 
+  using jfilteredDataCollisions = soa::Filtered<jselectedDataCollisions>;
   using jfilteredMCClusters = soa::Filtered<jMCClusters>;
   using jfilteredClusters = soa::Filtered<jClusters>;
 
@@ -639,20 +635,19 @@ struct statPromptPhoton {
     }
     histos.fill(HIST("REC_nEvents"), 2.5);
 
-
-    if(cfgSkimmedTrigger){
+    if (cfgSkimmedTrigger) {
       if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
-       	return;
+        return;
       }
-    }//JE Software Triggers
-    
+    } // JE Software Triggers
+
     histos.fill(HIST("REC_nEvents"), 3.5);
-   
+
     double weight = 1;
     if (collision.has_mcCollision()) {
       weight = collision.mcCollision().weight();
     }
-    
+
     bool noTrk = true;
     for (auto& track : tracks) {
       if (cfgJETracks) {
@@ -1071,12 +1066,12 @@ struct statPromptPhoton {
         }
       }
       double pthadsum = GetPtHadSum(tracks, track, cfgMinR, cfgMaxR, true, false, true);
-      histos.fill(HIST("REC_Trigger_V_PtHadSum_Nch"), sternPt, pthadsum,weight);
+      histos.fill(HIST("REC_Trigger_V_PtHadSum_Nch"), sternPt, pthadsum, weight);
       if (sterntrigger) {
         bool doStern = true;
         double sterncount = 1.0;
         while (doStern) {
-          histos.fill(HIST("REC_Trigger_V_PtHadSum_Stern"), sterncount, pthadsum, (2.0 / sternPt)*weight);
+          histos.fill(HIST("REC_Trigger_V_PtHadSum_Stern"), sterncount, pthadsum, (2.0 / sternPt) * weight);
           if (sterncount < sternPt) {
             sterncount++;
           } else {
@@ -1100,9 +1095,9 @@ struct statPromptPhoton {
       }
       if ((nEventsData + 1) % 10000 == 0) {
         std::cout << "Processed Data Events: " << nEventsData << std::endl;
-	std::cout << "Events Trigger Bit: " << collision.triggerSel() << std::endl;
-	std::cout << "Trigger Mask Bit: " << triggerMaskBits[0] << std::endl;
-	std::cout << "Trigger Mask Cfg Line: " << cfgTriggerMasks << std::endl;
+        std::cout << "Events Trigger Bit: " << collision.triggerSel() << std::endl;
+        std::cout << "Trigger Mask Bit: " << triggerMaskBits[0] << std::endl;
+        std::cout << "Trigger Mask Cfg Line: " << cfgTriggerMasks << std::endl;
       }
     }
 
@@ -1122,14 +1117,14 @@ struct statPromptPhoton {
 
     histos.fill(HIST("DATA_nEvents"), 2.5);
 
-    if(cfgSkimmedTrigger){
+    if (cfgSkimmedTrigger) {
       if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
-       	return;
+        return;
       }
-    }//JE Software Triggers
- 
+    } // JE Software Triggers
+
     histos.fill(HIST("DATA_nEvents"), 3.5);
-    
+
     bool noTrk = true;
     for (auto& track : tracks) {
 
