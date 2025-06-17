@@ -959,7 +959,7 @@ struct HfCandidateCreator3ProngExpressions {
           auto finalStates = getDecayChannelMain(pdg);
           for (const auto& [chn, finalState] : finalStates) {
             std::array<int, 3> finalStateParts3Prong = std::array{finalState[0], finalState[1], finalState[2]};
-            if (finalState.size() > 3) { // Partly Reco decays with 4 or 5 final state particles, o2-linter: disable=magic-number
+            if (finalState.size() > 3) { // o2-linter: disable=magic-number (Partly Reco decays with 4 or 5 final state particles)
               if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
                 indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, true>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth, &nKinkedTracks, &nInteractionsWithMaterial);
               } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
@@ -972,13 +972,13 @@ struct HfCandidateCreator3ProngExpressions {
 
               if (indexRec > -1) {
                 auto motherParticle = mcParticles.rawIteratorAt(indexRec);
-                if (finalState.size() == 4) { // Check if the final state has 4 particles, o2-linter: disable=magic-number
+                if (finalState.size() == 4) { // o2-linter: disable=magic-number (Check if the final state has 4 particles)
                   std::array<int, 4> finalStateParts3ProngAll = std::array{finalState[0], finalState[1], finalState[2], finalState[3]};
                   changeFinalStatePdgSign(motherParticle.pdgCode(), +kPi0, finalStateParts3ProngAll);
                   if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, pdg, finalStateParts3ProngAll, true, &sign, depth)) {
                     indexRec = -1; // Reset indexRec if the generated decay does not match the reconstructed one is not matched
                   }
-                } else if (finalState.size() == 5) { // Check if the final state has 5 particles, o2-linter: disable=magic-number
+                } else if (finalState.size() == 5) { // o2-linter: disable=magic-number (Check if the final state has 5 particles)
                   std::array<int, 5> finalStateParts3ProngAll = std::array{finalState[0], finalState[1], finalState[2], finalState[3], finalState[4]};
                   changeFinalStatePdgSign(motherParticle.pdgCode(), +kPi0, finalStateParts3ProngAll);
                   if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, pdg, finalStateParts3ProngAll, true, &sign, depth)) {
@@ -986,7 +986,7 @@ struct HfCandidateCreator3ProngExpressions {
                   }
                 }
               }
-            } else if (finalState.size() == 3) { // Fully Reco 3-prong decays, o2-linter: disable=magic-number
+            } else if (finalState.size() == 3) { // o2-linter: disable=magic-number(Fully Reco 3-prong decays)
               if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
                 indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth, &nKinkedTracks, &nInteractionsWithMaterial);
               } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {

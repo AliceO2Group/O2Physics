@@ -783,7 +783,7 @@ struct HfCandidateCreator2ProngExpressions {
         // D0(bar) → π+ K−, π+ K− π0, π+ π−, π+ π− π0, K+ K−
         for (const auto& [chn, finalState] : hf_cand_2prong::daughtersD0Main) {
           std::array<int, 2> finalStateParts2Prong = std::array{finalState[0], finalState[1]};
-          if (finalState.size() == 3) { // Partly Reco 3-prong decays, o2-linter: disable=magic-number
+          if (finalState.size() == 3) { // o2-linter: disable=magic-number (Partly Reco 3-prong decays)
             if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
               indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, true>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, FinalStateDepth, &nKinkedTracks, &nInteractionsWithMaterial);
             } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
@@ -802,7 +802,7 @@ struct HfCandidateCreator2ProngExpressions {
                 indexRec = -1; // Reset indexRec if the generated decay does not match the reconstructed one does not match the reconstructed one
               }
             }
-          } else if (finalState.size() == 2) { // Fully Reco 2-prong decays, o2-linter: disable=magic-number
+          } else if (finalState.size() == 2) { // o2-linter: disable=magic-number (Fully Reco 2-prong decays)
             if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
               indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, FinalStateDepth, &nKinkedTracks, &nInteractionsWithMaterial);
             } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
