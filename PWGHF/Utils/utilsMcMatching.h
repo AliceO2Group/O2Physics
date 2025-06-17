@@ -164,34 +164,13 @@ inline std::unordered_map<DecayChannelMain, const std::vector<int>> getDecayChan
 }
 } // namespace hf_cand_3prong
 
-
-{
-  switch (pdgMother) {
-    case o2::constants::physics::Pdg::kDPlus:
-      return DaughtersDPlusResonant;
-    case o2::constants::physics::Pdg::kDS:
-      return DaughtersDsResonant;
-    case o2::constants::physics::Pdg::kDStar:
-      return DaughtersDstarResonant;
-    case o2::constants::physics::Pdg::kLambdaCPlus:
-      return DaughtersLcResonant;
-    case o2::constants::physics::Pdg::kXiCPlus:
-      return DaughtersXiCResonant;
-    default:
-      LOG(error) << "Unknown PDG code for 3-prong final states: " << pdgMother;
-      return {};
-  }
-}
-
-} // namespace hf_cand_3prong
-
 /// Perform the matching for a single resonant channel
 /// \tparam N size of the array of daughter PDG codes
 /// \param arrPdgResoChn array of daughter indices
 /// \param arrPdgDaugs array of PDG codes for the resonant decay
 /// \return true if the resonant channel is matched, false otherwise
 template <std::size_t N>
-inline bool checkResonantDecay(std::array<int, N> const& arrPdgResoChn, std::array<int, N> arrPdgDaugs)
+inline bool checkDecayChannel(std::array<int, N> const& arrPdgResoChn, std::array<int, N> arrPdgDaugs)
 {
   for (std::size_t i = 0; i < N; i++) {
     bool findDaug = false;
@@ -217,24 +196,70 @@ inline bool checkResonantDecay(std::array<int, N> const& arrPdgResoChn, std::arr
 /// \param channel decay channel flag to be set
 /// \param arrDaughPdgs array of daughter PDG codes
 template <bool is3Prong = false, std::size_t N>
-inline void flagResonantDecay(int motherPdg, int8_t* channel, std::array<int, N> const& arrDaughPdgs)
+inline int8_t flagResonantDecay(int motherPdg, std::array<int, N> const& arrDaughPdgs)
 {
-  if constexpr (is3Prong) {
-    std::unordered_map<o2::hf_decay::hf_cand_3prong::DecayChannelResonant, const std::array<int, 2>> resoStates = o2::hf_decay::hf_cand_3prong::getResoChannels3Prong(motherPdg);
-    for (const auto& [flag, pdgCodes] : resoStates) {
-      if (o2::hf_decay::checkResonantDecay(arrDaughPdgs, pdgCodes)) {
-        *channel = flag;
-        break;
+  switch (motherPdg) {
+    case o2::constants::physics::Pdg::kD0:
+      for (const auto& [flag, pdgCodes] : o2::hf_decay::hf_cand_2prong::daughtersD0Resonant) {
+        if (o2::hf_decay::checkDecayChannel(arrDaughPdgs, pdgCodes)) {
+          return flag;
+        }
       }
-    }
-  } else {
-    if (motherPdg != o2::constants::physics::Pdg::kD0) {
-      return;
-    }
-    for (const auto& [flag, pdgCodes] : hf_cand_2prong::DaughtersD0Resonant) {
-      if (o2::hf_decay::checkResonantDecay(arrDaughPdgs, pdgCodes)) {
-        *channel = flag;
-        break;
+      break;
+    case o2::constants::physics::Pdg::kDPlus:
+      for (const auto& [flag, pdgCodes] : o2::hf_decay::hf_cand_3prong::daughtersDplusResonant) {
+        if (o2::hf_decay::checkDecayChannel(arrDaughPdgs, pdgCodes)) {
+          return flag;
+        }
+      }
+      break;
+    case o2::constants::physics::Pdg::kDS:
+      for (const auto& [flag, pdgCodes] : o2::hf_decay::hf_cand_3prong::daughtersDsResonant) {
+        if (o2::hf_decay::checkDecayChannel(arrDaughPdgs, pdgCodes)) {
+          return flag;
+        }
+      }
+      break;
+    case o2::constants::physics::Pdg::kDStar:
+      for (const auto& [flag, pdgCodes] : o2::hf_decay::hf_cand_3prong::daughtersDstarResonant) {
+        if (o2::hf_decay::checkDecayChannel(arrDaughPdgs, pdgCodes)) {
+          return flag;
+        }
+      }
+      break;
+    case o2::constants::physics::Pdg::kLambdaCPlus:
+      for (const auto& [flag, pdgCodes] : o2::hf_decay::hf_cand_3prong::daughtersLcResonant) {
+        if (o2::hf_decay::checkDecayChannel(arrDaughPdgs, pdgCodes)) {
+          return flag;
+        }
+      }
+      break;
+    case o2::constants::physics::Pdg::kXiCPlus:
+      for (const auto& [flag, pdgCodes] : o2::hf_decay::hf_cand_3prong::daughtersXicResonant) {
+        if (o2::hf_decay::checkDecayChannel(arrDaughPdgs, pdgCodes)) {
+          return flag;
+        }
+      }
+      break;
+    default:
+      LOG(fatal) << "Unknown PDG code for 3-prong final states: " << motherPdg;
+      return {};
+  }
+  return 0;
+}
+
+/// Convert Pi0 to AntiPi0 in the array of PDG codes for antiparticles since
+/// the Pi0s stemming from antiparticle decays keep the pdg code 111.
+/// \tparam N size of the array of PDG codes
+/// \param partPdgCode PDG code of the particle
+/// \param arrPdgIndexes array of PDG codes to be modified
+template <std::size_t N>
+inline void convertPi0ToAntiPi0(const int partPdgCode, std::array<int, N>& arrPdgIndexes)
+{
+  if (partPdgCode < 0) {
+    for (auto& part : arrPdgIndexes) {  // o2-linter: disable=const-ref-in-for-loop (int elements)
+      if (part == kPi0) {
+        part = -part; // The Pi0 pdg code does not change between particle and antiparticle
       }
     }
   }

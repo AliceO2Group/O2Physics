@@ -798,6 +798,7 @@ struct HfCandidateCreator2ProngExpressions {
             if (indexRec > -1) {
               auto motherParticle = mcParticles.rawIteratorAt(indexRec);
               std::array<int, 3> finalStateParts2ProngAll = std::array{finalState[0], finalState[1], finalState[2]};
+              convertPi0ToAntiPi0(motherParticle.pdgCode(), finalStateParts2ProngAll);
               if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, Pdg::kD0, finalStateParts2ProngAll, true, &sign, FinalStateDepth)) {
                 indexRec = -1; // Reset indexRec if the generated decay does not match the reconstructed one does not match the reconstructed one
               }
@@ -820,7 +821,6 @@ struct HfCandidateCreator2ProngExpressions {
             flag = sign * (1 << chn);
 
             // Flag the resonant decay channel
-            int resoMaxDepth = 1;
             std::vector<int> arrResoDaughIndex = {};
             RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrResoDaughIndex, std::array{0}, ResoDepth);
             std::array<int, NDaughtersResonant> arrPDGDaugh = {};
@@ -829,7 +829,7 @@ struct HfCandidateCreator2ProngExpressions {
                 auto daughI = mcParticles.rawIteratorAt(arrResoDaughIndex[iProng]);
                 arrPDGDaugh[iProng] = daughI.pdgCode();
               }
-              flagResonantDecay(Pdg::kD0, &channel, arrPDGDaugh);
+              channel = flagResonantDecay(Pdg::kD0, arrPDGDaugh);
             }
             break;
           }

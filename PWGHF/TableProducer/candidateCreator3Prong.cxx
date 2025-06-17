@@ -957,7 +957,7 @@ struct HfCandidateCreator3ProngExpressions {
           if (pdg == Pdg::kDStar) {
             depth = MaxDepth+1; // D0 resonant decays are active
           }
-          auto finalStates = getDecayChannel3Prong(pdg);
+          auto finalStates = getDecayChannelMain(pdg);
           for (const auto& [chn, finalState] : finalStates) {
             std::array<int, 3> finalStateParts3Prong = std::array{finalState[0], finalState[1], finalState[2]};
             if (finalState.size() > 3) { // Partly Reco 4-prong decays
@@ -975,25 +975,13 @@ struct HfCandidateCreator3ProngExpressions {
                 auto motherParticle = mcParticles.rawIteratorAt(indexRec);
                 if (finalState.size() == 4) { // Check if the final state has 4 particles
                   std::array<int, 4> finalStateParts3ProngAll = std::array{finalState[0], finalState[1], finalState[2], finalState[3]};
-                  if (sign < 0) {
-                    for (auto& part : finalStateParts3ProngAll) {
-                      if (part == kPi0) {
-                        part = -part; // The Pi0 pdg code does not change between particle and antiparticle
-                      }
-                    }
-                  }
+                  convertPi0ToAntiPi0(motherParticle.pdgCode(), finalStateParts3ProngAll);
                   if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, pdg, finalStateParts3ProngAll, true, &sign, depth)) {
                     indexRec = -1; // Reset indexRec if the generated decay does not match the reconstructed one is not matched
                   }
                 } else if (finalState.size() == 5) { // Check if the final state has 5 particles
                   std::array<int, 5> finalStateParts3ProngAll = std::array{finalState[0], finalState[1], finalState[2], finalState[3], finalState[4]};
-                  if (sign < 0) {
-                    for (auto& part : finalStateParts3ProngAll) {
-                      if (part == kPi0) {
-                        part = -part; // The Pi0 pdg code does not change between particle and antiparticle
-                      }
-                    }
-                  }
+                  convertPi0ToAntiPi0(motherParticle.pdgCode(), finalStateParts3ProngAll);
                   if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, pdg, finalStateParts3ProngAll, true, &sign, depth)) {
                     indexRec = -1; // Reset indexRec if the generated decay does not match the reconstructed one is not matched
                   }
@@ -1017,19 +1005,26 @@ struct HfCandidateCreator3ProngExpressions {
               flag = sign * chn;
 
               // Flag the resonant decay channel
-              int resoMaxDepth = 1;
-              if (std::abs(mcParticles.rawIteratorAt(indexRec).pdgCode()) == Pdg::kDStar) {
-                resoMaxDepth = 2; // Flag D0 resonances
-              }
               std::vector<int> arrResoDaughIndex = {};
-              RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrResoDaughIndex, std::array{0}, resoMaxDepth);
+              if (pdg == Pdg::kDStar) {
+                std::vector<int> arrResoDaughIndexDStar = {};
+                RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrResoDaughIndexDStar, std::array{0}, ResoMaxDepth);
+                for (size_t iDaug = 0; iDaug < arrResoDaughIndexDStar.size(); iDaug++) {
+                  auto daughDstar = mcParticles.rawIteratorAt(arrResoDaughIndexDStar[iDaug]);
+                  if (std::abs(daughDstar.pdgCode()) == Pdg::kD0 || std::abs(daughDstar.pdgCode()) == Pdg::kDPlus) {
+                    break;
+                  }
+                }
+              } else {
+                RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrResoDaughIndex, std::array{0}, ResoMaxDepth);
+              }
               std::array<int, NDaughtersResonant> arrPDGDaugh = {};
               if (arrResoDaughIndex.size() == NDaughtersResonant) {
                 for (auto iProng = 0u; iProng < NDaughtersResonant; ++iProng) {
                   auto daughI = mcParticles.rawIteratorAt(arrResoDaughIndex[iProng]);
                   arrPDGDaugh[iProng] = daughI.pdgCode();
                 }
-                flagResonantDecay<true>(pdg, &channel, arrPDGDaugh);
+                channel = flagResonantDecay<true>(pdg, arrPDGDaugh);
               }
               break; // Exit loop if a match is found
             }
