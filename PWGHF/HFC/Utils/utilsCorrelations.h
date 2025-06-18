@@ -28,6 +28,10 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 
+using namespace o2::constants::physics;
+
+HfHelper hfHelper;
+
 namespace o2::analysis::hf_correlations
 {
 enum Region {
@@ -118,6 +122,74 @@ bool passPIDSelection(Atrack const& track, SpeciesContainer const mPIDspecies,
   }
   return true; // Passed all checks
 }
+
+template <bool isScCand, typename McParticle>
+bool matchCandAndMass(McParticle const& particle, double& massCand) {
+  const auto pdgCand = std::abs(particle.pdgCode());
+  const auto matchGenFlag = std::abs(particle.flagMcMatchGen());
+
+  // Validate PDG code based on candidate type
+  if constexpr (isScCand) {
+    if (!(pdgCand == Pdg::kSigmaC0 ||
+          pdgCand == Pdg::kSigmaCPlusPlus ||
+          pdgCand == Pdg::kSigmaCStar0 ||
+          pdgCand == Pdg::kSigmaCStarPlusPlus)) {
+      return false;
+    }
+  } else {
+    if (pdgCand != Pdg::kLambdaCPlus) {
+      return false;
+    }
+  }
+  //std::cout<<matchGenFlag<<"  "<<aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi<<" "<<BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi)<<"   "<<hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi<<"  "<<BIT(hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi)<<std::endl;
+
+  // Map decay type to mass
+  switch (matchGenFlag) {
+    case BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi):
+      massCand = o2::constants::physics::MassSigmaC0;
+      return true;
+
+    case BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi):
+      massCand = o2::constants::physics::MassSigmaCStar0;
+      return true;
+
+    case BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi):
+      massCand = o2::constants::physics::MassSigmaCStarPlusPlus;
+      return true;
+    
+    case BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi):
+      massCand = o2::constants::physics::MassSigmaCStarPlusPlus;
+      return true;
+
+    case hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi:
+      massCand = o2::constants::physics::MassLambdaCPlus;
+      return true;
+
+    default:
+      return false;
+  }
+}
+
+
+  template <bool isCandSc, typename CandType>
+  double estimateY(CandType const& candidate)
+  {
+    double y = -999.;
+    const int chargeScZero = 0;
+    if constexpr (isCandSc) {
+      int8_t chargeCand = candidate.charge();
+
+      if (chargeCand == chargeScZero) {
+        y = hfHelper.ySc0(candidate);
+      } else {
+        y = hfHelper.yScPlusPlus(candidate);
+      }
+
+    } else {
+      y = hfHelper.yLc(candidate);
+    }
+    return y;
+  }
 
 // ========= Find Leading Particle ==============
 template <typename TTracks, typename T1> //// FIXME: 14 days
