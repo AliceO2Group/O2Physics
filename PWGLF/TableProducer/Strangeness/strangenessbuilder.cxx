@@ -196,12 +196,12 @@ struct StrangenessBuilder {
                     kCascFoundTags,
                     nTables };
 
-  enum V0PreSelection : uint8_t { selGamma = static_cast<uint8_t>(1) << static_cast<uint8_t>(0),
+  enum V0PreSelection : uint8_t { selGamma = 0,
                                   selK0Short,
                                   selLambda,
                                   selAntiLambda };
 
-  enum CascPreSelection : uint8_t { selXiMinus = static_cast<uint8_t>(1) << static_cast<uint8_t>(0),
+  enum CascPreSelection : uint8_t { selXiMinus = 0,
                                     selXiPlus,
                                     selOmegaMinus,
                                     selOmegaPlus };
@@ -714,11 +714,6 @@ struct StrangenessBuilder {
     straHelper.cascadeselections.dcacascdau = cascadeBuilderOpts.dcacascdau;
     straHelper.cascadeselections.lambdaMassWindow = cascadeBuilderOpts.lambdaMassWindow;
     straHelper.cascadeselections.maxDaughterEta = cascadeBuilderOpts.maxDaughterEta;
-  }
-
-  bool verifyMask(uint8_t bitmap, uint8_t mask)
-  {
-    return (bitmap & mask) == mask;
   }
 
   // for sorting
@@ -1485,10 +1480,7 @@ struct StrangenessBuilder {
 
           histos.fill(HIST("hPreselectionV0s"), maskV0Preselection);
 
-          if (!verifyMask(maskV0Preselection, selGamma) &&
-              !verifyMask(maskV0Preselection, selK0Short) &&
-              !verifyMask(maskV0Preselection, selLambda) &&
-              !verifyMask(maskV0Preselection, selAntiLambda)) {
+          if (maskV0Preselection == 0) {
             products.v0dataLink(-1, -1);
             continue;
           }
@@ -2048,10 +2040,7 @@ struct StrangenessBuilder {
 
           histos.fill(HIST("hPreselectionCascades"), maskCascadePreselection);
 
-          if (!verifyMask(maskCascadePreselection, selXiMinus) &&
-              !verifyMask(maskCascadePreselection, selXiPlus) &&
-              !verifyMask(maskCascadePreselection, selOmegaMinus) &&
-              !verifyMask(maskCascadePreselection, selOmegaPlus)) {
+          if (maskCascadePreselection == 0) {
             products.cascdataLink(-1);
             interlinks.cascadeToCascCores.push_back(-1);
             continue;

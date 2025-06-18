@@ -16,6 +16,7 @@
 #define PWGEM_DILEPTON_UTILS_EMTRACKUTILITIES_H_
 
 #include "Framework/DataTypes.h"
+#include "Framework/Logger.h"
 
 #include <algorithm>
 #include <map>

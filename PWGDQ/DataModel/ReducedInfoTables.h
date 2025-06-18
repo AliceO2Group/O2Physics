@@ -15,18 +15,20 @@
 #ifndef PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_
 #define PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_
 
-#include <cmath>
-#include <vector>
+#include "PWGHF/Utils/utilsPid.h"
+
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/Qvectors.h"
+
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Qvectors.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "MathUtils/Utils.h"
 
-#include "PWGHF/Utils/utilsPid.h"
+#include <cmath>
+#include <vector>
 
 namespace o2::aod
 {
@@ -146,11 +148,19 @@ DECLARE_SOA_TABLE_STAGED(ReducedEvents, "REDUCEDEVENT", //!   Main event informa
                          collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
                          collision::CollisionTime, collision::CollisionTimeRes);
 
-DECLARE_SOA_TABLE(ReducedEventsExtended, "AOD", "REEXTENDED", //!  Extended event information
+DECLARE_SOA_TABLE(ReducedEventsExtended_000, "AOD", "REEXTENDED", //!  Extended event information
                   bc::GlobalBC, evsel::Alias, evsel::Selection, timestamp::Timestamp, cent::CentRun2V0M,
                   mult::MultTPC, mult::MultFV0A, mult::MultFV0C, mult::MultFT0A, mult::MultFT0C,
                   mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC, mult::MultTracklets, mult::MultNTracksPV,
                   cent::CentFT0C);
+
+DECLARE_SOA_TABLE_VERSIONED(ReducedEventsExtended_001, "AOD", "REEXTENDED", 1, //!  Extended event information
+                            bc::GlobalBC, evsel::Alias, evsel::Selection, timestamp::Timestamp, cent::CentRun2V0M,
+                            mult::MultTPC, mult::MultFV0A, mult::MultFV0C, mult::MultFT0A, mult::MultFT0C,
+                            mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC, mult::MultTracklets, mult::MultNTracksPV,
+                            cent::CentFT0C, cent::CentFT0A, cent::CentFT0M);
+
+using ReducedEventsExtended = ReducedEventsExtended_001;
 
 DECLARE_SOA_TABLE(ReducedEventsMultPV_000, "AOD", "REMULTPV", //!  Multiplicity information for primary vertex
                   mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,
@@ -854,7 +864,7 @@ DECLARE_SOA_TABLE(DileptonsMiniTree, "AOD", "RTDILEPTMTREE", //!
                   dilepton_track_index::Pt2, dilepton_track_index::Eta2, dilepton_track_index::Phi2);
 
 DECLARE_SOA_TABLE(DileptonsMiniTreeGen, "AOD", "RTDILMTREEGEN", //!
-                  reducedpair::McDecision, mccollision::ImpactParameter,
+                  reducedpair::McDecision, mccollision::ImpactParameter, reducedpair::CentFT0C,
                   dilepton_track_index::PtMC1, dilepton_track_index::EtaMC1, dilepton_track_index::PhiMC1,
                   dilepton_track_index::PtMC2, dilepton_track_index::EtaMC2, dilepton_track_index::PhiMC2);
 
