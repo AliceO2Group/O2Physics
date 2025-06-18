@@ -20,6 +20,8 @@
 #include "Framework/InitContext.h"
 #include "Framework/RunningWorkflowInfo.h"
 
+using namespace o2::common::core;
+
 MetadataHelper::MetadataHelper()
 {
   const std::array<std::string, 8> keyList = {"DataType",
