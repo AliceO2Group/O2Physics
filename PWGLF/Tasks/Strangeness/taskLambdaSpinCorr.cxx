@@ -868,7 +868,7 @@ struct LfTaskLambdaSpinCorr {
 
       // auto postrack1 = v0.template posTrackExtra_as<dauTracks>();
       // auto negtrack1 = v0.template negTrackExtra_as<dauTracks>();
-      
+
       // 2nd loop for combination of lambda lambda
       for (const auto& v02 : V0s) {
         if (v02.index() <= v0.index()) {
