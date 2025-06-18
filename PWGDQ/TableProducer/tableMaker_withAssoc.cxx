@@ -104,8 +104,8 @@ using MyEventsWithMults = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
 using MyEventsWithFilter = soa::Join<aod::Collisions, aod::EvSels, aod::DQEventFilter>;
 using MyEventsWithMultsAndFilter = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::DQEventFilter>;
 using MyEventsWithMultsAndRapidityGapFilter = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::DQRapidityGapFilter>;
-using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
-using MyEventsWithCentAndMults = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults, aod::MultsExtra>;
+using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms>;
+using MyEventsWithCentAndMults = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::Mults, aod::MultsExtra>;
 using MyEventsWithMultsExtra = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra>;
 using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::FwdTracksDCA>;
@@ -770,6 +770,8 @@ struct TableMaker {
     int multTracklets = -1.0;
     int multTracksPV = -1.0;
     float centFT0C = -1.0;
+    float centFT0A = -1.0;
+    float centFT0M = -1.0;
 
     for (const auto& collision : collisions) {
 
@@ -898,9 +900,11 @@ struct TableMaker {
       }
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionCent) > 0) {
         centFT0C = collision.centFT0C();
+        centFT0A = collision.centFT0A();
+        centFT0M = collision.centFT0M();
       }
       eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO],
-                    multTPC, multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTracksPV, centFT0C);
+                    multTPC, multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTracksPV, centFT0C, centFT0A, centFT0M);
       eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
       eventInfo(collision.globalIndex());
       if constexpr ((TEventFillMap & VarManager::ObjTypes::Zdc) > 0) {

@@ -54,6 +54,7 @@ struct HfCorrelatorHfeHadrons {
   Configurable<float> zPvPosMax{"zPvPosMax", 10., "Maximum z of the primary vertex (cm)"};
   Configurable<bool> isRun3{"isRun3", true, "Data is from Run3 or Run2"};
 
+  Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "number of events mixed in ME process"};
   // Associated Hadron selection
   Configurable<float> ptTrackMin{"ptTrackMin", 0.1f, "Transverse momentum range for associated hadron tracks"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8f, "Eta range  for associated hadron tracks"};
@@ -377,7 +378,7 @@ struct HfCorrelatorHfeHadrons {
   void processDataMixedEvent(TableCollisions const& collision, aod::HfCorrSelEl const& electron, TableTracks const& tracks)
   {
     auto tracksTuple = std::make_tuple(electron, tracks);
-    Pair<TableCollisions, aod::HfCorrSelEl, TableTracks, BinningType> pair{corrBinning, 5, -1, collision, tracksTuple, &cache};
+    Pair<TableCollisions, aod::HfCorrSelEl, TableTracks, BinningType> pair{corrBinning, numberEventsMixed, -1, collision, tracksTuple, &cache};
 
     // loop over the rows of the new table
     for (const auto& [c1, tracks1, c2, tracks2] : pair) {
@@ -392,7 +393,7 @@ struct HfCorrelatorHfeHadrons {
   void processMcRecMixedEvent(McTableCollisions const& mccollision, aod::HfCorrSelEl const& electron, McTableTracks const& mcTracks)
   {
     auto tracksTuple = std::make_tuple(electron, mcTracks);
-    Pair<McTableCollisions, aod::HfCorrSelEl, McTableTracks, BinningType> pairMcRec{corrBinning, 5, -1, mccollision, tracksTuple, &cache};
+    Pair<McTableCollisions, aod::HfCorrSelEl, McTableTracks, BinningType> pairMcRec{corrBinning, numberEventsMixed, -1, mccollision, tracksTuple, &cache};
 
     // loop over the rows of the new table
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcRec) {

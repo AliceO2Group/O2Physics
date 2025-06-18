@@ -13,8 +13,19 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include <vector>
 #include "PWGJE/TableProducer/Matching/Substructure/jetSubstructureMatchingSub.cxx"
+
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetSubstructure.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/ConfigContext.h>
+#include <Framework/DataProcessorSpec.h>
+#include <Framework/runDataProcessing.h>
+
+#include <vector>
 
 using DielectronChargedJetSubstructureMatchingSub = JetSubstructureMatchingSub<soa::Join<aod::DielectronChargedJets, aod::DielectronChargedJetConstituents, aod::DielectronChargedJetsMatchedToDielectronChargedEventWiseSubtractedJets>,
                                                                                soa::Join<aod::DielectronChargedEventWiseSubtractedJets, aod::DielectronChargedEventWiseSubtractedJetConstituents, aod::DielectronChargedEventWiseSubtractedJetsMatchedToDielectronChargedJets>,

@@ -868,6 +868,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "ee pairs from non-prompt j/psi decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
+  if (!nameStr.compare("mumuFromPhi")) {
+    MCProng prong(2, {13, 333}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "mumu pairs from phi decays", {prong, prong}, {1, 1}); // signal at pair level
+    return signal;
+  }
   if (!nameStr.compare("mumuFromJpsi")) {
     MCProng prong(2, {13, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "mumu pairs from j/psi decays", {prong, prong}, {1, 1}); // signal at pair level
