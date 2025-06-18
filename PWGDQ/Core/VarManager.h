@@ -5301,7 +5301,7 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
         values[VarManager::kPairPt] = KFGeoTwoLeptons.GetPt();
       }
 
-      KFGeoFourProng.SetConstructMethod(3);
+      KFGeoFourProng.SetConstructMethod(2);
       KFGeoFourProng.AddDaughter(KFGeoTwoLeptons);
       KFGeoFourProng.AddDaughter(trk1KF);
       KFGeoFourProng.AddDaughter(trk2KF);
