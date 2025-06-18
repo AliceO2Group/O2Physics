@@ -15,7 +15,6 @@
 /// \brief  Analysis to do PID
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -24,13 +23,11 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
-
 #include "TF1.h"
 
 using namespace o2;
@@ -100,7 +97,7 @@ struct DedxAnalysis {
   Configurable<float> maxMassGamma{"maxMassGamma", 0.002022f,
                                    "Maximum Mass Gamma"};
   Configurable<bool> calibrationMode{"calibrationMode", true, "calibration mode"};
-  Configurable<bool> additionalTrackCuts{"additionalTrackCuts", true, "additional track cuts"};
+  Configurable<bool> additionalCuts{"additionalCuts", true, "additional cuts"};
   // Histograms names
   static constexpr std::string_view kDedxvsMomentumPos[kParticlesType] = {"dEdx_vs_Momentum_all_Pos", "dEdx_vs_Momentum_Pi_v0_Pos", "dEdx_vs_Momentum_Pr_v0_Pos", "dEdx_vs_Momentum_El_v0_Pos"};
   static constexpr std::string_view kDedxvsMomentumNeg[kParticlesType] = {"dEdx_vs_Momentum_all_Neg", "dEdx_vs_Momentum_Pi_v0_Neg", "dEdx_vs_Momentum_Pr_v0_Neg", "dEdx_vs_Momentum_El_v0_Neg"};
@@ -436,7 +433,7 @@ struct DedxAnalysis {
     if (!collision.sel8())
       return;
 
-    if (additionalTrackCuts) {
+    if (additionalCuts) {
       if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
         return;
 
