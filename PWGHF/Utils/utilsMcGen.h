@@ -54,7 +54,7 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
       rowMcMatchGen(flag, origin, channel, -1);
       continue;
     }
-    if (matchCorrBkgs) {
+    if (matchCorrelatedBackgrounds) {
       constexpr int MaxDepth = 2;     // Depth for final state matching
       constexpr int ResoMaxDepth = 1; // Depth for resonant decay matching
       bool matched = false;

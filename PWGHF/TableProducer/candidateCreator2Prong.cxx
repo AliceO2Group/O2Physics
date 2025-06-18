@@ -694,7 +694,7 @@ struct HfCandidateCreator2ProngExpressions {
   Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
   Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", false, "Match also candidates with tracks that decay with kinked topology"};
   Configurable<bool> matchInteractionsWithMaterial{"matchInteractionsWithMaterial", false, "Match also candidates with tracks that interact with material"};
-  Configurable<bool> matchCorrBkgs{"matchCorrBkgs", false, "Match correlated background candidates"};
+  Configurable<bool> matchCorrelatedBackgrounds{"matchCorrelatedBackgrounds", false, "Match correlated background candidates"};
 
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
 
@@ -775,7 +775,7 @@ struct HfCandidateCreator2ProngExpressions {
       }
       std::vector<int> idxBhadMothers{};
 
-      if (matchCorrBkgs) {
+      if (matchCorrelatedBackgrounds) {
         indexRec = -1; // Index of the matched reconstructed candidate
         constexpr int FinalStateDepth = 2;
         constexpr int ResoDepth = 1;

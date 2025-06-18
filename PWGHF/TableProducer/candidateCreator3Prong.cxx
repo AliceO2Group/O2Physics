@@ -851,7 +851,7 @@ struct HfCandidateCreator3ProngExpressions {
   Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
   Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", false, "Match also candidates with tracks that decay with kinked topology"};
   Configurable<bool> matchInteractionsWithMaterial{"matchInteractionsWithMaterial", false, "Match also candidates with tracks that interact with material"};
-  Configurable<bool> matchCorrBkgs{"matchCorrBkgs", false, "Match correlated background candidates"};
+  Configurable<bool> matchCorrelatedBackgrounds{"matchCorrelatedBackgrounds", false, "Match correlated background candidates"};
   Configurable<std::vector<int>> mothersCorrBkgsPdgs{"mothersCorrBkgsPdgs", {Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kLambdaCPlus, Pdg::kXiCPlus}, "PDG codes of the mother particles of correlated background candidates"};
 
   constexpr static std::size_t NDaughtersResonant{2u};
@@ -946,7 +946,7 @@ struct HfCandidateCreator3ProngExpressions {
         }
       }
 
-      if (matchCorrBkgs) {
+      if (matchCorrelatedBackgrounds) {
         indexRec = -1;                  // Index of the matched reconstructed candidate
         constexpr int MaxDepth = 2;     // Depth for final state matching
         constexpr int ResoMaxDepth = 1; // Depth for resonant decay matching
