@@ -1,3 +1,7 @@
+export ROOT_INCLUDE_PATH=path-to-json-include // if not in O2Physics environment
+
+root -l -x -b -q "HFInvMassFitter.cxx" "runMassFitter.C(\"config_massfitter.json\")"
+
 
 Step 1: Generate ROOT dictionary:
 rootcling -f G__HFInvMassFitter.cxx -c ../HFInvMassFitter.h ../HFInvMassFitterLinkDef.h
