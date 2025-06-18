@@ -75,18 +75,8 @@ void OnnxModel::initModel(std::string localPath, bool enableOptimizations, int t
   }
 
   mEnv = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "onnx-model");
-#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-  mSession = std::make_shared<Ort::Experimental::Session>(*mEnv, modelPath, sessionOptions);
-#else
   mSession = std::make_shared<Ort::Session>(*mEnv, modelPath.c_str(), sessionOptions);
-#endif
 
-#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-  mInputNames = mSession->GetInputNames();
-  mInputShapes = mSession->GetInputShapes();
-  mOutputNames = mSession->GetOutputNames();
-  mOutputShapes = mSession->GetOutputShapes();
-#else
   Ort::AllocatorWithDefaultOptions tmpAllocator;
   for (size_t i = 0; i < mSession->GetInputCount(); ++i) {
     mInputNames.push_back(mSession->GetInputNameAllocated(i, tmpAllocator).get());
@@ -100,7 +90,6 @@ void OnnxModel::initModel(std::string localPath, bool enableOptimizations, int t
   for (size_t i = 0; i < mSession->GetOutputCount(); ++i) {
     mOutputShapes.emplace_back(mSession->GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape());
   }
-#endif
   LOG(info) << "Input Nodes:";
   for (size_t i = 0; i < mInputNames.size(); i++) {
     LOG(info) << "\t" << mInputNames[i] << " : " << printShape(mInputShapes[i]);

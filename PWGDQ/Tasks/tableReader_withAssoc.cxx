@@ -3775,8 +3775,8 @@ struct AnalysisDileptonTrackTrack {
     // do nothing
   }
 
-  PROCESS_SWITCH(AnalysisDileptonTrackTrack, processJpsiPiPi, "Run barrel pairing of J/psi with pion candidate", true);
-  PROCESS_SWITCH(AnalysisDileptonTrackTrack, processDummy, "Dummy function", false);
+  PROCESS_SWITCH(AnalysisDileptonTrackTrack, processJpsiPiPi, "Run barrel pairing of J/psi with pion candidate", false);
+  PROCESS_SWITCH(AnalysisDileptonTrackTrack, processDummy, "Dummy function", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

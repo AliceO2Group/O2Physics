@@ -2011,7 +2011,7 @@ struct AnalysisSameEventPairing {
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig->GetName()), VarManager::fgValues);
           if (useMiniTree.fConfigMiniTree) {
             auto mcEvent = mcEvents.rawIteratorAt(mctrack.reducedMCeventId());
-            dileptonMiniTreeGen(mcDecision, mcEvent.impactParameter(), mctrack.pt(), mctrack.eta(), mctrack.phi(), -999, -999, -999);
+            dileptonMiniTreeGen(mcDecision, mcEvent.impactParameter(), VarManager::fgValues[VarManager::kCentFT0C], mctrack.pt(), mctrack.eta(), mctrack.phi(), -999, -999, -999);
           }
         }
       }

@@ -15,38 +15,40 @@
 // Author: Rik Spijkers (rik.spijkers@cern.ch)
 //
 
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/Utils/inelGt.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "EventFiltering/Zorro.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
 #include <Math/Vector4D.h>
-#include <cmath>
+#include <TFile.h>
+#include <TH2F.h>
+#include <TList.h>
+#include <TLorentzVector.h>
+#include <TPDGCode.h>
+#include <TProfile.h>
+
 #include <array>
+#include <cmath>
 #include <cstdlib>
 #include <string>
 #include <utility>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "EventFiltering/Zorro.h"
-#include "PWGLF/Utils/inelGt.h"
-
-#include <TFile.h>
-#include <TList.h>
-#include <TH2F.h>
-#include <TProfile.h>
-#include <TLorentzVector.h>
-#include <TPDGCode.h>
 // #include <TDatabasePDG.h>
 
 using namespace o2;
@@ -536,8 +538,8 @@ struct CascadeCorrelations {
   ConfigurableAxis dcaAxis = {"dcaAxis", {100, 0.0f, 2.0f}, "cm"};
   ConfigurableAxis multiplicityAxis{"multiplicityAxis", {100, 0, 100}, "Multiplicity (MultFT0M?)"};
   ConfigurableAxis invLambdaMassAxis{"invLambdaMassAxis", {100, 1.07f, 1.17f}, "Inv. Mass (GeV/c^{2})"};
-  AxisSpec deltaYAxis{40, -2 * maxRapidity, 2 * maxRapidity, "#Delta y"};
-  AxisSpec rapidityAxis{100, -maxRapidity, maxRapidity, "y"};
+  ConfigurableAxis deltaYAxis{"deltaYAxis", {40, -2.f, 2.f}, "#Delta y"};
+  ConfigurableAxis rapidityAxis{"rapidityAxis", {100, -1.f, 1.f}, "y"};
   AxisSpec selectionFlagAxis{4, -0.5f, 3.5f, "Selection flag of casc candidate"};
   AxisSpec itsClustersAxis{8, -0.5, 7.5, "number of ITS clusters"};
   AxisSpec tpcRowsAxis{160, -0.5, 159.5, "TPC crossed rows"};
@@ -1124,7 +1126,7 @@ struct CascadeCorrelations {
 
       if (!trigger.isPhysicalPrimary() || !assoc.isPhysicalPrimary())
         continue; // require the cascades to be primaries
-      if (trigger.eta() > etaGenCascades)
+      if (TMath::Abs(trigger.eta()) > etaGenCascades)
         continue; // only apply eta cut to trigger - trigger normalization still valid without introducing 2-particle-acceptance effects
 
       double dphi = RecoDecay::constrainAngle(trigger.phi() - assoc.phi(), -PIHalf);

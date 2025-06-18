@@ -194,10 +194,10 @@ class DimuonCut : public TNamed
         return track.nClusters() >= mMinNClustersMCHMID;
 
       case DimuonCuts::kChi2:
-        return track.chi2() < mMaxChi2;
+        return track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) < mMaxChi2;
 
       case DimuonCuts::kMatchingChi2MCHMFT:
-        return track.chi2MatchMCHMFT() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) < mMaxMatchingChi2MCHMFT;
+        return track.chi2MatchMCHMFT() < mMaxMatchingChi2MCHMFT;
 
       case DimuonCuts::kMatchingChi2MCHMID:
         return track.chi2MatchMCHMID() < mMaxMatchingChi2MCHMID;

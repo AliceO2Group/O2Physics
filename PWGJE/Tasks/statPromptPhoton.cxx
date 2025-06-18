@@ -13,30 +13,43 @@
 /// \brief Reconstruction of Phi yield through track-track Minv correlations for resonance hadrochemistry analysis.
 ///
 ///
-/// \author Adrian Fereydon Nassirpour <adrian.fereydon.nassirpour@cern.ch>
+///  \author Adrian Fereydon Nassirpour <adrian.fereydon.nassirpour@cern.ch>
 
+#include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
-#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/Jet.h"
 
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "CommonConstants/PhysicsConstants.h"
+#include "CommonDataFormat/InteractionRecord.h"
+#include "DataFormatsEMCAL/AnalysisCluster.h"
+#include "DataFormatsEMCAL/Cell.h"
+#include "DataFormatsEMCAL/Constants.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/Propagator.h"
+#include "EMCALBase/Geometry.h"
+#include "EMCALCalib/BadChannelMap.h"
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include <Framework/Configurable.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/OutputObjHeader.h>
-#include <Framework/runDataProcessing.h>
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
 
 #include <TLorentzVector.h>
-#include <TMath.h>
 #include <TVector2.h>
 
-#include <cmath>
 #include <iostream>
 #include <optional>
 #include <string>
@@ -47,6 +60,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct statPromptPhoton {
+
   SliceCache cache;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<double> cfgMaxDCArToPVcut{"cfgMaxDCArToPVcut", 0.5, "Track DCAr cut to PV Maximum"};
@@ -85,8 +99,11 @@ struct statPromptPhoton {
   Configurable<bool> cfgGenHistograms{"cfgGenHistograms", false, "Enables Generated histograms"};
   Configurable<bool> cfgRecHistograms{"cfgRecHistograms", false, "Enables Reconstructed histograms"};
   Configurable<bool> cfgDataHistograms{"cfgDataHistograms", false, "Enables Data histograms"};
+  Configurable<std::string> cfgTriggerMasks{"cfgTriggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
   Configurable<bool> cfgDebug{"cfgDebug", false, "Enables debug information for local running"};
+
   int trackFilter = -1;
+  std::vector<int> triggerMaskBits;
 
   // INIT
   void init(InitContext const&)
@@ -94,6 +111,7 @@ struct statPromptPhoton {
     std::vector<double> ptBinning = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 12.0, 16.0, 20.0, 25.0, 30.0, 40.0, 50.0, 75.0, 100.0, 150.0, 200.0, 300.0, 500.0};
     AxisSpec pthadAxis = {ptBinning, "#it{p}_{T}^{had sum} [GeV/c]"};
 
+    triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(cfgTriggerMasks);
     if (cfgJETracks) {
       trackFilter = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(cfgTrackFilter));
     }
@@ -235,8 +253,11 @@ struct statPromptPhoton {
 
   using jMCClusters = o2::soa::Join<o2::aod::JMcClusterLbs, o2::aod::JClusters, o2::aod::JClusterTracks>;
   using jClusters = o2::soa::Join<o2::aod::JClusters, o2::aod::JClusterTracks>;
-  using jselectedCollisions = soa::Join<aod::JCollisions, aod::JCollisionBCs, aod::JCollisionPIs, aod::EvSels, aod::JEMCCollisionLbs>;
+  using jselectedCollisions = soa::Join<aod::JCollisions, aod::JCollisionBCs, aod::JCollisionPIs, aod::EvSels, aod::JEMCCollisionLbs, aod::JMcCollisionLbs>;
+  using jselectedDataCollisions = soa::Join<aod::JCollisions, aod::JCollisionBCs, aod::JCollisionPIs, aod::EvSels, aod::JEMCCollisionLbs>;
+  //  using jselectedDataCollisions = soa::Join<aod::JCollisions, aod::JCollisionBCs, aod::JCollisionPIs, aod::JCollisionMcInfos, aod::EvSels, aod::JEMCCollisionLbs>;
   using jfilteredCollisions = soa::Filtered<jselectedCollisions>;
+  using jfilteredDataCollisions = soa::Filtered<jselectedDataCollisions>;
   using jfilteredMCClusters = soa::Filtered<jMCClusters>;
   using jfilteredClusters = soa::Filtered<jClusters>;
 
@@ -588,7 +609,7 @@ struct statPromptPhoton {
 
   PresliceUnsorted<jEMCtracks> EMCTrackPerTrack = aod::jemctrack::trackId;
   int nEventsRecMC_JE = 0;
-  void processMCRec_JE(jfilteredCollisions::iterator const& collision, jfilteredMCClusters const& mcclusters, jTrackCandidates const& tracks, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs> const&, TrackCandidates const&, aod::JMcParticles const&, BcCandidates const&, jEMCtracks const& emctracks)
+  void processMCRec_JE(jfilteredCollisions::iterator const& collision, jfilteredMCClusters const& mcclusters, jTrackCandidates const& tracks, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs> const&, TrackCandidates const&, aod::JMcParticles const&, BcCandidates const&, jEMCtracks const& emctracks, aod::JetMcCollisions const&)
   {
 
     nEventsRecMC_JE++;
@@ -612,6 +633,17 @@ struct statPromptPhoton {
         return;
     }
     histos.fill(HIST("REC_nEvents"), 2.5);
+
+    if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
+      return;
+    }
+
+    histos.fill(HIST("REC_nEvents"), 3.5);
+
+    double weight = 1;
+    if (collision.has_mcCollision()) {
+      weight = collision.mcCollision().weight();
+    }
 
     bool noTrk = true;
     for (auto& track : tracks) {
@@ -828,9 +860,9 @@ struct statPromptPhoton {
         histos.fill(HIST("REC_Cluster_QA"), 4.5);
         clustertrigger = true;
         double pthadsum = GetPtHadSum(tracks, mccluster, cfgMinR, cfgMaxR, false, false, true);
-        histos.fill(HIST("REC_Trigger_V_PtHadSum_Photon"), mccluster.energy(), pthadsum);
-        histos.fill(HIST("REC_PtHadSum_Photon"), pthadsum);
-        histos.fill(HIST("REC_Trigger_Energy"), mccluster.energy());
+        histos.fill(HIST("REC_Trigger_V_PtHadSum_Photon"), mccluster.energy(), pthadsum, weight);
+        histos.fill(HIST("REC_PtHadSum_Photon"), pthadsum, weight);
+        histos.fill(HIST("REC_Trigger_Energy"), mccluster.energy(), weight);
       }
 
       auto ClusterParticles = mccluster.mcParticles_as<aod::JMcParticles>();
@@ -839,11 +871,6 @@ struct statPromptPhoton {
       bool goodgentrigger = true;
       double chPe = 0;
       for (auto& clusterparticle : ClusterParticles) {
-        // double etaP = clusterparticle.eta();
-        // double etaC = mccluster.eta();
-        // double phiP = clusterparticle.phi();
-        // double phiC = mccluster.phi();
-        // double ptP = clusterparticle.pt();
         int cindex = clusterparticle.globalIndex();
         double pdgcode = fabs(clusterparticle.pdgCode());
         if (!clusterparticle.isPhysicalPrimary()) {
@@ -884,8 +911,6 @@ struct statPromptPhoton {
               histos.fill(HIST("REC_Cluster_ParticleWITHtrack_Phi"), clusterparticle.phi());
               histos.fill(HIST("REC_Cluster_ParticleWITHtrack_Eta"), clusterparticle.eta());
               histos.fill(HIST("REC_Cluster_ParticleWITHtrack_Pt_Phi"), clusterparticle.pt(), clusterparticle.phi());
-              // if (phiPrimeP > (0.12/ptP + TMath::Pi()/18. + 0.035) ||
-              // phiPrimeP < (0.1/ptP/ptP + TMath::Pi()/18. - 0.025) ) {
               histos.fill(HIST("REC_Cluster_ParticleWITHtrack_Pt_PhiPrime"), ptP, phiPrimeP);
               if (photontrigger) {
                 histos.fill(HIST("REC_Impurity_ParticleWITHtrack_Pt_PhiPrime"), ptP, phiPrimeP);
@@ -904,8 +929,6 @@ struct statPromptPhoton {
             histos.fill(HIST("REC_Cluster_ParticleWITHOUTtrack_Phi"), clusterparticle.phi());
             histos.fill(HIST("REC_Cluster_ParticleWITHOUTtrack_Eta"), clusterparticle.eta());
             histos.fill(HIST("REC_Cluster_ParticleWITHOUTtrack_Pt_Phi"), clusterparticle.pt(), clusterparticle.phi());
-            // if (phiPrimeP > (0.12/ptP + TMath::Pi()/18. + 0.035) ||
-            // phiPrimeP < (0.1/ptP/ptP + TMath::Pi()/18. - 0.025) ) {
             histos.fill(HIST("REC_Cluster_ParticleWITHOUTtrack_Pt_PhiPrime"), ptP, phiPrimeP);
             if (photontrigger) {
               histos.fill(HIST("REC_Impurity_ParticleWITHOUTtrack_Pt_PhiPrime"), ptP, phiPrimeP);
@@ -964,12 +987,12 @@ struct statPromptPhoton {
             std::cout << "Photon mom 2: " << mom2 << std::endl;
           }
           if (std::abs(clusterparticle.getGenStatusCode()) > 19 && std::abs(clusterparticle.getGenStatusCode()) < 90) {
-            histos.fill(HIST("REC_True_Prompt_Trigger_Energy"), clusterparticle.e());
+            histos.fill(HIST("REC_True_Prompt_Trigger_Energy"), clusterparticle.e(), weight);
             TLorentzVector lRealPhoton;
             lRealPhoton.SetPxPyPzE(clusterparticle.px(), clusterparticle.py(), clusterparticle.pz(), clusterparticle.e());
             double truepthadsum = GetPtHadSum(tracks, lRealPhoton, cfgMinR, cfgMaxR, false, false, false);
             truephotonPt = clusterparticle.e();
-            histos.fill(HIST("REC_TrueTrigger_V_PtHadSum_Photon"), truephotonPt, truepthadsum);
+            histos.fill(HIST("REC_TrueTrigger_V_PtHadSum_Photon"), truephotonPt, truepthadsum, weight);
           }
         } // photon check
       } // clusterparticle loop
@@ -1000,39 +1023,6 @@ struct statPromptPhoton {
       }
     } // cluster loop
 
-    // auto bc = collision.bc_as<BcCandidates>();
-    // int rnr = bc.runNumber();
-
-    // std::string rnrstring = std::to_string(rnr);
-    // if (runs.find(rnrstring) == std::string::npos) {
-    // std::cout<<"++++++++++++++++++++++++++++++++"<<std::endl;
-    // std::cout<<"FETCHING NEW RUN NUMBER FOR RUN: "<<rnr<<std::endl;
-    // std::cout<<"++++++++++++++++++++++++++++++++"<<std::endl;
-
-    // std::string ccdbpath="GLO/Config/GRPMagField";
-    // static o2::parameters::GRPMagField* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbpath, bc.timestamp());
-    // if(grpmag) {
-    // bfield = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-    // std::cout<<"++++++++++++++++++++++++++++++++"<<std::endl;
-    // std::cout<<"MAG FIELD IS: "<<bfield<<std::endl;
-    // std::cout<<"++++++++++++++++++++++++++++++++"<<std::endl;
-    // }
-    // else {
-    // ccdbpath="GLO/GRP/GRP";
-    // static o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbpath, bc.timestamp());
-    // if(!grpo) {
-    // std::cout<<"WE CAN NEITHER FETCH GRPMAG OR GRPO!!! SHIT IS SCREWED"<<std::endl;
-    // }
-    // bfield = grpo->getNominalL3Field();
-    // }
-    // bfield = 5;
-    // runs += rnrstring;
-    // std::cout << "++++++++++++++++++++++++++++++++" << std::endl;
-    // std::cout << "Run is now appended to string: " << runs << std::endl;
-    // std::cout << "++++++++++++++++++++++++++++++++" << std::endl;
-
-    //    } // check mag field for current run number: done!
-
     // clusters done, now we do the sternheimer tracks
     for (auto& track : tracks) {
       bool sterntrigger = false;
@@ -1057,19 +1047,9 @@ struct statPromptPhoton {
         phiPrime = 2 * TMath::Pi() - phiPrime;
       }
 
-      // if (bfield < 0) {
-      //   phiPrime = 2 * TMath::Pi() - phiPrime;
-      // }
-
       phiPrime = phiPrime + TMath::Pi() / 18.;
       phiPrime = fmod(phiPrime, 2 * TMath::Pi() / 18.);
-      // double pt = track.pt();
-      // if (phiPrime > (0.12/pt + TMath::Pi()/18. + 0.035) ||
-      // phiPrime < (0.1/pt/pt + TMath::Pi()/18. - 0.025) ) {
       histos.fill(HIST("REC_Track_PhiPrime_Pt"), phiPrime, track.pt());
-      //      }//geo cut
-      // Done with geometric cuts
-
       histos.fill(HIST("REC_Track_Pt"), track.pt());
       histos.fill(HIST("REC_Track_Phi"), track.phi());
       if (clustertrigger) {
@@ -1083,12 +1063,12 @@ struct statPromptPhoton {
         }
       }
       double pthadsum = GetPtHadSum(tracks, track, cfgMinR, cfgMaxR, true, false, true);
-      histos.fill(HIST("REC_Trigger_V_PtHadSum_Nch"), sternPt, pthadsum);
+      histos.fill(HIST("REC_Trigger_V_PtHadSum_Nch"), sternPt, pthadsum, weight);
       if (sterntrigger) {
         bool doStern = true;
         double sterncount = 1.0;
         while (doStern) {
-          histos.fill(HIST("REC_Trigger_V_PtHadSum_Stern"), sterncount, pthadsum, 2.0 / sternPt);
+          histos.fill(HIST("REC_Trigger_V_PtHadSum_Stern"), sterncount, pthadsum, (2.0 / sternPt) * weight);
           if (sterncount < sternPt) {
             sterncount++;
           } else {
@@ -1103,9 +1083,8 @@ struct statPromptPhoton {
   PROCESS_SWITCH(statPromptPhoton, processMCRec_JE, "processJE  MC data", false);
 
   int nEventsData = 0;
-  void processData(jfilteredCollisions::iterator const& collision, jfilteredClusters const& clusters, jDataTrackCandidates const& tracks, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs> const&, TrackCandidates const&, BcCandidates const&, jEMCtracks const& emctracks)
+  void processData(jfilteredDataCollisions::iterator const& collision, jfilteredClusters const& clusters, jDataTrackCandidates const& tracks, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs> const&, TrackCandidates const&, BcCandidates const&, jEMCtracks const& emctracks)
   {
-
     nEventsData++;
     if (cfgDebug) {
       if (nEventsData == 1) {
@@ -1113,8 +1092,12 @@ struct statPromptPhoton {
       }
       if ((nEventsData + 1) % 10000 == 0) {
         std::cout << "Processed Data Events: " << nEventsData << std::endl;
+        std::cout << "Events Trigger Bit: " << collision.triggerSel() << std::endl;
+        std::cout << "Trigger Mask Bit: " << triggerMaskBits[0] << std::endl;
+        std::cout << "Trigger Mask Cfg Line: " << cfgTriggerMasks << std::endl;
       }
     }
+
     histos.fill(HIST("DATA_nEvents"), 0.5);
 
     // required cuts
@@ -1124,12 +1107,18 @@ struct statPromptPhoton {
       return;
 
     histos.fill(HIST("DATA_nEvents"), 1.5);
-
     if (cfgEmcTrigger) {
       if (!collision.isEmcalReadout())
         return;
     }
+
     histos.fill(HIST("DATA_nEvents"), 2.5);
+
+      if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
+        return;
+      }
+
+    histos.fill(HIST("DATA_nEvents"), 3.5);
 
     bool noTrk = true;
     for (auto& track : tracks) {
@@ -1330,10 +1319,6 @@ struct statPromptPhoton {
       if (track.sign() < 0) {
         phiPrime = 2 * TMath::Pi() - phiPrime;
       }
-
-      // if (bfield < 0) {
-      //   phiPrime = 2 * TMath::Pi() - phiPrime;
-      // }
 
       phiPrime = phiPrime + TMath::Pi() / 18.;
       phiPrime = fmod(phiPrime, 2 * TMath::Pi() / 18.);
