@@ -141,7 +141,6 @@ bool matchCandAndMass(McParticle const& particle, double& massCand) {
       return false;
     }
   }
-  //std::cout<<matchGenFlag<<"  "<<aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi<<" "<<BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi)<<"   "<<hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi<<"  "<<BIT(hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi)<<std::endl;
 
   // Map decay type to mass
   switch (matchGenFlag) {
