@@ -36,8 +36,8 @@
 namespace hf_mc_gen
 {
 
-template <bool matchCorrBkgs, typename T, typename U, typename V>
-void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V& rowMcMatchGen, bool rejectBackground)
+template <typename T, typename U, typename V>
+void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V& rowMcMatchGen, bool rejectBackground, bool matchCorrelatedBackgrounds)
 {
   using namespace o2::constants::physics;
   constexpr std::size_t NDaughtersResonant{2u};
@@ -121,7 +121,7 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
   }
 }
 
-template <bool matchCorrBkgs, typename T, typename U, typename V>
+template <typename T, typename U, typename V>
 void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V& rowMcMatchGen, bool rejectBackground, std::vector<int> const& corrBkgMothersPdgs = {})
 {
   using namespace o2::constants::physics;
@@ -147,7 +147,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
       continue;
     }
 
-    if (matchCorrBkgs) {
+    if (corrBkgMothersPdgs.size() > 0) {
       for (const auto& motherPdgCode : corrBkgMothersPdgs) {
         if (std::abs(particle.pdgCode()) != motherPdgCode) {
           continue; // Skip if the particle PDG code does not match the mother PDG code

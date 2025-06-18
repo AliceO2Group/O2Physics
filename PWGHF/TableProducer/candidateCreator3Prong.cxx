@@ -1202,11 +1202,7 @@ struct HfCandidateCreator3ProngExpressions {
         }
         continue;
       }
-      if (matchCorrBkgs) {
-        hf_mc_gen::fillMcMatchGen3Prong<true>(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground, mothersCorrBkgsPdgs.value);
-      } else {
-        hf_mc_gen::fillMcMatchGen3Prong<false>(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground);
-      }
+      hf_mc_gen::fillMcMatchGen3Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground, matchCorrelatedBackgrounds ? mothersCorrBkgsPdgs.value : std::vector<int>{});
     }
   }
 

@@ -913,11 +913,7 @@ struct HfCandidateCreator2ProngExpressions {
         }
         continue;
       }
-      if (matchCorrBkgs) {
-        hf_mc_gen::fillMcMatchGen2Prong<true>(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground);
-      } else {
-        hf_mc_gen::fillMcMatchGen2Prong<false>(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground);
-      }
+      hf_mc_gen::fillMcMatchGen2Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground, matchCorrelatedBackgrounds.value);
     }
   }
 
