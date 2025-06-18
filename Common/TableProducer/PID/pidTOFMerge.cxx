@@ -46,8 +46,6 @@ using namespace o2::pid;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
-o2::common::core::MetadataHelper metadataInfo;
-
 // Input data types
 using Run3Trks = o2::soa::Join<aod::TracksIU, aod::TracksExtra>;
 using Run3TrksWtof = soa::Join<Run3Trks, aod::TOFSignal>;
@@ -123,8 +121,8 @@ struct tofSignal {
     }
     if (tofResponse->cfgAutoSetProcessFunctions()) {
       LOG(info) << "Autodetecting process functions";
-      if (metadataInfo.isFullyDefined() && !doprocessRun2 && !doprocessRun3) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
-        if (metadataInfo.isRun3()) {
+      if (tofResponse->metadataInfo.isFullyDefined() && !doprocessRun2 && !doprocessRun3) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
+        if (tofResponse->metadataInfo.isRun3()) {
           doprocessRun3.value = true;
         } else {
           doprocessRun2.value = false;
@@ -276,8 +274,8 @@ struct tofEventTime {
 
     if (tofResponse->cfgAutoSetProcessFunctions()) {
       LOG(info) << "Autodetecting process functions";
-      if (metadataInfo.isFullyDefined()) {
-        if (metadataInfo.isRun3()) {
+      if (tofResponse->metadataInfo.isFullyDefined()) {
+        if (tofResponse->metadataInfo.isRun3()) {
           doprocessRun3.value = true;
         } else {
           doprocessRun2.value = true;
@@ -285,11 +283,11 @@ struct tofEventTime {
       }
     }
 
-    if (metadataInfo.isFullyDefined()) {
-      if (metadataInfo.isRun3() && doprocessRun2) {
+    if (tofResponse->metadataInfo.isFullyDefined()) {
+      if (tofResponse->metadataInfo.isRun3() && doprocessRun2) {
         LOG(fatal) << "Run2 process function is enabled but the metadata says it is Run3";
       }
-      if (!metadataInfo.isRun3() && doprocessRun3) {
+      if (!tofResponse->metadataInfo.isRun3() && doprocessRun3) {
         LOG(fatal) << "Run3 process function is enabled but the metadata says it is Run2";
       }
     }
@@ -638,8 +636,8 @@ struct tofPidMerge {
     } else {
       if (tofResponse->cfgAutoSetProcessFunctions()) {
         LOG(info) << "Autodetecting process functions for mass and beta";
-        if (metadataInfo.isFullyDefined()) {
-          if (metadataInfo.isRun3()) {
+        if (tofResponse->metadataInfo.isFullyDefined()) {
+          if (tofResponse->metadataInfo.isRun3()) {
             doprocessRun3.value = true;
             doprocessRun2.value = false;
           } else {
@@ -686,8 +684,8 @@ struct tofPidMerge {
     } else {
       if (tofResponse->cfgAutoSetProcessFunctions()) {
         LOG(info) << "Autodetecting process functions for mass and beta";
-        if (metadataInfo.isFullyDefined()) {
-          if (metadataInfo.isRun3()) {
+        if (tofResponse->metadataInfo.isFullyDefined()) {
+          if (tofResponse->metadataInfo.isRun3()) {
             doprocessRun3BetaM.value = true;
             doprocessRun2BetaM.value = false;
           } else {
@@ -1239,7 +1237,7 @@ struct tofPidMerge {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   // Parse the metadata
-  metadataInfo.initMetadata(cfgc);
+  o2::pid::tof::TOFResponseImpl::metadataInfo.initMetadata(cfgc);
   auto workflow = WorkflowSpec{adaptAnalysisTask<tofSignal>(cfgc)};
   workflow.push_back(adaptAnalysisTask<tofEventTime>(cfgc));
   workflow.push_back(adaptAnalysisTask<tofPidMerge>(cfgc));
