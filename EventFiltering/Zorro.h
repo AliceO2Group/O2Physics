@@ -9,7 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Zero Obstacles Results Retriever for Offline trigger selections
+
+///
+/// \file Zorro.h
+/// \brief Zero Obstacles Results Retriever for Offline trigger selections
+/// \author M Puccio
+///
 
 #ifndef EVENTFILTERING_ZORRO_H_
 #define EVENTFILTERING_ZORRO_H_
@@ -54,6 +59,7 @@ class Zorro
   std::vector<int> getTOIcounters() const { return mTOIcounts; }
   std::vector<bool> getTriggerOfInterestResults(uint64_t bcGlobalId, uint64_t tolerance = 100);
   std::vector<bool> getTriggerOfInterestResults() const;
+  int getNTOIs() const { return mTOIs.size(); }
 
   void setCCDBpath(std::string path) { mBaseCCDBPath = path; }
   void setBaseCCDBPath(std::string path) { mBaseCCDBPath = path; }

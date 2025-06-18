@@ -39,6 +39,7 @@ uint64_t VarManager::fgSOR = 0;
 uint64_t VarManager::fgEOR = 0;
 o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
 o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
+o2::vertexing::DCAFitterN<4> VarManager::fgFitterFourProngBarrel;
 o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
 o2::vertexing::FwdDCAFitterN<3> VarManager::fgFitterThreeProngFwd;
 o2::globaltracking::MatchGlobalFwd VarManager::mMatching;
@@ -201,6 +202,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCentVZERO] = "%";
   fgVariableNames[kCentFT0C] = "Centrality FT0C";
   fgVariableUnits[kCentFT0C] = "%";
+  fgVariableNames[kCentFT0A] = "Centrality FT0A";
+  fgVariableUnits[kCentFT0A] = "%";
+  fgVariableNames[kCentFT0M] = "Centrality FT0M";
+  fgVariableUnits[kCentFT0M] = "%";
   fgVariableNames[kMultTPC] = "Multiplicity TPC";
   fgVariableUnits[kMultTPC] = "";
   fgVariableNames[kMultFV0A] = "Multiplicity FV0A";
@@ -1108,6 +1113,8 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kVtxChi2"] = kVtxChi2;
   fgVarNamesMap["kCentVZERO"] = kCentVZERO;
   fgVarNamesMap["kCentFT0C"] = kCentFT0C;
+  fgVarNamesMap["kCentFT0A"] = kCentFT0A;
+  fgVarNamesMap["kCentFT0M"] = kCentFT0M;
   fgVarNamesMap["kMultTPC"] = kMultTPC;
   fgVarNamesMap["kMultFV0A"] = kMultFV0A;
   fgVarNamesMap["kMultFV0C"] = kMultFV0C;

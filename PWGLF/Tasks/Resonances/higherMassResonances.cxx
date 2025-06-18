@@ -14,6 +14,29 @@
 /// \author Sawan <sawan.sawan@cern.ch>
 
 // #include <TDatabasePDG.h>
+#include "PWGLF/DataModel/LFStrangenessTables.h" //
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h" //
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h" //
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h" //
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h" //
+#include "ReconstructionDataFormats/Track.h"
+
+#include "Math/GenVector/Boost.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "TF1.h"
+#include "TRandom3.h"
 #include <TDirectory.h>
 #include <TFile.h>
 #include <TH1F.h>
@@ -23,33 +46,12 @@
 #include <TMath.h>
 #include <TObjArray.h>
 #include <TPDGCode.h>
+
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdlib>
 #include <vector>
-#include <algorithm>
-#include "TF1.h"
-#include "TRandom3.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "Math/GenVector/Boost.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/StepTHn.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h" //
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h" //
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"              //
-#include "Framework/runDataProcessing.h"         //
-#include "PWGLF/DataModel/LFStrangenessTables.h" //
 
 using namespace o2;
 using namespace o2::framework;
@@ -74,7 +76,7 @@ struct HigherMassResonances {
     // Configurable<bool> invMass1D{"invMass1D", false, "1D invariant mass histograms"};
     Configurable<bool> correlation2Dhist{"correlation2Dhist", true, "Lamda K0 mass correlation"};
     Configurable<bool> cDCAv0topv{"cDCAv0topv", false, "DCA V0 to PV"};
-    Configurable<bool> armcut{"armcut", false, "arm cut"};
+    // Configurable<bool> armcut{"armcut", false, "arm cut"};
     Configurable<bool> globalTracks{"globalTracks", false, "Global tracks"};
     Configurable<bool> hasTPC{"hasTPC", false, "TPC"};
     Configurable<bool> selectTWOKsOnly{"selectTWOKsOnly", true, "Select only events with two K0s"};
@@ -82,11 +84,11 @@ struct HigherMassResonances {
     // Configurables for event selection
     Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
     Configurable<float> cfgETAcut{"cfgETAcut", 0.8f, "Track ETA cut"};
-    Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
-    Configurable<bool> piluprejection{"piluprejection", false, "Pileup rejection"};
-    Configurable<bool> goodzvertex{"goodzvertex", false, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference."};
-    Configurable<bool> itstpctracks{"itstpctracks", false, "selects collisions with at least one ITS-TPC track,"};
-    Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
+    Configurable<bool> timFrameEvsel{"timFrameEvsel", true, "TPC Time frame boundary cut"};
+    // Configurable<bool> piluprejection{"piluprejection", false, "Pileup rejection"};
+    // Configurable<bool> goodzvertex{"goodzvertex", false, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference."};
+    // Configurable<bool> itstpctracks{"itstpctracks", false, "selects collisions with at least one ITS-TPC track,"};
+    // Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
     // Configurable<bool> applyOccupancyCut{"applyOccupancyCut", false, "Apply occupancy cut"};
     // Configurable<int> occupancyCut{"occupancyCut", 1000, "Mimimum Occupancy cut"};
 
@@ -107,7 +109,7 @@ struct HigherMassResonances {
     Configurable<float> confDaughEta{"confDaughEta", 0.8f, "V0 Daugh sel: max eta"};
     Configurable<float> confDaughTPCnclsMin{"confDaughTPCnclsMin", 70.f, "V0 Daugh sel: Min. nCls TPC"};
     Configurable<float> confDaughPIDCuts{"confDaughPIDCuts", 5, "PID selections for KS0 daughters"};
-    Configurable<float> confarmcut{"confarmcut", 0.2f, "Armenteros cut"};
+    // Configurable<float> confarmcut{"confarmcut", 0.2f, "Armenteros cut"};
     Configurable<float> confKsrapidity{"confKsrapidity", 0.5f, "Rapidity cut on K0s"};
     // Configurable<float> lowmasscutks0{"lowmasscutks0", 0.497 - 4 * 0.005, "Low mass cut on K0s"};
     // Configurable<float> highmasscutks0{"highmasscutks0", 0.497 + 4 * 0.005, "High mass cut on K0s"};
@@ -125,6 +127,7 @@ struct HigherMassResonances {
     Configurable<bool> cTVXEvsel{"cTVXEvsel", true, "Triggger selection"};
     Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", false, "avoid split track in MC"};
     Configurable<int> selectMCparticles{"selectMCparticles", 1, "0: f0(1710), 1: f2(1525), 2: a2(1320), 3: f0(1370), 4: f0(1500)"};
+    Configurable<bool> apply_rapidityMC{"apply_rapidityMC", true, "Apply rapidity cut on generated and reconstructed particles"};
     std::vector<int> pdgCodes = {10331, 335, 115, 10221, 9030221};
 
     // output THnSparses
@@ -138,7 +141,7 @@ struct HigherMassResonances {
     // Configurable<bool> rapidityks{"rapidityks", true, "rapidity cut on K0s"};
     Configurable<bool> applyCompetingcut{"applyCompetingcut", false, "Competing cascade rejection cut"};
     Configurable<float> competingcascrejlambda{"competingcascrejlambda", 0.005, "rejecting competing cascade lambda"};
-    Configurable<float> competingcascrejlambdaanti{"competingcascrejlambdaanti", 0.005, "rejecting competing cascade anti-lambda"}; // If one of the pions is misidentified as a proton, then instead of Ks we reconstruct lambda, therefore the competing cascade rejection cut is applied in which if the reconstrcted mass of a pion and proton (which we are assuming to be misidentified as proton) is close to lambda or anti-lambda, then the track is rejected
+    // Configurable<float> competingcascrejlambdaanti{"competingcascrejlambdaanti", 0.005, "rejecting competing cascade anti-lambda"}; // If one of the pions is misidentified as a proton, then instead of Ks we reconstruct lambda, therefore the competing cascade rejection cut is applied in which if the reconstrcted mass of a pion and proton (which we are assuming to be misidentified as proton) is close to lambda or anti-lambda, then the track is rejected
     Configurable<int> tpcCrossedrows{"tpcCrossedrows", 70, "TPC crossed rows"};
     Configurable<float> tpcCrossedrowsOverfcls{"tpcCrossedrowsOverfcls", 0.8, "TPC crossed rows over findable clusters"};
 
@@ -154,6 +157,7 @@ struct HigherMassResonances {
     Configurable<int> ksMassBins{"ksMassBins", 200, "Number of mass bins for K0s"};
     Configurable<int> rotationalCut{"rotationalCut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
     ConfigurableAxis configThnAxisPOL{"configThnAxisPOL", {20, -1.0, 1.0}, "Costheta axis"};
+    ConfigurableAxis configThnAxisPhi{"configThnAxisPhi", {70, 0.0f, 7.0f}, "Phi axis"}; // 0 to 2pi
     // ConfigurableAxis axisdEdx{"axisdEdx", {20000, 0.0f, 200.0f}, "dE/dx (a.u.)"};
     // ConfigurableAxis axisPtfordEbydx{"axisPtfordEbydx", {2000, 0, 20}, "pT (GeV/c)"};
     // ConfigurableAxis axisMultdist{"axisMultdist", {3500, 0, 70000}, "Multiplicity distribution"};
@@ -169,6 +173,8 @@ struct HigherMassResonances {
   float theta2;
   ROOT::Math::PxPyPzMVector daughter1, daughter2, fourVecDau1, fourVecMother, fourVecDauCM;
   ROOT::Math::XYZVector threeVecDauCM, helicityVec, randomVec, beamVec, normalVec;
+  ROOT::Math::XYZVector z_beam; // ẑ: beam direction in lab frame
+
   // const double massK0s = o2::constants::physics::MassK0Short;
   bool isMix = false;
 
@@ -182,6 +188,7 @@ struct HigherMassResonances {
     // AxisSpec multiplicityAxis = {110, 0.0f, 150.0f, "Multiplicity Axis"};
     AxisSpec multiplicityAxis = {config.binsCent, "Multiplicity Axis"};
     AxisSpec thnAxisPOL{config.configThnAxisPOL, "Configurabel theta axis"};
+    AxisSpec thnAxisPhi = {config.configThnAxisPhi, "Configurabel phi axis"}; // 0 to 2pi
     // AxisSpec occupancyAxis = {occupancyBins, "Occupancy [-40,100]"};
 
     //  THnSparses
@@ -216,9 +223,9 @@ struct HigherMassResonances {
       // rEventSelection.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{2000, 0.0f, 10000.0f}});
     }
 
-    hglue.add("h3glueInvMassDS", "h3glueInvMassDS", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL}, true);
-    hglue.add("h3glueInvMassME", "h3glueInvMassME", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL}, true);
-    hglue.add("h3glueInvMassRot", "h3glueInvMassRot", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL}, true);
+    hglue.add("h3glueInvMassDS", "h3glueInvMassDS", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL, thnAxisPhi}, true);
+    hglue.add("h3glueInvMassME", "h3glueInvMassME", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL, thnAxisPhi}, true);
+    hglue.add("h3glueInvMassRot", "h3glueInvMassRot", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL, thnAxisPhi}, true);
     hglue.add("heventscheck", "heventscheck", kTH1I, {{10, 0, 10}});
     hglue.add("htrackscheck_v0", "htrackscheck_v0", kTH1I, {{15, 0, 15}});
     hglue.add("htrackscheck_v0_daughters", "htrackscheck_v0_daughters", kTH1I, {{15, 0, 15}});
@@ -324,20 +331,20 @@ struct HigherMassResonances {
     }
     hglue.fill(HIST("heventscheck"), 3.5);
 
-    if (config.piluprejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-      return false;
-    }
-    hglue.fill(HIST("heventscheck"), 4.5);
+    // if (config.piluprejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    //   return false;
+    // }
+    // hglue.fill(HIST("heventscheck"), 4.5);
 
-    if (config.goodzvertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-      return false;
-    }
-    hglue.fill(HIST("heventscheck"), 5.5);
+    // if (config.goodzvertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    //   return false;
+    // }
+    // hglue.fill(HIST("heventscheck"), 5.5);
 
-    if (config.itstpctracks && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
-      return false;
-    }
-    hglue.fill(HIST("heventscheck"), 6.5);
+    // if (config.itstpctracks && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+    //   return false;
+    // }
+    // hglue.fill(HIST("heventscheck"), 6.5);
 
     return true;
   }
@@ -345,9 +352,9 @@ struct HigherMassResonances {
   template <typename Collision, typename V0>
   bool selectionV0(Collision const& collision, V0 const& candidate, float /*multiplicity*/)
   {
-    const float qtarm = candidate.qtarm();
-    const float alph = candidate.alpha();
-    float arm = qtarm / alph;
+    // const float qtarm = candidate.qtarm();
+    // const float alph = candidate.alpha();
+    // float arm = qtarm / alph;
     const float pT = candidate.pt();
     const float tranRad = candidate.v0radius();
     const float dcaDaughv0 = candidate.dcaV0daughters();
@@ -441,15 +448,15 @@ struct HigherMassResonances {
     // if (config.correlation2Dhist)
     //   rKzeroShort.fill(HIST("mass_lambda_kshort_after8"), candidate.mK0Short(), candidate.mLambda());
 
-    if (config.armcut && arm < config.confarmcut) {
-      return false;
-    }
+    // if (config.armcut && arm < config.confarmcut) {
+    //   return false;
+    // }
     hglue.fill(HIST("htrackscheck_v0"), 9.5);
     // if (config.correlation2Dhist)
     //   rKzeroShort.fill(HIST("mass_lambda_kshort_after9"), candidate.mK0Short(), candidate.mLambda());
 
     // if (config.applyCompetingcut && (std::abs(candidate.mLambda() - PDGdatabase->Mass(3122)) <= config.competingcascrejlambda || std::abs(candidate.mAntiLambda() - PDGdatabase->Mass(-3122)) <= config.competingcascrejlambdaanti))
-    if (config.applyCompetingcut && (std::abs(candidate.mLambda() - o2::constants::physics::MassLambda0) <= config.competingcascrejlambda || std::abs(candidate.mAntiLambda() - o2::constants::physics::MassLambda0) <= config.competingcascrejlambdaanti)) {
+    if (config.applyCompetingcut && (std::abs(candidate.mLambda() - o2::constants::physics::MassLambda0) <= config.competingcascrejlambda || std::abs(candidate.mAntiLambda() - o2::constants::physics::MassLambda0) <= config.competingcascrejlambda)) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 10.5);
@@ -565,59 +572,99 @@ struct HigherMassResonances {
   using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentFT0Ms>;
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::McTrackLabels>>;
   using V0TrackCandidatesMC = soa::Join<aod::V0Datas, aod::McV0Labels>;
+  // z_beam direction in lab frame
 
   template <typename T2, typename T3, typename T4>
   void fillInvMass(const T2& lv3, const T3& lv5, float multiplicity, const T4& daughter1, bool isMix)
   {
 
-    // polarization calculations
+    // //polarization calculations
+    // z_beam = ROOT::Math::XYZVector(0.f, 0.f, 1.f); // ẑ: beam direction in lab frame
 
-    fourVecDau1 = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), o2::constants::physics::MassK0Short); // Kaon or Pion
+    fourVecDau1 = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), o2::constants::physics::MassK0Short);
 
-    fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // mass of KshortKshort pair
-    ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                               // boost mother to center of mass frame
-    fourVecDauCM = boost(fourVecDau1);                                                // boost the frame of daughter same as mother
+    fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // 4 vector of mother particle
+    ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                               // define the boost to the center of mass frame
+    fourVecDauCM = boost(fourVecDau1);                                                // boost the frame of daughter to the center of mass frame
     threeVecDauCM = fourVecDauCM.Vect();                                              // get the 3 vector of daughter in the frame of mother
+    // define y = z_beam x z: Normal to the production plane
+    // ẑ: mother direction in lab, boosted into mother's rest frame
+
+    // auto motherLabDirection = ROOT::Math::XYZVector(0, 0, fourVecMother.Vect().Z()); // ẑ axis in lab frame
+
+    // // ŷ = z_beam × ẑ
+    // auto y_axis = z_beam.Cross(motherLabDirection).Unit();
+
+    // // x̂ = ŷ × ẑ
+    // auto x_axis = y_axis.Cross(motherLabDirection).Unit();
+
+    // // Project daughter momentum onto x–y plane
+    // auto p_proj_x = threeVecDauCM.Dot(x_axis);
+    // auto p_proj_y = threeVecDauCM.Dot(y_axis);
+
+    // // Calculate φ in [-π, π]
+    // auto angle_phi = std::atan2(p_proj_y, p_proj_x); // φ in radians
+
+    double BeamMomentum = TMath::Sqrt(13600 * 13600 / 4 - 0.938 * 0.938); // GeV
+    ROOT::Math::PxPyPzEVector Beam1(0., 0., -BeamMomentum, 13600 / 2);
+    ROOT::Math::PxPyPzEVector Beam2(0., 0., BeamMomentum, 13600 / 2);
+    ROOT::Math::XYZVectorF v1_CM{(boost(fourVecDau1).Vect()).Unit()};
+    // ROOT::Math::XYZVectorF v2_CM{(boost(fourVecDau1).Vect()).Unit()};
+    ROOT::Math::XYZVectorF Beam1_CM{(boost(Beam1).Vect()).Unit()};
+    ROOT::Math::XYZVectorF Beam2_CM{(boost(Beam2).Vect()).Unit()};
+    // using positive sign convention for the first track
+    // ROOT::Math::XYZVectorF v_CM = (t1.sign() > 0 ? v1_CM : v2_CM); // here selected decay daughter momentum is intested. here you can choose one decay daughter no need to check both case as it is neutral particle for our case
+    // Helicity frame
+    ROOT::Math::XYZVectorF zaxis_HE{(fourVecMother.Vect()).Unit()};
+    ROOT::Math::XYZVectorF yaxis_HE{(Beam1_CM.Cross(Beam2_CM)).Unit()};
+    ROOT::Math::XYZVectorF xaxis_HE{(yaxis_HE.Cross(zaxis_HE)).Unit()};
+
+    // CosThetaHE = zaxis_HE.Dot(v_CM);
+
+    auto angle_phi = TMath::ATan2(yaxis_HE.Dot(v1_CM), xaxis_HE.Dot(v1_CM));
+    if (angle_phi < 0) {
+      angle_phi += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
+    }
 
     if (std::abs(lv3.Rapidity()) < 0.5) {
       if (config.activateTHnSparseCosThStarHelicity) {
         helicityVec = fourVecMother.Vect(); // 3 vector of mother in COM frame
         auto cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(helicityVec.Mag2()));
         if (!isMix) {
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity, angle_phi);
 
           for (int i = 0; i < config.cRotations; i++) {
             theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarHelicity);
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarHelicity, angle_phi);
           }
         } else {
-          hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity);
+          hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity, angle_phi);
         }
 
       } else if (config.activateTHnSparseCosThStarProduction) {
         normalVec = ROOT::Math::XYZVector(lv3.Py(), -lv3.Px(), 0.f);
         auto cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(normalVec.Mag2()));
         if (!isMix) {
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction, angle_phi);
           for (int i = 0; i < config.cRotations; i++) {
             theta2 = rn->Uniform(0, o2::constants::math::PI);
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarProduction);
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarProduction, angle_phi);
           }
         } else {
-          hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction);
+          hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction, angle_phi);
         }
 
       } else if (config.activateTHnSparseCosThStarBeam) {
         beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
         auto cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
         if (!isMix) {
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam, angle_phi);
           for (int i = 0; i < config.cRotations; i++) {
             theta2 = rn->Uniform(0, o2::constants::math::PI);
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarBeam);
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarBeam, angle_phi);
           }
         } else {
-          hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam);
+          hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam, angle_phi);
         }
 
       } else if (config.activateTHnSparseCosThStarRandom) {
@@ -627,13 +674,13 @@ struct HigherMassResonances {
         randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
         auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
         if (!isMix) {
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom, angle_phi);
           for (int i = 0; i < config.cRotations; i++) {
             theta2 = rn->Uniform(0, o2::constants::math::PI);
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarRandom);
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarRandom, angle_phi);
           }
         } else {
-          hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom);
+          hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom, angle_phi);
         }
       }
     }
@@ -979,7 +1026,7 @@ struct HigherMassResonances {
       // hMChists.fill(HIST("GenPy"), mcParticle.py());
       // hMChists.fill(HIST("GenPz"), mcParticle.pz());
 
-      if (std::abs(mcParticle.y()) >= 0.5) {
+      if (config.apply_rapidityMC && std::abs(mcParticle.y()) >= 0.5) {
         continue;
       }
       hMChists.fill(HIST("events_check"), 6.5);
@@ -1159,7 +1206,7 @@ struct HigherMassResonances {
             }
             hMChists.fill(HIST("events_checkrec"), 17.5);
 
-            if (std::abs(mothertrack1.y()) >= 0.5) {
+            if (config.apply_rapidityMC && std::abs(mothertrack1.y()) >= 0.5) {
               continue;
             }
             hMChists.fill(HIST("events_checkrec"), 18.5);

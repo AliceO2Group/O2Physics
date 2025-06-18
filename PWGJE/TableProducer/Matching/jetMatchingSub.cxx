@@ -13,20 +13,17 @@
 /// \brief matching event-wise constituent subtracted data jets and unsubtracted data jets
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include <vector>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/runDataProcessing.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/Core/JetUtilities.h"
-#include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/Core/JetMatchingUtilities.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+
+#include "Framework/ASoA.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h> // IWYU pragma: export
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
