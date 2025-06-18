@@ -289,7 +289,7 @@ void o2::pid::tof::TOFResponseImpl::processSetup(const int runNumber, const int6
   mTimestamp = timeStamp;
 
   // Check the beam type
-  if (mCollisionSystem == -1) {
+  if (mCollisionSystem == o2::common::core::CollisionSystemType::kCollSysUndef) {
     o2::parameters::GRPLHCIFData* grpo = mCcdb->getSpecific<o2::parameters::GRPLHCIFData>(mPathGrpLhcIf,
                                                                                           mTimestamp);
     mCollisionSystem = CollisionSystemType::getCollisionTypeFromGrp(grpo);
