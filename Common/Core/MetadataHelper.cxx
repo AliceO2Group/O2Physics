@@ -26,7 +26,10 @@ MetadataHelper::MetadataHelper()
                                               "RecoPassName",
                                               "Run",
                                               "AnchorPassName",
-                                              "AnchorProduction"};
+                                              "AnchorProduction",
+                                              "ROOTVersion",
+                                              "LPMProductionTag",
+                                              "O2Version"};
   for (const auto& key : keyList) {
     mMetadata[key] = "undefined";
   }
