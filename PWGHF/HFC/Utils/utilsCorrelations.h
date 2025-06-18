@@ -124,7 +124,8 @@ bool passPIDSelection(Atrack const& track, SpeciesContainer const mPIDspecies,
 }
 
 template <bool isScCand, typename McParticle>
-bool matchCandAndMass(McParticle const& particle, double& massCand) {
+bool matchCandAndMass(McParticle const& particle, double& massCand)
+{
   const auto pdgCand = std::abs(particle.pdgCode());
   const auto matchGenFlag = std::abs(particle.flagMcMatchGen());
 
@@ -155,7 +156,7 @@ bool matchCandAndMass(McParticle const& particle, double& massCand) {
     case BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi):
       massCand = o2::constants::physics::MassSigmaCStarPlusPlus;
       return true;
-    
+
     case BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi):
       massCand = o2::constants::physics::MassSigmaCStarPlusPlus;
       return true;
@@ -169,26 +170,25 @@ bool matchCandAndMass(McParticle const& particle, double& massCand) {
   }
 }
 
+template <bool isCandSc, typename CandType>
+double estimateY(CandType const& candidate)
+{
+  double y = -999.;
+  const int chargeScZero = 0;
+  if constexpr (isCandSc) {
+    int8_t chargeCand = candidate.charge();
 
-  template <bool isCandSc, typename CandType>
-  double estimateY(CandType const& candidate)
-  {
-    double y = -999.;
-    const int chargeScZero = 0;
-    if constexpr (isCandSc) {
-      int8_t chargeCand = candidate.charge();
-
-      if (chargeCand == chargeScZero) {
-        y = hfHelper.ySc0(candidate);
-      } else {
-        y = hfHelper.yScPlusPlus(candidate);
-      }
-
+    if (chargeCand == chargeScZero) {
+      y = hfHelper.ySc0(candidate);
     } else {
-      y = hfHelper.yLc(candidate);
+      y = hfHelper.yScPlusPlus(candidate);
     }
-    return y;
+
+  } else {
+    y = hfHelper.yLc(candidate);
   }
+  return y;
+}
 
 // ========= Find Leading Particle ==============
 template <typename TTracks, typename T1> //// FIXME: 14 days

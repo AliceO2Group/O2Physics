@@ -92,7 +92,7 @@ struct HfCorrelatorLcScHadronsSelection {
       for (const auto& candidate : candidates) {
 
         auto yCand = estimateY<isCandSc>(candidate);
-        
+
         if (std::abs(yCand) > yCandMax || candidate.pt() < ptCandMin) {
           isCandFound = false;
           continue;
@@ -119,7 +119,7 @@ struct HfCorrelatorLcScHadronsSelection {
     for (const auto& particle : mcParticles) {
 
       isCandFound = matchCandAndMass<isCandSc>(particle, massCand);
-      if (!isCandFound){
+      if (!isCandFound) {
         continue;
       }
 
@@ -137,31 +137,31 @@ struct HfCorrelatorLcScHadronsSelection {
 
   /// Code to select collisions with at least one Lc - for real data and data-like analysis
   void processLcSelection(SelCollisions::iterator const& collision,
-                              CandsLcDataFiltered const& candidates)
+                          CandsLcDataFiltered const& candidates)
   {
-    selectionCollision<false>(collision,candidates);
+    selectionCollision<false>(collision, candidates);
   }
   PROCESS_SWITCH(HfCorrelatorLcScHadronsSelection, processLcSelection, "Process Lc Collision Selection for Data and Mc", true);
 
-    void processScSelection(SelCollisions::iterator const& collision,
-                              aod::HfCandSc const& candidates)
+  void processScSelection(SelCollisions::iterator const& collision,
+                          aod::HfCandSc const& candidates)
   {
-    selectionCollision<true>(collision,candidates);
+    selectionCollision<true>(collision, candidates);
   }
   PROCESS_SWITCH(HfCorrelatorLcScHadronsSelection, processScSelection, "Process Sc Collision Selection for Data and Mc", false);
 
-    void processLcSelectionMcRec(SelCollisions::iterator const& collision,
+  void processLcSelectionMcRec(SelCollisions::iterator const& collision,
                                CandsLcMcRecFiltered const& candidates)
   {
-    selectionCollision<false>(collision,candidates);
+    selectionCollision<false>(collision, candidates);
   }
-PROCESS_SWITCH(HfCorrelatorLcScHadronsSelection, processLcSelectionMcRec, "Process Lc Selection McRec", false);
+  PROCESS_SWITCH(HfCorrelatorLcScHadronsSelection, processLcSelectionMcRec, "Process Lc Selection McRec", false);
 
   void processScSelectionMcRec(SelCollisions::iterator const& collision,
-                                CandsScMcRec const& candidates)
-    {
-      selectionCollision<true>(collision,candidates);
-    }
+                               CandsScMcRec const& candidates)
+  {
+    selectionCollision<true>(collision, candidates);
+  }
   PROCESS_SWITCH(HfCorrelatorLcScHadronsSelection, processScSelectionMcRec, "Process Sc Selection McRec", false);
 
   void processLcSelectionMcGen(aod::McCollision const&,
@@ -241,12 +241,12 @@ struct HfCorrelatorLcScHadrons {
   bool isSignal = false;
 
   TRandom3* rnd = new TRandom3(0);
-  //std::vector<float> outputMl = {-1., -1., -1.};
+  // std::vector<float> outputMl = {-1., -1., -1.};
   std::vector<float> outputMlPKPi = {-1., -1., -1.};
   std::vector<float> outputMlPiKP = {-1., -1., -1.};
 
   // Event Mixing for the Data Mode
-  //using SelCollisionsWithSc = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
+  // using SelCollisionsWithSc = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
   using SelCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::LcSelection>>;
   using SelCollisionsMc = soa::Filtered<soa::Join<aod::McCollisions, aod::LcSelection, aod::MultsExtraMC>>; // collisionFilter applied
 
@@ -834,7 +834,8 @@ struct HfCorrelatorLcScHadrons {
   }
 
   template <bool isCandSc, typename CollisionType, typename PartType>
-  void doSameEventMcGen(CollisionType const& mcCollision, PartType const& mcParticles){
+  void doSameEventMcGen(CollisionType const& mcCollision, PartType const& mcParticles)
+  {
 
     int counterCharmCand = 0;
     registry.fill(HIST("hMcEvtCount"), 0);
@@ -850,9 +851,8 @@ struct HfCorrelatorLcScHadrons {
     for (const auto& particle : mcParticles) {
 
       double massCand = -999.0;
-      bool isCandFound = isCandSc ? matchCandAndMass<true>(particle, massCand) :
-      matchCandAndMass<false>(particle, massCand);
-      if (!isCandFound){
+      bool isCandFound = isCandSc ? matchCandAndMass<true>(particle, massCand) : matchCandAndMass<false>(particle, massCand);
+      if (!isCandFound) {
         continue;
       }
       double yCand = RecoDecay::y(particle.pVector(), massCand);
@@ -866,10 +866,10 @@ struct HfCorrelatorLcScHadrons {
       registry.fill(HIST("hPhiMcGen"), RecoDecay::constrainAngle(particle.phi(), -PIHalf));
       registry.fill(HIST("hYMcGen"), yCand);
 
-        int8_t chargeLc = pdg->GetParticle(particle.pdgCode())->Charge();         // Retrieve charge
-        if (chargeLc != 0){
-          chargeLc = chargeLc / std::abs(chargeLc);
-        }
+      int8_t chargeLc = pdg->GetParticle(particle.pdgCode())->Charge(); // Retrieve charge
+      if (chargeLc != 0) {
+        chargeLc = chargeLc / std::abs(chargeLc);
+      }
 
       isPrompt = particle.originMcGen() == RecoDecay::OriginType::Prompt;
       isNonPrompt = particle.originMcGen() == RecoDecay::OriginType::NonPrompt;
@@ -887,8 +887,8 @@ struct HfCorrelatorLcScHadrons {
       listDaughters.clear();
       const size_t expectedDaughters = isCandSc ? 4 : 3;
 
-      if (isCandSc){
-        if (massCand == o2::constants::physics::MassSigmaC0 || massCand == o2::constants::physics::MassSigmaCStar0){
+      if (isCandSc) {
+        if (massCand == o2::constants::physics::MassSigmaC0 || massCand == o2::constants::physics::MassSigmaCStar0) {
           std::array<int, NDaughtersSc> arrDaughSc0PDG = {kProton, -kKPlus, kPiPlus, kPiMinus};
           RecoDecay::getDaughters(particle, &listDaughters, arrDaughSc0PDG, 2);
         } else {
@@ -896,10 +896,10 @@ struct HfCorrelatorLcScHadrons {
           RecoDecay::getDaughters(particle, &listDaughters, arrDaughScPlusPDG, 2);
         }
       } else {
-      std::array<int, NDaughtersLc> arrDaughLcPDG = {kProton, -kKPlus, kPiPlus};
-      RecoDecay::getDaughters(particle, &listDaughters, arrDaughLcPDG, 2);
+        std::array<int, NDaughtersLc> arrDaughLcPDG = {kProton, -kKPlus, kPiPlus};
+        RecoDecay::getDaughters(particle, &listDaughters, arrDaughLcPDG, 2);
       }
-    
+
       int counterDaughters = 0;
       std::vector<int> prongsId(expectedDaughters);
       if (listDaughters.size() == expectedDaughters) {
@@ -921,9 +921,9 @@ struct HfCorrelatorLcScHadrons {
 
         if (std::find(prongsId.begin(), prongsId.end(), particleAssoc.globalIndex()) != prongsId.end()) {
           if (!storeAutoCorrelationFlag) {
-              continue;
-              }
-        correlationStatus = true;
+            continue;
+          }
+          correlationStatus = true;
         }
 
         if ((std::abs(particleAssoc.pdgCode()) != kElectron) && (std::abs(particleAssoc.pdgCode()) != kMuonMinus) && (std::abs(particleAssoc.pdgCode()) != kPiPlus) && (std::abs(particle.pdgCode()) != kKPlus) && (std::abs(particleAssoc.pdgCode()) != kProton)) {
@@ -1050,14 +1050,14 @@ struct HfCorrelatorLcScHadrons {
 
   /// Lc-Hadron correlation pair builder - for Mc Gen-level analysis
   void processMcGenLc(SelCollisionsMc::iterator const& mcCollision,
-                    CandidatesLcMcGen const& mcParticles)
+                      CandidatesLcMcGen const& mcParticles)
   {
     doSameEventMcGen<false>(mcCollision, mcParticles);
   }
   PROCESS_SWITCH(HfCorrelatorLcScHadrons, processMcGenLc, "Process Mc Gen Lc mode", false);
 
-    void processMcGenSc(SelCollisionsMc::iterator const& mcCollision,
-                    CandidatesScMcGen const& mcParticles)
+  void processMcGenSc(SelCollisionsMc::iterator const& mcCollision,
+                      CandidatesScMcGen const& mcParticles)
   {
     doSameEventMcGen<true>(mcCollision, mcParticles);
   }
