@@ -754,12 +754,9 @@ struct decay3bodyBuilder {
       auto trackPos = decay3body.template track0_as<TTracksTo>();
       auto trackNeg = decay3body.template track1_as<TTracksTo>();
       auto trackDeuteron = decay3body.template track2_as<TTracksTo>();
-      bool protonSign = trackDeuteron.sign() > 0;
-      if (doLikeSign) {
-        protonSign = -protonSign;
-      }
-      auto trackProton = protonSign ? trackPos : trackNeg;
-      auto trackPion = protonSign ? trackNeg : trackPos;
+      int protonSign = doLikeSign ? trackDeuteron.sign() : -trackDeuteron.sign();
+      auto trackProton = protonSign > 0 ? trackPos : trackNeg;
+      auto trackPion = protonSign > 0 ? trackNeg : trackPos;
 
       // get deuteron TOF PID
       float tofNSigmaDeuteron;
