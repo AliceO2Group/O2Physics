@@ -158,10 +158,16 @@ void o2::pid::tof::TOFResponseImpl::initSetup(o2::ccdb::BasicCCDBManager* ccdb,
   if (!ccdb) {
     LOG(fatal) << "CCDB manager is not set, cannot initialize TOFResponseImpl";
   }
-  mCcdb = ccdb; // Set the CCDB manager
-
   inheritFromBaseTask(initContext); // Gets the configuration parameters from the base task (tof-signal)
-  mIsInit = true;                   // Set the initialization flag
+  mCcdb = ccdb;                     // Set the CCDB manager
+  mCcdb->setURL(mUrl);
+  mCcdb->setTimestamp(mTimestamp);
+  mCcdb->setCaching(true);
+  mCcdb->setLocalObjectValidityChecking();
+  // Not later than now objects
+  mCcdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+
+  mIsInit = true; // Set the initialization flag
 
   // Then the information about the metadata
   if (mReconstructionPass == "metadata") {

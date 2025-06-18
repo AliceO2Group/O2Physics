@@ -18,9 +18,12 @@
 #ifndef COMMON_CORE_COLLISIONTYPEHELPER_H_
 #define COMMON_CORE_COLLISIONTYPEHELPER_H_
 
-#include <string>
 #include "DataFormatsParameters/GRPLHCIFData.h"
 
+#include <string>
+
+namespace o2::common::core
+{
 // Container for the collision system type
 struct CollisionSystemType {
   // Enum type for the collision system
@@ -37,5 +40,9 @@ struct CollisionSystemType {
 
   static int getCollisionTypeFromGrp(o2::parameters::GRPLHCIFData* grplhcif);
 };
+
+} // namespace o2::common::core
+
+using CollisionSystemType = o2::common::core::CollisionSystemType;
 
 #endif // COMMON_CORE_COLLISIONTYPEHELPER_H_

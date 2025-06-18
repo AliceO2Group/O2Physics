@@ -31,10 +31,12 @@
 #include "TGraph.h"
 #include "TMath.h"
 
-// O2 includes
+// O2Physics includes
+#include "Common/Core/CollisionTypeHelper.h"
 #include "Common/Core/MetadataHelper.h"
 #include "Common/Core/TableHelper.h"
 
+// O2 includes
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsTOF/ParameterContainers.h"
@@ -633,13 +635,37 @@ struct TOFResponseImpl {
   static o2::pid::tof::TOFResoParamsV3 parameters;      // TOF response parameters for the expected resolution
   static o2::common::core::MetadataHelper metadataInfo; // Metadata information used for the TOF response
 
+  /// Initialize the TOF response parameters in the init function of each task
+  /// \param ccdb Pointer to the CCDB manager
+  /// \param initContext Initialization context
+  /// \note This function should be called in the init function of each task that uses the TOF response
+  /// \note The parameters are loaded from the CCDB and stored in the static variable `parameters`
+  /// \note The metadata information is also initialized in this function
   void initSetup(o2::ccdb::BasicCCDBManager* ccdb, o2::framework::InitContext& initContext);
+
+  /// Initialize the TOF response parameters in the init function of each task
+  /// \param ccdb Service pointer to the CCDB manager
   template <typename T>
   void initSetup(T ccdb, o2::framework::InitContext& initContext)
   {
     initSetup(ccdb.operator->(), initContext);
   }
+
+  /// Initialize the TOF response parameters in the process function of each task, should be called only at least once per run
+  /// \param runNumber Run number for which the calibration is loaded
+  /// \param timeStamp Timestamp for which the calibration is loaded
+  /// \note This function should be called in the process function of each task that uses the TOF response
+  /// \note The parameters are loaded from the CCDB and stored in the static variable `parameters`
+  /// \note The metadata information is also initialized in this function
   void processSetup(const int runNumber, const int64_t timeStamp);
+
+  /// Initialize the TOF response parameters in the process function of each task, should be called only at least once per run
+  /// \param bc Bunch crossing containing the run number and timestamp for which the calibration is loaded
+  template <typename T>
+  void processSetup(const T& bc)
+  {
+    processSetup(bc.runNumber(), bc.timestamp());
+  }
 
   template <o2::track::PID::ID id>
   static float expectedSigma(const float tofSignal,
@@ -703,8 +729,11 @@ struct TOFResponseImpl {
     return nSigma<id>(track.tofSignal(), track.tofExpMom(), track.length(), track.p(), track.eta(), track.tofEvTime(), track.tofEvTimeErr(), params);
   }
 
-  static void setInit(bool value = true) { mIsInit = value; } //! Set the initialization flag
-  static bool isInit() { return mIsInit; }                    //! Get the initialization flag
+  static bool isInit() { return mIsInit; } //! Get the initialization flag
+
+  // Getters for the configurable options
+  bool cfgAutoSetProcessFunctions() const { return mAutoSetProcessFunctions; }
+  o2::common::core::CollisionSystemType::collType cfgCollisionType() const { return mCollisionSystem; }
 
  private:
   void inheritFromBaseTask(o2::framework::InitContext& initContext, const std::string task = "tof-signal");
@@ -729,7 +758,7 @@ struct TOFResponseImpl {
   std::string mReconstructionPassDefault = "undefined";
   bool mFatalOnPassNotAvailable = false;
   bool mEnableTimeDependentResponse = false;
-  int mCollisionSystem = -1;
+  o2::common::core::CollisionSystemType::collType mCollisionSystem = o2::common::core::CollisionSystemType::kCollSysUndef;
   bool mAutoSetProcessFunctions = false;
 
   template <typename VType>
