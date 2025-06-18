@@ -28,9 +28,7 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 
-using namespace o2::constants::physics;
-
-HfHelper hfHelper;
+//HfHelper hfHelper;
 
 namespace o2::analysis::hf_correlations
 {
@@ -49,12 +47,16 @@ enum PairSign {
   LcNegTrkNeg
 };
 
+constexpr float PhiTowardMax{o2::constants::math::PIThird};
+constexpr float PhiAwayMin{2.f * o2::constants::math::PIThird};
+constexpr float PhiAwayMax{4.f * o2::constants::math::PIThird};
+
 template <typename T>
 Region getRegion(T const deltaPhi)
 {
-  if (std::abs(deltaPhi) < o2::constants::math::PIThird) {
+  if (std::abs(deltaPhi) < PhiTowardMax) {
     return Toward;
-  } else if (deltaPhi > 2. * o2::constants::math::PIThird && deltaPhi < 4. * o2::constants::math::PIThird) {
+  } else if (deltaPhi > PhiAwayMin && deltaPhi < PhiAwayMax) {
     return Away;
   } else {
     return Transverse;
@@ -124,21 +126,20 @@ bool passPIDSelection(Atrack const& track, SpeciesContainer const mPIDspecies,
 }
 
 template <bool isScCand, typename McParticle>
-bool matchCandAndMass(McParticle const& particle, double& massCand)
-{
+bool matchCandAndMass(McParticle const& particle, double& massCand) {
   const auto pdgCand = std::abs(particle.pdgCode());
   const auto matchGenFlag = std::abs(particle.flagMcMatchGen());
 
   // Validate PDG code based on candidate type
   if constexpr (isScCand) {
-    if (!(pdgCand == Pdg::kSigmaC0 ||
-          pdgCand == Pdg::kSigmaCPlusPlus ||
-          pdgCand == Pdg::kSigmaCStar0 ||
-          pdgCand == Pdg::kSigmaCStarPlusPlus)) {
+    if (!(pdgCand == o2::constants::physics::Pdg::kSigmaC0 ||
+          pdgCand == o2::constants::physics::Pdg::kSigmaCPlusPlus ||
+          pdgCand == o2::constants::physics::Pdg::kSigmaCStar0 ||
+          pdgCand == o2::constants::physics::Pdg::kSigmaCStarPlusPlus)) {
       return false;
     }
   } else {
-    if (pdgCand != Pdg::kLambdaCPlus) {
+    if (pdgCand != o2::constants::physics::Pdg::kLambdaCPlus) {
       return false;
     }
   }
@@ -156,7 +157,7 @@ bool matchCandAndMass(McParticle const& particle, double& massCand)
     case BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi):
       massCand = o2::constants::physics::MassSigmaCStarPlusPlus;
       return true;
-
+    
     case BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi):
       massCand = o2::constants::physics::MassSigmaCStarPlusPlus;
       return true;
@@ -168,26 +169,6 @@ bool matchCandAndMass(McParticle const& particle, double& massCand)
     default:
       return false;
   }
-}
-
-template <bool isCandSc, typename CandType>
-double estimateY(CandType const& candidate)
-{
-  double y = -999.;
-  const int chargeScZero = 0;
-  if constexpr (isCandSc) {
-    int8_t chargeCand = candidate.charge();
-
-    if (chargeCand == chargeScZero) {
-      y = hfHelper.ySc0(candidate);
-    } else {
-      y = hfHelper.yScPlusPlus(candidate);
-    }
-
-  } else {
-    y = hfHelper.yLc(candidate);
-  }
-  return y;
 }
 
 // ========= Find Leading Particle ==============
