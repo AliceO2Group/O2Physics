@@ -186,8 +186,7 @@ DECLARE_SOA_TABLE(LcHadronPairC, "AOD", "LCHPAIRC", //! Lc-Hadrons pairs Informa
                   aod::hf_correlation_lc_hadron::PtHadron,
                   aod::hf_correlation_lc_hadron::PoolBin,
                   aod::hf_correlation_lc_hadron::IsAutoCorrelated,
-                  aod::hf_correlation_lc_hadron::Cent,
-                  aod::hf_correlation_lc_hadron::Zv);
+                  aod::hf_correlation_lc_hadron::Cent);
 
 DECLARE_SOA_TABLE(LcHadronRecoInfo, "AOD", "LCHRECOINFO", //! Lc-Hadrons pairs Reconstructed Informations
                   aod::hf_correlation_lc_hadron::MLc,
