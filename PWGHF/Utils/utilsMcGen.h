@@ -36,7 +36,7 @@
 namespace hf_mc_gen
 {
 
-template <bool matchCorrBkgs = false, typename T, typename U, typename V>
+template <bool matchCorrBkgs, typename T, typename U, typename V>
 void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V& rowMcMatchGen, bool rejectBackground)
 {
   using namespace o2::constants::physics;
@@ -46,7 +46,7 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
   for (const auto& particle : mcParticlesPerMcColl) {
     int8_t flag = 0;
     int8_t origin = 0;
-    int8_t channel = 0; // Not used in 2-prong decays
+    int8_t channel = 0;
     int8_t sign = 0;
     std::vector<int> idxBhadMothers{};
     // Reject particles from background events
@@ -121,7 +121,7 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
   }
 }
 
-template <bool matchCorrBkgs = false, typename T, typename U, typename V>
+template <bool matchCorrBkgs, typename T, typename U, typename V>
 void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V& rowMcMatchGen, bool rejectBackground, std::vector<int> const& corrBkgMothersPdgs = {})
 {
   using namespace o2::constants::physics;

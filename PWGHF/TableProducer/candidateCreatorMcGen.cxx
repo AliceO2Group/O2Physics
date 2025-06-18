@@ -55,10 +55,10 @@ struct HfCandidateCreatorMcGen {
     for (const auto& mcCollision : mcCollisions) {
       const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
       if (fill2Prong) {
-        hf_mc_gen::fillMcMatchGen2Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen2Prong, rejectBackground2Prong);
+        hf_mc_gen::fillMcMatchGen2Prong<false>(mcParticles, mcParticlesPerMcColl, rowMcMatchGen2Prong, rejectBackground2Prong);
       }
       if (fill3Prong) {
-        hf_mc_gen::fillMcMatchGen3Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen3Prong, rejectBackground3Prong);
+        hf_mc_gen::fillMcMatchGen3Prong<false>(mcParticles, mcParticlesPerMcColl, rowMcMatchGen3Prong, rejectBackground3Prong);
       }
     }
     if (fillBplus) {

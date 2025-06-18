@@ -163,24 +163,24 @@ inline std::unordered_map<DecayChannelMain, const std::vector<int>> getDecayChan
 }
 } // namespace hf_cand_3prong
 
-/// Perform the matching for a single resonant channel
-/// \tparam N size of the array of daughter PDG codes
-/// \param arrPdgResoChn array of daughter indices
-/// \param arrPdgDaugs array of PDG codes for the resonant decay
-/// \return true if the resonant channel is matched, false otherwise
+/// Compare an array of PDG codes with an expected array
+/// \tparam N size of the arrays to be compared
+/// \param arrPdgTested array of PDG codes to be tested
+/// \param arrPdgExpected array of the expected PDG codes
+/// \return true if the arrays are equal, false otherwise
 template <std::size_t N>
-inline bool checkDecayChannel(std::array<int, N> const& arrPdgResoChn, std::array<int, N> arrPdgDaugs)
+inline bool checkDecayChannel(std::array<int, N> const& arrPdgTested, std::array<int, N> arrPdgExpected)
 {
   for (std::size_t i = 0; i < N; i++) {
-    bool findDaug = false;
+    bool foundPdg = false;
     for (std::size_t j = 0; j < N; j++) {
-      if (std::abs(arrPdgResoChn[i]) == std::abs(arrPdgDaugs[j])) {
-        arrPdgDaugs[j] = -1; // Mark as found
-        findDaug = true;
+      if (std::abs(arrPdgTested[i]) == std::abs(arrPdgExpected[j])) {
+        arrPdgExpected[j] = -1; // Mark as found
+        foundPdg = true;
         break;
       }
     }
-    if (!findDaug) {
+    if (!foundPdg) {
       return false;
     }
   }
@@ -188,12 +188,10 @@ inline bool checkDecayChannel(std::array<int, N> const& arrPdgResoChn, std::arra
 }
 
 /// Flag the resonant decays
-/// Function documentation:
-/// \tparam is3Prong bool to specify if the mother decays with a 3-prong decay
 /// \tparam N size of the array of daughter PDG codes
 /// \param motherPdg PDG code of the mother particle
-/// \param channel decay channel flag to be set
 /// \param arrDaughPdgs array of daughter PDG codes
+/// \return the flag for the matched resonant decay channel
 template <std::size_t N>
 inline int8_t flagResonantDecay(const int motherPdg, std::array<int, N> const& arrDaughPdgs)
 {
@@ -248,16 +246,17 @@ inline int8_t flagResonantDecay(const int motherPdg, std::array<int, N> const& a
 }
 
 /// Flip the sign of a specific PDG code in an array
-/// of PDG codes representing either a final or a resonant state
+/// of PDG codes associated to an antiparticle.
 /// \tparam N size of the array of PDG codes
 /// \param motherPdgCode PDG code of the mother particle
-/// \param partPdgCode PDG code of the target particle
+/// \param partPdgCode PDG code to be flipped
 /// \param arrFinalStatePdgs array of PDG codes to be modified
 template <std::size_t N>
 inline void changeFinalStatePdgSign(const int motherPdgCode, const int partPdgCode, std::array<int, N>& arrFinalStatePdgs)
 {
-  if (motherPdgCode >= 0)
+  if (motherPdgCode >= 0) {
     return;
+  }
   for (auto& part : arrFinalStatePdgs) { // o2-linter: disable=const-ref-in-for-loop (arrFinalStatePdgs entries are modified)
     if (part == partPdgCode) {
       part = -part;

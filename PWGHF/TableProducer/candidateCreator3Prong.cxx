@@ -1205,7 +1205,7 @@ struct HfCandidateCreator3ProngExpressions {
       if (matchCorrBkgs) {
         hf_mc_gen::fillMcMatchGen3Prong<true>(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground, mothersCorrBkgsPdgs.value);
       } else {
-        hf_mc_gen::fillMcMatchGen3Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground);
+        hf_mc_gen::fillMcMatchGen3Prong<false>(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground);
       }
     }
   }
