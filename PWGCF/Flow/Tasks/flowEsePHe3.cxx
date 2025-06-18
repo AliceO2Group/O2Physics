@@ -316,7 +316,7 @@ struct FlowEsePHe3 {
   Configurable<float> cfgMinChi2NClITS{"cfgMinChi2NClITS", 0, "Minimum chi2 per cluster ITS for PID if not use costom track cuts"};
   Configurable<float> cfgMaxTPCChi2NCl{"cfgMaxTPCChi2NCl", 4, "Maximum chi2 per cluster TPC for PID if not use costom track cuts"};
   Configurable<float> cfgMaxChi2NClITS{"cfgMaxChi2NClITS", 36, "Maximum chi2 per cluster ITS for PID if not use costom track cuts"};
-  Configurable<float> cfgMinTPCCls{"cfgMinTPCCcls", 70, "Minimum TPC clusters for PID if not use costom track cuts"};
+  Configurable<float> cfgMinTPCCls{"cfgMinTPCCls", 70, "Minimum TPC clusters for PID if not use costom track cuts"};
   Configurable<float> cfgMinITSCls{"cfgMinITSCls", 1, "Minimum ITS clusters for PID if not use costom track cuts"};
   Configurable<float> cfgMaxTPCCls{"cfgMaxTPCCls", 999, "Max TPC clusters for PID if not use costom track cuts"};
   Configurable<float> cfgMaxITSCls{"cfgMaxITSCls", 999, "Max ITS clusters for PID if not use costom track cuts"};
