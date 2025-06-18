@@ -22,7 +22,7 @@
 
 MetadataHelper::MetadataHelper()
 {
-  const std::array<std::string, 5> keyList = {"DataType",
+  const std::array<std::string, 8> keyList = {"DataType",
                                               "RecoPassName",
                                               "Run",
                                               "AnchorPassName",
