@@ -16,11 +16,16 @@
 #ifndef PWGHF_UTILS_UTILSBFIELDCCDB_H_
 #define PWGHF_UTILS_UTILSBFIELDCCDB_H_
 
-#include <string> // std::string
+#include <fairlogger/Logger.h>
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisHelpers.h>
+
+#include <string> // std::string
 
 /// \brief Sets up the grp object for magnetic field (w/o matCorr for propagation)
 /// \param bc is the bunch crossing
@@ -29,7 +34,8 @@
 /// \param ccdbPathGrp is the path where the GRP oject is stored
 /// \param lut is a pointer to the o2::base::MatLayerCylSet object
 /// \param isRun2 tells whether we are analysing Run2 converted data or not (different GRP object type)
-void initCCDB(o2::aod::BCsWithTimestamps::iterator const& bc, int& mRunNumber,
+template <typename TBc>
+void initCCDB(TBc const& bc, int& mRunNumber,
               o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, std::string const& ccdbPathGrp, o2::base::MatLayerCylSet* lut,
               bool isRun2)
 {
