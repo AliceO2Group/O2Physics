@@ -28,7 +28,7 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 
-//HfHelper hfHelper;
+// HfHelper hfHelper;
 
 namespace o2::analysis::hf_correlations
 {
@@ -126,7 +126,8 @@ bool passPIDSelection(Atrack const& track, SpeciesContainer const mPIDspecies,
 }
 
 template <bool isScCand, typename McParticle>
-bool matchCandAndMass(McParticle const& particle, double& massCand) {
+bool matchCandAndMass(McParticle const& particle, double& massCand)
+{
   const auto pdgCand = std::abs(particle.pdgCode());
   const auto matchGenFlag = std::abs(particle.flagMcMatchGen());
 
@@ -157,7 +158,7 @@ bool matchCandAndMass(McParticle const& particle, double& massCand) {
     case BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi):
       massCand = o2::constants::physics::MassSigmaCStarPlusPlus;
       return true;
-    
+
     case BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi):
       massCand = o2::constants::physics::MassSigmaCStarPlusPlus;
       return true;
