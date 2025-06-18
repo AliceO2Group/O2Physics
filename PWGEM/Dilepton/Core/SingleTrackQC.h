@@ -83,7 +83,9 @@ struct SingleTrackQC {
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
 
   ConfigurableAxis ConfPtlBins{"ConfPtlBins", {VARIABLE_WIDTH, 0.00, 0.05, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pTl bins for output histograms"};
-  ConfigurableAxis ConfDCABins{"ConfDCABins", {VARIABLE_WIDTH, -10.0, -9.0, -8.0, -7.0, -6.0, -5.0, -4.5, -4.0, -3.5, -3.0, -2.5, -2.0, -1.9, -1.8, -1.7, -1.6, -1.5, -1.4, -1.3, -1.2, -1.1, -1.0, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "DCA bins for output histograms"};
+  ConfigurableAxis ConfDCA3DBins{"ConfDCA3DBins", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "DCA3d bins in sigma for output histograms"};
+  ConfigurableAxis ConfDCAXYBins{"ConfDCAXYBins", {VARIABLE_WIDTH, -10.0, -9.0, -8.0, -7.0, -6.0, -5.0, -4.5, -4.0, -3.5, -3.0, -2.5, -2.0, -1.9, -1.8, -1.7, -1.6, -1.5, -1.4, -1.3, -1.2, -1.1, -1.0, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "DCAxy bins in sigma for output histograms"};
+  ConfigurableAxis ConfDCAZBins{"ConfDCAZBins", {VARIABLE_WIDTH, -10.0, -9.0, -8.0, -7.0, -6.0, -5.0, -4.5, -4.0, -3.5, -3.0, -2.5, -2.0, -1.9, -1.8, -1.7, -1.6, -1.5, -1.4, -1.3, -1.2, -1.1, -1.0, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "DCAz bins in sigma for output histograms"};
 
   EMEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -227,17 +229,14 @@ struct SingleTrackQC {
       const AxisSpec axis_pt{ConfPtlBins, "p_{T,e} (GeV/c)"};
       const AxisSpec axis_eta{20, -1.0, +1.0, "#eta_{e}"};
       const AxisSpec axis_phi{36, 0.0, 2 * M_PI, "#varphi_{e} (rad.)"};
-      std::string dca3D_axis_title = "DCA_{e}^{3D} (#sigma)";
-      std::string dcaXY_axis_title = "DCA_{e}^{XY} (#sigma)";
-      std::string dcaZ_axis_title = "DCA_{e}^{Z} (#sigma)";
-      const AxisSpec axis_dca3D{ConfDCABins, dca3D_axis_title};
-      const AxisSpec axis_dcaXY{ConfDCABins, dcaXY_axis_title};
-      const AxisSpec axis_dcaZ{ConfDCABins, dcaZ_axis_title};
+      const AxisSpec axis_dca3D{ConfDCA3DBins, "DCA_{e}^{3D} (#sigma)"};
+      const AxisSpec axis_dcaXY{ConfDCAXYBins, "DCA_{e}^{XY} (#sigma)"};
+      const AxisSpec axis_dcaZ{ConfDCAZBins, "DCA_{e}^{Z} (#sigma)"};
 
       // track info
       fRegistry.add("Track/positive/hs", "rec. single electron", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_dca3D, axis_dcaXY, axis_dcaZ}, true);
       fRegistry.add("Track/positive/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{2000, -5, 5}}, false);
-      fRegistry.add("Track/positive/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {700, -3.5f, 3.5f}}, false);
+      fRegistry.add("Track/positive/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.f, 1.f}}, false);
       fRegistry.add("Track/positive/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{400, -20.0f, 20.0f}, {400, -20.0f, 20.0f}}, false);
       fRegistry.add("Track/positive/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
       fRegistry.add("Track/positive/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 400}}, false);
@@ -282,7 +281,7 @@ struct SingleTrackQC {
       const AxisSpec axis_pt{ConfPtlBins, "p_{T,#mu} (GeV/c)"};
       const AxisSpec axis_eta{50, -6, -1, "#eta_{#mu}"};
       const AxisSpec axis_phi{36, 0, 2 * M_PI, "#varphi_{#mu} (rad.)"};
-      const AxisSpec axis_dca{ConfDCABins, "DCA_{#mu}^{XY} (#sigma)"};
+      const AxisSpec axis_dca{ConfDCAXYBins, "DCA_{#mu}^{XY} (#sigma)"};
 
       // track info
       fRegistry.add("Track/positive/hs", "rec. single muon", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_dca}, true);
