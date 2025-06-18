@@ -99,7 +99,6 @@ struct statPromptPhoton {
   Configurable<bool> cfgGenHistograms{"cfgGenHistograms", false, "Enables Generated histograms"};
   Configurable<bool> cfgRecHistograms{"cfgRecHistograms", false, "Enables Reconstructed histograms"};
   Configurable<bool> cfgDataHistograms{"cfgDataHistograms", false, "Enables Data histograms"};
-  Configurable<bool> cfgSkimmedTrigger{"cfgSkimmedTrigger", false, "Enables trigger for skimmied datasets (2023 onwards)"};
   Configurable<std::string> cfgTriggerMasks{"cfgTriggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
   Configurable<bool> cfgDebug{"cfgDebug", false, "Enables debug information for local running"};
 
@@ -635,11 +634,9 @@ struct statPromptPhoton {
     }
     histos.fill(HIST("REC_nEvents"), 2.5);
 
-    if (cfgSkimmedTrigger) {
-      if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
-        return;
-      }
-    } // JE Software Triggers
+    if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
+      return;
+    }
 
     histos.fill(HIST("REC_nEvents"), 3.5);
 
@@ -1117,11 +1114,9 @@ struct statPromptPhoton {
 
     histos.fill(HIST("DATA_nEvents"), 2.5);
 
-    if (cfgSkimmedTrigger) {
       if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
         return;
       }
-    } // JE Software Triggers
 
     histos.fill(HIST("DATA_nEvents"), 3.5);
 
