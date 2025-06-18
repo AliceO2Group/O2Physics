@@ -10,50 +10,51 @@
 // or submit itself to any jurisdiction.
 // sourav.kundu@cern.ch , sarjeeta.gami@cern.ch
 
-#include <TH1F.h>
+#include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include "Math/GenVector/Boost.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "TF1.h"
+#include "TRandom3.h"
 #include <TDirectory.h>
+#include <TFile.h>
+#include <TH1F.h>
+#include <TH2F.h>
 #include <THn.h>
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TLorentzVector.h>
 #include <TPDGCode.h>
-#include <cmath>
+
 #include <array>
+#include <cmath>
 #include <cstdlib>
-#include <vector>
 #include <string>
-
-#include "TRandom3.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "Math/GenVector/Boost.h"
-#include "TF1.h"
-
-#include "PWGLF/DataModel/EPCalibrationTables.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/TrackSelection.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "Common/DataModel/PIDResponseITS.h"
-#include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -101,6 +102,7 @@ struct kstarpbpb {
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<bool> useGlobalTrack{"useGlobalTrack", true, "use Global track"};
+  Configurable<bool> usepolar{"usepolar", true, "flag to fill type of SA"};
   Configurable<float> nsigmaCutTOF{"nsigmacutTOF", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
   Configurable<bool> isTOFOnly{"isTOFOnly", false, "use TOF only PID"};
@@ -159,8 +161,8 @@ struct kstarpbpb {
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
 
   SliceCache cache;
-  Partition<TrackCandidates> posTracks = aod::track::signed1Pt > cfgCutCharge;
-  Partition<TrackCandidates> negTracks = aod::track::signed1Pt < cfgCutCharge;
+  // Partition<TrackCandidates> posTracks = aod::track::signed1Pt > cfgCutCharge;
+  // Partition<TrackCandidates> negTracks = aod::track::signed1Pt < cfgCutCharge;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -183,8 +185,8 @@ struct kstarpbpb {
     AxisSpec resAxis = {6000, -30, 30, "Res"};
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
     AxisSpec occupancyAxis = {occupancyBinning, "Occupancy"};
+    histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{10, 0, 10.0}});
     if (!fillSA) {
-      histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{10, 0, 10.0}});
       if (same) {
         histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configThnAxisCentrality});
       }
@@ -663,15 +665,25 @@ struct kstarpbpb {
           threeVecDauCM = fourVecDauCM.Vect();
           threeVecDauCMXY = ROOT::Math::XYZVector(threeVecDauCM.X(), threeVecDauCM.Y(), 0.);
           eventplaneVec = ROOT::Math::XYZVector(std::cos(2.0 * psiFT0C), std::sin(2.0 * psiFT0C), 0);
+          eventplaneVecNorm = ROOT::Math::XYZVector(std::sin(2.0 * psiFT0C), -std::cos(2.0 * psiFT0C), 0);
           auto cosPhistarminuspsi = GetPhiInRange(fourVecDauCM.Phi() - psiFT0C);
           auto SA = TMath::Cos(2.0 * cosPhistarminuspsi);
+          auto cosThetaStar = eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
 
-          if (track1Sign * track2Sign < 0)
-            histos.fill(HIST("hSparseSAvsrapsameunlike"), KstarMother.M(), KstarMother.Pt(), SA, KstarMother.Rapidity(), centrality);
-          else if (track1Sign * track2Sign > 0)
-            histos.fill(HIST("hSparseSAvsrapsamelike"), KstarMother.M(), KstarMother.Pt(), SA, KstarMother.Rapidity(), centrality);
+          if (track1Sign * track2Sign < 0) {
+            if (usepolar) {
+              histos.fill(HIST("hSparseSAvsrapsameunlike"), KstarMother.M(), KstarMother.Pt(), cosThetaStar, KstarMother.Rapidity(), centrality);
+            } else {
+              histos.fill(HIST("hSparseSAvsrapsameunlike"), KstarMother.M(), KstarMother.Pt(), SA, KstarMother.Rapidity(), centrality);
+            }
+          } else if (track1Sign * track2Sign > 0) {
+            if (usepolar) {
+              histos.fill(HIST("hSparseSAvsrapsamelike"), KstarMother.M(), KstarMother.Pt(), cosThetaStar, KstarMother.Rapidity(), centrality);
+            } else {
+              histos.fill(HIST("hSparseSAvsrapsamelike"), KstarMother.M(), KstarMother.Pt(), SA, KstarMother.Rapidity(), centrality);
+            }
+          }
         }
-
         if (fillRotation) {
           for (int nrotbkg = 0; nrotbkg < nBkgRotations; nrotbkg++) {
             auto anglestart = confMinRot;
@@ -707,8 +719,12 @@ struct kstarpbpb {
                 threeVecDauCMXYrot = ROOT::Math::XYZVector(threeVecDauCMrot.X(), threeVecDauCMrot.Y(), 0.);
                 auto cosPhistarminuspsirot = GetPhiInRange(fourVecDauCMrot.Phi() - psiFT0C);
                 auto SArot = TMath::Cos(2.0 * cosPhistarminuspsirot);
-
-                histos.fill(HIST("hSparseSAvsraprot"), kstarrot.M(), kstarrot.Pt(), SArot, kstarrot.Rapidity(), centrality);
+                auto cosThetaStarrot = eventplaneVecNorm.Dot(threeVecDauCMrot) / std::sqrt(threeVecDauCMrot.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
+                if (usepolar) {
+                  histos.fill(HIST("hSparseSAvsraprot"), kstarrot.M(), kstarrot.Pt(), cosThetaStarrot, kstarrot.Rapidity(), centrality);
+                } else {
+                  histos.fill(HIST("hSparseSAvsraprot"), kstarrot.M(), kstarrot.Pt(), SArot, kstarrot.Rapidity(), centrality);
+                }
               }
             }
           }
@@ -1203,10 +1219,15 @@ struct kstarpbpb {
           threeVecDauCM = fourVecDauCM.Vect();
           threeVecDauCMXY = ROOT::Math::XYZVector(threeVecDauCM.X(), threeVecDauCM.Y(), 0.);
           eventplaneVec = ROOT::Math::XYZVector(std::cos(2.0 * psiFT0C), std::sin(2.0 * psiFT0C), 0);
+          eventplaneVecNorm = ROOT::Math::XYZVector(std::sin(2.0 * psiFT0C), -std::cos(2.0 * psiFT0C), 0);
           auto cosPhistarminuspsi = GetPhiInRange(fourVecDauCM.Phi() - psiFT0C);
           auto SA = TMath::Cos(2.0 * cosPhistarminuspsi);
-
-          histos.fill(HIST("hSparseSAvsrapmix"), KstarMother.M(), KstarMother.Pt(), SA, KstarMother.Rapidity(), centrality);
+          auto cosThetaStar = eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
+          if (usepolar) {
+            histos.fill(HIST("hSparseSAvsrapmix"), KstarMother.M(), KstarMother.Pt(), cosThetaStar, KstarMother.Rapidity(), centrality);
+          } else {
+            histos.fill(HIST("hSparseSAvsrapmix"), KstarMother.M(), KstarMother.Pt(), SA, KstarMother.Rapidity(), centrality);
+          }
         }
       }
     }
