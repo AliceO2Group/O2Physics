@@ -169,8 +169,8 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
             o2::hf_decay::changeFinalStatePdgSign(particle.pdgCode(), +kPi0, finalStateParts);
             RecoDecay::getDaughters<false>(particle, &arrAllDaughtersIndex, finalStateParts, maxDepth);
             matched = RecoDecay::isMatchedMCGen(mcParticles, particle, motherPdgCode, finalStateParts, true, &sign, -1);
-          } else if (finalState.size() == 4) { //  o2-linter: disable=magic-number (Partly Reco 3-prong decays from 4-prong decays)
-            std::array<int, 4> finalStateParts = std::array{finalState[0], finalState[1], finalState[2], finalState[3]};
+          } else if (finalState.size() == 4) { // o2-linter: disable=magic-number (Partly Reco 3-prong decays from 4-prong decays)
+            std::array<int, 4> finalStateParts = std::array{finalState[0], finalState[1], finalState[2], finalState[3]}; 
             o2::hf_decay::changeFinalStatePdgSign(particle.pdgCode(), +kPi0, finalStateParts);
             RecoDecay::getDaughters<false>(particle, &arrAllDaughtersIndex, finalStateParts, maxDepth);
             matched = RecoDecay::isMatchedMCGen(mcParticles, particle, motherPdgCode, finalStateParts, true, &sign, -1);
@@ -194,8 +194,6 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
                 if (std::abs(daughDstar.pdgCode()) == Pdg::kD0 || std::abs(daughDstar.pdgCode()) == Pdg::kDPlus) {
                   RecoDecay::getDaughters(daughDstar, &arrResoDaughIndex, std::array{0}, ResoMaxDepth);
                   break;
-                } else {
-                  LOG(info) << "[matchFinalStateCorrBkgsGen] D* Daughter with PDG code: " << mcParticles.rawIteratorAt(arrResoDaughIndexDStar[iDaug]).pdgCode() << " not recognized.";
                 }
               }
             } else {

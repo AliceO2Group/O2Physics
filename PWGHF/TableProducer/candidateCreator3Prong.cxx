@@ -1011,6 +1011,7 @@ struct HfCandidateCreator3ProngExpressions {
                 for (size_t iDaug = 0; iDaug < arrResoDaughIndexDStar.size(); iDaug++) {
                   auto daughDstar = mcParticles.rawIteratorAt(arrResoDaughIndexDStar[iDaug]);
                   if (std::abs(daughDstar.pdgCode()) == Pdg::kD0 || std::abs(daughDstar.pdgCode()) == Pdg::kDPlus) {
+                    RecoDecay::getDaughters(daughDstar, &arrResoDaughIndex, std::array{0}, ResoMaxDepth);
                     break;
                   }
                 }
