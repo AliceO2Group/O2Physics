@@ -926,7 +926,7 @@ struct EventMeanPtId {
     histos.fill(HIST("Rec/hZvtx_after_sel8"), coll.posZ());
 
     double nch = 0., nchPi = 0., nchKa = 0., nchPr = 0., nchAll = 0., nchAllBfCut = 0., nchEta = 0., nchPt = 0.;
-    double q1 = 0., q2 = 0., q1Old = 0., q2Old = 0.;
+    double q1 = 0., q2 = 0.;
     double q1Pi = 0., q2Pi = 0., q1Ka = 0., q2Ka = 0., q1Pr = 0., q2Pr = 0.;
     double var1 = 0., var2 = 0., twoParAllCharge = 0.;
     double var1Pi = 0., var2Pi = 0., var1Ka = 0., var2Ka = 0., var1Pr = 0., var2Pr = 0.;
@@ -986,8 +986,6 @@ struct EventMeanPtId {
       if (track.pt() >= cPtmincut || track.pt() <= cPtmaxcut) // do not change this (it is for different pt work)
       {
         nch += 1.;
-        q1Old += track.pt();
-        q2Old += (track.pt() * track.pt());
         histos.fill(HIST("Rec/hnch"), nch);
       }
       q1 += track.pt();
