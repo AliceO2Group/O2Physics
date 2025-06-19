@@ -889,7 +889,8 @@ struct EventMeanPtId {
   SliceCache cache;
   Preslice<aod::McParticles> mcTrack = o2::aod::mcparticle::mcCollisionId;
   void processMcReco(aod::MyMCRecoCollision const& coll, aod::MyMCRecoTracks const& inputTracks, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
-  { (void)mcCollisions;
+  {
+    (void)mcCollisions;
     if (!coll.has_mcCollision()) {
       return;
     }
