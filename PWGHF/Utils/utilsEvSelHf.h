@@ -261,7 +261,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     addHistograms(registry);
   }
 
-  /// \brief Applies event selection
+  /// \brief Applies event selection.
   /// \tparam useEvSel use information from the EvSel table
   /// \tparam centEstimator centrality estimator
   /// \param collision collision to test against the selection criteria
@@ -407,7 +407,6 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
       if (TESTBIT(rejectionMask, reason)) {
         return;
       }
-
       hCollisions->Fill(reason);
     }
 
