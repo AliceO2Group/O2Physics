@@ -81,4 +81,4 @@ DECLARE_SOA_TABLE(LambdaPairs, "AOD", "LAMBDAPAIR",
 
 using LambdaPair = LambdaPairs::iterator;
 } // namespace o2::aod
-#endif // PWGLF_DATAMODEL_LFELATIONTABLES_H_
+#endif // PWGLF_DATAMODEL_LFSPINCORRELATIONTABLES_H_
