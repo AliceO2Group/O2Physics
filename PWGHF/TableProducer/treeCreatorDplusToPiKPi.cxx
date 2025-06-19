@@ -140,7 +140,6 @@ DECLARE_SOA_TABLE(HfCandDpLites, "AOD", "HFCANDDPLITE",
                   hf_cand_3prong::FlagMcDecayChanRec)
 
 DECLARE_SOA_TABLE(HfCandDpFulls, "AOD", "HFCANDDPFULL",
-                  collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
@@ -222,7 +221,6 @@ DECLARE_SOA_TABLE(HfCandDpFulls, "AOD", "HFCANDDPFULL",
                   hf_cand_3prong::FlagMcDecayChanRec);
 
 DECLARE_SOA_TABLE(HfCandDpFullEvs, "AOD", "HFCANDDPFULLEV",
-                  collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
@@ -231,7 +229,6 @@ DECLARE_SOA_TABLE(HfCandDpFullEvs, "AOD", "HFCANDDPFULLEV",
                   full::RunNumber);
 
 DECLARE_SOA_TABLE(HfCandDpFullPs, "AOD", "HFCANDDPFULLP",
-                  collision::BCId,
                   full::Pt,
                   full::Eta,
                   full::Phi,
@@ -284,7 +281,6 @@ struct HfTreeCreatorDplusToPiKPi {
   void fillEvent(const T& collision, int isEventReject, int runNumber)
   {
     rowCandidateFullEvents(
-      collision.bcId(),
       collision.numContrib(),
       collision.posX(),
       collision.posY(),
@@ -370,7 +366,6 @@ struct HfTreeCreatorDplusToPiKPi {
         channelMc);
     } else {
       rowCandidateFull(
-        coll.bcId(),
         coll.numContrib(),
         candidate.posX(),
         candidate.posY(),
@@ -544,7 +539,6 @@ struct HfTreeCreatorDplusToPiKPi {
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
       rowCandidateFullParticles(
-        particle.mcCollision().bcId(),
         particle.pt(),
         particle.eta(),
         particle.phi(),
