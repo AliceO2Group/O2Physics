@@ -560,7 +560,7 @@ struct ZdcQVectors {
     runnumber = foundBC.runNumber();
 
     // load new calibrations for new runs only
-    // UPLOAD Energy calibration and vmean in 1 histogram! 
+    // UPLOAD Energy calibration and vmean in 1 histogram!
     if (runnumber != lastRunNumber) {
       cal.calibfilesLoaded[2] = false;
       cal.calibList[2] = nullptr;
