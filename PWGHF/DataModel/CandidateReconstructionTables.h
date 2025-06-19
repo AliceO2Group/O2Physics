@@ -39,6 +39,7 @@
 namespace o2::aod
 {
 // Table aliases
+using BCFullInfos = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
 using TracksWCov = soa::Join<Tracks, TracksCov>;
 using TracksWDca = soa::Join<Tracks, TracksDCA>;
