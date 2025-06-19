@@ -480,7 +480,7 @@ struct DiHadronCor {
           continue; // Without pt-differential correlations, skip if the trigger pt is less than the associate pt
         if (cfgUsePtOrder && system == MixedEvent && cfgUsePtOrderInMixEvent && track1.pt() <= track2.pt())
           continue; // For pt-differential correlations in mixed events, skip if the trigger pt is less than the associate pt
-        
+
         float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi(), -PIHalf);
         float deltaEta = track1.eta() - track2.eta();
 
