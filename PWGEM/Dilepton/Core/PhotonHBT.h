@@ -589,7 +589,7 @@ struct PhotonHBT {
 
     if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDileptonCut
       static constexpr int nClassesMl = 2;
-      const std::vector<int> cutDirMl = {o2::cuts_ml::CutSmaller, o2::cuts_ml::CutNot};
+      const std::vector<int> cutDirMl = {o2::cuts_ml::CutGreater, o2::cuts_ml::CutNot};
       const std::vector<std::string> labelsClasses = {"Signal", "Background"};
       const uint32_t nBinsMl = dielectroncuts.binsMl.value.size() - 1;
       const std::vector<std::string> labelsBins(nBinsMl, "bin");

@@ -12,30 +12,34 @@
 /// \brief write relevant information about primary electrons.
 /// \author daiki.sekihata@cern.ch
 
-#include <unordered_map>
-#include <string>
-#include <vector>
-#include <utility>
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+#include "PWGEM/Dilepton/Utils/MlResponseO2Track.h"
+#include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
-#include "Math/Vector4D.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/Core/trackUtilities.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/Core/TableHelper.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Tools/ML/MlResponse.h"
 
-#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
-#include "PWGEM/Dilepton/Utils/PairUtilities.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DataFormatsCalibration/MeanVertexObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Math/Vector4D.h"
+
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::soa;
@@ -70,7 +74,7 @@ struct skimmerPrimaryElectron {
   // Operation and minimisation criteria
   Configurable<bool> fillQAHistogram{"fillQAHistogram", false, "flag to fill QA histograms"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
-  Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 10, "min ncluster tpc"};
+  Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};
   Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
   Configurable<int> min_ncluster_its{"min_ncluster_its", 4, "min ncluster its"};
@@ -79,8 +83,8 @@ struct skimmerPrimaryElectron {
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
   Configurable<float> minpt{"minpt", 0.15, "min pt for track"};
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance"};
-  Configurable<float> dca_xy_max{"dca_xy_max", 0.3f, "max DCAxy in cm"};
-  Configurable<float> dca_z_max{"dca_z_max", 0.3f, "max DCAz in cm"};
+  Configurable<float> dca_xy_max{"dca_xy_max", 1.0, "max DCAxy in cm"};
+  Configurable<float> dca_z_max{"dca_z_max", 1.0, "max DCAz in cm"};
   Configurable<float> dca_3d_sigma_max{"dca_3d_sigma_max", 1e+10, "max DCA 3D in sigma"};
   Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.5, "min. TPC n sigma for electron inclusion"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 3.5, "max. TPC n sigma for electron inclusion"};
@@ -96,7 +100,20 @@ struct skimmerPrimaryElectron {
   Configurable<float> max_pin_for_pion_rejection{"max_pin_for_pion_rejection", 0.5, "pion rejection is applied below this pin"};
   Configurable<float> max_frac_shared_clusters_tpc{"max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
 
+  // configuration for PID ML
+  Configurable<bool> usePIDML{"usePIDML", false, "Flag to use PID ML"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
+  Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
+  Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{-999999., 999999.}, "Bin limits for ML application"};
+  Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.95}, "ML cuts per bin"};
+  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature"}, "Names of ML model input features"};
+  Configurable<std::string> nameBinningFeature{"nameBinningFeature", "pt", "Names of ML model binning feature"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+  Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
+
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
+  o2::analysis::MlResponseO2Track<float> mlResponseSingleTrack;
 
   int mRunNumber;
   float d_bz;
@@ -106,6 +123,7 @@ struct skimmerPrimaryElectron {
   o2::dataformats::VertexBase mVtx;
   const o2::dataformats::MeanVertexObject* mMeanVtx = nullptr;
   o2::base::MatLayerCylSet* lut = nullptr;
+  o2::ccdb::CcdbApi ccdbApi;
 
   void init(InitContext&)
   {
@@ -116,6 +134,7 @@ struct skimmerPrimaryElectron {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+    ccdbApi.init(ccdburl);
 
     if (fillQAHistogram) {
       fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
@@ -154,6 +173,31 @@ struct skimmerPrimaryElectron {
       fRegistry.add("Track/hITSNsigmaKa", "ITS n sigma ka;p_{pv} (GeV/c);n #sigma_{K}^{ITS}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hITSNsigmaPr", "ITS n sigma pr;p_{pv} (GeV/c);n #sigma_{p}^{ITS}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     }
+
+    if (usePIDML) {
+      static constexpr int nClassesMl = 2;
+      const std::vector<int> cutDirMl = {o2::cuts_ml::CutGreater, o2::cuts_ml::CutNot};
+      const std::vector<std::string> labelsClasses = {"Signal", "Background"};
+      const uint32_t nBinsMl = binsMl.value.size() - 1;
+      const std::vector<std::string> labelsBins(nBinsMl, "bin");
+      double cutsMlArr[nBinsMl][nClassesMl];
+      for (uint32_t i = 0; i < nBinsMl; i++) {
+        cutsMlArr[i][0] = cutsMl.value[i];
+        cutsMlArr[i][1] = 0.;
+      }
+      o2::framework::LabeledArray<double> cutsMl = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
+
+      mlResponseSingleTrack.configure(binsMl.value, cutsMl, cutDirMl, nClassesMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdburl);
+        mlResponseSingleTrack.setModelPathsCCDB(onnxFileNames.value, ccdbApi, onnxPathsCCDB.value, timestampCCDB.value);
+      } else {
+        mlResponseSingleTrack.setModelPathsLocal(onnxFileNames.value);
+      }
+      mlResponseSingleTrack.cacheInputFeaturesIndices(namesInputFeatures);
+      mlResponseSingleTrack.cacheBinningIndex(nameBinningFeature);
+      mlResponseSingleTrack.init(enableOptimizations.value);
+    } // end of PID ML
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -299,10 +343,32 @@ struct skimmerPrimaryElectron {
     return true;
   }
 
-  template <typename TTrack>
-  bool isElectron(TTrack const& track)
+  template <typename TCollision, typename TTrack>
+  bool isElectron(TCollision const& collision, TTrack const& track)
   {
-    return isElectron_TPChadrej(track) || isElectron_TOFreq(track);
+    if (usePIDML) {
+      if (track.tpcNSigmaEl() < minTPCNsigmaEl || maxTPCNsigmaEl < track.tpcNSigmaEl()) {
+        return false;
+      }
+      if (track.hasTOF() && (maxTOFNsigmaEl < std::fabs(track.tofNSigmaEl()))) {
+        return false;
+      }
+
+      // return false;
+      o2::dataformats::DCA mDcaInfoCov;
+      mDcaInfoCov.set(999, 999, 999, 999, 999);
+      auto trackParCov = getTrackParCov(track);
+      trackParCov.setPID(o2::track::PID::Electron);
+      mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+      mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+
+      std::vector<float> inputFeatures = mlResponseSingleTrack.getInputFeatures(track, trackParCov, collision);
+      float binningFeature = mlResponseSingleTrack.getBinningFeature(track, trackParCov, collision);
+      return mlResponseSingleTrack.isSelectedMl(inputFeatures, binningFeature);
+    } else {
+      return isElectron_TPChadrej(track) || isElectron_TOFreq(track);
+    }
   }
 
   template <typename TTrack>
@@ -460,7 +526,7 @@ struct skimmerPrimaryElectron {
 
       auto tracks_per_coll = tracksWithITSPid.sliceBy(perCol, collision.globalIndex());
       for (const auto& track : tracks_per_coll) {
-        if (!checkTrack<false>(collision, track) || !isElectron(track)) {
+        if (!checkTrack<false>(collision, track) || !isElectron(collision, track)) {
           continue;
         }
         fillTrackTable(collision, track);
@@ -491,7 +557,7 @@ struct skimmerPrimaryElectron {
       for (const auto& trackId : trackIdsThisCollision) {
         // auto track = trackId.template track_as<MyTracks>();
         auto track = tracksWithITSPid.rawIteratorAt(trackId.trackId());
-        if (!checkTrack<false>(collision, track) || !isElectron(track)) {
+        if (!checkTrack<false>(collision, track) || !isElectron(collision, track)) {
           continue;
         }
         fillTrackTable(collision, track);
@@ -522,7 +588,7 @@ struct skimmerPrimaryElectron {
 
       auto tracks_per_coll = tracksWithITSPid.sliceBy(perCol, collision.globalIndex());
       for (const auto& track : tracks_per_coll) {
-        if (!checkTrack<false>(collision, track) || !isElectron(track)) {
+        if (!checkTrack<false>(collision, track) || !isElectron(collision, track)) {
           continue;
         }
         fillTrackTable(collision, track);
@@ -556,7 +622,7 @@ struct skimmerPrimaryElectron {
       for (const auto& trackId : trackIdsThisCollision) {
         // auto track = trackId.template track_as<MyTracks>();
         auto track = tracksWithITSPid.rawIteratorAt(trackId.trackId());
-        if (!checkTrack<false>(collision, track) || !isElectron(track)) {
+        if (!checkTrack<false>(collision, track) || !isElectron(collision, track)) {
           continue;
         }
         fillTrackTable(collision, track);
@@ -591,7 +657,7 @@ struct skimmerPrimaryElectron {
 
       auto tracks_per_coll = tracksWithITSPid.sliceBy(perCol, collision.globalIndex());
       for (const auto& track : tracks_per_coll) {
-        if (!checkTrack<true>(collision, track) || !isElectron(track)) {
+        if (!checkTrack<true>(collision, track) || !isElectron(collision, track)) {
           continue;
         }
         fillTrackTable(collision, track);
@@ -624,7 +690,7 @@ struct skimmerPrimaryElectron {
       for (const auto& trackId : trackIdsThisCollision) {
         // auto track = trackId.template track_as<MyTracksMC>();
         auto track = tracksWithITSPid.rawIteratorAt(trackId.trackId());
-        if (!checkTrack<true>(collision, track) || !isElectron(track)) {
+        if (!checkTrack<true>(collision, track) || !isElectron(collision, track)) {
           continue;
         }
         fillTrackTable(collision, track);
