@@ -667,7 +667,7 @@ struct EventMeanPtId {
     histos.fill(HIST("Data/hCentrality"), cent);
 
     double nch = 0., nchPi = 0., nchKa = 0., nchPr = 0., nchAll = 0., nchAllBfCut = 0., nchEta = 0., nchPt = 0.;
-    double q1 = 0., q2 = 0., q1Old = 0., q2Old = 0.;
+    double q1 = 0., q2 = 0.;
     double q1Pi = 0., q2Pi = 0., q1Ka = 0., q2Ka = 0., q1Pr = 0., q2Pr = 0.;
     double var1 = 0., var2 = 0., twoParAllCharge = 0.;
     double var1Pi = 0., var2Pi = 0.;
@@ -718,8 +718,6 @@ struct EventMeanPtId {
       if (track.pt() >= cPtmincut || track.pt() <= cPtmaxcut) // do not change this (it is for different pt work)
       {
         nch += 1.;
-        q1Old += track.pt();
-        q2Old += (track.pt() * track.pt());
         histos.fill(HIST("Data/hnch"), nch);
       }
 
@@ -891,7 +889,7 @@ struct EventMeanPtId {
   SliceCache cache;
   Preslice<aod::McParticles> mcTrack = o2::aod::mcparticle::mcCollisionId;
   void processMcReco(aod::MyMCRecoCollision const& coll, aod::MyMCRecoTracks const& inputTracks, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
-  {
+  { (void)mcCollisions;
     if (!coll.has_mcCollision()) {
       return;
     }
