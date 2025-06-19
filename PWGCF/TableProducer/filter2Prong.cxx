@@ -141,13 +141,14 @@ struct Filter2Prong {
   }
   PROCESS_SWITCH(Filter2Prong, processData, "Process data D0 candidates", true);
 
-  void processMC(aod::McCollisions::iterator const&, aod::CFMcParticleRefs const& cfmcparticles, [[maybe_unused]] aod::McParticles const& mcparticles)
+  using HFMCTrack = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
+  void processMC(aod::McCollisions::iterator const&, aod::CFMcParticleRefs const& cfmcparticles, [[maybe_unused]] HFMCTrack const& mcparticles)
   {
     // The main filter outputs the primary MC particles. Here we just resolve the daughter indices that are needed for the efficiency matching.
     for (const auto& r : cfmcparticles) {
-      const auto& mcParticle = r.mcParticle();
-      if (mcParticle.daughtersIds().size() != 2) {
-        output2ProngMcParts(-1, -1);
+      const auto& mcParticle = r.mcParticle_as<HFMCTrack>();
+      if ((mcParticle.flagMcMatchGen() & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) == 0 || mcParticle.daughtersIds().size() != 2) {
+        output2ProngMcParts(-1, -1, aod::cf2prongtrack::Generic2Prong);
         continue;
       }
       int prongCFId[2] = {-1, -1};
@@ -159,7 +160,8 @@ struct Filter2Prong {
           }
         }
       }
-      output2ProngMcParts(prongCFId[0], prongCFId[1]);
+      output2ProngMcParts(prongCFId[0], prongCFId[1],
+                          (mcParticle.pdgCode() >= 0 ? aod::cf2prongtrack::D0ToPiK : aod::cf2prongtrack::D0barToKPi) | ((mcParticle.originMcGen() & RecoDecay::OriginType::Prompt) ? aod::cf2prongmcpart::Prompt : 0));
     }
   }
   PROCESS_SWITCH(Filter2Prong, processMC, "Process MC 2-prong daughters", false);
