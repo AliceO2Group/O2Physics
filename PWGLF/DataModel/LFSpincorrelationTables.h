@@ -135,4 +135,4 @@ DECLARE_SOA_TABLE(LambdaPairmcs, "AOD", "LAMBDAPAIRMC",
 using LambdaPairmc = LambdaPairmcs::iterator;
 
 } // namespace o2::aod
-#endif // PWGLF_DATAMODEL_LFSPINCORRELATIONTABLES_H_
+#endif // PWGLF_DATAMODEL_LFELATIONTABLES_H_
