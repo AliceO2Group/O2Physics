@@ -34,7 +34,7 @@ o2physics_add_dpl_workflow(antiproton-cumulants-mc
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 		
-o2physics_add_dpl_workflow(event-meanpt-id
+o2physics_add_dpl_workflow(event-mean-pt-id
                     SOURCES eventMeanPtId.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
