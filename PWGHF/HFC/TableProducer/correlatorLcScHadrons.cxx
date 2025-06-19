@@ -914,11 +914,11 @@ struct HfCorrelatorLcScHadrons {
         registry.fill(HIST("hPtCandVsChargeMcGenNonPrompt"), particle.pt(), chargeLc);
       }
 
-      static constexpr size_t NDaughtersSc{4u};
-      static constexpr size_t NDaughtersLc{3u};
+      static constexpr std::size_t NDaughtersSc{4u};
+      static constexpr std::size_t NDaughtersLc{3u};
       std::vector<int> listDaughters{};
       listDaughters.clear();
-      const size_t expectedDaughters = isCandSc ? 4 : 3;
+      const std::size_t nDaughtersExpected = isCandSc ? 4 : 3;
 
       if (isCandSc) {
         if (massCand == o2::constants::physics::MassSigmaC0 || massCand == o2::constants::physics::MassSigmaCStar0) {
@@ -934,8 +934,8 @@ struct HfCorrelatorLcScHadrons {
       }
 
       int counterDaughters = 0;
-      std::vector<int> prongsId(expectedDaughters);
-      if (listDaughters.size() == expectedDaughters) {
+      std::vector<int> prongsId(nDaughtersExpected);
+      if (listDaughters.size() == nDaughtersExpected) {
         for (const auto& dauIdx : listDaughters) {
           auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
           counterDaughters += 1;
