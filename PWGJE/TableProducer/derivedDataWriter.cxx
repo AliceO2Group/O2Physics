@@ -16,21 +16,32 @@
 /// \author Jochen Klein <jochen.klein@cern.ch>
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include <MathUtils/Utils.h>
-#include <algorithm>
-#include <string>
-#include <vector>
+#include "JetDerivedDataUtilities.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/runDataProcessing.h"
-
-#include "PWGJE/Core/JetHFUtilities.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "PWGHF/DataModel/DerivedTables.h"
 #include "PWGJE/Core/JetDQUtilities.h"
+#include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetReducedDataDQ.h"
+#include "PWGJE/DataModel/JetReducedDataHF.h"
 #include "PWGJE/DataModel/JetReducedDataSelector.h"
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisTask.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataProcessorSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/detail/TypeTruncation.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <iterator>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

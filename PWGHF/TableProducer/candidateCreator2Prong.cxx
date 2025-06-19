@@ -20,45 +20,48 @@
 #define HomogeneousField // o2-linter: disable=name/macro (required by KFParticle)
 #endif
 
-#include <memory>
-#include <string>
-#include <vector>
-
-#include <KFParticleBase.h>
-#include <KFParticle.h>
-#include <KFPTrack.h>
-#include <KFPVertex.h>
-#include <KFVertex.h>
-
-#include <TPDGCode.h>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "ReconstructionDataFormats/DCA.h"
-
-#include "Common/Core/trackUtilities.h"
-#include "Tools/KFparticle/KFUtilities.h"
-
-#include "PWGLF/DataModel/mcCentrality.h"
-
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/Utils/utilsMcGen.h"
+#include "PWGHF/Utils/utilsMcMatching.h"
 #include "PWGHF/Utils/utilsPid.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+
+#include "Common/Core/trackUtilities.h"
+#include "Tools/KFparticle/KFUtilities.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/DCA.h"
+
+#include <TPDGCode.h>
+
+#include <KFPTrack.h>
+#include <KFPVertex.h>
+#include <KFParticle.h>
+#include <KFParticleBase.h>
+#include <KFVertex.h>
+
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::hf_evsel;
 using namespace o2::hf_trkcandsel;
 using namespace o2::aod::hf_cand_2prong;
+using namespace o2::hf_decay;
+using namespace o2::hf_decay::hf_cand_2prong;
 using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
 using namespace o2::constants::physics;
@@ -691,6 +694,7 @@ struct HfCandidateCreator2ProngExpressions {
   Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
   Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", false, "Match also candidates with tracks that decay with kinked topology"};
   Configurable<bool> matchInteractionsWithMaterial{"matchInteractionsWithMaterial", false, "Match also candidates with tracks that interact with material"};
+  Configurable<bool> matchCorrelatedBackgrounds{"matchCorrelatedBackgrounds", false, "Match correlated background candidates"};
 
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
 
@@ -738,15 +742,18 @@ struct HfCandidateCreator2ProngExpressions {
     int indexRec = -1;
     int8_t sign = 0;
     int8_t flag = 0;
+    int8_t channel = 0;
     int8_t origin = 0;
     int8_t nKinkedTracks = 0;
     int8_t nInteractionsWithMaterial = 0;
+    constexpr std::size_t NDaughtersResonant{2u};
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
     for (const auto& candidate : *rowCandidateProng2) {
       flag = 0;
       origin = 0;
+      channel = 0;
       auto arrayDaughters = std::array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>()};
 
       // Check whether the particle is from background events. If so, reject it.
@@ -762,47 +769,107 @@ struct HfCandidateCreator2ProngExpressions {
           }
         }
         if (fromBkg) {
-          rowMcMatchRec(flag, origin, -1.f, 0, 0, 0);
+          rowMcMatchRec(flag, origin, channel, -1.f, 0, 0, 0);
           continue;
         }
       }
       std::vector<int> idxBhadMothers{};
 
-      // D0(bar) → π± K∓
-      if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
-        indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1, &nKinkedTracks, &nInteractionsWithMaterial);
-      } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
-        indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1, &nKinkedTracks);
-      } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
-        indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1, nullptr, &nInteractionsWithMaterial);
+      if (matchCorrelatedBackgrounds) {
+        indexRec = -1; // Index of the matched reconstructed candidate
+        constexpr int FinalStateDepth = 2;
+        constexpr int ResoDepth = 1;
+
+        // D0(bar) → π+ K−, π+ K− π0, π+ π−, π+ π− π0, K+ K−
+        for (const auto& [chn, finalState] : hf_cand_2prong::daughtersD0Main) {
+          std::array<int, 2> finalStateParts2Prong = std::array{finalState[0], finalState[1]};
+          if (finalState.size() == 3) { // o2-linter: disable=magic-number (Partly Reco 3-prong decays)
+            if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+              indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, true>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, FinalStateDepth, &nKinkedTracks, &nInteractionsWithMaterial);
+            } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
+              indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, false>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, FinalStateDepth, &nKinkedTracks);
+            } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+              indexRec = RecoDecay::getMatchedMCRec<false, false, true, false, true>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, FinalStateDepth, nullptr, &nInteractionsWithMaterial);
+            } else {
+              indexRec = RecoDecay::getMatchedMCRec<false, false, true, false, false>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, FinalStateDepth);
+            }
+
+            if (indexRec > -1) {
+              auto motherParticle = mcParticles.rawIteratorAt(indexRec);
+              std::array<int, 3> finalStateParts2ProngAll = std::array{finalState[0], finalState[1], finalState[2]};
+              changeFinalStatePdgSign(motherParticle.pdgCode(), +kPi0, finalStateParts2ProngAll);
+              if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, Pdg::kD0, finalStateParts2ProngAll, true, &sign, FinalStateDepth)) {
+                indexRec = -1; // Reset indexRec if the generated decay does not match the reconstructed one does not match the reconstructed one
+              }
+            }
+          } else if (finalState.size() == 2) { // o2-linter: disable=magic-number (Fully Reco 2-prong decays)
+            if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+              indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, FinalStateDepth, &nKinkedTracks, &nInteractionsWithMaterial);
+            } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
+              indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, FinalStateDepth, &nKinkedTracks);
+            } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+              indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, FinalStateDepth, nullptr, &nInteractionsWithMaterial);
+            } else {
+              indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, false>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, FinalStateDepth);
+            }
+          } else {
+            LOG(fatal) << "Final state size not supported: " << finalState.size();
+            continue;
+          }
+          if (indexRec > -1) {
+            flag = sign * (1 << chn);
+
+            // Flag the resonant decay channel
+            std::vector<int> arrResoDaughIndex = {};
+            RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrResoDaughIndex, std::array{0}, ResoDepth);
+            std::array<int, NDaughtersResonant> arrPDGDaugh = {};
+            if (arrResoDaughIndex.size() == NDaughtersResonant) {
+              for (auto iProng = 0u; iProng < arrResoDaughIndex.size(); ++iProng) {
+                auto daughI = mcParticles.rawIteratorAt(arrResoDaughIndex[iProng]);
+                arrPDGDaugh[iProng] = daughI.pdgCode();
+              }
+              channel = flagResonantDecay(Pdg::kD0, arrPDGDaugh);
+            }
+            break;
+          }
+        }
       } else {
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
-      }
-      if (indexRec > -1) {
-        flag = sign * (1 << DecayType::D0ToPiK);
-      }
-
-      // J/ψ → e+ e−
-      if (flag == 0) {
-        if (matchInteractionsWithMaterial) {
-          indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true, &sign, 1, nullptr, &nInteractionsWithMaterial);
+        // D0(bar) → π± K∓
+        if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1, &nKinkedTracks, &nInteractionsWithMaterial);
+        } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
+          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1, &nKinkedTracks);
+        } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+          indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1, nullptr, &nInteractionsWithMaterial);
         } else {
-          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true);
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
         }
         if (indexRec > -1) {
-          flag = 1 << DecayType::JpsiToEE;
+          flag = sign * (1 << DecayType::D0ToPiK);
         }
-      }
 
-      // J/ψ → μ+ μ−
-      if (flag == 0) {
-        if (matchInteractionsWithMaterial) {
-          indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true, &sign, 1, nullptr, &nInteractionsWithMaterial);
-        } else {
-          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
+        // J/ψ → e+ e−
+        if (flag == 0) {
+          if (matchInteractionsWithMaterial) {
+            indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true, &sign, 1, nullptr, &nInteractionsWithMaterial);
+          } else {
+            indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true);
+          }
+          if (indexRec > -1) {
+            flag = 1 << DecayType::JpsiToEE;
+          }
         }
-        if (indexRec > -1) {
-          flag = 1 << DecayType::JpsiToMuMu;
+
+        // J/ψ → μ+ μ−
+        if (flag == 0) {
+          if (matchInteractionsWithMaterial) {
+            indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true, &sign, 1, nullptr, &nInteractionsWithMaterial);
+          } else {
+            indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
+          }
+          if (indexRec > -1) {
+            flag = 1 << DecayType::JpsiToMuMu;
+          }
         }
       }
 
@@ -813,9 +880,9 @@ struct HfCandidateCreator2ProngExpressions {
       }
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-        rowMcMatchRec(flag, origin, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracks, nInteractionsWithMaterial);
+        rowMcMatchRec(flag, origin, channel, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracks, nInteractionsWithMaterial);
       } else {
-        rowMcMatchRec(flag, origin, -1.f, 0, nKinkedTracks, nInteractionsWithMaterial);
+        rowMcMatchRec(flag, origin, channel, -1.f, 0, nKinkedTracks, nInteractionsWithMaterial);
       }
     }
 
@@ -842,11 +909,11 @@ struct HfCandidateCreator2ProngExpressions {
       if (rejectionMask != 0) {
         // at least one event selection not satisfied --> reject all particles from this collision
         for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
-          rowMcMatchGen(0, 0, -1);
+          rowMcMatchGen(0, 0, 0, -1);
         }
         continue;
       }
-      hf_mc_gen::fillMcMatchGen2Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground);
+      hf_mc_gen::fillMcMatchGen2Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground, matchCorrelatedBackgrounds);
     }
   }
 

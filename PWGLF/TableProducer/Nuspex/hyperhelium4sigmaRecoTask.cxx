@@ -13,29 +13,31 @@
 /// \brief QA and analysis task for hyper-helium4sigma (He4S)
 /// \author Yuanzhe Wang <yuanzhe.wang@cern.ch>
 
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
+#include "PWGLF/DataModel/LFHyperhelium4sigmaTables.h"
+#include "PWGLF/DataModel/LFKinkDecayTables.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "PWGLF/DataModel/LFKinkDecayTables.h"
-#include "PWGLF/DataModel/LFHyperhelium4sigmaTables.h"
+#include "Common/DataModel/PIDResponseITS.h"
 
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -46,23 +48,6 @@ using MCLabeledCollisionsFull = soa::Join<CollisionsFull, aod::McCollisionLabels
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullPr, aod::pidTPCFullAl, aod::pidTPCFullTr, aod::pidTPCFullPi>;
 using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
-namespace
-{
-constexpr float BzLowerLimit = -990.f;
-constexpr std::array<float, 7> LayerRadii{2.33959f, 3.14076f, 3.91924f, 19.6213f, 24.5597f, 34.388f, 39.3329f};
-constexpr int kITSLayers = 7;
-constexpr int kITSInnerBarrelLayers = 3;
-// constexpr int kITSOuterBarrelLayers = 4;
-std::shared_ptr<TH1> hMotherCounter;
-std::shared_ptr<TH1> hMother2BCounter;
-std::shared_ptr<TH1> hDauAlphaCounter;
-std::shared_ptr<TH1> hDauTritonCounter;
-std::shared_ptr<TH1> hDauProtonCounter;
-std::shared_ptr<TH1> hDauPionCounter;
-} // namespace
-
-//--------------------------------------------------------------
-// Check the decay channel of hyperhelium4sigma
 enum Channel {
   k2body = 0, // helium4, pion0
   k3body_p,   // triton, proton, pion0
@@ -70,6 +55,41 @@ enum Channel {
   kNDecayChannel
 };
 
+enum DaughterType {
+  kDauAlpha = 0,
+  kDauTriton,
+  kDauProton,
+  kDauChargedPion,
+  kDauNeutron,
+  kDauPion0,
+  kNDaughterType,
+  kNChargedDaughterType = kDauNeutron
+};
+
+namespace
+{
+// constexpr std::array<float, 7> LayerRadii{2.33959f, 3.14076f, 3.91924f, 19.6213f, 24.5597f, 34.388f, 39.3329f};
+constexpr int kITSLayers = 7;
+constexpr int kITSInnerBarrelLayers = 3;
+// constexpr int kITSOuterBarrelLayers = 4;
+constexpr std::array<int, kNDaughterType> kDaughterPDG = {
+  o2::constants::physics::Pdg::kAlpha,
+  o2::constants::physics::Pdg::kTriton,
+  PDG_t::kProton,
+  PDG_t::kPiPlus,
+  PDG_t::kNeutron,
+  PDG_t::kPi0};
+
+std::shared_ptr<TH1> hMotherCounter;
+std::shared_ptr<TH1> hMother2BCounter;
+std::shared_ptr<TH1> hDauCounter[kNChargedDaughterType];
+std::shared_ptr<TH2> hDauTPCNSigma[kNChargedDaughterType];
+std::shared_ptr<TH1> hRecoMotherCounter;
+std::shared_ptr<TH1> hRecoDauAlphaCounter;
+} // namespace
+
+//--------------------------------------------------------------
+// Check the decay channel of hyperhelium4sigma
 template <class TMCTrackTo, typename TMCParticle>
 Channel getDecayChannelHe4S(TMCParticle const& particle, std::vector<int>& list)
 {
@@ -77,7 +97,7 @@ Channel getDecayChannelHe4S(TMCParticle const& particle, std::vector<int>& list)
     return kNDecayChannel;
   }
 
-  // list: charged, charged or empty, neutral
+  // list: charged (alpha or triton), charged or empty, neutral
   list.clear();
   list.resize(3, -1);
 
@@ -180,6 +200,31 @@ void setTrackIDForMC(std::vector<int64_t>& mcPartIndices, aod::McParticles const
 }
 
 //--------------------------------------------------------------
+// get TPCNSigma for daughter track
+template <typename TTrack>
+float getTPCNSigma(const TTrack& track, const int daughterType)
+{
+  float nSigma = -999.f;
+  switch (daughterType) {
+    case kDauAlpha:
+      nSigma = track.tpcNSigmaAl();
+      break;
+    case kDauTriton:
+      nSigma = track.tpcNSigmaTr();
+      break;
+    case kDauProton:
+      nSigma = track.tpcNSigmaPr();
+      break;
+    case kDauChargedPion:
+      nSigma = track.tpcNSigmaPi();
+      break;
+    default:
+      break;
+  }
+  return nSigma;
+}
+
+//--------------------------------------------------------------
 struct Hyphe4sCandidate {
 
   bool isMatter = false;
@@ -248,12 +293,12 @@ struct Hyperhelium4sigmaRecoTask {
   void init(InitContext const&)
   {
     // Axes
-    const AxisSpec vertexZAxis{100, -15., 15., "vrtx_{Z} [cm]"};
+    const AxisSpec vertexZAxis{100, -15., 15., "vtx_{Z} [cm]"};
     const AxisSpec ptAxis{50, -10, 10, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec nSigmaAxis{120, -6.f, 6.f, "n#sigma_{#alpha}"};
     const AxisSpec massAxis{100, 3.85, 4.25, "m (GeV/#it{c}^{2})"};
-    const AxisSpec diffPtAxis{200, -10.f, 10.f, "#Delta p_{T} (GeV/#it{c})"};
-    const AxisSpec diffPzAxis{200, -10.f, 10.f, "#Delta p_{z} (GeV/#it{c})"};
+    const AxisSpec diffPtAxis{200, -10.f, 10.f, "#Delta #it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec diffPzAxis{200, -10.f, 10.f, "#Delta #it{p}_{z} (GeV/#it{c})"};
     const AxisSpec radiusAxis{40, 0.f, 40.f, "R (cm)"};
 
     registry.add<TH1>("hEventCounter", "hEventCounter", HistType::kTH1F, {{2, 0, 2}});
@@ -265,8 +310,11 @@ struct Hyperhelium4sigmaRecoTask {
       registry.add<TH1>("hDiffSVx", ";#Delta x (cm);", HistType::kTH1F, {{200, -10, 10}});
       registry.add<TH1>("hDiffSVy", ";#Delta y (cm);", HistType::kTH1F, {{200, -10, 10}});
       registry.add<TH1>("hDiffSVz", ";#Delta z (cm);", HistType::kTH1F, {{200, -10, 10}});
-      registry.add<TH2>("h2TrueMotherDiffPtVsRecSVR", ";Reconstruced SV R (cm);#Delta p_{T} (GeV/#it{c});", HistType::kTH2F, {radiusAxis, diffPtAxis});
-      registry.add<TH2>("h2TrueMotherDiffPzVsRecSVR", ";Reconstruced SV R (cm);#Delta p_{z} (GeV/#it{c});", HistType::kTH2F, {radiusAxis, diffPzAxis});
+      registry.add<TH2>("h2RecSVRVsTrueSVR", ";Reconstruced SV R (cm);True SV R (cm);", HistType::kTH2F, {radiusAxis, radiusAxis});
+      registry.add<TH2>("h2TrueMotherDiffPtVsRecSVR", ";Reconstruced SV R (cm);#Delta #it{p}_{T} (GeV/#it{c});", HistType::kTH2F, {radiusAxis, diffPtAxis});
+      registry.add<TH2>("h2TrueMotherDiffPzVsRecSVR", ";Reconstruced SV R (cm);#Delta #it{p}_{z} (GeV/#it{c});", HistType::kTH2F, {radiusAxis, diffPzAxis});
+      registry.add<TH2>("h2TrueMotherDiffTglVsRecSVR", ";Reconstruced SV R (cm);#Delta tan#lambda;", HistType::kTH2F, {radiusAxis, {200, -1.f, 1.f}});
+      registry.add<TH2>("h2TrueMotherDiffEtaVsRecSVR", ";Reconstruced SV R (cm);#Delta #eta;", HistType::kTH2F, {radiusAxis, {200, -1.f, 1.f}});
       registry.add<TH1>("hDiffDauPx", ";#Delta p_{x} (GeV/#it{c}); ", HistType::kTH1D, {{200, -10, 10}});
       registry.add<TH1>("hDiffDauPy", ";#Delta p_{y} (GeV/#it{c}); ", HistType::kTH1D, {{200, -10, 10}});
       registry.add<TH1>("hDiffDauPz", ";#Delta p_{z} (GeV/#it{c}); ", HistType::kTH1D, {{200, -10, 10}});
@@ -275,6 +323,11 @@ struct Hyperhelium4sigmaRecoTask {
 
       registry.add<TH1>("hDCAXYMothToRecSV", "hDCAXYMothToRecSV", HistType::kTH1F, {{200, -10, 10}});
       registry.add<TH1>("hDCAZMothToRecSV", "hDCAZMothToRecSV", HistType::kTH1F, {{200, -10, 10}});
+
+      registry.add<TH2>("h2TrueMotherDiffPtVsKinkAngle", ";cos(#theta);#Delta p_{T} / p_{T};", HistType::kTH2F, {{100, 0.8f, 1.f}, {100, -5.f, 5.f}});
+      registry.add<TH2>("h2TrueMotherDiffPtVsKinkAngleSV", ";cos(#theta);#Delta p_{T} / p_{T};", HistType::kTH2F, {{100, 0.8f, 1.f}, {100, -5.f, 5.f}});
+      registry.add<TH2>("h2TrueMotherDiffPtVsKinkAngleXY", ";cos(#theta);#Delta p_{T} / p_{T};", HistType::kTH2F, {{100, 0.8f, 1.f}, {100, -5.f, 5.f}});
+      registry.add<TH2>("h2TrueMotherDiffPtVsKinkAngleXYSV", ";cos(#theta);#Delta p_{T} / p_{T};", HistType::kTH2F, {{100, 0.8f, 1.f}, {100, -5.f, 5.f}});
     }
 
     registry.add<TH2>("h2MassHyperhelium4sigmaPt", "h2MassHyperhelium4sigmaPt", HistType::kTH2F, {{ptAxis, massAxis}});
@@ -287,40 +340,20 @@ struct Hyperhelium4sigmaRecoTask {
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
   }
 
-  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  void initCCDB(aod::BCs::iterator const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-    auto timestamp = bc.timestamp();
-
-    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, timestamp);
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (grpo) {
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      if (inputBz < BzLowerLimit) {
-        // Fetch magnetic field from ccdb for current collision
-        mBz = grpo->getNominalL3Field();
-        LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << mBz << " kZG";
-      } else {
-        mBz = inputBz;
-      }
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, timestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << timestamp;
-      }
-      o2::base::Propagator::initFieldFromGRP(grpmag);
-      if (inputBz < BzLowerLimit) {
-        // Fetch magnetic field from ccdb for current collision
-        mBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-        LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << mBz << " kZG";
-      } else {
-        mBz = inputBz;
-      }
-    }
-
     mRunNumber = bc.runNumber();
+    LOG(info) << "Initializing CCDB for run " << mRunNumber;
+    o2::parameters::GRPMagField* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>(grpmagPath, mRunNumber);
+    o2::base::Propagator::initFieldFromGRP(grpmag);
+    mBz = grpmag->getNominalL3Field();
+
+    if (!lut) {
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+    }
     o2::base::Propagator::Instance()->setMatLUT(lut);
     LOG(info) << "Task initialized for run " << mRunNumber << " with magnetic field " << mBz << " kZG";
   }
@@ -421,7 +454,7 @@ struct Hyperhelium4sigmaRecoTask {
   }
   PROCESS_SWITCH(Hyperhelium4sigmaRecoTask, processData, "process data", true);
 
-  void processMC(MCLabeledCollisionsFull const& collisions, aod::KinkCands const& KinkCands, MCLabeledTracksIU const& tracks, aod::McParticles const& particlesMC, aod::McCollisions const& mcCollisions, aod::BCsWithTimestamps const&)
+  void processMC(MCLabeledCollisionsFull const& collisions, aod::KinkCands const& KinkCands, MCLabeledTracksIU const& tracks, aod::McParticles const& particlesMC, aod::McCollisions const& mcCollisions, aod::BCs const&)
   {
     mcHe4sIndices.clear();
     std::vector<int64_t> mcPartIndices;
@@ -492,8 +525,11 @@ struct Hyperhelium4sigmaRecoTask {
         registry.fill(HIST("hDiffSVx"), kinkCand.xDecVtx() - mcDauTrack.vx());
         registry.fill(HIST("hDiffSVy"), kinkCand.yDecVtx() - mcDauTrack.vy());
         registry.fill(HIST("hDiffSVz"), kinkCand.zDecVtx() - mcDauTrack.vz());
+        registry.fill(HIST("h2RecSVRVsTrueSVR"), recSVR, std::hypot(mcDauTrack.vx(), mcDauTrack.vy()));
         registry.fill(HIST("h2TrueMotherDiffPtVsRecSVR"), recSVR, mcMotherTrack.pt() - kinkCand.ptMoth());
         registry.fill(HIST("h2TrueMotherDiffPzVsRecSVR"), recSVR, mcMotherTrack.pz() - kinkCand.pzMoth());
+        registry.fill(HIST("h2TrueMotherDiffTglVsRecSVR"), recSVR, mcMotherTrack.pz() / mcMotherTrack.pt() - motherTrack.tgl());
+        registry.fill(HIST("h2TrueMotherDiffEtaVsRecSVR"), recSVR, mcMotherTrack.eta() - motherTrack.eta());
         registry.fill(HIST("hDiffDauPx"), kinkCand.pxDaug() - mcDauTrack.px());
         registry.fill(HIST("hDiffDauPy"), kinkCand.pyDaug() - mcDauTrack.py());
         registry.fill(HIST("hDiffDauPz"), kinkCand.pzDaug() - mcDauTrack.pz());
@@ -507,13 +543,34 @@ struct Hyperhelium4sigmaRecoTask {
         fillCandidateMCInfo(hyphe4sCand, mcMotherTrack, mcDauTrack);
         mcHe4sIndices.push_back(mcMotherTrack.globalIndex());
 
-        auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+        auto bc = collision.bc_as<aod::BCs>();
         initCCDB(bc);
         std::array<float, 2> dcaInfo;
         auto mcMotherTrackPar = getTrackParFromMC(mcMotherTrack);
         o2::base::Propagator::Instance()->propagateToDCABxByBz({kinkCand.xDecVtx(), kinkCand.yDecVtx(), kinkCand.zDecVtx()}, mcMotherTrackPar, 2.f, matCorr, &dcaInfo);
         registry.fill(HIST("hDCAXYMothToRecSV"), dcaInfo[0]);
         registry.fill(HIST("hDCAZMothToRecSV"), dcaInfo[1]);
+
+        float spKink = kinkCand.pxMoth() * kinkCand.pxDaug() + kinkCand.pyMoth() * kinkCand.pyDaug() + kinkCand.pzMoth() * kinkCand.pzDaug();
+        float sptKink = kinkCand.pxMoth() * kinkCand.pxDaug() + kinkCand.pyMoth() * kinkCand.pyDaug();
+        float pMoth = std::hypot(kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth());
+        float pDaug = std::hypot(kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug());
+
+        float pMothDirVector[3] = {kinkCand.xDecVtx() - collision.posX(), kinkCand.yDecVtx() - collision.posY(), kinkCand.zDecVtx() - collision.posZ()};
+        float epMothDirVector = std::hypot(pMothDirVector[0], pMothDirVector[1], pMothDirVector[2]);
+        float eptMothDirVector = std::hypot(pMothDirVector[0], pMothDirVector[1]);
+        float spKinkSV = pMothDirVector[0] * kinkCand.pxDaug() + pMothDirVector[1] * kinkCand.pyDaug() + pMothDirVector[2] * kinkCand.pzDaug();
+        float sptKinkSV = pMothDirVector[0] * kinkCand.pxDaug() + pMothDirVector[1] * kinkCand.pyDaug();
+
+        float kinkAngle = spKink / (pMoth * pDaug);
+        float kinkAngleSV = spKinkSV / (epMothDirVector * pDaug);
+        float kinkAngleXY = sptKink / (kinkCand.ptMoth() * kinkCand.ptDaug());
+        float kinkAngleXYSV = sptKinkSV / (eptMothDirVector * kinkCand.ptDaug());
+
+        registry.fill(HIST("h2TrueMotherDiffPtVsKinkAngle"), kinkAngle, (mcMotherTrack.pt() - kinkCand.ptMoth()) / kinkCand.ptMoth());
+        registry.fill(HIST("h2TrueMotherDiffPtVsKinkAngleSV"), kinkAngleSV, (mcMotherTrack.pt() - kinkCand.ptMoth()) / kinkCand.ptMoth());
+        registry.fill(HIST("h2TrueMotherDiffPtVsKinkAngleXY"), kinkAngleXY, (mcMotherTrack.pt() - kinkCand.ptMoth()) / kinkCand.ptMoth());
+        registry.fill(HIST("h2TrueMotherDiffPtVsKinkAngleXYSV"), kinkAngleXYSV, (mcMotherTrack.pt() - kinkCand.ptMoth()) / kinkCand.ptMoth());
       }
 
       outputMCTable(
@@ -582,9 +639,14 @@ struct Hyperhelium4sigmaQa {
   ConfigurableAxis invMassBins{"invMassBins", {100, 3.85f, 4.15f}, "Binning for invariant mass (GeV/#it{c}^{2})"};
   ConfigurableAxis radiusBins{"radiusBins", {40, 0.f, 40.f}, "Binning for radius in xy plane (cm)"};
 
+  o2::aod::ITSResponse itsResponse;
+
   void init(InitContext&)
   {
     if (doprocessMC == true) {
+      itsResponse.setMCDefaultParameters();
+
+      const AxisSpec pAxis{ptBins, "#it{p} (GeV/#it{c})"};
       const AxisSpec ptAxis{ptBins, "#it{p}_{T} (GeV/#it{c})"};
       const AxisSpec ctAxis{ctBins, "c#it{t} (cm)"};
       const AxisSpec rigidityAxis{rigidityBins, "p/z (GeV/#it{c})"};
@@ -619,7 +681,7 @@ struct Hyperhelium4sigmaQa {
       hEvtSelectedHyperHelium4SigmaCounter->GetXaxis()->SetBinLabel(1, "Generated");
       hEvtSelectedHyperHelium4SigmaCounter->GetXaxis()->SetBinLabel(2, "Survived");
 
-      genQAHist.add<TH1>("hGenHyperHelium4SigmaP", "", HistType::kTH1F, {ptAxis});
+      genQAHist.add<TH1>("hGenHyperHelium4SigmaP", "", HistType::kTH1F, {pAxis});
       genQAHist.add<TH1>("hGenHyperHelium4SigmaPt", "", HistType::kTH1F, {ptAxis});
       genQAHist.add<TH1>("hGenHyperHelium4SigmaCt", "", HistType::kTH1F, {ctAxis});
       genQAHist.add<TH1>("hMcRecoInvMass", "", HistType::kTH1F, {invMassAxis});
@@ -638,37 +700,41 @@ struct Hyperhelium4sigmaQa {
         hist->GetXaxis()->SetBinLabel(8, "ITS chi2");
         hist->GetXaxis()->SetBinLabel(9, "pt");
       }
-      recoQAHist.add<TH2>("h2TrueMotherSVRVsRLastITS", ";ITS R (cm); Decay Vertex R (cm);", HistType::kTH2F, {itsRadiusAxis, svRadiuAxis});
-      recoQAHist.add<TH2>("h2GoodMotherSVRVsRLastITS", ";ITS R (cm); Decay Vertex R (cm);", HistType::kTH2F, {itsRadiusAxis, svRadiuAxis});
-      recoQAHist.add<TH2>("h2TrueMotherDiffPtVsDiffR", ";#Delta R (cm);#Delta p_{T} (GeV/#it{c});", HistType::kTH2F, {{80, -40.f, 40.f}, diffPtAxis});
-      recoQAHist.add<TH2>("h2GoodMotherDiffPtVsDiffR", ";#Delta R (cm);#Delta p_{T} (GeV/#it{c});", HistType::kTH2F, {{80, -40.f, 40.f}, diffPtAxis});
       recoQAHist.add<TH2>("h2TrueMotherDiffPtVsTrueSVR", ";Decay Vertex R (cm);#Delta p_{T} (GeV/#it{c});", HistType::kTH2F, {svRadiuAxis, diffPtAxis});
       recoQAHist.add<TH2>("h2TrueMotherDiffPzVsTrueSVR", ";Decay Vertex R (cm);#Delta p_{z} (GeV/#it{c});", HistType::kTH2F, {svRadiuAxis, diffPzAxis});
+      recoQAHist.add<TH2>("h2TrueMotherDiffTglVsTrueSVR", ";Decay Vertex R (cm);#Delta tgl;", HistType::kTH2F, {svRadiuAxis, {200, -1.f, 1.f}});
+      recoQAHist.add<TH2>("h2TrueMotherDiffEtaVsTrueSVR", ";Decay Vertex R (cm);#Delta #eta;", HistType::kTH2F, {svRadiuAxis, {200, -1.f, 1.f}});
       recoQAHist.add<TH2>("h2GoodMotherDiffPtVsTrueSVR", ";Decay Vertex R (cm);#Delta p_{T} (GeV/#it{c});", HistType::kTH2F, {svRadiuAxis, diffPtAxis});
       recoQAHist.add<TH2>("h2GoodMotherDiffPzVsTrueSVR", ";Decay Vertex R (cm);#Delta p_{z} (GeV/#it{c});", HistType::kTH2F, {svRadiuAxis, diffPzAxis});
-      recoQAHist.add<TH2>("h2TrueMotherDiffPtVsRLastITS", ";ITS R (cm);#Delta p_{T} (GeV/#it{c});", HistType::kTH2F, {itsRadiusAxis, diffPtAxis});
-      recoQAHist.add<TH2>("h2TrueMotherDiffPzVsRLastITS", ";ITS R (cm);#Delta p_{z} (GeV/#it{c});", HistType::kTH2F, {itsRadiusAxis, diffPzAxis});
-      recoQAHist.add<TH2>("h2GoodMotherDiffPtVsRLastITS", ";ITS R (cm);#Delta p_{T} (GeV/#it{c});", HistType::kTH2F, {itsRadiusAxis, diffPtAxis});
-      recoQAHist.add<TH2>("h2GoodMotherDiffPzVsRLastITS", ";ITS R (cm);#Delta p_{z} (GeV/#it{c});", HistType::kTH2F, {itsRadiusAxis, diffPzAxis});
 
-      hDauAlphaCounter = recoQAHist.add<TH1>("hDauAlphaCounter", "", HistType::kTH1F, {{7, 0.f, 7.f}});
-      hDauTritonCounter = recoQAHist.add<TH1>("hDauTritonCounter", "", HistType::kTH1F, {{7, 0.f, 7.f}});
-      hDauProtonCounter = recoQAHist.add<TH1>("hDauProtonCounter", "", HistType::kTH1F, {{7, 0.f, 7.f}});
-      hDauPionCounter = recoQAHist.add<TH1>("hDauPionCounter", "", HistType::kTH1F, {{7, 0.f, 7.f}});
-      for (const auto& hist : {hDauAlphaCounter, hDauTritonCounter, hDauProtonCounter, hDauPionCounter}) {
+      hDauCounter[kDauAlpha] = recoQAHist.add<TH1>("hDauAlphaCounter", "", HistType::kTH1F, {{9, 0.f, 9.f}});
+      hDauCounter[kDauTriton] = recoQAHist.add<TH1>("hDauTritonCounter", "", HistType::kTH1F, {{9, 0.f, 9.f}});
+      hDauCounter[kDauProton] = recoQAHist.add<TH1>("hDauProtonCounter", "", HistType::kTH1F, {{9, 0.f, 9.f}});
+      hDauCounter[kDauChargedPion] = recoQAHist.add<TH1>("hDauPionCounter", "", HistType::kTH1F, {{9, 0.f, 9.f}});
+      hDauTPCNSigma[kDauAlpha] = recoQAHist.add<TH2>("hDauAlphaTPCNSigma", "", HistType::kTH2F, {rigidityAxis, nsigmaAxis});
+      hDauTPCNSigma[kDauTriton] = recoQAHist.add<TH2>("hDauTritonTPCNSigma", "", HistType::kTH2F, {rigidityAxis, nsigmaAxis});
+      hDauTPCNSigma[kDauProton] = recoQAHist.add<TH2>("hDauProtonTPCNSigma", "", HistType::kTH2F, {rigidityAxis, nsigmaAxis});
+      hDauTPCNSigma[kDauChargedPion] = recoQAHist.add<TH2>("hDauPionTPCNSigma", "", HistType::kTH2F, {rigidityAxis, nsigmaAxis});
+
+      hRecoMotherCounter = recoQAHist.add<TH1>("hRecoMotherCounter", "", HistType::kTH1F, {{9, 0.f, 9.f}});
+      hRecoDauAlphaCounter = recoQAHist.add<TH1>("hRecoDauAlphaCounter", "", HistType::kTH1F, {{9, 0.f, 9.f}});
+      for (const auto& hist : {hDauCounter[kDauAlpha], hDauCounter[kDauTriton], hDauCounter[kDauProton], hDauCounter[kDauChargedPion], hRecoMotherCounter, hRecoDauAlphaCounter}) {
         hist->GetXaxis()->SetBinLabel(1, "Generated");
         hist->GetXaxis()->SetBinLabel(2, "Reconstructed");
         hist->GetXaxis()->SetBinLabel(3, "eta");
-        hist->GetXaxis()->SetBinLabel(4, "has ITS && TPC");
-        hist->GetXaxis()->SetBinLabel(5, "ITS quality");
-        hist->GetXaxis()->SetBinLabel(6, "TPC n#sigma");
-        hist->GetXaxis()->SetBinLabel(7, "has TOF");
+        hist->GetXaxis()->SetBinLabel(4, "has ITS&TPC");
+        hist->GetXaxis()->SetBinLabel(5, "TPC crossed rows");
+        hist->GetXaxis()->SetBinLabel(6, "TPC Ncls");
+        hist->GetXaxis()->SetBinLabel(7, "TPC n#sigma");
+        hist->GetXaxis()->SetBinLabel(8, "ITS hits");
+        hist->GetXaxis()->SetBinLabel(9, "has TOF)");
       }
 
-      recoQAHist.add<TH2>("hDauAlphaTPCNSigma", "", HistType::kTH2F, {rigidityAxis, nsigmaAxis});
-      recoQAHist.add<TH2>("hDauTritonTPCNSigma", "", HistType::kTH2F, {rigidityAxis, nsigmaAxis});
-      recoQAHist.add<TH2>("hDauProtonTPCNSigma", "", HistType::kTH2F, {rigidityAxis, nsigmaAxis});
-      recoQAHist.add<TH2>("hDauPionTPCNSigma", "", HistType::kTH2F, {rigidityAxis, nsigmaAxis});
+      recoQAHist.add<TH1>("hMotherIsPVContributer", "", HistType::kTH1F, {{2, 0.f, 2.f}});
+      recoQAHist.add<TH1>("hDauAlphaIsPVContributer", "", HistType::kTH1F, {{2, 0.f, 2.f}});
+      recoQAHist.add<TH2>("hDauAlphaPVsITSNSigma", "", HistType::kTH2F, {pAxis, nsigmaAxis});
+      recoQAHist.add<TH2>("h2BCandDauAlphaPVsITSNSigma", "", HistType::kTH2F, {pAxis, nsigmaAxis});
+      recoQAHist.add<TH1>("hReco2BCandidateCount", "", HistType::kTH1F, {{4, 0.f, 4.f}});
     }
   }
 
@@ -732,34 +798,46 @@ struct Hyperhelium4sigmaQa {
 
   // qa for daughter track selection
   template <typename TTrack>
-  void daughterTrackCheck(const TTrack& track, const std::shared_ptr<TH1> hist, float tpcNSigma)
+  bool daughterTrackCheck(const TTrack& track, const std::shared_ptr<TH1> hist, float tpcNSigma)
   {
     hist->Fill(1);
 
     if (std::abs(track.eta()) > etaMax) {
-      return;
+      return false;
     }
     hist->Fill(2);
 
     if (!track.hasITS() || !track.hasTPC()) {
-      return;
+      return false;
     }
     hist->Fill(3);
 
-    if (track.itsNClsInnerBarrel() != 0 && track.itsNCls() > kITSInnerBarrelLayers && track.tpcNClsCrossedRows() <= minRatioTPCNCls * track.tpcNClsFindable() && track.tpcNClsFound() <= nTPCClusMinDaug) {
-      return;
+    if (track.tpcNClsCrossedRows() <= minRatioTPCNCls * track.tpcNClsFindable()) {
+      return false;
     }
     hist->Fill(4);
 
-    if (std::abs(tpcNSigma) > tpcPidNsigmaCut) {
-      return;
+    if (track.tpcNClsFound() <= nTPCClusMinDaug) {
+      return false;
     }
     hist->Fill(5);
 
-    if (track.hasTOF()) {
-      return;
+    if (std::abs(tpcNSigma) > tpcPidNsigmaCut) {
+      return false;
     }
     hist->Fill(6);
+
+    if (track.itsNClsInnerBarrel() != 0 || track.itsNCls() > kITSInnerBarrelLayers) {
+      return false;
+    }
+    hist->Fill(7);
+
+    if (track.hasTOF()) {
+      return false;
+    }
+    hist->Fill(8);
+
+    return true;
   }
 
   void processData(o2::aod::Collisions const&)
@@ -768,7 +846,7 @@ struct Hyperhelium4sigmaQa {
   }
   PROCESS_SWITCH(Hyperhelium4sigmaQa, processData, "process data", true);
 
-  void processMC(aod::McCollisions const& mcCollisions, aod::McParticles const& particlesMC, o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels> const& collisions, MCLabeledTracksIU const& tracks)
+  void processMC(aod::McCollisions const& mcCollisions, aod::McParticles const& particlesMC, MCLabeledCollisionsFull const& collisions, MCLabeledTracksIU const& tracks, aod::BCs const&)
   {
     std::vector<int64_t> mcPartIndices;
     setTrackIDForMC(mcPartIndices, particlesMC, tracks);
@@ -830,81 +908,33 @@ struct Hyperhelium4sigmaQa {
         }
 
         float svPos[3] = {-999, -999, -999};
-        float dauAlphaMom[3] = {-999, -999, -999};
-        float dauTritonMom[3] = {-999, -999, -999};
-        float dauProtonMom[3] = {-999, -999, -999};
-        float dauNeuteronMom[3] = {-999, -999, -999};
-        float dauChargedPionMom[3] = {-999, -999, -999};
-        float dauPion0Mom[3] = {-999, -999, -999};
+        std::vector<std::vector<float>> dauMom(kNDaughterType, std::vector<float>(3, -999.0f));
         for (const auto& mcparticleDaughter : mcparticle.daughters_as<aod::McParticles>()) {
-          if (std::abs(mcparticleDaughter.pdgCode()) == o2::constants::physics::Pdg::kAlpha) {
-            dauAlphaMom[0] = mcparticleDaughter.px();
-            dauAlphaMom[1] = mcparticleDaughter.py();
-            dauAlphaMom[2] = mcparticleDaughter.pz();
+          for (int type = 0; type < kNDaughterType; type++) {
+            if (std::abs(mcparticleDaughter.pdgCode()) == kDaughterPDG[type]) {
+              dauMom[type][0] = mcparticleDaughter.px();
+              dauMom[type][1] = mcparticleDaughter.py();
+              dauMom[type][2] = mcparticleDaughter.pz();
 
-            // get SV position for 2body decay
-            svPos[0] = mcparticleDaughter.vx();
-            svPos[1] = mcparticleDaughter.vy();
-            svPos[2] = mcparticleDaughter.vz();
+              if (type <= kDauTriton) {
+                svPos[0] = mcparticleDaughter.vx();
+                svPos[1] = mcparticleDaughter.vy();
+                svPos[2] = mcparticleDaughter.vz();
+              }
 
-            recoQAHist.fill(HIST("hDauAlphaCounter"), 0);
-            if (mcPartIndices[mcparticleDaughter.globalIndex()] != -1) {
-              auto track = tracks.rawIteratorAt(mcPartIndices[mcparticleDaughter.globalIndex()]);
-              daughterTrackCheck(track, hDauAlphaCounter, track.tpcNSigmaAl());
-              if (track.hasTPC()) {
-                recoQAHist.fill(HIST("hDauAlphaTPCNSigma"), track.p() * track.sign(), track.tpcNSigmaAl());
+              if (type < kNChargedDaughterType) {
+                hDauCounter[type]->Fill(0.f);
+                // if daughter track is reconstructed
+                if (type <= kNChargedDaughterType && mcPartIndices[mcparticleDaughter.globalIndex()] != -1) {
+                  auto track = tracks.rawIteratorAt(mcPartIndices[mcparticleDaughter.globalIndex()]);
+                  float tpcNSigma = getTPCNSigma(track, type);
+                  daughterTrackCheck(track, hDauCounter[type], tpcNSigma);
+                  if (track.hasTPC()) {
+                    hDauTPCNSigma[type]->Fill(track.p() * track.sign(), tpcNSigma);
+                  }
+                }
               }
             }
-          } else if (std::abs(mcparticleDaughter.pdgCode()) == o2::constants::physics::Pdg::kTriton) {
-            dauTritonMom[0] = mcparticleDaughter.px();
-            dauTritonMom[1] = mcparticleDaughter.py();
-            dauTritonMom[2] = mcparticleDaughter.pz();
-
-            // get SV position for 3body decay
-            svPos[0] = mcparticleDaughter.vx();
-            svPos[1] = mcparticleDaughter.vy();
-            svPos[2] = mcparticleDaughter.vz();
-
-            recoQAHist.fill(HIST("hDauTritonCounter"), 0);
-            if (mcPartIndices[mcparticleDaughter.globalIndex()] != -1) {
-              auto track = tracks.rawIteratorAt(mcPartIndices[mcparticleDaughter.globalIndex()]);
-              daughterTrackCheck(track, hDauTritonCounter, track.tpcNSigmaTr());
-              if (track.hasTPC()) {
-                recoQAHist.fill(HIST("hDauTritonTPCNSigma"), track.p() * track.sign(), track.tpcNSigmaTr());
-              }
-            }
-          } else if (std::abs(mcparticleDaughter.pdgCode()) == PDG_t::kProton) {
-            dauProtonMom[0] = mcparticleDaughter.px();
-            dauProtonMom[1] = mcparticleDaughter.py();
-            dauProtonMom[2] = mcparticleDaughter.pz();
-
-            recoQAHist.fill(HIST("hDauProtonCounter"), 0);
-            if (mcPartIndices[mcparticleDaughter.globalIndex()] != -1) {
-              auto track = tracks.rawIteratorAt(mcPartIndices[mcparticleDaughter.globalIndex()]);
-              daughterTrackCheck(track, hDauProtonCounter, track.tpcNSigmaPr());
-              if (track.hasTPC()) {
-                recoQAHist.fill(HIST("hDauProtonTPCNSigma"), track.p() * track.sign(), track.tpcNSigmaPr());
-              }
-            }
-          } else if (std::abs(mcparticleDaughter.pdgCode()) == PDG_t::kNeutron) {
-            dauNeuteronMom[0] = mcparticleDaughter.px();
-            dauNeuteronMom[1] = mcparticleDaughter.py();
-            dauNeuteronMom[2] = mcparticleDaughter.pz();
-          } else if (std::abs(mcparticleDaughter.pdgCode()) == PDG_t::kPiPlus) {
-            dauChargedPionMom[0] = mcparticleDaughter.px();
-            dauChargedPionMom[1] = mcparticleDaughter.py();
-            dauChargedPionMom[2] = mcparticleDaughter.pz();
-
-            recoQAHist.fill(HIST("hDauPionCounter"), 0);
-            if (mcPartIndices[mcparticleDaughter.globalIndex()] != -1) {
-              auto track = tracks.rawIteratorAt(mcPartIndices[mcparticleDaughter.globalIndex()]);
-              recoQAHist.fill(HIST("hDauPionTPCNSigma"), track.p() * track.sign(), track.tpcNSigmaPi());
-              daughterTrackCheck(track, hDauPionCounter, track.tpcNSigmaPi());
-            }
-          } else if (mcparticleDaughter.pdgCode() == PDG_t::kPi0) {
-            dauPion0Mom[0] = mcparticleDaughter.px();
-            dauPion0Mom[1] = mcparticleDaughter.py();
-            dauPion0Mom[2] = mcparticleDaughter.pz();
           }
         }
 
@@ -913,7 +943,7 @@ struct Hyperhelium4sigmaQa {
         float ct = RecoDecay::sqrtSumOfSquares(svPos[0] - mcparticle.vx(), svPos[1] - mcparticle.vy(), svPos[2] - mcparticle.vz()) * o2::constants::physics::MassHyperHelium4Sigma / mcparticle.p();
         genQAHist.fill(HIST("hGenHyperHelium4SigmaCt"), ct);
 
-        // qa if mother track is reconstructed
+        // if mother track is reconstructed
         if (mcPartIndices[mcparticle.globalIndex()] != -1) {
           auto motherTrack = tracks.rawIteratorAt(mcPartIndices[mcparticle.globalIndex()]);
           bool isGoodMother = motherTrackCheck(motherTrack, hMotherCounter);
@@ -924,47 +954,61 @@ struct Hyperhelium4sigmaQa {
           float diffpt = mcparticle.pt() - 2 * motherTrack.pt();
           float diffpz = mcparticle.pz() - 2 * motherTrack.pz();
 
-          int lastITSLayerMoth = 0;
-          for (int i = 6; i >= 0; i--) {
-            if ((motherTrack.itsClusterSizes() >> (i * 4)) & 0xf) {
-              lastITSLayerMoth = i;
-              break;
-            }
-          }
-          float motherR = LayerRadii[lastITSLayerMoth];
-          recoQAHist.fill(HIST("h2TrueMotherSVRVsRLastITS"), motherR, svR);
-          recoQAHist.fill(HIST("h2TrueMotherDiffPtVsDiffR"), svR - motherR, diffpt);
           recoQAHist.fill(HIST("h2TrueMotherDiffPtVsTrueSVR"), svR, diffpt);
           recoQAHist.fill(HIST("h2TrueMotherDiffPzVsTrueSVR"), svR, diffpz);
-          recoQAHist.fill(HIST("h2TrueMotherDiffPtVsRLastITS"), motherR, diffpt);
-          recoQAHist.fill(HIST("h2TrueMotherDiffPzVsRLastITS"), motherR, diffpz);
+          recoQAHist.fill(HIST("h2TrueMotherDiffTglVsTrueSVR"), svR, mcparticle.pz() / mcparticle.pt() - motherTrack.tgl());
+          recoQAHist.fill(HIST("h2TrueMotherDiffEtaVsTrueSVR"), svR, mcparticle.eta() - motherTrack.eta());
           if (isGoodMother) {
-            recoQAHist.fill(HIST("h2GoodMotherSVRVsRLastITS"), motherR, svR);
-            recoQAHist.fill(HIST("h2GoodMotherDiffPtVsDiffR"), svR - motherR, diffpt);
             recoQAHist.fill(HIST("h2GoodMotherDiffPtVsTrueSVR"), svR, diffpt);
             recoQAHist.fill(HIST("h2GoodMotherDiffPzVsTrueSVR"), svR, diffpz);
-            recoQAHist.fill(HIST("h2GoodMotherDiffPtVsRLastITS"), motherR, diffpt);
-            recoQAHist.fill(HIST("h2GoodMotherDiffPzVsRLastITS"), motherR, diffpz);
           }
-          // fill qahist if charged daughters are also reconstructed
+          // if mother track and charged daughters are all reconstructed
           bool isDauReconstructed = mcPartIndices[dauIDList[0]] != -1 && (dChannel == k2body ? true : mcPartIndices[dauIDList[1]] != -1);
           if (isDauReconstructed) {
             genQAHist.fill(HIST("hGenHyperHelium4SigmaCounter"), 9.5);
+
+            // qa for bc matching for reconstructed tracks
+            if (dChannel == k2body) {
+              auto daughterTrack = tracks.rawIteratorAt(mcPartIndices[dauIDList[0]]);
+              bool isMoth = motherTrackCheck(motherTrack, hRecoMotherCounter);
+              bool isDaug = daughterTrackCheck(daughterTrack, hRecoDauAlphaCounter, daughterTrack.tpcNSigmaAl());
+
+              recoQAHist.fill(HIST("hReco2BCandidateCount"), 0.5);
+              recoQAHist.fill(HIST("hRecoMotherCounter"), 0.5);
+              recoQAHist.fill(HIST("hRecoDauAlphaCounter"), 0.5);
+              recoQAHist.fill(HIST("hMotherIsPVContributer"), motherTrack.isPVContributor() ? 1.5 : 0.5);
+              recoQAHist.fill(HIST("hDauAlphaIsPVContributer"), daughterTrack.isPVContributor() ? 1.5 : 0.5);
+
+              float itsNSigma = itsResponse.nSigmaITS<o2::track::PID::Alpha>(daughterTrack.itsClusterSizes(), 2 * daughterTrack.p(), daughterTrack.eta());
+              recoQAHist.fill(HIST("hDauAlphaPVsITSNSigma"), 2 * daughterTrack.p(), itsNSigma);
+
+              if (motherTrack.has_collision() && daughterTrack.has_collision()) {
+                recoQAHist.fill(HIST("hReco2BCandidateCount"), 1.5);
+                if (motherTrack.collisionId() == daughterTrack.collisionId()) {
+                  recoQAHist.fill(HIST("hReco2BCandidateCount"), 2.5);
+                }
+              }
+
+              if (isMoth && isDaug) {
+                recoQAHist.fill(HIST("hReco2BCandidateCount"), 3.5);
+                recoQAHist.fill(HIST("h2BCandDauAlphaPVsITSNSigma"), 2 * daughterTrack.p(), itsNSigma);
+              }
+            }
           }
         }
 
         // qa for branching ratios and invariant mass
         if (dChannel == k2body) {
           genQAHist.fill(HIST("hGenHyperHelium4SigmaCounter"), isMatter ? 3.5 : 4.5);
-          float hyperHelium4SigmaMCMass = RecoDecay::m(std::array{std::array{dauAlphaMom[0], dauAlphaMom[1], dauAlphaMom[2]}, std::array{dauPion0Mom[0], dauPion0Mom[1], dauPion0Mom[2]}}, std::array{o2::constants::physics::MassAlpha, o2::constants::physics::MassPi0});
+          float hyperHelium4SigmaMCMass = RecoDecay::m(std::array{std::array{dauMom[kDauAlpha][0], dauMom[kDauAlpha][1], dauMom[kDauAlpha][2]}, std::array{dauMom[kDauPion0][0], dauMom[kDauPion0][1], dauMom[kDauPion0][2]}}, std::array{o2::constants::physics::MassAlpha, o2::constants::physics::MassPi0});
           genQAHist.fill(HIST("hMcRecoInvMass"), hyperHelium4SigmaMCMass);
         } else if (dChannel == k3body_p) {
           genQAHist.fill(HIST("hGenHyperHelium4SigmaCounter"), isMatter ? 5.5 : 6.5);
-          float hyperHelium4SigmaMCMass = RecoDecay::m(std::array{std::array{dauTritonMom[0], dauTritonMom[1], dauTritonMom[2]}, std::array{dauProtonMom[0], dauProtonMom[1], dauProtonMom[2]}, std::array{dauPion0Mom[0], dauPion0Mom[1], dauPion0Mom[2]}}, std::array{o2::constants::physics::MassTriton, o2::constants::physics::MassProton, o2::constants::physics::MassPi0});
+          float hyperHelium4SigmaMCMass = RecoDecay::m(std::array{std::array{dauMom[kDauTriton][0], dauMom[kDauTriton][1], dauMom[kDauTriton][2]}, std::array{dauMom[kDauProton][0], dauMom[kDauProton][1], dauMom[kDauProton][2]}, std::array{dauMom[kDauPion0][0], dauMom[kDauPion0][1], dauMom[kDauPion0][2]}}, std::array{o2::constants::physics::MassTriton, o2::constants::physics::MassProton, o2::constants::physics::MassPi0});
           genQAHist.fill(HIST("hMcRecoInvMass"), hyperHelium4SigmaMCMass);
         } else if (dChannel == k3body_n) {
           genQAHist.fill(HIST("hGenHyperHelium4SigmaCounter"), isMatter ? 7.5 : 8.5);
-          float hyperHelium4SigmaMCMass = RecoDecay::m(std::array{std::array{dauTritonMom[0], dauTritonMom[1], dauTritonMom[2]}, std::array{dauNeuteronMom[0], dauNeuteronMom[1], dauNeuteronMom[2]}, std::array{dauChargedPionMom[0], dauChargedPionMom[1], dauChargedPionMom[2]}}, std::array{o2::constants::physics::MassTriton, o2::constants::physics::MassNeutron, o2::constants::physics::MassPionCharged});
+          float hyperHelium4SigmaMCMass = RecoDecay::m(std::array{std::array{dauMom[kDauTriton][0], dauMom[kDauTriton][1], dauMom[kDauTriton][2]}, std::array{dauMom[kDauNeutron][0], dauMom[kDauNeutron][1], dauMom[kDauNeutron][2]}, std::array{dauMom[kDauChargedPion][0], dauMom[kDauChargedPion][1], dauMom[kDauChargedPion][2]}}, std::array{o2::constants::physics::MassTriton, o2::constants::physics::MassNeutron, o2::constants::physics::MassPiPlus});
           genQAHist.fill(HIST("hMcRecoInvMass"), hyperHelium4SigmaMCMass);
         }
       }

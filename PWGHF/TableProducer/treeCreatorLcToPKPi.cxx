@@ -17,7 +17,9 @@
 /// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
 /// \author Luigi Dello Stritto <luigi.dello.stritto@cern.ch>, CERN
 
+#include <algorithm>
 #include <utility>
+#include <vector>
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
@@ -87,6 +89,9 @@ DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t);
 DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand3ProngWPidPiKaPr, "_0");
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
 DECLARE_SOA_COLUMN(Channel, channel, int8_t); // direct or resonant
+DECLARE_SOA_COLUMN(MlScoreFirstClass, mlScoreFirstClass, float);
+DECLARE_SOA_COLUMN(MlScoreSecondClass, mlScoreSecondClass, float);
+DECLARE_SOA_COLUMN(MlScoreThirdClass, mlScoreThirdClass, float);
 // Events
 DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
@@ -238,7 +243,10 @@ DECLARE_SOA_TABLE(HfCandLcLites, "AOD", "HFCANDLCLITE",
                   full::OriginMcRec,
                   full::IsCandidateSwapped,
                   full::Channel,
-                  full::MassKPi);
+                  full::MassKPi,
+                  full::MlScoreFirstClass,
+                  full::MlScoreSecondClass,
+                  full::MlScoreThirdClass);
 
 DECLARE_SOA_TABLE(HfCollIdLCLite, "AOD", "HFCOLLIDLCLITE",
                   full::CollisionId);
@@ -316,7 +324,10 @@ DECLARE_SOA_TABLE(HfCandLcFulls, "AOD", "HFCANDLCFULL",
                   full::IsCandidateSwapped,
                   full::CandidateId,
                   full::Channel,
-                  full::MassKPi);
+                  full::MassKPi,
+                  full::MlScoreFirstClass,
+                  full::MlScoreSecondClass,
+                  full::MlScoreThirdClass);
 
 DECLARE_SOA_TABLE(HfCandLcFullEvs, "AOD", "HFCANDLCFULLEV",
                   full::CollisionId,
@@ -374,6 +385,7 @@ struct HfTreeCreatorLcToPKPi {
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
   Configurable<bool> fillCollIdTable{"fillCollIdTable", false, "Fill a single-column table with collision index"};
   Configurable<bool> fillCandidateMcTable{"fillCandidateMcTable", false, "Switch to fill a table with MC particles matched to candidates"};
+  Configurable<bool> applyMl{"applyMl", false, "Whether ML was used in candidateSelectorLc"};
   Configurable<bool> keepOnlySignalMc{"keepOnlySignalMc", false, "Fill MC tree only with signal candidates"};
   Configurable<bool> keepOnlyBkg{"keepOnlyBkg", false, "Fill MC tree only with background candidates"};
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
@@ -410,7 +422,7 @@ struct HfTreeCreatorLcToPKPi {
 
     SigBgStatus status{Default};
 
-    if (std::abs(flag) == (1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi)) {
+    if (std::abs(flag) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
       if (swapped == 0) {
         if (candFlag == 0) {
           if (origin == RecoDecay::OriginType::Prompt)
@@ -553,11 +565,40 @@ struct HfTreeCreatorLcToPKPi {
     return std::make_pair(invMass, invMassKPi);
   }
 
+  /// \brief function to get ML score values for the current candidate and assign them to input parameters
+  /// \param candidate candidate instance
+  /// \param candidateMlScore instance of handler of vectors with ML scores associated with the current candidate
+  /// \param mlScoreFirstClass ML score for belonging to the first class
+  /// \param mlScoreSecondClass ML score for belonging to the second class
+  /// \param mlScoreThirdClass ML score for belonging to the third class
+  /// \param candFlag flag indicating if PKPi (0) or PiKP (1) hypothesis is used
+  void assignMlScores(aod::HfMlLcToPKPi::iterator const& candidateMlScore, float& mlScoreFirstClass, float& mlScoreSecondClass, float& mlScoreThirdClass, int candFlag)
+  {
+    std::vector<float> mlScores;
+    if (candFlag == 0) {
+      std::copy(candidateMlScore.mlProbLcToPKPi().begin(), candidateMlScore.mlProbLcToPKPi().end(), std::back_inserter(mlScores));
+    } else {
+      std::copy(candidateMlScore.mlProbLcToPiKP().begin(), candidateMlScore.mlProbLcToPiKP().end(), std::back_inserter(mlScores));
+    }
+    constexpr int IndexFirstClass{0};
+    constexpr int IndexSecondClass{1};
+    constexpr int IndexThirdClass{2};
+    if (mlScores.size() == 0) {
+      return; // when candidateSelectorLc rejects a candidate by "usual", non-ML cut, the ml score vector remains empty
+    }
+    mlScoreFirstClass = mlScores.at(IndexFirstClass);
+    mlScoreSecondClass = mlScores.at(IndexSecondClass);
+    if (mlScores.size() > IndexThirdClass) {
+      mlScoreThirdClass = mlScores.at(IndexThirdClass);
+    }
+  }
+
   /// \brief function to fill lite table
   /// \param candidate candidate instance
+  /// \param candidateMlScore instance of handler of vectors with ML scores associated with the current candidate
   /// \param candFlag flag indicating if PKPi (0) or PiKP (1) hypothesis is used
   template <bool isMc, int reconstructionType, typename CandType>
-  void fillLiteTable(CandType const& candidate, int candFlag)
+  void fillLiteTable(CandType const& candidate, aod::HfMlLcToPKPi::iterator const& candidateMlScore, int candFlag)
   {
     auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMasses<reconstructionType>(candidate, candFlag);
     const float functionCt = hfHelper.ctLc(candidate);
@@ -573,6 +614,14 @@ struct HfTreeCreatorLcToPKPi {
       functionOriginMcRec = candidate.originMcRec();
       functionIsCandidateSwapped = candidate.isCandidateSwapped();
       functionFlagMcDecayChanRec = candidate.flagMcDecayChanRec();
+    }
+
+    float mlScoreFirstClass{UndefValueFloat};
+    float mlScoreSecondClass{UndefValueFloat};
+    float mlScoreThirdClass{UndefValueFloat};
+
+    if (applyMl) {
+      assignMlScores(candidateMlScore, mlScoreFirstClass, mlScoreSecondClass, mlScoreThirdClass, candFlag);
     }
 
     rowCandidateLite(
@@ -618,7 +667,10 @@ struct HfTreeCreatorLcToPKPi {
       functionOriginMcRec,
       functionIsCandidateSwapped,
       functionFlagMcDecayChanRec,
-      functionInvMassKPi);
+      functionInvMassKPi,
+      mlScoreFirstClass,
+      mlScoreSecondClass,
+      mlScoreThirdClass);
 
     if (fillCollIdTable) {
       /// save also candidate collision indices
@@ -628,9 +680,10 @@ struct HfTreeCreatorLcToPKPi {
 
   /// \brief function to fill lite table
   /// \param candidate candidate instance
+  /// \param candidateMlScore instance of handler of vectors with ML scores associated with the current candidate
   /// \param candFlag flag indicating if PKPi (0) or PiKP (1) hypothesis is used
   template <bool isMc, int reconstructionType, typename CandType>
-  void fillFullTable(CandType const& candidate, int candFlag)
+  void fillFullTable(CandType const& candidate, aod::HfMlLcToPKPi::iterator const& candidateMlScore, int candFlag)
   {
     auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMasses<reconstructionType>(candidate, candFlag);
     const float functionCt = hfHelper.ctLc(candidate);
@@ -647,6 +700,14 @@ struct HfTreeCreatorLcToPKPi {
       functionOriginMcRec = candidate.originMcRec();
       functionIsCandidateSwapped = candidate.isCandidateSwapped();
       functionFlagMcDecayChanRec = candidate.flagMcDecayChanRec();
+    }
+
+    float mlScoreFirstClass{UndefValueFloat};
+    float mlScoreSecondClass{UndefValueFloat};
+    float mlScoreThirdClass{UndefValueFloat};
+
+    if (applyMl) {
+      assignMlScores(candidateMlScore, mlScoreFirstClass, mlScoreSecondClass, mlScoreThirdClass, candFlag);
     }
 
     rowCandidateFull(
@@ -722,7 +783,10 @@ struct HfTreeCreatorLcToPKPi {
       functionIsCandidateSwapped,
       candidate.globalIndex(),
       functionFlagMcDecayChanRec,
-      functionInvMassKPi);
+      functionInvMassKPi,
+      mlScoreFirstClass,
+      mlScoreSecondClass,
+      mlScoreThirdClass);
   }
 
   /// \brief function to fill lite table
@@ -839,6 +903,7 @@ struct HfTreeCreatorLcToPKPi {
   void fillTablesMc(Colls const& collisions,
                     aod::McCollisions const&,
                     CandType const& candidates,
+                    aod::HfMlLcToPKPi const& candidateMlScores,
                     soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                     soa::Join<TracksWPid, o2::aod::McTrackLabels> const&, aod::BCs const&)
   {
@@ -850,7 +915,10 @@ struct HfTreeCreatorLcToPKPi {
     const size_t candidatesSize = candidates.size();
     reserveTables<reconstructionType>(candidatesSize, IsMc);
 
+    int iCand{0};
     for (const auto& candidate : candidates) {
+      auto candidateMlScore = candidateMlScores.rawIteratorAt(iCand);
+      ++iCand;
       float ptProng0 = candidate.ptProng0();
       auto collision = candidate.template collision_as<Colls>();
       auto fillTable = [&](int candFlag) {
@@ -863,9 +931,9 @@ struct HfTreeCreatorLcToPKPi {
         const bool notSkippedBkg = isMcCandidateSignal || candidate.pt() > downSampleBkgPtMax || pseudoRndm < downSampleBkgFactor;
         if (passSelection && notSkippedBkg && (keepAll || (keepOnlySignalMc && isMcCandidateSignal) || (keepOnlyBkg && !isMcCandidateSignal))) {
           if (fillCandidateLiteTable) {
-            fillLiteTable<IsMc, reconstructionType>(candidate, candFlag);
+            fillLiteTable<IsMc, reconstructionType>(candidate, candidateMlScore, candFlag);
           } else {
-            fillFullTable<IsMc, reconstructionType>(candidate, candFlag);
+            fillFullTable<IsMc, reconstructionType>(candidate, candidateMlScore, candFlag);
           }
 
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
@@ -917,7 +985,7 @@ struct HfTreeCreatorLcToPKPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
         auto mcDaughter0 = particle.template daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().begin();
         auto mcCollision = particle.template mcCollision_as<aod::McCollisions>();
         auto p = particle.p();
@@ -955,10 +1023,11 @@ struct HfTreeCreatorLcToPKPi {
   void processMcNoCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, aod::PVMults> const& collisions,
                                            aod::McCollisions const& mcCollisions,
                                            soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
+                                           aod::HfMlLcToPKPi const& candidateMlScores,
                                            soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                                            soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
   {
-    fillTablesMc<false, aod::hf_cand::VertexerType::DCAFitter>(collisions, mcCollisions, candidates, particles, tracks, bcs);
+    fillTablesMc<false, aod::hf_cand::VertexerType::DCAFitter>(collisions, mcCollisions, candidates, candidateMlScores, particles, tracks, bcs);
   }
   PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processMcNoCentralityWithDCAFitterN, "Process MC tree writer w/o centrality with DCAFitterN", false);
 
@@ -971,10 +1040,11 @@ struct HfTreeCreatorLcToPKPi {
   void processMcWithCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
                                              aod::McCollisions const& mcCollisions,
                                              soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
+                                             aod::HfMlLcToPKPi const& candidateMlScores,
                                              soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                                              soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
   {
-    fillTablesMc<true, aod::hf_cand::VertexerType::DCAFitter>(collisions, mcCollisions, candidates, particles, tracks, bcs);
+    fillTablesMc<true, aod::hf_cand::VertexerType::DCAFitter>(collisions, mcCollisions, candidates, candidateMlScores, particles, tracks, bcs);
   }
   PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processMcWithCentralityWithDCAFitterN, "Process MC tree writer with centrality with DCAFitterN", false);
 
@@ -988,10 +1058,11 @@ struct HfTreeCreatorLcToPKPi {
   void processMcNoCentralityWithKFParticle(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, aod::PVMults> const& collisions,
                                            aod::McCollisions const& mcCollisions,
                                            soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
+                                           aod::HfMlLcToPKPi const& candidateMlScores,
                                            soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                                            soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
   {
-    fillTablesMc<false, aod::hf_cand::VertexerType::KfParticle>(collisions, mcCollisions, candidates, particles, tracks, bcs);
+    fillTablesMc<false, aod::hf_cand::VertexerType::KfParticle>(collisions, mcCollisions, candidates, candidateMlScores, particles, tracks, bcs);
   }
   PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processMcNoCentralityWithKFParticle, "Process MC tree writer w/o centrality with KFParticle", false);
 
@@ -1004,10 +1075,11 @@ struct HfTreeCreatorLcToPKPi {
   void processMcWithCentralityWithKFParticle(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
                                              aod::McCollisions const& mcCollisions,
                                              soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
+                                             aod::HfMlLcToPKPi const& candidateMlScores,
                                              soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                                              soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
   {
-    fillTablesMc<true, aod::hf_cand::VertexerType::KfParticle>(collisions, mcCollisions, candidates, particles, tracks, bcs);
+    fillTablesMc<true, aod::hf_cand::VertexerType::KfParticle>(collisions, mcCollisions, candidates, candidateMlScores, particles, tracks, bcs);
   }
   PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processMcWithCentralityWithKFParticle, "Process MC tree writer with centrality with KFParticle", false);
 
@@ -1017,6 +1089,7 @@ struct HfTreeCreatorLcToPKPi {
   template <bool useCentrality, int reconstructionType, typename Colls, typename CandType>
   void fillTablesData(Colls const& collisions,
                       CandType const& candidates,
+                      aod::HfMlLcToPKPi const& candidateMlScores,
                       TracksWPid const&, aod::BCs const&)
   {
 
@@ -1029,7 +1102,10 @@ struct HfTreeCreatorLcToPKPi {
 
     // Filling candidate properties
 
+    int iCand{0};
     for (const auto& candidate : candidates) {
+      auto candidateMlScore = candidateMlScores.rawIteratorAt(iCand);
+      ++iCand;
       float ptProng0 = candidate.ptProng0();
       auto collision = candidate.template collision_as<Colls>();
       auto fillTable = [&](int candFlag) {
@@ -1037,9 +1113,9 @@ struct HfTreeCreatorLcToPKPi {
         const int functionSelection = candFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         if (functionSelection >= selectionFlagLc && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))) {
           if (fillCandidateLiteTable) {
-            fillLiteTable<IsMc, reconstructionType>(candidate, candFlag);
+            fillLiteTable<IsMc, reconstructionType>(candidate, candidateMlScore, candFlag);
           } else {
-            fillFullTable<IsMc, reconstructionType>(candidate, candFlag);
+            fillFullTable<IsMc, reconstructionType>(candidate, candidateMlScore, candFlag);
           }
 
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
@@ -1060,9 +1136,10 @@ struct HfTreeCreatorLcToPKPi {
   /// \param bcs Bunch-crossing table
   void processDataNoCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::PVMultZeqs, aod::PVMults> const& collisions,
                                              soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc> const& candidates,
+                                             aod::HfMlLcToPKPi const& candidateMlScores,
                                              TracksWPid const& tracks, aod::BCs const& bcs)
   {
-    fillTablesData<false, aod::hf_cand::VertexerType::DCAFitter>(collisions, candidates, tracks, bcs);
+    fillTablesData<false, aod::hf_cand::VertexerType::DCAFitter>(collisions, candidates, candidateMlScores, tracks, bcs);
   }
   PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processDataNoCentralityWithDCAFitterN, "Process data tree writer w/o centrality with DCAFitterN", false);
 
@@ -1073,9 +1150,10 @@ struct HfTreeCreatorLcToPKPi {
   /// \param bcs Bunch-crossing table
   void processDataWithCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
                                                soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc> const& candidates,
+                                               aod::HfMlLcToPKPi const& candidateMlScores,
                                                TracksWPid const& tracks, aod::BCs const& bcs)
   {
-    fillTablesData<true, aod::hf_cand::VertexerType::DCAFitter>(collisions, candidates, tracks, bcs);
+    fillTablesData<true, aod::hf_cand::VertexerType::DCAFitter>(collisions, candidates, candidateMlScores, tracks, bcs);
   }
   PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processDataWithCentralityWithDCAFitterN, "Process data tree writer with centrality with DCAFitterN", true);
 
@@ -1086,9 +1164,10 @@ struct HfTreeCreatorLcToPKPi {
   /// \param bcs Bunch-crossing table
   void processDataNoCentralityWithKFParticle(soa::Join<aod::Collisions, aod::PVMultZeqs, aod::PVMults> const& collisions,
                                              soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
+                                             aod::HfMlLcToPKPi const& candidateMlScores,
                                              TracksWPid const& tracks, aod::BCs const& bcs)
   {
-    fillTablesData<false, aod::hf_cand::VertexerType::KfParticle>(collisions, candidates, tracks, bcs);
+    fillTablesData<false, aod::hf_cand::VertexerType::KfParticle>(collisions, candidates, candidateMlScores, tracks, bcs);
   }
   PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processDataNoCentralityWithKFParticle, "Process data tree writer w/o centrality with KFParticle", false);
 
@@ -1099,9 +1178,10 @@ struct HfTreeCreatorLcToPKPi {
   /// \param bcs Bunch-crossing table
   void processDataWithCentralityWithKFParticle(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
                                                soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
+                                               aod::HfMlLcToPKPi const& candidateMlScores,
                                                TracksWPid const& tracks, aod::BCs const& bcs)
   {
-    fillTablesData<true, aod::hf_cand::VertexerType::KfParticle>(collisions, candidates, tracks, bcs);
+    fillTablesData<true, aod::hf_cand::VertexerType::KfParticle>(collisions, candidates, candidateMlScores, tracks, bcs);
   }
   PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processDataWithCentralityWithKFParticle, "Process data tree writer with centrality with KFParticle", false);
 };
