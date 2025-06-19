@@ -39,7 +39,7 @@ using namespace o2::framework::expressions;
 using SelectedClusters = soa::Filtered<aod::BCWiseClusters>;
 using SelectedMCClusters = soa::Filtered<soa::Join<aod::BCWiseClusters, aod::BCWiseMCClusters>>;
 
-struct EmcalBcWisePi0 {
+struct EmcalBcWiseGammaGamma {
   HistogramRegistry mHistManager{"EmcalGammaGammaBcWiseHistograms"};
 
   Configurable<bool> cfgRequirekTVXinEMC{"cfgRequirekTVXinEMC", true, "Reconstruct pi0s only in kTVXinEMC triggered BCs"};
@@ -313,7 +313,7 @@ struct EmcalBcWisePi0 {
 
     reconstructTrueMesons(clusters, mcPi0s, bc);
   }
-  PROCESS_SWITCH(EmcalBcWisePi0, processMCInfo, "Run true and gen", false);
+  PROCESS_SWITCH(EmcalBcWiseGammaGamma, processMCInfo, "Run true and gen", false);
 };
 
-WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<EmcalBcWisePi0>(cfgc)}; }
+WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<EmcalBcWiseGammaGamma>(cfgc)}; }
