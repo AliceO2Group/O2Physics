@@ -987,9 +987,11 @@ struct CorrelationTask {
       case 2212: // proton
       case -2212:
         return 2;
-      default: // NOTE. The efficiency histogram is hardcoded to contain 4 species. Anything special will have the last slot.
-        return 3;
     }
+    if (std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), pdgCode) != cfgMcTriggerPDGs->end())
+      return 4; // NOTE - if changed, the number in processMCEfficiency2Prong needs to be changed too since we skip the getSpecies call
+    else        // The efficiency histogram is hardcoded to contain 5 species. Anything special will have the 4th slot.
+      return 3;
   }
 
   // NOTE SmallGroups includes soa::Filtered always
@@ -1054,10 +1056,12 @@ struct CorrelationTask {
     // Primaries
     p2indexCache.clear();
     for (const auto& mcParticle : mcParticles) {
-      if (mcParticle.isPhysicalPrimary() && std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), mcParticle.pdgCode()) != cfgMcTriggerPDGs->end()) {
-        same->getTrackHistEfficiency()->Fill(CorrelationContainer::MC, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), multiplicity, mcCollision.posZ());
+      if (std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), mcParticle.pdgCode()) != cfgMcTriggerPDGs->end()) {
+        if (mcParticle.decay() != aod::cf2prongtrack::D0ToPiK || mcParticle.decay() != aod::cf2prongtrack::D0barToKPi)
+          continue; // wrong decay channel
+        same->getTrackHistEfficiency()->Fill(CorrelationContainer::MC, mcParticle.eta(), mcParticle.pt(), 4, multiplicity, mcCollision.posZ());
         if (mcParticle.cfParticleDaugh0Id() < 0 || mcParticle.cfParticleDaugh1Id() < 0)
-          continue;
+          continue; // daughters not found
         p2indexCache.push_back(mcParticle.globalIndex());
       }
     }
@@ -1068,7 +1072,8 @@ struct CorrelationTask {
         // Check if the mc particles of the prongs are found.
         if (p2track.cfTrackProng0Id() < 0 || p2track.cfTrackProng1Id() < 0) {
           // fake track
-          same->getTrackHistEfficiency()->Fill(CorrelationContainer::Fake, p2track.eta(), p2track.pt(), 0, multiplicity, mcCollision.posZ());
+          same->getTrackHistEfficiency()->Fill(CorrelationContainer::Fake, p2track.eta(), p2track.pt(), 4, multiplicity, mcCollision.posZ());
+          continue;
         }
         const auto& p0 = p2track.cfTrackProng0_as<aod::CFTracksWithLabel>();
         const auto& p1 = p2track.cfTrackProng1_as<aod::CFTracksWithLabel>();
@@ -1076,18 +1081,16 @@ struct CorrelationTask {
           // find the 2-prong MC particle by the daughter MC particle IDs
           auto m = std::find_if(p2indexCache.begin(), p2indexCache.end(), [&](const auto& t) -> bool {
             const auto& mcParticle = mcParticles.iteratorAt(t - mcParticles.begin().globalIndex());
-            return p0.cfMCParticleId() == mcParticle.cfParticleDaugh0Id() && p1.cfMCParticleId() == mcParticle.cfParticleDaugh1Id();
+            return (p0.cfMCParticleId() == mcParticle.cfParticleDaugh0Id() && p1.cfMCParticleId() == mcParticle.cfParticleDaugh1Id()) || (p0.cfMCParticleId() == mcParticle.cfParticleDaugh1Id() && p1.cfMCParticleId() == mcParticle.cfParticleDaugh0Id());
           });
           if (m == p2indexCache.end())
             continue;
           const auto& mcParticle = mcParticles.iteratorAt(*m - mcParticles.begin().globalIndex());
-          if (mcParticle.isPhysicalPrimary()) {
-            same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoPrimaries, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), multiplicity, mcCollision.posZ());
-          }
-          same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoAll, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), multiplicity, mcCollision.posZ());
+          same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoPrimaries, mcParticle.eta(), mcParticle.pt(), 4, multiplicity, mcCollision.posZ());
+          same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoAll, mcParticle.eta(), mcParticle.pt(), 4, multiplicity, mcCollision.posZ());
         } else {
           // fake track
-          same->getTrackHistEfficiency()->Fill(CorrelationContainer::Fake, p2track.eta(), p2track.pt(), 0, multiplicity, mcCollision.posZ());
+          same->getTrackHistEfficiency()->Fill(CorrelationContainer::Fake, p2track.eta(), p2track.pt(), 4, multiplicity, mcCollision.posZ());
         }
       }
     }
