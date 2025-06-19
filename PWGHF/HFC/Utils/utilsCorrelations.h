@@ -123,7 +123,7 @@ bool passPIDSelection(Atrack const& track, SpeciesContainer const mPIDspecies,
   return true; // Passed all checks
 }
 
-//function to select candidate based on PDF and decay channels and their mass
+// function to select candidate based on PDF and decay channels and their mass
 template <bool isScCand, typename McParticle>
 bool matchCandAndMass(McParticle const& particle, double& massCand)
 {
@@ -146,32 +146,32 @@ bool matchCandAndMass(McParticle const& particle, double& massCand)
 
   // Map decay type to mass
   switch (matchGenFlag) {
-    case BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi):{
+    case BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi): {
       massCand = o2::constants::physics::MassSigmaC0;
       return true;
     }
 
-    case BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi):{
+    case BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi): {
       massCand = o2::constants::physics::MassSigmaCStar0;
       return true;
     }
 
-    case BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi):{
+    case BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi): {
       massCand = o2::constants::physics::MassSigmaCStarPlusPlus;
       return true;
     }
 
-    case BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi):{
+    case BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi): {
       massCand = o2::constants::physics::MassSigmaCStarPlusPlus;
       return true;
     }
 
-    case hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi:{
+    case hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi: {
       massCand = o2::constants::physics::MassLambdaCPlus;
       return true;
     }
 
-    default:{
+    default: {
       return false;
     }
   }
