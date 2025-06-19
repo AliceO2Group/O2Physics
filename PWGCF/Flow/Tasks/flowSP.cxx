@@ -550,7 +550,7 @@ struct FlowSP {
       std::vector<double> paramsMultCut = cfgEvSelsMult;
 
       // number of parameters required in cfgEvSelsMultPv and cfgEvSelsMult.  (5 Low + 5 High)
-      int nParams = 10;
+      ULong64_t nParams = 10;
 
       if (paramsMultPVCut.size() < nParams) {
         LOGF(fatal, "cfgEvSelsMultPv not set properly.. size = %d (should be 10) --> Check your config files!", paramsMultPVCut.size());
