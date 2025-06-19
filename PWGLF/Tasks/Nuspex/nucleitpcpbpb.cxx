@@ -11,34 +11,37 @@
 ///
 /// \file nucleitpcpbpb.cxx
 /// \brief nuclei analysis
-/// \author Jaideep Tanwar <jaideep.tanwar@cern.ch> 
+/// \author Jaideep Tanwar <jaideep.tanwar@cern.ch>
 ///
+#include "Common/Core/PID/PIDTOF.h"
+#include "Common/Core/PID/TPCPIDResponse.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
 #include <Math/Vector4D.h>
+#include <TRandom3.h>
+
 #include <limits>
 #include <string>
 #include <vector>
-#include <TRandom3.h>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/PID/TPCPIDResponse.h"
-#include "Common/DataModel/PIDResponseITS.h"
-#include "Common/Core/PID/PIDTOF.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "CCDB/BasicCCDBManager.h"
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -62,7 +65,7 @@ constexpr double betheBlochDefault[nParticles][nBetheParams]{
   {-126.557359, -0.858569, 1.111643, 1.210323, 2.656374, 0.09},  // helion
   {-126.557359, -0.858569, 1.111643, 1.210323, 2.656374, 0.09}}; // alpha
 const int nTrkSettings = 18;
-static const std::vector<std::string> trackPIDsettingsNames{"useBBparams", "minITSnCls", "minITSnClscos", "minTPCnCls", "maxTPCchi2","minTPCchi2", "maxITSchi2", "minRigidity", "maxRigidity", "maxTPCnSigma", "TOFrequiredabove", "minTOFmass", "maxTOFmass", "maxDcaXY", "maxDcaZ", "minITSclsSize", "maxITSclsSize", "minTPCnClsCrossedRows"};
+static const std::vector<std::string> trackPIDsettingsNames{"useBBparams", "minITSnCls", "minITSnClscos", "minTPCnCls", "maxTPCchi2", "minTPCchi2", "maxITSchi2", "minRigidity", "maxRigidity", "maxTPCnSigma", "TOFrequiredabove", "minTOFmass", "maxTOFmass", "maxDcaXY", "maxDcaZ", "minITSclsSize", "maxITSclsSize", "minTPCnClsCrossedRows"};
 constexpr double trackPIDsettings[nParticles][nTrkSettings]{
   {0, 0, 4, 60, 4.0, 0.5, 100, 0.15, 1.2, 2.5, -1, 0, 100, 2., 2., 0., 1000, 70},
   {1, 0, 4, 70, 4.0, 0.5, 100, 0.20, 4.0, 3.0, -1, 0, 100, 2., 2., 0., 1000, 70},
@@ -138,7 +141,7 @@ struct NucleitpcPbPb {
   Configurable<float> cfgtpcNClsFound{"cfgtpcNClsFound", 100.0f, "min. no. of tpcNClsFound"};
   Configurable<float> cfgitsNCls{"cfgitsNCls", 2.0f, "min. no. of itsNCls"};
   o2::track::TrackParametrizationWithError<float> mTrackParCov;
-  //CCDB
+  // CCDB
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<double> bField{"bField", -999, "bz field, -999 is automatic"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -194,11 +197,11 @@ struct NucleitpcPbPb {
     histos.add("histCentFT0M", "histCentFT0M", kTH1F, {axisCent});
     hDeDx.resize(2 * nParticles + 2);
     hNsigmaPt.resize(2 * nParticles + 2);
-    hmass.resize(2 * nParticles + 2);  
+    hmass.resize(2 * nParticles + 2);
     for (int i = 0; i < nParticles + 1; i++) {
       TString histName = i < nParticles ? primaryParticles[i].name : "all";
       if (cfgFillDeDxWithCut) {
-      	hDeDx[2 * i] = histos.add<TH2>(Form("dedx/histdEdx_%s_Cuts", histName.Data()), ";p_{TPC}/z (GeV/#it{c}); d#it{E}/d#it{x}", HistType::kTH2F, {axisRigidity, axisdEdx});
+        hDeDx[2 * i] = histos.add<TH2>(Form("dedx/histdEdx_%s_Cuts", histName.Data()), ";p_{TPC}/z (GeV/#it{c}); d#it{E}/d#it{x}", HistType::kTH2F, {axisRigidity, axisdEdx});
       }
     }
     for (int i = 0; i < nParticles; i++) {
@@ -244,7 +247,7 @@ struct NucleitpcPbPb {
         if (track.itsNCls() < cfgTrackPIDsettings->get(i, "minITSnCls") && cfgminITSnClsRequire)
           continue;
         double cosheta = std::cosh(track.eta());
-        if ((track.itsNCls()/cosheta) < cfgTrackPIDsettings->get(i, "minITSnClscos") && cfgminITSnClscosRequire)
+        if ((track.itsNCls() / cosheta) < cfgTrackPIDsettings->get(i, "minITSnClscos") && cfgminITSnClscosRequire)
           continue;
         if (track.itsChi2NCl() > cfgTrackPIDsettings->get(i, "maxITSchi2") && cfgmaxITSchi2Require)
           continue;
@@ -255,11 +258,11 @@ struct NucleitpcPbPb {
         if ((getRigidity(track) < cfgTrackPIDsettings->get(i, "minRigidity") || getRigidity(track) > cfgTrackPIDsettings->get(i, "maxRigidity")) && cfgRigidityCutRequire)
           continue;
         float pt_momn;
-        setTrackParCov(track, mTrackParCov); 
-  	mTrackParCov.setPID(track.pidForTracking());
-  	pt_momn = (i == 4 || i == 5) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();        
+        setTrackParCov(track, mTrackParCov);
+        mTrackParCov.setPID(track.pidForTracking());
+        pt_momn = (i == 4 || i == 5) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
         bool insideDCAxy = (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / std::pow(pt_momn, 1.1f))));
-        if ((!(insideDCAxy) || std::abs(track.dcaZ()) >  DCAzSigma( pt_momn, cfgTrackPIDsettings->get(i, "maxDcaZ"))) && cfgDCAwithptRequire)
+        if ((!(insideDCAxy) || std::abs(track.dcaZ()) > DCAzSigma(pt_momn, cfgTrackPIDsettings->get(i, "maxDcaZ"))) && cfgDCAwithptRequire)
           continue;
         if (track.sign() > 0) {
           histos.fill(HIST("histDcaZVsPtData_particle"), pt_momn, track.dcaZ());
@@ -273,23 +276,23 @@ struct NucleitpcPbPb {
         if ((std::abs(tpcNsigma) > cfgTrackPIDsettings->get(i, "maxTPCnSigma")) && cfgmaxTPCnSigmaRequire)
           continue;
         float itsSigma = getITSnSigma(track, primaryParticles.at(i));
-	if ((std::abs(itsSigma) > cfgITSnsigma) && cfgmaxITSnSigmaRequire)
+        if ((std::abs(itsSigma) > cfgITSnsigma) && cfgmaxITSnSigmaRequire)
           continue;
         fillnsigma(track, i);
         filldedx(track, i);
-        //TOF selection
-        if (!track.hasTOF() && cfgTrackPIDsettings->get(i, "TOFrequiredabove") < 1) 
+        // TOF selection
+        if (!track.hasTOF() && cfgTrackPIDsettings->get(i, "TOFrequiredabove") < 1)
           continue;
         float beta{o2::pid::tof::Beta::GetBeta(track)};
         float charge{1.f + static_cast<float>(i == 4 || i == 5)};
-        float tofMasses = getRigidity(track) * charge * std::sqrt(1.f / (beta * beta) - 1.f); 
+        float tofMasses = getRigidity(track) * charge * std::sqrt(1.f / (beta * beta) - 1.f);
         if ((getRigidity(track) > cfgTrackPIDsettings->get(i, "TOFrequiredabove") && (tofMasses < cfgTrackPIDsettings->get(i, "minTOFmass") || tofMasses > cfgTrackPIDsettings->get(i, "maxTOFmass"))) && cfgmassRequire)
           continue;
         fillhmass(track, i);
       }
       histos.fill(HIST("histeta"), track.eta());
       filldedx(track, nParticles);
-    } // track loop  
+    } // track loop
   }
   //----------------------------------------------------------------------------------------------------------------
   //----------------------------------------------------------------------------------------------------------------
@@ -397,9 +400,9 @@ struct NucleitpcPbPb {
       int i = species;
       const float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
       float pt_momn;
-      setTrackParCov(track, mTrackParCov); 
+      setTrackParCov(track, mTrackParCov);
       mTrackParCov.setPID(track.pidForTracking());
-      pt_momn = (i == 4 || i == 5) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();    
+      pt_momn = (i == 4 || i == 5) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
       if (track.sign() > 0) {
         hNsigmaPt[2 * species]->Fill(pt_momn, tpcNsigma);
       }
@@ -420,15 +423,15 @@ struct NucleitpcPbPb {
     if (beta <= 0.f || beta >= 1.f)
       return;
     float charge = (species == 4 || species == 5) ? 2.f : 1.f;
-    float p = getRigidity(track);  // assuming this is the momentum from inner TPC
+    float p = getRigidity(track); // assuming this is the momentum from inner TPC
     float massTOF = p * charge * std::sqrt(1.f / (beta * beta) - 1.f);
     // get PDG mass
     float pdgMass = particleMasses[species];
     float massDiff = massTOF - pdgMass;
     float pt_momn;
-    setTrackParCov(track, mTrackParCov); 
+    setTrackParCov(track, mTrackParCov);
     mTrackParCov.setPID(track.pidForTracking());
-    pt_momn = (species == 4 || species == 5) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();  
+    pt_momn = (species == 4 || species == 5) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
     if (track.sign() > 0) {
       hmass[2 * species]->Fill(pt_momn, massDiff * massDiff);
     } else if (track.sign() < 0) {
@@ -438,7 +441,7 @@ struct NucleitpcPbPb {
 
   //----------------------------------------------------------------------------------------------------------------
   template <class T>
-  float getTPCnSigma(T const& track, PrimParticles & particle)
+  float getTPCnSigma(T const& track, PrimParticles& particle)
   {
     const float rigidity = getRigidity(track);
     if (!track.hasTPC())
@@ -463,16 +466,16 @@ struct NucleitpcPbPb {
   }
   //----------------------------------------------------------------------------------------------------------------
   template <class T>
-float getITSnSigma(T const& track, PrimParticles & particle)
-{
-  if (!track.hasITS())
-    return -999;
-  o2::aod::ITSResponse itsResponse;
-  if (particle.name == "helion")
-    return itsResponse.nSigmaITS<o2::track::PID::Helium3>(track);
+  float getITSnSigma(T const& track, PrimParticles& particle)
+  {
+    if (!track.hasITS())
+      return -999;
+    o2::aod::ITSResponse itsResponse;
+    if (particle.name == "helion")
+      return itsResponse.nSigmaITS<o2::track::PID::Helium3>(track);
 
-  return -999; // fallback if no match
-}
+    return -999; // fallback if no match
+  }
 
   //----------------------------------------------------------------------------------------------------------------
   template <class T>
@@ -498,7 +501,7 @@ float getITSnSigma(T const& track, PrimParticles & particle)
   }
   float DCAzSigma(double pt, float dcasigma)
   {
-    float invPt = 1.f/pt;
+    float invPt = 1.f / pt;
     return (5.00000e-04 + 8.73690e-03 * invPt + 9.62329e-04 * invPt * invPt) * dcasigma; // o2-linter: disable=magic-number (To be checked)
   }
   //----------------------------------------------------------------------------------------------------------------
