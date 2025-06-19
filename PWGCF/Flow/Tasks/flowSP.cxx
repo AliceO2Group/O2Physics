@@ -552,9 +552,9 @@ struct FlowSP {
       // number of parameters required in cfgEvSelsMultPv and cfgEvSelsMult.  (5 Low + 5 High)
       int nParams = 10;
 
-      if (paramsMultPVCut.size() < nParams){
+      if (paramsMultPVCut.size() < nParams) {
         LOGF(fatal, "cfgEvSelsMultPv not set properly.. size = %d (should be 10) --> Check your config files!", paramsMultPVCut.size());
-      } else if (paramsMultCut.size() < nParams){
+      } else if (paramsMultCut.size() < nParams) {
         LOGF(fatal, "cfgEvSelsMult not set properly.. size = %d (should be 10) --> Check your config files!", paramsMultCut.size());
       } else {
         fMultPVCutLow->SetParameters(paramsMultPVCut[0], paramsMultPVCut[1], paramsMultPVCut[2], paramsMultPVCut[3], paramsMultPVCut[4]);
