@@ -644,7 +644,11 @@ struct HfCandidateCreator2Prong {
   void processPvRefitWithDCAFitterNUPC(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                        soa::Join<aod::Hf2Prongs, aod::HfPvRefit2Prong> const& rowsTrackIndexProng2,
                                        TracksWCovExtraPidPiKa const& tracks,
-                                       aod::BCFullInfos const& bcWithTimeStamps, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/, aod::Zdcs const& /*zdcs*/)
+                                       aod::BCFullInfos const& bcWithTimeStamps,
+                                       aod::FT0s const& /*ft0s*/,
+                                       aod::FV0As const& /*fv0as*/,
+                                       aod::FDDs const& /*fdds*/,
+                                       aod::Zdcs const& /*zdcs*/)
   {
     runCreator2ProngWithDCAFitterN</*doPvRefit*/ true, true, CentralityEstimator::None>(collisions, rowsTrackIndexProng2, tracks, bcWithTimeStamps);
   }
@@ -654,7 +658,11 @@ struct HfCandidateCreator2Prong {
   void processNoPvRefitWithDCAFitterNUPC(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                          aod::Hf2Prongs const& rowsTrackIndexProng2,
                                          TracksWCovExtraPidPiKa const& tracks,
-                                         aod::BCFullInfos const& bcWithTimeStamps, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/, aod::Zdcs const& /*zdcs*/)
+                                         aod::BCFullInfos const& bcWithTimeStamps,
+                                         aod::FT0s const& /*ft0s*/,
+                                         aod::FV0As const& /*fv0as*/,
+                                         aod::FDDs const& /*fdds*/,
+                                         aod::Zdcs const& /*zdcs*/)
   {
     runCreator2ProngWithDCAFitterN</*doPvRefit*/ false, true, CentralityEstimator::None>(collisions, rowsTrackIndexProng2, tracks, bcWithTimeStamps);
   }
@@ -664,7 +672,11 @@ struct HfCandidateCreator2Prong {
   void processPvRefitWithKFParticleUPC(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                        soa::Join<aod::Hf2Prongs, aod::HfPvRefit2Prong> const& rowsTrackIndexProng2,
                                        TracksWCovExtraPidPiKa const& tracks,
-                                       aod::BCFullInfos const& bcWithTimeStamps, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/, aod::Zdcs const& /*zdcs*/)
+                                       aod::BCFullInfos const& bcWithTimeStamps,
+                                       aod::FT0s const& /*ft0s*/,
+                                       aod::FV0As const& /*fv0as*/,
+                                       aod::FDDs const& /*fdds*/,
+                                       aod::Zdcs const& /*zdcs*/)
   {
     runCreator2ProngWithKFParticle</*doPvRefit*/ true, true, CentralityEstimator::None>(collisions, rowsTrackIndexProng2, tracks, bcWithTimeStamps);
   }
@@ -674,7 +686,11 @@ struct HfCandidateCreator2Prong {
   void processNoPvRefitWithKFParticleUPC(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                          aod::Hf2Prongs const& rowsTrackIndexProng2,
                                          TracksWCovExtraPidPiKa const& tracks,
-                                         aod::BCFullInfos const& bcWithTimeStamps, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/, aod::Zdcs const& /*zdcs*/)
+                                         aod::BCFullInfos const& bcWithTimeStamps,
+                                         aod::FT0s const& /*ft0s*/,
+                                         aod::FV0As const& /*fv0as*/,
+                                         aod::FDDs const& /*fdds*/,
+                                         aod::Zdcs const& /*zdcs*/)
   {
     runCreator2ProngWithKFParticle</*doPvRefit*/ false, true, CentralityEstimator::None>(collisions, rowsTrackIndexProng2, tracks, bcWithTimeStamps);
   }
