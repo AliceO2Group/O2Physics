@@ -317,9 +317,6 @@ struct bcWiseClusterSkimmer {
       auto mcCollisionsBC = mcCollisions.sliceBy(mcCollperBC, bc.globalIndex());
       for (const auto& mcCollision : mcCollisionsBC) {
         auto mcParticlesInColl = mcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
-        double centrality = 101.5;
-        if (collisionsInBC.size() > 0)
-          centrality = collisionsInBC.iteratorAt(0).centFT0M();
         mHistManager.fill(HIST("CentralityVsGenMultiplicity"), bc.centFT0M(), mcParticlesInColl.size());
         for (const auto& mcParticle : mcParticlesInColl) {
           if (mcParticle.pdgCode() != 111 || std::abs(mcParticle.y()) > cfgRapidityCut || !isGammaGammaDecay(mcParticle, mcParticles) || mcParticle.pt() < cfgMinPtGenPi0)
