@@ -219,37 +219,37 @@ struct kstarInOO {
   // {
   // for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2)))
   //   {
-  // 	// Full index policy is needed to consider all possible combinations
-  // 	if (trk1.index() == trk2.index())
-  // 	  continue; // We need to run (0,1), (1,0) pairs as well. but same id pairs are not needed.
+  //   // Full index policy is needed to consider all possible combinations
+  //   if (trk1.index() == trk2.index())
+  //     continue; // We need to run (0,1), (1,0) pairs as well. but same id pairs are not needed.
 
-  // 	//// Initialize variables
-  // 	// trk1: Pion, trk2: Kaon
-  // 	// apply the track cut
-  // 	if (!trackSelection(trk1) || !trackSelection(trk2))
-  // 	  continue;
+  //   //// Initialize variables
+  //   // trk1: Pion, trk2: Kaon
+  //   // apply the track cut
+  //   if (!trackSelection(trk1) || !trackSelection(trk2))
+  //     continue;
 
-  // 	auto isTrk1hasTOF = trk1.hasTOF();
-  // 	auto isTrk2hasTOF = trk2.hasTOF();
-  // 	auto trk1ptPi = trk1.pt();
-  // 	auto trk1NSigmaPiTPC = trk1.tpcNSigmaPi();
-  // 	auto trk1NSigmaPiTOF = (isTrk1hasTOF) ? trk1.tofNSigmaPi() : -999.;
-  // 	auto trk2ptKa = trk2.pt();
-  // 	auto trk2NSigmaKaTPC = trk2.tpcNSigmaKa();
-  // 	auto trk2NSigmaKaTOF = (isTrk2hasTOF) ? trk2.tofNSigmaKa() : -999.;
+  //   auto isTrk1hasTOF = trk1.hasTOF();
+  //   auto isTrk2hasTOF = trk2.hasTOF();
+  //   auto trk1ptPi = trk1.pt();
+  //   auto trk1NSigmaPiTPC = trk1.tpcNSigmaPi();
+  //   auto trk1NSigmaPiTOF = (isTrk1hasTOF) ? trk1.tofNSigmaPi() : -999.;
+  //   auto trk2ptKa = trk2.pt();
+  //   auto trk2NSigmaKaTPC = trk2.tpcNSigmaKa();
+  //   auto trk2NSigmaKaTOF = (isTrk2hasTOF) ? trk2.tofNSigmaKa() : -999.;
 
-  // 	if (!trackPIDPion(trk1) || !trackPIDKaon(trk2))
-  // 	  continue;
+  //   if (!trackPIDPion(trk1) || !trackPIDKaon(trk2))
+  //     continue;
 
-  // 	// PID QA Pion
-  // 	OOhistos.fill(HIST("QA_nSigma_pion_TPC"), trk1ptPi, trk1NSigmaPiTPC);
-  // 	OOhistos.fill(HIST("QA_nSigma_pion_TOF"), trk1ptPi, trk1NSigmaPiTOF);
-  // 	OOhistos.fill(HIST("QA_pion_TPC_TOF"), trk1NSigmaPiTOF, trk1NSigmaPiTPC);
+  //   // PID QA Pion
+  //   OOhistos.fill(HIST("QA_nSigma_pion_TPC"), trk1ptPi, trk1NSigmaPiTPC);
+  //   OOhistos.fill(HIST("QA_nSigma_pion_TOF"), trk1ptPi, trk1NSigmaPiTOF);
+  //   OOhistos.fill(HIST("QA_pion_TPC_TOF"), trk1NSigmaPiTOF, trk1NSigmaPiTPC);
 
-  // 	// PID QA Kaon
-  // 	OOhistos.fill(HIST("QA_nSigma_kaon_TPC"), trk2ptKa, trk2NSigmaKaTPC);
-  // 	OOhistos.fill(HIST("QA_nSigma_kaon_TOF"), trk2ptKa, trk2NSigmaKaTOF);
-  // 	OOhistos.fill(HIST("QA_kaon_TPC_TOF"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
+  //   // PID QA Kaon
+  //   OOhistos.fill(HIST("QA_nSigma_kaon_TPC"), trk2ptKa, trk2NSigmaKaTPC);
+  //   OOhistos.fill(HIST("QA_nSigma_kaon_TOF"), trk2ptKa, trk2NSigmaKaTOF);
+  //   OOhistos.fill(HIST("QA_kaon_TPC_TOF"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
   //   }
   // }
 
