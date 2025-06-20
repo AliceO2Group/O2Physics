@@ -448,7 +448,8 @@ struct EventSelectionQaTask {
       float multV0A = 0;
       float multV0C = 0;
       if (bc.has_fv0a()) {
-        for (unsigned int i = 0; i < bc.fv0a().amplitude().size(); ++i) {
+        auto fv0a = bc.fv0a();
+        for (unsigned int i = 0; i < fv0a.amplitude().size(); ++i) {
           int ring = bc.fv0a().channel()[i] / 8;
           multRingV0A[ring] += bc.fv0a().amplitude()[i];
           multV0A += bc.fv0a().amplitude()[i];
@@ -456,7 +457,8 @@ struct EventSelectionQaTask {
       }
 
       if (bc.has_fv0c()) {
-        for (unsigned int i = 0; i < bc.fv0c().amplitude().size(); ++i) {
+        auto fv0c = bc.fv0c();
+        for (unsigned int i = 0; i < fv0c.amplitude().size(); ++i) {
           int ring = bc.fv0c().channel()[i] / 8;
           multRingV0C[ring] += bc.fv0c().amplitude()[i];
           multV0C += bc.fv0c().amplitude()[i];
@@ -847,7 +849,8 @@ struct EventSelectionQaTask {
         histos.fill(HIST("hOrbitFV0"), orbit - orbitSOR);
         histos.fill(HIST("hBcFV0"), localBC);
         float multV0A = 0;
-        for (const auto& amplitude : bc.fv0a().amplitude()) {
+        auto fv0a = bc.fv0a();
+        for (const auto& amplitude : fv0a.amplitude()) {
           multV0A += amplitude;
         }
         histos.fill(HIST("hMultV0Aall"), multV0A);
@@ -1079,7 +1082,8 @@ struct EventSelectionQaTask {
       // FV0
       float multV0A = 0;
       if (foundBC.has_fv0a()) {
-        for (const auto& amplitude : foundBC.fv0a().amplitude()) {
+        auto fv0a = foundBC.fv0a();
+        for (const auto& amplitude : fv0a.amplitude()) {
           multV0A += amplitude;
         }
       }
