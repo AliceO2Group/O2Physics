@@ -304,7 +304,7 @@ struct kstarInOO {
   }
   PROCESS_SWITCH(kstarInOO, processEvents, "Jimun Code Go!", true);
 
-  void processEventsDummy(EventCandidates::iterator const& collision, TrackCandidates const& tracks)
+  void processEventsDummy(EventCandidates::iterator const&, TrackCandidates const&)
   {
     return;
   }
