@@ -129,6 +129,10 @@ class svPoolCreator
       }
       firstBC++;
     }
+    if (firstCollIdx == -1) {
+      return;
+    }
+
     // now loop over all the collisions to make the pool
     for (int i = firstCollIdx; i < collisions.size(); i++) {
       const auto& collision = collisions.rawIteratorAt(i);

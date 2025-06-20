@@ -14,27 +14,33 @@
 ///
 /// \author Gijs van Weelden <g.van.weelden@cern.ch>
 
-#include <string>
-#include <vector>
-#include "TH1F.h"
-#include "TTree.h"
+#include "JetDerivedDataUtilities.h"
+#include "RecoDecay.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/RunningWorkflowInfo.h"
+#include "PWGJE/Core/JetFindingUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
 
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/Core/JetUtilities.h"
-#include "PWGJE/Core/JetFindingUtilities.h"
-#include "PWGLF/DataModel/V0SelectorTables.h"
+#include <cmath>
+#include <cstdint>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
