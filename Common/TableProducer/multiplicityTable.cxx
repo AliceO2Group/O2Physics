@@ -267,12 +267,14 @@ struct MultiplicityTable {
     int multNContribsEtaHalf = 0;
 
     if (collision.has_fv0a()) {
-      for (const auto& amplitude : collision.fv0a().amplitude()) {
+      auto fv0a = collision.fv0a();
+      for (const auto& amplitude : fv0a.amplitude()) {
         multFV0A += amplitude;
       }
     }
     if (collision.has_fv0c()) {
-      for (const auto& amplitude : collision.fv0c().amplitude()) {
+      auto fv0c = collision.fv0c();
+      for (const auto& amplitude : fv0c.amplitude()) {
         multFV0C += amplitude;
       }
     }
