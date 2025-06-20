@@ -416,8 +416,9 @@ struct lambdapolsp {
   {
     // const auto eta = track.eta();
     // const auto pt = track.pt();
+    const auto rcrfc = 0.8;
     const auto tpcNClsF = track.tpcNClsFound();
-    if (track.tpcNClsCrossedRows() < 70) {
+    if (track.tpcNClsCrossedRows() < cfgTPCcluster) {
       return false;
     }
     /*if (TMath::Abs(eta) > ConfDaughEta) {
@@ -426,7 +427,7 @@ struct lambdapolsp {
     if (tpcNClsF < ConfDaughTPCnclsMin) {
       return false;
     }
-    if (track.tpcCrossedRowsOverFindableCls() < 0.8) {
+    if (track.tpcCrossedRowsOverFindableCls() < rcrfc) {
       return false;
     }
 
@@ -461,6 +462,7 @@ struct lambdapolsp {
   {
     // checks if this V0 is compatible with the requested hypothesis
 
+    const auto rcrfc = 0.8;
     // de-ref track extras
     auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
     auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
@@ -477,13 +479,13 @@ struct lambdapolsp {
     }
 
     // check TPC tracking properties
-    if (posTrackExtra.tpcNClsCrossedRows() < 70 || negTrackExtra.tpcNClsCrossedRows() < 70) {
+    if (posTrackExtra.tpcNClsCrossedRows() < cfgTPCcluster || negTrackExtra.tpcNClsCrossedRows() < cfgTPCcluster) {
       return false;
     }
     if (posTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin || negTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin) {
       return false;
     }
-    if (posTrackExtra.tpcCrossedRowsOverFindableCls() < 0.8 || negTrackExtra.tpcCrossedRowsOverFindableCls() < 0.8) {
+    if (posTrackExtra.tpcCrossedRowsOverFindableCls() < rcrfc || negTrackExtra.tpcCrossedRowsOverFindableCls() < rcrfc) {
       return false;
     }
 
@@ -511,6 +513,7 @@ struct lambdapolsp {
   {
     // checks if this V0 is compatible with the requested hypothesis
 
+    const auto rcrfc = 0.8;
     // de-ref track extras
     auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
     auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
@@ -523,13 +526,13 @@ struct lambdapolsp {
       return false;
     }
     // check TPC tracking properties
-    if (posTrackExtra.tpcNClsCrossedRows() < 70 || negTrackExtra.tpcNClsCrossedRows() < 70) {
+    if (posTrackExtra.tpcNClsCrossedRows() < cfgTPCcluster || negTrackExtra.tpcNClsCrossedRows() < cfgTPCcluster) {
       return false;
     }
     if (posTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin || negTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin) {
       return false;
     }
-    if (posTrackExtra.tpcCrossedRowsOverFindableCls() < 0.8 || negTrackExtra.tpcCrossedRowsOverFindableCls() < 0.8) {
+    if (posTrackExtra.tpcCrossedRowsOverFindableCls() < rcrfc || negTrackExtra.tpcCrossedRowsOverFindableCls() < rcrfc) {
       return false;
     }
     // check TPC PID
