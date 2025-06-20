@@ -6,7 +6,7 @@ The fitter is **not** a part of O2Physics source code.
 ## Dependencies
 1. ROOT
 
-2. RapidJSON. Download the header-only (no compilation needed) RapidJSON library, see the link https://rapidjson.org.
+2. RapidJSON. Download the header-only (no compilation needed) RapidJSON library, see the link <https://rapidjson.org>.
 
 ## How to run
 ### As a ROOT macro
