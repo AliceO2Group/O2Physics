@@ -189,22 +189,21 @@ struct kstarInOO {
 
     return false;
   }
-  /*
+
   // Pion
   template <typename T>
-  bool trackPIDPion (const T& candidate)
+  bool trackPIDPion(const T& candidate)
   {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
     if (std::abs(candidate.tpcNSigmaPi()) < cfgnTPCPID)
       tpcPIDPassed = true;
 
-    if (candidate.hasTOF())
-      {
-  if (std::abs(candidate.tofNSigmaPi()) < cfgnTOFPID)
-    tofPIDPassed = true;
-  else
-    tofPIDPassed = true;
-      }
+    if (candidate.hasTOF()) {
+      if (std::abs(candidate.tofNSigmaPi()) < cfgnTOFPID)
+        tofPIDPassed = true;
+      else
+        tofPIDPassed = true;
+    }
 
     if (tpcPIDPassed && tofPIDPassed)
       return true;
@@ -212,12 +211,12 @@ struct kstarInOO {
     return false;
   }
 
-  // template <typename TrackType>
-  // void fillHistograms(TrackType const& dTracks1, TrackType const& dTracks2)
-  // {
   //================================
   // 3. Basic PID QA (Pion, Kaon)
   //================================
+  // template <typename TrackType>
+  // void fillHistograms(TrackType const& dTracks1, TrackType const& dTracks2)
+  // {
   // for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2)))
   //   {
   // 	// Full index policy is needed to consider all possible combinations
@@ -253,13 +252,11 @@ struct kstarInOO {
   // 	OOhistos.fill(HIST("QA_kaon_TPC_TOF"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
   //   }
   // }
-  */
 
   //=================================
   // 1. nEvents Selection
   //=================================
   int nprocessEvents = 0;
-  //  template <typename TrackCandidates> //그치 void는 템플릿이 아닌데;; 이걸 템플릿이라고 정의했으니까 안되는게 당연하지 ;;;;
   void processEvents(EventCandidates::iterator const& collision, TrackCandidates const& tracks)
   {
     // 1. All events
