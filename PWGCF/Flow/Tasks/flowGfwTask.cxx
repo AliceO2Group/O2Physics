@@ -886,10 +886,11 @@ struct FlowGfwTask {
       double ft0mAmp = 0;
 
       if (foundBC.has_ft0()) {
-        for (const auto& amplitude : foundBC.ft0().amplitudeA()) {
+        auto ft0 = foundBC.ft0();
+        for (const auto& amplitude : ft0.amplitudeA()) {
           ft0aAmp += amplitude;
         }
-        for (const auto& amplitude : foundBC.ft0().amplitudeC()) {
+        for (const auto& amplitude : ft0.amplitudeC()) {
           ft0cAmp += amplitude;
         }
       } else {
