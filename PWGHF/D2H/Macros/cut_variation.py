@@ -424,7 +424,7 @@ class CutVarMinimiser:
         return self.get_raw_nonprompt_fraction(1.0, 1.0)
 
     # pylint: disable=no-member
-    def plot_result(self, suffix=""):
+    def plot_result(self, suffix="", title=""):
         """
         Helper function to plot minimisation result as a function of cut set
 
@@ -528,6 +528,9 @@ class CutVarMinimiser:
         hist_raw_yield_prompt.Draw("histsame")
         hist_raw_yield_nonprompt.Draw("histsame")
         hist_raw_yield_sum.Draw("histsame")
+        tex = ROOT.TLatex()
+        tex.SetTextSize(0.04)
+        tex.DrawLatexNDC(0.05, 0.95, title)
         canvas.Modified()
         canvas.Update()
 
@@ -540,7 +543,7 @@ class CutVarMinimiser:
 
         return canvas, histos, leg
 
-    def plot_cov_matrix(self, correlated=True, suffix=""):
+    def plot_cov_matrix(self, correlated=True, suffix="", title=""):
         """
         Helper function to plot covariance matrix
 
@@ -563,6 +566,7 @@ class CutVarMinimiser:
             padleftmargin=0.14,
             padbottommargin=0.12,
             padrightmargin=0.12,
+            padtopmargin = 0.075,
             palette=ROOT.kRainBow,
         )
 
@@ -592,12 +596,15 @@ class CutVarMinimiser:
 
         canvas = ROOT.TCanvas(f"cCorrMatrixCutSets{suffix}", "", 500, 500)
         hist_corr_matrix.Draw("colz")
+        tex = ROOT.TLatex()
+        tex.SetTextSize(0.04)
+        tex.DrawLatexNDC(0.05, 0.95, title)
         canvas.Modified()
         canvas.Update()
 
         return canvas, hist_corr_matrix
 
-    def plot_efficiencies(self, suffix=""):
+    def plot_efficiencies(self, suffix="", title=""):
         """
         Helper function to plot efficiencies as a function of cut set
 
@@ -616,7 +623,7 @@ class CutVarMinimiser:
             needed otherwise it is destroyed
         """
 
-        set_global_style(padleftmargin=0.14, padbottommargin=0.12, titleoffset=1.2)
+        set_global_style(padleftmargin=0.14, padbottommargin=0.12, titleoffset=1.2, padtopmargin = 0.075)
 
         hist_eff_prompt = ROOT.TH1F(
             f"hEffPromptVsCut{suffix}",
@@ -678,12 +685,15 @@ class CutVarMinimiser:
         leg.AddEntry(hist_eff_prompt, "prompt", "pl")
         leg.AddEntry(hist_eff_nonprompt, "non-prompt", "pl")
         leg.Draw()
+        tex = ROOT.TLatex()
+        tex.SetTextSize(0.04)
+        tex.DrawLatexNDC(0.05, 0.95, title)
         canvas.Modified()
         canvas.Update()
 
         return canvas, histos, leg
 
-    def plot_fractions(self, suffix=""):
+    def plot_fractions(self, suffix="", title=""):
         """
         Helper function to plot fractions as a function of cut set
 
@@ -702,7 +712,7 @@ class CutVarMinimiser:
             needed otherwise it is destroyed
         """
 
-        set_global_style(padleftmargin=0.14, padbottommargin=0.12, titleoffset=1.2)
+        set_global_style(padleftmargin=0.14, padbottommargin=0.12, titleoffset=1.2, padtopmargin = 0.075)
 
         hist_f_prompt = ROOT.TH1F(
             f"hFracPromptVsCut{suffix}",
@@ -757,6 +767,9 @@ class CutVarMinimiser:
         leg.AddEntry(hist_f_prompt, "prompt", "pl")
         leg.AddEntry(hist_f_nonprompt, "non-prompt", "pl")
         leg.Draw()
+        tex = ROOT.TLatex()
+        tex.SetTextSize(0.04)
+        tex.DrawLatexNDC(0.05, 0.95, title)
         canvas.Modified()
         canvas.Update()
 

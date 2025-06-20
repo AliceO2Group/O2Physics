@@ -155,25 +155,34 @@ def main(config):
             hist_frac_raw_nonprompt.SetBinContent(ipt + 1, raw_frac_nonprompt[0])
             hist_frac_raw_nonprompt.SetBinError(ipt + 1, raw_frac_nonprompt[1])
 
-        canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt{pt_min:.0f}_{pt_max:.0f}")
+        hist_bin_title = ""
+        hist_bin_name = cfg.get("rawyields", {}).get("binwisehistoname")
+        if hist_bin_name is not None:
+            infile_rawy = ROOT.TFile.Open(os.path.join(cfg["rawyields"]["inputdir"], filename_rawy))
+            hist_bin_name = cfg["rawyields"]["binwisehistoname"] + str(ipt)
+            hist_bin = infile_rawy.Get(hist_bin_name)
+            hist_bin_title = hist_bin.GetTitle()
+            infile_rawy.Close()
+
+        canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt{pt_min:.0f}_{pt_max:.0f}", hist_bin_title)
         output.cd()
         canv_rawy.Write()
         for _, hist in histos_rawy.items():
             hist.Write()
 
-        canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(f"_pt{pt_min:.0f}_{pt_max:.0f}")
+        canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(f"_pt{pt_min:.0f}_{pt_max:.0f}", hist_bin_title)
         output.cd()
         canv_eff.Write()
         for _, hist in histos_eff.items():
             hist.Write()
 
-        canv_frac, histos_frac, leg_f = minimiser.plot_fractions(f"_pt{pt_min:.0f}_{pt_max:.0f}")
+        canv_frac, histos_frac, leg_f = minimiser.plot_fractions(f"_pt{pt_min:.0f}_{pt_max:.0f}", hist_bin_title)
         output.cd()
         canv_frac.Write()
         for _, hist in histos_frac.items():
             hist.Write()
 
-        canv_cov, histo_cov = minimiser.plot_cov_matrix(True, f"_pt{pt_min:.0f}_{pt_max:.0f}")
+        canv_cov, histo_cov = minimiser.plot_cov_matrix(True, f"_pt{pt_min:.0f}_{pt_max:.0f}", hist_bin_title)
         output.cd()
         canv_cov.Write()
         histo_cov.Write()
