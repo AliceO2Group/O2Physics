@@ -296,7 +296,7 @@ DECLARE_SOA_TABLE(HfCandXic0FullKfs, "AOD", "HFCANDXIC0FULKF",
 				  full::DcaXYPiXi,
 				  full::DcaPiXi);
 
-DECLARE_SOA_TABLE(HfCandXic0ToXiPiFullPs, "AOD", "HFXIC0TOXIPIFULLP",	// -> Table to store MC?
+DECLARE_SOA_TABLE(HfCandXic0ToXiPiFullPs, "AOD", "HFXIC0TOXIPIFULLP",	
 				  hf_cand_xic0_xicp_to_hadronic::FlagMcMatchGen,
 				  hf_cand_xic0_xicp_to_hadronic::DebugMcGen,
 				  hf_cand_xic0_xicp_to_hadronic::OriginGen,
@@ -305,7 +305,7 @@ DECLARE_SOA_TABLE(HfCandXic0ToXiPiFullPs, "AOD", "HFXIC0TOXIPIFULLP",	// -> Tabl
 				  full::Phi,
 				  full::Y);
 
-DECLARE_SOA_TABLE(HfCandXic0ToXiPiResiduals, "AOD", "HFXIC0TOXIPIRESID", // -> Fill difference between MC Reco and MC Gen
+DECLARE_SOA_TABLE(HfCandXic0ToXiPiResiduals, "AOD", "HFXIC0TOXIPIRESID",
 				  hf_cand_xic0_xicp_to_hadronic::OriginGen,
 				  full::PResidual,
 				  full::PtResidual,
@@ -323,7 +323,6 @@ DECLARE_SOA_TABLE(HfCandXic0ToXiPiResiduals, "AOD", "HFXIC0TOXIPIRESID", // -> F
 				  full::ZSvPull);
 }// o2::aod
  
-// Writes the full information in an output TTree
 struct HfTreeCreatorXic0XicpToHadronic {
 
 	struct : ProducesGroup {
