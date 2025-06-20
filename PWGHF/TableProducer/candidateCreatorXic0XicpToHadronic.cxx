@@ -64,8 +64,7 @@ using namespace o2::hf_evsel;
 
 struct HfCandidateCreatorXic0XicpToHadronic {
 
-	// Cursor to fill the table
-	// -> Later, it can be changed to other table...this is just for the test
+	// Cursor to fill tables
 	struct : ProducesGroup {
 		Produces<aod::HfCandXic0Base> rowCandXic0Base;
 		Produces<aod::HfCandXic0KF> rowCandXic0KF;
@@ -146,7 +145,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 	using CascFull = soa::Join<aod::CascDatas, aod::CascCovs>;
 	// For KFParticle
 	using KFCascadesLinked = soa::Join<aod::Cascades, aod::KFCascDataLink>;
-	using KFCascFull = soa::Join<aod::KFCascDatas, aod::KFCascCovs>; // -> No error occured with strangenessbuilder
+	using KFCascFull = soa::Join<aod::KFCascDatas, aod::KFCascCovs>; 
 	using TracksWCovDcaExtraPidPrPi = soa::Join<aod::TracksWCovDcaExtra, aod::TracksPidPr, aod::TracksPidPi>;
 	
 	HistogramRegistry registry{"hists"};
@@ -246,7 +245,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 			if (!cascAodElement.has_cascData()) {
 				continue;
 			}
-			auto casc = cascAodElement.cascData_as<CascFull>(); // -> Need to understand this
+			auto casc = cascAodElement.cascData_as<CascFull>(); 
 			auto trackCharmBachelor = cand.prong0_as<TracksWCovDcaExtraPidPrPi>();
 			auto cascCharge = casc.sign() > 0 ? 1 : -1;
 

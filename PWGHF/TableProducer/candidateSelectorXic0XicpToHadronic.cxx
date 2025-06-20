@@ -71,6 +71,8 @@ struct HfCandidateSelectorXic0XicpToHadronic {
 		Configurable<float> nSigmaTofMax{"nSigmaTofMax", 5., "Nsigma on TOF only"};
 		Configurable<float> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
 		// ML interface
+		// -> Will be implemented in the future 
+
 		// CCDB
 		Configurable<std::string> ccdbUrl{"ccdbUrl", "https://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
@@ -205,17 +207,19 @@ struct HfCandidateSelectorXic0XicpToHadronic {
 		if (!acceptPIDNotApplicable && (pidTrackPi0 != TrackSelectorPID::Accepted ||
 										pidTrackPr != TrackSelectorPID::Accepted ||
 										pidTrackPiLam != TrackSelectorPID::Accepted ||
-										pidTrackPiXi != TrackSelectorPID::Accepted)) {
+										pidTrackPiXi != TrackSelectorPID::Accepted)) 
+		{
 			return false;
 		}
 
 		if (acceptPIDNotApplicable && (pidTrackPi0 == TrackSelectorPID::Rejected ||
 									   pidTrackPr == TrackSelectorPID::Rejected ||
 									   pidTrackPiLam == TrackSelectorPID::Rejected ||
-									   pidTrackPiXi == TrackSelectorPID::Rejected)) {
+									   pidTrackPiXi == TrackSelectorPID::Rejected)) 
+		{
 			return false;
 		}
-	
+		
 		return true;
 	}
 
@@ -238,7 +242,6 @@ struct HfCandidateSelectorXic0XicpToHadronic {
 				registry.fill(HIST("hSelections"), 2+SelectionStep::RecoSkims, ptCandXic0);
 			}
 	
-			#if 1 
 			// Topological cuts
 			if (!selectionTopol(hfCandXic0)) {
 				cursors.hfSelXic0ToXiPiCandidate(statusXic0ToXiPi);
@@ -248,7 +251,6 @@ struct HfCandidateSelectorXic0XicpToHadronic {
 			if (configs.activateQA) {
 				registry.fill(HIST("hSelections"), 2+SelectionStep::RecoTopol, ptCandXic0);
 			}
-			#endif	
 
 			// Track-level PID selection
 			if (configs.usePid) {
