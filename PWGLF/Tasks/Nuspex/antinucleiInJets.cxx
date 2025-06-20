@@ -102,7 +102,6 @@ struct AntinucleiInJets {
   Configurable<int> rejectionPercentage{"rejectionPercentage", 3, "percentage of events to reject"};
   Configurable<int> minItsNclusters{"minItsNclusters", 5, "minimum number of ITS clusters"};
   Configurable<int> minTpcNcrossedRows{"minTpcNcrossedRows", 80, "minimum number of TPC crossed pad rows"};
-  Configurable<double> minTpcNcrossedRowsOverFindable{"minTpcNcrossedRowsOverFindable", 0.8, "crossed rows/findable"};
   Configurable<double> maxChiSquareTpc{"maxChiSquareTpc", 4.0, "maximum TPC chi^2/Ncls"};
   Configurable<double> maxChiSquareIts{"maxChiSquareIts", 36.0, "maximum ITS chi^2/Ncls"};
   Configurable<double> minPt{"minPt", 0.3, "minimum pt of the tracks"};
@@ -388,7 +387,6 @@ struct AntinucleiInJets {
   {
 
     const int minTpcCr = 70;
-    const double minCrFindable = 0.8;
     const double maxChi2Tpc = 4.0;
     const double maxChi2Its = 36.0;
     const double maxPseudorapidity = 0.8;
@@ -405,8 +403,6 @@ struct AntinucleiInJets {
     if (!track.hasTPC())
       return false;
     if (track.tpcNClsCrossedRows() < minTpcCr)
-      return false;
-    if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < minCrFindable)
       return false;
     if (track.tpcChi2NCl() > maxChi2Tpc)
       return false;
@@ -436,8 +432,6 @@ struct AntinucleiInJets {
     if (!track.hasTPC())
       return false;
     if (track.tpcNClsCrossedRows() < minTpcNcrossedRows)
-      return false;
-    if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < minTpcNcrossedRowsOverFindable)
       return false;
     if (track.tpcChi2NCl() > maxChiSquareTpc)
       return false;
@@ -1458,8 +1452,6 @@ struct AntinucleiInJets {
             continue;
           if (track.tpcNClsCrossedRows() < tpcNcrossedRowsSyst[i])
             continue;
-          if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < minTpcNcrossedRowsOverFindable)
-            continue;
           if (track.tpcChi2NCl() > maxChiSquareTpc)
             continue;
           if (track.itsChi2NCl() > maxChiSquareIts)
@@ -1571,8 +1563,6 @@ struct AntinucleiInJets {
           if (!track.hasTPC())
             continue;
           if (track.tpcNClsCrossedRows() < tpcNcrossedRowsSyst[i])
-            continue;
-          if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < minTpcNcrossedRowsOverFindable)
             continue;
           if (track.tpcChi2NCl() > maxChiSquareTpc)
             continue;
