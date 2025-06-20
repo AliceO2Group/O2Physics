@@ -23,7 +23,8 @@
             "RawYieldsDplus_outFD_pos28.root",
             "RawYieldsDplus_outFD_pos29.root"
         ],
-        "histoname": "hRawYields"
+        "histoname": "hRawYields",
+        "binwisehistoname": "MassForFit"
     },
     "efficiencies": {
         "inputdir": "path/to/efficiencies/files",
