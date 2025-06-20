@@ -432,10 +432,11 @@ struct FlowZdcTask {
 
     float aT0A = 0., aT0C = 0., aV0A = 0.;
     if (foundBC.has_ft0()) {
-      for (const auto& amplitude : foundBC.ft0().amplitudeA()) {
+      auto ft0 = foundBC.ft0();
+      for (const auto& amplitude : ft0.amplitudeA()) {
         aT0A += amplitude;
       }
-      for (const auto& amplitude : foundBC.ft0().amplitudeC()) {
+      for (const auto& amplitude : ft0.amplitudeC()) {
         aT0C += amplitude;
       }
     } else {
@@ -443,7 +444,8 @@ struct FlowZdcTask {
     }
     histos.fill(HIST("hEventCounter"), EvCutLabel::TZero);
     if (foundBC.has_fv0a()) {
-      for (const auto& amplitude : foundBC.fv0a().amplitude()) {
+      auto fv0a = foundBC.fv0a();
+      for (const auto& amplitude : fv0a.amplitude()) {
         aV0A += amplitude;
       }
     } else {
