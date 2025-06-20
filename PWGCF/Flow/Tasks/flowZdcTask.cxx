@@ -15,7 +15,6 @@
 /// \brief  task to evaluate flow and neutron skin with information from ZDC
 
 #include "Common/CCDB/EventSelectionParams.h"
-#include "CommonConstants/MathConstants.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -23,6 +22,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "CommonConstants/MathConstants.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -215,7 +215,7 @@ struct FlowZdcTask {
     histos.add("EtaVsPhi", ";#eta;#varphi", kTH2F, {{{axisEta}, {100, -0.1 * PI, +2.1 * PI}}});
     histos.add("ZposVsEta", "", kTProfile, {axisZpos});
     histos.add("sigma1Pt", ";;#sigma(p_{T})/p_{T};", kTProfile, {axisPt});
-    histos.add("dcaXYvspT", ";DCA_{xy} (cm);;", kTH2F, {{{50, -1., 1.}, {axisPt}}}); 
+    histos.add("dcaXYvspT", ";DCA_{xy} (cm);;", kTH2F, {{{50, -1., 1.}, {axisPt}}});
 
     // event selection steps
     histos.add("eventSelectionSteps", "eventSelectionSteps", kTH1D, {axisEvent});
@@ -596,11 +596,11 @@ struct FlowZdcTask {
   {
     if (!isEventSelected(collision)) {
       return;
-    }    
+    }
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     if (!foundBC.has_zdc()) {
       return;
-    }    
+    }
     int nTot = tracks.size();
     double ft0aAmp = 0;
     double ft0cAmp = 0;
@@ -710,7 +710,7 @@ struct FlowZdcTask {
     }
     std::vector<float> pTs;
     std::vector<float> vecFD;
-    std::vector<float> vecOneOverEff;    
+    std::vector<float> vecOneOverEff;  
     auto efficiency = ccdb->getForTimeStamp<TH1F>(paTHEff.value, foundBC.timestamp());
     if (!efficiency) {
       return;
@@ -769,7 +769,7 @@ struct FlowZdcTask {
     histos.fill(HIST("NITSTacksVsZP"), itsTracks, sumZPs);
     histos.fill(HIST("T0MVsZN"), normT0M, sumZNs);
     histos.fill(HIST("T0MVsZP"), normT0M, sumZPs);
-    histos.fill(HIST("NchUncorrected"), glbTracks);    
+    histos.fill(HIST("NchUncorrected"), glbTracks);
 
     float ratioZN = sumZNC / sumZNA;
     float ratioZP = sumZPC / sumZPA;
