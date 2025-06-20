@@ -16,23 +16,23 @@
 /// \author S. Kundu (CERN) sourav.kundu@cern.ch
 /// \author M. Faggin (CERN) mattia.faggin@cern.ch
 
-#include <vector>
-
-#include "TRandom3.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "Math/GenVector/Boost.h"
-
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+
+#include "Math/GenVector/Boost.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "TRandom3.h"
+
+#include <vector>
 
 // #include "Common/Core/EventPlaneHelper.h"
 // #include "Common/DataModel/Qvectors.h"
 
 #include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -1607,8 +1607,8 @@ struct TaskPolarisationCharmHadrons {
     int8_t charge = -99;
     bool partRecoDstar{false};
     if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
-      partRecoDstar = TESTBIT(std::abs(mcParticle.flagMcMatchGen()), hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0) && TESTBIT(std::abs(mcParticle.flagMcMatchGenD0()), hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0);
-      bool signalDstar = TESTBIT(std::abs(mcParticle.flagMcMatchGen()), hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) && TESTBIT(std::abs(mcParticle.flagMcMatchGenD0()), hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
+      partRecoDstar = (std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0) && (std::abs(mcParticle.flagMcMatchGenD0()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0);
+      bool signalDstar = (std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) && (std::abs(mcParticle.flagMcMatchGenD0()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
 
       if (!signalDstar && (!activatePartRecoDstar || !partRecoDstar)) { // this particle is not signal and not partially reconstructed signal, skip
         return;

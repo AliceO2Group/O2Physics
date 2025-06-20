@@ -15,14 +15,14 @@
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -84,7 +84,7 @@ struct HfTaskD0Alice3Barrel {
 
       if (candidate.isSelD0NoPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0NoPid"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0NoPid"), massD0, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0NoPid"), massD0, ptCandidate, rapidityCandidate);
@@ -93,7 +93,7 @@ struct HfTaskD0Alice3Barrel {
 
       if (candidate.isSelD0TofPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0TofPid"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0TofPid"), massD0, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0TofPid"), massD0, ptCandidate, rapidityCandidate);
@@ -102,10 +102,10 @@ struct HfTaskD0Alice3Barrel {
 
       if (candidate.isSelD0RichPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0RICHPID"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0RICHPID"), massD0, ptCandidate, rapidityCandidate);
         } else {
-          if (candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+          if (candidate.flagMcMatchRec() == -(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)) {
             registry.fill(HIST("hMassReflBkgD0RICHPID"), massD0, ptCandidate, rapidityCandidate);
           }
           registry.fill(HIST("hMassBkgD0RICHPID"), massD0, ptCandidate, rapidityCandidate);
@@ -114,7 +114,7 @@ struct HfTaskD0Alice3Barrel {
 
       if (candidate.isSelD0TofPlusRichPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0TofPlusRichPid"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0TofPlusRichPid"), massD0, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0TofPlusRichPid"), massD0, ptCandidate, rapidityCandidate);
@@ -123,7 +123,7 @@ struct HfTaskD0Alice3Barrel {
 
       if (candidate.isSelD0barTofPlusRichPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0barTofPlusRichPid"), massD0bar, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == -(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0barTofPlusRichPid"), massD0bar, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0barTofPlusRichPid"), massD0bar, ptCandidate, rapidityCandidate);
@@ -132,7 +132,7 @@ struct HfTaskD0Alice3Barrel {
 
       if (candidate.isSelD0PerfectPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0PerfectPid"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0PerfectPid"), massD0, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0PerfectPid"), massD0, ptCandidate, rapidityCandidate);
@@ -141,7 +141,7 @@ struct HfTaskD0Alice3Barrel {
     }
 
     for (const auto& particle : mcParticles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
+      if (std::abs(particle.flagMcMatchGen()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
         if (std::abs(RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0)) > 4.0) {
           continue;
         }

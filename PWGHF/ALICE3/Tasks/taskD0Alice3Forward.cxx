@@ -15,14 +15,14 @@
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -60,7 +60,7 @@ struct HfTaskD0Alice3Forward {
 
       if (candidate.isSelD0FRichPid() >= 1) {
         registry.fill(HIST("hMassSigBkgD0ForwardRICHPID"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+        if (candidate.flagMcMatchRec() == (o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0ForwardRICHPID"), massD0, ptCandidate, rapidityCandidate);
         } else {
           registry.fill(HIST("hMassBkgD0ForwardRICHPID"), massD0, ptCandidate, rapidityCandidate);
@@ -69,7 +69,7 @@ struct HfTaskD0Alice3Forward {
     }
 
     for (const auto& particle : mcParticles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
+      if (std::abs(particle.flagMcMatchGen()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
         if (std::abs(RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0)) > 4.0) {
           continue;
         }
