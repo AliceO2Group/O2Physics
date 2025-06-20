@@ -89,4 +89,3 @@ o2physics_add_dpl_workflow(derived-data-creator-d0-calibration
     SOURCES derivedDataCreatorD0Calibration.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCore O2::DCAFitter O2Physics::MLCore
     COMPONENT_NAME Analysis)
-
