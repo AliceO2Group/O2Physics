@@ -103,6 +103,23 @@ float CalculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, fl
 {
   return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz));
 }
+float kineFactor(std::array<float, 3> const& momA, std::array<float, 3> const& momB, std::array<float, 3> const& momC, float const& massB, float const& massC, bool const& reso)
+{
+  float invMass = invMass2Body(momA, momC, momB, massC, massB);
+  float ptC = std::hypot(momC[0], momC[1]);
+  float ptB = std::hypot(momB[0], momB[1]);
+  float p2C = momC[0] * momC[0] + momC[1] * momC[1] + momC[2] * momC[2];
+  float p2B = momB[0] * momB[0] + momB[1] * momB[1] + momB[2] * momB[2];
+  float eC = RecoDecay::sqrtSumOfSquares(momC[0], momC[1], momC[2], massC);
+  float eB = RecoDecay::sqrtSumOfSquares(momB[0], momB[1], momB[2], massB);
+  float pCpB = momC[0] * momB[0] + momC[1] * momB[1] + momC[2] * momB[2];
+  float kineC = (eB * p2C / eC / ptC) - pCpB / ptC;
+  float kineB = (eC * p2B / eB / ptB) - pCpB / ptB;
+  if (reso) {
+    return std::hypot(kineC, kineB) / invMass;
+  }
+  return (kineC + kineB) / invMass;
+}
 } // namespace
 
 struct CandidateV0 {
@@ -162,10 +179,13 @@ struct LFStrangeTreeCreator {
 
   ConfigurableAxis centAxis{"centAxis", {106, 0, 106}, "binning for the centrality"};
   ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
+  ConfigurableAxis etaAxis{"etaAxis", {8, -0.8f, 0.8f}, "binning for pseudorapidity"};
+  ConfigurableAxis massKineAxis{"kineAxis", {3000, -3.f, 3.f}, "binning for the kinematic-transofrmed mass shift distributions"};
 
   // binning of (anti)lambda mass QA histograms
   ConfigurableAxis massLambdaAxis{"massLambdaAxis", {400, o2::constants::physics::MassLambda0 - 0.03f, o2::constants::physics::MassLambda0 + 0.03f}, "binning for the lambda invariant-mass"};
   ConfigurableAxis massXiAxis{"massXiAxis", {400, o2::constants::physics::MassXiMinus - 0.05f, o2::constants::physics::MassXiMinus + 0.05f}, "binning for the Xi invariant-mass"};
+  ConfigurableAxis massK0sAxis{"massK0sAxis", {400, o2::constants::physics::MassK0 - 0.1f, o2::constants::physics::MassK0 + 0.1f}, "binning for the K0s invariant-mass"};
 
   Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
   Configurable<float> etaMax{"etaMax", 0.8f, "maximum eta"};
@@ -184,6 +204,8 @@ struct LFStrangeTreeCreator {
   Configurable<float> v0trackNsharedClusTpc{"v0trackNsharedClusTpc", 5, "Maximum number of shared TPC clusters for V0 daughter"};
   Configurable<float> vetoMassK0Short{"vetoMassK0Short", 0.01f, "veto for V0 compatible with K0s mass"};
   Configurable<float> v0radiusMax{"v0radiusMax", 100.f, "maximum V0 radius eccepted"};
+  Configurable<float> v0alphaMax{"v0alphaMax", 10.f, "maximum Armenteros alpha (longitdinal momentum asymmetry)"};
+  Configurable<float> v0qtMin{"v0qtMin", 0.f, "minimum Armenteros qt (transverse momentum)"};
 
   Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 0.5f, "DCA V0 Daughters"};
   Configurable<float> v0setting_dcav0pv{"v0setting_dcav0pv", 1.f, "DCA V0 to Pv"};
@@ -282,6 +304,11 @@ struct LFStrangeTreeCreator {
     // v0 QA
     histos.add<TH3>("QA/massLambda", ";Centrality (%);#it{p}_{T} (GeV/#it{c});#it{M}(p + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, massLambdaAxis});
     histos.add<TH3>("QA/massXi", ";Centrality (%);#it{p}_{T} (GeV/#it{c});#it{M}(#Lambda + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, massXiAxis});
+    histos.add<TH2>("QA/massK0s", ";#it{p}_{T} (GeV/#it{c});#it{M}(#pi^{+} + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH2F, {momAxis, massK0sAxis});
+
+    // histograms for momentum shift/resolution extraction
+    histos.add<TH3>("massKineBias", ";#eta;#it{p}_{T} (GeV/#it{c});#delta#it{M}/#Sigma_{i}#partial#it{M}/#partial#it{p}^{i}_{T}", HistType::kTH3F, {etaAxis, momAxis, massKineAxis});
+    histos.add<TH3>("massKineReso", ";#eta;#it{p}_{T} (GeV/#it{c});#delta#it{M}/#Sigma_{i}(#partial#it{M}/#partial#it{p}^{i}_{T})^{2}", HistType::kTH3F, {etaAxis, momAxis, massKineAxis});
   }
 
   template <class C, class T>
@@ -335,11 +362,20 @@ struct LFStrangeTreeCreator {
       }
 
       auto alpha = alphaAP(momV0, momPos, momNeg);
+      if (std::abs(alpha) > v0alphaMax) {
+        continue;
+      }
+
       bool matter = alpha > 0;
       auto massPos = matter ? o2::constants::physics::MassProton : o2::constants::physics::MassPionCharged;
       auto massNeg = matter ? o2::constants::physics::MassPionCharged : o2::constants::physics::MassProton;
       auto mLambda = invMass2Body(momV0, momPos, momNeg, massPos, massNeg);
       auto mK0Short = invMass2Body(momV0, momPos, momNeg, o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged);
+
+      auto qt = qtAP(momV0, momPos);
+      if (std::abs(qt) < v0qtMin) {
+        continue;
+      }
 
       // pid selections
       auto nSigmaTPCPos = matter ? posTrack.tpcNSigmaPr() : posTrack.tpcNSigmaPi();
@@ -416,7 +452,16 @@ struct LFStrangeTreeCreator {
       if (std::abs(mLambda - o2::constants::physics::MassLambda0) > lambdaMassCut) { // for QA histograms
         continue;
       }
+
+      float ptPos = std::hypot(momPos[0], momPos[1]);
+      float deltaMass = mK0Short - o2::constants::physics::MassK0;
+      float massKineBias = deltaMass / kineFactor(momV0, momPos, momNeg, o2::constants::physics::MassPiMinus, o2::constants::physics::MassPiMinus, false);
+      float massKineReso = deltaMass / kineFactor(momV0, momPos, momNeg, o2::constants::physics::MassPiMinus, o2::constants::physics::MassPiMinus, true);
+
       histos.fill(HIST("QA/massLambda"), centrality, ptV0, mLambda);
+      histos.fill(HIST("QA/massK0s"), ptV0, mK0Short);
+      histos.fill(HIST("massKineBias"), ptPos, massKineBias);
+      histos.fill(HIST("massKineReso"), ptPos, massKineReso);
 
       CandidateV0 candV0;
       candV0.pt = matter > 0. ? ptV0 : -ptV0;
@@ -427,7 +472,7 @@ struct LFStrangeTreeCreator {
       candV0.radius = radiusV0;
       candV0.cpa = cosPA;
       candV0.alphaAP = alpha;
-      candV0.qtAP = qtAP(momV0, momPos);
+      candV0.qtAP = qt;
       candV0.trackv0 = fitter.createParentTrackParCov();
       candV0.mompos = std::array{momPos[0], momPos[1], momPos[2]};
       candV0.momneg = std::array{momNeg[0], momNeg[1], momNeg[2]};
