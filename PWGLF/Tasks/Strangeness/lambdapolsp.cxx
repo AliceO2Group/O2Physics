@@ -167,7 +167,7 @@ struct lambdapolsp {
     ConfigurableAxis configetaAxis{"configetaAxis", {VARIABLE_WIDTH, -0.8, -0.4, -0.2, 0, 0.2, 0.4, 0.8}, "Eta"};
     ConfigurableAxis configthnAxisPol{"configthnAxisPol", {VARIABLE_WIDTH, -1.0, -0.6, -0.2, 0, 0.2, 0.4, 0.8}, "Pol"};
     ConfigurableAxis configbinAxis{"configbinAxis", {VARIABLE_WIDTH, -0.8, -0.4, -0.2, 0, 0.2, 0.4, 0.8}, "BA"};
-  } rctCut;
+  } rctAxisGrp;
 
   RCTFlagsChecker rctChecker;
 
@@ -177,7 +177,7 @@ struct lambdapolsp {
   void init(o2::framework::InitContext&)
   {
 
-    rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
+    rctChecker.init(rctAxisGrp.cfgEvtRCTFlagCheckerLabel, rctAxisGrp.cfgEvtRCTFlagCheckerZDCCheck, rctAxisGrp.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
     AxisSpec thnAxisres{resNbins, lbinres, hbinres, "Reso"};
     AxisSpec thnAxisInvMass{IMNbins, lbinIM, hbinIM, "#it{M} (GeV/#it{c}^{2})"};
@@ -186,49 +186,49 @@ struct lambdapolsp {
     AxisSpec spAxis = {spNbins, lbinsp, hbinsp, "Sp"};
     AxisSpec qxZDCAxis = {QxyNbins, lbinQxy, hbinQxy, "Qx"};
 
-    std::vector<AxisSpec> runaxes = {thnAxisInvMass, rctCut.configthnAxispT, rctCut.configthnAxisPol, rctCut.configcentAxis};
+    std::vector<AxisSpec> runaxes = {thnAxisInvMass, rctAxisGrp.configthnAxispT, rctAxisGrp.configthnAxisPol, rctAxisGrp.configcentAxis};
     if (needetaaxis)
-      runaxes.insert(runaxes.end(), {rctCut.configbinAxis});
+      runaxes.insert(runaxes.end(), {rctAxisGrp.configbinAxis});
 
     if (checkwithpub) {
       if (useprofile == 2) {
-        histos.add("hpuxQxpvscentpteta", "hpuxQxpvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpuyQypvscentpteta", "hpuyQypvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpuxQxtvscentpteta", "hpuxQxtvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpuyQytvscentpteta", "hpuyQytvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpuxyQxytvscentpteta", "hpuxyQxytvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpuxyQxypvscentpteta", "hpuxyQxypvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpoddv1vscentpteta", "hpoddv1vscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpevenv1vscentpteta", "hpevenv1vscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpv21", "hpv21", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpv22", "hpv22", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpv23", "hpv23", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpx2Tx1Ax1Cvscentpteta", "hpx2Tx1Ax1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpx2Ty1Ay1Cvscentpteta", "hpx2Ty1Ay1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpy2Tx1Ay1Cvscentpteta", "hpy2Tx1Ay1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpy2Ty1Ax1Cvscentpteta", "hpy2Ty1Ax1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpx1Ax1Cvscentpteta", "hpx1Ax1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpy1Ay1Cvscentpteta", "hpy1Ay1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpx1Avscentpteta", "hpx1Avscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpx1Cvscentpteta", "hpx1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpy1Avscentpteta", "hpy1Avscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpy1Cvscentpteta", "hpy1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
+        histos.add("hpuxQxpvscentpteta", "hpuxQxpvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpuyQypvscentpteta", "hpuyQypvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpuxQxtvscentpteta", "hpuxQxtvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpuyQytvscentpteta", "hpuyQytvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpuxyQxytvscentpteta", "hpuxyQxytvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpuxyQxypvscentpteta", "hpuxyQxypvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpoddv1vscentpteta", "hpoddv1vscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpevenv1vscentpteta", "hpevenv1vscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpv21", "hpv21", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpv22", "hpv22", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpv23", "hpv23", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpx2Tx1Ax1Cvscentpteta", "hpx2Tx1Ax1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpx2Ty1Ay1Cvscentpteta", "hpx2Ty1Ay1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpy2Tx1Ay1Cvscentpteta", "hpy2Tx1Ay1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpy2Ty1Ax1Cvscentpteta", "hpy2Ty1Ax1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpx1Ax1Cvscentpteta", "hpx1Ax1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpy1Ay1Cvscentpteta", "hpy1Ay1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpx1Avscentpteta", "hpx1Avscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpx1Cvscentpteta", "hpx1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpy1Avscentpteta", "hpy1Avscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpy1Cvscentpteta", "hpy1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
 
-        histos.add("hpx2Tx1Avscentpteta", "hpx2Tx1Avscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpx2Tx1Cvscentpteta", "hpx2Tx1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpx2Ty1Avscentpteta", "hpx2Ty1Avscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpx2Ty1Cvscentpteta", "hpx2Ty1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpy2Tx1Avscentpteta", "hpy2Tx1Avscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpy2Ty1Cvscentpteta", "hpy2Ty1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpy2Ty1Avscentpteta", "hpy2Ty1Avscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpy2Tx1Cvscentpteta", "hpy2Tx1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpx1Ay1Cvscentpteta", "hpx1Ay1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpy1Ax1Cvscentpteta", "hpy1Ax1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpx2Tvscentpteta", "hpx2Tvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpy2Tvscentpteta", "hpy2Tvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
+        histos.add("hpx2Tx1Avscentpteta", "hpx2Tx1Avscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpx2Tx1Cvscentpteta", "hpx2Tx1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpx2Ty1Avscentpteta", "hpx2Ty1Avscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpx2Ty1Cvscentpteta", "hpx2Ty1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpy2Tx1Avscentpteta", "hpy2Tx1Avscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpy2Ty1Cvscentpteta", "hpy2Ty1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpy2Ty1Avscentpteta", "hpy2Ty1Avscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpy2Tx1Cvscentpteta", "hpy2Tx1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpx1Ay1Cvscentpteta", "hpx1Ay1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpy1Ax1Cvscentpteta", "hpy1Ax1Cvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpx2Tvscentpteta", "hpx2Tvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpy2Tvscentpteta", "hpy2Tvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
 
-        histos.add("hpuxvscentpteta", "hpuxvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpuyvscentpteta", "hpuyvscentpteta", HistType::kTHnSparseF, {centAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
+        histos.add("hpuxvscentpteta", "hpuxvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpuyvscentpteta", "hpuyvscentpteta", HistType::kTHnSparseF, {centAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
         /*
               histos.add("hpuxvscentptetaneg", "hpuxvscentptetaneg", HistType::kTHnSparseF, {centAxis, configthnAxispT, configetaAxis, spAxis}, true);
               histos.add("hpuyvscentptetaneg", "hpuyvscentptetaneg", HistType::kTHnSparseF, {centAxis, configthnAxispT, configetaAxis, spAxis}, true);
@@ -254,39 +254,39 @@ struct lambdapolsp {
         histos.add("hpQypvscent", "hpQypvscent", HistType::kTHnSparseF, {centAxis, spAxis}, true);
         histos.add("hpQytvscent", "hpQytvscent", HistType::kTHnSparseF, {centAxis, spAxis}, true);
       } else {
-        histos.add("hpuxQxpvscentpteta", "hpuxQxpvscentpteta", HistType::kTHnSparseF, {rctCut.configcentAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpuyQypvscentpteta", "hpuyQypvscentpteta", HistType::kTHnSparseF, {rctCut.configcentAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpuxQxtvscentpteta", "hpuxQxtvscentpteta", HistType::kTHnSparseF, {rctCut.configcentAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpuyQytvscentpteta", "hpuyQytvscentpteta", HistType::kTHnSparseF, {rctCut.configcentAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpuxyQxytvscentpteta", "hpuxyQxytvscentpteta", HistType::kTHnSparseF, {rctCut.configcentAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpuxyQxypvscentpteta", "hpuxyQxypvscentpteta", HistType::kTHnSparseF, {rctCut.configcentAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpoddv1vscentpteta", "hpoddv1vscentpteta", HistType::kTHnSparseF, {rctCut.configcentAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpevenv1vscentpteta", "hpevenv1vscentpteta", HistType::kTHnSparseF, {rctCut.configcentAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
+        histos.add("hpuxQxpvscentpteta", "hpuxQxpvscentpteta", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpuyQypvscentpteta", "hpuyQypvscentpteta", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpuxQxtvscentpteta", "hpuxQxtvscentpteta", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpuyQytvscentpteta", "hpuyQytvscentpteta", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpuxyQxytvscentpteta", "hpuxyQxytvscentpteta", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpuxyQxypvscentpteta", "hpuxyQxypvscentpteta", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpoddv1vscentpteta", "hpoddv1vscentpteta", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpevenv1vscentpteta", "hpevenv1vscentpteta", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
 
-        histos.add("hpuxvscentpteta", "hpuxvscentpteta", HistType::kTHnSparseF, {rctCut.configcentAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpuyvscentpteta", "hpuyvscentpteta", HistType::kTHnSparseF, {rctCut.configcentAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        /*histos.add("hpuxvscentptetaneg", "hpuxvscentptetaneg", HistType::kTHnSparseF, {rctCut.configcentAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpuyvscentptetaneg", "hpuyvscentptetaneg", HistType::kTHnSparseF, {rctCut.configcentAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
+        histos.add("hpuxvscentpteta", "hpuxvscentpteta", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpuyvscentpteta", "hpuyvscentpteta", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        /*histos.add("hpuxvscentptetaneg", "hpuxvscentptetaneg", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpuyvscentptetaneg", "hpuyvscentptetaneg", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
 
-        histos.add("hpuxQxpvscentptetaneg", "hpuxQxpvscentptetaneg", HistType::kTHnSparseF, {rctCut.configcentAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpuyQypvscentptetaneg", "hpuyQypvscentptetaneg", HistType::kTHnSparseF, {rctCut.configcentAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpuxQxtvscentptetaneg", "hpuxQxtvscentptetaneg", HistType::kTHnSparseF, {rctCut.configcentAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpuyQytvscentptetaneg", "hpuyQytvscentptetaneg", HistType::kTHnSparseF, {rctCut.configcentAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpuxyQxytvscentptetaneg", "hpuxyQxytvscentptetaneg", HistType::kTHnSparseF, {rctCut.configcentAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpuxyQxypvscentptetaneg", "hpuxyQxypvscentptetaneg", HistType::kTHnSparseF, {rctCut.configcentAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpoddv1vscentptetaneg", "hpoddv1vscentptetaneg", HistType::kTHnSparseF, {rctCut.configcentAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);
-        histos.add("hpevenv1vscentptetaneg", "hpevenv1vscentptetaneg", HistType::kTHnSparseF, {rctCut.configcentAxis, rctCut.configthnAxispT, rctCut.configetaAxis, spAxis}, true);*/
+        histos.add("hpuxQxpvscentptetaneg", "hpuxQxpvscentptetaneg", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpuyQypvscentptetaneg", "hpuyQypvscentptetaneg", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpuxQxtvscentptetaneg", "hpuxQxtvscentptetaneg", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpuyQytvscentptetaneg", "hpuyQytvscentptetaneg", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpuxyQxytvscentptetaneg", "hpuxyQxytvscentptetaneg", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpuxyQxypvscentptetaneg", "hpuxyQxypvscentptetaneg", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpoddv1vscentptetaneg", "hpoddv1vscentptetaneg", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);
+        histos.add("hpevenv1vscentptetaneg", "hpevenv1vscentptetaneg", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, rctAxisGrp.configthnAxispT, rctAxisGrp.configetaAxis, spAxis}, true);*/
 
-        histos.add("hpQxtQxpvscent", "hpQxtQxpvscent", HistType::kTHnSparseF, {rctCut.configcentAxis, spAxis}, true);
-        histos.add("hpQytQypvscent", "hpQytQypvscent", HistType::kTHnSparseF, {rctCut.configcentAxis, spAxis}, true);
-        histos.add("hpQxytpvscent", "hpQxytpvscent", HistType::kTHnSparseF, {rctCut.configcentAxis, spAxis}, true);
-        histos.add("hpQxtQypvscent", "hpQxtQypvscent", HistType::kTHnSparseF, {rctCut.configcentAxis, spAxis}, true);
-        histos.add("hpQxpQytvscent", "hpQxpQytvscent", HistType::kTHnSparseF, {rctCut.configcentAxis, spAxis}, true);
+        histos.add("hpQxtQxpvscent", "hpQxtQxpvscent", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, spAxis}, true);
+        histos.add("hpQytQypvscent", "hpQytQypvscent", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, spAxis}, true);
+        histos.add("hpQxytpvscent", "hpQxytpvscent", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, spAxis}, true);
+        histos.add("hpQxtQypvscent", "hpQxtQypvscent", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, spAxis}, true);
+        histos.add("hpQxpQytvscent", "hpQxpQytvscent", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, spAxis}, true);
 
-        histos.add("hpQxpvscent", "hpQxpvscent", HistType::kTHnSparseF, {rctCut.configcentAxis, spAxis}, true);
-        histos.add("hpQxtvscent", "hpQxtvscent", HistType::kTHnSparseF, {rctCut.configcentAxis, spAxis}, true);
-        histos.add("hpQypvscent", "hpQypvscent", HistType::kTHnSparseF, {rctCut.configcentAxis, spAxis}, true);
-        histos.add("hpQytvscent", "hpQytvscent", HistType::kTHnSparseF, {rctCut.configcentAxis, spAxis}, true);
+        histos.add("hpQxpvscent", "hpQxpvscent", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, spAxis}, true);
+        histos.add("hpQxtvscent", "hpQxtvscent", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, spAxis}, true);
+        histos.add("hpQypvscent", "hpQypvscent", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, spAxis}, true);
+        histos.add("hpQytvscent", "hpQytvscent", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, spAxis}, true);
       }
     }
 
@@ -302,12 +302,12 @@ struct lambdapolsp {
 
     if (!checkwithpub) {
       // histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{20, -10.0, 10.0}});
-      histos.add("hpRes", "hpRes", HistType::kTHnSparseF, {rctCut.configcentAxis, thnAxisres});
-      histos.add("hpResSin", "hpResSin", HistType::kTHnSparseF, {rctCut.configcentAxis, thnAxisres});
-      /*histos.add("hpCosPsiA", "hpCosPsiA", HistType::kTHnSparseF, {rctCut.configcentAxis, thnAxisres});
-      histos.add("hpCosPsiC", "hpCosPsiC", HistType::kTHnSparseF, {rctCut.configcentAxis, thnAxisres});
-      histos.add("hpSinPsiA", "hpSinPsiA", HistType::kTHnSparseF, {rctCut.configcentAxis, thnAxisres});
-      histos.add("hpSinPsiC", "hpSinPsiC", HistType::kTHnSparseF, {rctCut.configcentAxis, thnAxisres});*/
+      histos.add("hpRes", "hpRes", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, thnAxisres});
+      histos.add("hpResSin", "hpResSin", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, thnAxisres});
+      /*histos.add("hpCosPsiA", "hpCosPsiA", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, thnAxisres});
+      histos.add("hpCosPsiC", "hpCosPsiC", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, thnAxisres});
+      histos.add("hpSinPsiA", "hpSinPsiA", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, thnAxisres});
+      histos.add("hpSinPsiC", "hpSinPsiC", HistType::kTHnSparseF, {rctAxisGrp.configcentAxis, thnAxisres});*/
       /*histos.add("hcentQxZDCA", "hcentQxZDCA", kTH2F, {{centAxis}, {qxZDCAxis}});
       histos.add("hcentQyZDCA", "hcentQyZDCA", kTH2F, {{centAxis}, {qxZDCAxis}});
       histos.add("hcentQxZDCC", "hcentQxZDCC", kTH2F, {{centAxis}, {qxZDCAxis}});
@@ -747,7 +747,7 @@ struct lambdapolsp {
       return;
     }
 
-    if (rctCut.requireRCTFlagChecker && !rctChecker(collision)) {
+    if (rctAxisGrp.requireRCTFlagChecker && !rctChecker(collision)) {
       return;
     }
     // currentRunNumber = collision.foundBC_as<BCsRun3>().runNumber();
@@ -1106,7 +1106,7 @@ struct lambdapolsp {
       return;
     }
 
-    if (rctCut.requireRCTFlagChecker && !rctChecker(collision)) {
+    if (rctAxisGrp.requireRCTFlagChecker && !rctChecker(collision)) {
       return;
     }
 
