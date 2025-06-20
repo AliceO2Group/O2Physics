@@ -12,25 +12,28 @@
 /// \brief write relevant information about primary electrons.
 /// \author daiki.sekihata@cern.ch
 
-#include <map>
-#include <string>
-#include <vector>
-#include <utility>
-
-#include "Math/Vector4D.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/Core/trackUtilities.h"
-#include "CommonConstants/PhysicsConstants.h"
+#include "PWGEM/Dilepton/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
-#include "PWGEM/Dilepton/Utils/PairUtilities.h"
+
+#include "Common/Core/trackUtilities.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Math/Vector4D.h"
+
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::soa;
@@ -67,7 +70,8 @@ struct skimmerPrimaryElectronFromDalitzEE {
   Configurable<int> min_ncluster_itsib{"min_ncluster_itsib", 1, "min ncluster itsib"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
-  Configurable<float> minpt{"minpt", 0.05, "min pt for track"};
+  Configurable<float> minpt_itstpc{"minpt_itstpc", 0.05, "min pt for ITS-TPC track"};
+  Configurable<float> minpt_itssa{"minpt_itssa", 0.05, "min pt for ITSsa track"};
   Configurable<float> maxeta{"maxeta", 2.0, "max eta acceptance"};
   Configurable<float> dca_xy_max{"dca_xy_max", 1, "max DCAxy in cm"};
   Configurable<float> dca_z_max{"dca_z_max", 1, "max DCAz in cm"};
@@ -80,6 +84,9 @@ struct skimmerPrimaryElectronFromDalitzEE {
   Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", +3.5, "max. TOF n sigma for electron inclusion"};
   Configurable<float> maxMee{"maxMee", 0.04, "max. mee to store dalitz ee pairs"};
   Configurable<bool> fillLS{"fillLS", true, "flag to fill LS histograms for QA"};
+  Configurable<bool> includeITSsa{"includeITSsa", false, "Flag to include ITSsa tracks"};
+  Configurable<float> maxpt_itssa{"maxpt_itssa", 0.15, "max pt for ITSsa track"};
+  Configurable<float> maxMeanITSClusterSize{"maxMeanITSClusterSize", 16, "max <ITS cluster size> x cos(lambda)"};
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   static constexpr std::string_view dileptonSigns[3] = {"uls/", "lspp/", "lsmm/"};
@@ -125,7 +132,9 @@ struct skimmerPrimaryElectronFromDalitzEE {
     fRegistry.add("Track/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
     fRegistry.add("Track/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("Track/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
-    fRegistry.add("Track/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
+    fRegistry.add("Track/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<ITS cluster size> #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
+    fRegistry.add("Track/hMeanClusterSizeITSib", "mean cluster size ITSib;p_{pv} (GeV/c);<ITSib cluster size> #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
+    fRegistry.add("Track/hMeanClusterSizeITSob", "mean cluster size ITSob;p_{pv} (GeV/c);<ITSob cluster size> #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
 
     // TOF
     fRegistry.add("Track/hChi2TOF", "chi2 of TOF", kTH1F, {{100, 0, 10}}, false);
@@ -190,7 +199,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
       }
     }
 
-    if (track.tpcChi2NCl() > maxchi2tpc) {
+    if (!track.hasITS()) {
       return false;
     }
 
@@ -198,9 +207,6 @@ struct skimmerPrimaryElectronFromDalitzEE {
       return false;
     }
 
-    if (!track.hasITS() || !track.hasTPC()) {
-      return false;
-    }
     if (track.itsNCls() < min_ncluster_its) {
       return false;
     }
@@ -208,20 +214,30 @@ struct skimmerPrimaryElectronFromDalitzEE {
       return false;
     }
 
-    if (track.tpcNClsFound() < min_ncluster_tpc) {
+    if (!includeITSsa && (!track.hasITS() || !track.hasTPC())) {
       return false;
     }
 
-    if (track.tpcNClsCrossedRows() < mincrossedrows) {
-      return false;
-    }
+    if (track.hasTPC()) {
+      if (track.tpcChi2NCl() > maxchi2tpc) {
+        return false;
+      }
 
-    if (track.tpcCrossedRowsOverFindableCls() < min_tpc_cr_findable_ratio) {
-      return false;
-    }
+      if (track.tpcNClsFound() < min_ncluster_tpc) {
+        return false;
+      }
 
-    if (track.tpcFractionSharedCls() > max_frac_shared_clusters_tpc) {
-      return false;
+      if (track.tpcNClsCrossedRows() < mincrossedrows) {
+        return false;
+      }
+
+      if (track.tpcCrossedRowsOverFindableCls() < min_tpc_cr_findable_ratio) {
+        return false;
+      }
+
+      if (track.tpcFractionSharedCls() > max_frac_shared_clusters_tpc) {
+        return false;
+      }
     }
 
     if (std::fabs(track.dcaXY()) > dca_xy_max || std::fabs(track.dcaZ()) > dca_z_max) {
@@ -240,7 +256,13 @@ struct skimmerPrimaryElectronFromDalitzEE {
       return false;
     }
 
-    if (track.pt() < minpt || std::fabs(track.eta()) > maxeta) {
+    if (std::fabs(track.eta()) > maxeta) {
+      return false;
+    }
+    if ((track.hasITS() && track.hasTPC()) && track.pt() < minpt_itstpc) {
+      return false;
+    }
+    if ((track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF()) && (track.pt() < minpt_itssa || maxpt_itssa < track.pt())) {
       return false;
     }
 
@@ -250,6 +272,23 @@ struct skimmerPrimaryElectronFromDalitzEE {
   template <typename TTrack>
   bool isElectron(TTrack const& track)
   {
+    if (includeITSsa && (track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF())) {
+      int total_cluster_size = 0, nl = 0;
+      for (unsigned int layer = 0; layer < 7; layer++) {
+        int cluster_size_per_layer = track.itsClsSizeInLayer(layer);
+        if (cluster_size_per_layer > 0) {
+          nl++;
+        }
+        total_cluster_size += cluster_size_per_layer;
+      }
+
+      if (maxMeanITSClusterSize > static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(track.tgl()))) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+
     if (track.tpcNSigmaEl() < minTPCNsigmaEl || maxTPCNsigmaEl < track.tpcNSigmaEl()) {
       return false;
     }
@@ -304,11 +343,35 @@ struct skimmerPrimaryElectronFromDalitzEE {
       fRegistry.fill(HIST("Track/hChi2ITS"), track.itsChi2NCl());
       fRegistry.fill(HIST("Track/hITSClusterMap"), track.itsClusterMap());
 
-      int nsize = 0;
-      for (int il = 0; il < 7; il++) {
-        nsize += track.itsClsSizeInLayer(il);
+      int total_cluster_size = 0, nl = 0;
+      for (unsigned int layer = 0; layer < 7; layer++) {
+        int cluster_size_per_layer = track.itsClsSizeInLayer(layer);
+        if (cluster_size_per_layer > 0) {
+          nl++;
+        }
+        total_cluster_size += cluster_size_per_layer;
       }
-      fRegistry.fill(HIST("Track/hMeanClusterSizeITS"), track.p(), static_cast<float>(nsize) / static_cast<float>(track.itsNCls()) * std::cos(std::atan(track.tgl())));
+
+      int total_cluster_size_ib = 0, nl_ib = 0;
+      for (unsigned int layer = 0; layer < 3; layer++) {
+        int cluster_size_per_layer = track.itsClsSizeInLayer(layer);
+        if (cluster_size_per_layer > 0) {
+          nl_ib++;
+        }
+        total_cluster_size_ib += cluster_size_per_layer;
+      }
+
+      int total_cluster_size_ob = 0, nl_ob = 0;
+      for (unsigned int layer = 3; layer < 7; layer++) {
+        int cluster_size_per_layer = track.itsClsSizeInLayer(layer);
+        if (cluster_size_per_layer > 0) {
+          nl_ob++;
+        }
+        total_cluster_size_ob += cluster_size_per_layer;
+      }
+      fRegistry.fill(HIST("Track/hMeanClusterSizeITS"), track.p(), static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(track.tgl())));
+      fRegistry.fill(HIST("Track/hMeanClusterSizeITSib"), track.p(), static_cast<float>(total_cluster_size_ib) / static_cast<float>(nl_ib) * std::cos(std::atan(track.tgl())));
+      fRegistry.fill(HIST("Track/hMeanClusterSizeITSob"), track.p(), static_cast<float>(total_cluster_size_ob) / static_cast<float>(nl_ob) * std::cos(std::atan(track.tgl())));
 
       stored_trackIds.emplace_back(std::make_pair(collision.globalIndex(), track.globalIndex()));
     }
@@ -359,8 +422,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
   }
 
   std::vector<std::pair<int64_t, int64_t>> stored_trackIds;
-  Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true && nabs(o2::aod::track::dcaXY) < dca_xy_max&& nabs(o2::aod::track::dcaZ) < dca_z_max;
-  Filter pidFilter = minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl;
+  Filter trackFilter = o2::aod::track::pt > minpt_itssa&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && nabs(o2::aod::track::dcaXY) < dca_xy_max&& nabs(o2::aod::track::dcaZ) < dca_z_max;
   using MyFilteredTracks = soa::Filtered<MyTracks>;
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
   Partition<MyFilteredTracks> negTracks = o2::aod::track::signed1Pt < 0.f;

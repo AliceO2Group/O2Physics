@@ -18,24 +18,6 @@
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, CERN
 /// \author Biao Zhang <biao.zhang@cern.ch>, Heidelberg University
 
-#include <algorithm>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
-
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Qvectors.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
@@ -45,6 +27,24 @@
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
+
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/Qvectors.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/DCA.h"
+
+#include <algorithm>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -341,7 +341,7 @@ struct HfDataCreatorCharmHadPiReduced {
       return false;
     }
     // minimum pT and eta selection
-    if (trackParCovPion.getPt() < trackPionConfigurations.ptPionMin || std::abs(trackParCovPion.getEta()) > trackPionConfigurations.etaPionMax || !isSelectedTrackDCA(trackParCovPion, dcaPion)) {
+    if (trackParCovPion.getPt() < trackPionConfigurations.ptPionMin || std::abs(trackParCovPion.getEta()) > trackPionConfigurations.etaPionMax || !isSelectedTrackDCA(trackParCovPion, dcaPion, trackPionConfigurations.binsPtPion, trackPionConfigurations.cutsTrackPionDCA)) {
       return false;
     }
     // reject pions that are charm-hadron daughters
@@ -351,27 +351,6 @@ struct HfDataCreatorCharmHadPiReduced {
       }
     }
 
-    return true;
-  }
-
-  /// Single-track cuts for pions on dcaXY
-  /// \param trackPar is the track parametrisation
-  /// \param dca is the 2-D array with track DCAs
-  /// \return true if track passes all cuts
-  template <typename T1, typename T2>
-  bool isSelectedTrackDCA(const T1& trackPar, const T2& dca)
-  {
-    auto pTBinTrack = findBin(trackPionConfigurations.binsPtPion, trackPar.getPt());
-    if (pTBinTrack == -1) {
-      return false;
-    }
-
-    if (std::abs(dca[0]) < trackPionConfigurations.cutsTrackPionDCA->get(pTBinTrack, "min_dcaxytoprimary")) {
-      return false; // minimum DCAxy
-    }
-    if (std::abs(dca[0]) > trackPionConfigurations.cutsTrackPionDCA->get(pTBinTrack, "max_dcaxytoprimary")) {
-      return false; // maximum DCAxy
-    }
     return true;
   }
 
@@ -1332,7 +1311,7 @@ struct HfDataCreatorCharmHadPiReduced {
           yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
           counter++;
         }
-        rowHfB0McGenReduced(flag, ptParticle, yParticle, etaParticle,
+        rowHfB0McGenReduced(flag, -1 /*channel*/, ptParticle, yParticle, etaParticle,
                             ptProngs[0], yProngs[0], etaProngs[0],
                             ptProngs[1], yProngs[1], etaProngs[1]);
       } else if constexpr (decayChannel == DecayChannel::BsToDsminusPi) {
@@ -1407,7 +1386,7 @@ struct HfDataCreatorCharmHadPiReduced {
           yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
           counter++;
         }
-        rowHfBsMcGenReduced(flag, ptParticle, yParticle, etaParticle,
+        rowHfBsMcGenReduced(flag, -1 /*channel*/, ptParticle, yParticle, etaParticle,
                             ptProngs[0], yProngs[0], etaProngs[0],
                             ptProngs[1], yProngs[1], etaProngs[1]);
       } else if constexpr (decayChannel == DecayChannel::BplusToD0barPi) {
@@ -1440,7 +1419,7 @@ struct HfDataCreatorCharmHadPiReduced {
           yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
           counter++;
         }
-        rowHfBpMcGenReduced(flag, ptParticle, yParticle, etaParticle,
+        rowHfBpMcGenReduced(flag, -1 /*channel*/, ptParticle, yParticle, etaParticle,
                             ptProngs[0], yProngs[0], etaProngs[0],
                             ptProngs[1], yProngs[1], etaProngs[1]);
       } else if constexpr (decayChannel == DecayChannel::LbToLcplusPi) {

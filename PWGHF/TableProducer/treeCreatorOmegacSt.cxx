@@ -15,39 +15,41 @@
 /// \author Jochen Klein
 /// \author Tiantian Cheng
 
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/Utils/utilsTrkCandHf.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include <TPDGCode.h>
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "DCAFitter/DCAFitterN.h"
 #include "DetectorsBase/Propagator.h"
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
+#include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/ASoA.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/Utils/utilsTrkCandHf.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+
+#include <TPDGCode.h>
+
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -369,7 +371,7 @@ struct HfTreeCreatorOmegacSt {
           } else if (idxKaonDaughter >= 0 && idxCascDaughter >= 0) {
             decayChannel = o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK; // OmegaC -> Omega + K
           } else {
-            LOG(warning) << "Decay channel not recognized!";
+            decayChannel = -1; // LOG(warning) << "Decay channel not recognized!";
           }
           if (decayChannel != -1) {
             int idxDaughter = (decayChannel == o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) ? idxPionDaughter : idxKaonDaughter;
@@ -661,32 +663,36 @@ struct HfTreeCreatorOmegacSt {
                         // Match Omegac0 → Omega- + Pi+
                         indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles->get(), arrayDaughters, o2::constants::physics::kOmegaC0,
                                                                                                std::array{+kPiPlus, +kKMinus, +kProton, +kPiMinus}, true, &sign, 3, &nPiToMuOmegac0, &nKaToPiOmegac0);
+                        indexRecCharmBaryon = indexRec;
+                        if (indexRec > -1) {
+                          // Omega- → K pi p (Cascade match)
+                          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles->get(), arrayDaughtersCasc, +kOmegaMinus, std::array{+kKMinus, +kProton, +kPiMinus}, true, &signCasc, 2, &nPiToMuCasc, &nKaToPiCasc);
+                          if (indexRec > -1) {
+                            // Lambda → p pi (Lambda match)
+                            indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles->get(), arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1, &nPiToMuV0);
+                            if (indexRec > -1) {
+                              isMatched = true;
+                            }
+                          }
+                        }
                       } else if (decayChannel == o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK) {
                         // Match Omegac0 → Omega- + K+
                         indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles->get(), arrayDaughters, o2::constants::physics::kOmegaC0,
                                                                                                std::array{+kKPlus, +kKMinus, +kProton, +kPiMinus}, true, &sign, 3, &nPiToMuOmegac0, &nKaToPiOmegac0);
-                      }
-                      indexRecCharmBaryon = indexRec;
-                      if (indexRec > -1) {
-                        // Omega- → K pi p (Cascade match)
-                        indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles->get(), arrayDaughtersCasc, +kOmegaMinus, std::array{+kKMinus, +kProton, +kPiMinus}, true, &signCasc, 2, &nPiToMuCasc, &nKaToPiCasc);
+                        indexRecCharmBaryon = indexRec;
                         if (indexRec > -1) {
-                          // Lambda → p pi (Lambda match)
-                          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles->get(), arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1, &nPiToMuV0);
-                          if (decayChannel == o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) {
-                            if (nPiToMuOmegac0 >= 1 && nKaToPiOmegac0 == 0) {
-                              isMatched = true;
-                            } else if (nPiToMuOmegac0 == 0 && nKaToPiOmegac0 == 0) {
-                              isMatched = true;
-                            }
-                          } else if (decayChannel == o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK) {
-                            if (nPiToMuOmegac0 == 0 && nKaToPiOmegac0 == 0) {
+                          // Omega- → K pi p (Cascade match)
+                          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles->get(), arrayDaughtersCasc, +kOmegaMinus, std::array{+kKMinus, +kProton, +kPiMinus}, true, &signCasc, 2, &nPiToMuCasc, &nKaToPiCasc);
+                          if (indexRec > -1) {
+                            // Lambda → p pi (Lambda match)
+                            indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles->get(), arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1, &nPiToMuV0);
+                            if (indexRec > -1) {
                               isMatched = true;
                             }
                           }
                         }
                       }
-                      if (isMatched) {
+                      if (isMatched && indexRecCharmBaryon > -1) {
                         auto particle = mcParticles->get().rawIteratorAt(indexRecCharmBaryon);
                         origin = RecoDecay::getCharmHadronOrigin(mcParticles->get(), particle, false, &idxBhadMothers);
                       }

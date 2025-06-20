@@ -75,6 +75,7 @@ struct HfCorrelatorDMesonPairs {
   Configurable<float> massCut{"massCut", 0.05, "Maximum deviation from PDG peak allowed for signal region"};
   Configurable<bool> daughterTracksCutFlag{"daughterTracksCutFlag", false, "Flag to add cut on daughter tracks"};
   Configurable<bool> removeAmbiguous{"removeAmbiguous", false, "Flag to remove ambiguous candidates"};
+  Configurable<float> ptMaxRemoveAmbiguous{"ptMaxRemoveAmbiguous", 5.0, "Max. pT to remove the ambiguous candidates"};
 
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
@@ -612,7 +613,7 @@ struct HfCorrelatorDMesonPairs {
       }
 
       // Remove ambiguous D0 candidates if flag is true
-      if (removeAmbiguous && (isDCand1 && isDbarCand1)) {
+      if (removeAmbiguous && (isDCand1 && isDbarCand1) && candidate1.pt() < ptMaxRemoveAmbiguous) {
         continue;
       }
 
@@ -687,7 +688,7 @@ struct HfCorrelatorDMesonPairs {
           }
 
           // Remove ambiguous D0 candidates if flag is true
-          if (removeAmbiguous && (isDCand2 && isDbarCand2)) {
+          if (removeAmbiguous && (isDCand2 && isDbarCand2) && candidate2.pt() < ptMaxRemoveAmbiguous) {
             continue;
           }
 
@@ -776,7 +777,7 @@ struct HfCorrelatorDMesonPairs {
       }
 
       // Remove ambiguous D0 candidates if flag is true
-      if (removeAmbiguous && (isDCand1 && isDbarCand1)) {
+      if (removeAmbiguous && (isDCand1 && isDbarCand1) && candidate1.pt() < ptMaxRemoveAmbiguous) {
         continue;
       }
 
@@ -803,10 +804,10 @@ struct HfCorrelatorDMesonPairs {
           registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
           registry.fill(HIST("hPtVsYVsNContribMcRec"), candidate1.pt(), hfHelper.yD0(candidate1), collision.numContrib());
           registry.fill(HIST("hNContribMcRec"), collision.numContrib());
-          if (originRec1 == 1) {
+          if (originRec1 == RecoDecay::Prompt) {
             registry.fill(HIST("hMassMcRecPrompt"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
             registry.fill(HIST("hPtVsYVsNContribMcRecPrompt"), candidate1.pt(), hfHelper.yD0(candidate1), collision.numContrib());
-          } else if (originRec1 == 2) {
+          } else if (originRec1 == RecoDecay::NonPrompt) {
             registry.fill(HIST("hMassMcRecNonPrompt"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
             registry.fill(HIST("hPtVsYVsNContribMcRecNonPrompt"), candidate1.pt(), hfHelper.yD0(candidate1), collision.numContrib());
           }
@@ -824,9 +825,9 @@ struct HfCorrelatorDMesonPairs {
           registry.fill(HIST("hMass"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
           registry.fill(HIST("hPtVsYVsNContribMcRec"), candidate1.pt(), hfHelper.yD0(candidate1), collision.numContrib());
           registry.fill(HIST("hNContribMcRec"), collision.numContrib());
-          if (originRec1 == 1) {
+          if (originRec1 == RecoDecay::Prompt) {
             registry.fill(HIST("hMassMcRecPrompt"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
-          } else if (originRec1 == 2) {
+          } else if (originRec1 == RecoDecay::NonPrompt) {
             registry.fill(HIST("hMassMcRecNonPrompt"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
           }
         } else if (isTrueDCand1) {
@@ -893,7 +894,7 @@ struct HfCorrelatorDMesonPairs {
           }
 
           // Remove ambiguous D0 candidates if flag is true
-          if (removeAmbiguous && (isDCand2 && isDbarCand2)) {
+          if (removeAmbiguous && (isDCand2 && isDbarCand2) && candidate2.pt() < ptMaxRemoveAmbiguous) {
             continue;
           }
 
@@ -1011,10 +1012,10 @@ struct HfCorrelatorDMesonPairs {
       }
 
       registry.fill(HIST("hPtVsYVsNContribMcGen"), particle1.pt(), particle1.y(), numPvContributorsGen);
-      if (originGen1 == 1) {
+      if (originGen1 == RecoDecay::Prompt) {
         registry.fill(HIST("hPtVsYVsNContribMcGenPrompt"), particle1.pt(), particle1.y(), numPvContributorsGen);
       }
-      if (originGen1 == 2) {
+      if (originGen1 == RecoDecay::NonPrompt) {
         registry.fill(HIST("hPtVsYVsNContribMcGenNonPrompt"), particle1.pt(), particle1.y(), numPvContributorsGen);
       }
       registry.fill(HIST("hNContribMcGen"), numPvContributorsGen);

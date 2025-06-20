@@ -125,6 +125,7 @@ struct NPCascCandidate {
   float centFT0C;
   float centFT0A;
   float centFT0M;
+  uint32_t toiMask;
 };
 std::array<bool, 2> isFromHF(auto& particle)
 {
@@ -195,7 +196,7 @@ struct NonPromptCascadeTask {
   Configurable<float> cfgMinCosPA{"cfgMinCosPA", -1.f, "Minimum cosine of pointing angle"};
   Configurable<LabeledArray<float>> cfgCutsPID{"particlesCutsPID", {cutsPID[0], nParticles, nCutsPID, particlesNames, cutsNames}, "Nuclei PID selections"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", true, "Skimmed dataset processing"};
-  Configurable<std::string> cfgHMOmegaTrigger{"cfgHMOmegaTrigger", "HighMultOmega", "OTS high multiplicity Omega trigger"};
+  Configurable<std::string> cfgTriggersOfInterest{"cfgTriggersOfInterest", "fTrackedOmega,fOmegaHighMult", "Triggers of interest, comma separated for Zorro"};
 
   Zorro mZorro;
   OutputObj<ZorroSummary> mZorroSummary{"ZorroSummary"};
@@ -230,7 +231,6 @@ struct NonPromptCascadeTask {
   void init(InitContext const&)
   {
     mZorroSummary.setObject(mZorro.getZorroSummary());
-    mZorroSummary->setupTOIs(1, cfgHMOmegaTrigger);
     mCCDB->setURL(ccdbUrl);
     mCCDB->setFatalWhenNull(true);
     mCCDB->setCaching(true);
@@ -288,23 +288,34 @@ struct NonPromptCascadeTask {
     return true;
   }
 
-  void zorroAccounting(const auto& collisions)
+  void zorroAccounting(const auto& collisions, auto& toiMap)
   {
     if (cfgSkimmedProcessing) {
       int runNumber{-1};
       for (const auto& coll : collisions) {
         auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
         if (runNumber != bc.runNumber()) {
-          mZorro.initCCDB(mCCDB.service, bc.runNumber(), bc.timestamp(), "fTrackedOmega");
+          mZorro.initCCDB(mCCDB.service, bc.runNumber(), bc.timestamp(), cfgTriggersOfInterest.value);
+          if (mZorro.getNTOIs() > 32) {
+            LOG(fatal) << "N TOIs:" << mZorro.getNTOIs() << " Max 32 TOIs possible.";
+          }
           mZorro.populateHistRegistry(mRegistry, bc.runNumber());
           runNumber = bc.runNumber();
         }
-        mZorro.isSelected(bc.globalBC()); /// Just let Zorro do the accounting
+        bool sel = mZorro.isSelected(bc.globalBC()); /// Just let Zorro do the accounting
+        if (sel) {
+          std::vector<bool> toivect = mZorro.getTriggerOfInterestResults();
+          uint32_t toiMask = 0;
+          for (size_t i{0}; i < toivect.size(); i++) {
+            toiMask += toivect[i] << i;
+          }
+          toiMap[bc.globalBC()] = toiMask;
+        }
       }
     }
   }
   template <typename TrackType, typename CollisionType>
-  void fillCandidatesVector(CollisionType const&, TrackType const& tracks, auto const& cascades, auto& candidates)
+  void fillCandidatesVector(CollisionType const&, TrackType const& tracks, auto const& cascades, auto& candidates, std::map<uint64_t, uint32_t> toiMap = {})
   {
 
     const auto& getCascade = [](auto const& candidate) {
@@ -508,6 +519,10 @@ struct NonPromptCascadeTask {
       } else {
         o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, ntCascadeTrack, mBz, 2.f, matCorr, &motherDCA);
       }
+      uint32_t toiMask = 0x0;
+      if (toiMap.count(bc.globalBC())) {
+        toiMask = toiMap[bc.globalBC()];
+      }
       candidates.emplace_back(NPCascCandidate{mcParticleID, trackedCascGlobalIndex, itsTrackGlobalIndex, candidate.collisionId(), matchingChi2, deltaPtITSCascade, deltaPtCascade, cascITSclsSize, hasReassociatedClusters, hasFakeReassociation, isGoodMatch, isGoodCascade, pdgCodeMom, itsTrackPDG, fromHF[0], fromHF[1],
                                               collision.numContrib(), cascPVContribs, collision.collisionTimeRes(), primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               cascadeLvector.pt(), cascadeLvector.eta(), cascadeLvector.phi(),
@@ -518,7 +533,7 @@ struct NonPromptCascadeTask {
                                               cascITSclusters, protonTrack.itsNCls(), pionTrack.itsNCls(), bachelor.itsNCls(), protonTrack.tpcNClsFound(), pionTrack.tpcNClsFound(), bachelor.tpcNClsFound(),
                                               protonTrack.tpcNSigmaPr(), pionTrack.tpcNSigmaPi(), bachelor.tpcNSigmaKa(), bachelor.tpcNSigmaPi(),
                                               protonTrack.hasTOF(), pionTrack.hasTOF(), bachelor.hasTOF(),
-                                              protonTrack.tofNSigmaPr(), pionTrack.tofNSigmaPi(), bachelor.tofNSigmaKa(), bachelor.tofNSigmaPi(), collision.sel8(), collision.multFT0C(), collision.multFT0A(), collision.multFT0M(), collision.centFT0C(), collision.centFT0A(), collision.centFT0M()});
+                                              protonTrack.tofNSigmaPr(), pionTrack.tofNSigmaPi(), bachelor.tofNSigmaKa(), bachelor.tofNSigmaPi(), collision.sel8(), collision.multFT0C(), collision.multFT0A(), collision.multFT0M(), collision.centFT0C(), collision.centFT0A(), collision.centFT0M(), toiMask});
     }
   }
 
@@ -538,7 +553,7 @@ struct NonPromptCascadeTask {
                                   c.protonTPCNSigma, c.pionTPCNSigma, c.bachKaonTPCNSigma, c.bachPionTPCNSigma,
                                   c.protonHasTOF, c.pionHasTOF, c.bachHasTOF,
                                   c.protonTOFNSigma, c.pionTOFNSigma, c.bachKaonTOFNSigma, c.bachPionTOFNSigma,
-                                  c.sel8, c.multFT0C, c.multFT0A, c.multFT0M, c.centFT0C, c.centFT0A, c.centFT0M);
+                                  c.sel8, c.multFT0C, c.multFT0A, c.multFT0M, c.centFT0C, c.centFT0A, c.centFT0M, c.toiMask);
     }
   }
 
@@ -577,7 +592,7 @@ struct NonPromptCascadeTask {
                                 c.sel8, c.multFT0C, c.multFT0A, c.multFT0M, c.centFT0C, c.centFT0A, c.centFT0M,
                                 particle.pt(), particle.eta(), particle.phi(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
                                 particle.pdgCode(), mcCollision.posX() - particle.vx(), mcCollision.posY() - particle.vy(),
-                                mcCollision.posZ() - particle.vz(), mcCollision.globalIndex() == recCollision.mcCollisionId(), c.hasFakeReassociation, motherDecayDaughters);
+                                mcCollision.posZ() - particle.vz(), mcCollision.globalIndex() == recCollision.mcCollisionId(), c.hasFakeReassociation, motherDecayDaughters, c.toiMask);
     }
   }
 
@@ -654,8 +669,9 @@ struct NonPromptCascadeTask {
                                   aod::V0s const& /*v0s*/, TracksExtData const& tracks,
                                   aod::BCsWithTimestamps const&)
   {
-    zorroAccounting(collisions);
-    fillCandidatesVector<TracksExtData>(collisions, tracks, trackedCascades, gCandidates);
+    std::map<uint64_t, uint32_t> toiMap;
+    zorroAccounting(collisions, toiMap);
+    fillCandidatesVector<TracksExtData>(collisions, tracks, trackedCascades, gCandidates, toiMap);
     fillDataTable<aod::AssignedTrackedCascades>(gCandidates);
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processTrackedCascadesData, "process cascades from strangeness tracking: Data analysis", false);
@@ -664,8 +680,9 @@ struct NonPromptCascadeTask {
                            aod::V0s const& /*v0s*/, TracksExtData const& tracks,
                            aod::BCsWithTimestamps const&)
   {
-    zorroAccounting(collisions);
-    fillCandidatesVector<TracksExtData>(collisions, tracks, cascades, gCandidatesNT);
+    std::map<uint64_t, uint32_t> toiMap;
+    zorroAccounting(collisions, toiMap);
+    fillCandidatesVector<TracksExtData>(collisions, tracks, cascades, gCandidatesNT, toiMap);
     fillDataTable<aod::Cascades>(gCandidatesNT);
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processCascadesData, "process cascades: Data analysis", false);

@@ -8,22 +8,29 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 #ifndef PWGLF_DATAMODEL_LFSTRANGENESSTABLES_H_
 #define PWGLF_DATAMODEL_LFSTRANGENESSTABLES_H_
 
-#include <cmath>
-#include <vector>
-#include "Framework/AnalysisDataModel.h"
-#include "Common/Core/RecoDecay.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Qvectors.h"
-#include "Common/DataModel/McCollisionExtra.h"
 #include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "PWGLF/DataModel/SPCalibrationTables.h"
 #include "PWGUD/DataModel/UDTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h" // IWYU pragma: keep (FIXME: not used, remove asap)
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Qvectors.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/DataTypes.h>
+
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <vector>
 
 namespace o2::aod
 {

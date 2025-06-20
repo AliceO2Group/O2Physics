@@ -83,6 +83,7 @@ DECLARE_SOA_TABLE_FULL(StoredRedIUTracks, "RedIUTracks", "AOD", "REDIUTRACK", //
                        // tracks extra
                        track::PIDForTracking<track::Flags>,
                        track::IsPVContributor<track::Flags>,
+                       track::HasITS<track::v001::DetectorMap>,
                        track::HasTPC<track::v001::DetectorMap>,
                        track::HasTOF<track::v001::DetectorMap>,
                        track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
@@ -120,29 +121,22 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Track0, track0, int, RedIUTracks, "_0");       //!
 DECLARE_SOA_INDEX_COLUMN_FULL(Track1, track1, int, RedIUTracks, "_1");       //! Track 1 index
 DECLARE_SOA_INDEX_COLUMN_FULL(Track2, track2, int, RedIUTracks, "_2");       //! Track 2 index
 DECLARE_SOA_INDEX_COLUMN_FULL(Collision, collision, int, RedCollisions, ""); //! Collision index
-DECLARE_SOA_COLUMN(Phi, phi, float);                                         //! decay3body radius
-DECLARE_SOA_COLUMN(Radius, radius, float);                                   //! decay3body phi
-DECLARE_SOA_COLUMN(PosZ, posz, float);                                       //! decay3body z position
+DECLARE_SOA_COLUMN(RadiusKF, radiusKF, float);                               //! phi of momentum of mother particle calculated by KF
+DECLARE_SOA_COLUMN(PhiKF, phiKF, float);                                     //! SV radius in x-y plane calculated by KF
+DECLARE_SOA_COLUMN(PosZKF, poszKF, float);                                   //! z position of SV calculated by KF
+DECLARE_SOA_COLUMN(RadiusDCA, radiusDCA, float);                             //! phi of momentum of mother particle calculated by dcaFitter
+DECLARE_SOA_COLUMN(PhiDCA, phiDCA, float);                                   //! SV radius in x-y plane calculated by dcaFitter
+DECLARE_SOA_COLUMN(PosZDCA, poszDCA, float);                                 //! z position of SV calculated by dcaFitter
+DECLARE_SOA_COLUMN(TrackedClSize, trackedClSize, float);                     //! average ITS cluster size (if tracked)
 } // namespace reduceddecay3body
 
 DECLARE_SOA_TABLE(RedDecay3Bodys, "AOD", "REDDECAY3BODY", //! reduced 3-body decay table
                   o2::soa::Index<>, reduceddecay3body::CollisionId, reduceddecay3body::Track0Id, reduceddecay3body::Track1Id, reduceddecay3body::Track2Id);
 
-using ReducedDecay3BodysLinked = soa::Join<RedDecay3Bodys, Decay3BodyDataLink>;
-using ReducedDecay3BodyLinked = ReducedDecay3BodysLinked::iterator;
-
 DECLARE_SOA_TABLE(Red3BodyInfo, "AOD", "RED3BODYINFO", //! joinable with RedDecay3Bodys
-                  reduceddecay3body::Radius, reduceddecay3body::Phi, reduceddecay3body::PosZ);
-
-namespace dcafittersvinfo
-{
-DECLARE_SOA_COLUMN(SVRadius, svRadius, float); //! SV radius in x-y plane calculated by dcaFitter
-DECLARE_SOA_COLUMN(MomPhi, momPhi, float);     //! phi of momentum of mother particle calculated from dcaFitter
-DECLARE_SOA_COLUMN(SVPosZ, svPosZ, float);     //! z position of SV calculated by dcaFitter
-} // namespace dcafittersvinfo
-
-DECLARE_SOA_TABLE_FULL(DCAFitterSVInfo, "FitSVInfo", "AOD", "FITSVINFO", //! joinable with RedDecay3Bodys
-                       dcafittersvinfo::SVRadius, dcafittersvinfo::MomPhi, dcafittersvinfo::SVPosZ);
+                  reduceddecay3body::RadiusKF, reduceddecay3body::PhiKF, reduceddecay3body::PosZKF,
+                  reduceddecay3body::RadiusDCA, reduceddecay3body::PhiDCA, reduceddecay3body::PosZDCA,
+                  reduceddecay3body::TrackedClSize);
 
 } // namespace o2::aod
 
