@@ -45,7 +45,7 @@ struct kstarInOO {
   Configurable<double> cfgtrkMaxEta{"cfgtrkMaxEta", 0.9, "set track max Eta"};
   Configurable<double> cfgMaxDCArToPVcut{"cfgMaxDCArToPVcut", 0.5, "Track DCAr cut to PV Maximum"};
   Configurable<double> cfgMaxDCAzToPVcut{"cfgMaxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
-  Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                  // kGoldenChi2 | kDCAxy | kDCAz
+  Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgConnectedToPV{"cfgConnectedToPV", true, "PV contributor track selection"};           // PV Contriuibutor
   Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
   Configurable<double> cfgnFindableTPCClusters{"cfgnFindableTPCClusters", 50, "nFindable TPC Clusters"};
@@ -57,7 +57,6 @@ struct kstarInOO {
   Configurable<int> cfgnTOFPID{"cfgnTOFPID", 4, "nTOF PID"};
   Configurable<float> cfgVtxCut{"cfgVtxCut", 10.0, "V_z cut selection"};
   Configurable<int> cDebugLevel{"cDebugLevel", 0, "Resolution of Debug"};
-  
 
   void init(o2::framework::InitContext&)
   {
@@ -79,8 +78,8 @@ struct kstarInOO {
     OOhistos.add("QA_nSigma_kaon_TPC", "QA_nSigma_kaon_TPC", {HistType::kTH2F, {PtAxis, PIDAxis}});
     OOhistos.add("QA_nSigma_kaon_TOF", "QA_nSigma_kaon_TOF", {HistType::kTH2F, {PtAxis, PIDAxis}});
     OOhistos.add("QA_kaon_TPC_TOF", "QA_kaon_TPC_TOF", {HistType::kTH2F, {PIDAxis, PIDAxis}});
-    
-  }// end of init
+
+  } // end of init
 
   double massKa = o2::constants::physics::MassKPlus;
   double massPi = o2::constants::physics::MassPiMinus;
@@ -94,7 +93,8 @@ struct kstarInOO {
   //==================================
   // for PID QA TrackType
   template <typename TrackType>
-  bool trackSelection(const TrackType track) {
+  bool trackSelection(const TrackType track)
+  {
 
     if (track.pt() < cfgtrkMinPt)
       return false;
@@ -131,7 +131,7 @@ struct kstarInOO {
 
     return true;
   };
-  /*  
+  /*
   //----------------------------
   // 1-1. Track PID
   //----------------------------
@@ -143,40 +143,39 @@ struct kstarInOO {
       pid = trackPIDPion<T>(candidate);
     else
       pid = trackPIDKaon<T>(candidate);
-    
+
     return pid;
   }
   */
-  
+
   //---------------------------------------
   // 1-2. Check whether it passes tpc&tof
   //---------------------------------------
   // Kaon
   template <typename T>
-  bool trackPIDKaon (const T& candidate, bool QA = false)
+  bool trackPIDKaon(const T& candidate, bool QA = false)
   {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
     // TPC
-    if(QA){
+    if (QA) {
       OOhistos.fill(HIST("QA_nSigma_kaon_TPC"), candidate.pt(), candidate.tpcNSigmaKa());
-      OOhistos.fill(HIST("QA_nSigma_kaon_TOF"), candidate.pt(), candidate.tofNSigmaKa());      
-    }    
+      OOhistos.fill(HIST("QA_nSigma_kaon_TOF"), candidate.pt(), candidate.tofNSigmaKa());
+    }
     if (std::abs(candidate.tpcNSigmaKa()) < cfgnTPCPID)
       tpcPIDPassed = true;
 
     // TOF
-    if (candidate.hasTOF())
-      {
-	if (std::abs(candidate.tofNSigmaKa()) < cfgnTOFPID)
-	  tofPIDPassed = true;
-	else
-	  tofPIDPassed = true;
-      }
+    if (candidate.hasTOF()) {
+      if (std::abs(candidate.tofNSigmaKa()) < cfgnTOFPID)
+        tofPIDPassed = true;
+      else
+        tofPIDPassed = true;
+    }
 
     // TPC & TOF
     if (tpcPIDPassed && tofPIDPassed)
       return true;
-    
+
     return false;
   }
   /*
@@ -190,15 +189,15 @@ struct kstarInOO {
 
     if (candidate.hasTOF())
       {
-	if (std::abs(candidate.tofNSigmaPi()) < cfgnTOFPID)
-	  tofPIDPassed = true;
-	else
-	  tofPIDPassed = true;
+  if (std::abs(candidate.tofNSigmaPi()) < cfgnTOFPID)
+    tofPIDPassed = true;
+  else
+    tofPIDPassed = true;
       }
 
     if (tpcPIDPassed && tofPIDPassed)
       return true;
-    
+
     return false;
   }
 
@@ -213,13 +212,13 @@ struct kstarInOO {
   // 	// Full index policy is needed to consider all possible combinations
   // 	if (trk1.index() == trk2.index())
   // 	  continue; // We need to run (0,1), (1,0) pairs as well. but same id pairs are not needed.
-	
+
   // 	//// Initialize variables
   // 	// trk1: Pion, trk2: Kaon
   // 	// apply the track cut
   // 	if (!trackSelection(trk1) || !trackSelection(trk2))
   // 	  continue;
-	
+
   // 	auto isTrk1hasTOF = trk1.hasTOF();
   // 	auto isTrk2hasTOF = trk2.hasTOF();
   // 	auto trk1ptPi = trk1.pt();
@@ -252,18 +251,17 @@ struct kstarInOO {
   //  template <typename TrackCandidates> //그치 void는 템플릿이 아닌데;; 이걸 템플릿이라고 정의했으니까 안되는게 당연하지 ;;;;
   void processEvents(EventCandidates::iterator const& collision, TrackCandidates const& tracks)
   {
-    // 1. All events 
-    if (cDebugLevel > 0)
-      {
-	nprocessEvents++;
-	if ((nprocessEvents + 1) % 10000 == 0) {
-	  std::cout << "Processed Events: " << nprocessEvents << std::endl;
-	}
+    // 1. All events
+    if (cDebugLevel > 0) {
+      nprocessEvents++;
+      if ((nprocessEvents + 1) % 10000 == 0) {
+        std::cout << "Processed Events: " << nprocessEvents << std::endl;
       }
+    }
     OOhistos.fill(HIST("nEvents"), 0.5);
     if (std::fabs(collision.posZ()) > cfgVtxCut)
       return;
-    
+
     // 2. The events passed a condition
     bool INELgt0 = false;
     for (const auto& track : tracks) {
@@ -274,40 +272,37 @@ struct kstarInOO {
     }
     if (!INELgt0) // not INEL
       return;
-    
+
     OOhistos.fill(HIST("nEvents"), 1.5);
-    
+
     //=====================================
     // 2. Basic track QA ( pt, phi, eta )
     //=====================================
-    for (auto& track : tracks)
-      {
-	//auto originalTrack = track_as<TrackCandidates>();
-	
-	if (!trackSelection(track))
-	  continue;
-	
-	OOhistos.fill(HIST("h_rawpT"), track.pt());
-	OOhistos.fill(HIST("h_eta"), track.eta());
-	OOhistos.fill(HIST("h_phi"), track.phi());
+    for (auto& track : tracks) {
+      // auto originalTrack = track_as<TrackCandidates>();
 
-	if (!trackPIDKaon(track,true)) //Once it sets the value is true, but later, should be change to false
-	  continue; 
+      if (!trackSelection(track))
+        continue;
 
-	OOhistos.fill(HIST("h_rawpT_Kaon"), track.pt());
-      }
+      OOhistos.fill(HIST("h_rawpT"), track.pt());
+      OOhistos.fill(HIST("h_eta"), track.eta());
+      OOhistos.fill(HIST("h_phi"), track.phi());
+
+      if (!trackPIDKaon(track, true)) // Once it sets the value is true, but later, should be change to false
+        continue;
+
+      OOhistos.fill(HIST("h_rawpT_Kaon"), track.pt());
+    }
   }
   PROCESS_SWITCH(kstarInOO, processEvents, "Jimun Code Go!", true);
- 
-  
+
   void processEventsDummy(EventCandidates::iterator const& collision, TrackCandidates const& tracks)
   {
     return;
   }
   PROCESS_SWITCH(kstarInOO, processEventsDummy, "dummy", false);
-  
-};// kstarInOO
 
+}; // kstarInOO
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
