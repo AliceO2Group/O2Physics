@@ -202,8 +202,9 @@ struct HfElectronSelectionWithTpcEmcal {
 
     registry.add("hAfterPIDEtaPhi", "PID Info after PID Cuts Eta vs Phi ; #eta; #varphi; ", {HistType::kTH2F, {{axisEta}, {axisPhi}}});
     registry.add("hEPRatioAfterPID", "E/P Ratio after PID Cuts apply only trackwodca filter", {HistType::kTH2F, {{axisPt}, {axisEmcEnergy}}});
-    registry.add("hPIDAfterPIDCuts", "PID Info after PID cuts; E/P;#it{p}_{T} (GeV#it{/c});n#sigma;m02; m20;", {HistType::kTHnSparseF, {{binsEoP}, {binsPt}, {binsnSigma}, {binsM02}, {binsM20}}});
-    registry.add("hEmcClsTrkEtaPhiDiffTime", "EmcClsTrkEtaPhiDiffTime;#Delta#eta;#Delta#varphi;Sec;", {HistType::kTH3F, {{binsDeltaEta}, {binsDeltaPhi}, {binsEmcClsTime}}});
+
+    registry.add("hPIDAfterPIDCuts", "PID Info after PID cuts; E/P;#it{p}_{T} (GeV#it{/c});n#sigma;m02; m20;", {HistType::kTHnSparseF, {{axisEoP}, {axisPt}, {axisnSigma}, {axisM02}, {axisM20}}});
+    registry.add("hEmcClsTrkEtaPhiDiffTime", "EmcClsTrkEtaPhiDiffTime;#Delta#eta;#Delta#varphi;Sec;", {HistType::kTH3F, {{axisDeltaEta}, {axisDeltaPhi}, {axisEmcClsTime}}});
   }
   // Track Selection Cut
   template <typename T>
@@ -365,6 +366,11 @@ struct HfElectronSelectionWithTpcEmcal {
       return;
 
     registry.fill(HIST("hNevents"), 1);
+
+    // skip events with no clusters
+    if (emcClusters.size() == 0) {
+      return;
+    }
     registry.fill(HIST("hZvertex"), collision.posZ());
 
     /////////////////////////////////

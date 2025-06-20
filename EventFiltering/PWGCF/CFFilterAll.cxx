@@ -61,8 +61,8 @@ enum CFTriggers {
   kPPRho,
   kPD,
   kLD,
-  kRhoD,
   kPhiD,
+  kRhoD,
   kNTriggers
 };
 
