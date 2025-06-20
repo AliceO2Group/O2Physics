@@ -12,7 +12,7 @@ import sys
 import numpy as np  # pylint: disable=import-error
 import ROOT  # pylint: disable=import-error
 sys.path.insert(0, '..')
-from utils.style_formatter import set_global_style, set_object_style
+from style_formatter import set_global_style, set_object_style
 
 
 # pylint: disable=too-many-instance-attributes
@@ -110,9 +110,9 @@ class CutVarMinimiser:
         self.unc_frac_nonprompt = np.zeros(shape=self.n_sets)
 
         for i_set, (rawy, effp, effnp) in enumerate(zip(self.raw_yields, self.eff_prompt, self.eff_nonprompt)):
-            self.m_rawy.itemset(i_set, rawy)
-            self.m_eff.itemset((i_set, 0), effp)
-            self.m_eff.itemset((i_set, 1), effnp)
+            self.m_rawy[i_set] = rawy
+            self.m_eff[(i_set, 0)] = effp
+            self.m_eff[(i_set, 1)] = effnp
 
     # pylint: disable=too-many-locals
     def minimise_system(self, correlated=True, precision=1.0e-8, max_iterations=100):
@@ -165,7 +165,7 @@ class CutVarMinimiser:
                         else:
                             rho = 0.0
                     cov_row_col = rho * unc_row * unc_col
-                    self.m_cov_sets.itemset((i_row, i_col), cov_row_col)
+                    self.m_cov_sets[i_row, i_col] = cov_row_col
 
             self.m_cov_sets = np.matrix(self.m_cov_sets)
             self.m_weights = np.linalg.inv(np.linalg.cholesky(self.m_cov_sets))
@@ -211,10 +211,10 @@ class CutVarMinimiser:
                 + der_fnp_np**2 * self.m_covariance.item(1, 1)
                 + 2 * der_fnp_p * der_fnp_np * self.m_covariance.item(1, 0)
             )
-            self.frac_prompt.itemset(i_set, rawyp / (rawyp + rawynp))
-            self.frac_nonprompt.itemset(i_set, rawynp / (rawyp + rawynp))
-            self.unc_frac_prompt.itemset(i_set, unc_fp)
-            self.unc_frac_nonprompt.itemset(i_set, unc_fnp)
+            self.frac_prompt[i_set] = rawyp / (rawyp + rawynp)
+            self.frac_nonprompt[i_set] = rawynp / (rawyp + rawynp)
+            self.unc_frac_prompt[i_set] = unc_fp
+            self.unc_frac_nonprompt[i_set] = unc_fnp
 
     def get_red_chi2(self):
         """

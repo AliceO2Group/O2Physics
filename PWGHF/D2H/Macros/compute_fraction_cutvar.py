@@ -16,7 +16,7 @@ import numpy as np  # pylint: disable=import-error
 import ROOT  # pylint: disable=import-error
 sys.path.insert(0, '..')
 from cut_variation import CutVarMinimiser
-from utils.style_formatter import set_object_style
+from style_formatter import set_object_style
 
 # pylint: disable=no-member,too-many-locals,too-many-statements
 
@@ -121,12 +121,12 @@ def main(config):
 
         rawy, effp, effnp, unc_rawy, unc_effp, unc_effnp = (np.zeros(n_sets) for _ in range(6))
         for iset, (hrawy, heffp, heffnp) in enumerate(zip(hist_rawy, hist_effp, hist_effnp)):
-            rawy.itemset(iset, hrawy.GetBinContent(ipt + 1))
-            effp.itemset(iset, heffp.GetBinContent(ipt + 1))
-            effnp.itemset(iset, heffnp.GetBinContent(ipt + 1))
-            unc_rawy.itemset(iset, hrawy.GetBinError(ipt + 1))
-            unc_effp.itemset(iset, heffp.GetBinError(ipt + 1))
-            unc_effnp.itemset(iset, heffnp.GetBinError(ipt + 1))
+            rawy[iset] = hrawy.GetBinContent(ipt + 1)
+            effp[iset] = heffp.GetBinContent(ipt + 1)
+            effnp[iset] = heffnp.GetBinContent(ipt + 1)
+            unc_rawy[iset] = hrawy.GetBinError(ipt + 1)
+            unc_effp[iset] = heffp.GetBinError(ipt + 1)
+            unc_effnp[iset] = heffnp.GetBinError(ipt + 1)
 
         minimiser = CutVarMinimiser(rawy, effp, effnp, unc_rawy, unc_effp, unc_effnp)
         minimiser.minimise_system(cfg["minimisation"]["correlated"])
