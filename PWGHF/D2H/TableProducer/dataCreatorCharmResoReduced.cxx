@@ -140,6 +140,7 @@ struct HfDataCreatorCharmResoReduced {
   Produces<aod::HfRedTrkNoParams> hfTrackNoParam; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   Produces<aod::HfRed3PrNoTrks> hfCandD3Pr;       // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   Produces<aod::HfRed2PrNoTrks> hfCandD2Pr;       // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
+  Produces<aod::HfRedDstarNoTrks> hfCandDstar;    // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   // ML optional Tables
   Produces<aod::HfRed3ProngsMl> hfCandD3PrMl; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   Produces<aod::HfRed2ProngsMl> hfCandD2PrMl; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
@@ -864,7 +865,6 @@ struct HfDataCreatorCharmResoReduced {
       bool fillHfCandD = false;
       std::array<float, 3> secondaryVertexD;
       std::array<int, 3> prongIdsD;
-      int8_t dtype{0};
       std::array<float, 6> bdtScores = {-1.f, -1.f, -1.f, -1.f, -1.f, -1.f};
       std::vector<std::decay_t<typename TrIU::iterator>> charmHadDauTracks{};
       varUtils.ptD = candD.pt();
@@ -888,8 +888,6 @@ struct HfDataCreatorCharmResoReduced {
         varUtils.pVectorProng2 = candD.pVecSoftPi();
         charmHadDauTracks.push_back(candD.template prong0_as<TrIU>());
         charmHadDauTracks.push_back(candD.template prong1_as<TrIU>());
-        charmHadDauTracks.push_back(candD.template prongPi_as<TrIU>());
-        dtype = varUtils.signD * DType::Dstar;
         if constexpr (withMl) {
           std::copy(candD.mlProbDstarToD0Pi().begin(), candD.mlProbDstarToD0Pi().end(), bdtScores.begin());
         }
@@ -938,6 +936,8 @@ struct HfDataCreatorCharmResoReduced {
       // Get single track variables
       float chi2TpcDauMax = -1.f;
       int nItsClsDauMin = 8, nTpcCrossRowsDauMin = 200;
+      float chi2TpcSoftPi = -1.f;
+      int nItsClsSoftPi = 8, nTpcCrossRowsSoftPi = 200;
       for (const auto& charmHadTrack : charmHadDauTracks) {
         if (charmHadTrack.itsNCls() < nItsClsDauMin) {
           nItsClsDauMin = charmHadTrack.itsNCls();
@@ -949,7 +949,13 @@ struct HfDataCreatorCharmResoReduced {
           chi2TpcDauMax = charmHadTrack.tpcChi2NCl();
         }
       }
-
+      if constexpr (dType == DType::Dstar) {
+        auto softPi = candD.template prongPi_as<TrIU>();
+        nItsClsSoftPi = softPi.itsNCls();
+        nTpcCrossRowsSoftPi = softPi.tpcNClsCrossedRows();
+        chi2TpcSoftPi = softPi.tpcChi2NCl();
+        charmHadDauTracks.push_back(softPi);
+      }
       // Loop on the bachelor V0s
       if constexpr (DoV0s) {
         for (const auto& v0 : bachelorV0s) {
@@ -1292,14 +1298,14 @@ struct HfDataCreatorCharmResoReduced {
       } // end of do tracks
       // fill D candidate table
       if (fillHfCandD) { // fill candDplus table only once per D candidate, only if at least one V0 is found
-        if constexpr (dType == DType::Dstar || dType == DType::Dplus) {
+        if constexpr (dType == DType::Dplus) {
           hfCandD3Pr(prongIdsD[0], prongIdsD[1], prongIdsD[2],
                      indexHfReducedCollision,
                      secondaryVertexD[0], secondaryVertexD[1], secondaryVertexD[2],
                      candD.pxProng0(), candD.pyProng0(), candD.pzProng0(),
                      candD.pxProng1(), candD.pyProng1(), candD.pzProng1(),
                      varUtils.pVectorProng2[0], varUtils.pVectorProng2[1], varUtils.pVectorProng2[2],
-                     nItsClsDauMin, nTpcCrossRowsDauMin, chi2TpcDauMax, dtype);
+                     nItsClsDauMin, nTpcCrossRowsDauMin, chi2TpcDauMax, varUtils.signD);
           if constexpr (withMl) {
             hfCandD3PrMl(bdtScores[0], bdtScores[1], bdtScores[2], bdtScores[3], bdtScores[4], bdtScores[5]);
           }
@@ -1321,6 +1327,19 @@ struct HfDataCreatorCharmResoReduced {
           if constexpr (withMl) {
             hfCandD2PrMl(bdtScores[0], bdtScores[1], bdtScores[2], bdtScores[3], bdtScores[4], bdtScores[5]);
           }
+        } else if constexpr (dType == DType::Dstar) {
+          hfCandDstar(prongIdsD[0], prongIdsD[1], prongIdsD[2],
+                     indexHfReducedCollision,
+                     secondaryVertexD[0], secondaryVertexD[1], secondaryVertexD[2],
+                     candD.pxProng0(), candD.pyProng0(), candD.pzProng0(),
+                     candD.pxProng1(), candD.pyProng1(), candD.pzProng1(),
+                     varUtils.pVectorProng2[0], varUtils.pVectorProng2[1], varUtils.pVectorProng2[2],
+                     nItsClsDauMin, nTpcCrossRowsDauMin, chi2TpcDauMax,
+                     nItsClsSoftPi, nTpcCrossRowsSoftPi, chi2TpcSoftPi,
+                     varUtils.signD);
+          if constexpr (withMl) {
+            hfCandD3PrMl(bdtScores[0], bdtScores[1], bdtScores[2], bdtScores[3], bdtScores[4], bdtScores[5]);
+          }
         }
         fillHfReducedCollision = true;
         if constexpr (dType == DType::Dstar) {
@@ -1331,7 +1350,6 @@ struct HfDataCreatorCharmResoReduced {
           registry.fill(HIST("hMassVsPtD0Paired"), candD.pt(), varUtils.invMassD0);
           registry.fill(HIST("hMassVsPtD0BarPaired"), candD.pt(), varUtils.invMassD0Bar);
         }
-        registry.fill(HIST("hDType"), dtype);
       }
     } // candsD loop
     registry.fill(HIST("hEvents"), 1 + Event::Processed);
