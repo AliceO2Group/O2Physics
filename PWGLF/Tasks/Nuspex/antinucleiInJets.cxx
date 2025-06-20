@@ -387,7 +387,6 @@ struct AntinucleiInJets {
   {
 
     const int minTpcCr = 70;
-    const double minCrFindable = 0.8;
     const double maxChi2Tpc = 4.0;
     const double maxChi2Its = 36.0;
     const double maxPseudorapidity = 0.8;
