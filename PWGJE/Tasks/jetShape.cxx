@@ -13,28 +13,24 @@
 /// \author Yuto Nishida <yuto.nishida@cern.ch>
 /// \brief Task for measuring the dependence of the jet shape function rho(r) on the distance r from the jet axis.
 
+#include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGJE/DataModel/JetSubtraction.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include <CommonConstants/MathConstants.h>
-#include <Framework/Configurable.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/runDataProcessing.h>
+#include "Framework/runDataProcessing.h"
 
 #include <cmath>
-#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -44,10 +40,10 @@ using namespace o2::framework::expressions;
 
 struct JetShapeTask {
   HistogramRegistry registry{"registry",
-                             {{"tpcTofPi", "tpcTofPi", {HistType::kTHnSparseD, {{101, -10.1f, 10.1f}, {20, -10, 10}, {25, 0, 5}, {14, 0, 7}}}},
+                             {{"tpcTofPi", "tpcTofPi", {HistType::kTHnSparseD, {{101, -10.1f, 10.1f}, {20, -10, 10}, {25, 0, 5}, {14, 0, 0.7}}}},
                               {"tpcPi", "tpcPi", {HistType::kTH2F, {{100, 0, 5}, {401, -10.025f, 10.025f}}}},
                               {"tofPi", "tofPi", {HistType::kTH2F, {{100, 0, 5}, {401, -10.025f, 10.025f}}}},
-                              {"tpcTofPr", "tpcTofPr", {HistType::kTHnSparseD, {{101, -10.1f, 10.1f}, {20, -10, 10}, {25, 0, 5}, {14, 0, 7}}}},
+                              {"tpcTofPr", "tpcTofPr", {HistType::kTHnSparseD, {{101, -10.1f, 10.1f}, {20, -10, 10}, {25, 0, 5}, {14, 0, 0.7}}}},
                               {"tpcPr", "tpcPr", {HistType::kTH2F, {{100, 0, 5}, {401, -10.025f, 10.025f}}}},
                               {"tofPr", "tofPr", {HistType::kTH2F, {{100, 0, 5}, {401, -10.025f, 10.025f}}}},
                               {"tpcDedx", "tpcDedx", {HistType::kTH2F, {{500, 0, 5}, {1000, 0, 1000}}}},
@@ -154,17 +150,20 @@ struct JetShapeTask {
   void processJetShape(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, aod::JetTracks const& tracks, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
   {
 
-    std::vector<float> ptDensity(distanceCategory->size() - 1, 0.f);
-    std::vector<float> ptDensityBg1(distanceCategory->size() - 1, 0.f);
-    std::vector<float> ptDensityBg2(distanceCategory->size() - 1, 0.f);
-
     for (auto const& jet : jets) {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
 
+      std::vector<float> trackPtSum(distanceCategory->size() - 1, 0.f);
+      std::vector<float> trackPtSumBg1(distanceCategory->size() - 1, 0.f);
+      std::vector<float> trackPtSumBg2(distanceCategory->size() - 1, 0.f);
+
       // Get underlying event subtracted jet.pt() as ptCorr
       float ptCorr = jet.pt() - collision.rho() * jet.area();
+
+      float phiBg1 = jet.phi() + (o2::constants::math::PIHalf);
+      float phiBg2 = jet.phi() - (o2::constants::math::PIHalf);
 
       for (const auto& track : tracks) {
         float preDeltaPhi1 = track.phi() - jet.phi();
@@ -178,20 +177,13 @@ struct JetShapeTask {
         registry.fill(HIST("ptVsCentrality"), collision.centrality(), track.pt());
 
         // calculate compornents of jetshapefunction rho(r)
-        std::vector<float> trackPtSum(distanceCategory->size() - 1, 0.f);
-        std::vector<float> trackPtSumBg1(distanceCategory->size() - 1, 0.f);
-        std::vector<float> trackPtSumBg2(distanceCategory->size() - 1, 0.f);
-
-        float phiBg1 = jet.phi() + (o2::constants::math::PIHalf);
-        float phiBg2 = jet.phi() - (o2::constants::math::PIHalf);
 
         float preDeltaPhiBg1 = track.phi() - phiBg1;
-        float preDeltaPhiBg2 = track.phi() - phiBg2;
-
         float deltaPhiBg1 = RecoDecay::constrainAngle(preDeltaPhiBg1);
-        float deltaPhiBg2 = RecoDecay::constrainAngle(preDeltaPhiBg2);
-
         float distanceBg1 = std::sqrt(deltaEta * deltaEta + deltaPhiBg1 * deltaPhiBg1);
+
+        float preDeltaPhiBg2 = track.phi() - phiBg2;
+        float deltaPhiBg2 = RecoDecay::constrainAngle(preDeltaPhiBg2);
         float distanceBg2 = std::sqrt(deltaEta * deltaEta + deltaPhiBg2 * deltaPhiBg2);
 
         for (size_t i = 0; i < distanceCategory->size() - 1; i++) {
@@ -202,12 +194,16 @@ struct JetShapeTask {
           if (distanceCategory->at(i) <= distanceBg2 && distanceBg2 < distanceCategory->at(i + 1))
             trackPtSumBg2[i] += track.pt();
         }
+      }
 
-        for (size_t i = 0; i < distanceCategory->size() - 1; i++) {
-          ptDensity[i] += trackPtSum[i] / ((distanceCategory->at(i + 1) - distanceCategory->at(i)) * ptCorr);
-          ptDensityBg1[i] += trackPtSumBg1[i] / ((distanceCategory->at(i + 1) - distanceCategory->at(i)) * ptCorr);
-          ptDensityBg2[i] += trackPtSumBg2[i] / ((distanceCategory->at(i + 1) - distanceCategory->at(i)) * ptCorr);
-        }
+      std::vector<float> ptDensity(distanceCategory->size() - 1, 0.f);
+      std::vector<float> ptDensityBg1(distanceCategory->size() - 1, 0.f);
+      std::vector<float> ptDensityBg2(distanceCategory->size() - 1, 0.f);
+
+      for (size_t i = 0; i < distanceCategory->size() - 1; i++) {
+        ptDensity[i] += trackPtSum[i] / ((distanceCategory->at(i + 1) - distanceCategory->at(i)) * ptCorr);
+        ptDensityBg1[i] += trackPtSumBg1[i] / ((distanceCategory->at(i + 1) - distanceCategory->at(i)) * ptCorr);
+        ptDensityBg2[i] += trackPtSumBg2[i] / ((distanceCategory->at(i + 1) - distanceCategory->at(i)) * ptCorr);
       }
 
       registry.fill(HIST("jetPt"), jet.pt());
