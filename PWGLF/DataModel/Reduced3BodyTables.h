@@ -86,6 +86,7 @@ DECLARE_SOA_TABLE_FULL(StoredRedIUTracks, "RedIUTracks", "AOD", "REDIUTRACK", //
                        track::HasITS<track::v001::DetectorMap>,
                        track::HasTPC<track::v001::DetectorMap>,
                        track::HasTOF<track::v001::DetectorMap>,
+                       track::HasTRD<track::v001::DetectorMap>,
                        track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                        track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                        track::v001::ITSClsSizeInLayer<track::ITSClusterSizes>,
