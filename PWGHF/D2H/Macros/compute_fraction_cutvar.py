@@ -170,7 +170,7 @@ def main(config):
             hist_frac_raw_nonprompt.SetBinContent(ipt + 1, raw_frac_nonprompt[0])
             hist_frac_raw_nonprompt.SetBinError(ipt + 1, raw_frac_nonprompt[1])
 
-        hist_bin_title = ""
+        hist_bin_title = "bin # " + str(ipt)
         hist_bin_name = cfg.get("rawyields", {}).get("binwisehistoname")
         if hist_bin_name is not None:
             infile_rawy = ROOT.TFile.Open(os.path.join(cfg["rawyields"]["inputdir"], filename_rawy))
@@ -178,7 +178,7 @@ def main(config):
             hist_bin = infile_rawy.Get(hist_bin_name)
             if(hist_bin == None):
                 sys.exit(f"Fatal error: Histogram with bin-wise mass distributions \"{hist_bin_name}\" is absent. Exit.")
-            hist_bin_title = hist_bin.GetTitle()
+            hist_bin_title = hist_bin_title + "; " + hist_bin.GetTitle()
             infile_rawy.Close()
 
         canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt{pt_min:.0f}_{pt_max:.0f}", hist_bin_title)
