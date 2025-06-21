@@ -27,6 +27,7 @@ def main(config):
     """
 
     ROOT.gROOT.SetBatch(True)
+    ROOT.TH1.AddDirectory(False)
 
     with open(config, encoding="utf8") as fil:
         cfg = json.load(fil)
@@ -181,30 +182,30 @@ def main(config):
             hist_bin_title = hist_bin_title + "; " + hist_bin.GetTitle()
             infile_rawy.Close()
 
-        canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt{pt_min:.0f}_{pt_max:.0f}", hist_bin_title)
+        canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt{pt_min}_{pt_max}", hist_bin_title)
         output.cd()
         canv_rawy.Write()
         for _, hist in histos_rawy.items():
             hist.Write()
 
-        canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(f"_pt{pt_min:.0f}_{pt_max:.0f}", hist_bin_title)
+        canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(f"_pt{pt_min}_{pt_max}", hist_bin_title)
         output.cd()
         canv_eff.Write()
         for _, hist in histos_eff.items():
             hist.Write()
 
-        canv_frac, histos_frac, leg_f = minimiser.plot_fractions(f"_pt{pt_min:.0f}_{pt_max:.0f}", hist_bin_title)
+        canv_frac, histos_frac, leg_f = minimiser.plot_fractions(f"_pt{pt_min}_{pt_max}", hist_bin_title)
         output.cd()
         canv_frac.Write()
         for _, hist in histos_frac.items():
             hist.Write()
 
-        canv_cov, histo_cov = minimiser.plot_cov_matrix(True, f"_pt{pt_min:.0f}_{pt_max:.0f}", hist_bin_title)
+        canv_cov, histo_cov = minimiser.plot_cov_matrix(True, f"_pt{pt_min}_{pt_max}", hist_bin_title)
         output.cd()
         canv_cov.Write()
         histo_cov.Write()
 
-        canv_combined = ROOT.TCanvas("canv_combined", "", 1000, 1000)
+        canv_combined = ROOT.TCanvas(f"canv_combined_{ipt}", "", 1000, 1000)
         canv_combined.Divide(2, 2)
         canv_combined.cd(1)
         canv_rawy.DrawClonePad()
