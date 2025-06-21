@@ -12,13 +12,19 @@
 #ifndef PWGUD_CORE_SGSELECTOR_H_
 #define PWGUD_CORE_SGSELECTOR_H_
 
-#include <cmath>
+#include "PWGUD/Core/SGCutParHolder.h"
+#include "PWGUD/Core/UDHelpers.h"
+
+#include "Common/CCDB/RCTSelectionFlags.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/Logger.h"
+
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
-#include "Framework/Logger.h"
-#include "Framework/AnalysisTask.h"
-#include "PWGUD/Core/UDHelpers.h"
-#include "PWGUD/Core/SGCutParHolder.h"
+
+#include <cmath>
+using namespace o2::aod::rctsel;
 
 template <typename BC>
 struct SelectionResult {
@@ -29,7 +35,7 @@ struct SelectionResult {
 class SGSelector
 {
  public:
-  SGSelector() : fPDG(TDatabasePDG::Instance()) {}
+  SGSelector() : fPDG(TDatabasePDG::Instance()), myRCTChecker{"CBT"}, myRCTCheckerHadron{"CBT_hadronPID"}, myRCTCheckerZDC{"CBT", true}, myRCTCheckerHadronZDC{"CBT_hadronPID", true} {}
 
   template <typename CC, typename BCs, typename TCs, typename FWs>
   int Print(SGCutParHolder /*diffCuts*/, CC& collision, BCs& /*bcRange*/, TCs& /*tracks*/, FWs& /*fwdtracks*/)
@@ -146,8 +152,48 @@ class SGSelector
     return true_gap;
   }
 
+  // check CBT flags
+  template <typename CC>
+  bool isCBTOk(CC& collision)
+  {
+    if (myRCTChecker(collision))
+      return true;
+    return false;
+  }
+
+  // check CBT+hadronPID flags
+  template <typename CC>
+  bool isCBTHadronOk(CC& collision)
+  {
+    if (myRCTCheckerHadron(collision))
+      return true;
+    return false;
+  }
+
+  // check CBT+ZDC flags
+  template <typename CC>
+  bool isCBTZdcOk(CC& collision)
+  {
+    if (myRCTCheckerZDC(collision))
+      return true;
+    return false;
+  }
+
+  // check CBT+hadronPID+ZDC flags
+  template <typename CC>
+  bool isCBTHadronZdcOk(CC& collision)
+  {
+    if (myRCTCheckerHadronZDC(collision))
+      return true;
+    return false;
+  }
+
  private:
   TDatabasePDG* fPDG;
+  RCTFlagsChecker myRCTChecker;
+  RCTFlagsChecker myRCTCheckerHadron;
+  RCTFlagsChecker myRCTCheckerZDC;
+  RCTFlagsChecker myRCTCheckerHadronZDC;
 };
 
 #endif // PWGUD_CORE_SGSELECTOR_H_
