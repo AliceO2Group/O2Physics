@@ -13,8 +13,8 @@
 /// \brief Slim hyperhelium4sigma tables
 /// \author Yuanzhe Wang <yuanzhe.wang@cern.ch>
 
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
 
 #ifndef PWGLF_DATAMODEL_LFHYPERHELIUM4SIGMATABLES_H_
 #define PWGLF_DATAMODEL_LFHYPERHELIUM4SIGMATABLES_H_
@@ -44,6 +44,7 @@ DECLARE_SOA_COLUMN(ItsChi2Moth, itsChi2Moth, float);                      // ITS
 DECLARE_SOA_COLUMN(ItsClusterSizesMoth, itsClusterSizesMoth, uint32_t);   // ITS cluster size of the mother track
 DECLARE_SOA_COLUMN(ItsClusterSizesAlpha, itsClusterSizesAlpha, uint32_t); // ITS cluster size of the daughter alpha track
 DECLARE_SOA_COLUMN(NSigmaTPCAlpha, nSigmaTPCAlpha, float);                // Number of tpc sigmas of the daughter alpha track
+DECLARE_SOA_COLUMN(NSigmaITSAlpha, nSigmaITSAlpha, float);                // Number of ITS sigmas of the daughter alpha track
 
 DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                   // bool: true for hyperhelium4signal
 DECLARE_SOA_COLUMN(IsSignalReco, isSignalReco, bool);           // bool: true if the signal is reconstructed
@@ -71,7 +72,7 @@ DECLARE_SOA_TABLE(He4S2BCands, "AOD", "HE4S2BCANDS",
                   he4scand::PxAlpha, he4scand::PyAlpha, he4scand::PzAlpha,
                   he4scand::DcaMothPv, he4scand::DcaAlphaPv, he4scand::DcaKinkTopo,
                   he4scand::ItsChi2Moth, he4scand::ItsClusterSizesMoth, he4scand::ItsClusterSizesAlpha,
-                  he4scand::NSigmaTPCAlpha);
+                  he4scand::NSigmaTPCAlpha, he4scand::NSigmaITSAlpha);
 
 DECLARE_SOA_TABLE(MCHe4S2BCands, "AOD", "MCHE4S2BCANDS",
                   o2::soa::Index<>,
@@ -81,7 +82,7 @@ DECLARE_SOA_TABLE(MCHe4S2BCands, "AOD", "MCHE4S2BCANDS",
                   he4scand::PxAlpha, he4scand::PyAlpha, he4scand::PzAlpha,
                   he4scand::DcaMothPv, he4scand::DcaAlphaPv, he4scand::DcaKinkTopo,
                   he4scand::ItsChi2Moth, he4scand::ItsClusterSizesMoth, he4scand::ItsClusterSizesAlpha,
-                  he4scand::NSigmaTPCAlpha,
+                  he4scand::NSigmaTPCAlpha, he4scand::NSigmaITSAlpha,
                   he4scand::IsSignal, he4scand::IsSignalReco, he4scand::IsCollReco, he4scand::IsSurvEvSelection,
                   he4scand::TrueXDecVtx, he4scand::TrueYDecVtx, he4scand::TrueZDecVtx,
                   he4scand::GenPxMoth, he4scand::GenPyMoth, he4scand::GenPzMoth,
