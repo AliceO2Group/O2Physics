@@ -27,6 +27,11 @@ o2physics_add_dpl_workflow(event-selection
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCCDB
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(event-selection-service
+                    SOURCES eventSelectionService.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCCDB
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(multiplicity-table
                     SOURCES multiplicityTable.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
