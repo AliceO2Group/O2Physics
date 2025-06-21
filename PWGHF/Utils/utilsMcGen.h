@@ -219,7 +219,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
       // D± → π± K∓ π±
       if (flag == 0) {
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-          flag = sign * (1 << o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi);
+          flag = sign * o2::hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi;
         }
       }
 
@@ -229,11 +229,11 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
           // TODO: move to different and explicit flags
-          flag = sign * (1 << o2::aod::hf_cand_3prong::DecayType::DsToKKPi);
+          flag = sign * o2::hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK;
         } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
           // TODO: move to different and explicit flags
-          flag = sign * (1 << o2::aod::hf_cand_3prong::DecayType::DsToKKPi);
+          flag = sign * o2::hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKK;
           isDplus = true;
         }
         if (flag != 0) {
@@ -244,9 +244,9 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
               arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
             }
             if ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0])) {
-              channel = isDplus ? o2::aod::hf_cand_3prong::DecayChannelDToKKPi::DplusToPhiPi : o2::aod::hf_cand_3prong::DecayChannelDToKKPi::DsToPhiPi;
+              channel = isDplus ? o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DplusToPhiPi : o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DsToPhiPi;
             } else if ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0])) {
-              channel = isDplus ? o2::aod::hf_cand_3prong::DecayChannelDToKKPi::DplusToK0starK : o2::aod::hf_cand_3prong::DecayChannelDToKKPi::DsToK0starK;
+              channel = isDplus ? o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DplusToKstar0K : o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DsToKstar0K;
             }
           }
         }
