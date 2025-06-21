@@ -273,15 +273,16 @@ class strangenessBuilderHelper
                         TTrackParametrization& negativeTrackParam,
                         bool useCollinearFit = false,
                         bool calculateCovariance = false,
-                        bool acceptTPCOnly = false)
+                        bool acceptTPCOnly = false,
+                        bool acceptITSOnly = false)
   {
     if constexpr (useSelections) {
       // verify track quality
-      if (positiveTrack.tpcNClsCrossedRows() < v0selections.minCrossedRows) {
+      if (!acceptITSOnly && positiveTrack.tpcNClsCrossedRows() < v0selections.minCrossedRows) {
         v0 = {};
         return false;
       }
-      if (negativeTrack.tpcNClsCrossedRows() < v0selections.minCrossedRows) {
+      if (!acceptITSOnly && negativeTrack.tpcNClsCrossedRows() < v0selections.minCrossedRows) {
         v0 = {};
         return false;
       }
