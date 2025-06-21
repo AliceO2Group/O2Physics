@@ -14,10 +14,10 @@
 ///
 /// \author ALICE
 
-#include <vector>
-
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
+
+#include <vector>
 
 #ifndef COMMON_DATAMODEL_SELECTIONSTUDYTABLES_H_
 #define COMMON_DATAMODEL_SELECTIONSTUDYTABLES_H_
@@ -40,8 +40,8 @@ DECLARE_SOA_COLUMN(PtLambdaCs, ptLambdaCs, std::vector<float>);
 DECLARE_SOA_COLUMN(PtJPsis, ptJPsis, std::vector<float>);
 } // namespace selectionstudy
 
-DECLARE_SOA_TABLE(PIDPts, "AOD", "PIDPTS", o2::soa::Index<>, 
-                  o2::aod::selectionstudy::PtPions, 
+DECLARE_SOA_TABLE(PIDPts, "AOD", "PIDPTS", o2::soa::Index<>,
+                  o2::aod::selectionstudy::PtPions,
                   o2::aod::selectionstudy::PtKaons,
                   o2::aod::selectionstudy::PtProtons,
                   o2::aod::selectionstudy::PtK0s,
