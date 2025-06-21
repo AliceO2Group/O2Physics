@@ -56,7 +56,7 @@ struct SelectionStudyTable {
   {
   }
 
-  void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
+  void process(aod::McCollision const&, aod::McParticles const& mcParticles)
   {
     ptpi.clear();
     ptka.clear();
