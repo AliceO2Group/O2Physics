@@ -500,12 +500,14 @@ class MultModule
     //_______________________________________________________________________
     // forward detector signals, raw
     if (collision.has_fv0a()) {
-      for (const auto& amplitude : collision.fv0a().amplitude()) {
+      auto fv0a = collision.fv0a();
+      for (const auto& amplitude : fv0a.amplitude()) {
         mults.multFV0A += amplitude;
       }
     }
     if (collision.has_fv0c()) {
-      for (const auto& amplitude : collision.fv0c().amplitude()) {
+      auto fv0c = collision.fv0c();
+      for (const auto& amplitude : fv0c.amplitude()) {
         mults.multFV0C += amplitude;
       }
     }
