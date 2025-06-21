@@ -45,12 +45,16 @@ enum PairSign {
   LcNegTrkNeg
 };
 
+constexpr float PhiTowardMax{o2::constants::math::PIThird};
+constexpr float PhiAwayMin{2.f * o2::constants::math::PIThird};
+constexpr float PhiAwayMax{4.f * o2::constants::math::PIThird};
+
 template <typename T>
 Region getRegion(T const deltaPhi)
 {
-  if (std::abs(deltaPhi) < o2::constants::math::PIThird) {
+  if (std::abs(deltaPhi) < PhiTowardMax) {
     return Toward;
-  } else if (deltaPhi > 2. * o2::constants::math::PIThird && deltaPhi < 4. * o2::constants::math::PIThird) {
+  } else if (deltaPhi > PhiAwayMin && deltaPhi < PhiAwayMax) {
     return Away;
   } else {
     return Transverse;
@@ -117,6 +121,60 @@ bool passPIDSelection(Atrack const& track, SpeciesContainer const mPIDspecies,
     }
   }
   return true; // Passed all checks
+}
+
+// function to select candidate based on PDF and decay channels and their mass
+template <bool isScCand, typename McParticle>
+bool matchCandAndMass(McParticle const& particle, double& massCand)
+{
+  const auto pdgCand = std::abs(particle.pdgCode());
+  const auto matchGenFlag = std::abs(particle.flagMcMatchGen());
+
+  // Validate PDG code based on candidate type
+  if (isScCand) {
+    if (!(pdgCand == o2::constants::physics::Pdg::kSigmaC0 ||
+          pdgCand == o2::constants::physics::Pdg::kSigmaCPlusPlus ||
+          pdgCand == o2::constants::physics::Pdg::kSigmaCStar0 ||
+          pdgCand == o2::constants::physics::Pdg::kSigmaCStarPlusPlus)) {
+      return false;
+    }
+  } else {
+    if (pdgCand != o2::constants::physics::Pdg::kLambdaCPlus) {
+      return false;
+    }
+  }
+
+  // Map decay type to mass
+  switch (matchGenFlag) {
+    case BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi): {
+      massCand = o2::constants::physics::MassSigmaC0;
+      return true;
+    }
+
+    case BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi): {
+      massCand = o2::constants::physics::MassSigmaCStar0;
+      return true;
+    }
+
+    case BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi): {
+      massCand = o2::constants::physics::MassSigmaCStarPlusPlus;
+      return true;
+    }
+
+    case BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi): {
+      massCand = o2::constants::physics::MassSigmaCStarPlusPlus;
+      return true;
+    }
+
+    case hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi: {
+      massCand = o2::constants::physics::MassLambdaCPlus;
+      return true;
+    }
+
+    default: {
+      return false;
+    }
+  }
 }
 
 // ========= Find Leading Particle ==============
