@@ -19,6 +19,7 @@
 ///
 
 #include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/Core/emcalCrossTalkEmulation.h"
 #include "PWGJE/DataModel/EMCALClusterDefinition.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/EMCALMatchedCollisions.h"
@@ -26,36 +27,40 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsEMCAL/AnalysisCluster.h"
-#include "DataFormatsEMCAL/Cell.h"
-#include "DataFormatsEMCAL/CellLabel.h"
-#include "DataFormatsEMCAL/Constants.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "EMCALBase/ClusterFactory.h"
-#include "EMCALBase/Geometry.h"
-#include "EMCALBase/NonlinearityHandler.h"
-#include "EMCALReconstruction/Clusterizer.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsEMCAL/AnalysisCluster.h>
+#include <DataFormatsEMCAL/Cell.h>
+#include <DataFormatsEMCAL/CellLabel.h>
 #include <DataFormatsEMCAL/ClusterLabel.h>
+#include <DataFormatsEMCAL/Constants.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <EMCALBase/ClusterFactory.h>
+#include <EMCALBase/Geometry.h>
+#include <EMCALBase/NonlinearityHandler.h>
+#include <EMCALReconstruction/Clusterizer.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/Logger.h>
+#include <Framework/WorkflowSpec.h>
 #include <Framework/runDataProcessing.h>
 
-#include "TVector2.h"
 #include <TH1.h>
+#include <TVector2.h>
+
+#include <fairlogger/Logger.h>
 
 #include <GPUROOTCartesianFwd.h>
 
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <gsl/span>
 #include <memory>
 #include <random>
 #include <sstream>
@@ -68,6 +73,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::emccrosstalk;
 using MyGlobTracks = o2::soa::Join<o2::aod::FullTracks, o2::aod::TrackSelection>;
 using BcEvSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
 using CollEventSels = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
@@ -112,6 +118,12 @@ struct EmcalCorrectionTask {
   Configurable<bool> applyCellTimeCorrection{"applyCellTimeCorrection", true, "apply a correction to the cell time for data and MC: Shift both average cell times to 0 and smear MC time distribution to fit data better. For MC requires isMC to be true"};
   Configurable<float> trackMinPt{"trackMinPt", 0.3, "Minimum pT for tracks to perform track matching, to reduce computing time. Tracks below a certain pT will be loopers anyway."};
   Configurable<bool> fillQA{"fillQA", false, "Switch to turn on QA histograms."};
+
+  // cross talk emulation configs
+  EmcCrossTalkConf emcCrossTalkConf;
+
+  // cross talk emulation class for handling the cross talk
+  emccrosstalk::EMCCrossTalk emcCrossTalk;
 
   // Require EMCAL cells (CALO type 1)
   Filter emccellfilter = aod::calo::caloType == selectedCellType;
@@ -211,12 +223,12 @@ struct EmcalCorrectionTask {
 
     // Define the cell energy binning
     std::vector<double> cellEnergyBins;
-    for (int i = 0; i < 51; i++)
-      cellEnergyBins.emplace_back(0.1 * (i - 0) + 0.0); // from 0 to 5 GeV/c, every 0.1 GeV
-    for (int i = 51; i < 76; i++)
+    for (int i = 0; i < 51; i++)                         // o2-linter: disable=magic-number (just numbers for binning)
+      cellEnergyBins.emplace_back(0.1 * (i - 0) + 0.0);  // from 0 to 5 GeV/c, every 0.1 GeV
+    for (int i = 51; i < 76; i++)                        // o2-linter: disable=magic-number (just numbers for binning)
       cellEnergyBins.emplace_back(0.2 * (i - 51) + 5.2); // from 5.2 to 10.0 GeV, every 0.2 GeV
-    for (int i = 76; i < 166; i++)
-      cellEnergyBins.emplace_back(1. * (i - 76) + 11.); // from 11.0 to 100. GeV, every 1 GeV
+    for (int i = 76; i < 166; i++)                       // o2-linter: disable=magic-number (just numbers for binning)
+      cellEnergyBins.emplace_back(1. * (i - 76) + 11.);  // from 11.0 to 100. GeV, every 1 GeV
 
     // Setup QA hists.
     // NOTE: This is not comprehensive.
@@ -229,7 +241,8 @@ struct EmcalCorrectionTask {
       fCrossAxis{100, 0., 1., "F_{+}"},
       sigmaLongAxis{100, 0., 1.0, "#sigma^{2}_{long}"},
       sigmaShortAxis{100, 0., 1.0, "#sigma^{2}_{short}"},
-      nCellAxis{60, -0.5, 59.5, "#it{n}_{cells}"};
+      nCellAxis{60, -0.5, 59.5, "#it{n}_{cells}"},
+      energyDenseAxis = {7000, 0.f, 70.f, "#it{E}_{cell} (GeV)"};
     mHistManager.add("hCellE", "hCellE", O2HistType::kTH1D, {energyAxis});
     mHistManager.add("hCellTowerID", "hCellTowerID", O2HistType::kTH1D, {{20000, 0, 20000}});
     mHistManager.add("hCellEtaPhi", "hCellEtaPhi", O2HistType::kTH2F, {etaAxis, phiAxis});
@@ -279,6 +292,14 @@ struct EmcalCorrectionTask {
       mHistManager.add("hClusterFCrossE", "hClusterFCrossE", O2HistType::kTH2D, {energyAxis, fCrossAxis});
       mHistManager.add("hClusterFCrossSigmaLongE", "hClusterFCrossSigmaLongE", O2HistType::kTH3F, {energyAxis, fCrossAxis, sigmaLongAxis});
       mHistManager.add("hClusterFCrossSigmaShortE", "hClusterFCrossSigmaShortE", O2HistType::kTH3F, {energyAxis, fCrossAxis, sigmaShortAxis});
+    }
+
+    if (isMC.value && emcCrossTalkConf.enableCrossTalk.value) {
+      emcCrossTalk.initObjects(emcCrossTalkConf);
+      if (emcCrossTalkConf.createHistograms.value) {
+        mHistManager.add<TH1>("hCellEnergyDistBefore", "Cell energy before cross-talk emulation", {o2::framework::HistType::kTH1D, {energyDenseAxis}});
+        mHistManager.add<TH1>("hCellEnergyDistAfter", "Cell energy after cross-talk emulation", {o2::framework::HistType::kTH1D, {energyDenseAxis}});
+      }
     }
 
     // For some runs, LG cells require an extra time shift of 2 * 8.8ns due to problems in the time calibration
@@ -464,18 +485,60 @@ struct EmcalCorrectionTask {
         mHistManager.fill(HIST("hContributors"), cell.mcParticle_as<aod::StoredMcParticles_001>().size());
         auto cellParticles = cell.mcParticle_as<aod::StoredMcParticles_001>();
         for (const auto& cellparticle : cellParticles) {
+          const auto& ids = cell.mcParticleIds();
+          const auto& amps = cell.amplitudeA();
+
+          if (ids.empty() || amps.empty()) {
+            LOGF(warning, "Skipping cell with empty MC info: absId=%d", cell.cellNumber());
+            continue;
+          }
           mHistManager.fill(HIST("hMCParticleEnergy"), cellparticle.e());
         }
         auto amplitude = cell.amplitude();
-        if (static_cast<bool>(hasShaperCorrection) && emcal::intToChannelType(cell.cellType()) == emcal::ChannelType_t::LOW_GAIN) { // Apply shaper correction to LG cells
-          amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
-        }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
                              cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), runNumber),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
-        cellLabels.emplace_back(cell.mcParticleIds(), cell.amplitudeA());
+        cellLabels.emplace_back(std::vector<int>{cell.mcParticleIds().begin(), cell.mcParticleIds().end()}, std::vector<float>{cell.amplitudeA().begin(), cell.amplitudeA().end()});
+      }
+      size_t sizeBefore = cellsBC.size();
+      if (isMC.value && emcCrossTalkConf.enableCrossTalk.value) {
+        if (emcCrossTalkConf.createHistograms.value) {
+          for (const auto& cell : cellsBC) {
+            mHistManager.fill(HIST("hCellEnergyDistBefore"), cell.getAmplitude());
+          }
+        }
+        emcCrossTalk.setCells(cellsBC, cellLabels);
+        bool isOkCrossTalk = emcCrossTalk.run();
+        if (!isOkCrossTalk) {
+          LOG(info) << "Cross talk emulation failed!";
+        } else {
+          if (cellsBC.size() != sizeBefore) {
+            LOGF(debug, "Before: cell size = %lu", sizeBefore);
+            LOGF(debug, "After: cell size = %lu", cellsBC.size());
+            LOGF(debug, "After: cell label size = %lu", cellLabels.size());
+          }
+          // When we get new cells we also need to add additional entries into cellIndicesBC.
+          // Adding -1 and later when filling the clusterID<->cellID table skip all cases where this is -1
+          if (cellIndicesBC.size() < cellsBC.size()) {
+            cellIndicesBC.reserve(cellsBC.size());
+            for (size_t iMissing = 0; iMissing < (cellsBC.size() - cellIndicesBC.size()); ++iMissing) {
+              cellIndicesBC.emplace_back(-1);
+            }
+          }
+          if (emcCrossTalkConf.createHistograms.value) {
+            for (const auto& cell : cellsBC) {
+              mHistManager.fill(HIST("hCellEnergyDistAfter"), cell.getAmplitude());
+            }
+          }
+        } // cross talk emulation was okay
+      } // if (isMC.value && emcCrossTalkConf.enableCrossTalk.value)
+      // shaper correction has to come AFTER cross talk
+      for (auto& cell : cellsBC) { // o2-linter: disable=const-ref-in-for-loop (we are changing a value here)
+        if (cell.getLowGain()) {
+          cell.setAmplitude(o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(cell.getAmplitude()));
+        }
       }
       LOG(detail) << "Number of cells for BC (CF): " << cellsBC.size();
       nCellsProcessed += cellsBC.size();
@@ -739,7 +802,9 @@ struct EmcalCorrectionTask {
       for (int ncell = 0; ncell < cluster.getNCells(); ncell++) {
         cellindex = cluster.getCellIndex(ncell);
         LOG(debug) << "trying to find cell index " << cellindex << " in map";
-        clustercells(clusters.lastIndex(), cellIndicesBC[cellindex]);
+        if (cellIndicesBC[cellindex] >= 0) {
+          clustercells(clusters.lastIndex(), cellIndicesBC[cellindex]);
+        }
       } // end of cells of cluser loop
       // fill histograms
       mHistManager.fill(HIST("hClusterE"), energy);
