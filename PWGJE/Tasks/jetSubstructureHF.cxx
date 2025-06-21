@@ -130,20 +130,26 @@ struct JetSubstructureHFTask {
   Preslice<aod::JetTracks> TracksPerCollision = aod::jtrack::collisionId;
   PresliceOptional<aod::JTrackD0Subs> TracksPerD0DataSub = aod::bkgd0::candidateId;
   PresliceOptional<aod::JTrackDplusSubs> TracksPerDplusDataSub = aod::bkgdplus::candidateId;
+  PresliceOptional<aod::JTrackDstarSubs> TracksPerDstarDataSub = aod::bkgdstar::candidateId;
   PresliceOptional<aod::JTrackLcSubs> TracksPerLcDataSub = aod::bkglc::candidateId;
+  PresliceOptional<aod::JTrackB0Subs> TracksPerB0DataSub = aod::bkgb0::candidateId;
   PresliceOptional<aod::JTrackBplusSubs> TracksPerBplusDataSub = aod::bkgbplus::candidateId;
   PresliceOptional<aod::JTrackDielectronSubs> TracksPerDielectronDataSub = aod::bkgdielectron::candidateId;
   Preslice<aod::JetParticles> ParticlesPerMcCollision = aod::jmcparticle::mcCollisionId;
 
-  template <typename T, typename U, typename V, typename M, typename N>
-  auto selectSlicer(T const& D0Slicer, U const& DplusSlicer, V const& LcSlicer, M const& BplusSlicer, N const& DielectronSlicer)
+  template <typename T, typename U, typename V, typename M, typename N, typename O, typename P>
+  auto selectSlicer(T const& D0Slicer, U const& DplusSlicer, V const& DstarSlicer, M const& LcSlicer, N const& B0Slicer, O const& BplusSlicer, P const& DielectronSlicer)
   {
     if constexpr (jethfutilities::isD0Table<CandidateTable>()) {
       return D0Slicer;
     } else if constexpr (jethfutilities::isDplusTable<CandidateTable>()) {
       return DplusSlicer;
+    } else if constexpr (jethfutilities::isDstarTable<CandidateTable>()) {
+      return DstarSlicer;
     } else if constexpr (jethfutilities::isLcTable<CandidateTable>()) {
       return LcSlicer;
+    } else if constexpr (jethfutilities::isB0Table<CandidateTable>()) {
+      return B0Slicer;
     } else if constexpr (jethfutilities::isBplusTable<CandidateTable>()) {
       return BplusSlicer;
     } else if constexpr (jetdqutilities::isDielectronTable<CandidateTable>()) {
@@ -435,7 +441,7 @@ struct JetSubstructureHFTask {
                                  CandidateTable const& candidates,
                                  TracksSub const& tracks)
   {
-    analyseCharged<true>(jet, tracks, candidates, selectSlicer(TracksPerD0DataSub, TracksPerDplusDataSub, TracksPerLcDataSub, TracksPerBplusDataSub, TracksPerDielectronDataSub), jetSubstructureDataSubTable, jetSplittingsDataSubTable, jetPairsDataSubTable);
+    analyseCharged<true>(jet, tracks, candidates, selectSlicer(TracksPerD0DataSub, TracksPerDplusDataSub, TracksPerDstarDataSub, TracksPerLcDataSub, TracksPerB0DataSub, TracksPerBplusDataSub, TracksPerDielectronDataSub), jetSubstructureDataSubTable, jetSplittingsDataSubTable, jetPairsDataSubTable);
   }
   PROCESS_SWITCH(JetSubstructureHFTask, processChargedJetsDataSub, "HF jet substructure on data", false);
 
