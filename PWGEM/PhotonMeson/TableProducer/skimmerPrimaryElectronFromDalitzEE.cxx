@@ -70,8 +70,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
   Configurable<int> min_ncluster_itsib{"min_ncluster_itsib", 1, "min ncluster itsib"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
-  Configurable<float> minpt_itstpc{"minpt_itstpc", 0.05, "min pt for ITS-TPC track"};
-  Configurable<float> minpt_itssa{"minpt_itssa", 0.05, "min pt for ITSsa track"};
+  Configurable<float> minpt{"minpt", 0.05, "min pt for ITS-TPC track"};
   Configurable<float> maxeta{"maxeta", 2.0, "max eta acceptance"};
   Configurable<float> dca_xy_max{"dca_xy_max", 1, "max DCAxy in cm"};
   Configurable<float> dca_z_max{"dca_z_max", 1, "max DCAz in cm"};
@@ -259,10 +258,10 @@ struct skimmerPrimaryElectronFromDalitzEE {
     if (std::fabs(track.eta()) > maxeta) {
       return false;
     }
-    if ((track.hasITS() && track.hasTPC()) && track.pt() < minpt_itstpc) {
+    if ((track.hasITS() && track.hasTPC()) && track.pt() < minpt) {
       return false;
     }
-    if ((track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF()) && (track.pt() < minpt_itssa || maxpt_itssa < track.pt())) {
+    if ((track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF()) && maxpt_itssa < track.pt()) {
       return false;
     }
 
@@ -422,7 +421,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
   }
 
   std::vector<std::pair<int64_t, int64_t>> stored_trackIds;
-  Filter trackFilter = o2::aod::track::pt > minpt_itssa&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && nabs(o2::aod::track::dcaXY) < dca_xy_max&& nabs(o2::aod::track::dcaZ) < dca_z_max;
+  Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && nabs(o2::aod::track::dcaXY) < dca_xy_max&& nabs(o2::aod::track::dcaZ) < dca_z_max;
   using MyFilteredTracks = soa::Filtered<MyTracks>;
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
   Partition<MyFilteredTracks> negTracks = o2::aod::track::signed1Pt < 0.f;
