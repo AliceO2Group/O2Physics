@@ -491,7 +491,7 @@ struct HfTaskFlowCharmHadrons {
       return;
     }
     float occupancy = 0.;
-    uint16_t hfevflag{};
+    uint32_t hfevflag{};
     if (occEstimator != 0) {
       occupancy = getOccupancyColl(collision, occEstimator);
       registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
