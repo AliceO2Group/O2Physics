@@ -147,7 +147,7 @@ class SGSelector
       else if (FV0A <= fit_cut[0] && FT0A <= fit_cut[1] && ZNA <= zdc_cut && FT0C <= fit_cut[2] && ZNC <= zdc_cut)
         true_gap = 2;
       else
-        LOGF(info, "Something wrong with DG") ;
+        LOGF(info, "Something wrong with DG");
     }
     return true_gap;
   }
