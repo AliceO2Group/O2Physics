@@ -43,7 +43,7 @@ using namespace o2::framework::expressions;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
 using MyMCCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::McCollisionLabels>;
-using MyBCs = soa::Join<aod::BCs, aod::BcSels, aod::Timestamps>;
+using MyBCs = soa::Join<aod::BCs, aod::BcSels, aod::Timestamps, aod::BCCentFT0Ms>;
 
 using SelectedUniqueClusters = soa::Filtered<aod::EMCALClusters>;                                                         // Clusters from collisions with only one collision in the BC
 using SelectedUniqueMCClusters = soa::Filtered<soa::Join<aod::EMCALClusters, aod::EMCALMCClusters>>;                      // Clusters from collisions with only one collision in the BC
@@ -100,6 +100,7 @@ struct bcWiseClusterSkimmer {
       mHistManager.get<TH1>(HIST("nBCs"))->GetXaxis()->SetBinLabel(iBin + 1, binLabels[iBin]);
 
     mHistManager.add("CentralityVsGenMultiplicity", "Centrality vs number of generated MC particles;Centrality;#bf{#it{N}_{gen}}", HistType::kTH2F, {{102, 0., 102}, cfgMultiplicityBinning});
+    mHistManager.add("BCCentVsCollCent", "Centrality of the BC vs Centrality of the collision;BC Centrality;Collision Centrality", HistType::kTH2F, {{102, 0., 102}, {102, 0., 102}});
 
     LOG(info) << "BC wise cluster skimmer cuts:";
     LOG(info) << "------------------------------------";
@@ -232,11 +233,14 @@ struct bcWiseClusterSkimmer {
 
     double mu = cfgStoreMu ? calculateMu(bc) : 0.;
     float ft0Amp = hasFT0 ? bc.foundFT0().sumAmpA() + bc.foundFT0().sumAmpC() : 0.;
-    double centrality = 101.5;
+    double centralityOfCollision = 101.5;
     if (collisionsInBC.size() > 0)
-      centrality = collisionsInBC.iteratorAt(0).centFT0M();
+      centralityOfCollision = collisionsInBC.iteratorAt(0).centFT0M();
+    double centralityOfBC = bc.centFT0M();
 
-    bcTable(hasFT0, hasTVX, haskTVXinEMC, hasEMCCell, hasNoTFROFBorder, convertForStorage<uint8_t>(centrality, kFT0MCent), convertForStorage<uint16_t>(ft0Amp, kFT0Amp), convertForStorage<uint16_t>(mu, kMu));
+    mHistManager.fill(HIST("BCCentVsCollCent"), centralityOfBC, centralityOfCollision);
+
+    bcTable(hasFT0, hasTVX, haskTVXinEMC, hasEMCCell, hasNoTFROFBorder, convertForStorage<uint8_t>(centralityOfBC, kFT0MCent), convertForStorage<uint16_t>(ft0Amp, kFT0Amp), convertForStorage<uint16_t>(mu, kMu));
 
     for (const auto& collision : collisionsInBC)
       collisionTable(bcTable.lastIndex(), convertForStorage<uint8_t>(collision.centFT0M(), kFT0MCent), convertForStorage<int16_t>(collision.posZ(), kZVtx));
@@ -313,10 +317,7 @@ struct bcWiseClusterSkimmer {
       auto mcCollisionsBC = mcCollisions.sliceBy(mcCollperBC, bc.globalIndex());
       for (const auto& mcCollision : mcCollisionsBC) {
         auto mcParticlesInColl = mcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
-        double centrality = 101.5;
-        if (collisionsInBC.size() > 0)
-          centrality = collisionsInBC.iteratorAt(0).centFT0M();
-        mHistManager.fill(HIST("CentralityVsGenMultiplicity"), centrality, mcParticlesInColl.size());
+        mHistManager.fill(HIST("CentralityVsGenMultiplicity"), bc.centFT0M(), mcParticlesInColl.size());
         for (const auto& mcParticle : mcParticlesInColl) {
           if (mcParticle.pdgCode() != 111 || std::abs(mcParticle.y()) > cfgRapidityCut || !isGammaGammaDecay(mcParticle, mcParticles) || mcParticle.pt() < cfgMinPtGenPi0)
             continue;

@@ -560,6 +560,7 @@ struct ZdcQVectors {
     runnumber = foundBC.runNumber();
 
     // load new calibrations for new runs only
+    // UPLOAD Energy calibration and vmean in 1 histogram!
     if (runnumber != lastRunNumber) {
       cal.calibfilesLoaded[2] = false;
       cal.calibList[2] = nullptr;
@@ -587,11 +588,9 @@ struct ZdcQVectors {
     // load the calibrations for the mean v
     loadCalibrations<kMeanv>(foundBC.timestamp(), cfgMeanv.value);
 
-    if (!cal.calibfilesLoaded[1]) {
-      registry.get<TProfile>(HIST("vmean/hvertex_vx"))->Fill(Form("%d", runnumber), v[0]);
-      registry.get<TProfile>(HIST("vmean/hvertex_vy"))->Fill(Form("%d", runnumber), v[1]);
-      registry.get<TProfile>(HIST("vmean/hvertex_vz"))->Fill(Form("%d", runnumber), v[2]);
-    }
+    registry.get<TProfile>(HIST("vmean/hvertex_vx"))->Fill(Form("%d", runnumber), v[0]);
+    registry.get<TProfile>(HIST("vmean/hvertex_vy"))->Fill(Form("%d", runnumber), v[1]);
+    registry.get<TProfile>(HIST("vmean/hvertex_vz"))->Fill(Form("%d", runnumber), v[2]);
 
     bool isZNAhit = true;
     bool isZNChit = true;

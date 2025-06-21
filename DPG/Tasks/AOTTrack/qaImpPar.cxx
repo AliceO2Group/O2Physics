@@ -10,33 +10,32 @@
 // or submit itself to any jurisdiction.
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, Padova University and INFN
 
-#include <string>
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h" // for propagation to primary vertex
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "CommonConstants/GeomConstants.h"
+#include "CommonUtils/NameConf.h"
+#include "DataFormatsCalibration/MeanVertexObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "DetectorsVertexing/PVertexer.h"
+#include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "Common/Core/trackUtilities.h" // for propagation to primary vertex
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "CommonUtils/NameConf.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/Core/TrackSelection.h"
-#include "DetectorsVertexing/PVertexer.h"
-#include "ReconstructionDataFormats/Vertex.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
 #include "Framework/RunningWorkflowInfo.h"
-#include "CCDB/CcdbApi.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "CommonConstants/GeomConstants.h"
+#include "ReconstructionDataFormats/DCA.h"
+#include "ReconstructionDataFormats/Vertex.h"
 
 #include <iostream>
-#include <vector>
 #include <set>
+#include <string>
+#include <vector>
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -153,28 +152,47 @@ struct QaImpactPar {
   /// Data
   using CollisionRecoTable = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
   using TrackTable = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra>;
-  using TrackFullTable = o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TracksDCACov,
+  using TrackFullTableNoPid = o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TracksDCACov>;
+  using TrackFullTable = o2::soa::Join<TrackFullTableNoPid,
                                        o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr,
                                        o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
   using TrackTableIU = o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksCovIU, o2::aod::TracksExtra>;
+  ///
+  /// @brief process function in data, without the usage of PID info
   void processData(o2::soa::Filtered<CollisionRecoTable>::iterator const& collision,
                    const TrackTable& tracksUnfiltered,
-                   const o2::soa::Filtered<TrackFullTable>& tracks,
+                   const o2::soa::Filtered<TrackFullTableNoPid>& tracks,
                    const TrackTableIU& tracksIU,
                    o2::aod::BCsWithTimestamps const&)
   {
     /// here call the template processReco function
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-    processReco<false>(collision, tracksUnfiltered, tracks, tracksIU, 0, bc);
+    processReco<false, false>(collision, tracksUnfiltered, tracks, tracksIU, 0, bc);
   }
   PROCESS_SWITCH(QaImpactPar, processData, "process data", true);
+  ///
+  /// @brief process function in data, with the possibility to use PID info
+  void processDataWithPid(o2::soa::Filtered<CollisionRecoTable>::iterator const& collision,
+                          const TrackTable& tracksUnfiltered,
+                          const o2::soa::Filtered<TrackFullTable>& tracks,
+                          const TrackTableIU& tracksIU,
+                          o2::aod::BCsWithTimestamps const&)
+  {
+    /// here call the template processReco function
+    auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
+    processReco<false, true>(collision, tracksUnfiltered, tracks, tracksIU, 0, bc);
+  }
+  PROCESS_SWITCH(QaImpactPar, processDataWithPid, "process data with PID", false);
 
   /// MC
   using CollisionMCRecoTable = o2::soa::Join<CollisionRecoTable, o2::aod::McCollisionLabels>;
+  using TrackMCFullTableNoPid = o2::soa::Join<TrackFullTableNoPid, o2::aod::McTrackLabels>;
   using TrackMCFullTable = o2::soa::Join<TrackFullTable, o2::aod::McTrackLabels>;
+  ///
+  /// @brief process function in MC, without the usage of PID info
   void processMC(o2::soa::Filtered<CollisionMCRecoTable>::iterator const& collision,
                  TrackTable const& tracksUnfiltered,
-                 o2::soa::Filtered<TrackMCFullTable> const& tracks,
+                 o2::soa::Filtered<TrackMCFullTableNoPid> const& tracks,
                  const TrackTableIU& tracksIU,
                  const o2::aod::McParticles& mcParticles,
                  const o2::aod::McCollisions&,
@@ -182,9 +200,24 @@ struct QaImpactPar {
   {
     /// here call the template processReco function
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-    processReco<true>(collision, tracksUnfiltered, tracks, tracksIU, mcParticles, bc);
+    processReco<true, false>(collision, tracksUnfiltered, tracks, tracksIU, mcParticles, bc);
   }
   PROCESS_SWITCH(QaImpactPar, processMC, "process MC", false);
+  ///
+  /// @brief process function in MC,with the possibility to use PID info
+  void processMCWithPid(o2::soa::Filtered<CollisionMCRecoTable>::iterator const& collision,
+                        TrackTable const& tracksUnfiltered,
+                        o2::soa::Filtered<TrackMCFullTable> const& tracks,
+                        const TrackTableIU& tracksIU,
+                        const o2::aod::McParticles& mcParticles,
+                        const o2::aod::McCollisions&,
+                        o2::aod::BCsWithTimestamps const&)
+  {
+    /// here call the template processReco function
+    auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
+    processReco<true, true>(collision, tracksUnfiltered, tracks, tracksIU, mcParticles, bc);
+  }
+  PROCESS_SWITCH(QaImpactPar, processMCWithPid, "process MC with PID", false);
 
   /// core template process function
   /// template<bool IS_MC, typename C, typename T, typename T_MC>
@@ -197,6 +230,11 @@ struct QaImpactPar {
   /// init function - declare and define histograms
   void init(InitContext&)
   {
+    std::array<bool, 4> processes = {doprocessData, doprocessDataWithPid, doprocessMC, doprocessMCWithPid};
+    if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
+      LOGP(fatal, "One and only one process function for collision study must be enabled at a time.");
+    }
+
     // Primary vertex
     const AxisSpec collisionXAxis{100, -20.f, 20.f, "X (cm)"};
     const AxisSpec collisionYAxis{100, -20.f, 20.f, "Y (cm)"};
@@ -367,7 +405,7 @@ struct QaImpactPar {
   }
 
   /// core template process function
-  template <bool IS_MC, typename C, typename T, typename T_MC>
+  template <bool IS_MC, bool USE_PID, typename C, typename T, typename T_MC>
   void processReco(const C& collision, const TrackTable& unfilteredTracks, const T& tracks,
                    const TrackTableIU& tracksIU, const T_MC& /*mcParticles*/,
                    o2::aod::BCsWithTimestamps::iterator const& bc)
@@ -596,12 +634,14 @@ struct QaImpactPar {
 
       pt = track.pt();
       p = track.p();
-      tpcNSigmaPion = track.tpcNSigmaPi();
-      tpcNSigmaKaon = track.tpcNSigmaKa();
-      tpcNSigmaProton = track.tpcNSigmaPr();
-      tofNSigmaPion = track.tofNSigmaPi();
-      tofNSigmaKaon = track.tofNSigmaKa();
-      tofNSigmaProton = track.tofNSigmaPr();
+      if constexpr (USE_PID) {
+        tpcNSigmaPion = track.tpcNSigmaPi();
+        tpcNSigmaKaon = track.tpcNSigmaKa();
+        tpcNSigmaProton = track.tpcNSigmaPr();
+        tofNSigmaPion = track.tofNSigmaPi();
+        tofNSigmaKaon = track.tofNSigmaKa();
+        tofNSigmaProton = track.tofNSigmaPr();
+      }
 
       histograms.fill(HIST("Reco/pt"), pt);
       histograms.fill(HIST("Reco/hNSigmaTPCPion"), pt, tpcNSigmaPion);

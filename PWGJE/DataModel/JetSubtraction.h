@@ -18,14 +18,14 @@
 #ifndef PWGJE_DATAMODEL_JETSUBTRACTION_H_
 #define PWGJE_DATAMODEL_JETSUBTRACTION_H_
 
-#include <cmath>
-#include "Framework/AnalysisDataModel.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "PWGHF/DataModel/DerivedTables.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetReducedDataDQ.h"
-#include "PWGHF/DataModel/DerivedTables.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
+
+#include <Framework/ASoA.h>
+
+#include <cmath>
 
 namespace o2::aod
 {

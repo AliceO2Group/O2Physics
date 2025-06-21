@@ -14,20 +14,23 @@
 /// \file dedxAnalysis.cxx
 /// \brief  Analysis to do PID
 
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
+
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/TrackSelectionDefaults.h"
+
 #include "TF1.h"
 
 using namespace o2;
@@ -59,7 +62,7 @@ struct DedxAnalysis {
   float pionTofCut = 1.0;
   float invMassCut = 0.01;
   float invMassCutGamma = 0.0015;
-  float magField = 1.0;
+  float magField = 1;
   float pTcut = 2.0;
 
   // Configurable Parameters
@@ -96,8 +99,8 @@ struct DedxAnalysis {
                                    "Minimum Mass Gamma"};
   Configurable<float> maxMassGamma{"maxMassGamma", 0.002022f,
                                    "Maximum Mass Gamma"};
-  Configurable<bool> calibrationMode{"calibrationMode", false, "calibration mode"};
-  Configurable<bool> additionalCuts{"additionalCuts", false, "additional cuts"};
+  Configurable<bool> calibrationMode{"calibrationMode", true, "calibration mode"};
+  Configurable<bool> additionalCuts{"additionalCuts", true, "additional cuts"};
   // Histograms names
   static constexpr std::string_view kDedxvsMomentumPos[kParticlesType] = {"dEdx_vs_Momentum_all_Pos", "dEdx_vs_Momentum_Pi_v0_Pos", "dEdx_vs_Momentum_Pr_v0_Pos", "dEdx_vs_Momentum_El_v0_Pos"};
   static constexpr std::string_view kDedxvsMomentumNeg[kParticlesType] = {"dEdx_vs_Momentum_all_Neg", "dEdx_vs_Momentum_Pi_v0_Neg", "dEdx_vs_Momentum_Pr_v0_Neg", "dEdx_vs_Momentum_El_v0_Neg"};
@@ -213,9 +216,14 @@ struct DedxAnalysis {
 
     // phi cut
     registryDeDx.add(
-      "hpt_vs_phi", "phi cut", HistType::kTH2F,
-      {{ptAxis}, {100, 0.0, 6.4, "#phi"}});
+      "hpt_vs_phi_Ncl_After", "phi cut", HistType::kTH3F,
+      {{ptAxis}, {100, 0.0, 0.4, "#varphi^{'}"}, {100, 0, 160, "N_{cl}"}});
 
+    registryDeDx.add(
+      "hpt_vs_phi_Ncl_Before", "phi cut", HistType::kTH3F,
+      {{ptAxis}, {100, 0.0, 0.4, "#varphi^{'}"}, {100, 0, 160, "N_{cl}"}});
+
+    // beta plot
     registryDeDx.add(
       "hbeta_vs_p_Neg", "beta", HistType::kTH2F,
       {{pAxis}, {100, 0.0, 1.1, "#beta"}});
@@ -223,6 +231,7 @@ struct DedxAnalysis {
     registryDeDx.add(
       "hbeta_vs_p_Pos", "beta", HistType::kTH2F,
       {{pAxis}, {100, 0.0, 1.1, "#beta"}});
+
     // Event Counter
     registryDeDx.add("histRecVtxZData", "collision z position", HistType::kTH1F, {{100, -20.0, +20.0, "z_{vtx} (cm)"}});
 
@@ -396,11 +405,12 @@ struct DedxAnalysis {
     float pt = trk.pt();
     float phi = trk.phi();
     int charge = trk.sign();
+    auto nTPCCl = trk.tpcNClsFindable() - trk.tpcNClsFindableMinusFound();
 
     if (pt < pTcut)
       return true;
 
-    if (magField < 0.) // for negatve polarity field
+    if (magField < 0) // for negatve polarity field
       phi = o2::constants::math::TwoPI - phi;
     if (charge < 0) // for negatve charge
       phi = o2::constants::math::TwoPI - phi;
@@ -409,10 +419,12 @@ struct DedxAnalysis {
     phi += o2::constants::math::PI / 18.0f;
     phi = std::fmod(phi, o2::constants::math::PI / 9.0f);
 
+    registryDeDx.fill(HIST("hpt_vs_phi_Ncl_Before"), pt, phi, nTPCCl);
+
     if (phi < fphiCutHigh.Eval(pt) && phi > fphiCutLow.Eval(pt))
       return false; // reject track
 
-    registryDeDx.fill(HIST("hpt_vs_phi"), pt, phi);
+    registryDeDx.fill(HIST("hpt_vs_phi_Ncl_After"), pt, phi, nTPCCl);
     return true;
   }
 

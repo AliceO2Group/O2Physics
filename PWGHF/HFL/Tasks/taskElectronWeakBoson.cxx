@@ -52,8 +52,9 @@ struct HfTaskElectronWeakBoson {
 
   Configurable<float> vtxZ{"vtxZ", 10.f, ""};
 
-  Configurable<float> etaTrLow{"etaTrLow", -0.6f, "minimun track eta"};
-  Configurable<float> etaTrUp{"etaTrUp", 0.6f, "maximum track eta"};
+  Configurable<float> etaTrLow{"etaTrLow", -1.0f, "minimun track eta"};
+  Configurable<float> etaTrUp{"etaTrUp", 1.0f, "maximum track eta"};
+  Configurable<float> etaEmcAcc{"etaEmcAcc", 0.6f, "maximum track eta"};
   Configurable<float> dcaxyMax{"dcaxyMax", 2.0f, "mximum DCA xy"};
   Configurable<float> chi2ItsMax{"chi2ItsMax", 15.0f, "its chi2 cut"};
   Configurable<float> ptMin{"ptMin", 3.0f, "minimum pT cut"};
@@ -362,6 +363,8 @@ struct HfTaskElectronWeakBoson {
       //  continue;
       if (track.phi() < phiEmcMin || track.phi() > phiEmcMax)
         continue;
+      if (std::abs(track.eta()) > etaEmcAcc)
+        continue;
       auto tracksofcluster = matchedtracks.sliceBy(perClusterMatchedTracks, track.globalIndex());
 
       // LOGF(info, "Number of matched track: %d", tracksofcluster.size());
@@ -434,7 +437,7 @@ struct HfTaskElectronWeakBoson {
               if (eop > eopMin && eop < eopMax && trackCount < trackIsolationMax)
                 isIsolatedTr = true;
 
-              if (isIsolated) {
+              if (isIsolated && isIsolatedTr) {
                 registry.fill(HIST("hEopIsolation"), match.track_as<TrackEle>().pt(), eop);
 
                 if (match.track_as<TrackEle>().pt() > ptZeeMin) {
