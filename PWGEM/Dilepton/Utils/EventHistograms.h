@@ -14,6 +14,9 @@
 
 #ifndef PWGEM_DILEPTON_UTILS_EVENTHISTOGRAMS_H_
 #define PWGEM_DILEPTON_UTILS_EVENTHISTOGRAMS_H_
+
+#include "Framework/HistogramRegistry.h"
+
 using namespace o2::framework;
 
 namespace o2::aod::pwgem::dilepton::utils::eventhistogram
