@@ -12,24 +12,27 @@
 /// \author Diana Krupova, diana.krupova@cern.ch
 /// \since 04.06.2024
 
-#include <limits>
-#include <unordered_set>
-#include <utility>
-#include <unordered_map>
-#include <algorithm>
-#include <map>
-#include <vector>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/DataModel/EventSelection.h"
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsFIT/Triggers.h"
 #include "PWGUD/Core/UPCCutparHolder.h"
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include "CommonConstants/LHCConstants.h"
+#include "DataFormatsFIT/Triggers.h"
 #include "DataFormatsITSMFT/ROFRecord.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include <algorithm>
+#include <limits>
+#include <map>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -1512,7 +1515,7 @@ struct UpcCandProducer {
                           fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                           fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                           fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
-      eventCandidatesSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+      eventCandidatesSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
       eventCandidatesSelsFwd(fitInfo.distClosestBcV0A,
                              fitInfo.distClosestBcT0A,
                              amplitudesT0A,
@@ -1828,7 +1831,7 @@ struct UpcCandProducer {
                           fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                           fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                           fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
-      eventCandidatesSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, 0, 0, trs, trofs, hmpr, tfb, itsROFb, sbp, zVtxFT0vPv, vtxITSTPC);
+      eventCandidatesSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, 0, 0, trs, trofs, hmpr, tfb, itsROFb, sbp, zVtxFT0vPv, vtxITSTPC, 0);
       eventCandidatesSelsFwd(fitInfo.distClosestBcV0A,
                              fitInfo.distClosestBcT0A,
                              amplitudesT0A,
