@@ -444,8 +444,8 @@ struct MeanPtFlucId {
   template <typename T>
   bool rejectTracks(T const& track)
   {
-    if (((track.tpcNSigmaEl()) > -cfgCutNSig3.&&
-         (track.tpcNSigmaEl()) < cfgCutNSig5.) &&
+    if (((track.tpcNSigmaEl()) > -cfgCutNSig3 &&
+         (track.tpcNSigmaEl()) < cfgCutNSig5) &&
         (std::fabs(track.tpcNSigmaPi()) > cfgCutNSig3 &&
          std::fabs(track.tpcNSigmaKa()) > cfgCutNSig3 &&
          std::fabs(track.tpcNSigmaPr()) > cfgCutNSig3)) {
