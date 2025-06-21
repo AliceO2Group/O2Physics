@@ -318,6 +318,7 @@ struct StrangenessBuilder {
     Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
     Configurable<float> v0radius{"v0radius", 0.9, "v0radius"};
     Configurable<float> maxDaughterEta{"maxDaughterEta", 5.0, "Maximum daughter eta (in abs value)"};
+    Configurable<bool> acceptITSonly{"acceptITSonly", false, "flag to accept ITSonly tracks"};
 
     // MC builder options
     Configurable<bool> mc_populateV0MCCoresSymmetric{"mc_populateV0MCCoresSymmetric", false, "populate V0MCCores table for derived data analysis, keep V0MCCores joinable with V0Cores"};
@@ -947,7 +948,7 @@ struct StrangenessBuilder {
             // process candidate with helper, generate properties for consulting
             // <false>: do not apply selections: do as much as possible to preserve
             // candidate at this level and do not select with topo selections
-            if (straHelper.buildV0Candidate<false>(v0tableGrouped[iV0].collisionIds[ic], collision.posX(), collision.posY(), collision.posZ(), pTrack, nTrack, posTrackPar, negTrackPar, true, false, true)) {
+            if (straHelper.buildV0Candidate<false>(v0tableGrouped[iV0].collisionIds[ic], collision.posX(), collision.posY(), collision.posZ(), pTrack, nTrack, posTrackPar, negTrackPar, true, false, true, v0BuilderOpts.acceptITSonly)) {
               // candidate built, check pointing angle
               if (straHelper.v0.pointingAngle < bestPointingAngle) {
                 bestPointingAngle = straHelper.v0.pointingAngle;
@@ -1425,7 +1426,7 @@ struct StrangenessBuilder {
         }
       }
 
-      if (!straHelper.buildV0Candidate(v0.collisionId, pvX, pvY, pvZ, posTrack, negTrack, posTrackPar, negTrackPar, v0.isCollinearV0, mEnabledTables[kV0Covs], true)) {
+      if (!straHelper.buildV0Candidate(v0.collisionId, pvX, pvY, pvZ, posTrack, negTrack, posTrackPar, negTrackPar, v0.isCollinearV0, mEnabledTables[kV0Covs], true, v0BuilderOpts.acceptITSonly)) {
         products.v0dataLink(-1, -1);
         continue;
       }
