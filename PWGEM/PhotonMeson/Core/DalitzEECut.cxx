@@ -13,11 +13,12 @@
 // Class for dilepton Cut
 //
 
-#include <utility>
-#include <set>
+#include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 
 #include "Framework/Logger.h"
-#include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
+
+#include <set>
+#include <utility>
 
 ClassImp(DalitzEECut);
 
@@ -178,4 +179,10 @@ void DalitzEECut::SetPIDScheme(int scheme)
 {
   mPIDScheme = scheme;
   LOG(info) << "DalitzEE Cut, PID scheme: " << static_cast<int>(mPIDScheme);
+}
+void DalitzEECut::IncludeITSsa(bool flag, float max)
+{
+  mIncludeITSsa = flag;
+  mMaxPtITSsa = max;
+  LOG(info) << "DalitzEE Cut, include ITSsa tracks: " << mIncludeITSsa << ", mMaxPtITSsa = " << mMaxPtITSsa;
 }
