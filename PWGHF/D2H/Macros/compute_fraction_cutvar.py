@@ -221,23 +221,20 @@ def main(config):
         output_name_frac_pdf = f"Frac_{cfg['output']['file'].replace('.root', '.pdf')}"
         output_name_covmat_pdf = f"CovMatrix_{cfg['output']['file'].replace('.root', '.pdf')}"
         output_name_pdf = f"{cfg['output']['file'].replace('.root', '.pdf')}"
-        if ipt == 0:
-            canv_rawy.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_rawy_pdf)}[")
-            canv_eff.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_eff_pdf)}[")
-            canv_frac.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_frac_pdf)}[")
-            canv_cov.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_covmat_pdf)}[")
-            canv_combined.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_pdf)}[")
-        canv_rawy.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_rawy_pdf)}")
-        canv_eff.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_eff_pdf)}")
-        canv_frac.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_frac_pdf)}")
-        canv_cov.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_covmat_pdf)}")
-        canv_combined.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_pdf)}")
-        if ipt == hist_rawy[0].GetNbinsX() - 1:
-            canv_rawy.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_rawy_pdf)}]")
-            canv_eff.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_eff_pdf)}]")
-            canv_frac.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_frac_pdf)}]")
-            canv_cov.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_covmat_pdf)}]")
-            canv_combined.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_pdf)}]")
+
+        if hist_rawy[0].GetNbinsX() == 1:
+            print_bracket = ""
+        elif ipt == 0:
+            print_bracket = "("
+        elif ipt == hist_rawy[0].GetNbinsX() - 1:
+            print_bracket = ")"
+        else:
+            print_bracket = ""
+        canv_rawy.Print(f"{os.path.join(cfg['output']['directory'], output_name_rawy_pdf)}{print_bracket}")
+        canv_eff.Print(f"{os.path.join(cfg['output']['directory'], output_name_eff_pdf)}{print_bracket}")
+        canv_frac.Print(f"{os.path.join(cfg['output']['directory'], output_name_frac_pdf)}{print_bracket}")
+        canv_cov.Print(f"{os.path.join(cfg['output']['directory'], output_name_covmat_pdf)}{print_bracket}")
+        canv_combined.Print(f"{os.path.join(cfg['output']['directory'], output_name_pdf)}{print_bracket}")
 
     output.cd()
     hist_corry_prompt.Write()
