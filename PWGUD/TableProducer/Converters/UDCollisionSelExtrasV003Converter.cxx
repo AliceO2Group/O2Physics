@@ -31,7 +31,7 @@ struct UDCollisionSelExtrasV003Converter {
     if (!doprocessV000ToV003 && !doprocessV001ToV003 && !doprocessV002ToV003) {
       LOGF(fatal, "Neither processV000ToV003 nor processV001ToV003 nor processV002ToV003 is enabled. Please choose one!");
     }
-    if ((int)doprocessV000ToV003 + (int)doprocessV001ToV003 + (int)doprocessV002ToV003 > 1) {
+    if (static_cast<int>(doprocessV000ToV003) + static_cast<int>(doprocessV001ToV003) + static_cast<int>(doprocessV002ToV003) > 1) {
       LOGF(fatal, "More than one among processV000ToV003, processV001ToV003, processV002ToV003 is enabled. Please choose only one!");
     }
   }
