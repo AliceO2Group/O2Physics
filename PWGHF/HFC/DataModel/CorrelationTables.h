@@ -161,14 +161,14 @@ DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                              //! U
 DECLARE_SOA_COLUMN(IsPrompt, isPrompt, bool);                              //! Used in MC-Rec, Lc Prompt or Non-Prompt
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);            //! Used in MC-Rec, primary associated particles
 DECLARE_SOA_COLUMN(IsAutoCorrelated, isAutoCorrelated, bool);              //! Correlation Status
-DECLARE_SOA_COLUMN(Cent,cent,float);
-DECLARE_SOA_COLUMN(Zv,zv,float);
-DECLARE_SOA_COLUMN(PrNsigmTPC, prNsigmTPC, float);                         //! Associated Particle TPC nSigma proton
-DECLARE_SOA_COLUMN(KaNsigmTPC, kaNsigmTPC, float);                         //! Associated Particle TPC nSigma Kaon
-DECLARE_SOA_COLUMN(PiNsigmTPC, piNsigmTPC, float);                         //! Associated Particle TPC nSigma Pion
-DECLARE_SOA_COLUMN(PrNsigmTOF, prNsigmTOF, float);                         //! Associated Particle TOF nSigma Proton
-DECLARE_SOA_COLUMN(KaNsigmTOF, kaNsigmTOF, float);                         //! Associated Particle TOF nSigma Kaon
-DECLARE_SOA_COLUMN(PiNsigmTOF, piNsigmTOF, float);                         //! Associated Particle TOF nSigma Pion
+DECLARE_SOA_COLUMN(Cent, cent, float);
+DECLARE_SOA_COLUMN(Zv, zv, float);
+DECLARE_SOA_COLUMN(PrNsigmTPC, prNsigmTPC, float); //! Associated Particle TPC nSigma proton
+DECLARE_SOA_COLUMN(KaNsigmTPC, kaNsigmTPC, float); //! Associated Particle TPC nSigma Kaon
+DECLARE_SOA_COLUMN(PiNsigmTPC, piNsigmTPC, float); //! Associated Particle TPC nSigma Pion
+DECLARE_SOA_COLUMN(PrNsigmTOF, prNsigmTOF, float); //! Associated Particle TOF nSigma Proton
+DECLARE_SOA_COLUMN(KaNsigmTOF, kaNsigmTOF, float); //! Associated Particle TOF nSigma Kaon
+DECLARE_SOA_COLUMN(PiNsigmTOF, piNsigmTOF, float); //! Associated Particle TOF nSigma Pion
 } // namespace hf_correlation_lc_hadron
 
 DECLARE_SOA_TABLE(LcHadronPair, "AOD", "LCHPAIR", //! Lc-Hadrons pairs Informations

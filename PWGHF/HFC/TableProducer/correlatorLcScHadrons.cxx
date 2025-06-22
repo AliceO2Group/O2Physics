@@ -16,6 +16,7 @@
 /// \author Zhen Zhang <zhenz@cern.ch>
 /// \author Ravindra Singh <ravindra.singh@cern.ch>
 
+
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
@@ -60,6 +61,23 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <vector>
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CommonConstants/MathConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+
+#include "TRandom3.h"
+
 #include <vector>
 
 using namespace o2;
@@ -476,7 +494,7 @@ struct HfCorrelatorLcScHadrons {
   {
     bool isPhysicalPrimary = false;
     int trackOrigin = -1;
-    double_t cent =100.0; //will be updated later
+    double_t cent = 100.0; // will be updated later
 
     entryCandHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                         track.eta() - candidate.eta(),
@@ -1020,7 +1038,7 @@ struct HfCorrelatorLcScHadrons {
 
         int8_t chargeLc = pdg->GetParticle(particle.pdgCode())->Charge();         // Retrieve charge
         int8_t chargeAssoc = pdg->GetParticle(particleAssoc.pdgCode())->Charge(); // Retrieve charge
-        double_t cent =100.0; //will be updated later
+        double_t cent = 100.0;                                                    // will be updated later
 
         int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
         int8_t chargeAssoc = pdg->GetParticle(particleAssoc.pdgCode())->Charge(); // Retrieve charge
@@ -1173,7 +1191,7 @@ struct HfCorrelatorLcScHadrons {
         }
         int8_t chargeLc = pdg->GetParticle(candidate.pdgCode())->Charge();        // Retrieve charge
         int8_t chargeAssoc = pdg->GetParticle(particleAssoc.pdgCode())->Charge(); // Retrieve charge
-        double_t cent =100.0; //will be updated later
+        double_t cent = 100.0;                                                    // will be updated later
 
         int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
         bool isPrompt = candidate.originMcGen() == RecoDecay::OriginType::Prompt;
