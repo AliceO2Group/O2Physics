@@ -37,7 +37,7 @@ def main(config):
         infile_rawy = ROOT.TFile.Open(os.path.join(cfg["rawyields"]["inputdir"], filename_rawy))
         hist_rawy_name = cfg["rawyields"]["histoname"]
         hist_rawy.append(infile_rawy.Get(hist_rawy_name))
-        if(hist_rawy[-1] == None):
+        if(hist_rawy[-1] is None):
             sys.exit(f"Fatal error: Histogram with raw yield \"{hist_rawy_name}\" is absent. Exit.")
         hist_rawy[-1].SetDirectory(0)
         infile_rawy.Close()
@@ -47,9 +47,9 @@ def main(config):
         hist_effnp_name = cfg["efficiencies"]["histonames"]["nonprompt"]
         hist_effp.append(infile_eff.Get(hist_effp_name))
         hist_effnp.append(infile_eff.Get(hist_effnp_name))
-        if(hist_effp[-1] == None):
+        if(hist_effp[-1] is None):
             sys.exit(f"Fatal error: Histogram with efficiency for prompt \"{hist_effp_name}\" is absent. Exit.")
-        if(hist_effnp[-1] == None):
+        if(hist_effnp[-1] is None):
             sys.exit(f"Fatal error: Histogram with efficiency for nonprompt \"{hist_effnp}\" is absent. Exit.")
         hist_effp[-1].SetDirectory(0)
         hist_effnp[-1].SetDirectory(0)
@@ -60,11 +60,11 @@ def main(config):
         infile_central_eff = ROOT.TFile.Open(infile_name)
         hist_central_effp_name = cfg["central_efficiency"]["histonames"]["prompt"]
         hist_central_effp = infile_central_eff.Get(hist_central_effp_name)
-        if(hist_central_effp == None):
+        if(hist_central_effp is None):
             sys.exit(f"Fatal error: Histogram with central efficiency for prompt \"{hist_central_effp_name}\" is absent. Exit.")
         hist_central_effnp_name = cfg["central_efficiency"]["histonames"]["nonprompt"]
         hist_central_effnp = infile_central_eff.Get(hist_central_effnp_name)
-        if(hist_central_effnp == None):
+        if(hist_central_effnp is None):
             sys.exit(f"Fatal error: Histogram with central efficiency for nonprompt \"{hist_central_effnp_name}\" is absent. Exit.")
         hist_central_effp.SetDirectory(0)
         hist_central_effnp.SetDirectory(0)
