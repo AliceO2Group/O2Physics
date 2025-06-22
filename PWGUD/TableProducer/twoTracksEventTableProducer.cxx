@@ -77,11 +77,11 @@ struct TauEventTableProducer {
     Configurable<float> cutTrueGapSideFT0C{"cutTrueGapSideFT0C", 50., "FT0C threshold for SG selector"};
     Configurable<float> cutTrueGapSideZDC{"cutTrueGapSideZDC", 10000., "ZDC threshold for SG selector. 0 is <1n, 4.2 is <2n, 6.7 is <3n, 9.5 is <4n, 12.5 is <5n"};
     Configurable<float> cutFITtime{"cutFITtime", 40., "Maximum FIT time allowed. Default is 40ns"};
-	  Configurable<bool> cutEvTFb{"cutEvTFb", false, {"Event selection bit kNoTimeFrameBorder"}};
-		Configurable<bool> cutEvITSROFb{"cutEvITSROFb", false, {"Event selection bit kNoITSROFrameBorder"}};
-		Configurable<bool> cutEvSbp{"cutEvSbp", false, {"Event selection bit kNoSameBunchPileup"}};
+	  Configurable<bool> cutEvTFb{"cutEvTFb", true, {"Event selection bit kNoTimeFrameBorder"}};
+		Configurable<bool> cutEvITSROFb{"cutEvITSROFb", true, {"Event selection bit kNoITSROFrameBorder"}};
+		Configurable<bool> cutEvSbp{"cutEvSbp", true, {"Event selection bit kNoSameBunchPileup"}};
 		Configurable<bool> cutEvZvtxFT0vPV{"cutEvZvtxFT0vPV", false, {"Event selection bit kIsGoodZvtxFT0vsPV"}};
-		Configurable<bool> cutEvVtxITSTPC{"cutEvVtxITSTPC", false, {"Event selection bit kIsVertexITSTPC"}};
+		Configurable<bool> cutEvVtxITSTPC{"cutEvVtxITSTPC", true, {"Event selection bit kIsVertexITSTPC"}};
     Configurable<float> cutEvOccupancy{"cutEvOccupancy", 100000., "Maximum allowed occupancy"};
     Configurable<bool> cutEvTrs{"cutEvTrs", false, {"Event selection bit kNoCollInTimeRangeStandard"}};
     Configurable<bool> cutEvTrofs{"cutEvTrofs", false, {"Event selection bit kNoCollInRofStandard"}};
@@ -160,7 +160,6 @@ struct TauEventTableProducer {
   template <typename C>
   bool isGoodROFtime(C const& coll)
   {
-
 
 	  // kNoTimeFrameBorder
 	  if (cutSample.cutEvTFb && !coll.tfb())
