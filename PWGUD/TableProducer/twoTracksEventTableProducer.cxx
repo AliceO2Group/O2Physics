@@ -349,15 +349,6 @@ struct TauEventTableProducer {
     if (cutSample.useRecoFlag && (collision.flags() != cutSample.cutRecoFlag))
       return;
 
-	  udcollision::Trs,             //! kNoCollInTimeRangeStandard
-					  udcollision::Trofs,           //! kNoCollInRofStandard
-					  udcollision::Hmpr,            //! kNoHighMultCollInPrevRof
-					  udcollision::TFb,             //! kNoTimeFrameBorder
-					  udcollision::ITSROFb,         //! kNoITSROFrameBorder
-					  udcollision::Sbp,             //! kNoSameBunchPileup
-					  udcollision::ZvtxFT0vPV,      //! kIsGoodZvtxFT0vsPV
-					  udcollision::VtxITSTPC);      //! kIsVertexITSTPC
-
     int countTracksPerCollision = 0;
     int countGoodNonPVtracks = 0;
     int countGoodPVtracks = 0;
