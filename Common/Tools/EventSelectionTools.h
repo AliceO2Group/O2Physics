@@ -1428,7 +1428,7 @@ class LumiModule
         LOGP(warn, "Cross section for z={} + z={} @ {} GeV is not defined", beamZ1, beamZ2, sqrts);
       }
       // getting CTP config to extract lumi class indices (used for rate fetching and pileup correction)
-      std::map<string, string> metadata;
+      std::map<std::string, std::string> metadata;
       metadata["runNumber"] = std::to_string(run);
       auto config = ccdb->template getSpecific<o2::ctp::CTPConfiguration>("CTP/Config/Config", ts, metadata);
       auto classes = config->getCTPClasses();
