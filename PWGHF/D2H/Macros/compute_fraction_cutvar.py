@@ -131,6 +131,7 @@ def main(config):
 
     output = ROOT.TFile(os.path.join(cfg["output"]["directory"], cfg["output"]["file"]), "recreate")
     n_sets = len(hist_rawy)
+    pt_axis_title = hist_rawy[0].GetXaxis().GetTitle()
     for ipt in range(hist_rawy[0].GetNbinsX()):
         pt_min = hist_rawy[0].GetXaxis().GetBinLowEdge(ipt + 1)
         pt_max = hist_rawy[0].GetXaxis().GetBinUpEdge(ipt + 1)
@@ -171,16 +172,7 @@ def main(config):
             hist_frac_raw_nonprompt.SetBinContent(ipt + 1, raw_frac_nonprompt[0])
             hist_frac_raw_nonprompt.SetBinError(ipt + 1, raw_frac_nonprompt[1])
 
-        hist_bin_title = "bin # " + str(ipt)
-        hist_bin_name = cfg.get("rawyields", {}).get("binwisehistoname")
-        if hist_bin_name is not None:
-            infile_rawy = ROOT.TFile.Open(os.path.join(cfg["rawyields"]["inputdir"], filename_rawy))
-            hist_bin_name = cfg["rawyields"]["binwisehistoname"] + str(ipt)
-            hist_bin = infile_rawy.Get(hist_bin_name)
-            if(hist_bin == None):
-                sys.exit(f"Fatal error: Histogram with bin-wise mass distributions \"{hist_bin_name}\" is absent. Exit.")
-            hist_bin_title = hist_bin_title + "; " + hist_bin.GetTitle()
-            infile_rawy.Close()
+        hist_bin_title = "bin # " + str(ipt+1) + f"; {pt_axis_title}#in (" + str(pt_min) + "; " + str(pt_max) + ")"
 
         canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt{pt_min}_{pt_max}", hist_bin_title)
         output.cd()
