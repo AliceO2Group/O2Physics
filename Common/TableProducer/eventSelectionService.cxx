@@ -77,7 +77,7 @@ struct eventselectionRun2 {
   Partition<FullTracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
   Preslice<FullTracks> perCollision = aod::track::collisionId;
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
     // CCDB boilerplate init
     ccdb->setCaching(true);
@@ -85,8 +85,8 @@ struct eventselectionRun2 {
     ccdb->setURL(ccdburl.value);
 
     // task-specific
-    bcselmodule.init(bcselOpts, histos);
-    evselmodule.init(evselOpts, histos, metadataInfo);
+    bcselmodule.init(context, bcselOpts, histos);
+    evselmodule.init(context, evselOpts, histos, metadataInfo);
   }
 
   void process(BCsWithRun2InfosTimestampsAndMatches const& bcs,
@@ -110,6 +110,7 @@ struct eventselectionRun3 {
   o2::common::eventselection::evselConfigurables evselOpts;
   o2::common::eventselection::EventSelectionModule evselmodule;
 
+  o2::common::eventselection::lumiConfigurables lumiOpts;
   o2::common::eventselection::LumiModule lumimodule;
 
   Produces<aod::BcSels> bcsel;
@@ -132,7 +133,7 @@ struct eventselectionRun3 {
   Partition<FullTracksIU> pvTracks = ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
   Preslice<FullTracksIU> perCollisionIU = aod::track::collisionId;
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
     // CCDB boilerplate init
     ccdb->setCaching(true);
@@ -140,9 +141,9 @@ struct eventselectionRun3 {
     ccdb->setURL(ccdburl.value);
 
     // task-specific
-    bcselmodule.init(bcselOpts, histos);
-    evselmodule.init(evselOpts, histos, metadataInfo);
-    lumimodule.init(histos);
+    bcselmodule.init(context, bcselOpts, histos);
+    evselmodule.init(context, evselOpts, histos, metadataInfo);
+    lumimodule.init(context, lumiOpts, histos);
   }
 
   void process(aod::Collisions const& collisions,

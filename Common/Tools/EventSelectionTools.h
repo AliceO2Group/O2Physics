@@ -39,6 +39,7 @@
 #include "Framework/HistogramRegistry.h"
 #include "ITSMFTBase/DPLAlpideParam.h"
 #include "ITSMFTReconstruction/ChipMappingITS.h"
+#include "TableHelper.h"
 
 #include <array>
 #include <cmath>
@@ -74,6 +75,7 @@ struct bcselEntry {
 // bc selection configurables
 struct bcselConfigurables : o2::framework::ConfigurableGroup {
   std::string prefix = "bcselOpts";
+  o2::framework::Configurable<int> amIneeded{"amIneeded", -1, "run BC selection or not. -1: automatic; 0: no; 1: yes"};                                                           // o2-linter: disable=name/configurable (temporary fix)
   o2::framework::Configurable<int> confTriggerBcShift{"triggerBcShift", 0, "set either custom shift or 999 for apass2/apass3 in LHC22o-t"};                                       // o2-linter: disable=name/configurable (temporary fix)
   o2::framework::Configurable<int> confITSROFrameStartBorderMargin{"ITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"}; // o2-linter: disable=name/configurable (temporary fix)
   o2::framework::Configurable<int> confITSROFrameEndBorderMargin{"ITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};       // o2-linter: disable=name/configurable (temporary fix)
@@ -88,6 +90,7 @@ struct bcselConfigurables : o2::framework::ConfigurableGroup {
 struct evselConfigurables : o2::framework::ConfigurableGroup {
   std::string prefix = "evselOpts";
   bool isMC_metadata = false;
+  o2::framework::Configurable<int> amIneeded{"amIneeded", -1, "run event selection or not. -1: automatic; 0: no; 1: yes"};                                                        // o2-linter: disable=name/configurable (temporary fix)
   o2::framework::Configurable<int> muonSelection{"muonSelection", 0, "0 - barrel, 1 - muon selection with pileup cuts, 2 - muon selection without pileup cuts"};
   o2::framework::Configurable<float> maxDiffZvtxFT0vsPV{"maxDiffZvtxFT0vsPV", 1., "maximum difference (in cm) between z-vertex from FT0 and PV"};
   o2::framework::Configurable<int> isMC{"isMC", -1, "-1 - autoset, 0 - data, 1 - MC"};
@@ -103,6 +106,12 @@ struct evselConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> confEpsilonVzDiffVetoInROF{"EpsilonVzDiffVetoInROF", 0.3, "Minumum distance to nearby collisions along z inside this ITS ROF, cm"};                            // o2-linter: disable=name/configurable (temporary fix)
   o2::framework::Configurable<bool> confUseWeightsForOccupancyVariable{"UseWeightsForOccupancyEstimator", 1, "Use or not the delta-time weights for the occupancy estimator"};                      // o2-linter: disable=name/configurable (temporary fix)
   o2::framework::Configurable<int> confNumberOfOrbitsPerTF{"NumberOfOrbitsPerTF", -1, "Number of orbits per Time Frame. Take from CCDB if -1"};                                                     // o2-linter: disable=name/configurable (temporary fix)
+};
+
+// luminosity configurables
+struct lumiConfigurables : o2::framework::ConfigurableGroup {
+  std::string prefix = "lumiOpts";
+  o2::framework::Configurable<int> amIneeded{"amIneeded", -1, "run BC selection or not. -1: automatic; 0: no; 1: yes"};                                                           // o2-linter: disable=name/configurable (temporary fix)
 };
 
 class BcSelectionModule
@@ -139,11 +148,30 @@ class BcSelectionModule
   bool isGoodITSLayer0123 = true;                           // default value
   bool isGoodITSLayersAll = true;                           // default value
 
-  template <typename TBcSelOpts, typename THistoRegistry>
-  void init(TBcSelOpts const& external_bcselopts, THistoRegistry& histos)
+  template <typename TContext, typename TBcSelOpts, typename THistoRegistry>
+  void init(TContext& context, TBcSelOpts const& external_bcselopts, THistoRegistry& histos)
   {
     // read in configurations from the task where it's used
     bcselOpts = external_bcselopts;
+
+    if(bcselOpts.amIneeded.value<0){
+      int bcSelNeeded = -1, evSelNeeded = -1;
+      bcselOpts.amIneeded.value = 0;
+      enableFlagIfTableRequired(context, "BcSels", bcSelNeeded);
+      enableFlagIfTableRequired(context, "EvSels", evSelNeeded);
+      if(bcSelNeeded==1){
+        bcselOpts.amIneeded.value = 1;
+        LOGF(info, "BC Selection / Autodetection for aod::BcSels: subscription present, will generate.");
+      }
+      if(evSelNeeded==1 && bcSelNeeded==0){
+        bcselOpts.amIneeded.value = 1;
+        LOGF(info, "BC Selection / Autodetection for aod::BcSels: not there, but EvSel needed. Will generate.");
+      }
+      if(bcSelNeeded == 0 && evSelNeeded == 0){ 
+        LOGF(info, "BC Selection / Autodetection for aod::BcSels: not required. Skipping generation.");
+        return;
+      }
+    }
 
     // add counter
     histos.add("bcselection/hCounterInvalidBCTimestamp", "", o2::framework::kTH1D, {{1, 0., 1.}});
@@ -237,8 +265,12 @@ class BcSelectionModule
 
   //__________________________________________________
   template <typename TCCDB, typename TBCs, typename TBcSelBuffer, typename TBcSelCursor>
-  std::vector<o2::common::eventselection::bcselEntry> processRun2(TCCDB const& ccdb, TBCs const& bcs, TBcSelBuffer& bcselbuffer, TBcSelCursor& bcsel)
+  void processRun2(TCCDB const& ccdb, TBCs const& bcs, TBcSelBuffer& bcselbuffer, TBcSelCursor& bcsel)
   {
+    if(bcselOpts.amIneeded.value == 0){
+      bcselbuffer.clear();  
+      return;
+    }
     bcselbuffer.clear();
     for (const auto& bc : bcs) {
       par = ccdb->template getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
@@ -372,6 +404,10 @@ class BcSelectionModule
   template <typename TCCDB, typename THistoRegistry, typename TBCs, typename TBcSelBuffer, typename TBcSelCursor>
   void processRun3(TCCDB const& ccdb, THistoRegistry& histos, TBCs const& bcs, TBcSelBuffer& bcselbuffer, TBcSelCursor& bcsel)
   {
+    if(bcselOpts.amIneeded.value == 0){
+      bcselbuffer.clear();  
+      return;
+    }
     bcselbuffer.clear();
     if (!configure(ccdb, bcs))
       return; // don't do anything in case configuration reported not ok
@@ -623,11 +659,21 @@ class EventSelectionModule
   // (N.B.: will be invisible to the outside, create your own copies)
   o2::common::eventselection::evselConfigurables evselOpts;
 
-  template <typename TEvSelOpts, typename THistoRegistry, typename TMetadataInfo>
-  void init(TEvSelOpts const& external_evselopts, THistoRegistry& histos, TMetadataInfo const& metadataInfo)
+  template <typename TContext, typename TEvSelOpts, typename THistoRegistry, typename TMetadataInfo>
+  void init(TContext& context, TEvSelOpts const& external_evselopts, THistoRegistry& histos, TMetadataInfo const& metadataInfo)
   {
     // read in configurations from the task where it's used
     evselOpts = external_evselopts;
+
+    if(evselOpts.amIneeded.value<0){
+      enableFlagIfTableRequired(context, "EvSels", evselOpts.amIneeded.value);
+      if(evselOpts.amIneeded.value==0){
+        LOGF(info, "Event Selection / Autodetecting for aod::EvSels: not required, won't generate.");
+        return;
+      }else{
+        LOGF(info, "Event Selection / Autodetecting for aod::EvSels: subscription present, will generate.");
+      }
+    }
 
     if (metadataInfo.isFullyDefined()) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
       if (evselOpts.isMC == -1) {
@@ -678,6 +724,9 @@ class EventSelectionModule
   template <typename TCCDB, typename THistoRegistry, typename TCollisions, typename TTracklets, typename TSlicecache, typename TBcSelBuffer, typename TEvselCursor>
   void processRun2(TCCDB const& ccdb, THistoRegistry& histos, TCollisions const& collisions, TTracklets const& tracklets, TSlicecache& cache, TBcSelBuffer const& bcselbuffer, TEvselCursor& evsel)
   {
+    if(evselOpts.amIneeded.value == 0){
+      return; // dummy process
+    }
     for (const auto& col : collisions) {
       auto bc = col.template bc_as<soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>>();
       EventSelectionParams* par = ccdb->template getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
@@ -756,6 +805,9 @@ class EventSelectionModule
   template <typename TCCDB, typename THistoRegistry, typename TBCs, typename TCollisions, typename TPVTracks, typename TFT0s, typename TSlicecache, typename TBcSelBuffer, typename TEvselCursor>
   void processRun3(TCCDB const& ccdb, THistoRegistry& histos, TBCs const& bcs, TCollisions const& cols, TPVTracks const& pvTracks, TFT0s const& ft0s, TSlicecache& cache, TBcSelBuffer const& bcselbuffer, TEvselCursor& evsel)
   {
+    if(evselOpts.amIneeded.value == 0){
+      return; // dummy process
+    }
     if (!configure(ccdb, bcs))
       return; // don't do anything in case configuration reported not ok
 
@@ -1243,9 +1295,34 @@ class LumiModule
   std::bitset<nBCsPerOrbit> bcPatternB; // bc pattern of colliding bunches
   std::vector<o2::aod::rctsel::RCTFlagsChecker> mRCTFlagsCheckers;
 
-  template <typename THistoRegistry>
-  void init(THistoRegistry& histos)
+  // declaration of structs here
+  // (N.B.: will be invisible to the outside, create your own copies)
+  o2::common::eventselection::lumiConfigurables lumiOpts;
+
+  template <typename TContext, typename TLumiOpts, typename THistoRegistry>
+  void init(TContext& context, TLumiOpts const& external_lumiopts, THistoRegistry& histos)
   {
+    lumiOpts = external_lumiopts; 
+
+    if(lumiOpts.amIneeded.value<0){
+      int bcSelNeeded = -1, evSelNeeded = -1;
+      lumiOpts.amIneeded.value = 0;
+      enableFlagIfTableRequired(context, "BcSels", bcSelNeeded);
+      enableFlagIfTableRequired(context, "EvSels", evSelNeeded);
+      if(bcSelNeeded==1){
+        lumiOpts.amIneeded.value = 1;
+        LOGF(info, "Luminosity / Autodetection for aod::BcSels: subscription present, will generate.");
+      }
+      if(evSelNeeded==1 && bcSelNeeded==0){
+        lumiOpts.amIneeded.value = 1;
+        LOGF(info, "Luminosity / Autodetection for aod::BcSels: not there, but EvSel needed. Will generate.");
+      }
+      if(bcSelNeeded == 0 && evSelNeeded == 0){ 
+        LOGF(info, "Luminosity / Autodetection for aod::BcSels: not required. Skipping generation.");
+        return;
+      }
+    }
+
     histos.add("luminosity/hCounterTVX", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hCounterTCE", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("luminosity/hCounterZEM", "", framework::kTH1D, {{1, 0., 1.}});
@@ -1437,6 +1514,10 @@ class LumiModule
   template <typename TCCDB, typename THistoRegistry, typename TBCs, typename TBcSelBuffer>
   void process(TCCDB& ccdb, THistoRegistry& histos, TBCs const& bcs, TBcSelBuffer const& bcselBuffer)
   {
+    if(lumiOpts.amIneeded.value == 0){
+      return;
+    }
+
     if (!configure(ccdb, bcs))
       return; // don't do anything in case configuration reported not ok
 
