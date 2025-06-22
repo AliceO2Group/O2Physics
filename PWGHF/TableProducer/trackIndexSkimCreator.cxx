@@ -21,13 +21,23 @@
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 /// \author Ruiqi Yin <ruiqi.yin@cern.ch>, Fudan University
 
-#include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/Utils/utilsAnalysis.h"
-#include "PWGHF/Utils/utilsBfieldCCDB.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include <algorithm> // std::find
+#include <iterator>  // std::distance
+#include <string>    // std::string
+#include <vector>    // std::vector
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "CCDB/BasicCCDBManager.h"             // for PV refit
+#include "DataFormatsParameters/GRPMagField.h" // for PV refit
+#include "DataFormatsParameters/GRPObject.h"   // for PV refit
+#include "DCAFitter/DCAFitterN.h"
+#include "DetectorsBase/Propagator.h"     // for PV refit
+#include "DetectorsVertexing/PVertexer.h" // for PV refit
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/V0.h"
+#include "ReconstructionDataFormats/Vertex.h" // for PV refit
 
 #include "Common/Core/TrackSelectorPID.h"
 #include "Common/Core/trackUtilities.h"
@@ -37,23 +47,14 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Tools/ML/MlResponse.h"
 
-#include "CCDB/BasicCCDBManager.h" // for PV refit
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DataFormatsParameters/GRPMagField.h" // for PV refit
-#include "DataFormatsParameters/GRPObject.h"   // for PV refit
-#include "DetectorsBase/Propagator.h"          // for PV refit
-#include "DetectorsVertexing/PVertexer.h"      // for PV refit
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/V0.h"
-#include "ReconstructionDataFormats/Vertex.h" // for PV refit
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include <algorithm> // std::find
-#include <iterator>  // std::distance
-#include <string>    // std::string
-#include <vector>    // std::vector
+#include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
 
 using namespace o2;
 using namespace o2::analysis;
