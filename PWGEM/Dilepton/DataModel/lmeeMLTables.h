@@ -9,13 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <vector>
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/AnalysisDataModel.h"
+
+#include <vector>
 
 #ifndef PWGEM_DILEPTON_DATAMODEL_LMEEMLTABLES_H_
 #define PWGEM_DILEPTON_DATAMODEL_LMEEMLTABLES_H_
@@ -23,10 +25,9 @@
 namespace o2::aod
 {
 
-namespace pwgem::dilepton
+namespace pwgem::dilepton::ml
 {
-enum class PID_Label : int {
-  kUnDef = -1,
+enum class PID_Label : uint8_t {
   kElectron = 0,
   kMuon = 1,
   kPion = 2,
@@ -34,21 +35,22 @@ enum class PID_Label : int {
   kProton = 4,
 }; // this can be used for eID.
 
-enum class Track_Type : int {
+enum class Track_Type : uint8_t {
   kPrimary = 0,
   kSecondary = 1,
 }; // this can be used for selecting electron from primary or photon conversion.
 
-} // namespace pwgem::dilepton
+} // namespace pwgem::dilepton::ml
 
 namespace emprimarytrack
 {
-DECLARE_SOA_COLUMN(CollisionId, collisionId, int);               //!
-DECLARE_SOA_COLUMN(PIDLabel, pidlabel, int);                     //!
-DECLARE_SOA_COLUMN(TrackType, tracktype, int);                   //!
-DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, int);             //!
-DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, int); //!
-DECLARE_SOA_COLUMN(IsForValidation, isForValidation, bool);      //!
+// DECLARE_SOA_COLUMN(CollisionId, collisionId, int);               //!
+DECLARE_SOA_COLUMN(PIDLabel, pidlabel, uint8_t);                     //!
+DECLARE_SOA_COLUMN(TrackType, tracktype, uint8_t);                   //!
+DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, uint8_t);             //!
+DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t); //!
+DECLARE_SOA_COLUMN(IsForValidation, isForValidation, bool);          //!
+DECLARE_SOA_COLUMN(Sign, sign, short);                               //!
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITS, meanClusterSizeITS, [](uint32_t itsClusterSizes) -> float {
   int total_cluster_size = 0, nl = 0;
@@ -84,8 +86,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32
 
 // reconstructed track information
 DECLARE_SOA_TABLE(EMPrimaryTracks, "AOD", "EMPTRACK", //!
-                  o2::soa::Index<>, emprimarytrack::CollisionId, collision::PosZ, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange,
-                  track::Pt, track::Eta, track::Phi, track::Tgl, track::Signed1Pt,
+                  o2::soa::Index<>, collision::PosZ, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange,
+                  track::Pt, track::Eta, track::Phi, track::Tgl, emprimarytrack::Sign,
                   track::DcaXY, track::DcaZ, track::CYY, track::CZZ, track::CZY,
                   track::TPCNClsFindable, emprimarytrack::TPCNClsFound, emprimarytrack::TPCNClsCrossedRows,
                   track::TPCChi2NCl, track::TPCInnerParam,

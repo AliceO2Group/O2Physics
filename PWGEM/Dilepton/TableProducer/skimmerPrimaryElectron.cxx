@@ -81,8 +81,7 @@ struct skimmerPrimaryElectron {
   Configurable<int> min_ncluster_itsib{"min_ncluster_itsib", 1, "min ncluster itsib"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
-  Configurable<float> minpt_itstpc{"minpt_itstpc", 0.1, "min pt for ITS-TPC track"};
-  Configurable<float> minpt_itssa{"minpt_itssa", 0.05, "min pt for ITSsa track"};
+  Configurable<float> minpt{"minpt", 0.15, "min pt for ITS-TPC track"};
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance"};
   Configurable<float> dca_xy_max{"dca_xy_max", 1.0, "max DCAxy in cm"};
   Configurable<float> dca_z_max{"dca_z_max", 1.0, "max DCAz in cm"};
@@ -182,14 +181,14 @@ struct skimmerPrimaryElectron {
 
     if (usePIDML) {
       static constexpr int nClassesMl = 2;
-      const std::vector<int> cutDirMl = {o2::cuts_ml::CutGreater, o2::cuts_ml::CutNot};
-      const std::vector<std::string> labelsClasses = {"Signal", "Background"};
+      const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutSmaller};
+      const std::vector<std::string> labelsClasses = {"Background", "Signal"};
       const uint32_t nBinsMl = binsMl.value.size() - 1;
       const std::vector<std::string> labelsBins(nBinsMl, "bin");
       double cutsMlArr[nBinsMl][nClassesMl];
       for (uint32_t i = 0; i < nBinsMl; i++) {
-        cutsMlArr[i][0] = cutsMl.value[i];
-        cutsMlArr[i][1] = 0.;
+        cutsMlArr[i][0] = 0.0;
+        cutsMlArr[i][1] = cutsMl.value[i];
       }
       o2::framework::LabeledArray<double> cutsMl = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
 
@@ -348,11 +347,11 @@ struct skimmerPrimaryElectron {
       return false;
     }
 
-    if ((track.hasITS() && track.hasTPC()) && track_par_cov_recalc.getPt() < minpt_itstpc) {
+    if ((track.hasITS() && track.hasTPC()) && track_par_cov_recalc.getPt() < minpt) {
       return false;
     }
 
-    if ((track.hasITS() && !track.hasTPC() && !track.hasTOF() && !track.hasTRD()) && (track_par_cov_recalc.getPt() < minpt_itssa || maxpt_itssa < track_par_cov_recalc.getPt())) {
+    if ((track.hasITS() && !track.hasTPC() && !track.hasTOF() && !track.hasTRD()) && maxpt_itssa < track_par_cov_recalc.getPt()) {
       return false;
     }
 
@@ -558,7 +557,7 @@ struct skimmerPrimaryElectron {
 
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   std::vector<std::pair<int, int>> stored_trackIds;
-  Filter trackFilter = o2::aod::track::pt > minpt_itssa&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true;
+  Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true;
   using MyFilteredTracks = soa::Filtered<MyTracks>;
 
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
@@ -779,8 +778,7 @@ struct prefilterPrimaryElectron {
   Configurable<bool> fillQAHistogram{"fillQAHistogram", false, "flag to fill QA histograms"};
   Configurable<float> max_dcaxy{"max_dcaxy", 0.3, "DCAxy To PV for loose track sample"};
   Configurable<float> max_dcaz{"max_dcaz", 0.3, "DCAz To PV for loose track sample"};
-  Configurable<float> minpt_itstpc{"minpt_itstpc", 0.1, "min pt for ITS-TPC track"};
-  Configurable<float> minpt_itssa{"minpt_itssa", 0.05, "min pt for ITSsa track"};
+  Configurable<float> minpt{"minpt", 0.1, "min pt for ITS-TPC track"};
   Configurable<float> maxeta{"maxeta", 1.2, "eta acceptance for loose track sample"};
   Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
@@ -954,11 +952,11 @@ struct prefilterPrimaryElectron {
       return false;
     }
 
-    if ((track.hasITS() && track.hasTPC()) && track_par_cov_recalc.getPt() < minpt_itstpc) {
+    if ((track.hasITS() && track.hasTPC()) && track_par_cov_recalc.getPt() < minpt) {
       return false;
     }
 
-    if ((track.hasITS() && !track.hasTPC() && !track.hasTOF() && !track.hasTRD()) && (track_par_cov_recalc.getPt() < minpt_itssa || maxpt_itssa < track_par_cov_recalc.getPt())) {
+    if ((track.hasITS() && !track.hasTPC() && !track.hasTOF() && !track.hasTRD()) && maxpt_itssa < track_par_cov_recalc.getPt()) {
       return false;
     }
 
@@ -1021,7 +1019,7 @@ struct prefilterPrimaryElectron {
 
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
-  Filter trackFilter = o2::aod::track::pt > minpt_itssa&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true;
+  Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true;
   using MyFilteredTracks = soa::Filtered<MyTracks>;
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
   Partition<MyFilteredTracks> negTracks = o2::aod::track::signed1Pt < 0.f;
