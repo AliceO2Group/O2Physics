@@ -329,6 +329,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
         }
       }
     }
+
     /// number of PV contributors
     if (collision.numContrib() < nPvContributorsMin) {
       SETBIT(rejectionMask, EventRejection::NContrib);
