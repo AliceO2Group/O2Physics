@@ -43,9 +43,6 @@
 #include "PWGUD/DataModel/TauEventTables.h"
 #include "PWGUD/Core/SGSelector.h"
 
-// ROOT headers
-#include "TLorentzVector.h"
-#include "TPDGCode.h"
 
 using namespace o2;
 using namespace o2::framework;
