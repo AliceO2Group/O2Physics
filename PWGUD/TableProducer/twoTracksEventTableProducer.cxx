@@ -31,6 +31,11 @@
 #include "Framework/runDataProcessing.h"
 
 // O2Physics headers
+#include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
+#include "PWGUD/DataModel/TwoTracksEventTables.h"
+#include "PWGUD/DataModel/UDTables.h"
+
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -38,10 +43,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
-#include "PWGUD/DataModel/TwoTracksEventTables.h"
-#include "PWGUD/DataModel/UDTables.h"
 
 // ROOT
 #include "Math/Vector4D.h"
@@ -756,4 +757,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<TwoTracksEventTableProducer>(cfgc)};
 }
-
