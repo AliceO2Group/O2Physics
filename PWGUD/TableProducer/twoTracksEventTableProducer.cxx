@@ -326,11 +326,11 @@ struct TwoTracksEventTableProducer {
   // good for same-type particles decays
   {
     float nSigmasTPCsqrt[5];
-    nSigmasTPCsqrt[P_ELECTRON] = std::sqrt(trk1.tpcNsigmaEl() * trk1.tpcNsigmaEl() + trk2.tpcNsigmaEl() * trk2.tpcNsigmaEl());
-    nSigmasTPCsqrt[P_MUON] = std::sqrt(trk1.tpcNsigmaMu() * trk1.tpcNsigmaMu() + trk2.tpcNsigmaMu() * trk2.tpcNsigmaMu());
-    nSigmasTPCsqrt[P_PION] = std::sqrt(trk1.tpcNsigmaPi() * trk1.tpcNsigmaPi() + trk2.tpcNsigmaPi() * trk2.tpcNsigmaPi());
-    nSigmasTPCsqrt[P_KAON] = std::sqrt(trk1.tpcNsigmaKa() * trk1.tpcNsigmaKa() + trk2.tpcNsigmaKa() * trk2.tpcNsigmaKa());
-    nSigmasTPCsqrt[P_PROTON] = std::sqrt(trk1.tpcNsigmaPr() * trk1.tpcNsigmaPr() + trk2.tpcNsigmaPr() * trk2.tpcNsigmaPr());
+    nSigmasTPCsqrt[P_ELECTRON] = std::sqrt(trk1.tpcNSigmaEl() * trk1.tpcNSigmaEl() + trk2.tpcNSigmaEl() * trk2.tpcNSigmaEl());
+    nSigmasTPCsqrt[P_MUON] = std::sqrt(trk1.tpcNSigmaMu() * trk1.tpcNSigmaMu() + trk2.tpcNSigmaMu() * trk2.tpcNSigmaMu());
+    nSigmasTPCsqrt[P_PION] = std::sqrt(trk1.tpcNSigmaPi() * trk1.tpcNSigmaPi() + trk2.tpcNSigmaPi() * trk2.tpcNSigmaPi());
+    nSigmasTPCsqrt[P_KAON] = std::sqrt(trk1.tpcNSigmaKa() * trk1.tpcNSigmaKa() + trk2.tpcNSigmaKa() * trk2.tpcNSigmaKa());
+    nSigmasTPCsqrt[P_PROTON] = std::sqrt(trk1.tpcNSigmaPr() * trk1.tpcNSigmaPr() + trk2.tpcNSigmaPr() * trk2.tpcNSigmaPr());
 
     int enumChoiceTPC = std::distance(std::begin(nSigmasTPCsqrt),
                                                 std::min_element(std::begin(nSigmasTPCsqrt), std::end(nSigmasTPCsqrt)));
