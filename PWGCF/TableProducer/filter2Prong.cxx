@@ -44,9 +44,13 @@ struct Filter2Prong {
   O2_DEFINE_CONFIGURABLE(cfgYMax, float, -1.0f, "Maximum candidate rapidity")
   O2_DEFINE_CONFIGURABLE(cfgImPart1Mass, float, o2::constants::physics::MassKPlus, "Daughter particle 1 mass in GeV")
   O2_DEFINE_CONFIGURABLE(cfgImPart2Mass, float, o2::constants::physics::MassKMinus, "Daughter particle 2 mass in GeV")
+  // O2_DEFINE_CONFIGURABLE(cfgImPart1PID, int, o2::track::PID::Kaon, "PID of daughter particle 1 (O2 PID ID)")
+  // O2_DEFINE_CONFIGURABLE(cfgImPart2PID, int, o2::track::PID::Kaon, "PID of daughter particle 2 (O2 PID ID)")
+  O2_DEFINE_CONFIGURABLE(cfgMomDepPID, bool, 1, "Use mommentum dependent PID for Phi meson")
   O2_DEFINE_CONFIGURABLE(cfgImCutPt, float, 0.2f, "Minimal pT for candidates")
   O2_DEFINE_CONFIGURABLE(cfgImMinInvMass, float, 0.95f, "Minimum invariant mass (GeV)")
   O2_DEFINE_CONFIGURABLE(cfgImMaxInvMass, float, 1.07f, "Maximum invariant mass (GeV)")
+  // O2_DEFINE_CONFIGURABLE(cfgImSigmaFormula, std::string, "(z < 0.5 && x < 3.0) || (z >= 0.5 && x < 2.5 && y < 3.0)", "pT dependent daughter track sigma pass condition (x = TPC sigma, y = TOF sigma, z = pT)")
   O2_DEFINE_CONFIGURABLE(cfgDoPhi, bool, false, "Store phi information")
   O2_DEFINE_CONFIGURABLE(cfgDoV0, bool, true, "Store V0s candidates")
   O2_DEFINE_CONFIGURABLE(tpcNClsCrossedRowsTrackMin, float, 70, "Minimum number of crossed rows in TPC")
@@ -104,8 +108,12 @@ struct Filter2Prong {
   using PIDTrack = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta>;
   using ResoV0s = aod::V0Datas;
 
+  // std::unique_ptr<TFormula> sigmaFormula;
+
   void init(InitContext&)
   {
+    // if (doprocessDataInvMass)
+    // sigmaFormula = std::make_unique<TFormula>("sigmaFormula", cfgImSigmaFormula.value.c_str());
   }
 
   template <class HFCandidatesType>
@@ -343,20 +351,22 @@ struct Filter2Prong {
   template <typename T>
   bool selectionPID(const T& candidate)
   {
-    if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
-      return true;
-    }
-    if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaKa()) < nsigmaCutTOF) {
-      return true;
-    }
-    return false;
-  }
-
-  template <typename T>
-  bool selectionPID2(const T& candidate)
-  {
-    if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && TMath::Abs(candidate.tofNSigmaKa()) < nsigmaCutTOF) {
-      return true;
+    if (cfgMomDepPID) {
+      if (candidate.p() < 0.5) {
+        if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
+          return true;
+        } else if (candidate.hasTOF() && TMath::Sqrt(candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < nsigmaCutTOF && candidate.beta() > cfgCutTOFBeta) {
+          return true;
+        }
+      } else if (candidate.hasTOF() && TMath::Sqrt(candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < nsigmaCutTOF && candidate.beta() > cfgCutTOFBeta) {
+        return true;
+      }
+    } else if (!cfgMomDepPID) {
+      if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
+        return true;
+      } else if (candidate.hasTOF() && TMath::Sqrt(candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < nsigmaCutTOF && candidate.beta() > cfgCutTOFBeta) {
+        return true;
+      }
     }
     return false;
   }
@@ -372,52 +382,38 @@ struct Filter2Prong {
     if (cfgDoPhi) {                           // Process Phi mesons
       for (const auto& cftrack1 : cftracks) { // Loop over first track
         const auto& p1 = tracks.iteratorAt(cftrack1.trackId() - tracks.begin().globalIndex());
-        if (p1.sign() != 1) // Only consider positive tracks
-          continue;
-        /*if (sigmaFormula->Eval(o2::aod::pidutils::tpcNSigma(cfgImPart1PID, p1), o2::aod::pidutils::tofNSigma(cfgImPart1PID, p1)) <= 0.0f)
-    {
-      continue;
-      }*/
-        if (!isTOFOnly && !selectionPID(p1)) {
-          continue;
-        }
-        if (isTOFOnly && !selectionPID2(p1)) {
+        if (p1.sign() != 1) {
           continue;
         }
         if (ITSPIDSelection && p1.p() < ITSPIDPthreshold.value && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(p1) > -ITSPIDNsigma.value && itsResponse.nSigmaITS<o2::track::PID::Kaon>(p1) < ITSPIDNsigma.value)) { // Check ITS PID condition
           continue;
         }
+        if (!selectionPID(p1)) {
+          continue;
+        }
         if (removefaketrack && isFakeKaon(p1)) { // Check if the track is a fake kaon
           continue;
         }
-
         for (const auto& cftrack2 : cftracks) {                 // Loop over second track
           if (cftrack2.globalIndex() == cftrack1.globalIndex()) // Skip if it's the same track as the first one
             continue;
 
           const auto& p2 = tracks.iteratorAt(cftrack2.trackId() - tracks.begin().globalIndex());
-          if (p2.sign() != -1) // Only consider negative tracks
-            continue;
-          /*if (sigmaFormula->Eval(o2::aod::pidutils::tpcNSigma(cfgImPart2PID, p2), o2::aod::pidutils::tofNSigma(cfgImPart2PID, p2)) <= 0.0f)
-      {
-      continue;
-      }*/
-          if (!isTOFOnly && !selectionPID(p2)) {
+          if (p2.sign() != -1) {
             continue;
           }
-          if (isTOFOnly && !selectionPID2(p2)) {
+          if (!selectionPID(p2)) {
             continue;
           }
           if (ITSPIDSelection && p2.p() < ITSPIDPthreshold.value && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(p2) > -ITSPIDNsigma.value && itsResponse.nSigmaITS<o2::track::PID::Kaon>(p2) < ITSPIDNsigma.value)) { // Check ITS PID condition
             continue;
           }
+          if (removefaketrack && isFakeKaon(p2)) { // Check if the track is a fake kaon
+            continue;
+          }
           if (!selectionPair(p1, p2)) {
             continue;
           }
-          if (removefaketrack && isFakeKaon(p2)) {
-            continue;
-          }
-
           ROOT::Math::PtEtaPhiMVector vec1(p1.pt(), p1.eta(), p1.phi(), cfgImPart1Mass);
           ROOT::Math::PtEtaPhiMVector vec2(p2.pt(), p2.eta(), p2.phi(), cfgImPart2Mass);
           ROOT::Math::PtEtaPhiMVector s = vec1 + vec2;
