@@ -61,6 +61,53 @@ DECLARE_SOA_COLUMN(OuterTOFExpectedTimeMu, outerTOFExpectedTimeMu, float); //! R
 DECLARE_SOA_COLUMN(OuterTOFExpectedTimePi, outerTOFExpectedTimePi, float); //! Reconstructed expected time at the OuterTOF for the Pion mass hypotheses
 DECLARE_SOA_COLUMN(OuterTOFExpectedTimeKa, outerTOFExpectedTimeKa, float); //! Reconstructed expected time at the OuterTOF for the Kaon mass hypotheses
 DECLARE_SOA_COLUMN(OuterTOFExpectedTimePr, outerTOFExpectedTimePr, float); //! Reconstructed expected time at the OuterTOF for the Proton mass hypotheses
+DECLARE_SOA_DYNAMIC_COLUMN(NSigmaInnerTOF, nSigmaInnerTOF,                 //! General function to get the nSigma for the InnerTOF
+                           [](const float el,
+                              const float mu,
+                              const float pi,
+                              const float ka,
+                              const float pr,
+                              const int id) -> float {
+                             switch (std::abs(id)) {
+                               case 0:
+                                 return el;
+                               case 1:
+                                 return mu;
+                               case 2:
+                                 return pi;
+                               case 3:
+                                 return ka;
+                               case 4:
+                                 return pr;
+                               default:
+                                 LOG(fatal) << "Unrecognized PDG code for InnerTOF";
+                                 return 999.f;
+                             }
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(NSigmaOuterTOF, nSigmaOuterTOF, //! General function to get the nSigma for the OuterTOF
+                           [](const float el,
+                              const float mu,
+                              const float pi,
+                              const float ka,
+                              const float pr,
+                              const int id) -> float {
+                             switch (std::abs(id)) {
+                               case 0:
+                                 return el;
+                               case 1:
+                                 return mu;
+                               case 2:
+                                 return pi;
+                               case 3:
+                                 return ka;
+                               case 4:
+                                 return pr;
+                               default:
+                                 LOG(fatal) << "Unrecognized PDG code for InnerTOF";
+                                 return 999.f;
+                             }
+                           });
+
 } // namespace upgrade_tof
 
 DECLARE_SOA_TABLE(UpgradeTofMCs, "AOD", "UPGRADETOFMC",
@@ -85,7 +132,17 @@ DECLARE_SOA_TABLE(UpgradeTofs, "AOD", "UPGRADETOF",
                   upgrade_tof::NSigmaKaonOuterTOF,
                   upgrade_tof::NSigmaProtonOuterTOF,
                   upgrade_tof::OuterTOFTrackTimeReco,
-                  upgrade_tof::OuterTOFTrackLengthReco);
+                  upgrade_tof::OuterTOFTrackLengthReco,
+                  upgrade_tof::NSigmaInnerTOF<upgrade_tof::NSigmaElectronInnerTOF,
+                                              upgrade_tof::NSigmaMuonInnerTOF,
+                                              upgrade_tof::NSigmaPionInnerTOF,
+                                              upgrade_tof::NSigmaKaonInnerTOF,
+                                              upgrade_tof::NSigmaProtonInnerTOF>,
+                  upgrade_tof::NSigmaOuterTOF<upgrade_tof::NSigmaElectronOuterTOF,
+                                              upgrade_tof::NSigmaMuonOuterTOF,
+                                              upgrade_tof::NSigmaPionOuterTOF,
+                                              upgrade_tof::NSigmaKaonOuterTOF,
+                                              upgrade_tof::NSigmaProtonOuterTOF>);
 
 DECLARE_SOA_TABLE(UpgradeTofExpectedTimes, "AOD", "UPGRADETOFEXPT",
                   upgrade_tof::InnerTOFExpectedTimeEl,

@@ -18,38 +18,52 @@
 /// \author Raymond Ehlers (raymond.ehlers@cern.ch) ORNL, Florian Jonas (florian.jonas@cern.ch)
 ///
 
-#include <algorithm>
-#include <memory>
-#include <unordered_map>
-#include <cmath>
-#include <string>
-#include <tuple>
-#include <vector>
-#include <random>
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-
-#include "DetectorsBase/GeometryManager.h"
-
+#include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/DataModel/EMCALClusterDefinition.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/EMCALMatchedCollisions.h"
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsEMCAL/AnalysisCluster.h"
 #include "DataFormatsEMCAL/Cell.h"
 #include "DataFormatsEMCAL/CellLabel.h"
 #include "DataFormatsEMCAL/Constants.h"
-#include "DataFormatsEMCAL/AnalysisCluster.h"
-#include "EMCALBase/Geometry.h"
+#include "DetectorsBase/GeometryManager.h"
 #include "EMCALBase/ClusterFactory.h"
+#include "EMCALBase/Geometry.h"
 #include "EMCALBase/NonlinearityHandler.h"
 #include "EMCALReconstruction/Clusterizer.h"
-#include "PWGJE/Core/JetUtilities.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include <DataFormatsEMCAL/ClusterLabel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
 #include "TVector2.h"
+#include <TH1.h>
+
+#include <GPUROOTCartesianFwd.h>
+
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <random>
+#include <sstream>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -97,6 +111,7 @@ struct EmcalCorrectionTask {
   Configurable<bool> isMC{"isMC", false, "States if run over MC"};
   Configurable<bool> applyCellTimeCorrection{"applyCellTimeCorrection", true, "apply a correction to the cell time for data and MC: Shift both average cell times to 0 and smear MC time distribution to fit data better. For MC requires isMC to be true"};
   Configurable<float> trackMinPt{"trackMinPt", 0.3, "Minimum pT for tracks to perform track matching, to reduce computing time. Tracks below a certain pT will be loopers anyway."};
+  Configurable<bool> fillQA{"fillQA", false, "Switch to turn on QA histograms."};
 
   // Require EMCAL cells (CALO type 1)
   Filter emccellfilter = aod::calo::caloType == selectedCellType;
@@ -125,6 +140,11 @@ struct EmcalCorrectionTask {
 
   // EMCal geometry
   o2::emcal::Geometry* geometry;
+
+  std::vector<std::pair<int, int>> mExtraTimeShiftRunRanges;
+
+  // Current run number
+  int runNumber{0};
 
   void init(InitContext const&)
   {
@@ -201,22 +221,26 @@ struct EmcalCorrectionTask {
     // Setup QA hists.
     // NOTE: This is not comprehensive.
     using O2HistType = o2::framework::HistType;
-    o2::framework::AxisSpec energyAxis{200, 0., 100., "E (GeV)"},
-      timeAxis{300, -100, 200., "t (ns)"},
-      etaAxis{160, -0.8, 0.8, "#eta"},
-      phiAxis{72, 0, 2 * 3.14159, "phi"},
-      nlmAxis{50, -0.5, 49.5, "NLM"};
-    mHistManager.add("hCellE", "hCellE", O2HistType::kTH1F, {energyAxis});
+    o2::framework::AxisSpec energyAxis{200, 0., 100., "#it{E} (GeV)"},
+      timeAxis{300, -100, 200., "#it{t} (ns)"},
+      etaAxis{160, -0.8, 0.8, "#it{#eta}"},
+      phiAxis{72, 0, 2 * 3.14159, "#it{#varphi} (rad)"},
+      nlmAxis{50, -0.5, 49.5, "NLM"},
+      fCrossAxis{100, 0., 1., "F_{+}"},
+      sigmaLongAxis{100, 0., 1.0, "#sigma^{2}_{long}"},
+      sigmaShortAxis{100, 0., 1.0, "#sigma^{2}_{short}"},
+      nCellAxis{60, -0.5, 59.5, "#it{n}_{cells}"};
+    mHistManager.add("hCellE", "hCellE", O2HistType::kTH1D, {energyAxis});
     mHistManager.add("hCellTowerID", "hCellTowerID", O2HistType::kTH1D, {{20000, 0, 20000}});
     mHistManager.add("hCellEtaPhi", "hCellEtaPhi", O2HistType::kTH2F, {etaAxis, phiAxis});
     mHistManager.add("hHGCellTimeEnergy", "hCellTime", O2HistType::kTH2F, {{300, -30, 30}, cellEnergyBins}); // Cell time vs energy for high gain cells (low energies)
     mHistManager.add("hLGCellTimeEnergy", "hCellTime", O2HistType::kTH2F, {{300, -30, 30}, cellEnergyBins}); // Cell time vs energy for low gain cells (high energies)
     // NOTE: Reversed column and row because it's more natural for presentation.
     mHistManager.add("hCellRowCol", "hCellRowCol;Column;Row", O2HistType::kTH2D, {{96, -0.5, 95.5}, {208, -0.5, 207.5}});
-    mHistManager.add("hClusterE", "hClusterE", O2HistType::kTH1F, {energyAxis});
-    mHistManager.add("hClusterNLM", "hClusterNLM", O2HistType::kTH1F, {nlmAxis});
+    mHistManager.add("hClusterE", "hClusterE", O2HistType::kTH1D, {energyAxis});
+    mHistManager.add("hClusterNLM", "hClusterNLM", O2HistType::kTH1D, {nlmAxis});
     mHistManager.add("hClusterEtaPhi", "hClusterEtaPhi", O2HistType::kTH2F, {etaAxis, phiAxis});
-    mHistManager.add("hClusterTime", "hClusterTime", O2HistType::kTH1F, {timeAxis});
+    mHistManager.add("hClusterTime", "hClusterTime", O2HistType::kTH1D, {timeAxis});
     mHistManager.add("hGlobalTrackEtaPhi", "hGlobalTrackEtaPhi", O2HistType::kTH2F, {etaAxis, phiAxis});
     mHistManager.add("hGlobalTrackMult", "hGlobalTrackMult", O2HistType::kTH1D, {{200, -0.5, 199.5, "N_{trk}"}});
     mHistManager.add("hCollisionType", "hCollisionType;;#it{count}", O2HistType::kTH1D, {{3, -0.5, 2.5}});
@@ -246,10 +270,26 @@ struct EmcalCorrectionTask {
     hBC->GetXaxis()->SetBinLabel(6, "no EMCal cells and with collision");
     hBC->GetXaxis()->SetBinLabel(7, "no EMCal cells and mult. collisions");
     hBC->GetXaxis()->SetBinLabel(8, "all BC");
-    if (isMC) {
-      mHistManager.add("hContributors", "hContributors;contributor per cell hit;#it{counts}", O2HistType::kTH1I, {{20, 0, 20}});
-      mHistManager.add("hMCParticleEnergy", "hMCParticleEnergy;#it{E} (GeV/#it{c});#it{counts}", O2HistType::kTH1F, {energyAxis});
+    if (isMC.value) {
+      mHistManager.add("hContributors", "hContributors;contributor per cell hit;#it{counts}", O2HistType::kTH1D, {{20, 0, 20}});
+      mHistManager.add("hMCParticleEnergy", "hMCParticleEnergy;#it{E} (GeV/#it{c});#it{counts}", O2HistType::kTH1D, {energyAxis});
     }
+    if (fillQA.value) {
+      mHistManager.add("hClusterNCellE", "hClusterNCellE", O2HistType::kTH2D, {energyAxis, nCellAxis});
+      mHistManager.add("hClusterFCrossE", "hClusterFCrossE", O2HistType::kTH2D, {energyAxis, fCrossAxis});
+      mHistManager.add("hClusterFCrossSigmaLongE", "hClusterFCrossSigmaLongE", O2HistType::kTH3F, {energyAxis, fCrossAxis, sigmaLongAxis});
+      mHistManager.add("hClusterFCrossSigmaShortE", "hClusterFCrossSigmaShortE", O2HistType::kTH3F, {energyAxis, fCrossAxis, sigmaShortAxis});
+    }
+
+    // For some runs, LG cells require an extra time shift of 2 * 8.8ns due to problems in the time calibration
+    // Affected run ranges (inclusive) are initialised here (min,max)
+    mExtraTimeShiftRunRanges.emplace_back(535365, 535645); // LHC23g-LHC23h
+    mExtraTimeShiftRunRanges.emplace_back(535725, 536126); // LHC23h-LHC23l
+    mExtraTimeShiftRunRanges.emplace_back(536199, 536202); // LHC23l-LHC23m
+    mExtraTimeShiftRunRanges.emplace_back(536239, 536346); // LHC23m-LHC23n
+    mExtraTimeShiftRunRanges.emplace_back(536565, 536590); // Commisioning-LHC23r
+    mExtraTimeShiftRunRanges.emplace_back(542280, 543854); // LHC23zv-LHC23zy
+    mExtraTimeShiftRunRanges.emplace_back(559544, 559856); // PbPb 2024
   }
 
   // void process(aod::Collision const& collision, soa::Filtered<aod::Tracks> const& fullTracks, aod::Calos const& cells)
@@ -268,6 +308,10 @@ struct EmcalCorrectionTask {
     std::unordered_map<uint64_t, int> numberCellsInBC; // Number of cells mapped to the global BC index of all BCs to check whether EMCal was readout
     for (const auto& bc : bcs) {
       LOG(debug) << "Next BC";
+
+      // get run number
+      runNumber = bc.runNumber();
+
       // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
       // In particular, we need to filter only EMCAL cells.
 
@@ -297,7 +341,7 @@ struct EmcalCorrectionTask {
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType())),
+                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), runNumber),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
       }
@@ -342,7 +386,7 @@ struct EmcalCorrectionTask {
 
               // Store the clusters in the table where a matching collision could
               // be identified.
-              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, indexMapPair, trackGlobalIndex);
+              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, &indexMapPair, &trackGlobalIndex);
             } else {
               mHistManager.fill(HIST("hBCMatchErrors"), 2);
             }
@@ -396,6 +440,9 @@ struct EmcalCorrectionTask {
       // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
       // In particular, we need to filter only EMCAL cells.
 
+      // get run number
+      runNumber = bc.runNumber();
+
       // Get the collisions matched to the BC using foundBCId of the collision
       auto collisionsInFoundBC = collisions.sliceBy(collisionsPerFoundBC, bc.globalIndex());
       auto cellsInBC = cells.sliceBy(mcCellsPerFoundBC, bc.globalIndex());
@@ -425,7 +472,7 @@ struct EmcalCorrectionTask {
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType())),
+                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), runNumber),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
         cellLabels.emplace_back(cell.mcParticleIds(), cell.amplitudeA());
@@ -470,7 +517,7 @@ struct EmcalCorrectionTask {
 
               // Store the clusters in the table where a matching collision could
               // be identified.
-              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, indexMapPair, trackGlobalIndex);
+              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, &indexMapPair, &trackGlobalIndex);
             } else {
               mHistManager.fill(HIST("hBCMatchErrors"), 2);
             }
@@ -514,6 +561,7 @@ struct EmcalCorrectionTask {
     int previousCollisionId = 0; // Collision ID of the last unique BC. Needed to skip unordered collisions to ensure ordered collisionIds in the cluster table
     int nBCsProcessed = 0;
     int nCellsProcessed = 0;
+
     for (const auto& bc : bcs) {
       LOG(debug) << "Next BC";
       // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
@@ -521,6 +569,10 @@ struct EmcalCorrectionTask {
 
       // Get the collisions matched to the BC using global bc index of the collision
       // since we do not have event selection available here!
+
+      // get run number
+      runNumber = bc.runNumber();
+
       auto collisionsInBC = collisions.sliceBy(collisionsPerBC, bc.globalIndex());
       auto cellsInBC = cells.sliceBy(cellsPerFoundBC, bc.globalIndex());
 
@@ -536,7 +588,7 @@ struct EmcalCorrectionTask {
       for (const auto& cell : cellsInBC) {
         cellsBC.emplace_back(cell.cellNumber(),
                              cell.amplitude(),
-                             cell.time() + getCellTimeShift(cell.cellNumber(), cell.amplitude(), o2::emcal::intToChannelType(cell.cellType())),
+                             cell.time() + getCellTimeShift(cell.cellNumber(), cell.amplitude(), o2::emcal::intToChannelType(cell.cellType()), runNumber),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
       }
@@ -598,7 +650,7 @@ struct EmcalCorrectionTask {
   }
   PROCESS_SWITCH(EmcalCorrectionTask, processStandalone, "run stand alone analysis", false);
 
-  void cellsToCluster(size_t iClusterizer, const gsl::span<o2::emcal::Cell> cellsBC, std::optional<const gsl::span<o2::emcal::CellLabel>> cellLabels = std::nullopt)
+  void cellsToCluster(size_t iClusterizer, const gsl::span<o2::emcal::Cell> cellsBC, gsl::span<const o2::emcal::CellLabel> cellLabels = {})
   {
     mClusterizers.at(iClusterizer)->findClusters(cellsBC);
 
@@ -614,10 +666,10 @@ struct EmcalCorrectionTask {
     mClusterFactories.reset();
     // in preparation for future O2 changes
     // mClusterFactories.setClusterizerSettings(mClusterDefinitions.at(iClusterizer).minCellEnergy, mClusterDefinitions.at(iClusterizer).timeMin, mClusterDefinitions.at(iClusterizer).timeMax, mClusterDefinitions.at(iClusterizer).recalcShowerShape5x5);
-    if (cellLabels) {
-      mClusterFactories.setContainer(*emcalClusters, cellsBC, *emcalClustersInputIndices, cellLabels);
-    } else {
+    if (cellLabels.empty()) {
       mClusterFactories.setContainer(*emcalClusters, cellsBC, *emcalClustersInputIndices);
+    } else {
+      mClusterFactories.setContainer(*emcalClusters, cellsBC, *emcalClustersInputIndices, cellLabels);
     }
 
     LOG(debug) << "Cluster factory set up.";
@@ -634,24 +686,33 @@ struct EmcalCorrectionTask {
   }
 
   template <typename Collision>
-  void fillClusterTable(Collision const& col, math_utils::Point3D<float> const& vertexPos, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, std::optional<std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>>> const& indexMapPair = std::nullopt, std::optional<std::vector<int64_t>> const& trackGlobalIndex = std::nullopt)
+  void fillClusterTable(Collision const& col, math_utils::Point3D<float> const& vertexPos, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, const std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>>* indexMapPair = nullptr, const std::vector<int64_t>* trackGlobalIndex = nullptr)
   {
+    // average number of cells per cluster, only used the reseve a reasonable amount for the clustercells table
+    const size_t NAvgNcells = 3;
     // we found a collision, put the clusters into the none ambiguous table
     clusters.reserve(mAnalysisClusters.size());
-    if (mClusterLabels.size() > 0) {
+    if (!mClusterLabels.empty()) {
       mcclusters.reserve(mClusterLabels.size());
     }
+    clustercells.reserve(mAnalysisClusters.size() * NAvgNcells);
+
+    // get the clusterType once
+    const auto clusterType = static_cast<int>(mClusterDefinitions[iClusterizer]);
+
     int cellindex = -1;
     unsigned int iCluster = 0;
+    float energy = 0.f;
     for (const auto& cluster : mAnalysisClusters) {
+      energy = cluster.E();
       // Determine the cluster eta, phi, correcting for the vertex position.
       auto pos = cluster.getGlobalPosition();
       pos = pos - vertexPos;
       // Normalize the vector and rescale by energy.
-      pos *= (cluster.E() / std::sqrt(pos.Mag2()));
+      pos *= (energy / std::sqrt(pos.Mag2()));
 
       // Correct for nonlinear behaviour
-      float nonlinCorrEnergy = cluster.E();
+      float nonlinCorrEnergy = energy;
       if (!disableNonLin) {
         try {
           nonlinCorrEnergy = mNonlinearityHandler.getCorrectedClusterEnergy(cluster);
@@ -662,19 +723,18 @@ struct EmcalCorrectionTask {
 
       // save to table
       LOG(debug) << "Writing cluster definition "
-                 << static_cast<int>(mClusterDefinitions.at(iClusterizer))
+                 << clusterType
                  << " to table.";
       mHistManager.fill(HIST("hClusterType"), 1);
-      clusters(col, cluster.getID(), nonlinCorrEnergy, cluster.getCoreEnergy(), cluster.E(),
+      clusters(col, cluster.getID(), nonlinCorrEnergy, cluster.getCoreEnergy(), energy,
                pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()), cluster.getM02(),
                cluster.getM20(), cluster.getNCells(),
                cluster.getClusterTime(), cluster.getIsExotic(),
                cluster.getDistanceToBadChannel(), cluster.getNExMax(),
-               static_cast<int>(mClusterDefinitions.at(iClusterizer)));
-      if (mClusterLabels.size() > 0) {
+               clusterType);
+      if (!mClusterLabels.empty()) {
         mcclusters(mClusterLabels[iCluster].getLabels(), mClusterLabels[iCluster].getEnergyFractions());
       }
-      clustercells.reserve(cluster.getNCells());
       // loop over cells in cluster and save to table
       for (int ncell = 0; ncell < cluster.getNCells(); ncell++) {
         cellindex = cluster.getCellIndex(ncell);
@@ -682,10 +742,16 @@ struct EmcalCorrectionTask {
         clustercells(clusters.lastIndex(), cellIndicesBC[cellindex]);
       } // end of cells of cluser loop
       // fill histograms
-      mHistManager.fill(HIST("hClusterE"), cluster.E());
+      mHistManager.fill(HIST("hClusterE"), energy);
       mHistManager.fill(HIST("hClusterNLM"), cluster.getNExMax());
       mHistManager.fill(HIST("hClusterTime"), cluster.getClusterTime());
       mHistManager.fill(HIST("hClusterEtaPhi"), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()));
+      if (fillQA.value) {
+        mHistManager.fill(HIST("hClusterNCellE"), cluster.E(), cluster.getNCells());
+        mHistManager.fill(HIST("hClusterFCrossE"), cluster.E(), cluster.getFCross());
+        mHistManager.fill(HIST("hClusterFCrossSigmaLongE"), cluster.E(), cluster.getFCross(), cluster.getM02());
+        mHistManager.fill(HIST("hClusterFCrossSigmaShortE"), cluster.E(), cluster.getFCross(), cluster.getM20());
+      }
       if (indexMapPair && trackGlobalIndex) {
         for (unsigned int iTrack = 0; iTrack < std::get<0>(*indexMapPair)[iCluster].size(); iTrack++) {
           if (std::get<0>(*indexMapPair)[iCluster][iTrack] >= 0) {
@@ -701,20 +767,25 @@ struct EmcalCorrectionTask {
   template <typename BC>
   void fillAmbigousClusterTable(BC const& bc, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, bool hasCollision)
   {
+    // average number of cells per cluster, only used the reseve a reasonable amount for the clustercells table
+    const size_t NAvgNcells = 3;
     int cellindex = -1;
     clustersAmbiguous.reserve(mAnalysisClusters.size());
     if (mClusterLabels.size() > 0) {
       mcclustersAmbiguous.reserve(mClusterLabels.size());
     }
+    clustercellsambiguous.reserve(mAnalysisClusters.size() * NAvgNcells);
     unsigned int iCluster = 0;
+    float energy = 0.f;
     for (const auto& cluster : mAnalysisClusters) {
+      energy = cluster.E();
       auto pos = cluster.getGlobalPosition();
       pos = pos - math_utils::Point3D<float>{0., 0., 0.};
       // Normalize the vector and rescale by energy.
-      pos *= (cluster.E() / std::sqrt(pos.Mag2()));
+      pos *= (energy / std::sqrt(pos.Mag2()));
 
       // Correct for nonlinear behaviour
-      float nonlinCorrEnergy = cluster.E();
+      float nonlinCorrEnergy = energy;
       try {
         nonlinCorrEnergy = mNonlinearityHandler.getCorrectedClusterEnergy(cluster);
       } catch (o2::emcal::NonlinearityHandler::UninitException& e) {
@@ -723,14 +794,14 @@ struct EmcalCorrectionTask {
 
       // We have our necessary properties. Now we store outputs
 
-      // LOG(debug) << "Cluster E: " << cluster.E();
+      // LOG(debug) << "Cluster E: " << energy;
       if (!hasCollision) {
         mHistManager.fill(HIST("hClusterType"), 0);
       } else {
         mHistManager.fill(HIST("hClusterType"), 2);
       }
       clustersAmbiguous(
-        bc, cluster.getID(), nonlinCorrEnergy, cluster.getCoreEnergy(), cluster.E(),
+        bc, cluster.getID(), nonlinCorrEnergy, cluster.getCoreEnergy(), energy,
         pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()), cluster.getM02(),
         cluster.getM20(), cluster.getNCells(), cluster.getClusterTime(),
         cluster.getIsExotic(), cluster.getDistanceToBadChannel(),
@@ -738,7 +809,6 @@ struct EmcalCorrectionTask {
       if (mClusterLabels.size() > 0) {
         mcclustersAmbiguous(mClusterLabels[iCluster].getLabels(), mClusterLabels[iCluster].getEnergyFractions());
       }
-      clustercellsambiguous.reserve(cluster.getNCells());
       for (int ncell = 0; ncell < cluster.getNCells(); ncell++) {
         cellindex = cluster.getCellIndex(ncell);
         clustercellsambiguous(clustersAmbiguous.lastIndex(),
@@ -873,7 +943,7 @@ struct EmcalCorrectionTask {
   // Apply shift of the cell time in data and MC
   // In MC this has to be done to shift the cell time, which is not calibrated to 0 due to the flight time of the particles to the EMCal surface (~15ns)
   // In data this is done to correct for the time walk effect
-  float getCellTimeShift(const int16_t cellID, const float cellEnergy, const emcal::ChannelType_t cellType)
+  float getCellTimeShift(const int16_t cellID, const float cellEnergy, const emcal::ChannelType_t cellType, const int runNumber)
   {
     if (!applyCellTimeCorrection) {
       return 0.f;
@@ -908,6 +978,14 @@ struct EmcalCorrectionTask {
           timeshift = 1.9 * std::log(0.09 * cellEnergy);        // Parameters extracted from LHC24aj (pp), but also usable for other periods
         else                                                    // Very high energy regime
           timeshift = 1.9;                                      // Parameters extracted from LHC24aj (pp), but also usable for other periods
+      }
+      // Temporary extra shift for bug in time calibraiton of apass4 Pb-Pb 2024, requires pos shift of 2*8.8 ns for low gain cells
+      if (cellType == emcal::ChannelType_t::LOW_GAIN) {
+        for (const auto& range : mExtraTimeShiftRunRanges) {
+          if (runNumber >= range.first && runNumber <= range.second) {
+            timeshift += 2 * 8.8;
+          }
+        }
       }
       LOG(debug) << "Shift the cell time by " << timeshift << " + " << timesmear << " ns";
     }

@@ -17,11 +17,15 @@
 #ifndef PWGJE_DATAMODEL_JETREDUCEDDATA_H_
 #define PWGJE_DATAMODEL_JETREDUCEDDATA_H_
 
-#include <cmath>
-#include <vector>
-#include "Framework/AnalysisDataModel.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/DataModel/EMCALClusters.h" // IWYU pragma: keep
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h> // IWYU pragma: keep
+
+#include <cmath>
+#include <cstdint>
+#include <vector>
 
 namespace o2::aod
 {
@@ -95,6 +99,7 @@ DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel7KINT7, readCountsWithTVXAnd
 DECLARE_SOA_COLUMN(ReadCountsWithCustom, readCountsWithCustom, std::vector<int>);
 DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);
 DECLARE_SOA_COLUMN(IsEMCALReadout, isEmcalReadout, bool);
+DECLARE_SOA_COLUMN(IsOutlier, isOutlier, bool);
 } // namespace jcollision
 
 DECLARE_SOA_TABLE_STAGED(JCollisions, "JCOLLISION",
@@ -117,6 +122,9 @@ using StoredJCollision = StoredJCollisions::iterator;
 DECLARE_SOA_TABLE_STAGED(JCollisionMcInfos, "JCOLLISIONMCINFO",
                          jcollision::Weight,
                          jcollision::SubGeneratorId);
+
+DECLARE_SOA_TABLE_STAGED(JCollisionOutliers, "JCOLLISIONOUTLR",
+                         jcollision::IsOutlier);
 
 DECLARE_SOA_TABLE_STAGED(JEMCCollisionLbs, "JEMCCOLLISIONLB",
                          jcollision::IsAmbiguous,
@@ -166,6 +174,8 @@ DECLARE_SOA_COLUMN(Accepted, accepted, uint64_t);
 DECLARE_SOA_COLUMN(Attempted, attempted, uint64_t);
 DECLARE_SOA_COLUMN(XsectGen, xsectGen, float);
 DECLARE_SOA_COLUMN(XsectErr, xsectErr, float);
+DECLARE_SOA_COLUMN(PtHard, ptHard, float);
+DECLARE_SOA_COLUMN(IsOutlier, isOutlier, bool);
 } // namespace jmccollision
 DECLARE_SOA_TABLE_STAGED(JMcCollisions, "JMCCOLLISION",
                          o2::soa::Index<>,
@@ -177,7 +187,8 @@ DECLARE_SOA_TABLE_STAGED(JMcCollisions, "JMCCOLLISION",
                          jmccollision::Accepted,
                          jmccollision::Attempted,
                          jmccollision::XsectGen,
-                         jmccollision::XsectErr);
+                         jmccollision::XsectErr,
+                         jmccollision::PtHard);
 
 using JMcCollision = JMcCollisions::iterator;
 using StoredJMcCollision = StoredJMcCollisions::iterator;
@@ -192,6 +203,9 @@ DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
 
 DECLARE_SOA_TABLE_STAGED(JMcCollisionLbs, "JMCCOLLISIONLB",
                          jmccollisionlb::JMcCollisionId);
+
+DECLARE_SOA_TABLE_STAGED(JMcCollisionOutliers, "JMCCOLLISIONOUTLR",
+                         jmccollision::IsOutlier);
 
 namespace jtrack
 {

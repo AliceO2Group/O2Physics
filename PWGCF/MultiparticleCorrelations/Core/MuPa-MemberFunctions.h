@@ -283,6 +283,7 @@ void DefaultConfiguration()
   tc.fProcess[eProcessSim_Run1] = doprocessSim_Run1;
   tc.fProcess[eProcessTest] = doprocessTest;
   tc.fProcess[eProcessQA] = doprocessQA;
+  tc.fProcess[eProcessHepMChi] = doprocessHepMChi;
 
   // Temporarary bailout protection against cases which are not implemented/validated yet:
   if (tc.fProcess[eProcessSim]) {
@@ -333,6 +334,8 @@ void DefaultConfiguration()
     tc.fWhichProcess = "ProcessTest";
   } else if (tc.fProcess[eProcessQA]) {
     tc.fWhichProcess = "ProcessQA";
+  } else if (tc.fProcess[eProcessHepMChi]) {
+    tc.fWhichProcess = "ProcessHepMChi";
   }
 
   tc.fRandomSeed = cf_tc.cfRandomSeed;
@@ -763,6 +766,7 @@ void DefaultConfiguration()
   qa.fEventHistogramsName2D[eVertexZ_vs_InteractionRate] = Form("%s_vs_%s", eh.fEventHistogramsName[eVertexZ].Data(), eh.fEventHistogramsName[eInteractionRate].Data());
   qa.fEventHistogramsName2D[eMultiplicity_vs_FT0CAmplitudeOnFoundBC] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), "FT0CAmplitudeOnFoundBC"); // TBI 20250331 hardwired string
   qa.fEventHistogramsName2D[eCentFT0C_vs_FT0CAmplitudeOnFoundBC] = Form("%s_vs_%s", qa.fCentralityEstimatorName[eCentFT0C].Data(), "FT0CAmplitudeOnFoundBC");     // TBI 20250331 hardwired string
+  qa.fEventHistogramsName2D[eCentrality_vs_CentralitySim] = Form("%s_vs_%s", eh.fEventHistogramsName[eCentrality].Data(), "CentralitySim");                       // TBI 20250331 hardwired string
   qa.fEventHistogramsName2D[eMultNTracksPV_vs_MultNTracksGlobal] = Form("%s_vs_%s", qa.fReferenceMultiplicityEstimatorName[eMultNTracksPV].Data(), qa.fReferenceMultiplicityEstimatorName[eMultNTracksGlobal].Data());
   qa.fEventHistogramsName2D[eCentFT0C_vs_CentFT0CVariant1] = Form("%s_vs_%s", qa.fCentralityEstimatorName[eCentFT0C].Data(), qa.fCentralityEstimatorName[eCentFT0CVariant1].Data());
   qa.fEventHistogramsName2D[eCentFT0C_vs_CentFT0M] = Form("%s_vs_%s", qa.fCentralityEstimatorName[eCentFT0C].Data(), qa.fCentralityEstimatorName[eCentFT0M].Data());
@@ -1176,6 +1180,7 @@ void DefaultBooking()
   qa.fBookQAEventHistograms2D[eVertexZ_vs_InteractionRate] = Alright(lBookQAEventHistograms2D[eVertexZ_vs_InteractionRate]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eMultiplicity_vs_FT0CAmplitudeOnFoundBC] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_FT0CAmplitudeOnFoundBC]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eCentFT0C_vs_FT0CAmplitudeOnFoundBC] = Alright(lBookQAEventHistograms2D[eCentFT0C_vs_FT0CAmplitudeOnFoundBC]) && qa.fFillQAEventHistograms2D;
+  qa.fBookQAEventHistograms2D[eCentrality_vs_CentralitySim] = Alright(lBookQAEventHistograms2D[eCentrality_vs_CentralitySim]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eMultNTracksPV_vs_MultNTracksGlobal] = Alright(lBookQAEventHistograms2D[eMultNTracksPV_vs_MultNTracksGlobal]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eCentFT0C_vs_CentFT0CVariant1] = Alright(lBookQAEventHistograms2D[eCentFT0C_vs_CentFT0CVariant1]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eCentFT0C_vs_CentFT0M] = Alright(lBookQAEventHistograms2D[eCentFT0C_vs_CentFT0M]) && qa.fFillQAEventHistograms2D;
@@ -2504,6 +2509,10 @@ void InsanityChecksOnDefinitionsOfConfigurables()
     LOGF(fatal, "\033[1;31m%s at line %d : configurable cfTaskIsConfiguredFromJson = \"%s\", but it has to be set to \"yes\" in JSON => most likely some other configurable is misconfigured and all remaining settings in JSON are ignored silently\033[0m", __FUNCTION__, __LINE__, TString(cf_tc.cfTaskIsConfiguredFromJson).Data());
   }
 
+  if (cf_tc.cfUseSpecificCuts) {
+    LOGF(info, "\033[1;33m%s at line %d: !!!! WARNING !!!! cfUseSpecificCuts = true, all settings in the current config are ignored !!!! WARNING !!!! \033[0m", __FUNCTION__, __LINE__);
+  }
+
   // b) QA:
   // ...
 
@@ -3595,6 +3604,16 @@ void BookQAHistograms()
   min_y_Event[eCentFT0C_vs_FT0CAmplitudeOnFoundBC] = 0.;                         // TBI 20250331 hardwired value
   max_y_Event[eCentFT0C_vs_FT0CAmplitudeOnFoundBC] = 100000.;                    // TBI 20250331 hardwired value
   title_y_Event[eCentFT0C_vs_FT0CAmplitudeOnFoundBC] = "FT0CAmplitudeOnFoundBC"; // TBI 20250331 hardwired string
+
+  // *) "Centrality_vs_CentralitySim":
+  nBins_x_Event[eCentrality_vs_CentralitySim] = eh.fEventHistogramsBins[eCentrality][0];
+  min_x_Event[eCentrality_vs_CentralitySim] = eh.fEventHistogramsBins[eCentrality][1];
+  max_x_Event[eCentrality_vs_CentralitySim] = eh.fEventHistogramsBins[eCentrality][2];
+  title_x_Event[eCentrality_vs_CentralitySim] = FancyFormatting(eh.fEventHistogramsName[eCentrality].Data());
+  nBins_y_Event[eCentrality_vs_CentralitySim] = eh.fEventHistogramsBins[eCentrality][0];
+  min_y_Event[eCentrality_vs_CentralitySim] = eh.fEventHistogramsBins[eCentrality][1];
+  max_y_Event[eCentrality_vs_CentralitySim] = eh.fEventHistogramsBins[eCentrality][2];
+  title_y_Event[eCentrality_vs_CentralitySim] = "simulated centrality (calculated from IP)"; // TBI 20250331 hardwired string
 
   // *) "MultNTracksPV_vs_MultNTracksGlobal":
   nBins_x_Event[eMultNTracksPV_vs_MultNTracksGlobal] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0] / qa.fRebin);
@@ -5422,9 +5441,9 @@ void BookWeightsHistograms()
     TString yAxisTitle = "";
 
     yAxisTitle += TString::Format("%d:w_{#varphi}; ", 1);
-    yAxisTitle += TString::Format("%d:w_{p_{t}}}; ", 2);
+    yAxisTitle += TString::Format("%d:w_{p_{t}}; ", 2);
     yAxisTitle += TString::Format("%d:w_{#eta}; ", 3);
-    yAxisTitle += TString::Format("%d:(w_{#varphi})_{| p_{T}}}; ", 4);
+    yAxisTitle += TString::Format("%d:(w_{#varphi})_{| p_{T}}; ", 4);
     yAxisTitle += TString::Format("%d:(w_{#varphi})_{| #eta}; ", 5);
 
     // **) differential phi weights using sparse:
@@ -6137,7 +6156,7 @@ void InternalValidation()
     // For this option, vn's and psin's are constant for all simulated events, therefore I can configure fPhiPDF outside of loop over events.
     // Remark: The last parameter [18] is a random reaction plane, keep in sync with fPhiPDF->SetParameter(18,fReactionPlane); below
     //         Keep also in sync with const int gMaxHarmonic = 9; in *GlobalConstants.h
-    fPhiPDF = new TF1("fPhiPDF", "1 + 2.*[0]*cos(x-[1]-[18]) + 2.*[2]*cos(2.*(x-[3]-[18])) + 2.*[4]*cos(3.*(x-[5]-[18])) + 2.*[6]*cos(4.*(x-[7]-[18])) + 2.*[8]*cos(5.*(x-[9]-[18])) + 2.*[10]*cos(6.*(x-[11]-[18])) + 2.*[12]*cos(7.*(x-[13]-[18])) + 2.*[14]*cos(8.*(x-[15]-[18])) + 2.*[16]*cos(9.*(x-[17]-[18]))", 0., o2::constants::math::TwoPI);
+    fPhiPDF = new TF1("fPhiPDF", "1 + 2.*[0]*std::cos(x-[1]-[18]) + 2.*[2]*std::cos(2.*(x-[3]-[18])) + 2.*[4]*std::cos(3.*(x-[5]-[18])) + 2.*[6]*std::cos(4.*(x-[7]-[18])) + 2.*[8]*std::cos(5.*(x-[9]-[18])) + 2.*[10]*std::cos(6.*(x-[11]-[18])) + 2.*[12]*std::cos(7.*(x-[13]-[18])) + 2.*[14]*std::cos(8.*(x-[15]-[18])) + 2.*[16]*std::cos(9.*(x-[17]-[18]))", 0., o2::constants::math::TwoPI);
     for (int h = 0; h < gMaxHarmonic; h++) {
       fPhiPDF->SetParName(2 * h, TString::Format("v_{%d}", h + 1));       // set name v_n
       fPhiPDF->SetParName(2 * h + 1, TString::Format("Psi_{%d}", h + 1)); // set name psi_n
@@ -6170,7 +6189,7 @@ void InternalValidation()
     //         Keep also in sync with const int gMaxHarmonic = 9; in *GlobalConstants.h
 
     // Azimuthal angles are sampled from this pdf:
-    fPhiPDF = new TF1("fPhiPDF", "1 + 2.*[0]*cos(x-[3]) + 2.*[1]*cos(2.*(x-[3])) + 2.*[2]*cos(3.*(x-[3]))", 0., o2::constants::math::TwoPI);
+    fPhiPDF = new TF1("fPhiPDF", "1 + 2.*[0]*std::cos(x-[3]) + 2.*[1]*std::cos(2.*(x-[3])) + 2.*[2]*std::cos(3.*(x-[3]))", 0., o2::constants::math::TwoPI);
     // With this parameterization, I have:
     //  [0] => v1
     //  [1] => v2
@@ -6195,7 +6214,7 @@ void InternalValidation()
     //         Keep also in sync with const int gMaxHarmonic = 9; in *GlobalConstants.h
 
     // Azimuthal angles are sampled from this pdf:
-    fPhiPDF = new TF1("fPhiPDF", "1 + 2.*[0]*cos(x-[3]) + 2.*[1]*cos(2.*(x-[4])) + 2.*[2]*cos(3.*(x-[5]))", 0., o2::constants::math::TwoPI);
+    fPhiPDF = new TF1("fPhiPDF", "1 + 2.*[0]*std::cos(x-[3]) + 2.*[1]*std::cos(2.*(x-[4])) + 2.*[2]*std::cos(3.*(x-[5]))", 0., o2::constants::math::TwoPI);
     // With this parameterization, I have:
     //  [0] => v1
     //  [1] => v2
@@ -6239,6 +6258,7 @@ void InternalValidation()
     ebye.fCurrentRunDuration = static_cast<float>(gRandom->Uniform(0., 86400.));      // this is perfectly fine for this exercise
     ebye.fVz = static_cast<float>(gRandom->Uniform(-20., 20.));                       // this is perfectly fine for this exercise
     ebye.fFT0CAmplitudeOnFoundBC = static_cast<float>(gRandom->Uniform(0., 100000.)); // this is perfectly fine for this exercise
+    ebye.fImpactParameter = static_cast<float>(gRandom->Uniform(0., 20.));            // this is perfectly fine for this exercise
 
     //    b2) Fill event histograms before cuts:
     if (eh.fFillEventHistograms) {
@@ -6276,7 +6296,8 @@ void InternalValidation()
       // Persistent symmetry plane correlation:
       double Psi1 = gRandom->Uniform(0., o2::constants::math::TwoPI);
       double Psi2 = gRandom->Uniform(0., o2::constants::math::TwoPI);
-      double Psi3 = (1. / 3.) * ((o2::constants::math::PI / 4.) + 2. * Psi2 + Psi1); // see arXiv:1901.06968, Sec. II D.
+      double Psi3 = (1. / 3.) * (o2::constants::math::PIQuarter + 2. * Psi2 + Psi1); // see arXiv:1901.06968, Sec. II D.
+                                                                                     // o2::constants::math::PIQuarter = 0.25f * PI
       fPhiPDF->SetParameter(3, Psi1);
       fPhiPDF->SetParameter(4, Psi2);
       fPhiPDF->SetParameter(5, Psi3);
@@ -7347,11 +7368,14 @@ void ResetEventByEventQuantities()
   ebye.fMultiplicity = 0.;
   ebye.fReferenceMultiplicity = 0.;
   ebye.fCentrality = 0.;
+  // ebye.fCentralitySim = 0.; // TBI 20250429 special treatment, because I access this one before Steer(...) is called in .cxx . Re-think how to handle this one
+  //              But if I do not access it in .cxx, in any case I skip that collision, so I think it is just fine not to reset it here
   ebye.fOccupancy = 0.;
   ebye.fInteractionRate = 0.;
   ebye.fCurrentRunDuration = 0.;
   ebye.fVz = 0.;
   ebye.fFT0CAmplitudeOnFoundBC = 0.;
+  ebye.fImpactParameter = 0.; // I can reset it here to 0., as long as I am calculating it from collision.mcCollision().impactParameter() . If I calculate it from hep.impactParameter(), i need to re-think
 
   // b) Q-vectors:
   if (qv.fCalculateQvectors) {
@@ -7732,7 +7756,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eMinVertexDistanceFromIP]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eMinVertexDistanceFromIP, eCutCounterBinning);
-      } else if (sqrt(pow(collision.posX(), 2.) + pow(collision.posY(), 2.) + pow(collision.posZ(), 2.)) < ec.fdEventCuts[eMinVertexDistanceFromIP][eMin]) {
+      } else if (std::sqrt(std::pow(collision.posX(), 2.) + std::pow(collision.posY(), 2.) + std::pow(collision.posZ(), 2.)) < ec.fdEventCuts[eMinVertexDistanceFromIP][eMin]) {
         if (!EventCut(eRec, eMinVertexDistanceFromIP, cutModus)) {
           return false;
         }
@@ -7790,7 +7814,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     // See https://aliceo2group.github.io/analysis-framework/docs/datamodel/ao2dTables.html#montecarlo
     if constexpr (rs == eRecAndSim || rs == eRecAndSim_Run2 || rs == eRecAndSim_Run1) {
       if (!collision.has_mcCollision()) {
-        LOGF(warning, "No MC collision for this collision, skip..."); // TBI 20231106 re-think. I shouldn't probably get to this point, if MC truth info doesn't exist for this collision
+        LOGF(warning, "\033[1;31m%s at line %d : No MC collision for this collision, skip... \033[0m", __FUNCTION__, __LINE__); // TBI 20231106 re-think. I shouldn't probably get to this point, if MC truth info doesn't exist for this collision
         return false;
       }
 
@@ -7840,7 +7864,16 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     //   *) Multiplicity:
     //      Remark: This cut is implemented directly in Steer(...) TBI 20240508 check how to implement this one with the current re-write
 
-    //   *) Centrality: this is related to eImpactParameter. TBI 20240509 How do I proceed here? Shall i calculate it in void DetermineCentrality( ... ), from IP, and store it in ebye.fCentrality?
+    //   *) Centrality: this centrality is calculated directly from impact parameter, i.e. this is centrality at simulated level, see DetermineCentrality(...) what I do for thre "eSim*" cases.
+    if (ec.fUseEventCuts[eCentrality]) {
+      if (cutModus == eCutCounterBinning) {
+        EventCut(eSim, eCentrality, eCutCounterBinning);
+      } else if (ebye.fCentrality < ec.fdEventCuts[eCentrality][eMin] || ebye.fCentrality > ec.fdEventCuts[eCentrality][eMax] || std::abs(ebye.fCentrality - ec.fdEventCuts[eCentrality][eMax]) < tc.fFloatingPointPrecision) {
+        if (!EventCut(eSim, eCentrality, cutModus)) {
+          return false;
+        }
+      }
+    }
 
     //   *) VertexX:
     if (ec.fUseEventCuts[eVertexX]) {
@@ -7879,7 +7912,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eMinVertexDistanceFromIP]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eMinVertexDistanceFromIP, eCutCounterBinning);
-      } else if (sqrt(pow(collision.posX(), 2.) + pow(collision.posY(), 2.) + pow(collision.posZ(), 2.)) < ec.fdEventCuts[eMinVertexDistanceFromIP][eMin]) {
+      } else if (std::sqrt(std::pow(collision.posX(), 2.) + std::pow(collision.posY(), 2.) + std::pow(collision.posZ(), 2.)) < ec.fdEventCuts[eMinVertexDistanceFromIP][eMin]) {
         if (!EventCut(eRec, eMinVertexDistanceFromIP, cutModus)) {
           return false;
         }
@@ -8104,7 +8137,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     // See https://aliceo2group.github.io/analysis-framework/docs/datamodel/ao2dTables.html#montecarlo
     if constexpr (rs == eRecAndSim) {
       if (!collision.has_mcCollision()) {
-        LOGF(warning, "No MC collision for this collision, skip..."); // TBI 20231106 re-think. I shouldn't probably get to this point, if MC truth info doesn't exist for this collision
+        LOGF(warning, "\033[1;31m%s at line %d : No MC collision for this collision, skip... \033[0m", __FUNCTION__, __LINE__); // TBI 20231106 re-think. I shouldn't probably get to this point, if MC truth info doesn't exist for this collision
         return false;
       }
 
@@ -8203,7 +8236,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     // See https://aliceo2group.github.io/analysis-framework/docs/datamodel/ao2dTables.html#montecarlo
     if constexpr (rs == eRecAndSim_Run2 || rs == eRecAndSim_Run1) {
       if (!collision.has_mcCollision()) {
-        LOGF(warning, "No MC collision for this collision, skip..."); // TBI 20231106 re-think. I shouldn't probably get to this point, if MC truth info doesn't exist for this collision
+        LOGF(warning, "\033[1;31m%s at line %d : No MC collision for this collision, skip... \033[0m", __FUNCTION__, __LINE__); // TBI 20231106 re-think. I shouldn't probably get to this point, if MC truth info doesn't exist for this collision
         return false;
       }
 
@@ -8522,7 +8555,7 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
     // ... and corresponding MC truth simulated (common to Run 3, Run 2 and Run 1) ( see https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx ):
     if constexpr (rs == eRecAndSim || rs == eRecAndSim_Run2 || rs == eRecAndSim_Run1) {
       if (!collision.has_mcCollision()) {
-        LOGF(warning, "No MC collision for this collision, skip...");
+        LOGF(warning, "\033[1;31m%s at line %d : No MC collision for this collision, skip... \033[0m", __FUNCTION__, __LINE__);
         return;
       }
       if (eh.fFillEventHistograms) {
@@ -8535,12 +8568,13 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
         // eh.fEventHistograms[eTotalMultiplicity][eSim][ba]->Fill(tracks.size()); // TBI 20231106 check how to get corresponding MC truth info, and validate further
         // eh.fEventHistograms[eMultiplicity][eSim][ba]->Fill(ebye.fMultiplicity); // TBI 20241123 re-think if I really need it here. If yes, most likely I will have to
         //              generalize fSelectedTracks to an array, to counter separately selected sim particles
-        // eh.fEventHistograms[eCentrality][eSim][ba]->Fill(ebye.fCentrality); // TBI 20240120 this case is still not supported in DetermineCentrality()
+        !eh.fEventHistograms[eCentrality][eSim][ba] ? true : eh.fEventHistograms[eCentrality][eSim][ba]->Fill(ebye.fCentralitySim);
       }
 
       // QA:
       if (qa.fFillQAEventHistograms2D) {
         !qa.fQAEventHistograms2D[eCentrality_vs_ImpactParameter][eSim][ba] ? true : qa.fQAEventHistograms2D[eCentrality_vs_ImpactParameter][eSim][ba]->Fill(ebye.fCentrality, collision.mcCollision().impactParameter());
+        !qa.fQAEventHistograms2D[eCentrality_vs_CentralitySim][eSim][ba] ? true : qa.fQAEventHistograms2D[eCentrality_vs_CentralitySim][eSim][ba]->Fill(ebye.fCentrality, ebye.fCentralitySim);
         // ...
       }
     } // if constexpr (rs == eRecAndSim) {
@@ -8554,7 +8588,7 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
       !eh.fEventHistograms[eImpactParameter][eSim][ba] ? true : eh.fEventHistograms[eImpactParameter][eSim][ba]->Fill(collision.impactParameter()); // yes, because in this branch 'collision' is always aod::McCollision
       !eh.fEventHistograms[eEventPlaneAngle][eSim][ba] ? true : eh.fEventHistograms[eEventPlaneAngle][eSim][ba]->Fill(collision.eventPlaneAngle()); // yes, because in this branch 'collision' is always aod::McCollision
       !eh.fEventHistograms[eMultiplicity][eSim][ba] ? true : eh.fEventHistograms[eMultiplicity][eSim][ba]->Fill(ebye.fMultiplicity);
-      // eh.fEventHistograms[eCentrality][eSim][ba]->Fill(ebye.fCentrality); // TBI 20240120 this case is still not supported in DetermineCentrality()
+      !eh.fEventHistograms[eCentrality][eSim][ba] ? true : eh.fEventHistograms[eCentrality][eSim][ba]->Fill(ebye.fCentrality); // ebye.fCentrality = ebye.fCentralitySim in any case in this branh
       // eh.fEventHistograms[eReferenceMultiplicity][eSim][ba]->Fill(ebye.fReferenceMultiplicity); // TBI 20241123 this case is still not supported in DetermineReferenceMultiplicity()
       // eh.fEventHistograms[eTotalMultiplicity][eSim][ba]->Fill(tracks.size()); // TBI 20231030 check further how to use the same thing for 'sim'
     }
@@ -8678,7 +8712,7 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
     // See https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx
     if constexpr (rs == eRecAndSim) {
       if (!collision.has_mcCollision()) {
-        LOGF(warning, "No MC collision for this collision, skip...");
+        LOGF(warning, "\033[1;31m%s at line %d : No MC collision for this collision, skip... \033[0m", __FUNCTION__, __LINE__);
         return;
       }
 
@@ -8712,7 +8746,7 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
     // See https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx
     if constexpr (rs == eRecAndSim_Run2 || rs == eRecAndSim_Run1) {
       if (!collision.has_mcCollision()) {
-        LOGF(warning, "No MC collision for this collision, skip...");
+        LOGF(warning, "\033[1;31m%s at line %d : No MC collision for this collision, skip... \033[0m", __FUNCTION__, __LINE__);
         return;
       }
       // !eh.fEventHistograms[eNumberOfEvents][eSim][ba] ? true : eh.fEventHistograms[eNumberOfEvents][eSim][ba]->Fill(0.5);
@@ -9051,7 +9085,7 @@ float GetCentralityPercentile(TString ce)
   } else if (ce.EqualTo("centNGlobal", TString::kIgnoreCase)) {
     // centralityPercentile = qa.fCentrality[eCentNGlobal]; // TBI 20250331 enable eventually
 
-    // ... ctd here with Run 3 estimators ...
+    // ... ctd. here with Run 3 estimators ...
 
     // Run 1 and Run 2:
   } else if (ce.EqualTo("centRun2V0M", TString::kIgnoreCase)) {
@@ -9059,7 +9093,7 @@ float GetCentralityPercentile(TString ce)
   } else if (ce.EqualTo("centRun2SPDTracklets", TString::kIgnoreCase)) {
     centralityPercentile = qa.fCentrality[eCentRun2SPDTracklets];
 
-    // ... ctd here with Run 1 and Run 2 estimators ...
+    // ... ctd. here with Run 1 and Run 2 estimators ...
 
   } else {
     LOGF(fatal, "\033[1;31m%s at line %d : centrality estimator = %s is not supported yet. \033[0m", __FUNCTION__, __LINE__, ce.Data());
@@ -10326,7 +10360,7 @@ void CalculateCorrelations()
 
     // for on-the-fly and internal validation, rescale results with theoretical value:
     if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && std::abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1)) > 0.) {
-      twoC /= pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1), 2.);
+      twoC /= std::pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1), 2.);
     }
 
     // integrated:
@@ -10395,7 +10429,7 @@ void CalculateCorrelations()
 
     // for on-the-fly and internal validation, rescale results with theoretical value:
     if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && std::abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1)) > 0.) {
-      fourC /= pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1), 4.);
+      fourC /= std::pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1), 4.);
     }
 
     // integrated:
@@ -10466,7 +10500,7 @@ void CalculateCorrelations()
 
     // for on-the-fly and internal validation, rescale results with theoretical value:
     if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && std::abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1)) > 0.) {
-      sixC /= pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1), 6.);
+      sixC /= std::pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1), 6.);
     }
 
     // integrated:
@@ -10539,7 +10573,7 @@ void CalculateCorrelations()
 
     // for on-the-fly and internal validation, rescale results with theoretical value:
     if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && std::abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1)) > 0.) {
-      eightC /= pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1), 8.);
+      eightC /= std::pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1), 8.);
     }
 
     // integrated:
@@ -11111,7 +11145,7 @@ void CalculateEtaSeparations()
 
       // for on-the-fly and internal validation, rescale results with theoretical value:
       if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && std::abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h)) > 0.) {
-        correlation /= pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h), 2.);
+        correlation /= std::pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h), 2.);
       }
 
       // integrated:
@@ -11228,7 +11262,7 @@ void CalculateKineEtaSeparations(eAsFunctionOf AFO_variable)
 
         // for on-the-fly and internal validation, rescale results with theoretical value:
         if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && std::abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h)) > 0.) {
-          correlation /= pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h), 2.);
+          correlation /= std::pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h), 2.);
         }
 
         // finally, fill:
@@ -13692,7 +13726,7 @@ double WeightFromSparse(const double& dPhi, const double& dPt, const double& dEt
   }
 
   // *) Reduce dimensionality is possible, i.e. look up only the dimensions in THnSparse which were requested in this analysis:
-  Int_t dim = 1; // yes, because dimension 0 is always reserved for each category
+  int dim = 1; // yes, because dimension 0 is always reserved for each category
   switch (dwc) {
     case eDWPhi: {
       // Remember that ordering here has to resemble ordering in eDiffPhiWeights
@@ -13759,6 +13793,11 @@ double WeightFromSparse(const double& dPhi, const double& dPt, const double& dEt
   // *) okay, let's fetch the weight:
   int bin = pw.fDiffWeightsSparse[dwc]->GetBin(pw.fFindBinVector[dwc]->GetArray()); // this is the general bin, corresponding to the actual multidimensional bin
   // TBI 20250224 do I need some insanity check here, e.g. that bin is neither in overflow nor in underflow?
+  //              If I decide to implement this, remember e.g. for 2D case that all bins of type (0,1), (0,2) ... are underflow of first variable,
+  //              and all bins of type (1,0), (2,0), ... are underflow of second variable. Analogously for overflow.
+  //              Each of these cases, however, have different global bin!
+  //              Total number of linearized global bins for N-dimensional sparse = (N_1 + 2) * (N_2 + 2) * ... (N_N + 2),
+  //              where N_1 is number of bins in first dimension, etc. The offset + 2 in each case counts underflow and overflow.
   double weight = pw.fDiffWeightsSparse[dwc]->GetBinContent(bin);
 
   if (tc.fVerbose) {
@@ -14917,9 +14956,12 @@ template <eRecSim rs, typename T>
 void DetermineCentrality(T const& collision)
 {
   // Determine collision centrality.
+  // For simulated data, I determine ebye.ImpactParameter here as well.
+
+  // TBI 20250429 there it a bit of code bloat here in this function
 
   // a) For real data, determine centrality from default centrality estimator;
-  // b) For simulated data, determine centrality directly from impact parameter;
+  // b) For simulated data, determine centrality directly from impact parameter + store impact parameter;
   // c) Same as a), just for converted Run 2 data;
   // d) Same as b), just for converted Run 2 data;
   // e) Same as a), just for converted Run 1 data;
@@ -14959,13 +15001,27 @@ void DetermineCentrality(T const& collision)
       // qa.fCentrality[eCentNGlobal] = collision.centNGlobal(); // TBI 20250128 enable eventually
     }
 
-    // TBI 20240120 I could also here access also corresponding simulated centrality from impact parameter, if available through collision.has_mcCollision()
+    // ...
 
-  } // if constexpr (rs == eRec || rs == eRecAndSim)
+    //  ... and corresponding MC truth simulated:
+    if constexpr (rs == eRecAndSim) {
 
-  // b) For simulated data, determine centrality directly from impact parameter:
+      // *) Impact parameter:
+      ebye.fImpactParameter = collision.mcCollision().impactParameter(); // has to be called before DetermineSimulatedCentrality();
+
+      // *) Centrality for simulated data in Run 3:
+      ebye.fCentralitySim = DetermineSimulatedCentrality();
+
+      // ...
+
+    } // if constexpr (rs == eRecAndSim)
+
+  } // if constexpr (rs == eRec || rs == eRecAndSim || rs == eQA)
+
+  // b) For simulated data, determine centrality directly from impact parameter + store impact parameter:
   if constexpr (rs == eSim) {
-    ebye.fCentrality = -44.; // TBI 20240120 add support eventualy
+    ebye.fImpactParameter = collision.mcCollision().impactParameter(); // has to be called before DetermineSimulatedCentrality();
+    ebye.fCentrality = DetermineSimulatedCentrality();                 // yes, I use here ebye.fCentrality, not ebye.fCentralitySim
   }
 
   // c) Same as a), just for converted Run 2 data:
@@ -14983,12 +15039,27 @@ void DetermineCentrality(T const& collision)
       qa.fCentrality[eCentRun2SPDTracklets] = collision.centRun2SPDTracklets();
     }
 
-    // TBI 20240120 I could also here access also corresponding simulated centrality from impact parameter, if available through collision.has_mcCollision()
+    // ...
+
+    //  ... and corresponding MC truth simulated:
+
+    if constexpr (rs == eRecAndSim_Run2) {
+
+      // *) Impact parameter:
+      ebye.fImpactParameter = collision.mcCollision().impactParameter(); // has to be called before DetermineSimulatedCentrality();
+
+      // *) Centrality for simulated data in Run 3:
+      ebye.fCentralitySim = DetermineSimulatedCentrality();
+
+      // ...
+
+    } // if constexpr (rs == eRecAndSim_Run2)
   }
 
   // d) Same as b), just for converted Run 2 data:
   if constexpr (rs == eSim_Run2) {
-    ebye.fCentrality = -44.; // TBI 20240120 add support eventualy
+    ebye.fImpactParameter = collision.mcCollision().impactParameter(); // has to be called before DetermineSimulatedCentrality();
+    ebye.fCentrality = DetermineSimulatedCentrality();                 // yes, I use here ebye.fCentrality, not ebye.fCentralitySim
   }
 
   // e) Same as a), just for converted Run 1 data:
@@ -15000,12 +15071,26 @@ void DetermineCentrality(T const& collision)
     } else {
       LOGF(fatal, "\033[1;31m%s at line %d : centrality estimator = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
     }
-    // TBI 20240120 I could also here access also corresponding simulated centrality from impact parameter, if available through collision.has_mcCollision()
+
+    //  ... and corresponding MC truth simulated:
+
+    if constexpr (rs == eRecAndSim_Run1) {
+
+      // *) Impact parameter:
+      ebye.fImpactParameter = collision.mcCollision().impactParameter(); // has to be called before DetermineSimulatedCentrality();
+
+      // *) Centrality for simulated data in Run 3:
+      ebye.fCentralitySim = DetermineSimulatedCentrality();
+
+      // ...
+
+    } // if constexpr (rs == eRecAndSim_Run1)
   }
 
   // f) Same as b), just for converted Run 1 data:
   if constexpr (rs == eSim_Run1) {
-    ebye.fCentrality = -44.; // TBI 20240515 add support eventualy, or merge with Run 2 branch. It seems that in converted Run 1 there is no centrality.
+    ebye.fImpactParameter = collision.mcCollision().impactParameter(); // has to be called before DetermineSimulatedCentrality();
+    ebye.fCentrality = DetermineSimulatedCentrality();                 // yes, I use here ebye.fCentrality, not ebye.fCentralitySim
   }
 
   // g) Test case:
@@ -15016,10 +15101,78 @@ void DetermineCentrality(T const& collision)
   // h) Print centrality for the audience...:
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m ebye.fCentrality = %f\033[0m", ebye.fCentrality);
+    LOGF(info, "\033[1;32m ebye.fCentralitySim = %f\033[0m", ebye.fCentralitySim);
     ExitFunction(__FUNCTION__);
   }
 
 } // template <eRecSim rs, typename T> void DetermineCentrality(T const& collision)
+
+//============================================================
+
+float DetermineSimulatedCentrality()
+{
+  // Determine centrality at generated/simulated level, just using impact parameter.
+  // This is a helper function for DetermineCentrality(), to reduce the code bloat there. I do not anticipate calling this function anywhere alse at the moment.
+
+  // Algorithm:
+  // 1. Ideally, I simply fetch this centrality from the table HepMCHeavyIons via getter .centrality();
+  // 2. If that info is not available, I calculate the simulated centrality here temporarily manually from impact parameter + sigma_inel;
+  // 3. From process switches I can see whether I am processing Run 3, Run 2 or Run 1 data, for collision system I support at the moment only Pb+Pb.
+
+  if (tc.fVerbose) {
+    StartFunction(__FUNCTION__);
+  }
+
+  float lSimulatedCentrality = -1.;
+  float lSigmaInel = -1.;
+
+  if (tc.fProcess[eProcessHepMChi]) {
+    // I have extracted already by this point simulated centrality from HepMCHeavyIons and stored it in ebye.fCentralitySim:
+
+    // TBI 20250429 when I merge eProcessHepMChi with other RecSim process switches, I will have to refurbish the code here
+
+    lSimulatedCentrality = ebye.fCentralitySim;
+
+  } else if (tc.fProcess[eGenericRecSim] || tc.fProcess[eGenericSim]) {
+
+    LOGF(warning, "\033[1;33m%s at line %d : Simulated centrality is calculated manually for the time being from impact parameter. Results make sense only for Pb+Pb at Run 3, Run 2 and Run 1 energies, other cases are not supported here (yet)\033[0m\n", __FUNCTION__, __LINE__);
+
+    //    Algorithm: Temporarily, I calculate centrality manually for simulated data directly from impact parameter as follows:
+
+    //                 centrality(b) = Pi * b^2 / sigma_inel , where e.g. I take sigma_inel = 7.67 for Pb+Pb at 5.02 TeV, and analogously for other collision systems and energies
+
+    if (tc.fProcess[eProcessRecSim] || tc.fProcess[eSim]) {
+      // Pb+Pb in Run 3:
+      lSigmaInel = 7.71; // interpolation, see Slide 3 in DDC presentation https://indico.cern.ch/event/1326916/
+    } else if (tc.fProcess[eProcessRecSim_Run2] || tc.fProcess[eSim_Run2]) {
+      // Pb+Pb in Run 2:
+      lSigmaInel = 7.67; // for 5.02 TeV, see Slide 3 in DDC presentation https://indico.cern.ch/event/1326916/ + Run 2 paper https://arxiv.org/abs/2204.10148
+    } else if (tc.fProcess[eProcessRecSim_Run1] || tc.fProcess[eSim_Run1]) {
+      // Pb+Pb in Run 1:
+      lSigmaInel = 7.55; // see Slide 3 in DDC presentation https://indico.cern.ch/event/1326916/ + Run 1 multiplicity paper https://arxiv.org/abs/1301.4361
+    } else {
+      LOGF(fatal, "\033[1;31m%s at line %d : this branch is not supported/validated yet\033[0m", __FUNCTION__, __LINE__);
+    }
+
+    // okay, I have SigmaInel for this collision system and energy, calculate centrality:
+    float b = ebye.fImpactParameter;
+    if (b < 0.) {
+      LOGF(warning, "\033[1;31m%s at line %d : b < 0. => did you forget to calculate ebye.fImpactParameter before calling DetermineSimulatedCentrality() ? Or you are processing Monte Carlo dataset where IP was not stored, i.e. it's set to -999 (e.g. in LHC21i6a) ? Setting lSimulatedCentrality = -1. and simply continuing... \033[0m", __FUNCTION__, __LINE__);
+      lSimulatedCentrality = -1.;
+    } else {
+      lSimulatedCentrality = o2::constants::math::PI * std::pow(b, 2.) / lSigmaInel; // finally, calculate true simulated centrality directly from impact parameter
+    }
+  } else {
+    LOGF(fatal, "\033[1;31m%s at line %d : this branch is not supported/validated yet\033[0m", __FUNCTION__, __LINE__);
+  }
+
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
+  return lSimulatedCentrality;
+
+} // float DetermineSimulatedCentrality()
 
 //============================================================
 
@@ -15092,7 +15245,7 @@ void DetermineInteractionRateAndCurrentRunDuration(T1 const& collision, T2 const
     auto bc = collision.template foundBC_as<T2>(); // I have the same code snippet at other places, keep in sync.
 
     // a1) Determine interaction rate only for eRec:
-    if (ec.fUseEventCuts[eInteractionRate] || qa.fFillQAEventHistograms2D || qa.fFillQACorrelationsVsInteractionRateVsProfiles2D || mupa.fCalculateCorrelationsAsFunctionOf[AFO_INTERACTIONRATE] || t0.fCalculateTest0AsFunctionOf[AFO_INTERACTIONRATE] || es.fCalculateEtaSeparationsAsFunctionOf[AFO_INTERACTIONRATE]) {
+    if (ec.fUseEventCuts[eInteractionRate] || qa.fFillQAEventHistograms2D || qa.fFillQACorrelationsVsInteractionRateVsProfiles2D || (mupa.fCalculateCorrelations && mupa.fCalculateCorrelationsAsFunctionOf[AFO_INTERACTIONRATE]) || (t0.fCalculateTest0 && t0.fCalculateTest0AsFunctionOf[AFO_INTERACTIONRATE]) || (es.fCalculateEtaSeparations && es.fCalculateEtaSeparationsAsFunctionOf[AFO_INTERACTIONRATE])) {
 
       LOGF(info, "\033[1;33m%s at line %d: !!!! WARNING !!!! There is a large memory blow-up of ~130 MB when calling mRateFetcher.fetch(...) !!!! WARNING !!!! \033[0m", __FUNCTION__, __LINE__);
 
@@ -15195,6 +15348,30 @@ void DetermineQAThingies(T1 const& collision, T2 const&)
   } // if (tc.fVerbose) {
 
 } // template <eRecSim rs, typename T1, typename T2> void DetermineQAThingies(T1 const& collision, T2 const&)
+
+//============================================================
+
+void ProcessHepMCHeavyIons(aod::HepMCHeavyIon const& hep)
+{
+  // Process extra MC info from HepMCHeavyIons only in this function.
+  // See documentation at https://aliceo2group.github.io/analysis-framework/docs/datamodel/ao2dTables.html#montecarlo
+
+  LOGF(info, "\033[1;32m hep.mcCollisionId() = %d\033[0m", hep.mcCollisionId());
+  LOGF(info, "\033[1;32m hep.centrality() = %f\033[0m", hep.centrality());             // TBI 20250428 set to -1 in LHC24g3
+  LOGF(info, "\033[1;32m hep.eccentricity() = %f\033[0m", hep.eccentricity());         // TBI 20250428 set to 0 in LHC24g3
+  LOGF(info, "\033[1;32m hep.sigmaInelNN() = %f\033[0m", hep.sigmaInelNN());           // TBI 20250428 set to 0 in LHC24g3
+  LOGF(info, "\033[1;32m hep.eventPlaneAngle() = %f\033[0m", hep.eventPlaneAngle());   // TBI 20250428 set to 0 in LHC24g3, but stored correctly in McCollisions
+  LOGF(info, "\033[1;32m hep.impactParameter() = %f\033[0m\n", hep.impactParameter()); // stored correctly both in HepMCHeavyIons and McCollisions
+
+  // *) Centrality at generated level:
+  ebye.fCentralitySim = hep.centrality();
+  if (ebye.fCentralitySim < 0. || ebye.fCentralitySim > 100.) {
+    LOGF(info, "\033[1;33m%s at line %d: !!!! WARNING !!!! ebye.fCentralitySim = %f, this info is still not stored in the table HepMCHeavyIons !!!! WARNING !!!! \033[0m\n", __FUNCTION__, __LINE__, ebye.fCentralitySim);
+  }
+
+  // ... TBI 20240429 as soon as HepMCHeavyIons data is stored filled in Monte Carlo datasets, ctd. here
+
+} // void ProcessHepMCHeavyIons(aod::HepMCHeavyIon const& hep)
 
 //============================================================
 
@@ -15567,7 +15744,7 @@ void FillQvector(const double& dPhi, const double& dPt, const double& dEta)
     for (int h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
       for (int wp = 0; wp < gMaxCorrelator + 1; wp++) { // weight power
         if (pw.fUseWeights[wPHI] || pw.fUseWeights[wPT] || pw.fUseWeights[wETA]) {
-          wToPowerP = pow(wPhi * wPt * wEta, wp);
+          wToPowerP = std::pow(wPhi * wPt * wEta, wp);
           qv.fQvector[h][wp] += TComplex(wToPowerP * std::cos(h * dPhi), wToPowerP * std::sin(h * dPhi)); // Q-vector with weights
         } else {
           qv.fQvector[h][wp] += TComplex(std::cos(h * dPhi), std::sin(h * dPhi)); // bare Q-vector without weights
@@ -15699,7 +15876,7 @@ void FillQvectorFromSparse(const double& dPhi, const double& dPt, const double& 
     for (int h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
       for (int wp = 0; wp < gMaxCorrelator + 1; wp++) { // weight power
         if (pw.fUseDiffPhiWeights[wPhiPhiAxis] || pw.fUseDiffPtWeights[wPtPtAxis] || pw.fUseDiffEtaWeights[wEtaEtaAxis]) {
-          wToPowerP = pow(wPhi * wPt * wEta, wp);
+          wToPowerP = std::pow(wPhi * wPt * wEta, wp);
           qv.fQvector[h][wp] += TComplex(wToPowerP * std::cos(h * dPhi), wToPowerP * std::sin(h * dPhi)); // Q-vector with weights
         } else {
           qv.fQvector[h][wp] += TComplex(std::cos(h * dPhi), std::sin(h * dPhi)); // bare Q-vector without weights
@@ -15828,7 +16005,7 @@ void Fillqvector(const double& dPhi, const double& kineVarValue, eqvectorKine ki
       if (pw.fUseWeights[AFO_weight] || pw.fUseDiffWeights[AFO_diffWeight]) {
         // TBI 20240212 supported at the moment: e.g. q-vector vs pt can be weighted only with diff. phi(pt) and integrated pt weights.
         // It cannot be weighted in addition with eta weights, since in any case I anticipate I will do always 1-D analysis, by integrating out all other dependencies
-        wToPowerP = pow(diffPhiWeightsForThisKineVar * kineVarWeight, wp);
+        wToPowerP = std::pow(diffPhiWeightsForThisKineVar * kineVarWeight, wp);
         qv.fqvector[kineVarChoice][bin - 1][h][wp] += TComplex(wToPowerP * std::cos(h * dPhi), wToPowerP * std::sin(h * dPhi)); // q-vector with weights
       } else {
         qv.fqvector[kineVarChoice][bin - 1][h][wp] += TComplex(std::cos(h * dPhi), std::sin(h * dPhi)); // bare q-vector without weights
@@ -16005,6 +16182,9 @@ void MainLoopOverParticles(T const& tracks)
 
   // Remark #4:
   // *) There is also processQA(...), to process data with maximum subscription to the tables (use for Run 3 only). To use it, set field "processQA: "true" in json config
+
+  // Remark #5:
+  // *) Switch ProcessHepMChi(...) amounts at the moment to calling one dedicated function + calling Steer for "RecSim", so no special care is needed here for that switch.
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -16200,6 +16380,7 @@ void Steer(T1 const& collision, T2 const& bcs, T3 const& tracks)
   DetermineReferenceMultiplicity<rs>(collision);
 
   // *) Determine collision centrality:
+  //    Remark: I determine also IP here.
   DetermineCentrality<rs>(collision);
 
   // *) Determine collision occupancy:

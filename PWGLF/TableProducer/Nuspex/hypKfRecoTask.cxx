@@ -16,6 +16,7 @@
 #include <limits>
 #include <vector>
 #include <string>
+#include <map>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -39,10 +40,14 @@
 #include "PWGLF/DataModel/LFHypernucleiKfTables.h"
 #include "TRandom3.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/TableProducer/PID/pidTPCBase.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "ReconstructionDataFormats/PID.h"
+#include "MetadataHelper.h"
 
 // KFParticle
 #ifndef HomogeneousField
-#define HomogeneousField // o2-linter: disable=[name/macro]
+#define HomogeneousField // o2-linter: disable=name/macro (Name is defined in KFParticle package)
 #endif
 #include "KFParticle.h"
 #include "KFPTrack.h"
@@ -54,10 +59,11 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
+using CollisionsFull = soa::Join<aod::Collisions, aod::PIDMults, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
-using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, o2::aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCDe, aod::pidTPCTr, aod::pidTPCHe, aod::pidTPCAl, aod::pidTOFmass>;
+using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, o2::aod::TracksDCA, aod::pidTOFmass>;
 
+MetadataHelper metadataInfo; // Metadata helper
 //----------------------------------------------------------------------------------------------------------------
 
 namespace
@@ -148,7 +154,7 @@ static const std::vector<std::string> cascadeNames{"4LLH->4LHe+pi", "4XHe->4LHe+
 constexpr int cascadeEnabled[nCascades][1]{{0}, {0}, {0}, {0}, {0}, {0}};
 constexpr int cascadePdgCodes[nCascades][1]{
   {1020010040},
-  {1120010040},
+  {1120020040},
   {0},
   {0},
   {0},
@@ -167,33 +173,32 @@ constexpr double preSelectionsCascades[nCascades][nSelCas]{
   {0.00, 9.90, 0, 100, -1., 100., 10., 10.},
   {0.00, 9.90, 0, 100, -1., 100., 10., 10.},
   {0.00, 9.90, 0, 100, -1., 100., 10., 10.}};
-
 //----------------------------------------------------------------------------------------------------------------
 struct DaughterParticle {
   TString name;
   int pdgCode, charge;
   double mass, resolution;
-  std::vector<double> betheParams;
+  std::array<float, 5> betheParams;
   bool active;
   DaughterParticle(std::string name_, int pdgCode_, double mass_, int charge_, LabeledArray<double> bethe) : name(name_), pdgCode(pdgCode_), charge(charge_), mass(mass_), active(false)
   {
     resolution = bethe.get(name, "resolution");
-    betheParams.clear();
-    for (unsigned int i = 0; i < 5; i++)
-      betheParams.push_back(bethe.get(name, i));
+    for (unsigned int i = 0; i < betheParams.size(); i++)
+      betheParams[i] = bethe.get(name, i);
   }
+  int getCentralPIDIndex() { return getPIDIndex(pdgCode); }
 }; // struct DaughterParticle
 
 struct HyperNucleus {
   TString name;
   int pdgCode;
-  bool active;
+  bool active, savePrimary;
   std::vector<int> daughters, daughterTrackSigns;
-  HyperNucleus(std::string name_, int pdgCode_, bool active_, std::vector<int> daughters_, std::vector<int> daughterTrackSigns_) : pdgCode(pdgCode_), active(active_)
+  HyperNucleus(std::string name_, int pdgCode_, bool active_, std::vector<int> daughters_, std::vector<int> daughterTrackSigns_) : pdgCode(pdgCode_), active(active_), savePrimary(active_)
   {
     init(name_, daughters_, daughterTrackSigns_);
   }
-  HyperNucleus(std::string name_, int pdgCode_, bool active_, int hypDaughter, std::vector<int> daughters_, std::vector<int> daughterTrackSigns_) : pdgCode(pdgCode_), active(active_)
+  HyperNucleus(std::string name_, int pdgCode_, bool active_, int hypDaughter, std::vector<int> daughters_, std::vector<int> daughterTrackSigns_) : pdgCode(pdgCode_), active(active_), savePrimary(active_)
   {
     daughters.push_back(hypDaughter);
     init(name_, daughters_, daughterTrackSigns_);
@@ -213,16 +218,22 @@ struct HyperNucleus {
 
 struct DaughterKf {
   int64_t daughterTrackId;
-  int hypNucId;
+  int species, hypNucId;
   KFParticle daughterKfp;
-  float dcaToPv, dcaToPvXY, dcaToPvZ;
-  DaughterKf(int64_t daughterTrackId_, KFParticle daughterKfp_, std::vector<float> vtx) : daughterTrackId(daughterTrackId_), hypNucId(-1), daughterKfp(daughterKfp_)
+  float dcaToPv, dcaToPvXY, dcaToPvZ, tpcNsigma, tpcNsigmaNLP, tpcNsigmaNHP;
+  bool active;
+  std::vector<float> vtx;
+  DaughterKf(int species_, int64_t daughterTrackId_, std::vector<float> vtx_, float tpcNsigma_, float tpcNsigmaNLP_, float tpcNsigmaNHP_) : daughterTrackId(daughterTrackId_), species(species_), hypNucId(-1), tpcNsigma(tpcNsigma_), tpcNsigmaNLP(tpcNsigmaNLP_), tpcNsigmaNHP(tpcNsigmaNHP_), vtx(vtx_) {}
+  DaughterKf(int species_, KFParticle daughterKfp_, int hypNucId_) : daughterTrackId(-999), species(species_), hypNucId(hypNucId_), daughterKfp(daughterKfp_), dcaToPv(-999), dcaToPvXY(-999), dcaToPvZ(-999) {}
+  void addKfp(KFParticle daughterKfp_)
   {
+    daughterKfp = daughterKfp_;
     dcaToPvXY = daughterKfp.GetDistanceFromVertexXY(&vtx[0]);
     dcaToPv = daughterKfp.GetDistanceFromVertex(&vtx[0]);
     dcaToPvZ = std::sqrt(dcaToPv * dcaToPv - dcaToPvXY * dcaToPvXY);
   }
-  DaughterKf(KFParticle daughterKfp_, int hypNucId_) : daughterTrackId(-999), hypNucId(hypNucId_), daughterKfp(daughterKfp_), dcaToPv(-999), dcaToPvXY(-999), dcaToPvZ(-999) {}
+
+  bool isTrack() { return daughterTrackId >= 0; }
 }; // struct DaughterKf
 
 struct HyperNucCandidate {
@@ -325,7 +336,7 @@ struct HyperNucCandidate {
   }
   void calcDcaToVtx(KFPVertex& vtx)
   {
-    if (devToPvXY != 999)
+    if (devToPvXY != 999) // o2-linter: disable=magic-number (To be checked)
       return;
     devToPvXY = kfp.GetDeviationFromVertexXY(vtx);
     dcaToPvXY = kfp.GetDistanceFromVertexXY(vtx);
@@ -339,10 +350,22 @@ struct HyperNucCandidate {
   }
   float getSubDaughterMass(int d1, int d2)
   {
+    return calcSubDaughterMass(daughters.at(d1)->daughterKfp, daughters.at(d2)->daughterKfp);
+  }
+  float getSubDaughterMassCascade(int d1, int d2)
+  {
+    if (!isCascade()) {
+      LOGF(warning, "Primary hypernucleus has no hypernucleus daughter!");
+      return -999;
+    }
+    return calcSubDaughterMass(daughters.at(d1)->daughterKfp, hypNucDaughter->daughters.at(d2)->daughterKfp);
+  }
+  float calcSubDaughterMass(KFParticle d1, KFParticle d2)
+  {
     KFParticle subDaughter;
     subDaughter.SetConstructMethod(2);
-    subDaughter.AddDaughter(daughters.at(d1)->daughterKfp);
-    subDaughter.AddDaughter(daughters.at(d2)->daughterKfp);
+    subDaughter.AddDaughter(d1);
+    subDaughter.AddDaughter(d2);
     subDaughter.TransportToDecayVertex();
     return subDaughter.GetMass();
   }
@@ -360,6 +383,14 @@ struct IndexPairs {
         b = pair.second;
         return true;
       }
+    }
+    return false;
+  }
+  bool hasIndex(int64_t a)
+  {
+    for (const auto& pair : pairs) {
+      if (pair.first == a)
+        return true;
     }
     return false;
   }
@@ -419,6 +450,12 @@ struct HypKfRecoTask {
   Configurable<LabeledArray<double>> cfgPreSelectionsSecondaries{"cfgPreSelectionsSecondaries", {preSelectionsSecondaries[0], nHyperNuclei, nSelSec, hyperNucNames, preSelectionSecNames}, "selection criteria for secondary hypernuclei"};
   Configurable<LabeledArray<double>> cfgPreSelectionsCascades{"cfgPreSelectionsCascades", {preSelectionsCascades[0], nCascades, nSelCas, cascadeNames, preSelectionCascadeNames}, "selection criteria for cascade hypernuclei"};
 
+  // TPC PID Response
+  bool usePidResponse;
+  o2::pid::tpc::Response* response;
+  std::map<std::string, std::string> metadata;
+  std::array<float, 5> betheParams;
+
   // CCDB
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<double> bField{"bField", -999, "bz field, -999 is automatic"};
@@ -427,10 +464,10 @@ struct HypKfRecoTask {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  Configurable<std::string> pidPath{"pidPath", "", "Path to the PID response object"};
+  Configurable<std::string> pidPath{"pidPath", "Analysis/PID/TPC/Response", "Path to the PID response object"};
 
+  std::vector<int> activePdgs;
   std::vector<DaughterParticle> daughterParticles;
-  std::vector<std::vector<int64_t>> foundDaughters;
   std::vector<std::vector<DaughterKf>> foundDaughterKfs, hypNucDaughterKfs;
   std::vector<std::vector<HyperNucCandidate>> singleHyperNucCandidates, cascadeHyperNucCandidates;
   std::vector<HyperNucleus> singleHyperNuclei, cascadeHyperNuclei;
@@ -438,7 +475,7 @@ struct HypKfRecoTask {
   std::vector<McCollInfo> mcCollInfos;
   IndexPairs trackIndices, mcPartIndices;
   KFPVertex kfPrimVtx;
-  bool collHasCandidate, collHasMcTrueCandidate, collPassedEvSel, activeCascade;
+  bool collHasCandidate, collHasMcTrueCandidate, collPassedEvSel, activeCascade, isMC;
   int64_t mcCollTableIndex;
   int mRunNumber, occupancy;
   float dBz;
@@ -447,6 +484,7 @@ struct HypKfRecoTask {
 
   void init(InitContext const&)
   {
+    isMC = false;
     mRunNumber = 0;
     dBz = 0;
     rand.SetSeed(0);
@@ -456,18 +494,37 @@ struct HypKfRecoTask {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    for (int i = 0; i < nDaughterParticles; i++) { // create daughterparticles
+    usePidResponse = false;
+    for (unsigned int i = 0; i < nDaughterParticles; i++) { // create daughterparticles
       daughterParticles.push_back(DaughterParticle(particleNames.at(i), particlePdgCodes.at(i), particleMasses.at(i), particleCharge.at(i), cfgBetheBlochParams));
+      if (cfgTrackPIDsettings->get(i, "useBBparams") == 2 || cfgTrackPIDsettings->get(i, "useBBparams") == 0) // o2-linter: disable=magic-number (To be checked)
+        usePidResponse = true;
     }
+
     for (unsigned int i = 0; i < nHyperNuclei; i++) { // create hypernuclei
-      singleHyperNuclei.push_back(HyperNucleus(hyperNucNames.at(i), cfgHyperNucPdg->get(i, 0u), cfgHyperNucsActive->get(i, 0u), getDaughterVec(i, cfgHyperNucDaughters), getDaughterSignVec(i, cfgHyperNucSigns)));
+      auto active = cfgHyperNucsActive->get(i, 0u);
+      auto pdg = cfgHyperNucPdg->get(i, 0u);
+      singleHyperNuclei.push_back(HyperNucleus(hyperNucNames.at(i), pdg, active, getDaughterVec(i, cfgHyperNucDaughters), getDaughterSignVec(i, cfgHyperNucSigns)));
+      if (active)
+        activePdgs.push_back(pdg);
     }
+
     activeCascade = false;
     for (unsigned int i = 0; i < nCascades; i++) { // create cascades
-      cascadeHyperNuclei.push_back(HyperNucleus(cascadeNames.at(i), cfgCascadesPdg->get(i, 0u), cfgCascadesActive->get(i, 0u), getHypDaughterVec(i, cfgCascadeHypDaughter), getDaughterVec(i, cfgCascadeDaughters), getDaughterSignVec(i, cfgCascadeSigns)));
-      if (cfgCascadesActive->get(i, 0u))
+      auto active = cfgCascadesActive->get(i, 0u);
+      auto pdg = cfgCascadesPdg->get(i, 0u);
+      auto hypDaughter = getHypDaughterVec(i, cfgCascadeHypDaughter);
+      cascadeHyperNuclei.push_back(HyperNucleus(cascadeNames.at(i), pdg, active, hypDaughter, getDaughterVec(i, cfgCascadeDaughters), getDaughterSignVec(i, cfgCascadeSigns)));
+      if (active) {
+        activePdgs.push_back(pdg);
+        if (!singleHyperNuclei.at(hypDaughter).active) {
+          singleHyperNuclei.at(hypDaughter).active = true;
+          activePdgs.push_back(singleHyperNuclei.at(hypDaughter).pdgCode);
+        }
         activeCascade = true;
+      }
     }
+
     // define histogram axes
     const AxisSpec axisMagField{10, -10., 10., "magnetic field"};
     const AxisSpec axisNev{3, 0., 3., "Number of events"};
@@ -506,7 +563,7 @@ struct HypKfRecoTask {
   }
   //----------------------------------------------------------------------------------------------------------------
 
-  void findDaughterParticles(aod::TrackAssoc const& tracksByColl, TracksFull const& tracks)
+  void findDaughterParticles(aod::TrackAssoc const& tracksByColl, TracksFull const& tracks, CollisionsFull::iterator const& coll)
   {
     // track loop, store daughter candidates in std::vector
     for (const auto& trackId : tracksByColl) {
@@ -525,63 +582,69 @@ struct HypKfRecoTask {
           continue;
         if (track.itsChi2NCl() > cfgTrackPIDsettings->get(i, "maxITSchi2"))
           continue;
-        if (std::abs(getTPCnSigma(track, daughterParticles.at(i))) > cfgTrackPIDsettings->get(i, "maxTPCnSigma"))
+        if (getRigidity(track) < cfgTrackPIDsettings->get(i, "minRigidity") || getRigidity(track) > cfgTrackPIDsettings->get(i, "maxRigidity"))
+          continue;
+        float tpcNsigma = getTPCnSigma(track, coll, daughterParticles.at(i));
+        if (std::abs(tpcNsigma) > cfgTrackPIDsettings->get(i, "maxTPCnSigma"))
           continue;
         filldedx(track, i);
         if (getMeanItsClsSize(track) < cfgTrackPIDsettings->get(i, "minITSclsSize"))
           continue;
         if (getMeanItsClsSize(track) > cfgTrackPIDsettings->get(i, "maxITSclsSize"))
           continue;
-        if (getRigidity(track) < cfgTrackPIDsettings->get(i, "minRigidity") || getRigidity(track) > cfgTrackPIDsettings->get(i, "maxRigidity"))
-          continue;
         if (cfgTrackPIDsettings->get(i, "TOFrequiredabove") >= 0 && getRigidity(track) > cfgTrackPIDsettings->get(i, "TOFrequiredabove") && (track.mass() < cfgTrackPIDsettings->get(i, "minTOFmass") || track.mass() > cfgTrackPIDsettings->get(i, "maxTOFmass")))
           continue;
-        foundDaughters.at(i).push_back(track.globalIndex());
+        float tpcNsigmaNHP = (i == kAlpha ? -999 : getTPCnSigma(track, coll, daughterParticles.at(i + 1)));
+        float tpcNsigmaNLP = (i == kPion ? 999 : getTPCnSigma(track, coll, daughterParticles.at(i - 1)));
+        foundDaughterKfs.at(i).push_back(DaughterKf(i, track.globalIndex(), primVtx, tpcNsigma, tpcNsigmaNLP, tpcNsigmaNHP));
       }
     } // track loop
   }
-
   //----------------------------------------------------------------------------------------------------------------
-  void checkMCTrueTracks(aod::McTrackLabels const& trackLabels, aod::McParticles const&)
+
+  void checkMCTrueTracks(aod::McTrackLabels const& trackLabels, aod::McParticles const&, TracksFull const& tracks, CollisionsFull::iterator const& coll)
   {
-    std::vector<int> activePdgs;
-    std::vector<std::vector<HyperNucleus>*> hypNucVectors = {&singleHyperNuclei, &cascadeHyperNuclei};
-    for (int vec = 0; vec < 2; vec++) {
-      for (size_t hyperNucIter = 0; hyperNucIter < hypNucVectors.at(vec)->size(); hyperNucIter++) {
-        HyperNucleus* hyperNuc = &(hypNucVectors.at(vec)->at(hyperNucIter));
-        if (!hyperNuc->active)
-          continue;
-        activePdgs.push_back(std::abs(hyperNuc->pdgCode));
-      }
-    }
     for (int i = 0; i < nDaughterParticles; i++) {
-      auto& daughterVec = foundDaughters.at(i);
+      auto& daughterVec = foundDaughterKfs.at(i);
       if (!daughterVec.size())
         continue;
       for (auto it = daughterVec.end() - 1; it >= daughterVec.begin(); it--) {
-        const auto& mcLab = trackLabels.rawIteratorAt(*it);
+        const auto& mcLab = trackLabels.rawIteratorAt(it->daughterTrackId);
         if (!mcLab.has_mcParticle()) {
           daughterVec.erase(it);
           continue;
         }
         const auto& mcPart = mcLab.mcParticle_as<aod::McParticles>();
-        if (std::abs(mcPart.pdgCode()) != daughterParticles.at(i).pdgCode) {
-          daughterVec.erase(it);
-          continue;
-        }
-        if (!mcPart.has_mothers()) {
-          daughterVec.erase(it);
-          continue;
-        }
-        bool isDaughter = false;
-        for (const auto& mother : mcPart.mothers_as<aod::McParticles>()) {
-          if (std::find(activePdgs.begin(), activePdgs.end(), std::abs(mother.pdgCode())) != activePdgs.end()) {
-            isDaughter = true;
+        if (cfgSaveOnlyMcTrue) {
+          if (std::abs(mcPart.pdgCode()) != daughterParticles.at(i).pdgCode) {
+            daughterVec.erase(it);
+            continue;
+          }
+          if (!mcPart.has_mothers()) {
+            daughterVec.erase(it);
+            continue;
+          }
+          bool isDaughter = false;
+          for (const auto& mother : mcPart.mothers_as<aod::McParticles>()) {
+            if (std::find(activePdgs.begin(), activePdgs.end(), std::abs(mother.pdgCode())) != activePdgs.end()) {
+              isDaughter = true;
+            }
+          }
+          if (!isDaughter) {
+            daughterVec.erase(it);
+            continue;
           }
         }
-        if (!isDaughter) {
-          daughterVec.erase(it);
-          continue;
+        if (cfgTrackPIDsettings->get(i, "useBBparams") == 0) {
+          const auto& trk = tracks.rawIteratorAt(it->daughterTrackId);
+          const auto tpcNsigmaMC = getTPCnSigmaMC(trk, coll, daughterParticles.at(i), daughterParticles.at(i));
+          if (std::abs(tpcNsigmaMC) <= cfgTrackPIDsettings->get(i, "maxTPCnSigma")) {
+            it->tpcNsigma = tpcNsigmaMC;
+            it->tpcNsigmaNHP = (i == kAlpha ? -999 : getTPCnSigmaMC(trk, coll, daughterParticles.at(i), daughterParticles.at(i + 1)));
+            it->tpcNsigmaNLP = (i == kPion ? 999 : getTPCnSigmaMC(trk, coll, daughterParticles.at(i), daughterParticles.at(i - 1)));
+          } else {
+            daughterVec.erase(it);
+          }
         }
       }
     }
@@ -589,33 +652,42 @@ struct HypKfRecoTask {
   //----------------------------------------------------------------------------------------------------------------
   void createKFDaughters(TracksFull const& tracks)
   {
+    for (size_t daughterCount = 0; daughterCount < daughterParticles.size(); daughterCount++) {
+      daughterParticles.at(daughterCount).active = false;
+    }
     std::vector<std::vector<HyperNucleus>*> hypNucVectors = {&singleHyperNuclei, &cascadeHyperNuclei};
-    for (size_t vec = 0; vec < 2; vec++) {
+    bool singleHypNucActive = false;
+    for (size_t vec = 0; vec < hypNucVectors.size(); vec++) {
       for (const auto& hyperNuc : *(hypNucVectors.at(vec))) {
         if (!hyperNuc.active)
           continue;
         for (size_t i = vec; i < hyperNuc.daughters.size(); i++) {
-          if (foundDaughters.at(hyperNuc.daughters.at(i)).size() > 0)
+          if (foundDaughterKfs.at(hyperNuc.daughters.at(i)).size() > 0)
             daughterParticles.at(hyperNuc.daughters.at(i)).active = true;
           else
             break;
+          if (i == hyperNuc.daughters.size() - 1)
+            singleHypNucActive = true;
         }
       }
+      if (!singleHypNucActive)
+        break;
     }
+
     for (size_t daughterCount = 0; daughterCount < daughterParticles.size(); daughterCount++) {
       const auto& daughterParticle = daughterParticles.at(daughterCount);
-      if (!daughterParticle.active)
+      if (!daughterParticle.active) {
+        foundDaughterKfs.at(daughterCount).clear();
         continue;
+      }
       const auto& daughterMass = daughterParticle.mass;
       const auto& daughterCharge = daughterParticle.charge;
-      for (const auto& daughterId : foundDaughters.at(daughterCount)) {
-        const auto& daughterTrack = tracks.rawIteratorAt(daughterId);
-        DaughterKf daughter(daughterId, createKFParticle(daughterTrack, daughterMass, daughterCharge), primVtx);
-        if (std::abs(daughter.dcaToPvXY) < cfgTrackPIDsettings->get(daughterCount, "minDcaToPvXY"))
-          continue;
-        if (std::abs(daughter.dcaToPvZ) < cfgTrackPIDsettings->get(daughterCount, "minDcaToPvZ"))
-          continue;
-        foundDaughterKfs.at(daughterCount).push_back(daughter);
+      auto& daughterVec = foundDaughterKfs.at(daughterCount);
+      for (auto it = daughterVec.end() - 1; it >= daughterVec.begin(); it--) {
+        const auto& daughterTrack = tracks.rawIteratorAt(it->daughterTrackId);
+        it->addKfp(createKFParticle(daughterTrack, daughterMass, daughterCharge));
+        if (std::abs(it->dcaToPvXY) < cfgTrackPIDsettings->get(daughterCount, "minDcaToPvXY") || std::abs(it->dcaToPvZ) < cfgTrackPIDsettings->get(daughterCount, "minDcaToPvZ"))
+          daughterVec.erase(it);
       }
     }
   }
@@ -685,7 +757,7 @@ struct HypKfRecoTask {
               candidate.calcDcaToVtx(kfPrimVtx);
               candidate.isSecondaryCandidate = true;
             }
-            if (candidate.isPrimaryCandidate || candidate.isSecondaryCandidate)
+            if ((candidate.isPrimaryCandidate && hyperNuc->savePrimary) || (candidate.isSecondaryCandidate && activeCascade))
               singleHyperNucCandidates.at(hyperNucIter).push_back(candidate);
           }
         }
@@ -711,7 +783,7 @@ struct HypKfRecoTask {
       for (int64_t i = 0; i < static_cast<int64_t>(nHypNucDaughters); i++) {
         if (singleHyperNucCandidates.at(hyperNuc->daughters.at(0)).at(i).isSecondaryCandidate) {
           auto hypNucDaughter = &(singleHyperNucCandidates.at(hyperNuc->daughters.at(0)).at(i));
-          hypNucDaughterKfs.at(hyperNucIter).push_back(DaughterKf(hypNucDaughter->kfp, i));
+          hypNucDaughterKfs.at(hyperNucIter).push_back(DaughterKf(hyperNuc->daughters.at(0), hypNucDaughter->kfp, i));
         }
       }
       int nCombinations = hypNucDaughterKfs.at(hyperNucIter).size();
@@ -796,9 +868,8 @@ struct HypKfRecoTask {
         HyperNucleus* hyperNuc = &(hypNucVectors.at(vec)->at(hyperNucIter));
         if (!hyperNuc->active)
           continue;
-        for (auto& hypCand : candidateVector->at(hyperNucIter)) { // o2-linter: disable=[const-ref-in-for-loop]
+        for (auto& hypCand : candidateVector->at(hyperNucIter)) { // o2-linter: disable=[const-ref-in-for-loop] (Object is non const and modified in loop)
           std::vector<int64_t> motherIds;
-          int daughterCount = 0;
           if (hypCand.isCascade()) {
             if (!hypCand.hypNucDaughter->mcTrue)
               continue;
@@ -811,16 +882,15 @@ struct HypKfRecoTask {
                 break;
               }
             }
-            daughterCount++;
           }
           for (const auto& daughter : hypCand.daughters) {
-            if (daughter->daughterTrackId < 0)
+            if (!daughter->isTrack())
               continue;
             const auto& mcLab = trackLabels.rawIteratorAt(daughter->daughterTrackId);
             if (!mcLab.has_mcParticle())
               continue;
             const auto& mcPart = mcLab.mcParticle_as<aod::McParticles>();
-            if (std::abs(mcPart.pdgCode()) != daughterParticles.at(hyperNuc->daughters.at(daughterCount++)).pdgCode)
+            if (std::abs(mcPart.pdgCode()) != daughterParticles.at(daughter->species).pdgCode)
               continue;
             if (!mcPart.has_mothers())
               continue;
@@ -840,6 +910,8 @@ struct HypKfRecoTask {
           for (auto iter = motherIds.begin(); iter != motherIds.end() - 1; iter++)
             if (*iter != *(iter + 1))
               hypCand.mcTrue = false;
+          if (!mcPartIndices.hasIndex(motherIds.front()))
+            hypCand.mcTrue = false;
           if (hypCand.mcTrue) {
             hypCand.mcParticleId = motherIds.front();
             collHasMcTrueCandidate = true;
@@ -858,49 +930,39 @@ struct HypKfRecoTask {
     outputCollisionTable(
       collPassedEvSel, mcCollTableIndex,
       primVtx.at(0), primVtx.at(1), primVtx.at(2),
-      cents.at(0), cents.at(1), cents.at(2), occupancy);
+      cents.at(0), cents.at(1), cents.at(2), occupancy, mRunNumber);
 
     std::vector<std::vector<HyperNucleus>*> hypNucVectors = {&singleHyperNuclei, &cascadeHyperNuclei};
     std::vector<std::vector<std::vector<HyperNucCandidate>>*> candidateVectors = {&singleHyperNucCandidates, &cascadeHyperNucCandidates};
 
-    for (int vec = 0; vec < 2; vec++) {
+    for (unsigned int vec = 0; vec < candidateVectors.size(); vec++) {
       auto candidateVector = candidateVectors.at(vec);
       for (size_t hyperNucIter = 0; hyperNucIter < hypNucVectors.at(vec)->size(); hyperNucIter++) {
         HyperNucleus* hyperNuc = &(hypNucVectors.at(vec)->at(hyperNucIter));
         if (!hyperNuc->active)
           continue;
-        for (auto& hypCand : candidateVector->at(hyperNucIter)) { // o2-linter: disable=[const-ref-in-for-loop]
+        for (auto& hypCand : candidateVector->at(hyperNucIter)) { // o2-linter: disable=const-ref-in-for-loop (Object is non const and modified in loop)
           if (!hypCand.isPrimaryCandidate && !hypCand.isUsedSecondary && !hypCand.isCascade())
             continue;
           if (saveOnlyMcTrue && !hypCand.mcTrue && !hypCand.isCascade())
             continue;
           hInvMass[vec * nHyperNuclei + hyperNucIter]->Fill(hypCand.mass);
           std::vector<int> vecDaugtherTracks, vecAddons, vecSubDaughters;
-          int daughterCount = 0;
           for (const auto& daughter : hypCand.daughters) {
-            const auto& daughterTrackId = daughter->daughterTrackId;
-            if (daughterTrackId < 0)
+            if (!daughter->isTrack())
               continue;
+            const auto& daughterTrackId = daughter->daughterTrackId;
             int trackTableId;
             if (!trackIndices.getIndex(daughterTrackId, trackTableId)) {
-              auto daught = hyperNuc->daughters.at(daughterCount);
               const auto& track = tracks.rawIteratorAt(daughterTrackId);
               outputTrackTable(
-                hyperNuc->daughters.at(daughterCount) * track.sign(),
-                track.pt(), track.eta(), track.phi(),
-                daughter->dcaToPvXY, daughter->dcaToPvZ,
-                track.tpcNClsFound(), track.tpcChi2NCl(),
-                track.itsClusterSizes(), track.itsChi2NCl(),
-                getRigidity(track), track.tpcSignal(), getTPCnSigma(track, daughterParticles.at(daught)),
-                daught == kAlpha ? -999 : getTPCnSigma(track, daughterParticles.at(daught + 1)),
-                daught == kPion ? 999 : getTPCnSigma(track, daughterParticles.at(daught - 1)),
-                track.mass(),
-                track.isPVContributor());
+                daughter->species * track.sign(), track.pt(), track.eta(), track.phi(), daughter->dcaToPvXY, daughter->dcaToPvZ, track.tpcNClsFound(), track.tpcChi2NCl(),
+                track.itsClusterSizes(), track.itsChi2NCl(), getRigidity(track), track.tpcSignal(), daughter->tpcNsigma, daughter->tpcNsigmaNHP, daughter->tpcNsigmaNLP,
+                track.mass(), track.isPVContributor());
               trackTableId = outputTrackTable.lastIndex();
               trackIndices.add(daughterTrackId, trackTableId);
             }
             vecDaugtherTracks.push_back(trackTableId);
-            daughterCount++;
           }
           for (int i = 0; i < hypCand.getNdaughters(); i++) {
             std::vector<float>& posMom = hypCand.daughterPosMoms.at(i);
@@ -908,10 +970,18 @@ struct HypKfRecoTask {
               posMom.at(0), posMom.at(1), posMom.at(2), posMom.at(3), posMom.at(4), posMom.at(5));
             vecAddons.push_back(outputDaughterAddonTable.lastIndex());
           }
-          if (hypCand.getNdaughters() > 2) {
+          if (hypCand.getNdaughters() > 2) { // o2-linter: disable=magic-number (To be checked)
             for (int i = 0; i < hypCand.getNdaughters(); i++) {
               for (int j = i + 1; j < hypCand.getNdaughters(); j++) {
                 outputSubDaughterTable(hypCand.getSubDaughterMass(i, j));
+                vecSubDaughters.push_back(outputSubDaughterTable.lastIndex());
+              }
+            }
+          }
+          if (hypCand.isCascade()) {
+            for (int i = 1; i < hypCand.getNdaughters(); i++) {
+              for (int j = 0; j < hypCand.hypNucDaughter->getNdaughters(); j++) {
+                outputSubDaughterTable(hypCand.getSubDaughterMassCascade(i, j));
                 vecSubDaughters.push_back(outputSubDaughterTable.lastIndex());
               }
             }
@@ -922,12 +992,9 @@ struct HypKfRecoTask {
           outputHypNucTable(
             mcPartIndices.getIndex(hypCand.mcParticleId, mcPartTableId) ? mcPartTableId : -1,
             outputCollisionTable.lastIndex(), vecDaugtherTracks, vecAddons, hypCand.getDaughterTableId(), vecSubDaughters,
-            (vec * nHyperNuclei + hyperNucIter + 1) * hypCand.getSign(),
-            hypCand.isPrimaryCandidate, hypCand.mass,
-            hypCand.px, hypCand.py, hypCand.pz,
-            hypCand.dcaToPvXY, hypCand.dcaToPvZ, hypCand.devToPvXY,
-            hypCand.dcaToVtxXY, hypCand.dcaToVtxZ, hypCand.chi2,
-            hypCand.recoSV.at(0), hypCand.recoSV.at(1), hypCand.recoSV.at(2));
+            (vec * nHyperNuclei + hyperNucIter + 1) * hypCand.getSign(), hypCand.isPrimaryCandidate, hypCand.mass,
+            hypCand.px, hypCand.py, hypCand.pz, hypCand.dcaToPvXY, hypCand.dcaToPvZ, hypCand.devToPvXY,
+            hypCand.dcaToVtxXY, hypCand.dcaToVtxZ, hypCand.chi2, hypCand.recoSV.at(0), hypCand.recoSV.at(1), hypCand.recoSV.at(2));
           hypCand.tableId = outputHypNucTable.lastIndex();
         }
       }
@@ -935,21 +1002,23 @@ struct HypKfRecoTask {
   }
   //----------------------------------------------------------------------------------------------------------------
 
-  void processMC(CollisionsFullMC const& collisions, aod::McCollisions const& mcColls, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const& particlesMC, aod::McTrackLabels const& trackLabelsMC, aod::McCollisionLabels const& collLabels, aod::TrackAssoc const& tracksColl)
+  void processMC(CollisionsFullMC const& collisions, aod::McCollisions const& mcColls, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const& particlesMC, aod::McTrackLabels const& trackLabelsMC, aod::McCollisionLabels const& collLabels, aod::TrackAssoc const& tracksColl, CollisionsFull const& colls)
   {
-
+    isMC = true;
     mcCollInfos.clear();
     mcCollInfos.resize(mcColls.size());
     mcPartIndices.clear();
     for (const auto& collision : collisions) {
       if (!collision.has_mcCollision())
         continue;
-      if (collision.sel8() && std::abs(collision.posZ()) < 10)
+      if (collision.sel8() && std::abs(collision.posZ()) < 10) // o2-linter: disable=magic-number (To be checked)
         mcCollInfos.at(collision.mcCollisionId()).passedEvSel = true;
     }
     std::vector<std::vector<HyperNucleus>*> hypNucVectors = {&singleHyperNuclei, &cascadeHyperNuclei};
     for (const auto& mcPart : particlesMC) {
-      for (int vec = 0; vec < 2; vec++) {
+      if (!mcCollInfos.at(mcPart.mcCollisionId()).passedEvSel)
+        continue;
+      for (unsigned int vec = 0; vec < hypNucVectors.size(); vec++) {
         for (size_t hyperNucIter = 0; hyperNucIter < hypNucVectors.at(vec)->size(); hyperNucIter++) {
           HyperNucleus* hyperNuc = &(hypNucVectors.at(vec)->at(hyperNucIter));
           if (!hyperNuc->active)
@@ -958,11 +1027,7 @@ struct HypKfRecoTask {
             continue;
           bool isDecayMode = false;
           float svx, svy, svz;
-          int daughterPdg;
-          if (vec == 0)
-            daughterPdg = daughterParticles.at(hyperNuc->daughters.at(0)).pdgCode;
-          else
-            daughterPdg = singleHyperNuclei.at(hyperNuc->daughters.at(0)).pdgCode;
+          int daughterPdg = vec ? singleHyperNuclei.at(hyperNuc->daughters.at(0)).pdgCode : daughterParticles.at(hyperNuc->daughters.at(0)).pdgCode;
           for (const auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
             if (std::abs(mcDaught.pdgCode()) == daughterPdg) {
               isDecayMode = true;
@@ -999,11 +1064,14 @@ struct HypKfRecoTask {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       initCollision(collision);
+      if (!collision.has_mcCollision() || !mcCollInfos.at(collision.mcCollisionId()).passedEvSel)
+        continue;
+
       const uint64_t collIdx = collision.globalIndex();
       auto tracksByColl = tracksColl.sliceBy(perCollision, collIdx);
-      findDaughterParticles(tracksByColl, tracks);
-      if (cfgSaveOnlyMcTrue)
-        checkMCTrueTracks(trackLabelsMC, particlesMC);
+      findDaughterParticles(tracksByColl, tracks, colls.rawIteratorAt(collision.globalIndex()));
+      if (cfgSaveOnlyMcTrue || usePidResponse)
+        checkMCTrueTracks(trackLabelsMC, particlesMC, tracks, colls.rawIteratorAt(collision.globalIndex()));
       createKFDaughters(tracks);
       createKFHypernuclei(tracks);
       createMCinfo(trackLabelsMC, collLabels, particlesMC, mcColls);
@@ -1015,16 +1083,13 @@ struct HypKfRecoTask {
       if (cfgSaveOnlyMcTrue && !collHasMcTrueCandidate)
         continue;
 
-      mcCollTableIndex = -1;
-      if (collision.has_mcCollision()) {
-        mcCollTableIndex = mcCollInfos.at(collision.mcCollisionId()).tableIndex;
-        if (mcCollTableIndex < 0) {
-          outputMcCollisionTable(
-            mcCollInfos.at(collision.mcCollisionId()).passedEvSel,
-            collision.mcCollision().posX(), collision.mcCollision().posY(), collision.mcCollision().posZ());
-          mcCollTableIndex = outputMcCollisionTable.lastIndex();
-          mcCollInfos.at(collision.mcCollisionId()).tableIndex = mcCollTableIndex;
-        }
+      mcCollTableIndex = mcCollInfos.at(collision.mcCollisionId()).tableIndex;
+      if (mcCollTableIndex < 0) {
+        outputMcCollisionTable(
+          mcCollInfos.at(collision.mcCollisionId()).passedEvSel,
+          collision.mcCollision().posX(), collision.mcCollision().posY(), collision.mcCollision().posZ());
+        mcCollTableIndex = outputMcCollisionTable.lastIndex();
+        mcCollInfos.at(collision.mcCollisionId()).tableIndex = mcCollTableIndex;
       }
       fillTree(tracks, cfgSaveOnlyMcTrue);
     }
@@ -1042,7 +1107,7 @@ struct HypKfRecoTask {
         continue;
       const uint64_t collIdx = collision.globalIndex();
       auto tracksByColl = tracksColl.sliceBy(perCollision, collIdx);
-      findDaughterParticles(tracksByColl, tracks);
+      findDaughterParticles(tracksByColl, tracks, collision);
       createKFDaughters(tracks);
       createKFHypernuclei(tracks);
       createKFCascades(tracks);
@@ -1065,7 +1130,7 @@ struct HypKfRecoTask {
     o2::parameters::GRPMagField* grpmag = 0x0;
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
-      if (bField < -990) {
+      if (bField < -990) { // o2-linter: disable=magic-number (To be checked)
         // Fetch magnetic field from ccdb for current collision
         dBz = grpo->getNominalL3Field();
         LOG(info) << "Retrieved GRP for timestamp " << run3grpTimestamp << " with magnetic field of " << dBz << " kZG";
@@ -1078,7 +1143,7 @@ struct HypKfRecoTask {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grpTimestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
-      if (bField < -990) {
+      if (bField < -990) { // o2-linter: disable=magic-number (To be checked)
         // Fetch magnetic field from ccdb for current collision
         dBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
         LOG(info) << "Retrieved GRP for timestamp " << run3grpTimestamp << " with magnetic field of " << dBz << " kZG";
@@ -1088,13 +1153,35 @@ struct HypKfRecoTask {
     }
     mRunNumber = bc.runNumber();
     KFParticle::SetField(dBz);
+
+    // PID response
+    if (!usePidResponse)
+      return;
+    if (metadataInfo.isFullyDefined()) {
+      metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
+      LOGP(info, "Automatically setting reco pass for TPC Response to {} from AO2D", metadata["RecoPassName"]);
+    } else {
+      LOG(info) << "Setting reco pass for TPC response to default name";
+      metadata["RecoPassName"] = "apass5";
+    }
+    const std::string path = pidPath.value;
+    ccdb->setTimestamp(run3grpTimestamp);
+    response = ccdb->getSpecific<o2::pid::tpc::Response>(path, run3grpTimestamp, metadata);
+    if (!response) {
+      LOGF(warning, "Unable to find TPC parametrisation for specified pass name - falling back to latest object");
+      response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(path, run3grpTimestamp);
+      if (!response) {
+        LOGF(fatal, "Unable to find any TPC object corresponding to timestamp {}!", run3grpTimestamp);
+      }
+    }
+    LOG(info) << "Successfully retrieved TPC PID object from CCDB for timestamp " << run3grpTimestamp << ", recoPass " << metadata["RecoPassName"];
+    response->PrintAll();
+    betheParams = response->GetBetheBlochParams();
   }
   //----------------------------------------------------------------------------------------------------------------
   template <typename T>
   void initCollision(const T& collision)
   {
-    foundDaughters.clear();
-    foundDaughters.resize(nDaughterParticles);
     foundDaughterKfs.clear();
     foundDaughterKfs.resize(nDaughterParticles);
     hypNucDaughterKfs.clear();
@@ -1108,7 +1195,7 @@ struct HypKfRecoTask {
     collHasMcTrueCandidate = false;
     histos.fill(HIST("histMagField"), dBz);
     histos.fill(HIST("histNev"), 0.5);
-    collPassedEvSel = collision.sel8() && std::abs(collision.posZ()) < 10;
+    collPassedEvSel = collision.sel8() && std::abs(collision.posZ()) < 10; // o2-linter: disable=magic-number (To be checked)
     occupancy = collision.trackOccupancyInTimeRange();
     if (collPassedEvSel) {
       histos.fill(HIST("histNev"), 1.5);
@@ -1129,45 +1216,63 @@ struct HypKfRecoTask {
   {
     const float rigidity = getRigidity(track);
     hDeDx[2 * species]->Fill(track.sign() * rigidity, track.tpcSignal());
-    if (track.tpcNClsFound() < 100 || track.itsNCls() < 2)
+    if (track.tpcNClsFound() < 100 || track.itsNCls() < 2) // o2-linter: disable=magic-number (To be checked)
       return;
     hDeDx[2 * species + 1]->Fill(track.sign() * rigidity, track.tpcSignal());
   }
   //----------------------------------------------------------------------------------------------------------------
 
-  template <class T>
-  float getTPCnSigma(T const& track, DaughterParticle const& particle)
+  template <class T, class C>
+  float getTPCnSigma(T const& track, C const& coll, DaughterParticle& particle)
   {
     const float rigidity = getRigidity(track);
     if (!track.hasTPC())
       return -999;
+    float mMip = 1, chargeFactor = 1;
+    float* parBB;
 
-    if (particle.name == "pion" && cfgTrackPIDsettings->get("pion", "useBBparams") < 1)
-      return cfgTrackPIDsettings->get("pion", "useBBparams") == 0 ? track.tpcNSigmaPi() : 0;
-    if (particle.name == "proton" && cfgTrackPIDsettings->get("proton", "useBBparams") < 1)
-      return cfgTrackPIDsettings->get("proton", "useBBparams") == 0 ? track.tpcNSigmaPr() : 0;
-    if (particle.name == "deuteron" && cfgTrackPIDsettings->get("deuteron", "useBBparams") < 1)
-      return cfgTrackPIDsettings->get("deuteron", "useBBparams") == 0 ? track.tpcNSigmaDe() : 0;
-    if (particle.name == "triton" && cfgTrackPIDsettings->get("triton", "useBBparams") < 1)
-      return cfgTrackPIDsettings->get("triton", "useBBparams") == 0 ? track.tpcNSigmaTr() : 0;
-    if (particle.name == "helion" && cfgTrackPIDsettings->get("helion", "useBBparams") < 1)
-      return cfgTrackPIDsettings->get("helion", "useBBparams") == 0 ? track.tpcNSigmaHe() : 0;
-    if (particle.name == "alpha" && cfgTrackPIDsettings->get("alpha", "useBBparams") < 1)
-      return cfgTrackPIDsettings->get("alpha", "useBBparams") == 0 ? track.tpcNSigmaAl() : 0;
-
-    double expBethe{tpc::BetheBlochAleph(static_cast<double>(particle.charge * rigidity / particle.mass), particle.betheParams[0], particle.betheParams[1], particle.betheParams[2], particle.betheParams[3], particle.betheParams[4])};
+    switch (static_cast<int>(cfgTrackPIDsettings->get(particle.name, "useBBparams"))) {
+      case -1:
+        return 0;
+      case 0:
+        return isMC ? 0 : response->GetNumberOfSigma(coll, track, particle.getCentralPIDIndex());
+      case 1:
+        parBB = &particle.betheParams[0];
+        break;
+      case 2:
+        mMip = response->GetMIP();
+        chargeFactor = std::pow(particle.charge, response->GetChargeFactor());
+        parBB = &betheParams[0];
+        break;
+      default:
+        return -999;
+    }
+    double expBethe{mMip * chargeFactor * o2::tpc::BetheBlochAleph(static_cast<float>(particle.charge * rigidity / particle.mass), parBB[0], parBB[1], parBB[2], parBB[3], parBB[4])};
     double expSigma{expBethe * particle.resolution};
     float sigmaTPC = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
     return sigmaTPC;
   }
   //----------------------------------------------------------------------------------------------------------------
+
+  template <class T, class C>
+  float getTPCnSigmaMC(T const& trk, C const& coll, DaughterParticle& particle1, DaughterParticle& particle2)
+  {
+    const float pidval1 = particle1.getCentralPIDIndex();
+    const float pidval2 = particle2.getCentralPIDIndex();
+    const auto expSignal = response->GetExpectedSignal(trk, pidval2);
+    const auto expSigma = response->GetExpectedSigma(coll, trk, pidval2);
+    const auto mcTunedTPCSignal = gRandom->Gaus(expSignal, expSigma);
+    return response->GetNumberOfSigmaMCTuned(coll, trk, pidval1, mcTunedTPCSignal);
+  }
+  //----------------------------------------------------------------------------------------------------------------
+
   template <class T>
   float getMeanItsClsSize(T const& track)
   {
     int sum = 0, n = 0;
-    for (int i = 0; i < 8; i++) {
-      sum += (track.itsClusterSizes() >> (4 * i) & 15);
-      if (track.itsClusterSizes() >> (4 * i) & 15)
+    for (int i = 0; i < 0x08; i++) {
+      sum += (track.itsClusterSizes() >> (0x04 * i) & 0x0f);
+      if (track.itsClusterSizes() >> (0x04 * i) & 0x0f)
         n++;
     }
     return n > 0 ? static_cast<float>(sum) / n : 0.f;
@@ -1192,7 +1297,7 @@ struct HypKfRecoTask {
     trackparCov.getXYZGlo(fP);
     trackparCov.getPxPyPzGlo(fM);
     float fPM[6];
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 0x03; i++) {
       fPM[i] = fP[i];
       fPM[i + 3] = fM[i] * std::abs(charge);
     }
@@ -1228,7 +1333,7 @@ struct HypKfRecoTask {
   std::vector<int> getDaughterVec(unsigned int hypNuc, LabeledArray<std::string> cfg)
   {
     std::vector<int> vec;
-    for (unsigned int i = 0; i < 4; i++) {
+    for (unsigned int i = 0; i < 0x04; i++) {
       std::string daughter = cfg.get(hypNuc, i);
       if (std::find(particleNames.begin(), particleNames.end(), daughter) == particleNames.end())
         break;
@@ -1241,7 +1346,7 @@ struct HypKfRecoTask {
   std::vector<int> getDaughterSignVec(unsigned int hypNuc, LabeledArray<std::string> cfg)
   {
     std::vector<int> vec;
-    for (unsigned int i = 0; i < 4; i++) {
+    for (unsigned int i = 0; i < 0x04; i++) {
       std::string sign = cfg.get(hypNuc, i);
       if (sign != "+" && sign != "-")
         break;
@@ -1256,6 +1361,7 @@ struct HypKfRecoTask {
 //----------------------------------------------------------------------------------------------------------------
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  metadataInfo.initMetadata(cfgc); // Parse AO2D metadata
   return WorkflowSpec{
     adaptAnalysisTask<HypKfRecoTask>(cfgc)};
 }

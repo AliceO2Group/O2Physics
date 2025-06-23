@@ -164,14 +164,6 @@ struct HfCandidateSelectorLbToLcPi {
     for (const auto& hfCandLb : hfCandLbs) { // looping over Lb candidates
 
       int statusLb = 0;
-
-      // check if flagged as Λb --> Λc+ π-
-      if (!(hfCandLb.hfflag() & 1 << hf_cand_lb::DecayType::LbToLcPi)) {
-        hfSelLbToLcPiCandidate(statusLb);
-        // LOGF(debug, "Lb candidate selection failed at hfflag check");
-        continue;
-      }
-
       // Lc is always index0 and pi is index1 by default
       // auto candLc = hfCandLb.prong0();
       auto candLc = hfCandLb.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();

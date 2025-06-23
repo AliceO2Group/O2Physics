@@ -23,19 +23,20 @@
 #ifndef PWGJE_DATAMODEL_JET_H_
 #define PWGJE_DATAMODEL_JET_H_
 
-#include <cmath>
-#include "Framework/AnalysisDataModel.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "PWGHF/DataModel/DerivedTables.h"
 #include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetReducedDataDQ.h"
 #include "PWGJE/DataModel/JetReducedDataHF.h"
 #include "PWGJE/DataModel/JetReducedDataV0.h"
-#include "PWGJE/DataModel/JetReducedDataDQ.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
-
-#include "PWGHF/DataModel/DerivedTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "PWGLF/DataModel/V0SelectorTables.h"
+
+#include <Framework/ASoA.h>
+
+#include <cmath>
+#include <cstdint>
 
 namespace o2::aod
 {
@@ -244,8 +245,8 @@ using JetParticlesSubBplus = JMcParticleBplusSubs;
 using McCollisionsBplus = o2::soa::Join<HfBplusMcCollBases, JBplusMcCollisionIds>;
 using CandidatesBplusMCP = o2::soa::Join<HfBplusPBases, JBplusPIds>;
 
-using CandidatesV0Data = o2::soa::Join<V0Cores, JV0Ids>;
-using CandidatesV0MCD = o2::soa::Join<V0Cores, V0MCCores, JV0Ids>;
+using CandidatesV0Data = o2::soa::Join<V0Cores, JV0Ids, V0SignalFlags>;
+using CandidatesV0MCD = o2::soa::Join<V0Cores, V0MCCores, JV0Ids, V0SignalFlags>;
 // using V0Daughters = DauTrackExtras;
 using McCollisionsV0 = o2::soa::Join<JV0McCollisions, JV0McCollisionIds>;
 using CandidatesV0MCP = o2::soa::Join<JV0Mcs, JV0McIds>;

@@ -16,9 +16,10 @@
 #ifndef PWGEM_DILEPTON_CORE_EMEVENTCUT_H_
 #define PWGEM_DILEPTON_CORE_EMEVENTCUT_H_
 
-#include "TNamed.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
+
+#include "TNamed.h"
 
 using namespace std;
 
@@ -37,6 +38,7 @@ class EMEventCut : public TNamed
     kNoITSROFB, // no ITS read out frame border
     kNoSameBunchPileup,
     kIsVertexITSTPC,
+    kIsVertexTOFmatched,
     kIsGoodZvtxFT0vsPV,
     kNoCollInTimeRangeStandard,
     kNoCollInTimeRangeStrict,
@@ -71,6 +73,9 @@ class EMEventCut : public TNamed
       return false;
     }
     if (mRequireVertexITSTPC && !IsSelected(collision, EMEventCuts::kIsVertexITSTPC)) {
+      return false;
+    }
+    if (mRequireVertexTOFmatched && !IsSelected(collision, EMEventCuts::kIsVertexTOFmatched)) {
       return false;
     }
     if (mRequireGoodZvtxFT0vsPV && !IsSelected(collision, EMEventCuts::kIsGoodZvtxFT0vsPV)) {
@@ -128,6 +133,9 @@ class EMEventCut : public TNamed
       case EMEventCuts::kIsVertexITSTPC:
         return collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC);
 
+      case EMEventCuts::kIsVertexTOFmatched:
+        return collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched);
+
       case EMEventCuts::kIsGoodZvtxFT0vsPV:
         return collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
 
@@ -168,6 +176,7 @@ class EMEventCut : public TNamed
   void SetRequireNoITSROFB(bool flag);
   void SetRequireNoSameBunchPileup(bool flag);
   void SetRequireVertexITSTPC(bool flag);
+  void SetRequireVertexTOFmatched(bool flag);
   void SetRequireGoodZvtxFT0vsPV(bool flag);
   void SetRequireNoCollInTimeRangeStandard(bool flag);
   void SetRequireNoCollInTimeRangeStrict(bool flag);
@@ -186,6 +195,7 @@ class EMEventCut : public TNamed
   bool mRequireNoITSROFB{false};
   bool mRequireNoSameBunchPileup{false};
   bool mRequireVertexITSTPC{false};
+  bool mRequireVertexTOFmatched{false};
   bool mRequireGoodZvtxFT0vsPV{false};
   bool mRequireNoCollInTimeRangeStandard{false};
   bool mRequireNoCollInTimeRangeStrict{false};

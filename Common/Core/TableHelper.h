@@ -20,6 +20,7 @@
 
 #include <string>
 
+#include "Framework/Configurable.h"
 #include "Framework/InitContext.h"
 #include "Framework/RunningWorkflowInfo.h"
 
@@ -93,6 +94,17 @@ bool getTaskOptionValue(o2::framework::InitContext& initContext, const std::stri
     }
   }
   return false;
+}
+
+/// Function to check for a specific configurable from another task in the current workflow and fetch its value. Useful for tasks that need to know the value of a configurable in another task.
+/// @param initContext initContext of the init function
+/// @param taskName name of the task to check for
+/// @param value Task configurable to inherit from (name and values are used)
+/// @param verbose if true, print debug messages
+template <typename ValueType>
+bool getTaskOptionValue(o2::framework::InitContext& initContext, const std::string& taskName, ValueType& configurable, const bool verbose = true)
+{
+  return getTaskOptionValue(initContext, taskName, configurable.name, configurable.value, verbose);
 }
 
 #endif // COMMON_CORE_TABLEHELPER_H_

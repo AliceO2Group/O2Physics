@@ -16,18 +16,18 @@
 #ifndef PWGJE_CORE_MLRESPONSEHFTAGGING_H_
 #define PWGJE_CORE_MLRESPONSEHFTAGGING_H_
 
-#include <map>
-#include <string>
-#include <vector>
-
 #include "Tools/ML/MlResponse.h"
-#include "PWGJE/Core/JetTaggingUtilities.h"
 
-#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
-#else
 #include <onnxruntime_cxx_api.h>
-#endif
+
+#include <Framework/Logger.h>
+
+#include <onnxruntime_c_api.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <utility>
+#include <vector>
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)
@@ -71,6 +71,8 @@ enum class InputFeaturesBTag : uint8_t {
   deltaRJetTrack,
   signedIP2D,
   signedIP2DSign,
+  signedIPz,
+  signedIPzSign,
   signedIP3D,
   signedIP3DSign,
   momFraction,
@@ -111,6 +113,11 @@ class MlResponseHfTagging : public MlResponse<TypeOutputScore>
   /// @return A vector of input shapes
   std::vector<std::vector<int64_t>> getInputShape() const { return this->mModels[0].getInputShapes(); }
 
+  /// @brief Method to get the output shape of a model
+  /// \param imod is the index of the model
+  /// @return number of output nodes
+  int getOutputNodes(int imod = 0) const { return this->mModels[imod].getNumOutputNodes(); }
+
   /// Method to fill the inputs of jet, tracks and secondary vertices
   /// \param jet is the b-jet candidate
   /// \param tracks is the vector of tracks associated to the jet
@@ -148,6 +155,8 @@ class MlResponseHfTagging : public MlResponse<TypeOutputScore>
           CHECK_AND_FILL_VEC_BTAG(trackInput, track, deltaRJetTrack)
           CHECK_AND_FILL_VEC_BTAG(trackInput, track, signedIP2D)
           CHECK_AND_FILL_VEC_BTAG(trackInput, track, signedIP2DSign)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, signedIPz)
+          CHECK_AND_FILL_VEC_BTAG(trackInput, track, signedIPzSign)
           CHECK_AND_FILL_VEC_BTAG(trackInput, track, signedIP3D)
           CHECK_AND_FILL_VEC_BTAG(trackInput, track, signedIP3DSign)
           CHECK_AND_FILL_VEC_BTAG(trackInput, track, momFraction)
@@ -192,6 +201,23 @@ class MlResponseHfTagging : public MlResponse<TypeOutputScore>
     }
   }
 
+  /// @brief Method to replace NaN and infinity values in a vector with a specified value
+  /// @param vec is the vector to be processed
+  /// @param value is the value to replace NaN values with
+  /// @return the number of NaN values replaced
+  template <typename T>
+  static int replaceNaN(std::vector<T>& vec, T value)
+  {
+    int numNaN = 0;
+    for (auto& el : vec) {
+      if (std::isnan(el) || std::isinf(el)) {
+        el = value;
+        ++numNaN;
+      }
+    }
+    return numNaN;
+  }
+
   /// Method to get the input features vector needed for ML inference in a 2D vector
   /// \param jet is the b-jet candidate
   /// \param tracks is the vector of tracks associated to the jet
@@ -208,6 +234,10 @@ class MlResponseHfTagging : public MlResponse<TypeOutputScore>
     fillInputFeatures(jet, tracks, svs, jetInput, trackInput, svInput);
 
     std::vector<std::vector<float>> inputFeatures;
+
+    replaceNaN(jetInput, 0.f);
+    replaceNaN(trackInput, 0.f);
+    replaceNaN(svInput, 0.f);
 
     inputFeatures.push_back(jetInput);
     inputFeatures.push_back(trackInput);
@@ -237,6 +267,8 @@ class MlResponseHfTagging : public MlResponse<TypeOutputScore>
     inputFeatures.insert(inputFeatures.end(), trackInput.begin(), trackInput.end());
     inputFeatures.insert(inputFeatures.end(), svInput.begin(), svInput.end());
 
+    replaceNaN(inputFeatures, 0.f);
+
     return inputFeatures;
   }
 
@@ -261,6 +293,8 @@ class MlResponseHfTagging : public MlResponse<TypeOutputScore>
       FILL_MAP_BJET(deltaRJetTrack),
       FILL_MAP_BJET(signedIP2D),
       FILL_MAP_BJET(signedIP2DSign),
+      FILL_MAP_BJET(signedIPz),
+      FILL_MAP_BJET(signedIPzSign),
       FILL_MAP_BJET(signedIP3D),
       FILL_MAP_BJET(signedIP3DSign),
       FILL_MAP_BJET(momFraction),
@@ -295,25 +329,17 @@ class MlResponseHfTagging : public MlResponse<TypeOutputScore>
 class TensorAllocator
 {
  protected:
-#if !__has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
   Ort::MemoryInfo memInfo;
-#endif
  public:
   TensorAllocator()
-#if !__has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
     : memInfo(Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault))
-#endif
   {
   }
   ~TensorAllocator() = default;
   template <typename T>
   Ort::Value createTensor(std::vector<T>& input, std::vector<int64_t>& inputShape)
   {
-#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-    return Ort::Experimental::Value::CreateTensor<T>(input.data(), input.size(), inputShape);
-#else
     return Ort::Value::CreateTensor<T>(memInfo, input.data(), input.size(), inputShape.data(), inputShape.size());
-#endif
   }
 };
 

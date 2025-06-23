@@ -26,6 +26,7 @@
 
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseDplusToPiKPi.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
@@ -63,8 +64,6 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<std::vector<double>> binsPtTrack{"binsPtTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for DCA pT-dependent cut"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
-  // Correlated background from Ds and D+
-  Configurable<bool> storeDsDplusBkg{"storeDsDplusBkg", false, "Flag to store correlated background from misidentified product of Ds and D+ decay"};
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
@@ -217,7 +216,7 @@ struct HfCandidateSelectorDplusToPiKPi {
     return true;
   }
 
-  void process(aod::HfCand3ProngWPid const& candidates,
+  void process(aod::HfCand3ProngWPidPiKa const& candidates,
                TracksSel const&)
   {
     // looping over 3-prong candidates
@@ -228,7 +227,7 @@ struct HfCandidateSelectorDplusToPiKPi {
 
       auto ptCand = candidate.pt();
 
-      if (!TESTBIT(candidate.hfflag(), aod::hf_cand_3prong::DecayType::DplusToPiKPi) && !(storeDsDplusBkg && TESTBIT(candidate.hfflag(), aod::hf_cand_3prong::DecayType::DsToKKPi))) { // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
+      if (!TESTBIT(candidate.hfflag(), aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
         if (applyMl) {
           hfMlDplusToPiKPiCandidate(outputMlNotPreselected);

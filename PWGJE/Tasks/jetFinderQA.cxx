@@ -13,33 +13,34 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include <cmath>
-#include <vector>
-#include <string>
-#include <algorithm>
-#include <TRandom3.h>
-
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/Core/JetFindingUtilities.h"
-#include "PWGJE/DataModel/Jet.h"
+#include "RecoDecay.h"
 
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetFindingUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
 
-#include "EventFiltering/filterTables.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TMath.h>
+#include <TMathBase.h>
+#include <TRandom3.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <string>
+#include <type_traits>
+#include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -422,7 +423,7 @@ struct JetFinderQATask {
   }
 
   template <typename T>
-  void fillHistograms(T const& jet, float centrality, float occupancy, float weight = 1.0)
+  void fillHistograms(T const& jet, float centrality, float occupancy, float hadronicRate, float weight = 1.0)
   {
 
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
@@ -442,7 +443,7 @@ struct JetFinderQATask {
       registry.fill(HIST("h2_centrality_jet_phi"), centrality, jet.phi(), weight);
       registry.fill(HIST("h2_centrality_jet_ntracks"), centrality, jet.tracksIds().size(), weight);
       registry.fill(HIST("h3_centrality_occupancy_jet_pt"), centrality, occupancy, jet.pt(), weight);
-      registry.fill(HIST("h2_intrate_jet_pt"), jet.collision().hadronicRate(), jet.pt(), weight);
+      registry.fill(HIST("h2_intrate_jet_pt"), hadronicRate, jet.pt(), weight);
     }
 
     registry.fill(HIST("h3_jet_r_jet_pt_centrality"), jet.r() / 100.0, jet.pt(), centrality, weight);
@@ -783,7 +784,7 @@ struct JetFinderQATask {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
-      fillHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange());
+      fillHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange(), collision.hadronicRate());
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsData, "jet finder QA data", false);
@@ -898,7 +899,7 @@ struct JetFinderQATask {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
-      fillHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange());
+      fillHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange(), collision.hadronicRate());
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCD, "jet finder QA mcd", false);
@@ -921,7 +922,7 @@ struct JetFinderQATask {
           registry.fill(HIST("h_jet_ptcut"), jet.pt(), N * 0.25, jet.eventWeight());
         }
       }
-      fillHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange(), jet.eventWeight());
+      fillHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange(), collision.hadronicRate(), jet.eventWeight());
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCDWeighted, "jet finder QA mcd with weighted events", false);
@@ -1301,4 +1302,7 @@ struct JetFinderQATask {
   PROCESS_SWITCH(JetFinderQATask, processOccupancyQA, "occupancy QA on jet derived data", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetFinderQATask>(cfgc, TaskName{"jet-finder-charged-qa"})}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{adaptAnalysisTask<JetFinderQATask>(cfgc, TaskName{"jet-finder-charged-qa"})}; // o2-linter: disable=name/o2-task,name/workflow-file
+}

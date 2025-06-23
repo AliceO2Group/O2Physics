@@ -14,7 +14,13 @@
 ///
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari
 
-#include <memory>
+#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsTrkCandHf.h"
+
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
@@ -23,13 +29,7 @@
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
 
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
-#include "PWGHF/Utils/utilsTrkCandHf.h"
+#include <memory>
 
 using namespace o2;
 using namespace o2::aod;
@@ -293,7 +293,7 @@ struct HfCandidateCreatorBplusReducedExpressions {
         if ((rowD0PiMcRec.prong0Id() != candBplus.prong0Id()) || (rowD0PiMcRec.prong1Id() != candBplus.prong1Id())) {
           continue;
         }
-        rowBplusMcRec(rowD0PiMcRec.flagMcMatchRec(), rowD0PiMcRec.flagWrongCollision(), rowD0PiMcRec.debugMcRec(), rowD0PiMcRec.ptMother());
+        rowBplusMcRec(rowD0PiMcRec.flagMcMatchRec(), -1 /*channel*/, rowD0PiMcRec.flagWrongCollision(), rowD0PiMcRec.debugMcRec(), rowD0PiMcRec.ptMother());
         filledMcInfo = true;
         if constexpr (checkDecayTypeMc) {
           rowBplusMcCheck(rowD0PiMcRec.pdgCodeBeautyMother(),
@@ -305,7 +305,7 @@ struct HfCandidateCreatorBplusReducedExpressions {
         break;
       }
       if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the D0-Pi creator
-        rowBplusMcRec(0, -1, -1, -1.f);
+        rowBplusMcRec(0, -1, -1, -1, -1.f);
         if constexpr (checkDecayTypeMc) {
           rowBplusMcCheck(-1, -1, -1, -1, -1);
         }

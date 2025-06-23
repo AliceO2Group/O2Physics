@@ -46,7 +46,7 @@ o2physics_add_dpl_workflow(skimmer-gamma-calo
 
 o2physics_add_dpl_workflow(bc-wise-cluster-skimmer
                     SOURCES bcWiseClusterSkimmer.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2Physics::AnalysisCCDB O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(skimmer-phos

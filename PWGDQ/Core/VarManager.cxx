@@ -39,6 +39,7 @@ uint64_t VarManager::fgSOR = 0;
 uint64_t VarManager::fgEOR = 0;
 o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
 o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
+o2::vertexing::DCAFitterN<4> VarManager::fgFitterFourProngBarrel;
 o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
 o2::vertexing::FwdDCAFitterN<3> VarManager::fgFitterThreeProngFwd;
 o2::globaltracking::MatchGlobalFwd VarManager::mMatching;
@@ -201,6 +202,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCentVZERO] = "%";
   fgVariableNames[kCentFT0C] = "Centrality FT0C";
   fgVariableUnits[kCentFT0C] = "%";
+  fgVariableNames[kCentFT0A] = "Centrality FT0A";
+  fgVariableUnits[kCentFT0A] = "%";
+  fgVariableNames[kCentFT0M] = "Centrality FT0M";
+  fgVariableUnits[kCentFT0M] = "%";
   fgVariableNames[kMultTPC] = "Multiplicity TPC";
   fgVariableUnits[kMultTPC] = "";
   fgVariableNames[kMultFV0A] = "Multiplicity FV0A";
@@ -542,6 +547,26 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCVy] = "cm"; // TODO: check the unit
   fgVariableNames[kMCVz] = "MC vz";
   fgVariableUnits[kMCVz] = "cm"; // TODO: check the unit
+  fgVariableNames[kMCCosThetaHE] = "MC cos(#theta_{HE})";
+  fgVariableUnits[kMCCosThetaHE] = "";
+  fgVariableNames[kMCPhiHE] = "MC #varphi_{HE}";
+  fgVariableUnits[kMCPhiHE] = "rad";
+  fgVariableNames[kMCPhiTildeHE] = "MC #tilde{#varphi}_{HE}";
+  fgVariableUnits[kMCPhiTildeHE] = "rad";
+  fgVariableNames[kMCCosThetaCS] = "MC cos(#theta_{CS})";
+  fgVariableUnits[kMCCosThetaCS] = "";
+  fgVariableNames[kMCPhiCS] = "MC #varphi_{CS}";
+  fgVariableUnits[kMCPhiCS] = "rad";
+  fgVariableNames[kMCPhiTildeCS] = "MC #tilde{#varphi}_{CS}";
+  fgVariableUnits[kMCPhiTildeCS] = "rad";
+  fgVariableNames[kMCCosThetaPP] = "MC cos(#theta_{PP})";
+  fgVariableUnits[kMCCosThetaPP] = "";
+  fgVariableNames[kMCPhiPP] = "MC #varphi_{PP}";
+  fgVariableUnits[kMCPhiPP] = "rad";
+  fgVariableNames[kMCPhiTildePP] = "MC #tilde{#varphi}_{PP}";
+  fgVariableUnits[kMCPhiTildePP] = "rad";
+  fgVariableNames[kMCCosThetaRM] = "MC cos(#theta_{RM})";
+  fgVariableUnits[kMCCosThetaRM] = "";
   fgVariableNames[kCandidateId] = "";
   fgVariableUnits[kCandidateId] = "";
   fgVariableNames[kPairType] = "Pair type";
@@ -914,24 +939,34 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPairPhi] = "rad.";
   fgVariableNames[kPairPhiv] = "#varphi_{V}";
   fgVariableUnits[kPairPhiv] = "rad.";
+  fgVariableNames[kDileptonHadronKstar] = "Dilepton-hadron k^{*}";
+  fgVariableUnits[kDileptonHadronKstar] = "GeV/c^{2}";
   fgVariableNames[kDeltaEta] = "#Delta#eta";
   fgVariableUnits[kDeltaEta] = "";
   fgVariableNames[kDeltaPhi] = "#Delta#phi";
   fgVariableUnits[kDeltaPhi] = "rad.";
   fgVariableNames[kDeltaPhiSym] = "#Delta#phi";
   fgVariableUnits[kDeltaPhiSym] = "rad.";
-  fgVariableNames[kCosThetaHE] = "cos#it{#theta}_{HE}";
+  fgVariableNames[kCosThetaHE] = "cos#it{#theta}";
   fgVariableUnits[kCosThetaHE] = "";
   fgVariableNames[kPhiHE] = "#varphi_{HE}";
   fgVariableUnits[kPhiHE] = "rad.";
+  fgVariableNames[kPhiTildeHE] = "#tilde{#varphi}_{HE}";
+  fgVariableUnits[kPhiTildeHE] = "rad.";
   fgVariableNames[kCosThetaCS] = "cos#it{#theta}_{CS}";
   fgVariableUnits[kCosThetaCS] = "";
   fgVariableNames[kPhiCS] = "#varphi_{CS}";
   fgVariableUnits[kPhiCS] = "rad.";
+  fgVariableNames[kPhiTildeCS] = "#tilde{#varphi}_{CS}";
+  fgVariableUnits[kPhiTildeCS] = "rad.";
   fgVariableNames[kCosThetaPP] = "cos#it{#theta}_{PP}";
   fgVariableUnits[kCosThetaPP] = "";
   fgVariableNames[kPhiPP] = "#varphi_{PP}";
   fgVariableUnits[kPhiPP] = "rad.";
+  fgVariableNames[kPhiTildePP] = "#tilde{#varphi}_{PP}";
+  fgVariableUnits[kPhiTildePP] = "rad.";
+  fgVariableNames[kCosThetaRM] = "cos#it{#theta}_{RM}";
+  fgVariableUnits[kCosThetaRM] = "";
   fgVariableNames[kCosPhiVP] = "cos#it{#varphi}_{VP}";
   fgVariableUnits[kCosPhiVP] = "";
   fgVariableNames[kPhiVP] = "#varphi_{VP} - #Psi_{2}";
@@ -1024,6 +1059,12 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kWV22ME] = "";
   fgVariableNames[kWV24ME] = "W_{2}(4)_{ME}";
   fgVariableUnits[kWV24ME] = "";
+  fgVariableNames[kS12] = "m_{12}^{2}";
+  fgVariableUnits[kS12] = "GeV^{2}/c^{4}";
+  fgVariableNames[kS13] = "m_{13}^{2}";
+  fgVariableUnits[kS13] = "GeV^{2}/c^{4}";
+  fgVariableNames[kS23] = "m_{23}^{2}";
+  fgVariableUnits[kS23] = "GeV^{2}/c^{4}";
 
   // Set the variables short names map. This is needed for dynamic configuration via JSON files
   fgVarNamesMap["kNothing"] = kNothing;
@@ -1072,6 +1113,8 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kVtxChi2"] = kVtxChi2;
   fgVarNamesMap["kCentVZERO"] = kCentVZERO;
   fgVarNamesMap["kCentFT0C"] = kCentFT0C;
+  fgVarNamesMap["kCentFT0A"] = kCentFT0A;
+  fgVarNamesMap["kCentFT0M"] = kCentFT0M;
   fgVarNamesMap["kMultTPC"] = kMultTPC;
   fgVarNamesMap["kMultFV0A"] = kMultFV0A;
   fgVarNamesMap["kMultFV0C"] = kMultFV0C;
@@ -1441,6 +1484,16 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCPhi"] = kMCPhi;
   fgVarNamesMap["kMCEta"] = kMCEta;
   fgVarNamesMap["kMCY"] = kMCY;
+  fgVarNamesMap["kMCCosThetaHE"] = kMCCosThetaHE;
+  fgVarNamesMap["kMCPhiHE"] = kMCPhiHE;
+  fgVarNamesMap["kMCPhiTildeHE"] = kMCPhiTildeHE;
+  fgVarNamesMap["kMCCosThetaCS"] = kMCCosThetaCS;
+  fgVarNamesMap["kMCPhiCS"] = kMCPhiCS;
+  fgVarNamesMap["kMCPhiTildeCS"] = kMCPhiTildeCS;
+  fgVarNamesMap["kMCCosThetaPP"] = kMCCosThetaPP;
+  fgVarNamesMap["kMCPhiPP"] = kMCPhiPP;
+  fgVarNamesMap["kMCPhiTildePP"] = kMCPhiTildePP;
+  fgVarNamesMap["kMCCosThetaRM"] = kMCCosThetaRM;
   fgVarNamesMap["kMCParticleGeneratorId"] = kMCParticleGeneratorId;
   fgVarNamesMap["kNMCParticleVariables"] = kNMCParticleVariables;
   fgVarNamesMap["kMCMotherPdgCode"] = kMCMotherPdgCode;
@@ -1470,11 +1523,15 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kVertexingProcCode"] = kVertexingProcCode;
   fgVarNamesMap["kVertexingChi2PCA"] = kVertexingChi2PCA;
   fgVarNamesMap["kCosThetaHE"] = kCosThetaHE;
-  fgVarNamesMap["kCosThetaCS"] = kCosThetaCS;
-  fgVarNamesMap["kCosThetaPP"] = kCosThetaPP;
   fgVarNamesMap["kPhiHE"] = kPhiHE;
+  fgVarNamesMap["kPhiTildeHE"] = kPhiTildeHE;
+  fgVarNamesMap["kCosThetaCS"] = kCosThetaCS;
   fgVarNamesMap["kPhiCS"] = kPhiCS;
+  fgVarNamesMap["kPhiTildeCS"] = kPhiTildeCS;
+  fgVarNamesMap["kCosThetaPP"] = kCosThetaPP;
   fgVarNamesMap["kPhiPP"] = kPhiPP;
+  fgVarNamesMap["kPhiTildePP"] = kPhiTildePP;
+  fgVarNamesMap["kCosThetaRM"] = kCosThetaRM;
   fgVarNamesMap["kCosPhiVP"] = kCosPhiVP;
   fgVarNamesMap["kPhiVP"] = kPhiVP;
   fgVarNamesMap["kDeltaPhiPair2"] = kDeltaPhiPair2;
@@ -1600,6 +1657,9 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kKFJpsiDCAxy"] = kKFJpsiDCAxy;
   fgVarNamesMap["kKFPairDeviationFromPV"] = kKFPairDeviationFromPV;
   fgVarNamesMap["kKFPairDeviationxyFromPV"] = kKFPairDeviationxyFromPV;
+  fgVarNamesMap["kS12"] = kS12,
+  fgVarNamesMap["kS13"] = kS13,
+  fgVarNamesMap["kS23"] = kS23,
   fgVarNamesMap["kNPairVariables"] = kNPairVariables;
   fgVarNamesMap["kPairMass"] = kPairMass;
   fgVarNamesMap["kPairMassDau"] = kPairMassDau;
@@ -1609,6 +1669,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kPairEta"] = kPairEta;
   fgVarNamesMap["kPairPhi"] = kPairPhi;
   fgVarNamesMap["kPairPhiv"] = kPairPhiv;
+  fgVarNamesMap["kDileptonHadronKstar"] = kDileptonHadronKstar;
   fgVarNamesMap["kDeltaEta"] = kDeltaEta;
   fgVarNamesMap["kDeltaPhi"] = kDeltaPhi;
   fgVarNamesMap["kDeltaPhiSym"] = kDeltaPhiSym;

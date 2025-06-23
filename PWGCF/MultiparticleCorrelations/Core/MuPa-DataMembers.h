@@ -90,13 +90,15 @@ struct EventByEventQuantities {
                                       // Use configurable cfMultiplicityEstimator[eMultiplicityEstimator] to define what is this multiplicity, by default it is "SelectedTracks"
   float fReferenceMultiplicity = 0.;  // reference multiplicity, calculated outside of my code. Can be "MultTPC", "MultFV0M", etc.
                                       // Use configurable cfReferenceMultiplicityEstimator[eReferenceMultiplicityEstimator]" to define what is this multiplicity, by default it is "TBI 20241123 I do not know yet which estimator is best for ref. mult."
-  float fCentrality = 0.;             // event-by-event centrality. Value of the default centrality estimator, set via configurable cfCentralityEstimator
+  float fCentrality = 0.;             // event-by-event centrality, in reconstructed data. Value of the default centrality estimator, set via configurable cfCentralityEstimator
+  float fCentralitySim = 0.;          // event-by-event centrality, in simulated data. Calculated directly from IP at the moment, eventually I will access it from o2::aod::hepmcheavyion::Centrality
   float fOccupancy = 0.;              // event-by-event occupancy. Value of the default occupancy estimator, set via configurable cfOccupancyEstimator.
                                       // Remebmer that collision with occupanct 0. shall NOT be rejected, therefore in configurable I set -0.0001 for low edge by default.
   float fInteractionRate = 0.;        // event-by-event interaction rate
   float fCurrentRunDuration = 0.;     // how many seconds after start of run this collision was taken, i.e. seconds after start of run (SOR)
   float fVz = 0.;                     // vertex z position
   float fFT0CAmplitudeOnFoundBC = 0.; // TBI20250331 finalize the comment here
+  float fImpactParameter = 0.;        // calculated only for simulated/generated data
 } ebye;                               // "ebye" is a common label for objects in this struct
 
 // *) QA:

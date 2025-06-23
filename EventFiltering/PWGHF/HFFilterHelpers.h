@@ -8,7 +8,6 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-// O2 includes
 
 /// \file HFFilterHelpers.h
 /// \brief Header file with definition of variables, methods, and tables used in the HFFilter.cxx task
@@ -23,37 +22,46 @@
 #ifndef EVENTFILTERING_PWGHF_HFFILTERHELPERS_H_
 #define EVENTFILTERING_PWGHF_HFFILTERHELPERS_H_
 
+#include "EventFiltering/filterTables.h"
+//
+#include "PWGHF/Core/SelectorCuts.h"
+//
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DataFormatsTPC/BetheBlochAleph.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Array2D.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TAxis.h>
+#include <TH1.h>
+#include <TH3.h>
+
+#include <Rtypes.h>
+
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <map>
-#include <memory>
 #include <string>
+#include <tuple>
 #include <vector>
-
-#include "Math/GenVector/Boost.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-
-#include "CCDB/CcdbApi.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/DataTypes.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "EventFiltering/filterTables.h"
 
 namespace o2::aod
 {
@@ -278,7 +286,7 @@ constexpr float massJPsi = o2::constants::physics::MassJPsi;
 
 static const o2::framework::AxisSpec ptAxis{50, 0.f, 50.f};
 static const o2::framework::AxisSpec pAxis{50, 0.f, 10.f};
-static const o2::framework::AxisSpec kstarAxis{100, 0.f, 1.f};
+static const o2::framework::AxisSpec kstarAxis{200, 0.f, 2.f};
 static const o2::framework::AxisSpec etaAxis{30, -1.5f, 1.5f};
 static const o2::framework::AxisSpec nSigmaAxis{100, -10.f, 10.f};
 static const o2::framework::AxisSpec alphaAxis{100, -1.f, 1.f};
@@ -312,6 +320,11 @@ constexpr float cutsNsigma[4][8] = {
 };
 static const std::vector<std::string> labelsColumnsNsigma = {"PrFromLc", "PiKaFromDZero", "KaFrom3Prong", "PrForFemto", "PiKaFromCharmBaryon", "SoftKaonFromXicResoToSigmaC", "DeForFemto", "KaPrFromBeautyToJPsi"};
 static const std::vector<std::string> labelsRowsNsigma = {"TPC", "TOF", "Comb", "ITS"};
+
+// track cut
+constexpr float cutsTrackQuality[2][7] = {{0., 0., 0., 999., 999., 0., 0.},
+                                          {90, 80, 0.83, 160., 1., 5., 0.}};
+static const std::vector<std::string> labelsColumnsTrackQuality = {"minTpcCluster", "minTpcRow", "minTpcCrossedOverFound", "maxTpcShared", "maxTpcFracShared", "minItsCluster", "minItsIbCluster"};
 
 // high pt
 constexpr float cutsHighPtThresholds[1][2] = {{8., 8.}}; // 2-prongs, 3-prongs
@@ -489,6 +502,18 @@ class HfFilterHelper
 
   void setNsigmaProtonCutsForFemto(std::array<float, 4> nSigmaCuts) { mNSigmaPrCutsForFemto = nSigmaCuts; }
   void setNsigmaDeuteronCutsForFemto(std::array<float, 4> nSigmaCuts) { mNSigmaDeCutsForFemto = nSigmaCuts; }
+
+  void setDeuteronTrackSelectionForFemto(float minTpcCluster, float minTpcRow, float minTpcCrossedOverFound, float maxTpcShared, float maxTpcFracShared, float minItsCluster, float minItsIbCluster)
+  {
+    mMinTpcCluster = minTpcCluster;
+    mMinTpcRow = minTpcRow;
+    mMinTpcCrossedOverFound = minTpcCrossedOverFound;
+    mMaxTpcShared = maxTpcShared;
+    mMaxTpcFracShared = maxTpcFracShared;
+    mMinItsCluster = minItsCluster;
+    mMinItsIbCluster = minItsIbCluster;
+  }
+
   void setNsigmaProtonCutsForCharmBaryons(float nSigmaTpc, float nSigmaTof)
   {
     mNSigmaTpcPrCutForCharmBaryons = nSigmaTpc;
@@ -754,7 +779,13 @@ class HfFilterHelper
   std::array<float, 2> mCosPaMinXiBach{-2.f, -2.f};                               // minimum cosine of pointing angle for XiBachelor candidates
   std::array<o2::framework::LabeledArray<double>, kNBeautyParticles> mCutsBhad{}; // selections for B-hadron candidates (DeltaMass, CPA, DecayLength, ImpactParameterProduct)
   o2::framework::LabeledArray<double> mCutsBhadToJPsi{};                          // selections for B->JPsi candidates (PtMinMu, DeltaMass, CPA, DecayLength)
-
+  float mMinTpcCluster{90.};                                                      // Minimum number of TPC clusters required on a track
+  float mMinTpcRow{80.};                                                          // Minimum number of TPC rows (pad rows) traversed by the track
+  float mMinTpcCrossedOverFound{0.83};                                            // Minimum ratio of crossed TPC rows over findable clusters
+  float mMaxTpcShared{160.};                                                      // Maximum allowed number of shared TPC clusters between tracks
+  float mMaxTpcFracShared{1.};                                                    // Maximum allowed fraction of shared TPC clusters relative to total clusters
+  float mMinItsCluster{1.};                                                       // Minimum required number of ITS clusters
+  float mMinItsIbCluster{1.};                                                     // Minimum required number of ITS clusters for IB
   // PID recalibrations
   int mTpcPidCalibrationOption{0};                          // Option for TPC PID calibration (0 -> AO2D, 1 -> postcalibrations, 2 -> alternative bethe bloch parametrisation)
   std::array<TH3F*, 8> mHistMapPiPrKaDe{};                  // Map for TPC PID postcalibrations for pions, kaon, protons and deuterons
@@ -941,9 +972,9 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
   }
 
   float NSigma = std::sqrt(NSigmaTPC * NSigmaTPC + NSigmaTOF * NSigmaTOF);
-
+  float momentum = track.p();
   if (trackSpecies == kProtonForFemto) {
-    if (pt <= ptThresholdPidStrategy) {
+    if (momentum <= ptThresholdPidStrategy) {
       if (NSigma > nSigmaCuts[2]) {
         return false;
       }
@@ -955,14 +986,37 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
   }
   // For deuterons: Determine whether to apply TOF based on pt threshold
   if (trackSpecies == kDeuteronForFemto) {
+
+    if (track.tpcNClsFound() < mMinTpcCluster) {
+      return false;
+    }
+    if (track.tpcNClsCrossedRows() < mMinTpcRow) {
+      return false;
+    }
+    if (track.tpcCrossedRowsOverFindableCls() < mMinTpcCrossedOverFound) {
+      return false;
+    }
+    if (track.tpcNClsShared() > mMaxTpcShared) {
+      return false;
+    }
+    if (track.tpcFractionSharedCls() > mMaxTpcFracShared) {
+      return false;
+    }
+    if (track.itsNCls() < mMinItsCluster) {
+      return false;
+    }
+    if (track.itsNClsInnerBarrel() < mMinItsIbCluster) {
+      return false;
+    }
+
     // Apply different PID strategy in different pt range
     // one side selection only
-    if (pt <= ptThresholdPidStrategy) {
-      if (NSigmaTPC < -nSigmaCuts[0] || NSigmaITS < -nSigmaCuts[3]) { // Use TPC and ITS below the threshold, NSigmaITS for deuteron with a lower limit
+    if (momentum <= ptThresholdPidStrategy) {
+      if (std::fabs(NSigmaTPC) > nSigmaCuts[0] || NSigmaITS < -nSigmaCuts[3]) { // Use TPC and ITS below the threshold, NSigmaITS for deuteron with a lower limit
         return false;
       }
     } else {
-      if (NSigmaTOF < -nSigmaCuts[1] || NSigmaTPC < -nSigmaCuts[0]) { // Use combined TPC and TOF above the threshold
+      if (NSigma > nSigmaCuts[2]) { // Use combined TPC and TOF above the threshold
         return false;
       }
     }
@@ -970,11 +1024,11 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
 
   if (activateQA > 1) {
     hTPCPID->Fill(track.p(), NSigmaTPC);
-    if ((forceTof || track.hasTOF())) {
+    if ((!forceTof || track.hasTOF())) {
       if (trackSpecies == kProtonForFemto)
-        hTOFPID->Fill(track.p(), NSigmaTOF);
-      else if (trackSpecies == kDeuteronForFemto && pt > ptThresholdPidStrategy)
-        hTOFPID->Fill(track.p(), NSigmaTOF);
+        hTOFPID->Fill(momentum, NSigmaTOF);
+      else if (trackSpecies == kDeuteronForFemto && momentum > ptThresholdPidStrategy)
+        hTOFPID->Fill(momentum, NSigmaTOF);
     }
   }
 
@@ -2585,7 +2639,7 @@ inline bool HfFilterHelper::buildV0(V const& v0Indices, T const& tracks, C const
   auto trackParCovPos = getTrackParCov(trackPos);
   auto trackParCovNeg = getTrackParCov(trackNeg);
   std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
-  gpu::gpustd::array<float, 2> dcaInfoPos, dcaInfoNeg;
+  std::array<float, 2> dcaInfoPos, dcaInfoNeg;
   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovPos, 2.f, dcaFitter.getMatCorrType(), &dcaInfoPos);
   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovNeg, 2.f, dcaFitter.getMatCorrType(), &dcaInfoNeg);
 
@@ -2655,7 +2709,7 @@ inline bool HfFilterHelper::buildV0(V const& v0Indices, T const& tracks, C const
   auto trackParV0 = dcaFitter.createParentTrackParCov();
   trackParV0.setAbsCharge(0);
   trackParV0.setPID(o2::track::PID::K0);
-  gpu::gpustd::array<float, 2> dcaInfoV0;
+  std::array<float, 2> dcaInfoV0;
   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParV0, 2.f, dcaFitter.getMatCorrType(), &dcaInfoV0);
   v0Cand.dcav0topv = dcaInfoV0[0];
 
@@ -2707,7 +2761,7 @@ inline bool HfFilterHelper::buildCascade(Casc const& cascIndices, V const& v0Ind
     return false;
   }
 
-  gpu::gpustd::array<float, 2> dcaInfoBach;
+  std::array<float, 2> dcaInfoBach;
   auto bachTrackParCov = getTrackParCov(trackBachelor);
   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, bachTrackParCov, 2.f, dcaFitter.getMatCorrType(), &dcaInfoBach);
 
@@ -2781,7 +2835,7 @@ inline bool HfFilterHelper::buildCascade(Casc const& cascIndices, V const& v0Ind
   auto trackParCasc = dcaFitter.createParentTrackParCov();
   trackParCasc.setAbsCharge(1);
   trackParCasc.setPID(o2::track::PID::XiMinus);
-  gpu::gpustd::array<float, 2> dcaInfoCasc;
+  std::array<float, 2> dcaInfoCasc;
   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCasc, 2.f, dcaFitter.getMatCorrType(), &dcaInfoCasc);
   cascCand.dcaXYCascToPV = dcaInfoCasc[0];
   cascCand.dcacascdaughters = std::sqrt(dcaFitter.getChi2AtPCACandidate());

@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -143,7 +143,6 @@ struct FemtoUniverseProducerTask {
   Configurable<bool> confIsActivateV0{"confIsActivateV0", false, "Activate filling of V0 into femtouniverse tables"};
   Configurable<bool> confActivateSecondaries{"confActivateSecondaries", false, "Fill secondary MC gen particles that were reconstructed"};
   Configurable<bool> confIsActivateCascade{"confIsActivateCascade", false, "Activate filling of Cascade into femtouniverse tables"};
-  Configurable<bool> confIsSelectCascOmega{"confIsSelectCascOmega", false, "Select Omegas for cascade analysis"};
   Configurable<bool> confIsActivatePhi{"confIsActivatePhi", false, "Activate filling of Phi into femtouniverse tables"};
   Configurable<bool> confIsActiveD0{"confIsActiveD0", false, "Activate filling FU tables for D0/D0bar mesons"};
   Configurable<bool> confMCTruthAnalysisWithPID{"confMCTruthAnalysisWithPID", true, "1: take only particles with specified PDG, 0: all particles (for MC Truth)"};
@@ -276,12 +275,14 @@ struct FemtoUniverseProducerTask {
     Configurable<std::vector<float>> confCascChildPIDnSigmaMax{"confCascChildPIDnSigmaMax", std::vector<float>{3.f, 4.f}, "Cascade Child sel: Max. PID nSigma TPC"};
     Configurable<std::vector<int>> confCascChildPIDspecies{"confCascChildPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton}, "Cascade Child sel: particle species for PID"};
 
-    Configurable<float> confCascInvMassLowLimit{"confCascInvMassLowLimit", 1.25, "Lower limit of the cascade invariant mass"};
-    Configurable<float> confCascInvMassUpLimit{"confCascInvMassUpLimit", 1.40, "Upper limit of the cascade invariant mass"};
+    Configurable<float> confXiInvMassLowLimit{"confXiInvMassLowLimit", 1.25, "Lower limit of the Xi invariant mass"};
+    Configurable<float> confXiInvMassUpLimit{"confXiInvMassUpLimit", 1.40, "Upper limit of the Xi invariant mass"};
+    Configurable<float> confOmegaInvMassLowLimit{"confOmegaInvMassLowLimit", 1.60, "Lower limit of the Omega invariant mass"};
+    Configurable<float> confOmegaInvMassUpLimit{"confOmegaInvMassUpLimit", 1.80, "Upper limit of the Omega invariant mass"};
 
-    Configurable<bool> confCascRejectCompetingMass{"confCascRejectCompetingMass", false, "Switch on to reject Omegas (for Xi) or Xis (for Omegas)"};
-    Configurable<float> confCascInvCompetingMassLowLimit{"confCascInvCompetingMassLowLimit", 1.66, "Lower limit of the cascade invariant mass for competing mass rejection"};
-    Configurable<float> confCascInvCompetingMassUpLimit{"confCascInvCompetingMassUpLimit", 1.68, "Upper limit of the cascade invariant mass for competing mass rejection"};
+    // Configurable<bool> confCascRejectCompetingMass{"confCascRejectCompetingMass", false, "Switch on to reject Omegas (for Xi) or Xis (for Omegas)"};
+    // Configurable<float> confCascInvCompetingMassLowLimit{"confCascInvCompetingMassLowLimit", 1.66, "Lower limit of the cascade invariant mass for competing mass rejection"};
+    // Configurable<float> confCascInvCompetingMassUpLimit{"confCascInvCompetingMassUpLimit", 1.68, "Upper limit of the cascade invariant mass for competing mass rejection"};
   } ConfCascadeSelection;
 
   // PHI
@@ -544,13 +545,13 @@ struct FemtoUniverseProducerTask {
       cascadeCuts.setChildPIDSpecies(femto_universe_cascade_selection::kBachTrack, ConfCascadeSelection.confCascChildPIDspecies);
 
       // check if works correctly for bachelor track
-      cascadeCuts.init<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kV0Child, aod::femtouniverseparticle::ParticleType::kCascadeBachelor, aod::femtouniverseparticle::CutContainerType>(&cascadeQaRegistry, confIsSelectCascOmega);
+      cascadeCuts.init<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kV0Child, aod::femtouniverseparticle::ParticleType::kCascadeBachelor, aod::femtouniverseparticle::CutContainerType>(&cascadeQaRegistry);
       // invmass cuts
-      cascadeCuts.setInvMassLimits(ConfCascadeSelection.confCascInvMassLowLimit, ConfCascadeSelection.confCascInvMassUpLimit);
+      cascadeCuts.setInvMassLimits(ConfCascadeSelection.confXiInvMassLowLimit, ConfCascadeSelection.confOmegaInvMassLowLimit, ConfCascadeSelection.confXiInvMassUpLimit, ConfCascadeSelection.confOmegaInvMassUpLimit);
 
-      if (ConfCascadeSelection.confCascRejectCompetingMass) {
+      /*if (ConfCascadeSelection.confCascRejectCompetingMass) {
         cascadeCuts.setCompetingInvMassLimits(ConfCascadeSelection.confCascInvCompetingMassLowLimit, ConfCascadeSelection.confCascInvCompetingMassUpLimit);
-      }
+      }*/
     }
 
     if (confIsActivatePhi) {
@@ -708,10 +709,11 @@ struct FemtoUniverseProducerTask {
           particleOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary;
         } else if (!motherparticlesMC.empty()) {
           auto motherparticleMC = motherparticlesMC.front();
-          if (motherparticleMC.producedByGenerator())
+          if (motherparticleMC.producedByGenerator()) {
             particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
-        } else {
-          particleOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kMaterial;
+          } else {
+            particleOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kMaterial;
+          }
         }
       } else {
         particleOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kFake;
@@ -902,8 +904,8 @@ struct FemtoUniverseProducerTask {
   {
     for (const auto& c : col) {
       const auto vtxZ = c.posZ();
-      float mult = 0;
-      int multNtr = 0;
+      float mult = confIsRun3 ? c.multFV0M() : 0.5 * (c.multFV0M());
+      int multNtr = confIsRun3 ? c.multNTracksPV() : c.multTracklets();
 
       if (std::abs(vtxZ) > confEvtZvtx) {
         continue;
@@ -1013,24 +1015,15 @@ struct FemtoUniverseProducerTask {
       auto cutContainer = trackCuts.getCutContainer<aod::femtouniverseparticle::CutContainerType>(track);
 
       // now the table is filled
-      if (!confIsActivateCascade) {
-        outputParts(outputCollision.lastIndex(), track.pt(), track.eta(),
-                    track.phi(), aod::femtouniverseparticle::ParticleType::kTrack,
-                    cutContainer.at(
-                      femto_universe_track_selection::TrackContainerPosition::kCuts),
-                    cutContainer.at(
-                      femto_universe_track_selection::TrackContainerPosition::kPID),
-                    track.dcaXY(), childIDs, 0,
-                    track.sign()); // sign getter is mAntiLambda()
-      } else {
-        outputCascParts(outputCollision.lastIndex(), track.pt(), track.eta(),
-                        track.phi(), aod::femtouniverseparticle::ParticleType::kTrack,
-                        cutContainer.at(
-                          femto_universe_track_selection::TrackContainerPosition::kCuts),
-                        cutContainer.at(
-                          femto_universe_track_selection::TrackContainerPosition::kPID),
-                        track.dcaXY(), childIDs, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-      }
+      outputParts(outputCollision.lastIndex(), track.pt(), track.eta(),
+                  track.phi(), aod::femtouniverseparticle::ParticleType::kTrack,
+                  cutContainer.at(
+                    femto_universe_track_selection::TrackContainerPosition::kCuts),
+                  cutContainer.at(
+                    femto_universe_track_selection::TrackContainerPosition::kPID),
+                  track.dcaXY(), childIDs, 0,
+                  track.sign()); // sign getter is mAntiLambda()
+
       tmpIDtrack.push_back(track.globalIndex());
       if (confIsDebug) {
         fillDebugParticle<true, false, false>(track);
@@ -1158,28 +1151,18 @@ struct FemtoUniverseProducerTask {
       childIDs[1] = 0;                         // neg
       childIDs[2] = 0;                         // bachelor
       float hasTOF = posTrackCasc.hasTOF() ? 1 : 0;
-      outputCascParts(outputCollision.lastIndex(),
-                      casc.positivept(),
-                      casc.positiveeta(),
-                      casc.positivephi(),
-                      aod::femtouniverseparticle::ParticleType::kV0Child,
-                      0, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kPosCuts),
-                      0, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kPosPID),
-                      hasTOF,
-                      childIDs,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0);
-      const int rowOfPosTrack = outputCascParts.lastIndex();
+      outputParts(outputCollision.lastIndex(),
+                  casc.positivept(),
+                  casc.positiveeta(),
+                  casc.positivephi(),
+                  aod::femtouniverseparticle::ParticleType::kV0Child,
+                  0, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kPosCuts),
+                  0, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kPosPID),
+                  hasTOF,
+                  childIDs,
+                  0,
+                  0);
+      const int rowOfPosTrack = outputParts.lastIndex();
       if constexpr (isMC) {
         fillMCParticle(posTrackCasc, o2::aod::femtouniverseparticle::ParticleType::kV0Child);
       }
@@ -1190,28 +1173,18 @@ struct FemtoUniverseProducerTask {
       childIDs[1] = rowInPrimaryTrackTableNeg; // neg
       childIDs[2] = 0;                         // bachelor
       hasTOF = negTrackCasc.hasTOF() ? 1 : 0;
-      outputCascParts(outputCollision.lastIndex(),
-                      casc.negativept(),
-                      casc.negativeeta(),
-                      casc.negativephi(),
-                      aod::femtouniverseparticle::ParticleType::kV0Child,
-                      0, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegCuts),
-                      0, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegPID),
-                      hasTOF,
-                      childIDs,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0);
-      const int rowOfNegTrack = outputCascParts.lastIndex();
+      outputParts(outputCollision.lastIndex(),
+                  casc.negativept(),
+                  casc.negativeeta(),
+                  casc.negativephi(),
+                  aod::femtouniverseparticle::ParticleType::kV0Child,
+                  0, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegCuts),
+                  0, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegPID),
+                  hasTOF,
+                  childIDs,
+                  0,
+                  0);
+      const int rowOfNegTrack = outputParts.lastIndex();
       if constexpr (isMC) {
         fillMCParticle(negTrackCasc, o2::aod::femtouniverseparticle::ParticleType::kV0Child);
       }
@@ -1223,44 +1196,36 @@ struct FemtoUniverseProducerTask {
       childIDs[1] = 0;                          // neg
       childIDs[2] = rowInPrimaryTrackTableBach; // bachelor
       hasTOF = bachTrackCasc.hasTOF() ? 1 : 0;
-      outputCascParts(outputCollision.lastIndex(),
-                      casc.bachelorpt(),
-                      casc.bacheloreta(),
-                      casc.bachelorphi(),
-                      aod::femtouniverseparticle::ParticleType::kCascadeBachelor,
-                      0, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegCuts),
-                      0, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegPID),
-                      hasTOF,
-                      childIDs,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0);
-      const int rowOfBachTrack = outputCascParts.lastIndex();
+      outputParts(outputCollision.lastIndex(),
+                  casc.bachelorpt(),
+                  casc.bacheloreta(),
+                  casc.bachelorphi(),
+                  aod::femtouniverseparticle::ParticleType::kCascadeBachelor,
+                  0, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegCuts),
+                  0, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegPID),
+                  hasTOF,
+                  childIDs,
+                  0,
+                  0);
+      const int rowOfBachTrack = outputParts.lastIndex();
       if constexpr (isMC) {
         fillMCParticle(bachTrackCasc, o2::aod::femtouniverseparticle::ParticleType::kCascadeBachelor);
       }
       // cascade
       std::vector<int> indexCascChildID = {rowOfPosTrack, rowOfNegTrack, rowOfBachTrack};
+      outputParts(outputCollision.lastIndex(),
+                  casc.pt(),
+                  casc.eta(),
+                  casc.phi(),
+                  aod::femtouniverseparticle::ParticleType::kCascade,
+                  0, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kV0),
+                  0,
+                  0,
+                  indexCascChildID,
+                  casc.mXi(),
+                  casc.mOmega());
       outputCascParts(outputCollision.lastIndex(),
-                      casc.pt(),
-                      casc.eta(),
-                      casc.phi(),
-                      aod::femtouniverseparticle::ParticleType::kCascade,
-                      0, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kV0),
-                      0,
-                      0,
-                      indexCascChildID,
-                      confIsSelectCascOmega ? casc.mOmega() : casc.mXi(),
-                      confIsSelectCascOmega ? casc.mOmega() : casc.mXi(),
+                      outputParts.lastIndex(),
                       casc.dcaV0daughters(),
                       casc.v0cosPA(col.posX(), col.posY(), col.posZ()),
                       casc.v0radius(),
@@ -1723,30 +1688,21 @@ struct FemtoUniverseProducerTask {
         tmpIDtrack.push_back(particle.globalIndex());
         continue;
       }
-      if (!confIsActivateCascade) {
-        outputParts(outputCollision.lastIndex(),
-                    particle.pt(),
-                    particle.eta(),
-                    particle.phi(),
-                    aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
-                    0,
-                    pdgCode,
-                    variablePDG,
-                    childIDs,
-                    0,
-                    0);
-      } else {
+
+      if (confIsActivateCascade)
         childIDs.push_back(0);
-        outputCascParts(outputCollision.lastIndex(),
-                        particle.pt(),
-                        particle.eta(),
-                        particle.phi(),
-                        aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
-                        0,
-                        pdgCode,
-                        pdgCode,
-                        childIDs, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-      }
+      outputParts(outputCollision.lastIndex(),
+                  particle.pt(),
+                  particle.eta(),
+                  particle.phi(),
+                  aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
+                  0,
+                  pdgCode,
+                  variablePDG,
+                  childIDs,
+                  0,
+                  0);
+
       if (confIsDebug) {
         fillDebugParticle<false, true, false>(particle);
       }
@@ -1780,29 +1736,18 @@ struct FemtoUniverseProducerTask {
 
         int32_t variablePDG = confStoreMCmothers ? getMotherPDG(particle) : particle.pdgCode();
 
-        if (!confIsActivateCascade) {
-          outputParts(outputCollision.lastIndex(),
-                      particle.pt(),
-                      particle.eta(),
-                      particle.phi(),
-                      aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
-                      0,
-                      static_cast<uint32_t>(particle.pdgCode()),
-                      variablePDG,
-                      childIDs,
-                      0,
-                      0);
-        } else {
-          outputCascParts(outputCollision.lastIndex(),
-                          particle.pt(),
-                          particle.eta(),
-                          particle.phi(),
-                          aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
-                          0,
-                          static_cast<uint32_t>(particle.pdgCode()),
-                          particle.pdgCode(),
-                          childIDs, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-        }
+        outputParts(outputCollision.lastIndex(),
+                    particle.pt(),
+                    particle.eta(),
+                    particle.phi(),
+                    aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
+                    0,
+                    static_cast<uint32_t>(particle.pdgCode()),
+                    variablePDG,
+                    childIDs,
+                    0,
+                    0);
+
         if (confIsDebug) {
           fillDebugParticle<false, true, false>(particle);
         }
@@ -1888,15 +1833,15 @@ struct FemtoUniverseProducerTask {
                       ptGenB); // pT of the B hadron (mother particle, only when non-prompt D0)
         }
       } else {
-        outputCascParts(outputCollision.lastIndex(),
-                        particle.pt(),
-                        particle.eta(),
-                        particle.phi(),
-                        aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
-                        0,
-                        pdgCode,
-                        pdgCode,
-                        childIDs, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        outputParts(outputCollision.lastIndex(),
+                    particle.pt(),
+                    particle.eta(),
+                    particle.phi(),
+                    aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
+                    0,
+                    pdgCode,
+                    pdgCode,
+                    childIDs, 0, 0);
       }
       if (confIsDebug) {
         fillDebugParticle<false, true, false>(particle);
@@ -2333,6 +2278,47 @@ struct FemtoUniverseProducerTask {
     processTruthAndFullMC(mccols, mcParticles, collisions, tracks, fullCascades, bcs, perCollisionCascs);
   }
   PROCESS_SWITCH(FemtoUniverseProducerTask, processTruthAndFullMCCasc, "Provide both MC truth and reco for tracks and Cascades", false);
+
+  void processTruthAndFullMCCentRun3Casc(
+    aod::McCollisions const& mccols,
+    aod::McParticles const& mcParticles,
+    aod::FemtoFullCollisionCentRun3MCs const& collisions,
+    soa::Filtered<soa::Join<aod::FemtoFullTracks, aod::McTrackLabels>> const& tracks,
+    soa::Join<o2::aod::CascDatas, aod::McCascLabels> const& fullCascades,
+    aod::BCsWithTimestamps const&)
+  {
+
+    // recos
+    std::set<int> recoMcIds;
+    for (const auto& col : collisions) {
+      auto groupedTracks = tracks.sliceBy(perCollisionTracks, col.globalIndex());
+      auto groupedCascParts = fullCascades.sliceBy(perCollisionCascs, col.globalIndex());
+      getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+      const auto colcheck = fillCollisionsCentRun3<true>(col);
+      if (colcheck) {
+        fillTracks<true>(groupedTracks);
+        fillCascade<true>(col, groupedCascParts, groupedTracks);
+      }
+      for (const auto& track : groupedTracks) {
+        if (trackCuts.isSelectedMinimal(track))
+          recoMcIds.insert(track.mcParticleId());
+      }
+    }
+
+    // truth
+    for (const auto& mccol : mccols) {
+      auto groupedCollisions = collisions.sliceBy(recoCollsPerMCCollCentPbPb, mccol.globalIndex());
+      for (const auto& col : groupedCollisions) {
+        const auto colcheck = fillMCTruthCollisionsCentRun3(col); // fills the reco collisions for mc collision
+        if (colcheck) {
+          auto groupedMCParticles = mcParticles.sliceBy(perMCCollision, mccol.globalIndex());
+          outputCollExtra(1.0, 1.0);
+          fillParticles<decltype(groupedMCParticles), true, true>(groupedMCParticles, recoMcIds); // fills mc particles
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(FemtoUniverseProducerTask, processTruthAndFullMCCentRun3Casc, "Provide both MC truth and reco for tracks and cascades with centrality", false);
 
   Preslice<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec, aod::HfSelD0, aod::HfMlD0>> perCollisionD0s = aod::track::collisionId;
   void processTrackD0MC(aod::McCollisions const& mccols,

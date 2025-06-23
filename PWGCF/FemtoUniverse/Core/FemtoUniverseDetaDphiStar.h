@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -47,7 +47,7 @@ class FemtoUniverseDetaDphiStar
   /// Destructor
   virtual ~FemtoUniverseDetaDphiStar() = default;
   /// Initialization of the histograms and setting required values
-  void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaphistarcutmin, float ldeltaphistarcutmax, float ldeltaetacutmin, float ldeltaetacutmax, float lchosenradii, bool lplotForEveryRadii, float lPhiMassMin = 1.014, float lPhiMassMax = 1.026)
+  void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaphistarcutmin, float ldeltaphistarcutmax, float ldeltaetacutmin, float ldeltaetacutmax, float lchosenradii, bool lplotForEveryRadii, float lPhiMassMin = 1.014, float lPhiMassMax = 1.026, bool lisSameSignCPR = false)
   {
     chosenRadii = lchosenradii;
     cutDeltaPhiStarMax = ldeltaphistarcutmax;
@@ -59,6 +59,7 @@ class FemtoUniverseDetaDphiStar
     mHistogramRegistryQA = registryQA;
     cutPhiInvMassLow = lPhiMassMin;
     cutPhiInvMassHigh = lPhiMassMax;
+    isSameSignCPR = lisSameSignCPR;
 
     if constexpr (kPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && kPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kTrack) {
       std::string dirName = static_cast<std::string>(DirNames[0]);
@@ -66,6 +67,9 @@ class FemtoUniverseDetaDphiStar
       histdetadpisame[0][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(HistNamesSame[1][0])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
       histdetadpimixed[0][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(HistNamesMixed[0][0])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
       histdetadpimixed[0][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(HistNamesMixed[1][0])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+
+      histdetadpiqlcmssame = mHistogramRegistry->add<TH3>((dirName + static_cast<std::string>(HistNamesSame[1][7])).c_str(), "; #it{q}_{LCMS}; #Delta #eta; #Delta #phi", kTH3F, {{100, 0.0, 0.5}, {100, -0.15, 0.15}, {100, -0.15, 0.15}});
+      histdetadpiqlcmsmixed = mHistogramRegistry->add<TH3>((dirName + static_cast<std::string>(HistNamesMixed[1][7])).c_str(), "; #it{q}_{LCMS}; #Delta #eta; #Delta #phi", kTH3F, {{100, 0.0, 0.5}, {100, -0.15, 0.15}, {100, -0.15, 0.15}});
 
       if (plotForEveryRadii) {
         for (int i = 0; i < 9; i++) {
@@ -275,6 +279,8 @@ class FemtoUniverseDetaDphiStar
         auto indexOfDaughterpart2 = (ChosenEventType == femto_universe_container::EventType::mixed ? part2.globalIndex() : part2.index()) + CascChildTable[i][1];
         auto daughterpart1 = particles.begin() + indexOfDaughterpart1;
         auto daughterpart2 = particles.begin() + indexOfDaughterpart2;
+        if (isSameSignCPR && (daughterpart1.sign() != daughterpart2.sign()))
+          continue;
         auto deta = daughterpart1.eta() - daughterpart2.eta();
         auto dphiAvg = averagePhiStar(*daughterpart1, *daughterpart2, i);
         if (ChosenEventType == femto_universe_container::EventType::same) {
@@ -404,23 +410,42 @@ class FemtoUniverseDetaDphiStar
     }
   }
 
+  ///  Check if pair is close or not
+  template <typename Part>
+  void ClosePairqLCMS(Part const& part1, Part const& part2, float lmagfield, uint8_t ChosenEventType, double qlcms) // add typename Parts and variable parts for adding MClabels
+  {
+    magfield = lmagfield;
+    if constexpr (kPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && kPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kTrack) {
+      auto deta = part1.eta() - part2.eta();
+      auto dphiAvg = averagePhiStar(part1, part2, 0);
+
+      if (ChosenEventType == femto_universe_container::EventType::same) {
+        histdetadpiqlcmssame->Fill(qlcms, deta, dphiAvg);
+      } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
+        histdetadpiqlcmsmixed->Fill(qlcms, deta, dphiAvg);
+      } else {
+        LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
+      }
+    }
+  }
+
  private:
   HistogramRegistry* mHistogramRegistry = nullptr;   ///< For main output
   HistogramRegistry* mHistogramRegistryQA = nullptr; ///< For QA output
   static constexpr std::string_view DirNames[6] = {"kTrack_kTrack/", "kTrack_kV0/", "kV0_kV0/", "kTrack_kPhi/", "kTrack_kD0/", "kCascade_kCascade/"};
 
-  static constexpr std::string_view HistNamesSame[2][7] = {{"detadphidetadphi0BeforeSame_0", "detadphidetadphi0BeforeSame_1", "detadphidetadphi0BeforeSame_2",
+  static constexpr std::string_view HistNamesSame[2][8] = {{"detadphidetadphi0BeforeSame_0", "detadphidetadphi0BeforeSame_1", "detadphidetadphi0BeforeSame_2",
                                                             "detadphidetadphi0BeforeSame_3", "detadphidetadphi0BeforeSame_4", "detadphidetadphi0BeforeSame_5",
-                                                            "detadphidetadphi0BeforeSame_6"},
+                                                            "detadphidetadphi0BeforeSame_6", "detadphidetadphi0BeforeSameqLCMS"},
                                                            {"detadphidetadphi0AfterSame_0", "detadphidetadphi0AfterSame_1", "detadphidetadphi0AfterSame_2",
                                                             "detadphidetadphi0AfterSame_3", "detadphidetadphi0AfterSame_4", "detadphidetadphi0AfterSame_5",
-                                                            "detadphidetadphi0AfterSame_6"}};
-  static constexpr std::string_view HistNamesMixed[2][7] = {{"detadphidetadphi0BeforeMixed_0", "detadphidetadphi0BeforeMixed_1", "detadphidetadphi0BeforeMixed_2",
+                                                            "detadphidetadphi0AfterSame_6", "detadphidetadphi0AfterSameqLCMS"}};
+  static constexpr std::string_view HistNamesMixed[2][8] = {{"detadphidetadphi0BeforeMixed_0", "detadphidetadphi0BeforeMixed_1", "detadphidetadphi0BeforeMixed_2",
                                                              "detadphidetadphi0BeforeMixed_3", "detadphidetadphi0BeforeMixed_4", "detadphidetadphi0BeforeMixed_5",
-                                                             "detadphidetadphi0BeforeMixed_6"},
+                                                             "detadphidetadphi0BeforeMixed_6", "detadphidetadphi0BeforeMixedqLCMS"},
                                                             {"detadphidetadphi0AfterMixed_0", "detadphidetadphi0AfterMixed_1", "detadphidetadphi0AfterMixed_2",
                                                              "detadphidetadphi0AfterMixed_3", "detadphidetadphi0AfterMixed_4", "detadphidetadphi0AfterMixed_5",
-                                                             "detadphidetadphi0AfterMixed_6"}};
+                                                             "detadphidetadphi0AfterMixed_6", "detadphidetadphi0AfterMixedqLCMS"}};
 
   static constexpr std::string_view HistNamesRadii[7][9] = {{"detadphidetadphi0Before_0_0", "detadphidetadphi0Before_0_1", "detadphidetadphi0Before_0_2",
                                                              "detadphidetadphi0Before_0_3", "detadphidetadphi0Before_0_4", "detadphidetadphi0Before_0_5",
@@ -462,10 +487,14 @@ class FemtoUniverseDetaDphiStar
   bool plotForEveryRadii = false;
   float cutPhiInvMassLow;
   float cutPhiInvMassHigh;
+  bool isSameSignCPR = false;
 
   std::array<std::array<std::shared_ptr<TH2>, 2>, 7> histdetadpisame{};
   std::array<std::array<std::shared_ptr<TH2>, 2>, 7> histdetadpimixed{};
   std::array<std::array<std::shared_ptr<TH2>, 9>, 7> histdetadpiRadii{};
+
+  std::shared_ptr<TH3> histdetadpiqlcmssame{};
+  std::shared_ptr<TH3> histdetadpiqlcmsmixed{};
 
   ///  Calculate phi at all required radii stored in TmpRadiiTPC
   /// Magnetic field to be provided in Tesla

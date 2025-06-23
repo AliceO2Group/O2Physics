@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -16,6 +16,9 @@
 
 #include <string>
 #include <vector>
+
+#include "TMCProcess.h"
+
 #include "CCDB/BasicCCDBManager.h"
 
 #include "Common/Core/trackUtilities.h"
@@ -55,19 +58,19 @@ using namespace o2::hf_centrality;
 
 // event types
 enum Event : uint8_t {
-  kAll = 0,
-  kRejEveSel,
-  kRejNoTracksAndCharm,
-  kTrackSelected,
-  kCharmSelected,
-  kPairSelected
+  All = 0,
+  RejEveSel,
+  RejNoTracksAndCharm,
+  TrackSelected,
+  CharmSelected,
+  PairSelected
 };
 
 // ml modes
 enum MlMode : uint8_t {
-  kNoMl = 0,
-  kFillMlFromSelector,
-  kFillMlFromNewBDT
+  NoMl = 0,
+  FillMlFromSelector,
+  FillMlFromNewBDT
 };
 
 struct HfFemtoDreamProducer {
@@ -124,7 +127,7 @@ struct HfFemtoDreamProducer {
   Configurable<std::vector<float>> trkITSnclsIbMin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kITSnClsIbMin, "trk"), std::vector<float>{-1.f, 1.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kITSnClsIbMin, "Track selection: ")};
   Configurable<std::vector<float>> trkITSnclsMin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kITSnClsMin, "trk"), std::vector<float>{-1.f, 2.f, 4.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kITSnClsMin, "Track selection: ")};
   // ML inference
-  Configurable<int> applyMlMode{"applyMlMode", 1, "Occupancy estimation (None: 0, BDT model from Lc selector: 1, New BDT model on Top of Lc selector: 2)"};
+  Configurable<int> applyMlMode{"applyMlMode", 1, "None: 0, BDT model from Lc selector: 1, New BDT model on Top of Lc selector: 2"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
@@ -145,8 +148,8 @@ struct HfFemtoDreamProducer {
 
   float magField;
   int runNumber;
-  using CandidateLc = soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc>;
-  using CandidateLcMc = soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc, aod::HfCand3ProngMcRec>;
+  using CandidateLc = soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc>;
+  using CandidateLcMc = soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc, aod::HfCand3ProngMcRec>;
 
   using FemtoFullCollision = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator;
   using FemtoFullCollisionMc = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
@@ -175,14 +178,14 @@ struct HfFemtoDreamProducer {
     trackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{cutBits + 1, -0.5, cutBits + 0.5}});
 
     // event QA histograms
-    constexpr int kEventTypes = kPairSelected + 1;
+    constexpr int kEventTypes = PairSelected + 1;
     std::string labels[kEventTypes];
-    labels[Event::kAll] = "All events";
-    labels[Event::kRejEveSel] = "rejected by event selection";
-    labels[Event::kRejNoTracksAndCharm] = "rejected by no tracks and charm";
-    labels[Event::kTrackSelected] = "with tracks ";
-    labels[Event::kCharmSelected] = "with charm hadrons ";
-    labels[Event::kPairSelected] = "with pairs";
+    labels[Event::All] = "All events";
+    labels[Event::RejEveSel] = "rejected by event selection";
+    labels[Event::RejNoTracksAndCharm] = "rejected by no tracks and charm";
+    labels[Event::TrackSelected] = "with tracks ";
+    labels[Event::CharmSelected] = "with charm hadrons ";
+    labels[Event::PairSelected] = "with pairs";
 
     static const AxisSpec axisEvents = {kEventTypes, 0.5, kEventTypes + 0.5, ""};
     qaRegistry.add("hEventQA", "Events;;entries", HistType::kTH1F, {axisEvents});
@@ -219,7 +222,7 @@ struct HfFemtoDreamProducer {
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
 
-    if (applyMlMode) {
+    if (applyMlMode == FillMlFromNewBDT) {
       hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdbUrl);
@@ -281,6 +284,7 @@ struct HfFemtoDreamProducer {
       auto pdgCode = particleMc.pdgCode();
       int particleOrigin = 99;
       int pdgCodeMother = -1;
+      constexpr int GenFromTransport = -1; // -1 if a particle produced during transport
       // get list of mothers, but it could be empty (for example in case of injected light nuclei)
       auto motherparticlesMc = particleMc.template mothers_as<aod::McParticles>();
       // check pdg code
@@ -297,7 +301,7 @@ struct HfFemtoDreamProducer {
           // particle is from a decay -> getProcess() == 4
           // particle is generated during transport -> getGenStatusCode() == -1
           // list of mothers is not empty
-        } else if (particleMc.getProcess() == 4 && particleMc.getGenStatusCode() == -1 && !motherparticlesMc.empty()) {
+        } else if (particleMc.getProcess() == TMCProcess::kPDecay && particleMc.getGenStatusCode() == GenFromTransport && !motherparticlesMc.empty()) {
           // get direct mother
           auto motherparticleMc = motherparticlesMc.front();
           pdgCodeMother = motherparticleMc.pdgCode();
@@ -305,7 +309,7 @@ struct HfFemtoDreamProducer {
           // check if particle is material
           // particle is from inelastic hadronic interaction -> getProcess() == 23
           // particle is generated during transport -> getGenStatusCode() == -1
-        } else if (particleMc.getProcess() == 23 && particleMc.getGenStatusCode() == -1) {
+        } else if (particleMc.getProcess() == TMCProcess::kPHInhelastic && particleMc.getGenStatusCode() == GenFromTransport) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
           // cross check to see if we missed a case
         } else {
@@ -408,18 +412,18 @@ struct HfFemtoDreamProducer {
 
     const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(col, mult, ccdb, qaRegistry);
 
-    qaRegistry.fill(HIST("hEventQA"), 1 + Event::kAll);
+    qaRegistry.fill(HIST("hEventQA"), 1 + Event::All);
 
     /// monitor the satisfied event selections
     hfEvSel.fillHistograms(col, rejectionMask, mult);
     if (rejectionMask != 0) {
       /// at least one event selection not satisfied --> reject the candidate
-      qaRegistry.fill(HIST("hEventQA"), 1 + Event::kRejEveSel);
+      qaRegistry.fill(HIST("hEventQA"), 1 + Event::RejEveSel);
       return;
     }
 
     if (isNoSelectedTracks(col, tracks, trackCuts) && sizeCand <= 0) {
-      qaRegistry.fill(HIST("hEventQA"), 1 + Event::kRejNoTracksAndCharm);
+      qaRegistry.fill(HIST("hEventQA"), 1 + Event::RejNoTracksAndCharm);
       return;
     }
 
@@ -434,7 +438,8 @@ struct HfFemtoDreamProducer {
     bool isSelectedMlLcToPKPi = true;
     bool isSelectedMlLcToPiKP = true;
     for (const auto& candidate : candidates) {
-
+      outputMlPKPi = {-1.0f, -1.0f, -1.0f};
+      outputMlPiKP = {-1.0f, -1.0f, -1.0f};
       auto trackPos1 = candidate.template prong0_as<TrackType>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.template prong1_as<TrackType>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.template prong2_as<TrackType>(); // positive daughter (negative for the antiparticles)
@@ -442,7 +447,7 @@ struct HfFemtoDreamProducer {
       if constexpr (useCharmMl) {
         /// fill with ML information
         /// BDT index 0: bkg score; BDT index 1: prompt score; BDT index 2: non-prompt score
-        if (applyMlMode == kFillMlFromSelector) {
+        if (applyMlMode == FillMlFromSelector) {
           if (candidate.mlProbLcToPKPi().size() > 0) {
             outputMlPKPi.at(0) = candidate.mlProbLcToPKPi()[0]; /// bkg score
             outputMlPKPi.at(1) = candidate.mlProbLcToPKPi()[1]; /// prompt score
@@ -453,7 +458,7 @@ struct HfFemtoDreamProducer {
             outputMlPiKP.at(1) = candidate.mlProbLcToPiKP()[1]; /// prompt score
             outputMlPiKP.at(2) = candidate.mlProbLcToPiKP()[2]; /// non-prompt score
           }
-        } else if (applyMlMode == kFillMlFromNewBDT) {
+        } else if (applyMlMode == FillMlFromNewBDT) {
           isSelectedMlLcToPKPi = false;
           isSelectedMlLcToPiKP = false;
           if (candidate.mlProbLcToPKPi().size() > 0) {
@@ -470,37 +475,41 @@ struct HfFemtoDreamProducer {
           LOGF(fatal, "Please check your Ml configuration!!");
         }
       }
+      auto bc = col.template bc_as<aod::BCsWithTimestamps>();
+      int64_t timeStamp = bc.timestamp();
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
                            float BDTScoreBkg,
                            float BDTScorePrompt,
                            float BDTScoreFD) {
         if (FunctionSelection >= 1){
-                rowCandCharmHad(
-                    outputCollision.lastIndex(),
-                    trackPos1.sign() + trackNeg.sign() + trackPos2.sign(),
-                    trackPos1.globalIndex(),
-                    trackNeg.globalIndex(),
-                    trackPos2.globalIndex(),
-                    trackPos1.pt(),
-                    trackNeg.pt(),
-                    trackPos2.pt(),
-                    trackPos1.eta(),
-                    trackNeg.eta(),
-                    trackPos2.eta(),
-                    trackPos1.phi(),
-                    trackNeg.phi(),
-                    trackPos2.phi(),
-                    1 << CandFlag,
-                    BDTScoreBkg,
-                    BDTScorePrompt,
-                    BDTScoreFD);
+          rowCandCharmHad(
+            outputCollision.lastIndex(),
+            timeStamp,
+            trackPos1.sign() + trackNeg.sign() + trackPos2.sign(),
+            trackPos1.globalIndex(),
+            trackNeg.globalIndex(),
+            trackPos2.globalIndex(),
+            trackPos1.pt(),
+            trackNeg.pt(),
+            trackPos2.pt(),
+            trackPos1.eta(),
+            trackNeg.eta(),
+            trackPos2.eta(),
+            trackPos1.phi(),
+            trackNeg.phi(),
+            trackPos2.phi(),
+            1 << CandFlag,
+            BDTScoreBkg,
+            BDTScorePrompt,
+            BDTScoreFD);
 
-                // Row for MC candidate charm hadron (if constexpr isMc)
-                if constexpr (isMc) {
-                  rowCandMcCharmHad(
-                    candidate.flagMcMatchRec(),
-                    candidate.originMcRec());}
+          // Row for MC candidate charm hadron (if constexpr isMc)
+          if constexpr (isMc) {
+            rowCandMcCharmHad(
+              candidate.flagMcMatchRec(),
+              candidate.originMcRec());
+          }
       } };
 
       fillTable(0, candidate.isSelLcToPKPi(), outputMlPKPi.at(0), outputMlPKPi.at(1), outputMlPKPi.at(2));
@@ -515,17 +524,17 @@ struct HfFemtoDreamProducer {
     aod::femtodreamcollision::BitMaskType bitTrack = 0;
     if (isTrackFilled) {
       bitTrack |= 1 << 0;
-      qaRegistry.fill(HIST("hEventQA"), 1 + Event::kTrackSelected);
+      qaRegistry.fill(HIST("hEventQA"), 1 + Event::TrackSelected);
     }
 
     aod::femtodreamcollision::BitMaskType bitCand = 0;
     if (sizeCand > 0) {
       bitCand |= 1 << 0;
-      qaRegistry.fill(HIST("hEventQA"), 1 + Event::kCharmSelected);
+      qaRegistry.fill(HIST("hEventQA"), 1 + Event::CharmSelected);
     }
 
     if (isTrackFilled && (sizeCand > 0))
-      qaRegistry.fill(HIST("hEventQA"), 1 + Event::kPairSelected);
+      qaRegistry.fill(HIST("hEventQA"), 1 + Event::PairSelected);
 
     rowMasks(static_cast<aod::femtodreamcollision::BitMaskType>(bitTrack),
              static_cast<aod::femtodreamcollision::BitMaskType>(bitCand),
@@ -554,7 +563,7 @@ struct HfFemtoDreamProducer {
     // Filling particle properties
     rowCandCharmHadGen.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
         rowCandCharmHadGen(
           particle.mcCollisionId(),
           particle.flagMcMatchGen(),
