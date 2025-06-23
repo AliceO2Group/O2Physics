@@ -1065,6 +1065,12 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kS13] = "GeV^{2}/c^{4}";
   fgVariableNames[kS23] = "m_{23}^{2}";
   fgVariableUnits[kS23] = "GeV^{2}/c^{4}";
+  fgVariableNames[kBdtBackground] = "kBdtBackground";
+  fgVariableUnits[kBdtBackground] = " ";
+  fgVariableNames[kBdtPrompt] = "kBdtPrompt";
+  fgVariableUnits[kBdtPrompt] = " ";
+  fgVariableNames[kBdtNonprompt] = "kBdtNonprompt";
+  fgVariableUnits[kBdtNonprompt] = " ";
 
   // Set the variables short names map. This is needed for dynamic configuration via JSON files
   fgVarNamesMap["kNothing"] = kNothing;
@@ -1701,4 +1707,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kV24ME"] = kV24ME;
   fgVarNamesMap["kWV22ME"] = kWV22ME;
   fgVarNamesMap["kWV24ME"] = kWV24ME;
+  fgVarNamesMap["kBdtBackground"] = kBdtBackground;
+  fgVarNamesMap["kBdtPrompt"] = kBdtPrompt;
+  fgVarNamesMap["kBdtNonprompt"] = kBdtNonprompt;
 }
