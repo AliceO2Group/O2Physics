@@ -14,8 +14,8 @@
 /// \author Roman Lavička
 /// \since  2025-06-20
 /// \brief  A table to store information about events preselected to have exactly two tracks.
-/// \brief 	Good for UPC gammagamma (->elel,mumu,tautau) and gammalead (vector mesons)
-/// \bried 	If MC, careful with filling the mother
+/// \brief  Good for UPC gammagamma (->elel,mumu,tautau) and gammalead (vector mesons)
+/// \brief  If MC, careful with filling the mother
 ///
 
 #ifndef ALISW_TWOTRACKSEVENTTABLES_H
