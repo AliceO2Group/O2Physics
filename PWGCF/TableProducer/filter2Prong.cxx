@@ -44,13 +44,9 @@ struct Filter2Prong {
   O2_DEFINE_CONFIGURABLE(cfgYMax, float, -1.0f, "Maximum candidate rapidity")
   O2_DEFINE_CONFIGURABLE(cfgImPart1Mass, float, o2::constants::physics::MassKPlus, "Daughter particle 1 mass in GeV")
   O2_DEFINE_CONFIGURABLE(cfgImPart2Mass, float, o2::constants::physics::MassKMinus, "Daughter particle 2 mass in GeV")
-  // O2_DEFINE_CONFIGURABLE(cfgImPart1PID, int, o2::track::PID::Kaon, "PID of daughter particle 1 (O2 PID ID)")
-  // O2_DEFINE_CONFIGURABLE(cfgImPart2PID, int, o2::track::PID::Kaon, "PID of daughter particle 2 (O2 PID ID)")
-  O2_DEFINE_CONFIGURABLE(cfgMomDepPID, bool, 1, "Use mommentum dependent PID for Phi meson")
   O2_DEFINE_CONFIGURABLE(cfgImCutPt, float, 0.2f, "Minimal pT for candidates")
   O2_DEFINE_CONFIGURABLE(cfgImMinInvMass, float, 0.95f, "Minimum invariant mass (GeV)")
   O2_DEFINE_CONFIGURABLE(cfgImMaxInvMass, float, 1.07f, "Maximum invariant mass (GeV)")
-  // O2_DEFINE_CONFIGURABLE(cfgImSigmaFormula, std::string, "(z < 0.5 && x < 3.0) || (z >= 0.5 && x < 2.5 && y < 3.0)", "pT dependent daughter track sigma pass condition (x = TPC sigma, y = TOF sigma, z = pT)")
   O2_DEFINE_CONFIGURABLE(cfgDoPhi, bool, false, "Store phi information")
   O2_DEFINE_CONFIGURABLE(cfgDoV0, bool, true, "Store V0s candidates")
   O2_DEFINE_CONFIGURABLE(tpcNClsCrossedRowsTrackMin, float, 70, "Minimum number of crossed rows in TPC")
@@ -62,6 +58,7 @@ struct Filter2Prong {
   O2_DEFINE_CONFIGURABLE(ITSPIDPthreshold, float, 1.0, "Momentum threshold for ITS PID (GeV/c) (only used if ITSPIDSelection is true)")
   O2_DEFINE_CONFIGURABLE(ITSPIDNsigma, float, 3.0, "PID nsigma for ITS")
   O2_DEFINE_CONFIGURABLE(ConfDaughPIDCuts, float, 4.0, "PID nsigma for V0s")
+  O2_DEFINE_CONFIGURABLE(cfgMomDepPID, bool, true, "Use momentum dependent PID cuts for V0s")
   O2_DEFINE_CONFIGURABLE(massK0Min, float, 0.4, "Minimum mass for K0")
   O2_DEFINE_CONFIGURABLE(massK0Max, float, 0.6, "Maximum mass for K0")
   O2_DEFINE_CONFIGURABLE(massLambdaMin, float, 1.0, "Minimum mass for lambda")
@@ -108,12 +105,8 @@ struct Filter2Prong {
   using PIDTrack = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta>;
   using ResoV0s = aod::V0Datas;
 
-  // std::unique_ptr<TFormula> sigmaFormula;
-
   void init(InitContext&)
   {
-    // if (doprocessDataInvMass)
-    // sigmaFormula = std::make_unique<TFormula>("sigmaFormula", cfgImSigmaFormula.value.c_str());
   }
 
   template <class HFCandidatesType>
@@ -394,6 +387,7 @@ struct Filter2Prong {
         if (removefaketrack && isFakeKaon(p1)) { // Check if the track is a fake kaon
           continue;
         }
+
         for (const auto& cftrack2 : cftracks) {                 // Loop over second track
           if (cftrack2.globalIndex() == cftrack1.globalIndex()) // Skip if it's the same track as the first one
             continue;
@@ -414,6 +408,7 @@ struct Filter2Prong {
           if (!selectionPair(p1, p2)) {
             continue;
           }
+
           ROOT::Math::PtEtaPhiMVector vec1(p1.pt(), p1.eta(), p1.phi(), cfgImPart1Mass);
           ROOT::Math::PtEtaPhiMVector vec2(p2.pt(), p2.eta(), p2.phi(), cfgImPart2Mass);
           ROOT::Math::PtEtaPhiMVector s = vec1 + vec2;
