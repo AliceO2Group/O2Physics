@@ -316,16 +316,14 @@ float FT0AmplitudeC(TFT0 ft0)
 template <typename TFDD>
 float FDDAmplitudeA(TFDD fdd)
 {
-  std::vector<int16_t> ampsA(fdd.chargeA(), fdd.chargeA() + 8);
-  return std::accumulate(ampsA.begin(), ampsA.end(), 0);
+  return std::accumulate(fdd.chargeA().begin(), fdd.chargeA().end(), 0);
 }
 
 // -----------------------------------------------------------------------------
 template <typename TFDD>
 float FDDAmplitudeC(TFDD fdd)
 {
-  std::vector<int16_t> ampsC(fdd.chargeC(), fdd.chargeC() + 8);
-  return std::accumulate(ampsC.begin(), ampsC.end(), 0);
+  return std::accumulate(fdd.chargeC().begin(), fdd.chargeC().end(), 0);
 }
 
 // -----------------------------------------------------------------------------
