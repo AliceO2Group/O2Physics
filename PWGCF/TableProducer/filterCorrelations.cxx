@@ -9,6 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 #include "PWGCF/DataModel/CorrelationsDerived.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -66,9 +68,9 @@ struct FilterCF {
   O2_DEFINE_CONFIGURABLE(cfgCollisionFlags, uint16_t, aod::collision::CollisionFlagsRun2::Run2VertexerTracks, "Request collision flags if non-zero (0 = off, 1 = Run2VertexerTracks)")
   O2_DEFINE_CONFIGURABLE(cfgTransientTables, bool, false, "Output transient tables for collision and track IDs to enable successive filtering tasks")
   O2_DEFINE_CONFIGURABLE(cfgTrackSelection, int, 0, "Type of track selection (0 = Run 2/3 without systematics | 1 = Run 3 with systematics)")
-  O2_DEFINE_CONFIGURABLE(cfgStorePid, bool, false, "Store PID information for tracks (TPC and TOF n-sigma for protons)")
   O2_DEFINE_CONFIGURABLE(cfgMinMultiplicity, float, -1, "Minimum multiplicity considered for filtering (if value positive)")
   O2_DEFINE_CONFIGURABLE(cfgMcSpecialPDGs, std::vector<int>, {}, "Special MC PDG codes to include in the MC primary particle output (additional to charged particles). Empty = charged particles only.") // needed for some neutral particles
+  O2_DEFINE_CONFIGURABLE(fillproton, bool, true, "flag to fill proton nsigma")
 
   // Filters and input definitions
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -156,6 +158,7 @@ struct FilterCF {
     return 0;
   }
 
+  // void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>> const& tracks)
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCPr, aod::pidTOFPr>> const& tracks)
   {
     if (cfgVerbosity > 0) {
@@ -173,11 +176,10 @@ struct FilterCF {
       outputCollRefs(collision.globalIndex());
 
     for (auto& track : tracks) {
-      if (cfgStorePid) {
-        outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), getTrackType(track), track.tpcNsigmaPr(), track.tofNsigmaPr());
-      } else {
-        outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), getTrackType(track), -999.0f, -999.0f);
-      }
+      if (fillproton)
+        outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), getTrackType(track), track.tpcNSigmaPr(), track.tofNSigmaPr());
+      else
+        outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), getTrackType(track), -999.99, -999.99);
       if (cfgTransientTables)
         outputTrackRefs(collision.globalIndex(), track.globalIndex());
 
@@ -292,7 +294,7 @@ struct FilterCF {
           }
         }
         outputTracks(outputCollisions.lastIndex(),
-                     truncateFloatFraction(track.pt()), truncateFloatFraction(track.eta()), truncateFloatFraction(track.phi()), track.sign(), getTrackType(track), -999.0f, -999.0f);
+                     truncateFloatFraction(track.pt()), truncateFloatFraction(track.eta()), truncateFloatFraction(track.phi()), track.sign(), getTrackType(track), -999.99, -999.99);
         outputTrackLabels(mcParticleId);
         if (cfgTransientTables)
           outputTrackRefs(collision.globalIndex(), track.globalIndex());
