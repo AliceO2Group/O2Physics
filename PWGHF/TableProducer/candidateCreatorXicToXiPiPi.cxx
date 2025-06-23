@@ -505,7 +505,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       // create KFParticle
       KFParticle kfXi;
       float massXi = casc.mXi();
-      kfXi.Create(parPosMom, casc.kfTrackCovMat(), casc.sign(), massXi);
+      kfXi.Create(parPosMom, casc.kfTrackCovMat().data(), casc.sign(), massXi);
       if (useXiMassConstraint) {
         kfXi.SetNonlinearMassConstraint(MassXiMinus);
       }
