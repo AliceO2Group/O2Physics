@@ -142,22 +142,6 @@ struct kstarInOO {
 
     return true;
   };
-  /*
-  //----------------------------
-  // 1-1. Track PID
-  //----------------------------
-  template <typename T>
-  bool trackPID(const T& candidate, bool FT)
-  {
-    bool pid = false;
-    if (!FT)
-      pid = trackPIDPion<T>(candidate);
-    else
-      pid = trackPIDKaon<T>(candidate);
-
-    return pid;
-  }
-  */
 
   //---------------------------------------
   // 1-2. Check whether it passes tpc&tof
