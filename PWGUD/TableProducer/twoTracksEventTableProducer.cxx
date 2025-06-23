@@ -17,20 +17,25 @@
 //
 
 // C++ headers
+#include <algorithm>
+#include <random>
 #include <set>
 #include <utility>
-#include <algorithm>
 #include <vector>
-#include <random>
 
 // O2 headers
-#include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
 // O2Physics headers
+#include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
+#include "PWGUD/DataModel/TauEventTables.h"
+#include "PWGUD/DataModel/UDTables.h"
+
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -38,10 +43,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
-#include "PWGUD/DataModel/UDTables.h"
-#include "PWGUD/DataModel/TauEventTables.h"
-#include "PWGUD/Core/SGSelector.h"
 
 // ROOT
 #include "Math/Vector4D.h"
@@ -60,7 +61,7 @@ struct TauEventTableProducer {
   // Global varialbes
   Service<o2::framework::O2DatabasePDG> pdg;
   SGSelector sgSelector;
-	int nSelection{0};
+  int nSelection{0};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -79,11 +80,11 @@ struct TauEventTableProducer {
     Configurable<float> cutTrueGapSideFT0C{"cutTrueGapSideFT0C", 50., "FT0C threshold for SG selector"};
     Configurable<float> cutTrueGapSideZDC{"cutTrueGapSideZDC", 10000., "ZDC threshold for SG selector. 0 is <1n, 4.2 is <2n, 6.7 is <3n, 9.5 is <4n, 12.5 is <5n"};
     Configurable<float> cutFITtime{"cutFITtime", 40., "Maximum FIT time allowed. Default is 40ns"};
-	  Configurable<bool> cutEvTFb{"cutEvTFb", true, {"Event selection bit kNoTimeFrameBorder"}};
-		Configurable<bool> cutEvITSROFb{"cutEvITSROFb", true, {"Event selection bit kNoITSROFrameBorder"}};
-		Configurable<bool> cutEvSbp{"cutEvSbp", true, {"Event selection bit kNoSameBunchPileup"}};
-		Configurable<bool> cutEvZvtxFT0vPV{"cutEvZvtxFT0vPV", false, {"Event selection bit kIsGoodZvtxFT0vsPV"}};
-		Configurable<bool> cutEvVtxITSTPC{"cutEvVtxITSTPC", true, {"Event selection bit kIsVertexITSTPC"}};
+    Configurable<bool> cutEvTFb{"cutEvTFb", true, {"Event selection bit kNoTimeFrameBorder"}};
+    Configurable<bool> cutEvITSROFb{"cutEvITSROFb", true, {"Event selection bit kNoITSROFrameBorder"}};
+    Configurable<bool> cutEvSbp{"cutEvSbp", true, {"Event selection bit kNoSameBunchPileup"}};
+    Configurable<bool> cutEvZvtxFT0vPV{"cutEvZvtxFT0vPV", false, {"Event selection bit kIsGoodZvtxFT0vsPV"}};
+    Configurable<bool> cutEvVtxITSTPC{"cutEvVtxITSTPC", true, {"Event selection bit kIsVertexITSTPC"}};
     Configurable<float> cutEvOccupancy{"cutEvOccupancy", 100000., "Maximum allowed occupancy"};
     Configurable<bool> cutEvTrs{"cutEvTrs", false, {"Event selection bit kNoCollInTimeRangeStandard"}};
     Configurable<bool> cutEvTrofs{"cutEvTrofs", false, {"Event selection bit kNoCollInRofStandard"}};
@@ -113,14 +114,14 @@ struct TauEventTableProducer {
   } cutGlobalTrack;
 
   struct : ConfigurableGroup {
-	  Configurable<bool> preselAtLeastOneTOFtrack{"preselAtLeastOneTOFtrack", false, {"At least one track is required to hit TOF."}};
-	  Configurable<bool> preselBothAreTOFtracks{"preselBothAreTOFtracks", false, {"Both tracks are required to hit TOF."}};
-	  Configurable<bool> preselUseMinMomentumOnBothTracks{"preselUseMinMomentumOnBothTracks", false, {"Both tracks are required to fill requirement on minimum momentum."}};
-	  Configurable<float> preselMinTrackMomentum{"preselMinTrackMomentum", 0.1, {"Requirement on minimum momentum of the track."}};
-	  Configurable<float> preselSystemPtCut{"preselSystemPtCut", 0.0, {"By default, cut on maximum system pT."}};
-	  Configurable<bool> preselUseOppositeSystemPtCut{"preselUseOppositeSystemPtCut", false, {"Negates the system pT cut (cut on minimum system pT)."}};
-	  Configurable<float> preselMinInvariantMass{"preselMinInvariantMass", 2.0, {"Requirement on minimum system invariant mass."}};
-	  Configurable<float> preselMaxInvariantMass{"preselMaxInvariantMass", 5.0, {"Requirement on maximum system invariant mass."}};
+    Configurable<bool> preselAtLeastOneTOFtrack{"preselAtLeastOneTOFtrack", false, {"At least one track is required to hit TOF."}};
+    Configurable<bool> preselBothAreTOFtracks{"preselBothAreTOFtracks", false, {"Both tracks are required to hit TOF."}};
+    Configurable<bool> preselUseMinMomentumOnBothTracks{"preselUseMinMomentumOnBothTracks", false, {"Both tracks are required to fill requirement on minimum momentum."}};
+    Configurable<float> preselMinTrackMomentum{"preselMinTrackMomentum", 0.1, {"Requirement on minimum momentum of the track."}};
+    Configurable<float> preselSystemPtCut{"preselSystemPtCut", 0.0, {"By default, cut on maximum system pT."}};
+    Configurable<bool> preselUseOppositeSystemPtCut{"preselUseOppositeSystemPtCut", false, {"Negates the system pT cut (cut on minimum system pT)."}};
+    Configurable<float> preselMinInvariantMass{"preselMinInvariantMass", 2.0, {"Requirement on minimum system invariant mass."}};
+    Configurable<float> preselMaxInvariantMass{"preselMaxInvariantMass", 5.0, {"Requirement on maximum system invariant mass."}};
   } cutPreselect;
 
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
@@ -138,7 +139,7 @@ struct TauEventTableProducer {
 
     mySetITShitsRule(cutGlobalTrack.cutITShitsRule);
 
-	  histos.add("Reco/hSelections", "Effect of selections;;Number of  events (-)", HistType::kTH1D, {{50, 0.5, 50.5}});
+    histos.add("Reco/hSelections", "Effect of selections;;Number of  events (-)", HistType::kTH1D, {{50, 0.5, 50.5}});
     histos.add("Truth/hTroubles", "Counter of unwanted issues;;Number of  troubles (-)", HistType::kTH1D, {{15, 0.5, 15.5}});
 
   } // end init
@@ -150,14 +151,14 @@ struct TauEventTableProducer {
     // FTOA
     if ((std::abs(coll.timeFT0A()) > maxFITtime) && coll.timeFT0A() > -998.)
       return false;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-	  nSelection++;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     // FTOC
     if ((std::abs(coll.timeFT0C()) > maxFITtime) && coll.timeFT0C() > -998.)
       return false;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-	  nSelection++;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     return true;
   }
@@ -166,59 +167,59 @@ struct TauEventTableProducer {
   bool isGoodROFtime(C const& coll)
   {
 
-	  // kNoTimeFrameBorder
-	  if (cutSample.cutEvTFb && !coll.tfb())
-		  return false;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-	  nSelection++;
+    // kNoTimeFrameBorder
+    if (cutSample.cutEvTFb && !coll.tfb())
+      return false;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
-	  // kNoITSROFrameBorder
-	  if (cutSample.cutEvITSROFb && !coll.itsROFb())
-		  return false;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-	  nSelection++;
+    // kNoITSROFrameBorder
+    if (cutSample.cutEvITSROFb && !coll.itsROFb())
+      return false;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
-	  // kNoSameBunchPileup
-	  if (cutSample.cutEvSbp && !coll.sbp())
-		  return false;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-	  nSelection++;
+    // kNoSameBunchPileup
+    if (cutSample.cutEvSbp && !coll.sbp())
+      return false;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
-	  // kIsGoodZvtxFT0vsPV
-	  if (cutSample.cutEvZvtxFT0vPV && !coll.zVtxFT0vPV())
-		  return false;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-	  nSelection++;
+    // kIsGoodZvtxFT0vsPV
+    if (cutSample.cutEvZvtxFT0vPV && !coll.zVtxFT0vPV())
+      return false;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
-	  // kIsVertexITSTPC
-	  if (cutSample.cutEvVtxITSTPC && !coll.vtxITSTPC())
-		  return false;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-	  nSelection++;
+    // kIsVertexITSTPC
+    if (cutSample.cutEvVtxITSTPC && !coll.vtxITSTPC())
+      return false;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     // Occupancy
     if (coll.occupancyInTime() > cutSample.cutEvOccupancy)
       return false;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-	  nSelection++;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     // kNoCollInTimeRangeStandard
     if (cutSample.cutEvTrs && !coll.trs())
       return false;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-	  nSelection++;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     // kNoCollInRofStandard
     if (cutSample.cutEvTrofs && !coll.trofs())
       return false;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-	  nSelection++;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     // kNoHighMultCollInPrevRof
     if (cutSample.cutEvHmpr && !coll.hmpr())
       return false;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-	  nSelection++;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     return true;
   }
@@ -321,34 +322,34 @@ struct TauEventTableProducer {
     return true;
   }
 
-	template <typename T>
-	float findRightMass(T const& trk1, T const& trk2)
-	// choose the right mass for the tracks based on comparing combined sigma
-	// good for same-type particles decays
-	{
-		float nSigmasTPCsqrt[5];
-		nSigmasTPCsqrt[P_ELECTRON] = std::sqrt(trk1.tpcNsigmaEl()*trk1.tpcNsigmaEl()+trk2.tpcNsigmaEl()*trk2.tpcNsigmaEl())
-		nSigmasTPCsqrt[P_MUON] = std::sqrt(trk1.tpcNsigmaMu()*trk1.tpcNsigmaMu()+trk2.tpcNsigmaMu()*trk2.tpcNsigmaMu())
-		nSigmasTPCsqrt[P_PION] = std::sqrt(trk1.tpcNsigmaPi()*trk1.tpcNsigmaPi()+trk2.tpcNsigmaPi()*trk2.tpcNsigmaPi())
-		nSigmasTPCsqrt[P_KAON] = std::sqrt(trk1.tpcNsigmaKa()*trk1.tpcNsigmaKa()+trk2.tpcNsigmaKa()*trk2.tpcNsigmaKa())
-		nSigmasTPCsqrt[P_PROTON] = std::sqrt(trk1.tpcNsigmaPr()*trk1.tpcNsigmaPr()+trk2.tpcNsigmaPr()*trk2.tpcNsigmaPr())
+  template <typename T>
+  float findRightMass(T const& trk1, T const& trk2)
+  // choose the right mass for the tracks based on comparing combined sigma
+  // good for same-type particles decays
+  {
+    float nSigmasTPCsqrt[5];
+    nSigmasTPCsqrt[P_ELECTRON] = std::sqrt(trk1.tpcNsigmaEl() * trk1.tpcNsigmaEl() + trk2.tpcNsigmaEl() * trk2.tpcNsigmaEl())
+      nSigmasTPCsqrt[P_MUON] = std::sqrt(trk1.tpcNsigmaMu() * trk1.tpcNsigmaMu() + trk2.tpcNsigmaMu() * trk2.tpcNsigmaMu())
+        nSigmasTPCsqrt[P_PION] = std::sqrt(trk1.tpcNsigmaPi() * trk1.tpcNsigmaPi() + trk2.tpcNsigmaPi() * trk2.tpcNsigmaPi())
+          nSigmasTPCsqrt[P_KAON] = std::sqrt(trk1.tpcNsigmaKa() * trk1.tpcNsigmaKa() + trk2.tpcNsigmaKa() * trk2.tpcNsigmaKa())
+            nSigmasTPCsqrt[P_PROTON] = std::sqrt(trk1.tpcNsigmaPr() * trk1.tpcNsigmaPr() + trk2.tpcNsigmaPr() * trk2.tpcNsigmaPr())
 
-		int enumChoiceTPC = std::distance(std::begin(nSigmasTPCsqrt),
-		                                  std::min_element(std::begin(nSigmasTPCsqrt), std::end(nSigmasTPCsqrt)));
+              int enumChoiceTPC = std::distance(std::begin(nSigmasTPCsqrt),
+                                                std::min_element(std::begin(nSigmasTPCsqrt), std::end(nSigmasTPCsqrt)));
 
-		return pdg->Mass(trackPDGfromEnum(enumChoiceTPC));
-	}
+    return pdg->Mass(trackPDGfromEnum(enumChoiceTPC));
+  }
 
   void processDataSG(FullSGUDCollision const& collision,
                      FullUDTracks const& tracks)
   {
 
-		nSelection = 0;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-		nSelection++;
+    nSelection = 0;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
-	  if (!isGoodROFtime(collision))
-		  return;
+    if (!isGoodROFtime(collision))
+      return;
 
     int gapSide = collision.gapSide();
     int trueGapSide = sgSelector.trueGap(collision, cutSample.cutTrueGapSideFV0, cutSample.cutTrueGapSideFT0A, cutSample.cutTrueGapSideFT0C, cutSample.cutTrueGapSideZDC);
@@ -358,21 +359,21 @@ struct TauEventTableProducer {
 
     if (gapSide != cutSample.whichGapSide)
       return;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-	  nSelection++;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     if (!isGoodFITtime(collision, cutSample.cutFITtime))
       return;
 
     if (cutSample.useNumContribs && (collision.numContrib() != cutSample.cutNumContribs))
       return;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-	  nSelection++;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     if (cutSample.useRecoFlag && (collision.flags() != cutSample.cutRecoFlag))
       return;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-	  nSelection++;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     int countTracksPerCollision = 0;
     int countGoodNonPVtracks = 0;
@@ -391,60 +392,60 @@ struct TauEventTableProducer {
       vecTrkIdx.push_back(track.index());
     } // Loop over tracks with selections
 
-		// Critical selection, without it the rest of the process function will fail
-	  if (countGoodPVtracks != 2)
-			return;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-	  nSelection++;
+    // Critical selection, without it the rest of the process function will fail
+    if (countGoodPVtracks != 2)
+      return;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
-	  const auto& trk1 = tracks.iteratorAt(vecTrkIdx[0]);
-	  const auto& trk2 = tracks.iteratorAt(vecTrkIdx[1]);
+    const auto& trk1 = tracks.iteratorAt(vecTrkIdx[0]);
+    const auto& trk2 = tracks.iteratorAt(vecTrkIdx[1]);
 
-	  float thisMass = findRightMass(trk1,trk2);
+    float thisMass = findRightMass(trk1, trk2);
 
-	  // prepare lorentz vectors to create system
-	  ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> twoTrackMother, daug[2];
-	  daug[0].SetPxPyPzE(trk1.px(), trk1.py(), trk1.pz(), energy(thisMass, trk1.px(), trk1.py(), trk1.pz()));
-	  daug[1].SetPxPyPzE(trk2.px(), trk2.py(), trk2.pz(), energy(thisMass, trk2.px(), trk2.py(), trk2.pz()));
-	  twoTrackMother = daug[1] + daug[2];
-	  float thisPt = pt(twoTrackMother.px(),twoTrackMother.py());
+    // prepare lorentz vectors to create system
+    ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> twoTrackMother, daug[2];
+    daug[0].SetPxPyPzE(trk1.px(), trk1.py(), trk1.pz(), energy(thisMass, trk1.px(), trk1.py(), trk1.pz()));
+    daug[1].SetPxPyPzE(trk2.px(), trk2.py(), trk2.pz(), energy(thisMass, trk2.px(), trk2.py(), trk2.pz()));
+    twoTrackMother = daug[1] + daug[2];
+    float thisPt = pt(twoTrackMother.px(), twoTrackMother.py());
 
     // Apply system selections
-		// invariant mass
-	  if (twoTrackMother.M() < cutPreselect.preselMinInvariantMass || twoTrackMother.M() > cutPreselect.preselMaxInvariantMass)
-		  return;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-	  nSelection++;
+    // invariant mass
+    if (twoTrackMother.M() < cutPreselect.preselMinInvariantMass || twoTrackMother.M() > cutPreselect.preselMaxInvariantMass)
+      return;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
-		// system pt
-		if (cutPreselect.preselUseOppositeSystemPtCut ? thisPt < cutPreselect.preselSystemPtCut : thisPt > cutPreselect.preselSystemPtCut)
-			return;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-	  nSelection++;
+    // system pt
+    if (cutPreselect.preselUseOppositeSystemPtCut ? thisPt < cutPreselect.preselSystemPtCut : thisPt > cutPreselect.preselSystemPtCut)
+      return;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
-		// one track momentum
-		if (daug[0].P() < cutPreselect.preselMinTrackMomentum && daug[1].P() < cutPreselect.preselMinTrackMomentum)
-			return;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-	  nSelection++;
+    // one track momentum
+    if (daug[0].P() < cutPreselect.preselMinTrackMomentum && daug[1].P() < cutPreselect.preselMinTrackMomentum)
+      return;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
-		// both tracks momentum
-		if (cutPreselect.preselUseMinMomentumOnBothTracks && (daug[0].P() < cutPreselect.preselMinTrackMomentum || daug[1].P() < cutPreselect.preselMinTrackMomentum))
-			return;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-	  nSelection++;
+    // both tracks momentum
+    if (cutPreselect.preselUseMinMomentumOnBothTracks && (daug[0].P() < cutPreselect.preselMinTrackMomentum || daug[1].P() < cutPreselect.preselMinTrackMomentum))
+      return;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
-		// track in TOF
-		if (cutPreselect.preselAtLeastOneTOFtrack && (!trk1.hasTOF() && !trk2.hasTOF()))
-			return;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-	  nSelection++;
+    // track in TOF
+    if (cutPreselect.preselAtLeastOneTOFtrack && (!trk1.hasTOF() && !trk2.hasTOF()))
+      return;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
-		//tracks in TOF
-		if (cutPreselect.preselBothAreTOFtracks && (!trk1.hasTOF() || !trk2.hasTOF()))
-			return;
-	  histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
-	  nSelection++;
+    // tracks in TOF
+    if (cutPreselect.preselBothAreTOFtracks && (!trk1.hasTOF() || !trk2.hasTOF()))
+      return;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     float px[2] = {trk1.px(), trk2.px()};
     float py[2] = {trk1.py(), trk2.py()};
@@ -480,7 +481,6 @@ struct TauEventTableProducer {
               itsClusterSizesTrk1, itsClusterSizesTrk2,
               tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr, tpcIP,
               tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr, tofEP);
-
   }
   PROCESS_SWITCH(TauEventTableProducer, processDataSG, "Iterate UD tables with measured data created by SG-Candidate-Producer.", false);
 

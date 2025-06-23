@@ -159,20 +159,20 @@ int enumMyParticle(int valuePDG)
 int trackPDGfromEnum(int trackEnum)
 // reads pdg value and returns particle number as in enumMyParticle
 {
-	if (trackEnum == P_ELECTRON) {
-		return 11;
-	} else if (trackEnum == P_MUON) {
-		return 13;
-	} else if (trackEnum == P_PION) {
-		return 211;
-	} else if (trackEnum == P_KAON) {
-		return 321;
-	} else if (trackEnum == P_PROTON) {
-		return 2212;
-	} else {
-		printDebugMessage("PDG value not found in enumMyParticle. Returning -1.");
-		return -1.;
-	}
+  if (trackEnum == P_ELECTRON) {
+    return 11;
+  } else if (trackEnum == P_MUON) {
+    return 13;
+  } else if (trackEnum == P_PION) {
+    return 211;
+  } else if (trackEnum == P_KAON) {
+    return 321;
+  } else if (trackEnum == P_PROTON) {
+    return 2212;
+  } else {
+    printDebugMessage("PDG value not found in enumMyParticle. Returning -1.");
+    return -1.;
+  }
 }
 
 float pt(float px, float py)
