@@ -1363,7 +1363,7 @@ struct LumiTask {
     const char* srun = Form("%d", run);
 
     for (const auto& bc : bcs) {
-      auto& selection = bc.selection_raw();
+      auto selection = bc.selection_raw();
       if (bcPatternB[bc.globalBC() % nBCsPerOrbit] == 0) // skip non-colliding bcs
         continue;
 
