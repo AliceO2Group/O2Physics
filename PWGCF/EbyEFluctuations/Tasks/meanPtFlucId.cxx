@@ -54,22 +54,19 @@ struct MeanPtFlucId {
   Configurable<float> cfgCutDcaZ{"cfgCutDcaZ", 0.15, "DCAz cut"};
   Configurable<float> cfgCutPosZ{"cfgCutPosZ", 7.0, "cut for vertex Z"};
   Configurable<bool> cfgPosZ{"cfgPosZ", true, "Position Z"};
-  Configurable<float> cfgCutNSig2{"cfgCutNSig2", 2.0, "nSigma cut (2)"};
-  Configurable<float> cfgCutNSig3{"cfgCutNSig3", 3.0, "nSigma cut (3)"};
-  Configurable<float> cfgCutNSig5{"cfgCutNSig5", 5.0, "nSigma cut (3)"};
+  Configurable<float> cfgCutNSig2{"cfgCutNSig2", 2.0, "nSigma cut: 2"};
+  Configurable<float> cfgCutNSig3{"cfgCutNSig3", 3.0, "nSigma cut: 3"};
+  Configurable<float> cfgCutNSig5{"cfgCutNSig5", 5.0, "nSigma cut: 5"};
+  Configurable<float> cfgSelCutNSigPi{"cfgSelCutNSigPi", 2.0, "nSigma cut for pion selection"};
+  Configurable<float> cfgSelCutNSigKa{"cfgSelCutNSigKa", 3.0, "nSigma cut for kaon selection"};
+  Configurable<float> cfgSelCutNSigPr{"cfgSelCutNSigPr", 2.0, "nSigma cut for proton selection"};
+  Configurable<float> cfgRejCutNSigPi{"cfgRejCutNSigPi", 3.0, "nSigma cut for rejection of other particles while selecting pion"};
   Configurable<float> cfgCutPiPtMin{"cfgCutPiPtMin", 0.2, "Minimum pion p_{T} cut"};
   Configurable<float> cfgCutKaPtMin{"cfgCutKaPtMin", 0.3, "Minimum kaon p_{T} cut"};
   Configurable<float> cfgCutPrPtMin{"cfgCutPrPtMin", 0.5, "Minimum proton p_{T} cut"};
   Configurable<float> cfgCutPiThrsldP{"cfgCutPiThrsldP", 0.6, "Threshold p cut pion"};
   Configurable<float> cfgCutKaThrsldP{"cfgCutKaThrsldP", 0.6, "Threshold p cut kaon"};
   Configurable<float> cfgCutPrThrsldP{"cfgCutPrThrsldP", 1.0, "Threshold p cut proton "};
-  Configurable<float> cfgCutPiP1{"cfgCutPiP1", 0.5, "pion p cut-1"};
-  Configurable<float> cfgCutPiP2{"cfgCutPiP2", 0.6, "pion p cut-2"};
-  Configurable<float> cfgCutKaP1{"cfgCutKaP1", 0.4, "kaon p cut-1"};
-  Configurable<float> cfgCutKaP2{"cfgCutKaP2", 0.6, "kaon p cut-2"};
-  Configurable<float> cfgCutKaP3{"cfgCutKaP3", 1.2, "kaon p cut-3"};
-  Configurable<float> cfgCutPrP1{"cfgCutPrP1", 0.9, "proton p cut-1"};
-  Configurable<float> cfgCutPrP2{"cfgCutPrP2", 1.0, "proton p cut-2"};
   Configurable<bool> cfgSel8{"cfgSel8", true, "Sel8 trigger"};
   Configurable<float> cfgMinWeight{"cfgMinWeight", 1e-6, "Minimum weight for efficiency correction"};
   Configurable<bool> cfgNoSameBunchPileup{"cfgNoSameBunchPileup", true, "kNoSameBunchPileup"};
@@ -455,50 +452,63 @@ struct MeanPtFlucId {
     return false;
   }
 
-  template <typename T>
-  PIDType identifyParticle(const T& track)
+  template <PIDType s1, PIDType s2, PIDType s3, typename T>
+  bool identifyParticle(T const& track, float momThreshold)
   {
-    const float pt = track.pt();
-    const float p = track.p();
 
-    // Check pion
-    const bool tpcPi = std::fabs(track.tpcNSigmaPi()) < cfgCutNSig3 && std::fabs(track.tpcNSigmaPi()) < std::fabs(track.tpcNSigmaKa()) && std::fabs(track.tpcNSigmaPi()) < std::fabs(track.tpcNSigmaPr());
-    const bool tofPi = track.hasTOF() && std::fabs(track.tofNSigmaPi()) < cfgCutNSig3 && std::fabs(track.tofNSigmaPi()) < std::fabs(track.tofNSigmaKa()) && std::fabs(track.tofNSigmaPi()) < std::fabs(track.tofNSigmaPr());
-    const bool isPi = (pt >= cfgCutPiPtMin &&
-                       ((p <= cfgCutPiThrsldP && ((tpcPi && !track.hasTOF()) || (tpcPi && tofPi))) ||
-                        (p > cfgCutPiThrsldP && tpcPi && tofPi)));
+    const int sp = static_cast<int>(s1);
+    const int sq = static_cast<int>(s2);
+    const int sr = static_cast<int>(s3);
+    std::vector<float> vTpcNSigma = {-999., track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
+    std::vector<float> vTofNSigma = {-999., track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr()};
+    bool isTofPidFlag = false, isTpcPidFlag = false;
 
-    // Check kaon
-    const bool tpcKa = std::fabs(track.tpcNSigmaKa()) < cfgCutNSig3 && std::fabs(track.tpcNSigmaKa()) < std::fabs(track.tpcNSigmaPi()) && std::fabs(track.tpcNSigmaKa()) < std::fabs(track.tpcNSigmaPr());
-    const bool tofKa = track.hasTOF() && std::fabs(track.tofNSigmaKa()) < cfgCutNSig3 && std::fabs(track.tofNSigmaKa()) < std::fabs(track.tofNSigmaPi()) && std::fabs(track.tofNSigmaKa()) < std::fabs(track.tofNSigmaPr());
-    const bool tofKaTight = track.hasTOF() && std::fabs(track.tofNSigmaKa()) < cfgCutNSig2;
-    const bool isKa = (pt >= cfgCutKaPtMin &&
-                       ((p <= cfgCutKaThrsldP && ((tpcKa && !track.hasTOF()) || (tpcKa && tofKa))) ||
-                        (p > cfgCutKaThrsldP && tpcKa &&
-                         ((tofKa && p <= cfgCutKaP3) || (tofKaTight && p > cfgCutKaP3)))));
-
-    // Check proton
-    const bool tpcPr = std::fabs(track.tpcNSigmaPr()) < cfgCutNSig3 && std::fabs(track.tpcNSigmaPr()) < std::fabs(track.tpcNSigmaPi()) && std::fabs(track.tpcNSigmaPr()) < std::fabs(track.tpcNSigmaKa());
-    const bool tofPr = track.hasTOF() && std::fabs(track.tofNSigmaPr()) < cfgCutNSig3 && std::fabs(track.tofNSigmaPr()) < std::fabs(track.tofNSigmaPi()) && std::fabs(track.tofNSigmaPr()) < std::fabs(track.tofNSigmaKa());
-    const bool isPr = (pt >= cfgCutPrPtMin &&
-                       ((p <= cfgCutPrThrsldP && ((tpcPr && !track.hasTOF()) || (tpcPr && tofPr))) ||
-                        (p > cfgCutPrThrsldP && tpcPr && tofPr)));
-
-    if (!isPi && !isKa && !isPr) { // Reject tracks that are not identified as any particle
-      return PIDType::kNone;
+    float nSigmaSelCut = 0.;
+    float nSigmaTofRejCut = 0.;
+    float nSigmaTpcRejCut = 0.;
+    if constexpr (s1 == PIDType::kProtons) {
+      nSigmaSelCut = cfgSelCutNSigPr;
+      nSigmaTofRejCut = std::fabs(vTofNSigma[sp]);
+      nSigmaTpcRejCut = std::fabs(vTpcNSigma[sp]);
+    } else if constexpr (s1 == PIDType::kKaons) {
+      nSigmaSelCut = cfgSelCutNSigKa;
+      nSigmaTofRejCut = std::fabs(vTofNSigma[sp]);
+      nSigmaTpcRejCut = std::fabs(vTpcNSigma[sp]);
+    } else if constexpr (s1 == PIDType::kPions) {
+      nSigmaSelCut = cfgSelCutNSigPi;
+      nSigmaTofRejCut = cfgRejCutNSigPi;
+      nSigmaTpcRejCut = cfgRejCutNSigPi;
     }
 
-    if (isPi) {
-      return PIDType::kPions;
-    } else if (isKa) {
-      return PIDType::kKaons;
-    } else if (isPr) {
-      return PIDType::kProtons;
+    if (track.hasTOF()) {
+      if (std::fabs(vTofNSigma[sp]) < nSigmaSelCut &&
+          std::fabs(vTofNSigma[sq]) > nSigmaTofRejCut &&
+          std::fabs(vTofNSigma[sr]) > nSigmaTofRejCut) {
+        isTofPidFlag = true;
+      }
+      if (std::fabs(vTpcNSigma[sp]) < cfgCutNSig2) {
+        isTpcPidFlag = true;
+      }
+    } else { // select from TPC Only
+      if (track.p() >= momThreshold) {
+        return false;
+      }
+      if (std::fabs(vTpcNSigma[sp]) < nSigmaSelCut &&
+          std::fabs(vTpcNSigma[sq]) > nSigmaTpcRejCut &&
+          std::fabs(vTpcNSigma[sr]) > nSigmaTpcRejCut) {
+        isTofPidFlag = true;
+        isTpcPidFlag = true;
+      }
     }
 
-    return PIDType::kNone;
+    if (isTofPidFlag && isTpcPidFlag) {
+      return true; // Track is identified as one of the particles
+    }
+
+    return false; // Track is not identified as any of the particles
   }
 
+  // Get corrected weight for the track:
   template <typename T1>
   float getCorrectedWeight(T1 hWeightPt, T1 hPurePt, float pt, bool cfgWeightPt, bool cfgPurity)
   {
@@ -647,12 +657,12 @@ struct MeanPtFlucId {
     hist.fill(HIST(Dire[Mode]) + HIST("h2_TOFNsigma"), track.p(), nSigmaTOF);
     hist.fill(HIST(Dire[Mode]) + HIST("h2_TpcTofNsigma"), nSigmaTPC, nSigmaTOF);
     hist.fill(HIST(Dire[Mode]) + HIST("h2_TPCSignal"), track.p(), track.tpcSignal());
-    hist.fill(HIST(Dire[Mode]) + HIST("innerParam/h2_TPCSignal"), track.p(), track.tpcSignal());
+    hist.fill(HIST(Dire[Mode]) + HIST("innerParam/h2_TPCSignal"), track.tpcInnerParam(), track.tpcSignal());
     hist.fill(HIST(Dire[Mode]) + HIST("h2_TOFSignal"), track.p(), track.beta());
     hist.fill(HIST(Dire[Mode]) + HIST("h2_pvsm2"), track.mass() * track.mass(), track.p());
 
     hist.fill(HIST("QA/after/h2_TPCSignal"), track.p(), track.tpcSignal());
-    hist.fill(HIST("QA/after/innerParam/h2_TPCSignal"), track.p(), track.tpcSignal());
+    hist.fill(HIST("QA/after/innerParam/h2_TPCSignal"), track.tpcInnerParam(), track.tpcSignal());
     hist.fill(HIST("QA/after/h2_TOFSignal"), track.p(), track.beta());
     hist.fill(HIST("QA/after/h2_pvsm2"), track.mass() * track.mass(), track.p());
   }
@@ -797,16 +807,18 @@ struct MeanPtFlucId {
       if (cfgRejTrk && rejectTracks(track)) {
         continue;
       }
-      auto selID = identifyParticle(track);
-      if (selID == PIDType::kPions && pt >= cfgCutPiPtMin) {
+      auto selIDPion = identifyParticle<PIDType::kPions, PIDType::kKaons, PIDType::kProtons>(track, cfgCutPiThrsldP);
+      auto selIDKaon = identifyParticle<PIDType::kKaons, PIDType::kPions, PIDType::kProtons>(track, cfgCutKaThrsldP);
+      auto selIDProton = identifyParticle<PIDType::kProtons, PIDType::kPions, PIDType::kKaons>(track, cfgCutPrThrsldP);
+      if (selIDPion && pt >= cfgCutPiPtMin) {
         hist.fill(HIST("QA/Pion/h_Pt"), track.pt());
         fillIdParticleQAHistos<QA_Pion>(track, rapPi, nSigmaTPCPi, nSigmaTOFPi, centFT0M, hWeightPtPi, hPurePtPi, cfgWeightPtId, cfgPurityId, nPiW, nPiW2, q1Pi, q2Pi);
       }
-      if (selID == PIDType::kKaons && pt >= cfgCutKaPtMin) {
+      if (selIDKaon && pt >= cfgCutKaPtMin) {
         hist.fill(HIST("QA/Kaon/h_Pt"), track.pt());
         fillIdParticleQAHistos<QA_Kaon>(track, rapKa, nSigmaTPCKa, nSigmaTOFKa, centFT0M, hWeightPtKa, hPurePtKa, cfgWeightPtId, cfgPurityId, nKaW, nKaW2, q1Ka, q2Ka);
       }
-      if (selID == PIDType::kProtons && pt >= cfgCutPrPtMin) {
+      if (selIDProton && pt >= cfgCutPrPtMin) {
         hist.fill(HIST("QA/Proton/h_Pt"), track.pt());
         fillIdParticleQAHistos<QA_Proton>(track, rapPr, nSigmaTPCPr, nSigmaTOFPr, centFT0M, hWeightPtPr, hPurePtPr, cfgWeightPtId, cfgPurityId, nPrW, nPrW2, q1Pr, q2Pr);
       }
@@ -814,7 +826,7 @@ struct MeanPtFlucId {
       if constexpr (RecoFlag) {
         auto mc = track.template mcParticle_as<aod::McParticles>();
         int pid = mc.pdgCode();
-        if (selID == PIDType::kPions && pt >= cfgCutPiPtMin) {
+        if (selIDPion && pt >= cfgCutPiPtMin) {
           if (std::abs(pid) == kPiPlus) {
             hist.fill(HIST("QA/Pion/h_PtTruth"), pt);
             fillPtMCHist<QA_Pion>(false, pt, eta, rapPi, phi, centFT0M, pid, kPiPlus, kPiMinus);
@@ -825,7 +837,7 @@ struct MeanPtFlucId {
             }
           }
         }
-        if (selID == PIDType::kKaons && pt >= cfgCutKaPtMin) {
+        if (selIDKaon && pt >= cfgCutKaPtMin) {
           if (std::abs(pid) == kKPlus) {
             hist.fill(HIST("QA/Kaon/h_PtTruth"), pt);
             fillPtMCHist<QA_Kaon>(false, pt, eta, rapKa, phi, centFT0M, pid, kKPlus, kKMinus);
@@ -836,7 +848,7 @@ struct MeanPtFlucId {
             }
           }
         }
-        if (selID == PIDType::kProtons && pt >= cfgCutPrPtMin) {
+        if (selIDProton && pt >= cfgCutPrPtMin) {
           if (std::abs(pid) == kProton) {
             hist.fill(HIST("QA/Proton/h_PtTruth"), pt);
             fillPtMCHist<QA_Proton>(false, pt, eta, rapPr, phi, centFT0M, pid, kProton, kProtonBar);
