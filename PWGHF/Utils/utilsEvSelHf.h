@@ -196,7 +196,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   static constexpr char NameHistPosYAfterEvSel[] = "hPosYAfterEvSel";
   static constexpr char NameHistNumPvContributorsAfterSel[] = "hNumPvContributorsAfterSel";
   static constexpr char NameHistCollisionsCentOcc[] = "hCollisionsCentOcc";
-  static constexpr char NameHistUPC[] = "hUPCollisions";
+  static constexpr char NameHistUpCollisions[] = "hUpCollisions";
 
   std::shared_ptr<TH1> hCollisions, hSelCollisionsCent, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel, hUPCollisions;
   std::shared_ptr<TH2> hCollisionsCentOcc;
@@ -210,7 +210,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   int currentRun{-1};
 
   /// Set standard preselection gap trigger (values taken from UD group)
-  SGCutParHolder setSGPreselection()
+  SGCutParHolder setSgPreselection()
   {
     SGCutParHolder sgCuts;
     sgCuts.SetNDtcoll(1);       // Minimum number of sigma around the collision
@@ -236,7 +236,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     hPosYAfterEvSel = registry.add<TH1>(NameHistPosYAfterEvSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
     hNumPvContributorsAfterSel = registry.add<TH1>(NameHistNumPvContributorsAfterSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{500, -0.5, 499.5}}});
     setEventRejectionLabels(hCollisions, softwareTrigger);
-    hUPCollisions = registry.add<TH1>(NameHistUPC, "HF upc counter;;# of upc events", {o2::framework::HistType::kTH1D, {axisUPCEvents}});
+    hUPCollisions = registry.add<TH1>(NameHistUpCollisions, "HF upc counter;;# of upc events", {o2::framework::HistType::kTH1D, {axisUPCEvents}});
     const o2::framework::AxisSpec th2AxisCent{th2ConfigAxisCent, "Centrality"};
     const o2::framework::AxisSpec th2AxisOccupancy{th2ConfigAxisOccupancy, "Occupancy"};
     hCollisionsCentOcc = registry.add<TH2>(NameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {th2AxisCent, th2AxisOccupancy}});
@@ -373,12 +373,12 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   }
 
   template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename BCsType, typename Coll>
-  uint32_t getHfCollisionRejectionMaskWithUPC(const Coll& collision, float& centrality, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, o2::framework::HistogramRegistry& registry, const BCsType& bcs)
+  uint32_t getHfCollisionRejectionMaskWithUpc(const Coll& collision, float& centrality, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, o2::framework::HistogramRegistry& registry, const BCsType& bcs)
   {
     auto rejectionMaskWithUPC = getHfCollisionRejectionMask<true, centEstimator, BCsType>(collision, centrality, ccdb, registry);
 
     if (useEvSel) {
-      SGCutParHolder sgCuts = setSGPreselection();
+      SGCutParHolder sgCuts = setSgPreselection();
       auto bc = collision.template foundBC_as<BCsType>();
       auto bcRange = udhelpers::compatibleBCs(collision, sgCuts.NDtcoll(), bcs, sgCuts.minNBCs());
       auto sgSelectionResult = sgSelector.IsSelected(sgCuts, collision, bcRange, bc);
