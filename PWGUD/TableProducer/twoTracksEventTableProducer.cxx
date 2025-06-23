@@ -9,28 +9,33 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \file tauEventTableProducer.cxx
+/// \file twoTracksEventTableProducer.cxx
 /// \brief Produces derived table from UD tables
 ///
 /// \author Roman Lavicka <roman.lavicka@cern.ch>, Austrian Academy of Sciences & SMI
-/// \since  09.04.2025
+/// \since  20.06.2025
 //
 
 // C++ headers
+#include <algorithm>
+#include <random>
 #include <set>
 #include <utility>
-#include <algorithm>
 #include <vector>
-#include <random>
 
 // O2 headers
-#include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
 // O2Physics headers
+#include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
+#include "PWGUD/DataModel/TwoTracksEventTables.h"
+#include "PWGUD/DataModel/UDTables.h"
+
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -38,23 +43,23 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
-#include "PWGUD/DataModel/UDTables.h"
-#include "PWGUD/DataModel/TauEventTables.h"
-#include "PWGUD/Core/SGSelector.h"
+
+// ROOT
+#include "Math/Vector4D.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-struct TauEventTableProducer {
-  Produces<o2::aod::TauTwoTracks> tauTwoTracks;
-  Produces<o2::aod::TrueTauTwoTracks> trueTauTwoTracks;
+struct TwoTracksEventTableProducer {
+  Produces<o2::aod::TwoTracks> twoTracks;
+  Produces<o2::aod::TrueTwoTracks> trueTwoTracks;
 
   // Global varialbes
   Service<o2::framework::O2DatabasePDG> pdg;
   SGSelector sgSelector;
+  int nSelection{0};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -65,7 +70,7 @@ struct TauEventTableProducer {
     Configurable<int> whichGapSide{"whichGapSide", 2, {"0 for side A, 1 for side C, 2 for both sides"}};
     Configurable<bool> useTrueGap{"useTrueGap", true, {"Calculate gapSide for a given FV0/FT0/ZDC thresholds"}};
     Configurable<int> cutNumContribs{"cutNumContribs", 2, {"How many contributors event has"}};
-    Configurable<bool> useNumContribs{"useNumContribs", false, {"Use coll.numContribs as event cut"}};
+    Configurable<bool> useNumContribs{"useNumContribs", true, {"Use coll.numContribs as event cut"}};
     Configurable<int> cutRecoFlag{"cutRecoFlag", 1, {"0 = std mode, 1 = upc mode"}};
     Configurable<bool> useRecoFlag{"useRecoFlag", false, {"Use coll.flags as event cut"}};
     Configurable<float> cutTrueGapSideFV0{"cutTrueGapSideFV0", 180000, "FV0A threshold for SG selector"};
@@ -107,16 +112,14 @@ struct TauEventTableProducer {
   } cutGlobalTrack;
 
   struct : ConfigurableGroup {
-    Configurable<bool> preselUseTrackPID{"preselUseTrackPID", true, {"Apply weak PID check on tracks."}};
-    Configurable<int> preselNgoodPVtracs{"preselNgoodPVtracs", 2, {"How many good PV tracks to select."}};
-    Configurable<float> preselMinElectronNsigmaEl{"preselMinElectronNsigmaEl", 4.0, {"Good el candidate hypo in. Upper n sigma cut on el hypo of selected electron. What is more goes away."}};
-    Configurable<float> preselMaxElectronNsigmaEl{"preselMaxElectronNsigmaEl", -2.0, {"Good el candidate hypo in. Lower n sigma cut on el hypo of selected electron. What is less goes away."}};
-    Configurable<bool> preselElectronHasTOF{"preselElectronHasTOF", true, {"Electron candidated is required to hit TOF."}};
-    Configurable<float> preselMinPionNsigmaEl{"preselMinPionNsigmaEl", 5.0, {"Good pi candidate hypo in. Upper n sigma cut on pi hypo of selected electron. What is more goes away."}};
-    Configurable<float> preselMaxPionNsigmaEl{"preselMaxPionNsigmaEl", -5.0, {"Good pi candidate hypo in. Lower n sigma cut on pi hypo of selected electron. What is less goes away."}};
-    Configurable<float> preselMinMuonNsigmaEl{"preselMinMuonNsigmaEl", 5.0, {"Good pi candidate hypo in. Upper n sigma cut on pi hypo of selected electron. What is more goes away."}};
-    Configurable<float> preselMaxMuonNsigmaEl{"preselMaxMuonNsigmaEl", -5.0, {"Good pi candidate hypo in. Lower n sigma cut on pi hypo of selected electron. What is less goes away."}};
-    Configurable<bool> preselMupionHasTOF{"preselMupionHasTOF", true, {"Mupion candidate is required to hit TOF."}};
+    Configurable<bool> preselAtLeastOneTOFtrack{"preselAtLeastOneTOFtrack", false, {"At least one track is required to hit TOF."}};
+    Configurable<bool> preselBothAreTOFtracks{"preselBothAreTOFtracks", false, {"Both tracks are required to hit TOF."}};
+    Configurable<bool> preselUseMinMomentumOnBothTracks{"preselUseMinMomentumOnBothTracks", false, {"Both tracks are required to fill requirement on minimum momentum."}};
+    Configurable<float> preselMinTrackMomentum{"preselMinTrackMomentum", 0.1, {"Requirement on minimum momentum of the track."}};
+    Configurable<float> preselSystemPtCut{"preselSystemPtCut", 0.0, {"By default, cut on maximum system pT."}};
+    Configurable<bool> preselUseOppositeSystemPtCut{"preselUseOppositeSystemPtCut", false, {"Negates the system pT cut (cut on minimum system pT)."}};
+    Configurable<float> preselMinInvariantMass{"preselMinInvariantMass", 2.0, {"Requirement on minimum system invariant mass."}};
+    Configurable<float> preselMaxInvariantMass{"preselMaxInvariantMass", 5.0, {"Requirement on maximum system invariant mass."}};
   } cutPreselect;
 
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
@@ -134,6 +137,7 @@ struct TauEventTableProducer {
 
     mySetITShitsRule(cutGlobalTrack.cutITShitsRule);
 
+    histos.add("Reco/hSelections", "Effect of selections;;Number of  events (-)", HistType::kTH1D, {{50, 0.5, 50.5}});
     histos.add("Truth/hTroubles", "Counter of unwanted issues;;Number of  troubles (-)", HistType::kTH1D, {{15, 0.5, 15.5}});
 
   } // end init
@@ -145,10 +149,14 @@ struct TauEventTableProducer {
     // FTOA
     if ((std::abs(coll.timeFT0A()) > maxFITtime) && coll.timeFT0A() > -998.)
       return false;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     // FTOC
     if ((std::abs(coll.timeFT0C()) > maxFITtime) && coll.timeFT0C() > -998.)
       return false;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     return true;
   }
@@ -160,38 +168,56 @@ struct TauEventTableProducer {
     // kNoTimeFrameBorder
     if (cutSample.cutEvTFb && !coll.tfb())
       return false;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     // kNoITSROFrameBorder
     if (cutSample.cutEvITSROFb && !coll.itsROFb())
       return false;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     // kNoSameBunchPileup
     if (cutSample.cutEvSbp && !coll.sbp())
       return false;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     // kIsGoodZvtxFT0vsPV
     if (cutSample.cutEvZvtxFT0vPV && !coll.zVtxFT0vPV())
       return false;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     // kIsVertexITSTPC
     if (cutSample.cutEvVtxITSTPC && !coll.vtxITSTPC())
       return false;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     // Occupancy
     if (coll.occupancyInTime() > cutSample.cutEvOccupancy)
       return false;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     // kNoCollInTimeRangeStandard
     if (cutSample.cutEvTrs && !coll.trs())
       return false;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     // kNoCollInRofStandard
     if (cutSample.cutEvTrofs && !coll.trofs())
       return false;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     // kNoHighMultCollInPrevRof
     if (cutSample.cutEvHmpr && !coll.hmpr())
       return false;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     return true;
   }
@@ -295,34 +321,33 @@ struct TauEventTableProducer {
   }
 
   template <typename T>
-  bool isElectronCandidate(T const& electronCandidate)
-  // Loose criterium to find electron-like particle
-  // Requiring TOF to avoid double-counting pions/electrons and for better timing
+  float findRightMass(T const& trk1, T const& trk2)
+  // choose the right mass for the tracks based on comparing combined sigma
+  // good for same-type particles decays
   {
-    if (electronCandidate.tpcNSigmaEl() < cutPreselect.preselMaxElectronNsigmaEl || electronCandidate.tpcNSigmaEl() > cutPreselect.preselMinElectronNsigmaEl)
-      return false;
-    if (cutPreselect.preselElectronHasTOF && !electronCandidate.hasTOF())
-      return false;
-    return true;
-  }
+    float nSigmasTPCsqrt[5];
+    nSigmasTPCsqrt[P_ELECTRON] = std::sqrt(trk1.tpcNSigmaEl() * trk1.tpcNSigmaEl() + trk2.tpcNSigmaEl() * trk2.tpcNSigmaEl());
+    nSigmasTPCsqrt[P_MUON] = std::sqrt(trk1.tpcNSigmaMu() * trk1.tpcNSigmaMu() + trk2.tpcNSigmaMu() * trk2.tpcNSigmaMu());
+    nSigmasTPCsqrt[P_PION] = std::sqrt(trk1.tpcNSigmaPi() * trk1.tpcNSigmaPi() + trk2.tpcNSigmaPi() * trk2.tpcNSigmaPi());
+    nSigmasTPCsqrt[P_KAON] = std::sqrt(trk1.tpcNSigmaKa() * trk1.tpcNSigmaKa() + trk2.tpcNSigmaKa() * trk2.tpcNSigmaKa());
+    nSigmasTPCsqrt[P_PROTON] = std::sqrt(trk1.tpcNSigmaPr() * trk1.tpcNSigmaPr() + trk2.tpcNSigmaPr() * trk2.tpcNSigmaPr());
 
-  template <typename T>
-  bool isMuPionCandidate(T const& muPionCandidate)
-  // Loose criterium to find muon/pion-like particle
-  // Requiring TOF for better timing
-  {
-    if (muPionCandidate.tpcNSigmaMu() < cutPreselect.preselMaxMuonNsigmaEl || muPionCandidate.tpcNSigmaMu() > cutPreselect.preselMinMuonNsigmaEl)
-      return false;
-    if (muPionCandidate.tpcNSigmaPi() < cutPreselect.preselMaxPionNsigmaEl || muPionCandidate.tpcNSigmaPi() > cutPreselect.preselMinPionNsigmaEl)
-      return false;
-    if (cutPreselect.preselMupionHasTOF && !muPionCandidate.hasTOF())
-      return false;
-    return true;
+    int enumChoiceTPC = std::distance(std::begin(nSigmasTPCsqrt),
+                                      std::min_element(std::begin(nSigmasTPCsqrt), std::end(nSigmasTPCsqrt)));
+
+    return pdg->Mass(trackPDGfromEnum(enumChoiceTPC));
   }
 
   void processDataSG(FullSGUDCollision const& collision,
                      FullUDTracks const& tracks)
   {
+
+    nSelection = 0;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
+
+    if (!isGoodROFtime(collision))
+      return;
 
     int gapSide = collision.gapSide();
     int trueGapSide = sgSelector.trueGap(collision, cutSample.cutTrueGapSideFV0, cutSample.cutTrueGapSideFT0A, cutSample.cutTrueGapSideFT0C, cutSample.cutTrueGapSideZDC);
@@ -330,20 +355,23 @@ struct TauEventTableProducer {
     if (cutSample.useTrueGap)
       gapSide = trueGapSide;
 
-    if (!isGoodROFtime(collision))
-      return;
-
     if (gapSide != cutSample.whichGapSide)
       return;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     if (!isGoodFITtime(collision, cutSample.cutFITtime))
       return;
 
     if (cutSample.useNumContribs && (collision.numContrib() != cutSample.cutNumContribs))
       return;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     if (cutSample.useRecoFlag && (collision.flags() != cutSample.cutRecoFlag))
       return;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
     int countTracksPerCollision = 0;
     int countGoodNonPVtracks = 0;
@@ -362,70 +390,97 @@ struct TauEventTableProducer {
       vecTrkIdx.push_back(track.index());
     } // Loop over tracks with selections
 
-    // Apply weak condition on track PID
-    int countPVGTel = 0;
-    int countPVGTmupi = 0;
-    if (countGoodPVtracks == 2) {
-      for (const auto& vecMember : vecTrkIdx) {
-        const auto& thisTrk = tracks.iteratorAt(vecMember);
-        if (isElectronCandidate(thisTrk)) {
-          countPVGTel++;
-          continue;
-        }
-        if (isMuPionCandidate(thisTrk)) {
-          countPVGTmupi++;
-        }
-      }
-    }
+    // Critical selection, without it the rest of the process function will fail
+    if (countGoodPVtracks != 2)
+      return;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
 
-    if (cutPreselect.preselUseTrackPID ? ((countPVGTel == 2 && countPVGTmupi == 0) || (countPVGTel == 1 && countPVGTmupi == 1)) : countGoodPVtracks == cutPreselect.preselNgoodPVtracs) {
-      const auto& trk1 = tracks.iteratorAt(vecTrkIdx[0]);
-      const auto& trk2 = tracks.iteratorAt(vecTrkIdx[1]);
+    const auto& trk1 = tracks.iteratorAt(vecTrkIdx[0]);
+    const auto& trk2 = tracks.iteratorAt(vecTrkIdx[1]);
 
-      float px[2] = {trk1.px(), trk2.px()};
-      float py[2] = {trk1.py(), trk2.py()};
-      float pz[2] = {trk1.pz(), trk2.pz()};
-      int sign[2] = {trk1.sign(), trk2.sign()};
-      float dcaxy[2] = {trk1.dcaXY(), trk2.dcaXY()};
-      float dcaz[2] = {trk1.dcaZ(), trk2.dcaZ()};
-      float trkTimeRes[2] = {trk1.trackTimeRes(), trk2.trackTimeRes()};
-      uint32_t itsClusterSizesTrk1 = trk1.itsClusterSizes();
-      uint32_t itsClusterSizesTrk2 = trk2.itsClusterSizes();
-      float tpcSignal[2] = {trk1.tpcSignal(), trk2.tpcSignal()};
-      float tpcEl[2] = {trk1.tpcNSigmaEl(), trk2.tpcNSigmaEl()};
-      float tpcMu[2] = {trk1.tpcNSigmaMu(), trk2.tpcNSigmaMu()};
-      float tpcPi[2] = {trk1.tpcNSigmaPi(), trk2.tpcNSigmaPi()};
-      float tpcKa[2] = {trk1.tpcNSigmaKa(), trk2.tpcNSigmaKa()};
-      float tpcPr[2] = {trk1.tpcNSigmaPr(), trk2.tpcNSigmaPr()};
-      float tpcIP[2] = {trk1.tpcInnerParam(), trk2.tpcInnerParam()};
-      float tofSignal[2] = {trk1.tofSignal(), trk2.tofSignal()};
-      float tofEl[2] = {trk1.tofNSigmaEl(), trk2.tofNSigmaEl()};
-      float tofMu[2] = {trk1.tofNSigmaMu(), trk2.tofNSigmaMu()};
-      float tofPi[2] = {trk1.tofNSigmaPi(), trk2.tofNSigmaPi()};
-      float tofKa[2] = {trk1.tofNSigmaKa(), trk2.tofNSigmaKa()};
-      float tofPr[2] = {trk1.tofNSigmaPr(), trk2.tofNSigmaPr()};
-      float tofEP[2] = {trk1.tofExpMom(), trk2.tofExpMom()};
-      //      float infoZDC[4] = {-999., -999., -999., -999.};
-      //      if constexpr (requires { collision.udZdcsReduced(); }) {
-      //        infoZDC[0] = collision.energyCommonZNA();
-      //        infoZDC[1] = collision.energyCommonZNC();
-      //        infoZDC[2] = collision.timeZNA();
-      //        infoZDC[3] = collision.timeZNC();
-      //      }
-      float infoZDC[4] = {collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC()};
+    float thisMass = findRightMass(trk1, trk2);
 
-      tauTwoTracks(collision.runNumber(), collision.globalBC(), countTracksPerCollision, collision.numContrib(), countGoodNonPVtracks, collision.posX(), collision.posY(), collision.posZ(),
-                   collision.flags(), collision.occupancyInTime(), collision.hadronicRate(), collision.trs(), collision.trofs(), collision.hmpr(),
-                   collision.tfb(), collision.itsROFb(), collision.sbp(), collision.zVtxFT0vPV(), collision.vtxITSTPC(),
-                   collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), infoZDC[0], infoZDC[1],
-                   collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), infoZDC[2], infoZDC[3],
-                   px, py, pz, sign, dcaxy, dcaz, trkTimeRes,
-                   itsClusterSizesTrk1, itsClusterSizesTrk2,
-                   tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr, tpcIP,
-                   tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr, tofEP);
-    }
+    // prepare lorentz vectors to create system
+    ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> twoTrackMother, daug[2];
+    daug[0].SetPxPyPzE(trk1.px(), trk1.py(), trk1.pz(), energy(thisMass, trk1.px(), trk1.py(), trk1.pz()));
+    daug[1].SetPxPyPzE(trk2.px(), trk2.py(), trk2.pz(), energy(thisMass, trk2.px(), trk2.py(), trk2.pz()));
+    twoTrackMother = daug[0] + daug[1];
+    float thisPt = pt(twoTrackMother.px(), twoTrackMother.py());
+
+    // Apply system selections
+    // invariant mass
+    if (twoTrackMother.M() < cutPreselect.preselMinInvariantMass || twoTrackMother.M() > cutPreselect.preselMaxInvariantMass)
+      return;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
+
+    // system pt
+    if (cutPreselect.preselUseOppositeSystemPtCut ? thisPt < cutPreselect.preselSystemPtCut : thisPt > cutPreselect.preselSystemPtCut)
+      return;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
+
+    // one track momentum
+    if (daug[0].P() < cutPreselect.preselMinTrackMomentum && daug[1].P() < cutPreselect.preselMinTrackMomentum)
+      return;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
+
+    // both tracks momentum
+    if (cutPreselect.preselUseMinMomentumOnBothTracks && (daug[0].P() < cutPreselect.preselMinTrackMomentum || daug[1].P() < cutPreselect.preselMinTrackMomentum))
+      return;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
+
+    // track in TOF
+    if (cutPreselect.preselAtLeastOneTOFtrack && (!trk1.hasTOF() && !trk2.hasTOF()))
+      return;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
+
+    // tracks in TOF
+    if (cutPreselect.preselBothAreTOFtracks && (!trk1.hasTOF() || !trk2.hasTOF()))
+      return;
+    histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
+    nSelection++;
+
+    float px[2] = {trk1.px(), trk2.px()};
+    float py[2] = {trk1.py(), trk2.py()};
+    float pz[2] = {trk1.pz(), trk2.pz()};
+    int sign[2] = {trk1.sign(), trk2.sign()};
+    float dcaxy[2] = {trk1.dcaXY(), trk2.dcaXY()};
+    float dcaz[2] = {trk1.dcaZ(), trk2.dcaZ()};
+    float trkTimeRes[2] = {trk1.trackTimeRes(), trk2.trackTimeRes()};
+    uint32_t itsClusterSizesTrk1 = trk1.itsClusterSizes();
+    uint32_t itsClusterSizesTrk2 = trk2.itsClusterSizes();
+    float tpcSignal[2] = {trk1.tpcSignal(), trk2.tpcSignal()};
+    float tpcEl[2] = {trk1.tpcNSigmaEl(), trk2.tpcNSigmaEl()};
+    float tpcMu[2] = {trk1.tpcNSigmaMu(), trk2.tpcNSigmaMu()};
+    float tpcPi[2] = {trk1.tpcNSigmaPi(), trk2.tpcNSigmaPi()};
+    float tpcKa[2] = {trk1.tpcNSigmaKa(), trk2.tpcNSigmaKa()};
+    float tpcPr[2] = {trk1.tpcNSigmaPr(), trk2.tpcNSigmaPr()};
+    float tpcIP[2] = {trk1.tpcInnerParam(), trk2.tpcInnerParam()};
+    float tofSignal[2] = {trk1.tofSignal(), trk2.tofSignal()};
+    float tofEl[2] = {trk1.tofNSigmaEl(), trk2.tofNSigmaEl()};
+    float tofMu[2] = {trk1.tofNSigmaMu(), trk2.tofNSigmaMu()};
+    float tofPi[2] = {trk1.tofNSigmaPi(), trk2.tofNSigmaPi()};
+    float tofKa[2] = {trk1.tofNSigmaKa(), trk2.tofNSigmaKa()};
+    float tofPr[2] = {trk1.tofNSigmaPr(), trk2.tofNSigmaPr()};
+    float tofEP[2] = {trk1.tofExpMom(), trk2.tofExpMom()};
+    float infoZDC[4] = {collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC()};
+
+    twoTracks(collision.runNumber(), collision.globalBC(), countTracksPerCollision, collision.numContrib(), countGoodNonPVtracks, collision.posX(), collision.posY(), collision.posZ(),
+              collision.flags(), collision.occupancyInTime(), collision.hadronicRate(), collision.trs(), collision.trofs(), collision.hmpr(),
+              collision.tfb(), collision.itsROFb(), collision.sbp(), collision.zVtxFT0vPV(), collision.vtxITSTPC(),
+              collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), infoZDC[0], infoZDC[1],
+              collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), infoZDC[2], infoZDC[3],
+              px, py, pz, sign, dcaxy, dcaz, trkTimeRes,
+              itsClusterSizesTrk1, itsClusterSizesTrk2,
+              tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr, tpcIP,
+              tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr, tofEP);
   }
-  PROCESS_SWITCH(TauEventTableProducer, processDataSG, "Iterate UD tables with measured data created by SG-Candidate-Producer.", false);
+  PROCESS_SWITCH(TwoTracksEventTableProducer, processDataSG, "Iterate UD tables with measured data created by SG-Candidate-Producer.", false);
 
   PresliceUnsorted<aod::UDMcParticles> partPerMcCollision = aod::udmcparticle::udMcCollisionId;
   PresliceUnsorted<FullMCSGUDCollisions> colPerMcCollision = aod::udcollision::udMcCollisionId;
@@ -478,9 +533,9 @@ struct TauEventTableProducer {
 
       int trueChannel = -1;
       bool trueHasRecoColl = false;
-      float trueTauX[2] = {-999., -999.};
-      float trueTauY[2] = {-999., -999.};
-      float trueTauZ[2] = {-999., -999.};
+      float trueMotherX[2] = {-999., -999.};
+      float trueMotherY[2] = {-999., -999.};
+      float trueMotherZ[2] = {-999., -999.};
       float trueDaugX[2] = {-999., -999.};
       float trueDaugY[2] = {-999., -999.};
       float trueDaugZ[2] = {-999., -999.};
@@ -545,11 +600,11 @@ struct TauEventTableProducer {
         auto const& partsFromMcColl = parts.sliceBy(partPerMcCollision, mccoll.globalIndex());
         int countMothers = 0;
         for (const auto& particle : partsFromMcColl) {
-          // select only tauons with checking if particle has no mother
+          // select only mothers with checking if particle has no mother
           if (particle.has_mothers())
             continue;
           countMothers++;
-          // check the generated collision does not have more than 2 tauons
+          // check the generated collision does not have more than 2 mothers
           if (countMothers > 2) {
             if (verboseInfo)
               printLargeMessage("Truth collision has more than 2 no mother particles. Breaking the particle loop.");
@@ -557,10 +612,10 @@ struct TauEventTableProducer {
             problem = true;
             break;
           }
-          // fill info for each tau
-          trueTauX[countMothers - 1] = particle.px();
-          trueTauY[countMothers - 1] = particle.py();
-          trueTauZ[countMothers - 1] = particle.pz();
+          // fill info for each mother
+          trueMotherX[countMothers - 1] = particle.px();
+          trueMotherY[countMothers - 1] = particle.py();
+          trueMotherZ[countMothers - 1] = particle.pz();
 
           // get daughters of the tau
           const auto& daughters = particle.daughters_as<aod::UDMcParticles>();
@@ -633,7 +688,7 @@ struct TauEventTableProducer {
           if (particle.has_mothers())
             continue;
           countMothers++;
-          // check the generated collision does not have more than 2 tauons
+          // check the generated collision does not have more than 2 mothers
           if (countMothers > 2) {
             if (verboseInfo)
               printLargeMessage("Truth collision has more than 2 no mother particles. Breaking the particle loop.");
@@ -642,9 +697,9 @@ struct TauEventTableProducer {
             break;
           }
           // fill info for each tau
-          trueTauX[countMothers - 1] = particle.px();
-          trueTauY[countMothers - 1] = particle.py();
-          trueTauZ[countMothers - 1] = particle.pz();
+          trueMotherX[countMothers - 1] = particle.px();
+          trueMotherY[countMothers - 1] = particle.py();
+          trueMotherZ[countMothers - 1] = particle.pz();
 
           // get daughters of the tau
           const auto& daughters = particle.daughters_as<aod::UDMcParticles>();
@@ -679,24 +734,24 @@ struct TauEventTableProducer {
       if ((enumMyParticle(trueDaugPdgCode[1]) == P_ELECTRON) && ((enumMyParticle(trueDaugPdgCode[0]) == P_PION) || (enumMyParticle(trueDaugPdgCode[0]) == P_MUON)))
         trueChannel = CH_EMUPI;
 
-      trueTauTwoTracks(runNumber, bc, nTrks[0], nTrks[1], nTrks[2], vtxPos[0], vtxPos[1], vtxPos[2],
-                       recoMode, occupancy, hadronicRate, bcSels[0], bcSels[1], bcSels[2],
-                       bcSels[3], bcSels[4], bcSels[5], bcSels[6], bcSels[7],
-                       amplitudesFIT[0], amplitudesFIT[1], amplitudesFIT[2], -999., -999., // no ZDC info in MC
-                       timesFIT[0], timesFIT[1], timesFIT[2], -999., -999.,                // no ZDC info in MC
-                       px, py, pz, sign, dcaxy, dcaz, trkTimeRes,
-                       itsClusterSizesTrk1, itsClusterSizesTrk2,
-                       tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr, tpcIP,
-                       tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr, tofEP,
-                       trueChannel, trueHasRecoColl, mccoll.posX(), mccoll.posY(), mccoll.posZ(),
-                       trueTauX, trueTauY, trueTauZ, trueDaugX, trueDaugY, trueDaugZ, trueDaugPdgCode, problem);
+      trueTwoTracks(runNumber, bc, nTrks[0], nTrks[1], nTrks[2], vtxPos[0], vtxPos[1], vtxPos[2],
+                    recoMode, occupancy, hadronicRate, bcSels[0], bcSels[1], bcSels[2],
+                    bcSels[3], bcSels[4], bcSels[5], bcSels[6], bcSels[7],
+                    amplitudesFIT[0], amplitudesFIT[1], amplitudesFIT[2], -999., -999., // no ZDC info in MC
+                    timesFIT[0], timesFIT[1], timesFIT[2], -999., -999.,                // no ZDC info in MC
+                    px, py, pz, sign, dcaxy, dcaz, trkTimeRes,
+                    itsClusterSizesTrk1, itsClusterSizesTrk2,
+                    tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr, tpcIP,
+                    tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr, tofEP,
+                    trueChannel, trueHasRecoColl, mccoll.posX(), mccoll.posY(), mccoll.posZ(),
+                    trueMotherX, trueMotherY, trueMotherZ, trueDaugX, trueDaugY, trueDaugZ, trueDaugPdgCode, problem);
     } // mccollisions
   }
-  PROCESS_SWITCH(TauEventTableProducer, processMonteCarlo, "Iterate UD tables with simulated data created by SG-Candidate-Producer.", false);
+  PROCESS_SWITCH(TwoTracksEventTableProducer, processMonteCarlo, "Iterate UD tables with simulated data created by SG-Candidate-Producer.", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<TauEventTableProducer>(cfgc)};
+    adaptAnalysisTask<TwoTracksEventTableProducer>(cfgc)};
 }

@@ -8,10 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
-/// \brief
+
+/// \file UPCTauCentralBarrelHelperRL.h
+/// \brief  Personal helper file to analyze tau events from UPC collisions
 /// \author Roman Lavicka, roman.lavicka@cern.ch
 /// \since  27.10.2022
+///
 
 #ifndef PWGUD_CORE_UPCTAUCENTRALBARRELHELPERRL_H_
 #define PWGUD_CORE_UPCTAUCENTRALBARRELHELPERRL_H_
@@ -150,6 +152,25 @@ int enumMyParticle(int valuePDG)
     return P_KAON;
   } else if (std::abs(valuePDG) == 2212) {
     return P_PROTON;
+  } else {
+    printDebugMessage("PDG value not found in enumMyParticle. Returning -1.");
+    return -1.;
+  }
+}
+
+int trackPDGfromEnum(int trackEnum)
+// reads pdg value and returns particle number as in enumMyParticle
+{
+  if (trackEnum == P_ELECTRON) {
+    return 11;
+  } else if (trackEnum == P_MUON) {
+    return 13;
+  } else if (trackEnum == P_PION) {
+    return 211;
+  } else if (trackEnum == P_KAON) {
+    return 321;
+  } else if (trackEnum == P_PROTON) {
+    return 2212;
   } else {
     printDebugMessage("PDG value not found in enumMyParticle. Returning -1.");
     return -1.;

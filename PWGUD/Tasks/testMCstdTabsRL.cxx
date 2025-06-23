@@ -33,7 +33,7 @@
 #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
 
 // ROOT headers
-#include "TLorentzVector.h"
+#include "Math/Vector4D.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -74,24 +74,24 @@ struct TestMCstdTabsRL {
   void processMCgen(aod::McCollision const& collision, aod::McParticles const& particles)
   {
 
-    histos.get<TH2>(HIST("Events/Truth/hGenIDvsCountCollisions"))->Fill(collision.generatorsID(), 1);
-    histos.get<TH2>(HIST("Events/Truth/hGenIDvsNparticles"))->Fill(collision.generatorsID(), particles.size());
+    histos.get<TH2>(HIST("Events/Truth/hGenIDvsCountCollisions"))->Fill(collision.getGeneratorId(), 1);
+    histos.get<TH2>(HIST("Events/Truth/hGenIDvsNparticles"))->Fill(collision.getGeneratorId(), particles.size());
 
-    TLorentzVector mother;
+    ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> mother;
     for (const auto& particle : particles) {
-      histos.get<TH2>(HIST("Events/Truth/hGenIDvsPDGcodesAll"))->Fill(collision.generatorsID(), particle.pdgCode());
+      histos.get<TH2>(HIST("Events/Truth/hGenIDvsPDGcodesAll"))->Fill(collision.getGeneratorId(), particle.pdgCode());
       //        if (!particle.isPhysicalPrimary()) continue;
       if (particle.has_mothers())
         continue;
       mother.SetPxPyPzE(particle.px(), particle.py(), particle.pz(), energy(pdg->Mass(particle.pdgCode()), particle.px(), particle.py(), particle.pz()));
-      histos.get<TH2>(HIST("Events/Truth/hGenIDvsPDGcodesNoMother"))->Fill(collision.generatorsID(), particle.pdgCode());
-      histos.get<TH2>(HIST("Events/Truth/hGenIDvsMotherMass"))->Fill(collision.generatorsID(), mother.M());
-      histos.get<TH2>(HIST("Events/Truth/hGenIDvsMotherPt"))->Fill(collision.generatorsID(), particle.pt());
-      histos.get<TH2>(HIST("Events/Truth/hGenIDvsMotherRap"))->Fill(collision.generatorsID(), particle.y());
+      histos.get<TH2>(HIST("Events/Truth/hGenIDvsPDGcodesNoMother"))->Fill(collision.getGeneratorId(), particle.pdgCode());
+      histos.get<TH2>(HIST("Events/Truth/hGenIDvsMotherMass"))->Fill(collision.getGeneratorId(), mother.M());
+      histos.get<TH2>(HIST("Events/Truth/hGenIDvsMotherPt"))->Fill(collision.getGeneratorId(), particle.pt());
+      histos.get<TH2>(HIST("Events/Truth/hGenIDvsMotherRap"))->Fill(collision.getGeneratorId(), particle.y());
       const auto& daughters = particle.daughters_as<aod::McParticles>();
-      histos.get<TH2>(HIST("Events/Truth/hGenIDvsNdaughters"))->Fill(collision.generatorsID(), daughters.size());
+      histos.get<TH2>(HIST("Events/Truth/hGenIDvsNdaughters"))->Fill(collision.getGeneratorId(), daughters.size());
       for (const auto& daughter : daughters) {
-        histos.get<TH2>(HIST("Events/Truth/hGenIDvsPDGcodesDaughters"))->Fill(collision.generatorsID(), daughter.pdgCode());
+        histos.get<TH2>(HIST("Events/Truth/hGenIDvsPDGcodesDaughters"))->Fill(collision.getGeneratorId(), daughter.pdgCode());
       }
     }
 
