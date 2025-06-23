@@ -33,7 +33,7 @@
 #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
 
 // ROOT headers
-#include "TLorentzVector.h"
+#include "Math/Vector4D.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -76,8 +76,8 @@ struct TestMCstdTabsRL {
 
     histos.get<TH2>(HIST("Events/Truth/hGenIDvsCountCollisions"))->Fill(collision.getGeneratorId(), 1);
     histos.get<TH2>(HIST("Events/Truth/hGenIDvsNparticles"))->Fill(collision.getGeneratorId(), particles.size());
-
-    TLorentzVector mother;
+		
+	  ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> mother;
     for (const auto& particle : particles) {
       histos.get<TH2>(HIST("Events/Truth/hGenIDvsPDGcodesAll"))->Fill(collision.getGeneratorId(), particle.pdgCode());
       //        if (!particle.isPhysicalPrimary()) continue;

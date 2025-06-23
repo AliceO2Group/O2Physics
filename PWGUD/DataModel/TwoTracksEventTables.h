@@ -89,9 +89,9 @@ DECLARE_SOA_COLUMN(TruePosX, truePosX, float);
 DECLARE_SOA_COLUMN(TruePosY, truePosY, float);
 DECLARE_SOA_COLUMN(TruePosZ, truePosZ, float);
 // truth particles
-DECLARE_SOA_COLUMN(TrueMotherPx, trueTauPx, float[2]);
-DECLARE_SOA_COLUMN(TrueMotherPy, trueTauPy, float[2]);
-DECLARE_SOA_COLUMN(TrueMotherPz, trueTauPz, float[2]);
+DECLARE_SOA_COLUMN(TrueMotherPx, trueMotherPx, float[2]);
+DECLARE_SOA_COLUMN(TrueMotherPy, trueMotherPy, float[2]);
+DECLARE_SOA_COLUMN(TrueMotherPz, trueMotherPz, float[2]);
 DECLARE_SOA_COLUMN(TrueDaugPx, trueDaugPx, float[2]);
 DECLARE_SOA_COLUMN(TrueDaugPy, trueDaugPy, float[2]);
 DECLARE_SOA_COLUMN(TrueDaugPz, trueDaugPz, float[2]);

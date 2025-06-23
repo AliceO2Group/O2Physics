@@ -8,10 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
-/// \brief
+
+/// \file UPCTauCentralBarrelHelperRL.h
+/// \brief  Personal helper file to analyze tau events from UPC collisions
 /// \author Roman Lavicka, roman.lavicka@cern.ch
 /// \since  27.10.2022
+///
 
 #ifndef PWGUD_CORE_UPCTAUCENTRALBARRELHELPERRL_H_
 #define PWGUD_CORE_UPCTAUCENTRALBARRELHELPERRL_H_

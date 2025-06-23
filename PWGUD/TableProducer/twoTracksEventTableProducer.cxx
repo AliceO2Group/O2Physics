@@ -31,11 +31,6 @@
 #include "Framework/runDataProcessing.h"
 
 // O2Physics headers
-#include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
-#include "PWGUD/DataModel/TauEventTables.h"
-#include "PWGUD/DataModel/UDTables.h"
-
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -43,6 +38,10 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
+#include "PWGUD/DataModel/TwoTracksEventTables.h"
+#include "PWGUD/DataModel/UDTables.h"
 
 // ROOT
 #include "Math/Vector4D.h"
@@ -54,7 +53,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-struct TauEventTableProducer {
+struct TwoTracksEventTableProducer {
   Produces<o2::aod::TwoTracks> twoTracks;
   Produces<o2::aod::TrueTwoTracks> trueTwoTracks;
 
@@ -482,7 +481,7 @@ struct TauEventTableProducer {
               tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr, tpcIP,
               tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr, tofEP);
   }
-  PROCESS_SWITCH(TauEventTableProducer, processDataSG, "Iterate UD tables with measured data created by SG-Candidate-Producer.", false);
+  PROCESS_SWITCH(TwoTracksEventTableProducer, processDataSG, "Iterate UD tables with measured data created by SG-Candidate-Producer.", false);
 
   PresliceUnsorted<aod::UDMcParticles> partPerMcCollision = aod::udmcparticle::udMcCollisionId;
   PresliceUnsorted<FullMCSGUDCollisions> colPerMcCollision = aod::udcollision::udMcCollisionId;
@@ -535,9 +534,9 @@ struct TauEventTableProducer {
 
       int trueChannel = -1;
       bool trueHasRecoColl = false;
-      float trueTauX[2] = {-999., -999.};
-      float trueTauY[2] = {-999., -999.};
-      float trueTauZ[2] = {-999., -999.};
+      float trueMotherX[2] = {-999., -999.};
+      float trueMotherY[2] = {-999., -999.};
+      float trueMotherZ[2] = {-999., -999.};
       float trueDaugX[2] = {-999., -999.};
       float trueDaugY[2] = {-999., -999.};
       float trueDaugZ[2] = {-999., -999.};
@@ -602,11 +601,11 @@ struct TauEventTableProducer {
         auto const& partsFromMcColl = parts.sliceBy(partPerMcCollision, mccoll.globalIndex());
         int countMothers = 0;
         for (const auto& particle : partsFromMcColl) {
-          // select only tauons with checking if particle has no mother
+          // select only mothers with checking if particle has no mother
           if (particle.has_mothers())
             continue;
           countMothers++;
-          // check the generated collision does not have more than 2 tauons
+          // check the generated collision does not have more than 2 mothers
           if (countMothers > 2) {
             if (verboseInfo)
               printLargeMessage("Truth collision has more than 2 no mother particles. Breaking the particle loop.");
@@ -614,10 +613,10 @@ struct TauEventTableProducer {
             problem = true;
             break;
           }
-          // fill info for each tau
-          trueTauX[countMothers - 1] = particle.px();
-          trueTauY[countMothers - 1] = particle.py();
-          trueTauZ[countMothers - 1] = particle.pz();
+          // fill info for each mother
+          trueMotherX[countMothers - 1] = particle.px();
+          trueMotherY[countMothers - 1] = particle.py();
+          trueMotherZ[countMothers - 1] = particle.pz();
 
           // get daughters of the tau
           const auto& daughters = particle.daughters_as<aod::UDMcParticles>();
@@ -690,7 +689,7 @@ struct TauEventTableProducer {
           if (particle.has_mothers())
             continue;
           countMothers++;
-          // check the generated collision does not have more than 2 tauons
+          // check the generated collision does not have more than 2 mothers
           if (countMothers > 2) {
             if (verboseInfo)
               printLargeMessage("Truth collision has more than 2 no mother particles. Breaking the particle loop.");
@@ -699,9 +698,9 @@ struct TauEventTableProducer {
             break;
           }
           // fill info for each tau
-          trueTauX[countMothers - 1] = particle.px();
-          trueTauY[countMothers - 1] = particle.py();
-          trueTauZ[countMothers - 1] = particle.pz();
+          trueMotherX[countMothers - 1] = particle.px();
+          trueMotherY[countMothers - 1] = particle.py();
+          trueMotherZ[countMothers - 1] = particle.pz();
 
           // get daughters of the tau
           const auto& daughters = particle.daughters_as<aod::UDMcParticles>();
@@ -746,16 +745,15 @@ struct TauEventTableProducer {
                     tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr, tpcIP,
                     tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr, tofEP,
                     trueChannel, trueHasRecoColl, mccoll.posX(), mccoll.posY(), mccoll.posZ(),
-                    trueTauX, trueTauY, trueTauZ, trueDaugX, trueDaugY, trueDaugZ, trueDaugPdgCode, problem);
+                    trueMotherX, trueMotherY, trueMotherZ, trueDaugX, trueDaugY, trueDaugZ, trueDaugPdgCode, problem);
     } // mccollisions
   }
-  PROCESS_SWITCH(TauEventTableProducer, processMonteCarlo, "Iterate UD tables with simulated data created by SG-Candidate-Producer.", false);
+  PROCESS_SWITCH(TwoTracksEventTableProducer, processMonteCarlo, "Iterate UD tables with simulated data created by SG-Candidate-Producer.", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<TauEventTableProducer>(cfgc)};
+    adaptAnalysisTask<TwoTracksEventTableProducer>(cfgc)};
 }
 
-#pragma clang diagnostic pop
