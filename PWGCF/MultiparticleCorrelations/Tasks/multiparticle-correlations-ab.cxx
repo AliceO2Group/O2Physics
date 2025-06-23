@@ -78,16 +78,20 @@ using TracksRec_QA = TracksRec;    // if I would need additional tables for QA, 
 #include <TFile.h>
 #include <TH1D.h>
 #include <TProfile2D.h>
+#include <TProfile3D.h>
 #include <TGrid.h>
 #include <Riostream.h>
 #include <TRandom3.h>
 #include <TComplex.h>
 #include <TStopwatch.h>
+#include <TFormula.h>
 #include <TExMap.h>
 #include <TF1.h>
 #include <TF3.h>
 #include <TObjString.h>
 #include <THnSparse.h>
+#include <TDatabasePDG.h>
+#include <complex>
 using namespace std;
 
 // *) Enums:
@@ -157,13 +161,13 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
 
     // *) Book all remaining objects;
     BookAndNestAllLists();
-    BookResultsHistograms(); // yes, this one has to be booked first, because it defines the common binning for other groups of histograms TBI 20250412 this is true only if I can use Clone()
+    BookResultsHistograms(); // yes, this one has to be booked first, because it defines the common binning for other groups of histograms, w/ or w/o clonning
     BookQAHistograms();
     BookEventHistograms();
     BookEventCutsHistograms();
     BookParticleHistograms();
-    BookParticleCutsHistograms();
-    BookQvectorHistograms();
+    BookParticleCutsHistograms(); // memStatus: 50913
+    BookQvectorHistograms();      // memStatus: 50913 (without differential q-vectors and eta separations)
     BookCorrelationsHistograms();
     BookWeightsHistograms();
     BookCentralityWeightsHistograms();
@@ -173,6 +177,10 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     BookTest0Histograms();
     BookEtaSeparationsHistograms();
     BookTheRest(); // I book everything that was not sorted (yet) in the specific functions above
+    // memStatus: 50913 (without differential q-vectors and eta separations)
+
+    // *) I can purge a few objects used for common consistent booking across different group of histograms:
+    PurgeAfterBooking();
 
     // *) Insanity checks after booking:
     InsanityChecksAfterBooking(); // pointers of all local histograms, etc., are available, so I can do insanity checks directly on all booked objects
