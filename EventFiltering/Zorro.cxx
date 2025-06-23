@@ -195,10 +195,8 @@ std::vector<int> Zorro::initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber
   }
   mTOIcounts.resize(mTOIs.size(), 0);
   LOGF(info, "Zorro initialized for run %d, triggers of interest:", runNumber);
-  for (size_t i{0}; i < mTOIs.size(); ++i) {
-    LOGF(info, ">>> %s : %i", mTOIs[i].data(), mTOIidx[i]);
-  }
-  mZorroSummary.setupTOIs(mTOIs.size(), tois);
+  mZorroSummary.setupTOIs(mTOIs.size(), mTOIs);
+  mZorroSummary.printTOInames();
   std::vector<double> toiCounters(mTOIs.size(), 0.);
   for (size_t i{0}; i < mTOIs.size(); ++i) {
     toiCounters[i] = mSelections->GetBinContent(mTOIidx[i] + 2);

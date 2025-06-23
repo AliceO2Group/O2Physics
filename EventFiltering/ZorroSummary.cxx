@@ -13,6 +13,8 @@
 
 #include "TCollection.h"
 
+#include "Framework/Logger.h"
+
 void ZorroSummary::Copy(TObject& c) const
 {
   static_cast<ZorroSummary&>(c) = *this;
@@ -66,4 +68,12 @@ double ZorroSummary::getNormalisationFactor(int toiId) const
   }
 
   return totalTVX * totalAnalysedTOI / totalTOI;
+}
+void ZorroSummary::printTOInames() const
+{
+  std::string names = ">>> TOI names:";
+  for(auto const& name: mTOInames){
+    names += " " + name;
+  }
+  LOG(info) << names;
 }
