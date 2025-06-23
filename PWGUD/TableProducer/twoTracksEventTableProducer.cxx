@@ -333,7 +333,7 @@ struct TwoTracksEventTableProducer {
     nSigmasTPCsqrt[P_PROTON] = std::sqrt(trk1.tpcNSigmaPr() * trk1.tpcNSigmaPr() + trk2.tpcNSigmaPr() * trk2.tpcNSigmaPr());
 
     int enumChoiceTPC = std::distance(std::begin(nSigmasTPCsqrt),
-                                                std::min_element(std::begin(nSigmasTPCsqrt), std::end(nSigmasTPCsqrt)));
+                                      std::min_element(std::begin(nSigmasTPCsqrt), std::end(nSigmasTPCsqrt)));
 
     return pdg->Mass(trackPDGfromEnum(enumChoiceTPC));
   }
