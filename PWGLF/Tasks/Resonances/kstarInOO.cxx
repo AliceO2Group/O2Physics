@@ -12,14 +12,19 @@
 /// \file kstarInOO.cxx
 /// \author Jimun Lee <jimun.lee@cern.ch>
 
-#include <string>
-#include <vector>
-#include <TLorentzVector.h>
-#include "TF1.h"
-#include <TVector2.h>
-#include <algorithm>
-#include <iostream>
+#include "PWGLF/DataModel/LFResonanceTables.h"
 
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "DataFormatsParameters/GRPObject.h"
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -28,18 +33,14 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "CommonConstants/PhysicsConstants.h"
+#include "TF1.h"
+#include <TLorentzVector.h>
+#include <TVector2.h>
 
-#include "PWGLF/DataModel/LFResonanceTables.h"
+#include <algorithm>
+#include <iostream>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
