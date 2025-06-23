@@ -172,7 +172,7 @@ def main(config):
             hist_frac_raw_nonprompt.SetBinContent(ipt + 1, raw_frac_nonprompt[0])
             hist_frac_raw_nonprompt.SetBinError(ipt + 1, raw_frac_nonprompt[1])
 
-        hist_bin_title = "bin # " + str(ipt+1) + f"; {pt_axis_title}#in (" + str(pt_min) + "; " + str(pt_max) + ")"
+        hist_bin_title = f"bin # {ipt+1}; {pt_axis_title}#in ({pt_min}; {pt_max})"
 
         canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt{pt_min}_{pt_max}", hist_bin_title)
         output.cd()
