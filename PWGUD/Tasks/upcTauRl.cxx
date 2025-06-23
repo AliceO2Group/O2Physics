@@ -1629,7 +1629,7 @@ struct UpcTauRl {
     } // Loop over tracks with selections
 
     if (countPVGT == 2 && doTwoTracks) {
-      ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> daug[2], pion[2], muon[2];
+      ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> daug[2];
       const auto& trkDaug1 = reconstructedBarrelTracks.iteratorAt(vecPVnoPIDidx[0]);
       const auto& trkDaug2 = reconstructedBarrelTracks.iteratorAt(vecPVnoPIDidx[1]);
       daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
