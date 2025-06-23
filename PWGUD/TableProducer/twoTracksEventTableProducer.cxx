@@ -47,8 +47,6 @@
 // ROOT
 #include "Math/Vector4D.h"
 
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "UnreachableCode"
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -328,13 +326,13 @@ struct TwoTracksEventTableProducer {
   // good for same-type particles decays
   {
     float nSigmasTPCsqrt[5];
-    nSigmasTPCsqrt[P_ELECTRON] = std::sqrt(trk1.tpcNsigmaEl() * trk1.tpcNsigmaEl() + trk2.tpcNsigmaEl() * trk2.tpcNsigmaEl())
-      nSigmasTPCsqrt[P_MUON] = std::sqrt(trk1.tpcNsigmaMu() * trk1.tpcNsigmaMu() + trk2.tpcNsigmaMu() * trk2.tpcNsigmaMu())
-        nSigmasTPCsqrt[P_PION] = std::sqrt(trk1.tpcNsigmaPi() * trk1.tpcNsigmaPi() + trk2.tpcNsigmaPi() * trk2.tpcNsigmaPi())
-          nSigmasTPCsqrt[P_KAON] = std::sqrt(trk1.tpcNsigmaKa() * trk1.tpcNsigmaKa() + trk2.tpcNsigmaKa() * trk2.tpcNsigmaKa())
-            nSigmasTPCsqrt[P_PROTON] = std::sqrt(trk1.tpcNsigmaPr() * trk1.tpcNsigmaPr() + trk2.tpcNsigmaPr() * trk2.tpcNsigmaPr())
+    nSigmasTPCsqrt[P_ELECTRON] = std::sqrt(trk1.tpcNsigmaEl() * trk1.tpcNsigmaEl() + trk2.tpcNsigmaEl() * trk2.tpcNsigmaEl());
+    nSigmasTPCsqrt[P_MUON] = std::sqrt(trk1.tpcNsigmaMu() * trk1.tpcNsigmaMu() + trk2.tpcNsigmaMu() * trk2.tpcNsigmaMu());
+    nSigmasTPCsqrt[P_PION] = std::sqrt(trk1.tpcNsigmaPi() * trk1.tpcNsigmaPi() + trk2.tpcNsigmaPi() * trk2.tpcNsigmaPi());
+    nSigmasTPCsqrt[P_KAON] = std::sqrt(trk1.tpcNsigmaKa() * trk1.tpcNsigmaKa() + trk2.tpcNsigmaKa() * trk2.tpcNsigmaKa());
+    nSigmasTPCsqrt[P_PROTON] = std::sqrt(trk1.tpcNsigmaPr() * trk1.tpcNsigmaPr() + trk2.tpcNsigmaPr() * trk2.tpcNsigmaPr());
 
-              int enumChoiceTPC = std::distance(std::begin(nSigmasTPCsqrt),
+    int enumChoiceTPC = std::distance(std::begin(nSigmasTPCsqrt),
                                                 std::min_element(std::begin(nSigmasTPCsqrt), std::end(nSigmasTPCsqrt)));
 
     return pdg->Mass(trackPDGfromEnum(enumChoiceTPC));
