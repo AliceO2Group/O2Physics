@@ -407,7 +407,7 @@ struct TwoTracksEventTableProducer {
     ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> twoTrackMother, daug[2];
     daug[0].SetPxPyPzE(trk1.px(), trk1.py(), trk1.pz(), energy(thisMass, trk1.px(), trk1.py(), trk1.pz()));
     daug[1].SetPxPyPzE(trk2.px(), trk2.py(), trk2.pz(), energy(thisMass, trk2.px(), trk2.py(), trk2.pz()));
-    twoTrackMother = daug[1] + daug[2];
+    twoTrackMother = daug[0] + daug[1];
     float thisPt = pt(twoTrackMother.px(), twoTrackMother.py());
 
     // Apply system selections

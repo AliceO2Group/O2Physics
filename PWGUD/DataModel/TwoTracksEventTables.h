@@ -18,8 +18,8 @@
 /// \brief  If MC, careful with filling the mother
 ///
 
-#ifndef ALISW_TWOTRACKSEVENTTABLES_H
-#define ALISW_TWOTRACKSEVENTTABLES_H
+#ifndef PWGUD_DATAMODEL_TWOTRACKSEVENTTABLES_H_
+#define PWGUD_DATAMODEL_TWOTRACKSEVENTTABLES_H_
 
 #include "Framework/AnalysisDataModel.h"
 
@@ -223,4 +223,4 @@ DECLARE_SOA_TABLE(TrueTwoTracks, "AOD", "TRUETWOTRACK",
 
 } // namespace o2::aod
 
-#endif // ALISW_TWOTRACKSEVENTTABLES_H
+#endif // PWGUD_DATAMODEL_TWOTRACKSEVENTTABLES_H_
