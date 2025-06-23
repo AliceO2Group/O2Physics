@@ -16,6 +16,8 @@
 #ifndef PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_
 #define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_
 
+#include <vector>
+
 // General remarks:
 // 0. Starting with C++11, it's possible to initialize data members at declaration, so I do it here
 // 1. Use //!<! for introducing a Doxygen comment interpreted as transient in both ROOT 5 and ROOT 6.
