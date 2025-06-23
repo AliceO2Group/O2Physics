@@ -1206,7 +1206,7 @@ struct tofSpectra {
           return false;
         }
       }
-      return (std::abs(track.dcaXY()) <= (maxDcaXYFactor.value * (0.0105f + 0.0350f / pow(track.pt(), 1.1f))));
+      return (std::abs(track.dcaXY()) <= (maxDcaXYFactor.value * (0.0105f + 0.0350f / std::pow(track.pt(), 1.1f))));
     }
     return track.isGlobalTrack();
   }
