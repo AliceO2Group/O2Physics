@@ -200,7 +200,7 @@ struct NonPromptCascadeTask {
   Configurable<LabeledArray<float>> cfgCutsPID{"particlesCutsPID", {cutsPID[0], nParticles, nCutsPID, particlesNames, cutsNames}, "Nuclei PID selections"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", true, "Skimmed dataset processing"};
   Configurable<std::string> cfgTriggersOfInterest{"cfgTriggersOfInterest", "fTrackedOmega,fOmegaHighMult", "Triggers of interest, comma separated for Zorro"};
- 
+
   Zorro mZorro;
   OutputObj<ZorroSummary> mZorroSummary{"ZorroSummary"};
   SliceCache cache;
@@ -245,12 +245,11 @@ struct NonPromptCascadeTask {
     mDCAFitter.setUseAbsDCA(cfgUseAbsDCA);
 
     std::vector<double> ptBinning = {0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 2.8, 3.2, 3.6, 4.0, 4.4, 4.8, 5.2, 5.6, 6.0};
-    //AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec centAxis = {101,0.,101.,"Centrality"};
-    AxisSpec centAxisZoom = {100,0.,1.,"Centrality"};
-    AxisSpec multAxis = {10000,0,10000,"Multiplicity"};
-    AxisSpec multAxisZoom = {1000,0,1000,"Multiplicity"};
-
+    // AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec centAxis = {101, 0., 101., "Centrality"};
+    AxisSpec centAxisZoom = {100, 0., 1., "Centrality"};
+    AxisSpec multAxis = {10000, 0, 10000, "Multiplicity"};
+    AxisSpec multAxisZoom = {1000, 0, 1000, "Multiplicity"};
 
     std::array<std::string, 7> cutsNames{"# candidates", "hasTOF", "nClusTPC", "nSigmaTPCbach", "nSigmaTPCprotontrack", "nSigmaTPCpiontrack", "cosPA"};
     auto cutsOmega{std::get<std::shared_ptr<TH2>>(mRegistry.add("h_PIDcutsOmega", ";;Invariant mass (GeV/#it{c}^{2})", HistType::kTH2D, {{cutsNames.size(), -0.5, -0.5 + cutsNames.size()}, {125, 1.650, 1.700}}))};
@@ -326,10 +325,10 @@ struct NonPromptCascadeTask {
   void fillMultHistos(const auto& collisions)
   {
     std::cout << "Filling mult histos" << std::endl;
-    for(const auto& coll: collisions){
-      //std::cout << coll.centFT0M() << " mult, cent " << coll.multFT0M() << std::endl;
-      mRegistry.fill(HIST("hMultVsCent"),coll.centFT0M(),coll.multFT0M());
-      mRegistry.fill(HIST("hMultVsCentZoom"),coll.centFT0M(),coll.multFT0M());
+    for (const auto& coll : collisions) {
+      // std::cout << coll.centFT0M() << " mult, cent " << coll.multFT0M() << std::endl;
+      mRegistry.fill(HIST("hMultVsCent"), coll.centFT0M(), coll.multFT0M());
+      mRegistry.fill(HIST("hMultVsCentZoom"), coll.centFT0M(), coll.multFT0M());
     }
   };
 

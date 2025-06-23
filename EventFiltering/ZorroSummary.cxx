@@ -11,9 +11,9 @@
 
 #include "ZorroSummary.h"
 
-#include "TCollection.h"
-
 #include "Framework/Logger.h"
+
+#include "TCollection.h"
 
 void ZorroSummary::Copy(TObject& c) const
 {
@@ -72,7 +72,7 @@ double ZorroSummary::getNormalisationFactor(int toiId) const
 void ZorroSummary::printTOInames() const
 {
   std::string names = ">>> TOI names:";
-  for(auto const& name: mTOInames){
+  for (auto const& name : mTOInames) {
     names += " " + name;
   }
   LOG(info) << names;

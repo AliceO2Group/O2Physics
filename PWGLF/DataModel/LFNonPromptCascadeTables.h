@@ -252,7 +252,7 @@ DECLARE_SOA_TABLE(NPCascTableNT, "AOD", "NPCASCTABLENT",
                   NPCascadeTable::CentFT0C,
                   NPCascadeTable::CentFT0A,
                   NPCascadeTable::CentFT0M,
-                  NPCascadeTable::MultNTracksGlobal,                  
+                  NPCascadeTable::MultNTracksGlobal,
                   NPCascadeTable::ToiMask)
 
 DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
