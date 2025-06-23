@@ -41,7 +41,7 @@ enum eConfiguration {
   eUseSetBinLabel, // Use or not setter SetBinLabel(...)
   eUseClone,       // Use or not ->Clone()
   eUseFormula,     // Use or not class TFormula
-  eUseDatabasePDG, // Use or not class TFormula
+  eUseDatabasePDG, // Use or not class TDatabasePDG
   eConfiguration_N
 };
 
