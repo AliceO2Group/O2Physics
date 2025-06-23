@@ -16,6 +16,8 @@
 #ifndef PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_
 #define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_
 
+#include <vector>
+
 // General remarks:
 // 0. Starting with C++11, it's possible to initialize data members at declaration, so I do it here
 // 1. Use //!<! for introducing a Doxygen comment interpreted as transient in both ROOT 5 and ROOT 6.
@@ -76,10 +78,13 @@ struct TaskConfiguration {
   TString fWhichSpecificCuts = "";       // determine which set of analysis-specific cuts will be applied after DefaultCuts(). Use in combination with tc.fUseSpecificCuts
   TString fSkipTheseRuns = "";           // comma-separated list of runs which will be skipped during analysis in hl (a.k.a. "bad runs")
   bool fSkipRun = false;                 // based on the content of fWhichSpecificCuts, skip or not the current run
+  TDatabasePDG* fDatabasePDG = NULL;     // booked only when MC info is available. There is a standard memory blow-up when booked, therefore I need to request also fUseDatabasePDG = true
   bool fUseSetBinLabel = false;          // until SetBinLabel(...) large memory consumption is resolved, do not use hist->SetBinLabel(...), see ROOT Forum
                                          // See also local executable PostprocessLabels.C
   bool fUseClone = false;                // until Clone(...) large memory consumption is resolved, do not use hist->Clone(...), see ROOT Forum
   bool fUseFormula = false;              // until TFormula large memory consumption is resolved, do not use, see ROOT Forum
+  bool fUseDatabasePDG = false;          // I use it at the moment only to retreive charge for MC particle from its PDG code, because there is no direct getter mcParticle.sign()
+                                         // But most likely I will use it to retrieve other particle proprties from PDG table. There is a standard memoty blow-up when used.
 } tc;                                    // "tc" labels an instance of this group of variables.
 
 // *) Event-by-event quantities:
@@ -254,20 +259,34 @@ struct ParticleCuts {
 
 // *) Q-vectors:
 struct Qvector {
-  TList* fQvectorList = NULL;                                                                                                          // list to hold all Q-vector objects
-  TProfile* fQvectorFlagsPro = NULL;                                                                                                   // profile to hold all flags for Q-vector
-  bool fCalculateQvectors = true;                                                                                                      // to calculate or not to calculate Q-vectors, that's a Boolean...
-                                                                                                                                       // Does NOT apply to Qa, Qb, etc., vectors, needed for eta separ.
-  TComplex fQ[gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{TComplex(0., 0.)}};                                           //! generic Q-vector
-  TComplex fQvector[gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{TComplex(0., 0.)}};                                     //! "integrated" Q-vector
-  TComplex fqvector[eqvectorKine_N][gMaxNoBinsKine][gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{{{TComplex(0., 0.)}}}}; //! "differenttial" q-vector [kine var.][binNo][fMaxHarmonic*fMaxCorrelator+1][fMaxCorrelator+1] = [6*12+1][12+1]
-  int fqVectorEntries[eqvectorKine_N][gMaxNoBinsKine] = {{0}};                                                                         // count number of entries in each differential q-vector
-  TComplex fQabVector[2][gMaxHarmonic][gMaxNumberEtaSeparations] = {{{TComplex(0., 0.)}}};                                             //! integrated [-eta or +eta][harmonic][eta separation]
-  float fMab[2][gMaxNumberEtaSeparations] = {{0.}};                                                                                    //! multiplicities in 2 eta separated intervals
-  TH1F* fMabDist[2][2][2][gMaxNumberEtaSeparations] = {{{{NULL}}}};                                                                    // multiplicity distributions in A and B, for each eta separation [ A or B ] [rec or sim] [ before or after cuts ] [ eta separation value ]
-  TComplex fqabVector[2][gMaxNoBinsKine][gMaxHarmonic][gMaxNumberEtaSeparations] = {{{{TComplex(0., 0.)}}}};                           //! differential in pt [-eta or +eta][binNo][harmonic][eta separation]
-  float fmab[2][gMaxNoBinsKine][gMaxNumberEtaSeparations] = {{{0.}}};                                                                  //! multiplicities vs pt in 2 eta separated intervals
-} qv;                                                                                                                                  // "qv" is a common label for objects in this struct
+  TList* fQvectorList = NULL;                                                                      // list to hold all Q-vector objects
+  TProfile* fQvectorFlagsPro = NULL;                                                               // profile to hold all flags for Q-vector
+  bool fCalculateQvectors = true;                                                                  // to calculate or not to calculate Q-vectors, that's a Boolean...
+                                                                                                   // Does NOT apply to Qa, Qb, etc., vectors, needed for eta separ.
+  TComplex fQ[gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{TComplex(0., 0.)}};       //! generic Q-vector
+  TComplex fQvector[gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{TComplex(0., 0.)}}; //! "integrated" Q-vector
+
+  bool fCalculateqvectorsKineAny = false;                              // by default, it's off. It's set to true automatically if any of kine correlators is requested,
+                                                                       // either for Correlations, Test0, EtaSeparations, etc.
+  bool fCalculateqvectorsKine[eqvectorKine_N] = {false};               // same as above, just specifically for each enum eqvectorKine + applies only to Correlations and Test0
+  bool fCalculateqvectorsKineEtaSeparations[eqvectorKine_N] = {false}; // same as above, just specifically for each enum eqvectorKine + applies only to EtaSeparations
+
+  std::vector<std::vector<std::vector<std::vector<std::complex<double>>>>> fqvector; // dynamically allocated differential q-vector => it has to be done this way, to optimize memory usage
+                                                                                     // dimensions: [eqvectorKine_N][gMaxNoBinsKine][gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1]
+  std::vector<int> fNumberOfKineBins = {0};                                          // for each kine vector which was requested in this analysis, here I calculate and store the corresponding number of kine bins
+  std::vector<std::vector<int>> fqvectorEntries;                                     // dynamically allocated number of entries for differential q-vector => it has to be done this way, to optimize memory usage
+
+  // q-vectors for eta separations:
+  TComplex fQabVector[2][gMaxHarmonic][gMaxNumberEtaSeparations] = {{{TComplex(0., 0.)}}};          //! integrated [-eta or +eta][harmonic][eta separation]
+  float fMab[2][gMaxNumberEtaSeparations] = {{0.}};                                                 //! multiplicities in 2 eta separated intervals
+  TH1F* fMabDist[2][2][2][gMaxNumberEtaSeparations] = {{{{NULL}}}};                                 // multiplicity distributions in A and B, for each eta separation [ A or B ] [rec or sim] [ before or after cuts ] [ eta separation value ]
+  std::vector<std::vector<std::vector<std::vector<std::vector<std::complex<double>>>>>> fqabVector; // dynamically allocated differential q-vector.
+                                                                                                    // dimensions: [-eta or +eta][eqvectorKine_N][global binNo][harmonic][eta separation]
+                                                                                                    // Remark: Unlike fqvector above, here I support only 2-p correlations,
+                                                                                                    // therefore no need for "[gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1]", etc.
+  std::vector<std::vector<std::vector<std::vector<float>>>> fmab;                                   //! multiplicities vs kine in 2 eta separated intervals
+                                                                                                    // [-eta or +eta][eqvectorKine_N][global binNo][eta separation]
+} qv;                                                                                               // "qv" is a common label for objects in this struct
 
 // *) Multiparticle correlations (standard, isotropic, same harmonic):
 struct MultiparticleCorrelations {
@@ -326,7 +345,7 @@ struct NestedLoops {
                                                                                //! [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=gMaxHarmonic][0=integrated,1=vs.
                                                                                //! multiplicity,2=vs. centrality,3=pT,4=eta]
   TArrayD* ftaNestedLoops[2] = {NULL};                                         //! e-b-e container for nested loops [0=angles;1=product of all weights]
-  TArrayD* ftaNestedLoopsKine[eqvectorKine_N][gMaxNoBinsKine][2] = {{{NULL}}}; //! e-b-e container for nested loops // [0=pT,1=eta][kine bin][0=angles;1=product of all weights]
+  TArrayD* ftaNestedLoopsKine[eqvectorKine_N][gMaxNoBinsKine][2] = {{{NULL}}}; //! e-b-e container for nested loops // [0=pT,1=eta,2=...][kine bin][0=angles;1=product of all weights]
 } nl;                                                                          // "nl" labels an instance of this group of histograms
 
 // *) Toy NUA (can be applied both in real data analysis and in analysis 'on-the-fly', e.g. when running internal validation):
@@ -354,22 +373,29 @@ struct InternalValidation {
   unsigned int fnEventsInternalValidation = 0;        // how many on-the-fly events will be sampled for each real event, for internal validation
   TString* fHarmonicsOptionInternalValidation = NULL; // "constant", "correlated" or "persistent", see .cxx for full documentation
   bool fRescaleWithTheoreticalInput = false;          // if true, all measured correlators are rescaled with theoretical input, so that in profiles everything is at 1
+  bool fRandomizeReactionPlane = true;                // if true, RP is randomized e-by-e. I need false basically only when validating against theoretical input non-isotropic correlators
   TArrayD* fInternalValidationVnPsin[2] = {NULL};     // 0 = { v1, v2, ... }, 1 = { Psi1, Psi2, ... }
   int fMultRangeInternalValidation[2] = {0, 0};       // min and max values for uniform multiplicity distribution in on-the-fly analysis (convention: min <= M < max)
 } iv;
 
 // *) Test0:
 struct Test0 {
-  TList* fTest0List = NULL;                                                     // list to hold all objects for Test0
-  TProfile* fTest0FlagsPro = NULL;                                              // store all flags for Test0
-  bool fCalculateTest0 = false;                                                 // calculate or not Test0
-  TProfile* fTest0Pro[gMaxCorrelator][gMaxIndex][eAsFunctionOf_N] = {{{NULL}}}; //! [order][index][0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta]
-  TString* fTest0Labels[gMaxCorrelator][gMaxIndex] = {{NULL}};                  // all labels: k-p'th order is stored in k-1'th index. So yes, I also store 1-p
-  bool fCalculateTest0AsFunctionOf[eAsFunctionOf_N] = {false};                  //! [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy, ...]
-  TString fFileWithLabels = "";                                                 // path to external ROOT file which specifies all labels of interest
-  bool fUseDefaultLabels = false;                                               // use default labels hardwired in GetDefaultObjArrayWithLabels(), the choice is made with cfWhichDefaultLabels
-  TString fWhichDefaultLabels = "";                                             // only for testing purposes, select one set of default labels, see GetDefaultObjArrayWithLabels for supported options
-} t0;                                                                           // "t0" labels an instance of this group of histograms
+  TList* fTest0List = NULL;                                                           // list to hold all objects for Test0
+  TProfile* fTest0FlagsPro = NULL;                                                    // store all flags for Test0
+  bool fCalculateTest0 = false;                                                       // calculate or not Test0
+  TProfile* fTest0Pro[gMaxCorrelator][gMaxIndex][eAsFunctionOf_N] = {{{NULL}}};       //! [order][index][0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta]
+  bool fCalculate2DTest0 = false;                                                     // calculate or not 2D Test0
+  TProfile2D* fTest0Pro2D[gMaxCorrelator][gMaxIndex][eAsFunctionOf2D_N] = {{{NULL}}}; //! [order][index][0=cent vs pt, ..., see enum eAsFunctionOf2D]
+  bool fCalculate3DTest0 = false;                                                     // calculate or not 2D Test0
+  TProfile3D* fTest0Pro3D[gMaxCorrelator][gMaxIndex][eAsFunctionOf3D_N] = {{{NULL}}}; //! [order][index][0=cent vs pt vs eta, ..., see enum eAsFunctionOf3D]
+  TString* fTest0Labels[gMaxCorrelator][gMaxIndex] = {{NULL}};                        // all labels: k-p'th order is stored in k-1'th index. So yes, I also store 1-p
+  bool fCalculateTest0AsFunctionOf[eAsFunctionOf_N] = {false};                        //! [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy, ...]
+  bool fCalculate2DTest0AsFunctionOf[eAsFunctionOf2D_N] = {false};                    //! [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy, ...]
+  bool fCalculate3DTest0AsFunctionOf[eAsFunctionOf3D_N] = {false};                    //! [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy, ...]
+  TString fFileWithLabels = "";                                                       // path to external ROOT file which specifies all labels of interest
+  bool fUseDefaultLabels = false;                                                     // use default labels hardwired in GetDefaultObjArrayWithLabels(), the choice is made with cfWhichDefaultLabels
+  TString fWhichDefaultLabels = "";                                                   // only for testing purposes, select one set of default labels, see GetDefaultObjArrayWithLabels for supported options
+} t0;                                                                                 // "t0" labels an instance of this group of histograms
 
 // *) Eta separations:
 struct EtaSeparations {
@@ -394,19 +420,22 @@ struct GlobalCosmetics {
 } gc;
 
 // *) Results:
-struct Results {                                   // This is in addition also sort of "abstract" interface, which defines common binning, etc., for other groups of histograms.
-  TList* fResultsList = NULL;                      //!<! list to hold all results
-  TProfile* fResultsFlagsPro = NULL;               //!<! profile to hold all flags for results
-  bool fSaveResultsHistograms = false;             // if results histos are used only as "abstract" interface for binning, then they do not need to be saved
-  TProfile* fResultsPro[eAsFunctionOf_N] = {NULL}; //!<! example histogram to store some results + "abstract" interface, which defines common binning, etc., for other groups of histograms.
+struct Results {                                         // This is in addition also sort of "abstract" interface, which defines common binning, etc., for other groups of histograms.
+  TList* fResultsList = NULL;                            //!<! list to hold all results
+  TProfile* fResultsFlagsPro = NULL;                     //!<! profile to hold all flags for results
+  bool fSaveResultsHistograms = false;                   // if results histos are used only as "abstract" interface for binning, then they do not need to be saved
+  TProfile* fResultsPro[eAsFunctionOf_N] = {NULL};       //!<! example histogram to store some results + "abstract" interface, which defines common binning, etc., for other groups of histograms.
+  TProfile2D* fResultsPro2D[eAsFunctionOf2D_N] = {NULL}; //!<! example histogram to store some results + "abstract" interface, which defines common binning, etc., for other groups of histograms.
+  TProfile3D* fResultsPro3D[eAsFunctionOf3D_N] = {NULL}; //!<! example histogram to store some results + "abstract" interface, which defines common binning, etc., for other groups of histograms.
 
   // Remark: These settings apply to following categories fCorrelationsPro, fNestedLoopsPro, fTest0Pro, and fResultsHist
+  TArrayD* fResultsProBinEdges[eAsFunctionOf_N] = {NULL};              // here I keep bin edges uniformly, both for fixed-length binning and variable-length binning
   float fResultsProFixedLengthBins[eAsFunctionOf_N][3] = {{0.}};       // [nBins,min,max]
   TArrayF* fResultsProVariableLengthBins[eAsFunctionOf_N] = {NULL};    // here for each variable in eAsFunctionOf I specify array holding bin boundaries
   bool fUseResultsProVariableLengthBins[eAsFunctionOf_N] = {false};    // use or not variable-length bins
   TString fResultsProVariableLengthBinsString[eAsFunctionOf_N] = {""}; // TBI 20241110 this one is obsolete, can be removed
   TString fResultsProXaxisTitle[eAsFunctionOf_N] = {""};               // keep ordering in sync with enum eAsFunctionOf
-  TString fResultsProRawName[eAsFunctionOf_N] = {""};                  // this is how it appears simplified in the hist name when saved to the file
+  TString fResultsProRawName[eAsFunctionOf_N] = {""};                  // this is how it appears simplified in the 1D hist name when saved to the file
 } res;                                                                 // "res" labels an instance of this group of histograms
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_
