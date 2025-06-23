@@ -375,7 +375,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename BCsType, typename Coll>
   uint32_t getHfCollisionRejectionMaskWithUpc(const Coll& collision, float& centrality, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, o2::framework::HistogramRegistry& registry, const BCsType& bcs)
   {
-    auto rejectionMaskWithUPC = getHfCollisionRejectionMask<true, centEstimator, BCsType>(collision, centrality, ccdb, registry);
+    auto rejectionMaskWithUpc = getHfCollisionRejectionMask<true, centEstimator, BCsType>(collision, centrality, ccdb, registry);
 
     if (useEvSel) {
       SGCutParHolder sgCuts = setSgPreselection();
@@ -384,13 +384,13 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
       auto sgSelectionResult = sgSelector.IsSelected(sgCuts, collision, bcRange, bc);
       int upcEventType = sgSelectionResult.value;
       if (upcEventType > EventTypeUpc::DoubleGap) {
-        SETBIT(rejectionMaskWithUPC, EventRejection::UpcEventCut);
+        SETBIT(rejectionMaskWithUpc, EventRejection::UpcEventCut);
       } else {
         hUPCollisions->Fill(upcEventType);
       }
     }
 
-    return rejectionMaskWithUPC;
+    return rejectionMaskWithUpc;
   }
 
   /// \brief Fills histograms for monitoring event selections satisfied by the collision.
