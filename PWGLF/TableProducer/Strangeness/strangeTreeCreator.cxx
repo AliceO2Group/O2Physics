@@ -457,8 +457,8 @@ struct StrangeTreeCreator {
       }
 
       float ptPos = std::hypot(momPos[0], momPos[1]);
-      float momPos = std::hypot(momPos[0], momPos[1], momPos[2]);
-      float etaPos = 0.5 * std::log((momPos + momPos[2]) / (momPos - momPos[2]));
+      float pPos = std::hypot(momPos[0], momPos[1], momPos[2]);
+      float etaPos = 0.5 * std::log((pPos + momPos[2]) / (pPos - momPos[2]));
       float deltaMass = mK0Short - o2::constants::physics::MassK0;
       float massKineBias = deltaMass / kineFactor(momV0, momPos, momNeg, o2::constants::physics::MassPiMinus, o2::constants::physics::MassPiMinus, false);
       float massKineReso = deltaMass / kineFactor(momV0, momPos, momNeg, o2::constants::physics::MassPiMinus, o2::constants::physics::MassPiMinus, true);
