@@ -113,7 +113,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
 
   template <typename T, typename U>
   void fillTablesCandidate(const T& candidate, const U& prong0, const U& prong1, const U& prongSoftPi, int candFlag, double invMass,
-                           double y, int8_t flagMc, int8_t origin, const std::vector<float>& mlScores)
+                           double y, int8_t flagMc, int8_t origin, std::vector<float>& mlScores)
   {
     rowsCommon.fillTablesCandidate(candidate, invMass, y);
     if (fillCandidatePar) {
