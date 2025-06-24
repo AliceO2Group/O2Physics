@@ -13,18 +13,20 @@
 /// \brief Definitions of derived tables produced by data creator for D0 calibration studies
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
-#ifndef D0CALIBTABLES_H_
-#define D0CALIBTABLES_H_
+#ifndef DPG_TASKS_AOTTRACK_D0CALIBTABLES_H_
+#define DPG_TASKS_AOTTRACK_D0CALIBTABLES_H_
 
-#include <sys/types.h>
-#include <cstdint>
-#include <limits>
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/ASoA.h>
 
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include <sys/types.h>
+#include <cstdint>
+#include <limits>
+#include <string>
+#include <vector>
 
 namespace o2
 {
@@ -386,7 +388,32 @@ DECLARE_SOA_TABLE(D0CalibTrack, "AOD", "D0CALIBTRACKS",
                   track::TOFExpMom,
                   track::TrackTime,
                   track::TrackTimeRes,
-                  /// *** track QA --> FIXME: info not present for each track in normal AO2Ds, check how to do
+                  /// *** track QA
+                  trackqa::TPCTime0,
+                  trackqa::TPCdEdxNorm,
+                  trackqa::TPCDCAR,
+                  trackqa::TPCDCAZ,
+                  trackqa::TPCClusterByteMask,
+                  trackqa::TPCdEdxMax0R,
+                  trackqa::TPCdEdxMax1R,
+                  trackqa::TPCdEdxMax2R,
+                  trackqa::TPCdEdxMax3R,
+                  trackqa::TPCdEdxTot0R,
+                  trackqa::TPCdEdxTot1R,
+                  trackqa::TPCdEdxTot2R,
+                  trackqa::TPCdEdxTot3R,
+                  trackqa::DeltaRefContParamY,
+                  trackqa::DeltaRefContParamZ,
+                  trackqa::DeltaRefContParamSnp,
+                  trackqa::DeltaRefContParamTgl,
+                  trackqa::DeltaRefContParamQ2Pt,
+                  trackqa::DeltaRefGloParamY,
+                  trackqa::DeltaRefGloParamZ,
+                  trackqa::DeltaRefGloParamSnp,
+                  trackqa::DeltaRefGloParamTgl,
+                  trackqa::DeltaRefGloParamQ2Pt,
+                  trackqa::DeltaTOFdX,
+                  trackqa::DeltaTOFdZ,
                   /// *** DCA, Nsigma
                   track::DcaXY,
                   track::DcaZ,
@@ -394,6 +421,7 @@ DECLARE_SOA_TABLE(D0CalibTrack, "AOD", "D0CALIBTRACKS",
                   hf_calib::TpcNumSigmaKa,
                   hf_calib::TofNumSigmaPi,
                   hf_calib::TofNumSigmaKa,
+                  /// *** Occupancy variables
                   hf_calib::CmoPrimUnfm80,
                   hf_calib::CmoFV0AUnfm80,
                   hf_calib::CmoFT0AUnfm80,
@@ -407,8 +435,8 @@ DECLARE_SOA_TABLE(D0CalibTrack, "AOD", "D0CALIBTRACKS",
 
 namespace hf_calib
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(TrackPos, trackPos, int, D0CalibTrack, "");    //! Index of positive track
-DECLARE_SOA_INDEX_COLUMN_FULL(TrackNeg, trackNeg, int, D0CalibTrack, "");    //! Index of negative track
+DECLARE_SOA_INDEX_COLUMN_FULL(TrackPos, trackPos, int, D0CalibTrack, "_0");  //! Index of positive track
+DECLARE_SOA_INDEX_COLUMN_FULL(TrackNeg, trackNeg, int, D0CalibTrack, "_1");  //! Index of negative track
 DECLARE_SOA_COLUMN(MassHypo, massHypo, uint8_t);                             //! mass hypothesis for D0 (D0, D0bar, or both)
 DECLARE_SOA_COLUMN(Pt, pt, float);                                           //! D0-candidate pT
 DECLARE_SOA_COLUMN(Eta, eta, float);                                         //! D0-candidate eta
@@ -460,4 +488,4 @@ DECLARE_SOA_TABLE(D0CalibCand, "AOD", "D0CALIBCANDS",
                   hf_calib::BdtScoreNonpromptD0bar);
 } // namespace aod
 } // namespace o2
-#endif // D0CALIBTABLES_H_
+#endif // DPG_TASKS_AOTTRACK_D0CALIBTABLES_H_
