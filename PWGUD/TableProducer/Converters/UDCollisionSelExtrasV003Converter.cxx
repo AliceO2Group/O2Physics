@@ -56,7 +56,7 @@ struct UDCollisionSelExtrasV003Converter {
                                0,    // dummy sbp
                                0,    // dummy zVtxFT0vPV
                                0,    // dummy vtxITSTPC
-                               0);   // dummy rct_raw
+                               0);   // dummy rct
     }
   }
   PROCESS_SWITCH(UDCollisionSelExtrasV003Converter, processV000ToV003, "process v000-to-v003 conversion", false);
@@ -81,7 +81,7 @@ struct UDCollisionSelExtrasV003Converter {
                                0,  // dummy sbp
                                0,  // dummy zVtxFT0vPV
                                0,  // dummy vtxITSTPC
-                               0); // dummy rct_raw
+                               0); // dummy rct
     }
   }
   PROCESS_SWITCH(UDCollisionSelExtrasV003Converter, processV001ToV003, "process v001-to-v003 conversion", false);
@@ -106,7 +106,7 @@ struct UDCollisionSelExtrasV003Converter {
                                collision.sbp(),
                                collision.zVtxFT0vPV(),
                                collision.vtxITSTPC(),
-                               0); // dummy rct_raw
+                               0); // dummy rct
     }
   }
   PROCESS_SWITCH(UDCollisionSelExtrasV003Converter, processV002ToV003, "process v002-to-v003 conversion", true);

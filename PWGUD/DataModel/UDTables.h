@@ -122,8 +122,9 @@ DECLARE_SOA_COLUMN(ITSROFb, itsROFb, int);
 DECLARE_SOA_COLUMN(Sbp, sbp, int);
 DECLARE_SOA_COLUMN(ZvtxFT0vPV, zVtxFT0vPV, int);
 DECLARE_SOA_COLUMN(VtxITSTPC, vtxITSTPC, int);
-DECLARE_SOA_COLUMN(Rct_raw, rct_raw, uint32_t); //! run condition table mask
 // information about mask names -> Common/CCDB/RCTSelectionFlags.h
+// DECLARE_SOA_COLUMN(Rct, rct, uint32_t); //! run condition table mask
+DECLARE_SOA_BITMAP_COLUMN(Rct, rct, 32); //! run condition table mask
 
 // Gap Side Information
 DECLARE_SOA_COLUMN(GapSide, gapSide, uint8_t); // 0 for side A, 1 for side C, 2 for both sides (or use an enum for better readability)
@@ -279,7 +280,7 @@ DECLARE_SOA_TABLE_VERSIONED(UDCollisionSelExtras_003, "AOD", "UDCOLSELEXTRA", 3,
                             udcollision::Sbp,             //! kNoSameBunchPileup
                             udcollision::ZvtxFT0vPV,      //! kIsGoodZvtxFT0vsPV
                             udcollision::VtxITSTPC,       //! kIsVertexITSTPC
-                            udcollision::Rct_raw);        //! RCT mask
+                            udcollision::Rct);            //! RCT mask
 
 // central barrel-specific selections
 DECLARE_SOA_TABLE(UDCollisionsSelsCent, "AOD", "UDCOLSELCNT",
