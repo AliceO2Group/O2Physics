@@ -127,7 +127,6 @@ struct DeDxCorrection {
         occupancy = 0;
       }
 
-      float signedP = trk.sign() * trk.tpcInnerParam();
       float fTPCSignal = trk.tpcSignal();
       float fNormMultTPC = multTPC / 11000.;
 
