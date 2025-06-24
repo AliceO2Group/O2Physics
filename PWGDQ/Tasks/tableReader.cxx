@@ -1050,7 +1050,7 @@ struct AnalysisSameEventPairing {
   Configurable<float> fCenterMassEnergy{"energy", 13600, "Center of mass energy in GeV"};
   Configurable<bool> fConfigCumulants{"cfgCumulants", false, "If true, fill Cumulants with Weights different than 0"};
   Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
-  //ML inference
+  // ML inference
   Configurable<bool> applyBDT{"applyBDT", false, "Flag to apply ML selections"};
   Configurable<string> fConfigBdtCutsJSON{"fConfigBdtCutsJSON", "", "Additional list of BDT cuts in JSON format"};
   Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/j/jseo/ML/PbPbPsi/default/"}, "Paths of models on CCDB"};
@@ -1128,44 +1128,44 @@ struct AnalysisSameEventPairing {
     }
 
     if (applyBDT) {
-        // BDT cuts via JSON
-        std::vector<double> binsPtMl;
-        o2::framework::LabeledArray<double> cutsMl;
-        std::vector<int> cutDirMl;
-        int nClassesMl = 1; // 1 for binary BDT, 3 for multiclass BDT
-        std::vector<std::string> namesInputFeatures;
-        std::vector<std::string> onnxFileNames;
+      // BDT cuts via JSON
+      std::vector<double> binsPtMl;
+      o2::framework::LabeledArray<double> cutsMl;
+      std::vector<int> cutDirMl;
+      int nClassesMl = 1; // 1 for binary BDT, 3 for multiclass BDT
+      std::vector<std::string> namesInputFeatures;
+      std::vector<std::string> onnxFileNames;
 
-        auto config = o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFromJSON(fConfigBdtCutsJSON.value.c_str());
+      auto config = o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFromJSON(fConfigBdtCutsJSON.value.c_str());
 
-        if (std::holds_alternative<dqmlcuts::BinaryBdtScoreConfig>(config)) {
-          auto& cfg = std::get<dqmlcuts::BinaryBdtScoreConfig>(config);
-          binsPtMl = cfg.binsPt;
-          nClassesMl = 1;
-          cutsMl = cfg.cutsMl;        
-          cutDirMl = cfg.cutDirs;   
-          namesInputFeatures = cfg.inputFeatures;
-          onnxFileNames = cfg.onnxFiles;
-        } else {
-          auto& cfg = std::get<dqmlcuts::MultiClassBdtScoreConfig>(config);
-          binsPtMl = cfg.binsPt;
-          nClassesMl = 3;
-          cutsMl = cfg.cutsMl;   
-          cutDirMl = cfg.cutDirs;   
-          namesInputFeatures = cfg.inputFeatures;
-          onnxFileNames = cfg.onnxFiles;
-        }
-
-        dqMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
-        if (loadModelsFromCCDB) {
-          ccdbApi.init(ccdburl);
-          dqMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
-        } else {
-          dqMlResponse.setModelPathsLocal(onnxFileNames);
-        }
-        dqMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
-        dqMlResponse.init();
+      if (std::holds_alternative<dqmlcuts::BinaryBdtScoreConfig>(config)) {
+        auto& cfg = std::get<dqmlcuts::BinaryBdtScoreConfig>(config);
+        binsPtMl = cfg.binsPt;
+        nClassesMl = 1;
+        cutsMl = cfg.cutsMl;
+        cutDirMl = cfg.cutDirs;
+        namesInputFeatures = cfg.inputFeatures;
+        onnxFileNames = cfg.onnxFiles;
+      } else {
+        auto& cfg = std::get<dqmlcuts::MultiClassBdtScoreConfig>(config);
+        binsPtMl = cfg.binsPt;
+        nClassesMl = 3;
+        cutsMl = cfg.cutsMl;
+        cutDirMl = cfg.cutDirs;
+        namesInputFeatures = cfg.inputFeatures;
+        onnxFileNames = cfg.onnxFiles;
       }
+
+      dqMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdburl);
+        dqMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+      } else {
+        dqMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      dqMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      dqMlResponse.init();
+    }
 
     if (context.mOptions.get<bool>("processDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEESkimmedNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToEESkimmedWithCov") || context.mOptions.get<bool>("processDecayToEESkimmedWithCovNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToEEVertexingSkimmed") || context.mOptions.get<bool>("processVnDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEEPrefilterSkimmed") || context.mOptions.get<bool>("processDecayToEEPrefilterSkimmedNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToEESkimmedWithColl") || context.mOptions.get<bool>("processDecayToEESkimmedWithCollNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToPiPiSkimmed") || context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processDecayToEESkimmedBDT")) {
       TString cutNames = fConfigTrackCuts.value;
@@ -1444,19 +1444,20 @@ struct AnalysisSameEventPairing {
       }
       if constexpr ((TPairType == pairTypeEE) && (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelPID) > 0) {
         if (applyBDT) {
-           std::vector<float> dqInputFeatures = dqMlResponse.getInputFeatures(t1, t2, VarManager::fgValues); 
+          std::vector<float> dqInputFeatures = dqMlResponse.getInputFeatures(t1, t2, VarManager::fgValues);
 
           if (dqInputFeatures.empty()) {
             LOG(fatal) << "Input features for ML selection are empty! Please check your configuration.";
             return;
           }
 
-          //isSelectedBDT = dqMlResponse.isSelectedMl(dqInputFeatures, VarManager::fgValues[VarManager::kPt]);
+          // isSelectedBDT = dqMlResponse.isSelectedMl(dqInputFeatures, VarManager::fgValues[VarManager::kPt]);
           isSelectedBDT = dqMlResponse.isSelectedMl(dqInputFeatures, VarManager::fgValues[VarManager::kPt], outputMlPsi2ee);
           VarManager::FillBdtScore(outputMlPsi2ee); // TODO: check if this is needed or not
         }
 
-        if (applyBDT && !isSelectedBDT) continue;
+        if (applyBDT && !isSelectedBDT)
+          continue;
 
         if (fConfigFlatTables.value) {
           dielectronAllList(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap, dileptonMcDecision,
@@ -1531,7 +1532,8 @@ struct AnalysisSameEventPairing {
         }
       }
 
-      if(applyBDT && !isSelectedBDT) continue; 
+      if (applyBDT && !isSelectedBDT)
+        continue;
 
       int iCut = 0;
       for (int icut = 0; icut < ncuts; icut++) {

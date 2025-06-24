@@ -1325,16 +1325,16 @@ struct AnalysisSameEventPairing {
         auto& cfg = std::get<dqmlcuts::BinaryBdtScoreConfig>(config);
         binsPtMl = cfg.binsPt;
         nClassesMl = 1;
-        cutsMl = cfg.cutsMl;        
-        cutDirMl = cfg.cutDirs;   
+        cutsMl = cfg.cutsMl;
+        cutDirMl = cfg.cutDirs;
         namesInputFeatures = cfg.inputFeatures;
         onnxFileNames = cfg.onnxFiles;
       } else {
         auto& cfg = std::get<dqmlcuts::MultiClassBdtScoreConfig>(config);
         binsPtMl = cfg.binsPt;
         nClassesMl = 3;
-        cutsMl = cfg.cutsMl;   
-        cutDirMl = cfg.cutDirs;   
+        cutsMl = cfg.cutsMl;
+        cutDirMl = cfg.cutDirs;
         namesInputFeatures = cfg.inputFeatures;
         onnxFileNames = cfg.onnxFiles;
       }
@@ -1720,19 +1720,20 @@ struct AnalysisSameEventPairing {
             dielectronsExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
             if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelPID) > 0) {
               if (fConfigML.applyBDT) {
-                std::vector<float> dqInputFeatures = dqMlResponse.getInputFeatures(t1, t2, VarManager::fgValues); 
+                std::vector<float> dqInputFeatures = dqMlResponse.getInputFeatures(t1, t2, VarManager::fgValues);
 
                 if (dqInputFeatures.empty()) {
                   LOG(fatal) << "Input features for ML selection are empty! Please check your configuration.";
                   return;
                 }
 
-                //isSelectedBDT = dqMlResponse.isSelectedMl(dqInputFeatures, VarManager::fgValues[VarManager::kPt]);
+                // isSelectedBDT = dqMlResponse.isSelectedMl(dqInputFeatures, VarManager::fgValues[VarManager::kPt]);
                 isSelectedBDT = dqMlResponse.isSelectedMl(dqInputFeatures, VarManager::fgValues[VarManager::kPt], outputMlPsi2ee);
                 VarManager::FillBdtScore(outputMlPsi2ee); // TODO: check if this is needed or not
               }
 
-              if (fConfigML.applyBDT && !isSelectedBDT) continue;
+              if (fConfigML.applyBDT && !isSelectedBDT)
+                continue;
 
               if (fConfigOptions.flatTables.value) {
                 dielectronAllList(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), twoTrackFilter, dileptonMcDecision,
@@ -1855,8 +1856,9 @@ struct AnalysisSameEventPairing {
         bool isLeg1Ambi = false;
         bool isLeg2Ambi = false;
         bool isAmbiExtra = false;
-        
-        if (fConfigML.applyBDT && !isSelectedBDT) continue;
+
+        if (fConfigML.applyBDT && !isSelectedBDT)
+          continue;
 
         for (int icut = 0; icut < ncuts; icut++) {
           if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
@@ -2172,9 +2174,9 @@ struct AnalysisSameEventPairing {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCovWithColl>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
-   void processBarrelOnlySkimmedBDT(MyEventsVtxCovSelected const& events,
-                                soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
-                                MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
+  void processBarrelOnlySkimmedBDT(MyEventsVtxCovSelected const& events,
+                                   soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
+                                   MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
   {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }

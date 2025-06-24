@@ -7099,7 +7099,7 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
     }
 
     TString typeStr = obj["type"].GetString();
-    //int nClasses = (typeStr == "MultiClass") ? 3 : 1;
+    // int nClasses = (typeStr == "MultiClass") ? 3 : 1;
 
     std::vector<std::string> namesInputFeatures;
     if (obj.HasMember("inputFeatures") && obj["inputFeatures"].IsArray()) {
@@ -7123,7 +7123,8 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
 
     for (auto member = obj.MemberBegin(); member != obj.MemberEnd(); ++member) {
       TString key = member->name.GetString();
-      if (!key.Contains("AddCut")) continue;
+      if (!key.Contains("AddCut"))
+        continue;
 
       const auto& cut = member->value;
 
@@ -7141,16 +7142,17 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
 
       for (auto& sub : cut.GetObject()) {
         TString subKey = sub.name.GetString();
-        if (!subKey.Contains("AddMLCut")) continue;
+        if (!subKey.Contains("AddMLCut"))
+          continue;
 
         const auto& mlcut = sub.value;
-        //const char* var = mlcut["var"].GetString();
+        // const char* var = mlcut["var"].GetString();
         double cutVal = mlcut.HasMember("cut") ? mlcut["cut"].GetDouble() : 0.5;
         exclude = mlcut.HasMember("exclude") ? mlcut["exclude"].GetBool() : false;
 
         binCuts.push_back(cutVal);
-        
-         if (!cutDirsFilled) {
+
+        if (!cutDirsFilled) {
           cutDirs.push_back(exclude ? 1 : 0);
           cutDirsFilled = true;
         }
@@ -7161,7 +7163,8 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
 
     // bin edges
     std::set<double> binEdges;
-    for (auto& b : ptBins) binEdges.insert(b.first);
+    for (auto& b : ptBins)
+      binEdges.insert(b.first);
     binEdges.insert(ptBins.back().second);
     std::vector<double> binsPt(binEdges.begin(), binEdges.end());
 
@@ -7184,7 +7187,7 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
 
       return binaryCfg;
 
-    // MultiClass
+      // MultiClass
     } else if (typeStr == "MultiClass") {
       dqmlcuts::MultiClassBdtScoreConfig multiCfg;
       multiCfg.inputFeatures = namesInputFeatures;
@@ -7204,8 +7207,8 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
 }
 
 o2::framework::LabeledArray<double> o2::aod::dqmlcuts::makeLabeledCutsMl(const std::vector<std::vector<double>>& cuts,
-                                                      const std::vector<std::string>& labelsPt,
-                                                      const std::vector<std::string>& labelsClass)
+                                                                         const std::vector<std::string>& labelsPt,
+                                                                         const std::vector<std::string>& labelsClass)
 {
   const size_t nRows = cuts.size();
   const size_t nCols = cuts.empty() ? 0 : cuts[0].size();
@@ -7218,4 +7221,3 @@ o2::framework::LabeledArray<double> o2::aod::dqmlcuts::makeLabeledCutsMl(const s
   o2::framework::Array2D<double> arr(flat.data(), nRows, nCols);
   return o2::framework::LabeledArray<double>(arr, labelsPt, labelsClass);
 }
-

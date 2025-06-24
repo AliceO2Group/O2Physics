@@ -5524,7 +5524,6 @@ float VarManager::calculatePhiV(T1 const& t1, T2 const& t2)
   return pairPhiV;
 }
 
-
 template <typename T1>
 void VarManager::FillBdtScore(T1 const& bdtScore, float* values)
 {
@@ -5536,8 +5535,8 @@ void VarManager::FillBdtScore(T1 const& bdtScore, float* values)
     values[kBdtBackground] = bdtScore[0];
   } else if (bdtScore.size() == 3) {
     values[kBdtBackground] = bdtScore[0];
-    values[kBdtPrompt]     = bdtScore[1];
-    values[kBdtNonprompt]  = bdtScore[2];
+    values[kBdtPrompt] = bdtScore[1];
+    values[kBdtNonprompt] = bdtScore[2];
   } else {
     LOG(warning) << "Unexpected number of BDT outputs: " << bdtScore.size();
   }
