@@ -23,8 +23,8 @@
 #include "TableHelper.h"
 #include "pidTPCBase.h"
 
-#include "Common/DataModel/FT0Corrected.h"
 #include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/DataModel/FT0Corrected.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"

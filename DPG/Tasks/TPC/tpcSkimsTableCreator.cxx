@@ -855,11 +855,11 @@ struct TreeWriterTPCTOF {
                          aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr,
                          aod::TrackSelection>;
   using TrksWithDEdxCorrection = soa::Join<aod::Tracks, aod::TracksExtra,
-                         aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa,
-                         aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr,
-                         aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa,
-                         aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr,
-                         aod::TrackSelection, aod::DEdxsCorrected>;
+                                           aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa,
+                                           aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr,
+                                           aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa,
+                                           aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr,
+                                           aod::TrackSelection, aod::DEdxsCorrected>;
   using Colls = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
   using MyBCTable = soa::Join<aod::BCsWithTimestamps, aod::BCTFinfoTable>;
 
