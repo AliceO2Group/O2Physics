@@ -801,7 +801,7 @@ struct OnTheFlyRichPid {
       }
 
       // Straight to Nsigma
-      float deltaThetaBarrelRich[5];//, nSigmaBarrelRich[5];
+      float deltaThetaBarrelRich[5]; //, nSigmaBarrelRich[5];
       int lpdg_array[5] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
       float masses[5];
 
