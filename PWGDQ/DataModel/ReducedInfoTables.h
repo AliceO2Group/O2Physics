@@ -864,7 +864,7 @@ DECLARE_SOA_TABLE(DileptonsMiniTree, "AOD", "RTDILEPTMTREE", //!
                   dilepton_track_index::Pt2, dilepton_track_index::Eta2, dilepton_track_index::Phi2);
 
 DECLARE_SOA_TABLE(DileptonsMiniTreeGen, "AOD", "RTDILMTREEGEN", //!
-                  reducedpair::McDecision, mccollision::ImpactParameter, reducedpair::CentFT0C,
+                  reducedpair::McDecision, mccollision::ImpactParameter,
                   dilepton_track_index::PtMC1, dilepton_track_index::EtaMC1, dilepton_track_index::PhiMC1,
                   dilepton_track_index::PtMC2, dilepton_track_index::EtaMC2, dilepton_track_index::PhiMC2);
 

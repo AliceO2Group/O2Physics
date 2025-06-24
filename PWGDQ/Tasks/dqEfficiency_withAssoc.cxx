@@ -2055,7 +2055,7 @@ struct AnalysisSameEventPairing {
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig->GetName()), VarManager::fgValues);
           if (useMiniTree.fConfigMiniTree) {
             auto mcEvent = mcEvents.rawIteratorAt(mctrack.reducedMCeventId());
-            dileptonMiniTreeGen(mcDecision, mcEvent.impactParameter(), VarManager::fgValues[VarManager::kCentFT0C], mctrack.pt(), mctrack.eta(), mctrack.phi(), -999, -999, -999);
+            dileptonMiniTreeGen(mcDecision, mcEvent.impactParameter(), mctrack.pt(), mctrack.eta(), mctrack.phi(), -999, -999, -999);
           }
         }
       }
@@ -2077,7 +2077,7 @@ struct AnalysisSameEventPairing {
               fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig->GetName()), VarManager::fgValues);
               if (useMiniTree.fConfigMiniTree) {
                 // WARNING! To be checked
-                dileptonMiniTreeGen(mcDecision, -999, VarManager::fgValues[VarManager::kCentFT0C], t1.pt(), t1.eta(), t1.phi(), t2.pt(), t2.eta(), t2.phi());
+                dileptonMiniTreeGen(mcDecision, -999, t1.pt(), t1.eta(), t1.phi(), t2.pt(), t2.eta(), t2.phi());
               }
             }
             isig++;
