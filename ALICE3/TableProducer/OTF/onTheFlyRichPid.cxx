@@ -745,10 +745,15 @@ struct OnTheFlyRichPid {
     }
 
     for (const auto& track : tracks) {
+
+      float nSigmaBarrelRich[5] = {error_value, error_value, error_value, error_value, error_value};
+
       // first step: find precise arrival time (if any)
       // --- convert track into perfect track
-      if (!track.has_mcParticle()) // should always be OK but check please
+      if (!track.has_mcParticle()) { // should always be OK but check please
+        upgradeRich(nSigmaBarrelRich[0], nSigmaBarrelRich[1], nSigmaBarrelRich[2], nSigmaBarrelRich[3], nSigmaBarrelRich[4]);
         continue;
+      }
 
       auto mcParticle = track.mcParticle();
       o2::track::TrackParCov o2track = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdg);
@@ -761,12 +766,14 @@ struct OnTheFlyRichPid {
       // get particle to calculate Cherenkov angle and resolution
       auto pdgInfo = pdg->GetParticle(mcParticle.pdgCode());
       if (pdgInfo == nullptr) {
+        upgradeRich(nSigmaBarrelRich[0], nSigmaBarrelRich[1], nSigmaBarrelRich[2], nSigmaBarrelRich[3], nSigmaBarrelRich[4]);
         continue;
       }
 
       // find track bRICH sector
       int i_sector = findSector(o2track.getEta());
       if (i_sector < 0) {
+        upgradeRich(nSigmaBarrelRich[0], nSigmaBarrelRich[1], nSigmaBarrelRich[2], nSigmaBarrelRich[3], nSigmaBarrelRich[4]);
         continue;
       }
 
@@ -794,12 +801,12 @@ struct OnTheFlyRichPid {
       }
 
       // Straight to Nsigma
-      float deltaThetaBarrelRich[5], nSigmaBarrelRich[5];
+      float deltaThetaBarrelRich[5]; //, nSigmaBarrelRich[5];
       int lpdg_array[5] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
       float masses[5];
 
       for (int ii = 0; ii < 5; ii++) {
-        nSigmaBarrelRich[ii] = error_value;
+        // nSigmaBarrelRich[ii] = error_value;
 
         auto pdgInfoThis = pdg->GetParticle(lpdg_array[ii]);
         masses[ii] = pdgInfoThis->Mass();
