@@ -160,9 +160,9 @@ uint8_t getCompressedBdtScoreSgn(T bdtScore)
   return getCompressedUint8(bdtScore, 1. / 255);
 }
 
-/// It compresses the number of sigma (0.1 sigma precision)
+/// It compresses the occupancy value
 ///\param occupancy is the occupancy value
-///\return The number of sigma compressed to a int8_t with 0.1 precision
+///\return The number of occupancy compressed to a uint8_t
 template <typename T>
 uint8_t getCompressedOccupancy(T occupancy)
 {
@@ -327,6 +327,16 @@ DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, uint8_t);                       //! c
 DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, uint8_t);                       //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(TRDChi2, trdChi2, uint8_t);                             //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(TOFChi2, tofChi2, uint8_t);                             //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(CmoPrimUnfm80, cmoPrimUnfm80, uint8_t);
+DECLARE_SOA_COLUMN(CmoFV0AUnfm80, cmoFV0AUnfm80, uint8_t);
+DECLARE_SOA_COLUMN(CmoFT0AUnfm80, cmoFT0AUnfm80, uint8_t);
+DECLARE_SOA_COLUMN(CmoFT0CUnfm80, cmoFT0CUnfm80, uint8_t);
+DECLARE_SOA_COLUMN(CwmoPrimUnfm80, cwmoPrimUnfm80, uint8_t);
+DECLARE_SOA_COLUMN(CwmoFV0AUnfm80, cwmoFV0AUnfm80, uint8_t);
+DECLARE_SOA_COLUMN(CwmoFT0AUnfm80, cwmoFT0AUnfm80, uint8_t);
+DECLARE_SOA_COLUMN(CwmoFT0CUnfm80, cwmoFT0CUnfm80, uint8_t);
+DECLARE_SOA_COLUMN(CmoRobustT0V0PrimUnfm80, cmoRobustT0V0PrimUnfm80, uint8_t);
+DECLARE_SOA_COLUMN(CwmoRobustT0V0PrimUnfm80, cwmoRobustT0V0PrimUnfm80, uint8_t);
 } // namespace hf_calib
 
 DECLARE_SOA_TABLE(D0CalibTrack, "AOD", "D0CALIBTRACKS",
@@ -383,7 +393,17 @@ DECLARE_SOA_TABLE(D0CalibTrack, "AOD", "D0CALIBTRACKS",
                   hf_calib::TpcNumSigmaPi,
                   hf_calib::TpcNumSigmaKa,
                   hf_calib::TofNumSigmaPi,
-                  hf_calib::TofNumSigmaKa);
+                  hf_calib::TofNumSigmaKa,
+                  hf_calib::CmoPrimUnfm80,
+                  hf_calib::CmoFV0AUnfm80,
+                  hf_calib::CmoFT0AUnfm80,
+                  hf_calib::CmoFT0CUnfm80,
+                  hf_calib::CwmoPrimUnfm80,
+                  hf_calib::CwmoFV0AUnfm80,
+                  hf_calib::CwmoFT0AUnfm80,
+                  hf_calib::CwmoFT0CUnfm80,
+                  hf_calib::CmoRobustT0V0PrimUnfm80,
+                  hf_calib::CwmoRobustT0V0PrimUnfm80);
 
 namespace hf_calib
 {
