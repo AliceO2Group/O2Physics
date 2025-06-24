@@ -15,10 +15,14 @@
 #ifndef PWGEM_PHOTONMESON_UTILS_NMHISTOGRAMS_H_
 #define PWGEM_PHOTONMESON_UTILS_NMHISTOGRAMS_H_
 
-#include <vector>
-#include "TF1.h"
-#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
+#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
+
+#include "Framework/HistogramRegistry.h"
+
+#include "TF1.h"
+
+#include <vector>
 
 using namespace o2::framework;
 using namespace o2::aod::pwgem::photonmeson::utils::mcutil;

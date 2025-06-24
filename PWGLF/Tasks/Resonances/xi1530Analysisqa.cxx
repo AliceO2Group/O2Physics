@@ -430,13 +430,13 @@ struct Xi1530Analysisqa {
     if (std::abs(track.pt()) < cMinPtcut)
       return false;
     if constexpr (IsResoMicrotrack) {
-      if (std::abs(o2::aod::resodmciroaughter::ResoMicroTrackSelFlag::decodeDCAxy(track.trackSelectionFlags())) > (cDCAxytoPVByPtPiFirstP0 + cDCAxyToPVByPtPiFirstExp * std::pow(track.pt(), -1.1)))
+      if (std::abs(o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAxy(track.trackSelectionFlags())) > (cDCAxytoPVByPtPiFirstP0 + cDCAxyToPVByPtPiFirstExp * std::pow(track.pt(), -1.1)))
         return false;
       if (cDCAzToPVAsPt) {
-        if (std::abs(o2::aod::resodmciroaughter::ResoMicroTrackSelFlag::decodeDCAz(track.trackSelectionFlags())) > (cDCAxytoPVByPtPiFirstP0 + cDCAxyToPVByPtPiFirstExp * std::pow(track.pt(), -1.1)))
+        if (std::abs(o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAz(track.trackSelectionFlags())) > (cDCAxytoPVByPtPiFirstP0 + cDCAxyToPVByPtPiFirstExp * std::pow(track.pt(), -1.1)))
           return false;
       } else {
-        if (std::abs(o2::aod::resodmciroaughter::ResoMicroTrackSelFlag::decodeDCAz(track.trackSelectionFlags())) > cMaxDCAzToPVCut)
+        if (std::abs(o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAz(track.trackSelectionFlags())) > cMaxDCAzToPVCut)
           return false;
       }
     } else {
@@ -607,8 +607,8 @@ struct Xi1530Analysisqa {
     float trackPt = candidate.pt();
 
     if constexpr (IsResoMicrotrack) {
-      tpcNsigmaPionFirst = o2::aod::resodmciroaughter::PidNSigma::getTPCnSigma(candidate.pidNSigmaPiFlag());
-      tofNsigmaPionFirst = o2::aod::resodmciroaughter::PidNSigma::getTOFnSigma(candidate.pidNSigmaPiFlag());
+      tpcNsigmaPionFirst = o2::aod::resomicrodaughter::PidNSigma::getTPCnSigma(candidate.pidNSigmaPiFlag());
+      tofNsigmaPionFirst = o2::aod::resomicrodaughter::PidNSigma::getTOFnSigma(candidate.pidNSigmaPiFlag());
     } else {
       tpcNsigmaPionFirst = candidate.tpcNSigmaPi();
       tofNsigmaPionFirst = candidate.tofNSigmaPi();
@@ -700,10 +700,10 @@ struct Xi1530Analysisqa {
       static float trk1NSigmaPiTPC;
       static float trk1NSigmaPiTOF;
       if constexpr (IsResoMicrotrack) {
-        trk1DCAXY = o2::aod::resodmciroaughter::ResoMicroTrackSelFlag::decodeDCAxy(trk1.trackSelectionFlags());
-        trk1DCAZ = o2::aod::resodmciroaughter::ResoMicroTrackSelFlag::decodeDCAz(trk1.trackSelectionFlags());
-        trk1NSigmaPiTPC = o2::aod::resodmciroaughter::PidNSigma::getTPCnSigma(trk1.pidNSigmaPiFlag());
-        trk1NSigmaPiTOF = o2::aod::resodmciroaughter::PidNSigma::getTOFnSigma(trk1.pidNSigmaPiFlag());
+        trk1DCAXY = o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAxy(trk1.trackSelectionFlags());
+        trk1DCAZ = o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAz(trk1.trackSelectionFlags());
+        trk1NSigmaPiTPC = o2::aod::resomicrodaughter::PidNSigma::getTPCnSigma(trk1.pidNSigmaPiFlag());
+        trk1NSigmaPiTOF = o2::aod::resomicrodaughter::PidNSigma::getTOFnSigma(trk1.pidNSigmaPiFlag());
       } else {
         trk1DCAXY = trk1.dcaXY();
         trk1DCAZ = trk1.dcaZ();

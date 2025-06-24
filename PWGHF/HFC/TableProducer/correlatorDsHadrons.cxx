@@ -14,13 +14,12 @@
 /// \author Grazia Luparello <grazia.luparello@cern.ch>
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 
-#include <vector>
-#include <unordered_map>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/HFC/DataModel/CorrelationTables.h"
+#include "PWGHF/HFC/DataModel/DerivedDataCorrelationTables.h"
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
@@ -28,12 +27,13 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/HFC/DataModel/CorrelationTables.h"
-#include "PWGHF/HFC/DataModel/DerivedDataCorrelationTables.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
+#include <unordered_map>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -233,6 +233,7 @@ struct HfCorrelatorDsHadrons {
     AxisSpec axisStatus = {15, 0.5, 15.5, "Selection status"};
 
     // Histograms for data analysis
+    registry.add("hCollisionPoolBin", "Ds candidates collision pool bin", {HistType::kTH1F, {axisPoolBin}});
     if (fillHistoData) {
       registry.add("hPtCand", "Ds candidates pt", {HistType::kTH1F, {axisPtD}});
       registry.add("hSelectionStatusDsToKKPi", "Ds candidates selection", {HistType::kTH1F, {axisStatus}});
@@ -249,7 +250,6 @@ struct HfCorrelatorDsHadrons {
       registry.add("hZVtx", "z vertex", {HistType::kTH1F, {axisPosZ}});
       registry.add("hMassDsVsPt", "Ds candidates massVsPt", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
       registry.add("hMassDsData", "Ds candidates mass", {HistType::kTH1F, {axisMassD}});
-      registry.add("hCollisionPoolBin", "Ds candidates collision pool bin", {HistType::kTH1F, {axisPoolBin}});
       registry.add("hDsPoolBin", "Ds candidates pool bin", {HistType::kTH1F, {axisPoolBin}});
       registry.add("hTracksPoolBin", "Particles associated pool bin", {HistType::kTH1F, {axisPoolBin}});
     }
@@ -291,6 +291,7 @@ struct HfCorrelatorDsHadrons {
       registry.add("hCorrAllPrimaryPions", "Ds-pion correlations MC Gen", {HistType::kTH3F, {{axisPhi}, {axisPtD}, {axisPtHadron}}});
       registry.add("hCorrAllPrimaryKaons", "Ds-kaon correlations MC Gen", {HistType::kTH3F, {{axisPhi}, {axisPtD}, {axisPtHadron}}});
       registry.add("hCorrAllPrimaryProtons", "Ds-proton correlations MC Gen", {HistType::kTH3F, {{axisPhi}, {axisPtD}, {axisPtHadron}}});
+      registry.add("hFakeCollision", "Fake collision counter", {HistType::kTH1F, {{1, -0.5, 0.5, "n fake coll"}}});
     }
   }
 
