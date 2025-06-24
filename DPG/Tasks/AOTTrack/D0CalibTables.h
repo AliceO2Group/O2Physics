@@ -19,10 +19,11 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include <Framework/AnalysisDataModel.h>
 #include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 
 #include <sys/types.h>
+
 #include <cstdint>
 #include <limits>
 #include <string>
@@ -435,29 +436,29 @@ DECLARE_SOA_TABLE(D0CalibTracks, "AOD", "D0CALIBTRACK",
 
 namespace hf_calib
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(TrackPos, trackPos, int, D0CalibTracks, "_Pos");  //! Index of positive track
-DECLARE_SOA_INDEX_COLUMN_FULL(TrackNeg, trackNeg, int, D0CalibTracks, "_Neg");  //! Index of negative track
-DECLARE_SOA_COLUMN(MassHypo, massHypo, uint8_t);                                //! mass hypothesis for D0 (D0, D0bar, or both)
-DECLARE_SOA_COLUMN(Pt, pt, float);                                              //! D0-candidate pT
-DECLARE_SOA_COLUMN(Eta, eta, float);                                            //! D0-candidate eta
-DECLARE_SOA_COLUMN(Phi, phi, float);                                            //! D0-candidate phi
-DECLARE_SOA_COLUMN(InvMassD0, invMassD0, float);                                //! invariant mass (D0 hypothesis)
-DECLARE_SOA_COLUMN(InvMassD0bar, invMassD0bar, float);                          //! invariant mass (D0bar hypothesis)
-DECLARE_SOA_COLUMN(DecLength, decLength, uint8_t);                              //! compressed decay length
-DECLARE_SOA_COLUMN(DecLengthXY, decLengthXY, uint8_t);                          //! compressed decay length XY
-DECLARE_SOA_COLUMN(NormDecLength, normDecLength, uint8_t);                      //! compressed normalised decay length
-DECLARE_SOA_COLUMN(NormDecLengthXY, normDecLengthXY, uint8_t);                  //! compressed normalised decay length XY
-DECLARE_SOA_COLUMN(CosPa, cosPa, uint8_t);                                      //! compressed cosine of pointing angle
-DECLARE_SOA_COLUMN(CosPaXY, cosPaXY, uint8_t);                                  //! compressed cosine of pointing angle XY
-DECLARE_SOA_COLUMN(PointingAngle, pointingAngle, uint8_t);                      //! compressed pointing angle
-DECLARE_SOA_COLUMN(PointingAngleXY, pointingAngleXY, uint8_t);                  //! compressed pointing angle XY
-DECLARE_SOA_COLUMN(DecVtxChi2, decVtxChi2, uint8_t);                            //! compressed decay vertex chi2
-DECLARE_SOA_COLUMN(BdtScoreBkgD0, bdtScoreBkgD0, uint16_t);                     //! compressed BDT score (bkg, D0 mass hypo)
-DECLARE_SOA_COLUMN(BdtScorePromptD0, bdtScorePromptD0, uint8_t);                //! compressed BDT score (prompt, D0 mass hypo)
-DECLARE_SOA_COLUMN(BdtScoreNonpromptD0, bdtScoreNonpromptD0, uint8_t);          //! compressed BDT score (non-prompt, D0 mass hypo)
-DECLARE_SOA_COLUMN(BdtScoreBkgD0bar, bdtScoreBkgD0bar, uint16_t);               //! compressed BDT score (bkg, D0bar mass hypo)
-DECLARE_SOA_COLUMN(BdtScorePromptD0bar, bdtScorePromptD0bar, uint8_t);          //! compressed BDT score (prompt, D0bar mass hypo)
-DECLARE_SOA_COLUMN(BdtScoreNonpromptD0bar, bdtScoreNonpromptD0bar, uint8_t);    //! compressed BDT score (non-prompt, D0bar mass hypo)
+DECLARE_SOA_INDEX_COLUMN_FULL(TrackPos, trackPos, int, D0CalibTracks, "_Pos"); //! Index of positive track
+DECLARE_SOA_INDEX_COLUMN_FULL(TrackNeg, trackNeg, int, D0CalibTracks, "_Neg"); //! Index of negative track
+DECLARE_SOA_COLUMN(MassHypo, massHypo, uint8_t);                               //! mass hypothesis for D0 (D0, D0bar, or both)
+DECLARE_SOA_COLUMN(Pt, pt, float);                                             //! D0-candidate pT
+DECLARE_SOA_COLUMN(Eta, eta, float);                                           //! D0-candidate eta
+DECLARE_SOA_COLUMN(Phi, phi, float);                                           //! D0-candidate phi
+DECLARE_SOA_COLUMN(InvMassD0, invMassD0, float);                               //! invariant mass (D0 hypothesis)
+DECLARE_SOA_COLUMN(InvMassD0bar, invMassD0bar, float);                         //! invariant mass (D0bar hypothesis)
+DECLARE_SOA_COLUMN(DecLength, decLength, uint8_t);                             //! compressed decay length
+DECLARE_SOA_COLUMN(DecLengthXY, decLengthXY, uint8_t);                         //! compressed decay length XY
+DECLARE_SOA_COLUMN(NormDecLength, normDecLength, uint8_t);                     //! compressed normalised decay length
+DECLARE_SOA_COLUMN(NormDecLengthXY, normDecLengthXY, uint8_t);                 //! compressed normalised decay length XY
+DECLARE_SOA_COLUMN(CosPa, cosPa, uint8_t);                                     //! compressed cosine of pointing angle
+DECLARE_SOA_COLUMN(CosPaXY, cosPaXY, uint8_t);                                 //! compressed cosine of pointing angle XY
+DECLARE_SOA_COLUMN(PointingAngle, pointingAngle, uint8_t);                     //! compressed pointing angle
+DECLARE_SOA_COLUMN(PointingAngleXY, pointingAngleXY, uint8_t);                 //! compressed pointing angle XY
+DECLARE_SOA_COLUMN(DecVtxChi2, decVtxChi2, uint8_t);                           //! compressed decay vertex chi2
+DECLARE_SOA_COLUMN(BdtScoreBkgD0, bdtScoreBkgD0, uint16_t);                    //! compressed BDT score (bkg, D0 mass hypo)
+DECLARE_SOA_COLUMN(BdtScorePromptD0, bdtScorePromptD0, uint8_t);               //! compressed BDT score (prompt, D0 mass hypo)
+DECLARE_SOA_COLUMN(BdtScoreNonpromptD0, bdtScoreNonpromptD0, uint8_t);         //! compressed BDT score (non-prompt, D0 mass hypo)
+DECLARE_SOA_COLUMN(BdtScoreBkgD0bar, bdtScoreBkgD0bar, uint16_t);              //! compressed BDT score (bkg, D0bar mass hypo)
+DECLARE_SOA_COLUMN(BdtScorePromptD0bar, bdtScorePromptD0bar, uint8_t);         //! compressed BDT score (prompt, D0bar mass hypo)
+DECLARE_SOA_COLUMN(BdtScoreNonpromptD0bar, bdtScoreNonpromptD0bar, uint8_t);   //! compressed BDT score (non-prompt, D0bar mass hypo)
 } // namespace hf_calib
 
 DECLARE_SOA_TABLE(D0CalibCands, "AOD", "D0CALIBCAND",
