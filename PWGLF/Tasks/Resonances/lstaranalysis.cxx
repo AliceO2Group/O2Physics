@@ -82,6 +82,7 @@ struct Lstaranalysis {
   Configurable<float> cMinPtcut{"cMinPtcut", 0.15f, "Minimal pT for tracks"};
   Configurable<float> cMinTPCNClsFound{"cMinTPCNClsFound", 120, "minimum TPCNClsFound value for good track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
+  Configurable<int> cfgMinCrossedRows{"cfgMinCrossedRows", 70, "min crossed rows for good track"};
 
   // DCA Selections
   // DCAr to PV
@@ -111,7 +112,6 @@ struct Lstaranalysis {
   Configurable<std::vector<float>> kaonTOFPIDcuts{"kaonTOFPIDcuts", {2}, "nSigma list for Kaon TOF PID cuts"};
   Configurable<std::vector<float>> kaonTPCTOFCombinedpTintv{"kaonTPCTOFCombinedpTintv", {999.}, "pT intervals for Kaon TPC-TOF PID cuts"};
   Configurable<std::vector<float>> kaonTPCTOFCombinedPIDcuts{"kaonTPCTOFCombinedPIDcuts", {2}, "nSigma list for Kaon TPC-TOF PID cuts"};
-  Configurable<float> cMaxTPCnSigmaKaonVETO{"cMaxTPCnSigmaKaonVETO", 3.0, "TPC nSigma VETO cut for Kaon"}; // TPC
 
   // Proton
   Configurable<std::vector<float>> protonTPCPIDpTintv{"protonTPCPIDpTintv", {0.9}, "pT intervals for Kaon TPC PID cuts"};
@@ -120,7 +120,6 @@ struct Lstaranalysis {
   Configurable<std::vector<float>> protonTOFPIDcuts{"protonTOFPIDcuts", {2}, "nSigma list for Kaon TOF PID cuts"};
   Configurable<std::vector<float>> protonTPCTOFCombinedpTintv{"protonTPCTOFCombinedpTintv", {999.}, "pT intervals for Proton TPC-TOF PID cuts"};
   Configurable<std::vector<float>> protonTPCTOFCombinedPIDcuts{"protonTPCTOFCombinedPIDcuts", {2}, "nSigma list for Proton TPC-TOF PID cuts"};
-  Configurable<float> cMaxTPCnSigmaProtonVETO{"cMaxTPCnSigmaProtonVETO", 3.0, "TPC nSigma VETO cut for Proton"}; // TPC
 
   // Additional purity check
   Configurable<bool> crejectPion{"crejectPion", false, "Switch to turn on/off pion contamination"};
@@ -258,17 +257,17 @@ struct Lstaranalysis {
     if (doprocessData) {
       // Track QA before cuts
       //  --- Track
-      histos.add("QA/QAbefore/Track/TOF_TPC_Map_ka_all", "TOF + TPC Combined PID for Kaon;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTHnSparseF, {axisPIDQA, axisPIDQA}});
-      histos.add("QA/QAbefore/Track/TOF_Nsigma_ka_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
-      histos.add("QA/QAbefore/Track/TPC_Nsigma_ka_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
-      histos.add("QA/QAbefore/Track/TPConly_Nsigma_ka", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTHnSparseF, {axisPt, axisPIDQA}});
-      histos.add("QA/QAbefore/Track/TOF_TPC_Map_pr_all", "TOF + TPC Combined PID for Proton;#sigma_{TOF}^{Proton};#sigma_{TPC}^{Proton}", {HistType::kTHnSparseF, {axisPIDQA, axisPIDQA}});
-      histos.add("QA/QAbefore/Track/TOF_Nsigma_pr_all", "TOF NSigma for Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Proton};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
-      histos.add("QA/QAbefore/Track/TPC_Nsigma_pr_all", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Proton};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
-      histos.add("QA/QAbefore/Track/TPConly_Nsigma_pr", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Proton};", {HistType::kTHnSparseF, {axisPt, axisPIDQA}});
-      histos.add("QA/QAbefore/Track/dcaZ", "DCA_{Z} distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); DCA_{Z} (cm); ", HistType::kTHnSparseF, {axisPt, axisDCAz});
-      histos.add("QA/QAbefore/Track/dcaXY", "DCA_{XY} momentum distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); DCA_{XY} (cm);", HistType::kTHnSparseF, {axisPt, axisDCAxy});
-      histos.add("QA/QAbefore/Track/TPC_CR", "# TPC Xrows distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); TPC X rows", HistType::kTHnSparseF, {axisPt, axisTPCXrow});
+      histos.add("QA/QAbefore/Track/TOF_TPC_Map_ka_all", "TOF + TPC Combined PID for Kaon;{#sigma_{TOF}^{Kaon}};{#sigma_{TPC}^{Kaon}}", {HistType::kTH2F, {axisPIDQA, axisPIDQA}});
+      histos.add("QA/QAbefore/Track/TOF_Nsigma_ka_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});{#sigma_{TOF}^{Kaon}};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
+      histos.add("QA/QAbefore/Track/TPC_Nsigma_ka_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});{#sigma_{TPC}^{Kaon}};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
+      histos.add("QA/QAbefore/Track/TPConly_Nsigma_ka", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});{#sigma_{TPC}^{Kaon}};", {HistType::kTH2F, {axisPt, axisPIDQA}});
+      histos.add("QA/QAbefore/Track/TOF_TPC_Map_pr_all", "TOF + TPC Combined PID for Proton;{#sigma_{TOF}^{Proton}};{#sigma_{TPC}^{Proton}}", {HistType::kTH2F, {axisPIDQA, axisPIDQA}});
+      histos.add("QA/QAbefore/Track/TOF_Nsigma_pr_all", "TOF NSigma for Proton;#it{p}_{T} (GeV/#it{c});{#sigma_{TOF}^{Proton}};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
+      histos.add("QA/QAbefore/Track/TPC_Nsigma_pr_all", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});{#sigma_{TPC}^{Proton}};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
+      histos.add("QA/QAbefore/Track/TPConly_Nsigma_pr", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});{#sigma_{TPC}^{Proton}};", {HistType::kTH2F, {axisPt, axisPIDQA}});
+      histos.add("QA/QAbefore/Track/dcaZ", "DCA_{Z} distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); DCA_{Z} (cm); ", HistType::kTH2F, {axisPt, axisDCAz});
+      histos.add("QA/QAbefore/Track/dcaXY", "DCA_{XY} momentum distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); DCA_{XY} (cm);", HistType::kTH2F, {axisPt, axisDCAxy});
+      histos.add("QA/QAbefore/Track/TPC_CR", "# TPC Xrows distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); TPC X rows", HistType::kTH2F, {axisPt, axisTPCXrow});
       histos.add("QA/QAbefore/Track/pT", "pT distribution of Kaons; #it{p}_{T} (GeV/#it{c}); Counts;", {HistType::kTH1F, {axisPt}});
       histos.add("QA/QAbefore/Track/eta", "#eta distribution of Kaons; #eta; Counts;", {HistType::kTH1F, {axisEta}});
 
@@ -280,29 +279,29 @@ struct Lstaranalysis {
 
       // PID QA after cuts
       //  --- Kaon
-      histos.add("QA/QAafter/Kaon/TOF_TPC_Map_ka_all", "TOF + TPC Combined PID for Kaon;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTHnSparseF, {axisPIDQA, axisPIDQA}});
-      histos.add("QA/QAafter/Kaon/TOF_Nsigma_ka_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
-      histos.add("QA/QAafter/Kaon/TPC_Nsigma_ka_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
-      histos.add("QA/QAafter/Kaon/TPC_Nsigma_ka_TPConly", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTHnSparseF, {axisPt, axisPIDQA}});
-      histos.add("QA/QAafter/Kaon/dcaZ", "DCA_{Z} distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); DCA_{Z} (cm); ", HistType::kTHnSparseF, {axisPt, axisDCAz});
-      histos.add("QA/QAafter/Kaon/dcaXY", "DCA_{XY} momentum distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); DCA_{XY} (cm);", HistType::kTHnSparseF, {axisPt, axisDCAxy});
-      histos.add("QA/QAafter/Kaon/TPC_CR", "# TPC Xrows distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); TPC X rows", HistType::kTHnSparseF, {axisPt, axisTPCXrow});
+      histos.add("QA/QAafter/Kaon/TOF_TPC_Map_ka_all", "TOF + TPC Combined PID for Kaon;{#sigma_{TOF}^{Kaon}};{#sigma_{TPC}^{Kaon}}", {HistType::kTH2F, {axisPIDQA, axisPIDQA}});
+      histos.add("QA/QAafter/Kaon/TOF_Nsigma_ka_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});{#sigma_{TOF}^{Kaon}};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
+      histos.add("QA/QAafter/Kaon/TPC_Nsigma_ka_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});{#sigma_{TPC}^{Kaon}};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
+      histos.add("QA/QAafter/Kaon/TPC_Nsigma_ka_TPConly", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});{#sigma_{TPC}^{Kaon}};", {HistType::kTH2F, {axisPt, axisPIDQA}});
+      histos.add("QA/QAafter/Kaon/dcaZ", "DCA_{Z} distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); DCA_{Z} (cm); ", HistType::kTH2F, {axisPt, axisDCAz});
+      histos.add("QA/QAafter/Kaon/dcaXY", "DCA_{XY} momentum distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); DCA_{XY} (cm);", HistType::kTH2F, {axisPt, axisDCAxy});
+      histos.add("QA/QAafter/Kaon/TPC_CR", "# TPC Xrows distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); TPC X rows", HistType::kTH2F, {axisPt, axisTPCXrow});
       histos.add("QA/QAafter/Kaon/pT", "pT distribution of Kaons; #it{p}_{T} (GeV/#it{c}); Counts;", {HistType::kTH1F, {axisPt}});
       histos.add("QA/QAafter/Kaon/eta", "#eta distribution of Kaons; #eta; Counts;", {HistType::kTH1F, {axisEta}});
-      histos.add("QA/QAafter/Kaon/TPC_Signal_ka_all", "TPC Signal for Kaon;#it{p}_{T} (GeV/#it{c});TPC Signal (A.U.)", {HistType::kTHnSparseF, {axisPt, axisTPCSignal}});
+      histos.add("QA/QAafter/Kaon/TPC_Signal_ka_all", "TPC Signal for Kaon;#it{p} (GeV/#it{c});TPC Signal (A.U.)", {HistType::kTH2F, {axisPt, axisTPCSignal}});
       histos.add("QA/QAafter/Kaon/TPCnclusterPhika", "TPC ncluster vs phi", kTHnSparseF, {{160, 0, 160, "TPC nCluster"}, {63, 0, 6.28, "#phi"}});
 
       //  --- Proton
-      histos.add("QA/QAafter/Proton/TOF_TPC_Map_pr_all", "TOF + TPC Combined PID for Proton;#sigma_{TOF}^{Proton};#sigma_{TPC}^{Proton}", {HistType::kTHnSparseF, {axisPIDQA, axisPIDQA}});
-      histos.add("QA/QAafter/Proton/TOF_Nsigma_pr_all", "TOF NSigma for Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Proton};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
-      histos.add("QA/QAafter/Proton/TPC_Nsigma_pr_all", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Proton};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
-      histos.add("QA/QAafter/Proton/TPC_Nsigma_pr_TPConly", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Proton};", {HistType::kTHnSparseF, {axisPt, axisPIDQA}});
-      histos.add("QA/QAafter/Proton/dcaZ", "DCA_{Z} distribution of selected Protons; #it{p}_{T} (GeV/#it{c}); DCA_{Z} (cm);", HistType::kTHnSparseF, {axisPt, axisDCAz});
-      histos.add("QA/QAafter/Proton/dcaXY", "DCA_{XY} momentum distribution of selected Protons; #it{p}_{T} (GeV/#it{c}); DCA_{XY} (cm);", HistType::kTHnSparseF, {axisPt, axisDCAxy});
-      histos.add("QA/QAafter/Proton/TPC_CR", "# TPC Xrows distribution of selected Protons; #it{p}_{T} (GeV/#it{c}); TPC X rows", HistType::kTHnSparseF, {axisPt, axisTPCXrow});
+      histos.add("QA/QAafter/Proton/TOF_TPC_Map_pr_all", "TOF + TPC Combined PID for Proton;{#sigma_{TOF}^{Proton}};{#sigma_{TPC}^{Proton}}", {HistType::kTH2F, {axisPIDQA, axisPIDQA}});
+      histos.add("QA/QAafter/Proton/TOF_Nsigma_pr_all", "TOF NSigma for Proton;#it{p}_{T} (GeV/#it{c});{#sigma_{TOF}^{Proton}};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
+      histos.add("QA/QAafter/Proton/TPC_Nsigma_pr_all", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});{#sigma_{TPC}^{Proton}};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
+      histos.add("QA/QAafter/Proton/TPC_Nsigma_pr_TPConly", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});{#sigma_{TPC}^{Proton}};", {HistType::kTH2F, {axisPt, axisPIDQA}});
+      histos.add("QA/QAafter/Proton/dcaZ", "DCA_{Z} distribution of selected Protons; #it{p}_{T} (GeV/#it{c}); DCA_{Z} (cm);", HistType::kTH2F, {axisPt, axisDCAz});
+      histos.add("QA/QAafter/Proton/dcaXY", "DCA_{XY} momentum distribution of selected Protons; #it{p}_{T} (GeV/#it{c}); DCA_{XY} (cm);", HistType::kTH2F, {axisPt, axisDCAxy});
+      histos.add("QA/QAafter/Proton/TPC_CR", "# TPC Xrows distribution of selected Protons; #it{p}_{T} (GeV/#it{c}); TPC X rows", HistType::kTH2F, {axisPt, axisTPCXrow});
       histos.add("QA/QAafter/Proton/pT", "pT distribution of Protons; #it{p}_{T} (GeV/#it{c}); Counts;", {HistType::kTH1F, {axisPt}});
       histos.add("QA/QAafter/Proton/eta", "#eta distribution of Protons; #eta; Counts;", {HistType::kTH1F, {axisEta}});
-      histos.add("QA/QAafter/Proton/TPC_Signal_pr_all", "TPC Signal for Proton;#it{p}_{T} (GeV/#it{c});TPC Signal (A.U.)", {HistType::kTHnSparseF, {axisPt, axisTPCSignal}});
+      histos.add("QA/QAafter/Proton/TPC_Signal_pr_all", "TPC Signal for Proton;#it{p} (GeV/#it{c});TPC Signal (A.U.)", {HistType::kTH2F, {axisPt, axisTPCSignal}});
       histos.add("QA/QAafter/Proton/TPCnclusterPhipr", "TPC ncluster vs phi", kTHnSparseF, {{160, 0, 160, "TPC nCluster"}, {63, 0, 6.28, "#phi"}});
 
       //  Mass QA 1D for quick check
@@ -349,7 +348,7 @@ struct Lstaranalysis {
         histos.add("Result/Data/h3lambda1520invmassME_DSAnti", "Invariant mass of #Lambda(1520) mixed event DSAnti", kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
       }
     }
-    histos.add("QAMC", "all Lambda", kTH1F, {{1000, -0.5, 999.5}});
+
     // MC QA
     if (doprocessMCTrue) {
       histos.add("QA/MC/h2GenEtaPt_beforeanycut", " #eta-#it{p}_{T} distribution of Generated #Lambda(1520); #eta;  #it{p}_{T}; Counts;", HistType::kTHnSparseF, {axisEta, axisPtQA});
@@ -370,10 +369,10 @@ struct Lstaranalysis {
       histos.add("QA/MC/trkDCAxy_ka", "DCAxy distribution of kaon track candidates", HistType::kTHnSparseF, {axisPt, axisDCAxy});
       histos.add("QA/MC/trkDCAz_pr", "DCAz distribution of proton track candidates", HistType::kTHnSparseF, {axisPt, axisDCAz});
       histos.add("QA/MC/trkDCAz_ka", "DCAz distribution of kaon track candidates", HistType::kTHnSparseF, {axisPt, axisDCAz});
-      histos.add("QA/MC/TOF_Nsigma_pr_all", "TOF NSigma for Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Proton};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
-      histos.add("QA/MC/TPC_Nsigma_pr_all", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Proton};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
-      histos.add("QA/MC/TOF_Nsigma_ka_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
-      histos.add("QA/MC/TPC_Nsigma_ka_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
+      histos.add("QA/MC/TOF_Nsigma_pr_all", "TOF NSigma for Proton;#it{p}_{T} (GeV/#it{c});{#sigma_{TOF}^{Proton}};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
+      histos.add("QA/MC/TPC_Nsigma_pr_all", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});{#sigma_{TPC}^{Proton}};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
+      histos.add("QA/MC/TOF_Nsigma_ka_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});{#sigma_{TOF}^{Kaon}};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
+      histos.add("QA/MC/TPC_Nsigma_ka_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});{#sigma_{TPC}^{Kaon}};", {HistType::kTHnSparseF, {axisMult, axisPt, axisPIDQA}});
 
       histos.add("Result/MC/h3lambda1520Recoinvmass", "Invariant mass of Reconstructed MC #Lambda(1520)0", kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
       histos.add("Result/MC/h3antilambda1520Recoinvmass", "Invariant mass of Reconstructed MC Anti-#Lambda(1520)0", kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
@@ -418,6 +417,8 @@ struct Lstaranalysis {
       return false;
     if (cTPCNClsFound && (track.tpcNClsFound() < cMinTPCNClsFound))
       return false;
+    if (track.tpcNClsCrossedRows() < cfgMinCrossedRows)
+      return false;
     if (cfgHasTOF && !track.hasTOF())
       return false;
     if (cfgPrimaryTrack && !track.isPrimaryTrack())
@@ -436,7 +437,9 @@ struct Lstaranalysis {
     return true;
   }
 
-  // PID selection old PID method
+  // LOGF(info, "AFTER: pt: %f, hasTOF: %d, TPCSigma: %f, TOFSigma: %f, boolTPC: %d, boolTOF: %d, bool: %d", pt, candidate.hasTOF(),
+  //    candidate.tpcNSigmaPr(), candidate.tofNSigmaPr(), tpcPIDPassed, tofPIDPassed, tpcPIDPassed || tofPIDPassed);
+
   template <typename T>
   bool pTdependentPIDProton(const T& candidate)
   {
@@ -447,69 +450,58 @@ struct Lstaranalysis {
     auto vProtonTPCTOFCombinedpTintv = static_cast<std::vector<float>>(protonTPCTOFCombinedpTintv);
     auto vProtonTPCTOFCombinedPIDcuts = static_cast<std::vector<float>>(protonTPCTOFCombinedPIDcuts);
     auto vProtonTOFPIDcuts = static_cast<std::vector<float>>(protonTOFPIDcuts);
-    auto lengthOfprotonTPCPIDpTintv = static_cast<int>(vProtonTPCPIDpTintv.size());
-    auto lengthOfprotonTOFPIDpTintv = static_cast<int>(vProtonTOFPIDpTintv.size());
-    auto lengthOfprotonTPCTOFCombinedPIDpTintv = static_cast<int>(vProtonTPCTOFCombinedpTintv.size());
 
-    bool tpcPIDPassed{false}, tofPIDPassed{false};
+    float pt = candidate.pt();
+    float ptSwitchToTOF = vProtonTPCPIDpTintv.back();
 
-    // For Proton candidate:
-    // TPC PID
-    if (lengthOfprotonTPCPIDpTintv > 0) {
-      if (candidate.pt() > vProtonTPCPIDpTintv[lengthOfprotonTPCPIDpTintv - 1]) {
-        tpcPIDPassed = false;
-      } else {
-        for (int i = 0; i < lengthOfprotonTPCPIDpTintv; i++) {
-          if (candidate.pt() > vProtonTPCPIDpTintv[i] && candidate.pt() < vProtonTPCPIDpTintv[i + 1]) {
-            if (std::abs(candidate.tpcNSigmaPr()) < vProtonTPCPIDcuts[i])
-              tpcPIDPassed = true;
-          }
-        }
+    bool tpcPIDPassed = false;
+
+    // TPC PID (interval check)
+    for (size_t i = 0; i < vProtonTPCPIDpTintv.size() - 1; ++i) {
+      if (pt > vProtonTPCPIDpTintv[i] && pt < vProtonTPCPIDpTintv[i + 1]) {
+        if (std::abs(candidate.tpcNSigmaPr()) < vProtonTPCPIDcuts[i])
+          tpcPIDPassed = true;
       }
     }
 
-    // bypass TOF
-    if (cByPassTOF && tpcPIDPassed) {
-      return true;
+    // TOF bypass option (for QA or MC)
+    if (cByPassTOF) {
+      return std::abs(candidate.tpcNSigmaPr()) < vProtonTPCPIDcuts.back();
     }
 
-    // TOF PID
-    if (candidate.hasTOF() && candidate.pt() > vProtonTPCPIDpTintv[lengthOfprotonTPCPIDpTintv - 1]) {
+    // Case 1: No TOF and pt ≤ threshold → accept only via TPC PID
+    if (!candidate.hasTOF() && pt <= ptSwitchToTOF) {
+      return tpcPIDPassed;
+    }
+
+    // Case 2: No TOF but pt > threshold → reject
+    if (!candidate.hasTOF() && pt > ptSwitchToTOF) {
+      return false;
+    }
+
+    // Case 3: Has TOF → use TPC + TOF (square or circular)
+    if (candidate.hasTOF()) {
       if (cPIDcutType == 1) {
-        if (lengthOfprotonTOFPIDpTintv > 0) {
-          if (candidate.pt() > vProtonTOFPIDpTintv[lengthOfprotonTOFPIDpTintv - 1]) {
-            tofPIDPassed = false;
-          } else {
-            for (int i = 0; i < lengthOfprotonTOFPIDpTintv; i++) {
-              if (candidate.pt() < vProtonTOFPIDpTintv[i]) {
-
-                if (std::abs(candidate.tofNSigmaPr()) < vProtonTOFPIDcuts[i] && std::abs(candidate.tpcNSigmaPr()) < cMaxTPCnSigmaProtonVETO)
-                  tofPIDPassed = true;
-              }
-            }
+        // Rectangular cut
+        for (size_t i = 0; i < vProtonTOFPIDpTintv.size(); ++i) {
+          if (pt < vProtonTOFPIDpTintv[i]) {
+            if (std::abs(candidate.tofNSigmaPr()) < vProtonTOFPIDcuts[i] &&
+                std::abs(candidate.tpcNSigmaPr()) < vProtonTPCPIDcuts.back())
+              return true;
           }
         }
-      } else if (cPIDcutType == static_cast<int>(2)) {
-        if (lengthOfprotonTPCTOFCombinedPIDpTintv > 0) {
-          if (candidate.pt() > vProtonTPCTOFCombinedpTintv[lengthOfprotonTPCTOFCombinedPIDpTintv - 1]) {
-            tofPIDPassed = false;
-          } else {
-            for (int i = 0; i < lengthOfprotonTPCTOFCombinedPIDpTintv; i++) {
-              if (candidate.pt() < vProtonTPCTOFCombinedpTintv[i]) {
-                if ((candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr() + candidate.tofNSigmaPr() * candidate.tofNSigmaPr()) < (vProtonTPCTOFCombinedPIDcuts[i] * vProtonTPCTOFCombinedPIDcuts[i]))
-                  tofPIDPassed = true;
-              }
-            }
+      } else if (cPIDcutType == 2) {
+        // Circular cut
+        for (size_t i = 0; i < vProtonTPCTOFCombinedpTintv.size(); ++i) {
+          if (pt < vProtonTPCTOFCombinedpTintv[i]) {
+            float combinedSigma2 =
+              candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr() +
+              candidate.tofNSigmaPr() * candidate.tofNSigmaPr();
+            if (combinedSigma2 < vProtonTPCTOFCombinedPIDcuts[i] * vProtonTPCTOFCombinedPIDcuts[i])
+              return true;
           }
         }
       }
-    } else {
-      tofPIDPassed = true;
-    }
-
-    // TPC-TOF Combined PID
-    if (tpcPIDPassed && tofPIDPassed) {
-      return true;
     }
 
     return false;
@@ -525,69 +517,61 @@ struct Lstaranalysis {
     auto vKaonTPCTOFCombinedpTintv = static_cast<std::vector<float>>(kaonTPCTOFCombinedpTintv);
     auto vKaonTPCTOFCombinedPIDcuts = static_cast<std::vector<float>>(kaonTPCTOFCombinedPIDcuts);
     auto vKaonTOFPIDcuts = static_cast<std::vector<float>>(kaonTOFPIDcuts);
-    auto lengthOfkaonTPCPIDpTintv = static_cast<int>(vKaonTPCPIDpTintv.size());
-    auto lengthOfkaonTOFPIDpTintv = static_cast<int>(vKaonTOFPIDpTintv.size());
-    auto lengthOfkaonTPCTOFCombinedPIDpTintv = static_cast<int>(vKaonTPCTOFCombinedpTintv.size());
 
-    bool tpcPIDPassed{false}, tofPIDPassed{false};
+    float pt = candidate.pt();
+    float ptSwitchToTOF = vKaonTPCPIDpTintv.back();
 
-    // For Kaon candidate:
-    // TPC PID
-    if (lengthOfkaonTPCPIDpTintv > 0) {
-      if (candidate.pt() > vKaonTPCPIDpTintv[lengthOfkaonTPCPIDpTintv - 1]) {
-        tpcPIDPassed = false;
-      } else {
-        for (int i = 0; i < lengthOfkaonTPCPIDpTintv; i++) {
-          if (candidate.pt() > vKaonTPCPIDpTintv[i] && candidate.pt() < vKaonTPCPIDpTintv[i + 1]) {
-            if (std::abs(candidate.tpcNSigmaKa()) < vKaonTPCPIDcuts[i])
-              tpcPIDPassed = true;
-          }
+    bool tpcPIDPassed = false;
+
+    // TPC PID interval-based check
+    for (size_t i = 0; i < vKaonTPCPIDpTintv.size() - 1; ++i) {
+      if (pt > vKaonTPCPIDpTintv[i] && pt < vKaonTPCPIDpTintv[i + 1]) {
+        if (std::abs(candidate.tpcNSigmaKa()) < vKaonTPCPIDcuts[i]) {
+          tpcPIDPassed = true;
+          break;
         }
       }
     }
 
-    // bypass TOF
-    if (cByPassTOF && tpcPIDPassed) {
-      return true;
+    // TOF bypass option
+    if (cByPassTOF) {
+      return std::abs(candidate.tpcNSigmaKa()) < vKaonTPCPIDcuts.back();
     }
 
-    // TOF PID
-    if (candidate.hasTOF() && candidate.pt() > vKaonTPCPIDpTintv[lengthOfkaonTPCPIDpTintv - 1]) {
+    // Case 1: No TOF and pt ≤ ptSwitch → use TPC-only
+    if (!candidate.hasTOF() && pt <= ptSwitchToTOF) {
+      return tpcPIDPassed;
+    }
+
+    // Case 2: No TOF but pt > ptSwitch → reject
+    if (!candidate.hasTOF() && pt > ptSwitchToTOF) {
+      return false;
+    }
+
+    // Case 3: TOF is available → apply TPC+TOF PID logic
+    if (candidate.hasTOF()) {
       if (cPIDcutType == 1) {
-        if (lengthOfkaonTOFPIDpTintv > 0) {
-          if (candidate.pt() > vKaonTOFPIDpTintv[lengthOfkaonTOFPIDpTintv - 1]) {
-            tofPIDPassed = false;
-          } else {
-            for (int i = 0; i < lengthOfkaonTOFPIDpTintv; i++) {
-              if (candidate.pt() < vKaonTOFPIDpTintv[i]) {
-
-                if (std::abs(candidate.tofNSigmaKa()) < vKaonTOFPIDcuts[i] && std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaonVETO)
-                  tofPIDPassed = true;
-              }
+        // Rectangular cut
+        for (size_t i = 0; i < vKaonTOFPIDpTintv.size(); ++i) {
+          if (pt < vKaonTOFPIDpTintv[i]) {
+            if (std::abs(candidate.tofNSigmaKa()) < vKaonTOFPIDcuts[i] &&
+                std::abs(candidate.tpcNSigmaKa()) < vKaonTPCPIDcuts.back()) {
+              return true;
             }
           }
         }
-      } else if (cPIDcutType == static_cast<int>(2)) {
-        if (lengthOfkaonTPCTOFCombinedPIDpTintv > 0) {
-          if (candidate.pt() > vKaonTPCTOFCombinedpTintv[lengthOfkaonTPCTOFCombinedPIDpTintv - 1]) {
-            tofPIDPassed = false;
-          } else {
-            for (int i = 0; i < lengthOfkaonTPCTOFCombinedPIDpTintv; i++) {
-              if (candidate.pt() < vKaonTPCTOFCombinedpTintv[i]) {
-                if ((candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < (vKaonTPCTOFCombinedPIDcuts[i] * vKaonTPCTOFCombinedPIDcuts[i]))
-                  tofPIDPassed = true;
-              }
+      } else if (cPIDcutType == 2) {
+        // Circular cut
+        for (size_t i = 0; i < vKaonTPCTOFCombinedpTintv.size(); ++i) {
+          if (pt < vKaonTPCTOFCombinedpTintv[i]) {
+            float combinedSigma2 = candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() +
+                                   candidate.tofNSigmaKa() * candidate.tofNSigmaKa();
+            if (combinedSigma2 < vKaonTPCTOFCombinedPIDcuts[i] * vKaonTPCTOFCombinedPIDcuts[i]) {
+              return true;
             }
           }
         }
       }
-    } else {
-      tofPIDPassed = true;
-    }
-
-    // TPC-TOF Combined PID
-    if (tpcPIDPassed && tofPIDPassed) {
-      return true;
     }
 
     return false;
@@ -706,7 +690,7 @@ struct Lstaranalysis {
       //// QA plots after the selection
       if constexpr (IsData) { //  --- PID QA Proton
         histos.fill(HIST("QA/QAafter/Proton/TPC_Nsigma_pr_all"), multiplicity, trk1ptPr, trk1NSigmaPrTPC);
-        histos.fill(HIST("QA/QAafter/Proton/TPC_Signal_pr_all"), trk1ptPr, trk1.tpcSignal());
+        histos.fill(HIST("QA/QAafter/Proton/TPC_Signal_pr_all"), trk1.tpcInnerParam(), trk1.tpcSignal());
         if (isTrk1hasTOF) {
           histos.fill(HIST("QA/QAafter/Proton/TOF_Nsigma_pr_all"), multiplicity, trk1ptPr, trk1NSigmaPrTOF);
           histos.fill(HIST("QA/QAafter/Proton/TOF_TPC_Map_pr_all"), trk1NSigmaPrTOF, trk1NSigmaPrTPC);
@@ -723,7 +707,7 @@ struct Lstaranalysis {
 
         //  --- PID QA Kaon
         histos.fill(HIST("QA/QAafter/Kaon/TPC_Nsigma_ka_all"), multiplicity, trk2ptKa, trk2NSigmaKaTPC);
-        histos.fill(HIST("QA/QAafter/Kaon/TPC_Signal_ka_all"), trk2ptKa, trk2.tpcSignal());
+        histos.fill(HIST("QA/QAafter/Kaon/TPC_Signal_ka_all"), trk2.tpcInnerParam(), trk2.tpcSignal());
         if (isTrk2hasTOF) {
           histos.fill(HIST("QA/QAafter/Kaon/TOF_Nsigma_ka_all"), multiplicity, trk2ptKa, trk2NSigmaKaTOF);
           histos.fill(HIST("QA/QAafter/Kaon/TOF_TPC_Map_ka_all"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
@@ -965,7 +949,7 @@ struct Lstaranalysis {
 
   void processMCTrue(MCEventCandidates::iterator const& collision, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
-    bool IsInAfterAllCuts = colCuts.isSelected(collision);
+    bool isInAfterAllCuts = colCuts.isSelected(collision);
     bool inVtx10 = (std::abs(collision.mcCollision().posZ()) > 10.) ? false : true;
     bool isTriggerTVX = collision.selection_bit(aod::evsel::kIsTriggerTVX);
     bool isSel8 = collision.sel8();
@@ -989,8 +973,8 @@ struct Lstaranalysis {
         daughterPDGs = {-1, -1};
       }
 
-      bool pass1 = std::abs(daughterPDGs[0]) == 321 || std::abs(daughterPDGs[1]) == 321;   // At least one decay to Kaon
-      bool pass2 = std::abs(daughterPDGs[0]) == 2212 || std::abs(daughterPDGs[1]) == 2212; // At least one decay to Proton
+      bool pass1 = std::abs(daughterPDGs[0]) == kKPlus || std::abs(daughterPDGs[1]) == kKPlus;   // At least one decay to Kaon
+      bool pass2 = std::abs(daughterPDGs[0]) == kProton || std::abs(daughterPDGs[1]) == kProton; // At least one decay to Proton
 
       // Checking if we have both decay products
       if (!pass1 || !pass2)
@@ -1040,7 +1024,7 @@ struct Lstaranalysis {
         else
           histos.fill(HIST("Result/MC/Genantilambda1520pt"), 3, part.pt(), multiplicity);
       }
-      if (IsInAfterAllCuts) // after all event selection
+      if (isInAfterAllCuts) // after all event selection
       {
         if (part.pdgCode() > 0)
           histos.fill(HIST("Result/MC/Genlambda1520pt"), 4, part.pt(), multiplicity);
