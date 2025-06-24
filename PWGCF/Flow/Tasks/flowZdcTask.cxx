@@ -708,8 +708,6 @@ struct FlowZdcTask {
     if (!skipEvent) {
       return;
     }
-    std::vector<float> pTs;
-    std::vector<float> vecFD;
     std::vector<float> vecOneOverEff;
     auto efficiency = ccdb->getForTimeStamp<TH1F>(paTHEff.value, foundBC.timestamp());
     if (!efficiency) {
