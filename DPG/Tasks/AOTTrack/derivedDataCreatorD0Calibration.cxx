@@ -450,15 +450,7 @@ struct DerivedDataCreatorD0Calibration {
           // tracks
           if (!selectedTracks.count(trackPos.globalIndex())) {
             // fill track table with positive track if not yet present
-            if (trackPos.tmoId() == -1) {
-              // if track doesn't have occupancies stored for it
-              trackTable(selectedCollisions[collision.globalIndex()],
-                         trackPos.x(), trackPos.alpha(), trackPos.y(), trackPos.z(), trackPos.snp(), trackPos.tgl(), trackPos.signed1Pt(), // stored at PV
-                         trackPos.cYY(), trackPos.cZY(), trackPos.cZZ(), trackPos.cSnpY(), trackPos.cSnpZ(), trackPos.cSnpSnp(), trackPos.cTglY(), trackPos.cTglZ(), trackPos.cTglSnp(), trackPos.cTglTgl(), trackPos.c1PtY(), trackPos.c1PtZ(), trackPos.c1PtSnp(), trackPos.c1PtTgl(), trackPos.c1Pt21Pt2(),
-                         trackPos.tpcInnerParam(), trackPos.flags(), trackPos.itsClusterSizes(), trackPos.tpcNClsFindable(), trackPos.tpcNClsFindableMinusFound(), trackPos.tpcNClsFindableMinusCrossedRows(), trackPos.tpcNClsShared(), trackPos.trdPattern(), getCompressedChi2(trackPos.itsChi2NCl()), getCompressedChi2(trackPos.tpcChi2NCl()), getCompressedChi2(trackPos.trdChi2()), getCompressedChi2(trackPos.tofChi2()), trackPos.tpcSignal(), trackPos.trdSignal(), trackPos.length(), trackPos.tofExpMom(), trackPos.trackTime(), trackPos.trackTimeRes(),
-                         dcaPos.getY(), dcaPos.getZ(), getCompressedNumSigmaPid(trackPos.tpcNSigmaPi()), getCompressedNumSigmaPid(trackPos.tpcNSigmaKa()), getCompressedNumSigmaPid(trackPos.tofNSigmaPi()), getCompressedNumSigmaPid(trackPos.tofNSigmaKa()),
-                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-            } else {
+            if (trackPos.tmoId() != -1) {
               auto tmoFromTrack = trackPos.tmo_as<TrackMeanOccs>(); // obtain track mean occupancies
               trackTable(selectedCollisions[collision.globalIndex()],
                          trackPos.x(), trackPos.alpha(), trackPos.y(), trackPos.z(), trackPos.snp(), trackPos.tgl(), trackPos.signed1Pt(), // stored at PV
@@ -468,20 +460,20 @@ struct DerivedDataCreatorD0Calibration {
                          getCompressedOccupancy(tmoFromTrack.tmoPrimUnfm80()), getCompressedOccupancy(tmoFromTrack.tmoFV0AUnfm80()), getCompressedOccupancy(tmoFromTrack.tmoFT0AUnfm80()), getCompressedOccupancy(tmoFromTrack.tmoFT0CUnfm80()),
                          getCompressedOccupancy(tmoFromTrack.twmoPrimUnfm80()), getCompressedOccupancy(tmoFromTrack.twmoFV0AUnfm80()), getCompressedOccupancy(tmoFromTrack.twmoFT0AUnfm80()), getCompressedOccupancy(tmoFromTrack.twmoFT0CUnfm80()),
                          getCompressedOccupancy(tmoFromTrack.tmoRobustT0V0PrimUnfm80()), getCompressedOccupancy(tmoFromTrack.twmoRobustT0V0PrimUnfm80()));
+            } else {
+              // if track doesn't have occupancies stored for it
+              trackTable(selectedCollisions[collision.globalIndex()],
+                         trackPos.x(), trackPos.alpha(), trackPos.y(), trackPos.z(), trackPos.snp(), trackPos.tgl(), trackPos.signed1Pt(), // stored at PV
+                         trackPos.cYY(), trackPos.cZY(), trackPos.cZZ(), trackPos.cSnpY(), trackPos.cSnpZ(), trackPos.cSnpSnp(), trackPos.cTglY(), trackPos.cTglZ(), trackPos.cTglSnp(), trackPos.cTglTgl(), trackPos.c1PtY(), trackPos.c1PtZ(), trackPos.c1PtSnp(), trackPos.c1PtTgl(), trackPos.c1Pt21Pt2(),
+                         trackPos.tpcInnerParam(), trackPos.flags(), trackPos.itsClusterSizes(), trackPos.tpcNClsFindable(), trackPos.tpcNClsFindableMinusFound(), trackPos.tpcNClsFindableMinusCrossedRows(), trackPos.tpcNClsShared(), trackPos.trdPattern(), getCompressedChi2(trackPos.itsChi2NCl()), getCompressedChi2(trackPos.tpcChi2NCl()), getCompressedChi2(trackPos.trdChi2()), getCompressedChi2(trackPos.tofChi2()), trackPos.tpcSignal(), trackPos.trdSignal(), trackPos.length(), trackPos.tofExpMom(), trackPos.trackTime(), trackPos.trackTimeRes(),
+                         dcaPos.getY(), dcaPos.getZ(), getCompressedNumSigmaPid(trackPos.tpcNSigmaPi()), getCompressedNumSigmaPid(trackPos.tpcNSigmaKa()), getCompressedNumSigmaPid(trackPos.tofNSigmaPi()), getCompressedNumSigmaPid(trackPos.tofNSigmaKa()),
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
             }
             selectedTracks[trackPos.globalIndex()] = trackTable.lastIndex();
           }
           if (!selectedTracks.count(trackNeg.globalIndex())) {
             // fill track table with negative track if not yet present
-            if (trackNeg.tmoId() == -1) {
-              // if track doesn't have occupancies stored for it
-              trackTable(selectedCollisions[collision.globalIndex()],
-                         trackNeg.x(), trackNeg.alpha(), trackNeg.y(), trackNeg.z(), trackNeg.snp(), trackNeg.tgl(), trackNeg.signed1Pt(), // stored at PV
-                         trackNeg.cYY(), trackNeg.cZY(), trackNeg.cZZ(), trackNeg.cSnpY(), trackNeg.cSnpZ(), trackNeg.cSnpSnp(), trackNeg.cTglY(), trackNeg.cTglZ(), trackNeg.cTglSnp(), trackNeg.cTglTgl(), trackNeg.c1PtY(), trackNeg.c1PtZ(), trackNeg.c1PtSnp(), trackNeg.c1PtTgl(), trackNeg.c1Pt21Pt2(),
-                         trackNeg.tpcInnerParam(), trackNeg.flags(), trackNeg.itsClusterSizes(), trackNeg.tpcNClsFindable(), trackNeg.tpcNClsFindableMinusFound(), trackNeg.tpcNClsFindableMinusCrossedRows(), trackNeg.tpcNClsShared(), trackNeg.trdPattern(), getCompressedChi2(trackNeg.itsChi2NCl()), getCompressedChi2(trackNeg.tpcChi2NCl()), getCompressedChi2(trackNeg.trdChi2()), getCompressedChi2(trackNeg.tofChi2()), trackNeg.tpcSignal(), trackNeg.trdSignal(), trackNeg.length(), trackNeg.tofExpMom(), trackNeg.trackTime(), trackNeg.trackTimeRes(),
-                         dcaNeg.getY(), dcaNeg.getZ(), getCompressedNumSigmaPid(trackNeg.tpcNSigmaPi()), getCompressedNumSigmaPid(trackNeg.tpcNSigmaKa()), getCompressedNumSigmaPid(trackNeg.tofNSigmaPi()), getCompressedNumSigmaPid(trackNeg.tofNSigmaKa()),
-                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-            } else {
+            if (trackNeg.tmoId() != -1) {
               auto tmoFromTrack = trackNeg.tmo_as<TrackMeanOccs>();
               trackTable(selectedCollisions[collision.globalIndex()],
                          trackNeg.x(), trackNeg.alpha(), trackNeg.y(), trackNeg.z(), trackNeg.snp(), trackNeg.tgl(), trackNeg.signed1Pt(), // stored at PV
@@ -491,6 +483,14 @@ struct DerivedDataCreatorD0Calibration {
                          getCompressedOccupancy(tmoFromTrack.tmoPrimUnfm80()), getCompressedOccupancy(tmoFromTrack.tmoFV0AUnfm80()), getCompressedOccupancy(tmoFromTrack.tmoFT0AUnfm80()), getCompressedOccupancy(tmoFromTrack.tmoFT0CUnfm80()),
                          getCompressedOccupancy(tmoFromTrack.twmoPrimUnfm80()), getCompressedOccupancy(tmoFromTrack.twmoFV0AUnfm80()), getCompressedOccupancy(tmoFromTrack.twmoFT0AUnfm80()), getCompressedOccupancy(tmoFromTrack.twmoFT0CUnfm80()),
                          getCompressedOccupancy(tmoFromTrack.tmoRobustT0V0PrimUnfm80()), getCompressedOccupancy(tmoFromTrack.twmoRobustT0V0PrimUnfm80()));
+            } else {
+              // if track doesn't have occupancies stored for it
+              trackTable(selectedCollisions[collision.globalIndex()],
+                         trackNeg.x(), trackNeg.alpha(), trackNeg.y(), trackNeg.z(), trackNeg.snp(), trackNeg.tgl(), trackNeg.signed1Pt(), // stored at PV
+                         trackNeg.cYY(), trackNeg.cZY(), trackNeg.cZZ(), trackNeg.cSnpY(), trackNeg.cSnpZ(), trackNeg.cSnpSnp(), trackNeg.cTglY(), trackNeg.cTglZ(), trackNeg.cTglSnp(), trackNeg.cTglTgl(), trackNeg.c1PtY(), trackNeg.c1PtZ(), trackNeg.c1PtSnp(), trackNeg.c1PtTgl(), trackNeg.c1Pt21Pt2(),
+                         trackNeg.tpcInnerParam(), trackNeg.flags(), trackNeg.itsClusterSizes(), trackNeg.tpcNClsFindable(), trackNeg.tpcNClsFindableMinusFound(), trackNeg.tpcNClsFindableMinusCrossedRows(), trackNeg.tpcNClsShared(), trackNeg.trdPattern(), getCompressedChi2(trackNeg.itsChi2NCl()), getCompressedChi2(trackNeg.tpcChi2NCl()), getCompressedChi2(trackNeg.trdChi2()), getCompressedChi2(trackNeg.tofChi2()), trackNeg.tpcSignal(), trackNeg.trdSignal(), trackNeg.length(), trackNeg.tofExpMom(), trackNeg.trackTime(), trackNeg.trackTimeRes(),
+                         dcaNeg.getY(), dcaNeg.getZ(), getCompressedNumSigmaPid(trackNeg.tpcNSigmaPi()), getCompressedNumSigmaPid(trackNeg.tpcNSigmaKa()), getCompressedNumSigmaPid(trackNeg.tofNSigmaPi()), getCompressedNumSigmaPid(trackNeg.tofNSigmaKa()),
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
             }
             selectedTracks[trackNeg.globalIndex()] = trackTable.lastIndex();
           }
