@@ -307,7 +307,6 @@ struct NonPromptCascadeTask {
             LOG(fatal) << "N TOIs:" << mZorro.getNTOIs() << " Max 32 TOIs possible.";
           }
           mZorro.populateHistRegistry(mRegistry, bc.runNumber());
-          mZorro.getZorroSummary()->printTOInames();
           runNumber = bc.runNumber();
         }
         bool sel = mZorro.isSelected(bc.globalBC()); /// Just let Zorro do the accounting
