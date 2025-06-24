@@ -40,7 +40,7 @@ o2physics_add_dpl_workflow(dpt-dpt-efficiency-and-qc
 
 o2physics_add_dpl_workflow(dpt-dpt-per-run-qc
                            SOURCES dptDptPerRunQc.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB O2::DataFormatsITSMFT
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(dpt-dpt-per-run-extra-qc
