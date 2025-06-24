@@ -191,12 +191,54 @@ constexpr double ITSnSigmaCutDefault[5][2]{
   {-3., 3.},
   {-3., 3.},
   {-3., 3.}};
-constexpr double PtPreselection[5][2]{
+constexpr double POverZPreselection[5][2]{
   {0.15, 99.},
   {0.15, 99.},
   {0.15, 99.},
   {0.15, 99.},
   {0.15, 99.}};
+constexpr double EtaPreselection[5][2]{
+  {0.9},
+  {0.9},
+  {0.9},
+  {0.8},
+  {0.9}};
+constexpr double TPCNclsPreselection[5][2]{
+  {50, 160},
+  {50, 160},
+  {50, 160},
+  {100, 160},
+  {50, 160}};
+constexpr double ITSNclsPreselection[5][2]{
+  {5, 7},
+  {5, 7},
+  {5, 7},
+  {5, 7},
+  {5, 7}};
+constexpr double TPCChi2Preselection[5][2]{
+  {0, 10},
+  {0, 10},
+  {0, 10},
+  {0.5, 4},
+  {0, 10}};
+constexpr double ITSChi2Preselection[5][2]{
+  {0, 36},
+  {0, 36},
+  {0, 36},
+  {0, 36},
+  {0, 36}};
+constexpr double DCAxyPreselection[5][2]{
+  {1},
+  {1},
+  {1},
+  {0.1},
+  {1}};
+constexpr double DCAzPreselection[5][2]{
+  {5},
+  {5},
+  {5},
+  {1},
+  {5}};
 static const std::vector<std::string> names{"proton", "deuteron", "triton", "He3", "alpha"};
 static const std::vector<std::string> chargeLabelNames{"Positive", "Negative"};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
@@ -208,7 +250,14 @@ static const std::vector<std::string> openEventSelConfigNames{"Open related even
 static const std::vector<std::string> openTrackSelConfigNames{"Open track selection from TrackSelection table"};
 static const std::vector<std::string> pidTPCnSigmaNames{"n#sigma_{TPC} Low", "n#sigma_{TPC} High"};
 static const std::vector<std::string> pidITSnSigmaNames{"n#sigma_{ITS} Low", "n#sigma_{ITS} High"};
-static const std::vector<std::string> pidPtNames{"p_{T} Low", "p_{T} High"};
+static const std::vector<std::string> pidPOverZNames{"p/z Low", "p/z High"};
+static const std::vector<std::string> pidEtaNames{"Abs Eta Max"};
+static const std::vector<std::string> pidTPCNclsNames{"TPCNcls Low", "TPCNcls High"};
+static const std::vector<std::string> pidITSNclsNames{"ITSNcls Low", "ITSNcls High"};
+static const std::vector<std::string> pidTPCChi2Names{"TPCChi2 Low", "TPCChi2 High"};
+static const std::vector<std::string> pidITSChi2Names{"ITSChi2 Low", "ITSChi2 High"};
+static const std::vector<std::string> pidDCAxyNames{"Abs DCAxy Max"};
+static const std::vector<std::string> pidDCAzNames{"Abs DCAz Max"};
 std::vector<ESECandidate> eseCandidates;
 // Tar ptr
 std::shared_ptr<TH1> hPIDQATar1D[12];
@@ -238,7 +287,7 @@ struct FlowEsePHe3 {
   Configurable<std::string> cfgTarName{"cfgTarName", "kHe3", "Name of the v2 particle: kProton, kDeuteron, kTriton, kHe3, kAlpha"};
   Configurable<std::string> cfgRefName{"cfgRefName", "kProton", "Name of the q2 reference particle: kProton, kDeuteron, kTriton, kHe3, kAlpha"};
   // total control config
-  Configurable<bool> cfgOpenAllowCrossTrack{"cfgOpenAllowCrossTrack", false, "Allow one track to be identified as different kind of PID particles"};
+  Configurable<bool> cfgOpenAllowCrossTrack{"cfgOpenAllowCrossTrack", true, "Allow one track to be identified as different kind of PID particles"};
   Configurable<bool> cfgOpenFullEventQA{"cfgOpenFullEventQA", true, "Open full QA plots for event QA"};
   Configurable<bool> cfgOpenPIDQA{"cfgOpenPIDQA", true, "Open PID QA plots"};
   Configurable<bool> cfgOpenv2{"cfgOpenv2", true, "Open v2(EP)and q calculation for Proton and He3"};
@@ -262,7 +311,7 @@ struct FlowEsePHe3 {
   Configurable<LabeledArray<int>> cfgOpenTrackSel{"cfgOpenTrackSel", {ese_parameters::OpenTrackSel[0], 7, 1, ese_parameters::openTrackSelNames, ese_parameters::openTrackSelConfigNames}, "Track selection switch configuration"};
   Configurable<float> cfgMinPtPID{"cfgMinPtPID", 0.15, "Minimum track #P_{t} for PID"};
   Configurable<float> cfgMaxPtPID{"cfgMaxPtPID", 99.9, "Maximum track #P_{t} for PID"};
-  Configurable<float> cfgMaxEtaPID{"cfgMaxEtaPID", 0.8, "Maximum track #eta for PID"};
+  Configurable<float> cfgMaxEtaPID{"cfgMaxEtaPID", 0.9, "Maximum track #eta for PID"};
   Configurable<float> cfgMinTPCChi2NCl{"cfgMinTPCChi2NCl", 0, "Minimum chi2 per cluster TPC for PID if not use costom track cuts"};
   Configurable<float> cfgMinChi2NClITS{"cfgMinChi2NClITS", 0, "Minimum chi2 per cluster ITS for PID if not use costom track cuts"};
   Configurable<float> cfgMaxTPCChi2NCl{"cfgMaxTPCChi2NCl", 4, "Maximum chi2 per cluster TPC for PID if not use costom track cuts"};
@@ -275,10 +324,18 @@ struct FlowEsePHe3 {
   Configurable<float> cfgMaxDCAz{"cfgMaxDCAz", 2, "Maxium DCAz for standard PID tracking"};
   Configurable<float> cfgPtMaxforTPCOnlyPIDPrton{"cfgPtMaxforTPCOnlyPIDPrton", 0.4, "Maxmium track pt for TPC only PID, at RMS PID mode for proton"};
   // PID configs
-  Configurable<LabeledArray<double>> cfgPtPreselection{"cfgPtPreselection", {ese_parameters::PtPreselection[0], 5, 2, ese_parameters::names, ese_parameters::pidPtNames}, "Pt preselection for light nuclei"};
+  Configurable<bool> cfgOpenITSPreselection{"cfgOpenITSPreselection", false, "Use nSigma ITS preselection for light nuclei"};
+  Configurable<LabeledArray<double>> cfgPOverZPreselection{"cfgPOverZPreselection", {ese_parameters::POverZPreselection[0], 5, 2, ese_parameters::names, ese_parameters::pidPOverZNames}, "P/Z preselection for light nuclei"};
+  Configurable<LabeledArray<double>> cfgEtaPreselection{"cfgEtaPreselection", {ese_parameters::EtaPreselection[0], 5, 1, ese_parameters::names, ese_parameters::pidEtaNames}, "Eta preselection for light nuclei"};
+  Configurable<LabeledArray<double>> cfgTPCNclsPreselection{"cfgTPCNclsPreselection", {ese_parameters::TPCNclsPreselection[0], 5, 2, ese_parameters::names, ese_parameters::pidTPCNclsNames}, "TPCNcls preselection for light nuclei"};
+  Configurable<LabeledArray<double>> cfgITSNclsPreselection{"cfgITSNclsPreselection", {ese_parameters::ITSNclsPreselection[0], 5, 2, ese_parameters::names, ese_parameters::pidITSNclsNames}, "ITSNcls preselection for light nuclei"};
+  Configurable<LabeledArray<double>> cfgTPCChi2Preselection{"cfgTPCChi2Preselection", {ese_parameters::TPCChi2Preselection[0], 5, 2, ese_parameters::names, ese_parameters::pidTPCChi2Names}, "TPCChi2 preselection for light nuclei"};
+  Configurable<LabeledArray<double>> cfgITSChi2Preselection{"cfgITSChi2Preselection", {ese_parameters::ITSChi2Preselection[0], 5, 2, ese_parameters::names, ese_parameters::pidITSChi2Names}, "ITSChi2 preselection for light nuclei"};
+  Configurable<LabeledArray<double>> cfgDCAxyPreselection{"cfgDCAxyPreselection", {ese_parameters::DCAxyPreselection[0], 5, 1, ese_parameters::names, ese_parameters::pidDCAxyNames}, "DCAxy preselection for light nuclei"};
+  Configurable<LabeledArray<double>> cfgDCAzPreselection{"cfgDCAzPreselection", {ese_parameters::DCAzPreselection[0], 5, 1, ese_parameters::names, ese_parameters::pidDCAzNames}, "DCAz preselection for light nuclei"};
   Configurable<std::vector<float>> cfgnSigmaCutTOFProton{"cfgnSigmaCutTOFProton", {-1.5, 1.5}, "TOF nsigma cut limit for Proton"};
   Configurable<std::vector<float>> cfgnSigmaCutRMSProton{"cfgnSigmaCutRMSProton", {-3, 3}, "RMS nsigma cut limit for Proton"};
-  Configurable<bool> cfgUseSelfnSigmaTPCProton{"cfgUseSelfnSigmaTPCProton", false, "Use self nSigma TPC for Proton PID"};
+  Configurable<bool> cfgUseSelfnSigmaTPCProton{"cfgUseSelfnSigmaTPCProton", true, "Use self nSigma TPC for Proton PID"};
   Configurable<int> cfgProtonPIDMode{"cfgProtonPIDMode", 2, "Proton PID mode: 0 for TPC + RMS(TPC,TOF), 1 for TPC only, 2 for TOF only"};
   Configurable<LabeledArray<double>> cfgnSigmaTPC{"cfgnSigmaTPC", {ese_parameters::TPCnSigmaCutDefault[0], 5, 2, ese_parameters::names, ese_parameters::pidTPCnSigmaNames}, "TPC nSigma selection for light nuclei"};
   Configurable<LabeledArray<double>> cfgnSigmaITS{"cfgnSigmaITS", {ese_parameters::ITSnSigmaCutDefault[0], 5, 2, ese_parameters::names, ese_parameters::pidITSnSigmaNames}, "ITS nSigma selection for light nuclei"};
@@ -656,9 +713,6 @@ struct FlowEsePHe3 {
   template <typename CollType>
   void fillHistosQvec(const CollType& collision)
   {
-    int detInd = detId * 4 + cfgnTotalSystem * 4 * (2 - 2);
-    int refAInd = refAId * 4 + cfgnTotalSystem * 4 * (2 - 2);
-    int refBInd = refBId * 4 + cfgnTotalSystem * 4 * (2 - 2);
     if (collision.qvecAmp()[detId] > ese_parameters::Amplitudelow) {
       histsESE.fill(HIST("PlanQA/histQvec_CorrL0_V2"), collision.qvecRe()[detInd], collision.qvecIm()[detInd], collision.centFT0C());
       histsESE.fill(HIST("PlanQA/histQvec_CorrL1_V2"), collision.qvecRe()[detInd + 1], collision.qvecIm()[detInd + 1], collision.centFT0C());
@@ -679,7 +733,30 @@ struct FlowEsePHe3 {
   template <typename TrackType>
   bool pidSel(const TrackType& track, uint8_t POI)
   {
-    if (track.pt() < cfgPtPreselection->get(POI, 0u) || track.pt() > cfgPtPreselection->get(POI, 1u)) {
+    bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
+    float correctedTpcInnerParam = (heliumPID && cfgCompensatePIDinTracking) ? track.tpcInnerParam() / 2 : track.tpcInnerParam();
+    if (correctedTpcInnerParam < cfgPOverZPreselection->get(POI, 0u) || correctedTpcInnerParam > cfgPOverZPreselection->get(POI, 1u)) {
+      return false;
+    }
+    if (std::abs(track.eta()) > cfgEtaPreselection->get(POI)) {
+      return false;
+    }
+    if (track.tpcNClsFound() < cfgTPCNclsPreselection->get(POI, 0u) || track.tpcNClsFound() > cfgTPCNclsPreselection->get(POI, 1u)) {
+      return false;
+    }
+    if (track.itsNCls() < cfgITSNclsPreselection->get(POI, 0u) || track.itsNCls() > cfgITSNclsPreselection->get(POI, 1u)) {
+      return false;
+    }
+    if (track.tpcChi2NCl() < cfgTPCChi2Preselection->get(POI, 0u) || track.tpcChi2NCl() > cfgTPCChi2Preselection->get(POI, 1u)) {
+      return false;
+    }
+    if (track.itsChi2NCl() < cfgITSChi2Preselection->get(POI, 0u) || track.itsChi2NCl() > cfgITSChi2Preselection->get(POI, 1u)) {
+      return false;
+    }
+    if (std::abs(track.dcaXY()) > cfgDCAxyPreselection->get(POI)) {
+      return false;
+    }
+    if (std::abs(track.dcaZ()) > cfgDCAzPreselection->get(POI)) {
       return false;
     }
     float nSigmaTPC = 0.f;
@@ -700,27 +777,32 @@ struct FlowEsePHe3 {
             return false;
           }
         }
-        nSigmaITS = itsResponse.nSigmaITS<o2::track::PID::Proton>(track);
+        if (cfgOpenITSPreselection)
+          nSigmaITS = itsResponse.nSigmaITS<o2::track::PID::Proton>(track);
         break;
 
       case ese_parameters::kDeuteron:
         nSigmaTPC = getNSigmaTPCSelfBB(track, ese_parameters::kDeuteron);
-        nSigmaITS = itsResponse.nSigmaITS<o2::track::PID::Deuteron>(track);
+        if (cfgOpenITSPreselection)
+          nSigmaITS = itsResponse.nSigmaITS<o2::track::PID::Deuteron>(track);
         break;
 
       case ese_parameters::kTriton:
         nSigmaTPC = getNSigmaTPCSelfBB(track, ese_parameters::kTriton);
-        nSigmaITS = itsResponse.nSigmaITS<o2::track::PID::Triton>(track);
+        if (cfgOpenITSPreselection)
+          nSigmaITS = itsResponse.nSigmaITS<o2::track::PID::Triton>(track);
         break;
 
       case ese_parameters::kHe3:
         nSigmaTPC = getNSigmaTPCSelfBB(track, ese_parameters::kHe3);
-        nSigmaITS = itsResponse.nSigmaITS<o2::track::PID::Helium3>(track);
+        if (cfgOpenITSPreselection)
+          nSigmaITS = itsResponse.nSigmaITS<o2::track::PID::Helium3>(track);
         break;
 
       case ese_parameters::kAlpha:
         nSigmaTPC = getNSigmaTPCSelfBB(track, ese_parameters::kAlpha);
-        nSigmaITS = itsResponse.nSigmaITS<o2::track::PID::Alpha>(track);
+        if (cfgOpenITSPreselection)
+          nSigmaITS = itsResponse.nSigmaITS<o2::track::PID::Alpha>(track);
         break;
 
       default:
@@ -730,8 +812,10 @@ struct FlowEsePHe3 {
     if (nSigmaTPC < cfgnSigmaTPC->get(POI, 0u) || nSigmaTPC > cfgnSigmaTPC->get(POI, 1u)) {
       return false;
     }
-    if (nSigmaITS < cfgnSigmaITS->get(POI, 0u) || nSigmaITS > cfgnSigmaITS->get(POI, 1u)) {
-      return false;
+    if (cfgOpenITSPreselection) {
+      if (nSigmaITS < cfgnSigmaITS->get(POI, 0u) || nSigmaITS > cfgnSigmaITS->get(POI, 1u)) {
+        return false;
+      }
     }
     return true;
   }
@@ -782,9 +866,9 @@ struct FlowEsePHe3 {
           ese_parameters::hPIDQATar1D[10]->Fill(nSigmaTOFTar);
           ese_parameters::hPIDQATar1D[11]->Fill(nSigmaITSTar);
           ese_parameters::hPIDQATar2D[0]->Fill(track.sign() * correctedTpcInnerParam, track.tpcSignal());
-          ese_parameters::hPIDQATar2D[1]->Fill(nSigmaTPCTar, track.pt());
-          ese_parameters::hPIDQATar2D[2]->Fill(nSigmaTOFTar, track.pt());
-          ese_parameters::hPIDQATar2D[3]->Fill(nSigmaITSTar, track.pt());
+          ese_parameters::hPIDQATar2D[1]->Fill(track.pt(), nSigmaTPCTar);
+          ese_parameters::hPIDQATar2D[2]->Fill(track.pt(), nSigmaTOFTar);
+          ese_parameters::hPIDQATar2D[3]->Fill(track.pt(), nSigmaITSTar);
           if (cfgOpen3DPIDPlots->get(0u)) {
             ese_parameters::hPIDQATar3D[0]->Fill(nSigmaTOFTar, nSigmaITSTar, track.pt());
           }
@@ -830,9 +914,9 @@ struct FlowEsePHe3 {
           ese_parameters::hPIDQARef1D[10]->Fill(nSigmaTOFRef);
           ese_parameters::hPIDQARef1D[11]->Fill(nSigmaITSRef);
           ese_parameters::hPIDQARef2D[0]->Fill(track.sign() * correctedTpcInnerParam, track.tpcSignal());
-          ese_parameters::hPIDQARef2D[1]->Fill(nSigmaTPCRef, track.pt());
-          ese_parameters::hPIDQARef2D[2]->Fill(nSigmaTOFRef, track.pt());
-          ese_parameters::hPIDQARef2D[3]->Fill(nSigmaITSRef, track.pt());
+          ese_parameters::hPIDQARef2D[1]->Fill(track.pt(), nSigmaTPCRef);
+          ese_parameters::hPIDQARef2D[2]->Fill(track.pt(), nSigmaTOFRef);
+          ese_parameters::hPIDQARef2D[3]->Fill(track.pt(), nSigmaITSRef);
           if (cfgOpen3DPIDPlots->get(0u)) {
             ese_parameters::hPIDQARef3D[0]->Fill(nSigmaTOFRef, nSigmaITSRef, track.pt());
           }
@@ -891,7 +975,7 @@ struct FlowEsePHe3 {
     AxisSpec axisCentForQA = {100, 0, 100};
     AxisSpec axisCharge = {4, -2, 2, "Charge"};
     // hists for event level QA
-    histsESE.add("EventQA/histEventCount", ";Event Count;Counts", {HistType::kTH1F, {{100, 0, 100}}});
+    histsESE.add("EventQA/histEventCount", ";Event Count;Counts", {HistType::kTH1F, {{11, 0, 11}}});
     histsESE.get<TH1>(HIST("EventQA/histEventCount"))->GetXaxis()->SetBinLabel(1, "after sel8");
     histsESE.get<TH1>(HIST("EventQA/histEventCount"))->GetXaxis()->SetBinLabel(2, "kIsGoodZvtxFT0vsPV");
     histsESE.get<TH1>(HIST("EventQA/histEventCount"))->GetXaxis()->SetBinLabel(3, "kNoSameBunchPileup");
@@ -1029,6 +1113,7 @@ struct FlowEsePHe3 {
     float q2Refy{0.};
     int multiTar{0};
     int multiRef{0};
+    fillHistosQvec(collision);
     fillESECandidates(collision, tracks, q2Tarx, q2Tary, multiTar, q2Refx, q2Refy, multiRef);
     float q2Tar{calculateq2(q2Tarx, q2Tary, multiTar)};
     float q2Ref{calculateq2(q2Refx, q2Refy, multiRef)};

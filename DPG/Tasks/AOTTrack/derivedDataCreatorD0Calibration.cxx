@@ -26,17 +26,18 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/OccupancyTables.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "CommonDataFormat/InteractionRecord.h"
 #include "Tools/ML/MlResponse.h"
 
+#include "CommonDataFormat/InteractionRecord.h"
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/runDataProcessing.h>
 #include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
 
 #include <TH1D.h>
@@ -101,8 +102,9 @@ struct DerivedDataCreatorD0Calibration {
     std::string prefix = "ml";
   } cfgMl;
 
-  using TracksWCovExtraPid = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
+  using TracksWCovExtraPid = soa::Join<aod::Tracks, aod::TrackToTmo, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using CollisionsWEvSel = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
+  using TrackMeanOccs = soa::Join<aod::TmoTrackIds, aod::TmoPrim, aod::TmoT0V0, aod::TmoRT0V0Prim, aod::TwmoPrim, aod::TwmoT0V0, aod::TwmoRT0V0Prim>;
 
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
@@ -448,20 +450,48 @@ struct DerivedDataCreatorD0Calibration {
           // tracks
           if (!selectedTracks.count(trackPos.globalIndex())) {
             // fill track table with positive track if not yet present
-            trackTable(selectedCollisions[collision.globalIndex()],
-                       trackPos.x(), trackPos.alpha(), trackPos.y(), trackPos.z(), trackPos.snp(), trackPos.tgl(), trackPos.signed1Pt(), // stored at PV
-                       trackPos.cYY(), trackPos.cZY(), trackPos.cZZ(), trackPos.cSnpY(), trackPos.cSnpZ(), trackPos.cSnpSnp(), trackPos.cTglY(), trackPos.cTglZ(), trackPos.cTglSnp(), trackPos.cTglTgl(), trackPos.c1PtY(), trackPos.c1PtZ(), trackPos.c1PtSnp(), trackPos.c1PtTgl(), trackPos.c1Pt21Pt2(),
-                       trackPos.tpcInnerParam(), trackPos.flags(), trackPos.itsClusterSizes(), trackPos.tpcNClsFindable(), trackPos.tpcNClsFindableMinusFound(), trackPos.tpcNClsFindableMinusCrossedRows(), trackPos.tpcNClsShared(), trackPos.trdPattern(), getCompressedChi2(trackPos.itsChi2NCl()), getCompressedChi2(trackPos.tpcChi2NCl()), getCompressedChi2(trackPos.trdChi2()), getCompressedChi2(trackPos.tofChi2()), trackPos.tpcSignal(), trackPos.trdSignal(), trackPos.length(), trackPos.tofExpMom(), trackPos.trackTime(), trackPos.trackTimeRes(),
-                       dcaPos.getY(), dcaPos.getZ(), getCompressedNumSigmaPid(trackPos.tpcNSigmaPi()), getCompressedNumSigmaPid(trackPos.tpcNSigmaKa()), getCompressedNumSigmaPid(trackPos.tofNSigmaPi()), getCompressedNumSigmaPid(trackPos.tofNSigmaKa()));
+            if (trackPos.tmoId() != -1) {
+              auto tmoFromTrack = trackPos.tmo_as<TrackMeanOccs>(); // obtain track mean occupancies
+              trackTable(selectedCollisions[collision.globalIndex()],
+                         trackPos.x(), trackPos.alpha(), trackPos.y(), trackPos.z(), trackPos.snp(), trackPos.tgl(), trackPos.signed1Pt(), // stored at PV
+                         trackPos.cYY(), trackPos.cZY(), trackPos.cZZ(), trackPos.cSnpY(), trackPos.cSnpZ(), trackPos.cSnpSnp(), trackPos.cTglY(), trackPos.cTglZ(), trackPos.cTglSnp(), trackPos.cTglTgl(), trackPos.c1PtY(), trackPos.c1PtZ(), trackPos.c1PtSnp(), trackPos.c1PtTgl(), trackPos.c1Pt21Pt2(),
+                         trackPos.tpcInnerParam(), trackPos.flags(), trackPos.itsClusterSizes(), trackPos.tpcNClsFindable(), trackPos.tpcNClsFindableMinusFound(), trackPos.tpcNClsFindableMinusCrossedRows(), trackPos.tpcNClsShared(), trackPos.trdPattern(), getCompressedChi2(trackPos.itsChi2NCl()), getCompressedChi2(trackPos.tpcChi2NCl()), getCompressedChi2(trackPos.trdChi2()), getCompressedChi2(trackPos.tofChi2()), trackPos.tpcSignal(), trackPos.trdSignal(), trackPos.length(), trackPos.tofExpMom(), trackPos.trackTime(), trackPos.trackTimeRes(),
+                         dcaPos.getY(), dcaPos.getZ(), getCompressedNumSigmaPid(trackPos.tpcNSigmaPi()), getCompressedNumSigmaPid(trackPos.tpcNSigmaKa()), getCompressedNumSigmaPid(trackPos.tofNSigmaPi()), getCompressedNumSigmaPid(trackPos.tofNSigmaKa()),
+                         getCompressedOccupancy(tmoFromTrack.tmoPrimUnfm80()), getCompressedOccupancy(tmoFromTrack.tmoFV0AUnfm80()), getCompressedOccupancy(tmoFromTrack.tmoFT0AUnfm80()), getCompressedOccupancy(tmoFromTrack.tmoFT0CUnfm80()),
+                         getCompressedOccupancy(tmoFromTrack.twmoPrimUnfm80()), getCompressedOccupancy(tmoFromTrack.twmoFV0AUnfm80()), getCompressedOccupancy(tmoFromTrack.twmoFT0AUnfm80()), getCompressedOccupancy(tmoFromTrack.twmoFT0CUnfm80()),
+                         getCompressedOccupancy(tmoFromTrack.tmoRobustT0V0PrimUnfm80()), getCompressedOccupancy(tmoFromTrack.twmoRobustT0V0PrimUnfm80()));
+            } else {
+              // if track doesn't have occupancies stored for it
+              trackTable(selectedCollisions[collision.globalIndex()],
+                         trackPos.x(), trackPos.alpha(), trackPos.y(), trackPos.z(), trackPos.snp(), trackPos.tgl(), trackPos.signed1Pt(), // stored at PV
+                         trackPos.cYY(), trackPos.cZY(), trackPos.cZZ(), trackPos.cSnpY(), trackPos.cSnpZ(), trackPos.cSnpSnp(), trackPos.cTglY(), trackPos.cTglZ(), trackPos.cTglSnp(), trackPos.cTglTgl(), trackPos.c1PtY(), trackPos.c1PtZ(), trackPos.c1PtSnp(), trackPos.c1PtTgl(), trackPos.c1Pt21Pt2(),
+                         trackPos.tpcInnerParam(), trackPos.flags(), trackPos.itsClusterSizes(), trackPos.tpcNClsFindable(), trackPos.tpcNClsFindableMinusFound(), trackPos.tpcNClsFindableMinusCrossedRows(), trackPos.tpcNClsShared(), trackPos.trdPattern(), getCompressedChi2(trackPos.itsChi2NCl()), getCompressedChi2(trackPos.tpcChi2NCl()), getCompressedChi2(trackPos.trdChi2()), getCompressedChi2(trackPos.tofChi2()), trackPos.tpcSignal(), trackPos.trdSignal(), trackPos.length(), trackPos.tofExpMom(), trackPos.trackTime(), trackPos.trackTimeRes(),
+                         dcaPos.getY(), dcaPos.getZ(), getCompressedNumSigmaPid(trackPos.tpcNSigmaPi()), getCompressedNumSigmaPid(trackPos.tpcNSigmaKa()), getCompressedNumSigmaPid(trackPos.tofNSigmaPi()), getCompressedNumSigmaPid(trackPos.tofNSigmaKa()),
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+            }
             selectedTracks[trackPos.globalIndex()] = trackTable.lastIndex();
           }
           if (!selectedTracks.count(trackNeg.globalIndex())) {
             // fill track table with negative track if not yet present
-            trackTable(selectedCollisions[collision.globalIndex()],
-                       trackNeg.x(), trackNeg.alpha(), trackNeg.y(), trackNeg.z(), trackNeg.snp(), trackNeg.tgl(), trackNeg.signed1Pt(), // stored at PV
-                       trackNeg.cYY(), trackNeg.cZY(), trackNeg.cZZ(), trackNeg.cSnpY(), trackNeg.cSnpZ(), trackNeg.cSnpSnp(), trackNeg.cTglY(), trackNeg.cTglZ(), trackNeg.cTglSnp(), trackNeg.cTglTgl(), trackNeg.c1PtY(), trackNeg.c1PtZ(), trackNeg.c1PtSnp(), trackNeg.c1PtTgl(), trackNeg.c1Pt21Pt2(),
-                       trackNeg.tpcInnerParam(), trackNeg.flags(), trackNeg.itsClusterSizes(), trackNeg.tpcNClsFindable(), trackNeg.tpcNClsFindableMinusFound(), trackNeg.tpcNClsFindableMinusCrossedRows(), trackNeg.tpcNClsShared(), trackNeg.trdPattern(), getCompressedChi2(trackNeg.itsChi2NCl()), getCompressedChi2(trackNeg.tpcChi2NCl()), getCompressedChi2(trackNeg.trdChi2()), getCompressedChi2(trackNeg.tofChi2()), trackNeg.tpcSignal(), trackNeg.trdSignal(), trackNeg.length(), trackNeg.tofExpMom(), trackNeg.trackTime(), trackNeg.trackTimeRes(),
-                       dcaNeg.getY(), dcaNeg.getZ(), getCompressedNumSigmaPid(trackNeg.tpcNSigmaPi()), getCompressedNumSigmaPid(trackNeg.tpcNSigmaKa()), getCompressedNumSigmaPid(trackNeg.tofNSigmaPi()), getCompressedNumSigmaPid(trackNeg.tofNSigmaKa()));
+            if (trackNeg.tmoId() != -1) {
+              auto tmoFromTrack = trackNeg.tmo_as<TrackMeanOccs>();
+              trackTable(selectedCollisions[collision.globalIndex()],
+                         trackNeg.x(), trackNeg.alpha(), trackNeg.y(), trackNeg.z(), trackNeg.snp(), trackNeg.tgl(), trackNeg.signed1Pt(), // stored at PV
+                         trackNeg.cYY(), trackNeg.cZY(), trackNeg.cZZ(), trackNeg.cSnpY(), trackNeg.cSnpZ(), trackNeg.cSnpSnp(), trackNeg.cTglY(), trackNeg.cTglZ(), trackNeg.cTglSnp(), trackNeg.cTglTgl(), trackNeg.c1PtY(), trackNeg.c1PtZ(), trackNeg.c1PtSnp(), trackNeg.c1PtTgl(), trackNeg.c1Pt21Pt2(),
+                         trackNeg.tpcInnerParam(), trackNeg.flags(), trackNeg.itsClusterSizes(), trackNeg.tpcNClsFindable(), trackNeg.tpcNClsFindableMinusFound(), trackNeg.tpcNClsFindableMinusCrossedRows(), trackNeg.tpcNClsShared(), trackNeg.trdPattern(), getCompressedChi2(trackNeg.itsChi2NCl()), getCompressedChi2(trackNeg.tpcChi2NCl()), getCompressedChi2(trackNeg.trdChi2()), getCompressedChi2(trackNeg.tofChi2()), trackNeg.tpcSignal(), trackNeg.trdSignal(), trackNeg.length(), trackNeg.tofExpMom(), trackNeg.trackTime(), trackNeg.trackTimeRes(),
+                         dcaNeg.getY(), dcaNeg.getZ(), getCompressedNumSigmaPid(trackNeg.tpcNSigmaPi()), getCompressedNumSigmaPid(trackNeg.tpcNSigmaKa()), getCompressedNumSigmaPid(trackNeg.tofNSigmaPi()), getCompressedNumSigmaPid(trackNeg.tofNSigmaKa()),
+                         getCompressedOccupancy(tmoFromTrack.tmoPrimUnfm80()), getCompressedOccupancy(tmoFromTrack.tmoFV0AUnfm80()), getCompressedOccupancy(tmoFromTrack.tmoFT0AUnfm80()), getCompressedOccupancy(tmoFromTrack.tmoFT0CUnfm80()),
+                         getCompressedOccupancy(tmoFromTrack.twmoPrimUnfm80()), getCompressedOccupancy(tmoFromTrack.twmoFV0AUnfm80()), getCompressedOccupancy(tmoFromTrack.twmoFT0AUnfm80()), getCompressedOccupancy(tmoFromTrack.twmoFT0CUnfm80()),
+                         getCompressedOccupancy(tmoFromTrack.tmoRobustT0V0PrimUnfm80()), getCompressedOccupancy(tmoFromTrack.twmoRobustT0V0PrimUnfm80()));
+            } else {
+              // if track doesn't have occupancies stored for it
+              trackTable(selectedCollisions[collision.globalIndex()],
+                         trackNeg.x(), trackNeg.alpha(), trackNeg.y(), trackNeg.z(), trackNeg.snp(), trackNeg.tgl(), trackNeg.signed1Pt(), // stored at PV
+                         trackNeg.cYY(), trackNeg.cZY(), trackNeg.cZZ(), trackNeg.cSnpY(), trackNeg.cSnpZ(), trackNeg.cSnpSnp(), trackNeg.cTglY(), trackNeg.cTglZ(), trackNeg.cTglSnp(), trackNeg.cTglTgl(), trackNeg.c1PtY(), trackNeg.c1PtZ(), trackNeg.c1PtSnp(), trackNeg.c1PtTgl(), trackNeg.c1Pt21Pt2(),
+                         trackNeg.tpcInnerParam(), trackNeg.flags(), trackNeg.itsClusterSizes(), trackNeg.tpcNClsFindable(), trackNeg.tpcNClsFindableMinusFound(), trackNeg.tpcNClsFindableMinusCrossedRows(), trackNeg.tpcNClsShared(), trackNeg.trdPattern(), getCompressedChi2(trackNeg.itsChi2NCl()), getCompressedChi2(trackNeg.tpcChi2NCl()), getCompressedChi2(trackNeg.trdChi2()), getCompressedChi2(trackNeg.tofChi2()), trackNeg.tpcSignal(), trackNeg.trdSignal(), trackNeg.length(), trackNeg.tofExpMom(), trackNeg.trackTime(), trackNeg.trackTimeRes(),
+                         dcaNeg.getY(), dcaNeg.getZ(), getCompressedNumSigmaPid(trackNeg.tpcNSigmaPi()), getCompressedNumSigmaPid(trackNeg.tpcNSigmaKa()), getCompressedNumSigmaPid(trackNeg.tofNSigmaPi()), getCompressedNumSigmaPid(trackNeg.tofNSigmaKa()),
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+            }
             selectedTracks[trackNeg.globalIndex()] = trackTable.lastIndex();
           }
 

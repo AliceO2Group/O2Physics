@@ -31,6 +31,7 @@
 
 using namespace o2;
 using namespace o2::framework;
+using namespace o2::constants::physics;
 
 /// Reconstruction of heavy-flavour 2-prong decay candidates
 struct HfCandidateCreatorMcGen {
@@ -41,6 +42,8 @@ struct HfCandidateCreatorMcGen {
   Produces<aod::HfCandB0McGen> rowMcMatchGenB0;
   Configurable<bool> fill2Prong{"fill2Prong", false, "fill table for 2 prong candidates"};
   Configurable<bool> fill3Prong{"fill3Prong", false, "fill table for 3 prong candidates"};
+  Configurable<bool> matchCorrelatedBackgrounds{"matchCorrelatedBackgrounds", false, "Match correlated background candidates"};
+  Configurable<std::vector<int>> mothersCorrBkgsPdgs{"mothersCorrBkgsPdgs", {Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kLambdaCPlus, Pdg::kXiCPlus}, "PDG codes of the mother particles of correlated background candidates"};
   Configurable<bool> fillBplus{"fillBplus", false, "fill table for for B+ candidates"};
   Configurable<bool> fillB0{"fillB0", false, "fill table for B0 candidates"};
   Configurable<bool> rejectBackground2Prong{"rejectBackground2Prong", false, "Reject particles from PbPb background for 2 prong candidates"};
@@ -55,10 +58,10 @@ struct HfCandidateCreatorMcGen {
     for (const auto& mcCollision : mcCollisions) {
       const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
       if (fill2Prong) {
-        hf_mc_gen::fillMcMatchGen2Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen2Prong, rejectBackground2Prong);
+        hf_mc_gen::fillMcMatchGen2Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen2Prong, rejectBackground2Prong, matchCorrelatedBackgrounds);
       }
       if (fill3Prong) {
-        hf_mc_gen::fillMcMatchGen3Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen3Prong, rejectBackground3Prong);
+        hf_mc_gen::fillMcMatchGen3Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen3Prong, rejectBackground3Prong, matchCorrelatedBackgrounds ? mothersCorrBkgsPdgs : std::vector<int>{});
       }
     }
     if (fillBplus) {

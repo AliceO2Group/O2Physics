@@ -145,7 +145,7 @@ struct EmcEventSelectionQA {
       if (bc.runNumber() > mRun3MinNumber) {
         // in case of run3 not all BCs contain EMCAL data, require trigger selection also for min. bias
         // in addition select also L0/L1 triggers as triggers with EMCAL in reaodut
-        if (bc.alias_bit(kTVXinEMC) || bc.alias_bit(kEMC7) || bc.alias_bit(kEG1) || bc.alias_bit(kEG2) || bc.alias_bit(kDG1) || bc.alias_bit(kDG2) || bc.alias_bit(kEJ1) || bc.alias_bit(kEJ2) || bc.alias_bit(kDJ1) || bc.alias_bit(kDJ2)) {
+        if (bc.alias_bit(kTVXinEMC) || bc.alias_bit(kEMC7) || bc.alias_bit(kDMC7) || bc.alias_bit(kEG1) || bc.alias_bit(kEG2) || bc.alias_bit(kDG1) || bc.alias_bit(kDG2) || bc.alias_bit(kEJ1) || bc.alias_bit(kEJ2) || bc.alias_bit(kDJ1) || bc.alias_bit(kDJ2)) {
           isEMCALreadout = true;
         }
       } else {
