@@ -124,8 +124,8 @@ bool passPIDSelection(Atrack const& track, SpeciesContainer const mPIDspecies,
 }
 
 /// @brief Selects a candidate based on its PDG code, decay channel, and assigns the corresponding mass.
-/// 
-/// @tparam isScCandidate  Boolean template parameter: 
+///
+/// @tparam isScCandidate  Boolean template parameter:
 ///                   - `true` to check for Sigma_c candidates
 ///                   - `false` to check for Lambda_c candidates
 /// @tparam McParticleType Type representing the MC particle, must provide `pdgCode()` and `flagMcMatchGen()`
