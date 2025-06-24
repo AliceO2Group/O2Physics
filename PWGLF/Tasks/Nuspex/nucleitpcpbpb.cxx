@@ -157,13 +157,13 @@ struct NucleitpcPbPb {
   int mRunNumber, occupancy;
   float dBz, momn;
   TRandom3 rand;
+  int He3 = 4;
+  int He4 = 5;
   //----------------------------------------------------------------------------------------------------------------
   void init(InitContext const&)
   {
     mRunNumber = 0;
     dBz = 0;
-    int He3 = 4;
-    int He4 = 5;
     rand.SetSeed(0);
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
