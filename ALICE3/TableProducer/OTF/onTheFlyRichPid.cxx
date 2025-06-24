@@ -750,7 +750,7 @@ struct OnTheFlyRichPid {
 
       // first step: find precise arrival time (if any)
       // --- convert track into perfect track
-      if (!track.has_mcParticle()){ // should always be OK but check please
+      if (!track.has_mcParticle()) { // should always be OK but check please
         upgradeRich(nSigmaBarrelRich[0], nSigmaBarrelRich[1], nSigmaBarrelRich[2], nSigmaBarrelRich[3], nSigmaBarrelRich[4]);
         continue;
       }
@@ -806,7 +806,7 @@ struct OnTheFlyRichPid {
       float masses[5];
 
       for (int ii = 0; ii < 5; ii++) {
-        //nSigmaBarrelRich[ii] = error_value;
+        // nSigmaBarrelRich[ii] = error_value;
 
         auto pdgInfoThis = pdg->GetParticle(lpdg_array[ii]);
         masses[ii] = pdgInfoThis->Mass();
