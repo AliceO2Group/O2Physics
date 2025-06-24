@@ -190,7 +190,7 @@ struct HfCandidateCreator2Prong {
     setLabelHistoCands(hCandidates);
   }
 
-  template <bool doPvRefit, bool applyTrigSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll, typename CandType, typename TTracks, typename BCsType>
+  template <bool doPvRefit, bool applyUpcSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll, typename CandType, typename TTracks, typename BCsType>
   void runCreator2ProngWithDCAFitterN(Coll const&,
                                       CandType const& rowsTrackIndexProng2,
                                       TTracks const&,
@@ -203,7 +203,7 @@ struct HfCandidateCreator2Prong {
       auto collision = rowTrackIndexProng2.template collision_as<Coll>();
       float centrality{-1.f};
       uint32_t rejectionMask{0};
-      if constexpr (applyTrigSel) {
+      if constexpr (applyUpcSel) {
         rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, centEstimator, BCsType>(collision, centrality, ccdb, registry, bcs);
       } else {
         rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, BCsType>(collision, centrality, ccdb, registry);
@@ -343,7 +343,7 @@ struct HfCandidateCreator2Prong {
     }
   }
 
-  template <bool doPvRefit, bool applyTrigSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll, typename CandType, typename TTracks, typename BCsType>
+  template <bool doPvRefit, bool applyUpcSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll, typename CandType, typename TTracks, typename BCsType>
   void runCreator2ProngWithKFParticle(Coll const&,
                                       CandType const& rowsTrackIndexProng2,
                                       TTracks const&,
@@ -356,7 +356,7 @@ struct HfCandidateCreator2Prong {
       auto collision = rowTrackIndexProng2.template collision_as<Coll>();
       float centrality{-1.f};
       uint32_t rejectionMask{0};
-      if constexpr (applyTrigSel) {
+      if constexpr (applyUpcSel) {
         rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, centEstimator, BCsType>(collision, centrality, ccdb, registry, bcs);
       } else {
         rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, BCsType>(collision, centrality, ccdb, registry);
