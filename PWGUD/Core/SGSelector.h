@@ -8,6 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+/// \file   SGSelector.h
+/// \author Alexander Bylinkin
+/// \author Adam Matyja
+/// \since  2023-11-21
+/// \brief  Support class holding tools to work with Single Gap selection in central barrel UPCs
+///
 
 #ifndef PWGUD_CORE_SGSELECTOR_H_
 #define PWGUD_CORE_SGSELECTOR_H_
@@ -20,9 +27,6 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/Logger.h"
 
-#include "TDatabasePDG.h"
-#include "TLorentzVector.h"
-
 #include <cmath>
 using namespace o2::aod::rctsel;
 
@@ -32,10 +36,20 @@ struct SelectionResult {
   BC* bc;    // Pointer to the BC object
 };
 
+namespace o2::aod::sgselector
+{
+enum TrueGap : int {
+  NoGap = -1,
+  SingleGapA = 0,
+  SingleGapC = 1,
+  DoubleGap = 2
+};
+}
+
 class SGSelector
 {
  public:
-  SGSelector() : fPDG(TDatabasePDG::Instance()), myRCTChecker{"CBT"}, myRCTCheckerHadron{"CBT_hadronPID"}, myRCTCheckerZDC{"CBT", true}, myRCTCheckerHadronZDC{"CBT_hadronPID", true} {}
+  SGSelector() : myRCTChecker{"CBT"}, myRCTCheckerHadron{"CBT_hadronPID"}, myRCTCheckerZDC{"CBT", true}, myRCTCheckerHadronZDC{"CBT_hadronPID", true} {}
 
   template <typename CC, typename BCs, typename TCs, typename FWs>
   int Print(SGCutParHolder /*diffCuts*/, CC& collision, BCs& /*bcRange*/, TCs& /*tracks*/, FWs& /*fwdtracks*/)
@@ -113,7 +127,8 @@ class SGSelector
   template <typename TFwdTrack>
   int FwdTrkSelector(TFwdTrack const& fwdtrack)
   {
-    if (fwdtrack.trackType() == 0 || fwdtrack.trackType() == 3)
+    // if (fwdtrack.trackType() == 0 || fwdtrack.trackType() == 3)
+    if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack || fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)
       return 1;
     else
       return 0;
@@ -131,21 +146,21 @@ class SGSelector
     FT0C = collision.totalFT0AmplitudeC();
     ZNA = collision.energyCommonZNA();
     ZNC = collision.energyCommonZNC();
-    if (gap == 0) {
+    if (gap == o2::aod::sgselector::SingleGapA) { // gap == 0
       if (FV0A > fit_cut[0] || FT0A > fit_cut[1] || ZNA > zdc_cut)
-        true_gap = -1;
-    } else if (gap == 1) {
+        true_gap = o2::aod::sgselector::NoGap;           // -1
+    } else if (gap == o2::aod::sgselector::SingleGapC) { // gap == 1
       if (FT0C > fit_cut[2] || ZNC > zdc_cut)
-        true_gap = -1;
-    } else if (gap == 2) {
+        true_gap = o2::aod::sgselector::NoGap;          // -1
+    } else if (gap == o2::aod::sgselector::DoubleGap) { // gap == 2
       if ((FV0A > fit_cut[0] || FT0A > fit_cut[1] || ZNA > zdc_cut) && (FT0C > fit_cut[2] || ZNC > zdc_cut))
-        true_gap = -1;
+        true_gap = o2::aod::sgselector::NoGap; // -1
       else if ((FV0A > fit_cut[0] || FT0A > fit_cut[1] || ZNA > zdc_cut) && (FT0C <= fit_cut[2] && ZNC <= zdc_cut))
-        true_gap = 1;
+        true_gap = o2::aod::sgselector::SingleGapC; // 1
       else if ((FV0A <= fit_cut[0] && FT0A <= fit_cut[1] && ZNA <= zdc_cut) && (FT0C > fit_cut[2] || ZNC > zdc_cut))
-        true_gap = 0;
+        true_gap = o2::aod::sgselector::SingleGapA; // 0
       else if (FV0A <= fit_cut[0] && FT0A <= fit_cut[1] && ZNA <= zdc_cut && FT0C <= fit_cut[2] && ZNC <= zdc_cut)
-        true_gap = 2;
+        true_gap = o2::aod::sgselector::DoubleGap; // 2
       else
         LOGF(info, "Something wrong with DG");
     }
@@ -189,7 +204,6 @@ class SGSelector
   }
 
  private:
-  TDatabasePDG* fPDG;
   RCTFlagsChecker myRCTChecker;
   RCTFlagsChecker myRCTCheckerHadron;
   RCTFlagsChecker myRCTCheckerZDC;
