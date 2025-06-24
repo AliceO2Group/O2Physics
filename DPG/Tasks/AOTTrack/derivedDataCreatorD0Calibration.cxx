@@ -35,10 +35,10 @@
 #include "CommonDataFormat/InteractionRecord.h"
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
-#include <MathUtils/detail/TypeTruncation.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
+#include <MathUtils/detail/TypeTruncation.h>
 #include <ReconstructionDataFormats/DCA.h>
 
 #include <TH1D.h>
