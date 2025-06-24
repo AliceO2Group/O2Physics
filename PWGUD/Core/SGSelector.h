@@ -28,7 +28,7 @@
 #include "Framework/Logger.h"
 
 #include <cmath>
-using namespace o2::aod::rctsel;
+// using namespace o2::aod::rctsel;
 
 template <typename BC>
 struct SelectionResult {
@@ -204,10 +204,10 @@ class SGSelector
   }
 
  private:
-  RCTFlagsChecker myRCTChecker;
-  RCTFlagsChecker myRCTCheckerHadron;
-  RCTFlagsChecker myRCTCheckerZDC;
-  RCTFlagsChecker myRCTCheckerHadronZDC;
+  o2::aod::rctsel::RCTFlagsChecker myRCTChecker;
+  o2::aod::rctsel::RCTFlagsChecker myRCTCheckerHadron;
+  o2::aod::rctsel::RCTFlagsChecker myRCTCheckerZDC;
+  o2::aod::rctsel::RCTFlagsChecker myRCTCheckerHadronZDC;
 };
 
 #endif // PWGUD_CORE_SGSELECTOR_H_
