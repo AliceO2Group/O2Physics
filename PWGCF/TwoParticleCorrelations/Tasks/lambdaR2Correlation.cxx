@@ -339,7 +339,7 @@ struct LambdaTableProducer {
     const AxisSpec axisV0Phi(36, 0., TwoPI, "#phi (rad)");
 
     const AxisSpec axisRadius(2000, 0, 200, "r(cm)");
-    const AxisSpec axisCosPA(500, 0.995, 1.0, "cos(#theta_{PA})");
+    const AxisSpec axisCosPA(300, 0.97, 1.0, "cos(#theta_{PA})");
     const AxisSpec axisDcaV0PV(1000, 0., 10., "dca (cm)");
     const AxisSpec axisDcaProngPV(5000, -50., 50., "dca (cm)");
     const AxisSpec axisDcaDau(75, 0., 1.5, "Daug DCA (#sigma)");
@@ -404,7 +404,7 @@ struct LambdaTableProducer {
     histos.addClone("McRec/Lambda/", "McRec/AntiLambda/");
 
     // MC Generated Histograms
-    if (doprocessMCRun3 || doprocessMCRun2) {
+    if (doprocessMCRun3 || doprocessMCRun2 || doprocessMCRecoRun3 || doprocessMCRecoRun2) {
       // McReco Histos
       histos.add("Tracks/h2f_tracks_pid_before_sel", "PIDs", kTH2F, {axisPID, axisV0Pt});
       histos.add("Tracks/h2f_tracks_pid_after_sel", "PIDs", kTH2F, {axisPID, axisV0Pt});
@@ -1172,7 +1172,7 @@ struct LambdaTableProducer {
 
   using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
   using CollisionsRun2 = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
-  using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
+  using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr>;
   using McV0Tracks = soa::Join<aod::V0Datas, aod::McV0Labels>;
   using TracksMC = soa::Join<Tracks, aod::McTrackLabels>;
 
@@ -1189,6 +1189,30 @@ struct LambdaTableProducer {
   }
 
   PROCESS_SWITCH(LambdaTableProducer, processDataRun2, "Process for Run2 DATA", false);
+
+  void processMCRecoRun3(soa::Join<CollisionsRun3, aod::McCollisionLabels>::iterator const& collision, aod::McCollisions const&,
+                         McV0Tracks const& V0s, TracksMC const& tracks, aod::McParticles const&)
+  {
+    // check collision
+    if (!selCollision<kRun3>(collision)) {
+      return;
+    }
+    fillLambdaRecoTables<kRun3, kMC>(collision, V0s, tracks);
+  }
+
+  PROCESS_SWITCH(LambdaTableProducer, processMCRecoRun3, "Process for Run3 McReco DATA", false);
+
+  void processMCRecoRun2(soa::Join<CollisionsRun2, aod::McCollisionLabels>::iterator const& collision, aod::McCollisions const&,
+                         McV0Tracks const& V0s, TracksMC const& tracks, aod::McParticles const&)
+  {
+    // check collision
+    if (!selCollision<kRun2>(collision)) {
+      return;
+    }
+    fillLambdaRecoTables<kRun2, kMC>(collision, V0s, tracks);
+  }
+
+  PROCESS_SWITCH(LambdaTableProducer, processMCRecoRun2, "Process for Run2 McReco DATA", false);
 
   void processMCRun3(aod::McCollisions::iterator const& mcCollision,
                      soa::SmallGroups<soa::Join<CollisionsRun3, aod::McCollisionLabels>> const& collisions,

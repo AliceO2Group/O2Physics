@@ -163,7 +163,7 @@ struct HigherMassResonances {
     ConfigurableAxis configThnAxisPOL{"configThnAxisPOL", {20, -1.0, 1.0}, "Costheta axis"};
     ConfigurableAxis configThnAxisPhi{"configThnAxisPhi", {70, 0.0f, 7.0f}, "Phi axis"}; // 0 to 2pi
     ConfigurableAxis ksMassBins{"ksMassBins", {200, 0.45f, 0.55f}, "K0s invariant mass axis"};
-    ConfigurableAxis cMassBins{"cMassBins", {200, 0.9f, 3.0f}, "Glueball invariant mass axis"};
+    ConfigurableAxis cGlueMassBins{"cGlueMassBins", {200, 0.9f, 3.0f}, "Glueball invariant mass axis"};
     ConfigurableAxis cPtBins{"cPtBins", {200, 0.0f, 20.0f}, "Glueball pT axis"};
     // ConfigurableAxis axisdEdx{"axisdEdx", {20000, 0.0f, 200.0f}, "dE/dx (a.u.)"};
     // ConfigurableAxis axisPtfordEbydx{"axisPtfordEbydx", {2000, 0, 20}, "pT (GeV/c)"};
@@ -193,7 +193,7 @@ struct HigherMassResonances {
 
     // Axes
     AxisSpec k0ShortMassAxis = {config.ksMassBins, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
-    AxisSpec glueballMassAxis = {config.ksMassBins, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
+    AxisSpec glueballMassAxis = {config.cGlueMassBins, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec vertexZAxis = {60, -15.f, 15.f, "vrtx_{Z} [cm]"}; // for histogram
     AxisSpec ptAxis = {config.cPtBins, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec multiplicityAxis = {config.binsCent, "Multiplicity Axis"};
@@ -559,7 +559,9 @@ struct HigherMassResonances {
     phi2 = candidate2.phi();
 
     double angle = std::sqrt(std::pow(eta1 - eta2, 2) + std::pow(phi1 - phi2, 2));
-    rKzeroShort.fill(HIST("angularSeparation"), angle);
+    if (config.qAv0) {
+      rKzeroShort.fill(HIST("angularSeparation"), angle);
+    }
     if (config.applyAngSepCut && angle > config.angSepCut) {
       return false;
     }

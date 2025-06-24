@@ -57,8 +57,8 @@ namespace hf_cand_3prong
 
 // D±
 static const std::unordered_map<DecayChannelMain, const std::vector<int>> daughtersDplusMain{
-  {DecayChannelMain::DplusToPiKPi, {+kKMinus, +kKPlus, +kPiPlus}},
-  {DecayChannelMain::DplusToPiKK, {+kKMinus, +kPiPlus, +kPiPlus}},
+  {DecayChannelMain::DplusToPiKPi, {+kKMinus, +kPiPlus, +kPiPlus}},
+  {DecayChannelMain::DplusToPiKK, {+kKMinus, +kKPlus, +kPiPlus}},
   {DecayChannelMain::DplusToPiKPiPi0, {+kKMinus, +kPiPlus, +kPiPlus, +kPi0}},
   {DecayChannelMain::DplusToPiPiPi, {+kPiMinus, +kPiPlus, +kPiPlus}},
 };
@@ -66,7 +66,7 @@ static const std::unordered_map<DecayChannelMain, const std::vector<int>> daught
 static const std::unordered_map<DecayChannelResonant, const std::array<int, 2>> daughtersDplusResonant{
   {DecayChannelResonant::DplusToPhiPi, {+o2::constants::physics::kPhi, +kPiPlus}},
   {DecayChannelResonant::DplusToKstar0K, {-o2::constants::physics::kK0Star892, +kKPlus}},
-  {DecayChannelResonant::DplusToKstar1430_0K, {+10311, +kKPlus}},
+  {DecayChannelResonant::DplusToKstar1430_0K, {-10311, +kKPlus}},
   {DecayChannelResonant::DplusToRho0Pi, {+kRho770_0, +kPiPlus}},
   {DecayChannelResonant::DplusToF2_1270Pi, {+225, +kPiPlus}},
 };
@@ -110,7 +110,7 @@ static const std::unordered_map<DecayChannelResonant, const std::array<int, 2>> 
   {DecayChannelResonant::DstarToD0ToKstarPi, {-o2::constants::physics::kKPlusStar892, +kPiPlus}},
   {DecayChannelResonant::DstarToDplusToPhiPi, {+o2::constants::physics::kPhi, +kPiPlus}},
   {DecayChannelResonant::DstarToDplusToKstar0K, {-o2::constants::physics::kK0Star892, +kKPlus}},
-  {DecayChannelResonant::DstarToDplusToKstar1430_0K, {+10311, +kKPlus}},
+  {DecayChannelResonant::DstarToDplusToKstar1430_0K, {-10311, +kKPlus}},
   {DecayChannelResonant::DstarToDplusToRho0Pi, {+kRho770_0, +kPiPlus}},
   {DecayChannelResonant::DstarToDplusToF2_1270Pi, {+225, +kPiPlus}},
 };
@@ -123,7 +123,7 @@ static const std::unordered_map<DecayChannelMain, const std::vector<int>> daught
   {DecayChannelMain::LcToPKK, {+kProton, +kKMinus, +kKPlus}}};
 
 static const std::unordered_map<DecayChannelResonant, const std::array<int, 2>> daughtersLcResonant{
-  {DecayChannelResonant::LcToPKstar0, {+o2::constants::physics::kK0Star892, +kProton}},
+  {DecayChannelResonant::LcToPKstar0, {-o2::constants::physics::kK0Star892, +kProton}},
   {DecayChannelResonant::LcToDeltaplusplusK, {+2224, +kKMinus}},
   {DecayChannelResonant::LcToL1520Pi, {+102134, +kPiPlus}},
 };

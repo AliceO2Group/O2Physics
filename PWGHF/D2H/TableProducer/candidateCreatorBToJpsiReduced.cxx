@@ -421,8 +421,6 @@ struct HfCandidateCreatorBToJpsiReduced {
 struct HfCandidateCreatorBToJpsiReducedExpressions {
   Spawns<aod::HfCandBpJPExt> rowCandidateBPlus;
   Spawns<aod::HfCandBsJPExt> rowCandidateBs;
-  Spawns<aod::HfRedBach0Ext> rowTracksExt0;
-  Spawns<aod::HfRedBach1Ext> rowTracksExt1;
   Produces<aod::HfMcRecRedBps> rowBplusMcRec;
   Produces<aod::HfMcRecRedBss> rowBsMcRec;
 

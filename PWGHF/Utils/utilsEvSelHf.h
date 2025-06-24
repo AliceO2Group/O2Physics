@@ -203,7 +203,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     hPosZAfterEvSel = registry.add<TH1>(NameHistPosZAfterEvSel, "selected events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
     hPosXAfterEvSel = registry.add<TH1>(NameHistPosXAfterEvSel, "selected events;#it{x}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
     hPosYAfterEvSel = registry.add<TH1>(NameHistPosYAfterEvSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
-    hNumPvContributorsAfterSel = registry.add<TH1>(NameHistNumPvContributorsAfterSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{500, -0.5, 499.5}}});
+    hNumPvContributorsAfterSel = registry.add<TH1>(NameHistNumPvContributorsAfterSel, "selected events;number of prim. vtx. contributors;entries", {o2::framework::HistType::kTH1D, {{500, -0.5, 499.5}}});
     setEventRejectionLabels(hCollisions, softwareTrigger);
 
     const o2::framework::AxisSpec th2AxisCent{th2ConfigAxisCent, "Centrality"};

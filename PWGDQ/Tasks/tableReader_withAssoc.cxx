@@ -94,13 +94,13 @@ DECLARE_SOA_COLUMN(TauxyBcandidate, tauxyBcandidate, float);
 DECLARE_SOA_COLUMN(TauzBcandidate, tauzBcandidate, float);
 DECLARE_SOA_COLUMN(CosPBcandidate, cosPBcandidate, float);
 DECLARE_SOA_COLUMN(Chi2Bcandidate, chi2Bcandidate, float);
-DECLARE_SOA_COLUMN(Ptassoc, ptassoc, float);
+DECLARE_SOA_COLUMN(PINassoc, pINassoc, float);
 DECLARE_SOA_COLUMN(Etaassoc, etaassoc, float);
 DECLARE_SOA_COLUMN(Ptpair, ptpair, float);
 DECLARE_SOA_COLUMN(Etapair, etapair, float);
-DECLARE_SOA_COLUMN(Ptleg1, ptleg1, float);
+DECLARE_SOA_COLUMN(PINleg1, pINleg1, float);
 DECLARE_SOA_COLUMN(Etaleg1, etaleg1, float);
-DECLARE_SOA_COLUMN(Ptleg2, ptleg2, float);
+DECLARE_SOA_COLUMN(PINleg2, pINleg2, float);
 DECLARE_SOA_COLUMN(Etaleg2, etaleg2, float);
 DECLARE_SOA_COLUMN(TPCnsigmaKaassoc, tpcnsigmaKaassoc, float);
 DECLARE_SOA_COLUMN(TPCnsigmaPiassoc, tpcnsigmaPiassoc, float);
@@ -152,8 +152,8 @@ DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONSA",
                   dqanalysisflags::massBcandidate, dqanalysisflags::MassDileptonCandidate, dqanalysisflags::deltamassBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::EtaBcandidate,
                   dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate,
                   dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate,
-                  dqanalysisflags::Ptassoc, dqanalysisflags::Etaassoc, dqanalysisflags::Ptpair, dqanalysisflags::Etapair,
-                  dqanalysisflags::Ptleg1, dqanalysisflags::Etaleg1, dqanalysisflags::Ptleg2, dqanalysisflags::Etaleg2,
+                  dqanalysisflags::PINassoc, dqanalysisflags::Etaassoc, dqanalysisflags::Ptpair, dqanalysisflags::Etapair,
+                  dqanalysisflags::PINleg1, dqanalysisflags::Etaleg1, dqanalysisflags::PINleg2, dqanalysisflags::Etaleg2,
                   dqanalysisflags::TPCnsigmaKaassoc, dqanalysisflags::TPCnsigmaPiassoc, dqanalysisflags::TPCnsigmaPrassoc, dqanalysisflags::TOFnsigmaKaassoc,
                   dqanalysisflags::TPCnsigmaElleg1, dqanalysisflags::TPCnsigmaPileg1, dqanalysisflags::TPCnsigmaPrleg1,
                   dqanalysisflags::TPCnsigmaElleg2, dqanalysisflags::TPCnsigmaPileg2, dqanalysisflags::TPCnsigmaPrleg2,
@@ -3268,7 +3268,7 @@ struct AnalysisDileptonTrack {
                        fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz],
                        fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kCosPointingAngle],
                        fValuesHadron[VarManager::kVertexingChi2PCA],
-                       track.pt(), track.eta(), dilepton.pt(), dilepton.eta(), lepton1.pt(), lepton1.eta(), lepton2.pt(), lepton2.eta(),
+                       track.tpcInnerParam(), track.eta(), dilepton.pt(), dilepton.eta(), lepton1.tpcInnerParam(), lepton1.eta(), lepton2.tpcInnerParam(), lepton2.eta(),
                        track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tpcNSigmaPr(), track.tofNSigmaKa(),
                        lepton1.tpcNSigmaEl(), lepton1.tpcNSigmaPi(), lepton1.tpcNSigmaPr(),
                        lepton2.tpcNSigmaEl(), lepton2.tpcNSigmaPi(), lepton2.tpcNSigmaPr(),
