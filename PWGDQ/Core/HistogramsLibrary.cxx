@@ -195,16 +195,16 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "ITStrackOccupancy", "ITStrackOccupancy", false, 200, 0.0, 20000.0, VarManager::kTrackOccupancyInTimeRange);
       hm->AddHistogram(histClass, "Ft0cOccupancy", "Ft0cOccupancy", false, 200, 0.0, 20000.0, VarManager::kFT0COccupancyInTimeRange);
       if (subGroupStr.Contains("qvector")) {
-        hm->AddHistogram(histClass, "Psi2A_ITStrackOccupancy", "", false, 200, 0.0, 20000.0, VarManager::kTrackOccupancyInTimeRange, 100, -TMath::Pi()/2, TMath::Pi()/2, VarManager::kPsi2A);
-        hm->AddHistogram(histClass, "Psi2B_ITStrackOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kTrackOccupancyInTimeRange, 100, -TMath::Pi()/2, TMath::Pi()/2, VarManager::kPsi2B);
-        hm->AddHistogram(histClass, "Psi2C_ITStrackOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kTrackOccupancyInTimeRange, 100, -TMath::Pi()/2, TMath::Pi()/2, VarManager::kPsi2C);
-        hm->AddHistogram(histClass, "Psi2APOS_ITStrackOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kTrackOccupancyInTimeRange, 100, -TMath::Pi()/2, TMath::Pi()/2, VarManager::kPsi2APOS);
-        hm->AddHistogram(histClass, "Psi2ANEG_ITStrackOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kTrackOccupancyInTimeRange, 100, -TMath::Pi()/2, TMath::Pi()/2, VarManager::kPsi2ANEG);
-        hm->AddHistogram(histClass, "Psi2A_Ft0cOccupancy", "", false, 200, 0.0, 20000.0, VarManager::kFT0COccupancyInTimeRange, 100, -TMath::Pi()/2, TMath::Pi()/2, VarManager::kPsi2A);
-        hm->AddHistogram(histClass, "Psi2B_Ft0cOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kFT0COccupancyInTimeRange, 100, -TMath::Pi()/2, TMath::Pi()/2, VarManager::kPsi2B);
-        hm->AddHistogram(histClass, "Psi2C_Ft0cOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kFT0COccupancyInTimeRange, 100, -TMath::Pi()/2, TMath::Pi()/2, VarManager::kPsi2C);
-        hm->AddHistogram(histClass, "Psi2APOS_Ft0cOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kFT0COccupancyInTimeRange, 100, -TMath::Pi()/2, TMath::Pi()/2, VarManager::kPsi2APOS);
-        hm->AddHistogram(histClass, "Psi2ANEG_Ft0cOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kFT0COccupancyInTimeRange, 100, -TMath::Pi()/2, TMath::Pi()/2, VarManager::kPsi2ANEG);
+        hm->AddHistogram(histClass, "Psi2A_ITStrackOccupancy", "", false, 200, 0.0, 20000.0, VarManager::kTrackOccupancyInTimeRange, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kPsi2A);
+        hm->AddHistogram(histClass, "Psi2B_ITStrackOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kTrackOccupancyInTimeRange, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kPsi2B);
+        hm->AddHistogram(histClass, "Psi2C_ITStrackOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kTrackOccupancyInTimeRange, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kPsi2C);
+        hm->AddHistogram(histClass, "Psi2APOS_ITStrackOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kTrackOccupancyInTimeRange, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kPsi2APOS);
+        hm->AddHistogram(histClass, "Psi2ANEG_ITStrackOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kTrackOccupancyInTimeRange, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kPsi2ANEG);
+        hm->AddHistogram(histClass, "Psi2A_Ft0cOccupancy", "", false, 200, 0.0, 20000.0, VarManager::kFT0COccupancyInTimeRange, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kPsi2A);
+        hm->AddHistogram(histClass, "Psi2B_Ft0cOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kFT0COccupancyInTimeRange, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kPsi2B);
+        hm->AddHistogram(histClass, "Psi2C_Ft0cOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kFT0COccupancyInTimeRange, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kPsi2C);
+        hm->AddHistogram(histClass, "Psi2APOS_Ft0cOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kFT0COccupancyInTimeRange, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kPsi2APOS);
+        hm->AddHistogram(histClass, "Psi2ANEG_Ft0cOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kFT0COccupancyInTimeRange, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kPsi2ANEG);
       }
     }
     if (subGroupStr.Contains("mc")) {
