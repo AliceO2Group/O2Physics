@@ -441,7 +441,7 @@ struct HfCorrelatorLcHadrons {
                             track.pt() * track.sign(),
                             poolBin,
                             correlationStatus);
-          entryLcHadronPairY(track.y() - hfHelper.yLc(candidate));
+          entryLcHadronPairY(track.rapidity(MassProton) - hfHelper.yLc(candidate)); // only for proton as of now
           entryLcHadronRecoInfo(hfHelper.invMassLcToPKPi(candidate), false);
           entryLcHadronGenInfo(false, false, 0);
           entryLcHadronMlInfo(outputMl[0], outputMl[1]);
@@ -457,7 +457,7 @@ struct HfCorrelatorLcHadrons {
                             track.pt() * track.sign(),
                             poolBin,
                             correlationStatus);
-          entryLcHadronPairY(track.y() - hfHelper.yLc(candidate));
+          entryLcHadronPairY(track.rapidity(MassProton) - hfHelper.yLc(candidate)); // only for proton as of now
           entryLcHadronRecoInfo(hfHelper.invMassLcToPiKP(candidate), false);
           entryLcHadronGenInfo(false, false, 0);
           entryLcHadronMlInfo(outputMl[0], outputMl[1]);
@@ -694,7 +694,7 @@ struct HfCorrelatorLcHadrons {
                             track.pt() * track.sign(),
                             poolBin,
                             correlationStatus);
-          entryLcHadronPairY(track.y() - hfHelper.yLc(candidate));
+          entryLcHadronPairY(track.rapidity(MassProton) - hfHelper.yLc(candidate)); // only for proton as of now
           entryLcHadronRecoInfo(hfHelper.invMassLcToPKPi(candidate), isLcSignal);
           if (fillTrkPID) {
             entryLcHadronPairTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
@@ -724,7 +724,7 @@ struct HfCorrelatorLcHadrons {
                             track.pt() * track.sign(),
                             poolBin,
                             correlationStatus);
-          entryLcHadronPairY(track.y() - hfHelper.yLc(candidate));
+          entryLcHadronPairY(track.rapidity(MassProton) - hfHelper.yLc(candidate)); // only for proton as of now
           entryLcHadronRecoInfo(hfHelper.invMassLcToPiKP(candidate), isLcSignal);
           if (fillTrkPID) {
             entryLcHadronPairTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
