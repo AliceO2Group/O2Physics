@@ -164,7 +164,7 @@ struct skimmerPrimaryMuon {
     fRegistry.add("MCHMID/hDCAxyResolutionvsPt", "DCA_{xy} vs. p_{T};p_{T} (GeV/c);DCA_{y} resolution (#mum);", kTH2F, {{100, 0, 10.f}, {500, 0, 5e+5}}, false);
   }
 
-  bool isSelected(const float pt, const float eta, const float rAtAbsorberEnd, const float pDCA, const float chi2, const uint8_t trackType, const float dcaXY)
+  bool isSelected(const float pt, const float eta, const float rAtAbsorberEnd, const float pDCA, const float chi2_per_ndf, const uint8_t trackType, const float dcaXY)
   {
     if (pt < minPt || maxPt < pt) {
       return false;
@@ -183,7 +183,7 @@ struct skimmerPrimaryMuon {
       if (maxDCAxy < dcaXY) {
         return false;
       }
-      if (chi2 < 0.f || maxChi2GL < chi2) {
+      if (chi2_per_ndf < 0.f || maxChi2GL < chi2_per_ndf) {
         return false;
       }
       if (rAtAbsorberEnd < minRabsGL || maxRabs < rAtAbsorberEnd) {
@@ -193,7 +193,7 @@ struct skimmerPrimaryMuon {
       if (eta < minEtaSA || maxEtaSA < eta) {
         return false;
       }
-      if (chi2 < 0.f || maxChi2SA < chi2) {
+      if (chi2_per_ndf < 0.f || maxChi2SA < chi2_per_ndf) {
         return false;
       }
     } else {
@@ -252,7 +252,7 @@ struct skimmerPrimaryMuon {
     // float tgl = fwdtrack.tgl();
     float chi2mft = 0.f;
     uint64_t mftClusterSizesAndTrackFlags = 0;
-    int ndf_mchmft = 999;
+    int ndf_mchmft = 1;
 
     if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
       const auto& mchtrack = fwdtrack.template matchMCHTrack_as<TFwdTracks>(); // MCH-MID
@@ -293,7 +293,7 @@ struct skimmerPrimaryMuon {
       return;
     }
 
-    if (!isSelected(pt, eta, rAtAbsorberEnd, pDCA, fwdtrack.chi2(), fwdtrack.trackType(), dcaXY)) {
+    if (!isSelected(pt, eta, rAtAbsorberEnd, pDCA, fwdtrack.chi2() / ndf_mchmft, fwdtrack.trackType(), dcaXY)) {
       return;
     }
 

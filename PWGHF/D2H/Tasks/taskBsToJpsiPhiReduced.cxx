@@ -298,7 +298,7 @@ struct HfTaskBsToJpsiPhiReduced {
       registry.add("hPtJpsiGen", mcParticleMatched + "J/#Psi #it{p}_{T}^{gen} (GeV/#it{c}); B_{s}^{0} " + stringPt, {HistType::kTH2F, {axisPtProng, axisPtB}});
       registry.add("hPtPhiGen", mcParticleMatched + "#phi #it{p}_{T}^{gen} (GeV/#it{c}); B_{s}^{0} " + stringPt, {HistType::kTH2F, {axisPtProng, axisPtB}});
       registry.add("hPtKGen", mcParticleMatched + "Kaon #it{p}_{T}^{gen} (GeV/#it{c}); B_{s}^{0} " + stringPt, {HistType::kTH2F, {axisPtProng, axisPtB}});
-      registry.add("hYGenWithProngsInAcceptance", mcParticleMatched + "Kaon #it{p}_{T}^{gen} (GeV/#it{c}); B_{s}^{0} " + stringPt, {HistType::kTH2F, {axisPtProng, axisRapidity}});
+      registry.add("hYGenWithProngsInAcceptance", mcParticleMatched + "B_{s}^{0} #it{p}_{T}^{gen} (GeV/#it{c}); B_{s}^{0} #it{y}", {HistType::kTH2F, {axisPtProng, axisRapidity}});
       registry.add("hMassRecSig", bSCandMatch + "inv. mass J/#Psi K^{+} (GeV/#it{c}^{2}); B_{s}^{0} " + stringPt, {HistType::kTH2F, {axisMassBs, axisPtB}});
       registry.add("hMassJpsiRecSig", bSCandMatch + "inv. mass #mu^{+}#mu^{#minus} (GeV/#it{c}^{2}); J/#Psi " + stringPt, {HistType::kTH2F, {axisMassJpsi, axisPtJpsi}});
       registry.add("hMassPhiRecSig", bSCandMatch + "inv. mass K^{+}K^{#minus} (GeV/#it{c}^{2}); #phi " + stringPt, {HistType::kTH2F, {axisMassPhi, axisPtPhi}});

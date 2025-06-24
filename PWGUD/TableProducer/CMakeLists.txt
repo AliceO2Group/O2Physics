@@ -36,6 +36,11 @@ o2physics_add_dpl_workflow(tau-event-table-producer
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(two-tracks-event-table-producer
+                           SOURCES twoTracksEventTableProducer.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(fwdtrack-propagation
                            SOURCES fwdTrackPropagation.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::GlobalTracking

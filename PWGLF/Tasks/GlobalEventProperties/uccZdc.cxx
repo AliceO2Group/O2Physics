@@ -703,7 +703,7 @@ struct UccZdc {
       return;
     }
 
-    auto efficiency = ccdb->getForTimeStamp<TH1F>(paTHEff.value, foundBC.timestamp());
+    auto efficiency = ccdb->getForTimeStamp<TH2F>(paTHEff.value, foundBC.timestamp());
     if (!efficiency) {
       return;
     }
@@ -723,9 +723,11 @@ struct UccZdc {
       }
 
       float pt{track.pt()};
+      int foundNchBin{efficiency->GetXaxis()->FindBin(glbTracks)};
+      int foundPtBin{efficiency->GetYaxis()->FindBin(pt)};
       float effValue{1.0};
       if (applyEff) {
-        effValue = efficiency->GetBinContent(efficiency->FindBin(pt));
+        effValue = efficiency->GetBinContent(foundNchBin, foundPtBin);
       }
       if (effValue > 0.) {
         vecOneOverEff.emplace_back(1. / effValue);
@@ -756,10 +758,12 @@ struct UccZdc {
       }
 
       float pt{track.pt()};
+      int foundNchBin{efficiency->GetXaxis()->FindBin(glbTracks)};
+      int foundPtBin{efficiency->GetYaxis()->FindBin(pt)};
       float effValue{1.};
       float fdValue{1.};
       if (applyEff) {
-        effValue = efficiency->GetBinContent(efficiency->FindBin(pt));
+        effValue = efficiency->GetBinContent(foundNchBin, foundPtBin);
         fdValue = fd->GetBinContent(fd->FindBin(pt));
       }
       if (applyEff && !applyFD) {
@@ -870,7 +874,7 @@ struct UccZdc {
         registry.fill(HIST("EvtsDivided"), 0);
 
         // To use run-by-run efficiency
-        auto efficiency = ccdb->getForTimeStamp<TH1F>(paTHEff.value, foundBC.timestamp());
+        auto efficiency = ccdb->getForTimeStamp<TH2F>(paTHEff.value, foundBC.timestamp());
         if (!efficiency) {
           return;
         }
@@ -880,20 +884,43 @@ struct UccZdc {
         std::vector<float> vecOneOverEff;
         // std::vector<float> wIs;
         const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
+
+        // Calculates the event's Nch to evaluate the efficiency
+        for (const auto& track : groupedTracks) {
+          // Track Selection
+          if (track.eta() < minEta || track.eta() > maxEta) {
+            continue;
+          }
+          if (track.pt() < minPt || track.pt() > maxPt) {
+            continue;
+          }
+          if (!track.isGlobalTrack()) {
+            continue;
+          }
+          nchRaw++;
+        }
+
         // Calculates the event weight, W_k
         for (const auto& track : groupedTracks) {
           // Track Selection
+          if (track.eta() < minEta || track.eta() > maxEta) {
+            continue;
+          }
+          if (track.pt() < minPt || track.pt() > maxPt) {
+            continue;
+          }
           if (!track.isGlobalTrack()) {
             continue;
           }
 
           float pt{track.pt()};
+          int foundNchBin{efficiency->GetXaxis()->FindBin(nchRaw)};
+          int foundPtBin{efficiency->GetYaxis()->FindBin(pt)};
           float effValue{1.};
           float fdValue{1.};
-          nchRaw++;
 
           if (applyEff) {
-            effValue = efficiency->GetBinContent(efficiency->FindBin(pt));
+            effValue = efficiency->GetBinContent(foundNchBin, foundPtBin);
             fdValue = fd->GetBinContent(fd->FindBin(pt));
           }
           if ((effValue > 0.) && (fdValue > 0.)) {
@@ -987,6 +1014,12 @@ struct UccZdc {
         const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
         for (const auto& track : groupedTracks) {
           // Track Selection
+          if (track.eta() < minEta || track.eta() > maxEta) {
+            continue;
+          }
+          if (track.pt() < minPt || track.pt() > maxPt) {
+            continue;
+          }
           if (!track.isGlobalTrack()) {
             continue;
           }
@@ -998,6 +1031,12 @@ struct UccZdc {
 
         for (const auto& track : groupedTracks) {
           // Track Selection
+          if (track.eta() < minEta || track.eta() > maxEta) {
+            continue;
+          }
+          if (track.pt() < minPt || track.pt() > maxPt) {
+            continue;
+          }
           if (!track.isGlobalTrack()) {
             continue;
           }

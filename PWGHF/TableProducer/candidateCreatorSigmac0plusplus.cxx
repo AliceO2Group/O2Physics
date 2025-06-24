@@ -15,9 +15,17 @@
 ///
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN PADOVA
 
-#include <string>
-#include <set>
-#include <vector>
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h" // for dca recalculation
+#include "PWGHF/Utils/utilsEvSelHf.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 
 #include "CCDB/BasicCCDBManager.h" // for dca recalculation
 #include "CommonConstants/PhysicsConstants.h"
@@ -27,20 +35,12 @@
 #include "DetectorsBase/Propagator.h"          // for dca recalculation
 #include "DetectorsVertexing/PVertexer.h"      // for dca recalculation
 #include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Utils/utilsBfieldCCDB.h" // for dca recalculation
-#include "PWGHF/Utils/utilsEvSelHf.h"
+#include <set>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -172,7 +172,7 @@ struct HfCandidateCreatorSigmac0plusplus {
   /// @param candidates are 3-prong candidates satisfying the analysis selections for Λc+ → pK-π+ (and charge conj.)
   /// @param tracks are the tracks (with dcaXY, dcaZ information) → soft-pion candidate tracks
   template <typename TRK, typename CAND>
-  void makeSoftPiLcPair(TRK const& trackSoftPi, CAND const& candidatesThisColl, aod::TracksWDcaExtra const&)
+  void makeSoftPiLcPair(const std::array<float, 2> softPiDca, TRK const& trackSoftPi, CAND const& candidatesThisColl, aod::TracksWDcaExtra const&)
   {
 
     /// loop over Λc+ → pK-π+ (and charge conj.) candidates
@@ -253,7 +253,8 @@ struct HfCandidateCreatorSigmac0plusplus {
                       candLc.hfflag(),
                       /* Σc0,++ specific columns */
                       chargeSigmac,
-                      statusSpreadMinvPKPiFromPDG, statusSpreadMinvPiKPFromPDG);
+                      statusSpreadMinvPKPiFromPDG, statusSpreadMinvPiKPFromPDG,
+                      softPiDca[0], softPiDca[1]);
     } /// end loop over Λc+ → pK-π+ (and charge conj.) candidates
   } /// end makeSoftPiLcPair
 
@@ -278,6 +279,7 @@ struct HfCandidateCreatorSigmac0plusplus {
     if (!softPiCuts.IsSelected(trackSoftPi)) {
       return;
     }
+    std::array<float, 2> softPiDca = {-999.f, -999.f};
     if constexpr (withTimeAssoc) {
       /// dcaXY, dcaZ selections
       /// To be done separately from the others, because for reassigned tracks the dca must be recalculated
@@ -285,9 +287,8 @@ struct HfCandidateCreatorSigmac0plusplus {
       if (trackSoftPi.collisionId() == thisCollId) {
         /// this is a track originally assigned to the current collision
         /// therefore, the dcaXY, dcaZ are those already calculated in the track-propagation workflow
-        if (std::abs(trackSoftPi.dcaXY()) > softPiDcaXYMax || std::abs(trackSoftPi.dcaZ()) > softPiDcaZMax) {
-          return;
-        }
+        softPiDca[0] = trackSoftPi.dcaXY();
+        softPiDca[1] = trackSoftPi.dcaZ();
       } else {
         /// this is a reassigned track
         /// therefore we need to calculate the dcaXY, dcaZ with respect to this new primary vertex
@@ -296,17 +297,19 @@ struct HfCandidateCreatorSigmac0plusplus {
         auto trackParSoftPi = getTrackPar(trackSoftPi);
         std::array<float, 2> dcaInfo{-999., -999.};
         o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParSoftPi, 2.f, noMatCorr, &dcaInfo);
-        if (std::abs(dcaInfo[0]) > softPiDcaXYMax || std::abs(dcaInfo[1]) > softPiDcaZMax) {
-          return;
-        }
+        softPiDca[0] = dcaInfo[0];
+        softPiDca[1] = dcaInfo[1];
       }
     } else {
       /// this is a track originally assigned to the current collision
       /// therefore, the dcaXY, dcaZ are those already calculated in the track-propagation workflow
       /// No need to consider the time-reassociated tracks, since withTimeAssoc == false here
-      if (std::abs(trackSoftPi.dcaXY()) > softPiDcaXYMax || std::abs(trackSoftPi.dcaZ()) > softPiDcaZMax) {
-        return;
-      }
+      softPiDca[0] = trackSoftPi.dcaXY();
+      softPiDca[1] = trackSoftPi.dcaZ();
+    }
+    if (std::abs(softPiDca[0]) > softPiDcaXYMax || std::abs(softPiDca[1]) > softPiDcaZMax) {
+      /// soft-pion dca too large, reject the candidate
+      return;
     }
     histos.fill(HIST("hCounter"), 3);
 
@@ -314,10 +317,10 @@ struct HfCandidateCreatorSigmac0plusplus {
     if constexpr (withTimeAssoc) {
       /// need to group candidates manually
       auto candidatesThisColl = candidates.sliceBy(hf3ProngPerCollision, thisCollId);
-      makeSoftPiLcPair(trackSoftPi, candidatesThisColl, tracks);
+      makeSoftPiLcPair(softPiDca, trackSoftPi, candidatesThisColl, tracks);
     } else {
       /// tracks and candidates already grouped by collision at the level of process function
-      makeSoftPiLcPair(trackSoftPi, candidates, tracks);
+      makeSoftPiLcPair(softPiDca, trackSoftPi, candidates, tracks);
     }
 
   } /// end createSigmaC

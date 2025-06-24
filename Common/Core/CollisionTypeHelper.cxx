@@ -16,11 +16,14 @@
 ///
 
 #include "Common/Core/CollisionTypeHelper.h"
-#include <fairlogger/Logger.h>
-#include <string>
+
 #include "DataFormatsParameters/GRPLHCIFData.h"
 
-std::string CollisionSystemType::getCollisionSystemName(collType collSys)
+#include <fairlogger/Logger.h>
+
+#include <string>
+
+std::string o2::common::core::CollisionSystemType::getCollisionSystemName(collType collSys)
 {
   switch (collSys) {
     case kCollSyspp:
@@ -36,7 +39,7 @@ std::string CollisionSystemType::getCollisionSystemName(collType collSys)
   }
 }
 
-int CollisionSystemType::getCollisionTypeFromGrp(o2::parameters::GRPLHCIFData* grplhcif)
+int o2::common::core::CollisionSystemType::getCollisionTypeFromGrp(o2::parameters::GRPLHCIFData* grplhcif)
 {
   const int ZBeamA = grplhcif->getBeamZ(o2::constants::lhc::BeamDirection::BeamA);
   const int ZBeamC = grplhcif->getBeamZ(o2::constants::lhc::BeamDirection::BeamC);

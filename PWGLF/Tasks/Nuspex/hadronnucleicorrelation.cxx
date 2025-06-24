@@ -107,6 +107,7 @@ struct hadronnucleicorrelation {
   Configurable<std::vector<double>> pTBins{"pTBins", {0.6f, 1.0f, 1.2f, 2.f}, "p_{T} bins"};
 
   ConfigurableAxis AxisNSigma{"AxisNSigma", {35, -7.f, 7.f}, "n#sigma"};
+  ConfigurableAxis DeltaPhiAxis = {"DeltaPhiAxis", {46, -1 * o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf}, "#Delta#phi (rad)"};
 
   using FilteredCollisions = soa::Filtered<aod::SingleCollSels>;
   using SimCollisions = aod::McCollisions;
@@ -206,7 +207,6 @@ struct hadronnucleicorrelation {
     AxisSpec pTAxis_small = {100, -5.f, 5.f, "p_{T} GeV/c"};
 
     AxisSpec DeltaEtaAxis = {100, -1.5, 1.5, "#Delta#eta"};
-    AxisSpec DeltaPhiAxis = {60, -1 * o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf, "#Delta#phi (rad)"};
 
     registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{7, 0.f, 7.f}}});
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "Selected");
