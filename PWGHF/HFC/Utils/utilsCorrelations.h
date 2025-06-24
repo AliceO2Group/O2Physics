@@ -123,15 +123,25 @@ bool passPIDSelection(Atrack const& track, SpeciesContainer const mPIDspecies,
   return true; // Passed all checks
 }
 
-// function to select candidate based on PDF and decay channels and their mass
-template <bool isScCand, typename McParticle>
-bool matchCandAndMass(McParticle const& particle, double& massCand)
+/// @brief Selects a candidate based on its PDG code, decay channel, and assigns the corresponding mass.
+/// 
+/// @tparam isScCandidate  Boolean template parameter: 
+///                   - `true` to check for Sigma_c candidates
+///                   - `false` to check for Lambda_c candidates
+/// @tparam McParticleType Type representing the MC particle, must provide `pdgCode()` and `flagMcMatchGen()`
+///
+/// @param[in] particle  MC particle whose PDG code and decay flag are evaluated
+/// @param[out] massCand Mass of the matched candidate is set here, if a valid match is found
+///
+/// @return `true` if candidate matches expected PDG and decay flag, and mass is set; `false` otherwise
+template <bool isScCandidate, typename McParticleType>
+bool matchCandAndMass(McParticleType const& particle, double& massCand)
 {
   const auto pdgCand = std::abs(particle.pdgCode());
   const auto matchGenFlag = std::abs(particle.flagMcMatchGen());
 
   // Validate PDG code based on candidate type
-  if (isScCand) {
+  if (isScCandidate) {
     if (!(pdgCand == o2::constants::physics::Pdg::kSigmaC0 ||
           pdgCand == o2::constants::physics::Pdg::kSigmaCPlusPlus ||
           pdgCand == o2::constants::physics::Pdg::kSigmaCStar0 ||
