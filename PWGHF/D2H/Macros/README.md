@@ -12,7 +12,7 @@ If you have O2Physics compilation you do not need to fulfill these dependencies 
 ## How to run
 ### As a ROOT macro
 The `runMassFitter.C` can be compiled as ROOT macro.
-```
+```bash
 cd path-to-o2physics-src/PWGHF/D2H/Macros
 source path-to-root-install/bin/thisroot.sh
 export ROOT_INCLUDE_PATH=$ROOT_INCLUDE_PATH:path-to-json-include
@@ -24,7 +24,7 @@ If you have O2Physics compilation and enter into its environment there is no nee
 It is also possible to compile the fitter as a CMake project or insert it into existing one if any.
 Use the `CMakeLists_HFInvMassFitter.txt` (rename it into `CMakeLists.txt` before usage).\
 Compile the fitter with the following steps:
-```
+```bash
 cd path-to-o2physics-src/PWGHF/D2H/Macros
 mkdir build
 cd build
@@ -33,12 +33,12 @@ cmake -DHFFITTER_RAPIDJSON_INCLUDE_DIRS=path-to-json-include ../
 make
 ```
 and run the fitter:
-```
+```bash
 ./runMassFitter ../config_massfitter.json
 ```
 ### Directly from the terminal
 Compile the fitter with the following steps:
-```
+```bash
 cd path-to-o2physics-src/PWGHF/D2H/Macros
 mkdir build
 cd build
@@ -54,6 +54,6 @@ g++ -fPIC -I$(root-config --incdir) -I path-to-json-include -c ../HFInvMassFitte
 g++ -o runMassFitter HFInvMassFitter.o runMassFitter.o G__HFInvMassFitter.o $(root-config --libs)  -lRooFit -lRooFitCore -lEG
 ```
 and run the fitter:
-```
+```bash
 ./runMassFitter ../config_massfitter.json
 ```
