@@ -25,11 +25,13 @@ o2physics_add_dpl_workflow(trackselection
 o2physics_add_dpl_workflow(event-selection
                     SOURCES eventSelection.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCCDB
+                                          O2::DataFormatsITSMFT
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(event-selection-service
                     SOURCES eventSelectionService.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCCDB
+                                          O2::DataFormatsITSMFT
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(multiplicity-table
