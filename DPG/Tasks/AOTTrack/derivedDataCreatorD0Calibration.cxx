@@ -60,9 +60,9 @@ using namespace o2::hf_calib;
 
 struct DerivedDataCreatorD0Calibration {
 
-  Produces<aod::D0CalibColl> collTable;
-  Produces<aod::D0CalibTrack> trackTable;
-  Produces<aod::D0CalibCand> candTable;
+  Produces<aod::D0CalibColls> collTable;
+  Produces<aod::D0CalibTracks> trackTable;
+  Produces<aod::D0CalibCands> candTable;
 
   struct : ConfigurableGroup {
     Configurable<float> ptMin{"ptMin", 0.4, "min. track pT"};
