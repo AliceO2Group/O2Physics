@@ -28,7 +28,6 @@
 #include "Framework/Logger.h"
 
 #include <cmath>
-// using namespace o2::aod::rctsel;
 
 template <typename BC>
 struct SelectionResult {
