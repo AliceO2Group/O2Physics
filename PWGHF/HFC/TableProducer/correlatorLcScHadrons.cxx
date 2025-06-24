@@ -453,7 +453,7 @@ struct HfCorrelatorLcScHadrons {
                         track.pt() * track.sign(),
                         binPool,
                         correlStatus);
-    entryCandHadronPairY(track.y() - yCand);
+    entryCandHadronPairY(track.rapidity(MassProton) - yCand);
     entryCandHadronMlInfo(outMl[0], outMl[1]);
     entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
     entryPairCandCharge(signCand);
@@ -918,7 +918,7 @@ struct HfCorrelatorLcScHadrons {
       static constexpr std::size_t NDaughtersLc{3u};
       std::vector<int> listDaughters{};
       listDaughters.clear();
-      const std::size_t nDaughtersExpected = isCandSc ? 4 : 3;
+      const std::size_t nDaughtersExpected = isCandSc ? NDaughtersSc : NDaughtersLc;
 
       if (isCandSc) {
         if (massCand == o2::constants::physics::MassSigmaC0 || massCand == o2::constants::physics::MassSigmaCStar0) {
