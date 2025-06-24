@@ -241,7 +241,7 @@ struct HfCandidateCreator3Prong {
     }
   }
 
-  template <bool doPvRefit = false, bool useUpcSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll, typename Cand, typename BCsType>
+  template <bool doPvRefit, bool useUpcSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll, typename Cand, typename BCsType>
   void runCreator3ProngWithDCAFitterN(Coll const&, 
                                       Cand const& rowsTrackIndexProng3,
                                       TracksWCovExtraPidPiKaPr const&,
@@ -414,7 +414,7 @@ struct HfCandidateCreator3Prong {
     }
   }
 
-  template <bool doPvRefit = false, bool useUpcSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll, typename Cand, typename BCsType>
+  template <bool doPvRefit, bool useUpcSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll, typename Cand, typename BCsType>
   void runCreator3ProngWithKFParticle(Coll const&,
                                       Cand const& rowsTrackIndexProng3,
                                       TracksWCovExtraPidPiKaPr const&,
