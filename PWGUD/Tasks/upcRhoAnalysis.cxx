@@ -391,6 +391,14 @@ struct UpcRhoAnalysis {
       return false;
     if (collision.numContrib() > collisionsNumContribsMaxCut)
       return false;
+    if (!collision.vtxITSTPC())
+      return false;
+    if (!collision.sbp())
+      return false;
+    if (!collision.itsROFb())
+      return false;
+    if (!collision.tfb())
+      return false;
     return true;
   }
 
