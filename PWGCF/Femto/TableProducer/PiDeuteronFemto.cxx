@@ -236,6 +236,10 @@ struct PiDeuteronFemto {
      {"hDePitInvMass", "; M(De + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
      {"hDePt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
      {"hPiPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
+     {"hDeEta", "eta distribution; #eta(De)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+     {"hPiEta", "eta distribution; #eta(#pi)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+     {"hDePhi", "phi distribution; phi(De)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
+     {"hPiPhi", "phi distribution; phi(#pi)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
      {"h2dEdxDecandidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
      {"h2NsigmaDeTPC", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
      {"h2NsigmaDeTPC_preselection", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
@@ -691,6 +695,10 @@ struct PiDeuteronFemto {
   {
     mQaRegistry.fill(HIST("hDePt"), piDecand.recoPtDe());
     mQaRegistry.fill(HIST("hPiPt"), piDecand.recoPtPi());
+    mQaRegistry.fill(HIST("hDeEta"), piDecand.recoEtaDe());
+    mQaRegistry.fill(HIST("hPiEta"), piDecand.recoEtaPi());
+    mQaRegistry.fill(HIST("hDePhi"), piDecand.recoPhiDe());
+    mQaRegistry.fill(HIST("hPiPhi"), piDecand.recoPhiPi());
     mQaRegistry.fill(HIST("hDePitInvMass"), piDecand.invMass);
     mQaRegistry.fill(HIST("hdcaxyDe"), piDecand.dcaxyDe);
     mQaRegistry.fill(HIST("hdcazDe"), piDecand.dcazDe);
@@ -722,15 +730,15 @@ struct PiDeuteronFemto {
 
   double computeKstar(const PiDecandidate& piDecand)
   {
-    TLorentzVector he3, hadron;
-    float massHe3 = 2.80839;
+    TLorentzVector De, hadron;
+    float massDe = 1.8756;
     float massHad = 0.1395704;
-    he3.SetPtEtaPhiM(abs(piDecand.recoPtDe()), piDecand.recoEtaDe(), piDecand.recoPhiDe(), massHe3);
+    De.SetPtEtaPhiM(abs(piDecand.recoPtDe()), piDecand.recoEtaDe(), piDecand.recoPhiDe(), massDe);
     hadron.SetPtEtaPhiM(abs(piDecand.recoPtPi()), piDecand.recoEtaPi(), piDecand.recoPhiPi(), massHad);
 
-    TLorentzVector p_total_lab = he3 + hadron;
+    TLorentzVector p_total_lab = De + hadron;
     TVector3 v_cm = p_total_lab.BoostVector();
-    TLorentzVector p1_cm = he3;
+    TLorentzVector p1_cm = De;
     TLorentzVector p2_cm = hadron;
     p1_cm.Boost(-v_cm);
     p2_cm.Boost(-v_cm);
