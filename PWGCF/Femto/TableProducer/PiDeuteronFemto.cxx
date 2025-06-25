@@ -18,12 +18,10 @@
 #include <TH1F.h>
 #include <TDirectory.h>
 #include <THn.h>
-#include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
 #include <TFile.h>
 #include <TH2F.h>
-#include <TLorentzVector.h>
 
 #include <cmath>
 #include <string>
@@ -32,6 +30,9 @@
 #include <array>
 #include <cstdlib>
 #include <iterator> // std::prev
+
+#include "Math/Vector4D.h"
+#include "Math/Boost.h"
 
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
@@ -731,21 +732,27 @@ struct PiDeuteronFemto {
 
   double computeKstar(const PiDecandidate& piDecand)
   {
-    TLorentzVector De, hadron;
-    float massDe = 1.8756;
-    float massHad = 0.1395704;
-    De.SetPtEtaPhiM(abs(piDecand.recoPtDe()), piDecand.recoEtaDe(), piDecand.recoPhiDe(), massDe);
-    hadron.SetPtEtaPhiM(abs(piDecand.recoPtPi()), piDecand.recoEtaPi(), piDecand.recoPhiPi(), massHad);
+    constexpr double massDe = 1.8756;
+    constexpr double massHad = 0.1395704;
 
-    TLorentzVector p_total_lab = De + hadron;
-    TVector3 v_cm = p_total_lab.BoostVector();
-    TLorentzVector p1_cm = De;
-    TLorentzVector p2_cm = hadron;
-    p1_cm.Boost(-v_cm);
-    p2_cm.Boost(-v_cm);
-    TLorentzVector p_diff_cm = p1_cm - p2_cm;
-    double kStar = sqrt(p_diff_cm.X() * p_diff_cm.X() + p_diff_cm.Y() * p_diff_cm.Y() + p_diff_cm.Z() * p_diff_cm.Z());
-    return kStar / 2.0;
+    const ROOT::Math::PtEtaPhiMVector De(std::abs(piDecand.recoPtDe()), piDecand.recoEtaDe(), piDecand.recoPhiDe(), massDe);
+    const ROOT::Math::PtEtaPhiMVector Had(std::abs(piDecand.recoPtPi()), piDecand.recoEtaPi(), piDecand.recoPhiPi(), massHad);
+    const ROOT::Math::PtEtaPhiMVector trackSum = De + Had;
+
+    const float beta = trackSum.Beta();
+    const float betax = beta * std::cos(trackSum.Phi()) * std::sin(trackSum.Theta());
+    const float betay = beta * std::sin(trackSum.Phi()) * std::sin(trackSum.Theta());
+    const float betaz = beta * std::cos(trackSum.Theta());
+
+    ROOT::Math::PxPyPzMVector DeCMS(De);
+    ROOT::Math::PxPyPzMVector HadCMS(Had);
+
+    const ROOT::Math::Boost boostPRF = ROOT::Math::Boost(-betax, -betay, -betaz);
+    DeCMS = boostPRF(DeCMS);
+    HadCMS = boostPRF(HadCMS);
+
+    const ROOT::Math::PxPyPzMVector RelKstar = DeCMS - HadCMS;
+    return 0.5 * RelKstar.P();
   }
 
   void fillKstar(const PiDecandidate& piDecand)
