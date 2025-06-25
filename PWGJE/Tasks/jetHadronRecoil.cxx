@@ -530,16 +530,17 @@ struct JetHadronRecoil {
 
           float dphip = RecoDecay::constrainAngle(jetTag.phi() - phiTTPart);
           dRp = getWTAaxisDifference(jetTag, mcpjetsWTA, particles, true);
-
-          registry.fill(HIST("hPtMatched"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), weight);
-          registry.fill(HIST("hPhiMatched"), dphi, dphip, weight);
-          registry.fill(HIST("hPtResolution"), jetTag.pt(), (jetTag.pt() - (jetBase.pt() - (rho * jetBase.area()))) / jetTag.pt(), weight);
-          registry.fill(HIST("hPhiResolution"), dphip, dphip - dphi, weight);
-          registry.fill(HIST("hDeltaRMatched"), dR, dRp, weight);
-          registry.fill(HIST("hDeltaRResolution"), jetTag.pt(), dRp - dR, weight);
-          registry.fill(HIST("hFullMatching"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), dphi, dphip, dR, dRp, weight);
-          registry.fill(HIST("hPtMatched1d"), jetTag.pt(), weight);
-          registry.fill(HIST("hDeltaRMatched1d"), dRp, weight);
+          if ((std::abs(dphi - o2::constants::math::PI) < 0.6) || (std::abs(dphip - o2::constants::math::PI) < 0.6)) {
+            registry.fill(HIST("hPtMatched"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), weight);
+            registry.fill(HIST("hPhiMatched"), dphi, dphip, weight);
+            registry.fill(HIST("hPtResolution"), jetTag.pt(), (jetTag.pt() - (jetBase.pt() - (rho * jetBase.area()))) / jetTag.pt(), weight);
+            registry.fill(HIST("hPhiResolution"), dphip, dphip - dphi, weight);
+            registry.fill(HIST("hDeltaRMatched"), dR, dRp, weight);
+            registry.fill(HIST("hDeltaRResolution"), jetTag.pt(), dRp - dR, weight);
+            registry.fill(HIST("hFullMatching"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), dphi, dphip, dR, dRp, weight);
+            registry.fill(HIST("hPtMatched1d"), jetTag.pt(), weight);
+            registry.fill(HIST("hDeltaRMatched1d"), dRp, weight);
+          }
         }
       }
     }

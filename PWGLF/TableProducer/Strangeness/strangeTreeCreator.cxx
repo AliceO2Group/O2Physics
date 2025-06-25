@@ -9,35 +9,37 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <vector>
-#include <utility>
-#include <random>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/EventSelection.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-
-#include "Common/Core/PID/TPCPIDResponse.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "DCAFitter/DCAFitterN.h"
+/// \file strangeTreeCreator.cxx
+/// \brief table producer for strangeness studies
+/// \author Mario Ciacco <mario.ciacco@cern.ch>
 
 #include "PWGLF/DataModel/LFSlimStrangeTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "TDatabasePDG.h"
+#include "Common/Core/PID/TPCPIDResponse.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <random>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -49,7 +51,7 @@ namespace
 {
 void momTotXYZ(std::array<float, 3>& momA, std::array<float, 3> const& momB, std::array<float, 3> const& momC)
 {
-  for (int i = 0; i < 3; ++i) {
+  for (unsigned int i{0}; i < momA.size(); ++i) {
     momA[i] = momB[i] + momC[i];
   }
 }
@@ -99,9 +101,26 @@ float etaFromMom(std::array<float, 3> const& momA, std::array<float, 3> const& m
                                     (1.f * momA[2] + 1.f * momB[2]) * (1.f * momA[2] + 1.f * momB[2])) -
                           (1.f * momA[2] + 1.f * momB[2])));
 }
-float CalculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
+float calculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
 {
   return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz));
+}
+float kineFactor(std::array<float, 3> const& momA, std::array<float, 3> const& momB, std::array<float, 3> const& momC, float const& massB, float const& massC, bool const& reso)
+{
+  float invMass = invMass2Body(momA, momC, momB, massC, massB);
+  float ptC = std::hypot(momC[0], momC[1]);
+  float ptB = std::hypot(momB[0], momB[1]);
+  float p2C = momC[0] * momC[0] + momC[1] * momC[1] + momC[2] * momC[2];
+  float p2B = momB[0] * momB[0] + momB[1] * momB[1] + momB[2] * momB[2];
+  float eC = RecoDecay::sqrtSumOfSquares(momC[0], momC[1], momC[2], massC);
+  float eB = RecoDecay::sqrtSumOfSquares(momB[0], momB[1], momB[2], massB);
+  float pCpB = momC[0] * momB[0] + momC[1] * momB[1] + momC[2] * momB[2];
+  float kineC = (eB * p2C / eC / ptC) - pCpB / ptC;
+  float kineB = (eC * p2B / eB / ptB) - pCpB / ptB;
+  if (reso) {
+    return std::hypot(kineC, kineB) / invMass;
+  }
+  return (kineC + kineB) / invMass;
 }
 } // namespace
 
@@ -145,7 +164,7 @@ struct CandidateV0 {
   int64_t globalIndexNeg = -999;
 };
 
-struct LFStrangeTreeCreator {
+struct StrangeTreeCreator {
   Produces<o2::aod::LambdaTableML> lambdaTableML;
   Produces<o2::aod::V0TableAP> v0TableAP;
   Produces<o2::aod::McLambdaTableML> mcLambdaTableML;
@@ -156,16 +175,19 @@ struct LFStrangeTreeCreator {
   o2::vertexing::DCAFitterN<2> fitter;
 
   int mRunNumber;
-  float d_bz;
+  float mBz;
   o2::base::MatLayerCylSet* lut = nullptr;
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
 
   ConfigurableAxis centAxis{"centAxis", {106, 0, 106}, "binning for the centrality"};
   ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
+  ConfigurableAxis etaAxis{"etaAxis", {8, -0.8f, 0.8f}, "binning for pseudorapidity"};
+  ConfigurableAxis massKineAxis{"kineAxis", {3000, -3.f, 3.f}, "binning for the kinematic-transofrmed mass shift distributions"};
 
   // binning of (anti)lambda mass QA histograms
   ConfigurableAxis massLambdaAxis{"massLambdaAxis", {400, o2::constants::physics::MassLambda0 - 0.03f, o2::constants::physics::MassLambda0 + 0.03f}, "binning for the lambda invariant-mass"};
   ConfigurableAxis massXiAxis{"massXiAxis", {400, o2::constants::physics::MassXiMinus - 0.05f, o2::constants::physics::MassXiMinus + 0.05f}, "binning for the Xi invariant-mass"};
+  ConfigurableAxis massK0sAxis{"massK0sAxis", {400, o2::constants::physics::MassK0 - 0.1f, o2::constants::physics::MassK0 + 0.1f}, "binning for the K0s invariant-mass"};
 
   Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
   Configurable<float> etaMax{"etaMax", 0.8f, "maximum eta"};
@@ -184,21 +206,24 @@ struct LFStrangeTreeCreator {
   Configurable<float> v0trackNsharedClusTpc{"v0trackNsharedClusTpc", 5, "Maximum number of shared TPC clusters for V0 daughter"};
   Configurable<float> vetoMassK0Short{"vetoMassK0Short", 0.01f, "veto for V0 compatible with K0s mass"};
   Configurable<float> v0radiusMax{"v0radiusMax", 100.f, "maximum V0 radius eccepted"};
+  Configurable<float> v0alphaMax{"v0alphaMax", 10.f, "maximum Armenteros alpha (longitdinal momentum asymmetry)"};
+  Configurable<float> v0qtMin{"v0qtMin", 0.f, "minimum Armenteros qt (transverse momentum)"};
 
-  Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 0.5f, "DCA V0 Daughters"};
-  Configurable<float> v0setting_dcav0pv{"v0setting_dcav0pv", 1.f, "DCA V0 to Pv"};
-  Configurable<float> v0setting_dcadaughtopv{"v0setting_dcadaughtopv", 0.1f, "DCA Pos To PV"};
-  Configurable<double> v0setting_cospa{"v0setting_cospa", 0.99f, "V0 CosPA"};
-  Configurable<float> v0setting_radius{"v0setting_radius", 5.f, "v0radius"};
-  Configurable<float> v0setting_lifetime{"v0setting_lifetime", 40.f, "v0 lifetime cut"};
-  Configurable<float> v0setting_nsigmatpc{"v0setting_nsigmatpc", 4.f, "nsigmatpc"};
-  Configurable<float> cascsetting_dcabachpv{"cascsetting_dcabachpv", 0.1f, "cascdcabachpv"};
-  Configurable<float> cascsetting_cospa{"cascsetting_cospa", 0.99f, "casc cospa cut"};
-  Configurable<float> cascsetting_dcav0bach{"cascsetting_dcav0bach", 1.0f, "dcav0bach"};
-  Configurable<float> cascsetting_vetoOm{"cascsetting_vetoOm", 0.01f, "vetoOm"};
-  Configurable<float> cascsetting_mXi{"cascsetting_mXi", 0.02f, "mXi"};
+  Configurable<float> v0settingDcav0dau{"v0setting_dcav0dau", 0.5f, "DCA V0 Daughters"};
+  Configurable<float> v0settingDcav0pv{"v0setting_dcav0pv", 1.f, "DCA V0 to Pv"};
+  Configurable<float> v0settingDcadaughtopv{"v0setting_dcadaughtopv", 0.1f, "DCA Pos To PV"};
+  Configurable<double> v0settingCospa{"v0setting_cospa", 0.99f, "V0 CosPA"};
+  Configurable<float> v0settingRadius{"v0setting_radius", 5.f, "v0radius"};
+  Configurable<float> v0settingLifetime{"v0setting_lifetime", 40.f, "v0 lifetime cut"};
+  Configurable<float> v0settingNsigmatpc{"v0setting_nsigmatpc", 4.f, "nsigmatpc"};
+  Configurable<float> cascsettingDcabachpv{"cascsetting_dcabachpv", 0.1f, "cascdcabachpv"};
+  Configurable<float> cascsettingCospa{"cascsetting_cospa", 0.99f, "casc cospa cut"};
+  Configurable<float> cascsettingDcav0bach{"cascsetting_dcav0bach", 1.0f, "dcav0bach"};
+  Configurable<float> cascsettingVetoOm{"cascsetting_vetoOm", 0.01f, "vetoOm"};
+  Configurable<float> cascsettingMXi{"cascsetting_mXi", 0.02f, "mXi"};
   Configurable<float> lambdaMassCut{"lambdaMassCut", 0.02f, "maximum deviation from PDG mass (for QA histograms)"};
   Configurable<bool> k0short{"k0short", false, "process for k0short (true) or lambda (false)"};
+  Configurable<float> tpcFindableClsOverCR{"tpcFindableClsOverCR", 0.8, "fraction of findable clusters over crossed rows in TPC"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -218,7 +243,7 @@ struct LFStrangeTreeCreator {
     if (track.itsNCls() < v0trackNclusItsCut ||
         track.tpcNClsFound() < v0trackNclusTpcCut ||
         track.tpcNClsCrossedRows() < v0trackNclusTpcCut ||
-        track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable() ||
+        track.tpcNClsCrossedRows() < tpcFindableClsOverCR * track.tpcNClsFindable() ||
         track.tpcNClsShared() > v0trackNsharedClusTpc) {
       return false;
     }
@@ -243,10 +268,10 @@ struct LFStrangeTreeCreator {
     o2::base::Propagator::initFieldFromGRP(grpmag);
 
     // Fetch magnetic field from ccdb for current collision
-    d_bz = o2::base::Propagator::Instance()->getNominalBz();
-    LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << d_bz << " kG";
+    mBz = o2::base::Propagator::Instance()->getNominalBz();
+    LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << mBz << " kG";
     mRunNumber = bc.runNumber();
-    fitter.setBz(d_bz);
+    fitter.setBz(mBz);
 
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
     o2::base::Propagator::Instance()->setMatLUT(lut);
@@ -259,7 +284,7 @@ struct LFStrangeTreeCreator {
   {
 
     mRunNumber = 0;
-    d_bz = 0;
+    mBz = 0;
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -282,6 +307,11 @@ struct LFStrangeTreeCreator {
     // v0 QA
     histos.add<TH3>("QA/massLambda", ";Centrality (%);#it{p}_{T} (GeV/#it{c});#it{M}(p + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, massLambdaAxis});
     histos.add<TH3>("QA/massXi", ";Centrality (%);#it{p}_{T} (GeV/#it{c});#it{M}(#Lambda + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, massXiAxis});
+    histos.add<TH2>("QA/massK0s", ";#it{p}_{T} (GeV/#it{c});#it{M}(#pi^{+} + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH2F, {momAxis, massK0sAxis});
+
+    // histograms for momentum shift/resolution extraction
+    histos.add<TH3>("massKineBias", ";#eta;#it{p}_{T} (GeV/#it{c});#delta#it{M}/#Sigma_{i}#partial#it{M}/#partial#it{p}^{i}_{T}", HistType::kTH3F, {etaAxis, momAxis, massKineAxis});
+    histos.add<TH3>("massKineReso", ";#eta;#it{p}_{T} (GeV/#it{c});#delta#it{M}/#Sigma_{i}(#partial#it{M}/#partial#it{p}^{i}_{T})^{2}", HistType::kTH3F, {etaAxis, momAxis, massKineAxis});
   }
 
   template <class C, class T>
@@ -335,11 +365,20 @@ struct LFStrangeTreeCreator {
       }
 
       auto alpha = alphaAP(momV0, momPos, momNeg);
+      if (std::abs(alpha) > v0alphaMax) {
+        continue;
+      }
+
       bool matter = alpha > 0;
       auto massPos = matter ? o2::constants::physics::MassProton : o2::constants::physics::MassPionCharged;
       auto massNeg = matter ? o2::constants::physics::MassPionCharged : o2::constants::physics::MassProton;
       auto mLambda = invMass2Body(momV0, momPos, momNeg, massPos, massNeg);
       auto mK0Short = invMass2Body(momV0, momPos, momNeg, o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged);
+
+      auto qt = qtAP(momV0, momPos);
+      if (std::abs(qt) < v0qtMin) {
+        continue;
+      }
 
       // pid selections
       auto nSigmaTPCPos = matter ? posTrack.tpcNSigmaPr() : posTrack.tpcNSigmaPi();
@@ -350,7 +389,7 @@ struct LFStrangeTreeCreator {
         nSigmaTPCNeg = negTrack.tpcNSigmaPi();
       }
 
-      if (std::abs(nSigmaTPCPos) > v0setting_nsigmatpc || std::abs(nSigmaTPCNeg) > v0setting_nsigmatpc) {
+      if (std::abs(nSigmaTPCPos) > v0settingNsigmatpc || std::abs(nSigmaTPCNeg) > v0settingNsigmatpc) {
         continue;
       }
 
@@ -360,7 +399,7 @@ struct LFStrangeTreeCreator {
       }
 
       float dcaV0dau = std::sqrt(fitter.getChi2AtPCACandidate());
-      if (dcaV0dau > v0setting_dcav0dau) {
+      if (dcaV0dau > v0settingDcav0dau) {
         continue;
       }
 
@@ -368,22 +407,22 @@ struct LFStrangeTreeCreator {
       const auto& vtx = fitter.getPCACandidate();
 
       float radiusV0 = std::hypot(vtx[0], vtx[1]);
-      if (radiusV0 < v0setting_radius || radiusV0 > v0radiusMax) {
+      if (radiusV0 < v0settingRadius || radiusV0 > v0radiusMax) {
         continue;
       }
 
-      float dcaV0Pv = CalculateDCAStraightToPV(
+      float dcaV0Pv = calculateDCAStraightToPV(
         vtx[0], vtx[1], vtx[2],
         momPos[0] + momNeg[0],
         momPos[1] + momNeg[1],
         momPos[2] + momNeg[2],
         collision.posX(), collision.posY(), collision.posZ());
-      if (std::abs(dcaV0Pv) > v0setting_dcav0pv) {
+      if (std::abs(dcaV0Pv) > v0settingDcav0pv) {
         continue;
       }
 
       double cosPA = RecoDecay::cpa(primVtx, vtx, momV0);
-      if (cosPA < v0setting_cospa) {
+      if (cosPA < v0settingCospa) {
         continue;
       }
 
@@ -396,38 +435,49 @@ struct LFStrangeTreeCreator {
       } else {
         particlemass = o2::constants::physics::MassLambda;
       }
-      float ML2P = particlemass * lengthTraveled / ptotal;
-      if (ML2P > v0setting_lifetime) {
+      float mL2P = particlemass * lengthTraveled / ptotal;
+      if (mL2P > v0settingLifetime) {
         continue;
       }
 
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, posTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
       auto posDcaToPv = std::hypot(dcaInfo[0], dcaInfo[1]);
-      if (posDcaToPv < v0setting_dcadaughtopv && std::abs(dcaInfo[0]) < v0setting_dcadaughtopv) {
+      if (posDcaToPv < v0settingDcadaughtopv && std::abs(dcaInfo[0]) < v0settingDcadaughtopv) {
         continue;
       }
 
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, negTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
       auto negDcaToPv = std::hypot(dcaInfo[0], dcaInfo[1]);
-      if (negDcaToPv < v0setting_dcadaughtopv && std::abs(dcaInfo[0]) < v0setting_dcadaughtopv) {
+      if (negDcaToPv < v0settingDcadaughtopv && std::abs(dcaInfo[0]) < v0settingDcadaughtopv) {
         continue;
       }
 
       if (std::abs(mLambda - o2::constants::physics::MassLambda0) > lambdaMassCut) { // for QA histograms
         continue;
       }
+
+      float ptPos = std::hypot(momPos[0], momPos[1]);
+      float pPos = std::hypot(momPos[0], momPos[1], momPos[2]);
+      float etaPos = 0.5 * std::log((pPos + momPos[2]) / (pPos - momPos[2]));
+      float deltaMass = mK0Short - o2::constants::physics::MassK0;
+      float massKineBias = deltaMass / kineFactor(momV0, momPos, momNeg, o2::constants::physics::MassPiMinus, o2::constants::physics::MassPiMinus, false);
+      float massKineReso = deltaMass / kineFactor(momV0, momPos, momNeg, o2::constants::physics::MassPiMinus, o2::constants::physics::MassPiMinus, true);
+
       histos.fill(HIST("QA/massLambda"), centrality, ptV0, mLambda);
+      histos.fill(HIST("QA/massK0s"), ptV0, mK0Short);
+      histos.fill(HIST("massKineBias"), etaPos, ptPos, massKineBias);
+      histos.fill(HIST("massKineReso"), etaPos, ptPos, massKineReso);
 
       CandidateV0 candV0;
       candV0.pt = matter > 0. ? ptV0 : -ptV0;
       candV0.eta = etaV0;
-      candV0.ct = ML2P;
+      candV0.ct = mL2P;
       candV0.len = lengthTraveled;
       candV0.mass = mLambda;
       candV0.radius = radiusV0;
       candV0.cpa = cosPA;
       candV0.alphaAP = alpha;
-      candV0.qtAP = qtAP(momV0, momPos);
+      candV0.qtAP = qt;
       candV0.trackv0 = fitter.createParentTrackParCov();
       candV0.mompos = std::array{momPos[0], momPos[1], momPos[2]};
       candV0.momneg = std::array{momNeg[0], momNeg[1], momNeg[2]};
@@ -443,7 +493,7 @@ struct LFStrangeTreeCreator {
       candidateV0s.push_back(candV0);
     }
 
-    for (auto& casc : cascades) {
+    for (const auto& casc : cascades) {
       auto v0 = casc.template v0_as<aod::V0s>();
       auto itv0 = find_if(candidateV0s.begin(), candidateV0s.end(), [&](CandidateV0 v0cand) { return v0cand.globalIndex == v0.globalIndex(); });
       if (itv0 == candidateV0s.end()) {
@@ -453,7 +503,7 @@ struct LFStrangeTreeCreator {
       auto bachTrackPar = getTrackPar(bachTrack);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, bachTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
 
-      if (TMath::Abs(dcaInfo[0]) < cascsetting_dcabachpv)
+      if (std::abs(dcaInfo[0]) < cascsettingDcabachpv)
         continue;
 
       auto bachelorTrack = getTrackParCov(bachTrack);
@@ -477,23 +527,23 @@ struct LFStrangeTreeCreator {
       bachelorTrack.getPxPyPzGlo(momBach);
       momTotXYZ(momCasc, momV0, momBach);
 
-      auto dcacascv0bach = TMath::Sqrt(fitter.getChi2AtPCACandidate());
-      if (dcacascv0bach > cascsetting_dcav0bach)
+      auto dcacascv0bach = std::sqrt(fitter.getChi2AtPCACandidate());
+      if (dcacascv0bach > cascsettingDcav0bach)
         continue;
 
       std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
       const auto& vtx = fitter.getPCACandidate();
       double cosPA = RecoDecay::cpa(primVtx, vtx, momCasc);
-      if (cosPA < cascsetting_cospa)
+      if (cosPA < cascsettingCospa)
         continue;
 
       float mXi = invMass2Body(momCasc, momV0, momBach, o2::constants::physics::MassLambda0, o2::constants::physics::MassPionCharged);
       float mOm = invMass2Body(momCasc, momV0, momBach, o2::constants::physics::MassLambda0, o2::constants::physics::MassKaonCharged);
 
-      if (std::abs(mOm - o2::constants::physics::MassOmegaMinus) < cascsetting_vetoOm)
+      if (std::abs(mOm - o2::constants::physics::MassOmegaMinus) < cascsettingVetoOm)
         continue;
 
-      if (std::abs(mXi - o2::constants::physics::MassXiMinus) > cascsetting_mXi)
+      if (std::abs(mXi - o2::constants::physics::MassXiMinus) > cascsettingMXi)
         continue;
 
       histos.fill(HIST("QA/massXi"), centrality, std::hypot(momCasc[0], momCasc[1]), mXi);
@@ -506,7 +556,7 @@ struct LFStrangeTreeCreator {
   {
     fillRecoEvent<C, T>(collision, tracks, V0s, V0s_all, cascades, centrality);
 
-    for (auto& candidateV0 : candidateV0s) {
+    for (auto& candidateV0 : candidateV0s) { // o2-linter disable=const-red-in-for-loops (non const)
       candidateV0.isreco = true;
       auto mcLabPos = mcLabels.rawIteratorAt(candidateV0.globalIndexPos);
       auto mcLabNeg = mcLabels.rawIteratorAt(candidateV0.globalIndexNeg);
@@ -520,23 +570,23 @@ struct LFStrangeTreeCreator {
         auto pdgCodeMotherDauNeg = -999;
         auto pdgMatchMotherSecondMother = -999;
         if (mcTrackPos.has_mothers() && mcTrackNeg.has_mothers()) {
-          for (auto& negMother : mcTrackNeg.template mothers_as<aod::McParticles>()) {
-            for (auto& posMother : mcTrackPos.template mothers_as<aod::McParticles>()) {
+          for (const auto& negMother : mcTrackNeg.template mothers_as<aod::McParticles>()) {
+            for (const auto& posMother : mcTrackPos.template mothers_as<aod::McParticles>()) {
               if (posMother.globalIndex() != negMother.globalIndex()) {
                 pdgCodeMotherDauPos = posMother.pdgCode();
                 pdgCodeMotherDauNeg = negMother.pdgCode();
-                if (negMother.pdgCode() == -211) {
+                if (negMother.pdgCode() == PDG_t::kPiMinus) {
                   if (negMother.has_mothers()) {
-                    for (auto& negSecondMother : negMother.template mothers_as<aod::McParticles>()) {
+                    for (const auto& negSecondMother : negMother.template mothers_as<aod::McParticles>()) {
                       if (negSecondMother.globalIndex() == posMother.globalIndex()) {
                         pdgMatchMotherSecondMother = negSecondMother.pdgCode();
                       }
                     }
                   }
                 }
-                if (posMother.pdgCode() == 211) {
+                if (posMother.pdgCode() == PDG_t::kPiPlus) {
                   if (posMother.has_mothers()) {
-                    for (auto& posSecondMother : posMother.template mothers_as<aod::McParticles>()) {
+                    for (const auto& posSecondMother : posMother.template mothers_as<aod::McParticles>()) {
                       if (posSecondMother.globalIndex() == negMother.globalIndex()) {
                         pdgMatchMotherSecondMother = posSecondMother.pdgCode();
                       }
@@ -551,13 +601,13 @@ struct LFStrangeTreeCreator {
                 bool mother;
                 bool daughter;
                 if (k0short) {
-                  // mother is k0short (310) and daughters are pions (211/-211)
-                  mother = posMother.pdgCode() == 310;
-                  daughter = (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -211);
+                  // mother is k0short and daughters are pions
+                  mother = posMother.pdgCode() == PDG_t::kK0Short;
+                  daughter = (mcTrackPos.pdgCode() == PDG_t::kPiPlus && mcTrackNeg.pdgCode() == PDG_t::kPiMinus);
                 } else {
-                  // mother is lambda (3122) and daughters are proton (2212) and pion(211)
-                  mother = posMother.pdgCode() == 3122;
-                  daughter = ((mcTrackPos.pdgCode() == 2212 && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -2212));
+                  // mother is lambda and daughters are proton and pion
+                  mother = posMother.pdgCode() == PDG_t::kLambda0;
+                  daughter = ((mcTrackPos.pdgCode() == PDG_t::kProton && mcTrackNeg.pdgCode() == PDG_t::kPiMinus) || (mcTrackPos.pdgCode() == PDG_t::kPiPlus && mcTrackNeg.pdgCode() == PDG_t::kProtonBar));
                 }
                 // check conditions
                 if (!mother || !daughter) {
@@ -571,9 +621,9 @@ struct LFStrangeTreeCreator {
                 if (posMother.isPhysicalPrimary()) {
                   pdgCodeMother = 0;
                 } else if (posMother.has_mothers()) {
-                  for (auto& mcMother : posMother.mothers_as<aod::McParticles>()) {
+                  for (const auto& mcMother : posMother.mothers_as<aod::McParticles>()) {
                     // feed-down: xi and omega decaying to lambda, ignore for k0
-                    if (!k0short && (std::abs(mcMother.pdgCode()) == 3322 || std::abs(mcMother.pdgCode()) == 3312 || std::abs(mcMother.pdgCode()) == 3334)) {
+                    if (!k0short && (std::abs(mcMother.pdgCode()) == o2::constants::physics::Pdg::kXi0 || std::abs(mcMother.pdgCode()) == PDG_t::kXiMinus || std::abs(mcMother.pdgCode()) == PDG_t::kOmegaMinus)) {
                       pdgCodeMother = mcMother.pdgCode();
                       break;
                     }
@@ -596,13 +646,13 @@ struct LFStrangeTreeCreator {
         }
         if ((!mcTrackPos.has_mothers()) && mcTrackNeg.has_mothers()) {
           pdgCodeMotherDauPos = -999;
-          for (auto& negMother : mcTrackNeg.template mothers_as<aod::McParticles>()) {
+          for (const auto& negMother : mcTrackNeg.template mothers_as<aod::McParticles>()) {
             pdgCodeMotherDauNeg = negMother.pdgCode();
           }
         }
         if ((!mcTrackNeg.has_mothers()) && mcTrackPos.has_mothers()) {
           pdgCodeMotherDauNeg = -999;
-          for (auto& posMother : mcTrackPos.template mothers_as<aod::McParticles>()) {
+          for (const auto& posMother : mcTrackPos.template mothers_as<aod::McParticles>()) {
             pdgCodeMotherDauPos = posMother.pdgCode();
           }
         }
@@ -630,8 +680,8 @@ struct LFStrangeTreeCreator {
 
   void fillMcGen(aod::McParticles const& mcParticles, aod::McTrackLabels const& /*mcLab*/, uint64_t const& collisionId)
   {
-    auto mcParticles_thisCollision = mcParticles.sliceBy(perCollisionMcParts, collisionId);
-    for (auto& mcPart : mcParticles_thisCollision) {
+    auto mcParticlesThisCollision = mcParticles.sliceBy(perCollisionMcParts, collisionId);
+    for (const auto& mcPart : mcParticlesThisCollision) {
       auto genEta = mcPart.eta();
       if (std::abs(genEta) > etaMax) {
         continue;
@@ -642,23 +692,23 @@ struct LFStrangeTreeCreator {
       std::array<float, 3> momPosMC = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
       std::array<float, 3> momNegMC = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
 
-      // look for lambda (3122) or k0short (310)
-      int pdg_test = 3122;
+      // look for lambda or k0short
+      int pdg_test = PDG_t::kLambda0;
       if (k0short)
-        pdg_test = 310;
+        pdg_test = PDG_t::kK0Short;
 
       if (std::abs(pdgCode) == pdg_test) {
         if (!mcPart.isPhysicalPrimary() && !mcPart.has_mothers())
           continue;
-        // check if its the right decay containing proton (2122) for lambda and charged pion (211) for k0short
+        // check if its the right decay containing proton for lambda and charged pion for k0short
         int pdg_particle;
         if (k0short) {
-          pdg_particle = 211;
+          pdg_particle = PDG_t::kPiPlus;
         } else {
-          pdg_particle = 2212;
+          pdg_particle = PDG_t::kProton;
         }
         bool foundParticle = false;
-        for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
+        for (const auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
           if (std::abs(mcDaught.pdgCode()) == pdg_particle) {
             foundParticle = true;
             secVtx = std::array{mcDaught.vx(), mcDaught.vy(), mcDaught.vz()};
@@ -666,7 +716,7 @@ struct LFStrangeTreeCreator {
           }
         }
         // momentum of daughters
-        for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
+        for (const auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
           if (mcDaught.pdgCode() < 0) {
             momNegMC[0] = mcDaught.px();
             momNegMC[1] = mcDaught.py();
@@ -684,9 +734,9 @@ struct LFStrangeTreeCreator {
         if (mcPart.isPhysicalPrimary()) {
           pdgCodeMother = 0;
         } else if (mcPart.has_mothers()) {
-          for (auto& mcMother : mcPart.mothers_as<aod::McParticles>()) {
+          for (const auto& mcMother : mcPart.mothers_as<aod::McParticles>()) {
             // feed-down: xi and omega decaying to lambda, ignore for k0
-            if (!k0short && (std::abs(mcMother.pdgCode()) == 3322 || std::abs(mcMother.pdgCode()) == 3312 || std::abs(mcMother.pdgCode()) == 3334)) {
+            if (!k0short && (std::abs(mcMother.pdgCode()) == o2::constants::physics::Pdg::kXi0 || std::abs(mcMother.pdgCode()) == PDG_t::kXiMinus || std::abs(mcMother.pdgCode()) == PDG_t::kOmegaMinus)) {
               pdgCodeMother = mcMother.pdgCode();
               break;
             }
@@ -741,16 +791,16 @@ struct LFStrangeTreeCreator {
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
-      auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0, collIdx);
-      auto CascTable_thisCollision = cascades.sliceBy(perCollisionCasc, collIdx);
-      V0Table_thisCollision.bindExternalIndices(&tracks);
-      CascTable_thisCollision.bindExternalIndices(&tracks);
-      CascTable_thisCollision.bindExternalIndices(&V0s);
+      auto V0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
+      auto CascTableThisCollision = cascades.sliceBy(perCollisionCasc, collIdx);
+      V0TableThisCollision.bindExternalIndices(&tracks);
+      CascTableThisCollision.bindExternalIndices(&tracks);
+      CascTableThisCollision.bindExternalIndices(&V0s);
 
       auto centrality = collision.centFT0C();
-      fillRecoEvent(collision, tracks, V0Table_thisCollision, V0s, CascTable_thisCollision, centrality);
+      fillRecoEvent(collision, tracks, V0TableThisCollision, V0s, CascTableThisCollision, centrality);
 
-      for (auto& candidateV0 : candidateV0s) {
+      for (const auto& candidateV0 : candidateV0s) {
         lambdaTableML(
           candidateV0.pt,
           candidateV0.eta,
@@ -786,11 +836,11 @@ struct LFStrangeTreeCreator {
       }
     }
   }
-  PROCESS_SWITCH(LFStrangeTreeCreator, processRun3, "process (Run 3)", false);
+  PROCESS_SWITCH(StrangeTreeCreator, processRun3, "process (Run 3)", false);
 
   void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFullIU const& tracks, aod::V0s const& V0s, aod::Cascades const& cascades, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, aod::BCsWithTimestamps const&)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
@@ -808,16 +858,16 @@ struct LFStrangeTreeCreator {
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
-      auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0, collIdx);
-      auto CascTable_thisCollision = cascades.sliceBy(perCollisionCasc, collIdx);
-      V0Table_thisCollision.bindExternalIndices(&tracks);
-      CascTable_thisCollision.bindExternalIndices(&tracks);
-      CascTable_thisCollision.bindExternalIndices(&V0s);
+      auto V0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
+      auto CascTableThisCollision = cascades.sliceBy(perCollisionCasc, collIdx);
+      V0TableThisCollision.bindExternalIndices(&tracks);
+      CascTableThisCollision.bindExternalIndices(&tracks);
+      CascTableThisCollision.bindExternalIndices(&V0s);
 
-      fillMcEvent(collision, tracks, V0Table_thisCollision, V0s, CascTable_thisCollision, centrality, mcParticles, mcLab);
+      fillMcEvent(collision, tracks, V0TableThisCollision, V0s, CascTableThisCollision, centrality, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
-      for (auto& candidateV0 : candidateV0s) {
+      for (const auto& candidateV0 : candidateV0s) {
         mcLambdaTableML(
           candidateV0.pt,
           candidateV0.eta,
@@ -873,11 +923,11 @@ struct LFStrangeTreeCreator {
       }
     }
   }
-  PROCESS_SWITCH(LFStrangeTreeCreator, processMcRun3, "process MC (Run 3)", false);
+  PROCESS_SWITCH(StrangeTreeCreator, processMcRun3, "process MC (Run 3)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<LFStrangeTreeCreator>(cfgc)};
+    adaptAnalysisTask<StrangeTreeCreator>(cfgc)};
 }

@@ -17,10 +17,12 @@
 #ifndef PWGLF_DATAMODEL_VTX3BODYTABLES_H_
 #define PWGLF_DATAMODEL_VTX3BODYTABLES_H_
 
-#include <cmath>
-#include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
+
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/AnalysisDataModel.h"
+
+#include <cmath>
 
 namespace o2::aod
 {
@@ -30,8 +32,8 @@ namespace vtx3body
 DECLARE_SOA_INDEX_COLUMN_FULL(TrackPr, trackPr, int, Tracks, "_pr"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(TrackPi, trackPi, int, Tracks, "_pi"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(TrackDe, trackDe, int, Tracks, "_de"); //!
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                   //!
-DECLARE_SOA_INDEX_COLUMN(Decay3Body, decay3body);                 //!
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                      //!
+DECLARE_SOA_INDEX_COLUMN(Decay3Body, decay3body);                    //!
 
 // General 3 body Vtx properties
 DECLARE_SOA_COLUMN(Mass, mass, float); //! candidate mass (with H3L or Anti-H3L mass hypothesis depending on deuteron charge)
@@ -69,6 +71,12 @@ DECLARE_SOA_COLUMN(DCATrackPrToSV, dcaTrackPrToSv, float);   //! DCA of proton t
 DECLARE_SOA_COLUMN(DCATrackPiToSV, dcaTrackPiToSv, float);   //! DCA of pion to SV
 DECLARE_SOA_COLUMN(DCATrackDeToSV, dcaTrackDeToSv, float);   //! DCA of deuteron to SV
 DECLARE_SOA_COLUMN(DCAVtxDaughters, dcaVtxdaughters, float); //! Quadratic sum of DCA between daughters at SV
+
+// CosPA
+DECLARE_SOA_COLUMN(CosPA, cosPA, float); //! Cosine of pointing angle of the 3body candidate
+
+// Ct
+DECLARE_SOA_COLUMN(Ct, ct, float); //! Reconstruction Ct of 3body candidate
 
 // Strangeness tracking
 DECLARE_SOA_COLUMN(TrackedClSize, trackedClSize, float); //! Average ITS cluster size of strangeness tracked 3body
@@ -145,10 +153,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(DistOverTotMom, distovertotmom, //! PV to 3 body deca
                              return std::sqrt(std::pow(X - pvX, 2) + std::pow(Y - pvY, 2) + std::pow(Z - pvZ, 2)) / (P + 1E-10);
                            });
 
-// CosPA
-DECLARE_SOA_DYNAMIC_COLUMN(VtxCosPA, vtxcosPA, //! 3 body vtx CosPA
-                           [](float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ) -> float { return RecoDecay::cpa(std::array{pvX, pvY, pvZ}, std::array{X, Y, Z}, std::array{Px, Py, Pz}); });
-
 // Dca to PV
 DECLARE_SOA_DYNAMIC_COLUMN(DCAVtxToPV, dcavtxtopv, //! DCA of 3 body vtx to PV
                            [](float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ) -> float { return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz)); });
@@ -207,6 +211,7 @@ DECLARE_SOA_TABLE(Vtx3BodyDatas, "AOD", "VTX3BODYDATA", //!
                   vtx3body::DCAZTrackPrToPV, vtx3body::DCAZTrackPiToPV, vtx3body::DCAZTrackDeToPV,
                   vtx3body::DCATrackPrToSV, vtx3body::DCATrackPiToSV, vtx3body::DCATrackDeToSV,
                   vtx3body::DCAVtxDaughters,
+                  vtx3body::CosPA, vtx3body::Ct,
                   vtx3body::TPCNSigmaPr, vtx3body::TPCNSigmaPi, vtx3body::TPCNSigmaDe, vtx3body::TPCNSigmaPiBach,
                   vtx3body::TOFNSigmaDe,
                   vtx3body::ITSClSizePr, vtx3body::ITSClSizePi, vtx3body::ITSClSizeDe,
@@ -218,7 +223,6 @@ DECLARE_SOA_TABLE(Vtx3BodyDatas, "AOD", "VTX3BODYDATA", //!
                   vtx3body::Pt<vtx3body::Px, vtx3body::Py>,
                   vtx3body::VtxRadius<vtx3body::X, vtx3body::Y>,
                   vtx3body::DistOverTotMom<vtx3body::X, vtx3body::Y, vtx3body::Z, vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
-                  vtx3body::VtxCosPA<vtx3body::X, vtx3body::Y, vtx3body::Z, vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
                   vtx3body::DCAVtxToPV<vtx3body::X, vtx3body::Y, vtx3body::Z, vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
 
                   // Longitudinal
@@ -256,6 +260,7 @@ DECLARE_SOA_TABLE(McVtx3BodyDatas, "AOD", "MC3BODYDATA", //!
                   vtx3body::DCAZTrackPrToPV, vtx3body::DCAZTrackPiToPV, vtx3body::DCAZTrackDeToPV,
                   vtx3body::DCATrackPrToSV, vtx3body::DCATrackPiToSV, vtx3body::DCATrackDeToSV,
                   vtx3body::DCAVtxDaughters,
+                  vtx3body::CosPA, vtx3body::Ct,
                   vtx3body::TPCNSigmaPr, vtx3body::TPCNSigmaPi, vtx3body::TPCNSigmaDe, vtx3body::TPCNSigmaPiBach,
                   vtx3body::TOFNSigmaDe,
                   vtx3body::ITSClSizePr, vtx3body::ITSClSizePi, vtx3body::ITSClSizeDe,
@@ -283,7 +288,6 @@ DECLARE_SOA_TABLE(McVtx3BodyDatas, "AOD", "MC3BODYDATA", //!
                   vtx3body::VtxRadius<vtx3body::X, vtx3body::Y>,
                   vtx3body::GenRadius<vtx3body::GenX, vtx3body::GenY>,
                   vtx3body::DistOverTotMom<vtx3body::X, vtx3body::Y, vtx3body::Z, vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
-                  vtx3body::VtxCosPA<vtx3body::X, vtx3body::Y, vtx3body::Z, vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
                   vtx3body::DCAVtxToPV<vtx3body::X, vtx3body::Y, vtx3body::Z, vtx3body::Px, vtx3body::Py, vtx3body::Pz>,
 
                   // Longitudinal

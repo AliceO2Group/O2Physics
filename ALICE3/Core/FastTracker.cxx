@@ -516,7 +516,7 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   for (int ii = 0; ii < o2::track::kCovMatSize; ii++)
     covMat[ii] = outputTrack.getCov()[ii];
   TMatrixDSym m(5);
-  float fcovm[5][5];
+  double fcovm[5][5]; // double precision is needed for regularisation
 
   for (int ii = 0, k = 0; ii < 5; ++ii) {
     for (int j = 0; j < ii + 1; ++j, ++k) {

@@ -215,6 +215,12 @@ DECLARE_SOA_DYNAMIC_COLUMN(EtaProng2, etaProng2, //!
                            [](float pxProng2, float pyProng2, float pzProng2) -> float { return RecoDecay::eta(std::array<float, 3>{pxProng2, pyProng2, pzProng2}); });
 } // namespace hf_track_vars_reduced
 
+namespace hf_b_to_jpsi_track_vars_reduced
+{
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! transverse momentum
+                           [](float signed1Pt) -> float { return std::abs(signed1Pt) <= o2::constants::math::Almost0 ? o2::constants::math::VeryBig : 1.f / std::abs(signed1Pt); });
+} // namespace hf_b_to_jpsi_track_vars_reduced
+
 namespace hf_track_pid_reduced
 {
 DECLARE_SOA_COLUMN(TPCNSigmaPiProng0, tpcNSigmaPiProng0, float); //! NsigmaTPCPi for prong0, o2-linter: disable=name/o2-column (written to disk)
@@ -288,6 +294,7 @@ DECLARE_SOA_TABLE(HfRedBach0Bases, "AOD", "HFREDBACH0BASE", //! Table with track
                   hf_track_index_reduced::TrackId,
                   hf_track_index_reduced::HfRedCollisionId,
                   HFTRACKPAR_COLUMNS,
+                  hf_b_to_jpsi_track_vars_reduced::Pt<aod::track::Signed1Pt>,
                   hf_track_vars_reduced::ItsNCls,
                   hf_track_vars_reduced::TpcNClsCrossedRows,
                   hf_track_vars_reduced::TpcChi2NCl,
@@ -318,6 +325,7 @@ DECLARE_SOA_TABLE(HfRedBach1Bases, "AOD", "HFREDBACH1BASE", //! Table with track
                   hf_track_index_reduced::TrackId,
                   hf_track_index_reduced::HfRedCollisionId,
                   HFTRACKPAR_COLUMNS,
+                  hf_b_to_jpsi_track_vars_reduced::Pt<aod::track::Signed1Pt>,
                   hf_track_vars_reduced::ItsNCls,
                   hf_track_vars_reduced::TpcNClsCrossedRows,
                   hf_track_vars_reduced::TpcChi2NCl,
@@ -358,8 +366,8 @@ DECLARE_SOA_EXTENDED_TABLE_USER(HfRedBach1Ext, HfRedBach1Bases, "HFREDBACH1EXT",
                                 aod::track::Pt);
 
 using HfRedTracks = HfRedTracksExt;
-using HfRedBach0Tracks = HfRedBach0Ext;
-using HfRedBach1Tracks = HfRedBach1Ext;
+using HfRedBach0Tracks = HfRedBach0Bases;
+using HfRedBach1Tracks = HfRedBach1Bases;
 
 namespace hf_charm_cand_reduced
 {
