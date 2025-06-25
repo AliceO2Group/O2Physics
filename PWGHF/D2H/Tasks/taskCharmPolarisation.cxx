@@ -1021,7 +1021,7 @@ struct TaskPolarisationCharmHadrons {
               }
             }
           }
-        } 
+        }
       }
     }
   }
@@ -2078,7 +2078,7 @@ struct TaskPolarisationCharmHadrons {
     float yQVec = qVecs[1];
     // float amplQVec = qVecs[2];
     float evtPl = epHelper.GetEventPlane(xQVec, yQVec, harmonic);
-    
+
     for (const auto& dstarCandidate : groupedDstarCandidates) {
       nCands++;
       if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false, false, true>(dstarCandidate, 0, numPvContributors, -1 /*MC particles*/, tracks, &evtPl)) {
@@ -2131,7 +2131,7 @@ struct TaskPolarisationCharmHadrons {
       return; // skip this collision if outside of the centrality range
     }
     int numPvContributorsGen{0};
-    
+
     std::vector<float> qVecs = getQvec(collision);
     float xQVec = qVecs[0];
     float yQVec = qVecs[1];
@@ -2204,7 +2204,7 @@ struct TaskPolarisationCharmHadrons {
     }
   }
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstarMcWithMlInPbPb, "Process Dstar candidates in PbPb MC with ML", false);
-    
+
 
   ////////////////////////////
   //   Lc->pKpi analysis   ///
