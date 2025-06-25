@@ -15,31 +15,9 @@
 /// \author CMY
 /// \date 2025-04-10
 
-#include <TH1F.h>
-#include <TDirectory.h>
-#include <THn.h>
-#include <TMath.h>
-#include <TObjArray.h>
-#include <TFile.h>
-#include <TH2F.h>
-
-#include <cmath>
-#include <string>
-#include <algorithm>
-#include <vector>
-#include <array>
-#include <cstdlib>
-#include <iterator> // std::prev
-
-#include "Math/Vector4D.h"
-#include "Math/Boost.h"
-
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
+#include "PWGCF/Femto/DataModel/PionDeuteronTables.h"
+#include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "PWGLF/Utils/svPoolCreator.h"
 
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
@@ -53,21 +31,40 @@
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
-
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
 
 #include "CCDB/BasicCCDBManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 
-#include "PWGLF/DataModel/EPCalibrationTables.h"
-#include "PWGCF/Femto/DataModel/PionDeuteronTables.h"
-#include "PWGLF/Utils/svPoolCreator.h"
+#include "Math/Boost.h"
+#include "Math/Vector4D.h"
+#include <TDirectory.h>
+#include <TFile.h>
+#include <TH1F.h>
+#include <TH2F.h>
+#include <THn.h>
+#include <TMath.h>
+#include <TObjArray.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <iterator> // std::prev
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
