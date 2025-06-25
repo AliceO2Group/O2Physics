@@ -70,14 +70,12 @@ DECLARE_SOA_COLUMN(Pt, pt, float);                    //! pT (GeV/c)
 DECLARE_SOA_COLUMN(Eta, eta, float);                  //! Pseudorapidity
 DECLARE_SOA_COLUMN(Phi, phi, float);                  //! Phi angle
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);               //! Sign (positive, negative)
-DECLARE_SOA_COLUMN(NsigmaTPCPr, nsigmatpcpr, float);  //! nsigma tpc proton
-DECLARE_SOA_COLUMN(NsigmaTOFPr, nsigmatofpr, float);  //! nsigma tpc proton
 } // namespace cftrack
 DECLARE_SOA_TABLE(CFTracks, "AOD", "CFTRACK", //! Reduced track table
                   o2::soa::Index<>,
                   cftrack::CFCollisionId,
                   cftrack::Pt, cftrack::Eta, cftrack::Phi,
-                  cftrack::Sign, track::TrackType, cftrack::NsigmaTPCPr, cftrack::NsigmaTOFPr);
+                  cftrack::Sign, track::TrackType);
 DECLARE_SOA_TABLE(CFTrackLabels, "AOD", "CFTRACKLABEL", //! Labels for reduced track table
                   cftrack::CFMcParticleId);
 using CFTrack = CFTracks::iterator;
@@ -125,6 +123,7 @@ enum ParticleDecay {
   D0barToKPi,
   JPsiToEE,
   JPsiToMuMu,
+  Generic2Prong,
   PhiToKK,
   K0stoPiPi,
   LambdatoPPi,
