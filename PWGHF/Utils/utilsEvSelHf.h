@@ -113,16 +113,8 @@ enum EventRejection {
   NEventRejection
 };
 
-// upc event type, refer from PWGUD/Core/SGSelector.h
-enum EventTypeUpc {
-  SingleGapA = 0,
-  SingleGapC = 1,
-  DoubleGap = 2,
-  NEventTypes = 3
-};
-
 o2::framework::AxisSpec axisEvents = {EventRejection::NEventRejection, -0.5f, +EventRejection::NEventRejection - 0.5f, ""};
-o2::framework::AxisSpec axisUPCEvents = {EventTypeUpc::NEventTypes, -0.5f, +EventTypeUpc::NEventTypes - 0.5f, ""};
+o2::framework::AxisSpec axisUpcEvents = { o2::aod::sgselector::DoubleGap + 1, -0.5f, +o2::aod::sgselector::DoubleGap + 0.5f, ""};
 
 /// \brief Function to put labels on monitoring histogram
 /// \param hRejection monitoring histogram
@@ -198,7 +190,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   static constexpr char NameHistCollisionsCentOcc[] = "hCollisionsCentOcc";
   static constexpr char NameHistUpCollisions[] = "hUpCollisions";
 
-  std::shared_ptr<TH1> hCollisions, hSelCollisionsCent, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel, hUPCollisions;
+  std::shared_ptr<TH1> hCollisions, hSelCollisionsCent, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel, hUpCollisions;
   std::shared_ptr<TH2> hCollisionsCentOcc;
 
   // util to retrieve the RCT info from CCDB
@@ -236,7 +228,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     hPosYAfterEvSel = registry.add<TH1>(NameHistPosYAfterEvSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
     hNumPvContributorsAfterSel = registry.add<TH1>(NameHistNumPvContributorsAfterSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{500, -0.5, 499.5}}});
     setEventRejectionLabels(hCollisions, softwareTrigger);
-    hUPCollisions = registry.add<TH1>(NameHistUpCollisions, "HF upc counter;;# of upc events", {o2::framework::HistType::kTH1D, {axisUPCEvents}});
+      hUpCollisions = registry.add<TH1>(NameHistUpCollisions, "HF upc counter;;# of upc events", {o2::framework::HistType::kTH1D, {axisUpcEvents}});
     const o2::framework::AxisSpec th2AxisCent{th2ConfigAxisCent, "Centrality"};
     const o2::framework::AxisSpec th2AxisOccupancy{th2ConfigAxisOccupancy, "Occupancy"};
     hCollisionsCentOcc = registry.add<TH2>(NameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {th2AxisCent, th2AxisOccupancy}});
@@ -383,10 +375,10 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
       auto bcRange = udhelpers::compatibleBCs(collision, sgCuts.NDtcoll(), bcs, sgCuts.minNBCs());
       auto sgSelectionResult = sgSelector.IsSelected(sgCuts, collision, bcRange, bc);
       int upcEventType = sgSelectionResult.value;
-      if (upcEventType > EventTypeUpc::DoubleGap) {
+      if (upcEventType > o2::aod::sgselector::DoubleGap) {
         SETBIT(rejectionMaskWithUpc, EventRejection::UpcEventCut);
       } else {
-        hUPCollisions->Fill(upcEventType);
+          hUpCollisions->Fill(upcEventType);
       }
     }
 
