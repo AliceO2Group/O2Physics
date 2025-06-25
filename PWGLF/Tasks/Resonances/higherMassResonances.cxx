@@ -174,12 +174,17 @@ struct HigherMassResonances {
   TRandom* rn = new TRandom();
 
   // variables declaration
-  TLorentzVector lv1, lv2, lv3, lv4, lv5;
   float multiplicity = 0.0f;
   float theta2;
-  ROOT::Math::PxPyPzMVector daughter1, daughter2, fourVecDau1, fourVecMother, fourVecDauCM;
-  ROOT::Math::XYZVector threeVecDauCM, helicityVec, randomVec, beamVec, normalVec;
-  ROOT::Math::XYZVector z_beam; // ẑ: beam direction in lab frame
+  ROOT::Math::PxPyPzMVector daughter1, daughter2, daughterRot, daughterRotCM, mother, motherRot, fourVecDauCM;
+  ROOT::Math::XYZVector randomVec, beamVec, normalVec;
+  ROOT::Math::XYZVectorF v1_CM, zaxis_HE, yaxis_HE, xaxis_HE;
+  // ROOT::Math::XYZVector threeVecDauCM, helicityVec, randomVec, beamVec, normalVec;
+  ROOT::Math::XYZVector zBeam;                                          // ẑ: beam direction in lab frame
+  double BeamMomentum = TMath::Sqrt(13600 * 13600 / 4 - 0.938 * 0.938); // GeV
+  ROOT::Math::PxPyPzEVector Beam1{0., 0., -BeamMomentum, 13600. / 2.};
+  ROOT::Math::PxPyPzEVector Beam2{0., 0., BeamMomentum, 13600. / 2.};
+  ROOT::Math::XYZVectorF Beam1_CM, Beam2_CM;
 
   // const double massK0s = o2::constants::physics::MassK0Short;
   bool isMix = false;
@@ -584,28 +589,29 @@ struct HigherMassResonances {
   using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentFT0Ms>;
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::McTrackLabels>>;
   using V0TrackCandidatesMC = soa::Join<aod::V0Datas, aod::McV0Labels>;
-  // z_beam direction in lab frame
+  // zBeam direction in lab frame
 
-  template <typename T2, typename T3, typename T4>
-  void fillInvMass(const T2& lv3, const T3& lv5, float multiplicity, const T4& daughter1, bool isMix)
+  template <typename T>
+  void fillInvMass(const T& mother, float multiplicity, const T& daughter1, const T& daughter2, bool isMix)
   {
 
     // //polarization calculations
-    // z_beam = ROOT::Math::XYZVector(0.f, 0.f, 1.f); // ẑ: beam direction in lab frame
+    // zBeam = ROOT::Math::XYZVector(0.f, 0.f, 1.f); // ẑ: beam direction in lab frame
 
-    fourVecDau1 = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), o2::constants::physics::MassK0Short);
+    ROOT::Math::Boost boost{mother.BoostToCM()}; // define the boost to the center of mass frame
+    fourVecDauCM = boost(daughter1);             // boost the frame of daughter to the center of mass frame
+    // threeVecDauCM = fourVecDauCM.Vect();         // get the 3 vector of daughter in the frame of mother
 
-    fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // 4 vector of mother particle
-    ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                               // define the boost to the center of mass frame
-    fourVecDauCM = boost(fourVecDau1);                                                // boost the frame of daughter to the center of mass frame
-    threeVecDauCM = fourVecDauCM.Vect();                                              // get the 3 vector of daughter in the frame of mother
-    // define y = z_beam x z: Normal to the production plane
+    Beam1_CM = ROOT::Math::XYZVectorF((boost(Beam1).Vect()).Unit());
+    Beam2_CM = ROOT::Math::XYZVectorF((boost(Beam2).Vect()).Unit());
+
+    // define y = zBeam x z: Normal to the production plane
     // ẑ: mother direction in lab, boosted into mother's rest frame
 
-    // auto motherLabDirection = ROOT::Math::XYZVector(0, 0, fourVecMother.Vect().Z()); // ẑ axis in lab frame
+    // auto motherLabDirection = ROOT::Math::XYZVector(0, 0, mother.Vect().Z()); // ẑ axis in lab frame
 
-    // // ŷ = z_beam × ẑ
-    // auto y_axis = z_beam.Cross(motherLabDirection).Unit();
+    // // ŷ = zBeam × ẑ
+    // auto y_axis = zBeam.Cross(motherLabDirection).Unit();
 
     // // x̂ = ŷ × ẑ
     // auto x_axis = y_axis.Cross(motherLabDirection).Unit();
@@ -617,19 +623,14 @@ struct HigherMassResonances {
     // // Calculate φ in [-π, π]
     // auto angle_phi = std::atan2(p_proj_y, p_proj_x); // φ in radians
 
-    double BeamMomentum = TMath::Sqrt(13600 * 13600 / 4 - 0.938 * 0.938); // GeV
-    ROOT::Math::PxPyPzEVector Beam1(0., 0., -BeamMomentum, 13600 / 2);
-    ROOT::Math::PxPyPzEVector Beam2(0., 0., BeamMomentum, 13600 / 2);
-    ROOT::Math::XYZVectorF v1_CM{(boost(fourVecDau1).Vect()).Unit()};
-    // ROOT::Math::XYZVectorF v2_CM{(boost(fourVecDau1).Vect()).Unit()};
-    ROOT::Math::XYZVectorF Beam1_CM{(boost(Beam1).Vect()).Unit()};
-    ROOT::Math::XYZVectorF Beam2_CM{(boost(Beam2).Vect()).Unit()};
+    v1_CM = ROOT::Math::XYZVectorF(boost(daughter1).Vect()).Unit();
+    // ROOT::Math::XYZVectorF v2_CM{(boost(daughter1).Vect()).Unit()};
     // using positive sign convention for the first track
     // ROOT::Math::XYZVectorF v_CM = (t1.sign() > 0 ? v1_CM : v2_CM); // here selected decay daughter momentum is intested. here you can choose one decay daughter no need to check both case as it is neutral particle for our case
     // Helicity frame
-    ROOT::Math::XYZVectorF zaxis_HE{(fourVecMother.Vect()).Unit()};
-    ROOT::Math::XYZVectorF yaxis_HE{(Beam1_CM.Cross(Beam2_CM)).Unit()};
-    ROOT::Math::XYZVectorF xaxis_HE{(yaxis_HE.Cross(zaxis_HE)).Unit()};
+    zaxis_HE = ROOT::Math::XYZVectorF(mother.Vect()).Unit();
+    yaxis_HE = ROOT::Math::XYZVectorF(Beam1_CM.Cross(Beam2_CM)).Unit();
+    xaxis_HE = ROOT::Math::XYZVectorF(yaxis_HE.Cross(zaxis_HE)).Unit();
 
     // CosThetaHE = zaxis_HE.Dot(v_CM);
 
@@ -638,61 +639,72 @@ struct HigherMassResonances {
       angle_phi += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
     }
 
-    if (std::abs(lv3.Rapidity()) < 0.5) {
+    if (std::abs(mother.Rapidity()) < 0.5) {
       if (config.activateTHnSparseCosThStarHelicity) {
-        helicityVec = fourVecMother.Vect(); // 3 vector of mother in COM frame
-        auto cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(helicityVec.Mag2()));
+        // helicityVec = mother.Vect(); // 3 vector of mother in COM frame
+        // auto cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(helicityVec.Mag2()));
+        auto cosThetaStarHelicity = mother.Vect().Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(mother.Vect().Mag2()));
         if (!isMix) {
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity, angle_phi);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, mother.Pt(), mother.M(), cosThetaStarHelicity, angle_phi);
 
           for (int i = 0; i < config.cRotations; i++) {
             theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarHelicity, angle_phi);
+
+            daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
+
+            motherRot = daughterRot + daughter2;
+
+            ROOT::Math::Boost boost2{motherRot.BoostToCM()};
+            daughterRotCM = boost2(daughterRot);
+
+            auto cosThetaStarHelicityRot = motherRot.Vect().Dot(daughterRotCM.Vect()) / (std::sqrt(daughterRotCM.Vect().Mag2()) * std::sqrt(motherRot.Vect().Mag2()));
+
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarHelicityRot, angle_phi);
           }
         } else {
-          hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity, angle_phi);
+          hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), cosThetaStarHelicity, angle_phi);
         }
-
       } else if (config.activateTHnSparseCosThStarProduction) {
-        normalVec = ROOT::Math::XYZVector(lv3.Py(), -lv3.Px(), 0.f);
-        auto cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(normalVec.Mag2()));
+        normalVec = ROOT::Math::XYZVector(mother.Py(), -mother.Px(), 0.f);
+        auto cosThetaStarProduction = normalVec.Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(normalVec.Mag2()));
         if (!isMix) {
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction, angle_phi);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, mother.Pt(), mother.M(), cosThetaStarProduction, angle_phi);
           for (int i = 0; i < config.cRotations; i++) {
-            theta2 = rn->Uniform(0, o2::constants::math::PI);
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarProduction, angle_phi);
+            theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
+            motherRot = ROOT::Math::PxPyPzMVector(mother.Px() * std::cos(theta2) - mother.Py() * std::sin(theta2), mother.Px() * std::sin(theta2) + mother.Py() * std::cos(theta2), mother.Pz(), mother.M());
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarProduction, angle_phi);
           }
         } else {
-          hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction, angle_phi);
+          hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), cosThetaStarProduction, angle_phi);
         }
-
       } else if (config.activateTHnSparseCosThStarBeam) {
         beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
-        auto cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
+        auto cosThetaStarBeam = beamVec.Dot(fourVecDauCM.Vect()) / std::sqrt(fourVecDauCM.Vect().Mag2());
         if (!isMix) {
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam, angle_phi);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, mother.Pt(), mother.M(), cosThetaStarBeam, angle_phi);
           for (int i = 0; i < config.cRotations; i++) {
-            theta2 = rn->Uniform(0, o2::constants::math::PI);
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarBeam, angle_phi);
+            theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
+            motherRot = ROOT::Math::PxPyPzMVector(mother.Px() * std::cos(theta2) - mother.Py() * std::sin(theta2), mother.Px() * std::sin(theta2) + mother.Py() * std::cos(theta2), mother.Pz(), mother.M());
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarBeam, angle_phi);
           }
         } else {
-          hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam, angle_phi);
+          hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), cosThetaStarBeam, angle_phi);
         }
-
       } else if (config.activateTHnSparseCosThStarRandom) {
         auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
         auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
 
         randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
-        auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
+        auto cosThetaStarRandom = randomVec.Dot(fourVecDauCM.Vect()) / std::sqrt(fourVecDauCM.Vect().Mag2());
         if (!isMix) {
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom, angle_phi);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, mother.Pt(), mother.M(), cosThetaStarRandom, angle_phi);
           for (int i = 0; i < config.cRotations; i++) {
-            theta2 = rn->Uniform(0, o2::constants::math::PI);
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarRandom, angle_phi);
+            theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
+            motherRot = ROOT::Math::PxPyPzMVector(mother.Px() * std::cos(theta2) - mother.Py() * std::sin(theta2), mother.Px() * std::sin(theta2) + mother.Py() * std::cos(theta2), mother.Pz(), mother.M());
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarRandom, angle_phi);
           }
         } else {
-          hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom, angle_phi);
+          hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), cosThetaStarRandom, angle_phi);
         }
       }
     }
@@ -798,23 +810,18 @@ struct HigherMassResonances {
       }
       allConditionsMet = 1;
       daughter1 = ROOT::Math::PxPyPzMVector(v1.px(), v1.py(), v1.pz(), o2::constants::physics::MassK0Short); // Kshort
+      daughter2 = ROOT::Math::PxPyPzMVector(v2.px(), v2.py(), v2.pz(), o2::constants::physics::MassK0Short); // Kshort
 
-      lv3.SetPtEtaPhiM(0.0, 0.0, 0.0, 0.0);
-      lv5.SetPtEtaPhiM(0.0, 0.0, 0.0, 0.0);
-      lv1.SetPtEtaPhiM(v1.pt(), v1.eta(), v1.phi(), o2::constants::physics::MassK0Short);
-      lv2.SetPtEtaPhiM(v2.pt(), v2.eta(), v2.phi(), o2::constants::physics::MassK0Short);
-      lv4.SetPtEtaPhiM(v1.pt(), v1.eta(), v1.phi() + theta2, o2::constants::physics::MassK0Short); // for rotated background
-      lv3 = lv1 + lv2;
-      lv5 = lv2 + lv4;
+      mother = daughter1 + daughter2; // invariant mass of Kshort pair
       isMix = false;
 
       if (!config.selectTWOKsOnly)
-        fillInvMass(lv3, lv5, multiplicity, daughter1, isMix);
+        fillInvMass(mother, multiplicity, daughter1, daughter2, isMix);
     }
     int sizeofv0indexes = v0indexes.size();
     rKzeroShort.fill(HIST("NksProduced"), sizeofv0indexes);
     if (config.selectTWOKsOnly && sizeofv0indexes == 2 && allConditionsMet) {
-      fillInvMass(lv3, lv5, multiplicity, daughter1, false);
+      fillInvMass(mother, multiplicity, daughter1, daughter2, false);
     }
     v0indexes.clear();
   }
@@ -902,15 +909,11 @@ struct HigherMassResonances {
           }
 
           daughter1 = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassK0Short); // Kshort
+          daughter2 = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), o2::constants::physics::MassK0Short); // Kshort
 
-          lv3.SetPtEtaPhiM(0.0, 0.0, 0.0, 0.0);
-          lv1.SetPtEtaPhiM(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassK0Short);
-          lv2.SetPtEtaPhiM(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassK0Short);
-          lv4.SetPtEtaPhiM(t1.pt(), t1.eta(), t1.phi() + theta2, o2::constants::physics::MassK0Short); // for rotated background
-          lv3 = lv1 + lv2;
-          lv5 = lv2 + lv4;
+          mother = daughter1 + daughter2; // invariant mass of Kshort pair
           isMix = true;
-          fillInvMass(lv3, lv5, multiplicity, daughter1, isMix);
+          fillInvMass(mother, multiplicity, daughter1, daughter2, isMix);
         }
       }
     } else {
@@ -965,17 +968,12 @@ struct HigherMassResonances {
           if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, t2)) {
             continue;
           }
-
           daughter1 = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassK0Short); // Kshort
+          daughter2 = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), o2::constants::physics::MassK0Short); // Kshort
 
-          lv3.SetPtEtaPhiM(0.0, 0.0, 0.0, 0.0);
-          lv1.SetPtEtaPhiM(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassK0Short);
-          lv2.SetPtEtaPhiM(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassK0Short);
-          lv4.SetPtEtaPhiM(t1.pt(), t1.eta(), t1.phi() + theta2, o2::constants::physics::MassK0Short); // for rotated background
-          lv3 = lv1 + lv2;
-          lv5 = lv2 + lv4;
+          mother = daughter1 + daughter2; // invariant mass of Kshort pair
           isMix = true;
-          fillInvMass(lv3, lv5, multiplicity, daughter1, isMix);
+          fillInvMass(mother, multiplicity, daughter1, daughter2, isMix);
         }
       }
     }
@@ -989,7 +987,7 @@ struct HigherMassResonances {
     if (config.isMC == false) {
       return;
     }
-    TLorentzVector lResonance_gen;
+    ROOT::Math::PxPyPzMVector lResonance_gen;
     hMChists.fill(HIST("events_check"), 0.5);
     if (std::abs(mcCollision.posZ()) < config.cutzvertex) {
       hMChists.fill(HIST("events_check"), 1.5);
@@ -1075,16 +1073,16 @@ struct HigherMassResonances {
         if (std::abs(kCurrentDaughter.pdgCode()) == 310) {
           passKs = true;
           hMChists.fill(HIST("events_check"), 9.5);
-          fourVecDau1 = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassK0Short);
+          daughter1 = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassK0Short);
         }
       }
       if (passKs) {
-        lResonance_gen.SetPtEtaPhiE(mcParticle.pt(), mcParticle.eta(), mcParticle.phi(), mcParticle.e());
-        fourVecMother = ROOT::Math::PxPyPzMVector(lResonance_gen.Px(), lResonance_gen.Py(), lResonance_gen.Pz(), lResonance_gen.M());
-        ROOT::Math::Boost boost{fourVecMother.BoostToCM()};
-        fourVecDauCM = boost(fourVecDau1); // boost the frame of daughter to the center of mass frame
+        lResonance_gen = ROOT::Math::PxPyPzMVector(mcParticle.pt(), mcParticle.eta(), mcParticle.phi(), mcParticle.e());
+        mother = ROOT::Math::PxPyPzMVector(lResonance_gen.Px(), lResonance_gen.Py(), lResonance_gen.Pz(), lResonance_gen.M());
+        ROOT::Math::Boost boost{mother.BoostToCM()};
+        fourVecDauCM = boost(daughter1); // boost the frame of daughter to the center of mass frame
 
-        auto helicity_gen = fourVecDau1.Vect().Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(fourVecDau1.Vect().Mag2()));
+        auto helicity_gen = daughter1.Vect().Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(daughter1.Vect().Mag2()));
 
         hMChists.fill(HIST("Genf1710"), multiplicityGen, mcParticle.pt(), lResonance_gen.M(), helicity_gen);
         // hMChists.fill(HIST("Genf1710_mass"), lResonance_gen.M());
@@ -1102,7 +1100,7 @@ struct HigherMassResonances {
       return;
     }
 
-    TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
+    ROOT::Math::PxPyPzMVector lDecayDaughter1, lDecayDaughter2, lResonance;
     auto multiplicity = collision.centFT0C();
     hMChists.fill(HIST("MC_mult"), multiplicity);
 
@@ -1265,15 +1263,18 @@ struct HigherMassResonances {
             auto recMass = RecoDecay::m(arrMomrec, std::array{o2::constants::physics::MassK0Short, o2::constants::physics::MassK0Short});
             // auto recpt = TMath::Sqrt((track1.px() + track2.px()) * (track1.px() + track2.px()) + (track1.py() + track2.py()) * (track1.py() + track2.py()));
             //// Resonance reconstruction
-            lDecayDaughter1.SetXYZM(v01.px(), v01.py(), v01.pz(), o2::constants::physics::MassK0Short);
-            lDecayDaughter2.SetXYZM(v02.px(), v02.py(), v02.pz(), o2::constants::physics::MassK0Short);
+            lDecayDaughter1 = ROOT::Math::PxPyPzMVector(v01.px(), v01.py(), v01.pz(), o2::constants::physics::MassK0Short);
+            lDecayDaughter2 = ROOT::Math::PxPyPzMVector(v02.px(), v02.py(), v02.pz(), o2::constants::physics::MassK0Short);
             lResonance = lDecayDaughter1 + lDecayDaughter2;
-            // fourVecDau1, fourVecMother, fourVecDauCM
-            fourVecMother = ROOT::Math::PxPyPzMVector(lResonance.Px(), lResonance.Py(), lResonance.Pz(), lResonance.M());
-            fourVecDau1 = ROOT::Math::PxPyPzMVector(lDecayDaughter1.Px(), lDecayDaughter1.Py(), lDecayDaughter1.Pz(), o2::constants::physics::MassK0Short);
-            ROOT::Math::Boost boost{fourVecMother.BoostToCM()};
-            fourVecDauCM = boost(fourVecDau1); // boost the frame of daughter to the center of mass frame
-            auto helicity_rec = fourVecDau1.Vect().Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(fourVecDau1.Vect().Mag2()));
+            if (config.apply_rapidityMC && std::abs(lResonance.Y()) >= 0.5) {
+              continue;
+            }
+            // daughter1, mother, fourVecDauCM
+            mother = ROOT::Math::PxPyPzMVector(lResonance.Px(), lResonance.Py(), lResonance.Pz(), lResonance.M());
+            daughter1 = ROOT::Math::PxPyPzMVector(lDecayDaughter1.Px(), lDecayDaughter1.Py(), lDecayDaughter1.Pz(), o2::constants::physics::MassK0Short);
+            ROOT::Math::Boost boost{mother.BoostToCM()};
+            fourVecDauCM = boost(daughter1); // boost the frame of daughter to the center of mass frame
+            auto helicity_rec = daughter1.Vect().Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(daughter1.Vect().Mag2()));
 
             // hMChists.fill(HIST("Recf1710_p"), motherP);
             // hMChists.fill(HIST("Recf1710_mass"), recMass);
