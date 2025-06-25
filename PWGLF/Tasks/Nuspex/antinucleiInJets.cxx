@@ -611,7 +611,7 @@ struct AntinucleiInJets {
       // jet pt must be larger than threshold
       auto jetForSub = jet;
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-      //if (getCorrectedPt(jetMinusBkg.pt(), responseMatrix) < minJetPt)
+      // if (getCorrectedPt(jetMinusBkg.pt(), responseMatrix) < minJetPt)
       if (jetMinusBkg.pt() < minJetPt)
         continue;
       isAtLeastOneJetSelected = true;
@@ -1333,7 +1333,7 @@ struct AntinucleiInJets {
         fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
 
         // Apply jet pT threshold
-        //if (getCorrectedPt(jetMinusBkg.pt(), responseMatrix) < minJetPt)
+        // if (getCorrectedPt(jetMinusBkg.pt(), responseMatrix) < minJetPt)
         if (jetMinusBkg.pt() < minJetPt)
           continue;
 
@@ -1355,8 +1355,7 @@ struct AntinucleiInJets {
           if (mcparticle.pdgCode() == kProtonBar && passedTrackSelection(track) && std::fabs(track.dcaZ()) < maxDcaz) {
             if (mcparticle.isPhysicalPrimary()) {
               registryMC.fill(HIST("antiproton_prim_dca_jet"), track.pt(), track.dcaXY());
-            }
-            else {
+            } else {
               registryMC.fill(HIST("antiproton_all_dca_jet"), track.pt(), track.dcaXY());
             }
           }
@@ -1409,8 +1408,7 @@ struct AntinucleiInJets {
           if (mcparticle.pdgCode() == kProtonBar && passedTrackSelection(track) && std::fabs(track.dcaZ()) < maxDcaz) {
             if (mcparticle.isPhysicalPrimary()) {
               registryMC.fill(HIST("antiproton_prim_dca_ue"), track.pt(), track.dcaXY());
-            }
-            else {
+            } else {
               registryMC.fill(HIST("antiproton_all_dca_ue"), track.pt(), track.dcaXY());
             }
           }
