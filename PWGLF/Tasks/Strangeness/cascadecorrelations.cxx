@@ -836,7 +836,7 @@ struct CascadeCorrelations {
           if (doEfficiencyCorrection)
             weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt()) : getEfficiency(hEffXiPlus, assoc.pt());
           // if Omega-Xi, fill the Xi-Omega histogram (flip the trigger/assoc and dphy,dy signs)
-          registry.fill(HIST("hXiOm"), -dphi, -(trigger.yOmega() - assoc.yXi()), assoc.sign(), trigger.sign(), assoc.pt(), trigger.pt(), invMassXiAssoc, invMassOmTrigg, collision.posZ(), collision.multFT0M(), weightTrigg * weightAssoc);
+          registry.fill(HIST("hXiOm"), RecoDecay::constrainAngle(assoc.phi() - trigger.phi(), -PIHalf), -(trigger.yOmega() - assoc.yXi()), assoc.sign(), trigger.sign(), assoc.pt(), trigger.pt(), invMassXiAssoc, invMassOmTrigg, collision.posZ(), collision.multFT0M(), weightTrigg * weightAssoc);
         }
         if (assoc.isSelected() >= 2 && TMath::Abs(assoc.yOmega()) < maxRapidity) { // assoc Omega
           if (doEfficiencyCorrection)
@@ -923,7 +923,7 @@ struct CascadeCorrelations {
             if (doEfficiencyCorrection)
               weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt()) : getEfficiency(hEffXiPlus, assoc.pt());
             // if Omega-Xi, fill the Xi-Omega histogram (flip the trigger/assoc and dphy,dy signs)
-            registry.fill(HIST("MixedEvents/hMEXiOm"), -dphi, -(trigger.yOmega() - assoc.yXi()), assoc.sign(), trigger.sign(), assoc.pt(), trigger.pt(), invMassXiAssoc, invMassOmTrigg, col1.posZ(), col1.multFT0M(), weightTrigg * weightAssoc);
+            registry.fill(HIST("MixedEvents/hMEXiOm"), RecoDecay::constrainAngle(assoc.phi() - trigger.phi(), -PIHalf), -(trigger.yOmega() - assoc.yXi()), assoc.sign(), trigger.sign(), assoc.pt(), trigger.pt(), invMassXiAssoc, invMassOmTrigg, col1.posZ(), col1.multFT0M(), weightTrigg * weightAssoc);
           }
           if (assoc.isSelected() >= 2 && TMath::Abs(assoc.yOmega()) < maxRapidity) { // assoc Omega
             if (doEfficiencyCorrection)
