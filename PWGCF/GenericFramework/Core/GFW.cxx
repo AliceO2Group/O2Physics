@@ -16,7 +16,6 @@
 #include <utility>
 #include <vector>
 
-
 using std::complex;
 using std::pair;
 using std::string;
