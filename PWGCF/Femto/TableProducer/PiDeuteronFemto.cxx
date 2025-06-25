@@ -780,7 +780,7 @@ struct PiDeuteronFemto {
         mQaRegistry.fill(HIST("hkStar_US_A"), kstar);
       }
     }
-  mQaRegistry.fill(HIST("hkStar_All"), kstar);
+    mQaRegistry.fill(HIST("hkStar_All"), kstar);
   }
 
   // ==================================================================================================================
