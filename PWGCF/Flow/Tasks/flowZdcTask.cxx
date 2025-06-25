@@ -216,6 +216,8 @@ struct FlowZdcTask {
     histos.add("ZposVsEta", "", kTProfile, {axisZpos});
     histos.add("sigma1Pt", ";;#sigma(p_{T})/p_{T};", kTProfile, {axisPt});
     histos.add("dcaXYvspT", ";DCA_{xy} (cm);;", kTH2F, {{{50, -1., 1.}, {axisPt}}});
+    histos.add("GlobalMult_vs_FT0C", "GlobalMult_vs_FT0C", kTH2F, {axisMult, axisFT0CMult});
+    histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ});
 
     // event selection steps
     histos.add("eventSelectionSteps", "eventSelectionSteps", kTH1D, {axisEvent});
@@ -238,9 +240,6 @@ struct FlowZdcTask {
     xAxis->SetBinLabel(15, "has T0?");
     xAxis->SetBinLabel(16, "Within TDC cut?");
     xAxis->SetBinLabel(17, "Within ZEM cut?");
-
-    histos.add("GlobalMult_vs_FT0C", "GlobalMult_vs_FT0C", kTH2F, {axisMult, axisFT0CMult});
-    histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ});
 
     if (doprocessZdcCollAssoc) { // Check if the process function for ZDCCollAssoc is enabled
       histos.add("ZNAcoll", "ZNAcoll; ZNA amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZn}}});
@@ -295,7 +294,7 @@ struct FlowZdcTask {
       histos.add("ZEM2Vstdc", ";t_{ZEM2};ZEM2;", kTH2F, {{{30, -15., 15.}, {30, -0.5, 2000.5}}});
       histos.add("debunch", ";t_{ZDC}-t_{ZDA};t_{ZDC}+t_{ZDA}", kTH2F, {{{nBinsTDC, minTdc, maxTdc}, {nBinsTDC, minTdc, maxTdc}}});
 
-      histos.add("Nch", "Nch", kTH1F, {{nBinsNch, minNch, maxNch}});
+      histos.add("GlbTracks", "Nch", kTH1F, {{nBinsNch, minNch, maxNch}});
       histos.add("NchVsFT0C", ";T0C (#times 1/100, -3.3 < #eta < -2.1);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., 950.}, {nBinsNch, minNch, maxNch}}});
       histos.add("NchVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., 3000.}, {nBinsNch, minNch, maxNch}}});
       histos.add("NchVsFT0A", ";T0A (#times 1/100, 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsNch, minNch, maxNch}}});
@@ -541,7 +540,7 @@ struct FlowZdcTask {
     histos.fill(HIST("ZPCcvsZPCsum"), sumZPC / cfgCollisionEnergy, zdc.energyCommonZPC() / cfgCollisionEnergy);
     histos.fill(HIST("ZPAcvsZPAsum"), sumZPA / cfgCollisionEnergy, zdc.energyCommonZPA() / cfgCollisionEnergy);
 
-    histos.fill(HIST("Nch"), glbTracks);
+    histos.fill(HIST("GlbTracks"), glbTracks);
     histos.fill(HIST("ZNA"), znA);
     histos.fill(HIST("ZNC"), znC);
     histos.fill(HIST("ZPA"), zpA);
@@ -614,7 +613,6 @@ struct FlowZdcTask {
       }
     }
     const double normT0M{(ft0aAmp + ft0aAmp) / 100.};
-    histos.fill(HIST("hFT0MAmp"), normT0M);
 
     const auto& zdcread = foundBC.zdc();
     const auto cent = collision.centFT0C();
@@ -708,8 +706,6 @@ struct FlowZdcTask {
     if (!skipEvent) {
       return;
     }
-    std::vector<float> pTs;
-    std::vector<float> vecFD;
     std::vector<float> vecOneOverEff;
     auto efficiency = ccdb->getForTimeStamp<TH1F>(paTHEff.value, foundBC.timestamp());
     if (!efficiency) {
