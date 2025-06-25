@@ -254,6 +254,7 @@ struct PiDeuteronFemto {
      {"hkStar_LS_A", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
      {"hkStar_US_M", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
      {"hkStar_US_A", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+     {"hkStar_All", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
      {"hisBkgEM", "; isBkgEM;", {HistType::kTH1F, {{3, -1, 2}}}}},
     OutputObjHandlingPolicy::AnalysisObject,
     false,
@@ -779,6 +780,7 @@ struct PiDeuteronFemto {
         mQaRegistry.fill(HIST("hkStar_US_A"), kstar);
       }
     }
+  mQaRegistry.fill(HIST("hkStar_All"), kstar);
   }
 
   // ==================================================================================================================
