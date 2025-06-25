@@ -551,20 +551,21 @@ struct HfCandidateSelectorToOmegaPi {
             registry.fill(HIST("hSelctauOmegac"), 1);
           }
 
-          // Chi2Geo/NDF V0&Casc&Omegac selection
-          if ((candidate.v0Chi2OverNdf() > KfconfigurableGroup.v0Chi2OverNdfMax) || (candidate.cascChi2OverNdf() > KfconfigurableGroup.cascChi2OverNdfMax) || (candidate.omegacChi2OverNdf() > KfconfigurableGroup.omegacChi2OverNdfMax)) {
+          // Chi2Geo/NDF V0&Casc&OmegaKa selection
+          if ((candidate.chi2GeoV0() > KfconfigurableGroup.v0Chi2OverNdfMax) || (candidate.chi2GeoV0() < 0) || (candidate.chi2GeoCasc() > KfconfigurableGroup.cascChi2OverNdfMax) || (candidate.chi2GeoCasc() < 0) || (candidate.chi2GeoOmegaKa() > KfconfigurableGroup.omegaKaChi2OverNdfMax) || (candidate.chi2GeoOmegaKa() < 0)) {
             resultSelections = false;
-            registry.fill(HIST("hSelChi2GeooverNDFV0_Casc_Omegac"), 0);
+            registry.fill(HIST("hSelChi2GeooverNDFV0_Casc_OmegaKa"), 0);
           } else {
-            registry.fill(HIST("hSelChi2GeooverNDFV0_Casc_Omegac"), 1);
+            registry.fill(HIST("hSelChi2GeooverNDFV0_Casc_OmegaKa"), 1);
           }
-
-          // Chi2Topo/NDF (chi2TopoV0ToCasc chi2TopoOmegacToPv chi2TopoCascToOmegac chi2TopoCascToPv) selection  (???????????/NDF of which particle????????)
-          if ((candidate.chi2TopoV0ToCasc() > KfconfigurableGroup.chi2TopoV0ToCascMax) || (candidate.chi2TopoOmegacToPv() > KfconfigurableGroup.chi2TopoOmegacToPvMax) || (candidate.chi2TopoCascToOmegac() > KfconfigurableGroup.chi2TopoCascToOmegacMax) || (candidate.chi2TopoCascToPv() > KfconfigurableGroup.chi2TopoCascToPvMax)) {
+    
+          // Chi2Topo/NDF selection
+          if ((candidate.chi2TopoV0ToCasc() > KfconfigurableGroup.chi2TopoV0ToCascMax) || (candidate.chi2TopoV0ToCasc() < 0) || (candidate.chi2TopoKaToCasc() > KfconfigurableGroup.chi2TopoKaToCascMax) || (candidate.chi2TopoKaToCasc() < 0) || (candidate.chi2TopoCascToOmegaKa() > KfconfigurableGroup.chi2TopoCascToOmegaKaMax) || (candidate.chi2TopoCascToOmegaKa() < 0) || (candidate.chi2TopoKaToOmegaKa() > KfconfigurableGroup.chi2TopoKaToOmegaKaMax) || (candidate.chi2TopoKaToOmegaKa() < 0) ||
+              (candidate.chi2TopoOmegaKaToPv() > KfconfigurableGroup.chi2TopoOmegaKaToPvMax) || (candidate.chi2TopoOmegaKaToPv() < 0) || (candidate.chi2TopoCascToPv() > KfconfigurableGroup.chi2TopoCascToPvMax) || (candidate.chi2TopoCascToPv() < 0) || (candidate.chi2TopoKaFromOmegaKaToPv() > KfconfigurableGroup.chi2TopoKaFromOmegaKaToPvMax) || (candidate.chi2TopoKaFromOmegaKaToPv() < 0)) {
             resultSelections = false;
-            registry.fill(HIST("hSelChi2TopooverNDFV0_Casc_Omegac"), 0);
+            registry.fill(HIST("hSelChi2TopooverNDFV0_Casc_OmegaKa"), 0);
           } else {
-            registry.fill(HIST("hSelChi2TopooverNDFV0_Casc_Omegac"), 1);
+            registry.fill(HIST("hSelChi2TopooverNDFV0_Casc_OmegaKa"), 1);
           }
 
           // DecaylengthXY of Omegac&Casc&V0 selection
