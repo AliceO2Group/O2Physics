@@ -729,8 +729,8 @@ struct PiDeuteronFemto {
 
   double computeKstar(const PiDecandidate& piDecand)
   {
-    constexpr double massDe = 1.8756;
-    constexpr double massHad = 0.1395704;
+    constexpr double massDe = o2::constants::physics::MassDeuteron;
+    constexpr double massHad = o2::constants::physics::MassPiPlus;
 
     const ROOT::Math::PtEtaPhiMVector De(std::abs(piDecand.recoPtDe()), piDecand.recoEtaDe(), piDecand.recoPhiDe(), massDe);
     const ROOT::Math::PtEtaPhiMVector Had(std::abs(piDecand.recoPtPi()), piDecand.recoEtaPi(), piDecand.recoPhiPi(), massHad);
