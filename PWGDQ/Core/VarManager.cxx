@@ -967,6 +967,12 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPhiTildePP] = "rad.";
   fgVariableNames[kCosThetaRM] = "cos#it{#theta}_{RM}";
   fgVariableUnits[kCosThetaRM] = "";
+  fgVariableNames[kCosThetaStarTPC] = "cos#it{#theta}^{*}_{TPC}";
+  fgVariableUnits[kCosThetaStarTPC] = "";
+  fgVariableNames[kCosThetaStarFT0A] = "cos#it{#theta}^{*}_{FT0A}";
+  fgVariableUnits[kCosThetaStarFT0A] = "";
+  fgVariableNames[kCosThetaStarFT0C] = "cos#it{#theta}^{*}_{FT0C}";
+  fgVariableUnits[kCosThetaStarFT0C] = "";
   fgVariableNames[kCosPhiVP] = "cos#it{#varphi}_{VP}";
   fgVariableUnits[kCosPhiVP] = "";
   fgVariableNames[kPhiVP] = "#varphi_{VP} - #Psi_{2}";
@@ -1532,6 +1538,9 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kPhiPP"] = kPhiPP;
   fgVarNamesMap["kPhiTildePP"] = kPhiTildePP;
   fgVarNamesMap["kCosThetaRM"] = kCosThetaRM;
+  fgVarNamesMap["kCosThetaStarTPC"] = kCosThetaStarTPC;
+  fgVarNamesMap["kCosThetaStarFT0A"] = kCosThetaStarFT0A;
+  fgVarNamesMap["kCosThetaStarFT0C"] = kCosThetaStarFT0C;
   fgVarNamesMap["kCosPhiVP"] = kCosPhiVP;
   fgVarNamesMap["kPhiVP"] = kPhiVP;
   fgVarNamesMap["kDeltaPhiPair2"] = kDeltaPhiPair2;

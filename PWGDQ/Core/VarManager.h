@@ -670,6 +670,9 @@ class VarManager : public TObject
     kPhiPP,
     kPhiTildePP,
     kCosThetaRM,
+    kCosThetaStarTPC,
+    kCosThetaStarFT0A,
+    kCosThetaStarFT0C,
     kCosPhiVP,
     kPhiVP,
     kDeltaPhiPair2,
@@ -4840,6 +4843,29 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   if (std::isnan(VarManager::fgValues[VarManager::kCos3DeltaPhi]) == true) {
     values[kCos3DeltaPhi] = -999.;
     values[kR3EP] = -999.;
+  }
+
+  // global polarization parameters
+  bool useGlobalPolarizatiobSpinOne = fgUsedVars[kCosThetaStarTPC] || fgUsedVars[kCosThetaStarFT0A] || fgUsedVars[kCosThetaStarFT0C];
+  if (useGlobalPolarizatiobSpinOne) {
+    double BeamMomentum = TMath::Sqrt(fgCenterOfMassEnergy * fgCenterOfMassEnergy / 4 - fgMassofCollidingParticle * fgMassofCollidingParticle); // GeV
+    ROOT::Math::PxPyPzEVector Beam1(0., 0., -BeamMomentum, fgCenterOfMassEnergy / 2);
+
+    ROOT::Math::Boost boostv12{v12.BoostToCM()};
+    ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
+    ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
+
+    // using positive sign convention for the first track
+    ROOT::Math::XYZVectorF v_CM = (t1.sign() > 0 ? v1_CM : v2_CM);
+
+    ROOT::Math::XYZVector zaxisTPC = ROOT::Math::XYZVector(TMath::Cos(Psi2A), TMath::Sin(Psi2A), 0).Unit();
+    values[kCosThetaStarTPC] = v_CM.Dot(zaxisTPC);
+
+    ROOT::Math::XYZVector zaxisFT0A = ROOT::Math::XYZVector(TMath::Cos(Psi2B), TMath::Sin(Psi2B), 0).Unit();
+    values[kCosThetaStarFT0A] = v_CM.Dot(zaxisFT0A);
+
+    ROOT::Math::XYZVector zaxisFT0C = ROOT::Math::XYZVector(TMath::Cos(Psi2C), TMath::Sin(Psi2C), 0).Unit();
+    values[kCosThetaStarFT0C] = v_CM.Dot(zaxisFT0C);
   }
 
   //  kV4, kC4POI, kC4REF etc.
