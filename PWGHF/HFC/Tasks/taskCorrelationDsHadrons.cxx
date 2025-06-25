@@ -770,54 +770,53 @@ struct HfTaskCorrelationDsHadrons {
               }
             }
           }
+        }
+        // reconstructed candidate loop
+        for (const auto& candidate : groupedCandidates) {
+          if (candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
+            continue;
+          }
+          std::vector<float> outputMl = {-1., -1., -1.};
+          if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
+            }
+          } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
+            }
+          }
+          if (outputMl[0] < mlOutputPromptMin->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[0] < mlOutputPromptMax->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[2] > mlOutputBkg->at(o2::analysis::findBin(binsPtD, candidate.pt()))) {
+            continue;
+          }
 
-          // reconstructed candidate loop
-          for (const auto& candidate : groupedCandidates) {
-            if (candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
-              continue;
-            }
-            std::vector<float> outputMl = {-1., -1., -1.};
-            if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-                outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
-              }
-            } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-                outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
-              }
-            }
-            if (outputMl[0] < mlOutputPromptMin->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[0] < mlOutputPromptMax->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[2] > mlOutputBkg->at(o2::analysis::findBin(binsPtD, candidate.pt()))) {
-              continue;
-            }
-
-            if ((std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (candidate.flagMcDecayChanRec() == decayChannel)) {
-              auto prong0McPart = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>();
-              // DsToKKPi and DsToPiKK division
-              if (((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs))) {
-                // hCandidates->Fill(kCandidateStepMcReco, candidate.pt(), multiplicityReco, candidate.originMcRec());
-                if (std::abs(hfHelper.yDs(candidate)) <= yCandMax) {
-                  // hCandidates->Fill(kCandidateStepMcRecoInAcceptance, candidate.pt(), multiplicityReco, candidate.originMcRec());
-                  if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
-                    if (useHighDimHistoForEff) {
-                      registry.fill(HIST("hPtCandMcRecPrompt"), mcParticle.pt(), collision.numContrib());
-                    } else {
-                      registry.fill(HIST("hPtCandMcRecPrompt"), mcParticle.pt());
-                    }
+          if ((std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (candidate.flagMcDecayChanRec() == decayChannel)) {
+            auto prong0McPart = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>();
+            // DsToKKPi and DsToPiKK division
+            if (((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs))) {
+              // hCandidates->Fill(kCandidateStepMcReco, candidate.pt(), multiplicityReco, candidate.originMcRec());
+              if (std::abs(hfHelper.yDs(candidate)) <= yCandMax) {
+                // hCandidates->Fill(kCandidateStepMcRecoInAcceptance, candidate.pt(), multiplicityReco, candidate.originMcRec());
+                if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
+                  if (useHighDimHistoForEff) {
+                    registry.fill(HIST("hPtCandMcRecPrompt"), mcParticle.pt(), collision.numContrib());
+                  } else {
+                    registry.fill(HIST("hPtCandMcRecPrompt"), mcParticle.pt());
                   }
-                  if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
-                    if (useHighDimHistoForEff) {
-                      registry.fill(HIST("hPtCandMcRecNonPrompt"), mcParticle.pt(), collision.numContrib());
-                    } else {
-                      registry.fill(HIST("hPtCandMcRecNonPrompt"), mcParticle.pt());
-                    }
+                }
+                if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
+                  if (useHighDimHistoForEff) {
+                    registry.fill(HIST("hPtCandMcRecNonPrompt"), mcParticle.pt(), collision.numContrib());
+                  } else {
+                    registry.fill(HIST("hPtCandMcRecNonPrompt"), mcParticle.pt());
                   }
                 }
               }
             }
           }
-        } // end loop reconstructed collision
-      } // end loop generated collisions
-    }
+        }
+      } // end loop reconstructed collision
+    } // end loop generated collisions
   }
   PROCESS_SWITCH(HfTaskCorrelationDsHadrons, processMcCandEfficiency, "Process MC for calculating candidate reconstruction efficiency", false);
 
