@@ -105,14 +105,16 @@ struct HfTaskElectronWeakBoson {
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", true, "Enables processing of skimmed datasets"};
   Configurable<std::string> cfgTriggerName{"cfgTriggerName", "fGammaHighPtEMCAL", "Trigger of interest (comma separated for multiple)"};
 
-  // CCDB service object
+  // CCDB service configurations
   Configurable<std::string> cfgCCDBPath{"cfgCCDBPath", "Users/m/mpuccio/EventFiltering/OTS/", "Path to CCDB for trigger data"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // KFParticle
   Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "KF Construct Method"};
   Configurable<int> kfChisqMassMax{"kfChisqMassMax", 10, "Chi2 Max for mass reco by KF particle"};
+
+  // CCDB service object
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   struct HfElectronCandidate {
     float pt, eta, phi, energy;
