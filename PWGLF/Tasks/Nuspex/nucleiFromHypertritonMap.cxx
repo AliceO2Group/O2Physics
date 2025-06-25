@@ -79,17 +79,17 @@ struct nucleiFromHypertritonMap {
 
   void init(InitContext const&)
   {
-    registryMC.add("hypertritonPtgen", "hypertritonPtGen", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
+    registryMC.add("hypertritonPtGen", "hypertritonPtGen", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
     if (saveHelium) {
       registryMC.add("he3SecPtRec_from_hypertriton", "he3SecPtRec_from_hypertriton", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
-      registryMC.add("hyperHe4Ptgen", "hyperHe4PtGen", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
+      registryMC.add("hyperHe4PtGen", "hyperHe4PtGen", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
       registryMC.add("he3SecPtRec_from_hyperHe4", "he3SecPtRec_from_hyperHe4", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
       registryMC.add("he3PtRec", "he3PtRec", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
       registryMC.add("he3PtGen", "he3PtGen", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
     } else {
       registryMC.add("deutSecPtRec_from_hypertriton", "deutSecPtRec_from_hypertriton", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
       registryMC.add("deutPtRec", "deutPtRec", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
-      registryMC.add("deutPtgen", "deutPtGen", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
+      registryMC.add("deutPtGen", "deutPtGen", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
     }
   }
 
@@ -107,21 +107,21 @@ struct nucleiFromHypertritonMap {
         if (mcparticle.pdgCode() == AntiHypertritonPDG) {
           for (auto& daughter : mcparticle.daughters_as<aod::McParticles>()) {
             if (daughter.pdgCode() == selectedPDG) {
-              registryMC.fill(HIST("hypertritonPtgen"), mcparticle.pt());
+              registryMC.fill(HIST("hypertritonPtGen"), mcparticle.pt());
             }
           }
         }
         if (mcparticle.pdgCode() == AntiHyperHelium4PDG) {
           for (auto& daughter : mcparticle.daughters_as<aod::McParticles>()) {
             if (daughter.pdgCode() == selectedPDG) {
-              registryMC.fill(HIST("hyperHe4Ptgen"), mcparticle.pt());
+              registryMC.fill(HIST("hyperHe4PtGen"), mcparticle.pt());
             }
           }
         }
-        if (mcparticle.pdgCode() == AntihePDG) {
+        if (mcparticle.pdgCode() == AntihePDG && mcparticle.isPhysicalPrimary()) {
           registryMC.fill(HIST("he3PtGen"), mcparticle.pt());
         }
-        if (mcparticle.pdgCode() == AntideuteronPDG) {
+        if (mcparticle.pdgCode() == AntideuteronPDG && mcparticle.isPhysicalPrimary()) {
           registryMC.fill(HIST("deutPtGen"), mcparticle.pt());
         }
       }
@@ -148,10 +148,10 @@ struct nucleiFromHypertritonMap {
           track.itsChi2NCl() > 36.f) {
         continue;
       }
-      if (mcparticle.pdgCode() == AntideuteronPDG) {
+      if (mcparticle.pdgCode() == AntideuteronPDG && mcparticle.isPhysicalPrimary()) {
         registryMC.fill(HIST("deutPtRec"), track.pt());
       }
-      if (mcparticle.pdgCode() == AntihePDG) {
+      if (mcparticle.pdgCode() == AntihePDG && mcparticle.isPhysicalPrimary()) {
         registryMC.fill(HIST("he3PtRec"), 2 * track.pt());
       }
 
