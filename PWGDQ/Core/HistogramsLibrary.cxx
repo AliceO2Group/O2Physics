@@ -194,6 +194,18 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     if (subGroupStr.Contains("occupancy")) {
       hm->AddHistogram(histClass, "ITStrackOccupancy", "ITStrackOccupancy", false, 200, 0.0, 20000.0, VarManager::kTrackOccupancyInTimeRange);
       hm->AddHistogram(histClass, "Ft0cOccupancy", "Ft0cOccupancy", false, 200, 0.0, 20000.0, VarManager::kFT0COccupancyInTimeRange);
+      if (subGroupStr.Contains("qvector")) {
+        hm->AddHistogram(histClass, "Psi2A_ITStrackOccupancy", "", false, 200, 0.0, 20000.0, VarManager::kTrackOccupancyInTimeRange, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kPsi2A);
+        hm->AddHistogram(histClass, "Psi2B_ITStrackOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kTrackOccupancyInTimeRange, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kPsi2B);
+        hm->AddHistogram(histClass, "Psi2C_ITStrackOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kTrackOccupancyInTimeRange, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kPsi2C);
+        hm->AddHistogram(histClass, "Psi2APOS_ITStrackOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kTrackOccupancyInTimeRange, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kPsi2APOS);
+        hm->AddHistogram(histClass, "Psi2ANEG_ITStrackOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kTrackOccupancyInTimeRange, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kPsi2ANEG);
+        hm->AddHistogram(histClass, "Psi2A_Ft0cOccupancy", "", false, 200, 0.0, 20000.0, VarManager::kFT0COccupancyInTimeRange, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kPsi2A);
+        hm->AddHistogram(histClass, "Psi2B_Ft0cOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kFT0COccupancyInTimeRange, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kPsi2B);
+        hm->AddHistogram(histClass, "Psi2C_Ft0cOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kFT0COccupancyInTimeRange, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kPsi2C);
+        hm->AddHistogram(histClass, "Psi2APOS_Ft0cOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kFT0COccupancyInTimeRange, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kPsi2APOS);
+        hm->AddHistogram(histClass, "Psi2ANEG_Ft0cOccupancy", "", true, 200, 0.0, 20000.0, VarManager::kFT0COccupancyInTimeRange, 100, -TMath::Pi() / 2, TMath::Pi() / 2, VarManager::kPsi2ANEG);
+      }
     }
     if (subGroupStr.Contains("mc")) {
       hm->AddHistogram(histClass, "MCVtxX_VtxX", "Vtx X (MC vs rec)", false, 100, -0.5, 0.5, VarManager::kVtxX, 100, -0.5, 0.5, VarManager::kMCVtxX);
@@ -242,6 +254,10 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
 
       hm->AddHistogram(histClass, "Q2X0A", "", false, 500, -10.0, 10.0, VarManager::kQ2X0A);
       hm->AddHistogram(histClass, "Q2Y0A", "", false, 500, -10.0, 10.0, VarManager::kQ2Y0A);
+      hm->AddHistogram(histClass, "Q2X0APOS", "", false, 500, -10.0, 10.0, VarManager::kQ2X0APOS);
+      hm->AddHistogram(histClass, "Q2Y0APOS", "", false, 500, -10.0, 10.0, VarManager::kQ2Y0APOS);
+      hm->AddHistogram(histClass, "Q2X0ANEG", "", false, 500, -10.0, 10.0, VarManager::kQ2X0ANEG);
+      hm->AddHistogram(histClass, "Q2Y0ANEG", "", false, 500, -10.0, 10.0, VarManager::kQ2Y0ANEG);
       hm->AddHistogram(histClass, "Q2X0B", "", false, 500, -10.0, 10.0, VarManager::kQ2X0B);
       hm->AddHistogram(histClass, "Q2Y0B", "", false, 500, -10.0, 10.0, VarManager::kQ2Y0B);
       hm->AddHistogram(histClass, "Q2X0C", "", false, 500, -10.0, 10.0, VarManager::kQ2X0C);
@@ -285,6 +301,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "Q3X0A_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kQ3X0A);
       hm->AddHistogram(histClass, "Q3Y0A_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kQ3Y0A);
       hm->AddHistogram(histClass, "Psi2A", "", false, 100, -2.0, 2.0, VarManager::kPsi2A);
+      hm->AddHistogram(histClass, "Psi2APOS", "", false, 100, -2.0, 2.0, VarManager::kPsi2APOS);
+      hm->AddHistogram(histClass, "Psi2ANEG", "", false, 100, -2.0, 2.0, VarManager::kPsi2ANEG);
       hm->AddHistogram(histClass, "Psi2B", "", false, 100, -2.0, 2.0, VarManager::kPsi2B);
       hm->AddHistogram(histClass, "Psi2C", "", false, 100, -2.0, 2.0, VarManager::kPsi2C);
       hm->AddHistogram(histClass, "Psi2A_CentFT0C", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 100, -2.0, 2.0, VarManager::kPsi2A);
@@ -1017,6 +1035,11 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
           hm->AddHistogram(histClass, "cosThetaRM", "", false, 100, -1., 1., VarManager::kCosThetaRM);
           hm->AddHistogram(histClass, "Mass_Pt_CosThetaRM", "", false, 200, 1.0, 5.0, VarManager::kMass, 40, 0.0, 20.0, VarManager::kPt, 20, -1., 1., VarManager::kCosThetaRM);
         }
+      }
+      if (subGroupStr.Contains("globalpolarization")) {
+        hm->AddHistogram(histClass, "CosThetaStarTPC", "", false, 100, -1.0, 1.0, VarManager::kCosThetaStarTPC);
+        hm->AddHistogram(histClass, "CosThetaStarFT0A", "", false, 100, -1.0, 1.0, VarManager::kCosThetaStarFT0A);
+        hm->AddHistogram(histClass, "CosThetaStarFT0C", "", false, 100, -1.0, 1.0, VarManager::kCosThetaStarFT0C);
       }
       if (subGroupStr.Contains("upsilon")) {
         hm->AddHistogram(histClass, "MassUpsilon_Pt", "", false, 500, 7.0, 12.0, VarManager::kMass, 400, 0.0, 40.0, VarManager::kPt);
