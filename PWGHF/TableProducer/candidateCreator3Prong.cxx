@@ -149,7 +149,7 @@ struct HfCandidateCreator3Prong {
     const int nProcessesCollisions = std::accumulate(processesCollisions.begin(), processesCollisions.end(), 0);
 
     std::array<bool, 5> processesUpc = {doprocessPvRefitWithDCAFitterNUpc, doprocessNoPvRefitWithDCAFitterNUpc, doprocessPvRefitWithKFParticleUpc, doprocessNoPvRefitWithKFParticleUpc, doprocessCollisionsUpc};
-    const int nprocessesUpc = std::accumulate(processesUpc.begin(), processesUpc.end(), 0);
+    const int nProcessesUpc = std::accumulate(processesUpc.begin(), processesUpc.end(), 0);
 
     if (nProcessesCollisions > 1) {
       LOGP(fatal, "At most one process function for collision monitoring can be enabled at a time.");
@@ -164,8 +164,11 @@ struct HfCandidateCreator3Prong {
       if ((doprocessPvRefitWithDCAFitterNCentFT0M || doprocessNoPvRefitWithDCAFitterNCentFT0M || doprocessPvRefitWithKFParticleCentFT0M || doprocessNoPvRefitWithKFParticleCentFT0M) && !doprocessCollisionsCentFT0M) {
         LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisionsCentFT0M\"?");
       }
+      if ((doprocessPvRefitWithDCAFitterNUpc || doprocessNoPvRefitWithDCAFitterNUpc || doprocessPvRefitWithKFParticleUpc || doprocessNoPvRefitWithKFParticleUpc) && !doprocessCollisionsUpc) {
+        LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisionsUpc\"?");
+      }
     }
-    if (nprocessesUpc > 0 && isRun2) {
+    if (nProcessesUpc > 0 && isRun2) {
       LOGP(fatal, "Process function for UPC is only available in Run 3!");
     }
     std::array<bool, 4> creationFlags = {createDplus, createDs, createLc, createXic};
@@ -242,7 +245,7 @@ struct HfCandidateCreator3Prong {
   }
 
   template <bool doPvRefit, bool applyUpcSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll, typename Cand, typename BCsType>
-  void runCreator3ProngWithDCAFitterN(Coll const&, 
+  void runCreator3ProngWithDCAFitterN(Coll const&,
                                       Cand const& rowsTrackIndexProng3,
                                       TracksWCovExtraPidPiKaPr const&,
                                       BCsType const& bcs)

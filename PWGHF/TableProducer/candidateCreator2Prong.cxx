@@ -125,7 +125,7 @@ struct HfCandidateCreator2Prong {
     std::array<bool, 4> processesCollisions = {doprocessCollisions, doprocessCollisionsCentFT0C, doprocessCollisionsCentFT0M, doprocessCollisionsUpc};
     const int nProcessesCollisions = std::accumulate(processesCollisions.begin(), processesCollisions.end(), 0);
     std::array<bool, 5> processesUpc = {doprocessPvRefitWithDCAFitterNUpc, doprocessNoPvRefitWithDCAFitterNUpc, doprocessPvRefitWithKFParticleUpc, doprocessNoPvRefitWithKFParticleUpc, doprocessCollisionsUpc};
-    const int nprocessesUpc = std::accumulate(processesUpc.begin(), processesUpc.end(), 0);
+    const int nProcessesUpc = std::accumulate(processesUpc.begin(), processesUpc.end(), 0);
     if (nProcessesCollisions > 1) {
       LOGP(fatal, "At most one process function for collision monitoring can be enabled at a time.");
     }
@@ -139,8 +139,11 @@ struct HfCandidateCreator2Prong {
       if ((doprocessPvRefitWithDCAFitterNCentFT0M || doprocessNoPvRefitWithDCAFitterNCentFT0M || doprocessPvRefitWithKFParticleCentFT0M || doprocessNoPvRefitWithKFParticleCentFT0M) && !doprocessCollisionsCentFT0M) {
         LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisionsCentFT0M\"?");
       }
+      if ((doprocessPvRefitWithDCAFitterNUpc || doprocessNoPvRefitWithDCAFitterNUpc || doprocessPvRefitWithKFParticleUpc || doprocessNoPvRefitWithKFParticleUpc) && !doprocessCollisionsUpc) {
+        LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisionsUpc\"?");
+      }
     }
-    if (nprocessesUpc > 0 && isRun2) {
+    if (nProcessesUpc > 0 && isRun2) {
       LOGP(fatal, "Process function for UPC is only available in Run 3!");
     }
 
@@ -764,7 +767,7 @@ struct HfCandidateCreator2Prong {
   void processCollisionsUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                             aod::BcFullInfos const& bcs,
                             aod::FT0s const& /*ft0s*/,
-                            aod::FV0As const& /*fv0as*/, 
+                            aod::FV0As const& /*fv0as*/,
                             aod::FDDs const& /*fdds*/,
                             aod::Zdcs const& /*zdcs*/)
   {
