@@ -791,7 +791,6 @@ struct HfTaskCorrelationDsHadrons {
                                      aod::TracksWMc const&)
   {
     /// Gen loop
-    float multiplicity = -1.;
     for (const auto& mcParticle : mcParticles) {
       // generated candidates
       if ((std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (mcParticle.flagMcDecayChanGen() == decayChannel)) {
