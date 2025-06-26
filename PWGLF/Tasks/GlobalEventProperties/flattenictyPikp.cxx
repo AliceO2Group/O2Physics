@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file FlattenictyPikp.cxx
+/// \file flattenictyPikp.cxx
 /// \author Gyula Bencedi, gyula.bencedi@cern.ch
 /// \brief Task to produce pion, kaon, proton high-pT
 ///        distributions as a function of charged-particle flattenicity
