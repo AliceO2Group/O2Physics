@@ -10,45 +10,43 @@
 // or submit itself to any jurisdiction.
 
 // C++/ROOT includes.
-#include <chrono>
-#include <string>
-#include <vector>
 #include <TComplex.h>
 #include <TH1F.h>
 #include <TH2D.h>
 #include <TMath.h>
 #include <TVector2.h>
 
-// o2Physics includes.
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StaticFor.h"
+#include <chrono>
+#include <string>
+#include <vector>
 
-#include "Common/DataModel/Qvectors.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
+// o2Physics includes.
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StaticFor.h"
+#include "Framework/runDataProcessing.h"
 
 // o2 includes.
 
 using namespace o2;
 using namespace o2::framework;
 
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected,
-                               aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::QvectorFT0CVecs, aod::QvectorTPCposVecs, aod::QvectorTPCnegVecs, aod::QvectorFT0Cs>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::QvectorFT0CVecs, aod::QvectorTPCposVecs, aod::QvectorTPCnegVecs>;
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension>;
 using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
-struct flowEseCorre
-{
+struct flowEseCorre {
   HistogramRegistry histosQA{"histosQA", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2}, "Modulation of interest"};
@@ -68,11 +66,11 @@ struct flowEseCorre
   ConfigurableAxis cfgaxiscos{"cfgaxiscos", {102, -1.02, 1.02}, ""};
   ConfigurableAxis cfgaxispt{"cfgaxispt", {100, 0, 10}, ""};
   ConfigurableAxis cfgaxisCentMerged{"cfgaxisCentMerged", {20, 0, 100}, ""};
-  ConfigurableAxis cfgaxisMultnum{"cfgaxisMultnum", {300, 0, 3000}, ""};
+  ConfigurableAxis cfgaxisMultnum{"cfgaxisMultnum", {300, 0, 2700}, ""};
 
   EventPlaneHelper helperEP;
 
-  void init(InitContext const &)
+  void init(InitContext const&)
   {
     AxisSpec axisCent{cfgaxisCent, "centrality"};
     AxisSpec axisQvec{cfgaxisQvec, "Q"};
@@ -92,22 +90,18 @@ struct flowEseCorre
   }
 
   template <typename CollType>
-  bool SelEvent(const CollType &collision)
+  bool SelEvent(const CollType& collision)
   {
-    if (!collision.sel8())
-    {
+    if (!collision.sel8()) {
       return 0;
     }
-    if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
-    {
+    if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return 0;
     }
-    if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup))
-    {
+    if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return 0;
     }
-    if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))
-    {
+    if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return 0;
     }
 
@@ -140,10 +134,9 @@ struct flowEseCorre
   }
 
   template <typename CollType>
-  void fillHistosQvec(const CollType &collision, int nmode)
+  void fillHistosQvec(const CollType& collision, int nmode)
   {
-    if (nmode == 2)
-    {
+    if (nmode == 2) {
       histosQA.fill(HIST("histQvecV2"), collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], collision.centFT0C());
       histosQA.fill(HIST("histEvtPlV2"), helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), collision.centFT0C());
       histosQA.fill(HIST("histQvecRes_SigRefAV2"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), collision.centFT0C());
@@ -152,42 +145,36 @@ struct flowEseCorre
   }
 
   template <typename CollType, typename TrackType>
-  void fillHistosFlow(const CollType &collision, const TrackType &track, int nmode)
+  void fillHistosFlow(const CollType& collision, const TrackType& track, int nmode)
   {
-    if (collision.sumAmplFT0C() < 1e-4)
-    {
+    if (collision.sumAmplFT0C() < 1e-4) {
       return;
     }
-    for (auto &trk : track)
-    {
-      if (!SelTrack(trk))
-      {
+    for (auto& trk : track) {
+      if (!SelTrack(trk)) {
         continue;
       }
-      if (nmode == 2)
-      {
+      if (nmode == 2) {
         histosQA.fill(HIST("histCosDetV2"), collision.centFT0C(), trk.pt(),
                       std::cos(static_cast<float>(nmode) * (trk.phi() - helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode))));
       }
     }
   }
 
-  void process(MyCollisions::iterator const &collision, MyTracks const &tracks)
+  void process(MyCollisions::iterator const& collision, MyTracks const& tracks)
   {
-    if (!SelEvent(collision))
-    {
+    if (!SelEvent(collision)) {
       return;
     }
-    for (std::size_t i = 0; i < cfgnMods->size(); i++)
-    {
+    for (std::size_t i = 0; i < cfgnMods->size(); i++) {
       fillHistosQvec(collision, cfgnMods->at(i));
       fillHistosFlow(collision, tracks, cfgnMods->at(i));
     }
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const &cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-      adaptAnalysisTask<qVectorstutorial>(cfgc)};
+    adaptAnalysisTask<flowEseCorre>(cfgc)};
 }
