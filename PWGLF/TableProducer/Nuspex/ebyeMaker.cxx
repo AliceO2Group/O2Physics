@@ -64,6 +64,7 @@ namespace
 constexpr int kNpart = 2;
 constexpr float trackSels[12]{/* 60, */ 80, 100, 2, 3, /* 4,  */ 0.05, 0.1, /* 0.15,  */ 0.5, 1, /* 1.5, */ 2, 3 /* , 4 */, 2, 3, /*, 4 */};
 constexpr float dcaSels[3]{10., 10., 10.};
+constexpr float trklSels[3]{1.2, 0.6, 0.7};
 constexpr double betheBlochDefault[kNpart][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}, {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
 constexpr double betheBlochDefaultITS[6]{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32};
 constexpr double estimatorsCorrelationCoef[2]{-0.669108, 1.04489};
@@ -76,6 +77,7 @@ static const std::vector<std::string> particleNamesPar{"p", "d"};
 static const std::vector<std::string> trackSelsNames{"tpcClsMid", "tpcClsTight", "chi2TpcTight", "chi2TpcMid", "dcaxyTight", "dcaxyMid", "dcazTight", "dcazMid", "tpcNsigmaTight", "tpcNsigmaMid", "itsNsigmaTight", "itsNsigmaMid"};
 static const std::vector<std::string> dcaSelsNames{"dcaxy", "dcaz", "dca"};
 static const std::vector<std::string> particleName{"p"};
+static const std::vector<std::string> trklSelsNames{"etaMaxTot", "etaMaxInner", "etaMinOuter"};
 std::array<std::shared_ptr<TH3>, kNpart> tofMass;
 void momTotXYZ(std::array<float, 3>& momA, std::array<float, 3> const& momB, std::array<float, 3> const& momC)
 {
@@ -248,7 +250,6 @@ struct EbyeMaker {
   Configurable<float> etaMaxV0dau{"etaMaxV0dau", 0.8f, "maximum eta V0 daughters"};
   Configurable<float> outerPIDMin{"outerPIDMin", -4.f, "minimum outer PID"};
 
-  Configurable<bool> storeTracksNum{"storeTracksNum", false, "store the number of tracks instead of tracklets"};
   Configurable<std::string> genName{"genname", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
 
   Configurable<uint8_t> triggerCut{"triggerCut", 0x0, "trigger cut to select"};
@@ -307,6 +308,7 @@ struct EbyeMaker {
   Configurable<float> antidPtItsClsSizeCut{"antidPtItsClsSizeCut", 10.f, "pt for cluster size cut for antideuterons"};
 
   Configurable<LabeledArray<float>> cfgTrackSels{"cfgTrackSels", {trackSels, 1, 12, particleName, trackSelsNames}, "Track selections"};
+  Configurable<LabeledArray<float>> cfgTrklSels{"cfgTrklSels", {trklSels, 1, 3, particleName, trklSelsNames}, "Tracklet selections (eta)"};
 
   std::array<float, kNpart> ptMin;
   std::array<float, kNpart> ptTof;
@@ -673,13 +675,12 @@ struct EbyeMaker {
     std::array<float, 2> dcaInfo;
     uint8_t nTracklets[2]{0, 0};
     uint8_t nTracks{0};
-    const float tklEtaCuts[]{1.2, 0.6, 0.7};
     for (const auto& track : tracks) {
 
-      if (track.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet && std::abs(track.eta()) < tklEtaCuts[0]) { // tracklet
-        if (std::abs(track.eta()) < tklEtaCuts[1])
+      if (track.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet && std::abs(track.eta()) < cfgTrklSels->get("etaMaxTot")) { // tracklet
+        if (std::abs(track.eta()) < cfgTrklSels->get("etaMaxInner"))
           nTracklets[0]++;
-        else if (std::abs(track.eta()) > tklEtaCuts[2])
+        else if (std::abs(track.eta()) > cfgTrklSels->get("etaMinOuter"))
           nTracklets[1]++;
       }
 
@@ -1251,7 +1252,7 @@ struct EbyeMaker {
       if (triggerCut != 0x0 && (trigger & triggerCut) != triggerCut) {
         continue;
       }
-      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), trigger, storeTracksNum ? nTracksColl : nTrackletsColl, cV0M);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), trigger, nTrackletsColl, cV0M, nTracksColl);
 
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
@@ -1443,7 +1444,7 @@ struct EbyeMaker {
       fillMcEvent(collision, tracks, v0TableThisCollision, cV0M, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
-      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, storeTracksNum ? nTracksColl : nTrackletsColl, cV0M);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, nTrackletsColl, cV0M, nTracksColl);
 
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         int selMask = -1;
