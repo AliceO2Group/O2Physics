@@ -325,7 +325,7 @@ struct HfFragmentationFunction {
 
           // reflection information for storage: D0 = +1, D0bar = -1, neither = 0
           int matchedFrom = 0;
-          int decayChannel = 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;
+          int decayChannel = o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;
           int selectedAs = 0;
 
           if (mcdd0cand.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level
@@ -416,7 +416,7 @@ struct HfFragmentationFunction {
 
           // reflection information for storage: D0 = +1, D0bar = -1, neither = 0
           int matchedFrom = 0;
-          int decayChannel = 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;
+          int decayChannel = o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;
           int selectedAs = 0;
 
           if (mcdd0cand.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level

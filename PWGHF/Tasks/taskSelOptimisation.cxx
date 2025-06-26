@@ -14,15 +14,15 @@
 ///
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
-#include <algorithm>
-#include <vector>
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include <algorithm>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -272,7 +272,7 @@ struct HfSelOptimisation {
       bool isPrompt = false, isNonPrompt = false, isBkg = false;
       for (int iDecay{0}; iDecay < n2Prong; ++iDecay) {
         if (TESTBIT(cand2Prong.hfflag(), iDecay)) {
-          if (std::abs(cand2Prong.flagMcMatchRec()) == BIT(iDecay)) {
+          if (std::abs(cand2Prong.flagMcMatchRec()) == BIT(iDecay)) { // FIXME: Migrate to DecayChannelMain
             if (cand2Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
               isPrompt = true;
               switch (iDecay) {
@@ -328,7 +328,7 @@ struct HfSelOptimisation {
       bool isPrompt = false, isNonPrompt = false, isBkg = false;
       for (int iDecay{0}; iDecay < n3Prong; ++iDecay) {
         if (TESTBIT(cand3Prong.hfflag(), iDecay)) {
-          if (std::abs(cand3Prong.flagMcMatchRec()) == BIT(iDecay)) {
+          if (std::abs(cand3Prong.flagMcMatchRec()) == BIT(iDecay)) { // FIXME: Migrate to DecayChannelMain
             if (cand3Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
               isPrompt = true;
               switch (iDecay) {

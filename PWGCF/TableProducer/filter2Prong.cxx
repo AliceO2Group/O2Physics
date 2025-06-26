@@ -147,7 +147,7 @@ struct Filter2Prong {
     // The main filter outputs the primary MC particles. Here we just resolve the daughter indices that are needed for the efficiency matching.
     for (const auto& r : cfmcparticles) {
       const auto& mcParticle = r.mcParticle_as<HFMCTrack>();
-      if ((mcParticle.flagMcMatchGen() & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) == 0 || mcParticle.daughtersIds().size() != 2) {
+      if ((mcParticle.flagMcMatchGen() & (o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)) == 0 || mcParticle.daughtersIds().size() != 2) {
         output2ProngMcParts(-1, -1, aod::cf2prongtrack::Generic2Prong);
         continue;
       }
