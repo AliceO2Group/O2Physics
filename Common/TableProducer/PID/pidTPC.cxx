@@ -18,10 +18,10 @@
 /// \brief  Task to produce PID tables for TPC split for each particle.
 ///         Only the tables for the mass hypotheses requested are filled, and only for the requested table size ("Full" or "Tiny"). The others are sent empty.
 ///
-#include <utility>
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 // ROOT includes
 #include "TFile.h"
@@ -29,21 +29,23 @@
 #include "TSystem.h"
 
 // O2 includes
+#include "MetadataHelper.h"
+#include "TableHelper.h"
+#include "pidTPCBase.h"
+
+#include "Common/Core/PID/TPCPIDResponse.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Tools/ML/model.h"
+
 #include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "CCDB/CcdbApi.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/Core/PID/TPCPIDResponse.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/EventSelection.h"
-#include "TableHelper.h"
-#include "Tools/ML/model.h"
-#include "pidTPCBase.h"
-#include "MetadataHelper.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -155,8 +157,10 @@ struct tpcPid {
   void init(o2::framework::InitContext& initContext)
   {
     // Protection for process flags
-    if ((doprocessStandard && doprocessMcTuneOnData) || (!doprocessStandard && !doprocessMcTuneOnData)) {
-      LOG(fatal) << "pid-tpc must have only one of the options 'processStandard' OR 'processMcTuneOnData' enabled. Please check your configuration.";
+    if (!((doprocessStandard && !doprocessStandard2 && !doprocessMcTuneOnData) ||
+          (!doprocessStandard && doprocessStandard2 && !doprocessMcTuneOnData) ||
+          (!doprocessStandard && !doprocessStandard2 && doprocessMcTuneOnData))) {
+      LOG(fatal) << "pid-tpc must have only one of the options 'processStandard', 'processStandard2', 'processMcTuneOnData' enabled. Please check your configuration.";
     }
     response = new o2::pid::tpc::Response();
     // Checking the tables are requested in the workflow and enabling them
@@ -552,6 +556,98 @@ struct tpcPid {
   Partition<TrksMC> mcnotTPCStandaloneTracks = (aod::track::tpcNClsFindable > static_cast<uint8_t>(0)) && ((aod::track::itsClusterSizes > static_cast<uint32_t>(0)) || (aod::track::trdPattern > static_cast<uint8_t>(0)) || (aod::track::tofExpMom > 0.f && aod::track::tofChi2 > 0.f)); // To count number of tracks for use in NN array
   Partition<TrksMC> mctracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
 
+  void processStandard2(Coll const& collisions, Trks const& tracks, aod::DEdxsCorrected const& dedxscorrected, aod::BCsWithTimestamps const& bcs)
+  {
+    const uint64_t outTable_size = tracks.size();
+    const uint64_t dedxscorrected_size = dedxscorrected.size();
+
+    if (dedxscorrected_size != outTable_size) {
+      LOG(fatal) << "Size of dEdx corrected table does not match size of tracks! dEdx size: " << dedxscorrected_size << ", tracks size: " << outTable_size;
+    }
+
+    auto reserveTable = [&outTable_size](const Configurable<int>& flag, auto& table) {
+      if (flag.value != 1) {
+        return;
+      }
+      table.reserve(outTable_size);
+    };
+
+    // Prepare memory for enabled tables
+    reserveTable(pidFullEl, tablePIDFullEl);
+    reserveTable(pidFullMu, tablePIDFullMu);
+    reserveTable(pidFullPi, tablePIDFullPi);
+    reserveTable(pidFullKa, tablePIDFullKa);
+    reserveTable(pidFullPr, tablePIDFullPr);
+    reserveTable(pidFullDe, tablePIDFullDe);
+    reserveTable(pidFullTr, tablePIDFullTr);
+    reserveTable(pidFullHe, tablePIDFullHe);
+    reserveTable(pidFullAl, tablePIDFullAl);
+
+    reserveTable(pidTinyEl, tablePIDTinyEl);
+    reserveTable(pidTinyMu, tablePIDTinyMu);
+    reserveTable(pidTinyPi, tablePIDTinyPi);
+    reserveTable(pidTinyKa, tablePIDTinyKa);
+    reserveTable(pidTinyPr, tablePIDTinyPr);
+    reserveTable(pidTinyDe, tablePIDTinyDe);
+    reserveTable(pidTinyTr, tablePIDTinyTr);
+    reserveTable(pidTinyHe, tablePIDTinyHe);
+    reserveTable(pidTinyAl, tablePIDTinyAl);
+
+    const uint64_t tracksForNet_size = (skipTPCOnly) ? notTPCStandaloneTracks.size() : tracksWithTPC.size();
+    std::vector<float> network_prediction;
+
+    if (useNetworkCorrection) {
+      network_prediction = createNetworkPrediction(collisions, tracks, bcs, tracksForNet_size);
+    }
+
+    uint64_t count_tracks = 0;
+    uint64_t count_tracks2 = 0;
+
+    for (auto const& trk : tracks) {
+      // Loop on Tracks
+
+      const auto& bc = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).bc_as<aod::BCsWithTimestamps>() : bcs.begin();
+      auto dedx_corr = dedxscorrected.iteratorAt(count_tracks2);
+      count_tracks2++;
+      if (useCCDBParam && ccdbTimestamp.value == 0 && !ccdb->isCachedObjectValid(ccdbPath.value, bc.timestamp())) { // Updating parametrisation only if the initial timestamp is 0
+        if (recoPass.value == "") {
+          LOGP(info, "Retrieving latest TPC response object for timestamp {}:", bc.timestamp());
+        } else {
+          LOGP(info, "Retrieving TPC Response for timestamp {} and recoPass {}:", bc.timestamp(), recoPass.value);
+        }
+        response = ccdb->getSpecific<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp(), metadata);
+        headers = ccdbApi.retrieveHeaders(ccdbPath.value, metadata, bc.timestamp());
+        if (!response) {
+          LOGP(warning, "!! Could not find a valid TPC response object for specific pass name {}! Falling back to latest uploaded object.", metadata["RecoPassName"]);
+          response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp());
+          headers = ccdbApi.retrieveHeaders(ccdbPath.value, nullmetadata, bc.timestamp());
+          if (!response) {
+            LOGP(fatal, "Could not find ANY TPC response object for the timestamp {}!", bc.timestamp());
+          }
+        }
+        LOG(info) << "Successfully retrieved TPC PID object from CCDB for timestamp " << bc.timestamp() << ", period " << headers["LPMProductionTag"] << ", recoPass " << headers["RecoPassName"];
+        response->PrintAll();
+      }
+      auto makePidTablesDefault = [&trk, &dedx_corr, &collisions, &network_prediction, &count_tracks, &tracksForNet_size, this](const int flagFull, auto& tableFull, const int flagTiny, auto& tableTiny, const o2::track::PID::ID pid) {
+        makePidTables(flagFull, tableFull, flagTiny, tableTiny, pid, dedx_corr.tpcSignalCorrected(), trk, collisions, network_prediction, count_tracks, tracksForNet_size);
+      };
+
+      makePidTablesDefault(pidFullEl, tablePIDFullEl, pidTinyEl, tablePIDTinyEl, o2::track::PID::Electron);
+      makePidTablesDefault(pidFullMu, tablePIDFullMu, pidTinyMu, tablePIDTinyMu, o2::track::PID::Muon);
+      makePidTablesDefault(pidFullPi, tablePIDFullPi, pidTinyPi, tablePIDTinyPi, o2::track::PID::Pion);
+      makePidTablesDefault(pidFullKa, tablePIDFullKa, pidTinyKa, tablePIDTinyKa, o2::track::PID::Kaon);
+      makePidTablesDefault(pidFullPr, tablePIDFullPr, pidTinyPr, tablePIDTinyPr, o2::track::PID::Proton);
+      makePidTablesDefault(pidFullDe, tablePIDFullDe, pidTinyDe, tablePIDTinyDe, o2::track::PID::Deuteron);
+      makePidTablesDefault(pidFullTr, tablePIDFullTr, pidTinyTr, tablePIDTinyTr, o2::track::PID::Triton);
+      makePidTablesDefault(pidFullHe, tablePIDFullHe, pidTinyHe, tablePIDTinyHe, o2::track::PID::Helium3);
+      makePidTablesDefault(pidFullAl, tablePIDFullAl, pidTinyAl, tablePIDTinyAl, o2::track::PID::Alpha);
+
+      if (trk.hasTPC() && (!skipTPCOnly || trk.hasITS() || trk.hasTRD() || trk.hasTOF())) {
+        count_tracks++; // Increment network track counter only if track has TPC, and (not skipping TPConly) or (is not TPConly)
+      }
+    }
+  }
+  PROCESS_SWITCH(tpcPid, processStandard2, "Creating PID tables with Corrected dEdx", false);
   void processMcTuneOnData(CollMC const& collisionsMc, TrksMC const& tracksMc, aod::BCsWithTimestamps const& bcs, aod::McParticles const&)
   {
     gRandom->SetSeed(0); // Ensure unique seed from UUID for each process call
