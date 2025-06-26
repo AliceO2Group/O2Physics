@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file flattenictyPiKP.cxx
+/// \file FlattenictyPikp.cxx
 /// \author Gyula Bencedi, gyula.bencedi@cern.ch
 /// \brief Task to produce pion, kaon, proton high-pT
 ///        distributions as a function of charged-particle flattenicity
@@ -188,7 +188,7 @@ std::array<std::shared_ptr<THnSparse>, NpartChrg> hThPtNsigmaTPC{};
 std::array<std::shared_ptr<TH2>, NpartChrg> hPtNsigmaTOF{};
 std::array<std::shared_ptr<TH2>, NpartChrg> hPtNsigmaTPCTOF{};
 
-struct FlattenictyPiKP {
+struct FlattenictyPikp {
 
   HistogramRegistry flatchrg{"flatchrg", {}, OutputObjHandlingPolicy::AnalysisObject, true, false};
   OutputObj<THashList> listEfficiency{"Efficiency"};
@@ -1508,7 +1508,7 @@ struct FlattenictyPiKP {
   {
     processData<Colls>(collisions, tracks, v0s, bcs);
   }
-  PROCESS_SWITCH(FlattenictyPiKP, processFlat, "process Flat data inclusive", true);
+  PROCESS_SWITCH(FlattenictyPikp, processFlat, "process Flat data inclusive", true);
 
   template <bool fillHist = true, typename McPart>
   float fillFlatMC(McPart const& mcparts)
@@ -1840,7 +1840,7 @@ struct FlattenictyPiKP {
       });
     }
   }
-  PROCESS_SWITCH(FlattenictyPiKP, processSgnLoss, "process to calcuate signal/event lossses", false);
+  PROCESS_SWITCH(FlattenictyPikp, processSgnLoss, "process to calcuate signal/event lossses", false);
 
   // using Particles = soa::Filtered<aod::McParticles>;
   // expressions::Filter primaries = (aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary;
@@ -1885,7 +1885,7 @@ struct FlattenictyPiKP {
       });
     }
   }
-  PROCESS_SWITCH(FlattenictyPiKP, processMCclosure, "process MC closure test", false);
+  PROCESS_SWITCH(FlattenictyPikp, processMCclosure, "process MC closure test", false);
 
   Preslice<MyLabeledPIDTracks> perCollTrk = aod::track::collisionId;
   PresliceUnsorted<CollsGen> perCollMcLabel = aod::mccollisionlabel::mcCollisionId;
@@ -1988,7 +1988,7 @@ struct FlattenictyPiKP {
 
     } // gen collisions
   }
-  PROCESS_SWITCH(FlattenictyPiKP, processMC, "process MC", false);
+  PROCESS_SWITCH(FlattenictyPikp, processMC, "process MC", false);
 
   template <typename ObjType>
   ObjType* getForTsOrRun(std::string const& fullPath, int64_t timestamp, int runNumber)
@@ -2069,10 +2069,10 @@ struct FlattenictyPiKP {
     }
     correctFV0Amp(collision);
   }
-  PROCESS_SWITCH(FlattenictyPiKP, processFV0Amp, "Processing FV0 amplitude correction", false);
+  PROCESS_SWITCH(FlattenictyPikp, processFV0Amp, "Processing FV0 amplitude correction", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<FlattenictyPiKP>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<FlattenictyPikp>(cfgc)};
 }
