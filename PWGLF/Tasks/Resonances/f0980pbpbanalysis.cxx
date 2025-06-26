@@ -330,16 +330,16 @@ struct F0980pbpbanalysis {
     } else if (cfgSelectPID == PIDList::PIDTest) {
       if (cfgUSETOF) {
         if (track.hasTOF()) {
-          if ((track.tofNSigmaPi() * track.tofNSigmaPi() + track.tpcNSigmaPi() * track.tpcNSigmaPi()) > (cMaxTiednSigmaPion * cMaxTiednSigmaPion)) {
+          if ((getTpcNSigma(track) * getTpcNSigma(track) + getTofNSigma(track) * getTofNSigma(track)) > (cMaxTiednSigmaPion * cMaxTiednSigmaPion)) {
             return 0;
           }
         } else {
-          if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPionS) {
+          if (std::fabs(getTpcNSigma(track)) > cMaxTPCnSigmaPionS) {
             return 0;
           }
         }
       } else {
-        if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPionS) {
+        if (std::fabs(getTpcNSigma(track)) > cMaxTPCnSigmaPionS) {
           return 0;
         }
       }
