@@ -216,8 +216,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processNoTrigSel, "Do not use trigger selection", true);
 
   /// Event selection with UPC
-  void processUpcSel(soa::Join<aod::Collisions,
-                               aod::EvSels>::iterator const& collision,
+  void processUpcSel(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                      aod::BcFullInfos const& bcs,
                      aod::FT0s const& /*ft0s*/,
                      aod::FV0As const& /*fv0as*/,
