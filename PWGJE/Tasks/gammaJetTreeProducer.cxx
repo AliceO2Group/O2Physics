@@ -234,7 +234,7 @@ struct GammaJetTreeProducer {
 
     // if the track type is aod::JetTracks, we need to build the kd tree for the tracks
     if constexpr (std::is_same_v<typename std::decay_t<T>, aod::JetTracks>) {
-      for (auto track : objects) {
+      for (const auto& track : objects) {
         if (!isTrackSelected(track)) {
           continue;
         }
@@ -252,7 +252,7 @@ struct GammaJetTreeProducer {
     }
     // if the track type is aod::JetParticles, we need to build the kd tree for the mc particles
     if constexpr (std::is_same_v<typename std::decay_t<T>, aod::JetParticles>) {
-      for (auto particle : objects) {
+      for (const auto& particle : objects) {
         if (!particle.isPhysicalPrimary()) {
           continue;
         }
@@ -395,8 +395,8 @@ struct GammaJetTreeProducer {
     double cPhi = TVector2::Phi_0_2pi(object.phi());
 
     // rotate cone left by 90 degrees
-    float cPhiLeft = cPhi - o2::constants::math::PI / 2;
-    float cPhiRight = cPhi + o2::constants::math::PI / 2;
+    float cPhiLeft = cPhi - o2::constants::math::PIHalf;
+    float cPhiRight = cPhi + o2::constants::math::PIHalf;
 
     float pointLeft[2] = {object.eta(), cPhiLeft};
     float pointRight[2] = {object.eta(), cPhiRight};
@@ -530,7 +530,7 @@ struct GammaJetTreeProducer {
     if (particle.pdgCode() == PDG_t::kGamma && particle.isPhysicalPrimary() && std::abs(particle.getGenStatusCode()) >= 90) {
       // check if it has mothers that are pi0s
       const auto& mothers = particle.template mothers_as<aod::JMcParticles>();
-      for (auto mother : mothers) {
+      for (const auto& mother : mothers) {
         if (mother.pdgCode() == PDG_t::kPi0) {
           return true;
         }
@@ -547,7 +547,7 @@ struct GammaJetTreeProducer {
     if (particle.pdgCode() == PDG_t::kGamma && particle.isPhysicalPrimary() && std::abs(particle.getGenStatusCode()) >= 90) {
       // check if it has mothers that are etas
       const auto& mothers = particle.template mothers_as<aod::JMcParticles>();
-      for (auto mother : mothers) {
+      for (const auto& mother : mothers) {
         if (mother.pdgCode() == 221) {
           return true;
         }
@@ -564,7 +564,7 @@ struct GammaJetTreeProducer {
     if (particle.pdgCode() == PDG_t::kGamma && particle.isPhysicalPrimary() && std::abs(particle.getGenStatusCode()) >= 90) {
       // check if you find a pi0 mother or a eta mother
       const auto& mothers = particle.template mothers_as<aod::JMcParticles>();
-      for (auto mother : mothers) {
+      for (const auto& mother : mothers) {
         if (mother.pdgCode() == PDG_t::kPi0 || mother.pdgCode() == 221) {
           return false;
         }
@@ -630,7 +630,7 @@ struct GammaJetTreeProducer {
       return -1;
     }
     const auto& mothers = particle.template mothers_as<aod::JMcParticles>();
-    for (auto mother : mothers) {
+    for (const auto& mother : mothers) {
       if (mother.pdgCode() == pdgCode) {
         return mother.globalIndex();
       } else {
@@ -654,7 +654,7 @@ struct GammaJetTreeProducer {
     T currentParticle = particle;
     while (currentParticle.has_daughters()) {
       const auto& daughtersIDs = currentParticle.template daughters_as<aod::JMcParticles>();
-      for (auto daughter : daughtersIDs) {
+      for (const auto& daughter : daughtersIDs) {
         daughters.push_back(daughter.globalIndex());
       }
       currentParticle = daughtersIDs.iteratorAt(0);
@@ -691,7 +691,7 @@ struct GammaJetTreeProducer {
       return -1;
 
     // get first mother
-    for (auto mother : mothers) {
+    for (const auto& mother : mothers) {
       int primaryIndex = findPhysicalPrimaryInChain(mother, depth + 1);
       if (primaryIndex >= 0) {
         return primaryIndex;
@@ -734,12 +734,12 @@ struct GammaJetTreeProducer {
           bool photon2Found = false;
 
           // check if any of the particles in the fullDecayChain are leading or subleading in the cluster
-          for (auto particleID : fullDecayChain1) {
+          for (const auto& particleID : fullDecayChain1) {
             if (particleID == inducerIDs[0] || particleID == inducerIDs[1]) {
               photon1Found = true;
             }
           }
-          for (auto particleID : fullDecayChain2) {
+          for (const auto& particleID : fullDecayChain2) {
             if (particleID == inducerIDs[0] || particleID == inducerIDs[1]) {
               photon2Found = true;
             }
@@ -772,7 +772,7 @@ struct GammaJetTreeProducer {
     LOG(debug) << "Cluster with energy: " << cluster.energy() << " and nInducers: " << inducerIDs.size();
     LOG(debug) << "Number of stored amplitudes: " << cluster.amplitudeA().size();
     int aCounter = 0;
-    for (auto inducerID : inducerIDs) {
+    for (const auto& inducerID : inducerIDs) {
       const auto& inducer = mcParticles.iteratorAt(inducerID);
       int motherPDG = -1;
       if (inducer.has_mothers()) {
@@ -925,7 +925,7 @@ struct GammaJetTreeProducer {
       if (!particle.isPhysicalPrimary()) {
         continue;
       }
-      if (particle.pdgCode() != 22) {
+      if (particle.pdgCode() != PDG_t::kGamma) {
         continue;
       }
       mHistograms.fill(HIST("numberRecCollisionsVsPhotonPt"), nRecCollisions, particle.pt());
@@ -1016,7 +1016,7 @@ struct GammaJetTreeProducer {
     buildKdTree(tracks);
 
     // loop over clusters
-    for (auto cluster : clusters) {
+    for (const auto& cluster : clusters) {
 
       // fill histograms
       mHistograms.fill(HIST("clusterE"), cluster.energy());
@@ -1070,7 +1070,7 @@ struct GammaJetTreeProducer {
       return;
     // loop over mcClusters
     // TODO: add weights
-    for (auto mcCluster : mcClusters) {
+    for (const auto& mcCluster : mcClusters) {
       mHistograms.fill(HIST("clusterMC_E_All"), mcCluster.energy());
       uint16_t origin = getClusterOrigin(mcCluster, mcParticles);
       float leadingEnergyFraction = mcCluster.amplitudeA()[0] / mcCluster.energy();
@@ -1133,7 +1133,7 @@ struct GammaJetTreeProducer {
     }
     ushort nconst = 0;
     float leadingTrackPt = 0;
-    for (auto& constituent : jet.template tracks_as<aod::JetTracks>()) {
+    for (const auto& constituent : jet.template tracks_as<aod::JetTracks>()) {
       mHistograms.fill(HIST("chjetpt_vs_constpt"), jet.pt(), constituent.pt());
       nconst++;
       if (constituent.pt() > leadingTrackPt) {
@@ -1186,7 +1186,7 @@ struct GammaJetTreeProducer {
     buildKdTree(particlesPerMcCollision);
 
     // Now we want to store every pi0 and every prompt photon that we find on generator level
-    for (auto particle : particlesPerMcCollision) {
+    for (const auto& particle : particlesPerMcCollision) {
       // only store particles above a given threshold
       if (particle.pt() < minMCGenPt) {
         continue;
@@ -1259,7 +1259,7 @@ struct GammaJetTreeProducer {
     }
     int localIndex = 0;
     auto pjetsPerMcCollision = chargedJets.sliceBy(PJetsPerMCCollisions, collision.mcCollisionId());
-    for (auto pjet : pjetsPerMcCollision) {
+    for (const auto& pjet : pjetsPerMcCollision) {
       // fill MC particle level jet table
       float perpconerho = ch_perp_cone_rho(pjet, perpConeJetR, true);
       mcJetsTable(storedColIndex, pjet.pt(), pjet.eta(), pjet.phi(), pjet.r(), pjet.energy(), pjet.mass(), pjet.area(), perpconerho);
