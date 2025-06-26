@@ -132,7 +132,9 @@ struct F0980pbpbanalysis {
   Configurable<float> cfgTOFBetaCut{"cfgTOFBetaCut", 0.0, "cut TOF beta"};
   Configurable<bool> cfgDeepAngleSel{"cfgDeepAngleSel", true, "Deep Angle cut"};
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
-  Configurable<bool> cfgTrackIndexSel{"cfgTrackIndexSel", false, "Index selection flag"};
+  Configurable<int> cfgTrackIndexSelType{"cfgTrackIndexSelType", 1, "Index selection type"};
+  Configurable<double> cMaxTiednSigmaPion{"cMaxTiednSigmaPion", 3.0, "Combined nSigma cut for Pion"};
+
 
   ConfigurableAxis massAxis{"massAxis", {400, 0.2, 2.2}, "Invariant mass axis"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0}, "Transverse momentum Binning"};
@@ -172,6 +174,12 @@ struct F0980pbpbanalysis {
   enum PtlList {
     PtlPion = 0,
     PtlKaon = 1,
+  };
+
+  enum IndexSelList {
+    None = 0,
+    woSame = 1,
+    leq = 2
   };
 
   TRandom* rn = new TRandom();
@@ -320,18 +328,36 @@ struct F0980pbpbanalysis {
         }
       }
     } else if (cfgSelectPID == PIDList::PIDTest) {
-      if (track.hasTOF()) {
-        if (std::fabs(getTofNSigma(track)) > cMaxTOFnSigmaPion) {
-          return 0;
-        }
-        if (std::fabs(getTpcNSigma(track)) > cMaxTPCnSigmaPion) {
-          return 0;
+      if (cfgUSETOF) {
+        if (track.hasTOF()) {
+          if ((track.tofNSigmaPi() * track.tofNSigmaPi() + track.tpcNSigmaPi() * track.tpcNSigmaPi()) > (cMaxTiednSigmaPion * cMaxTiednSigmaPion)) {
+            return 0;
+          }
+        } else {
+          if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPionS) {
+            return 0;
+          }
         }
       } else {
-        if (std::fabs(getTpcNSigma(track)) > cMaxTPCnSigmaPionS) {
+        if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPionS) {
           return 0;
         }
       }
+    }
+    return 1;
+  }
+
+  template<typename TrackType1, typename TrackType2>
+  bool indexSelection(const TrackType1 track1, const TrackType2 track2)
+  {
+    if (cfgTrackIndexSelType == IndexSelList::woSame) {
+      if (track2.globalIndex() == track1.globalIndex()) {
+        return 0;
+      }
+    } else if (cfgTrackIndexSelType == IndexSelList::leq) {
+      if (track2.globalIndex() <= track1.globalIndex()) {
+        return 0;
+      } 
     }
     return 1;
   }
@@ -420,11 +446,11 @@ struct F0980pbpbanalysis {
           histos.fill(HIST("QA/TPC_TOF_selected"), getTpcNSigma(trk2), getTofNSigma(trk2));
         }
 
-        if (cfgTrackIndexSel && cfgSelectPID == PIDList::PIDTest && trk2.globalIndex() <= trk1.globalIndex()) {
+        if (!indexSelection(trk1, trk2)) {
           continue;
         }
 
-        if (cfgSelectPID == PIDList::PIDTest && !selectionPair(trk1, trk2)) {
+        if (!selectionPair(trk1, trk2)) {
           continue;
         }
 
