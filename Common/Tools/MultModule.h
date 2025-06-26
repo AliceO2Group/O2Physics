@@ -62,9 +62,9 @@ static const std::vector<std::string> tableNames{
   "FDDMultZeqs",
   "PVMultZeqs",
   "MultMCExtras",
-  "kMult2MCExtras",
-  "kMFTMults",
-  "kMultsGlobal",
+  "Mult2MCExtras",
+  "MFTMults",
+  "MultsGlobal",
 
   // centrality subcomponent
   "CentRun2V0Ms",
