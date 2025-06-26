@@ -697,7 +697,7 @@ struct HfTaskCorrelationDsHadrons {
                                CandDsMcReco const& candidates,
                                aod::TracksWMc const&)
   {
-    auto hCandidates = registry.get<StepTHn>(HIST("hCandidates"));
+    // auto hCandidates = registry.get<StepTHn>(HIST("hCandidates"));
 
     /// loop over generated collisions
     for (const auto& mcCollision : mcCollisions) {
@@ -731,8 +731,8 @@ struct HfTaskCorrelationDsHadrons {
         }
 
         registry.fill(HIST("hNumPvContrib"), collision.numContrib());
-        float multiplicityReco = collision.multFT0M();
-        float multiplicityGen = mcCollision.multMCFT0A() + mcCollision.multMCFT0C(); // multFT0M = multFt0A + multFT0C
+        // float multiplicityReco = collision.multFT0M();
+        // float multiplicityGen = mcCollision.multMCFT0A() + mcCollision.multMCFT0C(); // multFT0M = multFt0A + multFT0C
 
         const auto groupedCandidates = candidates.sliceBy(perCollisionCand, collision.globalIndex());
 
@@ -770,7 +770,8 @@ struct HfTaskCorrelationDsHadrons {
               }
             }
           }
-        }
+        } // end loop candidate gen
+
         // reconstructed candidate loop
         for (const auto& candidate : groupedCandidates) {
           if (candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
@@ -799,22 +800,22 @@ struct HfTaskCorrelationDsHadrons {
                 // hCandidates->Fill(kCandidateStepMcRecoInAcceptance, candidate.pt(), multiplicityReco, candidate.originMcRec());
                 if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
                   if (useHighDimHistoForEff) {
-                    registry.fill(HIST("hPtCandMcRecPrompt"), mcParticle.pt(), collision.numContrib());
+                    registry.fill(HIST("hPtCandMcRecPrompt"), candidate.pt(), collision.numContrib());
                   } else {
-                    registry.fill(HIST("hPtCandMcRecPrompt"), mcParticle.pt());
+                    registry.fill(HIST("hPtCandMcRecPrompt"), candidate.pt());
                   }
                 }
                 if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
                   if (useHighDimHistoForEff) {
-                    registry.fill(HIST("hPtCandMcRecNonPrompt"), mcParticle.pt(), collision.numContrib());
+                    registry.fill(HIST("hPtCandMcRecNonPrompt"), candidate.pt(), collision.numContrib());
                   } else {
-                    registry.fill(HIST("hPtCandMcRecNonPrompt"), mcParticle.pt());
+                    registry.fill(HIST("hPtCandMcRecNonPrompt"), candidate.pt());
                   }
                 }
               }
             }
           }
-        }
+        } // end loop candidate reco
       } // end loop reconstructed collision
     } // end loop generated collisions
   }
@@ -826,7 +827,7 @@ struct HfTaskCorrelationDsHadrons {
                                      CandDsMcReco const& candidates,
                                      aod::TracksWMc const&)
   {
-    auto hCandidates = registry.get<StepTHn>(HIST("hCandidates"));
+    // auto hCandidates = registry.get<StepTHn>(HIST("hCandidates"));
 
     /// Gen loop
     float multiplicity = -1.;
@@ -835,10 +836,10 @@ struct HfTaskCorrelationDsHadrons {
       if ((std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (mcParticle.flagMcDecayChanGen() == decayChannel)) {
         auto mcCollision = mcParticle.template mcCollision_as<soa::Join<aod::McCollisions, aod::MultsExtraMC>>();
         multiplicity = mcCollision.multMCFT0A() + mcCollision.multMCFT0C(); // multFT0M = multFt0A + multFT0C
-        hCandidates->Fill(kCandidateStepMcGenDsToKKPi, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
+        // hCandidates->Fill(kCandidateStepMcGenDsToKKPi, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
         auto yDs = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDS);
         if (std::abs(yDs) <= yCandGenMax) {
-          hCandidates->Fill(kCandidateStepMcCandInAcceptance, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
+          // hCandidates->Fill(kCandidateStepMcCandInAcceptance, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
           if (mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) {
             registry.fill(HIST("hPtCandMcGenPrompt"), mcParticle.pt());
           }
@@ -854,7 +855,7 @@ struct HfTaskCorrelationDsHadrons {
           }
         }
         if (isDaughterInAcceptance) {
-          hCandidates->Fill(kCandidateStepMcDaughtersInAcceptance, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
+          // hCandidates->Fill(kCandidateStepMcDaughtersInAcceptance, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
           registry.fill(HIST("hPtCandMcGenDaughterInAcc"), mcParticle.pt());
         }
       }
@@ -887,9 +888,9 @@ struct HfTaskCorrelationDsHadrons {
         auto prong0McPart = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>();
         // DsToKKPi and DsToPiKK division
         if (((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs))) {
-          hCandidates->Fill(kCandidateStepMcReco, candidate.pt(), multiplicity, candidate.originMcRec());
+          // hCandidates->Fill(kCandidateStepMcReco, candidate.pt(), multiplicity, candidate.originMcRec());
           if (std::abs(hfHelper.yDs(candidate)) <= yCandMax) {
-            hCandidates->Fill(kCandidateStepMcRecoInAcceptance, candidate.pt(), multiplicity, candidate.originMcRec());
+            // hCandidates->Fill(kCandidateStepMcRecoInAcceptance, candidate.pt(), multiplicity, candidate.originMcRec());
             if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
               registry.fill(HIST("hPtCandMcRecPrompt"), candidate.pt());
             }
@@ -942,10 +943,10 @@ struct HfTaskCorrelationDsHadrons {
           continue;
         }
 
-        float multiplicityReco = collision.multFT0M();
-        float posZReco = collision.posZ();
-        float multiplicityGen = mcCollision.multMCFT0A() + mcCollision.multMCFT0C(); // multFT0M = multFt0A + multFT0C
-        float posZGen = mcCollision.posZ();
+        // float multiplicityReco = collision.multFT0M();
+        // float posZReco = collision.posZ();
+        // float multiplicityGen = mcCollision.multMCFT0A() + mcCollision.multMCFT0C(); // multFT0M = multFt0A + multFT0C
+        // float posZGen = mcCollision.posZ();
 
         const auto groupedTracks = tracksData.sliceBy(perCollision, collision.globalIndex());
 
@@ -956,17 +957,32 @@ struct HfTaskCorrelationDsHadrons {
               // hAssocTracks->Fill(kAssocTrackStepMcGen, mcParticle.eta(), mcParticle.pt(), multiplicityGen, posZGen);
               if (std::abs(mcParticle.eta()) < etaTrackMax) {
                 // hAssocTracks->Fill(kAssocTrackStepMcGenInAcceptance, mcParticle.eta(), mcParticle.pt(), multiplicityGen, posZGen);
-                registry.fill(HIST("hPtParticleAssocMcGen"), mcParticle.pt());
-                if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
-                  registry.fill(HIST("hPtPrmPionMcGen"), mcParticle.pt());
-                } else if (std::abs(mcParticle.pdgCode()) == kKPlus) {
-                  registry.fill(HIST("hPtPrmKaonMcGen"), mcParticle.pt());
-                } else if (std::abs(mcParticle.pdgCode()) == kProton) {
-                  registry.fill(HIST("hPtPrmProtonMcGen"), mcParticle.pt());
-                } else if (std::abs(mcParticle.pdgCode()) == kElectron) {
-                  registry.fill(HIST("hPtPrmElectronMcGen"), mcParticle.pt());
-                } else if (std::abs(mcParticle.pdgCode()) == kMuonMinus) {
-                  registry.fill(HIST("hPtPrmMuonMcGen"), mcParticle.pt());
+                if (useHighDimHistoForEff) {
+                  registry.fill(HIST("hPtParticleAssocMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), collision.numContrib());
+                  if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
+                    registry.fill(HIST("hPtPrmPionMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), collision.numContrib());
+                  } else if (std::abs(mcParticle.pdgCode()) == kKPlus) {
+                    registry.fill(HIST("hPtPrmKaonMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), collision.numContrib());
+                  } else if (std::abs(mcParticle.pdgCode()) == kProton) {
+                    registry.fill(HIST("hPtPrmProtonMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), collision.numContrib());
+                  } else if (std::abs(mcParticle.pdgCode()) == kElectron) {
+                    registry.fill(HIST("hPtPrmElectronMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), collision.numContrib());
+                  } else if (std::abs(mcParticle.pdgCode()) == kMuonMinus) {
+                    registry.fill(HIST("hPtPrmMuonMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), collision.numContrib());
+                  }
+                } else {
+                  registry.fill(HIST("hPtParticleAssocMcGen"), mcParticle.pt());
+                  if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
+                    registry.fill(HIST("hPtPrmPionMcGen"), mcParticle.pt());
+                  } else if (std::abs(mcParticle.pdgCode()) == kKPlus) {
+                    registry.fill(HIST("hPtPrmKaonMcGen"), mcParticle.pt());
+                  } else if (std::abs(mcParticle.pdgCode()) == kProton) {
+                    registry.fill(HIST("hPtPrmProtonMcGen"), mcParticle.pt());
+                  } else if (std::abs(mcParticle.pdgCode()) == kElectron) {
+                    registry.fill(HIST("hPtPrmElectronMcGen"), mcParticle.pt());
+                  } else if (std::abs(mcParticle.pdgCode()) == kMuonMinus) {
+                    registry.fill(HIST("hPtPrmMuonMcGen"), mcParticle.pt());
+                  }
                 }
                 if (separateTrackOrigins) {
                   int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
@@ -994,19 +1010,34 @@ struct HfTaskCorrelationDsHadrons {
               registry.fill(HIST("hPtParticleAssocMcRec"), track.pt());
               if ((std::abs(mcParticle.pdgCode()) == kElectron) || (std::abs(mcParticle.pdgCode()) == kMuonMinus) || (std::abs(mcParticle.pdgCode()) == kPiPlus) || (std::abs(mcParticle.pdgCode()) == kKPlus) || (std::abs(mcParticle.pdgCode()) == kProton)) {
                 // hAssocTracks->Fill(kAssocTrackStepRecoSpecies, track.eta(), track.pt(), multiplicityReco, posZReco);
-                registry.fill(HIST("hPtParticleAssocSpecieMcRec"), track.pt());
                 // check the pt spectra of mcParticle
                 registry.fill(HIST("hPtMcParticleAssocSpecieMcRec"), mcParticle.pt());
-                if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
-                  registry.fill(HIST("hPtPrmPionMcRec"), track.pt());
-                } else if (std::abs(mcParticle.pdgCode()) == kKPlus) {
-                  registry.fill(HIST("hPtPrmKaonMcRec"), track.pt());
-                } else if (std::abs(mcParticle.pdgCode()) == kProton) {
-                  registry.fill(HIST("hPtPrmProtonMcRec"), track.pt());
-                } else if (std::abs(mcParticle.pdgCode()) == kElectron) {
-                  registry.fill(HIST("hPtPrmElectronMcRec"), track.pt());
-                } else if (std::abs(mcParticle.pdgCode()) == kMuonMinus) {
-                  registry.fill(HIST("hPtPrmMuonMcRec"), track.pt());
+                if (useHighDimHistoForEff) {
+                  registry.fill(HIST("hPtParticleAssocSpecieMcRec"), track.pt());
+                  if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
+                    registry.fill(HIST("hPtPrmPionMcRec"), track.pt(), track.eta(), collision.posZ(), collision.numContrib());
+                  } else if (std::abs(mcParticle.pdgCode()) == kKPlus) {
+                    registry.fill(HIST("hPtPrmKaonMcRec"), track.pt(), track.eta(), collision.posZ(), collision.numContrib());
+                  } else if (std::abs(mcParticle.pdgCode()) == kProton) {
+                    registry.fill(HIST("hPtPrmProtonMcRec"), track.pt(), track.eta(), collision.posZ(), collision.numContrib());
+                  } else if (std::abs(mcParticle.pdgCode()) == kElectron) {
+                    registry.fill(HIST("hPtPrmElectronMcRec"), track.pt(), track.eta(), collision.posZ(), collision.numContrib());
+                  } else if (std::abs(mcParticle.pdgCode()) == kMuonMinus) {
+                    registry.fill(HIST("hPtPrmMuonMcRec"), track.pt(), track.eta(), collision.posZ(), collision.numContrib());
+                  }
+                } else {
+                  registry.fill(HIST("hPtParticleAssocSpecieMcRec"), track.pt());
+                  if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
+                    registry.fill(HIST("hPtPrmPionMcRec"), track.pt());
+                  } else if (std::abs(mcParticle.pdgCode()) == kKPlus) {
+                    registry.fill(HIST("hPtPrmKaonMcRec"), track.pt());
+                  } else if (std::abs(mcParticle.pdgCode()) == kProton) {
+                    registry.fill(HIST("hPtPrmProtonMcRec"), track.pt());
+                  } else if (std::abs(mcParticle.pdgCode()) == kElectron) {
+                    registry.fill(HIST("hPtPrmElectronMcRec"), track.pt());
+                  } else if (std::abs(mcParticle.pdgCode()) == kMuonMinus) {
+                    registry.fill(HIST("hPtPrmMuonMcRec"), track.pt());
+                  }
                 }
                 // check track origin
                 if (separateTrackOrigins) {
