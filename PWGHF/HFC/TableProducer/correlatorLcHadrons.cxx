@@ -211,7 +211,7 @@ struct HfCorrelatorLcHadrons {
   Service<o2::framework::O2DatabasePDG> pdg;
   int leadingIndex = 0;
   bool correlationStatus = false;
-  static constexpr size_t NDaughters{3u};
+  static constexpr std::size_t NDaughters{3u};
   TRandom3* rnd = new TRandom3(0);
 
   // Event Mixing for the Data Mode
