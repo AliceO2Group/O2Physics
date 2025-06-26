@@ -47,7 +47,7 @@ struct HfCandidateSelectorXicToXiPiPi {
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // Enable PID
   Configurable<bool> usePid{"usePid", true, "Switch for PID selection at track level"};
-  Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::NotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
+  Configurable<bool> useTpcPidOnly{"useTpcPidOnly", false, "Switch to use TPC PID only instead of TPC OR TOF)"};
   // TPC PID
   Configurable<float> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<float> ptPidTpcMax{"ptPidTpcMax", 20., "Upper bound of track pT for TPC PID"};
@@ -194,24 +194,27 @@ struct HfCandidateSelectorXicToXiPiPi {
   }
 
   /// Apply PID selection
-  /// \param pidTrackPi0   PID status of trackPi0 (prong1 of Xic candidate)
-  /// \param pidTrackPi1   PID status of trackPi1 (prong2 of Xic candidate)
-  /// \param pidTrackPr    PID status of trackPr (positive daughter of V0 candidate)
-  /// \param pidTrackPiLam PID status of trackPiLam (negative daughter of V0 candidate)
-  /// \param pidTrackPiXi  PID status of trackPiXi (Bachelor of cascade candidate)
-  /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
+  /// \param statusPidPi0   PID status of trackPi0 (prong1 of Xic candidate)
+  /// \param statusPidPi1   PID status of trackPi1 (prong2 of Xic candidate)
+  /// \param statusPidPiXi  PID status of trackPiXi (Bachelor of cascade candidate)
+  /// \param statusPidPrLam PID status of trackPr (positive daughter of V0 candidate)
+  /// \param statusPidPiLam PID status of trackPiLam (negative daughter of V0 candidate)
+  /// \param usePidTpcOnly  switch to check only TPC status
   /// \return true if prongs of Xic candidate pass all selections
-  bool selectionPid(TrackSelectorPID::Status const pidTrackPi0,
-                    TrackSelectorPID::Status const pidTrackPi1,
-                    TrackSelectorPID::Status const pidTrackPr,
-                    TrackSelectorPID::Status const pidTrackPiLam,
-                    TrackSelectorPID::Status const pidTrackPiXi,
-                    bool const acceptPIDNotApplicable)
+  bool selectionPid(TrackSelectorPID::Status const statusPidPi0,
+                    TrackSelectorPID::Status const statusPidPi1,
+                    TrackSelectorPID::Status const statusPidPiXi,
+                    TrackSelectorPID::Status const statusPidPrLam,
+                    TrackSelectorPID::Status const statusPidPiLam,
+                    bool const useTpcPidOnly)
   {
-    if (!acceptPIDNotApplicable && (pidTrackPi0 != TrackSelectorPID::Accepted || pidTrackPi1 != TrackSelectorPID::Accepted || pidTrackPr != TrackSelectorPID::Accepted || pidTrackPiLam != TrackSelectorPID::Accepted || pidTrackPiXi != TrackSelectorPID::Accepted)) {
-      return false;
+    if (useTpcPidOnly) {
+      if ((statusPidPi0 != TrackSelectorPID::Accepted && statusPidPi0 != TrackSelectorPID::NotApplicable) || (statusPidPi1 != TrackSelectorPID::Accepted && statusPidPi1 != TrackSelectorPID::NotApplicable) || (statusPidPiXi != TrackSelectorPID::Accepted && statusPidPiXi != TrackSelectorPID::NotApplicable) || (statusPidPrLam != TrackSelectorPID::Accepted && statusPidPrLam != TrackSelectorPID::NotApplicable) || (statusPidPiLam != TrackSelectorPID::Accepted && statusPidPiLam != TrackSelectorPID::NotApplicable)) {
+        return false;
+      }
+      return true;
     }
-    if (acceptPIDNotApplicable && (pidTrackPi0 == TrackSelectorPID::Rejected || pidTrackPi1 == TrackSelectorPID::Rejected || pidTrackPr == TrackSelectorPID::Rejected || pidTrackPiLam == TrackSelectorPID::Rejected || pidTrackPiXi == TrackSelectorPID::Rejected)) {
+    if (statusPidPi0 == TrackSelectorPID::Rejected || statusPidPi1 == TrackSelectorPID::Rejected || statusPidPiXi == TrackSelectorPID::Rejected || statusPidPrLam == TrackSelectorPID::Rejected || statusPidPiLam == TrackSelectorPID::Rejected) {
       return false;
     }
     return true;
@@ -252,6 +255,12 @@ struct HfCandidateSelectorXicToXiPiPi {
 
       // track-level PID selection
       if (usePid) {
+        TrackSelectorPID::Status statusPidPi0 = TrackSelectorPID::NotApplicable;
+        TrackSelectorPID::Status statusPidPi1 = TrackSelectorPID::NotApplicable;
+        TrackSelectorPID::Status statusPidPiXi = TrackSelectorPID::NotApplicable;
+        TrackSelectorPID::Status statusPidPrLam = TrackSelectorPID::NotApplicable;
+        TrackSelectorPID::Status statusPidPiLam = TrackSelectorPID::NotApplicable;
+
         auto trackPi0 = hfCandXic.pi0_as<TracksPidWithSel>();
         auto trackPi1 = hfCandXic.pi1_as<TracksPidWithSel>();
         auto trackV0PosDau = hfCandXic.posTrack_as<TracksPidWithSel>();
@@ -264,14 +273,22 @@ struct HfCandidateSelectorXicToXiPiPi {
           trackPr = trackV0NegDau;
           trackPiFromLam = trackV0PosDau;
         }
-        // PID info
-        TrackSelectorPID::Status pidTrackPi0 = selectorPion.statusTpcAndTof(trackPi0);
-        TrackSelectorPID::Status pidTrackPi1 = selectorPion.statusTpcAndTof(trackPi1);
-        TrackSelectorPID::Status pidTrackPr = selectorProton.statusTpcAndTof(trackPr);
-        TrackSelectorPID::Status pidTrackPiLam = selectorPion.statusTpcAndTof(trackPiFromLam);
-        TrackSelectorPID::Status pidTrackPiXi = selectorPion.statusTpcAndTof(trackPiFromXi);
 
-        if (!selectionPid(pidTrackPi0, pidTrackPi1, pidTrackPr, pidTrackPiLam, pidTrackPiXi, acceptPIDNotApplicable.value)) {
+        if (useTpcPidOnly) {
+          TrackSelectorPID::Status statusPidPi0 = selectorPion.statusTpc(trackPi0);
+          TrackSelectorPID::Status statusPidPi1 = selectorPion.statusTpc(trackPi1);
+          TrackSelectorPID::Status statusPidPiXi = selectorPion.statusTpc(trackPiFromXi);
+          TrackSelectorPID::Status statusPidPrLam = selectorProton.statusTpc(trackPr);
+          TrackSelectorPID::Status statusPidPiLam = selectorPion.statusTpc(trackPiFromLam);
+        } else {
+          TrackSelectorPID::Status statusPidPi0 = selectorPion.statusTpcOrTof(trackPi0);
+          TrackSelectorPID::Status statusPidPi1 = selectorPion.statusTpcOrTof(trackPi1);
+          TrackSelectorPID::Status statusPidPiXi = selectorPion.statusTpcOrTof(trackPiFromXi);
+          TrackSelectorPID::Status statusPidPrLam = selectorProton.statusTpcOrTof(trackPr);
+          TrackSelectorPID::Status statusPidPiLam = selectorPion.statusTpcOrTof(trackPiFromLam);
+        }
+
+        if (!selectionPid(statusPidPi0, statusPidPi1, statusPidPiXi, statusPidPrLam, statusPidPiLam, useTpcPidOnly.value)) {
           hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
           if (applyMl) {
             hfMlXicToXiPiPiCandidate(outputMlXicToXiPiPi);
