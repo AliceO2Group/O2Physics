@@ -138,7 +138,7 @@ struct HfTaskDs {
   ConfigurableAxis axisMlScore0{"axisMlScore0", {100, 0., 1.}, "axis for ML output score 0"};
   ConfigurableAxis axisMlScore1{"axisMlScore1", {100, 0., 1.}, "axis for ML output score 1"};
   ConfigurableAxis axisMlScore2{"axisMlScore2", {100, 0., 1.}, "axis for ML output score 2"};
-  ConfigurableAxis axisCentrality{"axisCentrality", {100, 0., 1.}, "axis for centrality/multiplicity"};
+  ConfigurableAxis axisCentrality{"axisCentrality", {100, 0, 100}, "axis for centrality/multiplicity"};
   ConfigurableAxis axisOccupancy{"axisOccupancy", {14, 0., 14000.}, "axis for occupancy"};
 
   int mRunNumber{0};
@@ -183,7 +183,7 @@ struct HfTaskDs {
     AxisSpec flagBHad{axisFlagBHad, "B Hadron flag"};
     AxisSpec ybins = {100, -5., 5, "#it{y}"};
     AxisSpec massbins = {600, 1.67, 2.27, "inv. mass (KK#pi) (GeV/#it{c}^{2})"};
-    AxisSpec centralitybins = {100, 0., 100., "Centrality"};
+    AxisSpec centralitybins = {axisCentrality, "Centrality"};
     AxisSpec npvcontributorsbins = {axisNPvContributors, "NPvContributors"};
     AxisSpec mlscore0bins = {axisMlScore0, "Score 0"};
     AxisSpec mlscore1bins = {axisMlScore1, "Score 1"};
