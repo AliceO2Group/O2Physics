@@ -794,7 +794,6 @@ struct HfTaskCorrelationDsHadrons {
     for (const auto& mcParticle : mcParticles) {
       // generated candidates
       if ((std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (mcParticle.flagMcDecayChanGen() == decayChannel)) {
-        auto mcCollision = mcParticle.template mcCollision_as<soa::Join<aod::McCollisions, aod::MultsExtraMC>>();
         auto yDs = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDS);
         if (std::abs(yDs) <= yCandGenMax) {
           if (mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) {
