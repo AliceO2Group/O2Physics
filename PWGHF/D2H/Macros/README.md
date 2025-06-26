@@ -1,5 +1,5 @@
-# Invariant mass fitter
-Invariant mass fitter is implemented in the class `HFInvMassFitter` (`HFInvMassFitter.cxx/h` files), and its run is executed via `runMassFitter.C` macro.
+# Invariant-mass fitter
+Invariant-mass fitter is implemented in the class `HFInvMassFitter` (`HFInvMassFitter.cxx/h` files), and its run is executed via `runMassFitter.C` macro.
 Fitter is configured in `config_massfitter.json`.\
 The fitter is **not** a part of O2Physics source code.
 
