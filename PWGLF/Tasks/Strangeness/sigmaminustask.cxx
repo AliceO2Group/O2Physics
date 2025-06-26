@@ -74,7 +74,7 @@ struct sigmaminustask {
         continue;
       }
       rSigmaMinus.fill(HIST("h2MassSigmaMinusPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
-      rSigmaMinus.fill(HIST("h2SigmaMassVsXiMass"),  kinkCand.mXiMinus(), kinkCand.mSigmaMinus());
+      rSigmaMinus.fill(HIST("h2SigmaMassVsXiMass"), kinkCand.mXiMinus(), kinkCand.mSigmaMinus());
       rSigmaMinus.fill(HIST("h2NSigmaPiPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tpcNSigmaPi());
     }
   }
@@ -117,7 +117,6 @@ struct sigmaminustask {
             continue;
           }
           rSigmaMinus.fill(HIST("h2MassSigmaMinusPtMC"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
-
         }
       }
     }
