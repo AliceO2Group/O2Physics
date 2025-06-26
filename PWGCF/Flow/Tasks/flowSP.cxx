@@ -1379,7 +1379,6 @@ struct FlowSP {
   }
   PROCESS_SWITCH(FlowSP, processMCReco, "Process analysis for MC reconstructed events", false);
 
-
   void processMCGen(aod::McCollisions const& mcCollisions, CCs const& collisions, TCs const& tracks, FilteredTCs const& filteredTracks, MCs const& McParts)
   {
 
