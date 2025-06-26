@@ -25,6 +25,6 @@ o2physics_add_dpl_workflow(dndeta-mft-pp
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(flattenicty-pikp
-                    SOURCES flattenictyPiKP.cxx
+                    SOURCES flattenictyPikp.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB
                     COMPONENT_NAME Analysis)
