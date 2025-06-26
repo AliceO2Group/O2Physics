@@ -475,6 +475,14 @@ class MultModule
       internalOpts.mEnabledTables[kFDDMultZeqs] = 1;
       listOfRequestors[kFDDMultZeqs].Append(Form("%s ", "dependency check"));
     }
+    if (internalOpts.mEnabledTables[kCentMFTs] && !internalOpts.mEnabledTables[kMFTMults]) {
+      internalOpts.mEnabledTables[kMFTMults] = 1;
+      listOfRequestors[kMFTMults].Append(Form("%s ", "dependency check"));
+    }
+    if (internalOpts.mEnabledTables[kCentNGlobals] && !internalOpts.mEnabledTables[kMultsGlobal]) {
+      internalOpts.mEnabledTables[kMultsGlobal] = 1;
+      listOfRequestors[kMultsGlobal].Append(Form("%s ", "dependency check"));
+    }
 
     mRunNumber = 0;
     mRunNumberCentrality = 0;
