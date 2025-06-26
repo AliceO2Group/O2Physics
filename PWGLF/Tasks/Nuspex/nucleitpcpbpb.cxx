@@ -157,8 +157,8 @@ struct NucleitpcPbPb {
   int mRunNumber, occupancy;
   float dBz, momn;
   TRandom3 rand;
-  int He3 = 4;
-  int He4 = 5;
+  float He3 = 4;
+  float He4 = 5;
   //----------------------------------------------------------------------------------------------------------------
   void init(InitContext const&)
   {
