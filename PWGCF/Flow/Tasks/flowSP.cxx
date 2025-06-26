@@ -311,9 +311,7 @@ struct FlowSP {
       registry.add("QA/after/hCentFV0A", "; Cent FV0A (%); ", {HistType::kTH1D, {axisCent}});
       registry.add("QA/after/hCentNGlobal", "; Cent NGlobal (%); ", {HistType::kTH1D, {axisCent}});
       registry.add("QA/after/globalTracks_centT0C", "", {HistType::kTH2D, {axisCent, axisNch}});
-      // registry.add("QA/after/globalTracks_centNGlobal", "", {HistType::kTH2D, {axisCent, axisNch}});
       registry.add("QA/after/PVTracks_centT0C", "", {HistType::kTH2D, {axisCent, axisMultpv}});
-      // registry.add("QA/after/PVTracks_centNGlobal", "", {HistType::kTH2D, {axisCent, axisMultpv}});
       registry.add("QA/after/globalTracks_PVTracks", "", {HistType::kTH2D, {axisMultpv, axisNch}});
       registry.add("QA/after/globalTracks_multT0A", "", {HistType::kTH2D, {axisT0a, axisNch}});
       registry.add("QA/after/globalTracks_multV0A", "", {HistType::kTH2D, {axisV0a, axisNch}});
@@ -607,12 +605,10 @@ struct FlowSP {
     }
 
     if (nIdentified == 0) {
-      // LOGF(warning, "No PID match found for |nSigma| < %.2f", cfgTrackSelsPIDNsigma);
       return kUnidentified; // No PID match found
     } else if (nIdentified == 1) {
       return valPID;
     } else {
-      // LOGF(warning, "Track identified as %i particles for |nSigma| < %.2f", nIdentified, cfgTrackSelsPIDNsigma);
       return kUnidentified; // Multiple PID matches found
     }
 
@@ -622,10 +618,8 @@ struct FlowSP {
   int getMagneticField(uint64_t timestamp)
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
-    // static o2::parameters::GRPObject* grpo = nullptr;
     static o2::parameters::GRPMagField* grpo = nullptr;
     if (grpo == nullptr) {
-      // grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
       if (grpo == nullptr) {
         LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
@@ -815,8 +809,6 @@ struct FlowSP {
       return false;
 
     registry.fill(HIST("hTrackCount"), trackSel_DCAz);
-
-    // registry.fill(HIST("hTrackCount"), trackSel_GlobalTracks);
 
     if (track.tpcNClsFound() < cfgTrackSelsNcls)
       return false;
@@ -1363,7 +1355,6 @@ struct FlowSP {
 
     fillEventQA<kAfter>(collision, tracks);
 
-    // LOGF(info, "Size of tracks: %i", tracks.size());
     registry.fill(HIST("trackMCReco/hTrackSize_unFiltered"), tracks.size());
     registry.fill(HIST("trackMCReco/hTrackSize_Filtered"), filteredTracks.size());
 
@@ -1388,10 +1379,8 @@ struct FlowSP {
   }
   PROCESS_SWITCH(FlowSP, processMCReco, "Process analysis for MC reconstructed events", false);
 
-  // Filter mcCollFilter = nabs(aod::mccollision::posZ) < cfgEvSelsVtxZ;
   void processMCGen(aod::McCollisions const& mcCollisions, CCs const& collisions, TCs const& tracks, FilteredTCs const& filteredTracks, MCs const& McParts)
   {
-    // LOGF(info, "Size of mccollisions: %i", mcCollisions.size());
 
     for (const auto& mcCollision : mcCollisions) {
       float centrality = -1;
