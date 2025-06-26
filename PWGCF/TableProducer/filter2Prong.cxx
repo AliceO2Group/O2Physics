@@ -417,7 +417,7 @@ struct Filter2Prong {
   }
   PROCESS_SWITCH(Filter2Prong, processDataInvMass, "Process data generic 2-prong candidates with invariant mass method", false);
 
-  // Generic 2-prong invariant mass method candidate finder. Only works for non-identical daughters of opposite charge for now.
+  // Phi and V0s invariant mass method candidate finder. Only works for non-identical daughters of opposite charge for now.
   void processDataPhiV0(aod::Collisions::iterator const& collision, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, Filter2Prong::PIDTrack const& tracks, aod::V0Datas const& V0s)
   {
     if (cfcollisions.size() <= 0 || cftracks.size() <= 0)
