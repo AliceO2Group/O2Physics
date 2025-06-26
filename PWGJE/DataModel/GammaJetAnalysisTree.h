@@ -17,43 +17,45 @@
 #ifndef PWGJE_DATAMODEL_GAMMAJETANALYSISTREE_H_
 #define PWGJE_DATAMODEL_GAMMAJETANALYSISTREE_H_
 
-#include "Framework/AnalysisDataModel.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/Jet.h"
 
-namespace o2::aod::gjanalysis{
-    enum class ClusterOrigin{
-        kUnknown = 0,
-        kPhoton, // dominant amount of energy from the cluster is from a photon
-        kPromptPhoton,
-        kDirectPromptPhoton,
-        kFragmentationPhoton,
-        kDecayPhoton, // the particle that produced the cluster is a decay product
-        kDecayPhotonPi0, // the cluster was produced by a pi0 decay
-        kDecayPhotonEta, // the cluster was produced by a eta decay 
-        kMergedPi0, // the cluster was produced by a merged pi0, i.e. two photons contribute to the cluster that both come from pi0 decay
-        kMergedEta, // the cluster was produced by a merged eta, i.e. two photons contribute to the cluster that both come from eta decay
-        kConvertedPhoton, // the cluster was produced by a converted photon, i.e. a photon that converted to an electron-positron pair and one of the electrons was detected in the cluster
-    };
-    enum class ParticleOrigin{
-        kUnknown = 0,
-        kPromptPhoton,
-        kDirectPromptPhoton,
-        kFragmentationPhoton,
-        kDecayPhoton,
-        kDecayPhotonPi0,
-        kDecayPhotonEta,
-        kDecayPhotonOther,
-        kPi0
-    };
-}
+#include "Framework/AnalysisDataModel.h"
+
+namespace o2::aod::gjanalysis
+{
+enum class ClusterOrigin {
+  kUnknown = 0,
+  kPhoton, // dominant amount of energy from the cluster is from a photon
+  kPromptPhoton,
+  kDirectPromptPhoton,
+  kFragmentationPhoton,
+  kDecayPhoton,     // the particle that produced the cluster is a decay product
+  kDecayPhotonPi0,  // the cluster was produced by a pi0 decay
+  kDecayPhotonEta,  // the cluster was produced by a eta decay
+  kMergedPi0,       // the cluster was produced by a merged pi0, i.e. two photons contribute to the cluster that both come from pi0 decay
+  kMergedEta,       // the cluster was produced by a merged eta, i.e. two photons contribute to the cluster that both come from eta decay
+  kConvertedPhoton, // the cluster was produced by a converted photon, i.e. a photon that converted to an electron-positron pair and one of the electrons was detected in the cluster
+};
+enum class ParticleOrigin {
+  kUnknown = 0,
+  kPromptPhoton,
+  kDirectPromptPhoton,
+  kFragmentationPhoton,
+  kDecayPhoton,
+  kDecayPhotonPi0,
+  kDecayPhotonEta,
+  kDecayPhotonOther,
+  kPi0
+};
+} // namespace o2::aod::gjanalysis
 namespace o2::aod
 {
 
 // Collision level information
 namespace gjevent
-{                          //! event index
+{ //! event index
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
 DECLARE_SOA_COLUMN(Rho, rho, float);
@@ -70,7 +72,7 @@ namespace gjmcevent
 {
 DECLARE_SOA_INDEX_COLUMN(GjEvent, gjevent);
 DECLARE_SOA_COLUMN(Weight, weight, double);
-DECLARE_SOA_COLUMN(Rho, rho, float); // gen level rho
+DECLARE_SOA_COLUMN(Rho, rho, float);                              // gen level rho
 DECLARE_SOA_COLUMN(IsMultipleAssigned, isMultipleAssigned, bool); // if the corresponding MC collision matched to this rec collision was also matched to other rec collisions (allows to skip those on analysis level   )
 } // namespace gjmcevent
 DECLARE_SOA_TABLE(GjMCEvents, "AOD", "GJMCEVENT", gjmcevent::GjEventId, gjmcevent::Weight, gjmcevent::Rho, gjmcevent::IsMultipleAssigned)
@@ -106,7 +108,6 @@ DECLARE_SOA_COLUMN(LeadingEnergyFraction, leadingEnergyFraction, float); // frac
 } // namespace gjgammamcinfo
 DECLARE_SOA_TABLE(GjGammaMCInfos, "AOD", "GJGAMMAMCINFO", gjgamma::GjEventId, gjgammamcinfo::Origin, gjgammamcinfo::LeadingEnergyFraction)
 
-
 // Generator level particle information from the MC collision that was matched to the reconstructed collision
 namespace gjmcparticle
 {
@@ -115,10 +116,10 @@ DECLARE_SOA_COLUMN(Energy, energy, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(PdgCode, pdgCode, ushort); // TODO also add smoe origin of particle? maybe only save original pi0 and eta and photon (not decay photons)
+DECLARE_SOA_COLUMN(PdgCode, pdgCode, ushort);        // TODO also add smoe origin of particle? maybe only save original pi0 and eta and photon (not decay photons)
 DECLARE_SOA_COLUMN(MCIsolation, mcIsolation, float); // isolation in cone on mc gen level
-DECLARE_SOA_COLUMN(Origin, origin, uint16_t); // origin of particle
-}
+DECLARE_SOA_COLUMN(Origin, origin, uint16_t);        // origin of particle
+} // namespace gjmcparticle
 DECLARE_SOA_TABLE(GjMCParticles, "AOD", "GJMCPARTICLE", gjmcparticle::GjEventId, gjmcparticle::Energy, gjmcparticle::Eta, gjmcparticle::Phi, gjmcparticle::Pt, gjmcparticle::PdgCode, gjmcparticle::MCIsolation, gjmcparticle::Origin)
 
 // Reconstructed charged jet information
