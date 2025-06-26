@@ -131,6 +131,23 @@ class FemtoUniversePairCleaner
         return false;
       }
       return part1.globalIndex() != part2.globalIndex();
+    } else if constexpr (kPartOneType == o2::aod::femtouniverseparticle::ParticleType::kV0 && kPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kCascade) {
+      /// V0-Cascade combination where part1 is a V0 and part2 is a cascade
+      if (part1.partType() != o2::aod::femtouniverseparticle::ParticleType::kV0 || part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kCascade) {
+        LOG(fatal) << "FemtoUniversePairCleaner: passed arguments don't agree with FemtoUniversePairCleaner instantiation! Please provide first argument kV0 candidate and second argument kCascade candidate.";
+        return false;
+      }
+      // part1 v0 children
+      const auto& posChild1 = particles.iteratorAt(part1.index() - 2);
+      const auto& negChild1 = particles.iteratorAt(part1.index() - 1);
+      // part2 cascade children
+      const auto& posChild2 = particles.iteratorAt(part2.index() - 3);
+      const auto& negChild2 = particles.iteratorAt(part2.index() - 2);
+      const auto& bachelor2 = particles.iteratorAt(part2.index() - 1);
+      if (posChild1.globalIndex() == posChild2.globalIndex() || negChild1.globalIndex() == negChild2.globalIndex() || posChild1.globalIndex() == bachelor2.globalIndex() || negChild1.globalIndex() == bachelor2.globalIndex()) {
+        return false;
+      }
+      return part1.globalIndex() != part2.globalIndex();
     } else if constexpr (kPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && kPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kD0) {
       /// Track-D0 combination part1 is hadron and part2 is D0
       if (part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kD0) {

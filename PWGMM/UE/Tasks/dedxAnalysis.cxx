@@ -64,6 +64,7 @@ struct DedxAnalysis {
   float invMassCutGamma = 0.0015;
   float magField = 1;
   float pTcut = 2.0;
+  float nclCut = 120.0;
 
   // Configurable Parameters
   // Tracks cuts
@@ -99,11 +100,15 @@ struct DedxAnalysis {
                                    "Minimum Mass Gamma"};
   Configurable<float> maxMassGamma{"maxMassGamma", 0.002022f,
                                    "Maximum Mass Gamma"};
-  Configurable<bool> calibrationMode{"calibrationMode", true, "calibration mode"};
+  Configurable<bool> calibrationMode{"calibrationMode", false, "calibration mode"};
   Configurable<bool> additionalCuts{"additionalCuts", true, "additional cuts"};
   // Histograms names
   static constexpr std::string_view kDedxvsMomentumPos[kParticlesType] = {"dEdx_vs_Momentum_all_Pos", "dEdx_vs_Momentum_Pi_v0_Pos", "dEdx_vs_Momentum_Pr_v0_Pos", "dEdx_vs_Momentum_El_v0_Pos"};
   static constexpr std::string_view kDedxvsMomentumNeg[kParticlesType] = {"dEdx_vs_Momentum_all_Neg", "dEdx_vs_Momentum_Pi_v0_Neg", "dEdx_vs_Momentum_Pr_v0_Neg", "dEdx_vs_Momentum_El_v0_Neg"};
+  static constexpr std::string_view kNclDedxMomentumNegBefore[kEtaIntervals] = {"Ncl_vs_dEdx_vs_Momentum_Neg_1_Before", "Ncl_vs_dEdx_vs_Momentum_Neg_2_Before", "Ncl_vs_dEdx_vs_Momentum_Neg_3_Before", "Ncl_vs_dEdx_vs_Momentum_Neg_4_Before", "Ncl_vs_dEdx_vs_Momentum_Neg_5_Before", "Ncl_vs_dEdx_vs_Momentum_Neg_6_Before", "Ncl_vs_dEdx_vs_Momentum_Neg_7_Before", "Ncl_vs_dEdx_vs_Momentum_Neg_8_Before"};
+  static constexpr std::string_view kNclDedxMomentumPosBefore[kEtaIntervals] = {"Ncl_vs_dEdx_vs_Momentum_Pos_1_Before", "Ncl_vs_dEdx_vs_Momentum_Pos_2_Before", "Ncl_vs_dEdx_vs_Momentum_Pos_3_Before", "Ncl_vs_dEdx_vs_Momentum_Pos_4_Before", "Ncl_vs_dEdx_vs_Momentum_Pos_5_Before", "Ncl_vs_dEdx_vs_Momentum_Pos_6_Before", "Ncl_vs_dEdx_vs_Momentum_Pos_7_Before", "Ncl_vs_dEdx_vs_Momentum_Pos_8_Before"};
+  static constexpr std::string_view kNclDedxMomentumNegAfter[kEtaIntervals] = {"Ncl_vs_dEdx_vs_Momentum_Neg_1_After", "Ncl_vs_dEdx_vs_Momentum_Neg_2_After", "Ncl_vs_dEdx_vs_Momentum_Neg_3_After", "Ncl_vs_dEdx_vs_Momentum_Neg_4_After", "Ncl_vs_dEdx_vs_Momentum_Neg_5_After", "Ncl_vs_dEdx_vs_Momentum_Neg_6_After", "Ncl_vs_dEdx_vs_Momentum_Neg_7_After", "Ncl_vs_dEdx_vs_Momentum_Neg_8_After"};
+  static constexpr std::string_view kNclDedxMomentumPosAfter[kEtaIntervals] = {"Ncl_vs_dEdx_vs_Momentum_Pos_1_After", "Ncl_vs_dEdx_vs_Momentum_Pos_2_After", "Ncl_vs_dEdx_vs_Momentum_Pos_3_After", "Ncl_vs_dEdx_vs_Momentum_Pos_4_After", "Ncl_vs_dEdx_vs_Momentum_Pos_5_After", "Ncl_vs_dEdx_vs_Momentum_Pos_6_After", "Ncl_vs_dEdx_vs_Momentum_Pos_7_After", "Ncl_vs_dEdx_vs_Momentum_Pos_8_After"};
   static constexpr double EtaCut[kEtaIntervals + 1] = {-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8};
   Configurable<std::vector<float>> calibrationFactorNeg{"calibrationFactorNeg", {50.4011, 50.4764, 50.186, 49.2955, 48.8222, 49.4273, 49.9292, 50.0556}, "negative calibration factors"};
   Configurable<std::vector<float>> calibrationFactorPos{"calibrationFactorPos", {50.5157, 50.6359, 50.3198, 49.3345, 48.9197, 49.4931, 50.0188, 50.1406}, "positive calibration factors"};
@@ -222,6 +227,20 @@ struct DedxAnalysis {
     registryDeDx.add(
       "hpt_vs_phi_Ncl_Before", "phi cut", HistType::kTH3F,
       {{ptAxis}, {100, 0.0, 0.4, "#varphi^{'}"}, {100, 0, 160, "N_{cl}"}});
+
+    // Ncl vs de/dx
+
+    for (int i = 0; i < kEtaIntervals; ++i) {
+      registryDeDx.add(kNclDedxMomentumPosBefore[i].data(), "Ncl vs dE/dx vs Momentum Positive before", HistType::kTH3F,
+                       {{100, 0, 160, "N_{cl}"}, {dedxAxis}, {pAxis}});
+      registryDeDx.add(kNclDedxMomentumNegBefore[i].data(), "Ncl vs dE/dx vs Momentum Negative before", HistType::kTH3F,
+                       {{100, 0, 160, "N_{cl}"}, {dedxAxis}, {pAxis}});
+
+      registryDeDx.add(kNclDedxMomentumPosAfter[i].data(), "Ncl vs dE/dx vs Momentum Positive after", HistType::kTH3F,
+                       {{100, 0, 160, "N_{cl}"}, {dedxAxis}, {pAxis}});
+      registryDeDx.add(kNclDedxMomentumNegAfter[i].data(), "Ncl vs dE/dx vs Momentum Negative after", HistType::kTH3F,
+                       {{100, 0, 160, "N_{cl}"}, {dedxAxis}, {pAxis}});
+    }
 
     // beta plot
     registryDeDx.add(
@@ -405,7 +424,9 @@ struct DedxAnalysis {
     float pt = trk.pt();
     float phi = trk.phi();
     int charge = trk.sign();
+    float eta = trk.eta();
     auto nTPCCl = trk.tpcNClsFindable() - trk.tpcNClsFindableMinusFound();
+    float sigP = trk.sign() * trk.tpcInnerParam();
 
     if (pt < pTcut)
       return true;
@@ -421,10 +442,116 @@ struct DedxAnalysis {
 
     registryDeDx.fill(HIST("hpt_vs_phi_Ncl_Before"), pt, phi, nTPCCl);
 
+    // cut phi
     if (phi < fphiCutHigh.Eval(pt) && phi > fphiCutLow.Eval(pt))
       return false; // reject track
 
+    if (eta > EtaCut[0] && eta < EtaCut[1]) {
+      if (sigP < 0) {
+        registryDeDx.fill(HIST(kNclDedxMomentumNegBefore[0]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
+      } else {
+        registryDeDx.fill(HIST(kNclDedxMomentumPosBefore[0]), nTPCCl, trk.tpcSignal(), sigP);
+      }
+    } else if (eta > EtaCut[1] && eta < EtaCut[2]) {
+      if (sigP < 0) {
+        registryDeDx.fill(HIST(kNclDedxMomentumNegBefore[1]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
+      } else {
+        registryDeDx.fill(HIST(kNclDedxMomentumPosBefore[1]), nTPCCl, trk.tpcSignal(), sigP);
+      }
+    } else if (eta > EtaCut[2] && eta < EtaCut[3]) {
+      if (sigP < 0) {
+        registryDeDx.fill(HIST(kNclDedxMomentumNegBefore[2]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
+      } else {
+        registryDeDx.fill(HIST(kNclDedxMomentumPosBefore[2]), nTPCCl, trk.tpcSignal(), sigP);
+      }
+    } else if (eta > EtaCut[3] && eta < EtaCut[4]) {
+      if (sigP < 0) {
+        registryDeDx.fill(HIST(kNclDedxMomentumNegBefore[3]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
+      } else {
+        registryDeDx.fill(HIST(kNclDedxMomentumPosBefore[3]), nTPCCl, trk.tpcSignal(), sigP);
+      }
+    } else if (eta > EtaCut[4] && eta < EtaCut[5]) {
+      if (sigP < 0) {
+        registryDeDx.fill(HIST(kNclDedxMomentumNegBefore[4]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
+      } else {
+        registryDeDx.fill(HIST(kNclDedxMomentumPosBefore[4]), nTPCCl, trk.tpcSignal(), sigP);
+      }
+    } else if (eta > EtaCut[5] && eta < EtaCut[6]) {
+      if (sigP < 0) {
+        registryDeDx.fill(HIST(kNclDedxMomentumNegBefore[5]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
+      } else {
+        registryDeDx.fill(HIST(kNclDedxMomentumPosBefore[5]), nTPCCl, trk.tpcSignal(), sigP);
+      }
+    } else if (eta > EtaCut[6] && eta < EtaCut[7]) {
+      if (sigP < 0) {
+        registryDeDx.fill(HIST(kNclDedxMomentumNegBefore[6]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
+      } else {
+        registryDeDx.fill(HIST(kNclDedxMomentumPosBefore[6]), nTPCCl, trk.tpcSignal(), sigP);
+      }
+    } else if (eta > EtaCut[7] && eta < EtaCut[8]) {
+      if (sigP < 0) {
+        registryDeDx.fill(HIST(kNclDedxMomentumNegBefore[7]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
+      } else {
+        registryDeDx.fill(HIST(kNclDedxMomentumPosBefore[7]), nTPCCl, trk.tpcSignal(), sigP);
+      }
+    }
+
+    // cut Ncl
+    if (nTPCCl < nclCut)
+      return false;
+
     registryDeDx.fill(HIST("hpt_vs_phi_Ncl_After"), pt, phi, nTPCCl);
+
+    if (eta > EtaCut[0] && eta < EtaCut[1]) {
+      if (sigP < 0) {
+        registryDeDx.fill(HIST(kNclDedxMomentumNegAfter[0]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
+      } else {
+        registryDeDx.fill(HIST(kNclDedxMomentumPosAfter[0]), nTPCCl, trk.tpcSignal(), sigP);
+      }
+    } else if (eta > EtaCut[1] && eta < EtaCut[2]) {
+      if (sigP < 0) {
+        registryDeDx.fill(HIST(kNclDedxMomentumNegAfter[1]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
+      } else {
+        registryDeDx.fill(HIST(kNclDedxMomentumPosAfter[1]), nTPCCl, trk.tpcSignal(), sigP);
+      }
+    } else if (eta > EtaCut[2] && eta < EtaCut[3]) {
+      if (sigP < 0) {
+        registryDeDx.fill(HIST(kNclDedxMomentumNegAfter[2]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
+      } else {
+        registryDeDx.fill(HIST(kNclDedxMomentumPosAfter[2]), nTPCCl, trk.tpcSignal(), sigP);
+      }
+    } else if (eta > EtaCut[3] && eta < EtaCut[4]) {
+      if (sigP < 0) {
+        registryDeDx.fill(HIST(kNclDedxMomentumNegAfter[3]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
+      } else {
+        registryDeDx.fill(HIST(kNclDedxMomentumPosAfter[3]), nTPCCl, trk.tpcSignal(), sigP);
+      }
+    } else if (eta > EtaCut[4] && eta < EtaCut[5]) {
+      if (sigP < 0) {
+        registryDeDx.fill(HIST(kNclDedxMomentumNegAfter[4]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
+      } else {
+        registryDeDx.fill(HIST(kNclDedxMomentumPosAfter[4]), nTPCCl, trk.tpcSignal(), sigP);
+      }
+    } else if (eta > EtaCut[5] && eta < EtaCut[6]) {
+      if (sigP < 0) {
+        registryDeDx.fill(HIST(kNclDedxMomentumNegAfter[5]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
+      } else {
+        registryDeDx.fill(HIST(kNclDedxMomentumPosAfter[5]), nTPCCl, trk.tpcSignal(), sigP);
+      }
+    } else if (eta > EtaCut[6] && eta < EtaCut[7]) {
+      if (sigP < 0) {
+        registryDeDx.fill(HIST(kNclDedxMomentumNegAfter[6]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
+      } else {
+        registryDeDx.fill(HIST(kNclDedxMomentumPosAfter[6]), nTPCCl, trk.tpcSignal(), sigP);
+      }
+    } else if (eta > EtaCut[7] && eta < EtaCut[8]) {
+      if (sigP < 0) {
+        registryDeDx.fill(HIST(kNclDedxMomentumNegAfter[7]), nTPCCl, trk.tpcSignal(), std::abs(sigP));
+      } else {
+        registryDeDx.fill(HIST(kNclDedxMomentumPosAfter[7]), nTPCCl, trk.tpcSignal(), sigP);
+      }
+    }
+
     return true;
   }
 
