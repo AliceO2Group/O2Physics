@@ -215,7 +215,7 @@ struct F0980pbpbanalysis {
   template <typename TCollision>
   bool eventSelected(TCollision collision)
   {
-    constexpr float QvecAmpMin = 1e-4f;
+    constexpr double QvecAmpMin = 1e-4;
     if (!collision.sel8()) {
       return 0;
     }
