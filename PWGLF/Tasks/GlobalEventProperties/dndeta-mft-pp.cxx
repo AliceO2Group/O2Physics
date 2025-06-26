@@ -577,11 +577,10 @@ struct PseudorapidityDensityMFT {
           registry.fill(HIST("Tracks/2Danalysis/EtaZvtx"), track.eta(), z);
         }
       }
-     if (!disableITSROFCut && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) 
-     {
-     return;
-     }       
-     registry.fill(HIST("EventSelection"), 3.);
+      if (!disableITSROFCut && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+        return;
+      }
+      registry.fill(HIST("EventSelection"), 3.);
       if (!useEvSel || (useEvSel && collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
         registry.fill(HIST("EventSelection"), 4.);
         registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_sel8"), Ntrk, z);
@@ -856,10 +855,9 @@ struct PseudorapidityDensityMFT {
          collisions.size());
     for (auto& collision : collisions) {
       registry.fill(HIST("EventEfficiency"), 3.);
-      if (!disableITSROFCut && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
-        {
-         return;
-        }
+      if (!disableITSROFCut && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+        return;
+      }
       if (!useEvSel || (useEvSel && collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
         atLeastOne = true;
         auto perCollisionSample = sample->sliceByCached(
