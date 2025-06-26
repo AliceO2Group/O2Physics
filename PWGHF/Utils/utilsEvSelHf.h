@@ -228,7 +228,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     hPosYAfterEvSel = registry.add<TH1>(NameHistPosYAfterEvSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
     hNumPvContributorsAfterSel = registry.add<TH1>(NameHistNumPvContributorsAfterSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{500, -0.5, 499.5}}});
     setEventRejectionLabels(hCollisions, softwareTrigger);
-      hUpCollisions = registry.add<TH1>(NameHistUpCollisions, "HF upc counter;;# of upc events", {o2::framework::HistType::kTH1D, {axisUpcEvents}});
+      hUpCollisions = registry.add<TH1>(NameHistUpCollisions, "HF UPC counter;;# of UPC events", {o2::framework::HistType::kTH1D, {axisUpcEvents}});
     const o2::framework::AxisSpec th2AxisCent{th2ConfigAxisCent, "Centrality"};
     const o2::framework::AxisSpec th2AxisOccupancy{th2ConfigAxisOccupancy, "Occupancy"};
     hCollisionsCentOcc = registry.add<TH2>(NameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {th2AxisCent, th2AxisOccupancy}});

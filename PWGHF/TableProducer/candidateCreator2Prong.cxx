@@ -124,8 +124,8 @@ struct HfCandidateCreator2Prong {
 
     std::array<bool, 4> processesCollisions = {doprocessCollisions, doprocessCollisionsCentFT0C, doprocessCollisionsCentFT0M, doprocessCollisionsUpc};
     const int nProcessesCollisions = std::accumulate(processesCollisions.begin(), processesCollisions.end(), 0);
-    std::array<bool, 5> processesCollisionsUpc = {doprocessPvRefitWithDCAFitterNUpc, doprocessNoPvRefitWithDCAFitterNUpc, doprocessPvRefitWithKFParticleUpc, doprocessNoPvRefitWithKFParticleUpc, doprocessCollisionsUpc};
-    const int nProcessesCollisionsUpc = std::accumulate(processesCollisionsUpc.begin(), processesCollisionsUpc.end(), 0);
+    std::array<bool, 5> processesUpc = {doprocessPvRefitWithDCAFitterNUpc, doprocessNoPvRefitWithDCAFitterNUpc, doprocessPvRefitWithKFParticleUpc, doprocessNoPvRefitWithKFParticleUpc, doprocessCollisionsUpc};
+    const int nprocessesUpc = std::accumulate(processesUpc.begin(), processesUpc.end(), 0);
     if (nProcessesCollisions > 1) {
       LOGP(fatal, "At most one process function for collision monitoring can be enabled at a time.");
     }
@@ -140,7 +140,7 @@ struct HfCandidateCreator2Prong {
         LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisionsCentFT0M\"?");
       }
     }
-    if (nProcessesCollisionsUpc > 0 && isRun2) {
+    if (nprocessesUpc > 0 && isRun2) {
       LOGP(fatal, "Process function for UPC is only available in Run 3!");
     }
 
@@ -648,7 +648,7 @@ struct HfCandidateCreator2Prong {
   void processPvRefitWithDCAFitterNUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                        soa::Join<aod::Hf2Prongs, aod::HfPvRefit2Prong> const& rowsTrackIndexProng2,
                                        TracksWCovExtraPidPiKa const& tracks,
-                                       aod::BCFullInfos const& bcWithTimeStamps,
+                                       aod::BcFullInfos const& bcWithTimeStamps,
                                        aod::FT0s const& /*ft0s*/,
                                        aod::FV0As const& /*fv0as*/,
                                        aod::FDDs const& /*fdds*/,
@@ -662,7 +662,7 @@ struct HfCandidateCreator2Prong {
   void processNoPvRefitWithDCAFitterNUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                          aod::Hf2Prongs const& rowsTrackIndexProng2,
                                          TracksWCovExtraPidPiKa const& tracks,
-                                         aod::BCFullInfos const& bcWithTimeStamps,
+                                         aod::BcFullInfos const& bcWithTimeStamps,
                                          aod::FT0s const& /*ft0s*/,
                                          aod::FV0As const& /*fv0as*/,
                                          aod::FDDs const& /*fdds*/,
@@ -676,7 +676,7 @@ struct HfCandidateCreator2Prong {
   void processPvRefitWithKFParticleUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                        soa::Join<aod::Hf2Prongs, aod::HfPvRefit2Prong> const& rowsTrackIndexProng2,
                                        TracksWCovExtraPidPiKa const& tracks,
-                                       aod::BCFullInfos const& bcWithTimeStamps,
+                                       aod::BcFullInfos const& bcWithTimeStamps,
                                        aod::FT0s const& /*ft0s*/,
                                        aod::FV0As const& /*fv0as*/,
                                        aod::FDDs const& /*fdds*/,
@@ -690,7 +690,7 @@ struct HfCandidateCreator2Prong {
   void processNoPvRefitWithKFParticleUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                          aod::Hf2Prongs const& rowsTrackIndexProng2,
                                          TracksWCovExtraPidPiKa const& tracks,
-                                         aod::BCFullInfos const& bcWithTimeStamps,
+                                         aod::BcFullInfos const& bcWithTimeStamps,
                                          aod::FT0s const& /*ft0s*/,
                                          aod::FV0As const& /*fv0as*/,
                                          aod::FDDs const& /*fdds*/,
@@ -762,7 +762,7 @@ struct HfCandidateCreator2Prong {
 
   /// @brief process function to monitor collisions - UPC collision
   void processCollisionsUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                            aod::BCFullInfos const& bcs,
+                            aod::BcFullInfos const& bcs,
                             aod::FT0s const& /*ft0s*/,
                             aod::FV0As const& /*fv0as*/, 
                             aod::FDDs const& /*fdds*/,
@@ -774,7 +774,7 @@ struct HfCandidateCreator2Prong {
       /// bitmask with event. selection info
       float centrality{-1.f};
       float occupancy = getOccupancyColl(collision, OccupancyEstimator::Its);
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, CentralityEstimator::None, aod::BCFullInfos>(collision, centrality, ccdb, registry, bcs);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, CentralityEstimator::None, aod::BcFullInfos>(collision, centrality, ccdb, registry, bcs);
 
       /// monitor the satisfied event selections
       hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
