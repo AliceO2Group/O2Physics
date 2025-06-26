@@ -1374,11 +1374,14 @@ DECLARE_SOA_COLUMN(InvMassProng1, invMassProng1, float); //! Invariant Mass of V
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                   //! Sign of the Resonance candidate
 DECLARE_SOA_COLUMN(BachSignProduct, bachSignProduct, int8_t); //! Product of the bachelors signs
 
-DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);               // flag for decay channel classification reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);               // flag for resonance decay channel classification reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchRecD, flagMcMatchRecD, int8_t);             // flag for D meson bachelor decay channel classification reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchChanD, flagMcDecayChanD, int8_t);           // flag for D meson resonant channel classification reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);               // flag for decay channel classification generator level
-DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                       // debug flag for mis-association at reconstruction level
+DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, uint16_t);                       // debug flag for mis-association at reconstruction level
 DECLARE_SOA_COLUMN(Origin, origin, int8_t);                               // Flag for origin of MC particle 1=promt, 2=FD
 DECLARE_SOA_COLUMN(SignD0, signD0, int8_t);                               // Sign of the D0 in the channels with D* -> D0 pi, needed in case of non-matched D*
+DECLARE_SOA_COLUMN(PtGen, ptGen, float);                                  // Pt at generation level in GeV/c
 DECLARE_SOA_COLUMN(InvMassGen, invMassGen, float);                        //! Invariant mass at generation level in GeV/c2
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                                        //!
                            [](float pxProng0, float pxProng1, float pyProng0, float pyProng1) -> float { return RecoDecay::pt((1.f * pxProng0 + 1.f * pxProng1), (1.f * pyProng0 + 1.f * pyProng1)); });
@@ -1445,7 +1448,6 @@ DECLARE_SOA_TABLE(Hf2PrV0Ids, "AOD", "HF2PRV0ID",
                   hf_track_index_reduced::HfRedCollisionId,
                   hf_reso_2pr_v0::Prong0Id,
                   hf_reso_2pr_v0::Prong1Id);
-
 DECLARE_SOA_TABLE(Hf3PrTrkIds, "AOD", "HF3PRTRKID",
                   hf_track_index_reduced::HfRedCollisionId,
                   hf_reso_3pr_trk::Prong0Id,
@@ -1461,15 +1463,82 @@ DECLARE_SOA_TABLE(Hf2PrTrkIds, "AOD", "HF2PRTRKID",
 
 // Tables for MC Resonance analysis
 // table with results of reconstruction level MC matching
-DECLARE_SOA_TABLE(HfMcRecRedDV0s, "AOD", "HFMCRECREDDV0", //! Table with reconstructed MC information on DV0(<-Ds*) pairs for reduced workflow
+DECLARE_SOA_TABLE(Hf3PrV0McRec, "AOD", "HF3PRV0MCREC",
                   hf_reso_3pr_v0::Prong0Id,
                   hf_reso_3pr_v0::Prong1Id,
                   hf_reso_cand_reduced::FlagMcMatchRec,
+                  hf_reso_cand_reduced::FlagMcMatchRecD,
+                  hf_reso_cand_reduced::FlagMcMatchChanD,
                   hf_reso_cand_reduced::DebugMcRec,
                   hf_reso_cand_reduced::Origin,
-                  hf_reso_cand_reduced::SignD0,
-                  hf_b0_mc::PtMother,
+                  hf_reso_cand_reduced::PtGen,
                   hf_reso_cand_reduced::InvMassGen,
+                  hf_cand::NTracksDecayed,
+                  o2::soa::Marker<1>);
+                  
+DECLARE_SOA_TABLE(HfDstarV0McRec, "AOD", "HFDSTARV0MCREC",
+                  hf_reso_dstar_v0::Prong0Id,
+                  hf_reso_dstar_v0::Prong1Id,
+                  hf_reso_cand_reduced::FlagMcMatchRec,
+                  hf_reso_cand_reduced::FlagMcMatchRecD,
+                  hf_reso_cand_reduced::FlagMcMatchChanD,
+                  hf_reso_cand_reduced::DebugMcRec,
+                  hf_reso_cand_reduced::Origin,
+                  hf_reso_cand_reduced::PtGen,
+                  hf_reso_cand_reduced::InvMassGen,
+                  hf_cand::NTracksDecayed,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(Hf2PrV0McRec, "AOD", "HF2PRV0MCREC",
+                  hf_reso_2pr_v0::Prong0Id,
+                  hf_reso_2pr_v0::Prong1Id,
+                  hf_reso_cand_reduced::FlagMcMatchRec,
+                  hf_reso_cand_reduced::FlagMcMatchRecD,
+                  hf_reso_cand_reduced::FlagMcMatchChanD,
+                  hf_reso_cand_reduced::DebugMcRec,
+                  hf_reso_cand_reduced::Origin,
+                  hf_reso_cand_reduced::PtGen,
+                  hf_reso_cand_reduced::InvMassGen,
+                  hf_cand::NTracksDecayed,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(Hf3PrTrkMcRec, "AOD", "HF3PRTRKMCREC",
+                  hf_reso_3pr_trk::Prong0Id,
+                  hf_reso_3pr_trk::Prong1Id,
+                  hf_reso_cand_reduced::FlagMcMatchRec,
+                  hf_reso_cand_reduced::FlagMcMatchRecD,
+                  hf_reso_cand_reduced::FlagMcMatchChanD,
+                  hf_reso_cand_reduced::DebugMcRec,
+                  hf_reso_cand_reduced::Origin,
+                  hf_reso_cand_reduced::PtGen,
+                  hf_reso_cand_reduced::InvMassGen,
+                  hf_cand::NTracksDecayed,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(HfDstarTrkMcRec, "AOD", "HFDSTARTRKMCREC",
+                  hf_reso_dstar_trk::Prong0Id,
+                  hf_reso_dstar_trk::Prong1Id,
+                  hf_reso_cand_reduced::FlagMcMatchRec,
+                  hf_reso_cand_reduced::FlagMcMatchRecD,
+                  hf_reso_cand_reduced::FlagMcMatchChanD,
+                  hf_reso_cand_reduced::DebugMcRec,
+                  hf_reso_cand_reduced::Origin,
+                  hf_reso_cand_reduced::PtGen,
+                  hf_reso_cand_reduced::InvMassGen,
+                  hf_cand::NTracksDecayed,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(Hf2PrTrkMcRec, "AOD", "HF2PRTRKMCREC",
+                  hf_reso_2pr_trk::Prong0Id,
+                  hf_reso_2pr_trk::Prong1Id,
+                  hf_reso_cand_reduced::FlagMcMatchRec,
+                  hf_reso_cand_reduced::FlagMcMatchRecD,
+                  hf_reso_cand_reduced::FlagMcMatchChanD,
+                  hf_reso_cand_reduced::DebugMcRec,
+                  hf_reso_cand_reduced::Origin,
+                  hf_reso_cand_reduced::PtGen,
+                  hf_reso_cand_reduced::InvMassGen,
+                  hf_cand::NTracksDecayed,
                   o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(HfMcGenRedResos, "AOD", "HFMCGENREDRESO", //! Generation-level MC information on Ds-Resonances candidates for reduced workflow
@@ -1484,23 +1553,19 @@ DECLARE_SOA_TABLE(HfMcGenRedResos, "AOD", "HFMCGENREDRESO", //! Generation-level
                   hf_b0_mc::PtProng1,
                   hf_b0_mc::YProng1,
                   hf_b0_mc::EtaProng1,
+                  hf_reso_cand_reduced::InvMassGen,
+                  hf_reduced_collision::HfCollisionRejectionMap,
                   o2::soa::Marker<1>);
-
-DECLARE_SOA_TABLE(HfCandChaResTr, "AOD", "HFCANDCHARESTR", //! Table with Resonance candidate information for resonances plus tracks reduced workflow
-                                                           // Static
-                  hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
-                  hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
-                  hf_reso_cand_reduced::InvMass,
-                  hf_reso_cand_reduced::InvMassProng0,
-                  // Dynamic
-                  hf_reso_cand_reduced::PtProng0<hf_cand::PxProng0, hf_cand::PyProng0>);
 
 // Table with same size as HfCandCharmReso
 DECLARE_SOA_TABLE(HfMcRecRedResos, "AOD", "HFMCRECREDRESO", //! Reconstruction-level MC information on Ds-Resonances candidates for reduced workflow
                   hf_reso_cand_reduced::FlagMcMatchRec,
+                  hf_reso_cand_reduced::FlagMcMatchRecD,
+                  hf_reso_cand_reduced::FlagMcMatchChanD,
                   hf_reso_cand_reduced::DebugMcRec,
                   hf_reso_cand_reduced::Origin,
-                  hf_b0_mc::PtMother,
+                  hf_reso_cand_reduced::PtGen,
+                  hf_reso_cand_reduced::InvMassGen,
                   o2::soa::Marker<1>);
 } // namespace aod
 
