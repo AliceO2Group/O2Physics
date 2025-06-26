@@ -215,6 +215,7 @@ struct F0980pbpbanalysis {
   template <typename TCollision>
   bool eventSelected(TCollision collision)
   {
+    constexpr float QvecAmpMin = 1e-4f;
     if (!collision.sel8()) {
       return 0;
     }
@@ -237,7 +238,7 @@ struct F0980pbpbanalysis {
     if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return 0;
     }
-    if (cfgQvecSel && (collision.qvecAmp()[detId] < 1e-4 || collision.qvecAmp()[refAId] < 1e-4 || collision.qvecAmp()[refBId] < 1e-4)) {
+    if (cfgQvecSel && (collision.qvecAmp()[detId] < QvecAmpMin || collision.qvecAmp()[refAId] < QvecAmpMin || collision.qvecAmp()[refBId] < QvecAmpMin)) {
       return 0;
     }
     if (cfgOccupancySel && (collision.trackOccupancyInTimeRange() > cfgOccupancyMax || collision.trackOccupancyInTimeRange() < cfgOccupancyMin)) {
