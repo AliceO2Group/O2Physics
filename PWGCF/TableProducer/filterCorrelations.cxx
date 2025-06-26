@@ -79,6 +79,8 @@ struct FilterCF {
   O2_DEFINE_CONFIGURABLE(dcaselection, bool, false, "flag for applying dca selection on tracks")
   O2_DEFINE_CONFIGURABLE(dcaxymax, float, 0.1f, "dcaxy of tracks")
   O2_DEFINE_CONFIGURABLE(dcazmax, float, 0.1f, "dcaz of tracks")
+  O2_DEFINE_CONFIGURABLE(itsnclusters, int, 5, "minimum number of ITS clusters for tracks")
+  O2_DEFINE_CONFIGURABLE(tpcncrossedrows, int, 80, "minimum number of TPC crossed rows for tracks")
 
   // Filters and input definitions
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -181,10 +183,10 @@ struct FilterCF {
       uint8_t trackType = 0;
       if (track.isGlobalTrack()) {
         trackType |= kTrackSelected;
-        if (track.itsNCls() >= 5) {
+        if (track.itsNCls() >= itsnclusters) {
           trackType |= kITS5Clusters;
         }
-        if (track.tpcNClsCrossedRows() >= 90) {
+        if (track.tpcNClsCrossedRows() >= tpcncrossedrows) {
           trackType |= kTPC90CrossedRows;
         }
       }
@@ -193,10 +195,10 @@ struct FilterCF {
       uint8_t trackType = 0;
       if (track.isGlobalTrack()) {
         trackType |= kTrackSelected;
-        if (track.itsNCls() >= 5) {
+        if (track.itsNCls() >= itsnclusters) {
           trackType |= kITS5Clusters;
         }
-        if (track.tpcNClsCrossedRows() >= 90) {
+        if (track.tpcNClsCrossedRows() >= tpcncrossedrows) {
           trackType |= kTPC90CrossedRows;
         }
         if (isprot) {
