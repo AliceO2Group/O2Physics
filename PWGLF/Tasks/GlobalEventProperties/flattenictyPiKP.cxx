@@ -13,7 +13,7 @@
 /// \author Gyula Bencedi, gyula.bencedi@cern.ch
 /// \brief Task to produce pion, kaon, proton high-pT
 ///        distributions as a function of charged-particle flattenicity
-/// \since 25 June 2025
+/// \since 26 June 2025
 
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
