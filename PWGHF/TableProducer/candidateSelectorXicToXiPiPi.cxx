@@ -23,6 +23,7 @@
 
 #include "Common/Core/TrackSelectorPID.h"
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
@@ -38,13 +39,9 @@ struct HfCandidateSelectorXicToXiPiPi {
   Produces<aod::HfSelXicToXiPiPi> hfSelXicToXiPiPiCandidate;
   Produces<aod::HfMlXicToXiPiPi> hfMlXicToXiPiPiCandidate;
 
-  Configurable<float> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
-  Configurable<float> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
-  // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_to_xi_pi_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_xic_to_xi_pi_pi::Cuts[0], hf_cuts_xic_to_xi_pi_pi::NBinsPt, hf_cuts_xic_to_xi_pi_pi::NCutVars, hf_cuts_xic_to_xi_pi_pi::labelsPt, hf_cuts_xic_to_xi_pi_pi::labelsCutVar}, "Xicplus candidate selection per pT bin"};
-  // QA switch
-  Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
+  Configurable<bool> fillHistogram{"fillHistogram", false, "Flag to filling of counter histogram"};
   // Enable PID
   Configurable<bool> usePid{"usePid", true, "Switch for PID selection at track level"};
   Configurable<bool> useTpcPidOnly{"useTpcPidOnly", false, "Switch to use TPC PID only instead of TPC OR TOF)"};
@@ -77,6 +74,18 @@ struct HfCandidateSelectorXicToXiPiPi {
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
+  enum XicSelCriteria { All = 0,
+                        Pt,
+                        Mass,
+                        Rapidity,
+                        Eta,
+                        EtaDaughters,
+                        PtPionFromXicPlus,
+                        Chi2SV,
+                        MinDecayLength,
+                        MaxInvMassXiPiPairs,
+                        PidSelected,
+                        BdtSelected };
 
   using TracksPidWithSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TrackSelection>;
 
@@ -101,19 +110,20 @@ struct HfCandidateSelectorXicToXiPiPi {
       selectorProton.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
     }
 
-    if (activateQA) {
-      constexpr int kNBinsSelections = 1 + SelectionStep::NSelectionSteps;
-      std::string labels[kNBinsSelections];
-      labels[0] = "No selection";
-      labels[1 + SelectionStep::RecoSkims] = "Skims selection";
-      labels[1 + SelectionStep::RecoTopol] = "Skims & Topological selections";
-      labels[1 + SelectionStep::RecoPID] = "Skims & Topological & PID selections";
-      labels[1 + SelectionStep::RecoMl] = "Skims & Topological & PID & ML selections";
-      static const AxisSpec axisSelections = {kNBinsSelections, 0.5, kNBinsSelections + 0.5, ""};
-      registry.add("hSelections", "Selections;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
-      for (int iBin = 0; iBin < kNBinsSelections; ++iBin) {
-        registry.get<TH2>(HIST("hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
-      }
+    if (fillHistogram) {
+      registry.add("hSelCandidates", ";;entries", {HistType::kTH1F, {{11, -0.5, 10.5}}});
+      registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + All, "All");
+      registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + Pt, "#it{p}_{T}");
+      registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + Mass, "#Delta M");
+      registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + Rapidity, "y");
+      registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + Eta, "#eta");
+      registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + EtaDaughters, "#eta final state daughters");
+      registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + PtPionFromXicPlus, "#it{p}_{T} (#pi #leftarrow #Xi_{c}^{+})");
+      registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + Chi2SV, "#chi^{2}_{SV}");
+      registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + MinDecayLength, "Decay length");
+      registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + MaxInvMassXiPiPairs, "M_{#Xi #pi}");
+      registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + PidSelected, "PID selection");
+      registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + BdtSelected, "BDT selection");
     }
 
     if (applyMl) {
@@ -133,61 +143,71 @@ struct HfCandidateSelectorXicToXiPiPi {
   /// \param candidate is candidate
   /// \return true if candidate passes all cuts
   template <typename T1>
-  bool selectionTopol(const T1& hfCandXic)
+  bool isSelectedXic(const T1& hfCandXic)
   {
     auto candpT = hfCandXic.pt();
     int pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
     }
-
-    // check that the candidate pT is within the analysis range
-    if (candpT < ptCandMin || candpT >= ptCandMax) {
-      return false;
+    if (fillHistogram) {
+      registry.fill(HIST("hSelCandidates"), Pt);
     }
 
-    // check candidate mass is within a defined mass window
+    // check whether candidate mass is within a defined mass window
     if (std::abs(hfCandXic.invMassXicPlus() - o2::constants::physics::MassXiCPlus) > cuts->get(pTBin, "m")) {
       return false;
     }
-
-    // cosine of pointing angle
-    if (hfCandXic.cpa() <= cuts->get(pTBin, "cos pointing angle")) {
-      return false;
+    if (fillHistogram) {
+      registry.fill(HIST("hSelCandidates"), Mass);
     }
 
-    // cosine of pointing angle XY
-    if (hfCandXic.cpaXY() <= cuts->get(pTBin, "cos pointing angle XY")) {
+    // cut on candidate rapidity
+    if (std::abs(hfCandXic.y(o2::constants::physics::MassXiCPlus)) > cuts->get(pTBin, "y")) {
       return false;
     }
-
-    // candidate maximum decay length
-    if (hfCandXic.decayLength() > cuts->get(pTBin, "max decay length")) {
-      return false;
+    if (fillHistogram) {
+      registry.fill(HIST("hSelCandidates"), Rapidity);
     }
 
-    // candidate maximum decay length XY
-    if (hfCandXic.decayLengthXY() > cuts->get(pTBin, "max decay length XY")) {
+    // cut on candidate pseudorapidity
+    if (std::abs(hfCandXic.eta()) > cuts->get(pTBin, "eta")) {
       return false;
     }
-
-    // candidate chi2PC
-    if (hfCandXic.chi2PCA() > cuts->get(pTBin, "chi2PCA")) {
-      return false;
+    if (fillHistogram) {
+      registry.fill(HIST("hSelCandidates"), Eta);
     }
 
-    // maximum DCA of daughters
-    if ((std::abs(hfCandXic.impactParameter0()) > cuts->get(pTBin, "max impParXY Xi")) ||
-        (std::abs(hfCandXic.impactParameter1()) > cuts->get(pTBin, "max impParXY Pi0")) ||
-        (std::abs(hfCandXic.impactParameter2()) > cuts->get(pTBin, "max impParXY Pi1"))) {
+    // cut on pion pT
+    if (hfCandXic.ptProng1() < cuts->get(pTBin, "pT Pi0") || hfCandXic.ptProng2() < cuts->get(pTBin, "pT Pi1")) {
       return false;
     }
+    if (fillHistogram) {
+      registry.fill(HIST("hSelCandidates"), PtPionFromXicPlus);
+    }
 
-    // cut on daughter pT
-    if (hfCandXic.ptProng0() < cuts->get(pTBin, "pT Xi") ||
-        hfCandXic.ptProng1() < cuts->get(pTBin, "pT Pi0") ||
-        hfCandXic.ptProng2() < cuts->get(pTBin, "pT Pi1")) {
+    // cut on chi2 of secondary vertex
+    if (hfCandXic.chi2PCA() > cuts->get(pTBin, "chi2SV")) {
       return false;
+    }
+    if (fillHistogram) {
+      registry.fill(HIST("hSelCandidates"), Chi2SV);
+    }
+
+    // cut on candidate decay length
+    if (hfCandXic.decayLength() < cuts->get(pTBin, "min decay length") || hfCandXic.decayLengthXY() < cuts->get(pTBin, "min decay length XY")) {
+      return false;
+    }
+    if (fillHistogram) {
+      registry.fill(HIST("hSelCandidates"), MinDecayLength);
+    }
+
+    // cut on invariant mass of Xi-pion pairs
+    if (hfCandXic.invMassXiPi0() > cuts->get(pTBin, "max inv mass Xi-Pi0") || hfCandXic.invMassXiPi1() > cuts->get(pTBin, "max inv mass Xi-Pi1")) {
+      return false;
+    }
+    if (fillHistogram) {
+      registry.fill(HIST("hSelCandidates"), MaxInvMassXiPiPairs);
     }
 
     return true;
@@ -225,23 +245,18 @@ struct HfCandidateSelectorXicToXiPiPi {
   {
     for (const auto& hfCandXic : hfCandsXic) {
       int statusXicToXiPiPi = 0;
-
-      outputMlXicToXiPiPi.clear();
-
-      auto ptCandXic = hfCandXic.pt();
-
-      if (activateQA) {
-        registry.fill(HIST("hSelections"), 1, ptCandXic);
+      if (applyMl) {
+        outputMlXicToXiPiPi.clear();
       }
+
+      // get candidate pT
+      float ptCandXic = hfCandXic.pt();
 
       // No hfflag -> by default skim selected
       SETBIT(statusXicToXiPiPi, SelectionStep::RecoSkims); // RecoSkims = 0 --> statusXicToXiPiPi = 1
-      if (activateQA) {
-        registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoSkims, ptCandXic);
-      }
 
-      // topological cuts
-      if (!selectionTopol(hfCandXic)) {
+      // kinematic and topological selection
+      if (!isSelectedXic(hfCandXic)) {
         hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
         if (applyMl) {
           hfMlXicToXiPiPiCandidate(outputMlXicToXiPiPi);
@@ -249,9 +264,6 @@ struct HfCandidateSelectorXicToXiPiPi {
         continue;
       }
       SETBIT(statusXicToXiPiPi, SelectionStep::RecoTopol); // RecoTopol = 1 --> statusXicToXiPiPi = 3
-      if (activateQA) {
-        registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoTopol, ptCandXic);
-      }
 
       // track-level PID selection
       if (usePid) {
@@ -275,17 +287,17 @@ struct HfCandidateSelectorXicToXiPiPi {
         }
 
         if (useTpcPidOnly) {
-          TrackSelectorPID::Status statusPidPi0 = selectorPion.statusTpc(trackPi0);
-          TrackSelectorPID::Status statusPidPi1 = selectorPion.statusTpc(trackPi1);
-          TrackSelectorPID::Status statusPidPiXi = selectorPion.statusTpc(trackPiFromXi);
-          TrackSelectorPID::Status statusPidPrLam = selectorProton.statusTpc(trackPr);
-          TrackSelectorPID::Status statusPidPiLam = selectorPion.statusTpc(trackPiFromLam);
+          statusPidPi0 = selectorPion.statusTpc(trackPi0);
+          statusPidPi1 = selectorPion.statusTpc(trackPi1);
+          statusPidPiXi = selectorPion.statusTpc(trackPiFromXi);
+          statusPidPrLam = selectorProton.statusTpc(trackPr);
+          statusPidPiLam = selectorPion.statusTpc(trackPiFromLam);
         } else {
-          TrackSelectorPID::Status statusPidPi0 = selectorPion.statusTpcOrTof(trackPi0);
-          TrackSelectorPID::Status statusPidPi1 = selectorPion.statusTpcOrTof(trackPi1);
-          TrackSelectorPID::Status statusPidPiXi = selectorPion.statusTpcOrTof(trackPiFromXi);
-          TrackSelectorPID::Status statusPidPrLam = selectorProton.statusTpcOrTof(trackPr);
-          TrackSelectorPID::Status statusPidPiLam = selectorPion.statusTpcOrTof(trackPiFromLam);
+          statusPidPi0 = selectorPion.statusTpcOrTof(trackPi0);
+          statusPidPi1 = selectorPion.statusTpcOrTof(trackPi1);
+          statusPidPiXi = selectorPion.statusTpcOrTof(trackPiFromXi);
+          statusPidPrLam = selectorProton.statusTpcOrTof(trackPr);
+          statusPidPiLam = selectorPion.statusTpcOrTof(trackPiFromLam);
         }
 
         if (!selectionPid(statusPidPi0, statusPidPi1, statusPidPiXi, statusPidPrLam, statusPidPiLam, useTpcPidOnly.value)) {
@@ -296,9 +308,12 @@ struct HfCandidateSelectorXicToXiPiPi {
           continue;
         }
         SETBIT(statusXicToXiPiPi, SelectionStep::RecoPID); // RecoPID = 2 --> statusXicToXiPiPi = 7
-        if (activateQA) {
-          registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoPID, ptCandXic);
+        if (fillHistogram) {
+          registry.fill(HIST("hSelCandidates"), PidSelected);
         }
+      }
+      if (!usePid && fillHistogram) {
+        registry.fill(HIST("hSelCandidates"), PidSelected);
       }
 
       // ML selection
@@ -315,9 +330,12 @@ struct HfCandidateSelectorXicToXiPiPi {
           continue;
         }
         SETBIT(statusXicToXiPiPi, aod::SelectionStep::RecoMl);
-        if (activateQA) {
-          registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoMl, ptCandXic);
+        if (fillHistogram) {
+          registry.fill(HIST("hSelCandidates"), BdtSelected);
         }
+      }
+      if (!applyMl && fillHistogram) {
+        registry.fill(HIST("hSelCandidates"), BdtSelected);
       }
 
       hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
