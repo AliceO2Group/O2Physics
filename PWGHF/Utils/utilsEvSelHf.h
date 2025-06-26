@@ -261,7 +261,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   /// \param ccdb ccdb service needed to retrieve the needed info for zorro
   /// \param registry reference to the histogram registry needed for zorro
   /// \return bitmask with the event selection criteria not satisfied by the collision
-  template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename BCs, typename Coll>
+  template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename BCsType, typename Coll>
   uint32_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, o2::framework::HistogramRegistry& registry)
   {
     uint32_t rejectionMask{0}; // 32 bits, in case new ev. selections will be added
@@ -340,7 +340,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
     if (softwareTrigger.value != "") {
       // we might have to update it from CCDB
-      auto bc = collision.template bc_as<BCs>();
+      auto bc = collision.template bc_as<BCsType>();
 
       int runNumber = bc.runNumber();
       if (runNumber != currentRun) { // We might need to update Zorro from CCDB if the run number changes
