@@ -1,7 +1,3 @@
-/// \file gammaJetTreeProducer.cxx
-/// \brief Task to produce a tree for gamma-jet analysis, including photons (and information of isolation) and charged jets
-/// \author Florian Jonas <florian.jonas@cern.ch>, UC Berkeley/LBNL
-/// \since 02.08.2024
 // Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
@@ -12,6 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file gammaJetTreeProducer.cxx
+/// \brief Task to produce a tree for gamma-jet analysis, including photons (and information of isolation) and charged jets
+/// \author Florian Jonas <florian.jonas@cern.ch>, UC Berkeley/LBNL
+/// \since 02.08.2024
 
 // C++ system headers first
 #include <string>
