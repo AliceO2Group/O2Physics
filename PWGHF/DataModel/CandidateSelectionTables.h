@@ -317,6 +317,14 @@ DECLARE_SOA_COLUMN(MlProbXicToPiKP, mlProbXicToPiKP, std::vector<float>); //!
 // XicPlus to Xi Pi Pi
 DECLARE_SOA_COLUMN(IsSelXicToXiPiPi, isSelXicToXiPiPi, int);                  //!
 DECLARE_SOA_COLUMN(MlProbXicToXiPiPi, mlProbXicToXiPiPi, std::vector<float>); //!
+enum XicToXiPiPiSelectionStep {
+  RecoTotal = 0,
+  RecoKinTopol,
+  RecoTrackQuality,
+  RecoPID,
+  RecoMl,
+  NSelectionSteps
+};
 } // namespace hf_sel_candidate_xic
 
 DECLARE_SOA_TABLE(HfSelXicToPKPi, "AOD", "HFSELXIC", //!

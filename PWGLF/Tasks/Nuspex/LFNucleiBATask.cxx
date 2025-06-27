@@ -115,6 +115,7 @@ struct LFNucleiBATask {
   } kinemOptions;
 
   Configurable<bool> isPVContributorCut{"isPVContributorCut", false, "Flag to enable isPVContributor cut."};
+  Configurable<bool> initITSPID{"initITSPID", false, "Flag to init the ITS PID response"};
 
   struct : ConfigurableGroup {
     Configurable<float> nsigmaTPCPr{"nsigmaTPCPr", 3.f, "Value of the Nsigma TPC cut for protons"};
@@ -244,8 +245,11 @@ struct LFNucleiBATask {
     }
   }
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    if (initITSPID) {
+      o2::aod::ITSResponse::setParameters(context);
+    }
     if (skimmingOptions.applySkimming) {
       zorroSummary.setObject(zorro.getZorroSummary());
     }
