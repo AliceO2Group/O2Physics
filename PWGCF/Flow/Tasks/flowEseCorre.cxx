@@ -12,6 +12,11 @@
 /// \file FlowEseCorre.cxx
 /// \brief Task for flow and event shape engineering corrections
 /// \author Alice Collaboration
+/// \since 2023-05-15
+/// \version 1.0
+///
+/// This task calculates flow and event shape engineering corrections
+/// using Q-vector and event plane methods.
 
 // C++/ROOT includes.
 #include <TComplex.h>
@@ -50,7 +55,7 @@ using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension>;
 using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
-struct FlowEseCorr{
+struct FlowEseCorre {
   HistogramRegistry histosQA{"histosQA", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   Configurable<std::vector<int>> cfgNmods{"cfgNmods", {2}, "Modulation of interest"};
@@ -77,7 +82,7 @@ struct FlowEseCorr{
 
   EventPlaneHelper helperEP;
 
-  void init(InitContext const &)
+  void init(InitContext const&)
   {
     AxisSpec axisCent{cfgAxisCent, "centrality"};
     AxisSpec axisQvec{cfgAxisQvec, "Q"};
@@ -97,25 +102,26 @@ struct FlowEseCorr{
   }
 
   template <typename CollType>
-  bool selectEvent(const CollType &collision)
+  bool selectEvent(CollType const& collision)
   {
-    if (!collision.sel8()){
+    if (!collision.sel8()) {
       return false;
     }
-    if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)){
+    if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
-    if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)){
+    if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
-    if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)){
+    if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return false;
     }
+
     return true;
   }
 
   template <typename TrackType>
-  bool selectTrack(const TrackType &track)
+  bool selectTrack(TrackType const& track)
   {
     if (track.pt() < cfgMinPt)
       return false;
@@ -140,9 +146,9 @@ struct FlowEseCorr{
   }
 
   template <typename CollType>
-  void fillHistosQvec(const CollType &collision, int nmode)
+  void fillHistosQvec(CollType const& collision, int nmode)
   {
-    if (nmode == kDefaultModulation){
+    if (nmode == kDefaultModulation) {
       histosQA.fill(HIST("histQvecV2"), collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], collision.centFT0C());
       histosQA.fill(HIST("histEvtPlV2"), helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), collision.centFT0C());
       histosQA.fill(HIST("histQvecRes_SigRefAV2"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), collision.centFT0C());
@@ -151,37 +157,36 @@ struct FlowEseCorr{
   }
 
   template <typename CollType, typename TrackType>
-  void fillHistosFlow(const CollType &collision, const TrackType &tracks, int nmode)
+  void fillHistosFlow(CollType const& collision, TrackType const& tracks, int nmode)
   {
-    if (collision.sumAmplFT0C() < kMinAmplitudeThreshold){
+    if (collision.sumAmplFT0C() < kMinAmplitudeThreshold) {
       return;
     }
-    for (const auto &trk : tracks)
-    {
-      if (!selectTrack(trk)){
+    for (auto const& trk : tracks) {
+      if (!selectTrack(trk)) {
         continue;
       }
-      if (nmode == kDefaultModulation){
+      if (nmode == kDefaultModulation) {
         histosQA.fill(HIST("histCosDetV2"), collision.centFT0C(), trk.pt(),
                       std::cos(static_cast<float>(nmode) * (trk.phi() - helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode))));
       }
     }
   }
 
-  void process(MyCollisions::iterator const &collision, MyTracks const &tracks)
+  void process(MyCollisions::iterator const& collision, MyTracks const& tracks)
   {
-    if (!selectEvent(collision)){
+    if (!selectEvent(collision)) {
       return;
     }
-    for (const auto &mod : cfgNmods->at(i)){
+    for (auto const& mod : *cfgNmods) {
       fillHistosQvec(collision, mod);
       fillHistosFlow(collision, tracks, mod);
     }
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const &cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-      adaptAnalysisTask<FlowEseCorre>(cfgc)};
+    adaptAnalysisTask<FlowEseCorre>(cfgc)};
 }
