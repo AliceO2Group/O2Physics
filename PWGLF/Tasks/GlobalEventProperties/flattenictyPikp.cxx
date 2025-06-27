@@ -76,11 +76,6 @@ static constexpr float kFV0IndexPhi[5] = {0., 8., 16., 24., 32.};
 static constexpr float kEtaMaxFV0 = 5.1;
 static constexpr float kEtaMinFV0 = 2.2;
 static constexpr float kDEtaFV0 = (kEtaMaxFV0 - kEtaMinFV0) / kMaxRingsFV0;
-// eta binning for dEdx calibration
-static constexpr int Neta = 9;
-static constexpr float kEtaLow[Neta] = {-0.8, -0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6};
-static constexpr float kEtaHigh[Neta] = {0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8};
-static constexpr std::string_view kEtaEnding[Neta] = {"-88", "-8-6", "-6-4", "-4-2", "-20", "02", "24", "46", "68"};
 // PID names
 static constexpr int kProcessIdWeak = 4;
 static constexpr int Ncharges = 2;
@@ -98,7 +93,8 @@ static constexpr std::string_view kSpeciesAll[Npart] = {"El", "Mu", "Pi", "Ka", 
 static constexpr std::string_view kCharge[] = {"all/", "pos/", "neg/"};
 static constexpr std::string_view kPrefix = "Tracks/";
 static constexpr std::string_view kQA = "QA/";
-static constexpr std::string_view kPrefixClean = "Tracks/Clean/";
+static constexpr std::string_view kPrefixCleanTof = "Tracks/CleanTof/";
+static constexpr std::string_view kPrefixCleanV0 = "Tracks/CleanV0/";
 static constexpr std::string_view kStatus[] = {"preSel/", "postSel/"};
 static constexpr std::string_view kStatCalib[] = {"preCalib/", "postCalib/"};
 static constexpr std::string_view kPtGenPrimSgn = "/hPtGenPrimSgn";
@@ -503,20 +499,17 @@ struct FlattenictyPikp {
       flatchrg.add("Tracks/V0qa/hV0ArmPod", ";#alpha; #it{q}_T", HistType::kTH2D, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}});
       // dEdx PID
       flatchrg.add({"Tracks/all/hdEdx", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {HistType::kTHnSparseD, {etaAxis, multAxis, flatAxis, pAxis, dEdxAxis}}});
-
       // Clean samples
-      for (int i = 0; i < Neta; i++) {
-        flatchrg.add(fmt::format("Tracks/Clean/all/hPiTof{}", kEtaEnding[i]).c_str(), fmt::format("Tracks/Clean/all/hPiTof{}", kEtaEnding[i]).c_str(), {HistType::kTH2D, {pAxis, dEdxAxis}});
-        flatchrg.add(fmt::format("Tracks/Clean/all/hEV0{}", kEtaEnding[i]).c_str(), fmt::format("Tracks/Clean/all/hEV0{}", kEtaEnding[i]).c_str(), {HistType::kTH2D, {pAxis, dEdxAxis}});
-        flatchrg.add(fmt::format("Tracks/Clean/all/hPiV0{}", kEtaEnding[i]).c_str(), fmt::format("Tracks/Clean/all/hPiV0{}", kEtaEnding[i]).c_str(), {HistType::kTH2D, {pAxis, dEdxAxis}});
-        flatchrg.add(fmt::format("Tracks/Clean/all/hPV0{}", kEtaEnding[i]).c_str(), fmt::format("Tracks/Clean/all/hPV0{}", kEtaEnding[i]).c_str(), {HistType::kTH2D, {pAxis, dEdxAxis}});
-      }
-
+      flatchrg.add({"Tracks/CleanTof/all/hPiTof", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {HistType::kTHnSparseD, {etaAxis, multAxis, flatAxis, pAxis, dEdxAxis}}});
+      flatchrg.add({"Tracks/CleanV0/pos/hEV0", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {HistType::kTHnSparseD, {etaAxis, multAxis, flatAxis, pAxis, dEdxAxis}}});
+      flatchrg.add({"Tracks/CleanV0/pos/hPiV0", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {HistType::kTHnSparseD, {etaAxis, multAxis, flatAxis, pAxis, dEdxAxis}}});
+      flatchrg.add({"Tracks/CleanV0/pos/hPV0", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {HistType::kTHnSparseD, {etaAxis, multAxis, flatAxis, pAxis, dEdxAxis}}});
+      flatchrg.addClone("Tracks/CleanV0/pos/", "Tracks/CleanV0/neg/");
       if (cfgFillChrgType) {
         flatchrg.addClone("Tracks/all/", "Tracks/pos/");
         flatchrg.addClone("Tracks/all/", "Tracks/neg/");
-        flatchrg.addClone("Tracks/Clean/all/", "Tracks/Clean/pos/");
-        flatchrg.addClone("Tracks/Clean/all/", "Tracks/Clean/neg/");
+        flatchrg.addClone("Tracks/CleanTof/all/", "Tracks/CleanTof/pos/");
+        flatchrg.addClone("Tracks/CleanTof/all/", "Tracks/CleanTof/neg/");
       }
     }
 
@@ -774,17 +767,12 @@ struct FlattenictyPikp {
       // TOF pions
       if (track.hasTOF() && track.beta() > 1.) {
         if (selTOFPi(track)) {
-          static_for<0, 8>([&](auto i) {
-            constexpr int kIdx = i.value;
-            if (track.eta() > kEtaLow[kIdx] && track.eta() < kEtaHigh[kIdx]) {
-              flatchrg.fill(HIST(kPrefixClean) + HIST(kCharge[kAll]) + HIST("hPiTof") + HIST(kEtaEnding[kIdx]), track.tpcInnerParam(), dEdx);
-              if (track.sign() > 0) {
-                flatchrg.fill(HIST(kPrefixClean) + HIST(kCharge[kPos]) + HIST("hPiTof") + HIST(kEtaEnding[kIdx]), track.tpcInnerParam(), dEdx);
-              } else {
-                flatchrg.fill(HIST(kPrefixClean) + HIST(kCharge[kNeg]) + HIST("hPiTof") + HIST(kEtaEnding[kIdx]), track.tpcInnerParam(), dEdx);
-              }
-            }
-          });
+          flatchrg.fill(HIST(kPrefixCleanTof) + HIST(kCharge[kAll]) + HIST("hPiTof"), track.eta(), mult, flat, track.tpcInnerParam(), dEdx);
+          if (posP) {
+            flatchrg.fill(HIST(kPrefixCleanTof) + HIST(kCharge[kPos]) + HIST("hPiTof"), track.eta(), mult, flat, track.tpcInnerParam(), dEdx);
+          } else {
+            flatchrg.fill(HIST(kPrefixCleanTof) + HIST(kCharge[kNeg]) + HIST("hPiTof"), track.eta(), mult, flat, track.tpcInnerParam(), dEdx);
+          }
         }
       }
     }
@@ -806,48 +794,20 @@ struct FlattenictyPikp {
       }
 
       if (selectTypeV0s(v0, posTrack, negTrack) == kGa) { // Gamma selection
-        static_for<0, 8>([&](auto i) {
-          constexpr int kIdx = i.value;
-          if (posTrack.eta() > kEtaLow[kIdx] && posTrack.eta() < kEtaHigh[kIdx]) {
-            flatchrg.fill(HIST(kPrefixClean) + HIST(kCharge[kPos]) + HIST("hEV0") + HIST(kEtaEnding[kIdx]), posTrack.sign() * posTrack.tpcInnerParam(), dEdxPos);
-          }
-          if (negTrack.eta() > kEtaLow[kIdx] && negTrack.eta() < kEtaHigh[kIdx]) {
-            flatchrg.fill(HIST(kPrefixClean) + HIST(kCharge[kNeg]) + HIST("hEV0") + HIST(kEtaEnding[kIdx]), negTrack.sign() * negTrack.tpcInnerParam(), dEdxNeg);
-          }
-        });
+        flatchrg.fill(HIST(kPrefixCleanV0) + HIST(kCharge[kPos]) + HIST("hEV0"), posTrack.eta(), mult, flat, posTrack.sign() * posTrack.tpcInnerParam(), dEdxPos);
+        flatchrg.fill(HIST(kPrefixCleanV0) + HIST(kCharge[kNeg]) + HIST("hEV0"), negTrack.eta(), mult, flat, negTrack.sign() * negTrack.tpcInnerParam(), dEdxNeg);
       }
       if (selectTypeV0s(v0, posTrack, negTrack) == kKz) { // K0S -> pi + pi
-        static_for<0, 8>([&](auto i) {
-          constexpr int kIdx = i.value;
-          if (posTrack.eta() > kEtaLow[kIdx] && posTrack.eta() < kEtaHigh[kIdx]) {
-            flatchrg.fill(HIST(kPrefixClean) + HIST(kCharge[kPos]) + HIST("hPiV0") + HIST(kEtaEnding[kIdx]), posTrack.sign() * posTrack.tpcInnerParam(), dEdxPos);
-          }
-          if (negTrack.eta() > kEtaLow[kIdx] && negTrack.eta() < kEtaHigh[kIdx]) {
-            flatchrg.fill(HIST(kPrefixClean) + HIST(kCharge[kNeg]) + HIST("hPiV0") + HIST(kEtaEnding[kIdx]), negTrack.sign() * negTrack.tpcInnerParam(), dEdxNeg);
-          }
-        });
+        flatchrg.fill(HIST(kPrefixCleanV0) + HIST(kCharge[kPos]) + HIST("hPiV0"), posTrack.eta(), mult, flat, posTrack.sign() * posTrack.tpcInnerParam(), dEdxPos);
+        flatchrg.fill(HIST(kPrefixCleanV0) + HIST(kCharge[kNeg]) + HIST("hPiV0"), negTrack.eta(), mult, flat, negTrack.sign() * negTrack.tpcInnerParam(), dEdxNeg);
       }
       if (selectTypeV0s(v0, posTrack, negTrack) == kLam) { // L -> p + pi-
-        static_for<0, 8>([&](auto i) {
-          constexpr int kIdx = i.value;
-          if (posTrack.eta() > kEtaLow[kIdx] && posTrack.eta() < kEtaHigh[kIdx]) {
-            flatchrg.fill(HIST(kPrefixClean) + HIST(kCharge[kPos]) + HIST("hPV0") + HIST(kEtaEnding[kIdx]), posTrack.sign() * posTrack.tpcInnerParam(), dEdxPos);
-          }
-          if (negTrack.eta() > kEtaLow[kIdx] && negTrack.eta() < kEtaHigh[kIdx]) {
-            flatchrg.fill(HIST(kPrefixClean) + HIST(kCharge[kNeg]) + HIST("hPiV0") + HIST(kEtaEnding[kIdx]), negTrack.sign() * negTrack.tpcInnerParam(), dEdxNeg);
-          }
-        });
+        flatchrg.fill(HIST(kPrefixCleanV0) + HIST(kCharge[kPos]) + HIST("hPV0"), posTrack.eta(), mult, flat, posTrack.sign() * posTrack.tpcInnerParam(), dEdxPos);
+        flatchrg.fill(HIST(kPrefixCleanV0) + HIST(kCharge[kNeg]) + HIST("hPV0"), negTrack.eta(), mult, flat, negTrack.sign() * negTrack.tpcInnerParam(), dEdxNeg);
       }
       if (selectTypeV0s(v0, posTrack, negTrack) == kaLam) { // L -> p + pi-
-        static_for<0, 8>([&](auto i) {
-          constexpr int kIdx = i.value;
-          if (posTrack.eta() > kEtaLow[kIdx] && posTrack.eta() < kEtaHigh[kIdx]) {
-            flatchrg.fill(HIST(kPrefixClean) + HIST(kCharge[kPos]) + HIST("hPiV0") + HIST(kEtaEnding[kIdx]), posTrack.sign() * posTrack.tpcInnerParam(), dEdxPos);
-          }
-          if (negTrack.eta() > kEtaLow[kIdx] && negTrack.eta() < kEtaHigh[kIdx]) {
-            flatchrg.fill(HIST(kPrefixClean) + HIST(kCharge[kNeg]) + HIST("hPV0") + HIST(kEtaEnding[kIdx]), negTrack.sign() * negTrack.tpcInnerParam(), dEdxNeg);
-          }
-        });
+        flatchrg.fill(HIST(kPrefixCleanV0) + HIST(kCharge[kPos]) + HIST("hPiV0"), posTrack.eta(), mult, flat, posTrack.sign() * posTrack.tpcInnerParam(), dEdxPos);
+        flatchrg.fill(HIST(kPrefixCleanV0) + HIST(kCharge[kNeg]) + HIST("hPiV0"), negTrack.eta(), mult, flat, negTrack.sign() * negTrack.tpcInnerParam(), dEdxNeg);
       }
     }
   }
