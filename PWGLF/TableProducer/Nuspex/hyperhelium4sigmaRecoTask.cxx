@@ -441,7 +441,7 @@ struct Hyperhelium4sigmaRecoTask {
     hyphe4sCand.gMomDau[2] = mcDauTrack.pz();
   }
 
-  void processData(CollisionsFull const& collisions, aod::KinkCands const& KinkCands, FullTracksExtIU const&)
+  void processData(CollisionsFull const& collisions, aod::KinkCands const& KinkCands, FullTracksExtIU const&, aod::BCs const&)
   {
     for (const auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 0);
