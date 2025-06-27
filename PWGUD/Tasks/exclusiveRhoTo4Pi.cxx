@@ -528,6 +528,7 @@ struct ExclusiveRhoTo4Pi {
   Configurable<float> occupancyCut{"occupancyCut", 20000, "Occupancy Cut"};
   Configurable<uint16_t> numPVContrib{"numPVContrib", 4, "Number of PV Contributors"};
   Configurable<int> checkOneTof{"checkOneTof", 1, " (1 or 0)Check if event has at least 1 TOF"};
+  Configurable<bool> ifPass5{"ifPass5", true, "If pass 5 data is used"};
 
   // bc selection cuts
   Configurable<int> sbpCut{"sbpCut", 1, "Sbp"};
@@ -679,6 +680,13 @@ struct ExclusiveRhoTo4Pi {
     histosData.add("collin_soper_costheta_2", "#theta Distribution;cos(#theta); Counts", kTH1F, {cosThetaAxis});
     histosData.add("phi_vs_costheta_1", "Phi vs cosTheta; #phi; cos(#theta)", kTH2F, {phiAxis, cosThetaAxis});
     histosData.add("phi_vs_costheta_2", "Phi vs cosTheta; #phi; cos(#theta)", kTH2F, {phiAxis, cosThetaAxis});
+
+    histosData.add("collin_soper_phi_small_mass", "#phi Distribution; #phi; Events", kTH1F, {phiAxis});
+    histosData.add("collin_soper_phi_large_mass", "#phi Distribution; #phi; Events", kTH1F, {phiAxis});
+    histosData.add("collin_soper_costheta_small_mass", "#theta Distribution;cos(#theta); Counts", kTH1F, {cosThetaAxis});
+    histosData.add("collin_soper_costheta_large_mass", "#theta Distribution;cos(#theta); Counts", kTH1F, {cosThetaAxis});
+    histosData.add("phi_vs_costheta_small_mass", "Phi vs cosTheta for small mass; #phi; cos(#theta)", kTH2F, {phiAxis, cosThetaAxis});
+    histosData.add("phi_vs_costheta_large_mass", "Phi vs cosTheta for large mass; #phi; cos(#theta)", kTH2F, {phiAxis, cosThetaAxis});
 
     // MC Gen Stuff
 
@@ -888,9 +896,11 @@ struct ExclusiveRhoTo4Pi {
   void processData(UDCollision const& collision, UDtracks const& tracks)
   {
 
-    if (!(collision.sbp() == sbpCut && collision.itsROFb() == itsROFbCut && collision.vtxITSTPC() == vtxITSTPCcut && collision.tfb() == tfbCut)) {
+    if (ifPass5 && (!(collision.sbp() == sbpCut && collision.itsROFb() == itsROFbCut && collision.vtxITSTPC() == vtxITSTPCcut && collision.tfb() == tfbCut))) {
       return;
     }
+
+    histosData.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 0);
 
     int gapSide = collision.gapSide();
     std::vector<float> parameters = {pvCut, dcaZcut, dcaXYcut, tpcChi2Cut, tpcNClsFindableCut, itsChi2Cut, etaCut, pTcut};
@@ -1124,6 +1134,23 @@ struct ExclusiveRhoTo4Pi {
           histosData.fill(HIST("collin_soper_costheta_2"), fourPiCosThetaPair2);
           histosData.fill(HIST("phi_vs_costheta_1"), fourPiPhiPair1, fourPiCosThetaPair1);
           histosData.fill(HIST("phi_vs_costheta_2"), fourPiPhiPair2, fourPiCosThetaPair2);
+
+          // Small Mass CosTheta and Phi
+          if ((k13.M() + k24.M()) > (k14.M() + k23.M())) {
+            histosData.fill(HIST("collin_soper_phi_large_mass"), fourPiPhiPair1);
+            histosData.fill(HIST("collin_soper_costheta_large_mass"), fourPiCosThetaPair1);
+            histosData.fill(HIST("phi_vs_costheta_large_mass"), fourPiPhiPair1, fourPiCosThetaPair1);
+            histosData.fill(HIST("collin_soper_phi_small_mass"), fourPiPhiPair2);
+            histosData.fill(HIST("collin_soper_costheta_small_mass"), fourPiCosThetaPair2);
+            histosData.fill(HIST("phi_vs_costheta_small_mass"), fourPiPhiPair2, fourPiCosThetaPair2);
+          } else {
+            histosData.fill(HIST("collin_soper_phi_small_mass"), fourPiPhiPair1);
+            histosData.fill(HIST("collin_soper_costheta_small_mass"), fourPiCosThetaPair1);
+            histosData.fill(HIST("phi_vs_costheta_small_mass"), fourPiPhiPair1, fourPiCosThetaPair1);
+            histosData.fill(HIST("collin_soper_phi_large_mass"), fourPiPhiPair2);
+            histosData.fill(HIST("collin_soper_costheta_large_mass"), fourPiCosThetaPair2);
+            histosData.fill(HIST("phi_vs_costheta_large_mass"), fourPiPhiPair2, fourPiCosThetaPair2);
+          }
         }
         if (p1234.Pt() > rhoPtCut && p1234.Pt() < zeroPointEight) {
           histosData.fill(HIST("fourpion_mass_0_charge_domB"), p1234.M());
