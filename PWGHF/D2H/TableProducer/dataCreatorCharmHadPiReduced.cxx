@@ -38,8 +38,8 @@
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
 
 #include <algorithm>
@@ -922,8 +922,8 @@ struct HfDataCreatorCharmHadPiReduced {
   {
     registry.fill(HIST("hEvents"), 1 + Event::Processed);
     float centrality = -1.f;
-    auto hfRejMap= hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-    if (configs.skipRejectedCollisions && hfRejMap!= 0) {
+    auto hfRejMap = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+    if (configs.skipRejectedCollisions && hfRejMap != 0) {
       return;
     }
 
@@ -1307,8 +1307,8 @@ struct HfDataCreatorCharmHadPiReduced {
     // Check event selection
     float centDummy{-1.f}, centFT0C{-1.f}, centFT0M{-1.f};
     const auto collSlice = collisions.sliceBy(colPerMcCollision, mcCollision.globalIndex());
-    auto hfRejMap= hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::None>(mcCollision, collSlice, centDummy);
-    if (configs.skipRejectedCollisions && hfRejMap!= 0) {
+    auto hfRejMap = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::None>(mcCollision, collSlice, centDummy);
+    if (configs.skipRejectedCollisions && hfRejMap != 0) {
       return;
     }
 
@@ -1965,7 +1965,7 @@ struct HfDataCreatorCharmHadPiReduced {
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
-    for (const auto& mcCollision: mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       runMcGen<DecayChannel::B0ToDminusPi>(mcCollision, particlesMc, collisions, bcs);
     }
   }
@@ -2002,7 +2002,7 @@ struct HfDataCreatorCharmHadPiReduced {
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
-    for (const auto& mcCollision: mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       runMcGen<DecayChannel::B0ToDminusPi>(mcCollision, particlesMc, collisions, bcs);
     }
   }
@@ -2039,7 +2039,7 @@ struct HfDataCreatorCharmHadPiReduced {
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
-    for (const auto& mcCollision: mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       runMcGen<DecayChannel::BsToDsminusPi>(mcCollision, particlesMc, collisions, bcs);
     }
   }
@@ -2076,7 +2076,7 @@ struct HfDataCreatorCharmHadPiReduced {
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
-    for (const auto& mcCollision: mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       runMcGen<DecayChannel::BsToDsminusPi>(mcCollision, particlesMc, collisions, bcs);
     }
   }
@@ -2113,7 +2113,7 @@ struct HfDataCreatorCharmHadPiReduced {
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
-    for (const auto& mcCollision: mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       runMcGen<DecayChannel::BplusToD0barPi>(mcCollision, particlesMc, collisions, bcs);
     }
   }
@@ -2150,7 +2150,7 @@ struct HfDataCreatorCharmHadPiReduced {
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
-    for (const auto& mcCollision: mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       runMcGen<DecayChannel::BplusToD0barPi>(mcCollision, particlesMc, collisions, bcs);
     }
   }
@@ -2187,7 +2187,7 @@ struct HfDataCreatorCharmHadPiReduced {
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
-    for (const auto& mcCollision: mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       runMcGen<DecayChannel::LbToLcplusPi>(mcCollision, particlesMc, collisions, bcs);
     }
   }
@@ -2224,7 +2224,7 @@ struct HfDataCreatorCharmHadPiReduced {
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
-    for (const auto& mcCollision: mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       runMcGen<DecayChannel::LbToLcplusPi>(mcCollision, particlesMc, collisions, bcs);
     }
   }
