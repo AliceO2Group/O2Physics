@@ -253,3 +253,8 @@ o2physics_add_dpl_workflow(analysis-mc-dpm-jet-sg-v3
                            SOURCES analysisMCDPMJetSGv3.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(upc-test-rct-tables
+		SOURCES upcTestRctTables.cxx
+		PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+		COMPONENT_NAME Analysis)
