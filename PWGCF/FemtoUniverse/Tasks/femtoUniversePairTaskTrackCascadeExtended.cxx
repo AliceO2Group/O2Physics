@@ -64,8 +64,8 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   // configurations for correlation part
   Configurable<int> confTrackChoicePartOne{"confTrackChoicePartOne", 0, "0:Proton, 1:Pion, 2:Kaon"};
   Configurable<int> confTrkPDGCodePartOne{"confTrkPDGCodePartOne", 2212, "Particle 1 (Track) - PDG code"};
-  Configurable<int> confCascType1{"confCascType1", 0, "select one of the V0s (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for track-cascade combination"};
-  Configurable<int> confCascType2{"confCascType2", 0, "select one of the V0s (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for cascade-cascade combination"};
+  Configurable<int> confCascType1{"confCascType1", 0, "select one of the Cascades (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for track-cascade combination"};
+  Configurable<int> confCascType2{"confCascType2", 0, "select one of the Cascades (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for cascade-cascade combination"};
   Configurable<bool> confIsCPR{"confIsCPR", false, "Close Pair Rejection"};
   Configurable<float> confCPRdeltaPhiCutMax{"confCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
   Configurable<float> confCPRdeltaPhiCutMin{"confCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for Close Pair Rejection"};
@@ -285,6 +285,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     sameEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
     mixedEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
     pairCleaner.init(&qaRegistry);
+    pairCleanerCasc.init(&qaRegistry);
     if (confIsCPR.value) {
       pairCloseRejection.init(&resultRegistry, &qaRegistry, confCPRdeltaPhiCutMin.value, confCPRdeltaPhiCutMax.value, confCPRdeltaEtaCutMin.value, confCPRdeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value, 0, 0, confIsSameSignCPR.value);
     }
