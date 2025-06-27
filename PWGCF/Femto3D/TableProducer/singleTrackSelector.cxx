@@ -137,8 +137,9 @@ struct singleTrackSelector {
 
   rctsel::RCTFlagsChecker myChecker{"CBT_hadronPID"};
 
-  void init(InitContext&)
+  void init(InitContext& context)
   {
+    o2::aod::ITSResponse::setParameters(context);
 
     particlesToKeep = _particlesToKeep;
     particlesToReject = _particlesToReject;
