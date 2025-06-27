@@ -17,22 +17,20 @@
 //
 
 // O2 headers
-#include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
 // O2Physics headers
-#include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
-
+#include "PWGUD/DataModel/UDTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
 
 struct UpcTestRctTables {
 
@@ -41,12 +39,11 @@ struct UpcTestRctTables {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-	// declare configurables
-	Configurable<bool> verboseInfo{"verboseInfo", false, {"Print general info to terminal; default it false."}};
+  // declare configurables
+  Configurable<bool> verboseInfo{"verboseInfo", false, {"Print general info to terminal; default it false."}};
 
   using FullSGUDCollisions = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions, aod::UDZdcsReduced>;
   using FullSGUDCollision = FullSGUDCollisions::iterator;
-
 
   // init
   void init(InitContext&)
@@ -61,20 +58,19 @@ struct UpcTestRctTables {
   void processDataSG(FullSGUDCollision const& reconstructedCollision)
   {
 
-	  histos.get<TH1>(HIST("OutputTable/hRCTflags"))->Fill(0);
+    histos.get<TH1>(HIST("OutputTable/hRCTflags"))->Fill(0);
 
-	  if (sgSelector.isCBTOk(reconstructedCollision))
-		  histos.get<TH1>(HIST("OutputTable/hRCTflags"))->Fill(1);
+    if (sgSelector.isCBTOk(reconstructedCollision))
+      histos.get<TH1>(HIST("OutputTable/hRCTflags"))->Fill(1);
 
-	  if (sgSelector.isCBTZdcOk(reconstructedCollision))
-		  histos.get<TH1>(HIST("OutputTable/hRCTflags"))->Fill(2);
+    if (sgSelector.isCBTZdcOk(reconstructedCollision))
+      histos.get<TH1>(HIST("OutputTable/hRCTflags"))->Fill(2);
 
-	  if (sgSelector.isCBTHadronOk(reconstructedCollision))
-		  histos.get<TH1>(HIST("OutputTable/hRCTflags"))->Fill(3);
+    if (sgSelector.isCBTHadronOk(reconstructedCollision))
+      histos.get<TH1>(HIST("OutputTable/hRCTflags"))->Fill(3);
 
-	  if (sgSelector.isCBTHadronZdcOk(reconstructedCollision))
-		  histos.get<TH1>(HIST("OutputTable/hRCTflags"))->Fill(4);
-
+    if (sgSelector.isCBTHadronZdcOk(reconstructedCollision))
+      histos.get<TH1>(HIST("OutputTable/hRCTflags"))->Fill(4);
 
   } // end processDataSG
 
