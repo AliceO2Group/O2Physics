@@ -15,14 +15,13 @@
 // \brief This code loops over MFT tracks and collisions and fills histograms
 //        useful to compute dNdeta
 
-#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <unordered_set>
+#include <vector>
 
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "CommonConstants/MathConstants.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -30,17 +29,17 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/RuntimeError.h"
 #include "Framework/runDataProcessing.h"
+
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "CommonConstants/MathConstants.h"
 #include "MathUtils/Utils.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 
+#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 #include "TFile.h"
-
-#include <chrono>
-#include <cmath>
-#include <cstdint>
-#include <cstdlib>
-#include <unordered_set>
-#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -446,13 +445,13 @@ struct PseudorapidityDensityMFT {
   {
 
     std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
-    for (auto& bc : bcs) {
+    for (const auto& bc : bcs) {
       if (!useEvSel ||
           (useEvSel && ((bc.selection_bit(aod::evsel::kIsBBT0A) &&
                          bc.selection_bit(aod::evsel::kIsBBT0C)) != 0))) {
         registry.fill(HIST("EventSelection"), 8); // added 5->12
         cols.clear();
-        for (auto& collision : collisions) {
+        for (const auto& collision : collisions) {
           if (collision.has_foundBC()) {
             if (collision.foundBCId() == bc.globalIndex()) {
               cols.emplace_back(collision);
@@ -522,7 +521,7 @@ struct PseudorapidityDensityMFT {
       }
 
       if (tracks.size() > 0) {
-        for (auto& track : tracks) {
+        for (const auto& track : tracks) {
 
           float phi = track.phi();
           o2::math_utils::bringTo02Pi(phi);
@@ -570,7 +569,7 @@ struct PseudorapidityDensityMFT {
     if ((z >= cfgVzCut1) && (z <= cfgVzCut2)) {
       registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_all"), Ntrk, z);
       registry.fill(HIST("EventSelection"), 2.);
-      for (auto& retrack : retracks) {
+      for (const auto& retrack : retracks) {
         auto track = retrack.mfttrack();
         if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0) {
           registry.fill(HIST("Tracks/2Danalysis/EtaZvtx"), track.eta(), z);
@@ -602,7 +601,7 @@ struct PseudorapidityDensityMFT {
           registry.fill(HIST("EventSelection"), 12.);
         }
         int64_t i = 0.0, j = 0.0, k = 0.0;
-        for (auto& retrack : retracks) {
+        for (const auto& retrack : retracks) {
           auto track = retrack.mfttrack();
           if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0) {
             registry.fill(HIST("Tracks/2Danalysis/EtaZvtx_sel8"), track.eta(), z);
@@ -616,7 +615,7 @@ struct PseudorapidityDensityMFT {
           if (midtracks.size() > 0) {
             registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_sel8_inelfwdgt0"), Ntrk, z);
           }
-          for (auto& retrack : retracks) {
+          for (const auto& retrack : retracks) {
             auto track = retrack.mfttrack();
 
             if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster) {
@@ -762,7 +761,7 @@ struct PseudorapidityDensityMFT {
 
       registry.fill(HIST("Events/Centrality/NtrkZvtx"), Ntrk, z, c);
 
-      for (auto& track : tracks) {
+      for (const auto& track : tracks) {
 
         float phi = track.phi();
         o2::math_utils::bringTo02Pi(phi);
@@ -810,7 +809,7 @@ struct PseudorapidityDensityMFT {
     auto perCollisionMCSample = mcSample->sliceByCached(
       aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
     auto nCharged = 0;
-    for (auto& particle : perCollisionMCSample) {
+    for (const auto& particle : perCollisionMCSample) {
       auto charge = 0.;
       auto p = pdg->GetParticle(particle.pdgCode());
       if (p != nullptr) {
@@ -827,7 +826,7 @@ struct PseudorapidityDensityMFT {
     auto perCollisionMCSampleCentral = mcSampleCentral->sliceByCached(
       aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
     auto nChargedCentral = 0;
-    for (auto& particle : perCollisionMCSampleCentral) {
+    for (const auto& particle : perCollisionMCSample) {
       auto charge = 0.;
       auto p = pdg->GetParticle(particle.pdgCode());
       if (p != nullptr) {
@@ -852,7 +851,7 @@ struct PseudorapidityDensityMFT {
 
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(),
          collisions.size());
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       registry.fill(HIST("EventEfficiency"), 3.);
       if (!disableITSROFCut && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
         return;
@@ -894,7 +893,7 @@ struct PseudorapidityDensityMFT {
       registry.fill(HIST("EventsSplitMult"), nCharged);
     }
     if ((mcCollision.posZ() >= cfgVzCut1) && (mcCollision.posZ() <= cfgVzCut2)) {
-      for (auto& particle : particles) {
+      for (const auto& particle : particles) {
         auto p = pdg->GetParticle(particle.pdgCode());
         auto charge = 0;
         if (p != nullptr) {
@@ -949,7 +948,7 @@ struct PseudorapidityDensityMFT {
 
     float c_gen = -1;
     bool atLeastOne = false;
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       float c_rec = -1;
       if constexpr (ExColsGenCent::template contains<aod::CentFT0Cs>()) {
         c_rec = collision.centFT0C();
@@ -978,7 +977,7 @@ struct PseudorapidityDensityMFT {
       aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
     auto nCharged = 0;
 
-    for (auto& particle : perCollisionMCSample) {
+    for (const auto& particle : perCollisionMCSample) {
       auto p = pdg->GetParticle(particle.pdgCode());
       auto charge = 0;
       if (p != nullptr) {
@@ -995,7 +994,7 @@ struct PseudorapidityDensityMFT {
                     mcCollision.posZ(), c_gen);
     }
 
-    for (auto& particle : particles) {
+    for (const auto& particle : particles) {
       auto p = pdg->GetParticle(particle.pdgCode());
       auto charge = 0;
       if (p != nullptr) {
@@ -1031,7 +1030,7 @@ struct PseudorapidityDensityMFT {
     MFTTracksLabeled const& tracks, aod::McParticles const&)
   {
     if (!useEvSel || (useEvSel && collision.sel8())) {
-      for (auto& track : tracks) {
+      for (const auto& track : tracks) {
         if (!track.has_mcParticle()) {
           continue;
         }
