@@ -551,7 +551,7 @@ struct tofPidQaImp {
                            aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
                            aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
                            aod::pidTOFbeta, aod::pidTOFmass>;
-  void process2(TrkPID const& tracks)
+  void process2(TrkPID const& tracks, aod::Collisions const&)
   {
     auto tracksWithPid = soa::Attach<TrkPID,
                                      o2::aod::TOFExpSigma2El, o2::aod::TOFNSigma2El,
@@ -568,6 +568,9 @@ struct tofPidQaImp {
       LOG(fatal) << "Mismatch in track table size!" << tracks.size() << " vs " << tracksWithPid.size();
     }
     for (const auto& t : tracksWithPid) {
+      if (!t.has_collision()) { // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
+        continue;
+      }
       histos.fill(HIST("check/beta"), t.beta() - t.tofBeta());
       histos.fill(HIST("check/mass"), t.mass() - t.tofMass());
       const float offset = tofResponse->parameters.getTimeShift(t.eta(), t.sign());
@@ -583,10 +586,12 @@ struct tofPidQaImp {
 
       // LOG(info) << "nsigma " << nsigma << " nsigmaEl " << nsigmaEl << " t.tofNSigmaEl() " << t.tofNSigmaEl() << " t.tofNSigma2El() " << t.tofNSigma2El();
       // LOG(info) << "Offset for eta " << t.eta() << " and sign " << t.sign() << " is " << offset;
-      const float expEl = o2::pid::tof::ExpTimes<TrkPID::iterator, 0>::GetCorrectedExpectedSignal(tofResponse->parameters, trk);
+      const float expEl = o2::pid::tof::ExpTimes<TrkPID::iterator, PID::Electron>::GetCorrectedExpectedSignal(tofResponse->parameters, trk);
       if (std::abs(t.tofNSigmaEl() - t.tofNSigma2El()) > 1e-1f) {
+        constexpr auto responseEl = o2::pid::tof::ExpTimes<TrkPID::iterator, PID::Electron>();
         LOG(warning) << " t.tofNSigmaEl() " << t.tofNSigmaEl() << " t.tofNSigma2El() " << t.tofNSigma2El();
         LOG(warning) << "      t.tofExpSignalEl(t.tofSignal() - t.tofEvTime()) " << t.tofExpSignalEl(t.tofSignal() - t.tofEvTime()) << " t.tofExpTimeEl() " << t.tofExpTimeEl();
+        LOG(warning) << "      responseEl.GetExpectedSigma(tofResponse->parameters, t) " << responseEl.GetExpectedSigma(tofResponse->parameters, trk);
         LOG(warning) << "      t.tofExpSigmaEl() " << t.tofExpSigmaEl() << " t.tofExpSigma2El() " << t.tofExpSigma2El();
         LOG(warning) << "      expEl " << expEl;
         LOG(warning) << "      t.tofSignal() " << t.tofSignal() << " t.tofExpMom() " << t.tofExpMom() << " t.p() " << t.p();
