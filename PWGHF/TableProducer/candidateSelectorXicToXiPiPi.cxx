@@ -19,7 +19,7 @@
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Utils/utilsAnalysis.h" // findBin function
+#include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "Common/Core/TrackSelectorPID.h"
 
@@ -55,6 +55,15 @@ struct HfCandidateSelectorXicToXiPiPi {
   Configurable<float> ptPidTofMax{"ptPidTofMax", 20., "Upper bound of track pT for TOF PID"};
   Configurable<float> nSigmaTofMax{"nSigmaTofMax", 5., "Nsigma cut on TOF only"};
   Configurable<float> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
+  // TrackQualitySelection
+  Configurable<bool> doTrackQualitySelection{"doTrackQualitySelection", true, "Switch to apply track quality selections on final state daughter particles"};
+  Configurable<int> nClustersTpcMin{"nClustersTpcMin", 70, "Minimum number of TPC clusters requirement"};
+  Configurable<int> nTpcCrossedRowsMin{"nTpcCrossedRowsMin", 70, "Minimum number of TPC crossed rows requirement"};
+  Configurable<double> tpcCrossedRowsOverFindableClustersRatioMin{"tpcCrossedRowsOverFindableClustersRatioMin", 0.8, "Minimum ratio TPC crossed rows over findable clusters requirement"};
+  Configurable<float> tpcChi2PerClusterMax{"tpcChi2PerClusterMax", 4, "Maximum value of chi2 fit over TPC clusters"};
+  Configurable<int> nClustersItsMin{"nClustersItsMin", 3, "Minimum number of ITS clusters requirement for pi <- charm baryon"};
+  Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- charm baryon"};
+  Configurable<float> itsChi2PerClusterMax{"itsChi2PerClusterMax", 36, "Maximum value of chi2 fit over ITS clusters for pi <- charm baryon"};
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
@@ -84,10 +93,13 @@ struct HfCandidateSelectorXicToXiPiPi {
                         Chi2SV,
                         MinDecayLength,
                         MaxInvMassXiPiPairs,
+                        TpcTrackQualityXiDaughters,
+                        TpcTrackQualityPiFromCharm,
+                        ItsTrackQualityPiFromCharm,
                         PidSelected,
                         BdtSelected };
 
-  using TracksPidWithSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TrackSelection>;
+  using TracksExtraWPid = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TracksPidPr>;
 
   HistogramRegistry registry{"registry"};
 
@@ -111,7 +123,7 @@ struct HfCandidateSelectorXicToXiPiPi {
     }
 
     if (fillHistogram) {
-      registry.add("hSelCandidates", ";;entries", {HistType::kTH1F, {{11, -0.5, 10.5}}});
+      registry.add("hSelCandidates", ";;entries", {HistType::kTH1F, {{15, -0.5, 14.5}}});
       registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + All, "All");
       registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + Pt, "#it{p}_{T}");
       registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + Mass, "#Delta M");
@@ -122,6 +134,9 @@ struct HfCandidateSelectorXicToXiPiPi {
       registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + Chi2SV, "#chi^{2}_{SV}");
       registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + MinDecayLength, "Decay length");
       registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + MaxInvMassXiPiPairs, "M_{#Xi #pi}");
+      registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + TpcTrackQualityXiDaughters, "TPC track quality selection on #Xi daughters");
+      registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + TpcTrackQualityPiFromCharm, "TPC track quality selection on #pi #leftarrow #Xi_{c}^{+}");
+      registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + ItsTrackQualityPiFromCharm, "ITS track quality selection on #pi #leftarrow #Xi_{c}^{+}");
       registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + PidSelected, "PID selection");
       registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(1 + BdtSelected, "BDT selection");
     }
@@ -143,7 +158,12 @@ struct HfCandidateSelectorXicToXiPiPi {
   /// \param candidate is candidate
   /// \return true if candidate passes all cuts
   template <typename T1>
-  bool isSelectedXic(const T1& hfCandXic)
+  bool isSelectedXic(const T1& hfCandXic,
+                     const float& etaPi0,
+                     const float& etaPi1,
+                     const float& etaPiFromXi,
+                     const float& etaV0PosDau,
+                     const float& etaV0NegDau)
   {
     auto candpT = hfCandXic.pt();
     int pTBin = findBin(binsPt, candpT);
@@ -176,6 +196,14 @@ struct HfCandidateSelectorXicToXiPiPi {
     }
     if (fillHistogram) {
       registry.fill(HIST("hSelCandidates"), Eta);
+    }
+
+    // cut on rapidity of final state daughters
+    if (std::abs(etaPi0) > cuts->get(pTBin, "eta Daughters") || std::abs(etaPi1) > cuts->get(pTBin, "eta Daughters") || std::abs(etaPiFromXi) > cuts->get(pTBin, "eta Daughters") || std::abs(etaV0PosDau) > cuts->get(pTBin, "eta Daughters") || std::abs(etaV0NegDau) > cuts->get(pTBin, "eta Daughters")) {
+      return false;
+    }
+    if (fillHistogram) {
+      registry.fill(HIST("hSelCandidates"), EtaDaughters);
     }
 
     // cut on pion pT
@@ -241,7 +269,7 @@ struct HfCandidateSelectorXicToXiPiPi {
   }
 
   void process(aod::HfCandXic const& hfCandsXic,
-               TracksPidWithSel const&)
+               TracksExtraWPid const&)
   {
     for (const auto& hfCandXic : hfCandsXic) {
       int statusXicToXiPiPi = 0;
@@ -249,14 +277,18 @@ struct HfCandidateSelectorXicToXiPiPi {
         outputMlXicToXiPiPi.clear();
       }
 
-      // get candidate pT
       float ptCandXic = hfCandXic.pt();
+      auto trackPi0 = hfCandXic.pi0_as<TracksExtraWPid>();
+      auto trackPi1 = hfCandXic.pi1_as<TracksExtraWPid>();
+      auto trackPiFromXi = hfCandXic.bachelor_as<TracksExtraWPid>();
+      auto trackV0PosDau = hfCandXic.posTrack_as<TracksExtraWPid>();
+      auto trackV0NegDau = hfCandXic.negTrack_as<TracksExtraWPid>();
 
       // No hfflag -> by default skim selected
       SETBIT(statusXicToXiPiPi, SelectionStep::RecoSkims); // RecoSkims = 0 --> statusXicToXiPiPi = 1
 
       // kinematic and topological selection
-      if (!isSelectedXic(hfCandXic)) {
+      if (!isSelectedXic(hfCandXic, trackPi0.eta(), trackPi1.eta(), trackPiFromXi.eta(), trackV0PosDau.eta(), trackV0NegDau.eta())) {
         hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
         if (applyMl) {
           hfMlXicToXiPiPiCandidate(outputMlXicToXiPiPi);
@@ -264,6 +296,51 @@ struct HfCandidateSelectorXicToXiPiPi {
         continue;
       }
       SETBIT(statusXicToXiPiPi, SelectionStep::RecoTopol); // RecoTopol = 1 --> statusXicToXiPiPi = 3
+
+      // track quality selection
+      if (doTrackQualitySelection) {
+        if (!isSelectedTrackTpcQuality(trackPiFromXi, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax) ||
+            !isSelectedTrackTpcQuality(trackV0PosDau, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax) ||
+            !isSelectedTrackTpcQuality(trackV0NegDau, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
+          hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
+          if (applyMl) {
+            hfMlXicToXiPiPiCandidate(outputMlXicToXiPiPi);
+          }
+          continue;
+        }
+        if (fillHistogram) {
+          registry.fill(HIST("hSelCandidates"), TpcTrackQualityXiDaughters);
+        }
+
+        if (!isSelectedTrackTpcQuality(trackPi0, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax) ||
+            !isSelectedTrackTpcQuality(trackPi1, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
+          hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
+          if (applyMl) {
+            hfMlXicToXiPiPiCandidate(outputMlXicToXiPiPi);
+          }
+          continue;
+        }
+        if (fillHistogram) {
+          registry.fill(HIST("hSelCandidates"), TpcTrackQualityPiFromCharm);
+        }
+
+        if ((!isSelectedTrackItsQuality(trackPi0, nClustersItsMin, itsChi2PerClusterMax) || trackPiFromCharm.itsNClsInnerBarrel() < nClustersItsInnBarrMin) ||
+            (!isSelectedTrackItsQuality(trackPi0, nClustersItsMin, itsChi2PerClusterMax) || trackPiFromCharm.itsNClsInnerBarrel() < nClustersItsInnBarrMin)) {
+          hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
+          if (applyMl) {
+            hfMlXicToXiPiPiCandidate(outputMlXicToXiPiPi);
+          }
+          continue;
+        }
+        if (fillHistogram) {
+          registry.fill(HIST("hSelCandidates"), ItsTrackQualityPiFromCharm);
+        }
+      }
+      if (!doTrackQualitySelection && fillHistogram) {
+        registry.fill(HIST("hSelCandidates"), TpcTrackQualityXiDaughters);
+        registry.fill(HIST("hSelCandidates"), TpcTrackQualityPiFromCharm);
+        registry.fill(HIST("hSelCandidates"), ItsTrackQualityPiFromCharm);
+      }
 
       // track-level PID selection
       if (usePid) {
@@ -273,11 +350,6 @@ struct HfCandidateSelectorXicToXiPiPi {
         TrackSelectorPID::Status statusPidPrLam = TrackSelectorPID::NotApplicable;
         TrackSelectorPID::Status statusPidPiLam = TrackSelectorPID::NotApplicable;
 
-        auto trackPi0 = hfCandXic.pi0_as<TracksPidWithSel>();
-        auto trackPi1 = hfCandXic.pi1_as<TracksPidWithSel>();
-        auto trackV0PosDau = hfCandXic.posTrack_as<TracksPidWithSel>();
-        auto trackV0NegDau = hfCandXic.negTrack_as<TracksPidWithSel>();
-        auto trackPiFromXi = hfCandXic.bachelor_as<TracksPidWithSel>();
         // assign proton and pion hypothesis to V0 daughters
         auto trackPr = trackV0PosDau;
         auto trackPiFromLam = trackV0NegDau;
