@@ -298,6 +298,11 @@ struct hadronnucleicorrelation {
       }
     }
 
+    registry.add("hPrDCAxy", "DCAxy p", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
+    registry.add("hAntiPrDCAxy", "DCAxy #bar{p}", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
+    registry.add("hDeDCAxy", "DCAxy d", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
+    registry.add("hAntiDeDCAxy", "DCAxy #bar{d}", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
+
     if (doQA) {
       // Track QA
       QA.add("QA/hVtxZ_trk", "#it{z}_{vtx}", {HistType::kTH1D, {{150, -15.f, 15.f, "#it{z}_{vtx} (cm)"}}});
@@ -332,6 +337,19 @@ struct hadronnucleicorrelation {
     }
 
     if (isMC) {
+      registry.add("hPrimPrDCAxy", "DCAxy p", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
+      registry.add("hPrimAntiPrDCAxy", "DCAxy #bar{p}", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
+      registry.add("hPrimDeDCAxy", "DCAxy d", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
+      registry.add("hPrimAntiDeDCAxy", "DCAxy #bar{d}", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
+      registry.add("hSecMatPrDCAxy", "DCAxy p", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
+      registry.add("hSecMatAntiPrDCAxy", "DCAxy #bar{p}", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
+      registry.add("hSecMatDeDCAxy", "DCAxy d", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
+      registry.add("hSecMatAntiDeDCAxy", "DCAxy #bar{d}", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
+      registry.add("hSecWeakPrDCAxy", "DCAxy p", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
+      registry.add("hSecWeakAntiPrDCAxy", "DCAxy #bar{p}", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
+      registry.add("hSecWeakDeDCAxy", "DCAxy d", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
+      registry.add("hSecWeakAntiDeDCAxy", "DCAxy #bar{d}", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
+
       registry.add("hReco_EtaPhiPt_Proton", "Gen (anti)protons in reco collisions", {HistType::kTH3F, {etaAxis, phiAxis, pTAxis_small}});
       registry.add("hReco_EtaPhiPt_Deuteron", "Gen (anti)deuteron in reco collisions", {HistType::kTH3F, {etaAxis, phiAxis, pTAxis_small}});
       registry.add("hReco_PID_EtaPhiPt_Proton", "Gen (anti)protons + PID in reco collisions", {HistType::kTH3F, {etaAxis, phiAxis, pTAxis_small}});
@@ -744,6 +762,16 @@ struct hadronnucleicorrelation {
         continue;
       if (track.itsNCls() < min_itsNCls)
         continue;
+
+      if (IsProton(track, +1))
+        registry.fill(HIST("hPrDCAxy"), track.dcaXY(), track.pt());
+      if (IsProton(track, -1))
+        registry.fill(HIST("hAntiPrDCAxy"), track.dcaXY(), track.pt());
+      if (IsDeuteron(track, +1))
+        registry.fill(HIST("hDeDCAxy"), track.dcaXY(), track.pt());
+      if (IsDeuteron(track, -1))
+        registry.fill(HIST("hAntiDeDCAxy"), track.dcaXY(), track.pt());
+
       if (!applyDCAcut(track))
         continue;
 
@@ -1130,6 +1158,44 @@ struct hadronnucleicorrelation {
         continue;
       if (track.itsNCls() < min_itsNCls)
         continue;
+
+      if (IsProton(track, +1) && track.pdgCode() == pdgProton) {
+        registry.fill(HIST("hPrDCAxy"), track.dcaXY(), track.pt());
+        if (track.origin() == 0)
+          registry.fill(HIST("hPrimPrDCAxy"), track.dcaXY(), track.pt());
+        if (track.origin() == 1)
+          registry.fill(HIST("hSecWeakPrDCAxy"), track.dcaXY(), track.pt());
+        if (track.origin() == 2)
+          registry.fill(HIST("hSecMatPrDCAxy"), track.dcaXY(), track.pt());
+      }
+      if (IsProton(track, -1) && track.pdgCode() == -pdgProton) {
+        registry.fill(HIST("hAntiPrDCAxy"), track.dcaXY(), track.pt());
+        if (track.origin() == 0)
+          registry.fill(HIST("hPrimAntiPrDCAxy"), track.dcaXY(), track.pt());
+        if (track.origin() == 1)
+          registry.fill(HIST("hSecWeakAntiPrDCAxy"), track.dcaXY(), track.pt());
+        if (track.origin() == 2)
+          registry.fill(HIST("hSecMatAntiPrDCAxy"), track.dcaXY(), track.pt());
+      }
+      if (IsDeuteron(track, +1) && track.pdgCode() == pdgDeuteron) {
+        registry.fill(HIST("hDeDCAxy"), track.dcaXY(), track.pt());
+        if (track.origin() == 0)
+          registry.fill(HIST("hPrimDeDCAxy"), track.dcaXY(), track.pt());
+        if (track.origin() == 1)
+          registry.fill(HIST("hSecWeakDeDCAxy"), track.dcaXY(), track.pt());
+        if (track.origin() == 2)
+          registry.fill(HIST("hSecMatDeDCAxy"), track.dcaXY(), track.pt());
+      }
+      if (IsDeuteron(track, -1) && track.pdgCode() == -pdgDeuteron) {
+        registry.fill(HIST("hAntiDeDCAxy"), track.dcaXY(), track.pt());
+        if (track.origin() == 0)
+          registry.fill(HIST("hPrimAntiDeDCAxy"), track.dcaXY(), track.pt());
+        if (track.origin() == 1)
+          registry.fill(HIST("hSecWeakAntiDeDCAxy"), track.dcaXY(), track.pt());
+        if (track.origin() == 2)
+          registry.fill(HIST("hSecMatAntiDeDCAxy"), track.dcaXY(), track.pt());
+      }
+
       if (!applyDCAcut(track))
         continue;
 
