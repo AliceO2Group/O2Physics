@@ -51,7 +51,7 @@ using namespace o2::aod::track;
 AxisSpec PtAxis = {1001, -0.005, 10.005};
 AxisSpec DeltaZAxis = {61, -6.1, 6.1};
 AxisSpec ZAxis = {301, -30.1, 30.1};
-AxisSpec PhiAxis = {629, 0, 2 * M_PI, "Rad", "phi axis"};
+AxisSpec PhiAxis = {629, 0, 2 * o2::constants::math::PI, "Rad", "phi axis"};
 // AxisSpec EtaAxis = {18, -4.6, -1.};
 AxisSpec DCAxyAxis = {100, -1, 10};
 AxisSpec CentAxis = {{0, 10, 20, 30, 40, 50, 60, 70, 80, 100}};
@@ -530,10 +530,10 @@ struct PseudorapidityDensityMFT {
 
           if (usePhiCut) {
             if ((phi < cfgPhiCut) ||
-                ((phi > M_PI - cfgPhiCut) && (phi < M_PI + cfgPhiCut)) ||
-                (phi > 2. * M_PI - cfgPhiCut) ||
-                ((phi > ((M_PI / 2. - 0.1) * M_PI) - cfgPhiCut) &&
-                 (phi < ((M_PI / 2. - 0.1) * M_PI) + cfgPhiCut)))
+                ((phi > o2::constants::math::PI - cfgPhiCut) && (phi < o2::constants::math::PI + cfgPhiCut)) ||
+                (phi > 2. * o2::constants::math::PI - cfgPhiCut) ||
+                ((phi > ((o2::constants::math::PI / 2. - 0.1) * o2::constants::math::PI) - cfgPhiCut) &&
+                 (phi < ((o2::constants::math::PI / 2. - 0.1) * o2::constants::math::PI) + cfgPhiCut)))
               continue;
           }
 
@@ -770,10 +770,10 @@ struct PseudorapidityDensityMFT {
 
         if (usePhiCut) {
           if ((phi < cfgPhiCut) ||
-              ((phi > M_PI - cfgPhiCut) && (phi < M_PI + cfgPhiCut)) ||
-              (phi > 2. * M_PI - cfgPhiCut) ||
-              ((phi > ((M_PI / 2. - 0.1) * M_PI) - cfgPhiCut) &&
-               (phi < ((M_PI / 2. - 0.1) * M_PI) + cfgPhiCut)))
+              ((phi > o2::constants::math::PI - cfgPhiCut) && (phi < o2::constants::math::PI + cfgPhiCut)) ||
+              (phi > 2. * o2::constants::math::PI - cfgPhiCut) ||
+              ((phi > ((o2::constants::math::PI / 2. - 0.1) * o2::constants::math::PI) - cfgPhiCut) &&
+               (phi < ((o2::constants::math::PI / 2. - 0.1) * o2::constants::math::PI) + cfgPhiCut)))
             continue;
         }
 
