@@ -41,7 +41,6 @@ struct sigmaminustask {
 
   Preslice<aod::KinkCands> mPerCol = aod::track::collisionId;
 
-
   void init(InitContext const&)
   {
     // Axes
@@ -92,7 +91,7 @@ struct sigmaminustask {
       }
 
       rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
-      auto kinkCandPerColl =  KinkCands.sliceBy(mPerCol, collision.globalIndex());
+      auto kinkCandPerColl = KinkCands.sliceBy(mPerCol, collision.globalIndex());
       for (const auto& kinkCand : kinkCandPerColl) {
         auto dauTrack = kinkCand.trackDaug_as<TracksFull>();
         auto mothTrack = kinkCand.trackMoth_as<TracksFull>();
