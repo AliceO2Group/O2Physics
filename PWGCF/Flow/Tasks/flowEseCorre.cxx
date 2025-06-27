@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file FlowEseCorre.cxx
+/// \file flowEseCorre.cxx
 /// \brief Task for flow and event shape engineering corrections
 /// \author Alice Collaboration
 /// \since 2023-05-15
@@ -187,8 +187,7 @@ struct FlowEseCorre {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{	  return WorkflowSpec{
-      adaptAnalysisTask<FlowEseCorre>(cfgc)};	    adaptAnalysisTask<FlowEseCorre>(cfgc)};
-}	
-
+  return WorkflowSpec{
+    adaptAnalysisTask<FlowEseCorre>(cfgc)};
+}
 
