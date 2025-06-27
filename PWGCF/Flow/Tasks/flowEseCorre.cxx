@@ -190,4 +190,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<FlowEseCorre>(cfgc)};
 }
-
