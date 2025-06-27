@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file FlowEseCorre.cxx
+/// \brief Task for flow and event shape engineering corrections
+/// \author Alice Collaboration
+
 // C++/ROOT includes.
 #include <TComplex.h>
 #include <TH1F.h>
@@ -46,70 +50,72 @@ using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension>;
 using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
-struct flowEseCorre {
+struct FlowEseCorr{
   HistogramRegistry histosQA{"histosQA", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-  Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2}, "Modulation of interest"};
+  Configurable<std::vector<int>> cfgNmods{"cfgNmods", {2}, "Modulation of interest"};
   Configurable<std::string> cfgDetName{"cfgDetName", "FT0C", "The name of detector to be analyzed"};
   Configurable<std::string> cfgRefAName{"cfgRefAName", "TPCpos", "The name of detector for reference A"};
   Configurable<std::string> cfgRefBName{"cfgRefBName", "TPCneg", "The name of detector for reference B"};
 
-  Configurable<float> cfgMinPt{"cfgMinPt", 0.15, "Minimum transverse momentum for charged track"};
-  Configurable<float> cfgMaxEta{"cfgMaxEta", 0.8, "Maximum pseudorapidiy for charged track"};
-  Configurable<float> cfgMaxDCArToPVcut{"cfgMaxDCArToPVcut", 0.1, "Maximum transverse DCA"};
-  Configurable<float> cfgMaxDCAzToPVcut{"cfgMaxDCAzToPVcut", 1.0, "Maximum longitudinal DCA"};
+  Configurable<float> cfgMinPt{"cfgMinPt", 0.15f, "Minimum transverse momentum for charged track"};
+  Configurable<float> cfgMaxEta{"cfgMaxEta", 0.8f, "Maximum pseudorapidiy for charged track"};
+  Configurable<float> cfgMaxDCArToPVcut{"cfgMaxDCArToPVcut", 0.1f, "Maximum transverse DCA"};
+  Configurable<float> cfgMaxDCAzToPVcut{"cfgMaxDCAzToPVcut", 1.0f, "Maximum longitudinal DCA"};
 
-  ConfigurableAxis cfgaxisQvecF{"cfgaxisQvecF", {300, -1, 1}, ""};
-  ConfigurableAxis cfgaxisQvec{"cfgaxisQvec", {100, -3, 3}, ""};
-  ConfigurableAxis cfgaxisCent{"cfgaxisCent", {100, 0, 100}, ""};
+  ConfigurableAxis cfgAxisQvecF{"cfgAxisQvecF", {300, -1, 1}, ""};
+  ConfigurableAxis cfgAxisQvec{"cfgAxisQvec", {100, -3, 3}, ""};
+  ConfigurableAxis cfgAxisCent{"cfgAxisCent", {100, 0, 100}, ""};
 
-  ConfigurableAxis cfgaxiscos{"cfgaxiscos", {102, -1.02, 1.02}, ""};
-  ConfigurableAxis cfgaxispt{"cfgaxispt", {100, 0, 10}, ""};
-  ConfigurableAxis cfgaxisCentMerged{"cfgaxisCentMerged", {20, 0, 100}, ""};
-  ConfigurableAxis cfgaxisMultnum{"cfgaxisMultnum", {300, 0, 2700}, ""};
+  ConfigurableAxis cfgAxisCos{"cfgAxisCos", {102, -1.02, 1.02}, ""};
+  ConfigurableAxis cfgAxisPt{"cfgAxisPt", {100, 0, 10}, ""};
+  ConfigurableAxis cfgAxisCentMerged{"cfgAxisCentMerged", {20, 0, 100}, ""};
+  ConfigurableAxis cfgAxisMultNum{"cfgAxisMultNum", {300, 0, 2700}, ""};
+
+  static constexpr float kMinAmplitudeThreshold = 1e-4f;
+  static constexpr int kDefaultModulation = 2;
 
   EventPlaneHelper helperEP;
 
-  void init(InitContext const&)
+  void init(InitContext const &)
   {
-    AxisSpec axisCent{cfgaxisCent, "centrality"};
-    AxisSpec axisQvec{cfgaxisQvec, "Q"};
-    AxisSpec axisQvecF{cfgaxisQvecF, "Q"};
+    AxisSpec axisCent{cfgAxisCent, "centrality"};
+    AxisSpec axisQvec{cfgAxisQvec, "Q"};
+    AxisSpec axisQvecF{cfgAxisQvecF, "Q"};
     AxisSpec axisEvtPl = {100, -1.0 * constants::math::PI, constants::math::PI};
 
-    AxisSpec axisCos{cfgaxiscos, "angle function"};
-    AxisSpec axisPt{cfgaxispt, "trasverse momentum"};
-    AxisSpec axisCentMerged{cfgaxisCentMerged, "merged centrality"};
-    AxisSpec axisMultnum{cfgaxisMultnum, "statistic of mult"};
+    AxisSpec axisCos{cfgAxisCos, "angle function"};
+    AxisSpec axisPt{cfgAxisPt, "trasverse momentum"};
+    AxisSpec axisCentMerged{cfgAxisCentMerged, "merged centrality"};
+    AxisSpec axisMultNum{cfgAxisMultNum, "statistic of mult"};
 
     histosQA.add(Form("histQvecV2"), "", {HistType::kTH3F, {axisQvecF, axisQvecF, axisCent}});
     histosQA.add(Form("histEvtPlV2"), "", {HistType::kTH2F, {axisEvtPl, axisCent}});
     histosQA.add(Form("histQvecRes_SigRefAV2"), "", {HistType::kTH2F, {axisQvecF, axisCent}});
     histosQA.add(Form("histCosDetV2"), "", {HistType::kTH3F, {axisCentMerged, axisPt, axisCos}});
-    histosQA.add(Form("histMult_Cent"), "", {HistType::kTH2F, {axisMultnum, axisCent}});
+    histosQA.add(Form("histMult_Cent"), "", {HistType::kTH2F, {axisMultNum, axisCent}});
   }
 
   template <typename CollType>
-  bool SelEvent(const CollType& collision)
+  bool selectEvent(const CollType &collision)
   {
-    if (!collision.sel8()) {
-      return 0;
+    if (!collision.sel8()){
+      return false;
     }
-    if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
-      return 0;
+    if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)){
+      return false;
     }
-    if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
-      return 0;
+    if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)){
+      return false;
     }
-    if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-      return 0;
+    if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)){
+      return false;
     }
-
-    return 1;
+    return true;
   }
 
   template <typename TrackType>
-  bool SelTrack(const TrackType track)
+  bool selectTrack(const TrackType &track)
   {
     if (track.pt() < cfgMinPt)
       return false;
@@ -134,9 +140,9 @@ struct flowEseCorre {
   }
 
   template <typename CollType>
-  void fillHistosQvec(const CollType& collision, int nmode)
+  void fillHistosQvec(const CollType &collision, int nmode)
   {
-    if (nmode == 2) {
+    if (nmode == kDefaultModulation){
       histosQA.fill(HIST("histQvecV2"), collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], collision.centFT0C());
       histosQA.fill(HIST("histEvtPlV2"), helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), collision.centFT0C());
       histosQA.fill(HIST("histQvecRes_SigRefAV2"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), collision.centFT0C());
@@ -145,36 +151,37 @@ struct flowEseCorre {
   }
 
   template <typename CollType, typename TrackType>
-  void fillHistosFlow(const CollType& collision, const TrackType& track, int nmode)
+  void fillHistosFlow(const CollType &collision, const TrackType &tracks, int nmode)
   {
-    if (collision.sumAmplFT0C() < 1e-4) {
+    if (collision.sumAmplFT0C() < kMinAmplitudeThreshold){
       return;
     }
-    for (auto& trk : track) {
-      if (!SelTrack(trk)) {
+    for (const auto &trk : tracks)
+    {
+      if (!selectTrack(trk)){
         continue;
       }
-      if (nmode == 2) {
+      if (nmode == kDefaultModulation){
         histosQA.fill(HIST("histCosDetV2"), collision.centFT0C(), trk.pt(),
                       std::cos(static_cast<float>(nmode) * (trk.phi() - helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode))));
       }
     }
   }
 
-  void process(MyCollisions::iterator const& collision, MyTracks const& tracks)
+  void process(MyCollisions::iterator const &collision, MyTracks const &tracks)
   {
-    if (!SelEvent(collision)) {
+    if (!selectEvent(collision)){
       return;
     }
-    for (std::size_t i = 0; i < cfgnMods->size(); i++) {
-      fillHistosQvec(collision, cfgnMods->at(i));
-      fillHistosFlow(collision, tracks, cfgnMods->at(i));
+    for (const auto &mod : cfgNmods->at(i)){
+      fillHistosQvec(collision, mod);
+      fillHistosFlow(collision, tracks, mod);
     }
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const &cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<flowEseCorre>(cfgc)};
+      adaptAnalysisTask<FlowEseCorre>(cfgc)};
 }
