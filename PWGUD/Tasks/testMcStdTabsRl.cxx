@@ -17,14 +17,14 @@
 //
 
 // C++ headers
+#include <algorithm>
 #include <set>
 #include <utility>
-#include <algorithm>
 #include <vector>
 
 // O2 headers
-#include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
