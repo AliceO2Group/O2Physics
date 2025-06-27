@@ -64,7 +64,6 @@ struct DedxAnalysis {
   float invMassCutGamma = 0.0015;
   float magField = 1;
   float pTcut = 2.0;
-  float nclCut = 120.0;
 
   // Configurable Parameters
   // Tracks cuts
@@ -100,6 +99,8 @@ struct DedxAnalysis {
                                    "Minimum Mass Gamma"};
   Configurable<float> maxMassGamma{"maxMassGamma", 0.002022f,
                                    "Maximum Mass Gamma"};
+  Configurable<float> nclCut{"nclCut", 135.0f,
+                             "ncl Cut"};
   Configurable<bool> calibrationMode{"calibrationMode", false, "calibration mode"};
   Configurable<bool> additionalCuts{"additionalCuts", true, "additional cuts"};
   // Histograms names
@@ -555,6 +556,38 @@ struct DedxAnalysis {
     return true;
   }
 
+  // Phi cut Secondaries
+  template <typename T>
+  bool passedPhiCutSecondaries(const T& trk, float magField, const TF1& fphiCutLow, const TF1& fphiCutHigh)
+  {
+    float pt = trk.pt();
+    float phi = trk.phi();
+    int charge = trk.sign();
+    auto nTPCCl = trk.tpcNClsFindable() - trk.tpcNClsFindableMinusFound();
+
+    if (pt < pTcut)
+      return true;
+
+    if (magField < 0) // for negatve polarity field
+      phi = o2::constants::math::TwoPI - phi;
+    if (charge < 0) // for negatve charge
+      phi = o2::constants::math::TwoPI - phi;
+
+    // to center gap in the middle
+    phi += o2::constants::math::PI / 18.0f;
+    phi = std::fmod(phi, o2::constants::math::PI / 9.0f);
+
+    // cut phi
+    if (phi < fphiCutHigh.Eval(pt) && phi > fphiCutLow.Eval(pt))
+      return false; // reject track
+
+    // cut Ncl
+    if (nTPCCl < nclCut)
+      return false;
+
+    return true;
+  }
+
   // Process Data
   void process(SelectedCollisions::iterator const& collision,
                aod::V0Datas const& fullV0s, PIDTracks const& tracks)
@@ -590,7 +623,7 @@ struct DedxAnalysis {
       if (!mySelectionPrim.IsSelected(trk))
         continue;
 
-      // phi cut
+      // phi and Ncl cut
       if (!passedPhiCut(trk, magField, *fphiCutLow, *fphiCutHigh))
         continue;
 
@@ -701,6 +734,12 @@ struct DedxAnalysis {
         if (!posTrack.passedTPCRefit())
           continue;
         if (!negTrack.passedTPCRefit())
+          continue;
+        // phi and Ncl cut
+        if (!passedPhiCutSecondaries(posTrack, magField, *fphiCutLow, *fphiCutHigh))
+          continue;
+
+        if (!passedPhiCutSecondaries(negTrack, magField, *fphiCutLow, *fphiCutHigh))
           continue;
 
         float signedPpos = posTrack.sign() * posTrack.tpcInnerParam();
