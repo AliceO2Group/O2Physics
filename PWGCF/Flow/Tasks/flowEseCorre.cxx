@@ -178,7 +178,7 @@ struct FlowEseCorre {
     if (!selectEvent(collision)) {
       return;
     }
-    for (auto const& mod : *cfgNmods) {
+    for (const auto& mod : cfgNmods->at(i)) {
       fillHistosQvec(collision, mod);
       fillHistosFlow(collision, tracks, mod);
     }
@@ -187,6 +187,8 @@ struct FlowEseCorre {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<FlowEseCorre>(cfgc)};
-}
+  return WorkflowSpec{	  return WorkflowSpec{
+      adaptAnalysisTask<FlowEseCorre>(cfgc)};	    adaptAnalysisTask<FlowEseCorre>(cfgc)};
+}	
+
+
