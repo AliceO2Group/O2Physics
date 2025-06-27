@@ -528,6 +528,7 @@ struct ExclusiveRhoTo4Pi {
   Configurable<float> occupancyCut{"occupancyCut", 20000, "Occupancy Cut"};
   Configurable<uint16_t> numPVContrib{"numPVContrib", 4, "Number of PV Contributors"};
   Configurable<int> checkOneTof{"checkOneTof", 1, " (1 or 0)Check if event has at least 1 TOF"};
+  Configurable<bool> ifPass5{"ifPass5", true, "If pass 5 data is used"};
 
   // bc selection cuts
   Configurable<int> sbpCut{"sbpCut", 1, "Sbp"};
@@ -895,9 +896,11 @@ struct ExclusiveRhoTo4Pi {
   void processData(UDCollision const& collision, UDtracks const& tracks)
   {
 
-    if (!(collision.sbp() == sbpCut && collision.itsROFb() == itsROFbCut && collision.vtxITSTPC() == vtxITSTPCcut && collision.tfb() == tfbCut)) {
+    if (ifPass5 && (!(collision.sbp() == sbpCut && collision.itsROFb() == itsROFbCut && collision.vtxITSTPC() == vtxITSTPCcut && collision.tfb() == tfbCut))) {
       return;
     }
+
+    histosData.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 0);
 
     int gapSide = collision.gapSide();
     std::vector<float> parameters = {pvCut, dcaZcut, dcaXYcut, tpcChi2Cut, tpcNClsFindableCut, itsChi2Cut, etaCut, pTcut};
