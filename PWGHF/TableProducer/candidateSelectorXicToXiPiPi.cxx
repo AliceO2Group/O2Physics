@@ -198,7 +198,7 @@ struct HfCandidateSelectorXicToXiPiPi {
       registry.fill(HIST("hSelCandidates"), Eta);
     }
 
-    // cut on rapidity of final state daughters
+    // cut on pseudorapidity of final state daughters
     if (std::abs(etaPi0) > cuts->get(pTBin, "eta Daughters") || std::abs(etaPi1) > cuts->get(pTBin, "eta Daughters") || std::abs(etaPiFromXi) > cuts->get(pTBin, "eta Daughters") || std::abs(etaV0PosDau) > cuts->get(pTBin, "eta Daughters") || std::abs(etaV0NegDau) > cuts->get(pTBin, "eta Daughters")) {
       return false;
     }
@@ -284,8 +284,8 @@ struct HfCandidateSelectorXicToXiPiPi {
       auto trackV0PosDau = hfCandXic.posTrack_as<TracksExtraWPid>();
       auto trackV0NegDau = hfCandXic.negTrack_as<TracksExtraWPid>();
 
-      // No hfflag -> by default skim selected
-      SETBIT(statusXicToXiPiPi, SelectionStep::RecoSkims); // RecoSkims = 0 --> statusXicToXiPiPi = 1
+      // Succesful reconstruction
+      SETBIT(statusXicToXiPiPi, hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoTotal); // RecoTotal = 0 --> statusXicToXiPiPi += 1
 
       // kinematic and topological selection
       if (!isSelectedXic(hfCandXic, trackPi0.eta(), trackPi1.eta(), trackPiFromXi.eta(), trackV0PosDau.eta(), trackV0NegDau.eta())) {
@@ -295,7 +295,7 @@ struct HfCandidateSelectorXicToXiPiPi {
         }
         continue;
       }
-      SETBIT(statusXicToXiPiPi, SelectionStep::RecoTopol); // RecoTopol = 1 --> statusXicToXiPiPi = 3
+      SETBIT(statusXicToXiPiPi, hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoKinTopol); // RecoKinTopol = 1 --> statusXicToXiPiPi += 2
 
       // track quality selection
       if (doTrackQualitySelection) {
@@ -324,8 +324,8 @@ struct HfCandidateSelectorXicToXiPiPi {
           registry.fill(HIST("hSelCandidates"), TpcTrackQualityPiFromCharm);
         }
 
-        if ((!isSelectedTrackItsQuality(trackPi0, nClustersItsMin, itsChi2PerClusterMax) || trackPiFromCharm.itsNClsInnerBarrel() < nClustersItsInnBarrMin) ||
-            (!isSelectedTrackItsQuality(trackPi0, nClustersItsMin, itsChi2PerClusterMax) || trackPiFromCharm.itsNClsInnerBarrel() < nClustersItsInnBarrMin)) {
+        if ((!isSelectedTrackItsQuality(trackPi0, nClustersItsMin, itsChi2PerClusterMax) || trackPi0.itsNClsInnerBarrel() < nClustersItsInnBarrMin) ||
+            (!isSelectedTrackItsQuality(trackPi0, nClustersItsMin, itsChi2PerClusterMax) || trackPi1.itsNClsInnerBarrel() < nClustersItsInnBarrMin)) {
           hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
           if (applyMl) {
             hfMlXicToXiPiPiCandidate(outputMlXicToXiPiPi);
@@ -335,6 +335,8 @@ struct HfCandidateSelectorXicToXiPiPi {
         if (fillHistogram) {
           registry.fill(HIST("hSelCandidates"), ItsTrackQualityPiFromCharm);
         }
+
+        SETBIT(statusXicToXiPiPi, hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoTrackQuality); // RecoTrackQuality = 2 --> statusXicToXiPiPi += 4
       }
       if (!doTrackQualitySelection && fillHistogram) {
         registry.fill(HIST("hSelCandidates"), TpcTrackQualityXiDaughters);
@@ -379,7 +381,7 @@ struct HfCandidateSelectorXicToXiPiPi {
           }
           continue;
         }
-        SETBIT(statusXicToXiPiPi, SelectionStep::RecoPID); // RecoPID = 2 --> statusXicToXiPiPi = 7
+        SETBIT(statusXicToXiPiPi, hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoPID); // RecoPID = 3 --> statusXicToXiPiPi += 8
         if (fillHistogram) {
           registry.fill(HIST("hSelCandidates"), PidSelected);
         }
@@ -401,7 +403,7 @@ struct HfCandidateSelectorXicToXiPiPi {
           hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
           continue;
         }
-        SETBIT(statusXicToXiPiPi, aod::SelectionStep::RecoMl);
+        SETBIT(statusXicToXiPiPi, hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoMl); // RecoPID = 4 --> statusXicToXiPiPi += 16
         if (fillHistogram) {
           registry.fill(HIST("hSelCandidates"), BdtSelected);
         }
