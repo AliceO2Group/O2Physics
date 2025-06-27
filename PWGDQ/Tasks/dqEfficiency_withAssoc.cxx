@@ -2163,9 +2163,9 @@ struct AnalysisSameEventPairing {
       // groupedMCTracks.bindInternalIndicesTo(&mcTracks);
       // for (auto& track : groupedMCTracks) {
       for (auto& track : mcTracks) {
-	if (track.reducedMCeventId() != event.reducedMCeventId()){
-	  continue;
-	}
+        if (track.reducedMCeventId() != event.reducedMCeventId()) {
+          continue;
+        }
         VarManager::FillTrackMC(mcTracks, track);
         auto track_raw = mcTracks.rawIteratorAt(track.globalIndex());
         // auto track_raw = groupedMCTracks.rawIteratorAt(track.globalIndex());
