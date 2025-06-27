@@ -388,7 +388,7 @@ struct HfTreeCreatorLcToPKPi {
   Configurable<bool> applyMl{"applyMl", false, "Whether ML was used in candidateSelectorLc"};
   Configurable<bool> keepOnlySignalMc{"keepOnlySignalMc", false, "Fill MC tree only with signal candidates"};
   Configurable<bool> keepOnlyBkg{"keepOnlyBkg", false, "Fill MC tree only with background candidates"};
-  Configurable<bool> keepCorrBkgMC{"keepCorrBkgMC", false, "Flag to keep correlated background sources (Λc+ -> p K− π+ π0, p π− π+, p K− K+)"};
+  Configurable<bool> keepCorrBkgMC{"keepCorrBkgMC", false, "Flag to keep correlated background sources (Λc+ -> p K− π+ π0, p π− π+, p K− K+ and other charm hadrons)"};
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
   Configurable<float> downSampleBkgPtMax{"downSampleBkgPtMax", 100.f, "Max. pt for background downsampling"};
 
