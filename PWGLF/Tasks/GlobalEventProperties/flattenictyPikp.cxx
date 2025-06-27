@@ -311,30 +311,6 @@ struct FlattenictyPikp {
   std::unique_ptr<TF1> fEDeDxVsEtaPos = nullptr;
   std::unique_ptr<TF1> fEDeDxVsEtaNeg = nullptr;
 
-  static constexpr std::string_view kNvtxZFV0Cell[kNCellsFV0] = {
-    "hVtxZFV0_1", "hVtxZFV0_2", "hVtxZFV0_3", "hVtxZFV0_4", "hVtxZFV0_5", "hVtxZFV0_6", "hVtxZFV0_7", "hVtxZFV0_8",
-    "hVtxZFV0_9", "hVtxZFV0_10", "hVtxZFV0_11", "hVtxZFV0_12", "hVtxZFV0_13", "hVtxZFV0_14", "hVtxZFV0_15", "hVtxZFV0_16",
-    "hVtxZFV0_17", "hVtxZFV0_18", "hVtxZFV0_19", "hVtxZFV0_20", "hVtxZFV0_21", "hVtxZFV0_22", "hVtxZFV0_23", "hVtxZFV0_24",
-    "hVtxZFV0_25", "hVtxZFV0_26", "hVtxZFV0_27", "hVtxZFV0_28", "hVtxZFV0_29", "hVtxZFV0_30", "hVtxZFV0_31", "hVtxZFV0_32",
-    "hVtxZFV0_33", "hVtxZFV0_34", "hVtxZFV0_35", "hVtxZFV0_36", "hVtxZFV0_37", "hVtxZFV0_38", "hVtxZFV0_39", "hVtxZFV0_40",
-    "hVtxZFV0_41", "hVtxZFV0_42", "hVtxZFV0_43", "hVtxZFV0_44", "hVtxZFV0_45", "hVtxZFV0_46", "hVtxZFV0_47", "hVtxZFV0_48"};
-
-  static constexpr std::string_view kNVtxZFV0CellCalib[kNCellsFV0] = {
-    "hVtxZFV0Calib_1", "hVtxZFV0Calib_2", "hVtxZFV0Calib_3", "hVtxZFV0Calib_4", "hVtxZFV0Calib_5", "hVtxZFV0Calib_6", "hVtxZFV0Calib_7", "hVtxZFV0Calib_8",
-    "hVtxZFV0Calib_9", "hVtxZFV0Calib_10", "hVtxZFV0Calib_11", "hVtxZFV0Calib_12", "hVtxZFV0Calib_13", "hVtxZFV0Calib_14", "hVtxZFV0Calib_15", "hVtxZFV0Calib_16",
-    "hVtxZFV0Calib_17", "hVtxZFV0Calib_18", "hVtxZFV0Calib_19", "hVtxZFV0Calib_20", "hVtxZFV0Calib_21", "hVtxZFV0Calib_22", "hVtxZFV0Calib_23", "hVtxZFV0Calib_24",
-    "hVtxZFV0Calib_25", "hVtxZFV0Calib_26", "hVtxZFV0Calib_27", "hVtxZFV0Calib_28", "hVtxZFV0Calib_29", "hVtxZFV0Calib_30", "hVtxZFV0Calib_31", "hVtxZFV0Calib_32",
-    "hVtxZFV0Calib_33", "hVtxZFV0Calib_34", "hVtxZFV0Calib_35", "hVtxZFV0Calib_36", "hVtxZFV0Calib_37", "hVtxZFV0Calib_38", "hVtxZFV0Calib_39", "hVtxZFV0Calib_40",
-    "hVtxZFV0Calib_41", "hVtxZFV0Calib_42", "hVtxZFV0Calib_43", "hVtxZFV0Calib_44", "hVtxZFV0Calib_45", "hVtxZFV0Calib_46", "hVtxZFV0Calib_47", "hVtxZFV0Calib_48"};
-
-  static constexpr std::string_view kNMultFV0Cell[kNCellsFV0] = {
-    "hMultFV0_1", "hMultFV0_2", "hMultFV0_3", "hMultFV0_4", "hMultFV0_5", "hMultFV0_6", "hMultFV0_7", "hMultFV0_8",
-    "hMultFV0_9", "hMultFV0_10", "hMultFV0_11", "hMultFV0_12", "hMultFV0_13", "hMultFV0_14", "hMultFV0_15", "hMultFV0_16",
-    "hMultFV0_17", "hMultFV0_18", "hMultFV0_19", "hMultFV0_20", "hMultFV0_21", "hMultFV0_22", "hMultFV0_23", "hMultFV0_24",
-    "hMultFV0_25", "hMultFV0_26", "hMultFV0_27", "hMultFV0_28", "hMultFV0_29", "hMultFV0_30", "hMultFV0_31", "hMultFV0_32",
-    "hMultFV0_33", "hMultFV0_34", "hMultFV0_35", "hMultFV0_36", "hMultFV0_37", "hMultFV0_38", "hMultFV0_39", "hMultFV0_40",
-    "hMultFV0_41", "hMultFV0_42", "hMultFV0_43", "hMultFV0_44", "hMultFV0_45", "hMultFV0_46", "hMultFV0_47", "hMultFV0_48"};
-
   void init(InitContext&)
   {
     auto vecParamsMIPposEta = (std::vector<float>)paramsFuncMIPposEta;
@@ -494,7 +470,10 @@ struct FlattenictyPikp {
       flatchrg.add("FV0/hFV0AmplWCalib", "", HistType::kTH2D, {{48, -0.5, 47.5, "channel"}, {500, -0.5, +19999.5, "FV0 amplitude"}});
       flatchrg.add("FV0/hFV0AmplvsVtxzWoCalib", "", HistType::kTH2D, {{30, -15.0, +15.0, "z vtx (cm)"}, {1000, -0.5, +39999.5, "FV0 amplitude"}});
       flatchrg.add("FV0/hFV0AmplvsVtxzCalib", "", HistType::kTH2D, {{30, -15.0, +15.0, "z vtx (cm)"}, {1000, -0.5, +39999.5, "FV0 amplitude"}});
-      // V0's QA'
+      flatchrg.add("FV0/hFV0amp", "", {HistType::kTH2D, {channelFT0Axis, amplitudeFT0}});
+      flatchrg.add("FV0/pFV0amp", "", HistType::kTProfile, {channelFT0Axis});
+      flatchrg.add("FV0/hFV0ampCorr", "", {HistType::kTH2D, {channelFT0Axis, amplitudeFT0}});
+      // V0's QA
       flatchrg.add("Tracks/V0qa/hV0Pt", "pT", HistType::kTH1D, {{100, 0.0f, 10}});
       flatchrg.add("Tracks/V0qa/hV0ArmPod", ";#alpha; #it{q}_T", HistType::kTH2D, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}});
       // dEdx PID
@@ -599,18 +578,6 @@ struct FlattenictyPikp {
       initEfficiency<pidSgn, o2::track::PID::Kaon>();
       initEfficiency<pidSgn, o2::track::PID::Proton>();
     });
-
-    if (doprocessFV0Amp) {
-      flatchrg.add("hFV0amp", "hFV0amp", {HistType::kTH2D, {channelFT0Axis, amplitudeFT0}});
-      flatchrg.add("pFV0amp", "pFV0amp", HistType::kTProfile, {channelFT0Axis});
-      flatchrg.add("hFV0ampCorr", "", {HistType::kTH2D, {channelFT0Axis, amplitudeFT0}});
-      for (int i_e = 0; i_e < kNCellsFV0; ++i_e) {
-        flatchrg.add(kNvtxZFV0Cell[i_e].data(), "", HistType::kTProfile, {binOpt.axisVertexZ});
-        flatchrg.add(kNVtxZFV0CellCalib[i_e].data(), "", HistType::kTProfile, {binOpt.axisVertexZ});
-        flatchrg.add(kNMultFV0Cell[i_e].data(), "", HistType::kTH1D, {binOpt.axisMult});
-      }
-      flatchrg.add("hFlatCalibAmp", "hFlatCalibAmp", {HistType::kTH1D, {flatAxis}});
-    }
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -1361,6 +1328,13 @@ struct FlattenictyPikp {
           float amplCh = fv0.amplitude()[ich];
           int chv0 = fv0.channel()[ich];
           int chv0phi = getFV0IndexPhi(chv0);
+          if constexpr (fillHist) {
+            flatchrg.fill(HIST("FV0/hFV0amp"), chv0, amplCh);
+            flatchrg.fill(HIST("FV0/pFV0amp"), chv0, amplCh);
+            if (applyCalibGain) {
+              flatchrg.fill(HIST("FV0/hFV0ampCorr"), chv0, amplCh / fv0AmplCorr[chv0]);
+            }
+          }
           if (amplCh > 0.) {
             if (applyCalibGain) { // equalize gain channel-by-channel
               amplCh /= fv0AmplCorr[chv0];
@@ -1380,9 +1354,9 @@ struct FlattenictyPikp {
               }
               if (applyCalibVtx) {
                 rhoLatticeFV0[chv0phi] *= zVtxMap->GetBinContent(zVtxMap->GetXaxis()->FindBin(chv0phi), zVtxMap->GetYaxis()->FindBin(collision.posZ()));
-              }
-              if constexpr (fillHist) {
-                flatchrg.fill(HIST("FV0/hFV0AmplvsVtxzCalib"), collision.posZ(), rhoLatticeFV0[chv0phi]);
+                if constexpr (fillHist) {
+                  flatchrg.fill(HIST("FV0/hFV0AmplvsVtxzCalib"), collision.posZ(), rhoLatticeFV0[chv0phi]);
+                }
               }
             }
           }
@@ -1959,77 +1933,6 @@ struct FlattenictyPikp {
       return ccdb->getForTimeStamp<ObjType>(fullPath, timestamp);
     }
   }
-
-  template <typename C>
-  void correctFV0Amp(C const& collision)
-  {
-    rhoLatticeFV0.fill(0);
-    bool isOkFV0OrA = false;
-    if (collision.has_foundFV0()) {
-      auto fv0 = collision.foundFV0();
-      std::bitset<8> fV0Triggers = fv0.triggerMask();
-      isOkFV0OrA = fV0Triggers[o2::fit::Triggers::bitA];
-      if (!isOkFV0OrA) {
-        return;
-      }
-      for (std::size_t iCh = 0; iCh < fv0.channel().size(); iCh++) {
-        float ampl = fv0.amplitude()[iCh];
-        int fv0aChId = fv0.channel()[iCh];
-        int fv0aCh = getFV0IndexPhi(fv0aChId);
-        flatchrg.fill(HIST("hFV0amp"), fv0aChId, ampl);
-        flatchrg.fill(HIST("pFV0amp"), fv0aChId, ampl);
-        flatchrg.fill(HIST("hFV0ampCorr"), fv0aChId, ampl / fv0AmplCorr[fv0aChId]);
-
-        if (ampl > 0.) {
-          if (applyCalibGain) {
-            ampl /= fv0AmplCorr[fv0aChId];
-          }
-          if (fv0aCh > 0) {
-            if (fv0aChId < kInnerFV0) {
-              rhoLatticeFV0[fv0aCh] += ampl;
-            } else { // two channels per bin
-              rhoLatticeFV0[fv0aCh] += ampl / 2.;
-            }
-          }
-        }
-      }
-      float flatFV0 = calcFlatenicity(rhoLatticeFV0);
-      flatchrg.fill(HIST("hFlatCalibAmp"), 1. - flatFV0);
-
-      static_for<0, kNCellsFV0 - 1>([&](auto i) {
-        constexpr int kIdx = i.value;
-        if (rhoLatticeFV0[kIdx] > 0) {
-          flatchrg.fill(HIST(kNMultFV0Cell[kIdx]), rhoLatticeFV0[kIdx]);
-        }
-      });
-
-      static_for<0, kNCellsFV0 - 1>([&](auto i) {
-        constexpr int kIdx = i.value;
-        if (rhoLatticeFV0[kIdx] > 0) {
-          flatchrg.fill(HIST(kNvtxZFV0Cell[kIdx]), collision.posZ(), rhoLatticeFV0[kIdx]);
-          if (applyCalibVtx) {
-            rhoLatticeFV0[kIdx] *= zVtxMap->GetBinContent(zVtxMap->GetXaxis()->FindBin(kIdx), zVtxMap->GetYaxis()->FindBin(collision.posZ()));
-            flatchrg.fill(HIST(kNVtxZFV0CellCalib[kIdx]), collision.posZ(), rhoLatticeFV0[kIdx]);
-          }
-        }
-      });
-    }
-  }
-
-  void processFV0Amp(MyCollisions::iterator const& collision,
-                     aod::BCsWithTimestamps const&,
-                     aod::FT0s const&,
-                     aod::FV0As const&)
-  {
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    int currentRun = bc.runNumber();
-    if (runNumber != currentRun) {
-      initCCDB(bc);
-      runNumber = currentRun;
-    }
-    correctFV0Amp(collision);
-  }
-  PROCESS_SWITCH(FlattenictyPikp, processFV0Amp, "Processing FV0 amplitude correction", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
