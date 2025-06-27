@@ -15,13 +15,14 @@
 // \brief This code loops over MFT tracks and collisions and fills histograms
 //        useful to compute dNdeta
 
-#include <chrono>
-#include <cmath>
-#include <cstdint>
-#include <cstdlib>
-#include <unordered_set>
-#include <vector>
+#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CommonConstants/MathConstants.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -29,17 +30,17 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/RuntimeError.h"
 #include "Framework/runDataProcessing.h"
-
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "CommonConstants/MathConstants.h"
 #include "MathUtils/Utils.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 
-#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 #include "TFile.h"
+
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <unordered_set>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
