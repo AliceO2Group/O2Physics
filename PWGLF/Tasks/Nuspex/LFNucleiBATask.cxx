@@ -241,8 +241,9 @@ struct LFNucleiBATask {
     }
   }
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    o2::aod::ITSResponse::setParameters(context);
     if (skimmingOptions.applySkimming) {
       zorroSummary.setObject(zorro.getZorroSummary());
     }
