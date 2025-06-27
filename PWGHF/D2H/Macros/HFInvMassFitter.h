@@ -16,6 +16,7 @@
 /// \author Mingyu Zhang <mingyu.zang@cern.ch>
 /// \author Xinye Peng  <xinye.peng@cern.ch>
 /// \author Biao Zhang <biao.zhang@cern.ch>
+/// \author Oleksii Lubynets <oleksii.lubynets@cern.ch>
 
 #ifndef PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 #define PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
@@ -23,13 +24,13 @@
 #include <RooPlot.h>
 #include <RooRealVar.h>
 #include <RooWorkspace.h>
-#include <Rtypes.h>
-#include <RtypesCore.h>
-
 #include <TF1.h>
 #include <TH1.h>
 #include <TNamed.h>
 #include <TVirtualPad.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 #include <cstdio>
 
