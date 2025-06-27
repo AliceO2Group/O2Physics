@@ -140,7 +140,7 @@ DECLARE_SOA_TABLE(BCWiseMCEtas, "AOD", "BCWISEMCETA", //! table of eta mesons on
 
 namespace bcwisemccluster
 {
-DECLARE_SOA_COLUMN(MesonID, mesonID, int32_t);              //! Index of the mother mesom (-1 if not from a pi0 or eta)
+DECLARE_SOA_COLUMN(MesonID, mesonID, int32_t);          //! Index of the mother mesom (-1 if not from a pi0 or eta)
 DECLARE_SOA_COLUMN(IsEta, isEta, bool);                 //! Boolean flag to indicate if the cluster is from an eta meson, otherwise it is from a pi0
 DECLARE_SOA_COLUMN(StoredTrueE, storedTrueE, uint16_t); //! energy of cluster inducing particle (1 MeV -> Maximum cluster energy of ~65 GeV)
 
