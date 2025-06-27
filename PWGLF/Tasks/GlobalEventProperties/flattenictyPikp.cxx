@@ -81,12 +81,10 @@ static constexpr int kProcessIdWeak = 4;
 static constexpr int Ncharges = 2;
 static constexpr o2::track::PID::ID Npart = 5;
 static constexpr o2::track::PID::ID NpartChrg = Npart * Ncharges;
-static constexpr int PidSgnAll[] = {kPiPlus, kKPlus, kProton};
 static constexpr int PDGs[] = {11, 13, 211, 321, 2212};
 static constexpr int PidSgn[NpartChrg] = {11, 13, 211, 321, 2212, -11, -13, -211, -321, -2212};
 static constexpr const char* Pid[Npart] = {"el", "mu", "pi", "ka", "pr"};
 static constexpr const char* PidChrg[NpartChrg] = {"e^{-}", "#mu^{-}", "#pi^{+}", "K^{+}", "p", "e^{+}", "#mu^{+}", "#pi^{-}", "K^{-}", "#bar{p}"};
-static constexpr std::string_view PidDir[] = {"Pi/", "Ka/", "Pr/"};
 static constexpr std::string_view kSpecies[NpartChrg] = {"Elminus", "Muplus", "PiPlus", "KaPlus", "Pr", "ElPlus", "MuMinus", "PiMinus", "KaMinus", "PrBar"};
 static constexpr std::string_view kSpeciesAll[Npart] = {"El", "Mu", "Pi", "Ka", "Pr"};
 // histogram naming
