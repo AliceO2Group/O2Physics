@@ -82,6 +82,7 @@ struct PseudorapidityDensityMFT {
                                    "eta range for INEL>0 sample definition"};
 
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
+  Configurable<bool> disableITSROFCut{"disableITSROFCut", false, "Disable ITS ROC cut for event selection"};
   ConfigurableAxis multBinning{"multBinning", {701, -0.5, 700.5}, ""};
   ConfigurableAxis EtaAxis = {"etaBinning", {18, -4.6, -1.}, ""};
 
@@ -145,15 +146,15 @@ struct PseudorapidityDensityMFT {
     auto hstat = registry.get<TH1>(HIST("EventSelection"));
     auto* x = hstat->GetXaxis();
     x->SetBinLabel(1, "All");
-    x->SetBinLabel(2, "Selected");
-    x->SetBinLabel(3, "Selected Vz Cut");
-    x->SetBinLabel(4, "Sel8+Vz+INEL>0");
-    x->SetBinLabel(5, "Sel INEL,INEL_fwd>0");
-    x->SetBinLabel(6, "Rejected");
-    x->SetBinLabel(7, "Good BCs");
-    x->SetBinLabel(8, "BCs with collisions");
-    x->SetBinLabel(9, "BCs with pile-up/splitting");
-    x->SetBinLabel(10, "midtracks>0");
+    x->SetBinLabel(2, "Vz");
+    x->SetBinLabel(3, "Vz+ITSRof");
+    x->SetBinLabel(4, "Vz+Selected");
+    x->SetBinLabel(5, "Sel8+Vz+INEL>0");
+    x->SetBinLabel(6, "Sel INEL,INEL_fwd>0");
+    x->SetBinLabel(7, "Rejected");
+    x->SetBinLabel(8, "Good BCs");
+    x->SetBinLabel(9, "BCs with collisions");
+    x->SetBinLabel(10, "BCs with pile-up/splitting");
     x->SetBinLabel(11, "percollisionSample>0");
     x->SetBinLabel(12, "midtracks+percollisionSample>0");
     registry.add({"EventsNtrkZvtx",
@@ -450,7 +451,7 @@ struct PseudorapidityDensityMFT {
       if (!useEvSel ||
           (useEvSel && ((bc.selection_bit(aod::evsel::kIsBBT0A) &&
                          bc.selection_bit(aod::evsel::kIsBBT0C)) != 0))) {
-        registry.fill(HIST("EventSelection"), 7); // added 5->12
+        registry.fill(HIST("EventSelection"), 8); // added 5->12
         cols.clear();
         for (auto& collision : collisions) {
           if (collision.has_foundBC()) {
@@ -463,9 +464,9 @@ struct PseudorapidityDensityMFT {
         }
         LOGP(debug, "BC {} has {} collisions", bc.globalBC(), cols.size());
         if (!cols.empty()) {
-          registry.fill(HIST("EventSelection"), 8); // added 6->13
+          registry.fill(HIST("EventSelection"), 9); // added 6->13
           if (cols.size() > 1) {
-            registry.fill(HIST("EventSelection"), 9); // added 7->14
+            registry.fill(HIST("EventSelection"), 10); // added 7->14
           }
         }
       }
@@ -569,16 +570,20 @@ struct PseudorapidityDensityMFT {
     registry.fill(HIST("EventsNtrkZvtx"), Ntrk, z);
     if ((z >= cfgVzCut1) && (z <= cfgVzCut2)) {
       registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_all"), Ntrk, z);
+      registry.fill(HIST("EventSelection"), 2.);
       for (auto& retrack : retracks) {
         auto track = retrack.mfttrack();
         if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0) {
           registry.fill(HIST("Tracks/2Danalysis/EtaZvtx"), track.eta(), z);
         }
       }
-      if (!useEvSel || (useEvSel && collision.sel8())) {
-        registry.fill(HIST("EventSelection"), 2.);
+      if (!disableITSROFCut && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+        return;
+      }
+      registry.fill(HIST("EventSelection"), 3.);
+      if (!useEvSel || (useEvSel && collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
+        registry.fill(HIST("EventSelection"), 4.);
         registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_sel8"), Ntrk, z);
-        registry.fill(HIST("EventSelection"), 3.);
         std::unordered_set<int> uniqueEvents;
         std::unordered_set<int> uniqueEventsAmb;
         std::unordered_set<int> uniqueCollisions;
@@ -586,8 +591,7 @@ struct PseudorapidityDensityMFT {
         std::unordered_set<int> eventsInelMFT;
         std::unordered_set<int> eventsInel;
         if (midtracks.size() > 0) {
-          registry.fill(HIST("EventSelection"), 4.);
-          registry.fill(HIST("EventSelection"), 10.);
+          registry.fill(HIST("EventSelection"), 5.);
           registry.fill(HIST("EventsNtrkZvtx_gt0"), Ntrk, z);
           registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_sel8_inelgt0"), Ntrk, z);
           eventsInel.insert(collision.globalIndex());
@@ -609,7 +613,7 @@ struct PseudorapidityDensityMFT {
           }
         }
         if (retracks.size() > 0) {
-          registry.fill(HIST("EventSelection"), 5.);
+          registry.fill(HIST("EventSelection"), 6.);
           if (midtracks.size() > 0) {
             registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_sel8_inelfwdgt0"), Ntrk, z);
           }
@@ -736,7 +740,7 @@ struct PseudorapidityDensityMFT {
         registry.fill(HIST("hNumCollisions_Inel"), 1, eventsInel.size());
       }
     } else {
-      registry.fill(HIST("EventSelection"), 6);
+      registry.fill(HIST("EventSelection"), 7);
     }
   }
   PROCESS_SWITCH(PseudorapidityDensityMFT, processMultReassoc,
@@ -851,7 +855,10 @@ struct PseudorapidityDensityMFT {
          collisions.size());
     for (auto& collision : collisions) {
       registry.fill(HIST("EventEfficiency"), 3.);
-      if (!useEvSel || (useEvSel && collision.sel8())) {
+      if (!disableITSROFCut && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+        return;
+      }
+      if (!useEvSel || (useEvSel && collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
         atLeastOne = true;
         auto perCollisionSample = sample->sliceByCached(
           o2::aod::fwdtrack::collisionId, collision.globalIndex(), cache);
