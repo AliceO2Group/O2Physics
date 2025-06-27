@@ -80,13 +80,8 @@ struct TrackEfficiency {
   Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
   Configurable<float> pTHatMaxFractionMCD{"pTHatMaxFractionMCD", 999.0, "maximum fraction of hard scattering for reconstructed track acceptance in MC"};
 
-<<<<<<< HEAD
-  Configurable<int> getPtHatFromHepMCXSection{"getPtHatFromHepMCXSection", true, "test configurable, configurable should be removed once well tested"};
-  Configurable<int> useTrueTrackWeight{"useTrueTrackWeight", 1, "test configurable, should be set to 1 then config removed once well tested"};
-=======
   Configurable<bool> getPtHatFromHepMCXSection{"getPtHatFromHepMCXSection", true, "test configurable, configurable should be removed once well tested"};
   Configurable<bool> useTrueTrackWeight{"useTrueTrackWeight", true, "test configurable, should be set to 1 then config removed once well tested"};
->>>>>>> 53496b235 (trackEfficiency: separate collision processes; add ptHard vs ptHard with weight and hepmcxsection methods; add MC pt res)
 
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
