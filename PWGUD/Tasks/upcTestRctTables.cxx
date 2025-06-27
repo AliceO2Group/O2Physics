@@ -42,7 +42,7 @@ struct UpcTestRctTables {
   // declare configurables
   Configurable<bool> verboseInfo{"verboseInfo", false, {"Print general info to terminal; default it false."}};
 
-  using FullSGUDCollisions = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions, aod::UDZdcsReduced>;
+  using FullSGUDCollisions = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions>;
   using FullSGUDCollision = FullSGUDCollisions::iterator;
 
   // init
