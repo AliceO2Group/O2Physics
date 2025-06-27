@@ -574,8 +574,8 @@ struct CascadeCorrelations {
   ConfigurableAxis multiplicityAxis{"multiplicityAxis", {100, 0, 100}, "Multiplicity (MultFT0M?)"};
   ConfigurableAxis invLambdaMassAxis{"invLambdaMassAxis", {100, 1.07f, 1.17f}, "Inv. Mass (GeV/c^{2})"};
   AxisSpec signAxis{3, -1.5, 1.5, "sign of cascade"};
-  AxisSpec deltaYAxis{40, -2 * maxRapidity, 2 * maxRapidity, "#Delta y"};
-  AxisSpec rapidityAxis{100, -maxRapidity, maxRapidity, "y"};
+  AxisSpec deltaYAxis{40, -2.f, 2.f, "#Delta y"};
+  AxisSpec rapidityAxis{100, -1.f, 1.f, "y"};
   AxisSpec selectionFlagAxis{4, -0.5f, 3.5f, "Selection flag of casc candidate"};
   AxisSpec itsClustersAxis{8, -0.5, 7.5, "number of ITS clusters"};
   AxisSpec tpcRowsAxis{160, -0.5, 159.5, "TPC crossed rows"};
@@ -751,7 +751,7 @@ struct CascadeCorrelations {
           weight = getEfficiency(hEffXiPlus, casc.pt());
         }
         // LOGF(info, "casc pt %f, weight %f", casc.pt(), weight);
-        registry.fill(HIST("hMassXiEffCorrected"), casc.mXi(), casc.pt(), casc.yXi(), collision.posZ(), collision.multFT0M(), weight);
+        registry.fill(HIST("hMassXiEffCorrected"), casc.mXi(), casc.sign(), casc.pt(), casc.yXi(), collision.posZ(), collision.multFT0M(), weight);
         registry.fill(HIST("hRapidityXi"), casc.yXi());
       }
       if (casc.isSelected() >= 2) { // consistent with Omega or both
@@ -762,7 +762,7 @@ struct CascadeCorrelations {
           registry.fill(HIST("hMassOmegaPlus"), casc.mOmega(), casc.pt());
           weight = getEfficiency(hEffOmegaPlus, casc.pt());
         }
-        registry.fill(HIST("hMassOmegaEffCorrected"), casc.mOmega(), casc.pt(), casc.yOmega(), collision.posZ(), collision.multFT0M(), weight);
+        registry.fill(HIST("hMassOmegaEffCorrected"), casc.mOmega(), casc.sign(), casc.pt(), casc.yOmega(), collision.posZ(), collision.multFT0M(), weight);
         registry.fill(HIST("hRapidityOmega"), casc.yOmega());
       }
       registry.fill(HIST("hV0Radius"), casc.v0radius());
@@ -868,7 +868,6 @@ struct CascadeCorrelations {
         registry.fill(HIST("hMEQA"), 0.5);
         continue;
       }
-
       registry.fill(HIST("MixedEvents/hMEVz1"), col1.posZ());
       registry.fill(HIST("MixedEvents/hMEVz2"), col2.posZ());
 
