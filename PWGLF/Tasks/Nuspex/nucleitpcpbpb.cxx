@@ -157,6 +157,8 @@ struct NucleitpcPbPb {
   int mRunNumber, occupancy;
   float dBz, momn;
   TRandom3 rand;
+  float He3 = 4;
+  float He4 = 5;
   //----------------------------------------------------------------------------------------------------------------
   void init(InitContext const&)
   {
@@ -257,20 +259,20 @@ struct NucleitpcPbPb {
           continue;
         if ((getRigidity(track) < cfgTrackPIDsettings->get(i, "minRigidity") || getRigidity(track) > cfgTrackPIDsettings->get(i, "maxRigidity")) && cfgRigidityCutRequire)
           continue;
-        float pt_momn;
+        float ptMomn;
         setTrackParCov(track, mTrackParCov);
         mTrackParCov.setPID(track.pidForTracking());
-        pt_momn = (i == 4 || i == 5) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
-        bool insideDCAxy = (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / std::pow(pt_momn, 1.1f))));
-        if ((!(insideDCAxy) || std::abs(track.dcaZ()) > DCAzSigma(pt_momn, cfgTrackPIDsettings->get(i, "maxDcaZ"))) && cfgDCAwithptRequire)
+        ptMomn = (i == He3 || i == He4) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
+        bool insideDCAxy = (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / std::pow(ptMomn, 1.1f)))); // o2-linter: disable=magic-number (To be checked)
+        if ((!(insideDCAxy) || std::abs(track.dcaZ()) > DCAzSigma(ptMomn, cfgTrackPIDsettings->get(i, "maxDcaZ"))) && cfgDCAwithptRequire)
           continue;
         if (track.sign() > 0) {
-          histos.fill(HIST("histDcaZVsPtData_particle"), pt_momn, track.dcaZ());
-          histos.fill(HIST("histDcaXYVsPtData_particle"), pt_momn, track.dcaXY());
+          histos.fill(HIST("histDcaZVsPtData_particle"), ptMomn, track.dcaZ());
+          histos.fill(HIST("histDcaXYVsPtData_particle"), ptMomn, track.dcaXY());
         }
         if (track.sign() < 0) {
-          histos.fill(HIST("histDcaZVsPtData_antiparticle"), pt_momn, track.dcaZ());
-          histos.fill(HIST("histDcaXYVsPtData_antiparticle"), pt_momn, track.dcaXY());
+          histos.fill(HIST("histDcaZVsPtData_antiparticle"), ptMomn, track.dcaZ());
+          histos.fill(HIST("histDcaXYVsPtData_antiparticle"), ptMomn, track.dcaXY());
         }
         float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
         if ((std::abs(tpcNsigma) > cfgTrackPIDsettings->get(i, "maxTPCnSigma")) && cfgmaxTPCnSigmaRequire)
@@ -284,7 +286,7 @@ struct NucleitpcPbPb {
         if (!track.hasTOF() && cfgTrackPIDsettings->get(i, "TOFrequiredabove") < 1)
           continue;
         float beta{o2::pid::tof::Beta::GetBeta(track)};
-        float charge{1.f + static_cast<float>(i == 4 || i == 5)};
+        float charge{1.f + static_cast<float>(i == He3 || i == He4)};
         float tofMasses = getRigidity(track) * charge * std::sqrt(1.f / (beta * beta) - 1.f);
         if ((getRigidity(track) > cfgTrackPIDsettings->get(i, "TOFrequiredabove") && (tofMasses < cfgTrackPIDsettings->get(i, "minTOFmass") || tofMasses > cfgTrackPIDsettings->get(i, "maxTOFmass"))) && cfgmassRequire)
           continue;
@@ -399,15 +401,15 @@ struct NucleitpcPbPb {
     if (cfgFillnsigma) {
       int i = species;
       const float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
-      float pt_momn;
+      float ptMomn;
       setTrackParCov(track, mTrackParCov);
       mTrackParCov.setPID(track.pidForTracking());
-      pt_momn = (i == 4 || i == 5) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
+      ptMomn = (i == He3 || i == He4) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
       if (track.sign() > 0) {
-        hNsigmaPt[2 * species]->Fill(pt_momn, tpcNsigma);
+        hNsigmaPt[2 * species]->Fill(ptMomn, tpcNsigma);
       }
       if (track.sign() < 0) {
-        hNsigmaPt[2 * species]->Fill(pt_momn, tpcNsigma);
+        hNsigmaPt[2 * species]->Fill(ptMomn, tpcNsigma);
       }
     }
   }
@@ -422,20 +424,20 @@ struct NucleitpcPbPb {
     float beta{o2::pid::tof::Beta::GetBeta(track)};
     if (beta <= 0.f || beta >= 1.f)
       return;
-    float charge = (species == 4 || species == 5) ? 2.f : 1.f;
+    float charge = (species == He3 || species == He4) ? 2.f : 1.f;
     float p = getRigidity(track); // assuming this is the momentum from inner TPC
     float massTOF = p * charge * std::sqrt(1.f / (beta * beta) - 1.f);
     // get PDG mass
     float pdgMass = particleMasses[species];
     float massDiff = massTOF - pdgMass;
-    float pt_momn;
+    float ptMomn;
     setTrackParCov(track, mTrackParCov);
     mTrackParCov.setPID(track.pidForTracking());
-    pt_momn = (species == 4 || species == 5) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
+    ptMomn = (species == He3 || species == He4) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
     if (track.sign() > 0) {
-      hmass[2 * species]->Fill(pt_momn, massDiff * massDiff);
+      hmass[2 * species]->Fill(ptMomn, massDiff * massDiff);
     } else if (track.sign() < 0) {
-      hmass[2 * species + 1]->Fill(pt_momn, massDiff * massDiff);
+      hmass[2 * species + 1]->Fill(ptMomn, massDiff * massDiff);
     }
   }
 
@@ -471,9 +473,18 @@ struct NucleitpcPbPb {
     if (!track.hasITS())
       return -999;
     o2::aod::ITSResponse itsResponse;
+    if (particle.name == "pion")
+      return itsResponse.nSigmaITS<o2::track::PID::Pion>(track);
+    if (particle.name == "proton")
+      return itsResponse.nSigmaITS<o2::track::PID::Proton>(track);
+    if (particle.name == "deuteron")
+      return itsResponse.nSigmaITS<o2::track::PID::Deuteron>(track);
+    if (particle.name == "triton")
+      return itsResponse.nSigmaITS<o2::track::PID::Triton>(track);
     if (particle.name == "helion")
       return itsResponse.nSigmaITS<o2::track::PID::Helium3>(track);
-
+    if (particle.name == "alpha")
+      return itsResponse.nSigmaITS<o2::track::PID::Alpha>(track);
     return -999; // fallback if no match
   }
 

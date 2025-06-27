@@ -62,9 +62,9 @@ static const std::vector<std::string> tableNames{
   "FDDMultZeqs",
   "PVMultZeqs",
   "MultMCExtras",
-  "kMult2MCExtras",
-  "kMFTMults",
-  "kMultsGlobal",
+  "Mult2MCExtras",
+  "MFTMults",
+  "MultsGlobal",
 
   // centrality subcomponent
   "CentRun2V0Ms",
@@ -475,6 +475,14 @@ class MultModule
       internalOpts.mEnabledTables[kFDDMultZeqs] = 1;
       listOfRequestors[kFDDMultZeqs].Append(Form("%s ", "dependency check"));
     }
+    if (internalOpts.mEnabledTables[kCentMFTs] && !internalOpts.mEnabledTables[kMFTMults]) {
+      internalOpts.mEnabledTables[kMFTMults] = 1;
+      listOfRequestors[kMFTMults].Append(Form("%s ", "dependency check"));
+    }
+    if (internalOpts.mEnabledTables[kCentNGlobals] && !internalOpts.mEnabledTables[kMultsGlobal]) {
+      internalOpts.mEnabledTables[kMultsGlobal] = 1;
+      listOfRequestors[kMultsGlobal].Append(Form("%s ", "dependency check"));
+    }
 
     mRunNumber = 0;
     mRunNumberCentrality = 0;
@@ -781,8 +789,8 @@ class MultModule
         }
 
         // global counters: do them only in case information is provided in tracks table
-        if constexpr (requires { tracks.isQualityTrack(); }) {
-          if (track.pt() < internalOpts.maxPtGlobalTrack.value && track.pt() > internalOpts.minPtGlobalTrack.value && std::fabs(track.eta()) < 1.0f && track.isPVContributor() && tracks.isQualityTrack()) {
+        if constexpr (requires { track.isQualityTrack(); }) {
+          if (track.pt() < internalOpts.maxPtGlobalTrack.value && track.pt() > internalOpts.minPtGlobalTrack.value && std::fabs(track.eta()) < 1.0f && track.isPVContributor() && track.isQualityTrack()) {
             if (track.itsNCls() < internalOpts.minNclsITSGlobalTrack || track.itsNClsInnerBarrel() < internalOpts.minNclsITSibGlobalTrack) {
               continue;
             }
