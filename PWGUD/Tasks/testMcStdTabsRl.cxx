@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \file testMCstdTabsRL.cxx
+/// \file testMcStdTabsRl.cxx
 /// \brief task to test the Monte Carlo UD production generatorIDs on hyperloop
 ///
 /// \author Roman Lavicka <roman.lavicka@cern.ch>, Austrian Academy of Sciences & SMI
