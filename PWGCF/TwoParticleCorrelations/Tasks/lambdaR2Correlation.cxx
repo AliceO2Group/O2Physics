@@ -23,14 +23,14 @@
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
 #include "TPDGCode.h"
 
-#include <vector>
 #include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
