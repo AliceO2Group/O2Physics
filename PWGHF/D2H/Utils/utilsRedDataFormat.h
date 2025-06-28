@@ -19,9 +19,9 @@
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 
-#include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisHelpers.h"
-#include "Framework/HistogramRegistry.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/HistogramRegistry.h>
 
 #include <Rtypes.h>
 

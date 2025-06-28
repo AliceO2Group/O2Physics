@@ -14,24 +14,31 @@
 ///
 /// \author Federica Zanone, Heidelberg University
 
-#include <vector>
-
-#include "TMCProcess.h" // for VMC Particle Production Process
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/StepTHn.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TMCProcess.h> // for VMC Particle Production Process
+#include <TPDGCode.h>
+
+#include <vector>
+
 using namespace o2;
-using namespace o2::analysis;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
