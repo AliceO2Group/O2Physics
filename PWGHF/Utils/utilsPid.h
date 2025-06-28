@@ -17,12 +17,12 @@
 #ifndef PWGHF_UTILS_UTILSPID_H_
 #define PWGHF_UTILS_UTILSPID_H_
 
-#include <fairlogger/Logger.h>
-
-#include <cstdint>
-
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
+
+#include <Framework/Logger.h>
+
+#include <cstdint>
 
 namespace o2::aod::pid_tpc_tof_utils
 {

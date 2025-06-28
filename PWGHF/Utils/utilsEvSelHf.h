@@ -19,6 +19,8 @@
 #define PWGHF_UTILS_UTILSEVSELHF_H_
 
 #include "PWGHF/Core/CentralityEstimation.h"
+//
+#include "PWGUD/Core/SGCutParHolder.h"
 #include "PWGUD/Core/SGSelector.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -31,11 +33,10 @@
 #include <Framework/DeviceSpec.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
 
 #include <TH1.h>
 #include <TH2.h>
-
-#include <fairlogger/Logger.h>
 
 #include <Rtypes.h>
 
