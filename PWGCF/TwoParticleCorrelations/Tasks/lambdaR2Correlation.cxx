@@ -13,21 +13,24 @@
 /// \brief R2 correlation of Lambda baryons.
 /// \author Yash Patley <yash.patley@cern.ch>
 
-#include <vector>
-#include <string>
-
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/mcCentrality.h"
-#include "CommonConstants/PhysicsConstants.h"
+
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+
 #include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
 #include "TPDGCode.h"
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -152,8 +155,8 @@ enum TrackLabels {
   kPassV0KinCuts,
   kPassV0TopoSel,
   kAllSelPassed,
-  kNotPrimaryLambda,
-  kNotSecondaryLambda,
+  kPrimaryLambda,
+  kSecondaryLambda,
   kLambdaDauNotMcParticle,
   kLambdaNotPrPiMinus,
   kAntiLambdaNotAntiPrPiPlus,
@@ -242,14 +245,15 @@ struct LambdaTableProducer {
   Configurable<bool> cIsGoodITSLayers{"cIsGoodITSLayers", false, "Good ITS Layers All"};
 
   // Tracks
-  Configurable<float> cTrackMinPt{"cTrackMinPt", 0.16, "p_{T} minimum"};
-  Configurable<float> cTrackMaxPt{"cTrackMaxPt", 999.0, "p_{T} minimum"};
+  Configurable<float> cTrackMinPt{"cTrackMinPt", 0.15, "p_{T} minimum"};
+  Configurable<float> cTrackMaxPt{"cTrackMaxPt", 999.0, "p_{T} maximum"};
   Configurable<float> cTrackEtaCut{"cTrackEtaCut", 0.8, "Pseudorapidity cut"};
-  Configurable<int> cMinTpcCrossedRows{"cMinTpcCrossedRows", 80, "TPC Min Crossed Rows"};
+  Configurable<int> cMinTpcCrossedRows{"cMinTpcCrossedRows", 70, "TPC Min Crossed Rows"};
   Configurable<float> cMinTpcCROverCls{"cMinTpcCROverCls", 0.8, "Tpc Min Crossed Rows Over Findable Clusters"};
   Configurable<float> cMaxTpcSharedClusters{"cMaxTpcSharedClusters", 0.4, "Tpc Max Shared Clusters"};
   Configurable<float> cMaxChi2Tpc{"cMaxChi2Tpc", 4, "Max Chi2 Tpc"};
-  Configurable<double> cTpcNsigmaCut{"cTpcNsigmaCut", 5.0, "TPC NSigma Selection Cut"};
+  Configurable<double> cTpcNsigmaCut{"cTpcNsigmaCut", 3.0, "TPC NSigma Selection Cut"};
+  Configurable<bool> cRemoveAmbiguousTracks{"cRemoveAmbiguousTracks", false, "Remove Ambiguous Tracks"};
 
   // V0s
   Configurable<double> cMinDcaProtonToPV{"cMinDcaProtonToPV", 0.02, "Minimum Proton DCAr to PV"};
@@ -436,8 +440,8 @@ struct LambdaTableProducer {
       histos.get<TH1>(HIST("McGen/h1f_collisions_info"))->GetXaxis()->SetBinLabel(CollisionLabels::kTotCol, "kTotCol");
       histos.get<TH1>(HIST("McGen/h1f_collisions_info"))->GetXaxis()->SetBinLabel(CollisionLabels::kPassSelCol, "kPassSelCol");
       histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kTracksBeforeHasMcParticle, "kTracksBeforeHasMcParticle");
-      histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kNotPrimaryLambda, "kNotPrimaryLambda");
-      histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kNotSecondaryLambda, "kNotSecondaryLambda");
+      histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kPrimaryLambda, "kPrimaryLambda");
+      histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kSecondaryLambda, "kSecondaryLambda");
       histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kLambdaDauNotMcParticle, "kLambdaDauNotMcParticle");
       histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kLambdaNotPrPiMinus, "kLambdaNotPrPiMinus");
       histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kAntiLambdaNotAntiPrPiPlus, "kAntiLambdaNotAntiPrPiPlus");
@@ -736,6 +740,30 @@ struct LambdaTableProducer {
     return true;
   }
 
+  template <typename V, typename T>
+  bool hasAmbiguousDaughters(V const& v0, T const&)
+  {
+    auto posTrack = v0.template posTrack_as<T>();
+    auto negTrack = v0.template negTrack_as<T>();
+
+    auto posTrackCompCols = posTrack.compatibleCollIds();
+    auto negTrackCompCols = negTrack.compatibleCollIds();
+
+    // Check if daughter tracks belongs to more than one collision (Ambiguous Tracks)
+    if (posTrackCompCols.size() > 1 || negTrackCompCols.size() > 1) {
+      return true;
+    }
+
+    // Check if compatible collision index matches the track collision index
+    if (((posTrackCompCols.size() != 0) && (posTrackCompCols[0] != posTrack.collisionId())) ||
+        ((negTrackCompCols.size() != 0) && (negTrackCompCols[0] != negTrack.collisionId()))) {
+      return true;
+    }
+
+    // Pass as not ambiguous
+    return false;
+  }
+
   template <typename V>
   PrmScdType isPrimaryV0(V const& v0)
   {
@@ -743,12 +771,12 @@ struct LambdaTableProducer {
 
     // check for secondary lambda
     if (!mcpart.isPhysicalPrimary()) {
-      histos.fill(HIST("Tracks/h1f_tracks_info"), kNotPrimaryLambda);
+      histos.fill(HIST("Tracks/h1f_tracks_info"), kSecondaryLambda);
       bSecondaryLambdaFlag = true;
       return kSecondary;
     }
 
-    histos.fill(HIST("Tracks/h1f_tracks_info"), kNotSecondaryLambda);
+    histos.fill(HIST("Tracks/h1f_tracks_info"), kPrimaryLambda);
     return kPrimary;
   }
 
@@ -977,6 +1005,11 @@ struct LambdaTableProducer {
       // we have v0 as lambda
       histos.fill(HIST("Tracks/h1f_tracks_info"), kAllSelPassed);
 
+      // Remove lambda with ambiguous daughters
+      if (cRemoveAmbiguousTracks && hasAmbiguousDaughters(v0, tracks)) {
+        continue;
+      }
+
       // Get Lambda mass and kinematic variables
       mass = (v0Type == kLambda) ? v0.mLambda() : v0.mAntiLambda();
       pt = v0.pt();
@@ -1172,7 +1205,7 @@ struct LambdaTableProducer {
 
   using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
   using CollisionsRun2 = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
-  using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr>;
+  using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::TrackCompColls>;
   using McV0Tracks = soa::Join<aod::V0Datas, aod::McV0Labels>;
   using TracksMC = soa::Join<Tracks, aod::McTrackLabels>;
 
