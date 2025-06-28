@@ -372,7 +372,7 @@ struct TaskPolarisationCharmHadrons {
         }
         if (doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl || doprocessLcToPKPiBackgroundMcWithMl) { // Lc->pKpi MC
           std::vector<AxisSpec> hRecoHelicityAxes(hHelicityaxes);
-          if (doprocessLcToPKPiMc) {                                                                   // Lc->pKpi MC without ML, have one more axis for rotated candidates
+          if (doprocessLcToPKPiMc) { // Lc->pKpi MC without ML, have one more axis for rotated candidates
             hRecoHelicityAxes.insert(hRecoHelicityAxes.end(), {thnAxisResoChannelLc, thnAxisAbsEtaTrackMin, thnAxisNumItsClsMin, thnAxisNumTpcClsMin, thnAxisIsRotatedCandidate, thnAxisCharge});
           } else {
             hRecoHelicityAxes.insert(hRecoHelicityAxes.end(), {thnAxisResoChannelLc, thnAxisAbsEtaTrackMin, thnAxisNumItsClsMin, thnAxisNumTpcClsMin, thnAxisCharge});
@@ -447,7 +447,7 @@ struct TaskPolarisationCharmHadrons {
         }
         if (doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl || doprocessLcToPKPiBackgroundMcWithMl) {
           std::vector<AxisSpec> hRecoProductionAxes(hProductionaxes);
-          if (doprocessLcToPKPiMc) {  
+          if (doprocessLcToPKPiMc) {
             hRecoProductionAxes.insert(hRecoProductionAxes.end(), {thnAxisResoChannelLc, thnAxisAbsEtaTrackMin, thnAxisNumItsClsMin, thnAxisNumTpcClsMin, thnAxisIsRotatedCandidate, thnAxisCharge});
           } else {
             hRecoProductionAxes.insert(hRecoProductionAxes.end(), {thnAxisResoChannelLc, thnAxisAbsEtaTrackMin, thnAxisNumItsClsMin, thnAxisNumTpcClsMin, thnAxisCharge});
@@ -520,7 +520,7 @@ struct TaskPolarisationCharmHadrons {
         }
         if (doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl || doprocessLcToPKPiBackgroundMcWithMl) {
           std::vector<AxisSpec> hRecoBeamAxes(hBeamaxes);
-          if (doprocessLcToPKPiMc) {  
+          if (doprocessLcToPKPiMc) {
             hRecoBeamAxes.insert(hRecoBeamAxes.end(), {thnAxisResoChannelLc, thnAxisAbsEtaTrackMin, thnAxisNumItsClsMin, thnAxisNumTpcClsMin, thnAxisIsRotatedCandidate, thnAxisCharge});
           } else {
             hRecoBeamAxes.insert(hRecoBeamAxes.end(), {thnAxisResoChannelLc, thnAxisAbsEtaTrackMin, thnAxisNumItsClsMin, thnAxisNumTpcClsMin, thnAxisCharge});
