@@ -13,22 +13,21 @@
 /// \brief R2 correlation of Lambda baryons.
 /// \author Yash Patley <yash.patley@cern.ch>
 
-#include <vector>
-#include <string>
-
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/Core/RecoDecay.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/mcCentrality.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/RecoDecay.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "TPDGCode.h"
+
+#include <vector>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
