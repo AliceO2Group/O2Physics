@@ -259,13 +259,22 @@ struct lambdaspincorrderived {
   Preslice<aod::LambdaPairs> tracksPerCollisionV0 = aod::lambdapair::lambdaeventId;
   void processME(EventCandidates const& collisions, AllTrackCandidates const& V0s)
   {
+    auto collOldIndex = -999;
+    std::vector<bool> t1Used;
     for (auto& [collision1, collision2] : selfCombinations(colBinning, nEvtMixing, -1, collisions, collisions)) {
       // LOGF(info, "Mixed event collisions: (%d, %d)", collision1.index(), collision2.index());
       auto centrality = collision1.cent();
       auto groupV01 = V0s.sliceBy(tracksPerCollisionV0, collision1.globalIndex());
       auto groupV02 = V0s.sliceBy(tracksPerCollisionV0, collision1.globalIndex());
       auto groupV03 = V0s.sliceBy(tracksPerCollisionV0, collision2.globalIndex());
-      std::vector<bool> t1Used(groupV01.size(), false); // <-- reset here
+      auto collNewIndex = collision1.index();
+      // LOGF(info, "Mixed event collisions: (%d, %d)", collNewIndex, collOldIndex);
+      if (collOldIndex != collNewIndex) {
+        t1Used.resize(groupV01.size(), false);
+        // std::fill(t1Used.begin(), t1Used.end(), false);
+        // std::vector<bool> t1Used(groupV01.size(), false); // <-- reset here
+        collOldIndex = collNewIndex;
+      }
       for (auto& [t1, t3] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupV01, groupV03))) {
         if (t1Used[t1.index()]) {
           continue;
