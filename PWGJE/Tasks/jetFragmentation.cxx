@@ -2658,9 +2658,9 @@ struct JetFragmentation {
         std::vector<int> state = convertState(M, nV0inJet, nV0Classes);
         std::vector<double> corrected;
         if (doCorrectionWithTracks)
-          corrected = correctedValues(state, values);
-        else
           corrected = correctedValuesPlusTracks<CandidatesV0DataWithFlags, aod::JetTracks>(state, jet);
+        else
+          corrected = correctedValues(state, values);
 
         double ws = stateWeight(state, weights);
         double jetpt = corrected[nV0inJet];
