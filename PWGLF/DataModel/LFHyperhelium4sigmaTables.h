@@ -30,6 +30,9 @@ DECLARE_SOA_COLUMN(ZPrimVtx, zPrimVtx, float);                            // Pri
 DECLARE_SOA_COLUMN(XDecVtx, xDecVtx, float);                              // Decay vertex of the candidate (x direction)
 DECLARE_SOA_COLUMN(YDecVtx, yDecVtx, float);                              // Decay vertex of the candidate (y direction)
 DECLARE_SOA_COLUMN(ZDecVtx, zDecVtx, float);                              // Decay vertex of the candidate (z direction)
+DECLARE_SOA_COLUMN(XMoth, xMoth, float);                                  // X of the mother track at the radii of ITS layer which has the outermost update
+DECLARE_SOA_COLUMN(YMoth, yMoth, float);                                  // Y of the mother track at the radii of ITS layer which has the outermost update
+DECLARE_SOA_COLUMN(ZMoth, zMoth, float);                                  // Z of the mother track at the radii of ITS layer which has the outermost update
 DECLARE_SOA_COLUMN(PxMoth, pxMoth, float);                                //! Px of the mother track at the decay vertex
 DECLARE_SOA_COLUMN(PyMoth, pyMoth, float);                                //! Py of the mother track at the decay vertex
 DECLARE_SOA_COLUMN(PzMoth, pzMoth, float);                                //! Pz of the mother track at the decay vertex
@@ -56,6 +59,9 @@ DECLARE_SOA_COLUMN(TrueZDecVtx, trueZDecVtx, float);            // true z decay 
 DECLARE_SOA_COLUMN(GenPxMoth, genPxMoth, float);                // Generated px of the mother track
 DECLARE_SOA_COLUMN(GenPyMoth, genPyMoth, float);                // Generated py of the mother track
 DECLARE_SOA_COLUMN(GenPzMoth, genPzMoth, float);                // Generated pz of the mother track
+DECLARE_SOA_COLUMN(TruePxMoth, truePxMoth, float);              // true px of the mother track at the decay vertex
+DECLARE_SOA_COLUMN(TruePyMoth, truePyMoth, float);              // true py of the mother track at the decay vertex
+DECLARE_SOA_COLUMN(TruePzMoth, truePzMoth, float);              // true pz of the mother track at the decay vertex
 DECLARE_SOA_COLUMN(GenPxAlpha, genPxAlpha, float);              // true px of the daughter alpha track
 DECLARE_SOA_COLUMN(GenPyAlpha, genPyAlpha, float);              // true py of the daughter alpha track
 DECLARE_SOA_COLUMN(GenPzAlpha, genPzAlpha, float);              // true pz of the daughter alpha track
@@ -68,7 +74,9 @@ DECLARE_SOA_TABLE(He4S2BCands, "AOD", "HE4S2BCANDS",
                   o2::soa::Index<>,
                   he4scand::XPrimVtx, he4scand::YPrimVtx, he4scand::ZPrimVtx,
                   he4scand::XDecVtx, he4scand::YDecVtx, he4scand::ZDecVtx,
-                  he4scand::IsMatter, he4scand::PxMoth, he4scand::PyMoth, he4scand::PzMoth,
+                  he4scand::IsMatter,
+                  he4scand::XMoth, he4scand::YMoth, he4scand::ZMoth,
+                  he4scand::PxMoth, he4scand::PyMoth, he4scand::PzMoth,
                   he4scand::PxAlpha, he4scand::PyAlpha, he4scand::PzAlpha,
                   he4scand::DcaMothPv, he4scand::DcaAlphaPv, he4scand::DcaKinkTopo,
                   he4scand::ItsChi2Moth, he4scand::ItsClusterSizesMoth, he4scand::ItsClusterSizesAlpha,
@@ -78,7 +86,9 @@ DECLARE_SOA_TABLE(MCHe4S2BCands, "AOD", "MCHE4S2BCANDS",
                   o2::soa::Index<>,
                   he4scand::XPrimVtx, he4scand::YPrimVtx, he4scand::ZPrimVtx,
                   he4scand::XDecVtx, he4scand::YDecVtx, he4scand::ZDecVtx,
-                  he4scand::IsMatter, he4scand::PxMoth, he4scand::PyMoth, he4scand::PzMoth,
+                  he4scand::IsMatter,
+                  he4scand::XMoth, he4scand::YMoth, he4scand::ZMoth,
+                  he4scand::PxMoth, he4scand::PyMoth, he4scand::PzMoth,
                   he4scand::PxAlpha, he4scand::PyAlpha, he4scand::PzAlpha,
                   he4scand::DcaMothPv, he4scand::DcaAlphaPv, he4scand::DcaKinkTopo,
                   he4scand::ItsChi2Moth, he4scand::ItsClusterSizesMoth, he4scand::ItsClusterSizesAlpha,
@@ -86,6 +96,7 @@ DECLARE_SOA_TABLE(MCHe4S2BCands, "AOD", "MCHE4S2BCANDS",
                   he4scand::IsSignal, he4scand::IsSignalReco, he4scand::IsCollReco, he4scand::IsSurvEvSelection,
                   he4scand::TrueXDecVtx, he4scand::TrueYDecVtx, he4scand::TrueZDecVtx,
                   he4scand::GenPxMoth, he4scand::GenPyMoth, he4scand::GenPzMoth,
+                  he4scand::TruePxMoth, he4scand::TruePyMoth, he4scand::TruePzMoth,
                   he4scand::GenPxAlpha, he4scand::GenPyAlpha, he4scand::GenPzAlpha,
                   he4scand::IsMothReco, he4scand::RecoPtMoth, he4scand::RecoPzMoth);
 
