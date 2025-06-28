@@ -16,7 +16,7 @@
 #ifndef PWGHF_CORE_CENTRALITYESTIMATION_H_
 #define PWGHF_CORE_CENTRALITYESTIMATION_H_
 
-#include <fairlogger/Logger.h>
+#include <Framework/Logger.h>
 
 namespace o2::hf_centrality
 {

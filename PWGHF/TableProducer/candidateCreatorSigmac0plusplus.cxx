@@ -15,6 +15,8 @@
 ///
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN PADOVA
 
+#include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -22,22 +24,40 @@
 #include "PWGHF/Utils/utilsBfieldCCDB.h" // for dca recalculation
 #include "PWGHF/Utils/utilsEvSelHf.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
 
-#include "CCDB/BasicCCDBManager.h" // for dca recalculation
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsParameters/GRPMagField.h" // for dca recalculation
-#include "DataFormatsParameters/GRPObject.h"   // for dca recalculation
-#include "DetectorsBase/GeometryManager.h"     // for dca recalculation
-#include "DetectorsBase/Propagator.h"          // for dca recalculation
-#include "DetectorsVertexing/PVertexer.h"      // for dca recalculation
-#include "Framework/AnalysisTask.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h> // for dca recalculation
+#include <CommonConstants/PhysicsConstants.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h> // for dca recalculation
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
+#include <TPDGCode.h>
+
+#include <Rtypes.h>
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <numeric>
 #include <set>
 #include <string>
 #include <vector>
