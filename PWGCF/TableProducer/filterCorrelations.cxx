@@ -8,22 +8,25 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#include <vector>
+#include "PWGCF/DataModel/CorrelationsDerived.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-
+#include "Framework/runDataProcessing.h"
 #include "MathUtils/detail/TypeTruncation.h"
 
-#include "PWGCF/DataModel/CorrelationsDerived.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-
 #include <TH3F.h>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -50,7 +53,8 @@ struct FilterCF {
   enum TrackSelectionCuts : uint8_t {
     kTrackSelected = BIT(0),
     kITS5Clusters = BIT(1),
-    kTPC90CrossedRows = BIT(2)
+    kTPC90CrossedRows = BIT(2),
+    kPIDProton = BIT(3)
   };
 
   // Configuration
@@ -68,6 +72,15 @@ struct FilterCF {
   O2_DEFINE_CONFIGURABLE(cfgTrackSelection, int, 0, "Type of track selection (0 = Run 2/3 without systematics | 1 = Run 3 with systematics)")
   O2_DEFINE_CONFIGURABLE(cfgMinMultiplicity, float, -1, "Minimum multiplicity considered for filtering (if value positive)")
   O2_DEFINE_CONFIGURABLE(cfgMcSpecialPDGs, std::vector<int>, {}, "Special MC PDG codes to include in the MC primary particle output (additional to charged particles). Empty = charged particles only.") // needed for some neutral particles
+  O2_DEFINE_CONFIGURABLE(nsigmaCutTPCProton, float, 3, "proton nsigma TPC")
+  O2_DEFINE_CONFIGURABLE(nsigmaCutTOFProton, float, 3, "proton nsigma TOF")
+  O2_DEFINE_CONFIGURABLE(ITSProtonselection, bool, false, "flag for ITS proton nsigma selection")
+  O2_DEFINE_CONFIGURABLE(nsigmaCutITSProton, float, 3, "proton nsigma ITS")
+  O2_DEFINE_CONFIGURABLE(dcaselection, bool, false, "flag for applying dca selection on tracks")
+  O2_DEFINE_CONFIGURABLE(dcaxymax, float, 0.1f, "dcaxy of tracks")
+  O2_DEFINE_CONFIGURABLE(dcazmax, float, 0.1f, "dcaz of tracks")
+  O2_DEFINE_CONFIGURABLE(itsnclusters, int, 5, "minimum number of ITS clusters for tracks")
+  O2_DEFINE_CONFIGURABLE(tpcncrossedrows, int, 80, "minimum number of TPC crossed rows for tracks")
 
   // Filters and input definitions
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -75,7 +88,7 @@ struct FilterCF {
 
   // TODO how to have this in the second task? For now they are copied
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt);
-  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
+  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true);
 
   Filter mcCollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
 
@@ -128,8 +141,36 @@ struct FilterCF {
     return false;
   }
 
+  template <typename T>
+  bool selectionPIDProton(const T& candidate)
+  {
+    o2::aod::ITSResponse itsResponse;
+
+    if (ITSProtonselection && candidate.pt() <= 0.6 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(candidate) > nsigmaCutITSProton)) {
+      return false;
+    }
+    if (ITSProtonselection && candidate.pt() > 0.6 && candidate.pt() <= 0.8 && !(itsResponse.nSigmaITS<o2::track::PID::Proton>(candidate) > nsigmaCutITSProton)) {
+      return false;
+    }
+
+    if (candidate.hasTOF()) {
+      if (candidate.pt() < 0.7 && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPCProton) {
+        return true;
+      }
+      if (candidate.p() >= 0.7 && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPCProton && std::abs(candidate.tofNSigmaPr()) < nsigmaCutTOFProton) {
+        return true;
+      }
+    }
+    if (!candidate.hasTOF()) {
+      if (std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPCProton) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   template <typename TTrack>
-  uint8_t getTrackType(TTrack& track)
+  uint8_t getTrackType(TTrack& track, bool isprot)
   {
     if (cfgTrackSelection == 0) {
       if (track.isGlobalTrack()) {
@@ -142,11 +183,26 @@ struct FilterCF {
       uint8_t trackType = 0;
       if (track.isGlobalTrack()) {
         trackType |= kTrackSelected;
-        if (track.itsNCls() >= 5) {
+        if (track.itsNCls() >= itsnclusters) {
           trackType |= kITS5Clusters;
         }
-        if (track.tpcNClsCrossedRows() >= 90) {
+        if (track.tpcNClsCrossedRows() >= tpcncrossedrows) {
           trackType |= kTPC90CrossedRows;
+        }
+      }
+      return trackType;
+    } else if (cfgTrackSelection == 2) {
+      uint8_t trackType = 0;
+      if (track.isGlobalTrack()) {
+        trackType |= kTrackSelected;
+        if (track.itsNCls() >= itsnclusters) {
+          trackType |= kITS5Clusters;
+        }
+        if (track.tpcNClsCrossedRows() >= tpcncrossedrows) {
+          trackType |= kTPC90CrossedRows;
+        }
+        if (isprot) {
+          trackType |= kPIDProton;
         }
       }
       return trackType;
@@ -155,7 +211,7 @@ struct FilterCF {
     return 0;
   }
 
-  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>> const& tracks)
+  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCPr, aod::pidTOFPr, aod::TracksDCA>> const& tracks)
   {
     if (cfgVerbosity > 0) {
       LOGF(info, "processData: Tracks for collision: %d | Vertex: %.1f (%d) | INT7: %d | Multiplicity: %.1f", tracks.size(), collision.posZ(), collision.flags(), collision.sel7(), collision.multiplicity());
@@ -170,9 +226,17 @@ struct FilterCF {
 
     if (cfgTransientTables)
       outputCollRefs(collision.globalIndex());
-
+    Bool_t isproton = false;
     for (auto& track : tracks) {
-      outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), getTrackType(track));
+      if (selectionPIDProton(track)) {
+        isproton = true;
+      }
+      if (dcaselection && std::abs(track.dcaXY()) > dcaxymax)
+        continue;
+      if (dcaselection && std::abs(track.dcaZ()) > dcazmax)
+        continue;
+
+      outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), getTrackType(track, isproton));
       if (cfgTransientTables)
         outputTrackRefs(collision.globalIndex(), track.globalIndex());
 
@@ -286,8 +350,7 @@ struct FilterCF {
             LOGP(fatal, "processMC:     Track {} is referring to a MC particle which we do not store {} {} (reco flag {})", track.index(), track.mcParticleId(), mcParticleId, static_cast<bool>(mcReconstructedCache[track.mcParticleId()]));
           }
         }
-        outputTracks(outputCollisions.lastIndex(),
-                     truncateFloatFraction(track.pt()), truncateFloatFraction(track.eta()), truncateFloatFraction(track.phi()), track.sign(), getTrackType(track));
+        outputTracks(outputCollisions.lastIndex(), truncateFloatFraction(track.pt()), truncateFloatFraction(track.eta()), truncateFloatFraction(track.phi()), track.sign(), getTrackType(track, false));
         outputTrackLabels(mcParticleId);
         if (cfgTransientTables)
           outputTrackRefs(collision.globalIndex(), track.globalIndex());
@@ -326,7 +389,7 @@ struct MultiplicitySelector {
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
 
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt);
-  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
+  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true);
 
   void init(InitContext&)
   {
