@@ -273,7 +273,7 @@ class BcSelectionModule
     }
     bcselbuffer.clear();
     for (const auto& bc : bcs) {
-      auto timestamp = timestamps[bc.globalIndex()];
+      uint64_t timestamp = timestamps[bc.globalIndex()];
       par = ccdb->template getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", timestamp);
       aliases = ccdb->template getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", timestamp);
       // fill fired aliases
@@ -427,7 +427,7 @@ class BcSelectionModule
 
     // bc loop
     for (auto bc : bcs) { // o2-linter: disable=const-ref-in-for-loop (use bc as nonconst iterator)
-      auto timestamp = timestamps[bc.globalIndex()];
+      uint64_t timestamp = timestamps[bc.globalIndex()];
       // store rct flags
       uint32_t rct = lastRCT;
       int64_t thisTF = (bc.globalBC() - bcSOR) / nBCsPerTF;
@@ -732,7 +732,7 @@ class EventSelectionModule
     }
     for (const auto& col : collisions) {
       auto bc = col.template bc_as<soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>>();
-      auto timestamp = timestamps[bc.globalIndex()];
+      uint64_t timestamp = timestamps[bc.globalIndex()];
       EventSelectionParams* par = ccdb->template getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", timestamp);
       bool* applySelection = par->getSelection(evselOpts.muonSelection);
       if (evselOpts.isMC == 1) {

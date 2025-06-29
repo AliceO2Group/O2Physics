@@ -75,7 +75,7 @@ struct eventselectionRun2 {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // buffering intermediate results for passing
-  std::vector<int64_t> timestamps;
+  std::vector<uint64_t> timestamps;
   std::vector<o2::common::eventselection::bcselEntry> bcselsbuffer;
 
   // auxiliary
@@ -138,7 +138,7 @@ struct eventselectionRun3 {
 
   // the best: have readable cursors
   // this: a stopgap solution to avoid spawning yet another device
-  std::vector<int64_t> timestamps;
+  std::vector<uint64_t> timestamps;
   std::vector<o2::common::eventselection::bcselEntry> bcselsbuffer;
 
   // auxiliary
