@@ -16,25 +16,25 @@
 /// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) - Goethe University Frankfurt
 ///
 
-#include <limits>
-#include <vector>
-#include <map>
-#include <string>
+#include "PWGEM/PhotonMeson/DataModel/bcWiseTables.h"
+#include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-
-#include "DetectorsBase/GeometryManager.h"
-#include "EMCALBase/Geometry.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
-#include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
-#include "PWGEM/PhotonMeson/DataModel/bcWiseTables.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "EMCALBase/Geometry.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include <limits>
+#include <map>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod::emdownscaling;
@@ -56,6 +56,7 @@ struct bcWiseClusterSkimmer {
   Produces<aod::BCWiseClusters> clusterTable;
   Produces<aod::BCWiseCollisions> collisionTable;
   Produces<aod::BCWiseMCPi0s> mcpi0Table;
+  Produces<aod::BCWiseMCEtas> mcetaTable;
   Produces<aod::BCWiseMCClusters> mcclusterTable;
 
   PresliceUnsorted<MyCollisions> perFoundBC = aod::evsel::foundBCId;
@@ -70,7 +71,7 @@ struct bcWiseClusterSkimmer {
   Configurable<float> cfgMinTime{"cfgMinTime", -25, "Minimum time of selected clusters (ns)"};
   Configurable<float> cfgMaxTime{"cfgMaxTime", 25, "Maximum time of selected clusters (ns)"};
   Configurable<float> cfgRapidityCut{"cfgRapidityCut", 0.8f, "Maximum absolute rapidity of counted generated particles"};
-  Configurable<float> cfgMinPtGenPi0{"cfgMinPtGenPi0", 0., "Minimum pT for stored generated pi0s (reduce disk space of derived data)"};
+  Configurable<float> cfgMinPtGen{"cfgMinPtGen", 0., "Minimum pT for stored generated mesons (reduce disk space of derived data)"};
 
   Configurable<bool> cfgRequirekTVXinEMC{"cfgRequirekTVXinEMC", false, "Only store kTVXinEMC triggered BCs"};
   Configurable<bool> cfgRequireGoodRCTQuality{"cfgRequireGoodRCTQuality", false, "Only store BCs with good quality of T0 and EMC in RCT"};
@@ -90,6 +91,7 @@ struct bcWiseClusterSkimmer {
   HistogramRegistry mHistManager{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   std::map<int32_t, int32_t> fMapPi0Index; // Map to connect the MC index of the pi0 to the one saved in the derived table
+  std::map<int32_t, int32_t> fMapEtaIndex; // Map to connect the MC index of the eta to the one saved in the derived table
 
   void init(o2::framework::InitContext&)
   {
@@ -108,7 +110,7 @@ struct bcWiseClusterSkimmer {
     LOG(info) << "| Shape cut: " << cfgMinM02 << " < M02 < " << cfgMaxM02;
     LOG(info) << "| Energy cut: " << cfgMinClusterEnergy << " < E < " << cfgMaxClusterEnergy;
     LOG(info) << "| Rapidity cut: |y| < " << cfgRapidityCut;
-    LOG(info) << "| Min gen pi0 pt: pT > " << cfgMinPtGenPi0;
+    LOG(info) << "| Min gen pt: pT > " << cfgMinPtGen;
 
     o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
     if (cfgRequireGoodRCTQuality)
@@ -154,31 +156,42 @@ struct bcWiseClusterSkimmer {
   {
     for (const auto& cluster : clusters) {
       float clusterInducerEnergy = 0.;
-      int32_t pi0MCIndex = -1;
+      int32_t mesonMCIndex = -1;
       if (cluster.amplitudeA().size() > 0) {
         int clusterInducerId = cluster.mcParticleIds()[0];
         auto clusterInducer = mcParticles.iteratorAt(clusterInducerId);
         clusterInducerEnergy = clusterInducer.e();
-        int daughterId = aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(clusterInducer, mcParticles, std::vector<int>{111});
+        int daughterId = aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(clusterInducer, mcParticles, std::vector<int>{111, 221});
         if (daughterId > 0) {
-          pi0MCIndex = mcParticles.iteratorAt(daughterId).mothersIds()[0];
-          if (mcParticles.iteratorAt(pi0MCIndex).pt() < cfgMinPtGenPi0)
-            pi0MCIndex = -1;
+          mesonMCIndex = mcParticles.iteratorAt(daughterId).mothersIds()[0];
+          if (mcParticles.iteratorAt(mesonMCIndex).pt() < cfgMinPtGen)
+            mesonMCIndex = -1;
         }
       }
-      if (pi0MCIndex >= 0) {
-        if (fMapPi0Index.find(pi0MCIndex) != fMapPi0Index.end()) // Some pi0s might not be found (not gg decay or too large y)
-          pi0MCIndex = fMapPi0Index[pi0MCIndex];                 // If pi0 was stored in table, change index from the MC index to the pi0 index from this task
-        else                                                     // If pi0 was not stored, treat photon as if not from pi0
-          pi0MCIndex = -1;
+      bool isEta = false;
+      if (mesonMCIndex >= 0) {
+        if (mcParticles.iteratorAt(mesonMCIndex).pdgCode() == 111) {
+          if (fMapPi0Index.find(mesonMCIndex) != fMapPi0Index.end()) // Some pi0s might not be found (not gg decay or too large y)
+            mesonMCIndex = fMapPi0Index[mesonMCIndex];               // If pi0 was stored in table, change index from the MC index to the pi0 index from this task
+          else                                                       // If pi0 was not stored, treat photon as if not from pi0
+            mesonMCIndex = -1;
+        } else if (mcParticles.iteratorAt(mesonMCIndex).pdgCode() == 221) {
+          isEta = true;
+          if (fMapEtaIndex.find(mesonMCIndex) != fMapEtaIndex.end()) // Some etas might not be found (not gg decay or too large y)
+            mesonMCIndex = fMapEtaIndex[mesonMCIndex];               // If eta was stored in table, change index from the MC index to the eta index from this task
+          else                                                       // If eta was not stored, treat photon as if not from eta
+            mesonMCIndex = -1;
+        } else {
+          mesonMCIndex = -1; // Not a pi0 or eta
+        }
       }
-      mcclusterTable(bcID, pi0MCIndex, convertForStorage<uint16_t>(clusterInducerEnergy, kEnergy));
+      mcclusterTable(bcID, mesonMCIndex, isEta, convertForStorage<uint16_t>(clusterInducerEnergy, kEnergy));
     }
   }
 
   bool isBCSelected(const auto& bc)
   {
-    if (cfgRequirekTVXinEMC && !bc.selection_bit(aod::evsel::kIsTriggerTVX))
+    if (cfgRequirekTVXinEMC && !bc.alias_bit(kTVXinEMC))
       return false;
     if (cfgRequireGoodRCTQuality && !isFT0EMCGoodRCTChecker(bc))
       return false;
@@ -319,12 +332,18 @@ struct bcWiseClusterSkimmer {
         auto mcParticlesInColl = mcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
         mHistManager.fill(HIST("CentralityVsGenMultiplicity"), bc.centFT0M(), mcParticlesInColl.size());
         for (const auto& mcParticle : mcParticlesInColl) {
-          if (mcParticle.pdgCode() != 111 || std::abs(mcParticle.y()) > cfgRapidityCut || !isGammaGammaDecay(mcParticle, mcParticles) || mcParticle.pt() < cfgMinPtGenPi0)
+          if (std::abs(mcParticle.y()) > cfgRapidityCut || !isGammaGammaDecay(mcParticle, mcParticles) || mcParticle.pt() < cfgMinPtGen)
             continue;
           bool isPrimary = mcParticle.isPhysicalPrimary() || mcParticle.producedByGenerator();
           bool isFromWD = (aod::pwgem::photonmeson::utils::mcutil::IsFromWD(mcCollision, mcParticle, mcParticles)) > 0;
-          mcpi0Table(bc.globalIndex(), convertForStorage<uint16_t>(mcParticle.pt(), kpT), isAccepted(mcParticle, mcParticles), isPrimary, isFromWD);
-          fMapPi0Index[mcParticle.globalIndex()] = static_cast<int32_t>(mcpi0Table.lastIndex());
+
+          if (mcParticle.pdgCode() == 111) {
+            mcpi0Table(bc.globalIndex(), convertForStorage<uint16_t>(mcParticle.pt(), kpT), isAccepted(mcParticle, mcParticles), isPrimary, isFromWD);
+            fMapPi0Index[mcParticle.globalIndex()] = static_cast<int32_t>(mcpi0Table.lastIndex());
+          } else if (mcParticle.pdgCode() == 221) {
+            mcetaTable(bc.globalIndex(), convertForStorage<uint16_t>(mcParticle.pt(), kpT), isAccepted(mcParticle, mcParticles), isPrimary, isFromWD);
+            fMapEtaIndex[mcParticle.globalIndex()] = static_cast<int32_t>(mcetaTable.lastIndex());
+          }
         }
       }
 
@@ -338,6 +357,7 @@ struct bcWiseClusterSkimmer {
         processClusterMCInfo(clustersInBC, bc.globalIndex(), mcParticles);
       }
       fMapPi0Index.clear();
+      fMapEtaIndex.clear();
     }
   }
   PROCESS_SWITCH(bcWiseClusterSkimmer, processMC, "Run skimming for MC", false);
