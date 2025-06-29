@@ -53,12 +53,17 @@ struct lambda1405analysis {
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutZVertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<float> cutEtaDaught{"cutEtaDaughter", 0.8f, "Eta cut for daughter tracks"};
-  Configurable<float> cutDCAtoPVSigma{"cutDCAtoPVSigma", 0.1f, "DCA to primary vertex for Sigma candidates (cm)"};
+  Configurable<float> cutDCAtoPVSigma{"cutDCAtoPVSigma", 0.1f, "Max DCA to primary vertex for Sigma candidates (cm)"};
+  Configurable<float> cutDCAtoPVPiFromSigma{"cutDCAtoPVPiFromSigma", 2., "Min DCA to primary vertex for pion from Sigma candidates (cm)"};
+
   Configurable<float> cutSigmaRadius{"cutSigmaRadius", 20.f, "Minimum radius for Sigma candidates (cm)"};
   Configurable<float> cutSigmaMass{"cutSigmaMass", 0.1, "Sigma mass window (MeV/c^2)"};
   Configurable<float> cutNITSClusPi{"cutNITSClusPi", 5, "Minimum number of ITS clusters for pion candidate"};
   Configurable<float> cutNTPCClusPi{"cutNTPCClusPi", 90, "Minimum number of TPC clusters for pion candidate"};
   Configurable<float> cutNSigmaPi{"cutNSigmaPi", 3, "NSigmaTPCPion"};
+
+  Preslice<aod::KinkCands> mKinkPerCol = aod::track::collisionId;
+  Preslice<aod::TracksIU> mPerColTracks = aod::track::collisionId;
 
   void init(InitContext const&)
   {
@@ -108,7 +113,7 @@ struct lambda1405analysis {
       return false;
     }
     float sigmaRad = std::hypot(sigmaCand.xDecVtx(), sigmaCand.yDecVtx());
-    if (sigmaCand.dcaMothPv() > cutDCAtoPVSigma || sigmaRad < cutSigmaRadius) {
+    if (std::abs(sigmaCand.dcaMothPv()) > cutDCAtoPVSigma || std::abs(sigmaCand.dcaDaugPv()) < cutDCAtoPVPiFromSigma || sigmaRad < cutSigmaRadius) {
       return false;
     }
     rLambda1405.fill(HIST("h2PtMassSigmaBeforeCuts"), sigmaCand.mothSign() * sigmaCand.ptMoth(), sigmaCand.mSigmaMinus());
@@ -138,13 +143,13 @@ struct lambda1405analysis {
     return false; // No valid pion track found
   }
 
-  void processData(CollisionsFull::iterator const& collision, aod::KinkCands const& KinkCands, TracksFull const& tracks)
+  void processData(CollisionsFull::iterator const& collision, aod::KinkCands const& kinkCands, TracksFull const& tracks)
   {
     if (std::abs(collision.posZ()) > cutzvertex || !collision.sel8()) {
       return;
     }
     rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
-    for (const auto& sigmaCand : KinkCands) {
+    for (const auto& sigmaCand : kinkCands) {
       if (selectCandidate(sigmaCand, tracks)) {
         rLambda1405.fill(HIST("h2PtMass"), lambda1405Cand.sigmaSign * lambda1405Cand.pt, lambda1405Cand.mass);
         rLambda1405.fill(HIST("h2PtMassSigma"), lambda1405Cand.sigmaSign * lambda1405Cand.sigmaPt, lambda1405Cand.sigmaMass);
@@ -155,15 +160,17 @@ struct lambda1405analysis {
   }
   PROCESS_SWITCH(lambda1405analysis, processData, "Data processing", true);
 
-  void processMC(CollisionsFullMC const& collisions, aod::KinkCands const& KinkCands, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, TracksFull const& tracks)
+  void processMC(CollisionsFullMC const& collisions, aod::KinkCands const& kinkCands, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, TracksFull const& tracks)
   {
     for (const auto& collision : collisions) {
       if (std::abs(collision.posZ()) > cutzvertex || !collision.sel8()) {
         continue;
       }
       rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
-      for (const auto& sigmaCand : KinkCands) {
-        if (selectCandidate(sigmaCand, tracks)) {
+      auto sigmaCandsPerCol = kinkCands.sliceBy(mKinkPerCol, collision.globalIndex());
+      auto tracksPerCol = tracks.sliceBy(mPerColTracks, collision.globalIndex());
+      for (const auto& sigmaCand : sigmaCandsPerCol) {
+        if (selectCandidate(sigmaCand, tracksPerCol)) {
           // Do MC association
           auto mcLabPiKink = trackLabelsMC.rawIteratorAt(lambda1405Cand.piFromSigmaID);
           auto mcLabSigma = trackLabelsMC.rawIteratorAt(lambda1405Cand.sigmaID);
