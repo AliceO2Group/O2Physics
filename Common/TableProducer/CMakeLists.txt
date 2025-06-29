@@ -59,6 +59,11 @@ o2physics_add_dpl_workflow(timestamp
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(timestamptester
+                    SOURCES timestampTester.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(weak-decay-indices
                     SOURCES weakDecayIndices.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

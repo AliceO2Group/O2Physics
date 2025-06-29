@@ -264,8 +264,8 @@ class BcSelectionModule
   }
 
   //__________________________________________________
-  template <typename TCCDB, typename TBCs, typename TBcSelBuffer, typename TBcSelCursor>
-  void processRun2(TCCDB const& ccdb, TBCs const& bcs, TBcSelBuffer& bcselbuffer, TBcSelCursor& bcsel)
+  template <typename TCCDB, typename TBCs, typename TTimestamps, typename TBcSelBuffer, typename TBcSelCursor>
+  void processRun2(TCCDB const& ccdb, TBCs const& bcs, TTimestamps const& timestamps, TBcSelBuffer& bcselbuffer, TBcSelCursor& bcsel)
   {
     if (bcselOpts.amIneeded.value == 0) {
       bcselbuffer.clear();
@@ -273,8 +273,9 @@ class BcSelectionModule
     }
     bcselbuffer.clear();
     for (const auto& bc : bcs) {
-      par = ccdb->template getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
-      aliases = ccdb->template getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", bc.timestamp());
+      uint64_t timestamp = timestamps[bc.globalIndex()];
+      par = ccdb->template getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", timestamp);
+      aliases = ccdb->template getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", timestamp);
       // fill fired aliases
       uint32_t alias{0};
       uint64_t triggerMask = bc.triggerMask();
@@ -401,8 +402,8 @@ class BcSelectionModule
   } // end processRun2
 
   //__________________________________________________
-  template <typename TCCDB, typename THistoRegistry, typename TBCs, typename TBcSelBuffer, typename TBcSelCursor>
-  void processRun3(TCCDB const& ccdb, THistoRegistry& histos, TBCs const& bcs, TBcSelBuffer& bcselbuffer, TBcSelCursor& bcsel)
+  template <typename TCCDB, typename THistoRegistry, typename TBCs, typename TTimestamps, typename TBcSelBuffer, typename TBcSelCursor>
+  void processRun3(TCCDB const& ccdb, THistoRegistry& histos, TBCs const& bcs, TTimestamps const& timestamps, TBcSelBuffer& bcselbuffer, TBcSelCursor& bcsel)
   {
     if (bcselOpts.amIneeded.value == 0) {
       bcselbuffer.clear();
@@ -426,15 +427,16 @@ class BcSelectionModule
 
     // bc loop
     for (auto bc : bcs) { // o2-linter: disable=const-ref-in-for-loop (use bc as nonconst iterator)
+      uint64_t timestamp = timestamps[bc.globalIndex()];
       // store rct flags
       uint32_t rct = lastRCT;
       int64_t thisTF = (bc.globalBC() - bcSOR) / nBCsPerTF;
       if (mapRCT != nullptr && thisTF != lastTF) { // skip for unanchored runs; do it once per TF
-        auto itrct = mapRCT->upper_bound(bc.timestamp());
+        auto itrct = mapRCT->upper_bound(timestamp);
         if (itrct != mapRCT->begin())
           itrct--;
         rct = itrct->second;
-        LOGP(debug, "sor={} eor={} ts={} rct={}", sorTimestamp, eorTimestamp, bc.timestamp(), rct);
+        LOGP(debug, "sor={} eor={} ts={} rct={}", sorTimestamp, eorTimestamp, timestamp, rct);
         lastRCT = rct;
         lastTF = thisTF;
       }
@@ -560,10 +562,10 @@ class BcSelectionModule
       LOGP(debug, "foundFT0={}", foundFT0);
 
       const char* srun = Form("%d", run);
-      if (bc.timestamp() < sorTimestamp || bc.timestamp() > eorTimestamp) {
+      if (timestamp < sorTimestamp || timestamp > eorTimestamp) {
         histos.template get<TH1>(HIST("bcselection/hCounterInvalidBCTimestamp"))->Fill(srun, 1);
         if (bcselOpts.confCheckRunDurationLimits.value) {
-          LOGF(warn, "Invalid BC timestamp: %d, run: %d, sor: %d, eor: %d", bc.timestamp(), run, sorTimestamp, eorTimestamp);
+          LOGF(warn, "Invalid BC timestamp: %d, run: %d, sor: %d, eor: %d", timestamp, run, sorTimestamp, eorTimestamp);
           alias = 0u;
           selection = 0u;
         }
@@ -692,8 +694,8 @@ class EventSelectionModule
   }
 
   //__________________________________________________
-  template <typename TCCDB, typename TBCs>
-  bool configure(TCCDB& ccdb, TBCs const& bcs)
+  template <typename TCCDB, typename TTimestamps, typename TBCs>
+  bool configure(TCCDB& ccdb, TTimestamps const& timestamps, TBCs const& bcs)
   {
     int run = bcs.iteratorAt(0).runNumber();
     // extract bc pattern from CCDB for data or anchored MC only
@@ -705,7 +707,8 @@ class EventSelectionModule
       // duration of TF in bcs
       nBCsPerTF = evselOpts.confNumberOfOrbitsPerTF < 0 ? runInfo.orbitsPerTF * nBCsPerOrbit : evselOpts.confNumberOfOrbitsPerTF * nBCsPerOrbit;
       // colliding bc pattern
-      int64_t ts = bcs.iteratorAt(0).timestamp();
+      int64_t ts = timestamps[0];
+
       // getForTimeStamp replaced with getSpecific to set metadata to zero
       // avoids crash related to specific run number
       auto grplhcif = ccdb->template getSpecific<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
@@ -721,15 +724,16 @@ class EventSelectionModule
   }
 
   //__________________________________________________
-  template <typename TCCDB, typename THistoRegistry, typename TCollisions, typename TTracklets, typename TSlicecache, typename TBcSelBuffer, typename TEvselCursor>
-  void processRun2(TCCDB const& ccdb, THistoRegistry& histos, TCollisions const& collisions, TTracklets const& tracklets, TSlicecache& cache, TBcSelBuffer const& bcselbuffer, TEvselCursor& evsel)
+  template <typename TCCDB, typename THistoRegistry, typename TCollisions, typename TTracklets, typename TSlicecache, typename TTimestamps, typename TBcSelBuffer, typename TEvselCursor>
+  void processRun2(TCCDB const& ccdb, THistoRegistry& histos, TCollisions const& collisions, TTracklets const& tracklets, TSlicecache& cache, TTimestamps const& timestamps, TBcSelBuffer const& bcselbuffer, TEvselCursor& evsel)
   {
     if (evselOpts.amIneeded.value == 0) {
       return; // dummy process
     }
     for (const auto& col : collisions) {
       auto bc = col.template bc_as<soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>>();
-      EventSelectionParams* par = ccdb->template getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
+      uint64_t timestamp = timestamps[bc.globalIndex()];
+      EventSelectionParams* par = ccdb->template getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", timestamp);
       bool* applySelection = par->getSelection(evselOpts.muonSelection);
       if (evselOpts.isMC == 1) {
         applySelection[aod::evsel::kIsBBZAC] = 0;
@@ -802,13 +806,13 @@ class EventSelectionModule
   } // end processRun2
 
   //__________________________________________________
-  template <typename TCCDB, typename THistoRegistry, typename TBCs, typename TCollisions, typename TPVTracks, typename TFT0s, typename TSlicecache, typename TBcSelBuffer, typename TEvselCursor>
-  void processRun3(TCCDB const& ccdb, THistoRegistry& histos, TBCs const& bcs, TCollisions const& cols, TPVTracks const& pvTracks, TFT0s const& ft0s, TSlicecache& cache, TBcSelBuffer const& bcselbuffer, TEvselCursor& evsel)
+  template <typename TCCDB, typename THistoRegistry, typename TBCs, typename TCollisions, typename TPVTracks, typename TFT0s, typename TSlicecache, typename TTimestamps, typename TBcSelBuffer, typename TEvselCursor>
+  void processRun3(TCCDB const& ccdb, THistoRegistry& histos, TBCs const& bcs, TCollisions const& cols, TPVTracks const& pvTracks, TFT0s const& ft0s, TSlicecache& cache, TTimestamps const& timestamps, TBcSelBuffer const& bcselbuffer, TEvselCursor& evsel)
   {
     if (evselOpts.amIneeded.value == 0) {
       return; // dummy process
     }
-    if (!configure(ccdb, bcs))
+    if (!configure(ccdb, timestamps, bcs))
       return; // don't do anything in case configuration reported not ok
 
     int run = bcs.iteratorAt(0).runNumber();
@@ -1372,8 +1376,8 @@ class LumiModule
     }
   }
 
-  template <typename TCCDB, typename TBCs>
-  bool configure(TCCDB& ccdb, TBCs const& bcs)
+  template <typename TCCDB, typename TTimestamps, typename TBCs>
+  bool configure(TCCDB& ccdb, TTimestamps const& timestamps, TBCs const& bcs)
   {
     if (bcs.size() == 0)
       return false;
@@ -1382,7 +1386,7 @@ class LumiModule
       return false;
     if (run != lastRun && run >= 520259) { // o2-linter: disable=magic-number (scalers available for runs above 520120)
       lastRun = run;
-      int64_t ts = bcs.iteratorAt(0).timestamp();
+      int64_t ts = timestamps[0];
 
       // getting GRP LHCIF object to extract colliding system, energy and colliding bc pattern
       auto grplhcif = ccdb->template getForTimeStamp<parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
@@ -1511,14 +1515,14 @@ class LumiModule
   }
 
   //__________________________________________________
-  template <typename TCCDB, typename THistoRegistry, typename TBCs, typename TBcSelBuffer>
-  void process(TCCDB& ccdb, THistoRegistry& histos, TBCs const& bcs, TBcSelBuffer const& bcselBuffer)
+  template <typename TCCDB, typename THistoRegistry, typename TBCs, typename TTimestamps, typename TBcSelBuffer>
+  void process(TCCDB& ccdb, THistoRegistry& histos, TBCs const& bcs, TTimestamps const& timestamps, TBcSelBuffer const& bcselBuffer)
   {
     if (lumiOpts.amIneeded.value == 0) {
       return;
     }
 
-    if (!configure(ccdb, bcs))
+    if (!configure(ccdb, timestamps, bcs))
       return; // don't do anything in case configuration reported not ok
 
     int run = bcs.iteratorAt(0).runNumber();
