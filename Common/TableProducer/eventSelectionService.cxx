@@ -61,7 +61,7 @@ struct eventselectionRun2 {
   o2::common::eventselection::evselConfigurables evselOpts;
   o2::common::eventselection::EventSelectionModule evselmodule;
 
-  Produces<aod::Timestamps> timestampTable;  /// Table with SOR timestamps produced by the task
+  Produces<aod::Timestamps> timestampTable; /// Table with SOR timestamps produced by the task
   Produces<aod::BcSels> bcsel;
   Produces<aod::EvSels> evsel;
 
@@ -123,7 +123,7 @@ struct eventselectionRun3 {
   o2::common::eventselection::lumiConfigurables lumiOpts;
   o2::common::eventselection::LumiModule lumimodule;
 
-  Produces<aod::Timestamps> timestampTable;  /// Table with SOR timestamps produced by the task
+  Produces<aod::Timestamps> timestampTable; /// Table with SOR timestamps produced by the task
   Produces<aod::BcSels> bcsel;
   Produces<aod::EvSels> evsel;
 

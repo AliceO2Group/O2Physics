@@ -725,7 +725,7 @@ class EventSelectionModule
 
   //__________________________________________________
   template <typename TCCDB, typename THistoRegistry, typename TCollisions, typename TTracklets, typename TSlicecache, typename TTimestamps, typename TBcSelBuffer, typename TEvselCursor>
-  void processRun2(TCCDB const& ccdb, THistoRegistry& histos, TCollisions const& collisions, TTracklets const& tracklets, TSlicecache& cache,  TTimestamps const& timestamps, TBcSelBuffer const& bcselbuffer, TEvselCursor& evsel)
+  void processRun2(TCCDB const& ccdb, THistoRegistry& histos, TCollisions const& collisions, TTracklets const& tracklets, TSlicecache& cache, TTimestamps const& timestamps, TBcSelBuffer const& bcselbuffer, TEvselCursor& evsel)
   {
     if (evselOpts.amIneeded.value == 0) {
       return; // dummy process
@@ -1386,7 +1386,7 @@ class LumiModule
       return false;
     if (run != lastRun && run >= 520259) { // o2-linter: disable=magic-number (scalers available for runs above 520120)
       lastRun = run;
-      int64_t ts = timestamps[0]; 
+      int64_t ts = timestamps[0];
 
       // getting GRP LHCIF object to extract colliding system, energy and colliding bc pattern
       auto grplhcif = ccdb->template getForTimeStamp<parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
