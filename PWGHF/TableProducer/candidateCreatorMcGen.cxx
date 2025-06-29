@@ -14,20 +14,19 @@
 ///
 /// \author Nima Zardoshti, nima.zardoshti@cern.ch, CERN
 
-#include <memory>
-#include <string>
-#include <vector>
-
-#include <TPDGCode.h>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsMcGen.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/runDataProcessing.h>
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

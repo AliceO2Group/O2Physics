@@ -16,17 +16,22 @@
 #ifndef PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
 #define PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
 
+#include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/Logger.h>
+
 #include <TPDGCode.h>
 
-#include <fairlogger/Logger.h>
+#include <Rtypes.h>
 
 #include <cmath>
 #include <cstddef>
-
-#include "CommonConstants/MathConstants.h"
-
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/PIDResponseTOF.h"
 
 namespace o2::analysis::hf_correlations
 {

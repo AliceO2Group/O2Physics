@@ -18,30 +18,33 @@
 ///
 
 #include "PWGLF/DataModel/LFNucleiTables.h"
+#include "PWGLF/DataModel/LFParticleIdentification.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
-#include "CCDB/BasicCCDBManager.h"
-#include <string>
-#include <TLorentzVector.h>
-#include <TF1.h>
-#include "ReconstructionDataFormats/Track.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/CCDB/EventSelectionParams.h"
-#include "PWGLF/DataModel/LFParticleIdentification.h"
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/PID.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <TF1.h>
+#include <TLorentzVector.h>
+
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -328,7 +331,7 @@ struct LFNucleiBATask {
     hSkim->GetXaxis()->SetBinLabel(1, "Total");
     hSkim->GetXaxis()->SetBinLabel(2, "Skimmed events");
 
-    histos.add<TH1>("event/eventSelection", "eventSelection", HistType::kTH1D, {{7, -0.5, 6.5}});
+    histos.add<TH1>("event/eventSelection", "eventSelection", HistType::kTH1D, {{8, -0.5, 7.5}});
     auto h = histos.get<TH1>(HIST("event/eventSelection"));
     if (skimmingOptions.applySkimming)
       h->GetXaxis()->SetBinLabel(1, "Skimmed events");
@@ -340,6 +343,7 @@ struct LFNucleiBATask {
     h->GetXaxis()->SetBinLabel(5, "TVX + TF + ITS ROF");
     h->GetXaxis()->SetBinLabel(6, "Sel8 cut");
     h->GetXaxis()->SetBinLabel(7, "Z-vert Cut");
+    h->GetXaxis()->SetBinLabel(8, "Multiplicity cut");
     histos.add<TH1>("event/h1VtxZ", "V_{z};V_{z} (in cm); counts", HistType::kTH1F, {{1500, -15, 15}});
 
     if (enablePIDplot) {
@@ -1597,9 +1601,6 @@ struct LFNucleiBATask {
       }
     }
     if (enableTr) {
-      // histos.add<TH2>("tracks/triton/h2TritonVspTNSigmaITS", "NSigmaITS(t) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaITS", HistType::kTH2F, {{ptAxis}, {sigmaITSAxis}});
-      // histos.add<TH2>("tracks/triton/h2antiTritonVspTNSigmaITS", "NSigmaITS(#bar{t}) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaITS", HistType::kTH2F, {{ptAxis}, {sigmaITSAxis}});
-
       histos.add<TH2>("tracks/triton/h2TritonVspTNSigmaTPC", "NSigmaTPC(t) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {sigmaTPCAxis}});
       histos.add<TH2>("tracks/triton/h2antiTritonVspTNSigmaTPC", "NSigmaTPC(#bar{t}) vs pT; #it{p}_{T} (GeV/#it{c}); NSigmaTPC", HistType::kTH2F, {{ptAxis}, {sigmaTPCAxis}});
     }
@@ -2140,14 +2141,6 @@ struct LFNucleiBATask {
       if (enableDebug)
         debugHistos.fill(HIST("qa/h1VtxZ_sel8"), event.posZ());
 
-      if (enableCentrality) {
-        if (event.centFT0M() < cfgLowMultCut || event.centFT0M() > cfgHighMultCut) {
-          return;
-        }
-        if (enableDebug)
-          debugHistos.fill(HIST("event/h1VtxZ_Centrality"), event.posZ());
-      }
-
       if (event.posZ() < cfgLowCutVertex || event.posZ() > cfgHighCutVertex)
         return;
       histos.fill(HIST("event/eventSelection"), 6);
@@ -2157,6 +2150,15 @@ struct LFNucleiBATask {
         return;
       if (evselOptions.removeTFBorder && !event.selection_bit(aod::evsel::kNoTimeFrameBorder))
         return;
+    }
+
+    if (event.centFT0M() < cfgLowMultCut || event.centFT0M() > cfgHighMultCut) {
+      return;
+    }
+    histos.fill(HIST("event/eventSelection"), 7);
+
+    if (enableCentrality && enableDebug) {
+      debugHistos.fill(HIST("event/h1VtxZ_Centrality"), event.posZ());
     }
 
     float gamma = 0., massTOF = 0., massTOFhe = 0., massTOFantihe = 0., heTPCmomentum = 0.f, antiheTPCmomentum = 0.f, heP = 0.f, antiheP = 0.f, hePt = 0.f, antihePt = 0.f, antiDPt = 0.f, DPt = 0.f;
@@ -5763,6 +5765,7 @@ struct LFNucleiBATask {
 
   // Process function that runs on the original AO2D (for the MC)
   void processMCReco(EventCandidatesMC::iterator const& event,
+                     soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&,
                      soa::Join<TrackCandidates, aod::McTrackLabels> const& tracks,
                      aod::McParticles const& mcParticles,
                      o2::aod::BCsWithTimestamps const&)
@@ -5773,6 +5776,7 @@ struct LFNucleiBATask {
 
   // Process function that runs on the original AO2D (for the MC) with the LfPIDcalibration
   void processMCRecoLfPid(EventCandidatesMC::iterator const& event,
+                          soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&,
                           soa::Join<TrackCandidatesLfPid, aod::McTrackLabels> const& tracks,
                           aod::McParticles const& mcParticles,
                           o2::aod::BCsWithTimestamps const&)
@@ -5916,10 +5920,12 @@ struct LFNucleiBATask {
   ////////////
 
   // LOOP OVER GENERATED MC PARTICLES
-  void processMCGen(aod::McCollision const& mcCollision,
+  void processMCGen(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
                     aod::McParticles& mcParticles)
   {
     spectraGen.fill(HIST("histGenVetxZ"), mcCollision.posZ());
+    if (mcCollision.centFT0M() > cfgHighMultCut || mcCollision.centFT0M() < cfgLowMultCut)
+      return;
     for (auto& mcParticleGen : mcParticles) {
       if (mcParticleGen.y() > kinemOptions.yHighCut || mcParticleGen.y() < kinemOptions.yLowCut) {
         continue;
@@ -6151,7 +6157,7 @@ struct LFNucleiBATask {
     }
   } // Close processMCGen
   PROCESS_SWITCH(LFNucleiBATask, processMCGen, "process MC Generated", true);
-  void processEvSgLossMC(aod::McCollision const& mcCollision,
+  void processEvSgLossMC(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
                          aod::McParticles const& mcParticles,
                          const soa::SmallGroups<EventCandidatesMC>& recoColls)
   {

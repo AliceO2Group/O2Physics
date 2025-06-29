@@ -178,7 +178,6 @@ struct AntinucleiInJets {
       registryQC.add("nJetsFound", "nJetsFound", HistType::kTH1F, {{50, 0, 50, "#it{n}_{Jet}"}});
       registryQC.add("nJetsInAcceptance", "nJetsInAcceptance", HistType::kTH1F, {{50, 0, 50, "#it{n}_{Jet}"}});
       registryQC.add("nJetsSelectedHighPt", "nJetsSelectedHighPt", HistType::kTH1F, {{50, 0, 50, "#it{n}_{Jet}"}});
-      registryQC.add("jetEffectiveArea", "jetEffectiveArea", HistType::kTH1F, {{2000, 0, 2, "Area/#piR^{2}"}});
       registryQC.add("jetPtDifference", "jetPtDifference", HistType::kTH1F, {{200, -1, 1, "#Deltap_{T}^{jet}"}});
     }
 
@@ -193,6 +192,10 @@ struct AntinucleiInJets {
       // event counter data
       registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{10, 0, 10, "counter"}});
       registryData.add("number_of_rejected_events", "check on number of events rejected", HistType::kTH1F, {{10, 0, 10, "counter"}});
+
+      // Jet Area
+      registryData.add("jetEffectiveArea", "jetEffectiveArea", HistType::kTH1F, {{2000, 0, 2, "Area/#piR^{2}"}});
+      registryData.add("ptDistributionJet", "ptDistributionJet", HistType::kTH1F, {{2000, 0, 200, "#it{p}_{T} (GeV/#it{c})"}});
 
       // antiprotons
       registryData.add("antiproton_jet_tpc", "antiproton_jet_tpc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
@@ -612,6 +615,8 @@ struct AntinucleiInJets {
       auto jetForSub = jet;
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
       // if (getCorrectedPt(jetMinusBkg.pt(), responseMatrix) < minJetPt)
+      registryData.fill(HIST("ptDistributionJet"), jet.pt());
+
       if (jetMinusBkg.pt() < minJetPt)
         continue;
       isAtLeastOneJetSelected = true;
@@ -623,6 +628,9 @@ struct AntinucleiInJets {
       TVector3 ueAxis2(0, 0, 0);
       getPerpendicularAxis(jetAxis, ueAxis1, +1);
       getPerpendicularAxis(jetAxis, ueAxis2, -1);
+
+      // Jet Area
+      registryData.fill(HIST("jetEffectiveArea"), jet.area() / (PI * rJet * rJet));
 
       // get jet constituents
       std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
@@ -906,7 +914,6 @@ struct AntinucleiInJets {
       getPerpendicularAxis(jetAxis, ueAxis1, +1);
       getPerpendicularAxis(jetAxis, ueAxis2, -1);
 
-      registryQC.fill(HIST("jetEffectiveArea"), jet.area() / (PI * rJet * rJet));
       registryQC.fill(HIST("NchJetCone"), static_cast<int>(jetConstituents.size()));
 
       // loop over jet constituents
