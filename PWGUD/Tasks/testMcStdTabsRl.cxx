@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \file testMCstdTabsRL.cxx
+/// \file testMcStdTabsRl.cxx
 /// \brief task to test the Monte Carlo UD production generatorIDs on hyperloop
 ///
 /// \author Roman Lavicka <roman.lavicka@cern.ch>, Austrian Academy of Sciences & SMI
@@ -17,14 +17,14 @@
 //
 
 // C++ headers
+#include <algorithm>
 #include <set>
 #include <utility>
-#include <algorithm>
 #include <vector>
 
 // O2 headers
-#include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
@@ -40,7 +40,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-struct TestMCstdTabsRL {
+struct TestMcStdTabsRl {
 
   // Global varialbes
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -97,11 +97,11 @@ struct TestMCstdTabsRL {
 
   } // end processMCgenDG
 
-  PROCESS_SWITCH(TestMCstdTabsRL, processMCgen, "Iterate Monte Carlo UD tables with truth data.", true);
+  PROCESS_SWITCH(TestMcStdTabsRl, processMCgen, "Iterate Monte Carlo UD tables with truth data.", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<TestMCstdTabsRL>(cfgc)};
+    adaptAnalysisTask<TestMcStdTabsRl>(cfgc)};
 }
