@@ -16,15 +16,18 @@
 /// \brief  A task to fill the timestamp table from run number.
 ///         Uses headers from CCDB
 ///
-#include <vector>
-#include <map>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
+#include "MetadataHelper.h"
+
+#include "Common/Tools/timestampModule.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonDataFormat/InteractionRecord.h"
 #include "DetectorsRaw/HBFUtils.h"
-#include "MetadataHelper.h"
-#include "Common/Tools/timestampModule.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include <map>
+#include <vector>
 
 using namespace o2::framework;
 using namespace o2::header;
@@ -33,9 +36,9 @@ using namespace o2;
 MetadataHelper metadataInfo; // Metadata helper
 
 struct TimestampTask {
-  Produces<aod::Timestamps> timestampTable;  /// Table with SOR timestamps produced by the task
-  Service<o2::ccdb::BasicCCDBManager> ccdb;  /// CCDB manager to access orbit-reset timestamp
-  o2::ccdb::CcdbApi ccdb_api;                /// API to access CCDB headers
+  Produces<aod::Timestamps> timestampTable; /// Table with SOR timestamps produced by the task
+  Service<o2::ccdb::BasicCCDBManager> ccdb; /// CCDB manager to access orbit-reset timestamp
+  o2::ccdb::CcdbApi ccdb_api;               /// API to access CCDB headers
 
   Configurable<std::string> ccdb_url{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB database"};
 

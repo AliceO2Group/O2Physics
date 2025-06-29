@@ -12,10 +12,11 @@
 #ifndef COMMON_TOOLS_TIMESTAMPMODULEH_
 #define COMMON_TOOLS_TIMESTAMPMODULEH_
 
-#include <cstdlib>
-#include <cmath>
-#include <array>
 #include "Framework/AnalysisDataModel.h"
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
 
 namespace o2
 {
@@ -31,13 +32,13 @@ struct timestampConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> fatalOnInvalidTimestamp{"fatalOnInvalidTimestamp", false, "Generate fatal error for invalid timestamps"};
   o2::framework::Configurable<std::string> rct_path{"rct-path", "RCT/Info/RunInformation", "path to the ccdb RCT objects for the SOR timestamps"};
   o2::framework::Configurable<std::string> orbit_reset_path{"orbit-reset-path", "CTP/Calib/OrbitReset", "path to the ccdb orbit-reset objects"};
-  o2::framework::Configurable<int> isRun2MC{"isRun2MC", -1, "Running mode: enable only for Run 2 MC. Timestamps are set to SOR timestamp. Default: -1 (autoset from metadata) 0 (Standard) 1 (Run 2 MC)"};                                                         // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<int> isRun2MC{"isRun2MC", -1, "Running mode: enable only for Run 2 MC. Timestamps are set to SOR timestamp. Default: -1 (autoset from metadata) 0 (Standard) 1 (Run 2 MC)"}; // o2-linter: disable=name/configurable (temporary fix)
 };
 
 //__________________________________________
 // time stamp module
-// 
-// class to acquire time stamps to be used in 
+//
+// class to acquire time stamps to be used in
 // modular (plugin) fashion
 
 class TimestampModule
@@ -53,14 +54,15 @@ class TimestampModule
   o2::common::timestamp::timestampConfigurables timestampOpts;
 
   // objects necessary during processing
-  std::map<int, int64_t> mapRunToOrbitReset; /// Cache of orbit reset timestamps
+  std::map<int, int64_t> mapRunToOrbitReset;                      /// Cache of orbit reset timestamps
   std::map<int, std::pair<int64_t, int64_t>> mapRunToRunDuration; /// Cache of run duration timestamps
-  int lastRunNumber;                         /// Last run number processed
-  int64_t orbitResetTimestamp;               /// Orbit-reset timestamp in us
-  std::pair<int64_t, int64_t> runDuration;   /// Pair of SOR and EOR timestamps
+  int lastRunNumber;                                              /// Last run number processed
+  int64_t orbitResetTimestamp;                                    /// Orbit-reset timestamp in us
+  std::pair<int64_t, int64_t> runDuration;                        /// Pair of SOR and EOR timestamps
 
   template <typename TTimestampOpts, typename TMetadatahelper>
-  void init(TTimestampOpts const& external_timestampOpts, TMetadatahelper const& metadataInfo ){ 
+  void init(TTimestampOpts const& external_timestampOpts, TMetadatahelper const& metadataInfo)
+  {
     timestampOpts = external_timestampOpts;
 
     if (timestampOpts.isRun2MC.value == -1) {
@@ -74,9 +76,10 @@ class TimestampModule
   }
 
   template <typename TBCs, typename Tccdb, typename TTimestampBuffer, typename TCursor>
-  void process(TBCs const& bcs, Tccdb const& ccdb, TTimestampBuffer& timestampbuffer, TCursor& timestampTable){ 
+  void process(TBCs const& bcs, Tccdb const& ccdb, TTimestampBuffer& timestampbuffer, TCursor& timestampTable)
+  {
     timestampbuffer.clear();
-    for(auto const& bc : bcs){
+    for (auto const& bc : bcs) {
       int runNumber = bc.runNumber();
       // We need to set the orbit-reset timestamp for the run number.
       // This is done with caching if the run number was already processed before.
