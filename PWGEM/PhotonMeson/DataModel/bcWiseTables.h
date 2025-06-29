@@ -19,9 +19,9 @@
 #ifndef PWGEM_PHOTONMESON_DATAMODEL_BCWISETABLES_H_
 #define PWGEM_PHOTONMESON_DATAMODEL_BCWISETABLES_H_
 
-#include <limits>
-
 #include "Framework/AnalysisDataModel.h"
+
+#include <limits>
 
 namespace o2::aod
 {
@@ -121,7 +121,7 @@ DECLARE_SOA_TABLE(BCWiseClusters, "AOD", "BCWISECLUSTER", //! table of skimmed E
                   bcwisecluster::Definition<bcwisecluster::StoredDefinition>, bcwisecluster::E<bcwisecluster::StoredE>, bcwisecluster::Eta<bcwisecluster::StoredEta>, bcwisecluster::Phi<bcwisecluster::StoredPhi>, bcwisecluster::NCells<bcwisecluster::StoredNCells>, bcwisecluster::M02<bcwisecluster::StoredM02>, bcwisecluster::Time<bcwisecluster::StoredTime>, bcwisecluster::IsExotic<bcwisecluster::StoredIsExotic>,
                   bcwisecluster::Pt<bcwisecluster::StoredE, bcwisecluster::StoredEta>);
 
-namespace bcwisemcpi0s
+namespace bcwisemcmesons
 {
 DECLARE_SOA_COLUMN(StoredPt, storedPt, uint16_t); //! Transverse momentum of generated pi0 (1 MeV -> Maximum pi0 pT of ~65 GeV)
 DECLARE_SOA_COLUMN(IsAccepted, isAccepted, bool); //! Both decay photons are within the EMCal acceptance
@@ -129,22 +129,26 @@ DECLARE_SOA_COLUMN(IsPrimary, isPrimary, bool);   //! mcParticle.isPhysicalPrima
 DECLARE_SOA_COLUMN(IsFromWD, isFromWD, bool);     //! Pi0 from a weak decay according to pwgem::photonmeson::utils::mcutil::IsFromWD
 
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](uint16_t storedpt) -> float { return std::nextafter(storedpt / emdownscaling::downscalingFactors[emdownscaling::kpT], std::numeric_limits<float>::infinity()); }); //! pT of pi0 (GeV)
-} // namespace bcwisemcpi0s
+} // namespace bcwisemcmesons
 
 DECLARE_SOA_TABLE(BCWiseMCPi0s, "AOD", "BCWISEMCPI0", //! table of pi0s on MC level
-                  o2::soa::Index<>, BCWiseBCId, bcwisemcpi0s::StoredPt, bcwisemcpi0s::IsAccepted, bcwisemcpi0s::IsPrimary, bcwisemcpi0s::IsFromWD,
-                  bcwisemcpi0s::Pt<bcwisemcpi0s::StoredPt>);
+                  o2::soa::Index<>, BCWiseBCId, bcwisemcmesons::StoredPt, bcwisemcmesons::IsAccepted, bcwisemcmesons::IsPrimary, bcwisemcmesons::IsFromWD,
+                  bcwisemcmesons::Pt<bcwisemcmesons::StoredPt>);
+DECLARE_SOA_TABLE(BCWiseMCEtas, "AOD", "BCWISEMCETA", //! table of eta mesons on MC level
+                  o2::soa::Index<>, BCWiseBCId, bcwisemcmesons::StoredPt, bcwisemcmesons::IsAccepted, bcwisemcmesons::IsPrimary, bcwisemcmesons::IsFromWD,
+                  bcwisemcmesons::Pt<bcwisemcmesons::StoredPt>);
 
 namespace bcwisemccluster
 {
-DECLARE_SOA_COLUMN(Pi0ID, pi0ID, int32_t);              //! Index of the mother pi0 (-1 if not from pi0)
+DECLARE_SOA_COLUMN(MesonID, mesonID, int32_t);          //! Index of the mother mesom (-1 if not from a pi0 or eta)
+DECLARE_SOA_COLUMN(IsEta, isEta, bool);                 //! Boolean flag to indicate if the cluster is from an eta meson, otherwise it is from a pi0
 DECLARE_SOA_COLUMN(StoredTrueE, storedTrueE, uint16_t); //! energy of cluster inducing particle (1 MeV -> Maximum cluster energy of ~65 GeV)
 
 DECLARE_SOA_DYNAMIC_COLUMN(TrueE, trueE, [](uint16_t storedTrueE) -> float { return std::nextafter(storedTrueE / emdownscaling::downscalingFactors[emdownscaling::kEnergy], std::numeric_limits<float>::infinity()); }); //! energy of cluster inducing particle (GeV)
 } // namespace bcwisemccluster
 
 DECLARE_SOA_TABLE(BCWiseMCClusters, "AOD", "BCWISEMCCLS", //! table of MC information for clusters -> To be joined with the cluster table
-                  o2::soa::Index<>, BCWiseBCId, bcwisemccluster::Pi0ID, bcwisemccluster::StoredTrueE,
+                  o2::soa::Index<>, BCWiseBCId, bcwisemccluster::MesonID, bcwisemccluster::IsEta, bcwisemccluster::StoredTrueE,
                   bcwisemccluster::TrueE<bcwisemccluster::StoredTrueE>);
 
 } // namespace o2::aod
