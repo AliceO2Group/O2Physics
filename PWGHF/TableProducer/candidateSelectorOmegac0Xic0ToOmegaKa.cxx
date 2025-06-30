@@ -60,6 +60,10 @@ struct HfCandidateSelectorToOmegaKa {
   Configurable<float> cascadeMassWindow{"cascadeMassWindow", 0.01, "Cascade mass window"};
   Configurable<bool> applyTrkSelLf{"applyTrkSelLf", true, "Apply track selection for LF daughters"};
 
+  // topological cuts
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_omegacxic_to_omega_ka::vecBinsPt}, "pT bin limits"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_omegacxic_to_omega_ka::Cuts[0], hf_cuts_omegacxic_to_omega_ka::NBinsPt, hf_cuts_omegacxic_to_omega_ka::NCutVars, hf_cuts_omegacxic_to_omega_ka::labelsPt, hf_cuts_omegacxic_to_omega_ka::labelsCutVar}, "OmegaC0 candidate selection per pT bin"};
+
   // limit charm baryon invariant mass spectrum
   Configurable<double> invMassCharmBaryonMin{"invMassCharmBaryonMin", 2.0, "Lower limit invariant mass spectrum charm baryon"}; // Xic0:2.470 Omegac0:2.695
   Configurable<double> invMassCharmBaryonMax{"invMassCharmBaryonMax", 3.1, "Upper limit invariant mass spectrum charm baryon"};
@@ -156,27 +160,6 @@ struct HfCandidateSelectorToOmegaKa {
     Configurable<float> cosPaV0ToCascMin{"cosPaV0ToCascMin", 0.99, "Minimum cosPA of V0<-cascade"};
   } KfconfigurableGroup;
 
-  // topological cuts
-  // Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_omegaKa_to_omega_pi::vecBinsPt}, "pT bin limits"};
-  // Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_omegaKa_to_omega_pi::Cuts[0], hf_cuts_omegaKa_to_omega_pi::NBinsPt, hf_cuts_omegaKa_to_omega_pi::NCutVars, hf_cuts_omegaKa_to_omega_pi::labelsPt, hf_cuts_omegaKa_to_omega_pi::labelsCutVar}, "OmegaKa candidate selection per pT bin"};
-  // ML inference
-  // Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
-  // Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
-  // Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
-  // Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
-  // Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
-  // Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
-  // CCDB configuration
-  // Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  // Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"EventFiltering/PWGHF/BDTOmegaKa"}, "Paths of models on CCDB"};
-  // Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_OmegaKaToOmegaKa.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
-  // Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
-  // Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
-
-  // o2::analysis::HfMlResponseOmegaKaToOmegaKa<float> hfMlResponse;
-  // std::vector<float> outputMlOmegaKa = {};
-  // o2::ccdb::CcdbApi ccdbApi;
-
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
   TrackSelectorKa selectorKaon;
@@ -261,48 +244,38 @@ struct HfCandidateSelectorToOmegaKa {
     registry.add("hSeldecayLenOmegaKa_Casc_V0", "hSeldecayLenOmegaKa_Casc_V0;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hSelcosPaCascToOmegaKa_V0ToCasc", "hSelcosPaCascToOmegaKa_V0ToCasc;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hInvMassXiMinus_rej_cut", "hInvMassXiMinus_rej_cut", kTH1D, {{1000, 1.25f, 1.65f}});
-
-    // if (applyMl) {
-    //   registry.add("hBDTScoreTest1", "hBDTScoreTest1", {HistType::kTH1D, {{100, 0.0f, 1.0f, "score"}}});
-    //   hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
-    //   if (loadModelsFromCCDB) {
-    //     ccdbApi.init(ccdbUrl);
-    //     hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
-    //   } else {
-    //     hfMlResponse.setModelPathsLocal(onnxFileNames);
-    //   }
-    //   hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
-    //   hfMlResponse.init();
-    // }
   }
   // for pT-dependent cuts (other selections will move into this in futrue)
   // \param hfCandOmegaKa is candidate
   // return true if candidate passes all cuts
-  // template <typename T1>
-  // bool selectionTopol(const T1& hfCandOmegaKa)
-  //{
-  //  auto candpT = hfCandOmegaKa.ptCharmBaryon();
-  //  auto KaPtFromOmegaKa = hfCandOmegaKa.ptKaFromCharmBaryon();
-  //  int pTBin = findBin(binsPt, candpT);
-  //  if (pTBin == -1) {
-  //    return false;
-  //  }
+  template <typename T1>
+  bool selectionTopol(const T1& hfCandOmegaKa)
+  {
+    auto candpT = hfCandOmegaKa.kfPtOmegaKa();
+    auto KaPtFromOmegaKa = hfCandOmegaKa.kfPtKaFromOmegaKa();
+    int pTBin = findBin(binsPt, candpT);
+    if (pTBin == -1) {
+      return false;
+    }
 
-  // check that the candidate pT is within the analysis range
-  //  if (candpT <= ptCandMin || candpT >= ptCandMax) {
-  //    return false;
-  //  }
+    // check that the candidate pT is within the analysis range
+    if (candpT <= ptCandMin || candpT >= ptCandMax) {
+      registry.fill(HIST("hSelPtOmegaKa"), 0);
+      return false;
+    } else {
+      registry.fill(HIST("hSelPtOmegaKa"), 1);
+    }
 
-  // check that the candidate pT is within the analysis range
-  //  if (pionPtFromOmegaKa < cuts->get(pTBin, "pT pi from OmegaKa")) {
-  //    registry.fill(HIST("hSelPtKaFromCharm"), 0);
-  //    return false;
-  //  } else {
-  //    registry.fill(HIST("hSelPtKaFromCharm"), 1);
-  //  }
+    // check that the candidate pT is within the analysis range
+    if (KaPtFromOmegaKa < cuts->get(pTBin, "pT ka from OmegaKa")) {
+      registry.fill(HIST("hSelPtKaFromCharm"), 0);
+      return false;
+    } else {
+      registry.fill(HIST("hSelPtKaFromCharm"), 1);
+    }
 
-  //  return true;
-  //} // end template
+    return true;
+  } // end template
 
   void process(aod::HfCandToOmegaKaKf const& candidates,
                TracksSel const& tracks,
@@ -347,18 +320,9 @@ struct HfCandidateSelectorToOmegaKa {
       }
 
       // pt-dependent selection
-      // if (!selectionTopol(candidate)) {
-      //  resultSelections = false;
-      //  hfSelToOmegaKa(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
-      //                 trackKaFromCharm.tpcNSigmaPi(), trackKaFromCasc.tpcNSigmaKa(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
-      //                 trackKaFromCharm.tofNSigmaPi(), trackKaFromCasc.tofNSigmaKa(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
-      //  if constexpr (ConstructMethod == hf_cand_casc_lf::ConstructMethod::KfParticle) {
-      //    if (applyMl) {
-      //      hfMlSelToOmegaKa(outputMlOmegaKa);
-      //    }
-      //  }
-      //  continue;
-      //}
+      if (!selectionTopol(candidate)) {
+        resultSelections = false;
+      }
 
       // eta selection
       double etaV0DauPr = candidate.etaV0DauPr();
@@ -466,9 +430,6 @@ struct HfCandidateSelectorToOmegaKa {
       }
       if (std::abs(candidate.kfPtKaFromOmegaKa()) < ptKaFromCharmBaryonMin) {
         resultSelections = false;
-        registry.fill(HIST("hSelPtKaFromCharm"), 0);
-      } else {
-        registry.fill(HIST("hSelPtKaFromCharm"), 1);
       }
 
       //  Competing Ξ rejection(KF)  Try to reject cases in which the candidate has a an inv. mass compatibler to Xi (bachelor pion) instead of Omega (bachelor kaon)
@@ -480,14 +441,6 @@ struct HfCandidateSelectorToOmegaKa {
           registry.fill(HIST("hSelCompetingCasc"), 1);
           registry.fill(HIST("hInvMassXiMinus_rej_cut"), candidate.invMassCascadeRej());
         }
-      }
-
-      // OmegaKa Pt selection
-      if (std::abs(candidate.kfPtOmegaKa()) < ptCandMin || std::abs(candidate.kfPtOmegaKa()) > ptCandMax) {
-        resultSelections = false;
-        registry.fill(HIST("hSelPtOmegaKa"), 0);
-      } else {
-        registry.fill(HIST("hSelPtOmegaKa"), 1);
       }
 
       // v0&Casc&OmegaKa ldl selection
@@ -690,18 +643,6 @@ struct HfCandidateSelectorToOmegaKa {
         registry.fill(HIST("hSelMassCharmBaryon"), 0);
         resultSelections = false;
       }
-      // ML selections
-      // if constexpr (ConstructMethod == hf_cand_casc_lf::ConstructMethod::KfParticle) {
-      //  if (applyMl) {
-      //    bool isSelectedMlOmegaKa = false;
-      //    std::vector<float> inputFeaturesOmegaKa = hfMlResponse.getInputFeatures(candidate, trackPiFromLam, trackKaFromCasc, trackKaFromCharm);
-      //    isSelectedMlOmegaKa = hfMlResponse.isSelectedMl(inputFeaturesOmegaKa, ptCand, outputMlOmegaKa);
-      //    if (isSelectedMlOmegaKa) {
-      //      registry.fill(HIST("hBDTScoreTest1"), outputMlOmegaKa[0]);
-      //    }
-      //    hfMlSelToOmegaKa(outputMlOmegaKa);
-      //  }
-      //}
 
       hfSelToOmegaKaKf(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
                        trackKaFromCharm.tpcNSigmaKa(), trackKaFromCasc.tpcNSigmaKa(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
