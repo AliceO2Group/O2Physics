@@ -22,6 +22,9 @@
 #ifndef PWGLF_DATAMODEL_LFHSTRANGECORRELATIONTABLES_H_
 #define PWGLF_DATAMODEL_LFHSTRANGECORRELATIONTABLES_H_
 
+/// this data model uses the LF one, add here
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include <cmath>
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
