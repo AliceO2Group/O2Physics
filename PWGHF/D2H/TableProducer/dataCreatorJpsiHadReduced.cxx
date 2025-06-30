@@ -34,6 +34,7 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "Framework/RunningWorkflowInfo.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
@@ -52,7 +53,6 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/WorkflowSpec.h>
 #include <Framework/runDataProcessing.h>
-#include "Framework/RunningWorkflowInfo.h"
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/Track.h>
 
@@ -540,7 +540,7 @@ struct HfDataCreatorJpsiHadReduced {
     float centDummy{-1.f}, centFT0C{-1.f}, centFT0M{-1.f};
     const auto collSlice = collisions.sliceBy(colPerMcCollision, mcCollision.globalIndex());
     auto hfRejMap = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::None>(mcCollision, collSlice, centDummy);
-    if (skipRejectedCollisions && hfRejMap!= 0) {
+    if (skipRejectedCollisions && hfRejMap != 0) {
       return;
     }
 
@@ -1109,7 +1109,7 @@ struct HfDataCreatorJpsiHadReduced {
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
-    for (const auto& mcCollision: mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       runMcGen<DecayChannel::BplusToJpsiK>(mcCollision, particlesMc, collisions, bcs);
     }
   }
@@ -1146,7 +1146,7 @@ struct HfDataCreatorJpsiHadReduced {
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
-    for (const auto& mcCollision: mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       runMcGen<DecayChannel::BsToJpsiPhi>(mcCollision, particlesMc, collisions, bcs);
     }
   }
