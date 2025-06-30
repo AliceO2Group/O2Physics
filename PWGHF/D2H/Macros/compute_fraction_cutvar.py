@@ -135,6 +135,7 @@ def main(config):
     for ipt in range(hist_rawy[0].GetNbinsX()):
         pt_min = hist_rawy[0].GetXaxis().GetBinLowEdge(ipt + 1)
         pt_max = hist_rawy[0].GetXaxis().GetBinUpEdge(ipt + 1)
+        print(f"\n\nINFO: processing pt range {ipt} from {pt_min} to {pt_max} {pt_axis_title}")
 
         rawy, effp, effnp, unc_rawy, unc_effp, unc_effnp = (np.zeros(n_sets) for _ in range(6))
         for iset, (hrawy, heffp, heffnp) in enumerate(zip(hist_rawy, hist_effp, hist_effnp)):

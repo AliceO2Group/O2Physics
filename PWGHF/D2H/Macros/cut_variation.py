@@ -136,7 +136,8 @@ class CutVarMinimiser:
         self.m_eff = np.matrix(self.m_eff)
         m_corr_yields_old = np.zeros(shape=(2, 1))
 
-        for _ in range(max_iterations):
+        for iteration in range(max_iterations):
+            unc_row_cumul = []
             for i_row, (rw_unc_row, effp_unc_row, effnp_unc_row) in enumerate(
                 zip(self.unc_raw_yields, self.unc_eff_prompt, self.unc_eff_nonprompt)
             ):
@@ -167,6 +168,14 @@ class CutVarMinimiser:
                     cov_row_col = rho * unc_row * unc_col
                     self.m_cov_sets[i_row, i_col] = cov_row_col
 
+                unc_row_cumul.append(unc_row)
+
+            unc_row_cumul = np.array(unc_row_cumul)
+            if correlated and not (np.all(unc_row_cumul[1:] > unc_row_cumul[:-1]) or np.all(unc_row_cumul[1:] < unc_row_cumul[:-1])):
+                print("WARNING! minimise_system(): the uncertainties vector is not monotonous. Check the input for stability.")
+                print(f"iteration #{iteration}")
+                print(f"uncertainties vector = {unc_row_cumul}\n")
+
             self.m_cov_sets = np.matrix(self.m_cov_sets)
             self.m_weights = np.linalg.inv(np.linalg.cholesky(self.m_cov_sets))
             self.m_weights = self.m_weights.T * self.m_weights
@@ -188,6 +197,8 @@ class CutVarMinimiser:
                 break
 
             m_corr_yields_old = np.copy(self.m_corr_yields)
+
+        print(f"INFO: number of processed iterations = {iteration+1}\n")
 
         # chi2
         self.chi_2 = float(np.transpose(self.m_res) * self.m_weights * self.m_res)
