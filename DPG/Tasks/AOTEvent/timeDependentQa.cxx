@@ -54,7 +54,7 @@ const AxisSpec axisSparseDcaZ{100, -1., 1., "DCA_{z}, cm"};
 struct TimeDependentQaTask {
   Configurable<float> confTimeBinWidthInSec{"TimeBinWidthInSec", 0.5, "Width of time bins in seconds"};                                                                          // o2-linter: disable=name/configurable (temporary fix)
   Configurable<float> confTimeWiderBinFactor{"TimeWideBinFactor", 4, "Factor for wider time bins for some 2D histograms"};                                                       // o2-linter: disable=name/configurable (temporary fix)
-  Configurable<float> confTimeMuchWiderBinFactor{"TimeMuchWiderBinFactor", 20, "Factor for even wider time bins for some 2D histograms"};                                    // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<float> confTimeMuchWiderBinFactor{"TimeMuchWiderBinFactor", 20, "Factor for even wider time bins for some 2D histograms"};                                        // o2-linter: disable=name/configurable (temporary fix)
   Configurable<int> confTakeVerticesWithUPCsettings{"ConsiderVerticesWithUPCsettings", 0, "Take vertices: 0 - all , 1 - only without UPC settings, 2 - only with UPC settings"}; // o2-linter: disable=name/configurable (temporary fix)
   Configurable<int> confFlagFillPhiVsTimeHist{"FlagFillPhiVsTimeHist", 2, "0 - don't fill , 1 - fill only for global/7cls/TRD/TOF tracks, 2 - fill also layer-by-layer"};        // o2-linter: disable=name/configurable (temporary fix)
   Configurable<int> confFlagFillEtaPhiVsTimeHist{"FlagFillEtaPhiVsTimeHist", 0, "0 - don't fill , 1 - fill"};                                                                    // o2-linter: disable=name/configurable (temporary fix)
