@@ -8,8 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-/// \author Junlee Kim (jikim1290@gmail.com)
+///
+/// \file f0980analysis.cxx
+/// \brief f0(980) analysis in pp 13.6 TeV
+/// \author Yunseul Bae (ybae@cern.ch), Junlee Kim (jikim1290@gmail.com)
+/// \since 30/06/2025
 
 #include "PWGLF/DataModel/LFResonanceTables.h"
 
@@ -28,6 +31,8 @@
 #include "TVector2.h"
 
 #include <vector>
+
+using namespace o2::constants::physics;
 
 struct f0980analysis {
   SliceCache cache;
@@ -78,7 +83,7 @@ struct f0980analysis {
   Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"}; // TPC
   Configurable<double> cMaxTPCnSigmaPionWoTOF{"cMaxTPCnSigmaPionWoTOF", 2.0, "TPC nSigma cut without TOF for Pion"};
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"};
-  Configurable<int> SelectType{"SelectType", 0, "PID selection type"};
+  Configurable<int> selectType{"SelectType", 0, "PID selection type"};
 
   // Axis
   ConfigurableAxis massAxis{"massAxis", {400, 0.2, 2.2}, "Invariant mass axis"};
@@ -88,41 +93,41 @@ struct f0980analysis {
   {
     std::vector<double> lptBinning = {0, 5.0, 13.0, 20.0, 50.0, 1000.0};
 
-    AxisSpec RTAxis = {3, 0, 3};
-    AxisSpec LptAxis = {lptBinning}; // Minimum leading hadron pT selection
+    AxisSpec rtAxis = {3, 0, 3};
+    AxisSpec lptAxis = {lptBinning}; // Minimum leading hadron pT selection
 
-    AxisSpec PIDqaAxis = {120, -6, 6};
+    AxisSpec pidQaAxis = {120, -6, 6};
     AxisSpec pTqaAxis = {200, 0, 20};
-    AxisSpec phiqaAxis = {72, 0., 2.0 * o2::constants::math::PI};
-    AxisSpec EPAxis = {10, 0, o2::constants::math::PI};
-    AxisSpec EPqaAxis = {200, -o2::constants::math::PI, o2::constants::math::PI};
-    AxisSpec EPresAxis = {200, -2, 2};
+    AxisSpec phiqaAxis = {72, 0, o2::constants::math::TWOPI};
+    AxisSpec epAxis = {10, 0, o2::constants::math::PI};
+    AxisSpec epQaAxis = {200, -o2::constants::math::PI, o2::constants::math::PI};
+    AxisSpec epResAxis = {200, -2, 2};
 
     if (cfgFindRT) {
       histos.add("hInvMass_f0980_US", "unlike invariant mass",
-                 {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, RTAxis, LptAxis}});
+                 {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, rtAxis, lptAxis}});
       histos.add("hInvMass_f0980_LSpp", "++ invariant mass",
-                 {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, RTAxis, LptAxis}});
+                 {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, rtAxis, lptAxis}});
       histos.add("hInvMass_f0980_LSmm", "-- invariant mass",
-                 {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, RTAxis, LptAxis}});
+                 {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, rtAxis, lptAxis}});
     }
     histos.add("hInvMass_f0980_US_EPA", "unlike invariant mass",
-               {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, EPAxis}});
+               {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
     histos.add("hInvMass_f0980_LSpp_EPA", "++ invariant mass",
-               {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, EPAxis}});
+               {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
     histos.add("hInvMass_f0980_LSmm_EPA", "-- invariant mass",
-               {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, EPAxis}});
+               {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
 
-    histos.add("QA/hEPResAB", "", {HistType::kTH2F, {centAxis, EPresAxis}});
-    histos.add("QA/hEPResAC", "", {HistType::kTH2F, {centAxis, EPresAxis}});
-    histos.add("QA/hEPResBC", "", {HistType::kTH2F, {centAxis, EPresAxis}});
+    histos.add("QA/hEPResAB", "", {HistType::kTH2F, {centAxis, epResAxis}});
+    histos.add("QA/hEPResAC", "", {HistType::kTH2F, {centAxis, epResAxis}});
+    histos.add("QA/hEPResBC", "", {HistType::kTH2F, {centAxis, epResAxis}});
 
-    histos.add("QA/Nsigma_TPC", "", {HistType::kTH2F, {pTqaAxis, PIDqaAxis}});
-    histos.add("QA/Nsigma_TOF", "", {HistType::kTH2F, {pTqaAxis, PIDqaAxis}});
-    histos.add("QA/TPC_TOF", "", {HistType::kTH2F, {PIDqaAxis, PIDqaAxis}});
+    histos.add("QA/Nsigma_TPC", "", {HistType::kTH2F, {pTqaAxis, pidQaAxis}});
+    histos.add("QA/Nsigma_TOF", "", {HistType::kTH2F, {pTqaAxis, pidQaAxis}});
+    histos.add("QA/TPC_TOF", "", {HistType::kTH2F, {pidQaAxis, pidQaAxis}});
 
     histos.add("QA/LTpt", "", {HistType::kTH3F, {pTqaAxis, centAxis, phiqaAxis}});
-    histos.add("QA/EPhist", "", {HistType::kTH2F, {centAxis, EPqaAxis}});
+    histos.add("QA/EPhist", "", {HistType::kTH2F, {centAxis, epQaAxis}});
 
     if (doprocessMCLight) {
       histos.add("MCL/hpT_f0980_GEN", "generated f0 signals", HistType::kTH1F,
@@ -136,21 +141,26 @@ struct f0980analysis {
 
   double massPi = MassPionCharged;
 
-  int RTIndex(double pairphi, double lhphi)
+  constexpr float OneThird = 1.0f / 3.0f;
+  constexpr float PIthird = o2::constants::math::PI * OneThird;
+  constexpr float TWOPIthird = o2::constants::math::TWOPI * OneThird;
+
+  int rtIndex(double pairphi, double lhPhi)
   {
-    double dphi = std::fabs(TVector2::Phi_mpi_pi(lhphi - pairphi));
-    if (dphi < o2::constants::math::PI / 3.0)
+    double dphi = std::fabs(TVector2::Phi_mpi_pi(lhPhi - pairphi));
+
+    if (dphi < PIthird)
       return 0;
-    if (dphi < 2.0 * o2::constants::math::PI / 3.0 && dphi > o2::constants::math::PI / 3.0)
+    if (dphi < TWOPIthird && dphi > PIthird)
       return 1;
-    if (dphi > 2.0 * o2::constants::math::PI / 3.0)
+    if (dphi > TWOPIthird)
       return 2;
 
     return -1;
   }
 
   template <typename TrackType>
-  bool SelTrack(const TrackType track)
+  bool selTrack(const TrackType track)
   {
     if (std::abs(track.pt()) < cfgMinPt)
       return false;
@@ -181,21 +191,26 @@ struct f0980analysis {
   }
 
   template <typename TrackType>
-  bool SelPion(const TrackType track)
+  bool selPion(const TrackType track)
   {
-    if (SelectType == 0) {
+    constexpr int TPCorTOF = 0;
+    constexpr int TPCOnly = 1;
+    constexpr int Combined = 2;
+    constexpr int Run2Like = 3;
+
+    if (selectType == TPCorTOF) {
       if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaPi()) >= cMaxTOFnSigmaPion)
         return false;
     }
-    if (SelectType == 1) {
+    if (selectType == TPConly) {
       if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion)
         return false;
     }
-    if (SelectType == 2) {
+    if (selectType == Combined) {
       if (track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi() >= nsigmaCutCombinedPion * nsigmaCutCombinedPion)
         return false;
     }
-    if (SelectType == 3) {
+    if (selectType == Run2Like) {
       if (track.hasTOF()) {
         if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaPi()) >= cMaxTOFnSigmaPion)
           return false;
@@ -211,14 +226,14 @@ struct f0980analysis {
   void fillHistograms(const CollisionType& collision,
                       const TracksType& dTracks)
   {
-    double LHpt = 0.;
-    double LHphi = 0.;
+    double lhPt = 0.;
+    double lhPhi = 0.;
     double relPhi = 0.;
     if (cfgFindRT) {
-      for (auto& trk : dTracks) {
-        if (trk.pt() > LHpt) {
-          LHpt = trk.pt();
-          LHphi = trk.phi();
+      for (const auto& trk : dTracks) {
+        if (trk.pt() > lhPt) {
+          lhPt = trk.pt();
+          lhPhi = trk.phi();
         }
       }
     }
@@ -227,64 +242,64 @@ struct f0980analysis {
     histos.fill(HIST("QA/hEPResAB"), collision.cent(), collision.evtPlResAB());
     histos.fill(HIST("QA/hEPResAC"), collision.cent(), collision.evtPlResBC());
     histos.fill(HIST("QA/hEPResBC"), collision.cent(), collision.evtPlResAC());
-    histos.fill(HIST("QA/LTpt"), LHpt, collision.cent(), LHphi);
+    histos.fill(HIST("QA/LTpt"), lhPt, collision.cent(), lhPhi);
 
-    ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<float>> Pion1, Pion2, Reco;
-    for (auto& [trk1, trk2] :
+    ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<float>> pion1, pion2, reco;
+    for (const auto& [trk1, trk2] :
          combinations(CombinationsStrictlyUpperIndexPolicy(dTracks, dTracks))) {
 
-      if (!SelTrack(trk1) || !SelTrack(trk2))
+      if (!selTrack(trk1) || !selTrack(trk2))
         continue;
       //  TPC, TOF Nsigma distributions
       histos.fill(HIST("QA/Nsigma_TPC"), trk1.pt(), trk1.tpcNSigmaPi());
       histos.fill(HIST("QA/Nsigma_TOF"), trk1.pt(), trk1.tofNSigmaPi());
       histos.fill(HIST("QA/TPC_TOF"), trk1.tpcNSigmaPi(), trk1.tofNSigmaPi());
 
-      if (!SelPion(trk1) || !SelPion(trk2))
+      if (!selPion(trk1) || !selPion(trk2))
         continue;
 
-      Pion1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
-      Pion2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
-      Reco = Pion1 + Pion2;
+      pion1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
+      pion2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
+      reco = pion1 + pion2;
 
-      if (Reco.Rapidity() > cfgMaxRap || Reco.Rapidity() < cfgMinRap)
+      if (reco.Rapidity() > cfgMaxRap || reco.Rapidity() < cfgMinRap)
         continue;
 
-      relPhi = TVector2::Phi_0_2pi(Reco.Phi() - collision.evtPl());
+      relPhi = TVector2::Phi_0_2pi(reco.Phi() - collision.evtPl());
       if (relPhi > o2::constants::math::PI) {
         relPhi -= o2::constants::math::PI;
       }
 
       if (trk1.sign() * trk2.sign() < 0) {
         if (cfgFindRT) {
-          histos.fill(HIST("hInvMass_f0980_US"), Reco.M(), Reco.Pt(),
-                      collision.cent(), RTIndex(Reco.Phi(), LHphi), LHpt);
+          histos.fill(HIST("hInvMass_f0980_US"), reco.M(), reco.Pt(),
+                      collision.cent(), rtIndex(reco.Phi(), lhPhi), lhPt);
         }
-        histos.fill(HIST("hInvMass_f0980_US_EPA"), Reco.M(), Reco.Pt(),
+        histos.fill(HIST("hInvMass_f0980_US_EPA"), reco.M(), reco.Pt(),
                     collision.cent(), relPhi);
         if constexpr (IsMC) {
-          if (std::abs(trk1.pdgCode()) != 211 || std::abs(trk2.pdgCode()) != 211)
+          if (std::abs(trk1.pdgCode()) != Pdg::PiPlus || std::abs(trk2.pdgCode()) != Pdg::PiPlus)
             continue;
           if (trk1.motherId() != trk2.motherId())
             continue;
-          if (std::abs(trk1.motherPDG()) != 9010221)
+          if (std::abs(trk1.motherPDG()) != Pdg::f0_980) //  9010221
             continue;
-          histos.fill(HIST("MCL/hpT_f0980_REC"), Reco.M(), Reco.Pt(),
+          histos.fill(HIST("MCL/hpT_f0980_REC"), reco.M(), reco.Pt(),
                       collision.cent());
         }
       } else if (trk1.sign() > 0 && trk2.sign() > 0) {
         if (cfgFindRT) {
-          histos.fill(HIST("hInvMass_f0980_LSpp"), Reco.M(), Reco.Pt(),
-                      collision.cent(), RTIndex(Reco.Phi(), LHphi), LHpt);
+          histos.fill(HIST("hInvMass_f0980_LSpp"), reco.M(), reco.Pt(),
+                      collision.cent(), rtIndex(reco.Phi(), lhPhi), lhPt);
         }
-        histos.fill(HIST("hInvMass_f0980_LSpp_EPA"), Reco.M(), Reco.Pt(),
+        histos.fill(HIST("hInvMass_f0980_LSpp_EPA"), reco.M(), reco.Pt(),
                     collision.cent(), relPhi);
       } else if (trk1.sign() < 0 && trk2.sign() < 0) {
         if (cfgFindRT) {
-          histos.fill(HIST("hInvMass_f0980_LSmm"), Reco.M(), Reco.Pt(),
-                      collision.cent(), RTIndex(Reco.Phi(), LHphi), LHpt);
+          histos.fill(HIST("hInvMass_f0980_LSmm"), reco.M(), reco.Pt(),
+                      collision.cent(), rtIndex(reco.Phi(), lhPhi), lhPt);
         }
-        histos.fill(HIST("hInvMass_f0980_LSmm_EPA"), Reco.M(), Reco.Pt(),
+        histos.fill(HIST("hInvMass_f0980_LSmm_EPA"), reco.M(), reco.Pt(),
                     collision.cent(), relPhi);
       }
     }
@@ -305,10 +320,10 @@ struct f0980analysis {
   }
   PROCESS_SWITCH(f0980analysis, processMCLight, "Process Event for MC", false);
 
-  void processMCTrue(aod::ResoMCParents& resoParents)
+  void processMCTrue(const aod::ResoMCParents& resoParents)
   {
-    for (auto& part : resoParents) { // loop over all pre-filtered MC particles
-      if (std::abs(part.pdgCode()) != 9010221)
+    for (const auto& part : resoParents) { // loop over all pre-filtered MC particles
+      if (std::abs(part.pdgCode()) != Pdg::f0_980)
         continue;
       if (!part.producedByGenerator())
         continue;
@@ -316,8 +331,8 @@ struct f0980analysis {
         continue;
       }
       bool pass = false;
-      if ((std::abs(part.daughterPDG1()) == 211 &&
-           std::abs(part.daughterPDG2()) == 211)) {
+      if ((std::abs(part.daughterPDG1()) == Pdg::PiPlus &&
+           std::abs(part.daughterPDG2()) == Pdg::PiPlus)) {
         pass = true;
       }
       if (!pass) // If we have both decay products
