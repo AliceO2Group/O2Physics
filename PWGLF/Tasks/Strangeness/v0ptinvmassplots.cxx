@@ -283,7 +283,7 @@ struct V0PtInvMassPlots {
 
   // Event selection
   template <typename TCollision>
-  bool AcceptEvent(TCollision const& collision)
+  bool acceptEvent(TCollision const& collision)
   {
     rMCCorrections.fill(HIST("hNEvents"), 0.5);
     if (!(collision.sel8() && dosel8)) {
@@ -361,12 +361,12 @@ struct V0PtInvMassPlots {
 
     for (const auto& collision : collisions) {
       rMCCorrections.fill(HIST("hNEvents_Corrections"), 1.5); // Number of Events Reconsctructed
-      if (!AcceptEvent(collision)) {                          // Event Selection
+      if (!acceptEvent(collision)) {                          // Event Selection
         return;
       }
       rMCCorrections.fill(HIST("hNEvents_Corrections"), 2.5); // Event Split Denomimator and Event Efficiency Numenator
       // Signal Loss Numenator Loop
-      for (auto& mcParticle : mcParticles) {
+      for (const auto& mcParticle : mcParticles) {
         if (!mcParticle.isPhysicalPrimary()) {
           continue;
         }
@@ -463,13 +463,13 @@ struct V0PtInvMassPlots {
       lambdaptedgevalues[i] = std::stod(pthistos::lambdaPtBins[i]);
       antilambdaPtedgevalues[i] = std::stod(pthistos::antilambdaPtBins[i]);
     }
-    if (!AcceptEvent(collision)) { // Event Selection
+    if (!acceptEvent(collision)) { // Event Selection
       return;
     }
     rMCCorrections.fill(HIST("hNRecEvents_MC"), 1.0); // Event Split Numenator
 
     // v0 Signal Splitting Numenator Start
-    for (auto& mcParticle : mcParticles) {
+    for (const auto& mcParticle : mcParticles) {
       if (mcParticle.isPhysicalPrimary()) {
         if (std::abs(mcParticle.y()) < rapidityCut) {
           if (mcParticle.pdgCode() == kK0Short) { // kzero matched
@@ -675,7 +675,7 @@ struct V0PtInvMassPlots {
       lambdaptedgevalues[i] = std::stod(pthistos::lambdaPtBins[i]);
       antilambdaPtedgevalues[i] = std::stod(pthistos::antilambdaPtBins[i]);
     }
-    if (!AcceptEvent(collision)) { // Event Selection
+    if (!acceptEvent(collision)) { // Event Selection
       return;
     }
     rPtAnalysis.fill(HIST("hNRecEvents_Data"), 1.0); // Number of Reconstructed Events
