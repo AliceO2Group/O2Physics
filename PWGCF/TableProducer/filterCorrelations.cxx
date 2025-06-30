@@ -26,6 +26,7 @@
 
 #include <TH3F.h>
 
+#include <experimental/type_traits> // required for is_detected
 #include <vector>
 
 using namespace o2;
@@ -53,8 +54,11 @@ struct FilterCF {
   enum TrackSelectionCuts : uint8_t {
     kTrackSelected = BIT(0),
     kITS5Clusters = BIT(1),
-    kTPC90CrossedRows = BIT(2),
-    kPIDProton = BIT(3)
+    kTPCCrossedRows = BIT(2),
+  };
+
+  enum PIDCuts : uint8_t {
+    kPIDProton = BIT(1)
   };
 
   // Configuration
@@ -69,7 +73,7 @@ struct FilterCF {
   O2_DEFINE_CONFIGURABLE(cfgMaxOcc, int, 3000, "maximum occupancy selection")
   O2_DEFINE_CONFIGURABLE(cfgCollisionFlags, uint16_t, aod::collision::CollisionFlagsRun2::Run2VertexerTracks, "Request collision flags if non-zero (0 = off, 1 = Run2VertexerTracks)")
   O2_DEFINE_CONFIGURABLE(cfgTransientTables, bool, false, "Output transient tables for collision and track IDs to enable successive filtering tasks")
-  O2_DEFINE_CONFIGURABLE(cfgTrackSelection, int, 0, "Type of track selection (0 = Run 2/3 without systematics | 1 = Run 3 with systematics)")
+  O2_DEFINE_CONFIGURABLE(cfgTrackSelection, int, 0, "Type of track selection (0 = Run 2/3 without systematics | 1 = Run 3 with systematics |  2 = Run 3 with proton pid selection)")
   O2_DEFINE_CONFIGURABLE(cfgMinMultiplicity, float, -1, "Minimum multiplicity considered for filtering (if value positive)")
   O2_DEFINE_CONFIGURABLE(cfgMcSpecialPDGs, std::vector<int>, {}, "Special MC PDG codes to include in the MC primary particle output (additional to charged particles). Empty = charged particles only.") // needed for some neutral particles
   O2_DEFINE_CONFIGURABLE(nsigmaCutTPCProton, float, 3, "proton nsigma TPC")
@@ -141,6 +145,8 @@ struct FilterCF {
     return false;
   }
 
+  using TrackType = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCPr, aod::pidTOFPr, aod::TracksDCA>>;
+
   template <typename T>
   bool selectionPIDProton(const T& candidate)
   {
@@ -168,9 +174,24 @@ struct FilterCF {
     }
     return false;
   }
+  /*
+  template <typename T>
+  using HasProtonPID = decltype(selectionPIDProton(std::declval<T&>()));
+  */
+  template <typename T, typename = void>
+  struct HasProtonPID : std::false_type {
+  };
 
-  template <typename TTrack>
-  uint8_t getTrackType(TTrack& track, bool isprot)
+  template <typename T>
+  struct HasProtonPID<T, std::void_t<
+                           decltype(std::declval<T>().tpcNSigmaPr()),
+                           decltype(std::declval<T>().tofNSigmaPr()),
+                           decltype(std::declval<T>().hasTOF())>>
+    : std::true_type {
+  };
+
+  template <typename TTrack = TrackType>
+  uint8_t getTrackType(const TTrack& track)
   {
     if (cfgTrackSelection == 0) {
       if (track.isGlobalTrack()) {
@@ -187,26 +208,27 @@ struct FilterCF {
           trackType |= kITS5Clusters;
         }
         if (track.tpcNClsCrossedRows() >= tpcncrossedrows) {
-          trackType |= kTPC90CrossedRows;
+          trackType |= kTPCCrossedRows;
         }
       }
       return trackType;
     } else if (cfgTrackSelection == 2) {
       uint8_t trackType = 0;
       if (track.isGlobalTrack()) {
-        trackType |= kTrackSelected;
         if (track.itsNCls() >= itsnclusters) {
-          trackType |= kITS5Clusters;
-        }
-        if (track.tpcNClsCrossedRows() >= tpcncrossedrows) {
-          trackType |= kTPC90CrossedRows;
-        }
-        if (isprot) {
-          trackType |= kPIDProton;
+          if (track.tpcNClsCrossedRows() >= tpcncrossedrows) {
+            if constexpr (HasProtonPID<TTrack>::value) {
+              if (selectionPIDProton(track)) {
+                trackType |= kPIDProton;
+              }
+            }
+          }
         }
       }
       return trackType;
     }
+
+
     LOGF(fatal, "Invalid setting for cfgTrackSelection: %d", cfgTrackSelection.value);
     return 0;
   }
@@ -226,17 +248,13 @@ struct FilterCF {
 
     if (cfgTransientTables)
       outputCollRefs(collision.globalIndex());
-    Bool_t isproton = false;
     for (auto& track : tracks) {
-      if (selectionPIDProton(track)) {
-        isproton = true;
-      }
       if (dcaselection && std::abs(track.dcaXY()) > dcaxymax)
         continue;
       if (dcaselection && std::abs(track.dcaZ()) > dcazmax)
         continue;
 
-      outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), getTrackType(track, isproton));
+      outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), getTrackType(track));
       if (cfgTransientTables)
         outputTrackRefs(collision.globalIndex(), track.globalIndex());
 
@@ -251,7 +269,7 @@ struct FilterCF {
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   void processMC(aod::McCollisions const& mcCollisions, aod::McParticles const& allParticles,
                  soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities> const& allCollisions,
-                 soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
+                 soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection, aod::pidTPCPr, aod::pidTOFPr, aod::TracksDCA>> const& tracks,
                  aod::BCsWithTimestamps const&)
   {
     mcReconstructedCache.reserve(allParticles.size());
@@ -350,7 +368,7 @@ struct FilterCF {
             LOGP(fatal, "processMC:     Track {} is referring to a MC particle which we do not store {} {} (reco flag {})", track.index(), track.mcParticleId(), mcParticleId, static_cast<bool>(mcReconstructedCache[track.mcParticleId()]));
           }
         }
-        outputTracks(outputCollisions.lastIndex(), truncateFloatFraction(track.pt()), truncateFloatFraction(track.eta()), truncateFloatFraction(track.phi()), track.sign(), getTrackType(track, false));
+        outputTracks(outputCollisions.lastIndex(), truncateFloatFraction(track.pt()), truncateFloatFraction(track.eta()), truncateFloatFraction(track.phi()), track.sign(), getTrackType(track));
         outputTrackLabels(mcParticleId);
         if (cfgTransientTables)
           outputTrackRefs(collision.globalIndex(), track.globalIndex());

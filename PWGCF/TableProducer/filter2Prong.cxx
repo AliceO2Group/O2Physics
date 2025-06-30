@@ -48,51 +48,58 @@ struct Filter2Prong {
   O2_DEFINE_CONFIGURABLE(cfgImPart2PID, int, o2::track::PID::Kaon, "PID of daughter particle 2 (O2 PID ID)")
   O2_DEFINE_CONFIGURABLE(cfgMomDepPID, bool, 1, "Use mommentum dependent PID for Phi meson")
   O2_DEFINE_CONFIGURABLE(cfgImCutPt, float, 0.2f, "Minimal pT for candidates")
-  O2_DEFINE_CONFIGURABLE(cfgImMinInvMass, float, 0.98f, "Minimum invariant mass for generic 2 prong")
+  O2_DEFINE_CONFIGURABLE(cfgImMinInvMass, float, 0.95f, "Minimum invariant mass for generic 2 prong")
   O2_DEFINE_CONFIGURABLE(cfgImMaxInvMass, float, 1.07f, "Maximum invariant mass for generic 2 prong")
   O2_DEFINE_CONFIGURABLE(cfgImSigmaFormula, std::string, "(z < 0.5 && x < 3.0) || (z >= 0.5 && x < 2.5 && y < 3.0)", "pT dependent daughter track sigma pass condition (x = TPC sigma, y = TOF sigma, z = pT)")
+
   struct : ConfigurableGroup{
-             O2_DEFINE_CONFIGURABLE(cfgImMinInvMassPhiMeson, float, 0.98f, "Minimum invariant mass Phi meson (GeV)")
-               O2_DEFINE_CONFIGURABLE(cfgImMaxInvMassPhiMeson, float, 1.07f, "Maximum invariant mass Phi meson (GeV)")
-                 O2_DEFINE_CONFIGURABLE(cfgDoPhi, bool, false, "Store phi information")
-                   O2_DEFINE_CONFIGURABLE(cfgITSclusterPhiMeson, int, 5, "Minimum number of ITS cluster for phi meson track")
-                     O2_DEFINE_CONFIGURABLE(cfgTPCCrossedRowsPhiMeson, int, 80, "Minimum number of TPC Crossed Rows for phi meson track")
-                       O2_DEFINE_CONFIGURABLE(cfgCutDCAxyPhiMeson, float, 0.1, "Maximum DCAxy for phi meson track")
-                         O2_DEFINE_CONFIGURABLE(cfgCutDCAzPhiMeson, float, 0.1, "Maximum DCAz for phi meson track")
-                           O2_DEFINE_CONFIGURABLE(cfgCutEtaPhiMeson, float, 0.8, "Maximum eta for phi meson track")
-                             O2_DEFINE_CONFIGURABLE(cfgCutPTPhiMeson, float, 0.15, "Maximum pt for phi meson track")
-                               O2_DEFINE_CONFIGURABLE(cfgDoV0, bool, true, "Store V0s candidates")
-                                 O2_DEFINE_CONFIGURABLE(tpcNClsCrossedRowsTrackMin, float, 70, "Minimum number of crossed rows in TPC")
-                                   O2_DEFINE_CONFIGURABLE(etaTrackMax, float, 0.8, "Maximum pseudorapidity")
-                                     O2_DEFINE_CONFIGURABLE(ptTrackMin, float, 0.1, "Minimum transverse momentum")
-                                       O2_DEFINE_CONFIGURABLE(cMinV0DCAPr, float, 0.1, "Min V0 proton DCA")
-                                         O2_DEFINE_CONFIGURABLE(cMinV0DCAPi, float, 0.1, "Min V0 pion DCA")
-                                           O2_DEFINE_CONFIGURABLE(ITSPIDSelection, bool, true, "PID ITS")
-                                             O2_DEFINE_CONFIGURABLE(ITSPIDPthreshold, float, 1.0, "Momentum threshold for ITS PID (GeV/c) (only used if ITSPIDSelection is true)")
-                                               O2_DEFINE_CONFIGURABLE(lowITSPIDNsigma, float, 3.0, "lower cut on PID nsigma for ITS")
-                                                 O2_DEFINE_CONFIGURABLE(highITSPIDNsigma, float, 3.0, "higher cut on PID nsigma for ITS")
-                                                   O2_DEFINE_CONFIGURABLE(ConfDaughPIDCuts, float, 4.0, "PID nsigma for V0s")
-                                                     O2_DEFINE_CONFIGURABLE(massK0Min, float, 0.4, "Minimum mass for K0")
-                                                       O2_DEFINE_CONFIGURABLE(massK0Max, float, 0.6, "Maximum mass for K0")
-                                                         O2_DEFINE_CONFIGURABLE(massLambdaMin, float, 1.0, "Minimum mass for lambda")
-                                                           O2_DEFINE_CONFIGURABLE(massLambdaMax, float, 1.3, "Maximum mass for lambda")
-                                                             O2_DEFINE_CONFIGURABLE(radiusMax, float, 2.3, "Maximum decay radius (cm)")
-                                                               O2_DEFINE_CONFIGURABLE(radiusMin, float, 0.0, "Minimum decay radius (cm)")
-                                                                 O2_DEFINE_CONFIGURABLE(cosPaMin, float, 0.98, "Minimum cosine of pointing angle")
-                                                                   O2_DEFINE_CONFIGURABLE(dcaV0DaughtersMax, float, 0.2, "Maximum DCA among the V0 daughters (cm)")
-                                                                     O2_DEFINE_CONFIGURABLE(dcaV0ToPvMax, float, 0.2, "Maximum DCA of the V0 from the primary vertex (cm)")
-                                                                       O2_DEFINE_CONFIGURABLE(cosPaV0Min, float, 0.95, "Minimum cosine of pointing angle for V0 stemming from cascade decays")
-                                                                         O2_DEFINE_CONFIGURABLE(qtArmenterosMinForK0, float, 0.12, "Minimum Armenteros' qt for K0")
-                                                                           O2_DEFINE_CONFIGURABLE(ConfV0Rap, float, 0.5, "Store rapidity of v0")
-                                                                             O2_DEFINE_CONFIGURABLE(cMaxLambdaLifeTime, float, 30, "Store Lambda lifetime")
-                                                                               O2_DEFINE_CONFIGURABLE(cMaxK0sLifeTime, float, 30, "Store K0s lifetime")
-                                                                                 O2_DEFINE_CONFIGURABLE(isDeepAngle, bool, true, "flag for applying deep angle")
-                                                                                   O2_DEFINE_CONFIGURABLE(cfgDeepAngle, float, 0.04, "deep angle cut")
-                                                                                     O2_DEFINE_CONFIGURABLE(removefaketrack, bool, true, "flag to remove fake kaon")
-                                                                                       O2_DEFINE_CONFIGURABLE(ConfFakeKaonCut, float, 0.15, "Cut based on track from momentum difference")
-                                                                                         O2_DEFINE_CONFIGURABLE(nsigmaCutTPC, float, 2.5, "nsigma tpc")
-                                                                                           O2_DEFINE_CONFIGURABLE(nsigmaCutTOF, float, 2.5, "nsigma tof")
-                                                                                             O2_DEFINE_CONFIGURABLE(cfgCutTOFBeta, float, 0.5, "TOF beta")} grpphiV0;
+    O2_DEFINE_CONFIGURABLE(DoV0, bool, true, "Store V0s information")
+    O2_DEFINE_CONFIGURABLE(tpcNClsCrossedRowsTrackMin, float, 70, "Minimum number of crossed rows in TPC")
+    O2_DEFINE_CONFIGURABLE(etaTrackMax, float, 0.8, "Maximum pseudorapidity")
+    O2_DEFINE_CONFIGURABLE(ptTrackMin, float, 0.1, "Minimum transverse momentum")
+    O2_DEFINE_CONFIGURABLE(minV0DCAPr, float, 0.1, "Min V0 proton DCA")
+    O2_DEFINE_CONFIGURABLE(minV0DCAPiLambda, float, 0.1, "Min V0 pion DCA for lambda")
+    O2_DEFINE_CONFIGURABLE(minV0DCAPiK0s, float, 0.1, "Min V0 pion DCA for K0s")
+    O2_DEFINE_CONFIGURABLE(daughPIDCuts, float, 4.0, "PID nsigma for V0s")
+    O2_DEFINE_CONFIGURABLE(massK0Min, float, 0.4, "Minimum mass for K0")
+    O2_DEFINE_CONFIGURABLE(massK0Max, float, 0.6, "Maximum mass for K0")
+    O2_DEFINE_CONFIGURABLE(massLambdaMin, float, 1.0, "Minimum mass for lambda")
+    O2_DEFINE_CONFIGURABLE(massLambdaMax, float, 1.3, "Maximum mass for lambda")
+    O2_DEFINE_CONFIGURABLE(radiusMaxLambda, float, 2.3, "Maximum decay radius (cm) for lambda")
+    O2_DEFINE_CONFIGURABLE(radiusMinLambda, float, 0.0, "Minimum decay radius (cm) for lambda")
+    O2_DEFINE_CONFIGURABLE(radiusMaxK0s, float, 2.3, "Maximum decay radius (cm) for K0s")
+    O2_DEFINE_CONFIGURABLE(radiusMinK0s, float, 0.0, "Minimum decay radius (cm) for K0s")
+    O2_DEFINE_CONFIGURABLE(cosPaMinLambda, float, 0.98, "Minimum cosine of pointing angle for lambda")
+    O2_DEFINE_CONFIGURABLE(cosPaMinK0s, float, 0.98, "Minimum cosine of pointing angle for K0s")
+    O2_DEFINE_CONFIGURABLE(dcaV0DaughtersMaxLambda, float, 0.2, "Maximum DCA among the V0 daughters (cm) for lambda")
+    O2_DEFINE_CONFIGURABLE(dcaV0DaughtersMaxK0s, float, 0.2, "Maximum DCA among the V0 daughters (cm) for K0s")
+    O2_DEFINE_CONFIGURABLE(qtArmenterosMinForK0s, float, 0.12, "Minimum Armenteros' qt for K0s")
+    O2_DEFINE_CONFIGURABLE(maxLambdaLifeTime, float, 30, "Maximum lambda lifetime (in cm)")
+    O2_DEFINE_CONFIGURABLE(maxK0sLifeTime, float, 30, "Maximum K0s lifetime (in cm)")
+  } grpV0;
+  
+  struct : ConfigurableGroup{
+    O2_DEFINE_CONFIGURABLE(DoPhi, bool, false, "Store Phi information")
+    O2_DEFINE_CONFIGURABLE(ImMinInvMassPhiMeson, float, 0.98f, "Minimum invariant mass Phi meson (GeV)")
+    O2_DEFINE_CONFIGURABLE(ImMaxInvMassPhiMeson, float, 1.07f, "Maximum invariant mass Phi meson (GeV)")
+    O2_DEFINE_CONFIGURABLE(ITSPIDSelection, bool, true, "PID ITS")
+    O2_DEFINE_CONFIGURABLE(ITSPIDPthreshold, float, 1.0, "Momentum threshold for ITS PID (GeV/c) (only used if ITSPIDSelection is true)")
+    O2_DEFINE_CONFIGURABLE(lowITSPIDNsigma, float, 3.0, "lower cut on PID nsigma for ITS")
+    O2_DEFINE_CONFIGURABLE(highITSPIDNsigma, float, 3.0, "higher cut on PID nsigma for ITS")
+    O2_DEFINE_CONFIGURABLE(ITSclusterPhiMeson, int, 5, "Minimum number of ITS cluster for phi meson track")
+    O2_DEFINE_CONFIGURABLE(TPCCrossedRowsPhiMeson, int, 80, "Minimum number of TPC Crossed Rows for phi meson track")
+    O2_DEFINE_CONFIGURABLE(cutDCAxyPhiMeson, float, 0.1, "Maximum DCAxy for phi meson track")
+    O2_DEFINE_CONFIGURABLE(cutDCAzPhiMeson, float, 0.1, "Maximum DCAz for phi meson track")
+    O2_DEFINE_CONFIGURABLE(cutEtaPhiMeson, float, 0.8, "Maximum eta for phi meson track")
+    O2_DEFINE_CONFIGURABLE(cutPTPhiMeson, float, 0.15, "Maximum pt for phi meson track")
+    O2_DEFINE_CONFIGURABLE(isDeepAngle, bool, true, "Flag for applying deep angle")
+    O2_DEFINE_CONFIGURABLE(deepAngle, float, 0.04, "Deep angle cut")
+    O2_DEFINE_CONFIGURABLE(nsigmaCutTPC, float, 2.5, "nsigma tpc")
+    O2_DEFINE_CONFIGURABLE(nsigmaCutTOF, float, 2.5, "nsigma tof")
+    O2_DEFINE_CONFIGURABLE(cutTOFBeta, float, 0.5, "TOF beta")
+    O2_DEFINE_CONFIGURABLE(confFakeKaonCut, float, 0.15, "Cut based on track from momentum difference")
+    O2_DEFINE_CONFIGURABLE(removefaketrack, bool, true, "Flag to remove fake kaon")
+  } grpPhi;
 
   HfHelper hfHelper;
   Produces<aod::CF2ProngTracks> output2ProngTracks;
@@ -217,7 +224,7 @@ struct Filter2Prong {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() >= grpphiV0.cfgITSclusterPhiMeson && candidate.tpcNClsCrossedRows() > grpphiV0.cfgTPCCrossedRowsPhiMeson && std::abs(candidate.dcaXY()) <= grpphiV0.cfgCutDCAxyPhiMeson && std::abs(candidate.dcaZ()) <= grpphiV0.cfgCutDCAzPhiMeson && std::abs(candidate.eta()) <= grpphiV0.cfgCutEtaPhiMeson && candidate.pt() >= grpphiV0.cfgCutPTPhiMeson) {
+    if (candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() >= grpPhi.ITSclusterPhiMeson && candidate.tpcNClsCrossedRows() > grpPhi.TPCCrossedRowsPhiMeson && std::abs(candidate.dcaXY()) <= grpPhi.cutDCAxyPhiMeson && std::abs(candidate.dcaZ()) <= grpPhi.cutDCAzPhiMeson && std::abs(candidate.eta()) <= grpPhi.cutEtaPhiMeson && candidate.pt() >= grpPhi.cutPTPhiMeson) {
       return true;
     }
     return false;
@@ -234,7 +241,7 @@ struct Filter2Prong {
     p1 = candidate1.p();
     p2 = candidate2.p();
     angle = TMath::ACos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
-    if (grpphiV0.isDeepAngle && angle < grpphiV0.cfgDeepAngle) {
+    if (grpPhi.isDeepAngle && angle < grpPhi.deepAngle) {
       return false;
     }
     return true;
@@ -245,7 +252,7 @@ struct Filter2Prong {
   {
     const auto pglobal = track.p();
     const auto ptpc = track.tpcInnerParam();
-    if (TMath::Abs(pglobal - ptpc) > grpphiV0.ConfFakeKaonCut) {
+    if (TMath::Abs(pglobal - ptpc) > grpPhi.confFakeKaonCut) {
       return true;
     }
     return false;
@@ -259,34 +266,28 @@ struct Filter2Prong {
 
     float CtauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0;
 
-    if (v0.mK0Short() < grpphiV0.massK0Min || v0.mK0Short() > grpphiV0.massK0Max) {
+    if (v0.mK0Short() < grpV0.massK0Min || v0.mK0Short() > grpV0.massK0Max) {
       return false;
     }
-    if ((v0.qtarm() / std::abs(v0.alpha())) < grpphiV0.qtArmenterosMinForK0) {
+    if ((v0.qtarm() / std::abs(v0.alpha())) < grpV0.qtArmenterosMinForK0s) {
       return false;
     }
-    if (v0.v0radius() > grpphiV0.radiusMax || v0.v0radius() < grpphiV0.radiusMin) {
+    if (v0.v0radius() > grpV0.radiusMaxK0s || v0.v0radius() < grpV0.radiusMinK0s) {
       return false;
     }
-    if (v0.v0cosPA() < grpphiV0.cosPaMin) {
+    if (v0.v0cosPA() < grpV0.cosPaMinK0s) {
       return false;
     }
-    if (v0.dcaV0daughters() > grpphiV0.dcaV0DaughtersMax) {
+    if (v0.dcaV0daughters() > grpV0.dcaV0DaughtersMaxK0s) {
       return false;
     }
-    if (v0.dcav0topv() > grpphiV0.dcaV0ToPvMax) {
+    if (std::abs(CtauK0s) > grpV0.maxK0sLifeTime) {
       return false;
     }
-    if (std::abs(CtauK0s) > grpphiV0.cMaxK0sLifeTime) {
+    if (((std::abs(posTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts) || (std::abs(negTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts))) {
       return false;
     }
-    if (std::abs(v0.yK0Short()) > grpphiV0.ConfV0Rap) {
-      return false;
-    }
-    if (((std::abs(posTrack.tpcNSigmaPi()) > grpphiV0.ConfDaughPIDCuts) || (std::abs(negTrack.tpcNSigmaPi()) > grpphiV0.ConfDaughPIDCuts))) {
-      return false;
-    }
-    if ((TMath::Abs(v0.dcapostopv()) < grpphiV0.cMinV0DCAPi || TMath::Abs(v0.dcanegtopv()) < grpphiV0.cMinV0DCAPi)) {
+    if ((TMath::Abs(v0.dcapostopv()) < grpV0.minV0DCAPiK0s || TMath::Abs(v0.dcanegtopv()) < grpV0.minV0DCAPiK0s)) {
       return false;
     }
     return true;
@@ -300,38 +301,32 @@ struct Filter2Prong {
 
     float CtauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda;
 
-    if ((v0.mLambda() < grpphiV0.massLambdaMin || v0.mLambda() > grpphiV0.massLambdaMax) &&
-        (v0.mAntiLambda() < grpphiV0.massLambdaMin || v0.mAntiLambda() > grpphiV0.massLambdaMax)) {
+    if ((v0.mLambda() < grpV0.massLambdaMin || v0.mLambda() > grpV0.massLambdaMax) &&
+        (v0.mAntiLambda() < grpV0.massLambdaMin || v0.mAntiLambda() > grpV0.massLambdaMax)) {
       return false;
     }
-    if (v0.v0radius() > grpphiV0.radiusMax || v0.v0radius() < grpphiV0.radiusMin) {
+    if (v0.v0radius() > grpV0.radiusMaxLambda || v0.v0radius() < grpV0.radiusMinLambda) {
       return false;
     }
-    if (v0.v0cosPA() < grpphiV0.cosPaMin) {
+    if (v0.v0cosPA() < grpV0.cosPaMinLambda) {
       return false;
     }
-    if (v0.dcaV0daughters() > grpphiV0.dcaV0DaughtersMax) {
+    if (v0.dcaV0daughters() > grpV0.dcaV0DaughtersMaxLambda) {
       return false;
     }
-    if (v0.dcav0topv() > grpphiV0.dcaV0ToPvMax) {
+    if (pid == 0 && (TMath::Abs(v0.dcapostopv()) < grpV0.minV0DCAPr || TMath::Abs(v0.dcanegtopv()) < grpV0.minV0DCAPiLambda)) {
       return false;
     }
-    if (pid == 0 && (TMath::Abs(v0.dcapostopv()) < grpphiV0.cMinV0DCAPr || TMath::Abs(v0.dcanegtopv()) < grpphiV0.cMinV0DCAPi)) {
+    if (pid == 1 && (TMath::Abs(v0.dcapostopv()) < grpV0.minV0DCAPiLambda || TMath::Abs(v0.dcanegtopv()) < grpV0.minV0DCAPr)) {
       return false;
     }
-    if (pid == 1 && (TMath::Abs(v0.dcapostopv()) < grpphiV0.cMinV0DCAPi || TMath::Abs(v0.dcanegtopv()) < grpphiV0.cMinV0DCAPr)) {
+    if (pid == 0 && ((std::abs(posTrack.tpcNSigmaPr()) > grpV0.daughPIDCuts) || (std::abs(negTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts))) {
       return false;
     }
-    if (pid == 0 && ((std::abs(posTrack.tpcNSigmaPr()) > grpphiV0.ConfDaughPIDCuts) || (std::abs(negTrack.tpcNSigmaPi()) > grpphiV0.ConfDaughPIDCuts))) {
+    if (pid == 1 && ((std::abs(posTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts) || (std::abs(negTrack.tpcNSigmaPr()) > grpV0.daughPIDCuts))) {
       return false;
     }
-    if (pid == 1 && ((std::abs(posTrack.tpcNSigmaPi()) > grpphiV0.ConfDaughPIDCuts) || (std::abs(negTrack.tpcNSigmaPr()) > grpphiV0.ConfDaughPIDCuts))) {
-      return false;
-    }
-    if (std::abs(CtauLambda) > grpphiV0.cMaxLambdaLifeTime) {
-      return false;
-    }
-    if (std::abs(v0.yLambda()) > grpphiV0.ConfV0Rap) {
+    if (std::abs(CtauLambda) > grpV0.maxLambdaLifeTime) {
       return false;
     }
     return true;
@@ -346,16 +341,16 @@ struct Filter2Prong {
     if (!posTrack.hasTPC() || !negTrack.hasTPC()) {
       return false;
     }
-    if (posTrack.tpcNClsCrossedRows() < grpphiV0.tpcNClsCrossedRowsTrackMin || negTrack.tpcNClsCrossedRows() < grpphiV0.tpcNClsCrossedRowsTrackMin) {
+    if (posTrack.tpcNClsCrossedRows() < grpV0.tpcNClsCrossedRowsTrackMin || negTrack.tpcNClsCrossedRows() < grpV0.tpcNClsCrossedRowsTrackMin) {
       return false;
     }
     if (posTrack.tpcCrossedRowsOverFindableCls() < 0.8 || negTrack.tpcCrossedRowsOverFindableCls() < 0.8) {
       return false;
     }
-    if (std::abs(v0.positiveeta()) > grpphiV0.etaTrackMax || std::abs(v0.negativeeta()) > grpphiV0.etaTrackMax) {
+    if (std::abs(v0.positiveeta()) > grpV0.etaTrackMax || std::abs(v0.negativeeta()) > grpV0.etaTrackMax) {
       return false;
     }
-    if (v0.positivept() < grpphiV0.ptTrackMin || v0.negativept() < grpphiV0.ptTrackMin) {
+    if (v0.positivept() < grpV0.ptTrackMin || v0.negativept() < grpV0.ptTrackMin) {
       return false;
     }
     return true;
@@ -366,18 +361,18 @@ struct Filter2Prong {
   {
     if (cfgMomDepPID) {
       if (candidate.p() < 0.5) {
-        if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < grpphiV0.nsigmaCutTPC) {
+        if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < grpPhi.nsigmaCutTPC) {
           return true;
-        } else if (candidate.hasTOF() && TMath::Sqrt(candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < grpphiV0.nsigmaCutTOF && candidate.beta() > grpphiV0.cfgCutTOFBeta) {
+        } else if (candidate.hasTOF() && TMath::Sqrt(candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < grpPhi.nsigmaCutTOF && candidate.beta() > grpPhi.cutTOFBeta) {
           return true;
         }
-      } else if (candidate.hasTOF() && TMath::Sqrt(candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < grpphiV0.nsigmaCutTOF && candidate.beta() > grpphiV0.cfgCutTOFBeta) {
+      } else if (candidate.hasTOF() && TMath::Sqrt(candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < grpPhi.nsigmaCutTOF && candidate.beta() > grpPhi.cutTOFBeta) {
         return true;
       }
     } else if (!cfgMomDepPID) {
-      if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < grpphiV0.nsigmaCutTPC) {
+      if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < grpPhi.nsigmaCutTPC) {
         return true;
-      } else if (candidate.hasTOF() && TMath::Sqrt(candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < grpphiV0.nsigmaCutTOF && candidate.beta() > grpphiV0.cfgCutTOFBeta) {
+      } else if (candidate.hasTOF() && TMath::Sqrt(candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < grpPhi.nsigmaCutTOF && candidate.beta() > grpPhi.cutTOFBeta) {
         return true;
       }
     }
@@ -425,7 +420,7 @@ struct Filter2Prong {
 
     o2::aod::ITSResponse itsResponse;
 
-    if (grpphiV0.cfgDoPhi) {                  // Process Phi mesons
+    if (grpPhi.DoPhi) {                       // Process Phi mesons
       for (const auto& cftrack1 : cftracks) { // Loop over first track
         const auto& p1 = tracks.iteratorAt(cftrack1.trackId() - tracks.begin().globalIndex());
         if (p1.sign() != 1) {
@@ -434,13 +429,13 @@ struct Filter2Prong {
         if (!selectionTrack(p1)) {
           continue;
         }
-        if (grpphiV0.ITSPIDSelection && p1.p() < grpphiV0.ITSPIDPthreshold.value && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(p1) > grpphiV0.lowITSPIDNsigma.value && itsResponse.nSigmaITS<o2::track::PID::Kaon>(p1) < grpphiV0.highITSPIDNsigma.value)) { // Check ITS PID condition
+        if (grpPhi.ITSPIDSelection && p1.p() < grpPhi.ITSPIDPthreshold.value && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(p1) > grpPhi.lowITSPIDNsigma.value && itsResponse.nSigmaITS<o2::track::PID::Kaon>(p1) < grpPhi.highITSPIDNsigma.value)) { // Check ITS PID condition
           continue;
         }
         if (!selectionPID(p1)) {
           continue;
         }
-        if (grpphiV0.removefaketrack && isFakeTrack(p1)) { // Check if the track is a fake kaon
+        if (grpPhi.removefaketrack && isFakeTrack(p1)) { // Check if the track is a fake kaon
           continue;
         }
 
@@ -458,10 +453,10 @@ struct Filter2Prong {
           if (!selectionPID(p2)) {
             continue;
           }
-          if (grpphiV0.ITSPIDSelection && p2.p() < grpphiV0.ITSPIDPthreshold.value && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(p2) > grpphiV0.lowITSPIDNsigma.value && itsResponse.nSigmaITS<o2::track::PID::Kaon>(p2) < grpphiV0.highITSPIDNsigma.value)) { // Check ITS PID condition
+          if (grpPhi.ITSPIDSelection && p2.p() < grpPhi.ITSPIDPthreshold.value && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(p2) > grpPhi.lowITSPIDNsigma.value && itsResponse.nSigmaITS<o2::track::PID::Kaon>(p2) < grpPhi.highITSPIDNsigma.value)) { // Check ITS PID condition
             continue;
           }
-          if (grpphiV0.removefaketrack && isFakeTrack(p2)) { // Check if the track is a fake kaon
+          if (grpPhi.removefaketrack && isFakeTrack(p2)) { // Check if the track is a fake kaon
             continue;
           }
           if (!selectionPair(p1, p2)) {
@@ -471,7 +466,7 @@ struct Filter2Prong {
           ROOT::Math::PtEtaPhiMVector vec1(p1.pt(), p1.eta(), p1.phi(), cfgImPart1Mass);
           ROOT::Math::PtEtaPhiMVector vec2(p2.pt(), p2.eta(), p2.phi(), cfgImPart2Mass);
           ROOT::Math::PtEtaPhiMVector s = vec1 + vec2;
-          if (s.M() < grpphiV0.cfgImMinInvMassPhiMeson || s.M() > grpphiV0.cfgImMaxInvMassPhiMeson) {
+          if (s.M() < grpPhi.ImMinInvMassPhiMeson || s.M() > grpPhi.ImMaxInvMassPhiMeson) {
             continue;
           }
           float phi = RecoDecay::constrainAngle(s.Phi(), 0.0f);
@@ -481,7 +476,7 @@ struct Filter2Prong {
       } // end of loop over first track
     } // end of processing Phi mesons
 
-    if (grpphiV0.cfgDoV0) {           // Process V0 candidates (K0s, Lambdas, Anti-Lambdas)
+    if (grpV0.DoV0) {                 // Process V0 candidates (K0s, Lambdas, Anti-Lambdas)
       for (const auto& v0 : V0s) {    // Loop over V0 candidates
         if (!isV0TrackSelected(v0)) { // Quality selection for V0 prongs
           continue;
@@ -492,21 +487,20 @@ struct Filter2Prong {
 
         auto v0Type = 0;
         double massV0 = 0.0;
+
+        // K0s
         if (isSelectedV0AsK0s(collision, v0)) { // candidate is K0s
           SETBIT(v0Type, aod::cf2prongtrack::K0stoPiPi);
 
           output2ProngTracks(cfcollisions.begin().globalIndex(),
                              posTrack.globalIndex(), negTrack.globalIndex(),
                              v0.pt(), v0.eta(), v0.phi(), v0.mK0Short(), v0Type);
-
-          continue; // candidate is K0s, skip to next V0 candidate
         }
 
+        // Lambda and Anti-Lambda
         bool LambdaTag = isSelectedV0AsLambda(collision, v0, 0);
         bool aLambdaTag = isSelectedV0AsLambda(collision, v0, 1);
-        if (!LambdaTag && !aLambdaTag) { // neither Lambda nor Anti-Lambda
-          continue;
-        }
+
         // Note: candidate compatible with Lambda and Anti-Lambda hypothesis are counted twice (once for each hypothesis)
         if (LambdaTag) { // candidate is Lambda
           SETBIT(v0Type, aod::cf2prongtrack::LambdatoPPi);
