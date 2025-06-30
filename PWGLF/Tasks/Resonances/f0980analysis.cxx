@@ -11,19 +11,22 @@
 
 /// \author Junlee Kim (jikim1290@gmail.com)
 
-#include <Framework/Configurable.h>
-#include <TLorentzVector.h>
-#include "TVector2.h"
+#include "PWGLF/DataModel/LFResonanceTables.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
+
+#include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "PWGLF/DataModel/LFResonanceTables.h"
-#include "CommonConstants/PhysicsConstants.h"
+#include <Framework/Configurable.h>
+
+#include "TVector2.h"
+#include <TLorentzVector.h>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
