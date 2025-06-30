@@ -127,6 +127,9 @@ struct lambdaspincorrderived {
   template <typename T1, typename T2>
   bool checkKinematics(T1 const& candidate1, T2 const& candidate2)
   {
+    if (candidate1.v0Status() != candidate2.v0Status()) {
+      return false;
+    }
     if (std::abs(candidate1.lambdaPt() - candidate2.lambdaPt()) > ptMix) {
       return false;
     }
