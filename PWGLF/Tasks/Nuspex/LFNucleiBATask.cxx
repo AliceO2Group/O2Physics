@@ -217,11 +217,11 @@ struct LFNucleiBATask {
   static constexpr int PDGTriton = o2::constants::physics::Pdg::kTriton;
   static constexpr int PDGHelium = o2::constants::physics::Pdg::kHelium3;
   static constexpr int PDGAlpha = o2::constants::physics::Pdg::kAlpha;
-  static constexpr float MassProtonVal = 0.938272088f;
-  static constexpr float MassDeuteronVal = 1.87561f;
-  static constexpr float MassTritonVal = 2.80892f;
-  static constexpr float MassHeliumVal = 2.80839f;
-  static constexpr float MassAlphaVal = 3.72738f;
+  static constexpr float MassProtonVal = o2::constants::physics::MassProton;
+  static constexpr float MassDeuteronVal = o2::constants::physics::MassDeuteron;
+  static constexpr float MassTritonVal = o2::constants::physics::MassTriton;
+  static constexpr float MassHeliumVal = o2::constants::physics::MassHelium3;
+  static constexpr float MassAlphaVal = o2::constants::physics::MassAlpha;
 
   template <typename TrackType>
   float averageClusterSizeTrk(const TrackType& track)
@@ -5914,7 +5914,7 @@ struct LFNucleiBATask {
 
   // LOOP OVER GENERATED MC PARTICLES
   void processMCGen(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
-                    aod::McParticles& mcParticles)
+                    aod::McParticles const& mcParticles)
   {
     spectraGen.fill(HIST("histGenVetxZ"), mcCollision.posZ());
     if (mcCollision.centFT0M() < cfgLowMultCut || mcCollision.centFT0M() > cfgHighMultCut)
