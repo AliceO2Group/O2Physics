@@ -83,6 +83,15 @@ struct JetFragmentation {
   Configurable<int> nV0Classes{"nV0Classes", 2, "Must be 2 or 4! Number of V0 signal/bkg classes"};
   Configurable<bool> doCorrectionWithTracks{"doCorrectionWithTracks", false, "add tracks during background subtraction"};
 
+  Configurable<std::vector<float>> K0SPtBins{"K0SPtBins", {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 40.0}, "K0S pt Vals"};
+  Configurable<std::vector<float>> LambdaPtBins{"LambdaPtBins", {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0}, "Lambda pt Vals"};
+  Configurable<std::vector<float>> AntiLambdaPtBins{"AntiLambdaPtBins", {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0}, "AntiLambda pt Vals"};
+
+  // NB: these must be one shorter than ptbin vectors!
+  Configurable<std::vector<float>> K0SPurity{"K0SPurity", {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "K0S purity per pt bin"};
+  Configurable<std::vector<float>> LambdaPurity{"LambdaPurity", {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "Lambda purity per pt bin"};
+  Configurable<std::vector<float>> AntiLambdaPurity{"AntiLambdaPurity", {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "AntiLambda purity per pt bin"};
+
   Configurable<float> vertexZCut{"vertexZCut", 10.f, "vertex z cut"};
   Configurable<float> v0EtaMin{"v0EtaMin", -0.75, "minimum data V0 eta"};
   Configurable<float> v0EtaMax{"v0EtaMax", 0.75, "maximum data V0 eta"};
@@ -130,7 +139,7 @@ struct JetFragmentation {
 
   ConfigurableAxis binK0SMass{"binK0SMass", {400, 0.400f, 0.600f}, "Inv. Mass (GeV/c^{2})"};
   ConfigurableAxis binK0SMassWide{"binK0SMassWide", {400, 0.400f, 0.800f}, "Inv. Mass (GeV/c^{2})"}; // Wider version for high pt
-  ConfigurableAxis binLambdaMass{"binLambdaMass", {200, 1.015f, 1.215f}, "Inv. Mass (GeV/c^{2})"};
+  ConfigurableAxis binLambdaMass{"binLambdaMass", {200, 1.075f, 1.215f}, "Inv. Mass (GeV/c^{2})"};
   ConfigurableAxis binLambdaMassDiff{"binLambdaMassDiff", {200, -0.199f, 0.201f}, "M(#Lambda) - M(#bar{#Lambda})"};
   ConfigurableAxis binLambdaMassRatio{"binLambdaMassRatio", {50, -0.05f, 4.95f}, "M(#bar{#Lambda}) / M(#Lambda)"};
   ConfigurableAxis binLambdaMassRelDiff{"binLambdaMassRelDiff", {200, -0.995f, 1.005f}, "(M(#Lambda) - M(#bar{#Lambda})) / M(#Lambda)"};
@@ -1070,26 +1079,45 @@ struct JetFragmentation {
   // Implementation of background subtraction at runtime
   // ---------------------------------------------------
 
-  // Return probability for a V0 to be signal (or background)
+  int getPtBin(float pt, std::vector<float> ptBins)
+  {
+    if (pt < ptBins.at(0))
+      return -1;
+    if (pt > ptBins.at(ptBins.size() - 1))
+      return -2;
+
+    for (unsigned int i = 0; i < ptBins.size() - 1; i++) {
+      if (pt >= ptBins.at(i) && pt < ptBins.at(i + 1)) {
+        return i;
+      }
+    }
+    return -3;
+  }
+
+  // Return probability for a V0 to be signal
+  // Assumes V0 can only be of one type!
+  // Assumes V0 is not rejected!
   template <typename V>
   float getV0SignalProb(V const& v0)
   {
-    // TODO: This is filled with dummy values for now
-    // Assumes a V0 can only be of one type!
-    // Should be made to return purity for a V0 based on species and pt
+    double purity = 0.;
     if (v0.isK0SCandidate()) {
-      // return 1.;
-      return 0.5;
+      int ptBin = getPtBin(v0.pt(), K0SPtBins);
+      if (ptBin >= 0) {
+        purity = K0SPurity->at(ptBin);
+      }
+    } else if (v0.isLambdaCandidate()) {
+      int ptBin = getPtBin(v0.pt(), LambdaPtBins);
+      if (ptBin >= 0) {
+        purity = LambdaPurity->at(ptBin);
+      }
+    } else if (v0.isAntiLambdaCandidate()) {
+      int ptBin = getPtBin(v0.pt(), AntiLambdaPtBins);
+      if (ptBin >= 0) {
+        purity = AntiLambdaPurity->at(ptBin);
+      }
     }
-    if (v0.isLambdaCandidate()) {
-      // return 1.;
-      return 0.5;
-    }
-    if (v0.isAntiLambdaCandidate()) {
-      // return 1.;
-      return 0.5;
-    }
-    return 0.; // Background
+    return purity;
   }
   // Return a 2-length std::vector of probabilities for a particle to correspond to signal or background
   template <typename V>
@@ -2840,7 +2868,7 @@ struct JetFragmentation {
   }
   PROCESS_SWITCH(JetFragmentation, processMcMatchedV0JetsFrag, "Matched V0 jets fragmentation", false);
 
-  void processMcV0PerpCone(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MatchedMCDV0Jets const& v0jets, CandidatesV0MCDWithLabelsAndFlags const& v0s, aod::McParticles const& particles)
+  void processMcV0PerpCone(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MatchedMCDV0Jets const& v0jets, CandidatesV0MCDWithLabelsAndFlags const& v0s, aod::McParticles const& particles, MatchedMCPV0Jets const&)
   {
     if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
       return;
