@@ -108,12 +108,6 @@ struct TrackedCascadeProperties {
       zorroSummary.setObject(zorro.getZorroSummary());
     }
 
-    ccdb->setURL(urlToCcdb.value);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    ccdb->setFatalWhenNull(false);
-
     registryQC.add("matchingChi2", "matching Chi2", HistType::kTH1F, {{200, 0, 1000, "#chi^{2}_{matching}"}});
     registryQC.add("topologyChi2", "topology Chi2", HistType::kTH1F, {{500, 0, 0.5, "#chi^{2}_{topology}"}});
     registryQC.add("nITScls_vs_p_xi", "nITS Xi", HistType::kTH2F, {{100, 0, 10, "#it{p} (GeV/#it{c})"}, {8, 0, 8, "n_{ITS}^{cls}"}});
