@@ -1717,7 +1717,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       auto trackKaFromOmega = casc.bachelor_as<MyKfTracks>(); // Ka <- Omega track
       auto trackV0DauPos = casc.posTrack_as<MyKfTracks>();    // V0 positive daughter track
       auto trackV0DauNeg = casc.negTrack_as<MyKfTracks>();    // V0 negative daughter track
-      auto KaFromOmegaCharge = trackKaFromOmega.signed1Pt() > 0 ? +1 : -1;
+      int KaFromOmegaCharge = trackKaFromOmega.sign() > 0 ? +1 : -1;
       int signOmega = casc.sign() > 0 ? +1 : -1;
 
       KFPTrack kfpTrackKaFromCharm = createKFPTrackFromTrack(trackKaFromCharm);
