@@ -18,8 +18,9 @@
 
 #include "PWGHF/Core/HfMlResponse.h"
 
-#include <map>
-#include <string>
+#include "Tools/ML/MlResponse.h"
+
+#include <cstdint>
 #include <vector>
 
 // Fill the map of available input features

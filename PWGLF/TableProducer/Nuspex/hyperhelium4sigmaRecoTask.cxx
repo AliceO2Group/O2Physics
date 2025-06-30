@@ -68,7 +68,7 @@ enum DaughterType {
 
 namespace
 {
-// constexpr std::array<float, 7> LayerRadii{2.33959f, 3.14076f, 3.91924f, 19.6213f, 24.5597f, 34.388f, 39.3329f};
+constexpr std::array<float, 7> LayerRadii{2.33959f, 3.14076f, 3.91924f, 19.6213f, 24.5597f, 34.388f, 39.3329f};
 constexpr int kITSLayers = 7;
 constexpr int kITSInnerBarrelLayers = 3;
 // constexpr int kITSOuterBarrelLayers = 4;
@@ -231,6 +231,7 @@ struct Hyphe4sCandidate {
 
   std::array<float, 3> primVtx = {0.0f, 0.0f, 0.0f};
   std::array<float, 3> decVtx = {0.0f, 0.0f, 0.0f};
+  std::array<float, 3> lastPosMoth = {0.0f, 0.0f, 0.0f}; // last position of mother track at the radii of ITS layer which has the outermost update
   std::array<float, 3> momMoth = {0.0f, 0.0f, 0.0f};
   std::array<float, 3> momDaug = {0.0f, 0.0f, 0.0f};
 
@@ -251,7 +252,8 @@ struct Hyphe4sCandidate {
   bool isSurvEvSelection = false;
 
   std::array<float, 3> trueDecVtx = {0.0f, 0.0f, 0.0f};
-  std::array<float, 3> gMomMoth = {0.0f, 0.0f, 0.0f};
+  std::array<float, 3> gMomMoth = {0.0f, 0.0f, 0.0f};    // generated mother momentum
+  std::array<float, 3> trueMomMoth = {0.0f, 0.0f, 0.0f}; // true mother momentum at decay vertex
   std::array<float, 3> gMomDau = {0.0f, 0.0f, 0.0f};
 
   bool isMothReco = false;
@@ -322,8 +324,8 @@ struct Hyperhelium4sigmaRecoTask {
       registry.add<TH2>("h2TrueMotherDiffPyVsRecSVR", ";Reconstruced SV R (cm);#Delta #it{p}_{T} (GeV/#it{c});", HistType::kTH2F, {radiusAxis, diffPyAxis});
       registry.add<TH2>("h2TrueMotherDiffPtVsRecSVR", ";Reconstruced SV R (cm);#Delta #it{p}_{T} (GeV/#it{c});", HistType::kTH2F, {radiusAxis, diffPtAxis});
       registry.add<TH2>("h2TrueMotherDiffPzVsRecSVR", ";Reconstruced SV R (cm);#Delta #it{p}_{z} (GeV/#it{c});", HistType::kTH2F, {radiusAxis, diffPzAxis});
-      registry.add<TH2>("h2TrueMotherDiffTglVsRecSVR", ";Reconstruced SV R (cm);#Delta tan#lambda;", HistType::kTH2F, {radiusAxis, {200, -1.f, 1.f}});
-      registry.add<TH2>("h2TrueMotherDiffEtaVsRecSVR", ";Reconstruced SV R (cm);#Delta #eta;", HistType::kTH2F, {radiusAxis, {200, -1.f, 1.f}});
+      registry.add<TH2>("h2TrueMotherDiffTglVsRecSVR", ";Reconstruced SV R (cm);#Delta tan#lambda;", HistType::kTH2F, {radiusAxis, {200, -0.1, 0.1}});
+      registry.add<TH2>("h2TrueMotherDiffEtaVsRecSVR", ";Reconstruced SV R (cm);#Delta #eta;", HistType::kTH2F, {radiusAxis, {200, -0.1, 0.1}});
       registry.add<TH1>("hDiffDauPx", ";#Delta p_{x} (GeV/#it{c}); ", HistType::kTH1D, {{200, -10, 10}});
       registry.add<TH1>("hDiffDauPy", ";#Delta p_{y} (GeV/#it{c}); ", HistType::kTH1D, {{200, -10, 10}});
       registry.add<TH1>("hDiffDauPz", ";#Delta p_{z} (GeV/#it{c}); ", HistType::kTH1D, {{200, -10, 10}});
@@ -374,9 +376,9 @@ struct Hyperhelium4sigmaRecoTask {
     hyphe4sCand.primVtx[0] = collision.posX();
     hyphe4sCand.primVtx[1] = collision.posY();
     hyphe4sCand.primVtx[2] = collision.posZ();
-    hyphe4sCand.decVtx[0] = kinkCand.xDecVtx();
-    hyphe4sCand.decVtx[1] = kinkCand.yDecVtx();
-    hyphe4sCand.decVtx[2] = kinkCand.zDecVtx();
+    hyphe4sCand.decVtx[0] = kinkCand.xDecVtx() + collision.posX();
+    hyphe4sCand.decVtx[1] = kinkCand.yDecVtx() + collision.posY();
+    hyphe4sCand.decVtx[2] = kinkCand.zDecVtx() + collision.posZ();
 
     hyphe4sCand.momMoth[0] = kinkCand.pxMoth();
     hyphe4sCand.momMoth[1] = kinkCand.pyMoth();
@@ -394,6 +396,22 @@ struct Hyperhelium4sigmaRecoTask {
     hyphe4sCand.itsClusterSizeDau = trackDau.itsClusterSizes();
     hyphe4sCand.nSigmaTPCDau = trackDau.tpcNSigmaAl();
     hyphe4sCand.nSigmaITSDau = itsResponse.nSigmaITS<o2::track::PID::Alpha>(trackDau);
+
+    int lastLayerMoth = 0;
+    for (int i = 6; i >= 0; i--) {
+      if (trackMoth.itsClusterMap() & (1 << i)) {
+        lastLayerMoth = i;
+        break;
+      }
+    }
+    auto trackparMother = getTrackParCov(trackMoth);
+    o2::base::Propagator::Instance()->PropagateToXBxByBz(trackparMother, LayerRadii[lastLayerMoth]);
+    std::array<float, 9> vecLab{0.f};
+    if (trackparMother.getPosDirGlo(vecLab)) {
+      hyphe4sCand.lastPosMoth[0] = vecLab[0];
+      hyphe4sCand.lastPosMoth[1] = vecLab[1];
+      hyphe4sCand.lastPosMoth[2] = vecLab[2];
+    }
   }
 
   template <typename TTrack>
@@ -407,7 +425,7 @@ struct Hyperhelium4sigmaRecoTask {
   }
 
   template <typename TMCParticle>
-  void fillCandidateMCInfo(Hyphe4sCandidate& hyphe4sCand, TMCParticle const& mcMothTrack, TMCParticle const& mcDauTrack)
+  void fillCandidateMCInfo(Hyphe4sCandidate& hyphe4sCand, TMCParticle const& mcMothTrack, TMCParticle const& mcDauTrack, TMCParticle const& mcNeutDauTrack)
   {
     hyphe4sCand.trueDecVtx[0] = mcDauTrack.vx();
     hyphe4sCand.trueDecVtx[1] = mcDauTrack.vy();
@@ -415,12 +433,15 @@ struct Hyperhelium4sigmaRecoTask {
     hyphe4sCand.gMomMoth[0] = mcMothTrack.px();
     hyphe4sCand.gMomMoth[1] = mcMothTrack.py();
     hyphe4sCand.gMomMoth[2] = mcMothTrack.pz();
+    hyphe4sCand.trueMomMoth[0] = mcDauTrack.px() + mcNeutDauTrack.px();
+    hyphe4sCand.trueMomMoth[1] = mcDauTrack.py() + mcNeutDauTrack.py();
+    hyphe4sCand.trueMomMoth[2] = mcDauTrack.pz() + mcNeutDauTrack.pz();
     hyphe4sCand.gMomDau[0] = mcDauTrack.px();
     hyphe4sCand.gMomDau[1] = mcDauTrack.py();
     hyphe4sCand.gMomDau[2] = mcDauTrack.pz();
   }
 
-  void processData(CollisionsFull const& collisions, aod::KinkCands const& KinkCands, FullTracksExtIU const&)
+  void processData(CollisionsFull const& collisions, aod::KinkCands const& KinkCands, FullTracksExtIU const&, aod::BCs const&)
   {
     for (const auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 0);
@@ -448,6 +469,8 @@ struct Hyperhelium4sigmaRecoTask {
       registry.fill(HIST("h2MassHyperhelium4sigmaPt"), kinkCand.mothSign() * kinkCand.ptMoth(), invMass);
       registry.fill(HIST("h2NSigmaAlPt"), kinkCand.mothSign() * kinkCand.ptDaug(), dauTrack.tpcNSigmaAl());
 
+      auto bc = collision.bc_as<aod::BCs>();
+      initCCDB(bc);
       auto motherTrack = kinkCand.trackMoth_as<FullTracksExtIU>();
       Hyphe4sCandidate hyphe4sCand;
       fillCandidate(hyphe4sCand, collision, kinkCand, motherTrack, dauTrack);
@@ -455,7 +478,9 @@ struct Hyperhelium4sigmaRecoTask {
       outputDataTable(
         hyphe4sCand.primVtx[0], hyphe4sCand.primVtx[1], hyphe4sCand.primVtx[2],
         hyphe4sCand.decVtx[0], hyphe4sCand.decVtx[1], hyphe4sCand.decVtx[2],
-        hyphe4sCand.isMatter, hyphe4sCand.momMoth[0], hyphe4sCand.momMoth[1], hyphe4sCand.momMoth[2],
+        hyphe4sCand.isMatter,
+        hyphe4sCand.lastPosMoth[0], hyphe4sCand.lastPosMoth[1], hyphe4sCand.lastPosMoth[2],
+        hyphe4sCand.momMoth[0], hyphe4sCand.momMoth[1], hyphe4sCand.momMoth[2],
         hyphe4sCand.momDaug[0], hyphe4sCand.momDaug[1], hyphe4sCand.momDaug[2],
         hyphe4sCand.dcaXYMothPv, hyphe4sCand.dcaXYDauPv, hyphe4sCand.dcaKinkTopo,
         hyphe4sCand.chi2ITSMoth, hyphe4sCand.itsClusterSizeMoth, hyphe4sCand.itsClusterSizeDau,
@@ -524,6 +549,8 @@ struct Hyperhelium4sigmaRecoTask {
       registry.fill(HIST("h2MassHyperhelium4sigmaPt"), kinkCand.mothSign() * kinkCand.ptMoth(), invMass);
       registry.fill(HIST("h2NSigmaAlPt"), kinkCand.mothSign() * kinkCand.ptDaug(), dauTrack.tpcNSigmaAl());
 
+      auto bc = collision.bc_as<aod::BCs>();
+      initCCDB(bc);
       Hyphe4sCandidate hyphe4sCand;
       fillCandidate(hyphe4sCand, collision, kinkCand, motherTrack, dauTrack);
 
@@ -531,10 +558,12 @@ struct Hyperhelium4sigmaRecoTask {
       if (isTrueSignal) {
         auto mcMotherTrack = motherTrack.mcParticle_as<aod::McParticles>();
         auto mcDauTrack = dauTrack.mcParticle_as<aod::McParticles>();
-        float recSVR = std::sqrt(kinkCand.xDecVtx() * kinkCand.xDecVtx() + kinkCand.yDecVtx() * kinkCand.yDecVtx());
-        registry.fill(HIST("hDiffSVx"), kinkCand.xDecVtx() - mcDauTrack.vx());
-        registry.fill(HIST("hDiffSVy"), kinkCand.yDecVtx() - mcDauTrack.vy());
-        registry.fill(HIST("hDiffSVz"), kinkCand.zDecVtx() - mcDauTrack.vz());
+        auto mcNeutTrack = particlesMC.rawIteratorAt(dauIDList[2]);
+        float posDecVtx[3] = {kinkCand.xDecVtx() + collision.posX(), kinkCand.yDecVtx() + collision.posY(), kinkCand.zDecVtx() + collision.posZ()};
+        float recSVR = std::sqrt(posDecVtx[0] * posDecVtx[0] + posDecVtx[1] * posDecVtx[1]);
+        registry.fill(HIST("hDiffSVx"), posDecVtx[0] - mcDauTrack.vx());
+        registry.fill(HIST("hDiffSVy"), posDecVtx[1] - mcDauTrack.vy());
+        registry.fill(HIST("hDiffSVz"), posDecVtx[2] - mcDauTrack.vz());
         registry.fill(HIST("h2RecSVRVsTrueSVR"), recSVR, std::hypot(mcDauTrack.vx(), mcDauTrack.vy()));
         registry.fill(HIST("h2TrueMotherDiffPtVsRecSVR"), recSVR, mcMotherTrack.pt() - kinkCand.ptMoth());
         registry.fill(HIST("h2TrueMotherDiffPzVsRecSVR"), recSVR, mcMotherTrack.pz() - kinkCand.pzMoth());
@@ -550,14 +579,12 @@ struct Hyperhelium4sigmaRecoTask {
         hyphe4sCand.isSignalReco = true;
         hyphe4sCand.isCollReco = true;
         hyphe4sCand.isSurvEvSelection = true;
-        fillCandidateMCInfo(hyphe4sCand, mcMotherTrack, mcDauTrack);
+        fillCandidateMCInfo(hyphe4sCand, mcMotherTrack, mcDauTrack, mcNeutTrack);
         mcHe4sIndices.push_back(mcMotherTrack.globalIndex());
 
-        auto bc = collision.bc_as<aod::BCs>();
-        initCCDB(bc);
         std::array<float, 2> dcaInfo;
         auto mcMotherTrackPar = getTrackParFromMC(mcMotherTrack);
-        o2::base::Propagator::Instance()->propagateToDCABxByBz({kinkCand.xDecVtx(), kinkCand.yDecVtx(), kinkCand.zDecVtx()}, mcMotherTrackPar, 2.f, matCorr, &dcaInfo);
+        o2::base::Propagator::Instance()->propagateToDCABxByBz({posDecVtx[0], posDecVtx[1], posDecVtx[2]}, mcMotherTrackPar, 2.f, matCorr, &dcaInfo);
         registry.fill(HIST("hDCAXYMothToRecSV"), dcaInfo[0]);
         registry.fill(HIST("hDCAZMothToRecSV"), dcaInfo[1]);
         std::array<float, 3> pMotherAtSV = {-999.f, -999.f, -999.f};
@@ -570,7 +597,7 @@ struct Hyperhelium4sigmaRecoTask {
         float pMoth = std::hypot(kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth());
         float pDaug = std::hypot(kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug());
 
-        float mothPDir[3] = {kinkCand.xDecVtx() - collision.posX(), kinkCand.yDecVtx() - collision.posY(), kinkCand.zDecVtx() - collision.posZ()};
+        float mothPDir[3] = {kinkCand.xDecVtx(), kinkCand.yDecVtx(), kinkCand.zDecVtx()};
         float magMothPDirXY = std::hypot(mothPDir[0], mothPDir[1]);
         float magMothPDir = std::hypot(mothPDir[0], mothPDir[1], mothPDir[2]);
         float spKinkSV = mothPDir[0] * kinkCand.pxDaug() + mothPDir[1] * kinkCand.pyDaug() + mothPDir[2] * kinkCand.pzDaug();
@@ -590,7 +617,9 @@ struct Hyperhelium4sigmaRecoTask {
       outputMCTable(
         hyphe4sCand.primVtx[0], hyphe4sCand.primVtx[1], hyphe4sCand.primVtx[2],
         hyphe4sCand.decVtx[0], hyphe4sCand.decVtx[1], hyphe4sCand.decVtx[2],
-        hyphe4sCand.isMatter, hyphe4sCand.momMoth[0], hyphe4sCand.momMoth[1], hyphe4sCand.momMoth[2],
+        hyphe4sCand.isMatter,
+        hyphe4sCand.lastPosMoth[0], hyphe4sCand.lastPosMoth[1], hyphe4sCand.lastPosMoth[2],
+        hyphe4sCand.momMoth[0], hyphe4sCand.momMoth[1], hyphe4sCand.momMoth[2],
         hyphe4sCand.momDaug[0], hyphe4sCand.momDaug[1], hyphe4sCand.momDaug[2],
         hyphe4sCand.dcaXYMothPv, hyphe4sCand.dcaXYDauPv, hyphe4sCand.dcaKinkTopo,
         hyphe4sCand.chi2ITSMoth, hyphe4sCand.itsClusterSizeMoth, hyphe4sCand.itsClusterSizeDau,
@@ -598,6 +627,7 @@ struct Hyperhelium4sigmaRecoTask {
         hyphe4sCand.isSignal, hyphe4sCand.isSignalReco, hyphe4sCand.isCollReco, hyphe4sCand.isSurvEvSelection,
         hyphe4sCand.trueDecVtx[0], hyphe4sCand.trueDecVtx[1], hyphe4sCand.trueDecVtx[2],
         hyphe4sCand.gMomMoth[0], hyphe4sCand.gMomMoth[1], hyphe4sCand.gMomMoth[2],
+        hyphe4sCand.trueMomMoth[0], hyphe4sCand.trueMomMoth[1], hyphe4sCand.trueMomMoth[2],
         hyphe4sCand.gMomDau[0], hyphe4sCand.gMomDau[1], hyphe4sCand.gMomDau[2],
         hyphe4sCand.isMothReco, hyphe4sCand.ptMoth, hyphe4sCand.pzMoth);
     }
@@ -614,7 +644,8 @@ struct Hyperhelium4sigmaRecoTask {
 
       Hyphe4sCandidate hyphe4sCand;
       auto mcDauTrack = particlesMC.rawIteratorAt(dauIDList[0]);
-      fillCandidateMCInfo(hyphe4sCand, mcparticle, mcDauTrack);
+      auto mcNeutTrack = particlesMC.rawIteratorAt(dauIDList[2]);
+      fillCandidateMCInfo(hyphe4sCand, mcparticle, mcDauTrack, mcNeutTrack);
 
       if (mcPartIndices[mcparticle.globalIndex()] != -1) {
         auto mothTrack = tracks.rawIteratorAt(mcPartIndices[mcparticle.globalIndex()]);
@@ -624,7 +655,9 @@ struct Hyperhelium4sigmaRecoTask {
       outputMCTable(
         -1, -1, -1,
         -1, -1, -1,
-        -1, -1, -1, -1,
+        -1,
+        -1, -1, -1,
+        -1, -1, -1,
         -1, -1, -1,
         -1, -1, -1,
         -1, -1, -1,
@@ -632,6 +665,7 @@ struct Hyperhelium4sigmaRecoTask {
         true, false, isReconstructedMCCollisions[mcparticle.mcCollisionId()], isSelectedMCCollisions[mcparticle.mcCollisionId()],
         hyphe4sCand.trueDecVtx[0], hyphe4sCand.trueDecVtx[1], hyphe4sCand.trueDecVtx[2],
         hyphe4sCand.gMomMoth[0], hyphe4sCand.gMomMoth[1], hyphe4sCand.gMomMoth[2],
+        hyphe4sCand.trueMomMoth[0], hyphe4sCand.trueMomMoth[1], hyphe4sCand.trueMomMoth[2],
         hyphe4sCand.gMomDau[0], hyphe4sCand.gMomDau[1], hyphe4sCand.gMomDau[2],
         hyphe4sCand.isMothReco, hyphe4sCand.ptMoth, hyphe4sCand.pzMoth);
     }
@@ -730,6 +764,7 @@ struct Hyperhelium4sigmaQa {
       hDauTPCNSigma[kDauTriton] = recoQAHist.add<TH2>("hDauTritonTPCNSigma", "", HistType::kTH2F, {rigidityAxis, nsigmaAxis});
       hDauTPCNSigma[kDauProton] = recoQAHist.add<TH2>("hDauProtonTPCNSigma", "", HistType::kTH2F, {rigidityAxis, nsigmaAxis});
       hDauTPCNSigma[kDauChargedPion] = recoQAHist.add<TH2>("hDauPionTPCNSigma", "", HistType::kTH2F, {rigidityAxis, nsigmaAxis});
+      recoQAHist.add<TH2>("hDauAlphaITSNSigmaCheck", "", HistType::kTH2F, {rigidityAxis, itsnsigmaAxis});
 
       hRecoMotherCounter = recoQAHist.add<TH1>("hRecoMotherCounter", "", HistType::kTH1F, {{9, 0.f, 9.f}});
       hRecoDauAlphaCounter = recoQAHist.add<TH1>("hRecoDauAlphaCounter", "", HistType::kTH1F, {{9, 0.f, 9.f}});
@@ -749,8 +784,8 @@ struct Hyperhelium4sigmaQa {
       recoQAHist.add<TH1>("hMotherITSCls", "", HistType::kTH1F, {{8, 0.f, 8.f}});
       recoQAHist.add<TH1>("hDauAlphaIsPVContributer", "", HistType::kTH1F, {{2, 0.f, 2.f}});
       recoQAHist.add<TH1>("hDauAlphaITSCls", "", HistType::kTH1F, {{8, 0.f, 8.f}});
-      recoQAHist.add<TH2>("hDauAlphaPVsITSNSigma", "", HistType::kTH2F, {rigidityAxis, itsnsigmaAxis});
-      recoQAHist.add<TH2>("h2BCandDauAlphaPVsITSNSigma", "", HistType::kTH2F, {rigidityAxis, nsigmaAxis});
+      recoQAHist.add<TH2>("hDauAlphaITSNSigma", "", HistType::kTH2F, {rigidityAxis, itsnsigmaAxis});
+      recoQAHist.add<TH2>("hReco2BDauAlphaPVsITSNSigma", "", HistType::kTH2F, {rigidityAxis, itsnsigmaAxis});
       recoQAHist.add<TH1>("hReco2BCandidateCount", "", HistType::kTH1F, {{4, 0.f, 4.f}});
     }
   }
@@ -949,6 +984,9 @@ struct Hyperhelium4sigmaQa {
                   if (track.hasTPC()) {
                     hDauTPCNSigma[type]->Fill(track.p() * track.sign(), tpcNSigma);
                   }
+                  if (type == kDauAlpha && track.itsNCls() > kITSLayers - 2) {
+                    recoQAHist.fill(HIST("hDauAlphaITSNSigmaCheck"), track.p() * track.sign(), itsResponse.nSigmaITS<o2::track::PID::Alpha>(track));
+                  }
                 }
               }
             }
@@ -998,8 +1036,10 @@ struct Hyperhelium4sigmaQa {
               recoQAHist.fill(HIST("hDauAlphaIsPVContributer"), daughterTrack.isPVContributor() ? 1.5 : 0.5);
 
               float itsNSigma = itsResponse.nSigmaITS<o2::track::PID::Alpha>(daughterTrack);
-              recoQAHist.fill(HIST("hDauAlphaPVsITSNSigma"), daughterTrack.sign() * daughterTrack.p(), itsNSigma);
-              recoQAHist.fill(HIST("hDauAlphaITSCls"), daughterTrack.itsNCls());
+              if (daughterTrack.hasITS()) {
+                recoQAHist.fill(HIST("hDauAlphaITSNSigma"), daughterTrack.sign() * daughterTrack.p(), itsNSigma);
+                recoQAHist.fill(HIST("hDauAlphaITSCls"), daughterTrack.itsNCls());
+              }
 
               if (motherTrack.has_collision() && daughterTrack.has_collision()) {
                 recoQAHist.fill(HIST("hReco2BCandidateCount"), 1.5);
@@ -1010,7 +1050,7 @@ struct Hyperhelium4sigmaQa {
 
               if (isMoth && isDaug) {
                 recoQAHist.fill(HIST("hReco2BCandidateCount"), 3.5);
-                recoQAHist.fill(HIST("h2BCandDauAlphaPVsITSNSigma"), daughterTrack.sign() * daughterTrack.p(), itsNSigma);
+                recoQAHist.fill(HIST("hReco2BDauAlphaPVsITSNSigma"), daughterTrack.sign() * daughterTrack.p(), itsNSigma);
               }
             }
           }
