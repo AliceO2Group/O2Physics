@@ -42,7 +42,7 @@
 #include "ReconstructionDataFormats/Track.h"
 
 #include <TF1.h>
-#include <TLorentzVector.h>
+// #include <TLorentzVector.h>
 
 #include <string>
 
@@ -2209,6 +2209,13 @@ struct LFNucleiBATask {
       if ((track.itsChi2NCl() < itsChi2NclRange[0]) || (track.itsChi2NCl() > itsChi2NclRange[1]))
         continue;
 
+      // p cut
+      if (std::abs(track.tpcInnerParam()) < kinemOptions.cfgMomentumCut)
+        continue;
+      // eta cut
+      if (std::abs(track.eta()) > kinemOptions.cfgEtaCut)
+        continue;
+
       if (outFlagOptions.enablePIDplot) {
         histos.fill(HIST("tracks/h1pT"), track.pt());
         histos.fill(HIST("tracks/h1p"), track.p());
@@ -2436,13 +2443,6 @@ struct LFNucleiBATask {
           passDCAzCutAntiHe = std::pow(track.dcaXY(), 2) / std::pow(parDCAxy[3] * (parDCAxy[0] + parDCAxy[1] / std::pow(antihePt, parDCAxy[2])), 2) + std::pow(track.dcaZ(), 2) / std::pow(parDCAz[3] * (parDCAz[0] + parDCAz[1] / std::pow(antihePt, parDCAz[2])), 2) <= 1;
           break;
       }
-
-      // p cut
-      if (std::abs(track.tpcInnerParam()) < kinemOptions.cfgMomentumCut)
-        continue;
-      // eta cut
-      if (std::abs(track.eta()) > kinemOptions.cfgEtaCut)
-        continue;
 
       // Rapidity cuts
       prRapCut = track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Proton)) > kinemOptions.cfgRapidityCutLow && track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Proton)) < kinemOptions.cfgRapidityCutHigh;
