@@ -832,7 +832,10 @@ DECLARE_SOA_TABLE(HfMcGenRedB0s, "AOD", "HFMCGENREDB0", //! Generation-level MC 
                   hf_b0_mc::EtaProng0,
                   hf_b0_mc::PtProng1,
                   hf_b0_mc::YProng1,
-                  hf_b0_mc::EtaProng1);
+                  hf_b0_mc::EtaProng1,
+                  hf_reduced_collision::HfCollisionRejectionMap,
+                  cent::CentFT0C,
+                  cent::CentFT0M);
 
 // store all configurables values used in the first part of the workflow
 // so we can use them in the B0 part
@@ -923,7 +926,10 @@ DECLARE_SOA_TABLE(HfMcGenRedBps, "AOD", "HFMCGENREDBP", //! Generation-level MC 
                   hf_bplus_mc::EtaProng0,
                   hf_bplus_mc::PtProng1,
                   hf_bplus_mc::YProng1,
-                  hf_bplus_mc::EtaProng1);
+                  hf_bplus_mc::EtaProng1,
+                  hf_reduced_collision::HfCollisionRejectionMap,
+                  cent::CentFT0C,
+                  cent::CentFT0M);
 
 // store all configurables values used in the first part of the workflow
 // so we can use them in the Bplus part
@@ -1025,7 +1031,10 @@ DECLARE_SOA_TABLE(HfMcGenRedBss, "AOD", "HFMCGENREDBS", //! Generation-level MC 
                   hf_bs_mc::EtaProng0,
                   hf_bs_mc::PtProng1,
                   hf_bs_mc::YProng1,
-                  hf_bs_mc::EtaProng1);
+                  hf_bs_mc::EtaProng1,
+                  hf_reduced_collision::HfCollisionRejectionMap,
+                  cent::CentFT0C,
+                  cent::CentFT0M);
 
 // store all configurables values used in the first part of the workflow
 // so we can use them in the Bs part
@@ -1109,7 +1118,10 @@ DECLARE_SOA_TABLE(HfMcGenRedLbs, "AOD", "HFMCGENREDLB", //! Generation-level MC 
                   hf_lb_mc::EtaProng0,
                   hf_lb_mc::PtProng1,
                   hf_lb_mc::YProng1,
-                  hf_lb_mc::EtaProng1);
+                  hf_lb_mc::EtaProng1,
+                  hf_reduced_collision::HfCollisionRejectionMap,
+                  cent::CentFT0C,
+                  cent::CentFT0M);
 
 // store all configurables values used in the first part of the workflow
 // so we can use them in the B0 part
