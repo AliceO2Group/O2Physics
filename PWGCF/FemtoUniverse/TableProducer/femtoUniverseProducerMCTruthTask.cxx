@@ -14,29 +14,29 @@
 /// \author Malgorzata Janik, WUT Warsaw, majanik@cern.ch
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
-#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseCollisionSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
-#include <Framework/OutputObjHeader.h>
 #include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 
-#include <cstddef>
-#include <vector>
-#include <cstdint>
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis::femto_universe;
@@ -139,6 +139,7 @@ struct FemtoUniverseProducerMCTruthTask {
       float mult = confIsRun3 ? c.multFV0M() : 0.5 * (c.multFV0M());
       int multNtr = confIsRun3 ? c.multNTracksPV() : c.multTracklets();
 
+      // Removing collisions with Zvtx > 10 cm
       if (std::abs(vtxZ) > confEvtZvtx) {
         continue;
       }
