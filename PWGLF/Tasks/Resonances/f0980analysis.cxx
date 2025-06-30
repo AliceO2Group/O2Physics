@@ -14,7 +14,6 @@
 #include <Framework/Configurable.h>
 #include <TLorentzVector.h>
 #include "TVector2.h"
-#include <vector>
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -47,8 +46,6 @@ struct f0980analysis {
                                         "Maximum transverse DCA"};
   Configurable<float> cfgMaxDCAzToPVcut{"cfgMaxDCAzToPVcut", 2.0,
                                         "Maximum longitudinal DCA"};
-  Configurable<float> cfgMaxTPC{"cfgMaxTPC", 5.0, "Maximum TPC PID with TOF"};
-  Configurable<float> cfgMaxTOF{"cfgMaxTOF", 3.0, "Maximum TOF PID with TPC"};
   Configurable<float> cfgMinRap{"cfgMinRap", -0.5, "Minimum rapidity for pair"};
   Configurable<float> cfgMaxRap{"cfgMaxRap", 0.5, "Maximum rapidity for pair"};
   Configurable<bool> cfgFindRT{"cfgFindRT", false, "boolean for RT analysis"};
@@ -80,7 +77,8 @@ struct f0980analysis {
 
   // PID
   Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"}; // TOF
-  Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"}; // TPC
+  Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"}; // TPC
+  Configurable<double> cMaxTPCnSigmaPionWoTOF{"cMaxTPCnSigmaPionWoTOF", 2.0, "TPC nSigma cut without TOF for Pion"};
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"};
   Configurable<int> SelectType{"SelectType", 0, "PID selection type"};
 
@@ -199,6 +197,15 @@ struct f0980analysis {
       if (track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi() >= nsigmaCutCombinedPion * nsigmaCutCombinedPion)
         return false;
     }
+    if (SelectType == 3) {
+      if (track.hasTOF()) {
+        if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaPi()) >= cMaxTOFnSigmaPion)
+          return false;
+      } else if (!track.hasTOF()) {
+        if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPionWoTOF)
+          return false;
+      }
+    }
     return true;
   }
 
@@ -227,17 +234,14 @@ struct f0980analysis {
     TLorentzVector Pion1, Pion2, Reco;
     for (auto& [trk1, trk2] :
          combinations(CombinationsStrictlyUpperIndexPolicy(dTracks, dTracks))) {
-      if (trk1.index() == trk2.index()) {
-        if (!SelTrack(trk1))
-          continue;
-        histos.fill(HIST("QA/Nsigma_TPC"), trk1.pt(), trk1.tpcNSigmaPi());
-        histos.fill(HIST("QA/Nsigma_TOF"), trk1.pt(), trk1.tofNSigmaPi());
-        histos.fill(HIST("QA/TPC_TOF"), trk1.tpcNSigmaPi(), trk1.tofNSigmaPi());
-        continue;
-      }
 
       if (!SelTrack(trk1) || !SelTrack(trk2))
         continue;
+      //  TPC, TOF Nsigma distributions
+      histos.fill(HIST("QA/Nsigma_TPC"), trk1.pt(), trk1.tpcNSigmaPi());
+      histos.fill(HIST("QA/Nsigma_TOF"), trk1.pt(), trk1.tofNSigmaPi());
+      histos.fill(HIST("QA/TPC_TOF"), trk1.tpcNSigmaPi(), trk1.tofNSigmaPi());
+
       if (!SelPion(trk1) || !SelPion(trk2))
         continue;
 
@@ -305,7 +309,6 @@ struct f0980analysis {
 
   void processMCTrue(aod::ResoMCParents& resoParents)
   {
-
     for (auto& part : resoParents) { // loop over all pre-filtered MC particles
       if (abs(part.pdgCode()) != 9010221)
         continue;
