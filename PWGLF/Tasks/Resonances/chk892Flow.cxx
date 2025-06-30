@@ -118,7 +118,7 @@ struct Chk892Flow {
     ConfigurableAxis cfgBinsPtQA{"cfgBinsPtQA", {VARIABLE_WIDTH, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 7.0, 7.2, 7.4, 7.6, 7.8, 8.0, 8.2, 8.4, 8.6, 8.8, 9.0, 9.2, 9.4, 9.6, 9.8, 10.0}, "Binning of the pT axis"};
     ConfigurableAxis cfgBinsCent{"cfgBinsCent", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
     ConfigurableAxis cfgBinsVtxZ{"cfgBinsVtxZ", {VARIABLE_WIDTH, -10.0, -9.0, -8.0, -7.0, -6.0, -5.0, -4.0, -3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "Binning of the z-vertex axis"};
-		ConfigurableAxis cfgBinsOccu{"cfgBinsOccu",{VARIABLE_WIDTH, 0, 500, 1000, 2500, 9999},"Binning of the occupancy axis"};
+    ConfigurableAxis cfgBinsOccu{"cfgBinsOccu", {VARIABLE_WIDTH, 0, 500, 1000, 2500, 9999}, "Binning of the occupancy axis"};
     Configurable<int> cNbinsDiv{"cNbinsDiv", 1, "Integer to divide the number of bins"};
     Configurable<int> cNbinsDivQA{"cNbinsDivQA", 1, "Integer to divide the number of bins for QA"};
     ConfigurableAxis cfgAxisV2{"cfgAxisV2", {200, -1, 1}, "Binning of the v2 axis (+-1 for EP method)"};
@@ -137,8 +137,8 @@ struct Chk892Flow {
   o2::analysis::CollisonCuts colCuts;
   struct : ConfigurableGroup {
     Configurable<float> cfgEvtZvtx{"cfgEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
-//    Configurable<int> cfgEvtOccupancyInTimeRangeMax{"cfgEvtOccupancyInTimeRangeMax", -1, "Evt sel: maximum track occupancy"};
-//    Configurable<int> cfgEvtOccupancyInTimeRangeMin{"cfgEvtOccupancyInTimeRangeMin", -1, "Evt sel: minimum track occupancy"};
+    //    Configurable<int> cfgEvtOccupancyInTimeRangeMax{"cfgEvtOccupancyInTimeRangeMax", -1, "Evt sel: maximum track occupancy"};
+    //    Configurable<int> cfgEvtOccupancyInTimeRangeMin{"cfgEvtOccupancyInTimeRangeMin", -1, "Evt sel: minimum track occupancy"};
     Configurable<bool> cfgEvtTriggerCheck{"cfgEvtTriggerCheck", false, "Evt sel: check for trigger"};
     Configurable<bool> cfgEvtOfflineCheck{"cfgEvtOfflineCheck", true, "Evt sel: check for offline selection"};
     Configurable<bool> cfgEvtTriggerTVXSel{"cfgEvtTriggerTVXSel", false, "Evt sel: triggerTVX selection (MB)"};
@@ -278,7 +278,7 @@ struct Chk892Flow {
     AxisSpec ptAxisQA = {AxisConfig.cfgBinsPtQA, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec v2Axis = {AxisConfig.cfgAxisV2, "#v_{2}"};
     AxisSpec phiAxis = {AxisConfig.cfgAxisPhi, "2(#phi-#Psi_{2})"};
-		AxisSpec occuAxis = {AxisConfig.cfgBinsOccu, "Occupancy"};
+    AxisSpec occuAxis = {AxisConfig.cfgBinsOccu, "Occupancy"};
     AxisSpec radiusAxis = {50, 0, 5, "Radius (cm)"};
     AxisSpec cpaAxis = {30, 0.97, 1.0, "CPA"};
     AxisSpec tauAxis = {250, 0, 25, "Lifetime (cm)"};
@@ -286,7 +286,7 @@ struct Chk892Flow {
     AxisSpec dcaxyAxis = {100, 0, 1, "DCA_{#it{xy}} (cm)"};
     AxisSpec dcazAxis = {200, 0, 2, "DCA_{#it{z}} (cm)"};
     AxisSpec yAxis = {50, -1, 1, "Rapidity"};
-    AxisSpec invMassAxisK0s = {800 / AxisConfig.cNbinsDiv, 0.46, 0.54, "Invariant Mass (GeV/#it{c}^2)"};    // K0s ~497.611
+    AxisSpec invMassAxisK0s = {800 / AxisConfig.cNbinsDiv, 0.46, 0.54, "Invariant Mass (GeV/#it{c}^2)"};  // K0s ~497.611
     AxisSpec invMassAxisReso = {900 / AxisConfig.cNbinsDiv, 0.5f, 1.4f, "Invariant Mass (GeV/#it{c}^2)"}; // chK(892) ~892
     AxisSpec pidQAAxis = {130 / AxisConfig.cNbinsDivQA, -6.5, 6.5};
 
@@ -299,7 +299,7 @@ struct Chk892Flow {
     }
     histos.add("QA/before/CentDist", "Centrality distribution", {HistType::kTH1D, {centAxis}});
     histos.add("QA/before/VtxZ", "z-vertex distribution", {HistType::kTH1D, {vtxzAxis}});
-		histos.add("QA/before/Occupancy", "Occupancy distribution", {HistType::kTH1D, {occuAxis}});
+    histos.add("QA/before/Occupancy", "Occupancy distribution", {HistType::kTH1D, {occuAxis}});
 
     // EventPlane
     histos.add("QA/EP/hEPDet", "Event plane distribution of FT0C (Det = A)", {HistType::kTH2D, {centAxis, epAxis}});
@@ -894,13 +894,13 @@ struct Chk892Flow {
       auto trkkPropTau = k0sCand.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassK0Short;
       auto trkkMass = k0sCand.mK0Short();
 
-//      lResoSecondary.SetXYZM(k0sCand.px(), k0sCand.py(), k0sCand.pz(), MassK0Short);
+      //      lResoSecondary.SetXYZM(k0sCand.px(), k0sCand.py(), k0sCand.pz(), MassK0Short);
       lResoSecondary.SetXYZM(k0sCand.px(), k0sCand.py(), k0sCand.pz(), trkkMass);
       auto lPhiMinusPsiK0s = RecoDecay::constrainAngle(lResoSecondary.Phi() - lEPDet, 0.0, 2); // constrain angle to range 0, Pi
-//      auto v2K0s = std::cos(static_cast<float>(nmode) * lPhiMinusPsiK0s);
+                                                                                               //      auto v2K0s = std::cos(static_cast<float>(nmode) * lPhiMinusPsiK0s);
 
-			float cosNPhi_K0s = std::cos(static_cast<float>(nmode) * lResoSecondary.Phi());
-			float sinNPhi_K0s = std::sin(static_cast<float>(nmode) * lResoSecondary.Phi());
+      float cosNPhi_K0s = std::cos(static_cast<float>(nmode) * lResoSecondary.Phi());
+      float sinNPhi_K0s = std::sin(static_cast<float>(nmode) * lResoSecondary.Phi());
 
       auto v2K0s = cosNPhi_K0s * collision.qvecRe()[lQvecDetInd] + sinNPhi_K0s * collision.qvecIm()[lQvecDetInd];
       if constexpr (!IsMix) {
@@ -989,10 +989,10 @@ struct Chk892Flow {
       for (const auto& k0sIndex : k0sIndicies) {
         auto bTrack = dTracks1.rawIteratorAt(trackIndex);
         auto k0sCand = dTracks2.rawIteratorAt(k0sIndex);
-				auto trkkMass = k0sCand.mK0Short();
+        auto trkkMass = k0sCand.mK0Short();
 
         lDecayDaughter_bach.SetXYZM(bTrack.px(), bTrack.py(), bTrack.pz(), MassPionCharged);
-//        lResoSecondary.SetXYZM(k0sCand.px(), k0sCand.py(), k0sCand.pz(), MassK0Short);
+        //        lResoSecondary.SetXYZM(k0sCand.px(), k0sCand.py(), k0sCand.pz(), MassK0Short);
         lResoSecondary.SetXYZM(k0sCand.px(), k0sCand.py(), k0sCand.pz(), trkkMass);
         lResoKstar = lResoSecondary + lDecayDaughter_bach;
         auto resoPhi = lResoKstar.Phi();
