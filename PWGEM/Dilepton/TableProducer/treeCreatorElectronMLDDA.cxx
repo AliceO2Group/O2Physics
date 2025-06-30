@@ -65,7 +65,7 @@ using MyTrack = MyTracks::iterator;
 
 struct TreeCreatorElectronMLDDA {
   SliceCache cache;
-  Produces<o2::aod::EMPrimaryTracks> emprimarytracks; // flat table containing collision + track information
+  Produces<o2::aod::EMMLPrimaryTracks> emprimarytracks; // flat table containing collision + track information
 
   // Basic checks
   HistogramRegistry registry{
@@ -990,7 +990,7 @@ struct MLTrackQC {
     },
   };
 
-  void processQC(aod::EMPrimaryTracks const& tracks)
+  void processQC(aod::EMMLPrimaryTracks const& tracks)
   {
     for (const auto& track : tracks) {
       registry.fill(HIST("hTPCdEdx_P_All"), track.p(), track.tpcSignal());
@@ -1025,7 +1025,7 @@ struct MLTrackQC {
   }
   PROCESS_SWITCH(MLTrackQC, processQC, "process QC for single track level", false);
 
-  void processDummy(aod::EMPrimaryTracks const&) {}
+  void processDummy(aod::EMMLPrimaryTracks const&) {}
   PROCESS_SWITCH(MLTrackQC, processDummy, "process dummy", true);
 };
 
