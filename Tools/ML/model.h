@@ -22,8 +22,8 @@
 
 #include <Framework/Logger.h>
 
-#include <onnxruntime_cxx_api.h>
 #include <onnx/onnx_pb.h>
+#include <onnxruntime_cxx_api.h>
 
 #include <algorithm>
 #include <cassert>
