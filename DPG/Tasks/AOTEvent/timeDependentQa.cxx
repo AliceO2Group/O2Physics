@@ -769,7 +769,7 @@ struct TimeDependentQaTask {
         histos.fill(HIST("multDistributions/hSecondsDistrZNA"), secFromSOR, col.multZNA());
         histos.fill(HIST("multDistributions/hSecondsDistrZNC"), secFromSOR, col.multZNC());
         float ZNdiff = col.multZNA() - col.multZNC();
-        float ZNsum = col.multZNA() - col.multZNC();
+        float ZNsum = col.multZNA() + col.multZNC();
         histos.fill(HIST("multDistributions/hSecondsDistrZNACdiff"), secFromSOR, ZNdiff);
         if (ZNsum > 0)
           histos.fill(HIST("multDistributions/hSecondsDistrZNACdiffNorm"), secFromSOR, ZNdiff / ZNsum);
