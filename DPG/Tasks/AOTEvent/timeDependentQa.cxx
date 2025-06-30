@@ -227,6 +227,8 @@ struct TimeDependentQaTask {
         histos.add("multDistributions/hSecondsDistrPVtracks", "", kTH2D, {axisSecondsVeryWideBins, {maxNtracks, -0.5, maxNtracks - 0.5, "n PV tracks"}});
         histos.add("multDistributions/hSecondsDistrZNA", "", kTH2D, {axisSecondsVeryWideBins, {320, 0, maxZNACenergyForTimeDepDistributions, "ZNA ampl"}});
         histos.add("multDistributions/hSecondsDistrZNC", "", kTH2D, {axisSecondsVeryWideBins, {320, 0, maxZNACenergyForTimeDepDistributions, "ZNC ampl"}});
+        histos.add("multDistributions/hSecondsDistrZNACdiff", "", kTH2D, {axisSecondsVeryWideBins, {600, -maxZNACenergyForTimeDepDistributions, maxZNACenergyForTimeDepDistributions, "ZN A-C diff"}});
+        histos.add("multDistributions/hSecondsDistrZNACdiffNorm", "", kTH2D, {axisSecondsVeryWideBins, {200, -1., 1., "ZN A-C diff"}});
         histos.add("multDistributions/hSecondsDistrT0A", "", kTH2D, {axisSecondsVeryWideBins, {250, 0, maxT0ACamplForTimeDepDistributions, "T0A ampl"}});
         histos.add("multDistributions/hSecondsDistrT0C", "", kTH2D, {axisSecondsVeryWideBins, {250, 0, maxT0ACamplForTimeDepDistributions, "T0C ampl"}});
         histos.add("multDistributions/hSecondsDistrV0A", "", kTH2D, {axisSecondsVeryWideBins, {400, 0, maxV0AamplForTimeDepDistributions, "V0A ampl"}});
@@ -766,6 +768,11 @@ struct TimeDependentQaTask {
         // float multZNC = bc.has_zdc() ? bc.zdc().energyCommonZNC() : -999.f;
         histos.fill(HIST("multDistributions/hSecondsDistrZNA"), secFromSOR, col.multZNA());
         histos.fill(HIST("multDistributions/hSecondsDistrZNC"), secFromSOR, col.multZNC());
+        float ZNdiff = col.multZNA() - col.multZNC();
+        float ZNsum = col.multZNA() - col.multZNC();
+        histos.fill(HIST("multDistributions/hSecondsDistrZNACdiff"), secFromSOR, ZNdiff);
+        if (ZNsum > 0)
+          histos.fill(HIST("multDistributions/hSecondsDistrZNACdiffNorm"), secFromSOR, ZNdiff / ZNsum);
 
         // FT0A,C, V0A
         // float multT0A = bc.has_ft0() ? bc.ft0().sumAmpA() : -999.f;
