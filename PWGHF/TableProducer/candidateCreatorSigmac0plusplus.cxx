@@ -586,9 +586,8 @@ struct HfCandidateSigmac0plusplusMc {
       /// In case of need, readapt the code templetizing the function
       auto mcCollision = particle.mcCollision();
       float centrality{-1.f};
-      uint16_t rejectionMask{0};
       const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
-      rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::None>(mcCollision, collSlice, centrality);
+      auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::None>(mcCollision, collSlice, centrality);
       hfEvSelMc.fillHistograms<o2::hf_centrality::CentralityEstimator::None>(mcCollision, rejectionMask, 0);
       if (rejectionMask != 0) {
         // at least one event selection not satisfied --> reject gen particles from this collision
