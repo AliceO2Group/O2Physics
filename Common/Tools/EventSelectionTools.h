@@ -731,7 +731,7 @@ class EventSelectionModule
       return; // dummy process
     }
     for (const auto& col : collisions) {
-      auto bc = col.template bc_as<soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>>();
+      auto bc = col.template bc_as<soa::Join<aod::BCs, aod::Run2BCInfos, aod::Run2MatchedToBCSparse>>();
       uint64_t timestamp = timestamps[bc.globalIndex()];
       EventSelectionParams* par = ccdb->template getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", timestamp);
       bool* applySelection = par->getSelection(evselOpts.muonSelection);
@@ -837,7 +837,7 @@ class EventSelectionModule
     if (mapGlobalBcWithTVX.size() == 0) {
       LOGP(error, "FT0 table is empty or corrupted. Filling evsel table with dummy values");
       for (const auto& col : cols) {
-        auto bc = col.template bc_as<soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>>();
+        auto bc = col.template bc_as<soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>>();
         int32_t foundBC = bc.globalIndex();
         int32_t foundFT0 = bcselbuffer[bc.globalIndex()].foundFT0Id;
         int32_t foundFV0 = bcselbuffer[bc.globalIndex()].foundFV0Id;
@@ -877,7 +877,7 @@ class EventSelectionModule
     // first loop to match collisions to TVX, also extract other per-collision information for further use
     for (const auto& col : cols) {
       int32_t colIndex = col.globalIndex();
-      auto bc = col.template bc_as<soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>>();
+      auto bc = col.template bc_as<soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>>();
 
       vCollVz[colIndex] = col.posZ();
 
@@ -977,7 +977,7 @@ class EventSelectionModule
       if (vIsVertexTPC[colIndex] > 0 && vIsVertexTOF[colIndex] == 0 && vIsVertexHighPtTPC[colIndex] == 0) {
         float weightedTime = vWeightedTimesTPCnoTOFnoTRD[colIndex];
         float weightedSigma = vWeightedSigmaTPCnoTOFnoTRD[colIndex];
-        auto bc = col.template bc_as<soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>>();
+        auto bc = col.template bc_as<soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>>();
         int64_t globalBC = bc.globalBC();
         int64_t meanBC = globalBC + TMath::Nint(weightedTime / bcNS);
         int64_t sigmaBC = TMath::CeilNint(weightedSigma / bcNS);
