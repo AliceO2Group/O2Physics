@@ -18,6 +18,8 @@
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
@@ -95,7 +97,7 @@ struct TrackedCascadeProperties {
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     if (cfgSkimmedProcessing) {
-      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfgTriggerName.c_str());
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfgTriggerName);
     }
   }
 
