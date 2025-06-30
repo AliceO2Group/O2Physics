@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file flowGFWLightIons.cxx
+/// \file flowGfwLightIons.cxx
 /// \brief Dedicated GFW task to analyse angular correlations in light-ion collision systems
 /// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch
 
@@ -165,7 +165,9 @@ struct FlowGfwLightIons {
     kCentFT0CVariant1,
     kCentFT0M,
     kCentFV0A,
-    kCentNTPV
+    kCentNTPV,
+    kCentNGlobal,
+    kCentMFT
   };
 
   // Define global variables
@@ -212,7 +214,7 @@ struct FlowGfwLightIons {
 
   void init(InitContext const&)
   {
-    LOGF(info, "flowGFWLightIons::init()");
+    LOGF(info, "flowGfwLightIons::init()");
     o2::analysis::gfw::regions.SetNames(cfgRegions->GetNames());
     o2::analysis::gfw::regions.SetEtaMin(cfgRegions->GetEtaMin());
     o2::analysis::gfw::regions.SetEtaMax(cfgRegions->GetEtaMax());
@@ -265,8 +267,15 @@ struct FlowGfwLightIons {
       case kCentNTPV:
         sCentralityEstimator = "NTPV";
         break;
+      case kCentNGlobal:
+        sCentralityEstimator = "NGlobals";
+        break;
+      case kCentMFT:
+        sCentralityEstimator = "MFT";
+        break;
       default:
         sCentralityEstimator = "FT0C";
+        break;
     }
     sCentralityEstimator += " centrality (%)";
     AxisSpec centAxis = {o2::analysis::gfw::centbinning, sCentralityEstimator.c_str()};
@@ -296,7 +305,7 @@ struct FlowGfwLightIons {
     fPtAxis = new TAxis(ptbins, &o2::analysis::gfw::ptbinning[0]);
 
     if (doprocessMCGen || doprocessMCGenNoCent || doprocessOnTheFly) {
-      registry.add("MCGen/trackQA/nch_pt", "#it{p}_{T} vs multiplicity; N_{ch}; #it{p}_{T}", {HistType::kTH2D, {nchAxis, {100, o2::analysis::gfw::ptpoilow, o2::analysis::gfw::ptpoiup}}});
+      registry.add("MCGen/trackQA/nch_pt", "#it{p}_{T} vs multiplicity; N_{ch}; #it{p}_{T}", {HistType::kTH2D, {nchAxis, ptAxis}});
       registry.add("MCGen/trackQA/phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
       registry.add("MCGen/trackQA/pt_ref", "Reference #it{p}_{T}; #it{p}_{T}; Counts", {HistType::kTH1D, {{100, o2::analysis::gfw::ptreflow, o2::analysis::gfw::ptrefup}}});
       registry.add("MCGen/trackQA/pt_poi", "POI #it{p}_{T}; #it{p}_{T}; Counts", {HistType::kTH1D, {{100, o2::analysis::gfw::ptpoilow, o2::analysis::gfw::ptpoiup}}});
@@ -310,7 +319,7 @@ struct FlowGfwLightIons {
     if (doprocessMCReco || doprocessData || doprocessDataNoCent || doprocessMCRecoNoCent) {
       registry.add("trackQA/before/phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
       registry.add("trackQA/before/pt_dcaXY_dcaZ", "", {HistType::kTH3D, {ptAxis, dcaXYAXis, dcaZAXis}});
-      registry.add("trackQA/before/nch_pt", "#it{p}_{T} vs multiplicity; N_{ch}; #it{p}_{T}", {HistType::kTH2D, {nchAxis, {100, o2::analysis::gfw::ptpoilow, o2::analysis::gfw::ptpoiup}}});
+      registry.add("trackQA/before/nch_pt", "#it{p}_{T} vs multiplicity; N_{ch}; #it{p}_{T}", {HistType::kTH2D, {nchAxis, ptAxis}});
       registry.add("trackQA/before/chi2prTPCcls", "#chi^{2}/cluster for the TPC track segment; #chi^{2}/TPC cluster", {HistType::kTH1D, {{100, 0., 5.}}});
       registry.add("trackQA/before/chi2prITScls", "#chi^{2}/cluster for the ITS track; #chi^{2}/ITS cluster", {HistType::kTH1D, {{100, 0., 50.}}});
       registry.add("trackQA/before/nTPCClusters", "Number of found TPC clusters; TPC N_{cls}; Counts", {HistType::kTH1D, {{100, 40, 180}}});
@@ -770,10 +779,10 @@ struct FlowGfwLightIons {
         return;
 
       if (cfgFillWeights) {
-        fillWeights(mcParticle, vtxz, run);
+        fillWeights(track, vtxz, run);
       } else {
         fillPtSums<kReco>(track);
-        fillGFW<kReco>(mcParticle, vtxz, densitycorrections);
+        fillGFW<kReco>(track, vtxz, densitycorrections);
       }
 
       if (cfgFillQA) {
@@ -905,7 +914,7 @@ struct FlowGfwLightIons {
     return;
   }
 
-  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
+  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int run = bc.runNumber();
@@ -959,8 +968,15 @@ struct FlowGfwLightIons {
       case kCentNTPV:
         centrality = collision.centNTPV();
         break;
+      case kCentNGlobal:
+        centrality = collision.centNGlobal();
+        break;
+      case kCentMFT:
+        centrality = collision.centMFT();
+        break;
       default:
         centrality = collision.centFT0C();
+        break;
     }
     if (cfgFillQA)
       fillEventQA<kBefore>(collision, tracks);
@@ -1025,7 +1041,7 @@ struct FlowGfwLightIons {
   }
   PROCESS_SWITCH(FlowGfwLightIons, processDataNoCent, "Process analysis for non-derived data without centrality", true);
 
-  void processMCReco(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const&)
+  void processMCReco(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int run = bc.runNumber();
@@ -1036,7 +1052,33 @@ struct FlowGfwLightIons {
     }
     if (!collision.sel8())
       return;
-    const auto centrality = collision.centFT0C();
+    float centrality;
+    switch (cfgCentEstimator) {
+      case kCentFT0C:
+        centrality = collision.centFT0C();
+        break;
+      case kCentFT0CVariant1:
+        centrality = collision.centFT0CVariant1();
+        break;
+      case kCentFT0M:
+        centrality = collision.centFT0M();
+        break;
+      case kCentFV0A:
+        centrality = collision.centFV0A();
+        break;
+      case kCentNTPV:
+        centrality = collision.centNTPV();
+        break;
+      case kCentNGlobal:
+        centrality = collision.centNGlobal();
+        break;
+      case kCentMFT:
+        centrality = collision.centMFT();
+        break;
+      default:
+        centrality = collision.centFT0C();
+        break;
+    }
     if (cfgFillQA)
       fillEventQA<kBefore>(collision, tracks);
     registry.fill(HIST("eventQA/before/centrality"), centrality);
@@ -1142,13 +1184,38 @@ struct FlowGfwLightIons {
   }
   PROCESS_SWITCH(FlowGfwLightIons, processMCRecoNoCent, "Process analysis for MC reconstructed events without centrality/mult table", false);
 
-  void processMCGen(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs>> const& collisions, aod::McParticles const& particles, GFWTracks const& tracks)
+  void processMCGen(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>> const& collisions, aod::McParticles const& particles, GFWTracks const& tracks)
   {
     if (collisions.size() != 1)
       return;
     float centrality = -1;
     for (const auto& collision : collisions) {
-      centrality = collision.centFT0C();
+      switch (cfgCentEstimator) {
+        case kCentFT0C:
+          centrality = collision.centFT0C();
+          break;
+        case kCentFT0CVariant1:
+          centrality = collision.centFT0CVariant1();
+          break;
+        case kCentFT0M:
+          centrality = collision.centFT0M();
+          break;
+        case kCentFV0A:
+          centrality = collision.centFV0A();
+          break;
+        case kCentNTPV:
+          centrality = collision.centNTPV();
+          break;
+        case kCentNGlobal:
+          centrality = collision.centNGlobal();
+          break;
+        case kCentMFT:
+          centrality = collision.centMFT();
+          break;
+        default:
+          centrality = collision.centFT0C();
+          break;
+      }
     }
     std::vector<int> numberOfTracks;
     for (auto const& collision : collisions) {
