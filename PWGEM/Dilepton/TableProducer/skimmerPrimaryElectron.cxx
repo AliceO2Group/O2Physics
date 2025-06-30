@@ -59,7 +59,7 @@ using MyTrackMC = MyTracksMC::iterator;
 
 struct skimmerPrimaryElectron {
   SliceCache cache;
-  Preslice<aod::Tracks> perCol = o2::aod::track::collisionId;
+  Preslice<aod::TracksIU> perCol = o2::aod::track::collisionId;
   Produces<aod::EMPrimaryElectrons> emprimaryelectrons;
   Produces<aod::EMPrimaryElectronsCov> emprimaryelectronscov;
 
