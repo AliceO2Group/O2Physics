@@ -222,7 +222,8 @@ void OnnxModel::modelSurgery(std::string inpath, std::string outpath, std::unord
   }
 }
 
-void OnnxModel::add_concat_to_input(onnx::ModelProto& model, std::unordered_map<std::string, float> originals) {
+void OnnxModel::add_concat_to_input(onnx::ModelProto& model, std::unordered_map<std::string, float> originals)
+{
   auto* graph = model.mutable_graph();
 
   // 1. Save original input name and remove it
