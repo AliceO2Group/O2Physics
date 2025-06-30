@@ -641,18 +641,22 @@ struct ExclusiveRhoTo4Pi {
 
     // Four Pion Transverse Momentum
     histosData.add("fourpion_pT_0_charge", "Event pT in 0 Charge Events With Track Selection and PID Selection of Pi; pT [GeV/c]; Events", kTH1F, {pTAxis});
+    histosData.add("fourpion_pT_0_charge_within_rap", "Event pT in 0 Charge Events With Track Selection and PID Selection of Pi; pT [GeV/c]; Events", kTH1F, {pTAxis});
     histosData.add("fourpion_pT_non_0_charge", "Event pT in Non 0 Charge Events With Track Selection and PID Selection of Pi; pT [GeV/c]; Events", kTH1F, {pTAxis});
 
     // Four Pion Eta
     histosData.add("fourpion_eta_0_charge", "Four Pion #eta (0 charge); #eta; Events", kTH1F, {{1000, -1.1, 1.1}});
+    histosData.add("fourpion_eta_0_charge_within_rap", "Four Pion #eta (0 charge within rap); #eta; Events", kTH1F, {{1000, -1.1, 1.1}});
     histosData.add("fourpion_eta_non_0_charge", "Four Pion #eta (non 0 charge); #eta; #eta; Events", kTH1F, {{1000, -1.1, 1.1}});
 
     // Four Pion Phi
     histosData.add("fourpion_phi_0_charge", "Four Pion #phi (0 charge); #phi [rad]; Events", kTH1F, {phiAxis});
+    histosData.add("fourpion_phi_0_charge_within_rap", "Four Pion #phi (0 charge within rap); #phi [rad]; Events", kTH1F, {phiAxis});
     histosData.add("fourpion_phi_non_0_charge", "Four Pion #phi (non 0 charge); #phi [rad]; Events", kTH1F, {phiAxis});
 
     // Four Pion Rapidity
     histosData.add("fourpion_rap_0_charge", "Four Pion Rapidity (0 charge); y; Events", kTH1F, {{1000, -2.5, 2.5}});
+    histosData.add("fourpion_rap_0_charge_within_rap", "Four Pion Rapidity (0 charge within rap); y; Events", kTH1F, {{1000, -2.5, 2.5}});
     histosData.add("fourpion_rap_non_0_charge", "Four Pion Rapidity (non 0 charge); y; Events", kTH1F, {rapidityAxis});
 
     // Four Pion Mass
@@ -1117,7 +1121,10 @@ struct ExclusiveRhoTo4Pi {
         fourPiPhiPair1, fourPiPhiPair2, fourPiCosThetaPair1, fourPiCosThetaPair2);
 
       if (std::fabs(p1234.Rapidity()) < rhoRapCut) {
-        histosData.fill(HIST("fourpion_pT_0_charge"), p1234.Pt());
+        histosData.fill(HIST("fourpion_pT_0_charge_within_rap"), p1234.Pt());
+        histosData.fill(HIST("fourpion_eta_0_charge_within_rap"), p1234.Eta());
+        histosData.fill(HIST("fourpion_phi_0_charge_within_rap"), p1234.Phi());
+        histosData.fill(HIST("fourpion_rap_0_charge_within_rap"), p1234.Rapidity());
         if (p1234.Pt() < rhoPtCut) {
           histosData.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 5);
           // Fill the Invariant Mass Histogram
