@@ -54,12 +54,20 @@ const AxisSpec axisSparseDcaZ{100, -1., 1., "DCA_{z}, cm"};
 struct TimeDependentQaTask {
   Configurable<float> confTimeBinWidthInSec{"TimeBinWidthInSec", 0.5, "Width of time bins in seconds"};                                                                          // o2-linter: disable=name/configurable (temporary fix)
   Configurable<float> confTimeWiderBinFactor{"TimeWideBinFactor", 4, "Factor for wider time bins for some 2D histograms"};                                                       // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<float> confTimeMuchWiderBinFactor{"confTimeMuchWiderBinFactor", 20, "Factor for even wider time bins for some 2D histograms"};                                    // o2-linter: disable=name/configurable (temporary fix)
   Configurable<int> confTakeVerticesWithUPCsettings{"ConsiderVerticesWithUPCsettings", 0, "Take vertices: 0 - all , 1 - only without UPC settings, 2 - only with UPC settings"}; // o2-linter: disable=name/configurable (temporary fix)
   Configurable<int> confFlagFillPhiVsTimeHist{"FlagFillPhiVsTimeHist", 2, "0 - don't fill , 1 - fill only for global/7cls/TRD/TOF tracks, 2 - fill also layer-by-layer"};        // o2-linter: disable=name/configurable (temporary fix)
   Configurable<int> confFlagFillEtaPhiVsTimeHist{"FlagFillEtaPhiVsTimeHist", 0, "0 - don't fill , 1 - fill"};                                                                    // o2-linter: disable=name/configurable (temporary fix)
   Configurable<float> confCutOnNtpcClsForSharedFractAndDeDxCalc{"CutOnNtpcClsForSharedFractAndDeDxCalc", 70, ""};                                                                // o2-linter: disable=name/configurable (temporary fix)
   Configurable<int> confFlagCheckMshape{"FlagCheckMshape", 0, "0 - don't check , 1 - check"};                                                                                    // o2-linter: disable=name/configurable (temporary fix)
   Configurable<int> confFlagCheckQoverPtHist{"FlagCheckQoverPtHist", 1, "0 - don't check , 1 - check"};                                                                          // o2-linter: disable=name/configurable (temporary fix)
+
+  // for O-O and Ne-Ne run
+  Configurable<int> confIncludeMultDistrVsTimeHistos{"confIncludeMultDistrVsTimeHistos", 0, ""};                    // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<float> confMaxNtracksForTimeDepDistributions{"confMaxNtracksForTimeDepDistributions", 800, ""};      // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<float> confMaxZNACenergyForTimeDepDistributions{"confMaxZNACenergyForTimeDepDistributions", 80, ""}; // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<float> confMaxT0ACamplForTimeDepDistributions{"confMaxT0ACamplForTimeDepDistributions", 25000, ""};  // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<float> confMaxV0AamplForTimeDepDistributions{"confMaxV0AamplForTimeDepDistributions", 40000, ""};    // o2-linter: disable=name/configurable (temporary fix)
 
   enum EvSelBitsToMonitor {
     enCollisionsAll = 0,
@@ -181,10 +189,12 @@ struct TimeDependentQaTask {
       maxSec = ceil(tsEOR / 1000.);
       int nTimeBins = static_cast<int>((maxSec - minSec) / confTimeBinWidthInSec);
       int nTimeWideBins = static_cast<int>((maxSec - minSec) / confTimeBinWidthInSec / confTimeWiderBinFactor);
+      int nTimeVeryWideBins = static_cast<int>((maxSec - minSec) / confTimeBinWidthInSec / confTimeMuchWiderBinFactor);
       double timeInterval = nTimeBins * confTimeBinWidthInSec;
 
       const AxisSpec axisSeconds{nTimeBins, 0, timeInterval, "seconds"};
       const AxisSpec axisSecondsWideBins{nTimeWideBins, 0, timeInterval, "seconds"};
+      const AxisSpec axisSecondsVeryWideBins{nTimeVeryWideBins, 0, timeInterval, "seconds"};
       histos.add("hSecondsBCsTVX", "", kTH1D, {axisSeconds});
       histos.add("hSecondsBCsTVXandTFborderCuts", "", kTH1D, {axisSeconds});
 
@@ -207,6 +217,22 @@ struct TimeDependentQaTask {
       histos.add("hSecondsUPCverticesBeforeAllCuts", "", kTH2F, {axisSeconds, {2, -0.5, 1.5, "Is vertex with UPC settings"}});
       histos.add("hSecondsUPCverticesBeforeSel8", "", kTH2F, {axisSeconds, {2, -0.5, 1.5, "Is vertex with UPC settings after |vZ|<10 cut"}});
       histos.add("hSecondsUPCvertices", "", kTH2F, {axisSeconds, {2, -0.5, 1.5, "Is vertex with UPC settings after |vZ|<10 and sel8 cuts"}});
+
+      // shapes of distributions (added for the O-O run monitoring)
+      if (confIncludeMultDistrVsTimeHistos) {
+        int maxNtracks = confMaxNtracksForTimeDepDistributions;
+        float maxZNACenergyForTimeDepDistributions = confMaxZNACenergyForTimeDepDistributions;
+        float maxT0ACamplForTimeDepDistributions = confMaxT0ACamplForTimeDepDistributions;
+        float maxV0AamplForTimeDepDistributions = confMaxV0AamplForTimeDepDistributions;
+        histos.add("multDistributions/hSecondsDistrPVtracks", "", kTH2D, {axisSecondsVeryWideBins, {maxNtracks, -0.5, maxNtracks - 0.5, "n PV tracks"}});
+        histos.add("multDistributions/hSecondsDistrZNA", "", kTH2D, {axisSecondsVeryWideBins, {320, 0, maxZNACenergyForTimeDepDistributions, "ZNA ampl"}});
+        histos.add("multDistributions/hSecondsDistrZNC", "", kTH2D, {axisSecondsVeryWideBins, {320, 0, maxZNACenergyForTimeDepDistributions, "ZNC ampl"}});
+        histos.add("multDistributions/hSecondsDistrZNACdiff", "", kTH2D, {axisSecondsVeryWideBins, {600, -maxZNACenergyForTimeDepDistributions, maxZNACenergyForTimeDepDistributions, "ZN A-C diff"}});
+        histos.add("multDistributions/hSecondsDistrZNACdiffNorm", "", kTH2D, {axisSecondsVeryWideBins, {200, -1., 1., "ZN A-C diff"}});
+        histos.add("multDistributions/hSecondsDistrT0A", "", kTH2D, {axisSecondsVeryWideBins, {250, 0, maxT0ACamplForTimeDepDistributions, "T0A ampl"}});
+        histos.add("multDistributions/hSecondsDistrT0C", "", kTH2D, {axisSecondsVeryWideBins, {250, 0, maxT0ACamplForTimeDepDistributions, "T0C ampl"}});
+        histos.add("multDistributions/hSecondsDistrV0A", "", kTH2D, {axisSecondsVeryWideBins, {400, 0, maxV0AamplForTimeDepDistributions, "V0A ampl"}});
+      }
 
       // ### QA event selection bits
       int nEvSelBits = enNumEvSelBits;
@@ -534,6 +560,7 @@ struct TimeDependentQaTask {
 
       // ##### track loop
       auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
+      int nPVtracks = 0;
       for (const auto& track : tracksGrouped) {
         // if (!track.hasTPC() || !track.hasITS())
         //   continue;
@@ -593,6 +620,8 @@ struct TimeDependentQaTask {
           histos.fill(HIST("PVcontrib/hSecondsNumClsIts"), secFromSOR, track.itsNCls());
           histos.fill(HIST("PVcontrib/hSeconds2DNumClsIts"), secFromSOR, track.itsNCls());
           histos.fill(HIST("PVcontrib/hSecondsChi2NClIts"), secFromSOR, track.itsChi2NCl());
+
+          nPVtracks++;
         }
 
         // ### global tracks
@@ -728,6 +757,29 @@ struct TimeDependentQaTask {
             histos.fill(HIST("hSecondsITSglobalVsEtaPhi"), secFromSOR, track.eta(), track.phi());
           }
         }
+      } // end of track loop
+
+      // fill mult distributions vs time
+      if (confIncludeMultDistrVsTimeHistos) {
+        histos.fill(HIST("multDistributions/hSecondsDistrPVtracks"), secFromSOR, nPVtracks);
+
+        // ZNA,C
+        // float multZNA = bc.has_zdc() ? bc.zdc().energyCommonZNA() : -999.f;
+        // float multZNC = bc.has_zdc() ? bc.zdc().energyCommonZNC() : -999.f;
+        histos.fill(HIST("multDistributions/hSecondsDistrZNA"), secFromSOR, col.multZNA());
+        histos.fill(HIST("multDistributions/hSecondsDistrZNC"), secFromSOR, col.multZNC());
+        float ZNdiff = col.multZNA() - col.multZNC();
+        float ZNsum = col.multZNA() + col.multZNC();
+        histos.fill(HIST("multDistributions/hSecondsDistrZNACdiff"), secFromSOR, ZNdiff);
+        if (ZNsum > 0)
+          histos.fill(HIST("multDistributions/hSecondsDistrZNACdiffNorm"), secFromSOR, ZNdiff / ZNsum);
+
+        // FT0A,C, V0A
+        // float multT0A = bc.has_ft0() ? bc.ft0().sumAmpA() : -999.f;
+        // float multT0C = bc.has_ft0() ? fbcundBC.ft0().sumAmpC() : -999.f;
+        histos.fill(HIST("multDistributions/hSecondsDistrT0A"), secFromSOR, col.multFT0A());
+        histos.fill(HIST("multDistributions/hSecondsDistrT0C"), secFromSOR, col.multFT0C());
+        histos.fill(HIST("multDistributions/hSecondsDistrV0A"), secFromSOR, col.multFV0A());
       }
     }
   } // end of collision loop
