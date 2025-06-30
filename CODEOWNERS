@@ -41,13 +41,14 @@
 /PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @NicoleBastid @hahassan7 @jpxrk @apalasciano @zhangbiao-phy @gluparel
 # PWG-LF
 /PWGLF @alibuild @sustripathy @skundu692
-/PWGLF/Tasks/GlobalEventProperties         @alibuild @sustripathy @skundu692 @gbencedi @abmodak @omvazque
+/PWGLF/DataModel @alibuild @sustripathy @skundu692 @gbencedi @abmodak @fmazzasc @maciacco @dmallick2 @smaff92 @ercolessi @romainschotter
+/PWGLF/Tasks/GlobalEventProperties @alibuild @sustripathy @skundu692 @gbencedi @abmodak @omvazque
 /PWGLF/TableProducer/GlobalEventProperties @alibuild @sustripathy @skundu692 @gbencedi @abmodak @omvazque
-/PWGLF/Tasks/Nuspex         @alibuild @sustripathy @skundu692 @fmazzasc @chiarapinto @maciacco
-/PWGLF/TableProducer/Nuspex @alibuild @sustripathy @skundu692 @fmazzasc @chiarapinto @maciacco
-/PWGLF/Tasks/Resonances         @alibuild @sustripathy @skundu692 @dmallick2 @smaff92
+/PWGLF/Tasks/Nuspex @alibuild @sustripathy @skundu692 @fmazzasc @maciacco
+/PWGLF/TableProducer/Nuspex @alibuild @sustripathy @skundu692 @fmazzasc @maciacco
+/PWGLF/Tasks/Resonances @alibuild @sustripathy @skundu692 @dmallick2 @smaff92
 /PWGLF/TableProducer/Resonances @alibuild @sustripathy @skundu692 @dmallick2 @smaff92
-/PWGLF/Tasks/Strangeness         @alibuild @sustripathy @skundu692 @ercolessi @romainschotter
+/PWGLF/Tasks/Strangeness @alibuild @sustripathy @skundu692 @ercolessi @romainschotter
 /PWGLF/TableProducer/Strangeness @alibuild @sustripathy @skundu692 @ercolessi @romainschotter
 
 # PWG-MM

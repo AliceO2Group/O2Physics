@@ -16,19 +16,21 @@
 #ifndef PWGHF_CORE_HFMLRESPONSEDSTARTOD0PI_H_
 #define PWGHF_CORE_HFMLRESPONSEDSTARTOD0PI_H_
 
-#include <map>
-#include <string>
-#include <vector>
-
 #include "PWGHF/Core/HfMlResponse.h"
-#include "CommonConstants/PhysicsConstants.h"
+
+#include "Tools/ML/MlResponse.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+
+#include <cstdint>
+#include <vector>
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_DSTAR(FEATURE)                                         \
-  {                                                                     \
-#FEATURE, static_cast < uint8_t>(InputFeaturesDstarToD0Pi::FEATURE) \
+#define FILL_MAP_DSTAR(FEATURE)                                       \
+  {                                                                   \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesDstarToD0Pi::FEATURE) \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)

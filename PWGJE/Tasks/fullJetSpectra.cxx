@@ -13,46 +13,42 @@
 /// \brief Task for full jet spectra studies in pp collisions.
 /// \author Archita Rani Dash <archita.rani.dash@cern.ch>
 
-#include <vector>
-#include <utility>
-#include <string>
-#include <cmath>
-#include <TRandom3.h>
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetFindingUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/DataModel/EMCALClusterDefinition.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
 
-#include "CommonConstants/PhysicsConstants.h"
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/Multiplicity.h"
+
 #include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/Logger.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include <TH1.h>
 
-#include "PWGHF/Core/HfHelper.h"
+#include <cmath>
+#include <cstddef>
+#include <string>
+#include <type_traits>
+#include <vector>
 
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
-#include "PWGJE/DataModel/EMCALMatchedCollisions.h"
-#include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/Core/JetUtilities.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetFindingUtilities.h"
-
-#include "EventFiltering/filterTables.h"
+#include <math.h>
 
 using namespace std;
 using namespace o2;
-using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-// using namespace jetderiveddatautilities;
 
 struct FullJetSpectra {
 
@@ -674,8 +670,6 @@ struct FullJetSpectra {
   void processJetsData(soa::Filtered<EMCCollisionsData>::iterator const& collision, FullJetTableDataJoined const& jets, aod::JetTracks const&, aod::JetClusters const&)
   {
     bool eventAccepted = false;
-    double weight = 1.0;
-    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
 
     registry.fill(HIST("hDetcollisionCounter"), 0.5); // allDetColl
     if (std::fabs(collision.posZ()) > vertexZCut) {
@@ -683,37 +677,24 @@ struct FullJetSpectra {
     }
     registry.fill(HIST("hDetcollisionCounter"), 1.5); // DetCollWithVertexZ
 
-    // outlier check: for every outlier jet, reject the whole event
-    for (auto const& jet : jets) {
-      if (jet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) { // for MCD jets only to remove outliers; setting pTHatMaxMCD = 1 improves purity
-        registry.fill(HIST("hDetcollisionCounter"), 2.5);               // RejectedDetCollWithOutliers
-        return;
-      }
-      // this cut only to be used for calculating Jet Purity and not for Response Matrix
-      // this is mainly applied to remove all high weight jets causing big fluctuations
-      if (jet.pt() > 1 * pTHat) {
-        registry.fill(HIST("h_full_jet_pt_pTHatcut"), jet.pt(), weight);
-      }
-    }
-
     if (doMBGapTrigger && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
-      registry.fill(HIST("hDetcollisionCounter"), 3.5); // MBRejectedDetEvents
+      registry.fill(HIST("hDetcollisionCounter"), 2.5); // MBRejectedDetEvents
       return;
     }
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
-      registry.fill(HIST("hDetcollisionCounter"), 4.5); // EventsNotSatisfyingEventSelection
+      registry.fill(HIST("hDetcollisionCounter"), 3.5); // EventsNotSatisfyingEventSelection
       return;
     }
     if (doEMCALEventWorkaround) {
       if (collision.isEmcalReadout() && !collision.isAmbiguous()) { // i.e. EMCAL has a cell content
         eventAccepted = true;
         if (collision.alias_bit(kTVXinEMC)) {
-          registry.fill(HIST("hDetcollisionCounter"), 5.5); // EMCreadoutDetEventsWithkTVXinEMC
+          registry.fill(HIST("hDetcollisionCounter"), 4.5); // EMCreadoutDetEventsWithkTVXinEMC
         }
       }
     } else {
       if (!collision.isAmbiguous() && jetderiveddatautilities::eventEMCAL(collision) && collision.alias_bit(kTVXinEMC)) {
-        registry.fill(HIST("hDetcollisionCounter"), 5.5); // EMCreadoutDetEventsWithkTVXinEMC
+        registry.fill(HIST("hDetcollisionCounter"), 4.5); // EMCreadoutDetEventsWithkTVXinEMC
         eventAccepted = true;
       }
     }
@@ -724,10 +705,10 @@ struct FullJetSpectra {
           fillRejectedJetHistograms(jet, 1.0);
         }
       }
-      registry.fill(HIST("hDetcollisionCounter"), 6.5); // AllRejectedDetEventsAfterEMCEventSelection
+      registry.fill(HIST("hDetcollisionCounter"), 5.5); // AllRejectedDetEventsAfterEMCEventSelection
       return;
     }
-    registry.fill(HIST("hDetcollisionCounter"), 7.5); // EMCAcceptedDetColl
+    registry.fill(HIST("hDetcollisionCounter"), 6.5); // EMCAcceptedDetColl
 
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -1410,20 +1391,12 @@ struct FullJetSpectra {
   void processDataTracks(soa::Filtered<EMCCollisionsData>::iterator const& collision, soa::Filtered<aod::JetTracks> const& tracks, soa::Filtered<aod::JetClusters> const& clusters)
   {
     bool eventAccepted = false;
-    double weight = 1.0;
-    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
 
     registry.fill(HIST("hCollisionsUnweighted"), 0.5); // allDetColl
     if (std::fabs(collision.posZ()) > vertexZCut) {
       return;
     }
     registry.fill(HIST("hCollisionsUnweighted"), 1.5); // DetCollWithVertexZ
-
-    // for (auto const& track : tracks) {
-    if (pTHat < pTHatAbsoluteMin) { // Track outlier rejection: should this be for every track iteration or for every collision?
-      return;
-    }
-    // }
 
     if (doMBGapTrigger && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       registry.fill(HIST("hCollisionsUnweighted"), 2.5); // MBRejectedDetEvents

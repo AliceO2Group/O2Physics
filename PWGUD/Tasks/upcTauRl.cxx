@@ -43,7 +43,7 @@
 #include "PWGUD/Core/SGSelector.h"
 
 // ROOT headers
-#include "TLorentzVector.h"
+#include "Math/Vector4D.h"
 #include "TPDGCode.h"
 
 using namespace o2;
@@ -156,6 +156,11 @@ struct UpcTauRl {
     Configurable<float> cutTrueGapSideFT0C{"cutTrueGapSideFT0C", 50., "FT0C threshold for SG selector"};
     Configurable<float> cutTrueGapSideZDC{"cutTrueGapSideZDC", 0., "ZDC threshold for SG selector. 0 is <1n, 4.2 is <2n, 6.7 is <3n, 9.5 is <4n, 12.5 is <5n"};
     Configurable<float> cutFITtime{"cutFITtime", 40., "Maximum FIT time allowed. Default is 40ns"};
+    Configurable<bool> cutEvTFb{"cutEvTFb", true, {"Event selection bit kNoTimeFrameBorder"}};
+    Configurable<bool> cutEvITSROFb{"cutEvITSROFb", true, {"Event selection bit kNoITSROFrameBorder"}};
+    Configurable<bool> cutEvSbp{"cutEvSbp", true, {"Event selection bit kNoSameBunchPileup"}};
+    Configurable<bool> cutEvZvtxFT0vPV{"cutEvZvtxFT0vPV", false, {"Event selection bit kIsGoodZvtxFT0vsPV"}};
+    Configurable<bool> cutEvVtxITSTPC{"cutEvVtxITSTPC", true, {"Event selection bit kIsVertexITSTPC"}};
     Configurable<float> cutEvOccupancy{"cutEvOccupancy", 100000., "Maximum allowed occupancy"};
     Configurable<bool> cutEvTrs{"cutEvTrs", true, {"Event selection bit kNoCollInTimeRangeStandard"}};
     Configurable<bool> cutEvTrofs{"cutEvTrofs", true, {"Event selection bit kNoCollInRofStandard"}};
@@ -862,6 +867,26 @@ struct UpcTauRl {
   bool isGoodROFtime(C const& coll)
   {
 
+    // kNoTimeFrameBorder
+    if (cutSample.cutEvTFb && !coll.tfb())
+      return false;
+
+    // kNoITSROFrameBorder
+    if (cutSample.cutEvITSROFb && !coll.itsROFb())
+      return false;
+
+    // kNoSameBunchPileup
+    if (cutSample.cutEvSbp && !coll.sbp())
+      return false;
+
+    // kIsGoodZvtxFT0vsPV
+    if (cutSample.cutEvZvtxFT0vPV && !coll.zVtxFT0vPV())
+      return false;
+
+    // kIsVertexITSTPC
+    if (cutSample.cutEvVtxITSTPC && !coll.vtxITSTPC())
+      return false;
+
     // Occupancy
     if (coll.occupancyInTime() > cutSample.cutEvOccupancy)
       return false;
@@ -1012,7 +1037,7 @@ struct UpcTauRl {
   template <typename T>
   bool selectedTauEvent(T const& trkDaug1, T const& trkDaug2)
   {
-    TLorentzVector mother, daug[2], motherOfPions, pion[2];
+    ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> mother, daug[2], motherOfPions, pion[2];
     daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
     daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
     if (cutTauEvent.useThresholdsPID) {
@@ -1182,7 +1207,7 @@ struct UpcTauRl {
       histos.get<TH1>(HIST("Events/hChannels"))->Fill(CH_EMUPI);
 
     if (isTwoSelectedTracks && doTwoTracks) {
-      TLorentzVector mother, daug[2], motherOfPions, pion[2], motherOfMuons, muon[2];
+      ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> mother, daug[2], motherOfPions, pion[2], motherOfMuons, muon[2];
       const auto& trkDaug1 = reconstructedBarrelTracks.iteratorAt(cutTauEvent.useThresholdsPID ? vecPVnewPIDidx[0] : vecPVidx[0]);
       const auto& trkDaug2 = reconstructedBarrelTracks.iteratorAt(cutTauEvent.useThresholdsPID ? vecPVnewPIDidx[1] : vecPVidx[1]);
       daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
@@ -1290,7 +1315,7 @@ struct UpcTauRl {
         const auto& mupionP = (cutTauEvent.useThresholdsPID ? isElectronCandidate(trkDaug1) : enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[1].P() : daug[0].P();
         const auto& mupionE = (cutTauEvent.useThresholdsPID ? isElectronCandidate(trkDaug1) : enumMyParticle(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)) == P_ELECTRON) ? daug[1].E() : daug[0].E();
 
-        TLorentzVector motherOfPiKaon, kaon;
+        ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> motherOfPiKaon, kaon;
         if (isElectronCandidate(trkDaug1)) {
           kaon.SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(MassKaonCharged, trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
           motherOfPiKaon = kaon + daug[1];
@@ -1604,7 +1629,7 @@ struct UpcTauRl {
     } // Loop over tracks with selections
 
     if (countPVGT == 2 && doTwoTracks) {
-      TLorentzVector daug[2], pion[2], muon[2];
+      ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> daug[2];
       const auto& trkDaug1 = reconstructedBarrelTracks.iteratorAt(vecPVnoPIDidx[0]);
       const auto& trkDaug2 = reconstructedBarrelTracks.iteratorAt(vecPVnoPIDidx[1]);
       daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
@@ -1645,7 +1670,7 @@ struct UpcTauRl {
     bool isElEl = (cutTauEvent.useThresholdsPID ? countPVGTelectronsAlt == 2 : countPVGTelectrons == 2);
     bool isElMuPion = (cutTauEvent.useThresholdsPID ? (countPVGTelectronsAlt == 1 && countPVGTmupionsAlt == 1) : ((countPVGTelectrons == 1 && countPVGTmuons == 1) || (countPVGTelectrons == 1 && countPVGTpions == 1)));
     if (isTwoSelectedTracks && doTwoTracks) {
-      TLorentzVector daug[2], pion[2], muon[2];
+      ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> daug[2], pion[2], muon[2];
       const auto& trkDaug1 = reconstructedBarrelTracks.iteratorAt(cutTauEvent.useThresholdsPID ? vecPVnewPIDidx[0] : vecPVidx[0]);
       const auto& trkDaug2 = reconstructedBarrelTracks.iteratorAt(cutTauEvent.useThresholdsPID ? vecPVnewPIDidx[1] : vecPVidx[1]);
       daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
@@ -1844,7 +1869,7 @@ struct UpcTauRl {
     bool isElEl = (cutTauEvent.useThresholdsPID ? countPVGTelectronsAlt == 2 : countPVGTelectrons == 2);
     bool isElMuPion = (cutTauEvent.useThresholdsPID ? (countPVGTelectronsAlt == 1 && countPVGTmupionsAlt == 1) : ((countPVGTelectrons == 1 && countPVGTmuons == 1) || (countPVGTelectrons == 1 && countPVGTpions == 1)));
     if (isTwoSelectedTracks && doTwoTracks) {
-      TLorentzVector daug[2];
+      ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> daug[2];
       const auto& trkDaug1 = reconstructedBarrelTracks.iteratorAt(cutTauEvent.useThresholdsPID ? vecPVnewPIDidx[0] : vecPVidx[0]);
       const auto& trkDaug2 = reconstructedBarrelTracks.iteratorAt(cutTauEvent.useThresholdsPID ? vecPVnewPIDidx[1] : vecPVidx[1]);
       daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutPID.cutSiTPC, cutPID.cutSiTOF, cutPID.usePIDwTOF, cutPID.useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));

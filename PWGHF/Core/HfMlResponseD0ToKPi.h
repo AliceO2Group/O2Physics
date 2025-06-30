@@ -17,14 +17,15 @@
 #ifndef PWGHF_CORE_HFMLRESPONSED0TOKPI_H_
 #define PWGHF_CORE_HFMLRESPONSED0TOKPI_H_
 
-#include <map>
-#include <string>
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponse.h"
+
+#include "Tools/ML/MlResponse.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+
+#include <cstdint>
+#include <vector>
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)
