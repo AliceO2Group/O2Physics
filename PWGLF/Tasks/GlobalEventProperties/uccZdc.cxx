@@ -69,7 +69,7 @@ struct UccZdc {
 
   static constexpr float kCollEnergy{2.68};
   static constexpr float kZero{0.};
-  static constexpr float minCharge{3.f};
+  static constexpr float kMinCharge{3.f};
 
   // Configurables Event Selection
   Configurable<bool> isNoCollInTimeRangeStrict{"isNoCollInTimeRangeStrict", true, "use isNoCollInTimeRangeStrict?"};
@@ -711,6 +711,7 @@ struct UccZdc {
 
     std::vector<float> pTs;
     std::vector<float> vecFD;
+    std::vector<float> vecEff;
     std::vector<float> vecOneOverEff;
 
     // Calculates the Nch multiplicity
@@ -748,7 +749,7 @@ struct UccZdc {
     // Fill vectors for [pT] measurement
     pTs.clear();
     vecFD.clear();
-    vecOneOverEff.clear();
+    vecEff.clear();
     for (const auto& track : tracks) {
       // Track Selection
       if (!track.isGlobalTrack()) {
@@ -772,7 +773,7 @@ struct UccZdc {
       }
       if ((effValue > 0.) && (fdValue > 0.)) {
         pTs.emplace_back(pt);
-        vecOneOverEff.emplace_back(1. / effValue);
+        vecEff.emplace_back(effValue);
         vecFD.emplace_back(fdValue);
       }
       // To calculate event-averaged <pt>
@@ -781,7 +782,7 @@ struct UccZdc {
 
     double p1, p2, p3, p4, w1, w2, w3, w4;
     p1 = p2 = p3 = p4 = w1 = w2 = w3 = w4 = 0.0;
-    getPTpowers(pTs, vecOneOverEff, vecFD, p1, w1, p2, w2, p3, w3, p4, w4);
+    getPTpowers(pTs, vecEff, vecFD, p1, w1, p2, w2, p3, w3, p4, w4);
 
     // EbE one-particle pT correlation
     double oneParCorr{p1 / w1};
@@ -932,7 +933,7 @@ struct UccZdc {
           }
 
           // Is it a charged particle?
-          if (std::abs(charge) < minCharge) {
+          if (std::abs(charge) < kMinCharge) {
             continue;
           }
           // Is it a primary particle?
@@ -1006,7 +1007,7 @@ struct UccZdc {
           }
 
           // Is it a charged particle?
-          if (std::abs(charge) < minCharge) {
+          if (std::abs(charge) < kMinCharge) {
             continue;
           }
           // Is it a primary particle?
@@ -1094,7 +1095,7 @@ struct UccZdc {
           }
 
           // Is it a charged particle?
-          if (std::abs(charge) < minCharge) {
+          if (std::abs(charge) < kMinCharge) {
             continue;
           }
           // All charged particles
@@ -1139,7 +1140,7 @@ struct UccZdc {
           }
 
           // Is it a charged particle?
-          if (std::abs(charge) < minCharge) {
+          if (std::abs(charge) < kMinCharge) {
             continue;
           }
           // Is it a primary particle?
@@ -1176,7 +1177,7 @@ struct UccZdc {
       const double pTi{pTs.at(i)};
       const double eFFi{vecEff.at(i)};
       const double fDi{vecFD.at(i)};
-      const double wEighti{pow(eFFi, -1.) * fDi};
+      const double wEighti{std::pow(eFFi, -1.) * fDi};
       pOne += wEighti * pTi;
       wOne += wEighti;
       pTwo += std::pow(wEighti * pTi, 2.);
