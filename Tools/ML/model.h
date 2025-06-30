@@ -23,6 +23,7 @@
 #include <Framework/Logger.h>
 
 #include <onnxruntime_cxx_api.h>
+#include <onnx/onnx_pb.h>
 
 #include <algorithm>
 #include <cassert>
@@ -143,6 +144,11 @@ class OnnxModel
   uint64_t getValidityFrom() const { return validFrom; }
   uint64_t getValidityUntil() const { return validUntil; }
   void setActiveThreads(int);
+
+  // Experimental: Protobuf model surgery, change input of size NxM to M different nodes of input Nx1
+  void modelSurgery(std::string inpath, std::string outpath, std::unordered_map<std::string, float>);
+  void add_concat_to_input(onnx::ModelProto&, std::unordered_map<std::string, float>);
+  void print_shape(const onnx::TensorShapeProto&);
 
  private:
   // Environment variables for the ONNX runtime
