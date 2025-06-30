@@ -63,7 +63,7 @@ struct TrackedCascadeProperties {
 
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
-    
+
   // QC Histograms
   HistogramRegistry registryQC{
     "registryQC",
