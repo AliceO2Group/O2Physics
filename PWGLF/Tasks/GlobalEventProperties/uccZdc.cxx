@@ -69,6 +69,7 @@ struct UccZdc {
 
   static constexpr float kCollEnergy{2.68};
   static constexpr float kZero{0.};
+  static constexpr float kMinCharge{3.f};
 
   // Configurables Event Selection
   Configurable<bool> isNoCollInTimeRangeStrict{"isNoCollInTimeRangeStrict", true, "use isNoCollInTimeRangeStrict?"};
@@ -710,6 +711,7 @@ struct UccZdc {
 
     std::vector<float> pTs;
     std::vector<float> vecFD;
+    std::vector<float> vecEff;
     std::vector<float> vecOneOverEff;
 
     // Calculates the Nch multiplicity
@@ -747,7 +749,7 @@ struct UccZdc {
     // Fill vectors for [pT] measurement
     pTs.clear();
     vecFD.clear();
-    vecOneOverEff.clear();
+    vecEff.clear();
     for (const auto& track : tracks) {
       // Track Selection
       if (!track.isGlobalTrack()) {
@@ -771,7 +773,7 @@ struct UccZdc {
       }
       if ((effValue > 0.) && (fdValue > 0.)) {
         pTs.emplace_back(pt);
-        vecOneOverEff.emplace_back(1. / effValue);
+        vecEff.emplace_back(effValue);
         vecFD.emplace_back(fdValue);
       }
       // To calculate event-averaged <pt>
@@ -780,7 +782,7 @@ struct UccZdc {
 
     double p1, p2, p3, p4, w1, w2, w3, w4;
     p1 = p2 = p3 = p4 = w1 = w2 = w3 = w4 = 0.0;
-    getPTpowers(pTs, vecOneOverEff, vecFD, p1, w1, p2, w2, p3, w3, p4, w4);
+    getPTpowers(pTs, vecEff, vecFD, p1, w1, p2, w2, p3, w3, p4, w4);
 
     // EbE one-particle pT correlation
     double oneParCorr{p1 / w1};
@@ -819,6 +821,7 @@ struct UccZdc {
 
   // Preslice<aod::McParticles> perMCCollision = aod::mcparticle::mcCollisionId;
   Preslice<TheFilteredSimTracks> perCollision = aod::track::collisionId;
+  Service<o2::framework::O2DatabasePDG> pdg;
   TRandom* randPointer = new TRandom();
   void processMCclosure(aod::McCollisions::iterator const& mccollision, soa::SmallGroups<o2::aod::SimCollisions> const& collisions, o2::aod::BCsRun3 const& /*bcs*/, aod::FT0s const& /*ft0s*/, aod::McParticles const& mcParticles, TheFilteredSimTracks const& simTracks)
   {
@@ -879,9 +882,10 @@ struct UccZdc {
           return;
         }
 
-        std::vector<float> pTs;
-        std::vector<float> vecFD;
-        std::vector<float> vecOneOverEff;
+        std::vector<double> pTs;
+        std::vector<double> vecFD;
+        std::vector<double> vecEff;
+        std::vector<double> vecOneOverEffXFD;
         // std::vector<float> wIs;
         const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
 
@@ -901,6 +905,8 @@ struct UccZdc {
         }
 
         // Calculates the event weight, W_k
+        const int foundNchBin{efficiency->GetXaxis()->FindBin(nchRaw)};
+
         for (const auto& track : groupedTracks) {
           // Track Selection
           if (track.eta() < minEta || track.eta() > maxEta) {
@@ -912,12 +918,31 @@ struct UccZdc {
           if (!track.isGlobalTrack()) {
             continue;
           }
+          if (!track.has_mcParticle()) {
+            continue;
+          }
+          const auto& particle{track.mcParticle()};
 
-          float pt{track.pt()};
-          int foundNchBin{efficiency->GetXaxis()->FindBin(nchRaw)};
-          int foundPtBin{efficiency->GetYaxis()->FindBin(pt)};
-          float effValue{1.};
-          float fdValue{1.};
+          auto charge{0.};
+          // Get the MC particle
+          auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+          if (pdgParticle != nullptr) {
+            charge = pdgParticle->Charge();
+          } else {
+            continue;
+          }
+
+          // Is it a charged particle?
+          if (std::abs(charge) < kMinCharge) {
+            continue;
+          }
+          // Is it a primary particle?
+          // if (!particle.isPhysicalPrimary()) { continue; }
+
+          const double pt{static_cast<double>(track.pt())};
+          const int foundPtBin{efficiency->GetYaxis()->FindBin(pt)};
+          double effValue{1.};
+          double fdValue{1.};
 
           if (applyEff) {
             effValue = efficiency->GetBinContent(foundNchBin, foundPtBin);
@@ -925,19 +950,19 @@ struct UccZdc {
           }
           if ((effValue > 0.) && (fdValue > 0.)) {
             pTs.emplace_back(pt);
-            vecOneOverEff.emplace_back(1. / effValue);
+            vecEff.emplace_back(effValue);
             vecFD.emplace_back(fdValue);
+            vecOneOverEffXFD.emplace_back(fdValue / effValue);
           }
         }
-
-        nchMult = std::accumulate(vecOneOverEff.begin(), vecOneOverEff.end(), 0);
+        nchMult = std::accumulate(vecOneOverEffXFD.begin(), vecOneOverEffXFD.end(), 0);
         if (nchMult < minNchSel) {
           return;
         }
 
         double p1, p2, p3, p4, w1, w2, w3, w4;
         p1 = p2 = p3 = p4 = w1 = w2 = w3 = w4 = 0.0;
-        getPTpowers(pTs, vecOneOverEff, vecFD, p1, w1, p2, w2, p3, w3, p4, w4);
+        getPTpowers(pTs, vecEff, vecFD, p1, w1, p2, w2, p3, w3, p4, w4);
 
         const double denTwoParCorr{std::pow(w1, 2.) - w2};
         const double numTwoParCorr{std::pow(p1, 2.) - p2};
@@ -971,6 +996,21 @@ struct UccZdc {
           if (particle.pt() < minPt || particle.pt() > maxPt) {
             continue;
           }
+
+          auto charge{0.};
+          // Get the MC particle
+          auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+          if (pdgParticle != nullptr) {
+            charge = pdgParticle->Charge();
+          } else {
+            continue;
+          }
+
+          // Is it a charged particle?
+          if (std::abs(charge) < kMinCharge) {
+            continue;
+          }
+          // Is it a primary particle?
           if (!particle.isPhysicalPrimary()) {
             continue;
           }
@@ -1044,9 +1084,23 @@ struct UccZdc {
           if (!track.has_mcParticle()) {
             continue;
           }
-          registry.fill(HIST("Pt_all_ch"), nchRaw, track.pt());
-
+          // Get the MC particle
           const auto& particle{track.mcParticle()};
+          auto charge{0.};
+          auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+          if (pdgParticle != nullptr) {
+            charge = pdgParticle->Charge();
+          } else {
+            continue;
+          }
+
+          // Is it a charged particle?
+          if (std::abs(charge) < kMinCharge) {
+            continue;
+          }
+          // All charged particles
+          registry.fill(HIST("Pt_all_ch"), nchRaw, track.pt());
+          // Is it a primary particle?
           if (!particle.isPhysicalPrimary()) {
             continue;
           }
@@ -1075,6 +1129,21 @@ struct UccZdc {
           if (particle.pt() < minPt || particle.pt() > maxPt) {
             continue;
           }
+
+          auto charge{0.};
+          // Get the MC particle
+          auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+          if (pdgParticle != nullptr) {
+            charge = pdgParticle->Charge();
+          } else {
+            continue;
+          }
+
+          // Is it a charged particle?
+          if (std::abs(charge) < kMinCharge) {
+            continue;
+          }
+          // Is it a primary particle?
           if (!particle.isPhysicalPrimary()) {
             continue;
           }
@@ -1101,14 +1170,14 @@ struct UccZdc {
   PROCESS_SWITCH(UccZdc, processMCclosure, "Process MC closure", false);
 
   template <typename T, typename U>
-  void getPTpowers(const T& pTs, const T& vecOneOverEff, const T& vecFD, U& pOne, U& wOne, U& pTwo, U& wTwo, U& pThree, U& wThree, U& pFour, U& wFour)
+  void getPTpowers(const T& pTs, const T& vecEff, const T& vecFD, U& pOne, U& wOne, U& pTwo, U& wTwo, U& pThree, U& wThree, U& pFour, U& wFour)
   {
     pOne = wOne = pTwo = wTwo = pThree = wThree = pFour = wFour = 0.;
     for (std::size_t i = 0; i < pTs.size(); ++i) {
-      const float pTi{pTs.at(i)};
-      const float eFFi{vecOneOverEff.at(i)};
-      const float fDi{vecFD.at(i)};
-      const float wEighti{eFFi * fDi};
+      const double pTi{pTs.at(i)};
+      const double eFFi{vecEff.at(i)};
+      const double fDi{vecFD.at(i)};
+      const double wEighti{std::pow(eFFi, -1.) * fDi};
       pOne += wEighti * pTi;
       wOne += wEighti;
       pTwo += std::pow(wEighti * pTi, 2.);
