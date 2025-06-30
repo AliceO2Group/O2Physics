@@ -1339,7 +1339,6 @@ struct HfDataCreatorCharmHadPiReduced {
     }
 
     // get centrality
-    float centrality{-1};
     float multiplicity{0.f};
     for (const auto& collision : collSlice) {
       float collMult = collision.numContrib();
