@@ -337,7 +337,7 @@ struct V0PtInvMassPlots {
     rMCCorrections.fill(HIST("hNEvents_Corrections"), 0.5); // Event Efficiency Denominator
 
     // Signal Loss Denominator Loop
-    for (auto& mcParticle : mcParticles) {
+    for (const auto& mcParticle : mcParticles) {
       if (!mcParticle.isPhysicalPrimary()) {
         continue;
       }
