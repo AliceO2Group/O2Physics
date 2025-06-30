@@ -135,8 +135,6 @@ struct HfCandidateCreatorXic0Omegac0 {
   Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "KF Construct Method"};
   Configurable<bool> kfUseV0MassConstraint{"kfUseV0MassConstraint", false, "KF: use Lambda mass constraint"};
   Configurable<bool> kfUseCascadeMassConstraint{"kfUseCascadeMassConstraint", false, "KF: use Cascade mass constraint"};
-  Configurable<bool> constrainToPv{"constrainToPv", false, "Constrain particles to PV"};
-  Configurable<bool> constrainToMother{"constrainToMother", false, "Constrain daughter particles to mother particles"};
   Configurable<bool> kfResolutionQA{"kfResolutionQA", false, "KF: KFParticle Quality Assurance"};
 
   HfEventSelection hfEvSel;        // event selection and monitoring
