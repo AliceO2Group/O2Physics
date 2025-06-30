@@ -150,7 +150,7 @@ struct FemtoUniverseProducerMCTruthTask {
       }
     }
   }
-  
+
   template <typename TrackType>
   void fillParticles(TrackType const& tracks)
   {
