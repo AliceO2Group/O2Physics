@@ -649,14 +649,14 @@ struct TaskPolarisationCharmHadrons {
           hEPaxes.insert(hEPaxes.end(), {thnAxisAbsEtaTrackMin, thnAxisNumItsClsMin, thnAxisNumTpcClsMin});
         }
         if (doprocessDstarMc || doprocessDstarMcWithMl || doprocessDstarMcInPbPb || doprocessDstarMcWithMlInPbPb) {
-          std::vector<AxisSpec> RecoPromptEPAxes(hEPaxes);
-          RecoPromptEPAxes.insert(RecoPromptEPAxes.end(), {thnAxisDauToMuons});
+          std::vector<AxisSpec> hRecoPromptEPAxes(hEPaxes);
+          hRecoPromptEPAxes.insert(hRecoPromptEPAxes.end(), {thnAxisDauToMuons});
           std::vector<AxisSpec> hRecoNonPromptEPAxes(hEPaxes);
           hRecoNonPromptEPAxes.insert(hRecoNonPromptEPAxes.end(), {thnAxisDauToMuons, thnAxisPtB});
-          registry.add("hRecoPromptEP", "THn for polarisation studies with cosThStar w.r.t. event plane axis and BDT scores for reconstructed prompt D*+ candidates", HistType::kTHnSparseF, RecoPromptEPAxes);
+          registry.add("hRecoPromptEP", "THn for polarisation studies with cosThStar w.r.t. event plane axis and BDT scores for reconstructed prompt D*+ candidates", HistType::kTHnSparseF, hRecoPromptEPAxes);
           registry.add("hRecoNonPromptEP", "THn for polarisation studies with cosThStar w.r.t. event plane axis and BDT scores for reconstructed non-prompt D*+ candidates", HistType::kTHnSparseF, hRecoNonPromptEPAxes);
           if (activatePartRecoDstar) {
-            registry.add("hPartRecoPromptEP", "THn for polarisation studies with cosThStar w.r.t. event plane axis and BDT scores for partially reconstructed prompt D*+ candidates", HistType::kTHnSparseF, RecoPromptEPAxes);
+            registry.add("hPartRecoPromptEP", "THn for polarisation studies with cosThStar w.r.t. event plane axis and BDT scores for partially reconstructed prompt D*+ candidates", HistType::kTHnSparseF, hRecoPromptEPAxes);
             registry.add("hPartRecoNonPromptEP", "THn for polarisation studies with cosThStar w.r.t. event plane axis and BDT scores for partially reconstructed non-prompt D*+ candidates", HistType::kTHnSparseF, hRecoNonPromptEPAxes);
           }
         } else {
@@ -1406,12 +1406,18 @@ struct TaskPolarisationCharmHadrons {
   template <charm_polarisation::DecayChannel channel>
   bool isInSignalRegion(float invMass)
   {
+    float minInvMass = 0.f;
+    float maxInvMass = 100.f;
     if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
-      if (0.142f < invMass && invMass < 0.15f) {
+      minInvMass = 0.142f;
+      maxInvMass = 0.15f;
+      if (minInvMass < invMass && invMass < maxInvMass) {
         return true;
       }
     } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+ (to be tuned!)
-      if (2.25f < invMass && invMass < 2.35f) {
+      minInvMass = 2.25f;
+      maxInvMass = 2.35f;
+      if (minInvMass < invMass && invMass < maxInvMass) {
         return true;
       }
     }
