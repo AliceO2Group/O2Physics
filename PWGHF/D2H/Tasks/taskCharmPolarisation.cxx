@@ -217,8 +217,8 @@ struct HfTaskCharmPolarisation {
   EventPlaneHelper epHelper;
 
   using CollisionsWithMcLabels = soa::SmallGroups<soa::Join<aod::Collisions, aod::McCollisionLabels>>;
-  using CollsWithQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::CentFT0Ms, aod::CentFT0Cs>;
-  using CollsWithQvecsWithMcLabels = soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::QvectorFT0Cs, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::CentFT0Ms, aod::CentFT0Cs>>;
+  using CollsWithQVecs = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::CentFT0Ms, aod::CentFT0Cs>;
+  using CollsWithQVecsWithMcLabels = soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::QvectorFT0Cs, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::CentFT0Ms, aod::CentFT0Cs>>;
   using GenCollisWithQvecs = soa::Join<aod::McCollisions, aod::QvectorFT0Cs, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::CentFT0Ms, aod::CentFT0Cs>;
   using TracksWithMcLabels = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels>;
   using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
@@ -1413,15 +1413,15 @@ struct HfTaskCharmPolarisation {
     float invMassMin = 0.f;
     float invMassMax = 100.f;
     if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
-      minInvMass = 0.142f;
-      maxInvMass = 0.15f;
-      if (minInvMass < invMass && invMass < maxInvMass) {
+      invMassMin = 0.142f;
+      invMassMax = 0.15f;
+      if (invMassMin < invMass && invMass < invMassMax) {
         return true;
       }
     } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+ (to be tuned!)
-      minInvMass = 2.25f;
-      maxInvMass = 2.35f;
-      if (minInvMass < invMass && invMass < maxInvMass) {
+      invMassMin = 2.25f;
+      invMassMax = 2.35f;
+      if (invMassMin < invMass && invMass < invMassMax) {
         return true;
       }
     }
@@ -1500,7 +1500,7 @@ struct HfTaskCharmPolarisation {
     float xQVec = -999.;
     float yQVec = -999.;
     float amplQVec = -999.;
-    switch (qvecDetector) {
+    switch (qVecDetector) {
       case charm_polarisation::QvecEstimator::FV0A:
         xQVec = collision.qvecFV0ARe();
         yQVec = collision.qvecFV0AIm();
@@ -1533,6 +1533,9 @@ struct HfTaskCharmPolarisation {
   {
     if constexpr (withEP) {
       assert(qVecs && "EP analysis requested but qVecs == nullptr");
+    }
+    if constexpr (withMl) {
+      constexpr std::size_t NScores{3u};
     }
     bool isCandidateInSignalRegion{false};
     int8_t origin{RecoDecay::OriginType::None};
@@ -1698,8 +1701,7 @@ struct HfTaskCharmPolarisation {
             invMassCharmHadForSparse = hfHelper.invMassLcToPKPi(candidate);
           }
           if constexpr (withMl) {
-            const int scoresNum = 3;
-            if (candidate.mlProbLcToPKPi().size() == scoresNum) {
+            if (candidate.mlProbLcToPKPi().size() == NScores) {
               // protect from empty vectors
               // the BDT output score might be empty if no preselections were enabled (selectionFlag null)
               // !!! NB: each rotated candidates inherits the BDT scores of the original candidate, even if the candidate pt changed after the rotation of the kaon-track pt !!!
@@ -1733,8 +1735,7 @@ struct HfTaskCharmPolarisation {
             invMassCharmHadForSparse = hfHelper.invMassLcToPiKP(candidate);
           }
           if constexpr (withMl) {
-            const int scoresNum = 3;
-            if (candidate.mlProbLcToPiKP().size() == scoresNum) {
+            if (candidate.mlProbLcToPiKP().size() == NScores) {
               // protect from empty vectors
               // the BDT output score might be empty if no preselections were enabled (selectionFlag null)
               // !!! NB: each rotated candidates inherits the BDT scores of the original candidate, even if the candidate pt changed after the rotation of the kaon-track pt !!!
@@ -2314,13 +2315,13 @@ struct HfTaskCharmPolarisation {
   }
   PROCESS_SWITCH(HfTaskCharmPolarisation, processDstarMcWithMl, "Process Dstar candidates in MC with ML", false);
 
-  void processDstarInPbPb(CollsWithQvecs::iterator const& collision,
+  void processDstarInPbPb(CollsWithQVecs::iterator const& collision,
                           FilteredCandDstarWSelFlagAndMl const& dstarCandidates,
                           TracksWithExtra const& tracks)
   {
     float centrality = {-1.f};
     centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
-    if (centrality < minCent || centrality > maxCent) {
+    if (centrality < centralityMin || centrality > centralityMax) {
       return; // skip this collision if outside of the centrality range
     }
     auto thisCollId = collision.globalIndex();
@@ -2340,13 +2341,13 @@ struct HfTaskCharmPolarisation {
   }
   PROCESS_SWITCH(HfTaskCharmPolarisation, processDstarInPbPb, "Process Dstar candidates in PbPb collisions", false);
 
-  void processDstarWithMlInPbPb(CollsWithQvecs::iterator const& collision,
+  void processDstarWithMlInPbPb(CollsWithQVecs::iterator const& collision,
                                 FilteredCandDstarWSelFlagAndMl const& dstarCandidates,
                                 TracksWithExtra const& tracks)
   {
     float centrality = {-1.f};
     centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
-    if (centrality < minCent || centrality > maxCent) {
+    if (centrality < centralityMin || centrality > centralityMax) {
       return; // skip this collision if outside of the centrality range
     }
     auto thisCollId = collision.globalIndex();
@@ -2368,13 +2369,13 @@ struct HfTaskCharmPolarisation {
 
   void processDstarMcInPbPb(GenCollisWithQvecs::iterator const& collision,
                             McParticlesDstarMatched const& mcParticles,
-                            CollsWithQvecsWithMcLabels const& collisions, // this is grouped with SmallGroupsCollisionsWithMcLabels const& collisions,
+                            CollsWithQVecsWithMcLabels const& collisions, // this is grouped with SmallGroupsCollisionsWithMcLabels const& collisions,
                             FilteredCandDstarWSelFlagAndMc const& dstarCandidates,
                             TracksWithExtra const& tracks)
   {
     float centrality = {-1.f};
     centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
-    if (centrality < minCent || centrality > maxCent) {
+    if (centrality < centralityMin || centrality > centralityMax) {
       return; // skip this collision if outside of the centrality range
     }
     int numPvContributorsGen{0};
@@ -2407,13 +2408,13 @@ struct HfTaskCharmPolarisation {
 
   void processDstarMcWithMlInPbPb(GenCollisWithQvecs::iterator const& collision,
                                   McParticlesDstarMatched const& mcParticles,
-                                  CollsWithQvecsWithMcLabels const& collisions, // this is grouped with SmallGroupsCollisionsWithMcLabels const& collisions,
+                                  CollsWithQVecsWithMcLabels const& collisions, // this is grouped with SmallGroupsCollisionsWithMcLabels const& collisions,
                                   FilteredCandDstarWSelFlagAndMcAndMl const& dstarCandidates,
                                   TracksWithExtra const& tracks)
   {
     float centrality = {-1.f};
     centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
-    if (centrality < minCent || centrality > maxCent) {
+    if (centrality < centralityMin || centrality > centralityMax) {
       return; // skip this collision if outside of the centrality range
     }
     int numPvContributorsGen{0};
