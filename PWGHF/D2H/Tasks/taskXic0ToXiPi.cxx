@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file taskXic0ToXiPiKf.cxx
+/// \file taskXic0ToXiPi.cxx
 /// \brief Task for Ξc^0 → Ξ∓ π± Kf analysis
 /// \author Tao Fang <tao.fang@cern.ch>, Central China Normal University
 /// \author Ran Tu <ran.tu@cern.ch>, Fudan University
