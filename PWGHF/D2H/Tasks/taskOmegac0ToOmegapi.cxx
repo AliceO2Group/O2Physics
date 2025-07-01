@@ -57,10 +57,10 @@ DECLARE_SOA_COLUMN(KfptOmegac, kfptOmegac, float);
 DECLARE_SOA_COLUMN(InvMassCharmBaryon, invMassCharmBaryon, float);
 DECLARE_SOA_COLUMN(MlProbOmegac, mlProbOmegac, float);
 DECLARE_SOA_COLUMN(Cent, cent, float);
-}// namespace ml
+} // namespace ml
 DECLARE_SOA_TABLE(HfKfOmegacML, "AOD", "HFKFOMEGACML",
                   ml::InvMassCharmBaryon, ml::KfptOmegac, ml::KfptPiFromOmegac, ml::MlProbOmegac, ml::Cent);
-}
+} // namespace o2::aod
 
 /// Omegac0 analysis task
 
@@ -219,29 +219,29 @@ struct HfTaskOmegac0ToOmegapi {
         float cent = evaluateCentralityColl(collision);
         if constexpr (applyMl) {
           if (fillTree) {
-            kfCandMl(candidate.invMassCharmBaryon(), 
-                    candidate.ptCharmBaryon(),
-                    candidate.kfptPiFromOmegac(),
-                    candidate.mlProbOmegac()[0], 
-                    cent);
+            kfCandMl(candidate.invMassCharmBaryon(),
+                     candidate.ptCharmBaryon(),
+                     candidate.kfptPiFromOmegac(),
+                     candidate.mlProbOmegac()[0],
+                     cent);
           } else {
             registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsCentVsPtPion"),
-                        candidate.mlProbOmegac()[0], 
+                          candidate.mlProbOmegac()[0],
+                          candidate.invMassCharmBaryon(),
+                          candidate.ptCharmBaryon(),
+                          candidate.kfRapOmegac(),
+                          cent,
+                          candidate.kfptPiFromOmegac(),
+                          numPvContributors);
+          }
+        } else {
+          registry.fill(HIST("hMassVsPtVsYVsCentVsPtPion"),
                         candidate.invMassCharmBaryon(),
                         candidate.ptCharmBaryon(),
                         candidate.kfRapOmegac(),
                         cent,
                         candidate.kfptPiFromOmegac(),
                         numPvContributors);
-          }
-        } else {
-          registry.fill(HIST("hMassVsPtVsYVsCentVsPtPion"),
-                      candidate.invMassCharmBaryon(),
-                      candidate.ptCharmBaryon(),
-                      candidate.kfRapOmegac(),
-                      cent,
-                      candidate.kfptPiFromOmegac(),
-                      numPvContributors);
         }
       }
     }
