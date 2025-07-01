@@ -1157,7 +1157,7 @@ struct ProbeThirdTrack {
     Configurable<LabeledArray<double>> mlCutsDzeroFromDstar{"mlCutsDzeroFromDstar", {aod::tagandprobe::mlCuts[0], aod::tagandprobe::nBinsPt, 3, aod::tagandprobe::labelsEmpty, aod::tagandprobe::labelsMlScores}, "ML Selections for Kpi pairs from D0 <- D*+ decays"};
   } mlConfig;
   Configurable<float> ptCandMin{"ptCandMin", 0.f, "Minimum candidate pt for THnSparse filling"};
-  Configurable<float> fillTpcOnlyCase{"fillTpcOnlyCase", false, "Fill output for TPC only case (not needed for thinned data or Pb-Pb)"};
+  Configurable<bool> fillTpcOnlyCase{"fillTpcOnlyCase", false, "Fill output for TPC only case (not needed for thinned data or Pb-Pb)"};
 
   ConfigurableAxis axisPtProbe{"axisPtProbe", {VARIABLE_WIDTH, 0.05f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.2f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.f, 12.f, 15.f, 20.f, 25.f, 30.f}, "Axis for pt Probe"};
   ConfigurableAxis axisPtTag{"axisPtTag", {VARIABLE_WIDTH, 0.05f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.2f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.f, 12.f, 15.f, 20.f, 25.f, 30.f}, "Axis for pt Tag"};
