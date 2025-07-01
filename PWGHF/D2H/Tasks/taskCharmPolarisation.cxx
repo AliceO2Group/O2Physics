@@ -152,27 +152,6 @@ struct HfTaskCharmPolarisation {
   Configurable<int> minCent{"minCent", 30, "Minimum centrality (0-100) to be considered in the analysis"};
   Configurable<int> maxCent{"maxCent", 50, "Maximum centrality (0-100) to be considered in the analysis"};
 
-  ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {200, 0.139f, 0.179f}, "#it{M} (GeV/#it{c}^{2})"};
-  ConfigurableAxis configThnAxisPt{"configThnAxisPt", {100, 0.f, 100.f}, "#it{p}_{T} (GeV/#it{c})"};
-  ConfigurableAxis configThnAxisY{"configThnAxisY", {20, -1.f, 1.f}, "#it{y}"};
-  ConfigurableAxis configThnAxisCosThetaStarHelicity{"configThnAxisCosThetaStarHelicity", {20, -1.f, 1.f}, "cos(#vartheta_{helicity})"};
-  ConfigurableAxis configThnAxisCosThetaStarProduction{"configThnAxisCosThetaStarProduction", {20, -1.f, 1.f}, "cos(#vartheta_{production})"};
-  ConfigurableAxis configThnAxisCosThetaStarRandom{"configThnAxisCosThetaStarRandom", {20, -1.f, 1.f}, "cos(#vartheta_{random})"};
-  ConfigurableAxis configThnAxisCosThetaStarBeam{"configThnAxisCosThetaStarBeam", {20, -1.f, 1.f}, "cos(#vartheta_{beam})"};
-  ConfigurableAxis configThnAxisCosThetaStarEP{"configThnAxisCosThetaStarEP", {20, -1.f, 1.f}, "cos(#vartheta_{EP})"};
-  ConfigurableAxis configThnAxisMlBkg{"configThnAxisMlBkg", {100, 0.f, 1.f}, "ML bkg"};
-  ConfigurableAxis configThnAxisInvMassD0{"configThnAxisInvMassD0", {250, 1.65f, 2.15f}, "#it{M}(D^{0}) (GeV/#it{c}^{2})"};                           // only for D*+
-  ConfigurableAxis configThnAxisInvMassKPiLc{"configThnAxisInvMassKPiLc", {120, 0.65f, 1.25f}, "#it{M}(K#pi) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"}; // only for Lc+->pKpi
-  // ConfigurableAxis configThnAxisMlPrompt{"configThnAxisMlPrompt", {100, 0.f, 1.f}, "ML prompt"};
-  ConfigurableAxis configThnAxisMlNonPrompt{"configThnAxisMlNonPrompt", {100, 0.f, 1.f}, "ML non-prompt"};
-  ConfigurableAxis configThnAxisCent{"configThnAxisCent", {102, -1.f, 101.f}, "centrality (%)"};
-  ConfigurableAxis configThnAxisNumPvContributors{"configThnAxisNumPvContributors", {300, -0.5f, 299.5f}, "num PV contributors"};
-  ConfigurableAxis configThnAxisPtB{"configThnAxisPtB", {3000, 0.f, 300.f}, "#it{p}_{T}(B mother) (GeV/#it{c})"};
-  ConfigurableAxis configThnAxisAbsEtaTrackMin{"configThnAxisEtaTrackMin", {3, 0.f, 0.3f}, "min |#it{#eta_{track}}|"};
-  ConfigurableAxis configThnAxisNumItsClsMin{"configThnAxisNumItsClsMin", {4, 3.5f, 7.5f}, "min #it{N}_{cls ITS}"};
-  ConfigurableAxis configThnAxisNumTpcClsMin{"configThnAxisNumTpcClsMin", {3, 79.5f, 140.5f}, "min #it{N}_{cls TPC}"};
-  ConfigurableAxis configThnAxisCharge{"configThnAxisCharge", {2, -2.f, 2.f}, "electric charge"};
-
   /// activate rotational background
   Configurable<int> nBkgRotations{"nBkgRotations", 0, "Number of rotated copies (background) per each original candidate"};
   Configurable<float> minRotAngleMultByPi{"minRotAngleMultByPi", 5. / 6, "Minimum angle rotation for track rotation, to be multiplied by pi"};
@@ -213,7 +192,7 @@ struct HfTaskCharmPolarisation {
   struct : ConfigurableGroup {
     /// monitoring histograms (Dalitz plot)
     Configurable<bool> activateTHnLcChannelMonitor{"activateTHnLcChannelMonitor", false, "Flag to switch on the monitoring THnSparse of M2(Kpi), M2(pK), M2(ppi), pt correlation for Lc -> pKpi"};
-    ConfigurableAxis configThnAxisInvMass2KPiLcMonitoring{"configThnAxisInvMassKPiLcMonitoring", {200, 0.3f, 2.3f}, "#it{M}^{2}(K#pi) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"};
+    ConfigurableAxis configThnAxisInvMass2KPiLcMonitoring{"configThnAxisInvMass2KPiLcMonitoring", {200, 0.3f, 2.3f}, "#it{M}^{2}(K#pi) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"};
     ConfigurableAxis configThnAxisInvMass2PKLcMonitoring{"configThnAxisInvMass2PKLcMonitoring", {320, 2.f, 5.2f}, "#it{M}^{2}(pK) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"};
     ConfigurableAxis configThnAxisInvMass2PPiLcMonitoring{"configThnAxisInvMass2PPiLcMonitoring", {400, 1.f, 5.f}, "#it{M}^{2}(p#pi) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"};
 
@@ -226,13 +205,13 @@ struct HfTaskCharmPolarisation {
 
   /// Monitoring of phi Euler angle
   Configurable<bool> activateTHnEulerPhiMonitor{"activateTHnEulerPhiMonitor", false, "Flag to switch on the monitoring THnSparse vs. Euler angle phi (Lc -> pKpi)"};
-  ConfigurableAxis configTHnAxisEulerPhi{"configTHnAxisEulerPhi", {24, -o2::constants::math::PI, o2::constants::math::PI}, "Euler polar angle #phi"};
 
   /// Application of rapidity cut for reconstructed candidates
   Configurable<float> rapidityCut{"rapidityCut", 999.f, "Max. value of reconstructed candidate rapidity (abs. value)"};
 
-  Filter filterSelectDstarCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
-  Filter filterSelectLcToPKPiCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi) || (aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPKPi);
+  HfHelper hfHelper;
+  SliceCache cache;
+  EventPlaneHelper epHelper;
 
   using CollisionsWithMcLabels = soa::SmallGroups<soa::Join<aod::Collisions, aod::McCollisionLabels>>;
   using CollsWithQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::CentFT0Ms, aod::CentFT0Cs>;
@@ -257,7 +236,9 @@ struct HfTaskCharmPolarisation {
   using FilteredCandLcToPKPiWSelFlagAndMc = soa::Filtered<soa::Join<CandLcToPKPiWSelFlag, aod::HfCand3ProngMcRec>>;
   using FilteredCandLcToPKPiWSelFlagAndMcAndMl = soa::Filtered<soa::Join<CandLcToPKPiWSelFlag, aod::HfCand3ProngMcRec, aod::HfMlLcToPKPi>>;
 
-  SliceCache cache;
+  Filter filterSelectDstarCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
+  Filter filterSelectLcToPKPiCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi) || (aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPKPi);
+
   Preslice<FilteredCandDstarWSelFlag> dstarPerCollision = aod::hf_cand::collisionId;
   Preslice<FilteredCandDstarWSelFlagAndMl> dstarWithMlPerCollision = aod::hf_cand::collisionId;
   Preslice<FilteredCandDstarWSelFlagAndMc> dstarWithMcPerCollision = aod::hf_cand::collisionId;
@@ -268,8 +249,28 @@ struct HfTaskCharmPolarisation {
   Preslice<FilteredCandLcToPKPiWSelFlagAndMc> lcToPKPiWithMcPerCollision = aod::hf_cand::collisionId;
   Preslice<FilteredCandLcToPKPiWSelFlagAndMcAndMl> lcToPKPiWithMcAndMlPerCollision = aod::hf_cand::collisionId;
 
-  HfHelper hfHelper;
-  EventPlaneHelper epHelper;
+  ConfigurableAxis configTHnAxisEulerPhi{"configTHnAxisEulerPhi", {24, -o2::constants::math::PI, o2::constants::math::PI}, "Euler polar angle #phi"};
+  ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {200, 0.139f, 0.179f}, "#it{M} (GeV/#it{c}^{2})"};
+  ConfigurableAxis configThnAxisPt{"configThnAxisPt", {100, 0.f, 100.f}, "#it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis configThnAxisY{"configThnAxisY", {20, -1.f, 1.f}, "#it{y}"};
+  ConfigurableAxis configThnAxisCosThetaStarHelicity{"configThnAxisCosThetaStarHelicity", {20, -1.f, 1.f}, "cos(#vartheta_{helicity})"};
+  ConfigurableAxis configThnAxisCosThetaStarProduction{"configThnAxisCosThetaStarProduction", {20, -1.f, 1.f}, "cos(#vartheta_{production})"};
+  ConfigurableAxis configThnAxisCosThetaStarRandom{"configThnAxisCosThetaStarRandom", {20, -1.f, 1.f}, "cos(#vartheta_{random})"};
+  ConfigurableAxis configThnAxisCosThetaStarBeam{"configThnAxisCosThetaStarBeam", {20, -1.f, 1.f}, "cos(#vartheta_{beam})"};
+  ConfigurableAxis configThnAxisCosThetaStarEP{"configThnAxisCosThetaStarEP", {20, -1.f, 1.f}, "cos(#vartheta_{EP})"};
+  ConfigurableAxis configThnAxisMlBkg{"configThnAxisMlBkg", {100, 0.f, 1.f}, "ML bkg"};
+  ConfigurableAxis configThnAxisInvMassD0{"configThnAxisInvMassD0", {250, 1.65f, 2.15f}, "#it{M}(D^{0}) (GeV/#it{c}^{2})"};                           // only for D*+
+  ConfigurableAxis configThnAxisInvMassKPiLc{"configThnAxisInvMassKPiLc", {120, 0.65f, 1.25f}, "#it{M}(K#pi) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"}; // only for Lc+->pKpi
+  // ConfigurableAxis configThnAxisMlPrompt{"configThnAxisMlPrompt", {100, 0.f, 1.f}, "ML prompt"};
+  ConfigurableAxis configThnAxisMlNonPrompt{"configThnAxisMlNonPrompt", {100, 0.f, 1.f}, "ML non-prompt"};
+  ConfigurableAxis configThnAxisCent{"configThnAxisCent", {102, -1.f, 101.f}, "centrality (%)"};
+  ConfigurableAxis configThnAxisNumPvContributors{"configThnAxisNumPvContributors", {300, -0.5f, 299.5f}, "num PV contributors"};
+  ConfigurableAxis configThnAxisPtB{"configThnAxisPtB", {3000, 0.f, 300.f}, "#it{p}_{T}(B mother) (GeV/#it{c})"};
+  ConfigurableAxis configThnAxisAbsEtaTrackMin{"configThnAxisAbsEtaTrackMin", {3, 0.f, 0.3f}, "min |#it{#eta_{track}}|"};
+  ConfigurableAxis configThnAxisNumItsClsMin{"configThnAxisNumItsClsMin", {4, 3.5f, 7.5f}, "min #it{N}_{cls ITS}"};
+  ConfigurableAxis configThnAxisNumTpcClsMin{"configThnAxisNumTpcClsMin", {3, 79.5f, 140.5f}, "min #it{N}_{cls TPC}"};
+  ConfigurableAxis configThnAxisCharge{"configThnAxisCharge", {2, -2.f, 2.f}, "electric charge"};
+
   HistogramRegistry registry{"registry", {}};
 
   void init(InitContext&)
