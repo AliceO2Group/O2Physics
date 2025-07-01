@@ -28,7 +28,7 @@ using namespace o2::framework::expressions;
 
 using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCPi>;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSel>;
-using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
+using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSel>;
 
 struct sigmaminustask {
   // Histograms are defined with HistogramRegistry
@@ -38,6 +38,8 @@ struct sigmaminustask {
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<float> cutNSigmaPi{"cutNSigmaPi", 4, "NSigmaTPCPion"};
+
+  Preslice<aod::KinkCands> mPerCol = aod::track::collisionId;
 
   void init(InitContext const&)
   {
@@ -58,7 +60,8 @@ struct sigmaminustask {
 
     if (doprocessMC) {
       // Add MC histograms if needed
-      rSigmaMinus.add("h2MassSigmaMinusPtMC", "h2MassSigmaMinusPtMC", {HistType::kTH2F, {ptAxis, sigmaMassAxis}});
+      rSigmaMinus.add("h2MassPtMCRec", "h2MassPtMCRec", {HistType::kTH2F, {ptAxis, sigmaMassAxis}});
+      rSigmaMinus.add("h2MassPtMCGen", "h2MassPtMCGen", {HistType::kTH2F, {ptAxis, sigmaMassAxis}});
     }
   }
 
@@ -80,45 +83,70 @@ struct sigmaminustask {
   }
   PROCESS_SWITCH(sigmaminustask, processData, "Data processing", true);
 
-  void processMC(CollisionsFullMC::iterator const& collision, aod::KinkCands const& KinkCands, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const&, TracksFull const&)
+  void processMC(CollisionsFullMC const& collisions, aod::KinkCands const& KinkCands, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, TracksFull const&)
   {
-    if (std::abs(collision.posZ()) > cutzvertex || !collision.sel8()) {
-      return;
-    }
-    rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
-    for (const auto& kinkCand : KinkCands) {
-      auto dauTrack = kinkCand.trackDaug_as<TracksFull>();
-      auto mothTrack = kinkCand.trackMoth_as<TracksFull>();
-      if (dauTrack.sign() != mothTrack.sign()) {
-        LOG(info) << "Skipping kink candidate with opposite sign daughter and mother: " << kinkCand.globalIndex();
-        continue; // Skip if the daughter has the opposite sign as the mother
-      }
-      if (abs(dauTrack.tpcNSigmaPi()) > cutNSigmaPi) {
+    for (const auto& collision : collisions) {
+      if (std::abs(collision.posZ()) > cutzvertex || !collision.sel8()) {
         continue;
       }
 
-      rSigmaMinus.fill(HIST("h2MassSigmaMinusPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
-      rSigmaMinus.fill(HIST("h2SigmaMassVsXiMass"), kinkCand.mXiMinus(), kinkCand.mSigmaMinus());
-      rSigmaMinus.fill(HIST("h2NSigmaPiPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tpcNSigmaPi());
-      // do MC association
-      auto mcLabSigma = trackLabelsMC.rawIteratorAt(mothTrack.globalIndex());
-      auto mcLabPiDau = trackLabelsMC.rawIteratorAt(dauTrack.globalIndex());
-      if (mcLabSigma.has_mcParticle() && mcLabPiDau.has_mcParticle()) {
-        auto mcTrackSigma = mcLabSigma.mcParticle_as<aod::McParticles>();
-        auto mcTrackPiDau = mcLabPiDau.mcParticle_as<aod::McParticles>();
-        if (!mcTrackPiDau.has_mothers()) {
+      rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
+      auto kinkCandPerColl = KinkCands.sliceBy(mPerCol, collision.globalIndex());
+      for (const auto& kinkCand : kinkCandPerColl) {
+        auto dauTrack = kinkCand.trackDaug_as<TracksFull>();
+        auto mothTrack = kinkCand.trackMoth_as<TracksFull>();
+        if (dauTrack.sign() != mothTrack.sign()) {
+          LOG(info) << "Skipping kink candidate with opposite sign daughter and mother: " << kinkCand.globalIndex();
+          continue; // Skip if the daughter has the opposite sign as the mother
+        }
+        if (abs(dauTrack.tpcNSigmaPi()) > cutNSigmaPi) {
           continue;
         }
-        for (auto& piMother : mcTrackPiDau.mothers_as<aod::McParticles>()) {
-          if (piMother.globalIndex() != mcTrackSigma.globalIndex()) {
+
+        rSigmaMinus.fill(HIST("h2MassSigmaMinusPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
+        rSigmaMinus.fill(HIST("h2SigmaMassVsXiMass"), kinkCand.mXiMinus(), kinkCand.mSigmaMinus());
+        rSigmaMinus.fill(HIST("h2NSigmaPiPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tpcNSigmaPi());
+        // do MC association
+        auto mcLabSigma = trackLabelsMC.rawIteratorAt(mothTrack.globalIndex());
+        auto mcLabPiDau = trackLabelsMC.rawIteratorAt(dauTrack.globalIndex());
+        if (mcLabSigma.has_mcParticle() && mcLabPiDau.has_mcParticle()) {
+          auto mcTrackSigma = mcLabSigma.mcParticle_as<aod::McParticles>();
+          auto mcTrackPiDau = mcLabPiDau.mcParticle_as<aod::McParticles>();
+          if (!mcTrackPiDau.has_mothers()) {
             continue;
           }
-          if (std::abs(mcTrackSigma.pdgCode()) != 3112 || std::abs(mcTrackPiDau.pdgCode()) != 211) {
-            continue;
+          for (auto& piMother : mcTrackPiDau.mothers_as<aod::McParticles>()) {
+            if (piMother.globalIndex() != mcTrackSigma.globalIndex()) {
+              continue;
+            }
+            if (std::abs(mcTrackSigma.pdgCode()) != 3112 || std::abs(mcTrackPiDau.pdgCode()) != 211) {
+              continue;
+            }
+            rSigmaMinus.fill(HIST("h2MassPtMCRec"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
           }
-          rSigmaMinus.fill(HIST("h2MassSigmaMinusPtMC"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
         }
       }
+    }
+    for (const auto& mcPart : particlesMC) {
+      if (std::abs(mcPart.pdgCode()) != 3112 || std::abs(mcPart.y()) > 0.5) {
+        continue;
+      }
+      if (!mcPart.has_daughters()) {
+        continue; // Skip if no daughters
+      }
+      bool hasSigmaDaughter = false;
+      for (const auto& daughter : mcPart.daughters_as<aod::McParticles>()) {
+        if (std::abs(daughter.pdgCode()) == 211) { // Sigma PDG code
+          hasSigmaDaughter = true;
+          break; // Found a pi daughter, exit loop
+        }
+      }
+      if (!hasSigmaDaughter) {
+        continue; // Skip if no pi daughter found
+      }
+      float mcMass = std::sqrt(mcPart.e() * mcPart.e() - mcPart.p() * mcPart.p());
+      int sigmaSign = mcPart.pdgCode() > 0 ? 1 : -1; // Determine the sign of the Sigma
+      rSigmaMinus.fill(HIST("h2MassPtMCGen"), sigmaSign * mcPart.pt(), mcMass);
     }
   }
   PROCESS_SWITCH(sigmaminustask, processMC, "MC processing", false);
