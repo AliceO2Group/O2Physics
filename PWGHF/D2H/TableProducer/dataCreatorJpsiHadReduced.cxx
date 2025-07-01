@@ -665,7 +665,7 @@ struct HfDataCreatorJpsiHadReduced {
     // Set the magnetic field from ccdb.
     // The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
     // but this is not true when running on Run2 data/MC already converted into AO2Ds.
-    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    auto bc = collision.template bc_as<BBCs>();
     if (runNumber != bc.runNumber()) {
       LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
       o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, bc.timestamp());
