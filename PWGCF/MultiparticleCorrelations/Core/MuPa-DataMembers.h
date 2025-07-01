@@ -79,12 +79,13 @@ struct TaskConfiguration {
   TString fSkipTheseRuns = "";           // comma-separated list of runs which will be skipped during analysis in hl (a.k.a. "bad runs")
   bool fSkipRun = false;                 // based on the content of fWhichSpecificCuts, skip or not the current run
   TDatabasePDG* fDatabasePDG = NULL;     // booked only when MC info is available. There is a standard memory blow-up when booked, therefore I need to request also fUseDatabasePDG = true
+                                         // TBI 20250625 replace eventually with the service O2DatabasePDG, when memory consumption problem is resolved
   bool fUseSetBinLabel = false;          // until SetBinLabel(...) large memory consumption is resolved, do not use hist->SetBinLabel(...), see ROOT Forum
                                          // See also local executable PostprocessLabels.C
   bool fUseClone = false;                // until Clone(...) large memory consumption is resolved, do not use hist->Clone(...), see ROOT Forum
   bool fUseFormula = false;              // until TFormula large memory consumption is resolved, do not use, see ROOT Forum
   bool fUseDatabasePDG = false;          // I use it at the moment only to retreive charge for MC particle from its PDG code, because there is no direct getter mcParticle.sign()
-                                         // But most likely I will use it to retrieve other particle proprties from PDG table. There is a standard memoty blow-up when used.
+                                         // But most likely I will use it to retrieve other particle proprties from PDG table. There is a standard memory blow-up when used.
 } tc;                                    // "tc" labels an instance of this group of variables.
 
 // *) Event-by-event quantities:

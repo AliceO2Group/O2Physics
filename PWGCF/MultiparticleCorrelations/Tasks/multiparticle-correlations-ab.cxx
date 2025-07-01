@@ -14,16 +14,18 @@
 /// \author Ante.Bilandzic@cern.ch
 
 // O2:
-#include <CCDB/BasicCCDBManager.h>
 #include "Common/CCDB/ctpRateFetcher.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/DataTypes.h"
-#include "Common/DataModel/TrackSelectionTables.h" // needed for aod::TracksDCA table
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/TrackSelectionTables.h" // needed for aod::TracksDCA table
+
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/DataTypes.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -110,6 +112,12 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   Service<ccdb::BasicCCDBManager> ccdb;
   ctpRateFetcher mRateFetcher; // see email from MP on 20240508 and example usage in O2Physics/PWGLF/TableProducer/Common/zdcSP.cxx
 
+  // *) O2DatabsePDG service shared service between different tasks (do not use TDatabasePDG directly, because it's not shared)
+  //    See also Tutorials/src/usingPDGCervice.cxx
+  //    TBI 20250625 enable the line below and switch to O2DatabsePDG when memory consumption with O2DatabsePDG is resolved, and then replace in all functions
+  //      tc.fDatabasePDG->GetParticle(track.pdgCode()) with pdg->GetParticle(track.pdgCode()) + same for mcParticle + remove TDatabasePDG.h
+  // Service<o2::framework::O2DatabasePDG> pdg;
+
 // *) Configurables (cuts):
 #include "PWGCF/MultiparticleCorrelations/Core/MuPa-Configurables.h"
 
@@ -181,7 +189,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     BookTheRest(); // I book everything that was not sorted (yet) in the specific functions above
     // memStatus: 50913 (without differential q-vectors and eta separations)
 
-    // *) I can purge a few objects used for common consistent booking across different group of histograms:
+    // *) I can purge a few objects used for common consistent booking across different groups of histograms:
     PurgeAfterBooking();
 
     // *) Insanity checks after booking:
