@@ -466,9 +466,9 @@ struct HfCandidateSigmac0plusplusMc {
   /// @brief process function for MC matching of Σc0,++ → Λc+(→pK-π+) π- reconstructed candidates and counting of generated ones
   /// @param candidatesSigmac reconstructed Σc0,++ candidates
   /// @param mcParticles table of generated particles
-  void processMc(McParticlesLcGenMatch const& mcParticles, // aod::McParticles const& mcParticles,
+  void processMc(McParticlesLcGenMatch const& mcParticles,
                  aod::TracksWMc const& tracks,
-                 LambdacMc const& candsLc, // McParticlesLcGenMatch const& mcParticles,
+                 LambdacMc const& candsLc,
                  McCollisionsNoCents const& collInfos,
                  aod::McCollisions const&,
                  BCsInfo const&)
