@@ -1410,8 +1410,8 @@ struct HfTaskCharmPolarisation {
   template <charm_polarisation::DecayChannel channel>
   bool isInSignalRegion(float invMass)
   {
-    float minInvMass = 0.f;
-    float maxInvMass = 100.f;
+    float invMassMin = 0.f;
+    float invMassMax = 100.f;
     if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
       minInvMass = 0.142f;
       maxInvMass = 0.15f;
