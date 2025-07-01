@@ -744,9 +744,6 @@ struct HfCandidateCreatorXic0Omegac0 {
     for (const auto& cand : candidates) {
       hCandidateCounter->Fill(1);
 
-      if (!TESTBIT(cand.hfflag(), aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi)) {
-        continue;
-      }
       auto collision = cand.collision_as<Coll>();
       float centrality{-1.f};
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
@@ -1223,7 +1220,9 @@ struct HfCandidateCreatorXic0Omegac0 {
   {
     for (const auto& cand : candidates) {
       hCandidateCounter->Fill(1);
-
+      if (!TESTBIT(cand.hfflag(), aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi)) {
+        continue;
+      }
       auto collision = cand.collision_as<Coll>();
 
       float centrality{-1.f};

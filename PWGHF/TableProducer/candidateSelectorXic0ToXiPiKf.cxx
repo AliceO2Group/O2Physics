@@ -204,7 +204,7 @@ struct HfCandidateSelectorXic0ToXiPiKf {
     selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedPiMax, nSigmaTofCombinedPiMax);
 
     const AxisSpec axisSel{2, -0.5, 1.5, "status"};
-
+    registry.add("hStatusCheck", "Check consecutive selections status;status;entries", {HistType::kTH1D, {{3, 0., 3.}}});
     // sign of candidates
     registry.add("hSelSignDec", "hSelSignDec;status;entries", {HistType::kTH1D, {axisSel}});
     // basic selections (bin 0 -> candidates that did not pass the selection, bin 1 -> candidates that passed the selection)
@@ -413,6 +413,7 @@ struct HfCandidateSelectorXic0ToXiPiKf {
       if (statusPidPrFromLam == TrackSelectorPID::Accepted && statusPidPiFromLam == TrackSelectorPID::Accepted && statusPidPiFromCasc == TrackSelectorPID::Accepted && statusPidPiFromCharmBaryon == TrackSelectorPID::Accepted) {
         statusPidCharmBaryon = true;
       } else {
+        registry.fill(HIST("hStatusCheck"), 2.5);
         resultSelections = false;
       }
 
