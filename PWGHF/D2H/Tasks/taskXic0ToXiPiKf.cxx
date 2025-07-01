@@ -39,7 +39,6 @@ struct HfTaskXic0ToXiPiKf {
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<bool> fillCent{"fillCent", false, "Flag to fill centrality information"};
-  Configurable<bool> selectionFlagXic0{"selectionFlagXic0", true, "Select Xic0 candidates"};
   Configurable<double> yCandGenMax{"yCandGenMax", 0.8, "max. gen particle rapidity"};
   Configurable<double> yCandRecMax{"yCandRecMax", 0.8, "max. cand. rapidity"};
 
@@ -61,9 +60,7 @@ struct HfTaskXic0ToXiPiKf {
   using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
   using CollisionsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
 
-  //!!!!!!要select吗
   Filter filterSelectXic0Candidates = aod::hf_sel_toxipi::resultSelections == true;
-  // Filter filterXicToXiPiFlag = (aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi))) != static_cast<uint8_t>(0);
   Filter filterXicMatchedRec = nabs(aod::hf_cand_xic0_omegac0::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi));
   Filter filterXicMatchedGen = nabs(aod::hf_cand_xic0_omegac0::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi));
   Preslice<Xic0CandsKF> candXicKFPerCollision = aod::hf_cand_xic0_omegac0::collisionId;
@@ -142,7 +139,7 @@ struct HfTaskXic0ToXiPiKf {
   void processData(const CandType& candidates, CollType const&)
   {
     for (const auto& candidate : candidates) {
-      if (!(candidate.resultSelections() == true || (candidate.resultSelections() == false && !selectionFlagXic0))) {
+      if (candidate.resultSelections() != true) {
         continue;
       }
       if (yCandRecMax >= 0. && std::abs(candidate.kfRapXic()) > yCandRecMax) {
@@ -169,7 +166,7 @@ struct HfTaskXic0ToXiPiKf {
       // auto numPvContributors = collision.numContrib();
 
       for (const auto& candidate : groupedXicCandidates) {
-        if (!(candidate.resultSelections() == true || (candidate.resultSelections() == false && !selectionFlagXic0))) {
+        if (candidate.resultSelections() != true) {
           continue;
         }
         if (yCandRecMax >= 0. && std::abs(candidate.kfRapXic()) > yCandRecMax) {
@@ -215,7 +212,7 @@ struct HfTaskXic0ToXiPiKf {
   {
     // MC rec.
     for (const auto& candidate : candidates) {
-      if (!(candidate.resultSelections() == true || (candidate.resultSelections() == false && !selectionFlagXic0))) {
+      if (candidate.resultSelections() != true) {
         continue;
       }
       if (yCandRecMax >= 0. && std::abs(candidate.kfRapXic()) > yCandRecMax) {
