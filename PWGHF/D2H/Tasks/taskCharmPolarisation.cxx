@@ -150,10 +150,10 @@ struct HfTaskCharmPolarisation {
   Configurable<int> selectionFlagLcToPKPi{"selectionFlagLcToPKPi", 1, "Selection Flag for Lc decay to P K Pi"};
 
   // Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
-  Configurable<int> qvecDetector{"qvecDetector", 2, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0C: 2)"};
+  Configurable<int> qVecDetector{"qVecDetector", 2, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0C: 2)"};
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimator ((None: 0, FT0C: 2, FT0M: 3))"};
-  Configurable<int> minCent{"minCent", 30, "Minimum centrality (0-100) to be considered in the analysis"};
-  Configurable<int> maxCent{"maxCent", 50, "Maximum centrality (0-100) to be considered in the analysis"};
+  Configurable<int> centralityMin{"centralityMin", 30, "Minimum centrality (0-100) to be considered in the analysis"};
+  Configurable<int> centralityMax{"centralityMax", 50, "Maximum centrality (0-100) to be considered in the analysis"};
 
   /// activate rotational background
   Configurable<int> nBkgRotations{"nBkgRotations", 0, "Number of rotated copies (background) per each original candidate"};
