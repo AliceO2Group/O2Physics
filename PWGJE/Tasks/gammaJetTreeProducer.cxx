@@ -644,26 +644,23 @@ struct GammaJetTreeProducer {
   /// \param particle The particle to start from
   /// \return Vector of daughter particle IDs
   template <typename T>
-  std::vector<int> getDaughtersInChain(const T& particle, int depth = 0)
+  void getDaughtersInChain(const T& particle, std::vector<int>& daughters, int depth = 0)
   {
-    std::vector<int> daughters;
     // Limit recursion depth to avoid infinite loops
     if (depth > kMaxRecursionDepth) { // 100 generations should be more than enough
-      return daughters;
+      return;
     }
-    T currentParticle = particle;
-    while (currentParticle.has_daughters()) {
-      const auto& daughtersIDs = currentParticle.template daughters_as<aod::JMcParticles>();
-      for (const auto& daughter : daughtersIDs) {
-        daughters.push_back(daughter.globalIndex());
-      }
-      currentParticle = daughtersIDs.iteratorAt(0);
-      depth++;
-      if (depth > kMaxRecursionDepth) {
-        break;
-      }
+
+    if (!particle.has_daughters()) {
+      return;
     }
-    return daughters;
+
+    const auto& daughterParticles = particle.template daughters_as<aod::JMcParticles>();
+    for (const auto& daughter : daughterParticles) {
+      daughters.push_back(daughter.globalIndex());
+      getDaughtersInChain(daughter, daughters, depth + 1);
+    }
+    return;
   }
   /// \brief Finds the first physical primary particle in the decay chain (upwards)
   /// \param particle The particle to start from
@@ -728,8 +725,10 @@ struct GammaJetTreeProducer {
         const auto& daughter2 = daughtersMother.iteratorAt(1);
         if (daughter1.pdgCode() == PDG_t::kGamma && daughter2.pdgCode() == PDG_t::kGamma) {
           // get the full stack of particles that these daughters create
-          auto fullDecayChain1 = getDaughtersInChain(daughter1);
-          auto fullDecayChain2 = getDaughtersInChain(daughter2);
+          std::vector<int> fullDecayChain1;
+          std::vector<int> fullDecayChain2;
+          getDaughtersInChain(daughter1, fullDecayChain1);
+          getDaughtersInChain(daughter2, fullDecayChain2);
           bool photon1Found = false;
           bool photon2Found = false;
 
