@@ -702,6 +702,54 @@ static const std::vector<std::string> labelsPt = {
 static const std::vector<std::string> labelsCutVar = {"pT pi from Omegac"};
 } // namespace hf_cuts_omegac_to_omega_pi
 
+namespace hf_cuts_xic_to_xi_pi
+{
+static constexpr int NBinsPt = 9;
+static constexpr int NCutVars = 1;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// offset by 1 from the bin numbers in cuts array
+constexpr double BinsPt[NBinsPt + 1] = {
+  0.0,
+  1.0,
+  2.0,
+  3.0,
+  4.0,
+  5.0,
+  6.0,
+  8.0,
+  10.0,
+  12.0};
+
+auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+
+// default values for the cuts
+// pi_pT
+constexpr double Cuts[NBinsPt][NCutVars] = {{0.2},  /* 0 < pt < 1 */
+                                            {0.5},  /* 1 < pt < 2 */
+                                            {0.5},  /* 2 < pt < 3 */
+                                            {0.5},  /* 3 < pt < 4 */
+                                            {0.5},  /* 4 < pt < 5 */
+                                            {0.5},  /* 5 < pt < 6 */
+                                            {0.5},  /* 6 < pt < 8 */
+                                            {0.5},  /* 8 < pt < 10 */
+                                            {0.5}}; /* 10 < pt < 12 */
+
+// row labels
+static const std::vector<std::string> labelsPt = {
+  "pT bin 0",
+  "pT bin 1",
+  "pT bin 2",
+  "pT bin 3",
+  "pT bin 4",
+  "pT bin 5",
+  "pT bin 6",
+  "pT bin 7",
+  "pT bin 8"};
+
+// column labels
+static const std::vector<std::string> labelsCutVar = {"pT pi from Xic"};
+} // namespace hf_cuts_xic_to_xi_pi
+
 namespace hf_cuts_xic_to_p_k_pi
 {
 static constexpr int NBinsPt = 10;
