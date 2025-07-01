@@ -58,8 +58,8 @@ using namespace o2::aod::rctsel;
 
 struct lambdaspincorrelation {
 
-  Produces<aod::LambdaSpinCorrEvents> spinCorrEvent;
-  Produces<aod::LambdaSpinCorrPairs> spinCorrPair;
+  Produces<aod::LambdaEvents> lambdaEvent;
+  Produces<aod::LambdaPairs> lambdaPair;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -246,22 +246,24 @@ struct lambdaspincorrelation {
 
   void processData(EventCandidates::iterator const& collision, AllTrackCandidates const&, ResoV0s const& V0s)
   {
+    std::vector<ROOT::Math::PxPyPzMVector> lambdaMother, protonDaughter, pionDaughter;
+    std::vector<int> v0Status = {};
+    std::vector<bool> doubleStatus = {};
+    std::vector<float> v0Cospa = {};
+    std::vector<float> v0Radius = {};
+    std::vector<float> dcaPositive = {};
+    std::vector<float> dcaNegative = {};
+    std::vector<int> positiveIndex = {};
+    std::vector<int> negativeIndex = {};
+    std::vector<float> dcaBetweenDaughter = {};
+    int numbV0 = 0;
     // LOGF(info, "event collisions: (%d)", collision.index());
     auto centrality = collision.centFT0C();
+    auto vz = collision.posZ();
     int occupancy = collision.trackOccupancyInTimeRange();
     histos.fill(HIST("hEvtSelInfo"), 0.5);
     if ((rctCut.requireRCTFlagChecker && rctChecker(collision)) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) && collision.sel8() && collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) && occupancy < cfgCutOccupancy) {
       histos.fill(HIST("hEvtSelInfo"), 1.5);
-      std::vector<ROOT::Math::PxPyPzMVector> lambdaMother, protonDaughter, pionDaughter;
-      std::vector<int> v0Status = {};
-      std::vector<bool> doubleStatus = {};
-      std::vector<double> v0Cospa = {};
-      std::vector<double> v0Radius = {};
-      std::vector<double> dcaPositive = {};
-      std::vector<double> dcaNegative = {};
-      std::vector<double> positiveIndex = {};
-      std::vector<double> negativeIndex = {};
-      std::vector<double> dcaBetweenDaughter = {};
       for (const auto& v0 : V0s) {
         // LOGF(info, "v0 index 0 : (%d)", v0.index());
         auto [lambdaTag, aLambdaTag, isValid] = getLambdaTags(v0, collision);
@@ -320,19 +322,20 @@ struct lambdaspincorrelation {
             pionDaughter.push_back(pion);
             histos.fill(HIST("hLambdaMass"), lambda.M());
           }
+          numbV0 = numbV0 + 1;
         }
       }
-      if (v0Status.size() > 1) {
+      if (numbV0 > 1 && v0Cospa.size() > 1) {
         histos.fill(HIST("hEvtSelInfo"), 2.5);
-        spinCorrEvent(centrality, collision.posZ());
-        auto indexEvent = spinCorrEvent.lastIndex();
+        lambdaEvent(centrality, vz);
+        auto indexEvent = lambdaEvent.lastIndex();
         //// Fill track table for V0//////////////////
         for (auto if1 = lambdaMother.begin(); if1 != lambdaMother.end(); ++if1) {
           auto i5 = std::distance(lambdaMother.begin(), if1);
           lambdaDummy = lambdaMother.at(i5);
           protonDummy = protonDaughter.at(i5);
           pionDummy = pionDaughter.at(i5);
-          spinCorrPair(indexEvent, v0Status.at(i5), doubleStatus.at(i5), v0Cospa.at(i5), v0Radius.at(i5), dcaPositive.at(i5), dcaNegative.at(i5), dcaBetweenDaughter.at(i5), lambdaDummy.Pt(), lambdaDummy.Eta(), lambdaDummy.Phi(), lambdaDummy.M(), protonDummy.Pt(), protonDummy.Eta(), protonDummy.Phi(), positiveIndex.at(i5), negativeIndex.at(i5));
+          lambdaPair(indexEvent, v0Status.at(i5), doubleStatus.at(i5), v0Cospa.at(i5), v0Radius.at(i5), dcaPositive.at(i5), dcaNegative.at(i5), dcaBetweenDaughter.at(i5), lambdaDummy.Pt(), lambdaDummy.Eta(), lambdaDummy.Phi(), lambdaDummy.M(), protonDummy.Pt(), protonDummy.Eta(), protonDummy.Phi(), positiveIndex.at(i5), negativeIndex.at(i5));
         }
       }
     }

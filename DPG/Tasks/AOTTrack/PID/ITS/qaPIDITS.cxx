@@ -14,17 +14,18 @@
 /// \brief  Implementation for QA tasks of the ITS PID quantities
 ///
 
-#include <string>
-#include <vector>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StaticFor.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/StaticFor.h"
+#include "Framework/runDataProcessing.h"
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -183,8 +184,9 @@ struct itsPidQa {
     return averageClusterSizePerCoslInv(track.itsClusterSizes(), track.eta());
   }
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    o2::aod::ITSResponse::setParameters(context);
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
     const AxisSpec etaAxis{etaBins, "#it{#eta}"};
     const AxisSpec phiAxis{phiBins, "#it{#phi}"};

@@ -13,18 +13,21 @@
 /// \brief Definitions of derived tables produced by data creator for D0 calibration studies
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
-#ifndef D0CALIBTABLES_H_
-#define D0CALIBTABLES_H_
-
-#include <sys/types.h>
-#include <cstdint>
-#include <limits>
-
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/ASoA.h>
+#ifndef DPG_TASKS_AOTTRACK_D0CALIBTABLES_H_
+#define DPG_TASKS_AOTTRACK_D0CALIBTABLES_H_
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+
+#include <sys/types.h>
+
+#include <cstdint>
+#include <limits>
+#include <string>
+#include <vector>
 
 namespace o2
 {
@@ -160,9 +163,9 @@ uint8_t getCompressedBdtScoreSgn(T bdtScore)
   return getCompressedUint8(bdtScore, 1. / 255);
 }
 
-/// It compresses the number of sigma (0.1 sigma precision)
+/// It compresses the occupancy value
 ///\param occupancy is the occupancy value
-///\return The number of sigma compressed to a int8_t with 0.1 precision
+///\return The number of occupancy compressed to a uint8_t
 template <typename T>
 uint8_t getCompressedOccupancy(T occupancy)
 {
@@ -298,7 +301,7 @@ DECLARE_SOA_COLUMN(OccupancyTracks, occupancyTracks, uint8_t); //! FT0 occupancy
 DECLARE_SOA_COLUMN(OccupancyFT0C, occupancyFT0C, uint8_t);     //! FT0 occupancy
 } // namespace hf_calib
 
-DECLARE_SOA_TABLE(D0CalibColl, "AOD", "D0CALIBCOLLS",
+DECLARE_SOA_TABLE(D0CalibColls, "AOD", "D0CALIBCOLL",
                   o2::soa::Index<>,
                   collision::PosX,
                   collision::PosY,
@@ -318,18 +321,28 @@ DECLARE_SOA_TABLE(D0CalibColl, "AOD", "D0CALIBCOLLS",
 
 namespace hf_calib
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Collision, collision, int, D0CalibColl, ""); //! Index of collision
-DECLARE_SOA_COLUMN(TpcNumSigmaPi, tpcNumSigmaPi, int8_t);                  //! compressed NsigmaTPC for pions
-DECLARE_SOA_COLUMN(TpcNumSigmaKa, tpcNumSigmaKa, int8_t);                  //! compressed NsigmaTPC for kaons
-DECLARE_SOA_COLUMN(TofNumSigmaPi, tofNumSigmaPi, int8_t);                  //! compressed NsigmaTOF for pions
-DECLARE_SOA_COLUMN(TofNumSigmaKa, tofNumSigmaKa, int8_t);                  //! compressed NsigmaTOF for kaons
-DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, uint8_t);                       //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, uint8_t);                       //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(TRDChi2, trdChi2, uint8_t);                             //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(TOFChi2, tofChi2, uint8_t);                             //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
+DECLARE_SOA_INDEX_COLUMN_FULL(Collision, collision, int, D0CalibColls, ""); //! Index of collision
+DECLARE_SOA_COLUMN(TpcNumSigmaPi, tpcNumSigmaPi, int8_t);                   //! compressed NsigmaTPC for pions
+DECLARE_SOA_COLUMN(TpcNumSigmaKa, tpcNumSigmaKa, int8_t);                   //! compressed NsigmaTPC for kaons
+DECLARE_SOA_COLUMN(TofNumSigmaPi, tofNumSigmaPi, int8_t);                   //! compressed NsigmaTOF for pions
+DECLARE_SOA_COLUMN(TofNumSigmaKa, tofNumSigmaKa, int8_t);                   //! compressed NsigmaTOF for kaons
+DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, uint8_t);                        //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, uint8_t);                        //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(TRDChi2, trdChi2, uint8_t);                              //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(TOFChi2, tofChi2, uint8_t);                              //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(CmoPrimUnfm80, cmoPrimUnfm80, uint8_t);
+DECLARE_SOA_COLUMN(CmoFV0AUnfm80, cmoFV0AUnfm80, uint8_t);
+DECLARE_SOA_COLUMN(CmoFT0AUnfm80, cmoFT0AUnfm80, uint8_t);
+DECLARE_SOA_COLUMN(CmoFT0CUnfm80, cmoFT0CUnfm80, uint8_t);
+DECLARE_SOA_COLUMN(CwmoPrimUnfm80, cwmoPrimUnfm80, uint8_t);
+DECLARE_SOA_COLUMN(CwmoFV0AUnfm80, cwmoFV0AUnfm80, uint8_t);
+DECLARE_SOA_COLUMN(CwmoFT0AUnfm80, cwmoFT0AUnfm80, uint8_t);
+DECLARE_SOA_COLUMN(CwmoFT0CUnfm80, cwmoFT0CUnfm80, uint8_t);
+DECLARE_SOA_COLUMN(CmoRobustT0V0PrimUnfm80, cmoRobustT0V0PrimUnfm80, uint8_t);
+DECLARE_SOA_COLUMN(CwmoRobustT0V0PrimUnfm80, cwmoRobustT0V0PrimUnfm80, uint8_t);
 } // namespace hf_calib
 
-DECLARE_SOA_TABLE(D0CalibTrack, "AOD", "D0CALIBTRACKS",
+DECLARE_SOA_TABLE(D0CalibTracks, "AOD", "D0CALIBTRACK",
                   o2::soa::Index<>,
                   /// *** collision index
                   hf_calib::CollisionId,
@@ -376,43 +389,79 @@ DECLARE_SOA_TABLE(D0CalibTrack, "AOD", "D0CALIBTRACKS",
                   track::TOFExpMom,
                   track::TrackTime,
                   track::TrackTimeRes,
-                  /// *** track QA --> FIXME: info not present for each track in normal AO2Ds, check how to do
+                  /// *** track QA
+                  trackqa::TPCTime0,
+                  trackqa::TPCdEdxNorm,
+                  trackqa::TPCDCAR,
+                  trackqa::TPCDCAZ,
+                  trackqa::TPCClusterByteMask,
+                  trackqa::TPCdEdxMax0R,
+                  trackqa::TPCdEdxMax1R,
+                  trackqa::TPCdEdxMax2R,
+                  trackqa::TPCdEdxMax3R,
+                  trackqa::TPCdEdxTot0R,
+                  trackqa::TPCdEdxTot1R,
+                  trackqa::TPCdEdxTot2R,
+                  trackqa::TPCdEdxTot3R,
+                  trackqa::DeltaRefContParamY,
+                  trackqa::DeltaRefContParamZ,
+                  trackqa::DeltaRefContParamSnp,
+                  trackqa::DeltaRefContParamTgl,
+                  trackqa::DeltaRefContParamQ2Pt,
+                  trackqa::DeltaRefGloParamY,
+                  trackqa::DeltaRefGloParamZ,
+                  trackqa::DeltaRefGloParamSnp,
+                  trackqa::DeltaRefGloParamTgl,
+                  trackqa::DeltaRefGloParamQ2Pt,
+                  trackqa::DeltaTOFdX,
+                  trackqa::DeltaTOFdZ,
                   /// *** DCA, Nsigma
                   track::DcaXY,
                   track::DcaZ,
                   hf_calib::TpcNumSigmaPi,
                   hf_calib::TpcNumSigmaKa,
                   hf_calib::TofNumSigmaPi,
-                  hf_calib::TofNumSigmaKa);
+                  hf_calib::TofNumSigmaKa,
+                  /// *** Occupancy variables
+                  hf_calib::CmoPrimUnfm80,
+                  hf_calib::CmoFV0AUnfm80,
+                  hf_calib::CmoFT0AUnfm80,
+                  hf_calib::CmoFT0CUnfm80,
+                  hf_calib::CwmoPrimUnfm80,
+                  hf_calib::CwmoFV0AUnfm80,
+                  hf_calib::CwmoFT0AUnfm80,
+                  hf_calib::CwmoFT0CUnfm80,
+                  hf_calib::CmoRobustT0V0PrimUnfm80,
+                  hf_calib::CwmoRobustT0V0PrimUnfm80);
 
 namespace hf_calib
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(TrackPos, trackPos, int, D0CalibTrack, "");    //! Index of positive track
-DECLARE_SOA_INDEX_COLUMN_FULL(TrackNeg, trackNeg, int, D0CalibTrack, "");    //! Index of negative track
-DECLARE_SOA_COLUMN(MassHypo, massHypo, uint8_t);                             //! mass hypothesis for D0 (D0, D0bar, or both)
-DECLARE_SOA_COLUMN(Pt, pt, float);                                           //! D0-candidate pT
-DECLARE_SOA_COLUMN(Eta, eta, float);                                         //! D0-candidate eta
-DECLARE_SOA_COLUMN(Phi, phi, float);                                         //! D0-candidate phi
-DECLARE_SOA_COLUMN(InvMassD0, invMassD0, float);                             //! invariant mass (D0 hypothesis)
-DECLARE_SOA_COLUMN(InvMassD0bar, invMassD0bar, float);                       //! invariant mass (D0bar hypothesis)
-DECLARE_SOA_COLUMN(DecLength, decLength, uint8_t);                           //! compressed decay length
-DECLARE_SOA_COLUMN(DecLengthXY, decLengthXY, uint8_t);                       //! compressed decay length XY
-DECLARE_SOA_COLUMN(NormDecLength, normDecLength, uint8_t);                   //! compressed normalised decay length
-DECLARE_SOA_COLUMN(NormDecLengthXY, normDecLengthXY, uint8_t);               //! compressed normalised decay length XY
-DECLARE_SOA_COLUMN(CosPa, cosPa, uint8_t);                                   //! compressed cosine of pointing angle
-DECLARE_SOA_COLUMN(CosPaXY, cosPaXY, uint8_t);                               //! compressed cosine of pointing angle XY
-DECLARE_SOA_COLUMN(PointingAngle, pointingAngle, uint8_t);                   //! compressed pointing angle
-DECLARE_SOA_COLUMN(PointingAngleXY, pointingAngleXY, uint8_t);               //! compressed pointing angle XY
-DECLARE_SOA_COLUMN(DecVtxChi2, decVtxChi2, uint8_t);                         //! compressed decay vertex chi2
-DECLARE_SOA_COLUMN(BdtScoreBkgD0, bdtScoreBkgD0, uint16_t);                  //! compressed BDT score (bkg, D0 mass hypo)
-DECLARE_SOA_COLUMN(BdtScorePromptD0, bdtScorePromptD0, uint8_t);             //! compressed BDT score (prompt, D0 mass hypo)
-DECLARE_SOA_COLUMN(BdtScoreNonpromptD0, bdtScoreNonpromptD0, uint8_t);       //! compressed BDT score (non-prompt, D0 mass hypo)
-DECLARE_SOA_COLUMN(BdtScoreBkgD0bar, bdtScoreBkgD0bar, uint16_t);            //! compressed BDT score (bkg, D0bar mass hypo)
-DECLARE_SOA_COLUMN(BdtScorePromptD0bar, bdtScorePromptD0bar, uint8_t);       //! compressed BDT score (prompt, D0bar mass hypo)
-DECLARE_SOA_COLUMN(BdtScoreNonpromptD0bar, bdtScoreNonpromptD0bar, uint8_t); //! compressed BDT score (non-prompt, D0bar mass hypo)
+DECLARE_SOA_INDEX_COLUMN_FULL(TrackPos, trackPos, int, D0CalibTracks, "_Pos"); //! Index of positive track
+DECLARE_SOA_INDEX_COLUMN_FULL(TrackNeg, trackNeg, int, D0CalibTracks, "_Neg"); //! Index of negative track
+DECLARE_SOA_COLUMN(MassHypo, massHypo, uint8_t);                               //! mass hypothesis for D0 (D0, D0bar, or both)
+DECLARE_SOA_COLUMN(Pt, pt, float);                                             //! D0-candidate pT
+DECLARE_SOA_COLUMN(Eta, eta, float);                                           //! D0-candidate eta
+DECLARE_SOA_COLUMN(Phi, phi, float);                                           //! D0-candidate phi
+DECLARE_SOA_COLUMN(InvMassD0, invMassD0, float);                               //! invariant mass (D0 hypothesis)
+DECLARE_SOA_COLUMN(InvMassD0bar, invMassD0bar, float);                         //! invariant mass (D0bar hypothesis)
+DECLARE_SOA_COLUMN(DecLength, decLength, uint8_t);                             //! compressed decay length
+DECLARE_SOA_COLUMN(DecLengthXY, decLengthXY, uint8_t);                         //! compressed decay length XY
+DECLARE_SOA_COLUMN(NormDecLength, normDecLength, uint8_t);                     //! compressed normalised decay length
+DECLARE_SOA_COLUMN(NormDecLengthXY, normDecLengthXY, uint8_t);                 //! compressed normalised decay length XY
+DECLARE_SOA_COLUMN(CosPa, cosPa, uint8_t);                                     //! compressed cosine of pointing angle
+DECLARE_SOA_COLUMN(CosPaXY, cosPaXY, uint8_t);                                 //! compressed cosine of pointing angle XY
+DECLARE_SOA_COLUMN(PointingAngle, pointingAngle, uint8_t);                     //! compressed pointing angle
+DECLARE_SOA_COLUMN(PointingAngleXY, pointingAngleXY, uint8_t);                 //! compressed pointing angle XY
+DECLARE_SOA_COLUMN(DecVtxChi2, decVtxChi2, uint8_t);                           //! compressed decay vertex chi2
+DECLARE_SOA_COLUMN(BdtScoreBkgD0, bdtScoreBkgD0, uint16_t);                    //! compressed BDT score (bkg, D0 mass hypo)
+DECLARE_SOA_COLUMN(BdtScorePromptD0, bdtScorePromptD0, uint8_t);               //! compressed BDT score (prompt, D0 mass hypo)
+DECLARE_SOA_COLUMN(BdtScoreNonpromptD0, bdtScoreNonpromptD0, uint8_t);         //! compressed BDT score (non-prompt, D0 mass hypo)
+DECLARE_SOA_COLUMN(BdtScoreBkgD0bar, bdtScoreBkgD0bar, uint16_t);              //! compressed BDT score (bkg, D0bar mass hypo)
+DECLARE_SOA_COLUMN(BdtScorePromptD0bar, bdtScorePromptD0bar, uint8_t);         //! compressed BDT score (prompt, D0bar mass hypo)
+DECLARE_SOA_COLUMN(BdtScoreNonpromptD0bar, bdtScoreNonpromptD0bar, uint8_t);   //! compressed BDT score (non-prompt, D0bar mass hypo)
 } // namespace hf_calib
 
-DECLARE_SOA_TABLE(D0CalibCand, "AOD", "D0CALIBCANDS",
+DECLARE_SOA_TABLE(D0CalibCands, "AOD", "D0CALIBCAND",
                   o2::soa::Index<>,
                   hf_calib::CollisionId,
                   hf_calib::TrackPosId,
@@ -440,4 +489,4 @@ DECLARE_SOA_TABLE(D0CalibCand, "AOD", "D0CALIBCANDS",
                   hf_calib::BdtScoreNonpromptD0bar);
 } // namespace aod
 } // namespace o2
-#endif // D0CALIBTABLES_H_
+#endif // DPG_TASKS_AOTTRACK_D0CALIBTABLES_H_

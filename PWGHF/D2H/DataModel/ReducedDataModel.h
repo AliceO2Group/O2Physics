@@ -34,9 +34,10 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 
 #include <array>
 #include <cmath>
@@ -50,7 +51,7 @@ namespace aod
 namespace hf_reduced_collision
 {
 DECLARE_SOA_COLUMN(Bz, bz, float);                                              //! Magnetic field in z-direction
-DECLARE_SOA_COLUMN(HfCollisionRejectionMap, hfCollisionRejectionMap, uint16_t); //! Bitmask with failed selection criteria
+DECLARE_SOA_COLUMN(HfCollisionRejectionMap, hfCollisionRejectionMap, uint32_t); //! Bitmask with failed selection criteria
 // keep track of the number of studied events (for normalization purposes)
 DECLARE_SOA_COLUMN(OriginalCollisionCount, originalCollisionCount, int);                                                         //! Size of COLLISION table processed
 DECLARE_SOA_COLUMN(ZvtxSelectedCollisionCount, zvtxSelectedCollisionCount, int);                                                 //! Number of COLLISIONS with |zvtx| < zvtxMax
@@ -215,6 +216,12 @@ DECLARE_SOA_DYNAMIC_COLUMN(EtaProng2, etaProng2, //!
                            [](float pxProng2, float pyProng2, float pzProng2) -> float { return RecoDecay::eta(std::array<float, 3>{pxProng2, pyProng2, pzProng2}); });
 } // namespace hf_track_vars_reduced
 
+namespace hf_b_to_jpsi_track_vars_reduced
+{
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! transverse momentum
+                           [](float signed1Pt) -> float { return std::abs(signed1Pt) <= o2::constants::math::Almost0 ? o2::constants::math::VeryBig : 1.f / std::abs(signed1Pt); });
+} // namespace hf_b_to_jpsi_track_vars_reduced
+
 namespace hf_track_pid_reduced
 {
 DECLARE_SOA_COLUMN(TPCNSigmaPiProng0, tpcNSigmaPiProng0, float); //! NsigmaTPCPi for prong0, o2-linter: disable=name/o2-column (written to disk)
@@ -288,6 +295,7 @@ DECLARE_SOA_TABLE(HfRedBach0Bases, "AOD", "HFREDBACH0BASE", //! Table with track
                   hf_track_index_reduced::TrackId,
                   hf_track_index_reduced::HfRedCollisionId,
                   HFTRACKPAR_COLUMNS,
+                  hf_b_to_jpsi_track_vars_reduced::Pt<aod::track::Signed1Pt>,
                   hf_track_vars_reduced::ItsNCls,
                   hf_track_vars_reduced::TpcNClsCrossedRows,
                   hf_track_vars_reduced::TpcChi2NCl,
@@ -318,6 +326,7 @@ DECLARE_SOA_TABLE(HfRedBach1Bases, "AOD", "HFREDBACH1BASE", //! Table with track
                   hf_track_index_reduced::TrackId,
                   hf_track_index_reduced::HfRedCollisionId,
                   HFTRACKPAR_COLUMNS,
+                  hf_b_to_jpsi_track_vars_reduced::Pt<aod::track::Signed1Pt>,
                   hf_track_vars_reduced::ItsNCls,
                   hf_track_vars_reduced::TpcNClsCrossedRows,
                   hf_track_vars_reduced::TpcChi2NCl,
@@ -358,8 +367,8 @@ DECLARE_SOA_EXTENDED_TABLE_USER(HfRedBach1Ext, HfRedBach1Bases, "HFREDBACH1EXT",
                                 aod::track::Pt);
 
 using HfRedTracks = HfRedTracksExt;
-using HfRedBach0Tracks = HfRedBach0Ext;
-using HfRedBach1Tracks = HfRedBach1Ext;
+using HfRedBach0Tracks = HfRedBach0Bases;
+using HfRedBach1Tracks = HfRedBach1Bases;
 
 namespace hf_charm_cand_reduced
 {
@@ -823,7 +832,10 @@ DECLARE_SOA_TABLE(HfMcGenRedB0s, "AOD", "HFMCGENREDB0", //! Generation-level MC 
                   hf_b0_mc::EtaProng0,
                   hf_b0_mc::PtProng1,
                   hf_b0_mc::YProng1,
-                  hf_b0_mc::EtaProng1);
+                  hf_b0_mc::EtaProng1,
+                  hf_reduced_collision::HfCollisionRejectionMap,
+                  cent::CentFT0C,
+                  cent::CentFT0M);
 
 // store all configurables values used in the first part of the workflow
 // so we can use them in the B0 part
@@ -914,7 +926,10 @@ DECLARE_SOA_TABLE(HfMcGenRedBps, "AOD", "HFMCGENREDBP", //! Generation-level MC 
                   hf_bplus_mc::EtaProng0,
                   hf_bplus_mc::PtProng1,
                   hf_bplus_mc::YProng1,
-                  hf_bplus_mc::EtaProng1);
+                  hf_bplus_mc::EtaProng1,
+                  hf_reduced_collision::HfCollisionRejectionMap,
+                  cent::CentFT0C,
+                  cent::CentFT0M);
 
 // store all configurables values used in the first part of the workflow
 // so we can use them in the Bplus part
@@ -1016,7 +1031,10 @@ DECLARE_SOA_TABLE(HfMcGenRedBss, "AOD", "HFMCGENREDBS", //! Generation-level MC 
                   hf_bs_mc::EtaProng0,
                   hf_bs_mc::PtProng1,
                   hf_bs_mc::YProng1,
-                  hf_bs_mc::EtaProng1);
+                  hf_bs_mc::EtaProng1,
+                  hf_reduced_collision::HfCollisionRejectionMap,
+                  cent::CentFT0C,
+                  cent::CentFT0M);
 
 // store all configurables values used in the first part of the workflow
 // so we can use them in the Bs part
@@ -1100,7 +1118,10 @@ DECLARE_SOA_TABLE(HfMcGenRedLbs, "AOD", "HFMCGENREDLB", //! Generation-level MC 
                   hf_lb_mc::EtaProng0,
                   hf_lb_mc::PtProng1,
                   hf_lb_mc::YProng1,
-                  hf_lb_mc::EtaProng1);
+                  hf_lb_mc::EtaProng1,
+                  hf_reduced_collision::HfCollisionRejectionMap,
+                  cent::CentFT0C,
+                  cent::CentFT0M);
 
 // store all configurables values used in the first part of the workflow
 // so we can use them in the B0 part

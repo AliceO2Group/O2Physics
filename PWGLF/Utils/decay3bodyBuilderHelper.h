@@ -12,27 +12,29 @@
 #ifndef PWGLF_UTILS_DECAY3BODYBUILDERHELPER_H_
 #define PWGLF_UTILS_DECAY3BODYBUILDERHELPER_H_
 
-#include <cstdlib>
-#include <cmath>
-#include <array>
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Tools/KFparticle/KFUtilities.h"
+
+#include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisDataModel.h"
-#include "ReconstructionDataFormats/Track.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsVertexing/SVertexHypothesis.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/RecoDecay.h"
-#include "Tools/KFparticle/KFUtilities.h"
+#include "Framework/AnalysisDataModel.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
 
 #ifndef HomogeneousField
 #define HomogeneousField
 #endif
 
 /// includes KFParticle
-#include "KFParticle.h"
 #include "KFPTrack.h"
 #include "KFPVertex.h"
+#include "KFParticle.h"
 #include "KFParticleBase.h"
 #include "KFVertex.h"
 
@@ -78,6 +80,8 @@ struct decay3bodyCandidate {
   // float dcaxyToPV = 0.0f;
   float chi2 = 0.0f;
   float trackedClSize = 0.0f;
+  float cosPA = 0.0f;                                        // cosine of pointing angle
+  float ctau = 0.0f;                                         // ctau of the candidate
   float daughterDCAatSV = 0.0f;                              // quadratic sum of DCA between daughters at SV
   std::array<float, 3> daughterDCAtoSV = {0.0f, 0.0f, 0.0f}; // 0 - pos, 1 - neg, 2 - bach
 
@@ -186,6 +190,7 @@ class decay3bodyBuilderHelper
                                 bool useSelections = true,
                                 bool useTPCforPion = false,
                                 bool acceptTPCOnly = false,
+                                bool askOnlyITSMatch = true,
                                 bool calculateCovariance = true,
                                 bool isEventMixing = false)
   {
@@ -240,9 +245,21 @@ class decay3bodyBuilderHelper
       }
 
       // TPC only
-      if (!acceptTPCOnly && (!trackProton.hasITS() || !trackPion.hasITS() || !trackDeuteron.hasITS())) {
-        decay3body = {};
-        return false;
+      if (!acceptTPCOnly) {
+        if (askOnlyITSMatch) {
+          if (!trackProton.hasITS() || !trackPion.hasITS() || !trackDeuteron.hasITS()) {
+            decay3body = {};
+            return false;
+          }
+        } else {
+          bool isProtonTPCOnly = !trackProton.hasITS() && !trackProton.hasTOF() && !trackProton.hasTRD();
+          bool isPionTPCOnly = !trackPion.hasITS() && !trackPion.hasTOF() && !trackPion.hasTRD();
+          bool isDeuteronTPCOnly = !trackDeuteron.hasITS() && !trackDeuteron.hasTOF() && !trackDeuteron.hasTRD();
+          if (isProtonTPCOnly || isPionTPCOnly || isDeuteronTPCOnly) {
+            decay3body = {};
+            return false;
+          }
+        }
       }
 
       // daughter TPC PID
@@ -400,27 +417,33 @@ class decay3bodyBuilderHelper
         return false;
       }
 
-      // pointing angle
-      float cpa = RecoDecay::cpa(std::array{pvX, pvY, pvZ}, std::array{decay3body.position[0], decay3body.position[1], decay3body.position[2]}, std::array{decay3body.momentum[0], decay3body.momentum[1], decay3body.momentum[2]});
-      if (cpa < decay3bodyselections.minCosPA) {
-        decay3body = {};
-        return false;
-      }
-
       // vertex chi2
       if (decay3body.chi2 > decay3bodyselections.maxChi2) {
         decay3body = {};
         return false;
       }
+    }
 
-      // ctau
-      float P = RecoDecay::sqrtSumOfSquares(decay3body.momentum[0], decay3body.momentum[1], decay3body.momentum[2]);
-      float ctau = std::sqrt(std::pow(decay3body.position[0] - pvX, 2) + std::pow(decay3body.position[1] - pvY, 2) + std::pow(decay3body.position[2] - pvZ, 2)) / (P + 1E-10) * o2::constants::physics::MassHyperTriton;
+    // pointing angle
+    float cpa = RecoDecay::cpa(std::array{pvX, pvY, pvZ}, std::array{decay3body.position[0], decay3body.position[1], decay3body.position[2]}, std::array{decay3body.momentum[0], decay3body.momentum[1], decay3body.momentum[2]});
+    if (useSelections) {
+      if (cpa < decay3bodyselections.minCosPA) {
+        decay3body = {};
+        return false;
+      }
+    }
+    decay3body.cosPA = cpa;
+
+    // ctau
+    float P = RecoDecay::sqrtSumOfSquares(decay3body.momentum[0], decay3body.momentum[1], decay3body.momentum[2]);
+    float ctau = std::sqrt(std::pow(decay3body.position[0] - pvX, 2) + std::pow(decay3body.position[1] - pvY, 2) + std::pow(decay3body.position[2] - pvZ, 2)) / (P + 1E-10) * o2::constants::physics::MassHyperTriton;
+    if (useSelections) {
       if (ctau < decay3bodyselections.minCtau || ctau > decay3bodyselections.maxCtau) {
         decay3body = {};
         return false;
       }
     }
+    decay3body.ctau = ctau;
 
     //_______________________________________________________________________
     // SVertexer selections in case of event mixing

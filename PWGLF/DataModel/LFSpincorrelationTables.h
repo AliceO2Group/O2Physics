@@ -28,21 +28,21 @@
 
 namespace o2::aod
 {
-namespace lambdaspincorrevent
+namespace lambdaevent
 {
 DECLARE_SOA_COLUMN(Cent, cent, float);
 DECLARE_SOA_COLUMN(Posz, posz, float);
-} // namespace lambdaspincorrevent
-DECLARE_SOA_TABLE(LambdaSpinCorrEvents, "AOD", "LAMBDASPINCOREVENT",
+} // namespace lambdaevent
+DECLARE_SOA_TABLE(LambdaEvents, "AOD", "LAMBDAEVENT",
                   o2::soa::Index<>,
-                  lambdaspincorrevent::Cent,
-                  lambdaspincorrevent::Posz)
-using LambdaSpinCorrEvent = LambdaSpinCorrEvents::iterator;
+                  lambdaevent::Cent,
+                  lambdaevent::Posz)
+using LambdaEvent = LambdaEvents::iterator;
 
-namespace lambdaspincorrpair
+namespace lambdapair
 {
-DECLARE_SOA_INDEX_COLUMN(LambdaSpinCorrEvent, lambdaspincorrevent);
-DECLARE_SOA_COLUMN(V0Status, v0Status, float);                     //! Lambda or Anti-Lambda status
+DECLARE_SOA_INDEX_COLUMN(LambdaEvent, lambdaevent);
+DECLARE_SOA_COLUMN(V0Status, v0Status, int);                       //! Lambda or Anti-Lambda status
 DECLARE_SOA_COLUMN(DoubleStatus, doubleStatus, bool);              //! Double status
 DECLARE_SOA_COLUMN(V0Cospa, v0Cospa, float);                       //! V0 Cospa
 DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);                     //! V0 Radius
@@ -58,27 +58,27 @@ DECLARE_SOA_COLUMN(ProtonEta, protonEta, float);                   //! Proton Et
 DECLARE_SOA_COLUMN(ProtonPhi, protonPhi, float);                   //! Proton Phi
 DECLARE_SOA_COLUMN(ProtonIndex, protonIndex, int);                 //! Proton index
 DECLARE_SOA_COLUMN(PionIndex, pionIndex, int);                     //! Pion index
-} // namespace lambdaspincorrpair
-DECLARE_SOA_TABLE(LambdaSpinCorrPairs, "AOD", "LAMBDAPAIR",
+} // namespace lambdapair
+DECLARE_SOA_TABLE(LambdaPairs, "AOD", "LAMBDAPAIR",
                   o2::soa::Index<>,
-                  lambdaspincorrpair::LambdaSpinCorrEventId,
-                  lambdaspincorrpair::V0Status,
-                  lambdaspincorrpair::DoubleStatus,
-                  lambdaspincorrpair::V0Cospa,
-                  lambdaspincorrpair::V0Radius,
-                  lambdaspincorrpair::DcaPositive,
-                  lambdaspincorrpair::DcaNegative,
-                  lambdaspincorrpair::DcaBetweenDaughter,
-                  lambdaspincorrpair::LambdaPt,
-                  lambdaspincorrpair::LambdaEta,
-                  lambdaspincorrpair::LambdaPhi,
-                  lambdaspincorrpair::LambdaMass,
-                  lambdaspincorrpair::ProtonPt,
-                  lambdaspincorrpair::ProtonEta,
-                  lambdaspincorrpair::ProtonPhi,
-                  lambdaspincorrpair::ProtonIndex,
-                  lambdaspincorrpair::PionIndex);
+                  lambdapair::LambdaEventId,
+                  lambdapair::V0Status,
+                  lambdapair::DoubleStatus,
+                  lambdapair::V0Cospa,
+                  lambdapair::V0Radius,
+                  lambdapair::DcaPositive,
+                  lambdapair::DcaNegative,
+                  lambdapair::DcaBetweenDaughter,
+                  lambdapair::LambdaPt,
+                  lambdapair::LambdaEta,
+                  lambdapair::LambdaPhi,
+                  lambdapair::LambdaMass,
+                  lambdapair::ProtonPt,
+                  lambdapair::ProtonEta,
+                  lambdapair::ProtonPhi,
+                  lambdapair::ProtonIndex,
+                  lambdapair::PionIndex);
 
-using LambdaSpinCorrPair = LambdaSpinCorrPairs::iterator;
+using LambdaPair = LambdaPairs::iterator;
 } // namespace o2::aod
 #endif // PWGLF_DATAMODEL_LFSPINCORRELATIONTABLES_H_

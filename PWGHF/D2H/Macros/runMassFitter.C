@@ -16,12 +16,18 @@
 /// \author Mingyu Zhang <mingyu.zang@cern.ch>
 /// \author Xinye Peng  <xinye.peng@cern.ch>
 /// \author Biao Zhang <biao.zhang@cern.ch>
+/// \author Oleksii Lubynets <oleksii.lubynets@cern.ch>
 
 #if !defined(__CINT__) || defined(__CLING__)
 
 #include "HFInvMassFitter.h"
 
 // if .h file not found, please include your local rapidjson/document.h and rapidjson/filereadstream.h here
+#include <TCanvas.h>
+#include <TDatabasePDG.h>
+#include <TFile.h>
+#include <TH2F.h>
+
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
 
@@ -29,10 +35,6 @@
 #include <stdexcept>
 #include <string> // std::string
 #include <vector> // std::vector
-
-#include <TDatabasePDG.h>
-#include <TFile.h>
-#include <TH2F.h>
 
 #endif
 
@@ -671,4 +673,17 @@ void divideCanvas(TCanvas* canvas, int nSliceVarBins)
       canvas->Divide(rectangularSideMin + rectangularSidesDiff, rectangularSideMin);
     }
   }
+}
+
+int main(int argc, char* argv[])
+{
+  if (argc == 1) {
+    throw std::runtime_error("Not enough arguments. Please use\n./runMassFitter configFileName");
+  }
+
+  const std::string configFileName = argv[1];
+
+  runMassFitter(configFileName);
+
+  return 0;
 }
