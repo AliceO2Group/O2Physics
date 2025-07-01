@@ -131,7 +131,7 @@ DECLARE_SOA_TABLE(HfLcPolBkg, "AOD", "HFLCPOLBKG",
 
 } // namespace o2::aod
 
-struct TaskPolarisationCharmHadrons {
+struct HfTaskCharmPolarisation {
   Produces<o2::aod::HfLcPolBkg> rowCandLcBkg;
 
   float massPi{0.f};
@@ -2214,7 +2214,7 @@ struct TaskPolarisationCharmHadrons {
       fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
     }
   }
-  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstar, "Process Dstar candidates without ML", true);
+  PROCESS_SWITCH(HfTaskCharmPolarisation, processDstar, "Process Dstar candidates without ML", true);
 
   // Dstar with ML cuts
   void processDstarWithMl(aod::Collisions const& collisions,
@@ -2240,7 +2240,7 @@ struct TaskPolarisationCharmHadrons {
       fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
     }
   }
-  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstarWithMl, "Process Dstar candidates with ML", false);
+  PROCESS_SWITCH(HfTaskCharmPolarisation, processDstarWithMl, "Process Dstar candidates with ML", false);
 
   // Dstar in MC with rectangular cuts
   void processDstarMc(aod::McCollisions::iterator const&,
@@ -2273,7 +2273,7 @@ struct TaskPolarisationCharmHadrons {
       runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi>(mcParticle, mcParticles, numPvContributorsGen);
     }
   }
-  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstarMc, "Process Dstar candidates in MC without ML", false);
+  PROCESS_SWITCH(HfTaskCharmPolarisation, processDstarMc, "Process Dstar candidates in MC without ML", false);
 
   // Dstar in MC with ML cuts
   void processDstarMcWithMl(aod::McCollisions::iterator const&,
@@ -2306,7 +2306,7 @@ struct TaskPolarisationCharmHadrons {
       runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi>(mcParticle, mcParticles, numPvContributorsGen);
     }
   }
-  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstarMcWithMl, "Process Dstar candidates in MC with ML", false);
+  PROCESS_SWITCH(HfTaskCharmPolarisation, processDstarMcWithMl, "Process Dstar candidates in MC with ML", false);
 
   void processDstarInPbPb(CollsWithQvecs::iterator const& collision,
                           FilteredCandDstarWSelFlagAndMl const& dstarCandidates,
@@ -2332,7 +2332,7 @@ struct TaskPolarisationCharmHadrons {
     }
     fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
   }
-  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstarInPbPb, "Process Dstar candidates in PbPb collisions", false);
+  PROCESS_SWITCH(HfTaskCharmPolarisation, processDstarInPbPb, "Process Dstar candidates in PbPb collisions", false);
 
   void processDstarWithMlInPbPb(CollsWithQvecs::iterator const& collision,
                                 FilteredCandDstarWSelFlagAndMl const& dstarCandidates,
@@ -2358,7 +2358,7 @@ struct TaskPolarisationCharmHadrons {
     }
     fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
   }
-  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstarWithMlInPbPb, "Process Dstar candidates with ML in PbPb collisions", false);
+  PROCESS_SWITCH(HfTaskCharmPolarisation, processDstarWithMlInPbPb, "Process Dstar candidates with ML in PbPb collisions", false);
 
   void processDstarMcInPbPb(GenCollisWithQvecs::iterator const& collision,
                             McParticlesDstarMatched const& mcParticles,
@@ -2397,7 +2397,7 @@ struct TaskPolarisationCharmHadrons {
       runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi>(mcParticle, mcParticles, numPvContributorsGen);
     }
   }
-  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstarMcInPbPb, "Process Dstar candidates in PbPb MC without ML", false);
+  PROCESS_SWITCH(HfTaskCharmPolarisation, processDstarMcInPbPb, "Process Dstar candidates in PbPb MC without ML", false);
 
   void processDstarMcWithMlInPbPb(GenCollisWithQvecs::iterator const& collision,
                                   McParticlesDstarMatched const& mcParticles,
@@ -2436,7 +2436,7 @@ struct TaskPolarisationCharmHadrons {
       runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi>(mcParticle, mcParticles, numPvContributorsGen);
     }
   }
-  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstarMcWithMlInPbPb, "Process Dstar candidates in PbPb MC with ML", false);
+  PROCESS_SWITCH(HfTaskCharmPolarisation, processDstarMcWithMlInPbPb, "Process Dstar candidates in PbPb MC with ML", false);
 
   ////////////////////////////
   //   Lc->pKpi analysis   ///
@@ -2467,7 +2467,7 @@ struct TaskPolarisationCharmHadrons {
       fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
     }
   }
-  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processLcToPKPi, "Process Lc candidates without ML", false);
+  PROCESS_SWITCH(HfTaskCharmPolarisation, processLcToPKPi, "Process Lc candidates without ML", false);
 
   // Lc->pKpi with ML cuts
   void processLcToPKPiWithMl(aod::Collisions const& collisions,
@@ -2494,7 +2494,7 @@ struct TaskPolarisationCharmHadrons {
       fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
     }
   }
-  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processLcToPKPiWithMl, "Process Lc candidates with ML", false);
+  PROCESS_SWITCH(HfTaskCharmPolarisation, processLcToPKPiWithMl, "Process Lc candidates with ML", false);
 
   // Lc->pKpi in MC with rectangular cuts
   void processLcToPKPiMc(aod::McCollisions::iterator const&,
@@ -2527,7 +2527,7 @@ struct TaskPolarisationCharmHadrons {
       runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi>(mcParticle, mcParticles, numPvContributorsGen);
     }
   }
-  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processLcToPKPiMc, "Process Lc candidates in MC without ML", false);
+  PROCESS_SWITCH(HfTaskCharmPolarisation, processLcToPKPiMc, "Process Lc candidates in MC without ML", false);
 
   // Lc->pKpi in MC with ML cuts
   void processLcToPKPiMcWithMl(aod::McCollisions::iterator const&,
@@ -2560,7 +2560,7 @@ struct TaskPolarisationCharmHadrons {
       runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi>(mcParticle, mcParticles, numPvContributorsGen);
     }
   }
-  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processLcToPKPiMcWithMl, "Process Lc candidates in MC with ML", false);
+  PROCESS_SWITCH(HfTaskCharmPolarisation, processLcToPKPiMcWithMl, "Process Lc candidates in MC with ML", false);
 
   // Lc->pKpi in MC with ML cuts w/o mcCollision grouping (to study Lc background)
   void processLcToPKPiBackgroundMcWithMl(McParticles3ProngMatched const& mcParticles,
@@ -2575,10 +2575,10 @@ struct TaskPolarisationCharmHadrons {
       runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi>(mcParticle, mcParticles, /*numPvContributorsGen*/ -1);
     }
   }
-  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processLcToPKPiBackgroundMcWithMl, "Process Lc candidates in MC with ML w/o mcCollision grouping", false);
+  PROCESS_SWITCH(HfTaskCharmPolarisation, processLcToPKPiBackgroundMcWithMl, "Process Lc candidates in MC with ML w/o mcCollision grouping", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<TaskPolarisationCharmHadrons>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskCharmPolarisation>(cfgc)};
 }
