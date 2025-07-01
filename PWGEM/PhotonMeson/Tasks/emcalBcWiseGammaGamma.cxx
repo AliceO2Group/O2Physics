@@ -55,6 +55,8 @@ struct EmcalBcWiseGammaGamma {
   Configurable<float> cfgMinOpenAngle{"cfgMinOpenAngle", 0.0202, "Minimum opening angle between photons"};
   Configurable<int> cfgDistanceToEdge{"cfgDistanceToEdge", 1, "Distance to edge in cells required for rotated cluster to be accepted"};
   Configurable<int> cfgBGEventDownsampling{"cfgBGEventDownsampling", 1, "Only calculate background for every n-th event (performance reasons in PbPb)"};
+  Configurable<int> cfgMinTimeSinceSOF{"cfgMinTimeSinceSOF", -1, "Only analyze events with a time since start of fill larger than this value (in minutes)"};
+  Configurable<int> cfgMaxTimeSinceSOF{"cfgMaxTimeSinceSOF", 100000, "Only analyze events with a time since start of fill smaller than this value (in minutes)"};
 
   ConfigurableAxis cfgCentralityBinning{"cfgCentralityBinning", {VARIABLE_WIDTH, 0.f, 5.f, 10.f, 20.f, 30.f, 40.f, 50.f, 60.f, 70.f, 80.f, 90.f, 100.f, 101.f, 102.f}, "FT0M centrality (%)"};
 
@@ -83,6 +85,7 @@ struct EmcalBcWiseGammaGamma {
     mHistManager.add("Event/Z1VsZ2", "Z vertex positions for BCs with two collisions;#bf{#it{z}_{vtx}^{1} (cm)};#bf{#it{z}_{vtx}^{2} (cm)}", HistType::kTH2F, {{150, -15, 15}, {150, -15, 15}});
     mHistManager.add("Event/dZ", "Distance between vertices for BCs with two collisions;#bf{#Delta #it{z}_{vtx} (cm)};#bf{#it{N}_{BC}}", HistType::kTH1F, {{600, -30, 30}});
     mHistManager.add("Event/Mu", "Probablity of a collision in the BC;#bf{#mu};#bf{#it{N}_{BC}}", HistType::kTH1F, {{1000, 0., 0.1}});
+    mHistManager.add("Event/TimeSinceSOF", "Time of BC since the start of fill;#bf{t-t_{SOF} (min)};#bf{#it{N}_{BC}}", HistType::kTH1F, {{1200, 0., 600}});
 
     mHistManager.add("Event/Centrality", "FT0M centrality;FT0M centrality (%);#bf{#it{N}_{BC}}", HistType::kTH1F, {cfgCentralityBinning});
     mHistManager.add("Event/CentralityVsAmplitude", "FT0M AmplitudeVsCentrality;FT0M Centrality;FT0M Amplitude", HistType::kTH2F, {cfgCentralityBinning, {600, 0, 300000}});
@@ -140,6 +143,7 @@ struct EmcalBcWiseGammaGamma {
     mHistManager.fill(HIST("Event/nBCs"), 0, bc.centrality());
     float mu = bc.mu();
     mHistManager.fill(HIST("Event/Mu"), mu);
+    mHistManager.fill(HIST("Event/TimeSinceSOF"), bc.timeSinceSOF() / 60.);
     double p = mu > 0.001 ? mu / (1 - std::exp(-mu)) : 1.; // No pile-up for small mu (protection against division by zero)
     mHistManager.fill(HIST("Event/nCollisions"), 0, bc.centrality(), p);
     if (bc.hasFT0()) {
@@ -288,6 +292,8 @@ struct EmcalBcWiseGammaGamma {
     if (cfgSelectOnlyUniqueAmbiguous == 1 && collisions.size() != 1)
       return false;
     if (cfgSelectOnlyUniqueAmbiguous == 2 && collisions.size() == 1)
+      return false;
+    if (cfgMinTimeSinceSOF > bc.timeSinceSOF() / 60 || cfgMaxTimeSinceSOF < bc.timeSinceSOF() / 60)
       return false;
     return true;
   }
