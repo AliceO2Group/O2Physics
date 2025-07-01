@@ -340,7 +340,8 @@ struct HfDataCreatorCharmHadPiReduced {
     } else if (doprocessLcPiData || doprocessLcPiDataWithMl || doprocessLcPiMc || doprocessLcPiMcWithMl) {
       charmHadTitle = "#Lambda_{c}^{+}";
       histMassTitle = "Lc";
-      registry.add("hMassLc", "#Lambda_{c}^{+} candidates; #it{M}(pK#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
+      registry.add("hMassLcToPKPi", "#Lambda_{c}^{+} to KKpi candidates; #it{M}(pK#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
+      registry.add("hMassLcToPiKP", "#Lambda_{c}^{+} to piKK candidates; #it{M}(#piKp) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
     }
 
     registry.add(Form("hPt%s", histMassTitle.data()), Form("%s candidates candidates;%s candidate #it{p}_{T} (GeV/#it{c});entries", charmHadTitle.data(), charmHadTitle.data()), {HistType::kTH1D, {{100, 0., 10.}}});
