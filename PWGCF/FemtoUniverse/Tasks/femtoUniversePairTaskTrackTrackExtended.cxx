@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -567,7 +567,12 @@ struct FemtoUniversePairTaskTrackTrackExtended {
           weight *= effCorrection.getWeight(ParticleNo::TWO, p2);
         }
 
-        sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, weight);
+        if (swpart)
+          sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, weight);
+        else
+          sameEventCont.setPair<isMC>(p2, p1, multCol, twotracksconfigs.confUse3D, weight);
+
+        swpart = !swpart;
       }
     }
   }

@@ -9,15 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/*
-Author: Vytautas Vislavicius
-Extention of Generic Flow (https://arxiv.org/abs/1312.3572 by A. Bilandzic et al.)
-Class steers the initialization and calculation of n-particle correlations. Uses recursive function, all terms are calculated only once.
-Latest version includes the calculation of any number of gaps and any combination of harmonics (including eg symmetric cumulants, etc.)
-If used, modified, or distributed, please aknowledge the author of this code.
-*/
-
 #include "GFW.h"
+
+#include <cstdio>
+#include <string>
+#include <utility>
+#include <vector>
 
 using std::complex;
 using std::pair;

@@ -16,25 +16,39 @@
 /// \author Mingyu Zhang <mingyu.zang@cern.ch>
 /// \author Xinye Peng  <xinye.peng@cern.ch>
 /// \author Biao Zhang <biao.zhang@cern.ch>
+/// \author Oleksii Lubynets <oleksii.lubynets@cern.ch>
 
 #include "HFInvMassFitter.h"
 
-#include <TDatabasePDG.h>
-#include <TLine.h>
-
-#include <RooRealVar.h>
-#include <RooWorkspace.h>
 #include <RooAddPdf.h>
-#include <RooPlot.h>
-#include <RooHist.h>
 #include <RooDataHist.h>
 #include <RooExponential.h>
-#include <RooGamma.h>
-#include <RooPolynomial.h>
-#include <RooGenericPdf.h>
-#include <RooGaussian.h>
-#include <RooFormulaVar.h>
 #include <RooFitResult.h>
+#include <RooFormulaVar.h>
+#include <RooGamma.h>
+#include <RooGaussian.h>
+#include <RooGenericPdf.h>
+#include <RooGlobalFunc.h>
+#include <RooHist.h>
+#include <RooPlot.h>
+#include <RooPolynomial.h>
+#include <RooRealVar.h>
+#include <RooWorkspace.h>
+#include <TColor.h>
+#include <TDatabasePDG.h>
+#include <TLine.h>
+#include <TNamed.h>
+#include <TPaveText.h>
+#include <TString.h>
+#include <TStyle.h>
+#include <TVirtualPad.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
+#include <array>
+#include <cmath>
+#include <cstring>
 
 using namespace RooFit;
 

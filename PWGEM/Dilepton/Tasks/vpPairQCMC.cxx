@@ -14,30 +14,31 @@
 // This code runs loop over ULS ee pars for virtual photon QC.
 //    Please write to: daiki.sekihata@cern.ch
 
+#include "PWGEM/Dilepton/Core/DielectronCut.h"
+#include "PWGEM/Dilepton/Core/EMEventCut.h"
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
+#include "PWGEM/Dilepton/Utils/EventHistograms.h"
+#include "PWGEM/Dilepton/Utils/MCUtilities.h"
+#include "PWGEM/Dilepton/Utils/MlResponseDielectronSingleTrack.h"
+#include "PWGEM/Dilepton/Utils/PairUtilities.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Math/Vector4D.h"
+#include "TString.h"
+
 #include <map>
 #include <string>
 #include <vector>
-
-#include "TString.h"
-#include "Math/Vector4D.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/Core/RecoDecay.h"
-
-#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
-#include "PWGEM/Dilepton/Core/DielectronCut.h"
-#include "PWGEM/Dilepton/Core/EMEventCut.h"
-#include "PWGEM/Dilepton/Utils/MCUtilities.h"
-#include "PWGEM/Dilepton/Utils/EventHistograms.h"
-#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
-#include "PWGEM/Dilepton/Utils/PairUtilities.h"
-#include "PWGEM/Dilepton/Utils/MlResponseDielectronSingleTrack.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -123,7 +124,6 @@ struct vpPairQCMC {
     Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
     Configurable<float> cfg_min_its_cluster_size{"cfg_min_its_cluster_size", 0.f, "min ITS cluster size"};
     Configurable<float> cfg_max_its_cluster_size{"cfg_max_its_cluster_size", 16.f, "max ITS cluster size"};
-    Configurable<float> cfg_max_p_its_cluster_size{"cfg_max_p_its_cluster_size", 0.2, "max p to apply ITS cluster size cut"};
     Configurable<float> cfg_min_rel_diff_pin{"cfg_min_rel_diff_pin", -1e+10, "min rel. diff. between pin and ppv"};
     Configurable<float> cfg_max_rel_diff_pin{"cfg_max_rel_diff_pin", +1e+10, "max rel. diff. between pin and ppv"};
 
@@ -143,6 +143,8 @@ struct vpPairQCMC {
     Configurable<float> cfg_min_pin_pirejTPC{"cfg_min_pin_pirejTPC", 0.5, "min. pin for pion rejection in TPC"};
     Configurable<float> cfg_max_pin_pirejTPC{"cfg_max_pin_pirejTPC", 0.5, "max. pin for pion rejection in TPC"};
     Configurable<bool> enableTTCA{"enableTTCA", true, "Flag to enable or disable TTCA"};
+    Configurable<bool> includeITSsa{"includeITSsa", false, "Flag to enable ITSsa tracks"};
+    Configurable<float> cfg_max_pt_track_ITSsa{"cfg_max_pt_track_ITSsa", 0.15, "max pt for ITSsa tracks"};
 
     // configuration for PID ML
     Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
@@ -329,11 +331,12 @@ struct vpPairQCMC {
     fDielectronCut.SetChi2PerClusterTPC(0.0, dielectroncuts.cfg_max_chi2tpc);
     fDielectronCut.SetChi2PerClusterITS(0.0, dielectroncuts.cfg_max_chi2its);
     fDielectronCut.SetNClustersITS(dielectroncuts.cfg_min_ncluster_its, 7);
-    fDielectronCut.SetMeanClusterSizeITS(dielectroncuts.cfg_min_its_cluster_size, dielectroncuts.cfg_max_its_cluster_size, dielectroncuts.cfg_max_p_its_cluster_size);
+    fDielectronCut.SetMeanClusterSizeITS(dielectroncuts.cfg_min_its_cluster_size, dielectroncuts.cfg_max_its_cluster_size);
     fDielectronCut.SetTrackMaxDcaXY(dielectroncuts.cfg_max_dcaxy);
     fDielectronCut.SetTrackMaxDcaZ(dielectroncuts.cfg_max_dcaz);
     fDielectronCut.SetChi2TOF(0.0, dielectroncuts.cfg_max_chi2tof);
     fDielectronCut.SetRelDiffPin(dielectroncuts.cfg_min_rel_diff_pin, dielectroncuts.cfg_max_rel_diff_pin);
+    fDielectronCut.IncludeITSsa(dielectroncuts.includeITSsa, dielectroncuts.cfg_max_pt_track_ITSsa);
 
     // for eID
     fDielectronCut.SetPIDScheme(dielectroncuts.cfg_pid_scheme);

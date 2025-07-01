@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -16,22 +16,22 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEFFICIENCYCORRECTION_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEFFICIENCYCORRECTION_H_
 
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
+
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/Configurable.h>
 #include <Framework/ConfigurableKinds.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
-
 #include <Framework/O2DatabasePDGPlugin.h>
+
 #include <TH1.h>
 #include <TH2.h>
 
-#include <vector>
-#include <string>
 #include <algorithm>
 #include <ranges>
-
-#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
+#include <string>
+#include <vector>
 
 namespace o2::analysis::femto_universe::efficiency_correction
 {
@@ -110,14 +110,12 @@ class EfficiencyCorrection
               LOGF(fatal, notify("Unknown configuration for efficiency variables"));
               break;
           }
-        } else {
-          hLoaded[idx] = nullptr;
         }
       }
     }
   }
 
-  template <uint8_t N>
+  template <uint8_t N, typename CollisionType = aod::FdCollisions>
     requires IsOneOrTwo<N>
   void fillTruthHist(auto particle)
   {
@@ -128,10 +126,10 @@ class EfficiencyCorrection
     histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hMCTruth"),
                        particle.pt(),
                        particle.eta(),
-                       particle.fdCollision().multV0M());
+                       particle.template fdCollision_as<CollisionType>().multV0M());
   }
 
-  template <uint8_t N>
+  template <uint8_t N, typename CollisionType = aod::FdCollisions>
     requires IsOneOrTwo<N>
   void fillRecoHist(auto particle, int particlePDG)
   {
@@ -151,7 +149,7 @@ class EfficiencyCorrection
           histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hPrimary"),
                              mcParticle.pt(),
                              mcParticle.eta(),
-                             particle.fdCollision().multV0M());
+                             particle.template fdCollision_as<CollisionType>().multV0M());
           break;
 
         case (o2::aod::femtouniverse_mc_particle::kDaughter):
@@ -160,33 +158,34 @@ class EfficiencyCorrection
           histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hSecondary"),
                              mcParticle.pt(),
                              mcParticle.eta(),
-                             particle.fdCollision().multV0M());
+                             particle.template fdCollision_as<CollisionType>().multV0M());
           break;
 
         case (o2::aod::femtouniverse_mc_particle::kMaterial):
           histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hMaterial"),
                              mcParticle.pt(),
                              mcParticle.eta(),
-                             particle.fdCollision().multV0M());
+                             particle.template fdCollision_as<CollisionType>().multV0M());
           break;
 
         case (o2::aod::femtouniverse_mc_particle::kFake):
           histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hFake"),
                              mcParticle.pt(),
                              mcParticle.eta(),
-                             particle.fdCollision().multV0M());
+                             particle.template fdCollision_as<CollisionType>().multV0M());
           break;
 
         default:
           histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hOther"),
                              mcParticle.pt(),
                              mcParticle.eta(),
-                             particle.fdCollision().multV0M());
+                             particle.template fdCollision_as<CollisionType>().multV0M());
           break;
       }
     }
   }
 
+  template <typename CollisionType = aod::FdCollisions>
   auto getWeight(ParticleNo partNo, auto particle) -> float
   {
     auto weight = 1.0f;
@@ -201,17 +200,18 @@ class EfficiencyCorrection
 
       auto bin = -1;
       if (config->confEffCorVariables.value == "pt") {
-        bin = hLoaded[partNo - 1]->FindBin(particle.pt());
+        bin = hWeights->FindBin(particle.pt());
       } else if (config->confEffCorVariables.value == "pt,eta") {
-        bin = hLoaded[partNo - 1]->FindBin(particle.pt(), particle.eta());
+        bin = hWeights->FindBin(particle.pt(), particle.eta());
       } else if (config->confEffCorVariables.value == "pt,mult") {
-        bin = hLoaded[partNo - 1]->FindBin(particle.pt(), particle.fdCollision().multV0M());
+        bin = hWeights->FindBin(particle.pt(), particle.template fdCollision_as<CollisionType>().multV0M());
       } else if (config->confEffCorVariables.value == "pt,eta,mult") {
-        bin = hLoaded[partNo - 1]->FindBin(particle.pt(), particle.eta(), particle.fdCollision().multV0M());
+        bin = hWeights->FindBin(particle.pt(), particle.eta(), particle.template fdCollision_as<CollisionType>().multV0M());
       } else {
         LOGF(fatal, notify("Unknown configuration for efficiency variables"));
         return weight;
       }
+
       weight = hWeights->GetBinContent(bin);
     }
 
@@ -229,11 +229,21 @@ class EfficiencyCorrection
     if (!hist) {
       return true;
     }
-    for (auto idx = 0; idx <= hist->GetNbinsX() + 1; idx++) {
-      if (hist->GetBinContent(idx) > 0) {
-        return false;
+
+    const int nBinsX = hist->GetNbinsX() + 2;
+    const int nBinsY = hist->GetNbinsY() + 2;
+    const int nBinsZ = hist->GetNbinsZ() + 2;
+
+    for (int x = 0; x < nBinsX; ++x) {
+      for (int y = 0; y < nBinsY; ++y) {
+        for (int z = 0; z < nBinsZ; ++z) {
+          if (hist->GetBinContent(x, y, z) != 0) {
+            return false;
+          }
+        }
       }
     }
+
     return true;
   }
 
@@ -247,11 +257,14 @@ class EfficiencyCorrection
     }
 
     if (isHistEmpty(hWeights)) {
-      LOGF(warn, notify("Histogram \"%s/%ld\" has been loaded, but it is empty"), config->confEffCorCCDBUrl.value, timestamp);
+      LOGF(warn, notify("Histogram \"%s/%ld\" has been loaded, but it is empty"), config->confEffCorCCDBPath.value, timestamp);
     }
 
+    auto clonedHist = static_cast<H*>(hWeights->Clone());
+    clonedHist->SetDirectory(nullptr);
+
     LOGF(info, notify("Successfully loaded %ld"), timestamp);
-    return hWeights;
+    return clonedHist;
   }
 
   auto getDimensionFromVariables() -> size_t
@@ -266,7 +279,7 @@ class EfficiencyCorrection
   bool shouldFillHistograms{false};
 
   o2::ccdb::BasicCCDBManager& ccdb{o2::ccdb::BasicCCDBManager::instance()};
-  std::array<TH1*, 2> hLoaded{};
+  std::array<TH1*, 2> hLoaded{nullptr, nullptr};
 
   framework::HistogramRegistry* histRegistry{};
   static constexpr std::string_view histDirectory{"EfficiencyCorrection"};

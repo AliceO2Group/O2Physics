@@ -9,24 +9,30 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <climits>
-#include <cstdlib>
-#include <map>
-#include <memory>
-#include <sstream>
-#include <string>
-#include <vector>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/HistogramRegistry.h"
-
+#include "CommonDataFormat/InteractionRecord.h"
 #include "DataFormatsEMCAL/Constants.h"
 #include "EMCALBase/Geometry.h"
 #include "EMCALCalib/BadChannelMap.h"
-#include "CommonDataFormat/InteractionRecord.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TString.h>
+
+#include <algorithm>
+#include <climits>
+#include <cstdlib>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <vector>
 
 /// \struct CellMonitor
 /// \brief Simple monitoring task for cell related quantities

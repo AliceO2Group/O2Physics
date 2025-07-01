@@ -14,11 +14,12 @@
 // This code filters events that are interesting for dilepton analyses.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -31,6 +32,8 @@ struct filterEoI {
     kFwdMuon = 0x2,
   };
   Produces<o2::aod::EMEoIs> emeoi;
+  Configurable<int> minNElectrons{"minNElectrons", 1, "min number of e+ and e- at midrapidity"};
+  Configurable<int> minNMuons{"minNMuons", 1, "min number of mu+ and mu- at forward rapidity"};
 
   HistogramRegistry fRegistry{"output"};
   void init(o2::framework::InitContext&)
@@ -57,14 +60,14 @@ struct filterEoI {
 
       if constexpr (static_cast<bool>(system & kElectron)) {
         auto electrons_coll = electrons.sliceBy(perCollision_el, collision.globalIndex());
-        if (electrons_coll.size() > 0) {
+        if (electrons_coll.size() >= minNElectrons) {
           does_electron_exist = true;
           fRegistry.fill(HIST("hEventCounter"), 2);
         }
       }
       if constexpr (static_cast<bool>(system & kFwdMuon)) {
         auto muons_coll = muons.sliceBy(perCollision_mu, collision.globalIndex());
-        if (muons_coll.size() > 0) {
+        if (muons_coll.size() >= minNMuons) {
           does_fwdmuon_exist = true;
           fRegistry.fill(HIST("hEventCounter"), 3);
         }

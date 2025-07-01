@@ -8,7 +8,6 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-// O2 includes
 
 /// \file HFFilter.cxx
 /// \brief task for selection of events with HF signals
@@ -20,38 +19,60 @@
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, INFN Bari
 
-#include <array>
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "TRandom3.h"
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
+#include "EventFiltering/PWGHF/HFFilterHelpers.h"
+#include "EventFiltering/filterTables.h"
+//
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+//
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseITS.h"
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "EventFiltering/filterTables.h"
-#include "EventFiltering/PWGHF/HFFilterHelpers.h"
-#include "PWGHF/Utils/utilsTrkCandHf.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TJAlienCredentials.h>
+#include <TRandom3.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <memory>
+#include <numeric>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::soa;
@@ -76,7 +97,7 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<LabeledArray<float>> nSigmaPidCuts{"nSigmaPidCuts", {cutsNsigma[0], 4, 8, labelsRowsNsigma, labelsColumnsNsigma}, "Nsigma cuts for ITS/TPC/TOF PID (except for V0 and cascades)"};
   // min and max pts for tracks and bachelors (except for V0 and cascades)
   Configurable<LabeledArray<float>> ptCuts{"ptCuts", {cutsPt[0], 2, 10, labelsRowsCutsPt, labelsColumnsCutsPt}, "minimum and maximum pT for bachelor tracks (except for V0 and cascades)"};
-
+  Configurable<LabeledArray<float>> trackQaulityCuts{"trackQaulityCuts", {cutsTrackQuality[0], 2, 7, labelsColumnsPtThresholdsForFemto, labelsColumnsTrackQuality}, "Track quality cuts for proton and deuteron)"};
   // parameters for high-pT triggers
   Configurable<LabeledArray<float>> ptThresholds{"ptThresholds", {cutsHighPtThresholds[0], 1, 2, labelsEmpty, labelsColumnsHighPtThresholds}, "pT treshold for high pT charm hadron candidates for kHighPt triggers in GeV/c"};
 
@@ -215,6 +236,7 @@ struct HfFilter { // Main struct for HF triggers
     helper.setCutsBtoJPsi(cutsBtoHadrons.cutsBtoJPsiX);
     helper.setNsigmaProtonCutsForFemto(std::array{nSigmaPidCuts->get(0u, 3u), nSigmaPidCuts->get(1u, 3u), nSigmaPidCuts->get(2u, 3u), nSigmaPidCuts->get(3u, 3u)});
     helper.setNsigmaDeuteronCutsForFemto(std::array{nSigmaPidCuts->get(0u, 6u), nSigmaPidCuts->get(1u, 6u), nSigmaPidCuts->get(2u, 6u), nSigmaPidCuts->get(3u, 6u)});
+    helper.setDeuteronTrackSelectionForFemto(trackQaulityCuts->get(1u, 0u), trackQaulityCuts->get(1u, 1u), trackQaulityCuts->get(1u, 2u), trackQaulityCuts->get(1u, 3u), trackQaulityCuts->get(1u, 4u), trackQaulityCuts->get(1u, 5u), trackQaulityCuts->get(1u, 6u));
     helper.setNsigmaProtonCutsForCharmBaryons(nSigmaPidCuts->get(0u, 0u), nSigmaPidCuts->get(1u, 0u));
     helper.setNsigmaPionKaonCutsForDzero(nSigmaPidCuts->get(0u, 1u), nSigmaPidCuts->get(1u, 1u));
     helper.setNsigmaKaonCutsFor3Prongs(nSigmaPidCuts->get(0u, 2u), nSigmaPidCuts->get(1u, 2u));

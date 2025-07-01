@@ -15,7 +15,7 @@
 /// \author Igor Altsybeev <Igor.Altsybeev@cern.ch>
 
 #include <vector>
-#include "map"
+#include <map>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -65,6 +65,7 @@ struct DetectorOccupancyQaTask {
   Configurable<bool> confFlagUseNoHighMultCollInPrevRof{"FlagUseNoHighMultCollInPrevRof", false, "Suppress high-multiplicity prev-ROF events for occupancy historams"}; // o2-linter: disable=name/configurable (temporary fix)
   Configurable<bool> confFlagCentralityIsAvailable{"FlagCentralityIsAvailable", true, "Fill centrality-related historams"};                                             // o2-linter: disable=name/configurable (temporary fix)
   Configurable<bool> confFlagManyHeavyHistos{"FlagManyHeavyHistos", true, "Fill more TH2, TH3, THn historams"};                                                         // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<bool> confFlagIsTOFIsTRDdtStudy{"FlagIsTOFIsTRDdtStudy", true, "Fill THn dt historams with isTOF and isTRD condition"};                                  // o2-linter: disable=name/configurable (temporary fix)
 
   // configuration for small time binning
   Configurable<float> confTimeIntervalForSmallBins{"TimeIntervalForSmallBins", 100, "Time interval for TPC occupancy calculation in small bins, +/-, us"}; // o2-linter: disable=name/configurable (temporary fix)
@@ -180,6 +181,15 @@ struct DetectorOccupancyQaTask {
       histos.add("dEdx_vs_centr_vs_occup_narrow_p_win_neg", "dE/dx", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisDeDx});
       histos.add("dEdx_vs_centr_vs_occup_narrow_p_win_pos_FractionPIDclsInRange", "dE/dx", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisDeDx});
       histos.add("dEdx_vs_centr_vs_occup_narrow_p_win_neg_FractionPIDclsInRange", "dE/dx", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisDeDx});
+
+      AxisSpec axisNTPCcls{160, 0, 160, "n TPC clusters"};
+      histos.add("tpcNClsFound_vs_centr_vs_occup", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisNTPCcls});
+      histos.add("tpcNClsFindable_vs_centr_vs_occup", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisNTPCcls});
+      histos.add("tpcNClsShared_vs_centr_vs_occup", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisNTPCcls});
+      histos.add("tpcNClsShared_vs_centr_vs_occup_Aside", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisNTPCcls});
+      histos.add("tpcNClsShared_vs_centr_vs_occup_Cside", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisNTPCcls});
+      histos.add("tpcNClsShared_vs_centr_vs_occup_pos", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisNTPCcls});
+      histos.add("tpcNClsShared_vs_centr_vs_occup_neg", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisNTPCcls});
 
       AxisSpec axisFractionNclsFindableMinusPID{110, -1.1, 1.1, "TPC nClsFindableMinusPID / nClsFindable"};
       histos.add("fraction_tpcNClsFindableMinusPID_vs_occup", "", kTH2D, {axisOccupancyForDeDxStudies, axisFractionNclsFindableMinusPID});
@@ -319,6 +329,10 @@ struct DetectorOccupancyQaTask {
       histos.add("occupancyInTimeBins_nITS567_vs_FT0thisCol_occupByFT0_kNoCollInTimeRangeNarrow", ";time bin (#mus);FT0C this collision, this collision;n ITS567cls tracks, this collision;sum FT0 in time window", kTHnF, {axisTimeBins, {nBins3D, 0, kMaxThisEv * 100000}, {nBinsY, 0, kMaxThisEv * 4000}, {nBins3DoccupancyAxis, 0, kMaxOccup * 100000}});
       histos.add("occupancyInTimeBins_nITS567_vs_FT0thisCol_occupByFT0_kNoCollInTimeRangeNarrow_NoCollInRofStrict", ";time bin (#mus);FT0C this collision, this collision;n ITS567cls tracks, this collision;sum FT0 in time window", kTHnF, {axisTimeBins, {nBins3D, 0, kMaxThisEv * 100000}, {nBinsY, 0, kMaxThisEv * 4000}, {nBins3DoccupancyAxis, 0, kMaxOccup * 100000}});
     }
+    if (confFlagIsTOFIsTRDdtStudy) {
+      histos.add("occupancyInTimeBins_nITSTOF_vs_FT0thisCol_kNoCollInTimeRangeNarrow", ";time bin (#mus);FT0C this collision, this collision;n ITSTOF tracks, this collision;ITS tracks with 5,6,7 cls in time window", kTHnF, {axisTimeBins, {nBins3D, 0, kMaxThisEv * 100000}, {nBinsY, 0, kMaxThisEv * 4000}, {nBins3DoccupancyAxis, 0, kMaxOccup * 10000}});
+      histos.add("occupancyInTimeBins_nITSTRD_vs_FT0thisCol_kNoCollInTimeRangeNarrow", ";time bin (#mus);FT0C this collision, this collision;n ITSTRD tracks, this collision;ITS tracks with 5,6,7 cls in time window", kTHnF, {axisTimeBins, {nBins3D, 0, kMaxThisEv * 100000}, {nBinsY, 0, kMaxThisEv * 4000}, {nBins3DoccupancyAxis, 0, kMaxOccup * 10000}});
+    }
 
     histos.add("thisEventITStracksInTimeBins", ";time bin (#mus);n tracks", kTH1F, {axisTimeBins});
     histos.add("thisEventITSTPCtracksInTimeBins", ";time bin (#mus);n tracks", kTH1F, {axisTimeBins});
@@ -453,6 +467,8 @@ struct DetectorOccupancyQaTask {
     std::vector<int> vTracksGlobalPerCollPtEtaCuts(cols.size(), 0); // counter of tracks per found bc for occupancy studies
     std::vector<int> vTracksITSTPCperColl(cols.size(), 0);          // counter of tracks per found bc for occupancy studies
     std::vector<int> vTracksITSTPCperCollPtEtaCuts(cols.size(), 0); // counter of tracks per found bc for occupancy studies
+    std::vector<int> vTracksITSTOFperCollPtEtaCuts(cols.size(), 0); // counter of tracks per found bc for occupancy studies
+    std::vector<int> vTracksITSTRDperCollPtEtaCuts(cols.size(), 0); // counter of tracks per found bc for occupancy studies
     std::vector<float> vAmpFT0CperColl(cols.size(), 0);             // amplitude FT0C per collision
 
     std::vector<int> vTFids(cols.size(), 0);
@@ -473,6 +489,8 @@ struct DetectorOccupancyQaTask {
       int nGlobalPtEtaCuts = 0;
       int nITSTPCtracks = 0;
       int nITSTPCtracksPtEtaCuts = 0;
+      int nITSTOFtracksPtEtaCuts = 0;
+      int nITSTRDtracksPtEtaCuts = 0;
       int nTOFtracks = 0;
       // int nTRDtracks = 0;
       auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
@@ -480,8 +498,12 @@ struct DetectorOccupancyQaTask {
         if (!track.isPVContributor()) {
           continue;
         }
-        if (track.itsNCls() >= 5)
-          nITS567cls++;
+        // if (track.itsNCls() >= 5)
+        //   nITS567cls++;
+        if (track.itsNCls() < 5)
+          continue;
+        nITS567cls++;
+
         nITSTPCtracks += track.hasITS() && track.hasTPC();
         nTOFtracks += track.hasTOF();
         // nTRDtracks += track.hasTRD();
@@ -491,15 +513,18 @@ struct DetectorOccupancyQaTask {
         if (track.eta() < confCutEtaMinTracksThisEvent || track.eta() > confCutEtaMaxTracksThisEvent)
           continue;
 
-        if (track.itsNCls() >= 5)
-          nITS567clsPtEtaCuts++;
+        // if (track.itsNCls() >= 5)
+        nITS567clsPtEtaCuts++;
+
+        nITSTOFtracksPtEtaCuts += track.hasITS() && track.hasTOF();
+        nITSTRDtracksPtEtaCuts += track.hasITS() && track.hasTRD();
 
         if (track.tpcNClsFound() < confCutMinTPCcls)
           continue;
         nITSTPCtracksPtEtaCuts += track.hasITS() && track.hasTPC();
 
-        if (track.itsNCls() >= 5)
-          nGlobalPtEtaCuts += track.isGlobalTrack();
+        // if (track.itsNCls() >= 5)
+        nGlobalPtEtaCuts += track.isGlobalTrack();
       }
 
       int32_t foundBC = bc.globalIndex();
@@ -513,12 +538,14 @@ struct DetectorOccupancyQaTask {
 
       vIsVertexTOFmatched[colIndex] = nTOFtracks > 0;
 
-      vTracksITS567perColl[colIndex] += nITS567cls;
-      vTracksITS567perCollPtEtaCuts[colIndex] += nITS567clsPtEtaCuts;
-      vTracksGlobalPerCollPtEtaCuts[colIndex] += nGlobalPtEtaCuts;
+      vTracksITS567perColl[colIndex] = nITS567cls;
+      vTracksITS567perCollPtEtaCuts[colIndex] = nITS567clsPtEtaCuts;
+      vTracksGlobalPerCollPtEtaCuts[colIndex] = nGlobalPtEtaCuts;
 
-      vTracksITSTPCperColl[colIndex] += nITSTPCtracks;
-      vTracksITSTPCperCollPtEtaCuts[colIndex] += nITSTPCtracksPtEtaCuts;
+      vTracksITSTPCperColl[colIndex] = nITSTPCtracks;
+      vTracksITSTPCperCollPtEtaCuts[colIndex] = nITSTPCtracksPtEtaCuts;
+      vTracksITSTOFperCollPtEtaCuts[colIndex] = nITSTOFtracksPtEtaCuts;
+      vTracksITSTRDperCollPtEtaCuts[colIndex] = nITSTRDtracksPtEtaCuts;
 
       // TF ids within a given cols table
       int tfId = (bc.globalBC() - bcSOR) / nBCsPerTF;
@@ -806,6 +833,10 @@ struct DetectorOccupancyQaTask {
           if (col.selection_bit(kNoCollInTimeRangeNarrow)) {
             histos.fill(HIST("occupancyInTimeBins_vs_FT0thisCol_kNoCollInTimeRangeNarrow"), dt, vAmpFT0CperColl[colIndex], confFlagUseGlobalTracks ? vTracksGlobalPerCollPtEtaCuts[colIndex] : vTracksITSTPCperCollPtEtaCuts[colIndex], nITStrInTimeBin);
             histos.fill(HIST("occupancyInTimeBins_nITS567_vs_FT0thisCol_kNoCollInTimeRangeNarrow"), dt, vAmpFT0CperColl[colIndex], vTracksITS567perCollPtEtaCuts[colIndex], nITStrInTimeBin);
+            if (confFlagIsTOFIsTRDdtStudy) {
+              histos.fill(HIST("occupancyInTimeBins_nITSTOF_vs_FT0thisCol_kNoCollInTimeRangeNarrow"), dt, vAmpFT0CperColl[colIndex], vTracksITSTOFperCollPtEtaCuts[colIndex], nITStrInTimeBin);
+              histos.fill(HIST("occupancyInTimeBins_nITSTRD_vs_FT0thisCol_kNoCollInTimeRangeNarrow"), dt, vAmpFT0CperColl[colIndex], vTracksITSTRDperCollPtEtaCuts[colIndex], nITStrInTimeBin);
+            }
             if (confFlagManyHeavyHistos) {
               histos.fill(HIST("occupancyInTimeBins_occupByFT0_kNoCollInTimeRangeNarrow"), dt, vTracksITS567perCollPtEtaCuts[colIndex], confFlagUseGlobalTracks ? vTracksGlobalPerCollPtEtaCuts[colIndex] : vTracksITSTPCperCollPtEtaCuts[colIndex], nFT0CInTimeBin);
               histos.fill(HIST("occupancyInTimeBins_vs_FT0thisCol_occupByFT0_kNoCollInTimeRangeNarrow"), dt, vAmpFT0CperColl[colIndex], confFlagUseGlobalTracks ? vTracksGlobalPerCollPtEtaCuts[colIndex] : vTracksITSTPCperCollPtEtaCuts[colIndex], nFT0CInTimeBin);
@@ -1003,6 +1034,23 @@ struct DetectorOccupancyQaTask {
                 if (fractionTPCcls >= 0 && fractionTPCcls < 0.8)
                   histos.fill(HIST("dEdx_vs_centr_vs_occup_narrow_p_win_neg_FractionPIDclsInRange"), nPV, occupancy, track.tpcSignal());
               }
+
+              // nTPCcls vs nITStr vs occup
+              histos.fill(HIST("tpcNClsFound_vs_centr_vs_occup"), nPV, occupancy, track.tpcNClsFound());
+              histos.fill(HIST("tpcNClsFindable_vs_centr_vs_occup"), nPV, occupancy, track.tpcNClsFindable());
+              histos.fill(HIST("tpcNClsShared_vs_centr_vs_occup"), nPV, occupancy, track.tpcNClsShared());
+
+              // nTPCsharedCls for A and C separately
+              if (track.tgl() > 0.) // A side
+                histos.fill(HIST("tpcNClsShared_vs_centr_vs_occup_Aside"), nPV, occupancy, track.tpcNClsShared());
+              else // C side
+                histos.fill(HIST("tpcNClsShared_vs_centr_vs_occup_Cside"), nPV, occupancy, track.tpcNClsShared());
+
+              // nTPCsharedCls for pos and neg
+              if (signedP > 0)
+                histos.fill(HIST("tpcNClsShared_vs_centr_vs_occup_pos"), nPV, occupancy, track.tpcNClsShared());
+              else
+                histos.fill(HIST("tpcNClsShared_vs_centr_vs_occup_neg"), nPV, occupancy, track.tpcNClsShared());
             }
           }
         }

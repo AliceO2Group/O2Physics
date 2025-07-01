@@ -64,6 +64,7 @@ namespace
 constexpr int kNpart = 2;
 constexpr float trackSels[12]{/* 60, */ 80, 100, 2, 3, /* 4,  */ 0.05, 0.1, /* 0.15,  */ 0.5, 1, /* 1.5, */ 2, 3 /* , 4 */, 2, 3, /*, 4 */};
 constexpr float dcaSels[3]{10., 10., 10.};
+constexpr float trklSels[3]{1.2, 0.6, 0.7};
 constexpr double betheBlochDefault[kNpart][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}, {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
 constexpr double betheBlochDefaultITS[6]{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32};
 constexpr double estimatorsCorrelationCoef[2]{-0.669108, 1.04489};
@@ -76,6 +77,7 @@ static const std::vector<std::string> particleNamesPar{"p", "d"};
 static const std::vector<std::string> trackSelsNames{"tpcClsMid", "tpcClsTight", "chi2TpcTight", "chi2TpcMid", "dcaxyTight", "dcaxyMid", "dcazTight", "dcazMid", "tpcNsigmaTight", "tpcNsigmaMid", "itsNsigmaTight", "itsNsigmaMid"};
 static const std::vector<std::string> dcaSelsNames{"dcaxy", "dcaz", "dca"};
 static const std::vector<std::string> particleName{"p"};
+static const std::vector<std::string> trklSelsNames{"etaMaxTot", "etaMaxInner", "etaMinOuter"};
 std::array<std::shared_ptr<TH3>, kNpart> tofMass;
 void momTotXYZ(std::array<float, 3>& momA, std::array<float, 3> const& momB, std::array<float, 3> const& momC)
 {
@@ -231,7 +233,7 @@ struct EbyeMaker {
   Configurable<LabeledArray<double>> cfgBetheBlochParamsITS{"cfgBetheBlochParamsITS", {betheBlochDefaultITS, 1, 6, particleName, betheBlochParNames}, "ITS Bethe-Bloch parameterisation for deuteron"};
 
   ConfigurableAxis centAxis{"centAxis", {106, 0, 106}, "binning for the centrality"};
-  ConfigurableAxis zVtxAxis{"zVtxAxis", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
+  ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
   ConfigurableAxis multAxis{"multAxis", {100, 0, 10000}, "Binning for the multiplicity axis"};
   ConfigurableAxis multFt0Axis{"multFt0Axis", {100, 0, 100000}, "Binning for the ft0 multiplicity axis"};
 
@@ -239,7 +241,7 @@ struct EbyeMaker {
   ConfigurableAxis massLambdaAxis{"massLambdaAxis", {400, o2::constants::physics::MassLambda0 - 0.03f, o2::constants::physics::MassLambda0 + 0.03f}, "binning for the lambda invariant-mass"};
 
   // binning of PID QA histograms
-  ConfigurableAxis momAxis{"momAxis", {5.e2, 0.f, 5.f}, "momentum axis binning"};
+  ConfigurableAxis momAxis{"momAxisFine", {5.e2, 0.f, 5.f}, "momentum axis binning"};
   ConfigurableAxis tpcAxis{"tpcAxis", {4.e2, 0.f, 4.e3f}, "tpc signal axis binning"};
   ConfigurableAxis tofMassAxis{"tofMassAxis", {1000, 0., 3.f}, "tof mass axis"};
 
@@ -248,8 +250,7 @@ struct EbyeMaker {
   Configurable<float> etaMaxV0dau{"etaMaxV0dau", 0.8f, "maximum eta V0 daughters"};
   Configurable<float> outerPIDMin{"outerPIDMin", -4.f, "minimum outer PID"};
 
-  Configurable<bool> storeTracksNum{"storeTracksNum", false, "store the number of tracks instead of tracklets"};
-  Configurable<std::string> genName{"genName", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
+  Configurable<std::string> genName{"genname", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
 
   Configurable<uint8_t> triggerCut{"triggerCut", 0x0, "trigger cut to select"};
   Configurable<bool> kINT7Intervals{"kINT7Intervals", false, "toggle kINT7 trigger selection in the 10-30% and 50-90% centrality intervals (2018 Pb-Pb)"};
@@ -268,14 +269,14 @@ struct EbyeMaker {
   Configurable<float> lambdaPtMax{"lambdaPtMax", 4.f, "maximum (anti)lambda pT (GeV/c)"};
 
   Configurable<float> trackNcrossedRows{"trackNcrossedRows", 70, "Minimum number of crossed TPC rows"};
-  Configurable<float> trackNclusItsCut{"trackNclusItsCut", 2, "Minimum number of ITS clusters"};
-  Configurable<float> trackNclusTpcCut{"trackNclusTpcCut", 60, "Minimum number of TPC clusters"};
+  Configurable<float> trackNclusItsCut{"trackNclusITScut", 2, "Minimum number of ITS clusters"};
+  Configurable<float> trackNclusTpcCut{"trackNclusTPCcut", 60, "Minimum number of TPC clusters"};
   Configurable<float> trackChi2Cut{"trackChi2Cut", 4.f, "Maximum chi2/ncls in TPC"};
   Configurable<LabeledArray<float>> cfgDcaSels{"cfgDcaSels", {dcaSels, 1, 3, particleName, dcaSelsNames}, "DCA selections"};
 
   Configurable<float> v0trackNcrossedRows{"v0trackNcrossedRows", 100, "Minimum number of crossed TPC rows for V0 daughter"};
-  Configurable<float> v0trackNclusItsCut{"v0trackNclusItsCut", 0, "Minimum number of ITS clusters for V0 daughter"};
-  Configurable<float> v0trackNclusTpcCut{"v0trackNclusTpcCut", 100, "Minimum number of TPC clusters for V0 daughter"};
+  Configurable<float> v0trackNclusItsCut{"v0trackNclusITScut", 0, "Minimum number of ITS clusters for V0 daughter"};
+  Configurable<float> v0trackNclusTpcCut{"v0trackNclusTPCcut", 100, "Minimum number of TPC clusters for V0 daughter"};
   Configurable<float> v0trackNsharedClusTpc{"v0trackNsharedClusTpc", 5, "Maximum number of shared TPC clusters for V0 daughter"};
   Configurable<bool> v0requireITSrefit{"v0requireITSrefit", false, "require ITS refit for V0 daughter"};
   Configurable<float> vetoMassK0Short{"vetoMassK0Short", 0.01f, "veto for V0 compatible with K0s mass"};
@@ -283,8 +284,8 @@ struct EbyeMaker {
 
   Configurable<float> antidNsigmaTpcCutLow{"antidNsigmaTpcCutLow", -4.f, "TPC PID cut low"};
   Configurable<float> antidNsigmaTpcCutUp{"antidNsigmaTpcCutUp", 4.f, "TPC PID cut up"};
-  Configurable<float> antidTpcInnerParamMax{"antidTpcInnerParamMax", 0.f, "(temporary) tpc inner param cut"};
-  Configurable<float> antidTofMassMax{"antidTofMassMax", 0.3f, "(temporary) tof mass cut"};
+  Configurable<float> antidTpcInnerParamMax{"tpcInnerParamMax", 0.f, "(temporary) tpc inner param cut"};
+  Configurable<float> antidTofMassMax{"tofMassMax", 0.3f, "(temporary) tof mass cut"};
 
   Configurable<float> antipNsigmaTpcCutLow{"antipNsigmaTpcCutLow", -4.f, "TPC PID cut low"};
   Configurable<float> antipNsigmaTpcCutUp{"antipNsigmaTpcCutUp", 4.f, "TPC PID cut up"};
@@ -292,13 +293,13 @@ struct EbyeMaker {
   Configurable<float> antipTofMassMax{"antipTofMassMax", 0.3f, "(temporary) tof mass cut"};
   Configurable<float> tofMassMaxQA{"tofMassMaxQA", 0.6f, "(temporary) tof mass cut (for QA histograms)"};
 
-  Configurable<float> v0settingDcaV0Dau{"v0settingDcaV0Dau", 0.5f, "DCA V0 Daughters"};
-  Configurable<float> v0settingDcaV0Pv{"v0settingDcaV0Pv", 1.f, "DCA V0 to Pv"};
-  Configurable<float> v0settingDcaDaughToPv{"v0settingDcaDaughToPv", 0.1f, "DCA Pos To PV"};
-  Configurable<double> v0settingCosPa{"v0settingCosPa", 0.99f, "V0 CosPA"};
-  Configurable<float> v0settingRadius{"v0settingRadius", 5.f, "v0radius"};
-  Configurable<float> v0settingLifetime{"v0settingLifetime", 40.f, "v0 lifetime cut"};
-  Configurable<float> v0settingNSigmaTpc{"v0settingNSigmaTpc", 4.f, "nsigmatpc"};
+  Configurable<float> v0settingDcaV0Dau{"v0setting_dcav0dau", 0.5f, "DCA V0 Daughters"};
+  Configurable<float> v0settingDcaV0Pv{"v0setting_dcav0pv", 1.f, "DCA V0 to Pv"};
+  Configurable<float> v0settingDcaDaughToPv{"v0setting_dcadaughtopv", 0.1f, "DCA Pos To PV"};
+  Configurable<double> v0settingCosPa{"v0setting_cospa", 0.99f, "V0 CosPA"};
+  Configurable<float> v0settingRadius{"v0setting_radius", 5.f, "v0radius"};
+  Configurable<float> v0settingLifetime{"v0setting_lifetime", 40.f, "v0 lifetime cut"};
+  Configurable<float> v0settingNSigmaTpc{"v0setting_nsigmatpc", 4.f, "nsigmatpc"};
   Configurable<float> lambdaMassCut{"lambdaMassCut", 0.02f, "maximum deviation from PDG mass (for QA histograms)"};
 
   Configurable<bool> constDCASel{"constDCASel", true, "use DCA selections independent of pt"};
@@ -307,6 +308,7 @@ struct EbyeMaker {
   Configurable<float> antidPtItsClsSizeCut{"antidPtItsClsSizeCut", 10.f, "pt for cluster size cut for antideuterons"};
 
   Configurable<LabeledArray<float>> cfgTrackSels{"cfgTrackSels", {trackSels, 1, 12, particleName, trackSelsNames}, "Track selections"};
+  Configurable<LabeledArray<float>> cfgTrklSels{"cfgTrklSels", {trklSels, 1, 3, particleName, trklSelsNames}, "Tracklet selections (eta)"};
 
   std::array<float, kNpart> ptMin;
   std::array<float, kNpart> ptTof;
@@ -673,13 +675,12 @@ struct EbyeMaker {
     std::array<float, 2> dcaInfo;
     uint8_t nTracklets[2]{0, 0};
     uint8_t nTracks{0};
-    const float tklEtaCuts[]{1.2, 0.6, 0.7};
     for (const auto& track : tracks) {
 
-      if (track.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet && std::abs(track.eta()) < tklEtaCuts[0]) { // tracklet
-        if (std::abs(track.eta()) < tklEtaCuts[1])
+      if (track.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet && std::abs(track.eta()) < cfgTrklSels->get("etaMaxTot")) { // tracklet
+        if (std::abs(track.eta()) < cfgTrklSels->get("etaMaxInner"))
           nTracklets[0]++;
-        else if (std::abs(track.eta()) > tklEtaCuts[2])
+        else if (std::abs(track.eta()) > cfgTrklSels->get("etaMinOuter"))
           nTracklets[1]++;
       }
 
@@ -1251,7 +1252,7 @@ struct EbyeMaker {
       if (triggerCut != 0x0 && (trigger & triggerCut) != triggerCut) {
         continue;
       }
-      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), trigger, storeTracksNum ? nTracksColl : nTrackletsColl, cV0M);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), trigger, nTrackletsColl, cV0M, nTracksColl);
 
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
@@ -1443,7 +1444,7 @@ struct EbyeMaker {
       fillMcEvent(collision, tracks, v0TableThisCollision, cV0M, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
-      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, storeTracksNum ? nTracksColl : nTrackletsColl, cV0M);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, nTrackletsColl, cV0M, nTracksColl);
 
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         int selMask = -1;

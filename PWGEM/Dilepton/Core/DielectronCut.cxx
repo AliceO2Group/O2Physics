@@ -13,11 +13,12 @@
 // Class for dielectron Cut
 //
 
-#include <utility>
-#include <set>
+#include "PWGEM/Dilepton/Core/DielectronCut.h"
 
 #include "Framework/Logger.h"
-#include "PWGEM/Dilepton/Core/DielectronCut.h"
+
+#include <set>
+#include <utility>
 
 ClassImp(DielectronCut);
 
@@ -141,12 +142,12 @@ void DielectronCut::SetChi2PerClusterITS(float min, float max)
   mMaxChi2PerClusterITS = max;
   LOG(info) << "Dielectron Cut, set chi2 per cluster ITS range: " << mMinChi2PerClusterITS << " - " << mMaxChi2PerClusterITS;
 }
-void DielectronCut::SetMeanClusterSizeITS(float min, float max, float minP, float maxP)
+void DielectronCut::SetMeanClusterSizeITS(float min, float max)
 {
   mMinMeanClusterSizeITS = min;
   mMaxMeanClusterSizeITS = max;
-  mMinP_ITSClusterSize = minP;
-  mMaxP_ITSClusterSize = maxP;
+  // mMinP_ITSClusterSize = minP;
+  // mMaxP_ITSClusterSize = maxP;
   LOG(info) << "Dielectron Cut, set mean cluster size ITS range: " << mMinMeanClusterSizeITS << " - " << mMaxMeanClusterSizeITS;
 }
 void DielectronCut::SetChi2TOF(float min, float max)
@@ -340,4 +341,10 @@ void DielectronCut::RequireITSib1st(bool flag)
 {
   mRequireITSib1st = flag;
   LOG(info) << "Dielectron Cut, require ITS ib 1st: " << mRequireITSib1st;
+}
+void DielectronCut::IncludeITSsa(bool flag, float max)
+{
+  mIncludeITSsa = flag;
+  mMaxPtITSsa = max;
+  LOG(info) << "Dielectron Cut, include ITSsa tracks: " << mIncludeITSsa << ", mMaxPtITSsa = " << mMaxPtITSsa;
 }

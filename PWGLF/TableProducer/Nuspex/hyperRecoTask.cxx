@@ -11,39 +11,39 @@
 //
 // Build hypertriton candidates from V0s and tracks
 
-#include <memory>
-#include <string>
-#include <array>
-#include <vector>
-#include <algorithm>
+#include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "PWGLF/DataModel/LFHypernucleiTables.h"
+#include "PWGLF/Utils/svPoolCreator.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
+#include "Common/Core/PID/PIDTOF.h"
+#include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "PWGLF/DataModel/EPCalibrationTables.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-
+#include "Common/TableProducer/PID/pidTOFBase.h"
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
 
-#include "Common/Core/PID/TPCPIDResponse.h"
-#include "Common/Core/PID/PIDTOF.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "DCAFitter/DCAFitterN.h"
-#include "PWGLF/Utils/svPoolCreator.h"
-#include "PWGLF/DataModel/LFHypernucleiTables.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <algorithm>
+#include <array>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -168,6 +168,7 @@ struct hyperRecoTask {
 
   Configurable<bool> useCustomVertexer{"useCustomVertexer", false, "Use custom vertexer"};
   Configurable<bool> skipAmbiTracks{"skipAmbiTracks", false, "Skip ambiguous tracks"};
+  Configurable<bool> disableITSROFCut{"disableITSROFCut", false, "Disable ITS ROC cut for event selection"};
   Configurable<float> customVertexerTimeMargin{"customVertexerTimeMargin", 800, "Time margin for custom vertexer (ns)"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 1, 6, particleName, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for He3"};
   Configurable<bool> cfgCompensatePIDinTracking{"cfgCompensatePIDinTracking", true, "If true, divide tpcInnerParam by the electric charge"};
@@ -341,7 +342,7 @@ struct hyperRecoTask {
       initCCDB(bc);
       hEvents->Fill(0.);
 
-      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && !disableITSROFCut) {
         continue;
       }
 
