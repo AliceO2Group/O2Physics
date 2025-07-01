@@ -17,14 +17,14 @@
 /// \author M. Faggin (CERN) mattia.faggin@cern.ch
 /// \author M. Li (CCNU) mingze.li@cern.ch
 
+#include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
-#include "Common/Core/RecoDecay.h"
 #include "Common/Core/EventPlaneHelper.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Qvectors.h"
 
 #include <CommonConstants/MathConstants.h>
