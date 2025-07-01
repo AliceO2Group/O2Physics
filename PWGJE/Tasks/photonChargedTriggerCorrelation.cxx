@@ -18,10 +18,6 @@
 /// Also contains checks and monte-carlo (efficiency, purity, mc-true correlation,...)
 /// End goal of studying correlations between direct photons and jets
 
-#define ETA_MAX_DEFAULT 0.8
-#define DPHI_SCALE constants::math::TwoPI - constants::math::PIHalf
-#define DETA_SCALE 4 * ETA_MAX_DEFAULT - 2 * ETA_MAX_DEFAULT
-
 #include <cmath>
 #include <deque>
 #include <string>
@@ -51,114 +47,11 @@
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/PhotonChargedTriggerCorrelation.h"
 
-// derived data for correlations (on-the-fly)
-// should be more efficient due to usage in correlations and event mixing
-
-namespace o2::aod
-{
-
-// basic correlation particle columns
-namespace corr_particle
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(JetCollision, jetCollision, int, JCollisions, "");
-DECLARE_SOA_INDEX_COLUMN_FULL(JetMcCollision, jetMcCollision, int, JMcCollisions, "");
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(Eta, eta, float);
-} // namespace corr_particle
-
-// reco
-
-// collision extension
-namespace collision_extra_corr
-{
-DECLARE_SOA_COLUMN(SelEv, selEv, bool);
-DECLARE_SOA_COLUMN(TrigEv, trigEv, bool);
-} // namespace collision_extra_corr
-DECLARE_SOA_TABLE(CollisionsExtraCorr, "AOD", "COLLISIONSEXTRACORR",
-                  collision_extra_corr::SelEv, collision_extra_corr::TrigEv);
-
-// trigger
-namespace trigger
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(JetTrack, jetTrack, int, JetTracks, "");
-} // namespace trigger
-DECLARE_SOA_TABLE(Triggers, "AOD", "TRIGGERS",
-                  o2::soa::Index<>, corr_particle::JetCollisionId, trigger::JetTrackId,
-                  corr_particle::Pt, corr_particle::Phi, corr_particle::Eta);
-using Trigger = Triggers::iterator;
-
-// hadrons (global tracks)
-namespace hadron
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(JetTrack, jetTrack, int, JetTracks, "");
-} // namespace hadron
-DECLARE_SOA_TABLE(Hadrons, "AOD", "HADRONS",
-                  o2::soa::Index<>, corr_particle::JetCollisionId, hadron::JetTrackId,
-                  corr_particle::Pt, corr_particle::Phi, corr_particle::Eta);
-using Hadron = Hadrons::iterator;
-
-// pipm
-namespace pipm
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(JetTrack, jetTrack, int, JetTracks, "");
-} // namespace pipm
-DECLARE_SOA_TABLE(Pipms, "AOD", "PIPMS",
-                  o2::soa::Index<>, corr_particle::JetCollisionId, pipm::JetTrackId,
-                  corr_particle::Pt, corr_particle::Phi, corr_particle::Eta);
-using Pipm = Pipms::iterator;
-
-// photonPCM
-namespace photon_pcm
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(V0PhotonKF, v0PhotonKF, int, V0PhotonsKF, "");
-DECLARE_SOA_COLUMN(PosTrackId, posTrackId, int);
-DECLARE_SOA_COLUMN(NegTrackId, negTrackId, int);
-} // namespace photon_pcm
-DECLARE_SOA_TABLE(PhotonPCMs, "AOD", "PHOTONPCMS",
-                  o2::soa::Index<>, corr_particle::JetCollisionId, photon_pcm::V0PhotonKFId,
-                  photon_pcm::PosTrackId, photon_pcm::NegTrackId,
-                  corr_particle::Pt, corr_particle::Phi, corr_particle::Eta);
-using PhotonPCM = PhotonPCMs::iterator;
-
-// photonPCM pairs (pi0)
-namespace photon_pcm_pair
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(V0PhotonKF1, v0PhotonKF1, int, V0PhotonsKF, "_1");
-DECLARE_SOA_INDEX_COLUMN_FULL(V0PhotonKF2, v0PhotonKF2, int, V0PhotonsKF, "_2");
-DECLARE_SOA_COLUMN(PosTrack1Id, posTrack1Id, int);
-DECLARE_SOA_COLUMN(NegTrack1Id, negTrack1Id, int);
-DECLARE_SOA_COLUMN(PosTrack2Id, posTrack2Id, int);
-DECLARE_SOA_COLUMN(NegTrack2Id, negTrack2Id, int);
-DECLARE_SOA_COLUMN(Mgg, mgg, float);
-} // namespace photon_pcm_pair
-DECLARE_SOA_TABLE(PhotonPCMPairs, "AOD", "PHOTONPCMPAIRS",
-                  o2::soa::Index<>, corr_particle::JetCollisionId, photon_pcm_pair::V0PhotonKF1Id, photon_pcm_pair::V0PhotonKF2Id,
-                  photon_pcm_pair::PosTrack1Id, photon_pcm_pair::NegTrack1Id, photon_pcm_pair::PosTrack2Id, photon_pcm_pair::NegTrack2Id,
-                  corr_particle::Pt, corr_particle::Phi, corr_particle::Eta, photon_pcm_pair::Mgg);
-using PhotonPCMPair = PhotonPCMPairs::iterator;
-
-// mc
-
-// mcCollision extension
-namespace mc_collision_extra_corr
-{
-DECLARE_SOA_COLUMN(TrigEv, trigEv, bool);
-} // namespace mc_collision_extra_corr
-DECLARE_SOA_TABLE(McCollisionsExtraCorr, "AOD", "MCCOLLISIONSEXTRACORR",
-                  mc_collision_extra_corr::TrigEv);
-
-// trigger
-namespace trigger_particle
-{
-DECLARE_SOA_INDEX_COLUMN_FULL(JetMcParticle, jetMcParticle, int, JetParticles, "");
-} // namespace trigger_particle
-DECLARE_SOA_TABLE(TriggerParticles, "AOD", "TRIGGERPARTICLES",
-                  o2::soa::Index<>, corr_particle::JetMcCollisionId, trigger_particle::JetMcParticleId,
-                  corr_particle::Pt, corr_particle::Phi, corr_particle::Eta);
-using TriggerParticle = TriggerParticles::iterator;
-} // namespace o2::aod
+const double absEtaMax = 0.8;
+#define DPHI_SCALE constants::math::TwoPI - constants::math::PIHalf
+#define DETA_SCALE 4 * absEtaMax - 2 * absEtaMax
 
 using namespace o2;
 using namespace o2::framework;
@@ -189,7 +82,7 @@ struct CorrelationTableProducer {
   Configurable<double> zPvMax{"zPvMax", 7, "maximum absZ primary-vertex cut"};
   Configurable<int> occupancyMin{"occupancyMin", 0, "minimum occupancy cut"};
   Configurable<int> occupancyMax{"occupancyMax", 2000, "maximum occupancy cut"};
-  Configurable<double> etaMax{"etaMax", ETA_MAX_DEFAULT, "maximum absEta cut"};
+  Configurable<double> etaMax{"etaMax", 1 * absEtaMax, "maximum absEta cut"};
 
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "JE framework - event selection"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "JE framework - track selections"};
