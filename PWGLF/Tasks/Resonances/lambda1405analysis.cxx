@@ -15,6 +15,7 @@
 
 #include "PWGLF/DataModel/LFKinkDecayTables.h"
 
+#include "Common/Core/PID/PIDTOF.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 
@@ -26,7 +27,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCPi>;
+using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCPi, aod::pidTOFFullPi>;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSel>;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
 
@@ -39,6 +40,7 @@ struct lambda1405candidate {
   float sigmaPt = -1;     // pT of the Sigma daughter
   float piPt = -1;        // pT of the pion daughter
   float nSigmaTPCPi = -1; // Number of sigmas for the pion candidate
+  float nSigmaTOFPi = -1; // Number of sigmas for the pion candidate using TOF
   int piFromSigmaID = 0;  // ID of the pion from Sigma decay in MC
   int sigmaID = 0;        // ID of the Sigma candidate in MC
   int piID = 0;           // ID of the pion candidate in MC
@@ -61,6 +63,10 @@ struct lambda1405analysis {
   Configurable<float> cutNITSClusPi{"cutNITSClusPi", 5, "Minimum number of ITS clusters for pion candidate"};
   Configurable<float> cutNTPCClusPi{"cutNTPCClusPi", 90, "Minimum number of TPC clusters for pion candidate"};
   Configurable<float> cutNSigmaPi{"cutNSigmaPi", 3, "NSigmaTPCPion"};
+  Configurable<float> cutNSigmaPiTOF{"cutNSigmaPiTOF", 3, "NSigmaTOFPion"};
+
+  Configurable<bool> doLSBkg{"doLikeSignBkg", false, "Use like-sign background"};
+  Configurable<bool> useTOF{"useTOF", false, "Use TOF for PID for pion candidates"};
 
   Preslice<aod::KinkCands> mKinkPerCol = aod::track::collisionId;
   Preslice<aod::TracksIU> mPerColTracks = aod::track::collisionId;
@@ -68,7 +74,7 @@ struct lambda1405analysis {
   void init(InitContext const&)
   {
     // Axes
-    const AxisSpec ptAxis{50, -5, 5, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec ptAxis{100, -10, 10, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec ptPiAxis{50, -2, 2, "#it{p}_{T}^{#pi} (GeV/#it{c})"};
     const AxisSpec ptResolutionAxis{100, -0.5, 0.5, "#it{p}_{T}^{rec} - #it{p}_{T}^{gen} (GeV/#it{c})"};
     const AxisSpec massAxis{100, 1.3, 1.5, "m (GeV/#it{c}^{2})"};
@@ -82,6 +88,7 @@ struct lambda1405analysis {
     rLambda1405.add("h2PtMassSigma", "h2PtMassSigma", {HistType::kTH2F, {ptAxis, sigmaMassAxis}});
     rLambda1405.add("h2SigmaMassVsMass", "h2SigmaMassVsMass", {HistType::kTH2F, {massAxis, sigmaMassAxis}});
     rLambda1405.add("h2PtPiNSigma", "h2PtPiNSigma", {HistType::kTH2F, {ptPiAxis, nSigmaPiAxis}});
+    rLambda1405.add("h2PtPiNSigmaTOF", "h2PtPiNSigmaTOF", {HistType::kTH2F, {ptPiAxis, nSigmaPiAxis}});
 
     if (doprocessMC) {
       // Add MC histograms if needed
@@ -97,10 +104,23 @@ struct lambda1405analysis {
     if (std::abs(candidate.tpcNSigmaPi()) > cutNSigmaPi || candidate.tpcNClsFound() < cutNTPCClusPi || std::abs(candidate.eta()) > cutEtaDaught) {
       return false;
     }
-    if (!piFromSigma && candidate.itsNCls() < cutNITSClusPi) {
+    if (piFromSigma) {
+      return true;
+    }
+
+    if (candidate.itsNCls() < cutNITSClusPi) {
       return false;
     }
-    return true;
+
+    if (useTOF && !candidate.hasTOF()) {
+      return false;
+    }
+
+    if (useTOF && std::abs(candidate.tofNSigmaPi()) > cutNSigmaPiTOF) {
+      return false;
+    }
+
+    return true; // Track is selected
   }
 
   bool selectCandidate(aod::KinkCands::iterator const& sigmaCand, TracksFull const& tracks)
@@ -118,8 +138,17 @@ struct lambda1405analysis {
     }
     rLambda1405.fill(HIST("h2PtMassSigmaBeforeCuts"), sigmaCand.mothSign() * sigmaCand.ptMoth(), sigmaCand.mSigmaMinus());
     for (const auto& piTrack : tracks) {
-      if (piTrack.sign() == sigmaCand.mothSign() || !selectPiTrack(piTrack, false)) {
-        continue; // Skip if the pion has the same sign as the Sigma or does not pass selection
+      if (!doLSBkg) {
+        if (piTrack.sign() == sigmaCand.mothSign()) {
+          continue;
+        }
+      } else {
+        if (piTrack.sign() != sigmaCand.mothSign()) {
+          continue;
+        }
+      }
+      if (!selectPiTrack(piTrack, false)) {
+        continue;
       }
       auto sigmaMom = std::array{sigmaCand.pxMoth(), sigmaCand.pyMoth(), sigmaCand.pzMoth()};
       auto piMom = std::array{piTrack.px(), piTrack.py(), piTrack.pz()};
@@ -138,6 +167,11 @@ struct lambda1405analysis {
       lambda1405Cand.sigmaPt = sigmaCand.ptMoth();
       lambda1405Cand.piPt = piTrack.pt();
       lambda1405Cand.nSigmaTPCPi = piTrack.tpcNSigmaPi();
+      if (useTOF) {
+        lambda1405Cand.nSigmaTOFPi = piTrack.tofNSigmaPi();
+      } else {
+        lambda1405Cand.nSigmaTOFPi = -999; // Not used if TOF is not enabled
+      }
       return true; // Candidate is selected
     }
     return false; // No valid pion track found
@@ -154,7 +188,8 @@ struct lambda1405analysis {
         rLambda1405.fill(HIST("h2PtMass"), lambda1405Cand.sigmaSign * lambda1405Cand.pt, lambda1405Cand.mass);
         rLambda1405.fill(HIST("h2PtMassSigma"), lambda1405Cand.sigmaSign * lambda1405Cand.sigmaPt, lambda1405Cand.sigmaMass);
         rLambda1405.fill(HIST("h2SigmaMassVsMass"), lambda1405Cand.mass, lambda1405Cand.sigmaMass);
-        rLambda1405.fill(HIST("h2PtPiNSigma"), lambda1405Cand.piPt, lambda1405Cand.nSigmaTPCPi);
+        rLambda1405.fill(HIST("h2PtPiNSigma"), lambda1405Cand.sigmaSign * lambda1405Cand.piPt, lambda1405Cand.nSigmaTPCPi);
+        rLambda1405.fill(HIST("h2PtPiNSigmaTOF"), lambda1405Cand.sigmaSign * lambda1405Cand.piPt, lambda1405Cand.nSigmaTOFPi);
       }
     }
   }
