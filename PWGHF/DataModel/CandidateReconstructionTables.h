@@ -1445,7 +1445,7 @@ DECLARE_SOA_COLUMN(KfRapOmegaKa, kfRapOmegaKa, float);
 DECLARE_SOA_COLUMN(KfPtKaFromOmegaKa, kfPtKaFromOmegaKa, float);
 DECLARE_SOA_COLUMN(KfPtOmega, kfPtOmega, float);
 DECLARE_SOA_COLUMN(KfPtOmegaKa, kfPtOmegaKa, float);
-DECLARE_SOA_COLUMN(CosThetaStarKaFromOemgac, cosThetaStarKaFromOemgac, float);
+DECLARE_SOA_COLUMN(CosThetaStarKaFromOmegac, cosThetaStarKaFromOmegac, float);
 DECLARE_SOA_COLUMN(CosThetaStarKaFromXic, cosThetaStarKaFromXic, float);
 DECLARE_SOA_COLUMN(KfDcaXYPiFromOmegac, kfDcaXYPiFromOmegac, float);
 DECLARE_SOA_COLUMN(KfDcaXYPiFromXic, kfDcaXYPiFromXic, float);
