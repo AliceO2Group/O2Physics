@@ -35,7 +35,7 @@ using namespace o2::framework::expressions;
 
 /// Xic0 analysis task
 
-struct HfTaskXic0ToXiPiKf {
+struct HfTaskXic0ToXiPi {
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<bool> fillCent{"fillCent", false, "Flag to fill centrality information"};
@@ -282,42 +282,42 @@ struct HfTaskXic0ToXiPiKf {
   {
     processDataCent<false, false>(candidates, collisions);
   }
-  PROCESS_SWITCH(HfTaskXic0ToXiPiKf, processDataWithKFParticle, "process HfTaskXic0ToXiPiKf  with KFParticle", true);
+  PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithKFParticle, "process HfTaskXic0ToXiPi  with KFParticle", true);
 
   void processDataWithKFParticleMl(Xic0CandsMlKF const& candidates,
                                    Collisions const& collisions)
   {
     processDataCent<false, true>(candidates, collisions);
   }
-  PROCESS_SWITCH(HfTaskXic0ToXiPiKf, processDataWithKFParticleMl, "process HfTaskXic0ToXiPiKf  with KFParticle and ML selections", false);
+  PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithKFParticleMl, "process HfTaskXic0ToXiPi  with KFParticle and ML selections", false);
 
   void processDataWithKFParticleFT0C(Xic0CandsKF const& candidates,
                                      CollisionsWithFT0C const& collisions)
   {
     processDataCent<true, false>(candidates, collisions);
   }
-  PROCESS_SWITCH(HfTaskXic0ToXiPiKf, processDataWithKFParticleFT0C, "process HfTaskXic0ToXiPiKf  with KFParticle and with FT0C centrality", false);
+  PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithKFParticleFT0C, "process HfTaskXic0ToXiPi  with KFParticle and with FT0C centrality", false);
 
   void processDataWithKFParticleFT0M(Xic0CandsKF const& candidates,
                                      CollisionsWithFT0M const& collisions)
   {
     processDataCent<true, false>(candidates, collisions);
   }
-  PROCESS_SWITCH(HfTaskXic0ToXiPiKf, processDataWithKFParticleFT0M, "process HfTaskXic0ToXiPiKf  with KFParticle and with FT0M centrality", false);
+  PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithKFParticleFT0M, "process HfTaskXic0ToXiPi  with KFParticle and with FT0M centrality", false);
 
   void processDataWithKFParticleMlFT0C(Xic0CandsMlKF const& candidates,
                                        CollisionsWithFT0C const& collisions)
   {
     processDataCent<true, true>(candidates, collisions);
   }
-  PROCESS_SWITCH(HfTaskXic0ToXiPiKf, processDataWithKFParticleMlFT0C, "process HfTaskXic0ToXiPiKf  with KFParticle and ML selections and with FT0C centrality", false);
+  PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithKFParticleMlFT0C, "process HfTaskXic0ToXiPi  with KFParticle and ML selections and with FT0C centrality", false);
 
   void processDataWithKFParticleMlFT0M(Xic0CandsMlKF const& candidates,
                                        CollisionsWithFT0M const& collisions)
   {
     processDataCent<true, true>(candidates, collisions);
   }
-  PROCESS_SWITCH(HfTaskXic0ToXiPiKf, processDataWithKFParticleMlFT0M, "process HfTaskXic0ToXiPiKf  with KFParticle and ML selections and with FT0M centrality", false);
+  PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithKFParticleMlFT0M, "process HfTaskXic0ToXiPi  with KFParticle and ML selections and with FT0M centrality", false);
 
   void processMcWithKFParticle(Xic0CandsMcKF const& Xic0CandidatesMcKF,
                                Xic0Gen const& mcParticles,
@@ -327,7 +327,7 @@ struct HfTaskXic0ToXiPiKf {
   {
     processMc<false>(Xic0CandidatesMcKF, mcParticles, tracks, collisions, mcCollisions);
   }
-  PROCESS_SWITCH(HfTaskXic0ToXiPiKf, processMcWithKFParticle, "Process MC with KFParticle", false);
+  PROCESS_SWITCH(HfTaskXic0ToXiPi, processMcWithKFParticle, "Process MC with KFParticle", false);
 
   void processMcWithKFParticleMl(Xic0CandsMlMcKF const& Xic0CandidatesMlMcKF,
                                  Xic0Gen const& mcParticles,
@@ -337,10 +337,10 @@ struct HfTaskXic0ToXiPiKf {
   {
     processMc<true>(Xic0CandidatesMlMcKF, mcParticles, tracks, collisions, mcCollisions);
   }
-  PROCESS_SWITCH(HfTaskXic0ToXiPiKf, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
+  PROCESS_SWITCH(HfTaskXic0ToXiPi, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfTaskXic0ToXiPiKf>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskXic0ToXiPi>(cfgc)};
 }
