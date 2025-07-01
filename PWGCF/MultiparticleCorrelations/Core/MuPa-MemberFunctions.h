@@ -17,12 +17,12 @@
 #define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_MEMBERFUNCTIONS_H_
 
 // ...
-#include <vector>
 #include <string>
+#include <vector>
 
 //============================================================
 
-void BookBaseList()
+void bookBaseList()
 {
   // Book base TList and store task configuration.
 
@@ -229,11 +229,11 @@ void BookBaseList()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookBaseList()
+} // void bookBaseList()
 
 //============================================================
 
-void DefaultConfiguration()
+void defaultConfiguration()
 {
   // Default task configuration.
   // a) Default values are hardcoded as Configurables in the file MuPa-Configurables.h
@@ -862,7 +862,7 @@ void DefaultConfiguration()
   qa.fOccupancyEstimatorName[eFT0COccupancyInTimeRange] = "FT0COccupancyInTimeRange";
 
   // **) Names of QA 2D event histograms:
-  //     Remark: Do NOT use FancyFormatting here, only later in BookQAHistograms() for axis titles!
+  //     Remark: Do NOT use FancyFormatting here, only later in bookQAHistograms() for axis titles!
   qa.fEventHistogramsName2D[eMultiplicity_vs_ReferenceMultiplicity] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eReferenceMultiplicity].Data());
   qa.fEventHistogramsName2D[eMultiplicity_vs_NContributors] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eNContributors].Data());
   qa.fEventHistogramsName2D[eMultiplicity_vs_Centrality] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eCentrality].Data());
@@ -1107,7 +1107,7 @@ void DefaultConfiguration()
     ExitFunction(__FUNCTION__);
   }
 
-} // void DefaultConfiguration()
+} // void defaultConfiguration()
 
 //============================================================
 
@@ -1157,7 +1157,7 @@ bool Alright(TString s)
 
 //============================================================
 
-void DefaultBooking()
+void defaultBooking()
 {
   // Set here which histograms are booked by default.
 
@@ -1539,16 +1539,16 @@ void DefaultBooking()
     ExitFunction(__FUNCTION__);
   }
 
-} // void DefaultBooking()
+} // void defaultBooking()
 
 //============================================================
 
-void DefaultBinning()
+void defaultBinning()
 {
   // Default binning for all histograms.
 
   // TBI 20240114 If some of these values are going to change frequently, add support for them in MuPa-Configurables.h,
-  // in the same way I did it for DefaultCuts().
+  // in the same way I did it for defaultCuts().
   // At the moment, I added to configurables support only for binning of sparse histograms, because there memory managment is critical.
 
   // a) Default binning for event histograms;
@@ -1785,13 +1785,13 @@ void DefaultBinning()
     ExitFunction(__FUNCTION__);
   }
 
-} // void DefaultBinning()
+} // void defaultBinning()
 
 //============================================================
 
 void InitializeFixedLengthBins(eAsFunctionOf AFO)
 {
-  // This is a helper function to suppress code bloat in DefaultBinning().
+  // This is a helper function to suppress code bloat in defaultBinning().
   // It merely initalizes res.fResultsProFixedLengthBins[...] from corresponding configurables + a few other minor thingies.
   // I do not have here AFO_INTEGRATED and AFO_CHARGE, because for them binning is always the same, i.e. no need for configurable.
 
@@ -1859,7 +1859,7 @@ void InitializeFixedLengthBins(eAsFunctionOf AFO)
 
 void InitializeVariableLengthBins(eAsFunctionOf AFO)
 {
-  // This is a helper function to suppress code bloat in DefaultBinning().
+  // This is a helper function to suppress code bloat in defaultBinning().
   // It merely initalizes res.fResultsProVariableLengthBins[...] from corresponding configurables + a few other minor thingies.
 
   if (tc.fVerbose) {
@@ -1968,7 +1968,7 @@ void CastStringIntoArray(int AFO)
 
 //============================================================
 
-void DefaultCuts()
+void defaultCuts()
 {
   // Define default cuts. Default cuts are hardwired in MuPa-Configurables.h.
 
@@ -2309,13 +2309,13 @@ void DefaultCuts()
     ExitFunction(__FUNCTION__);
   }
 
-} // void DefaultCuts()
+} // void defaultCuts()
 
 //============================================================
 
-void SpecificCuts(TString whichSpecificCuts)
+void specificCuts(TString whichSpecificCuts)
 {
-  // After default cuts are applied, on top of them apply analysis-specific cuts. Has to be called after DefaultBinning() and DefaultCuts().
+  // After default cuts are applied, on top of them apply analysis-specific cuts. Has to be called after defaultBinning() and defaultCuts().
   // Here I hardwire defalt cuts and settings for a given period which will overwrite whatever is set in configurables.
   // When I do systematic checks, this option shall NOT be used, because values for some cuts which I plan to vary, are also hardwired here.
   // Both event and particle cuts are hardwired here. As well as some other settings.
@@ -2346,10 +2346,10 @@ void SpecificCuts(TString whichSpecificCuts)
   }
 
   // b) Implementation of analysis-specific cuts:
-  //    Remark #1: Whichever cuts start to repeat below across different case statements, promote them into DefaultCuts(), i.e. hardwire those values in configurables.
+  //    Remark #1: Whichever cuts start to repeat below across different case statements, promote them into defaultCuts(), i.e. hardwire those values in configurables.
   //               The idea is to keep here cuts only which are specific for particular analysis, and which are unlikely ever to change as a default cut for that particular analysis.
   //    Remark #2: Remember that the values for the cuts hardwired here overwrite the ones set as default values in configurables.
-  //               If you want to reconfigure all cuts below manually via configurables, simply do not call SpecificCuts, i.e. set in JSON "cfUseSpecificCuts": "false"
+  //               If you want to reconfigure all cuts below manually via configurables, simply do not call specificCuts, i.e. set in JSON "cfUseSpecificCuts": "false"
   //               Therefore, if I want to vary some of these cuts via configurables as a part of systematics, I must set in JSON "cfUseSpecificCuts": "false"
   //    Remark #3: Most up-to-date documentation of each cut is in enum file.
   switch (specificCuts) {
@@ -2372,7 +2372,7 @@ void SpecificCuts(TString whichSpecificCuts)
       ec.fUseEventCuts[eNoPileupFromSPD] = false;   // Run 2
       ec.fUseEventCuts[eNoSPDOnVsOfPileup] = false; // Run 2
 
-      ec.fUseEventCuts[eInteractionRate] = true;
+      ec.fUseEventCuts[eInteractionRate] = false;   // I set it to false by default, to prevent having the standard memory blow-up by default
       ec.fdEventCuts[eInteractionRate][eMin] = 0.1; // there are some pathological non-physical events with IR = 0. See eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity
       ec.fdEventCuts[eInteractionRate][eMax] = 1000000000.;
 
@@ -2455,7 +2455,7 @@ void SpecificCuts(TString whichSpecificCuts)
       ec.fUseEventCuts[eNoPileupFromSPD] = false;         // Run 2
       ec.fUseEventCuts[eNoSPDOnVsOfPileup] = false;       // Run 2
 
-      ec.fUseEventCuts[eInteractionRate] = true;
+      ec.fUseEventCuts[eInteractionRate] = false;   // I set it to false by default, to prevent having the standard memory blow-up by default
       ec.fdEventCuts[eInteractionRate][eMin] = 0.1; // there are some pathological non-physical events with IR = 0. See eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity
       ec.fdEventCuts[eInteractionRate][eMax] = 1000000000.;
 
@@ -2559,8 +2559,8 @@ void SpecificCuts(TString whichSpecificCuts)
         // TBI 20250331 fine-tune this cut in the same spirit for other ref. mult. estimators
       }
 
-      ec.fUseEventCuts[eCentralityCorrelationsCut] = true;
-      ec.fsEventCuts[eCentralityCorrelationsCut] = "CentRun2V0M_vs_CentRun2SPDTracklets";
+      ec.fUseEventCuts[eCentralityCorrelationsCut] = false;
+      ec.fsEventCuts[eCentralityCorrelationsCut] = "CentRun2V0M_CentRun2SPDTracklets";
       ec.fCentralityCorrelationsCutTreshold = 10.0;
       ec.fCentralityCorrelationsCutVersion = "Absolute";
 
@@ -2571,8 +2571,6 @@ void SpecificCuts(TString whichSpecificCuts)
       pc.fUseParticleCuts[etrackCutFlagFb1] = false;     // only for Run 3
       pc.fUseParticleCuts[etrackCutFlagFb2] = false;     // only for Run 3
       pc.fUseParticleCuts[eisPVContributor] = false;     // only for Run 3
-
-      // ...
 
       // The rest:
       mupa.fCalculateCorrelationsAsFunctionOf[AFO_OCCUPANCY] = false;
@@ -2686,11 +2684,11 @@ void SpecificCuts(TString whichSpecificCuts)
     ExitFunction(__FUNCTION__);
   }
 
-} // void SpecificCuts(const char* specificCutsName)
+} // void specificCuts(const char* specificCutsName)
 
 //============================================================
 
-void InsanityChecksOnDefinitionsOfConfigurables()
+void insanityChecksOnDefinitionsOfConfigurables()
 {
   // Do insanity checks on values obtained from configurables before using them in the remaining function.
   // This is really important, because one misconfigured configurable (e.g. boolean set to string), causes the whole json config to die silently, and
@@ -2778,15 +2776,15 @@ void InsanityChecksOnDefinitionsOfConfigurables()
     ExitFunction(__FUNCTION__);
   }
 
-} // InsanityChecksOnDefinitionsOfConfigurables()
+} // insanityChecksOnDefinitionsOfConfigurables()
 
 //============================================================
 
-void InsanityChecksBeforeBooking()
+void insanityChecksBeforeBooking()
 {
-  // Do insanity checks on configuration, binning and cuts. Values obtained from configurables are checked before being used in InsanityChecksOnDefinitionsOfConfigurables().
+  // Do insanity checks on configuration, binning and cuts. Values obtained from configurables are checked before being used in insanityChecksOnDefinitionsOfConfigurables().
   // Remember that here I cannot do insanity checks on local histograms, etc., because they are not booked yet.
-  // For those additional checks, use InsanityChecksAfterBooking().
+  // For those additional checks, use insanityChecksAfterBooking().
 
   // a) Insanity checks on configuration;
   // b) Ensure that Run 1/2 specific cuts and flags are used only in Run 1/2 (both data and sim);
@@ -2937,7 +2935,11 @@ void InsanityChecksBeforeBooking()
 
   // ** For simulated data when fDatabasePDG is NOT used, I have to disable cut on charge, since that info is not available:
   if ((tc.fProcess[eGenericRecSim] || tc.fProcess[eGenericSim]) && pc.fUseParticleCuts[eCharge] && !tc.fUseDatabasePDG) {
-    LOGF(fatal, "\033[1;31m%s at line %d : For simulated data when fDatabasePDG is NOT used, I have to disable cut on charge, since that info is not available:\033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d : For simulated data when fDatabasePDG is NOT used, I have to disable cut on charge, since that info is not available.\033[0m", __FUNCTION__, __LINE__);
+  }
+  // ** Make sure I am using fDatabasePDG only over Monte Carlo data:
+  if (tc.fUseDatabasePDG && !(tc.fProcess[eGenericRecSim] || tc.fProcess[eGenericSim])) {
+    LOGF(fatal, "\033[1;31m%s at line %d : Use fDatabasePDG only over Monte Carlo datasets.\033[0m", __FUNCTION__, __LINE__);
   }
 
   // b) Ensure that Run 1/2 specific cuts and flags are used only in Run 1/2 (both data and sim):
@@ -3195,8 +3197,8 @@ void InsanityChecksBeforeBooking()
   // ...
 
   // g) Insanity checks on internal validation:
-  //    Remark: I check here only in the settings I could define in DefaultConfiguration().
-  //            The other insanity checks are in BookInternalValidationHistograms() or in InsanityChecksAfterBooking()
+  //    Remark: I check here only in the settings I could define in defaultConfiguration().
+  //            The other insanity checks are in bookInternalValidationHistograms() or in insanityChecksAfterBooking()
   if (iv.fUseInternalValidation) {
     if (iv.fnEventsInternalValidation <= 0) {
       LOGF(fatal, "\033[1;31m%s at line %d : iv.fnEventsInternalValidation <= 0 => Set number of events to positive integer\033[0m", __FUNCTION__, __LINE__);
@@ -3236,14 +3238,14 @@ void InsanityChecksBeforeBooking()
     ExitFunction(__FUNCTION__);
   }
 
-} // void InsanityChecksBeforeBooking()
+} // void insanityChecksBeforeBooking()
 
 //============================================================
 
-void InsanityChecksAfterBooking()
+void insanityChecksAfterBooking()
 {
   // Do insanity checks on all booked histograms, etc.,
-  // Configuration, binning and cuts are checked already before booking in InsanityChecksBeforeBooking().
+  // Configuration, binning and cuts are checked already before booking in insanityChecksBeforeBooking().
 
   // a) Insanity checks on booking;
   // b) Insanity checks on internal validation;
@@ -3289,11 +3291,11 @@ void InsanityChecksAfterBooking()
     ExitFunction(__FUNCTION__);
   }
 
-} // void InsanityChecksAfterBooking()
+} // void insanityChecksAfterBooking()
 
 //============================================================
 
-void PurgeAfterBooking()
+void purgeAfterBooking()
 {
   // I can purge a few objects used for common consistent booking across different group of histograms.
 
@@ -3306,17 +3308,21 @@ void PurgeAfterBooking()
     StartFunction(__FUNCTION__);
   }
 
+  return; // TBI 20250625 the code below is not ready yet, because I still use these 2D and 3D histos in in FillqvectorNdim(...)
+
   // a) Purge results histograms and related objects:
   if (!res.fSaveResultsHistograms) {
     for (int v = 0; v < eAsFunctionOf2D_N; v++) {
       if (res.fResultsPro2D[v]) {
         delete res.fResultsPro2D[v];
+        res.fResultsPro2D[v] = NULL;
       }
     }
 
     for (int v = 0; v < eAsFunctionOf3D_N; v++) {
       if (res.fResultsPro3D[v]) {
         delete res.fResultsPro3D[v];
+        res.fResultsPro3D[v] = NULL;
       }
     }
   } // if(!res.fSaveResultsHistograms)
@@ -3325,7 +3331,7 @@ void PurgeAfterBooking()
     ExitFunction(__FUNCTION__);
   }
 
-} // void PurgeAfterBooking()
+} // void purgeAfterBooking()
 
 //============================================================
 
@@ -3364,7 +3370,7 @@ bool Skip(int recOrSim)
 
 //============================================================
 
-void BookAndNestAllLists()
+void bookAndNestAllLists()
 {
   // *) QA;
   //  **) QA event histograms;
@@ -3523,11 +3529,11 @@ void BookAndNestAllLists()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookAndNestAllLists()
+} // void bookAndNestAllLists()
 
 //==========================================================
 
-void BookQAHistograms()
+void bookQAHistograms()
 {
   // Book all QA histograms and other related objects.
 
@@ -4033,7 +4039,7 @@ void BookQAHistograms()
         // valgrind --tool=massif => ~9.8 MiB (Last check: 20250315)
         qa.fQAEventHistograms2D[t][rs][ba] = new TH2F(
           TString::Format("fQAEventHistograms2D[%s][%s][%s]", qa.fEventHistogramsName2D[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
-          TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
+          TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srsLong[rs].Data(), gc.sbaLong[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
           nBins_x_Event[t], min_x_Event[t], max_x_Event[t], nBins_y_Event[t], min_y_Event[t], max_y_Event[t]);
         qa.fQAEventHistograms2D[t][rs][ba]->GetXaxis()->SetTitle(title_x_Event[t].Data());
         qa.fQAEventHistograms2D[t][rs][ba]->GetYaxis()->SetTitle(title_y_Event[t].Data());
@@ -4098,7 +4104,7 @@ void BookQAHistograms()
         // valgrind --tool=massif => ~30.6 MiB (Last check: 20250315)
         qa.fQAParticleHistograms2D[t][rs][ba] = new TH2F(
           TString::Format("fQAParticleHistograms2D[%s][%s][%s]", qa.fParticleHistogramsName2D[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
-          TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
+          TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srsLong[rs].Data(), gc.sbaLong[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
           nBins_x_Particle[t], min_x_Particle[t], max_x_Particle[t], nBins_y_Particle[t], min_y_Particle[t], max_y_Particle[t]);
 
         qa.fQAParticleHistograms2D[t][rs][ba]->GetXaxis()->SetTitle(title_x_Particle[t].Data());
@@ -4259,7 +4265,7 @@ void BookQAHistograms()
         // valgrind --tool=massif => ~70.2 MiB (Last check: 20250315)
         qa.fQAParticleEventHistograms2D[t][rs][ba] = new TH2F(
           TString::Format("fQAParticleEventHistograms2D[%s][%s][%s]", qa.fQAParticleEventHistogramsName2D[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
-          TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
+          TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srsLong[rs].Data(), gc.sbaLong[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
           nBins_x_ParticleEvent[t], min_x_ParticleEvent[t], max_x_ParticleEvent[t], nBins_y_ParticleEvent[t], min_y_ParticleEvent[t], max_y_ParticleEvent[t]);
 
         qa.fQAParticleEventHistograms2D[t][rs][ba]->GetXaxis()->SetTitle(title_x_ParticleEvent[t].Data());
@@ -4289,7 +4295,7 @@ void BookQAHistograms()
 
       qa.fQAParticleEventProEbyE[rs][ba] = new TProfile(
         TString::Format("fParticleEventProEbyE[%s][%s]", gc.srs[rs].Data(), gc.sba[ba].Data()),
-        TString::Format("%s, %s", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()),
+        TString::Format("%s, %s", gc.srsLong[rs].Data(), gc.sbaLong[ba].Data()),
         eQAParticleEventProEbyE_N, 0., eQAParticleEventProEbyE_N);
     } // for (int ba = 0; ba < 2; ba++) // before/after cuts
   } // for (int rs = 0; rs < 2; rs++) // reco/sim
@@ -4464,7 +4470,7 @@ void BookQAHistograms()
         // valgrind --tool=massif => ~58.7 MiB (Last check: 20250315)
         qa.fQACorrelationsVsHistograms2D[t][h][rs] = new TH2F(
           TString::Format("fQACorrelationsVsHistograms2D[%s][%d][%s]", qa.fQACorrelationsVsHistogramsName2D[t].Data(), h, gc.srs[rs].Data()),
-          TString::Format("%s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
+          TString::Format("%s, %s", "__RUN_NUMBER__", gc.srsLong[rs].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
           nBins_x_CorrelationsVs, min_x_CorrelationsVs, max_x_CorrelationsVs, nBins_y_CorrelationsVs[t], min_y_CorrelationsVs[t], max_y_CorrelationsVs[t]);
 
         qa.fQACorrelationsVsHistograms2D[t][h][rs]->GetXaxis()->SetTitle(TString::Format("%s (harmonic = %d)", title_x_CorrelationsVs.Data(), h + 1));
@@ -4589,7 +4595,7 @@ void BookQAHistograms()
         // TBI 20250317 documet here the output of profiling using valgrind --tool=massif
         qa.fQACorrVsIRVsProfiles2D[t][h][rs] = new TProfile2D(
           TString::Format("fQACorrVsIRVsProfiles2D[%s][%d][%s]", qa.fQACorrelationsVsInteractionRateVsProfilesName2D[t].Data(), h, gc.srs[rs].Data()),
-          TString::Format("%s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
+          TString::Format("%s, %s", "__RUN_NUMBER__", gc.srsLong[rs].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
           nBins_x_CorrelationsVsInteractionRateVs, min_x_CorrelationsVsInteractionRateVs, max_x_CorrelationsVsInteractionRateVs, nBins_y_CorrelationsVsInteractionRateVs[t], min_y_CorrelationsVsInteractionRateVs[t], max_y_CorrelationsVsInteractionRateVs[t]);
 
         TString tmp = qa.fQACorrVsIRVsProfiles2D[t][h][rs]->GetTitle(); // translating e.g. "544114, reconstructed" into "<<2>> (harmonic = 2), 544114, reconstructed"
@@ -4612,11 +4618,11 @@ void BookQAHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookQAHistograms()
+} // void bookQAHistograms()
 
 //============================================================
 
-void BookEventHistograms()
+void bookEventHistograms()
 {
   // Book all event histograms.
 
@@ -4691,7 +4697,7 @@ void BookEventHistograms()
         }
         eh.fEventHistograms[t][rs][ba] = new TH1F(
           TString::Format("fEventHistograms[%s][%s][%s]", eh.fEventHistogramsName[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
-          TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
+          TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srsLong[rs].Data(), gc.sbaLong[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
           static_cast<int>(eh.fEventHistogramsBins[t][0]),
           eh.fEventHistogramsBins[t][1], eh.fEventHistogramsBins[t][2]);
         eh.fEventHistograms[t][rs][ba]->GetXaxis()->SetTitle(FancyFormatting(eh.fEventHistogramsName[t].Data()));
@@ -4706,11 +4712,11 @@ void BookEventHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookEventHistograms()
+} // void bookEventHistograms()
 
 //============================================================
 
-void BookEventCutsHistograms()
+void bookEventCutsHistograms()
 {
   // Book all event cuts objects.
 
@@ -4794,7 +4800,7 @@ void BookEventCutsHistograms()
         continue;
       }
 
-      ec.fEventCutCounterHist[rs][cc] = new TH1F(TString::Format("fEventCutCounterHist[%s][%s]", gc.srs[rs].Data(), gc.scc[cc].Data()), TString::Format("%s, %s, event cut counter (%s)", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.scc_long[cc].Data()), eEventCuts_N, 0.5, static_cast<double>(eEventCuts_N) + 0.5); // I cast in double the last argument, because that's what this particular TH1I constructor expects. And yes, +0.5, because eEventCuts kicks off from 0
+      ec.fEventCutCounterHist[rs][cc] = new TH1F(TString::Format("fEventCutCounterHist[%s][%s]", gc.srs[rs].Data(), gc.scc[cc].Data()), TString::Format("%s, %s, event cut counter (%s)", "__RUN_NUMBER__", gc.srsLong[rs].Data(), gc.sccLong[cc].Data()), eEventCuts_N, 0.5, static_cast<double>(eEventCuts_N) + 0.5); // I cast in double the last argument, because that's what this particular TH1I constructor expects. And yes, +0.5, because eEventCuts kicks off from 0
       ec.fEventCutCounterHist[rs][cc]->SetStats(false);
       ec.fEventCutCounterHist[rs][cc]->SetLineColor(eColor);
       ec.fEventCutCounterHist[rs][cc]->SetFillColor(eFillColor);
@@ -4857,7 +4863,7 @@ void BookEventCutsHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookEventCutsHistograms()
+} // void bookEventCutsHistograms()
 
 //============================================================
 
@@ -4934,7 +4940,7 @@ float RefMultVsNContr(const float& refMult, eEventCutsFormulas whichCutFormula)
 
 //============================================================
 
-void BookParticleHistograms()
+void bookParticleHistograms()
 {
   // Book all particle histograms.
 
@@ -5011,7 +5017,7 @@ void BookParticleHistograms()
       for (int ba = 0; ba < 2; ba++) // before/after cuts
       {
         ph.fParticleHistograms[t][rs][ba] = new TH1F(TString::Format("fParticleHistograms[%s][%s][%s]", ph.fParticleHistogramsName[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
-                                                     TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()),
+                                                     TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srsLong[rs].Data(), gc.sbaLong[ba].Data()),
                                                      static_cast<int>(ph.fParticleHistogramsBins[t][0]), ph.fParticleHistogramsBins[t][1], ph.fParticleHistogramsBins[t][2]);
         ph.fParticleHistograms[t][rs][ba]->SetLineColor(ec.fBeforeAfterColor[ba]);
         ph.fParticleHistograms[t][rs][ba]->SetFillColor(ec.fBeforeAfterColor[ba] - 10);
@@ -5066,14 +5072,14 @@ void BookParticleHistograms()
 
           // *) variable-length binning for phi vs pt, but only in pt axis:
           ph.fParticleHistograms2D[t][rs][ba] = new TH2D(TString::Format("fParticleHistograms2D[%s][%s][%s]", ph.fParticleHistogramsName2D[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
-                                                         TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()),
+                                                         TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srsLong[rs].Data(), gc.sbaLong[ba].Data()),
                                                          static_cast<int>(ph.fParticleHistogramsBins2D[t][eX][0]), ph.fParticleHistogramsBins2D[t][eX][1], ph.fParticleHistogramsBins2D[t][eX][2],
                                                          res.fResultsPro[AFO_PT]->GetXaxis()->GetXbins()->GetSize() - 1, res.fResultsPro[AFO_PT]->GetXaxis()->GetXbins()->GetArray()); // yes, x-axis of "results vs pt" hist is y-axis here for 2D.
         } else if (ph.fParticleHistogramsName2D[t].EqualTo("Phi_vs_Eta") && res.fUseResultsProVariableLengthBins[AFO_ETA]) {
 
           // *) variable-length binning for phi vs eta, but only in eta axis:
           ph.fParticleHistograms2D[t][rs][ba] = new TH2D(TString::Format("fParticleHistograms2D[%s][%s][%s]", ph.fParticleHistogramsName2D[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
-                                                         TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()),
+                                                         TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srsLong[rs].Data(), gc.sbaLong[ba].Data()),
                                                          static_cast<int>(ph.fParticleHistogramsBins2D[t][eX][0]), ph.fParticleHistogramsBins2D[t][eX][1], ph.fParticleHistogramsBins2D[t][eX][2],
                                                          res.fResultsPro[AFO_ETA]->GetXaxis()->GetXbins()->GetSize() - 1, res.fResultsPro[AFO_ETA]->GetXaxis()->GetXbins()->GetArray()); // yes, x-axis of "results vs pt" hist is y-axis here for 2D
         } else {
@@ -5081,7 +5087,7 @@ void BookParticleHistograms()
           // Remark: Remember that I cannot use here  GetXaxis()->GetXbins()->GetArray() as for variable-width case, because for fixed-width case, this is always 0
           //         See https://root-forum.cern.ch/t/get-bin-array/7276/9
           ph.fParticleHistograms2D[t][rs][ba] = new TH2D(TString::Format("fParticleHistograms2D[%s][%s][%s]", ph.fParticleHistogramsName2D[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
-                                                         TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()),
+                                                         TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srsLong[rs].Data(), gc.sbaLong[ba].Data()),
                                                          static_cast<int>(ph.fParticleHistogramsBins2D[t][eX][0]), ph.fParticleHistogramsBins2D[t][eX][1], ph.fParticleHistogramsBins2D[t][eX][2],
                                                          static_cast<int>(ph.fParticleHistogramsBins2D[t][eY][0]), ph.fParticleHistogramsBins2D[t][eY][1], ph.fParticleHistogramsBins2D[t][eY][2]);
         }
@@ -5097,7 +5103,7 @@ void BookParticleHistograms()
 
   // d) Default binning for particle sparse histograms:
   //    Remark 0: This requires the special treatment, because I re-use in some cases bins from results histograns.
-  //              Therefore, I can do all this only after BookResultsHistograms() was already called.
+  //              Therefore, I can do all this only after bookResultsHistograms() was already called.
   //    Remark 1: I anticipate I will need them only when I need to calculate differential weights, therefore I couple them intentionally
   //              with enum's for differential weights from very beginning.
   //    Remark 2: Whenever possible, I re-use binning from results histograms.
@@ -5302,13 +5308,13 @@ void BookParticleHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookParticleHistograms()
+} // void bookParticleHistograms()
 
 //============================================================
 
 void BookParticleSparseHistograms(eDiffWeightCategory dwc)
 {
-  // This is a helper function for BookParticleHistograms(), merely to reduce code bloat.
+  // This is a helper function for bookParticleHistograms(), merely to reduce code bloat.
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -5348,7 +5354,7 @@ void BookParticleSparseHistograms(eDiffWeightCategory dwc)
       continue;
     }
     // Remark: Here I have a bit unusual convention for the name and title, but okay...
-    ph.fParticleSparseHistograms[dwc][rs] = new THnSparseF(TString::Format("%s[%s]", ph.fParticleSparseHistogramsName[dwc].Data(), gc.srs[rs].Data()), TString::Format("__RUN_NUMBER__, %s, %s", gc.srs_long[rs].Data(), ph.fParticleSparseHistogramsTitle[dwc].Data()), nDimensions, nBins->GetArray(), NULL, NULL);
+    ph.fParticleSparseHistograms[dwc][rs] = new THnSparseF(TString::Format("%s[%s]", ph.fParticleSparseHistogramsName[dwc].Data(), gc.srs[rs].Data()), TString::Format("__RUN_NUMBER__, %s, %s", gc.srsLong[rs].Data(), ph.fParticleSparseHistogramsTitle[dwc].Data()), nDimensions, nBins->GetArray(), NULL, NULL);
 
     // *) For each dimension set bin edges, axis title, etc.:
     for (int d = 0; d < nDimensions; d++) {
@@ -5371,7 +5377,7 @@ void BookParticleSparseHistograms(eDiffWeightCategory dwc)
 
 //============================================================
 
-void BookParticleCutsHistograms()
+void bookParticleCutsHistograms()
 {
   // Book all particle cuts objects.
 
@@ -5453,7 +5459,7 @@ void BookParticleCutsHistograms()
         continue;
       }
 
-      pc.fParticleCutCounterHist[rs][cc] = new TH1F(TString::Format("fParticleCutCounterHist[%s][%s]", gc.srs[rs].Data(), gc.scc[cc].Data()), TString::Format("%s, %s, particle cut counter (%s)", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.scc_long[cc].Data()), eParticleCuts_N, 0.5, static_cast<double>(eParticleCuts_N) + 0.5);
+      pc.fParticleCutCounterHist[rs][cc] = new TH1F(TString::Format("fParticleCutCounterHist[%s][%s]", gc.srs[rs].Data(), gc.scc[cc].Data()), TString::Format("%s, %s, particle cut counter (%s)", "__RUN_NUMBER__", gc.srsLong[rs].Data(), gc.sccLong[cc].Data()), eParticleCuts_N, 0.5, static_cast<double>(eParticleCuts_N) + 0.5);
       // I cast in double the last argument, because that's what this particular TH1I constructor expects
       // Yes, +0.5, because eParticleCuts kicks off from 0
       pc.fParticleCutCounterHist[rs][cc]->SetStats(false);
@@ -5483,11 +5489,11 @@ void BookParticleCutsHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookParticleCutsHistograms()
+} // void bookParticleCutsHistograms()
 
 //============================================================
 
-void BookQvectorHistograms()
+void bookQvectorHistograms()
 {
   // Book all Q-vector histograms.
 
@@ -5658,7 +5664,7 @@ void BookQvectorHistograms()
   // c) Book multiplicity distributions in A and B, for each eta separation:
   if (es.fCalculateEtaSeparations) {
     TString sEtaSep[2] = {"A", "B"}; // A <=> -eta , B <=> + eta
-    TString sEtaSep_long[2] = {TString::Format("%.2f < #eta <", pc.fdParticleCuts[eEta][eMin]), TString::Format("< #eta < %.2f", pc.fdParticleCuts[eEta][eMax])};
+    TString sEtaSepLong[2] = {TString::Format("%.2f < #eta <", pc.fdParticleCuts[eEta][eMin]), TString::Format("< #eta < %.2f", pc.fdParticleCuts[eEta][eMax])};
     // yes, here I define first the part of intervals as etaCutMin < eta < "subevent boundary", and "subevent" boundary < eta < etaCutMax
     // Then below in the loop, I inject for "subevent boundary" the corresponding fEtaSeparationsValues (divided by 2, becaus it's symmetric round 0)
     for (int ab = 0; ab < 2; ab++) {   // ab = 0 <=> -eta , ab = 1 <=> + eta
@@ -5673,7 +5679,7 @@ void BookQvectorHistograms()
           for (int e = 0; e < gMaxNumberEtaSeparations; e++) { // eta separation
             qv.fMabDist[ab][rs][ba][e] = new TH1F(Form("fMabDist[%s][%s][%s][%d]", sEtaSep[ab].Data(), gc.srs[rs].Data(), gc.sba[ba].Data(), e),
                                                   Form("%s, %s, %s, %s", "__RUN_NUMBER__",
-                                                       0 == ab ? Form("%s -%.2f", sEtaSep_long[ab].Data(), es.fEtaSeparationsValues[e] / 2.) : Form("%.2f %s", es.fEtaSeparationsValues[e] / 2., sEtaSep_long[ab].Data()), gc.srs_long[rs].Data(), gc.sba_long[ba].Data()),
+                                                       0 == ab ? Form("%s -%.2f", sEtaSepLong[ab].Data(), es.fEtaSeparationsValues[e] / 2.) : Form("%.2f %s", es.fEtaSeparationsValues[e] / 2., sEtaSepLong[ab].Data()), gc.srsLong[rs].Data(), gc.sbaLong[ba].Data()),
                                                   static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0]), eh.fEventHistogramsBins[eMultiplicity][1], eh.fEventHistogramsBins[eMultiplicity][2]); // TBI 20241207 I have hardwired in this constructor "0 == ab", this can backfire...
             qv.fMabDist[ab][rs][ba][e]->SetLineColor(ec.fBeforeAfterColor[ba]);
             qv.fMabDist[ab][rs][ba][e]->SetFillColor(ec.fBeforeAfterColor[ba] - 10);
@@ -5696,13 +5702,13 @@ void BookQvectorHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookQvectorHistograms()
+} // void bookQvectorHistograms()
 
 //============================================================
 
 void NumberOfKineBins()
 {
-  // Helper function called only in void BookQvectorHistograms(), if kine analysis was requested.
+  // Helper function called only in void bookQvectorHistograms(), if kine analysis was requested.
   // I calculate for each requested kine vector the number of kine bins => this is stored in dynamically allocated array qv.fNumberOfKineBins.
 
   if (tc.fVerbose) {
@@ -5747,7 +5753,7 @@ void NumberOfKineBins()
 
 //============================================================
 
-void BookCorrelationsHistograms()
+void bookCorrelationsHistograms()
 {
   // Book all correlations histograms.
 
@@ -5854,11 +5860,11 @@ void BookCorrelationsHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // BookCorrelationsHistograms()
+} // bookCorrelationsHistograms()
 
 //============================================================
 
-void BookWeightsHistograms()
+void bookWeightsHistograms()
 {
   // Book all objects for particle weights.
 
@@ -6015,11 +6021,11 @@ void BookWeightsHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookWeightsHistograms()
+} // void bookWeightsHistograms()
 
 //============================================================
 
-void BookCentralityWeightsHistograms()
+void bookCentralityWeightsHistograms()
 {
   // Book all objects for centrality weights.
 
@@ -6078,16 +6084,16 @@ void BookCentralityWeightsHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookCentralityWeightsHistograms()
+} // void bookCentralityWeightsHistograms()
 
 //============================================================
 
-void BookNestedLoopsHistograms()
+void bookNestedLoopsHistograms()
 {
   // Book all nested loops histograms.
 
   // a) Book the profile holding flags;
-  // b) Common local labels (keep 'em in sync with BookCorrelationsHistograms());
+  // b) Common local labels (keep 'em in sync with bookCorrelationsHistograms());
   // c) Book what needs to be booked;
   // d) Few quick insanity checks on booking.
 
@@ -6192,27 +6198,33 @@ void BookNestedLoopsHistograms()
 
     // 2D kine:
     // **) vs. (pt,eta):
-    if (res.fResultsPro2D[AfoKineMap2D(PT_ETAq)]) {                                                                                      // this is safe, because this one shall be booked if any of Correlations, Test0, EtaSeparations, etc., was requested
-      nBins = (res.fResultsPro2D[AfoKineMap2D(PT_ETAq)]->GetNbinsX() + 2) * (res.fResultsPro2D[AfoKineMap2D(PT_ETAq)]->GetNbinsY() + 2); // + 2 means that I take into account overflow and underflow, then skip it in the loop below
-      for (int b = 0; b < nBins; b++) {                                                                                                  // loop over lineralized global bins
+    if (res.fResultsPro2D[AfoKineMap2D(PT_ETAq)]) {
+      // this is safe, because this one shall be booked if any of Correlations, Test0, EtaSeparations, etc., was requested
+      nBins = (res.fResultsPro2D[AfoKineMap2D(PT_ETAq)]->GetNbinsX() + 2) * (res.fResultsPro2D[AfoKineMap2D(PT_ETAq)]->GetNbinsY() + 2);
+      // + 2 means that I take into account overflow and underflow, then skip it in the loop below
+      for (int b = 0; b < nBins; b++) { // loop over lineralized global bins
         nl.ftaNestedLoopsKine[PT_ETAq][b][0] = new TArrayD(iMaxSize);
         nl.ftaNestedLoopsKine[PT_ETAq][b][1] = new TArrayD(iMaxSize);
       }
     }
 
     // **) vs. (pt,charge):
-    if (res.fResultsPro2D[AfoKineMap2D(PT_CHARGEq)]) {                                                                                         // this is safe, because this one shall be booked if any of Correlations, Test0, EtaSeparations, etc., was requested
-      nBins = (res.fResultsPro2D[AfoKineMap2D(PT_CHARGEq)]->GetNbinsX() + 2) * (res.fResultsPro2D[AfoKineMap2D(PT_CHARGEq)]->GetNbinsY() + 2); // + 2 means that I take into account overflow and underflow, then skip it in the loop below
-      for (int b = 0; b < nBins; b++) {                                                                                                        // loop over lineralized global bins
+    if (res.fResultsPro2D[AfoKineMap2D(PT_CHARGEq)]) {
+      // this is safe, because this one shall be booked if any of Correlations, Test0, EtaSeparations, etc., was requested
+      nBins = (res.fResultsPro2D[AfoKineMap2D(PT_CHARGEq)]->GetNbinsX() + 2) * (res.fResultsPro2D[AfoKineMap2D(PT_CHARGEq)]->GetNbinsY() + 2);
+      // + 2 means that I take into account overflow and underflow, then skip it in the loop below
+      for (int b = 0; b < nBins; b++) { // loop over lineralized global bins
         nl.ftaNestedLoopsKine[PT_CHARGEq][b][0] = new TArrayD(iMaxSize);
         nl.ftaNestedLoopsKine[PT_CHARGEq][b][1] = new TArrayD(iMaxSize);
       }
     }
 
     // **) vs. (eta,charge):
-    if (res.fResultsPro2D[AfoKineMap2D(ETA_CHARGEq)]) {                                                                                          // this is safe, because this one shall be booked if any of Correlations, Test0, EtaSeparations, etc., was requested
-      nBins = (res.fResultsPro2D[AfoKineMap2D(ETA_CHARGEq)]->GetNbinsX() + 2) * (res.fResultsPro2D[AfoKineMap2D(ETA_CHARGEq)]->GetNbinsY() + 2); // + 2 means that I take into account overflow and underflow, then skip it in the loop below
-      for (int b = 0; b < nBins; b++) {                                                                                                          // loop over lineralized global bins
+    if (res.fResultsPro2D[AfoKineMap2D(ETA_CHARGEq)]) {
+      // this is safe, because this one shall be booked if any of Correlations, Test0, EtaSeparations, etc., was requested
+      nBins = (res.fResultsPro2D[AfoKineMap2D(ETA_CHARGEq)]->GetNbinsX() + 2) * (res.fResultsPro2D[AfoKineMap2D(ETA_CHARGEq)]->GetNbinsY() + 2);
+      // + 2 means that I take into account overflow and underflow, then skip it in the loop below
+      for (int b = 0; b < nBins; b++) { // loop over lineralized global bins
         nl.ftaNestedLoopsKine[ETA_CHARGEq][b][0] = new TArrayD(iMaxSize);
         nl.ftaNestedLoopsKine[ETA_CHARGEq][b][1] = new TArrayD(iMaxSize);
       }
@@ -6222,9 +6234,11 @@ void BookNestedLoopsHistograms()
 
     // 3D kine:
     // **) vs. (pt,eta,charge):
-    if (res.fResultsPro3D[AfoKineMap3D(PT_ETA_CHARGEq)]) {                                                                                                                                                                  // this is safe, because this one shall be booked if any of Correlations, Test0, EtaSeparations, etc., was requested
-      nBins = (res.fResultsPro3D[AfoKineMap3D(PT_ETA_CHARGEq)]->GetNbinsX() + 2) * (res.fResultsPro3D[AfoKineMap3D(PT_ETA_CHARGEq)]->GetNbinsY() + 2) * (res.fResultsPro3D[AfoKineMap3D(PT_ETA_CHARGEq)]->GetNbinsZ() + 2); // + 2 means that I take into account overflow and underflow, then skip it in the loop below
-      for (int b = 0; b < nBins; b++) {                                                                                                                                                                                     // loop over lineralized global bins
+    if (res.fResultsPro3D[AfoKineMap3D(PT_ETA_CHARGEq)]) {
+      // this is safe, because this one shall be booked if any of Correlations, Test0, EtaSeparations, etc., was requested
+      nBins = (res.fResultsPro3D[AfoKineMap3D(PT_ETA_CHARGEq)]->GetNbinsX() + 2) * (res.fResultsPro3D[AfoKineMap3D(PT_ETA_CHARGEq)]->GetNbinsY() + 2) * (res.fResultsPro3D[AfoKineMap3D(PT_ETA_CHARGEq)]->GetNbinsZ() + 2);
+      // + 2 means that I take into account overflow and underflow, then skip it in the loop below
+      for (int b = 0; b < nBins; b++) { // loop over lineralized global bins
         nl.ftaNestedLoopsKine[PT_ETA_CHARGEq][b][0] = new TArrayD(iMaxSize);
         nl.ftaNestedLoopsKine[PT_ETA_CHARGEq][b][1] = new TArrayD(iMaxSize);
       }
@@ -6234,7 +6248,7 @@ void BookNestedLoopsHistograms()
 
   } // if (nl.fCalculateKineCustomNestedLoops)
 
-  // b) Common local labels (keep 'em in sync with BookCorrelationsHistograms())
+  // b) Common local labels (keep 'em in sync with bookCorrelationsHistograms())
   TString oVariable[4] = {
     "#varphi_{1}-#varphi_{2}",
     "#varphi_{1}+#varphi_{2}-#varphi_{3}-#varphi_{4}",
@@ -6269,13 +6283,9 @@ void BookNestedLoopsHistograms()
         nl.fNestedLoopsPro[k][n][v]->Sumw2();
         nl.fNestedLoopsPro[k][n][v]->GetXaxis()->SetTitle(res.fResultsProXaxisTitle[v].Data());
 
-        //        if(fUseFixedNumberOfRandomlySelectedTracks && 1==v) // just a warning
-        //        for the meaning of multiplicity in this special case
-        //        {
-        //         nl.fNestedLoopsPro[k][n][1]->GetXaxis()->SetTitle("WARNING: for each
-        //        multiplicity, fFixedNumberOfRandomlySelectedTracks is selected randomly
-        //        in Q-vector");
-        //        }
+        if (tc.fFixedNumberOfRandomlySelectedTracks > 0 && AFO_MULTIPLICITY == v) { // just a warning for the meaning of multiplicity in this special case
+          nl.fNestedLoopsPro[k][n][v]->GetXaxis()->SetTitle("WARNING: for each multiplicity, fFixedNumberOfRandomlySelectedTracks is selected randomly in Q-vector");
+        }
 
         nl.fNestedLoopsList->Add(nl.fNestedLoopsPro[k][n][v]);
       } // for(int v=0;v<5;v++) // variable [0=integrated,1=vs.
@@ -6297,11 +6307,11 @@ void BookNestedLoopsHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookNestedLoopsHistograms()
+} // void bookNestedLoopsHistograms()
 
 //============================================================
 
-void BookNUAHistograms()
+void bookNUAHistograms()
 {
   // Book all objects for Toy NUA.
 
@@ -6472,11 +6482,11 @@ void BookNUAHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookNUAHistograms()
+} // void bookNUAHistograms()
 
 //============================================================
 
-void BookInternalValidationHistograms()
+void bookInternalValidationHistograms()
 {
   // Book all internal validation histograms.
 
@@ -6588,7 +6598,7 @@ void BookInternalValidationHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // BookInternalValidationHistograms()
+} // bookInternalValidationHistograms()
 
 //============================================================
 
@@ -7145,7 +7155,7 @@ bool Accept(const double& value, int var)
 
 //============================================================
 
-void BookTest0Histograms()
+void bookTest0Histograms()
 {
   // Book all Test0 histograms.
 
@@ -7369,11 +7379,11 @@ void BookTest0Histograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookTest0Histograms()
+} // void bookTest0Histograms()
 
 //============================================================
 
-void BookEtaSeparationsHistograms()
+void bookEtaSeparationsHistograms()
 {
   // Book all eta separations histograms.
 
@@ -7472,11 +7482,11 @@ void BookEtaSeparationsHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookEtaSeparationsHistograms()
+} // void bookEtaSeparationsHistograms()
 
 //============================================================
 
-void BookResultsHistograms()
+void bookResultsHistograms()
 {
   // Book all results histograms.
   // These results histograms in addition act as a sort of "abstract" interface, which defines common binning, etc., for other groups of histograms.
@@ -7731,7 +7741,7 @@ void BookResultsHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookResultsHistograms()
+} // void bookResultsHistograms()
 
 //============================================================
 
@@ -7769,7 +7779,7 @@ TArrayD* ArrayWithBinEdges(int nBins, float min, float max)
 
 //============================================================
 
-void BookTheRest()
+void bookTheRest()
 {
   // Here I book everything not sorted (yes) in specific functions above.
 
@@ -7789,7 +7799,7 @@ void BookTheRest()
   }
 
   // b) Book TDatabasePDG:
-  if (tc.fUseDatabasePDG && (tc.fProcess[eGenericRecSim] || tc.fProcess[eGenericSim])) {
+  if (tc.fUseDatabasePDG) {
     tc.fDatabasePDG = new TDatabasePDG(); // there is a standard memory blow-up here
   }
 
@@ -7797,7 +7807,7 @@ void BookTheRest()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookTheRest()
+} // void bookTheRest()
 
 //============================================================
 
@@ -10650,28 +10660,28 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
         LOGF(warning, "No MC particle for this track, skip...");
         return false; // TBI 20231107 re-think. I shouldn't probably get to this point, if MC truth info doesn't exist for this track
       }
-      // auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
+      // auto mcParticle = track.mcParticle(); // corresponding MC truth simulated particle
 
-      // In this branch I can cut additionally and directly on corresponding MC truth simulated, e.g. on mcparticle.pt()
+      // In this branch I can cut additionally and directly on corresponding MC truth simulated, e.g. on mcParticle.pt()
       // In case I implement something here, remember to switch from eRec to eSim when calling e.g. ParticleCut(...)
 
       //          // *) Phi: TBI 2024-511 re-think if i really cut directly on MC truth kine and other info and keep it in sync with what I did in AliPhysics
       //          if (pc.fUseParticleCuts[ePhi]) {
       //            if (cutModus == eCutCounterBinning) {
       //              ParticleCut(eSim, ePhi, eCutCounterBinning);
-      //            } else if (mcparticle.phi() < pc.fdParticleCuts[ePhi][eMin] || mcparticle.phi() > pc.fdParticleCuts[ePhi][eMax]) {
+      //            } else if (mcParticle.phi() < pc.fdParticleCuts[ePhi][eMin] || mcParticle.phi() > pc.fdParticleCuts[ePhi][eMax]) {
       //              if (!ParticleCut(eSim, ePhi, cutModus)) {
       //                return false;
       //              }
       //            }
       //          }
 
-      // *) Charge: TBI 20240511 mcparticle.sign() doesn't exist, get charge from tc.fDatabasePDG instead using PDG code , as I did it below
+      // *) Charge: TBI 20240511 mcParticle.sign() doesn't exist, get charge from tc.fDatabasePDG instead using PDG code , as I did it below
 
       //            if (pc.fUseParticleCuts[eCharge]) {
       //             if (cutModus == eCutCounterBinning) {
       //                ParticleCut(eSim, eCharge, eCutCounterBinning);
-      //              } else if (0 == mcparticle.sign() || mcparticle.sign() < pc.fdParticleCuts[eCharge][eMin] || mcparticle.sign() > pc.fdParticleCuts[eCharge][eMax]) {
+      //              } else if (0 == mcParticle.sign() || mcParticle.sign() < pc.fdParticleCuts[eCharge][eMin] || mcParticle.sign() > pc.fdParticleCuts[eCharge][eMax]) {
       //                // TBI 20240511 with first condition, I always throw away neutral particles, so for the time being that is hardcoded
       //                if (!ParticleCut(eSim, eCharge, cutModus)) {
       //                  return false;
@@ -10727,27 +10737,30 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
       }
     }
 
-    // *) Charge:
-    if (pc.fUseParticleCuts[eCharge]) {
-      double charge = -44.; // yes, never initialize charge to 0.
-      if (tc.fDatabasePDG && tc.fDatabasePDG->GetParticle(track.pdgCode())) {
-        // Yes, I have to check the 2nd condition, because e.g. for PDG code 1000010020 (deuteron), GetParticle(...) returns NULL
-        charge = tc.fDatabasePDG->GetParticle(track.pdgCode())->Charge() / 3.; // yes, divided by 3. Fundamental unit of charge is associated with quarks
-        if (tc.fVerboseForEachParticle) {
-          LOGF(info, "\033[1;33m%s at line %d: !!!! WARNING !!!! There is a large memory blow-up when using TDatabasePDG !!!! WARNING !!!! \033[0m", __FUNCTION__, __LINE__);
+    /*
+        // *) Charge:
+        if (pc.fUseParticleCuts[eCharge]) {
+          double charge = -44.; // yes, never initialize charge to 0.
+          if (tc.fDatabasePDG && tc.fDatabasePDG->GetParticle(track.pdgCode())) {
+            // Yes, I have to check the 2nd condition, because e.g. for PDG code 1000010020 (deuteron), GetParticle(...) returns NULL
+            charge = tc.fDatabasePDG->GetParticle(track.pdgCode())->Charge() / 3.; // yes, divided by 3. Fundamental unit of charge is associated with quarks
+            if (tc.fVerboseForEachParticle) {
+              LOGF(info, "\033[1;33m%s at line %d: !!!! WARNING !!!! There is a large memory blow-up when using TDatabasePDG !!!! WARNING !!!! \033[0m", __FUNCTION__, __LINE__);
+            }
+          }
+          if (cutModus == eCutCounterBinning) {
+            ParticleCut(eSim, eCharge, eCutCounterBinning);
+          } else if (0 == static_cast<int>(charge) || charge < pc.fdParticleCuts[eCharge][eMin] || charge > pc.fdParticleCuts[eCharge][eMax]) {
+            // TBI 20250611 with first condition, I always throw away neutral particles when O2DatabasePDG is used.
+            //              However due to initialization charge = 0. that way I throw all particles when O2DatabasePDG is NOT used.
+            //              Therefore, when O2DatabasePDG is NOT used, I have to disable cut on charge, since that info is not available.
+            if (!ParticleCut(eSim, eCharge, cutModus)) {
+              return false;
+            }
+          }
         }
-      }
-      if (cutModus == eCutCounterBinning) {
-        ParticleCut(eSim, eCharge, eCutCounterBinning);
-      } else if (0 == static_cast<int>(charge) || charge < pc.fdParticleCuts[eCharge][eMin] || charge > pc.fdParticleCuts[eCharge][eMax]) {
-        // TBI 20250611 with first condition, I always throw away neutral particles when fDatabasePDG is used.
-        //              However due to initialization charge = 0. that way I true all particles when fDatabasePDG is NOT used.
-        //              Therefore, when fDatabasePDG is NOT used, I have to disable cut on charge, since that info is not available.
-        if (!ParticleCut(eSim, eCharge, cutModus)) {
-          return false;
-        }
-      }
-    }
+
+    */
 
     // *) PDG code:
     if (pc.fUseParticleCuts[ePDG]) {
@@ -10780,7 +10793,7 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
         LOGF(warning, "No MC particle for this track, skip...");
         return false; // TBI 20231107 re-think. I shouldn't probably get to this point, if MC truth info doesn't exist for this track
       }
-      // auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
+      // auto mcParticle = track.mcParticle(); // corresponding MC truth simulated particle
 
       // ...
 
@@ -10817,7 +10830,7 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
         LOGF(warning, "No MC particle for this track, skip...");
         return false; // TBI 20231107 re-think. I shouldn't probably get to this point, if MC truth info doesn't exist for this track
       }
-      // auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
+      // auto mcParticle = track.mcParticle(); // corresponding MC truth simulated particle
 
       // ...
 
@@ -10916,10 +10929,10 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
           LOGF(warning, "No MC particle for this track, skip...");
           return false; // TBI 20231107 re-think. I shouldn't probably get to this point, if MC truth info doesn't exist for this particle
         }
-        auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
-        dPhi = mcparticle.phi();
-        dPt = mcparticle.pt();
-        dEta = mcparticle.eta();
+        auto mcParticle = track.mcParticle(); // corresponding MC truth simulated particle
+        dPhi = mcParticle.phi();
+        dPt = mcParticle.pt();
+        dEta = mcParticle.eta();
 
         // Apply NUA on these kine variables:
         if (nua.fApplyNUAPDF[ePhiNUAPDF] && !Accept(dPhi, ePhiNUAPDF)) {
@@ -11195,29 +11208,28 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba, int weight = 1)
         LOGF(warning, "  No MC particle for this track, skip...");
         return;
       }
-      auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
+      auto mcParticle = track.mcParticle(); // corresponding MC truth simulated particle
 
       // 1D:
       if (ph.fFillParticleHistograms) {
-        !ph.fParticleHistograms[ePhi][eSim][ba] ? true : ph.fParticleHistograms[ePhi][eSim][ba]->Fill(mcparticle.phi(), weight);
-        !ph.fParticleHistograms[ePt][eSim][ba] ? true : ph.fParticleHistograms[ePt][eSim][ba]->Fill(mcparticle.pt(), weight);
-        !ph.fParticleHistograms[eEta][eSim][ba] ? true : ph.fParticleHistograms[eEta][eSim][ba]->Fill(mcparticle.eta(), weight);
+        !ph.fParticleHistograms[ePhi][eSim][ba] ? true : ph.fParticleHistograms[ePhi][eSim][ba]->Fill(mcParticle.phi(), weight);
+        !ph.fParticleHistograms[ePt][eSim][ba] ? true : ph.fParticleHistograms[ePt][eSim][ba]->Fill(mcParticle.pt(), weight);
+        !ph.fParticleHistograms[eEta][eSim][ba] ? true : ph.fParticleHistograms[eEta][eSim][ba]->Fill(mcParticle.eta(), weight);
 
-        // special treatment for charge, because there is no getter mcparticle.sign()
+        // special treatment for charge, because there is no getter mcParticle.sign()
         double charge = -44.; // yes, never initialize charge to 0.
-        if (tc.fDatabasePDG && tc.fDatabasePDG->GetParticle(mcparticle.pdgCode())) {
+        if (tc.fDatabasePDG && tc.fDatabasePDG->GetParticle(mcParticle.pdgCode())) {
           // Yes, I have to check the 2nd condition, because e.g. for PDG code 1000010020 (deuteron), GetParticle(...) returns NULL
-          charge = tc.fDatabasePDG->GetParticle(mcparticle.pdgCode())->Charge() / 3.; // yes, divided by 3. Fundamental unit of charge is associated with quarks
+          charge = tc.fDatabasePDG->GetParticle(mcParticle.pdgCode())->Charge() / 3.; // yes, divided by 3. Fundamental unit of charge is associated with quarks
         }
-
         !ph.fParticleHistograms[eCharge][eSim][ba] ? true : ph.fParticleHistograms[eCharge][eSim][ba]->Fill(charge);
-        !ph.fParticleHistograms[ePDG][eSim][ba] ? true : ph.fParticleHistograms[ePDG][eSim][ba]->Fill(mcparticle.pdgCode(), weight);
+        !ph.fParticleHistograms[ePDG][eSim][ba] ? true : ph.fParticleHistograms[ePDG][eSim][ba]->Fill(mcParticle.pdgCode(), weight);
       }
 
       // 2D:
       if (ph.fFillParticleHistograms2D) {
-        !ph.fParticleHistograms2D[ePhiPt][eSim][ba] ? true : ph.fParticleHistograms2D[ePhiPt][eSim][ba]->Fill(mcparticle.phi(), mcparticle.pt(), weight);
-        !ph.fParticleHistograms2D[ePhiEta][eSim][ba] ? true : ph.fParticleHistograms2D[ePhiEta][eSim][ba]->Fill(mcparticle.phi(), mcparticle.eta(), weight);
+        !ph.fParticleHistograms2D[ePhiPt][eSim][ba] ? true : ph.fParticleHistograms2D[ePhiPt][eSim][ba]->Fill(mcParticle.phi(), mcParticle.pt(), weight);
+        !ph.fParticleHistograms2D[ePhiEta][eSim][ba] ? true : ph.fParticleHistograms2D[ePhiEta][eSim][ba]->Fill(mcParticle.phi(), mcParticle.eta(), weight);
       } // if(ph.fFillParticleHistograms2D) {
 
       // nD (THnSparse):
@@ -11226,14 +11238,13 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba, int weight = 1)
         if (ph.fBookParticleSparseHistograms[eDWPhi]) {
           // Remark: It is mandatory that ordering in initialization here resembles the ordering in enum eDiffPhiWeights
 
-          // special treatment for charge, because there is no getter mcparticle.sign()
+          // special treatment for charge, because there is no getter mcParticle.sign()
           double charge = -44.; // yes, never initialize charge to 0.
-          if (tc.fDatabasePDG && tc.fDatabasePDG->GetParticle(mcparticle.pdgCode())) {
+          if (tc.fDatabasePDG && tc.fDatabasePDG->GetParticle(mcParticle.pdgCode())) {
             // Yes, I have to check the 2nd condition, because e.g. for PDG code 1000010020 (deuteron), GetParticle(...) returns NULL
-            charge = tc.fDatabasePDG->GetParticle(mcparticle.pdgCode())->Charge() / 3.; // yes, divided by 3. Fundamental unit of charge is associated with quarks
+            charge = tc.fDatabasePDG->GetParticle(mcParticle.pdgCode())->Charge() / 3.; // yes, divided by 3. Fundamental unit of charge is associated with quarks
           }
-
-          double vector[eDiffPhiWeights_N] = {mcparticle.phi(), mcparticle.pt(), mcparticle.eta(), charge, ebye.fCentralitySim, 0.};
+          double vector[eDiffPhiWeights_N] = {mcParticle.phi(), mcParticle.pt(), mcParticle.eta(), charge, ebye.fCentralitySim, 0.};
           // TBI 20250611 I do nothing for vertex z, I could trivially extend ebye.fVz also for "sim" dimension => I set it to 0 temporarily here, until that's done.
           ph.fParticleSparseHistograms[eDWPhi][eSim]->Fill(vector, weight);
         }
@@ -11241,28 +11252,26 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba, int weight = 1)
         if (ph.fBookParticleSparseHistograms[eDWPt]) {
           // Remark: It is mandatory that ordering in initialization here resembles the ordering in enum eDiffPtWeights
 
-          // special treatment for charge, because there is no getter mcparticle.sign()
+          // special treatment for charge, because there is no getter mcParticle.sign()
           double charge = -44.; // yes, never initialize charge to 0.
-          if (tc.fDatabasePDG && tc.fDatabasePDG->GetParticle(mcparticle.pdgCode())) {
+          if (tc.fDatabasePDG && tc.fDatabasePDG->GetParticle(mcParticle.pdgCode())) {
             // Yes, I have to check the 2nd condition, because e.g. for PDG code 1000010020 (deuteron), GetParticle(...) returns NULL
-            charge = tc.fDatabasePDG->GetParticle(mcparticle.pdgCode())->Charge() / 3.; // yes, divided by 3. Fundamental unit of charge is associated with quarks
+            charge = tc.fDatabasePDG->GetParticle(mcParticle.pdgCode())->Charge() / 3.; // yes, divided by 3. Fundamental unit of charge is associated with quarks
           }
-
-          double vector[eDiffPtWeights_N] = {mcparticle.pt(), charge, ebye.fCentralitySim};
+          double vector[eDiffPtWeights_N] = {mcParticle.pt(), charge, ebye.fCentralitySim};
           ph.fParticleSparseHistograms[eDWPt][eSim]->Fill(vector, weight);
         }
         // **) eDWEta : here the fundamental 0-th axis never to be projected out is "eta"
         if (ph.fBookParticleSparseHistograms[eDWEta]) {
           // Remark: It is mandatory that ordering in initialization here resembles the ordering in enum eDiffEtaWeights
 
-          // special treatment for charge, because there is no getter mcparticle.sign()
+          // special treatment for charge, because there is no getter mcParticle.sign()
           double charge = -44.; // yes, never initialize charge to 0.
-          if (tc.fDatabasePDG && tc.fDatabasePDG->GetParticle(mcparticle.pdgCode())) {
+          if (tc.fDatabasePDG && tc.fDatabasePDG->GetParticle(mcParticle.pdgCode())) {
             // Yes, I have to check the 2nd condition, because e.g. for PDG code 1000010020 (deuteron), GetParticle(...) returns NULL
-            charge = tc.fDatabasePDG->GetParticle(mcparticle.pdgCode())->Charge() / 3.; // yes, divided by 3. Fundamental unit of charge is associated with quarks
+            charge = tc.fDatabasePDG->GetParticle(mcParticle.pdgCode())->Charge() / 3.; // yes, divided by 3. Fundamental unit of charge is associated with quarks
           }
-
-          double vector[eDiffEtaWeights_N] = {mcparticle.eta(), charge, ebye.fCentralitySim};
+          double vector[eDiffEtaWeights_N] = {mcParticle.eta(), charge, ebye.fCentralitySim};
           ph.fParticleSparseHistograms[eDWEta][eSim]->Fill(vector, weight);
         }
       } // if (ba == eAfter) {
@@ -11282,13 +11291,12 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba, int weight = 1)
       !ph.fParticleHistograms[ePt][eSim][ba] ? true : ph.fParticleHistograms[ePt][eSim][ba]->Fill(track.pt(), weight);
       !ph.fParticleHistograms[eEta][eSim][ba] ? true : ph.fParticleHistograms[eEta][eSim][ba]->Fill(track.eta(), weight);
 
-      // special treatment for charge, because there is no getter mcparticle.sign()
+      // special treatment for charge, because there is no getter mcParticle.sign()
       double charge = -44.; // yes, never initialize charge to 0.
       if (tc.fDatabasePDG && tc.fDatabasePDG->GetParticle(track.pdgCode())) {
         // Yes, I have to check the 2nd condition, because e.g. for PDG code 1000010020 (deuteron), GetParticle(...) returns NULL
         charge = tc.fDatabasePDG->GetParticle(track.pdgCode())->Charge() / 3.; // yes, divided by 3. Fundamental unit of charge is associated with quarks
       }
-
       !ph.fParticleHistograms[eCharge][eSim][ba] ? true : ph.fParticleHistograms[eCharge][eSim][ba]->Fill(charge);
       !ph.fParticleHistograms[ePDG][eSim][ba] ? true : ph.fParticleHistograms[ePDG][eSim][ba]->Fill(track.pdgCode(), weight);
     } // if(ph.fFillParticleHistograms) {
@@ -11317,7 +11325,7 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba, int weight = 1)
         return;
       }
 
-      // auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
+      // auto mcParticle = track.mcParticle(); // corresponding MC truth simulated particle
 
       // ...
 
@@ -11352,7 +11360,7 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba, int weight = 1)
         return;
       }
 
-      // auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
+      // auto mcParticle = track.mcParticle(); // corresponding MC truth simulated particle
 
       // ...
 
@@ -12272,6 +12280,7 @@ void CalculateKineTest0Ndim(eqvectorKine kineVarChoice, int Ndim)
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
+    LOGF(info, "\033[1;31m%s kineVarChoice = %d (%s), Ndim = %d \033[0m", __FUNCTION__, static_cast<int>(kineVarChoice), StringKineMap(kineVarChoice).Data(), Ndim);
   }
 
   int nBins = -1;
@@ -12282,6 +12291,9 @@ void CalculateKineTest0Ndim(eqvectorKine kineVarChoice, int Ndim)
       eAsFunctionOf AFO_var = AfoKineMap1D(kineVarChoice);
       if (res.fResultsPro[AFO_var]) {
         nBins = res.fResultsPro[AFO_var]->GetNbinsX() + 2; // + 2 means that I take into account overflow and underflow, then skip it in the loop below.
+        if (tc.fVerbose) {
+          LOGF(info, "\033[1;31m%s nBins = %d, kineVarChoice = %d (%s), Ndim = %d \033[0m", __FUNCTION__, nBins, static_cast<int>(kineVarChoice), StringKineMap(kineVarChoice).Data(), Ndim);
+        }
       }
 
       break;
@@ -12291,6 +12303,9 @@ void CalculateKineTest0Ndim(eqvectorKine kineVarChoice, int Ndim)
       eAsFunctionOf2D AFO_var = AfoKineMap2D(kineVarChoice);
       if (res.fResultsPro2D[AFO_var]) {
         nBins = (res.fResultsPro2D[AFO_var]->GetNbinsX() + 2) * (res.fResultsPro2D[AFO_var]->GetNbinsY() + 2); // + 2 means that I take into account overflow and underflow, then skip it in the loop below
+        if (tc.fVerbose) {
+          LOGF(info, "\033[1;31m%s nBins = %d, kineVarChoice = %d (%s), Ndim = %d \033[0m", __FUNCTION__, nBins, static_cast<int>(kineVarChoice), StringKineMap(kineVarChoice).Data(), Ndim);
+        }
       }
 
       break;
@@ -12300,6 +12315,9 @@ void CalculateKineTest0Ndim(eqvectorKine kineVarChoice, int Ndim)
       eAsFunctionOf3D AFO_var = AfoKineMap3D(kineVarChoice);
       if (res.fResultsPro3D[AFO_var]) {
         nBins = (res.fResultsPro3D[AFO_var]->GetNbinsX() + 2) * (res.fResultsPro3D[AFO_var]->GetNbinsY() + 2) * (res.fResultsPro3D[AFO_var]->GetNbinsZ() + 2); // + 2 means that I take into account overflow and underflow, then skip it in the loop below
+        if (tc.fVerbose) {
+          LOGF(info, "\033[1;31m%s nBins = %d, kineVarChoice = %d (%s), Ndim = %d \033[0m", __FUNCTION__, nBins, static_cast<int>(kineVarChoice), StringKineMap(kineVarChoice).Data(), Ndim);
+        }
       }
       break;
     }
@@ -12315,6 +12333,11 @@ void CalculateKineTest0Ndim(eqvectorKine kineVarChoice, int Ndim)
 
   // *) Uniform loop over linearized global bins for all kine variables:
   for (int b = 0; b < nBins; b++) { // yes, "< nBins", not "<= nBins", because b runs over all regular bins + 2 (therefore, including underflow and overflow already)
+
+    if (tc.fVerbose) { // TBI 20250701 temporary check, remove eventually
+      LOGF(info, "\033[1;31m%s b = %d \033[0m", __FUNCTION__, b);
+      Trace(__FUNCTION__, __LINE__);
+    }
 
     // *) Check if this bin is overflow or underflow:
     //    Well, I already checked that when filling fqvector, if this global bin is overflow or underflow, qvector and number of entries shall be empty for that bin, so I am checking for that:
@@ -12343,6 +12366,10 @@ void CalculateKineTest0Ndim(eqvectorKine kineVarChoice, int Ndim)
       for (int wp = 0; wp < gMaxCorrelator + 1; wp++) {
         qv.fQ[h][wp] = TComplex(qv.fqvector[kineVarChoice][b][h][wp].real(), qv.fqvector[kineVarChoice][b][h][wp].imag()); // TBI 20250601 check if there is a simpler way to initialize ROOT TComplex with C++ type 'complex'
       }
+    }
+
+    if (tc.fVerbose) { // TBI 20250701 temporary check, remove eventually
+      Trace(__FUNCTION__, __LINE__);
     }
 
     // *) Okay, let's do transparently the differential calculus, whether it's 1D, 2D, 3D, ...:
@@ -12457,6 +12484,10 @@ void CalculateKineTest0Ndim(eqvectorKine kineVarChoice, int Ndim)
             harmonics = NULL;
           } // if(nl.fCalculateKineCustomNestedLoops)
 
+          if (tc.fVerbose) { // TBI 20250701 temporary check, remove eventually
+            Trace(__FUNCTION__, __LINE__);
+          }
+
           // To ease comparison, rescale with theoretical value. Now all Test0 results shall be at 1:
           if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && iv.fInternalValidationVnPsin[ePsin]) {
             TArrayI* harmonics = new TArrayI(mo + 1);
@@ -12471,6 +12502,10 @@ void CalculateKineTest0Ndim(eqvectorKine kineVarChoice, int Ndim)
             delete harmonics;
             harmonics = NULL;
           } // if(fUseInternalValidation && fRescaleWithTheoreticalInput)
+
+          if (tc.fVerbose) { // TBI 20250701 temporary check, remove eventually
+            Trace(__FUNCTION__, __LINE__);
+          }
 
           // Insanity check for the event weight:
           if (!(weight > 0.)) {
@@ -13057,18 +13092,6 @@ void CalculateNestedLoops()
   LOGF(info, "  ebye.fSelectedTracks = %d", ebye.fSelectedTracks);
   int nParticles = ebye.fSelectedTracks;
 
-  //  TBI 20220823 enable the lines below eventually
-  //  if(fUseFixedNumberOfRandomlySelectedTracks)
-  //  {
-  //   nParticles = 0;
-  //   for(int i=0;i<ftaNestedLoops[0]->GetSize();i++)
-  //   {
-  //    if(std::abs(ftaNestedLoops[0]->GetAt(i)) > 0. &&
-  //  std::abs(ftaNestedLoops[1]->GetAt(i)) > 0.){nParticles++;}
-  //   }
-  //  }
-  //   cout<<"nParticles = "<<nParticles<<endl;
-
   // a) 2-particle nested loops:
   if (nParticles < 2) {
     return;
@@ -13389,8 +13412,8 @@ void ComparisonNestedLoopsVsCorrelations()
   double valueNL = 0.;
 
   for (int v = 0; v < eAsFunctionOf_N; v++) { // This corresponds to the ordering of variables in enum eAsFunctionOf . Here (for the time being) I compare only int, mult, cent and occu.
-    if (v == AFO_PT || v == AFO_ETA) {
-      continue; // TBI 20241112 correlations vs pt and vs eta are not implemented yet
+    if (v == AFO_PT || v == AFO_ETA || v == AFO_CHARGE) {
+      continue; // TBI 20250624 kine correlations vs pt, vs eta, vs charge are not implemented yet
     }
     nBinsQV = mupa.fCorrelationsPro[0][0][v]->GetNbinsX();
     nBinsNL = nl.fNestedLoopsPro[0][0][v]->GetNbinsX();
@@ -14667,6 +14690,13 @@ TObjArray* GetDefaultObjArrayWithLabels(const char* whichDefaultLabels)
   if (TString(whichDefaultLabels).EqualTo("trivial")) {
     const int nLabels = 1;
     TString labels[nLabels] = {"2 -2"};
+    for (int l = 0; l < nLabels; l++) {
+      TObjString* objstr = new TObjString(labels[l].Data());
+      arr->Add(objstr);
+    }
+  } else if (TString(whichDefaultLabels).EqualTo("mixedEventsStudy")) {
+    const int nLabels = 3;
+    TString labels[nLabels] = {"2", "-2", "2 -2"};
     for (int l = 0; l < nLabels; l++) {
       TObjString* objstr = new TObjString(labels[l].Data());
       arr->Add(objstr);
@@ -16100,16 +16130,6 @@ double CalculateCustomNestedLoops(TArrayI* harmonics)
   }
 
   int nParticles = ebye.fSelectedTracks;
-  //  TBI 20250530 check this code snippet
-  //  TBI 20231108 enable eventually
-  //  if(fUseFixedNumberOfRandomlySelectedParticles)
-  //  {
-  //   nParticles = 0;
-  //   for(int i=0;i<nl.ftaNestedLoops[0]->GetSize();i++)
-  //   {
-  //    if(std::abs(nl.ftaNestedLoops[0]->GetAt(i)) > 0. && std::abs(nl.ftaNestedLoops[1]->GetAt(i)) > 0.){nParticles++;}
-  //   }
-  //  }
 
   // a) Determine the order of correlator;
   int order = harmonics->GetSize();
@@ -17589,7 +17609,7 @@ void BailOut(bool finalBailout = false)
   TDirectoryFile* dirFile = new TDirectoryFile(sDirectoryFile.Data(), sDirectoryFile.Data());
   // TBI 20240130 I cannot add here fBaseList directly, since that one is declared as OutputObj<TList>
   // Therefore, adding one-by-one nested TList's I want to bail out.
-  // Keep in sync with BookAndNestAllLists().
+  // Keep in sync with bookAndNestAllLists().
   TList* bailOutList = new TList(); // this is sort of 'fake' fBaseList
   bailOutList->SetOwner(false);     // yes, beacause for sequential bailout, with SetOwner(true) the code is crashing after 1st sequential bailout is done
   bailOutList->SetName(sBaseListName.Data());
@@ -18735,9 +18755,12 @@ void MainLoopOverParticles(T const& tracks)
       this->FillqvectorNdim(dPhi, kineArr, 2, PT_CHARGEq);
     } else if (es.fCalculateEtaSeparations) { // && TBI 20250527 finalize by checking if 2D pt_charge with eta separations was requested
       // In this branch I do need eta separation, so the heavier call must be executed:
-      LOGF(info, "\033[1;33m%s at line %d: !!!! WARNING !!!! This branch is not finalized yet, i need to implement 2D objects also for eta separations, but it's unlikely I will ever need that in pracice. If I ever add it, just finalize the if statement, and comment in two lines below !!!! WARNING !!!! \033[0m", __FUNCTION__, __LINE__);
       // double kineArr[2] = {dPt, dCharge};
       // this->FillqvectorNdim(dPhi, kineArr, 2, PT_CHARGEq, dEta); // TBI 20250620 enable when I finalize else if above
+
+      if (tc.fVerboseForEachParticle) { // TBI 20250627 temporary here I use this switch, otherwise logs in HL are too heavy
+        LOGF(info, "\033[1;33m%s at line %d: !!!! WARNING !!!! This branch is not finalized yet, i need to implement 2D objects also for eta separations, but it's unlikely I will ever need that in pracice. If I ever add it, just finalize the if statement above, and comment in two lines above !!!! WARNING !!!! \033[0m", __FUNCTION__, __LINE__);
+      }
     }
 
     // ***) eta-charge dependence:

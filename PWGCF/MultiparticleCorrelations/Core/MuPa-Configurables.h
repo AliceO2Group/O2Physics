@@ -17,8 +17,8 @@
 #define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_CONFIGURABLES_H_
 
 // ...
-#include <vector>
 #include <string>
+#include <vector>
 
 // *) Task configuration:
 struct : ConfigurableGroup {
@@ -191,7 +191,7 @@ struct : ConfigurableGroup {
 // *) Multiparticle correlations:
 struct : ConfigurableGroup {
   Configurable<bool> cfCalculateCorrelations{"cfCalculateCorrelations", false, "calculate or not multiparticle correlations"};
-  Configurable<std::vector<std::string>> cfCalculateCorrelationsAsFunctionOf{"cfCalculateCorrelationsAsFunctionOf", {"1-Integrated", "1-Multiplicity", "1-Centrality", "1-Pt", "1-Eta", "1-Occupancy", "1-InteractionRate", "1-CurrentRunDuration", "1-Vz", "1-Charge"}, "calculate or not correlations as a function of specified variable"};
+  Configurable<std::vector<std::string>> cfCalculateCorrelationsAsFunctionOf{"cfCalculateCorrelationsAsFunctionOf", {"1-Integrated", "1-Multiplicity", "1-Centrality", "0-Pt", "0-Eta", "1-Occupancy", "1-InteractionRate", "1-CurrentRunDuration", "1-Vz", "0-Charge"}, "calculate or not correlations as a function of specified variable"};
 } cf_mupa;
 
 // *) Test0:
@@ -207,7 +207,7 @@ struct : ConfigurableGroup {
 
   // 3D:
   Configurable<bool> cfCalculate3DTest0{"cfCalculate3DTest0", false, "calculate or not 3D Test0 using TProfile3D"};
-  Configurable<std::vector<std::string>> cfCalculate3DTest0AsFunctionOf{"cfCalculate3DTest0AsFunctionOf", {"1-Centrality_Pt_Eta", "1-Centrality_Pt_Charge", "1-Centrality_Pt_Vz", "1-Centrality_Eta_Vz", "1-Centrality_Eta_Charge", "1-Centrality_Vz_Charge"}, "calculate or not correlations in 3D as a function of three specified variables."};
+  Configurable<std::vector<std::string>> cfCalculate3DTest0AsFunctionOf{"cfCalculate3DTest0AsFunctionOf", {"1-Centrality_Pt_Eta", "1-Centrality_Pt_Charge", "1-Centrality_Pt_Vz", "1-Centrality_Eta_Vz", "1-Centrality_Eta_Charge", "1-Centrality_Vz_Charge", "1-Pt_Eta_Charge"}, "calculate or not correlations in 3D as a function of three specified variables."};
 
   Configurable<std::string> cfFileWithLabels{"cfFileWithLabels", "/home/abilandz/DatasetsO2/labels.root", "path to external ROOT file which specifies all labels"}; // for AliEn file prepend "/alice/cern.ch/", for CCDB prepend "/alice-ccdb.cern.ch"
   Configurable<bool> cfUseDefaultLabels{"cfUseDefaultLabels", false, "use default internally hardwired labels, only for testing purposes"};
@@ -230,8 +230,8 @@ struct : ConfigurableGroup {
   Configurable<bool> cfUseDiffPhiPtWeights{"cfUseDiffPhiPtWeights", false, "use or not differential phi(pt) weights"};
   Configurable<bool> cfUseDiffPhiEtaWeights{"cfUseDiffPhiEtaWeights", false, "use or not differential phi(eta) weights"};
   Configurable<std::vector<std::string>> cfWhichDiffPhiWeights{"cfWhichDiffPhiWeights", {"1-wPhi", "1-wPt", "1-wEta", "1-wCharge", "1-wCentrality", "1-wVertexZ"}, "use (1) or do not use (0) differential phi weight for particular dimension. If only phi is set to 1, integrated phi weights are used. If phi is set to 0, ALL dimensions are switched off (yes!)"};
-  Configurable<std::vector<std::string>> cfWhichDiffPtWeights{"cfWhichDiffPtWeights", {"1-wPt", "1-wCharge", "1-wCentrality"}, "use (1) or do not use (0) differential pt weight for particular dimension. If only pt is set to 1, integrated pt weights are used. If pt is set to 0, ALL dimensions are switched off (yes!)"};
-  Configurable<std::vector<std::string>> cfWhichDiffEtaWeights{"cfWhichDiffEtaWeights", {"1-wEta", "1-wCharge", "1-wCentrality"}, "use (1) or do not use (0) differential eta weight for particular dimension. If only eta is set to 1, integrated eta weights are used. If eta is set to 0, ALL dimensions are switched off (yes!)"};
+  Configurable<std::vector<std::string>> cfWhichDiffPtWeights{"cfWhichDiffPtWeights", {"0-wPt", "0-wCharge", "0-wCentrality"}, "use (1) or do not use (0) differential pt weight for particular dimension. If only pt is set to 1, integrated pt weights are used. If pt is set to 0, ALL dimensions are switched off (yes!)"};
+  Configurable<std::vector<std::string>> cfWhichDiffEtaWeights{"cfWhichDiffEtaWeights", {"0-wEta", "0-wCharge", "0-wCentrality"}, "use (1) or do not use (0) differential eta weight for particular dimension. If only eta is set to 1, integrated eta weights are used. If eta is set to 0, ALL dimensions are switched off (yes!)"};
   Configurable<std::string> cfFileWithWeights{"cfFileWithWeights", "/home/abilandz/DatasetsO2/weights.root", "path to external ROOT file which holds all particle weights in O2 format"}; // for AliEn file prepend "/alice/cern.ch/", for CCDB prepend "/alice-ccdb.cern.ch"
 } cf_pw;
 
