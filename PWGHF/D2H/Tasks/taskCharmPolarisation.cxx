@@ -17,7 +17,6 @@
 /// \author M. Faggin (CERN) mattia.faggin@cern.ch
 /// \author M. Li (CCNU) mingze.li@cern.ch
 
-
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
@@ -1699,7 +1698,8 @@ struct HfTaskCharmPolarisation {
             invMassCharmHadForSparse = hfHelper.invMassLcToPKPi(candidate);
           }
           if constexpr (withMl) {
-            if (candidate.mlProbLcToPKPi().size() == 3) {
+            const int scoresNum = 3;
+            if (candidate.mlProbLcToPKPi().size() == scoresNum) {
               // protect from empty vectors
               // the BDT output score might be empty if no preselections were enabled (selectionFlag null)
               // !!! NB: each rotated candidates inherits the BDT scores of the original candidate, even if the candidate pt changed after the rotation of the kaon-track pt !!!
@@ -1733,7 +1733,8 @@ struct HfTaskCharmPolarisation {
             invMassCharmHadForSparse = hfHelper.invMassLcToPiKP(candidate);
           }
           if constexpr (withMl) {
-            if (candidate.mlProbLcToPiKP().size() == 3) {
+            const int scoresNum = 3;
+            if (candidate.mlProbLcToPiKP().size() == scoresNum) {
               // protect from empty vectors
               // the BDT output score might be empty if no preselections were enabled (selectionFlag null)
               // !!! NB: each rotated candidates inherits the BDT scores of the original candidate, even if the candidate pt changed after the rotation of the kaon-track pt !!!
