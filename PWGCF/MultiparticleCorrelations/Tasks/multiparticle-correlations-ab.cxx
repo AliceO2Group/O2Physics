@@ -146,54 +146,54 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     TH1::AddDirectory(kFALSE);
 
     // *) Default configuration, booking, binning and cuts:
-    InsanityChecksOnDefinitionsOfConfigurables(); // values passed via configurables are insanitized here. Nothing is initialized yet via configurables in this method
-    DefaultConfiguration();                       // here default values from configurables are taken into account
-    DefaultBooking();                             // here I decide only which histograms are booked, not details like binning, etc.
-    DefaultBinning();                             // here default values for bins are either hardwired, or values for bins provided via configurables are taken into account
-    DefaultCuts();                                // here default values for cuts are either hardwired, or defined through default binning to ease bookeeping,
+    insanityChecksOnDefinitionsOfConfigurables(); // values passed via configurables are insanitized here. Nothing is initialized yet via configurables in this method
+    defaultConfiguration();                       // here default values from configurables are taken into account
+    defaultBooking();                             // here I decide only which histograms are booked, not details like binning, etc.
+    defaultBinning();                             // here default values for bins are either hardwired, or values for bins provided via configurables are taken into account
+    defaultCuts();                                // here default values for cuts are either hardwired, or defined through default binning to ease bookeeping,
                                                   // or values for cuts provided via configurables are taken into account
-                                                  // Remark: DefaultCuts() has to be called after DefaultBinning()
+                                                  // Remark: defaultCuts() has to be called after defaultBinning()
 
     // *) Specific cuts:
     if (tc.fUseSpecificCuts) {
-      SpecificCuts(tc.fWhichSpecificCuts); // after default cuts are applied, on top of them apply analysis-specific cuts. Has to be called after DefaultBinning() and DefaultCuts()
+      specificCuts(tc.fWhichSpecificCuts); // after default cuts are applied, on top of them apply analysis-specific cuts. Has to be called after defaultBinning() and defaultCuts()
     }
 
     // *) Insanity checks before booking:
-    InsanityChecksBeforeBooking(); // check only hardwired values and the ones obtained from configurables
+    insanityChecksBeforeBooking(); // check only hardwired values and the ones obtained from configurables
 
     // *) Book random generator:
     delete gRandom;
     gRandom = new TRandom3(tc.fRandomSeed); // if uiSeed is 0, the seed is determined uniquely in space and time via TUUID
 
     // *) Book base list:
-    BookBaseList();
+    bookBaseList();
 
     // *) Book all remaining objects;
-    BookAndNestAllLists();
-    BookResultsHistograms(); // yes, this one has to be booked first, because it defines the common binning for other groups of histograms, w/ or w/o clonning
-    BookQAHistograms();
-    BookEventHistograms();
-    BookEventCutsHistograms();
-    BookParticleHistograms();
-    BookParticleCutsHistograms(); // memStatus: 50913
-    BookQvectorHistograms();      // memStatus: 50913 (without differential q-vectors and eta separations)
-    BookCorrelationsHistograms();
-    BookWeightsHistograms();
-    BookCentralityWeightsHistograms();
-    BookNestedLoopsHistograms();
-    BookNUAHistograms();
-    BookInternalValidationHistograms();
-    BookTest0Histograms();
-    BookEtaSeparationsHistograms();
-    BookTheRest(); // I book everything that was not sorted (yet) in the specific functions above
+    bookAndNestAllLists();
+    bookResultsHistograms(); // yes, this one has to be booked first, because it defines the common binning for other groups of histograms, w/ or w/o clonning
+    bookQAHistograms();
+    bookEventHistograms();
+    bookEventCutsHistograms();
+    bookParticleHistograms();
+    bookParticleCutsHistograms(); // memStatus: 50913
+    bookQvectorHistograms();      // memStatus: 50913 (without differential q-vectors and eta separations)
+    bookCorrelationsHistograms();
+    bookWeightsHistograms();
+    bookCentralityWeightsHistograms();
+    bookNestedLoopsHistograms();
+    bookNUAHistograms();
+    bookInternalValidationHistograms();
+    bookTest0Histograms();
+    bookEtaSeparationsHistograms();
+    bookTheRest(); // I book everything that was not sorted (yet) in the specific functions above
     // memStatus: 50913 (without differential q-vectors and eta separations)
 
     // *) I can purge a few objects used for common consistent booking across different groups of histograms:
-    PurgeAfterBooking();
+    purgeAfterBooking();
 
     // *) Insanity checks after booking:
-    InsanityChecksAfterBooking(); // pointers of all local histograms, etc., are available, so I can do insanity checks directly on all booked objects
+    insanityChecksAfterBooking(); // pointers of all local histograms, etc., are available, so I can do insanity checks directly on all booked objects
 
     // *) Trick to avoid name clashes, part 2:
     TH1::AddDirectory(oldHistAddStatus);

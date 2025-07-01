@@ -22,7 +22,7 @@
 
 //============================================================
 
-void BookBaseList()
+void bookBaseList()
 {
   // Book base TList and store task configuration.
 
@@ -229,11 +229,11 @@ void BookBaseList()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookBaseList()
+} // void bookBaseList()
 
 //============================================================
 
-void DefaultConfiguration()
+void defaultConfiguration()
 {
   // Default task configuration.
   // a) Default values are hardcoded as Configurables in the file MuPa-Configurables.h
@@ -862,7 +862,7 @@ void DefaultConfiguration()
   qa.fOccupancyEstimatorName[eFT0COccupancyInTimeRange] = "FT0COccupancyInTimeRange";
 
   // **) Names of QA 2D event histograms:
-  //     Remark: Do NOT use FancyFormatting here, only later in BookQAHistograms() for axis titles!
+  //     Remark: Do NOT use FancyFormatting here, only later in bookQAHistograms() for axis titles!
   qa.fEventHistogramsName2D[eMultiplicity_vs_ReferenceMultiplicity] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eReferenceMultiplicity].Data());
   qa.fEventHistogramsName2D[eMultiplicity_vs_NContributors] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eNContributors].Data());
   qa.fEventHistogramsName2D[eMultiplicity_vs_Centrality] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eCentrality].Data());
@@ -1107,7 +1107,7 @@ void DefaultConfiguration()
     ExitFunction(__FUNCTION__);
   }
 
-} // void DefaultConfiguration()
+} // void defaultConfiguration()
 
 //============================================================
 
@@ -1157,7 +1157,7 @@ bool Alright(TString s)
 
 //============================================================
 
-void DefaultBooking()
+void defaultBooking()
 {
   // Set here which histograms are booked by default.
 
@@ -1539,16 +1539,16 @@ void DefaultBooking()
     ExitFunction(__FUNCTION__);
   }
 
-} // void DefaultBooking()
+} // void defaultBooking()
 
 //============================================================
 
-void DefaultBinning()
+void defaultBinning()
 {
   // Default binning for all histograms.
 
   // TBI 20240114 If some of these values are going to change frequently, add support for them in MuPa-Configurables.h,
-  // in the same way I did it for DefaultCuts().
+  // in the same way I did it for defaultCuts().
   // At the moment, I added to configurables support only for binning of sparse histograms, because there memory managment is critical.
 
   // a) Default binning for event histograms;
@@ -1785,13 +1785,13 @@ void DefaultBinning()
     ExitFunction(__FUNCTION__);
   }
 
-} // void DefaultBinning()
+} // void defaultBinning()
 
 //============================================================
 
 void InitializeFixedLengthBins(eAsFunctionOf AFO)
 {
-  // This is a helper function to suppress code bloat in DefaultBinning().
+  // This is a helper function to suppress code bloat in defaultBinning().
   // It merely initalizes res.fResultsProFixedLengthBins[...] from corresponding configurables + a few other minor thingies.
   // I do not have here AFO_INTEGRATED and AFO_CHARGE, because for them binning is always the same, i.e. no need for configurable.
 
@@ -1859,7 +1859,7 @@ void InitializeFixedLengthBins(eAsFunctionOf AFO)
 
 void InitializeVariableLengthBins(eAsFunctionOf AFO)
 {
-  // This is a helper function to suppress code bloat in DefaultBinning().
+  // This is a helper function to suppress code bloat in defaultBinning().
   // It merely initalizes res.fResultsProVariableLengthBins[...] from corresponding configurables + a few other minor thingies.
 
   if (tc.fVerbose) {
@@ -1968,7 +1968,7 @@ void CastStringIntoArray(int AFO)
 
 //============================================================
 
-void DefaultCuts()
+void defaultCuts()
 {
   // Define default cuts. Default cuts are hardwired in MuPa-Configurables.h.
 
@@ -2309,13 +2309,13 @@ void DefaultCuts()
     ExitFunction(__FUNCTION__);
   }
 
-} // void DefaultCuts()
+} // void defaultCuts()
 
 //============================================================
 
-void SpecificCuts(TString whichSpecificCuts)
+void specificCuts(TString whichSpecificCuts)
 {
-  // After default cuts are applied, on top of them apply analysis-specific cuts. Has to be called after DefaultBinning() and DefaultCuts().
+  // After default cuts are applied, on top of them apply analysis-specific cuts. Has to be called after defaultBinning() and defaultCuts().
   // Here I hardwire defalt cuts and settings for a given period which will overwrite whatever is set in configurables.
   // When I do systematic checks, this option shall NOT be used, because values for some cuts which I plan to vary, are also hardwired here.
   // Both event and particle cuts are hardwired here. As well as some other settings.
@@ -2346,10 +2346,10 @@ void SpecificCuts(TString whichSpecificCuts)
   }
 
   // b) Implementation of analysis-specific cuts:
-  //    Remark #1: Whichever cuts start to repeat below across different case statements, promote them into DefaultCuts(), i.e. hardwire those values in configurables.
+  //    Remark #1: Whichever cuts start to repeat below across different case statements, promote them into defaultCuts(), i.e. hardwire those values in configurables.
   //               The idea is to keep here cuts only which are specific for particular analysis, and which are unlikely ever to change as a default cut for that particular analysis.
   //    Remark #2: Remember that the values for the cuts hardwired here overwrite the ones set as default values in configurables.
-  //               If you want to reconfigure all cuts below manually via configurables, simply do not call SpecificCuts, i.e. set in JSON "cfUseSpecificCuts": "false"
+  //               If you want to reconfigure all cuts below manually via configurables, simply do not call specificCuts, i.e. set in JSON "cfUseSpecificCuts": "false"
   //               Therefore, if I want to vary some of these cuts via configurables as a part of systematics, I must set in JSON "cfUseSpecificCuts": "false"
   //    Remark #3: Most up-to-date documentation of each cut is in enum file.
   switch (specificCuts) {
@@ -2684,11 +2684,11 @@ void SpecificCuts(TString whichSpecificCuts)
     ExitFunction(__FUNCTION__);
   }
 
-} // void SpecificCuts(const char* specificCutsName)
+} // void specificCuts(const char* specificCutsName)
 
 //============================================================
 
-void InsanityChecksOnDefinitionsOfConfigurables()
+void insanityChecksOnDefinitionsOfConfigurables()
 {
   // Do insanity checks on values obtained from configurables before using them in the remaining function.
   // This is really important, because one misconfigured configurable (e.g. boolean set to string), causes the whole json config to die silently, and
@@ -2776,15 +2776,15 @@ void InsanityChecksOnDefinitionsOfConfigurables()
     ExitFunction(__FUNCTION__);
   }
 
-} // InsanityChecksOnDefinitionsOfConfigurables()
+} // insanityChecksOnDefinitionsOfConfigurables()
 
 //============================================================
 
-void InsanityChecksBeforeBooking()
+void insanityChecksBeforeBooking()
 {
-  // Do insanity checks on configuration, binning and cuts. Values obtained from configurables are checked before being used in InsanityChecksOnDefinitionsOfConfigurables().
+  // Do insanity checks on configuration, binning and cuts. Values obtained from configurables are checked before being used in insanityChecksOnDefinitionsOfConfigurables().
   // Remember that here I cannot do insanity checks on local histograms, etc., because they are not booked yet.
-  // For those additional checks, use InsanityChecksAfterBooking().
+  // For those additional checks, use insanityChecksAfterBooking().
 
   // a) Insanity checks on configuration;
   // b) Ensure that Run 1/2 specific cuts and flags are used only in Run 1/2 (both data and sim);
@@ -3197,8 +3197,8 @@ void InsanityChecksBeforeBooking()
   // ...
 
   // g) Insanity checks on internal validation:
-  //    Remark: I check here only in the settings I could define in DefaultConfiguration().
-  //            The other insanity checks are in BookInternalValidationHistograms() or in InsanityChecksAfterBooking()
+  //    Remark: I check here only in the settings I could define in defaultConfiguration().
+  //            The other insanity checks are in bookInternalValidationHistograms() or in insanityChecksAfterBooking()
   if (iv.fUseInternalValidation) {
     if (iv.fnEventsInternalValidation <= 0) {
       LOGF(fatal, "\033[1;31m%s at line %d : iv.fnEventsInternalValidation <= 0 => Set number of events to positive integer\033[0m", __FUNCTION__, __LINE__);
@@ -3238,14 +3238,14 @@ void InsanityChecksBeforeBooking()
     ExitFunction(__FUNCTION__);
   }
 
-} // void InsanityChecksBeforeBooking()
+} // void insanityChecksBeforeBooking()
 
 //============================================================
 
-void InsanityChecksAfterBooking()
+void insanityChecksAfterBooking()
 {
   // Do insanity checks on all booked histograms, etc.,
-  // Configuration, binning and cuts are checked already before booking in InsanityChecksBeforeBooking().
+  // Configuration, binning and cuts are checked already before booking in insanityChecksBeforeBooking().
 
   // a) Insanity checks on booking;
   // b) Insanity checks on internal validation;
@@ -3291,11 +3291,11 @@ void InsanityChecksAfterBooking()
     ExitFunction(__FUNCTION__);
   }
 
-} // void InsanityChecksAfterBooking()
+} // void insanityChecksAfterBooking()
 
 //============================================================
 
-void PurgeAfterBooking()
+void purgeAfterBooking()
 {
   // I can purge a few objects used for common consistent booking across different group of histograms.
 
@@ -3331,7 +3331,7 @@ void PurgeAfterBooking()
     ExitFunction(__FUNCTION__);
   }
 
-} // void PurgeAfterBooking()
+} // void purgeAfterBooking()
 
 //============================================================
 
@@ -3370,7 +3370,7 @@ bool Skip(int recOrSim)
 
 //============================================================
 
-void BookAndNestAllLists()
+void bookAndNestAllLists()
 {
   // *) QA;
   //  **) QA event histograms;
@@ -3529,11 +3529,11 @@ void BookAndNestAllLists()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookAndNestAllLists()
+} // void bookAndNestAllLists()
 
 //==========================================================
 
-void BookQAHistograms()
+void bookQAHistograms()
 {
   // Book all QA histograms and other related objects.
 
@@ -4039,7 +4039,7 @@ void BookQAHistograms()
         // valgrind --tool=massif => ~9.8 MiB (Last check: 20250315)
         qa.fQAEventHistograms2D[t][rs][ba] = new TH2F(
           TString::Format("fQAEventHistograms2D[%s][%s][%s]", qa.fEventHistogramsName2D[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
-          TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
+          TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srsLong[rs].Data(), gc.sbaLong[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
           nBins_x_Event[t], min_x_Event[t], max_x_Event[t], nBins_y_Event[t], min_y_Event[t], max_y_Event[t]);
         qa.fQAEventHistograms2D[t][rs][ba]->GetXaxis()->SetTitle(title_x_Event[t].Data());
         qa.fQAEventHistograms2D[t][rs][ba]->GetYaxis()->SetTitle(title_y_Event[t].Data());
@@ -4104,7 +4104,7 @@ void BookQAHistograms()
         // valgrind --tool=massif => ~30.6 MiB (Last check: 20250315)
         qa.fQAParticleHistograms2D[t][rs][ba] = new TH2F(
           TString::Format("fQAParticleHistograms2D[%s][%s][%s]", qa.fParticleHistogramsName2D[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
-          TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
+          TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srsLong[rs].Data(), gc.sbaLong[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
           nBins_x_Particle[t], min_x_Particle[t], max_x_Particle[t], nBins_y_Particle[t], min_y_Particle[t], max_y_Particle[t]);
 
         qa.fQAParticleHistograms2D[t][rs][ba]->GetXaxis()->SetTitle(title_x_Particle[t].Data());
@@ -4265,7 +4265,7 @@ void BookQAHistograms()
         // valgrind --tool=massif => ~70.2 MiB (Last check: 20250315)
         qa.fQAParticleEventHistograms2D[t][rs][ba] = new TH2F(
           TString::Format("fQAParticleEventHistograms2D[%s][%s][%s]", qa.fQAParticleEventHistogramsName2D[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
-          TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
+          TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srsLong[rs].Data(), gc.sbaLong[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
           nBins_x_ParticleEvent[t], min_x_ParticleEvent[t], max_x_ParticleEvent[t], nBins_y_ParticleEvent[t], min_y_ParticleEvent[t], max_y_ParticleEvent[t]);
 
         qa.fQAParticleEventHistograms2D[t][rs][ba]->GetXaxis()->SetTitle(title_x_ParticleEvent[t].Data());
@@ -4295,7 +4295,7 @@ void BookQAHistograms()
 
       qa.fQAParticleEventProEbyE[rs][ba] = new TProfile(
         TString::Format("fParticleEventProEbyE[%s][%s]", gc.srs[rs].Data(), gc.sba[ba].Data()),
-        TString::Format("%s, %s", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()),
+        TString::Format("%s, %s", gc.srsLong[rs].Data(), gc.sbaLong[ba].Data()),
         eQAParticleEventProEbyE_N, 0., eQAParticleEventProEbyE_N);
     } // for (int ba = 0; ba < 2; ba++) // before/after cuts
   } // for (int rs = 0; rs < 2; rs++) // reco/sim
@@ -4470,7 +4470,7 @@ void BookQAHistograms()
         // valgrind --tool=massif => ~58.7 MiB (Last check: 20250315)
         qa.fQACorrelationsVsHistograms2D[t][h][rs] = new TH2F(
           TString::Format("fQACorrelationsVsHistograms2D[%s][%d][%s]", qa.fQACorrelationsVsHistogramsName2D[t].Data(), h, gc.srs[rs].Data()),
-          TString::Format("%s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
+          TString::Format("%s, %s", "__RUN_NUMBER__", gc.srsLong[rs].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
           nBins_x_CorrelationsVs, min_x_CorrelationsVs, max_x_CorrelationsVs, nBins_y_CorrelationsVs[t], min_y_CorrelationsVs[t], max_y_CorrelationsVs[t]);
 
         qa.fQACorrelationsVsHistograms2D[t][h][rs]->GetXaxis()->SetTitle(TString::Format("%s (harmonic = %d)", title_x_CorrelationsVs.Data(), h + 1));
@@ -4595,7 +4595,7 @@ void BookQAHistograms()
         // TBI 20250317 documet here the output of profiling using valgrind --tool=massif
         qa.fQACorrVsIRVsProfiles2D[t][h][rs] = new TProfile2D(
           TString::Format("fQACorrVsIRVsProfiles2D[%s][%d][%s]", qa.fQACorrelationsVsInteractionRateVsProfilesName2D[t].Data(), h, gc.srs[rs].Data()),
-          TString::Format("%s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
+          TString::Format("%s, %s", "__RUN_NUMBER__", gc.srsLong[rs].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
           nBins_x_CorrelationsVsInteractionRateVs, min_x_CorrelationsVsInteractionRateVs, max_x_CorrelationsVsInteractionRateVs, nBins_y_CorrelationsVsInteractionRateVs[t], min_y_CorrelationsVsInteractionRateVs[t], max_y_CorrelationsVsInteractionRateVs[t]);
 
         TString tmp = qa.fQACorrVsIRVsProfiles2D[t][h][rs]->GetTitle(); // translating e.g. "544114, reconstructed" into "<<2>> (harmonic = 2), 544114, reconstructed"
@@ -4618,11 +4618,11 @@ void BookQAHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookQAHistograms()
+} // void bookQAHistograms()
 
 //============================================================
 
-void BookEventHistograms()
+void bookEventHistograms()
 {
   // Book all event histograms.
 
@@ -4697,7 +4697,7 @@ void BookEventHistograms()
         }
         eh.fEventHistograms[t][rs][ba] = new TH1F(
           TString::Format("fEventHistograms[%s][%s][%s]", eh.fEventHistogramsName[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
-          TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
+          TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srsLong[rs].Data(), gc.sbaLong[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
           static_cast<int>(eh.fEventHistogramsBins[t][0]),
           eh.fEventHistogramsBins[t][1], eh.fEventHistogramsBins[t][2]);
         eh.fEventHistograms[t][rs][ba]->GetXaxis()->SetTitle(FancyFormatting(eh.fEventHistogramsName[t].Data()));
@@ -4712,11 +4712,11 @@ void BookEventHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookEventHistograms()
+} // void bookEventHistograms()
 
 //============================================================
 
-void BookEventCutsHistograms()
+void bookEventCutsHistograms()
 {
   // Book all event cuts objects.
 
@@ -4800,7 +4800,7 @@ void BookEventCutsHistograms()
         continue;
       }
 
-      ec.fEventCutCounterHist[rs][cc] = new TH1F(TString::Format("fEventCutCounterHist[%s][%s]", gc.srs[rs].Data(), gc.scc[cc].Data()), TString::Format("%s, %s, event cut counter (%s)", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.scc_long[cc].Data()), eEventCuts_N, 0.5, static_cast<double>(eEventCuts_N) + 0.5); // I cast in double the last argument, because that's what this particular TH1I constructor expects. And yes, +0.5, because eEventCuts kicks off from 0
+      ec.fEventCutCounterHist[rs][cc] = new TH1F(TString::Format("fEventCutCounterHist[%s][%s]", gc.srs[rs].Data(), gc.scc[cc].Data()), TString::Format("%s, %s, event cut counter (%s)", "__RUN_NUMBER__", gc.srsLong[rs].Data(), gc.sccLong[cc].Data()), eEventCuts_N, 0.5, static_cast<double>(eEventCuts_N) + 0.5); // I cast in double the last argument, because that's what this particular TH1I constructor expects. And yes, +0.5, because eEventCuts kicks off from 0
       ec.fEventCutCounterHist[rs][cc]->SetStats(false);
       ec.fEventCutCounterHist[rs][cc]->SetLineColor(eColor);
       ec.fEventCutCounterHist[rs][cc]->SetFillColor(eFillColor);
@@ -4863,7 +4863,7 @@ void BookEventCutsHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookEventCutsHistograms()
+} // void bookEventCutsHistograms()
 
 //============================================================
 
@@ -4940,7 +4940,7 @@ float RefMultVsNContr(const float& refMult, eEventCutsFormulas whichCutFormula)
 
 //============================================================
 
-void BookParticleHistograms()
+void bookParticleHistograms()
 {
   // Book all particle histograms.
 
@@ -5017,7 +5017,7 @@ void BookParticleHistograms()
       for (int ba = 0; ba < 2; ba++) // before/after cuts
       {
         ph.fParticleHistograms[t][rs][ba] = new TH1F(TString::Format("fParticleHistograms[%s][%s][%s]", ph.fParticleHistogramsName[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
-                                                     TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()),
+                                                     TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srsLong[rs].Data(), gc.sbaLong[ba].Data()),
                                                      static_cast<int>(ph.fParticleHistogramsBins[t][0]), ph.fParticleHistogramsBins[t][1], ph.fParticleHistogramsBins[t][2]);
         ph.fParticleHistograms[t][rs][ba]->SetLineColor(ec.fBeforeAfterColor[ba]);
         ph.fParticleHistograms[t][rs][ba]->SetFillColor(ec.fBeforeAfterColor[ba] - 10);
@@ -5072,14 +5072,14 @@ void BookParticleHistograms()
 
           // *) variable-length binning for phi vs pt, but only in pt axis:
           ph.fParticleHistograms2D[t][rs][ba] = new TH2D(TString::Format("fParticleHistograms2D[%s][%s][%s]", ph.fParticleHistogramsName2D[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
-                                                         TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()),
+                                                         TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srsLong[rs].Data(), gc.sbaLong[ba].Data()),
                                                          static_cast<int>(ph.fParticleHistogramsBins2D[t][eX][0]), ph.fParticleHistogramsBins2D[t][eX][1], ph.fParticleHistogramsBins2D[t][eX][2],
                                                          res.fResultsPro[AFO_PT]->GetXaxis()->GetXbins()->GetSize() - 1, res.fResultsPro[AFO_PT]->GetXaxis()->GetXbins()->GetArray()); // yes, x-axis of "results vs pt" hist is y-axis here for 2D.
         } else if (ph.fParticleHistogramsName2D[t].EqualTo("Phi_vs_Eta") && res.fUseResultsProVariableLengthBins[AFO_ETA]) {
 
           // *) variable-length binning for phi vs eta, but only in eta axis:
           ph.fParticleHistograms2D[t][rs][ba] = new TH2D(TString::Format("fParticleHistograms2D[%s][%s][%s]", ph.fParticleHistogramsName2D[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
-                                                         TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()),
+                                                         TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srsLong[rs].Data(), gc.sbaLong[ba].Data()),
                                                          static_cast<int>(ph.fParticleHistogramsBins2D[t][eX][0]), ph.fParticleHistogramsBins2D[t][eX][1], ph.fParticleHistogramsBins2D[t][eX][2],
                                                          res.fResultsPro[AFO_ETA]->GetXaxis()->GetXbins()->GetSize() - 1, res.fResultsPro[AFO_ETA]->GetXaxis()->GetXbins()->GetArray()); // yes, x-axis of "results vs pt" hist is y-axis here for 2D
         } else {
@@ -5087,7 +5087,7 @@ void BookParticleHistograms()
           // Remark: Remember that I cannot use here  GetXaxis()->GetXbins()->GetArray() as for variable-width case, because for fixed-width case, this is always 0
           //         See https://root-forum.cern.ch/t/get-bin-array/7276/9
           ph.fParticleHistograms2D[t][rs][ba] = new TH2D(TString::Format("fParticleHistograms2D[%s][%s][%s]", ph.fParticleHistogramsName2D[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
-                                                         TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()),
+                                                         TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srsLong[rs].Data(), gc.sbaLong[ba].Data()),
                                                          static_cast<int>(ph.fParticleHistogramsBins2D[t][eX][0]), ph.fParticleHistogramsBins2D[t][eX][1], ph.fParticleHistogramsBins2D[t][eX][2],
                                                          static_cast<int>(ph.fParticleHistogramsBins2D[t][eY][0]), ph.fParticleHistogramsBins2D[t][eY][1], ph.fParticleHistogramsBins2D[t][eY][2]);
         }
@@ -5103,7 +5103,7 @@ void BookParticleHistograms()
 
   // d) Default binning for particle sparse histograms:
   //    Remark 0: This requires the special treatment, because I re-use in some cases bins from results histograns.
-  //              Therefore, I can do all this only after BookResultsHistograms() was already called.
+  //              Therefore, I can do all this only after bookResultsHistograms() was already called.
   //    Remark 1: I anticipate I will need them only when I need to calculate differential weights, therefore I couple them intentionally
   //              with enum's for differential weights from very beginning.
   //    Remark 2: Whenever possible, I re-use binning from results histograms.
@@ -5308,13 +5308,13 @@ void BookParticleHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookParticleHistograms()
+} // void bookParticleHistograms()
 
 //============================================================
 
 void BookParticleSparseHistograms(eDiffWeightCategory dwc)
 {
-  // This is a helper function for BookParticleHistograms(), merely to reduce code bloat.
+  // This is a helper function for bookParticleHistograms(), merely to reduce code bloat.
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -5354,7 +5354,7 @@ void BookParticleSparseHistograms(eDiffWeightCategory dwc)
       continue;
     }
     // Remark: Here I have a bit unusual convention for the name and title, but okay...
-    ph.fParticleSparseHistograms[dwc][rs] = new THnSparseF(TString::Format("%s[%s]", ph.fParticleSparseHistogramsName[dwc].Data(), gc.srs[rs].Data()), TString::Format("__RUN_NUMBER__, %s, %s", gc.srs_long[rs].Data(), ph.fParticleSparseHistogramsTitle[dwc].Data()), nDimensions, nBins->GetArray(), NULL, NULL);
+    ph.fParticleSparseHistograms[dwc][rs] = new THnSparseF(TString::Format("%s[%s]", ph.fParticleSparseHistogramsName[dwc].Data(), gc.srs[rs].Data()), TString::Format("__RUN_NUMBER__, %s, %s", gc.srsLong[rs].Data(), ph.fParticleSparseHistogramsTitle[dwc].Data()), nDimensions, nBins->GetArray(), NULL, NULL);
 
     // *) For each dimension set bin edges, axis title, etc.:
     for (int d = 0; d < nDimensions; d++) {
@@ -5377,7 +5377,7 @@ void BookParticleSparseHistograms(eDiffWeightCategory dwc)
 
 //============================================================
 
-void BookParticleCutsHistograms()
+void bookParticleCutsHistograms()
 {
   // Book all particle cuts objects.
 
@@ -5459,7 +5459,7 @@ void BookParticleCutsHistograms()
         continue;
       }
 
-      pc.fParticleCutCounterHist[rs][cc] = new TH1F(TString::Format("fParticleCutCounterHist[%s][%s]", gc.srs[rs].Data(), gc.scc[cc].Data()), TString::Format("%s, %s, particle cut counter (%s)", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.scc_long[cc].Data()), eParticleCuts_N, 0.5, static_cast<double>(eParticleCuts_N) + 0.5);
+      pc.fParticleCutCounterHist[rs][cc] = new TH1F(TString::Format("fParticleCutCounterHist[%s][%s]", gc.srs[rs].Data(), gc.scc[cc].Data()), TString::Format("%s, %s, particle cut counter (%s)", "__RUN_NUMBER__", gc.srsLong[rs].Data(), gc.sccLong[cc].Data()), eParticleCuts_N, 0.5, static_cast<double>(eParticleCuts_N) + 0.5);
       // I cast in double the last argument, because that's what this particular TH1I constructor expects
       // Yes, +0.5, because eParticleCuts kicks off from 0
       pc.fParticleCutCounterHist[rs][cc]->SetStats(false);
@@ -5489,11 +5489,11 @@ void BookParticleCutsHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookParticleCutsHistograms()
+} // void bookParticleCutsHistograms()
 
 //============================================================
 
-void BookQvectorHistograms()
+void bookQvectorHistograms()
 {
   // Book all Q-vector histograms.
 
@@ -5664,7 +5664,7 @@ void BookQvectorHistograms()
   // c) Book multiplicity distributions in A and B, for each eta separation:
   if (es.fCalculateEtaSeparations) {
     TString sEtaSep[2] = {"A", "B"}; // A <=> -eta , B <=> + eta
-    TString sEtaSep_long[2] = {TString::Format("%.2f < #eta <", pc.fdParticleCuts[eEta][eMin]), TString::Format("< #eta < %.2f", pc.fdParticleCuts[eEta][eMax])};
+    TString sEtaSepLong[2] = {TString::Format("%.2f < #eta <", pc.fdParticleCuts[eEta][eMin]), TString::Format("< #eta < %.2f", pc.fdParticleCuts[eEta][eMax])};
     // yes, here I define first the part of intervals as etaCutMin < eta < "subevent boundary", and "subevent" boundary < eta < etaCutMax
     // Then below in the loop, I inject for "subevent boundary" the corresponding fEtaSeparationsValues (divided by 2, becaus it's symmetric round 0)
     for (int ab = 0; ab < 2; ab++) {   // ab = 0 <=> -eta , ab = 1 <=> + eta
@@ -5679,7 +5679,7 @@ void BookQvectorHistograms()
           for (int e = 0; e < gMaxNumberEtaSeparations; e++) { // eta separation
             qv.fMabDist[ab][rs][ba][e] = new TH1F(Form("fMabDist[%s][%s][%s][%d]", sEtaSep[ab].Data(), gc.srs[rs].Data(), gc.sba[ba].Data(), e),
                                                   Form("%s, %s, %s, %s", "__RUN_NUMBER__",
-                                                       0 == ab ? Form("%s -%.2f", sEtaSep_long[ab].Data(), es.fEtaSeparationsValues[e] / 2.) : Form("%.2f %s", es.fEtaSeparationsValues[e] / 2., sEtaSep_long[ab].Data()), gc.srs_long[rs].Data(), gc.sba_long[ba].Data()),
+                                                       0 == ab ? Form("%s -%.2f", sEtaSepLong[ab].Data(), es.fEtaSeparationsValues[e] / 2.) : Form("%.2f %s", es.fEtaSeparationsValues[e] / 2., sEtaSepLong[ab].Data()), gc.srsLong[rs].Data(), gc.sbaLong[ba].Data()),
                                                   static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0]), eh.fEventHistogramsBins[eMultiplicity][1], eh.fEventHistogramsBins[eMultiplicity][2]); // TBI 20241207 I have hardwired in this constructor "0 == ab", this can backfire...
             qv.fMabDist[ab][rs][ba][e]->SetLineColor(ec.fBeforeAfterColor[ba]);
             qv.fMabDist[ab][rs][ba][e]->SetFillColor(ec.fBeforeAfterColor[ba] - 10);
@@ -5702,13 +5702,13 @@ void BookQvectorHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookQvectorHistograms()
+} // void bookQvectorHistograms()
 
 //============================================================
 
 void NumberOfKineBins()
 {
-  // Helper function called only in void BookQvectorHistograms(), if kine analysis was requested.
+  // Helper function called only in void bookQvectorHistograms(), if kine analysis was requested.
   // I calculate for each requested kine vector the number of kine bins => this is stored in dynamically allocated array qv.fNumberOfKineBins.
 
   if (tc.fVerbose) {
@@ -5753,7 +5753,7 @@ void NumberOfKineBins()
 
 //============================================================
 
-void BookCorrelationsHistograms()
+void bookCorrelationsHistograms()
 {
   // Book all correlations histograms.
 
@@ -5860,11 +5860,11 @@ void BookCorrelationsHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // BookCorrelationsHistograms()
+} // bookCorrelationsHistograms()
 
 //============================================================
 
-void BookWeightsHistograms()
+void bookWeightsHistograms()
 {
   // Book all objects for particle weights.
 
@@ -6021,11 +6021,11 @@ void BookWeightsHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookWeightsHistograms()
+} // void bookWeightsHistograms()
 
 //============================================================
 
-void BookCentralityWeightsHistograms()
+void bookCentralityWeightsHistograms()
 {
   // Book all objects for centrality weights.
 
@@ -6084,16 +6084,16 @@ void BookCentralityWeightsHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookCentralityWeightsHistograms()
+} // void bookCentralityWeightsHistograms()
 
 //============================================================
 
-void BookNestedLoopsHistograms()
+void bookNestedLoopsHistograms()
 {
   // Book all nested loops histograms.
 
   // a) Book the profile holding flags;
-  // b) Common local labels (keep 'em in sync with BookCorrelationsHistograms());
+  // b) Common local labels (keep 'em in sync with bookCorrelationsHistograms());
   // c) Book what needs to be booked;
   // d) Few quick insanity checks on booking.
 
@@ -6248,7 +6248,7 @@ void BookNestedLoopsHistograms()
 
   } // if (nl.fCalculateKineCustomNestedLoops)
 
-  // b) Common local labels (keep 'em in sync with BookCorrelationsHistograms())
+  // b) Common local labels (keep 'em in sync with bookCorrelationsHistograms())
   TString oVariable[4] = {
     "#varphi_{1}-#varphi_{2}",
     "#varphi_{1}+#varphi_{2}-#varphi_{3}-#varphi_{4}",
@@ -6307,11 +6307,11 @@ void BookNestedLoopsHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookNestedLoopsHistograms()
+} // void bookNestedLoopsHistograms()
 
 //============================================================
 
-void BookNUAHistograms()
+void bookNUAHistograms()
 {
   // Book all objects for Toy NUA.
 
@@ -6482,11 +6482,11 @@ void BookNUAHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookNUAHistograms()
+} // void bookNUAHistograms()
 
 //============================================================
 
-void BookInternalValidationHistograms()
+void bookInternalValidationHistograms()
 {
   // Book all internal validation histograms.
 
@@ -6598,7 +6598,7 @@ void BookInternalValidationHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // BookInternalValidationHistograms()
+} // bookInternalValidationHistograms()
 
 //============================================================
 
@@ -7155,7 +7155,7 @@ bool Accept(const double& value, int var)
 
 //============================================================
 
-void BookTest0Histograms()
+void bookTest0Histograms()
 {
   // Book all Test0 histograms.
 
@@ -7379,11 +7379,11 @@ void BookTest0Histograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookTest0Histograms()
+} // void bookTest0Histograms()
 
 //============================================================
 
-void BookEtaSeparationsHistograms()
+void bookEtaSeparationsHistograms()
 {
   // Book all eta separations histograms.
 
@@ -7482,11 +7482,11 @@ void BookEtaSeparationsHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookEtaSeparationsHistograms()
+} // void bookEtaSeparationsHistograms()
 
 //============================================================
 
-void BookResultsHistograms()
+void bookResultsHistograms()
 {
   // Book all results histograms.
   // These results histograms in addition act as a sort of "abstract" interface, which defines common binning, etc., for other groups of histograms.
@@ -7741,7 +7741,7 @@ void BookResultsHistograms()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookResultsHistograms()
+} // void bookResultsHistograms()
 
 //============================================================
 
@@ -7779,7 +7779,7 @@ TArrayD* ArrayWithBinEdges(int nBins, float min, float max)
 
 //============================================================
 
-void BookTheRest()
+void bookTheRest()
 {
   // Here I book everything not sorted (yes) in specific functions above.
 
@@ -7807,7 +7807,7 @@ void BookTheRest()
     ExitFunction(__FUNCTION__);
   }
 
-} // void BookTheRest()
+} // void bookTheRest()
 
 //============================================================
 
@@ -17609,7 +17609,7 @@ void BailOut(bool finalBailout = false)
   TDirectoryFile* dirFile = new TDirectoryFile(sDirectoryFile.Data(), sDirectoryFile.Data());
   // TBI 20240130 I cannot add here fBaseList directly, since that one is declared as OutputObj<TList>
   // Therefore, adding one-by-one nested TList's I want to bail out.
-  // Keep in sync with BookAndNestAllLists().
+  // Keep in sync with bookAndNestAllLists().
   TList* bailOutList = new TList(); // this is sort of 'fake' fBaseList
   bailOutList->SetOwner(false);     // yes, beacause for sequential bailout, with SetOwner(true) the code is crashing after 1st sequential bailout is done
   bailOutList->SetName(sBaseListName.Data());

@@ -412,12 +412,12 @@ struct EtaSeparations {
 
 // *) Global cosmetics:
 struct GlobalCosmetics {
-  TString srs[2] = {"rec", "sim"};                              // used in the histogram name as index when saved to the file
-  TString srs_long[2] = {"reconstructed", "simulated"};         // used in the histogram title
-  TString sba[2] = {"before", "after"};                         // used in the histogram name as index when saved to the file
-  TString sba_long[2] = {"before cuts", "after cuts"};          // used in the histogram title
-  TString scc[eCutCounter_N] = {"abs", "seq"};                  // used in the histogram name as index when saved to the file
-  TString scc_long[eCutCounter_N] = {"absolute", "sequential"}; // used in the histogram title
+  TString srs[2] = {"rec", "sim"};                             // used in the histogram name as index when saved to the file
+  TString srsLong[2] = {"reconstructed", "simulated"};         // used in the histogram title
+  TString sba[2] = {"before", "after"};                        // used in the histogram name as index when saved to the file
+  TString sbaLong[2] = {"before cuts", "after cuts"};          // used in the histogram title
+  TString scc[eCutCounter_N] = {"abs", "seq"};                 // used in the histogram name as index when saved to the file
+  TString sccLong[eCutCounter_N] = {"absolute", "sequential"}; // used in the histogram title
 } gc;
 
 // *) Results:
