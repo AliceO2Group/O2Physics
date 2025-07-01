@@ -17,9 +17,9 @@
 #ifndef PWGJE_DATAMODEL_JETREDUCEDDATASELECTOR_H_
 #define PWGJE_DATAMODEL_JETREDUCEDDATASELECTOR_H_
 
+#include <Framework/ASoA.h>
+
 #include <cmath>
-#include <vector>
-#include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
 {

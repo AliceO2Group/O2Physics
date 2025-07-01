@@ -15,9 +15,11 @@
 #ifndef PWGEM_PHOTONMESON_UTILS_MCUTILITIES_H_
 #define PWGEM_PHOTONMESON_UTILS_MCUTILITIES_H_
 
-#include <vector>
-#include <algorithm>
 #include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+
+#include <algorithm>
+#include <vector>
 
 //_______________________________________________________________________
 namespace o2::aod::pwgem::photonmeson::utils::mcutil

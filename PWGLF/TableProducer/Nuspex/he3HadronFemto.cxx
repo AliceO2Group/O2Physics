@@ -76,8 +76,8 @@ using CollBracket = o2::math_utils::Bracket<int>;
 
 using McIter = aod::McParticles::iterator;
 using CollBracket = o2::math_utils::Bracket<int>;
-using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults>;
-using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults>;
+using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::FT0Mults>;
+using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::FT0Mults>;
 using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::TOFSignal, aod::TOFEvTime>;
 using TrackCandidatesMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
 
@@ -243,7 +243,10 @@ struct he3HadronFemto {
   HistogramRegistry mQaRegistry{
     "QA",
     {
+      {"hVtxZBefore", "Vertex distribution in Z before selections;Z (cm)", {HistType::kTH1F, {{400, -20.0, 20.0}}}},
       {"hVtxZ", "Vertex distribution in Z;Z (cm)", {HistType::kTH1F, {{400, -20.0, 20.0}}}},
+      {"hCentralityFT0A", ";Centrality FT0A", {HistType::kTH1F, {{100, 0, 100.0}}}},
+      {"hCentralityFT0C", ";Centrality FT0C", {HistType::kTH1F, {{100, 0, 100.0}}}},
       {"hNcontributor", "Number of primary vertex contributor", {HistType::kTH1F, {{2000, 0.0f, 2000.0f}}}},
       {"hTrackSel", "Accepted tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
       {"hEvents", "; Events;", {HistType::kTH1F, {{3, -0.5, 2.5}}}},
@@ -360,6 +363,7 @@ struct he3HadronFemto {
   bool selectCollision(const Tcollision& collision, const aod::BCsWithTimestamps&)
   {
     mQaRegistry.fill(HIST("hEvents"), 0);
+    mQaRegistry.fill(HIST("hVtxZBefore"), collision.posZ());
 
     if constexpr (isMC) {
       if (/*!collision.sel8() ||*/ std::abs(collision.posZ()) > settingCutVertex) {
@@ -383,6 +387,8 @@ struct he3HadronFemto {
     mQaRegistry.fill(HIST("hEvents"), 1);
     mQaRegistry.fill(HIST("hNcontributor"), collision.numContrib());
     mQaRegistry.fill(HIST("hVtxZ"), collision.posZ());
+    mQaRegistry.fill(HIST("hCentralityFT0A"), collision.centFT0A());
+    mQaRegistry.fill(HIST("hCentralityFT0C"), collision.centFT0C());
     return true;
   }
 

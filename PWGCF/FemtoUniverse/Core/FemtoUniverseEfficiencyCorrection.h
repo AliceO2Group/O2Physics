@@ -16,22 +16,22 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEFFICIENCYCORRECTION_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEFFICIENCYCORRECTION_H_
 
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
+
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/Configurable.h>
 #include <Framework/ConfigurableKinds.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
-
 #include <Framework/O2DatabasePDGPlugin.h>
+
 #include <TH1.h>
 #include <TH2.h>
 
-#include <vector>
-#include <string>
 #include <algorithm>
 #include <ranges>
-
-#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
+#include <string>
+#include <vector>
 
 namespace o2::analysis::femto_universe::efficiency_correction
 {
@@ -115,7 +115,7 @@ class EfficiencyCorrection
     }
   }
 
-  template <uint8_t N>
+  template <uint8_t N, typename CollisionType = aod::FdCollisions>
     requires IsOneOrTwo<N>
   void fillTruthHist(auto particle)
   {
@@ -126,10 +126,10 @@ class EfficiencyCorrection
     histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hMCTruth"),
                        particle.pt(),
                        particle.eta(),
-                       particle.fdCollision().multV0M());
+                       particle.template fdCollision_as<CollisionType>().multV0M());
   }
 
-  template <uint8_t N>
+  template <uint8_t N, typename CollisionType = aod::FdCollisions>
     requires IsOneOrTwo<N>
   void fillRecoHist(auto particle, int particlePDG)
   {
@@ -149,7 +149,7 @@ class EfficiencyCorrection
           histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hPrimary"),
                              mcParticle.pt(),
                              mcParticle.eta(),
-                             particle.fdCollision().multV0M());
+                             particle.template fdCollision_as<CollisionType>().multV0M());
           break;
 
         case (o2::aod::femtouniverse_mc_particle::kDaughter):
@@ -158,33 +158,34 @@ class EfficiencyCorrection
           histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hSecondary"),
                              mcParticle.pt(),
                              mcParticle.eta(),
-                             particle.fdCollision().multV0M());
+                             particle.template fdCollision_as<CollisionType>().multV0M());
           break;
 
         case (o2::aod::femtouniverse_mc_particle::kMaterial):
           histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hMaterial"),
                              mcParticle.pt(),
                              mcParticle.eta(),
-                             particle.fdCollision().multV0M());
+                             particle.template fdCollision_as<CollisionType>().multV0M());
           break;
 
         case (o2::aod::femtouniverse_mc_particle::kFake):
           histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hFake"),
                              mcParticle.pt(),
                              mcParticle.eta(),
-                             particle.fdCollision().multV0M());
+                             particle.template fdCollision_as<CollisionType>().multV0M());
           break;
 
         default:
           histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hOther"),
                              mcParticle.pt(),
                              mcParticle.eta(),
-                             particle.fdCollision().multV0M());
+                             particle.template fdCollision_as<CollisionType>().multV0M());
           break;
       }
     }
   }
 
+  template <typename CollisionType = aod::FdCollisions>
   auto getWeight(ParticleNo partNo, auto particle) -> float
   {
     auto weight = 1.0f;
@@ -203,9 +204,9 @@ class EfficiencyCorrection
       } else if (config->confEffCorVariables.value == "pt,eta") {
         bin = hWeights->FindBin(particle.pt(), particle.eta());
       } else if (config->confEffCorVariables.value == "pt,mult") {
-        bin = hWeights->FindBin(particle.pt(), particle.fdCollision().multV0M());
+        bin = hWeights->FindBin(particle.pt(), particle.template fdCollision_as<CollisionType>().multV0M());
       } else if (config->confEffCorVariables.value == "pt,eta,mult") {
-        bin = hWeights->FindBin(particle.pt(), particle.eta(), particle.fdCollision().multV0M());
+        bin = hWeights->FindBin(particle.pt(), particle.eta(), particle.template fdCollision_as<CollisionType>().multV0M());
       } else {
         LOGF(fatal, notify("Unknown configuration for efficiency variables"));
         return weight;

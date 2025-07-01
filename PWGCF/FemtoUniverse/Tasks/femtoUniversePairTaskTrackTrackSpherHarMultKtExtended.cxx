@@ -182,6 +182,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   Configurable<bool> cfgProcessMultBins{"cfgProcessMultBins", true, "Process kstar histograms in multiplicity bins (in multiplicity bins)"};
   Configurable<bool> cfgProcessKtBins{"cfgProcessKtBins", true, "Process kstar histograms in kT bins (if cfgProcessMultBins is set false, this will not be processed regardless this Configurable state)"};
   Configurable<bool> cfgProcessKtMt3DCF{"cfgProcessKtMt3DCF", false, "Process 3D histograms in kT and Mult bins"};
+  Configurable<bool> ConfIsFillAngqLCMS{"ConfIsFillAngqLCMS", true, "Fill qLCMS vs dEta vs dPhi"};
 
   FemtoUniverseSHContainer<femto_universe_sh_container::EventType::same, femto_universe_sh_container::Observable::kstar> sameEventCont;
   FemtoUniverseSHContainer<femto_universe_sh_container::EventType::mixed, femto_universe_sh_container::Observable::kstar> mixedEventCont;
@@ -519,12 +520,21 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         double rand;
         rand = randgen->Rndm();
 
+        std::vector<double> f3d;
+        double kv;
+
         switch (ContType) {
           case 2: {
             if (rand > 0.5) {
               sameEventMultContPP.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::same, 2, multCol, kT, ConfIsIden);
+              f3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
             } else if (rand <= 0.5) {
               sameEventMultContPP.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::same, 2, multCol, kT, ConfIsIden);
+              f3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);
+            }
+            if (ConfIsFillAngqLCMS) {
+              kv = std::sqrt(f3d[1] * f3d[1] + f3d[2] * f3d[2] + f3d[3] * f3d[3]);
+              pairCloseRejection.ClosePairqLCMS(p1, p2, magFieldTesla, femto_universe_container::EventType::same, kv);
             }
             break;
           }
@@ -532,8 +542,14 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
           case 3: {
             if (rand > 0.5) {
               sameEventMultContMM.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::same, 2, multCol, kT, ConfIsIden);
+              f3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
             } else if (rand <= 0.5) {
               sameEventMultContMM.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::same, 2, multCol, kT, ConfIsIden);
+              f3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);
+            }
+            if (ConfIsFillAngqLCMS) {
+              kv = std::sqrt(f3d[1] * f3d[1] + f3d[2] * f3d[2] + f3d[3] * f3d[3]);
+              pairCloseRejection.ClosePairqLCMS(p1, p2, magFieldTesla, femto_universe_container::EventType::same, kv);
             }
             break;
           }
@@ -657,6 +673,9 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       double rand;
       rand = randgen->Rndm();
 
+      std::vector<double> f3d;
+      double kv;
+
       switch (ContType) {
         case 1: {
           if (rand > 0.5) {
@@ -670,8 +689,14 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         case 2: {
           if (rand > 0.5) {
             mixedEventMultContPP.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, ConfIsIden);
+            f3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
           } else {
             mixedEventMultContPP.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, ConfIsIden);
+            f3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);
+          }
+          if (ConfIsFillAngqLCMS) {
+            kv = std::sqrt(f3d[1] * f3d[1] + f3d[2] * f3d[2] + f3d[3] * f3d[3]);
+            pairCloseRejection.ClosePairqLCMS(p1, p2, magFieldTesla, femto_universe_container::EventType::mixed, kv);
           }
           break;
         }
@@ -679,8 +704,14 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         case 3: {
           if (rand > 0.5) {
             mixedEventMultContMM.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, ConfIsIden);
+            f3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
           } else {
             mixedEventMultContMM.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, ConfIsIden);
+            f3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);
+          }
+          if (ConfIsFillAngqLCMS) {
+            kv = std::sqrt(f3d[1] * f3d[1] + f3d[2] * f3d[2] + f3d[3] * f3d[3]);
+            pairCloseRejection.ClosePairqLCMS(p1, p2, magFieldTesla, femto_universe_container::EventType::mixed, kv);
           }
           break;
         }

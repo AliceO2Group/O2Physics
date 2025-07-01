@@ -16,19 +16,21 @@
 #ifndef PWGEM_DILEPTON_CORE_DIMUONCUT_H_
 #define PWGEM_DILEPTON_CORE_DIMUONCUT_H_
 
+#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/DataTypes.h"
+#include "Framework/Logger.h"
+#include "MathUtils/Utils.h"
+
+#include "Math/Vector4D.h"
+#include "TNamed.h"
+
 #include <algorithm>
 #include <set>
-#include <vector>
-#include <utility>
 #include <string>
-#include "TNamed.h"
-#include "Math/Vector4D.h"
-
-#include "MathUtils/Utils.h"
-#include "Framework/Logger.h"
-#include "Framework/DataTypes.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
+#include <utility>
+#include <vector>
 
 using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 
@@ -192,7 +194,7 @@ class DimuonCut : public TNamed
         return track.nClusters() >= mMinNClustersMCHMID;
 
       case DimuonCuts::kChi2:
-        return track.chi2() < mMaxChi2;
+        return track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) < mMaxChi2;
 
       case DimuonCuts::kMatchingChi2MCHMFT:
         return track.chi2MatchMCHMFT() < mMaxMatchingChi2MCHMFT;

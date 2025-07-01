@@ -43,10 +43,6 @@
 #include "PWGUD/DataModel/TauEventTables.h"
 #include "PWGUD/Core/SGSelector.h"
 
-// ROOT headers
-#include "TLorentzVector.h"
-#include "TPDGCode.h"
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -77,6 +73,11 @@ struct TauEventTableProducer {
     Configurable<float> cutTrueGapSideFT0C{"cutTrueGapSideFT0C", 50., "FT0C threshold for SG selector"};
     Configurable<float> cutTrueGapSideZDC{"cutTrueGapSideZDC", 10000., "ZDC threshold for SG selector. 0 is <1n, 4.2 is <2n, 6.7 is <3n, 9.5 is <4n, 12.5 is <5n"};
     Configurable<float> cutFITtime{"cutFITtime", 40., "Maximum FIT time allowed. Default is 40ns"};
+    Configurable<bool> cutEvTFb{"cutEvTFb", true, {"Event selection bit kNoTimeFrameBorder"}};
+    Configurable<bool> cutEvITSROFb{"cutEvITSROFb", true, {"Event selection bit kNoITSROFrameBorder"}};
+    Configurable<bool> cutEvSbp{"cutEvSbp", true, {"Event selection bit kNoSameBunchPileup"}};
+    Configurable<bool> cutEvZvtxFT0vPV{"cutEvZvtxFT0vPV", false, {"Event selection bit kIsGoodZvtxFT0vsPV"}};
+    Configurable<bool> cutEvVtxITSTPC{"cutEvVtxITSTPC", true, {"Event selection bit kIsVertexITSTPC"}};
     Configurable<float> cutEvOccupancy{"cutEvOccupancy", 100000., "Maximum allowed occupancy"};
     Configurable<bool> cutEvTrs{"cutEvTrs", false, {"Event selection bit kNoCollInTimeRangeStandard"}};
     Configurable<bool> cutEvTrofs{"cutEvTrofs", false, {"Event selection bit kNoCollInRofStandard"}};
@@ -155,6 +156,26 @@ struct TauEventTableProducer {
   template <typename C>
   bool isGoodROFtime(C const& coll)
   {
+
+    // kNoTimeFrameBorder
+    if (cutSample.cutEvTFb && !coll.tfb())
+      return false;
+
+    // kNoITSROFrameBorder
+    if (cutSample.cutEvITSROFb && !coll.itsROFb())
+      return false;
+
+    // kNoSameBunchPileup
+    if (cutSample.cutEvSbp && !coll.sbp())
+      return false;
+
+    // kIsGoodZvtxFT0vsPV
+    if (cutSample.cutEvZvtxFT0vPV && !coll.zVtxFT0vPV())
+      return false;
+
+    // kIsVertexITSTPC
+    if (cutSample.cutEvVtxITSTPC && !coll.vtxITSTPC())
+      return false;
 
     // Occupancy
     if (coll.occupancyInTime() > cutSample.cutEvOccupancy)

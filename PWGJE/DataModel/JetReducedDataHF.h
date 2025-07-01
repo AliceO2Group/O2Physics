@@ -17,11 +17,15 @@
 #ifndef PWGJE_DATAMODEL_JETREDUCEDDATAHF_H_
 #define PWGJE_DATAMODEL_JETREDUCEDDATAHF_H_
 
-#include <cmath>
-#include <vector>
-#include "Framework/AnalysisDataModel.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGJE/DataModel/EMCALClusters.h" // IWYU pragma: keep
 #include "PWGJE/DataModel/JetReducedData.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h> // IWYU pragma: keep
+
+#include <sys/types.h>
+
+#include <cmath>
 
 namespace o2::aod
 {
