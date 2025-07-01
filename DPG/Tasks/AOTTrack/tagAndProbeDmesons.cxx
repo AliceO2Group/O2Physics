@@ -32,6 +32,10 @@
 #include "Tools/ML/MlResponse.h"
 #include <TPDGCode.h>
 
+#include <algorithm>
+#include <string>
+#include <vector>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -734,7 +738,7 @@ struct TagTwoProngDisplacedVertices {
           } else if (fillTopoVarsTable == 3 && !TESTBIT(isSignal, aod::tagandprobe::SignalFlags::BkgFromNoHf)) { // only background excluding tracks from other HF decays
             fillTable = false;
           }
-          float pseudoRndm = trackFirst.pt() * 1000. - (int64_t)(trackFirst.pt() * 1000);
+          float pseudoRndm = trackFirst.pt() * 1000. - static_cast<int64_t>(trackFirst.pt() * 1000);
           if (ptTag < ptTagMaxForDownsampling && pseudoRndm >= downsamplingForTopoVarTable) {
             fillTable = false;
           }
@@ -899,7 +903,7 @@ struct TagTwoProngDisplacedVertices {
           } else if (fillTopoVarsTable == 3 && !TESTBIT(isSignal, aod::tagandprobe::SignalFlags::BkgFromNoHf)) { // only background excluding tracks from other HF decays
             fillTable = false;
           }
-          float pseudoRndm = trackPos.pt() * 1000. - (int64_t)(trackPos.pt() * 1000);
+          float pseudoRndm = trackPos.pt() * 1000. - static_cast<int64_t>(trackPos.pt() * 1000);
           if (ptTag < ptTagMaxForDownsampling && pseudoRndm >= downsamplingForTopoVarTable) {
             fillTable = false;
           }
