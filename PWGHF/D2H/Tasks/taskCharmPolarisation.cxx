@@ -1534,9 +1534,9 @@ struct HfTaskCharmPolarisation {
     if constexpr (withEP) {
       assert(qVecs && "EP analysis requested but qVecs == nullptr");
     }
-    if constexpr (withMl) {
-      constexpr std::size_t NScores{3u};
-    }
+    
+    constexpr std::size_t NScores{3u};
+    
     bool isCandidateInSignalRegion{false};
     int8_t origin{RecoDecay::OriginType::None};
     int8_t massHypoMcTruth{-1};
@@ -2329,7 +2329,7 @@ struct HfTaskCharmPolarisation {
     auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarPerCollision, thisCollId);
     int nCands{0}, nCandsInSignalRegion{0};
 
-    std::vector<float> qVecs = getQvec(collision);
+    std::vector<float> qVecs = getQVec(collision);
 
     for (const auto& dstarCandidate : groupedDstarCandidates) {
       nCands++;
@@ -2355,7 +2355,7 @@ struct HfTaskCharmPolarisation {
     auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarWithMlPerCollision, thisCollId);
     int nCands{0}, nCandsInSignalRegion{0};
 
-    std::vector<float> qVecs = getQvec(collision);
+    std::vector<float> qVecs = getQVec(collision);
 
     for (const auto& dstarCandidate : groupedDstarCandidates) {
       nCands++;
@@ -2380,7 +2380,7 @@ struct HfTaskCharmPolarisation {
     }
     int numPvContributorsGen{0};
 
-    std::vector<float> qVecs = getQvec(collision);
+    std::vector<float> qVecs = getQVec(collision);
 
     for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
       auto thisCollId = collision.globalIndex();
@@ -2419,7 +2419,7 @@ struct HfTaskCharmPolarisation {
     }
     int numPvContributorsGen{0};
 
-    std::vector<float> qVecs = getQvec(collision);
+    std::vector<float> qVecs = getQVec(collision);
 
     for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
       auto thisCollId = collision.globalIndex();
