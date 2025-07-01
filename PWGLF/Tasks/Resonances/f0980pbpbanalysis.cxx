@@ -15,50 +15,46 @@
 
 #include <CommonConstants/MathConstants.h>
 #include <Framework/Configurable.h>
-#include <cmath>
+
 #include <array>
-#include <cstdlib>
 #include <chrono>
+#include <cmath>
+#include <cstdlib>
 // #include <iostream>
 #include <string>
 
 // #include "TLorentzVector.h"
-#include "TRandom3.h"
-#include "TF1.h"
-#include "TVector2.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "Math/GenVector/Boost.h"
-#include <TMath.h>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/StaticFor.h"
-
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Qvectors.h"
-
-#include "Common/Core/trackUtilities.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
 #include "CommonConstants/PhysicsConstants.h"
-
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/StaticFor.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-
-#include "CCDB/CcdbApi.h"
-#include "CCDB/BasicCCDBManager.h"
+#include "Math/GenVector/Boost.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "TF1.h"
+#include "TRandom3.h"
+#include "TVector2.h"
+#include <TMath.h>
 
 // from phi
 #include "Common/DataModel/PIDResponseITS.h"
@@ -132,7 +128,8 @@ struct F0980pbpbanalysis {
   Configurable<float> cfgTOFBetaCut{"cfgTOFBetaCut", 0.0, "cut TOF beta"};
   Configurable<bool> cfgDeepAngleSel{"cfgDeepAngleSel", true, "Deep Angle cut"};
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
-  Configurable<bool> cfgTrackIndexSel{"cfgTrackIndexSel", false, "Index selection flag"};
+  Configurable<int> cfgTrackIndexSelType{"cfgTrackIndexSelType", 1, "Index selection type"};
+  Configurable<double> cMaxTiednSigmaPion{"cMaxTiednSigmaPion", 3.0, "Combined nSigma cut for Pion"};
 
   ConfigurableAxis massAxis{"massAxis", {400, 0.2, 2.2}, "Invariant mass axis"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0}, "Transverse momentum Binning"};
@@ -174,6 +171,12 @@ struct F0980pbpbanalysis {
     PtlKaon = 1,
   };
 
+  enum IndexSelList {
+    None = 0,
+    woSame = 1,
+    leq = 2
+  };
+
   TRandom* rn = new TRandom();
   // float theta2;
 
@@ -212,6 +215,7 @@ struct F0980pbpbanalysis {
   template <typename TCollision>
   bool eventSelected(TCollision collision)
   {
+    constexpr double QvecAmpMin = 1e-4;
     if (!collision.sel8()) {
       return 0;
     }
@@ -234,7 +238,7 @@ struct F0980pbpbanalysis {
     if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return 0;
     }
-    if (cfgQvecSel && (collision.qvecAmp()[detId] < 1e-4 || collision.qvecAmp()[refAId] < 1e-4 || collision.qvecAmp()[refBId] < 1e-4)) {
+    if (cfgQvecSel && (collision.qvecAmp()[detId] < QvecAmpMin || collision.qvecAmp()[refAId] < QvecAmpMin || collision.qvecAmp()[refBId] < QvecAmpMin)) {
       return 0;
     }
     if (cfgOccupancySel && (collision.trackOccupancyInTimeRange() > cfgOccupancyMax || collision.trackOccupancyInTimeRange() < cfgOccupancyMin)) {
@@ -320,17 +324,35 @@ struct F0980pbpbanalysis {
         }
       }
     } else if (cfgSelectPID == PIDList::PIDTest) {
-      if (track.hasTOF()) {
-        if (std::fabs(getTofNSigma(track)) > cMaxTOFnSigmaPion) {
-          return 0;
-        }
-        if (std::fabs(getTpcNSigma(track)) > cMaxTPCnSigmaPion) {
-          return 0;
+      if (cfgUSETOF) {
+        if (track.hasTOF()) {
+          if ((getTpcNSigma(track) * getTpcNSigma(track) + getTofNSigma(track) * getTofNSigma(track)) > (cMaxTiednSigmaPion * cMaxTiednSigmaPion)) {
+            return 0;
+          }
+        } else {
+          if (std::fabs(getTpcNSigma(track)) > cMaxTPCnSigmaPionS) {
+            return 0;
+          }
         }
       } else {
         if (std::fabs(getTpcNSigma(track)) > cMaxTPCnSigmaPionS) {
           return 0;
         }
+      }
+    }
+    return 1;
+  }
+
+  template <typename TrackType1, typename TrackType2>
+  bool indexSelection(const TrackType1 track1, const TrackType2 track2)
+  {
+    if (cfgTrackIndexSelType == IndexSelList::woSame) {
+      if (track2.globalIndex() == track1.globalIndex()) {
+        return 0;
+      }
+    } else if (cfgTrackIndexSelType == IndexSelList::leq) {
+      if (track2.globalIndex() <= track1.globalIndex()) {
+        return 0;
       }
     }
     return 1;
@@ -420,11 +442,11 @@ struct F0980pbpbanalysis {
           histos.fill(HIST("QA/TPC_TOF_selected"), getTpcNSigma(trk2), getTofNSigma(trk2));
         }
 
-        if (cfgTrackIndexSel && cfgSelectPID == PIDList::PIDTest && trk2.globalIndex() <= trk1.globalIndex()) {
+        if (!indexSelection(trk1, trk2)) {
           continue;
         }
 
-        if (cfgSelectPID == PIDList::PIDTest && !selectionPair(trk1, trk2)) {
+        if (!selectionPair(trk1, trk2)) {
           continue;
         }
 
