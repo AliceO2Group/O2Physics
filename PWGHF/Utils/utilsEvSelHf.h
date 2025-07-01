@@ -369,7 +369,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename BCsType, typename Coll>
   uint32_t getHfCollisionRejectionMaskWithUpc(const Coll& collision, float& centrality, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, o2::framework::HistogramRegistry& registry, const BCsType& bcs)
   {
-    auto rejectionMaskWithUpc = getHfCollisionRejectionMask<true, centEstimator, BCsType>(collision, centrality, ccdb, registry);
+    auto rejectionMaskWithUpc = getHfCollisionRejectionMask<useEvSel, centEstimator, BCsType>(collision, centrality, ccdb, registry);
 
     if (useEvSel) {
       SGCutParHolder sgCuts = setSgPreselection();
