@@ -86,9 +86,12 @@ DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);
 DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);
 DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float);
 DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float);
+<<<<<<< HEAD
 
 DECLARE_SOA_COLUMN(OccupancyInTime, occupancyInTime, int);
 DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, double);
+=======
+>>>>>>> 42f502b5c (new variables)
 
 } // namespace fourpi
 
@@ -97,7 +100,11 @@ DECLARE_SOA_TABLE(SYSTEMTREE, "AOD", "SystemTree", fourpi::RunNumber, fourpi::M,
                   fourpi::TotalFDDAmplitudeA, fourpi::TotalFDDAmplitudeC, fourpi::TimeFT0A, fourpi::TimeFT0C, fourpi::TimeFV0A, fourpi::TimeFDDA, fourpi::TimeFDDC,
                   fourpi::NumContrib, fourpi::Sign, fourpi::TrackPt, fourpi::TrackEta, fourpi::TrackPhi,
                   fourpi::TPCNSigmaEl, fourpi::TPCNSigmaPi, fourpi::TPCNSigmaKa, fourpi::TPCNSigmaPr, fourpi::TrackID, fourpi::IsReconstructedWithUPC,
+<<<<<<< HEAD
                   fourpi::TimeZNA, fourpi::TimeZNC, fourpi::EnergyCommonZNA, fourpi::EnergyCommonZNC, fourpi::OccupancyInTime, fourpi::HadronicRate);
+=======
+                  fourpi::TimeZNA, fourpi::TimeZNC, fourpi::EnergyCommonZNA, fourpi::EnergyCommonZNC);
+>>>>>>> 42f502b5c (new variables)
 } // namespace o2::aod
 
 struct upcRhoPrimeAnalysis {
@@ -283,6 +290,10 @@ struct upcRhoPrimeAnalysis {
 
     if (nTracks == 4 && tracksTotalCharge(cutTracks) == 0) { // 4pi system
 
+<<<<<<< HEAD
+=======
+      // Informacion de cada traza
+>>>>>>> 42f502b5c (new variables)
       std::vector<float> vTrackPt, vTrackEta, vTrackPhi;
       std::vector<int> vSign, vTrackID;
       std::vector<float> vTpcNSigmaEl, vTpcNSigmaPi, vTpcNSigmaKa, vTpcNSigmaPr;
@@ -302,6 +313,10 @@ struct upcRhoPrimeAnalysis {
         vTpcNSigmaKa.push_back(cutTracks[i].tpcNSigmaKa());
         vTpcNSigmaPr.push_back(cutTracks[i].tpcNSigmaPr());
 
+<<<<<<< HEAD
+=======
+        // ID de la traza
+>>>>>>> 42f502b5c (new variables)
         vTrackID.push_back(i);
       }
 
@@ -317,8 +332,12 @@ struct upcRhoPrimeAnalysis {
                  collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.timeFV0A(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
                  collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
                  collision.numContrib(), vSign, vTrackPt, vTrackEta, vTrackPhi, vTpcNSigmaEl, vTpcNSigmaPi, vTpcNSigmaKa, vTpcNSigmaPr, vTrackID, isReconstructedWithUPC,
+<<<<<<< HEAD
                  collision.timeZNA(), collision.timeZNC(), collision.energyCommonZNA(), collision.energyCommonZNC(),
                  collision.occupancyInTime(), collision.hadronicRate());
+=======
+                 collision.timeZNA(), collision.timeZNC(), collision.energyCommonZNA(), collision.energyCommonZNC());
+>>>>>>> 42f502b5c (new variables)
 
       // registry.fill(HIST("4pi/hM"), mass);
       // registry.fill(HIST("4pi/hPt"), pT);
