@@ -54,7 +54,7 @@ using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
                            aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                            aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 using MyTrack = MyTracks::iterator;
-using MyTracksMC = soa::Join<MyTracks, aod::McTrackLabels>;
+using MyTracksMC = soa::Join<MyTracks, aod::McTrackLabels, aod::mcTPCTuneOnData>;
 using MyTrackMC = MyTracksMC::iterator;
 
 struct skimmerPrimaryElectron {
@@ -435,7 +435,7 @@ struct skimmerPrimaryElectron {
     return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && std::fabs(track.tofNSigmaEl()) < maxTOFNsigmaEl;
   }
 
-  template <typename TCollision, typename TTrack>
+  template <bool isMC, typename TCollision, typename TTrack>
   void fillTrackTable(TCollision const& collision, TTrack const& track)
   {
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), std::pair<int, int>{collision.globalIndex(), track.globalIndex()}) == stored_trackIds.end()) {
@@ -455,12 +455,16 @@ struct skimmerPrimaryElectron {
       o2::math_utils::bringTo02Pi(phi_recalc);
 
       bool isAssociatedToMPC = collision.globalIndex() == track.collisionId();
+      float tpcSignal = track.tpcSignal();
+      if constexpr (isMC) {
+        tpcSignal = track.mcTunedTPCSignal();
+      }
 
       emprimaryelectrons(collision.globalIndex(), track.globalIndex(), track.sign(),
                          pt_recalc, eta_recalc, phi_recalc, dcaXY, dcaZ,
                          track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
                          track.tpcChi2NCl(), track.tpcInnerParam(),
-                         track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                         tpcSignal, track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                          track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
                          track.itsClusterSizes(), track.itsNSigmaEl(), track.itsNSigmaMu(), track.itsNSigmaPi(), track.itsNSigmaKa(), track.itsNSigmaPr(),
                          track.itsChi2NCl(), track.tofChi2(), track.detectorMap(),
@@ -531,7 +535,7 @@ struct skimmerPrimaryElectron {
         fRegistry.fill(HIST("Track/hChi2ITS"), track.itsChi2NCl());
         fRegistry.fill(HIST("Track/hChi2TOF"), track.tofChi2());
         fRegistry.fill(HIST("Track/hITSClusterMap"), track.itsClusterMap());
-        fRegistry.fill(HIST("Track/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
+        fRegistry.fill(HIST("Track/hTPCdEdx"), track.tpcInnerParam(), tpcSignal);
         fRegistry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
         fRegistry.fill(HIST("Track/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
         fRegistry.fill(HIST("Track/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
@@ -583,7 +587,7 @@ struct skimmerPrimaryElectron {
         if (!checkTrack<false>(collision, track) || !isElectron(collision, track)) {
           continue;
         }
-        fillTrackTable(collision, track);
+        fillTrackTable<false>(collision, track);
       }
 
     } // end of collision loop
@@ -614,7 +618,7 @@ struct skimmerPrimaryElectron {
         if (!checkTrack<false>(collision, track) || !isElectron(collision, track)) {
           continue;
         }
-        fillTrackTable(collision, track);
+        fillTrackTable<false>(collision, track);
       }
     } // end of collision loop
 
@@ -645,7 +649,7 @@ struct skimmerPrimaryElectron {
         if (!checkTrack<false>(collision, track) || !isElectron(collision, track)) {
           continue;
         }
-        fillTrackTable(collision, track);
+        fillTrackTable<false>(collision, track);
       }
 
     } // end of collision loop
@@ -679,7 +683,7 @@ struct skimmerPrimaryElectron {
         if (!checkTrack<false>(collision, track) || !isElectron(collision, track)) {
           continue;
         }
-        fillTrackTable(collision, track);
+        fillTrackTable<false>(collision, track);
       }
     } // end of collision loop
 
@@ -714,7 +718,7 @@ struct skimmerPrimaryElectron {
         if (!checkTrack<true>(collision, track) || !isElectron(collision, track)) {
           continue;
         }
-        fillTrackTable(collision, track);
+        fillTrackTable<true>(collision, track);
       }
     } // end of collision loop
 
@@ -747,7 +751,7 @@ struct skimmerPrimaryElectron {
         if (!checkTrack<true>(collision, track) || !isElectron(collision, track)) {
           continue;
         }
-        fillTrackTable(collision, track);
+        fillTrackTable<true>(collision, track);
       }
     } // end of collision loop
 
