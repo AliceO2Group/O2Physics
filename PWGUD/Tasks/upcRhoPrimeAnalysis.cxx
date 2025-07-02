@@ -283,8 +283,6 @@ struct upcRhoPrimeAnalysis {
 
     if (nTracks == 4 && tracksTotalCharge(cutTracks) == 0) { // 4pi system
 
-
-      // Informacion de cada traza
       std::vector<float> vTrackPt, vTrackEta, vTrackPhi;
       std::vector<int> vSign, vTrackID;
       std::vector<float> vTpcNSigmaEl, vTpcNSigmaPi, vTpcNSigmaKa, vTpcNSigmaPr;
@@ -304,7 +302,6 @@ struct upcRhoPrimeAnalysis {
         vTpcNSigmaKa.push_back(cutTracks[i].tpcNSigmaKa());
         vTpcNSigmaPr.push_back(cutTracks[i].tpcNSigmaPr());
 
-        // ID de la traza
         vTrackID.push_back(i);
       }
 
