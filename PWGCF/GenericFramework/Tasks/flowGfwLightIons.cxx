@@ -983,8 +983,8 @@ struct FlowGfwLightIons {
   {
     auto runDuration = ccdb->getRunDuration(firstRun);
     uint64_t tsSOF = runDuration.first;
-    double diff = difftime(timestamp, tsSOF);
-    return diff / 3600000.0;
+    long long diff = timestamp - tsSOF;
+    return static_cast<double>(diff) / 3600000.0;
   }
 
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
