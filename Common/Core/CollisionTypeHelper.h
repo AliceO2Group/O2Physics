@@ -36,7 +36,7 @@ struct CollisionSystemType {
   static constexpr collType kCollSyspPb = 3;    // pPb
   static constexpr collType kCollSysOO = 4;     // OO (Oxygen-Oxygen)
   static constexpr collType kCollSyspO = 5;     // pO (proton-Oxygen)
-  static constexpr collType kCollSysNeNe = 6;     // NeNe (Neon-Neon)
+  static constexpr collType kCollSysNeNe = 6;   // NeNe (Neon-Neon)
   static constexpr collType kNCollSys = 7;      // Number of collision systems
 
   static std::string getCollisionSystemName(collType collSys);
