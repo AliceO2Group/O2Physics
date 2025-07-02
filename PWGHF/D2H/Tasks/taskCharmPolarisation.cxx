@@ -1534,9 +1534,9 @@ struct HfTaskCharmPolarisation {
     if constexpr (withEP) {
       assert(qVecs && "EP analysis requested but qVecs == nullptr");
     }
-    
+
     constexpr std::size_t NScores{3u};
-    
+
     bool isCandidateInSignalRegion{false};
     int8_t origin{RecoDecay::OriginType::None};
     int8_t massHypoMcTruth{-1};
