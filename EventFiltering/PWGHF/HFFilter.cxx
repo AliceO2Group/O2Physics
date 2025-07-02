@@ -264,8 +264,9 @@ struct HfFilter { // Main struct for HF triggers
     }
 
     // fetch config of track-index-skim-creator to apply the same cut on DeltaMassKK for Ds
-    std::vector<double>> ptBinsDsSkimCreator{};
+    std::vector<double> ptBinsDsSkimCreator{};
     LabeledArray<double> cutsDsSkimCreator{};
+    const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-track-index-skim-creator") == 0) {
         for (const auto& option : device.options) {

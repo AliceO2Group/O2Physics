@@ -1080,8 +1080,8 @@ inline int8_t HfFilterHelper::isDsPreselected(const P& pTrackSameChargeFirst, co
   }
 
   // check delta-mass for phi resonance
-  auto ptDs = RecoDecay::pt(std::array{pTrackSameChargeFirst, pTrackSameChargeSecond, pTrackOppositeCharge});
-  auto ptBinDs = findBin(mPreselDsToKKPi, ptDs);
+  auto ptDs = RecoDecay::pt(pTrackSameChargeFirst, pTrackSameChargeSecond, pTrackOppositeCharge);
+  auto ptBinDs = findBin(mPtBinsPreselDsToKKPi, ptDs);
   if (ptBinDs == -1) {
     return retValue;
   }
@@ -1089,7 +1089,7 @@ inline int8_t HfFilterHelper::isDsPreselected(const P& pTrackSameChargeFirst, co
   auto invMassKKFirst = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge}, std::array{massKa, massKa});
   auto invMassKKSecond = RecoDecay::m(std::array{pTrackSameChargeSecond, pTrackOppositeCharge}, std::array{massKa, massKa});
 
-  float cutValueMassKK = mPtBinsPreselDsToKKPi.get(ptBinDs, 4u);
+  float cutValueMassKK = mPreselDsToKKPi.get(ptBinDs, 4u);
   if (std::fabs(invMassKKFirst - massPhi) < cutValueMassKK) {
     retValue |= BIT(0);
   }
