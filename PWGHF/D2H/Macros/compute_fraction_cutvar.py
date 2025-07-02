@@ -181,6 +181,11 @@ def main(config):
         for _, hist in histos_rawy.items():
             hist.Write()
 
+        canv_rawy_unc, histo_rawy_unc = minimiser.plot_raw_yield_uncertainties(f"_pt{pt_min}_{pt_max}", hist_bin_title)
+        output.cd()
+        canv_rawy_unc.Write()
+        histo_rawy_unc.Write()
+
         canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(f"_pt{pt_min}_{pt_max}", hist_bin_title)
         output.cd()
         canv_eff.Write()
@@ -197,11 +202,6 @@ def main(config):
         output.cd()
         canv_cov.Write()
         histo_cov.Write()
-
-        canv_rawy_unc, histo_rawy_unc = minimiser.plot_raw_yield_uncertainties(f"_pt{pt_min}_{pt_max}", hist_bin_title)
-        output.cd()
-        canv_rawy_unc.Write()
-        histo_rawy_unc.Write()
 
         canv_combined = ROOT.TCanvas(f"canv_combined_{ipt}", "", 1000, 1000)
         canv_combined.Divide(2, 2)
