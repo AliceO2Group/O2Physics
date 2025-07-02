@@ -65,7 +65,7 @@ using MyTrack = MyTracks::iterator;
 
 struct TreeCreatorElectronMLDDA {
   SliceCache cache;
-  Produces<o2::aod::EMMLPrimaryTracks> emprimarytracks; // flat table containing collision + track information
+  Produces<o2::aod::EMTracksForMLPID> emprimarytracks; // flat table containing collision + track information
 
   // Basic checks
   HistogramRegistry registry{
@@ -590,8 +590,8 @@ struct TreeCreatorElectronMLDDA {
     mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
     mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
     o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
-    float dcaXY = mDcaInfoCov.getY();
-    float dcaZ = mDcaInfoCov.getZ();
+    // float dcaXY = mDcaInfoCov.getY();
+    // float dcaZ = mDcaInfoCov.getZ();
 
     if (tracktype == static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::Track_Type::kPrimary)) {
       if (dist01(engine) > downscaling_electron_primary && trackParCov.getP() < max_p_for_downscaling_electron_primary) {
@@ -619,13 +619,12 @@ struct TreeCreatorElectronMLDDA {
 
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), track.globalIndex()) == stored_trackIds.end()) {
       emprimarytracks(collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
-                      trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi() > 0.f ? trackParCov.getPhi() : trackParCov.getPhi() + 2 * M_PI, trackParCov.getTgl(), track.sign(),
-                      dcaXY, dcaZ, trackParCov.getSigmaY2(), trackParCov.getSigmaZ2(), trackParCov.getSigmaZY(),
+                      trackParCov.getP(), trackParCov.getTgl(), track.sign(),
                       track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
                       track.tpcChi2NCl(), track.tpcInnerParam(),
                       track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                       track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                      track.itsClusterSizes(), track.itsChi2NCl(), track.tofChi2(), track.detectorMap(), pidlabel, tracktype, isForValidation);
+                      track.itsClusterSizes(), track.itsChi2NCl(), track.tofChi2(), track.detectorMap(), pidlabel, isForValidation);
       stored_trackIds.emplace_back(track.globalIndex());
     }
   }
@@ -990,7 +989,7 @@ struct MLTrackQC {
     },
   };
 
-  void processQC(aod::EMMLPrimaryTracks const& tracks)
+  void processQC(aod::EMTracksForMLPID const& tracks)
   {
     for (const auto& track : tracks) {
       registry.fill(HIST("hTPCdEdx_P_All"), track.p(), track.tpcSignal());
@@ -1025,7 +1024,7 @@ struct MLTrackQC {
   }
   PROCESS_SWITCH(MLTrackQC, processQC, "process QC for single track level", false);
 
-  void processDummy(aod::EMMLPrimaryTracks const&) {}
+  void processDummy(aod::EMTracksForMLPID const&) {}
   PROCESS_SWITCH(MLTrackQC, processDummy, "process dummy", true);
 };
 
