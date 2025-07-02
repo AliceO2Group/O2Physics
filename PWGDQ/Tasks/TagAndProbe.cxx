@@ -355,8 +355,6 @@ struct AnalysisTagAndProbe {
     TString cutNames = fConfigCuts.muon.value;
     std::map<int, std::vector<TString>> histNames = fMuonHistNames;
     int ncuts = fNCutsMuon;
-
-    //uint32_t twoTrackFilter = static_cast<uint32_t>(0);
     int sign1 = 0;
     int sign2 = 0;
 
