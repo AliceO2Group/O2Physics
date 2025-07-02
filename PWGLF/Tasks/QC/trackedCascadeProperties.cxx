@@ -16,30 +16,38 @@
 /// \author Alberto Caliva (alberto.caliva@cern.ch), Francesca Ercolessi (francesca.ercolessi@cern.ch)
 /// \since May 31, 2024
 
-#include <TMath.h>
-#include <TObjArray.h>
-#include <TPDGCode.h>
-#include <TVector2.h>
-#include <TVector3.h>
-#include <cmath>
-#include <vector>
-#include <algorithm>
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "ReconstructionDataFormats/Track.h"
 #include "ReconstructionDataFormats/DCA.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <TMath.h>
+#include <TObjArray.h>
+#include <TPDGCode.h>
+#include <TVector2.h>
+#include <TVector3.h>
+
+#include <algorithm>
+#include <cmath>
+#include <string>
+#include <vector>
 
 using namespace std;
 using namespace o2;
@@ -53,6 +61,12 @@ using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 using FullTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
 struct TrackedCascadeProperties {
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::ccdb::CcdbApi ccdbApi;
+
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   // QC Histograms
   HistogramRegistry registryQC{
@@ -72,6 +86,8 @@ struct TrackedCascadeProperties {
 
   // Global Parameters
   Configurable<float> zVtx{"zVtx", 10.0f, "z vertex cut"};
+  Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
+  Configurable<std::string> cfgTriggerName{"cfgTriggerName", "fOmega", "trigger Name"};
 
   // Mass Cuts
   Configurable<float> massMinXi{"massMinXi", 1.315f, "mMin Xi"};
@@ -79,8 +95,19 @@ struct TrackedCascadeProperties {
   Configurable<float> massMinOmega{"massMinOmega", 1.665f, "mMin Omega"};
   Configurable<float> massMaxOmega{"massMaxOmega", 1.680f, "mMax Omega"};
 
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (cfgSkimmedProcessing) {
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfgTriggerName.value);
+    }
+  }
+
   void init(InitContext const&)
   {
+    if (cfgSkimmedProcessing) {
+      zorroSummary.setObject(zorro.getZorroSummary());
+    }
+
     registryQC.add("matchingChi2", "matching Chi2", HistType::kTH1F, {{200, 0, 1000, "#chi^{2}_{matching}"}});
     registryQC.add("topologyChi2", "topology Chi2", HistType::kTH1F, {{500, 0, 0.5, "#chi^{2}_{topology}"}});
     registryQC.add("nITScls_vs_p_xi", "nITS Xi", HistType::kTH2F, {{100, 0, 10, "#it{p} (GeV/#it{c})"}, {8, 0, 8, "n_{ITS}^{cls}"}});
@@ -108,6 +135,17 @@ struct TrackedCascadeProperties {
     registryData.add("xi_neg_avgclustersize_cosL_vs_betagamma", "xi_neg_avgclustersize_cosL_vs_betagamma", HistType::kTH2F, {{200, 0.0, 10.0, "#beta#gamma"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
     registryData.add("omega_pos_avgclustersize_cosL_vs_betagamma", "omega_pos_avgclustersize_cosL_vs_betagamma", HistType::kTH2F, {{200, 0.0, 10.0, "#beta#gamma"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
     registryData.add("omega_neg_avgclustersize_cosL_vs_betagamma", "omega_neg_avgclustersize_cosL_vs_betagamma", HistType::kTH2F, {{200, 0.0, 10.0, "#beta#gamma"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
+
+    // Cluster size using truncated mean
+    registryData.add("xi_pos_avgclustersize_trunc_cosL", "xi_pos_avgclustersize_trunc_cosL", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
+    registryData.add("xi_neg_avgclustersize_trunc_cosL", "xi_neg_avgclustersize_trunc_cosL", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
+    registryData.add("omega_pos_avgclustersize_trunc_cosL", "omega_pos_avgclustersize_trunc_cosL", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
+    registryData.add("omega_neg_avgclustersize_trunc_cosL", "omega_neg_avgclustersize_trunc_cosL", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
+
+    registryData.add("xi_pos_avgclustersize_trunc_cosL_vs_betagamma", "xi_pos_avgclustersize_trunc_cosL_vs_betagamma", HistType::kTH2F, {{200, 0.0, 10.0, "#beta#gamma"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
+    registryData.add("xi_neg_avgclustersize_trunc_cosL_vs_betagamma", "xi_neg_avgclustersize_trunc_cosL_vs_betagamma", HistType::kTH2F, {{200, 0.0, 10.0, "#beta#gamma"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
+    registryData.add("omega_pos_avgclustersize_trunc_cosL_vs_betagamma", "omega_pos_avgclustersize_trunc_cosL_vs_betagamma", HistType::kTH2F, {{200, 0.0, 10.0, "#beta#gamma"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
+    registryData.add("omega_neg_avgclustersize_trunc_cosL_vs_betagamma", "omega_neg_avgclustersize_trunc_cosL_vs_betagamma", HistType::kTH2F, {{200, 0.0, 10.0, "#beta#gamma"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT cos(#lambda)"}});
 
     registryData.add("xi_mass_pos", "xi_mass_pos", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {200, 1.28, 1.36, "m_{p#pi#pi} (GeV/#it{c}^{2})"}});
     registryData.add("xi_mass_neg", "xi_mass_neg", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {200, 1.28, 1.36, "m_{p#pi#pi} (GeV/#it{c}^{2})"}});
@@ -140,14 +178,22 @@ struct TrackedCascadeProperties {
                    aod::Cascades const&, FullTracks const&)
   {
     registryData.fill(HIST("number_of_events_data"), 0.5);
+
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
+    if (cfgSkimmedProcessing && !zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC())) {
+      return;
+    }
+    registryData.fill(HIST("number_of_events_data"), 1.5);
+
     if (!collision.sel8())
       return;
 
-    registryData.fill(HIST("number_of_events_data"), 1.5);
+    registryData.fill(HIST("number_of_events_data"), 2.5);
     if (std::abs(collision.posZ()) > zVtx)
       return;
 
-    registryData.fill(HIST("number_of_events_data"), 2.5);
+    registryData.fill(HIST("number_of_events_data"), 3.5);
 
     std::vector<double> edgesItsLayers = {0.0, 2.2, 2.8, 3.6, 20.0, 22.0, 37.0, 39.0, 100.0};
 
@@ -188,6 +234,28 @@ struct TrackedCascadeProperties {
       }
       averageClusterSize = averageClusterSize / static_cast<double>(nCls);
 
+      // Average cluster size using truncated mean
+      double averageClusterSizeTrunc = 0.0;
+      int nClsTrunc = 0;
+      double clusterSizeMax = 0.0;
+
+      for (int i = 0; i < nClsCascade; i++) {
+        double clusterSize = static_cast<double>(trackITS.itsClsSizeInLayer(i));
+        if (clusterSize > clusterSizeMax) {
+          clusterSizeMax = clusterSize;
+        }
+
+        averageClusterSizeTrunc += clusterSize;
+        if (clusterSize > 0)
+          nClsTrunc++;
+      }
+
+      if (nClsTrunc > 1) {
+        averageClusterSizeTrunc = (averageClusterSizeTrunc - clusterSizeMax) / static_cast<double>(nClsTrunc - 1);
+      } else {
+        averageClusterSizeTrunc = 0.0;
+      }
+
       registryQC.fill(HIST("deltaNclsITS_track"), nCls - track.itsNCls());
       registryQC.fill(HIST("deltaNclsITS_itstrack"), nCls - trackITS.itsNCls());
 
@@ -209,11 +277,15 @@ struct TrackedCascadeProperties {
           registryData.fill(HIST("xi_pos_avgclustersize"), track.p(), averageClusterSize, track.eta());
           registryData.fill(HIST("xi_pos_avgclustersize_cosL"), track.p(), averageClusterSize * std::cos(lambda));
           registryData.fill(HIST("xi_pos_avgclustersize_cosL_vs_betagamma"), track.p() / o2::constants::physics::MassXiPlusBar, averageClusterSize * std::cos(lambda));
+          registryData.fill(HIST("xi_pos_avgclustersize_trunc_cosL"), track.p(), averageClusterSizeTrunc * std::cos(lambda));
+          registryData.fill(HIST("xi_pos_avgclustersize_trunc_cosL_vs_betagamma"), track.p() / o2::constants::physics::MassXiPlusBar, averageClusterSizeTrunc * std::cos(lambda));
         }
         if (btrack.sign() < 0) {
           registryData.fill(HIST("xi_neg_avgclustersize"), track.p(), averageClusterSize, track.eta());
           registryData.fill(HIST("xi_neg_avgclustersize_cosL"), track.p(), averageClusterSize * std::cos(lambda));
           registryData.fill(HIST("xi_neg_avgclustersize_cosL_vs_betagamma"), track.p() / o2::constants::physics::MassXiMinus, averageClusterSize * std::cos(lambda));
+          registryData.fill(HIST("xi_neg_avgclustersize_trunc_cosL"), track.p(), averageClusterSizeTrunc * std::cos(lambda));
+          registryData.fill(HIST("xi_neg_avgclustersize_trunc_cosL_vs_betagamma"), track.p() / o2::constants::physics::MassXiPlusBar, averageClusterSizeTrunc * std::cos(lambda));
         }
         continue;
       }
@@ -233,11 +305,15 @@ struct TrackedCascadeProperties {
           registryData.fill(HIST("omega_pos_avgclustersize"), track.p(), averageClusterSize, track.eta());
           registryData.fill(HIST("omega_pos_avgclustersize_cosL"), track.p(), averageClusterSize * std::cos(lambda));
           registryData.fill(HIST("omega_pos_avgclustersize_cosL_vs_betagamma"), track.p() / o2::constants::physics::MassOmegaPlusBar, averageClusterSize * std::cos(lambda));
+          registryData.fill(HIST("omega_pos_avgclustersize_trunc_cosL"), track.p(), averageClusterSizeTrunc * std::cos(lambda));
+          registryData.fill(HIST("omega_pos_avgclustersize_trunc_cosL_vs_betagamma"), track.p() / o2::constants::physics::MassXiPlusBar, averageClusterSizeTrunc * std::cos(lambda));
         }
         if (btrack.sign() < 0) {
           registryData.fill(HIST("omega_neg_avgclustersize"), track.p(), averageClusterSize, track.eta());
           registryData.fill(HIST("omega_neg_avgclustersize_cosL"), track.p(), averageClusterSize * std::cos(lambda));
           registryData.fill(HIST("omega_neg_avgclustersize_cosL_vs_betagamma"), track.p() / o2::constants::physics::MassOmegaMinus, averageClusterSize * std::cos(lambda));
+          registryData.fill(HIST("omega_neg_avgclustersize_trunc_cosL"), track.p(), averageClusterSizeTrunc * std::cos(lambda));
+          registryData.fill(HIST("omega_neg_avgclustersize_trunc_cosL_vs_betagamma"), track.p() / o2::constants::physics::MassXiPlusBar, averageClusterSizeTrunc * std::cos(lambda));
         }
       }
     }
