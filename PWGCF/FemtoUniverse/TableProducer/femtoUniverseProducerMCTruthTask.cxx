@@ -166,12 +166,12 @@ struct FemtoUniverseProducerMCTruthTask {
       if (particle.pt() < ConfFilteringTracks.confPtLowFilterCut || particle.pt() > ConfFilteringTracks.confPtHighFilterCut)
         continue;
 
-      uint32_t pdgCode = (uint32_t)particle.pdgCode();
+      int pdgCode = particle.pdgCode();
 
       if (confAnalysisWithPID) {
         bool pass = false;
         std::vector<int> tmpPDGCodes = confPDGCodes; // necessary due to some features of the Configurable
-        for (const uint32_t& pdg : tmpPDGCodes) {
+        for (const int& pdg : tmpPDGCodes) {
           if (pdgCode == Pdg::kPhi) { // phi meson
             pass = true;
           } else if (pdgCode == Pdg::kD0) { // D0 meson
