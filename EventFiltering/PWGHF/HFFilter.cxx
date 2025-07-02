@@ -276,8 +276,8 @@ struct HfFilter { // Main struct for HF triggers
             int iPt{0};
             while (ptBins[iPt] > lastEl) {
               ptBinsDsSkimCreator.push_back(ptBins[iPt]);
-              iPt++;
               lastEl = ptBins[iPt];
+              iPt++;
             }
           } else if (option.name.compare("cutsDsToKKPi") == 0) {
             cutsDsSkimCreator = option.defaultValue.get<LabeledArray<double>>();
