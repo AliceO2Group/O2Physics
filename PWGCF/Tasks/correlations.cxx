@@ -173,8 +173,11 @@ struct CorrelationTask {
     registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{1000, 0, 100, "/multiplicity/centrality"}}});
 
     const int maxMixBin = AxisSpec(axisMultiplicity).getNbins() * AxisSpec(axisVertex).getNbins();
+    // The bin numbers for the control histograms (eventcount_*) come from getBin(...) and are the following: #mult_bin * #number_of_z_bins + #zbin
     registry.add("eventcount_same", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
     registry.add("eventcount_mixed", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
+    registry.add("trackcount_same", "bin", {HistType::kTH2F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}, {10, -0.5, 9.5}}});
+    registry.add("trackcount_mixed", "bin", {HistType::kTH3F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}, {10, -0.5, 9.5}, {10, -0.5, 9.5}}});
 
     mPairCuts.SetHistogramRegistry(&registry);
 
@@ -653,6 +656,7 @@ struct CorrelationTask {
 
     int bin = configurableBinningDerived.getBin({collision.posZ(), collision.multiplicity()});
     registry.fill(HIST("eventcount_same"), bin);
+    registry.fill(HIST("trackcount_same"), bin, tracks.size());
     fillQA(collision, multiplicity, tracks);
 
     same->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
@@ -810,6 +814,7 @@ struct CorrelationTask {
       // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
 
       registry.fill(HIST("eventcount_mixed"), bin);
+      registry.fill(HIST("trackcount_mixed"), bin, tracks1.size(), tracks2.size());
       fillCorrelations<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), field, eventWeight);
 
       if (cfg.mEfficiencyAssociated || cfg.mEfficiencyTrigger) {

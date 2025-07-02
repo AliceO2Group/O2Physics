@@ -681,8 +681,11 @@ TH2* CorrelationContainer::getSumOfRatios(CorrelationContainer* mixed, Correlati
         Double_t sums[] = {0, 0, 0};
         Double_t errors[] = {0, 0, 0};
 
+        Int_t checkBinYBegin = 1;                     // tracksSame->GetXaxis()->FindBin(-0.79);
+        Int_t checkBinYEnd = tracksSame->GetNbinsY(); // tracksSame->GetXaxis()->FindBin(0.79);
+
         for (Int_t x = 1; x <= tracksSame->GetNbinsX(); x++) {
-          for (Int_t y = 1; y <= tracksSame->GetNbinsY(); y++) {
+          for (Int_t y = checkBinYBegin; y <= checkBinYEnd; y++) {
             sums[0] += tracksSame->GetBinContent(x, y);
             errors[0] += tracksSame->GetBinError(x, y);
             sums[1] += tracksMixed->GetBinContent(x, y);
@@ -693,7 +696,7 @@ TH2* CorrelationContainer::getSumOfRatios(CorrelationContainer* mixed, Correlati
         tracksSame->Divide(tracksMixed);
 
         for (Int_t x = 1; x <= tracksSame->GetNbinsX(); x++) {
-          for (Int_t y = 1; y <= tracksSame->GetNbinsY(); y++) {
+          for (Int_t y = checkBinYBegin; y <= checkBinYEnd; y++) {
             sums[2] += tracksSame->GetBinContent(x, y);
             errors[2] += tracksSame->GetBinError(x, y);
           }
