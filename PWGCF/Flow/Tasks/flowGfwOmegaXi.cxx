@@ -87,7 +87,6 @@ struct FlowGfwOmegaXi {
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 500, "High cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgMassBins, std::vector<int>, (std::vector<int>{80, 32, 14, 16}), "Number of K0s, Lambda, Xi, Omega mass axis bins for c22")
   O2_DEFINE_CONFIGURABLE(cfgDeltaPhiLocDen, int, 3, "Number of delta phi for local density, 200 bins in 2 pi")
 
@@ -142,6 +141,20 @@ struct FlowGfwOmegaXi {
     O2_DEFINE_CONFIGURABLE(cfgCheckGlobalTrack, bool, false, "check global track")
   } trkQualityOpts;
 
+  struct : ConfigurableGroup {
+    std::string prefix = "evtSelOpts";
+    O2_DEFINE_CONFIGURABLE(cfgDoTVXinTRD, bool, true, "check kTVXinTRD")
+    O2_DEFINE_CONFIGURABLE(cfgDoNoTimeFrameBorder, bool, true, "check kNoTimeFrameBorder")
+    O2_DEFINE_CONFIGURABLE(cfgDoNoITSROFrameBorder, bool, true, "check kNoITSROFrameBorder")
+    O2_DEFINE_CONFIGURABLE(cfgDoNoSameBunchPileup, bool, true, "check kNoITSROFrameBorder")
+    O2_DEFINE_CONFIGURABLE(cfgDoIsGoodZvtxFT0vsPV, bool, true, "check kIsGoodZvtxFT0vsPV")
+    O2_DEFINE_CONFIGURABLE(cfgDoNoCollInTimeRangeStandard, bool, true, "check kNoCollInTimeRangeStandard")
+    O2_DEFINE_CONFIGURABLE(cfgDoIsGoodITSLayersAll, bool, true, "check kIsGoodITSLayersAll")
+    O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 500, "High cut on TPC occupancy")
+    O2_DEFINE_CONFIGURABLE(cfgMultPVCut, int, 5, "Use apassX MultPVCut function or not (-1)")
+    O2_DEFINE_CONFIGURABLE(cfgDoV0AT0Acut, bool, true, "do V0A-T0A cut")
+  } evtSeleOpts;
+
   O2_DEFINE_CONFIGURABLE(cfgCasc_rapidity, float, 0.5, "rapidity")
   O2_DEFINE_CONFIGURABLE(cfgNSigmapid, std::vector<float>, (std::vector<float>{9, 9, 9, 3, 3, 3, 3, 3, 3}), "tpc, tof and its NSigma for Pion Proton Kaon")
   O2_DEFINE_CONFIGURABLE(cfgAcceptancePath, std::vector<std::string>, (std::vector<std::string>{"Users/f/fcui/NUA/NUAREFPartical", "Users/f/fcui/NUA/NUAK0s", "Users/f/fcui/NUA/NUALambda", "Users/f/fcui/NUA/NUAXi", "Users/f/fcui/NUA/NUAOmega"}), "CCDB path to acceptance object")
@@ -158,9 +171,7 @@ struct FlowGfwOmegaXi {
   O2_DEFINE_CONFIGURABLE(cfgOutputCasc, bool, true, "Fill and output cascades flow")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgOutputLocDenWeights, bool, false, "Fill and output local density weights")
-  O2_DEFINE_CONFIGURABLE(cfgDoV0AT0Acut, bool, false, "do V0A-T0A cut")
   O2_DEFINE_CONFIGURABLE(cfgOutputQA, bool, false, "do QA")
-  O2_DEFINE_CONFIGURABLE(cfgMultPVCut, int, 5, "Use apassX MultPVCut function or not")
 
   ConfigurableAxis cfgaxisVertex{"cfgaxisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis cfgaxisPhi{"cfgaxisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -302,15 +313,20 @@ struct FlowGfwOmegaXi {
     registry.add("hEtaPhiVtxzPOIOmega", "", {HistType::kTH3D, {cfgaxisPhi, cfgaxisEta, {20, -10, 10}}});
     registry.add("hEtaPhiVtxzPOIK0s", "", {HistType::kTH3D, {cfgaxisPhi, cfgaxisEta, {20, -10, 10}}});
     registry.add("hEtaPhiVtxzPOILambda", "", {HistType::kTH3D, {cfgaxisPhi, cfgaxisEta, {20, -10, 10}}});
-    registry.add("hEventCount", "", {HistType::kTH2D, {{4, 0, 4}, {4, 0, 4}}});
-    registry.get<TH2>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
-    registry.get<TH2>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "after sel8");
-    registry.get<TH2>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "before topological cut");
-    registry.get<TH2>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "after topological cut");
-    registry.get<TH2>(HIST("hEventCount"))->GetYaxis()->SetBinLabel(1, "K0s");
-    registry.get<TH2>(HIST("hEventCount"))->GetYaxis()->SetBinLabel(2, "Lambda");
-    registry.get<TH2>(HIST("hEventCount"))->GetYaxis()->SetBinLabel(3, "XiMinus");
-    registry.get<TH2>(HIST("hEventCount"))->GetYaxis()->SetBinLabel(4, "Omega");
+
+    registry.add("hEventCount", "", {HistType::kTH1D, {{12, 0, 12}}});
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "after sel8");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "after kTVXinTRD");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "after kNoTimeFrameBorder");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(5, "after kNoITSROFrameBorder");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(6, "after kDoNoSameBunchPileup");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(7, "after kIsGoodZvtxFT0vsPV");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(8, "after kNoCollInTimeRangeStandard");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(9, "after kIsGoodITSLayersAll");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(10, "after MultPVCut");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(11, "after TPC occupancy cut");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(12, "after V0AT0Acut");
 
     // QA
     if (cfgOutputQA) {
@@ -520,13 +536,13 @@ struct FlowGfwOmegaXi {
     // used for event selection
     int caseapass4 = 4;
     int caseapass5 = 5;
-    if (cfgMultPVCut == caseapass4) {
+    if (evtSeleOpts.cfgMultPVCut.value == caseapass4) {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
       fMultPVCutLow->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
       fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
       fMultPVCutHigh->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
     }
-    if (cfgMultPVCut == caseapass5) {
+    if (evtSeleOpts.cfgMultPVCut.value == caseapass5) {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
       fMultPVCutLow->SetParameters(3074.43, -106.192, 1.46176, -0.00968364, 2.61923e-05, 182.128, -7.43492, 0.193901, -0.00256715, 1.22594e-05);
       fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
@@ -785,38 +801,45 @@ struct FlowGfwOmegaXi {
   template <typename TCollision>
   bool eventSelected(TCollision collision, const float centrality)
   {
-    if (collision.alias_bit(kTVXinTRD)) {
+    if (evtSeleOpts.cfgDoTVXinTRD.value && collision.alias_bit(kTVXinTRD)) {
       // TRD triggered
       return false;
     }
-    if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+    registry.fill(HIST("hEventCount"), 2.5);
+    if (evtSeleOpts.cfgDoNoTimeFrameBorder.value && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       // reject collisions close to Time Frame borders
       // https://its.cern.ch/jira/browse/O2-4623
       return false;
     }
-    if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+    registry.fill(HIST("hEventCount"), 3.5);
+    if (evtSeleOpts.cfgDoNoITSROFrameBorder.value && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       // reject events affected by the ITS ROF border
       // https://its.cern.ch/jira/browse/O2-4309
       return false;
     }
-    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    registry.fill(HIST("hEventCount"), 4.5);
+    if (evtSeleOpts.cfgDoNoSameBunchPileup.value && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       // rejects collisions which are associated with the same "found-by-T0" bunch crossing
       // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
       return false;
     }
-    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    registry.fill(HIST("hEventCount"), 5.5);
+    if (evtSeleOpts.cfgDoIsGoodZvtxFT0vsPV.value && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
       // use this cut at low multiplicities with caution
       return false;
     }
-    if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    registry.fill(HIST("hEventCount"), 6.5);
+    if (evtSeleOpts.cfgDoNoCollInTimeRangeStandard.value && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       // no collisions in specified time range
       return 0;
     }
-    if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    registry.fill(HIST("hEventCount"), 7.5);
+    if (evtSeleOpts.cfgDoIsGoodITSLayersAll.value && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       // cut time intervals with dead ITS staves
       return 0;
     }
+    registry.fill(HIST("hEventCount"), 8.5);
     float vtxz = -999;
     if (collision.numContrib() > 1) {
       vtxz = collision.posZ();
@@ -833,21 +856,25 @@ struct FlowGfwOmegaXi {
       return false;
     int caseapass4 = 4;
     int caseapass5 = 5;
-    if (cfgMultPVCut == caseapass4 || cfgMultPVCut == caseapass5) {
+    if (evtSeleOpts.cfgMultPVCut.value == caseapass4 || evtSeleOpts.cfgMultPVCut.value == caseapass5) {
       if (multNTracksPV < fMultPVCutLow->Eval(centrality))
         return false;
       if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
         return false;
     }
-    if (occupancy > cfgCutOccupancyHigh)
+    registry.fill(HIST("hEventCount"), 9.5);
+
+    if (occupancy > evtSeleOpts.cfgCutOccupancyHigh.value)
       return 0;
+    registry.fill(HIST("hEventCount"), 10.5);
 
     // V0A T0A 5 sigma cut
-    if (cfgDoV0AT0Acut) {
+    if (evtSeleOpts.cfgDoV0AT0Acut.value) {
       int nsigma = 5;
       if (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > nsigma * fT0AV0ASigma->Eval(collision.multFT0A()))
         return 0;
     }
+    registry.fill(HIST("hEventCount"), 11.5);
 
     return true;
   }
@@ -856,18 +883,14 @@ struct FlowGfwOmegaXi {
   {
     o2::aod::ITSResponse itsResponse;
     int nTot = tracks.size();
-    int candNumAll[4] = {0, 0, 0, 0};
-    int candNum[4] = {0, 0, 0, 0};
-    int nspecies = 5;
-    for (int i = 0; i < nspecies - 1; i++) {
-      registry.fill(HIST("hEventCount"), 0.5, i + 0.5);
-    }
+    registry.fill(HIST("hEventCount"), 0.5);
     if (nTot < 1)
       return;
     fGFW->Clear();
     const auto cent = collision.centFT0C();
     if (!collision.sel8())
       return;
+    registry.fill(HIST("hEventCount"), 1.5);
     if (eventSelected(collision, cent))
       return;
     TH1D* hLocalDensity = new TH1D("hphi", "hphi", 400, -constants::math::TwoPI, constants::math::TwoPI);
@@ -877,9 +900,6 @@ struct FlowGfwOmegaXi {
     registry.fill(HIST("hVtxZ"), vtxz);
     registry.fill(HIST("hMult"), nTot);
     registry.fill(HIST("hCent"), cent);
-    for (int i = 0; i < nspecies - 1; i++) {
-      registry.fill(HIST("hEventCount"), 1.5, i + 0.5);
-    }
 
     float weff = 1;
     float wacc = 1;
@@ -944,7 +964,6 @@ struct FlowGfwOmegaXi {
               ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(v0posdau)) < cfgNSigma[6]) || v0posdau.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(v0negdau)) < cfgNSigma[6]) || v0negdau.pt() < lowpt)) {
             registry.fill(HIST("InvMassK0s_all"), v0.pt(), v0.mK0Short(), v0.eta(), cent);
             isK0s = true;
-            candNumAll[0] = candNumAll[0] + 1;
             if (cfgOutputQA) {
               registry.fill(HIST("QAhisto/V0/hqaarm_podoafter"), v0.alpha(), v0.qtarm());
             }
@@ -958,14 +977,12 @@ struct FlowGfwOmegaXi {
               ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(v0posdau)) < cfgNSigma[7]) || v0posdau.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(v0negdau)) < cfgNSigma[6]) || v0negdau.pt() < lowpt)) {
             registry.fill(HIST("InvMassLambda_all"), v0.pt(), v0.mLambda(), v0.eta(), cent);
             isLambda = true;
-            candNumAll[1] = candNumAll[1] + 1;
           } else if (std::fabs(v0.mLambda() - o2::constants::physics::MassLambda) < v0BuilderOpts.cfgv0_mlambdawindow.value &&
                      (std::fabs(v0negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
                      ((std::fabs(v0negdau.tofNSigmaPr()) < cfgNSigma[4] || v0negdau.pt() < lowpt) && (std::fabs(v0posdau.tofNSigmaPi()) < cfgNSigma[3] || v0posdau.pt() < lowpt)) &&
                      ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(v0posdau)) < cfgNSigma[7]) || v0posdau.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(v0negdau)) < cfgNSigma[6]) || v0negdau.pt() < lowpt)) {
             registry.fill(HIST("InvMassLambda_all"), v0.pt(), v0.mLambda(), v0.eta(), cent);
             isLambda = true;
-            candNumAll[1] = candNumAll[1] + 1;
           }
         }
         // fill QA before cut
@@ -1028,7 +1045,6 @@ struct FlowGfwOmegaXi {
             if (cfgOutputLocDenWeights)
               registry.fill(HIST("MC/densityMCRecK0s"), v0.pt(), nch, density, v0.mK0Short());
           }
-          candNum[0] = candNum[0] + 1;
           registry.fill(HIST("InvMassK0s"), v0.pt(), v0.mK0Short(), v0.eta(), cent);
           registry.fill(HIST("hEtaPhiVtxzPOIK0s"), v0.phi(), v0.eta(), vtxz, wacc);
           fGFW->Fill(v0.eta(), fK0sPtAxis->FindBin(v0.pt()) - 1 + ((fK0sMass->FindBin(v0.mK0Short()) - 1) * nK0sPtBins), v0.phi(), wacc * weff * wloc, 8);
@@ -1046,7 +1062,6 @@ struct FlowGfwOmegaXi {
             if (cfgOutputLocDenWeights)
               registry.fill(HIST("MC/densityMCRecLambda"), v0.pt(), nch, density, v0.mLambda());
           }
-          candNum[1] = candNum[1] + 1;
           registry.fill(HIST("InvMassLambda"), v0.pt(), v0.mLambda(), v0.eta(), cent);
           registry.fill(HIST("hEtaPhiVtxzPOILambda"), v0.phi(), v0.eta(), vtxz, wacc);
           fGFW->Fill(v0.eta(), fK0sPtAxis->FindBin(v0.pt()) - 1 + ((fLambdaMass->FindBin(v0.mLambda()) - 1) * nK0sPtBins), v0.phi(), wacc * weff * wloc, 16);
@@ -1081,14 +1096,12 @@ struct FlowGfwOmegaXi {
               ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Kaon>(bachelor)) < cfgNSigma[8]) || bachelor.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(posdau)) < cfgNSigma[7]) || posdau.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(negdau)) < cfgNSigma[6]) || negdau.pt() < lowpt)) {
             registry.fill(HIST("InvMassOmega_all"), casc.pt(), casc.mOmega(), casc.eta(), cent);
             isOmega = true;
-            candNumAll[3] = candNumAll[3] + 1;
           } else if (casc.sign() > 0 && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
                      (std::fabs(bachelor.tpcNSigmaKa()) < cfgNSigma[2] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
                      ((std::fabs(bachelor.tofNSigmaKa()) < cfgNSigma[5] || bachelor.pt() < lowpt) && (std::fabs(negdau.tofNSigmaPr()) < cfgNSigma[4] || negdau.pt() < lowpt) && (std::fabs(posdau.tofNSigmaPi()) < cfgNSigma[3] || posdau.pt() < lowpt)) &&
                      ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Kaon>(bachelor)) < cfgNSigma[8]) || bachelor.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(posdau)) < cfgNSigma[7]) || posdau.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(negdau)) < cfgNSigma[6]) || negdau.pt() < lowpt)) {
             registry.fill(HIST("InvMassOmega_all"), casc.pt(), casc.mOmega(), casc.eta(), cent);
             isOmega = true;
-            candNumAll[3] = candNumAll[3] + 1;
           }
         }
         // Xi and antiXi
@@ -1099,14 +1112,12 @@ struct FlowGfwOmegaXi {
               ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(bachelor)) < cfgNSigma[6]) || bachelor.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(posdau)) < cfgNSigma[7]) || posdau.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(negdau)) < cfgNSigma[6]) || negdau.pt() < lowpt)) {
             registry.fill(HIST("InvMassXi_all"), casc.pt(), casc.mXi(), casc.eta(), cent);
             isXi = true;
-            candNumAll[2] = candNumAll[2] + 1;
           } else if (casc.sign() > 0 && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
                      (std::fabs(bachelor.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
                      ((std::fabs(bachelor.tofNSigmaPi()) < cfgNSigma[3] || bachelor.pt() < lowpt) && (std::fabs(negdau.tofNSigmaPr()) < cfgNSigma[4] || negdau.pt() < lowpt) && (std::fabs(posdau.tofNSigmaPi()) < cfgNSigma[3] || posdau.pt() < lowpt)) &&
                      ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(bachelor)) < cfgNSigma[6]) || bachelor.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(posdau)) < cfgNSigma[7]) || posdau.pt() < lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(negdau)) < cfgNSigma[6]) || negdau.pt() < lowpt)) {
             registry.fill(HIST("InvMassXi_all"), casc.pt(), casc.mXi(), casc.eta(), cent);
             isXi = true;
-            candNumAll[2] = candNumAll[2] + 1;
           }
         }
         // fill QA
@@ -1186,7 +1197,6 @@ struct FlowGfwOmegaXi {
             if (cfgOutputLocDenWeights)
               registry.fill(HIST("MC/densityMCRecOmega"), casc.pt(), nch, density, casc.mOmega());
           }
-          candNum[3] = candNum[3] + 1;
           registry.fill(HIST("hEtaPhiVtxzPOIOmega"), casc.phi(), casc.eta(), vtxz, wacc);
           registry.fill(HIST("InvMassOmega"), casc.pt(), casc.mOmega(), casc.eta(), cent);
           fGFW->Fill(casc.eta(), fOmegaPtAxis->FindBin(casc.pt()) - 1 + ((fOmegaMass->FindBin(casc.mOmega()) - 1) * nOmegaPtBins), casc.phi(), wacc * weff * wloc, 4);
@@ -1204,7 +1214,6 @@ struct FlowGfwOmegaXi {
             if (cfgOutputLocDenWeights)
               registry.fill(HIST("MC/densityMCRecXi"), casc.pt(), nch, density, casc.mXi());
           }
-          candNum[2] = candNum[2] + 1;
           registry.fill(HIST("hEtaPhiVtxzPOIXi"), casc.phi(), casc.eta(), vtxz, wacc);
           registry.fill(HIST("InvMassXi"), casc.pt(), casc.mXi(), casc.eta(), cent);
           fGFW->Fill(casc.eta(), fXiPtAxis->FindBin(casc.pt()) - 1 + ((fXiMass->FindBin(casc.mXi()) - 1) * nXiPtBins), casc.phi(), wacc * weff * wloc, 2);
@@ -1214,14 +1223,6 @@ struct FlowGfwOmegaXi {
       }
     }
 
-    for (int i = 0; i < nspecies - 1; i++) {
-      if (candNumAll[i] > 0) {
-        registry.fill(HIST("hEventCount"), 2.5, i + 0.5);
-      }
-      if (candNum[i] > 0) {
-        registry.fill(HIST("hEventCount"), 3.5, i + 0.5);
-      }
-    }
     delete hLocalDensity;
     // Filling cumulant with ROOT TProfile and loop for all ptBins
     fillProfile(corrconfigs.at(20), HIST("c22"), cent);
