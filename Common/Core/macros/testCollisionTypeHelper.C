@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file   testCollisionTypeHelper.C
+/// \author Nicolò Jacazio nicolo.jacazio@cern.ch
+/// \brief  Test the CollisionTypeHelper functionality
+
 #include "Common/Core/CollisionTypeHelper.h"
 
 #include "CCDB/BasicCCDBManager.h"
