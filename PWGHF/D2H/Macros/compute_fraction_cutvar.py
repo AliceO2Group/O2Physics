@@ -198,6 +198,11 @@ def main(config):
         canv_cov.Write()
         histo_cov.Write()
 
+        canv_rawy_unc, histo_rawy_unc = minimiser.plot_raw_yield_uncertainties(f"_pt{pt_min}_{pt_max}", hist_bin_title)
+        output.cd()
+        canv_rawy_unc.Write()
+        histo_rawy_unc.Write()
+
         canv_combined = ROOT.TCanvas(f"canv_combined_{ipt}", "", 1000, 1000)
         canv_combined.Divide(2, 2)
         canv_combined.cd(1)
@@ -213,6 +218,7 @@ def main(config):
         output_name_eff_pdf = f"Eff_{cfg['output']['file'].replace('.root', '.pdf')}"
         output_name_frac_pdf = f"Frac_{cfg['output']['file'].replace('.root', '.pdf')}"
         output_name_covmat_pdf = f"CovMatrix_{cfg['output']['file'].replace('.root', '.pdf')}"
+        output_name_rawy_unc_pdf = f"RawYUnc_{cfg['output']['file'].replace('.root', '.pdf')}"
         output_name_pdf = f"{cfg['output']['file'].replace('.root', '.pdf')}"
 
         if hist_rawy[0].GetNbinsX() == 1:
@@ -228,6 +234,7 @@ def main(config):
         canv_frac.Print(f"{os.path.join(cfg['output']['directory'], output_name_frac_pdf)}{print_bracket}")
         canv_cov.Print(f"{os.path.join(cfg['output']['directory'], output_name_covmat_pdf)}{print_bracket}")
         canv_combined.Print(f"{os.path.join(cfg['output']['directory'], output_name_pdf)}{print_bracket}")
+        canv_rawy_unc.Print(f"{os.path.join(cfg['output']['directory'], output_name_rawy_unc_pdf)}{print_bracket}")
 
     output.cd()
     hist_corry_prompt.Write()

@@ -793,3 +793,54 @@ class CutVarMinimiser:
         canvas.Update()
 
         return canvas, histos, leg
+
+    # pylint: disable=no-member
+    def plot_raw_yield_uncertainties(self, suffix="", title=""):
+        """
+        Helper function to plot raw yield uncertainties as a function of cut set
+
+        Parameters
+        -----------------------------------------------------
+        - suffix: str
+            suffix to be added in the name of the output objects
+        - title: str
+            title to be written at the top margin of the output objects
+
+        Returns
+        -----------------------------------------------------
+        - canvas: ROOT.TCanvas
+            canvas with plot
+        - histo: ROOT.TH1F
+            ROOT.TH1F with raw yield uncertainties distributions
+        """
+
+        set_global_style(padleftmargin=0.16, padbottommargin=0.12, padtopmargin=0.075, titleoffsety=1.6)
+
+        hist_raw_yield_unc = ROOT.TH1F(
+            f"hRawYieldUncVsCut{suffix}",
+            ";cut set;raw yield unc.",
+            self.n_sets,
+            -0.5,
+            self.n_sets - 0.5,
+        )
+
+        for i_bin, unc_rawy in enumerate(self.unc_raw_yields):
+            hist_raw_yield_unc.SetBinContent(i_bin + 1, unc_rawy)
+
+        set_object_style(hist_raw_yield_unc)
+        canvas = ROOT.TCanvas(f"cRawYieldUncVsCut{suffix}", "", 500, 500)
+        canvas.DrawFrame(
+            -0.5,
+            0.0,
+            self.n_sets - 0.5,
+            hist_raw_yield_unc.GetMaximum() * 1.2,
+            ";cut set;raw yield unc.",
+        )
+        hist_raw_yield_unc.Draw("")
+        tex = ROOT.TLatex()
+        tex.SetTextSize(0.04)
+        tex.DrawLatexNDC(0.05, 0.95, title)
+        canvas.Modified()
+        canvas.Update()
+
+        return canvas, hist_raw_yield_unc
