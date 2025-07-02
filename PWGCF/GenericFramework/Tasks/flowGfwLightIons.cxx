@@ -983,7 +983,7 @@ struct FlowGfwLightIons {
   {
     auto runDuration = ccdb->getRunDuration(firstRun);
     uint64_t tsSOF = runDuration.first;
-    long long diff = timestamp - tsSOF;
+    uint64_t diff = timestamp - tsSOF;
     return static_cast<double>(diff) / 3600000.0;
   }
 
