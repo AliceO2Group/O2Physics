@@ -253,7 +253,7 @@ struct HfTaskCharmPolarisation {
   Preslice<FilteredCandLcToPKPiWSelFlagAndMcAndMl> lcToPKPiWithMcAndMlPerCollision = aod::hf_cand::collisionId;
 
   ConfigurableAxis configTHnAxisEulerPhi{"configTHnAxisEulerPhi", {24, -o2::constants::math::PI, o2::constants::math::PI}, "Euler polar angle #phi"};
-  ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {200, 0.139f, 0.179f}, "#it{M} (GeV/#it{c}^{2})"};
+  ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {200, 0.139f, 0.179f}, "#it{M} (GeV/#it{c}^{2})"}; //o2-linter: disable=Avoid hard-coded particle masses. Use o2::constants::physics::Mass... instead. [pdg/explicit-mass]
   ConfigurableAxis configThnAxisPt{"configThnAxisPt", {100, 0.f, 100.f}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis configThnAxisY{"configThnAxisY", {20, -1.f, 1.f}, "#it{y}"};
   ConfigurableAxis configThnAxisCosThetaStarHelicity{"configThnAxisCosThetaStarHelicity", {20, -1.f, 1.f}, "cos(#vartheta_{helicity})"};
@@ -1555,7 +1555,7 @@ struct HfTaskCharmPolarisation {
         ptBhadMother = candidate.ptBhadMotherPart();
         int pdgBhadMother = candidate.pdgBhadMotherPart();
         // For unknown reasons there are charm hadrons coming directly from beauty diquarks without an intermediate B-hadron which have an unreasonable correlation between the pT of the charm hadron and the beauty mother. We also remove charm hadrons from quarkonia.
-        if (origin == RecoDecay::OriginType::NonPrompt && (pdgBhadMother == 5101 || pdgBhadMother == 5103 || pdgBhadMother == 5201 || pdgBhadMother == 5203 || pdgBhadMother == 5301 || pdgBhadMother == 5303 || pdgBhadMother == 5401 || pdgBhadMother == 5403 || pdgBhadMother == 5503 || pdgBhadMother == 553 || pdgBhadMother == 555 || pdgBhadMother == 553 || pdgBhadMother == 557)) {
+        if (origin == RecoDecay::OriginType::NonPrompt && (pdgBhadMother == 5101 || pdgBhadMother == 5103 || pdgBhadMother == 5201 || pdgBhadMother == 5203 || pdgBhadMother == 5301 || pdgBhadMother == 5303 || pdgBhadMother == 5401 || pdgBhadMother == 5403 || pdgBhadMother == 5503 || pdgBhadMother == 553 || pdgBhadMother == 555 || pdgBhadMother == 553 || pdgBhadMother == 557)) {//o2-linter: disable=Avoid hard-coded PDG codes. Use named values from PDG_t or o2::constants::physics::Pdg instead. [pdg/explicit-code]//o2-linter: disable=Avoid magic numbers in expressions. Assign the value to a clearly named variable or constant. [magic-number]
           return isCandidateInSignalRegion;
         }
       } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) {
@@ -2093,7 +2093,7 @@ struct HfTaskCharmPolarisation {
         auto bHadMother = mcParticles.rawIteratorAt(mcParticle.idxBhadMotherPart() - mcParticles.offset());
         int pdgBhadMother = std::abs(bHadMother.pdgCode());
         // For unknown reasons there are charm hadrons coming directly from beauty diquarks without an intermediate B-hadron which have an unreasonable correlation between the pT of the charm hadron and the beauty mother. We also remove charm hadrons from quarkonia.
-        if (pdgBhadMother == 5101 || pdgBhadMother == 5103 || pdgBhadMother == 5201 || pdgBhadMother == 5203 || pdgBhadMother == 5301 || pdgBhadMother == 5303 || pdgBhadMother == 5401 || pdgBhadMother == 5403 || pdgBhadMother == 5503 || pdgBhadMother == 553 || pdgBhadMother == 555 || pdgBhadMother == 553 || pdgBhadMother == 557) {
+        if (pdgBhadMother == 5101 || pdgBhadMother == 5103 || pdgBhadMother == 5201 || pdgBhadMother == 5203 || pdgBhadMother == 5301 || pdgBhadMother == 5303 || pdgBhadMother == 5401 || pdgBhadMother == 5403 || pdgBhadMother == 5503 || pdgBhadMother == 553 || pdgBhadMother == 555 || pdgBhadMother == 553 || pdgBhadMother == 557) {//o2-linter: disable=Avoid hard-coded PDG codes. Use named values from PDG_t or o2::constants::physics::Pdg instead. [pdg/explicit-code] //o2-linter: disable=Avoid magic numbers in expressions. Assign the value to a clearly named variable or constant. [magic-number]
           return;
         }
         ptBhadMother = bHadMother.pt();
