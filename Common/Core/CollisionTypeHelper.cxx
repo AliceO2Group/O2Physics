@@ -12,7 +12,6 @@
 /// \file   CollisionTypeHelper.h
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Utility to handle the collision type from the GRP information
-///
 
 #include "Common/Core/CollisionTypeHelper.h"
 
