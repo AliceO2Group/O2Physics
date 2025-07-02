@@ -287,7 +287,7 @@ struct HfTaskMcValidationGen {
     if (storeOccupancy) {
       occupancy = getOccupancyGenColl(recoCollisions, OccupancyEstimator::Its);
     }
-    uint16_t rejectionMask{0};
+    uint32_t rejectionMask{0u};
     if constexpr (centEstimator == CentralityEstimator::FT0C) {
       rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, recoCollisions, centrality);
     } else if constexpr (centEstimator == CentralityEstimator::FT0M) {

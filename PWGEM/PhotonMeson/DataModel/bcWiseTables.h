@@ -41,23 +41,25 @@ enum Observable {
   kFT0Amp,
   kpT,
   kMu,
+  kTimeSinceSOF,
   nObservables
 };
 
 // Values in tables are stored in downscaled format to save disk space
 const float downscalingFactors[nObservables]{
-  1E0,  // Cluster definition
-  1E3,  // Cluster energy
-  1E4,  // Cluster eta
-  1E4,  // Cluster phi
-  1E0,  // Number of cells
-  1E4,  // M02
-  1E2,  // Cluster time
-  2E0,  // FT0M centrality
-  1E3,  // Z-vertex position
-  1E-1, // FT0M amplitude
-  1E3,  // MC pi0 pt
-  1E5}; // Mu
+  1E0,   // Cluster definition
+  1E3,   // Cluster energy
+  1E4,   // Cluster eta
+  1E4,   // Cluster phi
+  1E0,   // Number of cells
+  1E4,   // M02
+  1E2,   // Cluster time
+  2E0,   // FT0M centrality
+  1E3,   // Z-vertex position
+  1E-1,  // FT0M amplitude
+  1E3,   // MC pi0 pt
+  1E5,   // Mu
+  5E-1}; // Time since start of fill (since ADJUST decleration)
 } // namespace emdownscaling
 
 namespace bcwisebc
@@ -66,18 +68,19 @@ DECLARE_SOA_COLUMN(HasFT0, hasFT0, bool);                               //! has_
 DECLARE_SOA_COLUMN(HasTVX, hasTVX, bool);                               //! has the TVX trigger flag
 DECLARE_SOA_COLUMN(HaskTVXinEMC, haskTVXinEMC, bool);                   //! kTVXinEMC
 DECLARE_SOA_COLUMN(HasEMCCell, hasEMCCell, bool);                       //! at least one EMCal cell in the BC
-DECLARE_SOA_COLUMN(HasNoTFROFBorder, hasNoTFROFBorder, bool);           //! not in the TF border or ITS ROF border region
 DECLARE_SOA_COLUMN(StoredCentrality, storedCentrality, uint8_t);        //! FT0M centrality (0-100) (x2)
 DECLARE_SOA_COLUMN(StoredFT0MAmplitude, storedFT0MAmplitude, uint16_t); //! ft0a+c amplitude
 DECLARE_SOA_COLUMN(StoredMu, storedMu, uint16_t);                       //! probability of TVX collision per BC (x1000)
+DECLARE_SOA_COLUMN(StoredTimeSinceSOF, storedTimeSinceSOF, uint16_t);   //! time since decreation of ADJUST in seconds (x2)
 
 DECLARE_SOA_DYNAMIC_COLUMN(Centrality, centrality, [](uint8_t storedcentrality) -> float { return std::nextafter(storedcentrality / emdownscaling::downscalingFactors[emdownscaling::kFT0MCent], std::numeric_limits<float>::infinity()); });           //! Centrality (0-100)
 DECLARE_SOA_DYNAMIC_COLUMN(FT0MAmplitude, ft0Amplitude, [](uint16_t storedFT0MAmplitude) -> float { return std::nextafter(storedFT0MAmplitude / emdownscaling::downscalingFactors[emdownscaling::kFT0Amp], std::numeric_limits<float>::infinity()); }); //! FT0M amplitude
 DECLARE_SOA_DYNAMIC_COLUMN(Mu, mu, [](uint16_t storedMu) -> float { return std::nextafter(storedMu / emdownscaling::downscalingFactors[emdownscaling::kMu], std::numeric_limits<float>::infinity()); });                                                //! probability of TVX collision per BC
+DECLARE_SOA_DYNAMIC_COLUMN(TimeSinceSOF, timeSinceSOF, [](uint16_t storedTimeSinceSOF) -> float { return std::nextafter(storedTimeSinceSOF / emdownscaling::downscalingFactors[emdownscaling::kTimeSinceSOF], std::numeric_limits<float>::infinity()); }); //! probability of TVX collision per BC
 } // namespace bcwisebc
 DECLARE_SOA_TABLE(BCWiseBCs, "AOD", "BCWISEBC", //! table of bc wise centrality estimation and event selection input
-                  o2::soa::Index<>, bcwisebc::HasFT0, bcwisebc::HasTVX, bcwisebc::HaskTVXinEMC, bcwisebc::HasEMCCell, bcwisebc::HasNoTFROFBorder, bcwisebc::StoredCentrality,
-                  bcwisebc::StoredFT0MAmplitude, bcwisebc::StoredMu, bcwisebc::Centrality<bcwisebc::StoredCentrality>, bcwisebc::FT0MAmplitude<bcwisebc::StoredFT0MAmplitude>, bcwisebc::Mu<bcwisebc::StoredMu>);
+                  o2::soa::Index<>, bcwisebc::HasFT0, bcwisebc::HasTVX, bcwisebc::HaskTVXinEMC, bcwisebc::HasEMCCell, bcwisebc::StoredCentrality,
+                  bcwisebc::StoredFT0MAmplitude, bcwisebc::StoredMu, bcwisebc::StoredTimeSinceSOF, bcwisebc::Centrality<bcwisebc::StoredCentrality>, bcwisebc::FT0MAmplitude<bcwisebc::StoredFT0MAmplitude>, bcwisebc::Mu<bcwisebc::StoredMu>, bcwisebc::TimeSinceSOF<bcwisebc::StoredTimeSinceSOF>);
 
 DECLARE_SOA_INDEX_COLUMN(BCWiseBC, bcWiseBC); //! bunch crossing ID used as index
 

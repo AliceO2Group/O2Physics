@@ -256,7 +256,7 @@ struct FlowGfwLightIons {
       std::sort(o2::analysis::gfw::firstRunsOfFill.begin(), o2::analysis::gfw::firstRunsOfFill.end());
     }
     firstRunOfCurrentFill = o2::analysis::gfw::firstRunsOfFill.begin();
-
+    
     AxisSpec phiAxis = {o2::analysis::gfw::phibins, o2::analysis::gfw::philow, o2::analysis::gfw::phiup, "#phi"};
     AxisSpec etaAxis = {o2::analysis::gfw::etabins, -cfgEta, cfgEta, "#eta"};
     AxisSpec vtxAxis = {o2::analysis::gfw::vtxZbins, -cfgVtxZ, cfgVtxZ, "Vtx_{z} (cm)"};
@@ -318,7 +318,6 @@ struct FlowGfwLightIons {
     AxisSpec multAxis = (cfgTimeDependent) ? timeAxis : (doprocessOnTheFly && !cfgUseNch) ? bAxis
                                                       : (cfgUseNch)                       ? nchAxis
                                                                                           : centAxis;
-
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -602,7 +601,6 @@ struct FlowGfwLightIons {
       if (zRes > minZRes && collision.numContrib() < minNContrib)
         vtxz = -999;
     }
-
     auto multNTracksPV = collision.multNTracksPV();
 
     if (vtxz > o2::analysis::gfw::vtxZup || vtxz < o2::analysis::gfw::vtxZlow)
@@ -1144,6 +1142,7 @@ struct FlowGfwLightIons {
     registry.fill(HIST("eventQA/eventSel"), 0.5);
     if (!collision.sel8())
       return;
+
     registry.fill(HIST("eventQA/eventSel"), 1.5);
     if (cfgDoOccupancySel) {
       int occupancy = collision.trackOccupancyInTimeRange();
@@ -1236,6 +1235,7 @@ struct FlowGfwLightIons {
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       numberOfTracks.emplace_back(groupedTracks.size());
     }
+    
     const XAxis xaxis{centrality, numberOfTracks[0], -1.0};
     int run = 0;
     processCollision<kGen>(mcCollision, particles, xaxis, run);

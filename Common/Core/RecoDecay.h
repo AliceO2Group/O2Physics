@@ -732,7 +732,7 @@ struct RecoDecay {
         if (!arrDaughters[iProng].has_mcParticle()) {
           return -1;
         }
-        auto particleI = arrDaughters[iProng].mcParticle();                                // ith daughter particle
+        auto particleI = arrDaughters[iProng].template mcParticle_as<T>();                 // ith daughter particle
         if (std::abs(particleI.getGenStatusCode()) == StatusCodeAfterFlavourOscillation) { // oscillation decay product spotted
           coefFlavourOscillation = -1;                                                     // select the sign of the mother after oscillation (and not before)
           break;
@@ -744,7 +744,7 @@ struct RecoDecay {
       if (!arrDaughters[iProng].has_mcParticle()) {
         return -1;
       }
-      auto particleI = arrDaughters[iProng].mcParticle(); // ith daughter particle
+      auto particleI = arrDaughters[iProng].template mcParticle_as<T>(); // ith daughter particle
       if constexpr (acceptTrackDecay) {
         // Replace the MC particle associated with the prong by its mother for π → μ and K → π.
         auto motherI = particleI.template mothers_first_as<T>();
