@@ -16,20 +16,26 @@
 /// \author Marvin Hemmer (marvin.hemmer@cern.ch) Goethe-University
 ///
 
-#include <algorithm>
-#include <vector>
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-
 #include "PWGJE/DataModel/EMCALClusters.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <span>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -50,7 +56,7 @@ struct EmcalTrackSorter {
 
   // Filter for the tracks
   const float trackNotOnEMCal = -900;
-  Filter trackFilter = (aod::track::pt >= trackMinPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::trackEtaEmcal > trackNotOnEMCal) && (aod::track::trackPhiEmcal > trackNotOnEMCal) && (nabs(aod::track::dcaXY) < trackDCAxy) && (nabs(aod::track::dcaZ) < trackDCAz);
+  Filter trackFilter = (aod::track::pt >= trackMinPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::trackEtaEmcal > trackNotOnEMCal) && (aod::track::trackPhiEmcal > trackNotOnEMCal) && (nabs(aod::track::dcaXY) < trackDCAxy) && (nabs(aod::track::dcaZ) < trackDCAz) && (aod::track::collisionId >= 0);
   Filter collisionFilter = aod::evsel::foundBCId != -1;
 
   // QA
@@ -111,6 +117,107 @@ struct EmcalTrackSorter {
     LOG(debug) << "Ending process full.";
   }
   PROCESS_SWITCH(EmcalTrackSorter, processFull, "run full track sorting analysis", true);
+
+  //  Appears to need the BC to be accessed to be available in the collision table...
+  void processNormalSort(CollEventSels const&, FilteredTracks const& tracks)
+  {
+    LOG(debug) << "Starting process full.";
+
+    std::vector<MySortedTracks> vecSortedTracks;
+    vecSortedTracks.reserve(tracks.size());
+
+    int64_t prevColId = -1;
+    int32_t cachedBCID = -2;
+    bool cachedCollisionOk = true;
+
+    for (const auto& track : tracks) {
+      const auto col = track.collision_as<CollEventSels>();
+      const int64_t colID = col.globalIndex();
+
+      if (colID != prevColId) {
+        cachedBCID = col.foundBCId();
+        cachedCollisionOk = col.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
+        prevColId = colID;
+      }
+
+      if (cachedCollisionOk && cachedBCID >= 0) {
+        vecSortedTracks.emplace_back(cachedBCID, track.globalIndex(), track.trackEtaEmcal(), RecoDecay::constrainAngle(track.trackPhiEmcal()));
+      }
+    }
+
+    std::sort(vecSortedTracks.begin(), vecSortedTracks.end(),
+              [](const MySortedTracks& a, const MySortedTracks& b) {
+                return a.bcID < b.bcID;
+              });
+
+    sortedTracks.reserve(vecSortedTracks.size());
+    for (const auto& sTrack : vecSortedTracks) {
+      // mHistManager.fill(HIST("hTrackEtaPhiEMCal"), sTrack.eta, sTrack.phi);
+      sortedTracks(sTrack.bcID, sTrack.trackID, sTrack.eta, sTrack.phi);
+    }
+
+    LOG(debug) << "Ending process full.";
+  }
+  PROCESS_SWITCH(EmcalTrackSorter, processNormalSort, "run full track sorting analysis by looping over tracks not collisions", false);
+
+  // Appears to need the BC to be accessed to be available in the collision table...
+  void processBoostSort(FilteredCollisions const& collisions, FilteredTracks const& tracks)
+  {
+
+    LOG(debug) << "Starting process full.";
+
+    if (!tracks.size()) {
+      LOG(debug) << "No tracks found.";
+      return;
+    }
+
+    std::vector<MySortedTracks> vecSortedTracks;
+    vecSortedTracks.reserve(tracks.size());
+
+    int32_t cachedBCID = -1;
+
+    auto track = tracks.begin();
+    const auto trackEnd = tracks.end();
+    int32_t currentCollId = track.collisionId();
+
+    auto selection = collisions.getSelectedRows();
+    for (auto& collisionId : selection) {
+      // tracks are behind collision, move ahead in track table
+      while (track != trackEnd && collisionId > currentCollId) {
+        if (++track != trackEnd) {
+          currentCollId = track.collisionId();
+        }
+      }
+      // tracks are ahead of collisions, move to next collision
+      if (collisionId < currentCollId) {
+        continue;
+      }
+
+      // we reached the first track for this collision, get the BCId
+      cachedBCID = track.collision_as<FilteredCollisions>().foundBCId();
+      // loop over all tracks in current collision
+      while (track != trackEnd && collisionId == currentCollId) {
+        vecSortedTracks.emplace_back(cachedBCID, track.globalIndex(), track.trackEtaEmcal(), RecoDecay::constrainAngle(track.trackPhiEmcal()));
+        if (++track != trackEnd) {
+          currentCollId = track.collisionId();
+        }
+      }
+    }
+
+    std::sort(vecSortedTracks.begin(), vecSortedTracks.end(),
+              [](const MySortedTracks& a, const MySortedTracks& b) {
+                return a.bcID < b.bcID;
+              });
+
+    sortedTracks.reserve(vecSortedTracks.size());
+    for (const auto& sTrack : vecSortedTracks) {
+      // mHistManager.fill(HIST("hTrackEtaPhiEMCal"), sTrack.eta, sTrack.phi);
+      sortedTracks(sTrack.bcID, sTrack.trackID, sTrack.eta, sTrack.phi);
+    }
+
+    LOG(debug) << "Ending process full.";
+  }
+  PROCESS_SWITCH(EmcalTrackSorter, processBoostSort, "run full track sorting analysis by looping over tracks not collisions", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

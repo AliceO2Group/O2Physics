@@ -16,37 +16,41 @@
 /// \author Marvin Hemmer (marvin.hemmer@cern.ch) Goethe-University
 ///
 
-#include <algorithm>
-#include <memory>
-#include <unordered_map>
-#include <cmath>
-#include <string>
-#include <tuple>
-#include <vector>
-#include <random>
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-
-#include "DetectorsBase/GeometryManager.h"
-
+#include "PWGJE/Core/EmcalMatchingUtilities.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
-#include "PWGJE/DataModel/EMCALMatchedCollisions.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "DataFormatsEMCAL/Cell.h"
-#include "DataFormatsEMCAL/CellLabel.h"
-#include "DataFormatsEMCAL/Constants.h"
-#include "DataFormatsEMCAL/AnalysisCluster.h"
-#include "EMCALBase/Geometry.h"
-#include "EMCALBase/ClusterFactory.h"
-#include "EMCALBase/NonlinearityHandler.h"
-#include "EMCALReconstruction/Clusterizer.h"
-#include "PWGJE/Core/EmcalMatchingUtilities.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <EMCALBase/Geometry.h>
+#include <EMCALBase/GeometryBase.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TString.h>
+
+#include <boost/geometry.hpp>
+#include <boost/geometry/index/rtree.hpp>
+
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <span>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -58,7 +62,31 @@ using FilteredTracks = o2::soa::Filtered<MyGlobTracks>;
 using McCells = o2::soa::Join<aod::Calos, aod::McCaloLabels_001>;
 using FilteredCells = o2::soa::Filtered<aod::Calos>;
 
+namespace bg = boost::geometry;
+namespace bgi = boost::geometry::index;
+
+using point = bg::model::point<float, 2, bg::cs::cartesian>;
+using box = bg::model::box<point>;
+using value = std::pair<box, int>; // cell bounding box + cellID
+
 struct EmcalCellTrackMatcher {
+
+  // small neighbor cell struct
+  struct Neighbor {
+    int sm, iphi, ieta;
+    bool valid;
+    Neighbor() : sm(0), iphi(0), ieta(0), valid(true)
+    {
+    }
+  };
+
+  // small track data struct
+  struct Track {
+    float eta;
+    float phi;
+    int trackID;
+  };
+
   Produces<o2::aod::EMCALCellTracks> cellMatchedTracks;
 
   // Options for the clusterization
@@ -68,16 +96,18 @@ struct EmcalCellTrackMatcher {
   Configurable<float> trackDCAz{"trackDCAz", 5.f, "Maximum DCAz of a track to to be considered primary and perform the track matching."};
   Configurable<float> trackDCAxy{"trackDCAxy", 5.f, "Maximum DCAxy of a track to to be considered primary and perform the track matching."};
   Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.01011162697, "Max matching distance track-cell. Default value is equal to half a cell diagonal."};
+  Configurable<float> maxHalfDistance{"maxHalfDistance", 0.00715f, "Max distance in eta and phi between to cells. Default value is half a cell width, which is 0.0143."};
   Configurable<int> maxNumberTracks{"maxNumberTracks", 1000, "Number of tracks we expect per BC that point to EMCal. This is for optimization."};
   Configurable<bool> useAlignmentFromCCDB{"useAlignmentFromCCDB", true, "States if alignment objects should be used from CCDB"};
+  Configurable<float> minAplitude{"minAplitude", 0.09f, "Minimum amplitude a cell needs to have to be matched with a track. Since we do not use cells below a certain threshold for clustering this can be used to speed up this task."};
 
   // Require EMCAL cells (CALO type 1)
-  Partition<aod::Calos> emcalCells = aod::calo::caloType == selectedCellType;
-  Filter emccellfilter = aod::calo::caloType == selectedCellType;
+  Partition<aod::Calos> emcalCells = aod::calo::caloType == selectedCellType.value && aod::calo::amplitude >= minAplitude.value;
+  Filter emccellfilter = aod::calo::caloType == selectedCellType.value;
 
   // Filter for the tracks
   const float trackNotOnEMCal = -900;
-  Filter trackFilter = (aod::track::pt >= trackMinPt) && (aod::track::trackEtaEmcal > trackNotOnEMCal) && (aod::track::trackPhiEmcal > trackNotOnEMCal) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (nabs(aod::track::dcaXY) < trackDCAxy) && (nabs(aod::track::dcaZ) < trackDCAz);
+  Filter trackFilter = (aod::track::pt >= trackMinPt) && (aod::track::trackEtaEmcal > trackNotOnEMCal) && (aod::track::trackPhiEmcal > trackNotOnEMCal) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (nabs(aod::track::dcaXY) < trackDCAxy) && (nabs(aod::track::dcaZ) < trackDCAz);
 
   // CDB service (for geometry)
   Service<o2::ccdb::BasicCCDBManager> mCcdbManager;
@@ -87,15 +117,76 @@ struct EmcalCellTrackMatcher {
 
   // EMCal geometry
   o2::emcal::Geometry* geometry;
-  const int16_t nCellsInEMCal = 12288;
-  int nCellsTotal;
-  std::vector<std::vector<float>> vecLookUpCellPosition;
+  static constexpr int16_t NCellsInEMCal = 12288;
+  static constexpr int NCellsTotal = 17664; // Number of cells in the EMCal
+  static constexpr float Epsilon = 1.e-6;   // small value to ensure cells boxes are unique
+  std::array<float, NCellsTotal> arrEta;
+  std::array<float, NCellsTotal> arrPhi;
+  std::array<float, NCellsTotal> arrLowEta;
+  std::array<float, NCellsTotal> arrUpEta;
+  std::array<float, NCellsTotal> arrLowPhi;
+  std::array<float, NCellsTotal> arrUpPhi;
 
   // Preslices
   Preslice<MyGlobTracks> perCollision = o2::aod::track::collisionId;
   PresliceUnsorted<CollEventSels> collisionsPerFoundBC = aod::evsel::foundBCId;
   Preslice<aod::Calos> cellsPerFoundBC = aod::calo::bcId;
   Preslice<aod::SortedTracks> tracksPerFoundBC = aod::emcalcluster::bcId;
+
+  Neighbor computeNeighbor(int16_t sm, int16_t iphi, int16_t ieta, int16_t dPhi, int16_t dEta, int16_t maxPhi, int16_t maxEta)
+  {
+    Neighbor neighbour;
+    iphi += dPhi;
+    ieta += dEta;
+
+    if (iphi == maxPhi) {
+      if (sm == 10 || sm == 11 || sm == 18 || sm == 19) { // o2-linter: disable=magic-number (these are SM that do not have another SM directly next to them in positive iphi direction)
+        neighbour.valid = false;
+      } else {
+        iphi = 0;
+        sm += 2;
+      }
+    } else if (iphi < 0) {
+      if ((sm == 0 || sm == 1 || sm == 12 || sm == 13) || ((sm == 18 && ieta >= 32) || (sm == 19 && ieta <= 16))) { // o2-linter: disable=magic-number (these are SM that do not have another SM directly next to them in negative iphi direction. SM 18 and 19 only partially have a SM next to them depending on eta)
+        neighbour.valid = false;
+      } else {
+        iphi = 23;
+        sm -= 2;
+      }
+    }
+
+    if (ieta == maxEta) {
+      if ((sm % 2) || (sm == 12 || sm == 14 || sm == 16)) { // o2-linter: disable=magic-number (these are SM that do not have another SM directly next to them in positive ieta direction)
+        neighbour.valid = false;
+      } else {
+        ieta = 0;
+        sm += 1;
+      }
+    } else if (ieta < 0) {
+      if ((sm % 2 == 0) || (sm == 13 || sm == 15 || sm == 17)) { // o2-linter: disable=magic-number (these are SM that do not have another SM directly next to them in negative ieta direction)
+        neighbour.valid = false;
+      } else {
+        ieta = 47;
+        sm -= 1;
+      }
+    }
+    neighbour.ieta = ieta;
+    neighbour.iphi = iphi;
+    neighbour.sm = sm;
+    return neighbour;
+  };
+
+  // Build the R-tree
+  bgi::rtree<value, bgi::quadratic<16>> buildCellRTree(const std::vector<std::tuple<float, float, float, float>>& cellBounds)
+  {
+    std::vector<value> entries;
+    int cellID = 0;
+    for (const auto& [etaMin, etaMax, phiMin, phiMax] : cellBounds) {
+      box b(point(etaMin, phiMin), point(etaMax, phiMax));
+      entries.emplace_back(b, cellID++);
+    }
+    return bgi::rtree<value, bgi::quadratic<16>>(entries);
+  }
 
   void init(InitContext const&)
   {
@@ -115,7 +206,6 @@ struct EmcalCellTrackMatcher {
     LOG(debug) << "After load geometry!";
     const int runNumberForGeom = 223409;
     geometry = o2::emcal::Geometry::GetInstanceFromRunNumber(runNumberForGeom);
-    nCellsTotal = geometry->GetNCells();
     LOG(debug) << "Completed init!";
 
     // Setup QA hists.
@@ -124,7 +214,7 @@ struct EmcalCellTrackMatcher {
       phiAxis{1000, 0, 2 * 3.14159, "#it{#varphi} (rad)"},
       dEtaAxis{100, -0.015, 0.015, "#Delta#it{#eta}"},
       dPhiAxis{100, -0.015, 0.015, "#Delta#it{#varphi} (rad)"},
-      cellAxis{nCellsTotal, -0.5, nCellsTotal - 0.5, "cellID"},
+      cellAxis{NCellsTotal, -0.5, NCellsTotal - 0.5, "cellID"},
       etaIndexAxis{96, -0.5, 95.5, "#it{#eta} ID"},
       phiIndexAxis{208, -0.5, 207.5, "#it{#varphi} ID"},
       smAxis{20, -0.5, 19.5, "SM"};
@@ -147,8 +237,9 @@ struct EmcalCellTrackMatcher {
     }
     double dist = 0; // we will check the position on the surface of the cell
     double lxyzi[3] = {0., 0., 0.}, xyzi[3] = {0., 0., 0.};
-    vecLookUpCellPosition = std::vector<std::vector<float>>(nCellsTotal, std::vector<float>(2, -999.f));
-    for (int iCell = 0; iCell < nCellsTotal; ++iCell) {
+    arrEta.fill(-999.f);
+    arrPhi.fill(-999.f);
+    for (int iCell = 0; iCell < NCellsTotal; ++iCell) {
       // get the local coordinates of the cell
       try {
         geometry->RelPosCellInSModule(iCell, dist).GetCoordinates(lxyzi[0], lxyzi[1], lxyzi[2]);
@@ -157,17 +248,68 @@ struct EmcalCellTrackMatcher {
         continue;
       }
       // Now get the global coordinate
-      int SM = geometry->GetSuperModuleNumber(iCell);
-      geometry->GetGlobal(lxyzi, xyzi, SM);
+      int iSM = geometry->GetSuperModuleNumber(iCell);
+      geometry->GetGlobal(lxyzi, xyzi, iSM);
       auto [iRow, iCol] = geometry->GlobalRowColFromIndex(iCell);
       math_utils::Point3D<float> pos(xyzi[0], xyzi[1], xyzi[2]);
-      vecLookUpCellPosition[iCell][0] = pos.Eta();
-      vecLookUpCellPosition[iCell][1] = RecoDecay::constrainAngle(pos.Phi());
+      arrEta[iCell] = pos.Eta();
+      arrPhi[iCell] = RecoDecay::constrainAngle(pos.Phi());
       mHistManager.fill(HIST("hEMCalEtaPhi3DMap"), iCol, iRow, std::sqrt(pos.X() * pos.X() + pos.Y() * pos.Y()));
-      mHistManager.fill(HIST("pEMCalRadiusSM"), SM, std::sqrt(pos.X() * pos.X() + pos.Y() * pos.Y()));
+      mHistManager.fill(HIST("pEMCalRadiusSM"), iSM, std::sqrt(pos.X() * pos.X() + pos.Y() * pos.Y()));
       mHistManager.fill(HIST("pEMCalRadiusEta"), iCol, std::sqrt(pos.X() * pos.X() + pos.Y() * pos.Y()));
       mHistManager.fill(HIST("pEMCalRadiusPhi"), iRow, std::sqrt(pos.X() * pos.X() + pos.Y() * pos.Y()));
     }
+
+    // second loop over the cells to get the cell neighbor values
+    for (int iCell = 0; iCell < NCellsTotal; ++iCell) {
+      auto [iSM, iMod, iIphi, iIeta] = geometry->GetCellIndex(iCell);
+      auto [iphi, ieta] = geometry->GetCellPhiEtaIndexInSModule(iSM, iMod, iIphi, iIeta);
+
+      int nRows = o2::emcal::EMCAL_ROWS; // rows -> phi
+      int nCols = o2::emcal::EMCAL_COLS; // cols -> eta
+
+      switch (geometry->GetSMType(iSM)) {
+        case o2::emcal::EMCAL_STANDARD:
+          // all good
+          break;
+        case o2::emcal::EMCAL_HALF:
+          // does not exist
+          break;
+        case o2::emcal::DCAL_STANDARD:
+          nCols = 2 * nCols / 3;
+          break;
+        case o2::emcal::EMCAL_THIRD:
+        case o2::emcal::DCAL_EXT:
+          nRows = nRows / 3;
+          break;
+        default:
+          break;
+      }
+
+      Neighbor nPhiUp = computeNeighbor(iSM, iphi, ieta, +1, 0, nRows, nCols);
+      Neighbor nPhiDown = computeNeighbor(iSM, iphi, ieta, -1, 0, nRows, nCols);
+      Neighbor nEtaUp = computeNeighbor(iSM, iphi, ieta, 0, +1, nRows, nCols);
+      Neighbor nEtaDown = computeNeighbor(iSM, iphi, ieta, 0, -1, nRows, nCols);
+
+      auto computeBoundary = [&](float center, const Neighbor& n, bool isEta, bool positiveDir) -> float {
+        if (!n.valid)
+          return center + (positiveDir ? +maxHalfDistance.value : -maxHalfDistance.value);
+
+        int neighId = geometry->GetAbsCellIdFromCellIndexes(n.sm, n.iphi, n.ieta);
+        float neighVal = isEta ? arrEta[neighId] : arrPhi[neighId];
+        float delta = std::abs(center - neighVal) / 2.f - Epsilon;
+        if (delta >= maxHalfDistance.value) {
+          delta = maxHalfDistance.value;
+        }
+
+        return center + (positiveDir ? +delta : -delta);
+      };
+      arrUpPhi[iCell] = computeBoundary(arrPhi[iCell], nPhiUp, false, true);
+      arrLowPhi[iCell] = computeBoundary(arrPhi[iCell], nPhiDown, false, false);
+      arrUpEta[iCell] = computeBoundary(arrEta[iCell], nEtaUp, true, true);
+      arrLowEta[iCell] = computeBoundary(arrEta[iCell], nEtaDown, true, false);
+
+    } // for (int iCell = 0; iCell < NCellsTotal; ++iCell) {
   }
 
   template <int supermoduleID>
@@ -300,11 +442,11 @@ struct EmcalCellTrackMatcher {
             vTowerIndex.reserve(cellsInBC.size());
             for (const auto& cell : cellsInBC) {
               int16_t cellNumber = cell.cellNumber();
-              if (cellNumber < 0 || cellNumber >= nCellsTotal) {
+              if (cellNumber < 0 || cellNumber >= NCellsTotal) {
                 continue;
               }
-              vCellEta.emplace_back(vecLookUpCellPosition[cellNumber][0]);
-              vCellPhi.emplace_back(vecLookUpCellPosition[cellNumber][1]);
+              vCellEta.emplace_back(arrEta[cellNumber]);
+              vCellPhi.emplace_back(arrPhi[cellNumber]);
               vCellIndex.emplace_back(cell.globalIndex());
               vTowerIndex.emplace_back(cellNumber);
             }
@@ -335,7 +477,7 @@ struct EmcalCellTrackMatcher {
                 mHistManager.fill(HIST("hvTrackEtaPhiEMCal"), vTrackEta[iTrack], vTrackPhi[iTrack]);
                 double dEta = vTrackEta[iTrack] - vCellEta[cellIDLocal];
                 double dPhi = vTrackPhi[iTrack] - vCellPhi[cellIDLocal];
-                if (nCellsInEMCal > vTowerIndex[cellIDLocal]) {
+                if (NCellsInEMCal > vTowerIndex[cellIDLocal]) {
                   mHistManager.fill(HIST("hTrackCellDiffEMCal"), dEta, dPhi);
                 } else {
                   mHistManager.fill(HIST("hTrackCellDiffDCal"), dEta, dPhi);
@@ -351,6 +493,7 @@ struct EmcalCellTrackMatcher {
       LOG(debug) << "Done with process BC.";
       nBCsProcessed++;
     } // end of bc loop
+    cellMatchedTracks.reserve(vecCellToTracks.size());
     for (const auto& trackIDs : vecCellToTracks) {
       cellMatchedTracks(trackIDs);
     }
@@ -363,8 +506,24 @@ struct EmcalCellTrackMatcher {
   {
     LOG(debug) << "Starting process sorted tracks.";
 
+    // if we have no cells, just skip this DF
+    if (!cells.size()) {
+      return;
+    }
+    // if we have no tracks fill the table with empty spans
+    if (!tracks.size()) {
+      cellMatchedTracks.reserve(cells.size());
+      for (int64_t iCell = 0; iCell < cells.size(); ++iCell) {
+        cellMatchedTracks(std::span<int>());
+      }
+      return;
+    }
+
     // outer vector is size as number of ALL calo cells in current DF, inside vector will store trackIDs
     std::vector<std::vector<int>> vecCellToTracks(cells.size(), std::vector<int>());
+    // std::vector<int> vecTrackIDs;
+    // vecTrackIDs.reserve(cells.size());
+    // std::vector<int> vecNTrackIDs(cells.size(), 0);
 
     auto track = tracks.begin();
     auto cell = emcalCells.begin();
@@ -388,11 +547,11 @@ struct EmcalCellTrackMatcher {
     vTrackPhi.reserve(maxNumberTracks);
     vTrackEta.reserve(maxNumberTracks);
     vTrackIndex.reserve(maxNumberTracks);
-    vCellPhi.reserve(nCellsTotal);
-    vCellEta.reserve(nCellsTotal);
-    vCellIndex.reserve(nCellsTotal);
-    vTowerIndex.reserve(nCellsTotal);
-    vSMIndex.reserve(nCellsTotal);
+    vCellPhi.reserve(NCellsTotal);
+    vCellEta.reserve(NCellsTotal);
+    vCellIndex.reserve(NCellsTotal);
+    vTowerIndex.reserve(NCellsTotal);
+    vSMIndex.reserve(NCellsTotal);
     while (cell != cellEnd && track != trackEnd) {
       auto cellBC = cell.bcId();
       auto trackBC = track.bcId();
@@ -402,12 +561,12 @@ struct EmcalCellTrackMatcher {
 
         while (cell != cellEnd && cellBC == currentBCID) {
           int16_t cellNumber = cell.cellNumber();
-          if (cellNumber < 0 || cellNumber >= nCellsTotal) {
+          if (cellNumber < 0 || cellNumber >= NCellsTotal) {
             LOG(info) << "cell number " << cellNumber << " not within EMCal!";
             continue;
           }
-          vCellEta.emplace_back(vecLookUpCellPosition[cellNumber][0]);
-          vCellPhi.emplace_back(vecLookUpCellPosition[cellNumber][1]);
+          vCellEta.emplace_back(arrEta[cellNumber]);
+          vCellPhi.emplace_back(arrPhi[cellNumber]);
           vCellIndex.emplace_back(cell.globalIndex());
           vTowerIndex.emplace_back(cellNumber);
           vSMIndex.emplace_back(geometry->GetSuperModuleNumber(cellNumber));
@@ -434,10 +593,12 @@ struct EmcalCellTrackMatcher {
             int trackID = vTrackIndex[iTrack];
             int cellID = vCellIndex[cellIDLocal];
             vecCellToTracks[cellID].emplace_back(trackID);
+            // vecTrackIDs[cellID]
+            // vecNTrackIDs[cellID]
             mHistManager.fill(HIST("hvTrackEtaPhiEMCal"), trackEta, trackPhi);
-            double dEta = trackEta - vCellEta[cellIDLocal];
-            double dPhi = trackPhi - vCellPhi[cellIDLocal];
-            if (nCellsInEMCal > vTowerIndex[cellIDLocal]) {
+            float dEta = trackEta - vCellEta[cellIDLocal];
+            float dPhi = trackPhi - vCellPhi[cellIDLocal];
+            if (NCellsInEMCal > vTowerIndex[cellIDLocal]) {
               mHistManager.fill(HIST("hTrackCellDiffEMCal"), dEta, dPhi);
             } else {
               mHistManager.fill(HIST("hTrackCellDiffDCal"), dEta, dPhi);
@@ -473,11 +634,251 @@ struct EmcalCellTrackMatcher {
       }
     } // while (cell != cellEnd && track != trackEnd)
 
+    // vecTrackIDs
+    // vecNTrackIDs
+
+    cellMatchedTracks.reserve(vecCellToTracks.size());
     for (const auto& trackIDs : vecCellToTracks) {
       cellMatchedTracks(trackIDs);
     }
+    LOG(info) << "number of entries in new matched tracks table " << cellMatchedTracks.lastIndex() << "\t number of inital cell table entries " << cells.size();
   }
   PROCESS_SWITCH(EmcalCellTrackMatcher, processSorted, "run analysis with tracks sorted according to BCId", false);
+
+  void processSortedRTree(o2::aod::SortedTracks const&, aod::Calos const& cells)
+  {
+    LOG(debug) << "Starting process sorted tracks.";
+
+    // if we have no cells, just skip this DF
+    // if(!cells.size()) {
+    //   return;
+    // }
+
+    auto emptyVec = std::vector<int>({});
+    auto emptySpan = std::span(emptyVec.begin(), 0);
+    // if we have no tracks fill the table with empty spans
+    cellMatchedTracks.reserve(cells.size());
+    for (int64_t iCell = 0; iCell < cells.size(); ++iCell) {
+      cellMatchedTracks(emptySpan);
+    }
+    // if(tracks.size() == 0){
+    //   for (int64_t iCell = 0; iCell < cells.size(); ++iCell){
+    //     cellMatchedTracks(emptySpan);
+    //   }
+    //   return;
+    // } else {
+    //   for (int64_t iCell = 0; iCell < cells.size(); ++iCell){
+    //     cellMatchedTracks(emptySpan);
+    //   }
+    // }
+
+    // // outer vector is size as number of ALL calo cells in current DF, inside vector will store trackIDs
+    // std::vector<std::vector<int>> vecCellToTracks(cells.size(), std::vector<int>());
+    // std::vector<int> vecTrackIDs;
+    // vecTrackIDs.reserve(cells.size());
+    // std::vector<int> vecNTrackIDs(cells.size(), 0);
+
+    // std::array<size_t, NCellsTotal> matchedTrackCounts;
+    // std::vector<size_t> matchedTrackOffsets;
+    // matchedTrackOffsets.reserve(NCellsTotal + 1);
+    // std::vector<int> matchedTrackCountsOrdered;
+    // matchedTrackCountsOrdered.reserve(NCellsTotal);
+
+    // auto track = tracks.begin();
+    // auto cell = emcalCells.begin();
+
+    // const auto cellEnd = emcalCells.end();
+    // const auto trackEnd = tracks.end();
+
+    // std::vector<int> matchIndexCell;
+    // matchIndexCell.reserve(maxNumberTracks); // reserve enough space for better performance
+    // std::vector<int> matchIndexTower;
+    // matchIndexTower.reserve(maxNumberTracks); // reserve enough space for better performance
+
+    // // For the matching of a track to a cell we will use a KDTree approach from emcmatchingutilities
+    // // where cells are matched to tracks. For this we need vectors of cell and track eta and phi.
+    // std::vector<float> vTrackPhi;
+    // std::vector<float> vTrackEta;
+    // std::vector<int> vTrackIndex;
+    // std::vector<float> vCellPhi;
+    // std::vector<float> vCellEta;
+    // std::vector<int> vCellIndex;
+    // std::vector<int16_t> vTowerIndex;
+    // std::vector<int> vSMIndex;
+    // std::vector<std::tuple<float, float, float, float>> cellBounds;
+    // vTrackPhi.reserve(maxNumberTracks);
+    // vTrackEta.reserve(maxNumberTracks);
+    // vTrackIndex.reserve(maxNumberTracks);
+    // vCellPhi.reserve(NCellsTotal);
+    // vCellEta.reserve(NCellsTotal);
+    // vCellIndex.reserve(NCellsTotal);
+    // vTowerIndex.reserve(NCellsTotal);
+    // vSMIndex.reserve(NCellsTotal);
+    // cellBounds.reserve(NCellsTotal);
+    // while (cell != cellEnd && track != trackEnd) {
+    //   auto cellBC = cell.bcId();
+    //   auto trackBC = track.bcId();
+
+    //   if (cellBC == trackBC) {
+    //     auto currentBCID = cellBC;
+
+    //     while (cell != cellEnd && cellBC == currentBCID) {
+    //       int16_t cellNumber = cell.cellNumber();
+    //       if (cellNumber < 0 || cellNumber >= NCellsTotal) {
+    //         LOG(info) << "cell number " << cellNumber << " not within EMCal!";
+    //         continue;
+    //       }
+    //       vCellEta.emplace_back(arrEta[cellNumber]);
+    //       vCellPhi.emplace_back(arrPhi[cellNumber]);
+    //       vCellIndex.emplace_back(cell.globalIndex());
+    //       vTowerIndex.emplace_back(cellNumber);
+    //       vSMIndex.emplace_back(geometry->GetSuperModuleNumber(cellNumber));
+    //       // cell bounds (etaMin, etaMax, phiMin, phiMax)
+    //       cellBounds.emplace_back(std::tuple<float, float, float, float>(arrLowEta[cellNumber], arrUpEta[cellNumber], arrLowPhi[cellNumber], arrUpPhi[cellNumber]));
+    //       if (++cell != cellEnd) {
+    //         cellBC = cell.bcId();
+    //       }
+    //     }
+
+    //     while (track != trackEnd && trackBC == currentBCID) {
+    //       vTrackPhi.emplace_back(track.phi());
+    //       vTrackEta.emplace_back(track.eta());
+    //       vTrackIndex.emplace_back(track.trackId());
+    //       if (++track != trackEnd) {
+    //         trackBC = track.bcId();
+    //       }
+    //     }
+    //     // build the current RTree
+    //     auto cellRTree = buildCellRTree(cellBounds);
+
+    //     // loop over tracks to find matching cell
+    //     for (size_t iTrack = 0; iTrack < vTrackIndex.size(); ++iTrack) {
+    //       point p(vTrackEta[iTrack], vTrackPhi[iTrack]);
+    //       std::vector<value> result;
+    //       cellRTree.query(bgi::contains(p), std::back_inserter(result));
+
+    //       if (!result.empty()) {
+    //         // Choose best match if multiple
+    //         auto best = std::min_element(result.begin(), result.end(),
+    //             [&](const value& a, const value& b) {
+    //                 auto center = [](const value& v) {
+    //                     float etaC = 0.5f * (v.first.min_corner().get<0>() + v.first.max_corner().get<0>());
+    //                     float phiC = 0.5f * (v.first.min_corner().get<1>() + v.first.max_corner().get<1>());
+    //                     return std::make_pair(etaC, phiC);
+    //                 };
+    //                 auto [etaA, phiA] = center(a);
+    //                 auto [etaB, phiB] = center(b);
+    //                 float dA = std::hypot(vTrackEta[iTrack] - etaA, vTrackPhi[iTrack] - phiA);
+    //                 float dB = std::hypot(vTrackEta[iTrack] - etaB, vTrackPhi[iTrack] - phiB);
+    //                 return dA < dB;
+    //             });
+
+    //         int localCellIdx = best->second; // Index in vCellIndex
+    //         int cellID = vTowerIndex[localCellIdx];  // towerID of the matched cell
+    //         LOG(info) << "localCellIdx = " << localCellIdx << "\t cellID = " << cellID;
+    //         matchIndexCell.emplace_back(localCellIdx);
+    //         matchIndexTower.emplace_back(cellID);
+
+    //         // Fill histograms
+    //         mHistManager.fill(HIST("hvTrackEtaPhiEMCal"), vTrackEta[iTrack], vTrackPhi[iTrack]);
+    //         float dEta = vTrackEta[iTrack] - vCellEta[localCellIdx];
+    //         float dPhi = vTrackPhi[iTrack] - vCellPhi[localCellIdx];
+
+    //         if (NCellsInEMCal > vTowerIndex[localCellIdx]) {
+    //           mHistManager.fill(HIST("hTrackCellDiffEMCal"), dEta, dPhi);
+    //         } else {
+    //           mHistManager.fill(HIST("hTrackCellDiffDCal"), dEta, dPhi);
+    //         }
+
+    //         auto [iRow, iCol] = geometry->GlobalRowColFromIndex(vTowerIndex[localCellIdx]);
+    //         mHistManager.fill(HIST("hNTracksPerCell"), iCol, iRow);
+    //         fillSupermoduleHistograms(vSMIndex[localCellIdx], dEta, dPhi);
+
+    //       } else {
+    //         matchIndexCell.emplace_back(-1);
+    //         matchIndexTower.emplace_back(-1);
+    //       } // if (!result.empty())
+    //     } // end of loop over tracks
+
+    //     // count how many tracks a single cell is matched to
+    //     for (size_t iTrack = 0; iTrack < matchIndexTower.size(); ++iTrack) {
+    //       int towerID = matchIndexTower[iTrack];
+    //       if (towerID != -1) {
+    //         matchedTrackCounts[towerID]++;
+    //       }
+    //     }
+    //     matchedTrackOffsets.assign(vTowerIndex.size() + 1, 0);
+    //     matchedTrackCountsOrdered.assign(vTowerIndex.size(), 0);
+    //     // make adjustments for the offset for the flat vector later
+    //     for (size_t iCell = 0; iCell < vTowerIndex.size(); ++iCell) {
+    //       matchedTrackOffsets[iCell + 1] = matchedTrackOffsets[iCell] + matchedTrackCounts[vTowerIndex[iCell]];
+    //       matchedTrackCountsOrdered[iCell] = matchedTrackCounts[vTowerIndex[iCell]];
+    //     }
+
+    //     // making a flat vector order by the appearance of the cells
+    //     std::vector<int> matchedTrackIDsFlat(matchedTrackOffsets.back());
+    //     matchedTrackIDsFlat.assign(matchedTrackOffsets.back(), -1);
+    //     std::vector<size_t> cellFillPos = matchedTrackOffsets;  // working positions
+    //     if (!matchedTrackIDsFlat.empty()) {
+    //       for (size_t iTrack = 0; iTrack < matchIndexCell.size(); ++iTrack) {
+    //         int localCellID = matchIndexCell[iTrack];
+    //         if (localCellID != -1) {
+    //           size_t pos = cellFillPos[localCellID]++;
+    //           matchedTrackIDsFlat[pos] = vTrackIndex[iTrack];
+    //         }
+    //       }
+    //     }
+    //     auto it = matchedTrackIDsFlat.begin();
+    //     LOG(info) << "matchedTrackCountsOrdered.size() = " << matchedTrackCountsOrdered.size();
+    //     int nFilled2 = 0;
+    //     for (auto& size : matchedTrackCountsOrdered) {
+    //       auto sp = std::span(it, size);
+    //       //fill sp
+    //       ++nFilled;
+    //       ++nFilled2;
+    //       cellMatchedTracks(sp);
+    //       it += size;
+    //     }
+    //     LOG(info) << "nFilled2 = " << nFilled2;
+
+    //     matchedTrackCounts.fill(0);
+    //     matchedTrackCountsOrdered.clear();
+    //     cellBounds.clear();
+    //     matchedTrackOffsets.clear();
+    //     vTrackPhi.clear();
+    //     vTrackEta.clear();
+    //     vTrackIndex.clear();
+    //     vCellPhi.clear();
+    //     vCellEta.clear();
+    //     vCellIndex.clear();
+    //     vTowerIndex.clear();
+    //     vSMIndex.clear();
+    //     matchIndexCell.clear();
+    //     matchIndexTower.clear();
+    //   } else if (cellBC < trackBC) {
+    //     LOG(info) << "filling empty spans";
+    //     while (cell != cellEnd && cellBC < trackBC) {
+    //       if (++cell != cellEnd) {
+    //         cellMatchedTracks(std::span<const int>());
+    //         ++nFilled;
+    //         cellBC = cell.bcId();
+    //       }
+    //     }
+    //   } else {
+    //     while (track != trackEnd && trackBC < cellBC) {
+    //       if (++track != trackEnd) {
+    //         trackBC = track.bcId();
+    //       }
+    //     }
+    //   }
+    //   if (cell == cellEnd || track == trackEnd) {
+    //     break;
+    //   }
+    // } // while (cell != cellEnd && track != trackEnd)
+
+    LOG(info) << "number of entries in new matched tracks table " << cellMatchedTracks.lastIndex() + 1 << "\t number of inital cell table entries " << cells.size();
+  }
+  PROCESS_SWITCH(EmcalCellTrackMatcher, processSortedRTree, "run analysis with tracks sorted according to BCId", false);
 
   //  Appears to need the BC to be accessed to be available in the collision table...
   void processSortedWithSlices(BcEvSels const& bcs, o2::aod::SortedTracks const& tracks, aod::Calos const& cells)
@@ -520,8 +921,8 @@ struct EmcalCellTrackMatcher {
       vTowerIndex.reserve(cellsInBC.size());
       for (const auto& cell : cellsInBC) {
         int16_t cellNumber = cell.cellNumber();
-        vCellEta.emplace_back(vecLookUpCellPosition[cellNumber][0]);
-        vCellPhi.emplace_back(vecLookUpCellPosition[cellNumber][1]);
+        vCellEta.emplace_back(arrEta[cellNumber]);
+        vCellPhi.emplace_back(arrPhi[cellNumber]);
         vCellIndex.emplace_back(cell.globalIndex());
         vTowerIndex.emplace_back(cellNumber);
       }
@@ -546,7 +947,7 @@ struct EmcalCellTrackMatcher {
           mHistManager.fill(HIST("hvTrackEtaPhiEMCal"), vTrackEta[iTrack], vTrackPhi[iTrack]);
           double dEta = vTrackEta[iTrack] - vCellEta[cellIDLocal];
           double dPhi = vTrackPhi[iTrack] - vCellPhi[cellIDLocal];
-          if (nCellsInEMCal > vTowerIndex[cellIDLocal]) {
+          if (NCellsInEMCal > vTowerIndex[cellIDLocal]) {
             mHistManager.fill(HIST("hTrackCellDiffEMCal"), dEta, dPhi);
           } else {
             mHistManager.fill(HIST("hTrackCellDiffDCal"), dEta, dPhi);
@@ -557,6 +958,7 @@ struct EmcalCellTrackMatcher {
         }
       }
     } // end of bc loop
+    cellMatchedTracks.reserve(vecCellToTracks.size());
     for (const auto& trackIDs : vecCellToTracks) {
       cellMatchedTracks(trackIDs);
     }

@@ -20,6 +20,8 @@
 
 #include "Common/Core/RecoDecay.h"
 
+#include "CommonConstants/MathConstants.h"
+
 #include <TKDTree.h>
 
 #include <algorithm>
@@ -29,10 +31,6 @@
 #include <stdexcept>
 #include <tuple>
 #include <vector>
-
-#include "Framework/Logger.h"
-#include "CommonConstants/MathConstants.h"
-#include "Common/Core/RecoDecay.h"
 
 namespace jetutilities
 {

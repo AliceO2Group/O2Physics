@@ -18,11 +18,12 @@
 /// \author Raymond Ehlers (raymond.ehlers@cern.ch) ORNL, Florian Jonas (florian.jonas@cern.ch)
 ///
 
-#include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/Core/EmcalMatchingUtilities.h"
 #include "PWGJE/DataModel/EMCALClusterDefinition.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/EMCALMatchedCollisions.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -48,10 +49,7 @@
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
-#include "TVector2.h"
 #include <TH1.h>
-
-#include <GPUROOTCartesianFwd.h>
 
 #include <cmath>
 #include <cstddef>
@@ -182,7 +180,7 @@ struct EmcalCorrectionTask {
       }
     }
     mClusterFactories.setGeometry(geometry);
-    mClusterFactories.setECALogWeight(logWeight);
+    mClusterFactories.SetECALogWeight(logWeight);
     mClusterFactories.setExoticCellFraction(exoticCellFraction);
     mClusterFactories.setExoticCellDiffTime(exoticCellDiffTime);
     mClusterFactories.setExoticCellMinAmplitude(exoticCellMinAmplitude);
@@ -382,17 +380,16 @@ struct EmcalCorrectionTask {
               mHistManager.fill(HIST("hCollisionTimeReso"), col.collisionTimeRes());
               mHistManager.fill(HIST("hCollPerBC"), 1);
               mHistManager.fill(HIST("hCollisionType"), 1);
-              math_utils::Point3D<float> vertexPos = {col.posX(), col.posY(), col.posZ()};
 
               std::vector<std::vector<int>> clusterToTrackIndexMap;
               std::vector<std::vector<int>> trackToClusterIndexMap;
               std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>> indexMapPair{clusterToTrackIndexMap, trackToClusterIndexMap};
               std::vector<int64_t> trackGlobalIndex;
-              doTrackMatching<CollEventSels::filtered_iterator>(col, tracks, indexMapPair, vertexPos, trackGlobalIndex);
+              doTrackMatching<CollEventSels::filtered_iterator>(col, tracks, indexMapPair, trackGlobalIndex);
 
               // Store the clusters in the table where a matching collision could
               // be identified.
-              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, &indexMapPair, &trackGlobalIndex);
+              fillClusterTable<CollEventSels::filtered_iterator>(col, iClusterizer, cellIndicesBC, &indexMapPair, &trackGlobalIndex);
             } else {
               mHistManager.fill(HIST("hBCMatchErrors"), 2);
             }
@@ -513,17 +510,16 @@ struct EmcalCorrectionTask {
               mHistManager.fill(HIST("hBCMatchErrors"), 0); // CollisionID ordered and foundBC matches -> Fill as healthy
               mHistManager.fill(HIST("hCollPerBC"), 1);
               mHistManager.fill(HIST("hCollisionType"), 1);
-              math_utils::Point3D<float> vertexPos = {col.posX(), col.posY(), col.posZ()};
 
               std::vector<std::vector<int>> clusterToTrackIndexMap;
               std::vector<std::vector<int>> trackToClusterIndexMap;
               std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>> indexMapPair{clusterToTrackIndexMap, trackToClusterIndexMap};
               std::vector<int64_t> trackGlobalIndex;
-              doTrackMatching<CollEventSels::filtered_iterator>(col, tracks, indexMapPair, vertexPos, trackGlobalIndex);
+              doTrackMatching<CollEventSels::filtered_iterator>(col, tracks, indexMapPair, trackGlobalIndex);
 
               // Store the clusters in the table where a matching collision could
               // be identified.
-              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, &indexMapPair, &trackGlobalIndex);
+              fillClusterTable<CollEventSels::filtered_iterator>(col, iClusterizer, cellIndicesBC, &indexMapPair, &trackGlobalIndex);
             } else {
               mHistManager.fill(HIST("hBCMatchErrors"), 2);
             }
@@ -628,11 +624,10 @@ struct EmcalCorrectionTask {
             mHistManager.fill(HIST("hBCMatchErrors"), 0); // CollisionID ordered and foundBC matches -> Fill as healthy
             mHistManager.fill(HIST("hCollPerBC"), 1);
             mHistManager.fill(HIST("hCollisionType"), 1);
-            math_utils::Point3D<float> vertexPos = {col.posX(), col.posY(), col.posZ()};
 
             // Store the clusters in the table where a matching collision could
             // be identified.
-            fillClusterTable<aod::Collision>(col, vertexPos, iClusterizer, cellIndicesBC);
+            fillClusterTable<aod::Collision>(col, iClusterizer, cellIndicesBC);
           }
         } else { // ambiguous
           // LOG(warning) << "No vertex found for event. Assuming (0,0,0).";
@@ -656,7 +651,7 @@ struct EmcalCorrectionTask {
   }
   PROCESS_SWITCH(EmcalCorrectionTask, processStandalone, "run stand alone analysis", false);
 
-  void processCellTrackMatching(BcEvSels const& bcs, CollEventSels const& collisions, MyGlobTracks const& tracks, FilteredCells const& cells, o2::aod::EMCALCellTracks const& cellTracks)
+  void processCellTrackMatching(BcEvSels const& bcs, CollEventSels const& collisions, MyGlobTracks const& tracks, FilteredCells const& cells, o2::aod::EMCALCellTracks const&)
   {
     LOG(debug) << "Starting process cell track matching.";
 
@@ -696,7 +691,7 @@ struct EmcalCorrectionTask {
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType())),
+                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), runNumber),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
       }
@@ -731,17 +726,16 @@ struct EmcalCorrectionTask {
               mHistManager.fill(HIST("hCollisionTimeReso"), col.collisionTimeRes());
               mHistManager.fill(HIST("hCollPerBC"), 1);
               mHistManager.fill(HIST("hCollisionType"), 1);
-              math_utils::Point3D<float> vertexPos = {col.posX(), col.posY(), col.posZ()};
 
               std::vector<std::vector<int>> clusterToTrackIndexMap;
               std::vector<std::vector<int>> trackToClusterIndexMap;
               std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>> indexMapPair{clusterToTrackIndexMap, trackToClusterIndexMap};
               std::vector<int64_t> trackGlobalIndex;
-              doTrackMatching<CollEventSels::filtered_iterator>(col, tracks, indexMapPair, vertexPos, trackGlobalIndex);
+              doTrackMatching<CollEventSels::filtered_iterator>(col, tracks, indexMapPair, trackGlobalIndex);
 
               // Store the clusters in the table where a matching collision could
               // be identified.
-              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, indexMapPair, trackGlobalIndex);
+              fillClusterTable<CollEventSels::filtered_iterator>(col, iClusterizer, cellIndicesBC, &indexMapPair, &trackGlobalIndex);
             } else {
               mHistManager.fill(HIST("hBCMatchErrors"), 2);
             }
@@ -817,7 +811,7 @@ struct EmcalCorrectionTask {
   }
 
   template <typename Collision>
-  void fillClusterTable(Collision const& col, math_utils::Point3D<float> const& vertexPos, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, const std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>>* indexMapPair = nullptr, const std::vector<int64_t>* trackGlobalIndex = nullptr)
+  void fillClusterTable(Collision const& col, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, const std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>>* indexMapPair = nullptr, const std::vector<int64_t>* trackGlobalIndex = nullptr)
   {
     // average number of cells per cluster, only used the reseve a reasonable amount for the clustercells table
     const size_t NAvgNcells = 3;
@@ -946,7 +940,7 @@ struct EmcalCorrectionTask {
   }
 
   template <typename Collision>
-  void doTrackMatching(Collision const& col, MyGlobTracks const& tracks, std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>>& indexMapPair, math_utils::Point3D<float>& vertexPos, std::vector<int64_t>& trackGlobalIndex)
+  void doTrackMatching(Collision const& col, MyGlobTracks const& tracks, std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>>& indexMapPair, std::vector<int64_t>& trackGlobalIndex)
   {
     auto groupedTracks = tracks.sliceBy(perCollision, col.globalIndex());
     int nTracksInCol = groupedTracks.size();

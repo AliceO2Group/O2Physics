@@ -17,17 +17,24 @@
 #ifndef PWGJE_CORE_EMCALMATCHINGUTILITIES_H_
 #define PWGJE_CORE_EMCALMATCHINGUTILITIES_H_
 
-#include <cmath>
-#include <limits>
-#include <numeric>
-#include <tuple>
-#include <vector>
+#include "Common/Core/RecoDecay.h"
+
+#include "CommonConstants/MathConstants.h"
 
 #include <TKDTree.h>
 
-#include "Framework/Logger.h"
-#include "CommonConstants/MathConstants.h"
-#include "Common/Core/RecoDecay.h"
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/box.hpp>
+#include <boost/geometry/geometries/point.hpp>
+#include <boost/geometry/index/parameters.hpp>
+#include <boost/geometry/index/rtree.hpp>
+
+#include <cmath>
+#include <limits>
+#include <stdexcept>
+#include <tuple>
+#include <utility> // for std::pair
+#include <vector>
 
 namespace emcmatchingutilities
 {
@@ -179,7 +186,7 @@ void matchCellsAndTracks(
     return;
   }
 
-  matchIndexCell.resize(nTracks, -1);
+  matchIndexCell.assign(nTracks, -1);
 
   // Build the KD-trees using vectors
   // We build two trees:
@@ -205,6 +212,69 @@ void matchCellsAndTracks(
     }
   }
   return;
+}
+
+template <typename T>
+void matchCellsAndTracks2(
+  std::vector<T>& cellPhi,
+  std::vector<T>& cellEta,
+  std::vector<T>& trackPhi,
+  std::vector<T>& trackEta,
+  double maxMatchingDistance,
+  std::vector<int>& matchIndexCell)
+{
+  using Point = boost::geometry::model::point<T, 2, boost::geometry::cs::cartesian>;
+  using Value = std::pair<Point, int>;
+
+  const std::size_t nCells = cellEta.size();
+  const std::size_t nTracks = trackEta.size();
+
+  if (!(nCells && nTracks)) {
+    return;
+  }
+
+  if (cellPhi.size() != nCells) {
+    throw std::invalid_argument("Cells collection eta and phi sizes don't match! Check the inputs!");
+  }
+  if (trackPhi.size() != nTracks) {
+    throw std::invalid_argument("Track collection eta and phi sizes don't match! Check the inputs!");
+  }
+
+  // Build R-tree from cells
+  std::vector<Value> rtreeEntries;
+  rtreeEntries.reserve(nCells);
+
+  for (std::size_t i = 0; i < nCells; ++i) {
+    rtreeEntries.emplace_back(Point(cellEta[i], cellPhi[i]), static_cast<int>(i));
+  }
+
+  boost::geometry::index::rtree<Value, boost::geometry::index::quadratic<16>> rtree(rtreeEntries);
+
+  matchIndexCell.assign(nTracks, -1);
+
+  for (std::size_t iTrack = 0; iTrack < nTracks; ++iTrack) {
+    Point query(trackEta[iTrack], trackPhi[iTrack]);
+
+    std::vector<Value> result;
+    rtree.query(boost::geometry::index::nearest(query, 1), std::back_inserter(result));
+
+    if (!result.empty()) {
+      const auto& [matchedPoint, matchedIdx] = result.front();
+
+      // Compute actual distance squared
+      T dEta = trackEta[iTrack] - boost::geometry::get<0>(matchedPoint);
+      T dPhiRaw = trackPhi[iTrack] - boost::geometry::get<1>(matchedPoint);
+      T dPhi = std::fabs(dPhiRaw);
+      if (dPhi > static_cast<T>(M_PI)) {
+        dPhi = static_cast<T>(2 * M_PI) - dPhi;
+      }
+      T dist2 = dEta * dEta + dPhi * dPhi;
+
+      if (dist2 < maxMatchingDistance * maxMatchingDistance) {
+        matchIndexCell[iTrack] = matchedIdx;
+      }
+    }
+  }
 }
 
 template <typename T, typename U>

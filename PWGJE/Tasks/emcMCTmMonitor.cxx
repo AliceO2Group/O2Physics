@@ -23,35 +23,34 @@
 /// For pilot beam data, instead of relying on the event selection, one can veto specific BC IDS using the flag
 /// fDoVetoBCID.
 
-#include <climits>
-#include <cstdlib>
-#include <map>
-#include <memory>
-#include <sstream>
-#include <string>
-#include <algorithm>
-#include <vector>
+#include "PWGJE/DataModel/EMCALClusters.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/HistogramRegistry.h"
-
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "CommonConstants/MathConstants.h"
 
+#include "CommonConstants/MathConstants.h"
 #include "EMCALBase/Geometry.h"
 #include "EMCALCalib/BadChannelMap.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
-#include "DataFormatsEMCAL/Cell.h"
-#include "DataFormatsEMCAL/Constants.h"
-#include "DataFormatsEMCAL/AnalysisCluster.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 
-#include "CommonDataFormat/InteractionRecord.h"
+#include <TH3.h>
+#include <THnSparse.h>
+
+#include <algorithm>
+#include <climits>
+#include <cmath>
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
