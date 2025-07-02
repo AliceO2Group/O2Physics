@@ -274,7 +274,7 @@ struct HfFilter { // Main struct for HF triggers
             auto ptBins = option.defaultValue.get<double*>();
             double lastEl{-1.e6};
             int iPt{0};
-            while (ptBins[iPt] > lastEl) {              
+            while (ptBins[iPt] > lastEl) {
               ptBinsDsSkimCreator.push_back(ptBins[iPt]);
               iPt++;
               lastEl = ptBins[iPt];
