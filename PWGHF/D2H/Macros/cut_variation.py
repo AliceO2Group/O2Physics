@@ -443,6 +443,8 @@ class CutVarMinimiser:
         -----------------------------------------------------
         - suffix: str
             suffix to be added in the name of the output objects
+        - title: str
+            title to be written at the top margin of the output objects
 
         Returns
         -----------------------------------------------------
@@ -564,6 +566,8 @@ class CutVarMinimiser:
             correlation between cut sets
         - suffix: str
             suffix to be added in the name of the output objects
+        - title: str
+            title to be written at the top margin of the output objects
 
         Returns
         -----------------------------------------------------
@@ -623,6 +627,8 @@ class CutVarMinimiser:
         -----------------------------------------------------
         - suffix: str
             suffix to be added in the name of the output objects
+        - title: str
+            title to be written at the top margin of the output objects
 
         Returns
         -----------------------------------------------------
@@ -712,6 +718,8 @@ class CutVarMinimiser:
         -----------------------------------------------------
         - suffix: str
             suffix to be added in the name of the output objects
+        - title: str
+            title to be written at the top margin of the output objects
 
         Returns
         -----------------------------------------------------
