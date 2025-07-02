@@ -152,7 +152,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
   using MyLFTracksWCov = soa::Join<TracksIU, TracksCovIU>;
 
-  using MyKfTracks = soa::Join<aod::MyLFTracksWCov, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa>;
+  using MyKfTracks = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa>;
   using MyKfCascTable = soa::Join<KFCascDatas, aod::KFCascCovs>;
   using KFCascadesLinked = soa::Join<aod::Cascades, aod::KFCascDataLink>;
 
