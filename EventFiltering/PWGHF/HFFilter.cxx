@@ -54,6 +54,7 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
+#include "Framework/RunningWorkflowInfo.h"
 #include <ReconstructionDataFormats/Track.h>
 
 #include <TH1.h>
@@ -217,7 +218,7 @@ struct HfFilter { // Main struct for HF triggers
   // helper object
   HfFilterHelper helper;
 
-  void init(InitContext&)
+  void init(InitContext& initContext)
   {
     helper.setHighPtTriggerThresholds(ptThresholds->get(0u, 0u), ptThresholds->get(0u, 1u));
     helper.setPtTriggerThresholdsForFemto(ptThresholdsForFemto->get(0u, 0u), ptThresholdsForFemto->get(0u, 1u));
@@ -261,6 +262,22 @@ struct HfFilter { // Main struct for HF triggers
       helper.setVtxConfiguration(dfB, true);
       helper.setVtxConfiguration(dfBtoDstar, true);
     }
+
+    // fetch config of track-index-skim-creator to apply the same cut on DeltaMassKK for Ds
+    std::vector<double>> ptBinsDsSkimCreator{};
+    LabeledArray<double> cutsDsSkimCreator{};
+    for (const DeviceSpec& device : workflows.devices) {
+      if (device.name.compare("hf-track-index-skim-creator") == 0) {
+        for (const auto& option : device.options) {
+          if (option.name.compare("binsPtDsToKKPi") == 0) {
+            auto ptBinsDsSkimCreator = option.defaultValue.get<std::vector<double>>();
+          } else if (option.name.compare("cutsDsToKKPi") == 0) {
+            auto cutsDsSkimCreator = option.defaultValue.get<LabeledArray<double>>();
+          }
+        }
+      }
+    }
+    helper.setPreselDsToKKPi(ptBinsDsSkimCreator, cutsDsSkimCreator);
 
     hProcessedEvents = registry.add<TH1>("fProcessedEvents", "HF - event filtered;;counts", HistType::kTH1D, {{kNtriggersHF + 2, -0.5, +kNtriggersHF + 1.5}});
     for (auto iBin = 0; iBin < kNtriggersHF + 2; ++iBin) {
