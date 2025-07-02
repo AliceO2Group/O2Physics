@@ -1732,7 +1732,7 @@ DECLARE_SOA_TABLE(HfCandToOmegaKaKf, "AOD", "HFCANDTOOMEGAKAKF",
                   hf_cand_xic0_omegac0::DecLenV0, hf_cand_xic0_omegac0::DecLenCascade, hf_cand_xic0_omegac0::DecLenCharmBaryon,
                   hf_cand_xic0_omegac0::InvMassLambda, hf_cand_xic0_omegac0::InvMassLambdaErr, hf_cand_xic0_omegac0::InvMassCascade, hf_cand_xic0_omegac0::InvMassCascadeErr, hf_cand_xic0_omegac0::InvMassCascadeRej, hf_cand_xic0_omegac0::InvMassCascadeRejErr, hf_cand_xic0_omegac0::InvMassCharmBaryon, hf_cand_xic0_omegac0::InvMassCharmBaryonErr,
                   hf_cand_xic0_omegac0::KfPtOmegaKa, hf_cand_xic0_omegac0::KfPtKaFromOmegaKa, hf_cand_xic0_omegac0::KfPtOmega,
-                  hf_cand_xic0_omegac0::CosThetaStarKaFromOemgac, hf_cand_xic0_omegac0::CosThetaStarKaFromXic, hf_cand_xic0_omegac0::CTauV0, hf_cand_xic0_omegac0::CTauCascade, hf_cand_xic0_omegac0::CTauOmegaKa,
+                  hf_cand_xic0_omegac0::CosThetaStarKaFromOmegac, hf_cand_xic0_omegac0::CosThetaStarKaFromXic, hf_cand_xic0_omegac0::CTauV0, hf_cand_xic0_omegac0::CTauCascade, hf_cand_xic0_omegac0::CTauOmegaKa,
                   hf_cand_xic0_omegac0::V0Id, v0data::PosTrackId, v0data::NegTrackId, hf_cand_xic0_omegac0::CascadeId, cascdata::BachelorId, hf_cand_xic0_omegac0::BachelorFromCharmBaryonId);
 
 DECLARE_SOA_TABLE(HfCandToXiPiKf, "AOD", "HFCANDTOXIPIKF", //!
