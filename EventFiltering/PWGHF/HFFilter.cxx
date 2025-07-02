@@ -271,9 +271,16 @@ struct HfFilter { // Main struct for HF triggers
       if (device.name.compare("hf-track-index-skim-creator") == 0) {
         for (const auto& option : device.options) {
           if (option.name.compare("binsPtDsToKKPi") == 0) {
-            auto ptBinsDsSkimCreator = option.defaultValue.get<std::vector<double>>();
+            auto ptBins = option.defaultValue.get<double*>();
+            double lastEl{-1.e6};
+            int iPt{0};
+            while (ptBins[iPt] > lastEl) {              
+              ptBinsDsSkimCreator.push_back(ptBins[iPt]);
+              iPt++;
+              lastEl = ptBins[iPt];
+            }
           } else if (option.name.compare("cutsDsToKKPi") == 0) {
-            auto cutsDsSkimCreator = option.defaultValue.get<LabeledArray<double>>();
+            cutsDsSkimCreator = option.defaultValue.get<LabeledArray<double>>();
           }
         }
       }
