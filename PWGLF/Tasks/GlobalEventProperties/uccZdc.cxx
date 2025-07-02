@@ -69,6 +69,7 @@ struct UccZdc {
 
   static constexpr float kCollEnergy{2.68};
   static constexpr float kZero{0.};
+  static constexpr float kOne{1.};
   static constexpr float kMinCharge{3.f};
 
   // Configurables Event Selection
@@ -86,6 +87,7 @@ struct UccZdc {
   Configurable<bool> applyEff{"applyEff", true, "Apply track-by-track efficiency correction"};
   Configurable<bool> applyFD{"applyFD", false, "Apply track-by-track feed down correction"};
   Configurable<bool> correctNch{"correctNch", true, "Correct also Nch"};
+  Configurable<bool> skipRecoColGTOne{"skipRecoColGTOne", true, "Remove collisions if reconstructed more than once"};
 
   // Event selection
   Configurable<float> posZcut{"posZcut", +10.0, "z-vertex position cut"};
@@ -166,8 +168,6 @@ struct UccZdc {
   // Histograms: Data
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   Service<ccdb::BasicCCDBManager> ccdb;
-
-  TH1F* fd = nullptr;
 
   void init(InitContext const&)
   {
@@ -322,10 +322,10 @@ struct UccZdc {
     // This avoids that users can replace objects **while** a train is running
     ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
     // Feed Down is the same for all runs -> use a global object
-    fd = ccdb->getForTimeStamp<TH1F>(paTHFD.value, ccdbNoLaterThan.value);
-    if (!fd) {
-      LOGF(fatal, "Feed Down object not found!");
-    }
+    //        fd = ccdb->getForTimeStamp<TH1F>(paTHFD.value,ccdbNoLaterThan.value);
+    //        if (!fd) {
+    //            LOGF(fatal, "Feed Down object not found!");
+    //        }
   }
 
   template <typename CheckCol>
@@ -709,10 +709,15 @@ struct UccZdc {
       return;
     }
 
+    auto feedDown = ccdb->getForTimeStamp<TH2F>(paTHFD.value, foundBC.timestamp());
+    if (!feedDown) {
+      return;
+    }
+
+    double nchMult{0.};
     std::vector<float> pTs;
     std::vector<float> vecFD;
     std::vector<float> vecEff;
-    std::vector<float> vecOneOverEff;
 
     // Calculates the Nch multiplicity
     for (const auto& track : tracks) {
@@ -727,17 +732,19 @@ struct UccZdc {
       float pt{track.pt()};
       int foundNchBin{efficiency->GetXaxis()->FindBin(glbTracks)};
       int foundPtBin{efficiency->GetYaxis()->FindBin(pt)};
-      float effValue{1.0};
+      float effValue{1.};
+      float fdValue{1.};
       if (applyEff) {
         effValue = efficiency->GetBinContent(foundNchBin, foundPtBin);
       }
-      if (effValue > 0.) {
-        vecOneOverEff.emplace_back(1. / effValue);
+      if (applyFD) {
+        fdValue = feedDown->GetBinContent(foundNchBin, foundPtBin);
+      }
+      if ((effValue > 0.) && (fdValue > 0.)) {
+        nchMult += (std::pow(effValue, -1.) * fdValue);
       }
     }
 
-    double nchMult{0.};
-    nchMult = std::accumulate(vecOneOverEff.begin(), vecOneOverEff.end(), 0);
     if (!applyEff)
       nchMult = static_cast<double>(glbTracks);
     if (applyEff && !correctNch)
@@ -766,7 +773,7 @@ struct UccZdc {
       float fdValue{1.};
       if (applyEff) {
         effValue = efficiency->GetBinContent(foundNchBin, foundPtBin);
-        fdValue = fd->GetBinContent(fd->FindBin(pt));
+        fdValue = feedDown->GetBinContent(foundNchBin, foundPtBin);
       }
       if (applyEff && !applyFD) {
         fdValue = 1.0;
@@ -861,12 +868,18 @@ struct UccZdc {
 
       double nchRaw{0.};
       double nchMult{0.};
+      double nchMC{0};
       double normT0M{0.};
       normT0M = (aT0A + aT0C) / 100.;
 
       registry.fill(HIST("zPos"), collision.posZ());
       registry.fill(HIST("zPosMC"), mccollision.posZ());
       registry.fill(HIST("hEventCounterMC"), EvCutLabel::VtxZ);
+
+      if (skipRecoColGTOne && (collisions.size() > kOne)) {
+        continue;
+      }
+
       registry.fill(HIST("nRecColvsCent"), collisions.size(), collision.centFT0C());
 
       const auto& cent{collision.centFT0C()};
@@ -882,11 +895,15 @@ struct UccZdc {
           return;
         }
 
+        auto feedDown = ccdb->getForTimeStamp<TH2F>(paTHFD.value, foundBC.timestamp());
+        if (!feedDown) {
+          return;
+        }
+
         std::vector<double> pTs;
         std::vector<double> vecFD;
         std::vector<double> vecEff;
-        std::vector<double> vecOneOverEffXFD;
-        // std::vector<float> wIs;
+
         const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
 
         // Calculates the event's Nch to evaluate the efficiency
@@ -946,16 +963,16 @@ struct UccZdc {
 
           if (applyEff) {
             effValue = efficiency->GetBinContent(foundNchBin, foundPtBin);
-            fdValue = fd->GetBinContent(fd->FindBin(pt));
+            fdValue = feedDown->GetBinContent(foundNchBin, foundPtBin);
           }
           if ((effValue > 0.) && (fdValue > 0.)) {
             pTs.emplace_back(pt);
             vecEff.emplace_back(effValue);
             vecFD.emplace_back(fdValue);
-            vecOneOverEffXFD.emplace_back(fdValue / effValue);
+            nchMult += (std::pow(effValue, -1.0) * fdValue);
           }
         }
-        nchMult = std::accumulate(vecOneOverEffXFD.begin(), vecOneOverEffXFD.end(), 0);
+
         if (nchMult < minNchSel) {
           return;
         }
@@ -1019,13 +1036,13 @@ struct UccZdc {
           pTsMC.emplace_back(pt);
           vecFullEff.emplace_back(1.);
           vecFDEqualOne.emplace_back(1.);
+          nchMC++;
         }
 
-        double nchMC{0};
-        nchMC = std::accumulate(vecFullEff.begin(), vecFullEff.end(), 0);
         if (nchMC < minNchSel) {
           continue;
         }
+        // printf("nchMult = %f  | nchMC = %f  | nchMult/nchMc = %f\n",nchMult,nchMC,nchMult/nchMC);
 
         double p1MC, p2MC, p3MC, p4MC, w1MC, w2MC, w3MC, w4MC;
         p1MC = p2MC = p3MC = p4MC = w1MC = w2MC = w3MC = w4MC = 0.0;
