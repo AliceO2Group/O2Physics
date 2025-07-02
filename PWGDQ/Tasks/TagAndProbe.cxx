@@ -12,50 +12,54 @@
 /// \file TagAndProbe.cxx
 /// \brief Task Tag-And-Probe matching efficiency studies
 
-#include <cstdint>
-#include <cstdio>
-#include <cstring>
-#include <iostream>
-#include <numeric>
-#include <vector>
-#include <algorithm>
-#include <set>
-#include <map>
-#include <string>
-#include <memory>
-#include <utility>
+#include "PWGDQ/Core/AnalysisCompositeCut.h"
+#include "PWGDQ/Core/AnalysisCut.h"
+#include "PWGDQ/Core/CutsLibrary.h"
+#include "PWGDQ/Core/HistogramManager.h"
+#include "PWGDQ/Core/HistogramsLibrary.h"
+#include "PWGDQ/Core/MixingHandler.h"
+#include "PWGDQ/Core/MixingLibrary.h"
+#include "PWGDQ/Core/VarManager.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/TableHelper.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Field/MagneticField.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/Configurable.h"
+#include "Framework/OutputObjHeader.h"
+#include "Framework/runDataProcessing.h"
+#include "ITSMFTBase/DPLAlpideParam.h"
+
+#include "TGeoGlobalMagField.h"
 #include <TH1F.h>
 #include <TH3F.h>
 #include <THashList.h>
 #include <TList.h>
-#include <TString.h>
 #include <TObjString.h>
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/Configurable.h"
-#include "Framework/OutputObjHeader.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGDQ/Core/VarManager.h"
-#include "PWGDQ/Core/HistogramManager.h"
-#include "PWGDQ/Core/MixingHandler.h"
-#include "PWGDQ/Core/AnalysisCut.h"
-#include "PWGDQ/Core/AnalysisCompositeCut.h"
-#include "PWGDQ/Core/HistogramsLibrary.h"
-#include "PWGDQ/Core/CutsLibrary.h"
-#include "PWGDQ/Core/MixingLibrary.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "Field/MagneticField.h"
-#include "TGeoGlobalMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "Common/Core/TableHelper.h"
-#include "ITSMFTBase/DPLAlpideParam.h"
-#include "Common/CCDB/EventSelectionParams.h"
+#include <TString.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <numeric>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 using std::cout;
 using std::endl;
@@ -228,7 +232,7 @@ struct AnalysisTagAndProbe {
   // keep histogram class names in maps, so we don't have to buld their names in the pair loops
   std::map<int, std::vector<TString>> fMuonHistNames;
 
-  uint32_t fMuonFilterMask;  // mask for the muon cuts required in this task to be applied on the muon cuts produced upstream
+  uint32_t fMuonFilterMask; // mask for the muon cuts required in this task to be applied on the muon cuts produced upstream
   int fNCutsMuon;
 
   bool fEnableMuonHistos;
@@ -307,8 +311,8 @@ struct AnalysisTagAndProbe {
       fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
       VarManager::SetCollisionSystem((TString)fConfigOptions.collisionSystem, fConfigOptions.centerMassEnergy); // set collision system and center of mass energy
       DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram.value.data());                        // define all histograms
-      //dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str());                    // ad-hoc histograms via JSON
-      VarManager::SetUseVars(fHistMan->GetUsedVars());                                                          // provide the list of required variables so that VarManager knows what to fill
+      // dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str());                    // ad-hoc histograms via JSON
+      VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
   }
@@ -376,7 +380,7 @@ struct AnalysisTagAndProbe {
     uint32_t twoTrackFilter = static_cast<uint32_t>(0);
     int sign1 = 0;
     int sign2 = 0;
-    
+
     if (events.size() > 0) {
       for (auto& event : events) {
         // Reset the fValues array
@@ -391,11 +395,11 @@ struct AnalysisTagAndProbe {
 
         for (auto& [a1, a2] : o2::soa::combinations(groupedAssocs, groupedAssocs)) {
           if constexpr (TPairType == VarManager::kDecayToMuMu) {
-            //twoTrackFilter = a1.isMuonSelected_raw() & a2.isMuonSelected_raw() & fMuonFilterMask;
-            //if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
-              //continue;
+            // twoTrackFilter = a1.isMuonSelected_raw() & a2.isMuonSelected_raw() & fMuonFilterMask;
+            // if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
+            // continue;
             //}
-  
+
             auto t1 = a1.template reducedmuon_as<TTracks>();
             auto t2 = a2.template reducedmuon_as<TTracks>();
             if (t1.matchMCHTrackId() == t2.matchMCHTrackId() && t1.matchMCHTrackId() >= 0)
@@ -404,23 +408,22 @@ struct AnalysisTagAndProbe {
               continue;
             sign1 = t1.sign();
             sign2 = t2.sign();
-            
+
             VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
 
             for (int icut = 0; icut < ncuts; icut++) {
               if (sign1 * sign2 < 0) {
-                fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);         
-                
-                if (static_cast<int>(t1.trackType()) == 3) { // t1 is the tag (track MCHMID)
+                fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
+
+                if (static_cast<int>(t1.trackType()) == 3) {   // t1 is the tag (track MCHMID)
                   if (static_cast<int>(t2.trackType()) == 3) { // t2 is the passing probe (track MCHMID)
                     fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
-                  } else if (static_cast<int>(t2.trackType()) == 4){ // t2 is the failing probe (MCHStandalone)
+                  } else if (static_cast<int>(t2.trackType()) == 4) { // t2 is the failing probe (MCHStandalone)
                     fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
                   } else {
                     continue;
                   }
-                }  
-                
+                }
               }
             } // end loop (cuts)
           } // end if (kDecayToMuMu)
@@ -429,7 +432,6 @@ struct AnalysisTagAndProbe {
     } // end if (events.size() > 0)
 
   } // end runTagAndProbe
-
 
   void processMuonTagAndProbe(MyEventsVtxCov const& events,
                               aod::ReducedMuonsAssoc const& muonAssocs, MyMuonTracksWithCov const& muons)
@@ -528,3 +530,4 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, const char
     }
   } // end loop over histogram classes
 }
+ 
