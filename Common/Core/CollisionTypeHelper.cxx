@@ -9,7 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-///
 /// \file   CollisionTypeHelper.h
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Utility to handle the collision type from the GRP information
