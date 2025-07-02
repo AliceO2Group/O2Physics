@@ -37,6 +37,7 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "Framework/RunningWorkflowInfo.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -54,7 +55,6 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
-#include "Framework/RunningWorkflowInfo.h"
 #include <ReconstructionDataFormats/Track.h>
 
 #include <TH1.h>
