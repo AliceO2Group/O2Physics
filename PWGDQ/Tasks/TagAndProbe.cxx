@@ -377,7 +377,7 @@ struct AnalysisTagAndProbe {
     std::map<int, std::vector<TString>> histNames = fMuonHistNames;
     int ncuts = fNCutsMuon;
 
-    uint32_t twoTrackFilter = static_cast<uint32_t>(0);
+    //uint32_t twoTrackFilter = static_cast<uint32_t>(0);
     int sign1 = 0;
     int sign2 = 0;
 
@@ -530,4 +530,3 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, const char
     }
   } // end loop over histogram classes
 }
- 
