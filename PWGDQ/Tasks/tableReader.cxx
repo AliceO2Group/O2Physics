@@ -219,11 +219,11 @@ struct AnalysisEventSelection {
   {
     if (event.runNumber() != fLastRun) {
       // Part temporary removed to study the issue to run on derived data on hyperloop
-      //auto alppar = fCCDB->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", event.timestamp());
-      //EventSelectionParams* par = fCCDB->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", event.timestamp());
-      //int itsROFrameStartBorderMargin = fConfigITSROFrameStartBorderMargin < 0 ? par->fITSROFrameStartBorderMargin : fConfigITSROFrameStartBorderMargin;
-      //int itsROFrameEndBorderMargin = fConfigITSROFrameEndBorderMargin < 0 ? par->fITSROFrameEndBorderMargin : fConfigITSROFrameEndBorderMargin;
-      //VarManager::SetITSROFBorderselection(alppar->roFrameBiasInBC, alppar->roFrameLengthInBC, itsROFrameStartBorderMargin, itsROFrameEndBorderMargin);
+      // auto alppar = fCCDB->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", event.timestamp());
+      // EventSelectionParams* par = fCCDB->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", event.timestamp());
+      // int itsROFrameStartBorderMargin = fConfigITSROFrameStartBorderMargin < 0 ? par->fITSROFrameStartBorderMargin : fConfigITSROFrameStartBorderMargin;
+      // int itsROFrameEndBorderMargin = fConfigITSROFrameEndBorderMargin < 0 ? par->fITSROFrameEndBorderMargin : fConfigITSROFrameEndBorderMargin;
+      // VarManager::SetITSROFBorderselection(alppar->roFrameBiasInBC, alppar->roFrameLengthInBC, itsROFrameStartBorderMargin, itsROFrameEndBorderMargin);
       fLastRun = event.runNumber();
     }
 
