@@ -179,7 +179,7 @@ struct HfCandidateSelectorToOmegaKa {
     const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisPtKaon{thnConfigAxisPtKaon, "Pt of Kaon from Omegac0."};
     std::vector<AxisSpec> axes = {thnAxisMass, thnAxisPt, thnAxisPtKaon};
-    registry.add("hMassVsPtVsPtKaon", "Thn for Omegac0 or Xic candidates with InvmassOmegaKa&pT&pTKa", HistType::kTHnSparseD, axes);
+    registry.add("hMassVsPtVsPtKaon", "Thn for Omegac0 or Xic candidates with InvmassOmegaKa&pT&pTKa", HistType::kTHnSparseF, axes);
     registry.get<THnSparse>(HIST("hMassVsPtVsPtKaon"))->Sumw2();
 
     selectorPion.setRangePtTpc(ptPiPidTpcMin, ptPiPidTpcMax);
