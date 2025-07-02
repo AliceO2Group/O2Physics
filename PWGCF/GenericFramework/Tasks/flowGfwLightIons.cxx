@@ -44,6 +44,7 @@
 
 #include <algorithm>
 #include <complex>
+#include <ctime>
 #include <map>
 #include <numeric>
 #include <string>
@@ -77,6 +78,7 @@ GFWRegions regions;
 GFWCorrConfigs configs;
 std::vector<double> multGlobalCorrCutPars;
 std::vector<double> multPVCorrCutPars;
+std::vector<int> firstRunsOfFill;
 } // namespace o2::analysis::gfw
 
 struct FlowGfwLightIons {
@@ -87,6 +89,8 @@ struct FlowGfwLightIons {
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Do correlations as function of Nch")
   O2_DEFINE_CONFIGURABLE(cfgFillWeights, bool, false, "Fill NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgRunByRun, bool, false, "Fill histograms on a run-by-run basis")
+  O2_DEFINE_CONFIGURABLE(cfgTimeDependent, bool, false, "Fill output as function of time (for contamination studies)")
+  O2_DEFINE_CONFIGURABLE(cfgFirstRunsOfFill, std::vector<int>, {}, "First runs of a fill for time dependent analysis")
   O2_DEFINE_CONFIGURABLE(cfgFillQA, bool, false, "Fill QA histograms")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgUseCentralMoments, bool, true, "Use central moments in vn-pt calculations")
@@ -176,8 +180,9 @@ struct FlowGfwLightIons {
   std::vector<GFW::CorrConfig> corrconfigs;
 
   TRandom3* fRndm = new TRandom3(0);
-  TAxis* fPtAxis;
+  TAxis* fSecondAxis;
   int lastRun = -1;
+  std::vector<int>::iterator firstRunOfCurrentFill;
   std::vector<int> runNumbers;
 
   // Density dependent eff correction
@@ -246,6 +251,12 @@ struct FlowGfwLightIons {
     o2::analysis::gfw::multGlobalCorrCutPars = cfgMultGlobalCutPars;
     o2::analysis::gfw::multPVCorrCutPars = cfgMultPVCutPars;
 
+    o2::analysis::gfw::firstRunsOfFill = cfgFirstRunsOfFill;
+    if (cfgTimeDependent && !std::is_sorted(o2::analysis::gfw::firstRunsOfFill.begin(), o2::analysis::gfw::firstRunsOfFill.end())) {
+      std::sort(o2::analysis::gfw::firstRunsOfFill.begin(), o2::analysis::gfw::firstRunsOfFill.end());
+    }
+    firstRunOfCurrentFill = o2::analysis::gfw::firstRunsOfFill.begin();
+
     AxisSpec phiAxis = {o2::analysis::gfw::phibins, o2::analysis::gfw::philow, o2::analysis::gfw::phiup, "#phi"};
     AxisSpec etaAxis = {o2::analysis::gfw::etabins, -cfgEta, cfgEta, "#eta"};
     AxisSpec vtxAxis = {o2::analysis::gfw::vtxZbins, -cfgVtxZ, cfgVtxZ, "Vtx_{z} (cm)"};
@@ -285,15 +296,28 @@ struct FlowGfwLightIons {
       nchbinning.push_back(nchskip * i + o2::analysis::gfw::nchlow + 0.5);
     }
     AxisSpec nchAxis = {nchbinning, "N_{ch}"};
-    AxisSpec bAxis = {200, 0, 20, "#it{b}"};
+    std::vector<double> bbinning(201);
+    std::generate(bbinning.begin(), bbinning.end(), [n = -0.1, step = 0.1]() mutable {
+      n += step;
+      return n;
+    });
+    AxisSpec bAxis = {bbinning, "#it{b}"};
     AxisSpec t0cAxis = {70, 0, 70000, "N_{ch} (T0C)"};
     AxisSpec t0aAxis = {200, 0, 200, "N_{ch} (T0A)"};
     AxisSpec v0aAxis = {200, 0, 200, "N_{ch} (V0A)"};
     AxisSpec multpvAxis = {4000, 0, 4000, "N_{ch} (PV)"};
-    AxisSpec multAxis = (doprocessOnTheFly && !cfgUseNch) ? bAxis : (cfgUseNch) ? nchAxis
-                                                                                : centAxis;
     AxisSpec dcaZAXis = {200, -2, 2, "DCA_{z} (cm)"};
     AxisSpec dcaXYAXis = {200, -1, 1, "DCA_{xy} (cm)"};
+    std::vector<double> timebinning(289);
+    std::generate(timebinning.begin(), timebinning.end(), [n = -24 / 288., step = 24 / 288.]() mutable {
+      n += step;
+      return n;
+    });
+    AxisSpec timeAxis = {timebinning, "time (hrs)"};
+
+    AxisSpec multAxis = (cfgTimeDependent) ? timeAxis : (doprocessOnTheFly && !cfgUseNch) ? bAxis
+                                                      : (cfgUseNch)                       ? nchAxis
+                                                                                          : centAxis;
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -302,7 +326,7 @@ struct FlowGfwLightIons {
     ccdb->setCreatedNotAfter(now);
 
     int ptbins = o2::analysis::gfw::ptbinning.size() - 1;
-    fPtAxis = new TAxis(ptbins, &o2::analysis::gfw::ptbinning[0]);
+    fSecondAxis = (cfgTimeDependent) ? new TAxis(timeAxis.binEdges.size() - 1, &(timeAxis.binEdges[0])) : new TAxis(ptbins, &o2::analysis::gfw::ptbinning[0]);
 
     if (doprocessMCGen || doprocessMCGenNoCent || doprocessOnTheFly) {
       registry.add("MCGen/trackQA/nch_pt", "#it{p}_{T} vs multiplicity; N_{ch}; #it{p}_{T}", {HistType::kTH2D, {nchAxis, ptAxis}});
@@ -331,6 +355,13 @@ struct FlowGfwLightIons {
       registry.add("trackQA/after/pt_poi", "", {HistType::kTH1D, {{100, o2::analysis::gfw::ptpoilow, o2::analysis::gfw::ptpoiup}}});
 
       registry.add("eventQA/before/multiplicity", "", {HistType::kTH1D, {nchAxis}});
+      if (cfgTimeDependent) {
+        registry.add("eventQA/before/multiplicity_time", "Multiplicity vs time; time (hrs); N_{ch}", {HistType::kTH2D, {timeAxis, nchAxis}});
+        registry.add("eventQA/before/multT0C_time", "T0C Multiplicity vs time; time (hrs); N_{ch} (T0C)", {HistType::kTH2D, {timeAxis, t0cAxis}});
+        registry.add("eventQA/before/multT0A_time", "T0A Multiplicity vs time; time (hrs); N_{ch} (T0A)", {HistType::kTH2D, {timeAxis, t0aAxis}});
+        registry.add("eventQA/before/multV0A_time", "V0A Multiplicity vs time; time (hrs); N_{ch} (V0A)", {HistType::kTH2D, {timeAxis, v0aAxis}});
+        registry.add("eventQA/before/multPV_time", "PV Multiplicity vs time; time (hrs); N_{ch} (PV)", {HistType::kTH2D, {timeAxis, multpvAxis}});
+      }
       registry.add("eventQA/before/globalTracks_PVTracks", "", {HistType::kTH2D, {multpvAxis, nchAxis}});
       registry.add("eventQA/before/globalTracks_multT0A", "", {HistType::kTH2D, {t0aAxis, nchAxis}});
       registry.add("eventQA/before/globalTracks_multV0A", "", {HistType::kTH2D, {v0aAxis, nchAxis}});
@@ -357,7 +388,7 @@ struct FlowGfwLightIons {
       registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(10, "after Mult cuts");
       registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(11, "has track + within cent");
 
-      if (!cfgRunByRun) {
+      if (!cfgRunByRun && cfgFillWeights) {
         registry.add<TH3>("phi_eta_vtxz_ref", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
       }
     }
@@ -377,12 +408,12 @@ struct FlowGfwLightIons {
     addConfigObjectsToObjArray(oba, corrconfigs);
     if (doprocessData || doprocessMCReco || doprocessDataNoCent || doprocessMCRecoNoCent) {
       fFC->SetName("FlowContainer");
-      fFC->SetXAxis(fPtAxis);
+      fFC->SetXAxis(fSecondAxis);
       fFC->Initialize(oba, multAxis, cfgNbootstrap);
     }
     if (doprocessMCGen || doprocessMCGenNoCent || doprocessOnTheFly) {
       fFCgen->SetName("FlowContainer_gen");
-      fFCgen->SetXAxis(fPtAxis);
+      fFCgen->SetXAxis(fSecondAxis);
       fFCgen->Initialize(oba, multAxis, cfgNbootstrap);
     }
     delete oba;
@@ -434,7 +465,7 @@ struct FlowGfwLightIons {
     for (auto it = configs.begin(); it != configs.end(); ++it) {
       if (it->pTDif) {
         std::string suffix = "_ptDiff";
-        for (auto i = 0; i < fPtAxis->GetNbins(); ++i) {
+        for (auto i = 0; i < fSecondAxis->GetNbins(); ++i) {
           std::string index = Form("_pt_%i", i + 1);
           oba->Add(new TNamed(it->Head.c_str() + index, it->Head.c_str() + suffix));
         }
@@ -570,9 +601,6 @@ struct FlowGfwLightIons {
       if (zRes > minZRes && collision.numContrib() < minNContrib)
         vtxz = -999;
     }
-    // auto multV0A = collision.multFV0A();
-    // auto multT0A = collision.multFT0A();
-    // auto multT0C = collision.multFT0C();
     auto multNTracksPV = collision.multNTracksPV();
 
     if (vtxz > o2::analysis::gfw::vtxZup || vtxz < o2::analysis::gfw::vtxZlow)
@@ -667,7 +695,7 @@ struct FlowGfwLightIons {
         }
         continue;
       }
-      for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
+      for (int i = 1; i <= fSecondAxis->GetNbins(); i++) {
         auto dnx = fGFW->Calculate(corrconfigs.at(l_ind), i - 1, kTRUE).real();
         if (dnx == 0)
           continue;
@@ -679,12 +707,18 @@ struct FlowGfwLightIons {
     return;
   }
 
+  struct XAxis {
+    float centrality;
+    int64_t multiplicity;
+    double time;
+  };
+
   template <DataType dt, typename TCollision, typename TTracks>
-  void processCollision(TCollision collision, TTracks tracks, const float& centrality, const int& multiplicity, const int& run)
+  void processCollision(TCollision collision, TTracks tracks, const XAxis& xaxis, const int& run)
   {
     if (tracks.size() < 1)
       return;
-    if (dt != kGen && centrality >= 0 && (centrality < o2::analysis::gfw::centbinning.front() || centrality > o2::analysis::gfw::centbinning.back()))
+    if (dt != kGen && xaxis.centrality >= 0 && (xaxis.centrality < o2::analysis::gfw::centbinning.front() || xaxis.centrality > o2::analysis::gfw::centbinning.back()))
       return;
     if (dt != kGen) {
       registry.fill(HIST("eventQA/eventSel"), 10.5);
@@ -694,8 +728,8 @@ struct FlowGfwLightIons {
     float vtxz = collision.posZ();
     if (dt != kGen && cfgRunByRun) {
       th1sList[run][hVtxZ]->Fill(vtxz);
-      th1sList[run][hMult]->Fill(multiplicity);
-      th1sList[run][hCent]->Fill(centrality);
+      th1sList[run][hMult]->Fill(xaxis.multiplicity);
+      th1sList[run][hCent]->Fill(xaxis.centrality);
     }
     fGFW->Clear();
     (dt == kGen) ? fFCptgen->clearVector() : fFCpt->clearVector();
@@ -725,9 +759,9 @@ struct FlowGfwLightIons {
       psi2Est = std::atan2(q2y, q2x) / 2.;
       psi3Est = std::atan2(q3y, q3x) / 3.;
       psi4Est = std::atan2(q4y, q4x) / 4.;
-      v2 = funcV2->Eval(centrality);
-      v3 = funcV3->Eval(centrality);
-      v4 = funcV4->Eval(centrality);
+      v2 = funcV2->Eval(xaxis.centrality);
+      v3 = funcV3->Eval(xaxis.centrality);
+      v4 = funcV4->Eval(xaxis.centrality);
       densitycorrections.psi2Est = psi2Est;
       densitycorrections.psi3Est = psi3Est;
       densitycorrections.psi4Est = psi4Est;
@@ -738,10 +772,12 @@ struct FlowGfwLightIons {
     }
 
     for (const auto& track : tracks) {
-      processTrack(track, vtxz, multiplicity, run, densitycorrections);
+      processTrack(track, vtxz, xaxis.multiplicity, run, densitycorrections);
     }
     if (!cfgFillWeights)
-      fillOutputContainers<dt>((cfgUseNch) ? multiplicity : centrality, lRandom);
+      fillOutputContainers<dt>((cfgTimeDependent) ? xaxis.time : (cfgUseNch) ? xaxis.multiplicity
+                                                                             : xaxis.centrality,
+                               lRandom);
   }
 
   bool isStable(int pdg)
@@ -854,12 +890,11 @@ struct FlowGfwLightIons {
     }
     double wacc = (dt == kGen) ? 1. : getAcceptance(track, vtxz);
     if (withinPtRef)
-      fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 1);
+      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 1);
     if (withinPtPOI)
-      fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 2);
+      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 2);
     if (withinPtRef && withinPtPOI)
-      fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 4);
-
+      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 4);
     return;
   }
 
@@ -899,19 +934,57 @@ struct FlowGfwLightIons {
     }
   }
 
-  template <QAFillTime ft, typename TCollision, typename TTracks>
-  inline void fillEventQA(TCollision collision, TTracks tracks)
+  template <typename TCollision>
+  float getCentrality(TCollision collision)
+  {
+    switch (cfgCentEstimator) {
+      case kCentFT0C:
+        return collision.centFT0C();
+      case kCentFT0CVariant1:
+        return collision.centFT0CVariant1();
+      case kCentFT0M:
+        return collision.centFT0M();
+      case kCentFV0A:
+        return collision.centFV0A();
+      case kCentNTPV:
+        return collision.centNTPV();
+      case kCentNGlobal:
+        return collision.centNGlobal();
+      case kCentMFT:
+        return collision.centMFT();
+      default:
+        return collision.centFT0C();
+    }
+  }
+
+  template <QAFillTime ft, typename TCollision>
+  inline void fillEventQA(TCollision collision, XAxis xaxis)
   {
     if constexpr (framework::has_type_v<aod::cent::CentFT0C, typename TCollision::all_columns>) {
-      registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("globalTracks_centT0C"), collision.centFT0C(), tracks.size());
+      registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("globalTracks_centT0C"), collision.centFT0C(), xaxis.multiplicity);
       registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("PVTracks_centT0C"), collision.centFT0C(), collision.multNTracksPV());
       registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("multT0C_centT0C"), collision.centFT0C(), collision.multFT0C());
     }
-    registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
-    registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("globalTracks_multT0A"), collision.multFT0A(), tracks.size());
-    registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("globalTracks_multV0A"), collision.multFV0A(), tracks.size());
+    registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("globalTracks_PVTracks"), collision.multNTracksPV(), xaxis.multiplicity);
+    registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("globalTracks_multT0A"), collision.multFT0A(), xaxis.multiplicity);
+    registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("globalTracks_multV0A"), collision.multFV0A(), xaxis.multiplicity);
     registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("multV0A_multT0A"), collision.multFT0A(), collision.multFV0A());
+    if (cfgTimeDependent) {
+      registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("multiplicity_time"), xaxis.time, xaxis.multiplicity);
+      registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("multT0C_time"), xaxis.time, collision.multFT0C());
+      registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("multT0A_time"), xaxis.time, collision.multFT0A());
+      registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("multV0A_time"), xaxis.time, collision.multFV0A());
+      registry.fill(HIST("eventQA/") + HIST(FillTimeName[ft]) + HIST("multPV_time"), xaxis.time, collision.multNTracksPV());
+    }
     return;
+  }
+
+  double getTimeSinceStartOfFill(uint64_t timestamp, int firstRun)
+  {
+    auto runDuration = ccdb->getRunDuration(firstRun);
+    uint64_t tsSOF = runDuration.first;
+    uint64_t diff = timestamp - tsSOF;
+    return static_cast<double>(diff) / 3600000.0;
   }
 
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
@@ -951,44 +1024,22 @@ struct FlowGfwLightIons {
     registry.fill(HIST("eventQA/eventSel"), 2.5);
     if (cfgRunByRun)
       th1sList[run][hEventSel]->Fill(2.5);
-    float centrality;
-    switch (cfgCentEstimator) {
-      case kCentFT0C:
-        centrality = collision.centFT0C();
-        break;
-      case kCentFT0CVariant1:
-        centrality = collision.centFT0CVariant1();
-        break;
-      case kCentFT0M:
-        centrality = collision.centFT0M();
-        break;
-      case kCentFV0A:
-        centrality = collision.centFV0A();
-        break;
-      case kCentNTPV:
-        centrality = collision.centNTPV();
-        break;
-      case kCentNGlobal:
-        centrality = collision.centNGlobal();
-        break;
-      case kCentMFT:
-        centrality = collision.centMFT();
-        break;
-      default:
-        centrality = collision.centFT0C();
-        break;
-    }
+
+    const XAxis xaxis{getCentrality(collision), tracks.size(), (cfgTimeDependent) ? getTimeSinceStartOfFill(bc.timestamp(), *firstRunOfCurrentFill) : -1.0};
+    if (cfgTimeDependent && run == *firstRunOfCurrentFill && firstRunOfCurrentFill != o2::analysis::gfw::firstRunsOfFill.end() - 1)
+      ++firstRunOfCurrentFill;
+
     if (cfgFillQA)
-      fillEventQA<kBefore>(collision, tracks);
-    registry.fill(HIST("eventQA/before/centrality"), centrality);
-    registry.fill(HIST("eventQA/before/multiplicity"), tracks.size());
-    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), centrality, run))
+      fillEventQA<kBefore>(collision, xaxis);
+    registry.fill(HIST("eventQA/before/centrality"), xaxis.centrality);
+    registry.fill(HIST("eventQA/before/multiplicity"), xaxis.multiplicity);
+    if (cfgUseAdditionalEventCut && !eventSelected(collision, xaxis.multiplicity, xaxis.centrality, run))
       return;
     if (cfgFillQA)
-      fillEventQA<kAfter>(collision, tracks);
-    registry.fill(HIST("eventQA/after/centrality"), centrality);
-    registry.fill(HIST("eventQA/after/multiplicity"), tracks.size());
-    processCollision<kReco>(collision, tracks, centrality, tracks.size(), run);
+      fillEventQA<kAfter>(collision, xaxis);
+    registry.fill(HIST("eventQA/after/centrality"), xaxis.centrality);
+    registry.fill(HIST("eventQA/after/multiplicity"), xaxis.multiplicity);
+    processCollision<kReco>(collision, tracks, xaxis, run);
   }
   PROCESS_SWITCH(FlowGfwLightIons, processData, "Process analysis for non-derived data", true);
 
@@ -1029,15 +1080,20 @@ struct FlowGfwLightIons {
     registry.fill(HIST("eventQA/eventSel"), 2.5);
     if (cfgRunByRun)
       th1sList[run][hEventSel]->Fill(2.5);
+
+    const XAxis xaxis{-1., tracks.size(), (cfgTimeDependent) ? getTimeSinceStartOfFill(bc.timestamp(), *firstRunOfCurrentFill) : -1.0};
+    if (cfgTimeDependent && run == *firstRunOfCurrentFill && firstRunOfCurrentFill != o2::analysis::gfw::firstRunsOfFill.end() - 1)
+      ++firstRunOfCurrentFill;
+
     if (cfgFillQA)
-      fillEventQA<kBefore>(collision, tracks);
-    registry.fill(HIST("eventQA/before/multiplicity"), tracks.size());
-    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), -1, run))
+      fillEventQA<kBefore>(collision, xaxis);
+    registry.fill(HIST("eventQA/before/multiplicity"), xaxis.multiplicity);
+    if (cfgUseAdditionalEventCut && !eventSelected(collision, xaxis.multiplicity, xaxis.centrality, run))
       return;
     if (cfgFillQA)
-      fillEventQA<kAfter>(collision, tracks);
-    registry.fill(HIST("eventQA/after/multiplicity"), tracks.size());
-    processCollision<kReco>(collision, tracks, -1, tracks.size(), run);
+      fillEventQA<kAfter>(collision, xaxis);
+    registry.fill(HIST("eventQA/after/multiplicity"), xaxis.multiplicity);
+    processCollision<kReco>(collision, tracks, xaxis, run);
   }
   PROCESS_SWITCH(FlowGfwLightIons, processDataNoCent, "Process analysis for non-derived data without centrality", true);
 
@@ -1052,47 +1108,25 @@ struct FlowGfwLightIons {
     }
     if (!collision.sel8())
       return;
-    float centrality;
-    switch (cfgCentEstimator) {
-      case kCentFT0C:
-        centrality = collision.centFT0C();
-        break;
-      case kCentFT0CVariant1:
-        centrality = collision.centFT0CVariant1();
-        break;
-      case kCentFT0M:
-        centrality = collision.centFT0M();
-        break;
-      case kCentFV0A:
-        centrality = collision.centFV0A();
-        break;
-      case kCentNTPV:
-        centrality = collision.centNTPV();
-        break;
-      case kCentNGlobal:
-        centrality = collision.centNGlobal();
-        break;
-      case kCentMFT:
-        centrality = collision.centMFT();
-        break;
-      default:
-        centrality = collision.centFT0C();
-        break;
-    }
+
+    const XAxis xaxis{getCentrality(collision), tracks.size(), (cfgTimeDependent) ? getTimeSinceStartOfFill(bc.timestamp(), *firstRunOfCurrentFill) : -1.0};
+    if (cfgTimeDependent && run == *firstRunOfCurrentFill && firstRunOfCurrentFill != o2::analysis::gfw::firstRunsOfFill.end() - 1)
+      ++firstRunOfCurrentFill;
+
     if (cfgFillQA)
-      fillEventQA<kBefore>(collision, tracks);
-    registry.fill(HIST("eventQA/before/centrality"), centrality);
-    registry.fill(HIST("eventQA/before/multiplicity"), tracks.size());
-    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), centrality, run))
+      fillEventQA<kBefore>(collision, xaxis);
+    registry.fill(HIST("eventQA/before/centrality"), xaxis.centrality);
+    registry.fill(HIST("eventQA/before/multiplicity"), xaxis.multiplicity);
+    if (cfgUseAdditionalEventCut && !eventSelected(collision, xaxis.multiplicity, xaxis.centrality, run))
       return;
     if (cfgFillQA)
-      fillEventQA<kAfter>(collision, tracks);
-    registry.fill(HIST("eventQA/after/centrality"), centrality);
-    registry.fill(HIST("eventQA/after/multiplicity"), tracks.size());
+      fillEventQA<kAfter>(collision, xaxis);
+    registry.fill(HIST("eventQA/after/centrality"), xaxis.centrality);
+    registry.fill(HIST("eventQA/after/multiplicity"), xaxis.multiplicity);
 
     if (!cfgFillWeights)
       loadCorrections(bc);
-    processCollision<kReco>(collision, tracks, centrality, tracks.size(), run);
+    processCollision<kReco>(collision, tracks, xaxis, run);
   }
   PROCESS_SWITCH(FlowGfwLightIons, processMCReco, "Process analysis for MC reconstructed events", false);
 
@@ -1108,7 +1142,7 @@ struct FlowGfwLightIons {
     registry.fill(HIST("eventQA/eventSel"), 0.5);
     if (!collision.sel8())
       return;
-    const auto centrality = -1.;
+
     registry.fill(HIST("eventQA/eventSel"), 1.5);
     if (cfgDoOccupancySel) {
       int occupancy = collision.trackOccupancyInTimeRange();
@@ -1116,6 +1150,10 @@ struct FlowGfwLightIons {
         return;
     }
     registry.fill(HIST("eventQA/eventSel"), 2.5);
+
+    const XAxis xaxis{-1., tracks.size(), (cfgTimeDependent) ? getTimeSinceStartOfFill(bc.timestamp(), *firstRunOfCurrentFill) : -1.};
+    if (cfgTimeDependent && run == *firstRunOfCurrentFill && firstRunOfCurrentFill != o2::analysis::gfw::firstRunsOfFill.end() - 1)
+      ++firstRunOfCurrentFill;
 
     registry.fill(HIST("eventQA/before/multiplicity"), tracks.size());
     if (cfgUseAdditionalEventCut) {
@@ -1177,10 +1215,10 @@ struct FlowGfwLightIons {
         return;
     }
 
-    registry.fill(HIST("eventQA/after/multiplicity"), tracks.size());
+    registry.fill(HIST("eventQA/after/multiplicity"), xaxis.multiplicity);
     if (!cfgFillWeights)
       loadCorrections(bc);
-    processCollision<kReco>(collision, tracks, centrality, tracks.size(), run);
+    processCollision<kReco>(collision, tracks, xaxis, run);
   }
   PROCESS_SWITCH(FlowGfwLightIons, processMCRecoNoCent, "Process analysis for MC reconstructed events without centrality/mult table", false);
 
@@ -1190,32 +1228,7 @@ struct FlowGfwLightIons {
       return;
     float centrality = -1;
     for (const auto& collision : collisions) {
-      switch (cfgCentEstimator) {
-        case kCentFT0C:
-          centrality = collision.centFT0C();
-          break;
-        case kCentFT0CVariant1:
-          centrality = collision.centFT0CVariant1();
-          break;
-        case kCentFT0M:
-          centrality = collision.centFT0M();
-          break;
-        case kCentFV0A:
-          centrality = collision.centFV0A();
-          break;
-        case kCentNTPV:
-          centrality = collision.centNTPV();
-          break;
-        case kCentNGlobal:
-          centrality = collision.centNGlobal();
-          break;
-        case kCentMFT:
-          centrality = collision.centMFT();
-          break;
-        default:
-          centrality = collision.centFT0C();
-          break;
-      }
+      centrality = getCentrality(collision);
     }
     std::vector<int> numberOfTracks;
     for (auto const& collision : collisions) {
@@ -1223,10 +1236,11 @@ struct FlowGfwLightIons {
       numberOfTracks.emplace_back(groupedTracks.size());
     }
 
+    const XAxis xaxis{centrality, numberOfTracks[0], -1.0};
     int run = 0;
-    processCollision<kGen>(mcCollision, particles, centrality, numberOfTracks[0], run);
-    registry.fill(HIST("MCGen/eventQA/multiplicity"), numberOfTracks[0]);
-    registry.fill(HIST("MCGen/eventQA/centrality"), centrality);
+    processCollision<kGen>(mcCollision, particles, xaxis, run);
+    registry.fill(HIST("MCGen/eventQA/multiplicity"), xaxis.multiplicity);
+    registry.fill(HIST("MCGen/eventQA/centrality"), xaxis.centrality);
   }
   PROCESS_SWITCH(FlowGfwLightIons, processMCGen, "Process analysis for MC generated events", false);
 
@@ -1234,15 +1248,15 @@ struct FlowGfwLightIons {
   {
     if (collisions.size() != 1)
       return;
-    const float centrality = -1;
     std::vector<int> numberOfTracks;
     for (auto const& collision : collisions) {
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       numberOfTracks.emplace_back(groupedTracks.size());
     }
+    const XAxis xaxis{-1., numberOfTracks[0], -1.};
     int run = 0;
-    registry.fill(HIST("MCGen/eventQA/multiplicity"), numberOfTracks[0]);
-    processCollision<kGen>(mcCollision, particles, centrality, numberOfTracks[0], run);
+    registry.fill(HIST("MCGen/eventQA/multiplicity"), xaxis.multiplicity);
+    processCollision<kGen>(mcCollision, particles, xaxis, run);
   }
   PROCESS_SWITCH(FlowGfwLightIons, processMCGenNoCent, "Process analysis for MC generated events", false);
 
@@ -1250,7 +1264,8 @@ struct FlowGfwLightIons {
   {
     int run = 0;
     registry.fill(HIST("MCGen/impactParameter"), mcCollision.impactParameter(), mcParticles.size());
-    processCollision<kGen>(mcCollision, mcParticles, mcCollision.impactParameter(), mcParticles.size(), run);
+    const XAxis xaxis{mcCollision.impactParameter(), mcParticles.size(), -1.0};
+    processCollision<kGen>(mcCollision, mcParticles, xaxis, run);
   }
   PROCESS_SWITCH(FlowGfwLightIons, processOnTheFly, "Process analysis for MC on-the-fly generated events", false);
 };
