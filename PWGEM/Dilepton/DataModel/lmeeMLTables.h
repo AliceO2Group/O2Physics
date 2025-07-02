@@ -85,7 +85,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32
 } // namespace emprimarytrack
 
 // reconstructed track information
-DECLARE_SOA_TABLE(EMPrimaryTracks, "AOD", "EMPTRACK", //!
+DECLARE_SOA_TABLE(EMMLPrimaryTracks, "AOD", "EMMLPTRACK", //!
                   o2::soa::Index<>, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange,
                   track::Pt, track::Eta, track::Phi, track::Tgl, emprimarytrack::Sign,
                   track::DcaXY, track::DcaZ, track::CYY, track::CZZ, track::CZY,
@@ -101,7 +101,7 @@ DECLARE_SOA_TABLE(EMPrimaryTracks, "AOD", "EMPTRACK", //!
                   emprimarytrack::MeanClusterSizeITSob<track::ITSClusterSizes>);
 
 // iterators
-using EMPrimaryTrack = EMPrimaryTracks::iterator;
+using EMMLPrimaryTrack = EMMLPrimaryTracks::iterator;
 
 } // namespace o2::aod
 

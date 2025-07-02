@@ -82,26 +82,6 @@ struct HfTaskSigmac {
   ConfigurableAxis thnConfigAxisBdtScoreLcBkg{"thnConfigAxisBdtScoreLcBkg", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisBdtScoreLcNonPrompt{"thnConfigAxisBdtScoreLcNonPrompt", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisSoftPiAbsDca{"thnConfigAxisSoftPiAbsDca", {14, 0., 0.07}, ""};
-  const AxisSpec thnAxisMassLambdaC{configAxisMassLambdaC, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
-  const AxisSpec thnAxisPtLambdaC{thnConfigAxisPt, "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})"};
-  const AxisSpec thnAxisPtSigmaC{thnConfigAxisPt, "#it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c})"};
-  const AxisSpec thnAxisDecLength{thnConfigAxisDecLength, "decay length #Lambda_{c}^{+} (cm)"};
-  const AxisSpec thnAxisDecLengthXY{thnConfigAxisDecLengthXY, "decay length XY #Lambda_{c}^{+} (cm)"};
-  const AxisSpec thnAxisCPA{thnConfigAxisCPA, "cosine of pointing angle #Lambda_{c}^{+}"};
-  const AxisSpec thnAxisCPAXY{thnConfigAxisCPAXY, "cosine of pointing angle XY #Lambda_{c}^{+}"};
-  const AxisSpec thnAxisOriginMc{3, -0.5, 2.5, "0: none, 1: prompt, 2: non-prompt"};
-  const AxisSpec thnAxisChargeSigmaC{3, -0.5, 2.5, "#Sigma_{c}-baryon charge"};
-  const AxisSpec thnAxisChannel{4, -0.5, 3.5, "0: direct  1,2,3: resonant"};
-  const AxisSpec thnAxisBdtScoreLcBkg{thnConfigAxisBdtScoreLcBkg, "BDT bkg score (Lc)"};
-  const AxisSpec thnAxisBdtScoreLcNonPrompt{thnConfigAxisBdtScoreLcNonPrompt, "BDT non-prompt score (Lc)"};
-  const AxisSpec thnAxisGenPtLambdaC{thnConfigAxisGenPt, "#it{p}_{T}^{gen}(#Lambda_{c}^{+}) (GeV/#it{c})"};
-  const AxisSpec thnAxisGenPtSigmaC{thnConfigAxisGenPt, "#it{p}_{T}^{gen}(#Sigma_{c}^{0,++}) (GeV/#it{c})"};
-  const AxisSpec thnAxisGenPtLambdaCBMother{thnConfigAxisGenPtB, "#it{p}_{T}^{gen}(#Lambda_{c}^{+} B mother) (GeV/#it{c})"};
-  const AxisSpec thnAxisGenPtSigmaCBMother{thnConfigAxisGenPtB, "#it{p}_{T}^{gen}(#Sigma_{c}^{0,++} B mother) (GeV/#it{c})"};
-  const AxisSpec thnAxisSoftPiAbsDcaXY{thnConfigAxisSoftPiAbsDca, "|dca_{xy}|(#pi^{-,+} #leftarrow #Sigma_{c}^{0,++}) (cm)"};
-  const AxisSpec thnAxisSoftPiAbsDcaZ{thnConfigAxisSoftPiAbsDca, "|dca_{z}|(#pi^{-,+} #leftarrow #Sigma_{c}^{0,++}) (cm)"};
-  const AxisSpec thnAxisGenSigmaCSpecies = {o2::aod::hf_cand_sigmac::Species::NSpecies, -0.5f, +o2::aod::hf_cand_sigmac::Species::NSpecies - 0.5f, "bin 1: #Sigma_{c}(2455), bin 2: #Sigma_{c}(2520)"};
-  const AxisSpec thnAxisSigmaCParticleAntiparticle = {o2::aod::hf_cand_sigmac::Conjugated::NConjugated, -0.5f, +o2::aod::hf_cand_sigmac::Conjugated::NConjugated - 0.5f, "bin 1: particle, bin 2: antiparticle"};
 
   /// analysis histograms
   HistogramRegistry registry{
@@ -177,6 +157,26 @@ struct HfTaskSigmac {
       isMc = false;
     }
 
+    const AxisSpec thnAxisMassLambdaC{configAxisMassLambdaC, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisPtLambdaC{thnConfigAxisPt, "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})"};
+    const AxisSpec thnAxisPtSigmaC{thnConfigAxisPt, "#it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c})"};
+    const AxisSpec thnAxisDecLength{thnConfigAxisDecLength, "decay length #Lambda_{c}^{+} (cm)"};
+    const AxisSpec thnAxisDecLengthXY{thnConfigAxisDecLengthXY, "decay length XY #Lambda_{c}^{+} (cm)"};
+    const AxisSpec thnAxisCPA{thnConfigAxisCPA, "cosine of pointing angle #Lambda_{c}^{+}"};
+    const AxisSpec thnAxisCPAXY{thnConfigAxisCPAXY, "cosine of pointing angle XY #Lambda_{c}^{+}"};
+    const AxisSpec thnAxisOriginMc{3, -0.5, 2.5, "0: none, 1: prompt, 2: non-prompt"};
+    const AxisSpec thnAxisChargeSigmaC{3, -0.5, 2.5, "#Sigma_{c}-baryon charge"};
+    const AxisSpec thnAxisChannel{4, -0.5, 3.5, "0: direct  1,2,3: resonant"};
+    const AxisSpec thnAxisBdtScoreLcBkg{thnConfigAxisBdtScoreLcBkg, "BDT bkg score (Lc)"};
+    const AxisSpec thnAxisBdtScoreLcNonPrompt{thnConfigAxisBdtScoreLcNonPrompt, "BDT non-prompt score (Lc)"};
+    const AxisSpec thnAxisGenPtLambdaC{thnConfigAxisGenPt, "#it{p}_{T}^{gen}(#Lambda_{c}^{+}) (GeV/#it{c})"};
+    const AxisSpec thnAxisGenPtSigmaC{thnConfigAxisGenPt, "#it{p}_{T}^{gen}(#Sigma_{c}^{0,++}) (GeV/#it{c})"};
+    const AxisSpec thnAxisGenPtLambdaCBMother{thnConfigAxisGenPtB, "#it{p}_{T}^{gen}(#Lambda_{c}^{+} B mother) (GeV/#it{c})"};
+    const AxisSpec thnAxisGenPtSigmaCBMother{thnConfigAxisGenPtB, "#it{p}_{T}^{gen}(#Sigma_{c}^{0,++} B mother) (GeV/#it{c})"};
+    const AxisSpec thnAxisSoftPiAbsDcaXY{thnConfigAxisSoftPiAbsDca, "|dca_{xy}|(#pi^{-,+} #leftarrow #Sigma_{c}^{0,++}) (cm)"};
+    const AxisSpec thnAxisSoftPiAbsDcaZ{thnConfigAxisSoftPiAbsDca, "|dca_{z}|(#pi^{-,+} #leftarrow #Sigma_{c}^{0,++}) (cm)"};
+    const AxisSpec thnAxisGenSigmaCSpecies = {o2::aod::hf_cand_sigmac::Species::NSpecies, -0.5f, +o2::aod::hf_cand_sigmac::Species::NSpecies - 0.5f, "bin 1: #Sigma_{c}(2455), bin 2: #Sigma_{c}(2520)"};
+    const AxisSpec thnAxisSigmaCParticleAntiparticle = {o2::aod::hf_cand_sigmac::Conjugated::NConjugated, -0.5f, +o2::aod::hf_cand_sigmac::Conjugated::NConjugated - 0.5f, "bin 1: particle, bin 2: antiparticle"};
     const AxisSpec axisDeltaMassSigmaC{configAxisDeltaMassSigmaC, "#it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2})"};
     registry.add("Data/hDeltaMassSc0", "#Sigma_{c}^{0} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{0}) (GeV/#it{c});", {HistType::kTH2D, {axisDeltaMassSigmaC, {36, 0., 36.}}});
     registry.add("Data/hDeltaMassScPlusPlus", "#Sigma_{c}^{++} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Sigma_{c}^{++}) (GeV/#it{c});", {HistType::kTH2D, {axisDeltaMassSigmaC, {36, 0., 36.}}});
