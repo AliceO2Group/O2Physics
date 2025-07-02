@@ -34,7 +34,16 @@ std::string o2::common::core::CollisionSystemType::getCollisionSystemName(collTy
       return "XeXe";
     case kCollSyspPb:
       return "pPb";
+    case kCollSysOO:
+      return "OO";
+    case kCollSyspO:
+      return "pO";
+    case kCollSysNeNe:
+      return "NeNe";
+    case kCollSysUndef:
+      return "Undefined";
     default:
+      LOG(warning) << "Undefined collision system type: " << collSys;
       return "Undefined";
   }
 }
@@ -43,7 +52,10 @@ int o2::common::core::CollisionSystemType::getCollisionTypeFromGrp(o2::parameter
 {
   const int ZBeamA = grplhcif->getBeamZ(o2::constants::lhc::BeamDirection::BeamA);
   const int ZBeamC = grplhcif->getBeamZ(o2::constants::lhc::BeamDirection::BeamC);
-  LOG(debug) << "Collision system: " << ZBeamA << " * " << ZBeamC << " detected";
+  const int ABeamA = grplhcif->getBeamA(o2::constants::lhc::BeamDirection::BeamA);
+  const int ABeamC = grplhcif->getBeamA(o2::constants::lhc::BeamDirection::BeamC);
+  LOG(debug) << "Collision system Z: " << ZBeamA << " * " << ZBeamC << " detected = " << ZBeamA * ZBeamC;
+  LOG(debug) << "Collision system A: " << ABeamA << " * " << ABeamC << " detected = " << ABeamA * ABeamC;
   switch (ZBeamA * ZBeamC) {
     case 1: // pp 1*1
       return kCollSyspp;
@@ -53,8 +65,14 @@ int o2::common::core::CollisionSystemType::getCollisionTypeFromGrp(o2::parameter
       return kCollSysXeXe;
     case 82: // p-Pb 82*1
       return kCollSyspPb;
+    case 64: // O-O 8*8
+      return kCollSysOO;
+    case 8: // p-O 8*1
+      return kCollSyspO;
+    case 100: // Ne-Ne 10*10
+      return kCollSysNeNe;
     default:
-      LOG(fatal) << "Undefined collision system in getCollisionTypeFromGrp with BeamA = " << ZBeamA << " and BeamC = " << ZBeamC;
+      LOG(fatal) << "Undefined collision system in getCollisionTypeFromGrp with Z of BeamA = " << ZBeamA << " and Z of BeamC = " << ZBeamC << "; A of BeamA = " << ABeamA << " and A of BeamC = " << ABeamC;
       return kCollSysUndef;
   }
   return kCollSysUndef;
