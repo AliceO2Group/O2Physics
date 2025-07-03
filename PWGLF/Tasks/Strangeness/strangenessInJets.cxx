@@ -15,44 +15,47 @@
 /// \author Alberto Caliva (alberto.caliva@cern.ch), Francesca Ercolessi (francesca.ercolessi@cern.ch), Nicolò Jacazio (nicolo.jacazio@cern.ch), Sara Pucillo (sara.pucillo@cern.ch)
 /// \since May 22, 2024
 
-#include <TMath.h>
-#include <TObjArray.h>
-#include <TPDGCode.h>
-#include <TVector2.h>
-#include <TVector3.h>
-#include <cmath>
-#include <vector>
-#include <string>
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
+#include "PWGJE/Core/JetBkgSubUtils.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "ReconstructionDataFormats/Track.h"
 
+#include <TMath.h>
+#include <TObjArray.h>
+#include <TPDGCode.h>
+#include <TVector2.h>
+#include <TVector3.h>
+
+#include <fastjet/AreaDefinition.hh>
 #include <fastjet/ClusterSequence.hh>
 #include <fastjet/ClusterSequenceArea.hh>
+#include <fastjet/GhostedAreaSpec.hh>
+#include <fastjet/PseudoJet.hh>
+#include <fastjet/Selector.hh>
 #include <fastjet/tools/JetMedianBackgroundEstimator.hh>
 #include <fastjet/tools/Subtractor.hh>
-#include <fastjet/Selector.hh>
-#include <fastjet/PseudoJet.hh>
-#include <fastjet/AreaDefinition.hh>
-#include <fastjet/GhostedAreaSpec.hh>
-#include "PWGJE/Core/JetBkgSubUtils.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGJE/DataModel/Jet.h"
 
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
+#include <cmath>
+#include <string>
+#include <vector>
 
 using namespace std;
 using namespace o2;
@@ -198,6 +201,7 @@ struct StrangenessInJets {
   {
     if (cfgSkimmedProcessing) {
       zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fOmega");
+      zorro.populateHistRegistry(registryData, bc.runNumber());
     }
   }
 
@@ -1058,7 +1062,8 @@ struct StrangenessInJets {
   void processData(SelCollisions::iterator const& collision,
                    aod::V0Datas const& fullV0s,
                    aod::CascDataExt const& Cascades,
-                   StrHadronDaughterTracks const& tracks)
+                   StrHadronDaughterTracks const& tracks,
+                   aod::BCsWithTimestamps const&)
   {
     // event counter: before event selection
     registryData.fill(HIST("number_of_events_data"), 0.5);
@@ -1107,7 +1112,7 @@ struct StrangenessInJets {
     std::vector<TVector3> ue1;
     std::vector<TVector3> ue2;
 
-    for (auto& jet : jets) { // o2-linter: disable=const-ref-in-for-loop (required by backgroundSub)
+    for (const auto& jet : jets) { // o2-linter: disable=const-ref-in-for-loop (required by backgroundSub)
 
       // jet must be fully contained in the acceptance
       if ((std::fabs(jet.eta()) + rJet) > (etaMax - deltaEtaEdge))
@@ -2095,7 +2100,7 @@ struct StrangenessInJets {
       std::vector<TVector3> ue1;
       std::vector<TVector3> ue2;
 
-      for (auto& jet : jets) { // o2-linter: disable=const-ref-in-for-loop (required by backgroundSub)
+      for (const auto& jet : jets) { // o2-linter: disable=const-ref-in-for-loop (required by backgroundSub)
 
         // jet must be fully contained in the acceptance
         if ((std::fabs(jet.eta()) + rJet) > (etaMax - deltaEtaEdge))
