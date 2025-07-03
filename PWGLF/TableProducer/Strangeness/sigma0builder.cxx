@@ -1218,7 +1218,7 @@ struct sigma0builder {
         }
 
         for (size_t j = 0; j < bestLambdasArray.size(); ++j) {
-          auto lambda = fullV0s.iteratorAt(bestLambdasArray[j]);
+          auto lambda = fullV0s.rawIteratorAt(bestLambdasArray[j]);
 
           if (!lambda.has_v0MCCore())
             continue;
@@ -1361,7 +1361,7 @@ struct sigma0builder {
         auto gamma = fullV0s.rawIteratorAt(bestGammasArray[i]);
 
         for (size_t j = 0; j < bestLambdasArray.size(); ++j) {
-          auto lambda = fullV0s.iteratorAt(bestLambdasArray[j]);
+          auto lambda = fullV0s.rawIteratorAt(bestLambdasArray[j]);
 
           // Sigma0 candidate properties
           std::array<float, 3> pVecPhotons{gamma.px(), gamma.py(), gamma.pz()};
