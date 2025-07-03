@@ -887,7 +887,6 @@ struct HfTaskCorrelationDsHadrons {
                                 aod::McParticles const& mcParticles,
                                 TracksWithMc const& tracksData)
   {
-    auto hAssocTracks = registry.get<StepTHn>(HIST("hAssocTracks"));
 
     /// loop over generated collisions
     for (const auto& mcCollision : mcCollisions) {
