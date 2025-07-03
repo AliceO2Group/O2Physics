@@ -16,13 +16,15 @@
 ///
 /// The task store data relevant to the calculation of hadronization observables radial
 /// profile and/or jet momentum fraction for charmed hadrons
-#include "JetDerivedDataUtilities.h"
-#include "RecoDecay.h"
 
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
+//
+#include "PWGHF/Core/DecayChannels.h"
+
+#include "Common/Core/RecoDecay.h"
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
@@ -325,7 +327,7 @@ struct HfFragmentationFunction {
 
           // reflection information for storage: D0 = +1, D0bar = -1, neither = 0
           int matchedFrom = 0;
-          int decayChannel = 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;
+          int decayChannel = o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;
           int selectedAs = 0;
 
           if (mcdd0cand.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level
@@ -416,7 +418,7 @@ struct HfFragmentationFunction {
 
           // reflection information for storage: D0 = +1, D0bar = -1, neither = 0
           int matchedFrom = 0;
-          int decayChannel = 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;
+          int decayChannel = o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;
           int selectedAs = 0;
 
           if (mcdd0cand.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level
