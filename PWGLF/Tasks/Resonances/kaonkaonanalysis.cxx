@@ -12,77 +12,86 @@
 // (1) For Run3
 // (2) Event and track selection need to be optimized
 // (3) particle = 0 --> phi
-// (4) particle = 1 --> kstar
+// (4) particle = 1 --> Phi
 // (5) particle = 2 --> lambdastar
 // (6) 4 process function (a) Data same event (b) Data mixed event (c) MC generated (d) MC reconstructed
 /// \brief kaon kaon analysis for higher mass resonances (code taken from phianalysisrun3)
 /// \author Sawan (sawan.sawan@cern.ch)
 
-#include <TH1F.h>
-#include <TDirectory.h>
-#include <THn.h>
-#include <TLorentzVector.h>
-#include <TMath.h>
-#include <TObjArray.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TLorentzVector.h>
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include "TF1.h"
-#include "TRandom3.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "Math/GenVector/Boost.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/TrackSelection.h"
-#include "Framework/ASoAHelpers.h"
+
+#include "Math/GenVector/Boost.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "TF1.h"
+#include "TRandom3.h"
+#include <TDatabasePDG.h>
+#include <TDirectory.h>
+#include <TFile.h>
+#include <TH1F.h>
+#include <TH2F.h>
+#include <THn.h>
+#include <TMath.h>
+#include <TObjArray.h>
+#include <TPDGCode.h>
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
+using namespace o2::aod::rctsel;
+
 struct kaonkaonAnalysisRun3 {
+  struct : ConfigurableGroup {
+    Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", true, "Check event quality in run condition table"};
+    Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
+    Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
+    Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
+  } rctCut;
+  RCTFlagsChecker rctChecker;
+
   SliceCache cache;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry hInvMass{"hInvMass", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  // For histograms
+  Configurable<bool> calcLikeSign{"calcLikeSign", true, "Calculate Like Sign"};
+  Configurable<bool> calcRotational{"calcRotational", false, "Calculate Rotational"};
 
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
-  Configurable<bool> piluprejection{"piluprejection", false, "Pileup rejection"};
-  Configurable<bool> goodzvertex{"goodzvertex", false, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference."};
-  Configurable<bool> itstpctracks{"itstpctracks", false, "selects collisions with at least one ITS-TPC track,"};
+  // Configurable<bool> piluprejection{"piluprejection", false, "Pileup rejection"};
+  // Configurable<bool> goodzvertex{"goodzvertex", false, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference."};
+  // Configurable<bool> itstpctracks{"itstpctracks", false, "selects collisions with at least one ITS-TPC track,"};
   Configurable<bool> timFrameEvsel{"timFrameEvsel", true, "TPC Time frame boundary cut"};
-  Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
   Configurable<bool> otherQAplots{"otherQAplots", true, "Other QA plots"};
   Configurable<bool> QAPID{"QAPID", true, "QA PID plots"};
   Configurable<bool> QAevents{"QAevents", true, "QA events"};
   Configurable<bool> cfgMultFT0M{"cfgMultFT0M", true, "true for pp (FT0M estimator) and false for PbPb (FT0C estimator)"};
 
-  // Event selection cuts - Alex (Temporary, need to fix!)
-  TF1* fMultPVCutLow = nullptr;
-  TF1* fMultPVCutHigh = nullptr;
-  TF1* fMultCutLow = nullptr;
-  TF1* fMultCutHigh = nullptr;
-  TF1* fMultMultPVCut = nullptr;
-
   // track
-  Configurable<int> rotational_cut{"rotational_cut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
+  Configurable<int> rotationalCut{"rotationalCut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
   Configurable<float> cfgCutPT{"cfgCutPT", 0.2, "PT cut on daughter track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
@@ -94,24 +103,16 @@ struct kaonkaonAnalysisRun3 {
   Configurable<bool> iscustomDCAcut{"iscustomDCAcut", false, "iscustomDCAcut"};
   Configurable<bool> isNoTOF{"isNoTOF", false, "isNoTOF"};
   Configurable<bool> ismanualDCAcut{"ismanualDCAcut", true, "ismanualDCAcut"};
-  Configurable<bool> isITSOnlycut{"isITSOnlycut", true, "isITSOnlycut"};
+  Configurable<bool> isITSOnlycut{"isITSOnlycut", false, "isITSOnlycut"};
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
-  Configurable<float> cmultLow{"cmultLow", 0.0f, "Low centrality percentile"};
-  Configurable<float> cmultHigh{"cmultHigh", 150.0f, "High centrality percentile"};
-  Configurable<int> cmultBins{"cmultBins", 150, "Number of centrality bins"};
-  Configurable<float> cpTlow{"cpTlow", 0.0f, "Low pT"};
-  Configurable<float> cpThigh{"cpThigh", 10.0f, "High pT"};
-  Configurable<int> cpTbins{"cpTbins", 100, "Number of pT bins"};
-  Configurable<float> cMasslow{"cMasslow", 0.9f, "Low mass"};
-  Configurable<float> cMasshigh{"cMasshigh", 2.5f, "High mass"};
-  Configurable<int> cMassbins{"cMassbins", 320, "Number of mass bins"};
-  Configurable<int> c_nof_rotations{"c_nof_rotations", 3, "Number of random rotations in the rotational background"};
-  ConfigurableAxis axisdEdx{"axisdEdx", {20000, 0.0f, 200.0f}, "dE/dx (a.u.)"};
-  ConfigurableAxis axisPtfordEbydx{"axisPtfordEbydx", {2000, 0, 20}, "pT (GeV/c)"};
-  ConfigurableAxis axisMultdist{"axisMultdist", {3500, 0, 70000}, "Multiplicity distribution"};
+
+  Configurable<int> cRotations{"cRotations", 3, "Number of random rotations in the rotational background"};
+  ConfigurableAxis axisdEdx{"axisdEdx", {1, 0.0f, 200.0f}, "dE/dx (a.u.)"};
+  ConfigurableAxis axisPtfordEbydx{"axisPtfordEbydx", {1, 0, 20}, "pT (GeV/c)"};
+  ConfigurableAxis axisMultdist{"axisMultdist", {1, 0, 70000}, "Multiplicity distribution"};
 
   // different frames
   Configurable<bool> activateTHnSparseCosThStarHelicity{"activateTHnSparseCosThStarHelicity", true, "Activate the THnSparse with cosThStar w.r.t. helicity axis"};
@@ -119,6 +120,9 @@ struct kaonkaonAnalysisRun3 {
   Configurable<bool> activateTHnSparseCosThStarBeam{"activateTHnSparseCosThStarBeam", false, "Activate the THnSparse with cosThStar w.r.t. beam axis (Gottified jackson frame)"};
   Configurable<bool> activateTHnSparseCosThStarRandom{"activateTHnSparseCosThStarRandom", false, "Activate the THnSparse with cosThStar w.r.t. random axis"};
   ConfigurableAxis configThnAxisPOL{"configThnAxisPOL", {20, -1.0, 1.0}, "Costheta axis"};
+  ConfigurableAxis invMassKKAxis{"invMassKKAxis", {200, 1.0f, 3.0f}, "KK pair invariant mass axis"};
+  ConfigurableAxis ptAxisKK{"ptAxisKK", {200, 0.0f, 20.0f}, "KK pair pT axis"};
+  ConfigurableAxis multAxis{"multAxis", {110, 0.0f, 110.0f}, "THnSparse multiplicity axis"};
 
   // MC
   Configurable<bool> isMC{"isMC", false, "Run MC"};
@@ -127,9 +131,10 @@ struct kaonkaonAnalysisRun3 {
 
   void init(o2::framework::InitContext&)
   {
-    AxisSpec axisMult{cmultBins, cmultLow, cmultHigh, "Multiplicity"};
-    AxisSpec axisPt{cpTbins, cpTlow, cpThigh, "pT (GeV/c)"};
-    AxisSpec axisMass{cMassbins, cMasslow, cMasshigh, "Invariant mass (GeV/c^2)"};
+    rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
+    AxisSpec axisMult{multAxis, "Multiplicity"};
+    AxisSpec axisPt{ptAxisKK, "pT (GeV/c)"};
+    AxisSpec axisMass{invMassKKAxis, "Invariant mass (GeV/c^2)"};
     const AxisSpec thnAxisPOL{configThnAxisPOL, "Frame axis"};
 
     //  THnSparses
@@ -189,46 +194,30 @@ struct kaonkaonAnalysisRun3 {
       histos.add("Chi2perclusterTOF", "Chi2 / cluster for the TOF track segment", kTH1F, {{50, 0.0f, 50.0f}});
     }
     if (!isMC) {
-      histos.add("h3PhiInvMassUnlikeSign", "KK Unlike Sign", kTHnSparseF, {axisMult, axisPt, axisMass, thnAxisPOL}, true);
-      histos.add("h3PhiInvMassLikeSignPP", "KK Like Sign +", kTHnSparseF, {axisMult, axisPt, axisMass, thnAxisPOL}, true);
-      histos.add("h3PhiInvMassLikeSignMM", "KK Like Sign -", kTHnSparseF, {axisMult, axisPt, axisMass, thnAxisPOL}, true);
-      histos.add("h3PhiInvMassMixed", "KK Mixed", kTHnSparseF, {axisMult, axisPt, axisMass, thnAxisPOL}, true);
-      histos.add("h3PhiInvMassRotation", "KK Rotation", kTHnSparseF, {axisMult, axisPt, axisMass, thnAxisPOL}, true);
+      hInvMass.add("h3PhiInvMassUnlikeSign", "KK Unlike Sign", kTHnSparseF, {axisMult, axisPt, axisMass, thnAxisPOL}, true);
+      hInvMass.add("h3PhiInvMassLikeSignPP", "KK Like Sign +", kTHnSparseF, {axisMult, axisPt, axisMass, thnAxisPOL}, true);
+      hInvMass.add("h3PhiInvMassLikeSignMM", "KK Like Sign -", kTHnSparseF, {axisMult, axisPt, axisMass, thnAxisPOL}, true);
+      hInvMass.add("h3PhiInvMassMixed", "KK Mixed", kTHnSparseF, {axisMult, axisPt, axisMass, thnAxisPOL}, true);
+      hInvMass.add("h3PhiInvMassRotated", "KK Rotation", kTHnSparseF, {axisMult, axisPt, axisMass, thnAxisPOL}, true);
     } else if (isMC) {
+      hInvMass.add("h1PhiGen", "Phi meson Gen", kTH1F, {axisMult, axisPt});
+      hInvMass.add("h3PhiRec", "Phi meson Rec", kTHnSparseF, {axisMult, axisPt, axisMass});
       histos.add("hMC", "MC Event statistics", kTH1F, {{6, 0.0f, 6.0f}});
-      histos.add("h1PhiGen", "Phi meson Gen", kTH1F, {axisPt});
       histos.add("h1PhiRecsplit", "Phi meson Rec split", kTH1F, {axisPt});
-      histos.add("h3PhiRec", "Phi meson Rec", kTHnSparseF, {axisPt, axisPt, {200, -0.1, 0.1}}, true);
-    }
-    if (additionalEvsel) {
-      fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
-      fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
-      fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
-      fMultPVCutHigh->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
-      fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x)", 0, 100);
-      fMultCutLow->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
-      fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x)", 0, 100);
-      fMultCutHigh->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
-      fMultMultPVCut = new TF1("fMultMultPVCut", "[0]+[1]*x+[2]*x*x", 0, 5000);
-      fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
+      histos.add("Recmutiplicity", "Reconstructed multiplicity distribution", kTH1F, {axisMult});
+      histos.add("Genmutiplicity", "Generated multiplicity distribution", kTH1F, {axisMult});
     }
   }
 
   double massKa = o2::constants::physics::MassKPlus;
-  double rapidity;
-  double genMass, recMass, resolution;
-  double mass{0.};
-  double massrotation1{0.};
-  double massrotation2{0.};
-  double pT{0.};
-  array<float, 3> pvec0;
-  array<float, 3> pvec1;
-  array<float, 3> pvec1rotation;
-  array<float, 3> pvec2rotation;
-  ROOT::Math::PxPyPzMVector daughter1, daughter2;
+  double rapidity{0.0}, mass{0.}, massrotation1{0.}, massrotation2{0.}, pT{0.};
+  float theta2;
+  ROOT::Math::PxPyPzMVector daughter1, daughter2, daughterRot, mother, motherRot, daughterSelected, fourVecDauCM, daughterRotCM;
+  ROOT::Math::XYZVector randomVec, beamVec, normalVec;
+  bool isMix = false;
 
   template <typename Collision>
-  bool eventselection(Collision const& collision, const float& multiplicity)
+  bool eventselection(Collision const& collision)
   {
     if (!collision.sel8()) {
       return false;
@@ -236,32 +225,15 @@ struct kaonkaonAnalysisRun3 {
     if (timFrameEvsel && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
       return false;
     }
-    if (piluprejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-      return false;
-    }
-    if (goodzvertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-      return false;
-    }
-    if (itstpctracks && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
-      return false;
-    }
-    // if (collision.alias_bit(kTVXinTRD)) {
-    //   // TRD triggered
-    //   // return 0;
+    // if (piluprejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    //   return false;
     // }
-    auto multNTracksPV = collision.multNTracksPV();
-    if (additionalEvsel && multNTracksPV < fMultPVCutLow->Eval(multiplicity)) {
-      return false;
-    }
-    if (additionalEvsel && multNTracksPV > fMultPVCutHigh->Eval(multiplicity)) {
-      return false;
-    }
-    // if (multTrk < fMultCutLow->Eval(multiplicity))
-    //  return 0;
-    // if (multTrk > fMultCutHigh->Eval(multiplicity))
-    //  return 0;
-    // if (multTrk > fMultMultPVCut->Eval(multNTracksPV))
-    //  return 0;
+    // if (goodzvertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    //   return false;
+    // }
+    // if (itstpctracks && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+    //   return false;
+    // }
     return true;
   }
 
@@ -310,73 +282,141 @@ struct kaonkaonAnalysisRun3 {
     }
     return true;
   }
-  template <typename T1, typename T2, typename T3>
-  void FillinvMass(const T1& candidate1, const T2& candidate2, const T3& framecalculation, float multiplicity, bool unlike, bool mix, bool likesign, bool rotation, float massd1, float massd2)
+
+  template <typename T1, typename T2>
+  void fillInvMass(const T1& daughter1, const T1& daughter2, const T1& mother, float multiplicity, bool isMix, const T2& track1, const T2& track2)
   {
-    int track1Sign = candidate1.sign();
-    int track2Sign = candidate2.sign();
-    TLorentzVector vec1, vec2, vec3, vec4, vec5;
-    vec1.SetPtEtaPhiM(candidate1.pt(), candidate1.eta(), candidate1.phi(), massd1);
-    vec2.SetPtEtaPhiM(candidate2.pt(), candidate2.eta(), candidate2.phi(), massd2);
-    vec3 = vec1 + vec2;
-    // daughter1 = ROOT::Math::PxPyPzMVector(candidate1.px(), candidate1.py(), candidate1.pz(), massd1); // Kplus
-    // daughter2 = ROOT::Math::PxPyPzMVector(candidate2.px(), candidate2.py(), candidate2.pz(), massd2); // Kminus
-    double rapidity = vec3.Rapidity();
+    ROOT::Math::Boost boost{mother.BoostToCM()};
+    fourVecDauCM = boost(daughter1);
 
-    if (otherQAplots) {
-      histos.fill(HIST("Chi2perclusterITS"), candidate1.itsChi2NCl());
-      histos.fill(HIST("Chi2perclusterITS"), candidate2.itsChi2NCl());
-      histos.fill(HIST("Chi2perclusterTPC"), candidate1.tpcChi2NCl());
-      histos.fill(HIST("Chi2perclusterTPC"), candidate2.tpcChi2NCl());
-      histos.fill(HIST("Chi2perclusterTRD"), candidate1.trdChi2());
-      histos.fill(HIST("Chi2perclusterTRD"), candidate2.trdChi2());
-      histos.fill(HIST("Chi2perclusterTOF"), candidate1.tofChi2());
-      histos.fill(HIST("Chi2perclusterTOF"), candidate2.tofChi2());
-    }
-    if (QAPID) {
-      histos.fill(HIST("dE_by_dx_TPC"), candidate1.p(), candidate1.tpcSignal());
-      histos.fill(HIST("dE_by_dx_TPC"), candidate2.p(), candidate2.tpcSignal());
-    }
+    if (std::abs(mother.Rapidity()) < 0.5) {
+      if (activateTHnSparseCosThStarHelicity) {
+        auto cosThetaStarHelicity = mother.Vect().Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(mother.Vect().Mag2()));
 
-    // polarization calculations
-    // auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
-    // auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
-    // ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massd1); // Kaon
+        if (track1.sign() * track2.sign() < 0) {
+          if (!isMix) {
+            hInvMass.fill(HIST("h3PhiInvMassUnlikeSign"), multiplicity, mother.Pt(), mother.M(), cosThetaStarHelicity);
 
-    // ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(vec3.Px(), vec3.Py(), vec3.Pz(), vec3.M()); // mass of KaonKaon pair
-    // ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                                                             // boost mother to center of mass frame
-    // ROOT::Math::PxPyPzMVector fourVecDauCM = boost(fourVecDau);                                                     // boost the frame of daughter same as mother
-    // ROOT::Math::XYZVector threeVecDauCM = fourVecDauCM.Vect();                                                      // get the 3 vector of daughter in the frame of mother
+            for (int i = 0; i < cRotations; i++) {
+              theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / rotationalCut, o2::constants::math::PI + o2::constants::math::PI / rotationalCut);
 
-    // default filling
-    // if (activateTHnSparseCosThStarHelicity) {
-    // ROOT::Math::XYZVector helicityVec = fourVecMother.Vect(); // 3 vector of mother in COM frame
-    // auto cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(helicityVec.Mag2()));
-    if (std::abs(rapidity) < 0.5 && track1Sign * track2Sign < 0) {
-      if (unlike) {
-        histos.fill(HIST("h3PhiInvMassUnlikeSign"), multiplicity, vec3.Pt(), vec3.M(), framecalculation);
-      }
-      if (mix) {
-        histos.fill(HIST("h3PhiInvMassMixed"), multiplicity, vec3.Pt(), vec3.M(), framecalculation);
-      }
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
 
-      if (rotation) {
-        for (int i = 0; i < c_nof_rotations; i++) {
-          float theta2 = rn->Uniform(TMath::Pi() - TMath::Pi() / rotational_cut, TMath::Pi() + TMath::Pi() / rotational_cut);
-          vec4.SetPtEtaPhiM(candidate1.pt(), candidate1.eta(), candidate1.phi() + theta2, massd1); // for rotated background
-          vec5 = vec4 + vec2;
-          histos.fill(HIST("h3PhiInvMassRotation"), multiplicity, vec5.Pt(), vec5.M(), framecalculation);
+              motherRot = daughterRot + daughter2;
+
+              ROOT::Math::Boost boost2{motherRot.BoostToCM()};
+              daughterRotCM = boost2(daughterRot);
+
+              auto cosThetaStarHelicityRot = motherRot.Vect().Dot(daughterRotCM.Vect()) / (std::sqrt(daughterRotCM.Vect().Mag2()) * std::sqrt(motherRot.Vect().Mag2()));
+
+              if (calcRotational)
+                hInvMass.fill(HIST("h3PhiInvMassRotated"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarHelicityRot);
+            }
+          } else {
+            hInvMass.fill(HIST("h3PhiInvMassMixed"), multiplicity, mother.Pt(), mother.M(), cosThetaStarHelicity);
+          }
+        } else {
+          if (!isMix) {
+            if (calcLikeSign) {
+              if (track1.sign() * track2.sign() > 0) {
+                hInvMass.fill(HIST("h3PhiInvMasslikeSignPP"), multiplicity, mother.Pt(), mother.M(), cosThetaStarHelicity);
+              } else {
+                hInvMass.fill(HIST("h3PhiInvMasslikeSignMM"), multiplicity, mother.Pt(), mother.M(), cosThetaStarHelicity);
+              }
+            }
+          }
+        }
+
+      } else if (activateTHnSparseCosThStarProduction) {
+        normalVec = ROOT::Math::XYZVector(mother.Py(), -mother.Px(), 0.f);
+        auto cosThetaStarProduction = normalVec.Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(normalVec.Mag2()));
+
+        if (track1.sign() * track2.sign() < 0) {
+          if (!isMix) {
+            hInvMass.fill(HIST("h3PhiInvMassUnlikeSign"), multiplicity, mother.Pt(), mother.M(), cosThetaStarProduction);
+            for (int i = 0; i < cRotations; i++) {
+              theta2 = rn->Uniform(0, o2::constants::math::PI);
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
+
+              motherRot = daughterRot + daughter2;
+              if (calcRotational)
+                hInvMass.fill(HIST("h3PhiInvMassRotated"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarProduction);
+            }
+          } else {
+            hInvMass.fill(HIST("h3PhiInvMassMixed"), multiplicity, mother.Pt(), mother.M(), cosThetaStarProduction);
+          }
+        } else {
+          if (!isMix) {
+            if (calcLikeSign) {
+              if (track1.sign() * track2.sign() > 0) {
+                hInvMass.fill(HIST("h3PhiInvMasslikeSignPP"), multiplicity, mother.Pt(), mother.M(), cosThetaStarProduction);
+              } else {
+                hInvMass.fill(HIST("h3PhiInvMasslikeSignMM"), multiplicity, mother.Pt(), mother.M(), cosThetaStarProduction);
+              }
+            }
+          }
+        }
+      } else if (activateTHnSparseCosThStarBeam) {
+        beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
+        auto cosThetaStarBeam = beamVec.Dot(fourVecDauCM.Vect()) / std::sqrt(fourVecDauCM.Vect().Mag2());
+
+        if (track1.sign() * track2.sign() < 0) {
+          if (!isMix) {
+            hInvMass.fill(HIST("h3PhiInvMassUnlikeSign"), multiplicity, mother.Pt(), mother.M(), cosThetaStarBeam);
+            for (int i = 0; i < cRotations; i++) {
+              theta2 = rn->Uniform(0, o2::constants::math::PI);
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
+
+              motherRot = daughterRot + daughter2;
+              if (calcRotational)
+                hInvMass.fill(HIST("h3PhiInvMassRotated"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarBeam);
+            }
+          } else {
+            hInvMass.fill(HIST("h3PhiInvMassMixed"), multiplicity, mother.Pt(), mother.M(), cosThetaStarBeam);
+          }
+        } else {
+          if (calcLikeSign) {
+            if (track1.sign() * track2.sign() > 0) {
+              hInvMass.fill(HIST("h3PhiInvMasslikeSignPP"), multiplicity, mother.Pt(), mother.M(), cosThetaStarBeam);
+            } else {
+              hInvMass.fill(HIST("h3PhiInvMasslikeSignMM"), multiplicity, mother.Pt(), mother.M(), cosThetaStarBeam);
+            }
+          }
+        }
+      } else if (activateTHnSparseCosThStarRandom) {
+        auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
+        auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
+
+        randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
+        auto cosThetaStarRandom = randomVec.Dot(fourVecDauCM.Vect()) / std::sqrt(fourVecDauCM.Vect().Mag2());
+
+        if (track1.sign() * track2.sign() < 0) {
+          if (!isMix) {
+            hInvMass.fill(HIST("h3PhiInvMassUnlikeSign"), multiplicity, mother.Pt(), mother.M(), cosThetaStarRandom);
+            for (int i = 0; i < cRotations; i++) {
+              theta2 = rn->Uniform(0, o2::constants::math::PI);
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
+
+              motherRot = daughterRot + daughter2;
+              if (calcRotational)
+                hInvMass.fill(HIST("h3PhiInvMassRotated"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarRandom);
+            }
+          } else {
+            hInvMass.fill(HIST("h3PhiInvMassMixed"), multiplicity, mother.Pt(), mother.M(), cosThetaStarRandom);
+          }
+        } else {
+          if (!isMix) {
+            if (calcLikeSign) {
+              if (track1.sign() * track2.sign() > 0) {
+                hInvMass.fill(HIST("h3PhiInvMasslikeSignPP"), multiplicity, mother.Pt(), mother.M(), cosThetaStarRandom);
+              } else {
+                hInvMass.fill(HIST("h3PhiInvMasslikeSignMM"), multiplicity, mother.Pt(), mother.M(), cosThetaStarRandom);
+              }
+            }
+          }
         }
       }
     }
-    if (std::abs(rapidity) < 0.5 && track1Sign * track2Sign > 0 && likesign) {
-      if (track1Sign > 0 && track2Sign > 0) {
-        histos.fill(HIST("h3PhiInvMassLikeSignPP"), multiplicity, vec3.Pt(), vec3.M(), framecalculation);
-      } else {
-        histos.fill(HIST("h3PhiInvMassLikeSignMM"), multiplicity, vec3.Pt(), vec3.M(), framecalculation);
-      }
-    }
-    // }
   }
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -387,12 +427,15 @@ struct kaonkaonAnalysisRun3 {
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa>>;
 
   // using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::McCollisionLabels>;
-  using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
+  using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::McTrackLabels>>;
 
   void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
-    if (!eventselection(collision, collision.centFT0M())) {
+    if (rctCut.requireRCTFlagChecker && !rctChecker(collision)) {
+      return;
+    }
+    if (!eventselection(collision)) {
       return;
     }
     float multiplicity;
@@ -433,74 +476,16 @@ struct kaonkaonAnalysisRun3 {
           continue;
         }
 
-        // calculation of event planes
-        daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa); // Kplus
-        daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa); // Kminus
+        if (!selectionPID(track1)) // Track 1 is checked with Kaon
+          continue;
+        if (!selectionPID(track2)) // Track 2 is checked with Pion
+          continue;
 
-        ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massKa); // Kaon
-        TLorentzVector lv1, lv2, lv3;
-        lv1.SetPtEtaPhiM(track1.pt(), track1.eta(), track1.phi(), massKa);
-        lv2.SetPtEtaPhiM(track2.pt(), track2.eta(), track2.phi(), massKa);
-        lv3 = lv1 + lv2;
-
-        ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // mass of KaonKaon pair
-        ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                                                         // boost mother to center of mass frame
-        ROOT::Math::PxPyPzMVector fourVecDauCM = boost(fourVecDau);                                                 // boost the frame of daughter same as mother
-        ROOT::Math::XYZVector threeVecDauCM = fourVecDauCM.Vect();                                                  // get the 3 vector of daughter in the frame of mother
-
-        bool unlike = true;
-        bool mix = false;
-        bool likesign = true;
-        bool rotation = true;
-        if (activateTHnSparseCosThStarHelicity) {
-          ROOT::Math::XYZVector helicityVec = fourVecMother.Vect(); // 3 vector of mother in COM frame
-          auto cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(helicityVec.Mag2()));
-
-          if (isITSOnlycut) {
-            FillinvMass(track1, track2, cosThetaStarHelicity, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-          }
-          if (!isITSOnlycut && selectionPID(track1) && selectionPID(track2)) {
-            FillinvMass(track1, track2, cosThetaStarHelicity, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-          }
-        } else if (activateTHnSparseCosThStarProduction) {
-          ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(lv3.Py(), -lv3.Px(), 0.f);
-          auto cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(normalVec.Mag2()));
-
-          if (isITSOnlycut) {
-            FillinvMass(track1, track2, cosThetaStarProduction, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-          }
-          if (!isITSOnlycut && selectionPID(track1) && selectionPID(track2)) {
-            FillinvMass(track1, track2, cosThetaStarProduction, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-          }
-        } else if (activateTHnSparseCosThStarBeam) {
-          ROOT::Math::XYZVector beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
-          auto cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
-
-          if (isITSOnlycut) {
-            FillinvMass(track1, track2, cosThetaStarBeam, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-          }
-          if (!isITSOnlycut && selectionPID(track1) && selectionPID(track2)) {
-            FillinvMass(track1, track2, cosThetaStarBeam, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-          }
-        } else if (activateTHnSparseCosThStarRandom) {
-          auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
-          auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
-          ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
-          auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
-
-          if (isITSOnlycut) {
-            FillinvMass(track1, track2, cosThetaStarRandom, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-          }
-          if (!isITSOnlycut && selectionPID(track1) && selectionPID(track2)) {
-            FillinvMass(track1, track2, cosThetaStarRandom, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-          }
-        }
-
-        // if (!isITSOnlycut && selectionPID(track1) && selectionPID(track2)) {
-        //   // histos.fill(HIST("hNsigmaKaonTPC_after"), track1.pt(), track1.tpcNSigmaKa());
-        //   // histos.fill(HIST("hNsigmaKaonTOF_after"), track1.pt(), track1.tofNSigmaKa());
-        //   // histos.fill(HIST("hNsigmaKaonTOF_TPC_after"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
-        // }
+        daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+        daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+        mother = daughter1 + daughter2; // Kstar meson
+        isMix = false;
+        fillInvMass(daughter1, daughter2, mother, multiplicity, isMix, track1, track2);
       }
     }
   }
@@ -516,204 +501,53 @@ struct kaonkaonAnalysisRun3 {
   {
     auto tracksTuple = std::make_tuple(tracks);
     //////// currently mixing the event with similar TPC multiplicity ////////
-    BinningTypeVertexContributor1 binningOnPositions1{{axisVertex, axisMultiplicity}, true};
-    BinningTypeVertexContributor2 binningOnPositions2{{axisVertex, axisMultiplicity}, true};
+    BinningTypeVertexContributor1 binningOnPositions1{{axisVertex, axisMultiplicity}, true}; // for pp
+    BinningTypeVertexContributor2 binningOnPositions2{{axisVertex, axisMultiplicity}, true}; // for PbPb
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor1> pair1{binningOnPositions1, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor2> pair2{binningOnPositions2, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
-    if (cfgMultFT0M == true) {
-      for (auto& [c1, tracks1, c2, tracks2] : pair1) {
-        float multiplicity = c1.centFT0M();
 
-        if (!eventselection(c1, multiplicity)) {
-          continue;
-        }
-        if (!eventselection(c2, multiplicity)) {
-          continue;
-        }
+    for (auto& [c1, tracks1, c2, tracks2] : pair1) {
+      float multiplicity = c1.centFT0M();
 
-        for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-          bool unlike = false;
-          bool mix = true;
-          bool likesign = false;
-          bool rotation = false;
-          if (!selectionTrack(t1)) {
-            continue;
-          }
-          if (!selectionTrack(t2)) {
-            continue;
-          }
-          if (!selectionPair(t1, t2)) {
-            continue;
-          }
-
-          // calculation of event planes
-          daughter1 = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), massKa); // Kplus
-          daughter2 = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), massKa); // Kminus
-
-          ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massKa); // Kaon
-          TLorentzVector lv1, lv2, lv3;
-          lv1.SetPtEtaPhiM(t1.pt(), t1.eta(), t1.phi(), massKa);
-          lv2.SetPtEtaPhiM(t2.pt(), t2.eta(), t2.phi(), massKa);
-          lv3 = lv1 + lv2;
-
-          ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // mass of KaonKaon pair
-          ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                                                         // boost mother to center of mass frame
-          ROOT::Math::PxPyPzMVector fourVecDauCM = boost(fourVecDau);                                                 // boost the frame of daughter same as mother
-          ROOT::Math::XYZVector threeVecDauCM = fourVecDauCM.Vect();                                                  // get the 3 vector of daughter in the frame of mother
-
-          if (activateTHnSparseCosThStarHelicity) {
-            ROOT::Math::XYZVector helicityVec = fourVecMother.Vect(); // 3 vector of mother in COM frame
-            auto cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(helicityVec.Mag2()));
-
-            if (isITSOnlycut) {
-              FillinvMass(t1, t2, cosThetaStarHelicity, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-            }
-            if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
-              FillinvMass(t1, t2, cosThetaStarHelicity, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-            }
-          } else if (activateTHnSparseCosThStarProduction) {
-            ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(lv3.Py(), -lv3.Px(), 0.f);
-            auto cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(normalVec.Mag2()));
-
-            if (isITSOnlycut) {
-              FillinvMass(t1, t2, cosThetaStarProduction, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-            }
-            if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
-              FillinvMass(t1, t2, cosThetaStarProduction, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-            }
-          } else if (activateTHnSparseCosThStarBeam) {
-            ROOT::Math::XYZVector beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
-            auto cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
-
-            if (isITSOnlycut) {
-              FillinvMass(t1, t2, cosThetaStarBeam, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-            }
-            if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
-              FillinvMass(t1, t2, cosThetaStarBeam, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-            }
-          } else if (activateTHnSparseCosThStarRandom) {
-            auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
-            auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
-            ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
-            auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
-
-            if (isITSOnlycut) {
-              FillinvMass(t1, t2, cosThetaStarRandom, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-            }
-            if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
-              FillinvMass(t1, t2, cosThetaStarRandom, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-            }
-          }
-
-          // if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
-          //   histos.fill(HIST("hNsigmaKaonTPC_after"), t1.pt(), t1.tpcNSigmaKa());
-          //   histos.fill(HIST("hNsigmaKaonTOF_after"), t1.pt(), t1.tofNSigmaKa());
-          //   histos.fill(HIST("hNsigmaKaonTOF_TPC_after"), t1.tofNSigmaKa(), t1.tpcNSigmaKa());
-          // }
-          // if (isITSOnlycut) {
-          //   FillinvMass(t1, t2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-          // }
-          // if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
-          //   FillinvMass(t1, t2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-          // }
-        }
+      if (rctCut.requireRCTFlagChecker && !rctChecker(c1)) {
+        continue;
       }
-    } else {
-      for (auto& [c1, tracks1, c2, tracks2] : pair2) {
-        float multiplicity = c1.centFT0C();
+      if (rctCut.requireRCTFlagChecker && !rctChecker(c2)) {
+        continue;
+      }
 
-        if (!eventselection(c1, multiplicity)) {
+      if (!eventselection(c1)) {
+        continue;
+      }
+      if (!eventselection(c2)) {
+        continue;
+      }
+
+      for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+
+        if (!selectionTrack(t1)) {
           continue;
         }
-        if (!eventselection(c2, multiplicity)) {
+        if (!selectionTrack(t2)) {
           continue;
         }
-        for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-          bool unlike = false;
-          bool mix = true;
-          bool likesign = false;
-          bool rotation = false;
-          if (!selectionTrack(t1)) {
-            continue;
-          }
-          if (!selectionTrack(t2)) {
-            continue;
-          }
-          if (!selectionPair(t1, t2)) {
-            continue;
-          }
+        if (!selectionPair(t1, t2)) {
+          continue;
+        }
 
-          // calculation of event planes
-          daughter1 = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), massKa); // Kplus
-          daughter2 = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), massKa); // Kminus
+        if (!selectionPID(t1))
+          continue;
+        if (!selectionPID(t2))
+          continue;
 
-          ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massKa); // Kaon
-          TLorentzVector lv1, lv2, lv3;
-          lv1.SetPtEtaPhiM(t1.pt(), t1.eta(), t1.phi(), massKa);
-          lv2.SetPtEtaPhiM(t2.pt(), t2.eta(), t2.phi(), massKa);
-          lv3 = lv1 + lv2;
+        daughter1 = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), massKa);
+        daughter2 = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), massKa);
+        mother = daughter1 + daughter2; // Kstar meson
 
-          ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // mass of KaonKaon pair
-          ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                                                         // boost mother to center of mass frame
-          ROOT::Math::PxPyPzMVector fourVecDauCM = boost(fourVecDau);                                                 // boost the frame of daughter same as mother
-          ROOT::Math::XYZVector threeVecDauCM = fourVecDauCM.Vect();                                                  // get the 3 vector of daughter in the frame of mother
+        isMix = true;
 
-          if (activateTHnSparseCosThStarHelicity) {
-            ROOT::Math::XYZVector helicityVec = fourVecMother.Vect(); // 3 vector of mother in COM frame
-            auto cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(helicityVec.Mag2()));
-
-            if (isITSOnlycut) {
-              FillinvMass(t1, t2, cosThetaStarHelicity, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-            }
-            if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
-              FillinvMass(t1, t2, cosThetaStarHelicity, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-            }
-          } else if (activateTHnSparseCosThStarProduction) {
-            ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(lv3.Py(), -lv3.Px(), 0.f);
-            auto cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(normalVec.Mag2()));
-
-            if (isITSOnlycut) {
-              FillinvMass(t1, t2, cosThetaStarProduction, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-            }
-            if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
-              FillinvMass(t1, t2, cosThetaStarProduction, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-            }
-          } else if (activateTHnSparseCosThStarBeam) {
-            ROOT::Math::XYZVector beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
-            auto cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
-
-            if (isITSOnlycut) {
-              FillinvMass(t1, t2, cosThetaStarBeam, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-            }
-            if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
-              FillinvMass(t1, t2, cosThetaStarBeam, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-            }
-          } else if (activateTHnSparseCosThStarRandom) {
-            auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
-            auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
-            ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
-            auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
-
-            if (isITSOnlycut) {
-              FillinvMass(t1, t2, cosThetaStarRandom, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-            }
-            if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
-              FillinvMass(t1, t2, cosThetaStarRandom, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-            }
-          }
-
-          // if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
-          //   histos.fill(HIST("hNsigmaKaonTPC_after"), t1.pt(), t1.tpcNSigmaKa());
-          //   histos.fill(HIST("hNsigmaKaonTOF_after"), t1.pt(), t1.tofNSigmaKa());
-          //   histos.fill(HIST("hNsigmaKaonTOF_TPC_after"), t1.tofNSigmaKa(), t1.tpcNSigmaKa());
-          // }
-
-          // if (isITSOnlycut) {
-          //   FillinvMass(t1, t2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-          // }
-          // if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
-          //   FillinvMass(t1, t2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
-          // }
+        if (std::abs(mother.Rapidity()) < 0.5) {
+          fillInvMass(daughter1, daughter2, mother, multiplicity, isMix, t1, t2);
         }
       }
     }
@@ -726,6 +560,7 @@ struct kaonkaonAnalysisRun3 {
     if (std::abs(mcCollision.posZ()) < cfgCutVertex) {
       histos.fill(HIST("hMC"), 1.5);
     }
+    auto multiplicity = -1;
     int Nchinel = 0;
     for (auto& mcParticle : mcParticles) {
       auto pdgcode = std::abs(mcParticle.pdgCode());
@@ -744,6 +579,7 @@ struct kaonkaonAnalysisRun3 {
         continue;
       }
       SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
+      multiplicity = collision.centFT0M();
     }
     SelectedEvents.resize(nevts);
     const auto evtReconstructedAndSelected = std::find(SelectedEvents.begin(), SelectedEvents.end(), mcCollision.globalIndex()) != SelectedEvents.end();
@@ -751,6 +587,7 @@ struct kaonkaonAnalysisRun3 {
     if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
       return;
     }
+    histos.fill(HIST("Genmutiplicity"), multiplicity);
     histos.fill(HIST("hMC"), 4.5);
     for (auto& mcParticle : mcParticles) {
       if (std::abs(mcParticle.y()) > 0.5) {
@@ -776,7 +613,7 @@ struct kaonkaonAnalysisRun3 {
         }
       }
       if (daughtp && daughtm) {
-        histos.fill(HIST("h1PhiGen"), mcParticle.pt());
+        hInvMass.fill(HIST("h1PhiGen"), multiplicity, mcParticle.pt());
       }
     }
   }
@@ -790,6 +627,8 @@ struct kaonkaonAnalysisRun3 {
     if (std::abs(collision.mcCollision().posZ()) > cfgCutVertex || !collision.sel8()) {
       return;
     }
+    auto multiplicity = collision.centFT0M();
+    histos.fill(HIST("Recmutiplicity"), multiplicity);
     histos.fill(HIST("hMC"), 5.5);
     auto oldindex = -999;
     for (auto track1 : tracks) {
@@ -847,23 +686,27 @@ struct kaonkaonAnalysisRun3 {
             if (std::abs(mothertrack1.pdgCode()) != 333) {
               continue;
             }
-            if (!isITSOnlycut && !(selectionPID(track1) && selectionPID(track2))) {
+            if (!(selectionPID(track1))) {
+              continue;
+            }
+            if (!(selectionPID(track2))) {
               continue;
             }
             if (avoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
               histos.fill(HIST("h1PhiRecsplit"), mothertrack1.pt());
               continue;
             }
-            oldindex = mothertrack1.globalIndex();
-            pvec0 = array{track1.px(), track1.py(), track1.pz()};
-            pvec1 = array{track2.px(), track2.py(), track2.pz()};
-            auto arrMomrec = array{pvec0, pvec1};
-            auto motherP = mothertrack1.p();
-            auto motherE = mothertrack1.e();
-            genMass = std::sqrt(motherE * motherE - motherP * motherP);
-            recMass = RecoDecay::m(arrMomrec, array{massKa, massKa});
-            auto recpt = TMath::Sqrt((track1.px() + track2.px()) * (track1.px() + track2.px()) + (track1.py() + track2.py()) * (track1.py() + track2.py()));
-            histos.fill(HIST("h3PhiRec"), mothertrack1.pt(), recpt, recMass - genMass);
+
+            if (track1.sign() * track2.sign() < 0) {
+              daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+              daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+            }
+            mother = daughter1 + daughter2;
+
+            if (TMath::Abs(mother.Rapidity()) >= 0.5) {
+              continue;
+            }
+            hInvMass.fill(HIST("h3PhiRec"), multiplicity, mother.Pt(), mother.M());
           }
         }
       }
