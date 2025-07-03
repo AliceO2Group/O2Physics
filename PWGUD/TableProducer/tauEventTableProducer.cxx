@@ -68,6 +68,7 @@ struct TauEventTableProducer {
     Configurable<bool> useNumContribs{"useNumContribs", false, {"Use coll.numContribs as event cut"}};
     Configurable<int> cutRecoFlag{"cutRecoFlag", 1, {"0 = std mode, 1 = upc mode"}};
     Configurable<bool> useRecoFlag{"useRecoFlag", false, {"Use coll.flags as event cut"}};
+    Configurable<int> cutRCTflag{"cutRCTflag", 0, {"0 = off, 1 = CBT, 2 = CBT+ZDC, 3 = CBThadron, 4 = CBThadron+ZDC"}};
     Configurable<float> cutTrueGapSideFV0{"cutTrueGapSideFV0", 180000, "FV0A threshold for SG selector"};
     Configurable<float> cutTrueGapSideFT0A{"cutTrueGapSideFT0A", 150., "FT0A threshold for SG selector"};
     Configurable<float> cutTrueGapSideFT0C{"cutTrueGapSideFT0C", 50., "FT0C threshold for SG selector"};
@@ -151,6 +152,23 @@ struct TauEventTableProducer {
       return false;
 
     return true;
+  }
+
+  template <typename C>
+  bool isGoodRCTflag(C const& coll)
+  {
+    switch (cutSample.cutRCTflag) {
+      case 1:
+        return sgSelector.isCBTOk(coll);
+      case 2:
+        return sgSelector.isCBTZdcOk(coll);
+      case 3:
+        return sgSelector.isCBTHadronOk(coll);
+      case 4:
+        return sgSelector.isCBTHadronZdcOk(coll);
+      default:
+        return true;
+    }
   }
 
   template <typename C>
@@ -324,15 +342,16 @@ struct TauEventTableProducer {
                      FullUDTracks const& tracks)
   {
 
-    int gapSide = collision.gapSide();
-    int trueGapSide = sgSelector.trueGap(collision, cutSample.cutTrueGapSideFV0, cutSample.cutTrueGapSideFT0A, cutSample.cutTrueGapSideFT0C, cutSample.cutTrueGapSideZDC);
-
-    if (cutSample.useTrueGap)
-      gapSide = trueGapSide;
+    if (!isGoodRCTflag(collision))
+      return;
 
     if (!isGoodROFtime(collision))
       return;
 
+    int gapSide = collision.gapSide();
+    int trueGapSide = sgSelector.trueGap(collision, cutSample.cutTrueGapSideFV0, cutSample.cutTrueGapSideFT0A, cutSample.cutTrueGapSideFT0C, cutSample.cutTrueGapSideZDC);
+    if (cutSample.useTrueGap)
+      gapSide = trueGapSide;
     if (gapSide != cutSample.whichGapSide)
       return;
 
