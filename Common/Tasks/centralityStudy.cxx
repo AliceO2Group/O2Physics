@@ -13,14 +13,18 @@
 // Run 3 Pb-Pb centrality selections in 2023 data. It is compatible with
 // derived data.
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/McCollisionExtra.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
+#include "Common/DataModel/Multiplicity.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPECSObject.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+
 #include "TH1F.h"
 #include "TH2F.h"
 
@@ -32,6 +36,7 @@ using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3Match
 struct centralityStudy {
   // Raw multiplicities
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // Configurables
   Configurable<bool> do2DPlots{"do2DPlots", true, "0 - no, 1 - yes"};
@@ -39,6 +44,7 @@ struct centralityStudy {
   Configurable<bool> doOccupancyStudyVsRawValues2d{"doOccupancyStudyVsRawValues2d", true, "0 - no, 1 - yes"};
   Configurable<bool> doOccupancyStudyVsCentrality3d{"doOccupancyStudyVsCentrality3d", false, "0 - no, 1 - yes"};
   Configurable<bool> doOccupancyStudyVsRawValues3d{"doOccupancyStudyVsRawValues3d", false, "0 - no, 1 - yes"};
+  Configurable<bool> doTimeStudies{"doTimeStudies", false, "0 - no, 1 - yes"};
   Configurable<bool> doNGlobalTracksVsRawSignals{"doNGlobalTracksVsRawSignals", true, "0 - no, 1 - yes"};
   Configurable<bool> applySel8{"applySel8", true, "0 - no, 1 - yes"};
   Configurable<bool> applyVtxZ{"applyVtxZ", true, "0 - no, 1 - yes"};
@@ -113,10 +119,10 @@ struct centralityStudy {
   ConfigurableAxis axisCentrality{"axisCentrality", {100, 0, 100}, "FT0C percentile"};
   ConfigurableAxis axisPVChi2{"axisPVChi2", {300, 0, 30}, "FT0C percentile"};
   ConfigurableAxis axisDeltaTime{"axisDeltaTime", {300, 0, 300}, "#Delta time"};
+  ConfigurableAxis axisDeltaTimestamp{"axisDeltaTimestamp", {1440, 0, 24}, "#Delta timestamp - sor (hours)"};
 
   // For profile Z
   ConfigurableAxis axisPVz{"axisPVz", {400, -20.0f, +20.0f}, "PVz (cm)"};
-
   ConfigurableAxis axisZN{"axisZN", {1100, -50.0f, +500.0f}, "ZN"};
 
   void init(InitContext&)
@@ -226,6 +232,21 @@ struct centralityStudy {
         histos.add("hFT0COccupancyVsNContribsVsCentrality", "hFT0COccupancyVsNContribsVsCentrality", kTH3F, {axisFT0COccupancy, axisMultPVContributors, axisCentrality});
         histos.add("hFT0COccupancyVsNGlobalTracksVsCentrality", "hFT0COccupancyVsNGlobalTracksVsCentrality", kTH3F, {axisFT0COccupancy, axisMultGlobalTracks, axisCentrality});
       }
+    }
+
+    if (doTimeStudies) {
+      ccdb->setURL("http://alice-ccdb.cern.ch");
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setFatalWhenNull(false);
+
+      histos.add("hFT0AvsTime", "hFT0AvsTime", kTH2F, {axisDeltaTimestamp, axisMultFT0A});
+      histos.add("hFT0CvsTime", "hFT0CvsTime", kTH2F, {{axisDeltaTimestamp, axisMultFT0C}});
+      histos.add("hFT0MvsTime", "hFT0MvsTime", kTH2F, {{axisDeltaTimestamp, axisMultFT0M}});
+      histos.add("hFV0AvsTime", "hFV0AvsTime", kTH2F, {{axisDeltaTimestamp, axisMultFV0A}});
+      histos.add("hMFTTracksvsTime", "hMFTTracksvsTime", kTH2F, {{axisDeltaTimestamp, axisMultMFTTracks}});
+      histos.add("hNGlobalVsTime", "hNGlobalVsTime", kTH2F, {{axisDeltaTimestamp, axisMultGlobalTracks}});
+      histos.add("hNTPVContributorsvsTime", "hNTPVContributorsvsTime", kTH2F, {{axisDeltaTimestamp, axisMultPVContributors}});
     }
   }
 
@@ -403,19 +424,34 @@ struct centralityStudy {
         histos.fill(HIST("hFT0COccupancyVsNGlobalTracksVsCentrality"), collision.ft0cOccupancyInTimeRange(), collision.multNTracksGlobal(), collision.centFT0C());
       }
     }
+
+    if (doTimeStudies && collision.has_multBC()) {
+      auto multbc = collision.template multBC_as<aod::MultBCs>();
+      uint64_t bcTimestamp = multbc.timestamp();
+      o2::parameters::GRPECSObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", bcTimestamp);
+      uint64_t startOfRunTimestamp = grpo->getTimeStart();
+      float hoursAfterStartOfRun = static_cast<float>(bcTimestamp - startOfRunTimestamp) / 3600000.0;
+      histos.fill(HIST("hFT0AvsTime"), hoursAfterStartOfRun, collision.multFT0A());
+      histos.fill(HIST("hFT0CvsTime"), hoursAfterStartOfRun, collision.multFT0C());
+      histos.fill(HIST("hFT0MvsTime"), hoursAfterStartOfRun, collision.multFT0M());
+      histos.fill(HIST("hFV0AvsTime"), hoursAfterStartOfRun, collision.multFV0A());
+      histos.fill(HIST("hMFTTracksvsTime"), hoursAfterStartOfRun, collision.mftNtracks());
+      histos.fill(HIST("hNGlobalVsTime"), hoursAfterStartOfRun, collision.multNTracksGlobal());
+      histos.fill(HIST("hNTPVContributorsvsTime"), hoursAfterStartOfRun, collision.multPVTotalContributors());
+    }
   }
 
-  void processCollisions(soa::Join<aod::Mults, aod::MFTMults, aod::MultsExtra, aod::MultsGlobal, aod::MultSelections>::iterator const& collision)
+  void processCollisions(soa::Join<aod::Mults, aod::MFTMults, aod::MultsExtra, aod::MultsGlobal, aod::MultSelections, aod::Mults2BC>::iterator const& collision, aod::MultBCs const&)
   {
     genericProcessCollision(collision);
   }
 
-  void processCollisionsWithCentrality(soa::Join<aod::Mults, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal>::iterator const& collision)
+  void processCollisionsWithCentrality(soa::Join<aod::Mults, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::Mults2BC>::iterator const& collision, aod::MultBCs const&)
   {
     genericProcessCollision(collision);
   }
 
-  void processCollisionsWithCentralityWithNeighbours(soa::Join<aod::Mults, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::MultNeighs>::iterator const& collision)
+  void processCollisionsWithCentralityWithNeighbours(soa::Join<aod::Mults, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::MultNeighs, aod::Mults2BC>::iterator const& collision, aod::MultBCs const&)
   {
     genericProcessCollision(collision);
   }
