@@ -5296,7 +5296,7 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
 
       KFGeoTwoTracks.SetConstructMethod(2);
       KFGeoTwoTracks.AddDaughter(trk1KF);
-      KFGeoTwoTracks.AddDaughter(trk1KF);
+      KFGeoTwoTracks.AddDaughter(trk2KF);
 
       if (fgUsedVars[kDitrackMass] || fgUsedVars[kDitrackPt]) {
         values[VarManager::kDitrackMass] = KFGeoTwoTracks.GetMass();
