@@ -1070,7 +1070,7 @@ struct HfTaskSigmac {
         double decLengthLc(candidateLc.decayLength()), decLengthXYLc(candidateLc.decayLengthXY());
         double cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
         int origin = candSc.originMcRec();
-        auto channel = candidateLc.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
+        auto channel = candidateLc.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±; FIXME: DecayChannelResonant
 
         /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
         if ((TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PKPi)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kProton) {
