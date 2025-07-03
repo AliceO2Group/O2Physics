@@ -791,9 +791,9 @@ class CutVarMinimiser:
         return canvas, histos, leg
 
     # pylint: disable=no-member
-    def plot_raw_yield_uncertainties(self, suffix="", title=""):
+    def plot_uncertainties(self, suffix="", title=""):
         """
-        Helper function to plot raw yield uncertainties as a function of cut set
+        Helper function to plot uncertainties as a function of cut set
 
         Parameters
         -----------------------------------------------------
@@ -806,37 +806,67 @@ class CutVarMinimiser:
         -----------------------------------------------------
         - canvas: ROOT.TCanvas
             canvas with plot
-        - histo: ROOT.TH1F
-            ROOT.TH1F with raw yield uncertainties distributions
+        - histos: dict
+            dictionary of ROOT.TH1F with uncertainties distributions for
+            raw yield and residual vector
+        - leg: ROOT.TLegend
+            needed otherwise it is destroyed
         """
 
         set_global_style(padleftmargin=0.16, padbottommargin=0.12, padtopmargin=0.075, titleoffsety=1.6)
 
         hist_raw_yield_unc = ROOT.TH1F(
             f"hRawYieldUncVsCut{suffix}",
-            ";cut set;raw yield unc.",
+            ";cut set;runc.",
             self.n_sets,
             -0.5,
             self.n_sets - 0.5,
         )
 
-        for i_bin, unc_rawy in enumerate(self.unc_raw_yields):
-            hist_raw_yield_unc.SetBinContent(i_bin + 1, unc_rawy)
+        hist_residual_unc = ROOT.TH1F(
+            f"hResidualUncVsCut{suffix}",
+            ";cut set;unc.",
+            self.n_sets,
+            -0.5,
+            self.n_sets - 0.5,
+        )
 
-        set_object_style(hist_raw_yield_unc)
-        canvas = ROOT.TCanvas(f"cRawYieldUncVsCut{suffix}", "", 500, 500)
+        m_cov_sets_diag = np.diag(self.m_cov_sets)
+        m_cov_sets_diag = np.sqrt(m_cov_sets_diag)
+
+        for i_bin, (unc_rawy, unc_res) in enumerate(zip(self.unc_raw_yields, m_cov_sets_diag)):
+            hist_raw_yield_unc.SetBinContent(i_bin + 1, unc_rawy)
+            hist_residual_unc.SetBinContent(i_bin+1, unc_res)
+
+        set_object_style(hist_raw_yield_unc, color=ROOT.kRed + 1, fillstyle=0)
+        set_object_style(hist_residual_unc, color=ROOT.kAzure + 4, fillstyle=0)
+
+        canvas = ROOT.TCanvas(f"cUncVsCut{suffix}", "", 500, 500)
         canvas.DrawFrame(
             -0.5,
             0.0,
             self.n_sets - 0.5,
-            hist_raw_yield_unc.GetMaximum() * 1.2,
-            ";cut set;raw yield unc.",
+            hist_residual_unc.GetMaximum() * 1.2,
+            ";cut set;unc.",
         )
-        hist_raw_yield_unc.Draw("")
+        leg = ROOT.TLegend(0.6, 0.75, 0.8, 0.85)
+        leg.SetBorderSize(0)
+        leg.SetFillStyle(0)
+        leg.SetTextSize(0.04)
+        leg.AddEntry(hist_raw_yield_unc, "raw yield", "l")
+        leg.AddEntry(hist_residual_unc, "residual vector", "l")
+        leg.Draw()
+        hist_raw_yield_unc.Draw("histsame")
+        hist_residual_unc.Draw("histsame")
         tex = ROOT.TLatex()
         tex.SetTextSize(0.04)
         tex.DrawLatexNDC(0.05, 0.95, title)
         canvas.Modified()
         canvas.Update()
 
-        return canvas, hist_raw_yield_unc
+        histos = {
+            "rawy": hist_raw_yield_unc,
+            "residual": hist_residual_unc,
+        }
+
+        return canvas, histos, leg
