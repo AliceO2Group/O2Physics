@@ -15,21 +15,25 @@
 /// \since 01/07/2024
 
 #include "PWGLF/DataModel/LFResonanceTables.h"
+
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
+
 #include "CommonConstants/MathConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisHelpers.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include <Framework/Configurable.h>
-#include "TVector2.h"
+
 #include "Math/LorentzVector.h"
 #include "Math/Vector4D.h"
+#include "TVector2.h"
 #include <TLorentzVector.h>
+
 #include <vector>
 
 using namespace o2;
@@ -42,7 +46,7 @@ using namespace o2::soa;
 struct f0980analysis {
   SliceCache cache;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  
+
   //  Event selections
   Configurable<float> cfgMinpT{"cfgMinpT", 0.15, "Minimum transverse momentum for charged track"};
   Configurable<float> cfgMaxEta{"cfgMaxEta", 0.8, "Maximum pseudorapidiy for charged track"};
@@ -53,16 +57,16 @@ struct f0980analysis {
   Configurable<bool> cfgFindRT{"cfgFindRT", false, "boolean for RT analysis"};
 
   //  Track selections
-  Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"}; // kGoldenChi2 | kDCAxy | kDCAz
-  Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", false, "Global track selection"}; // kGoldenChi2 | kDCAxy | kDCAz
+  Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
+  Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", false, "Global track selection"};                      // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType |
-                                                                                                             // kTPCNCls | kTPCCrossedRows |
-                                                                                                             // kTPCCrossedRowsOverNCls |
-                                                                                                             // kTPCChi2NDF | kTPCRefit |
-                                                                                                             // kITSNCls | kITSChi2NDF |
-                                                                                                             // kITSRefit | kITSHits) |
-                                                                                                             // kInAcceptanceTracks (kPtRange |
-                                                                                                             // kEtaRange)
+                                                                                                                                      // kTPCNCls | kTPCCrossedRows |
+                                                                                                                                      // kTPCCrossedRowsOverNCls |
+                                                                                                                                      // kTPCChi2NDF | kTPCRefit |
+                                                                                                                                      // kITSNCls | kITSChi2NDF |
+                                                                                                                                      // kITSRefit | kITSHits) |
+                                                                                                                                      // kInAcceptanceTracks (kPtRange |
+                                                                                                                                      // kEtaRange)
   Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
   Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"};
   Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
@@ -81,17 +85,18 @@ struct f0980analysis {
   ConfigurableAxis pTAxis{"pTAxis", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0}, "Transverse momentum Binning"};
   ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 95.0, 100.0, 105.0, 110.0}, "Centrality Binning"};
 
-  void init (o2::framework::InitContext&) {
+  void init(o2::framework::InitContext&)
+  {
     std::vector<double> lptBinning = {0, 5.0, 13.0, 20.0, 50.0, 1000.0};
-    
+
     AxisSpec rtAxis = {3, 0, 3};
-    AxisSpec lptAxis = {lptBinning};                                              //  Minimum leading hadron pT selection
+    AxisSpec lptAxis = {lptBinning}; //  Minimum leading hadron pT selection
 
     AxisSpec pidqaAxis = {60, -6, 6};
     AxisSpec pTqaAxis = {200, 0, 20};
-    AxisSpec phiqaAxis = {72, 0, o2::constants::math::TwoPI};                     //  Azimuthal angle axis
+    AxisSpec phiqaAxis = {72, 0, o2::constants::math::TwoPI}; //  Azimuthal angle axis
 
-    AxisSpec epAxis = {10, 0, o2::constants::math::PI};                           //  Event Plane
+    AxisSpec epAxis = {10, 0, o2::constants::math::PI}; //  Event Plane
     AxisSpec epqaAxis = {200, -o2::constants::math::PI, o2::constants::math::PI};
     AxisSpec epResAxis = {200, -2, 2};
 
@@ -99,11 +104,10 @@ struct f0980analysis {
       histos.add("hInvMass_f0980_US", "unlike invariant mass", {HistType::kTHnSparseF, {massAxis, pTAxis, centAxis, rtAxis, lptAxis}});
       histos.add("hInvMass_f0980_LSpp", "++ invariant mass", {HistType::kTHnSparseF, {massAxis, pTAxis, centAxis, rtAxis, lptAxis}});
       histos.add("hInvMass_f0980_LSmm", "-- invariant mass", {HistType::kTHnSparseF, {massAxis, pTAxis, centAxis, rtAxis, lptAxis}});
-    }
-    else {
+    } else {
       histos.add("hInvMass_f0980_US_EPA", "unlike invariant mass", {HistType::kTHnSparseF, {massAxis, pTAxis, centAxis, epAxis}});
       histos.add("hInvMass_f0980_LSpp_EPA", "++ invariant mass", {HistType::kTHnSparseF, {massAxis, pTAxis, centAxis, epAxis}});
-      histos.add("hInvMass_f0980_LSmm_EPA", "-- invariant mass", {HistType::kTHnSparseF, {massAxis, pTAxis, centAxis, epAxis}}); 
+      histos.add("hInvMass_f0980_LSmm_EPA", "-- invariant mass", {HistType::kTHnSparseF, {massAxis, pTAxis, centAxis, epAxis}});
     }
 
     histos.add("QA/EPhist", "", {HistType::kTH2F, {centAxis, epqaAxis}});
@@ -118,7 +122,7 @@ struct f0980analysis {
     histos.add("QA/Nsigma_TPC_TOF", "", {HistType::kTH2F, {pidqaAxis, pidqaAxis}});
 
     if (doprocessMCLight) {
-      histos.add("MCL/hpT_f0980_GEN", "generated f0 signals", HistType::kTH1F,{pTqaAxis});
+      histos.add("MCL/hpT_f0980_GEN", "generated f0 signals", HistType::kTH1F, {pTqaAxis});
       histos.add("MCL/hpT_f0980_REC", "reconstructed f0 signals", HistType::kTH3F, {massAxis, pTqaAxis, centAxis});
     }
 
@@ -146,7 +150,8 @@ struct f0980analysis {
   }
 
   template <typename TrackType>
-  bool selTrack (const TrackType track) {
+  bool selTrack(const TrackType track)
+  {
     if (std::abs(track.pt()) < cfgMinpT)
       return false;
     if (std::fabs(track.eta()) > cfgMaxEta)
@@ -176,7 +181,8 @@ struct f0980analysis {
   }
 
   template <typename TrackType>
-  bool selPion (const TrackType track) {
+  bool selPion(const TrackType track)
+  {
     switch (selectType) {
       case 0:
         if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaPi()) >= cMaxTOFnSigmaPion)
@@ -191,8 +197,7 @@ struct f0980analysis {
         if (track.hasTOF()) {
           if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaPi()) >= cMaxTOFnSigmaPion)
             return false;
-        }
-        else {
+        } else {
           if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPionWoTOF)
             return false;
         }
@@ -201,7 +206,8 @@ struct f0980analysis {
   }
 
   template <bool IsMC, typename CollisionType, typename TracksType>
-  void fillHistograms(const CollisionType& collision, const TracksType& dTracks) {
+  void fillHistograms(const CollisionType& collision, const TracksType& dTracks)
+  {
     double lhpT = 0.;
     double lhphi = 0.;
     double relphi = 0.;
@@ -265,7 +271,7 @@ struct f0980analysis {
         if (cfgFindRT) {
           histos.fill(HIST("hInvMass_f0980_LSmm"), reco.M(), reco.Pt(), collision.cent(), rtIndex(reco.Phi(), lhphi), lhpT);
         }
-        histos.fill(HIST("hInvMass_f0980_LSmm_EPA"), reco.M(), reco.Pt(), collision.cent(), relphi); 
+        histos.fill(HIST("hInvMass_f0980_LSmm_EPA"), reco.M(), reco.Pt(), collision.cent(), relphi);
       }
     }
   }
