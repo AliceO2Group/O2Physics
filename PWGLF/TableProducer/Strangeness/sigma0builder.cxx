@@ -780,7 +780,7 @@ struct sigma0builder {
     auto negTrackGamma2 = gamma2.template negTrackExtra_as<dauTracks>();
 
     // Gamma1 Selection
-    bool passedTPCGamma1 = (TMath::Abs(posTrackGamma1.tpcNSigmaEl()) < Pi0PhotonMaxTPCNSigmas) || 
+    bool passedTPCGamma1 = (TMath::Abs(posTrackGamma1.tpcNSigmaEl()) < Pi0PhotonMaxTPCNSigmas) ||
                            (TMath::Abs(negTrackGamma1.tpcNSigmaEl()) < Pi0PhotonMaxTPCNSigmas);
 
     if (TMath::Abs(gamma1.mGamma()) > Pi0PhotonMaxMass ||
@@ -1186,10 +1186,10 @@ struct sigma0builder {
             histos.fill(HIST("MC/h2dPtVsCentralityBeforeSel_MCAssocALambda"), centrality, v0.pt());
         }
 
-        if (processPhotonCandidate(v0, coll))                // selecting photons
+        if (processPhotonCandidate(v0, coll))          // selecting photons
           bestGammasArray.push_back(v0.globalIndex()); // Save indices of best gamma candidates
 
-        if (processLambdaCandidate(v0, coll))                 // selecting lambdas
+        if (processLambdaCandidate(v0, coll))           // selecting lambdas
           bestLambdasArray.push_back(v0.globalIndex()); // Save indices of best lambda candidates
       }
 
@@ -1279,7 +1279,7 @@ struct sigma0builder {
             if (fIsAntiSigma)
               histos.fill(HIST("MC/h2dPtVsCentralityBeforeSel_MCAssocASigma0"), centrality, SigmaMCpT);
           }
-          
+
           // Build sigma0 candidate, please
           if (!buildSigma0(lambda, gamma, coll))
             continue;
@@ -1300,7 +1300,7 @@ struct sigma0builder {
                         LambdaCandPDGCode, LambdaCandPDGCodeMother, fIsLambdaPrimary, LambdaMCpT, fIsLambdaCorrectlyAssign);
 
           // Filling tables with accepted candidates
-          fillTables(lambda, gamma, coll); 
+          fillTables(lambda, gamma, coll);
 
           nSigmaCandidates++;
           if (nSigmaCandidates % 10000 == 0)
@@ -1315,7 +1315,7 @@ struct sigma0builder {
     for (const auto& coll : collisions) {
 
       if (!IsEventAccepted(coll, true))
-       continue;
+        continue;
 
       // Do analysis with collision-grouped V0s, retain full collision information
       const uint64_t collIdx = coll.globalIndex();
@@ -1340,10 +1340,10 @@ struct sigma0builder {
       //_______________________________________________
       // V0s loop
       for (auto& v0 : V0s) {
-        if (processPhotonCandidate(v0, coll))                // selecting photons
+        if (processPhotonCandidate(v0, coll))          // selecting photons
           bestGammasArray.push_back(v0.globalIndex()); // Save indices of best gamma candidates
 
-        if (processLambdaCandidate(v0, coll))                 // selecting lambdas
+        if (processLambdaCandidate(v0, coll))           // selecting lambdas
           bestLambdasArray.push_back(v0.globalIndex()); // Save indices of best lambda candidates
       }
 
@@ -1362,17 +1362,17 @@ struct sigma0builder {
       //_______________________________________________
       // Sigma0 nested loop
       for (size_t i = 0; i < bestGammasArray.size(); ++i) {
-        auto gamma = fullV0s.rawIteratorAt(bestGammasArray[i]);        
+        auto gamma = fullV0s.rawIteratorAt(bestGammasArray[i]);
 
         for (size_t j = 0; j < bestLambdasArray.size(); ++j) {
           auto lambda = fullV0s.rawIteratorAt(bestLambdasArray[j]);
-          
+
           // Building sigma0 candidate
           if (!buildSigma0(lambda, gamma, coll))
-           continue;
+            continue;
 
           // Filling tables with accepted candidates
-          fillTables(lambda, gamma, coll); 
+          fillTables(lambda, gamma, coll);
 
           nSigmaCandidates++;
           if (nSigmaCandidates % 10000 == 0)
