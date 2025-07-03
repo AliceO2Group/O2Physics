@@ -608,8 +608,8 @@ struct PseudorapidityDensityMFT {
         int64_t i = 0.0, j = 0.0, k = 0.0;
         for (const auto& retrack : retracks) {
           auto track = retrack.mfttrack();
-          float ndf = std::max(2.0f*track.nClusters()-5.0f,1.0f);
-          float chi2ndf = track.chi2()/ndf;
+          float ndf = std::max(2.0f * track.nClusters() - 5.0f, 1.0f);
+          float chi2ndf = track.chi2() / ndf;
           if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0 && chi2ndf < cfgChi2NDFMax) {
             registry.fill(HIST("Tracks/Control/Chi2NDF"), chi2ndf);
             registry.fill(HIST("Tracks/2Danalysis/EtaZvtx_sel8"), track.eta(), z);
@@ -625,8 +625,8 @@ struct PseudorapidityDensityMFT {
           }
           for (const auto& retrack : retracks) {
             auto track = retrack.mfttrack();
-            float ndf = std::max(2.0f*track.nClusters()-5.0f,1.0f);
-            float chi2ndf = track.chi2()/ndf;
+            float ndf = std::max(2.0f * track.nClusters() - 5.0f, 1.0f);
+            float chi2ndf = track.chi2() / ndf;
 
             if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && chi2ndf < cfgChi2NDFMax) {
               registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
