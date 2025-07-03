@@ -187,12 +187,15 @@ struct f0980analysis {
       case 0:
         if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaPi()) >= cMaxTOFnSigmaPion)
           return false;
+        break;
       case 1:
         if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion)
           return false;
+        break;
       case 2:
         if (track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi() >= nsigmaCutCombinedPion * nsigmaCutCombinedPion)
           return false;
+        break;
       case 3:
         if (track.hasTOF()) {
           if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaPi()) >= cMaxTOFnSigmaPion)
@@ -201,6 +204,7 @@ struct f0980analysis {
           if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPionWoTOF)
             return false;
         }
+        break;
     }
     return true;
   }
