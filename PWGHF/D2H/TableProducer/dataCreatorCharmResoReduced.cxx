@@ -943,7 +943,7 @@ struct HfDataCreatorCharmResoReduced {
       }
 
       // Loop on the bachelor V0s
-      if constexpr (doV0s) {
+      if constexpr (DoV0s) {
         for (const auto& v0 : bachelorV0s) {
           auto trackPos = v0.template posTrack_as<TrIU>();
           auto trackNeg = v0.template negTrack_as<TrIU>();
@@ -1095,7 +1095,7 @@ struct HfDataCreatorCharmResoReduced {
         } // end of loop on V0 candidates
       } // end of do V0s
       // Loop on the bachelor tracks
-      if constexpr (doTracks) {
+      if constexpr (DoTracks) {
         for (const auto& trackIndex : bachelorTrks) {
           auto track = tracks.rawIteratorAt(trackIndex.trackId());
           if (!isTrackSelected(track, prongIdsD)) {
