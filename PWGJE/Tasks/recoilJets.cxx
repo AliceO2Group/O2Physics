@@ -350,9 +350,10 @@ struct RecoilJets {
       bSigEv = true;
 
     for (const auto& jet : jets) {
-      if (jet.pt() > pTHatMax * pTHat)
+      if (jet.pt() > pTHatMax * pTHat) {
         spectra.fill(HIST("hEventSelectionCountPartLevel"), 1.5);
         return;
+      }
     }
 
     for (const auto& particle : particles) {
