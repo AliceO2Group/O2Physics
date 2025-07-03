@@ -107,8 +107,8 @@ struct HfTaskOmegac0ToOmegapi {
       LOGP(fatal, "One and only one data process function should be enabled at a time.");
     }
 
-    std::array<bool, 2> doprocess{doprocessMcWithKFParticle, doprocessMcWithKFParticleMl};
-    if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
+    std::array<bool, 2> doprocessMc{doprocessMcWithKFParticle, doprocessMcWithKFParticleMl};
+    if ((std::accumulate(doprocessMc.begin(), doprocessMc.end(), 0)) != 1) {
       LOGP(fatal, "One and only one MC process function should be enabled at a time.");
     }
 
