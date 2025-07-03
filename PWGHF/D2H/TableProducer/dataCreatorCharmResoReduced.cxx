@@ -840,8 +840,8 @@ struct HfDataCreatorCharmResoReduced {
     std::map<int64_t, int64_t> selectedV0s;
     std::map<int64_t, int64_t> selectedTracks;
     bool fillHfReducedCollision = false;
-    constexpr bool doTracks = pairingType == PairingType::TrackOnly || pairingType == PairingType::V0AndTrack;
-    constexpr bool doV0s = pairingType == PairingType::V0Only || pairingType == PairingType::V0AndTrack;
+    constexpr bool DoTracks = pairingType == PairingType::TrackOnly || pairingType == PairingType::V0AndTrack;
+    constexpr bool DoV0s = pairingType == PairingType::V0Only || pairingType == PairingType::V0AndTrack;
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {
       LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
