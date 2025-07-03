@@ -427,10 +427,10 @@ struct centralityStudy {
 
     if (doTimeStudies && collision.has_multBC()) {
       auto multbc = collision.template multBC_as<aod::MultBCs>();
-      uint64_t timestamp_ms = multbc.timestamp();
-      o2::parameters::GRPECSObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", timestamp_ms);
-      uint64_t timestamp_sor_ms = grpo->getTimeStart();
-      float hoursAfterStartOfRun = static_cast<float>(timestamp_ms - timestamp_sor_ms) / 3600000.0;
+      uint64_t bcTimestamp = multbc.timestamp();
+      o2::parameters::GRPECSObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", bcTimestamp);
+      uint64_t startOfRunTimestamp = grpo->getTimeStart();
+      float hoursAfterStartOfRun = static_cast<float>(bcTimestamp - startOfRunTimestamp) / 3600000.0;
       histos.fill(HIST("hFT0AvsTime"), hoursAfterStartOfRun, collision.multFT0A());
       histos.fill(HIST("hFT0CvsTime"), hoursAfterStartOfRun, collision.multFT0C());
       histos.fill(HIST("hFT0MvsTime"), hoursAfterStartOfRun, collision.multFT0M());
