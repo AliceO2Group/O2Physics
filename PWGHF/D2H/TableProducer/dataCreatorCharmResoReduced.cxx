@@ -918,8 +918,6 @@ struct HfDataCreatorCharmResoReduced {
         prongIdsD[2] = -1; // D0 does not have a third prong
         charmHadDauTracks.push_back(candD.template prong0_as<TrIU>());
         charmHadDauTracks.push_back(candD.template prong1_as<TrIU>());
-        std::copy(candD.pVectorProng0().begin(), candD.pVectorProng0().end(), varUtils.pVectorProng0.begin());
-        std::copy(candD.pVectorProng1().begin(), candD.pVectorProng1().end(), varUtils.pVectorProng1.begin());
         varUtils.pVectorProng0 = candD.pVectorProng0();
         varUtils.pVectorProng1 = candD.pVectorProng1();
         varUtils.pVectorProng2 = {0.f, 0.f, 0.f}; // D0 does not have a third prong
