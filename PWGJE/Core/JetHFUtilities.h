@@ -263,7 +263,7 @@ template <typename T>
 constexpr bool isMatchedHFCandidate(T const& candidate)
 {
   if constexpr (isD0Candidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK) {
+    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
       return true;
     } else {
       return false;
@@ -287,7 +287,7 @@ constexpr bool isMatchedHFCandidate(T const& candidate)
       return false;
     }
   } else if constexpr (isD0McCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchGen()) == 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK) {
+    if (std::abs(candidate.flagMcMatchGen()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
       return true;
     } else {
       return false;

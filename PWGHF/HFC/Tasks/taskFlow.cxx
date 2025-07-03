@@ -797,7 +797,7 @@ struct HfTaskFlow {
     auto etaCandidate = mcCandidate.eta();
 
     if constexpr (std::is_same_v<McParticles2ProngMatched, TMcTrack>) { // For now, that means we do D0
-      if (std::abs(mcCandidate.flagMcMatchGen()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
+      if (std::abs(mcCandidate.flagMcMatchGen()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
 
         if (etaCandidateMax >= 0. && std::abs(etaCandidate) > etaCandidateMax) {
           return false;
