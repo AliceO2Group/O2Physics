@@ -60,13 +60,13 @@ struct f0980analysis {
   Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", false, "Global track selection"};                      // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType |
-                                                                                                                                      // kTPCNCls | kTPCCrossedRows |
-                                                                                                                                      // kTPCCrossedRowsOverNCls |
-                                                                                                                                      // kTPCChi2NDF | kTPCRefit |
-                                                                                                                                      // kITSNCls | kITSChi2NDF |
-                                                                                                                                      // kITSRefit | kITSHits) |
-                                                                                                                                      // kInAcceptanceTracks (kPtRange |
-                                                                                                                                      // kEtaRange)
+                                                                                                             // kTPCNCls | kTPCCrossedRows |
+                                                                                                             // kTPCCrossedRowsOverNCls |
+                                                                                                             // kTPCChi2NDF | kTPCRefit |
+                                                                                                             // kITSNCls | kITSChi2NDF |
+                                                                                                             // kITSRefit | kITSHits) |
+                                                                                                             // kInAcceptanceTracks (kPtRange |
+                                                                                                             // kEtaRange)
   Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
   Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"};
   Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
