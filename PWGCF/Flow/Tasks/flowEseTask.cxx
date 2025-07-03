@@ -163,7 +163,7 @@ struct FlowEseTask {
     if (nmode == kDefaultModulation) {
       histosQA.fill(HIST("histQvecV2"), collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0],
                     collision.centFT0C());
-      histosQA.fill(HIST("histQvecCent"), sqrt(collision.qvecFT0CReVec()[0] * collision.qvecFT0CReVec()[0] + collision.qvecFT0CImVec()[0] * collision.qvecFT0CImVec()[0]) * sqrt(collision.sumAmplFT0C()), collision.centFT0C());
+      histosQA.fill(HIST("histQvecCent"), std::sqrt(collision.qvecFT0CReVec()[0] * collision.qvecFT0CReVec()[0] + collision.qvecFT0CImVec()[0] * collision.qvecFT0CImVec()[0]) * std::sqrt(collision.sumAmplFT0C()), collision.centFT0C());
       histosQA.fill(HIST("histEvtPlV2"),
                     helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode),
                     collision.centFT0C());
