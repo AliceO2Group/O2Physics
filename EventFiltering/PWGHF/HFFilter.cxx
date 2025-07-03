@@ -37,6 +37,7 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "Framework/RunningWorkflowInfo.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -217,7 +218,7 @@ struct HfFilter { // Main struct for HF triggers
   // helper object
   HfFilterHelper helper;
 
-  void init(InitContext&)
+  void init(InitContext& initContext)
   {
     helper.setHighPtTriggerThresholds(ptThresholds->get(0u, 0u), ptThresholds->get(0u, 1u));
     helper.setPtTriggerThresholdsForFemto(ptThresholdsForFemto->get(0u, 0u), ptThresholdsForFemto->get(0u, 1u));
@@ -261,6 +262,30 @@ struct HfFilter { // Main struct for HF triggers
       helper.setVtxConfiguration(dfB, true);
       helper.setVtxConfiguration(dfBtoDstar, true);
     }
+
+    // fetch config of track-index-skim-creator to apply the same cut on DeltaMassKK for Ds
+    std::vector<double> ptBinsDsSkimCreator{};
+    LabeledArray<double> cutsDsSkimCreator{};
+    const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    for (const DeviceSpec& device : workflows.devices) {
+      if (device.name.compare("hf-track-index-skim-creator") == 0) {
+        for (const auto& option : device.options) {
+          if (option.name.compare("binsPtDsToKKPi") == 0) {
+            auto ptBins = option.defaultValue.get<double*>();
+            double lastEl{-1.e6};
+            int iPt{0};
+            while (ptBins[iPt] > lastEl) {
+              ptBinsDsSkimCreator.push_back(ptBins[iPt]);
+              lastEl = ptBins[iPt];
+              iPt++;
+            }
+          } else if (option.name.compare("cutsDsToKKPi") == 0) {
+            cutsDsSkimCreator = option.defaultValue.get<LabeledArray<double>>();
+          }
+        }
+      }
+    }
+    helper.setPreselDsToKKPi(ptBinsDsSkimCreator, cutsDsSkimCreator);
 
     hProcessedEvents = registry.add<TH1>("fProcessedEvents", "HF - event filtered;;counts", HistType::kTH1D, {{kNtriggersHF + 2, -0.5, +kNtriggersHF + 1.5}});
     for (auto iBin = 0; iBin < kNtriggersHF + 2; ++iBin) {
