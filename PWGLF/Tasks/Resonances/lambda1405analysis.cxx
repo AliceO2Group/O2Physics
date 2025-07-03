@@ -77,7 +77,7 @@ struct lambda1405analysis {
     const AxisSpec ptAxis{100, -10, 10, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec ptPiAxis{50, -2, 2, "#it{p}_{T}^{#pi} (GeV/#it{c})"};
     const AxisSpec ptResolutionAxis{100, -0.5, 0.5, "#it{p}_{T}^{rec} - #it{p}_{T}^{gen} (GeV/#it{c})"};
-    const AxisSpec massAxis{100, 1.3, 1.5, "m (GeV/#it{c}^{2})"};
+    const AxisSpec massAxis{100, 1.3, 1.6, "m (GeV/#it{c}^{2})"};
     const AxisSpec massResolutionAxis{100, -0.1, 0.1, "m_{rec} - m_{gen} (GeV/#it{c}^{2})"};
     const AxisSpec nSigmaPiAxis{100, -5, 5, "n#sigma_{#pi}"};
     const AxisSpec sigmaMassAxis{100, 1.1, 1.4, "m (GeV/#it{c}^{2})"};
