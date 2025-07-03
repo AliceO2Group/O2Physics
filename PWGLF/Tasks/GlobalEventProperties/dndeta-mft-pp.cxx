@@ -81,14 +81,14 @@ struct PseudorapidityDensityMFT {
                                    "eta range for INEL>0 sample definition"};
 
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
-  Configurable<bool> disableITSROFCut{"disableITSROFCut", false, "Disable ITS ROC cut for event selection"};
+  Configurable<bool> disableITSROFCut{"disableITSROFCut", false, "Disable ITS ROF cut for event selection"};
   ConfigurableAxis multBinning{"multBinning", {701, -0.5, 700.5}, ""};
   ConfigurableAxis EtaAxis = {"etaBinning", {18, -4.6, -1.}, ""};
 
   Configurable<bool> useZDiffCut{"useZDiffCut", true, "use Z difference cut"};
   Configurable<float> maxZDiff{
     "maxZDiff", 1.0f,
-    "max allowed Z difference for reconstruced collisions (cm)"};
+    "max allowed Z difference for reconstructed collisions (cm)"};
 
   Configurable<bool> usePhiCut{"usePhiCut", false, "use azimuthal angle cut"};
   Configurable<float> cfgPhiCut{"cfgPhiCut", 0.1f,
@@ -103,6 +103,8 @@ struct PseudorapidityDensityMFT {
                                "Cut on eta1"};
   Configurable<float> cfgnEta2{"cfgnEta2", -1.0f,
                                "Cut on eta1"};
+  Configurable<float> cfgChi2NDFMax{"cfgChi2NDFMax", 2000.0f, "Max allowed chi2/NDF for MFT tracks"};
+
   HistogramRegistry registry{
     "registry",
     {
@@ -286,7 +288,9 @@ struct PseudorapidityDensityMFT {
       registry.add({"Tracks/Control/notReassignedVertexCorr",
                     "; #it{z}_{vtx}^{orig} (cm); #it{z}_{vtx}^{re} (cm)",
                     {HistType::kTH2F, {ZAxis, ZAxis}}});
-
+      registry.add({"Tracks/Control/Chi2NDF",
+                    " ; #chi^{2}/ndf",
+                    {HistType::kTH1F, {{5000, 0.0, 5000.0}}}});
       registry.add({"Tracks/Control/amb/AmbTracksEtaZvtx",
                     "; #eta; #it{z}_{vtx} (cm); tracks",
                     {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
@@ -604,7 +608,10 @@ struct PseudorapidityDensityMFT {
         int64_t i = 0.0, j = 0.0, k = 0.0;
         for (const auto& retrack : retracks) {
           auto track = retrack.mfttrack();
-          if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0) {
+          float ndf = std::max(2.0f * track.nClusters() - 5.0f, 1.0f);
+          float chi2ndf = track.chi2() / ndf;
+          if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0 && chi2ndf < cfgChi2NDFMax) {
+            registry.fill(HIST("Tracks/Control/Chi2NDF"), chi2ndf);
             registry.fill(HIST("Tracks/2Danalysis/EtaZvtx_sel8"), track.eta(), z);
             if (midtracks.size() > 0 && retrack.ambDegree() > 0) {
               registry.fill(HIST("Tracks/2Danalysis/EtaZvtx_sel8_inelgt0"), track.eta(), z);
@@ -618,8 +625,10 @@ struct PseudorapidityDensityMFT {
           }
           for (const auto& retrack : retracks) {
             auto track = retrack.mfttrack();
+            float ndf = std::max(2.0f * track.nClusters() - 5.0f, 1.0f);
+            float chi2ndf = track.chi2() / ndf;
 
-            if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster) {
+            if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && chi2ndf < cfgChi2NDFMax) {
               registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
               if (midtracks.size() > 0 && retrack.ambDegree() > 0) {
                 registry.fill(HIST("Tracks/EtaZvtx_gt0"), track.eta(), z);
