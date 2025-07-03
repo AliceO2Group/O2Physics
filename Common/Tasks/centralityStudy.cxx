@@ -44,7 +44,7 @@ struct centralityStudy {
   Configurable<bool> doOccupancyStudyVsRawValues2d{"doOccupancyStudyVsRawValues2d", true, "0 - no, 1 - yes"};
   Configurable<bool> doOccupancyStudyVsCentrality3d{"doOccupancyStudyVsCentrality3d", false, "0 - no, 1 - yes"};
   Configurable<bool> doOccupancyStudyVsRawValues3d{"doOccupancyStudyVsRawValues3d", false, "0 - no, 1 - yes"};
-  Configurable<bool> doTimeStudies{"doTimeStudies", false, "0 - no, 1 - yes"};
+  Configurable<bool> doTimeStudies{"doTimeStudies", true, "0 - no, 1 - yes"};
   Configurable<bool> doNGlobalTracksVsRawSignals{"doNGlobalTracksVsRawSignals", true, "0 - no, 1 - yes"};
   Configurable<bool> applySel8{"applySel8", true, "0 - no, 1 - yes"};
   Configurable<bool> applyVtxZ{"applyVtxZ", true, "0 - no, 1 - yes"};
