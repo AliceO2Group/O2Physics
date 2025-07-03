@@ -42,7 +42,8 @@ using SelectedMCClusters = soa::Filtered<soa::Join<aod::BCWiseClusters, aod::BCW
 struct EmcalBcWiseGammaGamma {
   HistogramRegistry mHistManager{"EmcalGammaGammaBcWiseHistograms"};
 
-  Configurable<bool> cfgRequirekTVXinEMC{"cfgRequirekTVXinEMC", true, "Reconstruct mesonss only in kTVXinEMC triggered BCs"};
+  Configurable<bool> cfgRequirekTVXinEMC{"cfgRequirekTVXinEMC", true, "Reconstruct mesons only in kTVXinEMC triggered BCs"};
+  Configurable<bool> cfgRequireEMCCell{"cfgRequireEMCCell", true, "Reconstruct mesons only in BCs containing at least one EMCal cell (workaround for kTVXinEMC trigger)"};
   Configurable<int> cfgSelectOnlyUniqueAmbiguous{"cfgSelectOnlyUniqueAmbiguous", 0, "0: all clusters, 1: only unique clusters, 2: only ambiguous clusters"};
 
   Configurable<int> cfgClusterDefinition{"cfgClusterDefinition", 13, "Clusterizer to be selected, e.g. 13 for kV3MostSplitLowSeed"};
@@ -288,6 +289,8 @@ struct EmcalBcWiseGammaGamma {
   bool isBCSelected(const auto& bc, const auto& collisions)
   {
     if (cfgRequirekTVXinEMC && !bc.haskTVXinEMC())
+      return false;
+    if (cfgRequireEMCCell && !bc.hasEMCCell())
       return false;
     if (cfgSelectOnlyUniqueAmbiguous == 1 && collisions.size() != 1)
       return false;
