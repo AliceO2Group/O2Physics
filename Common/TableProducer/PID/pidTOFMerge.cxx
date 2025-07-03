@@ -988,7 +988,7 @@ struct tofPidMerge {
         LOG(fatal) << "Both processRun2BetaM and processRun3BetaM are enabled. Pick one of the two";
       }
       if (!doprocessRun2BetaM && !doprocessRun3BetaM) {
-        LOG(fatal) << "Neither processRun2BetaM nor processRun3BetaM are enabled. Pick one of the two";
+        LOG(info) << "Neither processRun2BetaM nor processRun3BetaM are enabled";
       }
     }
   }
