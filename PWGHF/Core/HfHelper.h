@@ -1206,7 +1206,7 @@ class HfHelper
     }
 
     // Lc pt
-    if (ptLc < cuts->get(pTBin, "pT Lc")) {
+    if (ptLc < cuts->get(pTBin, "pT Lc+")) {
       return false;
     }
 
