@@ -30,6 +30,7 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
+#include <Framework/Logger.h>
 
 #include "TRandom3.h"
 #include <TH1.h>
@@ -48,8 +49,8 @@ using namespace o2::framework::expressions;
 
 // Shorthand notations
 using FilteredColl = soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator;
-using FilteredCollPartLevel = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos>>::iterator;
-using FilteredCollDetLevelGetWeight = soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator;
+using FilteredCollPartLevel = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos, aod::JMcCollisionOutliers>>::iterator;
+using FilteredCollDetLevelGetWeight = soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos, aod::JCollisionOutliers>>::iterator;
 
 using FilteredJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
 using FilteredJetsDetLevel = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>>;
@@ -59,6 +60,7 @@ using FilteredMatchedJetsDetLevel = soa::Filtered<soa::Join<aod::ChargedMCDetect
 using FilteredMatchedJetsPartLevel = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
 
 using FilteredTracks = soa::Filtered<aod::JetTracks>;
+using FilteredParticles = soa::Filtered<aod::JetParticles>;
 
 struct RecoilJets {
 
@@ -183,6 +185,13 @@ struct RecoilJets {
       spectra.add("vertexZMC", "Z vertex of jmccollision", kTH1F, {{60, -12., 12.}});
       spectra.add("ptHat", "Distribution of pT hat", kTH1F, {{500, 0.0, 100.}});
 
+      spectra.add("hEventSelectionCountPartLevel", "Count # of events in the part. level analysis", kTH1F, {{2, 0.0, 2.}});
+      spectra.get<TH1>(HIST("hEventSelectionCountPartLevel"))->GetXaxis()->SetBinLabel(1, "Total # of events");
+      spectra.get<TH1>(HIST("hEventSelectionCountPartLevel"))->GetXaxis()->SetBinLabel(2, "# of events w. outlier");
+
+      spectra.add("hCountNumberOutliersFrameWork", "Count # of outlier events based on flag from JE fw", kTH1F, {{1, 0.0, 1.}});
+      spectra.get<TH1>(HIST("hCountNumberOutliersFrameWork"))->GetXaxis()->SetBinLabel(1, "Oulier flag true");
+
       spectra.add("hPartPtEtaPhi", "Charact. of particles", kTH3F, {pT, pseudorap, phiAngle});
       spectra.add("hNtrig_Part", "Total number of selected triggers per class", kTH1F, {{2, 0.0, 2.}});
       spectra.get<TH1>(HIST("hNtrig_Part"))->GetXaxis()->SetBinLabel(1, "TT_{ref}");
@@ -205,6 +214,8 @@ struct RecoilJets {
 
       spectra.add("hJetArea_JetPt_Rho_TTRef_Part", "Events w. TT_{Ref}: A_{jet} & jet pT & #rho", kTH3F, {jetArea, pT, rho});
       spectra.add("hJetArea_JetPt_Rho_TTSig_Part", "Events w. TT_{Sig}: A_{jet} & jet pT & #rho", kTH3F, {jetArea, pT, rho});
+
+      spectra.add("hDiffInOutlierRemove", "Difference between pT hat from code and fw", kTH1F, {{502, -0.2, 50.}});
     }
 
     // Jet matching: part. vs. det.
@@ -331,7 +342,7 @@ struct RecoilJets {
     std::vector<double> vPhiOfTT;
     double phiTT = 0.;
     int nTT = 0;
-    float pTHat = getPtHat(weight);
+    float pTHat = getPtHat(weight);  
     spectra.fill(HIST("ptHat"), pTHat, weight);
 
     auto dice = rand->Rndm();
@@ -340,6 +351,7 @@ struct RecoilJets {
 
     for (const auto& jet : jets) {
       if (jet.pt() > pTHatMax * pTHat)
+        spectra.fill(HIST("hEventSelectionCountPartLevel"), 1.5);
         return;
     }
 
@@ -500,9 +512,10 @@ struct RecoilJets {
   PROCESS_SWITCH(RecoilJets, processMCDetLevelWeighted, "process MC detector level with event weight", false);
 
   void processMCPartLevel(FilteredCollPartLevel const& collision,
-                          aod::JetParticles const& particles,
+                          FilteredParticles const& particles,
                           FilteredJetsPartLevel const& jets)
   {
+    spectra.fill(HIST("hEventSelectionCountPartLevel"), 0.5);
     if (skipMBGapEvent(collision))
       return;
 
@@ -512,13 +525,23 @@ struct RecoilJets {
   PROCESS_SWITCH(RecoilJets, processMCPartLevel, "process MC particle level", false);
 
   void processMCPartLevelWeighted(FilteredCollPartLevel const& collision,
-                                  aod::JetParticles const& particles,
+                                  FilteredParticles const& particles,
                                   FilteredJetsPartLevel const& jets)
   {
+    spectra.fill(HIST("hEventSelectionCountPartLevel"), 0.5);
     if (skipMBGapEvent(collision))
       return;
 
     auto weight = collision.weight();
+
+    auto calcPtHat = getPtHat(weight);
+    auto pThatFromFW = collision.ptHard();
+    spectra.fill(HIST("hDiffInOutlierRemove"), calcPtHat - pThatFromFW);
+    if (collision.isOutlier())
+      spectra.fill(HIST("hCountNumberOutliersFrameWork"), 0.5);
+
+    // LOG(debug) << "Difference between pT hat: " << calcPtHat - pThatFromFW;
+
     spectra.fill(HIST("vertexZMC"), collision.posZ(), weight);
     fillMCPHistograms(collision, jets, particles, weight);
   }
