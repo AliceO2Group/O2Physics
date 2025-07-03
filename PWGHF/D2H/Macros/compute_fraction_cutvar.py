@@ -146,6 +146,10 @@ def main(config):
             unc_effp[iset] = heffp.GetBinError(ipt + 1)
             unc_effnp[iset] = heffnp.GetBinError(ipt + 1)
 
+        if cfg["minimisation"]["correlated"] and not (np.all(unc_rawy[1:] > unc_rawy[:-1]) or np.all(unc_rawy[1:] < unc_rawy[:-1])):
+            print("WARNING! main(): the raw yield uncertainties vector is not monotonous. Check the input for stability.")
+            print(f"raw yield uncertainties vector elements = {unc_rawy}\n")
+
         minimiser = CutVarMinimiser(rawy, effp, effnp, unc_rawy, unc_effp, unc_effnp)
         minimiser.minimise_system(cfg["minimisation"]["correlated"])
 
