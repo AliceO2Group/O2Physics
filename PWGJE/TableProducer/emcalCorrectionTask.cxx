@@ -112,6 +112,7 @@ struct EmcalCorrectionTask {
   Configurable<bool> applyCellTimeCorrection{"applyCellTimeCorrection", true, "apply a correction to the cell time for data and MC: Shift both average cell times to 0 and smear MC time distribution to fit data better. For MC requires isMC to be true"};
   Configurable<float> trackMinPt{"trackMinPt", 0.3, "Minimum pT for tracks to perform track matching, to reduce computing time. Tracks below a certain pT will be loopers anyway."};
   Configurable<bool> fillQA{"fillQA", false, "Switch to turn on QA histograms."};
+  Configurable<bool> useCCDBAlignment{"useCCDBAlignment", false, "EXPERTS ONLY! Switch to use the alignment object stored in CCDB instead of using the default alignment from the global geometry object."};
 
   // Require EMCAL cells (CALO type 1)
   Filter emccellfilter = aod::calo::caloType == selectedCellType;
@@ -165,6 +166,9 @@ struct EmcalCorrectionTask {
     geometry = o2::emcal::Geometry::GetInstanceFromRunNumber(223409);
     if (!geometry) {
       LOG(error) << "Failure accessing geometry";
+    }
+    if (useCCDBAlignment.value) {
+      geometry->SetMisalMatrixFromCcdb();
     }
 
     // read all the cluster definitions specified in the options
@@ -350,12 +354,6 @@ struct EmcalCorrectionTask {
 
       fillQAHistogram(cellsBC);
 
-      // TODO: Helpful for now, but should be removed.
-      LOG(debug) << "Converted EMCAL cells";
-      for (const auto& cell : cellsBC) {
-        LOG(debug) << cell.getTower() << ": E: " << cell.getEnergy() << ", time: " << cell.getTimeStamp() << ", type: " << cell.getType();
-      }
-
       LOG(debug) << "Converted cells. Contains: " << cellsBC.size() << ". Originally " << cellsInBC.size() << ". About to run clusterizer.";
       //  this is a test
       //  Run the clusterizers
@@ -482,12 +480,6 @@ struct EmcalCorrectionTask {
 
       fillQAHistogram(cellsBC);
 
-      // TODO: Helpful for now, but should be removed.
-      LOG(debug) << "Converted EMCAL cells";
-      for (const auto& cell : cellsBC) {
-        LOG(debug) << cell.getTower() << ": E: " << cell.getEnergy() << ", time: " << cell.getTimeStamp() << ", type: " << cell.getType();
-      }
-
       LOG(debug) << "Converted cells. Contains: " << cellsBC.size() << ". Originally " << cellsInBC.size() << ". About to run clusterizer.";
       //  this is a test
       //  Run the clusterizers
@@ -596,12 +588,6 @@ struct EmcalCorrectionTask {
       nCellsProcessed += cellsBC.size();
 
       fillQAHistogram(cellsBC);
-
-      // TODO: Helpful for now, but should be removed.
-      LOG(debug) << "Converted EMCAL cells";
-      for (const auto& cell : cellsBC) {
-        LOG(debug) << cell.getTower() << ": E: " << cell.getEnergy() << ", time: " << cell.getTimeStamp() << ", type: " << cell.getType();
-      }
 
       LOG(debug) << "Converted cells. Contains: " << cellsBC.size() << ". Originally " << cellsInBC.size() << ". About to run clusterizer.";
 
