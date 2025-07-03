@@ -53,12 +53,24 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
+using namespace o2::aod::rctsel;
+
 struct kaonkaonAnalysisRun3 {
+  struct : ConfigurableGroup {
+    Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", true, "Check event quality in run condition table"};
+    Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
+    Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
+    Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
+  } rctCut;
+  RCTFlagsChecker rctChecker;
+
   SliceCache cache;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry hInvMass{"hInvMass", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -119,6 +131,7 @@ struct kaonkaonAnalysisRun3 {
 
   void init(o2::framework::InitContext&)
   {
+    rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
     AxisSpec axisMult{multAxis, "Multiplicity"};
     AxisSpec axisPt{ptAxisKK, "pT (GeV/c)"};
     AxisSpec axisMass{invMassKKAxis, "Invariant mass (GeV/c^2)"};
@@ -419,6 +432,9 @@ struct kaonkaonAnalysisRun3 {
 
   void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
+    if (rctCut.requireRCTFlagChecker && !rctChecker(collision)) {
+      return;
+    }
     if (!eventselection(collision)) {
       return;
     }
@@ -492,6 +508,13 @@ struct kaonkaonAnalysisRun3 {
 
     for (auto& [c1, tracks1, c2, tracks2] : pair1) {
       float multiplicity = c1.centFT0M();
+
+      if (rctCut.requireRCTFlagChecker && !rctChecker(c1)) {
+        continue;
+      }
+      if (rctCut.requireRCTFlagChecker && !rctChecker(c2)) {
+        continue;
+      }
 
       if (!eventselection(c1)) {
         continue;
