@@ -484,17 +484,13 @@ struct Filter2Prong {
 
         const auto& posTrack = v0.template posTrack_as<PIDTrack>();
         const auto& negTrack = v0.template negTrack_as<PIDTrack>();
-
-        auto v0Type = 0;
         double massV0 = 0.0;
 
         // K0s
         if (isSelectedV0AsK0s(collision, v0)) { // candidate is K0s
-          SETBIT(v0Type, aod::cf2prongtrack::K0stoPiPi);
-
-          output2ProngTracks(cfcollisions.begin().globalIndex(),
+                    output2ProngTracks(cfcollisions.begin().globalIndex(),
                              posTrack.globalIndex(), negTrack.globalIndex(),
-                             v0.pt(), v0.eta(), v0.phi(), v0.mK0Short(), v0Type);
+                             v0.pt(), v0.eta(), v0.phi(), v0.mK0Short(), aod::cf2prongtrack::K0stoPiPi);
         }
 
         // Lambda and Anti-Lambda
@@ -503,16 +499,14 @@ struct Filter2Prong {
 
         // Note: candidate compatible with Lambda and Anti-Lambda hypothesis are counted twice (once for each hypothesis)
         if (LambdaTag) { // candidate is Lambda
-          SETBIT(v0Type, aod::cf2prongtrack::LambdatoPPi);
-          massV0 = v0.mLambda();
+                    massV0 = v0.mLambda();
           output2ProngTracks(cfcollisions.begin().globalIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
-                             v0.pt(), v0.eta(), v0.phi(), massV0, v0Type);
+                             v0.pt(), v0.eta(), v0.phi(), massV0, aod::cf2prongtrack::LambdatoPPi);
         }
         if (aLambdaTag) { // candidate is Anti-lambda
-          SETBIT(v0Type, aod::cf2prongtrack::AntiLambdatoPiP);
-          massV0 = v0.mAntiLambda();
+                    massV0 = v0.mAntiLambda();
           output2ProngTracks(cfcollisions.begin().globalIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
-                             v0.pt(), v0.eta(), v0.phi(), massV0, v0Type);
+                             v0.pt(), v0.eta(), v0.phi(), massV0, aod::cf2prongtrack::AntiLambdatoPiP);
         } // end of Lambda and Anti-Lambda processing
       } // end of loop over V0 candidates
     } // end of processing V0 candidates
