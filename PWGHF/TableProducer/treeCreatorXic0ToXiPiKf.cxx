@@ -49,6 +49,7 @@ DECLARE_SOA_COLUMN(DcaXYToPvV0Dau0, dcaXYToPvV0Dau0, float);
 DECLARE_SOA_COLUMN(DcaXYToPvV0Dau1, dcaXYToPvV0Dau1, float);
 DECLARE_SOA_COLUMN(DcaXYToPvCascDau, dcaXYToPvCascDau, float);
 DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, float);
+DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, float);
 DECLARE_SOA_COLUMN(DcaCharmBaryonDau, dcaCharmBaryonDau, float);
 // from creator - MC
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
@@ -74,7 +75,6 @@ DECLARE_SOA_COLUMN(Chi2MassV0, chi2MassV0, float);
 DECLARE_SOA_COLUMN(Chi2MassCasc, chi2MassCasc, float);
 DECLARE_SOA_COLUMN(V0ldl, v0ldl, float);
 DECLARE_SOA_COLUMN(Cascldl, cascldl, float);
-DECLARE_SOA_COLUMN(Xicldl, xicldl, float);
 DECLARE_SOA_COLUMN(Chi2TopoV0ToPv, chi2TopoV0ToPv, float);
 DECLARE_SOA_COLUMN(Chi2TopoCascToPv, chi2TopoCascToPv, float);
 DECLARE_SOA_COLUMN(Chi2TopoPiFromXicToPv, chi2TopoPiFromXicToPv, float);
@@ -88,7 +88,6 @@ DECLARE_SOA_COLUMN(CosPaV0ToCasc, cosPaV0ToCasc, float);
 DECLARE_SOA_COLUMN(CosPaV0ToPv, cosPaV0ToPv, float);
 DECLARE_SOA_COLUMN(CosPaCascToXic, cosPaCascToXic, float);
 DECLARE_SOA_COLUMN(CosPaCascToPv, cosPaCascToPv, float);
-DECLARE_SOA_COLUMN(CosPaXicToPv, cosPaXicToPv, float);
 DECLARE_SOA_COLUMN(KfRapXic, kfRapXic, float);
 DECLARE_SOA_COLUMN(KfptPiFromXic, kfptPiFromXic, float);
 DECLARE_SOA_COLUMN(KfptXic, kfptXic, float);
@@ -112,15 +111,15 @@ DECLARE_SOA_TABLE(HfKfXicFulls, "AOD", "HFKFXICFULL",
                   full::Centrality,
                   full::TpcNSigmaPiFromCharmBaryon, full::TofNSigmaPiFromCharmBaryon, full::TpcNSigmaPiFromCasc, full::TofNSigmaPiFromCasc,
                   full::TpcNSigmaPiFromLambda, full::TofNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda, full::TofNSigmaPrFromLambda,
-                  full::KfDcaXYPiFromXic, full::DcaCascDau, full::DcaCharmBaryonDau, full::KfDcaXYCascToPv,
+                  full::KfDcaXYPiFromXic, full::DcaCascDau, full::DcaV0Dau, full::DcaCharmBaryonDau, full::KfDcaXYCascToPv,
                   full::DcaXYToPvV0Dau0, full::DcaXYToPvV0Dau1, full::DcaXYToPvCascDau,
                   full::Chi2GeoV0, full::Chi2GeoCasc, full::Chi2GeoXic,
                   full::Chi2MassV0, full::Chi2MassCasc,
-                  full::V0ldl, full::Cascldl, full::Xicldl,
+                  full::V0ldl, full::Cascldl,
                   full::Chi2TopoV0ToPv, full::Chi2TopoCascToPv, full::Chi2TopoPiFromXicToPv, full::Chi2TopoXicToPv,
                   full::Chi2TopoV0ToCasc, full::Chi2TopoCascToXic,
                   full::DecayLenXYLambda, full::DecayLenXYCasc, full::DecayLenXYXic,
-                  full::CosPaV0ToCasc, full::CosPaV0ToPv, full::CosPaCascToXic, full::CosPaCascToPv, full::CosPaXicToPv,
+                  full::CosPaV0ToCasc, full::CosPaV0ToPv, full::CosPaCascToXic, full::CosPaCascToPv,
                   full::InvMassLambda, full::InvMassCascade, full::InvMassCharmBaryon,
                   full::KfRapXic, full::KfptPiFromXic, full::KfptXic,
                   full::CosThetaStarPiFromXic, full::CtXic, full::EtaXic,
@@ -145,22 +144,31 @@ struct HfTreeCreatorXic0ToXiPiKf {
   using MyEventTableWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
   using MyEventTableWithNTracksPV = soa::Join<aod::Collisions, aod::EvSels, aod::CentNTPVs>;
 
+  HistogramRegistry registry{"registry"}; // for QA of selections
+
   void init(InitContext const&)
   {
+    registry.add("hPiFromXic0ItsChi2NCls", "hItsChi2NCls;status;entries", {HistType::kTH1D, {{1000, 0.0f, 10.0f}}});
+    registry.add("hPiFromCacsItsChi2NCls", "hItsChi2NCls;status;entries", {HistType::kTH1D, {{1000, 0.0f, 10.0f}}});
+    registry.add("hV0Dau0ItsChi2NCls", "hItsChi2NCls;status;entries", {HistType::kTH1D, {{1000, 0.0f, 10.0f}}});
+    registry.add("hV0Dau1ItsChi2NCls", "hItsChi2NCls;status;entries", {HistType::kTH1D, {{1000, 0.0f, 10.0f}}});
   }
 
   template <bool useCentrality, typename MyEventTableType, typename T>
   void fillKfCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc, bool collisionMatched)
   {
 
-    if (candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
+    if (candidate.resultSelections()) {
 
       float centrality = -999.f;
       if constexpr (useCentrality) {
         auto const& collision = candidate.template collision_as<MyEventTableType>();
         centrality = o2::hf_centrality::getCentralityColl(collision);
       }
-
+      registry.fill(HIST("hPiFromXic0ItsChi2NCls"), candidate.template bachelorFromCharmBaryon_as<MyTrackTable>().itsChi2NCl());
+      registry.fill(HIST("hPiFromCacsItsChi2NCls"), candidate.template bachelor_as<MyTrackTable>().itsChi2NCl());
+      registry.fill(HIST("hV0Dau0ItsChi2NCls"), candidate.template posTrack_as<MyTrackTable>().itsChi2NCl());
+      registry.fill(HIST("hV0Dau1ItsChi2NCls"), candidate.template negTrack_as<MyTrackTable>().itsChi2NCl());
       rowKfCandidate(
         centrality,
         candidate.tpcNSigmaPiFromCharmBaryon(),
@@ -173,6 +181,7 @@ struct HfTreeCreatorXic0ToXiPiKf {
         candidate.tofNSigmaPrFromLambda(),
         candidate.kfDcaXYPiFromXic(),
         candidate.dcaCascDau(),
+        candidate.dcaV0Dau(),
         candidate.dcaCharmBaryonDau(),
         candidate.kfDcaXYCascToPv(),
         candidate.dcaXYToPvV0Dau0(),
@@ -185,7 +194,6 @@ struct HfTreeCreatorXic0ToXiPiKf {
         candidate.chi2MassCasc(),
         candidate.v0ldl(),
         candidate.cascldl(),
-        candidate.xicldl(),
         candidate.chi2TopoV0ToPv(),
         candidate.chi2TopoCascToPv(),
         candidate.chi2TopoPiFromXicToPv(),
@@ -199,13 +207,12 @@ struct HfTreeCreatorXic0ToXiPiKf {
         candidate.cosPAV0(),
         candidate.cosPaCascToXic(),
         candidate.cosPACasc(),
-        candidate.cosPACharmBaryon(),
         candidate.invMassLambda(),
         candidate.invMassCascade(),
         candidate.invMassCharmBaryon(),
         candidate.kfRapXic(),
-        candidate.kfptPiFromXic(),
-        candidate.kfptXic(),
+        RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon()),
+        RecoDecay::sqrtSumOfSquares(candidate.pxCharmBaryon(), candidate.pyCharmBaryon()),
         candidate.cosThetaStarPiFromXic(),
         candidate.cTauXic(),
         candidate.etaCharmBaryon(),
