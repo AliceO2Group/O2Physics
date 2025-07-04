@@ -939,7 +939,7 @@ struct HfCorrelatorLcScHadrons {
       registry.fill(HIST("hPhiMcGen"), RecoDecay::constrainAngle(particle.phi(), -PIHalf));
       registry.fill(HIST("hYMcGen"), yCand);
 
-      int8_t chargeCand = pdg->GetParticle(particle.pdgCode())->Charge() / scalePDGCharge; // Retrieve charge
+      int8_t chargeCand = pdg->GetParticle(particle.pdgCode())->Charge() / PDGChargeScale; // Retrieve charge
       if (chargeCand == chargeZero) {
         chargeCand = (particle.pdgCode() > chargeZero) ? assignedChargeSc0 : -assignedChargeSc0; // to distingush sc0 from anti-sc0, charge set to +1 and -1
       }
