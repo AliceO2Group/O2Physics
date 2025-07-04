@@ -16,10 +16,14 @@
 #ifndef PWGJE_DATAMODEL_EMCALCLUSTERS_H_
 #define PWGJE_DATAMODEL_EMCALCLUSTERS_H_
 
+#include "EMCALClusterDefinition.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h> // IWYU pragma: keep
+
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include "Framework/AnalysisDataModel.h"
-#include "EMCALClusterDefinition.h"
 
 namespace o2::aod
 {
@@ -134,6 +138,12 @@ DECLARE_SOA_TABLE(EMCALMCClusters, "AOD", "EMCALMCCLUSTERS", //!
                   emcalclustermc::McParticleIds, emcalclustermc::AmplitudeA);
 
 using EMCALMCCluster = EMCALMCClusters::iterator;
+
+// table of cluster MC info that could not be matched to a collision
+DECLARE_SOA_TABLE(EMCALAmbiguousMCClusters, "AOD", "EMCALAMBMCCLS", //!
+                  emcalclustermc::McParticleIds, emcalclustermc::AmplitudeA);
+
+using EMCALAmbiguousMCCluster = EMCALAmbiguousMCClusters::iterator;
 
 namespace emcalclustercell
 {

@@ -26,6 +26,7 @@ namespace NPCascadeTable
 {
 DECLARE_SOA_COLUMN(MatchingChi2, matchingChi2, float);
 DECLARE_SOA_COLUMN(DeltaPtITSCascade, deltaPtITSCascade, float);
+DECLARE_SOA_COLUMN(DeltaPtCascade, deltaPtCascade, float);
 DECLARE_SOA_COLUMN(ITSClusSize, itsClusSize, float);
 DECLARE_SOA_COLUMN(HasReassociatedCluster, hasReassociatedCluster, bool);
 DECLARE_SOA_COLUMN(IsGoodMatch, isGoodMatch, bool);
@@ -38,6 +39,8 @@ DECLARE_SOA_COLUMN(IsFromCharm, isFromCharm, bool);
 DECLARE_SOA_COLUMN(PvX, pvX, float);
 DECLARE_SOA_COLUMN(PvY, pvY, float);
 DECLARE_SOA_COLUMN(PvZ, pvZ, float);
+
+DECLARE_SOA_COLUMN(CascPVContribs, cascPVContribs, uint8_t);
 
 DECLARE_SOA_COLUMN(CascPt, cascPt, float);
 DECLARE_SOA_COLUMN(CascEta, cascEta, float);
@@ -72,16 +75,14 @@ DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);
 DECLARE_SOA_COLUMN(CascLenght, cascLenght, float);
 DECLARE_SOA_COLUMN(V0Lenght, v0Lenght, float);
 
-DECLARE_SOA_COLUMN(CascNClusITS, cascNClusITS, int);
-DECLARE_SOA_COLUMN(ProtonNClusITS, protonNClusITS, int);
-DECLARE_SOA_COLUMN(PionNClusITS, pionNClusITS, int);
-DECLARE_SOA_COLUMN(BachKaonNClusITS, bachKaonNClusITS, int);
-DECLARE_SOA_COLUMN(BachPionNClusITS, bachPionNClusITS, int);
+DECLARE_SOA_COLUMN(CascNClusITS, cascNClusITS, int16_t);
+DECLARE_SOA_COLUMN(ProtonNClusITS, protonNClusITS, int16_t);
+DECLARE_SOA_COLUMN(PionNClusITS, pionNClusITS, int16_t);
+DECLARE_SOA_COLUMN(BachNClusITS, bachNClusITS, int16_t);
 
-DECLARE_SOA_COLUMN(ProtonNClusTPC, protonNClusTPC, int);
-DECLARE_SOA_COLUMN(PionNClusTPC, pionNClusTPC, int);
-DECLARE_SOA_COLUMN(BachKaonNClusTPC, bachKaonNClusTPC, int);
-DECLARE_SOA_COLUMN(BachPionNClusTPC, bachPionNClusTPC, int);
+DECLARE_SOA_COLUMN(ProtonNClusTPC, protonNClusTPC, int16_t);
+DECLARE_SOA_COLUMN(PionNClusTPC, pionNClusTPC, int16_t);
+DECLARE_SOA_COLUMN(BachNClusTPC, bachNClusTPC, int16_t);
 
 DECLARE_SOA_COLUMN(ProtonTPCNSigma, protonTPCNSigma, float);
 DECLARE_SOA_COLUMN(PionTPCNSigma, pionTPCNSigma, float);
@@ -90,8 +91,7 @@ DECLARE_SOA_COLUMN(BachPionTPCNSigma, bachPionTPCNSigma, float);
 
 DECLARE_SOA_COLUMN(ProtonHasTOF, protonHasTOF, bool);
 DECLARE_SOA_COLUMN(PionHasTOF, pionHasTOF, bool);
-DECLARE_SOA_COLUMN(BachKaonHasTOF, bachKaonHasTOF, bool);
-DECLARE_SOA_COLUMN(BachPionHasTOF, bachPionHasTOF, bool);
+DECLARE_SOA_COLUMN(BachHasTOF, bachHasTOF, bool);
 
 DECLARE_SOA_COLUMN(ProtonTOFNSigma, protonTOFNSigma, float);
 DECLARE_SOA_COLUMN(PionTOFNSigma, pionTOFNSigma, float);
@@ -101,19 +101,36 @@ DECLARE_SOA_COLUMN(BachPionTOFNSigma, bachPionTOFNSigma, float);
 DECLARE_SOA_COLUMN(gPt, genPt, float);
 DECLARE_SOA_COLUMN(gEta, genEta, float);
 DECLARE_SOA_COLUMN(gPhi, genPhi, float);
+DECLARE_SOA_COLUMN(gVx, genVx, float);
+DECLARE_SOA_COLUMN(gVy, genVy, float);
+DECLARE_SOA_COLUMN(gVz, genVz, float);
 DECLARE_SOA_COLUMN(PDGcode, pdgCode, int);
 DECLARE_SOA_COLUMN(DCAxMC, dcaXmc, float);
 DECLARE_SOA_COLUMN(DCAyMC, dcaYmc, float);
 DECLARE_SOA_COLUMN(DCAzMC, dcaZmc, float);
 DECLARE_SOA_COLUMN(MCcollisionMatch, mcCollisionMatch, bool);
+DECLARE_SOA_COLUMN(HasFakeReassociation, hasFakeReassociation, bool);
+DECLARE_SOA_COLUMN(MotherDecayDaughters, motherDecayDaughters, int8_t);
+
+DECLARE_SOA_COLUMN(Sel8, sel8, bool);
+DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float);
+DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float);
+DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);
+DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
+DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float);
+DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
+DECLARE_SOA_COLUMN(MultNTracksGlobal, multNTracksGlobal, int);
+DECLARE_SOA_COLUMN(ToiMask, toiMask, uint32_t);
 
 } // namespace NPCascadeTable
 DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
                   NPCascadeTable::MatchingChi2,
                   NPCascadeTable::DeltaPtITSCascade,
+                  NPCascadeTable::DeltaPtCascade,
                   NPCascadeTable::ITSClusSize,
                   NPCascadeTable::HasReassociatedCluster,
                   aod::collision::NumContrib,
+                  NPCascadeTable::CascPVContribs,
                   aod::collision::CollisionTimeRes,
                   NPCascadeTable::PvX,
                   NPCascadeTable::PvY,
@@ -147,28 +164,101 @@ DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
                   NPCascadeTable::CascNClusITS,
                   NPCascadeTable::ProtonNClusITS,
                   NPCascadeTable::PionNClusITS,
-                  NPCascadeTable::BachKaonNClusITS,
-                  NPCascadeTable::BachPionNClusITS,
+                  NPCascadeTable::BachNClusITS,
                   NPCascadeTable::ProtonNClusTPC,
                   NPCascadeTable::PionNClusTPC,
-                  NPCascadeTable::BachKaonNClusTPC,
-                  NPCascadeTable::BachPionNClusTPC,
+                  NPCascadeTable::BachNClusTPC,
                   NPCascadeTable::ProtonTPCNSigma,
                   NPCascadeTable::PionTPCNSigma,
                   NPCascadeTable::BachKaonTPCNSigma,
                   NPCascadeTable::BachPionTPCNSigma,
                   NPCascadeTable::ProtonHasTOF,
                   NPCascadeTable::PionHasTOF,
-                  NPCascadeTable::BachKaonHasTOF,
-                  NPCascadeTable::BachPionHasTOF,
+                  NPCascadeTable::BachHasTOF,
                   NPCascadeTable::ProtonTOFNSigma,
                   NPCascadeTable::PionTOFNSigma,
                   NPCascadeTable::BachKaonTOFNSigma,
-                  NPCascadeTable::BachPionTOFNSigma)
+                  NPCascadeTable::BachPionTOFNSigma,
+                  NPCascadeTable::Sel8,
+                  NPCascadeTable::MultFT0C,
+                  NPCascadeTable::MultFT0A,
+                  NPCascadeTable::MultFT0M,
+                  NPCascadeTable::CentFT0C,
+                  NPCascadeTable::CentFT0A,
+                  NPCascadeTable::CentFT0M,
+                  NPCascadeTable::MultNTracksGlobal,
+                  NPCascadeTable::ToiMask)
+
+DECLARE_SOA_TABLE(NPCascTableNT, "AOD", "NPCASCTABLENT",
+                  NPCascadeTable::MatchingChi2,
+                  NPCascadeTable::DeltaPtITSCascade,
+                  NPCascadeTable::DeltaPtCascade,
+                  NPCascadeTable::ITSClusSize,
+                  NPCascadeTable::HasReassociatedCluster,
+                  aod::collision::NumContrib,
+                  NPCascadeTable::CascPVContribs,
+                  aod::collision::CollisionTimeRes,
+                  NPCascadeTable::PvX,
+                  NPCascadeTable::PvY,
+                  NPCascadeTable::PvZ,
+                  NPCascadeTable::CascPt,
+                  NPCascadeTable::CascEta,
+                  NPCascadeTable::CascPhi,
+                  NPCascadeTable::ProtonPt,
+                  NPCascadeTable::ProtonEta,
+                  NPCascadeTable::PionPt,
+                  NPCascadeTable::PionEta,
+                  NPCascadeTable::BachPt,
+                  NPCascadeTable::BachEta,
+                  NPCascadeTable::CascDCAxy,
+                  NPCascadeTable::CascDCAz,
+                  NPCascadeTable::ProtonDCAxy,
+                  NPCascadeTable::ProtonDCAz,
+                  NPCascadeTable::PionDCAxy,
+                  NPCascadeTable::PionDCAz,
+                  NPCascadeTable::BachDCAxy,
+                  NPCascadeTable::BachDCAz,
+                  NPCascadeTable::CascCosPA,
+                  NPCascadeTable::V0CosPA,
+                  NPCascadeTable::MassXi,
+                  NPCascadeTable::MassOmega,
+                  NPCascadeTable::MassV0,
+                  NPCascadeTable::CascRadius,
+                  NPCascadeTable::V0Radius,
+                  NPCascadeTable::CascLenght,
+                  NPCascadeTable::V0Lenght,
+                  NPCascadeTable::CascNClusITS,
+                  NPCascadeTable::ProtonNClusITS,
+                  NPCascadeTable::PionNClusITS,
+                  NPCascadeTable::BachNClusITS,
+                  NPCascadeTable::ProtonNClusTPC,
+                  NPCascadeTable::PionNClusTPC,
+                  NPCascadeTable::BachNClusTPC,
+                  NPCascadeTable::ProtonTPCNSigma,
+                  NPCascadeTable::PionTPCNSigma,
+                  NPCascadeTable::BachKaonTPCNSigma,
+                  NPCascadeTable::BachPionTPCNSigma,
+                  NPCascadeTable::ProtonHasTOF,
+                  NPCascadeTable::PionHasTOF,
+                  NPCascadeTable::BachHasTOF,
+                  NPCascadeTable::ProtonTOFNSigma,
+                  NPCascadeTable::PionTOFNSigma,
+                  NPCascadeTable::BachKaonTOFNSigma,
+                  NPCascadeTable::BachPionTOFNSigma,
+                  NPCascadeTable::Sel8,
+                  NPCascadeTable::MultFT0C,
+                  NPCascadeTable::MultFT0A,
+                  NPCascadeTable::MultFT0M,
+                  NPCascadeTable::CentFT0C,
+                  NPCascadeTable::CentFT0A,
+                  NPCascadeTable::CentFT0M,
+                  NPCascadeTable::MultNTracksGlobal,
+                  NPCascadeTable::ToiMask)
 
 DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::MatchingChi2,
                   NPCascadeTable::DeltaPtITSCascade,
+                  NPCascadeTable::DeltaPtCascade,
                   NPCascadeTable::ITSClusSize,
                   NPCascadeTable::HasReassociatedCluster,
                   NPCascadeTable::IsGoodMatch,
@@ -178,6 +268,7 @@ DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::IsFromBeauty,
                   NPCascadeTable::IsFromCharm,
                   aod::collision::NumContrib,
+                  NPCascadeTable::CascPVContribs,
                   aod::collision::CollisionTimeRes,
                   NPCascadeTable::PvX,
                   NPCascadeTable::PvY,
@@ -211,32 +302,128 @@ DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::CascNClusITS,
                   NPCascadeTable::ProtonNClusITS,
                   NPCascadeTable::PionNClusITS,
-                  NPCascadeTable::BachKaonNClusITS,
-                  NPCascadeTable::BachPionNClusITS,
+                  NPCascadeTable::BachNClusITS,
                   NPCascadeTable::ProtonNClusTPC,
                   NPCascadeTable::PionNClusTPC,
-                  NPCascadeTable::BachKaonNClusTPC,
-                  NPCascadeTable::BachPionNClusTPC,
+                  NPCascadeTable::BachNClusTPC,
                   NPCascadeTable::ProtonTPCNSigma,
                   NPCascadeTable::PionTPCNSigma,
                   NPCascadeTable::BachKaonTPCNSigma,
                   NPCascadeTable::BachPionTPCNSigma,
                   NPCascadeTable::ProtonHasTOF,
                   NPCascadeTable::PionHasTOF,
-                  NPCascadeTable::BachKaonHasTOF,
-                  NPCascadeTable::BachPionHasTOF,
+                  NPCascadeTable::BachHasTOF,
                   NPCascadeTable::ProtonTOFNSigma,
                   NPCascadeTable::PionTOFNSigma,
                   NPCascadeTable::BachKaonTOFNSigma,
                   NPCascadeTable::BachPionTOFNSigma,
+                  NPCascadeTable::Sel8,
+                  NPCascadeTable::MultFT0C,
+                  NPCascadeTable::MultFT0A,
+                  NPCascadeTable::MultFT0M,
+                  NPCascadeTable::CentFT0C,
+                  NPCascadeTable::CentFT0A,
+                  NPCascadeTable::CentFT0M,
                   NPCascadeTable::gPt,
                   NPCascadeTable::gEta,
                   NPCascadeTable::gPhi,
+                  NPCascadeTable::gVx,
+                  NPCascadeTable::gVy,
+                  NPCascadeTable::gVz,
                   NPCascadeTable::PDGcode,
                   NPCascadeTable::DCAxMC,
                   NPCascadeTable::DCAyMC,
                   NPCascadeTable::DCAzMC,
-                  NPCascadeTable::MCcollisionMatch)
+                  NPCascadeTable::MCcollisionMatch,
+                  NPCascadeTable::HasFakeReassociation,
+                  NPCascadeTable::MotherDecayDaughters,
+                  NPCascadeTable::MultNTracksGlobal,
+                  NPCascadeTable::ToiMask)
+
+DECLARE_SOA_TABLE(NPCascTableMCNT, "AOD", "NPCASCTABLEMCNT",
+                  NPCascadeTable::MatchingChi2,
+                  NPCascadeTable::DeltaPtITSCascade,
+                  NPCascadeTable::DeltaPtCascade,
+                  NPCascadeTable::ITSClusSize,
+                  NPCascadeTable::HasReassociatedCluster,
+                  NPCascadeTable::IsGoodMatch,
+                  NPCascadeTable::IsGoodCascade,
+                  NPCascadeTable::PdgCodeMom,
+                  NPCascadeTable::PdgCodeITStrack,
+                  NPCascadeTable::IsFromBeauty,
+                  NPCascadeTable::IsFromCharm,
+                  aod::collision::NumContrib,
+                  NPCascadeTable::CascPVContribs,
+                  aod::collision::CollisionTimeRes,
+                  NPCascadeTable::PvX,
+                  NPCascadeTable::PvY,
+                  NPCascadeTable::PvZ,
+                  NPCascadeTable::CascPt,
+                  NPCascadeTable::CascEta,
+                  NPCascadeTable::CascPhi,
+                  NPCascadeTable::ProtonPt,
+                  NPCascadeTable::ProtonEta,
+                  NPCascadeTable::PionPt,
+                  NPCascadeTable::PionEta,
+                  NPCascadeTable::BachPt,
+                  NPCascadeTable::BachEta,
+                  NPCascadeTable::CascDCAxy,
+                  NPCascadeTable::CascDCAz,
+                  NPCascadeTable::ProtonDCAxy,
+                  NPCascadeTable::ProtonDCAz,
+                  NPCascadeTable::PionDCAxy,
+                  NPCascadeTable::PionDCAz,
+                  NPCascadeTable::BachDCAxy,
+                  NPCascadeTable::BachDCAz,
+                  NPCascadeTable::CascCosPA,
+                  NPCascadeTable::V0CosPA,
+                  NPCascadeTable::MassXi,
+                  NPCascadeTable::MassOmega,
+                  NPCascadeTable::MassV0,
+                  NPCascadeTable::CascRadius,
+                  NPCascadeTable::V0Radius,
+                  NPCascadeTable::CascLenght,
+                  NPCascadeTable::V0Lenght,
+                  NPCascadeTable::CascNClusITS,
+                  NPCascadeTable::ProtonNClusITS,
+                  NPCascadeTable::PionNClusITS,
+                  NPCascadeTable::BachNClusITS,
+                  NPCascadeTable::ProtonNClusTPC,
+                  NPCascadeTable::PionNClusTPC,
+                  NPCascadeTable::BachNClusTPC,
+                  NPCascadeTable::ProtonTPCNSigma,
+                  NPCascadeTable::PionTPCNSigma,
+                  NPCascadeTable::BachKaonTPCNSigma,
+                  NPCascadeTable::BachPionTPCNSigma,
+                  NPCascadeTable::ProtonHasTOF,
+                  NPCascadeTable::PionHasTOF,
+                  NPCascadeTable::BachHasTOF,
+                  NPCascadeTable::ProtonTOFNSigma,
+                  NPCascadeTable::PionTOFNSigma,
+                  NPCascadeTable::BachKaonTOFNSigma,
+                  NPCascadeTable::BachPionTOFNSigma,
+                  NPCascadeTable::Sel8,
+                  NPCascadeTable::MultFT0C,
+                  NPCascadeTable::MultFT0A,
+                  NPCascadeTable::MultFT0M,
+                  NPCascadeTable::CentFT0C,
+                  NPCascadeTable::CentFT0A,
+                  NPCascadeTable::CentFT0M,
+                  NPCascadeTable::gPt,
+                  NPCascadeTable::gEta,
+                  NPCascadeTable::gPhi,
+                  NPCascadeTable::gVx,
+                  NPCascadeTable::gVy,
+                  NPCascadeTable::gVz,
+                  NPCascadeTable::PDGcode,
+                  NPCascadeTable::DCAxMC,
+                  NPCascadeTable::DCAyMC,
+                  NPCascadeTable::DCAzMC,
+                  NPCascadeTable::MCcollisionMatch,
+                  NPCascadeTable::HasFakeReassociation,
+                  NPCascadeTable::MotherDecayDaughters,
+                  NPCascadeTable::MultNTracksGlobal,
+                  NPCascadeTable::ToiMask)
 
 DECLARE_SOA_TABLE(NPCascTableGen, "AOD", "NPCASCTABLEGen",
                   NPCascadeTable::gPt,
@@ -248,7 +435,8 @@ DECLARE_SOA_TABLE(NPCascTableGen, "AOD", "NPCASCTABLEGen",
                   NPCascadeTable::DCAyMC,
                   NPCascadeTable::DCAzMC,
                   NPCascadeTable::IsFromBeauty,
-                  NPCascadeTable::IsFromCharm)
+                  NPCascadeTable::IsFromCharm,
+                  NPCascadeTable::MotherDecayDaughters)
 
 } // namespace o2::aod
 

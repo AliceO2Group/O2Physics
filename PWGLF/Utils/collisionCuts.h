@@ -88,13 +88,12 @@ class CollisonCuts
       LOGF(error, "Event selection not set - quitting!");
     }
     for (int i = 0; i < kNaliases; i++) {
-      bit_list.push_back(1 << i); // BIT(i)
+      bitList.push_back(1 << i); // BIT(i)
     }
     mHistogramRegistry = registry;
     mHistogramRegistry->add("Event/posZ", "; vtx_{z} (cm); Entries", o2::framework::kTH1F, {{250, -12.5, 12.5}});       // z-vertex histogram after event selections
     mHistogramRegistry->add("Event/posZ_noCut", "; vtx_{z} (cm); Entries", o2::framework::kTH1F, {{250, -12.5, 12.5}}); // z-vertex histogram before all selections
     if (mCheckIsRun3) {
-      mHistogramRegistry->add("Event/CentFV0A", "; vCentV0A; Entries", o2::framework::kTH1F, {{110, 0, 110}});
       mHistogramRegistry->add("Event/CentFT0M", "; vCentT0M; Entries", o2::framework::kTH1F, {{110, 0, 110}});
       mHistogramRegistry->add("Event/CentFT0C", "; vCentT0C; Entries", o2::framework::kTH1F, {{110, 0, 110}});
       mHistogramRegistry->add("Event/CentFT0A", "; vCentT0A; Entries", o2::framework::kTH1F, {{110, 0, 110}});
@@ -198,7 +197,7 @@ class CollisonCuts
       return false;
     }
     if (mInitialColBitScan) {
-      for (int bit : bit_list) {
+      for (const auto& bit : bitList) {
         if (col.selection_bit(bit)) {
           LOGF(info, "Trigger %d fired", bit);
         }
@@ -295,7 +294,6 @@ class CollisonCuts
       } else {
         mHistogramRegistry->fill(HIST("Event/posZ_ITSTPC"), col.posZ());
       }
-      mHistogramRegistry->fill(HIST("Event/CentFV0A"), col.centFV0A());
       mHistogramRegistry->fill(HIST("Event/CentFT0M"), col.centFT0M());
       mHistogramRegistry->fill(HIST("Event/CentFT0C"), col.centFT0C());
       mHistogramRegistry->fill(HIST("Event/CentFT0A"), col.centFT0A());
@@ -317,7 +315,7 @@ class CollisonCuts
  private:
   using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr; ///< For QA output
-  std::vector<int> bit_list;
+  std::vector<int> bitList;
   bool mCutsSet = false;                      ///< Protection against running without cuts
   bool mInitialColBitScan = true;             ///< Scan for collision bit
   bool mCheckTrigger = false;                 ///< Check for trigger

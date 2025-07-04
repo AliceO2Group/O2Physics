@@ -17,32 +17,18 @@
 #ifndef PWGJE_CORE_JETHFUTILITIES_H_
 #define PWGJE_CORE_JETHFUTILITIES_H_
 
-#include <array>
-#include <vector>
-#include <string>
-#include <optional>
-#include <algorithm>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-
-#include "Framework/Logger.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/DataModel/DerivedTables.h"
-
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <iterator>
+#include <type_traits>
+#include <vector>
 
 namespace jethfutilities
 {
@@ -277,19 +263,19 @@ template <typename T>
 constexpr bool isMatchedHFCandidate(T const& candidate)
 {
   if constexpr (isD0Candidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK) {
+    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
       return true;
     } else {
       return false;
     }
   } else if constexpr (isDplusCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == 1 << o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
+    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
       return true;
     } else {
       return false;
     }
   } else if constexpr (isLcCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == 1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi) {
+    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
       return true;
     } else {
       return false;
@@ -301,19 +287,19 @@ constexpr bool isMatchedHFCandidate(T const& candidate)
       return false;
     }
   } else if constexpr (isD0McCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchGen()) == 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK) {
+    if (std::abs(candidate.flagMcMatchGen()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
       return true;
     } else {
       return false;
     }
   } else if constexpr (isDplusMcCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchGen()) == 1 << o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
+    if (std::abs(candidate.flagMcMatchGen()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
       return true;
     } else {
       return false;
     }
   } else if constexpr (isLcMcCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchGen()) == 1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi) {
+    if (std::abs(candidate.flagMcMatchGen()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
       return true;
     } else {
       return false;
@@ -419,22 +405,23 @@ auto slicedPerHFCandidate(T const& table, U const& candidate, V const& perD0Cand
 }
 
 /**
- * returns a slice of the table depending on the type of the HF candidate and index of the collision
+ * returns a slice of the table depending on the index of the HF candidate
  *
- * @param candidate HF candidate that is being checked
+ * @param HFTable HF table type
+ * @param jet jet that is being sliced based on
  * @param table the table to be sliced
  */
-template <typename T, typename U, typename V, typename M, typename N, typename O, typename P>
-auto slicedPerHFCollision(T const& table, U const& /*candidates*/, V const& collision, M const& D0CollisionPerCollision, N const& DplusCollisionPerCollision, O const& LcCollisionPerCollision, P const& BplusCollisionPerCollision)
+template <typename HFTable, typename T, typename U, typename V, typename M, typename N, typename O>
+auto slicedPerHFJet(T const& table, U const& jet, V const& perD0Jet, M const& perDplusJet, N const& perLcJet, O const& perBplusJet)
 {
-  if constexpr (isD0Table<U>() || isD0McTable<U>()) {
-    return table.sliceBy(D0CollisionPerCollision, collision.globalIndex());
-  } else if constexpr (isDplusTable<U>() || isDplusMcTable<U>()) {
-    return table.sliceBy(DplusCollisionPerCollision, collision.globalIndex());
-  } else if constexpr (isLcTable<U>() || isLcMcTable<U>()) {
-    return table.sliceBy(LcCollisionPerCollision, collision.globalIndex());
-  } else if constexpr (isBplusTable<U>() || isBplusMcTable<U>()) {
-    return table.sliceBy(BplusCollisionPerCollision, collision.globalIndex());
+  if constexpr (isD0Table<HFTable>() || isD0McTable<HFTable>()) {
+    return table.sliceBy(perD0Jet, jet.globalIndex());
+  } else if constexpr (isDplusTable<HFTable>() || isDplusMcTable<HFTable>()) {
+    return table.sliceBy(perDplusJet, jet.globalIndex());
+  } else if constexpr (isLcTable<HFTable>() || isLcMcTable<HFTable>()) {
+    return table.sliceBy(perLcJet, jet.globalIndex());
+  } else if constexpr (isBplusTable<HFTable>() || isBplusMcTable<HFTable>()) {
+    return table.sliceBy(perBplusJet, jet.globalIndex());
   } else {
     return table;
   }
@@ -691,7 +678,7 @@ void fillDplusCandidateTable(T const& candidate, U& DplusParTable, V& DplusParET
   DplusMlTable(mlScoresVector);
 
   if constexpr (isMc) {
-    DplusMCDTable(candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.isCandidateSwapped());
+    DplusMCDTable(candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.isCandidateSwapped(), candidate.flagMcDecayChanRec());
   }
 }
 

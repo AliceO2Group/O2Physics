@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -462,6 +462,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
           continue;
         }
         trackHistoPartOne.fillQA<isMC, true>(part);
+        trackHistoPartOne.fillQAMisIden<isMC, true>(part, trackonefilter.ConfPDGCodePartOne);
       }
     }
 
@@ -667,7 +668,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 1, fillQA);
       }
       if (cfgProcessPP) {
-        doSameEvent<false>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multV0M(), 2, fillQA, mcparts);
+        doSameEvent<true>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multV0M(), 2, fillQA, mcparts);
       }
       if (cfgProcessMM) {
         doSameEvent<false>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 3, fillQA);
@@ -677,7 +678,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multNtr(), 1, fillQA);
       }
       if (cfgProcessPP) {
-        doSameEvent<false>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multNtr(), 2, fillQA, mcparts);
+        doSameEvent<true>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multNtr(), 2, fillQA, mcparts);
       }
       if (cfgProcessMM) {
         doSameEvent<false>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multNtr(), 3, fillQA);

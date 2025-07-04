@@ -11,7 +11,7 @@
 
 o2physics_add_dpl_workflow(electron-selection-with-tpc-emcal
                     SOURCES electronSelectionWithTpcEmcal.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(tree-creator-electron-d-c-a

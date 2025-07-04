@@ -64,10 +64,10 @@ void uploadOTSobjects(std::string inputList, std::string passName, bool useAlien
     std::unique_ptr<TFile> scalersFile{TFile::Open((path + "/AnalysisResults_fullrun.root").data(), "READ")};
     TH1* scalers = static_cast<TH1*>(scalersFile->Get("central-event-filter-task/scalers/mScalers"));
     TH1* filters = static_cast<TH1*>(scalersFile->Get("central-event-filter-task/scalers/mFiltered"));
-    api.storeAsTFile(scalers, baseCCDBpath + "FilterCounters", metadata, duration.first, duration.second);
-    api.storeAsTFile(filters, baseCCDBpath + "SelectionCounters", metadata, duration.first, duration.second);
+    api.storeAsTFile(scalers, baseCCDBpath + "FilterCounters", metadata, duration.first, duration.second + 1);
+    api.storeAsTFile(filters, baseCCDBpath + "SelectionCounters", metadata, duration.first, duration.second + 1);
     TH1* hCounterTVX = static_cast<TH1*>(scalersFile->Get("bc-selection-task/hCounterTVX"));
-    api.storeAsTFile(hCounterTVX, baseCCDBpath + "InspectedTVX", metadata, duration.first, duration.second);
+    api.storeAsTFile(hCounterTVX, baseCCDBpath + "InspectedTVX", metadata, duration.first, duration.second + 1);
 
     std::vector<ZorroHelper> zorroHelpers;
     std::unique_ptr<TFile> bcRangesFile{TFile::Open((path + "/bcRanges_fullrun.root").data(), "READ")};
@@ -99,7 +99,7 @@ void uploadOTSobjects(std::string inputList, std::string passName, bool useAlien
       return a.bcAOD < b.bcAOD;
     });
     if (!chunkedProcessing) {
-      api.storeAsTFileAny(&zorroHelpers, baseCCDBpath + "ZorroHelpers", metadata, duration.first, duration.second);
+      api.storeAsTFileAny(&zorroHelpers, baseCCDBpath + "ZorroHelpers", metadata, duration.first, duration.second + 1);
       std::cout << std::endl;
     } else {
       uint32_t helperIndex{0};
@@ -126,7 +126,7 @@ void uploadOTSobjects(std::string inputList, std::string passName, bool useAlien
           endIndex++;
         }
         std::cout << ">>> Chunk " << helperIndex << " - " << helperIndex + chunk.size() << " : " << startTS << " - " << endTS << " \t" << (endTS - startTS) * 1.e-3 << std::endl;
-        api.storeAsTFileAny(&chunk, baseCCDBpath + "ZorroHelpers", metadata, startTS, endTS);
+        api.storeAsTFileAny(&chunk, baseCCDBpath + "ZorroHelpers", metadata, startTS, endTS + 1);
         startTS = endTS + 1;
         helperIndex += chunk.size();
       }

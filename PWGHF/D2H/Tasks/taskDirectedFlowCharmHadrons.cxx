@@ -15,24 +15,36 @@
 /// \author Prottay Das, prottay.das@cern.ch
 /// \author Biao Zhang, biao.zhanng@cern.ch
 
-#include <string>
-#include <vector>
-#include <TMath.h>
-#include <cstdlib>
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/EventPlaneHelper.h"
+#include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGLF/DataModel/SPCalibrationTables.h"
 
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
+#include "Common/Core/EventPlaneHelper.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <numeric>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -54,18 +66,16 @@ struct HfTaskDirectedFlowCharmHadrons {
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality accepted in SP computation"};
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
   Configurable<bool> direct{"direct", false, "Flag to calculate direct v1 odd and even"};
+  Configurable<bool> correction{"correction", false, "Flag for correction"};
   Configurable<bool> userap{"userap", false, "Flag to fill rapidity vs eta "};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indices of BDT scores to be stored. Two indexes max."};
 
-  ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {100, 1.78, 2.05}, ""};
-  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0}, ""};
-  ConfigurableAxis thnConfigAxisEta{"thnConfigAxisEta", {VARIABLE_WIDTH, -0.8, -0.4, 0, 0.4, 0.8}, ""};
-  ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {VARIABLE_WIDTH, 0.0, 10.0, 40.0, 80.0}, ""};
-  ConfigurableAxis thnConfigAxisScalarProd{"thnConfigAxisScalarProd", {8000, -2.0, 2.0}, ""};
-  ConfigurableAxis thnConfigAxisSign{"thnConfigAxisSign", {2, -2.0, 2.0}, ""};
-  ConfigurableAxis thnConfigAxisMlOne{"thnConfigAxisMlOne", {1000, 0., 1.}, ""};
-  ConfigurableAxis thnConfigAxisMlTwo{"thnConfigAxisMlTwo", {1000, 0., 1.}, ""};
+  HfHelper hfHelper;
+  EventPlaneHelper epHelper;
+  SliceCache cache;
+  HfEventSelection hfEvSel; // event selection and monitoring
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   using CandDplusDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
@@ -85,11 +95,14 @@ struct HfTaskDirectedFlowCharmHadrons {
   Partition<CandD0DataWMl> selectedD0ToPiKWMl = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag;
   Partition<CandD0DataWMl> selectedD0ToKPiWMl = aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
 
-  SliceCache cache;
-  HfHelper hfHelper;
-  EventPlaneHelper epHelper;
-  HfEventSelection hfEvSel; // event selection and monitoring
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
+  ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {100, 1.78, 2.05}, ""};
+  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0}, ""};
+  ConfigurableAxis thnConfigAxisEta{"thnConfigAxisEta", {VARIABLE_WIDTH, -0.8, -0.4, 0, 0.4, 0.8}, ""};
+  ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {VARIABLE_WIDTH, 0.0, 10.0, 40.0, 80.0}, ""};
+  ConfigurableAxis thnConfigAxisScalarProd{"thnConfigAxisScalarProd", {8000, -2.0, 2.0}, ""};
+  ConfigurableAxis thnConfigAxisSign{"thnConfigAxisSign", {2, -2.0, 2.0}, ""};
+  ConfigurableAxis thnConfigAxisMlOne{"thnConfigAxisMlOne", {1000, 0., 1.}, ""};
+  ConfigurableAxis thnConfigAxisMlTwo{"thnConfigAxisMlTwo", {1000, 0., 1.}, ""};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -121,17 +134,19 @@ struct HfTaskDirectedFlowCharmHadrons {
 
     if (direct) {
       registry.add("hpQxytpvscent", "hpQxytpvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
-      registry.add("hpuxyQxypvscentpteta", "hpuxyQxypvscentpteta", HistType::kTHnSparseF, axes, true);
-      registry.add("hpuxyQxytvscentpteta", "hpuxyQxytvscentpteta", HistType::kTHnSparseF, axes, true);
       registry.add("hpoddvscentpteta", "hpoddvscentpteta", HistType::kTHnSparseF, axes, true);
       registry.add("hpevenvscentpteta", "hpevenvscentpteta", HistType::kTHnSparseF, axes, true);
+      if (correction) {
+        registry.add("hpuxyQxypvscentpteta", "hpuxyQxypvscentpteta", HistType::kTHnSparseF, axes, true);
+        registry.add("hpuxyQxytvscentpteta", "hpuxyQxytvscentpteta", HistType::kTHnSparseF, axes, true);
 
-      registry.add("hpQxpvscent", "hpQxpvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
-      registry.add("hpQypvscent", "hpQypvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
-      registry.add("hpQxtvscent", "hpQxtvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
-      registry.add("hpQytvscent", "hpQytvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
-      registry.add("hpuxvscentpteta", "hpuxvscentpteta", HistType::kTHnSparseF, axes, true);
-      registry.add("hpuyvscentpteta", "hpuyvscentpteta", HistType::kTHnSparseF, axes, true);
+        registry.add("hpQxpvscent", "hpQxpvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
+        registry.add("hpQypvscent", "hpQypvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
+        registry.add("hpQxtvscent", "hpQxtvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
+        registry.add("hpQytvscent", "hpQytvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
+        registry.add("hpuxvscentpteta", "hpuxvscentpteta", HistType::kTHnSparseF, axes, true);
+        registry.add("hpuyvscentpteta", "hpuyvscentpteta", HistType::kTHnSparseF, axes, true);
+      }
     } else {
       registry.add("hpQxtQxpvscent", "hpQxtQxpvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
       registry.add("hpQytQypvscent", "hpQytQypvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
@@ -203,24 +218,26 @@ struct HfTaskDirectedFlowCharmHadrons {
     auto qxZDCC = collision.qxZDCC(); // extracting q vectors of ZDC
     auto qyZDCC = collision.qyZDCC();
 
-    auto QxtQxp = qxZDCC * qxZDCA;
-    auto QytQyp = qyZDCC * qyZDCA;
-    auto Qxytp = QxtQxp + QytQyp;
-    auto QxpQyt = qxZDCA * qyZDCC;
-    auto QxtQyp = qxZDCC * qyZDCA;
+    auto qxtQxp = qxZDCC * qxZDCA;
+    auto qytQyp = qyZDCC * qyZDCA;
+    auto qxytp = qxtQxp + qytQyp;
+    auto qxpQyt = qxZDCA * qyZDCC;
+    auto qxtQyp = qxZDCC * qyZDCA;
 
     // correlations in the denominators for SP calculation
     if (direct) {
-      registry.fill(HIST("hpQxytpvscent"), cent, Qxytp);
-      registry.fill(HIST("hpQxpvscent"), cent, qxZDCA);
-      registry.fill(HIST("hpQxtvscent"), cent, qxZDCC);
-      registry.fill(HIST("hpQypvscent"), cent, qyZDCA);
-      registry.fill(HIST("hpQytvscent"), cent, qyZDCC);
+      registry.fill(HIST("hpQxytpvscent"), cent, qxytp);
+      if (correction) {
+        registry.fill(HIST("hpQxpvscent"), cent, qxZDCA);
+        registry.fill(HIST("hpQxtvscent"), cent, qxZDCC);
+        registry.fill(HIST("hpQypvscent"), cent, qyZDCA);
+        registry.fill(HIST("hpQytvscent"), cent, qyZDCC);
+      }
     } else {
-      registry.fill(HIST("hpQxtQxpvscent"), cent, QxtQxp);
-      registry.fill(HIST("hpQytQypvscent"), cent, QytQyp);
-      registry.fill(HIST("hpQxpQytvscent"), cent, QxpQyt);
-      registry.fill(HIST("hpQxtQypvscent"), cent, QxtQyp);
+      registry.fill(HIST("hpQxtQxpvscent"), cent, qxtQxp);
+      registry.fill(HIST("hpQytQypvscent"), cent, qytQyp);
+      registry.fill(HIST("hpQxpQytvscent"), cent, qxpQyt);
+      registry.fill(HIST("hpQxtQypvscent"), cent, qxtQyp);
       registry.fill(HIST("hpQxpvscent"), cent, qxZDCA);
       registry.fill(HIST("hpQxtvscent"), cent, qxZDCC);
       registry.fill(HIST("hpQypvscent"), cent, qyZDCA);
@@ -305,14 +322,15 @@ struct HfTaskDirectedFlowCharmHadrons {
 
       if (storeMl) {
         if (direct) {
-          registry.fill(HIST("hpuxyQxypvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyp, sign, outputMl[0], outputMl[1]);
-          registry.fill(HIST("hpuxyQxytvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyt, sign, outputMl[0], outputMl[1]);
           registry.fill(HIST("hpoddvscentpteta"), massCand, cent, ptCand, etaCand, oddv1, sign, outputMl[0], outputMl[1]);
           registry.fill(HIST("hpevenvscentpteta"), massCand, cent, ptCand, etaCand, evenv1, sign, outputMl[0], outputMl[1]);
+          if (correction) {
+            registry.fill(HIST("hpuxyQxypvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyp, sign, outputMl[0], outputMl[1]);
+            registry.fill(HIST("hpuxyQxytvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyt, sign, outputMl[0], outputMl[1]);
 
-          registry.fill(HIST("hpuxvscentpteta"), massCand, cent, ptCand, etaCand, ux, sign, outputMl[0], outputMl[1]);
-          registry.fill(HIST("hpuyvscentpteta"), massCand, cent, ptCand, etaCand, uy, sign, outputMl[0], outputMl[1]);
-
+            registry.fill(HIST("hpuxvscentpteta"), massCand, cent, ptCand, etaCand, ux, sign, outputMl[0], outputMl[1]);
+            registry.fill(HIST("hpuyvscentpteta"), massCand, cent, ptCand, etaCand, uy, sign, outputMl[0], outputMl[1]);
+          }
         } else {
           registry.fill(HIST("hpuxQxpvscentpteta"), massCand, cent, ptCand, etaCand, uxQxp, sign, outputMl[0], outputMl[1]);
           registry.fill(HIST("hpuyQypvscentpteta"), massCand, cent, ptCand, etaCand, uyQyp, sign, outputMl[0], outputMl[1]);
@@ -324,13 +342,16 @@ struct HfTaskDirectedFlowCharmHadrons {
         }
       } else {
         if (direct) {
-          registry.fill(HIST("hpuxyQxypvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyp, sign);
-          registry.fill(HIST("hpuxyQxytvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyt, sign);
           registry.fill(HIST("hpoddvscentpteta"), massCand, cent, ptCand, etaCand, oddv1, sign);
           registry.fill(HIST("hpevenvscentpteta"), massCand, cent, ptCand, etaCand, evenv1, sign);
 
-          registry.fill(HIST("hpuxvscentpteta"), massCand, cent, ptCand, etaCand, ux, sign);
-          registry.fill(HIST("hpuyvscentpteta"), massCand, cent, ptCand, etaCand, uy, sign);
+          if (correction) {
+            registry.fill(HIST("hpuxyQxypvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyp, sign);
+            registry.fill(HIST("hpuxyQxytvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyt, sign);
+
+            registry.fill(HIST("hpuxvscentpteta"), massCand, cent, ptCand, etaCand, ux, sign);
+            registry.fill(HIST("hpuyvscentpteta"), massCand, cent, ptCand, etaCand, uy, sign);
+          }
         } else {
           registry.fill(HIST("hpuxQxpvscentpteta"), massCand, cent, ptCand, etaCand, uxQxp, sign);
           registry.fill(HIST("hpuyQypvscentpteta"), massCand, cent, ptCand, etaCand, uyQyp, sign);

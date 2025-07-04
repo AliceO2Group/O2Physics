@@ -17,13 +17,24 @@
 ///
 /// \author Daniel Samitz <daniel.samitz@cern.ch>
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdint>
+#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;
@@ -307,9 +318,9 @@ struct HfTreeCreatorLcToK0sP {
         candidate.impactParameter1(),
         candidate.errorImpactParameter0(),
         candidate.errorImpactParameter1(),
-        candidate.v0x(),
-        candidate.v0y(),
-        candidate.v0z(),
+        candidate.v0X(),
+        candidate.v0Y(),
+        candidate.v0Z(),
         candidate.v0radius(),
         candidate.v0cosPA(),
         candidate.mLambda(),

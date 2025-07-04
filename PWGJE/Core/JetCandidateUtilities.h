@@ -17,35 +17,12 @@
 #ifndef PWGJE_CORE_JETCANDIDATEUTILITIES_H_
 #define PWGJE_CORE_JETCANDIDATEUTILITIES_H_
 
-#include <array>
-#include <vector>
-#include <string>
-#include <optional>
-#include <algorithm>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-
-#include "Framework/Logger.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/DataModel/DerivedTables.h"
-
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/Core/JetDQUtilities.h"
+#include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/Core/JetV0Utilities.h"
-#include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/DataModel/Jet.h"
+
+#include <cstdint>
+#include <type_traits>
 
 namespace jetcandidateutilities
 {
@@ -166,6 +143,9 @@ bool isDaughterTrack(T& track, U& candidate, V const& tracks)
 template <typename T>
 bool isDaughterParticle(const T& particle, int globalIndex)
 {
+  if (!particle.has_daughters()) {
+    return false;
+  }
   for (auto daughter : particle.template daughters_as<typename std::decay_t<T>::parent_t>()) {
     if (daughter.globalIndex() == globalIndex) {
       return true;
@@ -238,18 +218,18 @@ auto slicedPerCandidate(T const& table, U const& candidate, V const& perD0Candid
 }
 
 /**
- * returns a slice of the table depending on the type of the candidate and index of the collision
- *
- * @param candidate candidate that is being checked
+ * returns a slice of the table depending on the index of the candidate
+ * @param CandidateTable candidtae table type
+ * @param jet jet that the slice is based on
  * @param table the table to be sliced
  */
-template <typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename Q>
-auto slicedPerCandidateCollision(T const& table, U const& candidates, V const& collision, M const& D0CollisionPerCollision, N const& DplusCollisionPerCollision, O const& LcCollisionPerCollision, P const& BplusCollisionPerCollision, Q const& DielectronCollisionPerCollision)
+template <typename CandidateTable, typename T, typename U, typename V, typename M, typename N, typename O, typename P>
+auto slicedPerJet(T const& table, U const& jet, V const& perD0Jet, M const& perDplusJet, N const& perLcJet, O const& perBplusJet, P const& perDielectronJet)
 {
-  if constexpr (jethfutilities::isHFTable<U>() || jethfutilities::isHFMcTable<U>()) {
-    return jethfutilities::slicedPerHFCollision(table, candidates, collision, D0CollisionPerCollision, DplusCollisionPerCollision, LcCollisionPerCollision, BplusCollisionPerCollision);
-  } else if constexpr (jetdqutilities::isDielectronTable<U>() || jetdqutilities::isDielectronMcTable<U>()) {
-    return jetdqutilities::slicedPerDielectronCollision(table, candidates, collision, DielectronCollisionPerCollision);
+  if constexpr (jethfutilities::isHFTable<CandidateTable>() || jethfutilities::isHFMcTable<CandidateTable>()) {
+    return jethfutilities::slicedPerHFJet<CandidateTable>(table, jet, perD0Jet, perDplusJet, perLcJet, perBplusJet);
+  } else if constexpr (jetdqutilities::isDielectronTable<CandidateTable>() || jetdqutilities::isDielectronMcTable<CandidateTable>()) {
+    return jetdqutilities::slicedPerDielectronJet<CandidateTable>(table, jet, perDielectronJet);
   } else {
     return table;
   }

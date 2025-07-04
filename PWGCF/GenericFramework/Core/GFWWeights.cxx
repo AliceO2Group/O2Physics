@@ -482,3 +482,17 @@ void GFWWeights::mergeWeights(GFWWeights* other)
   addArray(fW_data, other->getDataArray());
   return;
 }
+void GFWWeights::setTH3D(TH3D* th3d)
+{
+  if (!fW_data) {
+    fW_data = new TObjArray();
+    fW_data->SetName("GFWWeights_Data");
+    fW_data->SetOwner(kTRUE);
+    fW_data->Add(th3d);
+    return;
+  }
+  TString ts(fW_data->At(0)->GetName());
+  TH3D* trash = reinterpret_cast<TH3D*>(fW_data->RemoveAt(0));
+  delete trash;
+  fW_data->Add(reinterpret_cast<TH3D*>(th3d->Clone(ts.Data())));
+}

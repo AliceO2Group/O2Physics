@@ -13,19 +13,19 @@
 /// \brief Task to produce a table joinable to the jet tables for a flavour definition on MC
 /// \author Hanseo Park <hanseo.park@cern.ch>
 
-#include <memory>
-#include <vector>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "Common/Core/trackUtilities.h"
-
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/JetTagging.h"
 #include "PWGJE/Core/JetTaggingUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetTagging.h"
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisTask.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdint>
 
 using namespace o2;
 using namespace o2::framework;
@@ -92,15 +92,14 @@ struct HeavyFlavourDefinitionTask {
   }
   PROCESS_SWITCH(HeavyFlavourDefinitionTask, processMCPByConstituents, "Fill definition of flavour for mcp jets using constituents", false);
 
-  void processMCPByDistance(soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs> const& /*mcCollisions*/, JetTableMCP const& mcpjets, aod::JetParticles const& particles)
+  void processMCPByDistance(aod::JetMcCollision const& /*mcCollision*/, JetTableMCP const& mcpjets, aod::JetParticles const& particles)
   {
     for (auto const& mcpjet : mcpjets) {
-      auto const particlesPerMcColl = particles.sliceBy(particlesPerMcCollision, mcpjet.globalIndex());
       int8_t origin = -1;
       if (searchUpToQuark) {
-        origin = jettaggingutilities::getJetFlavor(mcpjet, particlesPerMcColl);
+        origin = jettaggingutilities::getJetFlavor(mcpjet, particles);
       } else {
-        origin = jettaggingutilities::getJetFlavorHadron(mcpjet, particlesPerMcColl);
+        origin = jettaggingutilities::getJetFlavorHadron(mcpjet, particles);
       }
       flavourTableMCP(origin);
     }

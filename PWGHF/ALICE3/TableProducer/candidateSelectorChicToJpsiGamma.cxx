@@ -48,7 +48,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_chic_to_jpsi_gamma::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_chic_to_jpsi_gamma::cuts[0], hf_cuts_chic_to_jpsi_gamma::nBinsPt, hf_cuts_chic_to_jpsi_gamma::nCutVars, hf_cuts_chic_to_jpsi_gamma::labelsPt, hf_cuts_chic_to_jpsi_gamma::labelsCutVar}, "Jpsi candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_chic_to_jpsi_gamma::Cuts[0], hf_cuts_chic_to_jpsi_gamma::NBinsPt, hf_cuts_chic_to_jpsi_gamma::NCutVars, hf_cuts_chic_to_jpsi_gamma::labelsPt, hf_cuts_chic_to_jpsi_gamma::labelsCutVar}, "Jpsi candidate selection per pT bin"};
 
   HfHelper hfHelper;
 
@@ -97,8 +97,8 @@ struct HfCandidateSelectorChicToJpsiGamma {
       return false; // CPA check
     }
 
-    if ((std::abs(hfCandChic.impactParameter0()) > cuts->get(pTBin, "d0 Jpsi"))) {   // adf: Warning: no cut on photon
-      return false;                                                                  // DCA check on daughters
+    if ((std::abs(hfCandChic.impactParameter0()) > cuts->get(pTBin, "d0 Jpsi"))) { // adf: Warning: no cut on photon
+      return false;                                                                // DCA check on daughters
     }
 
     // add more cuts: d0 product? PCA?

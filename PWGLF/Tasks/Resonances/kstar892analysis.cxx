@@ -36,6 +36,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::constants::physics;
+using namespace o2::aod::resodaughter;
 
 struct kstar892analysis {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -88,11 +89,7 @@ struct kstar892analysis {
   Configurable<bool> additionalMEPlots{"additionalMEPlots", false, "Additional Mixed event plots"};
 
   Configurable<bool> tof_at_high_pt{"tof_at_high_pt", false, "Use TOF at high pT"};
-  Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 0, "Number of TPC cluster"};
-  Configurable<float> cfgRatioTPCRowsOverFindableCls{"cfgRatioTPCRowsOverFindableCls", 0.0f, "TPC Crossed Rows to Findable Clusters"};
-  Configurable<float> cfgITSChi2NCl{"cfgITSChi2NCl", 999.0, "ITS Chi2/NCl"};
-  Configurable<float> cfgTPCChi2NCl{"cfgTPCChi2NCl", 999.0, "TPC Chi2/NCl"};
   Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"};
   Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
 
@@ -111,7 +108,6 @@ struct kstar892analysis {
   void init(o2::framework::InitContext&)
   {
 
-    // LOG(info) << "\n cfgITScluster ============>"<< static_cast<uint8_t>(cfgITScluster);
     // LOG(info)<< "\n cfgTPCcluster ============>"<< static_cast<uint8_t>(cfgTPCcluster);
 
     AxisSpec centAxis = {binsCent, "V0M (%)"};
@@ -248,30 +244,71 @@ struct kstar892analysis {
 
   // Filters
   Filter acceptanceFilter = nabs(aod::resodaughter::pt) >= cMinPtcut;
-  Filter qualityFilter = (aod::track::itsChi2NCl <= cfgITSChi2NCl) && (aod::track::tpcChi2NCl <= cfgTPCChi2NCl) && (aod::resodaughter::tpcCrossedRowsOverFindableCls >= cfgRatioTPCRowsOverFindableCls);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) <= cMaxDCArToPVcut) && (nabs(aod::track::dcaZ) <= cMaxDCAzToPVcut);
-  Filter hasTPCfilter = aod::resodaughter::hasTPC == true;
-  Filter primarytrackFilter = aod::resodaughter::isPVContributor && aod::resodaughter::isPrimaryTrack && aod::resodaughter::isGlobalTrackWoDCA;
+  // Filter primarytrackFilter = aod::resodaughter::isPVContributor && aod::resodaughter::isPrimaryTrack && aod::resodaughter::isGlobalTrackWoDCA;
+  Filter primarytrackFilter = requirePVContributor() && requirePrimaryTrack() && requireGlobalTrackWoDCA();
 
   // partitions for data
-  Partition<soa::Filtered<aod::ResoTracks>> resoKaWithTof = (nabs(aod::pidtof::tofNSigmaKa) <= cMaxTOFnSigmaKaon) && (aod::resodaughter::hasTOF == true);
-  Partition<soa::Filtered<aod::ResoTracks>> resoPiWithTof = (nabs(aod::pidtof::tofNSigmaPi) <= cMaxTOFnSigmaPion) && (aod::resodaughter::hasTOF == true);
-  Partition<soa::Filtered<aod::ResoTracks>> resoKa = (nabs(aod::pidtpc::tpcNSigmaKa) <= cMaxTPCnSigmaKaon);
-  Partition<soa::Filtered<aod::ResoTracks>> resoPi = (nabs(aod::pidtpc::tpcNSigmaPi) <= cMaxTPCnSigmaPion);
-  Partition<soa::Filtered<aod::ResoTracks>> resoKaTPClowPt = (nabs(aod::pidtpc::tpcNSigmaKa) <= cMaxTPCnSigmaKaon) && (nabs(aod::resodaughter::pt) < cMaxPtTPC);
-  Partition<soa::Filtered<aod::ResoTracks>> resoPiTPClowPt = (nabs(aod::pidtpc::tpcNSigmaPi) <= cMaxTPCnSigmaPion) && (nabs(aod::resodaughter::pt) < cMaxPtTPC);
-  Partition<soa::Filtered<aod::ResoTracks>> resoKaTOFhighPt = (nabs(aod::pidtof::tofNSigmaKa) <= cMaxTOFnSigmaKaon) && (aod::resodaughter::hasTOF == true) && (nabs(aod::resodaughter::pt) >= cMinPtTOF);
-  Partition<soa::Filtered<aod::ResoTracks>> resoPiTOFhighPt = (nabs(aod::pidtof::tofNSigmaPi) <= cMaxTOFnSigmaPion) && (aod::resodaughter::hasTOF == true) && (nabs(aod::resodaughter::pt) >= cMinPtTOF);
+  Partition<aod::ResoTracks> resoKaWithTof =
+    (nabs(aod::resodaughter::tofNSigmaKa10) <= 10 * cMaxTOFnSigmaKaon) &&
+    requireHasTOF();
+
+  Partition<aod::ResoTracks> resoPiWithTof =
+    (nabs(aod::resodaughter::tofNSigmaPi10) <= 10 * cMaxTOFnSigmaPion) &&
+    requireHasTOF();
+
+  Partition<aod::ResoTracks> resoKa =
+    (nabs(aod::resodaughter::tpcNSigmaKa10) <= 10 * cMaxTPCnSigmaKaon);
+
+  Partition<aod::ResoTracks> resoPi =
+    (nabs(aod::resodaughter::tpcNSigmaPi10) <= 10 * cMaxTPCnSigmaPion);
+
+  Partition<aod::ResoTracks> resoKaTPClowPt =
+    (nabs(aod::resodaughter::tpcNSigmaKa10) <= 10 * cMaxTPCnSigmaKaon) &&
+    (nabs(aod::resodaughter::pt) < cMaxPtTPC);
+
+  Partition<aod::ResoTracks> resoPiTPClowPt =
+    (nabs(aod::resodaughter::tpcNSigmaPi10) <= 10 * cMaxTPCnSigmaPion) &&
+    (nabs(aod::resodaughter::pt) < cMaxPtTPC);
+
+  Partition<aod::ResoTracks> resoKaTOFhighPt =
+    (nabs(aod::resodaughter::tofNSigmaKa10) <= 10 * cMaxTOFnSigmaKaon) &&
+    requireHasTOF() && (nabs(aod::resodaughter::pt) >= cMinPtTOF);
+
+  Partition<aod::ResoTracks> resoPiTOFhighPt =
+    (nabs(aod::resodaughter::tofNSigmaPi10) <= 10 * cMaxTOFnSigmaPion) &&
+    requireHasTOF() && (nabs(aod::resodaughter::pt) >= cMinPtTOF);
 
   // Partitions for mc
-  Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecKaWithTof = (nabs(aod::pidtof::tofNSigmaKa) <= cMaxTOFnSigmaKaon) && (aod::resodaughter::hasTOF == true);
-  Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecPiWithTof = (nabs(aod::pidtof::tofNSigmaPi) <= cMaxTOFnSigmaPion) && (aod::resodaughter::hasTOF == true);
-  Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecKa = (nabs(aod::pidtpc::tpcNSigmaKa) <= cMaxTPCnSigmaKaon);
-  Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecPi = (nabs(aod::pidtpc::tpcNSigmaPi) <= cMaxTPCnSigmaPion);
-  Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecKaTPClowPt = (nabs(aod::pidtpc::tpcNSigmaKa) <= cMaxTPCnSigmaKaon) && (nabs(aod::resodaughter::pt) < cMaxPtTPC);
-  Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecPiTPClowPt = (nabs(aod::pidtpc::tpcNSigmaPi) <= cMaxTPCnSigmaPion) && (nabs(aod::resodaughter::pt) < cMaxPtTPC);
-  Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecKaTOFhighPt = (nabs(aod::pidtof::tofNSigmaKa) <= cMaxTOFnSigmaKaon) && (aod::resodaughter::hasTOF == true) && (nabs(aod::resodaughter::pt) >= cMinPtTOF);
-  Partition<soa::Filtered<soa::Join<aod::ResoTracks, aod::ResoMCTracks>>> resoMCrecPiTOFhighPt = (nabs(aod::pidtof::tofNSigmaPi) <= cMaxTOFnSigmaPion) && (aod::resodaughter::hasTOF == true) && (nabs(aod::resodaughter::pt) >= cMinPtTOF);
+  Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> resoMCrecKaWithTof =
+    (nabs(aod::resodaughter::tofNSigmaKa10) <= 10 * cMaxTOFnSigmaKaon) &&
+    requireHasTOF();
+
+  Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> resoMCrecPiWithTof =
+    (nabs(aod::resodaughter::tofNSigmaPi10) <= 10 * cMaxTOFnSigmaPion) &&
+    requireHasTOF();
+
+  Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> resoMCrecKa =
+    (nabs(aod::resodaughter::tpcNSigmaKa10) <= 10 * cMaxTPCnSigmaKaon);
+
+  Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> resoMCrecPi =
+    (nabs(aod::resodaughter::tpcNSigmaPi10) <= 10 * cMaxTPCnSigmaPion);
+
+  Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> resoMCrecKaTPClowPt =
+    (nabs(aod::resodaughter::tpcNSigmaKa10) <= 10 * cMaxTPCnSigmaKaon) &&
+    (nabs(aod::resodaughter::pt) < cMaxPtTPC);
+
+  Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> resoMCrecPiTPClowPt =
+    (nabs(aod::resodaughter::tpcNSigmaPi10) <= 10 * cMaxTPCnSigmaPion) &&
+    (nabs(aod::resodaughter::pt) < cMaxPtTPC);
+
+  Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> resoMCrecKaTOFhighPt =
+    (nabs(aod::resodaughter::tofNSigmaKa10) <= 10 * cMaxTOFnSigmaKaon) &&
+    requireHasTOF() && (nabs(aod::resodaughter::pt) >= cMinPtTOF);
+
+  Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> resoMCrecPiTOFhighPt =
+    (nabs(aod::resodaughter::tofNSigmaPi10) <= 10 * cMaxTOFnSigmaPion) &&
+    requireHasTOF() && (nabs(aod::resodaughter::pt) >= cMinPtTOF);
 
   using ResoMCCols = soa::Join<aod::ResoCollisions, aod::ResoMCCollisions>;
 
@@ -283,11 +320,10 @@ struct kstar892analysis {
   template <typename TrackType>
   bool trackCut(const TrackType track)
   {
-    if (track.itsNCls() < cfgITScluster)
-      return false;
+    // TPC
     if (track.tpcNClsFound() < cfgTPCcluster)
       return false;
-
+    // ITS
     if (cfgUseITSRefit && !track.passedITSRefit())
       return false;
     if (cfgUseTPCRefit && !track.passedTPCRefit())

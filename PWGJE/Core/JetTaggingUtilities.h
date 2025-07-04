@@ -18,25 +18,31 @@
 #ifndef PWGJE_CORE_JETTAGGINGUTILITIES_H_
 #define PWGJE_CORE_JETTAGGINGUTILITIES_H_
 
-#include <cmath>
-#include <limits>
-#include <numeric>
-#include <tuple>
-#include <vector>
+#include "PWGJE/Core/JetUtilities.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/Logger.h>
+
+#include <TF1.h>
+#include <TMath.h>
+
+#include <Rtypes.h>
+
 #include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <string>
+#include <tuple>
 #include <unordered_map>
-
-#include <TPDGCode.h>
-#include "CommonConstants/PhysicsConstants.h"
-
-#include "TF1.h"
-#include "Framework/Logger.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGJE/Core/JetUtilities.h"
+#include <utility>
+#include <vector>
 
 enum JetTaggingSpecies {
   none = 0,
@@ -63,50 +69,52 @@ namespace jettaggingutilities
 const int cmTomum = 10000; // using cm -> #mum for impact parameter (dca)
 
 struct BJetParams {
-  float JetpT = 0.0;
-  float JetEta = 0.0;
-  float JetPhi = 0.0;
-  int NTracks = -1;
-  int NSV = -1;
-  float JetMass = 0.0;
+  float jetpT = 0.0;
+  float jetEta = 0.0;
+  float jetPhi = 0.0;
+  int nTracks = -1;
+  int nSV = -1;
+  float jetMass = 0.0;
 };
 
 struct BJetTrackParams {
-  double TrackpT = 0.0;
-  double TrackEta = 0.0;
-  double DotProdTrackJet = 0.0;
-  double DotProdTrackJetOverJet = 0.0;
-  double DeltaRJetTrack = 0.0;
-  double SignedIP2D = 0.0;
-  double SignedIP2DSign = 0.0;
-  double SignedIP3D = 0.0;
-  double SignedIP3DSign = 0.0;
-  double MomFraction = 0.0;
-  double DeltaRTrackVertex = 0.0;
-  double TrackPhi = 0.0;
-  double TrackCharge = 0.0;
-  double TrackITSChi2NCl = 0.0;
-  double TrackTPCChi2NCl = 0.0;
-  double TrackITSNCls = 0.0;
-  double TrackTPCNCls = 0.0;
-  double TrackTPCNCrossedRows = 0.0;
-  int TrackOrigin = -1;
-  int TrackVtxIndex = -1;
+  double trackpT = 0.0;
+  double trackEta = 0.0;
+  double dotProdTrackJet = 0.0;
+  double dotProdTrackJetOverJet = 0.0;
+  double deltaRJetTrack = 0.0;
+  double signedIP2D = 0.0;
+  double signedIP2DSign = 0.0;
+  double signedIPz = 0.0;
+  double signedIPzSign = 0.0;
+  double signedIP3D = 0.0;
+  double signedIP3DSign = 0.0;
+  double momFraction = 0.0;
+  double deltaRTrackVertex = 0.0;
+  double trackPhi = 0.0;
+  double trackCharge = 0.0;
+  double trackITSChi2NCl = 0.0;
+  double trackTPCChi2NCl = 0.0;
+  double trackITSNCls = 0.0;
+  double trackTPCNCls = 0.0;
+  double trackTPCNCrossedRows = 0.0;
+  int trackOrigin = -1;
+  int trackVtxIndex = -1;
 };
 
 struct BJetSVParams {
-  double SVpT = 0.0;
-  double DeltaRSVJet = 0.0;
-  double SVMass = 0.0;
-  double SVfE = 0.0;
-  double IPxy = 0.0;
-  double CPA = 0.0;
-  double Chi2PCA = 0.0;
-  double Dispersion = 0.0;
-  double DecayLength2D = 0.0;
-  double DecayLength2DError = 0.0;
-  double DecayLength3D = 0.0;
-  double DecayLength3DError = 0.0;
+  double svpT = 0.0;
+  double deltaRSVJet = 0.0;
+  double svMass = 0.0;
+  double svfE = 0.0;
+  double svIPxy = 0.0;
+  double svCPA = 0.0;
+  double svChi2PCA = 0.0;
+  double dispersion = 0.0;
+  double decayLength2D = 0.0;
+  double decayLength2DError = 0.0;
+  double decayLength3D = 0.0;
+  double decayLength3DError = 0.0;
 };
 
 //________________________________________________________________________
@@ -209,12 +217,12 @@ int jetTrackFromHFShower(T const& jet, U const& /*tracks*/, V const& particles, 
     hasMcParticle = true;
     auto const& particle = track.template mcParticle_as<V>();
     origin = RecoDecay::getParticleOrigin(particles, particle, searchUpToQuark);
-    if (origin == 1 || origin == 2) { // 1=charm , 2=beauty
+    if (origin == RecoDecay::OriginType::Prompt || origin == RecoDecay::OriginType::NonPrompt) { // 1=charm , 2=beauty
       hftrack = track;
-      if (origin == 1) {
+      if (origin == RecoDecay::OriginType::Prompt) {
         return JetTaggingSpecies::charm;
       }
-      if (origin == 2) {
+      if (origin == RecoDecay::OriginType::NonPrompt) {
         return JetTaggingSpecies::beauty;
       }
     }
@@ -242,12 +250,12 @@ int jetParticleFromHFShower(T const& jet, U const& particles, typename U::iterat
   for (const auto& particle : jet.template tracks_as<U>()) {
     hfparticle = particle; // for init if origin is 1 or 2, the particle is not hfparticle
     origin = RecoDecay::getParticleOrigin(particles, particle, searchUpToQuark);
-    if (origin == 1 || origin == 2) { // 1=charm , 2=beauty
+    if (origin == RecoDecay::OriginType::Prompt || origin == RecoDecay::OriginType::NonPrompt) { // 1=charm , 2=beauty
       hfparticle = particle;
-      if (origin == 1) {
+      if (origin == RecoDecay::OriginType::Prompt) {
         return JetTaggingSpecies::charm;
       }
-      if (origin == 2) {
+      if (origin == RecoDecay::OriginType::NonPrompt) {
         return JetTaggingSpecies::beauty;
       }
     }
@@ -348,7 +356,7 @@ int jetOrigin(T const& jet, U const& particles, float dRMax = 0.25)
   typename U::iterator parton1;
   typename U::iterator parton2;
   for (auto const& particle : particles) {
-    if (std::abs(particle.getGenStatusCode() == 23)) {
+    if (std::abs(particle.getGenStatusCode()) == 23) {
       if (!firstPartonFound) {
         parton1 = particle;
         firstPartonFound = true;
@@ -991,11 +999,11 @@ void analyzeJetSVInfo4ML(AnalysisJet const& myJet, AnyTracks const& /*allTracks*
 
 // Looping over the track info and putting them in the input vector
 template <typename AnalysisJet, typename AnyTracks, typename SecondaryVertices>
-void analyzeJetTrackInfo4ML(AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, SecondaryVertices const& /*allSVs*/, std::vector<BJetTrackParams>& tracksParams, float trackPtMin = 0.5)
+void analyzeJetTrackInfo4ML(AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, SecondaryVertices const& /*allSVs*/, std::vector<BJetTrackParams>& tracksParams, float trackPtMin = 0.5, float trackDcaXYMax = 10.0, float trackDcaZMax = 10.0)
 {
   for (const auto& constituent : analysisJet.template tracks_as<AnyTracks>()) {
 
-    if (constituent.pt() < trackPtMin) {
+    if (constituent.pt() < trackPtMin || !trackAcceptanceWithDca(constituent, trackDcaXYMax, trackDcaZMax)) {
       continue;
     }
 
@@ -1011,11 +1019,11 @@ void analyzeJetTrackInfo4ML(AnalysisJet const& analysisJet, AnyTracks const& /*a
       }
     }
 
-    tracksParams.emplace_back(BJetTrackParams{constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), rClosestSV});
+    tracksParams.emplace_back(BJetTrackParams{constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaZ()) * sign, constituent.sigmadcaZ(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), rClosestSV});
   }
 
   auto compare = [](BJetTrackParams& tr1, BJetTrackParams& tr2) {
-    return (tr1.SignedIP2D / tr1.SignedIP2DSign) > (tr2.SignedIP2D / tr2.SignedIP2DSign);
+    return (tr1.signedIP2D / tr1.signedIP2DSign) > (tr2.signedIP2D / tr2.signedIP2DSign);
   };
 
   // Sort the tracks based on their IP significance in descending order
@@ -1024,11 +1032,11 @@ void analyzeJetTrackInfo4ML(AnalysisJet const& analysisJet, AnyTracks const& /*a
 
 // Looping over the track info and putting them in the input vector without using any SV info
 template <typename AnalysisJet, typename AnyTracks>
-void analyzeJetTrackInfo4MLnoSV(AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, std::vector<BJetTrackParams>& tracksParams, float trackPtMin = 0.5)
+void analyzeJetTrackInfo4MLnoSV(AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, std::vector<BJetTrackParams>& tracksParams, float trackPtMin = 0.5, float trackDcaXYMax = 10.0, float trackDcaZMax = 10.0)
 {
   for (const auto& constituent : analysisJet.template tracks_as<AnyTracks>()) {
 
-    if (constituent.pt() < trackPtMin) {
+    if (constituent.pt() < trackPtMin || !trackAcceptanceWithDca(constituent, trackDcaXYMax, trackDcaZMax)) {
       continue;
     }
 
@@ -1036,11 +1044,11 @@ void analyzeJetTrackInfo4MLnoSV(AnalysisJet const& analysisJet, AnyTracks const&
     double dotProduct = RecoDecay::dotProd(std::array<float, 3>{analysisJet.px(), analysisJet.py(), analysisJet.pz()}, std::array<float, 3>{constituent.px(), constituent.py(), constituent.pz()});
     int sign = getGeoSign(analysisJet, constituent);
 
-    tracksParams.emplace_back(BJetTrackParams{constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), 0.0});
+    tracksParams.emplace_back(BJetTrackParams{constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaZ()) * sign, constituent.sigmadcaZ(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), 0.0});
   }
 
   auto compare = [](BJetTrackParams& tr1, BJetTrackParams& tr2) {
-    return (tr1.SignedIP2D / tr1.SignedIP2DSign) > (tr2.SignedIP2D / tr2.SignedIP2DSign);
+    return (tr1.signedIP2D / tr1.signedIP2DSign) > (tr2.signedIP2D / tr2.signedIP2DSign);
   };
 
   // Sort the tracks based on their IP significance in descending order

@@ -23,6 +23,7 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/HistogramRegistry.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -59,6 +60,7 @@ struct FlowPtEfficiency {
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "DCAz cut for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAxyppPass3Enabled, bool, false, "switch of ppPass3 DCAxy pt dependent cut")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAzPtDepEnabled, bool, false, "switch of DCAz pt dependent cut")
+  O2_DEFINE_CONFIGURABLE(cfgEnableITSCuts, bool, true, "switch of enabling ITS based track selection cuts")
   O2_DEFINE_CONFIGURABLE(cfgSelRunNumberEnabled, bool, false, "switch of run number selection")
   O2_DEFINE_CONFIGURABLE(cfgFlowEnabled, bool, false, "switch of calculating flow")
   O2_DEFINE_CONFIGURABLE(cfgFlowNbootstrap, int, 30, "Number of subsamples")
@@ -76,6 +78,7 @@ struct FlowPtEfficiency {
   ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "X axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {100, 0.0f, constants::math::TwoPI}, ""};
   ConfigurableAxis axisB{"axisB", {100, 0.0f, 20.0f}, "b (fm)"};
+  ConfigurableAxis axisNch{"axisNch", {6000, 0, 6000}, "N_{ch}"};
 
   // Filter the tracks
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
@@ -92,6 +95,8 @@ struct FlowPtEfficiency {
   // Filter for MCcollisions
   Filter mccollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
   using MyMcCollisions = soa::Filtered<aod::McCollisions>;
+
+  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 
   // Additional filters for tracks
   TrackSelection myTrackSel;
@@ -141,20 +146,28 @@ struct FlowPtEfficiency {
 
   void init(InitContext const&)
   {
+    const AxisSpec axisVertex{20, -10, 10, "Vtxz (cm)"};
+    const AxisSpec axisEta{20, -1., 1., "#eta"};
     const AxisSpec axisCounter{1, 0, +1, ""};
     // create histograms
     registry.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
     registry.add("hPtMCRec", "Monte Carlo Reco", {HistType::kTH1D, {axisPt}});
-    registry.add("hPtCentMCRec", "Reco production; pT (GeV/c); centrality (%)", {HistType::kTH2D, {axisPt, axisCentrality}});
+    registry.add("hPtNchMCRec", "Reco production; pT (GeV/c); multiplicity", {HistType::kTH2D, {axisPt, axisNch}});
+    registry.add("hBVsPtVsPhiRec", "hBVsPtVsPhiRec", HistType::kTH3D, {axisB, axisPhi, axisPt});
+    registry.add("hEtaPtVzRec", "hEtaPtVz Reconstructed", HistType::kTH3D, {axisEta, axisPt, axisVertex});
 
     registry.add("mcEventCounter", "Monte Carlo Truth EventCounter", kTH1F, {axisCounter});
     registry.add("hPtMCGen", "Monte Carlo Truth", {HistType::kTH1D, {axisPt}});
-    registry.add("hPtCentMCGen", "Truth production; pT (GeV/c); centrality (%)", {HistType::kTH2D, {axisPt, axisCentrality}});
+    registry.add("hPtNchMCGen", "Truth production; pT (GeV/c); multiplicity", {HistType::kTH2D, {axisPt, axisNch}});
+    registry.add("numberOfRecoCollisions", "numberOfRecoCollisions", kTH1F, {{10, -0.5f, 9.5f}});
+    registry.add("hBVsPtVsPhiTrue", "hBVsPtVsPhiTrue", HistType::kTH3D, {axisB, axisPhi, axisPt});
+    registry.add("hEtaPtVzTrue", "hEtaPtVz True", HistType::kTH3D, {axisEta, axisPt, axisVertex});
 
     if (cfgFlowEnabled) {
       registry.add("hImpactParameterReco", "hImpactParameterReco", {HistType::kTH1D, {axisB}});
       registry.add("hImpactParameterTruth", "hImpactParameterTruth", {HistType::kTH1D, {axisB}});
       registry.add("hPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
+      registry.add("hPhiMCTruth", "#phi distribution", {HistType::kTH1D, {axisPhi}});
       registry.add("hPhiWeighted", "corrected #phi distribution", {HistType::kTH1D, {axisPhi}});
 
       o2::framework::AxisSpec axis = axisPt;
@@ -185,7 +198,7 @@ struct FlowPtEfficiency {
       fGFWTrue->AddRegion("refP10", 0.5, 0.8, 1, 1);
       fGFWTrue->AddRegion("poiN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 2);
       fGFWTrue->AddRegion("poifull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 2);
-      fGFWTrue->AddRegion("olN10", -0.8, -0.5, 1, 4);
+      fGFWTrue->AddRegion("olN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 4);
       fGFWTrue->AddRegion("olfull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 4);
       corrconfigsTruth.push_back(fGFWTrue->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
       corrconfigsTruth.push_back(fGFWTrue->GetCorrelatorConfig("poifull full | olfull {2 -2}", "ChFull22", kTRUE));
@@ -198,7 +211,7 @@ struct FlowPtEfficiency {
       fGFWReco->AddRegion("refP10", 0.5, 0.8, 1, 1);
       fGFWReco->AddRegion("poiN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 2);
       fGFWReco->AddRegion("poifull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 2);
-      fGFWReco->AddRegion("olN10", -0.8, -0.5, 1, 4);
+      fGFWReco->AddRegion("olN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 4);
       fGFWReco->AddRegion("olfull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 4);
       corrconfigsReco.push_back(fGFWReco->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
       corrconfigsReco.push_back(fGFWReco->GetCorrelatorConfig("poifull full | olfull {2 -2}", "ChFull22", kTRUE));
@@ -207,10 +220,12 @@ struct FlowPtEfficiency {
       fGFWReco->CreateRegions();
     }
 
-    if (cfgTrkSelRun3ITSMatch) {
-      myTrackSel = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
-    } else {
-      myTrackSel = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
+    if (cfgEnableITSCuts) {
+      if (cfgTrkSelRun3ITSMatch) {
+        myTrackSel = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
+      } else {
+        myTrackSel = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
+      }
     }
     if (cfgCutDCAxyppPass3Enabled) {
       myTrackSel.SetMaxDcaXYPtDep([](float pt) { return 0.004f + 0.013f / pt; });
@@ -218,8 +233,9 @@ struct FlowPtEfficiency {
       myTrackSel.SetMaxDcaXY(cfgCutDCAxy);
     }
     myTrackSel.SetMinNClustersTPC(cfgCutTPCclu);
-    myTrackSel.SetMinNClustersITS(cfgCutITSclu);
     myTrackSel.SetMinNCrossedRowsTPC(cfgCutTPCcrossedrows);
+    if (cfgEnableITSCuts)
+      myTrackSel.SetMinNClustersITS(cfgCutITSclu);
     if (!cfgCutDCAzPtDepEnabled)
       myTrackSel.SetMaxDcaZ(cfgCutDCAz);
   }
@@ -346,10 +362,12 @@ struct FlowPtEfficiency {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
-    if (cfgkIsTrackGlobal && !track.isGlobalTrack())
+    if (cfgkIsTrackGlobal && !track.isGlobalTrack()) {
       return false;
-    if (cfgCutDCAzPtDepEnabled && (track.dcaZ() > (0.004f + 0.013f / track.pt())))
+    }
+    if (cfgCutDCAzPtDepEnabled && (track.dcaZ() > (0.004f + 0.013f / track.pt()))) {
       return false;
+    }
     return myTrackSel.IsSelected(track);
   }
 
@@ -366,9 +384,9 @@ struct FlowPtEfficiency {
       if (!std::count(cfgRunNumberList.value.begin(), cfgRunNumberList.value.end(), runNumber))
         return;
     }
-
-    float imp;
+    float imp = 0;
     bool impFetched = false;
+    float evPhi = 0;
     float centrality = 0.;
     float lRandom = fRndm->Rndm();
     float vtxz = collision.posZ();
@@ -377,8 +395,9 @@ struct FlowPtEfficiency {
     if (cfgFlowEnabled) {
       loadCentVsIPReco(bc.timestamp());
       loadCorrections(bc.timestamp());
-    }
 
+      fGFWReco->Clear();
+    }
     for (const auto& track : tracks) {
       if (!trackSelected(track))
         continue;
@@ -389,13 +408,17 @@ struct FlowPtEfficiency {
           imp = mcCollision.impactParameter();
           registry.fill(HIST("hImpactParameterReco"), imp);
           centrality = mCentVsIPReco->GetBinContent(mCentVsIPReco->GetXaxis()->FindBin(imp));
+          evPhi = RecoDecay::constrainAngle(mcCollision.eventPlaneAngle());
           impFetched = true;
         }
         if (isStable(mcParticle.pdgCode())) {
           registry.fill(HIST("hPtMCRec"), track.pt());
-          registry.fill(HIST("hPtCentMCRec"), track.pt(), centrality);
+          registry.fill(HIST("hPtNchMCRec"), track.pt(), tracks.size());
+          registry.fill(HIST("hEtaPtVzRec"), track.eta(), track.pt(), vtxz);
 
           if (cfgFlowEnabled) {
+            float deltaPhi = RecoDecay::constrainAngle(track.phi() - evPhi);
+            registry.fill(HIST("hBVsPtVsPhiRec"), imp, deltaPhi, track.pt());
             bool withinPtPOI = (cfgFlowCutPtPOIMin < track.pt()) && (track.pt() < cfgFlowCutPtPOIMax); // within POI pT range
             bool withinPtRef = (cfgFlowCutPtRefMin < track.pt()) && (track.pt() < cfgFlowCutPtRefMax); // within RF pT range
             if (withinPtRef)
@@ -425,37 +448,58 @@ struct FlowPtEfficiency {
   }
   PROCESS_SWITCH(FlowPtEfficiency, processReco, "process reconstructed information", true);
 
-  void processSim(MyMcCollisions::iterator const& collision, aod::BCsWithTimestamps const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, MyMcParticles const& mcParticles)
+  void processSim(MyMcCollisions::iterator const& mcCollision, aod::BCsWithTimestamps const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, MyMcParticles const& mcParticles, MyTracks const& tracks)
   {
     if (cfgSelRunNumberEnabled) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = mcCollision.bc_as<aod::BCsWithTimestamps>();
       int runNumber = bc.runNumber();
       if (!std::count(cfgRunNumberList.value.begin(), cfgRunNumberList.value.end(), runNumber))
         return;
     }
 
-    float imp = collision.impactParameter();
+    float imp = mcCollision.impactParameter();
+    float evPhi = RecoDecay::constrainAngle(mcCollision.eventPlaneAngle());
     float centrality = 0.;
     if (cfgFlowEnabled) {
       registry.fill(HIST("hImpactParameterTruth"), imp);
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = mcCollision.bc_as<aod::BCsWithTimestamps>();
       loadCentVsIPTruth(bc.timestamp());
       centrality = mCentVsIPTruth->GetBinContent(mCentVsIPTruth->GetXaxis()->FindBin(imp));
+
+      fGFWTrue->Clear();
     }
     float lRandom = fRndm->Rndm();
     float wacc = 1.0f;
     float weff = 1.0f;
+    float vtxz = mcCollision.posZ();
 
     if (collisions.size() > -1) {
       registry.fill(HIST("mcEventCounter"), 0.5);
+
+      registry.fill(HIST("numberOfRecoCollisions"), collisions.size()); // number of times coll was reco-ed
+
+      std::vector<int> numberOfTracks;
+      for (auto const& collision : collisions) {
+        auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
+        numberOfTracks.emplace_back(groupedTracks.size());
+      }
+
       for (const auto& mcParticle : mcParticles) {
         if (mcParticle.isPhysicalPrimary() && isStable(mcParticle.pdgCode())) {
           registry.fill(HIST("hPtMCGen"), mcParticle.pt());
-          registry.fill(HIST("hPtCentMCGen"), mcParticle.pt(), centrality);
+          if (collisions.size() > 0) {
+            registry.fill(HIST("hPtNchMCGen"), mcParticle.pt(), numberOfTracks[0]);
+          }
+          registry.fill(HIST("hEtaPtVzTrue"), mcParticle.eta(), mcParticle.pt(), vtxz);
 
           if (cfgFlowEnabled) {
+            float deltaPhi = RecoDecay::constrainAngle(mcParticle.phi() - evPhi);
+            registry.fill(HIST("hBVsPtVsPhiTrue"), imp, deltaPhi, mcParticle.pt());
             bool withinPtPOI = (cfgFlowCutPtPOIMin < mcParticle.pt()) && (mcParticle.pt() < cfgFlowCutPtPOIMax); // within POI pT range
             bool withinPtRef = (cfgFlowCutPtRefMin < mcParticle.pt()) && (mcParticle.pt() < cfgFlowCutPtRefMax); // within RF pT range
+            if (withinPtRef) {
+              registry.fill(HIST("hPhiMCTruth"), mcParticle.phi());
+            }
             if (withinPtRef)
               fGFWTrue->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), wacc * weff, 1);
             if (withinPtPOI)

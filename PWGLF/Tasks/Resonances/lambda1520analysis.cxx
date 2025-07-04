@@ -51,11 +51,7 @@ struct Lambda1520analysis {
 
   // Pre-selection Track cuts
   Configurable<float> cMinPtcut{"cMinPtcut", 0.15f, "Minimal pT for tracks"};
-  Configurable<float> cfgRatioTPCRowsOverFindableCls{"cfgRatioTPCRowsOverFindableCls", 0.8f, "minimum ratio of number of Xrows to findable clusters in TPC"};
-  Configurable<float> cMaxChi2ITScut{"cMaxChi2ITScut", 36.0f, "Maximal pT for Chi2/cluster for ITS"};
-  Configurable<float> cMaxChi2TPCcut{"cMaxChi2TPCcut", 4.0f, "Maximal pT for Chi2/cluster for TPC"};
   Configurable<float> cMinTPCNClsFound{"cMinTPCNClsFound", 120, "minimum TPCNClsFound value for good track"};
-  Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
   Configurable<int> cMinTPCncr{"cMinTPCncr", 70, "Minimum number of TPC X rows"};
 
   // DCA Selections
@@ -69,8 +65,6 @@ struct Lambda1520analysis {
   Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
   Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", false, "Global track selection"};                      // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgPVContributor{"cfgPVContributor", false, "PV contributor track selection"};          // PV Contriuibutor
-  Configurable<bool> cfgHasITS{"cfgHasITS", false, "Require ITS"};
-  Configurable<bool> cfgHasTPC{"cfgHasTPC", false, "Require TPC"};
   Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
   Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"};
   Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
@@ -168,7 +162,7 @@ struct Lambda1520analysis {
     AxisSpec pidQAAxis = {binsnSigma, "#sigma"};
     AxisSpec axisTPCSignal = {binsnTPCSignal, ""};
     AxisSpec mcLabelAxis = {5, -0.5, 4.5, "MC Label"};
-    AxisSpec occupancyaxis = {occupancybins, "Occupancy [-40,100]"};
+    // AxisSpec occupancyaxis = {occupancybins, "Occupancy [-40,100]"};
 
     if (additionalQAeventPlots) {
       // Test on Mixed event
@@ -269,7 +263,7 @@ struct Lambda1520analysis {
       }
 
       if (isCalcRotBkg) {
-        histos.add("Result/Data/h3lambda1520InvMassRotation", "Invariant mass of #Lambda(1520) rotation", kTHnSparseF, {axisMult, axisPt, axisMassLambda1520, occupancyaxis});
+        histos.add("Result/Data/h3lambda1520InvMassRotation", "Invariant mass of #Lambda(1520) rotation", kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
       }
 
       // 3d histogram
@@ -359,19 +353,7 @@ struct Lambda1520analysis {
     }
     if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
       return false;
-    if (track.itsNCls() < cfgITScluster)
-      return false;
     if (cTPCNClsFound && (track.tpcNClsFound() < cMinTPCNClsFound))
-      return false;
-    if (track.tpcCrossedRowsOverFindableCls() < cfgRatioTPCRowsOverFindableCls)
-      return false;
-    if (track.itsChi2NCl() > cMaxChi2ITScut)
-      return false;
-    if (track.tpcChi2NCl() > cMaxChi2TPCcut)
-      return false;
-    if (cfgHasITS && !track.hasITS())
-      return false;
-    if (cfgHasTPC && !track.hasTPC())
       return false;
     if (cfgHasTOF && !track.hasTOF())
       return false;
@@ -720,10 +702,10 @@ struct Lambda1520analysis {
 
     // LOG(info) << "Before pass, Collision index:" << collision.index() << "multiplicity: " << collision.cent() << std::endl;
 
-    auto occupancyNo = collision.trackOccupancyInTimeRange();
-    if (applyOccupancyCut && occupancyNo < occupancyCut) {
-      return;
-    }
+    // auto occupancyNo = collision.trackOccupancyInTimeRange();
+    // if (applyOccupancyCut && occupancyNo < occupancyCut) {
+    //   return;
+    // }
 
     // Multiplicity correlation calibration plots
     if (isFilladditionalQA) {
@@ -926,7 +908,7 @@ struct Lambda1520analysis {
               float theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / rotationalcut, o2::constants::math::PI + o2::constants::math::PI / rotationalcut);
               ldaughterRot.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi() + theta2, massKa); // for rotated background
               lresonanceRot = lDecayDaughter1 + ldaughterRot;
-              histos.fill(HIST("Result/Data/h3lambda1520InvMassRotation"), multiplicity, lresonanceRot.Pt(), lresonanceRot.M(), occupancyNo);
+              histos.fill(HIST("Result/Data/h3lambda1520InvMassRotation"), multiplicity, lresonanceRot.Pt(), lresonanceRot.M());
             }
           }
 

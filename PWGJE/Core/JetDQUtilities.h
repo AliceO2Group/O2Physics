@@ -17,31 +17,21 @@
 #ifndef PWGJE_CORE_JETDQUTILITIES_H_
 #define PWGJE_CORE_JETDQUTILITIES_H_
 
-#include <array>
-#include <vector>
-#include <string>
-#include <optional>
+#include "PWGJE/DataModel/Jet.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
 
 #include <TPDGCode.h>
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/O2DatabasePDGPlugin.h"
+#include <Rtypes.h>
 
-#include "Framework/Logger.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/DataModel/Jet.h"
+#include <array>
+#include <cstdint>
+#include <string>
+#include <type_traits>
 
 namespace jetdqutilities
 {
@@ -165,16 +155,16 @@ auto slicedPerDielectronCandidate(T const& table, U const& candidate, V const& p
 }
 
 /**
- * returns a slice of the table depending on the type of the Dielectron candidate and index of the collision
- *
- * @param candidate dielectron candidate that is being checked
+ * returns a slice of the table depending on the index of the Dielectron jet
+ * @param DielectronTable dielectron table type
+ * @param jet jet that the slice is based on
  * @param table the table to be sliced
  */
-template <typename T, typename U, typename V, typename M>
-auto slicedPerDielectronCollision(T const& table, U const& /*candidates*/, V const& collision, M const& DielectronCollisionPerCollision)
+template <typename DielectronTable, typename T, typename U, typename V>
+auto slicedPerDielectronJet(T const& table, U const& jet, V const& perDielectronJet)
 {
-  if constexpr (isDielectronTable<U>() || isDielectronMcTable<U>()) {
-    return table.sliceBy(DielectronCollisionPerCollision, collision.globalIndex());
+  if constexpr (isDielectronTable<DielectronTable>() || isDielectronMcTable<DielectronTable>()) {
+    return table.sliceBy(perDielectronJet, jet.globalIndex());
   } else {
     return table;
   }

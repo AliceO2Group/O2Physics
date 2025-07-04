@@ -31,6 +31,7 @@ namespace redhqevent
 {
 DECLARE_SOA_COLUMN(NumPhi, numPhi, int);       //! Number of negative K
 DECLARE_SOA_COLUMN(NumLambda, numLambda, int); //! Number of lambda
+DECLARE_SOA_COLUMN(Centrality, centrality, float); //!
 } // namespace redhqevent
 DECLARE_SOA_TABLE(RedHQEvents, "AOD", "REDHQEVENT",
                   o2::soa::Index<>,
@@ -39,6 +40,7 @@ DECLARE_SOA_TABLE(RedHQEvents, "AOD", "REDHQEVENT",
                   timestamp::Timestamp,
                   collision::PosZ,
                   collision::NumContrib,
+                  redhqevent::Centrality,
                   redhqevent::NumPhi,
                   redhqevent::NumLambda);
 using RedHQEvent = RedHQEvents::iterator;
@@ -63,6 +65,10 @@ DECLARE_SOA_COLUMN(HQd1Charge, hqd1Charge, float); //! HQ d1 charge
 DECLARE_SOA_COLUMN(HQd2Charge, hqd2Charge, float); //! HQ d1 charge
 DECLARE_SOA_COLUMN(HQd1TPC, hqd1TPC, float);       //! TPC nsigma d1
 DECLARE_SOA_COLUMN(HQd2TPC, hqd2TPC, float);       //! TPC nsigma d2
+DECLARE_SOA_COLUMN(HQd1TOFHit, hqd1TOFHit, int);   //! TOF hit d1
+DECLARE_SOA_COLUMN(HQd2TOFHit, hqd2TOFHit, int);   //! TOF hit d2
+DECLARE_SOA_COLUMN(HQd1TOF, hqd1TOF, float);       //! TOF nsigma d1
+DECLARE_SOA_COLUMN(HQd2TOF, hqd2TOF, float);       //! TOF nsigma d2
 
 } // namespace hqtrack
 DECLARE_SOA_TABLE(HQTracks, "AOD", "HQTRACK",
@@ -84,7 +90,11 @@ DECLARE_SOA_TABLE(HQTracks, "AOD", "HQTRACK",
                   hqtrack::HQd1Charge,
                   hqtrack::HQd2Charge,
                   hqtrack::HQd1TPC,
-                  hqtrack::HQd2TPC);
+                  hqtrack::HQd2TPC,
+                  hqtrack::HQd1TOFHit,
+                  hqtrack::HQd2TOFHit,
+                  hqtrack::HQd1TOF,
+                  hqtrack::HQd2TOF);
 
 using HQTrack = HQTracks::iterator;
 } // namespace o2::aod

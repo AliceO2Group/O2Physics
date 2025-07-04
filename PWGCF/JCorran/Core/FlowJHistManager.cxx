@@ -158,7 +158,7 @@ void FlowJHistManager::createHistQA()
 /// \return Bin for the histograms,...
 int FlowJHistManager::getCentBin(float cValue)
 {
-  const float centClasses[] = {0., 1., 2., 5., 10., 20., 30., 40., 50., 60., 70.};
+  const float centClasses[] = {0., 5., 10., 20., 30., 40., 50., 60., 70., 100.};
 
   for (int i = 0; i < mNcentBins + 1; i++) {
     if (cValue >= centClasses[i]) {

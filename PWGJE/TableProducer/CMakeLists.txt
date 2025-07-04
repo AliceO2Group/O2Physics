@@ -15,7 +15,7 @@ if(FastJet_FOUND)
 
 o2physics_add_dpl_workflow(jet-deriveddata-producer
                     SOURCES derivedDataProducer.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2Physics::EventFilteringUtils O2Physics::AnalysisCCDB
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-deriveddata-trigger-producer
@@ -50,6 +50,11 @@ o2physics_add_dpl_workflow(jet-eventweight-mcd
 
 o2physics_add_dpl_workflow(jet-eventweight-mcp
                     SOURCES jetEventWeightMCP.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(mc-outlier-rejector
+                    SOURCES mcOutlierRejector.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -88,7 +93,7 @@ endif()
 
 o2physics_add_dpl_workflow(emcal-correction-task
                     SOURCES emcalCorrectionTask.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2::EMCALBase O2::EMCALReconstruction
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2::EMCALBase O2::EMCALReconstruction O2::EMCALCalibration
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(emcal-matchedtracks-writer
