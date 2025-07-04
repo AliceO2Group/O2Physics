@@ -93,7 +93,7 @@ struct TrackedCascadeProperties {
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     if (cfgSkimmedProcessing) {
-      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfgTriggerName.value);
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), triggerList);
       zorro.populateHistRegistry(registryData, bc.runNumber());
     }
   }
