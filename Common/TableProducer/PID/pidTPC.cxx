@@ -55,7 +55,7 @@ using namespace o2::framework::expressions;
 using namespace o2::track;
 using namespace o2::ml;
 
-MetadataHelper metadataInfo; // Metadata helper
+o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
