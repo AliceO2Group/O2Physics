@@ -93,7 +93,8 @@ struct ITSResponse {
   template <o2::track::PID::ID id, typename T>
   static float nSigmaITS(const T& track)
   {
-    return nSigmaITS<id>(track.itsClusterSizes(), track.p(), track.eta());
+    unsigned int charge = (id == o2::track::PID::Helium3 || id == o2::track::PID::Alpha) ? 2 : 1;
+    return nSigmaITS<id>(track.itsClusterSizes(), charge * track.p(), track.eta());
   }
 
   static void setParameters(float p0, float p1, float p2,
