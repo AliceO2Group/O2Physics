@@ -90,9 +90,10 @@ struct FemtoCorrelations {
   Configurable<int> _particlePDGtoReject{"particlePDGtoRejectFromSecond", 0, "applied only if the particles are non-identical and only to the second particle in the pair!!!"};
   Configurable<std::vector<float>> _rejectWithinNsigmaTOF{"rejectWithinNsigmaTOF", std::vector<float>{-0.0f, 0.0f}, "TOF rejection Nsigma range for the particle specified with PDG to be rejected"};
 
+  Configurable<int> _dPhiMode{"dPhiMode", 0, "Flag to choose how to calc. dphi*: 0 - at a fixed TPC radius; 1 - average over different TPC radii;"};
+  Configurable<float> _radiusTPC{"radiusTPC", 1.2, "TPC radius to calculate phi_star for"};
   Configurable<float> _deta{"deta", 0.01, "minimum allowed defference in eta between two tracks in a pair"};
   Configurable<float> _dphi{"dphi", 0.01, "minimum allowed defference in phi_star between two tracks in a pair"};
-  // Configurable<float> _radiusTPC{"radiusTPC", 1.2, "TPC radius to calculate phi_star for"};
   Configurable<float> _avgSepTPC{"avgSepTPC", 10, "average sep. (cm) in TPC"};
 
   Configurable<int> _vertexNbinsToMix{"vertexNbinsToMix", 10, "Number of vertexZ bins for the mixing"};
@@ -310,15 +311,15 @@ struct FemtoCorrelations {
           LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins (3D)");
 
         if (_fillDetaDphi % 2 == 0)
-          DoubleTrack_SE_histos_BC[multBin][kTbin]->Fill(Pair->GetAvgPhiStarDiff(), Pair->GetEtaDiff());
+          DoubleTrack_SE_histos_BC[multBin][kTbin]->Fill(_dPhiMode.value == 0 ? Pair->GetPhiStarDiff(_radiusTPC) : Pair->GetAvgPhiStarDiff(), Pair->GetEtaDiff());
 
-        if (_deta > 0 && _dphi > 0 && Pair->IsClosePair(_deta, _dphi))
+        if (_deta > 0 && _dphi > 0 && (_dPhiMode.value == 0 ? Pair->IsClosePair(_deta, _dphi, _radiusTPC) : Pair->IsClosePair(_deta, _dphi)))
           continue;
         if (_avgSepTPC > 0 && Pair->IsClosePair(_avgSepTPC))
           continue;
 
         if (_fillDetaDphi > 0)
-          DoubleTrack_SE_histos_AC[multBin][kTbin]->Fill(Pair->GetAvgPhiStarDiff(), Pair->GetEtaDiff());
+          DoubleTrack_SE_histos_AC[multBin][kTbin]->Fill(_dPhiMode.value == 0 ? Pair->GetPhiStarDiff(_radiusTPC) : Pair->GetAvgPhiStarDiff(), Pair->GetEtaDiff());
 
         kThistos[multBin][kTbin]->Fill(pair_kT);
         mThistos[multBin][kTbin]->Fill(Pair->GetMt());       // test
@@ -359,21 +360,21 @@ struct FemtoCorrelations {
 
         if (_fillDetaDphi % 2 == 0) {
           if (!SE_or_ME)
-            DoubleTrack_SE_histos_BC[multBin][kTbin]->Fill(Pair->GetAvgPhiStarDiff(), Pair->GetEtaDiff());
+            DoubleTrack_SE_histos_BC[multBin][kTbin]->Fill(_dPhiMode.value == 0 ? Pair->GetPhiStarDiff(_radiusTPC) : Pair->GetAvgPhiStarDiff(), Pair->GetEtaDiff());
           else
-            DoubleTrack_ME_histos_BC[multBin][kTbin]->Fill(Pair->GetAvgPhiStarDiff(), Pair->GetEtaDiff());
+            DoubleTrack_ME_histos_BC[multBin][kTbin]->Fill(_dPhiMode.value == 0 ? Pair->GetPhiStarDiff(_radiusTPC) : Pair->GetAvgPhiStarDiff(), Pair->GetEtaDiff());
         }
 
-        if (_deta > 0 && _dphi > 0 && Pair->IsClosePair(_deta, _dphi))
+        if (_deta > 0 && _dphi > 0 && (_dPhiMode.value == 0 ? Pair->IsClosePair(_deta, _dphi, _radiusTPC) : Pair->IsClosePair(_deta, _dphi)))
           continue;
         if (_avgSepTPC > 0 && Pair->IsClosePair(_avgSepTPC))
           continue;
 
         if (_fillDetaDphi > 0) {
           if (!SE_or_ME)
-            DoubleTrack_SE_histos_AC[multBin][kTbin]->Fill(Pair->GetAvgPhiStarDiff(), Pair->GetEtaDiff());
+            DoubleTrack_SE_histos_AC[multBin][kTbin]->Fill(_dPhiMode.value == 0 ? Pair->GetPhiStarDiff(_radiusTPC) : Pair->GetAvgPhiStarDiff(), Pair->GetEtaDiff());
           else
-            DoubleTrack_ME_histos_AC[multBin][kTbin]->Fill(Pair->GetAvgPhiStarDiff(), Pair->GetEtaDiff());
+            DoubleTrack_ME_histos_AC[multBin][kTbin]->Fill(_dPhiMode.value == 0 ? Pair->GetPhiStarDiff(_radiusTPC) : Pair->GetAvgPhiStarDiff(), Pair->GetEtaDiff());
         }
 
         if (!SE_or_ME) {

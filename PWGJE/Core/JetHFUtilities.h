@@ -17,32 +17,18 @@
 #ifndef PWGJE_CORE_JETHFUTILITIES_H_
 #define PWGJE_CORE_JETHFUTILITIES_H_
 
-#include <array>
-#include <vector>
-#include <string>
-#include <optional>
-#include <algorithm>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-
-#include "Framework/Logger.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/DataModel/DerivedTables.h"
-
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <iterator>
+#include <type_traits>
+#include <vector>
 
 namespace jethfutilities
 {
@@ -277,19 +263,19 @@ template <typename T>
 constexpr bool isMatchedHFCandidate(T const& candidate)
 {
   if constexpr (isD0Candidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK) {
+    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
       return true;
     } else {
       return false;
     }
   } else if constexpr (isDplusCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == 1 << o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
+    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
       return true;
     } else {
       return false;
     }
   } else if constexpr (isLcCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == 1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi) {
+    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
       return true;
     } else {
       return false;
@@ -301,19 +287,19 @@ constexpr bool isMatchedHFCandidate(T const& candidate)
       return false;
     }
   } else if constexpr (isD0McCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchGen()) == 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK) {
+    if (std::abs(candidate.flagMcMatchGen()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
       return true;
     } else {
       return false;
     }
   } else if constexpr (isDplusMcCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchGen()) == 1 << o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
+    if (std::abs(candidate.flagMcMatchGen()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
       return true;
     } else {
       return false;
     }
   } else if constexpr (isLcMcCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchGen()) == 1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi) {
+    if (std::abs(candidate.flagMcMatchGen()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
       return true;
     } else {
       return false;

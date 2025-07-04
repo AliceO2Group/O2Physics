@@ -16,17 +16,18 @@
 #ifndef PWGHF_DATAMODEL_DERIVEDTABLES_H_
 #define PWGHF_DATAMODEL_DERIVEDTABLES_H_
 
-#include <vector>
-
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
 
-#include "PWGLF/DataModel/mcCentrality.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include <sys/types.h>
+
+#include <cstdint>
+#include <vector>
 
 namespace o2::aod
 {

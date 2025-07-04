@@ -8,6 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file Multiplicity.h
+/// \brief multiplicity tables
+/// \author ALICE
+
 #ifndef COMMON_DATAMODEL_MULTIPLICITY_H_
 #define COMMON_DATAMODEL_MULTIPLICITY_H_
 
@@ -196,6 +201,12 @@ DECLARE_SOA_INDEX_COLUMN(MultMCExtra, multMCExtra);
 
 DECLARE_SOA_TABLE(Mult2MCExtras, "AOD", "Mult2MCEXTRA", //! Relate reco mult entry to MC extras entry
                   o2::soa::Index<>, mult::MultMCExtraId);
+
+DECLARE_SOA_TABLE(MultHepMCHIs, "AOD", "MULTHEPMCHI", //! complementary table for heavy-ion mc info (subset of HepMCHeavyIons)
+                  o2::soa::Index<>, mult::MultMCExtraId, hepmcheavyion::NcollHard, hepmcheavyion::NpartProj, hepmcheavyion::NpartTarg,
+                  hepmcheavyion::Ncoll, hepmcheavyion::ImpactParameter);
+
+using MultHepMCHI = MultHepMCHIs::iterator;
 
 namespace multZeq
 {

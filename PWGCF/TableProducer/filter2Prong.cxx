@@ -11,25 +11,24 @@
 
 /// \author Jasper Parkkila <jasper.parkkila@cern.ch>
 
-#include <experimental/type_traits>
-#include <vector>
-#include <string>
-#include <memory>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-
-#include "MathUtils/detail/TypeTruncation.h"
-
 #include "PWGCF/DataModel/CorrelationsDerived.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "MathUtils/detail/TypeTruncation.h"
+
 #include <TFormula.h>
+
+#include <experimental/type_traits>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -143,13 +142,14 @@ struct Filter2Prong {
   }
   PROCESS_SWITCH(Filter2Prong, processData, "Process data D0 candidates", true);
 
-  void processMC(aod::McCollisions::iterator const&, aod::CFMcParticleRefs const& cfmcparticles, aod::McParticles const& mcparticles)
+  using HFMCTrack = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
+  void processMC(aod::McCollisions::iterator const&, aod::CFMcParticleRefs const& cfmcparticles, [[maybe_unused]] HFMCTrack const& mcparticles)
   {
     // The main filter outputs the primary MC particles. Here we just resolve the daughter indices that are needed for the efficiency matching.
     for (const auto& r : cfmcparticles) {
-      const auto& mcParticle = mcparticles.iteratorAt(r.mcParticleId());
-      if (mcParticle.daughtersIds().size() != 2) {
-        output2ProngMcParts(-1, -1);
+      const auto& mcParticle = r.mcParticle_as<HFMCTrack>();
+      if ((std::abs(mcParticle.flagMcMatchGen()) != o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) || mcParticle.daughtersIds().size() != 2) {
+        output2ProngMcParts(-1, -1, aod::cf2prongtrack::Generic2Prong);
         continue;
       }
       int prongCFId[2] = {-1, -1};
@@ -161,7 +161,8 @@ struct Filter2Prong {
           }
         }
       }
-      output2ProngMcParts(prongCFId[0], prongCFId[1]);
+      output2ProngMcParts(prongCFId[0], prongCFId[1],
+                          (mcParticle.pdgCode() >= 0 ? aod::cf2prongtrack::D0ToPiK : aod::cf2prongtrack::D0barToKPi) | ((mcParticle.originMcGen() & RecoDecay::OriginType::Prompt) ? aod::cf2prongmcpart::Prompt : 0));
     }
   }
   PROCESS_SWITCH(Filter2Prong, processMC, "Process MC 2-prong daughters", false);

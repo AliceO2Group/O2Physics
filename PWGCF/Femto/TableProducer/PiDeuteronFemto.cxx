@@ -15,30 +15,9 @@
 /// \author CMY
 /// \date 2025-04-10
 
-#include <TH1F.h>
-#include <TDirectory.h>
-#include <THn.h>
-#include <TLorentzVector.h>
-#include <TMath.h>
-#include <TObjArray.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TLorentzVector.h>
-
-#include <cmath>
-#include <string>
-#include <algorithm>
-#include <vector>
-#include <array>
-#include <cstdlib>
-#include <iterator> // std::prev
-
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
+#include "PWGCF/Femto/DataModel/PionDeuteronTables.h"
+#include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "PWGLF/Utils/svPoolCreator.h"
 
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
@@ -52,21 +31,40 @@
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
-
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
 
 #include "CCDB/BasicCCDBManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 
-#include "PWGLF/DataModel/EPCalibrationTables.h"
-#include "PWGCF/Femto/DataModel/PionDeuteronTables.h"
-#include "PWGLF/Utils/svPoolCreator.h"
+#include "Math/Boost.h"
+#include "Math/Vector4D.h"
+#include <TDirectory.h>
+#include <TFile.h>
+#include <TH1F.h>
+#include <TH2F.h>
+#include <THn.h>
+#include <TMath.h>
+#include <TObjArray.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <iterator> // std::prev
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -152,8 +150,6 @@ struct PiDeuteronFemto {
   Configurable<float> settingCutVertex{"settingCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> settingCutPinMinDe{"settingCutPinMinDe", 0.0f, "Minimum Pin for De"};
   Configurable<float> settingCutEta{"settingCutEta", 0.8f, "Eta cut on daughter track"};
-  Configurable<float> settingCutDCAxy{"settingCutDCAxy", 2.0f, "DCAxy range for tracks"};
-  Configurable<float> settingCutDCAz{"settingCutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<float> settingCutChi2tpcLow{"settingCutChi2tpcLow", 0.0f, "Low cut on TPC chi2"};
   Configurable<float> settingCutChi2tpcHigh{"settingCutChi2tpcHigh", 999.f, "High cut on TPC chi2"};
   Configurable<float> settingCutInvMass{"settingCutInvMass", 0.0f, "Invariant mass upper limit"};
@@ -170,6 +166,18 @@ struct PiDeuteronFemto {
   Configurable<float> settingCutNsigmaTOFTPCPi{"settingCutNsigmaTOFTPCPi", 3.0f, "Value of the Pion TOF TPC Nsigma cut"};
   Configurable<int> settingNoMixedEvents{"settingNoMixedEvents", 5, "Number of mixed events per event"};
   Configurable<bool> settingEnableBkgUS{"settingEnableBkgUS", false, "Enable US background"};
+
+  Configurable<bool> settingFillTable{"settingFillTable", false, "Enable table filling"};
+  Configurable<float> settingCutPiptMin{"settingCutPiptMin", 0.14f, "Minimum PT cut on Pi"};
+  Configurable<float> settingCutPiptMax{"settingCutPiptMax", 4.0f, "Maximum PT cut on Pi"};
+  Configurable<float> settingCutDeptMin{"settingCutDeptMin", 0.6f, "Minimum PT cut on De"};
+  Configurable<float> settingCutDeptMax{"settingCutDeptMax", 1.6f, "Maximum PT cut on De"};
+  Configurable<float> settingCutPiDCAxyMin{"settingCutPiDCAxyMin", 0.3f, "DCAxy Min for Pi"};
+  Configurable<float> settingCutPiDCAzMin{"settingCutPiDCAzMin", 0.3f, "DCAz Min for Pi"};
+  Configurable<float> settingCutDeDCAzMin{"settingCutDeDCAzMin", 0.2f, "DCAxy Min for De"};
+  Configurable<float> settingCutNsigTPCPrMin{"settingCutNsigTPCPrMin", 3.0f, "Minimum TPC Pr Nsigma cut on Pi"};
+  Configurable<float> settingCutNsigTOFPrMin{"settingCutNsigTOFPrMin", 3.0f, "Minimum TOF Pr Nsigma cut on Pi"};
+
   Configurable<bool> settingSaveUSandLS{"settingSaveUSandLS", true, "Save All Pairs"};
   Configurable<bool> settingFillMultiplicity{"settingFillMultiplicity", false, "Fill multiplicity table"};
 
@@ -214,30 +222,38 @@ struct PiDeuteronFemto {
 
   HistogramRegistry mQaRegistry{
     "QA",
-    {
-      {"hVtxZ", "Vertex distribution in Z;Z (cm)", {HistType::kTH1F, {{400, -20.0, 20.0}}}},
-      {"hNcontributor", "Number of primary vertex contributor", {HistType::kTH1F, {{2000, 0.0f, 2000.0f}}}},
-      {"hTrackSel", "Accepted tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
-      {"hEvents", "; Events;", {HistType::kTH1F, {{3, -0.5, 2.5}}}},
-      {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
-      {"hdcaxyDe", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
-      {"hdcazDe", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
-      {"hNClsDeITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
-      {"hNClsPiITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
-      {"hDePitInvMass", "; M(De + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
-      {"hDePt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
-      {"hPiPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
-      {"h2dEdxDecandidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
-      {"h2NsigmaDeTPC", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-      {"h2NsigmaDeTPC_preselection", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-      {"h2NsigmaDeTPC_preselecComp", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-      {"h2NSigmaDeITS_preselection", "NsigmaDe ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} De", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
-      {"h2NSigmaDeITS", "NsigmaDe ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} De", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
-      {"h2NsigmaPiTPC", "NsigmaPi TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-      {"h2NsigmaPiTPC_preselection", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-      {"h2NsigmaPiTOF", "NsigmaPi TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-      {"h2NsigmaPiTOF_preselection", "NsigmaPi TOF distribution; #iit{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-    },
+    {{"hVtxZ", "Vertex distribution in Z;Z (cm)", {HistType::kTH1F, {{400, -20.0, 20.0}}}},
+     {"hNcontributor", "Number of primary vertex contributor", {HistType::kTH1F, {{2000, 0.0f, 2000.0f}}}},
+     {"hTrackSel", "Accepted tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
+     {"hEvents", "; Events;", {HistType::kTH1F, {{3, -0.5, 2.5}}}},
+     {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
+     {"hdcaxyDe", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+     {"hdcazDe", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+     {"hNClsDeITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
+     {"hNClsPiITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
+     {"hDePitInvMass", "; M(De + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
+     {"hDePt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
+     {"hPiPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
+     {"hDeEta", "eta distribution; #eta(De)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+     {"hPiEta", "eta distribution; #eta(#pi)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+     {"hDePhi", "phi distribution; phi(De)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
+     {"hPiPhi", "phi distribution; phi(#pi)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
+     {"h2dEdxDecandidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
+     {"h2NsigmaDeTPC", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+     {"h2NsigmaDeTPC_preselection", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+     {"h2NsigmaDeTPC_preselecComp", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+     {"h2NSigmaDeITS_preselection", "NsigmaDe ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} De", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
+     {"h2NSigmaDeITS", "NsigmaDe ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} De", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
+     {"h2NsigmaPiTPC", "NsigmaPi TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+     {"h2NsigmaPiTPC_preselection", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+     {"h2NsigmaPiTOF", "NsigmaPi TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+     {"h2NsigmaPiTOF_preselection", "NsigmaPi TOF distribution; #iit{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+     {"hkStar_LS_M", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+     {"hkStar_LS_A", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+     {"hkStar_US_M", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+     {"hkStar_US_A", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+     {"hkStar_All", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+     {"hisBkgEM", "; isBkgEM;", {HistType::kTH1F, {{3, -1, 2}}}}},
     OutputObjHandlingPolicy::AnalysisObject,
     false,
     true};
@@ -678,11 +694,97 @@ struct PiDeuteronFemto {
   {
     mQaRegistry.fill(HIST("hDePt"), piDecand.recoPtDe());
     mQaRegistry.fill(HIST("hPiPt"), piDecand.recoPtPi());
+    mQaRegistry.fill(HIST("hDeEta"), piDecand.recoEtaDe());
+    mQaRegistry.fill(HIST("hPiEta"), piDecand.recoEtaPi());
+    mQaRegistry.fill(HIST("hDePhi"), piDecand.recoPhiDe());
+    mQaRegistry.fill(HIST("hPiPhi"), piDecand.recoPhiPi());
     mQaRegistry.fill(HIST("hDePitInvMass"), piDecand.invMass);
     mQaRegistry.fill(HIST("hdcaxyDe"), piDecand.dcaxyDe);
     mQaRegistry.fill(HIST("hdcazDe"), piDecand.dcazDe);
     mQaRegistry.fill(HIST("hNClsDeITS"), piDecand.nClsItsDe);
     mQaRegistry.fill(HIST("hNClsPiITS"), piDecand.nClsItsPi);
+    mQaRegistry.fill(HIST("hisBkgEM"), piDecand.isBkgEM);
+  }
+
+  double computePrTPCnsig(double InnerParamTPCHad, double SignalTPCHad)
+  {
+    double m_BBparamsProton[6] = {-54.42066571222577, 0.2857381250239097, 1.247140602468868, 0.6297483918147729, 2.985438833884555, 0.09};
+
+    float TPCinnerParam = InnerParamTPCHad;
+    float expTPCSignal = o2::tpc::BetheBlochAleph((TPCinnerParam / 0.9382721), m_BBparamsProton[0], m_BBparamsProton[1], m_BBparamsProton[2], m_BBparamsProton[3], m_BBparamsProton[4]);
+    double resoTPC{expTPCSignal * m_BBparamsProton[5]};
+    return ((SignalTPCHad - expTPCSignal) / resoTPC);
+  }
+
+  double tofNSigmaCalculation(double MassTOFHad, double ptHad)
+  {
+    double fExpTOFMassHad = 0.9487; // Proton mass in TOF
+    const float kp0 = 1.22204e-02;
+    const float kp1 = 7.48467e-01;
+
+    double fSigmaTOFMassHad = (kp0 * TMath::Exp(kp1 * TMath::Abs(ptHad))) * fExpTOFMassHad;
+    double fNSigmaTOFHad = (MassTOFHad - fExpTOFMassHad) / fSigmaTOFMassHad;
+    return fNSigmaTOFHad;
+  }
+
+  double computeKstar(const PiDecandidate& piDecand)
+  {
+    constexpr double massDe = o2::constants::physics::MassDeuteron;
+    constexpr double massHad = o2::constants::physics::MassPiPlus;
+
+    const ROOT::Math::PtEtaPhiMVector De(std::abs(piDecand.recoPtDe()), piDecand.recoEtaDe(), piDecand.recoPhiDe(), massDe);
+    const ROOT::Math::PtEtaPhiMVector Had(std::abs(piDecand.recoPtPi()), piDecand.recoEtaPi(), piDecand.recoPhiPi(), massHad);
+    const ROOT::Math::PtEtaPhiMVector trackSum = De + Had;
+
+    const float beta = trackSum.Beta();
+    const float betax = beta * std::cos(trackSum.Phi()) * std::sin(trackSum.Theta());
+    const float betay = beta * std::sin(trackSum.Phi()) * std::sin(trackSum.Theta());
+    const float betaz = beta * std::cos(trackSum.Theta());
+
+    ROOT::Math::PxPyPzMVector DeCMS(De);
+    ROOT::Math::PxPyPzMVector HadCMS(Had);
+
+    const ROOT::Math::Boost boostPRF = ROOT::Math::Boost(-betax, -betay, -betaz);
+    DeCMS = boostPRF(DeCMS);
+    HadCMS = boostPRF(HadCMS);
+
+    const ROOT::Math::PxPyPzMVector RelKstar = DeCMS - HadCMS;
+    return 0.5 * RelKstar.P();
+  }
+
+  void fillKstar(const PiDecandidate& piDecand)
+  {
+    double PrTPCnsigma = computePrTPCnsig(piDecand.momPiTPC, piDecand.tpcSignalPi);
+    double PrTOFnsigma = tofNSigmaCalculation(piDecand.massTOFPi, piDecand.recoPtPi());
+    if (abs(PrTPCnsigma) < settingCutNsigTPCPrMin)
+      return;
+    if (abs(PrTOFnsigma) < settingCutNsigTOFPrMin)
+      return;
+    float DeDCAxyMin = 0.015 + 0.0305 / TMath::Power(piDecand.recoPtDe(), 1.1);
+    if (abs(piDecand.dcaxyDe) > DeDCAxyMin || abs(piDecand.dcazDe) > settingCutDeDCAzMin || abs(piDecand.dcaxyPi) > settingCutPiDCAxyMin || abs(piDecand.dcazPi) > settingCutPiDCAzMin)
+      return;
+    if (std::abs(piDecand.recoPtPi()) < settingCutPiptMin || std::abs(piDecand.recoPtPi()) > settingCutPiptMax)
+      return;
+    if (std::abs(piDecand.recoPtDe()) < settingCutDeptMin || std::abs(piDecand.recoPtDe()) > settingCutDeptMax)
+      return;
+
+    fillHistograms(piDecand);
+
+    double kstar = computeKstar(piDecand);
+    if (piDecand.isBkgUS == 0) {
+      if (piDecand.recoPtDe() > 0) {
+        mQaRegistry.fill(HIST("hkStar_LS_M"), kstar);
+      } else {
+        mQaRegistry.fill(HIST("hkStar_LS_A"), kstar);
+      }
+    } else {
+      if (piDecand.recoPtDe() > 0) {
+        mQaRegistry.fill(HIST("hkStar_US_M"), kstar);
+      } else {
+        mQaRegistry.fill(HIST("hkStar_US_A"), kstar);
+      }
+    }
+    mQaRegistry.fill(HIST("hkStar_All"), kstar);
   }
 
   // ==================================================================================================================
@@ -700,9 +802,14 @@ struct PiDeuteronFemto {
       if (!fillCandidateInfo(deTrack, piTrack, collBracket, collisions, piDecand, tracks, isMixedEvent)) {
         continue;
       }
-      fillHistograms(piDecand);
+
+      fillKstar(piDecand);
+
       auto collision = collisions.rawIteratorAt(piDecand.collisionID);
-      fillTable(piDecand, collision);
+
+      if (settingFillTable) {
+        fillTable(piDecand, collision);
+      }
     }
   }
 

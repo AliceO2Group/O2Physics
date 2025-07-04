@@ -12,31 +12,49 @@
 /// \file taskElectronWeakBoson.cxx
 /// \brief task for WeakBoson (W/Z) based on electron in mid-rapidity
 /// \author S. Sakai & S. Ito (Univ. of Tsukuba)
-#include <vector>
-#include <string>
 
-#include "CCDB/BasicCCDBManager.h"
+#ifndef HomogeneousField
+#define HomogeneousField // o2-linter: disable=name/macro (required by KFParticle)
+#endif
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-
-#include "EMCALBase/Geometry.h"
-#include "EMCALCalib/BadChannelMap.h"
-
-#include "DataFormatsEMCAL/Cell.h"
-#include "DataFormatsEMCAL/Constants.h"
-#include "DataFormatsEMCAL/AnalysisCluster.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
-
 #include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
+#include "Tools/KFparticle/KFUtilities.h"
 
-#include "PWGJE/DataModel/EMCALClusters.h"
-#include "PWGHF/Core/HfHelper.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TPDGCode.h>
+
+#include <KFPTrack.h>
+#include <KFParticle.h>
+
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -52,8 +70,9 @@ struct HfTaskElectronWeakBoson {
 
   Configurable<float> vtxZ{"vtxZ", 10.f, ""};
 
-  Configurable<float> etaTrLow{"etaTrLow", -0.6f, "minimun track eta"};
-  Configurable<float> etaTrUp{"etaTrUp", 0.6f, "maximum track eta"};
+  Configurable<float> etaTrMim{"etaTrMim", -1.0f, "minimun track eta"};
+  Configurable<float> etaTrMax{"etaTrMax", 1.0f, "maximum track eta"};
+  Configurable<float> etaEmcMax{"etaEmcMax", 0.6f, "maximum track eta"};
   Configurable<float> dcaxyMax{"dcaxyMax", 2.0f, "mximum DCA xy"};
   Configurable<float> chi2ItsMax{"chi2ItsMax", 15.0f, "its chi2 cut"};
   Configurable<float> ptMin{"ptMin", 3.0f, "minimum pT cut"};
@@ -81,12 +100,23 @@ struct HfTaskElectronWeakBoson {
   Configurable<float> energyIsolationMax{"energyIsolationMax", 0.1, "isolation cut on energy"};
   Configurable<int> trackIsolationMax{"trackIsolationMax", 3, "Maximum number of tracks in isolation cone"};
 
+  // flag for THn
+  Configurable<bool> isTHnElectron{"isTHnElectron", true, "Enables THn for electrons"};
+  Configurable<float> ptTHnThresh{"ptTHnThresh", 5.0, "Threshold for THn make"};
+
   // Skimmed dataset processing configurations
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", true, "Enables processing of skimmed datasets"};
   Configurable<std::string> cfgTriggerName{"cfgTriggerName", "fGammaHighPtEMCAL", "Trigger of interest (comma separated for multiple)"};
 
-  // CCDB service object
+  // CCDB service configurations
   Configurable<std::string> cfgCCDBPath{"cfgCCDBPath", "Users/m/mpuccio/EventFiltering/OTS/", "Path to CCDB for trigger data"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+
+  // KFParticle
+  Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "KF Construct Method"};
+  Configurable<int> kfChisqMassMax{"kfChisqMassMax", 10, "Chi2 Max for mass reco by KF particle"};
+
+  // CCDB service object
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   struct HfElectronCandidate {
@@ -99,10 +129,12 @@ struct HfTaskElectronWeakBoson {
   };
   std::vector<HfElectronCandidate> selectedElectronsIso;
   std::vector<HfElectronCandidate> selectedElectronsAss;
+  std::vector<HfElectronCandidate> reconstructedZ;
 
   using SelectedClusters = o2::aod::EMCALClusters;
   // PbPb
-  using TrackEle = o2::soa::Join<o2::aod::Tracks, o2::aod::FullTracks, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCFullEl>;
+  // using TrackEle = o2::soa::Join<o2::aod::Tracks, o2::aod::FullTracks, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCFullEl>;
+  using TrackEle = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::FullTracks, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCFullEl>;
 
   // pp
   // using TrackEle = o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::FullTracks, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCEl, o2::aod::pidTOFEl>>;
@@ -111,7 +143,7 @@ struct HfTaskElectronWeakBoson {
   Filter eventFilter = (o2::aod::evsel::sel8 == true);
   Filter posZFilter = (nabs(o2::aod::collision::posZ) < vtxZ);
 
-  Filter etafilter = (aod::track::eta < etaTrUp) && (aod::track::eta > etaTrLow);
+  Filter etafilter = (aod::track::eta < etaTrMax) && (aod::track::eta > etaTrMim);
   Filter dcaxyfilter = (nabs(aod::track::dcaXY) < dcaxyMax);
   Filter filterGlobalTr = requireGlobalTrackInFilter();
 
@@ -143,27 +175,31 @@ struct HfTaskElectronWeakBoson {
       zorroSummary.setObject(zorro.getZorroSummary());
     }
 
+    // add configurable for CCDB path
+    zorro.setBaseCCDBPath(cfgCCDBPath.value);
+
     // define axes you want to use
-    const AxisSpec axisZvtx{400, -20, 20, "Zvtx"};
+    const AxisSpec axisZvtx{40, -20, 20, "Zvtx"};
     const AxisSpec axisCounter{1, 0, 1, "events"};
-    const AxisSpec axisEta{200, -1.0, 1.0, "#eta"};
+    const AxisSpec axisEta{20, -1.0, 1.0, "#eta"};
     const AxisSpec axisPt{nBinsPt, 0, binPtmax, "p_{T}"};
     const AxisSpec axisNsigma{100, -5, 5, "N#sigma"};
     const AxisSpec axisE{nBinsE, 0, binEmax, "Energy"};
     const AxisSpec axisM02{100, 0, 1, "M02"};
-    const AxisSpec axisdPhi{200, -1, 1, "dPhi"};
-    const AxisSpec axisdEta{200, -1, 1, "dEta"};
+    const AxisSpec axisdPhi{100, -0.5, 0.5, "dPhi"};
+    const AxisSpec axisdEta{100, -0.5, 0.5, "dEta"};
+    const AxisSpec axisdR{20, 0.0, 0.2, "dR"};
+    const AxisSpec axisNcell{50, 0.0, 50.0, "Ncell"};
     const AxisSpec axisPhi{350, 0, 7, "Phi"};
     const AxisSpec axisEop{200, 0, 2, "Eop"};
-    const AxisSpec axisChi2{500, 0.0, 50.0, "#chi^{2}"};
+    const AxisSpec axisChi2{250, 0.0, 25.0, "#chi^{2}"};
     const AxisSpec axisCluster{100, 0.0, 200.0, "counts"};
-    const AxisSpec axisITSNCls{20, 0.0, 20, "counts"};
-    const AxisSpec axisEMCtime{200, -100.0, 100, "EMC time"};
-    const AxisSpec axisIsoEnergy{100, 0, 1, "Isolation energy(GeV/C)"};
-    const AxisSpec axisIsoTrack{20, -0.5, 19.5, "Isolation Track"};
-    const AxisSpec axisInvMassZ{200, 0, 200, "M_{ee} (GeV/c^{2})"};
-    const AxisSpec axisInvMassDy{200, 0, 2, "M_{ee} (GeV/c^{2})"};
-    const AxisSpec axisTrigger{3, 0, 2, "Trigger status of zorro"};
+    const AxisSpec axisITSNCls{10, 0.0, 10, "counts"};
+    const AxisSpec axisEMCtime{100, -50.0, 50, "EMC time"};
+    const AxisSpec axisIsoEnergy{100, 0, 1.0, "Isolation energy(GeV/C)"};
+    const AxisSpec axisIsoTrack{15, -0.5, 14.5, "Isolation Track"};
+    const AxisSpec axisInvMassZ{150, 0, 150, "M_{ee} (GeV/c^{2})"};
+    const AxisSpec axisTrigger{3, -0.5, 2.5, "Trigger status of zorro"};
 
     // create registrygrams
     registry.add("hZvtx", "Z vertex", kTH1F, {axisZvtx});
@@ -178,9 +214,8 @@ struct HfTaskElectronWeakBoson {
     registry.add("hPt", "track pt", kTH1F, {axisPt});
     registry.add("hTPCNsigma", "TPC electron Nsigma", kTH2F, {{axisPt}, {axisNsigma}});
     registry.add("hEnergy", "EMC cluster energy", kTH1F, {axisE});
-    registry.add("hM02", "EMC M02", kTH2F, {{axisNsigma}, {axisM02}});
-    registry.add("hM20", "EMC M20", kTH2F, {{axisNsigma}, {axisM02}});
-    registry.add("hTrMatch", "Track EMC Match", kTH2F, {{axisdPhi}, {axisdEta}});
+    registry.add("hEnergyNcell", "EMC cluster energy and cell", kTH2F, {{axisE}, {axisNcell}});
+    registry.add("hTrMatchR", "Track EMC Match in radius", kTH2F, {{axisPt}, {axisdR}});
     registry.add("hTrMatch_mim", "Track EMC Match minimu minimumm", kTH2F, {{axisdPhi}, {axisdEta}});
     registry.add("hMatchPhi", "Match in Phi", kTH2F, {{axisPhi}, {axisPhi}});
     registry.add("hMatchEta", "Match in Eta", kTH2F, {{axisEta}, {axisEta}});
@@ -193,18 +228,22 @@ struct HfTaskElectronWeakBoson {
     registry.add("hIsolationTrack", "Isolation Track", kTH2F, {{axisE}, {axisIsoTrack}});
     registry.add("hInvMassZeeLs", "invariant mass for Z LS pair", kTH2F, {{axisPt}, {axisInvMassZ}});
     registry.add("hInvMassZeeUls", "invariant mass for Z ULS pair", kTH2F, {{axisPt}, {axisInvMassZ}});
+    registry.add("hKfInvMassZeeLs", "invariant mass for Z LS pair KFp", kTH2F, {{axisPt}, {axisInvMassZ}});
+    registry.add("hKfInvMassZeeUls", "invariant mass for Z ULS pair KFp", kTH2F, {{axisPt}, {axisInvMassZ}});
+    registry.add("hTHnElectrons", "electron info", HistType::kTHnSparseF, {axisPt, axisNsigma, axisM02, axisEop, axisIsoEnergy, axisIsoTrack});
+    registry.add("hTHnTrMatch", "Track EMC Match", HistType::kTHnSparseF, {axisPt, axisdPhi, axisdEta});
 
     // hisotgram for EMCal trigger
     registry.add("hEMCalTrigger", "EMCal trigger", kTH1F, {axisTrigger});
   }
 
-  bool isIsolatedCluster(const o2::aod::EMCALCluster& cluster,
-                         const SelectedClusters& clusters)
+  double getIsolatedCluster(const o2::aod::EMCALCluster& cluster,
+                            const SelectedClusters& clusters)
   {
-    float energySum = 0.0;
-    float isoEnergy = 10.0;
-    float etaAssCluster = cluster.eta();
-    float phiAssCluster = cluster.phi();
+    double energySum = 0.0;
+    double isoEnergy = 10.0;
+    double etaAssCluster = cluster.eta();
+    double phiAssCluster = cluster.phi();
 
     for (const auto& associateCluster : clusters) {
       // Calculate angular distances
@@ -229,9 +268,9 @@ struct HfTaskElectronWeakBoson {
 
     registry.fill(HIST("hIsolationEnergy"), cluster.energy(), isoEnergy);
 
-    return (isoEnergy < energyIsolationMax);
+    return (isoEnergy);
   }
-  bool isIsolatedTrack(double etaEle,
+  int getIsolatedTrack(double etaEle,
                        double phiEle,
                        float ptEle,
                        TrackEle const& tracks)
@@ -239,9 +278,6 @@ struct HfTaskElectronWeakBoson {
     int trackCount = 0;
 
     for (const auto& track : tracks) {
-      // skip the reference track
-      if (std::abs(track.pt() - ptEle) < 1e-4)
-        continue;
 
       double dEta = track.eta() - etaEle;
       double dPhi = track.phi() - phiEle;
@@ -256,7 +292,57 @@ struct HfTaskElectronWeakBoson {
 
     registry.fill(HIST("hIsolationTrack"), ptEle, trackCount);
 
-    return (trackCount <= trackIsolationMax);
+    return (trackCount);
+  }
+
+  void recoMassZee(KFParticle kfpIsoEle,
+                   int charge,
+                   TrackEle const& tracks)
+  {
+    // LOG(info) << "Invarimass cal by KF particle ";
+    for (const auto& track : tracks) {
+
+      if (track.pt() < ptZeeMin)
+        continue;
+      if (std::abs(track.tpcNSigmaEl()) > nsigTpcMax)
+        continue;
+      if (std::abs(track.eta()) > etaTrMax)
+        continue;
+
+      int pdgAss = kElectron;
+      if (track.sign() > 0) {
+        pdgAss = kPositron;
+      }
+
+      KFPTrack kfpTrackAssEle = createKFPTrackFromTrack(track);
+      KFParticle kfpAssEle(kfpTrackAssEle, pdgAss);
+      const KFParticle* electronPairs[2] = {&kfpIsoEle, &kfpAssEle};
+      KFParticle zeeKF;
+      zeeKF.SetConstructMethod(kfConstructMethod);
+      zeeKF.Construct(electronPairs, 2);
+      // LOG(info) << "Invarimass cal by KF particle Chi2/NDF = " << zeeKF.GetChi2()/zeeKF.GetNDF();
+      float massZeeChi2 = zeeKF.GetChi2() / zeeKF.GetNDF();
+      if (zeeKF.GetNDF() < 1)
+        continue;
+      if (std::abs(massZeeChi2) > kfChisqMassMax)
+        continue;
+      float massZee, massZeeErr;
+      zeeKF.GetMass(massZee, massZeeErr);
+      // LOG(info) << "Invarimass cal by KF particle mass = " << massZee;
+
+      if (track.sign() * charge > 0) {
+        registry.fill(HIST("hKfInvMassZeeLs"), kfpIsoEle.GetPt(), massZee);
+      } else {
+        registry.fill(HIST("hKfInvMassZeeUls"), kfpIsoEle.GetPt(), massZee);
+      }
+
+      reconstructedZ.emplace_back(
+        zeeKF.GetPt(),
+        zeeKF.GetEta(),
+        zeeKF.GetPhi(),
+        massZee,
+        track.sign() * charge);
+    }
   }
 
   void process(soa::Filtered<aod::Collisions>::iterator const& collision,
@@ -280,9 +366,6 @@ struct HfTaskElectronWeakBoson {
       LOGF(info, "Initializing Zorro for run %d", runNumber);
       uint64_t currentTimestamp = bc.timestamp();
 
-      // add configurable for CCDB path
-      zorro.setBaseCCDBPath(cfgCCDBPath.value);
-
       // debug for timestamp
       LOGF(info, "Using CCDB path: %s, timestamp: %llu", cfgCCDBPath.value.c_str(), currentTimestamp);
 
@@ -290,6 +373,14 @@ struct HfTaskElectronWeakBoson {
       zorro.initCCDB(ccdb.service, runNumber, currentTimestamp, cfgTriggerName);
       isFirstEvent = false;
       lastRunNumber = runNumber;
+
+      // initialize magnetic field
+      o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, currentTimestamp);
+      o2::base::Propagator::initFieldFromGRP(grpo);
+      double magneticField = o2::base::Propagator::Instance()->getNominalBz();
+      LOG(info) << "magneticField = " << magneticField;
+      if (magneticField)
+        KFParticle::SetField(magneticField);
     }
 
     // Check if this is a triggered event using Zorro
@@ -299,14 +390,14 @@ struct HfTaskElectronWeakBoson {
       registry.fill(HIST("hEMCalTrigger"), isTriggered ? 1 : 0);
 
       // Skip event if not triggered and we're processing skimmed data
-      if (!isTriggered && cfgSkimmedProcessing) {
+      if (!isTriggered) {
         return;
       }
     }
-
     // initialze for inclusive-electron
     selectedElectronsIso.clear();
     selectedElectronsAss.clear();
+    reconstructedZ.clear();
 
     registry.fill(HIST("hEventCounter"), 0.5);
 
@@ -318,7 +409,7 @@ struct HfTaskElectronWeakBoson {
 
     for (const auto& track : tracks) {
 
-      if (std::abs(track.eta()) > etaTrUp)
+      if (std::abs(track.eta()) > etaTrMax)
         continue;
       if (track.tpcNClsCrossedRows() < nclcrossTpcMin)
         continue;
@@ -360,6 +451,8 @@ struct HfTaskElectronWeakBoson {
       //  continue;
       if (track.phi() < phiEmcMin || track.phi() > phiEmcMax)
         continue;
+      if (std::abs(track.eta()) > etaEmcMax)
+        continue;
       auto tracksofcluster = matchedtracks.sliceBy(perClusterMatchedTracks, track.globalIndex());
 
       // LOGF(info, "Number of matched track: %d", tracksofcluster.size());
@@ -375,10 +468,7 @@ struct HfTaskElectronWeakBoson {
         for (const auto& match : tracksofcluster) {
           if (match.emcalcluster_as<SelectedClusters>().time() < timeEmcMin || match.emcalcluster_as<SelectedClusters>().time() > timeEmcMax)
             continue;
-          if (match.emcalcluster_as<SelectedClusters>().m02() < m02Min || match.emcalcluster_as<SelectedClusters>().m02() > m02Max)
-            continue;
 
-          float m20Emc = match.emcalcluster_as<SelectedClusters>().m20();
           float m02Emc = match.emcalcluster_as<SelectedClusters>().m02();
           float energyEmc = match.emcalcluster_as<SelectedClusters>().energy();
           double phiEmc = match.emcalcluster_as<SelectedClusters>().phi();
@@ -402,33 +492,50 @@ struct HfTaskElectronWeakBoson {
               dPhiMin = dPhi;
               dEtaMin = dEta;
             }
-            registry.fill(HIST("hTrMatch"), dPhi, dEta);
+            registry.fill(HIST("hTHnTrMatch"), match.track_as<TrackEle>().pt(), dPhi, dEta);
             registry.fill(HIST("hEMCtime"), timeEmc);
             registry.fill(HIST("hEnergy"), energyEmc);
 
-            if (r > rMatchMax)
+            if (std::abs(dPhi) > rMatchMax || std::abs(dEta) > rMatchMax)
               continue;
+
+            registry.fill(HIST("hTrMatchR"), match.track_as<TrackEle>().pt(), r);
+            registry.fill(HIST("hEnergyNcell"), energyEmc, match.emcalcluster_as<SelectedClusters>().nCells());
 
             const auto& cluster = match.emcalcluster_as<SelectedClusters>();
 
             double eop = energyEmc / match.track_as<TrackEle>().p();
 
+            double isoEnergy = getIsolatedCluster(cluster, emcClusters);
+
+            int trackCount = getIsolatedTrack(track.eta(), track.phi(), track.pt(), tracks) - 1;
+
+            if (match.track_as<TrackEle>().pt() > ptTHnThresh && isTHnElectron) {
+              registry.fill(HIST("hTHnElectrons"), match.track_as<TrackEle>().pt(), match.track_as<TrackEle>().tpcNSigmaEl(), m02Emc, eop, isoEnergy, trackCount);
+            }
             // LOG(info) << "E/p" << eop;
             registry.fill(HIST("hEopNsigTPC"), match.track_as<TrackEle>().tpcNSigmaEl(), eop);
-            registry.fill(HIST("hM02"), match.track_as<TrackEle>().tpcNSigmaEl(), m02Emc);
-            registry.fill(HIST("hM20"), match.track_as<TrackEle>().tpcNSigmaEl(), m20Emc);
+            if (match.emcalcluster_as<SelectedClusters>().m02() < m02Min || match.emcalcluster_as<SelectedClusters>().m02() > m02Max)
+              continue;
+
             if (match.track_as<TrackEle>().tpcNSigmaEl() > nsigTpcMin && match.track_as<TrackEle>().tpcNSigmaEl() < nsigTpcMax) {
               registry.fill(HIST("hEop"), match.track_as<TrackEle>().pt(), eop);
+              if (eop > eopMin && eop < eopMax && isoEnergy < energyIsolationMax)
+                isIsolated = true;
+              if (eop > eopMin && eop < eopMax && trackCount < trackIsolationMax)
+                isIsolatedTr = true;
 
-              if (eop > eopMin && eop < eopMax) {
-                isIsolated = isIsolatedCluster(cluster, emcClusters);
-                isIsolatedTr = isIsolatedTrack(track.phi(), track.eta(), track.pt(), tracks);
-              }
-
-              if (isIsolated) {
+              if (isIsolated && isIsolatedTr) {
                 registry.fill(HIST("hEopIsolation"), match.track_as<TrackEle>().pt(), eop);
 
                 if (match.track_as<TrackEle>().pt() > ptZeeMin) {
+                  int pdgIso = kElectron;
+                  if (match.track_as<TrackEle>().sign() > 0) {
+                    pdgIso = kPositron;
+                  }
+                  KFPTrack kfpTrackIsoEle = createKFPTrackFromTrack(match.track_as<TrackEle>());
+                  KFParticle kfpIsoEle(kfpTrackIsoEle, pdgIso);
+                  recoMassZee(kfpIsoEle, match.track_as<TrackEle>().sign(), tracks);
 
                   selectedElectronsIso.emplace_back(
                     match.track_as<TrackEle>().pt(),

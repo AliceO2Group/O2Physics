@@ -59,6 +59,11 @@ o2physics_add_dpl_workflow(femtouniverse-pair-track-cascade-extended
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femtouniverse-pair-v0-cascade-extended
+          SOURCES femtoUniversePairTaskV0CascadeExtended.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(femtouniverse-pair-track-d0
           SOURCES femtoUniversePairTaskTrackD0.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore

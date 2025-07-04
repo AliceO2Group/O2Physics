@@ -17,14 +17,28 @@
 /// \author Stefano Politanò <stefano.politano@polito.it>, Politecnico & INFN, Torino
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, CERN
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdint>
+#include <unordered_map>
 
 using namespace o2;
 using namespace o2::framework;
@@ -229,6 +243,19 @@ DECLARE_SOA_TABLE(HfCandDsFullPs, "AOD", "HFCANDDSFULLP",
                   hf_cand_3prong::OriginMcGen);
 } // namespace o2::aod
 
+enum Mother : int8_t {
+  Ds,
+  Dplus
+};
+
+enum ResonantChannel : int8_t {
+  PhiPi = 1,
+  Kstar0K = 2
+};
+
+static std::unordered_map<int8_t, std::unordered_map<int8_t, int8_t>> channelsResonant = {{{Mother::Ds, {{ResonantChannel::PhiPi, hf_decay::hf_cand_3prong::DecayChannelResonant::DsToPhiPi}, {ResonantChannel::Kstar0K, hf_decay::hf_cand_3prong::DecayChannelResonant::DsToKstar0K}}},
+                                                                                           {Mother::Dplus, {{ResonantChannel::PhiPi, hf_decay::hf_cand_3prong::DecayChannelResonant::DplusToPhiPi}, {ResonantChannel::Kstar0K, hf_decay::hf_cand_3prong::DecayChannelResonant::DplusToKstar0K}}}}};
+
 /// Writes the full information in an output TTree
 struct HfTreeCreatorDsToKKPi {
   Produces<o2::aod::HfCandDsFulls> rowCandidateFull;
@@ -236,7 +263,7 @@ struct HfTreeCreatorDsToKKPi {
   Produces<o2::aod::HfCandDsFullPs> rowCandidateFullParticles;
   Produces<o2::aod::HfCandDsLites> rowCandidateLite;
 
-  Configurable<int> decayChannel{"decayChannel", 1, "Switch between decay channels: 1 for Ds/Dplus->PhiPi->KKpi, 2 for Ds/Dplus->K0*K->KKPi"};
+  Configurable<int> decayChannel{"decayChannel", 1, "Switch between resonant decay channels: 1 for Ds/Dplus->PhiPi->KKpi, 2 for Ds/Dplus->K0*K->KKPi"};
   Configurable<bool> fillDplusMc{"fillDplusMc", false, "Switch to fill Dplus MC information"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 1, "Selection flag for Ds"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
@@ -257,19 +284,23 @@ struct HfTreeCreatorDsToKKPi {
   using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
   using CollisionsWithNTracksPV = soa::Join<aod::Collisions, aod::EvSels, aod::CentNTPVs>;
 
-  int offsetDplusDecayChannel = aod::hf_cand_3prong::DecayChannelDToKKPi::DplusToPhiPi - aod::hf_cand_3prong::DecayChannelDToKKPi::DsToPhiPi; // Offset between Dplus and Ds to use the same decay channel. See aod::hf_cand_3prong::DecayChannelDToKKPi
-
   Filter filterSelectCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
-  Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && (aod::hf_cand_3prong::flagMcDecayChanGen == decayChannel || (fillDplusMc && aod::hf_cand_3prong::flagMcDecayChanGen == (decayChannel + offsetDplusDecayChannel))); // Do not store Dplus MC if fillDplusMc is false
+  Filter filterMcGenMatching =
+    nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) &&
+    (aod::hf_cand_3prong::flagMcDecayChanGen == channelsResonant[Mother::Ds][decayChannel] ||
+     (fillDplusMc && aod::hf_cand_3prong::flagMcDecayChanGen == channelsResonant[Mother::Dplus][decayChannel])); // Do not store Dplus MC if fillDplusMc is false
 
   Partition<CandDsData> selectedDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
   Partition<CandDsData> selectedDsToPiKKCand = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
 
-  Partition<CandDsMcReco> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && (aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel || (fillDplusMc && aod::hf_cand_3prong::flagMcDecayChanRec == (decayChannel + offsetDplusDecayChannel))); // Do not store Dplus MC if fillDplusMc is false
-  Partition<CandDsMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi));
+  Partition<CandDsMcReco> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (aod::hf_cand_3prong::flagMcDecayChanRec == channelsResonant[Mother::Ds][decayChannel] || (fillDplusMc && aod::hf_cand_3prong::flagMcDecayChanRec == channelsResonant[Mother::Dplus][decayChannel])); // Do not store Dplus MC if fillDplusMc is false
+  Partition<CandDsMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK);
 
   void init(InitContext const&)
   {
+    if (decayChannel != ResonantChannel::PhiPi && decayChannel != ResonantChannel::Kstar0K) {
+      LOGP(fatal, "Invalid value of decayChannel");
+    }
   }
 
   template <typename T>
@@ -305,7 +336,7 @@ struct HfTreeCreatorDsToKKPi {
       originMc = candidate.originMcRec();
       channelMc = candidate.flagMcDecayChanRec();
       isSwapped = candidate.isCandidateSwapped();
-      if (fillDplusMc && candidate.flagMcDecayChanRec() == (decayChannel + offsetDplusDecayChannel)) {
+      if (fillDplusMc && candidate.flagMcDecayChanRec() == channelsResonant[Mother::Dplus][decayChannel]) {
         yCand = hfHelper.yDplus(candidate);
         eCand = hfHelper.eDplus(candidate);
         ctCand = hfHelper.ctDplus(candidate);

@@ -16,12 +16,22 @@
 ///
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdint>
 
 using namespace o2;
 using namespace o2::framework;
@@ -261,10 +271,10 @@ struct HfTreeCreatorDstarToD0Pi {
   using CandDstarMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandDstarMcGen>>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
-  Filter filterMcGenMatching = nabs(aod::hf_cand_dstar::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
+  Filter filterMcGenMatching = nabs(aod::hf_cand_dstar::flagMcMatchGen) == static_cast<int8_t>(hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi);
 
-  Partition<CandDstarWSelFlagMcRec> reconstructedCandSig = nabs(aod::hf_cand_dstar::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
-  Partition<CandDstarWSelFlagMcRec> reconstructedCandBkg = nabs(aod::hf_cand_dstar::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
+  Partition<CandDstarWSelFlagMcRec> reconstructedCandSig = nabs(aod::hf_cand_dstar::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi);
+  Partition<CandDstarWSelFlagMcRec> reconstructedCandBkg = nabs(aod::hf_cand_dstar::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi);
 
   void init(InitContext const&)
   {

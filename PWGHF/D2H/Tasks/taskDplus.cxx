@@ -17,19 +17,38 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Luca Aglietta <luca.aglietta@cern.ch>, University and INFN Torino
 
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <Rtypes.h>
+
+#include <array>
+#include <cstdint>
+#include <cstdlib>
+#include <numeric>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -73,16 +92,16 @@ struct HfTaskDplus {
   Partition<CandDplusDataWithMl> selectedDPlusCandidatesWithMl = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
 
   // Matched MC
-  Partition<CandDplusMcReco> recoDPlusCandidates = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
-  Partition<CandDplusMcRecoWithMl> recoDPlusCandidatesWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Partition<CandDplusMcReco> recoDPlusCandidates = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Partition<CandDplusMcRecoWithMl> recoDPlusCandidatesWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
 
   // MC Bkg
-  Partition<CandDplusMcReco> recoBkgCandidates = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
-  Partition<CandDplusMcRecoWithMl> recoBkgCandidatesWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Partition<CandDplusMcReco> recoBkgCandidates = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Partition<CandDplusMcRecoWithMl> recoBkgCandidatesWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
 
   ConfigurableAxis thnConfigAxisY{"thnConfigAxisY", {40, -1, 1}, "Cand. rapidity bins"};
-  ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {110, 0., 110.}, ""};
-  ConfigurableAxis thnConfigAxisOccupancy{"thnConfigAxisOccupancy", {14, 0, 14000}, "axis for centrality"};
+  ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {110, 0., 110.}, "axis for centrality"};
+  ConfigurableAxis thnConfigAxisOccupancy{"thnConfigAxisOccupancy", {14, 0, 14000}, "axis for occupancy"};
   ConfigurableAxis thnConfigAxisPtBHad{"thnConfigAxisPtBHad", {25, 0., 50}, "axis for pt of B hadron decayed into D candidate"};
   ConfigurableAxis thnConfigAxisFlagBHad{"thnConfigAxisFlagBHad", {5, 0., 5}, "axis for PDG of B hadron"};
   ConfigurableAxis thnConfigAxisMlScore0{"thnConfigAxisMlScore0", {100, 0., 1.}, "axis for ML output score 0"};
@@ -568,7 +587,7 @@ struct HfTaskDplus {
         ptGenB = -1;
         flagGenB = -1;
         auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDPlus);
-        if ((yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) || (std::abs(particle.flagMcMatchGen()) != 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
+        if ((yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) || (std::abs(particle.flagMcMatchGen()) != hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)) {
           continue;
         }
         if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {

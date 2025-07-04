@@ -16,13 +16,23 @@
 /// \author Himanshu Sharma <himanshu.sharma@cern.ch>, INFN Padova
 /// \author Cristina Terrevoli <cristina.terrevoli@cern.ch>, INFN Bari
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdint>
 
 using namespace o2;
 using namespace o2::framework;
@@ -231,13 +241,13 @@ struct HfTreeCreatorXicToPKPi {
   using CandXicMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic;
-  Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::XicToPKPi));
+  Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::XicToPKPi);
 
   Partition<CandXicData> selectedXicToPKPiCand = aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic;
   Partition<CandXicData> selectedXicToPiKPCand = aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic;
 
-  Partition<CandXicMcReco> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::XicToPKPi));
-  Partition<CandXicMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::XicToPKPi));
+  Partition<CandXicMcReco> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::XicToPKPi);
+  Partition<CandXicMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::XicToPKPi);
 
   void init(InitContext const&)
   {

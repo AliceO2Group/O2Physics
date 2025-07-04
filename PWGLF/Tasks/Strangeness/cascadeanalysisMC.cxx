@@ -80,6 +80,7 @@ struct cascadeGenerated {
   Configurable<int> nPtBins{"nPtBins", 200, "number of pT bins"};
   Configurable<float> rapidityCut{"rapidityCut", 0.5, "max (absolute) rapidity of generated cascade"};
   Configurable<int> nRapidityBins{"nRapidityBins", 200, "number of pT bins"};
+  Configurable<bool> requirePhysicalPrimary{"requirePhysicalPrimary", false, "require the generated cascade to be a physical primary"};
 
   void init(InitContext const&)
   {
@@ -107,6 +108,8 @@ struct cascadeGenerated {
     // WARNING: event-level losses have to be understood too
     for (auto& particle : mcparts) {
       if (TMath::Abs(particle.y()) > rapidityCut)
+        continue;
+      if (requirePhysicalPrimary && !particle.isPhysicalPrimary())
         continue;
       if (particle.pdgCode() == 3312) {
         registry.fill(HIST("hPtXiMinus"), particle.pt());
