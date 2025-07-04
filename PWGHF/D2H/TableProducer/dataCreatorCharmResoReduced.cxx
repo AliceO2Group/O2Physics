@@ -875,9 +875,9 @@ struct HfDataCreatorCharmResoReduced {
         prongIdsD[0] = candD.prong0Id();
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prongPiId();
-        std::copy(candD.pVectorProng0().begin(), candD.pVectorProng0().end(), varUtils.pVectorProng0.begin());
-        std::copy(candD.pVectorProng1().begin(), candD.pVectorProng1().end(), varUtils.pVectorProng1.begin());
-        std::copy(candD.pVecSoftPi().begin(), candD.pVecSoftPi().end(), varUtils.pVectorProng2.begin());
+        varUtils.pVectorProng0 = candD.pVectorProng0();
+        varUtils.pVectorProng1 = candD.pVectorProng1();
+        varUtils.pVectorProng2 = candD.pVecSoftPi();
         charmHadDauTracks.push_back(candD.template prong0_as<TrIU>());
         charmHadDauTracks.push_back(candD.template prong1_as<TrIU>());
         charmHadDauTracks.push_back(candD.template prongPi_as<TrIU>());
@@ -896,9 +896,9 @@ struct HfDataCreatorCharmResoReduced {
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prong2Id();
         varUtils.signD = prong0.sign();
-        std::copy(candD.pVectorProng0().begin(), candD.pVectorProng0().end(), varUtils.pVectorProng0.begin());
-        std::copy(candD.pVectorProng1().begin(), candD.pVectorProng1().end(), varUtils.pVectorProng1.begin());
-        std::copy(candD.pVectorProng2().begin(), candD.pVectorProng2().end(), varUtils.pVectorProng2.begin());
+        varUtils.pVectorProng0 = candD.pVectorProng0();
+        varUtils.pVectorProng1 = candD.pVectorProng1();
+        varUtils.pVectorProng2 = candD.pVectorProng2();
         dtype = static_cast<int8_t>(varUtils.signD * DType::Dplus);
         charmHadDauTracks.push_back(candD.template prong0_as<TrIU>());
         charmHadDauTracks.push_back(candD.template prong1_as<TrIU>());
@@ -918,8 +918,8 @@ struct HfDataCreatorCharmResoReduced {
         prongIdsD[2] = -1; // D0 does not have a third prong
         charmHadDauTracks.push_back(candD.template prong0_as<TrIU>());
         charmHadDauTracks.push_back(candD.template prong1_as<TrIU>());
-        std::copy(candD.pVectorProng0().begin(), candD.pVectorProng0().end(), varUtils.pVectorProng0.begin());
-        std::copy(candD.pVectorProng1().begin(), candD.pVectorProng1().end(), varUtils.pVectorProng1.begin());
+        varUtils.pVectorProng0 = candD.pVectorProng0();
+        varUtils.pVectorProng1 = candD.pVectorProng1();
         varUtils.pVectorProng2 = {0.f, 0.f, 0.f}; // D0 does not have a third prong
         if constexpr (withMl) {
           std::copy(candD.mlProbD0().begin(), candD.mlProbD0().end(), bdtScores.begin());
