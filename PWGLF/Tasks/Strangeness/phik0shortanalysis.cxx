@@ -13,47 +13,49 @@
 /// \brief Analysis task for the Phi and K0S rapidity correlations analysis
 /// \author Stefano Cannito (stefano.cannito@cern.ch)
 
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/Utils/inelGt.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <Math/Vector4D.h>
+#include <TDirectory.h>
+#include <TF1.h>
+#include <TFile.h>
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TH3F.h>
 #include <THn.h>
-#include <TRandom.h>
-#include <TDirectory.h>
+#include <TList.h>
 #include <TMath.h>
 #include <TObjArray.h>
-#include <TFile.h>
-#include <TList.h>
-#include <TF1.h>
 #include <TPDGCode.h>
-#include <Math/Vector4D.h>
+#include <TRandom.h>
 
-#include <cstdlib>
-#include <cmath>
-#include <array>
-#include <vector>
 #include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdlib>
 #include <string>
 #include <utility>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Common/DataModel/EventSelection.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Framework/ASoAHelpers.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/TrackSelection.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "PWGLF/Utils/inelGt.h"
-#include "PWGLF/DataModel/mcCentrality.h"
-#include "CCDB/BasicCCDBManager.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -554,7 +556,7 @@ struct Phik0shortanalysis {
     mcPionHist.add("h3PiRapidityGenMC", "Rapidity for Pion for GenMC", kTH3F, {binnedmultAxis, binnedptPiAxis, yAxis});
 
     // Histograms for new analysis procedure (to be finalized and renamed deleting other histograms)
-    dataPhiHist.add("h3PhiDataNewProc", "Invariant mass of Phi n Data", kTH3F, {binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
+    dataPhiHist.add("h3PhiDataNewProc", "Invariant mass of Phi in Data", kTH3F, {binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
     dataPhiK0SHist.add("h5PhiK0SDataNewProc", "2D Invariant mass of Phi and K0Short for Data", kTHnSparseF, {deltayAxis, binnedmultAxis, binnedptK0SAxis, massK0SAxis, massPhiAxis});
     dataPhiPionHist.add("h6PhiPiDataNewProc", "Phi Invariant mass vs Pion nSigma TPC/TOF for Data", kTHnSparseF, {deltayAxis, binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, massPhiAxis});
 
@@ -562,7 +564,24 @@ struct Phik0shortanalysis {
     closureMCPhiK0SHist.add("h5PhiK0SMCClosureNewProc", "2D Invariant mass of Phi and K0Short for MC Closure Test", kTHnSparseF, {deltayAxis, binnedmultAxis, binnedptK0SAxis, massK0SAxis, massPhiAxis});
     closureMCPhiPionHist.add("h6PhiPiMCClosureNewProc", "Phi Invariant mass vs Pion nSigma TPC/TOF for MC Closure Test", kTHnSparseF, {deltayAxis, binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, massPhiAxis});
 
-    // Initialize CCDB only if purity is requested in the task
+    mcPhiHist.add("h2PhiMCRecoNewProc", "Phi in MCReco", kTH2F, {binnedmultAxis, binnedpTPhiAxis});
+    mcK0SHist.add("h2K0SMCRecoNewProc", "K0S in MCReco", kTH2F, {binnedmultAxis, binnedptK0SAxis});
+    mcPionHist.add("h2PiMCRecoNewProc", "Pion in MCReco", kTH2F, {binnedmultAxis, binnedptPiAxis});
+    mcPionHist.add("h2PiMCReco2NewProc", "Pion in MCReco", kTH2F, {binnedmultAxis, binnedptPiAxis});
+
+    mcPhiHist.add("h2PhiMCGenNewProc", "Phi in MCGen", kTH2F, {binnedmultAxis, binnedpTPhiAxis});
+    mcK0SHist.add("h2K0SMCGenNewProc", "K0S in MCGen", kTH2F, {binnedmultAxis, binnedptK0SAxis});
+    mcPionHist.add("h2PiMCGenNewProc", "Pion in MCGen", kTH2F, {binnedmultAxis, binnedptPiAxis});
+
+    mcPhiHist.add("h2PhiMCGenAssocRecoNewProc", "Phi in MCGen Associated MCReco", kTH2F, {binnedmultAxis, binnedpTPhiAxis});
+    mcK0SHist.add("h2K0SMCGenAssocRecoNewProc", "K0S in MCGen Associated MCReco", kTH2F, {binnedmultAxis, binnedptK0SAxis});
+    mcPionHist.add("h2PiMCGenAssocRecoNewProc", "Pion in MCGen Associated MCReco", kTH2F, {binnedmultAxis, binnedptPiAxis});
+
+    mcPhiHist.add("h2PhiMCGenAssocRecoCheckNewProc", "Phi in MCGen Associated MCReco Check", kTH2F, {binnedmultAxis, binnedpTPhiAxis});
+    mcK0SHist.add("h2K0SMCGenAssocRecoCheckNewProc", "K0S in MCGen Associated MCReco Check", kTH2F, {binnedmultAxis, binnedptK0SAxis});
+    mcPionHist.add("h2PiMCGenAssocRecoCheckNewProc", "Pion in MCGen Associated MCReco Check", kTH2F, {binnedmultAxis, binnedptPiAxis});
+
+    // Initialize CCDB only if purity or efficiencies are requested in the task
     if (useCCDB) {
       ccdb->setURL(ccdbUrl);
       ccdb->setCaching(true);
@@ -2694,7 +2713,7 @@ struct Phik0shortanalysis {
           if (pTMother < minPhiPt || std::abs(yMother) > cfgYAcceptance)
             continue;
 
-          mcPhiHist.fill(HIST("h2PhieffInvMass"), genmultiplicity, recPhi.M());
+          mcPhiHist.fill(HIST("h2PhiMCRecoNewProc"), genmultiplicity, recPhi.Pt());
         }
       }
 
@@ -2719,7 +2738,7 @@ struct Phik0shortanalysis {
         if (std::abs(v0mcparticle.y()) > cfgYAcceptance)
           continue;
 
-        mcK0SHist.fill(HIST("h3K0SMCReco"), genmultiplicity, v0mcparticle.pt(), v0.mK0Short());
+        mcK0SHist.fill(HIST("h2K0SMCRecoNewProc"), genmultiplicity, v0mcparticle.pt());
       }
 
       // Defining tracks in the collision
@@ -2752,12 +2771,12 @@ struct Phik0shortanalysis {
           continue;
         }
 
-        mcPionHist.fill(HIST("h3PiTPCMCReco"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi());
+        mcPionHist.fill(HIST("h2PiMCRecoNewProc"), genmultiplicity, mcTrack.pt());
 
         if (track.pt() >= trackConfigs.pTToUseTOF && !track.hasTOF())
           continue;
 
-        mcPionHist.fill(HIST("h4PiTPCTOFMCReco"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+        mcPionHist.fill(HIST("h2PiMCReco2NewProc"), genmultiplicity, mcTrack.pt());
       }
 
       // Defining McParticles in the collision
@@ -2773,7 +2792,7 @@ struct Phik0shortanalysis {
         if (mcParticle.pt() < minPhiPt)
           continue;
 
-        mcPhiHist.fill(HIST("h1PhiGenMCAssocReco"), genmultiplicity);
+        mcPhiHist.fill(HIST("h2PhiMCGenAssocRecoCheckNewProc"), genmultiplicity, mcParticle.pt());
 
         // K0S selection
         if (mcParticle.pdgCode() != PDG_t::kK0Short)
@@ -2781,7 +2800,7 @@ struct Phik0shortanalysis {
         if (!mcParticle.isPhysicalPrimary() || mcParticle.pt() < v0Configs.v0SettingMinPt)
           continue;
 
-        mcK0SHist.fill(HIST("h2K0SMCGenAssocReco"), genmultiplicity, mcParticle1.pt());
+        mcK0SHist.fill(HIST("h2K0SMCGenAssocRecoCheckNewProc"), genmultiplicity, mcParticle.pt());
 
         // Pion selection
         if (std::abs(mcParticle.pdgCode()) != PDG_t::kPiPlus)
@@ -2789,7 +2808,7 @@ struct Phik0shortanalysis {
         if (!mcParticle.isPhysicalPrimary() || mcParticle.pt() < trackConfigs.cMinPionPtcut)
           continue;
 
-        mcPionHist.fill(HIST("h2PiMCGenAssocReco"), genmultiplicity, mcParticle1.pt());
+        mcPionHist.fill(HIST("h2PiMCGenAssocRecoCheckNewProc"), genmultiplicity, mcParticle.pt());
       }
     }
   }
@@ -2826,9 +2845,9 @@ struct Phik0shortanalysis {
       if (mcParticle.pt() < minPhiPt)
         continue;
 
-      mcPhiHist.fill(HIST("h2PhiGenMCGenAssocReco"), genmultiplicity, mcParticle.pt());
+      mcPhiHist.fill(HIST("h2PhiMCGenNewProc"), genmultiplicity, mcParticle.pt());
       if (isAssocColl)
-        mcPhiHist.fill(HIST("h2PhiGenMCGenAssocReco2"), genmultiplicity, mcParticle.pt());
+        mcPhiHist.fill(HIST("h2PhiMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt());
 
       // K0S selection
       if (mcParticle.pdgCode() != PDG_t::kK0Short)
@@ -2836,9 +2855,9 @@ struct Phik0shortanalysis {
       if (!mcParticle.isPhysicalPrimary() || mcParticle.pt() < v0Configs.v0SettingMinPt)
         continue;
 
-      mcK0SHist.fill(HIST("h2K0SMCGenAssocReco"), genmultiplicity, mcParticle.pt());
+      mcK0SHist.fill(HIST("h2K0SMCGenNewProc"), genmultiplicity, mcParticle.pt());
       if (isAssocColl)
-        mcK0SHist.fill(HIST("h2K0SMCGenAssocReco2"), genmultiplicity, mcParticle.pt());
+        mcK0SHist.fill(HIST("h2K0SMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt());
 
       // Pion selection
       if (std::abs(mcParticle.pdgCode()) != PDG_t::kPiPlus)
@@ -2846,9 +2865,9 @@ struct Phik0shortanalysis {
       if (!mcParticle.isPhysicalPrimary() || mcParticle.pt() < trackConfigs.cMinPionPtcut)
         continue;
 
-      mcPionHist.fill(HIST("h2PiMCGenAssocReco"), genmultiplicity, mcParticle.pt());
+      mcPionHist.fill(HIST("h2PiMCGenNewProc"), genmultiplicity, mcParticle.pt());
       if (isAssocColl)
-        mcPionHist.fill(HIST("h2PiMCGenAssocReco2"), genmultiplicity, mcParticle.pt());
+        mcPionHist.fill(HIST("h2PiMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt());
     }
   }
 
