@@ -47,12 +47,30 @@ using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+namespace o2::aod
+{
+namespace ml
+{
+// collision info
+DECLARE_SOA_COLUMN(KfptPiFromOmegac, kfptPiFromOmegac, float);
+DECLARE_SOA_COLUMN(KfptOmegac, kfptOmegac, float);
+DECLARE_SOA_COLUMN(InvMassCharmBaryon, invMassCharmBaryon, float);
+DECLARE_SOA_COLUMN(MlProbOmegac, mlProbOmegac, float);
+DECLARE_SOA_COLUMN(Cent, cent, float);
+} // namespace ml
+DECLARE_SOA_TABLE(HfKfOmegacML, "AOD", "HFKFOMEGACML",
+                  ml::InvMassCharmBaryon, ml::KfptOmegac, ml::KfptPiFromOmegac, ml::MlProbOmegac, ml::Cent);
+} // namespace o2::aod
+
 /// Omegac0 analysis task
 
 struct HfTaskOmegac0ToOmegapi {
+
+  Produces<o2::aod::HfKfOmegacML> kfCandMl;
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<bool> fillCent{"fillCent", false, "Flag to fill centrality information"};
+  Configurable<bool> fillTree{"fillTree", false, "Fill TTree for local analysis.(Enabled only with ML)"};
   Configurable<bool> selectionFlagOmegac0{"selectionFlagOmegac0", true, "Select Omegac0 candidates"};
   Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
@@ -205,14 +223,22 @@ struct HfTaskOmegac0ToOmegapi {
         }
         float cent = evaluateCentralityColl(collision);
         if constexpr (applyMl) {
-          registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsCentVsPtPion"),
-                        candidate.mlProbOmegac()[0],
-                        candidate.invMassCharmBaryon(),
-                        candidate.ptCharmBaryon(),
-                        candidate.kfRapOmegac(),
-                        cent,
-                        candidate.kfptPiFromOmegac(),
-                        numPvContributors);
+          if (fillTree) {
+            kfCandMl(candidate.invMassCharmBaryon(),
+                     candidate.ptCharmBaryon(),
+                     candidate.kfptPiFromOmegac(),
+                     candidate.mlProbOmegac()[0],
+                     cent);
+          } else {
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsCentVsPtPion"),
+                          candidate.mlProbOmegac()[0],
+                          candidate.invMassCharmBaryon(),
+                          candidate.ptCharmBaryon(),
+                          candidate.kfRapOmegac(),
+                          cent,
+                          candidate.kfptPiFromOmegac(),
+                          numPvContributors);
+          }
         } else {
           registry.fill(HIST("hMassVsPtVsYVsCentVsPtPion"),
                         candidate.invMassCharmBaryon(),

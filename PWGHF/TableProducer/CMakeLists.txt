@@ -172,6 +172,11 @@ o2physics_add_dpl_workflow(candidate-selector-omegac0-to-omega-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(candidate-selector-omegac0-xic0-to-omega-ka
+                    SOURCES candidateSelectorOmegac0Xic0ToOmegaKa.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(candidate-selector-xic0-to-xi-pi-kf
                     SOURCES candidateSelectorXic0ToXiPiKf.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
