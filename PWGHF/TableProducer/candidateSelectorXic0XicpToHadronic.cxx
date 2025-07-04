@@ -148,7 +148,7 @@ struct HfCandidateSelectorXic0XicpToHadronic {
 
 				static const AxisSpec axisSelections = {kNBinsSelections, 0.5, kNBinsSelections+0.5, ""};
 
-				registry.add("hSelectionsXic0", "Selections;;#it{p}_{T} (GeV/#it{c})", {kTH2F, {axisSelections, {(std::vector<double>)configs.binsPtXicp, "#it{p}_{T} (GeV/#it{c})"}}});
+				registry.add("hSelectionsXicp", "Selections;;#it{p}_{T} (GeV/#it{c})", {kTH2F, {axisSelections, {(std::vector<double>)configs.binsPtXicp, "#it{p}_{T} (GeV/#it{c})"}}});
 				
 				for (int iBin=0; iBin<kNBinsSelections; ++iBin) {
 					registry.get<TH2>(HIST("hSelectionsXicp"))->GetXaxis()->SetBinLabel(iBin+1, labels[iBin].data());
@@ -505,7 +505,7 @@ struct HfCandidateSelectorXic0XicpToHadronic {
 			cursors.hfSelXicpToXiPiPiCandidate(statusXicpToXiPiPi);
 		}
 	}
-	PROCESS_SWITCH(HfCandidateSelectorXic0XicpToHadronic, processXicp, "Selection for Xicp candidates", true);
+	PROCESS_SWITCH(HfCandidateSelectorXic0XicpToHadronic, processXicp, "Selection for Xicp candidates", false);
 
 }; // end struct candidate selector
 
