@@ -54,6 +54,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 using namespace o2;
@@ -61,6 +62,13 @@ using namespace o2::constants::physics;
 using namespace o2::constants::math;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+
+enum ResonantChannel : int8_t {
+  PhiPi = 1,
+  Kstar0K = 2
+};
+
+static std::unordered_map<int8_t, int8_t> channelsResonant = {{{ResonantChannel::PhiPi, hf_decay::hf_cand_3prong::DecayChannelResonant::DsToPhiPi}, {ResonantChannel::Kstar0K, hf_decay::hf_cand_3prong::DecayChannelResonant::DsToKstar0K}}};
 
 /// Ds-Hadron correlation pair filling task, from pair tables - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
 struct HfTaskCorrelationDsHadrons {
@@ -732,7 +740,7 @@ struct HfTaskCorrelationDsHadrons {
 
         // generated candidate loop
         for (const auto& mcParticle : groupedMcParticles) {
-          if ((std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (mcParticle.flagMcDecayChanGen() == decayChannel)) {
+          if ((std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (mcParticle.flagMcDecayChanGen() == channelsResonant[decayChannel])) {
             auto yDs = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDS);
             if (std::abs(yDs) <= yCandGenMax) {
               if (mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) {
@@ -782,7 +790,7 @@ struct HfTaskCorrelationDsHadrons {
             continue;
           }
 
-          if ((std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (candidate.flagMcDecayChanRec() == decayChannel)) {
+          if ((std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (candidate.flagMcDecayChanRec() == channelsResonant[decayChannel])) {
             auto prong0McPart = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>();
             // DsToKKPi and DsToPiKK division
             if (((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs))) {
@@ -819,7 +827,7 @@ struct HfTaskCorrelationDsHadrons {
     /// Gen loop
     for (const auto& mcParticle : mcParticles) {
       // generated candidates
-      if ((std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (mcParticle.flagMcDecayChanGen() == decayChannel)) {
+      if ((std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (mcParticle.flagMcDecayChanGen() == channelsResonant[decayChannel])) {
         auto yDs = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDS);
         if (std::abs(yDs) <= yCandGenMax) {
           if (mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) {
@@ -864,7 +872,7 @@ struct HfTaskCorrelationDsHadrons {
       if (selNoSameBunchPileUpColl && !(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
         continue;
       }
-      if ((std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (candidate.flagMcDecayChanRec() == decayChannel)) {
+      if ((std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (candidate.flagMcDecayChanRec() == channelsResonant[decayChannel])) {
         auto prong0McPart = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>();
         // DsToKKPi and DsToPiKK division
         if (((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs))) {
