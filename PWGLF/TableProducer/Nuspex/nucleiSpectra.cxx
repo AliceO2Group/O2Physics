@@ -293,6 +293,7 @@ struct nucleiSpectra {
   Configurable<LabeledArray<double>> cfgDownscaling{"cfgDownscaling", {nuclei::DownscalingDefault[0], 5, 1, nuclei::names, nuclei::DownscalingConfigName}, "Fraction of kept candidates for light nuclei"};
   Configurable<LabeledArray<int>> cfgTreeConfig{"cfgTreeConfig", {nuclei::TreeConfigDefault[0], 5, 2, nuclei::names, nuclei::treeConfigNames}, "Filtered trees configuration"};
   Configurable<bool> cfgFillPairTree{"cfgFillPairTree", true, "Fill trees for pairs of light nuclei"};
+  Configurable<int> cfgFillGenSecondaries{"cfgFillGenSecondaries", 0, "Fill generated secondaries (0: no, 1: only weak decays, 2: all of them)"};
   Configurable<LabeledArray<int>> cfgDCAHists{"cfgDCAHists", {nuclei::DCAHistDefault[0], 5, 2, nuclei::names, nuclei::DCAConfigNames}, "DCA hist configuration"};
   Configurable<LabeledArray<int>> cfgFlowHist{"cfgFlowHist", {nuclei::FlowHistDefault[0], 5, 1, nuclei::names, nuclei::flowConfigNames}, "Flow hist configuration"};
 
@@ -1008,8 +1009,13 @@ struct nucleiSpectra {
         }
 
         if (!isReconstructed[index] && (cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u))) {
+          if ((flags & kIsPhysicalPrimary) == 0 && cfgFillGenSecondaries == 0) {
+            continue; // skip secondaries if not requested
+          }
+          if ((flags & (kIsPhysicalPrimary | kIsSecondaryFromWeakDecay)) == 0 && cfgFillGenSecondaries == 1) {
+            continue; // skip secondaries from material if not requested
+          }
           float absDecL = computeAbsoDecL(particle);
-
           nucleiTableMC(999., 999., 999., 0., 0., 999., -1, 999., 999., -1, -1, -1, -1, flags, 0, 0, 0, 0, 0, 0, goodCollisions[particle.mcCollisionId()], particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), motherPdgCode, motherDecRadius, absDecL);
         }
         break;
