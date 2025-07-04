@@ -35,6 +35,7 @@
 #include "EMCALBase/ClusterFactory.h"
 #include "EMCALBase/Geometry.h"
 #include "EMCALBase/NonlinearityHandler.h"
+#include "EMCALCalibration/EMCALTempCalibExtractor.h"
 #include "EMCALReconstruction/Clusterizer.h"
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
@@ -113,6 +114,9 @@ struct EmcalCorrectionTask {
   Configurable<float> trackMinPt{"trackMinPt", 0.3, "Minimum pT for tracks to perform track matching, to reduce computing time. Tracks below a certain pT will be loopers anyway."};
   Configurable<bool> fillQA{"fillQA", false, "Switch to turn on QA histograms."};
   Configurable<bool> useCCDBAlignment{"useCCDBAlignment", false, "EXPERTS ONLY! Switch to use the alignment object stored in CCDB instead of using the default alignment from the global geometry object."};
+  Configurable<bool> applyTempCalib{"applyTempCalib", false, "Switch to turn on Temperature calibration."};
+  Configurable<std::string> pathTempCalibCCDB{"pathTempCalibCCDB", "Users/j/jokonig/EMCalTempCalibParams", "Path in the ccdb where slope and intercept for each cell are stored"}; // change to official path as soon as it is available
+  Configurable<bool> useTempCalibMean{"useTempCalibMean", false, "Switch to turn on Temperature mean calculation instead of median."};
 
   // Require EMCAL cells (CALO type 1)
   Filter emccellfilter = aod::calo::caloType == selectedCellType;
@@ -142,6 +146,10 @@ struct EmcalCorrectionTask {
   // EMCal geometry
   o2::emcal::Geometry* geometry;
 
+  // EMCal cell temperature calibrator
+  std::unique_ptr<o2::emcal::EMCALTempCalibExtractor> mTempCalibExtractor;
+  bool mIsTempCalibInitialized = false;
+
   std::vector<std::pair<int, int>> mExtraTimeShiftRunRanges;
 
   // Current run number
@@ -169,6 +177,10 @@ struct EmcalCorrectionTask {
     }
     if (useCCDBAlignment.value) {
       geometry->SetMisalMatrixFromCcdb();
+    }
+
+    if (applyTempCalib) {
+      mTempCalibExtractor = std::make_unique<o2::emcal::EMCALTempCalibExtractor>();
     }
 
     // read all the cluster definitions specified in the options
@@ -316,6 +328,11 @@ struct EmcalCorrectionTask {
       // get run number
       runNumber = bc.runNumber();
 
+      if (applyTempCalib && !mIsTempCalibInitialized) { // needs to be called once
+        mTempCalibExtractor->InitializeFromCCDB(pathTempCalibCCDB, static_cast<uint64_t>(runNumber));
+        mIsTempCalibInitialized = true;
+      }
+
       // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
       // In particular, we need to filter only EMCAL cells.
 
@@ -342,6 +359,9 @@ struct EmcalCorrectionTask {
         }
         if (applyCellAbsScale) {
           amplitude *= getAbsCellScale(cell.cellNumber());
+        }
+        if (applyTempCalib) {
+          amplitude *= mTempCalibExtractor->getGainCalibFactor(static_cast<uint16_t>(cell.cellNumber()));
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
@@ -565,6 +585,11 @@ struct EmcalCorrectionTask {
       // get run number
       runNumber = bc.runNumber();
 
+      if (applyTempCalib && !mIsTempCalibInitialized) { // needs to be called once
+        mTempCalibExtractor->InitializeFromCCDB(pathTempCalibCCDB, static_cast<uint64_t>(runNumber));
+        mIsTempCalibInitialized = true;
+      }
+
       auto collisionsInBC = collisions.sliceBy(collisionsPerBC, bc.globalIndex());
       auto cellsInBC = cells.sliceBy(cellsPerFoundBC, bc.globalIndex());
 
@@ -578,9 +603,16 @@ struct EmcalCorrectionTask {
       std::vector<o2::emcal::Cell> cellsBC;
       std::vector<int64_t> cellIndicesBC;
       for (const auto& cell : cellsInBC) {
+        auto amplitude = cell.amplitude();
+        if (static_cast<bool>(hasShaperCorrection) && emcal::intToChannelType(cell.cellType()) == emcal::ChannelType_t::LOW_GAIN) { // Apply shaper correction to LG cells
+          amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
+        }
+        if (applyTempCalib) {
+          amplitude *= mTempCalibExtractor->getGainCalibFactor(static_cast<uint16_t>(cell.cellNumber()));
+        }
         cellsBC.emplace_back(cell.cellNumber(),
-                             cell.amplitude(),
-                             cell.time() + getCellTimeShift(cell.cellNumber(), cell.amplitude(), o2::emcal::intToChannelType(cell.cellType()), runNumber),
+                             amplitude,
+                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), runNumber),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
       }
