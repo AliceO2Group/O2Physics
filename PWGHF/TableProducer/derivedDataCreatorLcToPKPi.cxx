@@ -280,6 +280,13 @@ struct HfDerivedDataCreatorLcToPKPi {
               continue;
             }
           }
+        } else {
+          if (downSampleBkgFactor < 1.) {
+            float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+            if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
+              continue;
+            }
+          }
         }
         double ct = hfHelper.ctLc(candidate);
         double y = hfHelper.yLc(candidate);
