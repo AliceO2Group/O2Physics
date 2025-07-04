@@ -661,8 +661,8 @@ struct HfTaskCharmPolarisation {
             hEPaxes.push_back(thnAxisIsRotatedCandidate);
           }
           registry.add("hEP", "THn for polarisation studies with cosThStar w.r.t. event plane axis and BDT scores", HistType::kTHnSparseF, hEPaxes);
-        }
       }
+    }
 
     /// control plots for Lc->pKPi
     if ((doprocessLcToPKPi || doprocessLcToPKPiWithMl || doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl) && lcPKPiChannels.activateTHnLcChannelMonitor) {
@@ -2371,10 +2371,10 @@ struct HfTaskCharmPolarisation {
     int numPvContributorsGen{0};
 
     for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
-    centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
-    if (centrality < centralityMin || centrality > centralityMax) {
-      return; // skip this collision if outside of the centrality range
-    }
+      centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
+      if (centrality < centralityMin || centrality > centralityMax) {
+        return; // skip this collision if outside of the centrality range
+      }
       registry.fill(HIST("hCentrality"), centrality);
 
       auto thisCollId = collision.globalIndex();
@@ -2412,10 +2412,10 @@ struct HfTaskCharmPolarisation {
     int numPvContributorsGen{0};
 
     for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
-    centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
-    if (centrality < centralityMin || centrality > centralityMax) {
-      return; // skip this collision if outside of the centrality range
-    }
+      centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
+      if (centrality < centralityMin || centrality > centralityMax) {
+        return; // skip this collision if outside of the centrality range
+      }
       registry.fill(HIST("hCentrality"), centrality);
 
       auto thisCollId = collision.globalIndex();
