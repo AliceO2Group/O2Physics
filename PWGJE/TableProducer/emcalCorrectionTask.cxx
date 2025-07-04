@@ -18,54 +18,52 @@
 /// \author Raymond Ehlers (raymond.ehlers@cern.ch) ORNL, Florian Jonas (florian.jonas@cern.ch)
 ///
 
-#include <gsl/span>
-#include <fairlogger/Logger.h>
-#include <cstdint>
-#include <cstddef>
-#include <memory>
-#include <sstream>
-#include <unordered_map>
-#include <cmath>
-#include <string>
-#include <tuple>
-#include <utility>
-#include <vector>
-#include <random>
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/ASoA.h"
-#include "Framework/Configurable.h"
-#include "Framework/Expressions.h"
-#include "Framework/HistogramSpec.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/InitContext.h"
-#include "Framework/WorkflowSpec.h"
-
-#include "DetectorsBase/GeometryManager.h"
-
+#include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/EMCALClusterDefinition.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/EMCALMatchedCollisions.h"
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "DataFormatsEMCAL/ClusterLabel.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsEMCAL/AnalysisCluster.h"
 #include "DataFormatsEMCAL/Cell.h"
 #include "DataFormatsEMCAL/CellLabel.h"
 #include "DataFormatsEMCAL/Constants.h"
-#include "DataFormatsEMCAL/AnalysisCluster.h"
-#include "EMCALBase/Geometry.h"
+#include "DetectorsBase/GeometryManager.h"
 #include "EMCALBase/ClusterFactory.h"
+#include "EMCALBase/Geometry.h"
 #include "EMCALBase/NonlinearityHandler.h"
 #include "EMCALReconstruction/Clusterizer.h"
-#include "PWGJE/Core/JetUtilities.h"
-#include "GPUROOTCartesianFwd.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include <DataFormatsEMCAL/ClusterLabel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
 #include "TVector2.h"
-#include "TH1.h"
+#include <TH1.h>
+
+#include <GPUROOTCartesianFwd.h>
+
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <random>
+#include <sstream>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -114,6 +112,7 @@ struct EmcalCorrectionTask {
   Configurable<bool> applyCellTimeCorrection{"applyCellTimeCorrection", true, "apply a correction to the cell time for data and MC: Shift both average cell times to 0 and smear MC time distribution to fit data better. For MC requires isMC to be true"};
   Configurable<float> trackMinPt{"trackMinPt", 0.3, "Minimum pT for tracks to perform track matching, to reduce computing time. Tracks below a certain pT will be loopers anyway."};
   Configurable<bool> fillQA{"fillQA", false, "Switch to turn on QA histograms."};
+  Configurable<bool> useCCDBAlignment{"useCCDBAlignment", false, "EXPERTS ONLY! Switch to use the alignment object stored in CCDB instead of using the default alignment from the global geometry object."};
 
   // Require EMCAL cells (CALO type 1)
   Filter emccellfilter = aod::calo::caloType == selectedCellType;
@@ -167,6 +166,9 @@ struct EmcalCorrectionTask {
     geometry = o2::emcal::Geometry::GetInstanceFromRunNumber(223409);
     if (!geometry) {
       LOG(error) << "Failure accessing geometry";
+    }
+    if (useCCDBAlignment.value) {
+      geometry->SetMisalMatrixFromCcdb();
     }
 
     // read all the cluster definitions specified in the options
@@ -352,12 +354,6 @@ struct EmcalCorrectionTask {
 
       fillQAHistogram(cellsBC);
 
-      // TODO: Helpful for now, but should be removed.
-      LOG(debug) << "Converted EMCAL cells";
-      for (const auto& cell : cellsBC) {
-        LOG(debug) << cell.getTower() << ": E: " << cell.getEnergy() << ", time: " << cell.getTimeStamp() << ", type: " << cell.getType();
-      }
-
       LOG(debug) << "Converted cells. Contains: " << cellsBC.size() << ". Originally " << cellsInBC.size() << ". About to run clusterizer.";
       //  this is a test
       //  Run the clusterizers
@@ -484,12 +480,6 @@ struct EmcalCorrectionTask {
 
       fillQAHistogram(cellsBC);
 
-      // TODO: Helpful for now, but should be removed.
-      LOG(debug) << "Converted EMCAL cells";
-      for (const auto& cell : cellsBC) {
-        LOG(debug) << cell.getTower() << ": E: " << cell.getEnergy() << ", time: " << cell.getTimeStamp() << ", type: " << cell.getType();
-      }
-
       LOG(debug) << "Converted cells. Contains: " << cellsBC.size() << ". Originally " << cellsInBC.size() << ". About to run clusterizer.";
       //  this is a test
       //  Run the clusterizers
@@ -598,12 +588,6 @@ struct EmcalCorrectionTask {
       nCellsProcessed += cellsBC.size();
 
       fillQAHistogram(cellsBC);
-
-      // TODO: Helpful for now, but should be removed.
-      LOG(debug) << "Converted EMCAL cells";
-      for (const auto& cell : cellsBC) {
-        LOG(debug) << cell.getTower() << ": E: " << cell.getEnergy() << ", time: " << cell.getTimeStamp() << ", type: " << cell.getType();
-      }
 
       LOG(debug) << "Converted cells. Contains: " << cellsBC.size() << ". Originally " << cellsInBC.size() << ". About to run clusterizer.";
 

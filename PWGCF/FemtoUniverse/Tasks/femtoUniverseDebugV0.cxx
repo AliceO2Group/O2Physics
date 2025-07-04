@@ -85,7 +85,7 @@ struct FemtoUniverseDebugV0 {
     negativeChildHistos.init(&V0Registry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, confPDGCodeNegativeChild, true);
     V0Histos.init(&V0Registry, confV0TempFitVarpTBins, confV0TempFitVarBins, false, confPDGCodeV0.value, true);
 
-    thetaRegistry.add("Theta/hTheta", " ; p (GeV/#it{c}); cos(#theta)", kTH2F, {{100, 0, 10}, {50, -5, 5}});
+    thetaRegistry.add("Theta/hTheta", " ; p (GeV/#it{c}); cos(#theta)", kTH2F, {{100, 0, 10}, {110, -1.1, 1.1}});
   }
 
   /// Produce QA plots for V0 selection in FemtoUniverse framework

@@ -12,47 +12,50 @@
 /// \file strangenessInJets.cxx
 ///
 /// \brief task for analysis of strangeness in jets
-/// \author Alberto Caliva (alberto.caliva@cern.ch), Francesca Ercolessi (francesca.ercolessi@cern.ch), Nicolò Jacazio (nicolo.jacazio@cern.ch)
+/// \author Alberto Caliva (alberto.caliva@cern.ch), Francesca Ercolessi (francesca.ercolessi@cern.ch), Nicolò Jacazio (nicolo.jacazio@cern.ch), Sara Pucillo (sara.pucillo@cern.ch)
 /// \since May 22, 2024
 
-#include <TMath.h>
-#include <TObjArray.h>
-#include <TPDGCode.h>
-#include <TVector2.h>
-#include <TVector3.h>
-#include <cmath>
-#include <vector>
-#include <string>
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
+#include "PWGJE/Core/JetBkgSubUtils.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "ReconstructionDataFormats/Track.h"
 
+#include <TMath.h>
+#include <TObjArray.h>
+#include <TPDGCode.h>
+#include <TVector2.h>
+#include <TVector3.h>
+
+#include <fastjet/AreaDefinition.hh>
 #include <fastjet/ClusterSequence.hh>
 #include <fastjet/ClusterSequenceArea.hh>
+#include <fastjet/GhostedAreaSpec.hh>
+#include <fastjet/PseudoJet.hh>
+#include <fastjet/Selector.hh>
 #include <fastjet/tools/JetMedianBackgroundEstimator.hh>
 #include <fastjet/tools/Subtractor.hh>
-#include <fastjet/Selector.hh>
-#include <fastjet/PseudoJet.hh>
-#include <fastjet/AreaDefinition.hh>
-#include <fastjet/GhostedAreaSpec.hh>
-#include "PWGJE/Core/JetBkgSubUtils.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGJE/DataModel/Jet.h"
 
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
+#include <cmath>
+#include <string>
+#include <vector>
 
 using namespace std;
 using namespace o2;
@@ -156,9 +159,13 @@ struct StrangenessInJets {
   Configurable<std::string> histoNameWeightAntilambdaJet{"histoNameWeightAntilambdaJet", "", "reweighting histogram: antilambda in jet"};
   Configurable<std::string> histoNameWeightAntilambdaUe{"histoNameWeightAntilambdaUe", "", "reweighting histogram: antilambda in ue"};
   Configurable<std::string> histoNameWeightsXiInJet{"histoNameWeightsXiInJet", "", "reweighting histogram: xi in jet"};
-  Configurable<std::string> histoNameWeightsXiInUe{"histoNameWeightsXiInUe", "", "reweighting histogram: xi in ue"};
+  Configurable<std::string> histoNameWeightsXiUe{"histoNameWeightsXiUe", "", "reweighting histogram: xi in ue"};
   Configurable<std::string> histoNameWeightsAntiXiInJet{"histoNameWeightsAntiXiInJet", "", "reweighting histogram: antixi in jet"};
-  Configurable<std::string> histoNameWeightsAntiXiInUe{"histoNameWeightsAntiXiInUe", "", "reweighting histogram: antixi in ue"};
+  Configurable<std::string> histoNameWeightsAntiXiUe{"histoNameWeightsAntiXiUe", "", "reweighting histogram: antixi in ue"};
+  Configurable<std::string> histoNameWeightsOmegaInJet{"histoNameWeightsOmegaInJet", "", "reweighting histogram: omega in jet"};
+  Configurable<std::string> histoNameWeightsOmegaUe{"histoNameWeightsOmegaUe", "", "reweighting histogram: omega in ue"};
+  Configurable<std::string> histoNameWeightsAntiOmegaInJet{"histoNameWeightsAntiOmegaInJet", "", "reweighting histogram: antiomega in jet"};
+  Configurable<std::string> histoNameWeightsAntiOmegaUe{"histoNameWeightsAntiOmegaUe", "", "reweighting histogram: antiomega in ue"};
 
   // Two-dimensional weights
   TH2F* twodWeightsPiplusJet = nullptr;
@@ -171,10 +178,14 @@ struct StrangenessInJets {
   TH2F* twodWeightsLambdaUe;
   TH2F* twodWeightsAntilambdaJet;
   TH2F* twodWeightsAntilambdaUe;
-  TH1F* weightsXiInJet;
-  TH1F* weightsXiInUe;
-  TH1F* weightsAntiXiInJet;
-  TH1F* weightsAntiXiInUe;
+  TH2F* twodWeightsXiInJet;
+  TH2F* twodWeightsXiUe;
+  TH2F* twodWeightsAntiXiInJet;
+  TH2F* twodWeightsAntiXiUe;
+  TH2F* twodWeightsOmegaInJet;
+  TH2F* twodWeightsOmegaUe;
+  TH2F* twodWeightsAntiOmegaInJet;
+  TH2F* twodWeightsAntiOmegaUe;
 
   // List of Particles
   enum Option { KZeroLambda,
@@ -190,6 +201,7 @@ struct StrangenessInJets {
   {
     if (cfgSkimmedProcessing) {
       zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fOmega");
+      zorro.populateHistRegistry(registryData, bc.runNumber());
     }
   }
 
@@ -214,10 +226,14 @@ struct StrangenessInJets {
       twodWeightsLambdaUe = nullptr;
       twodWeightsAntilambdaJet = nullptr;
       twodWeightsAntilambdaUe = nullptr;
-      weightsXiInJet = nullptr;
-      weightsXiInUe = nullptr;
-      weightsAntiXiInJet = nullptr;
-      weightsAntiXiInUe = nullptr;
+      twodWeightsXiInJet = nullptr;
+      twodWeightsXiUe = nullptr;
+      twodWeightsAntiXiInJet = nullptr;
+      twodWeightsAntiXiUe = nullptr;
+      twodWeightsOmegaInJet = nullptr;
+      twodWeightsOmegaUe = nullptr;
+      twodWeightsAntiOmegaInJet = nullptr;
+      twodWeightsAntiOmegaUe = nullptr;
     }
 
     // Event Counters
@@ -241,8 +257,8 @@ struct StrangenessInJets {
     registryQC.add("sumPtUE", "sumPtUE", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
     registryQC.add("nJets_found", "nJets_found", HistType::kTH1F, {{10, 0, 10, "#it{n}_{Jet}"}});
     registryQC.add("nJets_selected", "nJets_selected", HistType::kTH1F, {{10, 0, 10, "#it{n}_{Jet}"}});
-    registryQC.add("dcaxy_vs_pt", "dcaxy_vs_pt", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
-    registryQC.add("dcaz_vs_pt", "dcaz_vs_pt", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{z} (cm)"}});
+    // registryQC.add("dcaxy_vs_pt", "dcaxy_vs_pt", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
+    // registryQC.add("dcaz_vs_pt", "dcaz_vs_pt", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{z} (cm)"}});
     registryQC.add("jet_jet_overlaps", "jet_jet_overlaps", HistType::kTH2F, {{20, 0.0, 20.0, "#it{n}_{jet}"}, {200, 0.0, 200.0, "#it{n}_{overlaps}"}});
     registryQC.add("jet_ue_overlaps", "jet_ue_overlaps", HistType::kTH2F, {{20, 0.0, 20.0, "#it{n}_{jet}"}, {200, 0.0, 200.0, "#it{n}_{overlaps}"}});
     registryQC.add("ue_ue_overlaps", "ue_ue_overlaps", HistType::kTH2F, {{20, 0.0, 20.0, "#it{n}_{jet}"}, {200, 0.0, 200.0, "#it{n}_{overlaps}"}});
@@ -344,10 +360,14 @@ struct StrangenessInJets {
       registryMC.add("Lambda_generated_ue", "Lambda_generated_ue", HistType::kTH2F, {multBinning, ptAxis});
       registryMC.add("AntiLambda_generated_jet", "AntiLambda_generated_jet", HistType::kTH2F, {multBinning, ptAxis});
       registryMC.add("AntiLambda_generated_ue", "AntiLambda_generated_ue", HistType::kTH2F, {multBinning, ptAxis});
-      registryMC.add("XiPos_generated", "XiPos_generated", HistType::kTH2F, {multBinning, ptAxis});
-      registryMC.add("XiNeg_generated", "XiNeg_generated", HistType::kTH2F, {multBinning, ptAxis});
-      registryMC.add("OmegaPos_generated", "OmegaPos_generated", HistType::kTH2F, {multBinning, ptAxis});
-      registryMC.add("OmegaNeg_generated", "OmegaNeg_generated", HistType::kTH2F, {multBinning, ptAxis});
+      registryMC.add("XiPos_generated_jet", "XiPos_generated_jet", HistType::kTH2F, {multBinning, ptAxis});
+      registryMC.add("XiPos_generated_ue", "XiPos_generated_ue", HistType::kTH2F, {multBinning, ptAxis});
+      registryMC.add("XiNeg_generated_jet", "XiNeg_generated_jet", HistType::kTH2F, {multBinning, ptAxis});
+      registryMC.add("XiNeg_generated_ue", "XiNeg_generated_ue", HistType::kTH2F, {multBinning, ptAxis});
+      registryMC.add("OmegaPos_generated_jet", "OmegaPos_generated_jet", HistType::kTH2F, {multBinning, ptAxis});
+      registryMC.add("OmegaPos_generated_ue", "OmegaPos_generated_ue", HistType::kTH2F, {multBinning, ptAxis});
+      registryMC.add("OmegaNeg_generated_jet", "OmegaNeg_generated_jet", HistType::kTH2F, {multBinning, ptAxis});
+      registryMC.add("OmegaNeg_generated_ue", "OmegaNeg_generated_ue", HistType::kTH2F, {multBinning, ptAxis});
 
       // Histograms for efficiency (reconstructed)
       registryMC.add("K0s_reconstructed_jet", "K0s_reconstructed_jet", HistType::kTH2F, {multBinning, ptAxis});
@@ -356,21 +376,30 @@ struct StrangenessInJets {
       registryMC.add("Lambda_reconstructed_ue", "Lambda_reconstructed_ue", HistType::kTH2F, {multBinning, ptAxis});
       registryMC.add("AntiLambda_reconstructed_jet", "AntiLambda_reconstructed_jet", HistType::kTH2F, {multBinning, ptAxis});
       registryMC.add("AntiLambda_reconstructed_ue", "AntiLambda_reconstructed_ue", HistType::kTH2F, {multBinning, ptAxis});
-      registryMC.add("XiPos_reconstructed", "XiPos_reconstructed", HistType::kTH2F, {multBinning, ptAxis});
-      registryMC.add("XiNeg_reconstructed", "XiNeg_reconstructed", HistType::kTH2F, {multBinning, ptAxis});
-      registryMC.add("OmegaPos_reconstructed", "OmegaPos_reconstructed", HistType::kTH2F, {multBinning, ptAxis});
-      registryMC.add("OmegaNeg_reconstructed", "OmegaNeg_reconstructed", HistType::kTH2F, {multBinning, ptAxis});
+      registryMC.add("XiPos_reconstructed_jet", "XiPos_reconstructed_jet", HistType::kTH2F, {multBinning, ptAxis});
+      registryMC.add("XiPos_reconstructed_ue", "XiPos_reconstructed_ue", HistType::kTH2F, {multBinning, ptAxis});
+      registryMC.add("XiNeg_reconstructed_jet", "XiNeg_reconstructed_jet", HistType::kTH2F, {multBinning, ptAxis});
+      registryMC.add("XiNeg_reconstructed_ue", "XiNeg_reconstructed_ue", HistType::kTH2F, {multBinning, ptAxis});
+      registryMC.add("OmegaPos_reconstructed_jet", "OmegaPos_reconstructed_jet", HistType::kTH2F, {multBinning, ptAxis});
+      registryMC.add("OmegaPos_reconstructed_ue", "OmegaPos_reconstructed_ue", HistType::kTH2F, {multBinning, ptAxis});
+      registryMC.add("OmegaNeg_reconstructed_jet", "OmegaNeg_reconstructed_jet", HistType::kTH2F, {multBinning, ptAxis});
+      registryMC.add("OmegaNeg_reconstructed_ue", "OmegaNeg_reconstructed_ue", HistType::kTH2F, {multBinning, ptAxis});
 
       // Histograms for secondary hadrons
       registryMC.add("K0s_reconstructed_incl", "K0s_reconstructed_incl", HistType::kTH2F, {multBinning, ptAxis});
       registryMC.add("Lambda_reconstructed_incl", "Lambda_reconstructed_incl", HistType::kTH2F, {multBinning, ptAxis});
       registryMC.add("AntiLambda_reconstructed_incl", "AntiLambda_reconstructed_incl", HistType::kTH2F, {multBinning, ptAxis});
 
+      registryMC.add("XiPos_reconstructed_incl", "XiPos_reconstructed_incl", HistType::kTH2F, {multBinning, ptAxis});
+      registryMC.add("XiNeg_reconstructed_incl", "XiNeg_reconstructed_incl", HistType::kTH2F, {multBinning, ptAxis});
+      registryMC.add("OmegaPos_reconstructed_incl", "OmegaPos_reconstructed_incl", HistType::kTH2F, {multBinning, ptAxis});
+      registryMC.add("OmegaNeg_reconstructed_incl", "OmegaNeg_reconstructed_incl", HistType::kTH2F, {multBinning, ptAxis});
+
       // Histograms for secondary lambda in jet and UE
-      registryMC.add("Secondary_Lambda_InJet", "Secondary_Lambda_InJet", HistType::kTH1F, {ptAxis});
-      registryMC.add("Secondary_Lambda_InUe", "Secondary_Lambda_InUe", HistType::kTH1F, {ptAxis});
-      registryMC.add("Secondary_AntiLambda_InJet", "Secondary_AntiLambda_InJet", HistType::kTH1F, {ptAxis});
-      registryMC.add("Secondary_AntiLambda_InUe", "Secondary_AntiLambda_InUe", HistType::kTH1F, {ptAxis});
+      // registryMC.add("Secondary_Lambda_InJet", "Secondary_Lambda_InJet", HistType::kTH1F, {ptAxis});
+      // registryMC.add("Secondary_Lambda_Ue", "Secondary_Lambda_Ue", HistType::kTH1F, {ptAxis});
+      // registryMC.add("Secondary_AntiLambda_InJet", "Secondary_AntiLambda_InJet", HistType::kTH1F, {ptAxis});
+      // registryMC.add("Secondary_AntiLambda_Ue", "Secondary_AntiLambda_Ue", HistType::kTH1F, {ptAxis});
 
       // Histograms for 2d reweighting (pion)
       registryMC.add("mc_pi_plus_eta_pt/jet", "", HistType::kTH2F, {ptAxisPi, etaAxis});
@@ -399,20 +428,20 @@ struct StrangenessInJets {
       registryMC.add("AntiLambda_eta_pt_pythia", "AntiLambda_eta_pt_pythia", HistType::kTH2F, {ptAxis, etaAxis});
 
       // Histograms for 2d reweighting (Xi)
-      registryMC.add("Xi_eta_pt_jet", "Xi_eta_pt_jet", HistType::kTH2F, {ptAxis, etaAxis});
-      registryMC.add("Xi_eta_pt_ue", "Xi_eta_pt_ue", HistType::kTH2F, {ptAxis, etaAxis});
-      registryMC.add("Xi_eta_pt_pythia", "Xi_eta_pt_pythia", HistType::kTH2F, {ptAxis, etaAxis});
-      registryMC.add("AntiXi_eta_pt_jet", "AntiXi_eta_pt_jet", HistType::kTH2F, {ptAxis, etaAxis});
-      registryMC.add("AntiXi_eta_pt_ue", "AntiXi_eta_pt_ue", HistType::kTH2F, {ptAxis, etaAxis});
-      registryMC.add("AntiXi_eta_pt_pythia", "AntiXi_eta_pt_pythia", HistType::kTH2F, {ptAxis, etaAxis});
+      registryMC.add("XiNeg_eta_pt_jet", "Xi_eta_pt_jet", HistType::kTH2F, {ptAxis, etaAxis});
+      registryMC.add("XiNeg_eta_pt_ue", "Xi_eta_pt_ue", HistType::kTH2F, {ptAxis, etaAxis});
+      registryMC.add("XiNeg_eta_pt_pythia", "Xi_eta_pt_pythia", HistType::kTH2F, {ptAxis, etaAxis});
+      registryMC.add("XiPos_eta_pt_jet", "AntiXi_eta_pt_jet", HistType::kTH2F, {ptAxis, etaAxis});
+      registryMC.add("XiPos_eta_pt_ue", "AntiXi_eta_pt_ue", HistType::kTH2F, {ptAxis, etaAxis});
+      registryMC.add("XiPos_eta_pt_pythia", "AntiXi_eta_pt_pythia", HistType::kTH2F, {ptAxis, etaAxis});
 
       // Histograms for 2d reweighting (Omega)
-      registryMC.add("Omega_eta_pt_jet", "Omega_eta_pt_jet", HistType::kTH2F, {ptAxis, etaAxis});
-      registryMC.add("Omega_eta_pt_ue", "Omega_eta_pt_ue", HistType::kTH2F, {ptAxis, etaAxis});
-      registryMC.add("Omega_eta_pt_pythia", "Omega_eta_pt_pythia", HistType::kTH2F, {ptAxis, etaAxis});
-      registryMC.add("AntiOmega_eta_pt_jet", "AntiOmega_eta_pt_jet", HistType::kTH2F, {ptAxis, etaAxis});
-      registryMC.add("AntiOmega_eta_pt_ue", "AntiOmega_eta_pt_ue", HistType::kTH2F, {ptAxis, etaAxis});
-      registryMC.add("AntiOmega_eta_pt_pythia", "AntiOmega_eta_pt_pythia", HistType::kTH2F, {ptAxis, etaAxis});
+      registryMC.add("OmegaNeg_eta_pt_jet", "Omega_eta_pt_jet", HistType::kTH2F, {ptAxis, etaAxis});
+      registryMC.add("OmegaNeg_eta_pt_ue", "Omega_eta_pt_ue", HistType::kTH2F, {ptAxis, etaAxis});
+      registryMC.add("OmegaNeg_eta_pt_pythia", "Omega_eta_pt_pythia", HistType::kTH2F, {ptAxis, etaAxis});
+      registryMC.add("OmegaPos_eta_pt_jet", "AntiOmega_eta_pt_jet", HistType::kTH2F, {ptAxis, etaAxis});
+      registryMC.add("OmegaPos_eta_pt_ue", "AntiOmega_eta_pt_ue", HistType::kTH2F, {ptAxis, etaAxis});
+      registryMC.add("OmegaPos_eta_pt_pythia", "AntiOmega_eta_pt_pythia", HistType::kTH2F, {ptAxis, etaAxis});
 
       // Histograms for efficiency (pions)
       registryMC.add("mc_pi_plus/in_jet/gen", "", HistType::kTH2F, {multBinning, ptAxisPi});
@@ -1017,31 +1046,24 @@ struct StrangenessInJets {
     get2DWeightHisto(histoNameWeightAntilambdaJet, twodWeightsAntilambdaJet);
     get2DWeightHisto(histoNameWeightAntilambdaUe, twodWeightsAntilambdaUe);
 
-    auto get1DWeightHisto = [&](Configurable<std::string> name, TH1F*& histo) {
-      LOG(info) << "Looking for 1D weight histogram '" << name.value << "' for " << name.name;
-      if (name.value == "") {
-        LOG(info) << " -> Skipping";
-        return;
-      }
-      histo = static_cast<TH1F*>(l->FindObject(name.value.c_str()));
-      if (!histo) {
-        LOG(error) << "Could not open histogram '" << name.value << "'";
-        return;
-      }
-      LOG(info) << "Opened histogram " << histo->ClassName() << " " << histo->GetName();
-    };
+    // Xi
+    get2DWeightHisto(histoNameWeightsXiInJet, twodWeightsXiInJet);
+    get2DWeightHisto(histoNameWeightsXiUe, twodWeightsXiUe);
+    get2DWeightHisto(histoNameWeightsAntiXiInJet, twodWeightsAntiXiInJet);
+    get2DWeightHisto(histoNameWeightsAntiXiUe, twodWeightsAntiXiUe);
 
-    // Secondary Lambda
-    get1DWeightHisto(histoNameWeightsXiInJet, weightsXiInJet);
-    get1DWeightHisto(histoNameWeightsXiInUe, weightsXiInUe);
-    get1DWeightHisto(histoNameWeightsAntiXiInJet, weightsAntiXiInJet);
-    get1DWeightHisto(histoNameWeightsAntiXiInUe, weightsAntiXiInUe);
+    // Omega
+    get2DWeightHisto(histoNameWeightsOmegaInJet, twodWeightsOmegaInJet);
+    get2DWeightHisto(histoNameWeightsOmegaUe, twodWeightsOmegaUe);
+    get2DWeightHisto(histoNameWeightsAntiOmegaInJet, twodWeightsAntiOmegaInJet);
+    get2DWeightHisto(histoNameWeightsAntiOmegaUe, twodWeightsAntiOmegaUe);
   }
 
   void processData(SelCollisions::iterator const& collision,
                    aod::V0Datas const& fullV0s,
                    aod::CascDataExt const& Cascades,
-                   StrHadronDaughterTracks const& tracks)
+                   StrHadronDaughterTracks const& tracks,
+                   aod::BCsWithTimestamps const&)
   {
     // event counter: before event selection
     registryData.fill(HIST("number_of_events_data"), 0.5);
@@ -1090,7 +1112,7 @@ struct StrangenessInJets {
     std::vector<TVector3> ue1;
     std::vector<TVector3> ue2;
 
-    for (auto& jet : jets) { // o2-linter: disable=const-ref-in-for-loop (required by backgroundSub)
+    for (const auto& jet : jets) { // o2-linter: disable=const-ref-in-for-loop (required by backgroundSub)
 
       // jet must be fully contained in the acceptance
       if ((std::fabs(jet.eta()) + rJet) > (etaMax - deltaEtaEdge))
@@ -1271,22 +1293,22 @@ struct StrangenessInJets {
           }
 
           bool isInJet = false;
-          bool isInUe = false;
+          bool isUe = false;
           if (deltaRjet < rJet)
             isInJet = true;
           if (deltaRue1 < rJet || deltaRue2 < rJet)
-            isInUe = true;
+            isUe = true;
 
           if (isHighPurityPion(track, nsigmaTPC, nsigmaTOF)) {
             if (track.sign() > 0) {
               if (isInJet)
                 registryData.fill(HIST("piplus_dcaxy_in_jet"), multiplicity, track.pt(), track.dcaXY());
-              if (isInUe)
+              if (isUe)
                 registryData.fill(HIST("piplus_dcaxy_in_ue"), multiplicity, track.pt(), track.dcaXY());
             } else {
               if (isInJet)
                 registryData.fill(HIST("piminus_dcaxy_in_jet"), multiplicity, track.pt(), track.dcaXY());
-              if (isInUe)
+              if (isUe)
                 registryData.fill(HIST("piminus_dcaxy_in_ue"), multiplicity, track.pt(), track.dcaXY());
             }
           }
@@ -1301,7 +1323,7 @@ struct StrangenessInJets {
               if (isInJet) {
                 registryData.fill(HIST("piplus_tpc_in_jet"), multiplicity, track.pt(), nsigmaTPC);
               }
-              if (isInUe) {
+              if (isUe) {
                 registryData.fill(HIST("piplus_tpc_in_ue"), multiplicity, track.pt(), nsigmaTPC);
               }
               break;
@@ -1309,7 +1331,7 @@ struct StrangenessInJets {
               if (isInJet) {
                 registryData.fill(HIST("piminus_tpc_in_jet"), multiplicity, track.pt(), nsigmaTPC);
               }
-              if (isInUe) {
+              if (isUe) {
                 registryData.fill(HIST("piminus_tpc_in_ue"), multiplicity, track.pt(), nsigmaTPC);
               }
               break;
@@ -1327,7 +1349,7 @@ struct StrangenessInJets {
               if (isInJet) {
                 registryData.fill(HIST("piplus_tof_in_jet"), multiplicity, track.pt(), nsigmaTOF);
               }
-              if (isInUe) {
+              if (isUe) {
                 registryData.fill(HIST("piplus_tof_in_ue"), multiplicity, track.pt(), nsigmaTOF);
               }
               break;
@@ -1335,7 +1357,7 @@ struct StrangenessInJets {
               if (isInJet) {
                 registryData.fill(HIST("piminus_tof_in_jet"), multiplicity, track.pt(), nsigmaTOF);
               }
-              if (isInUe) {
+              if (isUe) {
                 registryData.fill(HIST("piminus_tof_in_ue"), multiplicity, track.pt(), nsigmaTOF);
               }
               break;
@@ -1504,66 +1526,66 @@ struct StrangenessInJets {
         TVector3 momentumV0 = momentumPos + momentumNeg;
 
         // Feed-down for lambda
-        if (passedLambdaSelection(v0, pos, neg) && pdgParent == kLambda0) {
-          if (!isPhysPrim) {
-            double wSecLambdaInJet(1.0);
-            double wSecLambdaInUe(1.0);
-            int idMother = posParticle.mothersIds()[0];
-            const auto& mother = mcParticles.iteratorAt(idMother);
-            int idGrandMother = mother.mothersIds()[0];
-            const auto& grandMother = mcParticles.iteratorAt(idGrandMother);
-            switch (grandMother.pdgCode()) {
-              case kXiMinus:
-              case kXiPlusBar:
-                // case 3322:
-                // case -3322:
-                if (weightsXiInJet) {
-                  int ibinXiInJet = weightsXiInJet->GetXaxis()->FindBin(grandMother.pt());
-                  wSecLambdaInJet = weightsXiInJet->GetBinContent(ibinXiInJet);
-                }
-                if (weightsXiInUe) {
-                  int ibinXiInUe = weightsXiInUe->GetXaxis()->FindBin(grandMother.pt());
-                  wSecLambdaInUe = weightsXiInUe->GetBinContent(ibinXiInUe);
-                }
-                break;
-              default:
-                break;
-            }
-            registryMC.fill(HIST("Secondary_Lambda_InJet"), v0.pt(), wSecLambdaInJet);
-            registryMC.fill(HIST("Secondary_Lambda_InUe"), v0.pt(), wSecLambdaInUe);
-          }
-        }
+        // if (passedLambdaSelection(v0, pos, neg) && pdgParent == kLambda0) {
+        //  if (!isPhysPrim) {
+        //    double wSecLambdaInJet(1.0);
+        //    double wSecLambdaUe(1.0);
+        //    int idMother = posParticle.mothersIds()[0];
+        //    const auto& mother = mcParticles.iteratorAt(idMother);
+        //    int idGrandMother = mother.mothersIds()[0];
+        //    const auto& grandMother = mcParticles.iteratorAt(idGrandMother);
+        //    switch (grandMother.pdgCode()) {
+        //      case kXiMinus:
+        //      case kXiPlusBar:
+        //        // case 3322:
+        //        // case -3322:
+        //        if (weightsXiInJet) {
+        //          int ibinXiInJet = weightsXiInJet->GetXaxis()->FindBin(grandMother.pt());
+        //          wSecLambdaInJet = weightsXiInJet->GetBinContent(ibinXiInJet);
+        //        }
+        //        if (weightsXiUe) {
+        //          int ibinXiUe = weightsXiUe->GetXaxis()->FindBin(grandMother.pt());
+        //          wSecLambdaUe = weightsXiUe->GetBinContent(ibinXiUe);
+        //        }
+        //        break;
+        //      default:
+        //        break;
+        //    }
+        //    registryMC.fill(HIST("Secondary_Lambda_InJet"), v0.pt(), wSecLambdaInJet);
+        //    registryMC.fill(HIST("Secondary_Lambda_Ue"), v0.pt(), wSecLambdaUe);
+        //  }
+        //}
 
         // Feed-down for antilambda
-        if (passedAntiLambdaSelection(v0, pos, neg) && pdgParent == kLambda0Bar) {
-          if (!isPhysPrim) {
-            double wSecAntiLambdaInJet(1.0);
-            double wSecAntiLambdaInUe(1.0);
-            int idMother = posParticle.mothersIds()[0];
-            const auto& mother = mcParticles.iteratorAt(idMother);
-            int idGrandMother = mother.mothersIds()[0];
-            const auto& grandMother = mcParticles.iteratorAt(idGrandMother);
-            switch (grandMother.pdgCode()) {
-              case kXiMinus:
-              case kXiPlusBar:
-                // case 3322:
-                // case -3322:
-                if (weightsAntiXiInJet) {
-                  int ibinAntiXiInJet = weightsAntiXiInJet->GetXaxis()->FindBin(grandMother.pt());
-                  wSecAntiLambdaInJet = weightsAntiXiInJet->GetBinContent(ibinAntiXiInJet);
-                }
-                if (weightsAntiXiInUe) {
-                  int ibinAntiXiInUe = weightsAntiXiInUe->GetXaxis()->FindBin(grandMother.pt());
-                  wSecAntiLambdaInUe = weightsAntiXiInUe->GetBinContent(ibinAntiXiInUe);
-                }
-                break;
-              default:
-                break;
-            }
-            registryMC.fill(HIST("Secondary_AntiLambda_InJet"), v0.pt(), wSecAntiLambdaInJet);
-            registryMC.fill(HIST("Secondary_AntiLambda_InUe"), v0.pt(), wSecAntiLambdaInUe);
-          }
-        }
+        // if (passedAntiLambdaSelection(v0, pos, neg) && pdgParent == kLambda0Bar) {
+        //  if (!isPhysPrim) {
+        //    double wSecAntiLambdaInJet(1.0);
+        //    double wSecAntiLambdaUe(1.0);
+        //    int idMother = posParticle.mothersIds()[0];
+        //    const auto& mother = mcParticles.iteratorAt(idMother);
+        //    int idGrandMother = mother.mothersIds()[0];
+        //    const auto& grandMother = mcParticles.iteratorAt(idGrandMother);
+        //    switch (grandMother.pdgCode()) {
+        //      case kXiMinus:
+        //      case kXiPlusBar:
+        //        // case 3322:
+        //        // case -3322:
+        //        if (weightsAntiXiInJet) {
+        //          int ibinAntiXiInJet = weightsAntiXiInJet->GetXaxis()->FindBin(grandMother.pt());
+        //          wSecAntiLambdaInJet = weightsAntiXiInJet->GetBinContent(ibinAntiXiInJet);
+        //        }
+        //        if (weightsAntiXiUe) {
+        //          int ibinAntiXiUe = weightsAntiXiUe->GetXaxis()->FindBin(grandMother.pt());
+        //          wSecAntiLambdaUe = weightsAntiXiUe->GetBinContent(ibinAntiXiUe);
+        //        }
+        //        break;
+        //      default:
+        //        break;
+        //    }
+        //    registryMC.fill(HIST("Secondary_AntiLambda_InJet"), v0.pt(), wSecAntiLambdaInJet);
+        //    registryMC.fill(HIST("Secondary_AntiLambda_Ue"), v0.pt(), wSecAntiLambdaUe);
+        //  }
+        //}
 
         if (passedK0ShortSelection(v0, pos, neg) && pdgParent == kK0Short) {
           registryMC.fill(HIST("K0s_reconstructed_incl"), multiplicity, v0.pt());
@@ -1645,6 +1667,7 @@ struct StrangenessInJets {
           continue;
 
         int pdgParent(0);
+        bool isPhysPrim = false;
         for (const auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {
           for (const auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {
             for (const auto& particleMotherOfBach : bachParticle.mothers_as<aod::McParticles>()) {
@@ -1656,27 +1679,95 @@ struct StrangenessInJets {
                 continue;
 
               pdgParent = particleMotherOfBach.pdgCode();
+              isPhysPrim = particleMotherOfBach.isPhysicalPrimary();
             }
           }
         }
         if (pdgParent == 0)
           continue;
 
+        // Generated Momentum of casc
+        TVector3 momentumPos(posParticle.px(), posParticle.py(), posParticle.pz());
+        TVector3 momentumNeg(negParticle.px(), negParticle.py(), negParticle.pz());
+        TVector3 momentumBach(bachParticle.px(), bachParticle.py(), bachParticle.pz());
+        TVector3 momentumV0 = momentumPos + momentumNeg;
+        TVector3 momentumCasc = momentumV0 + momentumBach;
+
         // Xi+
         if (passedXiSelection(casc, pos, neg, bach, collision) && pdgParent == kXiPlusBar) {
-          registryMC.fill(HIST("XiPos_reconstructed"), multiplicity, casc.pt());
+          registryMC.fill(HIST("XiPos_reconstructed_incl"), multiplicity, casc.pt());
         }
         // Xi-
         if (passedXiSelection(casc, pos, neg, bach, collision) && pdgParent == kXiMinus) {
-          registryMC.fill(HIST("XiNeg_reconstructed"), multiplicity, casc.pt());
+          registryMC.fill(HIST("XiNeg_reconstructed_incl"), multiplicity, casc.pt());
         }
         // Omega+
         if (passedOmegaSelection(casc, pos, neg, bach, collision) && pdgParent == kOmegaPlusBar) {
-          registryMC.fill(HIST("OmegaPos_reconstructed"), multiplicity, casc.pt());
+          registryMC.fill(HIST("OmegaPos_reconstructed_incl"), multiplicity, casc.pt());
         }
         // Omega-
         if (passedOmegaSelection(casc, pos, neg, bach, collision) && pdgParent == kOmegaMinus) {
-          registryMC.fill(HIST("OmegaNeg_reconstructed"), multiplicity, casc.pt());
+          registryMC.fill(HIST("OmegaNeg_reconstructed_incl"), multiplicity, casc.pt());
+        }
+
+        if (!isPhysPrim)
+          continue;
+
+        double wXiPosJet(1.0), wXiPosUe(1.0), wXiNegJet(1.0), wXiNegUe(1.0), wOmegaPosJet(1.0), wOmegaPosUe(1.0), wOmegaNegJet(1.0), wOmegaNegUe(1.0);
+        if (applyReweighting) {
+          int ix = twodWeightsXiInJet->GetXaxis()->FindBin(momentumCasc.Pt());
+          int iy = twodWeightsXiInJet->GetYaxis()->FindBin(momentumCasc.Eta());
+          wXiPosJet = twodWeightsAntiXiInJet->GetBinContent(ix, iy);
+          wXiPosUe = twodWeightsAntiXiUe->GetBinContent(ix, iy);
+          wXiNegJet = twodWeightsXiInJet->GetBinContent(ix, iy);
+          wXiNegUe = twodWeightsXiUe->GetBinContent(ix, iy);
+          wOmegaPosJet = twodWeightsAntiOmegaInJet->GetBinContent(ix, iy);
+          wOmegaPosUe = twodWeightsAntiOmegaUe->GetBinContent(ix, iy);
+          wOmegaNegJet = twodWeightsOmegaInJet->GetBinContent(ix, iy);
+          wOmegaNegUe = twodWeightsOmegaUe->GetBinContent(ix, iy);
+
+          // protections
+          if (ix == 0 || ix > twodWeightsXiInJet->GetNbinsX()) {
+            wXiPosJet = 1.0;
+            wXiPosUe = 1.0;
+            wXiNegJet = 1.0;
+            wXiNegUe = 1.0;
+            wOmegaPosJet = 1.0;
+            wOmegaPosUe = 1.0;
+            wOmegaNegJet = 1.0;
+            wOmegaNegUe = 1.0;
+          }
+          if (iy == 0 || iy > twodWeightsXiInJet->GetNbinsY()) {
+            wXiPosJet = 1.0;
+            wXiPosUe = 1.0;
+            wXiNegJet = 1.0;
+            wXiNegUe = 1.0;
+            wOmegaPosJet = 1.0;
+            wOmegaPosUe = 1.0;
+            wOmegaNegJet = 1.0;
+            wOmegaNegUe = 1.0;
+          }
+        }
+
+        // Xi+
+        if (passedXiSelection(casc, pos, neg, bach, collision) && pdgParent == kXiPlusBar) {
+          registryMC.fill(HIST("XiPos_reconstructed_jet"), multiplicity, casc.pt(), wXiPosJet);
+          registryMC.fill(HIST("XiPos_reconstructed_ue"), multiplicity, casc.pt(), wXiPosUe);
+        }
+        // Xi-
+        if (passedXiSelection(casc, pos, neg, bach, collision) && pdgParent == kXiMinus) {
+          registryMC.fill(HIST("XiNeg_reconstructed_jet"), multiplicity, casc.pt(), wXiNegJet);
+          registryMC.fill(HIST("XiNeg_reconstructed_ue"), multiplicity, casc.pt(), wXiNegUe);
+        }
+        // Omega+
+        if (passedOmegaSelection(casc, pos, neg, bach, collision) && pdgParent == kOmegaPlusBar) {
+          registryMC.fill(HIST("OmegaPos_reconstructed_jet"), multiplicity, casc.pt(), wOmegaPosJet);
+          registryMC.fill(HIST("OmegaPos_reconstructed_ue"), multiplicity, casc.pt(), wOmegaPosUe);
+        }
+        // Omega-
+        if (passedOmegaSelection(casc, pos, neg, bach, collision) && pdgParent == kOmegaMinus) {
+          registryMC.fill(HIST("OmegaNeg_reconstructed_jet"), multiplicity, casc.pt(), wOmegaNegJet);
+          registryMC.fill(HIST("OmegaNeg_reconstructed_ue"), multiplicity, casc.pt(), wOmegaNegUe);
         }
       }
 
@@ -1854,6 +1945,42 @@ struct StrangenessInJets {
           }
         }
 
+        double wXiPosJet(1.0), wXiPosUe(1.0), wXiNegJet(1.0), wXiNegUe(1.0), wOmegaPosJet(1.0), wOmegaPosUe(1.0), wOmegaNegJet(1.0), wOmegaNegUe(1.0);
+        if (applyReweighting) {
+          int ix = twodWeightsXiInJet->GetXaxis()->FindBin(mcParticle.pt());
+          int iy = twodWeightsXiInJet->GetYaxis()->FindBin(mcParticle.eta());
+          wXiPosJet = twodWeightsAntiXiInJet->GetBinContent(ix, iy);
+          wXiPosUe = twodWeightsAntiXiUe->GetBinContent(ix, iy);
+          wXiNegJet = twodWeightsXiInJet->GetBinContent(ix, iy);
+          wXiNegUe = twodWeightsXiUe->GetBinContent(ix, iy);
+          wOmegaPosJet = twodWeightsAntiOmegaInJet->GetBinContent(ix, iy);
+          wOmegaPosUe = twodWeightsAntiOmegaUe->GetBinContent(ix, iy);
+          wOmegaNegJet = twodWeightsOmegaInJet->GetBinContent(ix, iy);
+          wOmegaNegUe = twodWeightsOmegaUe->GetBinContent(ix, iy);
+
+          // protections
+          if (ix == 0 || ix > twodWeightsXiInJet->GetNbinsX()) {
+            wXiPosJet = 1.0;
+            wXiPosUe = 1.0;
+            wXiNegJet = 1.0;
+            wXiNegUe = 1.0;
+            wOmegaPosJet = 1.0;
+            wOmegaPosUe = 1.0;
+            wOmegaNegJet = 1.0;
+            wOmegaNegUe = 1.0;
+          }
+          if (iy == 0 || iy > twodWeightsXiInJet->GetNbinsY()) {
+            wXiPosJet = 1.0;
+            wXiPosUe = 1.0;
+            wXiNegJet = 1.0;
+            wXiNegUe = 1.0;
+            wOmegaPosJet = 1.0;
+            wOmegaPosUe = 1.0;
+            wOmegaNegJet = 1.0;
+            wOmegaNegUe = 1.0;
+          }
+        }
+
         switch (mcParticle.pdgCode()) {
           /*
           case kPiPlus: // Pi+
@@ -1903,20 +2030,24 @@ struct StrangenessInJets {
             registryMC.fill(HIST("AntiLambda_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
           case kXiPlusBar: // Xi Pos
-            registryMC.fill(HIST("XiPos_generated"), multiplicity, mcParticle.pt());
-            registryMC.fill(HIST("Xi_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+            registryMC.fill(HIST("XiPos_generated_jet"), multiplicity, mcParticle.pt(), wXiPosJet);
+            registryMC.fill(HIST("XiPos_generated_ue"), multiplicity, mcParticle.pt(), wXiPosUe);
+            registryMC.fill(HIST("XiPos_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
           case kXiMinus: // Xi Neg
-            registryMC.fill(HIST("XiNeg_generated"), multiplicity, mcParticle.pt());
-            registryMC.fill(HIST("AntiXi_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+            registryMC.fill(HIST("XiNeg_generated_jet"), multiplicity, mcParticle.pt(), wXiNegJet);
+            registryMC.fill(HIST("XiNeg_generated_ue"), multiplicity, mcParticle.pt(), wXiNegUe);
+            registryMC.fill(HIST("XiNeg_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
           case kOmegaPlusBar: // Omega Pos
-            registryMC.fill(HIST("OmegaPos_generated"), multiplicity, mcParticle.pt());
-            registryMC.fill(HIST("Omega_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+            registryMC.fill(HIST("OmegaPos_generated_jet"), multiplicity, mcParticle.pt(), wOmegaPosJet);
+            registryMC.fill(HIST("OmegaPos_generated_ue"), multiplicity, mcParticle.pt(), wOmegaPosUe);
+            registryMC.fill(HIST("OmegaPos_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
           case kOmegaMinus: // Omega Neg
-            registryMC.fill(HIST("OmegaNeg_generated"), multiplicity, mcParticle.pt());
-            registryMC.fill(HIST("AntiOmega_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+            registryMC.fill(HIST("OmegaNeg_generated_jet"), multiplicity, mcParticle.pt(), wOmegaNegJet);
+            registryMC.fill(HIST("OmegaNeg_generated_ue"), multiplicity, mcParticle.pt(), wOmegaNegUe);
+            registryMC.fill(HIST("OmegaNeg_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
         }
       }
@@ -1969,7 +2100,7 @@ struct StrangenessInJets {
       std::vector<TVector3> ue1;
       std::vector<TVector3> ue2;
 
-      for (auto& jet : jets) { // o2-linter: disable=const-ref-in-for-loop (required by backgroundSub)
+      for (const auto& jet : jets) { // o2-linter: disable=const-ref-in-for-loop (required by backgroundSub)
 
         // jet must be fully contained in the acceptance
         if ((std::fabs(jet.eta()) + rJet) > (etaMax - deltaEtaEdge))
@@ -2038,16 +2169,16 @@ struct StrangenessInJets {
                 registryMC.fill(HIST("AntiLambda_eta_pt_jet"), particle.pt(), particle.eta());
                 break;
               case kXiMinus:
-                registryMC.fill(HIST("Xi_eta_pt_jet"), particle.pt(), particle.eta());
+                registryMC.fill(HIST("XiNeg_eta_pt_jet"), particle.pt(), particle.eta());
                 break;
               case kXiPlusBar:
-                registryMC.fill(HIST("AntiXi_eta_pt_jet"), particle.pt(), particle.eta());
+                registryMC.fill(HIST("XiPos_eta_pt_jet"), particle.pt(), particle.eta());
                 break;
               case kOmegaMinus:
-                registryMC.fill(HIST("Omega_eta_pt_jet"), particle.pt(), particle.eta());
+                registryMC.fill(HIST("OmegaNeg_eta_pt_jet"), particle.pt(), particle.eta());
                 break;
               case kOmegaPlusBar:
-                registryMC.fill(HIST("AntiOmega_eta_pt_jet"), particle.pt(), particle.eta());
+                registryMC.fill(HIST("OmegaPos_eta_pt_jet"), particle.pt(), particle.eta());
                 break;
               default:
                 continue;
@@ -2074,16 +2205,16 @@ struct StrangenessInJets {
                 registryMC.fill(HIST("AntiLambda_eta_pt_ue"), particle.pt(), particle.eta());
                 break;
               case kXiMinus:
-                registryMC.fill(HIST("Xi_eta_pt_ue"), particle.pt(), particle.eta());
+                registryMC.fill(HIST("XiNeg_eta_pt_ue"), particle.pt(), particle.eta());
                 break;
               case kXiPlusBar:
-                registryMC.fill(HIST("AntiXi_eta_pt_ue"), particle.pt(), particle.eta());
+                registryMC.fill(HIST("XiPos_eta_pt_ue"), particle.pt(), particle.eta());
                 break;
               case kOmegaMinus:
-                registryMC.fill(HIST("Omega_eta_pt_ue"), particle.pt(), particle.eta());
+                registryMC.fill(HIST("OmegaNeg_eta_pt_ue"), particle.pt(), particle.eta());
                 break;
               case kOmegaPlusBar:
-                registryMC.fill(HIST("AntiOmega_eta_pt_ue"), particle.pt(), particle.eta());
+                registryMC.fill(HIST("OmegaPos_eta_pt_ue"), particle.pt(), particle.eta());
                 break;
               default:
                 continue;

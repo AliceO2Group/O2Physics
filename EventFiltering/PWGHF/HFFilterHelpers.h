@@ -8,7 +8,6 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-// O2 includes
 
 /// \file HFFilterHelpers.h
 /// \brief Header file with definition of variables, methods, and tables used in the HFFilter.cxx task
@@ -23,40 +22,46 @@
 #ifndef EVENTFILTERING_PWGHF_HFFILTERHELPERS_H_
 #define EVENTFILTERING_PWGHF_HFFILTERHELPERS_H_
 
-#include <algorithm>
-#include <array>
-#include <cmath>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "Math/GenVector/Boost.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-
-#include "CCDB/CcdbApi.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/DataTypes.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-
+#include "EventFiltering/filterTables.h"
+//
+#include "PWGHF/Core/SelectorCuts.h"
+//
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DataFormatsTPC/BetheBlochAleph.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Array2D.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
 
-#include "EventFiltering/filterTables.h"
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TAxis.h>
+#include <TH1.h>
+#include <TH3.h>
+
+#include <Rtypes.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <string>
+#include <tuple>
+#include <vector>
 
 namespace o2::aod
 {
@@ -273,7 +278,7 @@ constexpr float massB0 = o2::constants::physics::MassB0;
 constexpr float massBs = o2::constants::physics::MassBS;
 constexpr float massLb = o2::constants::physics::MassLambdaB0;
 constexpr float massXib = o2::constants::physics::MassXiB0;
-constexpr float massBc = 6.2744700f; // TODO add Bc mass to o2::constants::physics
+constexpr float massBc = o2::constants::physics::MassBCPlus;
 constexpr float massSigmaCPlusPlus = o2::constants::physics::MassSigmaCPlusPlus;
 constexpr float massSigmaC0 = o2::constants::physics::MassSigmaC0;
 constexpr float massK0Star892 = o2::constants::physics::MassK0Star892;
@@ -596,6 +601,12 @@ class HfFilterHelper
 
   void setNumSigmaForDeltaMassCharmHadCut(float nSigma) { mNumSigmaDeltaMassCharmHad = nSigma; }
 
+  void setPreselDsToKKPi(std::vector<double> ptBins, o2::framework::LabeledArray<double> preselections)
+  {
+    mPtBinsPreselDsToKKPi = ptBins;
+    mPreselDsToKKPi = preselections;
+  }
+
   // helper functions for selections
   template <typename T>
   bool isSelectedHighPt2Prong(const T& pt);
@@ -785,6 +796,9 @@ class HfFilterHelper
   int mTpcPidCalibrationOption{0};                          // Option for TPC PID calibration (0 -> AO2D, 1 -> postcalibrations, 2 -> alternative bethe bloch parametrisation)
   std::array<TH3F*, 8> mHistMapPiPrKaDe{};                  // Map for TPC PID postcalibrations for pions, kaon, protons and deuterons
   std::array<std::vector<double>, 8> mBetheBlochPiKaPrDe{}; // Bethe-Bloch parametrisations for pions, antipions, kaons, antikaons, protons, antiprotons, deuterons, antideuterons in TPC
+  // Ds cuts from track-index-skim-creator
+  std::vector<double> mPtBinsPreselDsToKKPi{};           // pT bins for pre-selections for Ds from track-index-skim-creator
+  o2::framework::LabeledArray<double> mPreselDsToKKPi{}; // pre-selections for Ds from track-index-skim-creator
 };
 
 /// Selection of high-pt 2-prong candidates
@@ -1066,13 +1080,20 @@ inline int8_t HfFilterHelper::isDsPreselected(const P& pTrackSameChargeFirst, co
   }
 
   // check delta-mass for phi resonance
+  auto ptDs = RecoDecay::pt(pTrackSameChargeFirst, pTrackSameChargeSecond, pTrackOppositeCharge);
+  auto ptBinDs = findBin(mPtBinsPreselDsToKKPi, ptDs);
+  if (ptBinDs == -1) {
+    return retValue;
+  }
+
   auto invMassKKFirst = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge}, std::array{massKa, massKa});
   auto invMassKKSecond = RecoDecay::m(std::array{pTrackSameChargeSecond, pTrackOppositeCharge}, std::array{massKa, massKa});
 
-  if (std::fabs(invMassKKFirst - massPhi) < 0.02) {
+  float cutValueMassKK = mPreselDsToKKPi.get(ptBinDs, 4u);
+  if (std::fabs(invMassKKFirst - massPhi) < cutValueMassKK) {
     retValue |= BIT(0);
   }
-  if (std::fabs(invMassKKSecond - massPhi) < 0.02) {
+  if (std::fabs(invMassKKSecond - massPhi) < cutValueMassKK) {
     retValue |= BIT(1);
   }
 

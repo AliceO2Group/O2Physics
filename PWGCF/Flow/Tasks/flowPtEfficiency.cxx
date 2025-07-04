@@ -60,6 +60,7 @@ struct FlowPtEfficiency {
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "DCAz cut for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAxyppPass3Enabled, bool, false, "switch of ppPass3 DCAxy pt dependent cut")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAzPtDepEnabled, bool, false, "switch of DCAz pt dependent cut")
+  O2_DEFINE_CONFIGURABLE(cfgEnableITSCuts, bool, true, "switch of enabling ITS based track selection cuts")
   O2_DEFINE_CONFIGURABLE(cfgSelRunNumberEnabled, bool, false, "switch of run number selection")
   O2_DEFINE_CONFIGURABLE(cfgFlowEnabled, bool, false, "switch of calculating flow")
   O2_DEFINE_CONFIGURABLE(cfgFlowNbootstrap, int, 30, "Number of subsamples")
@@ -219,10 +220,12 @@ struct FlowPtEfficiency {
       fGFWReco->CreateRegions();
     }
 
-    if (cfgTrkSelRun3ITSMatch) {
-      myTrackSel = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
-    } else {
-      myTrackSel = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
+    if (cfgEnableITSCuts) {
+      if (cfgTrkSelRun3ITSMatch) {
+        myTrackSel = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
+      } else {
+        myTrackSel = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
+      }
     }
     if (cfgCutDCAxyppPass3Enabled) {
       myTrackSel.SetMaxDcaXYPtDep([](float pt) { return 0.004f + 0.013f / pt; });
@@ -230,8 +233,9 @@ struct FlowPtEfficiency {
       myTrackSel.SetMaxDcaXY(cfgCutDCAxy);
     }
     myTrackSel.SetMinNClustersTPC(cfgCutTPCclu);
-    myTrackSel.SetMinNClustersITS(cfgCutITSclu);
     myTrackSel.SetMinNCrossedRowsTPC(cfgCutTPCcrossedrows);
+    if (cfgEnableITSCuts)
+      myTrackSel.SetMinNClustersITS(cfgCutITSclu);
     if (!cfgCutDCAzPtDepEnabled)
       myTrackSel.SetMaxDcaZ(cfgCutDCAz);
   }
@@ -358,10 +362,12 @@ struct FlowPtEfficiency {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
-    if (cfgkIsTrackGlobal && !track.isGlobalTrack())
+    if (cfgkIsTrackGlobal && !track.isGlobalTrack()) {
       return false;
-    if (cfgCutDCAzPtDepEnabled && (track.dcaZ() > (0.004f + 0.013f / track.pt())))
+    }
+    if (cfgCutDCAzPtDepEnabled && (track.dcaZ() > (0.004f + 0.013f / track.pt()))) {
       return false;
+    }
     return myTrackSel.IsSelected(track);
   }
 
@@ -378,7 +384,6 @@ struct FlowPtEfficiency {
       if (!std::count(cfgRunNumberList.value.begin(), cfgRunNumberList.value.end(), runNumber))
         return;
     }
-
     float imp = 0;
     bool impFetched = false;
     float evPhi = 0;
@@ -393,7 +398,6 @@ struct FlowPtEfficiency {
 
       fGFWReco->Clear();
     }
-
     for (const auto& track : tracks) {
       if (!trackSelected(track))
         continue;

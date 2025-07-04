@@ -15,21 +15,33 @@
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
-#include <memory>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
-
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
+
+#include <TH1.h>
+
+#include <array>
+#include <cmath>
+#include <memory>
+#include <numeric>
+#include <stdexcept>
 
 using namespace o2;
 using namespace o2::aod;
@@ -203,7 +215,7 @@ struct HfCandidateCreatorB0Reduced {
           rowCandidateDmesMlScores(candD.mlScoreBkgMassHypo0(), candD.mlScorePromptMassHypo0(), candD.mlScoreNonpromptMassHypo0());
         }
       } // pi loop
-    }   // D loop
+    } // D loop
   }
 
   void processData(HfRedCollisionsWithExtras const& collisions,
@@ -295,7 +307,7 @@ struct HfCandidateCreatorB0ReducedExpressions {
         if ((rowDPiMcRec.prong0Id() != candB0.prong0Id()) || (rowDPiMcRec.prong1Id() != candB0.prong1Id())) {
           continue;
         }
-        rowB0McRec(rowDPiMcRec.flagMcMatchRec(), rowDPiMcRec.flagWrongCollision(), rowDPiMcRec.debugMcRec(), rowDPiMcRec.ptMother());
+        rowB0McRec(rowDPiMcRec.flagMcMatchRec(), -1 /*channel*/, rowDPiMcRec.flagWrongCollision(), rowDPiMcRec.debugMcRec(), rowDPiMcRec.ptMother());
         filledMcInfo = true;
         if constexpr (checkDecayTypeMc) {
           rowB0McCheck(rowDPiMcRec.pdgCodeBeautyMother(),
@@ -308,7 +320,7 @@ struct HfCandidateCreatorB0ReducedExpressions {
         break;
       }
       if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the D-Pi creator
-        rowB0McRec(0, -1, -1, -1.f);
+        rowB0McRec(0, -1, -1, -1, -1.f);
         if constexpr (checkDecayTypeMc) {
           rowB0McCheck(-1, -1, -1, -1, -1, -1);
         }

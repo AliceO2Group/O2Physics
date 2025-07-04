@@ -9,23 +9,22 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/*
-Author: Vytautas Vislavicius
-Extention of Generic Flow (https://arxiv.org/abs/1312.3572 by A. Bilandzic et al.)
-Class steers the initialization and calculation of n-particle correlations. Uses recursive function, all terms are calculated only once.
-Latest version includes the calculation of any number of gaps and any combination of harmonics (including eg symmetric cumulants, etc.)
-If used, modified, or distributed, please aknowledge the author of this code.
-*/
+/// \file GFW.h/.cxx
+/// \brief Class steers the initialization and calculation of n-particle correlations. Uses recursive function, all terms are calculated only once.
+/// \author Emil Gorm Nielsen (ack. V. Vislavicius), NBI, emil.gorm.nielsen@cern.ch
+
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_GFW_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_GFW_H_
 
 #include "GFWCumulant.h"
 #include "GFWPowerArray.h"
-#include <vector>
-#include <string>
-#include <utility>
+
 #include <algorithm>
 #include <complex>
+#include <cstdio>
+#include <string>
+#include <utility>
+#include <vector>
 
 class GFW
 {
