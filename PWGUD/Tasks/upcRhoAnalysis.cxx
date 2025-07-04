@@ -24,7 +24,7 @@
 #include "Framework/runDataProcessing.h"
 
 #include <random>
-#include "TLorentzVector.h"
+#include "Math/Vector4D.h"
 
 #include "Common/DataModel/PIDResponse.h"
 
@@ -116,7 +116,9 @@ struct UpcRhoAnalysis {
   Produces<o2::aod::RecoTree> recoTree;
   Produces<o2::aod::McTree> mcTree;
 
-  float pcEtaCut = 0.9; // physics coordination recommendation
+  float pcEtaCut = 0.9;  // physics coordination recommendation
+  const int gapSide = 2; // required gap side
+  const int piPDG = 211; // PDG code for pion
   Configurable<int> numPions{"numPions", 2, "required number of pions in the event"};
   Configurable<bool> requireTof{"requireTof", false, "require TOF signal"};
   Configurable<bool> onlyGoldenRuns{"onlyGoldenRuns", false, "process only golden runs"};
@@ -387,17 +389,11 @@ struct UpcRhoAnalysis {
   template <typename C>
   bool collisionPassesCuts(const C& collision) // collision cuts
   {
+    if (!collision.vtxITSTPC() || !collision.sbp() || !collision.itsROFb() || !collision.tfb()) // not applied automatically in pass5
+      return false;
     if (std::abs(collision.posZ()) > collisionsPosZMaxCut)
       return false;
     if (collision.numContrib() > collisionsNumContribsMaxCut)
-      return false;
-    if (!collision.vtxITSTPC())
-      return false;
-    if (!collision.sbp())
-      return false;
-    if (!collision.itsROFb())
-      return false;
-    if (!collision.tfb())
       return false;
     return true;
   }
@@ -505,7 +501,7 @@ struct UpcRhoAnalysis {
     return charge;
   }
 
-  bool systemPassesCuts(const TLorentzVector& system) // system cuts
+  bool systemPassesCuts(const ROOT::Math::PxPyPzMVector& system) // system cuts
   {
     if (system.M() < systemMassMinCut || system.M() > systemMassMaxCut)
       return false;
@@ -516,47 +512,57 @@ struct UpcRhoAnalysis {
     return true;
   }
 
-  TLorentzVector reconstructSystem(const std::vector<TLorentzVector>& cutTracksLVs) // reconstruct system from 4-vectors
+  ROOT::Math::PxPyPzMVector reconstructSystem(const std::vector<ROOT::Math::PxPyPzMVector>& cutTracksLVs) // reconstruct system from 4-vectors
   {
-    TLorentzVector system;
+    ROOT::Math::PxPyPzMVector system;
     for (const auto& trackLV : cutTracksLVs)
       system += trackLV;
     return system;
   }
 
-  float getPhiRandom(const std::vector<TLorentzVector>& cutTracksLVs)    // decay phi anisotropy
-  {                                                                      // two possible definitions of phi: randomize the tracks
+  double deltaPhi(const ROOT::Math::PxPyPzMVector& p1, const ROOT::Math::PxPyPzMVector& p2)
+  {
+    double dPhi = p1.Phi() - p2.Phi();
+    if (dPhi > o2::constants::math::PI)
+      dPhi -= o2::constants::math::TwoPI;
+    else if (dPhi < -o2::constants::math::PI)
+      dPhi += o2::constants::math::TwoPI;
+    return dPhi; // calculate delta phi in (-pi, pi)
+  }
+
+  float getPhiRandom(const std::vector<ROOT::Math::PxPyPzMVector>& cutTracksLVs) // decay phi anisotropy
+  {                                                                              // two possible definitions of phi: randomize the tracks
     int indices[2] = {0, 1};
-    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();    // get time-based seed
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();            // get time-based seed
     std::shuffle(std::begin(indices), std::end(indices), std::default_random_engine(seed)); // shuffle indices
     // calculate phi
-    TLorentzVector pOne = cutTracksLVs[indices[0]];
-    TLorentzVector pTwo = cutTracksLVs[indices[1]];
-    TLorentzVector pPlus = pOne + pTwo;
-    TLorentzVector pMinus = pOne - pTwo;
-    return pPlus.DeltaPhi(pMinus);
+    ROOT::Math::PxPyPzMVector pOne = cutTracksLVs[indices[0]];
+    ROOT::Math::PxPyPzMVector pTwo = cutTracksLVs[indices[1]];
+    ROOT::Math::PxPyPzMVector pPlus = pOne + pTwo;
+    ROOT::Math::PxPyPzMVector pMinus = pOne - pTwo;
+    return deltaPhi(pPlus, pMinus);
   }
 
   template <typename T>
-  float getPhiCharge(const T& cutTracks, const std::vector<TLorentzVector>& cutTracksLVs)
+  float getPhiCharge(const T& cutTracks, const std::vector<ROOT::Math::PxPyPzMVector>& cutTracksLVs)
   { // two possible definitions of phi: charge-based assignment
-    TLorentzVector pOne, pTwo;
+    ROOT::Math::PxPyPzMVector pOne, pTwo;
     pOne = (cutTracks[0].sign() > 0) ? cutTracksLVs[0] : cutTracksLVs[1];
     pTwo = (cutTracks[0].sign() > 0) ? cutTracksLVs[1] : cutTracksLVs[0];
-    TLorentzVector pPlus = pOne + pTwo;
-    TLorentzVector pMinus = pOne - pTwo;
-    return pPlus.DeltaPhi(pMinus);
+    ROOT::Math::PxPyPzMVector pPlus = pOne + pTwo;
+    ROOT::Math::PxPyPzMVector pMinus = pOne - pTwo;
+    return deltaPhi(pPlus, pMinus);
   }
 
   template <typename T>
-  float getPhiChargeMC(const T& cutTracks, const std::vector<TLorentzVector>& cutTracksLVs)
+  float getPhiChargeMC(const T& cutTracks, const std::vector<ROOT::Math::PxPyPzMVector>& cutTracksLVs)
   { // the same as for data but using pdg code instead of charge
-    TLorentzVector pOne, pTwo;
+    ROOT::Math::PxPyPzMVector pOne, pTwo;
     pOne = (cutTracks[0].pdgCode() > 0) ? cutTracksLVs[0] : cutTracksLVs[1];
     pTwo = (cutTracks[0].pdgCode() > 0) ? cutTracksLVs[1] : cutTracksLVs[0];
-    TLorentzVector pPlus = pOne + pTwo;
-    TLorentzVector pMinus = pOne - pTwo;
-    return pPlus.DeltaPhi(pMinus);
+    ROOT::Math::PxPyPzMVector pPlus = pOne + pTwo;
+    ROOT::Math::PxPyPzMVector pMinus = pOne - pTwo;
+    return deltaPhi(pPlus, pMinus);
   }
 
   template <typename C, typename T>
@@ -583,20 +589,20 @@ struct UpcRhoAnalysis {
     if (std::isinf(timeZNC))
       timeZNC = -999;
 
-    if (energyCommonZNA <= znCommonEnergyCut && energyCommonZNC <= znCommonEnergyCut){
+    if (energyCommonZNA <= znCommonEnergyCut && energyCommonZNC <= znCommonEnergyCut) {
       onon = true;
       neutronClass = 0;
     }
-    if (energyCommonZNA > znCommonEnergyCut && std::abs(timeZNA) <= znTimeCut && energyCommonZNC <= znCommonEnergyCut){
+    if (energyCommonZNA > znCommonEnergyCut && std::abs(timeZNA) <= znTimeCut && energyCommonZNC <= znCommonEnergyCut) {
       xnon = true;
       neutronClass = 1;
     }
-    if (energyCommonZNA <= znCommonEnergyCut && energyCommonZNC > znCommonEnergyCut && std::abs(timeZNC) <= znTimeCut){
+    if (energyCommonZNA <= znCommonEnergyCut && energyCommonZNC > znCommonEnergyCut && std::abs(timeZNC) <= znTimeCut) {
       onxn = true;
       neutronClass = 2;
     }
     if (energyCommonZNA > znCommonEnergyCut && std::abs(timeZNA) <= znTimeCut &&
-        energyCommonZNC > znCommonEnergyCut && std::abs(timeZNC) <= znTimeCut){
+        energyCommonZNC > znCommonEnergyCut && std::abs(timeZNC) <= znTimeCut) {
       xnxn = true;
       neutronClass = 3;
     }
@@ -624,11 +630,9 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/tracks/trackSelections/hTpcNSigmaKa2D"), cutTracks[0].tpcNSigmaKa(), cutTracks[1].tpcNSigmaKa());
 
     // create a vector of 4-vectors for selected tracks
-    std::vector<TLorentzVector> cutTracksLVs;
+    std::vector<ROOT::Math::PxPyPzMVector> cutTracksLVs;
     for (const auto& cutTrack : cutTracks) {
-      TLorentzVector cutTrackLV;
-      cutTrackLV.SetXYZM(cutTrack.px(), cutTrack.py(), cutTrack.pz(), o2::constants::physics::MassPionCharged); // apriori assume pion mass
-      cutTracksLVs.push_back(cutTrackLV);
+      cutTracksLVs.push_back(ROOT::Math::PxPyPzMVector(cutTrack.px(), cutTrack.py(), cutTrack.pz(), o2::constants::physics::MassPionCharged)); // apriori assume pion mass
     }
 
     // differentiate leading- and subleading-momentum tracks
@@ -659,7 +663,7 @@ struct UpcRhoAnalysis {
     float trackDcaXYs[2] = {positiveTrack.dcaXY(), negativeTrack.dcaXY()};
     float trackDcaZs[2] = {positiveTrack.dcaZ(), negativeTrack.dcaZ()};
     float trackTpcSignals[2] = {positiveTrack.tpcSignal(), negativeTrack.tpcSignal()};
-    recoTree(collision.flags(),collision.runNumber(), localBc, collision.numContrib(), collision.posX(), collision.posY(), collision.posZ(),
+    recoTree(collision.flags(), collision.runNumber(), localBc, collision.numContrib(), collision.posX(), collision.posY(), collision.posZ(),
              collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
              collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
              energyCommonZNA, energyCommonZNC, timeZNA, timeZNC, neutronClass,
@@ -676,7 +680,7 @@ struct UpcRhoAnalysis {
     rQC.fill(HIST("QC/tracks/hTofHitCheck"), leadingMomentumTrack.hasTOF(), subleadingMomentumTrack.hasTOF());
     fillCollisionQcHistos<1>(collision); // fill QC histograms after track selections
 
-    TLorentzVector system = reconstructSystem(cutTracksLVs);
+    ROOT::Math::PxPyPzMVector system = reconstructSystem(cutTracksLVs);
     int totalCharge = tracksTotalCharge(cutTracks);
     float mass = system.M();
     float pT = system.Pt();
@@ -764,7 +768,7 @@ struct UpcRhoAnalysis {
     rMC.fill(HIST("MC/collisions/hPosZ"), mcCollision.posZ());
 
     std::vector<decltype(mcParticles.begin())> cutMcParticles;
-    std::vector<TLorentzVector> mcParticlesLVs;
+    std::vector<ROOT::Math::PxPyPzMVector> mcParticlesLVs;
 
     for (auto const& mcParticle : mcParticles) {
       rMC.fill(HIST("MC/tracks/all/hPdgCode"), mcParticle.pdgCode());
@@ -773,10 +777,10 @@ struct UpcRhoAnalysis {
       rMC.fill(HIST("MC/tracks/all/hPt"), pt(mcParticle.px(), mcParticle.py()));
       rMC.fill(HIST("MC/tracks/all/hEta"), eta(mcParticle.px(), mcParticle.py(), mcParticle.pz()));
       rMC.fill(HIST("MC/tracks/all/hPhi"), phi(mcParticle.px(), mcParticle.py()));
-      if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.pdgCode()) != 211)
+      if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.pdgCode()) != piPDG)
         continue;
       cutMcParticles.push_back(mcParticle);
-      TLorentzVector pionLV;
+      ROOT::Math::PxPyPzMVector pionLV;
       pionLV.SetPxPyPzE(mcParticle.px(), mcParticle.py(), mcParticle.pz(), mcParticle.e());
       mcParticlesLVs.push_back(pionLV);
     }
@@ -789,7 +793,7 @@ struct UpcRhoAnalysis {
     if (tracksTotalChargeMC(cutMcParticles) != 0) // shouldn't happen in theory
       return;
 
-    TLorentzVector system = reconstructSystem(mcParticlesLVs);
+    ROOT::Math::PxPyPzMVector system = reconstructSystem(mcParticlesLVs);
     float mass = system.M();
     float pT = system.Pt();
     float rapidity = system.Rapidity();
@@ -802,7 +806,7 @@ struct UpcRhoAnalysis {
     rMC.fill(HIST("MC/tracks/hPt"), pt(leadingMomentumPion.px(), leadingMomentumPion.py()), pt(subleadingMomentumPion.px(), subleadingMomentumPion.py()));
     rMC.fill(HIST("MC/tracks/hEta"), eta(leadingMomentumPion.px(), leadingMomentumPion.py(), leadingMomentumPion.pz()), eta(subleadingMomentumPion.px(), subleadingMomentumPion.py(), subleadingMomentumPion.pz()));
     rMC.fill(HIST("MC/tracks/hPhi"), phi(leadingMomentumPion.px(), leadingMomentumPion.py()), phi(subleadingMomentumPion.px(), subleadingMomentumPion.py()));
-    
+
     rMC.fill(HIST("MC/system/hM"), mass);
     rMC.fill(HIST("MC/system/hPt"), pT);
     rMC.fill(HIST("MC/system/hPtVsM"), mass, pT);
@@ -813,7 +817,7 @@ struct UpcRhoAnalysis {
     rMC.fill(HIST("MC/system/hPhiCharge"), phiCharge);
     rMC.fill(HIST("MC/system/hPhiRandomVsM"), mass, phiRandom);
     rMC.fill(HIST("MC/system/hPhiChargeVsM"), mass, phiCharge);
-    
+
     if (systemPassesCuts(system)) {
       rMC.fill(HIST("MC/system/selected/hM"), mass);
       rMC.fill(HIST("MC/system/selected/hPt"), pT);
@@ -826,7 +830,7 @@ struct UpcRhoAnalysis {
       rMC.fill(HIST("MC/system/selected/hPhiRandomVsM"), mass, phiRandom);
       rMC.fill(HIST("MC/system/selected/hPhiChargeVsM"), mass, phiCharge);
     }
-    
+
     // fill mcTree
     auto positivePion = cutMcParticles[0].pdgCode() > 0 ? cutMcParticles[0] : cutMcParticles[1];
     auto negativePion = cutMcParticles[0].pdgCode() > 0 ? cutMcParticles[1] : cutMcParticles[0];
@@ -849,7 +853,7 @@ struct UpcRhoAnalysis {
 
   void processSGdata(FullUdSgCollision const& collision, FullUdTracks const& tracks)
   {
-    if (collision.gapSide() != 2)
+    if (collision.gapSide() != gapSide)
       return;
     processReco(collision, tracks);
   }
