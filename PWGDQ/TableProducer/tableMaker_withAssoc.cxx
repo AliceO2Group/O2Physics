@@ -1558,6 +1558,21 @@ struct TableMaker {
     fullSkimming<gkEventFillMapWithMultsZdc, gkTrackFillMapWithCov, 0u, 0u, 0u>(collisions, bcs, zdcs, tracksBarrel, nullptr, nullptr, nullptr, trackAssocs, nullptr, nullptr);
   }
 
+  // produce the barrel+EMCal DQ skimmed data model typically for pp/p-Pb or UPC Pb-Pb (no centrality), meant to run on skimmed data
+  void processPPBarrelEMCal(MyEventsWithMults const& collisions, MyBCs const& bcs, aod::Zdcs& zdcs,
+                            MyBarrelTracksWithCov const& tracksBarrel, MyEMCals const& emcalTracks,
+                            TrackAssoc const& trackAssocs)
+  {
+    fullSkimming<gkEventFillMapWithMultsZdc, gkTrackFillMapWithCov, gkEMCalFillMap, 0u, 0u>(collisions, bcs, zdcs, tracksBarrel, emcalTracks, nullptr, nullptr, trackAssocs, nullptr, nullptr);
+  }
+
+  // produce the EMCal-only DQ skimmed data model typically for pp/p-Pb or UPC Pb-Pb (no centrality), meant to run on skimmed data
+  void processPPEMCalOnly(MyEventsWithMults const& collisions, MyBCs const& bcs, aod::Zdcs& zdcs,
+                          MyEMCals const& emcalTracks)
+  {
+    fullSkimming<gkEventFillMapWithMultsZdc, 0u, gkEMCalFillMap, 0u, 0u>(collisions, bcs, zdcs, nullptr, emcalTracks, nullptr, nullptr, nullptr, nullptr, nullptr);
+  }
+
   // produce the barrel-only DQ skimmed barrel data model, with V0 tagged tracks
   void processPPBarrelOnlyWithV0s(MyEventsWithMults const& collisions, MyBCs const& bcs,
                                   MyBarrelTracksWithV0BitsNoTOF const& tracksBarrel,
