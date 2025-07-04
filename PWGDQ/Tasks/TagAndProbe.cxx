@@ -75,12 +75,12 @@ namespace o2::aod
 {
 namespace dqanalysisflags
 {
-DECLARE_SOA_BITMAP_COLUMN(IsEventSelected, isEventSelected, 8);                      //! Event decision
-DECLARE_SOA_BITMAP_COLUMN(IsMuonSelected, isMuonSelected, 32);                       //! Muon track decisions (joinable to ReducedMuonsAssoc)
+DECLARE_SOA_BITMAP_COLUMN(IsEventSelected, isEventSelected, 8); //! Event decision
+DECLARE_SOA_BITMAP_COLUMN(IsMuonSelected, isMuonSelected, 32);  //! Muon track decisions (joinable to ReducedMuonsAssoc)
 } // namespace dqanalysisflags
 
-DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTSA", dqanalysisflags::IsEventSelected);                                                            //!  joinable to ReducedEvents                                                            //!  joinable to ReducedEvents
-DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTSA", dqanalysisflags::IsMuonSelected);                                                       //!  joinable to ReducedMuonsAssoc                                              //!  joinable to ReducedTracksAssoc
+DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTSA", dqanalysisflags::IsEventSelected);      //!  joinable to ReducedEvents
+DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTSA", dqanalysisflags::IsMuonSelected); //!  joinable to ReducedMuonsAssoc                                           //!  joinable to ReducedTracksAssoc
 } // namespace o2::aod
 
 // Declarations of various short names
