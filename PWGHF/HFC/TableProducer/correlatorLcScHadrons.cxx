@@ -16,6 +16,7 @@
 /// \author Zhen Zhang <zhenz@cern.ch>
 /// \author Ravindra Singh <ravindra.singh@cern.ch>
 
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -642,7 +643,7 @@ struct HfCorrelatorLcScHadrons {
         auto trackPos2 = candidate.template prong2_as<TrackType>();
         chargeCand = trackPos1.sign();
         if constexpr (isMcRec) {
-          isSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::LcToPKPi);
+          isSignal = std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi;
           if (calTrkEff && countCand == 1 && (isSignal || !calEffEventWithCand)) {
             calculateTrkEff(trackPos1, trackPos2, *mcParticles);
           }
@@ -849,7 +850,7 @@ struct HfCorrelatorLcScHadrons {
           auto trackPos1 = candidate.template prong0_as<TrackType>();
           chargeCand = trackPos1.sign();
           if constexpr (isMcRec) {
-            isSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::LcToPKPi);
+            isSignal = std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi;
           }
         }
 

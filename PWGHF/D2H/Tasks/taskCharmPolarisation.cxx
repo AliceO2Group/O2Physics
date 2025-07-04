@@ -48,8 +48,6 @@
 #include <TPDGCode.h>
 #include <TRandom3.h>
 
-#include <Rtypes.h>
-
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -2082,8 +2080,8 @@ struct HfTaskCharmPolarisation {
     int8_t charge = -99;
     bool partRecoDstar{false};
     if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
-      partRecoDstar = TESTBIT(std::abs(mcParticle.flagMcMatchGen()), hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0) && TESTBIT(std::abs(mcParticle.flagMcMatchGenD0()), hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0);
-      bool signalDstar = TESTBIT(std::abs(mcParticle.flagMcMatchGen()), hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) && TESTBIT(std::abs(mcParticle.flagMcMatchGenD0()), hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
+      partRecoDstar = (std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0) && (std::abs(mcParticle.flagMcMatchGenD0()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0);
+      bool signalDstar = (std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) && (std::abs(mcParticle.flagMcMatchGenD0()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
 
       if (!signalDstar && (!activatePartRecoDstar || !partRecoDstar)) { // this particle is not signal and not partially reconstructed signal, skip
         return;
