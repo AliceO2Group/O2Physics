@@ -100,13 +100,7 @@ using MyBarrelTracksWithDalitzBits = soa::Join<aod::Tracks, aod::TracksExtra, ao
                                                aod::pidTPCFullKa, aod::pidTPCFullPr,
                                                aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                                aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta, aod::DalitzBits>;
-using MyBarrelTracksWithCovWithEMCal = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA,
-                                                 aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
-                                                 aod::pidTPCFullKa, aod::pidTPCFullPr,
-                                                 aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-                                                 aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
-                                                 aod::EMCALClusters>;
-using MyEMCals = soa::Join<aod::EMCALClusters, aod::EMCALAmbiguousClusters>;
+using MyEMCals = aod::EMCALClusters;
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsWithMults = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
 using MyEventsWithFilter = soa::Join<aod::Collisions, aod::EvSels, aod::DQEventFilter>;
@@ -177,8 +171,6 @@ struct TableMaker {
   Produces<ReducedTracksBarrel> trackBarrel;
   Produces<ReducedTracksBarrelCov> trackBarrelCov;
   Produces<ReducedTracksBarrelPID> trackBarrelPID;
-  Produces<ReducedTracksBarrelEMCal> trackBarrelEMCal;
-  Produces<ReducedTracksEMCalAssoc> trackBarrelEMCalTrackAssoc;
   Produces<ReducedTracksAssoc> trackBarrelAssoc;
   Produces<ReducedEMCals> trackBarrelEMCal;
   Produces<ReducedEMCalsAssoc> trackBarrelEMCalAssoc;
@@ -222,6 +214,7 @@ struct TableMaker {
     Configurable<bool> fConfigDetailedQA{"cfgDetailedQA", false, "If true, include more QA histograms (BeforeCuts classes)"};
     Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
+    Configurable<std::string> fConfigAddEMCalHistogram{"cfgAddEMCalHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddMuonHistogram{"cfgAddMuonHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
   } fConfigHistOutput;
@@ -311,7 +304,6 @@ struct TableMaker {
   Filter muonFilter = o2::aod::fwdtrack::pt >= fConfigFilter.fConfigMuonPtLow;*/
 
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  Preslice<aod::EMCalTrackAssoc> emcaltrackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::MFTTrackAssoc> mfttrackIndicesPerCollision = aod::track_association::collisionId;
 
@@ -417,12 +409,12 @@ struct TableMaker {
     if (enableEMCalHistos) {
       // EMCal track histograms, before selections
       if (fDoDetailedQA) {
-        histClasses += "EMCal_BeforeCuts;";
+        histClasses += "Emcal_BeforeCuts;";
       }
       if (fConfigHistOutput.fConfigQA) {
         // EMCal track histograms after selections; one histogram directory for each user specified selection
         for (auto& cut : fEMCalTrackCuts) {
-          histClasses += Form("EMCal_%s;", cut->GetName());
+          histClasses += Form("Emcal_%s;", cut->GetName());
         }
       }
     }
@@ -558,7 +550,7 @@ struct TableMaker {
         }
       }
 
-      TString histEmcalName = fConfigHistOutput.fConfigAddTrackHistogram.value;
+      TString histEmcalName = fConfigHistOutput.fConfigAddEMCalHistogram.value;
       if (classStr.Contains("Emcal")) {
         if (fConfigHistOutput.fConfigQA) {
           dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", histEmcalName);
@@ -1152,22 +1144,6 @@ struct TableMaker {
                        -999.0, -999.0, -999.0, -999.0, -999.0, -999.0,
                        -999.0);
       }
-      if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackEMCal)) {
-        const auto& emcal = static_cast<o2::aod::EMCALCluster const&>(track);
-        trackBarrelEMCal(emcal.energy(),
-                         emcal.coreEnergy(),
-                         emcal.rawEnergy(),
-                         emcal.eta(),
-                         emcal.phi(),
-                         emcal.m02(),
-                         emcal.m20(),
-                         emcal.nCells(),
-                         emcal.time(),
-                         emcal.isExotic(),
-                         emcal.distanceToBadChannel(),
-                         emcal.nlm(),
-                         emcal.definition());
-      }
 
       fTrackIndexMap[track.globalIndex()] = trackBasic.lastIndex();
 
@@ -1477,7 +1453,6 @@ struct TableMaker {
       trackBarrel.reserve(tracksBarrel.size());
       trackBarrelCov.reserve(tracksBarrel.size());
       trackBarrelPID.reserve(tracksBarrel.size());
-      trackBarrelEMCal.reserve(tracksBarrel.size());
       trackBarrelAssoc.reserve(tracksBarrel.size());
     }
 

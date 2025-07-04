@@ -401,19 +401,11 @@ DECLARE_SOA_TABLE(ReducedTracksBarrelPID, "AOD", "RTBARRELPID", //!
 DECLARE_SOA_TABLE(ReducedTracksBarrelInfo, "AOD", "RTBARRELINFO",
                   reducedtrack::CollisionId, collision::PosX, collision::PosY, collision::PosZ, reducedtrack::TrackId);
 
-DECLARE_SOA_TABLE(ReducedTracksBarrelEMCal, "AOD", "RTBARRELEMCAL",
-                  emcalcluster::Energy,
-                  emcalcluster::CoreEnergy, emcalcluster::RawEnergy, emcalcluster::Eta, emcalcluster::Phi,
-                  emcalcluster::M02, emcalcluster::M20, emcalcluster::NCells, emcalcluster::Time,
-                  emcalcluster::IsExotic, emcalcluster::DistanceToBadChannel, emcalcluster::NLM, emcalcluster::Definition);
-
 using ReducedTrack = ReducedTracks::iterator;
 using ReducedTrackBarrel = ReducedTracksBarrel::iterator;
 using ReducedTrackBarrelCov = ReducedTracksBarrelCov::iterator;
 using ReducedTrackBarrelPID = ReducedTracksBarrelPID::iterator;
 using ReducedTrackBarrelInfo = ReducedTracksBarrelInfo::iterator;
-using ReducedTrackBarrelEMCal = ReducedTracksBarrelEMCal::iterator;
-
 
 namespace reducedtrackMC
 {
@@ -610,7 +602,7 @@ namespace reducedtrack_association
 {
 DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent); //! ReducedEvent index
 DECLARE_SOA_INDEX_COLUMN(ReducedTrack, reducedtrack); //! ReducedTrack index
-DECLARE_SOA_INDEX_COLUMN(ReducedEMCal, reducedemcal); //! ReducedEMCal index
+// DECLARE_SOA_INDEX_COLUMN(ReducedEMCal, reducedemcal); //! ReducedEMCal index
 DECLARE_SOA_INDEX_COLUMN(ReducedMuon, reducedmuon);   //! ReducedMuon index
 DECLARE_SOA_INDEX_COLUMN(ReducedMFT, reducedmft);     //! ReducedMFTTrack index
 } // namespace reducedtrack_association
@@ -618,9 +610,9 @@ DECLARE_SOA_INDEX_COLUMN(ReducedMFT, reducedmft);     //! ReducedMFTTrack index
 DECLARE_SOA_TABLE(ReducedTracksAssoc, "AOD", "RTASSOC", //! Table for reducedtrack-to-reducedcollision association
                   reducedtrack_association::ReducedEventId,
                   reducedtrack_association::ReducedTrackId);
-DECLARE_SOA_TABLE(ReducedEMCalsAssoc, "AOD", "RTEMCALASSOC", //! Table for reducedemcal-to-reducedcollision association
-                  reducedtrack_association::ReducedEventId,
-                  reducedtrack_association::ReducedEMCalId);
+// DECLARE_SOA_TABLE(ReducedEMCalsAssoc, "AOD", "RTEMCALASSOC", //! Table for reducedemcal-to-reducedcollision association
+//                   reducedtrack_association::ReducedEventId,
+//                   reducedtrack_association::ReducedEMCalId);
 DECLARE_SOA_TABLE(ReducedMuonsAssoc, "AOD", "RMASSOC", //! Table for reducedmuon-to-reducedcollision association
                   reducedtrack_association::ReducedEventId,
                   reducedtrack_association::ReducedMuonId);
