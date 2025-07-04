@@ -87,7 +87,7 @@ struct HfDerivedDataCreatorLcToPKPi {
 
   HfHelper hfHelper;
   SliceCache cache;
-  static constexpr double MassLc{o2::constants::physics::MassLambdaCPlus};
+  static constexpr double Mass{o2::constants::physics::MassLambdaCPlus};
 
   using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   using CollisionsWMcCentMult = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
