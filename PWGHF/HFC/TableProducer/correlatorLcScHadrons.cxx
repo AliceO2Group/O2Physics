@@ -909,7 +909,7 @@ struct HfCorrelatorLcScHadrons {
   {
 
     int counterCharmCand = 0;
-    static constexpr std::size_t scalePDGCharge{3u};
+    static constexpr std::size_t PDGChargeScale{3u};
 
     registry.fill(HIST("hMcEvtCount"), 0);
     BinningTypeMcGen corrBinningMcGen{{binsZVtx, binsMultiplicityMc}, true};
