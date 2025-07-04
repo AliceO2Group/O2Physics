@@ -252,33 +252,21 @@ int runMassFitter(const TString& configFileName)
   inputFile->Close();
 
   // define output histos
-  auto hRawYields = new TH1D("hRawYields", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield",
-                             nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsCounted = new TH1D("hRawYieldsCounted", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield via bin count",
-                                    nSliceVarBins, sliceVarLimits.data());
+  auto hRawYieldsSignal = new TH1D("hRawYieldsSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield",
+                                   nSliceVarBins, sliceVarLimits.data());
+  auto hRawYieldsSignalCounted = new TH1D("hRawYieldsSignalCounted", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield via bin count",
+                                          nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSigma = new TH1D(
     "hRawYieldsSigma", ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})",
-    nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSigmaRatio = new TH1D(
-    "hRawYieldsSigmaRatio",
-    ";" + sliceVarName + "(" + sliceVarUnit + ");ratio #sigma_{1}/#sigma_{2}", nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSigma2 = new TH1D(
-    "hRawYieldsSigma2", ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})",
     nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsMean = new TH1D(
     "hRawYieldsMean", ";" + sliceVarName + "(" + sliceVarUnit + ");mean (GeV/#it{c}^{2})",
     nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsFracGaus2 = new TH1D(
-    "hRawYieldsFracGaus2",
-    ";" + sliceVarName + "(" + sliceVarUnit + ");second-gaussian fraction", nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSignificance = new TH1D(
     "hRawYieldsSignificance",
     ";" + sliceVarName + "(" + sliceVarUnit + ");significance (3#sigma)", nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSgnOverBkg =
     new TH1D("hRawYieldsSgnOverBkg", ";" + sliceVarName + "(" + sliceVarUnit + ");S/B (3#sigma)",
-             nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSignal =
-    new TH1D("hRawYieldsSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");Signal (3#sigma)",
              nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsBkg =
     new TH1D("hRawYieldsBkg", ";" + sliceVarName + "(" + sliceVarUnit + ");Background (3#sigma)",
@@ -286,35 +274,6 @@ int runMassFitter(const TString& configFileName)
   auto hRawYieldsChiSquare =
     new TH1D("hRawYieldsChiSquare",
              ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSecondPeak = new TH1D(
-    "hRawYieldsSecondPeak", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield second peak",
-    nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsMeanSecondPeak =
-    new TH1D("hRawYieldsMeanSecondPeak",
-             ";" + sliceVarName + "(" + sliceVarUnit + ");mean second peak (GeV/#it{c}^{2})",
-             nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSigmaSecondPeak =
-    new TH1D("hRawYieldsSigmaSecondPeak",
-             ";" + sliceVarName + "(" + sliceVarUnit + ");width second peak (GeV/#it{c}^{2})",
-             nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSignificanceSecondPeak =
-    new TH1D("hRawYieldsSignificanceSecondPeak",
-             ";" + sliceVarName + "(" + sliceVarUnit + ");signficance second peak (3#sigma)",
-             nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSigmaRatioSecondFirstPeak =
-    new TH1D("hRawYieldsSigmaRatioSecondFirstPeak",
-             ";" + sliceVarName + "(" + sliceVarUnit + ");width second peak / width first peak",
-             nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSoverBSecondPeak = new TH1D(
-    "hRawYieldsSoverBSecondPeak",
-    ";" + sliceVarName + "(" + sliceVarUnit + ");S/B second peak (3#sigma)", nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSignalSecondPeak = new TH1D(
-    "hRawYieldsSignalSecondPeak",
-    ";" + sliceVarName + "(" + sliceVarUnit + ");Signal second peak (3#sigma)", nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsBkgSecondPeak =
-    new TH1D("hRawYieldsBkgSecondPeak",
-             ";" + sliceVarName + "(" + sliceVarUnit + ");Background second peak (3#sigma)",
-             nSliceVarBins, sliceVarLimits.data());
   auto hReflectionOverSignal =
     new TH1D("hReflectionOverSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");Refl/Signal",
              nSliceVarBins, sliceVarLimits.data());
@@ -330,25 +289,14 @@ int runMassFitter(const TString& configFileName)
     hFitConfig->GetXaxis()->SetBinLabel(i + 1, hFitConfigXLabel[i]);
   }
 
-  setHistoStyle(hRawYields);
-  setHistoStyle(hRawYieldsCounted);
+  setHistoStyle(hRawYieldsSignal);
+  setHistoStyle(hRawYieldsSignalCounted);
   setHistoStyle(hRawYieldsSigma);
-  setHistoStyle(hRawYieldsSigma2);
   setHistoStyle(hRawYieldsMean);
-  setHistoStyle(hRawYieldsFracGaus2);
   setHistoStyle(hRawYieldsSignificance);
   setHistoStyle(hRawYieldsSgnOverBkg);
-  setHistoStyle(hRawYieldsSignal);
   setHistoStyle(hRawYieldsBkg);
   setHistoStyle(hRawYieldsChiSquare);
-  setHistoStyle(hRawYieldsSecondPeak, kRed + 1);
-  setHistoStyle(hRawYieldsMeanSecondPeak, kRed + 1);
-  setHistoStyle(hRawYieldsSigmaSecondPeak, kRed + 1);
-  setHistoStyle(hRawYieldsSignificanceSecondPeak, kRed + 1);
-  setHistoStyle(hRawYieldsSigmaRatioSecondFirstPeak, kRed + 1);
-  setHistoStyle(hRawYieldsSoverBSecondPeak, kRed + 1);
-  setHistoStyle(hRawYieldsSignalSecondPeak, kRed + 1);
-  setHistoStyle(hRawYieldsBkgSecondPeak, kRed + 1);
   setHistoStyle(hReflectionOverSignal, kRed + 1);
 
   TH1* hSigmaToFix = nullptr;
@@ -453,21 +401,21 @@ int runMassFitter(const TString& configFileName)
 
       massFitter->drawFit(gPad);
 
-      Double_t rawYield = massFitter->getRawYield();
-      Double_t rawYieldErr = massFitter->getRawYieldError();
-      Double_t rawYieldCounted = massFitter->getRawYieldCounted();
-      Double_t rawYieldCountedErr = massFitter->getRawYieldCountedError();
+      const Double_t rawYield = massFitter->getRawYield();
+      const Double_t rawYieldErr = massFitter->getRawYieldError();
+      const Double_t rawYieldCounted = massFitter->getRawYieldCounted();
+      const Double_t rawYieldCountedErr = massFitter->getRawYieldCountedError();
 
-      Double_t sigma = massFitter->getSigma();
-      Double_t sigmaErr = massFitter->getSigmaUncertainty();
-      Double_t mean = massFitter->getMean();
-      Double_t meanErr = massFitter->getMeanUncertainty();
-      Double_t reducedChiSquare = massFitter->getChiSquareOverNDF();
+      const Double_t sigma = massFitter->getSigma();
+      const Double_t sigmaErr = massFitter->getSigmaUncertainty();
+      const Double_t mean = massFitter->getMean();
+      const Double_t meanErr = massFitter->getMeanUncertainty();
+      const Double_t reducedChiSquare = massFitter->getChiSquareOverNDF();
 
-      hRawYields->SetBinContent(iSliceVar + 1, rawYield);
-      hRawYields->SetBinError(iSliceVar + 1, rawYieldErr);
-      hRawYieldsCounted->SetBinContent(iSliceVar + 1, rawYieldCounted);
-      hRawYieldsCounted->SetBinError(iSliceVar + 1, rawYieldCountedErr);
+      hRawYieldsSignal->SetBinContent(iSliceVar + 1, rawYield);
+      hRawYieldsSignal->SetBinError(iSliceVar + 1, rawYieldErr);
+      hRawYieldsSignalCounted->SetBinContent(iSliceVar + 1, rawYieldCounted);
+      hRawYieldsSignalCounted->SetBinError(iSliceVar + 1, rawYieldCountedErr);
       hRawYieldsSigma->SetBinContent(iSliceVar + 1, sigma);
       hRawYieldsSigma->SetBinError(iSliceVar + 1, sigmaErr);
       hRawYieldsMean->SetBinContent(iSliceVar + 1, mean);
@@ -514,24 +462,24 @@ int runMassFitter(const TString& configFileName)
 
       massFitter->doFit();
 
-      double rawYield = massFitter->getRawYield();
-      double rawYieldErr = massFitter->getRawYieldError();
-      double rawYieldCounted = massFitter->getRawYieldCounted();
-      double rawYieldCountedErr = massFitter->getRawYieldCountedError();
-      double sigma = massFitter->getSigma();
-      double sigmaErr = massFitter->getSigmaUncertainty();
-      double mean = massFitter->getMean();
-      double meanErr = massFitter->getMeanUncertainty();
-      double reducedChiSquare = massFitter->getChiSquareOverNDF();
-      double significance = massFitter->getSignificance();
-      double significanceErr = massFitter->getSignificanceError();
-      double bkg = massFitter->getBkgYield();
-      double bkgErr = massFitter->getBkgYieldError();
+      const double rawYield = massFitter->getRawYield();
+      const double rawYieldErr = massFitter->getRawYieldError();
+      const double rawYieldCounted = massFitter->getRawYieldCounted();
+      const double rawYieldCountedErr = massFitter->getRawYieldCountedError();
+      const double sigma = massFitter->getSigma();
+      const double sigmaErr = massFitter->getSigmaUncertainty();
+      const double mean = massFitter->getMean();
+      const double meanErr = massFitter->getMeanUncertainty();
+      const double reducedChiSquare = massFitter->getChiSquareOverNDF();
+      const double significance = massFitter->getSignificance();
+      const double significanceErr = massFitter->getSignificanceError();
+      const double bkg = massFitter->getBkgYield();
+      const double bkgErr = massFitter->getBkgYieldError();
 
-      hRawYields->SetBinContent(iSliceVar + 1, rawYield);
-      hRawYields->SetBinError(iSliceVar + 1, rawYieldErr);
-      hRawYieldsCounted->SetBinContent(iSliceVar + 1, rawYieldCounted);
-      hRawYieldsCounted->SetBinError(iSliceVar + 1, rawYieldCountedErr);
+      hRawYieldsSignal->SetBinContent(iSliceVar + 1, rawYield);
+      hRawYieldsSignal->SetBinError(iSliceVar + 1, rawYieldErr);
+      hRawYieldsSignalCounted->SetBinContent(iSliceVar + 1, rawYieldCounted);
+      hRawYieldsSignalCounted->SetBinError(iSliceVar + 1, rawYieldCountedErr);
       hRawYieldsSigma->SetBinContent(iSliceVar + 1, sigma);
       hRawYieldsSigma->SetBinError(iSliceVar + 1, sigmaErr);
       hRawYieldsMean->SetBinContent(iSliceVar + 1, mean);
@@ -540,8 +488,6 @@ int runMassFitter(const TString& configFileName)
       hRawYieldsSignificance->SetBinError(iSliceVar + 1, significanceErr);
       hRawYieldsSgnOverBkg->SetBinContent(iSliceVar + 1, rawYield / bkg);
       hRawYieldsSgnOverBkg->SetBinError(iSliceVar + 1, rawYield / bkg * std::sqrt(rawYieldErr / rawYield * rawYieldErr / rawYield + bkgErr / bkg * bkgErr / bkg));
-      hRawYieldsSignal->SetBinContent(iSliceVar + 1, rawYield);
-      hRawYieldsSignal->SetBinError(iSliceVar + 1, rawYieldErr);
       hRawYieldsBkg->SetBinContent(iSliceVar + 1, bkg);
       hRawYieldsBkg->SetBinError(iSliceVar + 1, bkgErr);
       hRawYieldsChiSquare->SetBinContent(iSliceVar + 1, reducedChiSquare);
@@ -607,25 +553,17 @@ int runMassFitter(const TString& configFileName)
   for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     hMass[iSliceVar]->Write();
   }
-  hRawYields->Write();
-  hRawYieldsCounted->Write();
+  hRawYieldsSignal->Write();
+  hRawYieldsSignalCounted->Write();
   hRawYieldsSigma->Write();
   hRawYieldsMean->Write();
   hRawYieldsSignificance->Write();
   hRawYieldsSgnOverBkg->Write();
-  hRawYieldsSignal->Write();
   hRawYieldsBkg->Write();
   hRawYieldsChiSquare->Write();
-  hRawYieldsSigma2->Write();
-  hRawYieldsFracGaus2->Write();
-  hRawYieldsSecondPeak->Write();
-  hRawYieldsMeanSecondPeak->Write();
-  hRawYieldsSigmaSecondPeak->Write();
-  hRawYieldsSignificanceSecondPeak->Write();
-  hRawYieldsSigmaRatioSecondFirstPeak->Write();
-  hRawYieldsSoverBSecondPeak->Write();
-  hRawYieldsSignalSecondPeak->Write();
-  hRawYieldsBkgSecondPeak->Write();
+  if (enableRefl) {
+    hReflectionOverSignal->Write();
+  }
   hFitConfig->Write();
 
   outputFile.Close();
