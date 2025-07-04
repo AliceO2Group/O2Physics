@@ -19,6 +19,7 @@
 /// \author Biao Zhang <biao.zhang@cern.ch>, Heidelberg University
 
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
@@ -81,6 +82,7 @@ using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_trkcandsel;
+using namespace o2::hf_decay::hf_cand_beauty;
 
 enum Event : uint8_t {
   Processed = 0,
@@ -473,7 +475,7 @@ struct HfDataCreatorCharmHadPiReduced {
         // Printf("Checking D- → π- K+ π-");
         indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, Pdg::kDMinus, std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
-          flag = sign * BIT(hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi);
+          flag = sign * DecayChannelMain::B0ToDminusPi;
         } else {
           debug = 1;
           LOGF(debug, "B0 decays in the expected final state but the condition on the intermediate state is not fulfilled");
@@ -496,7 +498,7 @@ struct HfDataCreatorCharmHadPiReduced {
             // Ds- → K- K+ π-
             indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, -Pdg::kDS, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
             if (indexRec > -1) {
-              flag = sign * BIT(hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi);
+              flag = sign * DecayChannelMain::B0ToDsPi;
             }
           }
         }
@@ -507,7 +509,7 @@ struct HfDataCreatorCharmHadPiReduced {
             // Ds- → K- K+ π-
             indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, -Pdg::kDS, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
             if (indexRec > -1) {
-              flag = sign * BIT(hf_cand_b0::DecayTypeMc::BsToDsPiToKKPiPi);
+              flag = sign * DecayChannelMain::BsToDsPi;
             }
           }
         }
@@ -518,7 +520,7 @@ struct HfDataCreatorCharmHadPiReduced {
             // D- → π- K+ π-
             indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, Pdg::kDMinus, std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
             if (indexRec > -1) {
-              flag = sign * BIT(hf_cand_b0::DecayTypeMc::B0ToDplusKToPiKPiK);
+              flag = sign * DecayChannelMain::B0ToDminusK;
             }
           }
         }
@@ -543,7 +545,7 @@ struct HfDataCreatorCharmHadPiReduced {
             // look for common b-hadron ancestor
             if (index0Mother > -1 && index1Mother > -1 && index2Mother > -1 && index3Mother > -1) {
               if (index0Mother == index1Mother && index1Mother == index2Mother && index2Mother == index3Mother) {
-                flag = BIT(hf_cand_b0::DecayTypeMc::PartlyRecoDecay);
+                flag = hf_cand_b0::DecayTypeMc::PartlyRecoDecay; // FIXME
                 pdgCodeBeautyMother = particlesMc.rawIteratorAt(index0Mother).pdgCode();
                 pdgCodeCharmMother = 0;
                 pdgCodeProng0 = particleProng0.pdgCode();
@@ -697,7 +699,7 @@ struct HfDataCreatorCharmHadPiReduced {
             // look for common b-hadron ancestor
             if (index0Mother > -1 && index1Mother > -1 && index2Mother > -1 && index3Mother > -1) {
               if (index0Mother == index1Mother && index1Mother == index2Mother && index2Mother == index3Mother) {
-                flag = BIT(hf_cand_bs::DecayTypeMc::PartlyRecoDecay);
+                flag = BIT(hf_cand_bs::DecayTypeMc::PartlyRecoDecay); // FIXME
                 pdgCodeBeautyMother = particlesMc.rawIteratorAt(index0Mother).pdgCode();
                 pdgCodeCharmMother = 0;
                 pdgCodeProng0 = particleProng0.pdgCode();
@@ -796,7 +798,7 @@ struct HfDataCreatorCharmHadPiReduced {
             // look for common b-hadron ancestor
             if (index0Mother > -1 && index1Mother > -1 && index2Mother > -1) {
               if (index0Mother == index1Mother && index1Mother == index2Mother) {
-                flag = BIT(hf_cand_bplus::DecayTypeMc::PartlyRecoDecay);
+                flag = BIT(hf_cand_bplus::DecayTypeMc::PartlyRecoDecay); // FIXME
                 pdgCodeBeautyMother = particlesMc.rawIteratorAt(index0Mother).pdgCode();
                 pdgCodeCharmMother = 0;
                 pdgCodeProng0 = particleProng0.pdgCode();
@@ -899,7 +901,7 @@ struct HfDataCreatorCharmHadPiReduced {
             // look for common b-hadron ancestor
             if (index0Mother > -1 && index1Mother > -1 && index2Mother > -1 && index3Mother > -1) {
               if (index0Mother == index1Mother && index1Mother == index2Mother && index2Mother == index3Mother) {
-                flag = BIT(hf_cand_b0::DecayTypeMc::PartlyRecoDecay);
+                flag = hf_cand_b0::DecayTypeMc::PartlyRecoDecay; // FIXME
                 pdgCodeBeautyMother = particlesMc.rawIteratorAt(index0Mother).pdgCode();
                 pdgCodeCharmMother = 0;
                 pdgCodeProng0 = particleProng0.pdgCode();
@@ -1363,12 +1365,12 @@ struct HfDataCreatorCharmHadPiReduced {
           auto candCMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
           // Printf("Checking D- -> π- K+ π-");
           if (RecoDecay::isMatchedMCGen(particlesMc, candCMC, -static_cast<int>(Pdg::kDPlus), std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2)) {
-            flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
+            flag = sign * DecayChannelMain::B0ToDminusPi;
           }
         }
 
         // save information for B0 task
-        if (!TESTBIT(std::abs(flag), hf_cand_b0::DecayType::B0ToDPi)) {
+        if (std::abs(flag) != DecayChannelMain::B0ToDminusPi) {
           continue;
         }
 

@@ -15,6 +15,7 @@
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -429,7 +430,7 @@ struct HfCandidateCreatorB0Expressions {
         // D- → π- K+ π-
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersD, Pdg::kDMinus, std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
-          flag = sign * BIT(hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi);
+          flag = sign * o2::hf_decay::hf_cand_beauty::DecayChannelMain::B0ToDminusPi;
         } else {
           debug = 1;
           LOGF(debug, "WARNING: B0 in decays in the expected final state but the condition on the intermediate state is not fulfilled");
@@ -443,7 +444,7 @@ struct HfCandidateCreatorB0Expressions {
           // Ds- → K- K+ π-
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersD, -Pdg::kDS, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
           if (indexRec > -1) {
-            flag = sign * BIT(hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi);
+            flag = sign * o2::hf_decay::hf_cand_beauty::DecayChannelMain::B0ToDsPi;
           }
         }
       }
@@ -465,11 +466,9 @@ struct HfCandidateCreatorB0Expressions {
           int index3Mother = RecoDecay::getMother(mcParticles, particleProng3, bHadronMotherHypo, true);
 
           // look for common b-hadron ancestor
-          if (index0Mother > -1 && index1Mother > -1 && index2Mother > -1 && index3Mother > -1) {
-            if (index0Mother == index1Mother && index1Mother == index2Mother && index2Mother == index3Mother) {
-              flag = BIT(hf_cand_b0::DecayTypeMc::PartlyRecoDecay);
-              break;
-            }
+          if (index0Mother > -1 && index0Mother == index1Mother && index1Mother == index2Mother && index2Mother == index3Mother) {
+            flag = hf_cand_b0::DecayTypeMc::PartlyRecoDecay; // FIXME
+            break;
           }
         }
       }

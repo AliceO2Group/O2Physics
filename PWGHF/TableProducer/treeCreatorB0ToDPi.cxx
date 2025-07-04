@@ -16,6 +16,7 @@
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -39,6 +40,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::hf_decay::hf_cand_beauty;
 
 namespace o2::aod
 {
@@ -189,8 +191,8 @@ struct HfTreeCreatorB0ToDPi {
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_b0::isSelB0ToDPi >= selectionFlagB0;
 
-  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_b0::flagMcMatchRec) == (int8_t)BIT(aod::hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi);
-  Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_b0::flagMcMatchRec) != (int8_t)BIT(aod::hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi);
+  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_b0::flagMcMatchRec) == static_cast<int8_t>(DecayChannelMain::B0ToDminusPi);
+  Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_b0::flagMcMatchRec) != static_cast<int8_t>(DecayChannelMain::B0ToDminusPi);
 
   void init(InitContext const&)
   {
@@ -373,7 +375,7 @@ struct HfTreeCreatorB0ToDPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi)) {
+      if (std::abs(particle.flagMcMatchGen()) == DecayChannelMain::B0ToDminusPi) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),

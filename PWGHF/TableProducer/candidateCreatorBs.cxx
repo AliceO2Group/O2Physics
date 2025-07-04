@@ -468,7 +468,7 @@ struct HfCandidateCreatorBsExpressions {
           // look for common b-hadron ancestor
           if (index0Mother > -1 && index1Mother > -1 && index2Mother > -1 && index3Mother > -1) {
             if (index0Mother == index1Mother && index1Mother == index2Mother && index2Mother == index3Mother) {
-              flag = BIT(hf_cand_bs::DecayTypeMc::PartlyRecoDecay);
+              flag = BIT(hf_cand_bs::DecayTypeMc::PartlyRecoDecay); // FIXME
               break;
             }
           }
