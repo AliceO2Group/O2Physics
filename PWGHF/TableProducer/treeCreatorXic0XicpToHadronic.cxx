@@ -1141,7 +1141,7 @@ struct HfTreeCreatorXic0XicpToHadronic {
 			fillXic0CandidateTable<false, false>(candidate);
 		}
 	}
-	PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processDataXic0, "Process Data with DCAFitter reconstruction", false);
+	PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processDataXic0, "Process Data with DCAFitter reconstruction", true);
 	
 
 	void processDataXic0Kf(SelectedXic0CandidatesKf const& candidates)
@@ -1164,7 +1164,7 @@ struct HfTreeCreatorXic0XicpToHadronic {
 			fillXic0CandidateTable<false, true>(candidate);
 		}
 	}
-	PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processDataXic0Kf, "Process Data with KFParticle reconstruction", true);
+	PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processDataXic0Kf, "Process Data with KFParticle reconstruction", false);
 
 	void processDataXicp(SelectedXicpCandidates const& candidates)
 	{
