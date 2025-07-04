@@ -1864,128 +1864,131 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
 			{
 				auto particle = mcParticles.rawIteratorAt(indexRecXicPlus);
 				origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false);
-				// Fill histograms
-				if (flag != 0 && configs.fillMcHistograms)
-				{
-					registry.fill(HIST("hDecayedPions"), nPionsDecayed);
-					registry.fill(HIST("hInteractionsWithMaterial"), nInteractionsWithMaterial);
-				}
-				// Fill table
-				cursors.rowCandXicpMcRec(flag, origin);
-			} // close loop over candidates
-
-			// Match generated particles.
-			for (const auto& mcCollision : mcCollisions)
+			}
+			
+			// Fill histograms
+			if (flag != 0 && configs.fillMcHistograms)
 			{
-				// Slice the particles table to get the particles for the current MC collision
-				const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
-				// Slice the collisions table to get the collision info for the current MC collision
-				float centrality{-1.f};
-				uint16_t rejectionMask{0};
-				int nSplitColl = 0;
+				registry.fill(HIST("hDecayedPions"), nPionsDecayed);
+				registry.fill(HIST("hInteractionsWithMaterial"), nInteractionsWithMaterial);
+			}
+				
+			// Fill table
+			cursors.rowCandXicpMcRec(flag, origin);
+		} // close loop over candidates
 
-				if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C)
+		// Match generated particles.
+		for (const auto& mcCollision : mcCollisions)
+		{
+			// Slice the particles table to get the particles for the current MC collision
+			const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
+			// Slice the collisions table to get the collision info for the current MC collision
+			float centrality{-1.f};
+			uint16_t rejectionMask{0};
+			int nSplitColl = 0;
+
+			if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C)
+			{
+				const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());
+				rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
+			}
+			else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M)
+			{
+				const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0M, mcCollision.globalIndex());
+				nSplitColl = collSlice.size();
+				rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
+			}
+			else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::None)
+			{
+				const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
+				rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
+			}
+
+			hfEvSelMc.fillHistograms<centEstimator>(mcCollision, rejectionMask, nSplitColl);
+
+			if (rejectionMask != 0)
+			{
+				// at least one event selection not satisfied --> reject all particles from this collision
+				for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i)
 				{
-					const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());
-					rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
+					cursors.rowCandXicpMcGen(-99, -99, -99);
 				}
-				else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M)
+				continue;
+			}
+
+			for (const auto& particle : mcParticlesPerMcColl) {
+  
+				sign = 0;
+				flag = 0;
+				origin = RecoDecay::OriginType::None;
+				arrDaughIndex.clear();
+				idxBhadMothers.clear();
+
+				// 4. Xic → Xi pi pi
+				if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, Pdg::kXiCPlus, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, true, &sign, 2))
 				{
-					const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0M, mcCollision.globalIndex());
-					nSplitColl = collSlice.size();
-					rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
-			    }
-				else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::None)
-			    {
-					const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
-					rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
-			    }
-
-				hfEvSelMc.fillHistograms<centEstimator>(mcCollision, rejectionMask, nSplitColl);
-
-				if (rejectionMask != 0)
-				{
-					// at least one event selection not satisfied --> reject all particles from this collision
-					for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i)
+					// 5. Xi- -> Lambda pi
+					auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
+					// 6. Find Xi- from Xi(1530) -> Xi pi in case of resonant decay
+					RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
+					if (arrDaughIndex.size() == NDaughtersResonant)
 					{
-						cursors.rowCandXicpMcGen(-99, -99, -99);
-					}
-					continue;
-				}
-
-				for (const auto& particle : mcParticlesPerMcColl) {
-	  
-					sign = 0;
-					flag = 0;
-					origin = RecoDecay::OriginType::None;
-					arrDaughIndex.clear();
-					idxBhadMothers.clear();
-
-					// 4. Xic → Xi pi pi
-					if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, Pdg::kXiCPlus, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, true, &sign, 2))
-					{
-						// 5. Xi- -> Lambda pi
-						auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-						// 6. Find Xi- from Xi(1530) -> Xi pi in case of resonant decay
-						RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
-						if (arrDaughIndex.size() == NDaughtersResonant)
+						auto cascStarMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
+						if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascStarMC, +3324, std::array{+kXiMinus, +kPiPlus}, true))
 						{
-							auto cascStarMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-							if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascStarMC, +3324, std::array{+kXiMinus, +kPiPlus}, true))
-							{
-								cascMC = mcParticles.rawIteratorAt(cascStarMC.daughtersIds().front());
-							}
-						}
-	      
-						if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascMC, +kXiMinus, std::array{+kLambda0, +kPiMinus}, true))
-						{
-							// 7. Lambda -> p pi
-							auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());
-							if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, v0MC, +kLambda0, std::array{+kProton, +kPiMinus}, true))
-							{
-								if (arrDaughIndex.size() == NDaughtersResonant)
-								{
-									for (auto iProng = 0u; iProng < NDaughtersResonant; ++iProng)
-									{
-										auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
-										arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
-									}
-			  
-									if ((arrPDGDaugh[0] == arrXiResonance[0] && arrPDGDaugh[1] == arrXiResonance[1]) || (arrPDGDaugh[0] == arrXiResonance[1] && arrPDGDaugh[1] == arrXiResonance[0])) {
-										flag = sign * (1 << aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi);
-									}
-								}
-								else
-								{
-									flag = sign * (1 << aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi);
-								}
-							}
+							cascMC = mcParticles.rawIteratorAt(cascStarMC.daughtersIds().front());
 						}
 					}
-
-					// 8. Check whether the charm baryon is non-prompt (from a b quark).
-					if (flag != 0)
-					{
-						origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
-					}
 	  
-					// Fill table
-					if (origin == RecoDecay::OriginType::NonPrompt)
+					if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascMC, +kXiMinus, std::array{+kLambda0, +kPiMinus}, true))
 					{
-						auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-						cursors.rowCandXicpMcGen(flag, origin, bHadMother.pdgCode());
+						// 7. Lambda -> p pi
+						auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());
+						if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, v0MC, +kLambda0, std::array{+kProton, +kPiMinus}, true))
+						{
+							if (arrDaughIndex.size() == NDaughtersResonant)
+							{
+								for (auto iProng = 0u; iProng < NDaughtersResonant; ++iProng)
+								{
+									auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
+									arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
+								}
+		  
+								if ((arrPDGDaugh[0] == arrXiResonance[0] && arrPDGDaugh[1] == arrXiResonance[1]) || (arrPDGDaugh[0] == arrXiResonance[1] && arrPDGDaugh[1] == arrXiResonance[0])) {
+									flag = sign * (1 << aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi);
+								}
+							}
+							else
+							{
+								flag = sign * (1 << aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi);
+							}
+						}
 					}
-	  
-					else
-					{
-						cursors.rowCandXicpMcGen(flag, origin, 0);
-					}
-	
-				} // end for loop generated particles
+				}
 
-			} // end for loop McCollisions
-		}
-	} // end of runXicpMc
+				// 8. Check whether the charm baryon is non-prompt (from a b quark).
+				if (flag != 0)
+				{
+					origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
+				}
+  
+				// Fill table
+				if (origin == RecoDecay::OriginType::NonPrompt)
+				{
+					auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
+					cursors.rowCandXicpMcGen(flag, origin, bHadMother.pdgCode());
+				}
+  
+				else
+				{
+					cursors.rowCandXicpMcGen(flag, origin, 0);
+				}
+
+			} // end for loop generated particles
+
+		} // end for loop McCollisions
+
+	} // end of run function MC Xicp
 	 
 	//////////////////////////////////
 	///      					   ///
