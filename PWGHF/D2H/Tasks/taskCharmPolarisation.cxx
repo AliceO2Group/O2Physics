@@ -48,8 +48,6 @@
 #include <TPDGCode.h>
 #include <TRandom3.h>
 
-#include <Rtypes.h>
-
 #include <array>
 #include <cmath>
 #include <cstdint>
