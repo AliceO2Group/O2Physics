@@ -181,12 +181,12 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 		}
 
 		// Exit if workflow is not configured correctly - More than one process enabled for Xic0
-		if (std::accumulate(processesXic0.begin(), processesXic0.end(), 1) > 1) {
+		if (std::accumulate(processesXic0.begin(), processesXic0.end(), 0) > 1) {
 			LOGP(fatal, "More than one process fucntion for Xic0 was enabled. Please choose only one process function");
 		}
 
-		// Exit if workflow is not configured correctly - More than one process enabled for Xic0
-		if (std::accumulate(processesXicp.begin(), processesXicp.end(), 1) > 1) {
+		// Exit if workflow is not configured correctly - More than one process enabled for Xicp
+		if (std::accumulate(processesXicp.begin(), processesXicp.end(), 0) > 1) {
 			LOGP(fatal, "More than one process fucntion for Xicp was enabled. Please choose only one process function");
 		}
 
@@ -196,7 +196,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 		}
 
 		// Initialization for Xic0
-		if (std::accumulate(processesXic0.begin(), processesXic0.end(), 1) == 1) {
+		if (std::accumulate(processesXic0.begin(), processesXic0.end(), 0) == 1) {
 
 			// Set histograms
 			if (configs.fillHistograms) {
@@ -252,7 +252,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 		}// end of Xic0 initilization
 
 		// Initialization for Xicp
-		if (std::accumulate(processesXicp.begin(), processesXicp.end(), 1) == 1) {
+		if (std::accumulate(processesXicp.begin(), processesXicp.end(), 0) == 1) {
 
 			if (configs.fillHistograms) {
 				registry.add("hVertexerType", "Use KF or DCAFitterN;Vertexer type;entries", {HistType::kTH1F, {{2, -0.5, 1.5}}}); // See o2::aod::hf_cand::VertexerType
@@ -304,15 +304,12 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 
 	}// end of initialization
 
-
-
 	///////////////////////////////////////////////////////////
 	//                                                       //
 	//                                                       //
 	//						Xic0                             //	
 	//                                                       //
 	///////////////////////////////////////////////////////////
-
 
 	// template function for running xic0 reconstruction via DCAFitter method
 	// templated for various centrality estimator usage
@@ -1406,7 +1403,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 	{
 		runCreatorXic0WithDCAFitter<CentralityEstimator::None, SelectedCollisions>(collisions, candidates, cascadesLinked, cascFull, tracks, bcsWithTimestamps); 
 	}
-	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processXic0WithDCAFitterNoCent, "Xic0 reconstruction via DcaFitter method, no centrality", false);
+	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processXic0WithDCAFitterNoCent, "Xic0 reconstruction via DcaFitter method, no centrality", true);
 
 	void processXicpWithDCAFitterNoCent( SelectedCollisions const& collisions,
 										 aod::HfCascLf3Prongs const& candidates,
@@ -1436,7 +1433,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 	{
 		runCreatorXic0WithKfParticle<CentralityEstimator::None, SelectedCollisions>(collisions, candidates, kfCascadesLinked, kfCascFull, tracks, bcsWithTimestamps); 
 	}
-	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processXic0WithKFParticleNoCent, "Xic0 reconstruction via KFParticle method, no centrality", true);
+	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processXic0WithKFParticleNoCent, "Xic0 reconstruction via KFParticle method, no centrality", false);
 
 	void processXicpWithKFParticleNoCent( SelectedCollisions const& collisions,
 										 aod::HfCascLf3Prongs const& candidates,
