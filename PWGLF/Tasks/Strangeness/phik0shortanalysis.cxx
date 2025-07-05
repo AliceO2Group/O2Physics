@@ -180,6 +180,9 @@ struct Phik0shortanalysis {
   Configurable<bool> fillMethodSingleWeight{"fillMethodSingleWeight", false, "Fill method Single Weight"};
   Configurable<bool> useEfficiency{"useEfficiency", false, "Use efficiency for filling histograms"};
 
+  // Configurable for event mixing
+  Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
+
   // Configurable for CCDB
   Configurable<bool> useCCDB{"useCCDB", false, "Use CCDB for corrections"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository to use"};
@@ -230,11 +233,20 @@ struct Phik0shortanalysis {
   using V0DauTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullPi>;
   using V0DauMCTracks = soa::Join<V0DauTracks, aod::McTrackLabels>;
 
-  // Defining the binning policy for mixed event
-  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+  // Defining binning policy, axis and pairs for mixed event
+  ConfigurableAxis axisVertexMixing{"axisVertexMixing", {20, -10, 10}, "Z vertex axis binning for mixing"};
+  ConfigurableAxis axisCentralityMixing{"axisCentralityMixing", {20, 0, 100}, "Multiplicity percentil binning for mixing"};
 
+  using BinningTypeVertexCent = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+  BinningTypeVertexCent binningOnVertexAndCent{{axisVertexMixing, axisCentralityMixing}, true};
+
+  Pair<SelCollisions, FullTracks, FullV0s, BinningTypeVertexCent> pairPhiK0S{binningOnVertexAndCent, cfgNoMixedEvents, -1, &cache};
+  SameKindPair<SelCollisions, FullTracks, BinningTypeVertexCent> pairPhiPion{binningOnVertexAndCent, cfgNoMixedEvents, -1, &cache};
+
+  // Cache for manual slicing
   SliceCache cache;
 
+  // Positive and negative tracks partitions
   Partition<FullTracks> posTracks = aod::track::signed1Pt > trackConfigs.cfgCutCharge;
   Partition<FullTracks> negTracks = aod::track::signed1Pt < trackConfigs.cfgCutCharge;
 
@@ -2648,7 +2660,7 @@ struct Phik0shortanalysis {
 
   PROCESS_SWITCH(Phik0shortanalysis, processPhiK0SPionMCClosure2D, "Process function for Phi-K0S and Phi-Pion Correlations in MCClosure2D", false);
 
-  void processAllPartMCReco(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const& mcParticles)
+  void processAllPartMCReco(SimCollisions const& collisions, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const& mcParticles)
   {
     for (const auto& collision : collisions) {
       if (!acceptEventQA<true>(collision, false))
@@ -2872,6 +2884,134 @@ struct Phik0shortanalysis {
   }
 
   PROCESS_SWITCH(Phik0shortanalysis, processAllPartMCGen, "Process function for all particles in MCGen", false);
+
+  void processMixingEvent(SelCollisions const& collisions, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
+  {
+    for (auto const& [collision1, tracks1, collision2, v0s2] : o2::soa::selfCombinations(binningOnPositions, cfgNoMixedEvents, -1, collisions, collisions)) {
+      if (!collision1.isInelGt0() || !collision2.isInelGt0())
+        continue;
+
+      // Defining V0s from collision1
+      auto V0ThisColl = V0s.sliceByCached(aod::v0::collisionId, collision1.globalIndex(), cache);
+
+      // Defining positive and negative tracks for phi reconstruction from collision1 and collision2, respectively
+      auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
+      auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
+
+      for (const auto& v0 : V0ThisColl) {
+        const auto& posDaughterTrack = v0.posTrack_as<V0DauTracks>();
+        const auto& negDaughterTrack = v0.negTrack_as<V0DauTracks>();
+
+        // Cut on V0 dynamic columns
+        if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
+          continue;
+
+        TLorentzVector recK0S;
+        recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
+        if (std::abs(recK0S.Rapidity()) > cfgInclusiveDeltay)
+          continue;
+
+        // Combinatorial background simulation
+        for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posThisColl, negThisColl))) {
+          if (!selectionTrackResonance(track1) || !selectionPIDKaon(track1) || !selectionTrackResonance(track2) || !selectionPIDKaon(track2))
+            continue; // topological and PID selection
+
+          TLorentzVector recPhi;
+          recPhi = recMother(track1, track2, massKa, massKa);
+          if (std::abs(recPhi.Rapidity()) > cfgInclusiveDeltay)
+            continue;
+        }
+      }
+
+      // Defining positive and negative tracks for phi reconstruction
+      auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+
+      bool isCountedPhi = false;
+      bool isFilledhV0 = false;
+
+      // Loop over all positive tracks
+      for (const auto& track1 : posThisColl) {
+        if (!selectionTrackResonance<false>(track1, true) || !selectionPIDKaonpTdependent(track1))
+          continue; // topological and PID selection
+
+        dataPhiHist.fill(HIST("hEta"), track1.eta());
+        dataPhiHist.fill(HIST("hNsigmaKaonTPC"), track1.tpcInnerParam(), track1.tpcNSigmaKa());
+        dataPhiHist.fill(HIST("hNsigmaKaonTOF"), track1.tpcInnerParam(), track1.tofNSigmaKa());
+
+        auto track1ID = track1.globalIndex();
+
+        // Loop over all negative tracks
+        for (const auto& track2 : negThisColl) {
+          if (!selectionTrackResonance<false>(track2, true) || !selectionPIDKaonpTdependent(track2))
+            continue; // topological and PID selection
+
+          auto track2ID = track2.globalIndex();
+          if (track2ID == track1ID)
+            continue; // condition to avoid double counting of pair
+
+          ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
+          if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
+            continue;
+          if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
+            continue;
+
+          if (!isCountedPhi) {
+            dataEventHist.fill(HIST("hEventSelection"), 4); // at least a Phi candidate in the event
+            dataEventHist.fill(HIST("hMultiplicityPercentWithPhi"), multiplicity);
+            isCountedPhi = true;
+          }
+
+          dataPhiHist.fill(HIST("h3PhiDataNewProc"), multiplicity, recPhi.Pt(), recPhi.M());
+
+          // V0 already reconstructed by the builder
+          for (const auto& v0 : V0s) {
+            const auto& posDaughterTrack = v0.posTrack_as<V0DauTracks>();
+            const auto& negDaughterTrack = v0.negTrack_as<V0DauTracks>();
+
+            // Cut on V0 dynamic columns
+            if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
+              continue;
+            if (v0Configs.cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
+              continue;
+
+            if (!isFilledhV0) {
+              dataK0SHist.fill(HIST("hDCAV0Daughters"), v0.dcaV0daughters());
+              dataK0SHist.fill(HIST("hV0CosPA"), v0.v0cosPA());
+
+              // Filling the PID of the V0 daughters in the region of the K0 peak
+              if (lowMK0S < v0.mK0Short() && v0.mK0Short() < upMK0S) {
+                dataK0SHist.fill(HIST("hNSigmaPosPionFromK0S"), posDaughterTrack.tpcInnerParam(), posDaughterTrack.tpcNSigmaPi());
+                dataK0SHist.fill(HIST("hNSigmaNegPionFromK0S"), negDaughterTrack.tpcInnerParam(), negDaughterTrack.tpcNSigmaPi());
+              }
+            }
+
+            if (std::abs(v0.yK0Short()) > cfgYAcceptance)
+              continue;
+
+            dataPhiK0SHist.fill(HIST("h5PhiK0SDataNewProc"), v0.yK0Short() - recPhi.Rapidity(), multiplicity, v0.pt(), v0.mK0Short(), recPhi.M());
+          }
+
+          isFilledhV0 = true;
+
+          // Loop over all primary pion candidates
+          for (const auto& track : fullTracks) {
+            if (!selectionPion<true, false>(track, false))
+              continue;
+
+            if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
+              continue;
+
+            float nSigmaTOFPi = (track.hasTOF() ? track.tofNSigmaPi() : -999);
+
+            dataPhiPionHist.fill(HIST("h6PhiPiDataNewProc"), track.rapidity(massPi) - recPhi.Rapidity(), multiplicity, track.pt(), track.tpcNSigmaPi(), nSigmaTOFPi, recPhi.M());
+          }
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(phik0shortanalysis, processMEPhiK0S, "Process Mixed Event for Phi-K0S Analysis", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
