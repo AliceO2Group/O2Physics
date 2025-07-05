@@ -102,6 +102,7 @@ struct skimmerPrimaryElectron {
   Configurable<bool> includeITSsa{"includeITSsa", false, "Flag to include ITSsa tracks"};
   Configurable<float> maxpt_itssa{"maxpt_itssa", 0.15, "max pt for ITSsa track"};
   Configurable<float> maxMeanITSClusterSize{"maxMeanITSClusterSize", 16, "max <ITS cluster size> x cos(lambda)"};
+  Configurable<bool> storeOnlyTrueElectronMC{"storeOnlyTrueElectronMC", false, "Flag to store only true electron in MC"};
 
   // configuration for PID ML
   Configurable<bool> usePIDML{"usePIDML", false, "Flag to use PID ML"};
@@ -269,6 +270,12 @@ struct skimmerPrimaryElectron {
     if constexpr (isMC) {
       if (!track.has_mcParticle()) {
         return false;
+      }
+      if (storeOnlyTrueElectronMC) {
+        const auto& mcParticle = track.template mcParticle_as<aod::McParticles>();
+        if (std::abs(mcParticle.pdgCode()) != 11) {
+          return false;
+        }
       }
     }
 
@@ -700,7 +707,7 @@ struct skimmerPrimaryElectron {
   using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;
   Partition<MyFilteredTracksMC> posTracksMC = o2::aod::track::signed1Pt > 0.f;
   Partition<MyFilteredTracksMC> negTracksMC = o2::aod::track::signed1Pt < 0.f;
-  void processMC_SA(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const&, aod::BCsWithTimestamps const&, MyFilteredTracksMC const& tracks)
+  void processMC_SA(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const&, aod::BCsWithTimestamps const&, MyFilteredTracksMC const& tracks, aod::McParticles const&)
   {
     auto tracksWithITSPid = soa::Attach<MyFilteredTracksMC, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaMu, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(tracks);
     stored_trackIds.reserve(tracks.size());
@@ -730,7 +737,7 @@ struct skimmerPrimaryElectron {
   }
   PROCESS_SWITCH(skimmerPrimaryElectron, processMC_SA, "process reconstructed and MC info ", false);
 
-  void processMC_TTCA(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const&, aod::BCsWithTimestamps const&, MyTracksMC const& tracks, aod::TrackAssoc const& trackIndices)
+  void processMC_TTCA(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const&, aod::BCsWithTimestamps const&, MyTracksMC const& tracks, aod::TrackAssoc const& trackIndices, aod::McParticles const&)
   {
     auto tracksWithITSPid = soa::Attach<MyTracksMC, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaMu, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(tracks);
     stored_trackIds.reserve(tracks.size() * 2);
