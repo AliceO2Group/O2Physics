@@ -297,8 +297,11 @@ struct HfCandidateSelectorXicToXiPiPi {
       auto trackV0PosDau = hfCandXic.posTrack_as<TracksExtraWPid>();
       auto trackV0NegDau = hfCandXic.negTrack_as<TracksExtraWPid>();
 
-      // Succesful reconstruction
+      // Successful reconstruction
       SETBIT(statusXicToXiPiPi, hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoTotal); // RecoTotal = 0 --> statusXicToXiPiPi += 1
+      if (fillHistogram) {
+        registry.fill(HIST("hSelCandidates"), All);
+      }
 
       // kinematic and topological selection
       if (!isSelectedXic(hfCandXic, trackPi0.eta(), trackPi1.eta(), trackPiFromXi.eta(), trackV0PosDau.eta(), trackV0NegDau.eta())) {

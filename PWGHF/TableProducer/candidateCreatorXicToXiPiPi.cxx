@@ -1073,7 +1073,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
 
       // Fill tables
       rowMcMatchRec(flag, origin);
-      if (fillResidualTable) {
+      if (flag != 0 && fillResidualTable) {
         rowResiduals(origin, momentumResiduals[0], momentumResiduals[1],
                      pvResiduals[0], pvResiduals[1], pvResiduals[2],
                      pvPulls[0], pvPulls[1], pvPulls[2],
