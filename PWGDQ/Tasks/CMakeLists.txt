@@ -123,3 +123,8 @@ o2physics_add_dpl_workflow(model-converter-event-extended
                     SOURCES ModelConverterEventExtended.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(tag-and-probe
+                    SOURCES TagAndProbe.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::PWGDQCore
+                    COMPONENT_NAME Analysis)
