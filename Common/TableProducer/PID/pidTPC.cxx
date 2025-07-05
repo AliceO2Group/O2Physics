@@ -150,9 +150,11 @@ struct tpcPid {
   Configurable<int> useNetworkHe{"useNetworkHe", 1, {"Switch for applying neural network on the helium3 mass hypothesis (if network enabled) (set to 0 to disable)"}};
   Configurable<int> useNetworkAl{"useNetworkAl", 1, {"Switch for applying neural network on the alpha mass hypothesis (if network enabled) (set to 0 to disable)"}};
   Configurable<float> networkBetaGammaCutoff{"networkBetaGammaCutoff", 0.45, {"Lower value of beta-gamma to override the NN application"}};
+  Configurable<float> networkInputBatchedMode{"networkInputBatchedMode", -1, {"-1: Takes all tracks, >0: Takes networkInputBatchedMode number of tracks at once"}};
 
   // Parametrization configuration
   bool useCCDBParam = false;
+  std::vector<float> track_properties;
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -288,6 +290,10 @@ struct tpcPid {
       } else {
         return;
       }
+
+      if (networkInputBatchedMode.value > 0) {
+        track_properties.resize(networkInputBatchedMode.value);
+      }
     }
   }
 
@@ -297,8 +303,6 @@ struct tpcPid {
   template <typename C, typename T, typename B>
   std::vector<float> createNetworkPrediction(C const& collisions, T const& tracks, B const& bcs, const size_t size)
   {
-
-    std::vector<float> network_prediction;
 
     auto start_network_total = std::chrono::high_resolution_clock::now();
     if (autofetchNetworks) {
@@ -348,18 +352,35 @@ struct tpcPid {
     const uint64_t track_prop_size = input_dimensions * size;
     const uint64_t prediction_size = output_dimensions * size;
 
-    network_prediction = std::vector<float>(prediction_size * 9); // For each mass hypotheses
     const float nNclNormalization = response->GetNClNormalization();
     float duration_network = 0;
 
-    std::vector<float> track_properties(track_prop_size);
-    uint64_t counter_track_props = 0;
-    int loop_counter = 0;
+    uint64_t counter_track_props = 0, exec_counter = 0, in_batch_counter = 0, total_input_count = 0, tracks_size = tracks.size();
+    const int numSpecies = 9;
+    if (networkInputBatchedMode.value <= 0) {
+      track_properties.resize(track_prop_size);
+    }
+    std::vector<float> network_prediction(prediction_size * numSpecies); // For each mass hypotheses
 
     // Filling a std::vector<float> to be evaluated by the network
     // Evaluation on single tracks brings huge overhead: Thus evaluation is done on one large vector
-    for (int i = 0; i < 9; i++) { // Loop over particle number for which network correction is used
+    for (int species = 0; species < numSpecies; species++) { // Loop over particle number for which network correction is used
       for (auto const& trk : tracks) {
+        if ((in_batch_counter == networkInputBatchedMode.value) || total_input_count == (tracks_size * numSpecies - 1)) { // If the batch size is reached, reset the counter
+          auto start_network_eval = std::chrono::high_resolution_clock::now();
+          float* output_network = network.evalModel(track_properties);
+          auto stop_network_eval = std::chrono::high_resolution_clock::now();
+          duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_eval - start_network_eval).count();
+          for (uint64_t i = 0; i < (in_batch_counter * output_dimensions); i += output_dimensions) {
+            for (int j = 0; j < output_dimensions; j++) {
+              network_prediction[i + j + networkInputBatchedMode.value * exec_counter] = output_network[i + j];
+            }
+          }
+          counter_track_props = 0;
+          in_batch_counter = 0;
+          exec_counter++;
+        }
+
         if (!trk.hasTPC()) {
           continue;
         }
@@ -368,30 +389,19 @@ struct tpcPid {
             continue;
           }
         }
-        track_properties[counter_track_props] = trk.tpcInnerParam();
+        track_properties[counter_track_props] = trk.tpcInnerParam(); // (tracks.asArrowTable()->GetColumn<float>("tpcInnerParam")).GetData();
         track_properties[counter_track_props + 1] = trk.tgl();
         track_properties[counter_track_props + 2] = trk.signed1Pt();
-        track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
+        track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[species];
         track_properties[counter_track_props + 4] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).multTPC() / 11000. : 1.;
         track_properties[counter_track_props + 5] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
         if (input_dimensions == 7 && networkVersion == "2") {
           track_properties[counter_track_props + 6] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
         }
         counter_track_props += input_dimensions;
+        in_batch_counter++;
+        total_input_count++;
       }
-
-      auto start_network_eval = std::chrono::high_resolution_clock::now();
-      float* output_network = network.evalModel(track_properties);
-      auto stop_network_eval = std::chrono::high_resolution_clock::now();
-      duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_eval - start_network_eval).count();
-      for (uint64_t i = 0; i < prediction_size; i += output_dimensions) {
-        for (int j = 0; j < output_dimensions; j++) {
-          network_prediction[i + j + prediction_size * loop_counter] = output_network[i + j];
-        }
-      }
-
-      counter_track_props = 0;
-      loop_counter += 1;
     }
     track_properties.clear();
 
