@@ -117,6 +117,7 @@ struct EmcalCorrectionTask {
   Configurable<bool> applyTempCalib{"applyTempCalib", false, "Switch to turn on Temperature calibration."};
   Configurable<std::string> pathTempCalibCCDB{"pathTempCalibCCDB", "Users/j/jokonig/EMCalTempCalibParams", "Path in the ccdb where slope and intercept for each cell are stored"}; // change to official path as soon as it is available
   Configurable<bool> useTempCalibMean{"useTempCalibMean", false, "Switch to turn on Temperature mean calculation instead of median."};
+  Configurable<float> mcCellEnergyResolutionBroadening{"mcCellEnergyResolutionBroadening", 0., "Relative widening of the MC cell energy resolution. 0 for no widening, 0.1 for 10% widening, etc. Only applied to MC."};
 
   // Require EMCAL cells (CALO type 1)
   Filter emccellfilter = aod::calo::caloType == selectedCellType;
@@ -487,6 +488,9 @@ struct EmcalCorrectionTask {
         auto amplitude = cell.amplitude();
         if (static_cast<bool>(hasShaperCorrection) && emcal::intToChannelType(cell.cellType()) == emcal::ChannelType_t::LOW_GAIN) { // Apply shaper correction to LG cells
           amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
+        }
+        if (mcCellEnergyResolutionBroadening != 0.) {
+          amplitude *= (1. + normalgaus(rdgen) * mcCellEnergyResolutionBroadening); // Fine tune the MC cell energy resolution
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
