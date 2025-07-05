@@ -554,17 +554,17 @@ struct SingleTrackQCMC {
     }
   }
 
-  template <int lepton_source_id, typename TMCParticles, typename TTrack>
+  template <bool isSmeared, int lepton_source_id, typename TMCParticles, typename TTrack>
   void fillTrackInfo(TTrack const& track)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      fillElectronInfo<lepton_source_id, TMCParticles>(track);
+      fillElectronInfo<isSmeared, lepton_source_id, TMCParticles>(track);
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
-      fillMuonInfo<lepton_source_id, TMCParticles>(track);
+      fillMuonInfo<isSmeared, lepton_source_id, TMCParticles>(track);
     }
   }
 
-  template <int lepton_source_id, typename TMCParticles, typename TTrack>
+  template <bool isSmeared, int lepton_source_id, typename TMCParticles, typename TTrack>
   void fillElectronInfo(TTrack const& track)
   {
     auto mctrack = track.template emmcparticle_as<TMCParticles>();
@@ -579,7 +579,11 @@ struct SingleTrackQCMC {
     // LOGF(info, "map_weight[%d] = %f", track.globalIndex(), weight);
 
     if (track.sign() > 0) {
-      fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hs"), track.pt(), track.eta(), track.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+      if (isSmeared) {
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hs"), track.pt(), track.eta(), track.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+      } else {
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hs"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+      }
       if (cfgFillQA) {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hQoverPt"), track.sign() / track.pt());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDCAxyz"), track.dcaXY(), track.dcaZ());
@@ -624,7 +628,11 @@ struct SingleTrackQCMC {
         // fRegistry.fill(HIST("Track/PID/positive/hITSNsigmaPr"), track.p(), track.itsNSigmaPr());
       }
     } else {
-      fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hs"), track.pt(), track.eta(), track.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+      if (isSmeared) {
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hs"), track.pt(), track.eta(), track.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+      } else {
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hs"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+      }
       if (cfgFillQA) {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hQoverPt"), track.sign() / track.pt());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDCAxyz"), track.dcaXY(), track.dcaZ());
@@ -671,7 +679,7 @@ struct SingleTrackQCMC {
     }
   }
 
-  template <int lepton_source_id, typename TMCParticles, typename TTrack>
+  template <bool isSmeared, int lepton_source_id, typename TMCParticles, typename TTrack>
   void fillMuonInfo(TTrack const& track)
   {
     auto mctrack = track.template emmcparticle_as<TMCParticles>();
@@ -687,7 +695,11 @@ struct SingleTrackQCMC {
     // LOGF(info, "map_weight[%d] = %f", track.globalIndex(), weight);
 
     if (track.sign() > 0) {
-      fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hs"), track.pt(), track.eta(), track.phi(), dca_xy, -mctrack.pdgCode() / pdg_lepton, weight);
+      if (isSmeared) {
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hs"), track.pt(), track.eta(), track.phi(), dca_xy, -mctrack.pdgCode() / pdg_lepton, weight);
+      } else {
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hs"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca_xy, -mctrack.pdgCode() / pdg_lepton, weight);
+      }
       if (cfgFillQA) {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hEtaPhi_MatchMCHMID"), track.phiMatchedMCHMID(), track.etaMatchedMCHMID(), weight);
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hdEtadPhi"), dphi, deta, weight);
@@ -710,7 +722,11 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
       }
     } else {
-      fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hs"), track.pt(), track.eta(), track.phi(), dca_xy, -mctrack.pdgCode() / pdg_lepton, weight);
+      if (isSmeared) {
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hs"), track.pt(), track.eta(), track.phi(), dca_xy, -mctrack.pdgCode() / pdg_lepton, weight);
+      } else {
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hs"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca_xy, -mctrack.pdgCode() / pdg_lepton, weight);
+      }
       if (cfgFillQA) {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hEtaPhi_MatchMCHMID"), track.phiMatchedMCHMID(), track.etaMatchedMCHMID(), weight);
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hdEtadPhi"), dphi, deta, weight);
@@ -803,33 +819,33 @@ struct SingleTrackQCMC {
 
         if (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) {
           if (pdg_mother == 111 || pdg_mother == 221 || pdg_mother == 331 || pdg_mother == 113 || pdg_mother == 223 || pdg_mother == 333) {
-            fillTrackInfo<0, TMCParticles>(track); // lf
+            fillTrackInfo<isSmeared, 0, TMCParticles>(track); // lf
             if (IsFromCharm(mcmother, mcparticles) < 0 && IsFromBeauty(mcmother, mcparticles) < 0) {
-              fillTrackInfo<1, TMCParticles>(track); // lf_prompt
+              fillTrackInfo<isSmeared, 1, TMCParticles>(track); // lf_prompt
             }
           } else if (pdg_mother == 443) {
             if (IsFromBeauty(mcmother, mcparticles) > 0) { // b is found in full decay chain.
-              fillTrackInfo<4, TMCParticles>(track);
+              fillTrackInfo<isSmeared, 4, TMCParticles>(track);
             } else {
-              fillTrackInfo<3, TMCParticles>(track);
+              fillTrackInfo<isSmeared, 3, TMCParticles>(track);
             }
           } else if (pdg_mother == 100443) {
             if (IsFromBeauty(mcmother, mcparticles) > 0) { // b is found in full decay chain.
-              fillTrackInfo<6, TMCParticles>(track);
+              fillTrackInfo<isSmeared, 6, TMCParticles>(track);
             } else {
-              fillTrackInfo<5, TMCParticles>(track);
+              fillTrackInfo<isSmeared, 5, TMCParticles>(track);
             }
           } else if (IsFromBeauty(mctrack, mcparticles) > 0) { // b is found in full decay chain.
             if (IsFromCharm(mctrack, mcparticles) > 0) {       // c is found in full decay chain.
-              fillTrackInfo<9, TMCParticles>(track);
+              fillTrackInfo<isSmeared, 9, TMCParticles>(track);
             } else {
-              fillTrackInfo<8, TMCParticles>(track);
+              fillTrackInfo<isSmeared, 8, TMCParticles>(track);
             }
           } else if (IsFromCharm(mctrack, mcparticles) > 0) { // c is found in full decay chain. Not from b.
-            fillTrackInfo<7, TMCParticles>(track);
+            fillTrackInfo<isSmeared, 7, TMCParticles>(track);
           }
         } else {
-          fillTrackInfo<2, TMCParticles>(track);
+          fillTrackInfo<isSmeared, 2, TMCParticles>(track);
         }
       } // end of track loop
 
