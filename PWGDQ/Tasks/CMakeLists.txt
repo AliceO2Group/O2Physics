@@ -118,3 +118,8 @@ o2physics_add_dpl_workflow(model-converter-mult-pv
                     SOURCES ModelConverterMultPv.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(model-converter-event-extended
+                    SOURCES ModelConverterEventExtended.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGDQCore
+                    COMPONENT_NAME Analysis)

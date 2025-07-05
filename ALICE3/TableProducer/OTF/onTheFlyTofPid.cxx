@@ -553,7 +553,7 @@ struct OnTheFlyTofPid {
     if (simConfig.considerEventTime.value) {
       etStatus = eventTime(tracksWithTime, tzero);
       if (!etStatus) {
-        LOG(warning) << "Event time calculation failed with " << tracksWithTime.size() << " tracks with time and " << dNdEta << " charged particles";
+        LOG(debug) << "Event time calculation failed with " << tracksWithTime.size() << " tracks with time and " << dNdEta << " charged particles";
       }
     }
 
