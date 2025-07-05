@@ -113,10 +113,12 @@ struct EmcalBcWiseGammaGamma {
       mHistManager.add("True/eta_invMassVsPt_HadronicShower", "Reconstructed validated eta meson from hadronic shower;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{400, 0., 0.8}, {200, 0., 20.}, cfgCentralityBinning});
 
       mHistManager.add("Generated/pi0_AllBCs", "pT spectrum of generated pi0s in all BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#pi^{0}}^{gen}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
+      mHistManager.add("Generated/pi0_FT0", "pT spectrum of generated pi0s in BCs with found FT0;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#pi^{0}}^{gen}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
       mHistManager.add("Generated/pi0_TVX", "pT spectrum of generated pi0s in TVX triggered BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#pi^{0}}^{gen}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
       mHistManager.add("Generated/pi0_kTVXinEMC", "pT spectrum of generated pi0s in kTVXinEMC triggered BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#pi^{0}}^{gen}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
       mHistManager.add("Accepted/pi0_kTVXinEMC", "pT spectrum of accepted pi0s in kTVXinEMC triggered BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#pi^{0}}^{acc}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
       mHistManager.add("Generated/eta_AllBCs", "pT spectrum of generated eta mesons in all BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#eta}^{gen}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
+      mHistManager.add("Generated/eta_FT0", "pT spectrum of generated eta mesons in BCs with found FT0;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#eta}^{gen}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
       mHistManager.add("Generated/eta_TVX", "pT spectrum of generated eta mesons in TVX triggered BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#eta}^{gen}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
       mHistManager.add("Generated/eta_kTVXinEMC", "pT spectrum of generated eta mesons in kTVXinEMC triggered BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#eta}^{gen}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
       mHistManager.add("Accepted/eta_kTVXinEMC", "pT spectrum of accepted eta mesons in kTVXinEMC triggered BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#eta}^{acc}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
@@ -306,6 +308,8 @@ struct EmcalBcWiseGammaGamma {
     for (const auto& mcPi0 : mcPi0s) {
       if (mcPi0.isPrimary()) {
         mHistManager.fill(HIST("Generated/pi0_AllBCs"), mcPi0.pt(), bc.centrality());
+        if (bc.hasFT0())
+          mHistManager.fill(HIST("Generated/pi0_FT0"), mcPi0.pt(), bc.centrality());
         if (bc.hasTVX())
           mHistManager.fill(HIST("Generated/pi0_TVX"), mcPi0.pt(), bc.centrality());
         if (bc.haskTVXinEMC())
@@ -317,6 +321,8 @@ struct EmcalBcWiseGammaGamma {
     for (const auto& mcEta : mcEtas) {
       if (mcEta.isPrimary()) {
         mHistManager.fill(HIST("Generated/eta_AllBCs"), mcEta.pt(), bc.centrality());
+        if (bc.hasFT0())
+          mHistManager.fill(HIST("Generated/eta_FT0"), mcEta.pt(), bc.centrality());
         if (bc.hasTVX())
           mHistManager.fill(HIST("Generated/eta_TVX"), mcEta.pt(), bc.centrality());
         if (bc.haskTVXinEMC())
