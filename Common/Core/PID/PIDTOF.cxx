@@ -17,6 +17,15 @@
 ///
 
 #include "PIDTOF.h"
+
+// O2Physics includes
+#include "Common/Core/CollisionTypeHelper.h"
+
+// O2 includes
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "Framework/Logger.h"
+
+#include <map>
 #include <string>
 
 namespace o2::pid::tof
