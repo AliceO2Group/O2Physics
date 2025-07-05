@@ -65,6 +65,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
     rowsCommon;
   // Candidates
   Produces<o2::aod::HfDstarPars> rowCandidatePar;
+  Produces<o2::aod::HfDstarParD0s> rowCandidateParD0;
   Produces<o2::aod::HfDstarSels> rowCandidateSel;
   Produces<o2::aod::HfDstarMls> rowCandidateMl;
   Produces<o2::aod::HfDstarIds> rowCandidateId;
@@ -73,6 +74,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
   // Switches for filling tables
   HfConfigurableDerivedData confDerData;
   Configurable<bool> fillCandidatePar{"fillCandidatePar", true, "Fill candidate parameters"};
+  Configurable<bool> fillCandidateParD0{"fillCandidateParD0", true, "Fill charm daughter parameters"};
   Configurable<bool> fillCandidateSel{"fillCandidateSel", true, "Fill candidate selection flags"};
   Configurable<bool> fillCandidateMl{"fillCandidateMl", true, "Fill candidate selection ML scores"};
   Configurable<bool> fillCandidateId{"fillCandidateId", true, "Fill original indices from the candidate table"};
@@ -130,6 +132,21 @@ struct HfDerivedDataCreatorDstarToD0Pi {
     rowsCommon.fillTablesCandidate(candidate, invMass, y);
     if (fillCandidatePar) {
       rowCandidatePar(
+        candidate.pxD0(),
+        candidate.pyD0(),
+        candidate.pzD0(),
+        candidate.pxSoftPi(),
+        candidate.pySoftPi(),
+        candidate.pzSoftPi(),
+        candidate.signSoftPi(),
+        candidate.impParamSoftPi(),
+        candidate.normalisedImpParamSoftPi(),
+        prongSoftPi.tpcNSigmaPi(),
+        prongSoftPi.tofNSigmaPi(),
+        prongSoftPi.tpcTofNSigmaPi());
+    }
+    if (fillCandidateParD0) {
+      rowCandidateParD0(
         candidate.chi2PCAD0(),
         candidate.cpaD0(),
         candidate.cpaXYD0(),
@@ -143,29 +160,23 @@ struct HfDerivedDataCreatorDstarToD0Pi {
         candidate.pxProng1(),
         candidate.pyProng1(),
         candidate.pzProng1(),
-        candidate.pxD0(),
-        candidate.pyD0(),
-        candidate.pzD0(),
-        candidate.pxSoftPi(),
-        candidate.pySoftPi(),
-        candidate.pzSoftPi(),
-        candidate.signSoftPi(),
         candidate.invMassD0(),
         candidate.impactParameter0(),
         candidate.impactParameter1(),
-        candidate.impParamSoftPi(),
         candidate.impactParameterNormalised0(),
         candidate.impactParameterNormalised1(),
-        candidate.normalisedImpParamSoftPi(),
         prong0.tpcNSigmaPi(),
         prong0.tofNSigmaPi(),
         prong0.tpcTofNSigmaPi(),
+        prong0.tpcNSigmaKa(),
+        prong0.tofNSigmaKa(),
+        prong0.tpcTofNSigmaKa(),
+        prong1.tpcNSigmaPi(),
+        prong1.tofNSigmaPi(),
+        prong1.tpcTofNSigmaPi(),
         prong1.tpcNSigmaKa(),
         prong1.tofNSigmaKa(),
-        prong1.tpcTofNSigmaKa(),
-        prongSoftPi.tpcNSigmaPi(),
-        prongSoftPi.tofNSigmaPi(),
-        prongSoftPi.tpcTofNSigmaPi());
+        prong1.tpcTofNSigmaKa());
     }
     if (fillCandidateSel) {
       rowCandidateSel(
@@ -224,6 +235,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
       // Fill candidate properties
       rowsCommon.reserveTablesCandidates(sizeTableCand);
       reserveTable(rowCandidatePar, fillCandidatePar, sizeTableCand);
+      reserveTable(rowCandidateParD0, fillCandidateParD0, sizeTableCand);
       reserveTable(rowCandidateSel, fillCandidateSel, sizeTableCand);
       reserveTable(rowCandidateMl, fillCandidateMl, sizeTableCand);
       reserveTable(rowCandidateId, fillCandidateId, sizeTableCand);
