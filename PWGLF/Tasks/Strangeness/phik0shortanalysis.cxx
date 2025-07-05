@@ -161,7 +161,7 @@ struct Phik0shortanalysis {
   Configurable<std::vector<double>> binspTPi{"binspTPi", {0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for pions"};
 
   // Configurables for delta y selection
-  Configurable<int> nBinsY{"nBinsY", 80, "Number of bins in y axis"};
+  Configurable<int> nBinsY{"nBinsY", 20, "Number of bins in y axis"};
   Configurable<int> nBinsDeltaY{"nBinsDeltaY", 20, "Number of bins in deltay axis"};
   Configurable<float> cfgYAcceptance{"cfgYAcceptance", 0.5f, "Rapidity acceptance"};
   Configurable<float> cfgYAcceptanceSmear{"cfgYAcceptanceSmear", 0.8f, "Rapidity acceptance for smearing matrix study"};
@@ -180,7 +180,7 @@ struct Phik0shortanalysis {
   // Configurables to choose the filling method
   Configurable<bool> fillMethodMultipleWeights{"fillMethodMultipleWeights", true, "Fill method Multiple Weights"};
   Configurable<bool> fillMethodSingleWeight{"fillMethodSingleWeight", false, "Fill method Single Weight"};
-  Configurable<bool> useEfficiency{"useEfficiency", false, "Use efficiency for filling histograms"};
+  Configurable<bool> applyEfficiency{"applyEfficiency", false, "Use efficiency for filling histograms"};
 
   // Configurable for event mixing
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
@@ -268,9 +268,9 @@ struct Phik0shortanalysis {
   std::vector<std::vector<TF1*>> phiPurityFunctions = std::vector<std::vector<TF1*>>(binsMult->size(), std::vector<TF1*>(binspTPhi->size(), nullptr));
 
   // Efficiecy maps
-  TH2F* effMapPhi;
-  TH2F* effMapK0S;
-  TH2F* effMapPion;
+  TH3F* effMapPhi;
+  TH3F* effMapK0S;
+  TH3F* effMapPion;
 
   void init(InitContext&)
   {
@@ -280,7 +280,7 @@ struct Phik0shortanalysis {
     AxisSpec sigmassPhiAxis = {nBinsMPhi, lowMPhi, upMPhi, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec vertexZAxis = {100, -15.f, 15.f, "vrtx_{Z} [cm]"};
     AxisSpec etaAxis = {16, -trackConfigs.etaMax, trackConfigs.etaMax, "#eta"};
-    AxisSpec yAxis = {nBinsY, -cfgYAcceptanceSmear, cfgYAcceptanceSmear, "#it{y}"};
+    AxisSpec yAxis = {nBinsY, -cfgYAcceptance, cfgYAcceptance, "#it{y}"};
     AxisSpec deltayAxis = {nBinsDeltaY, -1.0f, 1.0f, "#Delta#it{y}"};
     AxisSpec multAxis = {120, 0.0f, 120.0f, "centFT0M"};
     AxisSpec binnedmultAxis{(std::vector<double>)binsMult, "centFT0M"};
@@ -578,22 +578,22 @@ struct Phik0shortanalysis {
     closureMCPhiK0SHist.add("h5PhiK0SMCClosureNewProc", "2D Invariant mass of Phi and K0Short in MC Closure Test", kTHnSparseF, {deltayAxis, binnedmultAxis, binnedptK0SAxis, massK0SAxis, massPhiAxis});
     closureMCPhiPionHist.add("h6PhiPiMCClosureNewProc", "Phi Invariant mass vs Pion nSigma TPC/TOF in MC Closure Test", kTHnSparseF, {deltayAxis, binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, massPhiAxis});
 
-    mcPhiHist.add("h2PhiMCRecoNewProc", "Phi in MCReco", kTH2F, {binnedmultAxis, binnedpTPhiAxis});
-    mcK0SHist.add("h2K0SMCRecoNewProc", "K0S in MCReco", kTH2F, {binnedmultAxis, binnedptK0SAxis});
-    mcPionHist.add("h2PiMCRecoNewProc", "Pion in MCReco", kTH2F, {binnedmultAxis, binnedptPiAxis});
-    mcPionHist.add("h2PiMCReco2NewProc", "Pion in MCReco", kTH2F, {binnedmultAxis, binnedptPiAxis});
+    mcPhiHist.add("h3PhiMCRecoNewProc", "Phi in MCReco", kTH3F, {binnedmultAxis, binnedpTPhiAxis, yAxis});
+    mcK0SHist.add("h3K0SMCRecoNewProc", "K0S in MCReco", kTH3F, {binnedmultAxis, binnedptK0SAxis, yAxis});
+    mcPionHist.add("h3PiMCRecoNewProc", "Pion in MCReco", kTH3F, {binnedmultAxis, binnedptPiAxis, yAxis});
+    mcPionHist.add("h3PiMCReco2NewProc", "Pion in MCReco", kTH3F, {binnedmultAxis, binnedptPiAxis, yAxis});
 
-    mcPhiHist.add("h2PhiMCGenNewProc", "Phi in MCGen", kTH2F, {binnedmultAxis, binnedpTPhiAxis});
-    mcK0SHist.add("h2K0SMCGenNewProc", "K0S in MCGen", kTH2F, {binnedmultAxis, binnedptK0SAxis});
-    mcPionHist.add("h2PiMCGenNewProc", "Pion in MCGen", kTH2F, {binnedmultAxis, binnedptPiAxis});
+    mcPhiHist.add("h3PhiMCGenNewProc", "Phi in MCGen", kTH3F, {binnedmultAxis, binnedpTPhiAxis, yAxis});
+    mcK0SHist.add("h3K0SMCGenNewProc", "K0S in MCGen", kTH3F, {binnedmultAxis, binnedptK0SAxis, yAxis});
+    mcPionHist.add("h3PiMCGenNewProc", "Pion in MCGen", kTH3F, {binnedmultAxis, binnedptPiAxis, yAxis});
 
-    mcPhiHist.add("h2PhiMCGenAssocRecoNewProc", "Phi in MCGen Associated MCReco", kTH2F, {binnedmultAxis, binnedpTPhiAxis});
-    mcK0SHist.add("h2K0SMCGenAssocRecoNewProc", "K0S in MCGen Associated MCReco", kTH2F, {binnedmultAxis, binnedptK0SAxis});
-    mcPionHist.add("h2PiMCGenAssocRecoNewProc", "Pion in MCGen Associated MCReco", kTH2F, {binnedmultAxis, binnedptPiAxis});
+    mcPhiHist.add("h3PhiMCGenAssocRecoNewProc", "Phi in MCGen Associated MCReco", kTH3F, {binnedmultAxis, binnedpTPhiAxis, yAxis});
+    mcK0SHist.add("h3K0SMCGenAssocRecoNewProc", "K0S in MCGen Associated MCReco", kTH3F, {binnedmultAxis, binnedptK0SAxis, yAxis});
+    mcPionHist.add("h3PiMCGenAssocRecoNewProc", "Pion in MCGen Associated MCReco", kTH3F, {binnedmultAxis, binnedptPiAxis, yAxis});
 
-    mcPhiHist.add("h2PhiMCGenAssocRecoCheckNewProc", "Phi in MCGen Associated MCReco Check", kTH2F, {binnedmultAxis, binnedpTPhiAxis});
-    mcK0SHist.add("h2K0SMCGenAssocRecoCheckNewProc", "K0S in MCGen Associated MCReco Check", kTH2F, {binnedmultAxis, binnedptK0SAxis});
-    mcPionHist.add("h2PiMCGenAssocRecoCheckNewProc", "Pion in MCGen Associated MCReco Check", kTH2F, {binnedmultAxis, binnedptPiAxis});
+    mcPhiHist.add("h3PhiMCGenAssocRecoCheckNewProc", "Phi in MCGen Associated MCReco Check", kTH3F, {binnedmultAxis, binnedpTPhiAxis, yAxis});
+    mcK0SHist.add("h3K0SMCGenAssocRecoCheckNewProc", "K0S in MCGen Associated MCReco Check", kTH3F, {binnedmultAxis, binnedptK0SAxis, yAxis});
+    mcPionHist.add("h3PiMCGenAssocRecoCheckNewProc", "Pion in MCGen Associated MCReco Check", kTH3F, {binnedmultAxis, binnedptPiAxis, yAxis});
 
     mePhiK0SHist.add("h5PhiK0SMENewProc", "2D Invariant mass of Phi and K0Short in ME", kTHnSparseF, {deltayAxis, binnedmultAxis, binnedptK0SAxis, massK0SAxis, massPhiAxis});
     mePhiPionHist.add("h6PhiPiMENewProc", "Phi Invariant mass vs Pion nSigma TPC/TOF in ME", kTHnSparseF, {deltayAxis, binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, massPhiAxis});
@@ -608,7 +608,7 @@ struct Phik0shortanalysis {
       if (fillMethodSingleWeight)
         getPhiPurityFunctionsFromCCDB();
 
-      if (useEfficiency)
+      if (applyEfficiency)
         getEfficiencyMapsFromCCDB();
       else {
         effMapPhi = nullptr;
@@ -966,17 +966,17 @@ struct Phik0shortanalysis {
     if (!listEfficiencyMaps)
       LOG(error) << "Problem getting TList object with efficiency maps!";
 
-    effMapPhi = static_cast<TH2F*>(listEfficiencyMaps->FindObject("h2EfficiencyPhi"));
+    effMapPhi = static_cast<TH3F*>(listEfficiencyMaps->FindObject("h3EfficiencyPhi"));
     if (!effMapPhi) {
       LOG(error) << "Problem getting efficiency map for Phi!";
       return;
     }
-    effMapK0S = static_cast<TH2F*>(listEfficiencyMaps->FindObject("h2EfficiencyK0S"));
+    effMapK0S = static_cast<TH3F*>(listEfficiencyMaps->FindObject("h3EfficiencyK0S"));
     if (!effMapK0S) {
       LOG(error) << "Problem getting efficiency map for K0S!";
       return;
     }
-    effMapPion = static_cast<TH2F*>(listEfficiencyMaps->FindObject("h2EfficiencyPion"));
+    effMapPion = static_cast<TH3F*>(listEfficiencyMaps->FindObject("h3EfficiencyPion"));
     if (!effMapPion) {
       LOG(error) << "Problem getting efficiency map for Pion!";
       return;
@@ -2516,7 +2516,8 @@ struct Phik0shortanalysis {
           isCountedPhi = true;
         }
 
-        dataPhiHist.fill(HIST("h3PhiDataNewProc"), multiplicity, recPhi.Pt(), recPhi.M());
+        float weightPhi = applyEfficiency ? 1.0f / (effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity())) : 1.0f;
+        dataPhiHist.fill(HIST("h3PhiDataNewProc"), multiplicity, recPhi.Pt(), recPhi.M(), weightPhi);
 
         // V0 already reconstructed by the builder
         for (const auto& v0 : V0s) {
@@ -2543,7 +2544,8 @@ struct Phik0shortanalysis {
           if (std::abs(v0.yK0Short()) > cfgYAcceptance)
             continue;
 
-          dataPhiK0SHist.fill(HIST("h5PhiK0SDataNewProc"), v0.yK0Short() - recPhi.Rapidity(), multiplicity, v0.pt(), v0.mK0Short(), recPhi.M());
+          float weightPhiK0S = applyEfficiency ? 1.0f / (effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapK0S->Interpolate(multiplicity, v0.pt(), v0.yK0Short())) : 1.0f;
+          dataPhiK0SHist.fill(HIST("h5PhiK0SDataNewProc"), v0.yK0Short() - recPhi.Rapidity(), multiplicity, v0.pt(), v0.mK0Short(), recPhi.M(), weightPhiK0S);
         }
 
         isFilledhV0 = true;
@@ -2558,7 +2560,8 @@ struct Phik0shortanalysis {
 
           float nSigmaTOFPi = (track.hasTOF() ? track.tofNSigmaPi() : -999);
 
-          dataPhiPionHist.fill(HIST("h6PhiPiDataNewProc"), track.rapidity(massPi) - recPhi.Rapidity(), multiplicity, track.pt(), track.tpcNSigmaPi(), nSigmaTOFPi, recPhi.M());
+          float weightPhiPion = applyEfficiency ? 1.0f / (effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapPion->Interpolate(multiplicity, track.pt(), track.rapidity(massPi))) : 1.0f;
+          dataPhiPionHist.fill(HIST("h6PhiPiDataNewProc"), track.rapidity(massPi) - recPhi.Rapidity(), multiplicity, track.pt(), track.tpcNSigmaPi(), nSigmaTOFPi, recPhi.M(), weightPhiPion);
         }
       }
     }
@@ -2613,7 +2616,8 @@ struct Phik0shortanalysis {
           isCountedPhi = true;
         }
 
-        closureMCPhiHist.fill(HIST("h3PhiMCClosureNewProc"), genmultiplicity, recPhi.Pt(), recPhi.M());
+        float weightPhi = applyEfficiency ? 1.0f / (effMapPhi->Interpolate(genmultiplicity, recPhi.Pt(), recPhi.Rapidity())) : 1.0f;
+        closureMCPhiHist.fill(HIST("h3PhiMCClosureNewProc"), genmultiplicity, recPhi.Pt(), recPhi.M(), weightPhi);
 
         // V0 already reconstructed by the builder
         for (const auto& v0 : V0s) {
@@ -2636,7 +2640,8 @@ struct Phik0shortanalysis {
           if (std::abs(v0.yK0Short()) > cfgYAcceptance)
             continue;
 
-          closureMCPhiK0SHist.fill(HIST("h5PhiK0SMCClosureNewProc"), v0.yK0Short() - recPhi.Rapidity(), genmultiplicity, v0.pt(), v0.mK0Short(), recPhi.M());
+          float weightPhiK0S = applyEfficiency ? 1.0f / (effMapPhi->Interpolate(genmultiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapK0S->Interpolate(genmultiplicity, v0.pt(), v0.yK0Short())) : 1.0f;
+          closureMCPhiK0SHist.fill(HIST("h5PhiK0SMCClosureNewProc"), v0.yK0Short() - recPhi.Rapidity(), genmultiplicity, v0.pt(), v0.mK0Short(), recPhi.M(), weightPhiK0S);
         }
 
         // Loop over all primary pion candidates
@@ -2657,7 +2662,8 @@ struct Phik0shortanalysis {
 
           float nSigmaTOFPi = (track.hasTOF() ? track.tofNSigmaPi() : -999);
 
-          closureMCPhiPionHist.fill(HIST("h6PhiPiMCClosureNewProc"), track.rapidity(massPi) - recPhi.Rapidity(), genmultiplicity, track.pt(), track.tpcNSigmaPi(), nSigmaTOFPi, recPhi.M());
+          float weightPhiPion = applyEfficiency ? 1.0f / (effMapPhi->Interpolate(genmultiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapPion->Interpolate(genmultiplicity, track.pt(), track.rapidity(massPi))) : 1.0f;
+          closureMCPhiPionHist.fill(HIST("h6PhiPiMCClosureNewProc"), track.rapidity(massPi) - recPhi.Rapidity(), genmultiplicity, track.pt(), track.tpcNSigmaPi(), nSigmaTOFPi, recPhi.M(), weightPhiPion);
         }
       }
     }
@@ -2730,7 +2736,7 @@ struct Phik0shortanalysis {
           if (pTMother < minPhiPt || std::abs(yMother) > cfgYAcceptance)
             continue;
 
-          mcPhiHist.fill(HIST("h2PhiMCRecoNewProc"), genmultiplicity, recPhi.Pt());
+          mcPhiHist.fill(HIST("h3PhiMCRecoNewProc"), genmultiplicity, recPhi.Pt(), recPhi.Rapidity());
         }
       }
 
@@ -2755,7 +2761,7 @@ struct Phik0shortanalysis {
         if (std::abs(v0mcparticle.y()) > cfgYAcceptance)
           continue;
 
-        mcK0SHist.fill(HIST("h2K0SMCRecoNewProc"), genmultiplicity, v0mcparticle.pt());
+        mcK0SHist.fill(HIST("h3K0SMCRecoNewProc"), genmultiplicity, v0mcparticle.pt(), v0mcparticle.y());
       }
 
       // Defining tracks in the collision
@@ -2788,12 +2794,12 @@ struct Phik0shortanalysis {
           continue;
         }
 
-        mcPionHist.fill(HIST("h2PiMCRecoNewProc"), genmultiplicity, mcTrack.pt());
+        mcPionHist.fill(HIST("h3PiMCRecoNewProc"), genmultiplicity, mcTrack.pt(), mcTrack.y());
 
         if (track.pt() >= trackConfigs.pTToUseTOF && !track.hasTOF())
           continue;
 
-        mcPionHist.fill(HIST("h2PiMCReco2NewProc"), genmultiplicity, mcTrack.pt());
+        mcPionHist.fill(HIST("h3PiMCReco2NewProc"), genmultiplicity, mcTrack.pt(), mcTrack.y());
       }
 
       // Defining McParticles in the collision
@@ -2809,7 +2815,7 @@ struct Phik0shortanalysis {
         if (mcParticle.pt() < minPhiPt)
           continue;
 
-        mcPhiHist.fill(HIST("h2PhiMCGenAssocRecoCheckNewProc"), genmultiplicity, mcParticle.pt());
+        mcPhiHist.fill(HIST("h3PhiMCGenAssocRecoCheckNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
 
         // K0S selection
         if (mcParticle.pdgCode() != PDG_t::kK0Short)
@@ -2817,7 +2823,7 @@ struct Phik0shortanalysis {
         if (!mcParticle.isPhysicalPrimary() || mcParticle.pt() < v0Configs.v0SettingMinPt)
           continue;
 
-        mcK0SHist.fill(HIST("h2K0SMCGenAssocRecoCheckNewProc"), genmultiplicity, mcParticle.pt());
+        mcK0SHist.fill(HIST("h3K0SMCGenAssocRecoCheckNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
 
         // Pion selection
         if (std::abs(mcParticle.pdgCode()) != PDG_t::kPiPlus)
@@ -2825,7 +2831,7 @@ struct Phik0shortanalysis {
         if (!mcParticle.isPhysicalPrimary() || mcParticle.pt() < trackConfigs.cMinPionPtcut)
           continue;
 
-        mcPionHist.fill(HIST("h2PiMCGenAssocRecoCheckNewProc"), genmultiplicity, mcParticle.pt());
+        mcPionHist.fill(HIST("h3PiMCGenAssocRecoCheckNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
       }
     }
   }
@@ -2862,9 +2868,9 @@ struct Phik0shortanalysis {
       if (mcParticle.pt() < minPhiPt)
         continue;
 
-      mcPhiHist.fill(HIST("h2PhiMCGenNewProc"), genmultiplicity, mcParticle.pt());
+      mcPhiHist.fill(HIST("h3PhiMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
       if (isAssocColl)
-        mcPhiHist.fill(HIST("h2PhiMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt());
+        mcPhiHist.fill(HIST("h3PhiMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
 
       // K0S selection
       if (mcParticle.pdgCode() != PDG_t::kK0Short)
@@ -2872,9 +2878,9 @@ struct Phik0shortanalysis {
       if (!mcParticle.isPhysicalPrimary() || mcParticle.pt() < v0Configs.v0SettingMinPt)
         continue;
 
-      mcK0SHist.fill(HIST("h2K0SMCGenNewProc"), genmultiplicity, mcParticle.pt());
+      mcK0SHist.fill(HIST("h3K0SMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
       if (isAssocColl)
-        mcK0SHist.fill(HIST("h2K0SMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt());
+        mcK0SHist.fill(HIST("h3K0SMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
 
       // Pion selection
       if (std::abs(mcParticle.pdgCode()) != PDG_t::kPiPlus)
@@ -2882,9 +2888,9 @@ struct Phik0shortanalysis {
       if (!mcParticle.isPhysicalPrimary() || mcParticle.pt() < trackConfigs.cMinPionPtcut)
         continue;
 
-      mcPionHist.fill(HIST("h2PiMCGenNewProc"), genmultiplicity, mcParticle.pt());
+      mcPionHist.fill(HIST("h3PiMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
       if (isAssocColl)
-        mcPionHist.fill(HIST("h2PiMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt());
+        mcPionHist.fill(HIST("h3PiMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
     }
   }
 
