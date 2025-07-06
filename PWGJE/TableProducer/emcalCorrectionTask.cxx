@@ -35,6 +35,7 @@
 #include "EMCALBase/ClusterFactory.h"
 #include "EMCALBase/Geometry.h"
 #include "EMCALBase/NonlinearityHandler.h"
+#include "EMCALCalib/GainCalibrationFactors.h"
 #include "EMCALCalibration/EMCALTempCalibExtractor.h"
 #include "EMCALReconstruction/Clusterizer.h"
 #include "Framework/ASoA.h"
@@ -119,6 +120,7 @@ struct EmcalCorrectionTask {
   Configurable<bool> useTempCalibMean{"useTempCalibMean", false, "Switch to turn on Temperature mean calculation instead of median."};
   Configurable<float> mcCellEnergyShift{"mcCellEnergyShift", 1., "Relative shift of the MC cell energy. 1.1 for 10% shift to higher mass, etc. Only applied to MC."};
   Configurable<float> mcCellEnergyResolutionBroadening{"mcCellEnergyResolutionBroadening", 0., "Relative widening of the MC cell energy resolution. 0 for no widening, 0.1 for 10% widening, etc. Only applied to MC."};
+  Configurable<bool> applyGainCalibShift{"applyGainCalibShift", false, "Apply shift for cell gain calibration to use values before cell format change (Sept. 2023)"};
 
   // Require EMCAL cells (CALO type 1)
   Filter emccellfilter = aod::calo::caloType == selectedCellType;
@@ -152,6 +154,9 @@ struct EmcalCorrectionTask {
   std::unique_ptr<o2::emcal::EMCALTempCalibExtractor> mTempCalibExtractor;
   bool mIsTempCalibInitialized = false;
 
+  // Gain calibration
+  std::array<float, 17664> mArrGainCalibDiff;
+
   std::vector<std::pair<int, int>> mExtraTimeShiftRunRanges;
 
   // Current run number
@@ -183,6 +188,11 @@ struct EmcalCorrectionTask {
 
     if (applyTempCalib) {
       mTempCalibExtractor = std::make_unique<o2::emcal::EMCALTempCalibExtractor>();
+    }
+
+    // gain calibration shift initialization
+    if (applyGainCalibShift) {
+      initializeGainCalibShift();
     }
 
     // read all the cluster definitions specified in the options
@@ -362,6 +372,9 @@ struct EmcalCorrectionTask {
         }
         if (applyCellAbsScale) {
           amplitude *= getAbsCellScale(cell.cellNumber());
+        }
+        if (applyGainCalibShift) {
+          amplitude *= mArrGainCalibDiff[cell.cellNumber()];
         }
         if (applyTempCalib) {
           float tempCalibFactor = mTempCalibExtractor->getGainCalibFactor(static_cast<uint16_t>(cell.cellNumber()));
@@ -617,6 +630,9 @@ struct EmcalCorrectionTask {
         auto amplitude = cell.amplitude();
         if (static_cast<bool>(hasShaperCorrection) && emcal::intToChannelType(cell.cellType()) == emcal::ChannelType_t::LOW_GAIN) { // Apply shaper correction to LG cells
           amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
+        }
+        if (applyGainCalibShift) {
+          amplitude *= mArrGainCalibDiff[cell.cellNumber()];
         }
         if (applyTempCalib) {
           float tempCalibFactor = mTempCalibExtractor->getGainCalibFactor(static_cast<uint16_t>(cell.cellNumber()));
@@ -1022,6 +1038,18 @@ struct EmcalCorrectionTask {
     }
     return timeshift + timesmear;
   };
+
+  void initializeGainCalibShift()
+  {
+    auto& ccdbMgr = o2::ccdb::BasicCCDBManager::instance();
+    uint64_t tsOld = 1634853602000; // timestamp corresponding to LHC22o old gain calib object
+    o2::emcal::GainCalibrationFactors* paramsOld = ccdbMgr.getForTimeStamp<o2::emcal::GainCalibrationFactors>("EMC/Calib/GainCalibFactors", tsOld);
+    uint64_t tsNew = 1734853602000; // timestamp corresponding to new gain calib object (new cell compression)
+    o2::emcal::GainCalibrationFactors* paramsNew = ccdbMgr.getForTimeStamp<o2::emcal::GainCalibrationFactors>("EMC/Calib/GainCalibFactors", tsNew);
+    for (uint16_t i = 0; i < mArrGainCalibDiff.size(); ++i) {
+      mArrGainCalibDiff[i] = paramsOld->getGainCalibFactors(i) == 0 ? 1. : paramsNew->getGainCalibFactors(i) / paramsOld->getGainCalibFactors(i);
+    }
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
