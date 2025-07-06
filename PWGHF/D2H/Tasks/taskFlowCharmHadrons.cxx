@@ -109,6 +109,8 @@ struct HfTaskFlowCharmHadrons {
   Configurable<bool> storeEP{"storeEP", false, "Flag to store EP-related axis"};
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
   Configurable<bool> fillMassPtMlTree{"fillMassPtMlTree", false, "Flag to fill mass and pt tree"};
+  Configurable<float> downSampleFactor{"downSampleFactor", 1., "Fraction of candidates to keep in TTree"};
+  Configurable<float> ptDownSampleMax{"ptDownSampleMax", 10., "Maximum pt for the application of the downsampling factor"};
   Configurable<bool> storeResoOccu{"storeResoOccu", false, "Flag to store Occupancy in resolution ThnSparse"};
   Configurable<bool> storeEpCosSin{"storeEpCosSin", false, "Flag to store cos and sin of EP angle in ThnSparse"};
   Configurable<int> occEstimator{"occEstimator", 0, "Occupancy estimation (0: None, 1: ITS, 2: FT0C)"};
@@ -688,6 +690,12 @@ struct HfTaskFlowCharmHadrons {
       float cosDeltaPhi = std::cos(harmonic * (phiCand - evtPl));
 
       if (fillMassPtMlTree && storeMl) {
+        if (downSampleFactor < 1.) {
+          float pseudoRndm = ptCand * 1000. - static_cast<int64_t>(ptCand * 1000);
+          if (ptCand < ptDownSampleMax && pseudoRndm >= downSampleFactor) {
+            continue;
+          }
+        }
         fillMassPt(massCand, ptCand, outputMl[0], outputMl[1]);
       } else {
         fillThn(massCand, ptCand, cent, cosNPhi, sinNPhi, cosDeltaPhi, scalprodCand, outputMl, occupancy, hfevflag);
