@@ -117,6 +117,7 @@ struct EmcalCorrectionTask {
   Configurable<bool> applyTempCalib{"applyTempCalib", false, "Switch to turn on Temperature calibration."};
   Configurable<std::string> pathTempCalibCCDB{"pathTempCalibCCDB", "Users/j/jokonig/EMCalTempCalibParams", "Path in the ccdb where slope and intercept for each cell are stored"}; // change to official path as soon as it is available
   Configurable<bool> useTempCalibMean{"useTempCalibMean", false, "Switch to turn on Temperature mean calculation instead of median."};
+  Configurable<float> mcCellEnergyShift{"mcCellEnergyShift", 1., "Relative shift of the MC cell energy. 1.1 for 10% shift to higher mass, etc. Only applied to MC."};
   Configurable<float> mcCellEnergyResolutionBroadening{"mcCellEnergyResolutionBroadening", 0., "Relative widening of the MC cell energy resolution. 0 for no widening, 0.1 for 10% widening, etc. Only applied to MC."};
 
   // Require EMCAL cells (CALO type 1)
@@ -252,6 +253,7 @@ struct EmcalCorrectionTask {
     mHistManager.add("hCellEtaPhi", "hCellEtaPhi", O2HistType::kTH2F, {etaAxis, phiAxis});
     mHistManager.add("hHGCellTimeEnergy", "hCellTime", O2HistType::kTH2F, {{300, -30, 30}, cellEnergyBins}); // Cell time vs energy for high gain cells (low energies)
     mHistManager.add("hLGCellTimeEnergy", "hCellTime", O2HistType::kTH2F, {{300, -30, 30}, cellEnergyBins}); // Cell time vs energy for low gain cells (high energies)
+    mHistManager.add("hTempCalibCorrection", "hTempCalibCorrection", O2HistType::kTH1F, {{5000, 0.5, 1.5}});
     // NOTE: Reversed column and row because it's more natural for presentation.
     mHistManager.add("hCellRowCol", "hCellRowCol;Column;Row", O2HistType::kTH2D, {{96, -0.5, 95.5}, {208, -0.5, 207.5}});
     mHistManager.add("hClusterE", "hClusterE", O2HistType::kTH1D, {energyAxis});
@@ -362,7 +364,9 @@ struct EmcalCorrectionTask {
           amplitude *= getAbsCellScale(cell.cellNumber());
         }
         if (applyTempCalib) {
-          amplitude *= mTempCalibExtractor->getGainCalibFactor(static_cast<uint16_t>(cell.cellNumber()));
+          float tempCalibFactor = mTempCalibExtractor->getGainCalibFactor(static_cast<uint16_t>(cell.cellNumber()));
+          amplitude *= tempCalibFactor;
+          mHistManager.fill(HIST("hTempCalibCorrection"), tempCalibFactor);
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
@@ -489,6 +493,9 @@ struct EmcalCorrectionTask {
         if (static_cast<bool>(hasShaperCorrection) && emcal::intToChannelType(cell.cellType()) == emcal::ChannelType_t::LOW_GAIN) { // Apply shaper correction to LG cells
           amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
         }
+        if (mcCellEnergyShift != 1.) {
+          amplitude *= mcCellEnergyShift; // Fine tune the MC cell energy
+        }
         if (mcCellEnergyResolutionBroadening != 0.) {
           amplitude *= (1. + normalgaus(rdgen) * mcCellEnergyResolutionBroadening); // Fine tune the MC cell energy resolution
         }
@@ -612,7 +619,9 @@ struct EmcalCorrectionTask {
           amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
         }
         if (applyTempCalib) {
-          amplitude *= mTempCalibExtractor->getGainCalibFactor(static_cast<uint16_t>(cell.cellNumber()));
+          float tempCalibFactor = mTempCalibExtractor->getGainCalibFactor(static_cast<uint16_t>(cell.cellNumber()));
+          amplitude *= tempCalibFactor;
+          mHistManager.fill(HIST("hTempCalibCorrection"), tempCalibFactor);
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
