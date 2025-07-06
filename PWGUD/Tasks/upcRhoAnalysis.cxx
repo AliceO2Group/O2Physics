@@ -15,21 +15,24 @@
 /// \author Jakub Juracka, jakub.juracka@cern.ch
 /// \file   upcRhoAnalysis.cxx
 
-#include <string>
-#include <string_view>
-#include <vector>
+#include "Common/DataModel/PIDResponse.h"
+// #include "Common/Core/RecoDecay.h"
 
-#include "Framework/AnalysisTask.h"
+#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
+#include "PWGUD/DataModel/UDTables.h"
+
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
-#include <random>
 #include "Math/Vector4D.h"
 
-#include "Common/DataModel/PIDResponse.h"
-
-#include "PWGUD/DataModel/UDTables.h"
-#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
+#include <random>
+#include <string>
+#include <string_view>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -118,7 +121,6 @@ struct UpcRhoAnalysis {
 
   float pcEtaCut = 0.9;  // physics coordination recommendation
   const int gapSide = 2; // required gap side
-  const int piPDG = 211; // PDG code for pion
   Configurable<int> numPions{"numPions", 2, "required number of pions in the event"};
   Configurable<bool> requireTof{"requireTof", false, "require TOF signal"};
   Configurable<bool> onlyGoldenRuns{"onlyGoldenRuns", false, "process only golden runs"};
@@ -777,7 +779,7 @@ struct UpcRhoAnalysis {
       rMC.fill(HIST("MC/tracks/all/hPt"), pt(mcParticle.px(), mcParticle.py()));
       rMC.fill(HIST("MC/tracks/all/hEta"), eta(mcParticle.px(), mcParticle.py(), mcParticle.pz()));
       rMC.fill(HIST("MC/tracks/all/hPhi"), phi(mcParticle.px(), mcParticle.py()));
-      if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.pdgCode()) != piPDG)
+      if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.pdgCode()) != kPiPlus)
         continue;
       cutMcParticles.push_back(mcParticle);
       ROOT::Math::PxPyPzMVector pionLV;
