@@ -178,13 +178,13 @@ struct lambda1405analysis {
     if (std::abs(sigmaCand.dcaMothPv()) > cutDCAtoPVSigma || std::abs(sigmaCand.dcaDaugPv()) < cutDCAtoPVPiFromSigma || sigmaRad < cutSigmaRadius) {
       return false;
     }
-    if (lambda1405Cand.isSigmaMinus){
-    rLambda1405.fill(HIST("h2PtMassSigmaBeforeCuts_0"), sigmaCand.mothSign() * sigmaCand.ptMoth(), sigmaCand.mSigmaMinus());
-    } 
-    if (lambda1405Cand.isSigmaPlus){
-    rLambda1405.fill(HIST("h2PtMassSigmaBeforeCuts_1"), sigmaCand.mothSign() * sigmaCand.ptMoth(), sigmaCand.mSigmaPlus());
+    if (lambda1405Cand.isSigmaMinus) {
+      rLambda1405.fill(HIST("h2PtMassSigmaBeforeCuts_0"), sigmaCand.mothSign() * sigmaCand.ptMoth(), sigmaCand.mSigmaMinus());
     }
-    
+    if (lambda1405Cand.isSigmaPlus) {
+      rLambda1405.fill(HIST("h2PtMassSigmaBeforeCuts_1"), sigmaCand.mothSign() * sigmaCand.ptMoth(), sigmaCand.mSigmaPlus());
+    }
+
     for (const auto& piTrack : tracks) {
       if (!doLSBkg) {
         if (piTrack.sign() == sigmaCand.mothSign()) {
