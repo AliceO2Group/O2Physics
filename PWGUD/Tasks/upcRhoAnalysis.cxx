@@ -9,17 +9,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \brief  task for analysis of rho in UPCs using UD tables (from SG producer)
-///         includes event tagging based on ZN information, track selection, reconstruction,
+/// \brief  Task for analysis of rho in UPCs using UD tables (from SG producer).
+///         Includes event tagging based on ZN information, track selection, reconstruction,
 ///         and also some basic stuff for decay phi anisotropy studies
 /// \author Jakub Juracka, jakub.juracka@cern.ch
 /// \file   upcRhoAnalysis.cxx
 
-#include "Common/DataModel/PIDResponse.h"
-// #include "Common/Core/RecoDecay.h" // need to use something from this to restrict angle ranges
-
 #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
 #include "PWGUD/DataModel/UDTables.h"
+
+#include "Common/DataModel/PIDResponse.h"
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -526,11 +525,7 @@ struct UpcRhoAnalysis {
   {
     double dPhi = p1.Phi() - p2.Phi();
     dPhi = std::fmod(dPhi + o2::constants::math::PI, o2::constants::math::TwoPI) - o2::constants::math::PI; // normalize to (-pi, pi)
-    // if (dPhi > o2::constants::math::PI)
-    //   dPhi -= o2::constants::math::TwoPI;
-    // else if (dPhi < -o2::constants::math::PI)
-    //   dPhi += o2::constants::math::TwoPI;
-    return dPhi; // calculate delta phi in (-pi, pi)
+    return dPhi;
   }
 
   float getPhiRandom(const std::vector<ROOT::Math::PxPyPzMVector>& cutTracksLVs) // decay phi anisotropy
@@ -580,7 +575,7 @@ struct UpcRhoAnalysis {
       return;
 
     int neutronClass = -1;
-    bool xnxn = false, onon = false, xnon = false, onxn = false; // note: On == 0n...
+    bool xnxn = false, onon = false, xnon = false, onxn = false;
     float energyCommonZNA = collision.energyCommonZNA(), energyCommonZNC = collision.energyCommonZNC();
     float timeZNA = collision.timeZNA(), timeZNC = collision.timeZNC();
     if (std::isinf(energyCommonZNA))
