@@ -64,8 +64,8 @@ namespace o2::aod
 {
 namespace full
 {
-DECLARE_SOA_COLUMN(M, m, float);               //! Invariant mass of candidate (GeV/c2)
-DECLARE_SOA_COLUMN(Pt, pt, float);             //! Transverse momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(M, m, float);   //! Invariant mass of candidate (GeV/c2)
+DECLARE_SOA_COLUMN(Pt, pt, float); //! Transverse momentum of candidate (GeV/c)
 // ML scores
 DECLARE_SOA_COLUMN(MlScore0, mlScore0, float); //! ML score of the first configured index
 DECLARE_SOA_COLUMN(MlScore1, mlScore1, float); //! ML score of the second configured index
@@ -75,7 +75,7 @@ DECLARE_SOA_TABLE(HfCandPtCent, "AOD", "HFCANDPTCENT",
                   full::Pt,
                   full::MlScore0,
                   full::MlScore1);
-}
+} // namespace o2::aod
 
 enum DecayChannel { DplusToPiKPi = 0,
                     DsToKKPi,
@@ -308,8 +308,7 @@ struct HfTaskFlowCharmHadrons {
       mass,
       pt,
       mlscore0,
-      mlscore1
-    );
+      mlscore1);
   }
 
   /// Compute the Q vector for the candidate's tracks
