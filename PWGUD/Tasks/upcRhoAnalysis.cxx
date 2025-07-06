@@ -16,7 +16,7 @@
 /// \file   upcRhoAnalysis.cxx
 
 #include "Common/DataModel/PIDResponse.h"
-// #include "Common/Core/RecoDecay.h"
+// #include "Common/Core/RecoDecay.h" // need to use something from this to restrict angle ranges
 
 #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
 #include "PWGUD/DataModel/UDTables.h"
@@ -525,10 +525,11 @@ struct UpcRhoAnalysis {
   double deltaPhi(const ROOT::Math::PxPyPzMVector& p1, const ROOT::Math::PxPyPzMVector& p2)
   {
     double dPhi = p1.Phi() - p2.Phi();
-    if (dPhi > o2::constants::math::PI)
-      dPhi -= o2::constants::math::TwoPI;
-    else if (dPhi < -o2::constants::math::PI)
-      dPhi += o2::constants::math::TwoPI;
+    dPhi = std::fmod(dPhi + o2::constants::math::PI, o2::constants::math::TwoPI) - o2::constants::math::PI; // normalize to (-pi, pi)
+    // if (dPhi > o2::constants::math::PI)
+    //   dPhi -= o2::constants::math::TwoPI;
+    // else if (dPhi < -o2::constants::math::PI)
+    //   dPhi += o2::constants::math::TwoPI;
     return dPhi; // calculate delta phi in (-pi, pi)
   }
 
