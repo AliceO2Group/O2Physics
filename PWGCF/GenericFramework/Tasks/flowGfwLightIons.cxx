@@ -431,9 +431,9 @@ struct FlowGfwLightIons {
     fFCptgen->setUseGapMethod(true);
     fFCptgen->initialise(multAxis, cfgMpar, o2::analysis::gfw::configs, cfgNbootstrap);
 
-    fPtDepDCAxy = new TF1("ptDepDCAxy",Form("[0]*%s",cfgDCAxy->c_str()),0.001,100); 
-    fPtDepDCAxy->SetParameter(0,cfgDCAxyNSigma);
-    LOGF(info,"DCAxy pt-dependence function: %s",Form("[0]*%s",cfgDCAxy->c_str()));
+    fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgDCAxy->c_str()), 0.001, 100);
+    fPtDepDCAxy->SetParameter(0, cfgDCAxyNSigma);
+    LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", cfgDCAxy->c_str()));
 
     if (cfgUseAdditionalEventCut) {
       fMultPVCutLow = new TF1("fMultPVCutLow", cfgMultCorrLowCutFunction->c_str(), 0, 100);
@@ -613,7 +613,7 @@ struct FlowGfwLightIons {
       if (cfgRunByRun)
         th1sList[run][hEventSel]->Fill(9.5);
     }
-  
+
     if (cfgNoTimeFrameBorder) {
       if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
         return 0;
@@ -1244,7 +1244,7 @@ struct FlowGfwLightIons {
           return;
         }
         registry.fill(HIST("eventQA/eventSel"), 10.5);
-      }      
+      }
       float vtxz = -999;
       if (collision.numContrib() > 1) {
         vtxz = collision.posZ();
