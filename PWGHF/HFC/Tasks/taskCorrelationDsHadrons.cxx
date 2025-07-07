@@ -786,7 +786,7 @@ struct HfTaskCorrelationDsHadrons {
               outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
             }
           }
-          if (outputMl[0] < mlOutputPromptMin->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[0] < mlOutputPromptMax->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[2] > mlOutputBkg->at(o2::analysis::findBin(binsPtD, candidate.pt()))) {
+          if (outputMl[0] < mlOutputPromptMin->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[0] > mlOutputPromptMax->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[2] > mlOutputBkg->at(o2::analysis::findBin(binsPtD, candidate.pt()))) {
             continue;
           }
 
@@ -865,7 +865,7 @@ struct HfTaskCorrelationDsHadrons {
           outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
         }
       }
-      if (outputMl[0] < mlOutputPromptMin->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[0] < mlOutputPromptMax->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[2] > mlOutputBkg->at(o2::analysis::findBin(binsPtD, candidate.pt()))) {
+      if (outputMl[0] < mlOutputPromptMin->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[0] > mlOutputPromptMax->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[2] > mlOutputBkg->at(o2::analysis::findBin(binsPtD, candidate.pt()))) {
         continue;
       }
       auto collision = candidate.template collision_as<soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels>>();
