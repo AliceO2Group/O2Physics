@@ -36,6 +36,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::math_utils::detail;
 
+enum LambdaPid { kLambda = 0,
+                 kAntiLambda
+                };
+
 // #define FLOAT_PRECISION 0xFFFFFFF0
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
@@ -50,10 +54,9 @@ struct Filter2Prong {
   O2_DEFINE_CONFIGURABLE(cfgImCutPt, float, 0.2f, "Minimal pT for candidates")
   O2_DEFINE_CONFIGURABLE(cfgImMinInvMass, float, 0.95f, "Minimum invariant mass for generic 2 prong")
   O2_DEFINE_CONFIGURABLE(cfgImMaxInvMass, float, 1.07f, "Maximum invariant mass for generic 2 prong")
-  O2_DEFINE_CONFIGURABLE(cfgImSigmaFormula, std::string, "(z < 0.5 && x < 3.0) || (z >= 0.5 && x < 2.5 && y < 3.0)", "pT dependent daughter track sigma pass condition (x = TPC sigma, y = TOF sigma, z = pT)")
+  O2_DEFINE_CONFIGURABLE(cfgImSigmaFormula, std::string, "(z < 0.5 && abs(x) < 3.0) || (z >= 0.5 && abs(x) < 2.5 && abs(y) < 3.0)", "pT dependent daughter track sigma pass condition (x = TPC sigma, y = TOF sigma, z = pT)")
 
   struct : ConfigurableGroup{
-    O2_DEFINE_CONFIGURABLE(DoV0, bool, true, "Store V0s information")
     O2_DEFINE_CONFIGURABLE(tpcNClsCrossedRowsTrackMin, float, 70, "Minimum number of crossed rows in TPC")
     O2_DEFINE_CONFIGURABLE(etaTrackMax, float, 0.8, "Maximum pseudorapidity")
     O2_DEFINE_CONFIGURABLE(ptTrackMin, float, 0.1, "Minimum transverse momentum")
@@ -79,7 +82,6 @@ struct Filter2Prong {
   } grpV0;
   
   struct : ConfigurableGroup{
-    O2_DEFINE_CONFIGURABLE(DoPhi, bool, false, "Store Phi information")
     O2_DEFINE_CONFIGURABLE(ImMinInvMassPhiMeson, float, 0.98f, "Minimum invariant mass Phi meson (GeV)")
     O2_DEFINE_CONFIGURABLE(ImMaxInvMassPhiMeson, float, 1.07f, "Maximum invariant mass Phi meson (GeV)")
     O2_DEFINE_CONFIGURABLE(ITSPIDSelection, bool, true, "PID ITS")
@@ -293,8 +295,8 @@ struct Filter2Prong {
     return true;
   }
 
-  template <typename Collision, typename V0Cand>
-  bool isSelectedV0AsLambda(Collision const& collision, const V0Cand& v0, int pid /*0: lambda, 1: antilambda*/)
+  template <LambdaPid pid, typename Collision, typename V0Cand>
+  bool isSelectedV0AsLambda(Collision const& collision, const V0Cand& v0)
   {
     const auto& posTrack = v0.template posTrack_as<PIDTrack>();
     const auto& negTrack = v0.template negTrack_as<PIDTrack>();
@@ -314,18 +316,19 @@ struct Filter2Prong {
     if (v0.dcaV0daughters() > grpV0.dcaV0DaughtersMaxLambda) {
       return false;
     }
-    if (pid == 0 && (TMath::Abs(v0.dcapostopv()) < grpV0.minV0DCAPr || TMath::Abs(v0.dcanegtopv()) < grpV0.minV0DCAPiLambda)) {
+    if (pid == LambdaPid::kLambda && (TMath::Abs(v0.dcapostopv()) < grpV0.minV0DCAPr || TMath::Abs(v0.dcanegtopv()) < grpV0.minV0DCAPiLambda)) {
       return false;
     }
-    if (pid == 1 && (TMath::Abs(v0.dcapostopv()) < grpV0.minV0DCAPiLambda || TMath::Abs(v0.dcanegtopv()) < grpV0.minV0DCAPr)) {
+    if (pid == LambdaPid::kAntiLambda && (TMath::Abs(v0.dcapostopv()) < grpV0.minV0DCAPiLambda || TMath::Abs(v0.dcanegtopv()) < grpV0.minV0DCAPr)) {
       return false;
     }
-    if (pid == 0 && ((std::abs(posTrack.tpcNSigmaPr()) > grpV0.daughPIDCuts) || (std::abs(negTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts))) {
-      return false;
-    }
-    if (pid == 1 && ((std::abs(posTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts) || (std::abs(negTrack.tpcNSigmaPr()) > grpV0.daughPIDCuts))) {
-      return false;
-    }
+    if (pid == LambdaPid::kLambda && ((std::abs(posTrack.tpcNSigmaPr()) > grpV0.daughPIDCuts) || (std::abs(negTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts)))
+      {
+        return false;
+      }
+    if (pid == LambdaPid::kAntiLambda && ((std::abs(posTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts) || (std::abs(negTrack.tpcNSigmaPr()) > grpV0.daughPIDCuts))) {
+        return false;
+      }
     if (std::abs(CtauLambda) > grpV0.maxLambdaLifeTime) {
       return false;
     }
@@ -369,7 +372,7 @@ struct Filter2Prong {
       } else if (candidate.hasTOF() && TMath::Sqrt(candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < grpPhi.nsigmaCutTOF && candidate.beta() > grpPhi.cutTOFBeta) {
         return true;
       }
-    } else if (!cfgMomDepPID) {
+    } else {
       if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < grpPhi.nsigmaCutTPC) {
         return true;
       } else if (candidate.hasTOF() && TMath::Sqrt(candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < grpPhi.nsigmaCutTOF && candidate.beta() > grpPhi.cutTOFBeta) {
@@ -413,105 +416,111 @@ struct Filter2Prong {
   PROCESS_SWITCH(Filter2Prong, processDataInvMass, "Process data generic 2-prong candidates with invariant mass method", false);
 
   // Phi and V0s invariant mass method candidate finder. Only works for non-identical daughters of opposite charge for now.
-  void processDataPhiV0(aod::Collisions::iterator const& collision, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, Filter2Prong::PIDTrack const& tracks, aod::V0Datas const& V0s)
+  void processDataV0(aod::Collisions::iterator const& collision, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, Filter2Prong::PIDTrack const& tracks, aod::V0Datas const& V0s)
   {
     if (cfcollisions.size() <= 0 || cftracks.size() <= 0)
       return; // rejected collision
 
     o2::aod::ITSResponse itsResponse;
 
-    if (grpPhi.DoPhi) {                       // Process Phi mesons
-      for (const auto& cftrack1 : cftracks) { // Loop over first track
-        const auto& p1 = tracks.iteratorAt(cftrack1.trackId() - tracks.begin().globalIndex());
-        if (p1.sign() != 1) {
-          continue;
-        }
-        if (!selectionTrack(p1)) {
-          continue;
-        }
-        if (grpPhi.ITSPIDSelection && p1.p() < grpPhi.ITSPIDPthreshold.value && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(p1) > grpPhi.lowITSPIDNsigma.value && itsResponse.nSigmaITS<o2::track::PID::Kaon>(p1) < grpPhi.highITSPIDNsigma.value)) { // Check ITS PID condition
-          continue;
-        }
-        if (!selectionPID(p1)) {
-          continue;
-        }
-        if (grpPhi.removefaketrack && isFakeTrack(p1)) { // Check if the track is a fake kaon
-          continue;
-        }
+    for (const auto& v0 : V0s) {    // Loop over V0 candidates
+      if (!isV0TrackSelected(v0)) { // Quality selection for V0 prongs
+        continue;
+      }
 
-        for (const auto& cftrack2 : cftracks) {                 // Loop over second track
-          if (cftrack2.globalIndex() == cftrack1.globalIndex()) // Skip if it's the same track as the first one
-            continue;
+      const auto& posTrack = v0.template posTrack_as<PIDTrack>();
+      const auto& negTrack = v0.template negTrack_as<PIDTrack>();
+      double massV0 = 0.0;
 
-          const auto& p2 = tracks.iteratorAt(cftrack2.trackId() - tracks.begin().globalIndex());
-          if (p2.sign() != -1) {
-            continue;
-          }
-          if (!selectionTrack(p2)) {
-            continue;
-          }
-          if (!selectionPID(p2)) {
-            continue;
-          }
-          if (grpPhi.ITSPIDSelection && p2.p() < grpPhi.ITSPIDPthreshold.value && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(p2) > grpPhi.lowITSPIDNsigma.value && itsResponse.nSigmaITS<o2::track::PID::Kaon>(p2) < grpPhi.highITSPIDNsigma.value)) { // Check ITS PID condition
-            continue;
-          }
-          if (grpPhi.removefaketrack && isFakeTrack(p2)) { // Check if the track is a fake kaon
-            continue;
-          }
-          if (!selectionPair(p1, p2)) {
-            continue;
-          }
+      // K0s
+      if (isSelectedV0AsK0s(collision, v0)) { // candidate is K0s
+        output2ProngTracks(cfcollisions.begin().globalIndex(),
+                           posTrack.globalIndex(), negTrack.globalIndex(),
+                           v0.pt(), v0.eta(), v0.phi(), v0.mK0Short(), aod::cf2prongtrack::K0stoPiPi);
+      }
 
-          ROOT::Math::PtEtaPhiMVector vec1(p1.pt(), p1.eta(), p1.phi(), cfgImPart1Mass);
-          ROOT::Math::PtEtaPhiMVector vec2(p2.pt(), p2.eta(), p2.phi(), cfgImPart2Mass);
-          ROOT::Math::PtEtaPhiMVector s = vec1 + vec2;
-          if (s.M() < grpPhi.ImMinInvMassPhiMeson || s.M() > grpPhi.ImMaxInvMassPhiMeson) {
-            continue;
-          }
-          float phi = RecoDecay::constrainAngle(s.Phi(), 0.0f);
-          output2ProngTracks(cfcollisions.begin().globalIndex(),
-                             cftrack1.globalIndex(), cftrack2.globalIndex(), s.pt(), s.eta(), phi, s.M(), aod::cf2prongtrack::PhiToKK);
-        } // end of loop over second track
-      } // end of loop over first track
-    } // end of processing Phi mesons
+      // Lambda and Anti-Lambda
+      bool LambdaTag = isSelectedV0AsLambda<LambdaPid::kLambda>(collision, v0);
+      bool aLambdaTag = isSelectedV0AsLambda<LambdaPid::kAntiLambda>(collision, v0);
 
-    if (grpV0.DoV0) {                 // Process V0 candidates (K0s, Lambdas, Anti-Lambdas)
-      for (const auto& v0 : V0s) {    // Loop over V0 candidates
-        if (!isV0TrackSelected(v0)) { // Quality selection for V0 prongs
-          continue;
-        }
-
-        const auto& posTrack = v0.template posTrack_as<PIDTrack>();
-        const auto& negTrack = v0.template negTrack_as<PIDTrack>();
-        double massV0 = 0.0;
-
-        // K0s
-        if (isSelectedV0AsK0s(collision, v0)) { // candidate is K0s
-                    output2ProngTracks(cfcollisions.begin().globalIndex(),
-                             posTrack.globalIndex(), negTrack.globalIndex(),
-                             v0.pt(), v0.eta(), v0.phi(), v0.mK0Short(), aod::cf2prongtrack::K0stoPiPi);
-        }
-
-        // Lambda and Anti-Lambda
-        bool LambdaTag = isSelectedV0AsLambda(collision, v0, 0);
-        bool aLambdaTag = isSelectedV0AsLambda(collision, v0, 1);
-
-        // Note: candidate compatible with Lambda and Anti-Lambda hypothesis are counted twice (once for each hypothesis)
-        if (LambdaTag) { // candidate is Lambda
-                    massV0 = v0.mLambda();
-          output2ProngTracks(cfcollisions.begin().globalIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
-                             v0.pt(), v0.eta(), v0.phi(), massV0, aod::cf2prongtrack::LambdatoPPi);
-        }
-        if (aLambdaTag) { // candidate is Anti-lambda
-                    massV0 = v0.mAntiLambda();
-          output2ProngTracks(cfcollisions.begin().globalIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
-                             v0.pt(), v0.eta(), v0.phi(), massV0, aod::cf2prongtrack::AntiLambdatoPiP);
-        } // end of Lambda and Anti-Lambda processing
-      } // end of loop over V0 candidates
-    } // end of processing V0 candidates
+      // Note: candidate compatible with Lambda and Anti-Lambda hypothesis are counted twice (once for each hypothesis)
+      if (LambdaTag) { // candidate is Lambda
+        massV0 = v0.mLambda();
+        output2ProngTracks(cfcollisions.begin().globalIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
+                           v0.pt(), v0.eta(), v0.phi(), massV0, aod::cf2prongtrack::LambdatoPPi);
+      }
+      if (aLambdaTag) { // candidate is Anti-lambda
+        massV0 = v0.mAntiLambda();
+        output2ProngTracks(cfcollisions.begin().globalIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
+                           v0.pt(), v0.eta(), v0.phi(), massV0, aod::cf2prongtrack::AntiLambdatoPiP);
+      } // end of Lambda and Anti-Lambda processing
+    } // end of loop over V0 candidates
   }
-  PROCESS_SWITCH(Filter2Prong, processDataPhiV0, "Process data PhiV0 candidates with invariant mass method", false);
+  PROCESS_SWITCH(Filter2Prong, processDataV0, "Process data V0 candidates with invariant mass method", false);
+
+  // Phi and V0s invariant mass method candidate finder. Only works for non-identical daughters of opposite charge for now.
+  void processDataPhi(aod::Collisions::iterator const& collision, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, Filter2Prong::PIDTrack const& tracks)
+  {
+    if (cfcollisions.size() <= 0 || cftracks.size() <= 0)
+      return; // rejected collision
+
+    o2::aod::ITSResponse itsResponse;
+
+    for (const auto& cftrack1 : cftracks) { // Loop over first track
+      const auto& p1 = tracks.iteratorAt(cftrack1.trackId() - tracks.begin().globalIndex());
+      if (p1.sign() != 1) {
+        continue;
+      }
+      if (!selectionTrack(p1)) {
+        continue;
+      }
+      if (grpPhi.ITSPIDSelection && p1.p() < grpPhi.ITSPIDPthreshold.value && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(p1) > grpPhi.lowITSPIDNsigma.value && itsResponse.nSigmaITS<o2::track::PID::Kaon>(p1) < grpPhi.highITSPIDNsigma.value)) { // Check ITS PID condition
+        continue;
+      }
+      if (!selectionPID(p1)) {
+        continue;
+      }
+      if (grpPhi.removefaketrack && isFakeTrack(p1)) { // Check if the track is a fake kaon
+        continue;
+      }
+
+      for (const auto& cftrack2 : cftracks) {                 // Loop over second track
+        if (cftrack2.globalIndex() == cftrack1.globalIndex()) // Skip if it's the same track as the first one
+          continue;
+
+        const auto& p2 = tracks.iteratorAt(cftrack2.trackId() - tracks.begin().globalIndex());
+        if (p2.sign() != -1) {
+          continue;
+        }
+        if (!selectionTrack(p2)) {
+          continue;
+        }
+        if (!selectionPID(p2)) {
+          continue;
+        }
+        if (grpPhi.ITSPIDSelection && p2.p() < grpPhi.ITSPIDPthreshold.value && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(p2) > grpPhi.lowITSPIDNsigma.value && itsResponse.nSigmaITS<o2::track::PID::Kaon>(p2) < grpPhi.highITSPIDNsigma.value)) { // Check ITS PID condition
+          continue;
+        }
+        if (grpPhi.removefaketrack && isFakeTrack(p2)) { // Check if the track is a fake kaon
+          continue;
+        }
+        if (!selectionPair(p1, p2)) {
+          continue;
+        }
+
+        ROOT::Math::PtEtaPhiMVector vec1(p1.pt(), p1.eta(), p1.phi(), cfgImPart1Mass);
+        ROOT::Math::PtEtaPhiMVector vec2(p2.pt(), p2.eta(), p2.phi(), cfgImPart2Mass);
+        ROOT::Math::PtEtaPhiMVector s = vec1 + vec2;
+        if (s.M() < grpPhi.ImMinInvMassPhiMeson || s.M() > grpPhi.ImMaxInvMassPhiMeson) {
+          continue;
+        }
+        float phi = RecoDecay::constrainAngle(s.Phi(), 0.0f);
+        output2ProngTracks(cfcollisions.begin().globalIndex(),
+                             cftrack1.globalIndex(), cftrack2.globalIndex(), s.pt(), s.eta(), phi, s.M(), aod::cf2prongtrack::PhiToKK);
+      } // end of loop over second track
+    } // end of loop over first track
+  }
+  PROCESS_SWITCH(Filter2Prong, processDataPhi, "Process data Phi candidates with invariant mass method", false);
 
 }; // struct
 

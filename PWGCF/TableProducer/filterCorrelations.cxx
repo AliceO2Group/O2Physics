@@ -165,8 +165,7 @@ struct FilterCF {
       if (candidate.p() >= 0.7 && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPCProton && std::abs(candidate.tofNSigmaPr()) < nsigmaCutTOFProton) {
         return true;
       }
-    }
-    if (!candidate.hasTOF()) {
+    } else {
       if (std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPCProton) {
         return true;
       }
@@ -210,16 +209,10 @@ struct FilterCF {
       return trackType;
     } else if (cfgTrackSelection == 2) {
       uint8_t trackType = 0;
-      if (track.isGlobalTrack()) {
-        if (track.itsNCls() >= itsnclusters) {
-          if (track.tpcNClsCrossedRows() >= tpcncrossedrows) {
-            if constexpr (HasProtonPID<TTrack>::value) {
-              if (selectionPIDProton(track)) {
-                trackType |= kPIDProton;
-              }
-            }
+      if constexpr (HasProtonPID<TTrack>::value) {
+        if (track.isGlobalTrack() && (track.itsNCls() >= itsnclusters) && (track.tpcNClsCrossedRows() >= tpcncrossedrows) && selectionPIDProton(track)) {
+            trackType |= kPIDProton;
           }
-        }
       }
       return trackType;
     }
@@ -275,13 +268,18 @@ struct FilterCF {
   }
   PROCESS_SWITCH(FilterCF, processDataPid, "Process data with PID", false);
 
-  // NOTE not filtering collisions here because in that case there can be tracks referring to MC particles which are not part of the selected MC collisions
-  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
-  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
-  void processMC(aod::McCollisions const& mcCollisions, aod::McParticles const& allParticles,
-                 soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities> const& allCollisions,
-                 soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection, aod::pidTPCPr, aod::pidTOFPr, aod::TracksDCA>> const& tracks,
-                 aod::BCsWithTimestamps const&)
+  /// \brief Process MC data for a given set of MC collisions and associated particles and tracks
+  /// \param mcCollisions The collection of MC collisions
+  /// \param allParticles The collection of all MC particles
+  /// \param allCollisions The collection of all collisions, joined with MC collision labels and
+  ///                      event selections
+  /// \param tracks The collection of tracks, filtered by selection criteria
+  /// \param bcs The collection of bunch crossings with timestamps
+  template <typename T1>
+  void processMCT(aod::McCollisions const& mcCollisions, aod::McParticles const& allParticles,
+                  soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities> const& allCollisions,
+                  T1 const& tracks,
+                  aod::BCsWithTimestamps const&)
   {
     mcReconstructedCache.reserve(allParticles.size());
     mcParticleLabelsCache.reserve(allParticles.size());
@@ -389,7 +387,28 @@ struct FilterCF {
       }
     }
   }
+
+  // NOTE not filtering collisions here because in that case there can be tracks referring to MC particles which are not part of the selected MC collisions
+  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
+  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
+  void processMC(aod::McCollisions const& mcCollisions, aod::McParticles const& allParticles,
+                 soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities> const& allCollisions,
+                 soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
+                 aod::BCsWithTimestamps const& bcs)
+  {
+    processMCT(mcCollisions, allParticles, allCollisions, tracks, bcs);
+  }
   PROCESS_SWITCH(FilterCF, processMC, "Process MC", false);
+
+  // NOTE not filtering collisions here because in that case there can be tracks referring to MC particles which are not part of the selected MC collisions
+  void processMCPid(aod::McCollisions const& mcCollisions, aod::McParticles const& allParticles,
+                 soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities> const& allCollisions,
+                 soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection, aod::pidTPCPr, aod::pidTOFPr, aod::TracksDCA>> const& tracks,
+                 aod::BCsWithTimestamps const& bcs)
+  {
+    processMCT(mcCollisions, allParticles, allCollisions, tracks, bcs);
+  }
+  PROCESS_SWITCH(FilterCF, processMCPid, "Process MC with PID", false);
 
   void processMCGen(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& particles)
   {
