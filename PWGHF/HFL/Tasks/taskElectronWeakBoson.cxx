@@ -630,11 +630,14 @@ struct HfTaskElectronWeakBoson {
           if (std::abs(trackAss.pt - zBoson.ptchild1) < ptMatch)
             continue;
           // calculate Z-h correlation
+          /*
           double deltaPhi = trackAss.phi - zBoson.phi;
           while (deltaPhi < -TMath::Pi() / 2)
             deltaPhi += 2 * TMath::Pi();
           while (deltaPhi > 3 * TMath::Pi() / 2)
             deltaPhi -= 2 * TMath::Pi();
+          */
+          double deltaPhi = RecoDecay::constrainAngle(trackAss.phi - zBoson.phi, -o2::constants::math::PIHalf);
           registry.fill(HIST("hZHadronDphi"), zBoson.pt, deltaPhi);
         }
       }
