@@ -393,13 +393,13 @@ struct NucleitpcPbPb {
           continue;
         histomc.fill(HIST("histEtagen"), mcParticle.eta());
         float ptScaled = mcParticle.pt();
-        if (pdgCode == 1000020030) {
+        if (pdgCode == particlePdgCodes.at(5)) {
           histomc.fill(HIST("histPtgenHe3"), ptScaled);
-        } else if (pdgCode == -1000020030) {
+        } else if (pdgCode == -particlePdgCodes.at(5)) {
           histomc.fill(HIST("histPtgenAntiHe3"), ptScaled);
-        } else if (pdgCode == 1000020040) {
+        } else if (pdgCode == particlePdgCodes.at(6)) {
           histomc.fill(HIST("histPtgenHe4"), ptScaled);
-        } else if (pdgCode == -1000020040) {
+        } else if (pdgCode == -particlePdgCodes.at(6)) {
           histomc.fill(HIST("histPtgenAntiHe4"), ptScaled);
         }
       } // mc track loop generated
@@ -527,12 +527,12 @@ struct NucleitpcPbPb {
         float ptReco;
         setTrackParCov(track, mTrackParCov);
         mTrackParCov.setPID(track.pidForTracking());
-        ptReco = (std::abs(pdg) == 1000020030 || std::abs(pdg) == 1000020040) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
-        if (pdg == -1000020040 && cfgmccorrectionhe4Require) {
+        ptReco = (std::abs(pdg) == particlePdgCodes.at(5) || std::abs(pdg) == particlePdgCodes.at(6)) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
+        if (pdg == -particlePdgCodes.at(6) && cfgmccorrectionhe4Require) {
           ptReco = ptReco + 0.00765 + 0.503791 * std::exp(-1.10517 * ptReco);
         }
 
-        if (pdg == -1000020030 && cfgmccorrectionhe4Require) {
+        if (pdg == -particlePdgCodes.at(5) && cfgmccorrectionhe4Require) {
           int pidGuess = track.pidForTracking();
           if (pidGuess == 6) {
             ptReco = ptReco - 0.464215 + 0.195771 * ptReco - 0.0183111 * ptReco * ptReco;
@@ -542,20 +542,20 @@ struct NucleitpcPbPb {
         float ptGen = matchedMCParticle.pt();
         float deltaPt = ptReco - ptGen;
 
-        if (pdg == -1000020030) {
+        if (pdg == -particlePdgCodes.at(5)) {
           histomc.fill(HIST("histDeltaPtVsPtGen"), ptReco, deltaPt);
           histomc.fill(HIST("histPIDtrack"), ptReco, track.pidForTracking());
         }
-        if (pdg == -1000020040) {
+        if (pdg == -particlePdgCodes.at(6)) {
           histomc.fill(HIST("histDeltaPtVsPtGenHe4"), ptReco, deltaPt);
         }
-        if (pdg == 1000020030) {
+        if (pdg == particlePdgCodes.at(5)) {
           histomc.fill(HIST("histPtRecoHe3"), ptReco);
-        } else if (pdg == -1000020030) {
+        } else if (pdg == -particlePdgCodes.at(5)) {
           histomc.fill(HIST("histPtRecoAntiHe3"), ptReco);
-        } else if (pdg == 1000020040) {
+        } else if (pdg == particlePdgCodes.at(6)) {
           histomc.fill(HIST("histPtRecoHe4"), ptReco);
-        } else if (pdg == -1000020040) {
+        } else if (pdg == -particlePdgCodes.at(6)) {
           histomc.fill(HIST("histPtRecoAntiHe4"), ptReco);
         }
       } // Track loop
