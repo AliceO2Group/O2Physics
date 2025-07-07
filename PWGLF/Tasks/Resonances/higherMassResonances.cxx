@@ -1294,7 +1294,7 @@ struct HigherMassResonances {
           }
           gindex2.clear();
         }
-        gindex1.clear();  
+        gindex1.clear();
       }
     }
   }
