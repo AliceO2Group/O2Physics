@@ -13,11 +13,11 @@
 // Run 3 Pb-Pb centrality selections in 2023 data. It is compatible with
 // derived data.
 
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/CCDB/ctpRateFetcher.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPECSObject.h"
@@ -40,7 +40,7 @@ struct centralityStudy {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   ctpRateFetcher mRateFetcher;
-  
+
   // Configurables
   Configurable<bool> do2DPlots{"do2DPlots", true, "0 - no, 1 - yes"};
   Configurable<bool> doOccupancyStudyVsCentrality2d{"doOccupancyStudyVsCentrality2d", true, "0 - no, 1 - yes"};
@@ -444,7 +444,7 @@ struct centralityStudy {
 
       float hoursAfterStartOfRun = static_cast<float>(bcTimestamp - startOfRunTimestamp) / 3600000.0;
       float interactionRate = mRateFetcher.fetch(ccdb.service, bcTimestamp, collision.multRunNumber(), irSource.value, fIRCrashOnNull) / 1000.; // kHz
-      
+
       histos.fill(HIST("hFT0AvsTime"), hoursAfterStartOfRun, collision.multFT0A());
       histos.fill(HIST("hFT0CvsTime"), hoursAfterStartOfRun, collision.multFT0C());
       histos.fill(HIST("hFT0MvsTime"), hoursAfterStartOfRun, collision.multFT0M());
