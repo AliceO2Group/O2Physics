@@ -15,7 +15,6 @@
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
-#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -47,7 +46,6 @@ using namespace o2::aod;
 using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::hf_decay::hf_cand_beauty;
 
 namespace o2::aod
 {
@@ -323,17 +321,17 @@ struct HfTaskB0Reduced {
         }
         // MC checks
         if (doprocessMcWithDecayTypeCheck || doprocessMcWithB0MlAndDecayTypeCheck || doprocessMcWithDmesMlAndDecayTypeCheck) {
-          constexpr uint8_t NBinsDecayTypeMc = hf_cand_b0::DecayTypeMc::NDecayTypeMc;
-          TString labels[NBinsDecayTypeMc];
+          constexpr uint8_t kNBinsDecayTypeMc = hf_cand_b0::DecayTypeMc::NDecayTypeMc;
+          TString labels[kNBinsDecayTypeMc];
           labels[hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi] = "B^{0} #rightarrow (D^{#minus} #rightarrow #pi^{#minus} K^{#plus} #pi^{#minus}) #pi^{#plus}";
           labels[hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi] = "B^{0} #rightarrow (D^{#minus}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#minus}) #pi^{#plus}";
           labels[hf_cand_b0::DecayTypeMc::BsToDsPiToKKPiPi] = "B_{s}^{0} #rightarrow (D^{#minus}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#minus}) #pi^{#plus}";
           labels[hf_cand_b0::DecayTypeMc::B0ToDplusKToPiKPiK] = "B^{0} #rightarrow (D^{#minus} #rightarrow #pi^{#minus} K^{#plus} #pi^{#minus}) K^{#plus}";
           labels[hf_cand_b0::DecayTypeMc::PartlyRecoDecay] = "Partly reconstructed decay channel";
           labels[hf_cand_b0::DecayTypeMc::OtherDecay] = "Other decays";
-          static const AxisSpec axisDecayType = {NBinsDecayTypeMc, 0.5, NBinsDecayTypeMc + 0.5, ""};
+          static const AxisSpec axisDecayType = {kNBinsDecayTypeMc, 0.5, kNBinsDecayTypeMc + 0.5, ""};
           registry.add("hDecayTypeMc", "DecayType", {HistType::kTH3F, {axisDecayType, axisMassB0, axisPtB0}});
-          for (uint8_t iBin = 0; iBin < NBinsDecayTypeMc; ++iBin) {
+          for (uint8_t iBin = 0; iBin < kNBinsDecayTypeMc; ++iBin) {
             registry.get<TH3>(HIST("hDecayTypeMc"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin]);
           }
         }
@@ -417,7 +415,7 @@ struct HfTaskB0Reduced {
     if constexpr (doMc) {
       flagMcMatchRec = candidate.flagMcMatchRec();
       flagWrongCollision = candidate.flagWrongCollision();
-      isSignal = std::abs(flagMcMatchRec) == DecayChannelMain::B0ToDminusPi;
+      isSignal = TESTBIT(std::abs(flagMcMatchRec), hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi);
     }
 
     if (fillHistograms) {
@@ -480,13 +478,13 @@ struct HfTaskB0Reduced {
             registry.fill(HIST("hMlScoreSigB0RecBg"), ptCandB0, candidate.mlProbB0ToDPi());
           }
         } else if constexpr (withDecayTypeCheck) {
-          if (flagMcMatchRec == DecayChannelMain::B0ToDsPi) { // B0 → Ds- π+ → (K- K+ π-) π+
+          if (TESTBIT(flagMcMatchRec, hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi)) { // B0 → Ds- π+ → (K- K+ π-) π+
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi, invMassB0, ptCandB0);
-          } else if (flagMcMatchRec == DecayChannelMain::BsToDsPi) { // B0s → Ds- π+ → (K- K+ π-) π+
+          } else if (TESTBIT(flagMcMatchRec, hf_cand_b0::DecayTypeMc::BsToDsPiToKKPiPi)) { // B0s → Ds- π+ → (K- K+ π-) π+
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::BsToDsPiToKKPiPi, invMassB0, ptCandB0);
-          } else if (flagMcMatchRec == DecayChannelMain::B0ToDminusK) { // B0 → D- K+ → (π- K+ π-) K+
+          } else if (TESTBIT(flagMcMatchRec, hf_cand_b0::DecayTypeMc::B0ToDplusKToPiKPiK)) { // B0 → D- K+ → (π- K+ π-) K+
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::B0ToDplusKToPiKPiK, invMassB0, ptCandB0);
-          } else if (flagMcMatchRec == hf_cand_b0::DecayTypeMc::PartlyRecoDecay) { // FIXME, Partly reconstructed decay channel
+          } else if (TESTBIT(flagMcMatchRec, hf_cand_b0::DecayTypeMc::PartlyRecoDecay)) { // Partly reconstructed decay channel
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::PartlyRecoDecay, invMassB0, ptCandB0);
           } else {
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::OtherDecay, invMassB0, ptCandB0);

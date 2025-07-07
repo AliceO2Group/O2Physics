@@ -479,7 +479,7 @@ struct HfTaskLbReduced {
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_lb::DecayTypeMc::LbToLcKToPKPiK, invMassLb, ptCandLb);
           } else if (TESTBIT(flagMcMatchRec, hf_cand_lb::DecayTypeMc::B0ToDplusPiToPiKPiPi)) { // // B0 → D- π+ → (π- K+ π-) π+
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_lb::DecayTypeMc::B0ToDplusPiToPiKPiPi, invMassLb, ptCandLb);
-          } else if (TESTBIT(flagMcMatchRec, hf_cand_lb::DecayTypeMc::PartlyRecoDecay)) { // FIXME, Partly reconstructed decay channel
+          } else if (TESTBIT(flagMcMatchRec, hf_cand_lb::DecayTypeMc::PartlyRecoDecay)) { // Partly reconstructed decay channel
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_lb::DecayTypeMc::PartlyRecoDecay, invMassLb, ptCandLb);
           } else {
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_lb::DecayTypeMc::OtherDecay, invMassLb, ptCandLb);

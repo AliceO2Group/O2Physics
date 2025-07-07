@@ -368,7 +368,7 @@ struct HfTaskBsReduced {
     if constexpr (doMc) {
       flagMcMatchRec = candidate.flagMcMatchRec();
       flagWrongCollision = candidate.flagWrongCollision();
-      isSignal = TESTBIT(std::abs(flagMcMatchRec), DecayChannelMain::BsToDsPi);
+      isSignal = TESTBIT(std::abs(flagMcMatchRec), hf_cand_bs::DecayTypeMc::BsToDsPiToPhiPiPiToKKPiPi);
     }
 
     if (fillHistograms) {
@@ -572,7 +572,7 @@ struct HfTaskBsReduced {
   void fillCandMcGen(aod::HfMcGenRedBss::iterator const& particle)
   {
     // keep only generated Bs with the analysis decay channel
-    if (!TESTBIT(std::abs(particle.flagMcMatchGen()), DecayChannelMain::BsToDsPi)) {
+    if (!TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_bs::DecayTypeMc::BsToDsPiToPhiPiPiToKKPiPi)) {
       return;
     }
     auto ptParticle = particle.ptTrack();

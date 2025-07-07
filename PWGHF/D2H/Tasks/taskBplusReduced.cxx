@@ -496,7 +496,7 @@ struct HfTaskBplusReduced {
         } else if constexpr (withDecayTypeCheck) {
           if (TESTBIT(flagMcMatchRec, hf_cand_bplus::DecayTypeMc::BplusToD0KToKPiK)) { // Partly reconstructed decay channel
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bplus::DecayTypeMc::BplusToD0KToKPiK, invMassBplus, ptCandBplus);
-          } else if (TESTBIT(flagMcMatchRec, hf_cand_bplus::DecayTypeMc::PartlyRecoDecay)) { // FIXME, Partly reconstructed decay channel
+          } else if (TESTBIT(flagMcMatchRec, hf_cand_bplus::DecayTypeMc::PartlyRecoDecay)) { // Partly reconstructed decay channel
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bplus::DecayTypeMc::PartlyRecoDecay, invMassBplus, ptCandBplus);
           } else {
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bplus::DecayTypeMc::OtherDecay, invMassBplus, ptCandBplus);
