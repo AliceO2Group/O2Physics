@@ -9,9 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file NucleitpcPbPb.cxx
+/// \file nucleitpcpbpb.cxx
 /// \brief nuclei analysis
-/// \author Jaideep Tanwar <jaideep.tanwar@cern.ch>
+/// \note under work
+///
+/// \author Jaideep Tanwar <jaideep.tanwar@cern.ch>, Panjab University
 
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
