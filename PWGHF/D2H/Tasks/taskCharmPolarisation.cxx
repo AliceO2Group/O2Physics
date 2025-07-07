@@ -1474,8 +1474,8 @@ struct HfTaskCharmPolarisation {
 
   /// Get the Q vector
   /// \param collision is the collision with the Q vector information
-  template <typename CollsWithQVecs>
-  std::vector<float> getQVec(CollsWithQVecs const& collision)
+  template <typename Coll>
+  std::vector<float> getQVec(Coll const& collision)
   {
     float xQVec = -999.;
     float yQVec = -999.;
