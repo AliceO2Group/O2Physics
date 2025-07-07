@@ -133,13 +133,13 @@ struct HfTaskElectronWeakBoson {
   std::vector<HfElectronCandidate> selectedElectronsIso;
   std::vector<HfElectronCandidate> selectedElectronsAss;
 
-  struct ZeeCandidate {
+  struct HfZeeCandidate {
     float pt, eta, phi, mass, ptchild0, ptchild1;
     int charge;
-    ZeeCandidate(float ptr, float e, float ph, float m, int ch, float ptzee0, float ptzee1)
+    HfZeeCandidate(float ptr, float e, float ph, float m, int ch, float ptzee0, float ptzee1)
       : pt(ptr), eta(e), phi(ph), mass(m), ptchild0(ptzee0), ptchild1(ptzee1), charge(ch) {}
   };
-  std::vector<ZeeCandidate> reconstructedZ;
+  std::vector<HfZeeCandidate> reconstructedZ;
 
   using SelectedClusters = o2::aod::EMCALClusters;
   // PbPb
@@ -210,7 +210,7 @@ struct HfTaskElectronWeakBoson {
     const AxisSpec axisIsoTrack{15, -0.5, 14.5, "Isolation Track"};
     const AxisSpec axisInvMassZ{150, 0, 150, "M_{ee} (GeV/c^{2})"};
     const AxisSpec axisTrigger{3, -0.5, 2.5, "Trigger status of zorro"};
-    const AxisSpec axisDPhiZh{64, -TMath::Pi() / 2, 3 * TMath::Pi() / 2, "#Delta#phi(Z-h)"};
+    const AxisSpec axisDPhiZh{64, -o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf, "#Delta#phi(Z-h)"};
     const AxisSpec axisPtHadron{50, 0, 50, "p_{T,hadron} (GeV/c)"};
     const AxisSpec axisZpt{150, 0, 150, "p_{T,Z} (GeV/c)"};
 
@@ -630,13 +630,6 @@ struct HfTaskElectronWeakBoson {
           if (std::abs(trackAss.pt - zBoson.ptchild1) < ptMatch)
             continue;
           // calculate Z-h correlation
-          /*
-          double deltaPhi = trackAss.phi - zBoson.phi;
-          while (deltaPhi < -TMath::Pi() / 2)
-            deltaPhi += 2 * TMath::Pi();
-          while (deltaPhi > 3 * TMath::Pi() / 2)
-            deltaPhi -= 2 * TMath::Pi();
-          */
           double deltaPhi = RecoDecay::constrainAngle(trackAss.phi - zBoson.phi, -o2::constants::math::PIHalf);
           registry.fill(HIST("hZHadronDphi"), zBoson.pt, deltaPhi);
         }
