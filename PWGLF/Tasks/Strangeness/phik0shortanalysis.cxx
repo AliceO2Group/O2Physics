@@ -337,6 +337,7 @@ struct Phik0shortanalysis {
     mcEventHist.add("hGenMCVertexZ", "hGenMCVertexZ", kTH1F, {vertexZAxis});
     mcEventHist.add("hGenMCMultiplicityPercent", "GenMC Multiplicity Percentile", kTH1F, {binnedmultAxis});
     mcEventHist.add("hGenMCAssocRecoMultiplicityPercent", "GenMC AssocReco Multiplicity Percentile", kTH1F, {binnedmultAxis});
+    mcEventHist.add("hGenMCRecoMultiplicityPercent", "GenMCReco Multiplicity Percentile", kTH1F, {binnedmultAxis});
 
     // Eta distribution for dN/deta values estimation in MC
     mcEventHist.add("h2RecMCEtaDistribution", "Eta vs multiplicity in MCReco", kTH2F, {binnedmultAxis, etaAxis});
@@ -599,7 +600,7 @@ struct Phik0shortanalysis {
     mcK0SHist.add("h3K0SMCGenAssocRecoCheckNewProc", "K0S in MCGen Associated MCReco Check", kTH3F, {binnedmultAxis, pTK0SAxis, yAxis});
     mcPionHist.add("h3PiMCGenAssocRecoCheckNewProc", "Pion in MCGen Associated MCReco Check", kTH3F, {binnedmultAxis, pTPiAxis, yAxis});
 
-      // Initialize CCDB only if purity or efficiencies are requested in the task
+    // Initialize CCDB only if purity or efficiencies are requested in the task
     if (useCCDB) {
       ccdb->setURL(ccdbUrl);
       ccdb->setCaching(true);
@@ -2846,20 +2847,25 @@ struct Phik0shortanalysis {
     if (!pwglf::isINELgtNmc(mcParticles, 0, pdgDB))
       return;
 
-    bool isAssocColl = false;
+    float genmultiplicity = mcCollision.centFT0M();
+
+    uint64_t numberAssocColl = 0;
     for (const auto& collision : collisions) {
       if (acceptEventQA<true>(collision, false)) {
-        isAssocColl = true;
-        break;
+        mcEventHist.fill(HIST("hGenMCRecoMultiplicityPercent"), genmultiplicity); // Event split numerator
+        numberAssocColl++;
       }
     }
 
-    float genmultiplicity = mcCollision.centFT0M();
+    // The inclusive number of events is the event loss denominator,
+    // while the number of associated events is the event loss numerator
     mcEventHist.fill(HIST("hGenMCMultiplicityPercent"), genmultiplicity);
-    if (isAssocColl)
+    if (numberAssocColl > 0)
       mcEventHist.fill(HIST("hGenMCAssocRecoMultiplicityPercent"), genmultiplicity);
 
     for (const auto& mcParticle : mcParticles) {
+      // The inclusive number of particles is the signal loss denominator,
+      //  while the number of associated particles is the signal loss numerator
       if (std::abs(mcParticle.y()) > cfgYAcceptance)
         continue;
 
@@ -2870,7 +2876,7 @@ struct Phik0shortanalysis {
         continue;
 
       mcPhiHist.fill(HIST("h3PhiMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-      if (isAssocColl)
+      if (numberAssocColl > 0)
         mcPhiHist.fill(HIST("h3PhiMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
 
       // K0S selection
@@ -2880,7 +2886,7 @@ struct Phik0shortanalysis {
         continue;
 
       mcK0SHist.fill(HIST("h3K0SMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-      if (isAssocColl)
+      if (numberAssocColl > 0)
         mcK0SHist.fill(HIST("h3K0SMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
 
       // Pion selection
@@ -2890,7 +2896,7 @@ struct Phik0shortanalysis {
         continue;
 
       mcPionHist.fill(HIST("h3PiMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-      if (isAssocColl)
+      if (numberAssocColl > 0)
         mcPionHist.fill(HIST("h3PiMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
     }
   }
