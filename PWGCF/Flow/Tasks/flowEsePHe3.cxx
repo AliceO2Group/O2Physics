@@ -259,7 +259,8 @@ constexpr double DCAxyPreselection[7][2]{
   {0.1},
   {1},
   {1},
-  {1},};
+  {1},
+};
 constexpr double DCAzPreselection[7][2]{
   {5},
   {5},
@@ -267,7 +268,8 @@ constexpr double DCAzPreselection[7][2]{
   {1},
   {5},
   {5},
-  {5},};
+  {5},
+};
 static const std::vector<std::string> names{"proton", "deuteron", "triton", "He3", "alpha"};
 static const std::vector<std::string> namesFull{"proton", "deuteron", "triton", "He3", "alpha", "pion", "kaon"};
 static const std::vector<std::string> chargeLabelNames{"Positive", "Negative"};
@@ -395,7 +397,7 @@ struct FlowEsePHe3 {
   ConfigurableAxis cfgaxisq2Tar{"cfgaxisq2Tar", {100, 0, 2}, "Binning for q_{2} traget particle"};
   ConfigurableAxis cfgaxisq2Ref{"cfgaxisq2Ref", {120, 0, 12}, "Binning for q_{2} reference particle"};
   ConfigurableAxis cfgq2NumeratorTar{"cfgq2NumeratorTar", {20, 0, 2}, "q2 Numerator bin for tar particle"};
-  ConfigurableAxis cfgq2NumeratorRef{"cfgq2NumeratorRef", {100,0, 10}, "q2 Numerator bin for ref particle"};
+  ConfigurableAxis cfgq2NumeratorRef{"cfgq2NumeratorRef", {100, 0, 10}, "q2 Numerator bin for ref particle"};
   ConfigurableAxis cfgq2DenominatorTar{"cfgq2DenominatorTar", {20, 0, 2}, "q2 Denominator bin for tar particle"};
   ConfigurableAxis cfgq2DenominatorRef{"cfgq2DenominatorRef", {50, 0, 5}, "q2 Denominator bin for ref particle"};
 
@@ -490,11 +492,11 @@ struct FlowEsePHe3 {
       case ese_parameters::kAlpha: {
         return getNSigmaTPCSelfBB(track, ese_parameters::kAlpha);
       }
-      
+
       case ese_parameters::kPion: {
         return track.tpcNSigmaPi();
       }
-      
+
       case ese_parameters::kKaon: {
         return track.tpcNSigmaKa();
       }
@@ -801,7 +803,7 @@ struct FlowEsePHe3 {
     histsESE.fill(HIST("TrackQA/hist_TPCNcls_All"), track.tpcNClsFound());
     histsESE.fill(HIST("TrackQA/hist_ITSChi2NDF_All"), track.itsChi2NCl());
     histsESE.fill(HIST("TrackQA/hist_TPCChi2NDF_All"), track.tpcChi2NCl());
-    histsESE.fill(HIST("TrackQA/hist_MomRes_All"), track.p(), 1-(correctedTpcInnerParam/track.p()));
+    histsESE.fill(HIST("TrackQA/hist_MomRes_All"), track.p(), 1 - (correctedTpcInnerParam / track.p()));
     if (heliumPID) {
       histsESE.fill(HIST("TrackQA/hist_He3AlphaTrackcounts_All"), 1.5);
     } else {
@@ -832,10 +834,10 @@ struct FlowEsePHe3 {
   template <typename TrackType>
   bool pidSel(const TrackType& track, uint8_t POI)
   {
-    //Hadron 
+    // Hadron
     if (POI == ese_parameters::kHadron)
       return true;
-    //PID particles
+    // PID particles
     bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
     float correctedTpcInnerParam = (heliumPID && cfgCompensatePIDinTracking) ? track.tpcInnerParam() / 2 : track.tpcInnerParam();
     if (correctedTpcInnerParam < cfgPOverZPreselection->get(POI, 0u) || correctedTpcInnerParam > cfgPOverZPreselection->get(POI, 1u)) {
@@ -901,7 +903,7 @@ struct FlowEsePHe3 {
         nSigmaTPC = getNSigmaTPC(track, ese_parameters::kAlpha);
         break;
       }
-      
+
       case ese_parameters::kPion: {
         if (cfgPionPIDMode == ese_parameters::kRMSMode) { // RMS mode
           float nSigmaUse = (track.pt() > cfgPtMaxforTPCOnlyPIDPion) ? std::hypot(track.tpcNSigmaPi(), track.tofNSigmaPi()) : track.tpcNSigmaPi();
@@ -919,7 +921,7 @@ struct FlowEsePHe3 {
         }
         break;
       }
-      
+
       case ese_parameters::kKaon: {
         if (cfgKaonPIDMode == ese_parameters::kRMSMode) { // RMS mode
           float nSigmaUse = (track.pt() > cfgPtMaxforTPCOnlyPIDKaon) ? std::hypot(track.tpcNSigmaKa(), track.tofNSigmaKa()) : track.tpcNSigmaKa();
@@ -1055,7 +1057,7 @@ struct FlowEsePHe3 {
           }
         }
         if (cfgOpenv2Ref) {
-          ese_parameters::eseReferences.emplace_back(ESEReference{static_cast<int8_t>(track.sign()),ese_parameters::Charges[poiRef] * track.pt(),std::cos(2 * (track.phi() - psi2))});
+          ese_parameters::eseReferences.emplace_back(ESEReference{static_cast<int8_t>(track.sign()), ese_parameters::Charges[poiRef] * track.pt(), std::cos(2 * (track.phi() - psi2))});
         }
       }
     }
@@ -1168,8 +1170,8 @@ struct FlowEsePHe3 {
     histsESE.add("TrackQA/hist_TPCChi2NDF_All", ";TPC#it{#chi^{2}}/NDF;counts", {HistType::kTH1F, {cfgaxisChi2Ncls}});
     histsESE.add("TrackQA/hist_DCAxy_All", ";#it{DCA_{xy}};counts", {HistType::kTH1F, {cfgaxisDCAxy}});
     histsESE.add("TrackQA/hist_DCAz_All", ";#it{DCA_{xy}};counts", {HistType::kTH1F, {cfgaxisDCAz}});
-    histsESE.add("TrackQA/hist_MomRes_All", ";#it{p};Res(1 - corrted_p/track_p)", {HistType::kTH2F, {{100,0,10}, {100,-1,1}}});
-    histsESE.add("TrackQA/hist_He3AlphaTrackcounts_All", ";Track counts;Counts", {HistType::kTH1F, {{2,0,2}}});
+    histsESE.add("TrackQA/hist_MomRes_All", ";#it{p};Res(1 - corrted_p/track_p)", {HistType::kTH2F, {{100, 0, 10}, {100, -1, 1}}});
+    histsESE.add("TrackQA/hist_He3AlphaTrackcounts_All", ";Track counts;Counts", {HistType::kTH1F, {{2, 0, 2}}});
     histsESE.get<TH1>(HIST("TrackQA/hist_He3AlphaTrackcounts_All"))->GetXaxis()->SetBinLabel(1, "All Tracks");
     histsESE.get<TH1>(HIST("TrackQA/hist_He3AlphaTrackcounts_All"))->GetXaxis()->SetBinLabel(2, "He3+Alpha");
     // v2 and ESEPlots
@@ -1191,7 +1193,7 @@ struct FlowEsePHe3 {
       ese_parameters::hPIDQATar2D[2] = histsESE.add<TH2>(Form("ESE/TrackQA/hist_nSigmaTOF_pt_%s", cfgTarName.value.c_str()), ";#it{p}_{T};n#sigmaTOF", HistType::kTH2F, {cfgaxispt, cfgnSigmaBinsTOF});
       ese_parameters::hPIDQATar1D[11] = histsESE.add<TH1>(Form("ESE/TrackQA/hist_nSigmaITS_%s", cfgTarName.value.c_str()), ";n#sigmaITS;counts", HistType::kTH1F, {cfgnSigmaBinsITS});
       ese_parameters::hPIDQATar2D[3] = histsESE.add<TH2>(Form("ESE/TrackQA/hist_nSigmaITS_pt_%s", cfgTarName.value.c_str()), ";#it{p}_{T};n#sigmaITS", HistType::kTH2F, {cfgaxispt, cfgnSigmaBinsITS});
-      if (cfgRefName.value != "kHadron"){
+      if (cfgRefName.value != "kHadron") {
         ese_parameters::hPIDQARef2D[0] = histsESE.add<TH2>(Form("ESE/TrackQA/hist_dEdxTPC_%s", cfgRefName.value.c_str()), ";#it{p}^{TPC}/#it{z} (GeV/c);d#it{E}/d#it{x} [arb. units]", HistType::kTH2F, {axisRigidity, axisdEdx});
         ese_parameters::hPIDQARef1D[0] = histsESE.add<TH1>(Form("ESE/TrackQA/hist_pt_%s", cfgRefName.value.c_str()), ";#it{p}_{T};counts", HistType::kTH1F, {cfgaxispt});
         ese_parameters::hPIDQARef1D[1] = histsESE.add<TH1>(Form("ESE/TrackQA/hist_eta_%s", cfgRefName.value.c_str()), ";#it{#eta};counts", HistType::kTH1F, {axisEta});
