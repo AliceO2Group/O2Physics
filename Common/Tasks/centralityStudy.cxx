@@ -30,6 +30,8 @@
 #include "TH2F.h"
 #include "TProfile.h"
 
+#include <string>
+
 using namespace o2;
 using namespace o2::framework;
 
