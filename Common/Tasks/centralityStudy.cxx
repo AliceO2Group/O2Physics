@@ -130,7 +130,7 @@ struct centralityStudy {
   ConfigurableAxis axisPVChi2{"axisPVChi2", {300, 0, 30}, "FT0C percentile"};
   ConfigurableAxis axisDeltaTime{"axisDeltaTime", {300, 0, 300}, "#Delta time"};
   ConfigurableAxis axisDeltaTimestamp{"axisDeltaTimestamp", {1440, 0, 24}, "#Delta timestamp - sor (hours)"};
-  ConfigurableAxis axisInteractionRate{"IRbinning", {500, 0, 100}, "Binning for the interaction rate (kHz)"};
+  ConfigurableAxis axisInteractionRate{"axisInteractionRate", {500, 0, 100}, "Binning for the interaction rate (kHz)"};
 
   // For profile Z
   ConfigurableAxis axisPVz{"axisPVz", {400, -20.0f, +20.0f}, "PVz (cm)"};
