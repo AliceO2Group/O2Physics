@@ -139,4 +139,10 @@ o2physics_add_dpl_workflow(antinuclei-in-jets
     SOURCES antinucleiInJets.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(kink-pika
+    SOURCES spectraKinkPiKa.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 endif()
