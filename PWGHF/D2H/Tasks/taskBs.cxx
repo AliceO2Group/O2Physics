@@ -218,7 +218,7 @@ struct HfTaskBs {
       auto invMassCandBs = hfHelper.invMassBsToDsPi(candidate);
       int flagMcMatchRecBs = std::abs(candidate.flagMcMatchRec());
 
-      if (TESTBIT(flagMcMatchRecBs, hf_cand_bs::DecayTypeMc::BsToDsPiToPhiPiPiToKKPiPi)) {
+      if (TESTBIT(flagMcMatchRecBs, DecayChannelMain::BsToDsPi)) {
         auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBsMcGen>>(), o2::constants::physics::Pdg::kBS, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
 
@@ -277,7 +277,7 @@ struct HfTaskBs {
 
     // MC gen. level
     for (const auto& particle : mcParticles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_bs::DecayTypeMc::BsToDsPiToPhiPiPiToKKPiPi)) {
+      if (TESTBIT(std::abs(particle.flagMcMatchGen()), DecayChannelMain::BsToDsPi)) {
 
         auto ptParticle = particle.pt();
         auto yParticle = RecoDecay::y(particle.pVector(), o2::constants::physics::MassBS);

@@ -598,7 +598,7 @@ struct HfDataCreatorCharmHadPiReduced {
             }
             // Ds- → Phi π- → K- K+ π- and Ds- → K0* K- → K- K+ π-
             if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
-              flag = sign * BIT(hf_cand_bs::DecayTypeMc::BsToDsPiToPhiPiPiToKKPiPi);
+              flag = sign * DecayChannelMain::BsToDsPi;
             } else if ((arrPDGDaughDs[0] == arrPDGResonantDKstarK[0] && arrPDGDaughDs[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaughDs[0] == arrPDGResonantDKstarK[1] && arrPDGDaughDs[1] == arrPDGResonantDKstarK[0])) {
               flag = sign * BIT(hf_cand_bs::DecayTypeMc::BsToDsPiToK0starKPiToKKPiPi);
             }
@@ -1407,7 +1407,7 @@ struct HfDataCreatorCharmHadPiReduced {
               }
               // Ds- → Phi π- → K- K+ π- and Ds- → K0* K- → K- K+ π-
               if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
-                flag = sign * BIT(hf_cand_bs::DecayTypeMc::BsToDsPiToPhiPiPiToKKPiPi);
+                flag = sign * DecayChannelMain::BsToDsPi;
               } else if ((arrPDGDaughDs[0] == arrPDGResonantDKstarK[0] && arrPDGDaughDs[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaughDs[0] == arrPDGResonantDKstarK[1] && arrPDGDaughDs[1] == arrPDGResonantDKstarK[0])) {
                 flag = sign * BIT(hf_cand_bs::DecayTypeMc::BsToDsPiToK0starKPiToKKPiPi);
               }
@@ -1444,7 +1444,7 @@ struct HfDataCreatorCharmHadPiReduced {
         }
 
         // save information for Bs task
-        if (!TESTBIT(std::abs(flag), hf_cand_bs::DecayTypeMc::BsToDsPiToPhiPiPiToKKPiPi) && !TESTBIT(std::abs(flag), hf_cand_bs::DecayTypeMc::BsToDsPiToK0starKPiToKKPiPi) &&
+        if (!TESTBIT(std::abs(flag), DecayChannelMain::BsToDsPi) && !TESTBIT(std::abs(flag), hf_cand_bs::DecayTypeMc::BsToDsPiToK0starKPiToKKPiPi) &&
             !TESTBIT(std::abs(flag), hf_cand_bs::DecayTypeMc::B0ToDsPiToPhiPiPiToKKPiPi) && !TESTBIT(std::abs(flag), hf_cand_bs::DecayTypeMc::B0ToDsPiToK0starKPiToKKPiPi)) {
           continue;
         }
