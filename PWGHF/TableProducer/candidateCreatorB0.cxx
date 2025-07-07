@@ -68,6 +68,7 @@ using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_trkcandsel;
+using namespace o2::hf_decay::hf_cand_beauty;
 
 /// Reconstruction of B0 candidates
 struct HfCandidateCreatorB0 {
@@ -431,7 +432,7 @@ struct HfCandidateCreatorB0Expressions {
         // D- → π- K+ π-
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersD, Pdg::kDMinus, std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
-          flagChannelMain = sign * o2::hf_decay::hf_cand_beauty::DecayChannelMain::B0ToDminusPi;
+          flagChannelMain = sign * DecayChannelMain::B0ToDminusPi;
         } else {
           debug = 1;
           LOGF(debug, "WARNING: B0 in decays in the expected final state but the condition on the intermediate state is not fulfilled");
@@ -445,7 +446,7 @@ struct HfCandidateCreatorB0Expressions {
           // Ds- → K- K+ π-
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersD, -Pdg::kDS, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
           if (indexRec > -1) {
-            flagChannelMain = sign * o2::hf_decay::hf_cand_beauty::DecayChannelMain::B0ToDsPi;
+            flagChannelMain = sign * DecayChannelMain::B0ToDsPi;
           }
         }
       }
@@ -474,7 +475,7 @@ struct HfCandidateCreatorB0Expressions {
         }
       }
 
-      rowMcMatchRec(flagChannelMain, origin, debug);
+      rowMcMatchRec(flagChannelMain, flagChannelReso, origin, debug);
     } // rec
 
     hf_mc_gen::fillMcMatchGenB0(mcParticles, rowMcMatchGen); // gen

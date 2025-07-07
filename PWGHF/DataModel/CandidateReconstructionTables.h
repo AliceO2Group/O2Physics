@@ -2254,15 +2254,15 @@ using HfCandB0 = soa::Join<HfCandB0Ext, HfCandB0Prongs>;
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandB0McRec, "AOD", "HFCANDB0MCREC",
                   hf_cand_b0::FlagMcMatchRec,
-                  hf_cand_b0::OriginMcRec,
                   hf_cand_b0::FlagMcDecayChanRec,
+                  hf_cand_b0::OriginMcRec,
                   hf_cand_b0::DebugMcRec);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandB0McGen, "AOD", "HFCANDB0MCGEN",
                   hf_cand_b0::FlagMcMatchGen,
-                  hf_cand_b0::OriginMcGen,
-                  hf_cand_b0::FlagMcDecayChanGen);
+                  hf_cand_b0::FlagMcDecayChanGen,
+                  hf_cand_b0::OriginMcGen);
 
 // specific Bs candidate properties
 namespace hf_cand_bs

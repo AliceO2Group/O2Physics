@@ -15,6 +15,7 @@
 ///
 /// \author Phil Stahlhut <phil.lennart.stahlhut@cern.ch>
 
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -66,6 +67,7 @@ using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_trkcandsel;
+using namespace o2::hf_decay::hf_cand_beauty;
 
 /// Reconstruction of Bs candidates
 struct HfCandidateCreatorBs {
@@ -400,6 +402,7 @@ struct HfCandidateCreatorBsExpressions {
     // Match reconstructed candidates.
     for (const auto& candidate : candsBs) {
       flagChannelMain = 0;
+      flagChannelReso = 0;
       arrDaughDsIndex.clear();
       auto candDs = candidate.prong0();
       auto arrayDaughtersBs = std::array{candDs.prong0_as<aod::TracksWMc>(),
@@ -476,12 +479,13 @@ struct HfCandidateCreatorBsExpressions {
         }
       }
 
-      rowMcMatchRec(flagChannelMain);
+      rowMcMatchRec(flagChannelMain, flagChannelReso);
     } // rec
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
       flagChannelMain = 0;
+      flagChannelReso = 0;
       arrDaughDsIndex.clear();
 
       // Checking Bs0(bar) → Ds∓ π± → (K- K+ π∓) π±
@@ -496,7 +500,7 @@ struct HfCandidateCreatorBsExpressions {
               arrPDGDaughDs[jProng] = std::abs(daughJ.pdgCode());
             }
             if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
-              flag = sign * DecayChannelMain::BsToDsPi;
+              flagChannelMain = sign * DecayChannelMain::BsToDsPi;
             }
           }
         }
@@ -522,7 +526,7 @@ struct HfCandidateCreatorBsExpressions {
         }
       }
 
-      rowMcMatchGen(flagChannelMain);
+      rowMcMatchGen(flagChannelMain, flagChannelReso);
     } // gen
   } // processMc
   PROCESS_SWITCH(HfCandidateCreatorBsExpressions, processMc, "Process MC", false);

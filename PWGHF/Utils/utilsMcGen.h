@@ -319,6 +319,7 @@ void fillMcMatchGenBplus(T const& mcParticles, U& rowMcMatchGen)
   // Match generated particles.
   for (const auto& particle : mcParticles) {
     int8_t flagChannelMain = 0;
+    int8_t flagChannelReso = 0;
     int8_t origin = 0;
     int8_t signB = 0;
     int8_t signD0 = 0;
@@ -338,7 +339,7 @@ void fillMcMatchGenBplus(T const& mcParticles, U& rowMcMatchGen)
         flagChannelMain = signB * DecayChannelMain::BplusToD0Pi;
       }
     }
-    rowMcMatchGen(flagChannelMain, origin);
+    rowMcMatchGen(flagChannelMain, flagChannelReso, origin);
   } // B candidate
 }
 
@@ -351,6 +352,7 @@ void fillMcMatchGenB0(T const& mcParticles, U& rowMcMatchGen)
   // Match generated particles.
   for (const auto& particle : mcParticles) {
     int8_t flagChannelMain = 0;
+    int8_t flagChannelReso = 0;
     int8_t origin = 0;
     int8_t sign = 0;
     // B0 → D- π+
@@ -361,7 +363,7 @@ void fillMcMatchGenB0(T const& mcParticles, U& rowMcMatchGen)
         flagChannelMain = sign * DecayChannelMain::B0ToDminusPi;
       }
     }
-    rowMcMatchGen(flagChannelMain, origin);
+    rowMcMatchGen(flagChannelMain, flagChannelReso, origin);
   } // gen
 }
 
