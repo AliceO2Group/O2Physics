@@ -739,19 +739,19 @@ DECLARE_SOA_COLUMN(PairDCAxy, pairDCAxy, float);                                
 DECLARE_SOA_COLUMN(DeviationPairKF, deviationPairKF, float);                             //! Pair chi2 deviation to PV from KFParticle
 DECLARE_SOA_COLUMN(DeviationxyPairKF, deviationxyPairKF, float);                         //! Pair chi2 deviation to PV in XY from KFParticle
 // DECLARE_SOA_INDEX_COLUMN(ReducedMuon, reducedmuon2); //!
-DECLARE_SOA_COLUMN(CosThetaHE, costhetaHE, float);                                       //! Cosine in the helicity frame
-DECLARE_SOA_COLUMN(PhiHE, phiHe, float);                                                 //! Phi in the helicity frame
-DECLARE_SOA_COLUMN(PhiTildeHE, phiTildeHe, float);                                       //! Tilde Phi in the helicity frame
-DECLARE_SOA_COLUMN(CosThetaCS, costhetaCS, float);                                       //! Cosine in the Collins-Soper frame
-DECLARE_SOA_COLUMN(PhiCS, phiCS, float);                                                 //! Phi in the Collins-Soper frame
-DECLARE_SOA_COLUMN(PhiTildeCS, phiTildeCS, float);                                       //! Tilde Phi in the Collins-Soper frame
-DECLARE_SOA_COLUMN(CosThetaPP, costhetaPP, float);                                       //! Cosine in the Production Plane frame
-DECLARE_SOA_COLUMN(PhiPP, phiPP, float);                                                 //! Phi in the Production Plane frame
-DECLARE_SOA_COLUMN(PhiTildePP, phiTildePP, float);                                       //! Tilde Phi in the Production Plane frame
-DECLARE_SOA_COLUMN(CosThetaRM, costhetaRM, float);                                       //! Cosine in the Random frame
-DECLARE_SOA_COLUMN(CosThetaStarTPC, costhetaStarTPC, float);                             //! global polarization, event plane reconstructed from TPC tracks
-DECLARE_SOA_COLUMN(CosThetaStarFT0A, costhetaStarFT0A, float);                           //! global polarization, event plane reconstructed from FT0A tracks 
-DECLARE_SOA_COLUMN(CosThetaStarFT0C, costhetaStarFT0C, float);                           //! global polarization, event plane reconstructed from FT0C tracks
+DECLARE_SOA_COLUMN(CosThetaHE, costhetaHE, float);             //! Cosine in the helicity frame
+DECLARE_SOA_COLUMN(PhiHE, phiHe, float);                       //! Phi in the helicity frame
+DECLARE_SOA_COLUMN(PhiTildeHE, phiTildeHe, float);             //! Tilde Phi in the helicity frame
+DECLARE_SOA_COLUMN(CosThetaCS, costhetaCS, float);             //! Cosine in the Collins-Soper frame
+DECLARE_SOA_COLUMN(PhiCS, phiCS, float);                       //! Phi in the Collins-Soper frame
+DECLARE_SOA_COLUMN(PhiTildeCS, phiTildeCS, float);             //! Tilde Phi in the Collins-Soper frame
+DECLARE_SOA_COLUMN(CosThetaPP, costhetaPP, float);             //! Cosine in the Production Plane frame
+DECLARE_SOA_COLUMN(PhiPP, phiPP, float);                       //! Phi in the Production Plane frame
+DECLARE_SOA_COLUMN(PhiTildePP, phiTildePP, float);             //! Tilde Phi in the Production Plane frame
+DECLARE_SOA_COLUMN(CosThetaRM, costhetaRM, float);             //! Cosine in the Random frame
+DECLARE_SOA_COLUMN(CosThetaStarTPC, costhetaStarTPC, float);   //! global polarization, event plane reconstructed from TPC tracks
+DECLARE_SOA_COLUMN(CosThetaStarFT0A, costhetaStarFT0A, float); //! global polarization, event plane reconstructed from FT0A tracks
+DECLARE_SOA_COLUMN(CosThetaStarFT0C, costhetaStarFT0C, float); //! global polarization, event plane reconstructed from FT0C tracks
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!

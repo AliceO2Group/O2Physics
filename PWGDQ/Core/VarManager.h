@@ -24,50 +24,49 @@
 #define HomogeneousField
 #endif
 
-#include <vector>
-#include <map>
-#include <cmath>
-#include <iostream>
-#include <utility>
-#include <complex>
-#include <algorithm>
-
-#include <TObject.h>
-#include <TString.h>
-#include "TRandom.h"
-#include "TH3F.h"
-#include "Math/Vector4D.h"
-#include "Math/Vector3D.h"
-#include "Math/GenVector/Boost.h"
-#include "Math/VectorUtil.h"
-
-#include "Framework/DataTypes.h"
-#include "TGeoGlobalMagField.h"
-#include "Field/MagneticField.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "ReconstructionDataFormats/Vertex.h"
-#include "DCAFitter/DCAFitterN.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "DetectorsBase/Propagator.h"
+#include "Common/Core/CollisionTypeHelper.h"
+#include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/trackUtilities.h"
 
-#include "Math/SMatrix.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
-#include "DCAFitter/FwdDCAFitterN.h"
-#include "GlobalTracking/MatchGlobalFwd.h"
-#include "CommonConstants/PhysicsConstants.h"
 #include "CommonConstants/LHCConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DCAFitter/FwdDCAFitterN.h"
+#include "DetectorsBase/Propagator.h"
+#include "Field/MagneticField.h"
+#include "Framework/DataTypes.h"
+#include "GlobalTracking/MatchGlobalFwd.h"
+#include "ReconstructionDataFormats/DCA.h"
+#include "ReconstructionDataFormats/Track.h"
+#include "ReconstructionDataFormats/TrackFwd.h"
+#include "ReconstructionDataFormats/Vertex.h"
 
-#include "KFParticle.h"
+#include "Math/GenVector/Boost.h"
+#include "Math/SMatrix.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "Math/VectorUtil.h"
+#include "TGeoGlobalMagField.h"
+#include "TH3F.h"
+#include "TRandom.h"
+#include <TObject.h>
+#include <TString.h>
+
 #include "KFPTrack.h"
 #include "KFPVertex.h"
+#include "KFParticle.h"
 #include "KFParticleBase.h"
 #include "KFVertex.h"
 
-#include "Common/Core/EventPlaneHelper.h"
-#include "Common/Core/CollisionTypeHelper.h"
+#include <algorithm>
+#include <cmath>
+#include <complex>
+#include <iostream>
+#include <map>
+#include <utility>
+#include <vector>
 
 using std::complex;
 using std::cout;
@@ -1199,8 +1198,8 @@ class VarManager : public TObject
   static int fgITSROFBorderMarginHigh;    // ITS ROF border high margin
   static uint64_t fgSOR;                  // Timestamp for start of run
   static uint64_t fgEOR;                  // Timestamp for end of run
-  static ROOT::Math::PxPyPzEVector fgBeamA;        // beam from A-side 4-momentum vector
-  static ROOT::Math::PxPyPzEVector fgBeamC;        // beam from C-side 4-momentum vector
+  static ROOT::Math::PxPyPzEVector fgBeamA; // beam from A-side 4-momentum vector
+  static ROOT::Math::PxPyPzEVector fgBeamC; // beam from C-side 4-momentum vector
 
   // static void FillEventDerived(float* values = nullptr);
   static void FillTrackDerived(float* values = nullptr);

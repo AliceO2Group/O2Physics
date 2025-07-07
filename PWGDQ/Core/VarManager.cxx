@@ -35,7 +35,7 @@ int VarManager::fgITSROFBorderMarginLow = 0;
 int VarManager::fgITSROFBorderMarginHigh = 0;
 uint64_t VarManager::fgSOR = 0;
 uint64_t VarManager::fgEOR = 0;
-ROOT::Math::PxPyPzEVector VarManager::fgBeamA(0, 0, 6799.99, 6800); // GeV, beam from A-side 4-momentum vector
+ROOT::Math::PxPyPzEVector VarManager::fgBeamA(0, 0, 6799.99, 6800);  // GeV, beam from A-side 4-momentum vector
 ROOT::Math::PxPyPzEVector VarManager::fgBeamC(0, 0, -6799.99, 6800); // GeV, beam from C-side 4-momentum vector
 o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
 o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
@@ -116,8 +116,8 @@ void VarManager::SetCollisionSystem(TString system, float energy)
   //
   int NumberOfNucleonsA = 1; // default value for pp collisions
   int NumberOfNucleonsC = 1; // default value for pp collisions
-  int NumberOfProtonsA = 1; // default value for pp collisions
-  int NumberOfProtonsC = 1; // default value for pp collisions
+  int NumberOfProtonsA = 1;  // default value for pp collisions
+  int NumberOfProtonsC = 1;  // default value for pp collisions
   if (system.EqualTo("PbPb")) {
     NumberOfNucleonsA = 208;
     NumberOfNucleonsC = 208;
@@ -136,13 +136,13 @@ void VarManager::SetCollisionSystem(TString system, float energy)
   } else if (system.EqualTo("pPb")) {
     NumberOfNucleonsA = 1;
     NumberOfNucleonsC = 208;
-    NumberOfProtonsA = 1; // proton has 1 proton
+    NumberOfProtonsA = 1;  // proton has 1 proton
     NumberOfProtonsC = 82; // Pb has 82 protons
   } else if (system.EqualTo("Pbp")) {
     NumberOfNucleonsA = 208;
     NumberOfNucleonsC = 1;
     NumberOfProtonsA = 82; // Pb has 82 protons
-    NumberOfProtonsC = 1; // proton has 1 proton
+    NumberOfProtonsC = 1;  // proton has 1 proton
   } else if (system.EqualTo("OO")) {
     NumberOfNucleonsA = 16;
     NumberOfNucleonsC = 16;
