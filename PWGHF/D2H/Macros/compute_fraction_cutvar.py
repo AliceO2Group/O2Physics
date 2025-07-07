@@ -55,6 +55,8 @@ def main(config):
         hist_effnp[-1].SetDirectory(0)
         infile_eff.Close()
 
+    pt_bin_to_process = cfg.get("pt_bin_to_process", -1)
+
     if cfg["central_efficiency"]["computerawfrac"]:
         infile_name = os.path.join(cfg["central_efficiency"]["inputdir"], cfg["central_efficiency"]["inputfile"])
         infile_central_eff = ROOT.TFile.Open(infile_name)
@@ -80,6 +82,8 @@ def main(config):
     hist_covariance = hist_rawy[0].Clone("hCovPromptNonPrompt")
     hist_corrfrac_prompt = hist_rawy[0].Clone("hCorrFracPrompt")
     hist_corrfrac_nonprompt = hist_rawy[0].Clone("hCorrFracNonPrompt")
+    for histo in hist_corry_prompt, hist_corry_nonprompt, hist_covariance, hist_corrfrac_prompt, hist_corrfrac_nonprompt:
+        histo.Reset()
     hist_corry_prompt.GetYaxis().SetTitle("corrected yields prompt")
     hist_corry_nonprompt.GetYaxis().SetTitle("corrected yields non-prompt")
     hist_covariance.GetYaxis().SetTitle("#sigma(prompt, non-prompt)")
@@ -113,6 +117,8 @@ def main(config):
     if cfg["central_efficiency"]["computerawfrac"]:
         hist_frac_raw_prompt = hist_rawy[0].Clone("hRawFracPrompt")
         hist_frac_raw_nonprompt = hist_rawy[0].Clone("hRawFracNonPrompt")
+        for histo in hist_frac_raw_prompt, hist_frac_raw_nonprompt:
+            histo.Reset()
         hist_frac_raw_prompt.GetYaxis().SetTitle("raw fraction prompt")
         hist_frac_raw_nonprompt.GetYaxis().SetTitle("raw fraction non-prompt")
         set_object_style(
@@ -129,10 +135,17 @@ def main(config):
             markerstyle=ROOT.kFullSquare,
         )
 
-    output = ROOT.TFile(os.path.join(cfg["output"]["directory"], cfg["output"]["file"]), "recreate")
+    pt_bin_to_process_name_suffix = ""
+    if pt_bin_to_process != -1:
+        pt_bin_to_process_name_suffix = "_bin_" + str(pt_bin_to_process)
+
+    output_name_template = cfg['output']['file'].replace(".root", "") + pt_bin_to_process_name_suffix + ".root"
+    output = ROOT.TFile(os.path.join(cfg["output"]["directory"], output_name_template), "recreate")
     n_sets = len(hist_rawy)
     pt_axis_title = hist_rawy[0].GetXaxis().GetTitle()
     for ipt in range(hist_rawy[0].GetNbinsX()):
+        if pt_bin_to_process !=-1 and ipt+1 != pt_bin_to_process:
+            continue
         pt_min = hist_rawy[0].GetXaxis().GetBinLowEdge(ipt + 1)
         pt_max = hist_rawy[0].GetXaxis().GetBinUpEdge(ipt + 1)
         print(f"\n\nINFO: processing pt range {ipt} from {pt_min} to {pt_max} {pt_axis_title}")
@@ -146,7 +159,7 @@ def main(config):
             unc_effp[iset] = heffp.GetBinError(ipt + 1)
             unc_effnp[iset] = heffnp.GetBinError(ipt + 1)
 
-        if cfg["minimisation"]["correlated"]
+        if cfg["minimisation"]["correlated"]:
             if not (np.all(rawy[1:] > rawy[:-1]) or np.all(rawy[1:] < rawy[:-1])):
                 print("WARNING! main(): the raw yield vector is not monotonous. Check the input for stability.")
                 print(f"raw yield vector elements = {rawy}\n")
@@ -223,12 +236,14 @@ def main(config):
         canv_combined.cd(4)
         canv_cov.DrawClonePad()
 
-        output_name_rawy_pdf = f"Distr_{cfg['output']['file'].replace('.root', '.pdf')}"
-        output_name_eff_pdf = f"Eff_{cfg['output']['file'].replace('.root', '.pdf')}"
-        output_name_frac_pdf = f"Frac_{cfg['output']['file'].replace('.root', '.pdf')}"
-        output_name_covmat_pdf = f"CovMatrix_{cfg['output']['file'].replace('.root', '.pdf')}"
-        output_name_unc_pdf = f"Unc_{cfg['output']['file'].replace('.root', '.pdf')}"
-        output_name_pdf = f"{cfg['output']['file'].replace('.root', '.pdf')}"
+        output_name_template = output_name_template.replace('.root', '.pdf')
+
+        output_name_rawy_pdf = f"Distr_{output_name_template}"
+        output_name_eff_pdf = f"Eff_{output_name_template}"
+        output_name_frac_pdf = f"Frac_{output_name_template}"
+        output_name_covmat_pdf = f"CovMatrix_{output_name_template}"
+        output_name_unc_pdf = f"Unc_{output_name_template}"
+        output_name_pdf = f"{output_name_template}"
 
         if hist_rawy[0].GetNbinsX() == 1:
             print_bracket = ""
