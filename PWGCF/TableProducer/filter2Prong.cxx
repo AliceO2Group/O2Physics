@@ -413,12 +413,10 @@ struct Filter2Prong {
   PROCESS_SWITCH(Filter2Prong, processDataInvMass, "Process data generic 2-prong candidates with invariant mass method", false);
 
   // Phi and V0s invariant mass method candidate finder. Only works for non-identical daughters of opposite charge for now.
-  void processDataV0(aod::Collisions::iterator const& collision, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, Filter2Prong::PIDTrack const& tracks, aod::V0Datas const& V0s)
+  void processDataV0(aod::Collisions::iterator const& collision, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, Filter2Prong::PIDTrack const&, aod::V0Datas const& V0s)
   {
     if (cfcollisions.size() <= 0 || cftracks.size() <= 0)
       return; // rejected collision
-
-    o2::aod::ITSResponse itsResponse;
 
     for (const auto& v0 : V0s) {    // Loop over V0 candidates
       if (!isV0TrackSelected(v0)) { // Quality selection for V0 prongs
@@ -456,7 +454,7 @@ struct Filter2Prong {
   PROCESS_SWITCH(Filter2Prong, processDataV0, "Process data V0 candidates with invariant mass method", false);
 
   // Phi and V0s invariant mass method candidate finder. Only works for non-identical daughters of opposite charge for now.
-  void processDataPhi(aod::Collisions::iterator const& collision, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, Filter2Prong::PIDTrack const& tracks)
+  void processDataPhi(aod::Collisions::iterator const&, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, Filter2Prong::PIDTrack const& tracks)
   {
     if (cfcollisions.size() <= 0 || cftracks.size() <= 0)
       return; // rejected collision
