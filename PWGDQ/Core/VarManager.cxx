@@ -158,8 +158,6 @@ void VarManager::SetCollisionSystem(TString system, float energy)
     NumberOfNucleonsC = 20;
     NumberOfProtonsA = 10; // Ne has 5 protons
     NumberOfProtonsC = 10; // Ne has 5 protons
-  } else {
-    LOGF(WARNING, "Unknown collision system %s, using default pp", system.Data());
   }
   // TO Do: add more systems
 
@@ -185,8 +183,6 @@ void VarManager::SetCollisionSystem(o2::parameters::GRPLHCIFData* grplhcif)
   double beamCMomentum = std::sqrt(beamCEnergy * beamCEnergy - beamCNucleons * beamCNucleons * MassProton * MassProton);
   fgBeamA.SetPxPyPzE(0, 0, beamAMomentum, beamAEnergy);
   fgBeamC.SetPxPyPzE(0, 0, -beamCMomentum, beamCEnergy);
-  LOGF(INFO, "Beam A energy = %.2f GeV, beam C energy = %.2f GeV", beamAEnergy, beamCEnergy);
-  LOGF(INFO, "Beam A with %.0f nucleons, beam C with %.0f nucleons", beamANucleons, beamCNucleons);
 }
 
 //__________________________________________________________________

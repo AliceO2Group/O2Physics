@@ -1611,7 +1611,7 @@ struct AnalysisSameEventPairing {
       dimuonAllList.reserve(1);
     }
     if (fConfigOptions.polarTables.value) {
-      dielectronPolarList.reserve(1);
+      dileptonPolarList.reserve(1);
     }
     fAmbiguousPairs.clear();
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
@@ -1688,7 +1688,7 @@ struct AnalysisSameEventPairing {
             dileptonInfoList(t1.collisionId(), event.posX(), event.posY(), event.posZ());
           }
           if (fConfigOptions.polarTables.value) {
-            dileptonPolarizationTable(VarManager::fgValues[VarManager::kCosThetaHE], VarManager::fgValues[VarManager::kPhiHE], VarManager::fgValues[VarManager::kPhiTildeHE],
+            dileptonPolarList(VarManager::fgValues[VarManager::kCosThetaHE], VarManager::fgValues[VarManager::kPhiHE], VarManager::fgValues[VarManager::kPhiTildeHE],
                                       VarManager::fgValues[VarManager::kCosThetaCS], VarManager::fgValues[VarManager::kPhiCS], VarManager::fgValues[VarManager::kPhiTildeCS],
                                       VarManager::fgValues[VarManager::kCosThetaPP], VarManager::fgValues[VarManager::kPhiPP], VarManager::fgValues[VarManager::kPhiTildePP],
                                       VarManager::fgValues[VarManager::kCosThetaRM],
