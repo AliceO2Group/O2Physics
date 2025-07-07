@@ -64,11 +64,11 @@ struct FlowZdcTask {
   O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 0.2f, "DCA XY cut")
 
   Configurable<int> eventSelection{"eventSelection", 1, "event selection"};
-  Configurable<float> maxZp{"maxZp", 3099.5, "Max ZP signal"};
+  Configurable<float> maxZp{"maxZp", 125.5, "Max ZP signal"};
   Configurable<float> maxZem{"maxZem", 3099.5, "Max ZEM signal"};
   // for ZDC info and analysis
   Configurable<int> nBinsAmp{"nBinsAmp", 1025, "nbinsAmp"};
-  Configurable<float> maxZn{"maxZn", 4099.5, "Max ZN signal"};
+  Configurable<float> maxZn{"maxZn", 125.5, "Max ZN signal"};
   Configurable<float> vtxRange{"vtxRange", 10.0f, "Vertex Z range to consider"};
   Configurable<float> etaRange{"etaRange", 1.0f, "Eta range to consider"};
   // configs for process QA
@@ -96,8 +96,8 @@ struct FlowZdcTask {
   Configurable<bool> isOccupancyCut{"isOccupancyCut", true, "Occupancy cut?"};
   Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "T0C Occu cut?"};
   Configurable<bool> isTDCcut{"isTDCcut", false, "Use TDC cut?"};
-  Configurable<bool> isZEMcut{"isZEMcut", true, "Use ZEM cut?"};
-  Configurable<bool> useMidRapNchSel{"useMidRapNchSel", true, "Use mid-rapidit Nch selection"};
+  Configurable<bool> isZEMcut{"isZEMcut", false, "Use ZEM cut?"};
+  Configurable<bool> useMidRapNchSel{"useMidRapNchSel", false, "Use mid-rapidity Nch selection"};
   Configurable<bool> applyEff{"applyEff", true, "Apply track-by-track efficiency correction"};
   Configurable<bool> applyFD{"applyFD", false, "Apply track-by-track feed down correction"};
   Configurable<bool> correctNch{"correctNch", true, "Correct also Nch"};
@@ -512,6 +512,8 @@ struct FlowZdcTask {
       } else {
         skipEvent = true;
       }
+    } else {
+      skipEvent = true;
     }
     if (!skipEvent) {
       return;
@@ -795,7 +797,7 @@ struct FlowZdcTask {
     histos.fill(HIST("GlobalMult_vs_FT0C"), nchTracks, collision.multFT0C());
   }
 
-  PROCESS_SWITCH(FlowZdcTask, processZdcCollAssoc, "Processing ZDC w. collision association", true);
+  PROCESS_SWITCH(FlowZdcTask, processZdcCollAssoc, "Processing ZDC w. collision association", false);
   PROCESS_SWITCH(FlowZdcTask, processQA, "Process QA", true);
   PROCESS_SWITCH(FlowZdcTask, processCorrelation, "Process correlations", true);
 
