@@ -117,11 +117,6 @@ struct FemtoUniversePairTaskTrackPhi {
                                                    (aod::femtouniverseparticle::pt > ConfTrackPtLow) &&
                                                    (aod::femtouniverseparticle::pt < ConfTrackPtHigh);
 
-  // Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsTrackMCTruth =
-  //                                                  aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack) &&
-  //                                                  aod::femtouniverseparticle::pt < ConfTrackPtHigh &&
-  //                                                  aod::femtouniverseparticle::pt > ConfTrackPtLow;
-
   /// Particle 2 --- PHI MESON
   Configurable<float> ConfPhiPtLow{"ConfPhiPtLow", 0.8, "Lower limit of the Phi pT."};
   Configurable<float> ConfPhiPtHigh{"ConfPhiPtHigh", 4.0, "Higher limit of the Phi pT."};
@@ -140,11 +135,6 @@ struct FemtoUniversePairTaskTrackPhi {
                                                  (aod::femtouniverseparticle::pt < ConfPhiPtHigh) &&
                                                  (aod::femtouniverseparticle::tempFitVar > confInvMassLowLimitPhi) &&
                                                  (aod::femtouniverseparticle::tempFitVar < confInvMassUpLimitPhi);
-
-  // Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsPhiMCTruth =
-  //                                                aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack) &&
-  //                                                aod::femtouniverseparticle::pt < ConfPhiPtHigh &&
-  //                                                aod::femtouniverseparticle::pt > ConfPhiPtLow;
 
   /// Partitions  for Phi daughters kPhiChild
   Partition<FilteredFemtoFullParticles> partsPhiDaugh = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhiChild));
