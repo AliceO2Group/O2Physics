@@ -67,7 +67,7 @@ constexpr double betheBlochDefault[nParticles][nBetheParams]{
   {-126.557359, -0.858569, 1.111643, 1.210323, 2.656374, 0.09}}; // alpha
 const int nTrkSettings = 19;
 static const std::vector<std::string> trackPIDsettingsNames{"useBBparams", "minITSnCls", "minITSnClscos", "minTPCnCls", "maxTPCchi2", "minTPCchi2", "maxITSchi2", "minRigidity", "maxRigidity", "maxTPCnSigma", "TOFrequiredabove", "minTOFmass", "maxTOFmass", "maxDcaXY", "maxDcaZ", "minITSclsSize", "maxITSclsSize", "minTPCnClsCrossedRows", "minReqClusterITSib"};
-constexpr double trackPIDsettings[nParticles][nTrkSettings]{
+constexpr double kTrackPIDSettings[nParticles][nTrkSettings]{
   {0, 0, 4, 60, 4.0, 0.5, 100, 0.15, 1.2, 2.5, -1, 0, 100, 2., 2., 0., 1000, 70, 1},
   {1, 0, 4, 70, 4.0, 0.5, 100, 0.20, 4.0, 3.0, -1, 0, 100, 2., 2., 0., 1000, 70, 1},
   {1, 0, 4, 70, 4.0, 0.5, 100, 0.50, 5.0, 3.0, -1, 0, 100, 2., 2., 0., 1000, 70, 1},
@@ -137,7 +137,7 @@ struct NucleitpcPbPb {
   Configurable<bool> cfgRequireMCposZ{"cfgRequireMCposZ", true, "Require beta plot"};
 
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], nParticles, nBetheParams, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
-  Configurable<LabeledArray<double>> cfgTrackPIDsettings{"cfgTrackPIDsettings", {trackPIDsettings[0], nParticles, nTrkSettings, particleNames, trackPIDsettingsNames}, "track selection and PID criteria"};
+  Configurable<LabeledArray<double>> cfgTrackPIDsettings{"cfgTrackPIDsettings", {kTrackPIDSettings[0], nParticles, nTrkSettings, particleNames, trackPIDsettingsNames}, "track selection and PID criteria"};
   Configurable<bool> cfgFillDeDxWithCut{"cfgFillDeDxWithCut", true, "Fill with cut beth bloch"};
   Configurable<bool> cfgFillnsigma{"cfgFillnsigma", false, "Fill n-sigma histograms"};
   Configurable<bool> cfgFillmass{"cfgFillmass", false, "Fill mass histograms"};
@@ -177,8 +177,8 @@ struct NucleitpcPbPb {
   int mRunNumber, occupancy;
   float dBz, momn;
   TRandom3 rand;
-  float He3 = 4;
-  float He4 = 5;
+  float he3 = 4;
+  float he4 = 5;
   //----------------------------------------------------------------------------------------------------------------
   void init(InitContext const&)
   {
@@ -295,7 +295,7 @@ struct NucleitpcPbPb {
         float ptMomn;
         setTrackParCov(track, mTrackParCov);
         mTrackParCov.setPID(track.pidForTracking());
-        ptMomn = (i == He3 || i == He4) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
+        ptMomn = (i == he3 || i == he4) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
         bool insideDCAxy = (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / std::pow(ptMomn, 1.1f)))); // o2-linter: disable=magic-number (To be checked)
         if ((!(insideDCAxy) || std::abs(track.dcaZ()) > DCAzSigma(ptMomn, cfgTrackPIDsettings->get(i, "maxDcaZ"))) && cfgDCAwithptRequire)
           continue;
@@ -319,7 +319,7 @@ struct NucleitpcPbPb {
         if (!track.hasTOF() && cfgTrackPIDsettings->get(i, "TOFrequiredabove") < 1)
           continue;
         float beta{o2::pid::tof::Beta::GetBeta(track)};
-        float charge{1.f + static_cast<float>(i == He3 || i == He4)};
+        float charge{1.f + static_cast<float>(i == he3 || i == he4)};
         float tofMasses = getRigidity(track) * charge * std::sqrt(1.f / (beta * beta) - 1.f);
         if ((getRigidity(track) > cfgTrackPIDsettings->get(i, "TOFrequiredabove") && (tofMasses < cfgTrackPIDsettings->get(i, "minTOFmass") || tofMasses > cfgTrackPIDsettings->get(i, "maxTOFmass"))) && cfgmassRequire)
           continue;
@@ -489,7 +489,7 @@ struct NucleitpcPbPb {
           float ptMomn;
           setTrackParCov(track, mTrackParCov);
           mTrackParCov.setPID(track.pidForTracking());
-          ptMomn = (i == He3 || i == He4) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
+          ptMomn = (i == he3 || i == he4) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
           bool insideDCAxy = (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / std::pow(ptMomn, 1.1f)))); // o2-linter: disable=magic-number (To be checked)
           if ((!(insideDCAxy) || std::abs(track.dcaZ()) > DCAzSigma(ptMomn, cfgTrackPIDsettings->get(i, "maxDcaZ"))) && cfgDCAwithptRequire)
             continue;
@@ -512,7 +512,7 @@ struct NucleitpcPbPb {
           if (!track.hasTOF() && cfgTrackPIDsettings->get(i, "TOFrequiredabove") < 1)
             continue;
           float beta{o2::pid::tof::Beta::GetBeta(track)};
-          float charge{1.f + static_cast<float>(i == He3 || i == He4)};
+          float charge{1.f + static_cast<float>(i == he3 || i == he4)};
           float tofMasses = getRigidity(track) * charge * std::sqrt(1.f / (beta * beta) - 1.f);
           if ((getRigidity(track) > cfgTrackPIDsettings->get(i, "TOFrequiredabove") && (tofMasses < cfgTrackPIDsettings->get(i, "minTOFmass") || tofMasses > cfgTrackPIDsettings->get(i, "maxTOFmass"))) && cfgmassRequire)
             continue;
@@ -639,7 +639,7 @@ struct NucleitpcPbPb {
       float ptMomn;
       setTrackParCov(track, mTrackParCov);
       mTrackParCov.setPID(track.pidForTracking());
-      ptMomn = (i == He3 || i == He4) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
+      ptMomn = (i == he3 || i == he4) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
       if (track.sign() > 0) {
         hNsigmaPt[2 * species]->Fill(ptMomn, tpcNsigma);
       }
@@ -659,7 +659,7 @@ struct NucleitpcPbPb {
     float beta{o2::pid::tof::Beta::GetBeta(track)};
     if (beta <= 0.f || beta >= 1.f)
       return;
-    float charge = (species == He3 || species == He4) ? 2.f : 1.f;
+    float charge = (species == he3 || species == he4) ? 2.f : 1.f;
     float p = getRigidity(track); // assuming this is the momentum from inner TPC
     float massTOF = p * charge * std::sqrt(1.f / (beta * beta) - 1.f);
     // get PDG mass
@@ -668,7 +668,7 @@ struct NucleitpcPbPb {
     float ptMomn;
     setTrackParCov(track, mTrackParCov);
     mTrackParCov.setPID(track.pidForTracking());
-    ptMomn = (species == He3 || species == He4) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
+    ptMomn = (species == he3 || species == he4) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
     if (track.sign() > 0) {
       hmass[2 * species]->Fill(ptMomn, massDiff * massDiff);
     } else if (track.sign() < 0) {
