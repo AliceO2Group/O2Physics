@@ -38,7 +38,7 @@ using namespace o2::math_utils::detail;
 
 enum LambdaPid { kLambda = 0,
                  kAntiLambda
-                };
+};
 
 // #define FLOAT_PRECISION 0xFFFFFFF0
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
@@ -57,51 +57,49 @@ struct Filter2Prong {
   O2_DEFINE_CONFIGURABLE(cfgImSigmaFormula, std::string, "(z < 0.5 && abs(x) < 3.0) || (z >= 0.5 && abs(x) < 2.5 && abs(y) < 3.0)", "pT dependent daughter track sigma pass condition (x = TPC sigma, y = TOF sigma, z = pT)")
 
   struct : ConfigurableGroup{
-    O2_DEFINE_CONFIGURABLE(tpcNClsCrossedRowsTrackMin, float, 70, "Minimum number of crossed rows in TPC")
-    O2_DEFINE_CONFIGURABLE(etaTrackMax, float, 0.8, "Maximum pseudorapidity")
-    O2_DEFINE_CONFIGURABLE(ptTrackMin, float, 0.1, "Minimum transverse momentum")
-    O2_DEFINE_CONFIGURABLE(minV0DCAPr, float, 0.1, "Min V0 proton DCA")
-    O2_DEFINE_CONFIGURABLE(minV0DCAPiLambda, float, 0.1, "Min V0 pion DCA for lambda")
-    O2_DEFINE_CONFIGURABLE(minV0DCAPiK0s, float, 0.1, "Min V0 pion DCA for K0s")
-    O2_DEFINE_CONFIGURABLE(daughPIDCuts, float, 4.0, "PID nsigma for V0s")
-    O2_DEFINE_CONFIGURABLE(massK0Min, float, 0.4, "Minimum mass for K0")
-    O2_DEFINE_CONFIGURABLE(massK0Max, float, 0.6, "Maximum mass for K0")
-    O2_DEFINE_CONFIGURABLE(massLambdaMin, float, 1.0, "Minimum mass for lambda")
-    O2_DEFINE_CONFIGURABLE(massLambdaMax, float, 1.3, "Maximum mass for lambda")
-    O2_DEFINE_CONFIGURABLE(radiusMaxLambda, float, 2.3, "Maximum decay radius (cm) for lambda")
-    O2_DEFINE_CONFIGURABLE(radiusMinLambda, float, 0.0, "Minimum decay radius (cm) for lambda")
-    O2_DEFINE_CONFIGURABLE(radiusMaxK0s, float, 2.3, "Maximum decay radius (cm) for K0s")
-    O2_DEFINE_CONFIGURABLE(radiusMinK0s, float, 0.0, "Minimum decay radius (cm) for K0s")
-    O2_DEFINE_CONFIGURABLE(cosPaMinLambda, float, 0.98, "Minimum cosine of pointing angle for lambda")
-    O2_DEFINE_CONFIGURABLE(cosPaMinK0s, float, 0.98, "Minimum cosine of pointing angle for K0s")
-    O2_DEFINE_CONFIGURABLE(dcaV0DaughtersMaxLambda, float, 0.2, "Maximum DCA among the V0 daughters (cm) for lambda")
-    O2_DEFINE_CONFIGURABLE(dcaV0DaughtersMaxK0s, float, 0.2, "Maximum DCA among the V0 daughters (cm) for K0s")
-    O2_DEFINE_CONFIGURABLE(qtArmenterosMinForK0s, float, 0.12, "Minimum Armenteros' qt for K0s")
-    O2_DEFINE_CONFIGURABLE(maxLambdaLifeTime, float, 30, "Maximum lambda lifetime (in cm)")
-    O2_DEFINE_CONFIGURABLE(maxK0sLifeTime, float, 30, "Maximum K0s lifetime (in cm)")
-  } grpV0;
-  
+             O2_DEFINE_CONFIGURABLE(tpcNClsCrossedRowsTrackMin, float, 70, "Minimum number of crossed rows in TPC")
+               O2_DEFINE_CONFIGURABLE(etaTrackMax, float, 0.8, "Maximum pseudorapidity")
+                 O2_DEFINE_CONFIGURABLE(ptTrackMin, float, 0.1, "Minimum transverse momentum")
+                   O2_DEFINE_CONFIGURABLE(minV0DCAPr, float, 0.1, "Min V0 proton DCA")
+                     O2_DEFINE_CONFIGURABLE(minV0DCAPiLambda, float, 0.1, "Min V0 pion DCA for lambda")
+                       O2_DEFINE_CONFIGURABLE(minV0DCAPiK0s, float, 0.1, "Min V0 pion DCA for K0s")
+                         O2_DEFINE_CONFIGURABLE(daughPIDCuts, float, 4.0, "PID nsigma for V0s")
+                           O2_DEFINE_CONFIGURABLE(massK0Min, float, 0.4, "Minimum mass for K0")
+                             O2_DEFINE_CONFIGURABLE(massK0Max, float, 0.6, "Maximum mass for K0")
+                               O2_DEFINE_CONFIGURABLE(massLambdaMin, float, 1.0, "Minimum mass for lambda")
+                                 O2_DEFINE_CONFIGURABLE(massLambdaMax, float, 1.3, "Maximum mass for lambda")
+                                   O2_DEFINE_CONFIGURABLE(radiusMaxLambda, float, 2.3, "Maximum decay radius (cm) for lambda")
+                                     O2_DEFINE_CONFIGURABLE(radiusMinLambda, float, 0.0, "Minimum decay radius (cm) for lambda")
+                                       O2_DEFINE_CONFIGURABLE(radiusMaxK0s, float, 2.3, "Maximum decay radius (cm) for K0s")
+                                         O2_DEFINE_CONFIGURABLE(radiusMinK0s, float, 0.0, "Minimum decay radius (cm) for K0s")
+                                           O2_DEFINE_CONFIGURABLE(cosPaMinLambda, float, 0.98, "Minimum cosine of pointing angle for lambda")
+                                             O2_DEFINE_CONFIGURABLE(cosPaMinK0s, float, 0.98, "Minimum cosine of pointing angle for K0s")
+                                               O2_DEFINE_CONFIGURABLE(dcaV0DaughtersMaxLambda, float, 0.2, "Maximum DCA among the V0 daughters (cm) for lambda")
+                                                 O2_DEFINE_CONFIGURABLE(dcaV0DaughtersMaxK0s, float, 0.2, "Maximum DCA among the V0 daughters (cm) for K0s")
+                                                   O2_DEFINE_CONFIGURABLE(qtArmenterosMinForK0s, float, 0.12, "Minimum Armenteros' qt for K0s")
+                                                     O2_DEFINE_CONFIGURABLE(maxLambdaLifeTime, float, 30, "Maximum lambda lifetime (in cm)")
+                                                       O2_DEFINE_CONFIGURABLE(maxK0sLifeTime, float, 30, "Maximum K0s lifetime (in cm)")} grpV0;
+
   struct : ConfigurableGroup{
-    O2_DEFINE_CONFIGURABLE(ImMinInvMassPhiMeson, float, 0.98f, "Minimum invariant mass Phi meson (GeV)")
-    O2_DEFINE_CONFIGURABLE(ImMaxInvMassPhiMeson, float, 1.07f, "Maximum invariant mass Phi meson (GeV)")
-    O2_DEFINE_CONFIGURABLE(ITSPIDSelection, bool, true, "PID ITS")
-    O2_DEFINE_CONFIGURABLE(ITSPIDPthreshold, float, 1.0, "Momentum threshold for ITS PID (GeV/c) (only used if ITSPIDSelection is true)")
-    O2_DEFINE_CONFIGURABLE(lowITSPIDNsigma, float, 3.0, "lower cut on PID nsigma for ITS")
-    O2_DEFINE_CONFIGURABLE(highITSPIDNsigma, float, 3.0, "higher cut on PID nsigma for ITS")
-    O2_DEFINE_CONFIGURABLE(ITSclusterPhiMeson, int, 5, "Minimum number of ITS cluster for phi meson track")
-    O2_DEFINE_CONFIGURABLE(TPCCrossedRowsPhiMeson, int, 80, "Minimum number of TPC Crossed Rows for phi meson track")
-    O2_DEFINE_CONFIGURABLE(cutDCAxyPhiMeson, float, 0.1, "Maximum DCAxy for phi meson track")
-    O2_DEFINE_CONFIGURABLE(cutDCAzPhiMeson, float, 0.1, "Maximum DCAz for phi meson track")
-    O2_DEFINE_CONFIGURABLE(cutEtaPhiMeson, float, 0.8, "Maximum eta for phi meson track")
-    O2_DEFINE_CONFIGURABLE(cutPTPhiMeson, float, 0.15, "Maximum pt for phi meson track")
-    O2_DEFINE_CONFIGURABLE(isDeepAngle, bool, true, "Flag for applying deep angle")
-    O2_DEFINE_CONFIGURABLE(deepAngle, float, 0.04, "Deep angle cut")
-    O2_DEFINE_CONFIGURABLE(nsigmaCutTPC, float, 2.5, "nsigma tpc")
-    O2_DEFINE_CONFIGURABLE(nsigmaCutTOF, float, 2.5, "nsigma tof")
-    O2_DEFINE_CONFIGURABLE(cutTOFBeta, float, 0.5, "TOF beta")
-    O2_DEFINE_CONFIGURABLE(confFakeKaonCut, float, 0.15, "Cut based on track from momentum difference")
-    O2_DEFINE_CONFIGURABLE(removefaketrack, bool, true, "Flag to remove fake kaon")
-  } grpPhi;
+             O2_DEFINE_CONFIGURABLE(ImMinInvMassPhiMeson, float, 0.98f, "Minimum invariant mass Phi meson (GeV)")
+               O2_DEFINE_CONFIGURABLE(ImMaxInvMassPhiMeson, float, 1.07f, "Maximum invariant mass Phi meson (GeV)")
+                 O2_DEFINE_CONFIGURABLE(ITSPIDSelection, bool, true, "PID ITS")
+                   O2_DEFINE_CONFIGURABLE(ITSPIDPthreshold, float, 1.0, "Momentum threshold for ITS PID (GeV/c) (only used if ITSPIDSelection is true)")
+                     O2_DEFINE_CONFIGURABLE(lowITSPIDNsigma, float, 3.0, "lower cut on PID nsigma for ITS")
+                       O2_DEFINE_CONFIGURABLE(highITSPIDNsigma, float, 3.0, "higher cut on PID nsigma for ITS")
+                         O2_DEFINE_CONFIGURABLE(ITSclusterPhiMeson, int, 5, "Minimum number of ITS cluster for phi meson track")
+                           O2_DEFINE_CONFIGURABLE(TPCCrossedRowsPhiMeson, int, 80, "Minimum number of TPC Crossed Rows for phi meson track")
+                             O2_DEFINE_CONFIGURABLE(cutDCAxyPhiMeson, float, 0.1, "Maximum DCAxy for phi meson track")
+                               O2_DEFINE_CONFIGURABLE(cutDCAzPhiMeson, float, 0.1, "Maximum DCAz for phi meson track")
+                                 O2_DEFINE_CONFIGURABLE(cutEtaPhiMeson, float, 0.8, "Maximum eta for phi meson track")
+                                   O2_DEFINE_CONFIGURABLE(cutPTPhiMeson, float, 0.15, "Maximum pt for phi meson track")
+                                     O2_DEFINE_CONFIGURABLE(isDeepAngle, bool, true, "Flag for applying deep angle")
+                                       O2_DEFINE_CONFIGURABLE(deepAngle, float, 0.04, "Deep angle cut")
+                                         O2_DEFINE_CONFIGURABLE(nsigmaCutTPC, float, 2.5, "nsigma tpc")
+                                           O2_DEFINE_CONFIGURABLE(nsigmaCutTOF, float, 2.5, "nsigma tof")
+                                             O2_DEFINE_CONFIGURABLE(cutTOFBeta, float, 0.5, "TOF beta")
+                                               O2_DEFINE_CONFIGURABLE(confFakeKaonCut, float, 0.15, "Cut based on track from momentum difference")
+                                                 O2_DEFINE_CONFIGURABLE(removefaketrack, bool, true, "Flag to remove fake kaon")} grpPhi;
 
   HfHelper hfHelper;
   Produces<aod::CF2ProngTracks> output2ProngTracks;
@@ -322,13 +320,12 @@ struct Filter2Prong {
     if (pid == LambdaPid::kAntiLambda && (TMath::Abs(v0.dcapostopv()) < grpV0.minV0DCAPiLambda || TMath::Abs(v0.dcanegtopv()) < grpV0.minV0DCAPr)) {
       return false;
     }
-    if (pid == LambdaPid::kLambda && ((std::abs(posTrack.tpcNSigmaPr()) > grpV0.daughPIDCuts) || (std::abs(negTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts)))
-      {
-        return false;
-      }
+    if (pid == LambdaPid::kLambda && ((std::abs(posTrack.tpcNSigmaPr()) > grpV0.daughPIDCuts) || (std::abs(negTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts))) {
+      return false;
+    }
     if (pid == LambdaPid::kAntiLambda && ((std::abs(posTrack.tpcNSigmaPi()) > grpV0.daughPIDCuts) || (std::abs(negTrack.tpcNSigmaPr()) > grpV0.daughPIDCuts))) {
-        return false;
-      }
+      return false;
+    }
     if (std::abs(CtauLambda) > grpV0.maxLambdaLifeTime) {
       return false;
     }
@@ -516,7 +513,7 @@ struct Filter2Prong {
         }
         float phi = RecoDecay::constrainAngle(s.Phi(), 0.0f);
         output2ProngTracks(cfcollisions.begin().globalIndex(),
-                             cftrack1.globalIndex(), cftrack2.globalIndex(), s.pt(), s.eta(), phi, s.M(), aod::cf2prongtrack::PhiToKK);
+                           cftrack1.globalIndex(), cftrack2.globalIndex(), s.pt(), s.eta(), phi, s.M(), aod::cf2prongtrack::PhiToKK);
       } // end of loop over second track
     } // end of loop over first track
   }
