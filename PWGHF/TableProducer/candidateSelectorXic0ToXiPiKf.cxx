@@ -72,43 +72,6 @@ struct HfCandidateSelectorXic0ToXiPiKf {
   Configurable<double> radiusCascMin{"radiusCascMin", 0.5, "Min cascade radius"};
   Configurable<double> radiusV0Min{"radiusV0Min", 1.1, "Min V0 radius"};
 
-  // cosPA
-  Configurable<double> cosPACascToPvMin{"cosPACascToPvMin", 0.99, "Min value CosPA cascade to primary vertex"};
-  Configurable<double> cosPAV0ToPvMin{"cosPAV0ToPvMin", 0.97, "Min value CosPA V0 to ptimary vertex"};
-  Configurable<double> cosPACascToXicMin{"cosPACascToXicMin", 0.99, "Min value CosPA cascade to charm baryon"};
-  Configurable<double> cosPAV0ToCascMin{"cosPAV0ToCascMin", 0.99, "Min value CosPA V0 to cascade"};
-
-  // DCA
-  Configurable<double> dcaCharmBaryonDauMax{"dcaCharmBaryonDauMax", 0.1, "Max DCA charm baryon daughters"};
-  Configurable<double> dcaCascDauMax{"dcaCascDauMax", 0.2, "Max DCA cascade daughters"};
-  Configurable<double> dcaV0DauMax{"dcaV0DauMax", 1.0, "Max DCA V0 daughters"};
-  Configurable<float> dcaBachToPvMin{"dcaBachToPvMin", 0.04, "DCA Bach To PV"};
-  Configurable<float> dcaNegToPvMin{"dcaNegToPvMin", 0.06, "DCA Neg To PV"};
-  Configurable<float> dcaPosToPvMin{"dcaPosToPvMin", 0.06, "DCA Pos To PV"};
-  Configurable<float> kfDcaXYPiFromXicMax{"kfDcaXYPiFromXicMax", 0.05, "DCA Pion From Xic To PV"};
-  Configurable<float> kfDcaXYCascToPvMax{"kfDcaXYCascToPvMax", 0.3, "DCA cascade To PV"};
-  // Chi2Geo
-  Configurable<float> chi2GeoXicMax{"chi2GeoXicMax", 70, "Geometrical Chi2 of Xic0"};
-  Configurable<float> chi2GeoCascMax{"chi2GeoCascMax", 60, "Geometrical Chi2 of cascade"};
-  Configurable<float> chi2GeoV0Max{"chi2GeoV0Max", 100, "Geometrical Chi2 of V0"};
-  // Chi2Topo
-  Configurable<float> chi2TopoXicToPvMax{"chi2TopoXicToPvMax", 120, "Topological Chi2 of Xic0 to primary vertex"};
-  Configurable<float> chi2TopoPiFromXicToPvMax{"chi2TopoPiFromXicToPvMax", 250, "Topological Chi2 of pion <-- Xic0 to primary vertex"};
-  Configurable<float> chi2TopoCascToPvMax{"chi2TopoCascToPvMax", 250, "Topological Chi2 of cascade to primary vertex"};
-  Configurable<float> chi2TopoV0ToPvMin{"chi2TopoV0ToPvMin", 0.4, "Topological Chi2 of V0 to primary vertex"};
-  Configurable<float> chi2TopoV0ToCascMax{"chi2TopoV0ToCascMax", 100, "Topological Chi2 of V0 to cascade"};
-  Configurable<float> chi2TopoCascToXicMax{"chi2TopoCascToXicMax", 300, "Topological Chi2 of cascade to Xic0"};
-  // ldl
-  Configurable<float> cascldlMin{"cascldlMin", 0.0, "cascade ldl"};
-  Configurable<float> v0ldlMin{"v0ldlMin", 0.0, "V0 ldl"};
-  // decay length
-  Configurable<float> decayLenXYXicMax{"decayLenXYXicMax", 1.5, "Xic0 decay length"};
-  Configurable<float> decayLenXYCascMin{"decayLenXYCascMin", 0.0, "cascade decay length"};
-  Configurable<float> decayLenXYLambdaMin{"decayLenXYLambdaMin", 0.0, "cascade decay length"};
-
-  // ctau
-  Configurable<float> ctXicMax{"ctXicMax", 0.4, "Xic0 ctau"};
-
   Configurable<float> v0MassWindow{"v0MassWindow", 0.01, "V0 mass window"};
   Configurable<float> cascadeMassWindow{"cascadeMassWindow", 0.01, "Cascade mass window"};
   Configurable<bool> applyTrkSelLf{"applyTrkSelLf", true, "Apply track selection for LF daughters"};
@@ -219,7 +182,6 @@ struct HfCandidateSelectorXic0ToXiPiKf {
     registry.add("hSelTPCQualityPiFromCasc", "hSelTPCQualityPiFromCasc;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hSelITSQualityPiFromCharm", "hSelITSQualityPiFromCharm;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hSelPID", "hSelPID;status;entries", {HistType::kTH1D, {{12, 0., 12.}}});
-    registry.add("hCandSel", "hCandSel;selection type;entries", {HistType::kTH1D, {{28, 0., 28.}}});
     registry.add("hSelMassLam", "hSelMassLam;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hSelMassCasc", "hSelMassCasc;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hSelMassCharmBaryon", "hSelMassCharmBaryon;status;entries", {HistType::kTH1D, {axisSel}});
@@ -527,162 +489,107 @@ struct HfCandidateSelectorXic0ToXiPiKf {
     }
 
     double ptPiFromCharmBaryon = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon());
-    if (ptPiFromCharmBaryon <= cuts->get(pTBin, "pT pi from Xic")) {
+    if (ptPiFromCharmBaryon <= cuts->get(pTBin, "ptPiFromCharmBaryon")) {
       return false;
     }
-
-    // fill all candidates before preselection
-    registry.fill(HIST("hCandSel"), 0.5);
 
     // cosPA (LFcut)
-    if (candidate.cosPACasc() < cosPACascToPvMin) {
+    if (candidate.cosPACasc() < cuts->get(pTBin, "cosPACasc")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 1.5);
     }
-    if (candidate.cosPAV0() < cosPAV0ToPvMin) {
+    if (candidate.cosPAV0() < cuts->get(pTBin, "cosPAV0")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 2.5);
     }
-    if (candidate.cosPaCascToXic() < cosPACascToXicMin) {
+    if (candidate.cosPaCascToXic() < cuts->get(pTBin, "cosPaCascToXic")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 3.5);
     }
-    if (candidate.cosPaV0ToCasc() < cosPAV0ToCascMin) {
+    if (candidate.cosPaV0ToCasc() < cuts->get(pTBin, "cosPaV0ToCasc")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 4.5);
     }
 
     // dca cut
-    if (candidate.dcaCharmBaryonDau() > dcaCharmBaryonDauMax) {
+    if (candidate.dcaCharmBaryonDau() > cuts->get(pTBin, "dcaCharmBaryonDau")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 5.5);
     }
-    if (candidate.dcaCascDau() > dcaCascDauMax) {
+    if (candidate.dcaCascDau() > cuts->get(pTBin, "dcaCascDau")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 6.5);
     }
 
-    if (candidate.dcaV0Dau() > dcaV0DauMax) {
+    if (candidate.dcaV0Dau() > cuts->get(pTBin, "dcaV0Dau")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 7.5);
     }
 
     // dcaXY pion <-- cascade to PV cut
-    if (std::abs(candidate.dcaXYToPvCascDau()) < dcaBachToPvMin) {
+    if (std::abs(candidate.dcaXYToPvCascDau()) < cuts->get(pTBin, "dcaXYToPvCascDau")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 8.5);
     }
 
     // dcaXY v0 daughters to PV cut
-    if (std::abs(candidate.dcaXYToPvV0Dau0()) < dcaPosToPvMin || std::abs(candidate.dcaXYToPvV0Dau1()) < dcaNegToPvMin) {
+    if (std::abs(candidate.dcaXYToPvV0Dau0()) < cuts->get(pTBin, "dcaXYToPvV0Dau0") || std::abs(candidate.dcaXYToPvV0Dau1()) < cuts->get(pTBin, "dcaXYToPvV0Dau0")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 9.5);
     }
 
     // dacXY pion <-- Xic0 to PV cut
-    if (std::abs(candidate.kfDcaXYPiFromXic()) > kfDcaXYPiFromXicMax) {
+    if (std::abs(candidate.kfDcaXYPiFromXic()) > cuts->get(pTBin, "kfDcaXYPiFromXic")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 10.5);
     }
 
     // dacXY cascade to PV cut
-    if (std::abs(candidate.kfDcaXYCascToPv()) > kfDcaXYCascToPvMax) {
+    if (std::abs(candidate.kfDcaXYCascToPv()) > cuts->get(pTBin, "kfDcaXYCascToPv")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 11.5);
     }
 
     // Chi2Geo
-    if (candidate.chi2GeoXic() < 0 || candidate.chi2GeoXic() > chi2GeoXicMax) {
+    if (candidate.chi2GeoXic() < 0 || candidate.chi2GeoXic() > cuts->get(pTBin, "chi2GeoXic")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 12.5);
     }
-    if (candidate.chi2GeoCasc() < 0 || candidate.chi2GeoCasc() > chi2GeoCascMax) {
+    if (candidate.chi2GeoCasc() < 0 || candidate.chi2GeoCasc() > cuts->get(pTBin, "chi2GeoCasc")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 13.5);
     }
-    if (candidate.chi2GeoV0() < 0 || candidate.chi2GeoV0() > chi2GeoV0Max) {
+    if (candidate.chi2GeoV0() < 0 || candidate.chi2GeoV0() > cuts->get(pTBin, "chi2GeoV0")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 14.5);
     }
 
     // Chi2Topo
-    if (candidate.chi2TopoXicToPv() < 0 || candidate.chi2TopoXicToPv() > chi2TopoXicToPvMax) {
+    if (candidate.chi2TopoXicToPv() < 0 || candidate.chi2TopoXicToPv() > cuts->get(pTBin, "chi2TopoXicToPv")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 15.5);
     }
-    if (candidate.chi2TopoPiFromXicToPv() < 0 || candidate.chi2TopoPiFromXicToPv() > chi2TopoPiFromXicToPvMax) {
+    if (candidate.chi2TopoPiFromXicToPv() < 0 || candidate.chi2TopoPiFromXicToPv() > cuts->get(pTBin, "chi2TopoPiFromXicToPv")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 16.5);
     }
-    if (candidate.chi2TopoCascToPv() < 0 || candidate.chi2TopoCascToPv() > chi2TopoCascToPvMax) {
+    if (candidate.chi2TopoCascToPv() < 0 || candidate.chi2TopoCascToPv() > cuts->get(pTBin, "chi2TopoCascToPv")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 17.5);
     }
-    if (candidate.chi2TopoV0ToPv() > 0 && candidate.chi2TopoV0ToPv() < chi2TopoV0ToPvMin) {
+    if (candidate.chi2TopoV0ToPv() > 0 && candidate.chi2TopoV0ToPv() < cuts->get(pTBin, "chi2TopoV0ToPv")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 18.5);
     }
-    if (candidate.chi2TopoV0ToCasc() < 0 || candidate.chi2TopoV0ToCasc() > chi2TopoV0ToCascMax) {
+    if (candidate.chi2TopoV0ToCasc() < 0 || candidate.chi2TopoV0ToCasc() > cuts->get(pTBin, "chi2TopoV0ToCasc")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 19.5);
     }
-    if (candidate.chi2TopoCascToXic() < 0 || candidate.chi2TopoCascToXic() > chi2TopoCascToXicMax) {
+    if (candidate.chi2TopoCascToXic() < 0 || candidate.chi2TopoCascToXic() > cuts->get(pTBin, "chi2TopoCascToXic")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 20.5);
     }
 
     // ldl
-    if (candidate.cascldl() < cascldlMin) {
+    if (candidate.cascldl() < cuts->get(pTBin, "cascldl")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 21.5);
     }
-    if (candidate.v0ldl() < v0ldlMin) {
+    if (candidate.v0ldl() < cuts->get(pTBin, "v0ldl")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 22.5);
     }
     // decay length
-    if (std::abs(candidate.decayLenXYXic()) > decayLenXYXicMax) {
+    if (std::abs(candidate.decayLenXYXic()) > cuts->get(pTBin, "decayLenXYXic")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 23.5);
     }
-    if (std::abs(candidate.decayLenXYCasc()) < decayLenXYCascMin) {
+    if (std::abs(candidate.decayLenXYCasc()) < cuts->get(pTBin, "decayLenXYCasc")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 24.5);
     }
-    if (std::abs(candidate.decayLenXYLambda()) < decayLenXYLambdaMin) {
+    if (std::abs(candidate.decayLenXYLambda()) < cuts->get(pTBin, "decayLenXYLambda")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 25.5);
     }
     // ctau
-    if (std::abs(candidate.cTauXic()) > ctXicMax) {
+    if (std::abs(candidate.cTauXic()) > cuts->get(pTBin, "cTauXic")) {
       return false;
-    } else {
-      registry.fill(HIST("hCandSel"), 26.5);
     }
     return true;
   }
