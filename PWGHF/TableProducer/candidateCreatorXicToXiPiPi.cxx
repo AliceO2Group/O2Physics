@@ -300,7 +300,7 @@ struct HfCandidateCreatorXicToXiPiPi {
 
       //----------------------------calculate physical properties-----------------------
       // Charge of charm baryon
-      int signXic = casc.sign() < 0 ? +1 : -1;
+      int8_t signXic = casc.sign() < 0 ? +1 : -1;
 
       // get SV properties
       const auto& secondaryVertex = df.getPCACandidate();
@@ -561,7 +561,7 @@ struct HfCandidateCreatorXicToXiPiPi {
 
       //---------------------calculate physical parameters of XicPlus candidate----------------------
       // sign of charm baryon
-      int signXic = casc.sign() < 0 ? +1 : -1;
+      int8_t signXic = casc.sign() < 0 ? +1 : -1;
 
       // transport XicPlus daughters to XicPlus decay vertex (secondary vertex)
       float secondaryVertex[3] = {0.};
@@ -1073,7 +1073,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
 
       // Fill tables
       rowMcMatchRec(flag, origin);
-      if (fillResidualTable) {
+      if (flag != 0 && fillResidualTable) {
         rowResiduals(origin, momentumResiduals[0], momentumResiduals[1],
                      pvResiduals[0], pvResiduals[1], pvResiduals[2],
                      pvPulls[0], pvPulls[1], pvPulls[2],
