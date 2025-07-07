@@ -84,7 +84,7 @@ struct centralityStudy {
   Configurable<std::string> ccdbURL{"ccdbURL", "http://alice-ccdb.cern.ch", "ccdb url"};
   Configurable<std::string> pathGRPECSObject{"pathGRPECSObject", "GLO/Config/GRPECS", "Path to GRPECS object"};
   Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Source of the interaction rate: (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
-  Configurable<bool> fIRCrashOnNull{"fIRCrashOnNull", false, "Flag to avoid CTP RateFetcher crash."};
+  Configurable<bool> irCrashOnNull{"irCrashOnNull", false, "Flag to avoid CTP RateFetcher crash."};
 
   // _______________________________________
   // upc rejection criteria
@@ -445,7 +445,7 @@ struct centralityStudy {
       uint64_t startOfRunTimestamp = grpo->getTimeStart();
 
       float hoursAfterStartOfRun = static_cast<float>(bcTimestamp - startOfRunTimestamp) / 3600000.0;
-      float interactionRate = mRateFetcher.fetch(ccdb.service, bcTimestamp, collision.multRunNumber(), irSource.value, fIRCrashOnNull) / 1000.; // kHz
+      float interactionRate = mRateFetcher.fetch(ccdb.service, bcTimestamp, collision.multRunNumber(), irSource.value, irCrashOnNull) / 1000.; // kHz
 
       histos.fill(HIST("hFT0AvsTime"), hoursAfterStartOfRun, collision.multFT0A());
       histos.fill(HIST("hFT0CvsTime"), hoursAfterStartOfRun, collision.multFT0C());
