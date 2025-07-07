@@ -1462,7 +1462,6 @@ struct HfCandidateCreatorXic0Omegac0 {
       pVecCharmBachelorAsD[2] = kfCharmBachPionToXiC.GetPz();
 
       std::array<float, 3> pVecCharmBaryon = {kfXiC0.GetPx(), kfXiC0.GetPy(), kfXiC0.GetPz()};
-      std::array<float, 3> coordVtxCharmBaryon = {kfXiC0.GetX(), kfXiC0.GetY(), kfXiC0.GetZ()};
       auto covVtxCharmBaryon = kfXiC0.CovarianceMatrix();
       float covMatrixPV[6];
       kfVertex.GetCovarianceMatrix(covMatrixPV);
