@@ -58,7 +58,7 @@ static const std::vector<double> particleMasses{o2::constants::physics::MassPion
 static const std::vector<int> particleCharge{1, 1, 1, 1, 2, 2};
 const int nBetheParams = 6;
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
-constexpr double betheBlochDefault[nParticles][nBetheParams]{
+constexpr double kBetheBlochDefault[nParticles][nBetheParams]{
   {13.611469, 3.598765, -0.021138, 2.039562, 0.651040, 0.09},    // pion
   {5.393020, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},      // proton
   {5.393020, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},      // deuteron
@@ -136,7 +136,7 @@ struct NucleitpcPbPb {
   Configurable<bool> cfgRequirebetaplot{"cfgRequirebetaplot", true, "Require beta plot"};
   Configurable<bool> cfgRequireMCposZ{"cfgRequireMCposZ", true, "Require beta plot"};
 
-  Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], nParticles, nBetheParams, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
+  Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {kBetheBlochDefault[0], nParticles, nBetheParams, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
   Configurable<LabeledArray<double>> cfgTrackPIDsettings{"cfgTrackPIDsettings", {kTrackPIDSettings[0], nParticles, nTrkSettings, particleNames, trackPIDsettingsNames}, "track selection and PID criteria"};
   Configurable<bool> cfgFillDeDxWithCut{"cfgFillDeDxWithCut", true, "Fill with cut beth bloch"};
   Configurable<bool> cfgFillnsigma{"cfgFillnsigma", false, "Fill n-sigma histograms"};
