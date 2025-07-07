@@ -190,7 +190,8 @@ class HFInvMassFitter : public TNamed
   }
   void setDrawBgPrefit(Bool_t value = true) { mDrawBgPrefit = value; }
   void setHighlightPeakRegion(Bool_t value = true) { mHighlightPeakRegion = value; }
-  Double_t getChiSquareOverNDF() const { return mChiSquareOverNdf; }
+  Double_t getChiSquareOverNDFTotal() const { return mChiSquareOverNdfTotal; }
+  Double_t getChiSquareOverNDFBkg() const { return mChiSquareOverNdfBkg; }
   Double_t getRawYield() const { return mRawYield; }
   Double_t getRawYieldError() const { return mRawYieldErr; }
   Double_t getRawYieldCounted() const { return mRawYieldCounted; }
@@ -269,7 +270,8 @@ class HFInvMassFitter : public TNamed
   Double_t mBkgYieldErr;             /// err on background
   Double_t mSignificance;            /// significance
   Double_t mSignificanceErr;         /// err on significance
-  Double_t mChiSquareOverNdf;        /// chi2/ndf
+  Double_t mChiSquareOverNdfTotal;   /// chi2/ndf of the total fit
+  Double_t mChiSquareOverNdfBkg;     /// chi2/ndf of the background (sidebands) pre-fit
   Bool_t mFixReflOverSgn;            /// switch for fix refl/signal
   RooRealVar* mRooMeanSgn;           /// mean for gaussian of signal
   RooRealVar* mRooSigmaSgn;          /// sigma for gaussian of signal
