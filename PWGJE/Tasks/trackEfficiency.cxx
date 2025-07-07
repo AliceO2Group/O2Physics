@@ -165,7 +165,7 @@ struct TrackEfficiency {
       registry.get<TH1>(HIST("hMcCollCutsCounts"))->GetXaxis()->SetBinLabel(5, "recoCollEvtSel");
       registry.get<TH1>(HIST("hMcCollCutsCounts"))->GetXaxis()->SetBinLabel(6, "centralityCut");
       registry.get<TH1>(HIST("hMcCollCutsCounts"))->GetXaxis()->SetBinLabel(7, "ptHatCut");
-      if(checkOccupancy){
+      if (checkOccupancy) {
         registry.get<TH1>(HIST("hMcCollCutsCounts"))->GetXaxis()->SetBinLabel(8, "occupancyCut");
       }
 
@@ -359,8 +359,8 @@ struct TrackEfficiency {
     }
     registry.fill(HIST("hMcCollCutsCounts"), 6.5); // ptHat condition
 
-    if(checkOccupancy){
-      if(!occupancyCheck){
+    if (checkOccupancy) {
+      if (!occupancyCheck) {
         return;
       }
       registry.fill(HIST("hMcCollCutsCounts"), 7.5);
