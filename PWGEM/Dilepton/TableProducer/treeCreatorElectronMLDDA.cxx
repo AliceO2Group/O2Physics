@@ -59,13 +59,13 @@ using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 using MyCollision = MyCollisions::iterator;
 
 using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
-                           aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                           aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
+                           aod::pidTPCFullEl, /*aod::pidTPCFullMu,*/ aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                           aod::pidTOFFullEl, /*aod::pidTOFFullMu,*/ aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 using MyTrack = MyTracks::iterator;
 
 struct TreeCreatorElectronMLDDA {
   SliceCache cache;
-  Produces<o2::aod::EMPrimaryTracks> emprimarytracks; // flat table containing collision + track information
+  Produces<o2::aod::EMTracksForMLPID> emprimarytracks; // flat table containing collision + track information
 
   // Basic checks
   HistogramRegistry registry{
@@ -84,12 +84,10 @@ struct TreeCreatorElectronMLDDA {
       {"hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", {HistType::kTH2F, {{90, 0, M_PI}, {100, 0, 0.1}}}},
 
       {"V0/hTPCdEdx_P_El", "TPC dEdx vs. p;p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0, 5}, {200, 0, 200}}}},
-      {"V0/hTPCdEdx_P_Mu", "TPC dEdx vs. p;p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0, 5}, {200, 0, 200}}}},
       {"V0/hTPCdEdx_P_Pi", "TPC dEdx vs. p;p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0, 5}, {200, 0, 200}}}},
       {"V0/hTPCdEdx_P_Ka", "TPC dEdx vs. p;p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0, 5}, {200, 0, 200}}}},
       {"V0/hTPCdEdx_P_Pr", "TPC dEdx vs. p;p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0, 5}, {200, 0, 200}}}},
       {"V0/hTOFbeta_P_El", "TOF beta vs. p;p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
-      {"V0/hTOFbeta_P_Mu", "TOF beta vs. p;p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
       {"V0/hTOFbeta_P_Pi", "TOF beta vs. p;p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
       {"V0/hTOFbeta_P_Ka", "TOF beta vs. p;p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
       {"V0/hTOFbeta_P_Pr", "TOF beta vs. p;p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
@@ -590,8 +588,8 @@ struct TreeCreatorElectronMLDDA {
     mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
     mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
     o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
-    float dcaXY = mDcaInfoCov.getY();
-    float dcaZ = mDcaInfoCov.getZ();
+    // float dcaXY = mDcaInfoCov.getY();
+    // float dcaZ = mDcaInfoCov.getZ();
 
     if (tracktype == static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::Track_Type::kPrimary)) {
       if (dist01(engine) > downscaling_electron_primary && trackParCov.getP() < max_p_for_downscaling_electron_primary) {
@@ -619,13 +617,12 @@ struct TreeCreatorElectronMLDDA {
 
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), track.globalIndex()) == stored_trackIds.end()) {
       emprimarytracks(collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
-                      trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi() > 0.f ? trackParCov.getPhi() : trackParCov.getPhi() + 2 * M_PI, trackParCov.getTgl(), track.sign(),
-                      dcaXY, dcaZ, trackParCov.getSigmaY2(), trackParCov.getSigmaZ2(), trackParCov.getSigmaZY(),
+                      trackParCov.getP(), trackParCov.getTgl(), track.sign(),
                       track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
                       track.tpcChi2NCl(), track.tpcInnerParam(),
-                      track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-                      track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                      track.itsClusterSizes(), track.itsChi2NCl(), track.tofChi2(), track.detectorMap(), pidlabel, tracktype, isForValidation);
+                      track.tpcSignal(), track.tpcNSigmaEl(), /*track.tpcNSigmaMu(),*/ track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                      track.beta(), track.tofNSigmaEl(), /*track.tofNSigmaMu(),*/ track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+                      track.itsClusterSizes(), track.itsChi2NCl(), track.tofChi2(), track.detectorMap(), pidlabel, isForValidation);
       stored_trackIds.emplace_back(track.globalIndex());
     }
   }
@@ -990,7 +987,7 @@ struct MLTrackQC {
     },
   };
 
-  void processQC(aod::EMPrimaryTracks const& tracks)
+  void processQC(aod::EMTracksForMLPID const& tracks)
   {
     for (const auto& track : tracks) {
       registry.fill(HIST("hTPCdEdx_P_All"), track.p(), track.tpcSignal());
@@ -1025,7 +1022,7 @@ struct MLTrackQC {
   }
   PROCESS_SWITCH(MLTrackQC, processQC, "process QC for single track level", false);
 
-  void processDummy(aod::EMPrimaryTracks const&) {}
+  void processDummy(aod::EMTracksForMLPID const&) {}
   PROCESS_SWITCH(MLTrackQC, processDummy, "process dummy", true);
 };
 
