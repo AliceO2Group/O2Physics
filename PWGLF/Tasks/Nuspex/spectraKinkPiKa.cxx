@@ -11,7 +11,7 @@
 
 /// \file   spectraKinkPiKa.cxx
 /// \brief Example of a simple task for the analysis of the muon from Kaon pion using kink topology
-/// \author
+/// \author sandeep dudi sandeep.dudi@cern.ch
 
 #include "PWGLF/DataModel/LFKinkDecayTables.h"
 
@@ -54,6 +54,8 @@ struct spectraKinkPiKa {
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<float> cutNSigmaPi{"cutNSigmaPi", 4, "NSigmaTPCPion"};
   Configurable<float> cutNSigmaKa{"cutNSigmaKa", 4, "NSigmaTPCKaon"};
+  Configurable<float> rapCut{"rapCut", 0.8, "rapCut"};
+
   Configurable<int> pid{"pidMother", 321, ""};
   Configurable<bool> d0pid{"dopid", 0, ""};
 
@@ -118,10 +120,10 @@ struct spectraKinkPiKa {
       auto mothTrack = kinkCand.trackMoth_as<TracksFull>();
       bool kaon = false;
       bool pion = false;
-      if (abs(mothTrack.tpcNSigmaKa()) < cutNSigmaKa) {
+      if (std::abs(mothTrack.tpcNSigmaKa()) < cutNSigmaKa) {
         kaon = true;
       }
-      if (abs(mothTrack.tpcNSigmaPi()) < cutNSigmaPi) {
+      if (std::abs(mothTrack.tpcNSigmaPi()) < cutNSigmaPi) {
         pion = true;
       }
       if (!kaon && !pion)
@@ -132,34 +134,31 @@ struct spectraKinkPiKa {
       float pMoth = v0.P();
       float pDaug = v1.P();
       float spKink = mothTrack.px() * dauTrack.px() + mothTrack.py() * dauTrack.py() + mothTrack.pz() * dauTrack.pz();
-      float kink_angle = std::acos(spKink / (pMoth * pDaug));
+      float kinkangle = std::acos(spKink / (pMoth * pDaug));
       if (kaon) {
         rpiKkink.fill(HIST("h2_moth_pt_vs_eta_rec"), v0.Pt(), v0.Eta());
         rpiKkink.fill(HIST("h2_dau_pt_vs_eta_rec"), v1.Pt(), v1.Eta());
         rpiKkink.fill(HIST("h2_pt_moth_vs_dau_rec"), v0.Pt(), v1.Pt());
-        rpiKkink.fill(HIST("h2_kink_angle"), kink_angle);
+        rpiKkink.fill(HIST("h2_kink_angle"), kinkangle);
       }
       if (pion) {
         rpiKkink.fill(HIST("h2_moth_pt_vs_eta_rec_pion"), v0.Pt(), v0.Eta());
         rpiKkink.fill(HIST("h2_dau_pt_vs_eta_rec_pion"), v1.Pt(), v1.Eta());
         rpiKkink.fill(HIST("h2_pt_moth_vs_dau_rec_pion"), v0.Pt(), v1.Pt());
-        rpiKkink.fill(HIST("h2_kink_angle_pion"), kink_angle);
+        rpiKkink.fill(HIST("h2_kink_angle_pion"), kinkangle);
       }
-      ROOT::Math::Boost boost(-v0.BoostToCM());
-      ROOT::Math::PxPyPzMVector dBoosted = boost(v1);
-      TVector3 p_d_rest(dBoosted.Px(), dBoosted.Py(), dBoosted.Pz()); // Daughter in mother rest frame
+      TVector3 pdlab(v1.Px(), v1.Py(), v1.Pz());
       // Compute transverse component
-      TVector3 boostDir(v0.Px(), v0.Py(), v0.Pz());
-      boostDir = boostDir.Unit();
-      double pt_d = p_d_rest.Perp(boostDir); // or p_d_rest.Mag() * sin(theta)
+      TVector3 motherDir(v0.Px(), v0.Py(), v0.Pz());
+      double ptd = pdlab.Perp(motherDir); // or p_d_lab.Mag() * sin(theta)
 
       if (kaon) {
-        rpiKkink.fill(HIST("h2_qt"), pt_d);
-        rpiKkink.fill(HIST("h2_qt_vs_pt"), pt_d, v1.Pt());
+        rpiKkink.fill(HIST("h2_qt"), ptd);
+        rpiKkink.fill(HIST("h2_qt_vs_pt"), ptd, v1.Pt());
       }
       if (pion) {
-        rpiKkink.fill(HIST("h2_qt_pion"), pt_d);
-        rpiKkink.fill(HIST("h2_qt_vs_ptpion"), pt_d, v1.Pt());
+        rpiKkink.fill(HIST("h2_qt_pion"), ptd);
+        rpiKkink.fill(HIST("h2_qt_vs_ptpion"), ptd, v1.Pt());
       }
     }
   }
@@ -187,10 +186,10 @@ struct spectraKinkPiKa {
         }
         bool kaon = false;
         bool pion = false;
-        if (abs(mothTrack.tpcNSigmaKa()) < cutNSigmaKa) {
+        if (std::abs(mothTrack.tpcNSigmaKa()) < cutNSigmaKa) {
           kaon = true;
         }
-        if (abs(mothTrack.tpcNSigmaPi()) < cutNSigmaPi) {
+        if (std::abs(mothTrack.tpcNSigmaPi()) < cutNSigmaPi) {
           pion = true;
         }
         if (!kaon && !pion)
@@ -202,21 +201,19 @@ struct spectraKinkPiKa {
         float pMoth = v0.P();
         float pDaug = v1.P();
         float spKink = mothTrack.px() * dauTrack.px() + mothTrack.py() * dauTrack.py() + mothTrack.pz() * dauTrack.pz();
-        float kink_angle = std::acos(spKink / (pMoth * pDaug));
+        float kinkangle = std::acos(spKink / (pMoth * pDaug));
 
         rpiKkink.fill(HIST("h2_moth_pt_vs_eta_rec"), v0.Pt(), v0.Eta());
         rpiKkink.fill(HIST("h2_dau_pt_vs_eta_rec"), v1.Pt(), v1.Eta());
         rpiKkink.fill(HIST("h2_pt_moth_vs_dau_rec"), v0.Pt(), v1.Pt());
-        rpiKkink.fill(HIST("h2_kink_angle"), kink_angle);
+        rpiKkink.fill(HIST("h2_kink_angle"), kinkangle);
 
-        ROOT::Math::Boost boost(-v0.BoostToCM());
-        ROOT::Math::PxPyPzMVector dBoosted = boost(v1);
-        TVector3 p_d_rest(dBoosted.Px(), dBoosted.Py(), dBoosted.Pz()); // Daughter in mother rest frame
+        TVector3 pdlab(v1.Px(), v1.Py(), v1.Pz());
         // Compute transverse component
-        TVector3 boostDir(v0.Px(), v0.Py(), v0.Pz());
-        boostDir = boostDir.Unit();
-        double pt_d = p_d_rest.Perp(boostDir); // or p_d_rest.Mag() * sin(theta)
-        rpiKkink.fill(HIST("h2_qt"), pt_d);
+        TVector3 motherDir(v0.Px(), v0.Py(), v0.Pz());
+        double ptd = pdlab.Perp(motherDir); // or p_d_lab.Mag() * sin(theta)
+
+        rpiKkink.fill(HIST("h2_qt"), ptd);
 
         // do MC association
         auto mcLabMoth = trackLabelsMC.rawIteratorAt(mothTrack.globalIndex());
@@ -227,7 +224,7 @@ struct spectraKinkPiKa {
           if (!mcTrackDau.has_mothers()) {
             continue;
           }
-          for (auto& piMother : mcTrackDau.mothers_as<aod::McParticles>()) {
+          for (const auto& piMother : mcTrackDau.mothers_as<aod::McParticles>()) {
             if (piMother.globalIndex() != mcTrackMoth.globalIndex()) {
               continue;
             }
@@ -235,7 +232,7 @@ struct spectraKinkPiKa {
               continue;
             }
             // rpiKkink.fill(HIST("h2MassPtMCRec"), kinkCand.ptMoth(),   v1.Pt());
-            rpiKkink.fill(HIST("h2_qt_rec"), pt_d);
+            rpiKkink.fill(HIST("h2_qt_rec"), ptd);
           }
         }
       }
@@ -244,10 +241,10 @@ struct spectraKinkPiKa {
       ROOT::Math::PxPyPzMVector v0;
       ROOT::Math::PxPyPzMVector v1;
 
-      if (!d0pid && (std::abs(mcPart.pdgCode()) != pid || std::abs(mcPart.y()) > 0.8)) {
+      if (!d0pid && (std::abs(mcPart.pdgCode()) != pid || std::abs(mcPart.y()) > rapCut)) {
         continue;
       }
-      if (d0pid && (std::abs(mcPart.pdgCode()) != kD0 || std::abs(mcPart.pdgCode()) != kDPlus || std::abs(mcPart.pdgCode()) != kDStar || std::abs(mcPart.y()) > 0.8)) {
+      if (d0pid && (std::abs(mcPart.pdgCode()) != kD0 || std::abs(mcPart.pdgCode()) != kDPlus || std::abs(mcPart.pdgCode()) != kDStar || std::abs(mcPart.y()) > rapCut)) {
         continue;
       }
 
@@ -278,23 +275,20 @@ struct spectraKinkPiKa {
 
       float pMoth = v0.P();
       float pDaug = v1.P();
-      float spKink = v0.Px() * v1.Px() + v0.Py() * v1.Py() + v0.Pz() * v0.Pz();
-      float kink_angle = std::acos(spKink / (pMoth * pDaug));
+      float spKink = v0.Px() * v1.Px() + v0.Py() * v1.Py() + v0.Pz() * v1.Pz();
+      float kinkangle = std::acos(spKink / (pMoth * pDaug));
 
       //  std::cout<< kinkCand.ptMoth()<<" check   "<<v0.Pt()<<std::endl;
       rpiKkink.fill(HIST("h2_moth_pt_vs_eta_gen"), v0.Pt(), v0.Eta());
       rpiKkink.fill(HIST("h2_dau_pt_vs_eta_gen"), v1.Pt(), v1.Eta());
       rpiKkink.fill(HIST("h2_pt_moth_vs_dau_gen"), v0.Pt(), v1.Pt());
-      rpiKkink.fill(HIST("h2_kink_angle_gen"), kink_angle);
+      rpiKkink.fill(HIST("h2_kink_angle_gen"), kinkangle);
 
-      ROOT::Math::Boost boost(-v0.BoostToCM());
-      ROOT::Math::PxPyPzMVector dBoosted = boost(v1);
-      TVector3 p_d_rest(dBoosted.Px(), dBoosted.Py(), dBoosted.Pz()); // Daughter in mother rest frame
+      TVector3 pdlab(v1.Px(), v1.Py(), v1.Pz());
       // Compute transverse component
-      TVector3 boostDir(v0.Px(), v0.Py(), v0.Pz());
-      boostDir = boostDir.Unit();
-      double pt_d = p_d_rest.Perp(boostDir); // or p_d_rest.Mag() * sin(theta)
-      rpiKkink.fill(HIST("h2_qt_gen"), pt_d);
+      TVector3 motherDir(v0.Px(), v0.Py(), v0.Pz());
+      double ptd = pdlab.Perp(motherDir); // or p_d_lab.Mag() * sin(theta)
+      rpiKkink.fill(HIST("h2_qt_gen"), ptd);
     }
   }
   PROCESS_SWITCH(spectraKinkPiKa, processMC, "MC processing", false);
