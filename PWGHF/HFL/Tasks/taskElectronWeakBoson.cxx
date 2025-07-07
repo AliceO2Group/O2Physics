@@ -12,47 +12,44 @@
 /// \file taskElectronWeakBoson.cxx
 /// \brief task for WeakBoson (W/Z) based on electron in mid-rapidity
 /// \author S. Sakai & S. Ito (Univ. of Tsukuba)
-
 #ifndef HomogeneousField
 #define HomogeneousField // o2-linter: disable=name/macro (required by KFParticle)
 #endif
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
-#include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/MathConstants.h>
-#include <CommonConstants/PhysicsConstants.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DetectorsBase/Propagator.h>
-#include <Framework/ASoA.h>
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/Logger.h>
-#include <Framework/runDataProcessing.h>
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsEMCAL/AnalysisCluster.h"
+#include "DataFormatsEMCAL/Cell.h"
+#include "DataFormatsEMCAL/Constants.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "EMCALBase/Geometry.h"
+#include "EMCALCalib/BadChannelMap.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
-#include <TPDGCode.h>
+#include "TPDGCode.h"
 
-#include <KFPTrack.h>
-#include <KFParticle.h>
+#include "KFPTrack.h"
+#include "KFPVertex.h"
+#include "KFParticle.h"
+#include "KFParticleBase.h"
+#include "KFVertex.h"
 
-#include <array>
-#include <cmath>
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -70,12 +67,14 @@ struct HfTaskElectronWeakBoson {
 
   Configurable<float> vtxZ{"vtxZ", 10.f, ""};
 
-  Configurable<float> etaTrMim{"etaTrMim", -1.0f, "minimun track eta"};
+  Configurable<float> etaTrMin{"etaTrMin", -1.0f, "minimun track eta"};
   Configurable<float> etaTrMax{"etaTrMax", 1.0f, "maximum track eta"};
   Configurable<float> etaEmcMax{"etaEmcMax", 0.6f, "maximum track eta"};
   Configurable<float> dcaxyMax{"dcaxyMax", 2.0f, "mximum DCA xy"};
   Configurable<float> chi2ItsMax{"chi2ItsMax", 15.0f, "its chi2 cut"};
   Configurable<float> ptMin{"ptMin", 3.0f, "minimum pT cut"};
+  Configurable<float> ptAssMin{"ptAssMin", 0.15, "minimum pT cut for associated hadrons"};
+  Configurable<float> ptMatch{"ptMatch", 0.001, "pT match in Z->ee and associated tracks"};
   Configurable<float> ptZeeMin{"ptZeeMin", 20.0f, "minimum pT cut for Zee"};
   Configurable<float> chi2TpcMax{"chi2TpcMax", 4.0f, "tpc chi2 cut"};
   Configurable<float> nclItsMin{"nclItsMin", 2.0f, "its # of cluster cut"};
@@ -99,6 +98,10 @@ struct HfTaskElectronWeakBoson {
   Configurable<float> rIsolation{"rIsolation", 0.3, "cone radius for isolation cut"};
   Configurable<float> energyIsolationMax{"energyIsolationMax", 0.1, "isolation cut on energy"};
   Configurable<int> trackIsolationMax{"trackIsolationMax", 3, "Maximum number of tracks in isolation cone"};
+
+  Configurable<float> zMassMin{"zMassMin", 60.0, "Minimum Z mass (GeV/c^2)"};
+  Configurable<float> zMassMax{"zMassMax", 120.0, "Maximum Z mass (GeV/c^2)"};
+  Configurable<float> hadronPtMin{"hadronPtMin", 0.5, "Minimum hadron pT for correlation"};
 
   // flag for THn
   Configurable<bool> isTHnElectron{"isTHnElectron", true, "Enables THn for electrons"};
@@ -129,7 +132,14 @@ struct HfTaskElectronWeakBoson {
   };
   std::vector<HfElectronCandidate> selectedElectronsIso;
   std::vector<HfElectronCandidate> selectedElectronsAss;
-  std::vector<HfElectronCandidate> reconstructedZ;
+
+  struct ZeeCandidate {
+    float pt, eta, phi, mass, ptchild0, ptchild1;
+    int charge;
+    ZeeCandidate(float ptr, float e, float ph, float m, int ch, float ptzee0, float ptzee1)
+      : pt(ptr), eta(e), phi(ph), mass(m), ptchild0(ptzee0), ptchild1(ptzee1), charge(ch) {}
+  };
+  std::vector<ZeeCandidate> reconstructedZ;
 
   using SelectedClusters = o2::aod::EMCALClusters;
   // PbPb
@@ -143,7 +153,7 @@ struct HfTaskElectronWeakBoson {
   Filter eventFilter = (o2::aod::evsel::sel8 == true);
   Filter posZFilter = (nabs(o2::aod::collision::posZ) < vtxZ);
 
-  Filter etafilter = (aod::track::eta < etaTrMax) && (aod::track::eta > etaTrMim);
+  Filter etafilter = (aod::track::eta < etaTrMax) && (aod::track::eta > etaTrMin);
   Filter dcaxyfilter = (nabs(aod::track::dcaXY) < dcaxyMax);
   Filter filterGlobalTr = requireGlobalTrackInFilter();
 
@@ -200,6 +210,9 @@ struct HfTaskElectronWeakBoson {
     const AxisSpec axisIsoTrack{15, -0.5, 14.5, "Isolation Track"};
     const AxisSpec axisInvMassZ{150, 0, 150, "M_{ee} (GeV/c^{2})"};
     const AxisSpec axisTrigger{3, -0.5, 2.5, "Trigger status of zorro"};
+    const AxisSpec axisDPhiZh{64, -TMath::Pi() / 2, 3 * TMath::Pi() / 2, "#Delta#phi(Z-h)"};
+    const AxisSpec axisPtHadron{50, 0, 50, "p_{T,hadron} (GeV/c)"};
+    const AxisSpec axisZpt{150, 0, 150, "p_{T,Z} (GeV/c)"};
 
     // create registrygrams
     registry.add("hZvtx", "Z vertex", kTH1F, {axisZvtx});
@@ -232,6 +245,10 @@ struct HfTaskElectronWeakBoson {
     registry.add("hKfInvMassZeeUls", "invariant mass for Z ULS pair KFp", kTH2F, {{axisPt}, {axisInvMassZ}});
     registry.add("hTHnElectrons", "electron info", HistType::kTHnSparseF, {axisPt, axisNsigma, axisM02, axisEop, axisIsoEnergy, axisIsoTrack});
     registry.add("hTHnTrMatch", "Track EMC Match", HistType::kTHnSparseF, {axisPt, axisdPhi, axisdEta});
+
+    // Z-hadron correlation histograms
+    registry.add("hZHadronDphi", "Z-hadron #Delta#phi correlation", kTH2F, {{axisZpt}, {axisDPhiZh}});
+    registry.add("hZptSpectrum", "Z boson p_{T} spectrum", kTH1F, {axisZpt});
 
     // hisotgram for EMCal trigger
     registry.add("hEMCalTrigger", "EMCal trigger", kTH1F, {axisTrigger});
@@ -316,6 +333,12 @@ struct HfTaskElectronWeakBoson {
 
       KFPTrack kfpTrackAssEle = createKFPTrackFromTrack(track);
       KFParticle kfpAssEle(kfpTrackAssEle, pdgAss);
+      // reco by RecoDecay
+      auto arr1 = RecoDecayPtEtaPhi::pVector(kfpIsoEle.GetPt(), kfpIsoEle.GetEta(), kfpIsoEle.GetPhi());
+      auto arr2 = RecoDecayPtEtaPhi::pVector(kfpAssEle.GetPt(), kfpAssEle.GetEta(), kfpAssEle.GetPhi());
+      double massZeeRecoDecay = RecoDecay::m(std::array{arr1, arr2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
+
+      // reco by KFparticle
       const KFParticle* electronPairs[2] = {&kfpIsoEle, &kfpAssEle};
       KFParticle zeeKF;
       zeeKF.SetConstructMethod(kfConstructMethod);
@@ -329,11 +352,14 @@ struct HfTaskElectronWeakBoson {
       float massZee, massZeeErr;
       zeeKF.GetMass(massZee, massZeeErr);
       // LOG(info) << "Invarimass cal by KF particle mass = " << massZee;
+      // LOG(info) << "Invarimass cal by RecoDecay = " << massZeeRecoDecay;
 
       if (track.sign() * charge > 0) {
         registry.fill(HIST("hKfInvMassZeeLs"), kfpIsoEle.GetPt(), massZee);
+        registry.fill(HIST("hInvMassZeeLs"), kfpIsoEle.GetPt(), massZeeRecoDecay);
       } else {
         registry.fill(HIST("hKfInvMassZeeUls"), kfpIsoEle.GetPt(), massZee);
+        registry.fill(HIST("hInvMassZeeUls"), kfpIsoEle.GetPt(), massZeeRecoDecay);
       }
 
       reconstructedZ.emplace_back(
@@ -341,7 +367,9 @@ struct HfTaskElectronWeakBoson {
         zeeKF.GetEta(),
         zeeKF.GetPhi(),
         massZee,
-        track.sign() * charge);
+        track.sign() * charge,
+        kfpIsoEle.GetPt(),
+        kfpAssEle.GetPt());
     }
   }
 
@@ -423,8 +451,6 @@ struct HfTaskElectronWeakBoson {
         continue;
       if (track.itsNCls() < nclItsMin)
         continue;
-      if (track.pt() < ptMin)
-        continue;
 
       registry.fill(HIST("hEta"), track.eta());
       registry.fill(HIST("hITSchi2"), track.itsChi2NCl());
@@ -437,7 +463,7 @@ struct HfTaskElectronWeakBoson {
 
       float energyTrk = 0.0;
 
-      if (track.tpcNSigmaEl() > nsigTpcMinLose && track.tpcNSigmaEl() < nsigTpcMax && track.pt() > ptZeeMin) {
+      if (track.pt() > ptAssMin) {
         selectedElectronsAss.emplace_back(
           track.pt(),
           track.eta(),
@@ -445,6 +471,9 @@ struct HfTaskElectronWeakBoson {
           energyTrk,
           track.sign());
       }
+
+      if (track.pt() < ptMin)
+        continue;
 
       // track - match
 
@@ -550,7 +579,6 @@ struct HfTaskElectronWeakBoson {
               }
             }
           }
-
           nMatch++;
         }
       }
@@ -561,14 +589,17 @@ struct HfTaskElectronWeakBoson {
       }
 
     } // end of track loop
-
+    /*
     // calculate inv. mass
     if (selectedElectronsIso.size() > 0) {
       for (size_t i = 0; i < selectedElectronsIso.size(); i++) {
         const auto& e1 = selectedElectronsIso[i];
         for (size_t j = 0; j < selectedElectronsAss.size(); j++) {
           const auto& e2 = selectedElectronsAss[j];
-
+          if (std::abs(e2.nSigEl) > nsigTpcMax)
+            continue;
+          if (e2.pt < ptZeeMin)
+            continue;
           float ptIso = e1.pt;
           float ptAss = e2.pt;
           if (ptIso == ptAss)
@@ -585,6 +616,29 @@ struct HfTaskElectronWeakBoson {
         }
       }
     } // end of inv. mass calculation
+    */
+    // Z-hadron
+    if (reconstructedZ.size() > 0) {
+      for (const auto& zBoson : reconstructedZ) {
+        // Z boson selection
+        if (zBoson.mass < zMassMin || zBoson.mass > zMassMax)
+          continue;
+        registry.fill(HIST("hZptSpectrum"), zBoson.pt);
+        for (const auto& trackAss : selectedElectronsAss) {
+          if (std::abs(trackAss.pt - zBoson.ptchild0) < ptMatch)
+            continue;
+          if (std::abs(trackAss.pt - zBoson.ptchild1) < ptMatch)
+            continue;
+          // calculate Z-h correlation
+          double deltaPhi = trackAss.phi - zBoson.phi;
+          while (deltaPhi < -TMath::Pi() / 2)
+            deltaPhi += 2 * TMath::Pi();
+          while (deltaPhi > 3 * TMath::Pi() / 2)
+            deltaPhi -= 2 * TMath::Pi();
+          registry.fill(HIST("hZHadronDphi"), zBoson.pt, deltaPhi);
+        }
+      }
+    } // end of Z-hadron correlation
   }
 };
 
