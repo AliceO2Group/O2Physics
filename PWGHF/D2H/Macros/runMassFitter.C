@@ -169,40 +169,29 @@ int runMassFitter(const TString& configFileName)
     sliceVarLimits[iSliceVar] = sliceVarMin[iSliceVar];
     sliceVarLimits[iSliceVar + 1] = sliceVarMax[iSliceVar];
 
-    if (bkgFuncConfig[iSliceVar] < HFInvMassFitter::Expo || bkgFuncConfig[iSliceVar] > HFInvMassFitter::NoBkg) {
+    if (bkgFuncConfig[iSliceVar] < 0 || bkgFuncConfig[iSliceVar] >= HFInvMassFitter::NTypesOfBkgPdf) {
       throw std::runtime_error("ERROR: only Expo, Poly1, Poly2, Pow and PowEx background functions supported! Exit");
     }
     bkgFunc[iSliceVar] = bkgFuncConfig[iSliceVar];
 
-    if (sgnFuncConfig[iSliceVar] < HFInvMassFitter::SingleGaus || sgnFuncConfig[iSliceVar] > HFInvMassFitter::DoubleGausSigmaRatioPar) {
+    if (sgnFuncConfig[iSliceVar] < 0 || sgnFuncConfig[iSliceVar] >= HFInvMassFitter::NTypesOfSgnPdf) {
       throw std::runtime_error("ERROR: only SingleGaus, DoubleGaus and DoubleGausSigmaRatioPar signal functions supported! Exit");
     }
     sgnFunc[iSliceVar] = sgnFuncConfig[iSliceVar];
   }
 
-  TString massAxisTitle = "";
-  double massPDG;
-  if (particleName == "Dplus") {
-    massAxisTitle = "#it{M}(K#pi#pi) (GeV/#it{c}^{2})";
-    massPDG = TDatabasePDG::Instance()->GetParticle("D+")->Mass();
-  } else if (particleName == "D0") {
-    massAxisTitle = "#it{M}(K#pi) (GeV/#it{c}^{2})";
-    massPDG = TDatabasePDG::Instance()->GetParticle("D0")->Mass();
-  } else if (particleName == "Ds") {
-    massAxisTitle = "#it{M}(KK#pi) (GeV/#it{c}^{2})";
-    massPDG = TDatabasePDG::Instance()->GetParticle("D_s+")->Mass();
-  } else if (particleName == "LcToPKPi") {
-    massAxisTitle = "#it{M}(pK#pi) (GeV/#it{c}^{2})";
-    massPDG = TDatabasePDG::Instance()->GetParticle("Lambda_c+")->Mass();
-  } else if (particleName == "LcToPK0s") {
-    massAxisTitle = "#it{M}(pK^{0}_{s}) (GeV/#it{c}^{2})";
-    massPDG = TDatabasePDG::Instance()->GetParticle("Lambda_c+")->Mass();
-  } else if (particleName == "Dstar") {
-    massAxisTitle = "#it{M}(pi^{+}) (GeV/#it{c}^{2})";
-    massPDG = TDatabasePDG::Instance()->GetParticle("D*+")->Mass();
-  } else {
+  std::map<std::string, std::pair<std::string, std::string>> particles{
+    {"Dplus", {"K#pi#pi", "D+"}},
+    {"D0", {"K#pi", "D0"}},
+    {"Ds", {"KK#pi", "D_s+"}},
+    {"LcToPKPi", {"pK#pi", "Lambda_c+"}},
+    {"LcToPK0s", {"pK^{0}_{s}", "Lambda_c+"}},
+    {"Dstar", {"D^{0}pi^{+}", "D*+"}}};
+  if (particles.find(particleName.Data()) == particles.end()) {
     throw std::runtime_error("ERROR: only Dplus, D0, Ds, LcToPKPi, LcToPK0s and Dstar particles supported! Exit");
   }
+  const TString massAxisTitle = "#it{M}(" + particles[particleName.Data()].first + ") (GeV/#it{c}^{2})";
+  const double massPDG = TDatabasePDG::Instance()->GetParticle(particles[particleName.Data()].second.c_str())->Mass();
 
   // load inv-mass histograms
   auto inputFile = TFile::Open(inputFileName.Data());
