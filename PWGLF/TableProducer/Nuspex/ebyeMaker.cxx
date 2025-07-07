@@ -62,15 +62,15 @@ using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
 namespace
 {
 constexpr int kNpart = 2;
-constexpr float trackSels[12]{/* 60, */ 80, 100, 2, 3, /* 4,  */ 0.05, 0.1, /* 0.15,  */ 0.5, 1, /* 1.5, */ 2, 3 /* , 4 */, 2, 3, /*, 4 */};
-constexpr float dcaSels[3]{10., 10., 10.};
-constexpr double betheBlochDefault[kNpart][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}, {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
-constexpr double betheBlochDefaultITS[6]{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32};
-constexpr double estimatorsCorrelationCoef[2]{-0.669108, 1.04489};
-constexpr double estimatorsSigmaPars[4]{0.933321, 0.0416976, -0.000936344, 8.92179e-06};
-constexpr double deltaEstimatorNsigma[2]{5.5, 5.};
-constexpr double partMass[kNpart]{o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron};
-constexpr double partPdg[kNpart]{2212, o2::constants::physics::kDeuteron};
+constexpr float kTrackSels[12]{/* 60, */ 80, 100, 2, 3, /* 4,  */ 0.05, 0.1, /* 0.15,  */ 0.5, 1, /* 1.5, */ 2, 3 /* , 4 */, 2, 3, /*, 4 */};
+constexpr float kDcaSels[3]{10., 10., 10.};
+constexpr double kBetheBlochDefault[kNpart][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}, {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
+constexpr double kBetheBlochDefaultITS[6]{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32};
+constexpr double kEstimatorsCorrelationCoef[2]{-0.669108, 1.04489};
+constexpr double kEstimatorsSigmaPars[4]{0.933321, 0.0416976, -0.000936344, 8.92179e-06};
+constexpr double kDeltaEstimatorNsigma[2]{5.5, 5.};
+constexpr double kPartMass[kNpart]{o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron};
+constexpr double kPartPdg[kNpart]{PDG_t::kProton, o2::constants::physics::kDeuteron};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> particleNamesPar{"p", "d"};
 static const std::vector<std::string> trackSelsNames{"tpcClsMid", "tpcClsTight", "chi2TpcTight", "chi2TpcMid", "dcaxyTight", "dcaxyMid", "dcazTight", "dcazMid", "tpcNsigmaTight", "tpcNsigmaMid", "itsNsigmaTight", "itsNsigmaMid"};
@@ -210,8 +210,8 @@ struct EbyeMaker {
   uint8_t nTracksColl;
 
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
-  Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 2, 6, particleNamesPar, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for deuteron"};
-  Configurable<LabeledArray<double>> cfgBetheBlochParamsITS{"cfgBetheBlochParamsITS", {betheBlochDefaultITS, 1, 6, particleName, betheBlochParNames}, "ITS Bethe-Bloch parameterisation for deuteron"};
+  Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {kBetheBlochDefault[0], 2, 6, particleNamesPar, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for deuteron"};
+  Configurable<LabeledArray<double>> cfgBetheBlochParamsITS{"cfgBetheBlochParamsITS", {kBetheBlochDefaultITS, 1, 6, particleName, betheBlochParNames}, "ITS Bethe-Bloch parameterisation for deuteron"};
 
   ConfigurableAxis centAxis{"centAxis", {106, 0, 106}, "binning for the centrality"};
   ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
@@ -253,7 +253,7 @@ struct EbyeMaker {
   Configurable<float> trackNclusItsCut{"trackNclusITScut", 2, "Minimum number of ITS clusters"};
   Configurable<float> trackNclusTpcCut{"trackNclusTPCcut", 60, "Minimum number of TPC clusters"};
   Configurable<float> trackChi2Cut{"trackChi2Cut", 4.f, "Maximum chi2/ncls in TPC"};
-  Configurable<LabeledArray<float>> cfgDcaSels{"cfgDcaSels", {dcaSels, 1, 3, particleName, dcaSelsNames}, "DCA selections"};
+  Configurable<LabeledArray<float>> cfgDcaSels{"cfgDcaSels", {kDcaSels, 1, 3, particleName, dcaSelsNames}, "DCA selections"};
 
   Configurable<float> v0trackNcrossedRows{"v0trackNcrossedRows", 100, "Minimum number of crossed TPC rows for V0 daughter"};
   Configurable<float> v0trackNclusItsCut{"v0trackNclusITScut", 0, "Minimum number of ITS clusters for V0 daughter"};
@@ -289,7 +289,7 @@ struct EbyeMaker {
   Configurable<float> antidPtItsClsSizeCut{"antidPtItsClsSizeCut", 10.f, "pt for cluster size cut for antideuterons"};
 
   Configurable<float> trklEtaMax{"trklEtaMax", 0.8f, "maximum eta for run 2 tracklets"};
-  Configurable<LabeledArray<float>> cfgTrackSels{"cfgTrackSels", {trackSels, 1, 12, particleName, trackSelsNames}, "Track selections"};
+  Configurable<LabeledArray<float>> cfgTrackSels{"cfgTrackSels", {kTrackSels, 1, 12, particleName, trackSelsNames}, "Track selections"};
 
   std::array<float, kNpart> ptMin;
   std::array<float, kNpart> ptTof;
@@ -456,7 +456,7 @@ struct EbyeMaker {
   {
     if ((doprocessMiniRun2 || doprocessMiniMcRun2) && track.hasITS()) {
       auto extra = trackExtraRun2.rawIteratorAt(track.globalIndex());
-      double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.p() / partMass[0]), cfgBetheBlochParamsITS->get("p0"), cfgBetheBlochParamsITS->get("p1"), cfgBetheBlochParamsITS->get("p2"), cfgBetheBlochParamsITS->get("p3"), cfgBetheBlochParamsITS->get("p4"))};
+      double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.p() / kPartMass[0]), cfgBetheBlochParamsITS->get("p0"), cfgBetheBlochParamsITS->get("p1"), cfgBetheBlochParamsITS->get("p2"), cfgBetheBlochParamsITS->get("p3"), cfgBetheBlochParamsITS->get("p4"))};
       double expSigma{expBethe * cfgBetheBlochParamsITS->get("resolution")};
       auto nSigmaITS = static_cast<float>((extra.itsSignal() - expBethe) / expSigma);
       return std::make_pair(extra.itsSignal(), nSigmaITS);
@@ -617,7 +617,7 @@ struct EbyeMaker {
           }
         }
 
-        double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() / partMass[iP]), cfgBetheBlochParams->get(iP, "p0"), cfgBetheBlochParams->get(iP, "p1"), cfgBetheBlochParams->get(iP, "p2"), cfgBetheBlochParams->get(iP, "p3"), cfgBetheBlochParams->get(iP, "p4"))};
+        double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() / kPartMass[iP]), cfgBetheBlochParams->get(iP, "p0"), cfgBetheBlochParams->get(iP, "p1"), cfgBetheBlochParams->get(iP, "p2"), cfgBetheBlochParams->get(iP, "p3"), cfgBetheBlochParams->get(iP, "p4"))};
         double expSigma{expBethe * cfgBetheBlochParams->get(iP, "resolution")};
         auto nSigmaTPC = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
 
@@ -627,7 +627,7 @@ struct EbyeMaker {
         const float maxTofChi2 = 3.f; // TODO: check if this is still needed
         bool hasTof = track.hasTOF() && track.tofChi2() < maxTofChi2;
 
-        if (trackPt <= ptTof[iP] || (trackPt > ptTof[iP] && hasTof && std::abs(mass - partMass[iP]) < tofMassMaxQA)) { // for QA histograms
+        if (trackPt <= ptTof[iP] || (trackPt > ptTof[iP] && hasTof && std::abs(mass - kPartMass[iP]) < tofMassMaxQA)) { // for QA histograms
           if (nSigmaTPC > nSigmaTpcCutLow[iP] && nSigmaTPC < nSigmaTpcCutUp[iP]) {
             tofMass[iP]->Fill(centrality, trackPt, mass);
           }
@@ -645,7 +645,7 @@ struct EbyeMaker {
           continue;
         }
 
-        if (trackPt <= ptTof[iP] || (trackPt > ptTof[iP] && hasTof && std::abs(mass - partMass[iP]) < tofMassMax[iP])) {
+        if (trackPt <= ptTof[iP] || (trackPt > ptTof[iP] && hasTof && std::abs(mass - kPartMass[iP]) < tofMassMax[iP])) {
           CandidateTrack candTrack;
           candTrack.pt = track.sign() > 0. ? trackPt : -trackPt;
           candTrack.eta = trackEta;
@@ -834,7 +834,7 @@ struct EbyeMaker {
         }
         if (mcLab.has_mcParticle()) {
           auto mcTrack = mcLab.template mcParticle_as<aod::McParticles>();
-          if (std::abs(mcTrack.pdgCode()) != partPdg[iP])
+          if (std::abs(mcTrack.pdgCode()) != kPartPdg[iP])
             continue;
           if (((mcTrack.flags() & 0x8) && (doprocessMcRun2 || doprocessMiniMcRun2)) || (mcTrack.flags() & 0x2) || ((mcTrack.flags() & 0x1) && !doprocessMiniMcRun2))
             continue;
@@ -925,9 +925,9 @@ struct EbyeMaker {
           LOGF(debug, "not found!");
           candidateV0s.emplace_back(candV0);
         }
-      } else if (std::abs(pdgCode) == partPdg[0] || std::abs(pdgCode) == partPdg[1]) {
+      } else if (std::abs(pdgCode) == kPartPdg[0] || std::abs(pdgCode) == kPartPdg[1]) {
         int iP = 1;
-        if (std::abs(pdgCode) == partPdg[0]) {
+        if (std::abs(pdgCode) == kPartPdg[0]) {
           iP = 0;
         }
         if ((!mcPart.isPhysicalPrimary() && !doprocessMiniMcRun2))
@@ -1035,9 +1035,9 @@ struct EbyeMaker {
       float centralityCl0 = collision.centRun2CL0();
       if (kUseEstimatorsCorrelationCut) {
         const auto& x = centralityCl0;
-        const double center = estimatorsCorrelationCoef[0] + estimatorsCorrelationCoef[1] * x;
-        const double sigma = estimatorsSigmaPars[0] + estimatorsSigmaPars[1] * x + estimatorsSigmaPars[2] * std::pow(x, 2) + estimatorsSigmaPars[3] * std::pow(x, 3);
-        if (cV0M < center - deltaEstimatorNsigma[0] * sigma || cV0M > center + deltaEstimatorNsigma[1] * sigma) {
+        const double center = kEstimatorsCorrelationCoef[0] + kEstimatorsCorrelationCoef[1] * x;
+        const double sigma = kEstimatorsSigmaPars[0] + kEstimatorsSigmaPars[1] * x + kEstimatorsSigmaPars[2] * std::pow(x, 2) + kEstimatorsSigmaPars[3] * std::pow(x, 3);
+        if (cV0M < center - kDeltaEstimatorNsigma[0] * sigma || cV0M > center + kDeltaEstimatorNsigma[1] * sigma) {
           continue;
         }
       }
