@@ -297,7 +297,7 @@ struct NucleitpcPbPb {
         mTrackParCov.setPID(track.pidForTracking());
         ptMomn = (i == he3 || i == he4) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
         bool insideDCAxy = (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / std::pow(ptMomn, 1.1f)))); // o2-linter: disable=magic-number (To be checked)
-        if ((!(insideDCAxy) || std::abs(track.dcaZ()) > DCAzSigma(ptMomn, cfgTrackPIDsettings->get(i, "maxDcaZ"))) && cfgDCAwithptRequire)
+        if ((!(insideDCAxy) || std::abs(track.dcaZ()) > dcazSigma(ptMomn, cfgTrackPIDsettings->get(i, "maxDcaZ"))) && cfgDCAwithptRequire)
           continue;
         if (track.sign() > 0) {
           histos.fill(HIST("histDcaZVsPtData_particle"), ptMomn, track.dcaZ());
@@ -491,7 +491,7 @@ struct NucleitpcPbPb {
           mTrackParCov.setPID(track.pidForTracking());
           ptMomn = (i == he3 || i == he4) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
           bool insideDCAxy = (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / std::pow(ptMomn, 1.1f)))); // o2-linter: disable=magic-number (To be checked)
-          if ((!(insideDCAxy) || std::abs(track.dcaZ()) > DCAzSigma(ptMomn, cfgTrackPIDsettings->get(i, "maxDcaZ"))) && cfgDCAwithptRequire)
+          if ((!(insideDCAxy) || std::abs(track.dcaZ()) > dcazSigma(ptMomn, cfgTrackPIDsettings->get(i, "maxDcaZ"))) && cfgDCAwithptRequire)
             continue;
           if (track.sign() > 0) {
             histos.fill(HIST("histDcaZVsPtData_particle"), ptMomn, track.dcaZ());
@@ -534,7 +534,8 @@ struct NucleitpcPbPb {
 
         if (pdg == -particlePdgCodes.at(4) && cfgmccorrectionhe4Require) {
           int pidGuess = track.pidForTracking();
-          if (pidGuess == 6) {
+          int antitriton = 6;
+          if (pidGuess == antitriton) {
             ptReco = ptReco - 0.464215 + 0.195771 * ptReco - 0.0183111 * ptReco * ptReco;
             //  LOG(info) << "we have he3" << pidGuess;
           }
@@ -744,7 +745,7 @@ struct NucleitpcPbPb {
     return hePID ? track.tpcInnerParam() / 2 : track.tpcInnerParam();
   }
   //----------------------------------------------------------------------------------------------------------------
-  float DCAzSigma(double pt, float dcasigma)
+  float dcazSigma(double pt, float dcasigma)
   {
     float invPt = 1.f / pt;
     return (5.00000e-04 + 8.73690e-03 * invPt + 9.62329e-04 * invPt * invPt) * dcasigma; // o2-linter: disable=magic-number (To be checked)
