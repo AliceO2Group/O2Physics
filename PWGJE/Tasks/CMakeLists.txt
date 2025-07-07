@@ -50,6 +50,10 @@ o2physics_add_dpl_workflow(photon-isolation-qa
                     SOURCES photonIsolationQA.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(photon-charged-trigger-correlation
+                    SOURCES photonChargedTriggerCorrelation.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
 
 if(FastJet_FOUND)
     o2physics_add_dpl_workflow(jet-background-analysis
