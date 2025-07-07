@@ -81,7 +81,7 @@ o2physics_add_dpl_workflow(qvectors-correction
 
 o2physics_add_dpl_workflow(centrality-study
                     SOURCES centralityStudy.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(flow-test
