@@ -549,7 +549,7 @@ struct JetSpectraCharged {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
       return;
     }
-    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+    if (std::abs(collision.posZ()) > vertexZCut) {
       return;
     }
     for (auto const& track : tracks) {
@@ -591,7 +591,7 @@ struct JetSpectraCharged {
     }
     registry.fill(HIST("h_collisions"), 1.5);
     registry.fill(HIST("h_collisions_weighted"), 1.5, eventWeight);
-    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+    if (std::abs(collision.posZ()) > vertexZCut) {
       return;
     }
     registry.fill(HIST("h_collisions"), 2.5);
@@ -869,6 +869,7 @@ struct JetSpectraCharged {
     }
     registry.fill(HIST("h_mcColl_counts"), 2.5);
     registry.fill(HIST("h_mcColl_counts_weight"), 2.5, eventWeight);
+    registry.fill(HIST("h_mc_zvertex"), mccollision.posZ(), eventWeight);
 
     bool hasSel8Coll = false;
     for (auto const& collision : collisions) {
