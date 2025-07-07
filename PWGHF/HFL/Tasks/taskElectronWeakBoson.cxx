@@ -99,9 +99,8 @@ struct HfTaskElectronWeakBoson {
   Configurable<float> energyIsolationMax{"energyIsolationMax", 0.1, "isolation cut on energy"};
   Configurable<int> trackIsolationMax{"trackIsolationMax", 3, "Maximum number of tracks in isolation cone"};
 
-  Configurable<float> zMassMin{"zMassMin", 60.0, "Minimum Z mass (GeV/c^2)"};
-  Configurable<float> zMassMax{"zMassMax", 120.0, "Maximum Z mass (GeV/c^2)"};
-  Configurable<float> hadronPtMin{"hadronPtMin", 0.5, "Minimum hadron pT for correlation"};
+  Configurable<float> massZMin{"massZMin", 60.0, "Minimum Z mass (GeV/c^2)"};
+  Configurable<float> massZMax{"massZMax", 120.0, "Maximum Z mass (GeV/c^2)"};
 
   // flag for THn
   Configurable<bool> isTHnElectron{"isTHnElectron", true, "Enables THn for electrons"};
@@ -621,7 +620,7 @@ struct HfTaskElectronWeakBoson {
     if (reconstructedZ.size() > 0) {
       for (const auto& zBoson : reconstructedZ) {
         // Z boson selection
-        if (zBoson.mass < zMassMin || zBoson.mass > zMassMax)
+        if (zBoson.mass < massZMin || zBoson.mass > massZMax)
           continue;
         registry.fill(HIST("hZptSpectrum"), zBoson.pt);
         for (const auto& trackAss : selectedElectronsAss) {
