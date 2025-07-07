@@ -91,7 +91,7 @@ struct FilterCF {
 
   // TODO how to have this in the second task? For now they are copied
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt);
-  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true);
+  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
 
   Filter mcCollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
 
@@ -172,7 +172,7 @@ struct FilterCF {
     }
     return false;
   }
- 
+
   template <typename T, typename = void>
   struct HasProtonPID : std::false_type {
   };
@@ -211,12 +211,11 @@ struct FilterCF {
       uint8_t trackType = 0;
       if constexpr (HasProtonPID<TTrack>::value) {
         if (track.isGlobalTrack() && (track.itsNCls() >= itsnclusters) && (track.tpcNClsCrossedRows() >= tpcncrossedrows) && selectionPIDProton(track)) {
-            trackType |= kPIDProton;
-          }
+          trackType |= kPIDProton;
+        }
       }
       return trackType;
     }
-
 
     LOGF(fatal, "Invalid setting for cfgTrackSelection: %d", cfgTrackSelection.value);
     return 0;
@@ -245,7 +244,6 @@ struct FilterCF {
       if ((std::abs(track.dcaXY()) > dcaxymax) || (std::abs(track.dcaZ()) > dcazmax)) {
         continue;
       }
-
 
       outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), getTrackType(track));
       if (cfgTransientTables)
@@ -402,9 +400,9 @@ struct FilterCF {
 
   // NOTE not filtering collisions here because in that case there can be tracks referring to MC particles which are not part of the selected MC collisions
   void processMCPid(aod::McCollisions const& mcCollisions, aod::McParticles const& allParticles,
-                 soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities> const& allCollisions,
-                 soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection, aod::pidTPCPr, aod::pidTOFPr, aod::TracksDCA>> const& tracks,
-                 aod::BCsWithTimestamps const& bcs)
+                    soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities> const& allCollisions,
+                    soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection, aod::pidTPCPr, aod::pidTOFPr, aod::TracksDCA>> const& tracks,
+                    aod::BCsWithTimestamps const& bcs)
   {
     processMCT(mcCollisions, allParticles, allCollisions, tracks, bcs);
   }
@@ -437,7 +435,7 @@ struct MultiplicitySelector {
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
 
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt);
-  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true);
+  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
 
   void init(InitContext&)
   {
