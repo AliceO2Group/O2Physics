@@ -43,7 +43,7 @@ namespace o2::aod
 {
 namespace full
 {
-DECLARE_SOA_COLUMN(ParticleFlag, particleFlag, int);         //! hf_cand_xic_to_xi_pi_pi::Sign for data, hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec for MC
+DECLARE_SOA_COLUMN(ParticleFlag, particleFlag, int8_t);      //! hf_cand_xic_to_xi_pi_pi::Sign for data, hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec for MC
 DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int); //! Selection flag of candidate (output of candidateSelector)
 // vertices
 DECLARE_SOA_COLUMN(Chi2SV, chi2SV, float);               //! Chi2 of candidate vertex
