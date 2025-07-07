@@ -749,14 +749,15 @@ struct HfTaskCorrelationDsHadrons {
                 } else {
                   registry.fill(HIST("hPtCandMcGenPrompt"), mcParticle.pt());
                 }
-                if (mcParticle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
-                  if (useHighDimHistoForEff) {
-                    registry.fill(HIST("hPtCandMcGenNonPrompt"), mcParticle.pt(), collision.numContrib());
-                  } else {
-                    registry.fill(HIST("hPtCandMcGenNonPrompt"), mcParticle.pt());
-                  }
+              }
+              if (mcParticle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
+                if (useHighDimHistoForEff) {
+                  registry.fill(HIST("hPtCandMcGenNonPrompt"), mcParticle.pt(), collision.numContrib());
+                } else {
+                  registry.fill(HIST("hPtCandMcGenNonPrompt"), mcParticle.pt());
                 }
               }
+
               bool isDaughterInAcceptance = true;
               auto daughters = mcParticle.template daughters_as<CandDsMcGen>();
               for (const auto& daughter : daughters) {
