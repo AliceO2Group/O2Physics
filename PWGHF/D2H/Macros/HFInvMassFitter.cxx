@@ -720,40 +720,22 @@ void HFInvMassFitter::checkForSignal(Double_t& estimatedSignal)
 // Create Background Fit Function
 RooAbsPdf* HFInvMassFitter::createBackgroundFitFunction(RooWorkspace* workspace) const
 {
-  RooAbsPdf* bkgPdf;
-  switch (mTypeOfBkgPdf) {
-    case 0: // exponential
-    {
-      bkgPdf = workspace->pdf("bkgFuncExpo");
-    } break;
-    case 1: // poly1
-    {
-      bkgPdf = workspace->pdf("bkgFuncPoly1");
-    } break;
-    case 2: {
-      bkgPdf = workspace->pdf("bkgFuncPoly2");
-    } break;
-    case 3: {
-      bkgPdf = workspace->pdf("bkgFuncPow");
-    } break;
-    case 4: {
-      bkgPdf = workspace->pdf("bkgFuncPowExpo");
-    } break;
-    case 5: {
-      bkgPdf = workspace->pdf("bkgFuncPoly3");
-    } break;
-    case 6: // MC
-      break;
-    default:
-      break;
+  RooAbsPdf* bkgPdf{nullptr};
+  if (mTypeOfBkgPdf == NoBkg) {
+    return bkgPdf;
   }
+  if (mTypeOfBkgPdf < 0 || mTypeOfBkgPdf >= NTypesOfBkgPdf) {
+    throw std::runtime_error("createBackgroundFitFunction(): mTypeOfBkgPdf must be within [0; " + std::to_string(NTypesOfBkgPdf) + ") range");
+  }
+  bkgPdf = workspace->pdf(namesOfBkgPdf.at(mTypeOfBkgPdf));
+
   return bkgPdf;
 }
 
 // Create Signal Fit Function
 RooAbsPdf* HFInvMassFitter::createSignalFitFunction(RooWorkspace* workspace)
 {
-  RooAbsPdf* sgnPdf;
+  RooAbsPdf* sgnPdf{nullptr};
   switch (mTypeOfSgnPdf) {
     case 0: {
       sgnPdf = workspace->pdf("sgnFuncGaus");
@@ -784,74 +766,33 @@ RooAbsPdf* HFInvMassFitter::createSignalFitFunction(RooWorkspace* workspace)
 // Create Reflection Fit Function
 RooAbsPdf* HFInvMassFitter::createReflectionFitFunction(RooWorkspace* workspace) const
 {
-  RooAbsPdf* reflPdf;
-  switch (mTypeOfReflPdf) {
-    case 0: {
-      reflPdf = workspace->pdf("reflFuncGaus");
-    } break;
-    case 1: {
-      reflPdf = workspace->pdf("reflFuncDoubleGaus");
-    } break;
-    case 2: {
-      reflPdf = workspace->pdf("reflFuncPoly3");
-    } break;
-    case 3: {
-      reflPdf = workspace->pdf("reflFuncPoly6");
-    } break;
-    default:
-      break;
+  if (mTypeOfReflPdf < 0 || mTypeOfReflPdf >= NTypesOfReflPdf) {
+    throw std::runtime_error("createReflectionFitFunction(): mTypeOfReflPdf must be within [0; " + std::to_string(NTypesOfReflPdf) + ") range");
   }
+  RooAbsPdf* reflPdf = workspace->pdf(namesOfReflPdf.at(mTypeOfReflPdf));
+
   return reflPdf;
 }
 
 // Plot Bkg components of fTotFunction
 void HFInvMassFitter::plotBkg(RooAbsPdf* pdf, Color_t color)
 {
-  switch (mTypeOfBkgPdf) {
-    case 0:
-      pdf->plotOn(mInvMassFrame, Components("bkgFuncExpo"), Name("Bkg_c"), LineColor(color));
-      break;
-    case 1:
-      pdf->plotOn(mInvMassFrame, Components("bkgFuncPoly1"), Name("Bkg_c"), LineColor(color));
-      break;
-    case 2:
-      pdf->plotOn(mInvMassFrame, Components("bkgFuncPoly2"), Name("Bkg_c"), LineColor(color));
-      break;
-    case 3:
-      pdf->plotOn(mInvMassFrame, Components("bkgFuncPow"), Name("Bkg_c"), LineColor(color));
-      break;
-    case 4:
-      pdf->plotOn(mInvMassFrame, Components("bkgFuncPowExp"), Name("Bkg_c"), LineColor(color));
-      break;
-    case 5:
-      pdf->plotOn(mInvMassFrame, Components("bkgFuncPoly3"), Name("Bkg_c"), LineColor(color));
-      break;
-    case 6:
-      break;
-    default:
-      break;
+  if (mTypeOfBkgPdf == NoBkg) {
+    return;
   }
+  if (mTypeOfBkgPdf < 0 || mTypeOfBkgPdf >= NTypesOfBkgPdf) {
+    throw std::runtime_error("plotBkg(): mTypeOfBkgPdf must be within [0; " + std::to_string(NTypesOfBkgPdf) + ") range");
+  }
+  pdf->plotOn(mInvMassFrame, Components(namesOfBkgPdf.at(mTypeOfBkgPdf).c_str()), Name("Bkg_c"), LineColor(color));
 }
 
 // Plot Refl distribution on canvas
 void HFInvMassFitter::plotRefl(RooAbsPdf* pdf)
 {
-  switch (mTypeOfReflPdf) {
-    case 0:
-      pdf->plotOn(mInvMassFrame, Components("reflFuncGaus"), Name("Refl_c"), LineColor(kGreen));
-      break;
-    case 1:
-      pdf->plotOn(mInvMassFrame, Components("reflFuncDoubleGaus"), Name("Refl_c"), LineColor(kGreen));
-      break;
-    case 2:
-      pdf->plotOn(mInvMassFrame, Components("reflFuncPoly3"), Name("Refl_c"), LineColor(kGreen));
-      break;
-    case 3:
-      pdf->plotOn(mInvMassFrame, Components("reflFuncPoly6"), Name("Refl_c"), LineColor(kGreen));
-      break;
-    default:
-      break;
+  if (mTypeOfReflPdf < 0 || mTypeOfReflPdf >= NTypesOfReflPdf) {
+    throw std::runtime_error("plotRefl(): mTypeOfReflPdf must be within [0; " + std::to_string(NTypesOfReflPdf) + ") range");
   }
+  pdf->plotOn(mInvMassFrame, Components(namesOfReflPdf.at(mTypeOfReflPdf).c_str()), Name("Refl_c"), LineColor(kGreen));
 }
 
 // Fix reflection pdf

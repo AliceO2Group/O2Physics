@@ -33,6 +33,8 @@
 #include <RtypesCore.h>
 
 #include <cstdio>
+#include <string>
+#include <vector>
 
 class HFInvMassFitter : public TNamed
 {
@@ -44,8 +46,10 @@ class HFInvMassFitter : public TNamed
     Pow = 3,
     PowExpo = 4,
     Poly3 = 5,
-    NoBkg = 6
+    NoBkg = 6,
+    NTypesOfBkgPdf
   };
+  std::vector<std::string> namesOfBkgPdf{"bkgFuncExpo", "bkgFuncPoly1", "bkgFuncPoly2", "bkgFuncPow", "bkgFuncPowExpo", "bkgFuncPoly3"};
   enum TypeOfSgnPdf {
     SingleGaus = 0,
     DoubleGaus = 1,
@@ -56,8 +60,10 @@ class HFInvMassFitter : public TNamed
     SingleGausRefl = 0,
     DoubleGausRefl = 1,
     Poly3Refl = 2,
-    Poly6Refl = 3
+    Poly6Refl = 3,
+    NTypesOfReflPdf
   };
+  std::vector<std::string> namesOfReflPdf{"reflFuncGaus", "reflFuncDoubleGaus", "reflFuncPoly3", "reflFuncPoly6"};
   HFInvMassFitter();
   HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Double_t maxValue, Int_t fitTypeBkg = Expo, Int_t fitTypeSgn = SingleGaus);
   ~HFInvMassFitter();
