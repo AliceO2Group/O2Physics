@@ -159,13 +159,13 @@ struct HfCandidateSelectorXicToXiPiPi {
       labels[BdtSelected] = "BDT selection";
 
       if (doprocessData) {
-        registry.add("hSelCandidates", ";;entries", {HistType::kTH1F, {{NSelectionCriteria, -0.5f, static_cast<float>(NSelectionCriteria) - 0.5f}}});
+        registry.add("hSelCandidates", ";;entries", {HistType::kTH1F, {{NSelectionCriteria, -0.5f, +NSelectionCriteria - 0.5f}}});
         for (int iBin = 0; iBin < NSelectionCriteria; ++iBin) {
           registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
         }
       } else if (doprocessMc) {
-        registry.add("hSelCandidatesRecSig", ";;entries", {HistType::kTH1F, {{NSelectionCriteria, -0.5f, static_cast<float>(NSelectionCriteria) - 0.5f}}});
-        registry.add("hSelCandidatesRecBkg", ";;entries", {HistType::kTH1F, {{NSelectionCriteria, -0.5f, static_cast<float>(NSelectionCriteria) - 0.5f}}});
+        registry.add("hSelCandidatesRecSig", ";;entries", {HistType::kTH1F, {{NSelectionCriteria, -0.5f, +NSelectionCriteria - 0.5f}}});
+        registry.add("hSelCandidatesRecBkg", ";;entries", {HistType::kTH1F, {{NSelectionCriteria, -0.5f, +NSelectionCriteria - 0.5f}}});
         for (int iBin = 0; iBin < NSelectionCriteria; ++iBin) {
           registry.get<TH1>(HIST("hSelCandidatesRecSig"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
           registry.get<TH1>(HIST("hSelCandidatesRecBkg"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
