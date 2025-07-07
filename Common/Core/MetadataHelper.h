@@ -70,6 +70,4 @@ struct MetadataHelper {
 
 } // namespace o2::common::core
 
-using MetadataHelper = o2::common::core::MetadataHelper; // Alias for the MetadataHelper
-
 #endif // COMMON_CORE_METADATAHELPER_H_
