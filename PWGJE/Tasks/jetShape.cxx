@@ -39,6 +39,14 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct JetShapeTask {
+
+  Configurable<int> nBinsTpcNSigma{"nBinsTpcNSigma", 101, "Number of TPC-nsigma bins"};
+  Configurable<float> tpcNSigmaMin{"tpcNSigmaMin", -10.1f, "Min value of Tpc-nsigma"};
+  Configurable<float> tpcNSigmaMax{"tpcNSigmaMax", 10.1f, "Max value of Tpc-nsigma"};
+  Configurable<int> nBinsTofNSigma{"nBinsTofNSigma", 10, "Number of TOF-nsigma bins"};
+  Configurable<float> tofNSigmaMin{"tofNSigmaMin", -10, "Min value of Tof-nsigma"};
+  Configurable<float> tofNSigmaMax{"tofNSigmaMax", 10, "Max value of Tof-nsigma"};
+
   HistogramRegistry registry{"registry",
                              {{"tpcTofPi", "tpcTofPi", {HistType::kTHnSparseD, {{nBinsTpcNSigma, tpcNSigmaMin, tpcNSigmaMax}, {nBinsTofNSigma, tofNSigmaMin, tofNSigmaMax}, {25, 0, 5}, {14, 0, 0.7}}}},
                               {"tpcPi", "tpcPi", {HistType::kTH2F, {{100, 0, 5}, {101, -10.1f, 10.1f}}}},
@@ -62,13 +70,6 @@ struct JetShapeTask {
                               {"ptSumBg2", "ptSumBg2", {HistType::kTH2F, {{14, 0, 0.7}, {300, 0, 300}}}},
                               {"event/vertexz", ";Vtx_{z} (cm);Entries", {HistType::kTH1F, {{100, -20, 20}}}},
                               {"ptVsCentrality", "ptvscentrality", {HistType::kTH2F, {{100, 0, 100}, {300, 0, 300}}}}}};
-
-  Configurable<int> nBinsTpcNSigma{"nBinsTpcNSigma", 101, "Number of TPC-nsigma bins"};
-  Configurable<float> tpcNSigmaMin{"tpcNSigmaMin", -10.1f, "Min value of Tpc-nsigma"};
-  Configurable<float> tpcNSigmaMax{"tpcNSigmaMax", 10.1f, "Max value of Tpc-nsigma"};
-  Configurable<int> nBinsTofNSigma{"nBinsTofNSigma", 10, "Number of TOF-nsigma bins"};
-  Configurable<float> tofNSigmaMin{"tofNSigmaMin", -10, "Min value of Tof-nsigma"};
-  Configurable<float> tofNSigmaMax{"tofNSigmaMax", 10, "Max value of Tof-nsigma"};
 
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
 
