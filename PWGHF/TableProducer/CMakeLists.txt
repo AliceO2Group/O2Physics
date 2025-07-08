@@ -95,6 +95,11 @@ o2physics_add_dpl_workflow(candidate-creator-xic-to-xi-pi-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(candidate-creator-xic0-xicp-to-hadronic
+                    SOURCES candidateCreatorXic0XicpToHadronic.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(candidate-creator-xicc
                     SOURCES candidateCreatorXicc.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
@@ -197,6 +202,11 @@ o2physics_add_dpl_workflow(candidate-selector-xic-to-xi-pi-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(candidate-selector-xic0-xicp-to-hadronic
+                    SOURCES candidateSelectorXic0XicpToHadronic.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(candidate-selector-xicc-to-p-k-pi-pi
                     SOURCES candidateSelectorXiccToPKPiPi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -281,6 +291,11 @@ o2physics_add_dpl_workflow(tree-creator-xic-to-p-k-pi
 
 o2physics_add_dpl_workflow(tree-creator-xic-to-xi-pi-pi
                     SOURCES treeCreatorXicToXiPiPi.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(tree-creator-xic0-xicp-to-hadronic
+                    SOURCES treeCreatorXic0XicpToHadronic.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

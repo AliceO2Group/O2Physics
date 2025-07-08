@@ -900,6 +900,70 @@ static const std::vector<std::string> labelsPt = {
 static const std::vector<std::string> labelsCutVar = {"m", "y", "eta", "eta Pi from XicPlus", "eta Xi Daughters", "pT Pi0", "pT Pi1", "pT Pi0 + Pi1", "chi2SV", "min decay length", "min decay length XY", "max inv mass Xi-Pi0", "max inv mass Xi-Pi1"};
 } // namespace hf_cuts_xic_to_xi_pi_pi
 
+namespace hf_cuts_xic0_xicp_to_hadronic
+{
+// cuts for xic0
+
+static constexpr int NBinsPt = 10;
+static constexpr int NCutVars = 10;
+// default values for the pT bin edges
+// offset by 1 from the bin numbers in cuts array
+constexpr double BinsPt[NBinsPt+1] = {
+	0.,
+	1.,
+	2.,
+	3.,
+	4.,
+	5.,
+	6.,
+	8.,
+	12.,
+	24.,
+	36.
+};
+auto vecBinsPt = std::vector<double>{BinsPt, BinsPt+NBinsPt+1};
+
+// default values for the cuts				m   ptXi ptPi chi2PCA dL dLXY cosp cospXY impParXY Xi Pi	
+constexpr double Cuts[NBinsPt][NCutVars] = {{0.4, 0.4, 0.4, 1e-5, 0.5, 0.5, 0.9, 0.9, 0.1, 0.1},	/* 0 < pT < 1 */
+											{0.4, 0.4, 0.4, 1e-5, 0.5, 0.5, 0.9, 0.9, 0.1, 0.1},	/* 1 < pT < 2 */
+											{0.4, 0.4, 0.4, 1e-5, 0.5, 0.5, 0.9, 0.9, 0.1, 0.1},	/* 2 < pT < 3 */
+											{0.4, 0.4, 0.4, 1e-5, 0.5, 0.5, 0.9, 0.9, 0.1, 0.1},	/* 3 < pT < 4 */
+											{0.4, 0.4, 0.4, 1e-5, 0.5, 0.5, 0.9, 0.9, 0.1, 0.1},	/* 4 < pT < 5 */
+											{0.4, 0.4, 0.4, 1e-5, 0.5, 0.5, 0.9, 0.9, 0.1, 0.1},	/* 5 < pT < 6 */
+											{0.4, 0.4, 0.4, 1e-5, 0.5, 0.5, 0.9, 0.9, 0.1, 0.1},	/* 6 < pT < 8 */
+											{0.4, 0.4, 0.4, 1e-5, 0.5, 0.5, 0.9, 0.9, 0.1, 0.1},	/* 8 < pT < 12 */
+											{0.4, 0.4, 0.4, 1e-5, 0.5, 0.5, 0.9, 0.9, 0.1, 0.1},	/* 12 < pT < 24 */
+											{0.4, 0.4, 0.4, 1e-5, 0.5, 0.5, 0.9, 0.9, 0.1, 0.1}};	/* 24 < pT < 36 */
+
+// row tables
+static const std::vector<std::string> labelsPt = {
+	"pT bin 0",
+	"pT bin 1",
+	"pT bin 2",
+	"pT bin 3",
+	"pT bin 4",
+	"pT bin 5",
+	"pT bin 6",
+	"pT bin 7",
+	"pT bin 8",
+	"pT bin 9"};
+
+// column labels
+static const std::vector<std::string> labelsCutVar = {
+	"m",
+	"pT Xi",
+	"pT Pi",
+	"chi2PCA",
+	"max decay length",
+	"max decay length XY",
+	"cosine pointing angle",
+	"cosine pointing angle XY",
+	"max impParXY Xi",
+	"max impParXY Pi"};
+
+}// namespace hf_cuts_xic0_xicp_to_hadronic
+
+
 namespace hf_cuts_xicc_to_p_k_pi_pi
 {
 static constexpr int NBinsPt = 10;
