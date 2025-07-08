@@ -201,8 +201,8 @@ struct HfDataCreatorJpsiHadReduced {
 
   Preslice<aod::HfCand2ProngWPid> candsJpsiPerCollision = aod::track_association::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  PresliceUnsorted<CollisionsWCMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
+  PresliceUnsorted<CollisionsWCMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int runNumber;
@@ -438,7 +438,8 @@ struct HfDataCreatorJpsiHadReduced {
   }
 
   template <typename T1>
-  bool isSelectedJpsiDauPid(const T1& track) {
+  bool isSelectedJpsiDauPid(const T1& track)
+  {
     int pidPion = -1;
     int pidProton = -1;
     int pidElectron = -1;
@@ -896,7 +897,7 @@ struct HfDataCreatorJpsiHadReduced {
                           trackParCovBach.getX(), trackParCovBach.getAlpha(),
                           trackParCovBach.getY(), trackParCovBach.getZ(), trackParCovBach.getSnp(),
                           trackParCovBach.getTgl(), trackParCovBach.getQ2Pt(),
-                          trackBach.itsNCls(), trackBach.tpcNClsCrossedRows(), trackBach.tpcChi2NCl(),
+                          trackBach.itsNCls(), trackBach.tpcNClsCrossedRows(), trackBach.tpcChi2NCl(), trackBach.itsChi2NCl(),
                           trackBach.hasTPC(), trackBach.hasTOF(),
                           trackBach.tpcNSigmaPi(), trackBach.tofNSigmaPi(),
                           trackBach.tpcNSigmaKa(), trackBach.tofNSigmaKa(),
@@ -993,7 +994,7 @@ struct HfDataCreatorJpsiHadReduced {
                             trackParCovBach.getX(), trackParCovBach.getAlpha(),
                             trackParCovBach.getY(), trackParCovBach.getZ(), trackParCovBach.getSnp(),
                             trackParCovBach.getTgl(), trackParCovBach.getQ2Pt(),
-                            trackBach.itsNCls(), trackBach.tpcNClsCrossedRows(), trackBach.tpcChi2NCl(),
+                            trackBach.itsNCls(), trackBach.tpcNClsCrossedRows(), trackBach.tpcChi2NCl(), trackBach.itsChi2NCl(),
                             trackBach.hasTPC(), trackBach.hasTOF(),
                             trackBach.tpcNSigmaPi(), trackBach.tofNSigmaPi(),
                             trackBach.tpcNSigmaKa(), trackBach.tofNSigmaKa(),
@@ -1017,7 +1018,7 @@ struct HfDataCreatorJpsiHadReduced {
                             trackBach2ParCov.getX(), trackBach2ParCov.getAlpha(),
                             trackBach2ParCov.getY(), trackBach2ParCov.getZ(), trackBach2ParCov.getSnp(),
                             trackBach2ParCov.getTgl(), trackBach2ParCov.getQ2Pt(),
-                            trackBach2.itsNCls(), trackBach2.tpcNClsCrossedRows(), trackBach2.tpcChi2NCl(),
+                            trackBach2.itsNCls(), trackBach2.tpcNClsCrossedRows(), trackBach2.tpcChi2NCl(), trackBach2.itsChi2NCl(),
                             trackBach2.hasTPC(), trackBach2.hasTOF(),
                             trackBach2.tpcNSigmaPi(), trackBach2.tofNSigmaPi(),
                             trackBach2.tpcNSigmaKa(), trackBach2.tofNSigmaKa(),
@@ -1057,6 +1058,8 @@ struct HfDataCreatorJpsiHadReduced {
                indexHfReducedCollision,
                candidate.xSecondaryVertex(), candidate.ySecondaryVertex(), candidate.zSecondaryVertex(),
                invMassJpsi,
+               trackPos.itsNCls(), trackPos.tpcNClsCrossedRows(), trackPos.tpcChi2NCl(), trackPos.itsChi2NCl(),
+               trackNeg.itsNCls(), trackNeg.tpcNClsCrossedRows(), trackNeg.tpcChi2NCl(), trackNeg.itsChi2NCl(),
                trackPosParCov.getX(), trackNegParCov.getX(),
                trackPosParCov.getY(), trackNegParCov.getY(),
                trackPosParCov.getZ(), trackNegParCov.getZ(),
