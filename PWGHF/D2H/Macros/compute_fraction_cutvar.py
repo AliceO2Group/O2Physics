@@ -152,7 +152,7 @@ def main(config):
             continue
         pt_min = hist_rawy[0].GetXaxis().GetBinLowEdge(ipt + 1)
         pt_max = hist_rawy[0].GetXaxis().GetBinUpEdge(ipt + 1)
-        print(f"\n\nINFO: processing pt range {ipt} from {pt_min} to {pt_max} {pt_axis_title}")
+        print(f"\n\nINFO: processing pt range {ipt+1} from {pt_min} to {pt_max} {pt_axis_title}")
 
         rawy, effp, effnp, unc_rawy, unc_effp, unc_effnp = (np.zeros(n_sets) for _ in range(6))
         for iset, (hrawy, heffp, heffnp) in enumerate(zip(hist_rawy, hist_effp, hist_effnp)):
@@ -249,7 +249,7 @@ def main(config):
         output_name_unc_pdf = f"Unc_{output_name_template}"
         output_name_pdf = f"{output_name_template}"
 
-        if hist_rawy[0].GetNbinsX() == 1:
+        if hist_rawy[0].GetNbinsX() == 1 or pt_bin_to_process != -1:
             print_bracket = ""
         elif ipt == 0:
             print_bracket = "("
