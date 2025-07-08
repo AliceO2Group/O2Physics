@@ -43,6 +43,7 @@
 #include <cmath>
 #include <experimental/type_traits>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -429,8 +430,9 @@ struct CorrelationTask {
           if (cfgTriggerCharge != 0) {
             if (cfgTriggerCharge * track1.sign() < 0)
               continue;
-          } else if (track1.sign() == 0)
+          } else if (track1.sign() == 0) {
             continue; // reject neutral MC particles
+          }
         }
       } else if constexpr (std::experimental::is_detected<HasSign, typename TTracks1::iterator>::value) {
         // Check reco objects that have the sign attribute. There are no neutrals to deal with.
@@ -465,8 +467,9 @@ struct CorrelationTask {
           // TParticlePDG *p = pdg->GetParticle(track1.pdgCode());
           // target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, p->Mass(), triggerWeight);
           target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, 1.8, triggerWeight);
-        } else
+        } else {
           LOGF(fatal, "Can not fill mass axis without invMass column. Disable cfgMassAxis.");
+        }
       } else {
         target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, triggerWeight);
       }
@@ -559,8 +562,9 @@ struct CorrelationTask {
           if (cfgAssociatedCharge != 0) {
             if (cfgAssociatedCharge * track2.sign() < 0)
               continue;
-          } else if (track2.sign() == 0) // mc particles come in neutrals, need to check explicitly
+          } else if (track2.sign() == 0) { // mc particles come in neutrals, need to check explicitly
             continue;
+          }
         }
 
         if constexpr (std::experimental::is_detected<HasSign, typename TTracks1::iterator>::value && std::experimental::is_detected<HasSign, typename TTracks2::iterator>::value) {
@@ -608,8 +612,9 @@ struct CorrelationTask {
           else if constexpr (std::experimental::is_detected<HasPDGCode, typename TTracks1::iterator>::value) {
             // TParticlePDG *p = pdg->GetParticle(track1.pdgCode()); //TODO: get the mass for the PDG properly
             target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, 1.8, associatedWeight); // p->Mass()
-          } else
+          } else {
             LOGF(fatal, "Can not fill mass axis without invMass column. Disable cfgMassAxis.");
+          }
         } else {
           target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, associatedWeight);
         }
