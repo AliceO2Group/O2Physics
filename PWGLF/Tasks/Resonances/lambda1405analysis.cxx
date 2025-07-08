@@ -78,7 +78,7 @@ struct lambda1405analysis {
   {
     // Axes
     const AxisSpec ptAxis{100, -10, 10, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec ptPiAxis{50, -2, 2, "#it{p}_{T}^{#pi} (GeV/#it{c})"};
+    const AxisSpec ptPiAxis{100, -5, 5, "#it{p}_{T}^{#pi} (GeV/#it{c})"};
     const AxisSpec ptResolutionAxis{100, -0.5, 0.5, "#it{p}_{T}^{rec} - #it{p}_{T}^{gen} (GeV/#it{c})"};
     const AxisSpec massAxis{100, 1.3, 1.6, "m (GeV/#it{c}^{2})"};
     const AxisSpec massResolutionAxis{100, -0.1, 0.1, "m_{rec} - m_{gen} (GeV/#it{c}^{2})"};
@@ -165,24 +165,27 @@ struct lambda1405analysis {
     auto kinkDauTrack = sigmaCand.trackDaug_as<TracksFull>();
     bool isPiKink = selectPiTrack(kinkDauTrack, true);
     bool isProKink = selectProTrack(kinkDauTrack, true);
-    if (!isPiKink || !isProKink) {
+    if (!isPiKink && !isProKink) {
       return false;
     }
 
-    lambda1405Cand.isSigmaPlus = isProKink && (sigmaCand.mSigmaPlus() < o2::constants::physics::MassSigmaPlus - cutSigmaMass || sigmaCand.mSigmaPlus() > o2::constants::physics::MassSigmaPlus + cutSigmaMass);
-    lambda1405Cand.isSigmaMinus = isPiKink && (sigmaCand.mSigmaMinus() < o2::constants::physics::MassSigmaMinus - cutSigmaMass || sigmaCand.mSigmaMinus() > o2::constants::physics::MassSigmaMinus + cutSigmaMass);
+    if (isPiKink) {
+      rLambda1405.fill(HIST("h2PtMassSigmaBeforeCuts_0"), sigmaCand.mothSign() * sigmaCand.ptMoth(), sigmaCand.mSigmaMinus());
+      rLambda1405.fill(HIST("h2PtPiNSigma_0"), sigmaCand.mothSign() * kinkDauTrack.pt(), kinkDauTrack.tpcNSigmaPi());
+    }
+    if (isProKink) {
+      rLambda1405.fill(HIST("h2PtMassSigmaBeforeCuts_1"), sigmaCand.mothSign() * sigmaCand.ptMoth(), sigmaCand.mSigmaPlus());
+      rLambda1405.fill(HIST("h2PtPiNSigma_1"), sigmaCand.mothSign() * kinkDauTrack.pt(), kinkDauTrack.tpcNSigmaPr());
+    }
+
+    lambda1405Cand.isSigmaPlus = isProKink && (sigmaCand.mSigmaPlus() > o2::constants::physics::MassSigmaPlus - cutSigmaMass && sigmaCand.mSigmaPlus() < o2::constants::physics::MassSigmaPlus + cutSigmaMass);
+    lambda1405Cand.isSigmaMinus = isPiKink && (sigmaCand.mSigmaMinus() > o2::constants::physics::MassSigmaMinus - cutSigmaMass && sigmaCand.mSigmaMinus() < o2::constants::physics::MassSigmaMinus + cutSigmaMass);
     if (!lambda1405Cand.isSigmaPlus && !lambda1405Cand.isSigmaMinus) {
       return false;
     }
     float sigmaRad = std::hypot(sigmaCand.xDecVtx(), sigmaCand.yDecVtx());
     if (std::abs(sigmaCand.dcaMothPv()) > cutDCAtoPVSigma || std::abs(sigmaCand.dcaDaugPv()) < cutDCAtoPVPiFromSigma || sigmaRad < cutSigmaRadius) {
       return false;
-    }
-    if (lambda1405Cand.isSigmaMinus) {
-      rLambda1405.fill(HIST("h2PtMassSigmaBeforeCuts_0"), sigmaCand.mothSign() * sigmaCand.ptMoth(), sigmaCand.mSigmaMinus());
-    }
-    if (lambda1405Cand.isSigmaPlus) {
-      rLambda1405.fill(HIST("h2PtMassSigmaBeforeCuts_1"), sigmaCand.mothSign() * sigmaCand.ptMoth(), sigmaCand.mSigmaPlus());
     }
 
     for (const auto& piTrack : tracks) {
@@ -239,14 +242,12 @@ struct lambda1405analysis {
           rLambda1405.fill(HIST("h2PtMass_0"), lambda1405Cand.sigmaSign * lambda1405Cand.pt, lambda1405Cand.mass);
           rLambda1405.fill(HIST("h2PtMassSigma_0"), lambda1405Cand.sigmaSign * lambda1405Cand.sigmaPt, lambda1405Cand.sigmaMinusMass);
           rLambda1405.fill(HIST("h2SigmaMassVsMass_0"), lambda1405Cand.mass, lambda1405Cand.sigmaMinusMass);
-          rLambda1405.fill(HIST("h2PtPiNSigma_0"), lambda1405Cand.sigmaSign * lambda1405Cand.piPt, lambda1405Cand.nSigmaTPCPi);
           rLambda1405.fill(HIST("h2PtPiNSigmaTOF_0"), lambda1405Cand.sigmaSign * lambda1405Cand.piPt, lambda1405Cand.nSigmaTOFPi);
         }
         if (lambda1405Cand.isSigmaPlus) {
           rLambda1405.fill(HIST("h2PtMass_1"), lambda1405Cand.sigmaSign * lambda1405Cand.pt, lambda1405Cand.mass);
           rLambda1405.fill(HIST("h2PtMassSigma_1"), lambda1405Cand.sigmaSign * lambda1405Cand.sigmaPt, lambda1405Cand.sigmaPlusMass);
           rLambda1405.fill(HIST("h2SigmaMassVsMass_1"), lambda1405Cand.mass, lambda1405Cand.sigmaPlusMass);
-          rLambda1405.fill(HIST("h2PtPiNSigma_1"), lambda1405Cand.sigmaSign * lambda1405Cand.piPt, lambda1405Cand.nSigmaTPCPi);
           rLambda1405.fill(HIST("h2PtPiNSigmaTOF_1"), lambda1405Cand.sigmaSign * lambda1405Cand.piPt, lambda1405Cand.nSigmaTOFPi);
         }
       }
