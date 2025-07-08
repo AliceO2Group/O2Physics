@@ -124,6 +124,10 @@ enum ParticleDecay {
   JPsiToEE,
   JPsiToMuMu,
   Generic2Prong,
+  PhiToKK,
+  K0stoPiPi,
+  LambdatoPPi,
+  AntiLambdatoPiP
 };
 } // namespace cf2prongtrack
 DECLARE_SOA_TABLE(CF2ProngTracks, "AOD", "CF2PRONGTRACK", //! Reduced track table
