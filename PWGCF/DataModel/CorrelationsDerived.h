@@ -153,9 +153,10 @@ using CF2ProngTrackml = CF2ProngTrackmls::iterator;
 
 namespace cf2prongmcpart
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(CFParticleDaugh0, cfParticleDaugh0, int, CFMcParticles, "_0"); //! Index to prong 1 CFMcParticle
-DECLARE_SOA_INDEX_COLUMN_FULL(CFParticleDaugh1, cfParticleDaugh1, int, CFMcParticles, "_1"); //! Index to prong 2 CFMcParticle
-DECLARE_SOA_COLUMN(Decay, decay, uint8_t);                                                   //! Particle decay and flags
+DECLARE_SOA_INDEX_COLUMN_FULL(CFParticleDaugh0, cfParticleDaugh0, int, CFMcParticles, "_0");         //! Index to prong 1 CFMcParticle
+DECLARE_SOA_INDEX_COLUMN_FULL(CFParticleDaugh1, cfParticleDaugh1, int, CFMcParticles, "_1");         //! Index to prong 2 CFMcParticle
+DECLARE_SOA_COLUMN(Decay, decay, uint8_t);                                                           //! Particle decay and flags
+DECLARE_SOA_DYNAMIC_COLUMN(McDecay, mcDecay, [](uint8_t decay) -> uint8_t { return decay & 0x7f; }); //! MC particle decay
 enum ParticleDecayFlags {
   Prompt = 0x80
 };
@@ -164,7 +165,8 @@ DECLARE_SOA_TABLE(CF2ProngMcParts, "AOD", "CF2PRONGMCPART", //! Table for the da
                   o2::soa::Index<>,
                   cf2prongmcpart::CFParticleDaugh0Id,
                   cf2prongmcpart::CFParticleDaugh1Id,
-                  cf2prongmcpart::Decay)
+                  cf2prongmcpart::Decay,
+                  cf2prongmcpart::McDecay<cf2prongmcpart::Decay>)
 using CF2ProngMcPart = CF2ProngMcParts::iterator;
 
 } // namespace o2::aod
