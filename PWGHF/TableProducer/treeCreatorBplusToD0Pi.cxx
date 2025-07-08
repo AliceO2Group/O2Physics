@@ -33,8 +33,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Rtypes.h>
-
 #include <array>
 #include <cstdint>
 #include <cstdlib>

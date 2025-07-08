@@ -32,8 +32,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Rtypes.h>
-
 #include <cstdint>
 #include <cstdlib>
 

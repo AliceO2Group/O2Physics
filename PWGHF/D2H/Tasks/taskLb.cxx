@@ -40,8 +40,6 @@
 #include <TH2.h>
 #include <TMath.h>
 
-#include <Rtypes.h>
-
 #include <algorithm>
 #include <array>
 #include <cmath>
