@@ -54,7 +54,7 @@ struct HfCandidateSelectorXicToXiPiPi {
 
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_to_xi_pi_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_xic_to_xi_pi_pi::Cuts[0], hf_cuts_xic_to_xi_pi_pi::NBinsPt, hf_cuts_xic_to_xi_pi_pi::NCutVars, hf_cuts_xic_to_xi_pi_pi::labelsPt, hf_cuts_xic_to_xi_pi_pi::labelsCutVar}, "Xicplus candidate selection per pT bin"};
-  Configurable<bool> fillHistogram{"fillHistogram", false, "Flag to filling of counter histogram"};
+  Configurable<bool> fillQAHistograms{"fillQAHistograms", false, "Switch to enable filling of QA histograms"};
   // Enable PID
   Configurable<bool> usePid{"usePid", true, "Switch for PID selection at track level"};
   Configurable<bool> useTpcPidOnly{"useTpcPidOnly", false, "Switch to use TPC PID only instead of TPC OR TOF)"};
@@ -140,37 +140,58 @@ struct HfCandidateSelectorXicToXiPiPi {
       selectorProton.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
     }
 
-    if (fillHistogram) {
-      std::string labels[NSelectionCriteria];
-      labels[All] = "All";
-      labels[Pt] = "#it{p}_{T}";
-      labels[Mass] = "#Delta M";
-      labels[Rapidity] = "y";
-      labels[Eta] = "#eta";
-      labels[EtaDaughters] = "#eta final state daughters";
-      labels[PtPionFromXicPlus] = "#it{p}_{T} (#pi #leftarrow #Xi_{c}^{+})";
-      labels[Chi2SV] = "#chi^{2}_{SV}";
-      labels[MinDecayLength] = "Decay length";
-      labels[MaxInvMassXiPiPairs] = "M_{#Xi #pi}";
-      labels[TpcTrackQualityXiDaughters] = "TPC track quality selection on #Xi daughters";
-      labels[TpcTrackQualityPiFromCharm] = "TPC track quality selection on #pi #leftarrow #Xi_{c}^{+}";
-      labels[ItsTrackQualityPiFromCharm] = "ITS track quality selection on #pi #leftarrow #Xi_{c}^{+}";
-      labels[PidSelected] = "PID selection";
-      labels[BdtSelected] = "BDT selection";
+    std::string labels[NSelectionCriteria];
+    labels[All] = "All";
+    labels[Pt] = "#it{p}_{T}";
+    labels[Mass] = "#Delta M";
+    labels[Rapidity] = "y";
+    labels[Eta] = "#eta";
+    labels[EtaDaughters] = "#eta final state daughters";
+    labels[PtPionFromXicPlus] = "#it{p}_{T} (#pi #leftarrow #Xi_{c}^{+})";
+    labels[Chi2SV] = "#chi^{2}_{SV}";
+    labels[MinDecayLength] = "Decay length";
+    labels[MaxInvMassXiPiPairs] = "M_{#Xi #pi}";
+    labels[TpcTrackQualityXiDaughters] = "TPC track quality selection on #Xi daughters";
+    labels[TpcTrackQualityPiFromCharm] = "TPC track quality selection on #pi #leftarrow #Xi_{c}^{+}";
+    labels[ItsTrackQualityPiFromCharm] = "ITS track quality selection on #pi #leftarrow #Xi_{c}^{+}";
+    labels[PidSelected] = "PID selection";
+    labels[BdtSelected] = "BDT selection";
 
-      if (doprocessData) {
-        registry.add("hSelCandidates", ";;entries", {HistType::kTH1F, {{NSelectionCriteria, -0.5f, +NSelectionCriteria - 0.5f}}});
-        for (int iBin = 0; iBin < NSelectionCriteria; ++iBin) {
-          registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
-        }
-      } else if (doprocessMc) {
-        registry.add("hSelCandidatesRecSig", ";;entries", {HistType::kTH1F, {{NSelectionCriteria, -0.5f, +NSelectionCriteria - 0.5f}}});
-        registry.add("hSelCandidatesRecBkg", ";;entries", {HistType::kTH1F, {{NSelectionCriteria, -0.5f, +NSelectionCriteria - 0.5f}}});
-        for (int iBin = 0; iBin < NSelectionCriteria; ++iBin) {
-          registry.get<TH1>(HIST("hSelCandidatesRecSig"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
-          registry.get<TH1>(HIST("hSelCandidatesRecBkg"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
-        }
+    if (doprocessData) {
+      registry.add("hSelCandidates", ";;entries", {HistType::kTH1F, {{NSelectionCriteria, -0.5f, +NSelectionCriteria - 0.5f}}});
+      for (int iBin = 0; iBin < NSelectionCriteria; ++iBin) {
+        registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
       }
+    } else if (doprocessMc) {
+      registry.add("hSelCandidatesRecSig", ";;entries", {HistType::kTH1F, {{NSelectionCriteria, -0.5f, +NSelectionCriteria - 0.5f}}});
+      registry.add("hSelCandidatesRecBkg", ";;entries", {HistType::kTH1F, {{NSelectionCriteria, -0.5f, +NSelectionCriteria - 0.5f}}});
+      for (int iBin = 0; iBin < NSelectionCriteria; ++iBin) {
+        registry.get<TH1>(HIST("hSelCandidatesRecSig"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
+        registry.get<TH1>(HIST("hSelCandidatesRecBkg"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
+      }
+    }
+
+    if (fillQAHistograms) {
+      // eta of all final state daughters
+      registry.add("hEtaPi0FromXic", ";#eta (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
+      registry.add("hEtaPi1FromXic", ";#eta (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
+      registry.add("hEtaBachelorPion", ";#eta (#pi #leftarrow #Xi);entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
+      registry.add("hEtaV0PosDau", ";;#eta (V0 pos. dau.);entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
+      registry.add("hEtaV0NegDau", ";;#eta (V0 neg. dau.);entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
+      // pions from XicPlus
+      registry.add("hNClustersTpcPi0FromXic", ";#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+      registry.add("hNClustersTpcPi1FromXic", ";#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+      registry.add("hNClustersItsPi0FromXic", ";#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{7, 0.5, 7.5}}});
+      registry.add("hNClustersItsPi1FromXic", ";#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{7, 0.5, 7.5}}});
+      registry.add("hNClustersItsInnBarrPi0FromXic", ";#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{3, 0.5, 3.5}}});
+      registry.add("hNClustersItsInnBarrPi1FromXic", ";#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{3, 0.5, 3.5}}});
+      // Xi daughters
+      registry.add("hNClustersTpcBachelorPion", ";#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+      registry.add("hNClustersTpcV0PosDau", ";#it{N}_{clusters}^{TPC} (V0 pos. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+      registry.add("hNClustersTpcV0NegDau", ";#it{N}_{clusters}^{TPC} (V0 neg. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+      registry.add("hNCrossedRowsTpcBachelorPion", ";#it{N}_{rows}^{TPC} (#pi #leftarrow #Xi);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+      registry.add("hNCrossedRowsTpcV0PosDau", ";#it{N}_{rows}^{TPC} (V0 pos. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+      registry.add("hNCrossedRowsTpcV0NegDau", ";#it{N}_{rows}^{TPC} (V0 neg. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
     }
 
     if (applyMl) {
@@ -226,11 +247,11 @@ struct HfCandidateSelectorXicToXiPiPi {
   {
     // Successful reconstruction
     SETBIT(statusXicToXiPiPi, hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoTotal); // RecoTotal = 0 --> statusXicToXiPiPi += 1
-    if (fillHistogram && isMc && isMatchedSignal) {
+    if (isMc && isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecSig"), All);
-    } else if (fillHistogram && isMc && !isMatchedSignal) {
+    } else if (isMc && !isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecBkg"), All);
-    } else if (fillHistogram && !isMc) {
+    } else {
       registry.fill(HIST("hSelCandidates"), All);
     }
 
@@ -240,6 +261,29 @@ struct HfCandidateSelectorXicToXiPiPi {
     auto trackPiFromXi = hfCandXic.template bachelor_as<TracksExtraWPid>();
     auto trackV0PosDau = hfCandXic.template posTrack_as<TracksExtraWPid>();
     auto trackV0NegDau = hfCandXic.template negTrack_as<TracksExtraWPid>();
+
+    if (fillQAHistograms) {
+      // eta of all final state daughters
+      registry.fill(HIST("hEtaPi0FromXic"), trackPi0.eta());
+      registry.fill(HIST("hEtaPi1FromXic"), trackPi1.eta());
+      registry.fill(HIST("hEtaBachelorPion"), trackPiFromXi.eta());
+      registry.fill(HIST("hEtaV0PosDau"), trackV0PosDau.eta());
+      registry.fill(HIST("hEtaV0NegDau"), trackV0NegDau.eta());
+      // pions from XicPlus
+      registry.fill(HIST("hNClustersTpcPi0FromXic"), trackPi0.tpcNClsFound());
+      registry.fill(HIST("hNClustersTpcPi1FromXic"), trackPi1.tpcNClsFound());
+      registry.fill(HIST("hNClustersItsPi0FromXic"), trackPi0.itsNCls());
+      registry.fill(HIST("hNClustersItsPi1FromXic"), trackPi1.itsNCls());
+      registry.fill(HIST("hNClustersItsInnBarrPi0FromXic"), trackPi0.itsNClsInnerBarrel());
+      registry.fill(HIST("hNClustersItsInnBarrPi1FromXic"), trackPi1.itsNClsInnerBarrel());
+      // Xi daughters
+      registry.fill(HIST("hNClustersTpcBachelorPion"), trackPiFromXi.tpcNClsFound());
+      registry.fill(HIST("hNClustersTpcV0PosDau"), trackV0PosDau.tpcNClsFound());
+      registry.fill(HIST("hNClustersTpcV0NegDau"), trackV0NegDau.tpcNClsFound());
+      registry.fill(HIST("hNCrossedRowsTpcBachelorPion"), trackPiFromXi.tpcNClsCrossedRows());
+      registry.fill(HIST("hNCrossedRowsTpcV0PosDau"), trackV0PosDau.tpcNClsCrossedRows());
+      registry.fill(HIST("hNCrossedRowsTpcV0NegDau"), trackV0NegDau.tpcNClsCrossedRows());
+    }
 
     ////////////////////////////////////////////////
     //     Kinematic and topological selection    //
@@ -251,22 +295,22 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (pTBin == -1) {
       return false;
     }
-    if (fillHistogram && isMc && isMatchedSignal) {
+    if (isMc && isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecSig"), Pt);
-    } else if (fillHistogram && isMc && !isMatchedSignal) {
+    } else if (isMc && !isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecBkg"), Pt);
-    } else if (fillHistogram && !isMc) {
+    } else {
       registry.fill(HIST("hSelCandidates"), Pt);
     }
     // check whether candidate mass is within a defined mass window
     if (std::abs(hfCandXic.invMassXicPlus() - o2::constants::physics::MassXiCPlus) > cuts->get(pTBin, "m")) {
       return false;
     }
-    if (fillHistogram && isMc && isMatchedSignal) {
+    if (isMc && isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecSig"), Mass);
-    } else if (fillHistogram && isMc && !isMatchedSignal) {
+    } else if (isMc && !isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecBkg"), Mass);
-    } else if (fillHistogram && !isMc) {
+    } else {
       registry.fill(HIST("hSelCandidates"), Mass);
     }
 
@@ -274,11 +318,11 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (std::abs(hfCandXic.y(o2::constants::physics::MassXiCPlus)) > cuts->get(pTBin, "y")) {
       return false;
     }
-    if (fillHistogram && isMc && isMatchedSignal) {
+    if (isMc && isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecSig"), Rapidity);
-    } else if (fillHistogram && isMc && !isMatchedSignal) {
+    } else if (isMc && !isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecBkg"), Rapidity);
-    } else if (fillHistogram && !isMc) {
+    } else {
       registry.fill(HIST("hSelCandidates"), Rapidity);
     }
 
@@ -286,11 +330,11 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (std::abs(hfCandXic.eta()) > cuts->get(pTBin, "eta")) {
       return false;
     }
-    if (fillHistogram && isMc && isMatchedSignal) {
+    if (isMc && isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecSig"), Eta);
-    } else if (fillHistogram && isMc && !isMatchedSignal) {
+    } else if (isMc && !isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecBkg"), Eta);
-    } else if (fillHistogram && !isMc) {
+    } else {
       registry.fill(HIST("hSelCandidates"), Eta);
     }
 
@@ -298,23 +342,23 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (std::abs(trackPi0.eta()) > cuts->get(pTBin, "eta Daughters") || std::abs(trackPi1.eta()) > cuts->get(pTBin, "eta Daughters") || std::abs(trackPiFromXi.eta()) > cuts->get(pTBin, "eta Daughters") || std::abs(trackV0PosDau.eta()) > cuts->get(pTBin, "eta Daughters") || std::abs(trackV0NegDau.eta()) > cuts->get(pTBin, "eta Daughters")) {
       return false;
     }
-    if (fillHistogram && isMc && isMatchedSignal) {
+    if (isMc && isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecSig"), EtaDaughters);
-    } else if (fillHistogram && isMc && !isMatchedSignal) {
+    } else if (isMc && !isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecBkg"), EtaDaughters);
-    } else if (fillHistogram && !isMc) {
+    } else {
       registry.fill(HIST("hSelCandidates"), EtaDaughters);
     }
 
     // cut on pion pT
-    if (hfCandXic.ptProng1() < cuts->get(pTBin, "pT Pi0") || hfCandXic.ptProng2() < cuts->get(pTBin, "pT Pi1")) {
+    if (hfCandXic.ptProng1() < cuts->get(pTBin, "pT Pi0") || hfCandXic.ptProng2() < cuts->get(pTBin, "pT Pi1") || (hfCandXic.ptProng1() + hfCandXic.ptProng2()) < cuts->get(pTBin, "pT Pi0 + Pi1")) {
       return false;
     }
-    if (fillHistogram && isMc && isMatchedSignal) {
+    if (isMc && isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecSig"), PtPionFromXicPlus);
-    } else if (fillHistogram && isMc && !isMatchedSignal) {
+    } else if (isMc && !isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecBkg"), PtPionFromXicPlus);
-    } else if (fillHistogram && !isMc) {
+    } else {
       registry.fill(HIST("hSelCandidates"), PtPionFromXicPlus);
     }
 
@@ -322,11 +366,11 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (hfCandXic.chi2PCA() > cuts->get(pTBin, "chi2SV")) {
       return false;
     }
-    if (fillHistogram && isMc && isMatchedSignal) {
+    if (isMc && isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecSig"), Chi2SV);
-    } else if (fillHistogram && isMc && !isMatchedSignal) {
+    } else if (isMc && !isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecBkg"), Chi2SV);
-    } else if (fillHistogram && !isMc) {
+    } else {
       registry.fill(HIST("hSelCandidates"), Chi2SV);
     }
 
@@ -334,11 +378,11 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (hfCandXic.decayLength() < cuts->get(pTBin, "min decay length") || hfCandXic.decayLengthXY() < cuts->get(pTBin, "min decay length XY")) {
       return false;
     }
-    if (fillHistogram && isMc && isMatchedSignal) {
+    if (isMc && isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecSig"), MinDecayLength);
-    } else if (fillHistogram && isMc && !isMatchedSignal) {
+    } else if (isMc && !isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecBkg"), MinDecayLength);
-    } else if (fillHistogram && !isMc) {
+    } else {
       registry.fill(HIST("hSelCandidates"), MinDecayLength);
     }
 
@@ -346,11 +390,11 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (hfCandXic.invMassXiPi0() > cuts->get(pTBin, "max inv mass Xi-Pi0") || hfCandXic.invMassXiPi1() > cuts->get(pTBin, "max inv mass Xi-Pi1")) {
       return false;
     }
-    if (fillHistogram && isMc && isMatchedSignal) {
+    if (isMc && isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecSig"), MaxInvMassXiPiPairs);
-    } else if (fillHistogram && isMc && !isMatchedSignal) {
+    } else if (isMc && !isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecBkg"), MaxInvMassXiPiPairs);
-    } else if (fillHistogram && !isMc) {
+    } else {
       registry.fill(HIST("hSelCandidates"), MaxInvMassXiPiPairs);
     }
 
@@ -367,11 +411,11 @@ struct HfCandidateSelectorXicToXiPiPi {
           !isSelectedTrackTpcQuality(trackV0NegDau, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
         return false;
       }
-      if (fillHistogram && isMc && isMatchedSignal) {
+      if (isMc && isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecSig"), TpcTrackQualityXiDaughters);
-      } else if (fillHistogram && isMc && !isMatchedSignal) {
+      } else if (isMc && !isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecBkg"), TpcTrackQualityXiDaughters);
-      } else if (fillHistogram && !isMc) {
+      } else {
         registry.fill(HIST("hSelCandidates"), TpcTrackQualityXiDaughters);
       }
 
@@ -380,11 +424,11 @@ struct HfCandidateSelectorXicToXiPiPi {
           !isSelectedTrackTpcQuality(trackPi1, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
         return false;
       }
-      if (fillHistogram && isMc && isMatchedSignal) {
+      if (isMc && isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecSig"), TpcTrackQualityPiFromCharm);
-      } else if (fillHistogram && isMc && !isMatchedSignal) {
+      } else if (isMc && !isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecBkg"), TpcTrackQualityPiFromCharm);
-      } else if (fillHistogram && !isMc) {
+      } else {
         registry.fill(HIST("hSelCandidates"), TpcTrackQualityPiFromCharm);
       }
 
@@ -393,17 +437,17 @@ struct HfCandidateSelectorXicToXiPiPi {
           (!isSelectedTrackItsQuality(trackPi0, nClustersItsMin, itsChi2PerClusterMax) || trackPi1.itsNClsInnerBarrel() < nClustersItsInnBarrMin)) {
         return false;
       }
-      if (fillHistogram && isMc && isMatchedSignal) {
+      if (isMc && isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecSig"), ItsTrackQualityPiFromCharm);
-      } else if (fillHistogram && isMc && !isMatchedSignal) {
+      } else if (isMc && !isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecBkg"), ItsTrackQualityPiFromCharm);
-      } else if (fillHistogram && !isMc) {
+      } else {
         registry.fill(HIST("hSelCandidates"), ItsTrackQualityPiFromCharm);
       }
 
       // Successful track quality selection
       SETBIT(statusXicToXiPiPi, hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoTrackQuality); // RecoTrackQuality = 2 --> statusXicToXiPiPi += 4
-    } else if (fillHistogram) {
+    } else {
       if (isMc && isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecSig"), TpcTrackQualityXiDaughters);
         registry.fill(HIST("hSelCandidatesRecSig"), TpcTrackQualityPiFromCharm);
@@ -457,14 +501,14 @@ struct HfCandidateSelectorXicToXiPiPi {
 
       // Successful PID selection
       SETBIT(statusXicToXiPiPi, hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoPID); // RecoPID = 3 --> statusXicToXiPiPi += 8
-      if (fillHistogram && isMc && isMatchedSignal) {
+      if (isMc && isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecSig"), PidSelected);
-      } else if (fillHistogram && isMc && !isMatchedSignal) {
+      } else if (isMc && !isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecBkg"), PidSelected);
-      } else if (fillHistogram && !isMc) {
+      } else {
         registry.fill(HIST("hSelCandidates"), PidSelected);
       }
-    } else if (fillHistogram) {
+    } else {
       if (isMc && isMatchedSignal) {
         registry.fill(HIST("hSelCandidatesRecSig"), PidSelected);
       } else if (isMc && !isMatchedSignal) {
@@ -499,12 +543,12 @@ struct HfCandidateSelectorXicToXiPiPi {
     }
 
     // Successful ML selection
-    SETBIT(statusXicToXiPiPi, hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoMl); // RecoPID = 4 --> statusXicToXiPiPi += 16
-    if (fillHistogram && isMc && isMatchedSignal) {
+    SETBIT(statusXicToXiPiPi, hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoMl); // RecoML = 4 --> statusXicToXiPiPi += 16
+    if (isMc && isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecSig"), BdtSelected);
-    } else if (fillHistogram && isMc && !isMatchedSignal) {
+    } else if (isMc && !isMatchedSignal) {
       registry.fill(HIST("hSelCandidatesRecBkg"), BdtSelected);
-    } else if (fillHistogram && !isMc) {
+    } else {
       registry.fill(HIST("hSelCandidates"), BdtSelected);
     }
   }
@@ -530,7 +574,7 @@ struct HfCandidateSelectorXicToXiPiPi {
       // ML selection
       if (applyMl) {
         isBdtSelected<false>(hfCandXic, statusXicToXiPiPi);
-      } else if (fillHistogram) {
+      } else {
         registry.fill(HIST("hSelCandidates"), BdtSelected);
       }
 
@@ -565,9 +609,9 @@ struct HfCandidateSelectorXicToXiPiPi {
       // ML selection
       if (applyMl) {
         isBdtSelected<true>(hfCandXic, statusXicToXiPiPi, isMatchedCandidate);
-      } else if (fillHistogram && isMatchedCandidate) {
+      } else if (isMatchedCandidate) {
         registry.fill(HIST("hSelCandidatesRecSig"), BdtSelected);
-      } else if (fillHistogram && !isMatchedCandidate) {
+      } else if (!isMatchedCandidate) {
         registry.fill(HIST("hSelCandidatesRecBkg"), BdtSelected);
       }
 
