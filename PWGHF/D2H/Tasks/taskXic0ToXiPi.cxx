@@ -19,9 +19,7 @@
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
 
-#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/runDataProcessing.h>
@@ -55,7 +53,7 @@ struct HfTaskXic0ToXiPi {
 
   using Xic0Gen = soa::Filtered<soa::Join<aod::McParticles, aod::HfXicToXiPiMCGen>>;
 
-  using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
+  using CollisionsWithEvSels = soa::Join<aod::Collisions, aod::EvSels>;
   using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
   using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
   using CollisionsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
@@ -278,14 +276,14 @@ struct HfTaskXic0ToXiPi {
   }
 
   void processDataWithKFParticle(Xic0CandsKF const& candidates,
-                                 Collisions const& collisions)
+                                 CollisionsWithEvSels const& collisions)
   {
     processDataCent<false, false>(candidates, collisions);
   }
   PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithKFParticle, "process HfTaskXic0ToXiPi  with KFParticle", true);
 
   void processDataWithKFParticleMl(Xic0CandsMlKF const& candidates,
-                                   Collisions const& collisions)
+                                   CollisionsWithEvSels const& collisions)
   {
     processDataCent<false, true>(candidates, collisions);
   }
