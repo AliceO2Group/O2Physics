@@ -66,7 +66,7 @@ using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-MetadataHelper metadataInfo; // Metadata helper
+o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 
 enum FinalState { KKPi = 0,
                   PiKK };

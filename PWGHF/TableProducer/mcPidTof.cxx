@@ -66,7 +66,7 @@ using namespace o2::pid;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
-MetadataHelper metadataInfo;
+o2::common::core::MetadataHelper metadataInfo;
 
 // Input data types
 using Trks = o2::soa::Join<aod::TracksIU, aod::TracksExtra>;
