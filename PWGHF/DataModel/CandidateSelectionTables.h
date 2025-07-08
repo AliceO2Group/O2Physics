@@ -337,6 +337,17 @@ DECLARE_SOA_TABLE(HfSelXicToXiPiPi, "AOD", "HFSELXICTOXI2PI", //!
 DECLARE_SOA_TABLE(HfMlXicToXiPiPi, "AOD", "HFMLXICTOXI2PI", //!
                   hf_sel_candidate_xic::MlProbXicToXiPiPi);
 
+namespace hf_sel_xic0_xicp_to_hadronic
+{
+DECLARE_SOA_COLUMN(IsSelXic0ToXiPi, isSelXic0ToXiPi, int);
+DECLARE_SOA_COLUMN(MlProbXic0ToXiPi, mlProbXic0ToXiPi, std::vector<float>);
+} // namespace hf_sel_xic0_xicp_to_hadronic
+
+DECLARE_SOA_TABLE(HfSelXic0ToXiPi, "AOD", "HFSELXIC0TOXIPI",
+		hf_sel_xic0_xicp_to_hadronic::IsSelXic0ToXiPi);
+DECLARE_SOA_TABLE(HfMlXic0ToXiPi, "AOD", "HFMLXIC0TOXIPI",
+		hf_sel_xic0_xicp_to_hadronic::MlProbXic0ToXiPi);
+
 namespace hf_sel_candidate_xicc
 {
 DECLARE_SOA_COLUMN(IsSelXiccToPKPiPi, isSelXiccToPKPiPi, int); //!
