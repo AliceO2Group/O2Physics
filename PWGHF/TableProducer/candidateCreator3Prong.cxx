@@ -1125,6 +1125,13 @@ struct HfCandidateCreator3ProngExpressions {
             if (indexRec > -1) {
               flagChannelMain = sign * channelMain;
 
+              /// swapping for D+, Ds->Kpipi and Lc->pKpi
+              if (std::abs(flagChannelMain) == DecayChannelMain::DplusToPiKK || std::abs(flagChannelMain) == DecayChannelMain::DsToPiKK || std::abs(flagChannelMain) == DecayChannelMain::LcToPKPi) {
+                if (arrayDaughters[0].has_mcParticle()) {
+                  swapping = static_cast<int8_t>(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
+                }
+              }
+
               // Flag the resonant decay channel
               std::vector<int> arrResoDaughIndex = {};
               if (pdgMother == Pdg::kDStar) {
