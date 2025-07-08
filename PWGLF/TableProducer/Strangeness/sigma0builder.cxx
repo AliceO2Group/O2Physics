@@ -24,6 +24,7 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include <chrono> 
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -73,6 +74,7 @@ struct sigma0builder {
   // For manual sliceBy
   PresliceUnsorted<V0DerivedMCDatas> perCollisionMCDerived = o2::aod::v0data::straCollisionId;
   PresliceUnsorted<V0StandardDerivedDatas> perCollisionSTDDerived = o2::aod::v0data::straCollisionId;
+  Preslice<V0StandardDerivedDatas> perCollisionSTDSorted = o2::aod::v0data::straCollisionId;
   PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
 
   // pack track quality but separte also afterburner
@@ -90,6 +92,7 @@ struct sigma0builder {
   Configurable<bool> fillBkgQAhistos{"fillBkgQAhistos", false, "if true, fill MC QA histograms for Bkg study"};
   Configurable<bool> doPi0QA{"doPi0QA", true, "Flag to fill QA histos for pi0 rejection study."};
   Configurable<bool> doAssocStudy{"doAssocStudy", false, "Do v0 to collision association study."};
+  Configurable<bool> fverbose{"fverbose", false, "QA printout."};
 
   // Event level
   Configurable<bool> doPPAnalysis{"doPPAnalysis", true, "if in pp, set to true"};
@@ -1317,6 +1320,8 @@ struct sigma0builder {
 
   void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, V0StandardDerivedDatas const& fullV0s, dauTracks const&)
   {
+    uint64_t CollIDBuffer = 0;
+    auto start = std::chrono::high_resolution_clock::now();
     for (const auto& coll : collisions) {
 
       if (!IsEventAccepted(coll, true))
@@ -1324,6 +1329,11 @@ struct sigma0builder {
 
       // Do analysis with collision-grouped V0s, retain full collision information
       const uint64_t collIdx = coll.globalIndex();
+      if (collIdx < CollIDBuffer) 
+        LOGF(fatal, "Collision table unsorted! Previous index: %i, current index: %i", CollIDBuffer, collIdx); 
+
+      CollIDBuffer = collIdx;
+
       auto V0s = fullV0s.sliceBy(perCollisionSTDDerived, collIdx);
       float centrality = doPPAnalysis ? coll.centFT0M() : coll.centFT0C();
 
@@ -1383,8 +1393,240 @@ struct sigma0builder {
           if (nSigmaCandidates % 10000 == 0)
             LOG(info) << "Sigma0 Candidates built: " << nSigmaCandidates;
         }
+      }      
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    
+    if (fverbose) LOGF(info, "[Process function call, PreSliceUnsorted] N. Collisions: %i, N. V0s: %i, Processing time (s): %lf", collisions.size(), fullV0s.size(), elapsed.count());      
+  }
+
+  void processRealDataSorted(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, V0StandardDerivedDatas const& fullV0s, dauTracks const&)
+  {
+    uint64_t CollIDBuffer = 0;
+    auto start = std::chrono::high_resolution_clock::now();
+    for (const auto& coll : collisions) {
+
+      if (!IsEventAccepted(coll, true))
+        continue;
+
+      // Do analysis with collision-grouped V0s, retain full collision information
+      const uint64_t collIdx = coll.globalIndex();
+      if (collIdx < CollIDBuffer) 
+        LOGF(fatal, "Collision table unsorted! Previous index: %i, current index: %i", CollIDBuffer, collIdx); 
+
+      CollIDBuffer = collIdx;
+
+      auto V0s = fullV0s.sliceBy(perCollisionSTDSorted, collIdx);
+      float centrality = doPPAnalysis ? coll.centFT0M() : coll.centFT0C();
+
+      //_______________________________________________
+      // Retrieving IR info
+      float interactionRate = -1;
+      if (fGetIR) {
+        interactionRate = rateFetcher.fetch(ccdb.service, coll.timestamp(), coll.runNumber(), irSource, fIRCrashOnNull) * 1.e-3;
+        if (interactionRate < 0)
+          histos.get<TH1>(HIST("GeneralQA/hRunNumberNegativeIR"))->Fill(Form("%d", coll.runNumber()), 1);
+
+        histos.fill(HIST("GeneralQA/hInteractionRate"), interactionRate);
+        histos.fill(HIST("GeneralQA/hCentralityVsInteractionRate"), centrality, interactionRate);
+      }
+
+      std::vector<int> bestGammasArray;
+      std::vector<int> bestLambdasArray;
+
+      //_______________________________________________
+      // V0s loop
+      for (auto& v0 : V0s) {
+        if (processPhotonCandidate(v0, coll))          // selecting photons
+          bestGammasArray.push_back(v0.globalIndex()); // Save indices of best gamma candidates
+
+        if (processLambdaCandidate(v0, coll))           // selecting lambdas
+          bestLambdasArray.push_back(v0.globalIndex()); // Save indices of best lambda candidates
+      }
+
+      //_______________________________________________
+      // Pi0 optional loop
+      if (doPi0QA) {
+        for (size_t i = 0; i < bestGammasArray.size(); ++i) {
+          auto gamma1 = fullV0s.rawIteratorAt(bestGammasArray[i]);
+          for (size_t j = i + 1; j < bestGammasArray.size(); ++j) {
+            auto gamma2 = fullV0s.rawIteratorAt(bestGammasArray[j]);
+            runPi0QA(gamma1, gamma2, coll);
+          }
+        }
+      }
+
+      //_______________________________________________
+      // Sigma0 nested loop
+      for (size_t i = 0; i < bestGammasArray.size(); ++i) {
+        auto gamma = fullV0s.rawIteratorAt(bestGammasArray[i]);
+
+        for (size_t j = 0; j < bestLambdasArray.size(); ++j) {
+          auto lambda = fullV0s.rawIteratorAt(bestLambdasArray[j]);
+
+          // Building sigma0 candidate
+          if (!buildSigma0(lambda, gamma, coll))
+            continue;
+
+          // Filling tables with accepted candidates
+          fillTables(lambda, gamma, coll);
+
+          nSigmaCandidates++;
+          if (nSigmaCandidates % 10000 == 0)
+            LOG(info) << "Sigma0 Candidates built: " << nSigmaCandidates;
+        }
+      }      
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    
+    if (fverbose) LOGF(info, "[Process function call, PreSliceSorted] N. Collisions: %i, N. V0s: %i, Processing time (s): %lf", collisions.size(), fullV0s.size(), elapsed.count());      
+  }
+
+  void processRealDataIterator(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator const& coll, V0StandardDerivedDatas const& fullV0s, dauTracks const&)
+  {    
+    auto start = std::chrono::high_resolution_clock::now();    
+
+    if (!IsEventAccepted(coll, true))
+      continue;
+        
+    float centrality = doPPAnalysis ? coll.centFT0M() : coll.centFT0C();
+
+    //_______________________________________________
+    // Retrieving IR info
+    float interactionRate = -1;
+    if (fGetIR) {
+      interactionRate = rateFetcher.fetch(ccdb.service, coll.timestamp(), coll.runNumber(), irSource, fIRCrashOnNull) * 1.e-3;
+      if (interactionRate < 0)
+        histos.get<TH1>(HIST("GeneralQA/hRunNumberNegativeIR"))->Fill(Form("%d", coll.runNumber()), 1);
+
+      histos.fill(HIST("GeneralQA/hInteractionRate"), interactionRate);
+      histos.fill(HIST("GeneralQA/hCentralityVsInteractionRate"), centrality, interactionRate);
+    }
+
+    std::vector<int> bestGammasArray;
+    std::vector<int> bestLambdasArray;
+
+    //_______________________________________________
+    // V0s loop
+    for (auto& v0 : fullV0s) {
+      if (processPhotonCandidate(v0, coll))          // selecting photons
+        bestGammasArray.push_back(v0.globalIndex() - fullV0s.offset()); // Save indices of best gamma candidates
+
+      if (processLambdaCandidate(v0, coll))           // selecting lambdas
+        bestLambdasArray.push_back(v0.globalIndex() - fullV0s.offset()); // Save indices of best lambda candidates
+    }
+
+    //_______________________________________________
+    // Pi0 optional loop
+    if (doPi0QA) {
+      for (size_t i = 0; i < bestGammasArray.size(); ++i) {
+        auto gamma1 = fullV0s.rawIteratorAt(bestGammasArray[i]);
+        for (size_t j = i + 1; j < bestGammasArray.size(); ++j) {
+          auto gamma2 = fullV0s.rawIteratorAt(bestGammasArray[j]);
+          runPi0QA(gamma1, gamma2, coll);
+        }
       }
     }
+
+    //_______________________________________________
+    // Sigma0 nested loop
+    for (size_t i = 0; i < bestGammasArray.size(); ++i) {
+      auto gamma = fullV0s.rawIteratorAt(bestGammasArray[i]);
+
+      for (size_t j = 0; j < bestLambdasArray.size(); ++j) {
+        auto lambda = fullV0s.rawIteratorAt(bestLambdasArray[j]);
+
+        // Building sigma0 candidate
+        if (!buildSigma0(lambda, gamma, coll))
+          continue;
+
+        // Filling tables with accepted candidates
+        fillTables(lambda, gamma, coll);
+
+        nSigmaCandidates++;
+        if (nSigmaCandidates % 10000 == 0)
+          LOG(info) << "Sigma0 Candidates built: " << nSigmaCandidates;
+      }
+    }      
+    
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    
+    if (fverbose) LOGF(info, "[Process function call, Iterator] N. V0s per collision: %i, Processing time (s): %lf", fullV0s.size(), elapsed.count());      
+  }
+
+  void processRealDataDavid(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, V0StandardDerivedDatas const& fullV0s, dauTracks const&)
+  {
+    auto start = std::chrono::high_resolution_clock::now();
+
+    // brute force grouped index construction 
+    std::vector<std::vector<int>> v0grouped(collisions.size()); 
+
+    for (const auto& v0 : fullV0s) {
+      v0grouped[v0.straCollisionId()].push_back(v0.globalIndex());
+    }
+
+    for (const auto& coll : collisions) {
+
+      if (!IsEventAccepted(coll, true))
+        continue;
+
+      float centrality = doPPAnalysis ? coll.centFT0M() : coll.centFT0C();
+
+      std::vector<int> bestGammasArray;
+      std::vector<int> bestLambdasArray;
+
+      //_______________________________________________
+      // V0s loop
+      for (size_t i; i < v0grouped[coll.globalIndex()].size(); i++) {
+        auto v0 = fullV0s.rawIteratorAt(v0grouped[coll.globalIndex()][i]);
+        if (processPhotonCandidate(v0, coll))          // selecting photons
+          bestGammasArray.push_back(v0.globalIndex()); // Save indices of best gamma candidates
+
+        if (processLambdaCandidate(v0, coll))           // selecting lambdas
+          bestLambdasArray.push_back(v0.globalIndex()); // Save indices of best lambda candidates
+      }
+
+      //_______________________________________________
+      // Pi0 optional loop
+      if (doPi0QA) {
+        for (size_t i = 0; i < bestGammasArray.size(); ++i) {
+          auto gamma1 = fullV0s.rawIteratorAt(bestGammasArray[i]);
+          for (size_t j = i + 1; j < bestGammasArray.size(); ++j) {
+            auto gamma2 = fullV0s.rawIteratorAt(bestGammasArray[j]);
+            runPi0QA(gamma1, gamma2, coll);
+          }
+        }
+      }
+
+      //_______________________________________________
+      // Sigma0 nested loop
+      for (size_t i = 0; i < bestGammasArray.size(); ++i) {
+        auto gamma = fullV0s.rawIteratorAt(bestGammasArray[i]);
+
+        for (size_t j = 0; j < bestLambdasArray.size(); ++j) {
+          auto lambda = fullV0s.rawIteratorAt(bestLambdasArray[j]);
+
+          // Building sigma0 candidate
+          if (!buildSigma0(lambda, gamma, coll))
+            continue;
+
+          // Filling tables with accepted candidates
+          fillTables(lambda, gamma, coll);
+
+          nSigmaCandidates++;
+          if (nSigmaCandidates % 10000 == 0)
+            LOG(info) << "Sigma0 Candidates built: " << nSigmaCandidates;
+        }
+      }      
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    
+    if (fverbose) LOGF(info, "[David's process function call] N. Collisions: %i, N. V0s: %i, Processing time (s): %lf", collisions.size(), fullV0s.size(), elapsed.count());      
+
   }
 
   // Simulated processing in Run 3 (subscribes to MC information too)
@@ -1395,6 +1637,9 @@ struct sigma0builder {
 
   PROCESS_SWITCH(sigma0builder, processMonteCarlo, "process as if MC data", false);
   PROCESS_SWITCH(sigma0builder, processRealData, "process as if real data", true);
+  PROCESS_SWITCH(sigma0builder, processRealDataSorted, "process as if real data. QA only.", true);
+  PROCESS_SWITCH(sigma0builder, processRealDataIterator, "process as if real data. QA only.", true);
+  PROCESS_SWITCH(sigma0builder, processRealDataDavid, "process as if real data. QA only.", true);
   PROCESS_SWITCH(sigma0builder, processGeneratedRun3, "process generated MC collisions", false);
 };
 
