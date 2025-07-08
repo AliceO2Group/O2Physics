@@ -118,9 +118,9 @@ struct UpcRhoAnalysis {
   Produces<o2::aod::RecoTree> recoTree;
   Produces<o2::aod::McTree> mcTree;
 
-  float pcEtaCut = 0.9;  // physics coordination recommendation
-  const int gapSide = 2; // required gap side
+  float pcEtaCut = 0.9; // physics coordination recommendation
   Configurable<int> numPions{"numPions", 2, "required number of pions in the event"};
+  Configurable<int> gapSide{"gapSide", 2, "required gap side"};
   Configurable<bool> requireTof{"requireTof", false, "require TOF signal"};
   Configurable<bool> onlyGoldenRuns{"onlyGoldenRuns", false, "process only golden runs"};
 
