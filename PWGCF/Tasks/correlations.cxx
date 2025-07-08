@@ -705,7 +705,7 @@ struct CorrelationTask {
 
     int bin = configurableBinningDerived.getBin({collision.posZ(), collision.multiplicity()});
     registry.fill(HIST("eventcount_same"), bin);
-    registry.fill(HIST("trackcount_same"), bin, tracks.size());
+    registry.fill(HIST("trackcount_same"), bin, tracks1.size());
     if constexpr (std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value)
       fillQA(collision, multiplicity, tracks1, tracks2);
     else
