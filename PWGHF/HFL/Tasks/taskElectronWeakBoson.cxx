@@ -119,7 +119,7 @@ struct HfTaskElectronWeakBoson {
 
   // KFParticle
   Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "KF Construct Method"};
-  Configurable<int> kfChisqMassMax{"kfChisqMassMax", 10, "Chi2 Max for mass reco by KF particle"};
+  Configurable<int> ChiSqNdfMax{"ChiSqNdfMax", 10, "Chi2 Max for mass reco by KF particle"};
 
   // CCDB service object
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -340,7 +340,7 @@ struct HfTaskElectronWeakBoson {
       // reco by RecoDecay
       auto child1 = RecoDecayPtEtaPhi::pVector(kfpIsoEle.GetPt(), kfpIsoEle.GetEta(), kfpIsoEle.GetPhi());
       auto child2 = RecoDecayPtEtaPhi::pVector(kfpAssEle.GetPt(), kfpAssEle.GetEta(), kfpAssEle.GetPhi());
-      double massZeeRecoDecay = RecoDecay::m(std::array{child1, child2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
+      double invMassEE = RecoDecay::m(std::array{child1, child2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
 
       // reco by KFparticle
       const KFParticle* electronPairs[2] = {&kfpIsoEle, &kfpAssEle};
@@ -348,24 +348,24 @@ struct HfTaskElectronWeakBoson {
       zeeKF.SetConstructMethod(kfConstructMethod);
       zeeKF.Construct(electronPairs, 2);
       // LOG(info) << "Invarimass cal by KF particle Chi2/NDF = " << zeeKF.GetChi2()/zeeKF.GetNDF();
-      float massZeeChi2 = zeeKF.GetChi2() / zeeKF.GetNDF();
+      float ChiSqNdf = zeeKF.GetChi2() / zeeKF.GetNDF();
       if (zeeKF.GetNDF() < 1) {
         continue;
       }
-      if (std::abs(massZeeChi2) > kfChisqMassMax) {
+      if (ChiSqNdf > ChiSqNdfMax) {
         continue;
       }
       float massZee, massZeeErr;
       zeeKF.GetMass(massZee, massZeeErr);
       // LOG(info) << "Invarimass cal by KF particle mass = " << massZee;
-      // LOG(info) << "Invarimass cal by RecoDecay = " << massZeeRecoDecay;
+      // LOG(info) << "Invarimass cal by RecoDecay = " << invMassEE;
 
       if (track.sign() * charge > 0) {
         registry.fill(HIST("hKfInvMassZeeLs"), kfpIsoEle.GetPt(), massZee);
-        registry.fill(HIST("hInvMassZeeLs"), kfpIsoEle.GetPt(), massZeeRecoDecay);
+        registry.fill(HIST("hInvMassZeeLs"), kfpIsoEle.GetPt(), invMassEE);
       } else {
         registry.fill(HIST("hKfInvMassZeeUls"), kfpIsoEle.GetPt(), massZee);
-        registry.fill(HIST("hInvMassZeeUls"), kfpIsoEle.GetPt(), massZeeRecoDecay);
+        registry.fill(HIST("hInvMassZeeUls"), kfpIsoEle.GetPt(), invMassEE);
       }
 
       reconstructedZ.emplace_back(
