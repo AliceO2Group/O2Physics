@@ -91,7 +91,6 @@ struct Phik0shortanalysis {
   // Configurables for track selection (not necessarily common for trigger and the two associated particles)
   struct : ConfigurableGroup {
     Configurable<float> cfgCutCharge{"cfgCutCharge", 0.0f, "Cut on charge"};
-    Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", false, "Primary track selection"};
     Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"};
     Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
     Configurable<float> cMinKaonPtcut{"cMinKaonPtcut", 0.15f, "Track minimum pt cut"};
@@ -115,9 +114,9 @@ struct Phik0shortanalysis {
     Configurable<float> nSigmaCutCombinedKa{"nSigmaCutCombinedKa", 3.0f, "Value of the TOF Nsigma cut for Kaons"};
 
     Configurable<float> nSigmaCutTPCPion{"nSigmaCutTPCPion", 4.0f, "Value of the TPC Nsigma cut for Pions"};
-    Configurable<float> cMinPionPtcut{"cMinPionPtcut", 0.3f, "Track minimum pt cut"};
+    Configurable<float> cMinPionPtcut{"cMinPionPtcut", 0.2f, "Track minimum pt cut"};
     Configurable<int> minTPCnClsFound{"minTPCnClsFound", 70, "min number of found TPC clusters"};
-    Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80, "min number of TPC crossed rows"};
+    Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70, "min number of TPC crossed rows"};
     Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
     Configurable<int> minITSnCls{"minITSnCls", 4, "min number of ITS clusters"};
     Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
@@ -724,10 +723,8 @@ struct Phik0shortanalysis {
 
   // Topological track selection
   template <bool isMC, typename T>
-  bool selectionTrackResonance(const T& track, bool isQA)
+  bool selectionTrackResonance(const T& track, bool doQA)
   {
-    if (trackConfigs.cfgPrimaryTrack && !track.isPrimaryTrack())
-      return false;
     if (trackConfigs.cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
       return false;
     if (trackConfigs.cfgPVContributor && !track.isPVContributor())
@@ -738,10 +735,8 @@ struct Phik0shortanalysis {
 
     if (track.pt() < trackConfigs.cMinKaonPtcut)
       return false;
-    if (std::abs(track.eta()) > trackConfigs.etaMax)
-      return false;
 
-    if (isQA) {
+    if (doQA) {
       if constexpr (!isMC) {
         dataPhiHist.fill(HIST("h2DauTracksPhiDCAxyPreCutData"), track.pt(), track.dcaXY());
         dataPhiHist.fill(HIST("h2DauTracksPhiDCAzPreCutData"), track.pt(), track.dcaZ());
@@ -752,7 +747,7 @@ struct Phik0shortanalysis {
     }
     if (std::abs(track.dcaXY()) > trackConfigs.cMaxDCArToPV1Phi + (trackConfigs.cMaxDCArToPV2Phi / std::pow(track.pt(), trackConfigs.cMaxDCArToPV3Phi)))
       return false;
-    if (isQA) {
+    if (doQA) {
       if constexpr (!isMC) {
         dataPhiHist.fill(HIST("h2DauTracksPhiDCAxyPostCutData"), track.pt(), track.dcaXY());
         dataPhiHist.fill(HIST("h2DauTracksPhiDCAzPostCutData"), track.pt(), track.dcaZ());
@@ -802,27 +797,17 @@ struct Phik0shortanalysis {
 
   // Topological selection for pions
   template <bool isTOFChecked, bool isMC, typename T>
-  bool selectionPion(const T& track, bool isQA)
+  bool selectionPion(const T& track, bool doQA)
   {
-    if (!track.hasITS())
-      return false;
-    if (track.itsNCls() < trackConfigs.minITSnCls)
-      return false;
-    if (track.itsChi2NCl() > trackConfigs.maxChi2ITS)
+    if (!track.isGlobalTrackWoDCA())
       return false;
 
-    if (!track.hasTPC())
+    if (track.itsNCls() < trackConfigs.minITSnCls)
       return false;
     if (track.tpcNClsFound() < trackConfigs.minTPCnClsFound)
       return false;
-    if (track.tpcNClsCrossedRows() < trackConfigs.minNCrossedRowsTPC)
-      return false;
-    if (track.tpcChi2NCl() > trackConfigs.maxChi2TPC)
-      return false;
 
     if (track.pt() < trackConfigs.cMinPionPtcut)
-      return false;
-    if (std::abs(track.eta()) > trackConfigs.etaMax)
       return false;
 
     if constexpr (isTOFChecked) {
@@ -830,7 +815,7 @@ struct Phik0shortanalysis {
         return false;
     }
 
-    if (isQA) {
+    if (doQA) {
       if constexpr (!isMC) {
         dataPionHist.fill(HIST("h2TracksPiDCAxyPreCutData"), track.pt(), track.dcaXY());
         dataPionHist.fill(HIST("h2TracksPiDCAzPreCutData"), track.pt(), track.dcaZ());
@@ -841,7 +826,7 @@ struct Phik0shortanalysis {
     }
     if (std::abs(track.dcaXY()) > trackConfigs.cMaxDCArToPV1Pion + (trackConfigs.cMaxDCArToPV2Pion / std::pow(track.pt(), trackConfigs.cMaxDCArToPV3Pion)))
       return false;
-    if (isQA) {
+    if (doQA) {
       if constexpr (!isMC) {
         dataPionHist.fill(HIST("h2TracksPiDCAxyPostCutData"), track.pt(), track.dcaXY());
         dataPionHist.fill(HIST("h2TracksPiDCAzPostCutData"), track.pt(), track.dcaZ());
