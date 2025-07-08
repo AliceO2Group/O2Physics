@@ -2515,7 +2515,13 @@ struct Phik0shortanalysis {
           isCountedPhi = true;
         }
 
-        float weightPhi = applyEfficiency ? 1.0f / (effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity())) : 1.0f;
+        float efficiencyPhi = 1.0f;
+        if (applyEfficiency) {
+          efficiencyPhi = effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity());
+          if (efficiencyPhi == 0)
+            efficiencyPhi = 1.0f;
+        }
+        float weightPhi = applyEfficiency ? 1.0f / efficiencyPhi : 1.0f;
         dataPhiHist.fill(HIST("h3PhiDataNewProc"), multiplicity, recPhi.Pt(), recPhi.M(), weightPhi);
 
         // V0 already reconstructed by the builder
@@ -2543,7 +2549,13 @@ struct Phik0shortanalysis {
           if (std::abs(v0.yK0Short()) > cfgYAcceptance)
             continue;
 
-          float weightPhiK0S = applyEfficiency ? 1.0f / (effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapK0S->Interpolate(multiplicity, v0.pt(), v0.yK0Short())) : 1.0f;
+          float efficiencyPhiK0S = 1.0f;
+          if (applyEfficiency) {
+            efficiencyPhiK0S = effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapK0S->Interpolate(multiplicity, v0.pt(), v0.yK0Short());
+            if (efficiencyPhiK0S == 0)
+              efficiencyPhiK0S = 1.0f;
+          }
+          float weightPhiK0S = applyEfficiency ? 1.0f / efficiencyPhiK0S : 1.0f;
           dataPhiK0SHist.fill(HIST("h5PhiK0SDataNewProc"), v0.yK0Short() - recPhi.Rapidity(), multiplicity, v0.pt(), v0.mK0Short(), recPhi.M(), weightPhiK0S);
         }
 
@@ -2559,7 +2571,13 @@ struct Phik0shortanalysis {
 
           float nSigmaTOFPi = (track.hasTOF() ? track.tofNSigmaPi() : -999);
 
-          float weightPhiPion = applyEfficiency ? 1.0f / (effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapPion->Interpolate(multiplicity, track.pt(), track.rapidity(massPi))) : 1.0f;
+          float efficiencyPhiPion = 1.0f;
+          if (applyEfficiency) {
+            efficiencyPhiPion = effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapPion->Interpolate(multiplicity, track.pt(), track.rapidity(massPi));
+            if (efficiencyPhiPion == 0)
+              efficiencyPhiPion = 1.0f;
+          }
+          float weightPhiPion = applyEfficiency ? 1.0f / efficiencyPhiPion : 1.0f;
           dataPhiPionHist.fill(HIST("h6PhiPiDataNewProc"), track.rapidity(massPi) - recPhi.Rapidity(), multiplicity, track.pt(), track.tpcNSigmaPi(), nSigmaTOFPi, recPhi.M(), weightPhiPion);
         }
       }
@@ -2615,7 +2633,13 @@ struct Phik0shortanalysis {
           isCountedPhi = true;
         }
 
-        float weightPhi = applyEfficiency ? 1.0f / (effMapPhi->Interpolate(genmultiplicity, recPhi.Pt(), recPhi.Rapidity())) : 1.0f;
+        float efficiencyPhi = 1.0f;
+        if (applyEfficiency) {
+          efficiencyPhi = effMapPhi->Interpolate(genmultiplicity, recPhi.Pt(), recPhi.Rapidity());
+          if (efficiencyPhi == 0)
+            efficiencyPhi = 1.0f;
+        }
+        float weightPhi = applyEfficiency ? 1.0f / efficiencyPhi : 1.0f;
         closureMCPhiHist.fill(HIST("h3PhiMCClosureNewProc"), genmultiplicity, recPhi.Pt(), recPhi.M(), weightPhi);
 
         // V0 already reconstructed by the builder
@@ -2639,7 +2663,13 @@ struct Phik0shortanalysis {
           if (std::abs(v0.yK0Short()) > cfgYAcceptance)
             continue;
 
-          float weightPhiK0S = applyEfficiency ? 1.0f / (effMapPhi->Interpolate(genmultiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapK0S->Interpolate(genmultiplicity, v0.pt(), v0.yK0Short())) : 1.0f;
+          float efficiencyPhiK0S = 1.0f;
+          if (applyEfficiency) {
+            efficiencyPhiK0S = effMapPhi->Interpolate(genmultiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapK0S->Interpolate(genmultiplicity, v0.pt(), v0.yK0Short());
+            if (efficiencyPhiK0S == 0)
+              efficiencyPhiK0S = 1.0f;
+          }
+          float weightPhiK0S = applyEfficiency ? 1.0f / efficiencyPhiK0S : 1.0f;
           closureMCPhiK0SHist.fill(HIST("h5PhiK0SMCClosureNewProc"), v0.yK0Short() - recPhi.Rapidity(), genmultiplicity, v0.pt(), v0.mK0Short(), recPhi.M(), weightPhiK0S);
         }
 
@@ -2661,7 +2691,13 @@ struct Phik0shortanalysis {
 
           float nSigmaTOFPi = (track.hasTOF() ? track.tofNSigmaPi() : -999);
 
-          float weightPhiPion = applyEfficiency ? 1.0f / (effMapPhi->Interpolate(genmultiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapPion->Interpolate(genmultiplicity, track.pt(), track.rapidity(massPi))) : 1.0f;
+          float efficiencyPhiPion = 1.0f;
+          if (applyEfficiency) {
+            efficiencyPhiPion = effMapPhi->Interpolate(genmultiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapPion->Interpolate(genmultiplicity, track.pt(), track.rapidity(massPi));
+            if (efficiencyPhiPion == 0)
+              efficiencyPhiPion = 1.0f;
+          }
+          float weightPhiPion = applyEfficiency ? 1.0f / efficiencyPhiPion : 1.0f;
           closureMCPhiPionHist.fill(HIST("h6PhiPiMCClosureNewProc"), track.rapidity(massPi) - recPhi.Rapidity(), genmultiplicity, track.pt(), track.tpcNSigmaPi(), nSigmaTOFPi, recPhi.M(), weightPhiPion);
         }
       }
