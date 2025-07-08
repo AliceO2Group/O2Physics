@@ -48,10 +48,14 @@ struct RhoEstimatorTask {
   Produces<aod::BkgD0McRhos> rhoD0McTable;
   Produces<aod::BkgDplusRhos> rhoDplusTable;
   Produces<aod::BkgDplusMcRhos> rhoDplusMcTable;
+  Produces<aod::BkgDstarRhos> rhoDstarTable;
+  Produces<aod::BkgDstarMcRhos> rhoDstarMcTable;
   Produces<aod::BkgLcRhos> rhoLcTable;
   Produces<aod::BkgLcMcRhos> rhoLcMcTable;
   Produces<aod::BkgBplusRhos> rhoBplusTable;
   Produces<aod::BkgBplusMcRhos> rhoBplusMcTable;
+  Produces<aod::BkgB0Rhos> rhoB0Table;
+  Produces<aod::BkgB0McRhos> rhoB0McTable;
   Produces<aod::BkgDielectronRhos> rhoDielectronTable;
   Produces<aod::BkgDielectronMcRhos> rhoDielectronMcTable;
 
@@ -275,6 +279,34 @@ struct RhoEstimatorTask {
   }
   PROCESS_SWITCH(RhoEstimatorTask, processDplusMcCollisions, "Fill rho tables for collisions with Dplus MCP candidates", false);
 
+  void processDstarCollisions(aod::JetCollision const& collision, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesDstarData const& candidates)
+  {
+    for (auto& candidate : candidates) {
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || collision.centrality() < config.centralityMin || collision.centrality() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
+        rhoDstarTable(0.0, 0.0);
+        continue;
+      }
+      inputParticles.clear();
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.trackingEfficiency, &candidate);
+
+      auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
+      rhoDstarTable(rho, rhoM);
+    }
+  }
+  PROCESS_SWITCH(RhoEstimatorTask, processDstarCollisions, "Fill rho tables for collisions with Dstar candidates", false);
+
+  void processDstarMcCollisions(aod::JetMcCollision const&, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesDstarMCP const& candidates)
+  {
+    for (auto& candidate : candidates) {
+      inputParticles.clear();
+      jetfindingutilities::analyseParticles<true>(inputParticles, particleSelection, 1, particles, pdgDatabase, &candidate);
+
+      auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
+      rhoDstarMcTable(rho, rhoM);
+    }
+  }
+  PROCESS_SWITCH(RhoEstimatorTask, processDstarMcCollisions, "Fill rho tables for collisions with Dstar MCP candidates", false);
+
   void processLcCollisions(aod::JetCollision const& collision, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesLcData const& candidates)
   {
     for (auto& candidate : candidates) {
@@ -302,6 +334,34 @@ struct RhoEstimatorTask {
     }
   }
   PROCESS_SWITCH(RhoEstimatorTask, processLcMcCollisions, "Fill rho tables for collisions with Lc MCP candidates", false);
+
+  void processB0Collisions(aod::JetCollision const& collision, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesB0Data const& candidates)
+  {
+    for (auto& candidate : candidates) {
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || collision.centrality() < config.centralityMin || collision.centrality() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
+        rhoB0Table(0.0, 0.0);
+        continue;
+      }
+      inputParticles.clear();
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.trackingEfficiency, &candidate);
+
+      auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
+      rhoB0Table(rho, rhoM);
+    }
+  }
+  PROCESS_SWITCH(RhoEstimatorTask, processB0Collisions, "Fill rho tables for collisions with B0 candidates", false);
+
+  void processB0McCollisions(aod::JetMcCollision const&, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesB0MCP const& candidates)
+  {
+    for (auto& candidate : candidates) {
+      inputParticles.clear();
+      jetfindingutilities::analyseParticles<true>(inputParticles, particleSelection, 1, particles, pdgDatabase, &candidate);
+
+      auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
+      rhoB0McTable(rho, rhoM);
+    }
+  }
+  PROCESS_SWITCH(RhoEstimatorTask, processB0McCollisions, "Fill rho tables for collisions with B0 MCP candidates", false);
 
   void processBplusCollisions(aod::JetCollision const& collision, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesBplusData const& candidates)
   {

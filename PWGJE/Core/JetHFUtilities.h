@@ -106,6 +106,42 @@ constexpr bool isDplusMcTable()
 }
 
 /**
+ * returns true if the candidate is from a D* table
+ */
+template <typename T>
+constexpr bool isDstarCandidate()
+{
+  return std::is_same_v<std::decay_t<T>, o2::aod::CandidatesDstarData::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesDstarData::filtered_iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesDstarMCD::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesDstarMCD::filtered_iterator>;
+}
+
+/**
+ * returns true if the particle is from a D* MC table
+ */
+template <typename T>
+constexpr bool isDstarMcCandidate()
+{
+  return std::is_same_v<std::decay_t<T>, o2::aod::CandidatesDstarMCP::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesDstarMCP::filtered_iterator>;
+}
+
+/**
+ * returns true if the table is a D* table
+ */
+template <typename T>
+constexpr bool isDstarTable()
+{
+  return isDstarCandidate<typename T::iterator>() || isDstarCandidate<typename T::filtered_iterator>();
+}
+
+/**
+ * returns true if the table is a D* MC table
+ */
+template <typename T>
+constexpr bool isDstarMcTable()
+{
+  return isDstarMcCandidate<typename T::iterator>() || isDstarMcCandidate<typename T::filtered_iterator>();
+}
+
+/**
  * returns true if the candidate is from a Lc table
  */
 template <typename T>
@@ -139,6 +175,42 @@ template <typename T>
 constexpr bool isLcMcTable()
 {
   return isLcMcCandidate<typename T::iterator>() || isLcMcCandidate<typename T::filtered_iterator>();
+}
+
+/**
+ * returns true if the candidate is from a B0 table
+ */
+template <typename T>
+constexpr bool isB0Candidate()
+{
+  return std::is_same_v<std::decay_t<T>, o2::aod::CandidatesB0Data::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesB0Data::filtered_iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesB0MCD::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesB0MCD::filtered_iterator>;
+}
+
+/**
+ * returns true if the particle is from a B0 MC table
+ */
+template <typename T>
+constexpr bool isB0McCandidate()
+{
+  return std::is_same_v<std::decay_t<T>, o2::aod::CandidatesB0MCP::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesB0MCP::filtered_iterator>;
+}
+
+/**
+ * returns true if the table is a B0 table
+ */
+template <typename T>
+constexpr bool isB0Table()
+{
+  return isB0Candidate<typename T::iterator>() || isB0Candidate<typename T::filtered_iterator>();
+}
+
+/**
+ * returns true if the table is a B0 MC table
+ */
+template <typename T>
+constexpr bool isB0McTable()
+{
+  return isB0McCandidate<typename T::iterator>() || isB0McCandidate<typename T::filtered_iterator>();
 }
 
 /**
@@ -188,7 +260,11 @@ constexpr bool isHFCandidate()
     return true;
   } else if constexpr (isDplusCandidate<T>()) {
     return true;
+  } else if constexpr (isDstarCandidate<T>()) {
+    return true;
   } else if constexpr (isLcCandidate<T>()) {
+    return true;
+  } else if constexpr (isB0Candidate<T>()) {
     return true;
   } else if constexpr (isBplusCandidate<T>()) {
     return true;
@@ -208,7 +284,11 @@ constexpr bool isHFMcCandidate()
     return true;
   } else if constexpr (isDplusMcCandidate<T>()) {
     return true;
+  } else if constexpr (isDstarMcCandidate<T>()) {
+    return true;
   } else if constexpr (isLcMcCandidate<T>()) {
+    return true;
+  } else if constexpr (isB0McCandidate<T>()) {
     return true;
   } else if constexpr (isBplusMcCandidate<T>()) {
     return true;
@@ -227,7 +307,11 @@ constexpr bool isHFTable()
     return true;
   } else if constexpr (isDplusCandidate<typename T::iterator>() || isDplusCandidate<typename T::filtered_iterator>()) {
     return true;
+  } else if constexpr (isDstarCandidate<typename T::iterator>() || isDstarCandidate<typename T::filtered_iterator>()) {
+    return true;
   } else if constexpr (isLcCandidate<typename T::iterator>() || isLcCandidate<typename T::filtered_iterator>()) {
+    return true;
+  } else if constexpr (isB0Candidate<typename T::iterator>() || isB0Candidate<typename T::filtered_iterator>()) {
     return true;
   } else if constexpr (isBplusCandidate<typename T::iterator>() || isBplusCandidate<typename T::filtered_iterator>()) {
     return true;
@@ -246,7 +330,11 @@ constexpr bool isHFMcTable()
     return true;
   } else if constexpr (isDplusMcCandidate<typename T::iterator>() || isDplusMcCandidate<typename T::filtered_iterator>()) {
     return true;
+  } else if constexpr (isDstarMcCandidate<typename T::iterator>() || isDstarMcCandidate<typename T::filtered_iterator>()) {
+    return true;
   } else if constexpr (isLcMcCandidate<typename T::iterator>() || isLcMcCandidate<typename T::filtered_iterator>()) {
+    return true;
+  } else if constexpr (isB0McCandidate<typename T::iterator>() || isB0McCandidate<typename T::filtered_iterator>()) {
     return true;
   } else if constexpr (isBplusMcCandidate<typename T::iterator>() || isBplusMcCandidate<typename T::filtered_iterator>()) {
     return true;
@@ -274,8 +362,20 @@ constexpr bool isMatchedHFCandidate(T const& candidate)
     } else {
       return false;
     }
+  } else if constexpr (isDstarCandidate<T>()) {
+    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) {
+      return true;
+    } else {
+      return false;
+    }
   } else if constexpr (isLcCandidate<T>()) {
     if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
+      return true;
+    } else {
+      return false;
+    }
+  } else if constexpr (isB0Candidate<T>()) {
+    if (std::abs(candidate.flagMcMatchRec()) == 1 << o2::aod::hf_cand_b0::DecayType::B0ToDPi) {
       return true;
     } else {
       return false;
@@ -298,8 +398,20 @@ constexpr bool isMatchedHFCandidate(T const& candidate)
     } else {
       return false;
     }
+  } else if constexpr (isDstarMcCandidate<T>()) {
+    if (std::abs(candidate.flagMcMatchGen()) == o2::hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) {
+      return true;
+    } else {
+      return false;
+    }
   } else if constexpr (isLcMcCandidate<T>()) {
     if (std::abs(candidate.flagMcMatchGen()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
+      return true;
+    } else {
+      return false;
+    }
+  } else if constexpr (isB0McCandidate<T>()) {
+    if (std::abs(candidate.flagMcMatchGen()) == 1 << o2::aod::hf_cand_b0::DecayType::B0ToDPi) {
       return true;
     } else {
       return false;
@@ -337,8 +449,20 @@ bool isHFDaughterTrack(T& track, U& candidate, V const& /*tracks*/)
     } else {
       return false;
     }
+  } else if constexpr (isDstarCandidate<U>()) {
+    if (candidate.prong0Id() == track.globalIndex() || candidate.prong1Id() == track.globalIndex() || candidate.prong2Id() == track.globalIndex()) {
+      return true;
+    } else {
+      return false;
+    }
   } else if constexpr (isLcCandidate<U>()) {
     if (candidate.prong0Id() == track.globalIndex() || candidate.prong1Id() == track.globalIndex() || candidate.prong2Id() == track.globalIndex()) {
+      return true;
+    } else {
+      return false;
+    }
+  } else if constexpr (isB0Candidate<U>()) {
+    if (candidate.prong0Id() == track.globalIndex() || candidate.prong1Id() == track.globalIndex() || candidate.prong2Id() == track.globalIndex() || candidate.prong3Id() == track.globalIndex()) {
       return true;
     } else {
       return false;
@@ -388,15 +512,19 @@ auto matchedHFParticle(const T& candidate, const U& /*tracks*/, const V& /*parti
  * @param candidate HF candidate that is being checked
  * @param table the table to be sliced
  */
-template <typename T, typename U, typename V, typename M, typename N, typename O>
-auto slicedPerHFCandidate(T const& table, U const& candidate, V const& perD0Candidate, M const& perDplusCandidate, N const& perLcCandidate, O const& perBplusCandidate)
+template <typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename Q>
+auto slicedPerHFCandidate(T const& table, U const& candidate, V const& perD0Candidate, M const& perDplusCandidate, N const& perDstarCandidate, O const& perLcCandidate, P const& perB0Candidate, Q const& perBplusCandidate)
 {
   if constexpr (isD0Candidate<U>()) {
     return table.sliceBy(perD0Candidate, candidate.globalIndex());
   } else if constexpr (isDplusCandidate<U>()) {
     return table.sliceBy(perDplusCandidate, candidate.globalIndex());
+  } else if constexpr (isDstarCandidate<U>()) {
+    return table.sliceBy(perDstarCandidate, candidate.globalIndex());
   } else if constexpr (isLcCandidate<U>()) {
     return table.sliceBy(perLcCandidate, candidate.globalIndex());
+  } else if constexpr (isB0Candidate<U>()) {
+    return table.sliceBy(perB0Candidate, candidate.globalIndex());
   } else if constexpr (isBplusCandidate<U>()) {
     return table.sliceBy(perBplusCandidate, candidate.globalIndex());
   } else {
@@ -411,15 +539,19 @@ auto slicedPerHFCandidate(T const& table, U const& candidate, V const& perD0Cand
  * @param jet jet that is being sliced based on
  * @param table the table to be sliced
  */
-template <typename HFTable, typename T, typename U, typename V, typename M, typename N, typename O>
-auto slicedPerHFJet(T const& table, U const& jet, V const& perD0Jet, M const& perDplusJet, N const& perLcJet, O const& perBplusJet)
+template <typename HFTable, typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename Q>
+auto slicedPerHFJet(T const& table, U const& jet, V const& perD0Jet, M const& perDplusJet, N const& perDstarJet, O const& perLcJet, P const& perB0Jet, Q const& perBplusJet)
 {
   if constexpr (isD0Table<HFTable>() || isD0McTable<HFTable>()) {
     return table.sliceBy(perD0Jet, jet.globalIndex());
   } else if constexpr (isDplusTable<HFTable>() || isDplusMcTable<HFTable>()) {
     return table.sliceBy(perDplusJet, jet.globalIndex());
+  } else if constexpr (isDstarTable<HFTable>() || isDstarMcTable<HFTable>()) {
+    return table.sliceBy(perDstarJet, jet.globalIndex());
   } else if constexpr (isLcTable<HFTable>() || isLcMcTable<HFTable>()) {
     return table.sliceBy(perLcJet, jet.globalIndex());
+  } else if constexpr (isB0Table<HFTable>() || isB0McTable<HFTable>()) {
+    return table.sliceBy(perB0Jet, jet.globalIndex());
   } else if constexpr (isBplusTable<HFTable>() || isBplusMcTable<HFTable>()) {
     return table.sliceBy(perBplusJet, jet.globalIndex());
   } else {
@@ -461,8 +593,12 @@ int getHFCandidatePDG(T const& /*candidate*/)
     return static_cast<int>(o2::constants::physics::Pdg::kD0);
   } else if constexpr (isDplusCandidate<T>() || isDplusMcCandidate<T>()) {
     return static_cast<int>(o2::constants::physics::Pdg::kDPlus);
+  } else if constexpr (isDstarCandidate<T>() || isDstarMcCandidate<T>()) {
+    return static_cast<int>(o2::constants::physics::Pdg::kDStar);
   } else if constexpr (isLcCandidate<T>() || isLcMcCandidate<T>()) {
     return static_cast<int>(o2::constants::physics::Pdg::kLambdaCPlus);
+  } else if constexpr (isB0Candidate<T>() || isB0McCandidate<T>()) {
+    return static_cast<int>(o2::constants::physics::Pdg::kB0);
   } else if constexpr (isBplusCandidate<T>() || isBplusMcCandidate<T>()) {
     return static_cast<int>(o2::constants::physics::Pdg::kBPlus);
   } else {
@@ -480,8 +616,12 @@ int getHFTablePDG()
     return static_cast<int>(o2::constants::physics::Pdg::kD0);
   } else if constexpr (isDplusTable<T>() || isDplusMcTable<T>()) {
     return static_cast<int>(o2::constants::physics::Pdg::kDPlus);
+  } else if constexpr (isDstarTable<T>() || isDstarMcTable<T>()) {
+    return static_cast<int>(o2::constants::physics::Pdg::kDStar);
   } else if constexpr (isLcTable<T>() || isLcMcTable<T>()) {
     return static_cast<int>(o2::constants::physics::Pdg::kLambdaCPlus);
+  } else if constexpr (isB0Table<T>() || isB0McTable<T>()) {
+    return static_cast<int>(o2::constants::physics::Pdg::kB0);
   } else if constexpr (isBplusTable<T>() || isBplusMcTable<T>()) {
     return static_cast<int>(o2::constants::physics::Pdg::kBPlus);
   } else {
@@ -501,8 +641,12 @@ float getHFCandidatePDGMass(T const& /*candidate*/)
     return static_cast<float>(o2::constants::physics::MassD0);
   } else if constexpr (isDplusCandidate<T>() || isDplusMcCandidate<T>()) {
     return static_cast<float>(o2::constants::physics::MassDPlus);
+  } else if constexpr (isDstarCandidate<T>() || isDstarMcCandidate<T>()) {
+    return static_cast<float>(o2::constants::physics::MassDStar);
   } else if constexpr (isLcCandidate<T>() || isLcMcCandidate<T>()) {
     return static_cast<float>(o2::constants::physics::MassLambdaCPlus);
+  } else if constexpr (isB0Candidate<T>() || isB0McCandidate<T>()) {
+    return static_cast<float>(o2::constants::physics::MassB0);
   } else if constexpr (isBplusCandidate<T>() || isBplusMcCandidate<T>()) {
     return static_cast<float>(o2::constants::physics::MassBPlus);
   } else {
@@ -521,8 +665,12 @@ float getHFTablePDGMass()
     return static_cast<float>(o2::constants::physics::MassD0);
   } else if constexpr (isDplusTable<T>() || isDplusMcTable<T>()) {
     return static_cast<float>(o2::constants::physics::MassDPlus);
+  } else if constexpr (isDstarTable<T>() || isDstarMcTable<T>()) {
+    return static_cast<float>(o2::constants::physics::MassDStar);
   } else if constexpr (isLcTable<T>() || isLcMcTable<T>()) {
     return static_cast<float>(o2::constants::physics::MassLambdaCPlus);
+  } else if constexpr (isB0Table<T>() || isB0McTable<T>()) {
+    return static_cast<float>(o2::constants::physics::MassB0);
   } else if constexpr (isBplusTable<T>() || isBplusMcTable<T>()) {
     return static_cast<float>(o2::constants::physics::MassBPlus);
   } else {
@@ -683,6 +831,66 @@ void fillDplusCandidateTable(T const& candidate, U& DplusParTable, V& DplusParET
 }
 
 template <bool isMc, typename T, typename U, typename V, typename M, typename N>
+void fillDstarCandidateTable(T const& candidate, U& DstarParTable, V& DstarParDaughterTable, M& DstarMlTable, N& DstarMCDTable)
+{
+
+  DstarParTable(
+    candidate.pxProng0(),
+    candidate.pyProng0(),
+    candidate.pzProng0(),
+    candidate.pxProng1(),
+    candidate.pyProng1(),
+    candidate.pzProng1(),
+    candidate.signProng1(),
+    candidate.impactParameter1(),
+    candidate.impactParameterNormalised1(),
+    candidate.nSigTpcPi1(),
+    candidate.nSigTofPi1(),
+    candidate.nSigTpcTofPi1());
+
+  DstarParDaughterTable(
+    candidate.chi2PCACharm(),
+    candidate.cpaCharm(),
+    candidate.cpaXYCharm(),
+    candidate.decayLengthCharm(),
+    candidate.decayLengthXYCharm(),
+    candidate.decayLengthNormalisedCharm(),
+    candidate.decayLengthXYNormalisedCharm(),
+    candidate.pxProng0Charm(),
+    candidate.pyProng0Charm(),
+    candidate.pzProng0Charm(),
+    candidate.pxProng1Charm(),
+    candidate.pyProng1Charm(),
+    candidate.pzProng1Charm(),
+    candidate.invMassCharm(),
+    candidate.impactParameter0Charm(),
+    candidate.impactParameter1Charm(),
+    candidate.impactParameterNormalised0Charm(),
+    candidate.impactParameterNormalised1Charm(),
+    candidate.nSigTpcPi0Charm(),
+    candidate.nSigTofPi0Charm(),
+    candidate.nSigTpcTofPi0Charm(),
+    candidate.nSigTpcKa0Charm(),
+    candidate.nSigTofKa0Charm(),
+    candidate.nSigTpcTofKa0Charm(),
+    candidate.nSigTpcPi1Charm(),
+    candidate.nSigTofPi1Charm(),
+    candidate.nSigTpcTofPi1Charm(),
+    candidate.nSigTpcKa1Charm(),
+    candidate.nSigTofKa1Charm(),
+    candidate.nSigTpcTofKa1Charm());
+
+  std::vector<float> mlScoresVector;
+  auto mlScoresSpan = candidate.mlScores();
+  std::copy(mlScoresSpan.begin(), mlScoresSpan.end(), std::back_inserter(mlScoresVector));
+  DstarMlTable(mlScoresVector);
+
+  if constexpr (isMc) {
+    DstarMCDTable(candidate.flagMcMatchRec(), candidate.originMcRec());
+  }
+}
+
+template <bool isMc, typename T, typename U, typename V, typename M, typename N>
 void fillLcCandidateTable(T const& candidate, U& LcParTable, V& LcParETable, M& LcMlTable, N& LcMCDTable)
 {
 
@@ -751,6 +959,91 @@ void fillLcCandidateTable(T const& candidate, U& LcParTable, V& LcParETable, M& 
 
   if constexpr (isMc) {
     LcMCDTable(candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.isCandidateSwapped());
+  }
+}
+
+// need to update this
+template <bool isMc, typename T, typename U, typename V, typename M, typename N, typename O, typename P>
+void fillB0CandidateTable(T const& candidate, U& B0ParTable, V& B0ParETable, M& B0ParD0Table, N& B0MlTable, O& B0MlD0Table, P& B0MCDTable)
+{
+
+  B0ParTable(
+    candidate.chi2PCA(),
+    candidate.cpa(),
+    candidate.cpaXY(),
+    candidate.decayLength(),
+    candidate.decayLengthXY(),
+    candidate.decayLengthNormalised(),
+    candidate.decayLengthXYNormalised(),
+    candidate.ptProng0(),
+    candidate.ptProng1(),
+    candidate.impactParameter0(),
+    candidate.impactParameter1(),
+    candidate.impactParameterNormalised0(),
+    candidate.impactParameterNormalised1(),
+    candidate.nSigTpcPiExpPi(),
+    candidate.nSigTofPiExpPi(),
+    candidate.nSigTpcTofPiExpPi(),
+    candidate.nSigTpcKaExpPi(),
+    candidate.nSigTofKaExpPi(),
+    candidate.nSigTpcTofKaExpPi(),
+    candidate.maxNormalisedDeltaIP(),
+    candidate.impactParameterProduct());
+
+  B0ParETable(
+    candidate.xSecondaryVertex(),
+    candidate.ySecondaryVertex(),
+    candidate.zSecondaryVertex(),
+    candidate.errorDecayLength(),
+    candidate.errorDecayLengthXY(),
+    candidate.rSecondaryVertex(),
+    candidate.pProng1(),
+    candidate.pxProng1(),
+    candidate.pyProng1(),
+    candidate.pzProng1(),
+    candidate.errorImpactParameter1(),
+    candidate.cosThetaStar(),
+    candidate.ct());
+
+  B0ParD0Table(
+    candidate.chi2PCACharm(),
+    candidate.nProngsContributorsPVCharm(),
+    candidate.cpaCharm(),
+    candidate.cpaXYCharm(),
+    candidate.decayLengthCharm(),
+    candidate.decayLengthXYCharm(),
+    candidate.decayLengthNormalisedCharm(),
+    candidate.decayLengthXYNormalisedCharm(),
+    candidate.ptProng0Charm(),
+    candidate.ptProng1Charm(),
+    candidate.ptProng2Charm(),
+    candidate.impactParameter0Charm(),
+    candidate.impactParameter1Charm(),
+    candidate.impactParameter2Charm(),
+    candidate.impactParameterNormalised0Charm(),
+    candidate.impactParameterNormalised1Charm(),
+    candidate.impactParameterNormalised2Charm(),
+    candidate.nSigTpcPi0Charm(),
+    candidate.nSigTofPi0Charm(),
+    candidate.nSigTpcTofPi0Charm(),
+    candidate.nSigTpcKa1Charm(),
+    candidate.nSigTofKa1Charm(),
+    candidate.nSigTpcTofKa1Charm(),
+    candidate.nSigTpcPi2Charm(),
+    candidate.nSigTofPi2Charm(),
+    candidate.nSigTpcTofPi2Charm());
+
+  // B0SelectionFlagTable(candidate.candidateSelFlag());
+
+  B0MlTable(candidate.mlScoreSig());
+
+  std::vector<float> mlScoresCharmVector;
+  auto mlScoresCharmSpan = candidate.mlScoresCharm();
+  std::copy(mlScoresCharmSpan.begin(), mlScoresCharmSpan.end(), std::back_inserter(mlScoresCharmVector));
+  B0MlD0Table(mlScoresCharmVector);
+
+  if constexpr (isMc) {
+    B0MCDTable(candidate.flagMcMatchRec(), candidate.originMcRec());
   }
 }
 
@@ -842,8 +1135,14 @@ void fillHFCandidateTable(T const& candidate, int32_t collisionIndex, U& HFBaseT
   if constexpr (isDplusCandidate<T>()) {
     fillDplusCandidateTable<isMc>(candidate, HFParTable, HFParETable, HFMlTable, HFMCDTable);
   }
+  if constexpr (isDstarCandidate<T>()) {
+    fillDstarCandidateTable<isMc>(candidate, HFParTable, HFParDaughterTable, HFMlTable, HFMCDTable);
+  }
   if constexpr (isLcCandidate<T>()) {
     fillLcCandidateTable<isMc>(candidate, HFParTable, HFParETable, HFMlTable, HFMCDTable);
+  }
+  if constexpr (isB0Candidate<T>()) {
+    fillB0CandidateTable<isMc>(candidate, HFParTable, HFParETable, HFParDaughterTable, HFMlTable, HFMlDaughterTable, HFMCDTable);
   }
   if constexpr (isBplusCandidate<T>()) {
     fillBplusCandidateTable<isMc>(candidate, HFParTable, HFParETable, HFParDaughterTable, HFMlTable, HFMlDaughterTable, HFMCDTable);
