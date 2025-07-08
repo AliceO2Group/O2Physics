@@ -119,7 +119,7 @@ struct HfTaskElectronWeakBoson {
 
   // KFParticle
   Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "KF Construct Method"};
-  Configurable<int> ChiSqNdfMax{"ChiSqNdfMax", 10, "Chi2 Max for mass reco by KF particle"};
+  Configurable<int> chiSqNdfMax{"chiSqNdfMax", 10, "Chi2 Max for mass reco by KF particle"};
 
   // CCDB service object
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -348,11 +348,11 @@ struct HfTaskElectronWeakBoson {
       zeeKF.SetConstructMethod(kfConstructMethod);
       zeeKF.Construct(electronPairs, 2);
       // LOG(info) << "Invarimass cal by KF particle Chi2/NDF = " << zeeKF.GetChi2()/zeeKF.GetNDF();
-      float ChiSqNdf = zeeKF.GetChi2() / zeeKF.GetNDF();
+      float chiSqNdf = zeeKF.GetChi2() / zeeKF.GetNDF();
       if (zeeKF.GetNDF() < 1) {
         continue;
       }
-      if (ChiSqNdf > ChiSqNdfMax) {
+      if (chiSqNdf > chiSqNdfMax) {
         continue;
       }
       float massZee, massZeeErr;
