@@ -91,7 +91,6 @@ struct Phik0shortanalysis {
   // Configurables for track selection (not necessarily common for trigger and the two associated particles)
   struct : ConfigurableGroup {
     Configurable<float> cfgCutCharge{"cfgCutCharge", 0.0f, "Cut on charge"};
-    Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", false, "Primary track selection"};
     Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"};
     Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
     Configurable<float> cMinKaonPtcut{"cMinKaonPtcut", 0.15f, "Track minimum pt cut"};
@@ -115,9 +114,9 @@ struct Phik0shortanalysis {
     Configurable<float> nSigmaCutCombinedKa{"nSigmaCutCombinedKa", 3.0f, "Value of the TOF Nsigma cut for Kaons"};
 
     Configurable<float> nSigmaCutTPCPion{"nSigmaCutTPCPion", 4.0f, "Value of the TPC Nsigma cut for Pions"};
-    Configurable<float> cMinPionPtcut{"cMinPionPtcut", 0.3f, "Track minimum pt cut"};
+    Configurable<float> cMinPionPtcut{"cMinPionPtcut", 0.2f, "Track minimum pt cut"};
     Configurable<int> minTPCnClsFound{"minTPCnClsFound", 70, "min number of found TPC clusters"};
-    Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80, "min number of TPC crossed rows"};
+    Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70, "min number of TPC crossed rows"};
     Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
     Configurable<int> minITSnCls{"minITSnCls", 4, "min number of ITS clusters"};
     Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
@@ -724,10 +723,8 @@ struct Phik0shortanalysis {
 
   // Topological track selection
   template <bool isMC, typename T>
-  bool selectionTrackResonance(const T& track, bool isQA)
+  bool selectionTrackResonance(const T& track, bool doQA)
   {
-    if (trackConfigs.cfgPrimaryTrack && !track.isPrimaryTrack())
-      return false;
     if (trackConfigs.cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
       return false;
     if (trackConfigs.cfgPVContributor && !track.isPVContributor())
@@ -738,10 +735,8 @@ struct Phik0shortanalysis {
 
     if (track.pt() < trackConfigs.cMinKaonPtcut)
       return false;
-    if (std::abs(track.eta()) > trackConfigs.etaMax)
-      return false;
 
-    if (isQA) {
+    if (doQA) {
       if constexpr (!isMC) {
         dataPhiHist.fill(HIST("h2DauTracksPhiDCAxyPreCutData"), track.pt(), track.dcaXY());
         dataPhiHist.fill(HIST("h2DauTracksPhiDCAzPreCutData"), track.pt(), track.dcaZ());
@@ -752,7 +747,7 @@ struct Phik0shortanalysis {
     }
     if (std::abs(track.dcaXY()) > trackConfigs.cMaxDCArToPV1Phi + (trackConfigs.cMaxDCArToPV2Phi / std::pow(track.pt(), trackConfigs.cMaxDCArToPV3Phi)))
       return false;
-    if (isQA) {
+    if (doQA) {
       if constexpr (!isMC) {
         dataPhiHist.fill(HIST("h2DauTracksPhiDCAxyPostCutData"), track.pt(), track.dcaXY());
         dataPhiHist.fill(HIST("h2DauTracksPhiDCAzPostCutData"), track.pt(), track.dcaZ());
@@ -802,27 +797,17 @@ struct Phik0shortanalysis {
 
   // Topological selection for pions
   template <bool isTOFChecked, bool isMC, typename T>
-  bool selectionPion(const T& track, bool isQA)
+  bool selectionPion(const T& track, bool doQA)
   {
-    if (!track.hasITS())
-      return false;
-    if (track.itsNCls() < trackConfigs.minITSnCls)
-      return false;
-    if (track.itsChi2NCl() > trackConfigs.maxChi2ITS)
+    if (!track.isGlobalTrackWoDCA())
       return false;
 
-    if (!track.hasTPC())
+    if (track.itsNCls() < trackConfigs.minITSnCls)
       return false;
     if (track.tpcNClsFound() < trackConfigs.minTPCnClsFound)
       return false;
-    if (track.tpcNClsCrossedRows() < trackConfigs.minNCrossedRowsTPC)
-      return false;
-    if (track.tpcChi2NCl() > trackConfigs.maxChi2TPC)
-      return false;
 
     if (track.pt() < trackConfigs.cMinPionPtcut)
-      return false;
-    if (std::abs(track.eta()) > trackConfigs.etaMax)
       return false;
 
     if constexpr (isTOFChecked) {
@@ -830,7 +815,7 @@ struct Phik0shortanalysis {
         return false;
     }
 
-    if (isQA) {
+    if (doQA) {
       if constexpr (!isMC) {
         dataPionHist.fill(HIST("h2TracksPiDCAxyPreCutData"), track.pt(), track.dcaXY());
         dataPionHist.fill(HIST("h2TracksPiDCAzPreCutData"), track.pt(), track.dcaZ());
@@ -841,7 +826,7 @@ struct Phik0shortanalysis {
     }
     if (std::abs(track.dcaXY()) > trackConfigs.cMaxDCArToPV1Pion + (trackConfigs.cMaxDCArToPV2Pion / std::pow(track.pt(), trackConfigs.cMaxDCArToPV3Pion)))
       return false;
-    if (isQA) {
+    if (doQA) {
       if constexpr (!isMC) {
         dataPionHist.fill(HIST("h2TracksPiDCAxyPostCutData"), track.pt(), track.dcaXY());
         dataPionHist.fill(HIST("h2TracksPiDCAzPostCutData"), track.pt(), track.dcaZ());
@@ -2515,7 +2500,13 @@ struct Phik0shortanalysis {
           isCountedPhi = true;
         }
 
-        float weightPhi = applyEfficiency ? 1.0f / (effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity())) : 1.0f;
+        float efficiencyPhi = 1.0f;
+        if (applyEfficiency) {
+          efficiencyPhi = effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity());
+          if (efficiencyPhi == 0)
+            efficiencyPhi = 1.0f;
+        }
+        float weightPhi = applyEfficiency ? 1.0f / efficiencyPhi : 1.0f;
         dataPhiHist.fill(HIST("h3PhiDataNewProc"), multiplicity, recPhi.Pt(), recPhi.M(), weightPhi);
 
         // V0 already reconstructed by the builder
@@ -2543,7 +2534,13 @@ struct Phik0shortanalysis {
           if (std::abs(v0.yK0Short()) > cfgYAcceptance)
             continue;
 
-          float weightPhiK0S = applyEfficiency ? 1.0f / (effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapK0S->Interpolate(multiplicity, v0.pt(), v0.yK0Short())) : 1.0f;
+          float efficiencyPhiK0S = 1.0f;
+          if (applyEfficiency) {
+            efficiencyPhiK0S = effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapK0S->Interpolate(multiplicity, v0.pt(), v0.yK0Short());
+            if (efficiencyPhiK0S == 0)
+              efficiencyPhiK0S = 1.0f;
+          }
+          float weightPhiK0S = applyEfficiency ? 1.0f / efficiencyPhiK0S : 1.0f;
           dataPhiK0SHist.fill(HIST("h5PhiK0SDataNewProc"), v0.yK0Short() - recPhi.Rapidity(), multiplicity, v0.pt(), v0.mK0Short(), recPhi.M(), weightPhiK0S);
         }
 
@@ -2559,7 +2556,13 @@ struct Phik0shortanalysis {
 
           float nSigmaTOFPi = (track.hasTOF() ? track.tofNSigmaPi() : -999);
 
-          float weightPhiPion = applyEfficiency ? 1.0f / (effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapPion->Interpolate(multiplicity, track.pt(), track.rapidity(massPi))) : 1.0f;
+          float efficiencyPhiPion = 1.0f;
+          if (applyEfficiency) {
+            efficiencyPhiPion = effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapPion->Interpolate(multiplicity, track.pt(), track.rapidity(massPi));
+            if (efficiencyPhiPion == 0)
+              efficiencyPhiPion = 1.0f;
+          }
+          float weightPhiPion = applyEfficiency ? 1.0f / efficiencyPhiPion : 1.0f;
           dataPhiPionHist.fill(HIST("h6PhiPiDataNewProc"), track.rapidity(massPi) - recPhi.Rapidity(), multiplicity, track.pt(), track.tpcNSigmaPi(), nSigmaTOFPi, recPhi.M(), weightPhiPion);
         }
       }
@@ -2615,7 +2618,13 @@ struct Phik0shortanalysis {
           isCountedPhi = true;
         }
 
-        float weightPhi = applyEfficiency ? 1.0f / (effMapPhi->Interpolate(genmultiplicity, recPhi.Pt(), recPhi.Rapidity())) : 1.0f;
+        float efficiencyPhi = 1.0f;
+        if (applyEfficiency) {
+          efficiencyPhi = effMapPhi->Interpolate(genmultiplicity, recPhi.Pt(), recPhi.Rapidity());
+          if (efficiencyPhi == 0)
+            efficiencyPhi = 1.0f;
+        }
+        float weightPhi = applyEfficiency ? 1.0f / efficiencyPhi : 1.0f;
         closureMCPhiHist.fill(HIST("h3PhiMCClosureNewProc"), genmultiplicity, recPhi.Pt(), recPhi.M(), weightPhi);
 
         // V0 already reconstructed by the builder
@@ -2639,7 +2648,13 @@ struct Phik0shortanalysis {
           if (std::abs(v0.yK0Short()) > cfgYAcceptance)
             continue;
 
-          float weightPhiK0S = applyEfficiency ? 1.0f / (effMapPhi->Interpolate(genmultiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapK0S->Interpolate(genmultiplicity, v0.pt(), v0.yK0Short())) : 1.0f;
+          float efficiencyPhiK0S = 1.0f;
+          if (applyEfficiency) {
+            efficiencyPhiK0S = effMapPhi->Interpolate(genmultiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapK0S->Interpolate(genmultiplicity, v0.pt(), v0.yK0Short());
+            if (efficiencyPhiK0S == 0)
+              efficiencyPhiK0S = 1.0f;
+          }
+          float weightPhiK0S = applyEfficiency ? 1.0f / efficiencyPhiK0S : 1.0f;
           closureMCPhiK0SHist.fill(HIST("h5PhiK0SMCClosureNewProc"), v0.yK0Short() - recPhi.Rapidity(), genmultiplicity, v0.pt(), v0.mK0Short(), recPhi.M(), weightPhiK0S);
         }
 
@@ -2661,7 +2676,13 @@ struct Phik0shortanalysis {
 
           float nSigmaTOFPi = (track.hasTOF() ? track.tofNSigmaPi() : -999);
 
-          float weightPhiPion = applyEfficiency ? 1.0f / (effMapPhi->Interpolate(genmultiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapPion->Interpolate(genmultiplicity, track.pt(), track.rapidity(massPi))) : 1.0f;
+          float efficiencyPhiPion = 1.0f;
+          if (applyEfficiency) {
+            efficiencyPhiPion = effMapPhi->Interpolate(genmultiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapPion->Interpolate(genmultiplicity, track.pt(), track.rapidity(massPi));
+            if (efficiencyPhiPion == 0)
+              efficiencyPhiPion = 1.0f;
+          }
+          float weightPhiPion = applyEfficiency ? 1.0f / efficiencyPhiPion : 1.0f;
           closureMCPhiPionHist.fill(HIST("h6PhiPiMCClosureNewProc"), track.rapidity(massPi) - recPhi.Rapidity(), genmultiplicity, track.pt(), track.tpcNSigmaPi(), nSigmaTOFPi, recPhi.M(), weightPhiPion);
         }
       }
