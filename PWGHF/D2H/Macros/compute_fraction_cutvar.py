@@ -56,6 +56,10 @@ def main(config):
         infile_eff.Close()
 
     pt_bin_to_process = cfg.get("pt_bin_to_process", -1)
+    if not isinstance(pt_bin_to_process, int):
+        sys.exit("Fatal error: pt_bin_to_process must be an integer value. Exit.")
+    if (pt_bin_to_process != -1 and pt_bin_to_process < 1) or pt_bin_to_process > hist_rawy[0].GetNbinsX():
+        sys.exit("Fatal error: pt_bin_to_process must be a positive value up to number of bins in raw yield histogram. Exit.")
 
     if cfg["central_efficiency"]["computerawfrac"]:
         infile_name = os.path.join(cfg["central_efficiency"]["inputdir"], cfg["central_efficiency"]["inputfile"])
