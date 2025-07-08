@@ -12,6 +12,7 @@
 /// \file taskElectronWeakBoson.cxx
 /// \brief task for WeakBoson (W/Z) based on electron in mid-rapidity
 /// \author S. Sakai & S. Ito (Univ. of Tsukuba)
+
 #ifndef HomogeneousField
 #define HomogeneousField // o2-linter: disable=name/macro (required by KFParticle)
 #endif
@@ -320,13 +321,15 @@ struct HfTaskElectronWeakBoson {
     // LOG(info) << "Invarimass cal by KF particle ";
     for (const auto& track : tracks) {
 
-      if (track.pt() < ptZeeMin)
+      if (track.pt() < ptZeeMin) {
         continue;
-      if (std::abs(track.tpcNSigmaEl()) > nsigTpcMax)
+      }
+      if (std::abs(track.tpcNSigmaEl()) > nsigTpcMax) {
         continue;
-      if (std::abs(track.eta()) > etaTrMax)
+      }
+      if (std::abs(track.eta()) > etaTrMax) {
         continue;
-
+      }
       int pdgAss = kElectron;
       if (track.sign() > 0) {
         pdgAss = kPositron;
@@ -335,9 +338,9 @@ struct HfTaskElectronWeakBoson {
       KFPTrack kfpTrackAssEle = createKFPTrackFromTrack(track);
       KFParticle kfpAssEle(kfpTrackAssEle, pdgAss);
       // reco by RecoDecay
-      auto arr1 = RecoDecayPtEtaPhi::pVector(kfpIsoEle.GetPt(), kfpIsoEle.GetEta(), kfpIsoEle.GetPhi());
-      auto arr2 = RecoDecayPtEtaPhi::pVector(kfpAssEle.GetPt(), kfpAssEle.GetEta(), kfpAssEle.GetPhi());
-      double massZeeRecoDecay = RecoDecay::m(std::array{arr1, arr2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
+      auto child1 = RecoDecayPtEtaPhi::pVector(kfpIsoEle.GetPt(), kfpIsoEle.GetEta(), kfpIsoEle.GetPhi());
+      auto child2 = RecoDecayPtEtaPhi::pVector(kfpAssEle.GetPt(), kfpAssEle.GetEta(), kfpAssEle.GetPhi());
+      double massZeeRecoDecay = RecoDecay::m(std::array{child1, child2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
 
       // reco by KFparticle
       const KFParticle* electronPairs[2] = {&kfpIsoEle, &kfpAssEle};
@@ -346,10 +349,12 @@ struct HfTaskElectronWeakBoson {
       zeeKF.Construct(electronPairs, 2);
       // LOG(info) << "Invarimass cal by KF particle Chi2/NDF = " << zeeKF.GetChi2()/zeeKF.GetNDF();
       float massZeeChi2 = zeeKF.GetChi2() / zeeKF.GetNDF();
-      if (zeeKF.GetNDF() < 1)
+      if (zeeKF.GetNDF() < 1) {
         continue;
-      if (std::abs(massZeeChi2) > kfChisqMassMax)
+      }
+      if (std::abs(massZeeChi2) > kfChisqMassMax) {
         continue;
+      }
       float massZee, massZeeErr;
       zeeKF.GetMass(massZee, massZeeErr);
       // LOG(info) << "Invarimass cal by KF particle mass = " << massZee;
@@ -438,20 +443,27 @@ struct HfTaskElectronWeakBoson {
 
     for (const auto& track : tracks) {
 
-      if (std::abs(track.eta()) > etaTrMax)
+      if (std::abs(track.eta()) > etaTrMax) {
         continue;
-      if (track.tpcNClsCrossedRows() < nclcrossTpcMin)
+      }
+      if (track.tpcNClsCrossedRows() < nclcrossTpcMin) {
         continue;
-      if (std::abs(track.dcaXY()) > dcaxyMax)
+      }
+      if (std::abs(track.dcaXY()) > dcaxyMax) {
         continue;
-      if (track.itsChi2NCl() > chi2ItsMax)
+      }
+      if (track.itsChi2NCl() > chi2ItsMax) {
         continue;
-      if (track.tpcChi2NCl() > chi2TpcMax)
+      }
+      if (track.tpcChi2NCl() > chi2TpcMax) {
         continue;
-      if (track.tpcNClsFound() < nclTpcMin)
+      }
+      if (track.tpcNClsFound() < nclTpcMin) {
         continue;
-      if (track.itsNCls() < nclItsMin)
+      }
+      if (track.itsNCls() < nclItsMin) {
         continue;
+      }
 
       registry.fill(HIST("hEta"), track.eta());
       registry.fill(HIST("hITSchi2"), track.itsChi2NCl());
@@ -590,34 +602,6 @@ struct HfTaskElectronWeakBoson {
       }
 
     } // end of track loop
-    /*
-    // calculate inv. mass
-    if (selectedElectronsIso.size() > 0) {
-      for (size_t i = 0; i < selectedElectronsIso.size(); i++) {
-        const auto& e1 = selectedElectronsIso[i];
-        for (size_t j = 0; j < selectedElectronsAss.size(); j++) {
-          const auto& e2 = selectedElectronsAss[j];
-          if (std::abs(e2.nSigEl) > nsigTpcMax)
-            continue;
-          if (e2.pt < ptZeeMin)
-            continue;
-          float ptIso = e1.pt;
-          float ptAss = e2.pt;
-          if (ptIso == ptAss)
-            continue;
-          auto arr1 = RecoDecayPtEtaPhi::pVector(e1.pt, e1.eta, e1.phi);
-          auto arr2 = RecoDecayPtEtaPhi::pVector(e2.pt, e2.eta, e2.phi);
-          double mass = RecoDecay::m(std::array{arr1, arr2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
-
-          if (e1.sign() * e2.sign() > 0) {
-            registry.fill(HIST("hInvMassZeeLs"), ptIso, mass);
-          } else {
-            registry.fill(HIST("hInvMassZeeUls"), ptIso, mass);
-          }
-        }
-      }
-    } // end of inv. mass calculation
-    */
     // Z-hadron
     if (reconstructedZ.size() > 0) {
       for (const auto& zBoson : reconstructedZ) {
