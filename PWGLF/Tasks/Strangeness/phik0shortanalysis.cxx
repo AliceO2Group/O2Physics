@@ -235,15 +235,12 @@ struct Phik0shortanalysis {
   using V0DauTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullPi>;
   using V0DauMCTracks = soa::Join<V0DauTracks, aod::McTrackLabels>;
 
-  // Defining binning policy, axis and pairs for mixed event
+  // Defining binning policy and axis for mixed event
   ConfigurableAxis axisVertexMixing{"axisVertexMixing", {20, -10, 10}, "Z vertex axis binning for mixing"};
   ConfigurableAxis axisCentralityMixing{"axisCentralityMixing", {20, 0, 100}, "Multiplicity percentil binning for mixing"};
 
   using BinningTypeVertexCent = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   BinningTypeVertexCent binningOnVertexAndCent{{axisVertexMixing, axisCentralityMixing}, true};
-
-  Pair<SelCollisions, FullTracks, FullV0s, BinningTypeVertexCent> pairPhiK0S{binningOnVertexAndCent, cfgNoMixedEvents, -1, &cache};
-  SameKindPair<SelCollisions, FullTracks, BinningTypeVertexCent> pairPhiPion{binningOnVertexAndCent, cfgNoMixedEvents, -1, &cache};
 
   // Cache for manual slicing
   SliceCache cache;
@@ -2738,7 +2735,7 @@ struct Phik0shortanalysis {
           if (pTMother < minPhiPt || std::abs(yMother) > cfgYAcceptance)
             continue;
 
-          mcPhiHist.fill(HIST("h3PhiMCRecoNewProc"), genmultiplicity, recPhi.Pt(), recPhi.Rapidity());
+          mcPhiHist.fill(HIST("h3PhiMCRecoNewProc"), genmultiplicity, pTMother, yMother);
         }
       }
 
@@ -2905,21 +2902,26 @@ struct Phik0shortanalysis {
 
   void processPhiK0SMixingEvent(SelCollisions const& collisions, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
   {
+    auto tracksV0sTuple = std::make_tuple(fullTracks, V0s);
+    Pair<SelCollisions, FullTracks, FullV0s, BinningTypeVertexCent> pairPhiK0S{binningOnVertexAndCent, cfgNoMixedEvents, -1, collisions, tracksV0sTuple, &cache};
+
     for (auto const& [collision1, tracks1, collision2, v0s2] : pairPhiK0S) {
       float multiplicity = collision1.centFT0M();
 
-      auto posMixColl = posTracks->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
-      auto negMixColl = negTracks->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
+      Partition<FullTracks> posMixTracks = aod::track::signed1Pt > trackConfigs.cfgCutCharge;
+      posMixTracks.bindTable(tracks1);
+      Partition<FullTracks> negMixTracks = aod::track::signed1Pt < trackConfigs.cfgCutCharge;
+      negMixTracks.bindTable(tracks1);
 
-      for (const auto& [track1, track2, v0] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posMixColl, negMixColl, v0s2))) {
-        if (!selectionTrackResonance<false>(track1, true) || !selectionPIDKaonpTdependent(track1))
+      for (const auto& [posTrack1, negTrack1, v0] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posMixTracks, negMixTracks, v0s2))) {
+        if (!selectionTrackResonance<false>(posTrack1, true) || !selectionPIDKaonpTdependent(posTrack1))
           continue;
-        if (!selectionTrackResonance<false>(track2, true) || !selectionPIDKaonpTdependent(track2))
+        if (!selectionTrackResonance<false>(negTrack1, true) || !selectionPIDKaonpTdependent(negTrack1))
           continue;
-        if (track1.globalIndex() == track2.globalIndex())
+        if (posTrack1.globalIndex() == negTrack1.globalIndex())
           continue;
 
-        ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
+        ROOT::Math::PxPyPzMVector recPhi = recMother(posTrack1, negTrack1, massKa, massKa);
         if (recPhi.Pt() < minPhiPt)
           continue;
         if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
@@ -2940,25 +2942,30 @@ struct Phik0shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(phik0shortanalysis, processPhiK0SMixingEvent, "Process Mixed Event for Phi-K0S Analysis", false);
+  PROCESS_SWITCH(Phik0shortanalysis, processPhiK0SMixingEvent, "Process Mixed Event for Phi-K0S Analysis", false);
 
-  void processPhiPionMixingEvent(SelCollisions const& collisions, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
+  void processPhiPionMixingEvent(SelCollisions const& collisions, FullTracks const& fullTracks)
   {
+    auto tracksTuple = std::make_tuple(fullTracks);
+    SameKindPair<SelCollisions, FullTracks, BinningTypeVertexCent> pairPhiPion{binningOnVertexAndCent, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
+
     for (auto const& [collision1, tracks1, collision2, tracks2] : pairPhiPion) {
       float multiplicity = collision1.centFT0M();
 
-      auto posMixColl = posTracks->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
-      auto negMixColl = negTracks->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
+      Partition<FullTracks> posMixTracks = aod::track::signed1Pt > trackConfigs.cfgCutCharge;
+      posMixTracks.bindTable(tracks1);
+      Partition<FullTracks> negMixTracks = aod::track::signed1Pt < trackConfigs.cfgCutCharge;
+      negMixTracks.bindTable(tracks1);
 
-      for (const auto& [track1, track2, track] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posMixColl, negMixColl, tracks2))) {
-        if (!selectionTrackResonance<false>(track1, true) || !selectionPIDKaonpTdependent(track1))
+      for (const auto& [posTrack1, negTrack1, track] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posMixTracks, negMixTracks, tracks2))) {
+        if (!selectionTrackResonance<false>(posTrack1, true) || !selectionPIDKaonpTdependent(posTrack1))
           continue;
-        if (!selectionTrackResonance<false>(track2, true) || !selectionPIDKaonpTdependent(track2))
+        if (!selectionTrackResonance<false>(negTrack1, true) || !selectionPIDKaonpTdependent(negTrack1))
           continue;
-        if (track1.globalIndex() == track2.globalIndex())
+        if (posTrack1.globalIndex() == negTrack1.globalIndex())
           continue;
 
-        ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
+        ROOT::Math::PxPyPzMVector recPhi = recMother(posTrack1, negTrack1, massKa, massKa);
         if (recPhi.Pt() < minPhiPt)
           continue;
         if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
@@ -2976,7 +2983,7 @@ struct Phik0shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(phik0shortanalysis, processPhiPionMixingEvent, "Process Mixed Event for Phi-Pion Analysis", false);
+  PROCESS_SWITCH(Phik0shortanalysis, processPhiPionMixingEvent, "Process Mixed Event for Phi-Pion Analysis", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
