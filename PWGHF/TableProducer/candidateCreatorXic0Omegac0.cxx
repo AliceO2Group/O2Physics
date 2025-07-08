@@ -1671,7 +1671,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       auto trackKaFromOmega = casc.bachelor_as<MyKfTracks>(); // Ka <- Omega track
       auto trackV0DauPos = casc.posTrack_as<MyKfTracks>();    // V0 positive daughter track
       auto trackV0DauNeg = casc.negTrack_as<MyKfTracks>();    // V0 negative daughter track
-      auto KaFromOmegaCharge = trackKaFromOmega.sign();
+      auto kaFromOmegaCharge = trackKaFromOmega.sign();
       auto signOmega = casc.sign();
 
       KFPTrack kfpTrackKaFromCharm = createKFPTrackFromTrack(trackKaFromCharm);
@@ -1685,7 +1685,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       KFParticle kfPiFromXiRej(kfpTrackKaFromOmega, kPiMinus); // rej
       KFParticle kfKaFromCharm(kfpTrackKaFromCharm, kKPlus);
 
-      if (signOmega == 0 || KaFromOmegaCharge == 0 || KaFromOmegaCharge != signOmega) {
+      if (signOmega == 0 || kaFromOmegaCharge == 0 || kaFromOmegaCharge != signOmega) {
         continue;
       }
       // convert for Pos and Neg Particles
