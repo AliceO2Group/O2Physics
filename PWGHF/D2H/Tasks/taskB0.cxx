@@ -221,7 +221,7 @@ struct HfTaskB0 {
       auto ptCandB0 = candidate.pt();
       auto candD = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec>>();
       auto invMassCandB0 = hfHelper.invMassB0ToDPi(candidate);
-      int flagMcMatchRecB0 = std::abs(candidate.flagMcMatchRec());
+      auto flagMcMatchRecB0 = std::abs(candidate.flagMcMatchRec());
 
       if (flagMcMatchRecB0 == DecayChannelMain::B0ToDminusPi) {
         auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandB0McGen>>(), o2::constants::physics::Pdg::kB0, true);

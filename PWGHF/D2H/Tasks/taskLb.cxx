@@ -349,7 +349,7 @@ struct HfTaskLb {
         continue;
       }
       auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec>>();
-      int flagMcMatchRecLb = std::abs(candidate.flagMcMatchRec());
+      auto flagMcMatchRecLb = std::abs(candidate.flagMcMatchRec());
 
       if (flagMcMatchRecLb == DecayChannelMain::LbToLcPi) {
 
