@@ -235,8 +235,8 @@ struct cksspinalignment {
 
   std::tuple<int, bool> getK0sTags(const auto& v0, const auto& collision)
   {
-    auto postrack = v0.template posTrack_as<AllTrackCandidates>();
-    auto negtrack = v0.template negTrack_as<AllTrackCandidates>();
+    //auto postrack = v0.template posTrack_as<AllTrackCandidates>();
+    //auto negtrack = v0.template negTrack_as<AllTrackCandidates>();
 
     int kshortTag = 0;
 
@@ -286,7 +286,7 @@ struct cksspinalignment {
 
     int numbV0 = 0;
     auto centrality = collision.centFT0C();
-    auto vz = collision.posZ();
+    //auto vz = collision.posZ();
     int occupancy = collision.trackOccupancyInTimeRange();
     auto psiFT0C = collision.psiFT0C();
     auto psiFT0A = collision.psiFT0A();
