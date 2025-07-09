@@ -172,26 +172,77 @@ struct HfCandidateSelectorXicToXiPiPi {
     }
 
     if (fillQAHistograms) {
-      // eta of all final state daughters
-      registry.add("hEtaPi0FromXic", ";#eta (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
-      registry.add("hEtaPi1FromXic", ";#eta (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
-      registry.add("hEtaBachelorPion", ";#eta (#pi #leftarrow #Xi);entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
-      registry.add("hEtaV0PosDau", ";;#eta (V0 pos. dau.);entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
-      registry.add("hEtaV0NegDau", ";;#eta (V0 neg. dau.);entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
-      // pions from XicPlus
-      registry.add("hNClustersTpcPi0FromXic", ";#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
-      registry.add("hNClustersTpcPi1FromXic", ";#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
-      registry.add("hNClustersItsPi0FromXic", ";#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{7, 0.5, 7.5}}});
-      registry.add("hNClustersItsPi1FromXic", ";#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{7, 0.5, 7.5}}});
-      registry.add("hNClustersItsInnBarrPi0FromXic", ";#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{3, 0.5, 3.5}}});
-      registry.add("hNClustersItsInnBarrPi1FromXic", ";#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{3, 0.5, 3.5}}});
-      // Xi daughters
-      registry.add("hNClustersTpcBachelorPion", ";#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
-      registry.add("hNClustersTpcV0PosDau", ";#it{N}_{clusters}^{TPC} (V0 pos. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
-      registry.add("hNClustersTpcV0NegDau", ";#it{N}_{clusters}^{TPC} (V0 neg. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
-      registry.add("hNCrossedRowsTpcBachelorPion", ";#it{N}_{rows}^{TPC} (#pi #leftarrow #Xi);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
-      registry.add("hNCrossedRowsTpcV0PosDau", ";#it{N}_{rows}^{TPC} (V0 pos. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
-      registry.add("hNCrossedRowsTpcV0NegDau", ";#it{N}_{rows}^{TPC} (V0 neg. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+      if (doprocessData) {
+        // eta of all final state daughters
+        registry.add("hEtaPi0FromXic", ";#eta (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
+        registry.add("hEtaPi1FromXic", ";#eta (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
+        registry.add("hEtaBachelorPion", ";#eta (#pi #leftarrow #Xi);entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
+        registry.add("hEtaV0PosDau", ";;#eta (V0 pos. dau.);entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
+        registry.add("hEtaV0NegDau", ";;#eta (V0 neg. dau.);entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
+        // pions from XicPlus
+        registry.add("hNClustersTpcPi0FromXic", ";#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNClustersTpcPi1FromXic", ";#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNCrossedRowsTpcPi0FromXic", ";#it{N}_{rows}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNCrossedRowsTpcPi1FromXic", ";#it{N}_{rows}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNClustersItsPi0FromXic", ";#it{N}_{clusters}^{ITS} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{7, 0.5, 7.5}}});
+        registry.add("hNClustersItsPi1FromXic", ";#it{N}_{clusters}^{ITS} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{7, 0.5, 7.5}}});
+        registry.add("hNClustersItsInnBarrPi0FromXic", ";#it{N}_{clusters}^{ITS-IB} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{3, 0.5, 3.5}}});
+        registry.add("hNClustersItsInnBarrPi1FromXic", ";#it{N}_{clusters}^{ITS-IB} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{3, 0.5, 3.5}}});
+        // Xi daughters
+        registry.add("hNClustersTpcBachelorPion", ";#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNClustersTpcV0PosDau", ";#it{N}_{clusters}^{TPC} (V0 pos. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNClustersTpcV0NegDau", ";#it{N}_{clusters}^{TPC} (V0 neg. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNCrossedRowsTpcBachelorPion", ";#it{N}_{rows}^{TPC} (#pi #leftarrow #Xi);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNCrossedRowsTpcV0PosDau", ";#it{N}_{rows}^{TPC} (V0 pos. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNCrossedRowsTpcV0NegDau", ";#it{N}_{rows}^{TPC} (V0 neg. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+      } else if (doprocessMc) {
+        // Reconstructed signal
+        // eta of all final state daughters
+        registry.add("hEtaPi0FromXicRecSig", "Reconstructed signal;#eta (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
+        registry.add("hEtaPi1FromXicRecSig", "Reconstructed signal;#eta (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
+        registry.add("hEtaBachelorPionRecSig", "Reconstructed signal;#eta (#pi #leftarrow #Xi);entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
+        registry.add("hEtaV0PosDauRecSig", "Reconstructed signal;#eta (V0 pos. dau.);entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
+        registry.add("hEtaV0NegDauRecSig", "Reconstructed signal;#eta (V0 neg. dau.);entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
+        // pions from XicPlus
+        registry.add("hNClustersTpcPi0FromXicRecSig", "Reconstructed signal;#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNClustersTpcPi1FromXicRecSig", "Reconstructed signal;#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNCrossedRowsTpcPi0FromXicRecSig", "Reconstructed signal;#it{N}_{rows}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNCrossedRowsTpcPi1FromXicRecSig", "Reconstructed signal;#it{N}_{rows}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNClustersItsPi0FromXicRecSig", "Reconstructed signal;#it{N}_{clusters}^{ITS} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{7, 0.5, 7.5}}});
+        registry.add("hNClustersItsPi1FromXicRecSig", "Reconstructed signal;#it{N}_{clusters}^{ITS} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{7, 0.5, 7.5}}});
+        registry.add("hNClustersItsInnBarrPi0FromXicRecSig", "Reconstructed signal;#it{N}_{clusters}^{ITS-IB} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{3, 0.5, 3.5}}});
+        registry.add("hNClustersItsInnBarrPi1FromXicRecSig", "Reconstructed signal;#it{N}_{clusters}^{ITS-IB} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{3, 0.5, 3.5}}});
+        // Xi daughters
+        registry.add("hNClustersTpcBachelorPionRecSig", "Reconstructed signal;#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNClustersTpcV0PosDauRecSig", "Reconstructed signal;#it{N}_{clusters}^{TPC} (V0 pos. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNClustersTpcV0NegDauRecSig", "Reconstructed signal;#it{N}_{clusters}^{TPC} (V0 neg. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNCrossedRowsTpcBachelorPionRecSig", "Reconstructed signal;#it{N}_{rows}^{TPC} (#pi #leftarrow #Xi);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNCrossedRowsTpcV0PosDauRecSig", "Reconstructed signal;#it{N}_{rows}^{TPC} (V0 pos. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNCrossedRowsTpcV0NegDauRecSig", "Reconstructed signal;#it{N}_{rows}^{TPC} (V0 neg. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        // Reconstructed background
+        // eta of all final state daughters
+        registry.add("hEtaPi0FromXicRecBkg", "Reconstructed background;#eta (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
+        registry.add("hEtaPi1FromXicRecBkg", "Reconstructed background;#eta (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
+        registry.add("hEtaBachelorPionRecBkg", "Reconstructed background;#eta (#pi #leftarrow #Xi);entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
+        registry.add("hEtaV0PosDauRecBkg", "Reconstructed background;#eta (V0 pos. dau.);entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
+        registry.add("hEtaV0NegDauRecBkg", "Reconstructed background;#eta (V0 neg. dau.);entries", {HistType::kTH1F, {{150, -1.5f, +1.5f}}});
+        // pions from XicPlus
+        registry.add("hNClustersTpcPi0FromXicRecBkg", "Reconstructed background;#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNClustersTpcPi1FromXicRecBkg", "Reconstructed background;#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNCrossedRowsTpcPi0FromXicRecBkg", "Reconstructed background;#it{N}_{rows}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNCrossedRowsTpcPi1FromXicRecBkg", "Reconstructed background;#it{N}_{rows}^{TPC} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNClustersItsPi0FromXicRecBkg", "Reconstructed background;#it{N}_{clusters}^{ITS} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{7, 0.5, 7.5}}});
+        registry.add("hNClustersItsPi1FromXicRecBkg", "Reconstructed background;#it{N}_{clusters}^{ITS} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{7, 0.5, 7.5}}});
+        registry.add("hNClustersItsInnBarrPi0FromXicRecBkg", "Reconstructed background;#it{N}_{clusters}^{ITS-IB} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{3, 0.5, 3.5}}});
+        registry.add("hNClustersItsInnBarrPi1FromXicRecBkg", "Reconstructed background;#it{N}_{clusters}^{ITS-IB} (#pi #leftarrow #Xi_{c}^{#plus});entries", {HistType::kTH1F, {{3, 0.5, 3.5}}});
+        // Xi daughters
+        registry.add("hNClustersTpcBachelorPionRecBkg", "Reconstructed background;#it{N}_{clusters}^{TPC} (#pi #leftarrow #Xi);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNClustersTpcV0PosDauRecBkg", "Reconstructed background;#it{N}_{clusters}^{TPC} (V0 pos. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNClustersTpcV0NegDauRecBkg", "Reconstructed background;#it{N}_{clusters}^{TPC} (V0 neg. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNCrossedRowsTpcBachelorPionRecBkg", "Reconstructed background;#it{N}_{rows}^{TPC} (#pi #leftarrow #Xi);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNCrossedRowsTpcV0PosDauRecBkg", "Reconstructed background;#it{N}_{rows}^{TPC} (V0 pos. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+        registry.add("hNCrossedRowsTpcV0NegDauRecBkg", "Reconstructed background;#it{N}_{rows}^{TPC} (V0 neg. dau.);entries", {HistType::kTH1F, {{103, 49.5, 152.5}}});
+      }
     }
 
     if (applyMl) {
@@ -247,10 +298,12 @@ struct HfCandidateSelectorXicToXiPiPi {
   {
     // Successful reconstruction
     SETBIT(statusXicToXiPiPi, hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoTotal); // RecoTotal = 0 --> statusXicToXiPiPi += 1
-    if (isMc && isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecSig"), All);
-    } else if (isMc && !isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecBkg"), All);
+    if constexpr (isMc) {
+      if (isMatchedSignal) {
+        registry.fill(HIST("hSelCandidatesRecSig"), All);
+      } else {
+        registry.fill(HIST("hSelCandidatesRecBkg"), All);
+      }
     } else {
       registry.fill(HIST("hSelCandidates"), All);
     }
@@ -263,26 +316,69 @@ struct HfCandidateSelectorXicToXiPiPi {
     auto trackV0NegDau = hfCandXic.template negTrack_as<TracksExtraWPid>();
 
     if (fillQAHistograms) {
-      // eta of all final state daughters
-      registry.fill(HIST("hEtaPi0FromXic"), trackPi0.eta());
-      registry.fill(HIST("hEtaPi1FromXic"), trackPi1.eta());
-      registry.fill(HIST("hEtaBachelorPion"), trackPiFromXi.eta());
-      registry.fill(HIST("hEtaV0PosDau"), trackV0PosDau.eta());
-      registry.fill(HIST("hEtaV0NegDau"), trackV0NegDau.eta());
-      // pions from XicPlus
-      registry.fill(HIST("hNClustersTpcPi0FromXic"), trackPi0.tpcNClsFound());
-      registry.fill(HIST("hNClustersTpcPi1FromXic"), trackPi1.tpcNClsFound());
-      registry.fill(HIST("hNClustersItsPi0FromXic"), trackPi0.itsNCls());
-      registry.fill(HIST("hNClustersItsPi1FromXic"), trackPi1.itsNCls());
-      registry.fill(HIST("hNClustersItsInnBarrPi0FromXic"), trackPi0.itsNClsInnerBarrel());
-      registry.fill(HIST("hNClustersItsInnBarrPi1FromXic"), trackPi1.itsNClsInnerBarrel());
-      // Xi daughters
-      registry.fill(HIST("hNClustersTpcBachelorPion"), trackPiFromXi.tpcNClsFound());
-      registry.fill(HIST("hNClustersTpcV0PosDau"), trackV0PosDau.tpcNClsFound());
-      registry.fill(HIST("hNClustersTpcV0NegDau"), trackV0NegDau.tpcNClsFound());
-      registry.fill(HIST("hNCrossedRowsTpcBachelorPion"), trackPiFromXi.tpcNClsCrossedRows());
-      registry.fill(HIST("hNCrossedRowsTpcV0PosDau"), trackV0PosDau.tpcNClsCrossedRows());
-      registry.fill(HIST("hNCrossedRowsTpcV0NegDau"), trackV0NegDau.tpcNClsCrossedRows());
+      if constexpr (isMc) {
+        if (isMatchedSignal) {
+          registry.fill(HIST("hEtaPi0FromXicRecSig"), trackPi0.eta());
+          registry.fill(HIST("hEtaPi1FromXicRecSig"), trackPi1.eta());
+          registry.fill(HIST("hEtaBachelorPionRecSig"), trackPiFromXi.eta());
+          registry.fill(HIST("hEtaV0PosDauRecSig"), trackV0PosDau.eta());
+          registry.fill(HIST("hEtaV0NegDauRecSig"), trackV0NegDau.eta());
+          registry.fill(HIST("hNClustersTpcPi0FromXicRecSig"), trackPi0.tpcNClsFound());
+          registry.fill(HIST("hNClustersTpcPi1FromXicRecSig"), trackPi1.tpcNClsFound());
+          registry.fill(HIST("hNCrossedRowsTpcPi0FromXicRecSig"), trackPi0.tpcNClsCrossedRows());
+          registry.fill(HIST("hNCrossedRowsTpcPi1FromXicRecSig"), trackPi1.tpcNClsCrossedRows());
+          registry.fill(HIST("hNClustersItsPi0FromXicRecSig"), trackPi0.itsNCls());
+          registry.fill(HIST("hNClustersItsPi1FromXicRecSig"), trackPi1.itsNCls());
+          registry.fill(HIST("hNClustersItsInnBarrPi0FromXicRecSig"), trackPi0.itsNClsInnerBarrel());
+          registry.fill(HIST("hNClustersItsInnBarrPi1FromXicRecSig"), trackPi1.itsNClsInnerBarrel());
+          registry.fill(HIST("hNClustersTpcBachelorPionRecSig"), trackPiFromXi.tpcNClsFound());
+          registry.fill(HIST("hNClustersTpcV0PosDauRecSig"), trackV0PosDau.tpcNClsFound());
+          registry.fill(HIST("hNClustersTpcV0NegDauRecSig"), trackV0NegDau.tpcNClsFound());
+          registry.fill(HIST("hNCrossedRowsTpcBachelorPionRecSig"), trackPiFromXi.tpcNClsCrossedRows());
+          registry.fill(HIST("hNCrossedRowsTpcV0PosDauRecSig"), trackV0PosDau.tpcNClsCrossedRows());
+          registry.fill(HIST("hNCrossedRowsTpcV0NegDauRecSig"), trackV0NegDau.tpcNClsCrossedRows());
+        } else {
+          registry.fill(HIST("hEtaPi0FromXicRecBkg"), trackPi0.eta());
+          registry.fill(HIST("hEtaPi1FromXicRecBkg"), trackPi1.eta());
+          registry.fill(HIST("hEtaBachelorPionRecBkg"), trackPiFromXi.eta());
+          registry.fill(HIST("hEtaV0PosDauRecBkg"), trackV0PosDau.eta());
+          registry.fill(HIST("hEtaV0NegDauRecBkg"), trackV0NegDau.eta());
+          registry.fill(HIST("hNClustersTpcPi0FromXicRecBkg"), trackPi0.tpcNClsFound());
+          registry.fill(HIST("hNClustersTpcPi1FromXicRecBkg"), trackPi1.tpcNClsFound());
+          registry.fill(HIST("hNCrossedRowsTpcPi0FromXicRecBkg"), trackPi0.tpcNClsCrossedRows());
+          registry.fill(HIST("hNCrossedRowsTpcPi1FromXicRecBkg"), trackPi1.tpcNClsCrossedRows());
+          registry.fill(HIST("hNClustersItsPi0FromXicRecBkg"), trackPi0.itsNCls());
+          registry.fill(HIST("hNClustersItsPi1FromXicRecBkg"), trackPi1.itsNCls());
+          registry.fill(HIST("hNClustersItsInnBarrPi0FromXicRecBkg"), trackPi0.itsNClsInnerBarrel());
+          registry.fill(HIST("hNClustersItsInnBarrPi1FromXicRecBkg"), trackPi1.itsNClsInnerBarrel());
+          registry.fill(HIST("hNClustersTpcBachelorPionRecBkg"), trackPiFromXi.tpcNClsFound());
+          registry.fill(HIST("hNClustersTpcV0PosDauRecBkg"), trackV0PosDau.tpcNClsFound());
+          registry.fill(HIST("hNClustersTpcV0NegDauRecBkg"), trackV0NegDau.tpcNClsFound());
+          registry.fill(HIST("hNCrossedRowsTpcBachelorPionRecBkg"), trackPiFromXi.tpcNClsCrossedRows());
+          registry.fill(HIST("hNCrossedRowsTpcV0PosDauRecBkg"), trackV0PosDau.tpcNClsCrossedRows());
+          registry.fill(HIST("hNCrossedRowsTpcV0NegDauRecBkg"), trackV0NegDau.tpcNClsCrossedRows());
+        }
+      } else {
+        registry.fill(HIST("hEtaPi0FromXic"), trackPi0.eta());
+        registry.fill(HIST("hEtaPi1FromXic"), trackPi1.eta());
+        registry.fill(HIST("hEtaBachelorPion"), trackPiFromXi.eta());
+        registry.fill(HIST("hEtaV0PosDau"), trackV0PosDau.eta());
+        registry.fill(HIST("hEtaV0NegDau"), trackV0NegDau.eta());
+        registry.fill(HIST("hNClustersTpcPi0FromXic"), trackPi0.tpcNClsFound());
+        registry.fill(HIST("hNClustersTpcPi1FromXic"), trackPi1.tpcNClsFound());
+        registry.fill(HIST("hNCrossedRowsTpcPi0FromXic"), trackPi0.tpcNClsCrossedRows());
+        registry.fill(HIST("hNCrossedRowsTpcPi1FromXic"), trackPi1.tpcNClsCrossedRows());
+        registry.fill(HIST("hNClustersItsPi0FromXic"), trackPi0.itsNCls());
+        registry.fill(HIST("hNClustersItsPi1FromXic"), trackPi1.itsNCls());
+        registry.fill(HIST("hNClustersItsInnBarrPi0FromXic"), trackPi0.itsNClsInnerBarrel());
+        registry.fill(HIST("hNClustersItsInnBarrPi1FromXic"), trackPi1.itsNClsInnerBarrel());
+        registry.fill(HIST("hNClustersTpcBachelorPion"), trackPiFromXi.tpcNClsFound());
+        registry.fill(HIST("hNClustersTpcV0PosDau"), trackV0PosDau.tpcNClsFound());
+        registry.fill(HIST("hNClustersTpcV0NegDau"), trackV0NegDau.tpcNClsFound());
+        registry.fill(HIST("hNCrossedRowsTpcBachelorPion"), trackPiFromXi.tpcNClsCrossedRows());
+        registry.fill(HIST("hNCrossedRowsTpcV0PosDau"), trackV0PosDau.tpcNClsCrossedRows());
+        registry.fill(HIST("hNCrossedRowsTpcV0NegDau"), trackV0NegDau.tpcNClsCrossedRows());
+      }
     }
 
     ////////////////////////////////////////////////
@@ -295,21 +391,26 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (pTBin == -1) {
       return false;
     }
-    if (isMc && isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecSig"), Pt);
-    } else if (isMc && !isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecBkg"), Pt);
+    if constexpr (isMc) {
+      if (isMatchedSignal) {
+        registry.fill(HIST("hSelCandidatesRecSig"), Pt);
+      } else {
+        registry.fill(HIST("hSelCandidatesRecBkg"), Pt);
+      }
     } else {
       registry.fill(HIST("hSelCandidates"), Pt);
     }
+
     // check whether candidate mass is within a defined mass window
     if (std::abs(hfCandXic.invMassXicPlus() - o2::constants::physics::MassXiCPlus) > cuts->get(pTBin, "m")) {
       return false;
     }
-    if (isMc && isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecSig"), Mass);
-    } else if (isMc && !isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecBkg"), Mass);
+    if constexpr (isMc) {
+      if (isMatchedSignal) {
+        registry.fill(HIST("hSelCandidatesRecSig"), Mass);
+      } else {
+        registry.fill(HIST("hSelCandidatesRecBkg"), Mass);
+      }
     } else {
       registry.fill(HIST("hSelCandidates"), Mass);
     }
@@ -318,10 +419,12 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (std::abs(hfCandXic.y(o2::constants::physics::MassXiCPlus)) > cuts->get(pTBin, "y")) {
       return false;
     }
-    if (isMc && isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecSig"), Rapidity);
-    } else if (isMc && !isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecBkg"), Rapidity);
+    if constexpr (isMc) {
+      if (isMatchedSignal) {
+        registry.fill(HIST("hSelCandidatesRecSig"), Rapidity);
+      } else {
+        registry.fill(HIST("hSelCandidatesRecBkg"), Rapidity);
+      }
     } else {
       registry.fill(HIST("hSelCandidates"), Rapidity);
     }
@@ -330,10 +433,12 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (std::abs(hfCandXic.eta()) > cuts->get(pTBin, "eta")) {
       return false;
     }
-    if (isMc && isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecSig"), Eta);
-    } else if (isMc && !isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecBkg"), Eta);
+    if constexpr (isMc) {
+      if (isMatchedSignal) {
+        registry.fill(HIST("hSelCandidatesRecSig"), Eta);
+      } else {
+        registry.fill(HIST("hSelCandidatesRecBkg"), Eta);
+      }
     } else {
       registry.fill(HIST("hSelCandidates"), Eta);
     }
@@ -342,10 +447,12 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (std::abs(trackPi0.eta()) > cuts->get(pTBin, "eta Daughters") || std::abs(trackPi1.eta()) > cuts->get(pTBin, "eta Daughters") || std::abs(trackPiFromXi.eta()) > cuts->get(pTBin, "eta Daughters") || std::abs(trackV0PosDau.eta()) > cuts->get(pTBin, "eta Daughters") || std::abs(trackV0NegDau.eta()) > cuts->get(pTBin, "eta Daughters")) {
       return false;
     }
-    if (isMc && isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecSig"), EtaDaughters);
-    } else if (isMc && !isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecBkg"), EtaDaughters);
+    if constexpr (isMc) {
+      if (isMatchedSignal) {
+        registry.fill(HIST("hSelCandidatesRecSig"), EtaDaughters);
+      } else {
+        registry.fill(HIST("hSelCandidatesRecBkg"), EtaDaughters);
+      }
     } else {
       registry.fill(HIST("hSelCandidates"), EtaDaughters);
     }
@@ -354,10 +461,12 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (hfCandXic.ptProng1() < cuts->get(pTBin, "pT Pi0") || hfCandXic.ptProng2() < cuts->get(pTBin, "pT Pi1") || (hfCandXic.ptProng1() + hfCandXic.ptProng2()) < cuts->get(pTBin, "pT Pi0 + Pi1")) {
       return false;
     }
-    if (isMc && isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecSig"), PtPionFromXicPlus);
-    } else if (isMc && !isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecBkg"), PtPionFromXicPlus);
+    if constexpr (isMc) {
+      if (isMatchedSignal) {
+        registry.fill(HIST("hSelCandidatesRecSig"), PtPionFromXicPlus);
+      } else {
+        registry.fill(HIST("hSelCandidatesRecBkg"), PtPionFromXicPlus);
+      }
     } else {
       registry.fill(HIST("hSelCandidates"), PtPionFromXicPlus);
     }
@@ -366,10 +475,12 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (hfCandXic.chi2PCA() > cuts->get(pTBin, "chi2SV")) {
       return false;
     }
-    if (isMc && isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecSig"), Chi2SV);
-    } else if (isMc && !isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecBkg"), Chi2SV);
+    if constexpr (isMc) {
+      if (isMatchedSignal) {
+        registry.fill(HIST("hSelCandidatesRecSig"), Chi2SV);
+      } else {
+        registry.fill(HIST("hSelCandidatesRecBkg"), Chi2SV);
+      }
     } else {
       registry.fill(HIST("hSelCandidates"), Chi2SV);
     }
@@ -378,10 +489,12 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (hfCandXic.decayLength() < cuts->get(pTBin, "min decay length") || hfCandXic.decayLengthXY() < cuts->get(pTBin, "min decay length XY")) {
       return false;
     }
-    if (isMc && isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecSig"), MinDecayLength);
-    } else if (isMc && !isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecBkg"), MinDecayLength);
+    if constexpr (isMc) {
+      if (isMatchedSignal) {
+        registry.fill(HIST("hSelCandidatesRecSig"), MinDecayLength);
+      } else {
+        registry.fill(HIST("hSelCandidatesRecBkg"), MinDecayLength);
+      }
     } else {
       registry.fill(HIST("hSelCandidates"), MinDecayLength);
     }
@@ -390,10 +503,12 @@ struct HfCandidateSelectorXicToXiPiPi {
     if (hfCandXic.invMassXiPi0() > cuts->get(pTBin, "max inv mass Xi-Pi0") || hfCandXic.invMassXiPi1() > cuts->get(pTBin, "max inv mass Xi-Pi1")) {
       return false;
     }
-    if (isMc && isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecSig"), MaxInvMassXiPiPairs);
-    } else if (isMc && !isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecBkg"), MaxInvMassXiPiPairs);
+    if constexpr (isMc) {
+      if (isMatchedSignal) {
+        registry.fill(HIST("hSelCandidatesRecSig"), MaxInvMassXiPiPairs);
+      } else {
+        registry.fill(HIST("hSelCandidatesRecBkg"), MaxInvMassXiPiPairs);
+      }
     } else {
       registry.fill(HIST("hSelCandidates"), MaxInvMassXiPiPairs);
     }
@@ -411,10 +526,12 @@ struct HfCandidateSelectorXicToXiPiPi {
           !isSelectedTrackTpcQuality(trackV0NegDau, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
         return false;
       }
-      if (isMc && isMatchedSignal) {
-        registry.fill(HIST("hSelCandidatesRecSig"), TpcTrackQualityXiDaughters);
-      } else if (isMc && !isMatchedSignal) {
-        registry.fill(HIST("hSelCandidatesRecBkg"), TpcTrackQualityXiDaughters);
+      if constexpr (isMc) {
+        if (isMatchedSignal) {
+          registry.fill(HIST("hSelCandidatesRecSig"), TpcTrackQualityXiDaughters);
+        } else {
+          registry.fill(HIST("hSelCandidatesRecBkg"), TpcTrackQualityXiDaughters);
+        }
       } else {
         registry.fill(HIST("hSelCandidates"), TpcTrackQualityXiDaughters);
       }
@@ -424,10 +541,12 @@ struct HfCandidateSelectorXicToXiPiPi {
           !isSelectedTrackTpcQuality(trackPi1, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
         return false;
       }
-      if (isMc && isMatchedSignal) {
-        registry.fill(HIST("hSelCandidatesRecSig"), TpcTrackQualityPiFromCharm);
-      } else if (isMc && !isMatchedSignal) {
-        registry.fill(HIST("hSelCandidatesRecBkg"), TpcTrackQualityPiFromCharm);
+      if constexpr (isMc) {
+        if (isMatchedSignal) {
+          registry.fill(HIST("hSelCandidatesRecSig"), TpcTrackQualityPiFromCharm);
+        } else {
+          registry.fill(HIST("hSelCandidatesRecBkg"), TpcTrackQualityPiFromCharm);
+        }
       } else {
         registry.fill(HIST("hSelCandidates"), TpcTrackQualityPiFromCharm);
       }
@@ -437,10 +556,12 @@ struct HfCandidateSelectorXicToXiPiPi {
           (!isSelectedTrackItsQuality(trackPi0, nClustersItsMin, itsChi2PerClusterMax) || trackPi1.itsNClsInnerBarrel() < nClustersItsInnBarrMin)) {
         return false;
       }
-      if (isMc && isMatchedSignal) {
-        registry.fill(HIST("hSelCandidatesRecSig"), ItsTrackQualityPiFromCharm);
-      } else if (isMc && !isMatchedSignal) {
-        registry.fill(HIST("hSelCandidatesRecBkg"), ItsTrackQualityPiFromCharm);
+      if constexpr (isMc) {
+        if (isMatchedSignal) {
+          registry.fill(HIST("hSelCandidatesRecSig"), ItsTrackQualityPiFromCharm);
+        } else {
+          registry.fill(HIST("hSelCandidatesRecBkg"), ItsTrackQualityPiFromCharm);
+        }
       } else {
         registry.fill(HIST("hSelCandidates"), ItsTrackQualityPiFromCharm);
       }
@@ -448,15 +569,17 @@ struct HfCandidateSelectorXicToXiPiPi {
       // Successful track quality selection
       SETBIT(statusXicToXiPiPi, hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoTrackQuality); // RecoTrackQuality = 2 --> statusXicToXiPiPi += 4
     } else {
-      if (isMc && isMatchedSignal) {
-        registry.fill(HIST("hSelCandidatesRecSig"), TpcTrackQualityXiDaughters);
-        registry.fill(HIST("hSelCandidatesRecSig"), TpcTrackQualityPiFromCharm);
-        registry.fill(HIST("hSelCandidatesRecSig"), ItsTrackQualityPiFromCharm);
-      } else if (isMc && !isMatchedSignal) {
-        registry.fill(HIST("hSelCandidatesRecBkg"), TpcTrackQualityXiDaughters);
-        registry.fill(HIST("hSelCandidatesRecBkg"), TpcTrackQualityPiFromCharm);
-        registry.fill(HIST("hSelCandidatesRecBkg"), ItsTrackQualityPiFromCharm);
-      } else if (!isMc) {
+      if constexpr (isMc) {
+        if (isMatchedSignal) {
+          registry.fill(HIST("hSelCandidatesRecSig"), TpcTrackQualityXiDaughters);
+          registry.fill(HIST("hSelCandidatesRecSig"), TpcTrackQualityPiFromCharm);
+          registry.fill(HIST("hSelCandidatesRecSig"), ItsTrackQualityPiFromCharm);
+        } else {
+          registry.fill(HIST("hSelCandidatesRecBkg"), TpcTrackQualityXiDaughters);
+          registry.fill(HIST("hSelCandidatesRecBkg"), TpcTrackQualityPiFromCharm);
+          registry.fill(HIST("hSelCandidatesRecBkg"), ItsTrackQualityPiFromCharm);
+        }
+      } else {
         registry.fill(HIST("hSelCandidates"), TpcTrackQualityXiDaughters);
         registry.fill(HIST("hSelCandidates"), TpcTrackQualityPiFromCharm);
         registry.fill(HIST("hSelCandidates"), ItsTrackQualityPiFromCharm);
@@ -501,18 +624,22 @@ struct HfCandidateSelectorXicToXiPiPi {
 
       // Successful PID selection
       SETBIT(statusXicToXiPiPi, hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoPID); // RecoPID = 3 --> statusXicToXiPiPi += 8
-      if (isMc && isMatchedSignal) {
-        registry.fill(HIST("hSelCandidatesRecSig"), PidSelected);
-      } else if (isMc && !isMatchedSignal) {
-        registry.fill(HIST("hSelCandidatesRecBkg"), PidSelected);
+      if constexpr (isMc) {
+        if (isMatchedSignal) {
+          registry.fill(HIST("hSelCandidatesRecSig"), PidSelected);
+        } else {
+          registry.fill(HIST("hSelCandidatesRecBkg"), PidSelected);
+        }
       } else {
         registry.fill(HIST("hSelCandidates"), PidSelected);
       }
     } else {
-      if (isMc && isMatchedSignal) {
-        registry.fill(HIST("hSelCandidatesRecSig"), PidSelected);
-      } else if (isMc && !isMatchedSignal) {
-        registry.fill(HIST("hSelCandidatesRecBkg"), PidSelected);
+      if constexpr (isMc) {
+        if (isMatchedSignal) {
+          registry.fill(HIST("hSelCandidatesRecSig"), PidSelected);
+        } else {
+          registry.fill(HIST("hSelCandidatesRecBkg"), PidSelected);
+        }
       } else {
         registry.fill(HIST("hSelCandidates"), PidSelected);
       }
@@ -544,10 +671,12 @@ struct HfCandidateSelectorXicToXiPiPi {
 
     // Successful ML selection
     SETBIT(statusXicToXiPiPi, hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoMl); // RecoML = 4 --> statusXicToXiPiPi += 16
-    if (isMc && isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecSig"), BdtSelected);
-    } else if (isMc && !isMatchedSignal) {
-      registry.fill(HIST("hSelCandidatesRecBkg"), BdtSelected);
+    if constexpr (isMc) {
+      if (isMatchedSignal) {
+        registry.fill(HIST("hSelCandidatesRecSig"), BdtSelected);
+      } else {
+        registry.fill(HIST("hSelCandidatesRecBkg"), BdtSelected);
+      }
     } else {
       registry.fill(HIST("hSelCandidates"), BdtSelected);
     }
@@ -611,7 +740,7 @@ struct HfCandidateSelectorXicToXiPiPi {
         isBdtSelected<true>(hfCandXic, statusXicToXiPiPi, isMatchedCandidate);
       } else if (isMatchedCandidate) {
         registry.fill(HIST("hSelCandidatesRecSig"), BdtSelected);
-      } else if (!isMatchedCandidate) {
+      } else {
         registry.fill(HIST("hSelCandidatesRecBkg"), BdtSelected);
       }
 
