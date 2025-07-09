@@ -21,52 +21,59 @@
 #define HomogeneousField // o2-linter: disable=name/macro (required by KFParticle)
 #endif
 
-#include <iterator>
-#include <memory>
-#include <string>
-#include <vector>
-
-/// includes KFParticle
-#include "KFParticle.h"
-#include "KFParticleBase.h"
-#include "KFPTrack.h"
-#include "KFPVertex.h"
-#include "KFVertex.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "ReconstructionDataFormats/V0.h"
-
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Tools/KFparticle/KFUtilities.h"
-
+#include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
-#include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Utils/utilsBfieldCCDB.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Tools/KFparticle/KFUtilities.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/Track.h>
+
+#include <TH1.h>
+#include <TPDGCode.h>
+
+#include <KFPTrack.h>
+#include <KFPVertex.h>
+#include <KFParticle.h>
+
+#include <Rtypes.h>
+
+#include <array>
+#include <cstdint>
+#include <cstdlib>
+#include <memory>
+#include <numeric>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::track;
-using namespace o2::analysis;
 using namespace o2::aod;
 using namespace o2::aod::cascdata;
 using namespace o2::aod::v0data;
@@ -92,6 +99,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   Produces<aod::HfOmegacKf> kfCandidateData;
   Produces<aod::HfCandToXiPiKf> kfCandidateXicData;
   Produces<aod::HfCandToXiPiKfQa> rowKfXic0Qa;
+  Produces<aod::HfCandToOmegaKaKf> kfCandidateOmegaKaData;
 
   Configurable<bool> propagateToPCA{"propagateToPCA", false, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
@@ -105,6 +113,10 @@ struct HfCandidateCreatorXic0Omegac0 {
   Configurable<bool> refitWithMatCorr{"refitWithMatCorr", true, "when doing propagateTracksToVertex, propagate tracks to vtx with material corrections and rerun minimization"};
   Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", true, "Reject tracks coming from different collisions"};
   Configurable<bool> fillAllHist{"fillAllHist", true, "Fill additional KF histograms to check selector cuts"};
+  Configurable<bool> doCascadePreselection{"doCascadePreselection", true, "Use invariant mass and dcaXY cuts to preselect cascade candidates"};
+  Configurable<float> dcaXYToPVCascadeMax{"dcaXYToPVCascadeMax", 3.0, "Max cascade DCA to PV in xy plane"};
+  Configurable<float> dcaV0DaughtersMax{"dcaV0DaughtersMax", 1.0, "Max DCA of V0 daughter"};
+  Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 1.0, "Max DCA of cascade daughter"};
 
   // magnetic field setting from CCDB
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
@@ -118,6 +130,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   Configurable<float> lambdaMassWindow{"lambdaMassWindow", 0.0075, "Distance from Lambda mass"};
   // cascade cuts
   Configurable<double> massToleranceCascade{"massToleranceCascade", 0.01, "Invariant mass tolerance for cascade"};
+  Configurable<double> massToleranceCascadeRej{"massToleranceCascadeRej", 0.01, "Invariant mass tolerance for rejected Xi"};
   // for KF particle operation
   Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "KF Construct Method"};
   Configurable<bool> kfUseV0MassConstraint{"kfUseV0MassConstraint", false, "KF: use Lambda mass constraint"};
@@ -139,7 +152,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
   using MyLFTracksWCov = soa::Join<TracksIU, TracksCovIU>;
 
-  using MyKfTracks = soa::Join<aod::TracksWCovDcaExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa>;
+  using MyKfTracks = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa>;
   using MyKfCascTable = soa::Join<KFCascDatas, aod::KFCascCovs>;
   using KFCascadesLinked = soa::Join<aod::Cascades, aod::KFCascDataLink>;
 
@@ -1655,6 +1668,334 @@ struct HfCandidateCreatorXic0Omegac0 {
       }
     } // loop over LF Cascade-bachelor candidates
   }
+
+  template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename Coll, typename Hist>
+  void runOmegac0Xic0ToOmegaKaCreatorWithKFParticle(Coll const&,
+                                                    aod::BCsWithTimestamps const& /*bcWithTimeStamps*/,
+                                                    MyKfTracks const&,
+                                                    MyKfCascTable const&, KFCascadesLinked const&,
+                                                    aod::HfCascLf2Prongs const& candidates,
+                                                    Hist& hInvMassCharmBaryon,
+                                                    Hist& hFitterStatus,
+                                                    Hist& hCandidateCounter,
+                                                    Hist& hCascadesCounter)
+  {
+    for (const auto& cand : candidates) {
+      hCandidateCounter->Fill(1);
+
+      //----------------------check if the event is selected-----------------------------
+      auto collision = cand.collision_as<Coll>();
+      float centrality{-1.f};
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+      if (rejectionMask != 0) {
+        /// at least one event selection not satisfied --> reject the candidate
+        continue;
+      }
+
+      //----------------------Set the magnetic field from ccdb-----------------------------
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      if (runNumber != bc.runNumber()) {
+        LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
+        initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+        magneticField = o2::base::Propagator::Instance()->getNominalBz();
+        LOG(info) << ">>>>>>>>>>>> Magnetic field: " << magneticField;
+        runNumber = bc.runNumber();
+      }
+      KFParticle::SetField(magneticField);
+
+      // Retrieve skimmed cascade and pion tracks
+      auto cascAodElement = cand.cascade_as<aod::KFCascadesLinked>();
+      hCascadesCounter->Fill(0);
+      if (!cascAodElement.has_kfCascData()) {
+        continue;
+      }
+      auto casc = cascAodElement.kfCascData_as<MyKfCascTable>();
+      hCascadesCounter->Fill(1);
+
+      // convert KaonFromCharm&KaFromOmega&V0DauPos&V0DauNeg tracks into KFParticle object
+      auto trackKaFromCharm = cand.prong0_as<MyKfTracks>();
+      auto trackKaFromOmega = casc.bachelor_as<MyKfTracks>(); // Ka <- Omega track
+      auto trackV0DauPos = casc.posTrack_as<MyKfTracks>();    // V0 positive daughter track
+      auto trackV0DauNeg = casc.negTrack_as<MyKfTracks>();    // V0 negative daughter track
+      auto KaFromOmegaCharge = trackKaFromOmega.sign();
+      auto signOmega = casc.sign();
+
+      KFPTrack kfpTrackKaFromCharm = createKFPTrackFromTrack(trackKaFromCharm);
+      KFPTrack kfpTrackKaFromOmega = createKFPTrackFromTrack(trackKaFromOmega);
+      KFPTrack kfpTrackV0DauPos = createKFPTrackFromTrack(trackV0DauPos);
+      KFPTrack kfpTrackV0DauNeg = createKFPTrackFromTrack(trackV0DauNeg);
+
+      KFParticle kfPrFromV0(kfpTrackV0DauPos, kProton);
+      KFParticle kfPiFromV0(kfpTrackV0DauNeg, kPiMinus);
+      KFParticle kfKaFromOmega(kfpTrackKaFromOmega, kKMinus);
+      KFParticle kfPiFromXiRej(kfpTrackKaFromOmega, kPiMinus); // rej
+      KFParticle kfKaFromCharm(kfpTrackKaFromCharm, kKPlus);
+
+      if (signOmega == 0 || KaFromOmegaCharge == 0 || KaFromOmegaCharge != signOmega) {
+        continue;
+      }
+      // convert for Pos and Neg Particles
+      if (signOmega > 0) {
+        kfPiFromV0 = KFParticle(kfpTrackV0DauPos, kPiPlus);
+        kfPrFromV0 = KFParticle(kfpTrackV0DauNeg, -kProton);
+        kfKaFromOmega = KFParticle(kfpTrackKaFromOmega, kKPlus);
+        kfPiFromXiRej = KFParticle(kfpTrackKaFromOmega, kPiPlus); // rej
+        kfKaFromCharm = KFParticle(kfpTrackKaFromCharm, kKMinus);
+      }
+
+      if (doCascadePreselection) {
+        if (std::abs(casc.dcaXYCascToPV()) > dcaXYToPVCascadeMax) {
+          continue;
+        }
+        if (std::abs(casc.dcaV0daughters()) > dcaV0DaughtersMax) {
+          continue;
+        }
+        if (std::abs(casc.dcacascdaughters()) > dcaCascDaughtersMax) {
+          continue;
+        }
+        if (std::abs(casc.mOmega() - MassOmegaMinus) > massToleranceCascade) {
+          continue;
+        }
+      }
+
+      //----------------------info of V0 and cascade tracks from LF-table------------------
+      std::array<float, 3> vertexV0 = {casc.xlambda(), casc.ylambda(), casc.zlambda()};
+      std::array<float, 3> pVecV0 = {casc.pxlambda(), casc.pylambda(), casc.pzlambda()};
+      std::array<float, 3> vertexCasc = {casc.x(), casc.y(), casc.z()};
+      std::array<float, 3> pVecCasc = {casc.px(), casc.py(), casc.pz()};
+
+      // step 1 : construct V0 with KF
+      const KFParticle* v0Daughters[2] = {&kfPrFromV0, &kfPiFromV0};
+      // construct V0
+      KFParticle kfV0;
+      kfV0.SetConstructMethod(kfConstructMethod);
+      try {
+        kfV0.Construct(v0Daughters, 2);
+      } catch (std::runtime_error& e) {
+        LOG(debug) << "Failed to construct cascade V0 from daughter tracks: " << e.what();
+        continue;
+      }
+      // mass window cut on lambda before mass constraint
+      float massLam, sigLam;
+      kfV0.GetMass(massLam, sigLam);
+      if (std::abs(massLam - MassLambda0) > lambdaMassWindow)
+        continue;
+      // err_mass>0 of Lambda
+      if (sigLam <= 0)
+        continue;
+      // chi2>0 && NDF>0 for selecting Lambda
+      if ((kfV0.GetNDF() <= 0 || kfV0.GetChi2() <= 0))
+        continue;
+      KFParticle kfV0MassConstrained = kfV0;
+      kfV0MassConstrained.SetNonlinearMassConstraint(o2::constants::physics::MassLambda); // set mass constrain to Lambda
+      if (kfUseV0MassConstraint) {
+        kfV0 = kfV0MassConstrained;
+      }
+      kfV0.TransportToDecayVertex();
+
+      // step 2 : reconstruct cascade(Omega) with KF
+      const KFParticle* omegaDaugthers[2] = {&kfKaFromOmega, &kfV0};
+      const KFParticle* omegaDaugthersRej[2] = {&kfPiFromXiRej, &kfV0}; // rej
+      // construct cascade
+      KFParticle kfOmega;
+      KFParticle kfOmegarej; // rej
+      kfOmega.SetConstructMethod(kfConstructMethod);
+      kfOmegarej.SetConstructMethod(kfConstructMethod); // rej
+      try {
+        kfOmega.Construct(omegaDaugthers, 2);
+        kfOmegarej.Construct(omegaDaugthersRej, 2); // rej
+      } catch (std::runtime_error& e) {
+        LOG(debug) << "Failed to construct Omega or Omega_rej from V0 and bachelor track: " << e.what();
+        continue;
+      }
+      float massCasc, sigCasc;
+      float massCascrej, sigCascrej;
+      kfOmega.GetMass(massCasc, sigCasc);
+      kfOmegarej.GetMass(massCascrej, sigCascrej); // rej
+      // err_massOmega and err_massXiRej > 0
+      if (sigCasc <= 0 || sigCascrej <= 0)
+        continue;
+      // chi2>0 && NDF>0
+      if (kfOmega.GetNDF() <= 0 || kfOmega.GetChi2() <= 0)
+        continue;
+      if ((std::abs(massCasc - MassOmegaMinus) > massToleranceCascade) || (std::abs(massCascrej - MassXiMinus) < massToleranceCascadeRej))
+        continue;
+      registry.fill(HIST("hInvMassXiMinus_rej"), massCascrej); // rej: Add competing rejection to minimize misidentified Xi impact. Reject if kfBachPionRej is Pion and the constructed cascade has Xi's invariant mass.
+      KFParticle kfOmegaMassConstrained = kfOmega;
+      kfOmegaMassConstrained.SetNonlinearMassConstraint(o2::constants::physics::MassOmegaMinus); // set mass constrain to XiMinus
+      if (kfUseCascadeMassConstraint) {
+        // set mass constraint if requested
+        kfOmega = kfOmegaMassConstrained;
+      }
+      registry.fill(HIST("hInvMassXiMinus"), massCasc);
+      kfOmega.TransportToDecayVertex();
+      // rej: Add competing rejection to minimize misidentified Xi impact. Reject if kfBachPionRej is Pion and the constructed cascade has Xi's invariant mass.
+
+      // step 3 : reconstruc OmegaKa with KF
+      //  Create KF charm bach Pion from track
+      const KFParticle* omegaKaDaugthers[2] = {&kfKaFromCharm, &kfOmega};
+      // construct Omegac0 or Xic0
+      KFParticle kfOmegaKa;
+      kfOmegaKa.SetConstructMethod(kfConstructMethod);
+      try {
+        kfOmegaKa.Construct(omegaKaDaugthers, 2);
+      } catch (std::runtime_error& e) {
+        LOG(debug) << "Failed to construct OmegaKa from Cascade and bachelor pion track: " << e.what();
+        continue;
+      }
+      float massOmegaKa, sigOmegaKa;
+      kfOmegaKa.GetMass(massOmegaKa, sigOmegaKa);
+      if (sigOmegaKa <= 0)
+        continue;
+      if (kfOmegaKa.GetNDF() <= 0 || kfOmegaKa.GetChi2() <= 0)
+        continue;
+      kfOmegaKa.TransportToDecayVertex();
+      hFitterStatus->Fill(0);
+      hCandidateCounter->Fill(2);
+
+      // initialize primary vertex
+      KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
+      float covMatrixPV[6];
+      kfpVertex.GetCovarianceMatrix(covMatrixPV);
+      KFParticle kfPv(kfpVertex); // for calculation of DCAs to PV
+
+      // fill test histograms
+      hInvMassCharmBaryon->Fill(massOmegaKa);
+
+      // topological constraint of daughter to mother
+      KFParticle kfKaFromCharmToOmegaKa = kfKaFromCharm;
+      KFParticle kfOmegaToOmegaKa = kfOmega;
+      KFParticle kfV0ToOmega = kfV0;
+      KFParticle kfKaToOmega = kfKaFromOmega;
+      KFParticle kfPrToV0 = kfPrFromV0;
+      KFParticle kfPiToV0 = kfPiFromV0;
+
+      kfPrToV0.SetProductionVertex(kfV0);
+      kfPiToV0.SetProductionVertex(kfV0);
+      kfV0ToOmega.SetProductionVertex(kfOmega);
+      kfKaToOmega.SetProductionVertex(kfOmega);
+      kfKaFromCharmToOmegaKa.SetProductionVertex(kfOmegaKa);
+      kfOmegaToOmegaKa.SetProductionVertex(kfOmegaKa);
+
+      // topological constraint to PV
+      // KFParticle to PV
+      KFParticle kfV0ToPv = kfV0;
+      KFParticle kfOmegaToPv = kfOmega;
+      KFParticle kfCharmToPv = kfOmegaKa;
+      KFParticle kfKaFromCharmToPv = kfKaFromCharm;
+
+      kfV0ToPv.SetProductionVertex(kfPv);
+      kfOmegaToPv.SetProductionVertex(kfPv);
+      kfCharmToPv.SetProductionVertex(kfPv);
+      kfKaFromCharmToPv.SetProductionVertex(kfPv);
+
+      //---------------------calculate physical parameters of OmegaKa candidate----------------------
+
+      // transport OmegaKa daughters to decay vertex (secondary vertex)
+      float secondaryVertex[3] = {0.};
+      secondaryVertex[0] = kfOmegaKa.GetX();
+      secondaryVertex[1] = kfOmegaKa.GetY();
+      secondaryVertex[2] = kfOmegaKa.GetZ();
+      kfKaFromCharm.TransportToPoint(secondaryVertex);
+      kfOmega.TransportToPoint(secondaryVertex);
+
+      // get impact parameters of OmegaKa daughters
+      float impactParameterKaFromCharmXY = 0., errImpactParameterKaFromCharmXY = 0.;
+      float impactParameterOmegaXY = 0., errImpactParameterOmegaXY = 0.;
+      kfKaFromCharm.GetDistanceFromVertexXY(kfPv, impactParameterKaFromCharmXY, errImpactParameterKaFromCharmXY);
+      kfOmega.GetDistanceFromVertexXY(kfPv, impactParameterOmegaXY, errImpactParameterOmegaXY);
+
+      // calculate cosine of pointing angle
+      float cosPaV0ToPv = cpaFromKF(kfV0, kfPv);
+      float cosPaCascToPv = cpaFromKF(kfOmega, kfPv);
+      float cosPaOmegaKaToPv = cpaFromKF(kfOmegaKa, kfPv);
+      float cosPaXYV0ToPv = cpaXYFromKF(kfV0, kfPv);
+      float cosPaXYCascToPv = cpaXYFromKF(kfOmega, kfPv);
+      float cosPaXYOmegaKaToPv = cpaXYFromKF(kfOmegaKa, kfPv);
+      float cosPaV0ToCasc = cpaFromKF(kfV0, kfOmega);
+      float cosPaCascToOmegaKa = cpaFromKF(kfOmega, kfOmegaKa);
+      float cosPaXYV0ToCasc = cpaXYFromKF(kfV0, kfOmega);
+      float cosPaXYCascToOmegaKa = cpaXYFromKF(kfOmega, kfOmegaKa);
+
+      // Get Chi2Geo/NDF
+      float chi2GeoV0 = kfV0.GetChi2() / kfV0.GetNDF();
+      float chi2GeoCasc = kfOmega.GetChi2() / kfOmega.GetNDF();
+      float chi2GeoOmegaKa = kfOmegaKa.GetChi2() / kfOmegaKa.GetNDF();
+
+      // Get Chi2Topo/NDF
+      float chi2NdfTopoV0ToCasc = kfV0ToOmega.GetChi2() / kfV0ToOmega.GetNDF();
+      float chi2NdfTopoKaToCasc = kfKaToOmega.GetChi2() / kfKaToOmega.GetNDF();
+      float chi2NdfTopoKaFromOmegaKaToOmegaKa = kfKaFromCharmToOmegaKa.GetChi2() / kfKaFromCharmToOmegaKa.GetNDF();
+      float chi2NdfTopoCascToOmegaKa = kfOmegaToOmegaKa.GetChi2() / kfOmegaToOmegaKa.GetNDF();
+      float chi2NdfTopoV0ToPv = kfV0ToPv.GetChi2() / kfV0ToPv.GetNDF();
+      float chi2NdfTopoCascToPv = kfOmegaToPv.GetChi2() / kfOmegaToPv.GetNDF();
+      float chi2NdfTopoOmegaKaToPv = kfCharmToPv.GetChi2() / kfCharmToPv.GetNDF();
+      float chi2NdfTopoKaFromOmegaKaToPv = kfKaFromCharmToPv.GetChi2() / kfKaFromCharmToPv.GetNDF();
+
+      // Get MassChi2/NDF
+      auto v0Chi2OverNdfm = kfV0MassConstrained.GetChi2() / kfV0MassConstrained.GetNDF();
+      auto cascChi2OverNdfm = kfOmegaMassConstrained.GetChi2() / kfOmegaMassConstrained.GetNDF();
+
+      // KF ldl
+      float ldlV0 = ldlFromKF(kfV0, kfPv);
+      float ldlCasc = ldlFromKF(kfOmega, kfPv);
+      float ldlOmegaKa = ldlFromKF(kfOmegaKa, kfPv);
+
+      // KF decay length
+      float decayLxyLam, errDecayLxyLam;
+      kfV0ToOmega.GetDecayLengthXY(decayLxyLam, errDecayLxyLam);
+      float decayLxyCasc, errDecayLxyCasc;
+      kfOmegaToOmegaKa.GetDecayLengthXY(decayLxyCasc, errDecayLxyCasc);
+      float decayLxyOmegaKa, errDecayLxyOmegaKa;
+      kfCharmToPv.GetDecayLengthXY(decayLxyOmegaKa, errDecayLxyOmegaKa);
+
+      // KF pT
+      float ptOmegaKa = kfOmegaKa.GetPt();
+      float ptKaFromCharm = kfKaFromCharm.GetPt();
+      float ptOmega = kfOmega.GetPt();
+
+      // KF cosThetaStar
+      float cosThetaStarKaFromOmegac = cosThetaStarFromKF(0, 4332, 321, 3334, kfKaFromCharmToOmegaKa, kfOmegaToOmegaKa);
+      float cosThetaStarKaFromXic = cosThetaStarFromKF(0, 4132, 321, 3334, kfKaFromCharmToOmegaKa, kfOmegaToOmegaKa);
+
+      // KF ct
+      float ctV0 = kfV0ToOmega.GetLifeTime();
+      float ctCasc = kfOmegaToOmegaKa.GetLifeTime();
+      float ctOmegaKa = kfCharmToPv.GetLifeTime();
+
+      hCandidateCounter->Fill(3);
+
+      // fill full kf table
+      kfCandidateOmegaKaData(collision.globalIndex(),
+                             collision.posX(), collision.posY(), collision.posZ(),                                                                                                                                                // PV Coord
+                             kfPv.GetX(), kfPv.GetY(), kfPv.GetZ(),                                                                                                                                                               // PV KF
+                             vertexV0[0], vertexV0[1], vertexV0[2],                                                                                                                                                               // V0 Vtx from LF-table
+                             pVecV0[0], pVecV0[1], pVecV0[2],                                                                                                                                                                     // V0 P from LF-table
+                             vertexCasc[0], vertexCasc[1], vertexCasc[2],                                                                                                                                                         // Casc Vtx from LF-table
+                             pVecCasc[0], pVecCasc[1], pVecCasc[2],                                                                                                                                                               // Casc P from LF-table
+                             kfV0.GetX(), kfV0.GetY(), kfV0.GetZ(),                                                                                                                                                               // V0 Vtx KF
+                             kfV0.GetPx(), kfV0.GetPy(), kfV0.GetPz(),                                                                                                                                                            // V0 P KF
+                             kfOmega.GetX(), kfOmega.GetY(), kfOmega.GetZ(),                                                                                                                                                      // Omega Vtx KF
+                             kfOmega.GetPx(), kfOmega.GetPx(), kfOmega.GetPx(),                                                                                                                                                   // Omega Vtx KF
+                             kfOmegaKa.GetX(), kfOmegaKa.GetY(), kfOmegaKa.GetZ(),                                                                                                                                                // OmegaKa Vtx KF (SecondaryVertex)
+                             kfOmegaKa.GetPx(), kfOmegaKa.GetPx(), kfOmegaKa.GetPx(),                                                                                                                                             // OmegaKa P KF
+                             signOmega,                                                                                                                                                                                           // Check Omega sign
+                             kfPrFromV0.GetEta(), kfPiFromV0.GetEta(), kfKaFromOmega.GetEta(), kfKaFromCharm.GetEta(), kfV0.GetEta(), kfOmega.GetEta(), kfOmegaKa.GetEta(), kfOmegaKa.GetRapidity(),                              // Eta of daughters and mothers. Rapidity of OmegaKa
+                             impactParameterKaFromCharmXY, errImpactParameterKaFromCharmXY, impactParameterOmegaXY, errImpactParameterOmegaXY,                                                                                    // DCAXY of KaFromCharm and Omega
+                             kfPrToV0.GetDistanceFromParticle(kfPiToV0), kfV0ToOmega.GetDistanceFromParticle(kfKaToOmega), kfOmegaToOmegaKa.GetDistanceFromParticle(kfKaFromCharmToOmegaKa),                                      // DCA of daughters
+                             cosPaV0ToPv, cosPaCascToPv, cosPaOmegaKaToPv, cosPaXYV0ToPv, cosPaXYCascToPv, cosPaXYOmegaKaToPv, cosPaV0ToCasc, cosPaCascToOmegaKa, cosPaXYV0ToCasc, cosPaXYCascToOmegaKa,                          // CosPA of PV and mothers
+                             chi2GeoV0, chi2GeoCasc, chi2GeoOmegaKa,                                                                                                                                                              // Chi2Geo/NDF
+                             v0Chi2OverNdfm, cascChi2OverNdfm,                                                                                                                                                                    // Chi2Mass/NDF
+                             chi2NdfTopoV0ToCasc, chi2NdfTopoKaToCasc, chi2NdfTopoKaFromOmegaKaToOmegaKa, chi2NdfTopoCascToOmegaKa, chi2NdfTopoV0ToPv, chi2NdfTopoCascToPv, chi2NdfTopoKaFromOmegaKaToPv, chi2NdfTopoOmegaKaToPv, // Chi2Topo/NDF
+                             ldlV0, ldlCasc, ldlOmegaKa,                                                                                                                                                                          // ldl
+                             decayLxyLam, decayLxyCasc, decayLxyOmegaKa,                                                                                                                                                          // DecaylengthXY
+                             massLam, sigLam, massCasc, sigCasc, massCascrej, sigCascrej, massOmegaKa, sigOmegaKa,                                                                                                                // massKF and masserror
+                             ptOmegaKa, ptKaFromCharm, ptOmega,                                                                                                                                                                   // pT
+                             cosThetaStarKaFromOmegac, cosThetaStarKaFromXic, ctV0, ctCasc, ctOmegaKa,                                                                                                                            // cosThetaStar & ct
+                             cascAodElement.v0Id(), casc.posTrackId(), casc.negTrackId(), casc.cascadeId(), casc.bachelorId(), trackKaFromCharm.globalIndex());
+    }
+  }
+
   /// @brief process function w/o centrality selections
   void processNoCentToXiPi(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                            aod::BCsWithTimestamps const& bcWithTimeStamps,
@@ -1702,6 +2043,17 @@ struct HfCandidateCreatorXic0Omegac0 {
     runKfOmegac0CreatorWithKFParticle<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, bcWithTimeStamps, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaPi, hFitterStatusToOmegaPi, hCandidateCounterToOmegaPi, hCascadesCounterToOmegaPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processNoCentOmegacToOmegaPiWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega pi decay channel using KFParticle", false);
+
+  void processNoCentOmegac0Xic0ToOmegaKaCreatorWithKFParticle(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                                                              aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                                              MyKfTracks const& tracks,
+                                                              MyKfCascTable const& cascades,
+                                                              KFCascadesLinked const& cascadeLinks,
+                                                              aod::HfCascLf2Prongs const& candidates)
+  {
+    runOmegac0Xic0ToOmegaKaCreatorWithKFParticle<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, bcWithTimeStamps, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaK, hFitterStatusToOmegaK, hCandidateCounterToOmegaK, hCascadesCounterToOmegaK);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processNoCentOmegac0Xic0ToOmegaKaCreatorWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega ka decay channel using KFParticle", false);
 
   void processNoCentXicToXiPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                             aod::BCsWithTimestamps const& bcWithTimeStamps,
@@ -1762,6 +2114,17 @@ struct HfCandidateCreatorXic0Omegac0 {
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0COmegacToOmegaPiWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega pi decay channel using KFParticle", false);
 
+  void processCentFT0COmegac0Xic0ToOmegaKaCreatorWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+                                                                aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                                                MyKfTracks const& tracks,
+                                                                MyKfCascTable const& cascades,
+                                                                KFCascadesLinked const& cascadeLinks,
+                                                                aod::HfCascLf2Prongs const& candidates)
+  {
+    runOmegac0Xic0ToOmegaKaCreatorWithKFParticle<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, bcWithTimeStamps, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaK, hFitterStatusToOmegaK, hCandidateCounterToOmegaK, hCascadesCounterToOmegaK);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0COmegac0Xic0ToOmegaKaCreatorWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega ka decay channel using KFParticle", false);
+
   void processCentFT0CXicToXiPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                               aod::BCsWithTimestamps const& bcWithTimeStamps,
                                               MyKfTracks const& tracks,
@@ -1820,6 +2183,17 @@ struct HfCandidateCreatorXic0Omegac0 {
     runKfOmegac0CreatorWithKFParticle<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, bcWithTimeStamps, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaPi, hFitterStatusToOmegaPi, hCandidateCounterToOmegaPi, hCascadesCounterToOmegaPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0MOmegacToOmegaPiWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega pi decay channel using KFParticle", false);
+
+  void processCentFT0MOmegac0Xic0ToOmegaKaCreatorWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+                                                                aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                                                MyKfTracks const& tracks,
+                                                                MyKfCascTable const& cascades,
+                                                                KFCascadesLinked const& cascadeLinks,
+                                                                aod::HfCascLf2Prongs const& candidates)
+  {
+    runOmegac0Xic0ToOmegaKaCreatorWithKFParticle<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, bcWithTimeStamps, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaK, hFitterStatusToOmegaK, hCandidateCounterToOmegaK, hCascadesCounterToOmegaK);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0MOmegac0Xic0ToOmegaKaCreatorWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega ka decay channel using KFParticle", false);
 
   void processCentFT0MXicToXiPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                               aod::BCsWithTimestamps const& bcWithTimeStamps,

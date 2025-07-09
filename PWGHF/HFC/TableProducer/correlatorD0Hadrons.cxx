@@ -15,25 +15,46 @@
 /// \author Samrangy Sadhu <samrangy.sadhu@cern.ch>, INFN Bari
 /// \author Swapnesh Santosh Khade <swapnesh.santosh.khade@cern.ch>, IIT Indore
 
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
 #include "PWGHF/HFC/Utils/utilsCorrelations.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TPDGCode.h>
+
+#include <Rtypes.h>
+
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -537,7 +558,7 @@ struct HfCorrelatorD0Hadrons {
         efficiencyWeight = 1. / efficiencyDmeson->at(o2::analysis::findBin(binsPtEfficiencyD, candidate.pt()));
       }
 
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
+      if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
         // fill per-candidate distributions from D0/D0bar true candidates
         registry.fill(HIST("hPtCandRec"), candidate.pt());
         registry.fill(HIST("hPtProng0Rec"), candidate.ptProng0());
@@ -548,8 +569,8 @@ struct HfCorrelatorD0Hadrons {
         registry.fill(HIST("hSelectionStatusRec"), candidate.isSelD0bar() + (candidate.isSelD0() * 2));
       }
       // fill invariant mass plots from D0/D0bar signal and background candidates
-      if (candidate.isSelD0() >= selectionFlagD0) {                                       // only reco as D0
-        if (candidate.flagMcMatchRec() == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) { // also matched as D0
+      if (candidate.isSelD0() >= selectionFlagD0) {                                                  // only reco as D0
+        if (candidate.flagMcMatchRec() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) { // also matched as D0
           registry.fill(HIST("hMassD0RecSig"), hfHelper.invMassD0ToPiK(candidate), candidate.pt(), efficiencyWeight);
           if (isD0Prompt) {
             registry.fill(HIST("hPtCandRecSigPrompt"), candidate.pt());
@@ -558,7 +579,7 @@ struct HfCorrelatorD0Hadrons {
             registry.fill(HIST("hPtCandRecSigNonPrompt"), candidate.pt());
             registry.fill(HIST("hPtVsMultiplicityRecNonPrompt"), candidate.pt(), collision.multFT0M());
           }
-        } else if (candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+        } else if (candidate.flagMcMatchRec() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           registry.fill(HIST("hMassD0RecRef"), hfHelper.invMassD0ToPiK(candidate), candidate.pt(), efficiencyWeight);
         } else {
           registry.fill(HIST("hMassD0RecBg"), hfHelper.invMassD0ToPiK(candidate), candidate.pt(), efficiencyWeight);
@@ -567,8 +588,8 @@ struct HfCorrelatorD0Hadrons {
           outputMlD0[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
         }
       }
-      if (candidate.isSelD0bar() >= selectionFlagD0bar) {                                    // only reco as D0bar
-        if (candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) { // also matched as D0bar
+      if (candidate.isSelD0bar() >= selectionFlagD0bar) {                                             // only reco as D0bar
+        if (candidate.flagMcMatchRec() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) { // also matched as D0bar
           registry.fill(HIST("hMassD0barRecSig"), hfHelper.invMassD0barToKPi(candidate), candidate.pt(), efficiencyWeight);
           if (isD0Prompt) {
             registry.fill(HIST("hPtCandRecSigPrompt"), candidate.pt());
@@ -577,7 +598,7 @@ struct HfCorrelatorD0Hadrons {
             registry.fill(HIST("hPtCandRecSigNonPrompt"), candidate.pt());
             registry.fill(HIST("hPtVsMultiplicityRecNonPrompt"), candidate.pt(), collision.multFT0M());
           }
-        } else if (candidate.flagMcMatchRec() == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
+        } else if (candidate.flagMcMatchRec() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           registry.fill(HIST("hMassD0barRecRef"), hfHelper.invMassD0barToKPi(candidate), candidate.pt(), efficiencyWeight);
         } else {
           registry.fill(HIST("hMassD0barRecBg"), hfHelper.invMassD0barToKPi(candidate), candidate.pt(), efficiencyWeight);
@@ -595,8 +616,8 @@ struct HfCorrelatorD0Hadrons {
 
       // ============== D-h correlation dedicated section ====================================
 
-      flagD0 = candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK);     // flagD0Signal 'true' if candidate matched to D0 (particle)
-      flagD0bar = candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK); // flagD0Reflection 'true' if candidate, selected as D0 (particle), is matched to D0bar (antiparticle)
+      flagD0 = candidate.flagMcMatchRec() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;     // flagD0Signal 'true' if candidate matched to D0 (particle)
+      flagD0bar = candidate.flagMcMatchRec() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK; // flagD0Reflection 'true' if candidate, selected as D0 (particle), is matched to D0bar (antiparticle)
 
       // ========== track loop starts here ========================
 
@@ -720,7 +741,7 @@ struct HfCorrelatorD0Hadrons {
       if (std::abs(particleTrigg.pdgCode()) != Pdg::kD0) {
         continue;
       }
-      if (std::abs(particleTrigg.flagMcMatchGen()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
+      if (std::abs(particleTrigg.flagMcMatchGen()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
         double yD = RecoDecay::y(particleTrigg.pVector(), MassD0);
         if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
           continue;
@@ -952,8 +973,8 @@ struct HfCorrelatorD0Hadrons {
           }
         }
 
-        flagD0 = candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK);     // flagD0Signal 'true' if candidate matched to D0 (particle)
-        flagD0bar = candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK); // flagD0Reflection 'true' if candidate, selected as D0 (particle), is matched to D0bar (antiparticle)
+        flagD0 = candidate.flagMcMatchRec() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;     // flagD0Signal 'true' if candidate matched to D0 (particle)
+        flagD0bar = candidate.flagMcMatchRec() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK; // flagD0Reflection 'true' if candidate, selected as D0 (particle), is matched to D0bar (antiparticle)
         int signalStatus = 0;
 
         if (flagD0 && (candidate.isSelD0() >= selectionFlagD0)) {
@@ -1030,7 +1051,7 @@ struct HfCorrelatorD0Hadrons {
         if (std::abs(particleTrigg.pdgCode()) != Pdg::kD0) {
           continue;
         }
-        if (std::abs(particleTrigg.flagMcMatchGen()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
+        if (std::abs(particleTrigg.flagMcMatchGen()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           double yD = RecoDecay::y(particleTrigg.pVector(), MassD0);
           if (std::abs(yD) >= yCandMax || particleTrigg.pt() <= ptCandMin || std::abs(particleAssoc.eta()) >= etaTrackMax || particleAssoc.pt() <= ptTrackMin) {
             continue;

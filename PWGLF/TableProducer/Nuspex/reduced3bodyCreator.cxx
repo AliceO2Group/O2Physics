@@ -14,47 +14,49 @@
 /// \author Yuanzhe Wang <yuanzhe.wang@cern.ch>
 /// \author Carolina Reetz <c.reetz@cern.ch>
 
-#include <cmath>
+#include "TableHelper.h"
+
+#include "PWGLF/DataModel/Reduced3BodyTables.h"
+#include "PWGLF/DataModel/pidTOFGeneric.h"
+
+#include "Common/Core/PID/PIDTOF.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
+#include "Tools/KFparticle/KFUtilities.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdlib>
 #include <string>
 #include <vector>
-#include <algorithm>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "PWGLF/DataModel/pidTOFGeneric.h"
-#include "PWGLF/DataModel/Reduced3BodyTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/PID/PIDTOF.h"
-#include "TableHelper.h"
-#include "Tools/KFparticle/KFUtilities.h"
-
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
-
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
 
 #ifndef HomogeneousField
 #define HomogeneousField
 #endif
 
 // includes KFParticle
-#include "KFParticle.h"
 #include "KFPTrack.h"
 #include "KFPVertex.h"
+#include "KFParticle.h"
 #include "KFParticleBase.h"
 #include "KFVertex.h"
 
@@ -78,7 +80,6 @@ struct reduced3bodyCreator {
   Produces<aod::RedDecay3Bodys> reducedDecay3Bodys;
   Produces<aod::Red3BodyInfo> reduced3BodyInfo;
   Produces<aod::StoredRedIUTracks> reducedFullTracksPIDIU;
-  Produces<aod::DCAFitterSVInfo> dcaFitterSVInfo;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Zorro zorro;
@@ -87,9 +88,8 @@ struct reduced3bodyCreator {
   o2::vertexing::DCAFitterN<3> fitter3body;
   o2::aod::pidtofgeneric::TofPidNewCollision<TrackExtPIDIUwithEvTimes::iterator> bachelorTOFPID;
 
-  Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
-  Configurable<bool> mc_event_selection{"mc_event_selection", true, "mc event selection count post kIsTriggerTVX and kNoTimeFrameBorder"};
-  Configurable<bool> event_posZ_selection{"event_posZ_selection", true, "event selection count post poZ cut"};
+  Configurable<bool> doSel8selection{"doSel8selection", true, "flag for sel8 event selection"};
+  Configurable<bool> doPosZselection{"doPosZselection", true, "flag for posZ event selection"};
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
@@ -111,8 +111,11 @@ struct reduced3bodyCreator {
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction for DCAFitter"};
 
   int mRunNumber;
-  float d_bz;
+  float mBz;
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
+
+  // tracked cluster size
+  std::vector<int> fTrackedClSizeVector;
 
   HistogramRegistry registry{"registry", {}};
 
@@ -169,27 +172,18 @@ struct reduced3bodyCreator {
 
     // In case override, don't proceed, please - no CCDB access required
     auto run3grp_timestamp = bc.timestamp();
-    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (grpo) {
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-      }
-      o2::base::Propagator::initFieldFromGRP(grpmag);
-      // Fetch magnetic field from ccdb for current collision
-      // d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      d_bz = o2::base::Propagator::Instance()->getNominalBz();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    o2::parameters::GRPMagField* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+    if (!grpmag) {
+      LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
     }
+    o2::base::Propagator::initFieldFromGRP(grpmag);
+    // Fetch magnetic field from ccdb for current collision
+    // mBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+    mBz = o2::base::Propagator::Instance()->getNominalBz();
+    LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << mBz << " kZG";
 // Set magnetic field for KF vertexing
 #ifdef HomogeneousField
-    KFParticle::SetField(d_bz);
+    KFParticle::SetField(mBz);
 #endif
 
     // Initial TOF PID Paras, copied from PIDTOF.h
@@ -250,7 +244,7 @@ struct reduced3bodyCreator {
       }
     }
 
-    fitter3body.setBz(d_bz);
+    fitter3body.setBz(mBz);
     bachelorTOFPID.SetParams(mRespParamsV2);
   }
 
@@ -282,7 +276,7 @@ struct reduced3bodyCreator {
   //------------------------------------------------------------------
   // function to fit KFParticle 3body vertex
   template <typename TKFParticle>
-  void fit3bodyVertex(TKFParticle& kfpProton, TKFParticle& kfpPion, TKFParticle& kfpDeuteron, TKFParticle& KFHt)
+  bool fit3bodyVertex(TKFParticle& kfpProton, TKFParticle& kfpPion, TKFParticle& kfpDeuteron, TKFParticle& KFHt)
   {
     // Construct 3body vertex
     int nDaughters3body = 3;
@@ -292,14 +286,15 @@ struct reduced3bodyCreator {
       KFHt.Construct(Daughters3body, nDaughters3body);
     } catch (std::runtime_error& e) {
       LOG(debug) << "Failed to create Hyper triton 3-body vertex." << e.what();
-      return;
+      return false;
     }
     LOG(debug) << "Hypertriton vertex constructed.";
+    return true;
   }
 
-  void process(ColwithEvTimesMultsCents const& collisions, TrackExtPIDIUwithEvTimes const&, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
+  void process(ColwithEvTimesMultsCents const& collisions, TrackExtPIDIUwithEvTimes const&, aod::Decay3Bodys const& decay3bodys, aod::Tracked3Bodys const& tracked3bodys, aod::BCsWithTimestamps const&)
   {
-    std::vector<bool> triggeredCollisions(collisions.size(), false);
+    std::vector<bool> isTriggeredCollision(collisions.size(), false);
 
     int lastRunNumber = -1; // RunNumber of last collision, used for zorro counting
     // Event counting
@@ -317,17 +312,17 @@ struct reduced3bodyCreator {
         isZorroSelected = zorro.isSelected(bc.globalBC());
         if (isZorroSelected) {
           registry.fill(HIST("hEventCounterZorro"), 0.5);
-          triggeredCollisions[collision.globalIndex()] = true;
+          isTriggeredCollision[collision.globalIndex()] = true;
         }
       }
 
       // Event selection
       registry.fill(HIST("hEventCounter"), 0.5);
-      if (event_sel8_selection && !collision.sel8()) {
+      if (doSel8selection && !collision.sel8()) {
         continue;
       }
       registry.fill(HIST("hEventCounter"), 1.5);
-      if (event_posZ_selection && (collision.posZ() >= 10.0f || collision.posZ() <= -10.0f)) { // 10cm
+      if (doPosZselection && (collision.posZ() >= 10.0f || collision.posZ() <= -10.0f)) { // 10cm
         continue;
       }
       registry.fill(HIST("hEventCounter"), 2.5);
@@ -340,22 +335,29 @@ struct reduced3bodyCreator {
 
     int lastCollisionID = -1; // collisionId of last analysed decay3body. Table is sorted.
 
-    // Creat reduced table
+    // get tracked cluster size info
+    fTrackedClSizeVector.clear();
+    fTrackedClSizeVector.resize(decay3bodys.size(), 0);
+    for (const auto& tvtx3body : tracked3bodys) {
+      fTrackedClSizeVector[tvtx3body.decay3BodyId()] = tvtx3body.itsClsSize();
+    }
+
+    // Create reduced table
     for (const auto& d3body : decay3bodys) {
 
       auto collision = d3body.template collision_as<ColwithEvTimesMultsCents>();
 
-      if (event_sel8_selection && !collision.sel8()) {
+      if (doSel8selection && !collision.sel8()) {
         continue;
       }
-      if (event_posZ_selection && (collision.posZ() >= 10.0f || collision.posZ() <= -10.0f)) { // 10cm
+      if (doPosZselection && (collision.posZ() >= 10.0f || collision.posZ() <= -10.0f)) { // 10cm
         continue;
       }
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       if (cfgSkimmedProcessing && cfgOnlyKeepInterestedTrigger) {
-        if (triggeredCollisions[collision.globalIndex()] == false) {
+        if (isTriggeredCollision[collision.globalIndex()] == false) {
           continue;
         }
       }
@@ -398,7 +400,7 @@ struct reduced3bodyCreator {
       const auto trackStartIndex = reducedFullTracksPIDIU.lastIndex();
       reducedDecay3Bodys(collisionIndex, trackStartIndex - 2, trackStartIndex - 1, trackStartIndex);
 
-      // -------- save reduced decay3body info table --------
+      // -------- get decay3body info with KF --------
       // get trackParCov daughters
       auto trackParCovPos = getTrackParCov(daughter0);
       auto trackParCovNeg = getTrackParCov(daughter1);
@@ -413,23 +415,29 @@ struct reduced3bodyCreator {
         kfpPion = createKFParticleFromTrackParCov(trackParCovPos, daughter0.sign(), constants::physics::MassPionCharged);
       }
       kfpDeuteron = createKFParticleFromTrackParCov(trackParCovBach, daughter2.sign(), constants::physics::MassDeuteron);
-      // fit 3body vertex
+      // fit 3body vertex and caclulate radius, phi, z position
+      float radius, phi, posZ;
       KFParticle KFHt;
-      fit3bodyVertex(kfpProton, kfpPion, kfpDeuteron, KFHt);
-      // calculate radius and phi
-      auto radius = std::sqrt(KFHt.GetX() * KFHt.GetX() + KFHt.GetY() * KFHt.GetY());
-      float phi, sigma;
-      KFHt.GetPhi(phi, sigma);
-      // fill 3body info table
-      reduced3BodyInfo(radius, phi, KFHt.GetZ());
+      if (fit3bodyVertex(kfpProton, kfpPion, kfpDeuteron, KFHt)) {
+        radius = std::hypot(KFHt.GetX(), KFHt.GetY());
+        phi = std::atan2(KFHt.GetPx(), KFHt.GetPy());
+        posZ = KFHt.GetZ();
+      } else {
+        radius = -999.;
+        phi = -999.;
+        posZ = -999.;
+      }
 
-      // -------- save dcaFitter secondary vertex info table --------
+      // -------- get decay3body info with DCA fitter --------
       auto Track0 = getTrackParCov(daughter0);
       auto Track1 = getTrackParCov(daughter1);
       auto Track2 = getTrackParCov(daughter2);
       int n3bodyVtx = fitter3body.process(Track0, Track1, Track2);
+      float phiVtx, rVtx, zVtx;
       if (n3bodyVtx == 0) { // discard this pair
-        dcaFitterSVInfo(-999, -999, -999);
+        phiVtx = -999.;
+        rVtx = -999.;
+        zVtx = -999.;
       } else {
         const auto& vtxXYZ = fitter3body.getPCACandidate();
 
@@ -441,10 +449,13 @@ struct reduced3bodyCreator {
         propagatedTrack1.getPxPyPzGlo(p1);
         propagatedTrack2.getPxPyPzGlo(p2);
         std::array<float, 3> p3B = {p0[0] + p1[0] + p2[0], p0[1] + p1[1] + p2[1], p0[2] + p1[2] + p2[2]};
-        float phiVtx = std::atan2(p3B[1], p3B[0]);
-        float rVtx = std::hypot(vtxXYZ[0], vtxXYZ[1]);
-        dcaFitterSVInfo(rVtx, phiVtx, vtxXYZ[2]);
+        phiVtx = std::atan2(p3B[1], p3B[0]);
+        rVtx = std::hypot(vtxXYZ[0], vtxXYZ[1]);
+        zVtx = vtxXYZ[2];
       }
+
+      // fill 3body info table (KF and DCA fitter info)
+      reduced3BodyInfo(radius, phi, posZ, rVtx, phiVtx, zVtx, fTrackedClSizeVector[d3body.globalIndex()]);
     } // end decay3body loop
 
     registry.fill(HIST("hEventCounter"), 3.5, reducedCollisions.lastIndex() + 1);

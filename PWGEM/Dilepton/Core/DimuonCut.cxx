@@ -13,8 +13,11 @@
 // Class for dimuon Cut
 //
 
-#include "Framework/Logger.h"
 #include "PWGEM/Dilepton/Core/DimuonCut.h"
+
+#include "Framework/Logger.h"
+
+#include <vector>
 
 ClassImp(DimuonCut);
 
@@ -119,11 +122,14 @@ void DimuonCut::SetMaxPDCARabsDep(std::function<float(float)> RabsDepCut)
   mMaxPDCARabsDep = RabsDepCut;
   LOG(info) << "Dimuon Cut, set max pDCA as a function of Rabs: " << mMaxPDCARabsDep(10.0);
 }
-void DimuonCut::SetMFTHitMap(std::vector<int> hitMap)
+void DimuonCut::SetMFTHitMap(bool flag, std::vector<int> hitMap)
 {
+  mApplyMFTHitMap = flag;
   mRequiredMFTDisks = hitMap;
-  for (const auto& iDisk : mRequiredMFTDisks) {
-    LOG(info) << "Dimuon Cut, require MFT hit on Disk: " << iDisk;
+  if (mApplyMFTHitMap) {
+    for (const auto& iDisk : mRequiredMFTDisks) {
+      LOG(info) << "Dimuon Cut, require MFT hit on Disk: " << iDisk;
+    }
   }
 }
 void DimuonCut::SetMaxdPtdEtadPhiwrtMCHMID(float reldPtMax, float dEtaMax, float dPhiMax)

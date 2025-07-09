@@ -16,32 +16,26 @@
 
 #include "DhCorrelationFitter.h"
 
-#include <cstdio>
-#include <iostream>
-#include <sstream>
-
-#include <TMath.h>
-#include <TFile.h>
-#include <TCanvas.h>
-#include <TH1F.h>
+#include <TError.h>
 #include <TF1.h>
-#include <TF2.h>
-#include <TMatrixD.h>
 #include <TFitResult.h>
 #include <TFitResultPtr.h>
-#include <Riostream.h>
-#include <TBufferFile.h>
-#include <TROOT.h>
-#include <TStyle.h>
-#include <TPaveText.h>
-#include <TPaveLabel.h>
-#include <TVirtualPad.h>
 #include <TMath.h>
-#include <TLatex.h>
-#include <TColor.h>
-#include <TClass.h>
-#include <TVirtualFitter.h>
+#include <TMathBase.h>
+#include <TMatrixD.h> // IWYU pragma: keep (do not replace with TMatrixDfwd.h)
+#include <TMatrixDfwd.h>
 #include <TMinuit.h>
+#include <TPaveText.h>
+#include <TString.h>
+#include <TText.h>
+#include <TVirtualFitter.h>
+#include <TVirtualPad.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
+#include <cstdio>
+#include <iostream>
 
 using namespace std;
 

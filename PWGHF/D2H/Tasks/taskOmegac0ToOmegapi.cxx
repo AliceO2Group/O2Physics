@@ -14,31 +14,63 @@
 /// \author Yunfan Liu <yunfan.liu@cern.ch>, China University of Geosciences
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, University of Houston
 
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <THnSparse.h>
+
+#include <Rtypes.h>
+
+#include <array>
+#include <cstdint>
+#include <numeric>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+namespace o2::aod
+{
+namespace ml
+{
+// collision info
+DECLARE_SOA_COLUMN(KfptPiFromOmegac, kfptPiFromOmegac, float);
+DECLARE_SOA_COLUMN(KfptOmegac, kfptOmegac, float);
+DECLARE_SOA_COLUMN(InvMassCharmBaryon, invMassCharmBaryon, float);
+DECLARE_SOA_COLUMN(MlProbOmegac, mlProbOmegac, float);
+DECLARE_SOA_COLUMN(Cent, cent, float);
+} // namespace ml
+DECLARE_SOA_TABLE(HfKfOmegacML, "AOD", "HFKFOMEGACML",
+                  ml::InvMassCharmBaryon, ml::KfptOmegac, ml::KfptPiFromOmegac, ml::MlProbOmegac, ml::Cent);
+} // namespace o2::aod
+
 /// Omegac0 analysis task
 
 struct HfTaskOmegac0ToOmegapi {
+
+  Produces<o2::aod::HfKfOmegacML> kfCandMl;
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<bool> fillCent{"fillCent", false, "Flag to fill centrality information"};
+  Configurable<bool> fillTree{"fillTree", false, "Fill TTree for local analysis.(Enabled only with ML)"};
   Configurable<bool> selectionFlagOmegac0{"selectionFlagOmegac0", true, "Select Omegac0 candidates"};
   Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
@@ -88,9 +120,14 @@ struct HfTaskOmegac0ToOmegapi {
 
   void init(InitContext&)
   {
-    std::array<bool, 8> doprocess{doprocessDataWithKFParticle, doprocessMcWithKFParticle, doprocessDataWithKFParticleMl, doprocessMcWithKFParticleMl, doprocessDataWithKFParticleFT0C, doprocessDataWithKFParticleMlFT0C, doprocessDataWithKFParticleFT0M, doprocessDataWithKFParticleMlFT0M};
+    std::array<bool, 6> doprocess{doprocessDataWithKFParticle, doprocessDataWithKFParticleMl, doprocessDataWithKFParticleFT0C, doprocessDataWithKFParticleMlFT0C, doprocessDataWithKFParticleFT0M, doprocessDataWithKFParticleMlFT0M};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
-      LOGP(fatal, "One and only one process function should be enabled at a time.");
+      LOGP(fatal, "One and only one data process function should be enabled at a time.");
+    }
+
+    std::array<bool, 2> doprocessMc{doprocessMcWithKFParticle, doprocessMcWithKFParticleMl};
+    if ((std::accumulate(doprocessMc.begin(), doprocessMc.end(), 0)) != 1) {
+      LOGP(fatal, "One and only one MC process function should be enabled at a time.");
     }
 
     const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (#Omega#pi) (GeV/#it{c}^{2})"};
@@ -186,14 +223,22 @@ struct HfTaskOmegac0ToOmegapi {
         }
         float cent = evaluateCentralityColl(collision);
         if constexpr (applyMl) {
-          registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsCentVsPtPion"),
-                        candidate.mlProbOmegac()[0],
-                        candidate.invMassCharmBaryon(),
-                        candidate.ptCharmBaryon(),
-                        candidate.kfRapOmegac(),
-                        cent,
-                        candidate.kfptPiFromOmegac(),
-                        numPvContributors);
+          if (fillTree) {
+            kfCandMl(candidate.invMassCharmBaryon(),
+                     candidate.ptCharmBaryon(),
+                     candidate.kfptPiFromOmegac(),
+                     candidate.mlProbOmegac()[0],
+                     cent);
+          } else {
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsCentVsPtPion"),
+                          candidate.mlProbOmegac()[0],
+                          candidate.invMassCharmBaryon(),
+                          candidate.ptCharmBaryon(),
+                          candidate.kfRapOmegac(),
+                          cent,
+                          candidate.kfptPiFromOmegac(),
+                          numPvContributors);
+          }
         } else {
           registry.fill(HIST("hMassVsPtVsYVsCentVsPtPion"),
                         candidate.invMassCharmBaryon(),

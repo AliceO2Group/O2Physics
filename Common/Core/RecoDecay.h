@@ -22,6 +22,7 @@
 #include <array>     // std::array
 #include <cmath>     // std::abs, std::sqrt
 #include <cstdio>
+#include <tuple>   // std::apply
 #include <utility> // std::move
 #include <vector>  // std::vector
 
@@ -283,6 +284,19 @@ struct RecoDecay {
   {
     // c t = l m c^2/(p c)
     return static_cast<double>(length) * static_cast<double>(mass) / p(mom);
+  }
+
+  /// Calculates proper lifetime times c (pseudoproper decay length) in XY from information on daughter tracks.
+  /// \param posPV  {x, y, z} or {x, y} position of the primary vertex
+  /// \param posSV  {x, y, z} or {x, y} position of the secondary vertex
+  /// \param mom  array of {x, y, z} or {x, y} momentum arrays of the decay products
+  /// \param mass  mass of the decay products
+  /// \return pseudoproper decay length
+  template <std::size_t N, std::size_t NM, typename T, typename U, typename V, typename M>
+  static double ctXY(const T& posPV, const U& posSV, const std::array<std::array<V, NM>, N>& mom, const std::array<M, N> mass)
+  {
+    // c t_xy = l_xy * m c^2 / (pT c)
+    return distanceXY(posPV, posSV) * m(mom, mass) / std::apply([](const auto&... args) { return pt(args...); }, mom);
   }
 
   /// Calculates cosine of θ* (theta star).
@@ -718,7 +732,7 @@ struct RecoDecay {
         if (!arrDaughters[iProng].has_mcParticle()) {
           return -1;
         }
-        auto particleI = arrDaughters[iProng].mcParticle();                                // ith daughter particle
+        auto particleI = arrDaughters[iProng].template mcParticle_as<T>();                 // ith daughter particle
         if (std::abs(particleI.getGenStatusCode()) == StatusCodeAfterFlavourOscillation) { // oscillation decay product spotted
           coefFlavourOscillation = -1;                                                     // select the sign of the mother after oscillation (and not before)
           break;
@@ -730,7 +744,7 @@ struct RecoDecay {
       if (!arrDaughters[iProng].has_mcParticle()) {
         return -1;
       }
-      auto particleI = arrDaughters[iProng].mcParticle(); // ith daughter particle
+      auto particleI = arrDaughters[iProng].template mcParticle_as<T>(); // ith daughter particle
       if constexpr (acceptTrackDecay) {
         // Replace the MC particle associated with the prong by its mother for π → μ and K → π.
         auto motherI = particleI.template mothers_first_as<T>();
