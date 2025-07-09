@@ -128,7 +128,7 @@ struct UpcRhoAnalysis {
 
   Configurable<bool> cutGapSide{"cutGapSide", true, "apply gap side cut"};
   Configurable<int> gapSide{"gapSide", 2, "required gap side"};
-  Congigurable<bool> useTrueGap{"useTrueGap", false, "use true gap"};
+  Configurable<bool> useTrueGap{"useTrueGap", false, "use true gap"};
   Configurable<float> cutTrueGapSideFV0{"cutTrueGapSideFV0", 180000, "FV0A threshold for SG selector"};
   Configurable<float> cutTrueGapSideFT0A{"cutTrueGapSideFT0A", 150., "FT0A threshold for SG selector"};
   Configurable<float> cutTrueGapSideFT0C{"cutTrueGapSideFT0C", 50., "FT0C threshold for SG selector"};
@@ -139,7 +139,7 @@ struct UpcRhoAnalysis {
   Configurable<bool> useRecoFlag{"useRecoFlag", false, "use reco flag for event selection"};
   Configurable<int> cutRecoFlag{"cutRecoFlag", 1, "0 = std mode, 1 = upc mode"};
   Configurable<bool> useRctFlag{"useRctFlag", false, "use RCT flags for event selection"};
-  Configurable<int> cutRctFlag{"cutRCTflag", 0, "0 = off, 1 = CBT, 2 = CBT+ZDC, 3 = CBThadron, 4 = CBThadron+ZDC"};
+  Configurable<int> cutRctFlag{"cutRctFlag", 0, "0 = off, 1 = CBT, 2 = CBT+ZDC, 3 = CBThadron, 4 = CBThadron+ZDC"};
 
   Configurable<float> collisionsPosZMaxCut{"collisionsPosZMaxCut", 10.0, "max Z position cut on collisions"};
   Configurable<bool> cutNumContribs{"cutNumContribs", true, "cut on number of contributors"};
@@ -408,7 +408,7 @@ struct UpcRhoAnalysis {
   template <typename C>
   bool isGoodRctFlag(const C& collision)
   {
-    switch (cutRCTflag) {
+    switch (cutRctFlag) {
       case 1:
         return sgSelector.isCBTOk(collision);
       case 2:
@@ -438,7 +438,7 @@ struct UpcRhoAnalysis {
     if (useRecoFlag && (collision.flags() != cutRecoFlag)) // check reconstruction mode
       return false;
 
-    if (useTrueGap && (collision.gapSide() != sgSelector.trueGap(collision, cutTrueGapSideFV0, cutTrueGapSideFT0A, cutTrueGapSideFT0C, cutTrueGapSideZDC))) // check true gap side
+    if (useTrueGap && (gapSide != sgSelector.trueGap(collision, cutTrueGapSideFV0, cutTrueGapSideFT0A, cutTrueGapSideFT0C, cutTrueGapSideZDC))) // check true gap side
       return false;
 
     return true;
