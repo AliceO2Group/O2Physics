@@ -50,8 +50,6 @@
 #include <TH1.h>
 #include <TPDGCode.h>
 
-#include <Rtypes.h>
-
 #include <array>
 #include <cmath>
 #include <cstdint>
