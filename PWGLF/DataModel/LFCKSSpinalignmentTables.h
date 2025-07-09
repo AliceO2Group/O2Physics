@@ -49,7 +49,7 @@ using KShortpionEvent = KShortpionEvents::iterator;
 
 namespace kshortpionpair
 {
-DECLARE_SOA_INDEX_COLUMN(KShortpionEventId, kShortpionEventId);
+DECLARE_SOA_INDEX_COLUMN(KShortpionEvent, kshortpionevent);
 DECLARE_SOA_COLUMN(V0Cospa, v0Cospa, float);                       //! V0 Cospa
 DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);                     //! V0 Radius
 DECLARE_SOA_COLUMN(DcaPositive, dcaPositive, float);               //! DCA Positive
