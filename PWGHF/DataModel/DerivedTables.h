@@ -325,14 +325,7 @@ DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);                                  
 DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);                                     //! transverse momentum of prong 2
 DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);                     //! distance of the secondary vertex from the z axis
 // D*± → D0(bar) π±
-DECLARE_SOA_COLUMN(MassD0, massD0, float);                                       //! invariant mass of D0
-DECLARE_SOA_COLUMN(CpaD0, cpaD0, float);                                         //! cosine of pointing angle of D0
-DECLARE_SOA_COLUMN(CpaXYD0, cpaXYD0, float);                                     //! cosine of pointing angle in the transverse plane of D0
-DECLARE_SOA_COLUMN(DecayLengthD0, decayLengthD0, float);                         //! decay length of D0
-DECLARE_SOA_COLUMN(DecayLengthXYD0, decayLengthXYD0, float);                     //! decay length in the transverse plane of D0
-DECLARE_SOA_COLUMN(DecayLengthNormalisedD0, decayLengthNormalisedD0, float);     //! decay length of D0 divided by its uncertainty
-DECLARE_SOA_COLUMN(DecayLengthXYNormalisedD0, decayLengthXYNormalisedD0, float); //! decay length in the transverse plane of D0 divided by its uncertainty
-DECLARE_SOA_COLUMN(NormalisedImpParamSoftPi, normalisedImpParamSoftPi, float);   //! impact parameter of soft pion divided by its uncertainty
+DECLARE_SOA_COLUMN(SignProng1, signProng1, int8_t);
 // TOF
 DECLARE_SOA_COLUMN(NSigTofKa0, nSigTofKa0, float);
 DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float);
@@ -347,7 +340,6 @@ DECLARE_SOA_COLUMN(NSigTofPiExpKa, nSigTofPiExpKa, float);
 DECLARE_SOA_COLUMN(NSigTofPr0, nSigTofPr0, float);
 DECLARE_SOA_COLUMN(NSigTofPr1, nSigTofPr1, float);
 DECLARE_SOA_COLUMN(NSigTofPr2, nSigTofPr2, float);
-DECLARE_SOA_COLUMN(NSigTofPiSoftPi, nSigTofPiSoftPi, float);
 // TPC
 DECLARE_SOA_COLUMN(NSigTpcKa0, nSigTpcKa0, float);
 DECLARE_SOA_COLUMN(NSigTpcKa1, nSigTpcKa1, float);
@@ -362,7 +354,6 @@ DECLARE_SOA_COLUMN(NSigTpcPiExpKa, nSigTpcPiExpKa, float);
 DECLARE_SOA_COLUMN(NSigTpcPr0, nSigTpcPr0, float);
 DECLARE_SOA_COLUMN(NSigTpcPr1, nSigTpcPr1, float);
 DECLARE_SOA_COLUMN(NSigTpcPr2, nSigTpcPr2, float);
-DECLARE_SOA_COLUMN(NSigTpcPiSoftPi, nSigTpcPiSoftPi, float);
 // TPC+TOF
 DECLARE_SOA_COLUMN(NSigTpcTofKa0, nSigTpcTofKa0, float);
 DECLARE_SOA_COLUMN(NSigTpcTofKa1, nSigTpcTofKa1, float);
@@ -377,7 +368,6 @@ DECLARE_SOA_COLUMN(NSigTpcTofPiExpKa, nSigTpcTofPiExpKa, float);
 DECLARE_SOA_COLUMN(NSigTpcTofPr0, nSigTpcTofPr0, float);
 DECLARE_SOA_COLUMN(NSigTpcTofPr1, nSigTpcTofPr1, float);
 DECLARE_SOA_COLUMN(NSigTpcTofPr2, nSigTpcTofPr2, float);
-DECLARE_SOA_COLUMN(NSigTpcTofPiSoftPi, nSigTpcTofPiSoftPi, float);
 } // namespace hf_cand_par
 
 // Candidate properties of the charm daughter candidate used for selection of the beauty candidate
@@ -403,6 +393,12 @@ DECLARE_SOA_COLUMN(ImpactParameterNormalised1Charm, impactParameterNormalised1Ch
 DECLARE_SOA_COLUMN(ImpactParameterNormalised2Charm, impactParameterNormalised2Charm, float); //! impact parameter of prong 2 divided by its uncertainty
 DECLARE_SOA_COLUMN(ImpactParameterProductCharm, impactParameterProductCharm, float);         //! product of impact parameters of prong 0 and prong 1
 DECLARE_SOA_COLUMN(MaxNormalisedDeltaIPCharm, maxNormalisedDeltaIPCharm, float);             //! see RecoDecay::maxNormalisedDeltaIP
+DECLARE_SOA_COLUMN(PxProng0Charm, pxProng0Charm, float);                                     //! x-component of momentum of prong 0
+DECLARE_SOA_COLUMN(PyProng0Charm, pyProng0Charm, float);                                     //! y-component of momentum of prong 0
+DECLARE_SOA_COLUMN(PzProng0Charm, pzProng0Charm, float);                                     //! z-component of momentum of prong 0
+DECLARE_SOA_COLUMN(PxProng1Charm, pxProng1Charm, float);                                     //! x-component of momentum of prong 1
+DECLARE_SOA_COLUMN(PyProng1Charm, pyProng1Charm, float);                                     //! y-component of momentum of prong 1
+DECLARE_SOA_COLUMN(PzProng1Charm, pzProng1Charm, float);                                     //! z-component of momentum of prong 1
 DECLARE_SOA_COLUMN(PProng0Charm, pProng0Charm, float);                                       //! momentum magnitude of prong 0
 DECLARE_SOA_COLUMN(PProng1Charm, pProng1Charm, float);                                       //! momentum magnitude of prong 1
 DECLARE_SOA_COLUMN(PProng2Charm, pProng2Charm, float);                                       //! momentum magnitude of prong 2
@@ -410,6 +406,7 @@ DECLARE_SOA_COLUMN(PtProng0Charm, ptProng0Charm, float);                        
 DECLARE_SOA_COLUMN(PtProng1Charm, ptProng1Charm, float);                                     //! transverse momentum of prong 1
 DECLARE_SOA_COLUMN(PtProng2Charm, ptProng2Charm, float);                                     //! transverse momentum of prong 2
 DECLARE_SOA_COLUMN(RSecondaryVertexCharm, rSecondaryVertexCharm, float);                     //! distance of the secondary vertex from the z axis
+DECLARE_SOA_COLUMN(InvMassCharm, invMassCharm, float);                                       //! mass of the charm daughter
 // TOF
 DECLARE_SOA_COLUMN(NSigTofKa0Charm, nSigTofKa0Charm, float);
 DECLARE_SOA_COLUMN(NSigTofKa1Charm, nSigTofKa1Charm, float);
@@ -846,52 +843,61 @@ DECLARE_SOA_TABLE_STAGED(HfDplusMcs, "HFDPMC", //! Table with MC candidate info
 // D*+
 // ----------------
 
-DECLARE_SOA_TABLE_STAGED(HfDstarPars, "HFDSTARPAR", //! Table with candidate properties used for selection
-                         hf_cand_dstar::Chi2PCAD0,
-                         hf_cand_par::CpaD0,
-                         hf_cand_par::CpaXYD0,
-                         hf_cand_par::DecayLengthD0,
-                         hf_cand_par::DecayLengthXYD0,
-                         hf_cand_par::DecayLengthNormalisedD0,
-                         hf_cand_par::DecayLengthXYNormalisedD0,
-                         hf_cand::PxProng0,
+DECLARE_SOA_TABLE_STAGED(HfDstarPars, "HFDSTPAR", //! Table with candidate properties used for selection
+                         hf_cand::PxProng0,       // Prong0 is the D0
                          hf_cand::PyProng0,
                          hf_cand::PzProng0,
-                         hf_cand::PxProng1,
+                         hf_cand::PxProng1, // Prong1 is the soft pion
                          hf_cand::PyProng1,
                          hf_cand::PzProng1,
-                         hf_cand_dstar::PxD0,
-                         hf_cand_dstar::PyD0,
-                         hf_cand_dstar::PzD0,
-                         hf_cand_dstar::PxSoftPi,
-                         hf_cand_dstar::PySoftPi,
-                         hf_cand_dstar::PzSoftPi,
-                         hf_cand_dstar::PtSoftPi<hf_cand_dstar::PxSoftPi, hf_cand_dstar::PySoftPi>,
-                         hf_cand_dstar::SignSoftPi,
-                         hf_cand_dstar::PtD0<hf_cand_dstar::PxD0, hf_cand_dstar::PyD0>,
-                         hf_cand_par::MassD0,
-                         hf_cand::ImpactParameter0,
+                         hf_cand::PtProng1<hf_cand::PxProng1, hf_cand::PyProng1>,
+                         hf_cand_par::SignProng1,
+                         hf_cand::PtProng0<hf_cand::PxProng0, hf_cand::PyProng0>,
                          hf_cand::ImpactParameter1,
-                         hf_cand_dstar::ImpParamSoftPi,
-                         hf_cand_par::ImpactParameterNormalised0,
                          hf_cand_par::ImpactParameterNormalised1,
-                         hf_cand_par::NormalisedImpParamSoftPi,
-                         hf_cand_par::NSigTpcPi0,
-                         hf_cand_par::NSigTofPi0,
-                         hf_cand_par::NSigTpcTofPi0,
-                         hf_cand_par::NSigTpcKa1,
-                         hf_cand_par::NSigTofKa1,
-                         hf_cand_par::NSigTpcTofKa1,
-                         hf_cand_par::NSigTpcPiSoftPi,
-                         hf_cand_par::NSigTofPiSoftPi,
-                         hf_cand_par::NSigTpcTofPiSoftPi,
+                         hf_cand_par::NSigTpcPi1,
+                         hf_cand_par::NSigTofPi1,
+                         hf_cand_par::NSigTpcTofPi1,
                          o2::soa::Marker<MarkerDstar>);
 
-DECLARE_SOA_TABLE_STAGED(HfDstarMls, "HFDSTARML", //! Table with candidate selection ML scores
+DECLARE_SOA_TABLE_STAGED(HfDstarParD0s, "HFDSTPARD0", //! Table with candidate properties used for selection
+                         hf_cand_par_charm::Chi2PCACharm,
+                         hf_cand_par_charm::CpaCharm,
+                         hf_cand_par_charm::CpaXYCharm,
+                         hf_cand_par_charm::DecayLengthCharm,
+                         hf_cand_par_charm::DecayLengthXYCharm,
+                         hf_cand_par_charm::DecayLengthNormalisedCharm,
+                         hf_cand_par_charm::DecayLengthXYNormalisedCharm,
+                         hf_cand_par_charm::PxProng0Charm, // prong0 is the first D0 daughter
+                         hf_cand_par_charm::PyProng0Charm,
+                         hf_cand_par_charm::PzProng0Charm,
+                         hf_cand_par_charm::PxProng1Charm, // prong 1 is the second D0 daughter
+                         hf_cand_par_charm::PyProng1Charm,
+                         hf_cand_par_charm::PzProng1Charm,
+                         hf_cand_par_charm::InvMassCharm,
+                         hf_cand_par_charm::ImpactParameter0Charm,
+                         hf_cand_par_charm::ImpactParameter1Charm,
+                         hf_cand_par_charm::ImpactParameterNormalised0Charm,
+                         hf_cand_par_charm::ImpactParameterNormalised1Charm,
+                         hf_cand_par_charm::NSigTpcPi0Charm,
+                         hf_cand_par_charm::NSigTofPi0Charm,
+                         hf_cand_par_charm::NSigTpcTofPi0Charm,
+                         hf_cand_par_charm::NSigTpcKa0Charm,
+                         hf_cand_par_charm::NSigTofKa0Charm,
+                         hf_cand_par_charm::NSigTpcTofKa0Charm,
+                         hf_cand_par_charm::NSigTpcPi1Charm,
+                         hf_cand_par_charm::NSigTofPi1Charm,
+                         hf_cand_par_charm::NSigTpcTofPi1Charm,
+                         hf_cand_par_charm::NSigTpcKa1Charm,
+                         hf_cand_par_charm::NSigTofKa1Charm,
+                         hf_cand_par_charm::NSigTpcTofKa1Charm,
+                         o2::soa::Marker<MarkerDstar>);
+
+DECLARE_SOA_TABLE_STAGED(HfDstarMls, "HFDSTML", //! Table with candidate selection ML scores
                          hf_cand_mc::MlScores,
                          o2::soa::Marker<MarkerDstar>);
 
-DECLARE_SOA_TABLE_STAGED(HfDstarMcs, "HFDSTARMC", //! Table with MC candidate info
+DECLARE_SOA_TABLE_STAGED(HfDstarMcs, "HFDSTMC", //! Table with MC candidate info
                          hf_cand_mc::FlagMcMatchRec,
                          hf_cand_mc::OriginMcRec,
                          o2::soa::Marker<MarkerDstar>);
