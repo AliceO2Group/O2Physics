@@ -277,7 +277,6 @@ class EfficiencyCorrection
 
   bool shouldApplyCorrection{false};
   bool shouldFillHistograms{false};
-  bool shouldSetMultToConst{false};
 
   o2::ccdb::BasicCCDBManager& ccdb{o2::ccdb::BasicCCDBManager::instance()};
   std::array<TH1*, 2> hLoaded{nullptr, nullptr};
