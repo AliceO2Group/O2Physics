@@ -78,6 +78,7 @@ using DaughterTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, a
                                  aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                  aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 using DaughterTracksMC = soa::Join<DaughterTracks, aod::McTrackLabels>;
+using CascAndV0 = soa::Join<aod::CascDataExt, aod::V0Datas>;
 
 struct StrangenessInJets {
 
@@ -738,7 +739,7 @@ struct StrangenessInJets {
 
   // Process data
   void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s,
-                   aod::CascDataExt const& Cascades, DaughterTracks const& tracks,
+                   CascAndV0 const& Cascades, DaughterTracks const& tracks,
                    aod::BCsWithTimestamps const&)
   {
     // Fill event counter before event selection
@@ -1108,7 +1109,7 @@ struct StrangenessInJets {
 
   // Reconstructed MC events
   void processMCreconstructed(SimCollisions const& collisions, DaughterTracksMC const& mcTracks,
-                              aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades,
+                              aod::V0Datas const& fullV0s, CascAndV0 const& Cascades,
                               const aod::McParticles&)
   {
     for (const auto& collision : collisions) {
