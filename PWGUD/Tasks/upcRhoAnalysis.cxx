@@ -15,6 +15,7 @@
 /// \author Jakub Juracka, jakub.juracka@cern.ch
 /// \file   upcRhoAnalysis.cxx
 
+#include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
 #include "PWGUD/DataModel/UDTables.h"
 
@@ -119,13 +120,29 @@ struct UpcRhoAnalysis {
   Produces<o2::aod::RecoTree> recoTree;
   Produces<o2::aod::McTree> mcTree;
 
+  SGSelector sgSelector;
+
   float pcEtaCut = 0.9; // physics coordination recommendation
+
   Configurable<int> numPions{"numPions", 2, "required number of pions in the event"};
+
+  Configurable<bool> cutGapSide{"cutGapSide", true, "apply gap side cut"};
   Configurable<int> gapSide{"gapSide", 2, "required gap side"};
+  Congigurable<bool> useTrueGap{"useTrueGap", false, "use true gap"};
+  Configurable<float> cutTrueGapSideFV0{"cutTrueGapSideFV0", 180000, "FV0A threshold for SG selector"};
+  Configurable<float> cutTrueGapSideFT0A{"cutTrueGapSideFT0A", 150., "FT0A threshold for SG selector"};
+  Configurable<float> cutTrueGapSideFT0C{"cutTrueGapSideFT0C", 50., "FT0C threshold for SG selector"};
+  Configurable<float> cutTrueGapSideZDC{"cutTrueGapSideZDC", 10000., "ZDC threshold for SG selector. 0 is <1n, 4.2 is <2n, 6.7 is <3n, 9.5 is <4n, 12.5 is <5n"};
+    
   Configurable<bool> requireTof{"requireTof", false, "require TOF signal"};
   Configurable<bool> onlyGoldenRuns{"onlyGoldenRuns", false, "process only golden runs"};
+  Configurable<bool> useRecoFlag{"useRecoFlag", false, "use reco flag for event selection"};
+  Configurable<int> cutRecoFlag{"cutRecoFlag", 1, "0 = std mode, 1 = upc mode"};
+  Configurable<bool> useRctFlag{"useRctFlag", false, "use RCT flags for event selection"};
+  Configurable<int> cutRctFlag{"cutRCTflag", 0, "0 = off, 1 = CBT, 2 = CBT+ZDC, 3 = CBThadron, 4 = CBThadron+ZDC"};
 
   Configurable<float> collisionsPosZMaxCut{"collisionsPosZMaxCut", 10.0, "max Z position cut on collisions"};
+  Configurable<bool> cutNumContribs{"cutNumContribs", true, "cut on number of contributors"};
   Configurable<int> collisionsNumContribsMaxCut{"collisionsNumContribsMaxCut", 2, "max number of contributors cut on collisions"};
   Configurable<float> znCommonEnergyCut{"znCommonEnergyCut", 0.0, "ZN common energy cut"};
   Configurable<float> znTimeCut{"znTimeCut", 2.0, "ZN time cut"};
@@ -151,8 +168,8 @@ struct UpcRhoAnalysis {
   ConfigurableAxis pt2Axis{"pt2Axis", {1000, 0.0, 0.1}, "#it{p}_{T}^{2} (GeV^{2}/#it{c}^{2})"};
   ConfigurableAxis etaAxis{"etaAxis", {300, -1.5, 1.5}, "#it{#eta}"};
   ConfigurableAxis yAxis{"yAxis", {400, -4.0, 4.0}, "#it{y}"};
-  ConfigurableAxis phiAxis{"phiAxis", {180, 0.0, o2::constants::math::TwoPI}, "#it{#phi}"};
-  ConfigurableAxis deltaPhiAxis{"deltaPhiAxis", {182, -o2::constants::math::PI, o2::constants::math::PI}, "#Delta#it{#phi}"};
+  ConfigurableAxis phiAxis{"phiAxis", {180, 0.0, o2::constants::math::TwoPI}, "#it{#phi} (rad)"};
+  ConfigurableAxis deltaPhiAxis{"deltaPhiAxis", {182, -o2::constants::math::PI, o2::constants::math::PI}, "#Delta#it{#phi} (rad)"};
   ConfigurableAxis znCommonEnergyAxis{"znCommonEnergyAxis", {250, -5.0, 20.0}, "ZN common energy (TeV)"};
   ConfigurableAxis znTimeAxis{"znTimeAxis", {200, -10.0, 10.0}, "ZN time (ns)"};
   ConfigurableAxis runNumberAxis{"runNumberAxis", {1355, 544012.5, 545367.5}, "run number"};
@@ -389,14 +406,41 @@ struct UpcRhoAnalysis {
   }
 
   template <typename C>
+  bool isGoodRctFlag(const C& collision)
+  {
+    switch (cutRCTflag) {
+      case 1:
+        return sgSelector.isCBTOk(collision);
+      case 2:
+        return sgSelector.isCBTZdcOk(collision);
+      case 3:
+        return sgSelector.isCBTHadronOk(collision);
+      case 4:
+        return sgSelector.isCBTHadronZdcOk(collision);
+      default:
+        return true;
+    }
+  }
+
+  template <typename C>
   bool collisionPassesCuts(const C& collision) // collision cuts
   {
-    if (!collision.vtxITSTPC() || !collision.sbp() || !collision.itsROFb() || !collision.tfb()) // not applied automatically in pass5
+    if (!collision.vtxITSTPC() || !collision.sbp() || !collision.itsROFb() || !collision.tfb()) // not applied automatically in 2023 Pb-Pb pass5
       return false;
+
     if (std::abs(collision.posZ()) > collisionsPosZMaxCut)
       return false;
-    if (collision.numContrib() > collisionsNumContribsMaxCut)
+    if (cutNumContribs && (collision.numContrib() > collisionsNumContribsMaxCut))
       return false;
+    
+    if (useRctFlag && !isGoodRctFlag(collision)) // check RCT flags
+      return false;
+    if (useRecoFlag && (collision.flags() != cutRecoFlag)) // check reconstruction mode
+      return false;
+
+    if (useTrueGap && (collision.gapSide() != sgSelector.trueGap(collision, cutTrueGapSideFV0, cutTrueGapSideFT0A, cutTrueGapSideFT0C, cutTrueGapSideZDC))) // check true gap side
+      return false;
+    
     return true;
   }
 
@@ -852,7 +896,7 @@ struct UpcRhoAnalysis {
 
   void processSGdata(FullUdSgCollision const& collision, FullUdTracks const& tracks)
   {
-    if (collision.gapSide() != gapSide)
+    if (cutGapSide && collision.gapSide() != gapSide)
       return;
     processReco(collision, tracks);
   }
