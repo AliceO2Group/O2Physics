@@ -446,7 +446,7 @@ struct HfCandidateCreatorBsExpressions {
                 arrPDGDaughDs[iProng] = std::abs(daughI.pdgCode());
               }
               if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
-                flagChannelMain = sign * BIT(hf_cand_bs::DecayTypeMc::B0ToDsPiToPhiPiPiToKKPiPi);
+                flagChannelMain = sign * DecayChannelMain::B0ToDsPi;
               }
             }
           }
@@ -472,7 +472,7 @@ struct HfCandidateCreatorBsExpressions {
           // look for common b-hadron ancestor
           if (index0Mother > -1 && index1Mother > -1 && index2Mother > -1 && index3Mother > -1) {
             if (index0Mother == index1Mother && index1Mother == index2Mother && index2Mother == index3Mother) {
-              flagChannelMain = BIT(hf_cand_bs::DecayTypeMc::PartlyRecoDecay); // FIXME
+              flagChannelMain = hf_cand_bs::DecayTypeMc::PartlyRecoDecay; // FIXME
               break;
             }
           }
@@ -519,7 +519,7 @@ struct HfCandidateCreatorBsExpressions {
                 arrPDGDaughDs[jProng] = std::abs(daughJ.pdgCode());
               }
               if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
-                flagChannelMain = sign * BIT(hf_cand_bs::DecayTypeMc::B0ToDsPiToPhiPiPiToKKPiPi);
+                flagChannelMain = sign * DecayChannelMain::B0ToDsPi;
               }
             }
           }
