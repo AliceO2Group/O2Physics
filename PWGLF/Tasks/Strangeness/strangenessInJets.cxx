@@ -509,8 +509,8 @@ struct StrangenessInJets {
   }
 
   // Xi Selections
-  template <typename Xi, typename TrackPos, typename TrackNeg, typename TrackBac, typename vZero, typename Coll>
-  bool passedXiSelection(const Xi& casc, const TrackPos& ptrack, const TrackNeg& ntrack, const TrackBac& btrack, const vZero& v0, const Coll& coll)
+  template <typename Xi, typename TrackPos, typename TrackNeg, typename TrackBac, typename Coll>
+  bool passedXiSelection(const Xi& casc, const TrackPos& ptrack, const TrackNeg& ntrack, const TrackBac& btrack, const Coll& coll)
   {
     // Single-track selections on cascade daughters
     if (!passedSingleTrackSelection(ptrack))
@@ -542,8 +542,9 @@ struct StrangenessInJets {
       }
 
       // Require that V0 is compatible with Lambda
+      /*
       if (std::fabs(v0.mAntiLambda() - MassLambda0) > deltaMassLambda)
-        return false;
+        return false;*/
     }
 
     // Xi- selection (Xi- -> L + pi-)
@@ -568,8 +569,9 @@ struct StrangenessInJets {
       }
 
       // Require that V0 is compatible with Lambda
+      /*
       if (std::fabs(v0.mLambda() - MassLambda0) > deltaMassLambda)
-        return false;
+        return false;*/
     }
 
     // V0 selections
@@ -613,8 +615,8 @@ struct StrangenessInJets {
   }
 
   // Omega selections
-  template <typename Omega, typename TrackPos, typename TrackNeg, typename TrackBac, typename vZero, typename Coll>
-  bool passedOmegaSelection(const Omega& casc, const TrackPos& ptrack, const TrackNeg& ntrack, const TrackBac& btrack, const vZero& v0, const Coll& coll)
+  template <typename Omega, typename TrackPos, typename TrackNeg, typename TrackBac, typename Coll>
+  bool passedOmegaSelection(const Omega& casc, const TrackPos& ptrack, const TrackNeg& ntrack, const TrackBac& btrack, const Coll& coll)
   {
     // Single-track selections on cascade daughters
     if (!passedSingleTrackSelection(ptrack))
@@ -646,8 +648,9 @@ struct StrangenessInJets {
       }
 
       // Require that V0 is compatible with Lambda
+      /*
       if (std::fabs(v0.mAntiLambda() - MassLambda0) > deltaMassLambda)
-        return false;
+        return false;*/
     }
 
     // Omega- selection (Omega- -> L + K-)
@@ -672,8 +675,9 @@ struct StrangenessInJets {
       }
 
       // Require that V0 is compatible with Lambda
+      /*
       if (std::fabs(v0.mLambda() - MassLambda0) > deltaMassLambda)
-        return false;
+        return false;*/
     }
 
     // V0 selections
@@ -739,7 +743,7 @@ struct StrangenessInJets {
 
   // Process data
   void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s,
-                   CascAndV0 const& Cascades, DaughterTracks const& tracks,
+                   aod::CascDataExt const& Cascades, DaughterTracks const& tracks,
                    aod::BCsWithTimestamps const&)
   {
     // Fill event counter before event selection
@@ -896,7 +900,6 @@ struct StrangenessInJets {
           auto bach = casc.bachelor_as<DaughterTracks>();
           auto pos = casc.posTrack_as<DaughterTracks>();
           auto neg = casc.negTrack_as<DaughterTracks>();
-          auto const& v0 = casc.v0();
           TVector3 cascadeDir(casc.px(), casc.py(), casc.pz());
 
           // Calculate distance from jet and UE axes
@@ -911,7 +914,7 @@ struct StrangenessInJets {
           double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
           // Xi+
-          if (passedXiSelection(casc, pos, neg, bach, v0, collision) && bach.sign() > 0) {
+          if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
             if (deltaRjet < rJet) {
               registryData.fill(HIST("XiPos_in_jet"), multiplicity, casc.pt(), casc.mXi());
             }
@@ -920,7 +923,7 @@ struct StrangenessInJets {
             }
           }
           // Xi-
-          if (passedXiSelection(casc, pos, neg, bach, v0, collision) && bach.sign() < 0) {
+          if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
             if (deltaRjet < rJet) {
               registryData.fill(HIST("XiNeg_in_jet"), multiplicity, casc.pt(), casc.mXi());
             }
@@ -929,7 +932,7 @@ struct StrangenessInJets {
             }
           }
           // Omega+
-          if (passedOmegaSelection(casc, pos, neg, bach, v0, collision) && bach.sign() > 0) {
+          if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
             if (deltaRjet < rJet) {
               registryData.fill(HIST("OmegaPos_in_jet"), multiplicity, casc.pt(), casc.mOmega());
             }
@@ -938,7 +941,7 @@ struct StrangenessInJets {
             }
           }
           // Omega-
-          if (passedOmegaSelection(casc, pos, neg, bach, v0, collision) && bach.sign() < 0) {
+          if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
             if (deltaRjet < rJet) {
               registryData.fill(HIST("OmegaNeg_in_jet"), multiplicity, casc.pt(), casc.mOmega());
             }
@@ -1109,7 +1112,7 @@ struct StrangenessInJets {
 
   // Reconstructed MC events
   void processMCreconstructed(SimCollisions const& collisions, DaughterTracksMC const& mcTracks,
-                              aod::V0Datas const& fullV0s, CascAndV0 const& Cascades,
+                              aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades,
                               const aod::McParticles&)
   {
     for (const auto& collision : collisions) {
@@ -1298,7 +1301,6 @@ struct StrangenessInJets {
             auto bach = casc.bachelor_as<DaughterTracksMC>();
             auto pos = casc.posTrack_as<DaughterTracksMC>();
             auto neg = casc.negTrack_as<DaughterTracksMC>();
-            auto const& v0 = casc.v0();
 
             // Get MC particles
             if (!bach.has_mcParticle() || !pos.has_mcParticle() || !neg.has_mcParticle())
@@ -1342,7 +1344,7 @@ struct StrangenessInJets {
             double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
             // Xi+
-            if (passedXiSelection(casc, pos, neg, bach, v0, collision) && bach.sign() > 0 && pdgParent == kXiPlusBar) {
+            if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && pdgParent == kXiPlusBar) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("XiPos_reconstructed_jet"), multiplicity, casc.pt());
               }
@@ -1351,7 +1353,7 @@ struct StrangenessInJets {
               }
             }
             // Xi-
-            if (passedXiSelection(casc, pos, neg, bach, v0, collision) && bach.sign() < 0 && pdgParent == kXiMinus) {
+            if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && pdgParent == kXiMinus) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("XiNeg_reconstructed_jet"), multiplicity, casc.pt());
               }
@@ -1360,7 +1362,7 @@ struct StrangenessInJets {
               }
             }
             // Omega+
-            if (passedOmegaSelection(casc, pos, neg, bach, v0, collision) && bach.sign() > 0 && pdgParent == kOmegaPlusBar) {
+            if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && pdgParent == kOmegaPlusBar) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("OmegaPos_reconstructed_jet"), multiplicity, casc.pt());
               }
@@ -1369,7 +1371,7 @@ struct StrangenessInJets {
               }
             }
             // Omega-
-            if (passedOmegaSelection(casc, pos, neg, bach, v0, collision) && bach.sign() < 0 && pdgParent == kOmegaMinus) {
+            if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && pdgParent == kOmegaMinus) {
               if (deltaRjet < rJet) {
                 registryMC.fill(HIST("OmegaNeg_reconstructed_jet"), multiplicity, casc.pt());
               }
