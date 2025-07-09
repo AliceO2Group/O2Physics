@@ -9,7 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-
 /// \file   pidTPC.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \author Christian Sonnabend christian.sonnabend@cern.ch
@@ -18,26 +17,14 @@
 /// \brief  Task to produce PID tables for TPC split for each particle.
 ///         Only the tables for the mass hypotheses requested are filled, and only for the requested table size ("Full" or "Tiny"). The others are sent empty.
 
-
-#include <map>
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
-#include <string>
-#include <utility>
-#include <vector>
-
-#include <TFile.h>
-#include <TRandom.h>
-#include <TSystem.h>
-
 #include "MetadataHelper.h"
 #include "TableHelper.h"
 #include "pidTPCBase.h"
 
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Tools/ML/model.h"
@@ -50,16 +37,15 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 
-#include "TableHelper.h"
-#include "pidTPCBase.h"
+#include <TFile.h>
+#include <TRandom.h>
+#include <TSystem.h>
 
-#include "Common/CCDB/ctpRateFetcher.h"
-#include "Common/DataModel/FT0Corrected.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
