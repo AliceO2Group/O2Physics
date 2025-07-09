@@ -1043,7 +1043,7 @@ struct StrangenessInJets {
           double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
           // Select particles inside jet
-          if (deltaEtaJet < coneRadius) {
+          if (deltaRJet < coneRadius) {
             switch (particle.pdgCode()) {
               case kK0Short:
                 registryMC.fill(HIST("K0s_generated_jet"), genMultiplicity, particle.pt());
@@ -1194,8 +1194,8 @@ struct StrangenessInJets {
         // V0 particles
         if (particleOfInterest == Option::kV0Particles) {
           for (const auto& v0 : fullV0s) {
-            const auto& pos = v0.posTrack_as<DaughterTracks>();
-            const auto& neg = v0.negTrack_as<DaughterTracks>();
+            const auto& pos = v0.posTrack_as<DaughterTracksMC>();
+            const auto& neg = v0.negTrack_as<DaughterTracksMC>();
             TVector3 v0dir(v0.px(), v0.py(), v0.pz());
 
             // Get MC particles
@@ -1293,9 +1293,9 @@ struct StrangenessInJets {
         // Cascades
         if (particleOfInterest == Option::kCascades) {
           for (const auto& casc : Cascades) {
-            auto bach = casc.bachelor_as<DaughterTracks>();
-            auto pos = casc.posTrack_as<DaughterTracks>();
-            auto neg = casc.negTrack_as<DaughterTracks>();
+            auto bach = casc.bachelor_as<DaughterTracksMC>();
+            auto pos = casc.posTrack_as<DaughterTracksMC>();
+            auto neg = casc.negTrack_as<DaughterTracksMC>();
 
             // Get MC particles
             if (!bach.has_mcParticle() || !pos.has_mcParticle() || !neg.has_mcParticle())
