@@ -24,8 +24,10 @@
 
 #include "Common/CCDB/RCTSelectionFlags.h"
 
+#include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/Logger.h"
+#include "Framework/runDataProcessing.h"
 
 #include <cmath>
 
