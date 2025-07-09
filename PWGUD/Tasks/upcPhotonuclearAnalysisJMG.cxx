@@ -116,10 +116,10 @@ struct upcPhotonuclearAnalysisJMG {
   Configurable<float> cutCGapMyEnergyZNCMax{"cutCGapMyEnergyZNCMax", 0., {"My collision cut. C Gap"}};
   // Configurable<float> cutCGapMyAmplitudeFT0CMax{"cutCGapMyAmplitudeFT0CMax", 200., {"My collision cut. A Gap"}};
   // Declare configurables on tracks
-  Configurable<float> cutMyptMin{"cutMyptMin", 0.15, {"My Track cut"}};
-  Configurable<float> cutMyptMax{"cutMyptMax", 10., {"My Track cut"}};
-  Configurable<float> cutMyetaMin{"cutMyetaMin", -0.9, {"My Track cut"}};
-  Configurable<float> cutMyetaMax{"cutMyetaMax", 0.9, {"My Track cut"}};
+  Configurable<float> cutMyptMin{"cutMyptMin", 0.2, {"My Track cut"}};
+  Configurable<float> cutMyptMax{"cutMyptMax", 3., {"My Track cut"}};
+  Configurable<float> cutMyetaMin{"cutMyetaMin", -0.8, {"My Track cut"}};
+  Configurable<float> cutMyetaMax{"cutMyetaMax", 0.8, {"My Track cut"}};
   Configurable<float> cutMydcaZmax{"cutMydcaZmax", 2.f, {"My Track cut"}};
   Configurable<float> cutMydcaXYmax{"cutMydcaXYmax", 1e0f, {"My Track cut"}};
   Configurable<bool> cutMydcaXYusePt{"cutMydcaXYusePt", false, {"My Track cut"}};
@@ -316,6 +316,9 @@ struct upcPhotonuclearAnalysisJMG {
   template <typename T>
   bool isTrackCut(T const& track)
   {
+    if (track.sign() != 1 || track.sign() != -1) {
+      return false;
+    }
     if (track.pt() < cutMyptMin || track.pt() > cutMyptMax) {
       return false;
     }
@@ -447,7 +450,7 @@ struct upcPhotonuclearAnalysisJMG {
         histos.fill(HIST("Events/SGsideA/hAmplitudFT0A"), reconstructedCollision.totalFT0AmplitudeA());
         histos.fill(HIST("Events/SGsideA/hAmplitudFT0C"), reconstructedCollision.totalFT0AmplitudeC());
         for (const auto& track : reconstructedTracks) {
-          if (track.sign() == 1 || track.sign() == -1) {
+          // if (track.sign() == 1 || track.sign() == -1) {
             if (isTrackCut(track) == false) {
               continue;
             }
@@ -479,7 +482,7 @@ struct upcPhotonuclearAnalysisJMG {
             histos.fill(HIST("Tracks/SGsideA/hTrackTPCNClsFindableMinusCrossedRows"), track.tpcNClsFindableMinusCrossedRows());
             histos.fill(HIST("Tracks/SGsideA/hTrackTPCChi2NCls"), track.tpcChi2NCl());
             histos.fill(HIST("Tracks/SGsideA/hTrackITSNClsTPCCls"), track.tpcNClsFindable() - track.tpcNClsFindableMinusFound(), track.itsNCls());
-          }
+          // }
         }
         histos.fill(HIST("Events/SGsideA/hNch"), nTracksCharged);
         histos.fill(HIST("Events/SGsideA/hMultiplicity"), reconstructedTracks.size());
@@ -503,7 +506,7 @@ struct upcPhotonuclearAnalysisJMG {
         histos.fill(HIST("Events/SGsideC/hAmplitudFT0A"), reconstructedCollision.totalFT0AmplitudeA());
         histos.fill(HIST("Events/SGsideC/hAmplitudFT0C"), reconstructedCollision.totalFT0AmplitudeC());
         for (const auto& track : reconstructedTracks) {
-          if (track.sign() == 1 || track.sign() == -1) {
+          // if (track.sign() == 1 || track.sign() == -1) {
             if (isTrackCut(track) == false) {
               continue;
             }
@@ -535,7 +538,7 @@ struct upcPhotonuclearAnalysisJMG {
             histos.fill(HIST("Tracks/SGsideC/hTrackTPCNClsFindableMinusCrossedRows"), track.tpcNClsFindableMinusCrossedRows());
             histos.fill(HIST("Tracks/SGsideC/hTrackTPCChi2NCls"), track.tpcChi2NCl());
             histos.fill(HIST("Tracks/SGsideC/hTrackITSNClsTPCCls"), track.tpcNClsFindable() - track.tpcNClsFindableMinusFound(), track.itsNCls());
-          }
+          // }
         }
         histos.fill(HIST("Events/SGsideC/hNch"), nTracksCharged);
         histos.fill(HIST("Events/SGsideC/hMultiplicity"), reconstructedTracks.size());
