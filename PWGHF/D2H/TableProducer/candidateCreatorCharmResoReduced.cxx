@@ -70,6 +70,12 @@ enum DecayChannel : uint8_t {
   D0Track
 };
 
+enum DType : uint8_t {
+  Dplus = 1,
+  Dstar,
+  D0
+};
+
 enum V0Type : uint8_t {
   K0s = 0,
   Lambda,
@@ -92,7 +98,7 @@ enum DecayTypeMc : uint8_t {
 };
 
 const int nBinsPt = 7;
-constexpr double binsPt[nBinsPt + 1] = {
+constexpr double BinsPt[nBinsPt + 1] = {
   1.,
   2.,
   4.,
@@ -101,7 +107,7 @@ constexpr double binsPt[nBinsPt + 1] = {
   12.,
   24.,
   1000.};
-auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
+auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + nBinsPt + 1};
 
 struct HfCandidateCreatorCharmResoReduced {
   // Produces: Tables with resonance info
@@ -119,25 +125,20 @@ struct HfCandidateCreatorCharmResoReduced {
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{vecBinsPt}, "Histogram pT bin limits"};
   // Daughters selection cuts
-  Configurable<LabeledArray<double>> cutsD{"cutsDdaughter", {hf_cuts_d_daughter::Cuts[0], hf_cuts_d_daughter::NBinsPt, hf_cuts_d_daughter::NCutVars, hf_cuts_d_daughter::labelsPt, hf_cuts_d_daughter::labelsCutVar}, "D daughter selections"};
+  Configurable<LabeledArray<double>> cutsDdaughter{"cutsDdaughter", {hf_cuts_d_daughter::Cuts[0], hf_cuts_d_daughter::NBinsPt, hf_cuts_d_daughter::NCutVars, hf_cuts_d_daughter::labelsPt, hf_cuts_d_daughter::labelsCutVar}, "D daughter selections"};
   Configurable<std::vector<double>> binsPtD{"binsPtD", std::vector<double>{hf_cuts_d_daughter::vecBinsPt}, "pT bin limits for D daughter cuts"};
-  Configurable<LabeledArray<double>> cutsV0{"cutsV0daughter", {hf_cuts_v0_daughter::Cuts[0], hf_cuts_v0_daughter::NBinsPt, hf_cuts_v0_daughter::NCutVars, hf_cuts_v0_daughter::labelsPt, hf_cuts_v0_daughter::labelsCutVar}, "V0 daughter selections"};
+  Configurable<LabeledArray<double>> cutsV0daughter{"cutsV0daughter", {hf_cuts_v0_daughter::Cuts[0], hf_cuts_v0_daughter::NBinsPt, hf_cuts_v0_daughter::NCutVars, hf_cuts_v0_daughter::labelsPt, hf_cuts_v0_daughter::labelsCutVar}, "V0 daughter selections"};
   Configurable<std::vector<double>> binsPtV0{"binsPtV0", std::vector<double>{hf_cuts_v0_daughter::vecBinsPt}, "pT bin limits for V0 daughter cuts"};
 
   // Configurables for ME
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
   Configurable<int> numberEventsToSkip{"numberEventsToSkip", -1, "Number of events to Skip in ME process"};
-  ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0., 45., 60., 75., 95, 250}, "event multiplicity pools (PV contributors for now)"};
-  ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0, -4, -1, 1, 4, 10.0}, "z vertex position pools"};
 
+  SliceCache cache;
+  
   using HfRed3PrNoTrksWithMl = soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl>;
   using HfRed2PrNoTrksWithMl = soa::Join<aod::HfRed2PrNoTrks, aod::HfRed2ProngsMl>;
 
-  // Partition of V0 candidates based on v0Type
-  Partition<aod::HfRedVzeros> candidatesK0s = aod::hf_reso_v0::v0Type == (uint8_t)1 || aod::hf_reso_v0::v0Type == (uint8_t)3 || aod::hf_reso_v0::v0Type == (uint8_t)5;
-  Partition<aod::HfRedVzeros> candidatesLambda = aod::hf_reso_v0::v0Type == (uint8_t)2 || aod::hf_reso_v0::v0Type == (uint8_t)4;
-
-  SliceCache cache;
   Preslice<aod::HfRedVzeros> candsV0PerCollision = aod::hf_track_index_reduced::hfRedCollisionId;
   Preslice<aod::HfRedTrkNoParams> candsTrackPerCollision = aod::hf_track_index_reduced::hfRedCollisionId;
   Preslice<aod::HfRed3PrNoTrks> candsDPerCollision = hf_track_index_reduced::hfRedCollisionId;
@@ -145,6 +146,13 @@ struct HfCandidateCreatorCharmResoReduced {
   Preslice<HfRed3PrNoTrksWithMl> candsDPerCollisionWithMl = hf_track_index_reduced::hfRedCollisionId;
   Preslice<HfRed2PrNoTrksWithMl> candsD0PerCollisionWithMl = hf_track_index_reduced::hfRedCollisionId;
 
+  // Partition of V0 candidates based on v0Type
+  Partition<aod::HfRedVzeros> candidatesK0s = aod::hf_reso_v0::v0Type == (uint8_t)1 || aod::hf_reso_v0::v0Type == (uint8_t)3 || aod::hf_reso_v0::v0Type == (uint8_t)5;
+  Partition<aod::HfRedVzeros> candidatesLambda = aod::hf_reso_v0::v0Type == (uint8_t)2 || aod::hf_reso_v0::v0Type == (uint8_t)4;
+
+  ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0., 45., 60., 75., 95, 250}, "event multiplicity pools (PV contributors for now)"};
+  ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0, -4, -1, 1, 4, 10.0}, "z vertex position pools"};
+ 
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
@@ -208,20 +216,20 @@ struct HfCandidateCreatorCharmResoReduced {
     // invariant mass selection
     if (!keepSideBands) {
       if constexpr (channel == DecayChannel::D0Track) {
-        if ((candD.invMassD0() < cutsD->get(ptBin, "invMassSignalLow") || candD.invMassD0() > cutsD->get(ptBin, "invMassSignalHigh")) &&
-            (candD.invMassD0Bar() < cutsD->get(ptBin, "invMassSignalLow") || candD.invMassD0Bar() > cutsD->get(ptBin, "invMassSignalHigh"))) {
+        if ((candD.invMassD0() < cutsDdaughter->get(ptBin, "invMassSignalLow") || candD.invMassD0() > cutsDdaughter->get(ptBin, "invMassSignalHigh")) &&
+            (candD.invMassD0Bar() < cutsDdaughter->get(ptBin, "invMassSignalLow") || candD.invMassD0Bar() > cutsDdaughter->get(ptBin, "invMassSignalHigh"))) {
           return false;
         }
       } else {
-        if (invMassD < cutsD->get(ptBin, "invMassSignalLow") || invMassD > cutsD->get(ptBin, "invMassSignalHigh")) {
+        if (invMassD < cutsDdaughter->get(ptBin, "invMassSignalLow") || invMassD > cutsDdaughter->get(ptBin, "invMassSignalHigh")) {
           return false;
         }
       }
     } else {
-      if ((invMassD < cutsD->get(ptBin, "invMassLeftSBLow")) ||
-          (invMassD > cutsD->get(ptBin, "invMassLeftSBHigh") && invMassD < cutsD->get(ptBin, "invMassSignalLow")) ||
-          (invMassD > cutsD->get(ptBin, "invMassSignalHigh") && invMassD < cutsD->get(ptBin, "invMassRightSBLow")) ||
-          (invMassD > cutsD->get(ptBin, "invMassRightSBHigh"))) {
+      if ((invMassD < cutsDdaughter->get(ptBin, "invMassLeftSBLow")) ||
+          (invMassD > cutsDdaughter->get(ptBin, "invMassLeftSBHigh") && invMassD < cutsDdaughter->get(ptBin, "invMassSignalLow")) ||
+          (invMassD > cutsDdaughter->get(ptBin, "invMassSignalHigh") && invMassD < cutsDdaughter->get(ptBin, "invMassRightSBLow")) ||
+          (invMassD > cutsDdaughter->get(ptBin, "invMassRightSBHigh"))) {
         return false;
       }
     }
@@ -264,11 +272,11 @@ struct HfCandidateCreatorCharmResoReduced {
       }
     }
     // selection on V0 candidate mass
-    if ((invMassV0 - massV0) > cutsV0->get(ptBin, "invMassLow") && (massV0 - invMassV0) < cutsV0->get(ptBin, "invMassLow")) {
+    if ((invMassV0 - massV0) > cutsV0daughter->get(ptBin, "invMassLow") && (massV0 - invMassV0) < cutsV0daughter->get(ptBin, "invMassLow")) {
       return false;
     }
     // selection on kinematics and topology
-    if (candV0.dca() > cutsV0->get(ptBin, "dcaMax") || candV0.cpa() < cutsV0->get(ptBin, "cpaMin") || candV0.v0Radius() < cutsV0->get(ptBin, "radiusMin")) {
+    if (candV0.dca() > cutsV0daughter->get(ptBin, "dcaMax") || candV0.cpa() < cutsV0daughter->get(ptBin, "cpaMin") || candV0.v0Radius() < cutsV0daughter->get(ptBin, "radiusMin")) {
       return false;
     }
     return true;
@@ -295,13 +303,13 @@ struct HfCandidateCreatorCharmResoReduced {
       float invMassD0{0.};
       std::array<std::array<float, 3>, 3> pVectorCharmProngs;
       if constexpr (channel != DecayChannel::D0Track) {
-        if (std::abs(candD.dType()) == 1)
+        if (std::abs(candD.dType()) == DType::Dplus)
           invMassD = candD.invMassDplus();
-        if (candD.dType() == 2) {
+        if (candD.dType() == DType::Dstar) {
           invMassD = candD.invMassDstar();
           invMassD0 = candD.invMassD0();
         }
-        if (candD.dType() == -2) {
+        if (candD.dType() == (-1)*DType::Dstar) {
           invMassD = candD.invMassAntiDstar();
           invMassD0 = candD.invMassD0Bar();
         }
@@ -461,13 +469,13 @@ struct HfCandidateCreatorCharmResoReduced {
         // Retrieve D and V0 informations
         float invMassD{0.};
         float invMassD0{0.};
-        if (std::abs(bachD.dType()) == 1)
+        if (std::abs(bachD.dType()) == DType::Dplus)
           invMassD = bachD.invMassDplus();
-        if (bachD.dType() == 2) {
+        if (bachD.dType() == DType::Dstar) {
           invMassD = bachD.invMassDstar();
           invMassD0 = bachD.invMassD0();
         }
-        if (bachD.dType() == -2) {
+        if (bachD.dType() == (-1)*DType::Dstar) {
           invMassD = bachD.invMassAntiDstar();
           invMassD0 = bachD.invMassD0Bar();
         }
