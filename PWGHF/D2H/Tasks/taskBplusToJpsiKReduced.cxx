@@ -61,52 +61,58 @@ namespace o2::aod
 {
 namespace hf_cand_bplustojpsik_lite
 {
-DECLARE_SOA_COLUMN(PtJpsi, ptJpsi, float); //! Transverse momentum of Jpsi daughter candidate (GeV/c)
-DECLARE_SOA_COLUMN(PtBach, ptBach, float); //! Transverse momentum of bachelor kaon (GeV/c)
-// DECLARE_SOA_COLUMN(AbsEtaBach, absEtaBach, float);                                       //! Absolute pseudorapidity of bachelor kaon
-// DECLARE_SOA_COLUMN(ItsNClsBach, itsNClsBach, int);                                       //! Number of ITS clusters of bachelor kaon
-// DECLARE_SOA_COLUMN(TpcNClsCrossedRowsBach, tpcNClsCrossedRowsBach, int);                 //! Number of TPC crossed rows of prongs of bachelor kaon
-// DECLARE_SOA_COLUMN(TpcChi2NClBach, tpcChi2NClBach, float);                               //! Maximum TPC chi2 of prongs of Jpsi-meson daughter candidate
-// DECLARE_SOA_COLUMN(PtJpsiProngMin, ptJpsiProngMin, float);                               //! Minimum pT of prongs of Jpsi daughter candidate (GeV/c)
-// DECLARE_SOA_COLUMN(AbsEtaJpsiProngMin, absEtaJpsiProngMin, float);                       //! Minimum absolute pseudorapidity of prongs of Jpsi daughter candidate
-// DECLARE_SOA_COLUMN(ItsNClsJpsiProngMin, itsNClsJpsiProngMin, int);                       //! Minimum number of ITS clusters of prongs of Jpsi daughter candidate
-// DECLARE_SOA_COLUMN(TpcNClsCrossedRowsJpsiProngMin, tpcNClsCrossedRowsJpsiProngMin, int); //! Minimum number of TPC crossed rows of prongs of Jpsi daughter candidate
-// DECLARE_SOA_COLUMN(TpcChi2NClJpsiProngMax, tpcChi2NClJpsiProngMax, float);               //! Maximum TPC chi2 of prongs of Jpsi daughter candidate
-DECLARE_SOA_COLUMN(MJpsi, mJpsi, float);                                           //! Invariant mass of Jpsi daughter candidates (GeV/c)
-DECLARE_SOA_COLUMN(M, m, float);                                                   //! Invariant mass of candidate (GeV/c2)
-DECLARE_SOA_COLUMN(Pt, pt, float);                                                 //! Transverse momentum of candidate (GeV/c)
-DECLARE_SOA_COLUMN(PtGen, ptGen, float);                                           //! Transverse momentum of candidate (GeV/c)
-DECLARE_SOA_COLUMN(P, p, float);                                                   //! Momentum of candidate (GeV/c)
-DECLARE_SOA_COLUMN(Y, y, float);                                                   //! Rapidity of candidate
-DECLARE_SOA_COLUMN(Eta, eta, float);                                               //! Pseudorapidity of candidate
-DECLARE_SOA_COLUMN(Phi, phi, float);                                               //! Azimuth angle of candidate
-DECLARE_SOA_COLUMN(E, e, float);                                                   //! Energy of candidate (GeV)
-DECLARE_SOA_COLUMN(NSigTpcKaBachelor, nSigTpcKaBachelor, float);                   //! TPC Nsigma separation for bachelor with kaon mass hypothesis
-DECLARE_SOA_COLUMN(NSigTofKaBachelor, nSigTofKaBachelor, float);                   //! TOF Nsigma separation for bachelor with kaon mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcTofKaBachelor, nSigTpcTofKaBachelor, float);             //! Combined TPC and TOF Nsigma separation for bachelor with kaon mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcMuJpsiDauPos, nSigTpcMuJpsiDauPos, float);               //! TPC Nsigma separation for Jpsi DauPos with muon mass hypothesis
-DECLARE_SOA_COLUMN(NSigTofMuJpsiDauPos, nSigTofMuJpsiDauPos, float);               //! TOF Nsigma separation for Jpsi DauPos with muon mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcTofMuJpsiDauPos, nSigTpcTofMuJpsiDauPos, float);         //! Combined TPC and TOF Nsigma separation for Jpsi prong0 with muon mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcMuJpsiDauNeg, nSigTpcMuJpsiDauNeg, float);               //! TPC Nsigma separation for Jpsi DauNeg with muon mass hypothesis
-DECLARE_SOA_COLUMN(NSigTofMuJpsiDauNeg, nSigTofMuJpsiDauNeg, float);               //! TOF Nsigma separation for Jpsi DauNeg with muon mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcTofMuJpsiDauNeg, nSigTpcTofMuJpsiDauNeg, float);         //! Combined TPC and TOF Nsigma separation for Jpsi prong1 with muon mass hypothesis
-DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                               //! Decay length of candidate (cm)
-DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                           //! Transverse decay length of candidate (cm)
-DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);           //! Normalised decay length of candidate
-DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);       //! Normalised transverse decay length of candidate
-DECLARE_SOA_COLUMN(CtXY, ctXY, float);                                             //! Pseudo-proper decay length of candidate
-DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);         //! Impact parameter product of B daughters
-DECLARE_SOA_COLUMN(ImpactParameterProductJpsi, impactParameterProductJpsi, float); //! Impact parameter product of Jpsi daughters
-DECLARE_SOA_COLUMN(ImpactParameterJpsiDauPos, impactParameterJpsiDauPos, float);   //! Impact parameter of Jpsi daughter candidate
-DECLARE_SOA_COLUMN(ImpactParameterJpsiDauNeg, impactParameterJpsiDauNeg, float);   //! Impact parameter of Jpsi daughter candidate
-DECLARE_SOA_COLUMN(ImpactParameterLfTrack0, impactParameterLfTrack0, float);       //! Impact parameter of Phi daughter candidate
-DECLARE_SOA_COLUMN(Cpa, cpa, float);                                               //! Cosine pointing angle of candidate
-DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                           //! Cosine pointing angle of candidate in transverse plane
-DECLARE_SOA_COLUMN(CpaJpsi, cpaJpsi, float);                                       //! Cosine pointing angle of Jpsi daughter candidate
-DECLARE_SOA_COLUMN(CpaXYJpsi, cpaXYJpsi, float);                                   //! Cosine pointing angle in transverse plane of Jpsi daughter candidate
-DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);             //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
-DECLARE_SOA_COLUMN(MlScoreSig, mlScoreSig, float);                                 //! ML score for signal class
-DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t);                //! Flag for association with wrong collision
+DECLARE_SOA_COLUMN(PtJpsi, ptJpsi, float);                                           //! Transverse momentum of Jpsi daughter candidate (GeV/c)
+DECLARE_SOA_COLUMN(PtBach, ptBach, float);                                           //! Transverse momentum of bachelor kaon (GeV/c)
+DECLARE_SOA_COLUMN(ItsNClsJpsiDauPos, itsNClsJpsiDauPos, int);                       //! Number of clusters in ITS
+DECLARE_SOA_COLUMN(TpcNClsCrossedRowsJpsiDauPos, tpcNClsCrossedRowsJpsiDauPos, int); //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(ItsChi2NClJpsiDauPos, itsChi2NClJpsiDauPos, float);               //! ITS chi2 / Number of clusters
+DECLARE_SOA_COLUMN(TpcChi2NClJpsiDauPos, tpcChi2NClJpsiDauPos, float);               //! TPC chi2 / Number of clusters
+DECLARE_SOA_COLUMN(AbsEtaJpsiDauPos, absEtaJpsiDauPos, float);                       //! |eta|
+DECLARE_SOA_COLUMN(ItsNClsJpsiDauNeg, itsNClsJpsiDauNeg, int);                       //! Number of clusters in ITS
+DECLARE_SOA_COLUMN(TpcNClsCrossedRowsJpsiDauNeg, tpcNClsCrossedRowsJpsiDauNeg, int); //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(ItsChi2NClJpsiDauNeg, itsChi2NClJpsiDauNeg, float);               //! ITS chi2 / Number of clusters
+DECLARE_SOA_COLUMN(TpcChi2NClJpsiDauNeg, tpcChi2NClJpsiDauNeg, float);               //! TPC chi2 / Number of clusters
+DECLARE_SOA_COLUMN(AbsEtaJpsiDauNeg, absEtaJpsiDauNeg, float);                       //! |eta|
+DECLARE_SOA_COLUMN(ItsNClsLfTrack0, itsNClsLfTrack0, int);                           //! Number of clusters in ITS
+DECLARE_SOA_COLUMN(TpcNClsCrossedRowsLfTrack0, tpcNClsCrossedRowsLfTrack0, int);     //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(ItsChi2NClLfTrack0, itsChi2NClLfTrack0, float);                   //! ITS chi2 / Number of clusters
+DECLARE_SOA_COLUMN(TpcChi2NClLfTrack0, tpcChi2NClLfTrack0, float);                   //! TPC chi2 / Number of clusters
+DECLARE_SOA_COLUMN(AbsEtaLfTrack0, absEtaLfTrack0, float);                           //! |eta|
+DECLARE_SOA_COLUMN(MJpsi, mJpsi, float);                                             //! Invariant mass of Jpsi daughter candidates (GeV/c)
+DECLARE_SOA_COLUMN(M, m, float);                                                     //! Invariant mass of candidate (GeV/c2)
+DECLARE_SOA_COLUMN(Pt, pt, float);                                                   //! Transverse momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(PtGen, ptGen, float);                                             //! Transverse momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(P, p, float);                                                     //! Momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(Y, y, float);                                                     //! Rapidity of candidate
+DECLARE_SOA_COLUMN(Eta, eta, float);                                                 //! Pseudorapidity of candidate
+DECLARE_SOA_COLUMN(Phi, phi, float);                                                 //! Azimuth angle of candidate
+DECLARE_SOA_COLUMN(E, e, float);                                                     //! Energy of candidate (GeV)
+DECLARE_SOA_COLUMN(NSigTpcKaBachelor, nSigTpcKaBachelor, float);                     //! TPC Nsigma separation for bachelor with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofKaBachelor, nSigTofKaBachelor, float);                     //! TOF Nsigma separation for bachelor with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofKaBachelor, nSigTpcTofKaBachelor, float);               //! Combined TPC and TOF Nsigma separation for bachelor with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcMuJpsiDauPos, nSigTpcMuJpsiDauPos, float);                 //! TPC Nsigma separation for Jpsi DauPos with muon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofMuJpsiDauPos, nSigTofMuJpsiDauPos, float);                 //! TOF Nsigma separation for Jpsi DauPos with muon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofMuJpsiDauPos, nSigTpcTofMuJpsiDauPos, float);           //! Combined TPC and TOF Nsigma separation for Jpsi prong0 with muon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcMuJpsiDauNeg, nSigTpcMuJpsiDauNeg, float);                 //! TPC Nsigma separation for Jpsi DauNeg with muon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofMuJpsiDauNeg, nSigTofMuJpsiDauNeg, float);                 //! TOF Nsigma separation for Jpsi DauNeg with muon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofMuJpsiDauNeg, nSigTpcTofMuJpsiDauNeg, float);           //! Combined TPC and TOF Nsigma separation for Jpsi prong1 with muon mass hypothesis
+DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                                 //! Decay length of candidate (cm)
+DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                             //! Transverse decay length of candidate (cm)
+DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);             //! Normalised decay length of candidate
+DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);         //! Normalised transverse decay length of candidate
+DECLARE_SOA_COLUMN(CtXY, ctXY, float);                                               //! Pseudo-proper decay length of candidate
+DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);           //! Impact parameter product of B daughters
+DECLARE_SOA_COLUMN(ImpactParameterProductJpsi, impactParameterProductJpsi, float);   //! Impact parameter product of Jpsi daughters
+DECLARE_SOA_COLUMN(ImpactParameterJpsiDauPos, impactParameterJpsiDauPos, float);     //! Impact parameter of Jpsi daughter candidate
+DECLARE_SOA_COLUMN(ImpactParameterJpsiDauNeg, impactParameterJpsiDauNeg, float);     //! Impact parameter of Jpsi daughter candidate
+DECLARE_SOA_COLUMN(ImpactParameterLfTrack0, impactParameterLfTrack0, float);         //! Impact parameter of Phi daughter candidate
+DECLARE_SOA_COLUMN(Cpa, cpa, float);                                                 //! Cosine pointing angle of candidate
+DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                             //! Cosine pointing angle of candidate in transverse plane
+DECLARE_SOA_COLUMN(CpaJpsi, cpaJpsi, float);                                         //! Cosine pointing angle of Jpsi daughter candidate
+DECLARE_SOA_COLUMN(CpaXYJpsi, cpaXYJpsi, float);                                     //! Cosine pointing angle in transverse plane of Jpsi daughter candidate
+DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);               //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
+DECLARE_SOA_COLUMN(MlScoreSig, mlScoreSig, float);                                   //! ML score for signal class
+DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t);                  //! Flag for association with wrong collision
 } // namespace hf_cand_bplustojpsik_lite
 
 DECLARE_SOA_TABLE(HfRedCandBpLites, "AOD", "HFREDCANDBPLITE", //! Table with some B+ properties
@@ -134,17 +140,24 @@ DECLARE_SOA_TABLE(HfRedCandBpLites, "AOD", "HFREDCANDBPLITE", //! Table with som
                   hf_cand_bplustojpsik_lite::ImpactParameterJpsiDauPos,
                   hf_cand_bplustojpsik_lite::ImpactParameterJpsiDauNeg,
                   hf_cand_bplustojpsik_lite::ImpactParameterLfTrack0,
-                  // hf_cand_bplustojpsik_lite::PtJpsiProngMin,
-                  // hf_cand_bplustojpsik_lite::AbsEtaJpsiProngMin,
-                  // hf_cand_bplustojpsik_lite::ItsNClsJpsiProngMin,
-                  // hf_cand_bplustojpsik_lite::TpcNClsCrossedRowsJpsiProngMin,
-                  // hf_cand_bplustojpsik_lite::TpcChi2NClJpsiProngMax,
+                  // Jpsi daughter features
+                  hf_cand_bplustojpsik_lite::ItsNClsJpsiDauPos,
+                  hf_cand_bplustojpsik_lite::TpcNClsCrossedRowsJpsiDauPos,
+                  hf_cand_bplustojpsik_lite::ItsChi2NClJpsiDauPos,
+                  hf_cand_bplustojpsik_lite::TpcChi2NClJpsiDauPos,
+                  hf_cand_bplustojpsik_lite::AbsEtaJpsiDauPos,
+                  hf_cand_bplustojpsik_lite::ItsNClsJpsiDauNeg,
+                  hf_cand_bplustojpsik_lite::TpcNClsCrossedRowsJpsiDauNeg,
+                  hf_cand_bplustojpsik_lite::ItsChi2NClJpsiDauNeg,
+                  hf_cand_bplustojpsik_lite::TpcChi2NClJpsiDauNeg,
+                  hf_cand_bplustojpsik_lite::AbsEtaJpsiDauNeg,
                   // kaon features
                   hf_cand_bplustojpsik_lite::PtBach,
-                  // hf_cand_bplustojpsik_lite::AbsEtaBach,
-                  // hf_cand_bplustojpsik_lite::ItsNClsBach,
-                  // hf_cand_bplustojpsik_lite::TpcNClsCrossedRowsBach,
-                  // hf_cand_bplustojpsik_lite::TpcChi2NClBach,
+                  hf_cand_bplustojpsik_lite::ItsNClsLfTrack0,
+                  hf_cand_bplustojpsik_lite::TpcNClsCrossedRowsLfTrack0,
+                  hf_cand_bplustojpsik_lite::ItsChi2NClLfTrack0,
+                  hf_cand_bplustojpsik_lite::TpcChi2NClLfTrack0,
+                  hf_cand_bplustojpsik_lite::AbsEtaLfTrack0,
                   hf_cand_bplustojpsik_lite::NSigTpcKaBachelor,
                   hf_cand_bplustojpsik_lite::NSigTofKaBachelor,
                   hf_cand_bplustojpsik_lite::NSigTpcTofKaBachelor,
@@ -306,6 +319,14 @@ struct HfTaskBplusToJpsiKReduced {
     return std::abs(etaProng) <= etaTrackMax && ptProng >= ptTrackMin;
   }
 
+  /// Calculate pseudorapidity from track tan(lambda)
+  /// \param tgl is the track tangent of the dip angle
+  /// \return pseudorapidity
+  inline float absEta(float tgl)
+  {
+    return std::abs(std::log(std::tan(o2::constants::math::PIQuarter - 0.5f * std::atan(tgl))));
+  }
+
   /// Fill candidate information at reconstruction level
   /// \param doMc is the flag to enable the filling with MC information
   /// \param withBplusMl is the flag to enable the filling with ML scores for the B+ candidate
@@ -415,17 +436,23 @@ struct HfTaskBplusToJpsiKReduced {
         candidate.impactParameter0(),
         candidate.impactParameter1(),
         candidate.impactParameter2(),
-        // candJpsi.ptProngMin(),
-        // candJpsi.absEtaProngMin(),
-        // candJpsi.itsNClsProngMin(),
-        // candJpsi.tpcNClsCrossedRowsProngMin(),
-        // candJpsi.tpcChi2NClProngMax(),
+        candJpsi.itsNClsDauPos(),
+        candJpsi.tpcNClsCrossedRowsDauPos(),
+        candJpsi.itsChi2NClDauPos(),
+        candJpsi.tpcChi2NClDauPos(),
+        absEta(candJpsi.tglDauPos()),
+        candJpsi.itsNClsDauNeg(),
+        candJpsi.tpcNClsCrossedRowsDauNeg(),
+        candJpsi.itsChi2NClDauNeg(),
+        candJpsi.tpcChi2NClDauNeg(),
+        absEta(candJpsi.tglDauNeg()),
         // kaon features
         candidate.ptProng1(),
-        // std::abs(RecoDecay::eta(candKa.pVector())),
-        // candKa.itsNCls(),
-        // candKa.tpcNClsCrossedRows(),
-        // candKa.tpcChi2NCl(),
+        candKa.itsNCls(),
+        candKa.tpcNClsCrossedRows(),
+        candKa.itsChi2NCl(),
+        candKa.tpcChi2NCl(),
+        absEta(candKa.tgl()),
         candKa.tpcNSigmaKa(),
         candKa.tofNSigmaKa(),
         candKa.tpcTofNSigmaKa(),
