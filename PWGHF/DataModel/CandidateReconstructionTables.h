@@ -2234,7 +2234,6 @@ DECLARE_SOA_TABLE(HfCandXic0McGen, "AOD", "HFCANDXIC0MCGEN",
 				hf_cand_xic0_xicp_to_hadronic::FlagMcMatchGen,
 				hf_cand_xic0_xicp_to_hadronic::DebugMcGen,
 				hf_cand_xic0_xicp_to_hadronic::OriginGen)
->>>>>>> 966303b7b (Xic0XicpToHadronic : Xic0 workflow fully implemented)
 
 // specific chic candidate properties
 namespace hf_cand_chic
