@@ -142,7 +142,8 @@ struct StrangenessInJets {
   Configurable<float> deltaMassLambda{"deltaMassLambda", 0.02f, "Mass window for Lambda inclusion"};
 
   // List of Particles
-  enum Option { kV0Particles, kCascades };
+  enum Option { kV0Particles,
+                kCascades };
 
   // Instantiate utility class for jet background subtraction
   JetBkgSubUtils backgroundSub;
@@ -256,7 +257,6 @@ struct StrangenessInJets {
       registryMC.add("Lambda_reconstructed_ue_incl", "Lambda_reconstructed_ue_incl", HistType::kTH2F, {multBinning, ptAxis});
       registryMC.add("AntiLambda_reconstructed_jet_incl", "AntiLambda_reconstructed_jet_incl", HistType::kTH2F, {multBinning, ptAxis});
       registryMC.add("AntiLambda_reconstructed_ue_incl", "AntiLambda_reconstructed_ue_incl", HistType::kTH2F, {multBinning, ptAxis});
-      }
     }
   }
 
@@ -738,8 +738,8 @@ struct StrangenessInJets {
 
   // Process data
   void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s,
-                 aod::CascDataExt const& Cascades, DaughterTracks const& tracks,
-                 aod::BCsWithTimestamps const&)
+                   aod::CascDataExt const& Cascades, DaughterTracks const& tracks,
+                   aod::BCsWithTimestamps const&)
   {
     // Fill event counter before event selection
     registryData.fill(HIST("number_of_events_data"), 0.5);
@@ -1259,7 +1259,7 @@ struct StrangenessInJets {
               }
             }
 
-            //Fill inclusive spectra
+            // Fill inclusive spectra
             // K0s
             if (passedK0ShortSelection(v0, pos, neg) && pdgParent == kK0Short) {
               if (deltaRjet < rJet) {
