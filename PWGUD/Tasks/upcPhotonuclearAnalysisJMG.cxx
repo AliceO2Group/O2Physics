@@ -359,7 +359,11 @@ struct UpcPhotonuclearAnalysisJMG {
   template <typename T>
   bool isTrackCut(T const& track)
   {
+<<<<<<< HEAD
     if (track.sign() != 1 && track.sign() != -1) {
+=======
+    if (track.sign() != 1 || track.sign() != -1) {
+>>>>>>> cd0581547 (updating O2Physics)
       return false;
     }
     if (track.pt() < cutMyptMin || track.pt() > cutMyptMax) {
