@@ -42,6 +42,9 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+
 #include <TMath.h>
 #include <TObjArray.h>
 #include <TPDGCode.h>
@@ -78,7 +81,6 @@ using DaughterTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, a
                                  aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                  aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 using DaughterTracksMC = soa::Join<DaughterTracks, aod::McTrackLabels>;
-using CascAndV0 = soa::Join<aod::CascDataExt, aod::V0Datas>;
 
 struct StrangenessInJets {
 
@@ -542,9 +544,13 @@ struct StrangenessInJets {
       }
 
       // Require that V0 is compatible with Lambda
-      /*
-      if (std::fabs(v0.mAntiLambda() - MassLambda0) > deltaMassLambda)
-        return false;*/
+      ROOT::Math::PxPyPzMVector pProton;
+      ROOT::Math::PxPyPzMVector pPion;
+      pProton.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), MassProton);
+      pPion.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), MassPionCharged);
+      double mLambda = (pProton+pPion).M();
+      if (std::fabs(mLambda - MassLambda0) > deltaMassLambda)
+        return false;
     }
 
     // Xi- selection (Xi- -> L + pi-)
@@ -569,9 +575,13 @@ struct StrangenessInJets {
       }
 
       // Require that V0 is compatible with Lambda
-      /*
-      if (std::fabs(v0.mLambda() - MassLambda0) > deltaMassLambda)
-        return false;*/
+      ROOT::Math::PxPyPzMVector pProton;
+      ROOT::Math::PxPyPzMVector pPion;
+      pProton.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), MassProton);
+      pPion.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), MassPionCharged);
+      double mLambda = (pProton+pPion).M();
+      if (std::fabs(mLambda - MassLambda0) > deltaMassLambda)
+        return false;
     }
 
     // V0 selections
@@ -648,9 +658,13 @@ struct StrangenessInJets {
       }
 
       // Require that V0 is compatible with Lambda
-      /*
-      if (std::fabs(v0.mAntiLambda() - MassLambda0) > deltaMassLambda)
-        return false;*/
+      ROOT::Math::PxPyPzMVector pProton;
+      ROOT::Math::PxPyPzMVector pPion;
+      pProton.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), MassProton);
+      pPion.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), MassPionCharged);
+      double mLambda = (pProton+pPion).M();
+      if (std::fabs(mLambda - MassLambda0) > deltaMassLambda)
+        return false;
     }
 
     // Omega- selection (Omega- -> L + K-)
@@ -675,9 +689,13 @@ struct StrangenessInJets {
       }
 
       // Require that V0 is compatible with Lambda
-      /*
-      if (std::fabs(v0.mLambda() - MassLambda0) > deltaMassLambda)
-        return false;*/
+      ROOT::Math::PxPyPzMVector pProton;
+      ROOT::Math::PxPyPzMVector pPion;
+      pProton.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), MassProton);
+      pPion.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), MassPionCharged);
+      double mLambda = (pProton+pPion).M();
+      if (std::fabs(mLambda - MassLambda0) > deltaMassLambda)
+        return false;
     }
 
     // V0 selections
