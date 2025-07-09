@@ -9,6 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file cksspinalignment.cxx
+/// \brief DataModel for Charged KStar spin alignment
 ///
 /// \author Prottay Das <prottay.das@cern.ch>
 
@@ -31,7 +33,7 @@ namespace o2::aod
 namespace kshortpionevent
 {
 DECLARE_SOA_COLUMN(Cent, cent, float);
-DECLARE_SOA_COLUMN(CollIndex, collindex, float);
+DECLARE_SOA_COLUMN(CollIndex, collIndex, float);
 DECLARE_SOA_COLUMN(PsiFT0C, psiFT0C, float);
 DECLARE_SOA_COLUMN(PsiFT0A, psiFT0A, float);
 DECLARE_SOA_COLUMN(PsiTPC, psiTPC, float);
@@ -47,28 +49,27 @@ using KShortpionEvent = KShortpionEvents::iterator;
 
 namespace kshortpionpair
 {
-DECLARE_SOA_INDEX_COLUMN(KShortpionEvent, kshortpionevent);
+DECLARE_SOA_INDEX_COLUMN(KShortpionEventId, kshortpionEventId);
 DECLARE_SOA_COLUMN(V0Cospa, v0Cospa, float);                       //! V0 Cospa
 DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);                     //! V0 Radius
 DECLARE_SOA_COLUMN(DcaPositive, dcaPositive, float);               //! DCA Positive
 DECLARE_SOA_COLUMN(DcaNegative, dcaNegative, float);               //! DCA Negative
 DECLARE_SOA_COLUMN(DcaBetweenDaughter, dcaBetweenDaughter, float); //! DCA between daughters
 DECLARE_SOA_COLUMN(V0Lifetime, v0Lifetime, float);                 //! KShort lifetime
-                                                   // DECLARE_SOA_COLUMN(Armenteros, arm, float);                     //! Armenteros cut
-DECLARE_SOA_COLUMN(KShortPx, kshPx, float);            //! KShort Px
-DECLARE_SOA_COLUMN(KShortPy, kshPy, float);            //! KShort Py
-DECLARE_SOA_COLUMN(KShortPz, kshPz, float);            //! KShort Pz
-DECLARE_SOA_COLUMN(KShortMass, kshMass, float);        //! KShort Mass
-DECLARE_SOA_COLUMN(PionBachPx, pibachPx, float);       //! Bachelor Pion Px
-DECLARE_SOA_COLUMN(PionBachPy, pibachPy, float);       //! Bachelor Pion Py
-DECLARE_SOA_COLUMN(PionBachPz, pibachPz, float);       //! Bachelor Pion Pz
-DECLARE_SOA_COLUMN(PionBachSign, pibachSign, int);     //! Bachelor Pion Sign
-DECLARE_SOA_COLUMN(PionBachTPC, pibachnsigtpc, float); //! Bachelor Pion nsigmatpc
-DECLARE_SOA_COLUMN(PionBachTOFHit, pibachtofhit, int); //! Bachelor Pion tof hit availability
-DECLARE_SOA_COLUMN(PionBachTOF, pibachnsigtof, float); //! Bachelor Pion nsigmatof
-DECLARE_SOA_COLUMN(PionBachIndex, pibachIndex, int);   //! Bachelor Pion index
-DECLARE_SOA_COLUMN(PionIndex1, pionIndex1, int);       //! Daughter Pion index1
-DECLARE_SOA_COLUMN(PionIndex2, pionIndex2, int);       //! Daughter Pion index2
+DECLARE_SOA_COLUMN(KShortPx, kShortPx, float);                     //! KShort Px
+DECLARE_SOA_COLUMN(KShortPy, kShortPy, float);                     //! KShort Py
+DECLARE_SOA_COLUMN(KShortPz, kShortPz, float);                     //! KShort Pz
+DECLARE_SOA_COLUMN(KShortMass, kShortMass, float);                 //! KShort Mass
+DECLARE_SOA_COLUMN(PionBachPx, pionbachPx, float);                 //! Bachelor Pion Px
+DECLARE_SOA_COLUMN(PionBachPy, pionbachPy, float);                 //! Bachelor Pion Py
+DECLARE_SOA_COLUMN(PionBachPz, pionbachPz, float);                 //! Bachelor Pion Pz
+DECLARE_SOA_COLUMN(PionBachSign, pionbachSign, int);               //! Bachelor Pion Sign
+DECLARE_SOA_COLUMN(PionBachTPC, pionbachtpc, float);               //! Bachelor Pion nsigmatpc
+DECLARE_SOA_COLUMN(PionBachTOFHit, pibachtofhit, int);             //! Bachelor Pion tof hit availability
+DECLARE_SOA_COLUMN(PionBachTOF, pionbachtof, float);               //! Bachelor Pion nsigmatof
+DECLARE_SOA_COLUMN(PionBachIndex, pionbachIndex, int);             //! Bachelor Pion index
+DECLARE_SOA_COLUMN(PionIndex1, pionIndex1, int);                   //! Daughter Pion index1
+DECLARE_SOA_COLUMN(PionIndex2, pionIndex2, int);                   //! Daughter Pion index2
 } // namespace kshortpionpair
 DECLARE_SOA_TABLE(KShortpionPairs, "AOD", "KSHORTPIONPAIR",
                   o2::soa::Index<>,

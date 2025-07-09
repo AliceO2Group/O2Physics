@@ -84,19 +84,19 @@ struct cksspinalignment {
 
   // Configs for pion
   struct : ConfigurableGroup {
-    Configurable<bool> ITSPIDSelection{"ITSPIDSelection", true, "PID ITS"};
+    Configurable<bool> itsPIDSelection{"itsPIDSelection", true, "PID ITS"};
     Configurable<float> lowITSPIDNsigma{"lowITSPIDNsigma", -3.0, "lower cut on PID nsigma for ITS"};
     Configurable<float> highITSPIDNsigma{"highITSPIDNsigma", 3.0, "higher cut on PID nsigma for ITS"};
-    Configurable<int> ITSclusterPiMeson{"ITSclusterPiMeson", 5, "Minimum number of ITS cluster for pi meson track"};
-    Configurable<int> TPCCrossedRowsPiMeson{"TPCCrossedRowsPiMeson", 80, "Minimum number of TPC Crossed Rows for pi meson track"};
-    Configurable<float> CutDCAxyPiMeson{"CutDCAxyPiMeson", 0.1, "Maximum DCAxy for pi meson track"};
-    Configurable<float> CutDCAzPiMeson{"CutDCAzPiMeson", 0.1, "Maximum DCAz for pi meson track"};
-    Configurable<float> CutEtaPiMeson{"CutEtaPiMeson", 0.8, "Maximum eta for pi meson track"};
-    Configurable<float> CutPTPiMeson{"CutPTPiMeson", 0.8, "Maximum pt for pi meson track"};
-    Configurable<bool> UsePID{"UsePID", true, "Flag for using PID selection for pi meson track"};
+    Configurable<int> itsclusterPiMeson{"itsclusterPiMeson", 5, "Minimum number of ITS cluster for pi meson track"};
+    Configurable<int> tpcCrossedRowsPiMeson{"tpcCrossedRowsPiMeson", 80, "Minimum number of TPC Crossed Rows for pi meson track"};
+    Configurable<float> cutDCAxyPiMeson{"cutDCAxyPiMeson", 0.1, "Maximum DCAxy for pi meson track"};
+    Configurable<float> cutDCAzPiMeson{"cutDCAzPiMeson", 0.1, "Maximum DCAz for pi meson track"};
+    Configurable<float> cutEtaPiMeson{"cutEtaPiMeson", 0.8, "Maximum eta for pi meson track"};
+    Configurable<float> cutPTPiMeson{"cutPTPiMeson", 0.8, "Maximum pt for pi meson track"};
+    Configurable<bool> usePID{"usePID", true, "Flag for using PID selection for pi meson track"};
     Configurable<float> nsigmaCutTPCPiMeson{"nsigmaCutTPCPiMeson", 3.0, "Maximum nsigma cut TPC for pi meson track"};
     Configurable<float> nsigmaCutTOFPiMeson{"nsigmaCutTOFPiMeson", 3.0, "Maximum nsigma cut TOF for pi meson track"};
-    Configurable<float> CutTOFBetaPiMeson{"CutTOFBetaPiMeson", 3.0, "Maximum beta cut for pi meson track"};
+    Configurable<float> cutTOFBetaPiMeson{"cutTOFBetaPiMeson", 3.0, "Maximum beta cut for pi meson track"};
   } grpPion;
 
   // Configs for V0
@@ -110,7 +110,7 @@ struct cksspinalignment {
   Configurable<double> cMaxV0DCA{"cMaxV0DCA", 1.2, "Maximum V0 DCA to PV"};
   Configurable<float> cMinV0DCAPi{"cMinV0DCAPi", 0.05, "Minimum V0 daughters DCA to PV for Pi"};
   Configurable<float> cMaxV0LifeTime{"cMaxV0LifeTime", 50, "Maximum V0 life time"};
-  Configurable<float> qtArmenterosMin{"qtArmenterosMinForK0", 0.2, "Minimum armenteros cut for K0s"};
+  Configurable<float> qtArmenterosMin{"qtArmenterosMin", 0.2, "Minimum armenteros cut for K0s"};
   // config for V0 daughters
   Configurable<float> confDaughEta{"confDaughEta", 0.8f, "V0 Daugh sel: max eta"};
   Configurable<float> cfgDaughPiPt{"cfgDaughPiPt", 0.2, "minimum daughter pion pt"};
@@ -137,7 +137,7 @@ struct cksspinalignment {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() >= grpPion.ITSclusterPiMeson && candidate.tpcNClsCrossedRows() > grpPion.TPCCrossedRowsPiMeson && std::abs(candidate.dcaXY()) <= grpPion.CutDCAxyPiMeson && std::abs(candidate.dcaZ()) <= grpPion.CutDCAzPiMeson && std::abs(candidate.eta()) <= grpPion.CutEtaPiMeson && candidate.pt() >= grpPion.CutPTPiMeson) {
+    if (candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() >= grpPion.itsclusterPiMeson && candidate.tpcNClsCrossedRows() > grpPion.tpcCrossedRowsPiMeson && std::abs(candidate.dcaXY()) <= grpPion.cutDCAxyPiMeson && std::abs(candidate.dcaZ()) <= grpPion.cutDCAzPiMeson && std::abs(candidate.eta()) <= grpPion.cutEtaPiMeson && candidate.pt() >= grpPion.cutPTPiMeson) {
       return true;
     }
     return false;
@@ -149,7 +149,7 @@ struct cksspinalignment {
     if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < grpPion.nsigmaCutTPCPiMeson) {
       return true;
     }
-    if (candidate.hasTOF() && candidate.beta() > grpPion.CutTOFBetaPiMeson && std::abs(candidate.tpcNSigmaPi()) < grpPion.nsigmaCutTPCPiMeson && std::abs(candidate.tofNSigmaPi()) < grpPion.nsigmaCutTOFPiMeson) {
+    if (candidate.hasTOF() && candidate.beta() > grpPion.cutTOFBetaPiMeson && std::abs(candidate.tpcNSigmaPi()) < grpPion.nsigmaCutTPCPiMeson && std::abs(candidate.tofNSigmaPi()) < grpPion.nsigmaCutTOFPiMeson) {
       return true;
     }
     return false;
@@ -299,19 +299,19 @@ struct cksspinalignment {
       if (collision.triggereventep()) {
         histos.fill(HIST("hEvtSelInfo"), 2.5);
 
-        for (auto track1 : tracks) {
+        for (const auto& track1 : tracks) {
           histos.fill(HIST("hTrkSelInfo"), 0.5);
           if (!selectionTrack(track1)) {
             continue;
           }
           histos.fill(HIST("hTrkSelInfo"), 1.5);
 
-          if (grpPion.ITSPIDSelection && !(itsResponse.nSigmaITS<o2::track::PID::Pion>(track1) > grpPion.lowITSPIDNsigma && itsResponse.nSigmaITS<o2::track::PID::Pion>(track1) < grpPion.highITSPIDNsigma)) {
+          if (grpPion.itsPIDSelection && !(itsResponse.nSigmaITS<o2::track::PID::Pion>(track1) > grpPion.lowITSPIDNsigma && itsResponse.nSigmaITS<o2::track::PID::Pion>(track1) < grpPion.highITSPIDNsigma)) {
             continue;
           }
           histos.fill(HIST("hTrkSelInfo"), 2.5);
 
-          if (grpPion.UsePID && !selectionPID(track1)) {
+          if (grpPion.usePID && !selectionPID(track1)) {
             continue;
           }
           histos.fill(HIST("hTrkSelInfo"), 3.5);
