@@ -485,9 +485,9 @@ struct HfTaskElectronWeakBoson {
           track.sign());
       }
 
-      if (track.pt() < ptMin)
+      if (track.pt() < ptMin) {
         continue;
-
+      }
       // track - match
 
       //  continue;
