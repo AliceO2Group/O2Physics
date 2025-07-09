@@ -468,11 +468,9 @@ struct HfCandidateCreatorBsExpressions {
           int index3Mother = RecoDecay::getMother(mcParticles, particleProng3, bHadronMotherHypo, true);
 
           // look for common b-hadron ancestor
-          if (index0Mother > -1 && index1Mother > -1 && index2Mother > -1 && index3Mother > -1) {
-            if (index0Mother == index1Mother && index1Mother == index2Mother && index2Mother == index3Mother) {
-              flagChannelMain = hf_cand_bs::DecayTypeMc::PartlyRecoDecay; // FIXME
-              break;
-            }
+          if (index0Mother > -1 && index0Mother == index1Mother && index1Mother == index2Mother && index2Mother == index3Mother) {
+            flagChannelMain = hf_cand_bs::DecayTypeMc::PartlyRecoDecay; // FIXME
+            break;
           }
         }
       }
