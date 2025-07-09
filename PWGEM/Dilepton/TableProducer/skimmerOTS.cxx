@@ -100,7 +100,7 @@ struct skimmerOTS {
   void process(MyCollisions const& collisions, MyBCs const&)
   {
     for (auto& collision : collisions) {
-      auto bc = collision.template bc_as<MyBCs>(); //don't use foundBC.
+      auto bc = collision.template bc_as<MyBCs>(); // don't use foundBC.
       initCCDB(bc);
 
       uint16_t trigger_bitmap = 0;
