@@ -159,7 +159,7 @@ struct JetFinderV0QATask {
   using JetTableMCPMatchedWeightedJoined = soa::Join<JetTableMCD, JetConstituentTableMCP, JetMatchingTableMCPMCD, JetTableMCPWeighted>;
 
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
-  Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centrality >= centralityMin && aod::jcollision::centrality < centralityMax);
+  Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centFT0M >= centralityMin && aod::jcollision::centFT0M < centralityMax);
 
   template <typename T, typename U, typename V>
   bool isAcceptedJet(V const& jet)
@@ -292,10 +292,10 @@ struct JetFinderV0QATask {
       if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
         continue;
       }
-      registry.fill(HIST("h2_centrality_track_pt"), collision.centrality(), track.pt(), weight);
-      registry.fill(HIST("h2_centrality_track_eta"), collision.centrality(), track.eta(), weight);
-      registry.fill(HIST("h2_centrality_track_phi"), collision.centrality(), track.phi(), weight);
-      registry.fill(HIST("h2_centrality_track_energy"), collision.centrality(), track.energy(), weight);
+      registry.fill(HIST("h2_centrality_track_pt"), collision.centFT0M(), track.pt(), weight);
+      registry.fill(HIST("h2_centrality_track_eta"), collision.centFT0M(), track.eta(), weight);
+      registry.fill(HIST("h2_centrality_track_phi"), collision.centFT0M(), track.phi(), weight);
+      registry.fill(HIST("h2_centrality_track_energy"), collision.centFT0M(), track.energy(), weight);
     }
   }
 
@@ -313,7 +313,7 @@ struct JetFinderV0QATask {
       if (!isAcceptedJet<aod::JetTracks, CandidateTableData>(jet)) {
         continue;
       }
-      fillHistograms<typename JetTableDataJoined::iterator, CandidateTableData>(jet, collision.centrality());
+      fillHistograms<typename JetTableDataJoined::iterator, CandidateTableData>(jet, collision.centFT0M());
     }
   }
   PROCESS_SWITCH(JetFinderV0QATask, processJetsData, "jet finder HF QA data", false);
@@ -327,7 +327,7 @@ struct JetFinderV0QATask {
       if (!isAcceptedJet<aod::JetTracks, CandidateTableMCD>(jet)) {
         continue;
       }
-      fillHistograms<typename JetTableMCDJoined::iterator, CandidateTableMCD>(jet, collision.centrality());
+      fillHistograms<typename JetTableMCDJoined::iterator, CandidateTableMCD>(jet, collision.centFT0M());
     }
   }
   PROCESS_SWITCH(JetFinderV0QATask, processJetsMCD, "jet finder HF QA mcd", false);
@@ -341,7 +341,7 @@ struct JetFinderV0QATask {
       if (!isAcceptedJet<aod::JetTracks, CandidateTableMCD>(jet)) {
         continue;
       }
-      fillHistograms<typename JetTableMCDWeightedJoined::iterator, CandidateTableMCD>(jet, collision.centrality(), jet.eventWeight());
+      fillHistograms<typename JetTableMCDWeightedJoined::iterator, CandidateTableMCD>(jet, collision.centFT0M(), jet.eventWeight());
     }
   }
   PROCESS_SWITCH(JetFinderV0QATask, processJetsMCDWeighted, "jet finder HF QA mcd on weighted events", false);
@@ -380,12 +380,12 @@ struct JetFinderV0QATask {
                      soa::Filtered<aod::JetTracks> const& tracks)
   {
     registry.fill(HIST("h_collisions"), 0.5);
-    registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 0.5);
+    registry.fill(HIST("h2_centrality_collisions"), collision.centFT0M(), 0.5);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
-    registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 1.5);
+    registry.fill(HIST("h2_centrality_collisions"), collision.centFT0M(), 1.5);
     fillTrackHistograms(collision, tracks);
   }
   PROCESS_SWITCH(JetFinderV0QATask, processTracks, "QA for charged tracks", false);
@@ -416,7 +416,7 @@ struct JetFinderV0QATask {
       registry.fill(HIST("h_candidate_pt"), candidate.pt());
       registry.fill(HIST("h_candidate_y"), candidate.y());
     }
-    registry.fill(HIST("h2_centrality_ncandidates"), collision.centrality(), candidates.size());
+    registry.fill(HIST("h2_centrality_ncandidates"), collision.centFT0M(), candidates.size());
   }
   PROCESS_SWITCH(JetFinderV0QATask, processCandidates, "HF candidate QA", false);
 };

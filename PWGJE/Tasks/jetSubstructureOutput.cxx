@@ -220,7 +220,7 @@ struct JetSubstructureOutputTask {
             float centrality = -1.0;
             uint8_t eventSel = 0.0;
             if constexpr (!isMCP) {
-              centrality = collision.centrality();
+              centrality = collision.centFT0M();
               eventSel = collision.eventSel();
             }
             collisionOutputTable(collision.posZ(), centrality, eventSel, eventWeight);

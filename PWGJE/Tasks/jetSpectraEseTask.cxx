@@ -311,7 +311,7 @@ struct JetSpectraEseTask {
       return;
     registry.fill(HIST("hEventCounter"), counter++);
 
-    auto centrality = cfgCentVariant ? collision.centralityVariant1() : collision.centrality();
+    auto centrality = cfgCentVariant ? collision.centFT0CVariant1() : collision.centFT0M();
     if (cfgSelCentrality && !isCentralitySelected(centrality))
       return;
     registry.fill(HIST("hCentralitySel"), centrality);
@@ -394,7 +394,7 @@ struct JetSpectraEseTask {
     const auto qPerc{collision.qPERCFT0C()};
 
     auto occupancy{collision.trackOccupancyInTimeRange()};
-    registry.fill(HIST("hPsiOccupancy"), collision.centrality(), psi.psi2, occupancy);
+    registry.fill(HIST("hPsiOccupancy"), collision.centFT0M(), psi.psi2, occupancy);
     registry.fill(HIST("hOccupancy"), occupancy);
 
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
@@ -405,11 +405,11 @@ struct JetSpectraEseTask {
       if (!jetderiveddatautilities::selectTrack(track, trackSelection))
         continue;
 
-      registry.fill(HIST("hTrackPt"), collision.centrality(), track.pt(), qPerc[0], occupancy);
+      registry.fill(HIST("hTrackPt"), collision.centFT0M(), track.pt(), qPerc[0], occupancy);
       if (track.pt() < cfgOccupancyPtCut->at(0) || track.pt() > cfgOccupancyPtCut->at(1))
         continue;
-      registry.fill(HIST("hTrackEta"), collision.centrality(), track.eta(), occupancy);
-      registry.fill(HIST("hTrackPhi"), collision.centrality(), track.phi(), occupancy);
+      registry.fill(HIST("hTrackEta"), collision.centFT0M(), track.eta(), occupancy);
+      registry.fill(HIST("hTrackPhi"), collision.centFT0M(), track.phi(), occupancy);
     }
   }
   PROCESS_SWITCH(JetSpectraEseTask, processESEOccupancy, "process occupancy", false);
@@ -435,7 +435,7 @@ struct JetSpectraEseTask {
     bool eventSel = true;
     for (const auto& col : collisions) {
       if (cfgisPbPb)
-        centrality = col.centrality();
+        centrality = col.centFT0M();
       if (cfgEvSelOccupancy && !isOccupancyAccepted(col))
         fOccupancy = false;
       if (!jetderiveddatautilities::selectCollision(col, eventSelectionBits))
@@ -474,7 +474,7 @@ struct JetSpectraEseTask {
       return;
     }
 
-    auto centrality = cfgisPbPb ? collision.centrality() : -1;
+    auto centrality = cfgisPbPb ? collision.centFT0M() : -1;
 
     registry.fill(HIST("mcd/hCentralitySel"), centrality);
     jetLoopMCD<aod::JetTracks>(mcdjets, centrality, collision.rho());
@@ -519,7 +519,7 @@ struct JetSpectraEseTask {
         return;
       registry.fill(HIST("mcm/hMCDMatchedEventCounter"), secCount++);
 
-      auto centrality = cfgisPbPb ? collision.centrality() : -1;
+      auto centrality = cfgisPbPb ? collision.centFT0M() : -1;
       if (cfgisPbPb)
         if (centrality < centRange->at(0) || centrality > centRange->at(1))
           registry.fill(HIST("mcm/hMCDMatchedEventCounter"), secCount++);
@@ -572,9 +572,9 @@ struct JetSpectraEseTask {
   {
     // static constexpr std::string CosList[] = {"hCosPsi2AmC", "hCosPsi2AmB", "hCosPsi2BmC"};
     // (registry.fill(HIST(CosList[Idx]), col.centrality(), Corr[Idx], col.qPERCFT0C()[0]), ...);
-    registry.fill(HIST("hCosPsi2AmC"), col.centrality(), Corr[0], col.qPERCFT0C()[0]);
-    registry.fill(HIST("hCosPsi2AmB"), col.centrality(), Corr[1], col.qPERCFT0C()[0]);
-    registry.fill(HIST("hCosPsi2BmC"), col.centrality(), Corr[2], col.qPERCFT0C()[0]);
+    registry.fill(HIST("hCosPsi2AmC"), col.centFT0M(), Corr[0], col.qPERCFT0C()[0]);
+    registry.fill(HIST("hCosPsi2AmB"), col.centFT0M(), Corr[1], col.qPERCFT0C()[0]);
+    registry.fill(HIST("hCosPsi2BmC"), col.centFT0M(), Corr[2], col.qPERCFT0C()[0]);
   }
 
   template </*std::size_t... Idx,*/ typename collision>
@@ -582,11 +582,11 @@ struct JetSpectraEseTask {
   {
     // static constexpr std::string_view EpList[] = {"hPsi2FT0A", "hPsi2FV0A", "hPsi2FT0C", "hPsi2TPCpos", "hPsi2TPCneg"};
     // (registry.fill(HIST(EpList[Idx]), col.centrality(), epMap.at(std::string(RemovePrefix(EpList[Idx])))), ...);
-    registry.fill(HIST("hPsi2FT0A"), col.centrality(), epMap.at("FT0A"));
-    registry.fill(HIST("hPsi2FV0A"), col.centrality(), epMap.at("FV0A"));
-    registry.fill(HIST("hPsi2FT0C"), col.centrality(), epMap.at("FT0C"));
-    registry.fill(HIST("hPsi2TPCpos"), col.centrality(), epMap.at("TPCpos"));
-    registry.fill(HIST("hPsi2TPCneg"), col.centrality(), epMap.at("TPCneg"));
+    registry.fill(HIST("hPsi2FT0A"), col.centFT0M(), epMap.at("FT0A"));
+    registry.fill(HIST("hPsi2FV0A"), col.centFT0M(), epMap.at("FV0A"));
+    registry.fill(HIST("hPsi2FT0C"), col.centFT0M(), epMap.at("FT0C"));
+    registry.fill(HIST("hPsi2TPCpos"), col.centFT0M(), epMap.at("TPCpos"));
+    registry.fill(HIST("hPsi2TPCneg"), col.centFT0M(), epMap.at("TPCneg"));
   }
   constexpr std::string_view RemovePrefix(std::string_view str)
   {
@@ -623,13 +623,13 @@ struct JetSpectraEseTask {
     int detInd{detId * 4 + cfgnTotalSystem * 4 * (nmode - 2)};
     if constexpr (fill) {
       if (collision.qvecAmp()[detInd] > 1e-8) {
-        registry.fill(HIST("hQvecUncorV2"), collision.centrality(), collision.qvecRe()[detInd], collision.qvecIm()[detInd]);
-        registry.fill(HIST("hQvecRectrV2"), collision.centrality(), collision.qvecRe()[detInd + 1], collision.qvecIm()[detInd + 1]);
-        registry.fill(HIST("hQvecTwistV2"), collision.centrality(), collision.qvecRe()[detInd + 2], collision.qvecIm()[detInd + 2]);
-        registry.fill(HIST("hQvecFinalV2"), collision.centrality(), collision.qvecRe()[detInd + 3], collision.qvecIm()[detInd + 3]);
-        registry.fill(HIST("hEPUncorV2"), collision.centrality(), 0.5 * std::atan2(collision.qvecIm()[detInd], collision.qvecRe()[detInd]));
-        registry.fill(HIST("hEPRectrV2"), collision.centrality(), 0.5 * std::atan2(collision.qvecIm()[detInd + 1], collision.qvecRe()[detInd + 1]));
-        registry.fill(HIST("hEPTwistV2"), collision.centrality(), 0.5 * std::atan2(collision.qvecIm()[detInd + 2], collision.qvecRe()[detInd + 2]));
+        registry.fill(HIST("hQvecUncorV2"), collision.centFT0M(), collision.qvecRe()[detInd], collision.qvecIm()[detInd]);
+        registry.fill(HIST("hQvecRectrV2"), collision.centFT0M(), collision.qvecRe()[detInd + 1], collision.qvecIm()[detInd + 1]);
+        registry.fill(HIST("hQvecTwistV2"), collision.centFT0M(), collision.qvecRe()[detInd + 2], collision.qvecIm()[detInd + 2]);
+        registry.fill(HIST("hQvecFinalV2"), collision.centFT0M(), collision.qvecRe()[detInd + 3], collision.qvecIm()[detInd + 3]);
+        registry.fill(HIST("hEPUncorV2"), collision.centFT0M(), 0.5 * std::atan2(collision.qvecIm()[detInd], collision.qvecRe()[detInd]));
+        registry.fill(HIST("hEPRectrV2"), collision.centFT0M(), 0.5 * std::atan2(collision.qvecIm()[detInd + 1], collision.qvecRe()[detInd + 1]));
+        registry.fill(HIST("hEPTwistV2"), collision.centFT0M(), 0.5 * std::atan2(collision.qvecIm()[detInd + 2], collision.qvecRe()[detInd + 2]));
       }
     }
     std::vector<float> qVec{};
@@ -709,11 +709,11 @@ struct JetSpectraEseTask {
     hPhiPt->Fit(modulationFit.get(), "Q", "", 0, o2::constants::math::TwoPI);
 
     if constexpr (fillHist) {
-      registry.fill(HIST("hfitPar0"), col.centrality(), modulationFit->GetParameter(0));
-      registry.fill(HIST("hfitPar1"), col.centrality(), modulationFit->GetParameter(1));
-      registry.fill(HIST("hfitPar2"), col.centrality(), modulationFit->GetParameter(2));
-      registry.fill(HIST("hfitPar3"), col.centrality(), modulationFit->GetParameter(3));
-      registry.fill(HIST("hfitPar4"), col.centrality(), modulationFit->GetParameter(4));
+      registry.fill(HIST("hfitPar0"), col.centFT0M(), modulationFit->GetParameter(0));
+      registry.fill(HIST("hfitPar1"), col.centFT0M(), modulationFit->GetParameter(1));
+      registry.fill(HIST("hfitPar2"), col.centFT0M(), modulationFit->GetParameter(2));
+      registry.fill(HIST("hfitPar3"), col.centFT0M(), modulationFit->GetParameter(3));
+      registry.fill(HIST("hfitPar4"), col.centFT0M(), modulationFit->GetParameter(4));
     }
 
     if (modulationFit->GetParameter(0) <= 0)
@@ -735,8 +735,8 @@ struct JetSpectraEseTask {
     auto cDF = 1. - TMath::Gamma(nDF, chi2);
 
     if constexpr (fillHist) {
-      registry.fill(HIST("hPValueCentCDF"), col.centrality(), cDF);
-      registry.fill(HIST("hCentChi2Ndf"), col.centrality(), chi2 / (static_cast<float>(nDF)));
+      registry.fill(HIST("hPValueCentCDF"), col.centFT0M(), cDF);
+      registry.fill(HIST("hCentChi2Ndf"), col.centFT0M(), chi2 / (static_cast<float>(nDF)));
     }
 
     return modulationFit;
@@ -777,7 +777,7 @@ struct JetSpectraEseTask {
         }
       }
     }
-    registry.fill(HIST("hCentRhoRandomCone"), collision.centrality(), randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
+    registry.fill(HIST("hCentRhoRandomCone"), collision.centFT0M(), randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
 
     randomConePt = 0;
     for (auto const& track : tracks) {
@@ -789,7 +789,7 @@ struct JetSpectraEseTask {
         }
       }
     }
-    registry.fill(HIST("hCentRhoRandomConeRandomTrackDir"), collision.centrality(), randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
+    registry.fill(HIST("hCentRhoRandomConeRandomTrackDir"), collision.centFT0M(), randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
 
     if (jets.size() > 0) {
       float dPhiLeadingJet = RecoDecay::constrainAngle(jets.iteratorAt(0).phi() - randomConePhi, -o2::constants::math::PI);
@@ -825,7 +825,7 @@ struct JetSpectraEseTask {
       rho = evalRho(rhoFit.get(), randomConeR, randomConePhi, rho);
     }
     float dPhi{RecoDecay::constrainAngle(randomConePhi - psi.psi2, -o2::constants::math::PI)};
-    registry.fill(HIST("hCentRhoRandomConewoLeadingJet"), collision.centrality(), randomConePt - o2::constants::math::PI * randomConeR * randomConeR * rho, dPhi, qPerc[0]);
+    registry.fill(HIST("hCentRhoRandomConewoLeadingJet"), collision.centFT0M(), randomConePt - o2::constants::math::PI * randomConeR * randomConeR * rho, dPhi, qPerc[0]);
 
     double randomConePtWithoutOneLeadJet = 0;
     double randomConePtWithoutTwoLeadJet = 0;
@@ -845,8 +845,8 @@ struct JetSpectraEseTask {
         }
       }
     }
-    registry.fill(HIST("hCentRhoRandomConeRndTrackDirwoOneLeadingJet"), collision.centrality(), randomConePtWithoutOneLeadJet - o2::constants::math::PI * randomConeR * randomConeR * rho, dPhi, qPerc[0]);
-    registry.fill(HIST("hCentRhoRandomConeRndTrackDirwoTwoLeadingJet"), collision.centrality(), randomConePtWithoutTwoLeadJet - o2::constants::math::PI * randomConeR * randomConeR * rho, dPhi, qPerc[0]);
+    registry.fill(HIST("hCentRhoRandomConeRndTrackDirwoOneLeadingJet"), collision.centFT0M(), randomConePtWithoutOneLeadJet - o2::constants::math::PI * randomConeR * randomConeR * rho, dPhi, qPerc[0]);
+    registry.fill(HIST("hCentRhoRandomConeRndTrackDirwoTwoLeadingJet"), collision.centFT0M(), randomConePtWithoutTwoLeadJet - o2::constants::math::PI * randomConeR * randomConeR * rho, dPhi, qPerc[0]);
   }
   template <typename TTracks, typename TJets>
   bool isTrackInJet(TTracks const& track, TJets const& jet)
