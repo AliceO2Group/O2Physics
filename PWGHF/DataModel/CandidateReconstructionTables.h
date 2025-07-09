@@ -2203,7 +2203,7 @@ DECLARE_SOA_TABLE(HfCandXic0Base, "AOD", "HFCANDXIC0BASE",
 													hf_cand::PxProng1, hf_cand::PyProng1>,
                   hf_cand::Eta<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
                   hf_cand::Phi<hf_cand_2prong::Px, hf_cand_2prong::Py>,
-                  hf_cand::Y<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>)
+                  hf_cand::Y<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>);
 
 
 DECLARE_SOA_TABLE(HfCandXic0KF, "AOD", "HFCANDXIC0KF",
@@ -2218,7 +2218,7 @@ DECLARE_SOA_TABLE(HfCandXic0KF, "AOD", "HFCANDXIC0KF",
 		hf_cand_xic0_xicp_to_hadronic::Chi2TopoXiToXic0BeforeConstraint,
 		hf_cand_xic0_xicp_to_hadronic::Chi2TopoXiToXic0,
 		hf_cand_xic0_xicp_to_hadronic::DcaXYPiXi,
-		hf_cand_xic0_xicp_to_hadronic::DcaPiXi)
+		hf_cand_xic0_xicp_to_hadronic::DcaPiXi);
 
 DECLARE_SOA_EXTENDED_TABLE_USER(HfCandXic0Ext, HfCandXic0Base, "HFCANDXIC0EXT",
 							hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz);
@@ -2228,12 +2228,12 @@ using HfCandXic0 = HfCandXic0Ext;
 DECLARE_SOA_TABLE(HfCandXic0McRec, "AOD", "HFCANDXIC0MCREC",
 				hf_cand_xic0_xicp_to_hadronic::FlagMcMatchRec,
 				hf_cand_xic0_xicp_to_hadronic::DebugMcRec,
-				hf_cand_xic0_xicp_to_hadronic::OriginRec)
+				hf_cand_xic0_xicp_to_hadronic::OriginRec);
 
 DECLARE_SOA_TABLE(HfCandXic0McGen, "AOD", "HFCANDXIC0MCGEN",
 				hf_cand_xic0_xicp_to_hadronic::FlagMcMatchGen,
 				hf_cand_xic0_xicp_to_hadronic::DebugMcGen,
-				hf_cand_xic0_xicp_to_hadronic::OriginGen)
+				hf_cand_xic0_xicp_to_hadronic::OriginGen);
 
 // specific chic candidate properties
 namespace hf_cand_chic
