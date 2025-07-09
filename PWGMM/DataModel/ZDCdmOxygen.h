@@ -13,8 +13,8 @@
 /// \brief ZDC tower intercalibration task
 /// \author Chiara Oppedisano <chiara.oppedisano@cern.ch>, INFN Torino
 
-#ifndef COMMON_DATAMODEL_ZDCDMOXYGEN_H_
-#define COMMON_DATAMODEL_ZDCDMOXYGEN_H_
+#ifndef PWGMM_DATAMODEL_ZDCDMOXYGEN_H_
+#define PWGMM_DATAMODEL_ZDCDMOXYGEN_H_
 
 #include "Framework/AnalysisDataModel.h"
 
@@ -89,4 +89,4 @@ DECLARE_SOA_TABLE(ZDCInterCalib, "AOD", "ZDCO", o2::soa::Index<>,
                   zdctable::SelectionBits);
 } // namespace o2::aod
 
-#endif // COMMON_DATAMODEL_ZDCDMOXYGEN_H_
+#endif // PWGMM_DATAMODEL_ZDCDMOXYGEN_H_
