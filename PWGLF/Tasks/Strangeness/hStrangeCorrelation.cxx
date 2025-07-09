@@ -216,6 +216,7 @@ struct HStrangeCorrelation {
   TH2F* hEfficiencyOmegaMinus;
   TH2F* hEfficiencyOmegaPlus;
   TH2F* hEfficiencyHadron;
+  TH1F* hPurityHadron;
 
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   using BinningTypePbPb = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
@@ -295,6 +296,7 @@ struct HStrangeCorrelation {
     hEfficiencyOmegaPlus = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyOmegaPlus"));
     hEfficiencyHadron = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyHadron"));
     hEfficiencyPion = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyPion"));
+    hPurityHadron = static_cast<TH1F*>(listEfficiencies->FindObject("hPurityHadron"));
     LOG(info) << "Efficiencies now loaded for " << mRunNumber;
   }
 
@@ -941,20 +943,23 @@ struct HStrangeCorrelation {
           continue;
 
         float efficiency = 1;
+        float purity = 1.0f;
         if (applyEfficiencyCorrection) {
           if constexpr (requires { assocTrack.nSigmaTPCPi(); }) {
             efficiency = hEfficiencyPion->Interpolate(ptassoc, assoc.eta());
           } else {
             efficiency = hEfficiencyHadron->Interpolate(ptassoc, assoc.eta());
+            purity = hPurityHadron->Interpolate(ptassoc);
           }
         }
         if (applyEfficiencyForTrigger) {
           efficiency = efficiency * hEfficiencyTrigger->Interpolate(pttrigger, trigg.eta());
+          purity = purity * hPurityHadron->Interpolate(pttrigger);
         }
         if (efficiency == 0) { // check for zero efficiency, do not apply if the case
           efficiency = 1;
         }
-        float weight = (applyEfficiencyCorrection || applyEfficiencyForTrigger) ? 1. / efficiency : 1.0f;
+        float weight = (applyEfficiencyCorrection || applyEfficiencyForTrigger) ? purity / efficiency : 1.0f;
         double deltaPhiStar = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStar, bField);
         if (!mixing) {
           if constexpr (requires { assocTrack.nSigmaTPCPi(); }) {
@@ -998,6 +1003,7 @@ struct HStrangeCorrelation {
     hEfficiencyOmegaPlus = 0x0;
 
     hEfficiencyHadron = 0x0;
+    hPurityHadron = 0x0;
 
     // set bitmap for convenience
     doCorrelation = 0;
@@ -1547,13 +1553,15 @@ struct HStrangeCorrelation {
         if (!isValidAssocHadron(assoc))
           continue;
         float efficiency = 1.0f;
+        float purity = 1.0f;
         if (applyEfficiencyCorrection) {
           efficiency = hEfficiencyHadron->Interpolate(assoc.pt(), assoc.eta());
+          purity = hPurityHadron->Interpolate(assoc.pt());
         }
         if (efficiency == 0) { // check for zero efficiency, do not apply if the case
           efficiency = 1;
         }
-        float weight = applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
+        float weight = applyEfficiencyCorrection ? purity / efficiency : 1.0f;
         histos.fill(HIST("hAssocHadronsAllSelectedEtaVsPt"), assoc.pt(), assoc.eta(), collision.centFT0M());
         histos.fill(HIST("hAssocPtResolution"), assoc.pt(), assocTrack.mcOriginalPt());
         if (doAssocPhysicalPrimary && !assocTrack.mcPhysicalPrimary())

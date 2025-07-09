@@ -76,6 +76,7 @@ struct bcWiseClusterSkimmer {
   Configurable<bool> cfgRequirekTVXinEMC{"cfgRequirekTVXinEMC", false, "Only store kTVXinEMC triggered BCs"};
   Configurable<bool> cfgRequireGoodRCTQuality{"cfgRequireGoodRCTQuality", false, "Only store BCs with good quality of T0 and EMC in RCT"};
   Configurable<bool> cfgStoreMu{"cfgStoreMu", false, "Calculate and store mu (probablity of a TVX collision in the BC) per BC. Otherwise fill with 0"};
+  Configurable<bool> cfgStoreTime{"cfgStoreTime", false, "Calculate and store time since the start of fill. Otherwise fill with 0"};
   ConfigurableAxis cfgMultiplicityBinning{"cfgMultiplicityBinning", {1000, 0, 10000}, "Binning used for the binning of the number of particles in the event"};
 
   aod::rctsel::RCTFlagsChecker isFT0EMCGoodRCTChecker{aod::rctsel::kFT0Bad, aod::rctsel::kEMCBad};
@@ -198,25 +199,32 @@ struct bcWiseClusterSkimmer {
     return true;
   }
 
+  void setLHCIFData(const auto& bc)
+  {
+    if (mRunNumber == bc.runNumber())
+      return;
+
+    auto& ccdbMgr = o2::ccdb::BasicCCDBManager::instance();
+    uint64_t timeStamp = bc.timestamp();
+
+    std::map<std::string, std::string> metadata;
+    mLHCIFdata = ccdbMgr.getSpecific<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timeStamp, metadata);
+    if (mLHCIFdata == nullptr)
+      LOG(fatal) << "GRPLHCIFData not in database, timestamp:" << timeStamp;
+    mRunNumber = bc.runNumber();
+    LOG(info) << "LHCIF data fetched for run " << mRunNumber << " and timestamp " << timeStamp;
+
+    return;
+  }
+
   double calculateMu(const auto& bc)
   {
     auto& ccdbMgr = o2::ccdb::BasicCCDBManager::instance();
     uint64_t timeStamp = bc.timestamp();
 
-    if (mRunNumber != bc.runNumber()) {
-      std::map<std::string, std::string> metadata;
-      mLHCIFdata = ccdbMgr.getSpecific<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timeStamp, metadata);
-      if (mLHCIFdata == nullptr)
-        LOG(fatal) << "GRPLHCIFData not in database, timestamp:" << timeStamp;
-      mRunNumber = bc.runNumber();
-      LOG(info) << "LHCIF data fetched for run " << mRunNumber << " and timestamp " << timeStamp;
-    }
-
     auto bfilling = mLHCIFdata->getBunchFilling();
     double nbc = bfilling.getFilledBCs().size();
-
     double tvxRate = mRateFetcher.fetch(&ccdbMgr, timeStamp, bc.runNumber(), "T0VTX");
-
     double nTriggersPerFilledBC = tvxRate / nbc / o2::constants::lhc::LHCRevFreq;
     double mu = -std::log(1 - nTriggersPerFilledBC);
 
@@ -231,7 +239,6 @@ struct bcWiseClusterSkimmer {
     bool hasTVX = bc.selection_bit(aod::evsel::kIsTriggerTVX);
     bool haskTVXinEMC = bc.alias_bit(kTVXinEMC);
     bool hasEMCCell = cellsInBC.size() > 0;
-    bool hasNoTFROFBorder = bc.selection_bit(aod::evsel::kNoTimeFrameBorder) && bc.selection_bit(aod::evsel::kNoITSROFrameBorder);
     mHistManager.fill(HIST("nBCs"), 0);
     if (hasFT0)
       mHistManager.fill(HIST("nBCs"), 1);
@@ -241,10 +248,11 @@ struct bcWiseClusterSkimmer {
       mHistManager.fill(HIST("nBCs"), 3);
     if (hasEMCCell)
       mHistManager.fill(HIST("nBCs"), 4);
-    if (hasNoTFROFBorder)
-      mHistManager.fill(HIST("nBCs"), 5);
 
+    if (cfgStoreMu || cfgStoreTime)
+      setLHCIFData(bc);
     double mu = cfgStoreMu ? calculateMu(bc) : 0.;
+    float timeSinceSOF = cfgStoreTime ? (bc.timestamp() - mLHCIFdata->getFillNumberTime()) / 1e3 : 0.; // Convert to seconds
     float ft0Amp = hasFT0 ? bc.foundFT0().sumAmpA() + bc.foundFT0().sumAmpC() : 0.;
     double centralityOfCollision = 101.5;
     if (collisionsInBC.size() > 0)
@@ -253,7 +261,7 @@ struct bcWiseClusterSkimmer {
 
     mHistManager.fill(HIST("BCCentVsCollCent"), centralityOfBC, centralityOfCollision);
 
-    bcTable(hasFT0, hasTVX, haskTVXinEMC, hasEMCCell, hasNoTFROFBorder, convertForStorage<uint8_t>(centralityOfBC, kFT0MCent), convertForStorage<uint16_t>(ft0Amp, kFT0Amp), convertForStorage<uint16_t>(mu, kMu));
+    bcTable(hasFT0, hasTVX, haskTVXinEMC, hasEMCCell, convertForStorage<uint8_t>(centralityOfBC, kFT0MCent), convertForStorage<uint16_t>(ft0Amp, kFT0Amp), convertForStorage<uint16_t>(mu, kMu), convertForStorage<uint16_t>(timeSinceSOF, kTimeSinceSOF));
 
     for (const auto& collision : collisionsInBC)
       collisionTable(bcTable.lastIndex(), convertForStorage<uint8_t>(collision.centFT0M(), kFT0MCent), convertForStorage<int16_t>(collision.posZ(), kZVtx));

@@ -53,6 +53,7 @@ struct TrackEfficiency {
   // Tracking efficiency process function configurables:
   Configurable<bool> checkPrimaryPart{"checkPrimaryPart", true, "0: doesn't check mcparticle.isPhysicalPrimary() - 1: checks particle.isPhysicalPrimary()"};
   Configurable<bool> checkCentrality{"checkCentrality", false, ""};
+  Configurable<bool> checkOccupancy{"checkOccupancy", false, "check occupancy only in general purpose Pb-Pb MC, default as false"};
   Configurable<int> acceptSplitCollisions{"acceptSplitCollisions", 0, "0: only look at mcCollisions that are not split; 1: accept split mcCollisions, 2: accept split mcCollisions but only look at the first reco collision associated with it"};
   Configurable<float> trackEtaAcceptanceCountQA{"trackEtaAcceptanceCountQA", 0.9, "eta acceptance"}; // removed from actual cuts for now because all the histograms have an eta axis
   Configurable<float> centralityMin{"centralityMin", -999, ""};
@@ -164,6 +165,9 @@ struct TrackEfficiency {
       registry.get<TH1>(HIST("hMcCollCutsCounts"))->GetXaxis()->SetBinLabel(5, "recoCollEvtSel");
       registry.get<TH1>(HIST("hMcCollCutsCounts"))->GetXaxis()->SetBinLabel(6, "centralityCut");
       registry.get<TH1>(HIST("hMcCollCutsCounts"))->GetXaxis()->SetBinLabel(7, "ptHatCut");
+      if (checkOccupancy) {
+        registry.get<TH1>(HIST("hMcCollCutsCounts"))->GetXaxis()->SetBinLabel(8, "occupancyCut");
+      }
 
       registry.add("hMcPartCutsCounts", "McPart cuts count checks", {HistType::kTH1F, {{10, 0., 10.}}});
       registry.get<TH1>(HIST("hMcPartCutsCounts"))->GetXaxis()->SetBinLabel(1, "allPartsInSelMcColl");
@@ -315,12 +319,16 @@ struct TrackEfficiency {
 
     bool hasSel8Coll = false;
     bool centralityCheck = false;
+    bool occupancyCheck = false;
     if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {    // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
       if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
         hasSel8Coll = true;
       }
       if (!checkCentrality || ((centralityMin < collisions.begin().centrality()) && (collisions.begin().centrality() < centralityMax))) { // effect unclear if mcColl is split
         centralityCheck = true;
+      }
+      if (!checkOccupancy || ((trackOccupancyInTimeRangeMin < collisions.begin().trackOccupancyInTimeRange()) && (collisions.begin().trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax))) { // check occupancy only in GP Pb-Pb MC
+        occupancyCheck = true;
       }
     } else if (acceptSplitCollisions == SplitOkCheckAnyAssocColl) { // check that at least one of the reconstructed collisions passes the checks
       for (auto const& collision : collisions) {
@@ -329,6 +337,9 @@ struct TrackEfficiency {
         }
         if (!checkCentrality || ((centralityMin < collision.centrality()) && (collision.centrality() < centralityMax))) { // effect unclear if mcColl is split
           centralityCheck = true;
+        }
+        if (!checkOccupancy || ((trackOccupancyInTimeRangeMin < collisions.begin().trackOccupancyInTimeRange()) && (collisions.begin().trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax))) { // check occupancy only in GP Pb-Pb MC
+          occupancyCheck = true;
         }
       }
     }
@@ -347,6 +358,13 @@ struct TrackEfficiency {
       return;
     }
     registry.fill(HIST("hMcCollCutsCounts"), 6.5); // ptHat condition
+
+    if (checkOccupancy) {
+      if (!occupancyCheck) {
+        return;
+      }
+      registry.fill(HIST("hMcCollCutsCounts"), 7.5);
+    }
 
     for (auto const& jMcParticle : jMcParticles) {
       registry.fill(HIST("hMcPartCutsCounts"), 0.5); // allPartsInSelMcColl
@@ -658,7 +676,7 @@ struct TrackEfficiency {
       return;
     }
 
-    float pTHat = getPtHatFromHepMCXSection ? collision.mcCollision_as<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>().mcCollision_as<soa::Join<aod::McCollisions, aod::HepMCXSections>>().ptHard() : 10. / (std::pow(collision.mcCollision().weight(), 1.0 / pTHatExponent));
+    float pTHat = getPtHatFromHepMCXSection ? collision.mcCollision_as<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>().mcCollision_as<soa::Join<aod::McCollisions, aod::HepMCXSections>>().ptHard() : 10. / (std::pow(collision.mcCollision().weight(), 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
       return;
     }
@@ -683,7 +701,7 @@ struct TrackEfficiency {
       return;
     }
 
-    float pTHat = getPtHatFromHepMCXSection ? collision.mcCollision_as<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>().mcCollision_as<soa::Join<aod::McCollisions, aod::HepMCXSections>>().ptHard() : 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = getPtHatFromHepMCXSection ? collision.mcCollision_as<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>().mcCollision_as<soa::Join<aod::McCollisions, aod::HepMCXSections>>().ptHard() : 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
       return;
     }
@@ -839,7 +857,7 @@ struct TrackEfficiency {
     registry.fill(HIST("h_collisions"), 2.5);
     registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 2.5);
 
-    float pTHat = getPtHatFromHepMCXSection ? collision.mcCollision_as<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>().mcCollision_as<soa::Join<aod::McCollisions, aod::HepMCXSections>>().ptHard() : 10. / (std::pow(collision.mcCollision().weight(), 1.0 / pTHatExponent));
+    float pTHat = getPtHatFromHepMCXSection ? collision.mcCollision_as<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>().mcCollision_as<soa::Join<aod::McCollisions, aod::HepMCXSections>>().ptHard() : 10. / (std::pow(collision.mcCollision().weight(), 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
       return;
     }
@@ -870,7 +888,7 @@ struct TrackEfficiency {
     registry.fill(HIST("h_collisions"), 2.5);
     registry.fill(HIST("h_collisions_weighted"), 2.5, eventWeight);
 
-    float pTHat = getPtHatFromHepMCXSection ? collision.mcCollision_as<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>().mcCollision_as<soa::Join<aod::McCollisions, aod::HepMCXSections>>().ptHard() : 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = getPtHatFromHepMCXSection ? collision.mcCollision_as<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>().mcCollision_as<soa::Join<aod::McCollisions, aod::HepMCXSections>>().ptHard() : 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
       return;
     }

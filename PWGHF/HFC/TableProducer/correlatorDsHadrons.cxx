@@ -714,16 +714,18 @@ struct HfCorrelatorDsHadrons {
                 continue;
               }
 
-              registry.fill(HIST("hCorrAllPrimaryParticles"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-              if (std::abs(particleAssoc.pdgCode()) == kPiPlus) {
-                registry.fill(HIST("hCorrAllPrimaryHadrons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-                registry.fill(HIST("hCorrAllPrimaryPions"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-              } else if (std::abs(particleAssoc.pdgCode()) == kKPlus) {
-                registry.fill(HIST("hCorrAllPrimaryHadrons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-                registry.fill(HIST("hCorrAllPrimaryKaons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-              } else if (std::abs(particleAssoc.pdgCode()) == kProton) {
-                registry.fill(HIST("hCorrAllPrimaryHadrons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-                registry.fill(HIST("hCorrAllPrimaryProtons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
+              if (isDsPrompt) {
+                registry.fill(HIST("hCorrAllPrimaryParticles"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
+                if (std::abs(particleAssoc.pdgCode()) == kPiPlus) {
+                  registry.fill(HIST("hCorrAllPrimaryHadrons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
+                  registry.fill(HIST("hCorrAllPrimaryPions"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
+                } else if (std::abs(particleAssoc.pdgCode()) == kKPlus) {
+                  registry.fill(HIST("hCorrAllPrimaryHadrons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
+                  registry.fill(HIST("hCorrAllPrimaryKaons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
+                } else if (std::abs(particleAssoc.pdgCode()) == kProton) {
+                  registry.fill(HIST("hCorrAllPrimaryHadrons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
+                  registry.fill(HIST("hCorrAllPrimaryProtons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
+                }
               }
 
               // trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);

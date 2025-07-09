@@ -15,6 +15,7 @@
 /// \author S. Politanò, INFN Torino, Italy
 /// \author Wu Chuntai, CUG, China
 /// \author Ran Tu, Fudan University, China
+/// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/HfHelper.h"
@@ -59,6 +60,23 @@ using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
 using namespace o2::hf_evsel;
 
+namespace o2::aod
+{
+namespace full
+{
+DECLARE_SOA_COLUMN(M, m, float);   //! Invariant mass of candidate (GeV/c2)
+DECLARE_SOA_COLUMN(Pt, pt, float); //! Transverse momentum of candidate (GeV/c)
+// ML scores
+DECLARE_SOA_COLUMN(MlScore0, mlScore0, float); //! ML score of the first configured index
+DECLARE_SOA_COLUMN(MlScore1, mlScore1, float); //! ML score of the second configured index
+} // namespace full
+DECLARE_SOA_TABLE(HfCandPtCent, "AOD", "HFCANDPTCENT",
+                  full::M,
+                  full::Pt,
+                  full::MlScore0,
+                  full::MlScore1);
+} // namespace o2::aod
+
 enum DecayChannel { DplusToPiKPi = 0,
                     DsToKKPi,
                     DsToPiKK,
@@ -80,6 +98,8 @@ enum QvecEstimator { FV0A = 0,
                      TPCTot };
 
 struct HfTaskFlowCharmHadrons {
+  Produces<o2::aod::HfCandPtCent> rowCandidateMassPtMlScores;
+
   Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
   Configurable<int> qvecDetector{"qvecDetector", 3, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5, TPC Tot: 6)"};
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
@@ -88,6 +108,9 @@ struct HfTaskFlowCharmHadrons {
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality accepted in SP/EP computation (not applied in resolution process)"};
   Configurable<bool> storeEP{"storeEP", false, "Flag to store EP-related axis"};
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
+  Configurable<bool> fillMassPtMlTree{"fillMassPtMlTree", false, "Flag to fill mass and pt tree"};
+  Configurable<float> downSampleFactor{"downSampleFactor", 1., "Fraction of candidates to keep in TTree"};
+  Configurable<float> ptDownSampleMax{"ptDownSampleMax", 10., "Maximum pt for the application of the downsampling factor"};
   Configurable<bool> storeResoOccu{"storeResoOccu", false, "Flag to store Occupancy in resolution ThnSparse"};
   Configurable<bool> storeEpCosSin{"storeEpCosSin", false, "Flag to store cos and sin of EP angle in ThnSparse"};
   Configurable<int> occEstimator{"occEstimator", 0, "Occupancy estimation (0: None, 1: ITS, 2: FT0C)"};
@@ -273,6 +296,20 @@ struct HfTaskFlowCharmHadrons {
       ccdb->setLocalObjectValidityChecking();
     }
   }; // end init
+
+  /// Fill the mass, pt and ML scores of a candidate
+  /// \param mass is the candidate mass
+  /// \param pt is the candidate transverse momentum
+  /// \param mlscore0 is the first ML score
+  /// \param mlscore1 is the second ML score
+  void fillMassPt(const float mass, const float pt, const float mlscore0, const float mlscore1)
+  {
+    rowCandidateMassPtMlScores(
+      mass,
+      pt,
+      mlscore0,
+      mlscore1);
+  }
 
   /// Compute the Q vector for the candidate's tracks
   /// \param cand is the candidate
@@ -651,7 +688,17 @@ struct HfTaskFlowCharmHadrons {
       float scalprodCand = cosNPhi * xQVec + sinNPhi * yQVec;
       float cosDeltaPhi = std::cos(harmonic * (phiCand - evtPl));
 
-      fillThn(massCand, ptCand, cent, cosNPhi, sinNPhi, cosDeltaPhi, scalprodCand, outputMl, occupancy, hfevflag);
+      if (fillMassPtMlTree && storeMl) {
+        if (downSampleFactor < 1.) {
+          float pseudoRndm = ptCand * 1000. - static_cast<int64_t>(ptCand * 1000);
+          if (ptCand < ptDownSampleMax && pseudoRndm >= downSampleFactor) {
+            continue;
+          }
+        }
+        fillMassPt(massCand, ptCand, outputMl[0], outputMl[1]);
+      } else {
+        fillThn(massCand, ptCand, cent, cosNPhi, sinNPhi, cosDeltaPhi, scalprodCand, outputMl, occupancy, hfevflag);
+      }
     }
   }
 
