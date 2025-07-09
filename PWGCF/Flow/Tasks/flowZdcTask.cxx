@@ -56,12 +56,6 @@ struct FlowZdcTask {
   SliceCache cache;
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for ref tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 10.0f, "Maximal pT for ref tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2, "DCA Z cut")
-  O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 0.2f, "DCA XY cut")
 
   Configurable<int> eventSelection{"eventSelection", 1, "event selection"};
   Configurable<float> maxZp{"maxZp", 125.5, "Max ZP signal"};
@@ -125,12 +119,14 @@ struct FlowZdcTask {
   ConfigurableAxis ft0cMultHistBin{"ft0cMultHistBin", {501, -0.5, 500.5}, ""};
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12}, "pT binning"};
   Configurable<float> posZcut{"posZcut", +10.0, "z-vertex position cut"};
+  Configurable<float> minEta{"minEta", -0.8, "minimum eta"};
+  Configurable<float> maxEta{"maxEta", +0.8, "maximum eta"};
   Configurable<float> minT0CcentCut{"minT0CcentCut", 0.0, "Min T0C Cent. cut"};
   Configurable<float> maxT0CcentCut{"maxT0CcentCut", 90.0, "Max T0C Cent. cut"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
-  using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, o2::aod::CentFT0Cs>;
+  Filter trackFilter = ((aod::track::eta > minEta) && (aod::track::eta < maxEta));
+  using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, o2::aod::CentFT0Cs, aod::TPCMults, o2::aod::BarrelMults, aod::FT0MultZeqs>;
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
   Partition<AodTracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
@@ -140,6 +136,7 @@ struct FlowZdcTask {
   using CollisionDataTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms>;
   using TrackDataTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
   using FilTrackDataTable = soa::Filtered<TrackDataTable>;
+  using TheFilteredTracks = soa::Filtered<TracksSel>;
 
   // CCDB paths
   Configurable<std::string> paTH{"paTH", "Users/s/sahernan/test", "base path to the ccdb object"};
@@ -403,7 +400,7 @@ struct FlowZdcTask {
     return true;
   }
 
-  void processQA(ColEvSels::iterator const& collision, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, aod::FV0As const& /*fv0as*/, aod::FT0s const& /*ft0s*/, AodTracks const& tracks)
+  void processQA(ColEvSels::iterator const& collision, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, aod::FV0As const& /*fv0as*/, aod::FT0s const& /*ft0s*/, TheFilteredTracks const& tracks)
   {
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     if (!isEventSelected(collision)) {
