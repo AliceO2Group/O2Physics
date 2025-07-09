@@ -438,9 +438,6 @@ struct UpcRhoAnalysis {
     if (useRecoFlag && (collision.flags() != cutRecoFlag)) // check reconstruction mode
       return false;
 
-    if (useTrueGap && (gapSide != sgSelector.trueGap(collision, cutTrueGapSideFV0, cutTrueGapSideFT0A, cutTrueGapSideFT0C, cutTrueGapSideZDC))) // check true gap side
-      return false;
-
     return true;
   }
 
@@ -897,6 +894,8 @@ struct UpcRhoAnalysis {
   void processSGdata(FullUdSgCollision const& collision, FullUdTracks const& tracks)
   {
     if (cutGapSide && collision.gapSide() != gapSide)
+      return;
+    if (useTrueGap && (collision.gapSide() != sgSelector.trueGap(collision, cutTrueGapSideFV0, cutTrueGapSideFT0A, cutTrueGapSideFT0C, cutTrueGapSideZDC))) // check true gap side
       return;
     processReco(collision, tracks);
   }
