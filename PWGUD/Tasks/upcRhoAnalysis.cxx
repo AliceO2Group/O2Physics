@@ -15,6 +15,9 @@
 /// \author Jakub Juracka, jakub.juracka@cern.ch
 /// \file   upcRhoAnalysis.cxx
 
+#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
+#include "PWGUD/DataModel/UDTables.h"
+
 #include "Common/DataModel/PIDResponse.h"
 
 #include "Framework/AnalysisDataModel.h"
@@ -30,9 +33,6 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-
-#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
-#include "PWGUD/DataModel/UDTables.h"
 
 using namespace o2;
 using namespace o2::framework;
