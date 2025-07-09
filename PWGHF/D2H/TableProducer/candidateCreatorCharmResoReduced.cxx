@@ -307,7 +307,7 @@ struct HfCandidateCreatorCharmResoReduced {
         }
         pVectorCharmProngs = {candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2()};
       } else {
-        pVectorCharmProngs = {candD.pVectorProng0(), candD.pVectorProng1(), 0};
+        pVectorCharmProngs = {candD.pVectorProng0(), candD.pVectorProng1(), {0.}};
       }
       std::array<float, 3> pVecD = {candD.px(), candD.py(), candD.pz()};
 
