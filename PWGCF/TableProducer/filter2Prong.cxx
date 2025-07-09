@@ -123,7 +123,7 @@ struct Filter2Prong {
   using ResoV0s = aod::V0Datas;
 
   std::unique_ptr<TFormula> sigmaFormula;
-  uint sigmaFormulaParamIndex[4];
+  std::array<uint, 4> sigmaFormulaParamIndex;
 
   void init(InitContext&)
   {
