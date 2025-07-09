@@ -82,9 +82,9 @@ enum V0Type : uint8_t {
   AntiLambda
 };
 
-enum D0Sel : uint8_t {
-  selectedD0 = 0,
-  selectedD0Bar
+enum D0SelectionType : uint8_t {
+  SelectedD0 = 0,
+  SelectedD0Bar
 };
 
 enum DecayTypeMc : uint8_t {
@@ -364,12 +364,12 @@ struct HfCandidateCreatorCharmResoReduced {
           }
           registry.fill(HIST("hMassDstarTrack"), invMassReso - invMassD, ptReso);
         } else if constexpr (channel == DecayChannel::D0Track) {
-          if (TESTBIT(candD.selFlagD0(), D0Sel::selectedD0)) {
+          if (TESTBIT(candD.selFlagD0(), D0SelectionType::SelectedD0)) {
             invMassD = candD.invMassD0();
             invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassProton});
             registry.fill(HIST("hMassD0Track"), invMassReso - invMassD, ptReso);
           }
-          if (TESTBIT(candD.selFlagD0(), D0Sel::selectedD0Bar)) {
+          if (TESTBIT(candD.selFlagD0(), D0SelectionType::SelectedD0Bar)) {
             invMassD = candD.invMassD0Bar();
             invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[1], pVectorCharmProngs[0], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassProton});
             registry.fill(HIST("hMassD0BarTrack"), invMassReso - invMassD, ptReso);
