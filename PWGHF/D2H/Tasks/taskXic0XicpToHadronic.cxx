@@ -44,7 +44,7 @@ struct HfTaskXic0XicpToHadronic {
 		Configurable<float> yCandRecoMax{"yCandRecoMax", 0.8, "max. reco particle's rapidity"};
 		Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. track's pseudo-rapidity"};
 		Configurable<float> ptTrackMin{"ptTrackMin", 0.1, "min. track's pT"};
-		Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic0_xicp_to_hadronic::vecBinsPt}, "pT bin limits"};
+		Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic0_xicp_to_hadronic::xic0::vecBinsPt}, "pT bin limits"};
 		// MC checks
 		Configurable<bool> checkDecayTypeMc{"checkDecayTypeMc", false, "Flag to enable Decaytype histogram"};
 		// THnSparse for ML selection check

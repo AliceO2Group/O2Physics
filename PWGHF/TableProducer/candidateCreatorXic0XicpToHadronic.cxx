@@ -1193,6 +1193,9 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 
 			// get geometrical chi2 of XicPlus
 			float chi2GeoXicPlus = kfXicPlus.GetChi2() / kfXicPlus.GetNDF();
+			float chi2PrimXi = kfXicPlus.GetDeviationFromVertex(kfPv);
+			float chi2PrimPi0 = kfCharmBachelor0.GetDeviationFromVertex(kfPv);
+			float chi2PrimPi1 = kfCharmBachelor1.GetDeviationFromVertex(kfPv);
 
 			// topological constraint of Xic to PV
 			float chi2topoXicPlusToPVBeforeConstraint = kfXicPlus.GetDeviationFromVertex(kfPv);
@@ -1253,6 +1256,11 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 			float cpaXYXi = RecoDecay::cpaXY(pvCoord, vertexCasc, pVecCasc);
 			float cpaLambdaToXi = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
 			float cpaXYLambdaToXi = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
+
+			// get chi2 devuation of Pi0-Pi1, Pi0-Xi, Pi1-Xi
+			float chi2DevPi0Pi1 = kfCharmBachelor0.GetDeviationFromParticle(kfCharmBachelor1);
+			float chi2DevPi0Xi = kfCharmBachelor0.GetDeviationFromParticle(kfXi);
+			float chi2DevPi1Xi = kfCharmBachelor1.GetDeviationFromParticle(kfXi);
 
 			// get DCAs of Pi0-Pi1, Pi0-Xi, Pi1-Xi
 			float dcaXYPi0Pi1 = kfCharmBachelor0.GetDistanceFromParticleXY(kfCharmBachelor1);
@@ -1376,9 +1384,11 @@ struct HfCandidateCreatorXic0XicpToHadronic {
                        /*PID information*/
                        nSigTpcPiFromXicPlus0, nSigTpcPiFromXicPlus1, nSigTpcBachelorPi, nSigTpcPiFromLambda, nSigTpcPrFromLambda,
                        nSigTofPiFromXicPlus0, nSigTofPiFromXicPlus1, nSigTofBachelorPi, nSigTofPiFromLambda, nSigTofPrFromLambda);
-			cursors.rowCandXicpKF(casc.kfCascadeChi2(), casc.kfV0Chi2(),
-                     kfDecayLength, kfDecayLengthNormalised, kfDecayLengthXY, kfDecayLengthXYNormalised,
-                     chi2topoXicPlusToPVBeforeConstraint, chi2topoXicPlusToPV, chi2topoXiToXicPlusBeforeConstraint, chi2topoXiToXicPlus,
+			cursors.rowCandXicpKF(kfDecayLength, kfDecayLengthNormalised, kfDecayLengthXY, kfDecayLengthXYNormalised,
+					 casc.kfCascadeChi2(), casc.kfV0Chi2(),
+                     chi2topoXicPlusToPVBeforeConstraint, chi2topoXicPlusToPV, //chi2topoXiToXicPlusBeforeConstraint, chi2topoXiToXicPlus,
+					 chi2PrimXi, chi2PrimPi0, chi2PrimPi1,
+					 chi2DevPi0Pi1, chi2DevPi0Xi, chi2DevPi1Xi,
                      dcaXYPi0Pi1, dcaXYPi0Xi, dcaXYPi1Xi,
                      dcaPi0Pi1, dcaPi0Xi, dcaPi1Xi);
 
@@ -1481,14 +1491,16 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
 		Produces<aod::HfCandXic0McGen> rowCandXic0McGen;
 		Produces<aod::HfCandXicMcRec> rowCandXicpMcRec;
 		Produces<aod::HfCandXicMcGen> rowCandXicpMcGen;
+		Produces<aod::HfCandXicResid> rowCandXicpMcResid;
 
 	} cursors;
 
 	struct : ConfigurableGroup {
 
-		Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
+		Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"}; // -> Used for only Xic0
 		Configurable<bool> acceptTrackInteractionWithMaterial{"acceptTrackInteractionWithMaterial", false, "Accept candidates with final daughters interacting with materials"};
 		Configurable<bool> fillMcHistograms{"fillMcHistograms", true, "Fill validation plots"};
+		Configurable<bool> fillResidualTable{"fillResidualTable", true, "Fill table contaning residuals and pulls of PV and SV"};
 		Configurable<bool> matchDecayedPions{"matchedDecayedPions", true, "Match also candidates with daughter pion tracks that decay with kinked toploogy"};
 
 	} configs;
@@ -1735,6 +1747,13 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
 		std::array<int, NDaughtersResonant> arrXiResonance = {3324, kPiPlus}; // 3324: Ξ(1530)
 		// for non-prompt
 		std::vector<int> idxBhadMothers;
+		// residuals and pulls
+		std::array<float, 2> momentumResiduals{-9999.f};
+		std::array<float, 3> pvResiduals{-9999.f};
+		std::array<float, 3> pvPulls{-9999.f};
+		std::array<float, 3> svResiduals{-9999.f};
+		std::array<float, 3> svPulls{-9999.f};
+
 
 		// Match reconstructed candidates.
 		for (const auto& candidate : *rowCandXicpExt)
@@ -1745,6 +1764,13 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
 			nPionsDecayed = 0;
 			nInteractionsWithMaterial = 0;
 			arrDaughIndex.clear();
+			if (configs.fillResidualTable) {
+				momentumResiduals.fill(-9999.f);
+				pvResiduals.fill(-9999.f);
+				pvPulls.fill(-9999.f);
+				svResiduals.fill(-9999.f);
+				svPulls.fill(-9999.f);
+			}
 
 			auto arrayDaughters = std::array{candidate.pi0_as<aod::TracksWMc>(),       // pi <- Xic
 											 candidate.pi1_as<aod::TracksWMc>(),       // pi <- Xic
@@ -1759,113 +1785,104 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
 			auto arrayDaughtersV0 = std::array{candidate.posTrack_as<aod::TracksWMc>(),
 					   						   candidate.negTrack_as<aod::TracksWMc>()};
 
-			if (configs.fillMcHistograms)
-			{
+			if (configs.fillMcHistograms) {
 				registry.fill(HIST("hDebugRec"), TotalRec);
 			}
 
 			// 1. Xic → pi pi pi pi p
-			if (configs.matchDecayedPions && configs.acceptTrackInteractionWithMaterial)
-			{
+			if (configs.matchDecayedPions && configs.acceptTrackInteractionWithMaterial) {
 				indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4, &nPionsDecayed, nullptr, &nInteractionsWithMaterial);
-			}
-			else if (configs.matchDecayedPions && !configs.acceptTrackInteractionWithMaterial)
-			{
+			} else if (configs.matchDecayedPions && !configs.acceptTrackInteractionWithMaterial) {
 				indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4, &nPionsDecayed, nullptr, &nInteractionsWithMaterial);
-			}
-
-			else if (!configs.matchDecayedPions && configs.acceptTrackInteractionWithMaterial)
-			{
+			} else if (!configs.matchDecayedPions && configs.acceptTrackInteractionWithMaterial) {
 				indexRec = RecoDecay::getMatchedMCRec<false, true, false, false, true>(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4, &nPionsDecayed, nullptr, &nInteractionsWithMaterial);
-			}
-			else
-			{
+			} else {
 				indexRec = RecoDecay::getMatchedMCRec<false, true, false, false, false>(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4, &nPionsDecayed, nullptr, &nInteractionsWithMaterial);
 			}
 
 			indexRecXicPlus = indexRec;
 
-			if (indexRec > -1)
-			{
-				if (configs.fillMcHistograms)
-				{
+			if (indexRec > -1) {
+				if (configs.fillMcHistograms) {
 					registry.fill(HIST("hDebugRec"), XicToFinalState);
 				}
 				// 2. Xi- → pi pi p
-				if (configs.matchDecayedPions && configs.acceptTrackInteractionWithMaterial)
-				{
+				if (configs.matchDecayedPions && configs.acceptTrackInteractionWithMaterial) {
 					indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, nullptr, 2);
-				}
-				else if (configs.matchDecayedPions && !configs.acceptTrackInteractionWithMaterial)
-				{
+				} else if (configs.matchDecayedPions && !configs.acceptTrackInteractionWithMaterial) {
 					indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, nullptr, 2);
-				}
-				else if (!configs.matchDecayedPions && configs.acceptTrackInteractionWithMaterial)
-				{
+				} else if (!configs.matchDecayedPions && configs.acceptTrackInteractionWithMaterial) {
 					indexRec = RecoDecay::getMatchedMCRec<false, true, false, false, true>(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, nullptr, 2);
-				}
-				else
-				{
+				} else {
 					indexRec = RecoDecay::getMatchedMCRec<false, true, false, false, false>(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, nullptr, 2);
 				}
-				if (indexRec > -1)
-				{
-					if (configs.fillMcHistograms)
-					{
+				if (indexRec > -1) {
+					if (configs.fillMcHistograms) {
 						registry.fill(HIST("hDebugRec"), XiToPiPPi);
 					}
 					//3.  Lambda → p pi
-					if (configs.matchDecayedPions && configs.acceptTrackInteractionWithMaterial)
-					{
+					if (configs.matchDecayedPions && configs.acceptTrackInteractionWithMaterial) {
 						indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true);
-					}
-					else if (configs.matchDecayedPions && !configs.acceptTrackInteractionWithMaterial)
-					{
+					} else if (configs.matchDecayedPions && !configs.acceptTrackInteractionWithMaterial) {
 						indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true);
-					}
-					else if (!configs.matchDecayedPions && configs.acceptTrackInteractionWithMaterial)
-					{
+					} else if (!configs.matchDecayedPions && configs.acceptTrackInteractionWithMaterial) {
 						indexRec = RecoDecay::getMatchedMCRec<false, true, false, false, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true);
-					}
-		
-					else
-					{
+					} else {
 						indexRec = RecoDecay::getMatchedMCRec<false, true, false, false, false>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true);
 					}
 
-					if (indexRec > -1)
-					{
-						if (configs.fillMcHistograms)
-						{
+					if (indexRec > -1) {
+						if (configs.fillMcHistograms) {
 							registry.fill(HIST("hDebugRec"), LambdaToPPi);
 						}
-						RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRecXicPlus), &arrDaughIndex, std::array{0}, 1);
-						if (arrDaughIndex.size() == NDaughtersResonant)
-						{
-							for (auto iProng = 0u; iProng < NDaughtersResonant; ++iProng)
-							{
+						auto particleXicPlus = mcParticles.rawIteratorAt(indexRecXicPlus);
+
+						// Check whether XicPlus decays via resonant decay
+						RecoDecay::getDaughters(particleXicPlus, &arrDaughIndex, std::array{0}, 1);
+						if (arrDaughIndex.size() == NDaughtersResonant) {
+							for (auto iProng = 0u; iProng < NDaughtersResonant; ++iProng) {
 								auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
 								arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
 							}
 							if ((arrPDGDaugh[0] == arrXiResonance[0] && arrPDGDaugh[1] == arrXiResonance[1]) || (arrPDGDaugh[0] == arrXiResonance[1] && arrPDGDaugh[1] == arrXiResonance[0])) {
 								flag = sign * (1 << aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi);
 							}
-						}
-						else
-						{
+						} else {
 							flag = sign * (1 << aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi);
+						}
+						// Check whether the charm baryon is non-prompt (from a b quark).
+						if (flag != 0) {
+							auto particle = mcParticles.rawIteratorAt(indexRecXicPlus);
+							origin = RecoDecay::getCharmHadronOrigin(mcParticles, particleXicPlus, false);
+						}
+						// Calculate residuals and pulls
+						if (flag!=0 && configs.fillResidualTable) {
+							auto mcCollision = particleXicPlus.template mcCollision_as<McCollisions>();
+							auto particleDaughter0 = mcParticles.rawIteratorAt(arrDaughIndex[0]);
+
+							momentumResiduals[0] = candidate.p() - particleXicPlus.p();
+							momentumResiduals[1] = candidate.pt() - particleXicPlus.pt();
+							pvResiduals[0] = candidate.posX() - mcCollision.posX();
+							pvResiduals[1] = candidate.posY() - mcCollision.posY();
+							pvResiduals[2] = candidate.posZ() - mcCollision.posZ();
+							svResiduals[0] = candidate.xSecondaryVertex() - particleDaughter0.vx();
+							svResiduals[1] = candidate.ySecondaryVertex() - particleDaughter0.vy();
+							svResiduals[2] = candidate.zSecondaryVertex() - particleDaughter0.vz();
+							try {
+								pvPulls[0] = pvResiduals[0]/candidate.xPvErr();
+								pvPulls[0] = pvResiduals[1]/candidate.yPvErr();
+								pvPulls[0] = pvResiduals[2]/candidate.zPvErr();
+								svPulls[0] = svResiduals[0]/candidate.xSvErr();
+								svPulls[0] = svResiduals[1]/candidate.ySvErr();
+								svPulls[0] = svResiduals[2]/candidate.zSvErr();
+							} catch (const std::runtime_error& error) {
+								LOG(info) << "Run time error found : " << error.what() << ". Set values of vertex pulls to -9999.9";
+							}
 						}
 					}
 				}
 			}
 
-			// Check whether the charm baryon is non-prompt (from a b quark).
-			if (flag != 0)
-			{
-				auto particle = mcParticles.rawIteratorAt(indexRecXicPlus);
-				origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false);
-			}
-			
 			// Fill histograms
 			if (flag != 0 && configs.fillMcHistograms)
 			{
@@ -1875,11 +1892,17 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
 				
 			// Fill table
 			cursors.rowCandXicpMcRec(flag, origin);
+			if (flag!=0 && configs.fillResidualTable) {
+			cursors.rowCandXicpMcResid(origin, momentumResiduals[0], momentumResiduals[1],
+										pvResiduals[0], pvResiduals[1], pvResiduals[2],
+										pvPulls[0], pvPulls[1], pvPulls[2],
+										svResiduals[0], svResiduals[1], svResiduals[2],
+										svPulls[0], svPulls[1], svPulls[2]); 
+			}
 		} // close loop over candidates
 
 		// Match generated particles.
-		for (const auto& mcCollision : mcCollisions)
-		{
+		for (const auto& mcCollision : mcCollisions) {
 			// Slice the particles table to get the particles for the current MC collision
 			const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
 			// Slice the collisions table to get the collision info for the current MC collision
@@ -1887,30 +1910,23 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
 			uint16_t rejectionMask{0};
 			int nSplitColl = 0;
 
-			if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C)
-			{
+			if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C) {
 				const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());
 				rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
-			}
-			else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M)
-			{
+			} else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
 				const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0M, mcCollision.globalIndex());
 				nSplitColl = collSlice.size();
 				rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
-			}
-			else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::None)
-			{
+			} else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::None) {
 				const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
 				rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
 			}
 
 			hfEvSelMc.fillHistograms<centEstimator>(mcCollision, rejectionMask, nSplitColl);
 
-			if (rejectionMask != 0)
-			{
+			if (rejectionMask != 0) {
 				// at least one event selection not satisfied --> reject all particles from this collision
-				for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i)
-				{
+				for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
 					cursors.rowCandXicpMcGen(-99, -99, -99);
 				}
 				continue;
@@ -1925,31 +1941,24 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
 				idxBhadMothers.clear();
 
 				// 4. Xic → Xi pi pi
-				if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, Pdg::kXiCPlus, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, true, &sign, 2))
-				{
+				if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, Pdg::kXiCPlus, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, true, &sign, 2)) {
 					// 5. Xi- -> Lambda pi
 					auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
 					// 6. Find Xi- from Xi(1530) -> Xi pi in case of resonant decay
 					RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
-					if (arrDaughIndex.size() == NDaughtersResonant)
-					{
+					if (arrDaughIndex.size() == NDaughtersResonant) {
 						auto cascStarMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-						if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascStarMC, +3324, std::array{+kXiMinus, +kPiPlus}, true))
-						{
+						if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascStarMC, +3324, std::array{+kXiMinus, +kPiPlus}, true)) {
 							cascMC = mcParticles.rawIteratorAt(cascStarMC.daughtersIds().front());
 						}
 					}
 	  
-					if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascMC, +kXiMinus, std::array{+kLambda0, +kPiMinus}, true))
-					{
+					if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascMC, +kXiMinus, std::array{+kLambda0, +kPiMinus}, true)) {
 						// 7. Lambda -> p pi
 						auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());
-						if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, v0MC, +kLambda0, std::array{+kProton, +kPiMinus}, true))
-						{
-							if (arrDaughIndex.size() == NDaughtersResonant)
-							{
-								for (auto iProng = 0u; iProng < NDaughtersResonant; ++iProng)
-								{
+						if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, v0MC, +kLambda0, std::array{+kProton, +kPiMinus}, true)) {
+							if (arrDaughIndex.size() == NDaughtersResonant) {
+								for (auto iProng = 0u; iProng < NDaughtersResonant; ++iProng) {
 									auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
 									arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
 								}
@@ -1957,9 +1966,7 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
 								if ((arrPDGDaugh[0] == arrXiResonance[0] && arrPDGDaugh[1] == arrXiResonance[1]) || (arrPDGDaugh[0] == arrXiResonance[1] && arrPDGDaugh[1] == arrXiResonance[0])) {
 									flag = sign * (1 << aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi);
 								}
-							}
-							else
-							{
+							} else {
 								flag = sign * (1 << aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi);
 							}
 						}
@@ -1967,20 +1974,15 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
 				}
 
 				// 8. Check whether the charm baryon is non-prompt (from a b quark).
-				if (flag != 0)
-				{
+				if (flag != 0) {
 					origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
 				}
   
 				// Fill table
-				if (origin == RecoDecay::OriginType::NonPrompt)
-				{
+				if (origin == RecoDecay::OriginType::NonPrompt) {
 					auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
 					cursors.rowCandXicpMcGen(flag, origin, bHadMother.pdgCode());
-				}
-  
-				else
-				{
+				} else {
 					cursors.rowCandXicpMcGen(flag, origin, 0);
 				}
 
