@@ -18,8 +18,10 @@
 #ifndef PWGUD_CORE_UPCTAUCENTRALBARRELHELPERRL_H_
 #define PWGUD_CORE_UPCTAUCENTRALBARRELHELPERRL_H_
 
-#include <string>
+#include "Framework/runDataProcessing.h"
+
 #include <algorithm>
+#include <string>
 
 enum MyParticle {
   P_ELECTRON = 0,
