@@ -44,7 +44,6 @@
 
 #include "Math/Vector3D.h"
 #include "Math/Vector4D.h"
-
 #include <TMath.h>
 #include <TObjArray.h>
 #include <TPDGCode.h>
@@ -548,7 +547,7 @@ struct StrangenessInJets {
       ROOT::Math::PxPyPzMVector pPion;
       pProton.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), MassProton);
       pPion.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), MassPionCharged);
-      double mLambda = (pProton+pPion).M();
+      double mLambda = (pProton + pPion).M();
       if (std::fabs(mLambda - MassLambda0) > deltaMassLambda)
         return false;
     }
@@ -579,7 +578,7 @@ struct StrangenessInJets {
       ROOT::Math::PxPyPzMVector pPion;
       pProton.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), MassProton);
       pPion.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), MassPionCharged);
-      double mLambda = (pProton+pPion).M();
+      double mLambda = (pProton + pPion).M();
       if (std::fabs(mLambda - MassLambda0) > deltaMassLambda)
         return false;
     }
@@ -662,7 +661,7 @@ struct StrangenessInJets {
       ROOT::Math::PxPyPzMVector pPion;
       pProton.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), MassProton);
       pPion.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), MassPionCharged);
-      double mLambda = (pProton+pPion).M();
+      double mLambda = (pProton + pPion).M();
       if (std::fabs(mLambda - MassLambda0) > deltaMassLambda)
         return false;
     }
@@ -693,7 +692,7 @@ struct StrangenessInJets {
       ROOT::Math::PxPyPzMVector pPion;
       pProton.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), MassProton);
       pPion.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), MassPionCharged);
-      double mLambda = (pProton+pPion).M();
+      double mLambda = (pProton + pPion).M();
       if (std::fabs(mLambda - MassLambda0) > deltaMassLambda)
         return false;
     }
