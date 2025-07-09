@@ -541,7 +541,7 @@ struct StrangenessInJets {
       }
 
       // Require that V0 is compatible with Lambda
-      if (std::fabs(casc.mAntiLambda() - MassLambda0) > deltaMassLambda)
+      if (std::fabs(casc.v0().mAntiLambda() - MassLambda0) > deltaMassLambda)
         return false;
     }
 
@@ -567,7 +567,7 @@ struct StrangenessInJets {
       }
 
       // Require that V0 is compatible with Lambda
-      if (std::fabs(casc.mLambda() - MassLambda0) > deltaMassLambda)
+      if (std::fabs(casc.v0().mLambda() - MassLambda0) > deltaMassLambda)
         return false;
     }
 
@@ -645,7 +645,7 @@ struct StrangenessInJets {
       }
 
       // Require that V0 is compatible with Lambda
-      if (std::fabs(casc.mAntiLambda() - MassLambda0) > deltaMassLambda)
+      if (std::fabs(casc.v0().mAntiLambda() - MassLambda0) > deltaMassLambda)
         return false;
     }
 
@@ -671,7 +671,7 @@ struct StrangenessInJets {
       }
 
       // Require that V0 is compatible with Lambda
-      if (std::fabs(casc.mLambda() - MassLambda0) > deltaMassLambda)
+      if (std::fabs(casc.v0().mLambda() - MassLambda0) > deltaMassLambda)
         return false;
     }
 
