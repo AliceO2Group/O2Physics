@@ -32,8 +32,10 @@
 #include <rapidjson/filereadstream.h>
 
 #include <cstdio> // for fclose
+#include <map>
 #include <stdexcept>
 #include <string> // std::string
+#include <utility>
 #include <vector> // std::vector
 
 #endif
