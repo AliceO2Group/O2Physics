@@ -117,11 +117,6 @@ struct FemtoUniversePairTaskTrackPhi {
                                                    (aod::femtouniverseparticle::pt > ConfTrackPtLow) &&
                                                    (aod::femtouniverseparticle::pt < ConfTrackPtHigh);
 
-  // Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsTrackMCTruth =
-  //                                                  aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack) &&
-  //                                                  aod::femtouniverseparticle::pt < ConfTrackPtHigh &&
-  //                                                  aod::femtouniverseparticle::pt > ConfTrackPtLow;
-
   /// Particle 2 --- PHI MESON
   Configurable<float> ConfPhiPtLow{"ConfPhiPtLow", 0.8, "Lower limit of the Phi pT."};
   Configurable<float> ConfPhiPtHigh{"ConfPhiPtHigh", 4.0, "Higher limit of the Phi pT."};
@@ -140,11 +135,6 @@ struct FemtoUniversePairTaskTrackPhi {
                                                  (aod::femtouniverseparticle::pt < ConfPhiPtHigh) &&
                                                  (aod::femtouniverseparticle::tempFitVar > confInvMassLowLimitPhi) &&
                                                  (aod::femtouniverseparticle::tempFitVar < confInvMassUpLimitPhi);
-
-  // Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsPhiMCTruth =
-  //                                                aod::femtouniverseparticle::partType == static_cast<uint8_t>(aod::femtouniverseparticle::ParticleType::kMCTruthTrack) &&
-  //                                                aod::femtouniverseparticle::pt < ConfPhiPtHigh &&
-  //                                                aod::femtouniverseparticle::pt > ConfPhiPtLow;
 
   /// Partitions  for Phi daughters kPhiChild
   Partition<FilteredFemtoFullParticles> partsPhiDaugh = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhiChild));
@@ -523,13 +513,6 @@ struct FemtoUniversePairTaskTrackPhi {
       if constexpr (isMC) {
         // reco
         effCorrection.fillRecoHist<ParticleNo::ONE, FilteredFDCollisions>(phicandidate, 333);
-        // truth
-        auto mcPartId1 = phicandidate.fdMCParticleId();
-        auto const& mcpart1 = mcParts.iteratorAt(mcPartId1);
-        if (mcpart1.pdgMCTruth() != 333) {
-          continue;
-        }
-        effCorrection.fillTruthHist<ParticleNo::ONE, FilteredFDCollisions>(phicandidate);
       }
     }
 
@@ -570,14 +553,6 @@ struct FemtoUniversePairTaskTrackPhi {
 
       if constexpr (isMC) {
         effCorrection.fillRecoHist<ParticleNo::TWO, FilteredFDCollisions>(track, ConfTrackPDGCode);
-
-        // truth
-        auto mcPartId2 = track.fdMCParticleId();
-        auto const& mcpart2 = mcParts.iteratorAt(mcPartId2);
-        if (mcpart2.pdgMCTruth() != ConfTrackPDGCode) {
-          continue;
-        }
-        effCorrection.fillTruthHist<ParticleNo::TWO, FilteredFDCollisions>(track);
       }
     }
 
@@ -738,6 +713,10 @@ struct FemtoUniversePairTaskTrackPhi {
         continue;
       }
 
+      if (pdgCode == ConfTrackPDGCode) {
+        effCorrection.fillTruthHist<ParticleNo::TWO, FilteredFDCollisions>(part);
+      }
+
       // charge +
       if (pdgParticle->Charge() > 0.0) {
         registryMCtruth.fill(HIST("MCtruthAllPositivePt"), part.pt());
@@ -755,6 +734,7 @@ struct FemtoUniversePairTaskTrackPhi {
       if (pdgCode == 333) {
         registryMCtruth.fill(HIST("MCtruthPhi"), part.pt(), part.eta());
         registryMCtruth.fill(HIST("MCtruthPhiPt"), part.pt());
+        effCorrection.fillTruthHist<ParticleNo::ONE, FilteredFDCollisions>(part);
         continue;
       }
 
