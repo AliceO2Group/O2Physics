@@ -133,7 +133,7 @@ struct UpcRhoAnalysis {
   Configurable<float> cutTrueGapSideFT0A{"cutTrueGapSideFT0A", 150., "FT0A threshold for SG selector"};
   Configurable<float> cutTrueGapSideFT0C{"cutTrueGapSideFT0C", 50., "FT0C threshold for SG selector"};
   Configurable<float> cutTrueGapSideZDC{"cutTrueGapSideZDC", 10000., "ZDC threshold for SG selector. 0 is <1n, 4.2 is <2n, 6.7 is <3n, 9.5 is <4n, 12.5 is <5n"};
-    
+
   Configurable<bool> requireTof{"requireTof", false, "require TOF signal"};
   Configurable<bool> onlyGoldenRuns{"onlyGoldenRuns", false, "process only golden runs"};
   Configurable<bool> useRecoFlag{"useRecoFlag", false, "use reco flag for event selection"};
@@ -432,7 +432,7 @@ struct UpcRhoAnalysis {
       return false;
     if (cutNumContribs && (collision.numContrib() > collisionsNumContribsMaxCut))
       return false;
-    
+
     if (useRctFlag && !isGoodRctFlag(collision)) // check RCT flags
       return false;
     if (useRecoFlag && (collision.flags() != cutRecoFlag)) // check reconstruction mode
@@ -440,7 +440,7 @@ struct UpcRhoAnalysis {
 
     if (useTrueGap && (collision.gapSide() != sgSelector.trueGap(collision, cutTrueGapSideFV0, cutTrueGapSideFT0A, cutTrueGapSideFT0C, cutTrueGapSideZDC))) // check true gap side
       return false;
-    
+
     return true;
   }
 
