@@ -135,7 +135,7 @@ struct HfCandidateCreatorCharmResoReduced {
   Configurable<int> numberEventsToSkip{"numberEventsToSkip", -1, "Number of events to Skip in ME process"};
 
   SliceCache cache;
-  
+
   using HfRed3PrNoTrksWithMl = soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl>;
   using HfRed2PrNoTrksWithMl = soa::Join<aod::HfRed2PrNoTrks, aod::HfRed2ProngsMl>;
 
@@ -152,7 +152,7 @@ struct HfCandidateCreatorCharmResoReduced {
 
   ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0., 45., 60., 75., 95, 250}, "event multiplicity pools (PV contributors for now)"};
   ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0, -4, -1, 1, 4, 10.0}, "z vertex position pools"};
- 
+
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
@@ -309,7 +309,7 @@ struct HfCandidateCreatorCharmResoReduced {
           invMassD = candD.invMassDstar();
           invMassD0 = candD.invMassD0();
         }
-        if (candD.dType() == (-1)*DType::Dstar) {
+        if (candD.dType() == (-1) * DType::Dstar) {
           invMassD = candD.invMassAntiDstar();
           invMassD0 = candD.invMassD0Bar();
         }
@@ -475,7 +475,7 @@ struct HfCandidateCreatorCharmResoReduced {
           invMassD = bachD.invMassDstar();
           invMassD0 = bachD.invMassD0();
         }
-        if (bachD.dType() == (-1)*DType::Dstar) {
+        if (bachD.dType() == (-1) * DType::Dstar) {
           invMassD = bachD.invMassAntiDstar();
           invMassD0 = bachD.invMassD0Bar();
         }
