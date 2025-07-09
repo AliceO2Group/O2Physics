@@ -133,7 +133,7 @@ struct Filter2Prong {
       sigmaFormula = std::make_unique<TFormula>("sigmaFormula", cfgImSigmaFormula.value.c_str());
       // could do SetParameter(name,value) directly, but pre-lookup of the names will result in faster process
       std::array<std::string, 4> pars = {"p", "sTPC", "sTOF", "hasTOF"};
-      std::fill_n(sigmaFormulaParamIndex, std::size(sigmaFormulaParamIndex), ~0u);
+      std::fill_n(sigmaFormulaParamIndex.begin(), std::size(sigmaFormulaParamIndex), ~0u);
       for (uint i = 0, n = sigmaFormula->GetNpar(); i < n; ++i) {
         auto m = std::find(pars.begin(), pars.end(), sigmaFormula->GetParName(i));
         if (m != pars.end())
