@@ -445,7 +445,7 @@ class ExpTimes
   static constexpr float mMassZSqared = mMassZ * mMassZ;                   /// (M/z)^2
 
   /// Computes the expected time of a track, given it TOF expected momentum
-  static float ComputeExpectedTime(const float tofExpMom, const float length) { return length * sqrt((mMassZSqared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom); }
+  static float ComputeExpectedTime(const float tofExpMom, const float length) { return length * std::sqrt((mMassZSqared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom); }
 
   /// Gets the expected signal of the track of interest under the PID assumption
   /// \param track Track of interest
