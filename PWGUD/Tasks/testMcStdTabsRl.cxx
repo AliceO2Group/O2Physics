@@ -47,8 +47,8 @@ struct TestMcStdTabsRl {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-	// declare configurables
-	Configurable<bool> useMcgenidGetGeneratorID{"useMcgenidGetGeneratorID", true, {"Use o2::mcgenid::getGeneratorId instead of o2::mccollision::getGeneratorId; default it true."}};
+  // declare configurables
+  Configurable<bool> useMcgenidGetGeneratorID{"useMcgenidGetGeneratorID", true, {"Use o2::mcgenid::getGeneratorId instead of o2::mccollision::getGeneratorId; default it true."}};
 
   struct : ConfigurableGroup {
     ConfigurableAxis zzAxisNtracks{"zzAxisNtracks", {100, -0.5, 99.5}, "Number of tracks in collision"};
@@ -77,7 +77,7 @@ struct TestMcStdTabsRl {
   void processMCgen(aod::McCollision const& collision, aod::McParticles const& particles)
   {
 
-	  const auto genID = useMcgenidGetGeneratorID ? o2::mcgenid::getGeneratorId(collision.getGeneratorId()) : collision.getGeneratorId();
+    const auto genID = useMcgenidGetGeneratorID ? o2::mcgenid::getGeneratorId(collision.getGeneratorId()) : collision.getGeneratorId();
 
     histos.get<TH2>(HIST("Events/Truth/hGenIDvsCountCollisions"))->Fill(genID, 1);
     histos.get<TH2>(HIST("Events/Truth/hGenIDvsNparticles"))->Fill(genID, particles.size());
