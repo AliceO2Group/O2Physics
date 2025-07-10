@@ -108,7 +108,6 @@ struct FemtoUniverseEfficiencyBase {
   Configurable<float> confPtLowPart1{"confPtLowPart1", 0.2, "Lower limit for Pt for the first particle"};
   Configurable<float> confPtHighPart1{"confPtHighPart1", 2.5, "Higher limit for Pt for the first particle"};
   Configurable<int> confChargePart1{"confChargePart1", 1, "Charge of the first particle"};
-  Configurable<bool> confPGDSelPartOne{"confPGDSelPartOne", true, "0: don't cut misidentified, 1: select only particles with maching MCTruth PDG"};
 
   /// Partition for particle 1
   Partition<FemtoFullParticles> partsOneMCGen = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < confPtHighPart1) && (aod::femtouniverseparticle::pt > confPtLowPart1) && (nabs(aod::femtouniverseparticle::eta) < ConfBothTracks.confEtaMax);
@@ -130,7 +129,6 @@ struct FemtoUniverseEfficiencyBase {
   Configurable<float> confPtLowPart2{"confPtLowPart2", 0.2, "Lower limit for Pt for the second particle"};
   Configurable<float> confPtHighPart2{"confPtHighPart2", 2.5, "Higher limit for Pt for the second particle"};
   Configurable<int> confChargePart2{"confChargePart2", 1, "Charge of the second particle"};
-  Configurable<bool> confPGDSelPartTwo{"confPGDSelPartTwo", true, "0: don't cut misidentified, 1: select only particles with maching MCTruth PDG"};
 
   /// Partition for particle 2
   Partition<FemtoFullParticles> partsTwoMCGen = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (aod::femtouniverseparticle::pt < confPtHighPart2) && (aod::femtouniverseparticle::pt > confPtLowPart2) && (nabs(aod::femtouniverseparticle::eta) < ConfBothTracks.confEtaMax);
@@ -379,7 +377,7 @@ struct FemtoUniverseEfficiencyBase {
 
       registryPDG.fill(HIST("part1/PDGvspTall"), part.pt(), mcParticle.pdgMCTruth());
 
-      if (confPGDSelPartOne && !(std::abs(mcParticle.pdgMCTruth()) == std::abs(confPDGCodePartOne))) {
+      if (!(std::abs(mcParticle.pdgMCTruth()) == std::abs(confPDGCodePartOne))) {
         continue;
       }
 
@@ -405,7 +403,7 @@ struct FemtoUniverseEfficiencyBase {
 
         registryPDG.fill(HIST("part2/PDGvspTall"), part.pt(), mcParticle.pdgMCTruth());
 
-        if (confPGDSelPartTwo && !(std::abs(mcParticle.pdgMCTruth()) == std::abs(confPDGCodePartTwo))) {
+        if (!(std::abs(mcParticle.pdgMCTruth()) == std::abs(confPDGCodePartTwo))) {
           continue;
         }
 
