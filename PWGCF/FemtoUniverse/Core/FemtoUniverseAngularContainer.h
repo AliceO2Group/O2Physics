@@ -20,17 +20,20 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEANGULARCONTAINER_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEANGULARCONTAINER_H_
 
-#include <fairlogger/Logger.h>
-#include <vector>
-#include <string>
-
-#include "Framework/HistogramRegistry.h"
-#include "Common/Core/RecoDecay.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseMath.h"
 
+#include "Common/Core/RecoDecay.h"
+
+#include "Framework/HistogramRegistry.h"
+
 #include "Math/Vector4D.h"
-#include "TMath.h"
 #include "TDatabasePDG.h"
+#include "TMath.h"
+
+#include <fairlogger/Logger.h>
+
+#include <string>
+#include <vector>
 
 using namespace o2::framework;
 
@@ -78,6 +81,9 @@ class FemtoUniverseAngularContainer
     if (use3dplots) {
       // use 3d plots
     }
+    if (DoContainer) {
+      mHistogramRegistry->add((folderName + "/CorrelationContainer").c_str(), ";  #Delta#varphi (rad); #Delta#eta; Inv Mass; #p_{1T}; #p_{2T}", kTHnF, {phiAxis, etaAxis, minvAxis, pT1Axis, pT2Axis});
+    }
   }
 
   /// Initializes specialized Monte Carlo truth histograms for the task
@@ -103,8 +109,9 @@ class FemtoUniverseAngularContainer
   /// \param phiBins phi binning for the histograms
   /// \param isMC add Monte Carlo truth histograms to the output file
   template <typename T, typename P>
-  void init(HistogramRegistry* registry, T& kstarBins, T& multBins, T& kTBins, T& mTBins, T& multBins3D, T& mTBins3D, P& etaBins, P& phiBins, bool isMC, bool use3dplots)
+  void init(HistogramRegistry* registry, T& kstarBins, T& multBins, T& kTBins, T& mTBins, T& multBins3D, T& mTBins3D, P& etaBins, P& phiBins, bool isMC, bool use3dplots, bool doContainer = false)
   {
+    DoContainer = doContainer;
     mHistogramRegistry = registry;
     std::string femtoObs;
     if constexpr (FemtoObs == femto_universe_angular_container::Observable::kstar) {
@@ -125,6 +132,7 @@ class FemtoUniverseAngularContainer
     mPhiHigh = o2::constants::math::TwoPI + (-static_cast<int>(phiBins / 4) + 0.5) * o2::constants::math::TwoPI / phiBins;
     framework::AxisSpec phiAxis = {phiBins, mPhiLow, mPhiHigh};
     framework::AxisSpec etaAxis = {etaBins, -2.0, 2.0};
+    // for the container
 
     std::string folderName = static_cast<std::string>(FolderSuffix[EventType]) + static_cast<std::string>(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kRecon]);
 
@@ -241,6 +249,10 @@ class FemtoUniverseAngularContainer
   double mPhiHigh;
   double deltaEta;
   double deltaPhi;
+  framework::AxisSpec minvAxis = {100, 0.9, 1.05}; ///< Axis for invariant mass
+  framework::AxisSpec pT1Axis = {100, 0.0, 5.0};   ///< Axis for pT of particle 1
+  framework::AxisSpec pT2Axis = {100, 0.0, 5.0};   ///< Axis for pT of particle 2
+  bool DoContainer = false;                        ///< Flag to indicate if the container is used
 };
 
 } // namespace o2::analysis::femto_universe

@@ -92,6 +92,9 @@ class FemtoUniverseContainer
     if (use3dplots) {
       mHistogramRegistry->add((folderName + "/relPairkstarmTMult").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2}); Multiplicity").c_str(), kTH3F, {femtoObsAxis, mTAxis3D, multAxis3D});
     }
+    if (DoContainer) {
+      mHistogramRegistry->add((folderName + "/CorrelationContainer").c_str(), ";  #Delta#varphi (rad); #Delta#eta; Inv Mass; #p_{1T}; #p_{2T}", kTHnF, {phiAxis, etaAxis, minvAxis, pT1Axis, pT2Axis});
+    }
   }
 
   /// Initializes specialized Monte Carlo truth histograms for the task
@@ -123,8 +126,9 @@ class FemtoUniverseContainer
   /// \param phiBins phi binning for the histograms
   /// \param isMC add Monte Carlo truth histograms to the output file
   template <typename T, typename P>
-  void init(HistogramRegistry* registry, T& kstarBins, T& multBins, T& kTBins, T& mTBins, T& multBins3D, T& mTBins3D, P& etaBins, P& phiBins, bool isMC, bool use3dplots)
+  void init(HistogramRegistry* registry, T& kstarBins, T& multBins, T& kTBins, T& mTBins, T& multBins3D, T& mTBins3D, P& etaBins, P& phiBins, bool isMC, bool use3dplots, bool doContainer = false)
   {
+    DoContainer = doContainer;
     mHistogramRegistry = registry;
     std::string femtoObs;
     if constexpr (FemtoObs == femto_universe_container::Observable::kstar) {
@@ -285,6 +289,10 @@ class FemtoUniverseContainer
   double mPhiHigh;
   double deltaEta;
   double deltaPhi;
+  framework::AxisSpec minvAxis = {100, 0.9, 1.05}; ///< Axis for invariant mass
+  framework::AxisSpec pT1Axis = {100, 0.0, 5.0};   ///< Axis for pT of particle 1
+  framework::AxisSpec pT2Axis = {100, 0.0, 5.0};   ///< Axis for pT of particle 2
+  bool DoContainer = false;                        ///< Flag to indicate if the container is used
 };
 
 } // namespace o2::analysis::femto_universe
