@@ -18,7 +18,6 @@
 #define PWGJE_CORE_JETHFUTILITIES_H_
 
 #include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGJE/DataModel/Jet.h"
 
 #include <CommonConstants/PhysicsConstants.h>
@@ -375,13 +374,13 @@ constexpr bool isMatchedHFCandidate(T const& candidate)
       return false;
     }
   } else if constexpr (isB0Candidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == 1 << o2::aod::hf_cand_b0::DecayType::B0ToDPi) {
+    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_beauty::DecayChannelMain::B0ToDminusPi) {
       return true;
     } else {
       return false;
     }
   } else if constexpr (isBplusCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == 1 << o2::aod::hf_cand_bplus::DecayType::BplusToD0Pi) {
+    if (std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_beauty::DecayChannelMain::BplusToD0Pi) {
       return true;
     } else {
       return false;
@@ -411,13 +410,13 @@ constexpr bool isMatchedHFCandidate(T const& candidate)
       return false;
     }
   } else if constexpr (isB0McCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchGen()) == 1 << o2::aod::hf_cand_b0::DecayType::B0ToDPi) {
+    if (std::abs(candidate.flagMcMatchGen()) == o2::hf_decay::hf_cand_beauty::DecayChannelMain::B0ToDminusPi) {
       return true;
     } else {
       return false;
     }
   } else if constexpr (isBplusMcCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchGen()) == 1 << o2::aod::hf_cand_bplus::DecayType::BplusToD0Pi) {
+    if (std::abs(candidate.flagMcMatchGen()) == o2::hf_decay::hf_cand_beauty::DecayChannelMain::BplusToD0Pi) {
       return true;
     } else {
       return false;
