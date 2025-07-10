@@ -157,10 +157,7 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<bool> acceptBdtBkgOnly{"acceptBdtBkgOnly", true, "Enable / disable selection based on BDT bkg score only"};
 
   // CCDB configuration
-  o2::ccdb::CcdbApi ccdbApi;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  int currentRun{0}; // needed to detect if the run changed and trigger update of calibrations etc.
 
   // TPC PID calibrations
   Configurable<int> setTPCCalib{"setTPCCalib", 0, "0 is not use re-calibrations, 1 is compute TPC post-calibrated n-sigmas, 2 is using TPC Spline"};
@@ -179,6 +176,27 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<bool> applyDownscale{"applyDownscale", false, "Flag to enable or disable the application of downscale factors"};
   Configurable<LabeledArray<double>> downscaleFactors{"downscaleFactors", {defDownscaleFactors[0], kNtriggersHF, 1, hfTriggerNames, labelsDownscaleFactor}, "Downscale factors for each trigger (from 0 to 1)"};
 
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  using BigTracksMCPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullDe, aod::pidTOFFullDe, aod::McTrackLabels>;
+  using BigTracksPID = soa::Join<aod::Tracks, aod::TracksWCovDcaExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullDe, aod::pidTOFFullDe>;
+  using TracksIUPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi>;
+  using CollsWithEvSel = soa::Join<aod::Collisions, aod::EvSels>;
+
+  using Hf2ProngsWithMl = soa::Join<aod::Hf2Prongs, aod::Hf2ProngMlProbs>;
+  using Hf3ProngsWithMl = soa::Join<aod::Hf3Prongs, aod::Hf3ProngMlProbs>;
+
+  Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
+  Preslice<aod::V0s> v0sPerCollision = aod::v0::collisionId;
+  Preslice<Hf2ProngsWithMl> hf2ProngPerCollision = aod::track_association::collisionId;
+  Preslice<Hf3ProngsWithMl> hf3ProngPerCollision = aod::track_association::collisionId;
+  Preslice<aod::Cascades> cascPerCollision = aod::cascade::collisionId;
+  Preslice<aod::V0PhotonsKF> photonsPerCollision = aod::v0photonkf::collisionId;
+  PresliceUnsorted<aod::AssignedTrackedCascades> trackedCascadesPerCollision = aod::track::collisionId;
+
+  o2::ccdb::CcdbApi ccdbApi;
+  int currentRun{0}; // needed to detect if the run changed and trigger update of calibrations etc.
+
   // array of BDT thresholds
   std::array<LabeledArray<double>, kNCharmParticles> thresholdBDTScores;
 
@@ -189,7 +207,6 @@ struct HfFilter { // Main struct for HF triggers
   o2::vertexing::DCAFitterN<3> dfBtoDstar;    // fitter for Beauty Hadron to D* vertex (3-prong vertex fitter)
   o2::vertexing::DCAFitterN<2> dfStrangeness; // fitter for V0s and cascades (2-prong vertex fitter)
 
-  HistogramRegistry registry{"registry"};
   std::shared_ptr<TH1> hProcessedEvents;
 
   // QA histos
@@ -217,6 +234,8 @@ struct HfFilter { // Main struct for HF triggers
 
   // helper object
   HfFilterHelper helper;
+
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext& initContext)
   {
@@ -403,22 +422,6 @@ struct HfFilter { // Main struct for HF triggers
 
     thresholdBDTScores = {thresholdBDTScoreD0ToKPi, thresholdBDTScoreDPlusToPiKPi, thresholdBDTScoreDSToPiKK, thresholdBDTScoreLcToPiKP, thresholdBDTScoreXicToPiKP};
   }
-
-  using BigTracksMCPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullDe, aod::pidTOFFullDe, aod::McTrackLabels>;
-  using BigTracksPID = soa::Join<aod::Tracks, aod::TracksWCovDcaExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullDe, aod::pidTOFFullDe>;
-  using TracksIUPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi>;
-  using CollsWithEvSel = soa::Join<aod::Collisions, aod::EvSels>;
-
-  using Hf2ProngsWithMl = soa::Join<aod::Hf2Prongs, aod::Hf2ProngMlProbs>;
-  using Hf3ProngsWithMl = soa::Join<aod::Hf3Prongs, aod::Hf3ProngMlProbs>;
-
-  Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  Preslice<aod::V0s> v0sPerCollision = aod::v0::collisionId;
-  Preslice<Hf2ProngsWithMl> hf2ProngPerCollision = aod::track_association::collisionId;
-  Preslice<Hf3ProngsWithMl> hf3ProngPerCollision = aod::track_association::collisionId;
-  Preslice<aod::Cascades> cascPerCollision = aod::cascade::collisionId;
-  Preslice<aod::V0PhotonsKF> photonsPerCollision = aod::v0photonkf::collisionId;
-  PresliceUnsorted<aod::AssignedTrackedCascades> trackedCascadesPerCollision = aod::track::collisionId;
 
   void process(CollsWithEvSel const& collisions,
                aod::BCsWithTimestamps const&,
