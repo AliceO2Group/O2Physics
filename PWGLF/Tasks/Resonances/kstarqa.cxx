@@ -86,6 +86,9 @@ struct Kstarqa {
   Configurable<bool> onlyTOFHIT{"onlyTOFHIT", false, "accept only TOF hit tracks at high pt"};
   Configurable<bool> onlyTPC{"onlyTPC", true, "only TPC tracks"};
   Configurable<int> cRotations{"cRotations", 3, "Number of random rotations in the rotational background"};
+  Configurable<int> cSelectMultEstimator{"cSelectMultEstimator", 0, "Select multiplicity estimator: 0 - FT0M, 1 - FT0A, 2 - FT0C"};
+  Configurable<bool> applyRecMotherRapidity{"applyRecMotherRapidity", true, "Apply rapidity cut on reconstructed mother track"};
+  Configurable<bool> applypTdepPID{"applypTdepPID", false, "Apply pT dependent PID"};
 
   // Configurables for track selections
   Configurable<int> rotationalCut{"rotationalCut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
@@ -94,16 +97,15 @@ struct Kstarqa {
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
-  Configurable<bool> ismanualDCAcut{"ismanualDCAcut", true, "ismanualDCAcut"};
+  Configurable<bool> isGlobalTracks{"isGlobalTracks", true, "isGlobalTracks"};
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<float> cfgRCRFC{"cfgRCRFC", 0.8f, "Crossed Rows to Findable Clusters"};
   Configurable<float> cfgITSChi2NCl{"cfgITSChi2NCl", 36.0, "ITS Chi2/NCl"};
   Configurable<float> cfgTPCChi2NCl{"cfgTPCChi2NCl", 4.0, "TPC Chi2/NCl"};
-  Configurable<bool> cfgPVContributor{"cfgPVContributor", false, "PV contributor track selection"};           // PV Contriuibutor
-  Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", false, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
-  Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", false, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
-  Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", false, "Global track selection"};                       // kGoldenChi2 | kDCAxy | kDCAz
+  Configurable<bool> cfgPVContributor{"cfgPVContributor", false, "PV contributor track selection"}; // PV Contriuibutor
+  Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", false, "Primary track selection"};          // kGoldenChi2 | kDCAxy | kDCAz
+  // Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", false, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
   Configurable<float> cBetaCutTOF{"cBetaCutTOF", 0.0, "cut TOF beta"};
   Configurable<bool> cFakeTrack{"cFakeTrack", true, "Fake track selection"};
   Configurable<float> cFakeTrackCutKa{"cFakeTrackCutKa", 0.5, "Cut based on momentum difference in global and TPC tracks for Kaons"};
@@ -203,7 +205,7 @@ struct Kstarqa {
     hInvMass.add("hk892GenpT2", "pT distribution of True MC K(892)0", kTHnSparseF, {ptAxis, multiplicityAxis});
     hInvMass.add("h1KstarRecMass", "Invariant mass of kstar meson", kTH1F, {invmassAxis});
     hInvMass.add("h2KstarRecpt1", "pT of kstar meson", kTHnSparseF, {ptAxis, multiplicityAxis, invmassAxis});
-    hInvMass.add("h2KstarRecpt2", "pT of generated kstar meson", kTHnSparseF, {ptAxis, multiplicityAxis});
+    hInvMass.add("h2KstarRecpt2", "pT of generated kstar meson", kTHnSparseF, {ptAxis, multiplicityAxis, invmassAxis});
     hInvMass.add("h1genmass", "Invariant mass of generated kstar meson", kTH1F, {invmassAxis});
     hInvMass.add("h1GenMult", "Multiplicity generated", kTH1F, {multiplicityAxis});
     hInvMass.add("h1RecMult", "Multiplicity reconstructed", kTH1F, {multiplicityAxis});
@@ -230,9 +232,9 @@ struct Kstarqa {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (ismanualDCAcut && !(candidate.isGlobalTrackWoDCA() && candidate.isPVContributor() && std::abs(candidate.dcaXY()) < cfgCutDCAxy && std::abs(candidate.dcaZ()) < cfgCutDCAz && candidate.itsNCls() > cfgITScluster)) {
+    if (isGlobalTracks && !(candidate.isGlobalTrackWoDCA() && candidate.isPVContributor() && std::abs(candidate.dcaXY()) < cfgCutDCAxy && std::abs(candidate.dcaZ()) < cfgCutDCAz && candidate.itsNCls() > cfgITScluster) && candidate.tpcNClsFound() > cfgTPCcluster) {
       return false;
-    } else if (!ismanualDCAcut) {
+    } else if (!isGlobalTracks) {
       if (std::abs(candidate.pt()) < cfgCutPT)
         return false;
       if (std::abs(candidate.dcaXY()) > cfgCutDCAxy)
@@ -252,10 +254,6 @@ struct Kstarqa {
       if (cfgPVContributor && !candidate.isPVContributor())
         return false;
       if (cfgPrimaryTrack && !candidate.isPrimaryTrack())
-        return false;
-      if (cfgGlobalWoDCATrack && !candidate.isGlobalTrackWoDCA())
-        return false;
-      if (cfgGlobalTrack && !candidate.isGlobalTrack())
         return false;
     }
 
@@ -328,6 +326,34 @@ struct Kstarqa {
         }
       }
     }
+    return false;
+  }
+
+  template <typename T>
+  bool selectionPIDNew(const T& candidate, int PID)
+  {
+    if (PID == 0) {
+      if (candidate.pt() < 0.5 && TMath::Abs(candidate.tpcNSigmaPi()) < nsigmaCutTPCPi) {
+        return true;
+      }
+      if (candidate.pt() >= 0.5 && TMath::Abs(candidate.tpcNSigmaPi()) < nsigmaCutTPCPi && candidate.hasTOF() && TMath::Abs(candidate.tofNSigmaPi()) < nsigmaCutTOFPi) {
+        return true;
+      }
+      if (candidate.pt() >= 0.5 && TMath::Abs(candidate.tpcNSigmaPi()) < nsigmaCutTPCPi && !candidate.hasTOF()) {
+        return true;
+      }
+    } else if (PID == 1) {
+      if (candidate.pt() < 0.5 && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPCKa) {
+        return true;
+      }
+      if (candidate.pt() >= 0.5 && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPCKa && candidate.hasTOF() && TMath::Abs(candidate.tofNSigmaKa()) < nsigmaCutTOFKa) {
+        return true;
+      }
+      if (candidate.pt() >= 0.5 && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPCKa && !candidate.hasTOF()) {
+        return true;
+      }
+    }
+
     return false;
   }
 
@@ -579,7 +605,16 @@ struct Kstarqa {
     rEventSelection.fill(HIST("events_check_data"), 3.5);
 
     multiplicity = -1;
-    multiplicity = collision.centFT0M();
+
+    if (cSelectMultEstimator == 0) {
+      multiplicity = collision.centFT0M();
+    } else if (cSelectMultEstimator == 1) {
+      multiplicity = collision.centFT0A();
+    } else if (cSelectMultEstimator == 2) {
+      multiplicity = collision.centFT0C();
+    } else {
+      multiplicity = collision.multFT0M();
+    }
 
     // Fill the event counter
     if (cQAevents) {
@@ -636,9 +671,14 @@ struct Kstarqa {
       }
 
       // since we are using combinations full index policy, so repeated pairs are allowed, so we can check one with Kaon and other with pion
-      if (!selectionPID(track1, 1)) // Track 1 is checked with Kaon
+      if (!applypTdepPID && !selectionPID(track1, 1)) // Track 1 is checked with Kaon
         continue;
-      if (!selectionPID(track2, 0)) // Track 2 is checked with Pion
+      if (!applypTdepPID && !selectionPID(track2, 0)) // Track 2 is checked with Pion
+        continue;
+
+      if (applypTdepPID && !selectionPIDNew(track1, 1)) // Track 1 is checked with Kaon
+        continue;
+      if (applypTdepPID && !selectionPIDNew(track2, 0)) // Track 2 is checked with Pion
         continue;
 
       rEventSelection.fill(HIST("events_check_data"), 6.5);
@@ -690,76 +730,58 @@ struct Kstarqa {
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2000, 0, 10000}, "TPC multiplicity axis for ME mixing"};
 
   // using BinningTypeTPCMultiplicity = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
-  // using BinningTypeCentralityM = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+  using BinningTypeCentralityM = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+  using BinningTypeFT0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0A>;
 
   BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
-  // BinningTypeCentralityM binningOnCentrality{{axisVertex, axisMultiplicity}, true};
+  BinningTypeCentralityM binningOnCentrality{{axisVertex, axisMultiplicity}, true};
+  BinningTypeFT0A binningOnFT0A{{axisVertex, axisMultiplicity}, true};
 
   SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair1{binningOnPositions, cfgNoMixedEvents, -1, &cache};
-  // SameKindPair<EventCandidates, TrackCandidates, BinningTypeCentralityM> pair2{binningOnCentrality, cfgNoMixedEvents, -1, &cache};
+  SameKindPair<EventCandidates, TrackCandidates, BinningTypeCentralityM> pair2{binningOnCentrality, cfgNoMixedEvents, -1, &cache};
+  SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0A> pair3{binningOnFT0A, cfgNoMixedEvents, -1, &cache};
 
   void processME(EventCandidates const&, TrackCandidates const&)
   {
-    for (const auto& [c1, tracks1, c2, tracks2] : pair1) {
-
-      if (!c1.sel8()) {
-        continue;
-      }
-      if (!c2.sel8()) {
-        continue;
-      }
-
-      if (timFrameEvsel && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !c2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
-        continue;
-      }
-
-      if (cTVXEvsel && (!c1.selection_bit(aod::evsel::kIsTriggerTVX) || !c2.selection_bit(aod::evsel::kIsTriggerTVX))) {
-        return;
-      }
-
-      if (rctCut.requireRCTFlagChecker && !rctChecker(c1)) {
-        continue;
-      }
-      if (rctCut.requireRCTFlagChecker && !rctChecker(c2)) {
-        continue;
-      }
-
-      multiplicity = c1.centFT0M();
-
-      for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-
-        if (!selectionTrack(t1)) // Kaon
-          continue;
-        if (!selectionTrack(t2)) // Pion
-          continue;
-        if (!selectionPID(t1, 1)) // Kaon
-          continue;
-        if (!selectionPID(t2, 0)) // Pion
+    // Map estimator to pair and multiplicity accessor
+    auto runMixing = [&](auto& pair, auto multiplicityGetter) {
+      for (const auto& [c1, tracks1, c2, tracks2] : pair) {
+        if (!c1.sel8() || !c2.sel8())
           continue;
 
-        // if (cMID) {
-        //   if (cMIDselectionPID(t1, 0)) // misidentified as pion
-        //     continue;
-        //   if (cMIDselectionPID(t1, 2)) // misidentified as proton
-        //     continue;
-        //   if (cMIDselectionPID(t2, 1)) // misidentified as kaon
-        //     continue;
-        // }
+        if (rctCut.requireRCTFlagChecker && (!rctChecker(c1) || !rctChecker(c2)))
+          continue;
 
-        daughter1 = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), massKa);
-        daughter2 = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), massPi);
-        mother = daughter1 + daughter2; // Kstar meson
+        multiplicity = multiplicityGetter(c1);
 
-        isMix = true;
+        for (const auto& [t1, t2] : o2::soa::combinations(
+               o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+          if (!selectionTrack(t1) || !selectionTrack(t2))
+            continue;
+          if (!selectionPID(t1, 1) || !selectionPID(t2, 0))
+            continue;
 
-        // if (std::abs(kstar.Rapidity()) < 0.5) {
-        //   fillInvMass(t1, t2, vPION, kstar, multiplicity, isMix);
+          daughter1 = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), massKa);
+          daughter2 = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), massPi);
+          mother = daughter1 + daughter2;
 
-        if (std::abs(mother.Rapidity()) < 0.5) {
-          fillInvMass(daughter1, daughter2, mother, multiplicity, isMix, t1, t2);
+          isMix = true;
+
+          if (std::abs(mother.Rapidity()) < 0.5) {
+            fillInvMass(daughter1, daughter2, mother, multiplicity, isMix, t1, t2);
+          }
         }
       }
+    };
+
+    // Call mixing based on selected estimator
+    if (cSelectMultEstimator == 0) {
+      runMixing(pair1, [](const auto& c) { return c.centFT0M(); });
+    } else if (cSelectMultEstimator == 1) {
+      runMixing(pair2, [](const auto& c) { return c.centFT0A(); });
+    } else if (cSelectMultEstimator == 2) {
+      runMixing(pair3, [](const auto& c) { return c.centFT0C(); });
     }
   }
 
@@ -998,11 +1020,15 @@ struct Kstarqa {
             }
 
             if (track1PDG == 211) {
-              if (!(selectionPID(track1, 0) && selectionPID(track2, 1))) { // pion and kaon
+              if (!applypTdepPID && !(selectionPID(track1, 0) && selectionPID(track2, 1))) { // pion and kaon
+                continue;
+              } else if (applypTdepPID && !(selectionPIDNew(track1, 0) && selectionPIDNew(track2, 1))) { // pion and kaon
                 continue;
               }
             } else {
-              if (!(selectionPID(track1, 1) && selectionPID(track2, 0))) { // kaon and pion
+              if (!applypTdepPID && !(selectionPID(track1, 1) && selectionPID(track2, 0))) { // kaon and pion
+                continue;
+              } else if (applypTdepPID && !(selectionPIDNew(track1, 1) && selectionPIDNew(track2, 0))) { // kaon and pion
                 continue;
               }
             }
@@ -1017,13 +1043,14 @@ struct Kstarqa {
               daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
               mother = daughter1 + daughter2; // Kstar meson
 
-              if (mother.Rapidity() >= 0) {
+              hInvMass.fill(HIST("h2KstarRecpt2"), mothertrack1.pt(), multiplicity, TMath::Sqrt(mothertrack1.e() * mothertrack1.e() - mothertrack1.p() * mothertrack1.p()));
+
+              if (applyRecMotherRapidity && mother.Rapidity() >= 0) {
                 continue;
               }
 
               hInvMass.fill(HIST("h1KstarRecMass"), mother.M());
               hInvMass.fill(HIST("h2KstarRecpt1"), mother.Pt(), multiplicity, mother.M());
-              hInvMass.fill(HIST("h2KstarRecpt2"), mothertrack1.pt(), multiplicity);
             }
           }
         }

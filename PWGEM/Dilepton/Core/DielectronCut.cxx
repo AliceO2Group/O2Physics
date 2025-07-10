@@ -91,11 +91,13 @@ void DielectronCut::SetTrackEtaRange(float minEta, float maxEta)
   mMaxTrackEta = maxEta;
   LOG(info) << "Dielectron Cut, set track eta range: " << mMinTrackEta << " - " << mMaxTrackEta;
 }
-void DielectronCut::SetTrackPhiRange(float minPhi, float maxPhi)
+void DielectronCut::SetTrackPhiRange(float minPhi, float maxPhi, bool mirror, bool reject)
 {
   mMinTrackPhi = minPhi;
   mMaxTrackPhi = maxPhi;
-  LOG(info) << "Dielectron Cut, set track phi range (rad.): " << mMinTrackPhi << " - " << mMaxTrackPhi;
+  mMirrorTrackPhi = mirror;
+  mRejectTrackPhi = reject;
+  LOG(info) << "Dielectron Cut, set track phi range (rad.): " << mMinTrackPhi << " - " << mMaxTrackPhi << " with mirror: " << mMirrorTrackPhi << " and rejection: " << mRejectTrackPhi;
 }
 void DielectronCut::SetMinNClustersTPC(int minNClustersTPC)
 {
