@@ -239,13 +239,8 @@ struct lambdaspincorrderived {
       if (!selectionV0(v0)) {
         continue;
       }
-<<<<<<< HEAD
       histos.fill(HIST("ptCent"), v0.lambdaPt(), centrality);
       histos.fill(HIST("etaCent"), v0.lambdaEta(), centrality);
-=======
-      histos.fill(HIST("ptCent"),v0.lambdaPt(),centrality);
-      histos.fill(HIST("etaCent"),v0.lambdaEta(),centrality);
->>>>>>> af5b95163 (Modify azimuthal distribution)
       proton = ROOT::Math::PtEtaPhiMVector(v0.protonPt(), v0.protonEta(), v0.protonPhi(), o2::constants::physics::MassProton);
       lambda = ROOT::Math::PtEtaPhiMVector(v0.lambdaPt(), v0.lambdaEta(), v0.lambdaPhi(), v0.lambdaMass());
       for (const auto& v02 : V0s) {
@@ -263,11 +258,7 @@ struct lambdaspincorrderived {
         }
         proton2 = ROOT::Math::PtEtaPhiMVector(v02.protonPt(), v02.protonEta(), v02.protonPhi(), o2::constants::physics::MassProton);
         lambda2 = ROOT::Math::PtEtaPhiMVector(v02.lambdaPt(), v02.lambdaEta(), v02.lambdaPhi(), v02.lambdaMass());
-<<<<<<< HEAD
         histos.fill(HIST("deltaPhiSame"), std::abs(RecoDecay::constrainAngle(v0.lambdaPhi(), 0.0F) - RecoDecay::constrainAngle(v02.lambdaPhi(), 0.0F)));
-=======
-	histos.fill(HIST("deltaPhiSame"), std::abs(RecoDecay::constrainAngle(v0.lambdaPhi(), 0.0F) - RecoDecay::constrainAngle(v02.lambdaPhi(), 0.0F)));
->>>>>>> af5b95163 (Modify azimuthal distribution)
         if (v0.v0Status() == 0 && v02.v0Status() == 0) {
           fillHistograms(0, 0, lambda, lambda2, proton, proton2, centrality, 0);
         }
@@ -339,11 +330,7 @@ struct lambdaspincorrderived {
           lambda = ROOT::Math::PtEtaPhiMVector(t3.lambdaPt(), t3.lambdaEta(), t3.lambdaPhi(), t3.lambdaMass());
           proton2 = ROOT::Math::PtEtaPhiMVector(t2.protonPt(), t2.protonEta(), t2.protonPhi(), o2::constants::physics::MassProton);
           lambda2 = ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass());
-<<<<<<< HEAD
           histos.fill(HIST("deltaPhiMix"), std::abs(RecoDecay::constrainAngle(t3.lambdaPhi(), 0.0F) - RecoDecay::constrainAngle(t2.lambdaPhi(), 0.0F)));
-=======
-	  histos.fill(HIST("deltaPhiMix"), std::abs(RecoDecay::constrainAngle(t3.lambdaPhi(), 0.0F) - RecoDecay::constrainAngle(t2.lambdaPhi(), 0.0F)));
->>>>>>> af5b95163 (Modify azimuthal distribution)
           if (t3.v0Status() == 0 && t2.v0Status() == 0) {
             fillHistograms(0, 0, lambda, lambda2, proton, proton2, centrality, 1);
           }
