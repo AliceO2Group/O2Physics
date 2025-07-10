@@ -47,10 +47,13 @@ struct TestMcStdTabsRl {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  // declare configurables
+  Configurable<bool> useMcgenidGetGeneratorID{"useMcgenidGetGeneratorID", true, {"Use o2::mcgenid::getGeneratorId instead of o2::mccollision::getGeneratorId; default it true."}};
+
   struct : ConfigurableGroup {
-    ConfigurableAxis zzAxisNtracks{"zzAxisNtracks", {30, -0.5, 29.5}, "Number of tracks in collision"};
-    ConfigurableAxis zzAxisNparticles{"zzAxisNparticles", {60, -0.5, 59.5}, "Number of particles in collision"};
-    ConfigurableAxis zzAxisNprocesses{"zzAxisNprocesses", {50, -0.5, 49.5}, "Number of processes"};
+    ConfigurableAxis zzAxisNtracks{"zzAxisNtracks", {100, -0.5, 99.5}, "Number of tracks in collision"};
+    ConfigurableAxis zzAxisNparticles{"zzAxisNparticles", {100, -0.5, 99.5}, "Number of particles in collision"};
+    ConfigurableAxis zzAxisNprocesses{"zzAxisNprocesses", {1000, -0.5, 999.5}, "Number of processes"};
     ConfigurableAxis zzAxisInvMassWide{"zzAxisInvMassWide", {1000, 0., 10.}, "Invariant mass (GeV/c^{2}), wider range"};
     ConfigurableAxis zzAxisPt{"zzAxisPt", {400, 0., 2.}, "Transversal momentum (GeV/c)"};
     ConfigurableAxis zzAxisRap{"zzAxisRap", {50, -1.2, 1.2}, "Rapidity (a.u.)"};
@@ -74,24 +77,26 @@ struct TestMcStdTabsRl {
   void processMCgen(aod::McCollision const& collision, aod::McParticles const& particles)
   {
 
-    histos.get<TH2>(HIST("Events/Truth/hGenIDvsCountCollisions"))->Fill(collision.getGeneratorId(), 1);
-    histos.get<TH2>(HIST("Events/Truth/hGenIDvsNparticles"))->Fill(collision.getGeneratorId(), particles.size());
+    const auto genID = useMcgenidGetGeneratorID ? o2::mcgenid::getGeneratorId(collision.getGeneratorId()) : collision.getGeneratorId();
+
+    histos.get<TH2>(HIST("Events/Truth/hGenIDvsCountCollisions"))->Fill(genID, 1);
+    histos.get<TH2>(HIST("Events/Truth/hGenIDvsNparticles"))->Fill(genID, particles.size());
 
     ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> mother;
     for (const auto& particle : particles) {
-      histos.get<TH2>(HIST("Events/Truth/hGenIDvsPDGcodesAll"))->Fill(collision.getGeneratorId(), particle.pdgCode());
+      histos.get<TH2>(HIST("Events/Truth/hGenIDvsPDGcodesAll"))->Fill(genID, particle.pdgCode());
       //        if (!particle.isPhysicalPrimary()) continue;
       if (particle.has_mothers())
         continue;
       mother.SetPxPyPzE(particle.px(), particle.py(), particle.pz(), energy(pdg->Mass(particle.pdgCode()), particle.px(), particle.py(), particle.pz()));
-      histos.get<TH2>(HIST("Events/Truth/hGenIDvsPDGcodesNoMother"))->Fill(collision.getGeneratorId(), particle.pdgCode());
-      histos.get<TH2>(HIST("Events/Truth/hGenIDvsMotherMass"))->Fill(collision.getGeneratorId(), mother.M());
-      histos.get<TH2>(HIST("Events/Truth/hGenIDvsMotherPt"))->Fill(collision.getGeneratorId(), particle.pt());
-      histos.get<TH2>(HIST("Events/Truth/hGenIDvsMotherRap"))->Fill(collision.getGeneratorId(), particle.y());
+      histos.get<TH2>(HIST("Events/Truth/hGenIDvsPDGcodesNoMother"))->Fill(genID, particle.pdgCode());
+      histos.get<TH2>(HIST("Events/Truth/hGenIDvsMotherMass"))->Fill(genID, mother.M());
+      histos.get<TH2>(HIST("Events/Truth/hGenIDvsMotherPt"))->Fill(genID, particle.pt());
+      histos.get<TH2>(HIST("Events/Truth/hGenIDvsMotherRap"))->Fill(genID, particle.y());
       const auto& daughters = particle.daughters_as<aod::McParticles>();
-      histos.get<TH2>(HIST("Events/Truth/hGenIDvsNdaughters"))->Fill(collision.getGeneratorId(), daughters.size());
+      histos.get<TH2>(HIST("Events/Truth/hGenIDvsNdaughters"))->Fill(genID, daughters.size());
       for (const auto& daughter : daughters) {
-        histos.get<TH2>(HIST("Events/Truth/hGenIDvsPDGcodesDaughters"))->Fill(collision.getGeneratorId(), daughter.pdgCode());
+        histos.get<TH2>(HIST("Events/Truth/hGenIDvsPDGcodesDaughters"))->Fill(genID, daughter.pdgCode());
       }
     }
 

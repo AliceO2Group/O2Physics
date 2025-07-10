@@ -327,7 +327,7 @@ struct TwoTracksEventTableProducer {
       return false; // TPC chi2
     if (cutGlobalTrack.cutGoodITSTPCmatching) {
       if (track.itsChi2NCl() < 0.)
-        return false; // TPC chi2
+        return false; // good ITS-TPC matching means ITS ch2 is not negative
     }
     //  TOF
     if (track.hasTOF()) {
