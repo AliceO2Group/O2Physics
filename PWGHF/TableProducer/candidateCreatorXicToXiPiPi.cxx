@@ -146,7 +146,7 @@ struct HfCandidateCreatorXicToXiPiPi {
     registry.add("hVertexerType", "Use DCAFitter or KFParticle;;entries", {HistType::kTH1F, {{2, -0.5, 1.5}}});
     registry.get<TH1>(HIST("hVertexerType"))->GetXaxis()->SetBinLabel(1 + aod::hf_cand::VertexerType::DCAFitter, "DCAFitter");
     registry.get<TH1>(HIST("hVertexerType"))->GetXaxis()->SetBinLabel(1 + aod::hf_cand::VertexerType::KfParticle, "KFParticle");
-    registry.add("hCandCounter", "hCandCounter", {HistType::kTH1F, {{4, -0.5, 3.5}}});
+    registry.add("hCandCounter", "hCandCounter", {HistType::kTH1D, {{4, -0.5, 3.5}}});
     registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + TotalSkimmedTriplets, "total");
     registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + SelEvent, "Event selected");
     registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + CascPreSel, "Cascade preselection");

@@ -101,7 +101,8 @@ struct HfCandidateSelectorXicToXiPiPi {
                         Mass,
                         Rapidity,
                         Eta,
-                        EtaDaughters,
+                        EtaPionFromXicPlus,
+                        EtaXiDaughters,
                         PtPionFromXicPlus,
                         Chi2SV,
                         MinDecayLength,
@@ -146,25 +147,26 @@ struct HfCandidateSelectorXicToXiPiPi {
     labels[Mass] = "#Delta M";
     labels[Rapidity] = "y";
     labels[Eta] = "#eta";
-    labels[EtaDaughters] = "#eta final state daughters";
-    labels[PtPionFromXicPlus] = "#it{p}_{T} (#pi #leftarrow #Xi_{c}^{+})";
+    labels[EtaPionFromXicPlus] = "#eta (#pi #leftarrow #Xi_{c}^{#plus})";
+    labels[EtaXiDaughters] = "#eta (#Xi daughters)";
+    labels[PtPionFromXicPlus] = "#it{p}_{T} (#pi #leftarrow #Xi_{c}^{#plus})";
     labels[Chi2SV] = "#chi^{2}_{SV}";
     labels[MinDecayLength] = "Decay length";
     labels[MaxInvMassXiPiPairs] = "M_{#Xi #pi}";
     labels[TpcTrackQualityXiDaughters] = "TPC track quality selection on #Xi daughters";
-    labels[TpcTrackQualityPiFromCharm] = "TPC track quality selection on #pi #leftarrow #Xi_{c}^{+}";
-    labels[ItsTrackQualityPiFromCharm] = "ITS track quality selection on #pi #leftarrow #Xi_{c}^{+}";
+    labels[TpcTrackQualityPiFromCharm] = "TPC track quality selection on #pi #leftarrow #Xi_{c}^{#plus}";
+    labels[ItsTrackQualityPiFromCharm] = "ITS track quality selection on #pi #leftarrow #Xi_{c}^{#plus}";
     labels[PidSelected] = "PID selection";
     labels[BdtSelected] = "BDT selection";
 
     if (doprocessData) {
-      registry.add("hSelCandidates", ";;entries", {HistType::kTH1F, {{NSelectionCriteria, -0.5f, +NSelectionCriteria - 0.5f}}});
+      registry.add("hSelCandidates", ";;entries", {HistType::kTH1D, {{NSelectionCriteria, -0.5f, +NSelectionCriteria - 0.5f}}});
       for (int iBin = 0; iBin < NSelectionCriteria; ++iBin) {
         registry.get<TH1>(HIST("hSelCandidates"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
       }
     } else if (doprocessMc) {
-      registry.add("hSelCandidatesRecSig", ";;entries", {HistType::kTH1F, {{NSelectionCriteria, -0.5f, +NSelectionCriteria - 0.5f}}});
-      registry.add("hSelCandidatesRecBkg", ";;entries", {HistType::kTH1F, {{NSelectionCriteria, -0.5f, +NSelectionCriteria - 0.5f}}});
+      registry.add("hSelCandidatesRecSig", ";;entries", {HistType::kTH1D, {{NSelectionCriteria, -0.5f, +NSelectionCriteria - 0.5f}}});
+      registry.add("hSelCandidatesRecBkg", ";;entries", {HistType::kTH1D, {{NSelectionCriteria, -0.5f, +NSelectionCriteria - 0.5f}}});
       for (int iBin = 0; iBin < NSelectionCriteria; ++iBin) {
         registry.get<TH1>(HIST("hSelCandidatesRecSig"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
         registry.get<TH1>(HIST("hSelCandidatesRecBkg"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
@@ -443,18 +445,32 @@ struct HfCandidateSelectorXicToXiPiPi {
       registry.fill(HIST("hSelCandidates"), Eta);
     }
 
-    // cut on pseudorapidity of final state daughters
-    if (std::abs(trackPi0.eta()) > cuts->get(pTBin, "eta Daughters") || std::abs(trackPi1.eta()) > cuts->get(pTBin, "eta Daughters") || std::abs(trackPiFromXi.eta()) > cuts->get(pTBin, "eta Daughters") || std::abs(trackV0PosDau.eta()) > cuts->get(pTBin, "eta Daughters") || std::abs(trackV0NegDau.eta()) > cuts->get(pTBin, "eta Daughters")) {
+    // cut on pseudorapidity of pions from XicPlus
+    if (std::abs(trackPi0.eta()) > cuts->get(pTBin, "eta Pi from XicPlus") || std::abs(trackPi1.eta()) > cuts->get(pTBin, "eta Pi from XicPlus")) {
       return false;
     }
     if constexpr (isMc) {
       if (isMatchedSignal) {
-        registry.fill(HIST("hSelCandidatesRecSig"), EtaDaughters);
+        registry.fill(HIST("hSelCandidatesRecSig"), EtaPionFromXicPlus);
       } else {
-        registry.fill(HIST("hSelCandidatesRecBkg"), EtaDaughters);
+        registry.fill(HIST("hSelCandidatesRecBkg"), EtaPionFromXicPlus);
       }
     } else {
-      registry.fill(HIST("hSelCandidates"), EtaDaughters);
+      registry.fill(HIST("hSelCandidates"), EtaPionFromXicPlus);
+    }
+
+    // cut on pseudorapidity of Xi daughters
+    if (std::abs(trackPiFromXi.eta()) > cuts->get(pTBin, "eta Xi Daughters") || std::abs(trackV0PosDau.eta()) > cuts->get(pTBin, "eta Xi Daughters") || std::abs(trackV0NegDau.eta()) > cuts->get(pTBin, "eta Xi Daughters")) {
+      return false;
+    }
+    if constexpr (isMc) {
+      if (isMatchedSignal) {
+        registry.fill(HIST("hSelCandidatesRecSig"), EtaXiDaughters);
+      } else {
+        registry.fill(HIST("hSelCandidatesRecBkg"), EtaXiDaughters);
+      }
+    } else {
+      registry.fill(HIST("hSelCandidates"), EtaXiDaughters);
     }
 
     // cut on pion pT
