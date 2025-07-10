@@ -384,7 +384,15 @@ class DielectronCut : public TNamed
         return track.eta() > mMinTrackEta && track.eta() < mMaxTrackEta;
 
       case DielectronCuts::kTrackPhiRange:
-        return track.phi() > mMinTrackPhi && track.phi() < mMaxTrackPhi;
+        if (!mMirrorTrackPhi) {
+          bool is_in_phi_range = track.phi() > mMinTrackPhi && track.phi() < mMaxTrackPhi;
+          return mRejectTrackPhi ? !is_in_phi_range : is_in_phi_range;
+        } else {
+          double minTrackPhiMirror = mMinTrackPhi + TMath::Pi();
+          double maxTrackPhiMirror = mMaxTrackPhi + TMath::Pi();
+          bool is_in_phi_range = (track.phi() > mMinTrackPhi && track.phi() < mMaxTrackPhi) || (track.phi() > minTrackPhiMirror && track.phi() < maxTrackPhiMirror);
+          return mRejectTrackPhi ? !is_in_phi_range : is_in_phi_range;
+        }
 
       case DielectronCuts::kTPCNCls:
         return track.tpcNClsFound() >= mMinNClustersTPC;
@@ -440,7 +448,7 @@ class DielectronCut : public TNamed
 
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetTrackEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
-  void SetTrackPhiRange(float minPhi = 0.f, float maxPhi = 2.f * M_PI);
+  void SetTrackPhiRange(float minPhi = 0.f, float maxPhi = 2.f * M_PI, bool mirror = false, bool reject = false);
   void SetMinNClustersTPC(int minNClustersTPC);
   void SetMinNCrossedRowsTPC(int minNCrossedRowsTPC);
   void SetMinNCrossedRowsOverFindableClustersTPC(float minNCrossedRowsOverFindableClustersTPC);
@@ -514,9 +522,10 @@ class DielectronCut : public TNamed
   bool mRequireDiffSides{false}; // flag to require 2 tracks to be from different sides. (A-C combination). If one wants 2 tracks to be in the same side (A-A or C-C), one can simply use track eta cut.
 
   // kinematic cuts
-  float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};        // range in pT
-  float mMinTrackEta{-1e10f}, mMaxTrackEta{1e10f};   // range in eta
-  float mMinTrackPhi{0.f}, mMaxTrackPhi{2.f * M_PI}; // range in phi
+  float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};          // range in pT
+  float mMinTrackEta{-1e10f}, mMaxTrackEta{1e10f};     // range in eta
+  float mMinTrackPhi{0.f}, mMaxTrackPhi{2.f * M_PI};   // range in phi
+  bool mMirrorTrackPhi{false}, mRejectTrackPhi{false}; // phi cut mirror by Pi, rejected/accepted
 
   // track quality cuts
   int mMinNClustersTPC{0};                                                  // min number of TPC clusters
