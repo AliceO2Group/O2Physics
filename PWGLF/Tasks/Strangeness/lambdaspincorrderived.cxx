@@ -326,6 +326,7 @@ struct lambdaspincorrderived {
         if (std::abs(lambda2.Eta()) > v0eta) {
           continue;
         }
+        histos.fill(HIST("deltaPhiSame"), std::abs(RecoDecay::constrainAngle(v0.lambdaPhi(), 0.0F) - RecoDecay::constrainAngle(v02.lambdaPhi(), 0.0F)));
         if (v0.v0Status() == 0 && v02.v0Status() == 0) {
           fillHistograms(0, 0, lambda, lambda2, proton, proton2, centrality, 0, 1.0);
         }
@@ -410,6 +411,7 @@ struct lambdaspincorrderived {
           if (std::abs(lambda2.Eta()) > v0eta) {
             continue;
           }
+          histos.fill(HIST("deltaPhiMix"), std::abs(RecoDecay::constrainAngle(t3.lambdaPhi(), 0.0F) - RecoDecay::constrainAngle(t2.lambdaPhi(), 0.0F)));
           if (t3.v0Status() == 0 && t2.v0Status() == 0) {
             fillHistograms(0, 0, lambda, lambda2, proton, proton2, centrality, 1, 1.0);
           }
