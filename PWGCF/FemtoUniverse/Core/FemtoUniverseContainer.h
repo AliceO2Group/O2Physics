@@ -204,6 +204,9 @@ class FemtoUniverseContainer
     if (use3dplots) {
       mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/relPairkstarmTMult"), femtoObs, mT, mult, weight);
     }
+    if (DoContainer) {
+      mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/CorrelationContainer"), deltaPhi, deltaEta, FemtoUniverseMath::getMinv(part1, mMassOne, part2, mMassTwo), part1.pt(), part2.pt(), weight);
+    }
   }
 
   /// Called by setPair only in case of Monte Carlo truth
