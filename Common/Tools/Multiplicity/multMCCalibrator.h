@@ -16,8 +16,8 @@
 // - victor.gonzalez@cern.ch
 // - david.dobrigkeit.chinellato@cern.ch
 //
-#ifndef MULTMCCALIBRATOR_H
-#define MULTMCCALIBRATOR_H
+#ifndef COMMON_TOOLS_MULTIPLICITY_MULTMCCALIBRATOR_H_
+#define COMMON_TOOLS_MULTIPLICITY_MULTMCCALIBRATOR_H_
 
 #include "TF1.h"
 #include "TH1D.h"
@@ -64,4 +64,4 @@ class multMCCalibrator : public TNamed
   // be streamed according to current workflow except in very specific
   // tests!)
 };
-#endif
+#endif // COMMON_TOOLS_MULTIPLICITY_MULTMCCALIBRATOR_H_

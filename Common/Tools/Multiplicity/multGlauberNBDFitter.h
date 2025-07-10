@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-#ifndef MULTGLAUBERNBDFITTER_H
-#define MULTGLAUBERNBDFITTER_H
+#ifndef COMMON_TOOLS_MULTIPLICITY_MULTGLAUBERNBDFITTER_H_
+#define COMMON_TOOLS_MULTIPLICITY_MULTGLAUBERNBDFITTER_H_
 
 #include "TF1.h"
 #include "TH1.h"
@@ -118,4 +118,4 @@ class multGlauberNBDFitter : public TNamed
 
   ClassDef(multGlauberNBDFitter, 1);
 };
-#endif
+#endif // COMMON_TOOLS_MULTIPLICITY_MULTGLAUBERNBDFITTER_H_

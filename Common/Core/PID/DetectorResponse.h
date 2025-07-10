@@ -68,7 +68,7 @@ class DetectorResponse
   /// Setter for the parametrizations parameters, if the parametrization is not yet initialized a new parametrization is created without any implementation and just parameters
   /// \param ptype parametrization type
   /// \param p vector with parameters
-  void SetParameters(const Param_t ptype, std::vector<pidvar_t> const& p);
+  void SetParameters(const Param_t ptype, const std::vector<pidvar_t>& p);
 
   /// Getter for the value of the parametrization
   /// \param ptype parametrization type
@@ -100,7 +100,7 @@ inline void DetectorResponse::LoadParamFromFile(const TString& fname, const TStr
   mParam[ptype]->Print();
 }
 
-inline void DetectorResponse::SetParameters(const DetectorResponse::Param_t ptype, std::vector<pidvar_t> const& p)
+inline void DetectorResponse::SetParameters(const DetectorResponse::Param_t ptype, const std::vector<pidvar_t>& p)
 {
   if (!mParam[ptype]) {
     const std::string pname = std::string(ParamName[ptype]) + "_default_param";
