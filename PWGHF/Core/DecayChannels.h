@@ -154,7 +154,8 @@ enum DecayChannelMain : int8_t {
   B0ToDminusPiPi0 = 2,   // D− π+ π0
   B0ToDminusPiGamma = 3, // D− π+ γ0
   B0ToDminusK = 4,       // D− K+
-  B0ToD0PiPi = 5,        // anti-D0 π+
+  B0ToD0PiPi = 5,        // anti-D0 π+ π−
+  B0ToDsPi = 19,         // Ds− π+
   // Bs0
   BsToDsPi = 6,      // Ds− π+
   BsToDsPiPi0 = 7,   // Ds− π+ π0
@@ -172,7 +173,7 @@ enum DecayChannelMain : int8_t {
   BplusToD0PiGamma = 17, // anti-D0 π+ γ0
   BplusToD0K = 18,       // anti-D0 K+
   //
-  NChannelsMain = BplusToD0K // last channel
+  NChannelsMain = B0ToDsPi // last channel
 };
 /// @brief beauty candidates: resonant channels
 enum DecayChannelResonant : int8_t {

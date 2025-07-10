@@ -18,6 +18,7 @@
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari & INFN, Sezione di Bari
 /// \author Deepa Thomas <deepa.thomas@cern.ch>, UT Austin
 
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -48,6 +49,7 @@ using namespace o2::aod;
 using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::hf_decay::hf_cand_beauty;
 
 // string definitions, used for histogram axis labels
 const TString stringPt = "#it{p}_{T} (GeV/#it{c})";
@@ -224,7 +226,7 @@ struct HfTaskBplus {
       }
       auto ptCandBplus = candidate.pt();
       // auto candD0 = candidate.prong0_as<aod::HfCand2Prong>();
-      if (TESTBIT(std::abs(candidate.flagMcMatchRec()), hf_cand_bplus::DecayType::BplusToD0Pi)) {
+      if (std::abs(candidate.flagMcMatchRec()) == DecayChannelMain::BplusToD0Pi) {
 
         auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>(), o2::constants::physics::Pdg::kBPlus, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
@@ -267,7 +269,7 @@ struct HfTaskBplus {
 
     // MC gen. level
     for (const auto& particle : mcParticles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_bplus::DecayType::BplusToD0Pi)) {
+      if (std::abs(particle.flagMcMatchGen()) == DecayChannelMain::BplusToD0Pi) {
 
         auto ptParticle = particle.pt();
         auto yParticle = RecoDecay::y(particle.pVector(), o2::constants::physics::MassBPlus);

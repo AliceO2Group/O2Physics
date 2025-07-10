@@ -15,6 +15,7 @@
 ///
 /// \author Phil Stahlhut <phil.lennart.stahlhut@cern.ch>
 
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -49,6 +50,7 @@ using namespace o2::aod;
 using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::hf_decay::hf_cand_beauty;
 
 /// Bs analysis task
 struct HfTaskBs {
@@ -144,15 +146,15 @@ struct HfTaskBs {
     registry.add("hYGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);B^{0}_{s} candidate #it{y}^{gen};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});
 
     if (checkDecayTypeMc) {
-      constexpr uint8_t kNBinsDecayTypeMc = hf_cand_bs::DecayTypeMc::NDecayTypeMc + 1;
-      TString labels[kNBinsDecayTypeMc];
+      constexpr uint8_t NBinsDecayTypeMc = hf_cand_bs::DecayTypeMc::NDecayTypeMc + 1;
+      TString labels[NBinsDecayTypeMc];
       labels[hf_cand_bs::DecayTypeMc::BsToDsPiToPhiPiPiToKKPiPi] = "B^{0}_{s} #rightarrow (D^{#mp}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#mp}) #pi^{#pm}";
       labels[hf_cand_bs::DecayTypeMc::B0ToDsPiToPhiPiPiToKKPiPi] = "B^{0} #rightarrow (D^{#pm}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#pm}) #pi^{#mp}";
       labels[hf_cand_bs::DecayTypeMc::PartlyRecoDecay] = "Partly reconstructed decay channel";
       labels[hf_cand_bs::DecayTypeMc::NDecayTypeMc] = "Other decays";
-      static const AxisSpec axisDecayType = {kNBinsDecayTypeMc, 0.5, kNBinsDecayTypeMc + 0.5, ""};
+      static const AxisSpec axisDecayType = {NBinsDecayTypeMc, 0.5, NBinsDecayTypeMc + 0.5, ""};
       registry.add("hDecayTypeMc", "DecayType", {HistType::kTH3F, {axisDecayType, axisMassBs, axisPt}});
-      for (uint8_t iBin = 0; iBin < kNBinsDecayTypeMc; ++iBin) {
+      for (uint8_t iBin = 0; iBin < NBinsDecayTypeMc; ++iBin) {
         registry.get<TH3>(HIST("hDecayTypeMc"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin]);
       }
     }
@@ -216,9 +218,9 @@ struct HfTaskBs {
       auto ptCandBs = candidate.pt();
       auto candDs = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec>>();
       auto invMassCandBs = hfHelper.invMassBsToDsPi(candidate);
-      int flagMcMatchRecBs = std::abs(candidate.flagMcMatchRec());
+      auto flagMcMatchRecBs = std::abs(candidate.flagMcMatchRec());
 
-      if (TESTBIT(flagMcMatchRecBs, hf_cand_bs::DecayTypeMc::BsToDsPiToPhiPiPiToKKPiPi)) {
+      if (flagMcMatchRecBs == DecayChannelMain::BsToDsPi) {
         auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBsMcGen>>(), o2::constants::physics::Pdg::kBS, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
 
@@ -264,9 +266,9 @@ struct HfTaskBs {
         registry.fill(HIST("hChi2PCARecBg"), candidate.chi2PCA(), ptCandBs);
 
         if (checkDecayTypeMc) {
-          if (TESTBIT(flagMcMatchRecBs, hf_cand_bs::DecayTypeMc::B0ToDsPiToPhiPiPiToKKPiPi)) { // B0(bar) → Ds± π∓ → (K- K+ π±) π∓
+          if (flagMcMatchRecBs == DecayChannelMain::B0ToDsPi) { // B0(bar) → Ds± π∓ → (K- K+ π±) π∓
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bs::DecayTypeMc::B0ToDsPiToPhiPiPiToKKPiPi, invMassCandBs, ptCandBs);
-          } else if (TESTBIT(flagMcMatchRecBs, hf_cand_bs::DecayTypeMc::PartlyRecoDecay)) { // Partly reconstructed decay channel
+          } else if (flagMcMatchRecBs == hf_cand_bs::DecayTypeMc::PartlyRecoDecay) { // FIXME, Partly reconstructed decay channel
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bs::DecayTypeMc::PartlyRecoDecay, invMassCandBs, ptCandBs);
           } else {
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bs::DecayTypeMc::NDecayTypeMc, invMassCandBs, ptCandBs);
@@ -277,7 +279,7 @@ struct HfTaskBs {
 
     // MC gen. level
     for (const auto& particle : mcParticles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_bs::DecayTypeMc::BsToDsPiToPhiPiPiToKKPiPi)) {
+      if (std::abs(particle.flagMcMatchGen()) == DecayChannelMain::BsToDsPi) {
 
         auto ptParticle = particle.pt();
         auto yParticle = RecoDecay::y(particle.pVector(), o2::constants::physics::MassBS);

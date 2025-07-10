@@ -15,6 +15,7 @@
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -50,8 +51,6 @@
 #include <TH1.h>
 #include <TPDGCode.h>
 
-#include <Rtypes.h>
-
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -67,6 +66,7 @@ using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_trkcandsel;
+using namespace o2::hf_decay::hf_cand_beauty;
 
 /// Reconstruction of B0 candidates
 struct HfCandidateCreatorB0 {
@@ -405,13 +405,14 @@ struct HfCandidateCreatorB0Expressions {
 
     int indexRec = -1;
     int8_t sign = 0;
-    int8_t flag = 0;
+    int8_t flagChannelMain = 0;
+    int8_t flagChannelReso = 0;
     int8_t origin = 0;
     int8_t debug = 0;
 
     // Match reconstructed candidates.
     for (const auto& candidate : candsB0) {
-      flag = 0;
+      flagChannelMain = 0;
       origin = 0;
       debug = 0;
       auto candD = candidate.prong0();
@@ -429,7 +430,7 @@ struct HfCandidateCreatorB0Expressions {
         // D- → π- K+ π-
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersD, Pdg::kDMinus, std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
-          flag = sign * BIT(hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi);
+          flagChannelMain = sign * DecayChannelMain::B0ToDminusPi;
         } else {
           debug = 1;
           LOGF(debug, "WARNING: B0 in decays in the expected final state but the condition on the intermediate state is not fulfilled");
@@ -437,20 +438,20 @@ struct HfCandidateCreatorB0Expressions {
       }
 
       // B0 → Ds- π+ → (K- K+ π-) π+
-      if (!flag) {
+      if (!flagChannelMain) {
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersB0, Pdg::kB0, std::array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
         if (indexRec > -1) {
           // Ds- → K- K+ π-
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersD, -Pdg::kDS, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
           if (indexRec > -1) {
-            flag = sign * BIT(hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi);
+            flagChannelMain = sign * DecayChannelMain::B0ToDsPi;
           }
         }
       }
 
       // Partly reconstructed decays, i.e. the 4 prongs have a common b-hadron ancestor
       // convention: final state particles are prong0,1,2,3
-      if (!flag) {
+      if (!flagChannelMain) {
         auto particleProng0 = arrayDaughtersB0[0].mcParticle();
         auto particleProng1 = arrayDaughtersB0[1].mcParticle();
         auto particleProng2 = arrayDaughtersB0[2].mcParticle();
@@ -465,16 +466,14 @@ struct HfCandidateCreatorB0Expressions {
           int index3Mother = RecoDecay::getMother(mcParticles, particleProng3, bHadronMotherHypo, true);
 
           // look for common b-hadron ancestor
-          if (index0Mother > -1 && index1Mother > -1 && index2Mother > -1 && index3Mother > -1) {
-            if (index0Mother == index1Mother && index1Mother == index2Mother && index2Mother == index3Mother) {
-              flag = BIT(hf_cand_b0::DecayTypeMc::PartlyRecoDecay);
-              break;
-            }
+          if (index0Mother > -1 && index0Mother == index1Mother && index1Mother == index2Mother && index2Mother == index3Mother) {
+            flagChannelMain = hf_cand_b0::DecayTypeMc::PartlyRecoDecay; // FIXME
+            break;
           }
         }
       }
 
-      rowMcMatchRec(flag, origin, debug);
+      rowMcMatchRec(flagChannelMain, flagChannelReso, origin, debug);
     } // rec
 
     hf_mc_gen::fillMcMatchGenB0(mcParticles, rowMcMatchGen); // gen

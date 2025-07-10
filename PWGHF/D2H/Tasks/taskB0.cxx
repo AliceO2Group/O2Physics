@@ -14,6 +14,7 @@
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -48,6 +49,7 @@ using namespace o2::aod;
 using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::hf_decay::hf_cand_beauty;
 
 /// B0 analysis task
 struct HfTaskB0 {
@@ -146,15 +148,15 @@ struct HfTaskB0 {
     registry.add("hPtGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
 
     if (checkDecayTypeMc) {
-      constexpr uint8_t kNBinsDecayTypeMc = hf_cand_b0::DecayTypeMc::NDecayTypeMc;
-      TString labels[kNBinsDecayTypeMc];
+      constexpr uint8_t NBinsDecayTypeMc = hf_cand_b0::DecayTypeMc::NDecayTypeMc; // FIXME
+      TString labels[NBinsDecayTypeMc];
       labels[hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi] = "B^{0} #rightarrow (D^{#minus} #rightarrow #pi^{#minus} K^{#plus} #pi^{#minus}) #pi^{#plus}";
       labels[hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi] = "B^{0} #rightarrow (D^{#minus}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#minus}) #pi^{#plus}";
       labels[hf_cand_b0::DecayTypeMc::PartlyRecoDecay] = "Partly reconstructed decay channel";
       labels[hf_cand_b0::DecayTypeMc::OtherDecay] = "Other decays";
-      static const AxisSpec axisDecayType = {kNBinsDecayTypeMc, 0.5, kNBinsDecayTypeMc + 0.5, ""};
+      static const AxisSpec axisDecayType = {NBinsDecayTypeMc, 0.5, NBinsDecayTypeMc + 0.5, ""};
       registry.add("hDecayTypeMc", "DecayType", {HistType::kTH3F, {axisDecayType, axisMassB0, axisPt}});
-      for (uint8_t iBin = 0; iBin < kNBinsDecayTypeMc; ++iBin) {
+      for (uint8_t iBin = 0; iBin < NBinsDecayTypeMc; ++iBin) {
         registry.get<TH3>(HIST("hDecayTypeMc"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin]);
       }
     }
@@ -219,9 +221,9 @@ struct HfTaskB0 {
       auto ptCandB0 = candidate.pt();
       auto candD = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec>>();
       auto invMassCandB0 = hfHelper.invMassB0ToDPi(candidate);
-      int flagMcMatchRecB0 = std::abs(candidate.flagMcMatchRec());
+      auto flagMcMatchRecB0 = std::abs(candidate.flagMcMatchRec());
 
-      if (TESTBIT(flagMcMatchRecB0, hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi)) {
+      if (flagMcMatchRecB0 == DecayChannelMain::B0ToDminusPi) {
         auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandB0McGen>>(), o2::constants::physics::Pdg::kB0, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
 
@@ -267,9 +269,9 @@ struct HfTaskB0 {
         registry.fill(HIST("hChi2PCARecBg"), candidate.chi2PCA(), ptCandB0);
 
         if (checkDecayTypeMc) {
-          if (TESTBIT(flagMcMatchRecB0, hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi)) { // B0 → Ds- π+ → (K- K+ π-) π+
+          if (flagMcMatchRecB0 == DecayChannelMain::B0ToDsPi) { // B0 → Ds- π+ → (K- K+ π-) π+
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi, invMassCandB0, ptCandB0);
-          } else if (TESTBIT(flagMcMatchRecB0, hf_cand_b0::DecayTypeMc::PartlyRecoDecay)) { // Partly reconstructed decay channel
+          } else if (flagMcMatchRecB0 == hf_cand_b0::DecayTypeMc::PartlyRecoDecay) { // FIXME, Partly reconstructed decay channel
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::PartlyRecoDecay, invMassCandB0, ptCandB0);
           } else {
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::OtherDecay, invMassCandB0, ptCandB0);
@@ -280,7 +282,7 @@ struct HfTaskB0 {
 
     // MC gen. level
     for (const auto& particle : mcParticles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_b0::DecayType::B0ToDPi)) {
+      if (std::abs(particle.flagMcMatchGen()) == o2::hf_decay::hf_cand_beauty::DecayChannelMain::B0ToDminusPi) {
 
         auto ptParticle = particle.pt();
         auto yParticle = RecoDecay::y(particle.pVector(), o2::constants::physics::MassB0);
