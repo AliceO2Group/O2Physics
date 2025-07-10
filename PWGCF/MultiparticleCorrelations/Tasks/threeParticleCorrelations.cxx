@@ -329,7 +329,7 @@ struct ThreeParticleCorrelations {
     rQARegistry.fill(HIST("hEventZvtx"), collision.posZ());
 
     // Start of the Track QA
-    for (const auto& track : tracks) {   
+    for (const auto& track : tracks) {
       rQARegistry.fill(HIST("hTPCPion"), track.pt(), track.tpcNSigmaPi());
       rQARegistry.fill(HIST("hTPCKaon"), track.pt(), track.tpcNSigmaKa());
       rQARegistry.fill(HIST("hTPCProton"), track.pt(), track.tpcNSigmaPr());
@@ -344,7 +344,7 @@ struct ThreeParticleCorrelations {
         rQARegistry.fill(HIST("hTrackPt"), track.pt());
         rQARegistry.fill(HIST("hTrackEta"), track.eta());
         rQARegistry.fill(HIST("hTrackPhi"), track.phi());
-	rQARegistry.fill(HIST("hTrackNSharedClusters"), track.tpcNClsShared());
+        rQARegistry.fill(HIST("hTrackNSharedClusters"), track.tpcNClsShared());
         rQARegistry.fill(HIST("hdEdx"), track.pt(), track.tpcSignal());
         rQARegistry.fill(HIST("hBeta"), track.pt(), track.beta());
         if (assocPID[0] == pionID) { // Pions
@@ -368,7 +368,7 @@ struct ThreeParticleCorrelations {
     for (const auto& trigger : v0s) {
       if (v0Filters(collision, trigger, tracks)) {
 
-	triggSign = v0Sign(trigger);
+        triggSign = v0Sign(trigger);
         rQARegistry.fill(HIST("hPtV0"), trigger.pt(), collision.centFT0C(), triggSign);
         if (triggSign == 1) {
           candMass = trigger.mLambda();
@@ -516,12 +516,12 @@ struct ThreeParticleCorrelations {
     for (const auto& track : groupMCAssociates) {
       if (track.isPhysicalPrimary()) {
 
-	if (track.pdgCode() > 0) {
-	  assocSign = 1;
-	} else if (track.pdgCode() < 0) {
-	  assocSign = -1;
-	}
-	
+        if (track.pdgCode() > 0) {
+          assocSign = 1;
+        } else if (track.pdgCode() < 0) {
+          assocSign = -1;
+        }
+
         if (std::abs(track.pdgCode()) == kPiPlus) { // Pions
           rQARegistry.fill(HIST("hPtPion_MC"), track.pt(), collision.bestCollisionCentFT0C(), assocSign);
         } else if (std::abs(track.pdgCode()) == kKPlus) { // Kaons
@@ -542,7 +542,7 @@ struct ThreeParticleCorrelations {
         } else if (trigger.pdgCode() < 0) {
           triggSign = -1;
         }
-	rQARegistry.fill(HIST("hPtV0_MC"), trigger.pt(), collision.bestCollisionCentFT0C(), triggSign);
+        rQARegistry.fill(HIST("hPtV0_MC"), trigger.pt(), collision.bestCollisionCentFT0C(), triggSign);
         rQARegistry.fill(HIST("hNLambdas"), triggSign, trigger.pt(), collision.bestCollisionCentFT0C());
 
         for (const auto& associate : groupMCAssociates) {
