@@ -285,12 +285,12 @@ struct bayesPid {
     //  bethe = fTPCResponse.GetExpectedSignal(track, type, AliTPCPIDResponse::kdEdxDefault, fUseTPCEtaCorrection, fUseTPCMultiplicityCorrection, fUseTPCPileupCorrection);
     //  sigma = fTPCResponse.GetExpectedSigma(track, type, AliTPCPIDResponse::kdEdxDefault, fUseTPCEtaCorrection, fUseTPCMultiplicityCorrection, fUseTPCPileupCorrection);
 
-    if (abs(dedx - bethe) > fRange * sigma) {
-      // Probability[kTPC][pid] = exp(-0.5 * fRange * fRange) / sigma; // BUG fix
-      Probability[kTPC][pid] = exp(-0.5 * fRange * fRange);
+    if (std::abs(dedx - bethe) > fRange * sigma) {
+      // Probability[kTPC][pid] = std::exp(-0.5 * fRange * fRange) / sigma; // BUG fix
+      Probability[kTPC][pid] = std::exp(-0.5 * fRange * fRange);
     } else {
-      // Probability[kTPC][pid] = exp(-0.5 * (dedx - bethe) * (dedx - bethe) / (sigma * sigma)) / sigma; //BUG fix
-      Probability[kTPC][pid] = exp(-0.5 * (dedx - bethe) * (dedx - bethe) / (sigma * sigma));
+      // Probability[kTPC][pid] = std::exp(-0.5 * (dedx - bethe) * (dedx - bethe) / (sigma * sigma)) / sigma; //BUG fix
+      Probability[kTPC][pid] = std::exp(-0.5 * (dedx - bethe) * (dedx - bethe) / (sigma * sigma));
       mismatch = false;
     }
     if (Probability[kTPC][pid] <= 0.f) {
@@ -329,7 +329,7 @@ struct bayesPid {
     const float mismPropagationFactor[10] = {1., 1., 1., 1., 1., 1., 1., 1., 1., 1.};
     // In the O2 this cannot be done because the cluster information is missing in the AOD
     // if (!fNoTOFmism) {                                                                  // this flag allows to disable mismatch for iterative procedure to get prior probabilities
-    //   mismPropagationFactor[3] = 1 + exp(1 - 1.12 * pt);                                // it has to be aligned with the one in AliPIDCombined
+    //   mismPropagationFactor[3] = 1 + std::exp(1 - 1.12 * pt);                                // it has to be aligned with the one in AliPIDCombined
     //   mismPropagationFactor[4] = 1 + 1. / (4.71114 - 5.72372 * pt + 2.94715 * pt * pt); // it has to be aligned with the one in AliPIDCombined
 
     //   int nTOFcluster = 0;
@@ -343,10 +343,10 @@ struct bayesPid {
     //         nTOFcluster = 80;
     //         break;
     //       case kPPB: // pPb 5.05 ATeV
-    //         nTOFcluster = int(308 - 2.12 * fCurrCentrality + exp(4.917 - 0.1604 * fCurrCentrality));
+    //         nTOFcluster = int(308 - 2.12 * fCurrCentrality + std::exp(4.917 - 0.1604 * fCurrCentrality));
     //         break;
     //       case kPBPB: // PbPb 2.76 ATeV
-    //         nTOFcluster = int(exp(9.4 - 0.022 * fCurrCentrality));
+    //         nTOFcluster = int(std::exp(9.4 - 0.022 * fCurrCentrality));
     //         break;
     //     }
     //   }
@@ -377,9 +377,9 @@ struct bayesPid {
     const float sig = /*responseTOFPID.GetExpectedSigma(Response[kTOF], track)*/ +0.f;
 
     if (nsigmas < fTOFtail) {
-      Probability[kTOF][pid] = exp(-0.5 * nsigmas * nsigmas) / sig;
+      Probability[kTOF][pid] = std::exp(-0.5 * nsigmas * nsigmas) / sig;
     } else {
-      Probability[kTOF][pid] = exp(-(nsigmas - fTOFtail * 0.5) * fTOFtail) / sig;
+      Probability[kTOF][pid] = std::exp(-(nsigmas - fTOFtail * 0.5) * fTOFtail) / sig;
     }
 
     Probability[kTOF][pid] += fgTOFmismatchProb * mismPropagationFactor[pid];
@@ -557,7 +557,7 @@ struct bayesPidQa {
     double lmin = TMath::Log10(min);
     double ldelta = (TMath::Log10(max) - lmin) / (static_cast<double>(kNBins));
     for (int i = 0; i < kNBins; i++) {
-      binp[i] = exp(TMath::Log(10) * (lmin + i * ldelta));
+      binp[i] = std::exp(TMath::Log(10) * (lmin + i * ldelta));
     }
     binp[kNBins] = max + 1;
     h->GetXaxis()->Set(kNBins, binp);
