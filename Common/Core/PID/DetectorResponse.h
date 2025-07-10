@@ -23,6 +23,7 @@
 #include "Framework/Logger.h"
 
 #include <array>
+#include <string>
 #include <vector>
 // ROOT includes
 #include "Rtypes.h"

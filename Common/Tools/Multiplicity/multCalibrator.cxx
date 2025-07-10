@@ -28,6 +28,8 @@
 #include "TProfile.h"
 #include "TStopwatch.h"
 
+#include <iostream> // FIXME
+
 using namespace std;
 
 const TString multCalibrator::fCentEstimName[kNCentEstim] = {

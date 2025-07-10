@@ -35,6 +35,8 @@
 #include "TStopwatch.h"
 #include "TVirtualFitter.h"
 
+#include <iostream> // FIXME
+
 using namespace std;
 
 ClassImp(multGlauberNBDFitter);
