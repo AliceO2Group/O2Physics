@@ -143,17 +143,16 @@ struct HfCandidateCreatorXicToXiPiPi {
     }
 
     // add histograms to registry
+    registry.add("hVertexerType", "Use DCAFitter or KFParticle;;entries", {HistType::kTH1F, {{2, -0.5, 1.5}}});
+    registry.get<TH1>(HIST("hVertexerType"))->GetXaxis()->SetBinLabel(1 + aod::hf_cand::VertexerType::DCAFitter, "DCAFitter");
+    registry.get<TH1>(HIST("hVertexerType"))->GetXaxis()->SetBinLabel(1 + aod::hf_cand::VertexerType::KfParticle, "KFParticle");
+    registry.add("hCandCounter", "hCandCounter", {HistType::kTH1D, {{4, -0.5, 3.5}}});
+    registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + TotalSkimmedTriplets, "total");
+    registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + SelEvent, "Event selected");
+    registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + CascPreSel, "Cascade preselection");
+    registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + VertexFit, "Successful vertex fit");
+    // physical variables
     if (fillHistograms) {
-      // counter
-      registry.add("hVertexerType", "Use DCAFitter or KFParticle;;entries", {HistType::kTH1F, {{2, -0.5, 1.5}}});
-      registry.get<TH1>(HIST("hVertexerType"))->GetXaxis()->SetBinLabel(1 + aod::hf_cand::VertexerType::DCAFitter, "DCAFitter");
-      registry.get<TH1>(HIST("hVertexerType"))->GetXaxis()->SetBinLabel(1 + aod::hf_cand::VertexerType::KfParticle, "KFParticle");
-      registry.add("hCandCounter", "hCandCounter", {HistType::kTH1F, {{4, -0.5, 3.5}}});
-      registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + TotalSkimmedTriplets, "total");
-      registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + SelEvent, "Event selected");
-      registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + CascPreSel, "Cascade preselection");
-      registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + VertexFit, "Successful vertex fit");
-      // physical variables
       registry.add("hMass3", "3-prong candidates;inv. mass (#Xi #pi #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 2.3, 2.7}}});
       registry.add("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1D, {{100, 0., 1.e-4}}});
       registry.add("hCovSVXX", "3-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1D, {{100, 0., 0.2}}});
@@ -205,9 +204,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   {
     // loop over triplets of track indices
     for (const auto& rowTrackIndexXicPlus : rowsTrackIndexXicPlus) {
-      if (fillHistograms) {
-        registry.fill(HIST("hCandCounter"), TotalSkimmedTriplets);
-      }
+      registry.fill(HIST("hCandCounter"), TotalSkimmedTriplets);
 
       // check if the event is selected
       auto collision = rowTrackIndexXicPlus.collision_as<Collision>();
@@ -217,9 +214,7 @@ struct HfCandidateCreatorXicToXiPiPi {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
       }
-      if (fillHistograms) {
-        registry.fill(HIST("hCandCounter"), SelEvent);
-      }
+      registry.fill(HIST("hCandCounter"), SelEvent);
 
       // Retrieve skimmed cascade and pion tracks
       auto cascAodElement = rowTrackIndexXicPlus.cascade_as<CascadesLinked>();
@@ -239,9 +234,7 @@ struct HfCandidateCreatorXicToXiPiPi {
           continue;
         }
       }
-      if (fillHistograms) {
-        registry.fill(HIST("hCandCounter"), CascPreSel);
-      }
+      registry.fill(HIST("hCandCounter"), CascPreSel);
 
       //----------------------Set the magnetic field from ccdb---------------------------------------
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
@@ -294,9 +287,7 @@ struct HfCandidateCreatorXicToXiPiPi {
         LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
         continue;
       }
-      if (fillHistograms) {
-        registry.fill(HIST("hCandCounter"), VertexFit);
-      }
+      registry.fill(HIST("hCandCounter"), VertexFit);
 
       //----------------------------calculate physical properties-----------------------
       // Charge of charm baryon
@@ -446,9 +437,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   {
     // loop over triplets of track indices
     for (const auto& rowTrackIndexXicPlus : rowsTrackIndexXicPlus) {
-      if (fillHistograms) {
-        registry.fill(HIST("hCandCounter"), TotalSkimmedTriplets);
-      }
+      registry.fill(HIST("hCandCounter"), TotalSkimmedTriplets);
 
       // check if the event is selected
       auto collision = rowTrackIndexXicPlus.collision_as<Collision>();
@@ -458,9 +447,7 @@ struct HfCandidateCreatorXicToXiPiPi {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
       }
-      if (fillHistograms) {
-        registry.fill(HIST("hCandCounter"), SelEvent);
-      }
+      registry.fill(HIST("hCandCounter"), SelEvent);
 
       // Retrieve skimmed cascade and pion tracks
       auto cascAodElement = rowTrackIndexXicPlus.cascade_as<aod::KFCascadesLinked>();
@@ -480,9 +467,7 @@ struct HfCandidateCreatorXicToXiPiPi {
           continue;
         }
       }
-      if (fillHistograms) {
-        registry.fill(HIST("hCandCounter"), CascPreSel);
-      }
+      registry.fill(HIST("hCandCounter"), CascPreSel);
 
       //----------------------Set the magnetic field from ccdb-----------------------------
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
@@ -539,9 +524,7 @@ struct HfCandidateCreatorXicToXiPiPi {
         LOG(debug) << "Failed to construct XicPlus : " << e.what();
         continue;
       }
-      if (fillHistograms) {
-        registry.fill(HIST("hCandCounter"), VertexFit);
-      }
+      registry.fill(HIST("hCandCounter"), VertexFit);
 
       // get chi2 values
       float chi2GeoXicPlus = kfXicPlus.GetChi2() / kfXicPlus.GetNDF();
