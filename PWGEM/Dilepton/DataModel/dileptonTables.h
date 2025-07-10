@@ -377,6 +377,17 @@ DECLARE_SOA_TABLE(EMPrimaryMuonMCLabels, "AOD", "EMPRMMUMCLABEL", //!
                   emprimarymuonmclabel::EMMCParticleId, emprimarymuonmclabel::McMask);
 using EMPrimaryMuonMCLabel = EMPrimaryMuonMCLabels::iterator;
 
+namespace emmftmclabel
+{
+DECLARE_SOA_INDEX_COLUMN(EMMCParticle, emmcparticle); //!
+DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);
+} // namespace emmftmclabel
+
+// NOTE: MC labels. This table has one entry for each reconstructed track (joinable with EMPrimaryMuons table)
+DECLARE_SOA_TABLE(EMMFTMCLabels, "AOD", "EMMFTMCLABEL", //!
+                  emmftmclabel::EMMCParticleId, emmftmclabel::McMask);
+using EMMFTMCLabel = EMMFTMCLabels::iterator;
+
 namespace emprimaryelectron
 {
 DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);        //!
