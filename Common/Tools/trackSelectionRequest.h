@@ -21,8 +21,8 @@
 // Because of this, it is particularly important that the cuts in this object
 // in an analysis!
 
-#ifndef TRACKSELECTIONREQUEST_H
-#define TRACKSELECTIONREQUEST_H
+#ifndef COMMON_TOOLS_TRACKSELECTIONREQUEST_H_
+#define COMMON_TOOLS_TRACKSELECTIONREQUEST_H_
 
 #include <TMath.h>
 
@@ -165,4 +165,4 @@ class trackSelectionRequest
 
 std::ostream& operator<<(std::ostream& os, trackSelectionRequest const& c);
 
-#endif // TRACKSELECTIONREQUEST_H
+#endif // COMMON_TOOLS_TRACKSELECTIONREQUEST_H_

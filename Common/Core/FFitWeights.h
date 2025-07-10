@@ -53,11 +53,11 @@ class FFitWeights : public TNamed
   TAxis* getqVecAx() { return qAxis; }
 
   Long64_t Merge(TCollection* collist);
-  void qSelection(std::vector<int> const& nhv, std::vector<std::string> const& stv);
+  void qSelection(const std::vector<int>& nhv, const std::vector<std::string>& stv);
   float eval(float centr, const float& dqn, const int nh, const char* pf = "");
   void setResolution(int res) { nResolution = res; }
   int getResolution() const { return nResolution; }
-  void setQnType(std::vector<std::pair<int, std::string>> const& qninp) { qnTYPE = qninp; }
+  void setQnType(const std::vector<std::pair<int, std::string>>& qninp) { qnTYPE = qninp; }
 
  private:
   TObjArray* fW_data;
