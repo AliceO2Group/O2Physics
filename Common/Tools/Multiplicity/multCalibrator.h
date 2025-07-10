@@ -16,8 +16,8 @@
 // - victor.gonzalez@cern.ch
 // - david.dobrigkeit.chinellato@cern.ch
 //
-#ifndef MULTCALIBRATOR_H
-#define MULTCALIBRATOR_H
+#ifndef COMMON_TOOLS_MULTIPLICITY_MULTCALIBRATOR_H_
+#define COMMON_TOOLS_MULTIPLICITY_MULTCALIBRATOR_H_
 
 #include "TH1D.h"
 #include "TNamed.h"
@@ -70,8 +70,8 @@ class multCalibrator : public TNamed
   Double_t GetBoundaryForPercentile(TH1* histo, Double_t lPercentileRequested, Double_t& lPrecisionEstimate);
 
   // Precision bookkeeping
-  TH1D* GetPrecisionHistogram() { return fPrecisionHistogram; }; // gets precision histogram from current object
-  void ResetPrecisionHistogram();                                // Reset precision histogram, if it exists
+  TH1D* GetPrecisionHistogram() { return fPrecisionHistogram; } // gets precision histogram from current object
+  void ResetPrecisionHistogram();                               // Reset precision histogram, if it exists
 
   // Aliases for centrality estimators
   enum fCentEstim {
@@ -112,4 +112,4 @@ class multCalibrator : public TNamed
   // be streamed according to current workflow except in very specific
   // tests!)
 };
-#endif
+#endif // COMMON_TOOLS_MULTIPLICITY_MULTCALIBRATOR_H_
