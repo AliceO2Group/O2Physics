@@ -26,11 +26,12 @@
 #include "Framework/RunningWorkflowInfo.h"
 
 // DataModels
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Core/CentralityEstimation.h" // -> This was updated --> no use
 #include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/EventSelection.h"
 
 // Analysis Method
@@ -68,8 +69,8 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 	struct : ProducesGroup {
 		Produces<aod::HfCandXic0Base> rowCandXic0Base;
 		Produces<aod::HfCandXic0KF> rowCandXic0KF;
-		Produces<aod::HfCandXicBase> rowCandXicpBase;
-		Produces<aod::HfCandXicKF> rowCandXicpKF;
+		Produces<aod::HfCandXicpBase> rowCandXicpBase;
+		Produces<aod::HfCandXicpKF> rowCandXicpKF;
 	} cursors;	
 	
 	// Configurables
@@ -272,7 +273,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 				registry.add("hCovSVZZ", "3-prong candidates;ZZ element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1D, {{100, 0., 0.2}}});
 				registry.add("hDcaXYProngs", "DCAxy of 3-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);entries", {HistType::kTH2D, {{100, 0., 20.}, {200, -500., 500.}}});
 				registry.add("hDcaZProngs", "DCAz of 3-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", {HistType::kTH2D, {{100, 0., 20.}, {200, -500., 500.}}});
-																																  //
+																																  
 				if (doprocessXicpWithDCAFitterNoCent) {
 					registry.get<TH1>(HIST("hVertexerType"))->Fill(aod::hf_cand::VertexerType::DCAFitter);
 				}
@@ -299,6 +300,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 		lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(configs.ccdbPathLut));
 		runNumber = 0;
 
+		// initailize HF event selection helper
 		hfEvSel.init(registry);
 
 	}// end of initialization
@@ -313,7 +315,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 	// template function for running xic0 reconstruction via DCAFitter method
 	// templated for various centrality estimator usage
 	template<o2::hf_centrality::CentralityEstimator centEstimator, typename Colls>
-	void runCreatorXic0WithDCAFitter( Colls const& collisions,
+	void runCreatorXic0WithDCAFitter( Colls const&,
 									  aod::HfCascLf2Prongs const& candidates,
 									  CascadesLinked const&,
 									  CascFull const&,
@@ -547,12 +549,12 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 	// template function for running xic0 reconstruction via KFParticle method
 	// templated for various centrality estimator usage
 	template<o2::hf_centrality::CentralityEstimator centEstimator, typename Colls>
-	void runCreatorXic0WithKfParticle( Colls const& collisions,
+	void runCreatorXic0WithKfParticle( Colls const&,
                                        aod::HfCascLf2Prongs const& candidates,
                                        KFCascadesLinked const&, 
                                        KFCascFull const&,
                                        TracksWCovDcaExtraPidPrPi const&,
-                                       aod::BCsWithTimestamps const& )
+                                       aod::BCsWithTimestamps const&)
 	{
 		// Loop over candidates
 		for (auto const& cand : candidates) {
@@ -1410,9 +1412,31 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 										 TracksWCovDcaExtraPidPrPi const& tracks,
 										 aod::BCsWithTimestamps const& bcsWithTimestamps )
 	{
-		runCreatorXic0WithDCAFitter<CentralityEstimator::None, SelectedCollisions>(collisions, candidates, cascadesLinked, cascFull, tracks, bcsWithTimestamps); 
+		runCreatorXic0WithDCAFitter<CentralityEstimator::None>(collisions, candidates, cascadesLinked, cascFull, tracks, bcsWithTimestamps); 
 	}
 	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processXic0WithDCAFitterNoCent, "Xic0 reconstruction via DcaFitter method, no centrality", true);
+
+	void processXic0WithDCAFitterCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+										 aod::HfCascLf2Prongs const& candidates,
+										 CascadesLinked const& cascadesLinked,
+										 CascFull const& cascFull,
+										 TracksWCovDcaExtraPidPrPi const& tracks,
+										 aod::BCsWithTimestamps const& bcsWithTimestamps )
+	{
+		runCreatorXic0WithDCAFitter<CentralityEstimator::FT0C>(collisions, candidates, cascadesLinked, cascFull, tracks, bcsWithTimestamps); 
+	}
+	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processXic0WithDCAFitterCentFT0C, "Xic0 reconstruction via DcaFitter method, centrality selection on FT0C", false);
+
+	void processXic0WithDCAFitterCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+										 aod::HfCascLf2Prongs const& candidates,
+										 CascadesLinked const& cascadesLinked,
+										 CascFull const& cascFull,
+										 TracksWCovDcaExtraPidPrPi const& tracks,
+										 aod::BCsWithTimestamps const& bcsWithTimestamps )
+	{
+		runCreatorXic0WithDCAFitter<CentralityEstimator::FT0M>(collisions, candidates, cascadesLinked, cascFull, tracks, bcsWithTimestamps); 
+	}
+	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processXic0WithDCAFitterCentFT0M, "Xic0 reconstruction via DcaFitter method, centrality selection on FT0M", false);
 
 	void processXicpWithDCAFitterNoCent( SelectedCollisions const& collisions,
 										 aod::HfCascLf3Prongs const& candidates,
@@ -1424,6 +1448,28 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 		runCreatorXicpWithDCAFitterN<o2::hf_centrality::CentralityEstimator::None>(collisions, candidates, cascadesLinked, cascFull, tracks, bcWithTimeStamps);
 	}
 	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processXicpWithDCAFitterNoCent, "Xicp reconstruction via DcaFitter method, no centrality", false);
+
+	void processXicpWithDCAFitterCentFT0C( soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+										 aod::HfCascLf3Prongs const& candidates,
+										 CascadesLinked const& cascadesLinked,
+										 CascFull const& cascFull,
+										 TracksWCovDcaExtraPidPrPi const& tracks,
+										 aod::BCsWithTimestamps const& bcWithTimeStamps)
+	{
+		runCreatorXicpWithDCAFitterN<o2::hf_centrality::CentralityEstimator::FT0C>(collisions, candidates, cascadesLinked, cascFull, tracks, bcWithTimeStamps);
+	}
+	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processXicpWithDCAFitterCentFT0C, "Xicp reconstruction via DcaFitter method, centrality on FT0C", false);
+
+	void processXicpWithDCAFitterCentFT0M( soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+										 aod::HfCascLf3Prongs const& candidates,
+										 CascadesLinked const& cascadesLinked,
+										 CascFull const& cascFull,
+										 TracksWCovDcaExtraPidPrPi const& tracks,
+										 aod::BCsWithTimestamps const& bcWithTimeStamps)
+	{
+		runCreatorXicpWithDCAFitterN<o2::hf_centrality::CentralityEstimator::FT0M>(collisions, candidates, cascadesLinked, cascFull, tracks, bcWithTimeStamps);
+	}
+	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processXicpWithDCAFitterCentFT0M, "Xicp reconstruction via DcaFitter method, centrality on FT0M", false);
 
 
 
@@ -1440,9 +1486,31 @@ struct HfCandidateCreatorXic0XicpToHadronic {
                                   TracksWCovDcaExtraPidPrPi const& tracks,
                                   aod::BCsWithTimestamps const& bcsWithTimestamps )
 	{
-		runCreatorXic0WithKfParticle<CentralityEstimator::None, SelectedCollisions>(collisions, candidates, kfCascadesLinked, kfCascFull, tracks, bcsWithTimestamps); 
+		runCreatorXic0WithKfParticle<CentralityEstimator::None>(collisions, candidates, kfCascadesLinked, kfCascFull, tracks, bcsWithTimestamps); 
 	}
 	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processXic0WithKFParticleNoCent, "Xic0 reconstruction via KFParticle method, no centrality", false);
+
+	void processXic0WithKFParticleCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+                                  aod::HfCascLf2Prongs const& candidates,
+                                  KFCascadesLinked const& kfCascadesLinked,
+                                  KFCascFull const& kfCascFull,
+                                  TracksWCovDcaExtraPidPrPi const& tracks,
+                                  aod::BCsWithTimestamps const& bcsWithTimestamps )
+	{
+		runCreatorXic0WithKfParticle<CentralityEstimator::FT0C>(collisions, candidates, kfCascadesLinked, kfCascFull, tracks, bcsWithTimestamps); 
+	}
+	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processXic0WithKFParticleCentFT0C, "Xic0 reconstruction via KFParticle method, centrality on FT0C", false);
+
+	void processXic0WithKFParticleCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+                                  aod::HfCascLf2Prongs const& candidates,
+                                  KFCascadesLinked const& kfCascadesLinked,
+                                  KFCascFull const& kfCascFull,
+                                  TracksWCovDcaExtraPidPrPi const& tracks,
+                                  aod::BCsWithTimestamps const& bcsWithTimestamps )
+	{
+		runCreatorXic0WithKfParticle<CentralityEstimator::FT0M>(collisions, candidates, kfCascadesLinked, kfCascFull, tracks, bcsWithTimestamps); 
+	}
+	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processXic0WithKFParticleCentFT0M, "Xic0 reconstruction via KFParticle method, centrality on FT0M", false);
 
 	void processXicpWithKFParticleNoCent( SelectedCollisions const& collisions,
 										 aod::HfCascLf3Prongs const& candidates,
@@ -1454,6 +1522,28 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 		runCreatorXicpWithKFParticle<o2::hf_centrality::CentralityEstimator::None>(collisions, candidates, kfCascadesLinked, kfCascFull, tracks, bcWithTimeStamps);
 	}
 	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processXicpWithKFParticleNoCent, "Xicp reconstruction via KFParticle method, no centrality", false);
+
+	void processXicpWithKFParticleCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+										 aod::HfCascLf3Prongs const& candidates,
+										 KFCascadesLinked const& kfCascadesLinked,
+										 KFCascFull const& kfCascFull,
+										 TracksWCovDcaExtraPidPrPi const& tracks,
+										 aod::BCsWithTimestamps const& bcWithTimeStamps)
+	{
+		runCreatorXicpWithKFParticle<o2::hf_centrality::CentralityEstimator::FT0C>(collisions, candidates, kfCascadesLinked, kfCascFull, tracks, bcWithTimeStamps);
+	}
+	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processXicpWithKFParticleCentFT0C, "Xicp reconstruction via KFParticle method, centrality on FT0C", false);
+
+	void processXicpWithKFParticleCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+										 aod::HfCascLf3Prongs const& candidates,
+										 KFCascadesLinked const& kfCascadesLinked,
+										 KFCascFull const& kfCascFull,
+										 TracksWCovDcaExtraPidPrPi const& tracks,
+										 aod::BCsWithTimestamps const& bcWithTimeStamps)
+	{
+		runCreatorXicpWithKFParticle<o2::hf_centrality::CentralityEstimator::FT0M>(collisions, candidates, kfCascadesLinked, kfCascFull, tracks, bcWithTimeStamps);
+	}
+	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processXicpWithKFParticleCentFT0M, "Xicp reconstruction via KFParticle method, centrality on FT0M", false);
 
 
 	///////////////////////////////////////////////////////////////////
@@ -1482,8 +1572,8 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 
 struct HfCandidateCreatorXic0XicpToHadronicMc {
 
-	Spawns<aod::HfCandXic0Ext> rowCandXic0Ext; // -> Fills extended table
-	Spawns<aod::HfCandXicExt> rowCandXicpExt;
+	Spawns<aod::HfCandXic0Ext> rowCandXic0Ext; 
+	Spawns<aod::HfCandXicpExt> rowCandXicpExt;
 	
 	struct : ProducesGroup {
 
@@ -1522,7 +1612,7 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
 	using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 	using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
 	using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
-	using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
+	using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>; // -> Used for subscription for process functions of centrality with FT0Ms
 	using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
 	Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
@@ -1631,7 +1721,7 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
 						debug = McMatchFlag::V0Unmatched;
 					}
 					if (indexRec > -1) {
-						flag = sign*(1<<aod::hf_cand_xic0_xicp_to_hadronic::DecayType::Xic0ToXiPi);
+						flag = sign*(1<<aod::hf_cand_xic0_xicp_to_hadronic::DecayTypeXic0::Xic0ToXiPi);
 					}
 				}
 			}
@@ -1701,7 +1791,7 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
 								// Lambda -> p + pi
 								if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, +kLambda0, std::array{+kProton, +kPiMinus}, true)) {
 									debug = 3; // -> Matched Lambda0
-									flag = sign * (1<<o2::aod::hf_cand_xic0_xicp_to_hadronic::DecayType::Xic0ToXiPi);
+									flag = sign * (1<<o2::aod::hf_cand_xic0_xicp_to_hadronic::DecayTypeXic0::Xic0ToXiPi);
 								}
 							}// V0 daughter loop
 						}// cascade daughter loop
@@ -1845,10 +1935,10 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
 								arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
 							}
 							if ((arrPDGDaugh[0] == arrXiResonance[0] && arrPDGDaugh[1] == arrXiResonance[1]) || (arrPDGDaugh[0] == arrXiResonance[1] && arrPDGDaugh[1] == arrXiResonance[0])) {
-								flag = sign * (1 << aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi);
+								flag = sign * (1 << aod::hf_cand_xic0_xicp_to_hadronic::DecayTypeXicp::XicToXiResPiToXiPiPi);
 							}
 						} else {
-							flag = sign * (1 << aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi);
+							flag = sign * (1 << aod::hf_cand_xic0_xicp_to_hadronic::DecayTypeXicp::XicToXiPiPi);
 						}
 						// Check whether the charm baryon is non-prompt (from a b quark).
 						if (flag != 0) {
@@ -1964,10 +2054,10 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
 								}
 		  
 								if ((arrPDGDaugh[0] == arrXiResonance[0] && arrPDGDaugh[1] == arrXiResonance[1]) || (arrPDGDaugh[0] == arrXiResonance[1] && arrPDGDaugh[1] == arrXiResonance[0])) {
-									flag = sign * (1 << aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi);
+									flag = sign * (1 << aod::hf_cand_xic0_xicp_to_hadronic::DecayTypeXicp::XicToXiResPiToXiPiPi);
 								}
 							} else {
-								flag = sign * (1 << aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi);
+								flag = sign * (1 << aod::hf_cand_xic0_xicp_to_hadronic::DecayTypeXicp::XicToXiPiPi);
 							}
 						}
 					}
@@ -1998,22 +2088,48 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
 	///      					   ///
 	//////////////////////////////////
 	
+
 	void processMcEmpty(aod::Collisions const&)
 	{
 	}
 	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronicMc, processMcEmpty, "Empty process function to prevent workflow from getting stuck", true);
 	
-	void processMcXic0( aod::HfCandXic0Base const& candidates,
+	//~~~~Xic0~~~~//
+	void processMcXic0(aod::HfCandXic0Base const& candidates,
 					aod::TracksWMc const& tracks,
 					aod::McParticles const& mcParticles,
 					aod::McCollisions const& mcCollisions,
 					McCollisionsNoCents const& mcCollisionsNoCents,
-					BCsInfo const& bcs )
+					BCsInfo const& bcs)
 	{
 		runXic0Mc<o2::hf_centrality::CentralityEstimator::None>(candidates, tracks, mcParticles, mcCollisions, mcCollisionsNoCents, bcs);
 	}
 	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronicMc, processMcXic0, "Perform MC matching of Xic0, no cents", false);
 
+	 
+	void processMcXic0CentFT0C(aod::HfCandXic0Base const& candidates,
+					aod::TracksWMc const& tracks,
+					aod::McParticles const& mcParticles,
+					aod::McCollisions const& mcCollisions,
+					McCollisionsFT0Cs const& mcCollisionsFT0Cs,
+					BCsInfo const& bcs)
+	{
+		runXic0Mc<o2::hf_centrality::CentralityEstimator::FT0C>(candidates, tracks, mcParticles, mcCollisions, mcCollisionsFT0Cs, bcs);
+	}
+	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronicMc, processMcXic0CentFT0C, "Perform MC matching of Xic0, centrality on FT0C", false);
+
+	void processMcXic0CentFT0M(aod::HfCandXic0Base const& candidates,
+					aod::TracksWMc const& tracks,
+					aod::McParticles const& mcParticles,
+					McCollisionsCentFT0Ms const& mcCollisions,
+					McCollisionsFT0Ms const& mcCollisionsFT0Ms,
+					BCsInfo const& bcs)
+	{
+		runXic0Mc<o2::hf_centrality::CentralityEstimator::FT0M>(candidates, tracks, mcParticles, mcCollisions, mcCollisionsFT0Ms, bcs);
+	}
+	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronicMc, processMcXic0CentFT0M, "Perform MC matching of Xic0, centrality on FT0M", false);
+
+	//~~~~Xicp~~~~//
 	void processMcXicp( aod::TracksWMc const& tracks,
 						aod::McParticles const& mcParticles,
 						aod::McCollisions const& mcCollisions,
@@ -2023,6 +2139,26 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
 		runXicpMc<o2::hf_centrality::CentralityEstimator::None>(tracks, mcParticles, mcCollisions, mcCollisionsNoCents, bcs);
 	}
 	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronicMc, processMcXicp, "Perform MC matching of Xicp, no cents", false);
+
+	void processMcXicpCentFT0C( aod::TracksWMc const& tracks,
+						aod::McParticles const& mcParticles,
+						aod::McCollisions const& mcCollisions,
+						McCollisionsFT0Cs const& mcCollisionsFT0Cs,
+						BCsInfo const& bcs )
+	{
+		runXicpMc<o2::hf_centrality::CentralityEstimator::FT0C>(tracks, mcParticles, mcCollisions, mcCollisionsFT0Cs, bcs);
+	}
+	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronicMc, processMcXicpCentFT0C, "Perform MC matching of Xicp, centrality on FT0C", false);
+
+	void processMcXicpCentFT0M( aod::TracksWMc const& tracks,
+						aod::McParticles const& mcParticles,
+						McCollisionsCentFT0Ms const& mcCollisions,
+						McCollisionsFT0Ms const& mcCollisionsFT0Ms,
+						BCsInfo const& bcs )
+	{
+		runXicpMc<o2::hf_centrality::CentralityEstimator::FT0M>(tracks, mcParticles, mcCollisions, mcCollisionsFT0Ms, bcs);
+	}
+	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronicMc, processMcXicpCentFT0M, "Perform MC matching of Xicp, centrality on FT0M", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

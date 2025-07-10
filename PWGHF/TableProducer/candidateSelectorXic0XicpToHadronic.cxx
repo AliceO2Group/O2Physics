@@ -42,8 +42,8 @@ struct HfCandidateSelectorXic0XicpToHadronic {
 	struct : ProducesGroup {
 		Produces<aod::HfSelXic0ToXiPi> hfSelXic0ToXiPiCandidate;
 		Produces<aod::HfMlXic0ToXiPi> hfMlXic0ToXiPiCandidate;
-		Produces<aod::HfSelXicToXiPiPi> hfSelXicpToXiPiPiCandidate;
-		Produces<aod::HfMlXicToXiPiPi> hfMlXicpToXiPiPiCandidate;
+		Produces<aod::HfSelXicpToXiPiPi> hfSelXicpToXiPiPiCandidate;
+		Produces<aod::HfMlXicpToXiPiPi> hfMlXicpToXiPiPiCandidate;
 	} cursors;
 
 	struct : ConfigurableGroup {
