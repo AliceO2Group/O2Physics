@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file flowEseTask.cxx
+/// \file FlowEseTask.cxx
 /// \brief Task for flow and event shape engineering correlation with other observation.
 /// \author Alice Collaboration
 /// \since 2023-05-15
