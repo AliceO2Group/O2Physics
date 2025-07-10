@@ -80,8 +80,8 @@ struct FlowEseTask {
 
   static constexpr float kMinAmplitudeThreshold = 1e-4f;
   static constexpr int kDefaultModulation = 2;
-  static constexpr std::array<double, 11> kCent = {0,10,20,30,40,50,60,70,80,90,100};
-  static constexpr std::array<double, 20> kSeparator = {125,204,110,172,92,143,74,116,57,92,43,70,31,50,21,34,14,22,5,9};
+  static constexpr std::array<double, 11> kCent = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
+  static constexpr std::array<double, 20> kSeparator = {125, 204, 110, 172, 92, 143, 74, 116, 57, 92, 43, 70, 31, 50, 21, 34, 14, 22, 5, 9};
 
   EventPlaneHelper helperEP;
 
