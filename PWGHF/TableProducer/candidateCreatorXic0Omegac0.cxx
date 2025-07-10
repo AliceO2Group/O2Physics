@@ -740,8 +740,8 @@ struct HfCandidateCreatorXic0Omegac0 {
   template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename Coll, typename Hist>
   void runKfOmegac0CreatorWithKFParticle(Coll const&,
                                          aod::BCsWithTimestamps const& /*bcWithTimeStamps*/,
-                                         MyKfTracksIU const&,
-                                         MyKfTracks const&,
+                                         MyKfTracksIU const& tracksIU,
+                                         MyKfTracks const& tracks,
                                          MyKfCascTable const&, KFCascadesLinked const&,
                                          aod::HfCascLf2Prongs const& candidates,
                                          Hist& hInvMassCharmBaryon,
@@ -772,8 +772,8 @@ struct HfCandidateCreatorXic0Omegac0 {
       df.setBz(magneticField);
       KFParticle::SetField(magneticField);
       // bachelor from Omegac0
-      auto trackCharmBachelor = cand.prong0_as<MyKfTracks>();
-
+      auto trackCharmBachelorId = cand.prong0Id();
+      auto trackCharmBachelor = tracks.rawIteratorAt(trackCharmBachelorId);
       auto cascAodElement = cand.cascade_as<aod::KFCascadesLinked>();
       hCascadesCounter->Fill(0);
       int v0index = cascAodElement.v0Id();
@@ -782,9 +782,12 @@ struct HfCandidateCreatorXic0Omegac0 {
       }
       auto casc = cascAodElement.kfCascData_as<MyKfCascTable>();
       hCascadesCounter->Fill(1);
-      auto trackCascDauCharged = casc.bachelor_as<MyKfTracksIU>(); // pion <- xi track
-      auto trackV0Dau0 = casc.posTrack_as<MyKfTracksIU>();         // V0 positive daughter track
-      auto trackV0Dau1 = casc.negTrack_as<MyKfTracksIU>();         // V0 negative daughter track
+      auto trackCascDauChargedId = casc.bachelorId();
+      auto trackV0Dau0Id = casc.posTrackId();
+      auto trackV0Dau1Id = casc.negTrackId();
+      auto trackCascDauCharged = tracksIU.rawIteratorAt(trackCascDauChargedId); // pion <- xi track
+      auto trackV0Dau0 = tracksIU.rawIteratorAt(trackV0Dau0Id);                 // V0 positive daughter track
+      auto trackV0Dau1 = tracksIU.rawIteratorAt(trackV0Dau1Id);                 // V0 negative daughter track
 
       auto bachCharge = trackCascDauCharged.signed1Pt() > 0 ? +1 : -1;
 
@@ -1218,8 +1221,8 @@ struct HfCandidateCreatorXic0Omegac0 {
   template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename Coll, typename Hist>
   void runKfXic0CreatorWithKFParticle(Coll const&,
                                       aod::BCsWithTimestamps const& /*bcWithTimeStamps*/,
-                                      MyKfTracksIU const&,
-                                      MyKfTracks const&,
+                                      MyKfTracksIU const& tracksIU,
+                                      MyKfTracks const& tracks,
                                       MyKfCascTable const&, KFCascadesLinked const&,
                                       aod::HfCascLf2Prongs const& candidates,
                                       Hist& hInvMassCharmBaryon,
@@ -1253,8 +1256,8 @@ struct HfCandidateCreatorXic0Omegac0 {
       df.setBz(magneticField);
       KFParticle::SetField(magneticField);
       // bachelor from Xic0
-      auto trackCharmBachelor = cand.prong0_as<MyKfTracks>();
-
+      auto trackCharmBachelorId = cand.prong0Id();
+      auto trackCharmBachelor = tracks.rawIteratorAt(trackCharmBachelorId);
       auto cascAodElement = cand.cascade_as<aod::KFCascadesLinked>();
       hCascadesCounter->Fill(0);
       int v0index = cascAodElement.v0Id();
@@ -1263,9 +1266,12 @@ struct HfCandidateCreatorXic0Omegac0 {
       }
       auto casc = cascAodElement.kfCascData_as<MyKfCascTable>();
       hCascadesCounter->Fill(1);
-      auto trackCascDauCharged = casc.bachelor_as<MyKfTracksIU>(); // pion <- xi track
-      auto trackV0Dau0 = casc.posTrack_as<MyKfTracksIU>();         // V0 positive daughter track
-      auto trackV0Dau1 = casc.negTrack_as<MyKfTracksIU>();         // V0 negative daughter track
+      auto trackCascDauChargedId = casc.bachelorId();
+      auto trackV0Dau0Id = casc.posTrackId();
+      auto trackV0Dau1Id = casc.negTrackId();
+      auto trackCascDauCharged = tracksIU.rawIteratorAt(trackCascDauChargedId); // pion <- xi track
+      auto trackV0Dau0 = tracksIU.rawIteratorAt(trackV0Dau0Id);                 // V0 positive daughter track
+      auto trackV0Dau1 = tracksIU.rawIteratorAt(trackV0Dau1Id);                 // V0 negative daughter track
 
       auto bachCharge = trackCascDauCharged.signed1Pt() > 0 ? +1 : -1;
 
@@ -1629,8 +1635,8 @@ struct HfCandidateCreatorXic0Omegac0 {
   template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename Coll, typename Hist>
   void runOmegac0Xic0ToOmegaKaCreatorWithKFParticle(Coll const&,
                                                     aod::BCsWithTimestamps const& /*bcWithTimeStamps*/,
-                                                    MyKfTracksIU const&,
-                                                    MyKfTracks const&,
+                                                    MyKfTracksIU const& tracksIU,
+                                                    MyKfTracks const& tracks,
                                                     MyKfCascTable const&, KFCascadesLinked const&,
                                                     aod::HfCascLf2Prongs const& candidates,
                                                     Hist& hInvMassCharmBaryon,
@@ -1671,10 +1677,14 @@ struct HfCandidateCreatorXic0Omegac0 {
       hCascadesCounter->Fill(1);
 
       // convert KaonFromCharm&KaFromOmega&V0DauPos&V0DauNeg tracks into KFParticle object
-      auto trackKaFromCharm = cand.prong0_as<MyKfTracks>();
-      auto trackKaFromOmega = casc.bachelor_as<MyKfTracksIU>(); // Ka <- Omega track
-      auto trackV0DauPos = casc.posTrack_as<MyKfTracksIU>();    // V0 positive daughter track
-      auto trackV0DauNeg = casc.negTrack_as<MyKfTracksIU>();    // V0 negative daughter track
+      auto trackCharmBachelorId = cand.prong0Id();
+      auto trackKaFromCharm = tracks.rawIteratorAt(trackCharmBachelorId);
+      auto trackCascDauChargedId = casc.bachelorId();
+      auto trackV0Dau0Id = casc.posTrackId();
+      auto trackV0Dau1Id = casc.negTrackId();
+      auto trackKaFromOmega = tracksIU.rawIteratorAt(trackCascDauChargedId); // Ka <- Omega track
+      auto trackV0DauPos = tracksIU.rawIteratorAt(trackV0Dau0Id);            // V0 positive daughter track
+      auto trackV0DauNeg = tracksIU.rawIteratorAt(trackV0Dau1Id);            // V0 negative daughter track
       auto kaFromOmegaCharge = trackKaFromOmega.sign();
       auto signOmega = casc.sign();
 
