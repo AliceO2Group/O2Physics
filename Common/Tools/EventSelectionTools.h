@@ -191,8 +191,9 @@ class BcSelectionModule
   template <typename TCCDB, typename TBCs>
   bool configure(TCCDB& ccdb, TBCs const& bcs)
   {
-    if (bcs.size() == 0)
+    if (bcs.size() == 0) {
       return false;
+    }
     int run = bcs.iteratorAt(0).runNumber();
     if (run != lastRun) {
       lastRun = run;
@@ -266,7 +267,7 @@ class BcSelectionModule
       if (mapRCT == nullptr) {
         LOGP(info, "rct object missing... inserting dummy rct flags");
         mapRCT = new std::map<uint64_t, uint32_t>;
-        uint32_t dummyValue = 1 << 31; // setting bit 31 to indicate that rct object is missing
+        uint32_t dummyValue = 1u << 31; // setting bit 31 to indicate that rct object is missing
         mapRCT->insert(std::pair<uint64_t, uint32_t>(sorTimestamp, dummyValue));
       }
     }
@@ -716,6 +717,9 @@ class EventSelectionModule
   template <typename TCCDB, typename TTimestamps, typename TBCs>
   bool configure(TCCDB& ccdb, TTimestamps const& timestamps, TBCs const& bcs)
   {
+    if (bcs.size() == 0) {
+      return false;
+    }
     int run = bcs.iteratorAt(0).runNumber();
     // extract bc pattern from CCDB for data or anchored MC only
     if (run != lastRun && run >= run3min) {
@@ -1364,11 +1368,11 @@ class EventSelectionModule
       // compare zVtx from FT0 and from PV
       bool isGoodZvtxFT0vsPV = 0;
       if (bcselEntry.foundFT0Id > -1) {
-        auto foundFT0 = ft0s.rawIteratorAt(bcselEntry.foundFT0Id);
-        float diffVz = foundFT0.posZ() - col.posZ();
-        if (runLightIons == -1)
+        auto foundFT0Inner = ft0s.rawIteratorAt(bcselEntry.foundFT0Id);
+        float diffVz = foundFT0Inner.posZ() - col.posZ();
+        if (runLightIons == -1) {
           isGoodZvtxFT0vsPV = std::fabs(diffVz) < evselOpts.maxDiffZvtxFT0vsPV;
-        else { // special treatment of light ion runs
+        } else { // special treatment of light ion runs
           float multT0A = bc.ft0().sumAmpA();
           float multT0C = bc.ft0().sumAmpC();
           float T0M = multT0A + multT0C;
@@ -1540,11 +1544,13 @@ class LumiModule
   template <typename TCCDB, typename TTimestamps, typename TBCs>
   bool configure(TCCDB& ccdb, TTimestamps const& timestamps, TBCs const& bcs)
   {
-    if (bcs.size() == 0)
+    if (bcs.size() == 0) {
       return false;
+    }
     int run = bcs.iteratorAt(0).runNumber();
-    if (run < 500000) // o2-linter: disable=magic-number (skip for unanchored MCs)
+    if (run < 500000) { // o2-linter: disable=magic-number (skip for unanchored MCs)
       return false;
+    }
     if (run != lastRun && run >= 520259) { // o2-linter: disable=magic-number (scalers available for runs above 520120)
       lastRun = run;
       int64_t ts = timestamps[0];

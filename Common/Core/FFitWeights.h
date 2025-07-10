@@ -17,22 +17,22 @@
 #ifndef COMMON_CORE_FFITWEIGHTS_H_
 #define COMMON_CORE_FFITWEIGHTS_H_
 
-#include <vector>
-#include <string>
-#include <utility>
+#include "TCollection.h"
+#include "TFile.h"
+#include "TH1D.h"
+#include "TH2D.h"
+#include "TH3D.h"
+#include "TMath.h"
+#include "TNamed.h"
+#include "TObjArray.h"
+#include "TString.h"
+
 #include <algorithm>
 #include <complex>
 #include <memory>
-
-#include "TNamed.h"
-#include "TObjArray.h"
-#include "TH3D.h"
-#include "TH2D.h"
-#include "TH1D.h"
-#include "TFile.h"
-#include "TCollection.h"
-#include "TString.h"
-#include "TMath.h"
+#include <string>
+#include <utility>
+#include <vector>
 
 class FFitWeights : public TNamed
 {
@@ -53,11 +53,11 @@ class FFitWeights : public TNamed
   TAxis* getqVecAx() { return qAxis; }
 
   Long64_t Merge(TCollection* collist);
-  void qSelection(std::vector<int> nhv, std::vector<std::string> stv);
+  void qSelection(std::vector<int> const& nhv, std::vector<std::string> const& stv);
   float eval(float centr, const float& dqn, const int nh, const char* pf = "");
   void setResolution(int res) { nResolution = res; }
   int getResolution() const { return nResolution; }
-  void setQnType(std::vector<std::pair<int, std::string>> qninp) { qnTYPE = qninp; }
+  void setQnType(std::vector<std::pair<int, std::string>> const& qninp) { qnTYPE = qninp; }
 
  private:
   TObjArray* fW_data;

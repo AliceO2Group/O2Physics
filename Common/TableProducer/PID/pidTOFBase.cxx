@@ -15,25 +15,27 @@
 /// \brief  Base to build tasks for TOF PID tasks.
 ///
 
+#include <string>
 #include <utility>
 #include <vector>
-#include <string>
 
 // O2 includes
 #include "CCDB/BasicCCDBManager.h"
-#include "TOFBase/EventTimeMaker.h"
 #include "Framework/AnalysisTask.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "TOFBase/EventTimeMaker.h"
 
 // O2Physics includes
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "TableHelper.h"
+#include "pidTOFBase.h"
+
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "TableHelper.h"
-#include "pidTOFBase.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -111,7 +113,7 @@ struct tofSignal {
     if (enableTableFlags) {
       tableFlags.reserve(tracks.size());
     }
-    for (auto& t : tracks) {
+    for (const auto& t : tracks) {
       const auto s = o2::pid::tof::TOFSignal<Run3Trks::iterator>::GetTOFSignal(t);
       if (enableQaHistograms) {
         histos.fill(HIST("tofSignal"), s);
@@ -139,7 +141,7 @@ struct tofSignal {
     if (enableTableFlags) {
       tableFlags.reserve(tracks.size());
     }
-    for (auto& t : tracks) {
+    for (const auto& t : tracks) {
       table(o2::pid::tof::TOFSignal<TrksRun2::iterator>::GetTOFSignal(t));
       if (!enableTableFlags) {
         continue;
