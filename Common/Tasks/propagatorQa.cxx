@@ -14,20 +14,22 @@
 // Work in progress! More to follow, use at your own peril
 //
 
+#include "trackSelectionRequest.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/trackUtilities.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "trackSelectionRequest.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -315,10 +317,10 @@ struct propagatorQa {
       if (lUsedByV0 || lUsedByCascade)
         usedInSVertexer = true;
 
-      if (usedInSVertexer)
+      if (usedInSVertexer) {
         histos.fill(HIST("hUpdateRadiiusedInSVertexer"), lRadiusOfLastUpdate);
-      if (usedInSVertexer)
         histos.fill(HIST("hdcaXYusedInSVertexer"), lDCA);
+      }
     }
   }
   PROCESS_SWITCH(propagatorQa, processMC, "process MC", true);
@@ -431,10 +433,10 @@ struct propagatorQa {
       if (lUsedByV0 || lUsedByCascade)
         usedInSVertexer = true;
 
-      if (usedInSVertexer)
+      if (usedInSVertexer) {
         histos.fill(HIST("hUpdateRadiiusedInSVertexer"), lRadiusOfLastUpdate);
-      if (usedInSVertexer)
         histos.fill(HIST("hdcaXYusedInSVertexer"), lDCA);
+      }
     }
   }
   PROCESS_SWITCH(propagatorQa, processData, "process data", false);

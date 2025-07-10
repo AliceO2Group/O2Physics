@@ -78,12 +78,7 @@ bool MetadataHelper::isFullyDefined() const
   if (!mIsInitialized) {
     LOG(fatal) << "Metadata not initialized";
   }
-  for (const auto& key : mMetadata) {
-    if (!isKeyDefined(key.first)) {
-      return false;
-    }
-  }
-  return true;
+  return std::all_of(mMetadata.begin(), mMetadata.end(), [this](const auto& key) { return isKeyDefined(key.first); });
 }
 
 std::string MetadataHelper::get(std::string const& key) const

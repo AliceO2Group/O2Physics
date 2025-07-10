@@ -25,17 +25,18 @@
 
 // ROOT includes
 #include "Rtypes.h"
-#include "TMath.h"
-#include "TGraph.h"
-#include "TFile.h"
+
 #include "TF2.h"
+#include "TFile.h"
+#include "TGraph.h"
+#include "TMath.h"
 
 // O2 includes
+#include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsTOF/ParameterContainers.h"
+#include "Framework/DataTypes.h"
 #include "Framework/Logger.h"
 #include "ReconstructionDataFormats/PID.h"
-#include "Framework/DataTypes.h"
-#include "CommonConstants/PhysicsConstants.h"
 
 namespace o2::pid::tof
 {
@@ -485,11 +486,11 @@ class ExpTimes
   static float GetExpectedSigma(const ParamType& parameters, const TrackType& track, const float tofSignal, const float collisionTimeRes)
   {
     const float& mom = track.p();
-    const float& eta = track.eta();
+    const float& etaTrack = track.eta();
     if (mom <= 0) {
       return -999.f;
     }
-    const float reso = parameters.template getResolution<id>(mom, eta);
+    const float reso = parameters.template getResolution<id>(mom, etaTrack);
     if (reso > 0) {
       return std::sqrt(reso * reso + parameters[4] * parameters[4] + collisionTimeRes * collisionTimeRes);
     }

@@ -24,15 +24,17 @@
 #ifndef TRACKSELECTIONREQUEST_H
 #define TRACKSELECTIONREQUEST_H
 
-#include <iosfwd>
-#include <Rtypes.h>
 #include <TMath.h>
+
+#include <Rtypes.h>
+
+#include <iosfwd>
 
 class trackSelectionRequest
 {
  public:
   trackSelectionRequest()
-    : trackPhysicsType{0}, minPt{0.0}, maxPt{1e+6}, minEta{-100}, maxEta{+100}, maxDCAz{1e+6}, maxDCAxyPtDep{1e+6}, requireTPC{false}, minTPCclusters{-1}, minTPCcrossedrows{-1}, minTPCcrossedrowsoverfindable{0.0}, requireITS{false}, minITSclusters{-1}, maxITSChi2percluster{1e+6}
+    : trackPhysicsType{0}, minPt{0.0}, maxPt{1e+6}, minEta{-100}, maxEta{+100}, maxDCAz{1e+6}, maxDCAxyPtDep{1e+6}, requireTPC{false}, minTPCclusters{-1}, minTPCcrossedrows{-1}, minTPCcrossedrowsoverfindable{0.0}, maxTPCFractionSharedCls{0.0}, requireITS{false}, minITSclusters{-1}, maxITSChi2percluster{1e+6}
   {
     // constructor
   }

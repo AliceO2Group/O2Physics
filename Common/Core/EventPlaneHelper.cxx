@@ -20,13 +20,13 @@
 
 #include "Common/Core/EventPlaneHelper.h"
 
-#include <algorithm>
-#include <iterator>
-#include <vector>
-#include <memory>
-
 #include "TMath.h"
 #include "TVector3.h"
+
+#include <algorithm>
+#include <iterator>
+#include <memory>
+#include <vector>
 
 double EventPlaneHelper::GetPhiFV0(int chno, o2::fv0::Geometry* fv0geom)
 {
@@ -37,8 +37,8 @@ double EventPlaneHelper::GetPhiFV0(int chno, o2::fv0::Geometry* fv0geom)
   float offsetX = 0.;
   float offsetY = 0.;
 
-  int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27,
-                       32, 40, 33, 41, 34, 42, 35, 43};
+  const int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27,
+                             32, 40, 33, 41, 34, 42, 35, 43};
   bool isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
 
   if (isChnoInLeft) {

@@ -164,7 +164,7 @@ struct tpcPid {
     }
     response = new o2::pid::tpc::Response();
     // Checking the tables are requested in the workflow and enabling them
-    auto enableFlag = [&](const std::string particle, Configurable<int>& flag) {
+    auto enableFlag = [&](const std::string& particle, Configurable<int>& flag) {
       enableFlagIfTableRequired(initContext, "pidTPC" + particle, flag);
     };
     enableFlag("FullEl", pidFullEl);
@@ -381,12 +381,12 @@ struct tpcPid {
       }
 
       auto start_network_eval = std::chrono::high_resolution_clock::now();
-      float* output_network = network.evalModel(track_properties);
+      const float* output_network = network.evalModel(track_properties);
       auto stop_network_eval = std::chrono::high_resolution_clock::now();
       duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_eval - start_network_eval).count();
-      for (uint64_t i = 0; i < prediction_size; i += output_dimensions) {
+      for (uint64_t k = 0; k < prediction_size; k += output_dimensions) {
         for (int j = 0; j < output_dimensions; j++) {
-          network_prediction[i + j + prediction_size * loop_counter] = output_network[i + j];
+          network_prediction[k + j + prediction_size * loop_counter] = output_network[k + j];
         }
       }
 
@@ -425,8 +425,8 @@ struct tpcPid {
       }
     }
     auto expSignal = response->GetExpectedSignal(trk, pid);
-    auto expSigma = trk.has_collision() ? response->GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid) : 0.07 * expSignal; // use default sigma value of 7% if no collision information to estimate resolution
-    if (expSignal < 0. || expSigma < 0.) {                                                                                                   // skip if expected signal invalid
+    auto expSigma = trk.has_collision() ? response->GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid) : 0.07f * expSignal; // use default sigma value of 7% if no collision information to estimate resolution
+    if (expSignal < 0. || expSigma < 0.) {                                                                                                    // skip if expected signal invalid
       if (flagFull)
         tableFull(-999.f, -999.f);
       if (flagTiny)
