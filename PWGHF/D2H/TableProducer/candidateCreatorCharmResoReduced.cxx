@@ -125,9 +125,9 @@ struct HfCandidateCreatorCharmResoReduced {
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{vecBinsPt}, "Histogram pT bin limits"};
   // Daughters selection cuts
-  Configurable<LabeledArray<double>> cutsDdaughter{"cutsDdaughter", {hf_cuts_d_daughter::Cuts[0], hf_cuts_d_daughter::NBinsPt, hf_cuts_d_daughter::NCutVars, hf_cuts_d_daughter::labelsPt, hf_cuts_d_daughter::labelsCutVar}, "D daughter selections"};
+  Configurable<LabeledArray<double>> cutsDDaughter{"cutsDDaughter", {hf_cuts_d_daughter::Cuts[0], hf_cuts_d_daughter::NBinsPt, hf_cuts_d_daughter::NCutVars, hf_cuts_d_daughter::labelsPt, hf_cuts_d_daughter::labelsCutVar}, "D daughter selections"};
   Configurable<std::vector<double>> binsPtD{"binsPtD", std::vector<double>{hf_cuts_d_daughter::vecBinsPt}, "pT bin limits for D daughter cuts"};
-  Configurable<LabeledArray<double>> cutsV0daughter{"cutsV0daughter", {hf_cuts_v0_daughter::Cuts[0], hf_cuts_v0_daughter::NBinsPt, hf_cuts_v0_daughter::NCutVars, hf_cuts_v0_daughter::labelsPt, hf_cuts_v0_daughter::labelsCutVar}, "V0 daughter selections"};
+  Configurable<LabeledArray<double>> cutsV0Daughter{"cutsV0Daughter", {hf_cuts_v0_daughter::Cuts[0], hf_cuts_v0_daughter::NBinsPt, hf_cuts_v0_daughter::NCutVars, hf_cuts_v0_daughter::labelsPt, hf_cuts_v0_daughter::labelsCutVar}, "V0 daughter selections"};
   Configurable<std::vector<double>> binsPtV0{"binsPtV0", std::vector<double>{hf_cuts_v0_daughter::vecBinsPt}, "pT bin limits for V0 daughter cuts"};
 
   // Configurables for ME
@@ -216,20 +216,20 @@ struct HfCandidateCreatorCharmResoReduced {
     // invariant mass selection
     if (!keepSideBands) {
       if constexpr (channel == DecayChannel::D0Track) {
-        if ((candD.invMassD0() < cutsDdaughter->get(ptBin, "invMassSignalLow") || candD.invMassD0() > cutsDdaughter->get(ptBin, "invMassSignalHigh")) &&
-            (candD.invMassD0Bar() < cutsDdaughter->get(ptBin, "invMassSignalLow") || candD.invMassD0Bar() > cutsDdaughter->get(ptBin, "invMassSignalHigh"))) {
+        if ((candD.invMassD0() < cutsDDaughter->get(ptBin, "invMassSignalLow") || candD.invMassD0() > cutsDDaughter->get(ptBin, "invMassSignalHigh")) &&
+            (candD.invMassD0Bar() < cutsDDaughter->get(ptBin, "invMassSignalLow") || candD.invMassD0Bar() > cutsDDaughter->get(ptBin, "invMassSignalHigh"))) {
           return false;
         }
       } else {
-        if (invMassD < cutsDdaughter->get(ptBin, "invMassSignalLow") || invMassD > cutsDdaughter->get(ptBin, "invMassSignalHigh")) {
+        if (invMassD < cutsDDaughter->get(ptBin, "invMassSignalLow") || invMassD > cutsDDaughter->get(ptBin, "invMassSignalHigh")) {
           return false;
         }
       }
     } else {
-      if ((invMassD < cutsDdaughter->get(ptBin, "invMassLeftSBLow")) ||
-          (invMassD > cutsDdaughter->get(ptBin, "invMassLeftSBHigh") && invMassD < cutsDdaughter->get(ptBin, "invMassSignalLow")) ||
-          (invMassD > cutsDdaughter->get(ptBin, "invMassSignalHigh") && invMassD < cutsDdaughter->get(ptBin, "invMassRightSBLow")) ||
-          (invMassD > cutsDdaughter->get(ptBin, "invMassRightSBHigh"))) {
+      if ((invMassD < cutsDDaughter->get(ptBin, "invMassLeftSBLow")) ||
+          (invMassD > cutsDDaughter->get(ptBin, "invMassLeftSBHigh") && invMassD < cutsDDaughter->get(ptBin, "invMassSignalLow")) ||
+          (invMassD > cutsDDaughter->get(ptBin, "invMassSignalHigh") && invMassD < cutsDDaughter->get(ptBin, "invMassRightSBLow")) ||
+          (invMassD > cutsDDaughter->get(ptBin, "invMassRightSBHigh"))) {
         return false;
       }
     }
@@ -272,11 +272,11 @@ struct HfCandidateCreatorCharmResoReduced {
       }
     }
     // selection on V0 candidate mass
-    if ((invMassV0 - massV0) > cutsV0daughter->get(ptBin, "invMassLow") && (massV0 - invMassV0) < cutsV0daughter->get(ptBin, "invMassLow")) {
+    if ((invMassV0 - massV0) > cutsV0Daughter->get(ptBin, "invMassLow") && (massV0 - invMassV0) < cutsV0Daughter->get(ptBin, "invMassLow")) {
       return false;
     }
     // selection on kinematics and topology
-    if (candV0.dca() > cutsV0daughter->get(ptBin, "dcaMax") || candV0.cpa() < cutsV0daughter->get(ptBin, "cpaMin") || candV0.v0Radius() < cutsV0daughter->get(ptBin, "radiusMin")) {
+    if (candV0.dca() > cutsV0Daughter->get(ptBin, "dcaMax") || candV0.cpa() < cutsV0Daughter->get(ptBin, "cpaMin") || candV0.v0Radius() < cutsV0Daughter->get(ptBin, "radiusMin")) {
       return false;
     }
     return true;
