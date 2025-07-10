@@ -828,7 +828,7 @@ DECLARE_SOA_TABLE(HfMcCheckDpPis, "AOD", "HFMCCHECKDPPI", //! Table with reconst
 // Table with same size as HFCANDB0
 DECLARE_SOA_TABLE(HfMcRecRedB0s, "AOD", "HFMCRECREDB0", //! Reconstruction-level MC information on B0 candidates for reduced workflow
                   hf_cand_b0::FlagMcMatchRec,
-                  hf_cand_b0::ChannelMcMatchRec,
+                  hf_cand_b0::FlagMcDecayChanRec,
                   hf_cand_b0::FlagWrongCollision,
                   hf_cand_b0::DebugMcRec,
                   hf_b0_mc::PtMother);
@@ -844,7 +844,7 @@ DECLARE_SOA_TABLE(HfMcCheckB0s, "AOD", "HFMCCHECKB0", //! Table with reconstruct
 
 DECLARE_SOA_TABLE(HfMcGenRedB0s, "AOD", "HFMCGENREDB0", //! Generation-level MC information on B0 candidates for reduced workflow
                   hf_cand_b0::FlagMcMatchGen,
-                  hf_cand_b0::ChannelMcMatchRec,
+                  hf_cand_b0::FlagMcDecayChanRec,
                   hf_b0_mc::PtTrack,
                   hf_b0_mc::YTrack,
                   hf_b0_mc::EtaTrack,
@@ -906,7 +906,7 @@ DECLARE_SOA_TABLE(HfMcRecRedJPKs, "AOD", "HFMCRECREDJPK", //! Table with reconst
                   hf_cand_bplus_reduced::JpsiId,
                   hf_cand_bplus_reduced::BachKaId,
                   hf_cand_bplus::FlagMcMatchRec,
-                  hf_cand_bplus::ChannelMcMatchRec,
+                  hf_cand_bplus::FlagMcDecayChanRec,
                   hf_cand_bplus::FlagWrongCollision,
                   hf_cand_bplus::DebugMcRec,
                   hf_bplus_mc::PtMother);
@@ -923,7 +923,7 @@ DECLARE_SOA_TABLE(HfMcCheckD0Pis, "AOD", "HFMCCHECKD0PI", //! Table with reconst
 // Table with same size as HFCANDBPLUS
 DECLARE_SOA_TABLE(HfMcRecRedBps, "AOD", "HFMCRECREDBP", //! Reconstruction-level MC information on B+ candidates for reduced workflow
                   hf_cand_bplus::FlagMcMatchRec,
-                  hf_cand_bplus::ChannelMcMatchRec,
+                  hf_cand_bplus::FlagMcDecayChanRec,
                   hf_cand_bplus::FlagWrongCollision,
                   hf_cand_bplus::DebugMcRec,
                   hf_bplus_mc::PtMother);
@@ -938,7 +938,7 @@ DECLARE_SOA_TABLE(HfMcCheckBps, "AOD", "HFMCCHECKBP", //! Table with reconstruct
 
 DECLARE_SOA_TABLE(HfMcGenRedBps, "AOD", "HFMCGENREDBP", //! Generation-level MC information on B+ candidates for reduced workflow
                   hf_cand_bplus::FlagMcMatchGen,
-                  hf_cand_bplus::ChannelMcMatchRec,
+                  hf_cand_bplus::FlagMcDecayChanRec,
                   hf_bplus_mc::PtTrack,
                   hf_bplus_mc::YTrack,
                   hf_bplus_mc::EtaTrack,
@@ -1008,7 +1008,7 @@ DECLARE_SOA_TABLE(HfMcRecRedJPPhis, "AOD", "HFMCRECREDJPPHI", //! Table with rec
                   hf_cand_bs_reduced::Prong0PhiId,
                   hf_cand_bs_reduced::Prong1PhiId,
                   hf_cand_bs::FlagMcMatchRec,
-                  hf_cand_bs::ChannelMcMatchRec,
+                  hf_cand_bs::FlagMcDecayChanRec,
                   hf_cand_bs::FlagWrongCollision,
                   hf_cand_bs::DebugMcRec,
                   hf_bs_mc::PtMother);
@@ -1027,7 +1027,7 @@ DECLARE_SOA_TABLE(HfMcCheckDsPis, "AOD", "HFMCCHECKDSPI", //! Table with reconst
 // Table with same size as HFCANDBS
 DECLARE_SOA_TABLE(HfMcRecRedBss, "AOD", "HFMCRECREDBS", //! Reconstruction-level MC information on Bs candidates for reduced workflow
                   hf_cand_bs::FlagMcMatchRec,
-                  hf_cand_bs::ChannelMcMatchRec,
+                  hf_cand_bs::FlagMcDecayChanRec,
                   hf_cand_bs::FlagWrongCollision,
                   hf_cand_bs::DebugMcRec,
                   hf_bs_mc::PtMother);
@@ -1043,7 +1043,7 @@ DECLARE_SOA_TABLE(HfMcCheckBss, "AOD", "HFMCCHECKBS", //! Table with reconstruct
 
 DECLARE_SOA_TABLE(HfMcGenRedBss, "AOD", "HFMCGENREDBS", //! Generation-level MC information on Bs candidates for reduced workflow
                   hf_cand_bs::FlagMcMatchGen,
-                  hf_cand_bs::ChannelMcMatchRec,
+                  hf_cand_bs::FlagMcDecayChanRec,
                   hf_bs_mc::PtTrack,
                   hf_bs_mc::YTrack,
                   hf_bs_mc::EtaTrack,
