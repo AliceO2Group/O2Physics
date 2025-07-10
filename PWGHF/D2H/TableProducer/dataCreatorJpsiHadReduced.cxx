@@ -133,6 +133,36 @@ struct HfDataCreatorJpsiHadReduced {
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
 
   Configurable<bool> runJpsiToee{"runJpsiToee", false, "Run analysis for J/Psi to ee (debug)"};
+  struct : o2::framework::ConfigurableGroup {
+    // TPC PID
+    Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
+    Configurable<double> ptPidTpcMax{"ptPidTpcMax", 5., "Upper bound of track pT for TPC PID"};
+    Configurable<double> nSigmaTpcElMax{"nSigmaTpcElMax", 4., "Electron nsigma cut on TPC only"};
+    Configurable<double> nSigmaTpcPiMin{"nSigmaTpcPiMin", 2.5, "Pion nsigma cut on TPC only"};
+    Configurable<double> nSigmaTpcPiMax{"nSigmaTpcPiMax", 99., "Pion nsigma cut on TPC only"};
+    Configurable<double> nSigmaTpcPrMin{"nSigmaTpcPrMin", -99., "Proton nsigma cut on TPC only"};
+    Configurable<double> nSigmaTpcPrMax{"nSigmaTpcPrMax", 99, "Proton nsigma cut on TPC only"};
+    Configurable<double> nSigmaTpcElCombinedMax{"nSigmaTpcElCombinedMax", 4., "Electron Nsigma cut on TPC combined with TOF"};
+    Configurable<double> nSigmaTpcPiCombinedMin{"nSigmaTpcPiCombinedMin", 2.5, "Pion Nsigma cut on TPC combined with TOF"};
+    Configurable<double> nSigmaTpcPiCombinedMax{"nSigmaTpcPiCombinedMax", 99., "Pion Nsigma cut on TPC combined with TOF"};
+    Configurable<double> nSigmaTpcPrCombinedMin{"nSigmaTpcPrCombinedMin", -99., "Proton Nsigma cut on TPC combined with TOF"};
+    Configurable<double> nSigmaTpcPrCombinedMax{"nSigmaTpcPrCombinedMax", 99, "Proton Nsigma cut on TPC combined with TOF"};
+    // TOF PID
+    Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
+    Configurable<double> ptPidTofMax{"ptPidTofMax", 5., "Upper bound of track pT for TOF PID"};
+    Configurable<double> nSigmaTofElMax{"nSigmaTofElMax", 4., "Electron nsigma cut on TPC only"};
+    Configurable<double> nSigmaTofPiMin{"nSigmaTofPiMin", -99, "Pion nsigma cut on TPC only"};
+    Configurable<double> nSigmaTofPiMax{"nSigmaTofPiMax", 99., "Pion nsigma cut on TPC only"};
+    Configurable<double> nSigmaTofPrMin{"nSigmaTofPrMin", -99, "Proton nsigma cut on TPC only"};
+    Configurable<double> nSigmaTofPrMax{"nSigmaTofPrMax", 99., "Proton nsigma cut on TPC only"};
+    Configurable<double> nSigmaTofElCombinedMax{"nSigmaTofElCombinedMax", 4., "Electron Nsigma cut on TOF combined with TPC"};
+    Configurable<double> nSigmaTofPiCombinedMin{"nSigmaTofPiCombinedMin", 2.5, "Pion Nsigma cut on TOF combined with TPC"};
+    Configurable<double> nSigmaTofPiCombinedMax{"nSigmaTofPiCombinedMax", 99., "Pion Nsigma cut on TOF combined with TPC"};
+    Configurable<double> nSigmaTofPrCombinedMin{"nSigmaTofPrCombinedMin", -99., "Proton Nsigma cut on TOF combined with TPC"};
+    Configurable<double> nSigmaTofPrCombinedMax{"nSigmaTofPrCombinedMax", 99, "Proton Nsigma cut on TOF combined with TPC"};
+    // AND logic for TOF+TPC PID (as in Run2)
+    Configurable<bool> usePidTpcAndTof{"usePidTpcAndTof", true, "Use AND logic for TPC and TOF PID"};
+  } selectionsPid;
   Configurable<double> ptJpsiMin{"ptJpsiMin", 0., "Lower bound of J/Psi pT"};
   Configurable<double> ptJpsiMax{"ptJpsiMax", 50., "Upper bound of J/Psi pT"};
   Configurable<bool> useTrackIsGlobalTrackWoDCA{"useTrackIsGlobalTrackWoDCA", true, "check isGlobalTrackWoDCA status for the bachelor tracks"};
@@ -154,22 +184,25 @@ struct HfDataCreatorJpsiHadReduced {
 
   HfHelper hfHelper;
 
+  TrackSelectorPi selectorPion;
+  TrackSelectorPr selectorProton;
+  TrackSelectorEl selectorElectron;
+
   // CCDB service
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   // O2DatabasePDG service
   Service<o2::framework::O2DatabasePDG> pdg;
 
-  using TracksPid = soa::Join<aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
+  using TracksPid = soa::Join<aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullEl, aod::pidTOFFullEl>;
   using TracksPidWithSel = soa::Join<aod::TracksWCovDcaExtra, TracksPid, aod::TrackSelection>;
-  using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
   using TracksPidWithSelAndMc = soa::Join<TracksPidWithSel, aod::McTrackLabels>;
   using CollisionsWCMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
   using BCsInfo = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
 
   Preslice<aod::HfCand2ProngWPid> candsJpsiPerCollision = aod::track_association::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  PresliceUnsorted<CollisionsWCMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
+  PresliceUnsorted<CollisionsWCMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int runNumber;
@@ -188,17 +221,39 @@ struct HfDataCreatorJpsiHadReduced {
 
   void init(InitContext& initContext)
   {
+    selectorPion.setRangePtTpc(selectionsPid.ptPidTpcMin, selectionsPid.ptPidTpcMax);
+    selectorPion.setRangeNSigmaTpc(-selectionsPid.nSigmaTpcPiMax, selectionsPid.nSigmaTpcPiMax);
+    selectorPion.setRangeNSigmaTpcCondTof(-selectionsPid.nSigmaTpcPiCombinedMax, selectionsPid.nSigmaTpcPiCombinedMax);
+    selectorPion.setRangePtTof(selectionsPid.ptPidTofMin, selectionsPid.ptPidTofMax);
+    selectorPion.setRangeNSigmaTof(-selectionsPid.nSigmaTofPiMax, selectionsPid.nSigmaTofPiMax);
+    selectorPion.setRangeNSigmaTofCondTpc(-selectionsPid.nSigmaTofPiCombinedMax, selectionsPid.nSigmaTofPiCombinedMax);
+
+    selectorProton.setRangePtTpc(selectionsPid.ptPidTpcMin, selectionsPid.ptPidTpcMax);
+    selectorProton.setRangeNSigmaTpc(-selectionsPid.nSigmaTpcPrMax, selectionsPid.nSigmaTpcPrMax);
+    selectorProton.setRangeNSigmaTpcCondTof(-selectionsPid.nSigmaTpcPrCombinedMax, selectionsPid.nSigmaTpcPrCombinedMax);
+    selectorProton.setRangePtTof(selectionsPid.ptPidTofMin, selectionsPid.ptPidTofMax);
+    selectorProton.setRangeNSigmaTof(-selectionsPid.nSigmaTofPrMax, selectionsPid.nSigmaTofPrMax);
+    selectorProton.setRangeNSigmaTofCondTpc(-selectionsPid.nSigmaTofPrCombinedMax, selectionsPid.nSigmaTofPrCombinedMax);
+
+    selectorElectron.setRangePtTpc(selectionsPid.ptPidTpcMin, selectionsPid.ptPidTpcMax);
+    selectorElectron.setRangeNSigmaTpc(-selectionsPid.nSigmaTpcElMax, selectionsPid.nSigmaTpcElMax);
+    selectorElectron.setRangeNSigmaTpcCondTof(-selectionsPid.nSigmaTofElCombinedMax, selectionsPid.nSigmaTofElCombinedMax);
+    selectorElectron.setRangePtTof(selectionsPid.ptPidTofMin, selectionsPid.ptPidTofMax);
+    selectorElectron.setRangeNSigmaTof(-selectionsPid.nSigmaTofElMax, selectionsPid.nSigmaTofElMax);
+    selectorElectron.setRangeNSigmaTofCondTpc(-selectionsPid.nSigmaTofElCombinedMax, selectionsPid.nSigmaTofElCombinedMax);
+
     std::array<int, 4> doProcess = {doprocessJpsiKData, doprocessJpsiKMc, doprocessJpsiPhiData, doprocessJpsiPhiMc};
     if (std::accumulate(doProcess.begin(), doProcess.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function can be enabled at a time, please fix your configuration!");
     }
 
     // Set up the histogram registry
-    constexpr int kNBinsSelections = 2 + aod::SelectionStep::RecoTopol;
+    constexpr int kNBinsSelections = 2 + aod::SelectionStep::RecoPID;
     std::string labels[kNBinsSelections];
     labels[0] = "No selection";
     labels[1 + aod::SelectionStep::RecoSkims] = "Skims selection";
     labels[1 + aod::SelectionStep::RecoTopol] = "Skims & Topological selections";
+    labels[1 + aod::SelectionStep::RecoPID] = "Skims & Topological & PID selections";
     static const AxisSpec axisSelections = {kNBinsSelections, 0.5, kNBinsSelections + 0.5, ""};
     registry.add("hSelectionsJpsi", "J/Psi selection;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     for (int iBin = 0; iBin < kNBinsSelections; ++iBin) {
@@ -379,6 +434,31 @@ struct HfDataCreatorJpsiHadReduced {
       }
     }
 
+    return true;
+  }
+
+  template <typename T1>
+  bool isSelectedJpsiDauPid(const T1& track)
+  {
+    int pidPion = -1;
+    int pidProton = -1;
+    int pidElectron = -1;
+
+    if (selectionsPid.usePidTpcAndTof) {
+      pidPion = selectorPion.statusTpcAndTof(track, track.tpcNSigmaPi(), track.tofNSigmaPi());
+      pidProton = selectorProton.statusTpcAndTof(track, track.tpcNSigmaPr(), track.tofNSigmaPr());
+      pidElectron = selectorElectron.statusTpcAndTof(track, track.tpcNSigmaEl(), track.tofNSigmaEl());
+    } else {
+      pidPion = selectorPion.statusTpcOrTof(track, track.tpcNSigmaPi(), track.tofNSigmaPi());
+      pidProton = selectorProton.statusTpcOrTof(track, track.tpcNSigmaPr(), track.tofNSigmaPr());
+      pidElectron = selectorElectron.statusTpcOrTof(track, track.tpcNSigmaEl(), track.tofNSigmaEl());
+    }
+
+    if (pidPion == TrackSelectorPID::Rejected ||
+        pidProton == TrackSelectorPID::Rejected ||
+        pidElectron == TrackSelectorPID::Rejected) {
+      return false;
+    }
     return true;
   }
 
@@ -735,6 +815,12 @@ struct HfDataCreatorJpsiHadReduced {
       }
       registry.fill(HIST("hSelectionsJpsi"), 2 + aod::SelectionStep::RecoTopol, candidate.pt());
 
+      // PID selection
+      if (!isSelectedJpsiDauPid(trackPos) || !isSelectedJpsiDauPid(trackNeg)) {
+        continue;
+      }
+      registry.fill(HIST("hSelectionsJpsi"), 2 + aod::SelectionStep::RecoPID, candidate.pt());
+
       int indexHfCandJpsi = hfJpsi.lastIndex() + 1;
       float invMassJpsi{0.f};
       if (runJpsiToee) {
@@ -811,7 +897,7 @@ struct HfDataCreatorJpsiHadReduced {
                           trackParCovBach.getX(), trackParCovBach.getAlpha(),
                           trackParCovBach.getY(), trackParCovBach.getZ(), trackParCovBach.getSnp(),
                           trackParCovBach.getTgl(), trackParCovBach.getQ2Pt(),
-                          trackBach.itsNCls(), trackBach.tpcNClsCrossedRows(), trackBach.tpcChi2NCl(),
+                          trackBach.itsNCls(), trackBach.tpcNClsCrossedRows(), trackBach.tpcChi2NCl(), trackBach.itsChi2NCl(),
                           trackBach.hasTPC(), trackBach.hasTOF(),
                           trackBach.tpcNSigmaPi(), trackBach.tofNSigmaPi(),
                           trackBach.tpcNSigmaKa(), trackBach.tofNSigmaKa(),
@@ -908,7 +994,7 @@ struct HfDataCreatorJpsiHadReduced {
                             trackParCovBach.getX(), trackParCovBach.getAlpha(),
                             trackParCovBach.getY(), trackParCovBach.getZ(), trackParCovBach.getSnp(),
                             trackParCovBach.getTgl(), trackParCovBach.getQ2Pt(),
-                            trackBach.itsNCls(), trackBach.tpcNClsCrossedRows(), trackBach.tpcChi2NCl(),
+                            trackBach.itsNCls(), trackBach.tpcNClsCrossedRows(), trackBach.tpcChi2NCl(), trackBach.itsChi2NCl(),
                             trackBach.hasTPC(), trackBach.hasTOF(),
                             trackBach.tpcNSigmaPi(), trackBach.tofNSigmaPi(),
                             trackBach.tpcNSigmaKa(), trackBach.tofNSigmaKa(),
@@ -932,7 +1018,7 @@ struct HfDataCreatorJpsiHadReduced {
                             trackBach2ParCov.getX(), trackBach2ParCov.getAlpha(),
                             trackBach2ParCov.getY(), trackBach2ParCov.getZ(), trackBach2ParCov.getSnp(),
                             trackBach2ParCov.getTgl(), trackBach2ParCov.getQ2Pt(),
-                            trackBach2.itsNCls(), trackBach2.tpcNClsCrossedRows(), trackBach2.tpcChi2NCl(),
+                            trackBach2.itsNCls(), trackBach2.tpcNClsCrossedRows(), trackBach2.tpcChi2NCl(), trackBach2.itsChi2NCl(),
                             trackBach2.hasTPC(), trackBach2.hasTOF(),
                             trackBach2.tpcNSigmaPi(), trackBach2.tofNSigmaPi(),
                             trackBach2.tpcNSigmaKa(), trackBach2.tofNSigmaKa(),
@@ -972,6 +1058,8 @@ struct HfDataCreatorJpsiHadReduced {
                indexHfReducedCollision,
                candidate.xSecondaryVertex(), candidate.ySecondaryVertex(), candidate.zSecondaryVertex(),
                invMassJpsi,
+               trackPos.itsNCls(), trackPos.tpcNClsCrossedRows(), trackPos.tpcChi2NCl(), trackPos.itsChi2NCl(),
+               trackNeg.itsNCls(), trackNeg.tpcNClsCrossedRows(), trackNeg.tpcChi2NCl(), trackNeg.itsChi2NCl(),
                trackPosParCov.getX(), trackNegParCov.getX(),
                trackPosParCov.getY(), trackNegParCov.getY(),
                trackPosParCov.getZ(), trackNegParCov.getZ(),
