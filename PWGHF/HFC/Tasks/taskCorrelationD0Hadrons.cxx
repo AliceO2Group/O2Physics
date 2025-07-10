@@ -503,7 +503,7 @@ struct HfTaskCorrelationD0Hadrons {
       float bdtScorePromptD0bar = pairEntry.mlScorePromptD0bar();
       float bdtScoreBkgD0bar = pairEntry.mlScoreBkgD0bar();
       bool isPhysicalPrimary = pairEntry.isPhysicalPrimary();
-      int statusD0Prompt = static_cast<int>(pairEntry.isPrompt());
+      bool statusD0Prompt = pairEntry.isPrompt();
       int statusPromptHadron = pairEntry.trackOrigin();
 
       if (bdtScorePromptD0 < mlOutputPromptD0->at(ptBinD) || bdtScoreBkgD0 > mlOutputBkgD0->at(ptBinD) ||
@@ -550,15 +550,15 @@ struct HfTaskCorrelationD0Hadrons {
       // ---------------------- Fill plots for signal case, D0 ->1, D0bar ->8 ---------------------------------------------
       if ((massD > signalRegionLeft->at(ptBinD) && massD < signalRegionRight->at(ptBinD)) && (TESTBIT(signalStatus, ParticleTypeMcRec::D0Sig))) {
         // in signal region, tests bit ParticleTypeMcRec::D0Sig, SE-> softpi removed, ME-> inclusive
-        registry.fill(HIST("hCorrel2DVsPtSignalRegionRecSig"), deltaPhi, deltaEta, ptD, ptHadron, statusD0Prompt, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DVsPtSignalRegionRecSig"), deltaPhi, deltaEta, ptD, ptHadron, static_cast<int>(statusD0Prompt), poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegionRecSig"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegionRecSig"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionRecSig"), deltaPhi, efficiencyWeight);
         if (isPhysicalPrimary) {
-          registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryRecSig"), deltaPhi, deltaEta, ptD, ptHadron, statusD0Prompt, poolBin, efficiencyWeight);
-          if (statusD0Prompt == 1 && statusPromptHadron == RecoDecay::OriginType::Prompt) {
+          registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryRecSig"), deltaPhi, deltaEta, ptD, ptHadron, static_cast<int>(statusD0Prompt), poolBin, efficiencyWeight);
+          if (statusD0Prompt && statusPromptHadron == RecoDecay::OriginType::Prompt) {
             registry.fill(HIST("hCorrel2DVsPtSignalRegionPromptD0PromptHadronRecSig"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-          } else if (statusD0Prompt == 0 && statusPromptHadron == RecoDecay::OriginType::NonPrompt) {
+          } else if (!statusD0Prompt && statusPromptHadron == RecoDecay::OriginType::NonPrompt) {
             registry.fill(HIST("hCorrel2DVsPtSignalRegionNonPromptD0NonPromptHadronRecSig"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
           }
         }
@@ -566,15 +566,15 @@ struct HfTaskCorrelationD0Hadrons {
 
       if ((massDbar > signalRegionLeft->at(ptBinD) && massDbar < signalRegionRight->at(ptBinD)) && (TESTBIT(signalStatus, ParticleTypeMcRec::D0barSig))) {
         // in signal region, tests bit ParticleTypeMcRec::D0barSig, SE-> softpi removed, ME-> inclusive
-        registry.fill(HIST("hCorrel2DVsPtSignalRegionRecSig"), deltaPhi, deltaEta, ptD, ptHadron, statusD0Prompt, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DVsPtSignalRegionRecSig"), deltaPhi, deltaEta, ptD, ptHadron, static_cast<int>(statusD0Prompt), poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegionRecSig"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegionRecSig"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionRecSig"), deltaPhi, efficiencyWeight);
         if (isPhysicalPrimary) {
-          registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryRecSig"), deltaPhi, deltaEta, ptD, ptHadron, statusD0Prompt, poolBin, efficiencyWeight);
-          if (statusD0Prompt == 1 && statusPromptHadron == RecoDecay::OriginType::Prompt) {
+          registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryRecSig"), deltaPhi, deltaEta, ptD, ptHadron, static_cast<int>(statusD0Prompt), poolBin, efficiencyWeight);
+          if (statusD0Prompt && statusPromptHadron == RecoDecay::OriginType::Prompt) {
             registry.fill(HIST("hCorrel2DVsPtSignalRegionPromptD0PromptHadronRecSig"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-          } else if (statusD0Prompt == 0 && statusPromptHadron == RecoDecay::OriginType::NonPrompt) {
+          } else if (!statusD0Prompt && statusPromptHadron == RecoDecay::OriginType::NonPrompt) {
             registry.fill(HIST("hCorrel2DVsPtSignalRegionNonPromptD0NonPromptHadronRecSig"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
           }
         }
