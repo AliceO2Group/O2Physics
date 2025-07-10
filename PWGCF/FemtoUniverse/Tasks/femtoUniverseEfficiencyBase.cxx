@@ -20,8 +20,8 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
 
 #include <vector>
 
@@ -613,7 +613,7 @@ struct FemtoUniverseEfficiencyBase {
     // MCGen
     auto thegrouppartsOneMCGen = partsOneMCGen->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegrouppartsTwoMCGen = partsTwoMCGen->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    if(confIsMCGen) {
+    if (confIsMCGen) {
       doMCGen<true>(thegrouppartsOneMCGen, thegrouppartsTwoMCGen);
     } else {
       doMCGen<false>(thegrouppartsOneMCGen, thegrouppartsTwoMCGen);
@@ -622,7 +622,7 @@ struct FemtoUniverseEfficiencyBase {
     auto thegroupPartsTrackOneRec = partsTrackOneMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsTrackTwoRec = partsTrackTwoMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     if (confIsDebug) {
-      if(confIsMCGen) {
+      if (confIsMCGen) {
         doMCRecTrackTrack<true, true>(thegroupPartsTrackOneRec, thegroupPartsTrackTwoRec);
       } else {
         doMCRecTrackTrack<false, true>(thegroupPartsTrackOneRec, thegroupPartsTrackTwoRec);
