@@ -172,7 +172,7 @@ struct propagatorQa {
     if (d_bz_input > -990) {
       d_bz = d_bz_input;
       o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
+      if (std::fabs(d_bz) > 1e-5) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
@@ -212,7 +212,7 @@ struct propagatorQa {
     initCCDB(bc);
     std::array<float, 2> dcaInfo;
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (track.tpcNClsFound() < minTPCClustersRequired)
         continue;
 
@@ -298,7 +298,7 @@ struct propagatorQa {
       // determine if track was used in svertexer
       bool usedInSVertexer = false;
       bool lUsedByV0 = false, lUsedByCascade = false;
-      for (auto& V0 : V0s) {
+      for (const auto& V0 : V0s) {
         if (V0.posTrackId() == track.globalIndex()) {
           lUsedByV0 = true;
           break;
@@ -308,7 +308,7 @@ struct propagatorQa {
           break;
         }
       }
-      for (auto& cascade : cascades) {
+      for (const auto& cascade : cascades) {
         if (cascade.bachelorId() == track.globalIndex()) {
           lUsedByCascade = true;
           break;
@@ -332,7 +332,7 @@ struct propagatorQa {
     initCCDB(bc);
     std::array<float, 2> dcaInfo;
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (track.tpcNClsFound() < minTPCClustersRequired)
         continue;
 
@@ -414,7 +414,7 @@ struct propagatorQa {
       // determine if track was used in svertexer
       bool usedInSVertexer = false;
       bool lUsedByV0 = false, lUsedByCascade = false;
-      for (auto& V0 : V0s) {
+      for (const auto& V0 : V0s) {
         if (V0.posTrackId() == track.globalIndex()) {
           lUsedByV0 = true;
           break;
@@ -424,7 +424,7 @@ struct propagatorQa {
           break;
         }
       }
-      for (auto& cascade : cascades) {
+      for (const auto& cascade : cascades) {
         if (cascade.bachelorId() == track.globalIndex()) {
           lUsedByCascade = true;
           break;
@@ -448,7 +448,7 @@ struct propagatorQa {
     initCCDB(bc);
     std::array<float, 2> dcaInfo;
 
-    for (auto& trackIU : tracksIU) {
+    for (const auto& trackIU : tracksIU) {
       if (trackIU.tpcNClsFound() < minTPCClustersRequired)
         continue; // skip if not enough TPC clusters
 

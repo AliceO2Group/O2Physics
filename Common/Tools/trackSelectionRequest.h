@@ -90,7 +90,7 @@ class trackSelectionRequest
     if (lTrack.eta() > maxEta)
       return false;
     // DCA to PV
-    if (fabs(lTrack.dcaXY()) < maxDCAz)
+    if (std::fabs(lTrack.dcaXY()) < maxDCAz)
       return false;
     // TracksExtra-based
     if (lTrack.hasTPC() == false && requireTPC)
