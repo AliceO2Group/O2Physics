@@ -126,9 +126,9 @@ DECLARE_SOA_COLUMN(InvMassXiPi1, invMassXiPi1, float);
 }
 
 DECLARE_SOA_TABLE(HfCandXic0Lites, "AOD", "HFCANDXIC0LITE",
-				  hf_cand_xic0_xicp_to_hadronic::FlagMcMatchRec,
-				  hf_cand_xic0_xicp_to_hadronic::DebugMcRec,
-				  hf_cand_xic0_xicp_to_hadronic::OriginRec,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::FlagMcMatchRec,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::DebugMcRec,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::OriginRec,
 				  full::CandidateSelFlag,
 				  full::Y,
 				  full::Eta,
@@ -159,9 +159,9 @@ DECLARE_SOA_TABLE(HfCandXic0Lites, "AOD", "HFCANDXIC0LITE",
 				  full::MaxNormalisedDeltaIP);
 
 DECLARE_SOA_TABLE(HfCandXic0LiteKfs, "AOD", "HFCANDXIC0LITKF",
-				  hf_cand_xic0_xicp_to_hadronic::FlagMcMatchRec,
-				  hf_cand_xic0_xicp_to_hadronic::DebugMcRec,
-				  hf_cand_xic0_xicp_to_hadronic::OriginRec,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::FlagMcMatchRec,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::DebugMcRec,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::OriginRec,
 				  full::CandidateSelFlag,
 				  full::Y,
 				  full::Eta,
@@ -201,9 +201,9 @@ DECLARE_SOA_TABLE(HfCandXic0LiteKfs, "AOD", "HFCANDXIC0LITKF",
 				  full::DcaPiXi);
 
 DECLARE_SOA_TABLE(HfCandXic0Fulls, "AOD", "HFCANDXIC0FULL",
-				  hf_cand_xic0_xicp_to_hadronic::FlagMcMatchRec,
-				  hf_cand_xic0_xicp_to_hadronic::DebugMcRec,
-				  hf_cand_xic0_xicp_to_hadronic::OriginRec,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::FlagMcMatchRec,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::DebugMcRec,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::OriginRec,
 				  full::CandidateSelFlag,
 				  full::Y,
 				  full::Eta,
@@ -239,26 +239,26 @@ DECLARE_SOA_TABLE(HfCandXic0Fulls, "AOD", "HFCANDXIC0FULL",
 				  full::PBachelorPi,
 				  full::PPiFromLambda,
 				  full::PPrFromLambda,
-				  hf_cand_xic0_xicp_to_hadronic::DcaXiDaughters,
-				  hf_cand_xic0_xicp_to_hadronic::DcaV0Daughters,
-				  hf_cand_xic0_xicp_to_hadronic::DcaPosToPV,
-				  hf_cand_xic0_xicp_to_hadronic::DcaNegToPV,
-				  hf_cand_xic0_xicp_to_hadronic::DcaBachelorToPV,
-				  hf_cand_xic0_xicp_to_hadronic::DcaXYCascToPV,
-				  hf_cand_xic0_xicp_to_hadronic::DcaZCascToPV,
-				  hf_cand_xic0_xicp_to_hadronic::NSigTpcPiFromXic0,
-				  hf_cand_xic0_xicp_to_hadronic::NSigTpcBachelorPi,
-				  hf_cand_xic0_xicp_to_hadronic::NSigTpcPiFromLambda,
-				  hf_cand_xic0_xicp_to_hadronic::NSigTpcPrFromLambda,
-				  hf_cand_xic0_xicp_to_hadronic::NSigTofPiFromXic0,
-				  hf_cand_xic0_xicp_to_hadronic::NSigTofBachelorPi,
-				  hf_cand_xic0_xicp_to_hadronic::NSigTofPiFromLambda,
-				  hf_cand_xic0_xicp_to_hadronic::NSigTofPrFromLambda);
+				  hf_cand_xic0_xicp_to_hadronic::xic0::DcaXiDaughters,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::DcaV0Daughters,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::DcaPosToPV,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::DcaNegToPV,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::DcaBachelorToPV,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::DcaXYCascToPV,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::DcaZCascToPV,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTpcPiFromXic0,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTpcBachelorPi,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTpcPiFromLambda,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTpcPrFromLambda,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTofPiFromXic0,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTofBachelorPi,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTofPiFromLambda,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTofPrFromLambda);
 
 DECLARE_SOA_TABLE(HfCandXic0FullKfs, "AOD", "HFCANDXIC0FULKF",
-				  hf_cand_xic0_xicp_to_hadronic::FlagMcMatchRec,
-				  hf_cand_xic0_xicp_to_hadronic::DebugMcRec,
-				  hf_cand_xic0_xicp_to_hadronic::OriginRec,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::FlagMcMatchRec,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::DebugMcRec,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::OriginRec,
 				  full::CandidateSelFlag,
 				  full::Y,
 				  full::Eta,
@@ -294,21 +294,21 @@ DECLARE_SOA_TABLE(HfCandXic0FullKfs, "AOD", "HFCANDXIC0FULKF",
 				  full::PBachelorPi,
 				  full::PPiFromLambda,
 				  full::PPrFromLambda,
-				  hf_cand_xic0_xicp_to_hadronic::DcaXiDaughters,
-				  hf_cand_xic0_xicp_to_hadronic::DcaV0Daughters,
-				  hf_cand_xic0_xicp_to_hadronic::DcaPosToPV,
-				  hf_cand_xic0_xicp_to_hadronic::DcaNegToPV,
-				  hf_cand_xic0_xicp_to_hadronic::DcaBachelorToPV,
-				  hf_cand_xic0_xicp_to_hadronic::DcaXYCascToPV,
-				  hf_cand_xic0_xicp_to_hadronic::DcaZCascToPV,
-				  hf_cand_xic0_xicp_to_hadronic::NSigTpcPiFromXic0,
-				  hf_cand_xic0_xicp_to_hadronic::NSigTpcBachelorPi,
-				  hf_cand_xic0_xicp_to_hadronic::NSigTpcPiFromLambda,
-				  hf_cand_xic0_xicp_to_hadronic::NSigTpcPrFromLambda,
-				  hf_cand_xic0_xicp_to_hadronic::NSigTofPiFromXic0,
-				  hf_cand_xic0_xicp_to_hadronic::NSigTofBachelorPi,
-				  hf_cand_xic0_xicp_to_hadronic::NSigTofPiFromLambda,
-				  hf_cand_xic0_xicp_to_hadronic::NSigTofPrFromLambda,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::DcaXiDaughters,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::DcaV0Daughters,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::DcaPosToPV,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::DcaNegToPV,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::DcaBachelorToPV,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::DcaXYCascToPV,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::DcaZCascToPV,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTpcPiFromXic0,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTpcBachelorPi,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTpcPiFromLambda,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTpcPrFromLambda,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTofPiFromXic0,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTofBachelorPi,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTofPiFromLambda,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTofPrFromLambda,
 				  // KF specific columns
 				  full::Chi2XiVtx,
 				  full::Chi2LamVtx,
@@ -320,16 +320,16 @@ DECLARE_SOA_TABLE(HfCandXic0FullKfs, "AOD", "HFCANDXIC0FULKF",
 				  full::DcaPiXi);
 
 DECLARE_SOA_TABLE(HfCandXic0ToXiPiFullPs, "AOD", "HFXIC0TOXIPIFULLP",	
-				  hf_cand_xic0_xicp_to_hadronic::FlagMcMatchGen,
-				  hf_cand_xic0_xicp_to_hadronic::DebugMcGen,
-				  hf_cand_xic0_xicp_to_hadronic::OriginGen,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::FlagMcMatchGen,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::DebugMcGen,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::OriginGen,
 				  full::Pt,
 				  full::Eta,
 				  full::Phi,
 				  full::Y);
 
 DECLARE_SOA_TABLE(HfCandXic0ToXiPiResiduals, "AOD", "HFXIC0TOXIPIRESID",
-				  hf_cand_xic0_xicp_to_hadronic::OriginGen,
+				  hf_cand_xic0_xicp_to_hadronic::xic0::OriginGen,
 				  full::PResidual,
 				  full::PtResidual,
 				  full::XPvResidual,
@@ -346,8 +346,8 @@ DECLARE_SOA_TABLE(HfCandXic0ToXiPiResiduals, "AOD", "HFXIC0TOXIPIRESID",
 				  full::ZSvPull);
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiLites, "AOD", "HFXICXI2PILITE",
-                  hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec,
-                  hf_cand_xic_to_xi_pi_pi::OriginRec,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::FlagMcMatchRec,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::OriginRec,
                   full::CandidateSelFlag,
                   full::Sign,
                   full::Y,
@@ -384,8 +384,8 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiLites, "AOD", "HFXICXI2PILITE",
                   full::MaxNormalisedDeltaIP);
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteKfs, "AOD", "HFXICXI2PILITKF",
-                  hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec,
-                  hf_cand_xic_to_xi_pi_pi::OriginRec,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::FlagMcMatchRec,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::OriginRec,
                   full::CandidateSelFlag,
                   full::Sign,
                   full::Y,
@@ -435,8 +435,8 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteKfs, "AOD", "HFXICXI2PILITKF",
                   full::DcaPi1Xi);
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiFulls, "AOD", "HFXICXI2PIFULL",
-                  hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec,
-                  hf_cand_xic_to_xi_pi_pi::OriginRec,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::FlagMcMatchRec,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::OriginRec,
                   full::CandidateSelFlag,
                   full::Sign,
                   full::Y,
@@ -479,27 +479,27 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFulls, "AOD", "HFXICXI2PIFULL",
                   full::PBachelorPi,
                   full::PPiFromLambda,
                   full::PPrFromLambda,
-                  hf_cand_xic_to_xi_pi_pi::DcaXiDaughters,
-                  hf_cand_xic_to_xi_pi_pi::DcaV0Daughters,
-                  hf_cand_xic_to_xi_pi_pi::DcaPosToPV,
-                  hf_cand_xic_to_xi_pi_pi::DcaNegToPV,
-                  hf_cand_xic_to_xi_pi_pi::DcaBachelorToPV,
-                  hf_cand_xic_to_xi_pi_pi::DcaXYCascToPV,
-                  hf_cand_xic_to_xi_pi_pi::DcaZCascToPV,
-                  hf_cand_xic_to_xi_pi_pi::NSigTpcPiFromXicPlus0,
-                  hf_cand_xic_to_xi_pi_pi::NSigTpcPiFromXicPlus1,
-                  hf_cand_xic_to_xi_pi_pi::NSigTpcBachelorPi,
-                  hf_cand_xic_to_xi_pi_pi::NSigTpcPiFromLambda,
-                  hf_cand_xic_to_xi_pi_pi::NSigTpcPrFromLambda,
-                  hf_cand_xic_to_xi_pi_pi::NSigTofPiFromXicPlus0,
-                  hf_cand_xic_to_xi_pi_pi::NSigTofPiFromXicPlus1,
-                  hf_cand_xic_to_xi_pi_pi::NSigTofBachelorPi,
-                  hf_cand_xic_to_xi_pi_pi::NSigTofPiFromLambda,
-                  hf_cand_xic_to_xi_pi_pi::NSigTofPrFromLambda);
+                  hf_cand_xic0_xicp_to_hadronic::xicp::DcaXiDaughters,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::DcaV0Daughters,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::DcaPosToPV,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::DcaNegToPV,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::DcaBachelorToPV,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::DcaXYCascToPV,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::DcaZCascToPV,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::NSigTpcPiFromXicPlus0,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::NSigTpcPiFromXicPlus1,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::NSigTpcBachelorPi,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::NSigTpcPiFromLambda,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::NSigTpcPrFromLambda,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::NSigTofPiFromXicPlus0,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::NSigTofPiFromXicPlus1,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::NSigTofBachelorPi,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::NSigTofPiFromLambda,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::NSigTofPrFromLambda);
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullKfs, "AOD", "HFXICXI2PIFULKF",
-                  hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec,
-                  hf_cand_xic_to_xi_pi_pi::OriginRec,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::FlagMcMatchRec,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::OriginRec,
                   full::CandidateSelFlag,
                   full::Sign,
                   full::Y,
@@ -542,23 +542,23 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullKfs, "AOD", "HFXICXI2PIFULKF",
                   full::PBachelorPi,
                   full::PPiFromLambda,
                   full::PPrFromLambda,
-                  hf_cand_xic_to_xi_pi_pi::DcaXiDaughters,
-                  hf_cand_xic_to_xi_pi_pi::DcaV0Daughters,
-                  hf_cand_xic_to_xi_pi_pi::DcaPosToPV,
-                  hf_cand_xic_to_xi_pi_pi::DcaNegToPV,
-                  hf_cand_xic_to_xi_pi_pi::DcaBachelorToPV,
-                  hf_cand_xic_to_xi_pi_pi::DcaXYCascToPV,
-                  hf_cand_xic_to_xi_pi_pi::DcaZCascToPV,
-                  hf_cand_xic_to_xi_pi_pi::NSigTpcPiFromXicPlus0,
-                  hf_cand_xic_to_xi_pi_pi::NSigTpcPiFromXicPlus1,
-                  hf_cand_xic_to_xi_pi_pi::NSigTpcBachelorPi,
-                  hf_cand_xic_to_xi_pi_pi::NSigTpcPiFromLambda,
-                  hf_cand_xic_to_xi_pi_pi::NSigTpcPrFromLambda,
-                  hf_cand_xic_to_xi_pi_pi::NSigTofPiFromXicPlus0,
-                  hf_cand_xic_to_xi_pi_pi::NSigTofPiFromXicPlus1,
-                  hf_cand_xic_to_xi_pi_pi::NSigTofBachelorPi,
-                  hf_cand_xic_to_xi_pi_pi::NSigTofPiFromLambda,
-                  hf_cand_xic_to_xi_pi_pi::NSigTofPrFromLambda,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::DcaXiDaughters,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::DcaV0Daughters,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::DcaPosToPV,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::DcaNegToPV,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::DcaBachelorToPV,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::DcaXYCascToPV,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::DcaZCascToPV,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::NSigTpcPiFromXicPlus0,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::NSigTpcPiFromXicPlus1,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::NSigTpcBachelorPi,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::NSigTpcPiFromLambda,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::NSigTpcPrFromLambda,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::NSigTofPiFromXicPlus0,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::NSigTofPiFromXicPlus1,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::NSigTofBachelorPi,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::NSigTofPiFromLambda,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::NSigTofPrFromLambda,
                   // KF-specific columns
                   full::Chi2XiVtx,
                   full::Chi2LamVtx,
@@ -574,8 +574,8 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullKfs, "AOD", "HFXICXI2PIFULKF",
                   full::DcaPi1Xi);
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullPs, "AOD", "HFXICXI2PIFULLP",
-                  hf_cand_xic_to_xi_pi_pi::FlagMcMatchGen,
-                  hf_cand_xic_to_xi_pi_pi::OriginGen,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::FlagMcMatchGen,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::OriginGen,
                   hf_cand::PdgBhadMotherPart,
                   full::Pt,
                   full::Eta,
@@ -583,7 +583,7 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullPs, "AOD", "HFXICXI2PIFULLP",
                   full::Y);
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiResiduals, "AOD", "HFXICXI2PIRESID",
-                  hf_cand_xic_to_xi_pi_pi::OriginGen,
+                  hf_cand_xic0_xicp_to_hadronic::xicp::OriginGen,
                   full::PResidual,
                   full::PtResidual,
                   full::XPvResidual,
@@ -638,12 +638,12 @@ struct HfTreeCreatorXic0XicpToHadronic {
 	using SelectedXic0CandidatesMc = soa::Filtered<soa::Join<aod::HfCandXic0, aod::HfCandXic0McRec, aod::HfSelXic0ToXiPi>>;
 	using SelectedXic0CandidatesKfMc = soa::Filtered<soa::Join<aod::HfCandXic0, aod::HfCandXic0KF, aod::HfCandXic0McRec, aod::HfSelXic0ToXiPi>>;
 
-	Filter filterSelectXic0Candidates = aod::hf_sel_xic0_xicp_to_hadronic::isSelXic0ToXiPi >= configs.selectionFlagXic0;
+	Filter filterSelectXic0Candidates = aod::hf_sel_xic0_xicp_to_hadronic::xic0::isSelXic0ToXiPi >= configs.selectionFlagXic0;
 
-	Partition<SelectedXic0CandidatesMc> recXic0Sig = nabs(aod::hf_cand_xic0_xicp_to_hadronic::flagMcMatchRec) != int8_t(0);
-	Partition<SelectedXic0CandidatesMc> recXic0Bkg = nabs(aod::hf_cand_xic0_xicp_to_hadronic::flagMcMatchRec) == int8_t(0);
-	Partition<SelectedXic0CandidatesKfMc> recXic0SigKf = nabs(aod::hf_cand_xic0_xicp_to_hadronic::flagMcMatchRec) != int8_t(0);
-	Partition<SelectedXic0CandidatesKfMc> recXic0BkgKf = nabs(aod::hf_cand_xic0_xicp_to_hadronic::flagMcMatchRec) == int8_t(0);
+	Partition<SelectedXic0CandidatesMc> recXic0Sig = nabs(aod::hf_cand_xic0_xicp_to_hadronic::xic0::flagMcMatchRec) != int8_t(0);
+	Partition<SelectedXic0CandidatesMc> recXic0Bkg = nabs(aod::hf_cand_xic0_xicp_to_hadronic::xic0::flagMcMatchRec) == int8_t(0);
+	Partition<SelectedXic0CandidatesKfMc> recXic0SigKf = nabs(aod::hf_cand_xic0_xicp_to_hadronic::xic0::flagMcMatchRec) != int8_t(0);
+	Partition<SelectedXic0CandidatesKfMc> recXic0BkgKf = nabs(aod::hf_cand_xic0_xicp_to_hadronic::xic0::flagMcMatchRec) == int8_t(0);
 	
 	// Table alises for Xicp
 	using SelectedXicpCandidates = soa::Filtered<soa::Join<aod::HfCandXic, aod::HfSelXicToXiPiPi>>;
@@ -652,14 +652,14 @@ struct HfTreeCreatorXic0XicpToHadronic {
 	using SelectedXicpCandidatesKfMc = soa::Filtered<soa::Join<aod::HfCandXic, aod::HfCandXicKF, aod::HfCandXicMcRec, aod::HfSelXicToXiPiPi>>;
 	using MatchedGenXicToXiPiPi = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandXicMcGen>>;
 
-	Filter filterSelecXicptCandidates = aod::hf_sel_candidate_xic::isSelXicToXiPiPi >= configs.selectionFlagXicp;
-	Filter filterGenXicToXiPiPi = (nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi)) || 
-								   nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)));
+	Filter filterSelecXicptCandidates = aod::hf_sel_xic0_xicp_to_hadronic::xicp::isSelXicpToXiPiPi >= configs.selectionFlagXicp;
+	Filter filterGenXicToXiPiPi = (nabs(aod::hf_cand_xic0_xicp_to_hadronic::xicp::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_xic0_xicp_to_hadronic::DecayTypeXicp::XicToXiPiPi)) || 
+								   nabs(aod::hf_cand_xic0_xicp_to_hadronic::xicp::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_xic0_xicp_to_hadronic::DecayTypeXicp::XicToXiResPiToXiPiPi)));
 
-	Partition<SelectedXicpCandidatesMc> recXicpSig = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec) != int8_t(0);
-	Partition<SelectedXicpCandidatesMc> recXicpBkg = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec) == int8_t(0);
-	Partition<SelectedXicpCandidatesKfMc> recXicpSigKf = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec) != int8_t(0);
-	Partition<SelectedXicpCandidatesKfMc> recXicpBkgKf = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec) == int8_t(0);
+	Partition<SelectedXicpCandidatesMc> recXicpSig = nabs(aod::hf_cand_xic0_xicp_to_hadronic::xicp::flagMcMatchRec) != int8_t(0);
+	Partition<SelectedXicpCandidatesMc> recXicpBkg = nabs(aod::hf_cand_xic0_xicp_to_hadronic::xicp::flagMcMatchRec) == int8_t(0);
+	Partition<SelectedXicpCandidatesKfMc> recXicpSigKf = nabs(aod::hf_cand_xic0_xicp_to_hadronic::xicp::flagMcMatchRec) != int8_t(0);
+	Partition<SelectedXicpCandidatesKfMc> recXicpBkgKf = nabs(aod::hf_cand_xic0_xicp_to_hadronic::xicp::flagMcMatchRec) == int8_t(0);
 
 	void init(InitContext const&)
 	{

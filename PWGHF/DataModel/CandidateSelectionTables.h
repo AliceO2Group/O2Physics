@@ -339,14 +339,31 @@ DECLARE_SOA_TABLE(HfMlXicToXiPiPi, "AOD", "HFMLXICTOXI2PI", //!
 
 namespace hf_sel_xic0_xicp_to_hadronic
 {
+
+namespace xic0
+{
 DECLARE_SOA_COLUMN(IsSelXic0ToXiPi, isSelXic0ToXiPi, int);
 DECLARE_SOA_COLUMN(MlProbXic0ToXiPi, mlProbXic0ToXiPi, std::vector<float>);
+} // namespace xic0
+
+namespace xicp
+{
+DECLARE_SOA_COLUMN(IsSelXicpToXiPiPi, isSelXicpToXiPiPi, int);
+DECLARE_SOA_COLUMN(MlProbXicpToXiPiPi, mlProbXicpToXiPiPi, std::vector<float>);
+} // namespace xicp
+
 } // namespace hf_sel_xic0_xicp_to_hadronic
 
 DECLARE_SOA_TABLE(HfSelXic0ToXiPi, "AOD", "HFSELXIC0TOXIPI",
-		hf_sel_xic0_xicp_to_hadronic::IsSelXic0ToXiPi);
+		hf_sel_xic0_xicp_to_hadronic::xic0::IsSelXic0ToXiPi);
 DECLARE_SOA_TABLE(HfMlXic0ToXiPi, "AOD", "HFMLXIC0TOXIPI",
-		hf_sel_xic0_xicp_to_hadronic::MlProbXic0ToXiPi);
+		hf_sel_xic0_xicp_to_hadronic::xic0::MlProbXic0ToXiPi);
+
+DECLARE_SOA_TABLE(HfSelXicpToXiPiPi, "AOD", "HFSELXICPTOXIPIPI",
+		hf_sel_xic0_xicp_to_hadronic::xic0::IsSelXic0ToXiPi);
+DECLARE_SOA_TABLE(HfMlXicpToXiPiPi, "AOD", "HFMLXICPTOXIPIPI",
+		hf_sel_xic0_xicp_to_hadronic::xic0::MlProbXic0ToXiPi);
+
 
 namespace hf_sel_candidate_xicc
 {
