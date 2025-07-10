@@ -18,6 +18,7 @@
 #include "DataFormatsParameters/GRPLHCIFData.h"
 
 #include <map>
+#include <string>
 #include <vector>
 
 namespace o2

@@ -17,6 +17,10 @@
 
 #include "Framework/Logger.h"
 
+#include <set>
+#include <string>
+#include <utility>
+
 bool TrackSelection::FulfillsITSHitRequirements(uint8_t itsClusterMap) const
 {
   constexpr uint8_t bit = 1;

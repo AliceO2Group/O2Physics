@@ -31,6 +31,8 @@
 #include "TProfile.h"
 #include "TStopwatch.h"
 
+#include <iostream> // FIXME
+
 using namespace std;
 
 multMCCalibrator::multMCCalibrator() : TNamed(),

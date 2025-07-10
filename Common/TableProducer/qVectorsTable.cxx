@@ -18,7 +18,22 @@
 ///         (with or without corrections) and save the results in a dedicated table.
 ///
 
-// C++/ROOT includes.
+#include "Common/Core/EventPlaneHelper.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DetectorsCommonDataFormats/AlignParam.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+
 #include <TComplex.h>
 #include <TH3F.h>
 
@@ -26,26 +41,6 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-// o2Physics includes.
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-
-#include "Common/Core/EventPlaneHelper.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/FT0Corrected.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-
-#include "Common/DataModel/Qvectors.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-// o2 includes.
-#include "CCDB/BasicCCDBManager.h"
-#include "DetectorsCommonDataFormats/AlignParam.h"
 
 using namespace o2;
 using namespace o2::framework;
