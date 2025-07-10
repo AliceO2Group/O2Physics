@@ -23,6 +23,8 @@
 
 #include "TFile.h"
 
+#include <vector>
+
 namespace o2::pid
 {
 
