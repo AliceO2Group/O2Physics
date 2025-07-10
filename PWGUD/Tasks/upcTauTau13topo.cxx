@@ -17,9 +17,9 @@
 // copts="--configuration json://tautauConfig.json -b"
 // o2-analysis-ud-tautau13topo $copts > output.log
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 // #include "TDatabasePDG.h" // not recommended in o2
 #include "Framework/O2DatabasePDGPlugin.h"
@@ -28,13 +28,13 @@
 // #include "Common/DataModel/EventSelection.h"
 // #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Common/DataModel/PIDResponse.h"
-#include "PWGUD/DataModel/UDTables.h"
-#include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/DGPIDSelector.h"
 #include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/Core/UDHelpers.h"
+#include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/PIDResponse.h"
 // #include <CommonUtils/EnumFlags.h>
 #include "TPDGCode.h"
 
@@ -52,7 +52,8 @@ namespace tau_tree
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
 DECLARE_SOA_COLUMN(Bc, bc, int);
 DECLARE_SOA_COLUMN(TotalTracks, totalTracks, int);
-DECLARE_SOA_COLUMN(NumContrib, numContrib, int);
+DECLARE_SOA_COLUMN(NumContrib, numContrib, int8_t);
+DECLARE_SOA_COLUMN(RctOk, rctOk, int);
 // DECLARE_SOA_COLUMN(GlobalNonPVtracks, globalNonPVtracks, int);
 // DECLARE_SOA_COLUMN(PosX, posX, float);
 // DECLARE_SOA_COLUMN(PosY, posY, float);
@@ -63,14 +64,14 @@ DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, double);
 DECLARE_SOA_COLUMN(Trs, trs, bool);
 DECLARE_SOA_COLUMN(Trofs, trofs, bool);
 DECLARE_SOA_COLUMN(Hmpr, hmpr, bool);
-// DECLARE_SOA_COLUMN(Tfb, tfb, int);
-// DECLARE_SOA_COLUMN(ItsRofb, itsRofb, int);
-// DECLARE_SOA_COLUMN(Sbp, sbp, int);
-// DECLARE_SOA_COLUMN(ZvtxFT0vsPv, zvtxFT0vsPv, int);
-// DECLARE_SOA_COLUMN(VtxITSTPC, vtxITSTPC, int);
+DECLARE_SOA_COLUMN(Tfb, tfb, bool);
+DECLARE_SOA_COLUMN(ItsRofb, itsRofb, bool);
+DECLARE_SOA_COLUMN(Sbp, sbp, bool);
+DECLARE_SOA_COLUMN(ZvtxFT0vsPv, zvtxFT0vsPv, bool);
+DECLARE_SOA_COLUMN(VtxITSTPC, vtxITSTPC, bool);
 DECLARE_SOA_COLUMN(ZdcAenergy, zdcAenergy, float);
 DECLARE_SOA_COLUMN(ZdcCenergy, zdcCenergy, float);
-DECLARE_SOA_COLUMN(Qtot, qtot, int16_t);
+DECLARE_SOA_COLUMN(Qtot, qtot, int8_t);
 // FIT info
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float);
@@ -83,9 +84,14 @@ DECLARE_SOA_COLUMN(TrkPx, trkPx, float[4]);
 DECLARE_SOA_COLUMN(TrkPy, trkPy, float[4]);
 DECLARE_SOA_COLUMN(TrkPz, trkPz, float[4]);
 // DECLARE_SOA_COLUMN(TrkSign, trkSign, int[4]);
-// DECLARE_SOA_COLUMN(TrkDCAxy, trkDCAxy, float[4]);
-// DECLARE_SOA_COLUMN(TrkDCAz, trkDCAz, float[4]);
+DECLARE_SOA_COLUMN(TrkDCAxy, trkDCAxy, float[4]);
+DECLARE_SOA_COLUMN(TrkDCAz, trkDCAz, float[4]);
 DECLARE_SOA_COLUMN(TrkTPCcr, trkTPCcr, int[4]);
+DECLARE_SOA_COLUMN(TrkTPCfind, trkTPCfind, int[4]);
+DECLARE_SOA_COLUMN(TrkTPCchi2, trkTPCchi2, float[4]);
+DECLARE_SOA_COLUMN(TrkITSchi2, trkITSchi2, float[4]);
+DECLARE_SOA_COLUMN(TrkITScl, trkITScl, int[4]);
+
 DECLARE_SOA_COLUMN(TrkTPCsignal, trkTPCsignal, float[4]);
 DECLARE_SOA_COLUMN(TrkTPCnSigmaEl, trkTPCnSigmaEl, float[4]);
 // DECLARE_SOA_COLUMN(TrkTPCnSigmaMu, trkTPCnSigmaMu, float[4]);
@@ -105,19 +111,21 @@ DECLARE_SOA_COLUMN(TrkTOFchi2, trkTOFchi2, float[4]);
 } // end of namespace tau_tree
 DECLARE_SOA_TABLE(TauFourTracks, "AOD", "TAUFOURTRACK",
                   tau_tree::RunNumber, tau_tree::Bc, tau_tree::TotalTracks, tau_tree::NumContrib,
+                  tau_tree::RctOk,
                   // tau_tree::GlobalNonPVtracks,
                   // tau_tree::PosX, tau_tree::PosY,
                   tau_tree::PosZ,
                   tau_tree::FlagUPC, tau_tree::OccupancyInTime, tau_tree::HadronicRate, tau_tree::ZdcAenergy, tau_tree::ZdcCenergy,
                   tau_tree::Qtot,
                   tau_tree::Trs, tau_tree::Trofs, tau_tree::Hmpr,
-                  // tau_tree::Tfb, tau_tree::ItsRofb, tau_tree::Sbp, tau_tree::ZvtxFT0vsPv, tau_tree::VtxITSTPC,
+                  tau_tree::Tfb, tau_tree::ItsRofb, tau_tree::Sbp, tau_tree::ZvtxFT0vsPv, tau_tree::VtxITSTPC,
                   tau_tree::TotalFT0AmplitudeA, tau_tree::TotalFT0AmplitudeC, tau_tree::TotalFV0AmplitudeA,
                   // tau_tree::TimeFT0A, tau_tree::TimeFT0C, tau_tree::TimeFV0A,
                   tau_tree::TrkPx, tau_tree::TrkPy, tau_tree::TrkPz,
                   // tau_tree::TrkSign,
-                  // tau_tree::TrkDCAxy, tau_tree::TrkDCAz,
+                  tau_tree::TrkDCAxy, tau_tree::TrkDCAz,
                   tau_tree::TrkTPCcr,
+                  tau_tree::TrkTPCfind, tau_tree::TrkTPCchi2, tau_tree::TrkITSchi2, tau_tree::TrkITScl,
                   tau_tree::TrkTPCsignal, tau_tree::TrkTPCnSigmaEl, tau_tree::TrkTPCnSigmaPi, tau_tree::TrkTPCnSigmaKa, tau_tree::TrkTPCnSigmaPr, tau_tree::TrkTPCnSigmaMu,
                   tau_tree::TrkTOFbeta, tau_tree::TrkTOFnSigmaEl, tau_tree::TrkTOFnSigmaPi, tau_tree::TrkTOFnSigmaKa, tau_tree::TrkTOFnSigmaPr, tau_tree::TrkTOFnSigmaMu,
                   tau_tree::TrkTOFchi2);
@@ -138,7 +146,7 @@ struct TauTau13topo {
   ConfigurableAxis ptAxis{"ptAxis", {120, 0., 4.}, "#it{p} (GeV/#it{c})"};
   //  ConfigurableAxis etaAxis{"etaAxis", {100, -2., 2.}, "#eta"};
   ConfigurableAxis dedxAxis{"dedxAxis", {100, 20., 160.}, "dE/dx"};
-  ConfigurableAxis minvAxis{"minvAxis", {100, 0.4, 3.5}, "M_{inv} (GeV/#it{c}^{2})"};
+  ConfigurableAxis minvAxis{"minvAxis", {100, 0.5, 5.0}, "M_{inv} (GeV/#it{c}^{2})"};
   ConfigurableAxis phiAxis{"phiAxis", {120, 0., 3.2}, "#phi"};
   //  ConfigurableAxis vectorAxis{"vectorAxis", {100, 0., 2.}, "A_{V}"};
   //  ConfigurableAxis scalarAxis{"scalarAxis", {100, -1., 1.}, "A_{S}"};
@@ -215,6 +223,7 @@ struct TauTau13topo {
     const AxisSpec scalarAxis{100, -1., 1., "A_{S}"};
     const AxisSpec axisZDC{50, -1., 14., "#it{E} (TeV)"};
     const AxisSpec axisInvMass4trk{160, 0.5, 8.5, "#it{M}^{4trk}_{inv} (GeV/#it{c}^{2})"};
+    const AxisSpec acoAxis{100, 0., 1., "A^{1+3}"};
 
     if (doprocessDataSG) {
       registry.add("global/RunNumber", "Run number; Run; Collisions", {HistType::kTH1F, {{150, 544013, 545367}}});
@@ -805,22 +814,78 @@ struct TauTau13topo {
       registry.add("pidTOF/h3piTOFchi2Cut23", "tof chi2;chi2 TOF;events", {HistType::kTH1F, {{100, 0., 10.}}});
       // registry.add("pidTOF/h3piTOFchi2Cut36", "tof chi2;chi2 TOF;events", {HistType::kTH1F, {{100, 0., 10.}}});
       // registry.add("pidTOF/h3piTOFchi2Cut37", "tof chi2;chi2 TOF;events", {HistType::kTH1F, {{100, 0., 10.}}});
+
+      // histograms mass3pi vs acoponarity
+      registry.add("control/cut0/h3piMassVsAco", "3#pi mass vs acoplanarity, up to 4 entries per event ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry.add("control/cut20/h3piMassVsAco", "3#pi mass vs acoplanarity, up to 4 entries per event ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry.add("control/cut33/h3piMassVsAco", "3#pi mass vs acoplanarity, up to 4 entries per event ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry.add("control/cut21/h3piMassVsAco", "3#pi mass vs acoplanarity, up to 4 entries per event ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry.add("control/cut24/h3piMassVsAco", "3#pi mass vs acoplanarity, up to 4 entries per event ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry.add("control/cut25/h3piMassVsAco", "3#pi mass vs acoplanarity, up to 4 entries per event ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry.add("control/cut28/h3piMassVsAco", "3#pi mass vs acoplanarity, up to 4 entries per event ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry.add("control/cut22/h3piMassVsAco", "3#pi mass vs acoplanarity, up to 4 entries per event ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry.add("control/cut29/h3piMassVsAco", "3#pi mass vs acoplanarity, up to 4 entries per event ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry.add("control/cut26/h3piMassVsAco", "3#pi mass vs acoplanarity, up to 4 entries per event ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry.add("control/cut34/h3piMassVsAco", "3#pi mass vs acoplanarity, up to 4 entries per event ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry.add("control/cut30/h3piMassVsAco", "3#pi mass vs acoplanarity, up to 4 entries per event ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry.add("control/cut27/h3piMassVsAco", "3#pi mass vs acoplanarity, up to 4 entries per event ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry.add("control/cut35/h3piMassVsAco", "3#pi mass vs acoplanarity, up to 4 entries per event ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry.add("control/cut23/h3piMassVsAco", "3#pi mass vs acoplanarity, up to 4 entries per event ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+
     } // end of data histograms
 
     // MC part
     // histograms filled by processSimpleMCSG
     // CollisionMC histograms
-    if (doprocessEfficiencyMCSG) {
-      registry1MC.add("globalMC/hGeneratorID", ";Generator ID;events", {HistType::kTH1F, {{100, 0., 1000.}}});
+    if (doprocessEfficiencyMCSG || doprocessSimpleMCSG) {
       registryMC.add("globalMC/hMCZvertex", ";V_{Z}^{MC} (cm);events", {HistType::kTH1F, {{100, -25., 25.}}});
       registryMC.add("globalMC/hMCefficiency", ";Cut Number;events", {HistType::kTH1F, {{20, 0., 20.}}});
+
+      // efficiency el
+      registryMC.add("efficiencyMCEl/effiEl", ";Efficiency e3#pi;events", {HistType::kTH1F, {{70, 0., 70.}}});
+      // efficiency pi
+      registryMC.add("efficiencyMCPi/effiPi", ";Efficiency #pi3#pi;events", {HistType::kTH1F, {{20, 0., 20.}}});
+      // efficiency mu
+      registryMC.add("efficiencyMCMu/effiMu", ";Efficiency #mu3#pi;events", {HistType::kTH1F, {{20, 0., 20.}}});
+    }
+
+    if (doprocessSimpleMCSG) {
       registryMC.add("globalMC/hMCnPart", ";N_{part};Type;events", {HistType::kTH2F, {{25, 0., 25.}, {10, 0, 10}}});
+
       registryMC.add("globalMC/hMCetaGen", ";#eta^{gen};N^{MC particles}", {HistType::kTH1F, {{100, -5., 5.}}});
       registryMC.add("globalMC/hMCphiGen", ";#phi^{gen};N^{MC particles}", {HistType::kTH1F, {{100, 0., 6.4}}});
       registryMC.add("globalMC/hMCyGen", ";y^{gen};N^{MC particles}", {HistType::kTH1F, {{100, -5., 5.}}});
       registryMC.add("globalMC/hMCptGen", ";p_{T}^{gen};N^{MC particles}", {HistType::kTH1F, {{100, 0., 4.}}});
 
+      // tau
+      registryMC.add("tauMC/hMCeta", ";#eta^{#tau};N^{#tau} ", {HistType::kTH1F, {{100, -5., 5.}}});
+      registryMC.add("tauMC/hMCy", ";y^{#tau};N^{#tau}", {HistType::kTH1F, {{100, -5., 5.}}});
+      registryMC.add("tauMC/hMCphi", ";#phi^{#tau};N^{#tau}", {HistType::kTH1F, {{100, 0., 6.4}}});
+      registryMC.add("tauMC/hMCpt", ";#it{p}_{T}^{#tau};N^{#tau}", {HistType::kTH1F, {{100, 0., 10.}}});
+
+      registryMC.add("tauMC/hMCdeltaeta", ";#Delta#eta^{#tau};events ", {HistType::kTH1F, {{100, -5., 5.}}});
+      registryMC.add("tauMC/hMCdeltaphi", ";#Delta#phi^{#tau}(deg.);events", {HistType::kTH1F, {{100, 131., 181}}});
+
+      // electron
+      registryMC.add("electronMC/hMCeta", ";#eta^{e};N^{e}", {HistType::kTH1F, {{100, -5., 5.}}});
+      registryMC.add("electronMC/hMCy", ";y^{e};N^{e}", {HistType::kTH1F, {{100, -5., 5.}}});
+      registryMC.add("electronMC/hMCphi", ";#phi^{e};N^{e}", {HistType::kTH1F, {{100, 0., 6.4}}});
+      registryMC.add("electronMC/hMCpt", ";#it{p}_{T}^{e};N^{e}", {HistType::kTH1F, {{400, 0., 10.}}});
+
+      // efficiency mu
+      registryMC.add("efficiencyMCMu/hpTmuon", ";p_{T}^{#mu, gen} (GeV/c);events", {HistType::kTH1F, {{200, 0., 5.}}});
+
+      // efficiency pi
+      registryMC.add("efficiencyMCPi/hpTpi", ";p_{T}^{#pi, gen} (GeV/c);events", {HistType::kTH1F, {{200, 0., 5.}}});
+
+      // efficiency el
+      registryMC.add("efficiencyMCEl/hpTelec", ";p_{T}^{e, gen} (GeV/c);events", {HistType::kTH1F, {axispt}});
+    }
+
+    if (doprocessEfficiencyMCSG) {
       // MC reconstructed with information from MC true
+      registry1MC.add("globalMC/hGeneratorID", ";Generator ID;events", {HistType::kTH1F, {{100, 0., 1000.}}});
+
       registryMC.add("globalMCrec/hMCetaGenCol", ";#eta^{genCol};events", {HistType::kTH1F, {{100, -5., 5.}}});
       registryMC.add("globalMCrec/hMCphiGenCol", ";#phi^{genCol};events", {HistType::kTH1F, {{100, 0., 6.4}}});
       registryMC.add("globalMCrec/hMCyGenCol", ";y^{genCol};events", {HistType::kTH1F, {{100, -5., 5.}}});
@@ -1461,33 +1526,6 @@ struct TauTau13topo {
       registryMC.add("controlMCcomb/cut35/hPtSpectrumEl", ";p_{T}^{comb} (GeV/c);entries", {HistType::kTH1F, {axispt}});
       // zrobic hpTspectrumEl dla cut 0,20-35: registry.get<TH1>(HIST("global/hFinalPtSpectrumEl"))->Fill(tmpPt[i]);
 
-      // tau
-      registryMC.add("tauMC/hMCeta", ";#eta^{#tau};N^{#tau} ", {HistType::kTH1F, {{100, -5., 5.}}});
-      registryMC.add("tauMC/hMCy", ";y^{#tau};N^{#tau}", {HistType::kTH1F, {{100, -5., 5.}}});
-      registryMC.add("tauMC/hMCphi", ";#phi^{#tau};N^{#tau}", {HistType::kTH1F, {{100, 0., 6.4}}});
-      registryMC.add("tauMC/hMCpt", ";#it{p}_{T}^{#tau};N^{#tau}", {HistType::kTH1F, {{100, 0., 10.}}});
-
-      registryMC.add("tauMC/hMCdeltaeta", ";#Delta#eta^{#tau};events ", {HistType::kTH1F, {{100, -5., 5.}}});
-      registryMC.add("tauMC/hMCdeltaphi", ";#Delta#phi^{#tau}(deg.);events", {HistType::kTH1F, {{100, 131., 181}}});
-
-      // electron
-      registryMC.add("electronMC/hMCeta", ";#eta^{e};N^{e}", {HistType::kTH1F, {{100, -5., 5.}}});
-      registryMC.add("electronMC/hMCy", ";y^{e};N^{e}", {HistType::kTH1F, {{100, -5., 5.}}});
-      registryMC.add("electronMC/hMCphi", ";#phi^{e};N^{e}", {HistType::kTH1F, {{100, 0., 6.4}}});
-      registryMC.add("electronMC/hMCpt", ";#it{p}_{T}^{e};N^{e}", {HistType::kTH1F, {{400, 0., 10.}}});
-
-      // efficiency mu
-      registryMC.add("efficiencyMCMu/effiMu", ";Efficiency #mu3#pi;events", {HistType::kTH1F, {{20, 0., 20.}}});
-      registryMC.add("efficiencyMCMu/hpTmuon", ";p_{T}^{#mu, gen} (GeV/c);events", {HistType::kTH1F, {{200, 0., 5.}}});
-
-      // efficiency pi
-      registryMC.add("efficiencyMCPi/effiPi", ";Efficiency #pi3#pi;events", {HistType::kTH1F, {{20, 0., 20.}}});
-      registryMC.add("efficiencyMCPi/hpTpi", ";p_{T}^{#pi, gen} (GeV/c);events", {HistType::kTH1F, {{200, 0., 5.}}});
-
-      // efficiency el
-      registryMC.add("efficiencyMCEl/effiEl", ";Efficiency e3#pi;events", {HistType::kTH1F, {{70, 0., 70.}}});
-      registryMC.add("efficiencyMCEl/hpTelec", ";p_{T}^{e, gen} (GeV/c);events", {HistType::kTH1F, {axispt}});
-
       // efficiency el
       registryMC.add("efficiencyMCEl/hMCdeltaAlphaEpi", ";#Delta#alpha^{e-#pi(3x), gen} (rad);events", {HistType::kTH1F, {{100, -0.1, 3.2}}});
       registryMC.add("efficiencyMCEl/hMCdeltaAlphaPiPi", ";#Delta#alpha^{#pi-#pi(3x), gen} (rad);events", {HistType::kTH1F, {{100, -0.1, 3.2}}});
@@ -1505,6 +1543,40 @@ struct TauTau13topo {
       registryMC.add("efficiencyMCEl/hMCinvmass4pi", ";M_{inv}^{4#pi true} (GeV/c^{2}) ;events", {HistType::kTH1F, {axisInvMass4trk}});
       registryMC.add("efficiencyMCEl/hMCinvmass3pi", ";M_{inv}^{3#pi true} (GeV/c^{2}) ;events", {HistType::kTH1F, {{100, 0.4, 2.4}}});
       registryMC.add("efficiencyMCEl/hMCdeltaphi13", ";#Delta#phi^{1-3 true} ;events", {HistType::kTH1F, {{100, 0., 3.2}}});
+
+      // histograms mass3pi vs acoponarity MC true
+      registry1MC.add("controlMCtrue/cut0/h3piMassVsAco", "3#pi mass vs acoplanarity MC sig ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCtrue/cut20/h3piMassVsAco", "3#pi mass vs acoplanarity MC sig ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCtrue/cut33/h3piMassVsAco", "3#pi mass vs acoplanarity MC sig ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCtrue/cut21/h3piMassVsAco", "3#pi mass vs acoplanarity MC sig ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCtrue/cut24/h3piMassVsAco", "3#pi mass vs acoplanarity MC sig ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCtrue/cut25/h3piMassVsAco", "3#pi mass vs acoplanarity MC sig ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCtrue/cut28/h3piMassVsAco", "3#pi mass vs acoplanarity MC sig ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCtrue/cut22/h3piMassVsAco", "3#pi mass vs acoplanarity MC sig ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCtrue/cut29/h3piMassVsAco", "3#pi mass vs acoplanarity MC sig ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCtrue/cut26/h3piMassVsAco", "3#pi mass vs acoplanarity MC sig ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCtrue/cut34/h3piMassVsAco", "3#pi mass vs acoplanarity MC sig ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCtrue/cut30/h3piMassVsAco", "3#pi mass vs acoplanarity MC sig ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCtrue/cut27/h3piMassVsAco", "3#pi mass vs acoplanarity MC sig ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCtrue/cut35/h3piMassVsAco", "3#pi mass vs acoplanarity MC sig ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCtrue/cut23/h3piMassVsAco", "3#pi mass vs acoplanarity MC sig ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+
+      // histograms mass3pi vs acoponarity MC comb
+      registry1MC.add("controlMCcomb/cut0/h3piMassVsAco", "3#pi mass vs acoplanarity MC comb ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCcomb/cut20/h3piMassVsAco", "3#pi mass vs acoplanarity MC comb ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCcomb/cut33/h3piMassVsAco", "3#pi mass vs acoplanarity MC comb ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCcomb/cut21/h3piMassVsAco", "3#pi mass vs acoplanarity MC comb ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCcomb/cut24/h3piMassVsAco", "3#pi mass vs acoplanarity MC comb ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCcomb/cut25/h3piMassVsAco", "3#pi mass vs acoplanarity MC comb ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCcomb/cut28/h3piMassVsAco", "3#pi mass vs acoplanarity MC comb ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCcomb/cut22/h3piMassVsAco", "3#pi mass vs acoplanarity MC comb ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCcomb/cut29/h3piMassVsAco", "3#pi mass vs acoplanarity MC comb ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCcomb/cut26/h3piMassVsAco", "3#pi mass vs acoplanarity MC comb ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCcomb/cut34/h3piMassVsAco", "3#pi mass vs acoplanarity MC comb ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCcomb/cut30/h3piMassVsAco", "3#pi mass vs acoplanarity MC comb ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCcomb/cut27/h3piMassVsAco", "3#pi mass vs acoplanarity MC comb ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCcomb/cut35/h3piMassVsAco", "3#pi mass vs acoplanarity MC comb ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
+      registry1MC.add("controlMCcomb/cut23/h3piMassVsAco", "3#pi mass vs acoplanarity MC comb ;M_{inv}^{3#pi} (GeV/c^{2});A^{1+3};entries", {HistType::kTH2F, {minvAxis, acoAxis}});
 
     } // end of MC histograms processEfficiencyMCSG
 
@@ -1651,6 +1723,8 @@ struct TauTau13topo {
     registry.get<TH1>(HIST("control/cut") + HIST(kHistoname[mode]) + HIST("/hTPCnCrossedRows"))->Fill(nCRtpc);
     registry.get<TH1>(HIST("control/cut") + HIST(kHistoname[mode]) + HIST("/hPtSpectrumEl"))->Fill(ptelec);
     registry.get<TH1>(HIST("control/cut") + HIST(kHistoname[mode]) + HIST("/hTofChi2El"))->Fill(tofchi2);
+    float aco = 1. - pi3deltaPhi / o2::constants::math::PI;
+    registry.get<TH2>(HIST("control/cut") + HIST(kHistoname[mode]) + HIST("/h3piMassVsAco"))->Fill(pi3invMass, aco);
   }
 
   // fill control histograms per track in MC true
@@ -1671,6 +1745,8 @@ struct TauTau13topo {
     registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(kHistoname[mode]) + HIST("/hPtSpectrumEl"))->Fill(ptelec);
     // registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(kHistoname[mode]) + HIST("/h13EtaSum"))->Fill(pi3etasum);
     registry1MC.get<TH1>(HIST("controlMCtrue/cut") + HIST(kHistoname[mode]) + HIST("/hTofChi2El"))->Fill(tofchi2);
+    float aco = 1. - pi3deltaPhi / o2::constants::math::PI;
+    registry1MC.get<TH2>(HIST("controlMCtrue/cut") + HIST(kHistoname[mode]) + HIST("/h3piMassVsAco"))->Fill(pi3invMass, aco);
   }
 
   // fill control histograms per track in MC true
@@ -1691,6 +1767,8 @@ struct TauTau13topo {
     registryMC.get<TH1>(HIST("controlMCcomb/cut") + HIST(kHistoname[mode]) + HIST("/hPtSpectrumEl"))->Fill(ptelec);
     // registryMC.get<TH1>(HIST("controlMCtrue/cut") + HIST(kHistoname[mode]) + HIST("/h13EtaSum"))->Fill(pi3etasum);
     registry1MC.get<TH1>(HIST("controlMCcomb/cut") + HIST(kHistoname[mode]) + HIST("/hTofChi2El"))->Fill(tofchi2);
+    float aco = 1. - pi3deltaPhi / o2::constants::math::PI;
+    registry1MC.get<TH2>(HIST("controlMCcomb/cut") + HIST(kHistoname[mode]) + HIST("/h3piMassVsAco"))->Fill(pi3invMass, aco);
   }
 
   template <typename T>
@@ -1919,6 +1997,45 @@ struct TauTau13topo {
     return true;
   }
 
+  // check ITS clusters, how many -1,0,1,7 + 10 if 0,1,2 layers were fired
+  // analysis track quality check
+  template <typename T>
+  int numberOfItsClustersCheck(T track)
+  {
+    if (!track.hasITS())
+      return -1;
+    int nITSbits = 0;
+    int firstThreeLayers = 0;
+    uint32_t clusterSizes = track.itsClusterSizes();
+    for (int layer = 0; layer < 7; layer++) {
+      if ((clusterSizes >> (layer * 4)) & 0xf) {
+        nITSbits++;
+        if (layer < 3)
+          firstThreeLayers++;
+      }
+    } // end of loop over ITS bits
+    if (firstThreeLayers == 3)
+      nITSbits += 10;
+
+    return nITSbits;
+  }
+
+  // RCT check
+  template <typename C>
+  int isGoodRCTflag(C const& coll)
+  {
+    if (sgSelector.isCBTHadronZdcOk(coll))
+      return 4;
+    else if (sgSelector.isCBTHadronOk(coll))
+      return 3;
+    else if (sgSelector.isCBTZdcOk(coll))
+      return 2;
+    else if (sgSelector.isCBTOk(coll))
+      return 1;
+    else
+      return 0;
+  }
+
   //  using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>;
   //  using UDCollisionFull = UDCollisionsFull::iterator;
   using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
@@ -1930,9 +2047,6 @@ struct TauTau13topo {
   Filter pVContributorFilter = aod::udtrack::isPVContributor == true;
   using PVTracks = soa::Filtered<UDTracksFull>;
 
-  //  using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
-  using LabeledTracks = soa::Join<aod::UDTracks, aod::UDMcTrackLabels, aod::UDTracksExtra, aod::UDTracksPID, aod::UDTracksFlags, aod::UDTracksDCA>;
-  Preslice<aod::UDTracks> perCollision = aod::udtrack::udCollisionId;
   // PVContributors in MC handling
   //  Filter pVContributorFilterMC = aod::udtrack::isPVContributor == true;
   //  using PVTracksMC = soa::Filtered<LabeledTracks>;
@@ -3216,6 +3330,7 @@ struct TauTau13topo {
 
     // loop over MC particles
     for (const auto& mcParticle : mcParticles) {
+      // LOGF(info, "<processSimpleMCSG> mcParticle pdg %d",  mcParticle.pdgCode());
       // primaries
       // if (mcParticle.isPhysicalPrimary()) {
       // countPrim++;
@@ -3393,20 +3508,42 @@ struct TauTau13topo {
 
   } // end of processSimpleMCSG
 
+  // using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
+  using LabeledTracks = soa::Join<aod::UDTracks, aod::UDMcTrackLabels, aod::UDTracksExtra, aod::UDTracksPID, aod::UDTracksFlags, aod::UDTracksDCA>;
+  Preslice<aod::UDTracks> perCollision = aod::udtrack::udCollisionId;
+  // ZDC is not reproduced in MC, it is for a consistency
+  using FullMcUdCollisions = soa::Join<aod::UDMcCollsLabels, aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced, aod::UDCollisionSelExtras>;
+  // using FullMcUdCollisions = soa::Join<aod::UDMcCollsLabels, aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDCollisionSelExtras>;
+  // PresliceUnsorted<FullMcUdCollisions> colPerMcCollision = aod::udcollision::udMcCollisionId;
+  // PresliceUnsorted<aod::UDMcParticles> partPerMcCollision = aod::udmcparticle::udMcCollisionId;
+
   void processEfficiencyMCSG(aod::UDMcCollision const& mcCollision,
+                             // void processEfficiencyMCSG(aod::UDMcCollisions const& mcCollisions,
                              // soa::SmallGroups<soa::Join<aod::UDMcCollsLabels, aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>> const& collisions,
-                             soa::SmallGroups<soa::Join<aod::UDMcCollsLabels, aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced, aod::UDCollisionSelExtras>> const& collisions,
+                             // soa::SmallGroups<soa::Join<aod::UDMcCollsLabels, aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced, aod::UDCollisionSelExtras>> const& collisions,
+                             soa::SmallGroups<FullMcUdCollisions> const& collisions,
+                             // FullMcUdCollisions const& collisionsFull,
                              LabeledTracks const& tracks,
                              aod::UDMcParticles const& mcParticles)
+  // aod::UDMcParticles const& mcParts)
   {
+    // LOGF(info, "<tautau13topo_MC> Per DF: UDMcParticles size %d, UDMcCollisions size %d, FullMcUdCollisions size %d",  mcParts.size(), mcCollisions.size(), collisionsFull.size());
+    // LOGF(info, "<tautau13topo_MC> Per DF: UDMcParticles size %d, UDMcCollisions size %d, FullMcUdCollisions size %d",  mcParts.size(), mcCollisions.size(), collisions.size());
+
+    // loop over generated collisions
+    // for (const auto &mcCollision : mcCollisions) {
+    // LOGF(info, "<tautau13topo_MC> Per mcCollision not sliced: UDMcParticles size %d, FullMcUdCollisions size %d",  mcParts.size(), collisionsFull.size());
+
     if (verbose) {
       LOGF(info, "<tautau13topo_MC> GeneratorIDtot %d", mcCollision.generatorsID());
       // below is not implemented in UDMcCollisions
       // LOGF(info,"<tautau13topo_MC> GeneratorIDtot %d, GenID %d, subGenID %d, source %d", mcCollision.generatorsID(), mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId());
     }
+    // registry1MC.get<TH1>(HIST("globalMC/hGeneratorID"))->Fill(mcCollision.getGeneratorID());
     registry1MC.get<TH1>(HIST("globalMC/hGeneratorID"))->Fill(mcCollision.generatorsID());
     registryMC.get<TH1>(HIST("globalMC/hMCefficiency"))->Fill(10., 1.);
     if (!(generatorIDMC < 0)) { // do not check generatorsID process if generatorIDMC < 0
+      // if (mcCollision.getGeneratorID() != generatorIDMC)
       if (mcCollision.generatorsID() != generatorIDMC)
         return;
     }
@@ -3426,11 +3563,21 @@ struct TauTau13topo {
 
     TLorentzVector tmp(0., 0., 0., 0.);
 
+    // get reconstructed collisions associated to generated collision
+    // auto const& collisions  = collisionsFull.sliceBy(colPerMcCollision, mcCollision.globalIndex());
+    // LOGF(info, "<tautau13topo_MC> per mcCollisions sliced collisions.size %d",  collisions.size());
+
+    // get MC particles associated to generated collision
+    // auto const& mcParticles  = mcParts.sliceBy(partPerMcCollision, mcCollision.globalIndex());
+    // LOGF(info, "<tautau13topo_MC> per mcCollisions sliced mcParticles.size %d",  mcParticles.size());
+
     for (const auto& mcParticle : mcParticles) {
+      // LOGF(info, "<tautau13topo_MC> mcParticle pdg %d",  mcParticle.pdgCode());
       if (mcParticle.isPhysicalPrimary()) {
         if (mcParticle.pdgCode() != 22 && std::abs(mcParticle.pdgCode()) != 12 && std::abs(mcParticle.pdgCode()) != 14 && std::abs(mcParticle.pdgCode()) != 16 && mcParticle.pdgCode() != 130 && mcParticle.pdgCode() != 111) {
           if (mcParticle.has_mothers()) {
             auto const& mother = mcParticle.mothers_first_as<aod::UDMcParticles>();
+            // LOGF(info, "<tautau13topo_MC> mcParticle has mother %d",mother.pdgCode());
             tmp.SetPxPyPzE(mother.px(), mother.py(), mother.pz(), mother.e());
             if (std::abs(mother.pdgCode()) == 15) {
               if (std::abs(rapidity(mother.e(), mother.pz())) > 0.9)
@@ -3466,7 +3613,6 @@ struct TauTau13topo {
           } // has mothers
         } // charged particles
       } // end if isPhysicalPrimary
-
     } // end loop over mcParticle
 
     registryMC.get<TH1>(HIST("globalMC/hMCefficiency"))->Fill(11., 1.);
@@ -4816,6 +4962,8 @@ struct TauTau13topo {
       } // end of loop over collisions
     } // end of electron + 3pi
 
+    // } // end of loop over mcCollisions
+
   } // end of processEfficiencyMCSG
 
   // skimming: only 4 tracks selection
@@ -4845,7 +4993,7 @@ struct TauTau13topo {
     int nEtaIn15 = 0;
     int npT100 = 0;
     //    int qtot = 0;
-    int16_t qtot = 0;
+    int8_t qtot = 0;
     TLorentzVector p;
     for (const auto& trk : PVContributors) {
       qtot += trk.sign();
@@ -4898,14 +5046,18 @@ struct TauTau13topo {
       return;
     registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(7., 1.);
 
+    // RCT variable
+    int rct = 0;
+    rct = isGoodRCTflag(dgcand);
+
     //
     // variables per track
     //
     int counterTmp = 0;
     float px[4], py[4], pz[4];
     // int sign[4];
-    // float dcaZ[4];
-    // float dcaXY[4];
+    float dcaZ[4];
+    float dcaXY[4];
 
     float tmpDedx[4];
     float tmpTofNsigmaEl[4];
@@ -4922,8 +5074,12 @@ struct TauTau13topo {
     // float chi2TPC[4];
     // float chi2ITS[4];
     float chi2TOF[4] = {-1., -1., -1., -1.};
-    // float nclTPCfind[4];
     int nclTPCcrossedRows[4];
+    int nclTPCfind[4];
+    float nclTPCchi2[4];
+    float trkITSchi2[4];
+    int trkITScl[4];
+
     // double trkTime[4];
     // float trkTimeRes[4];
     float trkTofSignal[4];
@@ -4934,8 +5090,8 @@ struct TauTau13topo {
       py[counterTmp] = trk.py();
       pz[counterTmp] = trk.pz();
       // sign[counterTmp] = trk.sign();
-      // dcaZ[counterTmp] = trk.dcaZ();
-      // dcaXY[counterTmp] = trk.dcaXY();
+      dcaZ[counterTmp] = trk.dcaZ();
+      dcaXY[counterTmp] = trk.dcaXY();
 
       tmpDedx[counterTmp] = trk.tpcSignal();
       nSigmaEl[counterTmp] = trk.tpcNSigmaEl();
@@ -4958,6 +5114,11 @@ struct TauTau13topo {
       // nclTPCfind[counterTmp] = trk.tpcNClsFindable();
       nclTPCcrossedRows[counterTmp] = trk.tpcNClsCrossedRows();
 
+      nclTPCfind[counterTmp] = trk.tpcNClsFindable();
+      nclTPCchi2[counterTmp] = trk.tpcChi2NCl();
+      trkITSchi2[counterTmp] = trk.itsChi2NCl();
+      trkITScl[counterTmp] = numberOfItsClustersCheck(trk);
+
       // trkTime[counterTmp] = trk.trackTime();
       // trkTimeRes[counterTmp] = trk.trackTimeRes();
       counterTmp++;
@@ -4967,6 +5128,7 @@ struct TauTau13topo {
                   dgcand.globalBC(), // is it necessary
                   dgtracks.size(),
                   dgcand.numContrib(),
+                  rct,
                   // dgcand.posX(), dgcand.posY(),
                   dgcand.posZ(),
                   dgcand.flags(),
@@ -4975,12 +5137,12 @@ struct TauTau13topo {
                   energyZNA, energyZNC,
                   qtot,
                   dgcand.trs(), dgcand.trofs(), dgcand.hmpr(), // to test it
-                  // dgcand.tfb(), dgcand.itsROFb(), dgcand.sbp(), dgcand.zVtxFT0vPV(), dgcand.vtxITSTPC(),
+                  dgcand.tfb(), dgcand.itsROFb(), dgcand.sbp(), dgcand.zVtxFT0vPV(), dgcand.vtxITSTPC(),
                   dgcand.totalFT0AmplitudeA(), dgcand.totalFT0AmplitudeC(), dgcand.totalFV0AmplitudeA(),
                   // dgcand.timeFT0A(), dgcand.timeFT0C(), dgcand.timeFV0A(),
                   px, py, pz, // sign,
-                  // dcaXY, dcaZ,
-                  nclTPCcrossedRows,
+                  dcaXY, dcaZ,
+                  nclTPCcrossedRows, nclTPCfind, nclTPCchi2, trkITSchi2, trkITScl,
                   tmpDedx, nSigmaEl, nSigmaPi, nSigmaKa, nSigmaPr, nSigmaMu,
                   trkTofSignal, tmpTofNsigmaEl, tmpTofNsigmaPi, tmpTofNsigmaKa, tmpTofNsigmaPr, tmpTofNsigmaMu,
                   chi2TOF);
