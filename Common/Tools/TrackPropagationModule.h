@@ -20,9 +20,6 @@
 
 #include "Common/Tools/TrackTuner.h"
 
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/Propagator.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/Configurable.h"
 #include "Framework/HistogramSpec.h"
@@ -89,7 +86,7 @@ class TrackPropagationModule
   std::shared_ptr<TH1> trackTunedTracks;
 
   // Running variables
-  std::array<float, 2> mDcaInfo;
+  std::array<float, 2> mDcaInfo{};
   o2::dataformats::DCA mDcaInfoCov;
   o2::dataformats::VertexBase mVtx;
   o2::track::TrackParametrization<float> mTrackPar;

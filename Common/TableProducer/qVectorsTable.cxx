@@ -169,7 +169,7 @@ struct qVectorsTable {
   void init(InitContext& initContext)
   {
     // Check the sub-detector used
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec const& device : workflows.devices) {
       for (auto const& input : device.inputs) {
         if (input.matcher.binding == "Qvectors") {
@@ -260,7 +260,7 @@ struct qVectorsTable {
     }
     fullPath = cfgGainEqPath;
     fullPath += "/FT0";
-    auto objft0Gain = getForTsOrRun<std::vector<float>>(fullPath, timestamp, runnumber);
+    const auto objft0Gain = getForTsOrRun<std::vector<float>>(fullPath, timestamp, runnumber);
     if (!objft0Gain || cfgCorrLevel == 0) {
       for (auto i{0u}; i < 208; i++) {
         FT0RelGainConst.push_back(1.);
@@ -271,7 +271,7 @@ struct qVectorsTable {
 
     fullPath = cfgGainEqPath;
     fullPath += "/FV0";
-    auto objfv0Gain = getForTsOrRun<std::vector<float>>(fullPath, timestamp, runnumber);
+    const auto objfv0Gain = getForTsOrRun<std::vector<float>>(fullPath, timestamp, runnumber);
     if (!objfv0Gain || cfgCorrLevel == 0) {
       for (auto i{0u}; i < 48; i++) {
         FV0RelGainConst.push_back(1.);
@@ -560,7 +560,7 @@ struct qVectorsTable {
       runNumber = currentRun;
     }
 
-    float centAllEstim[4] = {
+    const float centAllEstim[4] = {
       coll.centFT0M(), coll.centFT0A(), coll.centFT0C(),
       coll.centFV0A()};
     cent = centAllEstim[cfgCentEsti];

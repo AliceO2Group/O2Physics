@@ -14,34 +14,55 @@
 ///
 /// \author Evgeny Kryshen <evgeny.kryshen@cern.ch> and Igor Altsybeev <Igor.Altsybeev@cern.ch>
 
-#include <vector>
+#include "Common/DataModel/EventSelection.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/Core/MetadataHelper.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsCTP/Configuration.h>
+#include <DataFormatsCTP/Scalers.h>
+#include <DataFormatsFT0/Digit.h>
+#include <DataFormatsITSMFT/NoiseMap.h> // missing include in TimeDeadMap.
+#include <DataFormatsITSMFT/TimeDeadMap.h>
+#include <DataFormatsParameters/AggregatedRunInfo.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <ITSMFTBase/DPLAlpideParam.h>
+#include <ITSMFTReconstruction/ChipMappingITS.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TMath.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
+#include <algorithm>
+#include <bitset>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <iterator>
+#include <limits>
 #include <map>
 #include <string>
-#include <limits>
-
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/CCDB/TriggerAliases.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/LHCConstants.h"
-#include "Framework/HistogramRegistry.h"
-#include "DataFormatsFT0/Digit.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "DataFormatsParameters/GRPECSObject.h"
-#include "ITSMFTBase/DPLAlpideParam.h"
-#include "MetadataHelper.h"
-#include "DataFormatsParameters/AggregatedRunInfo.h"
-#include "DataFormatsITSMFT/NoiseMap.h" // missing include in TimeDeadMap.h
-#include "DataFormatsITSMFT/TimeDeadMap.h"
-#include "ITSMFTReconstruction/ChipMappingITS.h"
-#include "DataFormatsCTP/Configuration.h"
-#include "DataFormatsCTP/Scalers.h"
-
-#include "TH1D.h"
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -317,7 +338,7 @@ struct BcSelectionTask {
       if (mapRCT == nullptr) {
         LOGP(info, "rct object missing... inserting dummy rct flags");
         mapRCT = new std::map<uint64_t, uint32_t>;
-        uint32_t dummyValue = 1 << 31; // setting bit 31 to indicate that rct object is missing
+        uint32_t dummyValue = 1u << 31; // setting bit 31 to indicate that rct object is missing
         mapRCT->insert(std::pair<uint64_t, uint32_t>(sorTimestamp, dummyValue));
       }
     }
@@ -521,7 +542,7 @@ struct EventSelectionTask {
   int rofLength = -1;                   // ITS ROF length, in bc
   std::string strLPMProductionTag = ""; // MC production tag to be retrieved from AO2D metadata
 
-  int32_t findClosest(int64_t globalBC, std::map<int64_t, int32_t>& bcs)
+  int32_t findClosest(int64_t globalBC, const std::map<int64_t, int32_t>& bcs)
   {
     auto it = bcs.lower_bound(globalBC);
     int64_t bc1 = it->first;
@@ -1286,7 +1307,7 @@ struct LumiTask {
         LOGP(warn, "Cross section for z={} + z={} @ {} GeV is not defined", beamZ1, beamZ2, sqrts);
       }
       // getting CTP config to extract lumi class indices (used for rate fetching and pileup correction)
-      std::map<string, string> metadata;
+      std::map<std::string, std::string> metadata;
       metadata["runNumber"] = std::to_string(run);
       auto config = ccdb->getSpecific<o2::ctp::CTPConfiguration>("CTP/Config/Config", ts, metadata);
       auto classes = config->getCTPClasses();
