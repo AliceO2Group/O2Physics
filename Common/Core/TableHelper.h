@@ -70,7 +70,7 @@ bool getTaskOptionValue(o2::framework::InitContext& initContext, const std::stri
   if (verbose) {
     LOG(info) << "Checking for option '" << optName << "' in task '" << taskName << "'";
   }
-  auto& workflows = initContext.services().get<o2::framework::RunningWorkflowInfo const>();
+  const auto& workflows = initContext.services().get<o2::framework::RunningWorkflowInfo const>();
   int deviceCounter = 0;
   bool found = false;
   for (auto const& device : workflows.devices) {
