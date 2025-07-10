@@ -111,7 +111,7 @@ void FFitWeights::addArray(TObjArray* targ, TObjArray* sour)
   }
 };
 
-void FFitWeights::qSelection(std::vector<int> const& nhv, std::vector<std::string> const& stv) /* only execute OFFLINE */
+void FFitWeights::qSelection(const std::vector<int>& nhv, const std::vector<std::string>& stv) /* only execute OFFLINE */
 {
   TObjArray* tar{nullptr};
 
