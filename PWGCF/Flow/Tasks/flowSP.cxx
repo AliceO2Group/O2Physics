@@ -682,12 +682,12 @@ struct FlowSP {
       }
     } else if(cfguseNUA2D) {
       if (cfgCCDB_NUA.value.empty() == false) {
-        TH3D* NUA2D = ccdb->getForTimeStamp<TH3D>(cfgCCDB_NUA, timestamp);
-        if (!NUA2D){
+        TH3D* hNUA2D = ccdb->getForTimeStamp<TH3D>(cfgCCDB_NUA, timestamp);
+        if (!hNUA2D){
           LOGF(fatal, "Could not load acceptance weights from %s", cfgCCDB_NUA.value.c_str());
         } else {
           LOGF(info, "Loaded acceptance weights from %s", cfgCCDB_NUA.value.c_str());
-          cfg.mAcceptance2D.push_back(NUA2D);
+          cfg.mAcceptance2D.push_back(hNUA2D);
         }
       } else {
         LOGF(info, "cfgCCDB_NUA empty! No corrections loaded");

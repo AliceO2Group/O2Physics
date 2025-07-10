@@ -715,39 +715,39 @@ struct ZdcQVectors {
       registry.get<TProfile>(HIST("QA/after/ZNC_pm3"))->Fill(Form("%d", runnumber), e[6]);
       registry.get<TProfile>(HIST("QA/after/ZNC_pm4"))->Fill(Form("%d", runnumber), e[7]);
 
-      double sumZNA_before = eZN[0] + eZN[1] + eZN[2] + eZN[3];
-      double sumZNA_after = e[0] + e[1] + e[2] + e[3];
+      double sumZNAbefore = eZN[0] + eZN[1] + eZN[2] + eZN[3];
+      double sumZNAafter = e[0] + e[1] + e[2] + e[3];
 
-      double sumZNC_before = eZN[4] + eZN[5] + eZN[6] + eZN[7];
-      double sumZNC_after = e[4] + e[5] + e[6] + e[7];
+      double sumZNCbefore = eZN[4] + eZN[5] + eZN[6] + eZN[7];
+      double sumZNCafter = e[4] + e[5] + e[6] + e[7];
 
       registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pmC_vs_Centrality"), centrality, zdcCol.energyCommonZNA());
-      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pmSUM_vs_Centrality"), centrality, sumZNA_before);
-      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pm1_vs_Centrality"), centrality, eZN[0]/sumZNA_before);
-      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pm2_vs_Centrality"), centrality, eZN[1]/sumZNA_before);
-      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pm3_vs_Centrality"), centrality, eZN[2]/sumZNA_before);
-      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pm4_vs_Centrality"), centrality, eZN[3]/sumZNA_before);
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pmSUM_vs_Centrality"), centrality, sumZNAbefore);
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pm1_vs_Centrality"), centrality, eZN[0]/sumZNAbefore);
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pm2_vs_Centrality"), centrality, eZN[1]/sumZNAbefore);
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pm3_vs_Centrality"), centrality, eZN[2]/sumZNAbefore);
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pm4_vs_Centrality"), centrality, eZN[3]/sumZNAbefore);
 
       registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pmC_vs_Centrality"), centrality, zdcCol.energyCommonZNC());
-      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pmSUM_vs_Centrality"), centrality, sumZNC_before);
-      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pm1_vs_Centrality"), centrality, eZN[4]/sumZNC_before);
-      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pm2_vs_Centrality"), centrality, eZN[5]/sumZNC_before);
-      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pm3_vs_Centrality"), centrality, eZN[6]/sumZNC_before);
-      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pm4_vs_Centrality"), centrality, eZN[7]/sumZNC_before);
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pmSUM_vs_Centrality"), centrality, sumZNCbefore);
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pm1_vs_Centrality"), centrality, eZN[4]/sumZNCbefore);
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pm2_vs_Centrality"), centrality, eZN[5]/sumZNCbefore);
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pm3_vs_Centrality"), centrality, eZN[6]/sumZNCbefore);
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pm4_vs_Centrality"), centrality, eZN[7]/sumZNCbefore);
 
       registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pmC_vs_Centrality"), centrality, zdcCol.energyCommonZNA());
-      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pmSUM_vs_Centrality"), centrality, sumZNA_after);
-      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pm1_vs_Centrality"), centrality, e[0]/sumZNA_after);
-      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pm2_vs_Centrality"), centrality, e[1]/sumZNA_after);
-      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pm3_vs_Centrality"), centrality, e[2]/sumZNA_after);
-      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pm4_vs_Centrality"), centrality, e[3]/sumZNA_after);
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pmSUM_vs_Centrality"), centrality, sumZNAafter);
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pm1_vs_Centrality"), centrality, e[0]/sumZNAafter);
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pm2_vs_Centrality"), centrality, e[1]/sumZNAafter);
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pm3_vs_Centrality"), centrality, e[2]/sumZNAafter);
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pm4_vs_Centrality"), centrality, e[3]/sumZNAafter);
 
       registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pmC_vs_Centrality"), centrality, zdcCol.energyCommonZNC());
-      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pmSUM_vs_Centrality"), centrality, sumZNC_after);
-      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pm1_vs_Centrality"), centrality, e[4]/sumZNC_after);
-      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pm2_vs_Centrality"), centrality, e[5]/sumZNC_after);
-      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pm3_vs_Centrality"), centrality, e[6]/sumZNC_after);
-      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pm4_vs_Centrality"), centrality, e[7]/sumZNC_after);
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pmSUM_vs_Centrality"), centrality, sumZNCafter);
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pm1_vs_Centrality"), centrality, e[4]/sumZNCafter);
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pm2_vs_Centrality"), centrality, e[5]/sumZNCafter);
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pm3_vs_Centrality"), centrality, e[6]/sumZNCafter);
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pm4_vs_Centrality"), centrality, e[7]/sumZNCafter);
     }
 
     // Now calculate Q-vector
