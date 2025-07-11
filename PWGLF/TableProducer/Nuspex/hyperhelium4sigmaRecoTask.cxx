@@ -233,20 +233,26 @@ std::array<float, 3> refitMotherTrack(TCollision& collision, TTrack& track, std:
 {
   auto trackPar = getTrackParCov(track);
 
-  std::array<float, 3> innermostPos = {0.f};
-  std::array<float, 21> innermostCov = {0.f};
-  trackPar.getXYZGlo(innermostPos);
-  trackPar.getCovXYZPxPyPzGlo(innermostCov);
-
+  float trackIUPos[2] = {track.y(), track.z()};
+  float trackIUCov[3] = {track.cYY(), track.cZY(), track.cZZ()};
   o2::dataformats::VertexBase primaryVtx = {{collision.posX(), collision.posY(), collision.posZ()}, {collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()}};
-  o2::dataformats::VertexBase innermostVtx = {{innermostPos[0], innermostPos[1], innermostPos[2]}, {innermostCov[0], innermostCov[1], innermostCov[2], innermostCov[3], innermostCov[4], innermostCov[5]}};
   o2::dataformats::VertexBase secondaryVtx = {{posSV[0], posSV[1], posSV[2]}, {covPosSV[0], covPosSV[1], covPosSV[2], covPosSV[3], covPosSV[4], covPosSV[5]}};
 
-  o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVtx, trackPar, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE);
+  o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVtx, trackPar, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrLUT);
 
   trackPar.resetCovariance(999.f);
   std::array<float, 3> refitP = {-999.f, -999.f, -999.f};
-  if (!trackPar.update(primaryVtx, 999.f) || !trackPar.update(innermostVtx, 999.f) || !trackPar.update(secondaryVtx, 999.f)) {
+  if (!trackPar.update(primaryVtx, 999.f)) {
+    return refitP;
+  }
+
+  o2::base::Propagator::Instance()->PropagateToXBxByBz(trackPar, track.x());
+  if (!trackPar.update(trackIUPos, trackIUCov)) {
+    return refitP;
+  }
+  
+  o2::base::Propagator::Instance()->propagateToDCABxByBz(secondaryVtx, trackPar, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrLUT);
+  if (!trackPar.update(secondaryVtx, 999.f)) {
     return refitP;
   }
 
