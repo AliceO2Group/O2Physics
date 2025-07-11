@@ -146,6 +146,7 @@ enum DecayChannel : uint8_t {
 struct HfTaskCharmResoToDV0Reduced {
   Produces<aod::HfCandDV0Lites> hfCandResoLite;
   Produces<aod::HfGenResoLites> hfGenResoLite;
+  
   Configurable<bool> doWrongSign{"doWrongSign", false, "Flag to enable wrong sign candidates"};
   Configurable<float> ptMinReso{"ptMinReso", -1, "Discard events with smaller pT"};
   Configurable<bool> fillTrees{"fillTrees", true, "Fill output Trees"};
@@ -158,6 +159,14 @@ struct HfTaskCharmResoToDV0Reduced {
   Configurable<float> ptTrackMin{"ptTrackMin", 0.1, "min. track transverse momentum for acceptance calculation"};
   Configurable<float> massResoMin{"massResoMin", 0.49, "min. mass of resonance"};
   Configurable<float> massResoMax{"massResoMax", 1.29, "max. mass of resonance"};
+  
+  using ReducedReso3PrV0 = soa::Join<aod::HfCandCharmReso, aod::Hf3PrV0Ids>;
+  using ReducedResoDstarV0 = soa::Join<aod::HfCandCharmReso, aod::HfDstarV0Ids>;
+  using ReducedReso2PrV0 = soa::Join<aod::HfCandCharmReso, aod::Hf2PrV0Ids>;
+  using ReducedReso3PrV0MC = soa::Join<aod::HfCandCharmReso, aod::Hf3PrV0Ids, aod::HfMcRecRedResos>;
+  using ReducedResoDstarV0MC = soa::Join<aod::HfCandCharmReso, aod::HfDstarV0Ids, aod::HfMcRecRedResos>;
+  using ReducedReso2PrV0MC = soa::Join<aod::HfCandCharmReso, aod::Hf2PrV0Ids, aod::HfMcRecRedResos>;
+
   // Configurables axis for histos
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0., 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f, 50.f}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis axisPtProng0{"axisPtProng0", {VARIABLE_WIDTH, 0., 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f, 50.f}, "prong0 bach. #it{p}_{T} (GeV/#it{c})"};
@@ -171,13 +180,6 @@ struct HfTaskCharmResoToDV0Reduced {
   ConfigurableAxis axisEta{"axisEta", {30, -1.5, 1.5}, "pseudorapidity"};
   ConfigurableAxis axisOrigin{"axisOrigin", {3, -0.5, 2.5}, "origin"};
   ConfigurableAxis axisFlag{"axisFlag", {65, -32.5, 32.5}, "mc flag"};
-
-  using ReducedReso3PrV0 = soa::Join<aod::HfCandCharmReso, aod::Hf3PrV0Ids>;
-  using ReducedResoDstarV0 = soa::Join<aod::HfCandCharmReso, aod::HfDstarV0Ids>;
-  using ReducedReso2PrV0 = soa::Join<aod::HfCandCharmReso, aod::Hf2PrV0Ids>;
-  using ReducedReso3PrV0MC = soa::Join<aod::HfCandCharmReso, aod::Hf3PrV0Ids, aod::HfMcRecRedResos>;
-  using ReducedResoDstarV0MC = soa::Join<aod::HfCandCharmReso, aod::HfDstarV0Ids, aod::HfMcRecRedResos>;
-  using ReducedReso2PrV0MC = soa::Join<aod::HfCandCharmReso, aod::Hf2PrV0Ids, aod::HfMcRecRedResos>;
 
   // Histogram Registry
   HistogramRegistry registry;

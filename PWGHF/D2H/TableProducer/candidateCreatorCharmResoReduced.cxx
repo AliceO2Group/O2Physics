@@ -146,7 +146,7 @@ struct HfCandidateCreatorCharmResoReduced {
     ConfigurableAxis axisPtReso{"axisPtReso", {100, 0., 50}, "#it{p}_{T} (GeV/#it{c})"};
     ConfigurableAxis axisMassD{"axisMassD", {100, 1.7f, 2.1f}, "inv. mass (D) (GeV/#it{c}^{2})"};
     ConfigurableAxis axisMassV0{"axisMassV0", {100, 0.45f, 0.55f}, "inv. mass (V_{0}) (GeV/#it{c}^{2})"};
-    ConfigurableAxis axisMassDsj{"axisMassReso", {400, 0.49f, 0.89f}, "inv. mass (DV_{0}) (GeV/#it{c}^{2})"};
+    ConfigurableAxis axisMassDsj{"axisMassDsj", {400, 0.49f, 0.89f}, "inv. mass (DV_{0}) (GeV/#it{c}^{2})"};
   } cfgHistAxes;
   // Other Configurables
   Configurable<bool> rejectPairsWithCommonDaughter{"rejectPairsWithCommonDaughter", true, "flag to reject the pairs that share a daughter track if not done in the derived data creation"};
