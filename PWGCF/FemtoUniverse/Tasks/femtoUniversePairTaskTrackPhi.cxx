@@ -96,6 +96,7 @@ struct FemtoUniversePairTaskTrackPhi {
   Configurable<bool> ConfUse3D{"ConfUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
   Configurable<int> ConfBinsPhi{"ConfBinsPhi", 29, "Number of phi bins in deta dphi"};
   Configurable<int> ConfBinsEta{"ConfBinsEta", 29, "Number of eta bins in deta dphi"};
+  Configurable<bool> ConfDoContainer{"ConfDoContainer", true, "Enable correlation containers"};
 
   /// Particle 1 --- IDENTIFIED TRACK
   Configurable<int> ConfTrackPDGCode{"ConfTrackPDGCode", 2212, "Particle 2 - PDG code"};
@@ -472,8 +473,8 @@ struct FemtoUniversePairTaskTrackPhi {
     mixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
     mixQaRegistry.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
 
-    sameEventCont.init(&resultRegistry, ConfBinskstar, ConfBinsMult, ConfBinskT, ConfBinsmT, ConfBins3Dmult, ConfBins3DmT, ConfBinsEta, ConfBinsPhi, ConfIsMC, ConfUse3D);
-    mixedEventCont.init(&resultRegistry, ConfBinskstar, ConfBinsMult, ConfBinskT, ConfBinsmT, ConfBins3Dmult, ConfBins3DmT, ConfBinsEta, ConfBinsPhi, ConfIsMC, ConfUse3D);
+    sameEventCont.init(&resultRegistry, ConfBinskstar, ConfBinsMult, ConfBinskT, ConfBinsmT, ConfBins3Dmult, ConfBins3DmT, ConfBinsEta, ConfBinsPhi, ConfIsMC, ConfUse3D, ConfDoContainer);
+    mixedEventCont.init(&resultRegistry, ConfBinskstar, ConfBinsMult, ConfBinskT, ConfBinsmT, ConfBins3Dmult, ConfBins3DmT, ConfBinsEta, ConfBinsPhi, ConfIsMC, ConfUse3D, ConfDoContainer);
 
     sameEventCont.setPDGCodes(333, ConfTrackPDGCode);
     mixedEventCont.setPDGCodes(333, ConfTrackPDGCode);
