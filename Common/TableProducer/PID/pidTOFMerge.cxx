@@ -15,29 +15,30 @@
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 ///
 
+#include <map>
+#include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
-#include <string>
-#include <map>
-#include <unordered_map>
 
 // O2 includes
-#include "Framework/runDataProcessing.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "CCDB/BasicCCDBManager.h"
 #include "TOFBase/EventTimeMaker.h"
 
 // O2Physics includes
-#include "TableHelper.h"
-#include "MetadataHelper.h"
 #include "CollisionTypeHelper.h"
+#include "MetadataHelper.h"
+#include "TableHelper.h"
 #include "pidTOFBase.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -82,14 +83,14 @@ struct TOFCalibConfig {
   }
 
   template <typename VType>
-  void getCfg(o2::framework::InitContext& initContext, const std::string name, VType& v, const std::string task)
+  void getCfg(o2::framework::InitContext& initContext, const std::string& name, VType& v, const std::string& task)
   {
     if (!getTaskOptionValue(initContext, task, name, v, false)) {
       LOG(fatal) << "Could not get " << name << " from " << task << " task";
     }
   }
 
-  void inheritFromBaseTask(o2::framework::InitContext& initContext, const std::string task = "tof-signal")
+  void inheritFromBaseTask(o2::framework::InitContext& initContext, const std::string& task = "tof-signal")
   {
     mInitMode = 2;
     getCfg(initContext, "ccdb-url", mUrl, task);
@@ -328,7 +329,7 @@ struct TOFCalibConfig {
   // Configurable options
   std::string mUrl;
   std::string mPathGrpLhcIf;
-  int64_t mTimestamp;
+  int64_t mTimestamp{0};
   std::string mTimeShiftCCDBPathPos;
   std::string mTimeShiftCCDBPathNeg;
   std::string mTimeShiftCCDBPathPosMC;
@@ -337,10 +338,10 @@ struct TOFCalibConfig {
   std::string mParametrizationPath;
   std::string mReconstructionPass;
   std::string mReconstructionPassDefault;
-  bool mFatalOnPassNotAvailable;
-  bool mEnableTimeDependentResponse;
-  int mCollisionSystem;
-  bool mAutoSetProcessFunctions;
+  bool mFatalOnPassNotAvailable{false};
+  bool mEnableTimeDependentResponse{false};
+  int mCollisionSystem{-1};
+  bool mAutoSetProcessFunctions{false};
 };
 
 // Part 1 TOF signal definition

@@ -14,26 +14,28 @@
 // Work in progress! More to follow, use at your own peril
 //
 
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Tools/trackSelectionRequest.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/trackUtilities.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "trackSelectionRequest.h"
+
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-#include "Framework/runDataProcessing.h"
 
 struct propagatorQa {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -170,7 +172,7 @@ struct propagatorQa {
     if (d_bz_input > -990) {
       d_bz = d_bz_input;
       o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
+      if (std::fabs(d_bz) > 1e-5) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
@@ -210,7 +212,7 @@ struct propagatorQa {
     initCCDB(bc);
     std::array<float, 2> dcaInfo;
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (track.tpcNClsFound() < minTPCClustersRequired)
         continue;
 
@@ -296,7 +298,7 @@ struct propagatorQa {
       // determine if track was used in svertexer
       bool usedInSVertexer = false;
       bool lUsedByV0 = false, lUsedByCascade = false;
-      for (auto& V0 : V0s) {
+      for (const auto& V0 : V0s) {
         if (V0.posTrackId() == track.globalIndex()) {
           lUsedByV0 = true;
           break;
@@ -306,7 +308,7 @@ struct propagatorQa {
           break;
         }
       }
-      for (auto& cascade : cascades) {
+      for (const auto& cascade : cascades) {
         if (cascade.bachelorId() == track.globalIndex()) {
           lUsedByCascade = true;
           break;
@@ -315,10 +317,10 @@ struct propagatorQa {
       if (lUsedByV0 || lUsedByCascade)
         usedInSVertexer = true;
 
-      if (usedInSVertexer)
+      if (usedInSVertexer) {
         histos.fill(HIST("hUpdateRadiiusedInSVertexer"), lRadiusOfLastUpdate);
-      if (usedInSVertexer)
         histos.fill(HIST("hdcaXYusedInSVertexer"), lDCA);
+      }
     }
   }
   PROCESS_SWITCH(propagatorQa, processMC, "process MC", true);
@@ -330,7 +332,7 @@ struct propagatorQa {
     initCCDB(bc);
     std::array<float, 2> dcaInfo;
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (track.tpcNClsFound() < minTPCClustersRequired)
         continue;
 
@@ -412,7 +414,7 @@ struct propagatorQa {
       // determine if track was used in svertexer
       bool usedInSVertexer = false;
       bool lUsedByV0 = false, lUsedByCascade = false;
-      for (auto& V0 : V0s) {
+      for (const auto& V0 : V0s) {
         if (V0.posTrackId() == track.globalIndex()) {
           lUsedByV0 = true;
           break;
@@ -422,7 +424,7 @@ struct propagatorQa {
           break;
         }
       }
-      for (auto& cascade : cascades) {
+      for (const auto& cascade : cascades) {
         if (cascade.bachelorId() == track.globalIndex()) {
           lUsedByCascade = true;
           break;
@@ -431,10 +433,10 @@ struct propagatorQa {
       if (lUsedByV0 || lUsedByCascade)
         usedInSVertexer = true;
 
-      if (usedInSVertexer)
+      if (usedInSVertexer) {
         histos.fill(HIST("hUpdateRadiiusedInSVertexer"), lRadiusOfLastUpdate);
-      if (usedInSVertexer)
         histos.fill(HIST("hdcaXYusedInSVertexer"), lDCA);
+      }
     }
   }
   PROCESS_SWITCH(propagatorQa, processData, "process data", false);
@@ -446,7 +448,7 @@ struct propagatorQa {
     initCCDB(bc);
     std::array<float, 2> dcaInfo;
 
-    for (auto& trackIU : tracksIU) {
+    for (const auto& trackIU : tracksIU) {
       if (trackIU.tpcNClsFound() < minTPCClustersRequired)
         continue; // skip if not enough TPC clusters
 
