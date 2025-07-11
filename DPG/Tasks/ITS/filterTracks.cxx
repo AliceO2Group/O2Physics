@@ -8,7 +8,6 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \file   MonitorFilterBit.cxx
 /// \author Andrea Rossi <andrea.rossi@cern.ch>
 /// \brief Simple task to filter tracks and save infos to trees for DCA-related studies (alignment, HF-related issues)
 
@@ -183,7 +182,7 @@ struct FilterTracks {
         if (motherIndex != -1) {
           auto particleMother = mcParticles.rawIteratorAt(motherIndex);
           // just for internal check
-          //	     double mass=particleMother.e()*particleMother.e()-particleMother.pt()*particleMother.pt()-particleMother.pz()*particleMother.pz();
+          // double mass=particleMother.e()*particleMother.e()-particleMother.pt()*particleMother.pt()-particleMother.pz()*particleMother.pz();
           // filteredTracksMC(mcparticle.pdgCode(),mcparticle.isPhysicalPrimary(),particleMother.pdgCode(),0,motherIndex,0,particleMother.pt(),particleMother.y(),std::sqrt(mass),0);
           if (pdgParticleMother == 310) {
             auto daughtersSlice = mcparticle.template daughters_as<aod::McParticles>();
@@ -213,10 +212,10 @@ struct FilterTracks {
           std::vector<int> idxBhadMothers;
           if (RecoDecay::getCharmHadronOrigin(mcParticles, particleMother, false, &idxBhadMothers) == RecoDecay::OriginType::NonPrompt) {
             if (idxBhadMothers.size() > 1) {
-              std::cout << "more than 1 B mother hadron found, should not be: " << std::endl;
+              LOG(info) << "more than 1 B mother hadron found, should not be: ";
               for (unsigned long iBhM = 0; iBhM < idxBhadMothers.size(); iBhM++) {
                 auto particleBhadr = mcParticles.rawIteratorAt(idxBhadMothers[iBhM]);
-                std::cout << particleBhadr.pdgCode() << std::endl;
+                LOG(info) << particleBhadr.pdgCode();
               }
             }
             auto particleBhadr = mcParticles.rawIteratorAt(idxBhadMothers[0]);
@@ -231,7 +230,7 @@ struct FilterTracks {
       }
       if (pdgParticleMother == 0)
         filteredTracksMC(mcparticle.pdgCode(), mcparticle.isPhysicalPrimary(), 0, 0, -1, 0, 0, 0, 0, 0);
-      //	std::cout<<mcparticle.pdgCode()<<std::endl;
+      // std::cout<<mcparticle.pdgCode()<<std::endl;
     } else {
       filteredTracksMC(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     }
@@ -289,20 +288,21 @@ struct FilterTracks {
       } else if (std::abs(pdgCode) == 4122) {
         isMatchedToSignal = RecoDecay::isMatchedMCGen<true, false>(mcParticles, mcpart, 4122, pdgDecayLc, true, nullptr, 3, &indxDaughers);
         // std::cout<<"Lc found, matched to MC? "<<isMatchedToSignal<<std::endl;
-        //	if(!isMatchedToSignal){
-        //   auto daughtersLxSlice = mcpart.daughters_as<aod::McParticles>();
+        // if(!isMatchedToSignal){
+        // auto daughtersLxSlice = mcpart.daughters_as<aod::McParticles>();
         //   int ndaught = daughtersLxSlice.size();
         //   for(auto lcDaught : daughtersLxSlice){
         //     std::cout<<"Lc daught, total daught "<<ndaught<<" pdg: "<<lcDaught.pdgCode()<<std::endl;
         //   }
-        //	}
+        // }
       }
       if (isMatchedToSignal) {
         for (auto mcpartdaughtIdx : indxDaughers) {
           auto mcPartDaught = mcParticles.rawIteratorAt(mcpartdaughtIdx);
           double eta = std::abs(mcPartDaught.eta());
-          if ((eta) > etamax)
+          if ((eta) > etamax){
             etamax = eta;
+          }
         }
         if (pdgCode == 310) {
           selectedGenParticles(mcpart.pdgCode(), mcpart.mcCollisionId(), 0, mcpart.pt(), mcpart.y(), etamax, 0, 0);
@@ -311,10 +311,10 @@ struct FilterTracks {
         std::vector<int> idxBhadMothers;
         if (RecoDecay::getCharmHadronOrigin(mcParticles, mcpart, false, &idxBhadMothers) == RecoDecay::OriginType::NonPrompt) {
           if (idxBhadMothers.size() > 1) {
-            std::cout << "loop on gen particles: more than 1 B mother hadron found, should not be: " << std::endl;
+            LOG(info) << "loop on gen particles: more than 1 B mother hadron found, should not be: ";
             for (unsigned long iBhM = 0; iBhM < idxBhadMothers.size(); iBhM++) {
               auto particleBhadr = mcParticles.rawIteratorAt(idxBhadMothers[iBhM]);
-              std::cout << particleBhadr.pdgCode() << std::endl;
+              LOG(info) << particleBhadr.pdgCode();
             }
           }
           auto particleBhadr = mcParticles.rawIteratorAt(idxBhadMothers[0]);
