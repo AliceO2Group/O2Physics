@@ -95,7 +95,7 @@ static constexpr int NCutVars = 7;
 constexpr double Cuts[1][NCutVars] = {{0.1, 3, 40, 4, 3, -1, -1}}; // nSigmaTpc, nSigmaTof, nSigmaCombined
 // row labels
 static const std::vector<std::string> labelsCutVar = {"ptMin", "itsNClsMin", "tpcNCrossedRowsMin", "tpcChi2Max", "nSigmaTpc", "nSigmaTof", "nSigmaComb"};
-}
+} // namespace hf_cuts_track_daughter
 
 } // namespace o2::analysis
 #endif // PWGHF_D2H_CORE_SELECTORCUTSREDDATAFORMAT_H_

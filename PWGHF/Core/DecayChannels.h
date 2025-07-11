@@ -234,7 +234,7 @@ enum DecayChannelMain : int8_t {
   // Ds1(2536)+
   Ds1ToDstarK0s = 5, // D*+ K0s
   // Ds2*(2573)+
-  Ds2starToD0Kplus = 6, // D0 K+
+  Ds2starToD0Kplus = 6,  // D0 K+
   Ds2starToDplusK0s = 7, // D+ K0s
   Ds2starToDstarK0s = 8, // D*+ K0s
   // Ds1*(2700)+
@@ -252,7 +252,7 @@ enum DecayChannelMain : int8_t {
   // Xic(3080)+
   Xic3080plusToDplusLambda = 15 // D+ Λ
 };
-}
+} // namespace hf_cand_reso
 } // namespace o2::hf_decay
 
 #endif // PWGHF_CORE_DECAYCHANNELS_H_
