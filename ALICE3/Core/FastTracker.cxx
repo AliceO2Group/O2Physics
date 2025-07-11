@@ -368,7 +368,9 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
     }
 
     if (layers[il].isInert()) {
-      LOG(info) << "Skipping inert layer: " << layers[il].getName() << " at radius " << layers[il].getRadius() << " cm";
+      if (mVerboseLevel > 0) {
+        LOG(info) << "Skipping inert layer: " << layers[il].getName() << " at radius " << layers[il].getRadius() << " cm";
+      }
       continue; // inert layer, skip
     }
 
