@@ -86,7 +86,15 @@ bool getTaskOptionValue(o2::framework::InitContext& initContext, const std::stri
         if (option.name == optName) {
           value = option.defaultValue.get<ValueType>();
           if (verbose) {
-            if constexpr (!std::is_same_v<ValueType, o2::framework::LabeledArray<float>>) {
+            if constexpr (std::is_same_v<ValueType, o2::framework::LabeledArray<float>>) {
+              LOG(info) << "   Found option '" << optName << "' a o2::framework::LabeledArray<float>";
+              LOG(info) << "   Values: ";
+              for (uint32_t r = 0; r < value.rows(); r++) {
+                for (uint32_t c = 0; r < value.cols(); c++) {
+                  LOG(info) << "    r " << r << " c " << c << value.get(r, c);
+                }
+              }
+            } else {
               LOG(info) << "   Found option '" << optName << "' with value '" << value << "'";
             }
             found = true;
