@@ -51,6 +51,7 @@
 #include <string>
 #include <vector>
 #include <stdlib.h>
+#include <utility>
 
 using namespace o2;
 using namespace o2::framework;
@@ -93,7 +94,7 @@ struct phiOO{
   Configurable<double> cfg_Track_nITSChi2{"cfg_Track_ITSChi2", 36.0, "nITS Chi2 per Cluster"};
   Configurable<bool> cfg_Track_TPCPID{"cfg_Track_TPCPID", true, "Enables TPC PID"};
   Configurable<bool> cfg_Track_TOFPID{"cfg_Track_TOFPID", true, "Enables TOF PID"};
-  Configurable<bool> cfg_Track_Hard_TOFPID{"cfg_Track_Hard_TOFPID", true, "Enables STRICT TOF Reqruirement"}; 
+  Configurable<bool> cfg_Track_Hard_TOFPID {"cfg_Track_Hard_TOFPID", true, "Enables STRICT TOF Reqruirement"}; 
   Configurable<float> cfg_Track_TPCPID_nSig{"cfg_Track_TPCPID_nSig", 4, "nTPC PID sigma"};
   Configurable<float> cfg_Track_TOFPID_nSig{"cfg_Track_TOFPID_nSig", 4, "nTOF PID sigma"};
   Configurable<bool> cfg_Track_Explicit_PID{"cfg_Track_Explicit_PID", true, "Enables explicit pid cehck"};
@@ -184,11 +185,7 @@ struct phiOO{
      histos.add("hnEvents", "Event selection decision", kTH1I, {{10, -0.5, 9.5}});
      histos.add("hnEvents_MC", "Event selection decision", kTH1I, {{10, -0.5, 9.5}});
      histos.add("hnEvents_MC_True", "Event selection decision", kTH1I, {{10, -0.5, 9.5}});
-     
-      // histos.add("hnEvent", "Event selection decision", kTH1I, {AxisSpec{"SelectionCode", aliasLabels{"Success", "FailSel8", "FailVertex", "FailTimeframe", "FailTimeRange", "FailPileup", "FailCentrality", "FailOccupancy"}}});
-      // histos.add("hnEvent_MC", "Event selection decision", kTH1I, {AxisSpec{"SelectionCode", aliasLabels{"Success", "FailSel8", "FailVertex", "FailTimeframe", "FailTimeRange", "FailPileup", "FailCentrality", "FailOccupancy"}}});
-      // histos.add("hnEvent_MC_True", "Event selection decision", kTH1I, {AxisSpec{"SelectionCode", aliasLabels{"Success", "FailSel8", "FailVertex", "FailTimeframe", "FailTimeRange", "FailPileup", "FailCentrality", "FailOccupancy"}}});
-    
+         
   }//end of init
   
   Filter collisionFilter = nabs(aod::collision::posZ) <= cfg_Event_VtxCut;
@@ -204,27 +201,19 @@ struct phiOO{
 						     aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTOFbeta, aod::McTrackLabels>>;
   
   using BinningTypeVtxCent = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-  
-  // Partition<TrackCandidates> PosKaon = (aod::track::signed1Pt > static_cast<float>(0)) && (nabs(aod::pidtpc::tpcNSigmaKa) <= cfg_Track_TPCPID_nSig);
-  // Partition<TrackCandidates> NegKaon = (aod::track::signed1Pt < static_cast<float>(0)) && (nabs(aod::pidtpc::tpcNSigmaKa) <= cfg_Track_TPCPID_nSig);
 
-  Partition<TrackCandidates> PosKaon = 
-    (aod::track::signed1Pt < static_cast<float>(0)) &&
-    (!cfg_Track_TPCPID || (nabs(aod::pidtpc::tpcNSigmaKa) <= cfg_Track_TPCPID_nSig));
-  Partition<TrackCandidates> NegKaon = 
+  Partition<TrackCandidates_MC> PosKaon_MC =
     (aod::track::signed1Pt > static_cast<float>(0)) &&
     (!cfg_Track_TPCPID || (nabs(aod::pidtpc::tpcNSigmaKa) <= cfg_Track_TPCPID_nSig));
-  
-  Partition<TrackCandidates_MC> PosKaon_MC = 
+  Partition<TrackCandidates_MC> NegKaon_MC =
     (aod::track::signed1Pt < static_cast<float>(0)) &&
     (!cfg_Track_TPCPID || (nabs(aod::pidtpc::tpcNSigmaKa) <= cfg_Track_TPCPID_nSig));
-  Partition<TrackCandidates_MC> NegKaon_MC = 
+  Partition<TrackCandidates> PosKaon =
     (aod::track::signed1Pt > static_cast<float>(0)) &&
     (!cfg_Track_TPCPID || (nabs(aod::pidtpc::tpcNSigmaKa) <= cfg_Track_TPCPID_nSig));
-  
-  // Partition<TrackCandidates_MC> PosKaon_MC = (aod::track::signed1Pt < static_cast<float>(0)) && (nabs(aod::pidtpc::tpcNSigmaKa) <= cfg_Track_TPCPID_nSig);
-  // Partition<TrackCandidates_MC> NegKaon_MC = (aod::track::signed1Pt > static_cast<float>(0)) && (nabs(aod::pidtpc::tpcNSigmaKa) <= cfg_Track_TPCPID_nSig);
-
+  Partition<TrackCandidates> NegKaon =
+    (aod::track::signed1Pt < static_cast<float>(0)) &&
+    (!cfg_Track_TPCPID || (nabs(aod::pidtpc::tpcNSigmaKa) <= cfg_Track_TPCPID_nSig));
   
   double massKa = o2::constants::physics::MassKPlus;
   //***********************************//
@@ -375,6 +364,9 @@ struct phiOO{
 	}
       } else if (!cfg_Track_Hard_TOFPID) {
 	tofPIDPassed = true;
+      }
+      if (!candidate.hasTOF()) {
+	std::cout<<candidate.tofNSigmaKa()<<std::endl;
       }
     }
     if (tpcPIDPassed && tofPIDPassed) {
