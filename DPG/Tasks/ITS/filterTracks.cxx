@@ -8,12 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
 /// \file   MonitorFilterBit.cxx
 /// \author Andrea Rossi <andrea.rossi@cern.ch>
-///
 /// \brief Simple task to filter tracks and save infos to trees for DCA-related studies (alignment, HF-related issues)
-///
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
