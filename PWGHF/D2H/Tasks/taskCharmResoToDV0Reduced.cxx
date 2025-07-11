@@ -146,7 +146,7 @@ enum DecayChannel : uint8_t {
 struct HfTaskCharmResoToDV0Reduced {
   Produces<aod::HfCandDV0Lites> hfCandResoLite;
   Produces<aod::HfGenResoLites> hfGenResoLite;
-  
+
   Configurable<bool> doWrongSign{"doWrongSign", false, "Flag to enable wrong sign candidates"};
   Configurable<float> ptMinReso{"ptMinReso", -1, "Discard events with smaller pT"};
   Configurable<bool> fillTrees{"fillTrees", true, "Fill output Trees"};
@@ -159,7 +159,7 @@ struct HfTaskCharmResoToDV0Reduced {
   Configurable<float> ptTrackMin{"ptTrackMin", 0.1, "min. track transverse momentum for acceptance calculation"};
   Configurable<float> massResoMin{"massResoMin", 0.49, "min. mass of resonance"};
   Configurable<float> massResoMax{"massResoMax", 1.29, "max. mass of resonance"};
-  
+
   using ReducedReso3PrV0 = soa::Join<aod::HfCandCharmReso, aod::Hf3PrV0Ids>;
   using ReducedResoDstarV0 = soa::Join<aod::HfCandCharmReso, aod::HfDstarV0Ids>;
   using ReducedReso2PrV0 = soa::Join<aod::HfCandCharmReso, aod::Hf2PrV0Ids>;

@@ -155,7 +155,7 @@ struct HfTaskCharmResoToDTrkReduced {
 
   using ReducedReso2PrTrk = soa::Join<aod::HfCandCharmReso, aod::Hf2PrTrkIds>;
   using ReducedReso2PrTrkMC = soa::Join<aod::HfCandCharmReso, aod::Hf2PrTrkIds, aod::HfMcRecRedResos>;
-  
+
   // Configurables axis for histos
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0., 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f, 50.f}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis axisPtProng0{"axisPtProng0", {VARIABLE_WIDTH, 0., 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f, 50.f}, "prong0 bach. #it{p}_{T} (GeV/#it{c})"};
