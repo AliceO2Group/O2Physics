@@ -246,11 +246,12 @@ std::array<float, 3> refitMotherTrack(TCollision& collision, TTrack& track, std:
     return refitP;
   }
 
+  trackPar.rotate(track.alpha());
   o2::base::Propagator::Instance()->PropagateToXBxByBz(trackPar, track.x());
   if (!trackPar.update(trackIUPos, trackIUCov)) {
     return refitP;
   }
-  
+
   o2::base::Propagator::Instance()->propagateToDCABxByBz(secondaryVtx, trackPar, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrLUT);
   if (!trackPar.update(secondaryVtx, 999.f)) {
     return refitP;
@@ -513,7 +514,7 @@ struct Hyperhelium4sigmaRecoTask {
 
       std::array<float, 3> posDecVtx = {kinkCand.xDecVtx() + collision.posX(), kinkCand.yDecVtx() + collision.posY(), kinkCand.zDecVtx() + collision.posZ()};
       auto refitP = refitMotherTrack(collision, motherTrack, posDecVtx);
-      for (int i = 0; i < refitP.size(); ++i) {
+      for (auto i = 0; i < refitP.size(); ++i) {
         refitP[i] *= 2.f;
       }
 
@@ -599,7 +600,7 @@ struct Hyperhelium4sigmaRecoTask {
 
       std::array<float, 3> posDecVtx = {kinkCand.xDecVtx() + collision.posX(), kinkCand.yDecVtx() + collision.posY(), kinkCand.zDecVtx() + collision.posZ()};
       auto refitP = refitMotherTrack(collision, motherTrack, posDecVtx);
-      for (int i = 0; i < refitP.size(); ++i) {
+      for (auto i = 0; i < refitP.size(); ++i) {
         refitP[i] *= 2.f;
       }
 
