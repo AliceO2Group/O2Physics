@@ -341,15 +341,14 @@ struct HfTreeCreatorDsToKKPi {
     int8_t originMc{0};
     int8_t channelMc{0};
     int8_t isSwapped{massHypo}; // 0 if KKPi, 1 if PiKK
-    float yCand = isSwapped ? candidate.y(invMassDs) : candidate.y(invMassDs);
     float eCand{0.f};
     float ctCand{0.f};
+    float yCand = candidate.y(invMassDs);
     if constexpr (doMc) {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
       channelMc = candidate.flagMcDecayChanRec();
       isSwapped = candidate.isCandidateSwapped();
-      yCand = isSwapped ? candidate.y(invMassDs) : candidate.y(invMassDs);
       if (fillDplusMc && candidate.flagMcDecayChanRec() == channelsResonant[Mother::Dplus][decayChannel]) {
         eCand = hfHelper.eDplus(candidate);
         ctCand = hfHelper.ctDplus(candidate);
