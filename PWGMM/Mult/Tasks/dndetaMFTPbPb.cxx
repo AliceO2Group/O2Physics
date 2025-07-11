@@ -126,7 +126,7 @@ struct DndetaMFTPbPb {
     Configurable<float> minOccupancy{
       "minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
     Configurable<float> maxOccupancy{
-      "maxOccupancy", -1, "maximum occupancy from neighbouring collisions"};                          
+      "maxOccupancy", -1, "maximum occupancy from neighbouring collisions"};
     Configurable<bool> cfgSelInteractionRate{"cfgSelInteractionRate", false, " Get Interaction rate from CCDB"};
     Configurable<float> minIR{"minIR", -1, "minimum IR (kHz) collisions"};
     Configurable<float> maxIR{"maxIR", -1, "maximum IR (kHz) collisions"};
