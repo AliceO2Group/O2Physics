@@ -256,7 +256,7 @@ struct FilterTracks {
   }
   PROCESS_SWITCH(FilterTracks, processData, "process data", true);
 
-  void processMC(soa::Filtered<TracksWithSelAndDcaMc> const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions, aod::McCollisionLabels const& mcCollisionLabels)
+  void processMC(soa::Filtered<TracksWithSelAndDcaMc> const& tracks, aod::McParticles const& mcParticles, aod::McCollisionLabels const& mcCollisionLabels)
   {
     if (trackPtSampling == 0) {
       for (auto& track : tracks) {
