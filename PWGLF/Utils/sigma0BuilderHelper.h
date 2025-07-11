@@ -16,6 +16,7 @@
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/Track.h"
 
 #include <array>
