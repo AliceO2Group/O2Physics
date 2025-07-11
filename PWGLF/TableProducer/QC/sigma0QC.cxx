@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 //
 // This is a task that employs the standard derived V0 tables and attempts to combine
-// two V0s into a Sigma0 -> Lambda + gamma candidate. 
+// two V0s into a Sigma0 -> Lambda + gamma candidate.
 //  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 //  Sigma0 QC task
 //  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -20,37 +20,40 @@
 //    gianni.shigeru.setoue.liveraro@cern.ch
 //
 
-#include <Math/Vector4D.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/ASoA.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/CCDB/ctpRateFetcher.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
-#include "PWGLF/DataModel/LFStrangenessMLTables.h"
 #include "PWGLF/DataModel/LFSigmaTables.h"
+#include "PWGLF/DataModel/LFStrangenessMLTables.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include <PWGLF/Utils/sigma0BuilderHelper.h>
+
+#include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "CCDB/BasicCCDBManager.h"
+#include "Framework/ASoA.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <Math/Vector4D.h>
+#include <TDatabasePDG.h>
 #include <TFile.h>
 #include <TH2F.h>
-#include <TProfile.h>
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
-#include <TDatabasePDG.h>
-#include <PWGLF/Utils/sigma0BuilderHelper.h>
+#include <TProfile.h>
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;
@@ -59,7 +62,6 @@ using std::array;
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 using V0StandardDerivedDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0LambdaMLScores, aod::V0AntiLambdaMLScores, aod::V0GammaMLScores>;
 using StraColls = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>;
-
 
 struct sigma0Sorted {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -72,13 +74,13 @@ struct sigma0Sorted {
   o2::pwglf::sigma0::photonselConfigurables photonselOpts;
   o2::pwglf::sigma0::sigma0selConfigurables sigma0selOpts;
   o2::pwglf::sigma0::pi0selConfigurables pi0selOpts;
-  o2::pwglf::sigma0::axisConfigurables axisOpts;  
+  o2::pwglf::sigma0::axisConfigurables axisOpts;
 
   o2::pwglf::sigma0::Sigma0BuilderModule sigma0Module;
 
-  // For manual sliceBy  
+  // For manual sliceBy
   SliceCache cache;
-  Preslice<V0StandardDerivedDatas> perCollisionSTDDerived = o2::aod::v0data::straCollisionId;  
+  Preslice<V0StandardDerivedDatas> perCollisionSTDDerived = o2::aod::v0data::straCollisionId;
 
   // Histogram registry
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -95,21 +97,23 @@ struct sigma0Sorted {
     sigma0Module.init(histos, evselOpts, lambdaselOpts, photonselOpts, sigma0selOpts, pi0selOpts, axisOpts);
   }
 
-  // Dummy process function 
-  void process(StraColls const&){} 
+  // Dummy process function
+  void process(StraColls const&) {}
 
-  void processRealData(StraColls const& collisions, V0StandardDerivedDatas const& fullV0s, dauTracks const&){
-   auto start = std::chrono::high_resolution_clock::now();
+  void processRealData(StraColls const& collisions, V0StandardDerivedDatas const& fullV0s, dauTracks const&)
+  {
+    auto start = std::chrono::high_resolution_clock::now();
 
-   sigma0Module.processSlicing(collisions, fullV0s, perCollisionSTDDerived, histos, ccdb, rateFetcher); 
-   
-   auto end = std::chrono::high_resolution_clock::now();
-   std::chrono::duration<double> elapsed = end - start;
+    sigma0Module.processSlicing(collisions, fullV0s, perCollisionSTDDerived, histos, ccdb, rateFetcher);
 
-   if (fverbose) LOGF(info, "[Process function call, Sorted] N. Collisions: %i, N. V0s: %i, Processing time (s): %lf", collisions.size(), fullV0s.size(), elapsed.count());      
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+
+    if (fverbose)
+      LOGF(info, "[Process function call, Sorted] N. Collisions: %i, N. V0s: %i, Processing time (s): %lf", collisions.size(), fullV0s.size(), elapsed.count());
   }
-  
-  PROCESS_SWITCH(sigma0Sorted, processRealData, "process run 3 real data", true);    
+
+  PROCESS_SWITCH(sigma0Sorted, processRealData, "process run 3 real data", true);
 };
 
 struct sigma0Unsorted {
@@ -123,16 +127,16 @@ struct sigma0Unsorted {
   o2::pwglf::sigma0::photonselConfigurables photonselOpts;
   o2::pwglf::sigma0::sigma0selConfigurables sigma0selOpts;
   o2::pwglf::sigma0::pi0selConfigurables pi0selOpts;
-  o2::pwglf::sigma0::axisConfigurables axisOpts;  
+  o2::pwglf::sigma0::axisConfigurables axisOpts;
 
   o2::pwglf::sigma0::Sigma0BuilderModule sigma0Module;
 
-  // For manual sliceBy  
+  // For manual sliceBy
   SliceCache cache;
-  PresliceUnsorted<V0StandardDerivedDatas> perCollisionSTDDerived = o2::aod::v0data::straCollisionId;  
+  PresliceUnsorted<V0StandardDerivedDatas> perCollisionSTDDerived = o2::aod::v0data::straCollisionId;
 
   // Histogram registry
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};  
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext const&)
   {
@@ -146,21 +150,23 @@ struct sigma0Unsorted {
     sigma0Module.init(histos, evselOpts, lambdaselOpts, photonselOpts, sigma0selOpts, pi0selOpts, axisOpts);
   }
 
-  // Dummy process function 
-  void process(StraColls const&){} 
+  // Dummy process function
+  void process(StraColls const&) {}
 
-  void processRealData(StraColls const& collisions, V0StandardDerivedDatas const& fullV0s, dauTracks const&){
-   auto start = std::chrono::high_resolution_clock::now();
+  void processRealData(StraColls const& collisions, V0StandardDerivedDatas const& fullV0s, dauTracks const&)
+  {
+    auto start = std::chrono::high_resolution_clock::now();
 
-   sigma0Module.processSlicing(collisions, fullV0s, perCollisionSTDDerived, histos, ccdb, rateFetcher); 
-   
-   auto end = std::chrono::high_resolution_clock::now();
-   std::chrono::duration<double> elapsed = end - start;
+    sigma0Module.processSlicing(collisions, fullV0s, perCollisionSTDDerived, histos, ccdb, rateFetcher);
 
-   if (fverbose) LOGF(info, "[Process function call, Unsorted] N. Collisions: %i, N. V0s: %i, Processing time (s): %lf", collisions.size(), fullV0s.size(), elapsed.count());      
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+
+    if (fverbose)
+      LOGF(info, "[Process function call, Unsorted] N. Collisions: %i, N. V0s: %i, Processing time (s): %lf", collisions.size(), fullV0s.size(), elapsed.count());
   }
-  
-  PROCESS_SWITCH(sigma0Unsorted, processRealData, "process run 3 real data", true);    
+
+  PROCESS_SWITCH(sigma0Unsorted, processRealData, "process run 3 real data", true);
 };
 
 struct sigma0Iterator {
@@ -174,12 +180,12 @@ struct sigma0Iterator {
   o2::pwglf::sigma0::photonselConfigurables photonselOpts;
   o2::pwglf::sigma0::sigma0selConfigurables sigma0selOpts;
   o2::pwglf::sigma0::pi0selConfigurables pi0selOpts;
-  o2::pwglf::sigma0::axisConfigurables axisOpts;  
+  o2::pwglf::sigma0::axisConfigurables axisOpts;
 
   o2::pwglf::sigma0::Sigma0BuilderModule sigma0Module;
 
   // Histogram registry
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};  
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   uint64_t CollIDBuffer = 0;
   std::chrono::high_resolution_clock::time_point start{};
   std::chrono::high_resolution_clock::time_point end{};
@@ -195,37 +201,42 @@ struct sigma0Iterator {
     sigma0Module.init(histos, evselOpts, lambdaselOpts, photonselOpts, sigma0selOpts, pi0selOpts, axisOpts);
   }
 
-  // Dummy process function 
-  void process(V0StandardDerivedDatas const&){} 
+  // Dummy process function
+  void process(V0StandardDerivedDatas const&) {}
 
-  void processCheckIndexOrdered(V0StandardDerivedDatas const& fullV0s){ 
-    CollIDBuffer=0; 
+  void processCheckIndexOrdered(V0StandardDerivedDatas const& fullV0s)
+  {
+    CollIDBuffer = 0;
     for (const auto& v0 : fullV0s) {
-      const uint64_t v0collidx = v0.straCollisionId();      
-      if (v0collidx < CollIDBuffer) 
-        LOGF(fatal, "V0 -> stracollision: index unsorted! Previous index: %i, current index: %i", CollIDBuffer, v0collidx); 
+      const uint64_t v0collidx = v0.straCollisionId();
+      if (v0collidx < CollIDBuffer)
+        LOGF(fatal, "V0 -> stracollision: index unsorted! Previous index: %i, current index: %i", CollIDBuffer, v0collidx);
       CollIDBuffer = v0collidx;
     }
   }
-  void processTI(StraColls const&){    
+  void processTI(StraColls const&)
+  {
     start = std::chrono::high_resolution_clock::now();
   }
 
-  void processRealData(StraColls::iterator const& collision, V0StandardDerivedDatas const& fullV0s, dauTracks const&){
-   sigma0Module.processIterator(collision, fullV0s, histos, ccdb, rateFetcher);    
+  void processRealData(StraColls::iterator const& collision, V0StandardDerivedDatas const& fullV0s, dauTracks const&)
+  {
+    sigma0Module.processIterator(collision, fullV0s, histos, ccdb, rateFetcher);
   }
 
-  void processTF(StraColls const& collisions, V0StandardDerivedDatas const& fullV0s){
+  void processTF(StraColls const& collisions, V0StandardDerivedDatas const& fullV0s)
+  {
     end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
 
-    if (fverbose) LOGF(info, "[Process function call, Iterator] N. Collisions: %i, N. V0s: %i, Processing time (s): %lf", collisions.size(), fullV0s.size(), elapsed.count());      
+    if (fverbose)
+      LOGF(info, "[Process function call, Iterator] N. Collisions: %i, N. V0s: %i, Processing time (s): %lf", collisions.size(), fullV0s.size(), elapsed.count());
   }
-  
+
   PROCESS_SWITCH(sigma0Iterator, processCheckIndexOrdered, "check ordering", true);
   PROCESS_SWITCH(sigma0Iterator, processTI, "Initial setup", true);
   PROCESS_SWITCH(sigma0Iterator, processRealData, "process data", true);
-  PROCESS_SWITCH(sigma0Iterator, processTF, "Printouts", true);    
+  PROCESS_SWITCH(sigma0Iterator, processTF, "Printouts", true);
 };
 
 struct sigma0CustomGrouping {
@@ -239,12 +250,12 @@ struct sigma0CustomGrouping {
   o2::pwglf::sigma0::photonselConfigurables photonselOpts;
   o2::pwglf::sigma0::sigma0selConfigurables sigma0selOpts;
   o2::pwglf::sigma0::pi0selConfigurables pi0selOpts;
-  o2::pwglf::sigma0::axisConfigurables axisOpts;  
+  o2::pwglf::sigma0::axisConfigurables axisOpts;
 
   o2::pwglf::sigma0::Sigma0BuilderModule sigma0Module;
 
   // Histogram registry
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};  
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext const&)
   {
@@ -258,28 +269,30 @@ struct sigma0CustomGrouping {
     sigma0Module.init(histos, evselOpts, lambdaselOpts, photonselOpts, sigma0selOpts, pi0selOpts, axisOpts);
   }
 
-  // Dummy process function 
-  void process(StraColls const&){}
+  // Dummy process function
+  void process(StraColls const&) {}
 
-  void processRealData(StraColls const& collisions, V0StandardDerivedDatas const& fullV0s, dauTracks const&){
-   auto start = std::chrono::high_resolution_clock::now();
+  void processRealData(StraColls const& collisions, V0StandardDerivedDatas const& fullV0s, dauTracks const&)
+  {
+    auto start = std::chrono::high_resolution_clock::now();
 
-   sigma0Module.processCustomGrouping(collisions, fullV0s, histos, ccdb, rateFetcher); 
-   
-   auto end = std::chrono::high_resolution_clock::now();
-   std::chrono::duration<double> elapsed = end - start;
+    sigma0Module.processCustomGrouping(collisions, fullV0s, histos, ccdb, rateFetcher);
 
-   if (fverbose) LOGF(info, "[Process function call, Custom] N. Collisions: %i, N. V0s: %i, Processing time (s): %lf", collisions.size(), fullV0s.size(), elapsed.count());      
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+
+    if (fverbose)
+      LOGF(info, "[Process function call, Custom] N. Collisions: %i, N. V0s: %i, Processing time (s): %lf", collisions.size(), fullV0s.size(), elapsed.count());
   }
-  
-  PROCESS_SWITCH(sigma0CustomGrouping, processRealData, "process run 3 real data", true);    
+
+  PROCESS_SWITCH(sigma0CustomGrouping, processRealData, "process run 3 real data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-      adaptAnalysisTask<sigma0Sorted>(cfgc),
-      adaptAnalysisTask<sigma0Unsorted>(cfgc),
-      adaptAnalysisTask<sigma0Iterator>(cfgc),
-      adaptAnalysisTask<sigma0CustomGrouping>(cfgc)};
+    adaptAnalysisTask<sigma0Sorted>(cfgc),
+    adaptAnalysisTask<sigma0Unsorted>(cfgc),
+    adaptAnalysisTask<sigma0Iterator>(cfgc),
+    adaptAnalysisTask<sigma0CustomGrouping>(cfgc)};
 }

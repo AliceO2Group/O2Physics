@@ -12,13 +12,15 @@
 #ifndef PWGLF_UTILS_SIGMA0BUILDERHELPER_H_
 #define PWGLF_UTILS_SIGMA0BUILDERHELPER_H_
 
-#include <cstdlib>
-#include <cmath>
-#include <array>
+#include "Common/Core/trackUtilities.h"
+
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisDataModel.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/trackUtilities.h"
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
 
 namespace o2
 {
@@ -63,7 +65,6 @@ struct evselConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::string> irSource{"irSource", "T0VTX", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
   o2::framework::Configurable<float> minIR{"minIR", -1, "minimum IR collisions"};
   o2::framework::Configurable<float> maxIR{"maxIR", -1, "maximum IR collisions"};
-
 };
 
 // Lambda criteria:
@@ -102,13 +103,12 @@ struct sigma0selConfigurables : o2::framework::ConfigurableGroup {
 
   o2::framework::Configurable<float> Sigma0Window{"Sigma0Window", 0.1, "Mass window around expected (in GeV/c2)"};
   o2::framework::Configurable<float> SigmaMaxRap{"SigmaMaxRap", 0.8, "Max sigma0 rapidity"};
-
 };
 
 struct pi0selConfigurables : o2::framework::ConfigurableGroup {
   std::string prefix = "pi0selOpts";
 
-  o2::framework::Configurable<bool> doPi0QA{"doPi0QA", true, "Flag to fill QA histos for pi0 rejection study."};  
+  o2::framework::Configurable<bool> doPi0QA{"doPi0QA", true, "Flag to fill QA histos for pi0 rejection study."};
   o2::framework::Configurable<float> Pi0PhotonMinDCADauToPv{"Pi0PhotonMinDCADauToPv", 0.0, "Min DCA daughter To PV (cm)"};
   o2::framework::Configurable<float> Pi0PhotonMaxDCAV0Dau{"Pi0PhotonMaxDCAV0Dau", 3.5, "Max DCA V0 Daughters (cm)"};
   o2::framework::Configurable<int> Pi0PhotonMinTPCCrossedRows{"Pi0PhotonMinTPCCrossedRows", 0, "Min daughter TPC Crossed Rows"};
@@ -154,7 +154,6 @@ struct axisConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis axisIRBinning{"axisIRBinning", {150, 0, 1500}, "Binning for the interaction rate (kHz)"};
 };
 
-
 class Sigma0BuilderModule
 {
  public:
@@ -169,73 +168,73 @@ class Sigma0BuilderModule
   {
     if (evselOpts.requireSel8 && !collision.sel8()) {
       return false;
-    }    
+    }
     if (evselOpts.requireTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
       return false;
-    }    
+    }
     if (evselOpts.rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return false;
-    }    
+    }
     if (evselOpts.rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return false;
-    }    
+    }
     if (std::abs(collision.posZ()) > evselOpts.maxZVtxPosition) {
       return false;
-    }  
+    }
     if (evselOpts.requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
       return false;
-    }    
+    }
     if (evselOpts.requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
-    }    
+    }
     if (evselOpts.requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
       return false;
-    }    
+    }
     if (evselOpts.requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
       return false;
-    }    
+    }
     if (evselOpts.rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
-    }    
+    }
     if (evselOpts.requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return false;
-    }    
+    }
     if (evselOpts.requireNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
       return false;
-    }    
+    }
     if (evselOpts.requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
       return false;
-    }    
+    }
     if (evselOpts.requireNoCollInROFStd && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       return false;
-    }    
+    }
     if (evselOpts.requireNoCollInROFStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
       return false;
-    }    
+    }
     if (evselOpts.doPPAnalysis) { // we are in pp
       if (evselOpts.requireINEL0 && collision.multNTracksPVeta1() < 1) {
         return false;
-      }      
+      }
       if (evselOpts.requireINEL1 && collision.multNTracksPVeta1() < 2) {
         return false;
-      }      
+      }
     } else { // we are in Pb-Pb
       float collisionOccupancy = evselOpts.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
       if (evselOpts.minOccupancy >= 0 && collisionOccupancy < evselOpts.minOccupancy) {
         return false;
-      }      
+      }
       if (evselOpts.maxOccupancy >= 0 && collisionOccupancy > evselOpts.maxOccupancy) {
         return false;
-      }      
+      }
     }
     // Fetch interaction rate only if required (in order to limit ccdb calls)
     double interactionRate = (evselOpts.minIR >= 0 || evselOpts.maxIR >= 0) ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), evselOpts.irSource, evselOpts.fIRCrashOnNull) * 1.e-3 : -1;
     if (evselOpts.minIR >= 0 && interactionRate < evselOpts.minIR) {
       return false;
-    }    
+    }
     if (evselOpts.maxIR >= 0 && interactionRate > evselOpts.maxIR) {
       return false;
-    }    
+    }
     float centrality = evselOpts.doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
 
     histos.template get<TH1>(HIST("hEventCentrality"))->Fill(centrality);
@@ -273,7 +272,7 @@ class Sigma0BuilderModule
 
     // Gamma1 Selection
     bool passedTPCGamma1 = (TMath::Abs(posTrackGamma1.tpcNSigmaEl()) < pi0selOpts.Pi0PhotonMaxTPCNSigmas) ||
-                            (TMath::Abs(negTrackGamma1.tpcNSigmaEl()) < pi0selOpts.Pi0PhotonMaxTPCNSigmas);
+                           (TMath::Abs(negTrackGamma1.tpcNSigmaEl()) < pi0selOpts.Pi0PhotonMaxTPCNSigmas);
 
     if (TMath::Abs(gamma1.mGamma()) > pi0selOpts.Pi0PhotonMaxMass ||
         gamma1.qtarm() >= pi0selOpts.Pi0PhotonMaxQt ||
@@ -294,7 +293,7 @@ class Sigma0BuilderModule
 
     // Gamma2 Selection
     bool passedTPCGamma2 = (TMath::Abs(posTrackGamma2.tpcNSigmaEl()) < pi0selOpts.Pi0PhotonMaxTPCNSigmas) ||
-                            (TMath::Abs(negTrackGamma2.tpcNSigmaEl()) < pi0selOpts.Pi0PhotonMaxTPCNSigmas);
+                           (TMath::Abs(negTrackGamma2.tpcNSigmaEl()) < pi0selOpts.Pi0PhotonMaxTPCNSigmas);
 
     if (TMath::Abs(gamma2.mGamma()) > pi0selOpts.Pi0PhotonMaxMass ||
         gamma2.qtarm() >= pi0selOpts.Pi0PhotonMaxQt ||
@@ -318,7 +317,7 @@ class Sigma0BuilderModule
       return;
     }
 
-    // Fill histograms    
+    // Fill histograms
     histos.template get<TH3>(HIST("Pi0QA/h3dMassPi0AfterSel_Candidates"))->Fill(centrality, pi0Pt, pi0Mass);
   }
 
@@ -336,18 +335,18 @@ class Sigma0BuilderModule
 
     } else {
       // Standard selection
-      // Gamma basic selection criteria:      
+      // Gamma basic selection criteria:
       if ((gamma.mGamma() < 0) || (gamma.mGamma() > photonselOpts.PhotonMaxMass))
         return false;
-      float PhotonY = RecoDecay::y(std::array{gamma.px(), gamma.py(), gamma.pz()}, o2::constants::physics::MassGamma);      
+      float PhotonY = RecoDecay::y(std::array{gamma.px(), gamma.py(), gamma.pz()}, o2::constants::physics::MassGamma);
       if ((TMath::Abs(PhotonY) > photonselOpts.PhotonRapidity) || (TMath::Abs(gamma.negativeeta()) > photonselOpts.PhotonMaxDauPseudoRap) || (TMath::Abs(gamma.positiveeta()) > photonselOpts.PhotonMaxDauPseudoRap))
-        return false;      
+        return false;
       if ((TMath::Abs(gamma.dcapostopv()) < photonselOpts.PhotonMinDCAToPv) || (TMath::Abs(gamma.dcanegtopv()) < photonselOpts.PhotonMinDCAToPv))
-        return false;      
+        return false;
       if (TMath::Abs(gamma.dcaV0daughters()) > photonselOpts.PhotonMaxDCAV0Dau)
-        return false;      
+        return false;
       if ((gamma.v0radius() < photonselOpts.PhotonMinRadius) || (gamma.v0radius() > photonselOpts.PhotonMaxRadius))
-        return false;      
+        return false;
     }
     float centrality = evselOpts.doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
     histos.template get<TH3>(HIST("PhotonSel/h3dPhotonMass"))->Fill(centrality, gamma.pt(), gamma.mGamma());
@@ -367,17 +366,17 @@ class Sigma0BuilderModule
         return false;
 
     } else {
-      // Lambda basic selection criteria:      
+      // Lambda basic selection criteria:
       if ((TMath::Abs(lambda.mLambda() - o2::constants::physics::MassLambda0) > lambdaselOpts.LambdaWindow) && (TMath::Abs(lambda.mAntiLambda() - o2::constants::physics::MassLambda0) > lambdaselOpts.LambdaWindow))
-        return false;      
+        return false;
       if ((TMath::Abs(lambda.yLambda()) > lambdaselOpts.LambdaRapidity) || (TMath::Abs(lambda.negativeeta()) > lambdaselOpts.LambdaDauPseudoRap) || (TMath::Abs(lambda.positiveeta()) > lambdaselOpts.LambdaDauPseudoRap))
-        return false;      
+        return false;
       if ((TMath::Abs(lambda.dcapostopv()) < lambdaselOpts.LambdaMinDCAPosToPv) || (TMath::Abs(lambda.dcanegtopv()) < lambdaselOpts.LambdaMinDCANegToPv))
-        return false;      
+        return false;
       if ((lambda.v0radius() < lambdaselOpts.LambdaMinv0radius) || (lambda.v0radius() > lambdaselOpts.LambdaMaxv0radius))
-        return false;      
+        return false;
       if (TMath::Abs(lambda.dcaV0daughters()) > lambdaselOpts.LambdaMaxDCAV0Dau)
-        return false;      
+        return false;
     }
 
     float centrality = evselOpts.doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
@@ -413,7 +412,7 @@ class Sigma0BuilderModule
 
     if (TMath::Abs(sigmaMass - 1.192642) > sigma0selOpts.Sigma0Window)
       return false;
-    
+
     histos.template get<TH1>(HIST("SigmaSel/hSigmaY"))->Fill(sigmaY);
 
     if (TMath::Abs(sigmaY) > sigma0selOpts.SigmaMaxRap)
@@ -435,7 +434,7 @@ class Sigma0BuilderModule
   o2::pwglf::sigma0::axisConfigurables axisOpts;
 
   template <typename THistoRegistry, typename TEvSelOpt, typename TLambdaSelOpt, typename TPhotonSelOpt, typename TSigma0SelOpt, typename TPi0Opt, typename TAxisOpt>
-  void init(THistoRegistry& histos, 
+  void init(THistoRegistry& histos,
             TEvSelOpt const& external_evselopts,
             TLambdaSelOpt const& external_lambdaselopts,
             TPhotonSelOpt const& external_photonselopts,
@@ -451,7 +450,7 @@ class Sigma0BuilderModule
     pi0selOpts = external_pi0selopts;
     axisOpts = external_axisopts;
 
-    histos.add("hEventCentrality", "hEventCentrality", framework::kTH1D, {axisOpts.axisCentrality});    
+    histos.add("hEventCentrality", "hEventCentrality", framework::kTH1D, {axisOpts.axisCentrality});
     histos.add("hInteractionRate", "hInteractionRate", framework::kTH1F, {axisOpts.axisIRBinning});
     histos.add("hCentralityVsInteractionRate", "hCentralityVsInteractionRate", o2::framework::kTH2F, {axisOpts.axisCentrality, axisOpts.axisIRBinning});
 
@@ -466,7 +465,7 @@ class Sigma0BuilderModule
     histos.add("SigmaSel/hSigmaY", "hSigmaY", framework::kTH1F, {axisOpts.axisRapidity});
     histos.add("SigmaSel/hSigmaMassSelected", "hSigmaMassSelected", framework::kTH1F, {axisOpts.axisSigmaMass});
     histos.add("SigmaSel/h3dMassSigma0AfterSel", "h3dMassSigma0AfterSel", framework::kTH3D, {axisOpts.axisCentrality, axisOpts.axisPt, axisOpts.axisSigmaMass});
-  
+
     // For Pi0 QA
     histos.add("Pi0QA/h3dMassPi0BeforeSel_Candidates", "h3dMassPi0BeforeSel_Candidates", framework::kTH3D, {axisOpts.axisCentrality, axisOpts.axisPt, axisOpts.axisPi0Mass});
     histos.add("Pi0QA/h3dMassPi0AfterSel_Candidates", "h3dMassPi0AfterSel_Candidates", framework::kTH3D, {axisOpts.axisCentrality, axisOpts.axisPt, axisOpts.axisPi0Mass});
@@ -482,29 +481,28 @@ class Sigma0BuilderModule
       if (!IsEventAccepted(coll, histos, ccdb, rateFetcher))
         continue;
 
-      const uint64_t collIdx = coll.globalIndex();      
+      const uint64_t collIdx = coll.globalIndex();
 
       //_______________________________________________
       // V0s loop
       std::vector<int> bestGammasArray;
       std::vector<int> bestLambdasArray;
 
-      auto V0s = fullV0s.sliceBy(slicer, collIdx);      
+      auto V0s = fullV0s.sliceBy(slicer, collIdx);
       for (auto& v0 : V0s) {
-        const uint64_t v0collidx = v0.straCollisionId(); 
-        if (v0collidx < CollIDBuffer) 
-          LOGF(fatal, "Collision table unsorted! Previous index: %i, current index: %i", CollIDBuffer, v0collidx); 
-        
-        if (processPhotonCandidate(v0, coll, histos))          // selecting photons
+        const uint64_t v0collidx = v0.straCollisionId();
+        if (v0collidx < CollIDBuffer)
+          LOGF(fatal, "Collision table unsorted! Previous index: %i, current index: %i", CollIDBuffer, v0collidx);
+
+        if (processPhotonCandidate(v0, coll, histos))  // selecting photons
           bestGammasArray.push_back(v0.globalIndex()); // Save indices of best gamma candidates
 
-        if (processLambdaCandidate(v0, coll, histos))           // selecting lambdas
+        if (processLambdaCandidate(v0, coll, histos))   // selecting lambdas
           bestLambdasArray.push_back(v0.globalIndex()); // Save indices of best lambda candidates
 
         CollIDBuffer = v0collidx;
       }
-    
-       
+
       //_______________________________________________
       // Pi0 optional loop
       if (pi0selOpts.doPi0QA) {
@@ -527,27 +525,27 @@ class Sigma0BuilderModule
 
           // Building sigma0 candidate
           if (!buildSigma0(lambda, gamma, coll, histos))
-            continue;          
+            continue;
         }
       }
     }
-  } // end processSlicing 
+  } // end processSlicing
 
-    // ______________________________________________________
+  // ______________________________________________________
   // Real data processing - no MC subscription
   template <typename TCollision, typename TV0s, typename THistoRegistry, typename TCCDB, typename TRateFetcher>
   void processCustomGrouping(TCollision const& collisions, TV0s const& fullV0s, THistoRegistry& histos, TCCDB const& ccdb, TRateFetcher& rateFetcher)
   {
     uint64_t CollIDBuffer = 0;
-    // brute force grouped index construction 
-    std::vector<std::vector<int>> v0grouped(collisions.size()); 
+    // brute force grouped index construction
+    std::vector<std::vector<int>> v0grouped(collisions.size());
 
     for (const auto& v0 : fullV0s) {
       v0grouped[v0.straCollisionId()].push_back(v0.globalIndex());
 
-      const uint64_t v0collidx = v0.straCollisionId();      
-      if (v0collidx < CollIDBuffer) 
-        LOGF(fatal, "V0 -> stracollision: index unsorted! Previous index: %i, current index: %i", CollIDBuffer, v0collidx); 
+      const uint64_t v0collidx = v0.straCollisionId();
+      if (v0collidx < CollIDBuffer)
+        LOGF(fatal, "V0 -> stracollision: index unsorted! Previous index: %i, current index: %i", CollIDBuffer, v0collidx);
       CollIDBuffer = v0collidx;
     }
 
@@ -562,14 +560,13 @@ class Sigma0BuilderModule
 
       for (size_t i = 0; i < v0grouped[coll.globalIndex()].size(); i++) {
         auto v0 = fullV0s.rawIteratorAt(v0grouped[coll.globalIndex()][i]);
-        if (processPhotonCandidate(v0, coll, histos))          // selecting photons
+        if (processPhotonCandidate(v0, coll, histos))  // selecting photons
           bestGammasArray.push_back(v0.globalIndex()); // Save indices of best gamma candidates
 
-        if (processLambdaCandidate(v0, coll, histos))           // selecting lambdas
+        if (processLambdaCandidate(v0, coll, histos))   // selecting lambdas
           bestLambdasArray.push_back(v0.globalIndex()); // Save indices of best lambda candidates
       }
-    
-       
+
       //_______________________________________________
       // Pi0 optional loop
       if (pi0selOpts.doPi0QA) {
@@ -592,11 +589,11 @@ class Sigma0BuilderModule
 
           // Building sigma0 candidate
           if (!buildSigma0(lambda, gamma, coll, histos))
-            continue;          
+            continue;
         }
       }
     }
-  } // end processCustomGrouping 
+  } // end processCustomGrouping
 
   // ______________________________________________________
   // Real data processing - no MC subscription
@@ -612,13 +609,13 @@ class Sigma0BuilderModule
     std::vector<int> bestLambdasArray;
 
     for (auto& v0 : fullV0s) {
-      if (processPhotonCandidate(v0, coll, histos))          // selecting photons
+      if (processPhotonCandidate(v0, coll, histos))                     // selecting photons
         bestGammasArray.push_back(v0.globalIndex() - fullV0s.offset()); // Save indices of best gamma candidates
 
-      if (processLambdaCandidate(v0, coll, histos))           // selecting lambdas
+      if (processLambdaCandidate(v0, coll, histos))                      // selecting lambdas
         bestLambdasArray.push_back(v0.globalIndex() - fullV0s.offset()); // Save indices of best lambda candidates
     }
-  
+
     //_______________________________________________
     // Pi0 optional loop
     if (pi0selOpts.doPi0QA) {
@@ -641,11 +638,11 @@ class Sigma0BuilderModule
 
         // Building sigma0 candidate
         if (!buildSigma0(lambda, gamma, coll, histos))
-          continue;          
+          continue;
       }
     }
-  
-  } // end processIterator 
+
+  } // end processIterator
 
 }; // end Sigma0BuilderModule
 
