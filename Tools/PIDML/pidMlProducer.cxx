@@ -15,18 +15,21 @@
 /// \author Maja Kabus <mkabus@cern.ch>
 /// \author Marek Mytkowski <marek.mytkowski@cern.ch>
 
-#include <string_view>
-#include <limits>
-#include "Framework/AnalysisTask.h"
-#include "Framework/StaticFor.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include "Tools/PIDML/pidMl.h"
+#include "Tools/PIDML/pidUtils.h"
+//
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Tools/PIDML/pidMl.h"
-#include "Tools/PIDML/pidUtils.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
+
+#include <limits>
+#include <string_view>
 
 using namespace o2;
 using namespace o2::framework;

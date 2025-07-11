@@ -14,15 +14,17 @@
 ///
 /// \author Maja Kabus <mkabus@cern.ch>
 
+#include "Tools/PIDML/pidOnnxInterface.h"
+//
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CCDB/CcdbApi.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+
 #include <string>
 #include <vector>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "CCDB/CcdbApi.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Tools/PIDML/pidOnnxInterface.h"
 
 using namespace o2;
 using namespace o2::framework;

@@ -17,10 +17,12 @@
 #ifndef TOOLS_PIDML_PIDML_H_
 #define TOOLS_PIDML_PIDML_H_
 
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <Framework/AnalysisDataModel.h>
 
 namespace o2::aod
 {

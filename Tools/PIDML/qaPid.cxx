@@ -14,14 +14,16 @@
 /// \author Łukasz Sawicki
 /// \since
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StaticFor.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
-#include <TParameter.h>
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
+
 #include <TPDGCode.h>
+#include <TParameter.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -371,7 +373,7 @@ struct QaPid {
     for (int j = 0; j < kArrLen; ++j) {
       if (p < PSwitch[j]) {
         particleNSigma[j] = std::abs(tpcNSigmas[j]);
-      } else if (p >= PSwitch[j]) {
+      } else {
         particleNSigma[j] = combinedSignal(tpcNSigmas[j], tofNSigmas[j]);
       }
     }
@@ -409,7 +411,7 @@ struct QaPid {
     for (int j = 0; j < kArrLen; ++j) {
       if (p < PSwitch[j]) {
         particleNSigma[j] = std::abs(tpcNSigmas[j]);
-      } else if (p >= PSwitch[j]) {
+      } else {
         particleNSigma[j] = combinedSignal(tpcNSigmas[j], tofNSigmas[j]);
       }
     }
