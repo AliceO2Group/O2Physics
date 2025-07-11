@@ -50,8 +50,8 @@
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/runDataProcessing.h>
 #include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
 #include <TPDGCode.h>
@@ -196,7 +196,7 @@ struct HfDataCreatorCharmResoReduced {
   Configurable<bool> doMcRecQa{"doMcRecQa", true, "Fill QA histograms for Mc matching"};
   Configurable<bool> rejectPairsWithCommonDaughter{"rejectPairsWithCommonDaughter", true, "flag to reject already at this stage the pairs that share a daughter track"};
   Configurable<bool> rejectCollisionsWithBadEvSel{"rejectCollisionsWithBadEvSel", true, "flag to reject collisions with bad event selection"};
-  
+
   HfHelper hfHelper;
   o2::hf_evsel::HfEventSelection hfEvSel;
   o2::hf_evsel::HfEventSelectionMc hfEvSelMc;
@@ -247,7 +247,6 @@ struct HfDataCreatorCharmResoReduced {
     std::array<float, 3> pVectorProng1;
     std::array<float, 3> pVectorProng2;
   } varUtils;
-  
 
   // Dplus
   using CandsDplusFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
@@ -289,7 +288,7 @@ struct HfDataCreatorCharmResoReduced {
   PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
   HistogramRegistry registry{"registry"};
- 
+
   void init(InitContext& initContext)
   {
     // histograms
@@ -623,9 +622,9 @@ struct HfDataCreatorCharmResoReduced {
     }
     return true;
   }
-  
+
   template <typename PParticles, typename TrIU>
-  int8_t getMatchingFlagV0(PParticles const& particlesMc, const std::array<TrIU,2>& arrDaughtersV0)
+  int8_t getMatchingFlagV0(PParticles const& particlesMc, const std::array<TrIU, 2>& arrDaughtersV0)
   {
     int8_t signV0{0};
     int indexRec{-1};
@@ -650,31 +649,31 @@ struct HfDataCreatorCharmResoReduced {
   /// \param tracks is the table with tracks
   /// \param indexHfCandCharm is the index of the charm-hadron bachelor in the reduced table
   /// \param indexCandV0TrBach is the index of the v0 bachelor in the reduced table
-  template<uint8_t dType, typename PParticles, typename CCand, typename BBachV0, typename Tr>
+  template <uint8_t dType, typename PParticles, typename CCand, typename BBachV0, typename Tr>
   void fillMcRecoInfoDV0(PParticles const& particlesMc,
-                      CCand const& candCharmBach,
-                      BBachV0 const& bachelorV0,
-                      Tr const& tracks,
-                      int& indexHfCandCharm,
-                      int64_t& indexCandV0Bach)
+                         CCand const& candCharmBach,
+                         BBachV0 const& bachelorV0,
+                         Tr const& tracks,
+                         int& indexHfCandCharm,
+                         int64_t& indexCandV0Bach)
   {
     std::vector<typename Tr::iterator> vecDaughtersReso{};
     int8_t sign{0}, nKinkedTracks{0}, origin{0}, flagCharmBach{0}, flagCharmBachInterm{0}, flagV0{0}, flagReso{0};
     int indexRec{-1}, debugMcRec{0};
     float ptGen{-1.f}, invMassGen{-1.f};
-    if constexpr (dType == DType::Dstar){
+    if constexpr (dType == DType::Dstar) {
       vecDaughtersReso.push_back(tracks.rawIteratorAt(candCharmBach.prong0Id()));
       vecDaughtersReso.push_back(tracks.rawIteratorAt(candCharmBach.prong1Id()));
       vecDaughtersReso.push_back(tracks.rawIteratorAt(candCharmBach.prongPiId()));
       // Check if D* is matched
       flagCharmBach = candCharmBach.flagMcMatchRec();
-      if (std::abs(flagCharmBach) > 0){
+      if (std::abs(flagCharmBach) > 0) {
         SETBIT(debugMcRec, hf_decay::hf_cand_reso::PartialMatchMc::DstarMatched);
         origin = candCharmBach.originMcRec();
       }
       // Check if D0 is matched
       flagCharmBachInterm = candCharmBach.flagMcMatchRecD0();
-      if (std::abs(flagCharmBachInterm) > 0){
+      if (std::abs(flagCharmBachInterm) > 0) {
         SETBIT(debugMcRec, hf_decay::hf_cand_reso::PartialMatchMc::D0Matched);
       }
       // Check if V0 is matched
@@ -692,19 +691,19 @@ struct HfDataCreatorCharmResoReduced {
           indexRec = RecoDecay::getMatchedMCRec<false, true, true, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
           if (indexRec > -1) {
             flagReso = sign * decayChannelFlag;
-            break; 
+            break;
           }
         }
-      } else if (std::abs(flagCharmBachInterm) > 0 && flagV0 == hf_decay::hf_cand_reso::PartialMatchMc::K0Matched){
+      } else if (std::abs(flagCharmBachInterm) > 0 && flagV0 == hf_decay::hf_cand_reso::PartialMatchMc::K0Matched) {
         std::array<int, 4> pdgCodesDaughters = {+kPiPlus, -kKPlus, +kPiPlus, -kPiPlus};
-        auto arrDaughtersReso = std::array{vecDaughtersReso[0], vecDaughtersReso[1],  vecDaughtersReso[3], vecDaughtersReso[4]};
+        auto arrDaughtersReso = std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[3], vecDaughtersReso[4]};
         // Peaking background of D0K0s <- Ds* with spurious soft pion
         for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToDstarK0s) {
           indexRec = RecoDecay::getMatchedMCRec<false, true, true, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
           if (indexRec > -1) {
             flagReso = sign * decayChannelFlag;
             SETBIT(debugMcRec, hf_decay::hf_cand_reso::PartialMatchMc::ResoPartlyMatched);
-            break; 
+            break;
           }
         }
       }
@@ -714,11 +713,11 @@ struct HfDataCreatorCharmResoReduced {
         ptGen = particleReso.pt();
         invMassGen = RecoDecay::m(particleReso.p(), particleReso.e());
       }
-      rowHfDstarV0McRecReduced(indexHfCandCharm, indexCandV0Bach, 
-                              flagReso, flagCharmBach, 
-                              flagCharmBachInterm, debugMcRec,
-                              origin, ptGen, invMassGen, 
-                              nKinkedTracks);
+      rowHfDstarV0McRecReduced(indexHfCandCharm, indexCandV0Bach,
+                               flagReso, flagCharmBach,
+                               flagCharmBachInterm, debugMcRec,
+                               origin, ptGen, invMassGen,
+                               nKinkedTracks);
     } else if constexpr (dType == DType::Dplus) {
       vecDaughtersReso.push_back(tracks.rawIteratorAt(candCharmBach.prong0Id()));
       vecDaughtersReso.push_back(tracks.rawIteratorAt(candCharmBach.prong1Id()));
@@ -726,7 +725,7 @@ struct HfDataCreatorCharmResoReduced {
       // Check if D+ is matched
       flagCharmBach = candCharmBach.flagMcMatchRec();
       flagCharmBachInterm = candCharmBach.flagMcDecayChanRec();
-      if (std::abs(flagCharmBach) > 0){
+      if (std::abs(flagCharmBach) > 0) {
         SETBIT(debugMcRec, hf_decay::hf_cand_reso::PartialMatchMc::DplusMatched);
         origin = candCharmBach.originMcRec();
       }
@@ -738,8 +737,7 @@ struct HfDataCreatorCharmResoReduced {
         SETBIT(debugMcRec, std::abs(flagV0));
       }
       // If both D+ and K0s are matched, try to match resonance
-      if (hf_decay::hf_cand_3prong::daughtersDplusMain.contains(static_cast<hf_decay::hf_cand_3prong::DecayChannelMain>(std::abs(flagCharmBach)))
-         && flagV0 == hf_decay::hf_cand_reso::PartialMatchMc::K0Matched) {
+      if (hf_decay::hf_cand_3prong::daughtersDplusMain.contains(static_cast<hf_decay::hf_cand_3prong::DecayChannelMain>(std::abs(flagCharmBach))) && flagV0 == hf_decay::hf_cand_reso::PartialMatchMc::K0Matched) {
         auto arrDaughtersReso = std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]};
         auto pdgCodesDplusDaughters = hf_decay::hf_cand_3prong::daughtersDplusMain.at(static_cast<hf_decay::hf_cand_3prong::DecayChannelMain>(std::abs(flagCharmBach)));
         auto pdgCodesDaughters = std::array{pdgCodesDplusDaughters[0], pdgCodesDplusDaughters[1], pdgCodesDplusDaughters[2], +kPiPlus, -kPiPlus};
@@ -750,8 +748,7 @@ struct HfDataCreatorCharmResoReduced {
             break;
           }
         }
-      } else if (hf_decay::hf_cand_3prong::daughtersDplusMain.contains(static_cast<hf_decay::hf_cand_3prong::DecayChannelMain>(std::abs(flagCharmBach))) 
-                 && std::abs(flagV0) == hf_decay::hf_cand_reso::PartialMatchMc::LambdaMatched) {
+      } else if (hf_decay::hf_cand_3prong::daughtersDplusMain.contains(static_cast<hf_decay::hf_cand_3prong::DecayChannelMain>(std::abs(flagCharmBach))) && std::abs(flagV0) == hf_decay::hf_cand_reso::PartialMatchMc::LambdaMatched) {
         // Peaking background of D+Lambda <- Ds* with spurious soft pion
         auto arrDaughtersReso = std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]};
         auto pdgCodesDplusDaughters = hf_decay::hf_cand_3prong::daughtersDplusMain.at(static_cast<hf_decay::hf_cand_3prong::DecayChannelMain>(std::abs(flagCharmBach)));
@@ -769,18 +766,18 @@ struct HfDataCreatorCharmResoReduced {
         ptGen = particleReso.pt();
         invMassGen = RecoDecay::m(particleReso.p(), particleReso.e());
       }
-      rowHf3PrV0McRecReduced(indexHfCandCharm, indexCandV0Bach, 
-                               flagReso, flagCharmBach, 
-                               flagCharmBachInterm, debugMcRec,
-                               origin, ptGen, invMassGen, 
-                               nKinkedTracks); 
+      rowHf3PrV0McRecReduced(indexHfCandCharm, indexCandV0Bach,
+                             flagReso, flagCharmBach,
+                             flagCharmBachInterm, debugMcRec,
+                             origin, ptGen, invMassGen,
+                             nKinkedTracks);
     } else if constexpr (dType == DType::D0) {
       vecDaughtersReso.push_back(tracks.rawIteratorAt(candCharmBach.prong0Id()));
       vecDaughtersReso.push_back(tracks.rawIteratorAt(candCharmBach.prong1Id()));
       // Check if D0 is matched
       flagCharmBach = candCharmBach.flagMcMatchRec();
       flagCharmBachInterm = candCharmBach.flagMcDecayChanRec();
-      if (std::abs(flagCharmBach) > 0){
+      if (std::abs(flagCharmBach) > 0) {
         SETBIT(debugMcRec, hf_decay::hf_cand_reso::PartialMatchMc::D0Matched);
         origin = candCharmBach.originMcRec();
       }
@@ -793,8 +790,7 @@ struct HfDataCreatorCharmResoReduced {
       }
       // No physical channel expected in D0 K0s
       // If both D0 and Lambda are matched, try to match resonance
-      if (hf_decay::hf_cand_2prong::daughtersD0Main.contains(static_cast<hf_decay::hf_cand_2prong::DecayChannelMain>(std::abs(flagCharmBach))) 
-          && std::abs(flagV0) == hf_decay::hf_cand_reso::PartialMatchMc::LambdaMatched) {
+      if (hf_decay::hf_cand_2prong::daughtersD0Main.contains(static_cast<hf_decay::hf_cand_2prong::DecayChannelMain>(std::abs(flagCharmBach))) && std::abs(flagV0) == hf_decay::hf_cand_reso::PartialMatchMc::LambdaMatched) {
         auto arrDaughtersReso = std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3]};
         auto pdgCodesDzeroDaughters = hf_decay::hf_cand_2prong::daughtersD0Main.at(static_cast<hf_decay::hf_cand_2prong::DecayChannelMain>(std::abs(flagCharmBach)));
         auto pdgCodesDaughters = std::array{pdgCodesDzeroDaughters[0], pdgCodesDzeroDaughters[1], +kProton, -kPiPlus};
@@ -811,11 +807,11 @@ struct HfDataCreatorCharmResoReduced {
         ptGen = particleReso.pt();
         invMassGen = RecoDecay::m(particleReso.p(), particleReso.e());
       }
-      rowHf2PrV0McRecReduced(indexHfCandCharm, indexCandV0Bach, 
-                               flagReso, flagCharmBach, 
-                               flagCharmBachInterm, debugMcRec,
-                               origin, ptGen, invMassGen, 
-                               nKinkedTracks); 
+      rowHf2PrV0McRecReduced(indexHfCandCharm, indexCandV0Bach,
+                             flagReso, flagCharmBach,
+                             flagCharmBachInterm, debugMcRec,
+                             origin, ptGen, invMassGen,
+                             nKinkedTracks);
     }
     registry.fill(HIST("hMCRecDebug"), debugMcRec);
     if (indexRec > -1) {
@@ -823,14 +819,13 @@ struct HfDataCreatorCharmResoReduced {
       registry.fill(HIST("hMCRecOrigin"), origin);
       registry.fill(HIST("hMCRecMassGen"), invMassGen);
     }
-    if (std::abs(flagCharmBach) > 0){
+    if (std::abs(flagCharmBach) > 0) {
       registry.fill(HIST("hMCRecCharmDau"), flagCharmBach);
     }
   }
 
-
-  template < typename Tr>
-  int8_t getMatchingFlagTrack( Tr const& bachTrack)
+  template <typename Tr>
+  int8_t getMatchingFlagTrack(Tr const& bachTrack)
   {
     auto particle = bachTrack.mcParticle();
     auto pdgCode = std::abs(particle.pdgCode());
@@ -851,32 +846,32 @@ struct HfDataCreatorCharmResoReduced {
   /// \param tracks is the table with tracks
   /// \param indexHfCandCharm is the index of the charm-hadron bachelor in the reduced table
   /// \param indexCandTrBach is the index of the v0 bachelor in the reduced table
-  template<uint8_t dType, typename PParticles, typename CCand, typename BBachTr, typename Tr>
+  template <uint8_t dType, typename PParticles, typename CCand, typename BBachTr, typename Tr>
   void fillMcRecoInfoDTrack(PParticles const& particlesMc,
-                      CCand const& candCharmBach,
-                      BBachTr const& bachelorTrack,
-                      Tr const& tracks,
-                      int& indexHfCandCharm,
-                      int64_t& indexCandTrBach)
+                            CCand const& candCharmBach,
+                            BBachTr const& bachelorTrack,
+                            Tr const& tracks,
+                            int& indexHfCandCharm,
+                            int64_t& indexCandTrBach)
   {
     std::vector<typename Tr::iterator> vecDaughtersReso{};
     int8_t sign{0}, nKinkedTracks{0}, origin{0}, flagCharmBach{0}, flagCharmBachInterm{0}, flagTrack{0}, flagReso{0};
     int indexRec{-1};
     uint16_t debugMcRec{0};
     float ptGen{-1.f}, invMassGen{-1.f};
-    if constexpr (dType == DType::Dstar){
+    if constexpr (dType == DType::Dstar) {
       vecDaughtersReso.push_back(tracks.rawIteratorAt(candCharmBach.prong0Id()));
       vecDaughtersReso.push_back(tracks.rawIteratorAt(candCharmBach.prong1Id()));
       vecDaughtersReso.push_back(tracks.rawIteratorAt(candCharmBach.prongPiId()));
       // Check if D* is matched
       flagCharmBach = candCharmBach.flagMcMatchRec();
-      if (std::abs(flagCharmBach) > 0){
+      if (std::abs(flagCharmBach) > 0) {
         SETBIT(debugMcRec, hf_decay::hf_cand_reso::PartialMatchMc::DstarMatched);
         origin = candCharmBach.originMcRec();
       }
       // Check if D0 is matched
       flagCharmBachInterm = candCharmBach.flagMcMatchRecD0();
-      if (std::abs(flagCharmBachInterm) > 0){
+      if (std::abs(flagCharmBachInterm) > 0) {
         SETBIT(debugMcRec, hf_decay::hf_cand_reso::PartialMatchMc::D0Matched);
       }
       // Check if Track is matched
@@ -892,21 +887,21 @@ struct HfDataCreatorCharmResoReduced {
           indexRec = RecoDecay::getMatchedMCRec<false, true, true, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
           if (indexRec > -1) {
             flagReso = sign * decayChannelFlag;
-            break; 
+            break;
           }
         }
-      } 
+      }
       // No channels in D*K+ or D*Pr
       if (indexRec > -1) {
         auto particleReso = particlesMc.iteratorAt(indexRec);
         ptGen = particleReso.pt();
-        invMassGen = RecoDecay::m(particleReso.p(), particleReso.e()); 
+        invMassGen = RecoDecay::m(particleReso.p(), particleReso.e());
       }
-      rowHfDstarTrkMcRecReduced(indexHfCandCharm, indexCandTrBach, 
-                                 flagReso, flagCharmBach, 
-                                 flagCharmBachInterm, debugMcRec,
-                                 origin, ptGen, invMassGen, 
-                                 nKinkedTracks); 
+      rowHfDstarTrkMcRecReduced(indexHfCandCharm, indexCandTrBach,
+                                flagReso, flagCharmBach,
+                                flagCharmBachInterm, debugMcRec,
+                                origin, ptGen, invMassGen,
+                                nKinkedTracks);
     } else if constexpr (dType == DType::Dplus) {
       vecDaughtersReso.push_back(tracks.rawIteratorAt(candCharmBach.prong0Id()));
       vecDaughtersReso.push_back(tracks.rawIteratorAt(candCharmBach.prong1Id()));
@@ -914,7 +909,7 @@ struct HfDataCreatorCharmResoReduced {
       // Check if D+ is matched
       flagCharmBach = candCharmBach.flagMcMatchRec();
       flagCharmBachInterm = candCharmBach.flagMcDecayChanRec();
-      if (std::abs(flagCharmBach) > 0){
+      if (std::abs(flagCharmBach) > 0) {
         SETBIT(debugMcRec, hf_decay::hf_cand_reso::PartialMatchMc::DplusMatched);
         origin = candCharmBach.originMcRec();
       }
@@ -924,8 +919,7 @@ struct HfDataCreatorCharmResoReduced {
         SETBIT(debugMcRec, flagTrack);
       }
       // If both D+ and Track are matched, try to match resonance
-      if (hf_decay::hf_cand_3prong::daughtersDplusMain.contains(static_cast<hf_decay::hf_cand_3prong::DecayChannelMain>(std::abs(flagCharmBach))) 
-          && flagTrack == hf_decay::hf_cand_reso::PartialMatchMc::PionMatched) {
+      if (hf_decay::hf_cand_3prong::daughtersDplusMain.contains(static_cast<hf_decay::hf_cand_3prong::DecayChannelMain>(std::abs(flagCharmBach))) && flagTrack == hf_decay::hf_cand_reso::PartialMatchMc::PionMatched) {
         auto arrDaughtersReso = std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], bachelorTrack};
         auto pdgCodesDplusDaughters = hf_decay::hf_cand_3prong::daughtersDplusMain.at(static_cast<hf_decay::hf_cand_3prong::DecayChannelMain>(std::abs(flagCharmBach)));
         auto pdgCodesDaughters = std::array{pdgCodesDplusDaughters[0], pdgCodesDplusDaughters[1], pdgCodesDplusDaughters[2], -kPiPlus};
@@ -936,30 +930,29 @@ struct HfDataCreatorCharmResoReduced {
             break;
           }
         }
-      } 
+      }
       // No channels in D+K+ or D+Pr
       if (indexRec > -1) {
         auto particleReso = particlesMc.iteratorAt(indexRec);
         ptGen = particleReso.pt();
-        invMassGen = RecoDecay::m(particleReso.p(), particleReso.e()); 
+        invMassGen = RecoDecay::m(particleReso.p(), particleReso.e());
       }
-      rowHf3PrTrkMcRecReduced(indexHfCandCharm, indexCandTrBach, 
-                               flagReso, flagCharmBach, 
-                               flagCharmBachInterm, debugMcRec,
-                               origin, ptGen, invMassGen, 
-                               nKinkedTracks);
+      rowHf3PrTrkMcRecReduced(indexHfCandCharm, indexCandTrBach,
+                              flagReso, flagCharmBach,
+                              flagCharmBachInterm, debugMcRec,
+                              origin, ptGen, invMassGen,
+                              nKinkedTracks);
     } else if constexpr (dType == DType::D0) {
       vecDaughtersReso.push_back(tracks.rawIteratorAt(candCharmBach.prong0Id()));
       vecDaughtersReso.push_back(tracks.rawIteratorAt(candCharmBach.prong1Id()));
       // Check if D0 is matched
       flagCharmBach = candCharmBach.flagMcMatchRec();
       flagCharmBachInterm = candCharmBach.flagMcDecayChanRec();
-      if (std::abs(flagCharmBach) > 0){
+      if (std::abs(flagCharmBach) > 0) {
         SETBIT(debugMcRec, hf_decay::hf_cand_reso::PartialMatchMc::D0Matched);
         origin = candCharmBach.originMcRec();
       }
-      if (hf_decay::hf_cand_2prong::daughtersD0Main.contains(static_cast<hf_decay::hf_cand_2prong::DecayChannelMain>(std::abs(flagCharmBach))) 
-          && flagTrack == hf_decay::hf_cand_reso::PartialMatchMc::PionMatched) {
+      if (hf_decay::hf_cand_2prong::daughtersD0Main.contains(static_cast<hf_decay::hf_cand_2prong::DecayChannelMain>(std::abs(flagCharmBach))) && flagTrack == hf_decay::hf_cand_reso::PartialMatchMc::PionMatched) {
         auto arrDaughtersReso = std::array{vecDaughtersReso[0], vecDaughtersReso[1], bachelorTrack};
         auto pdgCodesDzeroDaughters = hf_decay::hf_cand_2prong::daughtersD0Main.at(static_cast<hf_decay::hf_cand_2prong::DecayChannelMain>(std::abs(flagCharmBach)));
         auto pdgCodesDaughters = std::array{pdgCodesDzeroDaughters[0], pdgCodesDzeroDaughters[1], +kPiPlus};
@@ -970,8 +963,7 @@ struct HfDataCreatorCharmResoReduced {
             break;
           }
         }
-      } else if (hf_decay::hf_cand_2prong::daughtersD0Main.contains(static_cast<hf_decay::hf_cand_2prong::DecayChannelMain>(std::abs(flagCharmBach)))
-                && flagTrack == hf_decay::hf_cand_reso::PartialMatchMc::KaonMatched) {
+      } else if (hf_decay::hf_cand_2prong::daughtersD0Main.contains(static_cast<hf_decay::hf_cand_2prong::DecayChannelMain>(std::abs(flagCharmBach))) && flagTrack == hf_decay::hf_cand_reso::PartialMatchMc::KaonMatched) {
         auto arrDaughtersReso = std::array{vecDaughtersReso[0], vecDaughtersReso[1], bachelorTrack};
         auto pdgCodesDzeroDaughters = hf_decay::hf_cand_2prong::daughtersD0Main.at(static_cast<hf_decay::hf_cand_2prong::DecayChannelMain>(std::abs(flagCharmBach)));
         auto pdgCodesDaughters = std::array{pdgCodesDzeroDaughters[0], pdgCodesDzeroDaughters[1], +kKPlus};
@@ -986,13 +978,13 @@ struct HfDataCreatorCharmResoReduced {
       if (indexRec > -1) {
         auto particleReso = particlesMc.iteratorAt(indexRec);
         ptGen = particleReso.pt();
-        invMassGen = RecoDecay::m(particleReso.p(), particleReso.e()); 
+        invMassGen = RecoDecay::m(particleReso.p(), particleReso.e());
       }
-      rowHf2PrTrkMcRecReduced(indexHfCandCharm, indexCandTrBach, 
-                               flagReso, flagCharmBach, 
-                               flagCharmBachInterm, debugMcRec,
-                               origin, ptGen, invMassGen, 
-                               nKinkedTracks);
+      rowHf2PrTrkMcRecReduced(indexHfCandCharm, indexCandTrBach,
+                              flagReso, flagCharmBach,
+                              flagCharmBachInterm, debugMcRec,
+                              origin, ptGen, invMassGen,
+                              nKinkedTracks);
     }
     registry.fill(HIST("hMCRecDebug"), debugMcRec);
     if (indexRec > -1) {
@@ -1000,9 +992,9 @@ struct HfDataCreatorCharmResoReduced {
       registry.fill(HIST("hMCRecOrigin"), origin);
       registry.fill(HIST("hMCRecMassGen"), invMassGen);
     }
-    if (std::abs(flagCharmBach) > 0){
+    if (std::abs(flagCharmBach) > 0) {
       registry.fill(HIST("hMCRecCharmDau"), flagCharmBach);
-    }                               
+    }
   } // fillMcRecoInfoDTrack
 
   template <bool withMl, bool doMc, uint8_t dType, uint8_t pairingType, typename Coll, typename CCands, typename Tr, typename TrIU, typename PParticles, typename BBachV0s, typename BBachTracks, typename BCs>
@@ -1108,11 +1100,10 @@ struct HfDataCreatorCharmResoReduced {
           std::copy(candD.mlProbD0().begin(), candD.mlProbD0().end(), bdtScores.begin());
           std::copy(candD.mlProbD0bar().begin(), candD.mlProbD0bar().end(), bdtScores.begin() + 3);
         }
-        if (candD.isSelD0() >= cfgDmesCuts.selectionFlagD0){
+        if (candD.isSelD0() >= cfgDmesCuts.selectionFlagD0) {
           registry.fill(HIST("hMassVsPtD0All"), varUtils.ptD, varUtils.invMassD0);
-
         }
-        if (candD.isSelD0bar() >= cfgDmesCuts.selectionFlagD0Bar){
+        if (candD.isSelD0bar() >= cfgDmesCuts.selectionFlagD0Bar) {
           registry.fill(HIST("hMassVsPtD0BarAll"), varUtils.ptD, varUtils.invMassD0Bar);
         }
       } // end of dType switch
@@ -1279,10 +1270,13 @@ struct HfDataCreatorCharmResoReduced {
           fillHfCandD = true;
           // Optional filling of MC Rec table, for now only implemented for Ds1->D*K0s and Ds2*->D+K0s
           if constexpr (doMc) {
-            int indexHfCandCharm {-1};
-            if constexpr (dType == DType::Dstar) indexHfCandCharm = hfCandDstar.lastIndex() + 1;
-            else if constexpr (dType == DType::Dplus) indexHfCandCharm = hfCandD3Pr.lastIndex() + 1;
-            else if constexpr (dType == DType::D0) indexHfCandCharm = hfCandD2Pr.lastIndex() + 1;
+            int indexHfCandCharm{-1};
+            if constexpr (dType == DType::Dstar)
+              indexHfCandCharm = hfCandDstar.lastIndex() + 1;
+            else if constexpr (dType == DType::Dplus)
+              indexHfCandCharm = hfCandD3Pr.lastIndex() + 1;
+            else if constexpr (dType == DType::D0)
+              indexHfCandCharm = hfCandD2Pr.lastIndex() + 1;
             fillMcRecoInfoDV0<dType>(particlesMc, candD, v0, tracksIU, indexHfCandCharm, selectedV0s[v0.globalIndex()]);
           }
         } // end of loop on V0 candidates
@@ -1474,10 +1468,13 @@ struct HfDataCreatorCharmResoReduced {
           }
           fillHfCandD = true;
           if constexpr (doMc) {
-            int indexHfCandCharm {-1};
-            if constexpr (dType == DType::Dstar) indexHfCandCharm = hfCandDstar.lastIndex() + 1;
-            else if constexpr (dType == DType::Dplus) indexHfCandCharm = hfCandD3Pr.lastIndex() + 1;
-            else if constexpr (dType == DType::D0) indexHfCandCharm = hfCandD2Pr.lastIndex() + 1;
+            int indexHfCandCharm{-1};
+            if constexpr (dType == DType::Dstar)
+              indexHfCandCharm = hfCandDstar.lastIndex() + 1;
+            else if constexpr (dType == DType::Dplus)
+              indexHfCandCharm = hfCandD3Pr.lastIndex() + 1;
+            else if constexpr (dType == DType::D0)
+              indexHfCandCharm = hfCandD2Pr.lastIndex() + 1;
             fillMcRecoInfoDTrack<dType>(particlesMc, candD, track, tracks, indexHfCandCharm, selectedTracks[track.globalIndex()]);
           }
         } // end of loop on bachelor tracks
@@ -1515,14 +1512,14 @@ struct HfDataCreatorCharmResoReduced {
           }
         } else if constexpr (dType == DType::Dstar) {
           hfCandDstar(prongIdsD[0], prongIdsD[1], prongIdsD[2],
-                     indexHfReducedCollision,
-                     secondaryVertexD[0], secondaryVertexD[1], secondaryVertexD[2],
-                     candD.pxProng0(), candD.pyProng0(), candD.pzProng0(),
-                     candD.pxProng1(), candD.pyProng1(), candD.pzProng1(),
-                     varUtils.pVectorProng2[0], varUtils.pVectorProng2[1], varUtils.pVectorProng2[2],
-                     nItsClsDauMin, nTpcCrossRowsDauMin, chi2TpcDauMax,
-                     nItsClsSoftPi, nTpcCrossRowsSoftPi, chi2TpcSoftPi,
-                     varUtils.signD);
+                      indexHfReducedCollision,
+                      secondaryVertexD[0], secondaryVertexD[1], secondaryVertexD[2],
+                      candD.pxProng0(), candD.pyProng0(), candD.pzProng0(),
+                      candD.pxProng1(), candD.pyProng1(), candD.pzProng1(),
+                      varUtils.pVectorProng2[0], varUtils.pVectorProng2[1], varUtils.pVectorProng2[2],
+                      nItsClsDauMin, nTpcCrossRowsDauMin, chi2TpcDauMax,
+                      nItsClsSoftPi, nTpcCrossRowsSoftPi, chi2TpcSoftPi,
+                      varUtils.signD);
           if constexpr (withMl) {
             hfCandD3PrMl(bdtScores[0], bdtScores[1], bdtScores[2], bdtScores[3], bdtScores[4], bdtScores[5]);
           }
@@ -1533,13 +1530,12 @@ struct HfDataCreatorCharmResoReduced {
         } else if constexpr (dType == DType::Dplus) {
           registry.fill(HIST("hMassVsPtDplusPaired"), candD.pt(), varUtils.invMassD);
         } else if constexpr (dType == DType::D0) {
-          if (candD.isSelD0() >= cfgDmesCuts.selectionFlagD0){
-          registry.fill(HIST("hMassVsPtD0Paired"), varUtils.ptD, varUtils.invMassD0);
-
-        }
-        if (candD.isSelD0bar() >= cfgDmesCuts.selectionFlagD0Bar){
-          registry.fill(HIST("hMassVsPtD0BarPaired"), varUtils.ptD, varUtils.invMassD0Bar);
-        }
+          if (candD.isSelD0() >= cfgDmesCuts.selectionFlagD0) {
+            registry.fill(HIST("hMassVsPtD0Paired"), varUtils.ptD, varUtils.invMassD0);
+          }
+          if (candD.isSelD0bar() >= cfgDmesCuts.selectionFlagD0Bar) {
+            registry.fill(HIST("hMassVsPtD0BarPaired"), varUtils.ptD, varUtils.invMassD0Bar);
+          }
         }
       }
     } // candsD loop
@@ -1553,10 +1549,8 @@ struct HfDataCreatorCharmResoReduced {
     hfReducedCollision(collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), hfRejMap, bz);
   } // end of runDataCreation function
 
-
-
   template <uint8_t dType, uint8_t pairingType, typename McParticles, typename CCs, typename McCollisions>
-  void runMcGen (McParticles const& mcParticles,
+  void runMcGen(McParticles const& mcParticles,
                 CCs const& collInfos,
                 McCollisions const& mcCollisions,
                 BCsInfo const&)
@@ -1586,33 +1580,33 @@ struct HfDataCreatorCharmResoReduced {
         bool matchedReso{false}, matchedD{false}, matchedV0Tr{false};
         std::vector<int> idxBhadMothers{};
         if constexpr (dType == DType::Dstar) {
-          if (doV0s){
+          if (doV0s) {
             // D* K0s
-            for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToDstarK0s){
+            for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToDstarK0s) {
               matchedReso = RecoDecay::isMatchedMCGen<false, true>(mcParticlesPerMcColl, particle, pdgCodeReso, std::array{static_cast<int>(Pdg::kDStar), +kK0}, true, &sign, 1);
-              if (matchedReso){
+              if (matchedReso) {
                 flag = sign * decayChannelFlag;
                 auto candV0MC = mcParticles.rawIteratorAt(particle.daughtersIds().back());
                 matchedV0Tr = RecoDecay::isMatchedMCGen<false, true>(mcParticlesPerMcColl, candV0MC, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signBach, 2);
                 break;
               }
-            } 
+            }
           }
-          if (doTracks && !matchedReso){
+          if (doTracks && !matchedReso) {
             // D*+ pi-
-            for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToDstarPi){
+            for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToDstarPi) {
               matchedReso = RecoDecay::isMatchedMCGen<false, true>(mcParticlesPerMcColl, particle, pdgCodeReso, std::array{static_cast<int>(Pdg::kDStar), -static_cast<int>(kPiPlus)}, true, &sign, 1);
-              if (matchedReso){
+              if (matchedReso) {
                 flag = sign * decayChannelFlag;
-                matchedV0Tr = true; 
+                matchedV0Tr = true;
                 break;
               }
             }
           }
           if (matchedReso && matchedV0Tr) {
-            auto candDstarMC = mcParticles.rawIteratorAt(particle.daughtersIds().front()); 
+            auto candDstarMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
             matchedD = RecoDecay::isMatchedMCGen(mcParticlesPerMcColl, candDstarMC, Pdg::kDStar, std::array{static_cast<int>(Pdg::kD0), +static_cast<int>(kPiPlus)}, true, &signD, 1);
-            if (matchedD){
+            if (matchedD) {
               auto candD0MC = mcParticles.rawIteratorAt(candDstarMC.daughtersIds().front());
               matchedD = RecoDecay::isMatchedMCGen(mcParticlesPerMcColl, candD0MC, Pdg::kD0, std::array{-kKPlus, +kPiPlus}, true, &signD, 2);
             }
@@ -1629,7 +1623,7 @@ struct HfDataCreatorCharmResoReduced {
                 break;
               }
             }
-            if (!matchedReso){
+            if (!matchedReso) {
               // D+ lambda
               for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToDplusLambda) {
                 matchedReso = RecoDecay::isMatchedMCGen<false, true>(mcParticlesPerMcColl, particle, pdgCodeReso, std::array{static_cast<int>(Pdg::kDPlus), +kLambda0}, true, &sign, 1);
@@ -1648,7 +1642,7 @@ struct HfDataCreatorCharmResoReduced {
               matchedReso = RecoDecay::isMatchedMCGen<false, true>(mcParticlesPerMcColl, particle, pdgCodeReso, std::array{static_cast<int>(Pdg::kDPlus), -static_cast<int>(kPiPlus)}, true, &sign, 1);
               if (matchedReso) {
                 flag = sign * decayChannelFlag;
-                matchedV0Tr = true; 
+                matchedV0Tr = true;
                 break;
               }
             }
@@ -1676,17 +1670,17 @@ struct HfDataCreatorCharmResoReduced {
               matchedReso = RecoDecay::isMatchedMCGen<false, true>(mcParticlesPerMcColl, particle, pdgCodeReso, std::array{static_cast<int>(Pdg::kD0), +static_cast<int>(kPiPlus)}, true, &sign, 1);
               if (matchedReso) {
                 flag = sign * decayChannelFlag;
-                matchedV0Tr = true; 
+                matchedV0Tr = true;
                 break;
               }
             }
             // D0 K+
-            if (!matchedReso){
+            if (!matchedReso) {
               for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToD0Kplus) {
                 matchedReso = RecoDecay::isMatchedMCGen<false, true>(mcParticlesPerMcColl, particle, pdgCodeReso, std::array{static_cast<int>(Pdg::kD0), +static_cast<int>(kKPlus)}, true, &sign, 1);
                 if (matchedReso) {
                   flag = sign * decayChannelFlag;
-                  matchedV0Tr = true; 
+                  matchedV0Tr = true;
                   break;
                 }
               }
@@ -1720,11 +1714,10 @@ struct HfDataCreatorCharmResoReduced {
                                 ptProngs[0], yProngs[0], etaProngs[0],
                                 ptProngs[1], yProngs[1], etaProngs[1],
                                 invMassGen, rejectionMask);
-        }  
+        }
       }
     }
   }
-
 
   // Process functions
   // No ML
@@ -2206,13 +2199,13 @@ struct HfDataCreatorCharmResoReduced {
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0MC, "Process Dstar candidates paired with V0s with MC matching", false);
 
   void processDstarTrackMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                        CandsDstarFilteredWithMc const& candsDstar,
-                        TracksWithPIDAndMC const& tracks,
-                        aod::TrackAssoc const& trackIndices,
-                        aod::McParticles const& particlesMc,
-                        BCsInfo const& bcs,
-                        McCollisionsNoCents const& collInfos,
-                        aod::McCollisions const& mcCollisions)
+                           CandsDstarFilteredWithMc const& candsDstar,
+                           TracksWithPIDAndMC const& tracks,
+                           aod::TrackAssoc const& trackIndices,
+                           aod::McParticles const& particlesMc,
+                           BCsInfo const& bcs,
+                           McCollisionsNoCents const& collInfos,
+                           aod::McCollisions const& mcCollisions)
   {
     int zvtxColl{0};
     int sel8Coll{0};
@@ -2233,15 +2226,15 @@ struct HfDataCreatorCharmResoReduced {
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarTrackMC, "Process Dstar candidates paired with tracks with MC matching", false);
 
   void processDstarV0AndTrackMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                              CandsDstarFilteredWithMc const& candsDstar,
-                              aod::V0s const& v0s,
-                              aod::TrackAssoc const& trackIndices,
-                              TracksWithPIDAndMC const& tracks,
-                              TracksIUWithPIDAndMC const& tracksIU,
-                              aod::McParticles const& particlesMc,
-                              BCsInfo const& bcs,
-                              McCollisionsNoCents const& collInfos,
-                              aod::McCollisions const& mcCollisions)
+                                CandsDstarFilteredWithMc const& candsDstar,
+                                aod::V0s const& v0s,
+                                aod::TrackAssoc const& trackIndices,
+                                TracksWithPIDAndMC const& tracks,
+                                TracksIUWithPIDAndMC const& tracksIU,
+                                aod::McParticles const& particlesMc,
+                                BCsInfo const& bcs,
+                                McCollisionsNoCents const& collInfos,
+                                aod::McCollisions const& mcCollisions)
   {
     int zvtxColl{0};
     int sel8Coll{0};
@@ -2261,7 +2254,7 @@ struct HfDataCreatorCharmResoReduced {
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0AndTrackMC, "Process Dstar candidates paired with V0s and tracks with MC matching", false);
-  
+
   // Dplus
   void processDplusV0MC(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                         CandsDplusFilteredWithMc const& candsDplus,
@@ -2289,15 +2282,15 @@ struct HfDataCreatorCharmResoReduced {
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0MC, "Process Dstar candidates paired with V0s with MC matching", false);
-  
+
   void processDplusTrackMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                        CandsDplusFilteredWithMc const& candsDplus,
-                        TracksWithPIDAndMC const& tracks,
-                        aod::TrackAssoc const& trackIndices,
-                        aod::McParticles const& particlesMc,
-                        BCsInfo const& bcs,
-                        McCollisionsNoCents const& collInfos,
-                        aod::McCollisions const& mcCollisions)
+                           CandsDplusFilteredWithMc const& candsDplus,
+                           TracksWithPIDAndMC const& tracks,
+                           aod::TrackAssoc const& trackIndices,
+                           aod::McParticles const& particlesMc,
+                           BCsInfo const& bcs,
+                           McCollisionsNoCents const& collInfos,
+                           aod::McCollisions const& mcCollisions)
   {
     int zvtxColl{0};
     int sel8Coll{0};
@@ -2316,17 +2309,17 @@ struct HfDataCreatorCharmResoReduced {
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusTrackMC, "Process Dplus candidates paired with tracks with MC matching", false);
-  
+
   void processDplusV0AndTrackMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                              CandsDplusFilteredWithMc const& candsDplus,
-                              aod::V0s const& v0s,
-                              aod::TrackAssoc const& trackIndices,
-                              TracksWithPIDAndMC const& tracks,
-                              TracksIUWithPIDAndMC const& tracksIU,
-                              aod::McParticles const& particlesMc,
-                              BCsInfo const& bcs,
-                              McCollisionsNoCents const& collInfos,
-                              aod::McCollisions const& mcCollisions)
+                                CandsDplusFilteredWithMc const& candsDplus,
+                                aod::V0s const& v0s,
+                                aod::TrackAssoc const& trackIndices,
+                                TracksWithPIDAndMC const& tracks,
+                                TracksIUWithPIDAndMC const& tracksIU,
+                                aod::McParticles const& particlesMc,
+                                BCsInfo const& bcs,
+                                McCollisionsNoCents const& collInfos,
+                                aod::McCollisions const& mcCollisions)
   {
     int zvtxColl{0};
     int sel8Coll{0};
@@ -2346,7 +2339,7 @@ struct HfDataCreatorCharmResoReduced {
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0AndTrackMC, "Process Dplus candidates paired with V0s and tracks with MC matching", false);
-  
+
   // D0
   void processD0V0MC(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                      CandsD0FilteredWithMc const& candsD0,
@@ -2461,13 +2454,13 @@ struct HfDataCreatorCharmResoReduced {
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0MCWithMl, "Process Dstar candidates paired with V0s with MC matching and with ML info", false);
 
   void processDstarTrackMCWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                              CandsDstarFilteredWithMlAndMc const& candsDstar,
-                              TracksWithPIDAndMC const& tracks,
-                              aod::TrackAssoc const& trackIndices,
-                              aod::McParticles const& particlesMc,
-                              BCsInfo const& bcs,
-                              McCollisionsNoCents const& collInfos,
-                              aod::McCollisions const& mcCollisions)
+                                 CandsDstarFilteredWithMlAndMc const& candsDstar,
+                                 TracksWithPIDAndMC const& tracks,
+                                 aod::TrackAssoc const& trackIndices,
+                                 aod::McParticles const& particlesMc,
+                                 BCsInfo const& bcs,
+                                 McCollisionsNoCents const& collInfos,
+                                 aod::McCollisions const& mcCollisions)
   {
     int zvtxColl{0};
     int sel8Coll{0};
@@ -2488,15 +2481,15 @@ struct HfDataCreatorCharmResoReduced {
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarTrackMCWithMl, "Process Dstar candidates paired with tracks with MC matching and with ML info", false);
 
   void processDstarV0AndTrackMCWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                              CandsDstarFilteredWithMlAndMc const& candsDstar,
-                              aod::V0s const& v0s,
-                              aod::TrackAssoc const& trackIndices,
-                              TracksWithPIDAndMC const& tracks,
-                              TracksIUWithPIDAndMC const& tracksIU,
-                              aod::McParticles const& particlesMc,
-                              BCsInfo const& bcs,
-                              McCollisionsNoCents const& collInfos,
-                              aod::McCollisions const& mcCollisions)
+                                      CandsDstarFilteredWithMlAndMc const& candsDstar,
+                                      aod::V0s const& v0s,
+                                      aod::TrackAssoc const& trackIndices,
+                                      TracksWithPIDAndMC const& tracks,
+                                      TracksIUWithPIDAndMC const& tracksIU,
+                                      aod::McParticles const& particlesMc,
+                                      BCsInfo const& bcs,
+                                      McCollisionsNoCents const& collInfos,
+                                      aod::McCollisions const& mcCollisions)
   {
     int zvtxColl{0};
     int sel8Coll{0};
@@ -2544,15 +2537,15 @@ struct HfDataCreatorCharmResoReduced {
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0MCWithMl, "Process Dplus candidates paired with V0s with MC matching and with ML info", false);
-  
+
   void processDplusTrackMCWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                              CandsDplusFilteredWithMlAndMc const& candsDplus,
-                              TracksWithPIDAndMC const& tracks,
-                              aod::TrackAssoc const& trackIndices,
-                              aod::McParticles const& particlesMc,
-                              BCsInfo const& bcs,
-                              McCollisionsNoCents const& collInfos,
-                              aod::McCollisions const& mcCollisions)
+                                 CandsDplusFilteredWithMlAndMc const& candsDplus,
+                                 TracksWithPIDAndMC const& tracks,
+                                 aod::TrackAssoc const& trackIndices,
+                                 aod::McParticles const& particlesMc,
+                                 BCsInfo const& bcs,
+                                 McCollisionsNoCents const& collInfos,
+                                 aod::McCollisions const& mcCollisions)
   {
     int zvtxColl{0};
     int sel8Coll{0};
@@ -2571,17 +2564,17 @@ struct HfDataCreatorCharmResoReduced {
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusTrackMCWithMl, "Process Dplus candidates paired with tracks with MC matching and with ML info", false);
-  
+
   void processDplusV0AndTrackMCWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                              CandsDplusFilteredWithMlAndMc const& candsDplus,
-                              aod::V0s const& v0s,
-                              aod::TrackAssoc const& trackIndices,
-                              TracksWithPIDAndMC const& tracks,
-                              TracksIUWithPIDAndMC const& tracksIU,
-                              aod::McParticles const& particlesMc,
-                              BCsInfo const& bcs,
-                              McCollisionsNoCents const& collInfos,
-                              aod::McCollisions const& mcCollisions)
+                                      CandsDplusFilteredWithMlAndMc const& candsDplus,
+                                      aod::V0s const& v0s,
+                                      aod::TrackAssoc const& trackIndices,
+                                      TracksWithPIDAndMC const& tracks,
+                                      TracksIUWithPIDAndMC const& tracksIU,
+                                      aod::McParticles const& particlesMc,
+                                      BCsInfo const& bcs,
+                                      McCollisionsNoCents const& collInfos,
+                                      aod::McCollisions const& mcCollisions)
   {
     int zvtxColl{0};
     int sel8Coll{0};
@@ -2604,13 +2597,13 @@ struct HfDataCreatorCharmResoReduced {
 
   // D0
   void processD0V0MCWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                          CandsD0FilteredWithMlAndMc const& candsD0,
-                          aod::V0s const& v0s,
-                          TracksIUWithPIDAndMC const& tracksIU,
-                          aod::McParticles const& particlesMc,
-                          BCsInfo const& bcs,
-                          McCollisionsNoCents const& collInfos,
-                          aod::McCollisions const& mcCollisions)
+                           CandsD0FilteredWithMlAndMc const& candsD0,
+                           aod::V0s const& v0s,
+                           TracksIUWithPIDAndMC const& tracksIU,
+                           aod::McParticles const& particlesMc,
+                           BCsInfo const& bcs,
+                           McCollisionsNoCents const& collInfos,
+                           aod::McCollisions const& mcCollisions)
   {
     int zvtxColl{0};
     int sel8Coll{0};
@@ -2631,13 +2624,13 @@ struct HfDataCreatorCharmResoReduced {
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processD0V0MCWithMl, "Process D0 candidates paired with V0s with MC matching and with ML info", false);
 
   void processD0TrackMCWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                             CandsD0FilteredWithMlAndMc const& candsD0,
-                             TracksWithPIDAndMC const& tracks,
-                             aod::TrackAssoc const& trackIndices,
-                             aod::McParticles const& particlesMc,
-                             BCsInfo const& bcs,
-                             McCollisionsNoCents const& collInfos,
-                             aod::McCollisions const& mcCollisions)
+                              CandsD0FilteredWithMlAndMc const& candsD0,
+                              TracksWithPIDAndMC const& tracks,
+                              aod::TrackAssoc const& trackIndices,
+                              aod::McParticles const& particlesMc,
+                              BCsInfo const& bcs,
+                              McCollisionsNoCents const& collInfos,
+                              aod::McCollisions const& mcCollisions)
   {
     int zvtxColl{0};
     int sel8Coll{0};
@@ -2658,15 +2651,15 @@ struct HfDataCreatorCharmResoReduced {
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processD0TrackMCWithMl, "Process D0 candidates paired with tracks with MC matching and with ML info", false);
 
   void processD0V0AndTrackMCWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                                  CandsD0FilteredWithMlAndMc const& candsD0,
-                                  aod::V0s const& v0s,
-                                  aod::TrackAssoc const& trackIndices,
-                                  TracksWithPIDAndMC const& tracks,
-                                  TracksIUWithPIDAndMC const& tracksIU,
-                                  aod::McParticles const& particlesMc,
-                                  BCsInfo const& bcs,
-                                  McCollisionsNoCents const& collInfos,
-                                  aod::McCollisions const& mcCollisions)
+                                   CandsD0FilteredWithMlAndMc const& candsD0,
+                                   aod::V0s const& v0s,
+                                   aod::TrackAssoc const& trackIndices,
+                                   TracksWithPIDAndMC const& tracks,
+                                   TracksIUWithPIDAndMC const& tracksIU,
+                                   aod::McParticles const& particlesMc,
+                                   BCsInfo const& bcs,
+                                   McCollisionsNoCents const& collInfos,
+                                   aod::McCollisions const& mcCollisions)
   {
     int zvtxColl{0};
     int sel8Coll{0};

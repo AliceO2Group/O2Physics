@@ -117,9 +117,9 @@ struct HfCandidateCreatorCharmResoReduced {
   Produces<aod::Hf2PrTrkIds> rowCandidateResoIndices2PrTrks;
   // D Configurables
   struct : ConfigurableGroup {
-      Configurable<std::vector<double>> binsPtD{"binsPtD", std::vector<double>{hf_cuts_d_daughter::vecBinsPt}, "pT bin limits for D daughter cuts"};
-      Configurable<LabeledArray<double>> cutsD{"cutsDmesDaughter", {hf_cuts_d_daughter::Cuts[0], hf_cuts_d_daughter::NBinsPt, hf_cuts_d_daughter::NCutVars, hf_cuts_d_daughter::labelsPt, hf_cuts_d_daughter::labelsCutVar}, "D daughter selections"};
-      Configurable<bool> keepSideBands{"keepSideBands", false, "flag to keep events from D meson sidebands for backgorund estimation"};
+    Configurable<std::vector<double>> binsPtD{"binsPtD", std::vector<double>{hf_cuts_d_daughter::vecBinsPt}, "pT bin limits for D daughter cuts"};
+    Configurable<LabeledArray<double>> cutsD{"cutsDmesDaughter", {hf_cuts_d_daughter::Cuts[0], hf_cuts_d_daughter::NBinsPt, hf_cuts_d_daughter::NCutVars, hf_cuts_d_daughter::labelsPt, hf_cuts_d_daughter::labelsCutVar}, "D daughter selections"};
+    Configurable<bool> keepSideBands{"keepSideBands", false, "flag to keep events from D meson sidebands for backgorund estimation"};
   } cfgDmesCuts;
   // V0 cuts configurables
   struct : ConfigurableGroup {
@@ -130,15 +130,15 @@ struct HfCandidateCreatorCharmResoReduced {
   // Track cuts configurables
   struct : ConfigurableGroup {
     Configurable<LabeledArray<double>> cutsTrk{"cutsTrk", {hf_cuts_track_daughter::Cuts[0], hf_cuts_track_daughter::NCutVars, hf_cuts_track_daughter::labelsCutVar}, "Track daughter selections, set to -1 to disable cuts"};
-    Configurable<int> massHypo {"massHypo", 1, "Mass Hypothesis for the track daughters (0: pion, 1: kaon, 2: proton)"};
+    Configurable<int> massHypo{"massHypo", 1, "Mass Hypothesis for the track daughters (0: pion, 1: kaon, 2: proton)"};
   } cfgTrackCuts;
-  // Mixed Event configurables 
+  // Mixed Event configurables
   struct : ConfigurableGroup {
     Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
     Configurable<int> numberEventsToSkip{"numberEventsToSkip", -1, "Number of events to Skip in ME process"};
     ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0., 45., 60., 75., 95, 250}, "event multiplicity pools (PV contributors for now)"};
     ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0, -4, -1, 1, 4, 10.0}, "z vertex position pools"};
-  }cfgMixedEvent;
+  } cfgMixedEvent;
   // Histogram axes configurables
   struct : ConfigurableGroup {
     ConfigurableAxis axisPtD{"axPtD", {100, 0., 50}, "#it{p}_{T} (GeV/#it{c})"};
@@ -147,7 +147,7 @@ struct HfCandidateCreatorCharmResoReduced {
     ConfigurableAxis axisMassD{"axMassD", {100, 1.7f, 2.1f}, "inv. mass (D) (GeV/#it{c}^{2})"};
     ConfigurableAxis axisMassV0{"axMassV0", {100, 0.45f, 0.55f}, "inv. mass (V_{0}) (GeV/#it{c}^{2})"};
     ConfigurableAxis axisMassDsj{"axMassReso", {400, 0.49f, 0.89f}, "inv. mass (DV_{0}) (GeV/#it{c}^{2})"};
-  }cfgHistAxes;
+  } cfgHistAxes;
   // Other Configurables
   Configurable<bool> rejectPairsWithCommonDaughter{"rejectPairsWithCommonDaughter", true, "flag to reject the pairs that share a daughter track if not done in the derived data creation"};
   Configurable<bool> useDeltaMass{"useDeltaMass", true, "Use Delta Mass for resonance invariant Mass calculation"};
@@ -205,11 +205,11 @@ struct HfCandidateCreatorCharmResoReduced {
     if (ptBin == -1) {
       return 0;
     }
-    if constexpr (dType == DType::Dplus){
+    if constexpr (dType == DType::Dplus) {
       invMassD = candD.invMassDplus();
       if (!isInMassInterval(invMassD, ptBin)) {
-          return 0;
-        }
+        return 0;
+      }
     } else if constexpr (dType == DType::Dstar) {
       if (candD.sign() > 0) {
         invMassD = candD.invMassDstar() - candD.invMassD0();
@@ -217,8 +217,8 @@ struct HfCandidateCreatorCharmResoReduced {
         invMassD = candD.invMassAntiDstar() - candD.invMassD0Bar();
       }
       if (!isInMassInterval(invMassD, ptBin)) {
-          return 0;
-        }
+        return 0;
+      }
     } else if constexpr (dType == DType::D0) {
       if (TESTBIT(candD.selFlagD0(), PartSel::selAsPart)) {
         invMassD = candD.invMassD0();
@@ -235,7 +235,7 @@ struct HfCandidateCreatorCharmResoReduced {
         }
       } else {
         CLRBIT(selection, PartSel::selAsAntiPart);
-      } 
+      }
     }
     return selection;
   }
@@ -255,11 +255,11 @@ struct HfCandidateCreatorCharmResoReduced {
         return false;
       }
       if ((candV0.invMassK0s() - MassK0Short) > cfgV0Cuts.cutsV0->get(ptBin, "invMassLow") && (MassK0Short - candV0.invMassK0s()) < cfgV0Cuts.cutsV0->get(ptBin, "invMassLow")) {
-      return false;
+        return false;
       }
     } else if (cfgV0Cuts.v0Type == V0Type::Lambda) { // Lambda
       if (!TESTBIT(candV0.v0Type(), V0Type::Lambda) && !TESTBIT(candV0.v0Type(), V0Type::AntiLambda)) {
-        return false; 
+        return false;
       }
       if ((candV0.invMassLambda() - MassLambda) > cfgV0Cuts.cutsV0->get(ptBin, "invMassLow") && (MassLambda - candV0.invMassLambda()) < cfgV0Cuts.cutsV0->get(ptBin, "invMassLow")) {
         return false;
@@ -270,7 +270,7 @@ struct HfCandidateCreatorCharmResoReduced {
     } else {
       LOG(error) << "Unsupported V0 type for selection: " << cfgV0Cuts.v0Type;
       return false;
-    }    
+    }
     // selection on kinematics and topology
     if (candV0.dca() > cfgV0Cuts.cutsV0->get(ptBin, "dcaMax") || candV0.cpa() < cfgV0Cuts.cutsV0->get(ptBin, "cpaMin") || candV0.v0Radius() < cfgV0Cuts.cutsV0->get(ptBin, "radiusMin")) {
       return false;
@@ -333,7 +333,7 @@ struct HfCandidateCreatorCharmResoReduced {
     } else {
       LOG(error) << "Unsupported mass hypothesis for track selection: " << cfgTrackCuts.massHypo;
       return false;
-    } 
+    }
     return true;
   }
 
@@ -348,7 +348,7 @@ struct HfCandidateCreatorCharmResoReduced {
                         DRedTable const& candD,
                         V0TrRedTable const& candV0Tr,
                         int selectionFlag)
-  { 
+  {
     std::vector<std::array<float, 3>> pVectorCharmProngs = {candD.pVectorProng0(), candD.pVectorProng1()};
     std::array<float, 3> pVecD = candD.pVector();
     std::array<float, 3> pVecV0Tr = candV0Tr.pVector();
@@ -356,7 +356,7 @@ struct HfCandidateCreatorCharmResoReduced {
     int8_t signReso{0}, isWrongSign{0};
     double ptReso = RecoDecay::pt(RecoDecay::sumOfVec(pVecV0Tr, pVecD));
 
-    if constexpr (dType == DType::Dplus){
+    if constexpr (dType == DType::Dplus) {
       invMassD = candD.invMassDplus();
       pVectorCharmProngs.push_back(candD.pVectorProng2());
       if constexpr (bachType == BachelorType::V0) {
@@ -376,7 +376,7 @@ struct HfCandidateCreatorCharmResoReduced {
             invMassV0Tr = candV0Tr.invMassAntiLambda();
             signReso = candD.sign();
             isWrongSign = 1;
-          } 
+          }
           if (useDeltaMass) {
             invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda}) - invMassD;
           } else {
@@ -384,12 +384,12 @@ struct HfCandidateCreatorCharmResoReduced {
           }
         }
         rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
-                        pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
-                        invMassReso,
-                        invMassD,
-                        invMassV0Tr,
-                        signReso,
-                        isWrongSign);
+                         pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
+                         invMassReso,
+                         invMassD,
+                         invMassV0Tr,
+                         signReso,
+                         isWrongSign);
         rowCandidateResoIndices3PrV0s(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
         registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
         registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
@@ -420,12 +420,12 @@ struct HfCandidateCreatorCharmResoReduced {
           }
         }
         rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
-                        pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
-                        invMassReso,
-                        invMassD,
-                        invMassV0Tr,
-                        signReso,
-                        isWrongSign);
+                         pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
+                         invMassReso,
+                         invMassD,
+                         invMassV0Tr,
+                         signReso,
+                         isWrongSign);
         rowCandidateResoIndices3PrTrks(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
         registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
         registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
@@ -472,12 +472,12 @@ struct HfCandidateCreatorCharmResoReduced {
           }
         }
         rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
-                        pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
-                        invMassReso,
-                        invMassD - invMassD0,
-                        invMassV0Tr,
-                        signReso,
-                        isWrongSign);
+                         pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
+                         invMassReso,
+                         invMassD - invMassD0,
+                         invMassV0Tr,
+                         signReso,
+                         isWrongSign);
         rowCandidateResoIndicesDstarV0s(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
         registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
         registry.fill(HIST("hMassDmesDauVsPt"), invMassD - invMassD0, candD.pt());
@@ -520,19 +520,19 @@ struct HfCandidateCreatorCharmResoReduced {
           }
         }
         rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
-                        pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
-                        invMassReso,
-                        invMassD - invMassD0,
-                        invMassV0Tr,
-                        signReso,
-                        isWrongSign);
+                         pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
+                         invMassReso,
+                         invMassD - invMassD0,
+                         invMassV0Tr,
+                         signReso,
+                         isWrongSign);
         rowCandidateResoIndicesDstarTrks(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
         registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
         registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
         registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
       }
     } else if constexpr (dType == DType::D0) {
-      //D0
+      // D0
       if (TESTBIT(selectionFlag, PartSel::selAsPart)) {
         invMassD = candD.invMassD0();
         if constexpr (bachType == BachelorType::V0) {
@@ -558,12 +558,12 @@ struct HfCandidateCreatorCharmResoReduced {
             }
           }
           rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
-                          pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
-                          invMassReso,
-                          invMassD,
-                          invMassV0Tr,
-                          signReso,
-                          isWrongSign);
+                           pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
+                           invMassReso,
+                           invMassD,
+                           invMassV0Tr,
+                           signReso,
+                           isWrongSign);
           rowCandidateResoIndices2PrV0s(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
           registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
           registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
@@ -594,12 +594,12 @@ struct HfCandidateCreatorCharmResoReduced {
             }
           }
           rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
-                          pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
-                          invMassReso,
-                          invMassD,
-                          invMassV0Tr,
-                          signReso,
-                          isWrongSign);
+                           pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
+                           invMassReso,
+                           invMassD,
+                           invMassV0Tr,
+                           signReso,
+                           isWrongSign);
           rowCandidateResoIndices2PrTrks(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
           registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
           registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
@@ -632,12 +632,12 @@ struct HfCandidateCreatorCharmResoReduced {
             }
           }
           rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
-                          pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
-                          invMassReso,
-                          invMassD,
-                          invMassV0Tr,
-                          signReso,
-                          isWrongSign);
+                           pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
+                           invMassReso,
+                           invMassD,
+                           invMassV0Tr,
+                           signReso,
+                           isWrongSign);
           rowCandidateResoIndices2PrV0s(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
           registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
           registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
@@ -668,12 +668,12 @@ struct HfCandidateCreatorCharmResoReduced {
             }
           }
           rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
-                          pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
-                          invMassReso,
-                          invMassD,
-                          invMassV0Tr,
-                          signReso,
-                          isWrongSign);
+                           pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
+                           invMassReso,
+                           invMassD,
+                           invMassV0Tr,
+                           signReso,
+                           isWrongSign);
           rowCandidateResoIndices2PrTrks(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
           registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
           registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
@@ -682,7 +682,6 @@ struct HfCandidateCreatorCharmResoReduced {
       }
     }
   }
-
 
   template <DType dType, BachelorType bachType, typename Coll, typename DRedTable, typename V0TrRedTable>
   void runCandidateCreation(Coll const& collision,
@@ -706,7 +705,7 @@ struct HfCandidateCreatorCharmResoReduced {
       // loop on V0 or track candidates
       bool alreadyCounted{false};
       for (const auto& candV0Tr : candsV0Tr) {
-        if constexpr (bachType == BachelorType::V0){ // Case: V0
+        if constexpr (bachType == BachelorType::V0) { // Case: V0
           if (rejectPairsWithCommonDaughter) {
             if (std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.prong0Id()) != dDaughtersIDs.end() || std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.prong1Id()) != dDaughtersIDs.end()) {
               continue;
@@ -792,8 +791,8 @@ struct HfCandidateCreatorCharmResoReduced {
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, process3ProngV0s, "Process resonances decaying in a 3 prong D meson and a V0", true);
 
   void processDstarV0s(aod::HfRedCollisions const& collisions,
-                        aod::HfRedDstarNoTrks const& candsD,
-                        aod::HfRedVzeros const& candsV0)
+                       aod::HfRedDstarNoTrks const& candsD,
+                       aod::HfRedVzeros const& candsV0)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
@@ -805,8 +804,8 @@ struct HfCandidateCreatorCharmResoReduced {
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processDstarV0s, "Process resonances decaying in a Dstar meson and a V0", false);
 
   void process2PrV0s(aod::HfRedCollisions const& collisions,
-                        aod::HfRed2PrNoTrks const& candsD,
-                        aod::HfRedVzeros const& candsV0)
+                     aod::HfRed2PrNoTrks const& candsD,
+                     aod::HfRedVzeros const& candsV0)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
@@ -844,8 +843,8 @@ struct HfCandidateCreatorCharmResoReduced {
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processDstarTracks, "Process resonances decaying in a Dstar meson and a Track", false);
 
   void process2PrTracks(aod::HfRedCollisions const& collisions,
-                       aod::HfRed2PrNoTrks const& candsD,
-                       HfRedTrkNoParams const& candsTr)
+                        aod::HfRed2PrNoTrks const& candsD,
+                        HfRedTrkNoParams const& candsTr)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
@@ -858,48 +857,48 @@ struct HfCandidateCreatorCharmResoReduced {
 
   // Mixed Event Process Functions
   void process3ProngV0sMixedEvent(aod::HfRedCollisions const& collisions,
-                                      aod::HfRed3PrNoTrks const& candsD,
-                                      aod::HfRedVzeros const& candsV0)
+                                  aod::HfRed3PrNoTrks const& candsD,
+                                  aod::HfRedVzeros const& candsV0)
   {
     runCandidateCreationMixedEvent<DType::Dplus, BachelorType::V0>(collisions, candsD, candsV0);
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, process3ProngV0sMixedEvent, "Process mixed events for resonances decaying in a 3 prong D meson and a V0", false);
 
   void processDstarV0sMixedEvent(aod::HfRedCollisions const& collisions,
-                                     aod::HfRedDstarNoTrks const& candsD,
-                                     aod::HfRedVzeros const& candsV0)
+                                 aod::HfRedDstarNoTrks const& candsD,
+                                 aod::HfRedVzeros const& candsV0)
   {
     runCandidateCreationMixedEvent<DType::Dstar, BachelorType::V0>(collisions, candsD, candsV0);
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processDstarV0sMixedEvent, "Process mixed events for resonances decaying in a Dstar meson and a V0", false);
 
   void process2PrV0sMixedEvent(aod::HfRedCollisions const& collisions,
-                                  aod::HfRed2PrNoTrks const& candsD,
-                                  aod::HfRedVzeros const& candsV0)
+                               aod::HfRed2PrNoTrks const& candsD,
+                               aod::HfRedVzeros const& candsV0)
   {
     runCandidateCreationMixedEvent<DType::D0, BachelorType::V0>(collisions, candsD, candsV0);
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, process2PrV0sMixedEvent, "Process mixed events for resonances decaying in a 2 prong D meson and a V0", false);
 
   void process3ProngTracksMixedEvent(aod::HfRedCollisions const& collisions,
-                                         aod::HfRed3PrNoTrks const& candsD,
-                                         HfRedTrkNoParams const& candsTr)
+                                     aod::HfRed3PrNoTrks const& candsD,
+                                     HfRedTrkNoParams const& candsTr)
   {
     runCandidateCreationMixedEvent<DType::Dplus, BachelorType::Track>(collisions, candsD, candsTr);
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, process3ProngTracksMixedEvent, "Process mixed events for resonances decaying in a 3 prong D meson and a Track", false);
 
   void processDstarTracksMixedEvent(aod::HfRedCollisions const& collisions,
-                                        aod::HfRedDstarNoTrks const& candsD,
-                                        HfRedTrkNoParams const& candsTr)
+                                    aod::HfRedDstarNoTrks const& candsD,
+                                    HfRedTrkNoParams const& candsTr)
   {
     runCandidateCreationMixedEvent<DType::Dstar, BachelorType::Track>(collisions, candsD, candsTr);
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processDstarTracksMixedEvent, "Process mixed events for resonances decaying in a Dstar meson and a Track", false);
 
   void process2PrTracksMixedEvent(aod::HfRedCollisions const& collisions,
-                                     aod::HfRed2PrNoTrks const& candsD,
-                                     HfRedTrkNoParams const& candsTr)
+                                  aod::HfRed2PrNoTrks const& candsD,
+                                  HfRedTrkNoParams const& candsTr)
   {
     runCandidateCreationMixedEvent<DType::D0, BachelorType::Track>(collisions, candsD, candsTr);
   }
@@ -917,7 +916,6 @@ struct HfCandidateCreatorCharmResoReducedExpressions {
   using CandResoWithIndices3PrTrks = soa::Join<aod::HfCandCharmReso, aod::Hf3PrTrkIds>;
   using CandResoWithIndicesDstarV0s = soa::Join<aod::HfCandCharmReso, aod::HfDstarV0Ids>;
   using CandResoWithIndicesDstarTrks = soa::Join<aod::HfCandCharmReso, aod::HfDstarTrkIds>;
-  
 
   // Configurable axis
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0., 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f, 50.f}, "#it{p}_{T} (GeV/#it{c})"};
@@ -956,15 +954,15 @@ struct HfCandidateCreatorCharmResoReducedExpressions {
                      rowDV0McRec.ptGen(),
                      rowDV0McRec.invMassGen());
         filledMcInfo = true;
-        if (std::abs(rowDV0McRec.flagMcMatchRec()) >0 &&
-            !TESTBIT(rowDV0McRec.debugMcRec(), hf_decay::hf_cand_reso::PartialMatchMc::ResoPartlyMatched)){
+        if (std::abs(rowDV0McRec.flagMcMatchRec()) > 0 &&
+            !TESTBIT(rowDV0McRec.debugMcRec(), hf_decay::hf_cand_reso::PartialMatchMc::ResoPartlyMatched)) {
           registry.fill(HIST("hMassMcMatched"), candReso.invMass(), candReso.pt());
         } else if (std::abs(rowDV0McRec.flagMcMatchRec()) > 0 &&
-                  TESTBIT(rowDV0McRec.debugMcRec(), hf_decay::hf_cand_reso::PartialMatchMc::ResoPartlyMatched)) {
+                   TESTBIT(rowDV0McRec.debugMcRec(), hf_decay::hf_cand_reso::PartialMatchMc::ResoPartlyMatched)) {
           registry.fill(HIST("hMassMcMatchedIncomplete"), candReso.invMass(), candReso.pt());
         } else {
           registry.fill(HIST("hMassMcUnmatched"), candReso.invMass(), candReso.pt());
-          }
+        }
         break;
       }
       if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the D-Pi creator
@@ -1009,7 +1007,7 @@ struct HfCandidateCreatorCharmResoReducedExpressions {
     fillResoMcRec(rowsMcRec, candsReso);
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReducedExpressions, process3PrTrackMc, "Process resonances to Dplus track MC", false);
-  
+
   void processDummy(aod::HfCandCharmReso const&) {}
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReducedExpressions, processDummy, "Process dummy", true);
 };

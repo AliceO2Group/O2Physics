@@ -1161,7 +1161,7 @@ DECLARE_SOA_TABLE(HfCandLbConfigs, "AOD", "HFCANDLBCONFIG", //! Table with confi
 // Charm resonances analysis
 namespace hf_reso_3_prong
 {
-DECLARE_SOA_COLUMN(Sign, sign, int8_t); //! Integer with selected D candidate sign
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                      //! Integer with selected D candidate sign
 DECLARE_SOA_COLUMN(ItsNClsSoftPi, itsNClsSoftPi, int);                       //! minimum value of number of ITS clusters for the decay daughter tracks
 DECLARE_SOA_COLUMN(TpcNClsCrossedRowsSoftPi, tpcNClsCrossedRowsSoftPi, int); //! minimum value of number of TPC crossed rows for the decay daughter tracks
 DECLARE_SOA_COLUMN(TpcChi2NClSoftPi, tpcChi2NClSoftPi, float);               //! maximum value of TPC chi2 for the decay daughter tracks
@@ -1368,7 +1368,6 @@ DECLARE_SOA_TABLE(HfRedDstarNoTrks, "AOD", "HFREDDSTARNOTRK", //! Table with 3 p
                   hf_cand::PVectorProng2<hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2>,
                   hf_reso_3_prong::PVector<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2>);
 
-
 namespace hf_reso_cand_reduced
 {
 DECLARE_SOA_COLUMN(InvMass, invMass, float);             //! Invariant mass in GeV/c2
@@ -1381,7 +1380,7 @@ DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);               // fla
 DECLARE_SOA_COLUMN(FlagMcMatchRecD, flagMcMatchRecD, int8_t);             // flag for D meson bachelor decay channel classification reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchChanD, flagMcMatchChanD, int8_t);           // flag for D meson resonant channel classification reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);               // flag for decay channel classification generator level
-DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, uint16_t);                       // debug flag for mis-association at reconstruction level
+DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, uint16_t);                     // debug flag for mis-association at reconstruction level
 DECLARE_SOA_COLUMN(Origin, origin, int8_t);                               // Flag for origin of MC particle 1=promt, 2=FD
 DECLARE_SOA_COLUMN(SignD0, signD0, int8_t);                               // Sign of the D0 in the channels with D* -> D0 pi, needed in case of non-matched D*
 DECLARE_SOA_COLUMN(PtGen, ptGen, float);                                  // Pt at generation level in GeV/c
@@ -1394,30 +1393,36 @@ DECLARE_SOA_DYNAMIC_COLUMN(PtProng1, ptProng1, //!
                            [](float pxProng1, float pyProng1) -> float { return RecoDecay::pt(pxProng1, pyProng1); });
 } // namespace hf_reso_cand_reduced
 
-namespace hf_reso_3pr_v0{
-  DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3PrNoTrks, "_0"); //! Prong0 index (D daughter)
-  DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedVzeros, "_1");    //! Prong1 index (V0 daughter)
-}
-namespace hf_reso_dstar_v0{
-  DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRedDstarNoTrks, "_0"); //! Prong0 index (D daughter)
-  DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedVzeros, "_1");    //! Prong1 index (V0 daughter)
-}
-namespace hf_reso_2pr_v0{
-  DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed2PrNoTrks, "_0"); //! Prong0 index (D daughter)
-  DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedVzeros, "_1");    //! Prong1 index (V0 daughter)
-}
-namespace hf_reso_3pr_trk{
-  DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3PrNoTrks, "_0"); //! Prong0 index (D daughter)
-  DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrkNoParams, "_1");    //! Prong1 index (Track daughter)
-}
-namespace hf_reso_dstar_trk{
-  DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRedDstarNoTrks, "_0"); //! Prong0 index (D daughter)
-  DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrkNoParams, "_1");    //! Prong1 index (Track daughter)
-}
-namespace hf_reso_2pr_trk{
-  DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed2PrNoTrks, "_0"); //! Prong0 index (D daughter)
-  DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrkNoParams, "_1");    //! Prong1 index (Track daughter)
-}
+namespace hf_reso_3pr_v0
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3PrNoTrks, "_0"); //! Prong0 index (D daughter)
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedVzeros, "_1");    //! Prong1 index (V0 daughter)
+} // namespace hf_reso_3pr_v0
+namespace hf_reso_dstar_v0
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRedDstarNoTrks, "_0"); //! Prong0 index (D daughter)
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedVzeros, "_1");      //! Prong1 index (V0 daughter)
+} // namespace hf_reso_dstar_v0
+namespace hf_reso_2pr_v0
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed2PrNoTrks, "_0"); //! Prong0 index (D daughter)
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedVzeros, "_1");    //! Prong1 index (V0 daughter)
+} // namespace hf_reso_2pr_v0
+namespace hf_reso_3pr_trk
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3PrNoTrks, "_0");   //! Prong0 index (D daughter)
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrkNoParams, "_1"); //! Prong1 index (Track daughter)
+} // namespace hf_reso_3pr_trk
+namespace hf_reso_dstar_trk
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRedDstarNoTrks, "_0"); //! Prong0 index (D daughter)
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrkNoParams, "_1"); //! Prong1 index (Track daughter)
+} // namespace hf_reso_dstar_trk
+namespace hf_reso_2pr_trk
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed2PrNoTrks, "_0");   //! Prong0 index (D daughter)
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrkNoParams, "_1"); //! Prong1 index (Track daughter)
+} // namespace hf_reso_2pr_trk
 
 DECLARE_SOA_TABLE(HfCandCharmReso, "AOD", "HFCANDCHARMRESO", //! Table with Resonance candidate information for resonances reduced workflow
                   o2::soa::Index<>,
@@ -1478,7 +1483,7 @@ DECLARE_SOA_TABLE(Hf3PrV0McRec, "AOD", "HF3PRV0MCREC",
                   hf_reso_cand_reduced::InvMassGen,
                   hf_cand::NTracksDecayed,
                   o2::soa::Marker<1>);
-                  
+
 DECLARE_SOA_TABLE(HfDstarV0McRec, "AOD", "HFDSTARV0MCREC",
                   hf_reso_dstar_v0::Prong0Id,
                   hf_reso_dstar_v0::Prong1Id,
