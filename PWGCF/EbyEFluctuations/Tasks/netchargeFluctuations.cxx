@@ -15,32 +15,35 @@
 ///        For RUN-3
 ///
 /// \author Nida Malik <nida.malik@cern.ch>
-#include <vector> // Include for std::vector
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "CommonConstants/MathConstants.h"
-#include "Common/DataModel/FT0Corrected.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CommonConstants/MathConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+
 #include "TProfile.h"
 #include "TProfile2D.h"
 #include "TRandom3.h"
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -149,22 +152,23 @@ struct NetchargeFluctuations {
   Configurable<bool> cIsGoodITSLayers{"cIsGoodITSLayers", false, "Good ITS Layers All"}; // pileup
 
   // Initialization
-  float cent = 0.;
-  float mult = 0.;
   void init(o2::framework::InitContext&)
   {
-    const AxisSpec vtxzAxis = {80, -20, 20, "V_{Z} (cm)"};
+    const AxisSpec vtxzAxis = {800, -20, 20, "V_{Z} (cm)"};
     const AxisSpec dcaAxis = {250, -0.5, 0.5, "DCA_{xy} (cm)"};
     const AxisSpec dcazAxis = {250, -0.5, 0.5, "DCA_{z} (cm)"};
     const AxisSpec ptAxis = {70, 0.0, 7.0, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec etaAxis = {20, -1., 1., "#eta"};
+    const AxisSpec etaAxis = {200, -1., 1., "#eta"};
+    const AxisSpec cent1Axis = {10, 0., 100., "centrality"};
     const AxisSpec centAxis = {100, 0., 100., "centrality"};
     const AxisSpec multAxis = {200, 0., 10000., "FT0M Amplitude"};
-    const AxisSpec tpcChiAxis = {140, 0., 7., "Chi2"};
-    const AxisSpec itsChiAxis = {80, 0., 40., "Chi2"};
-    const AxisSpec crossedRowAxis = {160, 0., 160., "TPC Crossed rows"};
+    const AxisSpec tpcChiAxis = {1400, 0., 7., "Chi2"};
+    const AxisSpec itsChiAxis = {800, 0., 40., "Chi2"};
+    const AxisSpec crossedRowAxis = {1600, 0., 160., "TPC Crossed rows"};
     const AxisSpec eventsAxis = {10, 0, 10, ""};
     const AxisSpec signAxis = {20, -10, 10, ""};
+    const AxisSpec nchAxis = {3000, 0, 3000, "Nch"};
+    const AxisSpec nchpAxis = {50000, 0, 50000, "Nch"};
 
     histogramRegistry.add("hVtxZ_before", "", kTH1F, {vtxzAxis});
     histogramRegistry.add("hDcaXY_before", "", kTH1F, {dcaAxis});
@@ -186,39 +190,40 @@ struct NetchargeFluctuations {
     histogramRegistry.add("hPt", "", kTH1F, {ptAxis});
     histogramRegistry.add("hCentrality", "", kTH1F, {centAxis});
     histogramRegistry.add("hMultiplicity", "", kTH1F, {multAxis});
-    histogramRegistry.add("rec_hVtxZ_before", "", kTH1F, {vtxzAxis});
     histogramRegistry.add("gen_hVtxZ_before", "", kTH1F, {vtxzAxis});
-    histogramRegistry.add("rec_hDcaXY_before", "", kTH1D, {dcaAxis});
-    histogramRegistry.add("rec_hDcaZ_before", "", kTH1D, {dcazAxis});
-    histogramRegistry.add("rec_hTPCchi2perCluster_before", "TPC #Chi^{2}/Cluster", kTH1D, {tpcChiAxis});
-    histogramRegistry.add("rec_hITSchi2perCluster_before", "ITS #Chi^{2}/Cluster", kTH1D, {itsChiAxis});
-    histogramRegistry.add("rec_hTPCCrossedrows_before", "Crossed TPC rows", kTH1D, {crossedRowAxis});
-    histogramRegistry.add("rec_hVtxZ_after", "", kTH1F, {vtxzAxis});
     histogramRegistry.add("gen_hVtxZ_after", "", kTH1F, {vtxzAxis});
-    histogramRegistry.add("rec_hDcaXY_after", "", kTH1D, {dcaAxis});
-    histogramRegistry.add("rec_hDcaZ_after", "", kTH1D, {dcazAxis});
-    histogramRegistry.add("rec_hTPCchi2perCluster_after", "TPC #Chi^{2}/Cluster", kTH1D, {tpcChiAxis});
-    histogramRegistry.add("rec_hITSchi2perCluster_after", "ITS #Chi^{2}/Cluster", kTH1D, {itsChiAxis});
-    histogramRegistry.add("rec_hTPCCrossedrows_after", "Crossed TPC rows", kTH1D, {crossedRowAxis});
     histogramRegistry.add("gen_hEta", "", kTH1F, {etaAxis});
-    histogramRegistry.add("rec_hEta", "", kTH1F, {etaAxis});
     histogramRegistry.add("gen_hSign", "", kTH1F, {signAxis});
     histogramRegistry.add("gen_hPt", "", kTH1F, {ptAxis});
-    histogramRegistry.add("rec_hPt", "", kTH1F, {ptAxis});
-    histogramRegistry.add("rec_hPtDcaXY_after", "hPtDCAxy", kTH2D, {ptAxis, dcaAxis});
-    histogramRegistry.add("rec_hPtDcaZ_after", "hPtDCAz", kTH2D, {ptAxis, dcazAxis});
-    histogramRegistry.add("rec_hCentrality", "", kTH1D, {centAxis});
-    histogramRegistry.add("gen_hCentrality", "", kTH1D, {centAxis});
-    histogramRegistry.add("rec_hMultiplicity", "", kTH1D, {multAxis});
-    histogramRegistry.add("gen_hMultiplicity", "", kTH1D, {multAxis});
-  }
 
+    histogramRegistry.add("nch", "", kTH1D, {nchAxis});
+    histogramRegistry.add("nch0", "", kTH1D, {nchAxis});
+    histogramRegistry.add("nch1", "", kTH1D, {nchAxis});
+    histogramRegistry.add("nch2", "", kTH1D, {nchAxis});
+    histogramRegistry.add("nch3", "", kTH1D, {nchAxis});
+    histogramRegistry.add("nch4", "", kTH1D, {nchAxis});
+    histogramRegistry.add("nch5", "", kTH1D, {nchAxis});
+    histogramRegistry.add("nch6", "", kTH1D, {nchAxis});
+    histogramRegistry.add("nch7", "", kTH1D, {nchAxis});
+    histogramRegistry.add("nch8", "", kTH1D, {nchAxis});
+    histogramRegistry.add("nch9", "", kTH1D, {nchAxis});
+    histogramRegistry.add("nch_pos", "", kTH1D, {nchAxis});
+    histogramRegistry.add("nch_neg", "", kTH1D, {nchAxis});
+    histogramRegistry.add("nch_negpos", "", kTH1D, {nchpAxis});
+
+    histogramRegistry.add("nch_cent", "", kTH2D, {centAxis, nchAxis});
+    histogramRegistry.add("nch_pos_cent", "", kTH2D, {centAxis, nchAxis});
+    histogramRegistry.add("nch_neg_cent", "", kTH2D, {centAxis, nchAxis});
+    histogramRegistry.add("nch_negpos_cent", "", kTH2D, {centAxis, nchpAxis});
+  }
   template <RunType run, typename C>
-  bool selCollision(C const& coll)
+  bool selCollision(C const& coll, float& cent, float& mult)
   {
+    histogramRegistry.fill(HIST("hVtxZ_before"), coll.posZ());
+
     if (std::abs(coll.posZ()) > vertexZcut) {
       return false;
-    } // Reject the collisions with large vertex-z
+    }
 
     if constexpr (run == kRun3) {
 
@@ -257,8 +262,75 @@ struct NetchargeFluctuations {
     if (cItsTpcVtx && !coll.selection_bit(aod::evsel::kIsVertexITSTPC)) {
       return false;
     }
+    histogramRegistry.fill(HIST("hVtxZ_after"), coll.posZ());
+    histogramRegistry.fill(HIST("hCentrality"), cent);
+    histogramRegistry.fill(HIST("hMultiplicity"), mult);
 
-    return true; // if all checks pass, accept the collision
+    return true;
+  }
+  template <typename T>
+  void fillBeforeQA(T const& track)
+  {
+    histogramRegistry.fill(HIST("hTPCchi2perCluster_before"), track.tpcChi2NCl());
+    histogramRegistry.fill(HIST("hITSchi2perCluster_before"), track.itsChi2NCl());
+    histogramRegistry.fill(HIST("hTPCCrossedrows_before"), track.tpcNClsCrossedRows());
+    histogramRegistry.fill(HIST("hDcaXY_before"), track.dcaXY());
+    histogramRegistry.fill(HIST("hDcaZ_before"), track.dcaZ());
+    histogramRegistry.fill(HIST("hPtDcaXY_before"), track.pt(), track.dcaXY());
+    histogramRegistry.fill(HIST("hPtDcaZ_before"), track.pt(), track.dcaZ());
+  }
+
+  template <typename T>
+  void fillAfterQA(T const& track)
+  {
+    histogramRegistry.fill(HIST("hDcaXY_after"), track.dcaXY());
+    histogramRegistry.fill(HIST("hDcaZ_after"), track.dcaZ());
+    histogramRegistry.fill(HIST("hPt"), track.pt());
+    histogramRegistry.fill(HIST("hEta"), track.eta());
+    histogramRegistry.fill(HIST("hPtDcaXY_after"), track.pt(), track.dcaXY());
+    histogramRegistry.fill(HIST("hPtDcaZ_after"), track.pt(), track.dcaZ());
+    histogramRegistry.fill(HIST("hTPCCrossedrows_after"), track.tpcNClsCrossedRows());
+    histogramRegistry.fill(HIST("hTPCchi2perCluster_after"), track.tpcChi2NCl());
+    histogramRegistry.fill(HIST("hITSchi2perCluster_after"), track.itsChi2NCl());
+  }
+
+  template <typename N, typename C>
+  void nchDistribution(N const& nch, C const& cent)
+  {
+    constexpr int kCent0Min = 0, kCent0Max = 5;
+    constexpr int kCent1Min = 5, kCent1Max = 10;
+    constexpr int kCent2Min = 10, kCent2Max = 20;
+    constexpr int kCent3Min = 20, kCent3Max = 30;
+    constexpr int kCent4Min = 30, kCent4Max = 40;
+    constexpr int kCent5Min = 40, kCent5Max = 50;
+    constexpr int kCent6Min = 50, kCent6Max = 60;
+    constexpr int kCent7Min = 60, kCent7Max = 70;
+    constexpr int kCent8Min = 70, kCent8Max = 80;
+    constexpr int kCent9Min = 80, kCent9Max = 90;
+
+    histogramRegistry.fill(HIST("nch"), nch);
+    histogramRegistry.fill(HIST("nch_cent"), cent, nch);
+
+    if (cent >= kCent0Min && cent < kCent0Max)
+      histogramRegistry.fill(HIST("nch0"), nch);
+    else if (cent >= kCent1Min && cent < kCent1Max)
+      histogramRegistry.fill(HIST("nch1"), nch);
+    else if (cent >= kCent2Min && cent < kCent2Max)
+      histogramRegistry.fill(HIST("nch2"), nch);
+    else if (cent >= kCent3Min && cent < kCent3Max)
+      histogramRegistry.fill(HIST("nch3"), nch);
+    else if (cent >= kCent4Min && cent < kCent4Max)
+      histogramRegistry.fill(HIST("nch4"), nch);
+    else if (cent >= kCent5Min && cent < kCent5Max)
+      histogramRegistry.fill(HIST("nch5"), nch);
+    else if (cent >= kCent6Min && cent < kCent6Max)
+      histogramRegistry.fill(HIST("nch6"), nch);
+    else if (cent >= kCent7Min && cent < kCent7Max)
+      histogramRegistry.fill(HIST("nch7"), nch);
+    else if (cent >= kCent8Min && cent < kCent8Max)
+      histogramRegistry.fill(HIST("nch8"), nch);
+    else if (cent >= kCent9Min && cent < kCent9Max)
+      histogramRegistry.fill(HIST("nch9"), nch);
   }
 
   template <typename T>
@@ -268,14 +340,6 @@ struct NetchargeFluctuations {
       return false;
     } // accept only global tracks
 
-    if (std::fabs(track.dcaXY()) > dcaXYCut) {
-      return false;
-    }
-
-    if (std::fabs(track.dcaZ()) > dcaZCut) {
-      return false;
-    }
-
     if (std::fabs(track.eta()) >= etaCut) {
       return false;
     }
@@ -284,6 +348,18 @@ struct NetchargeFluctuations {
       return false;
     }
 
+    if (track.sign() == 0) {
+      return false;
+    }
+    /*    if (std::fabs(track.dcaXY()) > dcaXYCut) {
+          return false;
+        }
+
+        if (std::fabs(track.dcaZ()) > dcaZCut) {
+          return false ;
+        }*/
+
+    /*
     if (track.tpcNClsCrossedRows() < tpcCrossCut) {
       return false;
     }
@@ -296,162 +372,115 @@ struct NetchargeFluctuations {
       return false;
     }
 
-    return true; // if all checks pass, accept the collision
+*/
+
+    return true;
   }
 
   template <RunType run, typename C, typename T>
-  void calculation(C const& coll, T const& tracks)
+  void calculationData(C const& coll, T const& tracks)
   {
-    histogramRegistry.fill(HIST("hVtxZ_before"), coll.posZ());
-
-    if (!selCollision<run>(coll)) {
+    float cent = -1, mult = -1;
+    if (!selCollision<run>(coll, cent, mult)) {
       return;
     }
-
-    histogramRegistry.fill(HIST("hVtxZ_after"), coll.posZ());
-    histogramRegistry.fill(HIST("hCentrality"), cent);
-    histogramRegistry.fill(HIST("hMultiplicity"), mult);
-
     int fpos = 0, fneg = 0, posneg = 0, termn = 0, termp = 0;
-
+    int nch = 0;
     for (const auto& track : tracks) {
-      histogramRegistry.fill(HIST("hTPCchi2perCluster_before"), track.tpcChi2NCl());
-      histogramRegistry.fill(HIST("hITSchi2perCluster_before"), track.itsChi2NCl());
-      histogramRegistry.fill(HIST("hTPCCrossedrows_before"), track.tpcNClsCrossedRows());
-      histogramRegistry.fill(HIST("hDcaXY_before"), track.dcaXY());
-      histogramRegistry.fill(HIST("hDcaZ_before"), track.dcaZ());
-      histogramRegistry.fill(HIST("hPtDcaXY_before"), track.pt(), track.dcaXY());
-      histogramRegistry.fill(HIST("hPtDcaZ_before"), track.pt(), track.dcaZ());
+      fillBeforeQA(track);
 
       if (!selTrack(track)) {
         continue;
       }
-      if (track.sign() == 0)
-        continue;
-      histogramRegistry.fill(HIST("hDcaXY_after"), track.dcaXY());
-      histogramRegistry.fill(HIST("hDcaZ_after"), track.dcaZ());
-      histogramRegistry.fill(HIST("hPt"), track.pt());
-      histogramRegistry.fill(HIST("hEta"), track.eta());
-      histogramRegistry.fill(HIST("hPtDcaXY_after"), track.pt(), track.dcaXY());
-      histogramRegistry.fill(HIST("hPtDcaZ_after"), track.pt(), track.dcaZ());
-      histogramRegistry.fill(HIST("hTPCCrossedrows_after"), track.tpcNClsCrossedRows());
-      histogramRegistry.fill(HIST("hTPCchi2perCluster_after"), track.tpcChi2NCl());
-      histogramRegistry.fill(HIST("hITSchi2perCluster_after"), track.itsChi2NCl());
+      nch += 1;
 
+      fillAfterQA(track);
       if (track.sign() == 1) {
         fpos += 1;
-        termp = fpos * (fpos - 1);
-      }
-
-      if (track.sign() == -1) {
+      } else if (track.sign() == -1) {
         fneg += 1;
-        termn = fneg * (fneg - 1);
       }
+    } // track
+    termp = fpos * (fpos - 1);
+    termn = fneg * (fneg - 1);
+    posneg = fpos * fneg;
 
-      posneg = fpos * fneg;
-      netCharge(fpos, fneg, fpos * fpos, fneg * fneg, termp, termn, posneg, cent);
-    } // tracks
+    nchDistribution(nch, cent);
 
-    return;
+    histogramRegistry.fill(HIST("nch_pos"), fpos);
+    histogramRegistry.fill(HIST("nch_pos_cent"), cent, fpos);
+    histogramRegistry.fill(HIST("nch_neg"), fneg);
+    histogramRegistry.fill(HIST("nch_neg_cent"), cent, fneg);
+    histogramRegistry.fill(HIST("nch_negpos"), posneg);
+    histogramRegistry.fill(HIST("nch_negpos_cent"), cent, posneg);
+
+    netCharge(fpos, fneg, fpos * fpos, fneg * fneg, termp, termn, posneg, cent);
   }
 
   template <RunType run, typename C, typename T, typename M, typename P>
-  void histosMcRecoGen(C const& coll, T const& inputTracks, M const& mcCollisions, P const& mcParticles)
+  void calculationMc(C const& coll, T const& inputTracks, M const& mcCollisions, P const& mcParticles)
   {
     (void)mcCollisions;
+
     if (!coll.has_mcCollision()) {
       return;
     }
-
     histogramRegistry.fill(HIST("gen_hVtxZ_before"), coll.mcCollision().posZ());
-    histogramRegistry.fill(HIST("rec_hVtxZ_before"), coll.posZ());
 
-    if (cNoItsROBorder && !coll.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
-      return;
-    }
-    if (cTFBorder && !coll.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
-      return;
-    }
-    if (cPileupReject && !coll.selection_bit(aod::evsel::kNoSameBunchPileup)) {
-      return;
-    }
-    if (cZVtxTimeDiff && !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
-      return;
-    }
-    if (cItsTpcVtx && !coll.selection_bit(aod::evsel::kIsVertexITSTPC)) {
+    float cent = -1, mult = -1;
+
+    if (!selCollision<run>(coll, cent, mult)) {
       return;
     }
 
-    if (std::abs(coll.posZ()) > vertexZcut) {
-      return;
-    }
+    int fpos = 0, fneg = 0, posneg = 0, termn = 0, termp = 0;
+    int nch = 0;
 
-    if constexpr (run == kRun3) {
-      if (cSel8Trig && !coll.sel8()) {
-        return;
+    for (const auto& track : inputTracks) {
+
+      fillBeforeQA(track);
+
+      if (!selTrack(track)) {
+        continue;
       }
+      nch += 1;
 
-      cent = coll.centFT0M(); // centrality for run3
-      mult = coll.multFT0M();
-    } else {
-      if (cSel7Trig && !coll.sel7()) {
-        return;
+      fillAfterQA(track);
+
+      if (track.sign() == 1) {
+        fpos += 1;
+      } else if (track.sign() == -1) {
+        fneg += 1;
       }
+    } // track
+    termp = fpos * (fpos - 1);
+    termn = fneg * (fneg - 1);
+    posneg = fpos * fneg;
 
-      cent = coll.centRun2V0M(); // centrality for run2
-      mult = coll.multFV0M();    // multiplicity for run2
-    }
+    nchDistribution(nch, cent);
 
-    histogramRegistry.fill(HIST("rec_hVtxZ_after"), coll.posZ());
-    histogramRegistry.fill(HIST("rec_hCentrality"), cent);
-    histogramRegistry.fill(HIST("rec_hMultiplicity"), mult);
+    histogramRegistry.fill(HIST("nch_pos"), fpos);
+    histogramRegistry.fill(HIST("nch_pos_cent"), cent, fpos);
+    histogramRegistry.fill(HIST("nch_neg"), fneg);
+    histogramRegistry.fill(HIST("nch_neg_cent"), cent, fneg);
+    histogramRegistry.fill(HIST("nch_negpos"), posneg);
+    histogramRegistry.fill(HIST("nch_negpos_cent"), cent, posneg);
 
-    int posRec = 0, negRec = 0, posNegRec = 0, termNRec = 0, termPRec = 0;
+    netCharge(fpos, fneg, fpos * fpos, fneg * fneg, termp, termn, posneg, cent);
+
     int posGen = 0, negGen = 0, posNegGen = 0, termNGen = 0, termPGen = 0;
 
     const auto& mccolgen = coll.template mcCollision_as<aod::McCollisions>();
-    if (std::abs(mccolgen.posZ()) > vertexZcut) {
-      return;
-    }
+
+    /* if (std::abs(mccolgen.posZ()) > vertexZcut) {
+        return;
+      }*/
 
     const auto& mcpartgen = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccolgen.globalIndex(), cache);
     histogramRegistry.fill(HIST("gen_hVtxZ_after"), mccolgen.posZ());
 
-    for (const auto& track : inputTracks) {
-      if (!track.isGlobalTrack())
-        continue;
-      if (std::fabs(track.dcaXY()) > dcaXYCut)
-        continue;
-      if (std::fabs(track.dcaZ()) > dcaZCut)
-        continue;
-      if (std::fabs(track.eta()) > etaCut)
-        continue;
-      if ((track.pt() <= ptMinCut) || (track.pt() >= ptMaxCut))
-        continue;
-      if (track.sign() == 0) {
-        continue;
-      }
-
-      histogramRegistry.fill(HIST("rec_hPt"), track.pt());
-      histogramRegistry.fill(HIST("rec_hEta"), track.eta());
-
-      if (track.sign() == 1) {
-        posRec += 1;
-        termPRec = posRec * (posRec - 1);
-      }
-
-      if (track.sign() == -1) {
-        negRec += 1;
-        termNRec = negRec * (negRec - 1);
-      }
-
-      posNegRec = posRec * negRec;
-
-      netCharge(posRec, negRec, posRec * posRec, negRec * negRec,
-                termPRec, termNRec, posNegRec, cent);
-    } // loop over inputTracks (reco)
-
     for (const auto& mcpart : mcpartgen) {
+
       if (!mcpart.isPhysicalPrimary()) {
         continue;
       }
@@ -461,38 +490,40 @@ struct NetchargeFluctuations {
       if (pd != nullptr) {
         sign = pd->Charge() / 3.;
       }
+
       if (sign == 0) {
         continue;
       }
-      // auto pdgServicecode = mcpart.pdgCode();
+
       if (std::abs(pid) != kElectron && std::abs(pid) != kMuonMinus && std::abs(pid) != kPiPlus && std::abs(pid) != kKPlus && std::abs(pid) != kProton) {
         continue;
       }
 
       if (std::fabs(mcpart.eta()) > etaCut)
         continue;
+
       if ((mcpart.pt() <= ptMinCut) || (mcpart.pt() >= ptMaxCut))
         continue;
+
       histogramRegistry.fill(HIST("gen_hPt"), mcpart.pt());
       histogramRegistry.fill(HIST("gen_hEta"), mcpart.eta());
       histogramRegistry.fill(HIST("gen_hSign"), sign);
 
       if (sign == 1) {
         posGen += 1;
-        termPGen = posGen * (posGen - 1);
       }
 
       if (sign == -1) {
         negGen += 1;
-        termNGen = negGen * (negGen - 1);
       }
-
-      posNegGen = posGen * negGen;
-
-      netChargeGen(posGen, negGen, posGen * posGen, negGen * negGen,
-                   termPGen, termNGen, posNegGen, cent);
-
     } // particle
+    termPGen = posGen * (posGen - 1);
+    termNGen = negGen * (negGen - 1);
+    posNegGen = posGen * negGen;
+
+    netChargeGen(posGen, negGen, posGen * posGen, negGen * negGen,
+                 termPGen, termNGen, posNegGen, cent);
+
   } // void
 
   SliceCache cache;
@@ -500,14 +531,14 @@ struct NetchargeFluctuations {
 
   void processDataRun3(aod::MyCollisionRun3 const& coll, aod::MyTracks const& tracks)
   {
-    calculation<kRun3>(coll, tracks);
+    calculationData<kRun3>(coll, tracks);
   }
 
-  PROCESS_SWITCH(NetchargeFluctuations, processDataRun3, "Process for Run3 DATA", false);
+  PROCESS_SWITCH(NetchargeFluctuations, processDataRun3, "Process for Run3 DATA", true);
 
   void processDataRun2(aod::MyCollisionRun2 const& coll, aod::MyTracks const& tracks)
   {
-    calculation<kRun2>(coll, tracks);
+    calculationData<kRun2>(coll, tracks);
   }
 
   PROCESS_SWITCH(NetchargeFluctuations, processDataRun2, "Process for Run2 DATA", false);
@@ -515,15 +546,15 @@ struct NetchargeFluctuations {
   void processMcRun3(aod::MyMCCollisionRun3 const& coll, aod::MyMCTracks const& inputTracks,
                      aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
-    histosMcRecoGen<kRun3>(coll, inputTracks, mcCollisions, mcParticles);
+    calculationMc<kRun3>(coll, inputTracks, mcCollisions, mcParticles);
   }
 
-  PROCESS_SWITCH(NetchargeFluctuations, processMcRun3, "Process reconstructed", true);
+  PROCESS_SWITCH(NetchargeFluctuations, processMcRun3, "Process reconstructed", false);
 
   void processMcRun2(aod::MyMCCollisionRun2 const& coll, aod::MyMCTracks const& inputTracks,
                      aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
-    histosMcRecoGen<kRun2>(coll, inputTracks, mcCollisions, mcParticles);
+    calculationMc<kRun2>(coll, inputTracks, mcCollisions, mcParticles);
   }
 
   PROCESS_SWITCH(NetchargeFluctuations, processMcRun2, "Process reconstructed", false);

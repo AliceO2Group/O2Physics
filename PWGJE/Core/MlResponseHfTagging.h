@@ -18,11 +18,7 @@
 
 #include "Tools/ML/MlResponse.h"
 
-#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
-#else
 #include <onnxruntime_cxx_api.h>
-#endif
 
 #include <Framework/Logger.h>
 
@@ -333,25 +329,17 @@ class MlResponseHfTagging : public MlResponse<TypeOutputScore>
 class TensorAllocator
 {
  protected:
-#if !__has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
   Ort::MemoryInfo memInfo;
-#endif
  public:
   TensorAllocator()
-#if !__has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
     : memInfo(Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault))
-#endif
   {
   }
   ~TensorAllocator() = default;
   template <typename T>
   Ort::Value createTensor(std::vector<T>& input, std::vector<int64_t>& inputShape)
   {
-#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-    return Ort::Experimental::Value::CreateTensor<T>(input.data(), input.size(), inputShape);
-#else
     return Ort::Value::CreateTensor<T>(memInfo, input.data(), input.size(), inputShape.data(), inputShape.size());
-#endif
   }
 };
 

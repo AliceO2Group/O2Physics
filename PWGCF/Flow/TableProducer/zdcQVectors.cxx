@@ -144,6 +144,7 @@ struct ZdcQVectors {
   using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
   enum SelectionCriteria {
+    evSel_FilteredEvent,
     evSel_Zvtx,
     evSel_sel8,
     evSel_occupancy,
@@ -228,8 +229,8 @@ struct ZdcQVectors {
         } // end of capCOORDS
       } // end of sides
 
-      registry.add<TH1>("QA/centrality_before", "centrality_before", kTH1D, {{200, 0, 100}});
-      registry.add<TH1>("QA/centrality_after", "centrality_after", kTH1D, {{200, 0, 100}});
+      registry.add<TH1>("QA/centrality_before", "centrality_before", kTH1D, {{100, 0, 100}});
+      registry.add<TH1>("QA/centrality_after", "centrality_after", kTH1D, {{100, 0, 100}});
 
       registry.add<TProfile>("QA/ZNA_Energy", "ZNA_Energy", kTProfile, {{8, 0, 8}});
       registry.add<TProfile>("QA/ZNC_Energy", "ZNC_Energy", kTProfile, {{8, 0, 8}});
@@ -251,12 +252,31 @@ struct ZdcQVectors {
       registry.add<TProfile>("QA/before/ZNC_Qx", "ZNC_Qx", kTProfile, {{1, 0, 1.}});
       registry.add<TProfile>("QA/before/ZNC_Qy", "ZNC_Qy", kTProfile, {{1, 0, 1.}});
 
+      registry.add<TH2>("QA/before/ZNA_Qx_vs_Centrality", "ZNA_Qx_vs_Centrality", kTH2D, {{100, 0, 100}, {200, -2, 2}});
+      registry.add<TH2>("QA/before/ZNA_Qy_vs_Centrality", "ZNA_Qy_vs_Centrality", kTH2D, {{100, 0, 100}, {200, -2, 2}});
+      registry.add<TH2>("QA/before/ZNC_Qx_vs_Centrality", "ZNC_Qx_vs_Centrality", kTH2D, {{100, 0, 100}, {200, -2, 2}});
+      registry.add<TH2>("QA/before/ZNC_Qy_vs_Centrality", "ZNC_Qy_vs_Centrality", kTH2D, {{100, 0, 100}, {200, -2, 2}});
+
+      registry.add<TH2>("QA/before/ZNA_pmC_vs_Centrality", "ZNA_pmC_vs_Centrality", kTH2D, {{100, 0, 100}, {300, 0, 300}});
+      registry.add<TH2>("QA/before/ZNA_pmSUM_vs_Centrality", "ZNA_pmSUM_vs_Centrality", kTH2D, {{100, 0, 100}, {300, 0, 300}});
+      registry.add<TH2>("QA/before/ZNA_pm1_vs_Centrality", "ZNA_pm1_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
+      registry.add<TH2>("QA/before/ZNA_pm2_vs_Centrality", "ZNA_pm2_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
+      registry.add<TH2>("QA/before/ZNA_pm3_vs_Centrality", "ZNA_pm3_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
+      registry.add<TH2>("QA/before/ZNA_pm4_vs_Centrality", "ZNA_pm4_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
+
+      registry.add<TH2>("QA/before/ZNC_pmC_vs_Centrality", "ZNC_pmC_vs_Centrality", kTH2D, {{100, 0, 100}, {300, 0, 300}});
+      registry.add<TH2>("QA/before/ZNC_pmSUM_vs_Centrality", "ZNC_pmSUM_vs_Centrality", kTH2D, {{100, 0, 100}, {300, 0, 300}});
+      registry.add<TH2>("QA/before/ZNC_pm1_vs_Centrality", "ZNC_pm1_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
+      registry.add<TH2>("QA/before/ZNC_pm2_vs_Centrality", "ZNC_pm2_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
+      registry.add<TH2>("QA/before/ZNC_pm3_vs_Centrality", "ZNC_pm3_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
+      registry.add<TH2>("QA/before/ZNC_pm4_vs_Centrality", "ZNC_pm4_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
+
+      registry.addClone("QA/before/", "QA/after/");
+
       registry.add<TProfile>("QA/before/ZNA_Qx_noEq", "ZNA_Qx_noEq", kTProfile, {{1, 0, 1.}});
       registry.add<TProfile>("QA/before/ZNA_Qy_noEq", "ZNA_Qy_noEq", kTProfile, {{1, 0, 1.}});
       registry.add<TProfile>("QA/before/ZNC_Qx_noEq", "ZNC_Qx_noEq", kTProfile, {{1, 0, 1.}});
       registry.add<TProfile>("QA/before/ZNC_Qy_noEq", "ZNC_Qy_noEq", kTProfile, {{1, 0, 1.}});
-
-      registry.addClone("QA/before/", "QA/after/");
     }
 
     // Tower mean energies vs. centrality used for tower gain equalisation
@@ -273,6 +293,7 @@ struct ZdcQVectors {
     registry.add<TProfile>("vmean/hvertex_vz", "hvertex_vz", kTProfile, {{1, 0., 1.}});
 
     registry.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_FilteredEvent + 1, "Filtered events");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_Zvtx + 1, "Z vertex cut event");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_sel8 + 1, "Sel8");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_occupancy + 1, "kOccupancy");
@@ -290,7 +311,7 @@ struct ZdcQVectors {
   {
     if (std::fabs(collision.posZ()) > cfgVtxZ)
       return 0;
-    registry.fill(HIST("hEventCount"), evSel_sel8);
+    registry.fill(HIST("hEventCount"), evSel_Zvtx);
 
     if (!collision.sel8())
       return 0;
@@ -402,6 +423,11 @@ struct ZdcQVectors {
     registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_QYC_vs_vz"), v[2], qya * qyc);
     registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQYA_QXC_vs_vz"), v[2], qya * qxc);
     registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hQXA_QYC_vs_vz"), v[2], qxa * qyc);
+
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/ZNA_Qx_vs_Centrality"), centrality, qxa);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/ZNA_Qy_vs_Centrality"), centrality, qya);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/ZNC_Qx_vs_Centrality"), centrality, qxc);
+    registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/ZNC_Qy_vs_Centrality"), centrality, qyc);
 
     // add psi!!
     double psiA = 1.0 * std::atan2(qxc, qxa);
@@ -536,6 +562,8 @@ struct ZdcQVectors {
     if (cfgFillCommonRegistry)
       registry.fill(HIST("QA/centrality_before"), cent);
 
+    registry.fill(HIST("hEventCount"), evSel_FilteredEvent);
+
     if (!eventSelected(collision, cent)) {
       // event not selected
       isSelected = false;
@@ -560,6 +588,7 @@ struct ZdcQVectors {
     runnumber = foundBC.runNumber();
 
     // load new calibrations for new runs only
+    // UPLOAD Energy calibration and vmean in 1 histogram!
     if (runnumber != lastRunNumber) {
       cal.calibfilesLoaded[2] = false;
       cal.calibList[2] = nullptr;
@@ -587,11 +616,9 @@ struct ZdcQVectors {
     // load the calibrations for the mean v
     loadCalibrations<kMeanv>(foundBC.timestamp(), cfgMeanv.value);
 
-    if (!cal.calibfilesLoaded[1]) {
-      registry.get<TProfile>(HIST("vmean/hvertex_vx"))->Fill(Form("%d", runnumber), v[0]);
-      registry.get<TProfile>(HIST("vmean/hvertex_vy"))->Fill(Form("%d", runnumber), v[1]);
-      registry.get<TProfile>(HIST("vmean/hvertex_vz"))->Fill(Form("%d", runnumber), v[2]);
-    }
+    registry.get<TProfile>(HIST("vmean/hvertex_vx"))->Fill(Form("%d", runnumber), v[0]);
+    registry.get<TProfile>(HIST("vmean/hvertex_vy"))->Fill(Form("%d", runnumber), v[1]);
+    registry.get<TProfile>(HIST("vmean/hvertex_vz"))->Fill(Form("%d", runnumber), v[2]);
 
     bool isZNAhit = true;
     bool isZNChit = true;
@@ -679,6 +706,7 @@ struct ZdcQVectors {
       registry.get<TProfile>(HIST("QA/before/ZNC_pm3"))->Fill(Form("%d", runnumber), eZN[6]);
       registry.get<TProfile>(HIST("QA/before/ZNC_pm4"))->Fill(Form("%d", runnumber), eZN[7]);
 
+      registry.get<TProfile>(HIST("QA/after/ZNA_pm1"))->Fill(Form("%d", runnumber), e[0]);
       registry.get<TProfile>(HIST("QA/after/ZNA_pm2"))->Fill(Form("%d", runnumber), e[1]);
       registry.get<TProfile>(HIST("QA/after/ZNA_pm3"))->Fill(Form("%d", runnumber), e[2]);
       registry.get<TProfile>(HIST("QA/after/ZNA_pm4"))->Fill(Form("%d", runnumber), e[3]);
@@ -686,6 +714,40 @@ struct ZdcQVectors {
       registry.get<TProfile>(HIST("QA/after/ZNC_pm2"))->Fill(Form("%d", runnumber), e[5]);
       registry.get<TProfile>(HIST("QA/after/ZNC_pm3"))->Fill(Form("%d", runnumber), e[6]);
       registry.get<TProfile>(HIST("QA/after/ZNC_pm4"))->Fill(Form("%d", runnumber), e[7]);
+
+      double sumZNAbefore = eZN[0] + eZN[1] + eZN[2] + eZN[3];
+      double sumZNAafter = e[0] + e[1] + e[2] + e[3];
+
+      double sumZNCbefore = eZN[4] + eZN[5] + eZN[6] + eZN[7];
+      double sumZNCafter = e[4] + e[5] + e[6] + e[7];
+
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pmC_vs_Centrality"), centrality, zdcCol.energyCommonZNA());
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pmSUM_vs_Centrality"), centrality, sumZNAbefore);
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pm1_vs_Centrality"), centrality, eZN[0] / sumZNAbefore);
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pm2_vs_Centrality"), centrality, eZN[1] / sumZNAbefore);
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pm3_vs_Centrality"), centrality, eZN[2] / sumZNAbefore);
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNA_pm4_vs_Centrality"), centrality, eZN[3] / sumZNAbefore);
+
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pmC_vs_Centrality"), centrality, zdcCol.energyCommonZNC());
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pmSUM_vs_Centrality"), centrality, sumZNCbefore);
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pm1_vs_Centrality"), centrality, eZN[4] / sumZNCbefore);
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pm2_vs_Centrality"), centrality, eZN[5] / sumZNCbefore);
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pm3_vs_Centrality"), centrality, eZN[6] / sumZNCbefore);
+      registry.fill(HIST("QA/") + HIST("before") + HIST("/ZNC_pm4_vs_Centrality"), centrality, eZN[7] / sumZNCbefore);
+
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pmC_vs_Centrality"), centrality, zdcCol.energyCommonZNA());
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pmSUM_vs_Centrality"), centrality, sumZNAafter);
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pm1_vs_Centrality"), centrality, e[0] / sumZNAafter);
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pm2_vs_Centrality"), centrality, e[1] / sumZNAafter);
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pm3_vs_Centrality"), centrality, e[2] / sumZNAafter);
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNA_pm4_vs_Centrality"), centrality, e[3] / sumZNAafter);
+
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pmC_vs_Centrality"), centrality, zdcCol.energyCommonZNC());
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pmSUM_vs_Centrality"), centrality, sumZNCafter);
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pm1_vs_Centrality"), centrality, e[4] / sumZNCafter);
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pm2_vs_Centrality"), centrality, e[5] / sumZNCafter);
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pm3_vs_Centrality"), centrality, e[6] / sumZNCafter);
+      registry.fill(HIST("QA/") + HIST("after") + HIST("/ZNC_pm4_vs_Centrality"), centrality, e[7] / sumZNCafter);
     }
 
     // Now calculate Q-vector

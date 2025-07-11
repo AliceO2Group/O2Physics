@@ -107,6 +107,8 @@ struct CascadeSelector {
   Configurable<int> minTPCCrossedRows{"minTPCCrossedRows", 80, "min N TPC crossed rows"}; // TODO: finetune! 80 > 159/2, so no split tracks?
   Configurable<int> minITSClusters{"minITSClusters", 4, "minimum number of ITS clusters"};
   Configurable<float> etaTracks{"etaTracks", 1.0, "min/max of eta for tracks"};
+  Configurable<float> tpcChi2{"tpcChi2", 4, "TPC Chi2"};
+  Configurable<float> itsChi2{"itsChi2", 36, "ITS Chi2"};
 
   // Selection criteria - compatible with core wagon autodetect - copied from cascadeanalysis.cxx
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -171,6 +173,12 @@ struct CascadeSelector {
       {"hITSnClustersPos", "hITSnClustersPos", {HistType::kTH3F, {itsClustersAxis, invXiMassAxis, ptAxis}}},
       {"hITSnClustersNeg", "hITSnClustersNeg", {HistType::kTH3F, {itsClustersAxis, invXiMassAxis, ptAxis}}},
       {"hITSnClustersBach", "hITSnClustersBach", {HistType::kTH3F, {itsClustersAxis, invXiMassAxis, ptAxis}}},
+      {"hTPCChi2Pos", "hTPCChi2Pos", {HistType::kTH1F, {{100, 0, 10, "TPC Chi2 Pos"}}}},
+      {"hTPCChi2Neg", "hTPCChi2Neg", {HistType::kTH1F, {{100, 0, 10, "TPC Chi2 Neg"}}}},
+      {"hTPCChi2Bach", "hTPCChi2Bach", {HistType::kTH1F, {{100, 0, 10, "TPC Chi2 Bach"}}}},
+      {"hITSChi2Pos", "hITSChi2Pos", {HistType::kTH1F, {{100, 0, 100, "ITS Chi2 Pos"}}}},
+      {"hITSChi2Neg", "hITSChi2Neg", {HistType::kTH1F, {{100, 0, 100, "ITS Chi2 Neg"}}}},
+      {"hITSChi2Bach", "hITSChi2Bach", {HistType::kTH1F, {{100, 0, 100, "ITS Chi2 Bach"}}}},
 
       {"hTriggerQA", "hTriggerQA", {HistType::kTH1F, {{2, -0.5, 1.5, "Trigger y/n"}}}},
     },
@@ -186,11 +194,12 @@ struct CascadeSelector {
     h->GetXaxis()->SetBinLabel(1, "All");
     h->GetXaxis()->SetBinLabel(2, "nTPC OK");
     h->GetXaxis()->SetBinLabel(3, "nITS OK");
-    h->GetXaxis()->SetBinLabel(4, "Topo OK");
-    h->GetXaxis()->SetBinLabel(5, "Track eta OK");
-    h->GetXaxis()->SetBinLabel(6, "Cascade eta OK");
-    h->GetXaxis()->SetBinLabel(7, "V0 PID OK");
-    h->GetXaxis()->SetBinLabel(8, "Bach PID OK");
+    h->GetXaxis()->SetBinLabel(4, "track Chi2 OK");
+    h->GetXaxis()->SetBinLabel(5, "Topo OK");
+    h->GetXaxis()->SetBinLabel(6, "Track eta OK");
+    h->GetXaxis()->SetBinLabel(7, "Cascade eta OK");
+    h->GetXaxis()->SetBinLabel(8, "V0 PID OK");
+    h->GetXaxis()->SetBinLabel(9, "Bach PID OK");
 
     auto hEventSel = registry.add<TH1>("hEventSel", "hEventSel", HistType::kTH1I, {{10, 0, 10, "selection criteria"}});
     hEventSel->GetXaxis()->SetBinLabel(1, "All");
@@ -219,6 +228,12 @@ struct CascadeSelector {
       registry.add("truerec/hITSnClustersPos", "hITSnClustersPos", HistType::kTH1F, {itsClustersAxis});
       registry.add("truerec/hITSnClustersNeg", "hITSnClustersNeg", HistType::kTH1F, {itsClustersAxis});
       registry.add("truerec/hITSnClustersBach", "hITSnClustersBach", HistType::kTH1F, {itsClustersAxis});
+      registry.add("truerec/hTPCChi2Pos", "hTPCChi2Pos", HistType::kTH1F, {{100, 0, 10, "TPC Chi2 Pos"}});
+      registry.add("truerec/hTPCChi2Neg", "hTPCChi2Neg", HistType::kTH1F, {{100, 0, 10, "TPC Chi2 Neg"}});
+      registry.add("truerec/hTPCChi2Bach", "hTPCChi2Bach", HistType::kTH1F, {{100, 0, 10, "TPC Chi2 Bach"}});
+      registry.add("truerec/hITSChi2Pos", "hITSChi2Pos", HistType::kTH1F, {{100, 0, 100, "ITS Chi2 Pos"}});
+      registry.add("truerec/hITSChi2Neg", "hITSChi2Neg", HistType::kTH1F, {{100, 0, 100, "ITS Chi2 Neg"}});
+      registry.add("truerec/hITSChi2Bach", "hITSChi2Bach", HistType::kTH1F, {{100, 0, 100, "ITS Chi2 Bach"}});
       registry.add("truerec/hXiMinus", "hXiMinus", HistType::kTH2F, {ptAxis, rapidityAxis});
       registry.add("truerec/hXiPlus", "hXiPlus", HistType::kTH2F, {ptAxis, rapidityAxis});
       registry.add("truerec/hOmegaMinus", "hOmegaMinus", HistType::kTH2F, {ptAxis, rapidityAxis});
@@ -231,13 +246,22 @@ struct CascadeSelector {
       registry.add("gen/hXiPlus", "hXiPlus", HistType::kTH2F, {ptAxis, rapidityAxis});
       registry.add("gen/hOmegaMinus", "hOmegaMinus", HistType::kTH2F, {ptAxis, rapidityAxis});
       registry.add("gen/hOmegaPlus", "hOmegaPlus", HistType::kTH2F, {ptAxis, rapidityAxis});
+
+      registry.add("genwithrec/hXiMinus", "hXiMinus", HistType::kTH2F, {ptAxis, rapidityAxis});
+      registry.add("genwithrec/hXiPlus", "hXiPlus", HistType::kTH2F, {ptAxis, rapidityAxis});
+      registry.add("genwithrec/hOmegaMinus", "hOmegaMinus", HistType::kTH2F, {ptAxis, rapidityAxis});
+      registry.add("genwithrec/hOmegaPlus", "hOmegaPlus", HistType::kTH2F, {ptAxis, rapidityAxis});
+
+      registry.add("genwithrec/hNevents", "hNevents", HistType::kTH1F, {{1, 0, 1, "N generated events with reconstructed event"}});
+      registry.add("gen/hNevents", "hNevents", HistType::kTH1F, {{1, 0, 1, "N generated events"}});
     }
   }
 
-  bool eventSelection(MyCollisions::iterator const& collision)
+  template <typename TCollision>
+  bool eventSelection(TCollision const& collision)
   {
     if (useTrigger) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), triggerList);
       bool eventTrigger = zorro.isSelected(bc.globalBC());
       if (eventTrigger) {
@@ -267,7 +291,8 @@ struct CascadeSelector {
     return true;
   }
 
-  void fillMatchedHistos(LabeledCascades::iterator rec, int flag, MyCollisions::iterator collision)
+  template <typename TCollision>
+  void fillMatchedHistos(LabeledCascades::iterator rec, int flag, TCollision collision)
   {
     if (flag == 0)
       return;
@@ -297,6 +322,12 @@ struct CascadeSelector {
       registry.fill(HIST("truerec/hTPCnCrossedRowsPos"), rec.posTrack_as<FullTracksExtIUWithPID>().tpcNClsCrossedRows());
       registry.fill(HIST("truerec/hTPCnCrossedRowsNeg"), rec.negTrack_as<FullTracksExtIUWithPID>().tpcNClsCrossedRows());
       registry.fill(HIST("truerec/hTPCnCrossedRowsBach"), rec.bachelor_as<FullTracksExtIUWithPID>().tpcNClsCrossedRows());
+      registry.fill(HIST("truerec/hITSChi2Pos"), rec.posTrack_as<FullTracksExtIUWithPID>().itsChi2NCl());
+      registry.fill(HIST("truerec/hITSChi2Neg"), rec.negTrack_as<FullTracksExtIUWithPID>().itsChi2NCl());
+      registry.fill(HIST("truerec/hITSChi2Bach"), rec.bachelor_as<FullTracksExtIUWithPID>().itsChi2NCl());
+      registry.fill(HIST("truerec/hTPCChi2Pos"), rec.posTrack_as<FullTracksExtIUWithPID>().tpcChi2NCl());
+      registry.fill(HIST("truerec/hTPCChi2Neg"), rec.negTrack_as<FullTracksExtIUWithPID>().tpcChi2NCl());
+      registry.fill(HIST("truerec/hTPCChi2Bach"), rec.bachelor_as<FullTracksExtIUWithPID>().tpcChi2NCl());
       switch (genpdg) { // is matched so we can use genpdg
         case 3312:
           registry.fill(HIST("truerec/hXiMinus"), rec.pt(), rec.yXi());
@@ -314,8 +345,8 @@ struct CascadeSelector {
     }
   }
 
-  template <typename TCascade>
-  int processCandidate(TCascade const& casc, MyCollisions::iterator const& collision)
+  template <typename TCascade, typename TCollision>
+  int processCandidate(TCascade const& casc, TCollision const& collision)
   {
     // these are the tracks:
     auto bachTrack = casc.template bachelor_as<FullTracksExtIUWithPID>();
@@ -341,6 +372,12 @@ struct CascadeSelector {
     registry.fill(HIST("hTPCnCrossedRowsPos"), posTrack.tpcNClsCrossedRows(), casc.mXi(), casc.pt());
     registry.fill(HIST("hTPCnCrossedRowsNeg"), negTrack.tpcNClsCrossedRows(), casc.mXi(), casc.pt());
     registry.fill(HIST("hTPCnCrossedRowsBach"), bachTrack.tpcNClsCrossedRows(), casc.mXi(), casc.pt());
+    registry.fill(HIST("hITSChi2Pos"), posTrack.itsChi2NCl());
+    registry.fill(HIST("hITSChi2Neg"), negTrack.itsChi2NCl());
+    registry.fill(HIST("hITSChi2Bach"), bachTrack.itsChi2NCl());
+    registry.fill(HIST("hTPCChi2Pos"), posTrack.tpcChi2NCl());
+    registry.fill(HIST("hTPCChi2Neg"), negTrack.tpcChi2NCl());
+    registry.fill(HIST("hTPCChi2Bach"), bachTrack.tpcChi2NCl());
 
     registry.fill(HIST("hSelectionStatus"), 0); // all the cascade before selections
     // registry.fill(HIST("hMassXi0"), casc.mXi(), casc.pt());
@@ -359,6 +396,14 @@ struct CascadeSelector {
     registry.fill(HIST("hSelectionStatus"), 2); // passes nITS clusters
     // registry.fill(HIST("hMassXi2"), casc.mXi(), casc.pt());
 
+    // Chi2 cuts
+    if (posTrack.itsChi2NCl() > itsChi2 || negTrack.itsChi2NCl() > itsChi2 || bachTrack.itsChi2NCl() > itsChi2)
+      return 0;
+    if (posTrack.tpcChi2NCl() > tpcChi2 || negTrack.tpcChi2NCl() > tpcChi2 || bachTrack.tpcChi2NCl() > tpcChi2)
+      return 0;
+
+    registry.fill(HIST("hSelectionStatus"), 3); // passes Chi2 cuts
+
     //// TOPO CUTS //// TODO: improve!
     double pvx = collision.posX();
     double pvy = collision.posY();
@@ -371,18 +416,18 @@ struct CascadeSelector {
         TMath::Abs(casc.mLambda() - 1.115683) > cascadesetting_v0masswindow)
       return 0; // It failed at least one topo selection
 
-    registry.fill(HIST("hSelectionStatus"), 3); // passes topo
+    registry.fill(HIST("hSelectionStatus"), 4); // passes topo
     // registry.fill(HIST("hMassXi3"), casc.mXi(), casc.pt());
 
     if (TMath::Abs(posTrack.eta()) > etaTracks || TMath::Abs(negTrack.eta()) > etaTracks || TMath::Abs(bachTrack.eta()) > etaTracks)
       return 0;
 
-    registry.fill(HIST("hSelectionStatus"), 4); // passes track eta
+    registry.fill(HIST("hSelectionStatus"), 5); // passes track eta
 
     if (TMath::Abs(casc.eta()) > etaCascades)
       return 0;
 
-    registry.fill(HIST("hSelectionStatus"), 5); // passes candidate eta
+    registry.fill(HIST("hSelectionStatus"), 6); // passes candidate eta
 
     // TODO: TOF (for pT > 2 GeV per track?)
 
@@ -403,14 +448,14 @@ struct CascadeSelector {
       if (TMath::Abs(posTrack.tpcNSigmaPi()) > tpcNsigmaPion)
         return 0;
     }
-    registry.fill(HIST("hSelectionStatus"), 6); // passes V0 daughters PID
+    registry.fill(HIST("hSelectionStatus"), 7); // passes V0 daughters PID
     // registry.fill(HIST("hMassXi4"), casc.mXi(), casc.pt());
 
     // Bachelor check
     if (TMath::Abs(bachTrack.tpcNSigmaPi()) < tpcNsigmaBachelor) {
       if (TMath::Abs(bachTrack.tpcNSigmaKa()) < tpcNsigmaBachelor) {
         // consistent with both!
-        registry.fill(HIST("hSelectionStatus"), 7); // passes bach PID
+        registry.fill(HIST("hSelectionStatus"), 8); // passes bach PID
         // registry.fill(HIST("hMassXi5"), casc.mXi(), casc.pt());
         if (casc.sign() < 0) {
           registry.fill(HIST("hMassXiMinus"), casc.mXi(), casc.pt(), casc.yXi());
@@ -421,7 +466,7 @@ struct CascadeSelector {
         }
         return 2;
       }
-      registry.fill(HIST("hSelectionStatus"), 7); // passes bach PID
+      registry.fill(HIST("hSelectionStatus"), 8); // passes bach PID
       // registry.fill(HIST("hMassXi5"), casc.mXi(), casc.pt());
       if (casc.sign() < 0) {
         registry.fill(HIST("hMassXiMinus"), casc.mXi(), casc.pt(), casc.yXi());
@@ -430,7 +475,7 @@ struct CascadeSelector {
       }
       return 1;
     } else if (TMath::Abs(bachTrack.tpcNSigmaKa()) < tpcNsigmaBachelor) {
-      registry.fill(HIST("hSelectionStatus"), 7); // passes bach PID
+      registry.fill(HIST("hSelectionStatus"), 8); // passes bach PID
       if (casc.sign() < 0) {
         registry.fill(HIST("hMassOmegaMinus"), casc.mOmega(), casc.pt(), casc.yOmega());
       } else {
@@ -442,8 +487,11 @@ struct CascadeSelector {
     return 0;
   } // processCandidate
 
-  void processGenMC(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, MyCollisionsMult>> const&, aod::McParticles const& mcParticles)
+  void processGenMC(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, MyCollisions>> const& collisions, aod::McParticles const& mcParticles)
   {
+    // N gen events without any event selection or matched reco event
+    registry.fill(HIST("gen/hNevents"), 0);
+
     for (auto const& mcPart : mcParticles) {
       if (!mcPart.isPhysicalPrimary())
         continue;
@@ -466,15 +514,44 @@ struct CascadeSelector {
       }
     }
 
-    // if (matchedCollisions.size() < 1) {
-    //   return;
-    // } else if (matchedCollisions.size() == 1) {
-    //   for (auto const& collision : matchedCollisions) { // not really a loop, as there is only one collision
-    //   }
-    // } else if (matchedCollisions.size() > 1) {
-    //   registry.fill(HIST("MC/hSplitEvents"), matchedCollisions.size());
-    //   return;
-    // }
+    // Do the same thing, but now making sure there is at least one matched reconstructed event:
+    if (collisions.size() < 1) {
+      return;
+    } else {
+      bool evSel = false; // will be true if at least one rec. collision passes evsel
+      for (auto const& collision : collisions) {
+        // can be more than 1 rec. collisions due to event splitting
+        evSel = eventSelection(collision);
+        if (evSel) // exit loop if we find 1 rec. event that passes evsel
+          break;
+      }
+      if (evSel) {
+        // N gen events with a reconstructed event
+        registry.fill(HIST("genwithrec/hNevents"), 0);
+
+        for (auto const& mcPart : mcParticles) {
+          if (!mcPart.isPhysicalPrimary())
+            continue;
+          if (TMath::Abs(mcPart.eta()) > etaCascades)
+            continue;
+
+          switch (mcPart.pdgCode()) {
+            case 3312:
+              registry.fill(HIST("genwithrec/hXiMinus"), mcPart.pt(), mcPart.y());
+              break;
+            case -3312:
+              registry.fill(HIST("genwithrec/hXiPlus"), mcPart.pt(), mcPart.y());
+              break;
+            case 3334:
+              registry.fill(HIST("genwithrec/hOmegaMinus"), mcPart.pt(), mcPart.y());
+              break;
+            case -3334:
+              registry.fill(HIST("genwithrec/hOmegaPlus"), mcPart.pt(), mcPart.y());
+              break;
+          }
+        }
+      }
+    }
   } // processGen
 
   // wrappers for data/MC processes on reco level
@@ -538,8 +615,9 @@ struct CascadeCorrelations {
   ConfigurableAxis dcaAxis = {"dcaAxis", {100, 0.0f, 2.0f}, "cm"};
   ConfigurableAxis multiplicityAxis{"multiplicityAxis", {100, 0, 100}, "Multiplicity (MultFT0M?)"};
   ConfigurableAxis invLambdaMassAxis{"invLambdaMassAxis", {100, 1.07f, 1.17f}, "Inv. Mass (GeV/c^{2})"};
-  ConfigurableAxis deltaYAxis{"deltaYAxis", {40, -2.f, 2.f}, "#Delta y"};
-  ConfigurableAxis rapidityAxis{"rapidityAxis", {100, -1.f, 1.f}, "y"};
+  AxisSpec signAxis{3, -1.5, 1.5, "sign of cascade"};
+  AxisSpec deltaYAxis{40, -2.f, 2.f, "#Delta y"};
+  AxisSpec rapidityAxis{100, -1.f, 1.f, "y"};
   AxisSpec selectionFlagAxis{4, -0.5f, 3.5f, "Selection flag of casc candidate"};
   AxisSpec itsClustersAxis{8, -0.5, 7.5, "number of ITS clusters"};
   AxisSpec tpcRowsAxis{160, -0.5, 159.5, "TPC crossed rows"};
@@ -585,6 +663,18 @@ struct CascadeCorrelations {
       return 1. / eff;
   }
 
+  bool autoCorrelation(std::array<int, 3> triggerTracks, std::array<int, 3> assocTracks)
+  {
+    // function that loops over 2 arrays of track indices, checking for common elements
+    for (int triggerTrack : triggerTracks) {
+      for (int assocTrack : assocTracks) {
+        if (triggerTrack == assocTrack)
+          return true;
+      }
+    }
+    return false;
+  }
+
   HistogramRegistry registry{
     "registry",
     {
@@ -594,8 +684,8 @@ struct CascadeCorrelations {
       {"hMassOmegaMinus", "hMassOmegaMinus", {HistType::kTH2F, {invMassAxis, ptAxis}}},
       {"hMassOmegaPlus", "hMassOmegaPlus", {HistType::kTH2F, {invMassAxis, ptAxis}}},
       // efficiency corrected inv mass
-      {"hMassXiEffCorrected", "hMassXiEffCorrected", {HistType::kTHnSparseF, {invMassAxis, ptAxis, rapidityAxis, vertexAxis, multiplicityAxis}}, true},
-      {"hMassOmegaEffCorrected", "hMassOmegaEffCorrected", {HistType::kTHnSparseF, {invMassAxis, ptAxis, rapidityAxis, vertexAxis, multiplicityAxis}}, true},
+      {"hMassXiEffCorrected", "hMassXiEffCorrected", {HistType::kTHnSparseF, {invMassAxis, signAxis, ptAxis, rapidityAxis, vertexAxis, multiplicityAxis}}, true},
+      {"hMassOmegaEffCorrected", "hMassOmegaEffCorrected", {HistType::kTHnSparseF, {invMassAxis, signAxis, ptAxis, rapidityAxis, vertexAxis, multiplicityAxis}}, true},
 
       // trigger QA
       {"hTriggerQA", "hTriggerQA", {HistType::kTH1F, {{2, -0.5, 1.5, "Trigger y/n"}}}},
@@ -631,14 +721,9 @@ struct CascadeCorrelations {
       {"hDeltaPhiSS", "hDeltaPhiSS", {HistType::kTH1F, {deltaPhiAxis}}},
       {"hDeltaPhiOS", "hDeltaPhiOS", {HistType::kTH1F, {deltaPhiAxis}}},
 
-      {"hXiXiOS", "hXiXiOS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
-      {"hXiXiSS", "hXiXiSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
-      {"hXiOmOS", "hXiOmOS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
-      {"hXiOmSS", "hXiOmSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
-      {"hOmXiOS", "hOmXiOS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
-      {"hOmXiSS", "hOmXiSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
-      {"hOmOmOS", "hOmOmOS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
-      {"hOmOmSS", "hOmOmSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
+      {"hXiXi", "hXiXi", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, signAxis, signAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
+      {"hXiOm", "hXiOm", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, signAxis, signAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
+      {"hOmOm", "hOmOm", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, signAxis, signAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
 
       // Mixed events
       {"MixedEvents/hMEVz1", "hMEVz1", {HistType::kTH1F, {vertexAxis}}},
@@ -649,14 +734,9 @@ struct CascadeCorrelations {
       {"MixedEvents/hMEAutoCorrelation", "hMEAutoCorrelation", {HistType::kTH1I, {{4, -0.5f, 3.5f, "Types of SS autocorrelation"}}}},
       {"MixedEvents/hMEAutoCorrelationOS", "hMEAutoCorrelationOS", {HistType::kTH1I, {{2, -1.f, 1.f, "Charge of OS autocorrelated track"}}}},
 
-      {"MixedEvents/hMEXiXiOS", "hMEXiXiOS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
-      {"MixedEvents/hMEXiXiSS", "hMEXiXiSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
-      {"MixedEvents/hMEXiOmOS", "hMEXiOmOS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
-      {"MixedEvents/hMEXiOmSS", "hMEXiOmSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
-      {"MixedEvents/hMEOmXiOS", "hMEOmXiOS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
-      {"MixedEvents/hMEOmXiSS", "hMEOmXiSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
-      {"MixedEvents/hMEOmOmOS", "hMEOmOmOS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
-      {"MixedEvents/hMEOmOmSS", "hMEOmOmSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
+      {"MixedEvents/hMEXiXi", "hMEXiXi", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, signAxis, signAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
+      {"MixedEvents/hMEXiOm", "hMEXiOm", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, signAxis, signAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
+      {"MixedEvents/hMEOmOm", "hMEOmOm", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, signAxis, signAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, vertexAxis, multiplicityAxis}}, true},
 
       // MC closure
       {"MC/hMCPlusMinus", "hMCPlusMinus", {HistType::kTHnSparseF, {deltaPhiAxis, deltaYAxis, ptAxis, ptAxis, vertexAxis, multiplicityAxis}}, true},
@@ -713,7 +793,7 @@ struct CascadeCorrelations {
           weight = getEfficiency(hEffXiPlus, casc.pt());
         }
         // LOGF(info, "casc pt %f, weight %f", casc.pt(), weight);
-        registry.fill(HIST("hMassXiEffCorrected"), casc.mXi(), casc.pt(), casc.yXi(), collision.posZ(), collision.multFT0M(), weight);
+        registry.fill(HIST("hMassXiEffCorrected"), casc.mXi(), casc.sign(), casc.pt(), casc.yXi(), collision.posZ(), collision.multFT0M(), weight);
         registry.fill(HIST("hRapidityXi"), casc.yXi());
       }
       if (casc.isSelected() >= 2) { // consistent with Omega or both
@@ -724,7 +804,7 @@ struct CascadeCorrelations {
           registry.fill(HIST("hMassOmegaPlus"), casc.mOmega(), casc.pt());
           weight = getEfficiency(hEffOmegaPlus, casc.pt());
         }
-        registry.fill(HIST("hMassOmegaEffCorrected"), casc.mOmega(), casc.pt(), casc.yOmega(), collision.posZ(), collision.multFT0M(), weight);
+        registry.fill(HIST("hMassOmegaEffCorrected"), casc.mOmega(), casc.sign(), casc.pt(), casc.yOmega(), collision.posZ(), collision.multFT0M(), weight);
         registry.fill(HIST("hRapidityOmega"), casc.yOmega());
       }
       registry.fill(HIST("hV0Radius"), casc.v0radius());
@@ -760,12 +840,11 @@ struct CascadeCorrelations {
       auto trigger = *triggerAddress;
       auto assoc = *assocAddress;
 
-      // track indices for posterior checks
-      // retains logic of V0 index while being safe wrt data model
-      int posIdTrigg = trigger.posTrackId();
-      int negIdTrigg = trigger.negTrackId();
-      int posIdAssoc = assoc.posTrackId();
-      int negIdAssoc = assoc.negTrackId();
+      // autocorrelation check
+      std::array<int, 3> triggerTracks = {trigger.posTrackId(), trigger.negTrackId(), trigger.bachelorId()};
+      std::array<int, 3> assocTracks = {assoc.posTrackId(), assoc.negTrackId(), assoc.bachelorId()};
+      if (autoCorrelation(triggerTracks, assocTracks))
+        continue;
 
       // calculate angular correlations
       double dphi = RecoDecay::constrainAngle(trigger.phi() - assoc.phi(), -PIHalf);
@@ -778,127 +857,41 @@ struct CascadeCorrelations {
       double weightTrigg = 1.;
       double weightAssoc = 1.;
 
-      // split into opposite-sign or same-sign
-      if (trigger.sign() * assoc.sign() < 0) { // opposite-sign
-        // check for autocorrelations between mis-identified kaons (omega bach) and protons (lambda daughter) TODO: improve logic?
-        if (trigger.isSelected() >= 2) {
-          if (trigger.sign() > 0 && trigger.bachelorId() == posIdAssoc) {
-            // K+ from trigger Omega is the same as proton from assoc lambda
-            registry.fill(HIST("hAutoCorrelationOS"), 1);
-            continue;
-          }
-          if (trigger.sign() < 0 && trigger.bachelorId() == negIdAssoc) {
-            // K- from trigger Omega is the same as antiproton from assoc antilambda
-            registry.fill(HIST("hAutoCorrelationOS"), -1);
-            continue;
-          }
-        }
-        if (assoc.isSelected() >= 2) {
-          if (assoc.sign() > 0 && assoc.bachelorId() == posIdTrigg) {
-            // K+ from assoc Omega is the same as proton from trigger lambda
-            registry.fill(HIST("hAutoCorrelationOS"), 1);
-            continue;
-          }
-          if (assoc.sign() < 0 && assoc.bachelorId() == negIdTrigg) {
-            // K- from assoc Omega is the same as antiproton from trigger antilambda
-            registry.fill(HIST("hAutoCorrelationOS"), -1);
-            continue;
-          }
-        }
-        registry.fill(HIST("hDeltaPhiOS"), dphi);
-        // Fill the different THnSparses depending on PID logic (important for rapidity & inv mass information)
-        if (trigger.isSelected() <= 2 && TMath::Abs(trigger.yXi()) < maxRapidity) { // trigger Xi
+      if (trigger.isSelected() <= 2 && TMath::Abs(trigger.yXi()) < maxRapidity) { // trigger Xi
+        if (doEfficiencyCorrection)
+          weightTrigg = trigger.sign() < 0 ? getEfficiency(hEffXiMin, trigger.pt()) : getEfficiency(hEffXiPlus, trigger.pt());
+        if (assoc.isSelected() <= 2 && TMath::Abs(assoc.yXi()) < maxRapidity) { // assoc Xi
           if (doEfficiencyCorrection)
-            weightTrigg = trigger.sign() < 0 ? getEfficiency(hEffXiMin, trigger.pt()) : getEfficiency(hEffXiPlus, trigger.pt());
-          if (assoc.isSelected() <= 2 && TMath::Abs(assoc.yXi()) < maxRapidity) { // assoc Xi
-            if (doEfficiencyCorrection)
-              weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt()) : getEfficiency(hEffXiPlus, assoc.pt());
-            registry.fill(HIST("hXiXiOS"), dphi, trigger.yXi() - assoc.yXi(), trigger.pt(), assoc.pt(), invMassXiTrigg, invMassXiAssoc, collision.posZ(), collision.multFT0M(), weightTrigg * weightAssoc);
-          }
-          if (assoc.isSelected() >= 2 && TMath::Abs(assoc.yOmega()) < maxRapidity) { // assoc Omega
-            if (doEfficiencyCorrection)
-              weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffOmegaMin, assoc.pt()) : getEfficiency(hEffOmegaPlus, assoc.pt());
-            registry.fill(HIST("hXiOmOS"), dphi, trigger.yXi() - assoc.yOmega(), trigger.pt(), assoc.pt(), invMassXiTrigg, invMassOmAssoc, collision.posZ(), collision.multFT0M(), weightTrigg * weightAssoc);
-          }
+            weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt()) : getEfficiency(hEffXiPlus, assoc.pt());
+          registry.fill(HIST("hXiXi"), dphi, trigger.yXi() - assoc.yXi(), trigger.sign(), assoc.sign(), trigger.pt(), assoc.pt(), invMassXiTrigg, invMassXiAssoc, collision.posZ(), collision.multFT0M(), weightTrigg * weightAssoc);
         }
-        if (trigger.isSelected() >= 2 && TMath::Abs(trigger.yOmega()) < maxRapidity) { // trigger Omega
+        if (assoc.isSelected() >= 2 && TMath::Abs(assoc.yOmega()) < maxRapidity) { // assoc Omega
           if (doEfficiencyCorrection)
-            weightTrigg = trigger.sign() < 0 ? getEfficiency(hEffOmegaMin, trigger.pt()) : getEfficiency(hEffOmegaPlus, trigger.pt());
-          if (assoc.isSelected() <= 2 && TMath::Abs(assoc.yXi()) < maxRapidity) { // assoc Xi
-            if (doEfficiencyCorrection)
-              weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt()) : getEfficiency(hEffXiPlus, assoc.pt());
-            registry.fill(HIST("hOmXiOS"), dphi, trigger.yOmega() - assoc.yXi(), trigger.pt(), assoc.pt(), invMassOmTrigg, invMassXiAssoc, collision.posZ(), collision.multFT0M(), weightTrigg * weightAssoc);
-          }
-          if (assoc.isSelected() >= 2 && TMath::Abs(assoc.yOmega()) < maxRapidity) { // assoc Omega
-            if (doEfficiencyCorrection)
-              weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffOmegaMin, assoc.pt()) : getEfficiency(hEffOmegaPlus, assoc.pt());
-            registry.fill(HIST("hOmOmOS"), dphi, trigger.yOmega() - assoc.yOmega(), trigger.pt(), assoc.pt(), invMassOmTrigg, invMassOmAssoc, collision.posZ(), collision.multFT0M(), weightTrigg * weightAssoc);
-          }
+            weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffOmegaMin, assoc.pt()) : getEfficiency(hEffOmegaPlus, assoc.pt());
+          registry.fill(HIST("hXiOm"), dphi, trigger.yXi() - assoc.yOmega(), trigger.sign(), assoc.sign(), trigger.pt(), assoc.pt(), invMassXiTrigg, invMassOmAssoc, collision.posZ(), collision.multFT0M(), weightTrigg * weightAssoc);
         }
-      } else { // same-sign
-        // make sure to check for autocorrelations - only possible in same-sign correlations (if PID is correct)
-        if (posIdTrigg == posIdAssoc && negIdTrigg == negIdAssoc) {
-          // LOGF(info, "same v0 in SS correlation! %d %d", v0dataTrigg.v0Id(), v0dataAssoc.v0Id());
-          registry.fill(HIST("hAutoCorrelation"), 0);
-          continue;
+      }
+      if (trigger.isSelected() >= 2 && TMath::Abs(trigger.yOmega()) < maxRapidity) { // trigger Omega
+        if (doEfficiencyCorrection)
+          weightTrigg = trigger.sign() < 0 ? getEfficiency(hEffOmegaMin, trigger.pt()) : getEfficiency(hEffOmegaPlus, trigger.pt());
+        if (assoc.isSelected() <= 2 && TMath::Abs(assoc.yXi()) < maxRapidity) { // assoc Xi
+          if (doEfficiencyCorrection)
+            weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt()) : getEfficiency(hEffXiPlus, assoc.pt());
+          // if Omega-Xi, fill the Xi-Omega histogram (flip the trigger/assoc and dphy,dy signs)
+          registry.fill(HIST("hXiOm"), RecoDecay::constrainAngle(assoc.phi() - trigger.phi(), -PIHalf), -(trigger.yOmega() - assoc.yXi()), assoc.sign(), trigger.sign(), assoc.pt(), trigger.pt(), invMassXiAssoc, invMassOmTrigg, collision.posZ(), collision.multFT0M(), weightTrigg * weightAssoc);
         }
-        int bachIdTrigg = trigger.bachelorId();
-        int bachIdAssoc = assoc.bachelorId();
+        if (assoc.isSelected() >= 2 && TMath::Abs(assoc.yOmega()) < maxRapidity) { // assoc Omega
+          if (doEfficiencyCorrection)
+            weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffOmegaMin, assoc.pt()) : getEfficiency(hEffOmegaPlus, assoc.pt());
+          registry.fill(HIST("hOmOm"), dphi, trigger.yOmega() - assoc.yOmega(), trigger.sign(), assoc.sign(), trigger.pt(), assoc.pt(), invMassOmTrigg, invMassOmAssoc, collision.posZ(), collision.multFT0M(), weightTrigg * weightAssoc);
+        }
+      }
 
-        if (bachIdTrigg == bachIdAssoc) {
-          // LOGF(info, "same bachelor in SS correlation! %d %d", bachIdTrigg, bachIdAssoc);
-          registry.fill(HIST("hAutoCorrelation"), 1);
-          continue;
-        }
-        // check for same tracks in v0's of cascades
-        if (negIdTrigg == negIdAssoc || posIdTrigg == posIdAssoc) {
-          // LOGF(info, "cascades have a v0-track in common in SS correlation!");
-          registry.fill(HIST("hAutoCorrelation"), 2);
-          continue;
-        }
-        if (trigger.sign() < 0) { // neg cascade
-          if (negIdTrigg == bachIdAssoc || negIdAssoc == bachIdTrigg) {
-            // LOGF(info, "bach of casc == v0-pion of other casc in neg SS correlation!");
-            registry.fill(HIST("hAutoCorrelation"), 3);
-            continue;
-          }
-        } else { // pos cascade
-          if (posIdTrigg == bachIdAssoc || posIdAssoc == bachIdTrigg) {
-            // LOGF(info, "bach of casc == v0-pion of other casc in pos SS correlation!");
-            registry.fill(HIST("hAutoCorrelation"), 3);
-            continue;
-          }
-        }
+      // QA plots
+      if (trigger.sign() * assoc.sign() < 0) {
+        registry.fill(HIST("hDeltaPhiOS"), dphi);
+      } else {
         registry.fill(HIST("hDeltaPhiSS"), dphi);
-        // Fill the different THnSparses depending on PID logic (important for rapidity & inv mass information)
-        if (trigger.isSelected() <= 2 && TMath::Abs(trigger.yXi()) < maxRapidity) { // trigger Xi
-          if (doEfficiencyCorrection)
-            weightTrigg = trigger.sign() < 0 ? getEfficiency(hEffXiMin, trigger.pt()) : getEfficiency(hEffXiPlus, trigger.pt());
-          if (assoc.isSelected() <= 2 && TMath::Abs(assoc.yXi()) < maxRapidity) { // assoc Xi
-            if (doEfficiencyCorrection)
-              weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt()) : getEfficiency(hEffXiPlus, assoc.pt());
-            registry.fill(HIST("hXiXiSS"), dphi, trigger.yXi() - assoc.yXi(), trigger.pt(), assoc.pt(), invMassXiTrigg, invMassXiAssoc, collision.posZ(), collision.multFT0M(), weightTrigg * weightAssoc);
-          }
-          if (assoc.isSelected() >= 2 && TMath::Abs(assoc.yOmega()) < maxRapidity) { // assoc Omega
-            if (doEfficiencyCorrection)
-              weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffOmegaMin, assoc.pt()) : getEfficiency(hEffOmegaPlus, assoc.pt());
-            registry.fill(HIST("hXiOmSS"), dphi, trigger.yXi() - assoc.yOmega(), trigger.pt(), assoc.pt(), invMassXiTrigg, invMassOmAssoc, collision.posZ(), collision.multFT0M(), weightTrigg * weightAssoc);
-          }
-        }
-        if (trigger.isSelected() >= 2 && TMath::Abs(trigger.yOmega()) < maxRapidity) { // trigger Omega
-          if (doEfficiencyCorrection)
-            weightTrigg = trigger.sign() < 0 ? getEfficiency(hEffOmegaMin, trigger.pt()) : getEfficiency(hEffOmegaPlus, trigger.pt());
-          if (assoc.isSelected() <= 2 && TMath::Abs(assoc.yXi()) < maxRapidity) { // assoc Xi
-            if (doEfficiencyCorrection)
-              weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt()) : getEfficiency(hEffXiPlus, assoc.pt());
-            registry.fill(HIST("hOmXiSS"), dphi, trigger.yOmega() - assoc.yXi(), trigger.pt(), assoc.pt(), invMassOmTrigg, invMassXiAssoc, collision.posZ(), collision.multFT0M(), weightTrigg * weightAssoc);
-          }
-          if (assoc.isSelected() >= 2 && TMath::Abs(assoc.yOmega()) < maxRapidity) { // assoc Omega
-            if (doEfficiencyCorrection)
-              weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffOmegaMin, assoc.pt()) : getEfficiency(hEffOmegaPlus, assoc.pt());
-            registry.fill(HIST("hOmOmSS"), dphi, trigger.yOmega() - assoc.yOmega(), trigger.pt(), assoc.pt(), invMassOmTrigg, invMassOmAssoc, collision.posZ(), collision.multFT0M(), weightTrigg * weightAssoc);
-          }
-        }
       }
     } // correlations
   } // process same event
@@ -917,7 +910,6 @@ struct CascadeCorrelations {
         registry.fill(HIST("hMEQA"), 0.5);
         continue;
       }
-
       registry.fill(HIST("MixedEvents/hMEVz1"), col1.posZ());
       registry.fill(HIST("MixedEvents/hMEVz2"), col2.posZ());
 
@@ -936,6 +928,11 @@ struct CascadeCorrelations {
           continue;
         }
 
+        std::array<int, 3> triggerTracks = {trigger.posTrackId(), trigger.negTrackId(), trigger.bachelorId()};
+        std::array<int, 3> assocTracks = {assoc.posTrackId(), assoc.negTrackId(), assoc.bachelorId()};
+        if (autoCorrelation(triggerTracks, assocTracks))
+          continue;
+
         double dphi = RecoDecay::constrainAngle(trigger.phi() - assoc.phi(), -PIHalf);
 
         double invMassXiTrigg = trigger.mXi();
@@ -943,140 +940,45 @@ struct CascadeCorrelations {
         double invMassXiAssoc = assoc.mXi();
         double invMassOmAssoc = assoc.mOmega();
 
-        // V0 daughter track ID's used for autocorrelation check
-        int posIdTrigg = trigger.posTrackId();
-        int negIdTrigg = trigger.negTrackId();
-        int posIdAssoc = assoc.posTrackId();
-        int negIdAssoc = assoc.negTrackId();
-
         double weightTrigg = 1.;
         double weightAssoc = 1.;
 
-        if (trigger.sign() * assoc.sign() < 0) { // opposite-sign
-
-          // check for autocorrelations between mis-identified kaons (omega bach) and protons (lambda daughter) TODO: improve logic?
-          if (trigger.isSelected() >= 2) {
-            if (trigger.sign() > 0 && trigger.bachelorId() == posIdAssoc) {
-              // K+ from trigger Omega is the same as proton from assoc lambda
-              registry.fill(HIST("MixedEvents/hMEAutoCorrelationOS"), 1);
-              continue;
-            }
-            if (trigger.sign() < 0 && trigger.bachelorId() == negIdAssoc) {
-              // K- from trigger Omega is the same as antiproton from assoc antilambda
-              registry.fill(HIST("MixedEvents/hMEAutoCorrelationOS"), -1);
-              continue;
-            }
+        if (trigger.isSelected() <= 2 && TMath::Abs(trigger.yXi()) < maxRapidity) { // trigger Xi
+          if (doEfficiencyCorrection)
+            weightTrigg = trigger.sign() < 0 ? getEfficiency(hEffXiMin, trigger.pt()) : getEfficiency(hEffXiPlus, trigger.pt());
+          if (assoc.isSelected() <= 2 && TMath::Abs(assoc.yXi()) < maxRapidity) { // assoc Xi
+            if (doEfficiencyCorrection)
+              weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt()) : getEfficiency(hEffXiPlus, assoc.pt());
+            registry.fill(HIST("MixedEvents/hMEXiXi"), dphi, trigger.yXi() - assoc.yXi(), trigger.sign(), assoc.sign(), trigger.pt(), assoc.pt(), invMassXiTrigg, invMassXiAssoc, col1.posZ(), col1.multFT0M(), weightTrigg * weightAssoc);
           }
-          if (assoc.isSelected() >= 2) {
-            if (assoc.sign() > 0 && assoc.bachelorId() == posIdTrigg) {
-              // K+ from assoc Omega is the same as proton from trigger lambda
-              registry.fill(HIST("MixedEvents/hMEAutoCorrelationOS"), 1);
-              continue;
-            }
-            if (assoc.sign() < 0 && assoc.bachelorId() == negIdTrigg) {
-              // K- from assoc Omega is the same as antiproton from trigger antilambda
-              registry.fill(HIST("MixedEvents/hMEAutoCorrelationOS"), -1);
-              continue;
-            }
+          if (assoc.isSelected() >= 2 && TMath::Abs(assoc.yOmega()) < maxRapidity) { // assoc Omega
+            if (doEfficiencyCorrection)
+              weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffOmegaMin, assoc.pt()) : getEfficiency(hEffOmegaPlus, assoc.pt());
+            registry.fill(HIST("MixedEvents/hMEXiOm"), dphi, trigger.yXi() - assoc.yOmega(), trigger.sign(), assoc.sign(), trigger.pt(), assoc.pt(), invMassXiTrigg, invMassOmAssoc, col1.posZ(), col1.multFT0M(), weightTrigg * weightAssoc);
           }
+        }
+        if (trigger.isSelected() >= 2 && TMath::Abs(trigger.yOmega()) < maxRapidity) { // trigger Omega
+          if (doEfficiencyCorrection)
+            weightTrigg = trigger.sign() < 0 ? getEfficiency(hEffOmegaMin, trigger.pt()) : getEfficiency(hEffOmegaPlus, trigger.pt());
+          if (assoc.isSelected() <= 2 && TMath::Abs(assoc.yXi()) < maxRapidity) { // assoc Xi
+            if (doEfficiencyCorrection)
+              weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt()) : getEfficiency(hEffXiPlus, assoc.pt());
+            // if Omega-Xi, fill the Xi-Omega histogram (flip the trigger/assoc and dphy,dy signs)
+            registry.fill(HIST("MixedEvents/hMEXiOm"), RecoDecay::constrainAngle(assoc.phi() - trigger.phi(), -PIHalf), -(trigger.yOmega() - assoc.yXi()), assoc.sign(), trigger.sign(), assoc.pt(), trigger.pt(), invMassXiAssoc, invMassOmTrigg, col1.posZ(), col1.multFT0M(), weightTrigg * weightAssoc);
+          }
+          if (assoc.isSelected() >= 2 && TMath::Abs(assoc.yOmega()) < maxRapidity) { // assoc Omega
+            if (doEfficiencyCorrection)
+              weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffOmegaMin, assoc.pt()) : getEfficiency(hEffOmegaPlus, assoc.pt());
+            registry.fill(HIST("MixedEvents/hMEOmOm"), dphi, trigger.yOmega() - assoc.yOmega(), trigger.sign(), assoc.sign(), trigger.pt(), assoc.pt(), invMassOmTrigg, invMassOmAssoc, col1.posZ(), col1.multFT0M(), weightTrigg * weightAssoc);
+          }
+        }
 
+        // QA plots
+        if (trigger.sign() * assoc.sign() < 0) {
           registry.fill(HIST("MixedEvents/hMEDeltaPhiOS"), dphi);
-
-          // Fill the different THnSparses depending on PID logic (important for rapidity & inv mass information)
-          if (trigger.isSelected() <= 2 && TMath::Abs(trigger.yXi()) < maxRapidity) { // trigger Xi
-            if (doEfficiencyCorrection)
-              weightTrigg = trigger.sign() < 0 ? getEfficiency(hEffXiMin, trigger.pt()) : getEfficiency(hEffXiPlus, trigger.pt());
-            if (assoc.isSelected() <= 2 && TMath::Abs(assoc.yXi()) < maxRapidity) { // assoc Xi
-              if (doEfficiencyCorrection)
-                weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt()) : getEfficiency(hEffXiPlus, assoc.pt());
-              registry.fill(HIST("MixedEvents/hMEXiXiOS"), dphi, trigger.yXi() - assoc.yXi(), trigger.pt(), assoc.pt(), invMassXiTrigg, invMassXiAssoc, col1.posZ(), col1.multFT0M(), weightTrigg * weightAssoc);
-            }
-            if (assoc.isSelected() >= 2 && TMath::Abs(assoc.yOmega()) < maxRapidity) { // assoc Omega
-              if (doEfficiencyCorrection)
-                weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffOmegaMin, assoc.pt()) : getEfficiency(hEffOmegaPlus, assoc.pt());
-              registry.fill(HIST("MixedEvents/hMEXiOmOS"), dphi, trigger.yXi() - assoc.yOmega(), trigger.pt(), assoc.pt(), invMassXiTrigg, invMassOmAssoc, col1.posZ(), col1.multFT0M(), weightTrigg * weightAssoc);
-            }
-          }
-          if (trigger.isSelected() >= 2 && TMath::Abs(trigger.yOmega()) < maxRapidity) { // trigger Omega
-            if (doEfficiencyCorrection)
-              weightTrigg = trigger.sign() < 0 ? getEfficiency(hEffOmegaMin, trigger.pt()) : getEfficiency(hEffOmegaPlus, trigger.pt());
-            if (assoc.isSelected() <= 2 && TMath::Abs(assoc.yXi()) < maxRapidity) { // assoc Xi
-              if (doEfficiencyCorrection)
-                weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt()) : getEfficiency(hEffXiPlus, assoc.pt());
-              registry.fill(HIST("MixedEvents/hMEOmXiOS"), dphi, trigger.yOmega() - assoc.yXi(), trigger.pt(), assoc.pt(), invMassOmTrigg, invMassXiAssoc, col1.posZ(), col1.multFT0M(), weightTrigg * weightAssoc);
-            }
-            if (assoc.isSelected() >= 2 && TMath::Abs(assoc.yOmega()) < maxRapidity) { // assoc Omega
-              if (doEfficiencyCorrection)
-                weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffOmegaMin, assoc.pt()) : getEfficiency(hEffOmegaPlus, assoc.pt());
-              registry.fill(HIST("MixedEvents/hMEOmOmOS"), dphi, trigger.yOmega() - assoc.yOmega(), trigger.pt(), assoc.pt(), invMassOmTrigg, invMassOmAssoc, col1.posZ(), col1.multFT0M(), weightTrigg * weightAssoc);
-            }
-          }
-        } else { // same sign
-          // make sure to check for autocorrelations - only possible in same-sign correlations (if PID is correct)
-          if (posIdTrigg == posIdAssoc && negIdTrigg == negIdAssoc) {
-            // LOGF(info, "same v0 in SS correlation! %d %d", v0dataTrigg.v0Id(), v0dataAssoc.v0Id());
-            registry.fill(HIST("MixedEvents/hMEAutoCorrelation"), 0);
-            continue;
-          }
-          int bachIdTrigg = trigger.bachelorId();
-          int bachIdAssoc = assoc.bachelorId();
-
-          if (bachIdTrigg == bachIdAssoc) {
-            // LOGF(info, "same bachelor in SS correlation! %d %d", bachIdTrigg, bachIdAssoc);
-            registry.fill(HIST("MixedEvents/hMEAutoCorrelation"), 1);
-            continue;
-          }
-          // check for same tracks in v0's of cascades
-          if (negIdTrigg == negIdAssoc || posIdTrigg == posIdAssoc) {
-            // LOGF(info, "cascades have a v0-track in common in SS correlation!");
-            registry.fill(HIST("MixedEvents/hMEAutoCorrelation"), 2);
-            continue;
-          }
-          if (trigger.sign() < 0) { // neg cascade
-            if (negIdTrigg == bachIdAssoc || negIdAssoc == bachIdTrigg) {
-              // LOGF(info, "bach of casc == v0-pion of other casc in neg SS correlation!");
-              registry.fill(HIST("MixedEvents/hMEAutoCorrelation"), 3);
-              continue;
-            }
-          } else { // pos cascade
-            if (posIdTrigg == bachIdAssoc || posIdAssoc == bachIdTrigg) {
-              // LOGF(info, "bach of casc == v0-pion of other casc in pos SS correlation!");
-              registry.fill(HIST("MixedEvents/hMEAutoCorrelation"), 3);
-              continue;
-            }
-          }
-
+        } else {
           registry.fill(HIST("MixedEvents/hMEDeltaPhiSS"), dphi);
-
-          if (trigger.isSelected() <= 2 && TMath::Abs(trigger.yXi()) < maxRapidity) { // trigger Xi
-            if (doEfficiencyCorrection)
-              weightTrigg = trigger.sign() < 0 ? getEfficiency(hEffXiMin, trigger.pt()) : getEfficiency(hEffXiPlus, trigger.pt());
-            if (assoc.isSelected() <= 2 && TMath::Abs(assoc.yXi()) < maxRapidity) { // assoc Xi
-              if (doEfficiencyCorrection)
-                weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt()) : getEfficiency(hEffXiPlus, assoc.pt());
-              registry.fill(HIST("MixedEvents/hMEXiXiSS"), dphi, trigger.yXi() - assoc.yXi(), trigger.pt(), assoc.pt(), invMassXiTrigg, invMassXiAssoc, col1.posZ(), col1.multFT0M(), weightTrigg * weightAssoc);
-            }
-            if (assoc.isSelected() >= 2 && TMath::Abs(assoc.yOmega()) < maxRapidity) { // assoc Omega
-              if (doEfficiencyCorrection)
-                weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffOmegaMin, assoc.pt()) : getEfficiency(hEffOmegaPlus, assoc.pt());
-              registry.fill(HIST("MixedEvents/hMEXiOmSS"), dphi, trigger.yXi() - assoc.yOmega(), trigger.pt(), assoc.pt(), invMassXiTrigg, invMassOmAssoc, col1.posZ(), col1.multFT0M(), weightTrigg * weightAssoc);
-            }
-          }
-          if (trigger.isSelected() >= 2 && TMath::Abs(trigger.yOmega()) < maxRapidity) { // trigger Omega
-            if (doEfficiencyCorrection)
-              weightTrigg = trigger.sign() < 0 ? getEfficiency(hEffOmegaMin, trigger.pt()) : getEfficiency(hEffOmegaPlus, trigger.pt());
-            if (assoc.isSelected() <= 2 && TMath::Abs(assoc.yXi()) < maxRapidity) { // assoc Xi
-              if (doEfficiencyCorrection)
-                weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffXiMin, assoc.pt()) : getEfficiency(hEffXiPlus, assoc.pt());
-              registry.fill(HIST("MixedEvents/hMEOmXiSS"), dphi, trigger.yOmega() - assoc.yXi(), trigger.pt(), assoc.pt(), invMassOmTrigg, invMassXiAssoc, col1.posZ(), col1.multFT0M(), weightTrigg * weightAssoc);
-            }
-            if (assoc.isSelected() >= 2 && TMath::Abs(assoc.yOmega()) < maxRapidity) { // assoc Omega
-              if (doEfficiencyCorrection)
-                weightAssoc = assoc.sign() < 0 ? getEfficiency(hEffOmegaMin, assoc.pt()) : getEfficiency(hEffOmegaPlus, assoc.pt());
-              registry.fill(HIST("MixedEvents/hMEOmOmSS"), dphi, trigger.yOmega() - assoc.yOmega(), trigger.pt(), assoc.pt(), invMassOmTrigg, invMassOmAssoc, col1.posZ(), col1.multFT0M(), weightTrigg * weightAssoc);
-            }
-          }
-        } // same sign
+        }
       } // correlations
     } // collisions
   } // process mixed events

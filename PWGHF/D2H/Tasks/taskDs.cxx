@@ -17,32 +17,56 @@
 /// \author Stefano Politanò <stefano.politano@cern.ch>, Politecnico & INFN Torino
 /// \author Fabrizio Chinu <fabrizio.chinu@cern.ch>, Universita and INFN Torino
 
-#include <memory>
-#include <unordered_map>
-#include <vector>
-#include <map>
-#include <string>
-
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "MetadataHelper.h"
-
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
+
+#include "Common/Core/MetadataHelper.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <THnSparse.h>
+#include <TProfile.h>
+
+#include <Rtypes.h>
+
+#include <array>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <numeric>
+#include <string>
+#include <unordered_map>
+#include <variant>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-MetadataHelper metadataInfo; // Metadata helper
+o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 
 enum FinalState { KKPi = 0,
                   PiKK };
@@ -138,7 +162,7 @@ struct HfTaskDs {
   ConfigurableAxis axisMlScore0{"axisMlScore0", {100, 0., 1.}, "axis for ML output score 0"};
   ConfigurableAxis axisMlScore1{"axisMlScore1", {100, 0., 1.}, "axis for ML output score 1"};
   ConfigurableAxis axisMlScore2{"axisMlScore2", {100, 0., 1.}, "axis for ML output score 2"};
-  ConfigurableAxis axisCentrality{"axisCentrality", {100, 0., 1.}, "axis for centrality/multiplicity"};
+  ConfigurableAxis axisCentrality{"axisCentrality", {100, 0, 100}, "axis for centrality/multiplicity"};
   ConfigurableAxis axisOccupancy{"axisOccupancy", {14, 0., 14000.}, "axis for occupancy"};
 
   int mRunNumber{0};
@@ -183,7 +207,7 @@ struct HfTaskDs {
     AxisSpec flagBHad{axisFlagBHad, "B Hadron flag"};
     AxisSpec ybins = {100, -5., 5, "#it{y}"};
     AxisSpec massbins = {600, 1.67, 2.27, "inv. mass (KK#pi) (GeV/#it{c}^{2})"};
-    AxisSpec centralitybins = {100, 0., 100., "Centrality"};
+    AxisSpec centralitybins = {axisCentrality, "Centrality"};
     AxisSpec npvcontributorsbins = {axisNPvContributors, "NPvContributors"};
     AxisSpec mlscore0bins = {axisMlScore0, "Score 0"};
     AxisSpec mlscore1bins = {axisMlScore1, "Score 1"};

@@ -28,11 +28,7 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h> // needed for HFFilterHelpers, to be fixed
-#else
 #include <onnxruntime_cxx_api.h>
-#endif
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>

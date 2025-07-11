@@ -16,31 +16,49 @@
 ///         It works only for MC and adds the possibility to apply postcalibrations for MC.
 ///
 
-#include <map>
-#include <utility>
-#include <vector>
-#include <string>
-#include <unordered_map>
-
-#include <TPDGCode.h>
-
-// O2 includes
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "TOFBase/EventTimeMaker.h"
-
-// O2Physics includes
-#include "TableHelper.h"
-#include "MetadataHelper.h"
-#include "CollisionTypeHelper.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/CollisionTypeHelper.h"
+#include "Common/Core/MetadataHelper.h"
+#include "Common/Core/TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
-#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <DataFormatsTOF/ParameterContainers.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <PID/PIDTOF.h>
+#include <ReconstructionDataFormats/PID.h>
+#include <TOFBase/EventTimeMaker.h>
+
+#include <TGraph.h>
+#include <TH2.h>
+#include <TPDGCode.h>
+#include <TString.h>
+
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -48,7 +66,7 @@ using namespace o2::pid;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
-MetadataHelper metadataInfo;
+o2::common::core::MetadataHelper metadataInfo;
 
 // Input data types
 using Trks = o2::soa::Join<aod::TracksIU, aod::TracksExtra>;
@@ -82,14 +100,14 @@ struct TOFCalibConfig {
   }
 
   template <typename VType>
-  void getCfg(o2::framework::InitContext& initContext, const std::string name, VType& v, const std::string task)
+  void getCfg(o2::framework::InitContext& initContext, const std::string& name, VType& v, const std::string& task)
   {
     if (!getTaskOptionValue(initContext, task, name, v, false)) {
       LOG(fatal) << "Could not get " << name << " from " << task << " task";
     }
   }
 
-  void inheritFromBaseTask(o2::framework::InitContext& initContext, const std::string task = "tof-signal")
+  void inheritFromBaseTask(o2::framework::InitContext& initContext, const std::string& task = "tof-signal")
   {
     mInitMode = 2;
     getCfg(initContext, "ccdb-url", mUrl, task);
@@ -297,7 +315,7 @@ struct TOFCalibConfig {
   // Configurable options
   std::string mUrl;
   std::string mPathGrpLhcIf;
-  int64_t mTimestamp;
+  int64_t mTimestamp{0};
   std::string mTimeShiftCCDBPathPos;
   std::string mTimeShiftCCDBPathNeg;
   std::string mTimeShiftCCDBPathPosMC;
@@ -306,10 +324,10 @@ struct TOFCalibConfig {
   std::string mParametrizationPath;
   std::string mReconstructionPass;
   std::string mReconstructionPassDefault;
-  bool mFatalOnPassNotAvailable;
-  bool mEnableTimeDependentResponse;
-  int mCollisionSystem;
-  bool mAutoSetProcessFunctions;
+  bool mFatalOnPassNotAvailable{false};
+  bool mEnableTimeDependentResponse{false};
+  int mCollisionSystem{-1};
+  bool mAutoSetProcessFunctions{false};
 };
 
 // Part 1 TOF signal definition

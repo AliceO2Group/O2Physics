@@ -1206,7 +1206,7 @@ struct tofSpectra {
           return false;
         }
       }
-      return (std::abs(track.dcaXY()) <= (maxDcaXYFactor.value * (0.0105f + 0.0350f / pow(track.pt(), 1.1f))));
+      return (std::abs(track.dcaXY()) <= (maxDcaXYFactor.value * (0.0105f + 0.0350f / std::pow(track.pt(), 1.1f))));
     }
     return track.isGlobalTrack();
   }
@@ -1887,7 +1887,9 @@ struct tofSpectra {
     if (!isParticleEnabled<i>()) { // Check if the particle is enabled
       return;
     }
-
+    if (!collision.has_mcCollision()) {
+      return; // Skips processing if no corresponding MC collision is found (rare case!)
+    }
     const auto& mcCollision = collision.mcCollision_as<GenMCCollisions>();
     const float multiplicity = getMultiplicity(collision);
     const int occupancy = collision.trackOccupancyInTimeRange();

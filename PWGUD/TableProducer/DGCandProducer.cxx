@@ -12,20 +12,23 @@
 // \brief Saves relevant information of DG candidates
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
 
-#include <vector>
-#include <string>
-#include <map>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/Vertex.h"
+#include "PWGUD/Core/DGSelector.h"
+#include "PWGUD/Core/UPCHelpers.h"
+#include "PWGUD/DataModel/UDTables.h"
+
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
+
 #include "CCDB/BasicCCDBManager.h"
-#include "Common/CCDB/ctpRateFetcher.h"
-#include "PWGUD/DataModel/UDTables.h"
-#include "PWGUD/Core/UPCHelpers.h"
-#include "PWGUD/Core/DGSelector.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Vertex.h"
+
+#include <map>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -354,7 +357,7 @@ struct DGCandProducer {
                            fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                            fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                            fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
-      outputCollisionSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, occ, ir, trs, trofs, hmpr, tfb, itsROFb, sbp, zVtxFT0vPv, vtxITSTPC);
+      outputCollisionSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, occ, ir, trs, trofs, hmpr, tfb, itsROFb, sbp, zVtxFT0vPv, vtxITSTPC, collision.rct_raw());
       outputCollsLabels(collision.globalIndex());
 
       // update DGTracks tables

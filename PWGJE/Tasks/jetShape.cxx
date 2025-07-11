@@ -13,28 +13,24 @@
 /// \author Yuto Nishida <yuto.nishida@cern.ch>
 /// \brief Task for measuring the dependence of the jet shape function rho(r) on the distance r from the jet axis.
 
+#include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGJE/DataModel/JetSubtraction.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include <CommonConstants/MathConstants.h>
-#include <Framework/Configurable.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/runDataProcessing.h>
+#include "Framework/runDataProcessing.h"
 
 #include <cmath>
-#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -43,16 +39,24 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct JetShapeTask {
+
+  Configurable<int> nBinsTpcNSigma{"nBinsTpcNSigma", 101, "Number of TPC-nsigma bins"};
+  Configurable<float> tpcNSigmaMin{"tpcNSigmaMin", -10.1f, "Min value of Tpc-nsigma"};
+  Configurable<float> tpcNSigmaMax{"tpcNSigmaMax", 10.1f, "Max value of Tpc-nsigma"};
+  Configurable<int> nBinsTofNSigma{"nBinsTofNSigma", 10, "Number of TOF-nsigma bins"};
+  Configurable<float> tofNSigmaMin{"tofNSigmaMin", -10, "Min value of Tof-nsigma"};
+  Configurable<float> tofNSigmaMax{"tofNSigmaMax", 10, "Max value of Tof-nsigma"};
+
   HistogramRegistry registry{"registry",
-                             {{"tpcTofPi", "tpcTofPi", {HistType::kTHnSparseD, {{101, -10.1f, 10.1f}, {20, -10, 10}, {25, 0, 5}, {14, 0, 7}}}},
-                              {"tpcPi", "tpcPi", {HistType::kTH2F, {{100, 0, 5}, {401, -10.025f, 10.025f}}}},
-                              {"tofPi", "tofPi", {HistType::kTH2F, {{100, 0, 5}, {401, -10.025f, 10.025f}}}},
-                              {"tpcTofPr", "tpcTofPr", {HistType::kTHnSparseD, {{101, -10.1f, 10.1f}, {20, -10, 10}, {25, 0, 5}, {14, 0, 7}}}},
-                              {"tpcPr", "tpcPr", {HistType::kTH2F, {{100, 0, 5}, {401, -10.025f, 10.025f}}}},
-                              {"tofPr", "tofPr", {HistType::kTH2F, {{100, 0, 5}, {401, -10.025f, 10.025f}}}},
-                              {"tpcDedx", "tpcDedx", {HistType::kTH2F, {{500, 0, 5}, {1000, 0, 1000}}}},
-                              {"tofBeta", "tofBeta", {HistType::kTH2F, {{500, 0, 5}, {450, 0.2, 1.1}}}},
-                              {"tofMass", "tofMass", {HistType::kTH1F, {{3000, 0, 3}}}},
+                             {{"tpcTofPi", "tpcTofPi", {HistType::kTHnSparseD, {{nBinsTpcNSigma, tpcNSigmaMin, tpcNSigmaMax}, {nBinsTofNSigma, tofNSigmaMin, tofNSigmaMax}, {25, 0, 5}, {14, 0, 0.7}}}},
+                              {"tpcPi", "tpcPi", {HistType::kTH2F, {{100, 0, 5}, {101, -10.1f, 10.1f}}}},
+                              {"tofPi", "tofPi", {HistType::kTH2F, {{100, 0, 5}, {101, -10.1f, 10.1f}}}},
+                              {"tpcTofPr", "tpcTofPr", {HistType::kTHnSparseD, {{nBinsTpcNSigma, tpcNSigmaMin, tpcNSigmaMax}, {nBinsTofNSigma, tofNSigmaMin, tofNSigmaMax}, {25, 0, 5}, {14, 0, 0.7}}}},
+                              {"tpcPr", "tpcPr", {HistType::kTH2F, {{50, 0, 5}, {101, -10.1f, 10.1f}}}},
+                              {"tofPr", "tofPr", {HistType::kTH2F, {{50, 0, 5}, {101, -10.1f, 10.1f}}}},
+                              {"tpcDedx", "tpcDedx", {HistType::kTHnSparseD, {{100, 0, 5}, {500, 0, 1000}, {7, 0, 0.7}}}},
+                              {"tofBeta", "tofBeta", {HistType::kTHnSparseD, {{100, 0, 5}, {350, 0.4, 1.1}, {7, 0, 0.7}}}},
+                              {"tofMass", "tofMass", {HistType::kTH1F, {{300, 0, 3}}}},
                               {"jetPt", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
                               {"jetEta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
                               {"jetPhi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
@@ -261,8 +265,6 @@ struct JetShapeTask {
           continue;
 
         // PID check
-        registry.fill(HIST("tpcDedx"), track.pt(), track.tpcSignal());
-        registry.fill(HIST("tofBeta"), track.pt(), track.beta());
         registry.fill(HIST("tofMass"), track.mass());
 
         // for calculate purity
@@ -280,6 +282,8 @@ struct JetShapeTask {
         float distance = std::sqrt(deltaEta * deltaEta + deltaPhi1 * deltaPhi1);
 
         registry.fill(HIST("distanceVsTrackpt"), distance, track.pt());
+        registry.fill(HIST("tpcDedx"), track.pt(), track.tpcSignal(), distance);
+        registry.fill(HIST("tofBeta"), track.pt(), track.beta(), distance);
         registry.fill(HIST("tpcTofPi"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), distance);
         registry.fill(HIST("tpcTofPr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt(), distance);
       }

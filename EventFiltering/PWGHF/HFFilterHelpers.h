@@ -278,7 +278,7 @@ constexpr float massB0 = o2::constants::physics::MassB0;
 constexpr float massBs = o2::constants::physics::MassBS;
 constexpr float massLb = o2::constants::physics::MassLambdaB0;
 constexpr float massXib = o2::constants::physics::MassXiB0;
-constexpr float massBc = 6.2744700f; // TODO add Bc mass to o2::constants::physics
+constexpr float massBc = o2::constants::physics::MassBCPlus;
 constexpr float massSigmaCPlusPlus = o2::constants::physics::MassSigmaCPlusPlus;
 constexpr float massSigmaC0 = o2::constants::physics::MassSigmaC0;
 constexpr float massK0Star892 = o2::constants::physics::MassK0Star892;
@@ -594,12 +594,27 @@ class HfFilterHelper
       mSigmaPars3Prongs[1] = 0.00176f;
       mDeltaMassPars3Prongs[0] = -0.0025f;
       mDeltaMassPars3Prongs[1] = 0.0001f;
+    } else if (recoPass == "2025_pass1") {
+      mSigmaPars2Prongs[0] = 0.01424f;
+      mSigmaPars2Prongs[1] = 0.00178f;
+      mDeltaMassPars2Prongs[0] = -0.013f;
+      mDeltaMassPars2Prongs[1] = 0.00029f;
+      mSigmaPars3Prongs[0] = 0.00796f;
+      mSigmaPars3Prongs[1] = 0.00176f;
+      mDeltaMassPars3Prongs[0] = -0.013f;
+      mDeltaMassPars3Prongs[1] = 0.00029f;
     } else {
       LOGP(fatal, "Mass resolution parametrisation {} not supported! Please set 2023_pass3", recoPass.data());
     }
   }
 
   void setNumSigmaForDeltaMassCharmHadCut(float nSigma) { mNumSigmaDeltaMassCharmHad = nSigma; }
+
+  void setPreselDsToKKPi(std::vector<double> ptBins, o2::framework::LabeledArray<double> preselections)
+  {
+    mPtBinsPreselDsToKKPi = ptBins;
+    mPreselDsToKKPi = preselections;
+  }
 
   // helper functions for selections
   template <typename T>
@@ -790,6 +805,9 @@ class HfFilterHelper
   int mTpcPidCalibrationOption{0};                          // Option for TPC PID calibration (0 -> AO2D, 1 -> postcalibrations, 2 -> alternative bethe bloch parametrisation)
   std::array<TH3F*, 8> mHistMapPiPrKaDe{};                  // Map for TPC PID postcalibrations for pions, kaon, protons and deuterons
   std::array<std::vector<double>, 8> mBetheBlochPiKaPrDe{}; // Bethe-Bloch parametrisations for pions, antipions, kaons, antikaons, protons, antiprotons, deuterons, antideuterons in TPC
+  // Ds cuts from track-index-skim-creator
+  std::vector<double> mPtBinsPreselDsToKKPi{};           // pT bins for pre-selections for Ds from track-index-skim-creator
+  o2::framework::LabeledArray<double> mPreselDsToKKPi{}; // pre-selections for Ds from track-index-skim-creator
 };
 
 /// Selection of high-pt 2-prong candidates
@@ -1071,13 +1089,20 @@ inline int8_t HfFilterHelper::isDsPreselected(const P& pTrackSameChargeFirst, co
   }
 
   // check delta-mass for phi resonance
+  auto ptDs = RecoDecay::pt(pTrackSameChargeFirst, pTrackSameChargeSecond, pTrackOppositeCharge);
+  auto ptBinDs = findBin(mPtBinsPreselDsToKKPi, ptDs);
+  if (ptBinDs == -1) {
+    return retValue;
+  }
+
   auto invMassKKFirst = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge}, std::array{massKa, massKa});
   auto invMassKKSecond = RecoDecay::m(std::array{pTrackSameChargeSecond, pTrackOppositeCharge}, std::array{massKa, massKa});
 
-  if (std::fabs(invMassKKFirst - massPhi) < 0.02) {
+  float cutValueMassKK = mPreselDsToKKPi.get(ptBinDs, 4u);
+  if (std::fabs(invMassKKFirst - massPhi) < cutValueMassKK) {
     retValue |= BIT(0);
   }
-  if (std::fabs(invMassKKSecond - massPhi) < 0.02) {
+  if (std::fabs(invMassKKSecond - massPhi) < cutValueMassKK) {
     retValue |= BIT(1);
   }
 
