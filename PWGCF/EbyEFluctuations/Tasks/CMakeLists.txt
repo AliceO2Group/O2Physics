@@ -33,7 +33,7 @@ o2physics_add_dpl_workflow(antiproton-cumulants-mc
                     SOURCES antiprotonCumulantsMc.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
-		
+
 o2physics_add_dpl_workflow(event-mean-pt-id
                     SOURCES eventMeanPtId.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
@@ -66,5 +66,10 @@ o2physics_add_dpl_workflow(netcharge-fluctuations
 
 o2physics_add_dpl_workflow(nch-cumulants-id
                     SOURCES nchCumulantsId.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(v0pt-had-pi-ka-prot
+                    SOURCES v0ptHadPiKaProt.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
