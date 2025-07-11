@@ -85,7 +85,7 @@ typedef struct Str_dEdx_correction {
     fMatrix.SetMatrixArray(elements);
   }
 
-  float fReal_fTPCSignalN(std::vector<float>& vec1, std::vector<float>& vec2)
+  float fReal_fTPCSignalN(std::vector<float> vec1, std::vector<float> vec2)
   {
     float result = 0.f;
     // push 1.
