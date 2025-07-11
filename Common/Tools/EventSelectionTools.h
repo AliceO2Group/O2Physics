@@ -1395,14 +1395,20 @@ class LumiModule
       float sqrts = grplhcif->getSqrtS();
       int nCollidingBCs = grplhcif->getBunchFilling().getNBunches();
       bcPatternB = grplhcif->getBunchFilling().getBCPattern();
-
+      LOGP(info, "beamZ1={} beamZ2={} sqrts={}", beamZ1, beamZ2, sqrts);
       // visible cross sections in ub. Using dummy -1 if lumi estimator is not reliable for this colliding system
       csTVX = -1;
       csTCE = -1;
       csZEM = -1;
       csZNC = -1;
       // Temporary workaround to get visible cross section. TODO: store run-by-run visible cross sections in CCDB
-      if (beamZ1 == 1 && beamZ2 == 1) {
+      if (beamZ1 == 8 && beamZ2 == 1) {
+        csTVX = 0.3874e6; // eff(TVX) = 0.807 (based on LHC25e6f); sigma(INEL)=0.48b; arxiv:2507.05853
+      } else if (beamZ1 == 8 && beamZ2 == 8) {
+        csTVX = 1.2050e6; // eff(TVX) = 0.886 (based on LHC25e6b); sigma(INEL)=1.36b; arxiv:2507.05853
+      } else if (beamZ1 == 10 && beamZ2 == 10) {
+        csTVX = 1.5411e6; // eff(TVX) = 0.896 (based on LHC25e6g); sigma(INEL)=1.72b; arxiv:2507.05853
+      } else if (beamZ1 == 1 && beamZ2 == 1) {
         if (std::fabs(sqrts - 900.) < 100.) {          // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
           csTVX = 0.0357e6;                            // ub
         } else if (std::fabs(sqrts - 5360.) < 100.) {  // pp-ref     // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
