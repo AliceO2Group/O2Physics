@@ -95,7 +95,7 @@ static std::unordered_map<int8_t, std::unordered_map<int8_t, int8_t>> channelsRe
                                                                                            {Mother::Dplus, {{ResonantChannel::PhiPi, hf_decay::hf_cand_3prong::DecayChannelResonant::DplusToPhiPi}, {ResonantChannel::Kstar0K, hf_decay::hf_cand_3prong::DecayChannelResonant::DplusToKstar0K}}}}};
 
 template <typename T>
-concept hasDsMlInfo = requires(T candidate) {
+concept HasDsMlInfo = requires(T candidate) {
   candidate.mlProbDsToKKPi();
   candidate.mlProbDsToPiKK();
 };
@@ -468,7 +468,7 @@ struct HfTaskDs {
   /// \param candidate is candidate
   /// \param dataType is data class, as defined in DataType enum
   /// \param finalState is either KKPi or PiKK, as defined in FinalState enum
-  template <bool isMc, typename Coll, hasDsMlInfo Cand>
+  template <bool isMc, typename Coll, HasDsMlInfo Cand>
   void fillSparse(const Cand& candidate, DataType dataType, FinalState finalState)
   {
     auto mass = finalState == FinalState::KKPi ? hfHelper.invMassDsToKKPi(candidate) : hfHelper.invMassDsToPiKK(candidate);
@@ -596,13 +596,10 @@ struct HfTaskDs {
   {
 
     int id = o2::constants::physics::Pdg::kDS;
-    auto yCand = hfHelper.yDs(candidate);
     if (dataType == DataType::McDplusPrompt || dataType == DataType::McDplusNonPrompt || dataType == DataType::McDplusBkg) {
       id = o2::constants::physics::Pdg::kDPlus;
-      yCand = hfHelper.yDplus(candidate);
     } else if (dataType == DataType::McLcBkg) {
       id = o2::constants::physics::Pdg::kLambdaCPlus;
-      yCand = hfHelper.yLc(candidate);
     }
 
     auto indexMother = RecoDecay::getMother(mcParticles,
@@ -610,13 +607,14 @@ struct HfTaskDs {
                                             id, true);
 
     if (indexMother != -1) {
-      if (yCandRecoMax >= 0. && std::abs(yCand) > yCandRecoMax) {
-        return;
-      }
 
       auto pt = candidate.pt(); // rec. level pT
 
       if (candidate.isSelDsToKKPi() >= selectionFlagDs) { // KKPi
+        auto yCand = candidate.y(hfHelper.invMassDsToKKPi(candidate));
+        if (yCandRecoMax >= 0. && std::abs(yCand) > yCandRecoMax) {
+          return;
+        }
         fillHisto(candidate, dataType);
         fillHistoKKPi<true, Coll>(candidate, dataType);
 
@@ -631,6 +629,10 @@ struct HfTaskDs {
         }
       }
       if (candidate.isSelDsToPiKK() >= selectionFlagDs) { // PiKK
+        auto yCand = candidate.y(hfHelper.invMassDsToPiKK(candidate));
+        if (yCandRecoMax >= 0. && std::abs(yCand) > yCandRecoMax) {
+          return;
+        }
         fillHisto(candidate, dataType);
         fillHistoPiKK<true, Coll>(candidate, dataType);
 
@@ -651,15 +653,17 @@ struct HfTaskDs {
   template <typename Coll, typename CandDs>
   void runDataAnalysisPerCandidate(CandDs const& candidate)
   {
-    if (yCandRecoMax >= 0. && std::abs(hfHelper.yDs(candidate)) > yCandRecoMax) {
-      return;
-    }
-
     if (candidate.isSelDsToKKPi() >= selectionFlagDs) { // KKPi
+      if (yCandRecoMax >= 0. && std::abs(candidate.y(hfHelper.invMassDsToKKPi(candidate))) > yCandRecoMax) {
+        return;
+      }
       fillHisto(candidate, DataType::Data);
       fillHistoKKPi<false, Coll>(candidate, DataType::Data);
     }
     if (candidate.isSelDsToPiKK() >= selectionFlagDs) { // PiKK
+      if (yCandRecoMax >= 0. && std::abs(candidate.y(hfHelper.invMassDsToPiKK(candidate))) > yCandRecoMax) {
+        return;
+      }
       fillHisto(candidate, DataType::Data);
       fillHistoPiKK<false, Coll>(candidate, DataType::Data);
     }
@@ -687,16 +691,19 @@ struct HfTaskDs {
       }
     }
     if (isBkg && fillMcBkgHistos) {
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yDs(candidate)) > yCandRecoMax) {
-        return;
-      }
 
       if (candidate.isSelDsToKKPi() >= selectionFlagDs || candidate.isSelDsToPiKK() >= selectionFlagDs) {
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) { // KKPi
+          if (yCandRecoMax >= 0. && std::abs(candidate.y(hfHelper.invMassDsToKKPi(candidate))) > yCandRecoMax) {
+            return;
+          }
           fillHisto(candidate, DataType::McBkg);
           fillHistoKKPi<true, Coll>(candidate, DataType::McBkg);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) { // PiKK
+          if (yCandRecoMax >= 0. && std::abs(candidate.y(hfHelper.invMassDsToPiKK(candidate))) > yCandRecoMax) {
+            return;
+          }
           fillHisto(candidate, DataType::McBkg);
           fillHistoPiKK<true, Coll>(candidate, DataType::McBkg);
         }
