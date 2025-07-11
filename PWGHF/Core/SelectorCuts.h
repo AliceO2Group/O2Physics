@@ -736,6 +736,63 @@ static const std::vector<std::string> labelsPt = {
 static const std::vector<std::string> labelsCutVar = {"pT Ka from Omegac"};
 } // namespace hf_cuts_omegacxic_to_omega_ka
 
+namespace hf_cuts_xic_to_xi_pi
+{
+static constexpr int NBinsPt = 11;
+static constexpr int NCutVars = 28;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// offset by 1 from the bin numbers in cuts array
+constexpr double BinsPt[NBinsPt + 1] = {
+  0.0,
+  1.0,
+  2.0,
+  3.0,
+  4.0,
+  5.0,
+  6.0,
+  8.0,
+  10.0,
+  12.0,
+  16.0,
+  24.0};
+
+auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+
+// default values for the cuts
+constexpr double Cuts[NBinsPt][NCutVars] = {{0.2, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 0 < pt < 1 */
+                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 1 < pt < 2 */
+                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 2 < pt < 3 */
+                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 3 < pt < 4 */
+                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 4 < pt < 5 */
+                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 5 < pt < 6 */
+                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 6 < pt < 8 */
+                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 8 < pt < 10 */
+                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 10 < pt < 12 */
+                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4},  /* 12 < pt < 16 */
+                                            {0.5, 0.99, 0.97, 0.99, 0.99, 0.1, 0.2, 1.0, 0.04, 0.06, 0.06, 0.05, 0.3, 70, 60, 100, 120, 250, 250, 0.4, 100, 300, 0., 0., 1.5, 0., 0., 0.4}}; /* 16 < pt < 24 */
+
+// row labels
+static const std::vector<std::string> labelsPt = {
+  "pT bin 0",
+  "pT bin 1",
+  "pT bin 2",
+  "pT bin 3",
+  "pT bin 4",
+  "pT bin 5",
+  "pT bin 6",
+  "pT bin 7",
+  "pT bin 8",
+  "pT bin 9",
+  "pT bin 10"};
+
+// column labels
+static const std::vector<std::string> labelsCutVar = {"ptPiFromCharmBaryon", "cosPACasc", "cosPAV0", "cosPaCascToXic", "cosPaV0ToCasc",
+                                                      "dcaCharmBaryonDau", "dcaCascDau", "dcaV0Dau", "dcaXYToPvCascDau", "dcaXYToPvV0Dau0", "dcaXYToPvV0Dau1", "kfDcaXYPiFromXic", "kfDcaXYCascToPv",
+                                                      "chi2GeoXic", "chi2GeoCasc", "chi2GeoV0",
+                                                      "chi2TopoXicToPv", "chi2TopoPiFromXicToPv", "chi2TopoCascToPv", "chi2TopoV0ToPv", "chi2TopoV0ToCasc", "chi2TopoCascToXic",
+                                                      "cascldl", "v0ldl", "decayLenXYXic", "decayLenXYCasc", "decayLenXYLambda", "cTauXic"};
+} // namespace hf_cuts_xic_to_xi_pi
+
 namespace hf_cuts_xic_to_p_k_pi
 {
 static constexpr int NBinsPt = 10;
