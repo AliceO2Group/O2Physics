@@ -55,8 +55,12 @@ struct spectraKinkPiKa {
   Configurable<float> cutNSigmaPi{"cutNSigmaPi", 4, "NSigmaTPCPion"};
   Configurable<float> cutNSigmaKa{"cutNSigmaKa", 4, "NSigmaTPCKaon"};
   Configurable<float> rapCut{"rapCut", 0.8, "rapCut"};
+  Configurable<float> kinkanglecut{"kinkanglecut", 2.0, "kinkanglecut"};
+  Configurable<float> minradius{"minradius", 1.0, "minradiuscut"};
+  Configurable<float> maxradius{"maxradius", 200.0, "maxradiuscut"};
 
   Configurable<int> pid{"pidMother", 321, ""};
+  Configurable<int> dpid{"pidDaughter", 13, ""};
   Configurable<bool> d0pid{"dopid", 0, ""};
 
   Preslice<aod::KinkCands> mPerCol = aod::track::collisionId;
@@ -68,10 +72,11 @@ struct spectraKinkPiKa {
     const AxisSpec qtAxis{2000, 0, 2, "#it{q}_{T} (GeV/#it{c})"};
     const AxisSpec kinkAxis{200, 0, 4, "#theta"};
     const AxisSpec etaAxis{200, -5.0, 5.0, "#eta"};
-    const AxisSpec vertexZAxis{100, -15., 15., "vrtx_{Z} [cm]"};
+    const AxisSpec vertexAxis{1200, -300., 300., "vrtx [cm]"};
+    const AxisSpec radiusAxis{600, 0., 300., "vrtx [cm]"};
 
     // Event selection
-    rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
+    rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexAxis}});
 
     rpiKkink.add("h2_dau_pt_vs_eta_rec", "pt_vs_eta_dau", {HistType::kTH2F, {ptAxis, etaAxis}});
     rpiKkink.add("h2_moth_pt_vs_eta_rec", "pt_vs_eta_moth", {HistType::kTH2F, {ptAxis, etaAxis}});
@@ -90,6 +95,11 @@ struct spectraKinkPiKa {
     rpiKkink.add("h2_qt_pion", "qt", {HistType::kTH1F, {qtAxis}});
     rpiKkink.add("h2_qt_vs_ptpion", "qt_pt", {HistType::kTH2F, {qtAxis, ptAxis}});
     rpiKkink.add("h2_kink_angle_pion", "kink angle", {HistType::kTH1F, {kinkAxis}});
+
+    // track qa
+
+    rpiKkink.add("h2_kinkradius_vs_vz", "kink radius_vz", {HistType::kTH2F, {vertexAxis, radiusAxis}});
+    rpiKkink.add("h2_kink_vx_vs_vy", "kink vx vs vz ", {HistType::kTH2F, {vertexAxis, vertexAxis}});
 
     if (doprocessMC) {
       rpiKkink.add("h2_dau_pt_vs_eta_gen", "pt_vs_eta_dau", {HistType::kTH2F, {ptAxis, etaAxis}});
@@ -113,7 +123,6 @@ struct spectraKinkPiKa {
     if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return;
     }
-
     rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
     for (const auto& kinkCand : KinkCands) {
       auto dauTrack = kinkCand.trackDaug_as<TracksFull>();
@@ -126,8 +135,15 @@ struct spectraKinkPiKa {
       if (std::abs(mothTrack.tpcNSigmaPi()) < cutNSigmaPi) {
         pion = true;
       }
-      if (!kaon && !pion)
+      if (!kaon && !pion) {
         continue;
+      }
+      double radiusxy = std::sqrt(kinkCand.xDecVtx() * kinkCand.xDecVtx() + kinkCand.yDecVtx() * kinkCand.yDecVtx());
+      if (radiusxy < minradius || radiusxy > maxradius)
+        continue;
+      rpiKkink.fill(HIST("h2_kinkradius_vs_vz"), kinkCand.zDecVtx(), radiusxy);
+      rpiKkink.fill(HIST("h2_kink_vx_vs_vy"), kinkCand.xDecVtx(), kinkCand.yDecVtx());
+
       v0.SetCoordinates(mothTrack.px(), mothTrack.py(), mothTrack.pz(), o2::constants::physics::MassPionCharged);
       v1.SetCoordinates(dauTrack.px(), dauTrack.py(), dauTrack.pz(), o2::constants::physics::MassMuon);
 
@@ -135,6 +151,9 @@ struct spectraKinkPiKa {
       float pDaug = v1.P();
       float spKink = mothTrack.px() * dauTrack.px() + mothTrack.py() * dauTrack.py() + mothTrack.pz() * dauTrack.pz();
       float kinkangle = std::acos(spKink / (pMoth * pDaug));
+      float radToDeg = o2::constants::math::Rad2Deg;
+      if (kinkangle * radToDeg < kinkanglecut)
+        continue;
       if (kaon) {
         rpiKkink.fill(HIST("h2_moth_pt_vs_eta_rec"), v0.Pt(), v0.Eta());
         rpiKkink.fill(HIST("h2_dau_pt_vs_eta_rec"), v1.Pt(), v1.Eta());
@@ -194,6 +213,11 @@ struct spectraKinkPiKa {
         }
         if (!kaon && !pion)
           continue;
+        double radiusxy = std::sqrt(kinkCand.xDecVtx() * kinkCand.xDecVtx() + kinkCand.yDecVtx() * kinkCand.yDecVtx());
+        if (radiusxy < minradius || radiusxy > maxradius)
+          continue;
+        rpiKkink.fill(HIST("h2_kinkradius_vs_vz"), kinkCand.zDecVtx(), radiusxy);
+        rpiKkink.fill(HIST("h2_kink_vx_vs_vy"), kinkCand.xDecVtx(), kinkCand.yDecVtx());
 
         v0.SetCoordinates(mothTrack.px(), mothTrack.py(), mothTrack.pz(), o2::constants::physics::MassPionCharged);
         v1.SetCoordinates(dauTrack.px(), dauTrack.py(), dauTrack.pz(), o2::constants::physics::MassMuon);
@@ -202,6 +226,9 @@ struct spectraKinkPiKa {
         float pDaug = v1.P();
         float spKink = mothTrack.px() * dauTrack.px() + mothTrack.py() * dauTrack.py() + mothTrack.pz() * dauTrack.pz();
         float kinkangle = std::acos(spKink / (pMoth * pDaug));
+        float radToDeg = o2::constants::math::Rad2Deg;
+        if (kinkangle * radToDeg < kinkanglecut)
+          continue;
 
         rpiKkink.fill(HIST("h2_moth_pt_vs_eta_rec"), v0.Pt(), v0.Eta());
         rpiKkink.fill(HIST("h2_dau_pt_vs_eta_rec"), v1.Pt(), v1.Eta());
@@ -228,10 +255,9 @@ struct spectraKinkPiKa {
             if (piMother.globalIndex() != mcTrackMoth.globalIndex()) {
               continue;
             }
-            if (std::abs(mcTrackMoth.pdgCode()) != pid || std::abs(mcTrackDau.pdgCode()) != kMuonPlus) {
+            if (std::abs(mcTrackMoth.pdgCode()) != pid || std::abs(mcTrackDau.pdgCode()) != dpid) {
               continue;
             }
-            // rpiKkink.fill(HIST("h2MassPtMCRec"), kinkCand.ptMoth(),   v1.Pt());
             rpiKkink.fill(HIST("h2_qt_rec"), ptd);
           }
         }
@@ -240,20 +266,19 @@ struct spectraKinkPiKa {
     for (const auto& mcPart : particlesMC) {
       ROOT::Math::PxPyPzMVector v0;
       ROOT::Math::PxPyPzMVector v1;
-
       if (!d0pid && (std::abs(mcPart.pdgCode()) != pid || std::abs(mcPart.y()) > rapCut)) {
         continue;
       }
-      if (d0pid && (std::abs(mcPart.pdgCode()) != kD0 || std::abs(mcPart.pdgCode()) != kDPlus || std::abs(mcPart.pdgCode()) != kDStar || std::abs(mcPart.y()) > rapCut)) {
+      bool isDmeson = std::abs(mcPart.pdgCode()) == kD0 || std::abs(mcPart.pdgCode()) == kDPlus || std::abs(mcPart.pdgCode()) == kDStar;
+      if (d0pid && (!isDmeson || std::abs(mcPart.y()) > rapCut)) {
         continue;
       }
-
       if (!mcPart.has_daughters()) {
         continue; // Skip if no daughters
       }
       bool hasKaonpionDaughter = false;
       for (const auto& daughter : mcPart.daughters_as<aod::McParticles>()) {
-        if (std::abs(daughter.pdgCode()) == kMuonPlus) { // muon PDG code
+        if (std::abs(daughter.pdgCode()) == dpid) { // muon PDG code
           hasKaonpionDaughter = true;
           v1.SetCoordinates(daughter.px(), daughter.py(), daughter.pz(), o2::constants::physics::MassMuon);
           break; // Found a muon daughter, exit loop
@@ -262,28 +287,27 @@ struct spectraKinkPiKa {
       if (!hasKaonpionDaughter) {
         continue; // Skip if no muon daughter found
       }
-      if (pid == kKPlus) {
+      if (!d0pid && pid == kKPlus) {
         v0.SetCoordinates(mcPart.px(), mcPart.py(), mcPart.pz(), o2::constants::physics::MassKaonCharged);
       }
 
-      if (pid == kPiPlus) {
+      if (!d0pid && pid == kPiPlus) {
         v0.SetCoordinates(mcPart.px(), mcPart.py(), mcPart.pz(), o2::constants::physics::MassPionCharged);
       }
       if (d0pid) {
         v0.SetCoordinates(mcPart.px(), mcPart.py(), mcPart.pz(), o2::constants::physics::MassD0);
       }
-
       float pMoth = v0.P();
       float pDaug = v1.P();
       float spKink = v0.Px() * v1.Px() + v0.Py() * v1.Py() + v0.Pz() * v1.Pz();
       float kinkangle = std::acos(spKink / (pMoth * pDaug));
-
-      //  std::cout<< kinkCand.ptMoth()<<" check   "<<v0.Pt()<<std::endl;
+      float radToDeg = o2::constants::math::Rad2Deg;
+      if (kinkangle * radToDeg < kinkanglecut)
+        continue;
       rpiKkink.fill(HIST("h2_moth_pt_vs_eta_gen"), v0.Pt(), v0.Eta());
       rpiKkink.fill(HIST("h2_dau_pt_vs_eta_gen"), v1.Pt(), v1.Eta());
       rpiKkink.fill(HIST("h2_pt_moth_vs_dau_gen"), v0.Pt(), v1.Pt());
       rpiKkink.fill(HIST("h2_kink_angle_gen"), kinkangle);
-
       TVector3 pdlab(v1.Px(), v1.Py(), v1.Pz());
       // Compute transverse component
       TVector3 motherDir(v0.Px(), v0.Py(), v0.Pz());
