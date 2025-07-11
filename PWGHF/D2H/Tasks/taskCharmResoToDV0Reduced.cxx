@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file taskCharmResoReduced.cxx
-/// \brief Charmed Resonances analysis task
+/// \file taskCharmResoToDV0Reduced.cxx
+/// \brief Charmed Resonances decaying in a D meson and a V0 analysis task
 ///
 /// \author Luca Aglietta <luca.aglietta@cern.ch>, University and INFN Torino
 
@@ -279,9 +279,9 @@ struct HfTaskCharmResoToDV0Reduced {
           return;
         }
       }
-      if (origin == 1) {
+      if (origin == RecoDecay::OriginType::Prompt) {
         registry.fill(HIST("hYRecPrompt"), candidate.pt(), y);
-      } else if (origin == 2) {
+      } else if (origin == RecoDecay::OriginType::NonPrompt) {
         registry.fill(HIST("hYRecNonPrompt"), candidate.pt(), y);
       }
     }
@@ -462,12 +462,12 @@ struct HfTaskCharmResoToDV0Reduced {
       if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
         continue;
       }
-      if (originParticle == 1) { // prompt particles
+      if (originParticle == RecoDecay::OriginType::Prompt) { // prompt particles
         registry.fill(HIST("hYGenPrompt"), ptParticle, yParticle);
         if (prongsInAcc) {
           registry.fill(HIST("hYGenPromptWithProngsInAcceptance"), ptParticle, yParticle);
         }
-      } else if (originParticle == 2) {
+      } else if (originParticle == RecoDecay::OriginType::NonPrompt) {
         registry.fill(HIST("hYGenNonPrompt"), ptParticle, yParticle);
         if (prongsInAcc) {
           registry.fill(HIST("hYGenNonPromptWithProngsInAcceptance"), ptParticle, yParticle);
