@@ -11,7 +11,12 @@
 
 #include "ZorroSummary.h"
 
-#include "TCollection.h"
+#include <TCollection.h>
+#include <TObject.h>
+
+#include <RtypesCore.h>
+
+#include <cstddef>
 
 void ZorroSummary::Copy(TObject& c) const
 {
@@ -42,7 +47,7 @@ Long64_t ZorroSummary::Merge(TCollection* list)
         mTOIcounters[runNumber] = entry->getTOIcounters().at(runNumber);
       } else {
         auto& thisCounters = mAnalysedTOIcounters[runNumber];
-        for (size_t i = 0; i < thisCounters.size(); ++i) {
+        for (std::size_t i = 0; i < thisCounters.size(); ++i) {
           thisCounters[i] += currentAnalysedToiCounters[i];
         }
       }

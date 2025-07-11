@@ -13,7 +13,8 @@
 #ifndef EVENTFILTERING_ZORROHELPER_H_
 #define EVENTFILTERING_ZORROHELPER_H_
 
-#include "Rtypes.h"
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 struct ZorroHelper {
   ULong64_t bcAOD, bcEvSel, trigMask[2], selMask[2];
