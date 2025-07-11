@@ -507,7 +507,7 @@ struct HfTaskXic0XicpToHadronic {
 	//										  //
 	////////////////////////////////////////////
 	
-	Filter filterSelectCandidates = (aod::hf_sel_xic0_xicp_to_hadronic::isSelXic0ToXiPi >= configs.selectionFlagXic0Xicp);
+	Filter filterSelectCandidates = (aod::hf_sel_xic0_xicp_to_hadronic::xic0::isSelXic0ToXiPi >= configs.selectionFlagXic0Xicp);
 
 	void processXic0WithDCAFitter(soa::Filtered<soa::Join<aod::HfCandXic0, aod::HfSelXic0ToXiPi>> const& candidates)
 	{
