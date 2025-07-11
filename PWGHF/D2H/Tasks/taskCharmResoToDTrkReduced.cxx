@@ -136,7 +136,7 @@ enum DecayChannel : uint8_t {
 struct HfTaskCharmResoToDTrkReduced {
   Produces<aod::HfCandDTrkLites> hfCandResoLite;
   Produces<aod::HfGenResoLites> hfGenResoLite;
-  
+
   using ReducedReso2PrTrk = soa::Join<aod::HfCandCharmReso, aod::Hf2PrTrkIds>;
   using ReducedReso2PrTrkMC = soa::Join<aod::HfCandCharmReso, aod::Hf2PrTrkIds, aod::HfMcRecRedResos>;
 
