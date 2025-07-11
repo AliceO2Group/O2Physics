@@ -18,10 +18,13 @@
 #define TOOLS_PIDML_PIDONNXINTERFACE_H_
 
 #include "Tools/PIDML/pidOnnxModel.h"
-
+//
+#include <CCDB/CcdbApi.h>
 #include <Framework/Array2D.h>
+#include <Framework/Logger.h>
 
-#include <array>
+#include <cstddef>
+#include <cstdint>
 #include <set>
 #include <string>
 #include <vector>

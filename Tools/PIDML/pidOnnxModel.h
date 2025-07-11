@@ -18,16 +18,19 @@
 #define TOOLS_PIDML_PIDONNXMODEL_H_
 
 #include "Tools/PIDML/pidUtils.h"
-
+//
 #include <CCDB/CcdbApi.h>
 #include <Framework/ASoA.h>
+#include <Framework/Logger.h>
 
+#include <onnxruntime_c_api.h>
 #include <onnxruntime_cxx_api.h>
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
 
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -35,8 +38,8 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <string>
-#include <type_traits>
 #include <utility>
 #include <vector>
 

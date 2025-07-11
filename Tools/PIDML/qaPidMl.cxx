@@ -16,18 +16,26 @@
 
 #include "Tools/PIDML/pidOnnxModel.h"
 //
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include <CCDB/CcdbApi.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/StaticFor.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TPDGCode.h>
-#include <TParameter.h>
 
+#include <cstddef>
 #include <string>
+#include <string_view>
 
 using namespace o2;
 using namespace o2::framework;

@@ -19,18 +19,33 @@
 #include "Tools/PIDML/pidOnnxModel.h"
 #include "Tools/PIDML/pidUtils.h"
 //
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/CcdbApi.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/StaticFor.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
+
 #include <algorithm>
+#include <array>
+#include <cmath>
 #include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <limits>
+#include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
