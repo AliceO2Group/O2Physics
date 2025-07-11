@@ -339,7 +339,8 @@ struct Phik0shortanalysis {
     mcEventHist.add("h2RecMCEtaDistribution", "Eta vs multiplicity in MCReco", kTH2F, {binnedmultAxis, etaAxis});
     mcEventHist.add("h2GenMCEtaDistribution", "Eta vs multiplicity in MCGen", kTH2F, {binnedmultAxis, etaAxis});
     mcEventHist.add("h2GenMCEtaDistributionAssocReco", "Eta vs multiplicity in MCGen Assoc Reco", kTH2F, {binnedmultAxis, etaAxis});
-    mcEventHist.add("h2GenMCEtaDistributionAssocReco2", "Eta vs multiplicity in MCGen Assoc Reco", kTH2F, {binnedmultAxis, etaAxis});
+    mcEventHist.add("h2GenMCEtaDistributionReco", "Eta vs multiplicity in MCGen Reco", kTH2F, {binnedmultAxis, etaAxis});
+    mcEventHist.add("h2GenMCEtaDistributionRecoCheck", "Eta vs multiplicity in MCGen Reco Check", kTH2F, {binnedmultAxis, etaAxis});
 
     // Phi topological/PID cuts
     dataPhiHist.add("h2DauTracksPhiDCAxyPreCutData", "Dcaxy distribution vs pt before DCAxy cut", kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
@@ -592,9 +593,13 @@ struct Phik0shortanalysis {
     mcK0SHist.add("h3K0SMCGenAssocRecoNewProc", "K0S in MCGen Associated MCReco", kTH3F, {binnedmultAxis, pTK0SAxis, yAxis});
     mcPionHist.add("h3PiMCGenAssocRecoNewProc", "Pion in MCGen Associated MCReco", kTH3F, {binnedmultAxis, pTPiAxis, yAxis});
 
-    mcPhiHist.add("h3PhiMCGenAssocRecoCheckNewProc", "Phi in MCGen Associated MCReco Check", kTH3F, {binnedmultAxis, pTPhiAxis, yAxis});
-    mcK0SHist.add("h3K0SMCGenAssocRecoCheckNewProc", "K0S in MCGen Associated MCReco Check", kTH3F, {binnedmultAxis, pTK0SAxis, yAxis});
-    mcPionHist.add("h3PiMCGenAssocRecoCheckNewProc", "Pion in MCGen Associated MCReco Check", kTH3F, {binnedmultAxis, pTPiAxis, yAxis});
+    mcPhiHist.add("h3PhiMCGenRecoNewProc", "Phi in MCGen MCReco", kTH3F, {binnedmultAxis, pTPhiAxis, yAxis});
+    mcK0SHist.add("h3K0SMCGenRecoNewProc", "K0S in MCGen MCReco", kTH3F, {binnedmultAxis, pTK0SAxis, yAxis});
+    mcPionHist.add("h3PiMCGenRecoNewProc", "Pion in MCGen MCReco", kTH3F, {binnedmultAxis, pTPiAxis, yAxis});
+
+    mcPhiHist.add("h3PhiMCGenRecoCheckNewProc", "Phi in MCGen MCReco Check", kTH3F, {binnedmultAxis, pTPhiAxis, yAxis});
+    mcK0SHist.add("h3K0SMCGenRecoCheckNewProc", "K0S in MCGen MCReco Check", kTH3F, {binnedmultAxis, pTK0SAxis, yAxis});
+    mcPionHist.add("h3PiMCGenRecoCheckNewProc", "Pion in MCGen MCReco Check", kTH3F, {binnedmultAxis, pTPiAxis, yAxis});
 
     // Initialize CCDB only if purity or efficiencies are requested in the task
     if (useCCDB) {
@@ -2405,7 +2410,7 @@ struct Phik0shortanalysis {
       if (pdgTrack->Charge() == trackConfigs.cfgCutCharge)
         continue;
 
-      mcEventHist.fill(HIST("h2GenMCEtaDistributionAssocReco"), genmultiplicity, mcParticle.eta());
+      mcEventHist.fill(HIST("h2GenMCEtaDistributionRecoCheck"), genmultiplicity, mcParticle.eta());
     }
   }
 
@@ -2420,17 +2425,32 @@ struct Phik0shortanalysis {
     if (!eventHasMCPhi(mcParticles))
       return;
 
-    bool isAssocColl = false;
+    float genmultiplicity = mcCollision.centFT0M();
+
+    uint64_t numberAssocColl = 0;
     for (const auto& collision : collisions) {
       if (acceptEventQA<true>(collision, false)) {
-        isAssocColl = true;
-        break;
+        mcEventHist.fill(HIST("hGenMCRecoMultiplicityPercent"), genmultiplicity);
+
+        for (const auto& mcParticle : mcParticles) {
+          if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.eta()) > trackConfigs.etaMax)
+            continue;
+
+          auto pdgTrack = pdgDB->GetParticle(mcParticle.pdgCode());
+          if (pdgTrack == nullptr)
+            continue;
+          if (pdgTrack->Charge() == trackConfigs.cfgCutCharge)
+            continue;
+
+          mcEventHist.fill(HIST("h2GenMCEtaDistributionReco"), genmultiplicity, mcParticle.eta());
+        }
+
+        numberAssocColl++;
       }
     }
 
-    float genmultiplicity = mcCollision.centFT0M();
     mcEventHist.fill(HIST("hGenMCMultiplicityPercent"), genmultiplicity);
-    if (isAssocColl)
+    if (numberAssocColl > 0)
       mcEventHist.fill(HIST("hGenMCAssocRecoMultiplicityPercent"), genmultiplicity);
 
     for (const auto& mcParticle : mcParticles) {
@@ -2444,8 +2464,8 @@ struct Phik0shortanalysis {
         continue;
 
       mcEventHist.fill(HIST("h2GenMCEtaDistribution"), genmultiplicity, mcParticle.eta());
-      if (isAssocColl)
-        mcEventHist.fill(HIST("h2GenMCEtaDistributionAssocReco2"), genmultiplicity, mcParticle.eta());
+      if (numberAssocColl > 0)
+        mcEventHist.fill(HIST("h2GenMCEtaDistributionAssocReco"), genmultiplicity, mcParticle.eta());
     }
   }
 
@@ -2828,7 +2848,7 @@ struct Phik0shortanalysis {
       if (mcParticle.pt() < minPhiPt)
         continue;
 
-      mcPhiHist.fill(HIST("h3PhiMCGenAssocRecoCheckNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+      mcPhiHist.fill(HIST("h3PhiMCGenRecoCheckNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
 
       // K0S selection
       if (mcParticle.pdgCode() != PDG_t::kK0Short)
@@ -2836,7 +2856,7 @@ struct Phik0shortanalysis {
       if (!mcParticle.isPhysicalPrimary() || mcParticle.pt() < v0Configs.v0SettingMinPt)
         continue;
 
-      mcK0SHist.fill(HIST("h3K0SMCGenAssocRecoCheckNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+      mcK0SHist.fill(HIST("h3K0SMCGenRecoCheckNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
 
       // Pion selection
       if (std::abs(mcParticle.pdgCode()) != PDG_t::kPiPlus)
@@ -2844,7 +2864,7 @@ struct Phik0shortanalysis {
       if (!mcParticle.isPhysicalPrimary() || mcParticle.pt() < trackConfigs.cMinPionPtcut)
         continue;
 
-      mcPionHist.fill(HIST("h3PiMCGenAssocRecoCheckNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+      mcPionHist.fill(HIST("h3PiMCGenRecoCheckNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
     }
   }
 
@@ -2863,6 +2883,35 @@ struct Phik0shortanalysis {
     for (const auto& collision : collisions) {
       if (acceptEventQA<true>(collision, false)) {
         mcEventHist.fill(HIST("hGenMCRecoMultiplicityPercent"), genmultiplicity); // Event split numerator
+
+        for (const auto& mcParticle : mcParticles) {
+          // The inclusive number of particles is the signal loss denominator,
+          //  while the number of associated particles is the signal loss numerator
+          if (std::abs(mcParticle.y()) > cfgYAcceptance)
+            continue;
+
+          // Phi selection
+          if (mcParticle.pdgCode() != o2::constants::physics::Pdg::kPhi)
+            continue;
+          if (mcParticle.pt() < minPhiPt)
+            continue;
+          mcPhiHist.fill(HIST("h3PhiMCGenRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+
+          // K0S selection
+          if (mcParticle.pdgCode() != PDG_t::kK0Short)
+            continue;
+          if (!mcParticle.isPhysicalPrimary() || mcParticle.pt() < v0Configs.v0SettingMinPt)
+            continue;
+          mcK0SHist.fill(HIST("h3K0SMCGenRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+
+          // Pion selection
+          if (std::abs(mcParticle.pdgCode()) != PDG_t::kPiPlus)
+            continue;
+          if (!mcParticle.isPhysicalPrimary() || mcParticle.pt() < trackConfigs.cMinPionPtcut)
+            continue;
+          mcPionHist.fill(HIST("h3PiMCGenRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+        }
+
         numberAssocColl++;
       }
     }
