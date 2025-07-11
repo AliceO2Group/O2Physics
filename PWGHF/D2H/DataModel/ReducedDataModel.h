@@ -215,6 +215,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(EtaProng1, etaProng1, //!
                            [](float pxProng1, float pyProng1, float pzProng1) -> float { return RecoDecay::eta(std::array<float, 3>{pxProng1, pyProng1, pzProng1}); });
 DECLARE_SOA_DYNAMIC_COLUMN(EtaProng2, etaProng2, //!
                            [](float pxProng2, float pyProng2, float pzProng2) -> float { return RecoDecay::eta(std::array<float, 3>{pxProng2, pyProng2, pzProng2}); });
+DECLARE_SOA_DYNAMIC_COLUMN(PVector, pVector, //! 3-momentum vector
+                           [](float px, float py, float pz) -> std::array<float, 3> { return {px, py, pz}; });
 } // namespace hf_track_vars_reduced
 
 namespace hf_b_to_jpsi_track_vars_reduced
@@ -1274,7 +1276,8 @@ DECLARE_SOA_TABLE(HfRedTrkNoParams, "AOD", "HFREDTRKNOPARAM", //! Table with tra
                   hf_track_vars_reduced::Phi<hf_track_vars_reduced::Px, hf_track_vars_reduced::Py>,
                   hf_track_pid_reduced::TPCTOFNSigmaPi<pidtpc::TPCNSigmaPi, pidtof::TOFNSigmaPi>,
                   hf_track_pid_reduced::TPCTOFNSigmaKa<pidtpc::TPCNSigmaKa, pidtof::TOFNSigmaKa>,
-                  hf_track_pid_reduced::TPCTOFNSigmaPr<pidtpc::TPCNSigmaPr, pidtof::TOFNSigmaPr>);
+                  hf_track_pid_reduced::TPCTOFNSigmaPr<pidtpc::TPCNSigmaPr, pidtof::TOFNSigmaPr>,
+                  hf_track_vars_reduced::PVector<hf_track_vars_reduced::Px, hf_track_vars_reduced::Py, hf_track_vars_reduced::Pz>);
 
 DECLARE_SOA_TABLE(HfRed3PrNoTrks, "AOD", "HFRED3PRNOTRK", //! Table with 3 prong candidate information for resonances reduced workflow
                   o2::soa::Index<>,
@@ -1371,12 +1374,12 @@ namespace hf_reso_cand_reduced
 DECLARE_SOA_COLUMN(InvMass, invMass, float);             //! Invariant mass in GeV/c2
 DECLARE_SOA_COLUMN(InvMassProng0, invMassProng0, float); //! Invariant Mass of D daughter in GeV/c
 DECLARE_SOA_COLUMN(InvMassProng1, invMassProng1, float); //! Invariant Mass of V0/Tr daughter in GeV/c
-DECLARE_SOA_COLUMN(Sign, sign, int8_t);                   //! Sign of the Resonance candidate
-DECLARE_SOA_COLUMN(BachSignProduct, bachSignProduct, int8_t); //! Product of the bachelors signs
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);                  //! Sign of the Resonance candidate
+DECLARE_SOA_COLUMN(IsWrongSign, isWrongSign, int8_t);    //! Flag for wrong sign of the Resonance candidate, 1 = wrong sign, 0 = right sign
 
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);               // flag for resonance decay channel classification reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchRecD, flagMcMatchRecD, int8_t);             // flag for D meson bachelor decay channel classification reconstruction level
-DECLARE_SOA_COLUMN(FlagMcMatchChanD, flagMcDecayChanD, int8_t);           // flag for D meson resonant channel classification reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchChanD, flagMcMatchChanD, int8_t);           // flag for D meson resonant channel classification reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);               // flag for decay channel classification generator level
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, uint16_t);                       // debug flag for mis-association at reconstruction level
 DECLARE_SOA_COLUMN(Origin, origin, int8_t);                               // Flag for origin of MC particle 1=promt, 2=FD
@@ -1425,7 +1428,7 @@ DECLARE_SOA_TABLE(HfCandCharmReso, "AOD", "HFCANDCHARMRESO", //! Table with Reso
                   hf_reso_cand_reduced::InvMassProng0,
                   hf_reso_cand_reduced::InvMassProng1,
                   hf_reso_cand_reduced::Sign,
-                  hf_reso_cand_reduced::BachSignProduct,
+                  hf_reso_cand_reduced::IsWrongSign,
                   // Dynamic
                   hf_reso_cand_reduced::Pt<hf_cand::PxProng0, hf_cand::PxProng1, hf_cand::PyProng0, hf_cand::PyProng1>,
                   hf_reso_cand_reduced::PtProng0<hf_cand::PxProng0, hf_cand::PyProng0>,

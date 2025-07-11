@@ -18,6 +18,7 @@
 #include "PWGHF/D2H/Core/SelectorCutsRedDataFormat.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
+#include "PWGHF/Utils/utilsMcMatching.h"
 
 #include "Common/Core/RecoDecay.h"
 
@@ -349,10 +350,10 @@ struct HfCandidateCreatorCharmResoReduced {
                         int selectionFlag)
   { 
     std::vector<std::array<float, 3>> pVectorCharmProngs = {candD.pVectorProng0(), candD.pVectorProng1()};
-    std::array<float, 3> pVecD = {candD.px(), candD.py(), candD.pz()};
-    std::array<float, 3> pVecV0Tr = {candV0Tr.px(), candV0Tr.py(), candV0Tr.pz()};
-    float invMassReso, invMassV0Tr, invMassD;
-    int8_t signReso, bachSignProduct;
+    std::array<float, 3> pVecD = candD.pVector();
+    std::array<float, 3> pVecV0Tr = candV0Tr.pVector();
+    float invMassReso{-1}, invMassV0Tr{-1}, invMassD{-1};
+    int8_t signReso{0}, isWrongSign{0};
     double ptReso = RecoDecay::pt(RecoDecay::sumOfVec(pVecV0Tr, pVecD));
 
     if constexpr (dType == DType::Dplus){
@@ -362,7 +363,6 @@ struct HfCandidateCreatorCharmResoReduced {
         if (cfgV0Cuts.v0Type == V0Type::K0s) { // K0s
           invMassV0Tr = candV0Tr.invMassK0s();
           signReso = candD.sign();
-          bachSignProduct = candD.sign();
           if (useDeltaMass) {
             invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0Short}) - invMassD;
           } else {
@@ -372,11 +372,10 @@ struct HfCandidateCreatorCharmResoReduced {
           if (candV0Tr.v0Type() == V0Type::Lambda) {
             invMassV0Tr = candV0Tr.invMassLambda();
             signReso = candD.sign();
-            bachSignProduct = candD.sign();
           } else if (candV0Tr.v0Type() == V0Type::AntiLambda) {
             invMassV0Tr = candV0Tr.invMassAntiLambda();
             signReso = candD.sign();
-            bachSignProduct = -candD.sign();
+            isWrongSign = 1;
           } 
           if (useDeltaMass) {
             invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda}) - invMassD;
@@ -390,14 +389,14 @@ struct HfCandidateCreatorCharmResoReduced {
                         invMassD,
                         invMassV0Tr,
                         signReso,
-                        bachSignProduct);
-        rowCandidateResoIndices3PrV0s(collision.globalIndex(), candD.index(), candV0Tr.index());
+                        isWrongSign);
+        rowCandidateResoIndices3PrV0s(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
         registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
         registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
         registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
       } else if constexpr (bachType == BachelorType::Track) {
         signReso = candD.sign() + candV0Tr.sign();
-        bachSignProduct = candD.sign() * candV0Tr.sign();
+        isWrongSign = candD.sign() * candV0Tr.sign() > 0 ? 1 : 0;
         if (cfgTrackCuts.massHypo == TrackType::Pion) { // Pion
           invMassV0Tr = MassPiPlus;
           if (useDeltaMass) {
@@ -426,8 +425,8 @@ struct HfCandidateCreatorCharmResoReduced {
                         invMassD,
                         invMassV0Tr,
                         signReso,
-                        bachSignProduct);
-        rowCandidateResoIndices3PrTrks(collision.globalIndex(), candD.index(), candV0Tr.index());
+                        isWrongSign);
+        rowCandidateResoIndices3PrTrks(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
         registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
         registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
         registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
@@ -446,7 +445,6 @@ struct HfCandidateCreatorCharmResoReduced {
         signReso = candD.sign();
         if (cfgV0Cuts.v0Type == V0Type::K0s) { // K0s
           invMassV0Tr = candV0Tr.invMassK0s();
-          bachSignProduct = candD.sign();
           if (useDeltaMass) {
             if (candD.sign() > 0) {
               invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0Short}) - invMassD;
@@ -459,10 +457,9 @@ struct HfCandidateCreatorCharmResoReduced {
         } else if (cfgV0Cuts.v0Type == V0Type::Lambda) { // Lambda
           if (candV0Tr.v0Type() == V0Type::Lambda) {
             invMassV0Tr = candV0Tr.invMassLambda();
-            bachSignProduct = candD.sign();
           } else if (candV0Tr.v0Type() == V0Type::AntiLambda) {
             invMassV0Tr = candV0Tr.invMassAntiLambda();
-            bachSignProduct = -candD.sign();
+            isWrongSign = 1;
           }
           if (useDeltaMass) {
             if (candD.sign() > 0) {
@@ -480,14 +477,14 @@ struct HfCandidateCreatorCharmResoReduced {
                         invMassD - invMassD0,
                         invMassV0Tr,
                         signReso,
-                        bachSignProduct);
-        rowCandidateResoIndicesDstarV0s(collision.globalIndex(), candD.index(), candV0Tr.index());
+                        isWrongSign);
+        rowCandidateResoIndicesDstarV0s(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
         registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
-        registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
+        registry.fill(HIST("hMassDmesDauVsPt"), invMassD - invMassD0, candD.pt());
         registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
       } else if constexpr (bachType == BachelorType::Track) {
         signReso = candD.sign() + candV0Tr.sign();
-        bachSignProduct = candD.sign() * candV0Tr.sign();
+        isWrongSign = candD.sign() * candV0Tr.sign() > 0 ? 1 : 0;
         if (cfgTrackCuts.massHypo == TrackType::Pion) { // Pion
           invMassV0Tr = MassPiPlus;
           if (useDeltaMass) {
@@ -528,8 +525,8 @@ struct HfCandidateCreatorCharmResoReduced {
                         invMassD - invMassD0,
                         invMassV0Tr,
                         signReso,
-                        bachSignProduct);
-        rowCandidateResoIndicesDstarTrks(collision.globalIndex(), candD.index(), candV0Tr.index());
+                        isWrongSign);
+        rowCandidateResoIndicesDstarTrks(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
         registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
         registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
         registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
@@ -542,7 +539,6 @@ struct HfCandidateCreatorCharmResoReduced {
           signReso = 0;
           if (cfgV0Cuts.v0Type == V0Type::K0s) { // K0s
             invMassV0Tr = candV0Tr.invMassK0s();
-            bachSignProduct = 1;
             if (useDeltaMass) {
               invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassK0Short}) - invMassD;
             } else {
@@ -551,10 +547,9 @@ struct HfCandidateCreatorCharmResoReduced {
           } else if (cfgV0Cuts.v0Type == V0Type::Lambda) { // Lambda
             if (candV0Tr.v0Type() == V0Type::Lambda) {
               invMassV0Tr = candV0Tr.invMassLambda();
-              bachSignProduct = 1;
             } else if (candV0Tr.v0Type() == V0Type::AntiLambda) {
               invMassV0Tr = candV0Tr.invMassAntiLambda();
-              bachSignProduct = -1;
+              isWrongSign = 1;
             }
             if (useDeltaMass) {
               invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassLambda}) - invMassD;
@@ -568,14 +563,14 @@ struct HfCandidateCreatorCharmResoReduced {
                           invMassD,
                           invMassV0Tr,
                           signReso,
-                          bachSignProduct);
-          rowCandidateResoIndices2PrV0s(collision.globalIndex(), candD.index(), candV0Tr.index());
+                          isWrongSign);
+          rowCandidateResoIndices2PrV0s(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
           registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
           registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
           registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
         } else if constexpr (bachType == BachelorType::Track) {
           signReso = candV0Tr.sign();
-          bachSignProduct = candV0Tr.sign();
+          isWrongSign = candV0Tr.sign() > 0 ? 0 : 1;
           if (cfgTrackCuts.massHypo == TrackType::Pion) { // Pion
             invMassV0Tr = MassPiPlus;
             if (useDeltaMass) {
@@ -604,8 +599,8 @@ struct HfCandidateCreatorCharmResoReduced {
                           invMassD,
                           invMassV0Tr,
                           signReso,
-                          bachSignProduct);
-          rowCandidateResoIndices2PrTrks(collision.globalIndex(), candD.index(), candV0Tr.index());
+                          isWrongSign);
+          rowCandidateResoIndices2PrTrks(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
           registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
           registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
           registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
@@ -618,7 +613,6 @@ struct HfCandidateCreatorCharmResoReduced {
           signReso = 0;
           if (cfgV0Cuts.v0Type == V0Type::K0s) { // K0s
             invMassV0Tr = candV0Tr.invMassK0s();
-            bachSignProduct = -1;
             if (useDeltaMass) {
               invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassKPlus, MassPiPlus, MassK0Short}) - invMassD;
             } else {
@@ -627,10 +621,9 @@ struct HfCandidateCreatorCharmResoReduced {
           } else if (cfgV0Cuts.v0Type == V0Type::Lambda) { // Lambda
             if (candV0Tr.v0Type() == V0Type::Lambda) {
               invMassV0Tr = candV0Tr.invMassLambda();
-              bachSignProduct = -1;
+              isWrongSign = 1;
             } else if (candV0Tr.v0Type() == V0Type::AntiLambda) {
               invMassV0Tr = candV0Tr.invMassAntiLambda();
-              bachSignProduct = 1;
             }
             if (useDeltaMass) {
               invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassKPlus, MassPiPlus, MassLambda}) - invMassD;
@@ -644,14 +637,14 @@ struct HfCandidateCreatorCharmResoReduced {
                           invMassD,
                           invMassV0Tr,
                           signReso,
-                          bachSignProduct);
-          rowCandidateResoIndices2PrV0s(collision.globalIndex(), candD.index(), candV0Tr.index());
+                          isWrongSign);
+          rowCandidateResoIndices2PrV0s(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
           registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
           registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
           registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
         } else if constexpr (bachType == BachelorType::Track) {
           signReso = candV0Tr.sign();
-          bachSignProduct = -candV0Tr.sign();
+          isWrongSign = candV0Tr.sign() > 0 ? 1 : 0;
           if (cfgTrackCuts.massHypo == TrackType::Pion) { // Pion
             invMassV0Tr = MassPiPlus;
             if (useDeltaMass) {
@@ -680,8 +673,8 @@ struct HfCandidateCreatorCharmResoReduced {
                           invMassD,
                           invMassV0Tr,
                           signReso,
-                          bachSignProduct);
-          rowCandidateResoIndices2PrTrks(collision.globalIndex(), candD.index(), candV0Tr.index());
+                          isWrongSign);
+          rowCandidateResoIndices2PrTrks(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
           registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
           registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
           registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
@@ -697,6 +690,7 @@ struct HfCandidateCreatorCharmResoReduced {
                             V0TrRedTable const& candsV0Tr)
   {
     // loop on D candidates
+    // LOG(info) << "Number of D candidates: " << candsD.size() << ", Number of V0/Track candidates: " << candsV0Tr.size();
     for (const auto& candD : candsD) {
       // selection of D candidates
       registry.fill(HIST("hSelections"), 1);
@@ -917,14 +911,19 @@ struct HfCandidateCreatorCharmResoReducedExpressions {
 
   Produces<aod::HfMcRecRedResos> rowResoMcRec;
 
-  using CandResoWithIndices = soa::Join<aod::HfCandCharmReso, aod::Hf3PrV0Ids>;
+  using CandResoWithIndices2PrV0s = soa::Join<aod::HfCandCharmReso, aod::Hf2PrV0Ids>;
+  using CandResoWithIndices2PrTrks = soa::Join<aod::HfCandCharmReso, aod::Hf2PrTrkIds>;
+  using CandResoWithIndices3PrV0s = soa::Join<aod::HfCandCharmReso, aod::Hf3PrV0Ids>;
+  using CandResoWithIndices3PrTrks = soa::Join<aod::HfCandCharmReso, aod::Hf3PrTrkIds>;
+  using CandResoWithIndicesDstarV0s = soa::Join<aod::HfCandCharmReso, aod::HfDstarV0Ids>;
+  using CandResoWithIndicesDstarTrks = soa::Join<aod::HfCandCharmReso, aod::HfDstarTrkIds>;
+  
 
   // Configurable axis
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0., 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f, 50.f}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis axisInvMassReso{"axisInvMassReso", {400, 0.49f, 0.89f}, "inv. mass (DV_{0}) (GeV/#it{c}^{2})"};
   ConfigurableAxis axisInvMassProng0{"axisInvMassProng0", {200, 0.14, 0.17}, "inv. mass (D) (GeV/#it{c}^{2})"};
   ConfigurableAxis axisInvMassProng1{"axisInvMassProng1", {200, 0.47, 0.53}, "inv. mass ({V}_{0}) (GeV/#it{c}^{2})"};
-  ConfigurableAxis axisInvMassD0{"axisInvMassD0", {200, 1.65, 2.05}, "inv. mass ({V}_{0}) (GeV/#it{c}^{2})"};
   ConfigurableAxis axisDebug{"axisDebug", {16, -0.5, 15.5}, "MC debug flag"};
   ConfigurableAxis axisOrigin{"axisOrigin", {3, -0.5, 2.5}, "MC origin flag"};
   HistogramRegistry registry{"registry"};
@@ -935,63 +934,83 @@ struct HfCandidateCreatorCharmResoReducedExpressions {
     registry.add("hMassMcMatchedIncomplete", "Reso MC candidates Matched with generate particle w. Invcomplete decay;m (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisInvMassReso, axisPt}});
     registry.add("hMassMcUnmatched", "Reso MC candidates NOT Matched with generate particle;m (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisInvMassReso, axisPt}});
     registry.add("hMassMcNoEntry", "Reso MC candidates w.o. entry in MC Reco table;m (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisInvMassReso, axisPt}});
-    registry.add("hMassMcMatchedVsBach0Mass", "Reso MC candidates Matched with generate particle;m (GeV/#it{c}^{2}); m (GeV/#it{c}^{2})", {HistType::kTH2F, {axisInvMassReso, axisInvMassProng0}});
-    registry.add("hMassMcUnmatchedVsBach0Mass", "Reso MC candidates Matched with generate particle w. Invcomplete decay;m (GeV/#it{c}^{2}); m (GeV/#it{c}^{2})", {HistType::kTH2F, {axisInvMassReso, axisInvMassProng0}});
-    registry.add("hMassMcMatchedVsBach1Mass", "Reso MC candidates NOT Matched with generate particle;m (GeV/#it{c}^{2}); m (GeV/#it{c}^{2})", {HistType::kTH2F, {axisInvMassReso, axisInvMassProng1}});
-    registry.add("hMassMcUnmatchedVsBach1Mass", "Reso MC candidates Matched with generate particle w. Invcomplete decay;m (GeV/#it{c}^{2}); m (GeV/#it{c}^{2})", {HistType::kTH2F, {axisInvMassReso, axisInvMassProng1}});
-    registry.add("hMassMcMatchedVsD0Mass", "Reso MC candidates NOT Matched with generate particle;m (GeV/#it{c}^{2}); m (GeV/#it{c}^{2})", {HistType::kTH2F, {axisInvMassReso, axisInvMassD0}});
-    registry.add("hMassMcUnmatchedVsD0Mass", "Reso MC candidates Matched with generate particle w. Invcomplete decay;m (GeV/#it{c}^{2}); m (GeV/#it{c}^{2})", {HistType::kTH2F, {axisInvMassReso, axisInvMassD0}});
-    registry.add("hMassMcUnmatchedVsDebug", "Reso MC candidates NOT Matched with generate particle;m (GeV/#it{c}^{2});debug flag", {HistType::kTH2F, {axisInvMassReso, axisDebug}});
-    registry.add("hSparseUnmatchedDebug", "THn for debug of MC matching and Correlated BKG study", HistType::kTHnSparseF, {axisInvMassReso, axisPt, axisInvMassProng0, axisInvMassProng1, axisInvMassD0, axisDebug, axisOrigin});
   }
 
   /// Fill candidate information at MC reconstruction level
-  /// \param rowsDV0McRec MC reco information on DPi pairs
+  /// \param rowsMcRec MC reco information on DPi pairs
   /// \param candsReso prong global indices of B0 candidates
-  template <typename McRec>
-  void fillResoMcRec(McRec const& rowsDV0McRec, CandResoWithIndices const& candsReso)
+  template <typename McRec, typename CandResoWithIndices>
+  void fillResoMcRec(McRec const& rowsMcRec, CandResoWithIndices const& candsReso)
   {
     for (const auto& candReso : candsReso) {
       bool filledMcInfo{false};
-      for (const auto& rowDV0McRec : rowsDV0McRec) {
+      for (const auto& rowDV0McRec : rowsMcRec) {
         if ((rowDV0McRec.prong0Id() != candReso.prong0Id()) || (rowDV0McRec.prong1Id() != candReso.prong1Id())) {
           continue;
         }
-        rowResoMcRec(rowDV0McRec.flagMcMatchRec(), rowDV0McRec.debugMcRec(), rowDV0McRec.origin(), rowDV0McRec.ptMother());
+        rowResoMcRec(rowDV0McRec.flagMcMatchRec(),
+                     rowDV0McRec.flagMcMatchRecD(),
+                     rowDV0McRec.flagMcMatchChanD(),
+                     rowDV0McRec.debugMcRec(),
+                     rowDV0McRec.origin(),
+                     rowDV0McRec.ptGen(),
+                     rowDV0McRec.invMassGen());
         filledMcInfo = true;
-        if (std::abs(rowDV0McRec.flagMcMatchRec()) == DecayTypeMc::Ds1ToDStarK0ToD0PiK0s || std::abs(rowDV0McRec.flagMcMatchRec()) == DecayTypeMc::Ds2StarToDplusK0sToPiKaPiPiPi ||
-            std::abs(rowDV0McRec.flagMcMatchRec()) == DecayTypeMc::Ds1ToDStarK0ToD0PiK0sOneMu || std::abs(rowDV0McRec.flagMcMatchRec()) == DecayTypeMc::Ds2StarToDplusK0sOneMu) {
+        if (std::abs(rowDV0McRec.flagMcMatchRec()) >0 &&
+            !TESTBIT(rowDV0McRec.debugMcRec(), hf_decay::hf_cand_reso::PartialMatchMc::ResoPartlyMatched)){
           registry.fill(HIST("hMassMcMatched"), candReso.invMass(), candReso.pt());
-          registry.fill(HIST("hMassMcMatchedVsBach0Mass"), candReso.invMass(), candReso.invMassProng0());
-          registry.fill(HIST("hMassMcMatchedVsBach1Mass"), candReso.invMass(), candReso.invMassProng1());
-          registry.fill(HIST("hMassMcMatchedVsD0Mass"), candReso.invMass(), candReso.invMassProng0());
-        } else if (std::abs(rowDV0McRec.flagMcMatchRec()) == DecayTypeMc::Ds1ToDStarK0ToD0NoPiK0sPart || std::abs(rowDV0McRec.flagMcMatchRec()) == DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s) {
+        } else if (std::abs(rowDV0McRec.flagMcMatchRec()) > 0 &&
+                  TESTBIT(rowDV0McRec.debugMcRec(), hf_decay::hf_cand_reso::PartialMatchMc::ResoPartlyMatched)) {
           registry.fill(HIST("hMassMcMatchedIncomplete"), candReso.invMass(), candReso.pt());
         } else {
           registry.fill(HIST("hMassMcUnmatched"), candReso.invMass(), candReso.pt());
-          registry.fill(HIST("hMassMcUnmatchedVsBach0Mass"), candReso.invMass(), candReso.invMassProng0());
-          registry.fill(HIST("hMassMcUnmatchedVsBach1Mass"), candReso.invMass(), candReso.invMassProng1());
-          registry.fill(HIST("hMassMcUnmatchedVsD0Mass"), candReso.invMass(), candReso.invMassProng0());
-          registry.fill(HIST("hMassMcUnmatchedVsDebug"), candReso.invMass(), rowDV0McRec.debugMcRec());
-          registry.fill(HIST("hSparseUnmatchedDebug"), candReso.invMass(), candReso.pt(), candReso.invMassProng0(), candReso.invMassProng1(), candReso.invMassProng0(), rowDV0McRec.debugMcRec(), rowDV0McRec.origin());
-        }
-
+          }
         break;
       }
       if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the D-Pi creator
-        rowResoMcRec(0, -1, -1, -1.f);
+        rowResoMcRec(0, 0, 0, 0, 0, -1.f, -1.f);
         registry.fill(HIST("hMassMcNoEntry"), candReso.invMass(), candReso.pt());
       }
     }
   }
 
-  void processMc(aod::HfMcRecRedDV0s const& rowsDV0McRec, CandResoWithIndices const& candsReso)
+  void processDstarV0Mc(aod::HfDstarV0McRec const& rowsMcRec, CandResoWithIndicesDstarV0s const& candsReso)
   {
-    fillResoMcRec(rowsDV0McRec, candsReso);
+    fillResoMcRec(rowsMcRec, candsReso);
   }
-  PROCESS_SWITCH(HfCandidateCreatorCharmResoReducedExpressions, processMc, "Process MC", false);
+  PROCESS_SWITCH(HfCandidateCreatorCharmResoReducedExpressions, processDstarV0Mc, "Process resonances to Dstar V0 MC", false);
 
-  void processDummy(CandResoWithIndices const&) {}
+  void processDstarTrackMc(aod::HfDstarTrkMcRec const& rowsMcRec, CandResoWithIndicesDstarTrks const& candsReso)
+  {
+    fillResoMcRec(rowsMcRec, candsReso);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorCharmResoReducedExpressions, processDstarTrackMc, "Process resonances to Dstar track MC", false);
+
+  void process2PrV0Mc(aod::Hf2PrV0McRec const& rowsMcRec, CandResoWithIndices2PrV0s const& candsReso)
+  {
+    fillResoMcRec(rowsMcRec, candsReso);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorCharmResoReducedExpressions, process2PrV0Mc, "Process resonances to D0 V0 MC", false);
+
+  void process2PrTrackMc(aod::Hf2PrTrkMcRec const& rowsMcRec, CandResoWithIndices2PrTrks const& candsReso)
+  {
+    fillResoMcRec(rowsMcRec, candsReso);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorCharmResoReducedExpressions, process2PrTrackMc, "Process resonances to D0 track MC", false);
+
+  void process3PrV0Mc(aod::Hf3PrV0McRec const& rowsMcRec, CandResoWithIndices3PrV0s const& candsReso)
+  {
+    fillResoMcRec(rowsMcRec, candsReso);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorCharmResoReducedExpressions, process3PrV0Mc, "Process resonances to Dplus V0 MC", false);
+
+  void process3PrTrackMc(aod::Hf3PrTrkMcRec const& rowsMcRec, CandResoWithIndices3PrTrks const& candsReso)
+  {
+    fillResoMcRec(rowsMcRec, candsReso);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorCharmResoReducedExpressions, process3PrTrackMc, "Process resonances to Dplus track MC", false);
+  
+  void processDummy(aod::HfCandCharmReso const&) {}
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReducedExpressions, processDummy, "Process dummy", true);
 };
 
