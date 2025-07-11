@@ -9,9 +9,15 @@
 #granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(its - impact - parameter - studies SOURCES itsImpParStudies.cxx PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats O2::DetectorsVertexing COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(its-impact-parameter-studies
+    SOURCES itsImpParStudies.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    O2::ReconstructionDataFormats
+    O2::DetectorsCommonDataFormats
+    O2::DetectorsVertexing
+    COMPONENT_NAME Analysis)
 
-  o2physics_add_dpl_workflow(filtertracks
-                               SOURCES filterTracks.cxx
-                                 PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                                   COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(filtertracks
+    SOURCES filterTracks.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
