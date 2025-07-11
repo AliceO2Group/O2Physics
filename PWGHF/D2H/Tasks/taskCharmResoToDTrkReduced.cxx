@@ -137,9 +137,6 @@ struct HfTaskCharmResoToDTrkReduced {
   Produces<aod::HfCandDTrkLites> hfCandResoLite;
   Produces<aod::HfGenResoLites> hfGenResoLite;
 
-  using ReducedReso2PrTrk = soa::Join<aod::HfCandCharmReso, aod::Hf2PrTrkIds>;
-  using ReducedReso2PrTrkMC = soa::Join<aod::HfCandCharmReso, aod::Hf2PrTrkIds, aod::HfMcRecRedResos>;
-
   Configurable<bool> doWrongSign{"doWrongSign", false, "Flag to enable wrong sign candidates"};
   Configurable<float> ptMinReso{"ptMinReso", -1, "Discard events with smaller pT"};
   Configurable<bool> fillTrees{"fillTrees", true, "Fill output Trees"};
