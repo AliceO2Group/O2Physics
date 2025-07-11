@@ -1123,7 +1123,7 @@ struct DndetaMFTPbPb {
     if (!isGoodEvent<true>(collision)) {
       return;
     }
-    if (cfgSelInteractionRate) {
+    if (eventCuts.cfgSelInteractionRate) {
       if (!isIRSelected(bc, true)) {
         return;
       }
@@ -1174,7 +1174,7 @@ struct DndetaMFTPbPb {
     if (!isGoodEvent<false>(collision)) {
       return;
     }
-    if (cfgSelInteractionRate) {
+    if (eventCuts.cfgSelInteractionRate) {
       if (!isIRSelected(bc, true)) {
         return;
       }
