@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file taskCharmResoReduced.cxx
-/// \brief Charmed Resonances analysis task
+/// \file taskCharmResoToDTrkReduced.cxx
+/// \brief Charmed Resonances decaying in a D meson and a Track analysis task
 ///
 /// \author Luca Aglietta <luca.aglietta@cern.ch>, University and INFN Torino
 
@@ -136,6 +136,10 @@ enum DecayChannel : uint8_t {
 struct HfTaskCharmResoToDTrkReduced {
   Produces<aod::HfCandDTrkLites> hfCandResoLite;
   Produces<aod::HfGenResoLites> hfGenResoLite;
+  
+  using ReducedReso2PrTrk = soa::Join<aod::HfCandCharmReso, aod::Hf2PrTrkIds>;
+  using ReducedReso2PrTrkMC = soa::Join<aod::HfCandCharmReso, aod::Hf2PrTrkIds, aod::HfMcRecRedResos>;
+
   Configurable<bool> doWrongSign{"doWrongSign", false, "Flag to enable wrong sign candidates"};
   Configurable<float> ptMinReso{"ptMinReso", -1, "Discard events with smaller pT"};
   Configurable<bool> fillTrees{"fillTrees", true, "Fill output Trees"};
@@ -160,9 +164,6 @@ struct HfTaskCharmResoToDTrkReduced {
   ConfigurableAxis axisEta{"axisEta", {30, -1.5, 1.5}, "pseudorapidity"};
   ConfigurableAxis axisOrigin{"axisOrigin", {3, -0.5, 2.5}, "origin"};
   ConfigurableAxis axisFlag{"axisFlag", {65, -32.5, 32.5}, "mc flag"};
-
-  using ReducedReso2PrTrk = soa::Join<aod::HfCandCharmReso, aod::Hf2PrTrkIds>;
-  using ReducedReso2PrTrkMC = soa::Join<aod::HfCandCharmReso, aod::Hf2PrTrkIds, aod::HfMcRecRedResos>;
 
   // Histogram Registry
   HistogramRegistry registry;
@@ -241,9 +242,9 @@ struct HfTaskCharmResoToDTrkReduced {
           return;
         }
       }
-      if (origin == 1) {
+      if (origin == RecoDecay::OriginType::Prompt) {
         registry.fill(HIST("hYRecPrompt"), candidate.pt(), y);
-      } else if (origin == 2) {
+      } else if (origin == RecoDecay::OriginType::NonPrompt) {
         registry.fill(HIST("hYRecNonPrompt"), candidate.pt(), y);
       }
     }
@@ -401,12 +402,12 @@ struct HfTaskCharmResoToDTrkReduced {
       if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
         continue;
       }
-      if (originParticle == 1) { // prompt particles
+      if (originParticle == RecoDecay::OriginType::Prompt) { // prompt particles
         registry.fill(HIST("hYGenPrompt"), ptParticle, yParticle);
         if (prongsInAcc) {
           registry.fill(HIST("hYGenPromptWithProngsInAcceptance"), ptParticle, yParticle);
         }
-      } else if (originParticle == 2) {
+      } else if (originParticle == RecoDecay::OriginType::NonPrompt) {
         registry.fill(HIST("hYGenNonPrompt"), ptParticle, yParticle);
         if (prongsInAcc) {
           registry.fill(HIST("hYGenNonPromptWithProngsInAcceptance"), ptParticle, yParticle);

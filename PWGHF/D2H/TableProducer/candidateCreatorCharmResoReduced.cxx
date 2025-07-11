@@ -118,7 +118,7 @@ struct HfCandidateCreatorCharmResoReduced {
   // D Configurables
   struct : ConfigurableGroup {
     Configurable<std::vector<double>> binsPtD{"binsPtD", std::vector<double>{hf_cuts_d_daughter::vecBinsPt}, "pT bin limits for D daughter cuts"};
-    Configurable<LabeledArray<double>> cutsD{"cutsDmesDaughter", {hf_cuts_d_daughter::Cuts[0], hf_cuts_d_daughter::NBinsPt, hf_cuts_d_daughter::NCutVars, hf_cuts_d_daughter::labelsPt, hf_cuts_d_daughter::labelsCutVar}, "D daughter selections"};
+    Configurable<LabeledArray<double>> cutsD{"cutsD", {hf_cuts_d_daughter::Cuts[0], hf_cuts_d_daughter::NBinsPt, hf_cuts_d_daughter::NCutVars, hf_cuts_d_daughter::labelsPt, hf_cuts_d_daughter::labelsCutVar}, "D daughter selections"};
     Configurable<bool> keepSideBands{"keepSideBands", false, "flag to keep events from D meson sidebands for backgorund estimation"};
   } cfgDmesCuts;
   // V0 cuts configurables
@@ -141,12 +141,12 @@ struct HfCandidateCreatorCharmResoReduced {
   } cfgMixedEvent;
   // Histogram axes configurables
   struct : ConfigurableGroup {
-    ConfigurableAxis axisPtD{"axPtD", {100, 0., 50}, "#it{p}_{T} (GeV/#it{c})"};
-    ConfigurableAxis axisPtV0{"axPtV0", {100, 0., 50}, "#it{p}_{T} (GeV/#it{c})"};
-    ConfigurableAxis axisPtReso{"axPtReso", {100, 0., 50}, "#it{p}_{T} (GeV/#it{c})"};
-    ConfigurableAxis axisMassD{"axMassD", {100, 1.7f, 2.1f}, "inv. mass (D) (GeV/#it{c}^{2})"};
-    ConfigurableAxis axisMassV0{"axMassV0", {100, 0.45f, 0.55f}, "inv. mass (V_{0}) (GeV/#it{c}^{2})"};
-    ConfigurableAxis axisMassDsj{"axMassReso", {400, 0.49f, 0.89f}, "inv. mass (DV_{0}) (GeV/#it{c}^{2})"};
+    ConfigurableAxis axisPtD{"axisPtD", {100, 0., 50}, "#it{p}_{T} (GeV/#it{c})"};
+    ConfigurableAxis axisPtV0{"axisPtV0", {100, 0., 50}, "#it{p}_{T} (GeV/#it{c})"};
+    ConfigurableAxis axisPtReso{"axisPtReso", {100, 0., 50}, "#it{p}_{T} (GeV/#it{c})"};
+    ConfigurableAxis axisMassD{"axisMassD", {100, 1.7f, 2.1f}, "inv. mass (D) (GeV/#it{c}^{2})"};
+    ConfigurableAxis axisMassV0{"axisMassV0", {100, 0.45f, 0.55f}, "inv. mass (V_{0}) (GeV/#it{c}^{2})"};
+    ConfigurableAxis axisMassDsj{"axisMassReso", {400, 0.49f, 0.89f}, "inv. mass (DV_{0}) (GeV/#it{c}^{2})"};
   } cfgHistAxes;
   // Other Configurables
   Configurable<bool> rejectPairsWithCommonDaughter{"rejectPairsWithCommonDaughter", true, "flag to reject the pairs that share a daughter track if not done in the derived data creation"};
