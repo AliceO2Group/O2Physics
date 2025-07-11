@@ -659,7 +659,7 @@ struct HfTaskFlowCharmHadrons {
       float phiCand = 0.;
 
       if constexpr (std::is_same_v<T1, CandXic0Data> || std::is_same_v<T1, CandXic0DataWMl>) {
-        ptCand = candidate.kfptXic();
+        ptCand = RecoDecay::sqrtSumOfSquares(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
         phiCand = std::atan2(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
       } else {
         ptCand = candidate.pt();

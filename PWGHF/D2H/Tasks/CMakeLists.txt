@@ -138,3 +138,8 @@ o2physics_add_dpl_workflow(task-xicc
                     SOURCES taskXicc.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(task-xic0-to-xi-pi
+                    SOURCES taskXic0ToXiPi.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

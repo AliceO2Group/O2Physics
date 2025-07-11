@@ -152,7 +152,8 @@ struct HfCandidateCreatorXic0Omegac0 {
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
   using MyLFTracksWCov = soa::Join<TracksIU, TracksCovIU>;
 
-  using MyKfTracks = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa>;
+  using MyKfTracksIU = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa>;
+  using MyKfTracks = soa::Join<aod::TracksWCovDcaExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa>;
   using MyKfCascTable = soa::Join<KFCascDatas, aod::KFCascCovs>;
   using KFCascadesLinked = soa::Join<aod::Cascades, aod::KFCascDataLink>;
 
@@ -227,8 +228,6 @@ struct HfCandidateCreatorXic0Omegac0 {
     float cosPaXYCascToPv;
     float massV0;
     float massCasc;
-    float ptPiFromXic;
-    float ptXic;
     float rapXic;
     float massXic;
     float cosThetaStarPiFromXic;
@@ -249,7 +248,6 @@ struct HfCandidateCreatorXic0Omegac0 {
     float ctV0;
     float ctCasc;
     float ctXic;
-    float ctOmegac;
     float chi2MassV0;
     float chi2MassCasc;
     float etaXic;
@@ -742,7 +740,8 @@ struct HfCandidateCreatorXic0Omegac0 {
   template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename Coll, typename Hist>
   void runKfOmegac0CreatorWithKFParticle(Coll const&,
                                          aod::BCsWithTimestamps const& /*bcWithTimeStamps*/,
-                                         MyKfTracks const&,
+                                         MyKfTracksIU const& tracksIU,
+                                         MyKfTracks const& tracks,
                                          MyKfCascTable const&, KFCascadesLinked const&,
                                          aod::HfCascLf2Prongs const& candidates,
                                          Hist& hInvMassCharmBaryon,
@@ -773,8 +772,8 @@ struct HfCandidateCreatorXic0Omegac0 {
       df.setBz(magneticField);
       KFParticle::SetField(magneticField);
       // bachelor from Omegac0
-      auto trackCharmBachelor = cand.prong0_as<MyKfTracks>();
-
+      auto trackCharmBachelorId = cand.prong0Id();
+      auto trackCharmBachelor = tracks.rawIteratorAt(trackCharmBachelorId);
       auto cascAodElement = cand.cascade_as<aod::KFCascadesLinked>();
       hCascadesCounter->Fill(0);
       int v0index = cascAodElement.v0Id();
@@ -783,9 +782,12 @@ struct HfCandidateCreatorXic0Omegac0 {
       }
       auto casc = cascAodElement.kfCascData_as<MyKfCascTable>();
       hCascadesCounter->Fill(1);
-      auto trackCascDauCharged = casc.bachelor_as<MyKfTracks>(); // pion <- xi track
-      auto trackV0Dau0 = casc.posTrack_as<MyKfTracks>();         // V0 positive daughter track
-      auto trackV0Dau1 = casc.negTrack_as<MyKfTracks>();         // V0 negative daughter track
+      auto trackCascDauChargedId = casc.bachelorId();
+      auto trackV0Dau0Id = casc.posTrackId();
+      auto trackV0Dau1Id = casc.negTrackId();
+      auto trackCascDauCharged = tracksIU.rawIteratorAt(trackCascDauChargedId); // pion <- xi track
+      auto trackV0Dau0 = tracksIU.rawIteratorAt(trackV0Dau0Id);                 // V0 positive daughter track
+      auto trackV0Dau1 = tracksIU.rawIteratorAt(trackV0Dau1Id);                 // V0 negative daughter track
 
       auto bachCharge = trackCascDauCharged.signed1Pt() > 0 ? +1 : -1;
 
@@ -1219,7 +1221,8 @@ struct HfCandidateCreatorXic0Omegac0 {
   template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename Coll, typename Hist>
   void runKfXic0CreatorWithKFParticle(Coll const&,
                                       aod::BCsWithTimestamps const& /*bcWithTimeStamps*/,
-                                      MyKfTracks const&,
+                                      MyKfTracksIU const& tracksIU,
+                                      MyKfTracks const& tracks,
                                       MyKfCascTable const&, KFCascadesLinked const&,
                                       aod::HfCascLf2Prongs const& candidates,
                                       Hist& hInvMassCharmBaryon,
@@ -1229,7 +1232,9 @@ struct HfCandidateCreatorXic0Omegac0 {
   {
     for (const auto& cand : candidates) {
       hCandidateCounter->Fill(1);
-
+      if (!TESTBIT(cand.hfflag(), aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi)) {
+        continue;
+      }
       auto collision = cand.collision_as<Coll>();
 
       float centrality{-1.f};
@@ -1251,8 +1256,8 @@ struct HfCandidateCreatorXic0Omegac0 {
       df.setBz(magneticField);
       KFParticle::SetField(magneticField);
       // bachelor from Xic0
-      auto trackCharmBachelor = cand.prong0_as<MyKfTracks>();
-
+      auto trackCharmBachelorId = cand.prong0Id();
+      auto trackCharmBachelor = tracks.rawIteratorAt(trackCharmBachelorId);
       auto cascAodElement = cand.cascade_as<aod::KFCascadesLinked>();
       hCascadesCounter->Fill(0);
       int v0index = cascAodElement.v0Id();
@@ -1261,9 +1266,12 @@ struct HfCandidateCreatorXic0Omegac0 {
       }
       auto casc = cascAodElement.kfCascData_as<MyKfCascTable>();
       hCascadesCounter->Fill(1);
-      auto trackCascDauCharged = casc.bachelor_as<MyKfTracks>(); // pion <- xi track
-      auto trackV0Dau0 = casc.posTrack_as<MyKfTracks>();         // V0 positive daughter track
-      auto trackV0Dau1 = casc.negTrack_as<MyKfTracks>();         // V0 negative daughter track
+      auto trackCascDauChargedId = casc.bachelorId();
+      auto trackV0Dau0Id = casc.posTrackId();
+      auto trackV0Dau1Id = casc.negTrackId();
+      auto trackCascDauCharged = tracksIU.rawIteratorAt(trackCascDauChargedId); // pion <- xi track
+      auto trackV0Dau0 = tracksIU.rawIteratorAt(trackV0Dau0Id);                 // V0 positive daughter track
+      auto trackV0Dau1 = tracksIU.rawIteratorAt(trackV0Dau1Id);                 // V0 negative daughter track
 
       auto bachCharge = trackCascDauCharged.signed1Pt() > 0 ? +1 : -1;
 
@@ -1456,16 +1464,13 @@ struct HfCandidateCreatorXic0Omegac0 {
       std::array<float, 3> vertexCasc = {kfXi.GetX(), kfXi.GetY(), kfXi.GetZ()};
       std::array<float, 3> pVecCascBachelor = {kfBachPionToXi.GetPx(), kfBachPionToXi.GetPy(), kfBachPionToXi.GetPz()};
 
-      auto primaryVertex = getPrimaryVertex(collision);
       std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
-      std::array<float, 3> vertexCharmBaryonFromFitter = {0.0, 0.0, 0.0}; // This variable get from DCAfitter in default process, in KF process it is set as 0.
       std::array<float, 3> pVecCharmBachelorAsD;
       pVecCharmBachelorAsD[0] = kfCharmBachPionToXiC.GetPx();
       pVecCharmBachelorAsD[1] = kfCharmBachPionToXiC.GetPy();
       pVecCharmBachelorAsD[2] = kfCharmBachPionToXiC.GetPz();
 
       std::array<float, 3> pVecCharmBaryon = {kfXiC0.GetPx(), kfXiC0.GetPy(), kfXiC0.GetPz()};
-      std::array<float, 3> coordVtxCharmBaryon = {kfXiC0.GetX(), kfXiC0.GetY(), kfXiC0.GetZ()};
       auto covVtxCharmBaryon = kfXiC0.CovarianceMatrix();
       float covMatrixPV[6];
       kfVertex.GetCovarianceMatrix(covMatrixPV);
@@ -1473,37 +1478,16 @@ struct HfCandidateCreatorXic0Omegac0 {
       // impact parameters
       std::array<float, 2> impactParameterV0Dau0;
       std::array<float, 2> impactParameterV0Dau1;
-      std::array<float, 2> impactParameterKaFromCasc;
+      std::array<float, 2> impactParameterPiFromCasc;
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovV0Dau0, 2.f, matCorr, &impactParameterV0Dau0);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovV0Dau1, 2.f, matCorr, &impactParameterV0Dau1);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, xiDauChargedTrackParCov, 2.f, matCorr, &impactParameterKaFromCasc);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, xiDauChargedTrackParCov, 2.f, matCorr, &impactParameterPiFromCasc);
       float dcaxyV0Dau0 = impactParameterV0Dau0[0];
       float dcaxyV0Dau1 = impactParameterV0Dau1[0];
-      float dcaxyCascBachelor = impactParameterKaFromCasc[0];
-      float dcazV0Dau0 = impactParameterV0Dau0[1];
-      float dcazV0Dau1 = impactParameterV0Dau1[1];
-      float dcazCascBachelor = impactParameterKaFromCasc[1];
+      float dcaxyCascBachelor = impactParameterPiFromCasc[0];
 
       // pseudorapidity
       float pseudorapCharmBachelor = kfCharmBachPionToXiC.GetEta();
-
-      // impact parameters
-      o2::dataformats::DCA impactParameterCasc;
-      o2::dataformats::DCA impactParameterCharmBachelor;
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackCasc, 2.f, matCorr, &impactParameterCasc);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParVarCharmBachelor, 2.f, matCorr, &impactParameterCharmBachelor);
-      float impactParBachFromCharmBaryonXY = impactParameterCharmBachelor.getY();
-      float impactParBachFromCharmBaryonZ = impactParameterCharmBachelor.getZ();
-
-      // computing decay length and ctau
-      float decLenCharmBaryon = RecoDecay::distance(pvCoord, coordVtxCharmBaryon);
-      float decLenCascade = RecoDecay::distance(coordVtxCharmBaryon, vertexCasc);
-      float decLenV0 = RecoDecay::distance(vertexCasc, vertexV0);
-
-      double phiCharmBaryon, thetaCharmBaryon;
-      getPointDirection(std::array{kfV0.GetX(), kfV0.GetY(), kfV0.GetZ()}, coordVtxCharmBaryon, phiCharmBaryon, thetaCharmBaryon);
-      auto errorDecayLengthCharmBaryon = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phiCharmBaryon, thetaCharmBaryon) + getRotatedCovMatrixXX(covVtxCharmBaryon, phiCharmBaryon, thetaCharmBaryon));
-      auto errorDecayLengthXYCharmBaryon = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phiCharmBaryon, 0.) + getRotatedCovMatrixXX(covVtxCharmBaryon, phiCharmBaryon, 0.));
 
       // fill test histograms
       hInvMassCharmBaryon->Fill(massXiC0);
@@ -1581,42 +1565,26 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfXic0Candidate.massCasc = massCasc;
       kfXic0Candidate.massXic = massXiC0;
 
-      // KF pT
-      kfXic0Candidate.ptPiFromXic = kfCharmBachPionToXiC.GetPt();
-      kfXic0Candidate.ptXic = kfXiC0.GetPt();
-
       // KF rapidity
       kfXic0Candidate.rapXic = kfXiC0.GetRapidity();
 
       // KF cosThetaStar
-      kfXic0Candidate.cosThetaStarPiFromXic = cosThetaStarFromKF(0, 4332, 211, 3312, kfCharmBachPionToXiC, kfXiToXiC);
+      kfXic0Candidate.cosThetaStarPiFromXic = cosThetaStarFromKF(0, 4132, 211, 3312, kfCharmBachPionToXiC, kfXiToXiC);
 
       // KF ct
-      kfXic0Candidate.ctV0 = kfV0.GetLifeTime();
-      kfXic0Candidate.ctCasc = kfXi.GetLifeTime();
-      kfXic0Candidate.ctXic = kfXiC0.GetLifeTime();
-      kfXic0Candidate.ctOmegac = kfXiC0.GetLifeTime();
-
+      kfXic0Candidate.ctV0 = kfV0ToCasc.GetLifeTime();
+      kfXic0Candidate.ctCasc = kfXiToXiC.GetLifeTime();
+      kfXic0Candidate.ctXic = kfXic0ToPv.GetLifeTime();
       // KF eta
       kfXic0Candidate.etaXic = kfXiC0.GetEta();
 
       // fill KF hist
       registry.fill(HIST("hKFParticleCascBachTopoChi2"), cascBachTopoChi2);
-      registry.fill(HIST("hKFParticleV0TopoChi2"), kfXic0Candidate.chi2NdfTopoV0ToCasc);
-      registry.fill(HIST("hKFParticleCascTopoChi2"), kfXic0Candidate.chi2NdfTopoCascToXic);
-      registry.fill(HIST("hKFParticleDcaCharmBaryonDau"), kfXic0Candidate.kfDcaXicDau);
-      registry.fill(HIST("hKFParticleDcaXYCascBachToPv"), dcaxyCascBachelor);
-      registry.fill(HIST("hKFParticleDcaXYV0DauPosToPv"), dcaxyV0Dau0);
-      registry.fill(HIST("hKFParticleDcaXYV0DauNegToPv"), dcaxyV0Dau1);
-      registry.fill(HIST("hKfLambda_ldl"), kfXic0Candidate.ldlV0);
-      registry.fill(HIST("hKfXi_ldl"), kfXic0Candidate.ldlCasc);
       registry.fill(HIST("hKfXiC0_ldl"), kfXic0Candidate.ldlXic);
-      registry.fill(HIST("hDcaXYCascadeToPVKf"), kfXic0Candidate.kfDcaXYCascToPv);
 
       // fill kf table
       kfCandidateXicData(collision.globalIndex(),
                          pvCoord[0], pvCoord[1], pvCoord[2],
-                         vertexCharmBaryonFromFitter[0], vertexCharmBaryonFromFitter[1], vertexCharmBaryonFromFitter[2],
                          vertexCasc[0], vertexCasc[1], vertexCasc[2],
                          vertexV0[0], vertexV0[1], vertexV0[2],
                          trackCascDauCharged.sign(),
@@ -1628,28 +1596,23 @@ struct HfCandidateCreatorXic0Omegac0 {
                          pVecCascBachelor[0], pVecCascBachelor[1], pVecCascBachelor[2],
                          pVecV0Dau0[0], pVecV0Dau0[1], pVecV0Dau0[2],
                          pVecV0Dau1[0], pVecV0Dau1[1], pVecV0Dau1[2],
-                         impactParameterCasc.getY(), impactParBachFromCharmBaryonXY,
-                         impactParameterCasc.getZ(), impactParBachFromCharmBaryonZ,
-                         std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBachelor.getSigmaY2()),
                          v0index, casc.posTrackId(), casc.negTrackId(),
                          casc.cascadeId(), trackCharmBachelor.globalIndex(), casc.bachelorId(),
                          kfXic0Candidate.massV0, kfXic0Candidate.massCasc, kfXic0Candidate.massXic,
-                         kfXic0Candidate.cosPaV0ToPv, kfXic0Candidate.cosPaXicToPv, kfXic0Candidate.cosPaCascToPv, kfXic0Candidate.cosPaXYV0ToPv, kfXic0Candidate.cosPaXYXicToPv, kfXic0Candidate.cosPaXYCascToPv,
-                         kfXic0Candidate.ctOmegac, kfXic0Candidate.ctCasc, kfXic0Candidate.ctV0, kfXic0Candidate.ctXic,
+                         kfXic0Candidate.cosPaV0ToPv, kfXic0Candidate.cosPaCascToPv,
+                         kfXic0Candidate.ctCasc, kfXic0Candidate.ctV0, kfXic0Candidate.ctXic,
                          pseudorapV0Dau0, pseudorapV0Dau1, pseudorapCascBachelor, pseudorapCharmBachelor,
                          kfXic0Candidate.etaXic, kfXi.GetEta(), kfV0.GetEta(),
                          dcaxyV0Dau0, dcaxyV0Dau1, dcaxyCascBachelor,
-                         dcazV0Dau0, dcazV0Dau1, dcazCascBachelor,
                          kfXic0Candidate.kfDcaCascDau, kfXic0Candidate.kfDcaV0Dau, kfXic0Candidate.kfDcaXicDau,
-                         decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon,
                          kfXic0Candidate.kfDcaXYPiFromXic, kfXic0Candidate.kfDcaXYCascToPv,
                          kfXic0Candidate.chi2GeoV0, kfXic0Candidate.chi2GeoCasc, kfXic0Candidate.chi2GeoXic, kfXic0Candidate.chi2MassV0, kfXic0Candidate.chi2MassCasc,
-                         kfXic0Candidate.ldlV0, kfXic0Candidate.ldlCasc, kfXic0Candidate.ldlXic,
+                         kfXic0Candidate.ldlV0, kfXic0Candidate.ldlCasc,
                          kfXic0Candidate.chi2NdfTopoV0ToPv, kfXic0Candidate.chi2NdfTopoCascToPv, kfXic0Candidate.chi2NdfTopoPiFromXicToPv, kfXic0Candidate.chi2NdfTopoXicToPv,
                          kfXic0Candidate.chi2NdfTopoV0ToCasc, kfXic0Candidate.chi2NdfTopoCascToXic,
                          kfXic0Candidate.decayLenXYLambda, kfXic0Candidate.decayLenXYCasc, kfXic0Candidate.decayLenXYXic,
-                         kfXic0Candidate.cosPaV0ToCasc, kfXic0Candidate.cosPaCascToXic, kfXic0Candidate.cosPaXYV0ToCasc, kfXic0Candidate.cosPaXYCascToXic,
-                         kfXic0Candidate.rapXic, kfXic0Candidate.ptPiFromXic, kfXic0Candidate.ptXic,
+                         kfXic0Candidate.cosPaV0ToCasc, kfXic0Candidate.cosPaCascToXic,
+                         kfXic0Candidate.rapXic,
                          kfXic0Candidate.cosThetaStarPiFromXic,
                          v0NDF, cascNDF, charmbaryonNDF, v0Ndfm, cascNdfm,
                          v0Chi2OverNdf, cascChi2OverNdf, charmbaryonChi2OverNdf, v0Chi2OverNdfm, cascChi2OverNdfm);
@@ -1672,7 +1635,8 @@ struct HfCandidateCreatorXic0Omegac0 {
   template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename Coll, typename Hist>
   void runOmegac0Xic0ToOmegaKaCreatorWithKFParticle(Coll const&,
                                                     aod::BCsWithTimestamps const& /*bcWithTimeStamps*/,
-                                                    MyKfTracks const&,
+                                                    MyKfTracksIU const& tracksIU,
+                                                    MyKfTracks const& tracks,
                                                     MyKfCascTable const&, KFCascadesLinked const&,
                                                     aod::HfCascLf2Prongs const& candidates,
                                                     Hist& hInvMassCharmBaryon,
@@ -1713,11 +1677,15 @@ struct HfCandidateCreatorXic0Omegac0 {
       hCascadesCounter->Fill(1);
 
       // convert KaonFromCharm&KaFromOmega&V0DauPos&V0DauNeg tracks into KFParticle object
-      auto trackKaFromCharm = cand.prong0_as<MyKfTracks>();
-      auto trackKaFromOmega = casc.bachelor_as<MyKfTracks>(); // Ka <- Omega track
-      auto trackV0DauPos = casc.posTrack_as<MyKfTracks>();    // V0 positive daughter track
-      auto trackV0DauNeg = casc.negTrack_as<MyKfTracks>();    // V0 negative daughter track
-      auto KaFromOmegaCharge = trackKaFromOmega.sign();
+      auto trackCharmBachelorId = cand.prong0Id();
+      auto trackKaFromCharm = tracks.rawIteratorAt(trackCharmBachelorId);
+      auto trackCascDauChargedId = casc.bachelorId();
+      auto trackV0Dau0Id = casc.posTrackId();
+      auto trackV0Dau1Id = casc.negTrackId();
+      auto trackKaFromOmega = tracksIU.rawIteratorAt(trackCascDauChargedId); // Ka <- Omega track
+      auto trackV0DauPos = tracksIU.rawIteratorAt(trackV0Dau0Id);            // V0 positive daughter track
+      auto trackV0DauNeg = tracksIU.rawIteratorAt(trackV0Dau1Id);            // V0 negative daughter track
+      auto kaFromOmegaCharge = trackKaFromOmega.sign();
       auto signOmega = casc.sign();
 
       KFPTrack kfpTrackKaFromCharm = createKFPTrackFromTrack(trackKaFromCharm);
@@ -1731,7 +1699,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       KFParticle kfPiFromXiRej(kfpTrackKaFromOmega, kPiMinus); // rej
       KFParticle kfKaFromCharm(kfpTrackKaFromCharm, kKPlus);
 
-      if (signOmega == 0 || KaFromOmegaCharge == 0 || KaFromOmegaCharge != signOmega) {
+      if (signOmega == 0 || kaFromOmegaCharge == 0 || kaFromOmegaCharge != signOmega) {
         continue;
       }
       // convert for Pos and Neg Particles
@@ -2035,34 +2003,37 @@ struct HfCandidateCreatorXic0Omegac0 {
 
   void processNoCentOmegacToOmegaPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                                   aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                                  MyKfTracksIU const& tracksIU,
                                                   MyKfTracks const& tracks,
                                                   MyKfCascTable const& cascades,
                                                   KFCascadesLinked const& cascadeLinks,
                                                   aod::HfCascLf2Prongs const& candidates)
   {
-    runKfOmegac0CreatorWithKFParticle<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, bcWithTimeStamps, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaPi, hFitterStatusToOmegaPi, hCandidateCounterToOmegaPi, hCascadesCounterToOmegaPi);
+    runKfOmegac0CreatorWithKFParticle<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, bcWithTimeStamps, tracksIU, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaPi, hFitterStatusToOmegaPi, hCandidateCounterToOmegaPi, hCascadesCounterToOmegaPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processNoCentOmegacToOmegaPiWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega pi decay channel using KFParticle", false);
 
   void processNoCentOmegac0Xic0ToOmegaKaCreatorWithKFParticle(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                                               aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                                              MyKfTracksIU const& tracksIU,
                                                               MyKfTracks const& tracks,
                                                               MyKfCascTable const& cascades,
                                                               KFCascadesLinked const& cascadeLinks,
                                                               aod::HfCascLf2Prongs const& candidates)
   {
-    runOmegac0Xic0ToOmegaKaCreatorWithKFParticle<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, bcWithTimeStamps, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaK, hFitterStatusToOmegaK, hCandidateCounterToOmegaK, hCascadesCounterToOmegaK);
+    runOmegac0Xic0ToOmegaKaCreatorWithKFParticle<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, bcWithTimeStamps, tracksIU, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaK, hFitterStatusToOmegaK, hCandidateCounterToOmegaK, hCascadesCounterToOmegaK);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processNoCentOmegac0Xic0ToOmegaKaCreatorWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega ka decay channel using KFParticle", false);
 
   void processNoCentXicToXiPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                             aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                            MyKfTracksIU const& tracksIU,
                                             MyKfTracks const& tracks,
                                             MyKfCascTable const& cascades,
                                             KFCascadesLinked const& cascadeLinks,
                                             aod::HfCascLf2Prongs const& candidates)
   {
-    runKfXic0CreatorWithKFParticle<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, bcWithTimeStamps, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToXiPi, hFitterStatusToXiPi, hCandidateCounterToXiPi, hCascadesCounterToXiPi);
+    runKfXic0CreatorWithKFParticle<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, bcWithTimeStamps, tracksIU, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToXiPi, hFitterStatusToXiPi, hCandidateCounterToXiPi, hCascadesCounterToXiPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processNoCentXicToXiPiWithKFParticle, "Run candidate creator w/o centrality selections for Xic0 To Xi pi decay channel using KFParticle", false);
 
@@ -2105,34 +2076,37 @@ struct HfCandidateCreatorXic0Omegac0 {
 
   void processCentFT0COmegacToOmegaPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                                     aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                                    MyKfTracksIU const& tracksIU,
                                                     MyKfTracks const& tracks,
                                                     MyKfCascTable const& cascades,
                                                     KFCascadesLinked const& cascadeLinks,
                                                     aod::HfCascLf2Prongs const& candidates)
   {
-    runKfOmegac0CreatorWithKFParticle<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, bcWithTimeStamps, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaPi, hFitterStatusToOmegaPi, hCandidateCounterToOmegaPi, hCascadesCounterToOmegaPi);
+    runKfOmegac0CreatorWithKFParticle<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, bcWithTimeStamps, tracksIU, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaPi, hFitterStatusToOmegaPi, hCandidateCounterToOmegaPi, hCascadesCounterToOmegaPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0COmegacToOmegaPiWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega pi decay channel using KFParticle", false);
 
   void processCentFT0COmegac0Xic0ToOmegaKaCreatorWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                                                 aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                                                MyKfTracksIU const& tracksIU,
                                                                 MyKfTracks const& tracks,
                                                                 MyKfCascTable const& cascades,
                                                                 KFCascadesLinked const& cascadeLinks,
                                                                 aod::HfCascLf2Prongs const& candidates)
   {
-    runOmegac0Xic0ToOmegaKaCreatorWithKFParticle<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, bcWithTimeStamps, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaK, hFitterStatusToOmegaK, hCandidateCounterToOmegaK, hCascadesCounterToOmegaK);
+    runOmegac0Xic0ToOmegaKaCreatorWithKFParticle<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, bcWithTimeStamps, tracksIU, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaK, hFitterStatusToOmegaK, hCandidateCounterToOmegaK, hCascadesCounterToOmegaK);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0COmegac0Xic0ToOmegaKaCreatorWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega ka decay channel using KFParticle", false);
 
   void processCentFT0CXicToXiPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                               aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                              MyKfTracksIU const& tracksIU,
                                               MyKfTracks const& tracks,
                                               MyKfCascTable const& cascades,
                                               KFCascadesLinked const& cascadeLinks,
                                               aod::HfCascLf2Prongs const& candidates)
   {
-    runKfXic0CreatorWithKFParticle<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, bcWithTimeStamps, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToXiPi, hFitterStatusToXiPi, hCandidateCounterToXiPi, hCascadesCounterToXiPi);
+    runKfXic0CreatorWithKFParticle<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, bcWithTimeStamps, tracksIU, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToXiPi, hFitterStatusToXiPi, hCandidateCounterToXiPi, hCascadesCounterToXiPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0CXicToXiPiWithKFParticle, "Run candidate creator w FT0C centrality selections for Xic0 To Xi pi decay channel using KFParticle", false);
 
@@ -2175,34 +2149,37 @@ struct HfCandidateCreatorXic0Omegac0 {
 
   void processCentFT0MOmegacToOmegaPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                                     aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                                    MyKfTracksIU const& tracksIU,
                                                     MyKfTracks const& tracks,
                                                     MyKfCascTable const& cascades,
                                                     KFCascadesLinked const& cascadeLinks,
                                                     aod::HfCascLf2Prongs const& candidates)
   {
-    runKfOmegac0CreatorWithKFParticle<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, bcWithTimeStamps, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaPi, hFitterStatusToOmegaPi, hCandidateCounterToOmegaPi, hCascadesCounterToOmegaPi);
+    runKfOmegac0CreatorWithKFParticle<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, bcWithTimeStamps, tracksIU, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaPi, hFitterStatusToOmegaPi, hCandidateCounterToOmegaPi, hCascadesCounterToOmegaPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0MOmegacToOmegaPiWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega pi decay channel using KFParticle", false);
 
   void processCentFT0MOmegac0Xic0ToOmegaKaCreatorWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                                                 aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                                                MyKfTracksIU const& tracksIU,
                                                                 MyKfTracks const& tracks,
                                                                 MyKfCascTable const& cascades,
                                                                 KFCascadesLinked const& cascadeLinks,
                                                                 aod::HfCascLf2Prongs const& candidates)
   {
-    runOmegac0Xic0ToOmegaKaCreatorWithKFParticle<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, bcWithTimeStamps, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaK, hFitterStatusToOmegaK, hCandidateCounterToOmegaK, hCascadesCounterToOmegaK);
+    runOmegac0Xic0ToOmegaKaCreatorWithKFParticle<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, bcWithTimeStamps, tracksIU, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaK, hFitterStatusToOmegaK, hCandidateCounterToOmegaK, hCascadesCounterToOmegaK);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0MOmegac0Xic0ToOmegaKaCreatorWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega ka decay channel using KFParticle", false);
 
   void processCentFT0MXicToXiPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                               aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                              MyKfTracksIU const& tracksIU,
                                               MyKfTracks const& tracks,
                                               MyKfCascTable const& cascades,
                                               KFCascadesLinked const& cascadeLinks,
                                               aod::HfCascLf2Prongs const& candidates)
   {
-    runKfXic0CreatorWithKFParticle<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, bcWithTimeStamps, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToXiPi, hFitterStatusToXiPi, hCandidateCounterToXiPi, hCascadesCounterToXiPi);
+    runKfXic0CreatorWithKFParticle<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, bcWithTimeStamps, tracksIU, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToXiPi, hFitterStatusToXiPi, hCandidateCounterToXiPi, hCascadesCounterToXiPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0MXicToXiPiWithKFParticle, "Run candidate creator w FT0M centrality selections for Xic0 To Xi pi decay channel using KFParticle", false);
 
