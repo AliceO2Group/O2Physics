@@ -474,8 +474,8 @@ class Sigma0BuilderModule
 
   // ______________________________________________________
   // Real data processing - no MC subscription
-  template <typename TCollision, typename TV0s, typename THistoRegistry, typename TSlicecache, typename TCCDB, typename TRateFetcher>
-  void process(TCollision const& collisions, TV0s const& fullV0s, THistoRegistry& histos, TSlicecache& cache, TCCDB const& ccdb, TRateFetcher& rateFetcher)
+  template <typename TCollision, typename TV0s, typename TSlicer, typename THistoRegistry, typename TCCDB, typename TRateFetcher>
+  void processSlicing(TCollision const& collisions, TV0s const& fullV0s, TSlicer& slicer, THistoRegistry& histos, TCCDB const& ccdb, TRateFetcher& rateFetcher)
   {
     uint64_t CollIDBuffer = 0;
     for (const auto& coll : collisions) {
@@ -483,18 +483,85 @@ class Sigma0BuilderModule
         continue;
 
       const uint64_t collIdx = coll.globalIndex();      
-      if (collIdx < CollIDBuffer) 
-        LOGF(fatal, "Collision table unsorted! Previous index: %i, current index: %i", CollIDBuffer, collIdx); 
-
-      CollIDBuffer = collIdx;
 
       //_______________________________________________
       // V0s loop
       std::vector<int> bestGammasArray;
       std::vector<int> bestLambdasArray;
 
-      auto V0s = fullV0s.sliceByCached(o2::aod::v0data::straCollisionId, collIdx, cache);      
+      auto V0s = fullV0s.sliceBy(slicer, collIdx);      
       for (auto& v0 : V0s) {
+        const uint64_t v0collidx = v0.straCollisionId(); 
+        if (v0collidx < CollIDBuffer) 
+          LOGF(fatal, "Collision table unsorted! Previous index: %i, current index: %i", CollIDBuffer, v0collidx); 
+        
+        if (processPhotonCandidate(v0, coll, histos))          // selecting photons
+          bestGammasArray.push_back(v0.globalIndex()); // Save indices of best gamma candidates
+
+        if (processLambdaCandidate(v0, coll, histos))           // selecting lambdas
+          bestLambdasArray.push_back(v0.globalIndex()); // Save indices of best lambda candidates
+
+        CollIDBuffer = v0collidx;
+      }
+    
+       
+      //_______________________________________________
+      // Pi0 optional loop
+      if (pi0selOpts.doPi0QA) {
+        for (size_t i = 0; i < bestGammasArray.size(); ++i) {
+          auto gamma1 = fullV0s.rawIteratorAt(bestGammasArray[i]);
+          for (size_t j = i + 1; j < bestGammasArray.size(); ++j) {
+            auto gamma2 = fullV0s.rawIteratorAt(bestGammasArray[j]);
+            runPi0QA(gamma1, gamma2, coll, histos);
+          }
+        }
+      }
+
+      //_______________________________________________
+      // Sigma0 nested loop
+      for (size_t i = 0; i < bestGammasArray.size(); ++i) {
+        auto gamma = fullV0s.rawIteratorAt(bestGammasArray[i]);
+
+        for (size_t j = 0; j < bestLambdasArray.size(); ++j) {
+          auto lambda = fullV0s.rawIteratorAt(bestLambdasArray[j]);
+
+          // Building sigma0 candidate
+          if (!buildSigma0(lambda, gamma, coll, histos))
+            continue;          
+        }
+      }
+    }
+  } // end processSlicing 
+
+    // ______________________________________________________
+  // Real data processing - no MC subscription
+  template <typename TCollision, typename TV0s, typename THistoRegistry, typename TCCDB, typename TRateFetcher>
+  void processCustomGrouping(TCollision const& collisions, TV0s const& fullV0s, THistoRegistry& histos, TCCDB const& ccdb, TRateFetcher& rateFetcher)
+  {
+    uint64_t CollIDBuffer = 0;
+    // brute force grouped index construction 
+    std::vector<std::vector<int>> v0grouped(collisions.size()); 
+
+    for (const auto& v0 : fullV0s) {
+      v0grouped[v0.straCollisionId()].push_back(v0.globalIndex());
+
+      const uint64_t v0collidx = v0.straCollisionId();      
+      if (v0collidx < CollIDBuffer) 
+        LOGF(fatal, "V0 -> stracollision: index unsorted! Previous index: %i, current index: %i", CollIDBuffer, v0collidx); 
+      CollIDBuffer = v0collidx;
+    }
+
+    for (const auto& coll : collisions) {
+      if (!IsEventAccepted(coll, histos, ccdb, rateFetcher))
+        continue;
+
+      //_______________________________________________
+      // V0s loop
+      std::vector<int> bestGammasArray;
+      std::vector<int> bestLambdasArray;
+
+      for (size_t i = 0; i < v0grouped[coll.globalIndex()].size(); i++) {
+        auto v0 = fullV0s.rawIteratorAt(v0grouped[coll.globalIndex()][i]);
         if (processPhotonCandidate(v0, coll, histos))          // selecting photons
           bestGammasArray.push_back(v0.globalIndex()); // Save indices of best gamma candidates
 
@@ -529,7 +596,57 @@ class Sigma0BuilderModule
         }
       }
     }
-  } // end process 
+  } // end processCustomGrouping 
+
+  // ______________________________________________________
+  // Real data processing - no MC subscription
+  template <typename TCollision, typename TV0s, typename THistoRegistry, typename TCCDB, typename TRateFetcher>
+  void processIterator(TCollision const& coll, TV0s const& fullV0s, THistoRegistry& histos, TCCDB const& ccdb, TRateFetcher& rateFetcher)
+  {
+    if (!IsEventAccepted(coll, histos, ccdb, rateFetcher))
+      return;
+
+    //_______________________________________________
+    // V0s loop
+    std::vector<int> bestGammasArray;
+    std::vector<int> bestLambdasArray;
+
+    for (auto& v0 : fullV0s) {
+      if (processPhotonCandidate(v0, coll, histos))          // selecting photons
+        bestGammasArray.push_back(v0.globalIndex() - fullV0s.offset()); // Save indices of best gamma candidates
+
+      if (processLambdaCandidate(v0, coll, histos))           // selecting lambdas
+        bestLambdasArray.push_back(v0.globalIndex() - fullV0s.offset()); // Save indices of best lambda candidates
+    }
+  
+    //_______________________________________________
+    // Pi0 optional loop
+    if (pi0selOpts.doPi0QA) {
+      for (size_t i = 0; i < bestGammasArray.size(); ++i) {
+        auto gamma1 = fullV0s.rawIteratorAt(bestGammasArray[i]);
+        for (size_t j = i + 1; j < bestGammasArray.size(); ++j) {
+          auto gamma2 = fullV0s.rawIteratorAt(bestGammasArray[j]);
+          runPi0QA(gamma1, gamma2, coll, histos);
+        }
+      }
+    }
+
+    //_______________________________________________
+    // Sigma0 nested loop
+    for (size_t i = 0; i < bestGammasArray.size(); ++i) {
+      auto gamma = fullV0s.rawIteratorAt(bestGammasArray[i]);
+
+      for (size_t j = 0; j < bestLambdasArray.size(); ++j) {
+        auto lambda = fullV0s.rawIteratorAt(bestLambdasArray[j]);
+
+        // Building sigma0 candidate
+        if (!buildSigma0(lambda, gamma, coll, histos))
+          continue;          
+      }
+    }
+  
+  } // end processIterator 
+
 }; // end Sigma0BuilderModule
 
 } // namespace sigma0
