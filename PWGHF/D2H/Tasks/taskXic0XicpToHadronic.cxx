@@ -367,7 +367,7 @@ struct HfTaskXic0XicpToHadronic {
 			auto ptCandXic0 = candidate.pt();
 			int flagMatchRecXic0 = std::abs(candidate.flagMcMatchRec());
 
-			if (TESTBIT(flagMatchRecXic0, hf_cand_xic0_xicp_to_hadronic::DecayType::Xic0ToXiPi)) { // process signal
+			if (TESTBIT(flagMatchRecXic0, hf_cand_xic0_xicp_to_hadronic::DecayTypeXic0::Xic0ToXiPi)) { // process signal
 				auto idxMother = RecoDecay::getMother(mcParticles, candidate.template pi_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCandXic0McGen>>(), o2::constants::physics::Pdg::kXiC0, true);
 				auto particleMother = mcParticles.rawIteratorAt(idxMother);
 				        
@@ -447,7 +447,7 @@ struct HfTaskXic0XicpToHadronic {
 		// MC gen
 		for (const auto& particle : mcParticles) {
 
-		if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_xic0_xicp_to_hadronic::DecayType::Xic0ToXiPi)) {
+		if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_xic0_xicp_to_hadronic::DecayTypeXic0::Xic0ToXiPi)) {
 			arrDaughIdx.clear();
 
 			auto ptParticle = particle.pt();
