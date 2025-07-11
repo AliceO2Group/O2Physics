@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 /// \author Andrea Rossi <andrea.rossi@cern.ch>
+
 /// \brief Simple task to filter tracks and save infos to trees for DCA-related studies (alignment, HF-related issues)
 
 #include "Common/Core/RecoDecay.h"
@@ -300,7 +301,7 @@ struct FilterTracks {
         for (auto mcpartdaughtIdx : indxDaughers) {
           auto mcPartDaught = mcParticles.rawIteratorAt(mcpartdaughtIdx);
           double eta = std::abs(mcPartDaught.eta());
-          if ((eta) > etamax){
+          if ((eta) > etamax) {
             etamax = eta;
           }
         }
