@@ -63,7 +63,7 @@ struct sigma0builder {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   ctpRateFetcher rateFetcher;
 
-  SliceCache cache;
+  //SliceCache cache;
 
   Produces<aod::Sigma0Cores> sigma0cores;             // save sigma0 candidates for analysis
   Produces<aod::SigmaPhotonExtras> sigmaPhotonExtras; // save sigma0 candidates for analysis
@@ -71,8 +71,8 @@ struct sigma0builder {
   Produces<aod::SigmaMCCores> sigma0mccores;
 
   // For manual sliceBy
-  PresliceUnsorted<V0DerivedMCDatas> perCollisionMCDerived = o2::aod::v0data::straCollisionId;
-  PresliceUnsorted<V0StandardDerivedDatas> perCollisionSTDDerived = o2::aod::v0data::straCollisionId;
+  //PresliceUnsorted<V0DerivedMCDatas> perCollisionMCDerived = o2::aod::v0data::straCollisionId;
+  //PresliceUnsorted<V0StandardDerivedDatas> perCollisionSTDDerived = o2::aod::v0data::straCollisionId;
   PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
 
   // pack track quality but separte also afterburner
@@ -1138,16 +1138,20 @@ struct sigma0builder {
 
   void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions, V0DerivedMCDatas const& fullV0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
   {
+    // brute force grouped index construction 
+    std::vector<std::vector<int>> v0grouped(collisions.size()); 
+      
+    for (const auto& v0 : fullV0s) {
+      v0grouped[v0.straCollisionId()].push_back(v0.globalIndex());
+    }
+
     for (const auto& coll : collisions) {
 
       if (!IsEventAccepted(coll, true))
         continue;
 
-      // Do analysis with collision-grouped V0s, retain full collision information
-      const uint64_t collIdx = coll.globalIndex();
-      auto V0s = fullV0s.sliceBy(perCollisionMCDerived, collIdx);
       float centrality = doPPAnalysis ? coll.centFT0M() : coll.centFT0C();
-
+      
       bool fhasMCColl = false;
       if (coll.has_straMCCollision())
         fhasMCColl = true;
@@ -1169,7 +1173,9 @@ struct sigma0builder {
 
       //_______________________________________________
       // V0s loop
-      for (auto& v0 : V0s) {
+      for (size_t i = 0; i < v0grouped[coll.globalIndex()].size(); i++) {
+        auto v0 = fullV0s.rawIteratorAt(v0grouped[coll.globalIndex()][i]);
+
         if (!v0.has_v0MCCore())
           continue;
 
@@ -1317,14 +1323,18 @@ struct sigma0builder {
 
   void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, V0StandardDerivedDatas const& fullV0s, dauTracks const&)
   {
+    // brute force grouped index construction 
+    std::vector<std::vector<int>> v0grouped(collisions.size()); 
+      
+    for (const auto& v0 : fullV0s) {
+      v0grouped[v0.straCollisionId()].push_back(v0.globalIndex());
+    }
+
     for (const auto& coll : collisions) {
 
       if (!IsEventAccepted(coll, true))
         continue;
 
-      // Do analysis with collision-grouped V0s, retain full collision information
-      const uint64_t collIdx = coll.globalIndex();
-      auto V0s = fullV0s.sliceBy(perCollisionSTDDerived, collIdx);
       float centrality = doPPAnalysis ? coll.centFT0M() : coll.centFT0C();
 
       //_______________________________________________
@@ -1344,7 +1354,8 @@ struct sigma0builder {
 
       //_______________________________________________
       // V0s loop
-      for (auto& v0 : V0s) {
+      for (size_t i = 0; i < v0grouped[coll.globalIndex()].size(); i++) {
+        auto v0 = fullV0s.rawIteratorAt(v0grouped[coll.globalIndex()][i]);
         if (processPhotonCandidate(v0, coll))          // selecting photons
           bestGammasArray.push_back(v0.globalIndex()); // Save indices of best gamma candidates
 
