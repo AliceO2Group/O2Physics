@@ -469,8 +469,9 @@ struct HfCandidateCreatorCharmResoReduced {
         // Retrieve D and V0 informations
         float invMassD{0.};
         float invMassD0{0.};
-        if (std::abs(bachD.dType()) == DType::Dplus)
+        if (std::abs(bachD.dType()) == DType::Dplus) {
           invMassD = bachD.invMassDplus();
+        }
         if (bachD.dType() == DType::Dstar) {
           invMassD = bachD.invMassDstar();
           invMassD0 = bachD.invMassD0();
