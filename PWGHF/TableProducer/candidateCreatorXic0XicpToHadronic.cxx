@@ -1427,7 +1427,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 	}
 	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processXic0WithDCAFitterCentFT0C, "Xic0 reconstruction via DcaFitter method, centrality selection on FT0C", false);
 
-	void processXic0WithDCAFitterCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+	void processXic0WithDCAFitterCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
 										 aod::HfCascLf2Prongs const& candidates,
 										 CascadesLinked const& cascadesLinked,
 										 CascFull const& cascFull,
@@ -1438,7 +1438,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 	}
 	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processXic0WithDCAFitterCentFT0M, "Xic0 reconstruction via DcaFitter method, centrality selection on FT0M", false);
 
-	void processXicpWithDCAFitterNoCent( SelectedCollisions const& collisions,
+	void processXicpWithDCAFitterNoCent(SelectedCollisions const& collisions,
 										 aod::HfCascLf3Prongs const& candidates,
 										 CascadesLinked const& cascadesLinked,
 										 CascFull const& cascFull,
@@ -1449,7 +1449,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 	}
 	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processXicpWithDCAFitterNoCent, "Xicp reconstruction via DcaFitter method, no centrality", false);
 
-	void processXicpWithDCAFitterCentFT0C( soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+	void processXicpWithDCAFitterCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
 										 aod::HfCascLf3Prongs const& candidates,
 										 CascadesLinked const& cascadesLinked,
 										 CascFull const& cascFull,
@@ -1460,7 +1460,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 	}
 	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processXicpWithDCAFitterCentFT0C, "Xicp reconstruction via DcaFitter method, centrality on FT0C", false);
 
-	void processXicpWithDCAFitterCentFT0M( soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+	void processXicpWithDCAFitterCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
 										 aod::HfCascLf3Prongs const& candidates,
 										 CascadesLinked const& cascadesLinked,
 										 CascFull const& cascFull,
@@ -1567,6 +1567,38 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 		}
 	}
 	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processCollisionsNoCent, "Collision monitoring - No Centrality", false);
+
+	void processCollisionsCentFT0C( soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+								 aod::BCsWithTimestamps const& )
+	{
+		for (const auto& collision : collisions) {
+			
+			// bitmask with event selection info
+			float centrality{-1.f};
+			float occupancy = getOccupancyColl(collision, OccupancyEstimator::Its);
+			const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+
+			// monitor the satisfied event selection
+			hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
+		}
+	}
+	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processCollisionsCentFT0C, "Collision monitoring - Centrality selection with FT0C", false);
+
+	void processCollisionsCentFT0M( soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+								 aod::BCsWithTimestamps const& )
+	{
+		for (const auto& collision : collisions) {
+			
+			// bitmask with event selection info
+			float centrality{-1.f};
+			float occupancy = getOccupancyColl(collision, OccupancyEstimator::Its);
+			const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+
+			// monitor the satisfied event selection
+			hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
+		}
+	}
+	PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processCollisionsCentFT0M, "Collision monitoring - Centrality selection with FT0M", false);
 
 };
 
