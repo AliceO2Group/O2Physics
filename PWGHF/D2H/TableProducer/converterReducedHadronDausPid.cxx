@@ -44,7 +44,7 @@ struct HfConverterReducedHadronDausPid {
   {
     hfRedPidDau0s(hfCandPidProngs.tpcNSigmaPiProng0(), hfCandPidProngs.tofNSigmaPiProng0(), hfCandPidProngs.tpcNSigmaKaProng0(), hfCandPidProngs.tofNSigmaKaProng0(), -999.f, -999.f, hfCandPidProngs.hasTOFProng0(), hfCandPidProngs.hasTPCProng0());
     hfRedPidDau1s(hfCandPidProngs.tpcNSigmaPiProng1(), hfCandPidProngs.tofNSigmaPiProng1(), hfCandPidProngs.tpcNSigmaKaProng1(), hfCandPidProngs.tofNSigmaKaProng1(), -999.f, -999.f, hfCandPidProngs.hasTOFProng1(), hfCandPidProngs.hasTPCProng1());
-    hfRedPidDau2s(hfCandPidProngs.tpcNSigmaPiProng2(), hfCandPidProngs.tofNSigmaPiProng2(), hfCandPidProngs.tpcNSigmaKaProng2(), hfCandPidProngs.tofNSigmaKaProng2(), -999.f, -999.f, hfCandPidProngs.hasTOFProng1(), hfCandPidProngs.hasTPCProng1());
+    hfRedPidDau2s(hfCandPidProngs.tpcNSigmaPiProng2(), hfCandPidProngs.tofNSigmaPiProng2(), hfCandPidProngs.tpcNSigmaKaProng2(), hfCandPidProngs.tofNSigmaKaProng2(), -999.f, -999.f, hfCandPidProngs.hasTOFProng2(), hfCandPidProngs.hasTPCProng2());
   }
   PROCESS_SWITCH(HfConverterReducedHadronDausPid, process3Prongs, "Produce PID tables for 3-prong candidates", true);
 };
