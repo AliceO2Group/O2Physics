@@ -594,6 +594,15 @@ class HfFilterHelper
       mSigmaPars3Prongs[1] = 0.00176f;
       mDeltaMassPars3Prongs[0] = -0.0025f;
       mDeltaMassPars3Prongs[1] = 0.0001f;
+    } else if (recoPass == "2025_pass1") {
+      mSigmaPars2Prongs[0] = 0.01424f;
+      mSigmaPars2Prongs[1] = 0.00178f;
+      mDeltaMassPars2Prongs[0] = -0.013f;
+      mDeltaMassPars2Prongs[1] = 0.00029f;
+      mSigmaPars3Prongs[0] = 0.00796f;
+      mSigmaPars3Prongs[1] = 0.00176f;
+      mDeltaMassPars3Prongs[0] = -0.013f;
+      mDeltaMassPars3Prongs[1] = 0.00029f;
     } else {
       LOGP(fatal, "Mass resolution parametrisation {} not supported! Please set 2023_pass3", recoPass.data());
     }
