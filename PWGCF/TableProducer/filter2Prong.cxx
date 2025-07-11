@@ -128,9 +128,9 @@ struct Filter2Prong {
   void init(InitContext&)
   {
     if (doprocessDataInvMass) {
+      sigmaFormula = std::make_unique<TFormula>("sigmaFormula", cfgImSigmaFormula.value.c_str());
       if (static_cast<std::size_t>(sigmaFormula->GetNpar()) > std::size(sigmaFormulaParamIndex))
         LOGF(fatal, "Number of parameters in cfgImSigmaFormula can not be larger than %d.", std::size(sigmaFormulaParamIndex));
-      sigmaFormula = std::make_unique<TFormula>("sigmaFormula", cfgImSigmaFormula.value.c_str());
       // could do SetParameter(name,value) directly, but pre-lookup of the names will result in faster process
       std::array<std::string, 4> pars = {"p", "sTPC", "sTOF", "hasTOF"};
       std::fill_n(sigmaFormulaParamIndex.begin(), std::size(sigmaFormulaParamIndex), ~0u);
