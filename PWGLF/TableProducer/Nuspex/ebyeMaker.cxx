@@ -230,7 +230,7 @@ struct EbyeMaker {
   Configurable<float> etaMaxV0dau{"etaMaxV0dau", 0.8f, "maximum eta V0 daughters"};
   Configurable<float> outerPIDMin{"outerPIDMin", -4.f, "minimum outer PID"};
 
-  Configurable<std::string> genName{"genname", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
+  Configurable<bool> useAllEvSel{"useAllEvSel", false, "use additional event selections fo run 3 analyses"};
   Configurable<uint8_t> triggerCut{"triggerCut", 0x0, "trigger cut to select"};
   Configurable<bool> kINT7Intervals{"kINT7Intervals", false, "toggle kINT7 trigger selection in the 10-30% and 50-90% centrality intervals (2018 Pb-Pb)"};
   Configurable<bool> kUsePileUpCut{"kUsePileUpCut", false, "toggle strong correlation cuts (Run 2)"};
@@ -816,7 +816,7 @@ struct EbyeMaker {
           auto mcTrack = mcLab.template mcParticle_as<aod::McParticles>();
           if (std::abs(mcTrack.pdgCode()) != kPartPdg[iP])
             continue;
-          if (((mcTrack.flags() & 0x8) && (doprocessMcRun2 || doprocessMiniMcRun2)) || (mcTrack.flags() & 0x2) || ((mcTrack.flags() & 0x1) && !doprocessMiniMcRun2))
+          if ((((mcTrack.flags() & 0x8) || (mcTrack.flags() & 0x2)) && (doprocessMcRun2 || doprocessMiniMcRun2)) || ((mcTrack.flags() & 0x1) && !doprocessMiniMcRun2))
             continue;
 
           if (!mcTrack.isPhysicalPrimary() && !doprocessMiniMcRun2)
@@ -854,7 +854,7 @@ struct EbyeMaker {
               }
               if (!posMother.isPhysicalPrimary() && !posMother.has_mothers())
                 continue;
-              if (((posMother.flags() & 0x8) && (doprocessMcRun2 || doprocessMiniMcRun2)) || (posMother.flags() & 0x2) || (posMother.flags() & 0x1))
+              if (((posMother.flags() & 0x8) || (posMother.flags() & 0x2) || (posMother.flags() & 0x1)) && (doprocessMcRun2 || doprocessMiniMcRun2))
                 continue;
 
               auto genPt = std::hypot(posMother.px(), posMother.py());
@@ -877,7 +877,7 @@ struct EbyeMaker {
       if (std::abs(genEta) > etaMax) {
         continue;
       }
-      if (((mcPart.flags() & 0x8) && (doprocessMcRun2 || doprocessMiniMcRun2)) || (mcPart.flags() & 0x2) || ((mcPart.flags() & 0x1) && !doprocessMiniMcRun2))
+      if ((((mcPart.flags() & 0x8) || (mcPart.flags() & 0x2)) && (doprocessMcRun2 || doprocessMiniMcRun2)) || ((mcPart.flags() & 0x1) && !doprocessMiniMcRun2))
         continue;
       auto pdgCode = mcPart.pdgCode();
       if (std::abs(pdgCode) == PDG_t::kLambda0) {
@@ -938,10 +938,7 @@ struct EbyeMaker {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
-      if (!collision.sel8() || std::abs(collision.posZ()) > zVtxMax)
-        continue;
-
-      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+      if (std::abs(collision.posZ()) > zVtxMax || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kIsTriggerTVX) || ((!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && useAllEvSel))
         continue;
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
@@ -1119,10 +1116,7 @@ struct EbyeMaker {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
-      if (!collision.sel8() || std::abs(collision.posZ()) > zVtxMax)
-        continue;
-
-      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+      if (std::abs(collision.posZ()) > zVtxMax || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kIsTriggerTVX) || ((!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && useAllEvSel))
         continue;
 
       auto centrality = collision.centFT0C();
