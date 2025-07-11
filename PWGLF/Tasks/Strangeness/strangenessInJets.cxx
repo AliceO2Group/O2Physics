@@ -982,12 +982,14 @@ struct StrangenessInJets {
       registryMC.fill(HIST("number_of_events_mc_gen"), 0.5);
 
       // Need to apply event selection to simulated events
+      registryMC.fill(HIST("number_of_events_mc_gen"), 1.5);
+
       // Require vertex position within the allowed z range
       if (std::fabs(collision.posZ()) > zVtx)
         continue;
 
       // Fill event counter after selection on z-vertex
-      registryMC.fill(HIST("number_of_events_mc_gen"), 1.5);
+      registryMC.fill(HIST("number_of_events_mc_gen"), 2.5);
 
       // Multiplicity of generated event
       double genMultiplicity = 0.0;
@@ -1011,7 +1013,7 @@ struct StrangenessInJets {
       // Skip events with no particles
       if (fjParticles.size() < 1)
         continue;
-      registryMC.fill(HIST("number_of_events_mc_gen"), 2.5);
+      registryMC.fill(HIST("number_of_events_mc_gen"), 3.5);
 
       // Cluster MC particles into jets using anti-kt algorithm
       fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
@@ -1036,7 +1038,7 @@ struct StrangenessInJets {
         // Apply jet pT threshold
         if (jetMinusBkg.pt() < minJetPt)
           continue;
-        registryMC.fill(HIST("number_of_events_mc_gen"), 3.5);
+        registryMC.fill(HIST("number_of_events_mc_gen"), 4.5);
 
         // Set up two perpendicular cone axes for underlying event estimation
         TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
