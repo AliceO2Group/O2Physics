@@ -514,7 +514,7 @@ struct Hyperhelium4sigmaRecoTask {
 
       std::array<float, 3> posDecVtx = {kinkCand.xDecVtx() + collision.posX(), kinkCand.yDecVtx() + collision.posY(), kinkCand.zDecVtx() + collision.posZ()};
       auto refitP = refitMotherTrack(collision, motherTrack, posDecVtx);
-      for (auto i = 0; i < refitP.size(); ++i) {
+      for (size_t i = 0; i < refitP.size(); ++i) {
         refitP[i] *= 2.f;
       }
 
@@ -600,7 +600,7 @@ struct Hyperhelium4sigmaRecoTask {
 
       std::array<float, 3> posDecVtx = {kinkCand.xDecVtx() + collision.posX(), kinkCand.yDecVtx() + collision.posY(), kinkCand.zDecVtx() + collision.posZ()};
       auto refitP = refitMotherTrack(collision, motherTrack, posDecVtx);
-      for (auto i = 0; i < refitP.size(); ++i) {
+      for (size_t i = 0; i < refitP.size(); ++i) {
         refitP[i] *= 2.f;
       }
 
