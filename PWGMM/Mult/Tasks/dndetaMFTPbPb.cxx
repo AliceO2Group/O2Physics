@@ -127,6 +127,7 @@ struct DndetaMFTPbPb {
       "minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
     Configurable<float> maxOccupancy{
       "maxOccupancy", -1, "maximum occupancy from neighbouring collisions"};
+    Configurable<bool> cfgSelInteractionRate{"cfgSelInteractionRate", false, " Get Interaction rate from CCDB"};
     Configurable<float> minIR{"minIR", -1, "minimum IR (kHz) collisions"};
     Configurable<float> maxIR{"maxIR", -1, "maximum IR (kHz) collisions"};
   } eventCuts;
@@ -1122,8 +1123,10 @@ struct DndetaMFTPbPb {
     if (!isGoodEvent<true>(collision)) {
       return;
     }
-    if (!isIRSelected(bc, true)) {
-      return;
+    if (eventCuts.cfgSelInteractionRate) {
+      if (!isIRSelected(bc, true)) {
+        return;
+      }
     }
 
     auto z = collision.posZ();
@@ -1171,8 +1174,10 @@ struct DndetaMFTPbPb {
     if (!isGoodEvent<false>(collision)) {
       return;
     }
-    if (!isIRSelected(bc, true)) {
-      return;
+    if (eventCuts.cfgSelInteractionRate) {
+      if (!isIRSelected(bc, true)) {
+        return;
+      }
     }
 
     auto z = collision.posZ();
