@@ -14,13 +14,12 @@
 /// \author Tao Fang <tao.fang@cern.ch>, Central China Normal University
 /// \author Ran Tu <ran.tu@cern.ch>, Fudan University
 
-#include "RecoDecay.h"
-
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 

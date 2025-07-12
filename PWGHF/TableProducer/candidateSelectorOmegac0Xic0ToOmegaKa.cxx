@@ -14,8 +14,7 @@
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 /// \author Ruiqi Yin <ruiqi.yin@cern.ch>, Fudan University
 
-#include "RecoDecay.h"
-
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelectorPID.h"
 
 #include <CommonConstants/PhysicsConstants.h>
