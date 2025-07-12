@@ -47,6 +47,25 @@ using namespace o2::constants::physics;
 
 using LorentzVectorPtEtaPhiMass = ROOT::Math::PtEtaPhiMVector;
 
+enum {
+  kINEL = 1,
+  kINEL10,
+  kINELg0,
+  kINELg010,
+  kTrig,
+  kTrig10,
+  kTrigINELg0,
+  kTrigINELg010,
+  kSel8,
+  kSel810,
+  kSel8INELg0,
+  kSel8INELg010,
+  kAllCuts,
+  kAllCuts10,
+  kAllCutsINELg0,
+  kAllCutsINELg010,
+};
+
 struct Lstaranalysis {
   // Define slice per Resocollision
   SliceCache cache;
@@ -156,6 +175,7 @@ struct Lstaranalysis {
   Configurable<bool> cFilladditionalMEPlots{"cFilladditionalMEPlots", false, "Additional Mixed event plots"};
   Configurable<bool> cFilldeltaEtaPhiPlots{"cFilldeltaEtaPhiPlots", false, "Enamble additional cuts on daughters"};
   Configurable<bool> cFillinvmass1DPlots{"cFillinvmass1DPlots", false, "Invariant mass 1D"};
+  Configurable<int> multEstimator{"multEstimator", 0, "Select multiplicity estimator: 0 - FT0M, 1 - FT0A, 2 - FT0C"};
 
   Configurable<int> cfgCentEst{"cfgCentEst", 2, "Centrality estimator, 1: FT0C, 2: FT0M"};
 
@@ -183,7 +203,7 @@ struct Lstaranalysis {
   ConfigurableAxis binsPtQA{"binsPtQA", {VARIABLE_WIDTH, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 7.0, 7.2, 7.4, 7.6, 7.8, 8.0, 8.2, 8.4, 8.6, 8.8, 9.0, 9.2, 9.4, 9.6, 9.8, 10.0, 10.2, 10.4, 10.6, 10.8, 11, 11.2, 11.4, 11.6, 11.8, 12, 12.2, 12.4, 12.6, 12.8, 13, 13.2, 13.4, 13.6, 13.8, 14, 14.2, 14.4, 14.6, 14.8, 15, 15.2, 15.4, 15.6, 15.8, 16, 16.2, 16.4, 16.6, 16.8, 17, 17.2, 17.4, 17.6, 17.8, 18, 18.2, 18.4, 18.6, 18.8, 19, 19.2, 19.4, 19.6, 19.8, 20}, "Binning of the pT axis"};
   ConfigurableAxis binsEta{"binsEta", {150, -1.5, 1.5}, ""};
   ConfigurableAxis binsMass{"binsMass", {70, 1.3, 2.0}, "Invariant Mass (GeV/#it{c}^2)"};
-  ConfigurableAxis binsMult{"binsMult", {110, 0.0, 110.0}, "mult_{FT0M}"};
+  ConfigurableAxis binsMult{"binsMult", {105, 0.0, 105.0}, "mult_{FT0M}"};
   ConfigurableAxis binsDCAz{"binsDCAz", {40, -0.2, 0.2}, ""};
   ConfigurableAxis binsDCAxy{"binsDCAxy", {40, -0.2, 0.2}, ""};
   ConfigurableAxis binsTPCXrows{"binsTPCXrows", {100, 60, 160}, ""};
@@ -226,6 +246,7 @@ struct Lstaranalysis {
     AxisSpec axisPhi{350, 0, 7, "#Phi"};
     AxisSpec axisMultMix{cfgMultBins, "Multiplicity"};
     AxisSpec axisVtxMix{cfgVtxBins, "Vertex Z (cm)"};
+    AxisSpec idxMCAxis = {26, -0.5, 25.5, "Index"};
 
     if (cFilladditionalQAeventPlots) {
       // event histograms
@@ -350,6 +371,7 @@ struct Lstaranalysis {
     }
 
     // MC QA
+    histos.add("Event/hMCEventIndices", "hMCEventIndices", kTH2D, {axisMult, idxMCAxis});
     if (doprocessMCTrue) {
       histos.add("QA/MC/h2GenEtaPt_beforeanycut", " #eta-#it{p}_{T} distribution of Generated #Lambda(1520); #eta;  #it{p}_{T}; Counts;", HistType::kTHnSparseF, {axisEta, axisPtQA});
       histos.add("QA/MC/h2GenPhiRapidity_beforeanycut", " #phi-y distribution of Generated #Lambda(1520); #phi; y; Counts;", HistType::kTHnSparseF, {axisPhi, axisRap});
@@ -398,6 +420,46 @@ struct Lstaranalysis {
     } else {
       return -999;
     }
+  }
+
+  // Centralicity estimator selection
+  template <typename ResoColl>
+  float centEst(ResoColl ResoEvents)
+  {
+    float returnValue = -999.0;
+    switch (multEstimator) {
+      case 0:
+        returnValue = ResoEvents.centFT0M();
+        break;
+      case 1:
+        returnValue = ResoEvents.centFT0A();
+        break;
+      case 2:
+        returnValue = ResoEvents.centFT0C();
+        break;
+      default:
+        returnValue = ResoEvents.centFT0M();
+        break;
+    }
+    return returnValue;
+  }
+
+  // Check if the collision is INEL>0
+  template <typename MCColl, typename MCPart>
+  bool isTrueINEL0(MCColl const& /*mccoll*/, MCPart const& mcparts)
+  {
+    for (auto const& mcparticle : mcparts) {
+      if (!mcparticle.isPhysicalPrimary())
+        continue;
+      auto p = pdg->GetParticle(mcparticle.pdgCode());
+      if (p != nullptr) {
+        if (std::abs(p->Charge()) >= 3) {
+          if (std::abs(mcparticle.eta()) < 1)
+            return true;
+        }
+      }
+    }
+    return false;
   }
 
   template <typename TrackType>
@@ -953,6 +1015,8 @@ struct Lstaranalysis {
     bool inVtx10 = (std::abs(collision.mcCollision().posZ()) > 10.) ? false : true;
     bool isTriggerTVX = collision.selection_bit(aod::evsel::kIsTriggerTVX);
     bool isSel8 = collision.sel8();
+    bool isTrueINELgt0 = isTrueINEL0(collision, mcParticles);
+    centrality = centEst(collision);
 
     auto multiplicity = collision.centFT0M();
 
@@ -1032,6 +1096,45 @@ struct Lstaranalysis {
           histos.fill(HIST("Result/MC/Genantilambda1520pt"), 4, part.pt(), multiplicity);
       }
     }
+
+    // QA for Trigger efficiency
+    histos.fill(HIST("Event/hMCEventIndices"), centrality, kINEL);
+    if (inVtx10)
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, kINEL10);
+    if (isTrueINELgt0)
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, kINELg0);
+    if (inVtx10 && isTrueINELgt0)
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, kINELg010);
+
+    // TVX MB trigger
+    if (isTriggerTVX)
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, kTrig);
+    if (isTriggerTVX && inVtx10)
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, kTrig10);
+    if (isTriggerTVX && isTrueINELgt0)
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, kTrigINELg0);
+    if (isTriggerTVX && isTrueINELgt0 && inVtx10)
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, kTrigINELg010);
+
+    // Sel8 event selection
+    if (isSel8)
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, kSel8);
+    if (isSel8 && inVtx10)
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, kSel810);
+    if (isSel8 && isTrueINELgt0)
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, kSel8INELg0);
+    if (isSel8 && isTrueINELgt0 && inVtx10)
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, kSel8INELg010);
+
+    // CollisionCuts selection
+    if (isInAfterAllCuts)
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, kAllCuts);
+    if (isInAfterAllCuts && inVtx10)
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, kAllCuts10);
+    if (isInAfterAllCuts && isTrueINELgt0)
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, kAllCutsINELg0);
+    if (isInAfterAllCuts && isTrueINELgt0 && inVtx10)
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, kAllCutsINELg010);
   }
   PROCESS_SWITCH(Lstaranalysis, processMCTrue, "Process Event for MC only", false);
 
