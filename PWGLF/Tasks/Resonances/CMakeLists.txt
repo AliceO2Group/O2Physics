@@ -50,7 +50,7 @@ o2physics_add_dpl_workflow(lambda1520analysis
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lstaranalysis
-    SOURCES lstaranalysis.cxx
+    SOURCES lambda1520analysisinpp.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
