@@ -25,6 +25,8 @@
 
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Qvectors.h"
 
 #include <CommonConstants/MathConstants.h>
@@ -49,6 +51,7 @@
 #include <TRandom3.h>
 
 #include <array>
+#include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -655,10 +658,10 @@ struct HfTaskCharmPolarisation {
         if (activateTrackingSys) {
           hEPaxes.insert(hEPaxes.end(), {thnAxisAbsEtaTrackMin, thnAxisNumItsClsMin, thnAxisNumTpcClsMin});
         }
-          if (nBkgRotations > 0) {
-            hEPaxes.push_back(thnAxisIsRotatedCandidate);
-          }
-          registry.add("hEP", "THn for polarisation studies with cosThStar w.r.t. event plane axis and BDT scores", HistType::kTHnSparseF, hEPaxes);
+        if (nBkgRotations > 0) {
+          hEPaxes.push_back(thnAxisIsRotatedCandidate);
+        }
+        registry.add("hEP", "THn for polarisation studies with cosThStar w.r.t. event plane axis and BDT scores", HistType::kTHnSparseF, hEPaxes);
       }
     }
 

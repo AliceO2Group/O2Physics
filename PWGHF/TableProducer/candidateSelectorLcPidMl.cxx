@@ -27,7 +27,7 @@
 #include "Common/DataModel/PIDResponseCombined.h"
 #include "Tools/ML/model.h"
 
-#include "CCDB/CcdbApi.h"
+#include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
