@@ -40,7 +40,7 @@ using namespace o2::aod::evsel;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>;
 
-struct ZDCoonene {
+struct ZdcTaskOxygen {
 
   Produces<aod::ZdcTable> zdcTableoo;
 
@@ -186,9 +186,10 @@ struct ZDCoonene {
         0,
         0,
       };
-      for (int it = 0; it < 4; it++) {
-        pmqZNA[it] = (zdc.energySectorZNA())[it];
-        pmqZNC[it] = (zdc.energySectorZNC())[it];
+      const int noofZNsectors = 4;
+      for (int itow = 0; itow < noofZNsectors; itow++) {
+        pmqZNA[itow] = (zdc.energySectorZNA())[itow];
+        pmqZNC[itow] = (zdc.energySectorZNC())[itow];
       }
 
       bool isZNChit = false, isZNAhit = false;
@@ -221,7 +222,7 @@ struct ZDCoonene {
   }
   /// name, description, function pointer, default value
   /// note that it has to be declared after the function, so that the pointer is known
-  PROCESS_SWITCH(ZDCoonene, processZDCautoTrig, "Processing ZDC 4 auto-triggered events", true);
+  PROCESS_SWITCH(ZdcTaskOxygen, processZDCautoTrig, "Processing ZDC 4 auto-triggered events", true);
 
   void processALICEcoll(ColEvSels const& cols, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/)
   {
@@ -239,17 +240,17 @@ struct ZDCoonene {
       float multFT0A = 0.;
       float multFT0C = 0.;
       if (foundBC.has_ft0()) {
-        for (auto amplitude : foundBC.ft0().amplitudeA()) {
+        for (auto const& amplitude : foundBC.ft0().amplitudeA()) {
           multFT0A += amplitude;
         }
-        for (auto amplitude : foundBC.ft0().amplitudeC()) {
+        for (auto const& amplitude : foundBC.ft0().amplitudeC()) {
           multFT0C += amplitude;
         }
       }
       // FV0
       float multV0A = 0;
       if (foundBC.has_fv0a()) {
-        for (auto amplitude : foundBC.fv0a().amplitude()) {
+        for (auto const& amplitude : foundBC.fv0a().amplitude()) {
           multV0A += amplitude;
         }
       }      
@@ -285,9 +286,10 @@ struct ZDCoonene {
           0,
           0,
         };
-        for (int it = 0; it < 4; it++) {
-          pmqZNA[it] = (zdc.energySectorZNA())[it];
-          pmqZNC[it] = (zdc.energySectorZNC())[it];
+        const int noofZNsectors = 4;
+        for (int itow = 0; itow < noofZNsectors; itow++) {
+          pmqZNA[itow] = (zdc.energySectorZNA())[itow];
+          pmqZNC[itow] = (zdc.energySectorZNC())[itow];
         }
 
         bool isZNChit = false, isZNAhit = false;
@@ -322,11 +324,11 @@ struct ZDCoonene {
   }
   /// name, description, function pointer, default value
   /// note that it has to be declared after the function, so that the pointer is known
-  PROCESS_SWITCH(ZDCoonene, processALICEcoll, "Processing ZDC for ALICE collisions", true);
+  PROCESS_SWITCH(ZdcTaskOxygen, processALICEcoll, "Processing ZDC for ALICE collisions", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) // o2-linter: disable=name/file-cpp
 {
   return WorkflowSpec{
-    adaptAnalysisTask<ZDCoonene>(cfgc)};
+    adaptAnalysisTask<ZdcTaskOxygen>(cfgc)};
 }
