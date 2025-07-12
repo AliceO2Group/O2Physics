@@ -38,6 +38,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <cstdint>
+#include <cstdlib>
 #include <unordered_map>
 
 using namespace o2;
