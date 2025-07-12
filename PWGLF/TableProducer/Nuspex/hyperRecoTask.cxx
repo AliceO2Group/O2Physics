@@ -113,6 +113,8 @@ struct hyperCandidate {
   float massTOFHe3 = 0.f;
   uint8_t nTPCClustersHe3 = 0u;
   uint8_t nTPCClustersPi = 0u;
+  uint8_t nTPCpidClusHe3 = 0u;
+  uint8_t nTPCpidClusPi = 0u;
   uint32_t clusterSizeITSHe3 = 0u;
   uint32_t clusterSizeITSPi = 0u;
 
@@ -405,8 +407,10 @@ struct hyperRecoTask {
     hypCand.nSigmaHe3 = computeNSigmaHe3(heTrack);
     hypCand.nTPCClustersHe3 = heTrack.tpcNClsFound();
     hypCand.tpcSignalHe3 = heTrack.tpcSignal();
+    hypCand.nTPCpidClusHe3 = (int16_t)heTrack.tpcNClsFindable() - heTrack.tpcNClsFindableMinusPID();
     hypCand.clusterSizeITSHe3 = heTrack.itsClusterSizes();
     hypCand.nTPCClustersPi = piTrack.tpcNClsFound();
+    hypCand.nTPCpidClusPi = (int16_t)piTrack.tpcNClsFindable() - piTrack.tpcNClsFindableMinusPID();
     hypCand.tpcSignalPi = piTrack.tpcSignal();
     hypCand.tpcChi2He3 = heTrack.tpcChi2NCl();
     hypCand.clusterSizeITSPi = piTrack.itsClusterSizes();
@@ -682,6 +686,7 @@ struct hyperRecoTask {
                       hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
                       hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                       hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
+                      hypCand.nTPCpidClusHe3, hypCand.nTPCpidClusPi,
                       hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3,
                       hypCand.massTOFHe3,
                       hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize);
@@ -716,6 +721,7 @@ struct hyperRecoTask {
                               hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
                               hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                               hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
+                              hypCand.nTPCpidClusHe3, hypCand.nTPCpidClusPi,
                               hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3,
                               hypCand.massTOFHe3,
                               hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize);
@@ -750,7 +756,7 @@ struct hyperRecoTask {
                     hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
                     hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
                     hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
-                    hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
+                    hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi, hypCand.nTPCpidClusHe3, hypCand.nTPCpidClusPi,
                     hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3,
                     hypCand.massTOFHe3,
                     hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize,
@@ -825,7 +831,7 @@ struct hyperRecoTask {
                     -1, -1, -1,
                     -1, -1, -1,
                     -1, -1, -1,
-                    -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, 0, 0,
                     -1, -1, -1, false,
                     chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
                     hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2],
