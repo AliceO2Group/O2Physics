@@ -19,9 +19,9 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectorPID.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
 #include <string>
 #include <vector>

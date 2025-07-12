@@ -34,7 +34,6 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/RunningWorkflowInfo.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
@@ -51,6 +50,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/RunningWorkflowInfo.h>
 #include <Framework/WorkflowSpec.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
