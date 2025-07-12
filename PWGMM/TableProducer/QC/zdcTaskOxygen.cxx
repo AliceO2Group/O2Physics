@@ -13,20 +13,20 @@
 /// \brief Task for ZDC
 /// \author chiara.oppedisano@cern.ch
 
+#include "PWGMM/DataModel/ZDCdmOxygen.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/CCDB/TriggerAliases.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-
-#include "PWGMM/DataModel/ZDCdmOxygen.h"
 
 #include "TH1F.h"
 #include "TH2F.h"
@@ -80,7 +80,7 @@ struct ZdcTaskOxygen {
   {
     registry.add("debunchHist", "ZN sum vs. diff; ZNA-ZNC (ns); ZNA+ZNC (ns)", {HistType::kTH2D, {{nBinsTiming, -20., 20.}, {nBinsTiming, -20., 20.}}});
 
-    if(doprocessALICEcoll) { 
+    if (doprocessALICEcoll) {
       registry.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
       registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_allEvents + 1, "All events");
       registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_zvtx + 1, "vtxZ");
@@ -156,63 +156,63 @@ struct ZdcTaskOxygen {
 
   void processZDCautoTrig(aod::Zdc const& zdc)
   {
-      // auto-triggered events for ZDC
+    // auto-triggered events for ZDC
 
-      auto tdcZNA = zdc.timeZNA();
-      auto tdcZNC = zdc.timeZNC();
-      auto tdcZPA = zdc.timeZPA();
-      auto tdcZPC = zdc.timeZPC();
-      auto tdcZEM1 = zdc.timeZEM1();
-      auto tdcZEM2 = zdc.timeZEM2();
-      //
-      double zna = zdc.amplitudeZNA();
-      double znc = zdc.amplitudeZNC();
-      double zpa = zdc.amplitudeZPA();
-      double zpc = zdc.amplitudeZPC();
-      double zem1 = zdc.amplitudeZEM1();
-      double zem2 = zdc.amplitudeZEM2();
-      //
-      double pmcZNA = zdc.energyCommonZNA();
-      double pmcZNC = zdc.energyCommonZNC();
-      double pmqZNC[4] = {
-        0,
-        0,
-        0,
-        0,
-      };
-      double pmqZNA[4] = {
-        0,
-        0,
-        0,
-        0,
-      };
-      const int noofZNsectors = 4;
-      for (int itow = 0; itow < noofZNsectors; itow++) {
-        pmqZNA[itow] = (zdc.energySectorZNA())[itow];
-        pmqZNC[itow] = (zdc.energySectorZNC())[itow];
-      }
+    auto tdcZNA = zdc.timeZNA();
+    auto tdcZNC = zdc.timeZNC();
+    auto tdcZPA = zdc.timeZPA();
+    auto tdcZPC = zdc.timeZPC();
+    auto tdcZEM1 = zdc.timeZEM1();
+    auto tdcZEM2 = zdc.timeZEM2();
+    //
+    double zna = zdc.amplitudeZNA();
+    double znc = zdc.amplitudeZNC();
+    double zpa = zdc.amplitudeZPA();
+    double zpc = zdc.amplitudeZPC();
+    double zem1 = zdc.amplitudeZEM1();
+    double zem2 = zdc.amplitudeZEM2();
+    //
+    double pmcZNA = zdc.energyCommonZNA();
+    double pmcZNC = zdc.energyCommonZNC();
+    double pmqZNC[4] = {
+      0,
+      0,
+      0,
+      0,
+    };
+    double pmqZNA[4] = {
+      0,
+      0,
+      0,
+      0,
+    };
+    const int noofZNsectors = 4;
+    for (int itow = 0; itow < noofZNsectors; itow++) {
+      pmqZNA[itow] = (zdc.energySectorZNA())[itow];
+      pmqZNC[itow] = (zdc.energySectorZNC())[itow];
+    }
 
-      bool isZNChit = false, isZNAhit = false;
-      if (tdcCut) { // a narrow TDC window is set
-        if ((tdcZNC >= tdcZNmincut) && (tdcZNC <= tdcZNmaxcut)) {
-          isZNChit = true;
-        }
-        if ((tdcZNA >= tdcZNmincut) && (tdcZNA <= tdcZNmaxcut)) {
-          isZNAhit = true;
-        }
-      } else { // if no window on TDC is set
-        if (pmcZNC > 0.) {
-          isZNChit = true;
-        }
-        if (pmcZNA > 0.) {
-          isZNAhit = true;
-        }
+    bool isZNChit = false, isZNAhit = false;
+    if (tdcCut) { // a narrow TDC window is set
+      if ((tdcZNC >= tdcZNmincut) && (tdcZNC <= tdcZNmaxcut)) {
+        isZNChit = true;
       }
-      if (isZNChit && isZNAhit) {
-          registry.get<TH1>(HIST("debunchHist"))->Fill(zna-znc, zna+znc);
+      if ((tdcZNA >= tdcZNmincut) && (tdcZNA <= tdcZNmaxcut)) {
+        isZNAhit = true;
       }
+    } else { // if no window on TDC is set
+      if (pmcZNC > 0.) {
+        isZNChit = true;
+      }
+      if (pmcZNA > 0.) {
+        isZNAhit = true;
+      }
+    }
+    if (isZNChit && isZNAhit) {
+      registry.get<TH1>(HIST("debunchHist"))->Fill(zna - znc, zna + znc);
+    }
 
-      zdcTableoo(tdcZNA, zna, pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3],
+    zdcTableoo(tdcZNA, zna, pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3],
                tdcZNC, znc, pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3],
                tdcZPA, zpa, tdcZPC, zpc, tdcZEM1, zem1, tdcZEM2, zem2,
                -1, -1, -1,
@@ -253,7 +253,7 @@ struct ZdcTaskOxygen {
         for (auto const& amplitude : foundBC.fv0a().amplitude()) {
           multV0A += amplitude;
         }
-      }      
+      }
 
       if (foundBC.has_zdc()) {
         const auto& zdc = foundBC.zdc();
@@ -309,16 +309,16 @@ struct ZdcTaskOxygen {
           }
         }
         if (isZNChit && isZNAhit) {
-            registry.get<TH1>(HIST("debunchHist"))->Fill(zna-znc, zna+znc);
+          registry.get<TH1>(HIST("debunchHist"))->Fill(zna - znc, zna + znc);
         }
 
         zdcTableoo(tdcZNA, zna, pmcZNA, pmqZNA[0], pmqZNA[1], pmqZNA[2], pmqZNA[3],
-                tdcZNC, znc, pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3],
-                tdcZPA, zpa, tdcZPC, zpc, tdcZEM1, zem1, tdcZEM2, zem2,
-                multFT0A, multFT0C, multV0A,
-                zv,
-                centralityFT0C, centralityFT0A, centralityFT0M,
-                evSelection);
+                   tdcZNC, znc, pmcZNC, pmqZNC[0], pmqZNC[1], pmqZNC[2], pmqZNC[3],
+                   tdcZPA, zpa, tdcZPC, zpc, tdcZEM1, zem1, tdcZEM2, zem2,
+                   multFT0A, multFT0C, multV0A,
+                   zv,
+                   centralityFT0C, centralityFT0A, centralityFT0M,
+                   evSelection);
       }
     }
   }

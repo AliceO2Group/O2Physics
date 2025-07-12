@@ -16,9 +16,10 @@
 #ifndef PWGMM_DATAMODEL_ZDCDMOXYGEN_H_
 #define PWGMM_DATAMODEL_ZDCDMOXYGEN_H_
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/Centrality.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
 {
@@ -56,7 +57,7 @@ DECLARE_SOA_COLUMN(CentralityFt0C, centralityFT0C, float); //! Centrality       
 DECLARE_SOA_COLUMN(CentralityFt0A, centralityFT0A, float); //! Centrality        // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(CentralityFt0M, centralityFT0M, float); //! Centrality        // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(SelectionBits, selectionBits, uint8_t); //! Selection Flags   // o2-linter: disable=name/o2-column
-} // namespace zdctable
+} // namespace zdcTableOO
 
 DECLARE_SOA_TABLE(ZdcTable, "AOD", "ZdcTeble",
                   zdcTableOO::ZnaTdc,
