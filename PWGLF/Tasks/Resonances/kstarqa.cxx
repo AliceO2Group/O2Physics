@@ -514,7 +514,7 @@ struct Kstarqa {
             if (calcRotational && motherRot.Rapidity() < 0.5)
               hInvMass.fill(HIST("h3KstarInvMassRotated"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarHelicityRot);
           }
-        } else if (std::abs(mother.Rapidity()) < 0.5) {
+        } else if (isMix && std::abs(mother.Rapidity()) < 0.5) {
           hInvMass.fill(HIST("h3KstarInvMassMixed"), multiplicity, mother.Pt(), mother.M(), cosThetaStarHelicity);
         }
       } else {
@@ -541,7 +541,7 @@ struct Kstarqa {
             if (calcRotational && abs(motherRot.Rapidity()) < 0.5)
               hInvMass.fill(HIST("h3KstarInvMassRotated"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarProduction);
           }
-        } else if (std::abs(mother.Rapidity()) < 0.5) {
+        } else if (isMix && std::abs(mother.Rapidity()) < 0.5) {
           hInvMass.fill(HIST("h3KstarInvMassMixed"), multiplicity, mother.Pt(), mother.M(), cosThetaStarProduction);
         }
       } else {
@@ -567,7 +567,7 @@ struct Kstarqa {
             if (calcRotational && std::abs(motherRot.Rapidity()) < 0.5)
               hInvMass.fill(HIST("h3KstarInvMassRotated"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarBeam);
           }
-        } else if (std::abs(mother.Rapidity()) < 0.5) {
+        } else if (isMix && std::abs(mother.Rapidity()) < 0.5) {
           hInvMass.fill(HIST("h3KstarInvMassMixed"), multiplicity, mother.Pt(), mother.M(), cosThetaStarBeam);
         }
       } else {
@@ -594,7 +594,7 @@ struct Kstarqa {
             if (calcRotational && std::abs(motherRot.Rapidity()) < 0.5)
               hInvMass.fill(HIST("h3KstarInvMassRotated"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarRandom);
           }
-        } else if (std::abs(mother.Rapidity()) < 0.5) {
+        } else if (isMix && std::abs(mother.Rapidity()) < 0.5) {
           hInvMass.fill(HIST("h3KstarInvMassMixed"), multiplicity, mother.Pt(), mother.M(), cosThetaStarRandom);
         }
       } else {
