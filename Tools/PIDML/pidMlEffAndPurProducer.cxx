@@ -15,16 +15,27 @@
 /// \author Michał Olędzki <m.oledzki@cern.ch>
 /// \author Marek Mytkowski <marek.mytkowski@cern.ch>
 
-#include <string>
-
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "CCDB/CcdbApi.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Tools/PIDML/pidOnnxModel.h"
 #include "Tools/PIDML/pidUtils.h"
+//
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CCDB/CcdbApi.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -91,7 +102,7 @@ struct PidMlEffAndPurProducer {
     return nSigma;
   }
 
-  bool isNSigmaAccept(const BigTracks::iterator& track, nSigma_t& nSigma)
+  bool isNSigmaAccept(const BigTracks::iterator& track, const nSigma_t& nSigma)
   {
     // FIXME: for current particles it works, but there are some particles,
     //  which can have different sign and pdgSign
