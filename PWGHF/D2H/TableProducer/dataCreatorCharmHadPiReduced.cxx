@@ -49,6 +49,7 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -62,6 +63,8 @@
 #include <TH1.h>
 #include <TPDGCode.h>
 #include <TString.h>
+
+#include <Rtypes.h>
 
 #include <algorithm>
 #include <array>
