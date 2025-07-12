@@ -17,10 +17,12 @@
 #define PWGMM_DATAMODEL_ZDCDMOXYGEN_H_
 
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/ASoAHelpers.h"
+#include "Common/DataModel/Centrality.h"
 
 namespace o2::aod
 {
-namespace zdctable // o2-linter: disable=name/workflow-file
+namespace ZdcTableOO // o2-linter: disable=name/workflow-file
 {
 DECLARE_SOA_COLUMN(ZNAtdc, znaTDC, float);                 //! TDC ZNA           // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(ZNAampl, znaampl, float);               //! amplitude ZNA     // o2-linter: disable=name/o2-column
@@ -40,7 +42,7 @@ DECLARE_SOA_COLUMN(ZPAtdc, zpaTDC, float);                 //! TDC ZPA          
 DECLARE_SOA_COLUMN(ZPAampl, zpamplc, float);               //! amplitude ZPA     // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(ZPApmc, zpapmc, float);                 //! ADC PMC ZPA       // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(ZPCtdc, zpcTDC, float);                 //! TDC ZPC           // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZPCampl, zncampl, float);               //! amplitude ZPA     // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZPCampl, zpcampl, float);               //! amplitude ZPA     // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(ZPCpmc, zpcpmc, float);                 //! ADC PMC ZPA       // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(ZEM1tdc, zem1TDC, float);               //! TDC ZEM1          // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(ZEM1ampl, zem1ampl, float);             //! amplitude ZEM1    // o2-linter: disable=name/o2-column
@@ -49,44 +51,44 @@ DECLARE_SOA_COLUMN(ZEM2ampl, zem2ampl, float);             //! amplitude ZEM2   
 DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float);             //! mult. FIT-A       // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float);             //! mult. FIT-C       // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(MultV0A, multV0A, float);               //! mult. V0-A       // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(Zvertex, zVertex, float);               //! Z vertex
 DECLARE_SOA_COLUMN(CentralityFT0C, centralityFT0C, float); //! Centrality
 DECLARE_SOA_COLUMN(CentralityFT0A, centralityFT0A, float); //! Centrality
 DECLARE_SOA_COLUMN(CentralityFT0M, centralityFT0M, float); //! Centrality
-DECLARE_SOA_COLUMN(CentralityFV0A, centralityFV0A, float); //! Centrality
 DECLARE_SOA_COLUMN(SelectionBits, selectionBits, uint8_t); //! Selection Flags
 } // namespace zdctable
 
-DECLARE_SOA_TABLE(ZDCInterCalib, "AOD", "ZDCO", o2::soa::Index<>,
-                  zdctable::ZNAtdc,
-                  zdctable::ZNAampl,
-                  zdctable::ZNApmc,
-                  zdctable::ZNApm1,
-                  zdctable::ZNApm2,
-                  zdctable::ZNApm3,
-                  zdctable::ZNApm4,
-                  zdctable::ZNCtdc,
-                  zdctable::ZNCampl,
-                  zdctable::ZNCpmc,
-                  zdctable::ZNCpm1,
-                  zdctable::ZNCpm2,
-                  zdctable::ZNCpm3,
-                  zdctable::ZNCpm4,
-                  zdctable::ZPAtdc,
-                  zdctable::ZPAampl,
-                  zdctable::ZPCtdc,
-                  zdctable::ZPCampl,
-                  zdctable::ZEM1tdc,
-                  zdctable::ZEM1ampl
-                    zdctable::ZEM2tdc,
-                  zdctable::ZEM2ampl,
-                  zdctable::MultFT0A,
-                  zdctable::MultFT0C,
-                  zdctable::MultV0A,
-                  zdctable::CentralityFT0C,
-                  zdctable::CentralityFT0A,
-                  zdctable::CentralityFT0M,
-                  zdctable::CentralityFV0A,
-                  zdctable::SelectionBits);
+DECLARE_SOA_TABLE(ZdcTable, "AOD", "ZdcTeble",
+                  ZdcTableOO::ZNAtdc,
+                  ZdcTableOO::ZNAampl,
+                  ZdcTableOO::ZNApmc,
+                  ZdcTableOO::ZNApm1,
+                  ZdcTableOO::ZNApm2,
+                  ZdcTableOO::ZNApm3,
+                  ZdcTableOO::ZNApm4,
+                  ZdcTableOO::ZNCtdc,
+                  ZdcTableOO::ZNCampl,
+                  ZdcTableOO::ZNCpmc,
+                  ZdcTableOO::ZNCpm1,
+                  ZdcTableOO::ZNCpm2,
+                  ZdcTableOO::ZNCpm3,
+                  ZdcTableOO::ZNCpm4,
+                  ZdcTableOO::ZPAtdc,
+                  ZdcTableOO::ZPAampl,
+                  ZdcTableOO::ZPCtdc,
+                  ZdcTableOO::ZPCampl,
+                  ZdcTableOO::ZEM1tdc,
+                  ZdcTableOO::ZEM1ampl,
+                  ZdcTableOO::ZEM2tdc,
+                  ZdcTableOO::ZEM2ampl,
+                  ZdcTableOO::MultFT0A,
+                  ZdcTableOO::MultFT0C,
+                  ZdcTableOO::MultV0A,
+                  ZdcTableOO::Zvertex,
+                  ZdcTableOO::CentralityFT0C,
+                  ZdcTableOO::CentralityFT0A,
+                  ZdcTableOO::CentralityFT0M,
+                  ZdcTableOO::SelectionBits);
 } // namespace o2::aod
 
 #endif // PWGMM_DATAMODEL_ZDCDMOXYGEN_H_
