@@ -36,6 +36,9 @@ DECLARE_SOA_COLUMN(ZMoth, zMoth, float);                                  // Z o
 DECLARE_SOA_COLUMN(PxMoth, pxMoth, float);                                //! Px of the mother track at the decay vertex
 DECLARE_SOA_COLUMN(PyMoth, pyMoth, float);                                //! Py of the mother track at the decay vertex
 DECLARE_SOA_COLUMN(PzMoth, pzMoth, float);                                //! Pz of the mother track at the decay vertex
+DECLARE_SOA_COLUMN(RefitPxMoth, refitPxMoth, float);                      //! Refit Px of the mother track at the decay vertex
+DECLARE_SOA_COLUMN(RefitPyMoth, refitPyMoth, float);                      //! Refit Py of the mother track at the decay vertex
+DECLARE_SOA_COLUMN(RefitPzMoth, refitPzMoth, float);                      //! Refit Pz of the mother track at the decay vertex
 DECLARE_SOA_COLUMN(PxAlpha, pxAlpha, float);                              //! Px of the daughter alpha track at the decay vertex
 DECLARE_SOA_COLUMN(PyAlpha, pyAlpha, float);                              //! Py of the daughter alpha track at the decay vertex
 DECLARE_SOA_COLUMN(PzAlpha, pzAlpha, float);                              //! Pz of the daughter alpha track at the decay vertex
@@ -77,6 +80,7 @@ DECLARE_SOA_TABLE(He4S2BCands, "AOD", "HE4S2BCANDS",
                   he4scand::IsMatter,
                   he4scand::XMoth, he4scand::YMoth, he4scand::ZMoth,
                   he4scand::PxMoth, he4scand::PyMoth, he4scand::PzMoth,
+                  he4scand::RefitPxMoth, he4scand::RefitPyMoth, he4scand::RefitPzMoth,
                   he4scand::PxAlpha, he4scand::PyAlpha, he4scand::PzAlpha,
                   he4scand::DcaMothPv, he4scand::DcaAlphaPv, he4scand::DcaKinkTopo,
                   he4scand::ItsChi2Moth, he4scand::ItsClusterSizesMoth, he4scand::ItsClusterSizesAlpha,
@@ -89,6 +93,7 @@ DECLARE_SOA_TABLE(MCHe4S2BCands, "AOD", "MCHE4S2BCANDS",
                   he4scand::IsMatter,
                   he4scand::XMoth, he4scand::YMoth, he4scand::ZMoth,
                   he4scand::PxMoth, he4scand::PyMoth, he4scand::PzMoth,
+                  he4scand::RefitPxMoth, he4scand::RefitPyMoth, he4scand::RefitPzMoth,
                   he4scand::PxAlpha, he4scand::PyAlpha, he4scand::PzAlpha,
                   he4scand::DcaMothPv, he4scand::DcaAlphaPv, he4scand::DcaKinkTopo,
                   he4scand::ItsChi2Moth, he4scand::ItsClusterSizesMoth, he4scand::ItsClusterSizesAlpha,
