@@ -49,6 +49,8 @@
 #include <array>
 #include <cmath>
 #include <cstring>
+#include <stdexcept>
+#include <string>
 
 using namespace RooFit;
 
