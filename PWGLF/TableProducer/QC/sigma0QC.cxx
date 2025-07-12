@@ -1,0 +1,298 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+//
+// This is a task that employs the standard derived V0 tables and attempts to combine
+// two V0s into a Sigma0 -> Lambda + gamma candidate.
+//  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+//  Sigma0 QC task
+//  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+//
+//    Comments, questions, complaints, suggestions?
+//    Please write to:
+//    gianni.shigeru.setoue.liveraro@cern.ch
+//
+
+#include "PWGLF/DataModel/LFSigmaTables.h"
+#include "PWGLF/DataModel/LFStrangenessMLTables.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include <PWGLF/Utils/sigma0BuilderHelper.h>
+
+#include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/ASoA.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <Math/Vector4D.h>
+#include <TDatabasePDG.h>
+#include <TFile.h>
+#include <TH2F.h>
+#include <TLorentzVector.h>
+#include <TPDGCode.h>
+#include <TProfile.h>
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+using std::array;
+using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
+using V0StandardDerivedDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0LambdaMLScores, aod::V0AntiLambdaMLScores, aod::V0GammaMLScores>;
+using StraColls = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>;
+
+struct sigma0Sorted {
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  ctpRateFetcher rateFetcher;
+
+  // Load configurables and the sigma0 module, please
+  Configurable<bool> fverbose{"fverbose", true, "QA printout."};
+  o2::pwglf::sigma0::evselConfigurables evselOpts;
+  o2::pwglf::sigma0::lambdaselConfigurables lambdaselOpts;
+  o2::pwglf::sigma0::photonselConfigurables photonselOpts;
+  o2::pwglf::sigma0::sigma0selConfigurables sigma0selOpts;
+  o2::pwglf::sigma0::pi0selConfigurables pi0selOpts;
+  o2::pwglf::sigma0::axisConfigurables axisOpts;
+
+  o2::pwglf::sigma0::Sigma0BuilderModule sigma0Module;
+
+  // For manual sliceBy
+  SliceCache cache;
+  Preslice<V0StandardDerivedDatas> perCollisionSTDDerived = o2::aod::v0data::straCollisionId;
+
+  // Histogram registry
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  void init(InitContext const&)
+  {
+    // setting CCDB service
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
+
+    // Initialize task
+    sigma0Module.init(histos, evselOpts, lambdaselOpts, photonselOpts, sigma0selOpts, pi0selOpts, axisOpts);
+  }
+
+  // Dummy process function
+  void process(StraColls const&) {}
+
+  void processRealData(StraColls const& collisions, V0StandardDerivedDatas const& fullV0s, dauTracks const&)
+  {
+    auto start = std::chrono::high_resolution_clock::now();
+
+    sigma0Module.processSlicing(collisions, fullV0s, perCollisionSTDDerived, histos, ccdb, rateFetcher);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+
+    if (fverbose)
+      LOGF(info, "[Process function call, Sorted] N. Collisions: %i, N. V0s: %i, Processing time (s): %lf", collisions.size(), fullV0s.size(), elapsed.count());
+  }
+
+  PROCESS_SWITCH(sigma0Sorted, processRealData, "process run 3 real data", true);
+};
+
+struct sigma0Unsorted {
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  ctpRateFetcher rateFetcher;
+
+  // Load configurables and the sigma0 module, please
+  Configurable<bool> fverbose{"fverbose", true, "QA printout."};
+  o2::pwglf::sigma0::evselConfigurables evselOpts;
+  o2::pwglf::sigma0::lambdaselConfigurables lambdaselOpts;
+  o2::pwglf::sigma0::photonselConfigurables photonselOpts;
+  o2::pwglf::sigma0::sigma0selConfigurables sigma0selOpts;
+  o2::pwglf::sigma0::pi0selConfigurables pi0selOpts;
+  o2::pwglf::sigma0::axisConfigurables axisOpts;
+
+  o2::pwglf::sigma0::Sigma0BuilderModule sigma0Module;
+
+  // For manual sliceBy
+  SliceCache cache;
+  PresliceUnsorted<V0StandardDerivedDatas> perCollisionSTDDerived = o2::aod::v0data::straCollisionId;
+
+  // Histogram registry
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  void init(InitContext const&)
+  {
+    // setting CCDB service
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
+
+    // Initialize task
+    sigma0Module.init(histos, evselOpts, lambdaselOpts, photonselOpts, sigma0selOpts, pi0selOpts, axisOpts);
+  }
+
+  // Dummy process function
+  void process(StraColls const&) {}
+
+  void processRealData(StraColls const& collisions, V0StandardDerivedDatas const& fullV0s, dauTracks const&)
+  {
+    auto start = std::chrono::high_resolution_clock::now();
+
+    sigma0Module.processSlicing(collisions, fullV0s, perCollisionSTDDerived, histos, ccdb, rateFetcher);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+
+    if (fverbose)
+      LOGF(info, "[Process function call, Unsorted] N. Collisions: %i, N. V0s: %i, Processing time (s): %lf", collisions.size(), fullV0s.size(), elapsed.count());
+  }
+
+  PROCESS_SWITCH(sigma0Unsorted, processRealData, "process run 3 real data", true);
+};
+
+struct sigma0Iterator {
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  ctpRateFetcher rateFetcher;
+
+  // Load configurables and the sigma0 module, please
+  Configurable<bool> fverbose{"fverbose", true, "QA printout."};
+  o2::pwglf::sigma0::evselConfigurables evselOpts;
+  o2::pwglf::sigma0::lambdaselConfigurables lambdaselOpts;
+  o2::pwglf::sigma0::photonselConfigurables photonselOpts;
+  o2::pwglf::sigma0::sigma0selConfigurables sigma0selOpts;
+  o2::pwglf::sigma0::pi0selConfigurables pi0selOpts;
+  o2::pwglf::sigma0::axisConfigurables axisOpts;
+
+  o2::pwglf::sigma0::Sigma0BuilderModule sigma0Module;
+
+  // Histogram registry
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  uint64_t CollIDBuffer = 0;
+  std::chrono::high_resolution_clock::time_point start{};
+  std::chrono::high_resolution_clock::time_point end{};
+  void init(InitContext const&)
+  {
+    // setting CCDB service
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
+
+    // Initialize task
+    sigma0Module.init(histos, evselOpts, lambdaselOpts, photonselOpts, sigma0selOpts, pi0selOpts, axisOpts);
+  }
+
+  // Dummy process function
+  void process(V0StandardDerivedDatas const&) {}
+
+  void processCheckIndexOrdered(V0StandardDerivedDatas const& fullV0s)
+  {
+    CollIDBuffer = 0;
+    for (const auto& v0 : fullV0s) {
+      const uint64_t v0collidx = v0.straCollisionId();
+      if (v0collidx < CollIDBuffer)
+        LOGF(fatal, "V0 -> stracollision: index unsorted! Previous index: %i, current index: %i", CollIDBuffer, v0collidx);
+      CollIDBuffer = v0collidx;
+    }
+  }
+  void processTI(StraColls const&)
+  {
+    start = std::chrono::high_resolution_clock::now();
+  }
+
+  void processRealData(StraColls::iterator const& collision, V0StandardDerivedDatas const& fullV0s, dauTracks const&)
+  {
+    sigma0Module.processIterator(collision, fullV0s, histos, ccdb, rateFetcher);
+  }
+
+  void processTF(StraColls const& collisions, V0StandardDerivedDatas const& fullV0s)
+  {
+    end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+
+    if (fverbose)
+      LOGF(info, "[Process function call, Iterator] N. Collisions: %i, N. V0s: %i, Processing time (s): %lf", collisions.size(), fullV0s.size(), elapsed.count());
+  }
+
+  PROCESS_SWITCH(sigma0Iterator, processCheckIndexOrdered, "check ordering", true);
+  PROCESS_SWITCH(sigma0Iterator, processTI, "Initial setup", true);
+  PROCESS_SWITCH(sigma0Iterator, processRealData, "process data", true);
+  PROCESS_SWITCH(sigma0Iterator, processTF, "Printouts", true);
+};
+
+struct sigma0CustomGrouping {
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  ctpRateFetcher rateFetcher;
+
+  // Load configurables and the sigma0 module, please
+  Configurable<bool> fverbose{"fverbose", true, "QA printout."};
+  o2::pwglf::sigma0::evselConfigurables evselOpts;
+  o2::pwglf::sigma0::lambdaselConfigurables lambdaselOpts;
+  o2::pwglf::sigma0::photonselConfigurables photonselOpts;
+  o2::pwglf::sigma0::sigma0selConfigurables sigma0selOpts;
+  o2::pwglf::sigma0::pi0selConfigurables pi0selOpts;
+  o2::pwglf::sigma0::axisConfigurables axisOpts;
+
+  o2::pwglf::sigma0::Sigma0BuilderModule sigma0Module;
+
+  // Histogram registry
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  void init(InitContext const&)
+  {
+    // setting CCDB service
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
+
+    // Initialize task
+    sigma0Module.init(histos, evselOpts, lambdaselOpts, photonselOpts, sigma0selOpts, pi0selOpts, axisOpts);
+  }
+
+  // Dummy process function
+  void process(StraColls const&) {}
+
+  void processRealData(StraColls const& collisions, V0StandardDerivedDatas const& fullV0s, dauTracks const&)
+  {
+    auto start = std::chrono::high_resolution_clock::now();
+
+    sigma0Module.processCustomGrouping(collisions, fullV0s, histos, ccdb, rateFetcher);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+
+    if (fverbose)
+      LOGF(info, "[Process function call, Custom] N. Collisions: %i, N. V0s: %i, Processing time (s): %lf", collisions.size(), fullV0s.size(), elapsed.count());
+  }
+
+  PROCESS_SWITCH(sigma0CustomGrouping, processRealData, "process run 3 real data", true);
+};
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{
+    adaptAnalysisTask<sigma0Sorted>(cfgc),
+    adaptAnalysisTask<sigma0Unsorted>(cfgc),
+    adaptAnalysisTask<sigma0Iterator>(cfgc),
+    adaptAnalysisTask<sigma0CustomGrouping>(cfgc)};
+}

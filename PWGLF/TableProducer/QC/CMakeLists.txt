@@ -18,3 +18,8 @@ o2physics_add_dpl_workflow(flow-qc
     SOURCES flowQC.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(sigma0qc
+    SOURCES sigma0QC.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::AnalysisCCDB
+    COMPONENT_NAME Analysis)
