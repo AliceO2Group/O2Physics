@@ -232,7 +232,7 @@ struct OnTheFlyRichPid {
         lAerogelZ[2 * iCentralMirror - i] = std::sqrt(1.0 + mVal * mVal) * rMin * squareSizeZ / (std::sqrt(1.0 + mVal * mVal) * rMax - mVal * squareSizeZ);
         tRPlusG[2 * iCentralMirror - i] = std::sqrt(1.0 + mVal * mVal) * (rMax - rMin) - mVal / 2.0 * (squareSizeZ + lAerogelZ[i]);
         aerogelRindex[2 * iCentralMirror - i] = bRichRefractiveIndexSector[i - iCentralMirror];
-        bRichPhotodetectorCentralModuleHalfLength.value = rMin * t; // <-- At the end of the loop this will be the maximum Z
+        bRichPhotodetectorCentralModuleHalfLength.value = rMin * t; // <-- At the end of the loop this will be the maximum z
       }
     } else { // Even number of sectors
       float twoHalfGap = 1.0;
@@ -265,7 +265,7 @@ struct OnTheFlyRichPid {
         lAerogelZ[2 * iCentralMirror - i - 1] = std::sqrt(1.0 + mVal * mVal) * rMin * squareSizeZ / (std::sqrt(1.0 + mVal * mVal) * rMax - mVal * squareSizeZ);
         tRPlusG[2 * iCentralMirror - i - 1] = std::sqrt(1.0 + mVal * mVal) * (rMax - rMin) - mVal / 2.0 * (squareSizeZ + lAerogelZ[i]);
         aerogelRindex[2 * iCentralMirror - i - 1] = bRichRefractiveIndexSector[i - iCentralMirror];
-        bRichPhotodetectorCentralModuleHalfLength.value = rMin * t; // <-- At the end of the loop this will be the maximum Z
+        bRichPhotodetectorCentralModuleHalfLength.value = rMin * t; // <-- At the end of the loop this will be the maximum z
       }
     }
     // Coordinate radiali layer considerati
@@ -525,11 +525,11 @@ struct OnTheFlyRichPid {
     static constexpr float kEtaSampling[] = {-2.000000, -1.909740, -1.731184, -1.552999, -1.375325, -1.198342, -1.022276, -0.847390, -0.673976, -0.502324, -0.332683, -0.165221, 0.000000, 0.165221, 0.332683, 0.502324, 0.673976, 0.847390, 1.022276, 1.198342, 1.375325, 1.552999, 1.731184, 1.909740, 2.000000};
     static constexpr float kResRingSamplingWithAbsWalls[] = {0.0009165, 0.000977, 0.001098, 0.001198, 0.001301, 0.001370, 0.001465, 0.001492, 0.001498, 0.001480, 0.001406, 0.001315, 0.001241, 0.001325, 0.001424, 0.001474, 0.001480, 0.001487, 0.001484, 0.001404, 0.001273, 0.001197, 0.001062, 0.000965, 0.0009165};
     static constexpr float kResRingSamplingWithoutAbsWalls[] = {0.0009165, 0.000977, 0.001095, 0.001198, 0.001300, 0.001369, 0.001468, 0.001523, 0.001501, 0.001426, 0.001299, 0.001167, 0.001092, 0.001179, 0.001308, 0.001407, 0.001491, 0.001508, 0.001488, 0.001404, 0.001273, 0.001196, 0.001061, 0.000965, 0.0009165};
-    static constexpr int sizeResVector = sizeof(kEtaSampling) / sizeof(kEtaSampling[0]);
+    static constexpr int kSizeResVector = sizeof(kEtaSampling) / sizeof(kEtaSampling[0]);
     // Use binary search to find the lower and upper indices
-    const int lowerIndex = std::lower_bound(kEtaSampling, kEtaSampling + sizeResVector, eta) - kEtaSampling - 1;
+    const int lowerIndex = std::lower_bound(kEtaSampling, kEtaSampling + kSizeResVector, eta) - kEtaSampling - 1;
     const int upperIndex = lowerIndex + 1;
-    if (lowerIndex >= 0 && upperIndex < sizeResVector) {
+    if (lowerIndex >= 0 && upperIndex < kSizeResVector) {
       // Resolution interpolation
       if (bRichFlagAbsorbingWalls) {
         float interpolatedResRing = interpolate(eta, kEtaSampling[lowerIndex], kEtaSampling[upperIndex], kResRingSamplingWithAbsWalls[lowerIndex], kResRingSamplingWithAbsWalls[upperIndex]);
@@ -610,24 +610,24 @@ struct OnTheFlyRichPid {
     // const float ze = thicknessRad / (2. * zP);
     const float aZ = zP * cosThetaCherenkov - xP * sinThetaCherenkov * cosPhi;
     const float e3z = std::sqrt(aZ * aZ + (nGas / n) * (nGas / n) - 1.);
-    const float Z = thicknessGas;
+    const float z = thicknessGas;
     const float alpha = e3z / aZ;
     const float etac = e3z * n * n;
-    const float k = thicknessRad / (2. * Z);
+    const float k = thicknessRad / (2. * z);
     const float m = 1. / (n * n);
     const float lambda = (1. + k * alpha * alpha * alpha) / (1. + k * alpha);
     // Derivative d(thetaCherenkov)/dx
-    const float temp1 = etac / Z;
+    const float temp1 = etac / z;
     const float temp2 = alpha * e3z * cosPhi;
     const float temp3 = xP * sinThetaCherenkov * sinPhi * sinPhi;
     const float dThetaX = temp1 * (temp2 - temp3);
     // Derivative d(thetaCherenkov)/dy
-    const float temp4 = etac * sinPhi / Z;
+    const float temp4 = etac * sinPhi / z;
     const float temp5 = cosThetaCherenkov - zP * (1 - m) / aZ;
     const float dThetaY = temp4 * temp5;
     // Derivative d(thetaCherenkov)/dze
     const float temp8 = etac * sinThetaCherenkov;
-    const float temp9 = Z * (1.0 + k * alpha * alpha * alpha * n * n);
+    const float temp9 = z * (1.0 + k * alpha * alpha * alpha * n * n);
     const float temp10 = alpha * alpha * (1.0 - xP * xP * sinPhi * sinPhi) + lambda * xP * xP * sinPhi * sinPhi;
     const float dThetaZe = temp8 * temp10 / temp9;
     // Derivative d(thetaCherenkov)/dn
