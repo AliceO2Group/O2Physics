@@ -44,7 +44,7 @@
 <<<<<<< Updated upstream
 =======
 #include "CommonConstants/MathConstants.h"
->>>>>>> Stashed changes
+  >>>>>>> Stashed changes
 #include "CommonConstants/PhysicsConstants.h"
 #include "CommonUtils/NameConf.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
@@ -73,7 +73,7 @@
 #include <utility>
 #include <vector>
 
-using namespace o2;
+  using namespace o2;
 using namespace o2::framework;
 using namespace o2::constants::math;
 
