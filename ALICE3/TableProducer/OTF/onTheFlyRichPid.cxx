@@ -170,15 +170,9 @@ struct OnTheFlyRichPid {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   /// Flag unphysical and unavailable values (must be negative)
-  float error_value = -1000;
+  static constexpr float kErrorValue = -1000;
 
   // Variables projective/hybrid layout
-  int mNumberSectors = bRichNumberOfSectors;                            // 21;
-  float mTileLength = bRichPhotodetectorOtherModuleLength;              // 18.4; // [cm]
-  float mTileLengthCentral = bRichPhotodetectorCentralModuleHalfLength; // 18.4 / 2.0; // [cm]
-  float mProjectiveLengthInner = mTileLengthCentral;
-  float mRadiusProjIn = bRichRadiatorInnerRadius;       // 85.;   // [cm]
-  float mRadiusProjOut = bRichPhotodetectorOuterRadius; // 112.; // [cm]
   std::vector<TVector3> det_centers;
   std::vector<TVector3> rad_centers;
   std::vector<float> angle_centers;
@@ -192,13 +186,7 @@ struct OnTheFlyRichPid {
   // Update projective geometry
   void updateProjectiveParameters()
   {
-    mNumberSectors = bRichNumberOfSectors;
-    mTileLength = bRichPhotodetectorOtherModuleLength;
-    mTileLengthCentral = bRichPhotodetectorCentralModuleHalfLength;
-    mProjectiveLengthInner = mTileLengthCentral;
-    mRadiusProjIn = bRichRadiatorInnerRadius;
-    mRadiusProjOut = bRichPhotodetectorOuterRadius;
-    const int number_of_sectors_in_z = mNumberSectors;
+    const int number_of_sectors_in_z = bRichNumberOfSectors;
     det_centers.resize(number_of_sectors_in_z);
     rad_centers.resize(number_of_sectors_in_z);
     angle_centers.resize(number_of_sectors_in_z);
@@ -207,10 +195,10 @@ struct OnTheFlyRichPid {
     aerogel_rindex.resize(number_of_sectors_in_z);
     photodetrctor_length.resize(number_of_sectors_in_z);
     gap_thickness.resize(number_of_sectors_in_z);
-    float square_size_barrel_cylinder = 2.0 * mTileLengthCentral;
-    float square_size_z = mTileLength;
-    float R_min = mRadiusProjIn;
-    float R_max = mRadiusProjOut;
+    float square_size_barrel_cylinder = 2.0 * bRichPhotodetectorCentralModuleHalfLength;
+    float square_size_z = bRichPhotodetectorOtherModuleLength;
+    float R_min = bRichRadiatorInnerRadius;
+    float R_max = bRichPhotodetectorOuterRadius;
     std::vector<float> theta_bi;
     std::vector<float> R0_tilt;
     std::vector<float> z0_tilt;
@@ -225,7 +213,8 @@ struct OnTheFlyRichPid {
     l_detector_z.resize(number_of_sectors_in_z);
 
     // Odd number of sectors
-    if (number_of_sectors_in_z % 2 != 0) {
+    static constexpr int kTwo = 2;
+    if (number_of_sectors_in_z % kTwo != 0) {
       int i_central_mirror = static_cast<int>((number_of_sectors_in_z) / 2.0);
       float m_val = std::tan(0.0);
       theta_bi[i_central_mirror] = std::atan(m_val);
@@ -237,7 +226,7 @@ struct OnTheFlyRichPid {
       float t = std::tan(std::atan(m_val) + std::atan(square_size_barrel_cylinder / (2.0 * R_max * std::sqrt(1.0 + m_val * m_val) - square_size_barrel_cylinder * m_val)));
       theta_max[i_central_mirror] = o2::constants::math::PIHalf - std::atan(t);
       theta_min[i_central_mirror] = o2::constants::math::PIHalf + std::atan(t);
-      mProjectiveLengthInner = R_min * t;
+      bRichPhotodetectorCentralModuleHalfLength = R_min * t;
       aerogel_rindex[i_central_mirror] = bRichRefractiveIndexSector[0];
       for (int i = i_central_mirror + 1; i < number_of_sectors_in_z; i++) {
         float par_a = t;
@@ -264,14 +253,14 @@ struct OnTheFlyRichPid {
         l_aerogel_z[2 * i_central_mirror - i] = std::sqrt(1.0 + m_val * m_val) * R_min * square_size_z / (std::sqrt(1.0 + m_val * m_val) * R_max - m_val * square_size_z);
         T_r_plus_g[2 * i_central_mirror - i] = std::sqrt(1.0 + m_val * m_val) * (R_max - R_min) - m_val / 2.0 * (square_size_z + l_aerogel_z[i]);
         aerogel_rindex[2 * i_central_mirror - i] = bRichRefractiveIndexSector[i - i_central_mirror];
-        mProjectiveLengthInner = R_min * t; // <-- At the end of the loop this will be the maximum Z
+        bRichPhotodetectorCentralModuleHalfLength = R_min * t; // <-- At the end of the loop this will be the maximum Z
       }
     } else { // Even number of sectors
       float two_half_gap = 1.0;
       int i_central_mirror = static_cast<int>((number_of_sectors_in_z) / 2.0);
       float m_val = std::tan(0.0);
       float t = std::tan(std::atan(m_val) + std::atan(two_half_gap / (2.0 * R_max * std::sqrt(1.0 + m_val * m_val) - two_half_gap * m_val)));
-      mProjectiveLengthInner = R_min * t;
+      bRichPhotodetectorCentralModuleHalfLength = R_min * t;
       for (int i = i_central_mirror; i < number_of_sectors_in_z; i++) {
         float par_a = t;
         float par_b = 2.0 * R_max / square_size_z;
@@ -297,7 +286,7 @@ struct OnTheFlyRichPid {
         l_aerogel_z[2 * i_central_mirror - i - 1] = std::sqrt(1.0 + m_val * m_val) * R_min * square_size_z / (std::sqrt(1.0 + m_val * m_val) * R_max - m_val * square_size_z);
         T_r_plus_g[2 * i_central_mirror - i - 1] = std::sqrt(1.0 + m_val * m_val) * (R_max - R_min) - m_val / 2.0 * (square_size_z + l_aerogel_z[i]);
         aerogel_rindex[2 * i_central_mirror - i - 1] = bRichRefractiveIndexSector[i - i_central_mirror];
-        mProjectiveLengthInner = R_min * t; // <-- At the end of the loop this will be the maximum Z
+        bRichPhotodetectorCentralModuleHalfLength = R_min * t; // <-- At the end of the loop this will be the maximum Z
       }
     }
     // Coordinate radiali layer considerati
@@ -326,7 +315,7 @@ struct OnTheFlyRichPid {
   {
     pRandomNumberGenerator.SetSeed(0); // fully randomize
 
-    if (magneticField.value < 0.0001f) {
+    if (magneticField.value < o2::constants::math::Epsilon) {
       LOG(info) << "Getting the magnetic field from the on-the-fly tracker task";
       if (!getTaskOptionValue(initContext, "on-the-fly-tracker", magneticField, false)) {
         LOG(fatal) << "Could not get Bz from on-the-fly-tracker task";
@@ -487,7 +476,7 @@ struct OnTheFlyRichPid {
   int findSector(const float eta)
   {
     float polar = 2.0 * std::atan(std::exp(-eta));
-    for (int j_sec = 0; j_sec < mNumberSectors; j_sec++) {
+    for (int j_sec = 0; j_sec < bRichNumberOfSectors; j_sec++) {
       if (polar > theta_max[j_sec] && polar < theta_min[j_sec]) {
         return j_sec;
       }
@@ -508,7 +497,7 @@ struct OnTheFlyRichPid {
       const float z_sec_rich_squared = z_sec_rich * z_sec_rich;
       return (R_sec_rich_squared + z_sec_rich_squared) / (R_sec_rich + z_sec_rich / std::tan(polar));
     } else {
-      return error_value;
+      return kErrorValue;
     }
   }
 
@@ -528,7 +517,8 @@ struct OnTheFlyRichPid {
       const float meanNumberofDetectedPhotons = 230. * std::sin(angle) * std::sin(angle) * bRichRadiatorThickness;
 
       // Require at least 3 photons on average for real angle reconstruction
-      if (meanNumberofDetectedPhotons > 3.) {
+      static constexpr float kMinPhotons = 3.f;
+      if (meanNumberofDetectedPhotons > kMinPhotons) {
         return true; // Particle is above the threshold and enough photons
       }
       return false; // Particle is above the threshold, but not enough photons
@@ -573,7 +563,7 @@ struct OnTheFlyRichPid {
       }
     } else {
       // std::cout << "Unable to interpolate. Target x value is outside the range of available data." << std::endl;
-      return error_value;
+      return kErrorValue;
     }
   }
 
@@ -587,14 +577,14 @@ struct OnTheFlyRichPid {
     const float polar = 2.0 * std::atan(std::exp(-eta));
     int i_sector = 0;
     bool flag_sector = false;
-    for (int j_sec = 0; j_sec < mNumberSectors; j_sec++) {
+    for (int j_sec = 0; j_sec < bRichNumberOfSectors; j_sec++) {
       if (polar > theta_max[j_sec] && polar < theta_min[j_sec]) {
         flag_sector = true;
         i_sector = j_sec;
       }
     }
     if (flag_sector == false) {
-      return error_value; // <-- Returning negative value
+      return kErrorValue; // <-- Returning negative value
     }
     float R_sec_rich = rad_centers[i_sector].X();
     float z_sec_rich = rad_centers[i_sector].Z();
@@ -627,8 +617,8 @@ struct OnTheFlyRichPid {
   float extract_ring_angular_resolution(const float eta, const float n, const float n_g, const float T_r, const float T_g, const float pixel_size, const float theta_c, const float tile_z_length)
   {
     // Check if input angle is error value
-    if (theta_c <= error_value + 1)
-      return error_value;
+    if (theta_c <= kErrorValue + 1)
+      return kErrorValue;
     // Parametrization variables (notation from https://doi.org/10.1016/0168-9002(94)90532-0)
     const float phi_c = 0.;
     const float theta_p = 0.;
@@ -700,8 +690,8 @@ struct OnTheFlyRichPid {
     // float n_photons = (tile_z_length / 2.0 > radius) ? N0 * multiplicity_spectrum_factor * (1.-(2.0*radius)/(o2::constants::math::PI*tile_z_length)) : N0 * multiplicity_spectrum_factor * (1.-(2.0*radius)/(o2::constants::math::PI*tile_z_length) - (2.0/(tile_z_length*o2::constants::math::PI))*(-(tile_z_length/(2.0))*std::acos(tile_z_length/(2.0*radius)) + radius*std::sqrt(1.-std::pow(tile_z_length/(2.0*radius),2.0))));
     // Considering "exact" resolution (eta by eta)
     float n_photons = N0 * multiplicity_spectrum_factor * fractionPhotonsProjectiveRICH(eta, tile_z_length, radius);
-    if (n_photons <= error_value + 1)
-      return error_value;
+    if (n_photons <= kErrorValue + 1)
+      return kErrorValue;
     // Ring angular resolution
     float ring_angular_resolution = single_photon_angular_resolution / std::sqrt(n_photons);
     return ring_angular_resolution;
@@ -774,7 +764,7 @@ struct OnTheFlyRichPid {
     for (const auto& track : tracks) {
 
       auto fillDummyValues = [&]() {
-        upgradeRich(error_value, error_value, error_value, error_value, error_value);
+        upgradeRich(kErrorValue, kErrorValue, kErrorValue, kErrorValue, kErrorValue);
         upgradeRichSignal(false, false, false, false, false, false);
       };
 
@@ -788,7 +778,7 @@ struct OnTheFlyRichPid {
       const auto& mcParticle = track.mcParticle();
       o2::track::TrackParCov o2track = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdg);
 
-      // float xPv = error_value;
+      // float xPv = kErrorValue;
       if (o2track.propagateToDCA(mcPvVtx, magneticField)) {
         // xPv = o2track.getX();
       }
@@ -807,7 +797,7 @@ struct OnTheFlyRichPid {
         continue;
       }
 
-      float expectedAngleBarrelRich = error_value;
+      float expectedAngleBarrelRich = kErrorValue;
       const bool expectedAngleBarrelRichOk = CherenkovAngle(o2track.getP(), pdgInfo->Mass(), aerogel_rindex[i_sector], expectedAngleBarrelRich);
       if (!expectedAngleBarrelRichOk) {
         fillDummyValues();
@@ -817,7 +807,7 @@ struct OnTheFlyRichPid {
       const float barrelRICHAngularResolution = extract_ring_angular_resolution(o2track.getEta(), aerogel_rindex[i_sector], bRichGapRefractiveIndex, bRichRadiatorThickness, gap_thickness[i_sector], bRICHPixelSize, expectedAngleBarrelRich, photodetrctor_length[i_sector]);
       const float projectiveRadiatorRadius = radiusRipple(o2track.getEta(), i_sector);
       bool flagReachesRadiator = false;
-      if (projectiveRadiatorRadius > error_value + 1.) {
+      if (projectiveRadiatorRadius > kErrorValue + 1.) {
         flagReachesRadiator = checkMagfieldLimit(o2track, projectiveRadiatorRadius, magneticField);
       }
       /// DISCLAIMER: Exact extrapolation of angular resolution would require track propagation
@@ -837,7 +827,12 @@ struct OnTheFlyRichPid {
 
       // Straight to Nsigma
       static constexpr int kNspecies = 5;
-      float nSigmaBarrelRich[kNspecies] = {error_value, error_value, error_value, error_value, error_value};
+      static constexpr int kEl = 0;
+      static constexpr int kMu = 1;
+      static constexpr int kPi = 2;
+      static constexpr int kKa = 3;
+      static constexpr int kPr = 4;
+      float nSigmaBarrelRich[kNspecies] = {kErrorValue, kErrorValue, kErrorValue, kErrorValue, kErrorValue};
       bool signalBarrelRich[kNspecies] = {false, false, false, false, false};
       float deltaThetaBarrelRich[kNspecies]; //, nSigmaBarrelRich[kNspecies];
       static constexpr int lpdg_array[kNspecies] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
@@ -849,7 +844,7 @@ struct OnTheFlyRichPid {
 
       for (int ii = 0; ii < kNspecies; ii++) { // Loop on the particle hypotheses
 
-        float hypothesisAngleBarrelRich = error_value;
+        float hypothesisAngleBarrelRich = kErrorValue;
         const bool hypothesisAngleBarrelRichOk = CherenkovAngle(recoTrack.getP(), masses[ii], aerogel_rindex[i_sector], hypothesisAngleBarrelRich);
         signalBarrelRich[ii] = hypothesisAngleBarrelRichOk; // Particle is above the threshold and enough photons
 
@@ -867,42 +862,42 @@ struct OnTheFlyRichPid {
           const float barrelTrackAngularReso = calculate_track_angular_resolution_advanced(recoTrack.getP() / std::cosh(recoTrack.getEta()), recoTrack.getEta(), pt_resolution, eta_resolution, masses[ii], aerogel_rindex[i_sector]);
           barrelTotalAngularReso = std::hypot(barrelRICHAngularResolution, barrelTrackAngularReso);
           if (doQAplots &&
-              hypothesisAngleBarrelRich > error_value + 1. &&
-              measuredAngleBarrelRich > error_value + 1. &&
-              barrelRICHAngularResolution > error_value + 1. &&
+              hypothesisAngleBarrelRich > kErrorValue + 1. &&
+              measuredAngleBarrelRich > kErrorValue + 1. &&
+              barrelRICHAngularResolution > kErrorValue + 1. &&
               flagReachesRadiator) {
             switch (mcParticle.pdgCode()) {
-              case lpdg_array[0]:  // Electron
-              case -lpdg_array[0]: // Positron
-                if (ii == 0) {
+              case lpdg_array[kEl]:  // Electron
+              case -lpdg_array[kEl]: // Positron
+                if (ii == kEl) {
                   histos.fill(HIST("h2dBarrelAngularResTrackElecVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
                   histos.fill(HIST("h2dBarrelAngularResTotalElecVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
                 }
                 break;
-              case lpdg_array[1]:  // Muon
-              case -lpdg_array[1]: // AntiMuon
-                if (ii == 1) {
+              case lpdg_array[kMu]:  // Muon
+              case -lpdg_array[kMu]: // AntiMuon
+                if (ii == kMu) {
                   histos.fill(HIST("h2dBarrelAngularResTrackMuonVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
                   histos.fill(HIST("h2dBarrelAngularResTotalMuonVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
                 }
                 break;
-              case lpdg_array[2]:  // Pion
-              case -lpdg_array[2]: // AntiPion
-                if (ii == 2) {
+              case lpdg_array[kPi]:  // Pion
+              case -lpdg_array[kPi]: // AntiPion
+                if (ii == kPi) {
                   histos.fill(HIST("h2dBarrelAngularResTrackPionVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
                   histos.fill(HIST("h2dBarrelAngularResTotalPionVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
                 }
                 break;
-              case lpdg_array[3]:  // Kaon
-              case -lpdg_array[3]: // AntiKaon
-                if (ii == 3) {
+              case lpdg_array[kKa]:  // Kaon
+              case -lpdg_array[kKa]: // AntiKaon
+                if (ii == kKa) {
                   histos.fill(HIST("h2dBarrelAngularResTrackKaonVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
                   histos.fill(HIST("h2dBarrelAngularResTotalKaonVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
                 }
                 break;
-              case lpdg_array[4]:  // Proton
-              case -lpdg_array[4]: // AntiProton
-                if (ii == 4) {
+              case lpdg_array[kPr]:  // Proton
+              case -lpdg_array[kPr]: // AntiProton
+                if (ii == kPr) {
                   histos.fill(HIST("h2dBarrelAngularResTrackProtVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
                   histos.fill(HIST("h2dBarrelAngularResTotalProtVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
                 }
@@ -916,9 +911,9 @@ struct OnTheFlyRichPid {
         /// DISCLAIMER: here tracking is accounted only for momentum value, but not for track parameters at impact point on the
         ///             RICH radiator, since exact resolution would require photon generation and transport to photodetector.
         ///             Effects are expected to be negligible (a few tenths of a milliradian) but further studies are required !
-        if (hypothesisAngleBarrelRich > error_value + 1. &&
-            measuredAngleBarrelRich > error_value + 1. &&
-            barrelRICHAngularResolution > error_value + 1. &&
+        if (hypothesisAngleBarrelRich > kErrorValue + 1. &&
+            measuredAngleBarrelRich > kErrorValue + 1. &&
+            barrelRICHAngularResolution > kErrorValue + 1. &&
             flagReachesRadiator) {
           deltaThetaBarrelRich[ii] = hypothesisAngleBarrelRich - measuredAngleBarrelRich;
           nSigmaBarrelRich[ii] = deltaThetaBarrelRich[ii] / barrelTotalAngularReso;
@@ -927,8 +922,8 @@ struct OnTheFlyRichPid {
 
       // Fill histograms
       if (doQAplots) {
-        if (measuredAngleBarrelRich > error_value + 1. &&
-            barrelRICHAngularResolution > error_value + 1. &&
+        if (measuredAngleBarrelRich > kErrorValue + 1. &&
+            barrelRICHAngularResolution > kErrorValue + 1. &&
             flagReachesRadiator) {
           histos.fill(HIST("h2dAngleVsMomentumBarrelRICH"), recoTrack.getP(), measuredAngleBarrelRich);
           histos.fill(HIST("h2dAngleVsEtaBarrelRICH"), recoTrack.getEta(), measuredAngleBarrelRich);
