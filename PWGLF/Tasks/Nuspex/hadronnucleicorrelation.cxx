@@ -1611,6 +1611,9 @@ struct hadronnucleicorrelation {
       if (selectedtracksPIDMC_antid.find(collision.globalIndex()) != selectedtracksPIDMC_antid.end()) {
         mixbinsPID_antidantip[std::pair<int, float>{vertexBinToMix, centBinToMix}].push_back(std::make_shared<decltype(collision)>(collision));
       }
+
+      PairMC->SetMagField1(collision.magField());
+      PairMC->SetMagField2(collision.magField());
     } // coll
 
     if (!mixbins_antid.empty()) {
