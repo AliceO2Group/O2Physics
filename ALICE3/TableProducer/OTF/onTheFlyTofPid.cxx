@@ -24,40 +24,42 @@
 /// \since  May 22, 2024
 ///
 
-#include <utility>
-#include <map>
-#include <string>
-#include <vector>
+#include "TableHelper.h"
 
-#include <TPDGCode.h>
-
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
+#include "ALICE3/Core/DelphesO2TrackSmearer.h"
 #include "ALICE3/Core/TrackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "CommonUtils/NameConf.h"
-#include "CCDB/CcdbApi.h"
+#include "ALICE3/DataModel/OTFTOF.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
+#include "CCDB/CcdbApi.h"
 #include "CommonConstants/GeomConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include "TRandom3.h"
-#include "ALICE3/DataModel/OTFTOF.h"
+#include "CommonUtils/NameConf.h"
+#include "DataFormatsCalibration/MeanVertexObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
 #include "DetectorsVertexing/HelixHelper.h"
-#include "TableHelper.h"
-#include "ALICE3/Core/DelphesO2TrackSmearer.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/DCA.h"
+
 #include "TEfficiency.h"
 #include "THashList.h"
+#include "TRandom3.h"
+#include <TPDGCode.h>
+
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -84,7 +86,7 @@ struct OnTheFlyTofPid {
   // more could be added (especially a disk TOF at a certain z?)
   // in the evolution of this effort
   struct : ConfigurableGroup {
-    Configurable<float> dBz{"dBz", 20, "magnetic field (kilogauss)"};
+    Configurable<float> magneticField{"magneticField", 0, "magnetic field (kilogauss) if 0, taken from the tracker task"};
     Configurable<bool> considerEventTime{"considerEventTime", true, "flag to consider event time"};
     Configurable<float> innerTOFRadius{"innerTOFRadius", 20, "barrel inner TOF radius (cm)"};
     Configurable<float> outerTOFRadius{"outerTOFRadius", 80, "barrel outer TOF radius (cm)"};
@@ -140,6 +142,13 @@ struct OnTheFlyTofPid {
   void init(o2::framework::InitContext& initContext)
   {
     pRandomNumberGenerator.SetSeed(0); // fully randomize
+    if (simConfig.magneticField.value < 0.0001f) {
+      LOG(info) << "Getting the magnetic field from the on-the-fly tracker task";
+      if (!getTaskOptionValue(initContext, "on-the-fly-tracker", simConfig.magneticField, false)) {
+        LOG(fatal) << "Could not get Bz from on-the-fly-tracker task";
+      }
+      LOG(info) << "Bz = " << simConfig.magneticField.value << " T";
+    }
 
     // Check if inheriting the LUT configuration
     auto configLutPath = [&](Configurable<std::string>& lut) {
@@ -397,7 +406,7 @@ struct OnTheFlyTofPid {
 
     static constexpr float kMaxEventTimeResolution = 200.f;
     if (sumw <= 0. || tracks.size() <= 1 || std::sqrt(1. / sumw) > kMaxEventTimeResolution) {
-      tzero[0] = 0.;    // [ps]
+      tzero[0] = 0.;                      // [ps]
       tzero[1] = kMaxEventTimeResolution; // [ps]
       return false;
     }
@@ -496,13 +505,13 @@ struct OnTheFlyTofPid {
 
       float xPv = -100.f;
       static constexpr float kTrkXThreshold = -99.f; // Threshold to consider a good propagation of the track
-      if (o2track.propagateToDCA(mcPvVtx, simConfig.dBz)) {
+      if (o2track.propagateToDCA(mcPvVtx, simConfig.magneticField)) {
         xPv = o2track.getX();
       }
       float trackLengthInnerTOF = -1, trackLengthOuterTOF = -1;
       if (xPv > kTrkXThreshold) {
-        trackLengthInnerTOF = computeTrackLength(o2track, simConfig.innerTOFRadius, simConfig.dBz);
-        trackLengthOuterTOF = computeTrackLength(o2track, simConfig.outerTOFRadius, simConfig.dBz);
+        trackLengthInnerTOF = computeTrackLength(o2track, simConfig.innerTOFRadius, simConfig.magneticField);
+        trackLengthOuterTOF = computeTrackLength(o2track, simConfig.outerTOFRadius, simConfig.magneticField);
       }
 
       // get mass to calculate velocity
@@ -526,12 +535,12 @@ struct OnTheFlyTofPid {
       float trackLengthRecoInnerTOF = -1, trackLengthRecoOuterTOF = -1;
       auto recoTrack = getTrackParCov(track);
       xPv = -100.f;
-      if (recoTrack.propagateToDCA(pvVtx, simConfig.dBz)) {
+      if (recoTrack.propagateToDCA(pvVtx, simConfig.magneticField)) {
         xPv = recoTrack.getX();
       }
       if (xPv > kTrkXThreshold) {
-        trackLengthRecoInnerTOF = computeTrackLength(recoTrack, simConfig.innerTOFRadius, simConfig.dBz);
-        trackLengthRecoOuterTOF = computeTrackLength(recoTrack, simConfig.outerTOFRadius, simConfig.dBz);
+        trackLengthRecoInnerTOF = computeTrackLength(recoTrack, simConfig.innerTOFRadius, simConfig.magneticField);
+        trackLengthRecoOuterTOF = computeTrackLength(recoTrack, simConfig.outerTOFRadius, simConfig.magneticField);
       }
 
       // cache the track info needed for the event time calculation
@@ -639,8 +648,8 @@ struct OnTheFlyTofPid {
             ptResolution = mSmearer.getAbsPtRes(pdgInfoThis->PdgCode(), dNdEta, pseudorapidity, momentum / std::cosh(pseudorapidity));
             etaResolution = mSmearer.getAbsEtaRes(pdgInfoThis->PdgCode(), dNdEta, pseudorapidity, momentum / std::cosh(pseudorapidity));
           }
-          float innerTrackTimeReso = calculateTrackTimeResolutionAdvanced(momentum / std::cosh(pseudorapidity), pseudorapidity, ptResolution, etaResolution, masses[ii], simConfig.innerTOFRadius, simConfig.dBz);
-          float outerTrackTimeReso = calculateTrackTimeResolutionAdvanced(momentum / std::cosh(pseudorapidity), pseudorapidity, ptResolution, etaResolution, masses[ii], simConfig.outerTOFRadius, simConfig.dBz);
+          float innerTrackTimeReso = calculateTrackTimeResolutionAdvanced(momentum / std::cosh(pseudorapidity), pseudorapidity, ptResolution, etaResolution, masses[ii], simConfig.innerTOFRadius, simConfig.magneticField);
+          float outerTrackTimeReso = calculateTrackTimeResolutionAdvanced(momentum / std::cosh(pseudorapidity), pseudorapidity, ptResolution, etaResolution, masses[ii], simConfig.outerTOFRadius, simConfig.magneticField);
           innerTotalTimeReso = std::hypot(simConfig.innerTOFTimeReso, innerTrackTimeReso);
           outerTotalTimeReso = std::hypot(simConfig.outerTOFTimeReso, outerTrackTimeReso);
 
