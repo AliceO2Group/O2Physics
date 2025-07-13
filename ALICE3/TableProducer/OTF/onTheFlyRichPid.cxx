@@ -105,27 +105,6 @@ struct OnTheFlyRichPid {
   Configurable<bool> flagIncludeTrackAngularRes{"flagIncludeTrackAngularRes", true, "flag to include or exclude track time resolution"};
   Configurable<float> multiplicityEtaRange{"multiplicityEtaRange", 0.800000012, "eta range to compute the multiplicity"};
   Configurable<bool> flagRICHLoadDelphesLUTs{"flagRICHLoadDelphesLUTs", false, "flag to load Delphes LUTs for tracking correction (use recoTrack parameters if false)"};
-  /*Configurable<float> bRichRefractiveIndexSector0AndNMinus1{"bRichRefractiveIndexSector0AndMinus1", 1.03, "barrel RICH refractive index sector 0 and N-1"};
-  Configurable<float> bRichRefractiveIndexSector1AndNMinus2{"bRichRefractiveIndexSector1AndMinus2", 1.03, "barrel RICH refractive index sector 1 and N-2"};
-  Configurable<float> bRichRefractiveIndexSector2AndNMinus3{"bRichRefractiveIndexSector2AndMinus3", 1.03, "barrel RICH refractive index sector 2 and N-3"};
-  Configurable<float> bRichRefractiveIndexSector3AndNMinus4{"bRichRefractiveIndexSector3AndMinus4", 1.03, "barrel RICH refractive index sector 3 and N-4"};
-  Configurable<float> bRichRefractiveIndexSector4AndNMinus5{"bRichRefractiveIndexSector4AndMinus5", 1.03, "barrel RICH refractive index sector 4 and N-5"};
-  Configurable<float> bRichRefractiveIndexSector5AndNMinus6{"bRichRefractiveIndexSector5AndMinus6", 1.03, "barrel RICH refractive index sector 5 and N-6"};
-  Configurable<float> bRichRefractiveIndexSector6AndNMinus7{"bRichRefractiveIndexSector6AndMinus7", 1.03, "barrel RICH refractive index sector 6 and N-7"};
-  Configurable<float> bRichRefractiveIndexSector7AndNMinus8{"bRichRefractiveIndexSector7AndMinus8", 1.03, "barrel RICH refractive index sector 7 and N-8"};
-  Configurable<float> bRichRefractiveIndexSector8AndNMinus9{"bRichRefractiveIndexSector8AndMinus9", 1.03, "barrel RICH refractive index sector 8 and N-9"};
-  Configurable<float> bRichRefractiveIndexSector9AndNMinus10{"bRichRefractiveIndexSector9AndMinus10", 1.03, "barrel RICH refractive index sector 9 and N-10"};
-  Configurable<float> bRichRefractiveIndexSector10AndNMinus11{"bRichRefractiveIndexSector10AndMinus11", 1.03, "barrel RICH refractive index sector 10 and N-11"};
-  Configurable<float> bRichRefractiveIndexSector11AndNMinus12{"bRichRefractiveIndexSector11AndMinus12", 1.03, "barrel RICH refractive index sector 11 and N-12"};
-  Configurable<float> bRichRefractiveIndexSector12AndNMinus13{"bRichRefractiveIndexSector12AndMinus13", 1.03, "barrel RICH refractive index sector 12 and N-13"};
-  Configurable<float> bRichRefractiveIndexSector13AndNMinus14{"bRichRefractiveIndexSector13AndMinus14", 1.03, "barrel RICH refractive index sector 13 and N-14"};
-  Configurable<float> bRichRefractiveIndexSector14AndNMinus15{"bRichRefractiveIndexSector14AndMinus15", 1.03, "barrel RICH refractive index sector 14 and N-15"};
-  Configurable<float> bRichRefractiveIndexSector15AndNMinus16{"bRichRefractiveIndexSector15AndMinus16", 1.03, "barrel RICH refractive index sector 15 and N-16"};
-  Configurable<float> bRichRefractiveIndexSector16AndNMinus17{"bRichRefractiveIndexSector16AndMinus17", 1.03, "barrel RICH refractive index sector 16 and N-17"};
-  Configurable<float> bRichRefractiveIndexSector17AndNMinus18{"bRichRefractiveIndexSector17AndMinus18", 1.03, "barrel RICH refractive index sector 17 and N-18"};
-  Configurable<float> bRichRefractiveIndexSector18AndNMinus19{"bRichRefractiveIndexSector18AndMinus19", 1.03, "barrel RICH refractive index sector 18 and N-19"};
-  Configurable<float> bRichRefractiveIndexSector19AndNMinus20{"bRichRefractiveIndexSector19AndMinus20", 1.03, "barrel RICH refractive index sector 19 and N-20"};
-  Configurable<float> bRichRefractiveIndexSector20AndNMinus21{"bRichRefractiveIndexSector20AndMinus21", 1.03, "barrel RICH refractive index sector 20 and N-21"};*/
   Configurable<float> bRichRefractiveIndexSector0{"bRichRefractiveIndexSector0", 1.03, "barrel RICH refractive index central(s)"};                        // central(s)
   Configurable<float> bRichRefractiveIndexSector1{"bRichRefractiveIndexSector1", 1.03, "barrel RICH refractive index central(s)-1 and central(s)+1"};     // central(s)-1 and central(s)+1
   Configurable<float> bRichRefractiveIndexSector2{"bRichRefractiveIndexSector2", 1.03, "barrel RICH refractive index central(s)-2 and central(s)+2"};     // central(s)-2 and central(s)+2
@@ -543,21 +522,21 @@ struct OnTheFlyRichPid {
   float angularResolution(float eta)
   {
     // Vectors for sampling (USE ANALYTICAL EXTRAPOLATION FOR BETTER RESULTS)
-    static constexpr float etaSampling[] = {-2.000000, -1.909740, -1.731184, -1.552999, -1.375325, -1.198342, -1.022276, -0.847390, -0.673976, -0.502324, -0.332683, -0.165221, 0.000000, 0.165221, 0.332683, 0.502324, 0.673976, 0.847390, 1.022276, 1.198342, 1.375325, 1.552999, 1.731184, 1.909740, 2.000000};
-    static constexpr float resRingSamplingWithAbsWalls[] = {0.0009165, 0.000977, 0.001098, 0.001198, 0.001301, 0.001370, 0.001465, 0.001492, 0.001498, 0.001480, 0.001406, 0.001315, 0.001241, 0.001325, 0.001424, 0.001474, 0.001480, 0.001487, 0.001484, 0.001404, 0.001273, 0.001197, 0.001062, 0.000965, 0.0009165};
-    static constexpr float resRingSamplingWithoutAbsWalls[] = {0.0009165, 0.000977, 0.001095, 0.001198, 0.001300, 0.001369, 0.001468, 0.001523, 0.001501, 0.001426, 0.001299, 0.001167, 0.001092, 0.001179, 0.001308, 0.001407, 0.001491, 0.001508, 0.001488, 0.001404, 0.001273, 0.001196, 0.001061, 0.000965, 0.0009165};
-    static constexpr int sizeResVector = sizeof(etaSampling) / sizeof(etaSampling[0]);
+    static constexpr float kEtaSampling[] = {-2.000000, -1.909740, -1.731184, -1.552999, -1.375325, -1.198342, -1.022276, -0.847390, -0.673976, -0.502324, -0.332683, -0.165221, 0.000000, 0.165221, 0.332683, 0.502324, 0.673976, 0.847390, 1.022276, 1.198342, 1.375325, 1.552999, 1.731184, 1.909740, 2.000000};
+    static constexpr float kResRingSamplingWithAbsWalls[] = {0.0009165, 0.000977, 0.001098, 0.001198, 0.001301, 0.001370, 0.001465, 0.001492, 0.001498, 0.001480, 0.001406, 0.001315, 0.001241, 0.001325, 0.001424, 0.001474, 0.001480, 0.001487, 0.001484, 0.001404, 0.001273, 0.001197, 0.001062, 0.000965, 0.0009165};
+    static constexpr float kResRingSamplingWithoutAbsWalls[] = {0.0009165, 0.000977, 0.001095, 0.001198, 0.001300, 0.001369, 0.001468, 0.001523, 0.001501, 0.001426, 0.001299, 0.001167, 0.001092, 0.001179, 0.001308, 0.001407, 0.001491, 0.001508, 0.001488, 0.001404, 0.001273, 0.001196, 0.001061, 0.000965, 0.0009165};
+    static constexpr int sizeResVector = sizeof(kEtaSampling) / sizeof(kEtaSampling[0]);
     // Use binary search to find the lower and upper indices
-    const int lowerIndex = std::lower_bound(etaSampling, etaSampling + sizeResVector, eta) - etaSampling - 1;
+    const int lowerIndex = std::lower_bound(kEtaSampling, kEtaSampling + sizeResVector, eta) - kEtaSampling - 1;
     const int upperIndex = lowerIndex + 1;
     if (lowerIndex >= 0 && upperIndex < sizeResVector) {
       // Resolution interpolation
       if (bRichFlagAbsorbingWalls) {
-        float interpolatedResRing = interpolate(eta, etaSampling[lowerIndex], etaSampling[upperIndex], resRingSamplingWithAbsWalls[lowerIndex], resRingSamplingWithAbsWalls[upperIndex]);
+        float interpolatedResRing = interpolate(eta, kEtaSampling[lowerIndex], kEtaSampling[upperIndex], kResRingSamplingWithAbsWalls[lowerIndex], kResRingSamplingWithAbsWalls[upperIndex]);
         // std::cout << "Interpolated y value: " << interpolatedY << std::endl;
         return interpolatedResRing;
       } else {
-        float interpolatedResRing = interpolate(eta, etaSampling[lowerIndex], etaSampling[upperIndex], resRingSamplingWithoutAbsWalls[lowerIndex], resRingSamplingWithoutAbsWalls[upperIndex]);
+        float interpolatedResRing = interpolate(eta, kEtaSampling[lowerIndex], kEtaSampling[upperIndex], kResRingSamplingWithoutAbsWalls[lowerIndex], kResRingSamplingWithoutAbsWalls[upperIndex]);
         // std::cout << "Interpolated y value: " << interpolatedY << std::endl;
         return interpolatedResRing;
       }
@@ -630,16 +609,16 @@ struct OnTheFlyRichPid {
     const float cosPhi = std::cos(phiC);
     // const float ze = thicknessRad / (2. * zP);
     const float aZ = zP * cosThetaCherenkov - xP * sinThetaCherenkov * cosPhi;
-    const float e3Z = std::sqrt(aZ * aZ + (nGas / n) * (nGas / n) - 1.);
+    const float e3z = std::sqrt(aZ * aZ + (nGas / n) * (nGas / n) - 1.);
     const float Z = thicknessGas;
-    const float alpha = e3Z / aZ;
-    const float etac = e3Z * n * n;
+    const float alpha = e3z / aZ;
+    const float etac = e3z * n * n;
     const float k = thicknessRad / (2. * Z);
     const float m = 1. / (n * n);
     const float lambda = (1. + k * alpha * alpha * alpha) / (1. + k * alpha);
     // Derivative d(thetaCherenkov)/dx
     const float temp1 = etac / Z;
-    const float temp2 = alpha * e3Z * cosPhi;
+    const float temp2 = alpha * e3z * cosPhi;
     const float temp3 = xP * sinThetaCherenkov * sinPhi * sinPhi;
     const float dThetaX = temp1 * (temp2 - temp3);
     // Derivative d(thetaCherenkov)/dy
@@ -835,17 +814,17 @@ struct OnTheFlyRichPid {
       float nSigmaBarrelRich[kNspecies] = {kErrorValue, kErrorValue, kErrorValue, kErrorValue, kErrorValue};
       bool signalBarrelRich[kNspecies] = {false, false, false, false, false};
       float deltaThetaBarrelRich[kNspecies]; //, nSigmaBarrelRich[kNspecies];
-      static constexpr int lpdgArray[kNspecies] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
-      static constexpr float masses[kNspecies] = {o2::track::pid_constants::sMasses[o2::track::PID::Electron],
-                                                  o2::track::pid_constants::sMasses[o2::track::PID::Muon],
-                                                  o2::track::pid_constants::sMasses[o2::track::PID::Pion],
-                                                  o2::track::pid_constants::sMasses[o2::track::PID::Kaon],
-                                                  o2::track::pid_constants::sMasses[o2::track::PID::Proton]};
+      static constexpr int kPdgArray[kNspecies] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
+      static constexpr float kMasses[kNspecies] = {o2::track::pid_constants::sMasses[o2::track::PID::Electron],
+                                                   o2::track::pid_constants::sMasses[o2::track::PID::Muon],
+                                                   o2::track::pid_constants::sMasses[o2::track::PID::Pion],
+                                                   o2::track::pid_constants::sMasses[o2::track::PID::Kaon],
+                                                   o2::track::pid_constants::sMasses[o2::track::PID::Proton]};
 
       for (int ii = 0; ii < kNspecies; ii++) { // Loop on the particle hypotheses
 
         float hypothesisAngleBarrelRich = kErrorValue;
-        const bool hypothesisAngleBarrelRichOk = cherenkovAngle(recoTrack.getP(), masses[ii], aerogelRindex[iSecor], hypothesisAngleBarrelRich);
+        const bool hypothesisAngleBarrelRichOk = cherenkovAngle(recoTrack.getP(), kMasses[ii], aerogelRindex[iSecor], hypothesisAngleBarrelRich);
         signalBarrelRich[ii] = hypothesisAngleBarrelRichOk; // Particle is above the threshold and enough photons
 
         // Evaluate total sigma (layer + tracking resolution)
@@ -855,11 +834,11 @@ struct OnTheFlyRichPid {
           double ptResolution = transverseMomentum * transverseMomentum * std::sqrt(recoTrack.getSigma1Pt2());
           double etaResolution = std::fabs(std::sin(2.0 * std::atan(std::exp(-recoTrack.getEta())))) * std::sqrt(recoTrack.getSigmaTgl2());
           if (flagRICHLoadDelphesLUTs) {
-            ptResolution = mSmearer.getAbsPtRes(lpdgArray[ii], dNdEta, recoTrack.getEta(), transverseMomentum);
-            etaResolution = mSmearer.getAbsEtaRes(lpdgArray[ii], dNdEta, recoTrack.getEta(), transverseMomentum);
+            ptResolution = mSmearer.getAbsPtRes(kPdgArray[ii], dNdEta, recoTrack.getEta(), transverseMomentum);
+            etaResolution = mSmearer.getAbsEtaRes(kPdgArray[ii], dNdEta, recoTrack.getEta(), transverseMomentum);
           }
           // cout << endl <<  "Pt resolution: " << ptResolution << ", Eta resolution: " << etaResolution << endl << endl;
-          const float barrelTrackAngularReso = calculateTrackAngularResolutionAdvanced(recoTrack.getP() / std::cosh(recoTrack.getEta()), recoTrack.getEta(), ptResolution, etaResolution, masses[ii], aerogelRindex[iSecor]);
+          const float barrelTrackAngularReso = calculateTrackAngularResolutionAdvanced(recoTrack.getP() / std::cosh(recoTrack.getEta()), recoTrack.getEta(), ptResolution, etaResolution, kMasses[ii], aerogelRindex[iSecor]);
           barrelTotalAngularReso = std::hypot(barrelRICHAngularResolution, barrelTrackAngularReso);
           if (doQAplots &&
               hypothesisAngleBarrelRich > kErrorValue + 1. &&
@@ -867,36 +846,36 @@ struct OnTheFlyRichPid {
               barrelRICHAngularResolution > kErrorValue + 1. &&
               flagReachesRadiator) {
             switch (mcParticle.pdgCode()) {
-              case lpdgArray[kEl]:  // Electron
-              case -lpdgArray[kEl]: // Positron
+              case kPdgArray[kEl]:  // Electron
+              case -kPdgArray[kEl]: // Positron
                 if (ii == kEl) {
                   histos.fill(HIST("h2dBarrelAngularResTrackElecVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
                   histos.fill(HIST("h2dBarrelAngularResTotalElecVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
                 }
                 break;
-              case lpdgArray[kMu]:  // Muon
-              case -lpdgArray[kMu]: // AntiMuon
+              case kPdgArray[kMu]:  // Muon
+              case -kPdgArray[kMu]: // AntiMuon
                 if (ii == kMu) {
                   histos.fill(HIST("h2dBarrelAngularResTrackMuonVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
                   histos.fill(HIST("h2dBarrelAngularResTotalMuonVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
                 }
                 break;
-              case lpdgArray[kPi]:  // Pion
-              case -lpdgArray[kPi]: // AntiPion
+              case kPdgArray[kPi]:  // Pion
+              case -kPdgArray[kPi]: // AntiPion
                 if (ii == kPi) {
                   histos.fill(HIST("h2dBarrelAngularResTrackPionVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
                   histos.fill(HIST("h2dBarrelAngularResTotalPionVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
                 }
                 break;
-              case lpdgArray[kKa]:  // Kaon
-              case -lpdgArray[kKa]: // AntiKaon
+              case kPdgArray[kKa]:  // Kaon
+              case -kPdgArray[kKa]: // AntiKaon
                 if (ii == kKa) {
                   histos.fill(HIST("h2dBarrelAngularResTrackKaonVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
                   histos.fill(HIST("h2dBarrelAngularResTotalKaonVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
                 }
                 break;
-              case lpdgArray[kPr]:  // Proton
-              case -lpdgArray[kPr]: // AntiProton
+              case kPdgArray[kPr]:  // Proton
+              case -kPdgArray[kPr]: // AntiProton
                 if (ii == kPr) {
                   histos.fill(HIST("h2dBarrelAngularResTrackProtVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
                   histos.fill(HIST("h2dBarrelAngularResTotalProtVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
@@ -932,40 +911,40 @@ struct OnTheFlyRichPid {
           histos.fill(HIST("hSectorID"), iSecor);
 
           switch (mcParticle.pdgCode()) {
-            case lpdgArray[kEl]:  // Electron
-            case -lpdgArray[kEl]: // Positron
+            case kPdgArray[kEl]:  // Electron
+            case -kPdgArray[kEl]: // Positron
               histos.fill(HIST("h2dBarrelNsigmaTrueElecVsElecHypothesis"), recoTrack.getP(), nSigmaBarrelRich[0]);
               histos.fill(HIST("h2dBarrelNsigmaTrueElecVsMuonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[1]);
               histos.fill(HIST("h2dBarrelNsigmaTrueElecVsPionHypothesis"), recoTrack.getP(), nSigmaBarrelRich[2]);
               histos.fill(HIST("h2dBarrelNsigmaTrueElecVsKaonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[3]);
               histos.fill(HIST("h2dBarrelNsigmaTrueElecVsProtHypothesis"), recoTrack.getP(), nSigmaBarrelRich[4]);
               break;
-            case lpdgArray[kMu]:  // Muon
-            case -lpdgArray[kMu]: // AntiMuon
+            case kPdgArray[kMu]:  // Muon
+            case -kPdgArray[kMu]: // AntiMuon
               histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsElecHypothesis"), recoTrack.getP(), nSigmaBarrelRich[0]);
               histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsMuonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[1]);
               histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsPionHypothesis"), recoTrack.getP(), nSigmaBarrelRich[2]);
               histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsKaonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[3]);
               histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsProtHypothesis"), recoTrack.getP(), nSigmaBarrelRich[4]);
               break;
-            case lpdgArray[kPi]:  // Pion
-            case -lpdgArray[kPi]: // AntiPion
+            case kPdgArray[kPi]:  // Pion
+            case -kPdgArray[kPi]: // AntiPion
               histos.fill(HIST("h2dBarrelNsigmaTruePionVsElecHypothesis"), recoTrack.getP(), nSigmaBarrelRich[0]);
               histos.fill(HIST("h2dBarrelNsigmaTruePionVsMuonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[1]);
               histos.fill(HIST("h2dBarrelNsigmaTruePionVsPionHypothesis"), recoTrack.getP(), nSigmaBarrelRich[2]);
               histos.fill(HIST("h2dBarrelNsigmaTruePionVsKaonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[3]);
               histos.fill(HIST("h2dBarrelNsigmaTruePionVsProtHypothesis"), recoTrack.getP(), nSigmaBarrelRich[4]);
               break;
-            case lpdgArray[kka]:  // Kaon
-            case -lpdgArray[kka]: // AntiKaon
+            case kPdgArray[kka]:  // Kaon
+            case -kPdgArray[kka]: // AntiKaon
               histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsElecHypothesis"), recoTrack.getP(), nSigmaBarrelRich[0]);
               histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsMuonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[1]);
               histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsPionHypothesis"), recoTrack.getP(), nSigmaBarrelRich[2]);
               histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsKaonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[3]);
               histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsProtHypothesis"), recoTrack.getP(), nSigmaBarrelRich[4]);
               break;
-            case lpdgArray[kPr]:  // Proton
-            case -lpdgArray[kPr]: // AntiProton
+            case kPdgArray[kPr]:  // Proton
+            case -kPdgArray[kPr]: // AntiProton
               histos.fill(HIST("h2dBarrelNsigmaTrueProtVsElecHypothesis"), recoTrack.getP(), nSigmaBarrelRich[0]);
               histos.fill(HIST("h2dBarrelNsigmaTrueProtVsMuonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[1]);
               histos.fill(HIST("h2dBarrelNsigmaTrueProtVsPionHypothesis"), recoTrack.getP(), nSigmaBarrelRich[2]);
