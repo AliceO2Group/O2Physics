@@ -41,6 +41,7 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
 #include "CommonConstants/GeomConstants.h"
+#include "CommonConstants/MathConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "CommonUtils/NameConf.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
@@ -506,7 +507,7 @@ struct OnTheFlyRichPid {
   /// \param n the refractive index of the considered sector
   /// \param angle the output angle (passed by reference)
   /// \return true if particle is above the threshold and enough photons, false otherwise
-  bool CherenkovAngle(const float momentum, const float mass, const float n, float& angle)
+  bool cherenkovAngle(const float momentum, const float mass, const float n, float& angle)
   {
     if (momentum > mass / std::sqrt(n * n - 1.0)) { // Check if particle is above the threshold
       // Calculate angle
@@ -539,7 +540,7 @@ struct OnTheFlyRichPid {
 
   /// returns angular resolution for considered track eta
   /// \param eta the pseudorapidity of the tarck (assuming primary vertex at origin)
-  float AngularResolution(float eta)
+  float angularResolution(float eta)
   {
     // Vectors for sampling (USE ANALYTICAL EXTRAPOLATION FOR BETTER RESULTS)
     static constexpr float etaSampling[] = {-2.000000, -1.909740, -1.731184, -1.552999, -1.375325, -1.198342, -1.022276, -0.847390, -0.673976, -0.502324, -0.332683, -0.165221, 0.000000, 0.165221, 0.332683, 0.502324, 0.673976, 0.847390, 1.022276, 1.198342, 1.375325, 1.552999, 1.731184, 1.909740, 2.000000};
@@ -628,22 +629,22 @@ struct OnTheFlyRichPid {
     const float sinPhi = std::sin(phiC);
     const float cosPhi = std::cos(phiC);
     // const float ze = thicknessRad / (2. * zP);
-    const float az = zP * cosThetaCherenkov - xP * sinThetaCherenkov * cosPhi;
-    const float e3z = std::sqrt(az * az + (nGas / n) * (nGas / n) - 1.);
+    const float aZ = zP * cosThetaCherenkov - xP * sinThetaCherenkov * cosPhi;
+    const float e3Z = std::sqrt(aZ * aZ + (nGas / n) * (nGas / n) - 1.);
     const float Z = thicknessGas;
-    const float alpha = e3z / az;
-    const float etac = e3z * n * n;
+    const float alpha = e3Z / aZ;
+    const float etac = e3Z * n * n;
     const float k = thicknessRad / (2. * Z);
     const float m = 1. / (n * n);
     const float lambda = (1. + k * alpha * alpha * alpha) / (1. + k * alpha);
     // Derivative d(thetaCherenkov)/dx
     const float temp1 = etac / Z;
-    const float temp2 = alpha * e3z * cosPhi;
+    const float temp2 = alpha * e3Z * cosPhi;
     const float temp3 = xP * sinThetaCherenkov * sinPhi * sinPhi;
     const float dThetaX = temp1 * (temp2 - temp3);
     // Derivative d(thetaCherenkov)/dy
     const float temp4 = etac * sinPhi / Z;
-    const float temp5 = cosThetaCherenkov - zP * (1 - m) / az;
+    const float temp5 = cosThetaCherenkov - zP * (1 - m) / aZ;
     const float dThetaY = temp4 * temp5;
     // Derivative d(thetaCherenkov)/dze
     const float temp8 = etac * sinThetaCherenkov;
@@ -651,7 +652,7 @@ struct OnTheFlyRichPid {
     const float temp10 = alpha * alpha * (1.0 - xP * xP * sinPhi * sinPhi) + lambda * xP * xP * sinPhi * sinPhi;
     const float dThetaZe = temp8 * temp10 / temp9;
     // Derivative d(thetaCherenkov)/dn
-    const float dThetaN = zP / (n * az * sinThetaCherenkov);
+    const float dThetaN = zP / (n * aZ * sinThetaCherenkov);
     // RMS wavelength (using Sellmeier formula with measured aerogel parameters)
     const float a0 = 0.0616;
     const float w0 = 56.5;
@@ -681,14 +682,14 @@ struct OnTheFlyRichPid {
     // Fraction of photons in rings (to account loss close to sector boundary in projective geometry)
     const float sinThetaCherenkovSquared = sinThetaCherenkov * sinThetaCherenkov;
     const float radius = (thicknessRad / 2.0) * std::tan(thetaCherenkov) + thicknessGas * std::tan(std::asin((n / nGas) * sinThetaCherenkov));
-    const float N0 = 24. * thicknessRad / 2.; // photons for N = 1.03 at saturation ( 24/2 factor per radiator cm )
+    const float n0 = 24. * thicknessRad / 2.; // photons for N = 1.03 at saturation ( 24/2 factor per radiator cm )
     const float sinAngle = std::sin(std::acos(1. / 1.03));
     const float sinAngleSquared = sinAngle * sinAngle;
     const float multiplicitySpectrumFactor = sinThetaCherenkovSquared / sinAngleSquared; // scale multiplicity w.r.t. N = 1.03 at saturation
     // Considering average resolution (integrated over the sector)
-    // float nPhotons = (tileZlength / 2.0 > radius) ? N0 * multiplicitySpectrumFactor * (1.-(2.0*radius)/(o2::constants::math::PI*tileZlength)) : N0 * multiplicitySpectrumFactor * (1.-(2.0*radius)/(o2::constants::math::PI*tileZlength) - (2.0/(tileZlength*o2::constants::math::PI))*(-(tileZlength/(2.0))*std::acos(tileZlength/(2.0*radius)) + radius*std::sqrt(1.-std::pow(tileZlength/(2.0*radius),2.0))));
+    // float nPhotons = (tileZlength / 2.0 > radius) ? n0 * multiplicitySpectrumFactor * (1.-(2.0*radius)/(o2::constants::math::PI*tileZlength)) : n0 * multiplicitySpectrumFactor * (1.-(2.0*radius)/(o2::constants::math::PI*tileZlength) - (2.0/(tileZlength*o2::constants::math::PI))*(-(tileZlength/(2.0))*std::acos(tileZlength/(2.0*radius)) + radius*std::sqrt(1.-std::pow(tileZlength/(2.0*radius),2.0))));
     // Considering "exact" resolution (eta by eta)
-    const float nPhotons = N0 * multiplicitySpectrumFactor * fractionPhotonsProjectiveRICH(eta, tileZlength, radius);
+    const float nPhotons = n0 * multiplicitySpectrumFactor * fractionPhotonsProjectiveRICH(eta, tileZlength, radius);
     if (nPhotons <= kErrorValue + 1)
       return kErrorValue;
     // Ring angular resolution
@@ -797,12 +798,12 @@ struct OnTheFlyRichPid {
       }
 
       float expectedAngleBarrelRich = kErrorValue;
-      const bool expectedAngleBarrelRichOk = CherenkovAngle(o2track.getP(), pdgInfo->Mass(), aerogelRindex[iSecor], expectedAngleBarrelRich);
+      const bool expectedAngleBarrelRichOk = cherenkovAngle(o2track.getP(), pdgInfo->Mass(), aerogelRindex[iSecor], expectedAngleBarrelRich);
       if (!expectedAngleBarrelRichOk) {
         fillDummyValues();
         continue; // Particle is below the threshold or not enough photons
       }
-      // float barrelRICHAngularResolution = AngularResolution(o2track.getEta());
+      // float barrelRICHAngularResolution = angularResolution(o2track.getEta());
       const float barrelRICHAngularResolution = extractRingAngularResolution(o2track.getEta(), aerogelRindex[iSecor], bRichGapRefractiveIndex, bRichRadiatorThickness, gapThickness[iSecor], bRICHPixelSize, expectedAngleBarrelRich, photodetrctorLength[iSecor]);
       const float projectiveRadiatorRadius = radiusRipple(o2track.getEta(), iSecor);
       bool flagReachesRadiator = false;
@@ -844,7 +845,7 @@ struct OnTheFlyRichPid {
       for (int ii = 0; ii < kNspecies; ii++) { // Loop on the particle hypotheses
 
         float hypothesisAngleBarrelRich = kErrorValue;
-        const bool hypothesisAngleBarrelRichOk = CherenkovAngle(recoTrack.getP(), masses[ii], aerogelRindex[iSecor], hypothesisAngleBarrelRich);
+        const bool hypothesisAngleBarrelRichOk = cherenkovAngle(recoTrack.getP(), masses[ii], aerogelRindex[iSecor], hypothesisAngleBarrelRich);
         signalBarrelRich[ii] = hypothesisAngleBarrelRichOk; // Particle is above the threshold and enough photons
 
         // Evaluate total sigma (layer + tracking resolution)
