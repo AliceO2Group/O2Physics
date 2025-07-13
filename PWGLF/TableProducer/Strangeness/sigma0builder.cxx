@@ -63,7 +63,7 @@ struct sigma0builder {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   ctpRateFetcher rateFetcher;
 
-  //SliceCache cache;
+  // SliceCache cache;
 
   Produces<aod::Sigma0Cores> sigma0cores;             // save sigma0 candidates for analysis
   Produces<aod::SigmaPhotonExtras> sigmaPhotonExtras; // save sigma0 candidates for analysis
@@ -71,8 +71,8 @@ struct sigma0builder {
   Produces<aod::SigmaMCCores> sigma0mccores;
 
   // For manual sliceBy
-  //PresliceUnsorted<V0DerivedMCDatas> perCollisionMCDerived = o2::aod::v0data::straCollisionId;
-  //PresliceUnsorted<V0StandardDerivedDatas> perCollisionSTDDerived = o2::aod::v0data::straCollisionId;
+  // PresliceUnsorted<V0DerivedMCDatas> perCollisionMCDerived = o2::aod::v0data::straCollisionId;
+  // PresliceUnsorted<V0StandardDerivedDatas> perCollisionSTDDerived = o2::aod::v0data::straCollisionId;
   PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
 
   // pack track quality but separte also afterburner
@@ -1142,9 +1142,9 @@ struct sigma0builder {
     std::vector<int> bestGammasArray;
     std::vector<int> bestLambdasArray;
 
-    // brute force grouped index construction 
-    std::vector<std::vector<int>> v0grouped(collisions.size()); 
-      
+    // brute force grouped index construction
+    std::vector<std::vector<int>> v0grouped(collisions.size());
+
     for (const auto& v0 : fullV0s) {
       v0grouped[v0.straCollisionId()].push_back(v0.globalIndex());
     }
@@ -1158,7 +1158,7 @@ struct sigma0builder {
         continue;
 
       float centrality = doPPAnalysis ? coll.centFT0M() : coll.centFT0C();
-      
+
       bool fhasMCColl = false;
       if (coll.has_straMCCollision())
         fhasMCColl = true;
@@ -1331,9 +1331,9 @@ struct sigma0builder {
     std::vector<int> bestGammasArray;
     std::vector<int> bestLambdasArray;
 
-    // brute force grouped index construction 
-    std::vector<std::vector<int>> v0grouped(collisions.size()); 
-      
+    // brute force grouped index construction
+    std::vector<std::vector<int>> v0grouped(collisions.size());
+
     for (const auto& v0 : fullV0s) {
       v0grouped[v0.straCollisionId()].push_back(v0.globalIndex());
     }
@@ -1421,4 +1421,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<sigma0builder>(cfgc)};
 }
-
