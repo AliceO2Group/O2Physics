@@ -41,7 +41,10 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
 #include "CommonConstants/GeomConstants.h"
+<<<<<<< Updated upstream
+=======
 #include "CommonConstants/MathConstants.h"
+>>>>>>> Stashed changes
 #include "CommonConstants/PhysicsConstants.h"
 #include "CommonUtils/NameConf.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
@@ -932,40 +935,40 @@ struct OnTheFlyRichPid {
           histos.fill(HIST("hSectorID"), iSecor);
 
           switch (mcParticle.pdgCode()) {
-            case lpdgArray[0]:  // Electron
-            case -lpdgArray[0]: // Positron
+            case lpdgArray[kEl]:  // Electron
+            case -lpdgArray[kEl]: // Positron
               histos.fill(HIST("h2dBarrelNsigmaTrueElecVsElecHypothesis"), recoTrack.getP(), nSigmaBarrelRich[0]);
               histos.fill(HIST("h2dBarrelNsigmaTrueElecVsMuonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[1]);
               histos.fill(HIST("h2dBarrelNsigmaTrueElecVsPionHypothesis"), recoTrack.getP(), nSigmaBarrelRich[2]);
               histos.fill(HIST("h2dBarrelNsigmaTrueElecVsKaonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[3]);
               histos.fill(HIST("h2dBarrelNsigmaTrueElecVsProtHypothesis"), recoTrack.getP(), nSigmaBarrelRich[4]);
               break;
-            case lpdgArray[1]:  // Muon
-            case -lpdgArray[1]: // AntiMuon
+            case lpdgArray[kMu]:  // Muon
+            case -lpdgArray[kMu]: // AntiMuon
               histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsElecHypothesis"), recoTrack.getP(), nSigmaBarrelRich[0]);
               histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsMuonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[1]);
               histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsPionHypothesis"), recoTrack.getP(), nSigmaBarrelRich[2]);
               histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsKaonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[3]);
               histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsProtHypothesis"), recoTrack.getP(), nSigmaBarrelRich[4]);
               break;
-            case lpdgArray[2]:  // Pion
-            case -lpdgArray[2]: // AntiPion
+            case lpdgArray[kPi]:  // Pion
+            case -lpdgArray[kPi]: // AntiPion
               histos.fill(HIST("h2dBarrelNsigmaTruePionVsElecHypothesis"), recoTrack.getP(), nSigmaBarrelRich[0]);
               histos.fill(HIST("h2dBarrelNsigmaTruePionVsMuonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[1]);
               histos.fill(HIST("h2dBarrelNsigmaTruePionVsPionHypothesis"), recoTrack.getP(), nSigmaBarrelRich[2]);
               histos.fill(HIST("h2dBarrelNsigmaTruePionVsKaonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[3]);
               histos.fill(HIST("h2dBarrelNsigmaTruePionVsProtHypothesis"), recoTrack.getP(), nSigmaBarrelRich[4]);
               break;
-            case lpdgArray[3]:  // Kaon
-            case -lpdgArray[3]: // AntiKaon
+            case lpdgArray[kka]:  // Kaon
+            case -lpdgArray[kka]: // AntiKaon
               histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsElecHypothesis"), recoTrack.getP(), nSigmaBarrelRich[0]);
               histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsMuonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[1]);
               histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsPionHypothesis"), recoTrack.getP(), nSigmaBarrelRich[2]);
               histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsKaonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[3]);
               histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsProtHypothesis"), recoTrack.getP(), nSigmaBarrelRich[4]);
               break;
-            case lpdgArray[4]:  // Proton
-            case -lpdgArray[4]: // AntiProton
+            case lpdgArray[kPr]:  // Proton
+            case -lpdgArray[kPr]: // AntiProton
               histos.fill(HIST("h2dBarrelNsigmaTrueProtVsElecHypothesis"), recoTrack.getP(), nSigmaBarrelRich[0]);
               histos.fill(HIST("h2dBarrelNsigmaTrueProtVsMuonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[1]);
               histos.fill(HIST("h2dBarrelNsigmaTrueProtVsPionHypothesis"), recoTrack.getP(), nSigmaBarrelRich[2]);
