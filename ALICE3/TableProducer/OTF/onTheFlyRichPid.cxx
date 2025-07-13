@@ -41,10 +41,6 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
 #include "CommonConstants/GeomConstants.h"
-<<<<<<< Updated upstream
-=======
-#include "CommonConstants/MathConstants.h"
->>>>>>> Stashed changes
 #include "CommonConstants/PhysicsConstants.h"
 #include "CommonUtils/NameConf.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
