@@ -583,8 +583,8 @@ struct hadronnucleicorrelation {
   template <int ME, typename Type>
   void mixTracks(Type const& tracks1, Type const& tracks2, bool isIdentical)
   { // last value: 0 -- SE; 1 -- ME
-    for (auto it1 : tracks1) {
-      for (auto it2 : tracks2) {
+    for (auto const& it1 : tracks1) {
+      for (auto const& it2 : tracks2) {
 
         Pair->SetPair(it1, it2);
         Pair->SetIdentical(isIdentical);
@@ -658,8 +658,8 @@ struct hadronnucleicorrelation {
   template <int ME, typename Type>
   void mixTracksMC(Type const& tracks1, Type const& tracks2, bool isIdentical, bool isMCPID)
   { // last value: 0 -- SE; 1 -- ME
-    for (auto it1 : tracks1) {
-      for (auto it2 : tracks2) {
+    for (auto const& it1 : tracks1) {
+      for (auto const& it2 : tracks2) {
 
         PairMC->SetPair(it1, it2);
         PairMC->SetIdentical(isIdentical);
@@ -715,8 +715,8 @@ struct hadronnucleicorrelation {
   template <int ME, typename Type>
   void mixMCParticles(Type const& particles1, Type const& particles2)
   {
-    for (auto it1 : particles1) {
-      for (auto it2 : particles2) {
+    for (auto const& it1 : particles1) {
+      for (auto const& it2 : particles2) {
         // Calculate Delta-eta Delta-phi (gen)
         float deltaEtaGen = it2->eta() - it1->eta();
         float deltaPhiGen = RecoDecay::constrainAngle(it2->phi() - it1->phi(), -1 * o2::constants::math::PIHalf);
@@ -739,8 +739,8 @@ struct hadronnucleicorrelation {
   template <int ME, typename Type>
   void mixMCParticlesIdentical(Type const& particles1, Type const& particles2)
   {
-    for (auto it1 : particles1) {
-      for (auto it2 : particles2) {
+    for (auto const& it1 : particles1) {
+      for (auto const& it2 : particles2) {
         // Calculate Delta-eta Delta-phi (gen)
         float deltaEtaGen = it2->eta() - it1->eta();
         float deltaPhiGen = RecoDecay::constrainAngle(it2->phi() - it1->phi(), -1 * o2::constants::math::PIHalf);
