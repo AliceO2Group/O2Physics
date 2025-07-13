@@ -2843,28 +2843,16 @@ struct Phik0shortanalysis {
         continue;
 
       // Phi selection
-      if (mcParticle.pdgCode() != o2::constants::physics::Pdg::kPhi)
-        continue;
-      if (mcParticle.pt() < minPhiPt)
-        continue;
-
-      mcPhiHist.fill(HIST("h3PhiMCGenRecoCheckNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+      if (mcParticle.pdgCode() == o2::constants::physics::Pdg::kPhi && mcParticle.pt() >= minPhiPt)
+        mcPhiHist.fill(HIST("h3PhiMCGenRecoCheckNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
 
       // K0S selection
-      if (mcParticle.pdgCode() != PDG_t::kK0Short)
-        continue;
-      if (!mcParticle.isPhysicalPrimary() || mcParticle.pt() < v0Configs.v0SettingMinPt)
-        continue;
-
-      mcK0SHist.fill(HIST("h3K0SMCGenRecoCheckNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+      if (mcParticle.pdgCode() == PDG_t::kK0Short && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= v0Configs.v0SettingMinPt)
+        mcK0SHist.fill(HIST("h3K0SMCGenRecoCheckNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
 
       // Pion selection
-      if (std::abs(mcParticle.pdgCode()) != PDG_t::kPiPlus)
-        continue;
-      if (!mcParticle.isPhysicalPrimary() || mcParticle.pt() < trackConfigs.cMinPionPtcut)
-        continue;
-
-      mcPionHist.fill(HIST("h3PiMCGenRecoCheckNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+      if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= trackConfigs.cMinPionPtcut)
+        mcPionHist.fill(HIST("h3PiMCGenRecoCheckNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
     }
   }
 
@@ -2891,25 +2879,16 @@ struct Phik0shortanalysis {
             continue;
 
           // Phi selection
-          if (mcParticle.pdgCode() != o2::constants::physics::Pdg::kPhi)
-            continue;
-          if (mcParticle.pt() < minPhiPt)
-            continue;
-          mcPhiHist.fill(HIST("h3PhiMCGenRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+          if (mcParticle.pdgCode() == o2::constants::physics::Pdg::kPhi && mcParticle.pt() >= minPhiPt)
+            mcPhiHist.fill(HIST("h3PhiMCGenRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
 
           // K0S selection
-          if (mcParticle.pdgCode() != PDG_t::kK0Short)
-            continue;
-          if (!mcParticle.isPhysicalPrimary() || mcParticle.pt() < v0Configs.v0SettingMinPt)
-            continue;
-          mcK0SHist.fill(HIST("h3K0SMCGenRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+          if (mcParticle.pdgCode() == PDG_t::kK0Short && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= v0Configs.v0SettingMinPt)
+            mcK0SHist.fill(HIST("h3K0SMCGenRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
 
           // Pion selection
-          if (std::abs(mcParticle.pdgCode()) != PDG_t::kPiPlus)
-            continue;
-          if (!mcParticle.isPhysicalPrimary() || mcParticle.pt() < trackConfigs.cMinPionPtcut)
-            continue;
-          mcPionHist.fill(HIST("h3PiMCGenRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+          if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= trackConfigs.cMinPionPtcut)
+            mcPionHist.fill(HIST("h3PiMCGenRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
         }
 
         numberAssocColl++;
@@ -2929,34 +2908,25 @@ struct Phik0shortanalysis {
         continue;
 
       // Phi selection
-      if (mcParticle.pdgCode() != o2::constants::physics::Pdg::kPhi)
-        continue;
-      if (mcParticle.pt() < minPhiPt)
-        continue;
-
-      mcPhiHist.fill(HIST("h3PhiMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-      if (numberAssocColl > 0)
-        mcPhiHist.fill(HIST("h3PhiMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+      if (mcParticle.pdgCode() == o2::constants::physics::Pdg::kPhi && mcParticle.pt() >= minPhiPt) {
+        mcPhiHist.fill(HIST("h3PhiMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+        if (numberAssocColl > 0)
+          mcPhiHist.fill(HIST("h3PhiMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+      }
 
       // K0S selection
-      if (mcParticle.pdgCode() != PDG_t::kK0Short)
-        continue;
-      if (!mcParticle.isPhysicalPrimary() || mcParticle.pt() < v0Configs.v0SettingMinPt)
-        continue;
-
-      mcK0SHist.fill(HIST("h3K0SMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-      if (numberAssocColl > 0)
-        mcK0SHist.fill(HIST("h3K0SMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+      if (mcParticle.pdgCode() == PDG_t::kK0Short && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= v0Configs.v0SettingMinPt) {
+        mcK0SHist.fill(HIST("h3K0SMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+        if (numberAssocColl > 0)
+          mcK0SHist.fill(HIST("h3K0SMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+      }
 
       // Pion selection
-      if (std::abs(mcParticle.pdgCode()) != PDG_t::kPiPlus)
-        continue;
-      if (!mcParticle.isPhysicalPrimary() || mcParticle.pt() < trackConfigs.cMinPionPtcut)
-        continue;
-
-      mcPionHist.fill(HIST("h3PiMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-      if (numberAssocColl > 0)
-        mcPionHist.fill(HIST("h3PiMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+      if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= trackConfigs.cMinPionPtcut) {
+        mcPionHist.fill(HIST("h3PiMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+        if (numberAssocColl > 0)
+          mcPionHist.fill(HIST("h3PiMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+      }
     }
   }
 
