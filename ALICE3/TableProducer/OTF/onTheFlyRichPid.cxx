@@ -30,41 +30,44 @@
 /// \since  May 22, 2024
 ///
 
-#include <utility>
-#include <cmath>
-#include <vector>
-#include <map>
-#include <string>
+#include "TableHelper.h"
 
-#include <TPDGCode.h>
-
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
+#include "ALICE3/Core/DelphesO2TrackSmearer.h"
 #include "ALICE3/Core/TrackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "CommonUtils/NameConf.h"
-#include "CCDB/CcdbApi.h"
+#include "ALICE3/DataModel/OTFRICH.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
+#include "CCDB/CcdbApi.h"
 #include "CommonConstants/GeomConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include "TRandom3.h"
-#include "TVector3.h"
-#include "TString.h"
-#include "ALICE3/DataModel/OTFRICH.h"
+#include "CommonUtils/NameConf.h"
+#include "DataFormatsCalibration/MeanVertexObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
 #include "DetectorsVertexing/HelixHelper.h"
-#include "TableHelper.h"
-#include "ALICE3/Core/DelphesO2TrackSmearer.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/DCA.h"
+#include "ReconstructionDataFormats/PID.h"
+
+#include "TRandom3.h"
+#include "TString.h"
+#include "TVector3.h"
+#include <TPDGCode.h>
+
+#include <cmath>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -72,12 +75,13 @@ using namespace o2::constants::math;
 
 struct OnTheFlyRichPid {
   Produces<aod::UpgradeRich> upgradeRich;
+  Produces<aod::UpgradeRichSignal> upgradeRichSignal;
 
   // necessary for particle charges
   Service<o2::framework::O2DatabasePDG> pdg;
 
   // master setting: magnetic field
-  Configurable<float> dBz{"dBz", 20, "magnetic field (kilogauss)"};
+  Configurable<float> magneticField{"magneticField", 0, "magnetic field (kilogauss) if 0, taken from the tracker task"};
 
   // add rich-specific configurables here
   Configurable<int> bRichNumberOfSectors{"bRichNumberOfSectors", 21, "barrel RICH number of sectors"};
@@ -321,6 +325,14 @@ struct OnTheFlyRichPid {
   {
     pRandomNumberGenerator.SetSeed(0); // fully randomize
 
+    if (magneticField.value < 0.0001f) {
+      LOG(info) << "Getting the magnetic field from the on-the-fly tracker task";
+      if (!getTaskOptionValue(initContext, "on-the-fly-tracker", magneticField, false)) {
+        LOG(fatal) << "Could not get Bz from on-the-fly-tracker task";
+      }
+      LOG(info) << "Bz = " << magneticField.value << " T";
+    }
+
     // Check if inheriting the LUT configuration
     auto configLutPath = [&](Configurable<std::string>& lut) {
       if (lut.value != "inherit") {
@@ -376,9 +388,10 @@ struct OnTheFlyRichPid {
       histos.add("h2dAngularResolutionVsEtaBarrelRICH", "h2dAngularResolutionVsEtaBarrelRICH", kTH2F, {axisEta, axisRingAngularResolution});
       histos.add("hSectorID", "hSectorID", kTH1F, {axisSector});
 
-      std::string particle_names1[5] = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}"};
-      std::string particle_names2[5] = {"Elec", "Muon", "Pion", "Kaon", "Prot"};
-      for (int i_true = 0; i_true < 5; i_true++) {
+      const int kNspec = 5; // electron, muon, pion, kaon, proton
+      std::string particle_names1[kNspec] = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}"};
+      std::string particle_names2[kNspec] = {"Elec", "Muon", "Pion", "Kaon", "Prot"};
+      for (int i_true = 0; i_true < kNspec; i_true++) {
         std::string name_title_barrel_track_res = "h2dBarrelAngularResTrack" + particle_names2[i_true] + "VsP";
         std::string name_title_barrel_total_res = "h2dBarrelAngularResTotal" + particle_names2[i_true] + "VsP";
         const AxisSpec axisTrackAngularRes{static_cast<int>(nBinsAngularRes), 0.0f, +5.0f, "Track angular resolution - " + particle_names1[i_true] + " (mrad)"};
@@ -386,8 +399,8 @@ struct OnTheFlyRichPid {
         histos.add(name_title_barrel_track_res.c_str(), name_title_barrel_track_res.c_str(), kTH2F, {axisMomentum, axisTrackAngularRes});
         histos.add(name_title_barrel_total_res.c_str(), name_title_barrel_total_res.c_str(), kTH2F, {axisMomentum, axisTotalAngularRes});
       }
-      for (int i_true = 0; i_true < 5; i_true++) {
-        for (int i_hyp = 0; i_hyp < 5; i_hyp++) {
+      for (int i_true = 0; i_true < kNspec; i_true++) {
+        for (int i_hyp = 0; i_hyp < kNspec; i_hyp++) {
           std::string name_title = "h2dBarrelNsigmaTrue" + particle_names2[i_true] + "Vs" + particle_names2[i_hyp] + "Hypothesis";
           if (i_true == i_hyp) {
             const AxisSpec axisNsigmaCorrect{static_cast<int>(nBinsNsigmaCorrectSpecies), -10.0f, +10.0f, "N#sigma - True " + particle_names1[i_true] + " vs " + particle_names1[i_hyp] + " hypothesis"};
@@ -451,7 +464,7 @@ struct OnTheFlyRichPid {
   /// \param track the input track
   /// \param radius the radius of the layer you're calculating the length to
   /// \param magneticField the magnetic field to use when propagating
-  bool checkMagfieldLimit(o2::track::TrackParCov track, float radius, float magneticField)
+  bool checkMagfieldLimit(o2::track::TrackParCov track, const float radius, const float magneticField)
   {
     o2::math_utils::CircleXYf_t trcCircle;
     float sna, csa;
@@ -470,7 +483,7 @@ struct OnTheFlyRichPid {
 
   /// returns sector hit by the track (if any), -1 otherwise
   /// \param eta the pseudorapidity of the tarck (assuming primary vertex at origin)
-  int findSector(float eta)
+  int findSector(const float eta)
   {
     float polar = 2.0 * std::atan(std::exp(-eta));
     for (int j_sec = 0; j_sec < mNumberSectors; j_sec++) {
@@ -484,13 +497,15 @@ struct OnTheFlyRichPid {
   /// returns radiator radius in cm at considered eta (accounting for sector inclination)
   /// \param eta the pseudorapidity of the tarck (assuming primary vertex at origin)
   /// \param i_sector the index of the track RICH sector
-  float radiusRipple(float eta, int i_sector)
+  float radiusRipple(const float eta, const int i_sector)
   {
-    float polar = 2.0 * std::atan(std::exp(-eta));
     if (i_sector > 0) {
-      float R_sec_rich = rad_centers[i_sector].X();
-      float z_sec_rich = rad_centers[i_sector].Z();
-      return (std::pow(R_sec_rich, 2) + std::pow(z_sec_rich, 2)) / (R_sec_rich + z_sec_rich / std::tan(polar));
+      const float polar = 2.0 * std::atan(std::exp(-eta));
+      const float R_sec_rich = rad_centers[i_sector].X();
+      const float z_sec_rich = rad_centers[i_sector].Z();
+      const float R_sec_rich_squared = R_sec_rich * R_sec_rich;
+      const float z_sec_rich_squared = z_sec_rich * z_sec_rich;
+      return (R_sec_rich_squared + z_sec_rich_squared) / (R_sec_rich + z_sec_rich / std::tan(polar));
     } else {
       return error_value;
     }
@@ -500,25 +515,24 @@ struct OnTheFlyRichPid {
   /// \param momentum the momentum of the tarck
   /// \param mass the mass of the particle
   /// \param n the refractive index of the considered sector
-  float CherenkovAngle(float momentum, float mass, float n)
+  /// \param angle the output angle (passed by reference)
+  /// \return true if particle is above the threshold and enough photons, false otherwise
+  bool CherenkovAngle(const float momentum, const float mass, const float n, float& angle)
   {
-    // Check if particle is above the threshold
-    if (momentum > mass / std::sqrt(n * n - 1.0)) {
+    if (momentum > mass / std::sqrt(n * n - 1.0)) { // Check if particle is above the threshold
       // Calculate angle
-      float angle = std::acos(std::sqrt(momentum * momentum + mass * mass) / (momentum * n));
+      angle = std::acos(std::sqrt(momentum * momentum + mass * mass) / (momentum * n));
 
       // Mean number of detected photons (SiPM PDE is accountd in multiplicative factor!!!)
-      float meanNumberofDetectedPhotons = 230. * std::sin(angle) * std::sin(angle) * bRichRadiatorThickness;
+      const float meanNumberofDetectedPhotons = 230. * std::sin(angle) * std::sin(angle) * bRichRadiatorThickness;
 
       // Require at least 3 photons on average for real angle reconstruction
       if (meanNumberofDetectedPhotons > 3.) {
-        return angle;
-      } else {
-        return error_value;
+        return true; // Particle is above the threshold and enough photons
       }
-    } else {
-      return error_value;
+      return false; // Particle is above the threshold, but not enough photons
     }
+    return false; // Particle is below the threshold
   }
 
   /// returns linear interpolation
@@ -538,13 +552,13 @@ struct OnTheFlyRichPid {
   float AngularResolution(float eta)
   {
     // Vectors for sampling (USE ANALYTICAL EXTRAPOLATION FOR BETTER RESULTS)
-    float eta_sampling[] = {-2.000000, -1.909740, -1.731184, -1.552999, -1.375325, -1.198342, -1.022276, -0.847390, -0.673976, -0.502324, -0.332683, -0.165221, 0.000000, 0.165221, 0.332683, 0.502324, 0.673976, 0.847390, 1.022276, 1.198342, 1.375325, 1.552999, 1.731184, 1.909740, 2.000000};
-    float res_ring_sampling_with_abs_walls[] = {0.0009165, 0.000977, 0.001098, 0.001198, 0.001301, 0.001370, 0.001465, 0.001492, 0.001498, 0.001480, 0.001406, 0.001315, 0.001241, 0.001325, 0.001424, 0.001474, 0.001480, 0.001487, 0.001484, 0.001404, 0.001273, 0.001197, 0.001062, 0.000965, 0.0009165};
-    float res_ring_sampling_without_abs_walls[] = {0.0009165, 0.000977, 0.001095, 0.001198, 0.001300, 0.001369, 0.001468, 0.001523, 0.001501, 0.001426, 0.001299, 0.001167, 0.001092, 0.001179, 0.001308, 0.001407, 0.001491, 0.001508, 0.001488, 0.001404, 0.001273, 0.001196, 0.001061, 0.000965, 0.0009165};
-    int size_res_vector = sizeof(eta_sampling) / sizeof(eta_sampling[0]);
+    static constexpr float eta_sampling[] = {-2.000000, -1.909740, -1.731184, -1.552999, -1.375325, -1.198342, -1.022276, -0.847390, -0.673976, -0.502324, -0.332683, -0.165221, 0.000000, 0.165221, 0.332683, 0.502324, 0.673976, 0.847390, 1.022276, 1.198342, 1.375325, 1.552999, 1.731184, 1.909740, 2.000000};
+    static constexpr float res_ring_sampling_with_abs_walls[] = {0.0009165, 0.000977, 0.001098, 0.001198, 0.001301, 0.001370, 0.001465, 0.001492, 0.001498, 0.001480, 0.001406, 0.001315, 0.001241, 0.001325, 0.001424, 0.001474, 0.001480, 0.001487, 0.001484, 0.001404, 0.001273, 0.001197, 0.001062, 0.000965, 0.0009165};
+    static constexpr float res_ring_sampling_without_abs_walls[] = {0.0009165, 0.000977, 0.001095, 0.001198, 0.001300, 0.001369, 0.001468, 0.001523, 0.001501, 0.001426, 0.001299, 0.001167, 0.001092, 0.001179, 0.001308, 0.001407, 0.001491, 0.001508, 0.001488, 0.001404, 0.001273, 0.001196, 0.001061, 0.000965, 0.0009165};
+    static constexpr int size_res_vector = sizeof(eta_sampling) / sizeof(eta_sampling[0]);
     // Use binary search to find the lower and upper indices
-    int lowerIndex = std::lower_bound(eta_sampling, eta_sampling + size_res_vector, eta) - eta_sampling - 1;
-    int upperIndex = lowerIndex + 1;
+    const int lowerIndex = std::lower_bound(eta_sampling, eta_sampling + size_res_vector, eta) - eta_sampling - 1;
+    const int upperIndex = lowerIndex + 1;
     if (lowerIndex >= 0 && upperIndex < size_res_vector) {
       // Resolution interpolation
       if (bRichFlagAbsorbingWalls) {
@@ -569,7 +583,7 @@ struct OnTheFlyRichPid {
   /// \param radius the nominal radius of the Cherenkov ring
   float fractionPhotonsProjectiveRICH(float eta, float tile_z_length, float radius)
   {
-    float polar = 2.0 * std::atan(std::exp(-eta));
+    const float polar = 2.0 * std::atan(std::exp(-eta));
     int i_sector = 0;
     bool flag_sector = false;
     for (int j_sec = 0; j_sec < mNumberSectors; j_sec++) {
@@ -585,9 +599,11 @@ struct OnTheFlyRichPid {
     float z_sec_rich = rad_centers[i_sector].Z();
     // float R_sec_tof = det_centers[i_sector].X();
     // float z_sec_tof = det_centers[i_sector].Z();
-    float radius_ripple = (std::pow(R_sec_rich, 2) + std::pow(z_sec_rich, 2)) / (R_sec_rich + z_sec_rich / std::tan(polar));
-    float z_ripple = radius_ripple / std::tan(polar);
-    float absZ = std::hypot(radius_ripple - R_sec_rich, z_ripple - z_sec_rich);
+    const float R_sec_rich_squared = R_sec_rich * R_sec_rich;
+    const float z_sec_rich_squared = z_sec_rich * z_sec_rich;
+    const float radius_ripple = (R_sec_rich_squared + z_sec_rich_squared) / (R_sec_rich + z_sec_rich / std::tan(polar));
+    const float z_ripple = radius_ripple / std::tan(polar);
+    const float absZ = std::hypot(radius_ripple - R_sec_rich, z_ripple - z_sec_rich);
     float fraction = 1.;
     if (tile_z_length / 2. - absZ < radius) {
       fraction = fraction - (1. / M_PI) * std::acos((tile_z_length / 2. - absZ) / radius);
@@ -607,71 +623,78 @@ struct OnTheFlyRichPid {
   /// \param pixel_size the SiPM pixel size in cm
   /// \param theta_c the Cherenkov angle for the considered track
   /// \param tile_z_length the Z-length of the photodetector plane of the considered sector
-  float extract_ring_angular_resolution(float eta, float n, float n_g, float T_r, float T_g, float pixel_size, float theta_c, float tile_z_length)
+  float extract_ring_angular_resolution(const float eta, const float n, const float n_g, const float T_r, const float T_g, const float pixel_size, const float theta_c, const float tile_z_length)
   {
     // Check if input angle is error value
     if (theta_c <= error_value + 1)
       return error_value;
     // Parametrization variables (notation from https://doi.org/10.1016/0168-9002(94)90532-0)
-    float phi_c = 0.;
-    float theta_p = 0.;
-    float sin_theta_c = std::sin(theta_c);
-    float cos_theta_c = std::cos(theta_c);
-    float x_p = std::sin(theta_p);
-    float z_p = std::cos(theta_p);
-    float sin_phi = std::sin(phi_c);
-    float cos_phi = std::cos(phi_c);
-    // float ze = T_r / (2. * z_p);
-    float az = z_p * cos_theta_c - x_p * sin_theta_c * cos_phi;
-    float e3z = std::sqrt(az * az + (n_g / n) * (n_g / n) - 1.);
-    float Z = T_g;
-    float alpha = e3z / az;
-    float etac = e3z * n * n;
-    float k = T_r / (2. * Z);
-    float m = 1. / (n * n);
-    float lambda = (1. + k * alpha * alpha * alpha) / (1. + k * alpha);
+    const float phi_c = 0.;
+    const float theta_p = 0.;
+    const float sin_theta_c = std::sin(theta_c);
+    const float cos_theta_c = std::cos(theta_c);
+    const float x_p = std::sin(theta_p);
+    const float z_p = std::cos(theta_p);
+    const float sin_phi = std::sin(phi_c);
+    const float cos_phi = std::cos(phi_c);
+    // const float ze = T_r / (2. * z_p);
+    const float az = z_p * cos_theta_c - x_p * sin_theta_c * cos_phi;
+    const float e3z = std::sqrt(az * az + (n_g / n) * (n_g / n) - 1.);
+    const float Z = T_g;
+    const float alpha = e3z / az;
+    const float etac = e3z * n * n;
+    const float k = T_r / (2. * Z);
+    const float m = 1. / (n * n);
+    const float lambda = (1. + k * alpha * alpha * alpha) / (1. + k * alpha);
     // Derivative d(theta_c)/dx
-    float temp1 = etac / Z;
-    float temp2 = alpha * e3z * cos_phi;
-    float temp3 = x_p * sin_theta_c * sin_phi * sin_phi;
-    float d_theta_x = temp1 * (temp2 - temp3);
+    const float temp1 = etac / Z;
+    const float temp2 = alpha * e3z * cos_phi;
+    const float temp3 = x_p * sin_theta_c * sin_phi * sin_phi;
+    const float d_theta_x = temp1 * (temp2 - temp3);
     // Derivative d(theta_c)/dy
-    float temp4 = etac * sin_phi / Z;
-    float temp5 = cos_theta_c - z_p * (1 - m) / az;
-    float d_theta_y = temp4 * temp5;
+    const float temp4 = etac * sin_phi / Z;
+    const float temp5 = cos_theta_c - z_p * (1 - m) / az;
+    const float d_theta_y = temp4 * temp5;
     // Derivative d(theta_c)/dze
-    float temp8 = etac * sin_theta_c;
-    float temp9 = Z * (1.0 + k * alpha * alpha * alpha * n * n);
-    float temp10 = alpha * alpha * (1.0 - x_p * x_p * sin_phi * sin_phi) + lambda * x_p * x_p * sin_phi * sin_phi;
-    float d_theta_ze = temp8 * temp10 / temp9;
+    const float temp8 = etac * sin_theta_c;
+    const float temp9 = Z * (1.0 + k * alpha * alpha * alpha * n * n);
+    const float temp10 = alpha * alpha * (1.0 - x_p * x_p * sin_phi * sin_phi) + lambda * x_p * x_p * sin_phi * sin_phi;
+    const float d_theta_ze = temp8 * temp10 / temp9;
     // Derivative d(theta_c)/dn
-    float d_theta_n = z_p / (n * az * sin_theta_c);
+    const float d_theta_n = z_p / (n * az * sin_theta_c);
     // RMS wavelength (using Sellmeier formula with measured aerogel parameters)
-    float a0 = 0.0616;
-    float w0 = 56.5;
-    float n0 = 1.0307;
-    float w_mean = 436.0; // 450.0;//484.9;//426.0; //450;//485;//450; // nm  //450   426 493.5 // 426.0
-    float scaling = n / n0;
-    float temp11 = a0 * w0 * w0 * w_mean;
-    float temp12 = std::pow(w_mean * w_mean - w0 * w0, 1.5);
-    float temp13 = std::sqrt(w_mean * w_mean * (1.0 + a0) - w0 * w0);
-    float d_n_w = temp11 / (temp12 * temp13) * scaling;
-    float sigma_w = 115.0;
+    const float a0 = 0.0616;
+    const float w0 = 56.5;
+    const float n0 = 1.0307;
+    const float w_mean = 436.0; // 450.0;//484.9;//426.0; //450;//485;//450; // nm  //450   426 493.5 // 426.0
+    const float scaling = n / n0;
+    const float temp11 = a0 * w0 * w0 * w_mean;
+    const float temp12 = std::pow(w_mean * w_mean - w0 * w0, 1.5);
+    const float temp13 = std::sqrt(w_mean * w_mean * (1.0 + a0) - w0 * w0);
+    const float d_n_w = temp11 / (temp12 * temp13) * scaling;
+    const float sigma_w = 115.0;
     // RMS x y
-    float sigma_theta_x = pixel_size / std::sqrt(12.0);
-    float sigma_theta_y = pixel_size / std::sqrt(12.0);
+    const float sigma_theta_x = pixel_size / std::sqrt(12.0);
+    const float sigma_theta_y = pixel_size / std::sqrt(12.0);
     // RMS emission point
-    float sigma_theta_ze = T_r / (z_p * std::sqrt(12.0));
+    const float sigma_theta_ze = T_r / (z_p * std::sqrt(12.0));
     // Single photon angular resolution
-    float res_x = d_theta_x * sigma_theta_x;
-    float res_y = d_theta_y * sigma_theta_y;
-    float res_ze = d_theta_ze * sigma_theta_ze;
-    float res_n = d_theta_n * d_n_w * sigma_w;
-    float single_photon_angular_resolution = std::sqrt(std::pow(res_x, 2) + std::pow(res_y, 2) + std::pow(res_ze, 2) + std::pow(res_n, 2));
+    const float res_x = d_theta_x * sigma_theta_x;
+    const float res_y = d_theta_y * sigma_theta_y;
+    const float res_ze = d_theta_ze * sigma_theta_ze;
+    const float res_n = d_theta_n * d_n_w * sigma_w;
+    const float res_x_squared = res_x * res_x;
+    const float res_y_squared = res_y * res_y;
+    const float res_ze_squared = res_ze * res_ze;
+    const float res_n_squared = res_n * res_n;
+    const float single_photon_angular_resolution = std::sqrt(res_x_squared + res_y_squared + res_ze_squared + res_n_squared);
     // Fraction of photons in rings (to account loss close to sector boundary in projective geometry)
-    float radius = (T_r / 2.0) * std::tan(theta_c) + T_g * std::tan(std::asin((n / n_g) * std::sin(theta_c)));
-    float N0 = 24. * T_r / 2.;                                                                                           // photons for N = 1.03 at saturation ( 24/2 factor per radiator cm )
-    float multiplicity_spectrum_factor = std::pow(std::sin(theta_c), 2.) / std::pow(std::sin(std::acos(1. / 1.03)), 2.); // scale multiplicity w.r.t. N = 1.03 at saturation
+    const float sin_theta_c_squared = sin_theta_c * sin_theta_c;
+    const float radius = (T_r / 2.0) * std::tan(theta_c) + T_g * std::tan(std::asin((n / n_g) * sin_theta_c));
+    const float N0 = 24. * T_r / 2.; // photons for N = 1.03 at saturation ( 24/2 factor per radiator cm )
+    const float sin_angle = std::sin(std::acos(1. / 1.03));
+    const float sin_angle_squared = sin_angle * sin_angle;
+    const float multiplicity_spectrum_factor = sin_theta_c_squared / sin_angle_squared; // scale multiplicity w.r.t. N = 1.03 at saturation
     // Considering average resolution (integrated over the sector)
     // float n_photons = (tile_z_length / 2.0 > radius) ? N0 * multiplicity_spectrum_factor * (1.-(2.0*radius)/(M_PI*tile_z_length)) : N0 * multiplicity_spectrum_factor * (1.-(2.0*radius)/(M_PI*tile_z_length) - (2.0/(tile_z_length*M_PI))*(-(tile_z_length/(2.0))*std::acos(tile_z_length/(2.0*radius)) + radius*std::sqrt(1.-std::pow(tile_z_length/(2.0*radius),2.0))));
     // Considering "exact" resolution (eta by eta)
@@ -690,25 +713,28 @@ struct OnTheFlyRichPid {
   /// \param track_pt_resolution the absolute resolution on eta
   /// \param mass the mass of the particle
   /// \param refractive_index the refractive index of the radiator
-  double calculate_track_angular_resolution_advanced(float pt, float eta, float track_pt_resolution, float track_eta_resolution, float mass, float refractive_index)
+  double calculate_track_angular_resolution_advanced(const float pt, const float eta, const float track_pt_resolution, const float track_eta_resolution, const float mass, const float refractive_index)
   {
     // Compute tracking contribution to timing using the error propagation formula
     // Uses light speed in m/ps, magnetic field in T (*0.1 for conversion kGauss -> T)
-    double a0 = mass * mass;
-    double a1 = refractive_index;
-    double dtheta_on_dpt = a0 / (pt * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)) * std::sqrt(std::pow(pt * std::cosh(eta), 2) * (std::pow(a1, 2) - 1.0) - a0));
-    double dtheta_on_deta = (a0 * std::tanh(eta)) / (std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)) * std::sqrt(std::pow(pt * std::cosh(eta), 2) * (std::pow(a1, 2) - 1.0) - a0));
-    double track_angular_resolution = std::hypot(std::fabs(dtheta_on_dpt) * track_pt_resolution, std::fabs(dtheta_on_deta) * track_eta_resolution);
+    const double a0 = mass * mass;
+    const double a1 = refractive_index;
+    const double a1_squared = a1 * a1;
+    const float pt_cosh_eta = pt * std::cosh(eta);
+    const float pt_cosh_eta_squared = pt_cosh_eta * pt_cosh_eta;
+    const double dtheta_on_dpt = a0 / (pt * std::sqrt(a0 + pt_cosh_eta_squared) * std::sqrt(pt_cosh_eta_squared * (a1_squared - 1.0) - a0));
+    const double dtheta_on_deta = (a0 * std::tanh(eta)) / (std::sqrt(a0 + pt_cosh_eta_squared) * std::sqrt(pt_cosh_eta_squared * (a1_squared - 1.0) - a0));
+    const double track_angular_resolution = std::hypot(std::fabs(dtheta_on_dpt) * track_pt_resolution, std::fabs(dtheta_on_deta) * track_eta_resolution);
     return track_angular_resolution;
   }
 
-  void process(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels> const& tracks, aod::McParticles const&, aod::McCollisions const&)
+  void process(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision,
+               soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels> const& tracks,
+               aod::McParticles const&,
+               aod::McCollisions const&)
   {
-    // for (int i = 0; i < 1000; i++)
-    //   std::cout << "Prova" << std::endl;
-
-    o2::dataformats::VertexBase pvVtx({collision.posX(), collision.posY(), collision.posZ()},
-                                      {collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()});
+    const o2::dataformats::VertexBase pvVtx({collision.posX(), collision.posY(), collision.posZ()},
+                                            {collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()});
 
     std::array<float, 6> mcPvCov = {0.};
     o2::dataformats::VertexBase mcPvVtx({0.0f, 0.0f, 0.0f}, mcPvCov);
@@ -746,44 +772,52 @@ struct OnTheFlyRichPid {
 
     for (const auto& track : tracks) {
 
-      float nSigmaBarrelRich[5] = {error_value, error_value, error_value, error_value, error_value};
+      auto fillDummyValues = [&]() {
+        upgradeRich(error_value, error_value, error_value, error_value, error_value);
+        upgradeRichSignal(false, false, false, false, false, false);
+      };
 
       // first step: find precise arrival time (if any)
       // --- convert track into perfect track
       if (!track.has_mcParticle()) { // should always be OK but check please
-        upgradeRich(nSigmaBarrelRich[0], nSigmaBarrelRich[1], nSigmaBarrelRich[2], nSigmaBarrelRich[3], nSigmaBarrelRich[4]);
+        fillDummyValues();
         continue;
       }
 
-      auto mcParticle = track.mcParticle();
+      const auto& mcParticle = track.mcParticle();
       o2::track::TrackParCov o2track = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdg);
 
       // float xPv = error_value;
-      if (o2track.propagateToDCA(mcPvVtx, dBz)) {
+      if (o2track.propagateToDCA(mcPvVtx, magneticField)) {
         // xPv = o2track.getX();
       }
 
       // get particle to calculate Cherenkov angle and resolution
       auto pdgInfo = pdg->GetParticle(mcParticle.pdgCode());
       if (pdgInfo == nullptr) {
-        upgradeRich(nSigmaBarrelRich[0], nSigmaBarrelRich[1], nSigmaBarrelRich[2], nSigmaBarrelRich[3], nSigmaBarrelRich[4]);
+        fillDummyValues();
         continue;
       }
 
       // find track bRICH sector
       int i_sector = findSector(o2track.getEta());
       if (i_sector < 0) {
-        upgradeRich(nSigmaBarrelRich[0], nSigmaBarrelRich[1], nSigmaBarrelRich[2], nSigmaBarrelRich[3], nSigmaBarrelRich[4]);
+        fillDummyValues();
         continue;
       }
 
-      float expectedAngleBarrelRich = CherenkovAngle(o2track.getP(), pdgInfo->Mass(), aerogel_rindex[i_sector]);
+      float expectedAngleBarrelRich = error_value;
+      const bool expectedAngleBarrelRichOk = CherenkovAngle(o2track.getP(), pdgInfo->Mass(), aerogel_rindex[i_sector], expectedAngleBarrelRich);
+      if (!expectedAngleBarrelRichOk) {
+        fillDummyValues();
+        continue; // Particle is below the threshold or not enough photons
+      }
       // float barrelRICHAngularResolution = AngularResolution(o2track.getEta());
-      float barrelRICHAngularResolution = extract_ring_angular_resolution(o2track.getEta(), aerogel_rindex[i_sector], bRichGapRefractiveIndex, bRichRadiatorThickness, gap_thickness[i_sector], bRICHPixelSize, expectedAngleBarrelRich, photodetrctor_length[i_sector]);
-      float projectiveRadiatorRadius = radiusRipple(o2track.getEta(), i_sector);
+      const float barrelRICHAngularResolution = extract_ring_angular_resolution(o2track.getEta(), aerogel_rindex[i_sector], bRichGapRefractiveIndex, bRichRadiatorThickness, gap_thickness[i_sector], bRICHPixelSize, expectedAngleBarrelRich, photodetrctor_length[i_sector]);
+      const float projectiveRadiatorRadius = radiusRipple(o2track.getEta(), i_sector);
       bool flagReachesRadiator = false;
       if (projectiveRadiatorRadius > error_value + 1.) {
-        flagReachesRadiator = checkMagfieldLimit(o2track, projectiveRadiatorRadius, dBz);
+        flagReachesRadiator = checkMagfieldLimit(o2track, projectiveRadiatorRadius, magneticField);
       }
       /// DISCLAIMER: Exact extrapolation of angular resolution would require track propagation
       ///             to the RICH radiator (accounting sector inclination) in terms of (R,z).
@@ -791,62 +825,89 @@ struct OnTheFlyRichPid {
       ///             Discrepancies may be negligible, but would be more rigorous if propagation tool is available
 
       // Smear with expected resolutions
-      float measuredAngleBarrelRich = pRandomNumberGenerator.Gaus(expectedAngleBarrelRich, barrelRICHAngularResolution);
+      const float measuredAngleBarrelRich = pRandomNumberGenerator.Gaus(expectedAngleBarrelRich, barrelRICHAngularResolution);
 
       // Now we calculate the expected Cherenkov angle following certain mass hypotheses
       // and the (imperfect!) reconstructed track parametrizations
       auto recoTrack = getTrackParCov(track);
-      if (recoTrack.propagateToDCA(pvVtx, dBz)) {
+      if (recoTrack.propagateToDCA(pvVtx, magneticField)) {
         // xPv = recoTrack.getX();
       }
 
       // Straight to Nsigma
-      float deltaThetaBarrelRich[5]; //, nSigmaBarrelRich[5];
-      int lpdg_array[5] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
-      float masses[5];
+      static constexpr int kNspecies = 5;
+      float nSigmaBarrelRich[kNspecies] = {error_value, error_value, error_value, error_value, error_value};
+      bool signalBarrelRich[kNspecies] = {false, false, false, false, false};
+      float deltaThetaBarrelRich[kNspecies]; //, nSigmaBarrelRich[kNspecies];
+      static constexpr int lpdg_array[kNspecies] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
+      static constexpr float masses[kNspecies] = {o2::track::pid_constants::sMasses[o2::track::PID::Electron],
+                                                  o2::track::pid_constants::sMasses[o2::track::PID::Muon],
+                                                  o2::track::pid_constants::sMasses[o2::track::PID::Pion],
+                                                  o2::track::pid_constants::sMasses[o2::track::PID::Kaon],
+                                                  o2::track::pid_constants::sMasses[o2::track::PID::Proton]};
 
-      for (int ii = 0; ii < 5; ii++) {
-        // nSigmaBarrelRich[ii] = error_value;
+      for (int ii = 0; ii < kNspecies; ii++) { // Loop on the particle hypotheses
 
-        auto pdgInfoThis = pdg->GetParticle(lpdg_array[ii]);
-        masses[ii] = pdgInfoThis->Mass();
-        float hypothesisAngleBarrelRich = CherenkovAngle(recoTrack.getP(), masses[ii], aerogel_rindex[i_sector]);
+        float hypothesisAngleBarrelRich = error_value;
+        const bool hypothesisAngleBarrelRichOk = CherenkovAngle(recoTrack.getP(), masses[ii], aerogel_rindex[i_sector], hypothesisAngleBarrelRich);
+        signalBarrelRich[ii] = hypothesisAngleBarrelRichOk; // Particle is above the threshold and enough photons
 
         // Evaluate total sigma (layer + tracking resolution)
         float barrelTotalAngularReso = barrelRICHAngularResolution;
         if (flagIncludeTrackAngularRes) {
-          double pt_resolution = std::pow(recoTrack.getP() / std::cosh(recoTrack.getEta()), 2) * std::sqrt(recoTrack.getSigma1Pt2());
+          const float transverseMomentum = recoTrack.getP() / std::cosh(recoTrack.getEta());
+          double pt_resolution = transverseMomentum * transverseMomentum * std::sqrt(recoTrack.getSigma1Pt2());
           double eta_resolution = std::fabs(std::sin(2.0 * std::atan(std::exp(-recoTrack.getEta())))) * std::sqrt(recoTrack.getSigmaTgl2());
           if (flagRICHLoadDelphesLUTs) {
-            pt_resolution = mSmearer.getAbsPtRes(pdgInfoThis->PdgCode(), dNdEta, recoTrack.getEta(), recoTrack.getP() / std::cosh(recoTrack.getEta()));
-            eta_resolution = mSmearer.getAbsEtaRes(pdgInfoThis->PdgCode(), dNdEta, recoTrack.getEta(), recoTrack.getP() / std::cosh(recoTrack.getEta()));
+            pt_resolution = mSmearer.getAbsPtRes(lpdg_array[ii], dNdEta, recoTrack.getEta(), transverseMomentum);
+            eta_resolution = mSmearer.getAbsEtaRes(lpdg_array[ii], dNdEta, recoTrack.getEta(), transverseMomentum);
           }
           // cout << endl <<  "Pt resolution: " << pt_resolution << ", Eta resolution: " << eta_resolution << endl << endl;
-          float barrelTrackAngularReso = calculate_track_angular_resolution_advanced(recoTrack.getP() / std::cosh(recoTrack.getEta()), recoTrack.getEta(), pt_resolution, eta_resolution, masses[ii], aerogel_rindex[i_sector]);
+          const float barrelTrackAngularReso = calculate_track_angular_resolution_advanced(recoTrack.getP() / std::cosh(recoTrack.getEta()), recoTrack.getEta(), pt_resolution, eta_resolution, masses[ii], aerogel_rindex[i_sector]);
           barrelTotalAngularReso = std::hypot(barrelRICHAngularResolution, barrelTrackAngularReso);
-          if (doQAplots && hypothesisAngleBarrelRich > error_value + 1. && measuredAngleBarrelRich > error_value + 1. && barrelRICHAngularResolution > error_value + 1. && flagReachesRadiator) {
-            float momentum = recoTrack.getP();
-            // float pseudorapidity = recoTrack.getEta();
-            // float transverse_momentum = momentum / std::cosh(pseudorapidity);
-            if (ii == 0 && std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[0])->PdgCode()) {
-              histos.fill(HIST("h2dBarrelAngularResTrackElecVsP"), momentum, 1000.0 * barrelTrackAngularReso);
-              histos.fill(HIST("h2dBarrelAngularResTotalElecVsP"), momentum, 1000.0 * barrelTotalAngularReso);
-            }
-            if (ii == 1 && std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[1])->PdgCode()) {
-              histos.fill(HIST("h2dBarrelAngularResTrackMuonVsP"), momentum, 1000.0 * barrelTrackAngularReso);
-              histos.fill(HIST("h2dBarrelAngularResTotalMuonVsP"), momentum, 1000.0 * barrelTotalAngularReso);
-            }
-            if (ii == 2 && std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[2])->PdgCode()) {
-              histos.fill(HIST("h2dBarrelAngularResTrackPionVsP"), momentum, 1000.0 * barrelTrackAngularReso);
-              histos.fill(HIST("h2dBarrelAngularResTotalPionVsP"), momentum, 1000.0 * barrelTotalAngularReso);
-            }
-            if (ii == 3 && std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[3])->PdgCode()) {
-              histos.fill(HIST("h2dBarrelAngularResTrackKaonVsP"), momentum, 1000.0 * barrelTrackAngularReso);
-              histos.fill(HIST("h2dBarrelAngularResTotalKaonVsP"), momentum, 1000.0 * barrelTotalAngularReso);
-            }
-            if (ii == 4 && std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[4])->PdgCode()) {
-              histos.fill(HIST("h2dBarrelAngularResTrackProtVsP"), momentum, 1000.0 * barrelTrackAngularReso);
-              histos.fill(HIST("h2dBarrelAngularResTotalProtVsP"), momentum, 1000.0 * barrelTotalAngularReso);
+          if (doQAplots &&
+              hypothesisAngleBarrelRich > error_value + 1. &&
+              measuredAngleBarrelRich > error_value + 1. &&
+              barrelRICHAngularResolution > error_value + 1. &&
+              flagReachesRadiator) {
+            switch (mcParticle.pdgCode()) {
+              case lpdg_array[0]:  // Electron
+              case -lpdg_array[0]: // Positron
+                if (ii == 0) {
+                  histos.fill(HIST("h2dBarrelAngularResTrackElecVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
+                  histos.fill(HIST("h2dBarrelAngularResTotalElecVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
+                }
+                break;
+              case lpdg_array[1]:  // Muon
+              case -lpdg_array[1]: // AntiMuon
+                if (ii == 1) {
+                  histos.fill(HIST("h2dBarrelAngularResTrackMuonVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
+                  histos.fill(HIST("h2dBarrelAngularResTotalMuonVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
+                }
+                break;
+              case lpdg_array[2]:  // Pion
+              case -lpdg_array[2]: // AntiPion
+                if (ii == 2) {
+                  histos.fill(HIST("h2dBarrelAngularResTrackPionVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
+                  histos.fill(HIST("h2dBarrelAngularResTotalPionVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
+                }
+                break;
+              case lpdg_array[3]:  // Kaon
+              case -lpdg_array[3]: // AntiKaon
+                if (ii == 3) {
+                  histos.fill(HIST("h2dBarrelAngularResTrackKaonVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
+                  histos.fill(HIST("h2dBarrelAngularResTotalKaonVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
+                }
+                break;
+              case lpdg_array[4]:  // Proton
+              case -lpdg_array[4]: // AntiProton
+                if (ii == 4) {
+                  histos.fill(HIST("h2dBarrelAngularResTrackProtVsP"), recoTrack.getP(), 1000.0 * barrelTrackAngularReso);
+                  histos.fill(HIST("h2dBarrelAngularResTotalProtVsP"), recoTrack.getP(), 1000.0 * barrelTotalAngularReso);
+                }
+                break;
+              default:
+                break;
             }
           }
         }
@@ -854,7 +915,10 @@ struct OnTheFlyRichPid {
         /// DISCLAIMER: here tracking is accounted only for momentum value, but not for track parameters at impact point on the
         ///             RICH radiator, since exact resolution would require photon generation and transport to photodetector.
         ///             Effects are expected to be negligible (a few tenths of a milliradian) but further studies are required !
-        if (hypothesisAngleBarrelRich > error_value + 1. && measuredAngleBarrelRich > error_value + 1. && barrelRICHAngularResolution > error_value + 1. && flagReachesRadiator) {
+        if (hypothesisAngleBarrelRich > error_value + 1. &&
+            measuredAngleBarrelRich > error_value + 1. &&
+            barrelRICHAngularResolution > error_value + 1. &&
+            flagReachesRadiator) {
           deltaThetaBarrelRich[ii] = hypothesisAngleBarrelRich - measuredAngleBarrelRich;
           nSigmaBarrelRich[ii] = deltaThetaBarrelRich[ii] / barrelTotalAngularReso;
         }
@@ -862,57 +926,65 @@ struct OnTheFlyRichPid {
 
       // Fill histograms
       if (doQAplots) {
-        float momentum = recoTrack.getP();
-        float pseudorapidity = recoTrack.getEta();
-        float barrelRichTheta = measuredAngleBarrelRich;
-
-        if (barrelRichTheta > error_value + 1. && barrelRICHAngularResolution > error_value + 1. && flagReachesRadiator) {
-          histos.fill(HIST("h2dAngleVsMomentumBarrelRICH"), momentum, barrelRichTheta);
-          histos.fill(HIST("h2dAngleVsEtaBarrelRICH"), pseudorapidity, barrelRichTheta);
-          histos.fill(HIST("h2dAngularResolutionVsMomentumBarrelRICH"), momentum, 1000 * barrelRICHAngularResolution);
-          histos.fill(HIST("h2dAngularResolutionVsEtaBarrelRICH"), pseudorapidity, 1000 * barrelRICHAngularResolution);
+        if (measuredAngleBarrelRich > error_value + 1. &&
+            barrelRICHAngularResolution > error_value + 1. &&
+            flagReachesRadiator) {
+          histos.fill(HIST("h2dAngleVsMomentumBarrelRICH"), recoTrack.getP(), measuredAngleBarrelRich);
+          histos.fill(HIST("h2dAngleVsEtaBarrelRICH"), recoTrack.getEta(), measuredAngleBarrelRich);
+          histos.fill(HIST("h2dAngularResolutionVsMomentumBarrelRICH"), recoTrack.getP(), 1000 * barrelRICHAngularResolution);
+          histos.fill(HIST("h2dAngularResolutionVsEtaBarrelRICH"), recoTrack.getEta(), 1000 * barrelRICHAngularResolution);
           histos.fill(HIST("hSectorID"), i_sector);
 
-          if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[0])->PdgCode()) {
-            histos.fill(HIST("h2dBarrelNsigmaTrueElecVsElecHypothesis"), momentum, nSigmaBarrelRich[0]);
-            histos.fill(HIST("h2dBarrelNsigmaTrueElecVsMuonHypothesis"), momentum, nSigmaBarrelRich[1]);
-            histos.fill(HIST("h2dBarrelNsigmaTrueElecVsPionHypothesis"), momentum, nSigmaBarrelRich[2]);
-            histos.fill(HIST("h2dBarrelNsigmaTrueElecVsKaonHypothesis"), momentum, nSigmaBarrelRich[3]);
-            histos.fill(HIST("h2dBarrelNsigmaTrueElecVsProtHypothesis"), momentum, nSigmaBarrelRich[4]);
-          }
-          if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[1])->PdgCode()) {
-            histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsElecHypothesis"), momentum, nSigmaBarrelRich[0]);
-            histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsMuonHypothesis"), momentum, nSigmaBarrelRich[1]);
-            histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsPionHypothesis"), momentum, nSigmaBarrelRich[2]);
-            histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsKaonHypothesis"), momentum, nSigmaBarrelRich[3]);
-            histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsProtHypothesis"), momentum, nSigmaBarrelRich[4]);
-          }
-          if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[2])->PdgCode()) {
-            histos.fill(HIST("h2dBarrelNsigmaTruePionVsElecHypothesis"), momentum, nSigmaBarrelRich[0]);
-            histos.fill(HIST("h2dBarrelNsigmaTruePionVsMuonHypothesis"), momentum, nSigmaBarrelRich[1]);
-            histos.fill(HIST("h2dBarrelNsigmaTruePionVsPionHypothesis"), momentum, nSigmaBarrelRich[2]);
-            histos.fill(HIST("h2dBarrelNsigmaTruePionVsKaonHypothesis"), momentum, nSigmaBarrelRich[3]);
-            histos.fill(HIST("h2dBarrelNsigmaTruePionVsProtHypothesis"), momentum, nSigmaBarrelRich[4]);
-          }
-          if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[3])->PdgCode()) {
-            histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsElecHypothesis"), momentum, nSigmaBarrelRich[0]);
-            histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsMuonHypothesis"), momentum, nSigmaBarrelRich[1]);
-            histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsPionHypothesis"), momentum, nSigmaBarrelRich[2]);
-            histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsKaonHypothesis"), momentum, nSigmaBarrelRich[3]);
-            histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsProtHypothesis"), momentum, nSigmaBarrelRich[4]);
-          }
-          if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[4])->PdgCode()) {
-            histos.fill(HIST("h2dBarrelNsigmaTrueProtVsElecHypothesis"), momentum, nSigmaBarrelRich[0]);
-            histos.fill(HIST("h2dBarrelNsigmaTrueProtVsMuonHypothesis"), momentum, nSigmaBarrelRich[1]);
-            histos.fill(HIST("h2dBarrelNsigmaTrueProtVsPionHypothesis"), momentum, nSigmaBarrelRich[2]);
-            histos.fill(HIST("h2dBarrelNsigmaTrueProtVsKaonHypothesis"), momentum, nSigmaBarrelRich[3]);
-            histos.fill(HIST("h2dBarrelNsigmaTrueProtVsProtHypothesis"), momentum, nSigmaBarrelRich[4]);
+          switch (mcParticle.pdgCode()) {
+            case lpdg_array[0]:  // Electron
+            case -lpdg_array[0]: // Positron
+              histos.fill(HIST("h2dBarrelNsigmaTrueElecVsElecHypothesis"), recoTrack.getP(), nSigmaBarrelRich[0]);
+              histos.fill(HIST("h2dBarrelNsigmaTrueElecVsMuonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[1]);
+              histos.fill(HIST("h2dBarrelNsigmaTrueElecVsPionHypothesis"), recoTrack.getP(), nSigmaBarrelRich[2]);
+              histos.fill(HIST("h2dBarrelNsigmaTrueElecVsKaonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[3]);
+              histos.fill(HIST("h2dBarrelNsigmaTrueElecVsProtHypothesis"), recoTrack.getP(), nSigmaBarrelRich[4]);
+              break;
+            case lpdg_array[1]:  // Muon
+            case -lpdg_array[1]: // AntiMuon
+              histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsElecHypothesis"), recoTrack.getP(), nSigmaBarrelRich[0]);
+              histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsMuonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[1]);
+              histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsPionHypothesis"), recoTrack.getP(), nSigmaBarrelRich[2]);
+              histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsKaonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[3]);
+              histos.fill(HIST("h2dBarrelNsigmaTrueMuonVsProtHypothesis"), recoTrack.getP(), nSigmaBarrelRich[4]);
+              break;
+            case lpdg_array[2]:  // Pion
+            case -lpdg_array[2]: // AntiPion
+              histos.fill(HIST("h2dBarrelNsigmaTruePionVsElecHypothesis"), recoTrack.getP(), nSigmaBarrelRich[0]);
+              histos.fill(HIST("h2dBarrelNsigmaTruePionVsMuonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[1]);
+              histos.fill(HIST("h2dBarrelNsigmaTruePionVsPionHypothesis"), recoTrack.getP(), nSigmaBarrelRich[2]);
+              histos.fill(HIST("h2dBarrelNsigmaTruePionVsKaonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[3]);
+              histos.fill(HIST("h2dBarrelNsigmaTruePionVsProtHypothesis"), recoTrack.getP(), nSigmaBarrelRich[4]);
+              break;
+            case lpdg_array[3]:  // Kaon
+            case -lpdg_array[3]: // AntiKaon
+              histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsElecHypothesis"), recoTrack.getP(), nSigmaBarrelRich[0]);
+              histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsMuonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[1]);
+              histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsPionHypothesis"), recoTrack.getP(), nSigmaBarrelRich[2]);
+              histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsKaonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[3]);
+              histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsProtHypothesis"), recoTrack.getP(), nSigmaBarrelRich[4]);
+              break;
+            case lpdg_array[4]:  // Proton
+            case -lpdg_array[4]: // AntiProton
+              histos.fill(HIST("h2dBarrelNsigmaTrueProtVsElecHypothesis"), recoTrack.getP(), nSigmaBarrelRich[0]);
+              histos.fill(HIST("h2dBarrelNsigmaTrueProtVsMuonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[1]);
+              histos.fill(HIST("h2dBarrelNsigmaTrueProtVsPionHypothesis"), recoTrack.getP(), nSigmaBarrelRich[2]);
+              histos.fill(HIST("h2dBarrelNsigmaTrueProtVsKaonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[3]);
+              histos.fill(HIST("h2dBarrelNsigmaTrueProtVsProtHypothesis"), recoTrack.getP(), nSigmaBarrelRich[4]);
+              break;
+            default:
+              break;
           }
         }
       }
 
       // Sigmas have been fully calculated. Please populate the NSigma helper table (once per track)
       upgradeRich(nSigmaBarrelRich[0], nSigmaBarrelRich[1], nSigmaBarrelRich[2], nSigmaBarrelRich[3], nSigmaBarrelRich[4]);
+      upgradeRichSignal(expectedAngleBarrelRichOk, signalBarrelRich[0], signalBarrelRich[1], signalBarrelRich[2], signalBarrelRich[3], signalBarrelRich[4]);
     }
   }
 };
