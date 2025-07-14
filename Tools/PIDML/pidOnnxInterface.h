@@ -17,13 +17,17 @@
 #ifndef TOOLS_PIDML_PIDONNXINTERFACE_H_
 #define TOOLS_PIDML_PIDONNXINTERFACE_H_
 
-#include <string>
-#include <array>
-#include <set>
-#include <vector>
-
-#include "Framework/Array2D.h"
 #include "Tools/PIDML/pidOnnxModel.h"
+//
+#include <CCDB/CcdbApi.h>
+#include <Framework/Array2D.h>
+#include <Framework/Logger.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <set>
+#include <string>
+#include <vector>
 
 namespace pidml_pt_cuts
 {
@@ -110,7 +114,7 @@ struct PidONNXInterface {
   }
 
   std::vector<PidONNXModel<T>> mModels;
-  std::size_t mNPids;
+  std::size_t mNPids{0};
   o2::framework::LabeledArray<double> mPLimits;
 };
 #endif // TOOLS_PIDML_PIDONNXINTERFACE_H_
