@@ -25,6 +25,6 @@ o2physics_add_dpl_workflow(femto3d-pair-task-mc
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(femto3d-pid-optimization
-    SOURCES PIDOptimization.cxx
+    SOURCES PIDoptimization.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
