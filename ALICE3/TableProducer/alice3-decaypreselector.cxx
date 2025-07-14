@@ -63,7 +63,7 @@ using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov>;
 // For MC association in pre-selection
 using labeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 using tofTracks = soa::Join<aod::Tracks, aod::UpgradeTofs>;
-using richTracks = soa::Join<aod::Tracks, aod::UpgradeRichs>;
+using richTracks = soa::Join<aod::Tracks, aod::UpgradeRichs, aod::UpgradeRichSignal>;
 
 struct alice3decaypreselector {
   Produces<aod::Alice3DecayMaps> a3decayMaps;
@@ -112,9 +112,9 @@ struct alice3decaypreselector {
   Partition<tofTracks> pOuterTOFPi = nabs(aod::upgrade_tof::nSigmaPionOuterTOF) > nSigmaTOF;
   Partition<tofTracks> pOuterTOFKa = nabs(aod::upgrade_tof::nSigmaKaonOuterTOF) > nSigmaTOF;
   Partition<tofTracks> pOuterTOFPr = nabs(aod::upgrade_tof::nSigmaProtonOuterTOF) > nSigmaTOF;
-  Partition<richTracks> pRICHPi = nabs(aod::upgrade_rich::nSigmaPionRich) > nSigmaRICH;
-  Partition<richTracks> pRICHKa = nabs(aod::upgrade_rich::nSigmaKaonRich) > nSigmaRICH;
-  Partition<richTracks> pRICHPr = nabs(aod::upgrade_rich::nSigmaProtonRich) > nSigmaRICH;
+  Partition<richTracks> pRICHPi = aod::upgrade_rich::hasSig && aod::upgrade_rich::hasSigPi && nabs(aod::upgrade_rich::nSigmaPionRich) > nSigmaRICH;
+  Partition<richTracks> pRICHKa = aod::upgrade_rich::hasSig && aod::upgrade_rich::hasSigKa && nabs(aod::upgrade_rich::nSigmaKaonRich) > nSigmaRICH;
+  Partition<richTracks> pRICHPr = aod::upgrade_rich::hasSig && aod::upgrade_rich::hasSigPr && nabs(aod::upgrade_rich::nSigmaProtonRich) > nSigmaRICH;
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// Initialization of mask vectors if uninitialized
