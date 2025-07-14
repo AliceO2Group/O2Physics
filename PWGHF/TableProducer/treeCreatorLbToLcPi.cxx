@@ -18,12 +18,21 @@
 /// \author Panos Christakoglou <Panos.Christakoglou@cern.ch>, Nikhef
 /// \author Maurice Jongerhuis <m.v.jongerhuis@students.uu.nl>, University Utrecht
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdint>
 
 using namespace o2;
 using namespace o2::framework;
@@ -192,7 +201,7 @@ struct HfTreeCreatorLbToLcPi {
   using TracksWPid = soa::Join<aod::Tracks, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
   void process(soa::Join<aod::HfCandLb, aod::HfSelLbToLcPi> const& candidates,
-               soa::Join<aod::HfCand3Prong, aod::HfSelLc> const&,
+               soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc> const&,
                TracksWPid const&)
   {
     // Filling candidate properties
@@ -202,7 +211,7 @@ struct HfTreeCreatorLbToLcPi {
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY) {
-        auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
+        auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc>>();
         auto track0 = candidate.prong1_as<TracksWPid>(); // daughter pion track
         auto track1 = candLc.prong0_as<TracksWPid>();    // granddaughter tracks (lc decay particles)
         auto track2 = candLc.prong1_as<TracksWPid>();
@@ -245,18 +254,18 @@ struct HfTreeCreatorLbToLcPi {
           candidate.impactParameter1(),
           candidate.errorImpactParameter0(),
           candidate.errorImpactParameter1(),
-          track1.tpcNSigmaPi(),
-          track1.tpcNSigmaKa(),
-          track1.tpcNSigmaPr(),
-          track2.tpcNSigmaPi(),
-          track2.tpcNSigmaKa(),
-          track2.tpcNSigmaPr(),
-          track3.tpcNSigmaPi(),
-          track3.tpcNSigmaKa(),
-          track3.tpcNSigmaPr(),
-          track1.tofNSigmaPr(),
-          track2.tofNSigmaKa(),
-          track3.tofNSigmaPi(),
+          candLc.nSigTpcPi0(),
+          candLc.nSigTpcKa0(),
+          candLc.nSigTpcPr0(),
+          candLc.nSigTpcPi1(),
+          candLc.nSigTpcKa1(),
+          candLc.nSigTpcPr1(),
+          candLc.nSigTpcPi2(),
+          candLc.nSigTpcKa2(),
+          candLc.nSigTpcPr2(),
+          candLc.nSigTofPr0(),
+          candLc.nSigTofKa1(),
+          candLc.nSigTofPi2(),
           hfHelper.invMassLcToPKPi(candLc),
           hfHelper.ctLc(candLc),
           hfHelper.yLc(candLc),

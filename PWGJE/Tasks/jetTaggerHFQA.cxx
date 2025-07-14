@@ -14,28 +14,30 @@
 ///
 /// \author Hanseo Park <hanseo.park@cern.ch>
 
-#include <string>
-#include <functional>
-#include <algorithm>
-#include <vector>
-
-#include "TF1.h"
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "Common/Core/trackUtilities.h"
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/JetTagging.h"
-#include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/Core/JetTaggingUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetTagging.h"
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <algorithm>
+#include <cmath>
+#include <functional>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -151,12 +153,18 @@ struct JetTaggerHFQA {
     AxisSpec axisSigmaLxyz = {binSigmaLxyz, "#sigma_{L_{XYZ}} [cm]"};
 
     if (doprocessTracksDca) {
-      registry.add("h_impact_parameter_xy", "", {HistType::kTH1F, {{axisImpactParameterXY}}});
-      registry.add("h_impact_parameter_xy_significance", "", {HistType::kTH1F, {{axisImpactParameterXYSignificance}}});
-      registry.add("h_impact_parameter_z", "", {HistType::kTH1F, {{axisImpactParameterZ}}});
-      registry.add("h_impact_parameter_z_significance", "", {HistType::kTH1F, {{axisImpactParameterZSignificance}}});
-      registry.add("h_impact_parameter_xyz", "", {HistType::kTH1F, {{axisImpactParameterXYZ}}});
-      registry.add("h_impact_parameter_xyz_significance", "", {HistType::kTH1F, {{axisImpactParameterXYZSignificance}}});
+      if (fillIPxy) {
+        registry.add("h_impact_parameter_xy", "", {HistType::kTH1F, {{axisImpactParameterXY}}});
+        registry.add("h_impact_parameter_xy_significance", "", {HistType::kTH1F, {{axisImpactParameterXYSignificance}}});
+      }
+      if (fillIPz) {
+        registry.add("h_impact_parameter_z", "", {HistType::kTH1F, {{axisImpactParameterZ}}});
+        registry.add("h_impact_parameter_z_significance", "", {HistType::kTH1F, {{axisImpactParameterZSignificance}}});
+      }
+      if (fillIPxyz) {
+        registry.add("h_impact_parameter_xyz", "", {HistType::kTH1F, {{axisImpactParameterXYZ}}});
+        registry.add("h_impact_parameter_xyz_significance", "", {HistType::kTH1F, {{axisImpactParameterXYZSignificance}}});
+      }
     }
     if (doprocessValFlavourDefMCD) {
       registry.add("h2_flavour_dist_quark_flavour_dist_hadron", "", {HistType::kTH2F, {{axisJetFlavour}, {axisJetFlavour}}});
@@ -195,21 +203,27 @@ struct JetTaggerHFQA {
         registry.add("h3_jet_pt_track_pt_sign_impact_parameter_xyz_significance", "", {HistType::kTH3F, {{axisJetPt}, {axisTrackPt}, {axisImpactParameterXYZSignificance}}});
       }
       if (fillTrackCounting) {
-        registry.add("h2_jet_pt_sign_impact_parameter_xy_significance_N1", "", {HistType::kTH2F, {{axisJetPt}, {axisImpactParameterXYSignificance}}});
-        registry.add("h2_jet_pt_sign_impact_parameter_xy_significance_N2", "", {HistType::kTH2F, {{axisJetPt}, {axisImpactParameterXYSignificance}}});
-        registry.add("h2_jet_pt_sign_impact_parameter_xy_significance_N3", "", {HistType::kTH2F, {{axisJetPt}, {axisImpactParameterXYSignificance}}});
-        registry.add("h2_jet_pt_sign_impact_parameter_z_significance_N1", "", {HistType::kTH2F, {{axisJetPt}, {axisImpactParameterXYSignificance}}});
-        registry.add("h2_jet_pt_sign_impact_parameter_z_significance_N2", "", {HistType::kTH2F, {{axisJetPt}, {axisImpactParameterXYSignificance}}});
-        registry.add("h2_jet_pt_sign_impact_parameter_z_significance_N3", "", {HistType::kTH2F, {{axisJetPt}, {axisImpactParameterXYSignificance}}});
-        registry.add("h2_jet_pt_sign_impact_parameter_xyz_significance_N1", "", {HistType::kTH2F, {{axisJetPt}, {axisImpactParameterXYSignificance}}});
-        registry.add("h2_jet_pt_sign_impact_parameter_xyz_significance_N2", "", {HistType::kTH2F, {{axisJetPt}, {axisImpactParameterXYSignificance}}});
-        registry.add("h2_jet_pt_sign_impact_parameter_xyz_significance_N3", "", {HistType::kTH2F, {{axisJetPt}, {axisImpactParameterXYSignificance}}});
-        registry.add("h3_jet_pt_sign_impact_parameter_xy_significance_tc", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterXYSignificance}, {axisNumOrder}}});
-        registry.add("h3_jet_pt_sign_impact_parameter_z_significance_tc", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterZSignificance}, {axisNumOrder}}});
-        registry.add("h3_jet_pt_sign_impact_parameter_xyz_significance_tc", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterXYZSignificance}, {axisNumOrder}}});
-        registry.add("h3_track_pt_sign_impact_parameter_xy_significance_tc", "", {HistType::kTH3F, {{axisTrackPt}, {axisImpactParameterXYSignificance}, {axisNumOrder}}});
-        registry.add("h3_track_pt_sign_impact_parameter_z_significance_tc", "", {HistType::kTH3F, {{axisTrackPt}, {axisImpactParameterZSignificance}, {axisNumOrder}}});
-        registry.add("h3_track_pt_sign_impact_parameter_xyz_significance_tc", "", {HistType::kTH3F, {{axisTrackPt}, {axisImpactParameterXYZSignificance}, {axisNumOrder}}});
+        if (fillIPxy) {
+          registry.add("h2_jet_pt_sign_impact_parameter_xy_significance_N1", "", {HistType::kTH2F, {{axisJetPt}, {axisImpactParameterXYSignificance}}});
+          registry.add("h2_jet_pt_sign_impact_parameter_xy_significance_N2", "", {HistType::kTH2F, {{axisJetPt}, {axisImpactParameterXYSignificance}}});
+          registry.add("h2_jet_pt_sign_impact_parameter_xy_significance_N3", "", {HistType::kTH2F, {{axisJetPt}, {axisImpactParameterXYSignificance}}});
+          registry.add("h3_jet_pt_sign_impact_parameter_xy_significance_tc", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterXYSignificance}, {axisNumOrder}}});
+          registry.add("h3_track_pt_sign_impact_parameter_xy_significance_tc", "", {HistType::kTH3F, {{axisTrackPt}, {axisImpactParameterXYSignificance}, {axisNumOrder}}});
+        }
+        if (fillIPz) {
+          registry.add("h2_jet_pt_sign_impact_parameter_z_significance_N1", "", {HistType::kTH2F, {{axisJetPt}, {axisImpactParameterXYSignificance}}});
+          registry.add("h2_jet_pt_sign_impact_parameter_z_significance_N2", "", {HistType::kTH2F, {{axisJetPt}, {axisImpactParameterXYSignificance}}});
+          registry.add("h2_jet_pt_sign_impact_parameter_z_significance_N3", "", {HistType::kTH2F, {{axisJetPt}, {axisImpactParameterXYSignificance}}});
+          registry.add("h3_jet_pt_sign_impact_parameter_z_significance_tc", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterZSignificance}, {axisNumOrder}}});
+          registry.add("h3_track_pt_sign_impact_parameter_z_significance_tc", "", {HistType::kTH3F, {{axisTrackPt}, {axisImpactParameterZSignificance}, {axisNumOrder}}});
+        }
+        if (fillIPxyz) {
+          registry.add("h2_jet_pt_sign_impact_parameter_xyz_significance_N1", "", {HistType::kTH2F, {{axisJetPt}, {axisImpactParameterXYSignificance}}});
+          registry.add("h2_jet_pt_sign_impact_parameter_xyz_significance_N2", "", {HistType::kTH2F, {{axisJetPt}, {axisImpactParameterXYSignificance}}});
+          registry.add("h2_jet_pt_sign_impact_parameter_xyz_significance_N3", "", {HistType::kTH2F, {{axisJetPt}, {axisImpactParameterXYSignificance}}});
+          registry.add("h3_jet_pt_sign_impact_parameter_xyz_significance_tc", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterXYZSignificance}, {axisNumOrder}}});
+          registry.add("h3_track_pt_sign_impact_parameter_xyz_significance_tc", "", {HistType::kTH3F, {{axisTrackPt}, {axisImpactParameterXYZSignificance}, {axisNumOrder}}});
+        }
       }
     }
     if (doprocessIPsMCD || doprocessIPsMCDWeighted || doprocessIPsMCPMCDMatched || doprocessIPsMCPMCDMatchedWeighted) {
@@ -251,18 +265,24 @@ struct JetTaggerHFQA {
         registry.add("h3_track_pt_sign_impact_parameter_xyz_significance_flavour", "", {HistType::kTH3F, {{axisTrackPt}, {axisImpactParameterXYZSignificance}, {axisJetFlavour}}});
       }
       if (fillTrackCounting) {
-        registry.add("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N1", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterXYSignificance}, {axisJetFlavour}}});
-        registry.add("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N2", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterXYSignificance}, {axisJetFlavour}}});
-        registry.add("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N3", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterXYSignificance}, {axisJetFlavour}}});
-        registry.add("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N1", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterZSignificance}, {axisJetFlavour}}});
-        registry.add("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N2", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterZSignificance}, {axisJetFlavour}}});
-        registry.add("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N3", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterZSignificance}, {axisJetFlavour}}});
-        registry.add("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N1", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterXYZSignificance}, {axisJetFlavour}}});
-        registry.add("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N2", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterXYZSignificance}, {axisJetFlavour}}});
-        registry.add("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N3", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterXYZSignificance}, {axisJetFlavour}}});
-        registry.add("h3_sign_impact_parameter_xy_significance_tc_flavour", "", {HistType::kTH3F, {{axisImpactParameterXYSignificance}, {axisNumOrder}, {axisJetFlavour}}});
-        registry.add("h3_sign_impact_parameter_z_significance_tc_flavour", "", {HistType::kTH3F, {{axisImpactParameterZSignificance}, {axisNumOrder}, {axisJetFlavour}}});
-        registry.add("h3_sign_impact_parameter_xyz_significance_tc_flavour", "", {HistType::kTH3F, {{axisImpactParameterXYZSignificance}, {axisNumOrder}, {axisJetFlavour}}});
+        if (fillIPxy) {
+          registry.add("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N1", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterXYSignificance}, {axisJetFlavour}}});
+          registry.add("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N2", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterXYSignificance}, {axisJetFlavour}}});
+          registry.add("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N3", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterXYSignificance}, {axisJetFlavour}}});
+          registry.add("h3_sign_impact_parameter_xy_significance_tc_flavour", "", {HistType::kTH3F, {{axisImpactParameterXYSignificance}, {axisNumOrder}, {axisJetFlavour}}});
+        }
+        if (fillIPz) {
+          registry.add("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N1", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterZSignificance}, {axisJetFlavour}}});
+          registry.add("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N2", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterZSignificance}, {axisJetFlavour}}});
+          registry.add("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N3", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterZSignificance}, {axisJetFlavour}}});
+          registry.add("h3_sign_impact_parameter_z_significance_tc_flavour", "", {HistType::kTH3F, {{axisImpactParameterZSignificance}, {axisNumOrder}, {axisJetFlavour}}});
+        }
+        if (fillIPxyz) {
+          registry.add("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N1", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterXYZSignificance}, {axisJetFlavour}}});
+          registry.add("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N2", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterXYZSignificance}, {axisJetFlavour}}});
+          registry.add("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N3", "", {HistType::kTH3F, {{axisJetPt}, {axisImpactParameterXYZSignificance}, {axisJetFlavour}}});
+          registry.add("h3_sign_impact_parameter_xyz_significance_tc_flavour", "", {HistType::kTH3F, {{axisImpactParameterXYZSignificance}, {axisNumOrder}, {axisJetFlavour}}});
+        }
       }
     }
     if (doprocessIPsMCP || doprocessIPsMCPWeighted) {
@@ -1059,12 +1079,18 @@ struct JetTaggerHFQA {
       varImpXYZ = dcaXYZ * jettaggingutilities::cmTomum;
       varImpXYZSig = dcaXYZ / sigmadcaXYZ;
 
-      registry.fill(HIST("h_impact_parameter_xy"), varImpXY);
-      registry.fill(HIST("h_impact_parameter_xy_significance"), varImpXYSig);
-      registry.fill(HIST("h_impact_parameter_z"), varImpZ);
-      registry.fill(HIST("h_impact_parameter_z_significance"), varImpZSig);
-      registry.fill(HIST("h_impact_parameter_xyz"), varImpXYZ);
-      registry.fill(HIST("h_impact_parameter_xyz_significance"), varImpXYZSig);
+      if (fillIPxy) {
+        registry.fill(HIST("h_impact_parameter_xy"), varImpXY);
+        registry.fill(HIST("h_impact_parameter_xy_significance"), varImpXYSig);
+      }
+      if (fillIPz) {
+        registry.fill(HIST("h_impact_parameter_z"), varImpZ);
+        registry.fill(HIST("h_impact_parameter_z_significance"), varImpZSig);
+      }
+      if (fillIPxyz) {
+        registry.fill(HIST("h_impact_parameter_xyz"), varImpXYZ);
+        registry.fill(HIST("h_impact_parameter_xyz_significance"), varImpXYZSig);
+      }
     }
   }
   PROCESS_SWITCH(JetTaggerHFQA, processTracksDca, "Fill inclusive tracks' imformation for data", false);

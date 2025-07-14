@@ -17,11 +17,30 @@
 #ifndef PWGHF_UTILS_UTILSPID_H_
 #define PWGHF_UTILS_UTILSPID_H_
 
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+
+#include <Framework/Logger.h>
+
+#include <cstdint>
+
 namespace o2::aod::pid_tpc_tof_utils
 {
-enum HfProngSpecies : uint8_t { Pion = 0,
-                                Kaon,
-                                Proton };
+/// @brief Species of HF-candidate daughter tracks
+enum HfProngSpecies : uint8_t {
+  Pion = 0,
+  Kaon,
+  Proton,
+  NHfProngSpecies
+};
+
+/// @brief PID methods used for HF-candidate daughter tracks
+enum PidMethod {
+  NoPid = 0, // none
+  TpcOrTof,  // TPC or TOF
+  TpcAndTof, // TPC and TOF
+  NPidMethods
+};
 
 /// Function to combine TPC and TOF NSigma
 /// \param tiny switch between full and tiny (binned) PID tables

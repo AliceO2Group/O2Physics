@@ -18,27 +18,56 @@
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, CERN
 
-#include <memory>
+#include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <THnSparse.h>
+#include <TPDGCode.h>
+#include <TString.h>
+
+#include <sys/types.h>
+
+#include <Rtypes.h>
+
 #include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <memory>
+#include <numeric>
+#include <string_view>
 #include <vector>
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StaticFor.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-
-#include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
-
 using namespace o2;
-using namespace o2::analysis;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -258,7 +287,7 @@ struct HfTaskMcValidationGen {
     if (storeOccupancy) {
       occupancy = getOccupancyGenColl(recoCollisions, OccupancyEstimator::Its);
     }
-    uint16_t rejectionMask{0};
+    uint32_t rejectionMask{0u};
     if constexpr (centEstimator == CentralityEstimator::FT0C) {
       rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, recoCollisions, centrality);
     } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
@@ -1069,7 +1098,7 @@ struct HfTaskMcValidationRec {
           continue;
         }
         int whichHad = -1;
-        if (isD0Sel && TESTBIT(std::abs(cand2Prong.flagMcMatchRec()), hf_cand_2prong::DecayType::D0ToPiK)) {
+        if (isD0Sel && std::abs(cand2Prong.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           whichHad = DzeroToKPi;
         }
         int whichOrigin;
@@ -1103,21 +1132,21 @@ struct HfTaskMcValidationRec {
           continue;
         }
         int whichHad = -1;
-        if (isDPlusSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::DplusToPiKPi)) {
+        if (isDPlusSel && std::abs(cand3Prong.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
           whichHad = DplusToPiKPi;
-        } else if (isDsSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::DsToKKPi)) {
-          if (cand3Prong.flagMcDecayChanRec() == hf_cand_3prong::DecayChannelDToKKPi::DsToPhiPi) {
+        } else if (isDsSel && std::abs(cand3Prong.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) {
+          if (cand3Prong.flagMcDecayChanRec() == o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DsToPhiPi) {
             whichHad = DsToPhiPiToKKPi;
           }
-          if (cand3Prong.flagMcDecayChanRec() == hf_cand_3prong::DecayChannelDToKKPi::DsToK0starK) {
+          if (cand3Prong.flagMcDecayChanRec() == o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DsToKstar0K) {
             whichHad = DsToK0starKToKKPi;
           }
-          if (cand3Prong.flagMcDecayChanRec() == hf_cand_3prong::DecayChannelDToKKPi::DplusToPhiPi) {
+          if (cand3Prong.flagMcDecayChanRec() == o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DplusToPhiPi) {
             whichHad = DplusToPhiPiToKKPi;
           }
-        } else if (isLcSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::LcToPKPi)) {
+        } else if (isLcSel && std::abs(cand3Prong.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
           whichHad = LcToPKPi;
-        } else if (isXicSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::XicToPKPi)) {
+        } else if (isXicSel && std::abs(cand3Prong.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::XicToPKPi) {
           whichHad = XiCplusToPKPi;
         }
         int whichOrigin;

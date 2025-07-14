@@ -253,6 +253,12 @@ bool MCSignal::CheckProng(int i, bool checkSources, const T& track)
             sourcesDecision |= (static_cast<uint64_t>(1) << MCProng::kHEPMCFinalState);
           }
         }
+        // Check kIsPowhegDYMuon
+        if (fProngs[i].fSourceBits[j] & (static_cast<uint64_t>(1) << MCProng::kIsPowhegDYMuon)) {
+          if ((fProngs[i].fExcludeSource[j] & (static_cast<uint64_t>(1) << MCProng::kIsPowhegDYMuon)) != (currentMCParticle.getGenStatusCode() == 23)) {
+            sourcesDecision |= (static_cast<uint64_t>(1) << MCProng::kIsPowhegDYMuon);
+          }
+        }
       } // end if(hasSources)
       // no source bit is fulfilled
       if (hasSources && !sourcesDecision) {

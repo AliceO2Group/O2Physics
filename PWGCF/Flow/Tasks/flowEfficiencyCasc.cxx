@@ -43,6 +43,7 @@ struct FlowEfficiencyCasc {
   O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 3.0f, "Maximal pT for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5f, "max chi2 per TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 500, "High cut on TPC occupancy")
   // topological cut for V0
   O2_DEFINE_CONFIGURABLE(cfgv0_radius, float, 5.0f, "minimum decay radius")
   O2_DEFINE_CONFIGURABLE(cfgv0_v0cospa, float, 0.995f, "minimum cosine of pointing angle")
@@ -97,7 +98,7 @@ struct FlowEfficiencyCasc {
 
   void init(InitContext const&)
   {
-    const AxisSpec axisCounter{1, 0, +1, ""};
+    const AxisSpec axisCounter{2, 0, 2, ""};
     // create histograms
     registry.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
     registry.add("mcEventCounter", "Monte Carlo Truth EventCounter", kTH1F, {axisCounter});
@@ -111,6 +112,79 @@ struct FlowEfficiencyCasc {
     registry.add("h3DRecLambda", "", {HistType::kTH3D, {cfgaxisPtV0, cfgaxisMultiplicity, axisLambdaMass}});
     registry.add("h3DRecXi", "", {HistType::kTH3D, {cfgaxisPtXi, cfgaxisMultiplicity, axisXiMass}});
     registry.add("h3DRecOmega", "", {HistType::kTH3D, {cfgaxisPtOmega, cfgaxisMultiplicity, axisOmegaMass}});
+
+    // V0 QA
+    registry.add("QAhisto/V0/hqaV0radiusbefore", "", {HistType::kTH1D, {{200, 0, 200}}});
+    registry.add("QAhisto/V0/hqaV0radiusafter", "", {HistType::kTH1D, {{200, 0, 200}}});
+    registry.add("QAhisto/V0/hqaV0cosPAbefore", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
+    registry.add("QAhisto/V0/hqaV0cosPAafter", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
+    registry.add("QAhisto/V0/hqadcaV0daubefore", "", {HistType::kTH1D, {{100, 0, 1}}});
+    registry.add("QAhisto/V0/hqadcaV0dauafter", "", {HistType::kTH1D, {{100, 0, 1}}});
+    registry.add("QAhisto/V0/hqaarm_podobefore", "", {HistType::kTH2D, {{100, -1, 1}, {50, 0, 0.3}}});
+    registry.add("QAhisto/V0/hqaarm_podoafter", "", {HistType::kTH2D, {{100, -1, 1}, {50, 0, 0.3}}});
+    registry.add("QAhisto/V0/hqadcapostoPVbefore", "", {HistType::kTH1D, {{1000, -10, 10}}});
+    registry.add("QAhisto/V0/hqadcapostoPVafter", "", {HistType::kTH1D, {{1000, -10, 10}}});
+    registry.add("QAhisto/V0/hqadcanegtoPVbefore", "", {HistType::kTH1D, {{1000, -10, 10}}});
+    registry.add("QAhisto/V0/hqadcanegtoPVafter", "", {HistType::kTH1D, {{1000, -10, 10}}});
+    // Cascade QA
+    registry.add("QAhisto/Casc/hqaCasccosPAbefore", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
+    registry.add("QAhisto/Casc/hqaCasccosPAafter", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
+    registry.add("QAhisto/Casc/hqaCascV0cosPAbefore", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
+    registry.add("QAhisto/Casc/hqaCascV0cosPAafter", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
+    registry.add("QAhisto/Casc/hqadcaCascV0toPVbefore", "", {HistType::kTH1D, {{1000, -10, 10}}});
+    registry.add("QAhisto/Casc/hqadcaCascV0toPVafter", "", {HistType::kTH1D, {{1000, -10, 10}}});
+    registry.add("QAhisto/Casc/hqadcaCascBachtoPVbefore", "", {HistType::kTH1D, {{1000, -10, 10}}});
+    registry.add("QAhisto/Casc/hqadcaCascBachtoPVafter", "", {HistType::kTH1D, {{1000, -10, 10}}});
+    registry.add("QAhisto/Casc/hqadcaCascdaubefore", "", {HistType::kTH1D, {{100, 0, 1}}});
+    registry.add("QAhisto/Casc/hqadcaCascdauafter", "", {HistType::kTH1D, {{100, 0, 1}}});
+    registry.add("QAhisto/Casc/hqadcaCascV0daubefore", "", {HistType::kTH1D, {{100, 0, 1}}});
+    registry.add("QAhisto/Casc/hqadcaCascV0dauafter", "", {HistType::kTH1D, {{100, 0, 1}}});
+  }
+  template <typename TCollision>
+  bool eventSelected(TCollision collision)
+  {
+    if (collision.alias_bit(kTVXinTRD)) {
+      // TRD triggered
+      return false;
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      // reject collisions close to Time Frame borders
+      // https://its.cern.ch/jira/browse/O2-4623
+      return false;
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      // reject events affected by the ITS ROF border
+      // https://its.cern.ch/jira/browse/O2-4309
+      return false;
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      // rejects collisions which are associated with the same "found-by-T0" bunch crossing
+      // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
+      return false;
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
+      // use this cut at low multiplicities with caution
+      return false;
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      // no collisions in specified time range
+      return false;
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      // cut time intervals with dead ITS staves
+      return false;
+    }
+
+    auto occupancy = collision.trackOccupancyInTimeRange();
+    if (occupancy > cfgCutOccupancyHigh)
+      return false;
+
+    // // V0A T0A 5 sigma cut
+    // if (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A()))
+    //   return false;
+
+    return true;
   }
 
   void processRec(MyCollisions::iterator const& collision, V0MCCandidates const& V0s, CascMCCandidates const& Cascades, DaughterTracks const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
@@ -118,6 +192,9 @@ struct FlowEfficiencyCasc {
     registry.fill(HIST("eventCounter"), 0.5);
     if (!collision.sel8())
       return;
+    if (eventSelected(collision))
+      return;
+    registry.fill(HIST("eventCounter"), 1.5);
     int rectracknum = collision.multNTracksGlobal();
     registry.fill(HIST("h2DCentvsNch"), collision.centFT0C(), rectracknum);
     for (const auto& casc : Cascades) {
@@ -127,6 +204,13 @@ struct FlowEfficiencyCasc {
       auto negdau = casc.negTrackExtra_as<DaughterTracks>();
       auto posdau = casc.posTrackExtra_as<DaughterTracks>();
       auto bachelor = casc.bachTrackExtra_as<DaughterTracks>();
+      // fill QA
+      registry.fill(HIST("QAhisto/Casc/hqaCasccosPAbefore"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("QAhisto/Casc/hqaCascV0cosPAbefore"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascV0toPVbefore"), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascBachtoPVbefore"), casc.dcabachtopv());
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascdaubefore"), casc.dcacascdaughters());
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascV0daubefore"), casc.dcaV0daughters());
       // track quality check
       if (bachelor.tpcNClsFound() < cfgtpcclusters)
         continue;
@@ -157,13 +241,20 @@ struct FlowEfficiencyCasc {
         continue;
       if (std::fabs(casc.mLambda() - o2::constants::physics::MassLambda0) > cfgcasc_mlambdawindow)
         continue;
+      // fill QA
+      registry.fill(HIST("QAhisto/Casc/hqaCasccosPAafter"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("QAhisto/Casc/hqaCascV0cosPAafter"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascV0toPVafter"), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascBachtoPVafter"), casc.dcabachtopv());
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascdauafter"), casc.dcacascdaughters());
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascV0dauafter"), casc.dcaV0daughters());
       // Omega and antiOmega
       int pdgCode{cascMC.pdgCode()};
       if (!cfgcheckMCParticle || (std::abs(pdgCode) == kOmegaMinus && std::abs(cascMC.pdgCodeV0()) == kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == kKPlus)) {
         if (casc.sign() < 0 && (casc.mOmega() > 1.63) && (casc.mOmega() < 1.71) && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
             (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaKa()) < cfgNSigma[2] && std::fabs(posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
           registry.fill(HIST("h3DRecOmega"), casc.pt(), rectracknum, casc.mOmega());
-        } else if (casc.sign() < 0 && (casc.mOmega() > 1.63) && (casc.mOmega() < 1.71) && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
+        } else if (casc.sign() > 0 && (casc.mOmega() > 1.63) && (casc.mOmega() < 1.71) && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
                    (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaKa()) < cfgNSigma[2] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
           registry.fill(HIST("h3DRecOmega"), casc.pt(), rectracknum, casc.mOmega());
         }
@@ -173,7 +264,7 @@ struct FlowEfficiencyCasc {
         if (casc.sign() < 0 && (casc.mXi() > 1.30) && (casc.mXi() < 1.37) && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
             (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
           registry.fill(HIST("h3DRecXi"), casc.pt(), rectracknum, casc.mXi());
-        } else if (casc.sign() < 0 && (casc.mXi() > 1.30) && (casc.mXi() < 1.37) && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
+        } else if (casc.sign() > 0 && (casc.mXi() > 1.30) && (casc.mXi() < 1.37) && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
                    (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
           registry.fill(HIST("h3DRecXi"), casc.pt(), rectracknum, casc.mXi());
         }
@@ -187,6 +278,13 @@ struct FlowEfficiencyCasc {
       auto v0negdau = v0.negTrackExtra_as<DaughterTracks>();
       auto v0posdau = v0.posTrackExtra_as<DaughterTracks>();
 
+      // fill QA before cut
+      registry.fill(HIST("QAhisto/V0/hqaV0radiusbefore"), v0.v0radius());
+      registry.fill(HIST("QAhisto/V0/hqaV0cosPAbefore"), v0.v0cosPA());
+      registry.fill(HIST("QAhisto/V0/hqadcaV0daubefore"), v0.dcaV0daughters());
+      registry.fill(HIST("QAhisto/V0/hqadcapostoPVbefore"), v0.dcapostopv());
+      registry.fill(HIST("QAhisto/V0/hqadcanegtoPVbefore"), v0.dcanegtopv());
+      registry.fill(HIST("QAhisto/V0/hqaarm_podobefore"), v0.alpha(), v0.qtarm());
       // track quality check
       if (v0posdau.tpcNClsFound() < cfgtpcclusters)
         continue;
@@ -213,6 +311,12 @@ struct FlowEfficiencyCasc {
         continue;
       if (std::fabs(v0.dcanegtopv()) < cfgv0_dcadautopv)
         continue;
+      // fill QA after cut
+      registry.fill(HIST("QAhisto/V0/hqaV0radiusafter"), v0.v0radius());
+      registry.fill(HIST("QAhisto/V0/hqaV0cosPAafter"), v0.v0cosPA());
+      registry.fill(HIST("QAhisto/V0/hqadcaV0dauafter"), v0.dcaV0daughters());
+      registry.fill(HIST("QAhisto/V0/hqadcapostoPVafter"), v0.dcapostopv());
+      registry.fill(HIST("QAhisto/V0/hqadcanegtoPVafter"), v0.dcanegtopv());
 
       int pdgCode{v0MC.pdgCode()};
       // K0short
@@ -220,6 +324,7 @@ struct FlowEfficiencyCasc {
         if (v0.qtarm() / std::fabs(v0.alpha()) > cfgv0_ArmPodocut && std::fabs(v0.y()) < 0.5 && std::fabs(v0.mK0Short() - o2::constants::physics::MassK0Short) < cfgv0_mk0swindow &&
             (!cfgcheckDauTPC || (std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(v0negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
           registry.fill(HIST("h3DRecK0s"), v0.pt(), rectracknum, v0.mK0Short());
+          registry.fill(HIST("QAhisto/V0/hqaarm_podoafter"), v0.alpha(), v0.qtarm());
         }
       }
       // Lambda and antiLambda

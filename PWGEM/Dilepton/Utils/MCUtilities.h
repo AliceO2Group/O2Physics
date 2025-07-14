@@ -15,9 +15,12 @@
 #ifndef PWGEM_DILEPTON_UTILS_MCUTILITIES_H_
 #define PWGEM_DILEPTON_UTILS_MCUTILITIES_H_
 
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/Logger.h"
+
+#include <algorithm>
 #include <string>
 #include <vector>
-#include <algorithm>
 
 //_______________________________________________________________________
 namespace o2::aod::pwgem::dilepton::utils::mcutil
@@ -481,14 +484,16 @@ int searchMothers(T& p, U& mcParticles, int pdg, bool equal)
     for (int i : allmothersids) {
       auto mother = mcParticles.iteratorAt(i);
       int mpdg = mother.pdgCode();
-      if (abs(mpdg) == pdg && mpdg * p.pdgCode() > 0) { // check for quark
-        if (quark_id > -1 || next_mother_id > -1) {     // we already found a possible candidate in the list of mothers, so now we have (at least) two
+      // if (abs(mpdg) == pdg && mpdg * p.pdgCode() > 0) { // check for quark
+      if (abs(mpdg) == pdg) {                       // check for quark to allow for beauty and charm + oscillation
+        if (quark_id > -1 || next_mother_id > -1) { // we already found a possible candidate in the list of mothers, so now we have (at least) two
           // LOG(warning) << "Flavour tracking is ambiguous. Stopping here.";
           return -1;
         }
         quark_id = i;
-      } else if ((static_cast<int>(abs(mpdg) / 100) == pdg || static_cast<int>(abs(mpdg) / 1000) == pdg) && mpdg * p.pdgCode() > 0) { // check for other mothers with flavour content
-        if (quark_id > -1 || next_mother_id > -1) {                                                                                   // we already found a possible candidate in the list of mothers, so now we have (at least) two
+        //} else if ((static_cast<int>(abs(mpdg) / 100) == pdg || static_cast<int>(abs(mpdg) / 1000) == pdg) && mpdg * p.pdgCode() > 0) { // check for other mothers with flavour content
+      } else if ((static_cast<int>(abs(mpdg) / 100) == pdg || static_cast<int>(abs(mpdg) / 1000) == pdg)) { // check for other mothers with flavour content to allow for beauty and charm
+        if (quark_id > -1 || next_mother_id > -1) {                                                         // we already found a possible candidate in the list of mothers, so now we have (at least) two
           // LOG(warning) << "Flavour tracking is ambiguous. Stopping here.";
           return -1;
         }

@@ -17,20 +17,36 @@
 ///         Daniel Samitz, <daniel.samitz@cern.ch>, Vienna
 ///         Elisa Meninno, <elisa.meninno@cern.ch>, Vienna
 
-#include <string>
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/TrackSelectorPID.h"
-
 #include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/HfMlResponse.h"
 #include "PWGHF/Core/HfMlResponseLcToK0sP.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Common/Core/TrackSelectorPID.h"
+#include "Common/DataModel/PIDResponseCombined.h"
+
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TString.h>
+
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -146,6 +162,10 @@ struct HfCandidateSelectorLcToK0sP {
 
     if (candPt < ptCandMin || candPt >= ptCandMax) {
       return false; // check that the candidate pT is within the analysis range
+    }
+
+    if (std::abs(hfHelper.invMassLcToK0sP(hfCandCascade) - o2::constants::physics::MassLambdaCPlus) > cuts->get(ptBin, "mLc")) {
+      return false; // mass of the Lambda c
     }
 
     if (std::abs(hfCandCascade.mK0Short() - o2::constants::physics::MassK0Short) > cuts->get(ptBin, "mK0s")) {

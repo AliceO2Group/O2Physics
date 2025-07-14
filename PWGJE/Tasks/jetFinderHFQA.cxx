@@ -13,31 +13,34 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include <TRandom3.h>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "RecoDecay.h"
 
 #include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-
-#include "PWGJE/DataModel/Jet.h"
-
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
+#include "PWGJE/Core/JetHFUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
 
-#include "EventFiltering/filterTables.h"
+#include "Framework/ASoA.h"
+#include "Framework/HistogramRegistry.h"
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+
+#include <TMath.h>
+#include <TMathBase.h>
+#include <TRandom3.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <string>
+#include <type_traits>
+#include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -490,7 +493,9 @@ struct JetFinderHFQATask {
 
   PresliceOptional<soa::Filtered<JetTracksDataSub>> perD0CandidateTracks = aod::bkgd0::candidateId;
   PresliceOptional<soa::Filtered<JetTracksDataSub>> perDplusCandidateTracks = aod::bkgdplus::candidateId;
+  PresliceOptional<soa::Filtered<JetTracksDataSub>> perDstarCandidateTracks = aod::bkgdstar::candidateId;
   PresliceOptional<soa::Filtered<JetTracksDataSub>> perLcCandidateTracks = aod::bkglc::candidateId;
+  PresliceOptional<soa::Filtered<JetTracksDataSub>> perB0CandidateTracks = aod::bkgb0::candidateId;
   PresliceOptional<soa::Filtered<JetTracksDataSub>> perBplusCandidateTracks = aod::bkgbplus::candidateId;
   PresliceOptional<soa::Filtered<JetTracksDataSub>> perDielectronCandidateTracks = aod::bkgdielectron::candidateId;
 
@@ -1518,7 +1523,7 @@ struct JetFinderHFQATask {
     }
     for (auto const& candidate : candidates) {
 
-      for (auto const& track : jetcandidateutilities::slicedPerCandidate(tracks, candidate, perD0CandidateTracks, perDplusCandidateTracks, perLcCandidateTracks, perBplusCandidateTracks, perDielectronCandidateTracks)) {
+      for (auto const& track : jetcandidateutilities::slicedPerCandidate(tracks, candidate, perD0CandidateTracks, perDplusCandidateTracks, perDstarCandidateTracks, perLcCandidateTracks, perB0CandidateTracks, perBplusCandidateTracks, perDielectronCandidateTracks)) {
         registry.fill(HIST("h3_centrality_track_pt_track_phi_eventwiseconstituentsubtracted"), collision.centrality(), track.pt(), track.phi());
         registry.fill(HIST("h3_centrality_track_pt_track_eta_eventwiseconstituentsubtracted"), collision.centrality(), track.pt(), track.eta());
         registry.fill(HIST("h3_track_pt_track_eta_track_phi_eventwiseconstituentsubtracted"), track.pt(), track.eta(), track.phi());

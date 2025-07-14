@@ -13,31 +13,42 @@
 /// \brief Task to produce a SV indices table joinable to the jet tables and 3/2-prong SV for hf jet tagging
 /// \author Hadi Hassan <hadi.hassan@cern.ch>
 
-#include <type_traits>
-#include <string>
-#include <utility>
-#include <vector>
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetTagging.h"
 
-#include <TF1.h>
-#include <TH1.h>
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/RecoDecay.h"
-
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "ReconstructionDataFormats/DCA.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/TrackParametrizationWithError.h>
+#include <ReconstructionDataFormats/Vertex.h>
 
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/JetTagging.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include <GPUROOTCartesianFwd.h>
 
-#include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include <array>
+#include <cstddef>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -72,6 +83,8 @@ struct SecondaryVertexReconstruction {
   Configurable<float> ptMinTrack{"ptMinTrack", -1., "min. track pT"};
   Configurable<float> etaMinTrack{"etaMinTrack", -99999., "min. pseudorapidity"};
   Configurable<float> etaMaxTrack{"etaMaxTrack", 4., "max. pseudorapidity"};
+  Configurable<float> maxIPxy{"maxIPxy", 10, "maximum track DCA in xy plane"};
+  Configurable<float> maxIPz{"maxIPz", 10, "maximum track DCA in z direction"};
   Configurable<bool> fillHistograms{"fillHistograms", true, "do validation plots"};
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -197,8 +210,6 @@ struct SecondaryVertexReconstruction {
       auto chi2PCA = df.getChi2AtPCACandidate();
       auto covMatrixPCA = df.calcPCACovMatrixFlat();
 
-      registry.fill(HIST("hDispersion"), dispersion, numProngs);
-
       // get track impact parameters
       // This modifies track momenta!
       auto primaryVertex = getPrimaryVertex(collision);
@@ -275,6 +286,7 @@ struct SecondaryVertexReconstruction {
         double decayLengthNormalised = RecoDecay::distance(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, std::array{secondaryVertex[0], secondaryVertex[1], secondaryVertex[2]}) / errorDecayLength;
         double decayLengthXYNormalised = RecoDecay::distanceXY(std::array{primaryVertex.getX(), primaryVertex.getY()}, std::array{secondaryVertex[0], secondaryVertex[1]}) / errorDecayLengthXY;
 
+        registry.fill(HIST("hDispersion"), dispersion, numProngs);
         registry.fill(HIST("hMassNProngs"), massSV, numProngs);
         registry.fill(HIST("hLxySNProngs"), decayLengthXYNormalised, numProngs);
         registry.fill(HIST("hLSNProngs"), decayLengthNormalised, numProngs);
@@ -288,7 +300,7 @@ struct SecondaryVertexReconstruction {
     for (size_t iprong = prongIndex; iprong < particles.size(); ++iprong) {
 
       const auto& testTrack = particles[iprong].template track_as<OriginalTracks>();
-      if (testTrack.pt() < ptMinTrack || testTrack.eta() < etaMinTrack || testTrack.eta() > etaMaxTrack) {
+      if (testTrack.pt() < ptMinTrack || testTrack.eta() < etaMinTrack || testTrack.eta() > etaMaxTrack || std::abs(testTrack.dcaXY()) > maxIPxy || std::abs(testTrack.dcaZ()) > maxIPz) {
         continue;
       }
 

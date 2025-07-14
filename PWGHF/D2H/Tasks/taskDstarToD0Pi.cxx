@@ -17,18 +17,31 @@
 
 /// \brief Dstar production analysis task (With and Without ML)
 
-#include <algorithm>
-#include <utility>
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -313,8 +326,8 @@ struct HfTaskDstarToD0Pi {
         continue;
       }
       auto collision = candDstarMcRec.template collision_as<CollisionsWCentMcLabel>();
-      auto centrality = collision.centFT0M();                                                               // 0-100%
-      if (TESTBIT(std::abs(candDstarMcRec.flagMcMatchRec()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // if MC matching is successful at Reconstruction Level
+      auto centrality = collision.centFT0M();                                                                     // 0-100%
+      if (std::abs(candDstarMcRec.flagMcMatchRec()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) { // if MC matching is successful at Reconstruction Level
         // LOGF(info, "MC Rec Dstar loop MC Matched");
         // get MC Mother particle
         auto prong0 = candDstarMcRec.template prong0_as<aod::TracksWMc>();
@@ -392,7 +405,7 @@ struct HfTaskDstarToD0Pi {
   {
     // MC Gen level
     for (auto const& mcParticle : rowsMcPartilces) {
-      if (TESTBIT(std::abs(mcParticle.flagMcMatchGen()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // MC Matching is successful at Generator Level
+      if (std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) { // MC Matching is successful at Generator Level
         auto ptGen = mcParticle.pt();
         auto yGen = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDStar);
         if (yCandDstarGenMax >= 0. && std::abs(yGen) > yCandDstarGenMax) {

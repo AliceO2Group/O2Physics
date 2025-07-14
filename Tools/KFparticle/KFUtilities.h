@@ -22,17 +22,26 @@
 #define HomogeneousField
 #endif
 
-#include <utility>
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/PID.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 
 #include <TDatabasePDG.h> // FIXME
 
-#include "KFParticle.h"
-#include "KFPTrack.h"
-#include "KFPVertex.h"
-#include "KFParticleBase.h"
-#include "KFVertex.h"
+#include <KFPTrack.h>
+#include <KFPVertex.h>
+#include <KFParticle.h>
+#include <KFParticleBase.h>
 
-#include "Common/Core/RecoDecay.h"
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <stdexcept>
+#include <utility>
 
 /// @brief Function to create a KFPVertex from the collision table in the AO2Ds.
 /// The Multiplicity table is required to set the number of real PV Contributors
@@ -156,8 +165,8 @@ KFParticle createKFParticleFromTrackParCov(const o2::track::TrackParametrization
 /// @return o2::track::TrackParametrizationWithError track
 o2::track::TrackParCov getTrackParCovFromKFP(const KFParticle& kfParticle, const o2::track::PID pid, const int sign)
 {
-  o2::gpu::gpustd::array<float, 3> xyz, pxpypz;
-  o2::gpu::gpustd::array<float, 21> cv;
+  std::array<float, 3> xyz, pxpypz;
+  std::array<float, 21> cv;
 
   // get parameters from kfParticle
   xyz[0] = kfParticle.GetX();

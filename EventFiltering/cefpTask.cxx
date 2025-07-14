@@ -217,6 +217,7 @@ struct centralEventFilterTask {
   Configurable<bool> cfgSkipUntriggeredEvents{"cfgSkipUntriggeredEvents", false, "Skip untriggered events"};
 
   FILTER_CONFIGURABLE(F1ProtonFilters);
+  FILTER_CONFIGURABLE(DoublePhiFilters);
   FILTER_CONFIGURABLE(NucleiFilters);
   FILTER_CONFIGURABLE(DiffractionFilters);
   FILTER_CONFIGURABLE(DqFilters);

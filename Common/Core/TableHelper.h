@@ -18,10 +18,14 @@
 #ifndef COMMON_CORE_TABLEHELPER_H_
 #define COMMON_CORE_TABLEHELPER_H_
 
-#include <string>
-
+#include "Framework/Configurable.h"
 #include "Framework/InitContext.h"
 #include "Framework/RunningWorkflowInfo.h"
+
+#include <string>
+
+namespace o2::common::core
+{
 
 /// Function to print the table required in the full workflow
 /// @param initContext initContext of the init function
@@ -75,14 +79,16 @@ bool getTaskOptionValue(o2::framework::InitContext& initContext, const std::stri
     }
     if (device.name == taskName) { // Found the mother task
       int optionCounter = 0;
-      for (auto const& option : device.options) {
+      for (const o2::framework::ConfigParamSpec& option : device.options) {
         if (verbose) {
-          LOG(info) << "  Option " << optionCounter++ << " " << option.name << " = '" << option.defaultValue.asString() << "'";
+          LOG(info) << "  Option " << optionCounter++ << " " << option.name << " of type " << static_cast<int>(option.type) << " = '" << option.defaultValue.asString() << "'";
         }
         if (option.name == optName) {
           value = option.defaultValue.get<ValueType>();
           if (verbose) {
-            LOG(info) << "   Found option '" << optName << "' with value '" << value << "'";
+            if constexpr (!std::is_same_v<ValueType, o2::framework::LabeledArray<float>>) {
+              LOG(info) << "   Found option '" << optName << "' with value '" << value << "'";
+            }
             found = true;
           } else {
             return true;
@@ -94,5 +100,23 @@ bool getTaskOptionValue(o2::framework::InitContext& initContext, const std::stri
   }
   return false;
 }
+
+/// Function to check for a specific configurable from another task in the current workflow and fetch its value. Useful for tasks that need to know the value of a configurable in another task.
+/// @param initContext initContext of the init function
+/// @param taskName name of the task to check for
+/// @param value Task configurable to inherit from (name and values are used)
+/// @param verbose if true, print debug messages
+template <typename ValueType>
+bool getTaskOptionValue(o2::framework::InitContext& initContext, const std::string& taskName, ValueType& configurable, const bool verbose = true)
+{
+  return getTaskOptionValue(initContext, taskName, configurable.name, configurable.value, verbose);
+}
+
+} // namespace o2::common::core
+
+using o2::common::core::enableFlagIfTableRequired;
+using o2::common::core::getTaskOptionValue;
+using o2::common::core::isTableRequiredInWorkflow;
+using o2::common::core::printTablesInWorkflow;
 
 #endif // COMMON_CORE_TABLEHELPER_H_

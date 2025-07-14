@@ -1,4 +1,4 @@
-// Copyright 2019-2023 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -412,7 +412,7 @@ struct PhotonConversionBuilder {
     // }
 
     // Calculate DCA with respect to the collision associated to the v0, not individual tracks
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
 
     auto pTrack = getTrackParCov(pos);
     if (moveTPCTracks && isTPConlyTrack(pos) && !mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, pos, pTrack)) {

@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file MuPa-Enums.h
+/// \brief ... TBI 20250425
+/// \author Ante.Bilandzic@cern.ch
+
 #ifndef PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_
 #define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_
 
@@ -34,6 +38,10 @@ enum eConfiguration {
   eUseSpecificCuts,
   eWhichSpecificCuts,
   eSkipTheseRuns,
+  eUseSetBinLabel, // Use or not setter SetBinLabel(...)
+  eUseClone,       // Use or not ->Clone()
+  eUseFormula,     // Use or not class TFormula
+  eUseDatabasePDG, // Use or not class TDatabasePDG
   eConfiguration_N
 };
 
@@ -48,8 +56,10 @@ enum eProcess {
   eProcessRecSim_Run1, // Run 1, both reconstructed and simulated
   eProcessSim_Run1,    // Run 1, only simulated
   eProcessTest,        // minimum subscription to the tables, for testing purposes
+  eProcessQA,          // maximum subscription to the tables, for QA purposes. Basically: eProcessRec + otherwise unnecessary tables
+  eProcessHepMChi,     // special subscription when I extract info from the table HepMCHeavyIons TBI 20250429 merge this case eventualyl with RecSim cases
   // Generic flags, calculated and set from individual flags above in DefaultConfiguration(), AFTER process switch was taken into account:
-  eGenericRec,    // generic "Rec" case, eTest is treated for the time being as "Rec"
+  eGenericRec,    // generic "Rec" case, eTest is treated for the time being as "Rec". eQA is also in this category
   eGenericRecSim, // generic "RecSim" case
   eGenericSim,    // generic "Sim" case
   eProcess_N
@@ -64,7 +74,8 @@ enum eRecSim { eRec = 0,
                eRec_Run1, // converted Run 1 data
                eSim_Run1,
                eRecAndSim_Run1,
-               eTest }; // remember that as of 20250315 I can use "cfWhichSpecificCuts": "Test" in JSON, to configure quickly all cuts for this case
+               eTest, // remember that as of 20250315 I can use "cfWhichSpecificCuts": "Test" in JSON, to configure quickly all cuts for this case
+               eQA };
 
 enum eBeforeAfter { eBefore = 0, // use this one for cuts
                     eAfter = 1 };
@@ -82,11 +93,13 @@ enum eDefaultColors { eColor = kBlack,
 enum eWeights { wPHI = 0,
                 wPT = 1,
                 wETA = 2,
+                wCHARGE = 3,
                 eWeights_N };
 
 enum eDiffWeights { // TBI 20250215 this is now obsolete, superseeded with more general implementation, see enums eDiffWeightCategory, eDiffPhiWeights, etc.
   wPHIPT = 0,
   wPHIETA,
+  wPHICHARGE,
   eDiffWeights_N
 };
 
@@ -104,19 +117,21 @@ enum eDiffPhiWeights {
   wPhiEtaAxis,
   wPhiChargeAxis,
   wPhiCentralityAxis,
-  wPhiVertex_zAxis,
+  wPhiVertexZAxis,
   eDiffPhiWeights_N
 };
 
 enum eDiffPtWeights {
   wPtPtAxis = 0,
-  // ... TBI 20250222 add all other axes on which differential pt weight could have non-trivial dependence, in the same spirit I did it above for phi weights in enum eDiffPhiWeights
+  wPtChargeAxis,
+  wPtCentralityAxis,
   eDiffPtWeights_N
 };
 
 enum eDiffEtaWeights {
   wEtaEtaAxis = 0,
-  // ... TBI 20250222 add all other axes on which differential eta weight could have non-trivial dependence, in the same spirit I did it above for phi weights in enum eDiffPhiWeights
+  wEtaChargeAxis,
+  wEtaCentralityAxis,
   eDiffEtaWeights_N
 };
 
@@ -129,14 +144,14 @@ enum eEventHistograms {
   eMultiplicity,          // see documentation for ebye.fMultiplicity
   eReferenceMultiplicity, // see documentation for ebye.fReferenceMultiplicity
   eCentrality,            // default centrality estimator
-  eVertex_x,
-  eVertex_y,
-  eVertex_z,
+  eVertexX,
+  eVertexY,
+  eVertexZ,
   eNContributors, // number of tracks used for the vertex
   eImpactParameter,
   eEventPlaneAngle,
   eOccupancy,             // from helper task o2-analysis-event-selection, see also IA's presentation in https://indico.cern.ch/event/1464946, slide 38. Use specific occupancy estimator via eOccupancyEstimator
-  eInteractionRate,       // from utility ctpRateFetcher
+  eInteractionRate,       // from utility ctpRateFetcher .
   eCurrentRunDuration,    // calculated with utility ctpRateFetcher
   eMultMCNParticlesEta08, // from helper task table o2::aod::MultMCExtras
   eEventHistograms_N
@@ -182,12 +197,33 @@ enum eEventCuts {
   eNoPileupTPC,                    // no pileup in TPC
   eNoPileupFromSPD,                // no pileup according to SPD vertexer
   eNoSPDOnVsOfPileup,              // no out-of-bunch pileup according to online-vs-offline SPD correlation
+  eRefMultVsNContrUp,              // formula for upper boundary cut in eReferenceMultiplicity_vs_NContributors (remember that I use naming convention "x_vs_y")
+  eRefMultVsNContrLow,             // formula for lower boundary cut in eReferenceMultiplicity_vs_NContributors (remember that I use naming convention "x_vs_y")
+  eCentralityCorrelationsCut,      // port of void SetCentralityCorrelationsCuts(...) from MuPa class. Example format: "CentFT0C_CentFT0M", so IFS is "_", until proven otherwise
+
+  // RCT flags, see https://indico.cern.ch/event/1545907/ + up-to-date code in Common/CCDB/RCTSelectionFlags.h
+  // Remark 1: For the time being, I support here differentially 6 flags used to define the combined "CBT" flag, see if (label == "CBT") in Common/CCDB/RCTSelectionFlags.h
+  // Remark 2: If I want to use directly the combined "CBT" flag, see how it can be done using RCTFlagsChecker in
+  //           https://github.com/AliceO2Group/O2Physics/blob/master/DPG/Tasks/AOTEvent/timeDependentQa.cxx#L115
+  //           But check before the memory status after RCTFlagsChecker is used.
+  eFT0Bad,
+  eITSBad,
+  eITSLimAccMCRepr,
+  eTPCBadTracking,
+  eTPCLimAccMCRepr,
+  eTPCBadPID,
   // ...
   eCentralityWeights, // used for centrality flattening. Remember that this event cut must be implemented very last,
                       // therefore I have it separately implemented for Run 3,2,1 in EventCuts() at the very end in each case.
                       // Use only for small non-uniformity in centrality distribution (e.g. of the biggest dip in distribution is up to 20% compared to uniform part of cent. distribution),
                       // otherwise this flattening is too costly in terms of statistics.
   eEventCuts_N
+};
+
+enum eEventCutsFormulas { // special treatment for all event cuts defined via mathematical formula, because for them I have to do one additional layer of booking using TFormula
+  eRefMultVsNContrUp_Formula = 0,
+  eRefMultVsNContrLow_Formula,
+  eEventCutsFormulas_N
 };
 
 enum eParticleHistograms {
@@ -234,6 +270,7 @@ enum eParticleHistograms2D { // All 2D histograms are first implemented in eQAPa
 enum eParticleCuts {
 
   // from o2::aod::TrackSelection (https://aliceo2group.github.io/analysis-framework/docs/datamodel/helperTaskTables.html#o2-analysis-trackselection)
+  // See also O2Physics/Common/DataModel/TrackSelectionTables.h
   etrackCutFlag = eParticleHistograms_N, // General selection, with centrally tuned particle cuts for tpcNClsFound, itsNCls, etc.
                                          // As of 20250113, this cut still has not effect, neither in Run 3 nor in converted Run 2. Use instead trackCutFlagFb1 and/or trackCutFlagFb2 below.
   etrackCutFlagFb1,                      // Global tracks in Run 3. Closest possible match to global track definition in Run 2, which are selected with eisGlobalTrack.
@@ -245,7 +282,13 @@ enum eParticleCuts {
                                          // Unlike etrackCutFlagFb1 (1 ITS point is required), it produces a 20% dip in azimuthal acceptance for 1.2 < phi < 1.6, in LHC24ar/559545
                                          // DCAxy and z are significantly further depleted, when compared to etrackCutFlagFb1
   eisQualityTrack,                       // Do not use in Run 3, but it can be used in Run 2 and Run 1
+                                         // In Run 2, it is already requested in isGlobalTrack, through definition kGlobalTrack = kQualityTracks | kPrimaryTracks | kInAcceptanceTracks
+                                         // See O2Physics/Common/DataModel/TrackSelectionTables.h for further details.
+                                         // Therefore, vary in Run 2 only is isGlobalTrack is NOT requested by default.
   eisPrimaryTrack,                       // Validated in Run 3. See also isPVContributor
+                                         // In Run 2, it is already requested in isGlobalTrack, through definition kGlobalTrack = kQualityTracks | kPrimaryTracks | kInAcceptanceTracks
+                                         // See O2Physics/Common/DataModel/TrackSelectionTables.h for further details.
+                                         // Therefore, vary in Run 2 only is isGlobalTrack is NOT requested by default.
   eisInAcceptanceTrack,                  // kInAcceptanceTracks = kPtRange | kEtaRange . Pt is open, and |eta| < 0.8.
                                          // But after I already cut directly on 0.2 < pt < 5.0 and |eta| < 0.8, it has no effect.
                                          // Can be used both in Run 3 and Run 2.
@@ -270,7 +313,8 @@ enum eParticleCuts {
   eParticleCuts_N
 };
 
-enum eAsFunctionOf {
+enum eAsFunctionOf { // this is a specific enum only for 1D dependence
+  // 1D:
   AFO_INTEGRATED = 0,
   AFO_MULTIPLICITY, // vs. default multiplicity, which is (at the moment) fSelectedTracks, i.e. number of tracks in Q-vector
   AFO_CENTRALITY,   // vs. default centrality estimator, see how it's calculated in DetermineCentrality(...)
@@ -280,8 +324,36 @@ enum eAsFunctionOf {
   AFO_INTERACTIONRATE,    // vs. "interation rate"
   AFO_CURRENTRUNDURATION, // vs. "current run duration", i.e. vs "seconds since start of run"
   AFO_VZ,                 // vs. "vertex z position"
+  AFO_CHARGE,             // vs. "particle charge"
+  // ...
   eAsFunctionOf_N
 }; // prefix is needed, to avoid conflict with enum eKinematics
+
+enum eAsFunctionOf2D { // this is a specific enum only for 2D dependence
+  // 2D:
+  AFO_CENTRALITY_PT = 0,
+  AFO_CENTRALITY_ETA,
+  AFO_CENTRALITY_CHARGE,
+  AFO_CENTRALITY_VZ,
+  AFO_PT_ETA,
+  AFO_PT_CHARGE,
+  AFO_ETA_CHARGE,
+  // ...
+  eAsFunctionOf2D_N
+};
+
+enum eAsFunctionOf3D { // this is a specific enum only for 3D dependence
+  // 3D:
+  AFO_CENTRALITY_PT_ETA = 0,
+  AFO_CENTRALITY_PT_CHARGE,
+  AFO_CENTRALITY_PT_VZ,
+  AFO_CENTRALITY_ETA_VZ,
+  AFO_CENTRALITY_ETA_CHARGE,
+  AFO_CENTRALITY_VZ_CHARGE,
+  AFO_PT_ETA_CHARGE,
+  // ...
+  eAsFunctionOf3D_N
+};
 
 enum eNUAPDF {
   ePhiNUAPDF = 0,
@@ -291,8 +363,21 @@ enum eNUAPDF {
 };
 
 enum eqvectorKine { // Here "kine" originally meant "kinematic", i.e. vs. pt or vs. eta, now it's general.
+  // 1D:
   PTq = 0,
   ETAq,
+  CHARGEq,
+  // ...
+
+  // 2D: // Yes, I linearize 2D case, in an analogy with "global bin" structure for multidimensional histograms.
+  PT_ETAq,
+  PT_CHARGEq,
+  ETA_CHARGEq,
+  // ...
+
+  // 3D: // Yes, I linearize 3D case, in an analogy with "global bin" structure for multidimensional histograms.
+  PT_ETA_CHARGEq,
+  // ...
   eqvectorKine_N
 };
 
@@ -325,24 +410,24 @@ enum eQAEventHistograms2D {
   eMultiplicity_vs_ReferenceMultiplicity = 0, // multiplicity is x, reference multiplicity is y. I can swap offline if needed: histOriginal->GetBinContent(x,y); histSwapped->Fill(y,x);
   eMultiplicity_vs_NContributors,
   eMultiplicity_vs_Centrality,
-  eMultiplicity_vs_Vertex_z,
+  eMultiplicity_vs_VertexZ,
   eMultiplicity_vs_Occupancy,
-  eMultiplicity_vs_InteractionRate,
+  eMultiplicity_vs_InteractionRate, // TBI 20250331 I ctd. below with more histos in category eMultiplicity_vs_... - re-organize at some point bookkeping here
   eReferenceMultiplicity_vs_NContributors,
   eReferenceMultiplicity_vs_Centrality,
-  eReferenceMultiplicity_vs_Vertex_z,
+  eReferenceMultiplicity_vs_VertexZ,
   eReferenceMultiplicity_vs_Occupancy,
   eReferenceMultiplicity_vs_InteractionRate,
   eNContributors_vs_Centrality,
-  eNContributors_vs_Vertex_z,
+  eNContributors_vs_VertexZ,
   eNContributors_vs_Occupancy,
   eNContributors_vs_InteractionRate,
-  eCentrality_vs_Vertex_z,
+  eCentrality_vs_VertexZ,
   eCentrality_vs_Occupancy,
   eCentrality_vs_ImpactParameter, // [sim] = reconstructed centrality vs. simulated impact parameter. [rec] = ... TBI 20241210
   eCentrality_vs_InteractionRate,
-  eVertex_z_vs_Occupancy,
-  eVertex_z_vs_InteractionRate,
+  eVertexZ_vs_Occupancy,
+  eVertexZ_vs_InteractionRate,
   // ...
   // Specific (everything is hardwired):
   eMultNTracksPV_vs_MultNTracksGlobal,  // Run 3 multiplicity
@@ -355,6 +440,12 @@ enum eQAEventHistograms2D {
   eCentRun2V0M_vs_CentRun2SPDTracklets, // Run 2 centrality (do not use in Run 1 converted, because there is no centrality information)
   eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange,
   eCurrentRunDuration_vs_InteractionRate, // ...
+  // ...
+  // Unsorted category: TBI 20250331 not sure if I will keep these ones permanently:
+  eMultiplicity_vs_FT0CAmplitudeOnFoundBC,
+  eCentFT0C_vs_FT0CAmplitudeOnFoundBC,
+  eCentrality_vs_CentralitySim, // correlation between centrality determined from reconstructed data, and centrality determined at generated level (from IP). I save it as [eSim], not as [eRec]
+  // ...
   eQAEventHistograms2D_N
 };
 
@@ -382,19 +473,33 @@ enum eQAParticleEventHistograms2D {
 };
 
 enum eQAParticleEventProEbyE {
-  eitsNClsEbyE = 1,   // Labels average <itsNCls> in a given event (therefore "EbyE" is appended). Yes, from one, because it runs over bin content and entries in TProfile for most of the time.
-  eitsNClsNegEtaEbyE, // <itsNCls> in a given event for eta < 0
-  eitsNClsPosEtaEbyE, // <itsNCls> in a given event for eta > 0
-  eEta0804EbyE,       // <eta> in a given event for -0.8 < eta < -0.4
-  eEta0400EbyE,       // <eta> in a given event for -0.4 < eta <  0.0
-  eEta0004EbyE,       // <eta> in a given event for  0.0 < eta <  0.4
-  eEta0408EbyE,       // <eta> in a given event for  0.4 < eta <  0.8
-  ePt0005EbyE,        // <pt> in a given event for  0.0 < pt < 0.5
-  ePt0510EbyE,        // <pt> in a given event for  0.5 < pt < 1.0
-  ePt1050EbyE,        // <pt> in a given event for  1.0 < pt < 5.0
-  eMeanPhi,           // <phi> in an event TBI 20250214 I need to unify naming convention for <> with previous enums in above in the series, but okay...
-  eMeanPt,            // <pt> in an event
-  eMeanEta,           // <eta> in an event
+  eitsNClsEbyE = 1,                   // Labels average <itsNCls> in a given event (therefore "EbyE" is appended). Yes, from one, because it runs over bin content and entries in TProfile for most of the time.
+  eitsNClsNegEtaEbyE,                 // <itsNCls> in a given event for eta < 0
+  eitsNClsPosEtaEbyE,                 // <itsNCls> in a given event for eta > 0
+  eEta0804EbyE,                       // <eta> in a given event for -0.8 < eta < -0.4
+  eEta0400EbyE,                       // <eta> in a given event for -0.4 < eta <  0.0
+  eEta0004EbyE,                       // <eta> in a given event for  0.0 < eta <  0.4
+  eEta0408EbyE,                       // <eta> in a given event for  0.4 < eta <  0.8
+  ePt0005EbyE,                        // <pt> in a given event for  0.0 < pt < 0.5
+  ePt0510EbyE,                        // <pt> in a given event for  0.5 < pt < 1.0
+  ePt1050EbyE,                        // <pt> in a given event for  1.0 < pt < 5.0
+  eMeanPhi,                           // <phi> in an event TBI 20250214 I need to unify naming convention for <> with previous enums in above in the series, but okay...
+  eMeanPt,                            // <pt> in an event
+  eMeanEta,                           // <eta> in an event
+  eMeanCharge,                        // <charge> in an event
+  eMeantpcNClsFindable,               // <tpcNClsFindable> in an event
+  eMeantpcNClsShared,                 // <tpcNClsShared> in an event
+  eMeanitsChi2NCl,                    // <itsChi2NCl> in an event
+  eMeantpcNClsFound,                  // <tpcNClsFound> in an event
+  eMeantpcNClsCrossedRows,            // <tpcNClsCrossedRows> in an event
+  eMeanitsNCls,                       // <itsNCls> in an event
+  eMeanitsNClsInnerBarrel,            // <itsNClsInnerBarrel> in an event
+  eMeantpcCrossedRowsOverFindableCls, // <tpcCrossedRowsOverFindableCls> in an event
+  eMeantpcFoundOverFindableCls,       // <tpcFoundOverFindableCls> in an event
+  eMeantpcFractionSharedCls,          // <tpcFractionSharedCls> in an event
+  eMeantpcChi2NCl,                    // <tpcChi2NCl> in an event
+  eMeandcaXY,                         // <dcaXY> in an event
+  eMeandcaZ,                          // <dcaZ> in an event
   eQAParticleEventProEbyE_N
 };
 
@@ -411,6 +516,20 @@ enum eQACorrelationsVsHistograms2D {
   eCorrelations_vs_MeanPhi,
   eCorrelations_vs_MeanPt,
   eCorrelations_vs_MeanEta,
+  eCorrelations_vs_MeanCharge,
+  eCorrelations_vs_MeantpcNClsFindable,
+  eCorrelations_vs_MeantpcNClsShared,
+  eCorrelations_vs_MeanitsChi2NCl,
+  eCorrelations_vs_MeantpcNClsFound,
+  eCorrelations_vs_MeantpcNClsCrossedRows,
+  eCorrelations_vs_MeanitsNCls,
+  eCorrelations_vs_MeanitsNClsInnerBarrel,
+  eCorrelations_vs_MeantpcCrossedRowsOverFindableCls,
+  eCorrelations_vs_MeantpcFoundOverFindableCls,
+  eCorrelations_vs_MeantpcFractionSharedCls,
+  eCorrelations_vs_MeantpcChi2NCl,
+  eCorrelations_vs_MeandcaXY,
+  eCorrelations_vs_MeandcaZ,
   // ...
   eQACorrelationsVsHistograms2D_N
 };

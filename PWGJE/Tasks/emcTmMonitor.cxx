@@ -9,33 +9,36 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <climits>
-#include <cstdlib>
-#include <map>
-#include <memory>
-#include <sstream>
-#include <string>
-#include <vector>
+#include "PWGJE/DataModel/EMCALClusters.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/HistogramRegistry.h"
-
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "EMCALBase/Geometry.h"
-#include "EMCALCalib/BadChannelMap.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
-#include "DataFormatsEMCAL/Cell.h"
-#include "DataFormatsEMCAL/Constants.h"
-#include "DataFormatsEMCAL/AnalysisCluster.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include <EMCALBase/GeometryBase.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "CommonDataFormat/InteractionRecord.h"
+#include <TMathBase.h>
+
+#include <RtypesCore.h>
+
+#include <climits>
+#include <cmath>
+#include <cstdlib>
+#include <sstream>
+#include <string>
+#include <vector>
 
 // \struct TrackMatchingMonitor
 /// \brief Simple monitoring task for EMCal clusters

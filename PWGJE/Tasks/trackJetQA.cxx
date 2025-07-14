@@ -15,27 +15,29 @@
 /// \since  2023-10-02
 ///  \brief Task producing jet tracking qa histograms
 ///
-#include <iostream>
+#include "PWGJE/DataModel/TrackJetQa.h"
 
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/ASoA.h"
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/TrackJetQa.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
+#include <math.h>
 
 using namespace o2;
-using namespace o2::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -272,7 +274,7 @@ struct TrackJetQa {
     histos.fill(HIST("TrackPar/signed1Pt"), track.pt(), track.sigma1Pt() * track.pt(), track.signed1Pt(), collision.centFT0A(), collision.centFT0C());
     histos.fill(HIST("TrackPar/snp"), track.pt(), track.sigma1Pt() * track.pt(), track.snp(), collision.centFT0A(), collision.centFT0C());
     histos.fill(HIST("TrackPar/tgl"), track.pt(), track.sigma1Pt() * track.pt(), track.tgl(), collision.centFT0A(), collision.centFT0C());
-    for (unsigned int i = 0; i < 64; i++) {
+    for (unsigned int i = 0; i < 32; i++) {
       if (track.flags() & (1 << i)) {
         histos.fill(HIST("TrackPar/flags"), track.pt(), track.sigma1Pt() * track.pt(), i);
       }

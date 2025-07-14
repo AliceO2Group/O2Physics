@@ -21,39 +21,64 @@
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 /// \author Ruiqi Yin <ruiqi.yin@cern.ch>, Fudan University
 
-#include <algorithm> // std::find
-#include <iterator>  // std::distance
-#include <string>    // std::string
-#include <vector>    // std::vector
+#include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "CCDB/BasicCCDBManager.h"             // for PV refit
-#include "DataFormatsParameters/GRPMagField.h" // for PV refit
-#include "DataFormatsParameters/GRPObject.h"   // for PV refit
-#include "DCAFitter/DCAFitterN.h"
-#include "DetectorsBase/Propagator.h"     // for PV refit
-#include "DetectorsVertexing/PVertexer.h" // for PV refit
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/V0.h"
-#include "ReconstructionDataFormats/Vertex.h" // for PV refit
-
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelectorPID.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Tools/ML/MlResponse.h"
 
-#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include <CCDB/BasicCCDBManager.h> // for PV refit
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <CommonUtils/ConfigurableParam.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>     // for PV refit
+#include <DetectorsVertexing/PVertexer.h> // for PV refit
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/Vertex.h> // for PV refit
 
-#include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/Utils/utilsAnalysis.h"
-#include "PWGHF/Utils/utilsBfieldCCDB.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
+#include <TH1.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
+#include <algorithm> // std::find
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <iterator> // std::distance
+#include <numeric>
+#include <string> // std::string
+#include <vector> // std::vector
 
 using namespace o2;
 using namespace o2::analysis;
@@ -107,7 +132,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
   void init(InitContext const&)
   {
-    std::array<int, 6> doProcess = {doprocessTrigAndCentFT0ASel, doprocessTrigAndCentFT0CSel, doprocessTrigAndCentFT0MSel, doprocessTrigAndCentFV0ASel, doprocessTrigSel, doprocessNoTrigSel};
+    std::array<int, 7> doProcess = {doprocessTrigAndCentFT0ASel, doprocessTrigAndCentFT0CSel, doprocessTrigAndCentFT0MSel, doprocessTrigAndCentFV0ASel, doprocessTrigSel, doprocessNoTrigSel, doprocessUpcSel};
     if (std::accumulate(doProcess.begin(), doProcess.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function for collision selection can be enabled at a time!");
     }
@@ -131,11 +156,19 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
   /// Collision selection
   /// \param collision  collision table with
-  template <bool applyTrigSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Col, typename BCs>
-  void selectCollision(const Col& collision, const BCs&)
+  template <bool applyTrigSel, bool applyUpcSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Col, typename BCsType>
+  void selectCollision(const Col& collision, const BCsType& bcs)
   {
     float centrality = -1.;
-    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<applyTrigSel, centEstimator, BCs>(collision, centrality, ccdb, registry);
+    uint32_t rejectionMask;
+
+    if constexpr (applyUpcSel) {
+      rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<applyTrigSel, centEstimator, BCsType>(
+        collision, centrality, ccdb, registry, bcs);
+    } else {
+      rejectionMask = hfEvSel.getHfCollisionRejectionMask<applyTrigSel, centEstimator, BCsType>(
+        collision, centrality, ccdb, registry);
+    }
 
     if (fillHistograms) {
       hfEvSel.fillHistograms(collision, rejectionMask, centrality);
@@ -154,46 +187,69 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   }
 
   /// Event selection with trigger and FT0A centrality selection
-  void processTrigAndCentFT0ASel(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As>::iterator const& collision, aod::BCsWithTimestamps const& bcs)
+  void processTrigAndCentFT0ASel(soa::Join<aod::Collisions,
+                                           aod::EvSels, aod::CentFT0As>::iterator const& collision,
+                                 aod::BcFullInfos const& bcs)
   {
-    selectCollision<true, CentralityEstimator::FT0A>(collision, bcs);
+    selectCollision<true, false, CentralityEstimator::FT0A>(collision, bcs);
   }
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigAndCentFT0ASel, "Use trigger and centrality selection with FT0A", false);
 
   /// Event selection with trigger and FT0C centrality selection
-  void processTrigAndCentFT0CSel(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator const& collision, aod::BCsWithTimestamps const& bcs)
+  void processTrigAndCentFT0CSel(soa::Join<aod::Collisions,
+                                           aod::EvSels, aod::CentFT0Cs>::iterator const& collision,
+                                 aod::BcFullInfos const& bcs)
   {
-    selectCollision<true, CentralityEstimator::FT0C>(collision, bcs);
+    selectCollision<true, false, CentralityEstimator::FT0C>(collision, bcs);
   }
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigAndCentFT0CSel, "Use trigger and centrality selection with FT0C", false);
 
   /// Event selection with trigger and FT0M centrality selection
-  void processTrigAndCentFT0MSel(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision, aod::BCsWithTimestamps const& bcs)
+  void processTrigAndCentFT0MSel(soa::Join<aod::Collisions,
+                                           aod::EvSels, aod::CentFT0Ms>::iterator const& collision,
+                                 aod::BcFullInfos const& bcs)
   {
-    selectCollision<true, CentralityEstimator::FT0M>(collision, bcs);
+    selectCollision<true, false, CentralityEstimator::FT0M>(collision, bcs);
   }
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigAndCentFT0MSel, "Use trigger and centrality selection with FT0M", false);
 
   /// Event selection with trigger and FV0A centrality selection
-  void processTrigAndCentFV0ASel(soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As>::iterator const& collision, aod::BCsWithTimestamps const& bcs)
+  void processTrigAndCentFV0ASel(soa::Join<aod::Collisions,
+                                           aod::EvSels, aod::CentFV0As>::iterator const& collision,
+                                 aod::BcFullInfos const& bcs)
   {
-    selectCollision<true, CentralityEstimator::FV0A>(collision, bcs);
+    selectCollision<true, false, CentralityEstimator::FV0A>(collision, bcs);
   }
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigAndCentFV0ASel, "Use trigger and centrality selection with FV0A", false);
 
   /// Event selection with trigger selection
-  void processTrigSel(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::BCsWithTimestamps const& bcs)
+  void processTrigSel(soa::Join<aod::Collisions,
+                                aod::EvSels>::iterator const& collision,
+                      aod::BcFullInfos const& bcs)
   {
-    selectCollision<true, CentralityEstimator::None>(collision, bcs);
+    selectCollision<true, false, CentralityEstimator::None>(collision, bcs);
   }
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigSel, "Use trigger selection", false);
 
   /// Event selection without trigger selection
-  void processNoTrigSel(aod::Collision const& collision, aod::BCsWithTimestamps const& bcs)
+  void processNoTrigSel(aod::Collision const& collision,
+                        aod::BcFullInfos const& bcs)
   {
-    selectCollision<false, CentralityEstimator::None>(collision, bcs);
+    selectCollision<false, false, CentralityEstimator::None>(collision, bcs);
   }
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processNoTrigSel, "Do not use trigger selection", true);
+
+  /// Event selection with UPC
+  void processUpcSel(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+                     aod::BcFullInfos const& bcs,
+                     aod::FT0s const& /*ft0s*/,
+                     aod::FV0As const& /*fv0as*/,
+                     aod::FDDs const& /*fdds*/,
+                     aod::Zdcs const& /*zdcs*/)
+  {
+    selectCollision<true, true, CentralityEstimator::None>(collision, bcs);
+  }
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processUpcSel, "Use UPC event selection", false);
 };
 
 /// Track selection
@@ -813,7 +869,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       /// Track propagation to the PV refit considering also the material budget
       /// Mandatory for tracks updated at most only to the innermost ITS layer
       auto trackPar = getTrackPar(trackToRemove);
-      o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
+      std::array<float, 2> dcaInfo{-999., -999.};
       if (o2::base::Propagator::Instance()->propagateToDCABxByBz({primVtxBaseRecalc.getX(), primVtxBaseRecalc.getY(), primVtxBaseRecalc.getZ()}, trackPar, 2.f, noMatCorr, &dcaInfo)) {
         pvCoord[0] = primVtxBaseRecalc.getX();
         pvCoord[1] = primVtxBaseRecalc.getY();
@@ -916,7 +972,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
         initCCDB(bc, runNumber, ccdb, config.isRun2 ? config.ccdbPathGrp : config.ccdbPathGrpMag, lut, config.isRun2);
         auto trackPar = getTrackPar(track);
-        o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
+        std::array<float, 2> dcaInfo{-999., -999.};
         o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, noMatCorr, &dcaInfo);
         trackPt = trackPar.getPt();
         trackEta = trackPar.getEta();
@@ -1245,7 +1301,7 @@ struct HfTrackIndexSkimCreator {
   using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
 
   // filter collisions
-  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == static_cast<uint16_t>(0));
+  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == static_cast<uint32_t>(0));
   // filter track indices
   Filter filterSelectTrackIds = ((aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::Cand2Prong))) != 0u) || ((aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::Cand3Prong))) != 0u) || ((aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandDstar))) != 0u);
 
@@ -2121,7 +2177,7 @@ struct HfTrackIndexSkimCreator {
 
         auto trackParVarPos1 = getTrackParCov(trackPos1);
         std::array<float, 3> pVecTrackPos1{trackPos1.pVector()};
-        o2::gpu::gpustd::array<float, 2> dcaInfoPos1{trackPos1.dcaXY(), trackPos1.dcaZ()};
+        std::array<float, 2> dcaInfoPos1{trackPos1.dcaXY(), trackPos1.dcaZ()};
         if (thisCollId != trackPos1.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarPos1, 2.f, noMatCorr, &dcaInfoPos1);
           getPxPyPz(trackParVarPos1, pVecTrackPos1);
@@ -2139,7 +2195,7 @@ struct HfTrackIndexSkimCreator {
 
           auto trackParVarNeg1 = getTrackParCov(trackNeg1);
           std::array<float, 3> pVecTrackNeg1{trackNeg1.pVector()};
-          o2::gpu::gpustd::array<float, 2> dcaInfoNeg1{trackNeg1.dcaXY(), trackNeg1.dcaZ()};
+          std::array<float, 2> dcaInfoNeg1{trackNeg1.dcaXY(), trackNeg1.dcaZ()};
           if (thisCollId != trackNeg1.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarNeg1, 2.f, noMatCorr, &dcaInfoNeg1);
             getPxPyPz(trackParVarNeg1, pVecTrackNeg1);
@@ -2373,7 +2429,7 @@ struct HfTrackIndexSkimCreator {
 
               auto trackPos2 = trackIndexPos2.template track_as<TTracks>();
               auto trackParVarPos2 = getTrackParCov(trackPos2);
-              o2::gpu::gpustd::array<float, 2> dcaInfoPos2{trackPos2.dcaXY(), trackPos2.dcaZ()};
+              std::array<float, 2> dcaInfoPos2{trackPos2.dcaXY(), trackPos2.dcaZ()};
 
               // preselection of 3-prong candidates
               if (isSelected3ProngCand) {
@@ -2625,7 +2681,7 @@ struct HfTrackIndexSkimCreator {
 
               auto trackNeg2 = trackIndexNeg2.template track_as<TTracks>();
               auto trackParVarNeg2 = getTrackParCov(trackNeg2);
-              o2::gpu::gpustd::array<float, 2> dcaInfoNeg2{trackNeg2.dcaXY(), trackNeg2.dcaZ()};
+              std::array<float, 2> dcaInfoNeg2{trackNeg2.dcaXY(), trackNeg2.dcaZ()};
 
               // preselection of 3-prong candidates
               if (isSelected3ProngCand) {
@@ -2869,7 +2925,7 @@ struct HfTrackIndexSkimCreator {
                 std::array<float, 3> pVecTrackPos2{trackPos2.pVector()};
                 if (thisCollId != trackPos2.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
                   auto trackParVarPos2 = getTrackParCov(trackPos2);
-                  o2::gpu::gpustd::array<float, 2> dcaInfoPos2{trackPos2.dcaXY(), trackPos2.dcaZ()};
+                  std::array<float, 2> dcaInfoPos2{trackPos2.dcaXY(), trackPos2.dcaZ()};
                   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarPos2, 2.f, noMatCorr, &dcaInfoPos2);
                   getPxPyPz(trackParVarPos2, pVecTrackPos2);
                 }
@@ -2906,7 +2962,7 @@ struct HfTrackIndexSkimCreator {
                 std::array<float, 3> pVecTrackNeg2{trackNeg2.pVector()};
                 if (thisCollId != trackNeg2.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
                   auto trackParVarNeg2 = getTrackParCov(trackNeg2);
-                  o2::gpu::gpustd::array<float, 2> dcaInfoNeg2{trackNeg2.dcaXY(), trackNeg2.dcaZ()};
+                  std::array<float, 2> dcaInfoNeg2{trackNeg2.dcaXY(), trackNeg2.dcaZ()};
                   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarNeg2, 2.f, noMatCorr, &dcaInfoNeg2);
                   getPxPyPz(trackParVarNeg2, pVecTrackNeg2);
                 }
@@ -3057,7 +3113,7 @@ struct HfTrackIndexSkimCreatorCascades {
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
   using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
 
-  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == static_cast<uint16_t>(0));
+  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == static_cast<uint32_t>(0));
   Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandV0bachelor))) != 0u && (config.applyProtonPid == false || (aod::hf_sel_track::isIdentifiedPid & static_cast<uint32_t>(BIT(ChannelsProtonPid::LcToPK0S))) != 0u);
 
   Preslice<FilteredTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId;
@@ -3135,7 +3191,7 @@ struct HfTrackIndexSkimCreatorCascades {
         std::array<float, 3> pVecBach{bach.pVector()};
         auto trackBach = getTrackParCov(bach);
         if (thisCollId != bach.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
-          o2::gpu::gpustd::array<float, 2> dcaInfoBach{bach.dcaXY(), bach.dcaZ()};
+          std::array<float, 2> dcaInfoBach{bach.dcaXY(), bach.dcaZ()};
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackBach, 2.f, noMatCorr, &dcaInfoBach);
           getPxPyPz(trackBach, pVecBach);
         }
@@ -3336,7 +3392,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
   using CascFull = soa::Join<aod::CascDatas, aod::CascCovs>;
   using V0Full = soa::Join<aod::V0Datas, aod::V0Covs>;
 
-  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == static_cast<uint16_t>(0));
+  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == static_cast<uint32_t>(0));
   Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandCascadeBachelor))) != 0u;
 
   Preslice<aod::TracksWCovDca> tracksPerCollision = aod::track::collisionId;                     // needed for PV refit

@@ -20,27 +20,25 @@
 #ifndef PWGJE_CORE_JETMATCHINGUTILITIES_H_
 #define PWGJE_CORE_JETMATCHINGUTILITIES_H_
 
-#include <array>
-#include <vector>
-#include <string>
-#include <optional>
-#include <tuple>
-#include <algorithm>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-
-#include "Framework/Logger.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
-#include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/Core/JetCandidateUtilities.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+
+#include <Framework/Logger.h>
+
+#include <TKDTree.h>
+
+#include <RtypesCore.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <numeric>
+#include <ostream>
+#include <stdexcept>
+#include <tuple>
+#include <vector>
+
+#include <math.h>
 
 namespace jetmatchingutilities
 {
@@ -742,5 +740,5 @@ void doPairMatching(T const& pairsBase, U const& pairsTag, std::vector<std::vect
   }
 }
 
-};     // namespace jetmatchingutilities
+}; // namespace jetmatchingutilities
 #endif // PWGJE_CORE_JETMATCHINGUTILITIES_H_
