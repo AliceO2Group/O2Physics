@@ -21,6 +21,8 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/vertexing/RecoDecay.h"
+
 using namespace o2;
 using namespace o2::constants::math;
 using namespace o2::framework;
@@ -117,7 +119,7 @@ struct HfTaskSingleElectron {
   }
 
   template <typename TrackType>
-  bool TrackSel(TrackType track)
+  bool trackSel(TrackType track)
   {
     if (track.pt() > ptTrackMax || track.pt() < ptTrackMin)
       return false;
@@ -157,19 +159,22 @@ struct HfTaskSingleElectron {
   }
 
   template <typename TrackType>
-  bool AssoTrackSel(TrackType track)
+  bool assoTrackSel(TrackType track)
   {
+	float ptAssoTrackMin = 4.0f;
+	float ptAssoTrackMax = 6.0f;
+	int tpcNClsAssoTrackMin = 60;
 
     if (std::abs(track.eta()) > etaTrackMax)
       return false;
-    if (track.pt() < 4.0f || track.pt() > 6.0f)
+    if (track.pt() < ptAssoTrackMin || track.pt() > ptAssoTrackMax)
       return false;
 
     int tpcNClsFound = track.tpcNClsCrossedRows();
     int tpcNClsFindable = track.tpcNClsFindable();
     float tpcFoundOverFindable = (tpcNClsFindable ? static_cast<float>(tpcNClsFound) / static_cast<float>(tpcNClsFindable) : 0);
 
-    if (tpcNClsFound < 60)
+    if (tpcNClsFound < tpcNClsAssoTrackMin)
       return false;
     if (track.tpcChi2NCl() > tpcChi2perNClMax)
       return false;
@@ -189,14 +194,9 @@ struct HfTaskSingleElectron {
     return true;
   }
 
-  double ComputeDeltaPhi(double phi1, double phi2)
+  double computeDeltaPhi(double phi1, double phi2)
   {
-    double deltaPhi = phi1 - phi2;
-    if (deltaPhi < -PIHalf)
-      deltaPhi += TwoPI;
-    if (deltaPhi > (PI + PIHalf))
-      deltaPhi -= TwoPI;
-    return deltaPhi;
+    return RecoDecay::constrainAngle(phi1 - phi2);
   }
 
   void process(soa::Filtered<MyCollisions>::iterator const& collision, TracksEl const& tracks)
@@ -215,7 +215,7 @@ struct HfTaskSingleElectron {
     histos.fill(HIST("hEventCounter"), 3.5);
     histos.fill(HIST("nEvents"), 0.5);
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
 
       if (!TrackSel(track))
         continue;
