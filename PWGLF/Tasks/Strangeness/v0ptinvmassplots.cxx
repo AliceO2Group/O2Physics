@@ -134,7 +134,7 @@ struct V0PtInvMassPlots {
   Configurable<double> kaonshSettingcosPA{"kaonshSettingcosPA", 0.98, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0
   Configurable<float> kaonshSettingradius{"kaonshSettingradius", 0.50, "v0radius"};
   Configurable<float> kaonshmaxct{"kaonshmaxct", 20.00, "K0sh maximum ct value"};
-  Configurable<float> K0shparamArmenterosCut{"K0shparamArmenterosCut", 0.2, "K0sh Armenteros Cut on parameter"};
+  Configurable<float> k0shparamArmenterosCut{"k0shparamArmenterosCut", 0.2, "K0sh Armenteros Cut on parameter"};
 
   // Configurable Lambda Cuts (best cuts determined by v0topologicalcuts task)
   Configurable<float> lambdaSettingdcav0dau{"lambdaSettingdcav0dau", 0.3, "DCA V0 Daughters"};
