@@ -1164,7 +1164,7 @@ struct StrangenessInJets {
       Preslice<aod::V0Datas> perCollisionV0 = o2::aod::v0data::collisionId;
       Preslice<aod::CascDataExt> perCollisionCasc = o2::aod::cascade::collisionId;
       Preslice<DaughterTracksMC> perCollisionTrk = o2::aod::track::collisionId;
-        
+
       // Loop over reconstructed tracks
       std::vector<fastjet::PseudoJet> fjParticles;
       for (auto const& track : perCollisionTrk) {
