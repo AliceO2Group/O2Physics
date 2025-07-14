@@ -919,6 +919,82 @@ DECLARE_SOA_TABLE_STAGED(HfDstarMcs, "HFDSTMC", //! Table with MC candidate info
                          hf_cand_mc::FlagMcMatchRec,
                          hf_cand_mc::OriginMcRec,
                          o2::soa::Marker<MarkerDstar>);
+
+// ----------------
+// Xic+
+// ----------------
+
+DECLARE_SOA_TABLE_STAGED(HfXicToXiPiPiPars, "HFXICTOXIPIPIPAR", //! Table with candidate properties used for selection
+                         hf_cand::Chi2PCA,
+                         hf_cand_par::Cpa,
+                         hf_cand_par::CpaXY,
+                         hf_cand_par::DecayLength,
+                         hf_cand_par::DecayLengthXY,
+                         hf_cand_par::DecayLengthNormalised,
+                         hf_cand_par::DecayLengthXYNormalised,
+                         hf_cand_par::PtProng0,
+                         hf_cand_par::PtProng1,
+                         hf_cand::ImpactParameter0,
+                         hf_cand::ImpactParameter1,
+                         hf_cand_par::ImpactParameterNormalised0,
+                         hf_cand_par::ImpactParameterNormalised1,
+                         hf_cand_par::NSigTpcPiExpPi,
+                         hf_cand_par::NSigTofPiExpPi,
+                         hf_cand_par::NSigTpcTofPiExpPi,
+                         hf_cand_par::NSigTpcKaExpPi,
+                         hf_cand_par::NSigTofKaExpPi,
+                         hf_cand_par::NSigTpcTofKaExpPi,
+                         hf_cand_par::MaxNormalisedDeltaIP,
+                         hf_cand_par::ImpactParameterProduct,
+                         o2::soa::Marker<MarkerXicToXiPiPi>);
+
+DECLARE_SOA_TABLE_STAGED(HfXicToXiPiPiParXis, "HFXICTOXIPIPIPARXI", //! Table with Xi candidate properties used for selection of Xic+
+                         hf_cand_par_charm::CpaCharm,
+                         hf_cand_par_charm::DecayLengthCharm,
+                         hf_cand_par_charm::ImpactParameter0Charm,
+                         hf_cand_par_charm::ImpactParameter1Charm,
+                         hf_cand_par_charm::ImpactParameterProductCharm,
+                         hf_cand_par_charm::NSigTpcPiExpPiCharm,
+                         hf_cand_par_charm::NSigTofPiExpPiCharm,
+                         hf_cand_par_charm::NSigTpcTofPiExpPiCharm,
+                         hf_cand_par_charm::NSigTpcKaExpPiCharm,
+                         hf_cand_par_charm::NSigTofKaExpPiCharm,
+                         hf_cand_par_charm::NSigTpcTofKaExpPiCharm,
+                         hf_cand_par_charm::NSigTpcPiExpKaCharm,
+                         hf_cand_par_charm::NSigTofPiExpKaCharm,
+                         hf_cand_par_charm::NSigTpcTofPiExpKaCharm,
+                         hf_cand_par_charm::NSigTpcKaExpKaCharm,
+                         hf_cand_par_charm::NSigTofKaExpKaCharm,
+                         hf_cand_par_charm::NSigTpcTofKaExpKaCharm);
+
+DECLARE_SOA_TABLE_STAGED(HfXicToXiPiPiParEs, "HFXICTOXIPIPIPARE", //! Table with additional candidate properties used for selection
+                         hf_cand::XSecondaryVertex,
+                         hf_cand::YSecondaryVertex,
+                         hf_cand::ZSecondaryVertex,
+                         hf_cand::ErrorDecayLength,
+                         hf_cand::ErrorDecayLengthXY,
+                         hf_cand_par::RSecondaryVertex,
+                         hf_cand_par::PProng1,
+                         hf_cand::PxProng1,
+                         hf_cand::PyProng1,
+                         hf_cand::PzProng1,
+                         hf_cand::ErrorImpactParameter1,
+                         hf_cand_par::CosThetaStar,
+                         hf_cand_par::Ct,
+                         o2::soa::Marker<MarkerXicToXiPiPi>);
+
+DECLARE_SOA_TABLE_STAGED(HfXicToXiPiPiMls, "HFXICTOXIPIPIML", //! Table with candidate selection ML scores
+                         hf_cand_mc::MlScoreSig,
+                         o2::soa::Marker<MarkerXicToXiPiPi>);
+
+DECLARE_SOA_TABLE_STAGED(HfXicToXiPiPiMlXis, "HFXICTOXIPIPIMLXI", //! Table with Xi candidate selection ML scores
+                         hf_cand_mc_charm::MlScoresCharm,
+                         o2::soa::Marker<MarkerXicToXiPiPi>);
+
+DECLARE_SOA_TABLE_STAGED(HfXicToXiPiPiMcs, "HFXICTOXIPIPIMC", //! Table with MC candidate info
+                         hf_cand_mc::FlagMcMatchRec,
+                         hf_cand_mc::OriginMcRec,
+                         o2::soa::Marker<MarkerXicToXiPiPi>);
 } // namespace o2::aod
 
 #endif // PWGHF_DATAMODEL_DERIVEDTABLES_H_
