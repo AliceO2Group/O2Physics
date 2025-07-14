@@ -13,6 +13,7 @@
 // Run 3 Pb-Pb centrality selections in 2023 data. It is compatible with
 // derived data.
 
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
@@ -27,6 +28,9 @@
 
 #include "TH1F.h"
 #include "TH2F.h"
+#include "TProfile.h"
+
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -37,6 +41,7 @@ struct centralityStudy {
   // Raw multiplicities
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  ctpRateFetcher mRateFetcher;
 
   // Configurables
   Configurable<bool> do2DPlots{"do2DPlots", true, "0 - no, 1 - yes"};
@@ -75,6 +80,11 @@ struct centralityStudy {
   Configurable<float> scaleSignalFT0C{"scaleSignalFT0C", 1.00f, "scale FT0C signal for convenience"};
   Configurable<float> scaleSignalFT0M{"scaleSignalFT0M", 1.00f, "scale FT0M signal for convenience"};
   Configurable<float> scaleSignalFV0A{"scaleSignalFV0A", 1.00f, "scale FV0A signal for convenience"};
+
+  Configurable<std::string> ccdbURL{"ccdbURL", "http://alice-ccdb.cern.ch", "ccdb url"};
+  Configurable<std::string> pathGRPECSObject{"pathGRPECSObject", "GLO/Config/GRPECS", "Path to GRPECS object"};
+  Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Source of the interaction rate: (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
+  Configurable<bool> irCrashOnNull{"irCrashOnNull", false, "Flag to avoid CTP RateFetcher crash."};
 
   // _______________________________________
   // upc rejection criteria
@@ -120,6 +130,7 @@ struct centralityStudy {
   ConfigurableAxis axisPVChi2{"axisPVChi2", {300, 0, 30}, "FT0C percentile"};
   ConfigurableAxis axisDeltaTime{"axisDeltaTime", {300, 0, 300}, "#Delta time"};
   ConfigurableAxis axisDeltaTimestamp{"axisDeltaTimestamp", {1440, 0, 24}, "#Delta timestamp - sor (hours)"};
+  ConfigurableAxis axisInteractionRate{"axisInteractionRate", {500, 0, 100}, "Binning for the interaction rate (kHz)"};
 
   // For profile Z
   ConfigurableAxis axisPVz{"axisPVz", {400, -20.0f, +20.0f}, "PVz (cm)"};
@@ -235,18 +246,21 @@ struct centralityStudy {
     }
 
     if (doTimeStudies) {
-      ccdb->setURL("http://alice-ccdb.cern.ch");
+      ccdb->setURL(ccdbURL);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
       ccdb->setFatalWhenNull(false);
 
       histos.add("hFT0AvsTime", "hFT0AvsTime", kTH2F, {axisDeltaTimestamp, axisMultFT0A});
-      histos.add("hFT0CvsTime", "hFT0CvsTime", kTH2F, {{axisDeltaTimestamp, axisMultFT0C}});
-      histos.add("hFT0MvsTime", "hFT0MvsTime", kTH2F, {{axisDeltaTimestamp, axisMultFT0M}});
-      histos.add("hFV0AvsTime", "hFV0AvsTime", kTH2F, {{axisDeltaTimestamp, axisMultFV0A}});
-      histos.add("hMFTTracksvsTime", "hMFTTracksvsTime", kTH2F, {{axisDeltaTimestamp, axisMultMFTTracks}});
-      histos.add("hNGlobalVsTime", "hNGlobalVsTime", kTH2F, {{axisDeltaTimestamp, axisMultGlobalTracks}});
-      histos.add("hNTPVContributorsvsTime", "hNTPVContributorsvsTime", kTH2F, {{axisDeltaTimestamp, axisMultPVContributors}});
+      histos.add("hFT0CvsTime", "hFT0CvsTime", kTH2F, {axisDeltaTimestamp, axisMultFT0C});
+      histos.add("hFT0MvsTime", "hFT0MvsTime", kTH2F, {axisDeltaTimestamp, axisMultFT0M});
+      histos.add("hFV0AvsTime", "hFV0AvsTime", kTH2F, {axisDeltaTimestamp, axisMultFV0A});
+      histos.add("hMFTTracksvsTime", "hMFTTracksvsTime", kTH2F, {axisDeltaTimestamp, axisMultMFTTracks});
+      histos.add("hNGlobalVsTime", "hNGlobalVsTime", kTH2F, {axisDeltaTimestamp, axisMultGlobalTracks});
+      histos.add("hNTPVContributorsvsTime", "hNTPVContributorsvsTime", kTH2F, {axisDeltaTimestamp, axisMultPVContributors});
+      histos.add("hIRProfileVsTime", "hIRProfileVsTime", kTProfile, {axisDeltaTimestamp});
+      histos.add("hPVzProfileCoVsTime", "hPVzProfileCoVsTime", kTProfile, {axisDeltaTimestamp});
+      histos.add("hPVzProfileBcVsTime", "hPVzProfileBcVsTime", kTProfile, {axisDeltaTimestamp});
     }
   }
 
@@ -254,7 +268,6 @@ struct centralityStudy {
   void genericProcessCollision(TCollision collision)
   // process this collisions
   {
-
     histos.fill(HIST("hCollisionSelection"), 0); // all collisions
     if (applySel8 && !collision.multSel8())
       return;
@@ -428,9 +441,12 @@ struct centralityStudy {
     if (doTimeStudies && collision.has_multBC()) {
       auto multbc = collision.template multBC_as<aod::MultBCs>();
       uint64_t bcTimestamp = multbc.timestamp();
-      o2::parameters::GRPECSObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", bcTimestamp);
+      o2::parameters::GRPECSObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPECSObject>(pathGRPECSObject, bcTimestamp);
       uint64_t startOfRunTimestamp = grpo->getTimeStart();
+
       float hoursAfterStartOfRun = static_cast<float>(bcTimestamp - startOfRunTimestamp) / 3600000.0;
+      float interactionRate = mRateFetcher.fetch(ccdb.service, bcTimestamp, collision.multRunNumber(), irSource.value, irCrashOnNull) / 1000.; // kHz
+
       histos.fill(HIST("hFT0AvsTime"), hoursAfterStartOfRun, collision.multFT0A());
       histos.fill(HIST("hFT0CvsTime"), hoursAfterStartOfRun, collision.multFT0C());
       histos.fill(HIST("hFT0MvsTime"), hoursAfterStartOfRun, collision.multFT0M());
@@ -438,6 +454,9 @@ struct centralityStudy {
       histos.fill(HIST("hMFTTracksvsTime"), hoursAfterStartOfRun, collision.mftNtracks());
       histos.fill(HIST("hNGlobalVsTime"), hoursAfterStartOfRun, collision.multNTracksGlobal());
       histos.fill(HIST("hNTPVContributorsvsTime"), hoursAfterStartOfRun, collision.multPVTotalContributors());
+      histos.fill(HIST("hPVzProfileCoVsTime"), hoursAfterStartOfRun, collision.multPVz());
+      histos.fill(HIST("hPVzProfileBcVsTime"), hoursAfterStartOfRun, multbc.multFT0PosZ());
+      histos.fill(HIST("hIRProfileVsTime"), hoursAfterStartOfRun, interactionRate);
     }
   }
 

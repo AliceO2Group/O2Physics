@@ -175,15 +175,16 @@ struct ThreeParticleCorrelations {
     rQARegistry.add("hTrackPt", "hTrackPt", {HistType::kTH1D, {{100, 0, 4}}});
     rQARegistry.add("hTrackEta", "hTrackEta", {HistType::kTH1D, {{100, -1, 1}}});
     rQARegistry.add("hTrackPhi", "hTrackPhi", {HistType::kTH1D, {{100, (-1. / 2) * constants::math::PI, (5. / 2) * constants::math::PI}}});
+    rQARegistry.add("hTrackNSharedClusters", "hTrackNSharedClusters", {HistType::kTH1D, {{200, 0, 200}}});
 
-    rQARegistry.add("hPtPion", "hPtPion", {HistType::kTH2D, {{trackPtAxis}, {centralityAxis}}});
-    rQARegistry.add("hPtKaon", "hPtKaon", {HistType::kTH2D, {{trackPtAxis}, {centralityAxis}}});
-    rQARegistry.add("hPtProton", "hPtProton", {HistType::kTH2D, {{trackPtAxis}, {centralityAxis}}});
-    rQARegistry.add("hPtV0", "hPtV0", {HistType::kTH2D, {{v0PtAxis}, {centralityAxis}}});
-    rQARegistry.add("hPtPion_MC", "hPtPion_MC", {HistType::kTH2D, {{trackPtAxis}, {centralityAxis}}});
-    rQARegistry.add("hPtKaon_MC", "hPtKaon_MC", {HistType::kTH2D, {{trackPtAxis}, {centralityAxis}}});
-    rQARegistry.add("hPtProton_MC", "hPtProton_MC", {HistType::kTH2D, {{trackPtAxis}, {centralityAxis}}});
-    rQARegistry.add("hPtV0_MC", "hPtV0_MC", {HistType::kTH2D, {{v0PtAxis}, {centralityAxis}}});
+    rQARegistry.add("hPtPion", "hPtPion", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtKaon", "hPtKaon", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtProton", "hPtProton", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtV0", "hPtV0", {HistType::kTH3D, {{v0PtAxis}, {centralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtPion_MC", "hPtPion_MC", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtKaon_MC", "hPtKaon_MC", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtProton_MC", "hPtProton_MC", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtV0_MC", "hPtV0_MC", {HistType::kTH3D, {{v0PtAxis}, {centralityAxis}, {2, -2, 2}}});
 
     rQARegistry.add("hdEdx", "hdEdx", {HistType::kTH2D, {{56, 0.2, 3.0}, {180, 20, 200}}});
     rQARegistry.add("hdEdxPion", "hdEdxPion", {HistType::kTH2D, {{56, 0.2, 3.0}, {180, 20, 200}}});
@@ -343,18 +344,19 @@ struct ThreeParticleCorrelations {
         rQARegistry.fill(HIST("hTrackPt"), track.pt());
         rQARegistry.fill(HIST("hTrackEta"), track.eta());
         rQARegistry.fill(HIST("hTrackPhi"), track.phi());
+        rQARegistry.fill(HIST("hTrackNSharedClusters"), track.tpcNClsShared());
         rQARegistry.fill(HIST("hdEdx"), track.pt(), track.tpcSignal());
         rQARegistry.fill(HIST("hBeta"), track.pt(), track.beta());
         if (assocPID[0] == pionID) { // Pions
-          rQARegistry.fill(HIST("hPtPion"), track.pt(), collision.centFT0C(), 1. / trackEff(hEffPions, track, collision.centFT0C()));
+          rQARegistry.fill(HIST("hPtPion"), track.pt(), collision.centFT0C(), track.sign(), 1. / trackEff(hEffPions, track, collision.centFT0C()));
           rQARegistry.fill(HIST("hdEdxPion"), track.pt(), track.tpcSignal());
           rQARegistry.fill(HIST("hBetaPion"), track.pt(), track.beta());
         } else if (assocPID[0] == kaonID) { // Kaons
-          rQARegistry.fill(HIST("hPtKaon"), track.pt(), collision.centFT0C(), 1. / trackEff(hEffKaons, track, collision.centFT0C()));
+          rQARegistry.fill(HIST("hPtKaon"), track.pt(), collision.centFT0C(), track.sign(), 1. / trackEff(hEffKaons, track, collision.centFT0C()));
           rQARegistry.fill(HIST("hdEdxKaon"), track.pt(), track.tpcSignal());
           rQARegistry.fill(HIST("hBetaKaon"), track.pt(), track.beta());
         } else if (assocPID[0] == protonID) { // Protons
-          rQARegistry.fill(HIST("hPtProton"), track.pt(), collision.centFT0C(), 1. / trackEff(hEffProtons, track, collision.centFT0C()));
+          rQARegistry.fill(HIST("hPtProton"), track.pt(), collision.centFT0C(), track.sign(), 1. / trackEff(hEffProtons, track, collision.centFT0C()));
           rQARegistry.fill(HIST("hdEdxProton"), track.pt(), track.tpcSignal());
           rQARegistry.fill(HIST("hBetaProton"), track.pt(), track.beta());
         }
@@ -366,8 +368,8 @@ struct ThreeParticleCorrelations {
     for (const auto& trigger : v0s) {
       if (v0Filters(collision, trigger, tracks)) {
 
-        rQARegistry.fill(HIST("hPtV0"), trigger.pt(), collision.centFT0C());
         triggSign = v0Sign(trigger);
+        rQARegistry.fill(HIST("hPtV0"), trigger.pt(), collision.centFT0C(), triggSign);
         if (triggSign == 1) {
           candMass = trigger.mLambda();
           rQARegistry.fill(HIST("hInvMassLambda"), trigger.mLambda(), trigger.pt(), collision.centFT0C());
@@ -514,12 +516,18 @@ struct ThreeParticleCorrelations {
     for (const auto& track : groupMCAssociates) {
       if (track.isPhysicalPrimary()) {
 
+        if (track.pdgCode() > 0) {
+          assocSign = 1;
+        } else if (track.pdgCode() < 0) {
+          assocSign = -1;
+        }
+
         if (std::abs(track.pdgCode()) == kPiPlus) { // Pions
-          rQARegistry.fill(HIST("hPtPion_MC"), track.pt(), collision.bestCollisionCentFT0C());
+          rQARegistry.fill(HIST("hPtPion_MC"), track.pt(), collision.bestCollisionCentFT0C(), assocSign);
         } else if (std::abs(track.pdgCode()) == kKPlus) { // Kaons
-          rQARegistry.fill(HIST("hPtKaon_MC"), track.pt(), collision.bestCollisionCentFT0C());
+          rQARegistry.fill(HIST("hPtKaon_MC"), track.pt(), collision.bestCollisionCentFT0C(), assocSign);
         } else if (std::abs(track.pdgCode()) == kProton) { // Protons
-          rQARegistry.fill(HIST("hPtProton_MC"), track.pt(), collision.bestCollisionCentFT0C());
+          rQARegistry.fill(HIST("hPtProton_MC"), track.pt(), collision.bestCollisionCentFT0C(), assocSign);
         }
       }
     }
@@ -529,12 +537,12 @@ struct ThreeParticleCorrelations {
     for (const auto& trigger : groupMCTriggers) {
       if (trigger.isPhysicalPrimary()) {
 
-        rQARegistry.fill(HIST("hPtV0_MC"), trigger.pt(), collision.bestCollisionCentFT0C());
         if (trigger.pdgCode() > 0) {
           triggSign = 1;
         } else if (trigger.pdgCode() < 0) {
           triggSign = -1;
         }
+        rQARegistry.fill(HIST("hPtV0_MC"), trigger.pt(), collision.bestCollisionCentFT0C(), triggSign);
         rQARegistry.fill(HIST("hNLambdas"), triggSign, trigger.pt(), collision.bestCollisionCentFT0C());
 
         for (const auto& associate : groupMCAssociates) {

@@ -85,6 +85,8 @@ struct FlowSP {
   O2_DEFINE_CONFIGURABLE(cfgFillWeights, bool, true, "Fill NUA weights");
   O2_DEFINE_CONFIGURABLE(cfgFillWeightsPOS, bool, true, "Fill NUA weights only for positive charges");
   O2_DEFINE_CONFIGURABLE(cfgFillWeightsNEG, bool, true, "Fill NUA weights only for negative charges");
+  O2_DEFINE_CONFIGURABLE(cfguseNUA1D, bool, false, "Use 1D NUA weights (only phi)");
+  O2_DEFINE_CONFIGURABLE(cfguseNUA2D, bool, true, "Use 2D NUA weights (phi and eta)");
   // Additional track Selections
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsUseAdditionalTrackCut, bool, false, "Bool to enable Additional Track Cut");
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsDoDCApt, bool, false, "Apply Pt dependent DCAz cut");
@@ -146,6 +148,7 @@ struct FlowSP {
   struct Config {
     std::vector<TH1D*> mEfficiency = {};
     std::vector<GFWWeights*> mAcceptance = {};
+    std::vector<TH3D*> mAcceptance2D = {};
     bool correctionsLoaded = false;
     int lastRunNumber = 0;
 
@@ -161,10 +164,10 @@ struct FlowSP {
 
   } cfg;
 
-  // define output objects
   OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
   OutputObj<GFWWeights> fWeightsPOS{GFWWeights("weights_positive")};
   OutputObj<GFWWeights> fWeightsNEG{GFWWeights("weights_negative")};
+
   HistogramRegistry registry{"registry"};
 
   // Event selection cuts - Alex
@@ -247,7 +250,7 @@ struct FlowSP {
     AxisSpec axisDCAxy = {100, -.5, .5, "DCA_{xy} (cm)"};
     AxisSpec axisPhiMod = {100, 0, constants::math::PI / 9, "fmod(#varphi,#pi/9)"};
     AxisSpec axisPhi = {60, 0, constants::math::TwoPI, "#varphi"};
-    AxisSpec axisEta = {64, -1.8, 1.8, "#eta"};
+    AxisSpec axisEta = {64, -1.6, 1.6, "#eta"};
     AxisSpec axisEtaVn = {8, -.8, .8, "#eta"};
     AxisSpec axisVx = {40, -0.01, 0.01, "v_{x}"};
     AxisSpec axisVy = {40, -0.01, 0.01, "v_{y}"};
@@ -295,14 +298,21 @@ struct FlowSP {
     registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_ParticleWeights + 1, "Apply weights");
 
     if (cfgFillWeights) {
-      fWeights->setPtBins(ptbins, &ptbinning[0]);
-      fWeights->init(true, false);
+      if (cfguseNUA2D) {
+        registry.add<TH3>("weights/hPhi_Eta_vz", "", kTH3D, {axisPhi, axisEta, axisVz});
+        registry.add<TH3>("weights/hPhi_Eta_vz_positive", "", kTH3D, {axisPhi, axisEta, axisVz});
+        registry.add<TH3>("weights/hPhi_Eta_vz_negative", "", kTH3D, {axisPhi, axisEta, axisVz});
+      } else {
+        // define output objects
+        fWeights->setPtBins(ptbins, &ptbinning[0]);
+        fWeights->init(true, false);
 
-      fWeightsPOS->setPtBins(ptbins, &ptbinning[0]);
-      fWeightsPOS->init(true, false);
+        fWeightsPOS->setPtBins(ptbins, &ptbinning[0]);
+        fWeightsPOS->init(true, false);
 
-      fWeightsNEG->setPtBins(ptbins, &ptbinning[0]);
-      fWeightsNEG->init(true, false);
+        fWeightsNEG->setPtBins(ptbins, &ptbinning[0]);
+        fWeightsNEG->init(true, false);
+      }
     }
 
     if (cfgFillEventQA) {
@@ -357,9 +367,14 @@ struct FlowSP {
       if (cfgFillTrackQA) {
         registry.add("QA/after/pt_phi", "", {HistType::kTH2D, {axisPt, axisPhiMod}});
         registry.add<TH1>("incl/QA/after/hPt", "", kTH1D, {axisPt});
+        registry.add<TH1>("incl/QA/after/hPt_forward", "", kTH1D, {axisPt});
+        registry.add<TH1>("incl/QA/after/hPt_forward_uncorrected", "", kTH1D, {axisPt});
+        registry.add<TH1>("incl/QA/after/hPt_backward", "", kTH1D, {axisPt});
+        registry.add<TH1>("incl/QA/after/hPt_backward_uncorrected", "", kTH1D, {axisPt});
         registry.add<TH1>("incl/QA/after/hPhi", "", kTH1D, {axisPhi});
         registry.add<TH1>("incl/QA/after/hPhi_uncorrected", "", kTH1D, {axisPhi});
         registry.add<TH1>("incl/QA/after/hEta", "", kTH1D, {axisEta});
+        registry.add<TH1>("incl/QA/after/hEta_uncorrected", "", kTH1D, {axisEta});
         registry.add<TH3>("incl/QA/after/hPhi_Eta_vz", "", kTH3D, {axisPhi, axisEta, axisVz});
         registry.add<TH3>("incl/QA/after/hPhi_Eta_vz_corrected", "", kTH3D, {axisPhi, axisEta, axisVz});
         registry.add<TH2>("incl/QA/after/hDCAxy_pt", "", kTH2D, {axisPt, axisDCAxy});
@@ -568,6 +583,17 @@ struct FlowSP {
     }
   } // end of init
 
+  float getNUA2D(TH3D* hNUA, float eta, float phi, float vtxz)
+  {
+    int xind = hNUA->GetXaxis()->FindBin(phi);
+    int etaind = hNUA->GetYaxis()->FindBin(eta);
+    int vzind = hNUA->GetZaxis()->FindBin(vtxz);
+    float weight = hNUA->GetBinContent(xind, etaind, vzind);
+    if (weight != 0)
+      return 1. / weight;
+    return 1;
+  }
+
   template <typename TrackObject>
   int getTrackPID(TrackObject track)
   {
@@ -639,19 +665,34 @@ struct FlowSP {
 
     int nWeights = 3;
 
-    if (cfgCCDB_NUA.value.empty() == false) {
-      TList* listCorrections = ccdb->getForTimeStamp<TList>(cfgCCDB_NUA, timestamp);
-      cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights")));
-      cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights_positive")));
-      cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights_negative")));
-      int sizeAcc = cfg.mAcceptance.size();
-      if (sizeAcc < nWeights)
-        LOGF(fatal, "Could not load acceptance weights from %s", cfgCCDB_NUA.value.c_str());
-      else
-        LOGF(info, "Loaded acceptance weights from %s", cfgCCDB_NUA.value.c_str());
-    } else {
-      LOGF(info, "cfgCCDB_NUA empty! No corrections loaded");
+    if (cfguseNUA1D) {
+      if (cfgCCDB_NUA.value.empty() == false) {
+        TList* listCorrections = ccdb->getForTimeStamp<TList>(cfgCCDB_NUA, timestamp);
+        cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights")));
+        cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights_positive")));
+        cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights_negative")));
+        int sizeAcc = cfg.mAcceptance.size();
+        if (sizeAcc < nWeights)
+          LOGF(fatal, "Could not load acceptance weights from %s", cfgCCDB_NUA.value.c_str());
+        else
+          LOGF(info, "Loaded acceptance weights from %s", cfgCCDB_NUA.value.c_str());
+      } else {
+        LOGF(info, "cfgCCDB_NUA empty! No corrections loaded");
+      }
+    } else if (cfguseNUA2D) {
+      if (cfgCCDB_NUA.value.empty() == false) {
+        TH3D* hNUA2D = ccdb->getForTimeStamp<TH3D>(cfgCCDB_NUA, timestamp);
+        if (!hNUA2D) {
+          LOGF(fatal, "Could not load acceptance weights from %s", cfgCCDB_NUA.value.c_str());
+        } else {
+          LOGF(info, "Loaded acceptance weights from %s", cfgCCDB_NUA.value.c_str());
+          cfg.mAcceptance2D.push_back(hNUA2D);
+        }
+      } else {
+        LOGF(info, "cfgCCDB_NUA empty! No corrections loaded");
+      }
     }
+    // Get Efficiency correction
     if (cfgCCDB_NUE.value.empty() == false) {
       TList* listCorrections = ccdb->getForTimeStamp<TList>(cfgCCDB_NUE, timestamp);
       cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency")));
@@ -680,11 +721,20 @@ struct FlowSP {
     if (eff == 0)
       return false;
     weight_nue = 1. / eff;
-    int sizeAcc = cfg.mAcceptance.size();
-    if (sizeAcc > pID) {
-      weight_nua = cfg.mAcceptance[pID]->getNUA(phi, eta, vtxz);
-    } else {
-      weight_nua = 1;
+
+    if (cfguseNUA1D) {
+      int sizeAcc = cfg.mAcceptance.size();
+      if (sizeAcc > pID) {
+        weight_nua = cfg.mAcceptance[pID]->getNUA(phi, eta, vtxz);
+      } else {
+        weight_nua = 1;
+      }
+    } else if (cfguseNUA2D) {
+      if (cfg.mAcceptance2D.size() > 0) {
+        weight_nua = getNUA2D(cfg.mAcceptance2D[0], eta, phi, vtxz);
+      } else {
+        weight_nua = 1;
+      }
     }
     return true;
   }
@@ -1004,9 +1054,17 @@ struct FlowSP {
     static constexpr std::string_view Time[] = {"before/", "after/"};
     // NOTE: species[kUnidentified] = "" (when no PID)
     registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt"), track.pt(), wacc * weff);
+    if (track.eta() > 0) {
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_forward"), track.pt(), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_forward_uncorrected"), track.pt());
+    } else {
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_backward"), track.pt(), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_backward_uncorrected"), track.pt());
+    }
     registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi"), track.phi(), wacc);
     registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_uncorrected"), track.phi());
     registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hEta"), track.eta(), wacc);
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hEta_uncorrected"), track.eta());
     registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_vz"), track.phi(), track.eta(), vz);
     registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_vz_corrected"), track.phi(), track.eta(), vz, wacc);
     registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hDCAxy_pt"), track.pt(), track.dcaXY(), wacc * weff);
@@ -1252,6 +1310,15 @@ struct FlowSP {
 
         // constrain angle to 0 -> [0,0+2pi]
         auto phi = RecoDecay::constrainAngle(track.phi(), 0);
+
+        if (cfguseNUA2D && cfgFillWeights) {
+          registry.fill(HIST("weights/hPhi_Eta_vz"), phi, track.eta(), vtxz, 1);
+          if (pos) {
+            registry.fill(HIST("weights/hPhi_Eta_vz_positive"), phi, track.eta(), vtxz, 1);
+          } else {
+            registry.fill(HIST("weights/hPhi_Eta_vz_negative"), phi, track.eta(), vtxz, 1);
+          }
+        }
 
         // Fill NUA weights (last 0 is for Data see GFWWeights class (not a weight))
         if (cfgFillWeights) {

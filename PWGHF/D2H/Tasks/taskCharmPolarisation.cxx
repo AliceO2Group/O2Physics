@@ -25,6 +25,8 @@
 
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Qvectors.h"
 
 #include <CommonConstants/MathConstants.h>
@@ -49,6 +51,7 @@
 #include <TRandom3.h>
 
 #include <array>
+#include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -655,10 +658,10 @@ struct HfTaskCharmPolarisation {
         if (activateTrackingSys) {
           hEPaxes.insert(hEPaxes.end(), {thnAxisAbsEtaTrackMin, thnAxisNumItsClsMin, thnAxisNumTpcClsMin});
         }
-          if (nBkgRotations > 0) {
-            hEPaxes.push_back(thnAxisIsRotatedCandidate);
-          }
-          registry.add("hEP", "THn for polarisation studies with cosThStar w.r.t. event plane axis and BDT scores", HistType::kTHnSparseF, hEPaxes);
+        if (nBkgRotations > 0) {
+          hEPaxes.push_back(thnAxisIsRotatedCandidate);
+        }
+        registry.add("hEP", "THn for polarisation studies with cosThStar w.r.t. event plane axis and BDT scores", HistType::kTHnSparseF, hEPaxes);
       }
     }
 
@@ -1474,7 +1477,8 @@ struct HfTaskCharmPolarisation {
 
   /// Get the Q vector
   /// \param collision is the collision with the Q vector information
-  std::vector<float> getQVec(CollsWithQVecs::iterator const& collision)
+  template <typename Coll>
+  std::vector<float> getQVec(Coll const& collision)
   {
     float xQVec = -999.;
     float yQVec = -999.;
@@ -2303,59 +2307,63 @@ struct HfTaskCharmPolarisation {
   }
   PROCESS_SWITCH(HfTaskCharmPolarisation, processDstarMcWithMl, "Process Dstar candidates in MC with ML", false);
 
-  void processDstarInPbPb(CollsWithQVecs::iterator const& collision,
+  void processDstarInPbPb(CollsWithQVecs const& collisions,
                           FilteredCandDstarWSelFlag const& dstarCandidates,
                           TracksWithExtra const& tracks)
   {
-    float centrality = {-1.f};
-    centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
-    if (centrality < centralityMin || centrality > centralityMax) {
-      return; // skip this collision if outside of the centrality range
-    }
-    registry.fill(HIST("hCentrality"), centrality);
-
-    auto thisCollId = collision.globalIndex();
-    int numPvContributors = collision.numContrib();
-    auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarPerCollision, thisCollId);
-    int nCands{0}, nCandsInSignalRegion{0};
-
-    std::vector<float> qVecs = getQVec(collision);
-
-    for (const auto& dstarCandidate : groupedDstarCandidates) {
-      nCands++;
-      if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false, false, true>(dstarCandidate, 0, numPvContributors, -1 /*MC particles*/, tracks, &qVecs)) {
-        nCandsInSignalRegion++;
+    for (const auto& collision : collisions) {
+      float centrality = {-1.f};
+      centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
+      if (centrality < centralityMin || centrality > centralityMax) {
+        return; // skip this collision if outside of the centrality range
       }
+      registry.fill(HIST("hCentrality"), centrality);
+
+      auto thisCollId = collision.globalIndex();
+      int numPvContributors = collision.numContrib();
+      auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarPerCollision, thisCollId);
+      int nCands{0}, nCandsInSignalRegion{0};
+
+      std::vector<float> qVecs = getQVec(collision);
+
+      for (const auto& dstarCandidate : groupedDstarCandidates) {
+        nCands++;
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false, false, true>(dstarCandidate, 0, numPvContributors, -1 /*MC particles*/, tracks, &qVecs)) {
+          nCandsInSignalRegion++;
+        }
+      }
+      fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
     }
-    fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
   }
   PROCESS_SWITCH(HfTaskCharmPolarisation, processDstarInPbPb, "Process Dstar candidates in PbPb collisions", false);
 
-  void processDstarWithMlInPbPb(CollsWithQVecs::iterator const& collision,
+  void processDstarWithMlInPbPb(CollsWithQVecs const& collisions,
                                 FilteredCandDstarWSelFlagAndMl const& dstarCandidates,
                                 TracksWithExtra const& tracks)
   {
-    float centrality = {-1.f};
-    centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
-    if (centrality < centralityMin || centrality > centralityMax) {
-      return; // skip this collision if outside of the centrality range
-    }
-    registry.fill(HIST("hCentrality"), centrality);
-
-    auto thisCollId = collision.globalIndex();
-    int numPvContributors = collision.numContrib();
-    auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarWithMlPerCollision, thisCollId);
-    int nCands{0}, nCandsInSignalRegion{0};
-
-    std::vector<float> qVecs = getQVec(collision);
-
-    for (const auto& dstarCandidate : groupedDstarCandidates) {
-      nCands++;
-      if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false, false, true>(dstarCandidate, 0, numPvContributors, -1 /*MC particles*/, tracks, &qVecs)) {
-        nCandsInSignalRegion++;
+    for (const auto& collision : collisions) {
+      float centrality = {-1.f};
+      centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
+      if (centrality < centralityMin || centrality > centralityMax) {
+        return; // skip this collision if outside of the centrality range
       }
+      registry.fill(HIST("hCentrality"), centrality);
+
+      auto thisCollId = collision.globalIndex();
+      int numPvContributors = collision.numContrib();
+      auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarWithMlPerCollision, thisCollId);
+      int nCands{0}, nCandsInSignalRegion{0};
+
+      std::vector<float> qVecs = getQVec(collision);
+
+      for (const auto& dstarCandidate : groupedDstarCandidates) {
+        nCands++;
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false, false, true>(dstarCandidate, 0, numPvContributors, -1 /*MC particles*/, tracks, &qVecs)) {
+          nCandsInSignalRegion++;
+        }
+      }
+      fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
     }
-    fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
   }
   PROCESS_SWITCH(HfTaskCharmPolarisation, processDstarWithMlInPbPb, "Process Dstar candidates with ML in PbPb collisions", false);
 
