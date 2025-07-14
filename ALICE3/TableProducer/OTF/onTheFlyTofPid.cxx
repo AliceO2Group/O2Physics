@@ -35,6 +35,7 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
 #include "CommonConstants/GeomConstants.h"
+#include "CommonConstants/MathConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "CommonUtils/NameConf.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
@@ -142,7 +143,7 @@ struct OnTheFlyTofPid {
   void init(o2::framework::InitContext& initContext)
   {
     pRandomNumberGenerator.SetSeed(0); // fully randomize
-    if (simConfig.magneticField.value < 0.0001f) {
+    if (simConfig.magneticField.value < o2::constants::math::Epsilon) {
       LOG(info) << "Getting the magnetic field from the on-the-fly tracker task";
       if (!getTaskOptionValue(initContext, "on-the-fly-tracker", simConfig.magneticField, false)) {
         LOG(fatal) << "Could not get Bz from on-the-fly-tracker task";
