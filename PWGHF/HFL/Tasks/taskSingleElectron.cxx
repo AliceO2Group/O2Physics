@@ -32,6 +32,7 @@ struct HfTaskSingleElectron {
   // Produces
 
   // Configurable
+  Configurable<int> nContribMin{"nContribMin", 2, "min number of contributors"};
   Configurable<float> posZMax{"posZMax", 10., "max posZ cut"};
   Configurable<float> ptTrackMax{"ptTrackMax", 10., "max pt cut"};
   Configurable<float> ptTrackMin{"ptTrackMin", 0.5, "min pt cut"};
@@ -209,7 +210,7 @@ struct HfTaskSingleElectron {
       return;
     histos.fill(HIST("hEventCounter"), 1.5);
 
-    if (collision.numContrib() < 2)
+    if (collision.numContrib() < nContribMin)
       return;
     histos.fill(HIST("hEventCounter"), 2.5);
 
