@@ -17,26 +17,31 @@
 #ifndef TOOLS_PIDML_PIDONNXMODEL_H_
 #define TOOLS_PIDML_PIDONNXMODEL_H_
 
-#include <Framework/ASoA.h>
-#include <array>
-#include <algorithm>
-#include <cstdint>
-#include <cstring>
-#include <cstdio>
-#include <limits>
-#include <optional>
-#include <string>
-#include <map>
-#include <type_traits>
-#include <utility>
-#include <memory>
-#include <vector>
-#include <onnxruntime_cxx_api.h>
-
-#include "rapidjson/document.h"
-#include "rapidjson/filereadstream.h"
-#include "CCDB/CcdbApi.h"
 #include "Tools/PIDML/pidUtils.h"
+//
+#include <CCDB/CcdbApi.h>
+#include <Framework/ASoA.h>
+#include <Framework/Logger.h>
+
+#include <onnxruntime_c_api.h>
+#include <onnxruntime_cxx_api.h>
+#include <rapidjson/document.h>
+#include <rapidjson/filereadstream.h>
+
+#include <algorithm>
+#include <array>
+#include <cassert>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <limits>
+#include <map>
+#include <memory>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 enum PidMLDetector {
   kTPCOnly = 0,
@@ -57,7 +62,7 @@ constexpr MomentumLimitsMatrix defaultModelPLimits({0.0, 0.5, 0.8});
 // TODO: Copied from cefpTask, shall we put it in some common utils code?
 namespace
 {
-bool readJsonFile(const std::string& config, rapidjson::Document& d)
+bool readJsonFile(std::string const& config, rapidjson::Document& d)
 {
   FILE* fp = fopen(config.data(), "rb");
   if (!fp) {
@@ -77,7 +82,7 @@ bool readJsonFile(const std::string& config, rapidjson::Document& d)
 template <typename T>
 struct PidONNXModel {
  public:
-  PidONNXModel(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp,
+  PidONNXModel(std::string const& localPath, std::string const& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi const& ccdbApi, uint64_t timestamp,
                int pid, double minCertainty, const double* pLimits = &pidml_pt_cuts::defaultModelPLimits[0])
     : mPid(pid), mMinCertainty(minCertainty), mPLimits(pLimits, pLimits + kNDetectors)
   {
@@ -136,8 +141,8 @@ struct PidONNXModel {
     return getModelOutput(track) >= mMinCertainty;
   }
 
-  int mPid;
-  double mMinCertainty;
+  int mPid{0};
+  double mMinCertainty{0};
 
  private:
   void getModelPaths(std::string const& path, std::string& modelDir, std::string& modelFile, std::string& modelPath, int pid, std::string const& ext)
@@ -155,7 +160,7 @@ struct PidONNXModel {
     modelPath = modelDir + "/" + modelFile;
   }
 
-  void downloadFromCCDB(o2::ccdb::CcdbApi& ccdbApi, std::string const& ccdbFile, uint64_t timestamp, std::string const& localDir, std::string const& localFile)
+  void downloadFromCCDB(o2::ccdb::CcdbApi const& ccdbApi, std::string const& ccdbFile, uint64_t timestamp, std::string const& localDir, std::string const& localFile)
   {
     std::map<std::string, std::string> metadata;
     bool retrieveSuccess = ccdbApi.retrieveBlob(ccdbFile, localDir, metadata, timestamp, false, localFile);
@@ -167,7 +172,7 @@ struct PidONNXModel {
     }
   }
 
-  void loadInputFiles(std::string const& localPath, std::string const& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, int pid, std::string& modelPath)
+  void loadInputFiles(std::string const& localPath, std::string const& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi const& ccdbApi, uint64_t timestamp, int pid, std::string& modelPath)
   {
     rapidjson::Document trainColumnsDoc;
     rapidjson::Document scalingParamsDoc;
