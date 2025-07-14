@@ -661,14 +661,14 @@ struct OnTheFlyRichPid {
     // Fraction of photons in rings (to account loss close to sector boundary in projective geometry)
     const float sinThetaCherenkovSquared = sinThetaCherenkov * sinThetaCherenkov;
     const float radius = (thicknessRad / 2.0) * std::tan(thetaCherenkov) + thicknessGas * std::tan(std::asin((n / nGas) * sinThetaCherenkov));
-    const float n0 = 24. * thicknessRad / 2.; // photons for N = 1.03 at saturation ( 24/2 factor per radiator cm )
+    const float n0Photons = 24. * thicknessRad / 2.; // photons for N = 1.03 at saturation ( 24/2 factor per radiator cm )
     const float sinAngle = std::sin(std::acos(1. / 1.03));
     const float sinAngleSquared = sinAngle * sinAngle;
     const float multiplicitySpectrumFactor = sinThetaCherenkovSquared / sinAngleSquared; // scale multiplicity w.r.t. N = 1.03 at saturation
     // Considering average resolution (integrated over the sector)
-    // float nPhotons = (tileZlength / 2.0 > radius) ? n0 * multiplicitySpectrumFactor * (1.-(2.0*radius)/(o2::constants::math::PI*tileZlength)) : n0 * multiplicitySpectrumFactor * (1.-(2.0*radius)/(o2::constants::math::PI*tileZlength) - (2.0/(tileZlength*o2::constants::math::PI))*(-(tileZlength/(2.0))*std::acos(tileZlength/(2.0*radius)) + radius*std::sqrt(1.-std::pow(tileZlength/(2.0*radius),2.0))));
+    // float nPhotons = (tileZlength / 2.0 > radius) ? n0Photons * multiplicitySpectrumFactor * (1.-(2.0*radius)/(o2::constants::math::PI*tileZlength)) : n0Photons * multiplicitySpectrumFactor * (1.-(2.0*radius)/(o2::constants::math::PI*tileZlength) - (2.0/(tileZlength*o2::constants::math::PI))*(-(tileZlength/(2.0))*std::acos(tileZlength/(2.0*radius)) + radius*std::sqrt(1.-std::pow(tileZlength/(2.0*radius),2.0))));
     // Considering "exact" resolution (eta by eta)
-    const float nPhotons = n0 * multiplicitySpectrumFactor * fractionPhotonsProjectiveRICH(eta, tileZlength, radius);
+    const float nPhotons = n0Photons * multiplicitySpectrumFactor * fractionPhotonsProjectiveRICH(eta, tileZlength, radius);
     if (nPhotons <= kErrorValue + 1)
       return kErrorValue;
     // Ring angular resolution
@@ -935,8 +935,8 @@ struct OnTheFlyRichPid {
               histos.fill(HIST("h2dBarrelNsigmaTruePionVsKaonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[3]);
               histos.fill(HIST("h2dBarrelNsigmaTruePionVsProtHypothesis"), recoTrack.getP(), nSigmaBarrelRich[4]);
               break;
-            case kPdgArray[kka]:  // Kaon
-            case -kPdgArray[kka]: // AntiKaon
+            case kPdgArray[kKa]:  // Kaon
+            case -kPdgArray[kKa]: // AntiKaon
               histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsElecHypothesis"), recoTrack.getP(), nSigmaBarrelRich[0]);
               histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsMuonHypothesis"), recoTrack.getP(), nSigmaBarrelRich[1]);
               histos.fill(HIST("h2dBarrelNsigmaTrueKaonVsPionHypothesis"), recoTrack.getP(), nSigmaBarrelRich[2]);
