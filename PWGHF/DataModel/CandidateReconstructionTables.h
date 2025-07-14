@@ -245,6 +245,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, Tracks, "_0"); //! Index to f
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, Tracks, "_1"); //! Index to second prong
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong2, prong2, int, Tracks, "_2"); //! Index to third prong
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong3, prong3, int, Tracks, "_3"); //! Index to fourth prong
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong4, prong4, int, Tracks, "_4"); //! Index to fifth prong
 DECLARE_SOA_INDEX_COLUMN(V0, v0);                                 //! Index to V0 prong
 DECLARE_SOA_INDEX_COLUMN(Cascade, cascade);                       //! Index to cascade prong
 DECLARE_SOA_COLUMN(HFflag, hfflag, uint8_t);                      //! Bitmap to store selection results, o2-linter: disable=name/o2-column (written to disk)

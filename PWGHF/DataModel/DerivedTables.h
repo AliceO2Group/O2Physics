@@ -41,6 +41,7 @@ namespace o2::aod
 // B0 → D− π+
 // B+ → D0 π+
 // D*+ → D0 π+
+// Ξc± → (Ξ∓ → (Λ → p π∓) π∓) π± π±
 
 // ================
 // Collision tables
@@ -214,6 +215,17 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
                            hf_track_index::Prong3Id,                       \
                            o2::soa::Marker<Marker##_hf_type_>);
 
+// Declares the table with global indices for 4-prong candidates (Ids).
+#define DECLARE_TABLE_CAND_ID_5P(_hf_type_, _hf_description_)              \
+  DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##Ids, "HF" _hf_description_ "ID", \
+                           hf_cand::CollisionId,                           \
+                           hf_track_index::Prong0Id,                       \
+                           hf_track_index::Prong1Id,                       \
+                           hf_track_index::Prong2Id,                       \
+                           hf_track_index::Prong3Id,                       \
+                           hf_track_index::Prong4Id,                       \
+                           o2::soa::Marker<Marker##_hf_type_>);
+
 // Declares the table with candidate selection flags (Sels).
 #define DECLARE_TABLE_CAND_SEL(_hf_type_, _hf_description_)                  \
   DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##Sels, "HF" _hf_description_ "SEL", \
@@ -282,6 +294,11 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
   DECLARE_TABLES_COMMON(_hf_type_, _hf_description_, _hf_namespace_)                    \
   DECLARE_TABLE_CAND_ID_4P(_hf_type_, _hf_description_)
 
+#define DECLARE_TABLES_5P(_hf_type_, _hf_description_, _hf_namespace_, _marker_number_) \
+  constexpr uint Marker##_hf_type_ = _marker_number_;                                   \
+  DECLARE_TABLES_COMMON(_hf_type_, _hf_description_, _hf_namespace_)                    \
+  DECLARE_TABLE_CAND_ID_5P(_hf_type_, _hf_description_)
+
 // ================
 // Declarations of common tables for individual species
 // ================
@@ -296,6 +313,7 @@ DECLARE_TABLES_3P(Dstar, "DST", dstar, 6);
 #undef B0
 DECLARE_TABLES_4P(B0, "B0", b0, 7);
 #pragma pop_macro("B0")
+DECLARE_TABLES_5P(XicToXiPiPi, "XICTOXIPIPI", xic_to_xi_pi_pi, 6);
 
 // ================
 // Additional species-specific candidate tables
