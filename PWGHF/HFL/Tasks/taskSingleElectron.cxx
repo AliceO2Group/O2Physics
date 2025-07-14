@@ -13,8 +13,7 @@
 /// \brief task for electrons from heavy-flavour hadron decays
 /// \author Jonghan Park (Jeonbuk National University)
 
-#include "PWGHF/vertexing/RecoDecay.h"
-
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -37,7 +36,7 @@ struct HfTaskSingleElectron {
   Configurable<float> ptTrackMax{"ptTrackMax", 10., "max pt cut"};
   Configurable<float> ptTrackMin{"ptTrackMin", 0.5, "min pt cut"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "eta cut"};
-  Configurable<int> ptcNCrossedRowMax{"ptcNCrossedRowMax", 70, "max of TPC n cluster crossed rows"};
+  Configurable<int> tpcNCrossedRowMin{"tpcNCrossedRowMin", 70, "max of TPC n cluster crossed rows"};
   Configurable<float> tpcNClsFoundOverFindableMin{"tpcNClsFoundOverFindableMin", 0.8, "min # of TPC found/findable clusters"};
   Configurable<float> tpcChi2perNClMax{"tpcChi2perNClMax", 4., "min # of tpc chi2 per clusters"};
   Configurable<int> itsIBClsMin{"itsIBClsMin", 3, "min # of its clusters in IB"};
@@ -46,6 +45,12 @@ struct HfTaskSingleElectron {
   Configurable<float> tofNSigmaMax{"tofNSigmaMax", 3., "max of tof nsigma"};
   Configurable<float> tpcNSigmaMin{"tpcNSigmaMin", -1., "min of tpc nsigma"};
   Configurable<float> tpcNSigmaMax{"tpcNSigmaMax", 3., "max of tpc nsigma"};
+
+  Configurable<float> ptAssoTrackMax{"ptAssoTrackMax", 6., "max pt cut of asso tracks"};
+  Configurable<float> ptAssoTrackMin{"ptAssoTrackMin", 4., "min pt cut of asso tracks"};
+  Configurable<int> tpcNCrossedRowAssoTrackMin{"tpcNCrossedRowAssoTrackMin", 60, "max of TPC n cluster crossed rows of asso tracks"};
+
+  int tpcNClsAssoTrackMin = 60;
 
   Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histo"};
   Configurable<int> nBinsDeltaPhi{"nBinsDeltaPhi", 100, "N bins in DeltaPhi histo"};
@@ -131,7 +136,7 @@ struct HfTaskSingleElectron {
     int tpcNClsFindable = track.tpcNClsFindable();
     float tpcFoundOverFindable = (tpcNClsFindable ? static_cast<float>(tpcNClsFound) / static_cast<float>(tpcNClsFindable) : 0);
 
-    if (tpcNClsFound < ptcNCrossedRowMax)
+    if (tpcNClsFound < tpcNCrossedRowMin)
       return false;
     if (tpcFoundOverFindable < tpcNClsFoundOverFindableMin)
       return false;
@@ -162,10 +167,6 @@ struct HfTaskSingleElectron {
   template <typename TrackType>
   bool assoTrackSel(TrackType track)
   {
-    float ptAssoTrackMin = 4.0f;
-    float ptAssoTrackMax = 6.0f;
-    int tpcNClsAssoTrackMin = 60;
-
     if (std::abs(track.eta()) > etaTrackMax)
       return false;
     if (track.pt() < ptAssoTrackMin || track.pt() > ptAssoTrackMax)
@@ -175,7 +176,7 @@ struct HfTaskSingleElectron {
     int tpcNClsFindable = track.tpcNClsFindable();
     float tpcFoundOverFindable = (tpcNClsFindable ? static_cast<float>(tpcNClsFound) / static_cast<float>(tpcNClsFindable) : 0);
 
-    if (tpcNClsFound < tpcNClsAssoTrackMin)
+    if (tpcNClsFound < tpcNCrossedRowAssoTrackMin)
       return false;
     if (track.tpcChi2NCl() > tpcChi2perNClMax)
       return false;
@@ -218,7 +219,7 @@ struct HfTaskSingleElectron {
 
     for (const auto& track : tracks) {
 
-      if (!TrackSel(track))
+      if (!trackSel(track))
         continue;
 
       histos.fill(HIST("tofNSigPt"), track.pt(), track.tofNSigmaEl());
