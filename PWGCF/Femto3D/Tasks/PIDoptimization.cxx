@@ -300,7 +300,5 @@ struct PidOptimization {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<PidOptimization>(cfgc),
-  };
+  return WorkflowSpec{adaptAnalysisTask<PidOptimization>(cfgc)};
 }
