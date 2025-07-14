@@ -298,10 +298,12 @@ struct AssociateDileptonToEMEvent {
   Produces<o2::aod::V0KFEMEventIds> v0kfeventid;
   Produces<o2::aod::EMPrimaryElectronEMEventIds> prmeleventid;
   Produces<o2::aod::EMPrimaryMuonEMEventIds> prmmueventid;
+  Produces<o2::aod::EMPrimaryTrackEMEventIds> prmtrackeventid;
 
   Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
   PresliceUnsorted<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
   PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
+  PresliceUnsorted<aod::EMPrimaryTracks> perCollision_track = aod::emprimarytrack::collisionId;
 
   void init(o2::framework::InitContext&) {}
 
@@ -336,11 +338,17 @@ struct AssociateDileptonToEMEvent {
     fillEventId(collisions, tracks, prmmueventid, perCollision_mu);
   }
 
+  void processChargedTrack(aod::EMEvents const& collisions, aod::EMPrimaryTracks const& tracks)
+  {
+    fillEventId(collisions, tracks, prmtrackeventid, perCollision_track);
+  }
+
   void processDummy(aod::EMEvents const&) {}
 
-  PROCESS_SWITCH(AssociateDileptonToEMEvent, processPCM, "process pcm-event indexing", false);
-  PROCESS_SWITCH(AssociateDileptonToEMEvent, processElectron, "process dalitzee-event indexing", false);
-  PROCESS_SWITCH(AssociateDileptonToEMEvent, processFwdMuon, "process forward muon indexing", false);
+  PROCESS_SWITCH(AssociateDileptonToEMEvent, processPCM, "process indexing for PCM", false);
+  PROCESS_SWITCH(AssociateDileptonToEMEvent, processElectron, "process indexing for electrons", false);
+  PROCESS_SWITCH(AssociateDileptonToEMEvent, processFwdMuon, "process indexing for forward muons", false);
+  PROCESS_SWITCH(AssociateDileptonToEMEvent, processChargedTrack, "process indexing for charged tracks", false);
   PROCESS_SWITCH(AssociateDileptonToEMEvent, processDummy, "process dummy", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
