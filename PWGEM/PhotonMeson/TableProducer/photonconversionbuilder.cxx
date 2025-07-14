@@ -70,7 +70,7 @@ using MyTracksIUMC = soa::Join<MyTracksIU, aod::McTrackLabels>;
 
 struct PhotonConversionBuilder {
   Produces<aod::V0PhotonsKF> v0photonskf;
-  Produces<aod::V0PhotonsKFCov> v0photonskfcov;
+  // Produces<aod::V0PhotonsKFCov> v0photonskfcov;
   Produces<aod::V0Legs> v0legs;
   Produces<aod::EMEventsNgPCM> events_ngpcm;
 
@@ -665,7 +665,7 @@ struct PhotonConversionBuilder {
                   v0_sv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
                   cospa_kf, cospaXY_kf, cospaRZ_kf, pca_kf, alpha, qt, chi2kf);
 
-      v0photonskfcov(gammaKF_PV.GetCovariance(9), gammaKF_PV.GetCovariance(14), gammaKF_PV.GetCovariance(20), gammaKF_PV.GetCovariance(13), gammaKF_PV.GetCovariance(19), gammaKF_PV.GetCovariance(18));
+      // v0photonskfcov(gammaKF_PV.GetCovariance(9), gammaKF_PV.GetCovariance(14), gammaKF_PV.GetCovariance(20), gammaKF_PV.GetCovariance(13), gammaKF_PV.GetCovariance(19), gammaKF_PV.GetCovariance(18));
 
       fillTrackTable(pos, pTrack, kfp_pos_DecayVtx, posdcaXY, posdcaZ); // positive leg first
       fillTrackTable(ele, nTrack, kfp_ele_DecayVtx, eledcaXY, eledcaZ); // negative leg second
