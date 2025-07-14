@@ -109,7 +109,7 @@ struct HfDerivedDataCreatorXicToXiPiPi {
   using THfCandDaughtersMl = soa::Join<aod::Cascades>;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToXiPiPi & static_cast<int8_t>(BIT(aod::SelectionStep::RecoMl - 1))) != 0;
-  Filter filterMcGenMatching = nabs(aod::hf_cand_bplus::flagMcMatchGen) == static_cast<int8_t>(DecayType::XicToXiPiPi);
+  Filter filterMcGenMatching = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchGen) == static_cast<int8_t>(DecayType::XicToXiPiPi);
 
   Preslice<SelectedCandidates> candidatesPerCollision = aod::hf_cand::collisionId;
   Preslice<SelectedCandidatesMc> candidatesMcPerCollision = aod::hf_cand::collisionId;
@@ -123,10 +123,10 @@ struct HfDerivedDataCreatorXicToXiPiPi {
   Partition<SelectedCandidatesMl> candidatesMlAll = aod::hf_sel_candidate_xic::isSelXicToXiPiPi >= 0;
   Partition<SelectedCandidatesMcMl> candidatesMcMlAll = aod::hf_sel_candidate_xic::isSelXicToXiPiPi >= 0;
   // partitions for signal and background
-  Partition<SelectedCandidatesMc> candidatesMcSig = nabs(aod::hf_cand_bplus::flagMcMatchRec) == static_cast<int8_t>(DecayType::XicToXiPiPi);
-  Partition<SelectedCandidatesMc> candidatesMcBkg = nabs(aod::hf_cand_bplus::flagMcMatchRec) != static_cast<int8_t>(DecayType::XicToXiPiPi);
-  Partition<SelectedCandidatesMcMl> candidatesMcMlSig = nabs(aod::hf_cand_bplus::flagMcMatchRec) == static_cast<int8_t>(DecayType::XicToXiPiPi);
-  Partition<SelectedCandidatesMcMl> candidatesMcMlBkg = nabs(aod::hf_cand_bplus::flagMcMatchRec) != static_cast<int8_t>(DecayType::XicToXiPiPi);
+  Partition<SelectedCandidatesMc> candidatesMcSig = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec) == static_cast<int8_t>(DecayType::XicToXiPiPi);
+  Partition<SelectedCandidatesMc> candidatesMcBkg = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec) != static_cast<int8_t>(DecayType::XicToXiPiPi);
+  Partition<SelectedCandidatesMcMl> candidatesMcMlSig = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec) == static_cast<int8_t>(DecayType::XicToXiPiPi);
+  Partition<SelectedCandidatesMcMl> candidatesMcMlBkg = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec) != static_cast<int8_t>(DecayType::XicToXiPiPi);
 
   void init(InitContext const&)
   {
