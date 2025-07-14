@@ -1161,13 +1161,13 @@ struct StrangenessInJets {
       const float multiplicity = collision.centFT0M();
 
       // Number of V0 and cascades per collision
-      Preslice<aod::V0Datas> perCollisionV0 = o2::aod::v0data::collisionId;
-      Preslice<aod::CascDataExt> perCollisionCasc = o2::aod::cascade::collisionId;
-      Preslice<DaughterTracksMC> perCollisionTrk = o2::aod::track::collisionId;
+      auto v0sPerColl = fullV0s.sliceBy(perCollisionV0, collision.globalIndex());
+      auto cascPerColl = Cascades.sliceBy(perCollisionCasc, collision.globalIndex());
+      auto tracksPerColl = mcTracks.sliceBy(perCollisionTrk, collision.globalIndex());
 
       // Loop over reconstructed tracks
       std::vector<fastjet::PseudoJet> fjParticles;
-      for (auto const& track : perCollisionTrk) {
+      for (auto const& track : tracksPerColl) {
         if (!passedTrackSelectionForJetReconstruction(track))
           continue;
 
@@ -1230,7 +1230,7 @@ struct StrangenessInJets {
 
         // V0 particles
         if (particleOfInterest == Option::kV0Particles) {
-          for (const auto& v0 : perCollisionV0) {
+          for (const auto& v0 : v0sPerColl) {
             const auto& pos = v0.posTrack_as<DaughterTracksMC>();
             const auto& neg = v0.negTrack_as<DaughterTracksMC>();
             TVector3 v0dir(v0.px(), v0.py(), v0.pz());
@@ -1329,7 +1329,7 @@ struct StrangenessInJets {
 
         // Cascades
         if (particleOfInterest == Option::kCascades) {
-          for (const auto& casc : perCollisionCasc) {
+          for (const auto& casc : cascPerColl) {
             auto bach = casc.bachelor_as<DaughterTracksMC>();
             auto pos = casc.posTrack_as<DaughterTracksMC>();
             auto neg = casc.negTrack_as<DaughterTracksMC>();
