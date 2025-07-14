@@ -89,6 +89,8 @@ struct Kstarqa {
   Configurable<int> cSelectMultEstimator{"cSelectMultEstimator", 0, "Select multiplicity estimator: 0 - FT0M, 1 - FT0A, 2 - FT0C"};
   Configurable<bool> applyRecMotherRapidity{"applyRecMotherRapidity", true, "Apply rapidity cut on reconstructed mother track"};
   Configurable<bool> applypTdepPID{"applypTdepPID", false, "Apply pT dependent PID"};
+  Configurable<bool> ispileupGoodvtxCut{"ispileupGoodvtxCut", true, "kNoSameBunchPileup, kIsGoodZvtxFT0vsPV cuts"};
+  Configurable<bool> allLayersGoodITS{"allLayersGoodITS", true, "Require all ITS layers to be good"};
 
   // Configurables for track selections
   Configurable<int> rotationalCut{"rotationalCut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
@@ -245,6 +247,12 @@ struct Kstarqa {
       return false;
     }
     if (rctCut.requireRCTFlagChecker && !rctChecker(collision)) {
+      return false;
+    }
+    if (ispileupGoodvtxCut && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      return false;
+    }
+    if (allLayersGoodITS && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return false;
     }
     return true;
@@ -855,6 +863,9 @@ struct Kstarqa {
       if (!collision.sel8()) {
         continue;
       }
+      if (ispileupGoodvtxCut && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
       multiplicity = collision.centFT0M();
       hInvMass.fill(HIST("h1GenMult"), multiplicity);
       selectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
@@ -976,6 +987,9 @@ struct Kstarqa {
     rEventSelection.fill(HIST("events_checkrec"), 4.5);
 
     if (!collision.sel8()) {
+      return;
+    }
+    if (ispileupGoodvtxCut && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
       return;
     }
     multiplicity = collision.centFT0M();
