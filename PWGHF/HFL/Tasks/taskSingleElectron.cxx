@@ -193,9 +193,9 @@ struct HfTaskSingleElectron {
   {
     double deltaPhi = phi1 - phi2;
     if (deltaPhi < -PIHalf)
-      deltaPhi += 2. * PI;
-    if (deltaPhi > 3. * PIHalf)
-      deltaPhi -= 2. * PI;
+      deltaPhi += TwoPI;
+    if (deltaPhi > (PI + PIHalf))
+      deltaPhi -= TwoPI;
     return deltaPhi;
   }
 
