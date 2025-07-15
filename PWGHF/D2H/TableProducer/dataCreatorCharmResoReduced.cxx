@@ -474,9 +474,9 @@ struct HfDataCreatorCharmResoReduced {
     auto& trackNegProp = fitter.getTrack(1);
     trackPosProp.getPxPyPzGlo(candidateV0.momPos);
     trackNegProp.getPxPyPzGlo(candidateV0.momNeg);
-    
+
     candidateV0.mom = RecoDecay::pVec(candidateV0.momPos, candidateV0.momNeg);
-    
+
     candidateV0.pT = std::hypot(candidateV0.mom[0], candidateV0.mom[1]);
     // topological selections:
     // v0 eta
@@ -1219,8 +1219,8 @@ struct HfDataCreatorCharmResoReduced {
                       varUtils.invMassD0 < cfgQaPlots.cutMassDMax) ||
                      (varUtils.invMassD0Bar > cfgQaPlots.cutMassDMin &&
                       varUtils.invMassD0Bar < cfgQaPlots.cutMassDMax) &&
-                     candidateV0.mLambda > cfgQaPlots.cutMassLambdaMin &&
-                     candidateV0.mLambda < cfgQaPlots.cutMassLambdaMax)) {
+                       candidateV0.mLambda > cfgQaPlots.cutMassLambdaMin &&
+                       candidateV0.mLambda < cfgQaPlots.cutMassLambdaMax)) {
                   if (isLambda) {
                     registry.fill(HIST("hMassD0Lambda"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD0);
                   } else {
