@@ -203,7 +203,7 @@ struct V0PtInvMassPlots {
     for (int i = 0; i < nmaxHistograms + 1; i++) {     // Histos won't accept "." character so converting it to "_"
       std::string kaonptbin = pthistos::kaonPtBins[i]; // getting the value of the bin edge
       size_t pos = kaonptbin.find(".");                // finding the "." character
-      kaonptbin[pos] = '_';                            // changing the "." character of thestring-value to a "_"
+      kaonptbin[pos] = '_';                            // changing the "." character of the string-value to a "_"
       kaonhistvalue[i] = kaonptbin;                    // filling bin edges list
     }
     // Lambda Histograms Pt Bin Edges (same as K0s above)
@@ -404,7 +404,7 @@ struct V0PtInvMassPlots {
     }
     rPtAnalysis.fill(HIST("hNV0s"), 2.5);
     rPtAnalysis.get<TH1>(HIST("hNV0s"))->GetXaxis()->SetBinLabel(3, "Dau Pseudorapidity");
-    if ((posDaughterTrack.isITSAfterburner() || negDaughterTrack.isITSAfterburner()) && doisITSAfterburner) { // ITS After Burner on daughter tracks
+    if ((posDaughterTrack.isITSAfterburner() || negDaughterTrack.isITSAfterburner()) && !doisITSAfterburner) { // ITS After Burner on daughter tracks
       return false;
     }
     rPtAnalysis.fill(HIST("hNV0s"), 3.5);
@@ -765,7 +765,7 @@ struct V0PtInvMassPlots {
     if (!acceptEvent(collision)) { // Event Selection
       return;
     }
-    rMCCorrections.fill(HIST("hNRecEvents_MC"), 1.0); // Event Split Numenator
+    rMCCorrections.fill(HIST("hNRecEvents_MC"), 0.5); // Event Split Numenator
 
     // v0 Signal Splitting Numenator Start
     for (const auto& mcParticle : mcParticles) {
