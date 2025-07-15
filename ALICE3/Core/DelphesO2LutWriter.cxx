@@ -33,7 +33,6 @@
 #include "TVectorD.h"
 
 #include <cstdio>
-#include <iostream>
 #include <string>
 
 // #define USE_FWD_PARAM
@@ -96,11 +95,11 @@ bool DelphesO2LutWriter::fatSolve(lutEntry_t& lutEntry,
   o2::track::TrackParCov trkOut;
   const int status = fat.FastTrack(trkIn, trkOut, nch);
   if (status <= mAtLeastHits) {
-    Printf(" --- fatSolve: FastTrack failed --- \n");
+    LOGF(info, " --- fatSolve: FastTrack failed --- \n");
     // tlv.Print();
     return false;
   }
-  Printf(" --- fatSolve: FastTrack succeeded %d --- \n", status);
+  LOGF(info, " --- fatSolve: FastTrack succeeded %d --- \n", status);
   // trkOut.print();
   lutEntry.valid = true;
   lutEntry.itof = fat.GetGoodHitProb(itof);
@@ -176,7 +175,7 @@ bool DelphesO2LutWriter::fwdPara(lutEntry_t& lutEntry, float pt, float eta, floa
   const double dcaz_ms = sigma_alpha * r0 * std::cosh(eta);
   const double dcaz2 = dca_pos * dca_pos + dcaz_ms * dcaz_ms;
 
-  const float Leta = 2.8 / sinh(eta) - 0.01 * r0; // m
+  const float Leta = 2.8 / std::sinh(eta) - 0.01 * r0; // m
   const double relmomres_pos = 10e-6 * pt / 0.3 / Bfield / Leta / Leta * std::sqrt(720. / 15.);
 
   const float relmomres_barrel = std::sqrt(covmbarrel[14]) * pt;
@@ -186,7 +185,7 @@ bool DelphesO2LutWriter::fwdPara(lutEntry_t& lutEntry, float pt, float eta, floa
 
   // interpolate MS contrib (rel resolution 0.4 at eta = 4)
   const float relmomres_MS_eta4 = 0.4 / beta * 0.5 / Bfield;
-  const float relmomres_MS = relmomres_MS_eta4 * pow(relmomres_MS_eta4 / relmomres_MS_barrel, (std::fabs(eta) - 4.) / (4. - etaMaxBarrel));
+  const float relmomres_MS = relmomres_MS_eta4 * std::pow(relmomres_MS_eta4 / relmomres_MS_barrel, (std::fabs(eta) - 4.) / (4. - etaMaxBarrel));
   const float momres_tot = pt * std::sqrt(relmomres_pos * relmomres_pos + relmomres_MS * relmomres_MS); // total absolute mom reso
 
   // Fill cov matrix diag
@@ -205,7 +204,7 @@ bool DelphesO2LutWriter::fwdPara(lutEntry_t& lutEntry, float pt, float eta, floa
   // Check that all numbers are numbers
   for (int i = 0; i < 15; ++i) {
     if (std::isnan(lutEntry.covm[i])) {
-      Printf(" --- lutEntry.covm[%d] is NaN", i);
+      LOGF(info, " --- lutEntry.covm[%d] is NaN", i);
       return false;
     }
   }
@@ -216,14 +215,14 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, si
 {
 
   if (useFlatDipole && useDipole) {
-    Printf("Both dipole and dipole flat flags are on, please use only one of them");
+    LOGF(info, "Both dipole and dipole flat flags are on, please use only one of them");
     return;
   }
 
   // output file
   std::ofstream lutFile(filename, std::ofstream::binary);
   if (!lutFile.is_open()) {
-    Printf("Did not manage to open output file!!");
+    LOGF(info, "Did not manage to open output file!!");
     return;
   }
 
@@ -234,7 +233,7 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, si
   lutHeader.mass = TDatabasePDG::Instance()->GetParticle(pdg)->Mass();
   const int q = std::abs(TDatabasePDG::Instance()->GetParticle(pdg)->Charge()) / 3;
   if (q <= 0) {
-    Printf("Negative or null charge (%f) for pdg code %i. Fix the charge!", TDatabasePDG::Instance()->GetParticle(pdg)->Charge(), pdg);
+    LOGF(info, "Negative or null charge (%f) for pdg code %i. Fix the charge!", TDatabasePDG::Instance()->GetParticle(pdg)->Charge(), pdg);
     return;
   }
   lutHeader.field = field;
@@ -267,23 +266,23 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, si
   int successfullCalls = 0;
   int failedCalls = 0;
   for (int inch = 0; inch < nnch; ++inch) {
-    Printf(" --- writing nch = %d/%d", inch, nnch);
+    LOGF(info, " --- writing nch = %d/%d", inch, nnch);
     auto nch = lutHeader.nchmap.eval(inch);
     lutEntry.nch = nch;
     fat.SetdNdEtaCent(nch);
     for (int irad = 0; irad < nrad; ++irad) {
-      Printf(" --- writing irad = %d/%d", irad, nrad);
+      LOGF(info, " --- writing irad = %d/%d", irad, nrad);
       for (int ieta = 0; ieta < neta; ++ieta) {
-        Printf(" --- writing ieta = %d/%d", ieta, neta);
+        LOGF(info, " --- writing ieta = %d/%d", ieta, neta);
         auto eta = lutHeader.etamap.eval(ieta);
         lutEntry.eta = lutHeader.etamap.eval(ieta);
         for (int ipt = 0; ipt < npt; ++ipt) {
           nCalls++;
-          Printf(" --- writing ipt = %d/%d", ipt, npt);
+          LOGF(info, " --- writing ipt = %d/%d", ipt, npt);
           lutEntry.pt = lutHeader.ptmap.eval(ipt);
           lutEntry.valid = true;
           if (std::fabs(eta) <= etaMaxBarrel) { // full lever arm ends at etaMaxBarrel
-            Printf("Solving in the barrel");
+            LOGF(info, "Solving in the barrel");
             // printf(" --- fatSolve: pt = %f, eta = %f, mass = %f, field=%f \n", lutEntry.pt, lutEntry.eta, lutHeader.mass, lutHeader.field);
             successfullCalls++;
             if (!fatSolve(lutEntry, lutEntry.pt, lutEntry.eta, lutHeader.mass, itof, otof, q)) {
@@ -298,7 +297,7 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, si
               failedCalls++;
             }
           } else {
-            Printf("Solving outside the barrel");
+            LOGF(info, "Solving outside the barrel");
             // printf(" --- fwdSolve: pt = %f, eta = %f, mass = %f, field=%f \n", lutEntry.pt, lutEntry.eta, lutHeader.mass, lutHeader.field);
             lutEntry.eff = 1.;
             lutEntry.eff2 = 1.;
@@ -329,16 +328,16 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, si
               failedCalls++;
             }
           }
-          Printf("Diagonalizing");
+          LOGF(info, "Diagonalizing");
           diagonalise(lutEntry);
-          Printf("Writing");
+          LOGF(info, "Writing");
           lutFile.write(reinterpret_cast<char*>(&lutEntry), sizeof(lutEntry_t));
         }
       }
     }
   }
-  Printf(" --- finished writing LUT file %s", filename);
-  Printf(" --- successfull calls: %d/%d, failed calls: %d/%d", successfullCalls, nCalls, failedCalls, nCalls);
+  LOGF(info, " --- finished writing LUT file %s", filename);
+  LOGF(info, " --- successfull calls: %d/%d, failed calls: %d/%d", successfullCalls, nCalls, failedCalls, nCalls);
   lutFile.close();
 }
 
@@ -409,52 +408,52 @@ TGraph* DelphesO2LutWriter::lutRead(const char* filename, int pdg, int what, int
   g->SetTitle(Form("LUT for %s, pdg %d, vs %d, what %d", filename, pdg, vs, what));
   switch (vs) {
     case kNch:
-      Printf(" --- vs = kNch");
+      LOGF(info, " --- vs = kNch");
       g->GetXaxis()->SetTitle("Nch");
       break;
     case kEta:
-      Printf(" --- vs = kEta");
+      LOGF(info, " --- vs = kEta");
       g->GetXaxis()->SetTitle("#eta");
       break;
     case kPt:
-      Printf(" --- vs = kPt");
+      LOGF(info, " --- vs = kPt");
       g->GetXaxis()->SetTitle("p_{T} (GeV/c)");
       break;
     default:
-      Printf(" --- error: unknown vs %d", vs);
+      LOGF(info, " --- error: unknown vs %d", vs);
       return nullptr;
   }
   switch (what) {
     case kEfficiency:
-      Printf(" --- what = kEfficiency");
+      LOGF(info, " --- what = kEfficiency");
       g->GetYaxis()->SetTitle("Efficiency (%)");
       break;
     case kEfficiency2:
-      Printf(" --- what = kEfficiency2");
+      LOGF(info, " --- what = kEfficiency2");
       g->GetYaxis()->SetTitle("Efficiency2 (%)");
       break;
     case kEfficiencyInnerTOF:
-      Printf(" --- what = kEfficiencyInnerTOF");
+      LOGF(info, " --- what = kEfficiencyInnerTOF");
       g->GetYaxis()->SetTitle("Inner TOF Efficiency (%)");
       break;
     case kEfficiencyOuterTOF:
-      Printf(" --- what = kEfficiencyOuterTOF");
+      LOGF(info, " --- what = kEfficiencyOuterTOF");
       g->GetYaxis()->SetTitle("Outer TOF Efficiency (%)");
       break;
     case kPtResolution:
-      Printf(" --- what = kPtResolution");
+      LOGF(info, " --- what = kPtResolution");
       g->GetYaxis()->SetTitle("p_{T} Resolution (%)");
       break;
     case kRPhiResolution:
-      Printf(" --- what = kRPhiResolution");
+      LOGF(info, " --- what = kRPhiResolution");
       g->GetYaxis()->SetTitle("R#phi Resolution (#mum)");
       break;
     case kZResolution:
-      Printf(" --- what = kZResolution");
+      LOGF(info, " --- what = kZResolution");
       g->GetYaxis()->SetTitle("Z Resolution (#mum)");
       break;
     default:
-      Printf(" --- error: unknown what %d", what);
+      LOGF(info, " --- error: unknown what %d", what);
       return nullptr;
   }
 
@@ -475,7 +474,7 @@ TGraph* DelphesO2LutWriter::lutRead(const char* filename, int pdg, int what, int
     auto lutEntry = smearer.getLUTEntry(pdg, nch, radius, eta, pt, eff);
     if (!lutEntry->valid || lutEntry->eff == 0.) {
       if (!canBeInvalid) {
-        Printf(" --- warning: it cannot be invalid");
+        LOGF(info, " --- warning: it cannot be invalid");
       }
       continue;
     }
@@ -508,16 +507,16 @@ TGraph* DelphesO2LutWriter::lutRead(const char* filename, int pdg, int what, int
         val = lutEntry->otof * 100.; // efficiency (%)
         break;
       case kPtResolution:
-        val = sqrt(lutEntry->covm[14]) * lutEntry->pt * 100.; // pt resolution (%)
+        val = std::sqrt(lutEntry->covm[14]) * lutEntry->pt * 100.; // pt resolution (%)
         break;
       case kRPhiResolution:
-        val = sqrt(lutEntry->covm[0]) * 1.e4; // rphi resolution (um)
+        val = std::sqrt(lutEntry->covm[0]) * 1.e4; // rphi resolution (um)
         break;
       case kZResolution:
-        val = sqrt(lutEntry->covm[1]) * 1.e4; // z resolution (um)
+        val = std::sqrt(lutEntry->covm[1]) * 1.e4; // z resolution (um)
         break;
       default:
-        Printf(" --- error: unknown what %d", what);
+        LOGF(info, " --- error: unknown what %d", what);
         break;
     }
     g->AddPoint(cen, val);

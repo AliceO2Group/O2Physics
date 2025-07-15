@@ -43,9 +43,9 @@ class DelphesO2LutWriter
   void setBinningEta(bool log, int nbins, float min, float max) { mEtaBinning = {log, nbins, min, max}; }
   void setBinningPt(bool log, int nbins, float min, float max) { mPtBinning = {log, nbins, min, max}; }
   void setEtaMaxBarrel(float eta) { etaMaxBarrel = eta; }
-  void SetAtLeastHits(int n) { mAtLeastHits = n; }
-  void SetAtLeastCorr(int n) { mAtLeastCorr = n; }
-  void SetAtLeastFake(int n) { mAtLeastFake = n; }
+  void setAtLeastHits(int n) { mAtLeastHits = n; }
+  void setAtLeastCorr(int n) { mAtLeastCorr = n; }
+  void setAtLeastFake(int n) { mAtLeastFake = n; }
   bool fatSolve(lutEntry_t& lutEntry,
                 float pt = 0.1,
                 float eta = 0.0,
@@ -55,7 +55,7 @@ class DelphesO2LutWriter
                 int q = 1,
                 const float nch = 1);
 
-  void Print() const;
+  void print() const;
   bool fwdSolve(float* covm, float pt = 0.1, float eta = 0.0, float mass = 0.13957000);
   bool fwdPara(lutEntry_t& lutEntry, float pt = 0.1, float eta = 0.0, float mass = 0.13957000, float Bfield = 0.5);
   void lutWrite(const char* filename = "lutCovm.dat", int pdg = 211, float field = 0.2, size_t itof = 0, size_t otof = 0);
