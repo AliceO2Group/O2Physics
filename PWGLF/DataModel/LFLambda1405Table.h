@@ -33,8 +33,10 @@ DECLARE_SOA_COLUMN(Px, px, float);                           //! Px of the candi
 DECLARE_SOA_COLUMN(Py, py, float);                           //! Py of the candidate
 DECLARE_SOA_COLUMN(Pz, pz, float);                           //! Pz of the candidate
 DECLARE_SOA_COLUMN(Mass, mass, float);                       //! Invariant mass of the candidate
+DECLARE_SOA_COLUMN(MassXi1530, massXi1530, float);           //! Invariant mass of the Xi(1530) candidate
 DECLARE_SOA_COLUMN(SigmaMinusMass, sigmaMinusMass, float);   //! Invariant mass of the Sigma- candidate
 DECLARE_SOA_COLUMN(SigmaPlusMass, sigmaPlusMass, float);     //! Invariant mass of the Sigma+ candidate
+DECLARE_SOA_COLUMN(XiMinusMass, xiMinusMass, float);         //! Invariant mass of the Xi- candidate
 DECLARE_SOA_COLUMN(PtSigma, ptSigma, float);                 //! Signed pT of the Sigma daughter
 DECLARE_SOA_COLUMN(AlphaAPSigma, alphaAPSigma, float);       //! Alpha of the Sigma
 DECLARE_SOA_COLUMN(QtAPSigma, qtAPSigma, float);             //! qT of the Sigma
@@ -58,7 +60,8 @@ DECLARE_SOA_COLUMN(KinkDauPdgCode, kinkDauPdgCode, int); //! PDG code of the kin
 DECLARE_SOA_TABLE(Lambda1405Cands, "AOD", "LAMBDA1405",
                   o2::soa::Index<>,
                   lambda1405::Px, lambda1405::Py, lambda1405::Pz,
-                  lambda1405::Mass, lambda1405::SigmaMinusMass, lambda1405::SigmaPlusMass,
+                  lambda1405::Mass, lambda1405::MassXi1530,
+                  lambda1405::SigmaMinusMass, lambda1405::SigmaPlusMass, lambda1405::XiMinusMass,
                   lambda1405::PtSigma, lambda1405::AlphaAPSigma, lambda1405::QtAPSigma, lambda1405::RadiusSigma,
                   lambda1405::NSigmaTPCPiKink, lambda1405::NSigmaTOFPiKink,
                   lambda1405::NSigmaTPCPrKink, lambda1405::NSigmaTOFPrKink,
@@ -68,7 +71,8 @@ DECLARE_SOA_TABLE(Lambda1405Cands, "AOD", "LAMBDA1405",
 DECLARE_SOA_TABLE(Lambda1405CandsMC, "AOD", "MCLAMBDA1405",
                   o2::soa::Index<>,
                   lambda1405::Px, lambda1405::Py, lambda1405::Pz,
-                  lambda1405::Mass, lambda1405::SigmaMinusMass, lambda1405::SigmaPlusMass,
+                  lambda1405::Mass, lambda1405::MassXi1530,
+                  lambda1405::SigmaMinusMass, lambda1405::SigmaPlusMass, lambda1405::XiMinusMass,
                   lambda1405::PtSigma, lambda1405::AlphaAPSigma, lambda1405::QtAPSigma, lambda1405::RadiusSigma,
                   lambda1405::NSigmaTPCPiKink, lambda1405::NSigmaTOFPiKink,
                   lambda1405::NSigmaTPCPrKink, lambda1405::NSigmaTOFPrKink,

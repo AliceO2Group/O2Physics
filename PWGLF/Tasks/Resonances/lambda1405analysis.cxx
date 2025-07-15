@@ -35,6 +35,7 @@ using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod:
 struct lambda1405candidate {
   // Columns for Lambda(1405) candidate
   float mass = -1;                                          // Invariant mass of the Lambda(1405) candidate
+  float massXi1530 = -1;                                    // Invariant mass of the Xi(1530) candidate
   float px = -1;                                            // Px of the Lambda(1405) candidate
   float py = -1;                                            // Py of the Lambda(1405) candidate
   float pz = -1;                                            // Pz of the Lambda(1405) candidate
@@ -44,6 +45,7 @@ struct lambda1405candidate {
   bool isSigmaMinus = false;  // True if compatible with Sigma-
   float sigmaMinusMass = -1;  // Invariant mass of the Sigma- candidate
   float sigmaPlusMass = -1;   // Invariant mass of the Sigma+ candidate
+  float xiMinusMass = -1;     // Invariant mass of the Xi- candidate
   int sigmaSign = 0;          // Sign of the Sigma candidate: 1 for matter, -1 for antimatter
   float sigmaPt = -1;         // pT of the Sigma daughter
   float sigmaAlphaAP = -1;    // Alpha of the Sigma
@@ -241,7 +243,8 @@ struct lambda1405analysis {
       auto sigmaMom = std::array{sigmaCand.pxMoth(), sigmaCand.pyMoth(), sigmaCand.pzMoth()};
       auto piMom = std::array{piTrack.px(), piTrack.py(), piTrack.pz()};
       double massSigma = lambda1405Cand.isSigmaMinus ? sigmaCand.mSigmaMinus() : sigmaCand.mSigmaPlus();
-      float invMass = RecoDecay::m(std::array{sigmaMom, piMom}, std::array{massSigma, o2::constants::physics::MassPiPlus});
+      float invMass = RecoDecay::m(std::array{sigmaMom, piMom}, std::array{o2::constants::physics::MassSigmaMinus, o2::constants::physics::MassPiPlus});
+      float invMassXiPi = RecoDecay::m(std::array{sigmaMom, kinkDauMom}, std::array{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus});
       if (invMass > cutUpperMass) {
         continue;
       }
@@ -254,9 +257,11 @@ struct lambda1405analysis {
       lambda1405Cand.py = sigmaMom[1] + piMom[1];
       lambda1405Cand.pz = sigmaMom[2] + piMom[2];
       lambda1405Cand.mass = invMass;
+      lambda1405Cand.massXi1530 = invMassXiPi;
 
       lambda1405Cand.sigmaMinusMass = sigmaCand.mSigmaMinus();
       lambda1405Cand.sigmaPlusMass = sigmaCand.mSigmaPlus();
+      lambda1405Cand.xiMinusMass = sigmaCand.mXiMinus();
       lambda1405Cand.sigmaSign = sigmaCand.mothSign();
       lambda1405Cand.sigmaAlphaAP = alphaAP(sigmaMom, kinkDauMom);
       lambda1405Cand.sigmaQtAP = qtAP(sigmaMom, kinkDauMom);
@@ -322,7 +327,8 @@ struct lambda1405analysis {
         }
         if (fillOutputTree) {
           outputDataTable(lambda1405Cand.px, lambda1405Cand.py, lambda1405Cand.pz,
-                          lambda1405Cand.mass, lambda1405Cand.sigmaMinusMass, lambda1405Cand.sigmaPlusMass,
+                          lambda1405Cand.mass, lambda1405Cand.massXi1530,
+                          lambda1405Cand.sigmaMinusMass, lambda1405Cand.sigmaPlusMass, lambda1405Cand.xiMinusMass,
                           lambda1405Cand.sigmaPt, lambda1405Cand.sigmaAlphaAP, lambda1405Cand.sigmaQtAP, lambda1405Cand.sigmaRadius,
                           lambda1405Cand.kinkTPCNSigmaPi, lambda1405Cand.kinkTOFNSigmaPi,
                           lambda1405Cand.kinkTPCNSigmaPr, lambda1405Cand.kinkTOFNSigmaPr,
@@ -406,7 +412,8 @@ struct lambda1405analysis {
 
           if (fillOutputTree) {
             outputDataTableMC(lambda1405Cand.px, lambda1405Cand.py, lambda1405Cand.pz,
-                              lambda1405Cand.mass, lambda1405Cand.sigmaMinusMass, lambda1405Cand.sigmaPlusMass,
+                              lambda1405Cand.mass, lambda1405Cand.massXi1530,
+                              lambda1405Cand.sigmaMinusMass, lambda1405Cand.sigmaPlusMass, lambda1405Cand.xiMinusMass,
                               lambda1405Cand.sigmaPt, lambda1405Cand.sigmaAlphaAP, lambda1405Cand.sigmaQtAP, lambda1405Cand.sigmaRadius,
                               lambda1405Cand.kinkTPCNSigmaPi, lambda1405Cand.kinkTOFNSigmaPi,
                               lambda1405Cand.kinkTPCNSigmaPr, lambda1405Cand.kinkTOFNSigmaPr,
@@ -417,6 +424,7 @@ struct lambda1405analysis {
         }
       }
     }
+
     // Loop over generated particles to fill MC histograms
     for (const auto& mcPart : particlesMC) {
       if (std::abs(mcPart.pdgCode()) != lambda1405PdgCode) {
@@ -426,6 +434,7 @@ struct lambda1405analysis {
       if (!mcPart.has_daughters()) {
         continue; // Skip if no daughters
       }
+
       // Check if the Lambda(1405) has a Sigma daughter
       bool hasSigmaDaughter = false;
       int dauPdgCode = 0;
