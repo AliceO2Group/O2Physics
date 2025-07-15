@@ -388,7 +388,6 @@ int runMassFitter(const TString& configFileName)
     const Int_t iCanvas = std::floor(static_cast<float>(iSliceVar) / nCanvasesMax);
 
     hMassForFit[iSliceVar] = static_cast<TH1*>(hMass[iSliceVar]->Rebin(nRebin[iSliceVar]));
-
     TString ptTitle =
       Form("%0.2f < " + sliceVarName + " < %0.2f " + sliceVarUnit, sliceVarMin[iSliceVar], sliceVarMax[iSliceVar]);
     hMassForFit[iSliceVar]->SetTitle(Form("%s;%s;Counts per %0.1f MeV/#it{c}^{2}",
@@ -490,6 +489,7 @@ int runMassFitter(const TString& configFileName)
           printf("*****************************\n");
         } else {
           printf("WARNING: impossible to fix sigma! Wrong fix sigma file or value!\n");
+        }
       }
       if (fixSecondSigma) {
         if (fixSecondSigmaManual.empty()) {
