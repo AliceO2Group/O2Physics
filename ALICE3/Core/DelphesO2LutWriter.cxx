@@ -233,10 +233,15 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, si
   lutHeader_t lutHeader;
   // pid
   lutHeader.pdg = pdg;
-  lutHeader.mass = TDatabasePDG::Instance()->GetParticle(pdg)->Mass();
-  const int q = std::abs(TDatabasePDG::Instance()->GetParticle(pdg)->Charge()) / 3;
+  const TParticlePDG* particle = TDatabasePDG::Instance()->GetParticle(pdg);
+  if (!particle) {
+    LOG(fatal) << "Cannot find particle with PDG code " << pdg;
+    return;
+  }
+  lutHeader.mass = particle->Mass();
+  const int q = std::abs(particle->Charge()) / 3;
   if (q <= 0) {
-    LOGF(info, "Negative or null charge (%f) for pdg code %i. Fix the charge!", TDatabasePDG::Instance()->GetParticle(pdg)->Charge(), pdg);
+    LOGF(info, "Negative or null charge (%f) for pdg code %i. Fix the charge!", particle->Charge(), pdg);
     return;
   }
   lutHeader.field = field;
