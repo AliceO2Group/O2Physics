@@ -213,7 +213,7 @@ struct HfTaskElectronWeakBoson {
     const AxisSpec axisTrigger{3, -0.5, 2.5, "Trigger status of zorro"};
     const AxisSpec axisDPhiZh{64, -o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf, "#Delta#phi(Z-h)"};
     const AxisSpec axisPtHadron{50, 0, 50, "p_{T,hadron} (GeV/c)"};
-    const AxisSpec axisZpt{150, 0, 150, "p_{T,Z} (GeV/c)"};
+    const AxisSpec axisPtZ{150, 0, 150, "p_{T,Z} (GeV/c)"};
     const AxisSpec axisSign{2, -2, 2, "charge sign"};
 
     // create registrygrams
@@ -249,8 +249,8 @@ struct HfTaskElectronWeakBoson {
     registry.add("hTHnTrMatch", "Track EMC Match", HistType::kTHnSparseF, {axisPt, axisdPhi, axisdEta});
 
     // Z-hadron correlation histograms
-    registry.add("hZHadronDphi", "Z-hadron #Delta#phi correlation", HistType::kTHnSparseF, {axisSign, axisZpt, axisDPhiZh});
-    registry.add("hZptSpectrum", "Z boson p_{T} spectrum", kTH2F, {{axisSign}, {axisZpt}});
+    registry.add("hZHadronDphi", "Z-hadron #Delta#phi correlation", HistType::kTHnSparseF, {axisSign, axisPtZ, axisDPhiZh});
+    registry.add("hZptSpectrum", "Z boson p_{T} spectrum", kTH2F, {{axisSign}, {axisPtZ}});
 
     // hisotgram for EMCal trigger
     registry.add("hEMCalTrigger", "EMCal trigger", kTH1F, {axisTrigger});
