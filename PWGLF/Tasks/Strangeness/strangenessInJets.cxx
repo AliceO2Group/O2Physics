@@ -972,6 +972,11 @@ struct StrangenessInJets {
   }
   PROCESS_SWITCH(StrangenessInJets, processData, "Process data", true);
 
+  Preslice<aod::V0Datas> perCollisionV0 = o2::aod::v0data::collisionId;
+  Preslice<aod::CascDataExt> perCollisionCasc = o2::aod::cascade::collisionId;
+  Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
+  Preslice<DaughterTracksMC> perCollisionTrk = o2::aod::track::collisionId;
+
   // Generated MC events
   void processMCgenerated(aod::McCollisions const& collisions, aod::McParticles const& mcParticles)
   {
@@ -982,19 +987,24 @@ struct StrangenessInJets {
       registryMC.fill(HIST("number_of_events_mc_gen"), 0.5);
 
       // Need to apply event selection to simulated events
+      registryMC.fill(HIST("number_of_events_mc_gen"), 1.5);
+
       // Require vertex position within the allowed z range
       if (std::fabs(collision.posZ()) > zVtx)
         continue;
 
       // Fill event counter after selection on z-vertex
-      registryMC.fill(HIST("number_of_events_mc_gen"), 1.5);
+      registryMC.fill(HIST("number_of_events_mc_gen"), 2.5);
 
       // Multiplicity of generated event
       double genMultiplicity = 0.0;
 
+      // MC particles per collision
+      auto mcParticlesPerColl = mcParticles.sliceBy(perMCCollision, collision.globalIndex());
+
       // Loop over all MC particles and select physical primaries within acceptance
       std::vector<fastjet::PseudoJet> fjParticles;
-      for (const auto& particle : mcParticles) {
+      for (const auto& particle : mcParticlesPerColl) {
         if (!particle.isPhysicalPrimary())
           continue;
         double minPtParticle = 0.1;
@@ -1011,7 +1021,7 @@ struct StrangenessInJets {
       // Skip events with no particles
       if (fjParticles.size() < 1)
         continue;
-      registryMC.fill(HIST("number_of_events_mc_gen"), 2.5);
+      registryMC.fill(HIST("number_of_events_mc_gen"), 3.5);
 
       // Cluster MC particles into jets using anti-kt algorithm
       fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
@@ -1036,7 +1046,7 @@ struct StrangenessInJets {
         // Apply jet pT threshold
         if (jetMinusBkg.pt() < minJetPt)
           continue;
-        registryMC.fill(HIST("number_of_events_mc_gen"), 3.5);
+        registryMC.fill(HIST("number_of_events_mc_gen"), 4.5);
 
         // Set up two perpendicular cone axes for underlying event estimation
         TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
@@ -1046,7 +1056,7 @@ struct StrangenessInJets {
         getPerpendicularAxis(jetAxis, ueAxis2, -1);
 
         // Loop over MC particles
-        for (const auto& particle : mcParticles) {
+        for (const auto& particle : mcParticlesPerColl) {
           if (!particle.isPhysicalPrimary())
             continue;
           double minPtParticle = 0.1;
@@ -1150,9 +1160,14 @@ struct StrangenessInJets {
       // Event multiplicity
       const float multiplicity = collision.centFT0M();
 
+      // Number of V0 and cascades per collision
+      auto v0sPerColl = fullV0s.sliceBy(perCollisionV0, collision.globalIndex());
+      auto cascPerColl = Cascades.sliceBy(perCollisionCasc, collision.globalIndex());
+      auto tracksPerColl = mcTracks.sliceBy(perCollisionTrk, collision.globalIndex());
+
       // Loop over reconstructed tracks
       std::vector<fastjet::PseudoJet> fjParticles;
-      for (auto const& track : mcTracks) {
+      for (auto const& track : tracksPerColl) {
         if (!passedTrackSelectionForJetReconstruction(track))
           continue;
 
@@ -1215,7 +1230,7 @@ struct StrangenessInJets {
 
         // V0 particles
         if (particleOfInterest == Option::kV0Particles) {
-          for (const auto& v0 : fullV0s) {
+          for (const auto& v0 : v0sPerColl) {
             const auto& pos = v0.posTrack_as<DaughterTracksMC>();
             const auto& neg = v0.negTrack_as<DaughterTracksMC>();
             TVector3 v0dir(v0.px(), v0.py(), v0.pz());
@@ -1314,7 +1329,7 @@ struct StrangenessInJets {
 
         // Cascades
         if (particleOfInterest == Option::kCascades) {
-          for (const auto& casc : Cascades) {
+          for (const auto& casc : cascPerColl) {
             auto bach = casc.bachelor_as<DaughterTracksMC>();
             auto pos = casc.posTrack_as<DaughterTracksMC>();
             auto neg = casc.negTrack_as<DaughterTracksMC>();

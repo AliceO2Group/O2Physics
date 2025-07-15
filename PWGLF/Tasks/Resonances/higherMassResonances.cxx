@@ -178,7 +178,8 @@ struct HigherMassResonances {
   // variables declaration
   float multiplicity = 0.0f;
   float theta2;
-  ROOT::Math::PxPyPzMVector daughter1, daughter2, daughterRot, daughterRotCM, mother, mother1, motherRot, fourVecDauCM, fourVecDauCM1;
+  ROOT::Math::PxPyPzMVector daughter1, daughter2, daughterRot, daughterRotCM, mother, motherRot, fourVecDauCM, fourVecDauCM1;
+  ROOT::Math::PxPyPzEVector mother1;
   ROOT::Math::XYZVector randomVec, beamVec, normalVec;
   ROOT::Math::XYZVectorF v1_CM, zaxis_HE, yaxis_HE, xaxis_HE;
   // ROOT::Math::XYZVector threeVecDauCM, helicityVec, randomVec, beamVec, normalVec;
@@ -313,13 +314,15 @@ struct HigherMassResonances {
       hMChists.add("events_check", "No. of events in the generated MC", kTH1I, {{20, 0, 20}});
       hMChists.add("events_checkrec", "No. of events in the reconstructed MC", kTH1I, {{25, 0, 25}});
       hMChists.add("Genf1710", "Gen f_{0}(1710)", kTHnSparseF, {multiplicityAxis, ptAxis, thnAxisPOL});
+      hMChists.add("Genf17102", "Gen f_{0}(1710)", kTHnSparseF, {multiplicityAxis, ptAxis, thnAxisPOL});
       hMChists.add("Recf1710_pt1", "Rec f_{0}(1710) p_{T}", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL});
       hMChists.add("Recf1710_pt2", "Rec f_{0}(1710) p_{T}", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL});
       // hMChists.add("Recf1710_p", "Rec f_{0}(1710) p", kTH1F, {ptAxis});
       hMChists.add("h1Recsplit", "Rec p_{T}2", kTH1F, {ptAxis});
       // hMChists.add("Recf1710_mass", "Rec f_{0}(1710) mass", kTH1F, {glueballMassAxis});
       hMChists.add("Genf1710_mass", "Gen f_{0}(1710) mass", kTH1F, {glueballMassAxis});
-      hMChists.add("Genf1710_pt2", "Gen f_{0}(1710) p_{T}", kTH1F, {ptAxis});
+      hMChists.add("Genf1710_mass2", "Gen f_{0}(1710) mass", kTH1F, {glueballMassAxis});
+      // hMChists.add("Genf1710_pt2", "Gen f_{0}(1710) p_{T}", kTH1F, {ptAxis});
       hMChists.add("GenPhi", "Gen Phi", kTH1F, {{70, 0.0, 7.0f}});
       hMChists.add("GenPhi2", "Gen Phi", kTH1F, {{70, 0.0, 7.0f}});
       hMChists.add("GenEta", "Gen Eta", kTHnSparseF, {{150, -1.5f, 1.5f}});
@@ -992,7 +995,8 @@ struct HigherMassResonances {
   int counter = 0;
   float multiplicityGen = 0.0;
   std::vector<bool> passKs;
-  ROOT::Math::PxPyPzMVector lResonance_gen, lResonance_gen2;
+  ROOT::Math::PxPyPzMVector lResonance_gen1;
+  ROOT::Math::PxPyPzEVector lResonance_gen;
 
   void processGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
@@ -1084,26 +1088,32 @@ struct HigherMassResonances {
       }
       if (passKs.size() == 2) {
         lResonance_gen = ROOT::Math::PxPyPzEVector(mcParticle.pt(), mcParticle.eta(), mcParticle.phi(), mcParticle.e());
-        lResonance_gen2 = daughter1 + daughter2;
+        lResonance_gen1 = daughter1 + daughter2;
 
-        if (config.applyPairRapidityGen && std::abs(lResonance_gen2.Y()) >= 0.5) {
+        ROOT::Math::Boost boost{lResonance_gen.BoostToCM()};
+        ROOT::Math::Boost boost1{lResonance_gen1.BoostToCM()};
+
+        fourVecDauCM = boost(daughter1);
+        fourVecDauCM1 = boost1(daughter1);
+
+        auto helicity_gen = lResonance_gen.Vect().Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(lResonance_gen.Vect().Mag2()));
+        auto helicity_gen1 = lResonance_gen1.Vect().Dot(fourVecDauCM1.Vect()) / (std::sqrt(fourVecDauCM1.Vect().Mag2()) * std::sqrt(lResonance_gen1.Vect().Mag2()));
+
+        hMChists.fill(HIST("Genf1710"), multiplicityGen, lResonance_gen.pt(), helicity_gen);
+        hMChists.fill(HIST("Genf1710_mass"), lResonance_gen.M());
+        hMChists.fill(HIST("GenRapidity"), mcParticle.y());
+        hMChists.fill(HIST("GenEta"), mcParticle.eta());
+        hMChists.fill(HIST("GenPhi"), mcParticle.phi());
+
+        if (config.applyPairRapidityGen && std::abs(lResonance_gen1.Y()) >= 0.5) {
           continue;
         }
 
-        ROOT::Math::Boost boost{lResonance_gen.BoostToCM()};
-        fourVecDauCM = boost(daughter1); // boost the frame of daughter to the center of mass frame
-
-        auto helicity_gen = lResonance_gen2.Vect().Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(lResonance_gen2.Vect().Mag2()));
-
-        hMChists.fill(HIST("Genf1710"), multiplicityGen, lResonance_gen2.pt(), helicity_gen);
-        hMChists.fill(HIST("Genf1710_mass"), lResonance_gen2.M());
-        hMChists.fill(HIST("Genf1710_pt2"), mcParticle.pt());
-        hMChists.fill(HIST("GenRapidity"), lResonance_gen2.Y());
-        hMChists.fill(HIST("GenRapidity2"), mcParticle.y());
-        hMChists.fill(HIST("GenEta"), lResonance_gen2.Eta());
-        hMChists.fill(HIST("GenEta2"), mcParticle.eta());
-        hMChists.fill(HIST("GenPhi"), lResonance_gen2.Phi());
-        hMChists.fill(HIST("GenPhi2"), mcParticle.phi());
+        hMChists.fill(HIST("Genf17102"), multiplicityGen, lResonance_gen1.pt(), helicity_gen1);
+        hMChists.fill(HIST("Genf1710_mass2"), lResonance_gen1.M());
+        hMChists.fill(HIST("GenRapidity2"), lResonance_gen1.Y());
+        hMChists.fill(HIST("GenEta2"), lResonance_gen1.Eta());
+        hMChists.fill(HIST("GenPhi2"), lResonance_gen1.Phi());
       }
       passKs.clear(); // clear the vector for the next iteration
     }
@@ -1118,7 +1128,7 @@ struct HigherMassResonances {
       return;
     }
 
-    auto multiplicity = collision.centFT0C();
+    auto multiplicity = collision.centFT0M();
     hMChists.fill(HIST("Rec_Multiplicity"), multiplicity);
 
     hMChists.fill(HIST("events_checkrec"), 0.5);
@@ -1277,20 +1287,19 @@ struct HigherMassResonances {
 
             auto helicity_rec2 = mother1.Vect().Dot(fourVecDauCM1.Vect()) / (std::sqrt(fourVecDauCM1.Vect().Mag2()) * std::sqrt(mother1.Vect().Mag2()));
 
+            hMChists.fill(HIST("Recf1710_pt1"), multiplicity, mothertrack1.pt(), mother1.M(), helicity_rec2);
+            hMChists.fill(HIST("RecRapidity"), mothertrack1.y());
+            hMChists.fill(HIST("RecPhi"), mothertrack1.phi());
+            hMChists.fill(HIST("RecEta"), mothertrack1.eta());
+
             if (config.applyPairRapidityRec && std::abs(mother.Y()) >= 0.5) {
               continue;
             }
 
-            // std::cout << "mother pT is " << mother.Pt() << std::endl;
-
-            hMChists.fill(HIST("Recf1710_pt1"), multiplicity, mother.Pt(), mother.M(), helicity_rec);
-            hMChists.fill(HIST("Recf1710_pt2"), multiplicity, mother1.Pt(), mother1.M(), helicity_rec2);
-            hMChists.fill(HIST("RecRapidity"), mother.Y());
-            hMChists.fill(HIST("RecRapidity2"), mothertrack1.y());
-            hMChists.fill(HIST("RecPhi"), mother.Phi());
-            hMChists.fill(HIST("RecPhi2"), mothertrack1.phi());
-            hMChists.fill(HIST("RecEta"), mother.Eta());
-            hMChists.fill(HIST("RecEta2"), mothertrack1.eta());
+            hMChists.fill(HIST("Recf1710_pt2"), multiplicity, mother.Pt(), mother.M(), helicity_rec);
+            hMChists.fill(HIST("RecRapidity2"), mother.Y());
+            hMChists.fill(HIST("RecPhi2"), mother.Phi());
+            hMChists.fill(HIST("RecEta2"), mother.Eta());
           }
           gindex2.clear();
         }
