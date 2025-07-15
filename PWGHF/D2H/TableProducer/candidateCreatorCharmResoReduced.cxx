@@ -62,9 +62,9 @@ enum Selections : uint8_t {
   NSelSteps
 };
 
-enum PartSel : uint8_t {
-  selAsPart = 0,
-  selAsAntiPart
+enum D0Sel : uint8_t {
+  selectedD0 = 0,
+  selectedD0Bar
 };
 
 enum DType : uint8_t {
@@ -84,25 +84,10 @@ enum V0Type : uint8_t {
   AntiLambda
 };
 
-enum D0SelectionType : uint8_t {
-  SelectedD0 = 0,
-  SelectedD0Bar
-};
-
 enum TrackType : uint8_t {
   Pion = 0,
   Kaon,
   Proton
-};
-
-enum DecayTypeMc : uint8_t {
-  Ds1ToDStarK0ToD0PiK0s = 1,
-  Ds2StarToDplusK0sToPiKaPiPiPi,
-  Ds1ToDStarK0ToDPlusPi0K0s,
-  Ds1ToDStarK0ToD0PiK0sPart,
-  Ds1ToDStarK0ToD0NoPiK0sPart,
-  Ds1ToDStarK0ToD0PiK0sOneMu,
-  Ds2StarToDplusK0sOneMu
 };
 
 struct HfCandidateCreatorCharmResoReduced {
@@ -198,7 +183,7 @@ struct HfCandidateCreatorCharmResoReduced {
   template <DType dType, typename DRedTable>
   uint8_t selctionFlagBachD(DRedTable const& candD)
   {
-    uint8_t selection = {BIT(PartSel::selAsPart) | BIT(PartSel::selAsAntiPart)};
+    uint8_t selection = {BIT(D0Sel::selectedD0) | BIT(D0Sel::selectedD0Bar)};
     float invMassD{0.};
     float ptD = candD.pt();
     int ptBin = findBin(cfgDmesCuts.binsPtD, ptD);
@@ -220,21 +205,21 @@ struct HfCandidateCreatorCharmResoReduced {
         return 0;
       }
     } else if constexpr (dType == DType::D0) {
-      if (TESTBIT(candD.selFlagD0(), PartSel::selAsPart)) {
+      if (TESTBIT(candD.selFlagD0(), D0Sel::selectedD0)) {
         invMassD = candD.invMassD0();
         if (!isInMassInterval(invMassD, ptBin)) {
-          CLRBIT(selection, PartSel::selAsPart);
+          CLRBIT(selection, D0Sel::selectedD0);
         }
       } else {
-        CLRBIT(selection, PartSel::selAsPart);
+        CLRBIT(selection, D0Sel::selectedD0);
       }
-      if (TESTBIT(candD.selFlagD0(), PartSel::selAsAntiPart)) {
+      if (TESTBIT(candD.selFlagD0(), D0Sel::selectedD0Bar)) {
         invMassD = candD.invMassD0Bar();
         if (!isInMassInterval(invMassD, ptBin)) {
-          CLRBIT(selection, PartSel::selAsAntiPart);
+          CLRBIT(selection, D0Sel::selectedD0Bar);
         }
       } else {
-        CLRBIT(selection, PartSel::selAsAntiPart);
+        CLRBIT(selection, D0Sel::selectedD0Bar);
       }
     }
     return selection;
@@ -533,7 +518,7 @@ struct HfCandidateCreatorCharmResoReduced {
       }
     } else if constexpr (dType == DType::D0) {
       // D0
-      if (TESTBIT(selectionFlag, PartSel::selAsPart)) {
+      if (TESTBIT(selectionFlag, D0Sel::selectedD0)) {
         invMassD = candD.invMassD0();
         if constexpr (bachType == BachelorType::V0) {
           signReso = 0;
@@ -607,7 +592,7 @@ struct HfCandidateCreatorCharmResoReduced {
         }
       }
       // D0bar
-      if (TESTBIT(selectionFlag, PartSel::selAsAntiPart)) {
+      if (TESTBIT(selectionFlag, D0Sel::selectedD0Bar)) {
         invMassD = candD.invMassD0Bar();
         if constexpr (bachType == BachelorType::V0) {
           signReso = 0;

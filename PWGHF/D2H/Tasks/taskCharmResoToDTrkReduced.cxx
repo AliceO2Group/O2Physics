@@ -172,25 +172,25 @@ struct HfTaskCharmResoToDTrkReduced {
   // init
   void init(InitContext&)
   {
-    registry.add("hMass", "Charm resonance candidates inv. mass", {HistType::kTH1F, {axisInvMassReso}});
-    registry.add("hMassProng0", "D daughters inv. mass", {HistType::kTH1F, {axisInvMassProng0}});
-    registry.add("hPt", "Charm resonance candidates pT", {HistType::kTH1F, {axisPt}});
-    registry.add("hPtProng0", "D daughters pT", {HistType::kTH1F, {axisPtProng0}});
-    registry.add("hPtProng1", "Track daughter pT", {HistType::kTH1F, {axisPtProng1}});
-    registry.add("hNPvCont", "Collision number of PV contributors ; N contrib ; entries", {HistType::kTH1F, {{125, -0.5, 249.5}}});
-    registry.add("hZvert", "Collision Z Vtx ; z PV [cm] ; entries", {HistType::kTH1F, {{120, -12., 12.}}});
-    registry.add("hBz", "Collision Bz ; Bz [T] ; entries", {HistType::kTH1F, {{20, -10., 10.}}});
+    registry.add("hMass", "Charm resonance candidates inv. mass", {HistType::kTH1D, {axisInvMassReso}});
+    registry.add("hMassProng0", "D daughters inv. mass", {HistType::kTH1D, {axisInvMassProng0}});
+    registry.add("hPt", "Charm resonance candidates pT", {HistType::kTH1D, {axisPt}});
+    registry.add("hPtProng0", "D daughters pT", {HistType::kTH1D, {axisPtProng0}});
+    registry.add("hPtProng1", "Track daughter pT", {HistType::kTH1D, {axisPtProng1}});
+    registry.add("hNPvCont", "Collision number of PV contributors ; N contrib ; entries", {HistType::kTH1D, {{125, -0.5, 249.5}}});
+    registry.add("hZvert", "Collision Z Vtx ; z PV [cm] ; entries", {HistType::kTH1D, {{120, -12., 12.}}});
+    registry.add("hBz", "Collision Bz ; Bz [T] ; entries", {HistType::kTH1D, {{20, -10., 10.}}});
     registry.add("hSparse", "THn for production studies with cosThStar and BDT scores", HistType::kTHnSparseF, {axisPt, axisPtProng0, axisPtProng1, axisInvMassReso, axisInvMassProng0, axisCosThetaStar, axisBkgBdtScore, axisNonPromptBdtScore});
 
     if (doprocessD0KplusMC || doprocessD0KplusMCWithMl) {
       // gen histos
-      registry.add("hYRecPrompt", "Charm resonance candidates pT", {HistType::kTH2F, {axisPt, axisEta}});
-      registry.add("hYRecNonPrompt", "Charm resonance candidates pT", {HistType::kTH2F, {axisPt, axisEta}});
-      registry.add("hYGenAll", "Prompt {D_{S}}^j particles (generated);#it{p}_{T}^{gen}({D_{S}}^j) (GeV/#it{c});#it{y}^{gen}({D_{S}}^j);entries", {HistType::kTH2F, {axisPt, axisEta}});
-      registry.add("hYGenPrompt", "Prompt {D_{S}}^j particles (generated);#it{p}_{T}^{gen}({D_{S}}^j) (GeV/#it{c});#it{y}^{gen}({D_{S}}^j);entries", {HistType::kTH2F, {axisPt, axisEta}});
-      registry.add("hYGenPromptWithProngsInAcceptance", "Prompt {D_{S}}^j particles (generated-daughters in acceptance);#it{p}_{T}^{gen}({D_{S}}^j) (GeV/#it{c});#it{y}^{gen}({D_{S}}^j);entries", {HistType::kTH2F, {axisPt, axisEta}});
-      registry.add("hYGenNonPrompt", "NonPrompt {D_{S}}^j particles (generated);#it{p}_{T}^{gen}({D_{S}}^j) (GeV/#it{c});#it{y}^{gen}({D_{S}}^j);entries", {HistType::kTH2F, {axisPt, axisEta}});
-      registry.add("hYGenNonPromptWithProngsInAcceptance", "NonPrompt {D_{S}}^j particles (generated-daughters in acceptance);#it{p}_{T}^{gen}({D_{S}}^j) (GeV/#it{c});#it{y}^{gen}({D_{S}}^j);entries", {HistType::kTH2F, {axisPt, axisEta}});
+      registry.add("hYRecPrompt", "Charm resonance candidates pT", {HistType::kTH2D, {axisPt, axisEta}});
+      registry.add("hYRecNonPrompt", "Charm resonance candidates pT", {HistType::kTH2D, {axisPt, axisEta}});
+      registry.add("hYGenAll", "Prompt {D_{S}}^j particles (generated);#it{p}_{T}^{gen}({D_{S}}^j) (GeV/#it{c});#it{y}^{gen}({D_{S}}^j);entries", {HistType::kTH2D, {axisPt, axisEta}});
+      registry.add("hYGenPrompt", "Prompt {D_{S}}^j particles (generated);#it{p}_{T}^{gen}({D_{S}}^j) (GeV/#it{c});#it{y}^{gen}({D_{S}}^j);entries", {HistType::kTH2D, {axisPt, axisEta}});
+      registry.add("hYGenPromptWithProngsInAcceptance", "Prompt {D_{S}}^j particles (generated-daughters in acceptance);#it{p}_{T}^{gen}({D_{S}}^j) (GeV/#it{c});#it{y}^{gen}({D_{S}}^j);entries", {HistType::kTH2D, {axisPt, axisEta}});
+      registry.add("hYGenNonPrompt", "NonPrompt {D_{S}}^j particles (generated);#it{p}_{T}^{gen}({D_{S}}^j) (GeV/#it{c});#it{y}^{gen}({D_{S}}^j);entries", {HistType::kTH2D, {axisPt, axisEta}});
+      registry.add("hYGenNonPromptWithProngsInAcceptance", "NonPrompt {D_{S}}^j particles (generated-daughters in acceptance);#it{p}_{T}^{gen}({D_{S}}^j) (GeV/#it{c});#it{y}^{gen}({D_{S}}^j);entries", {HistType::kTH2D, {axisPt, axisEta}});
       if (fillSparses) {
         registry.add("hPtYGenSig", "{D_{S}}^j particles (generated);#it{p}_{T}({D_{S}}^j) (GeV/#it{c});#it{y}({D_{S}}^j)", {HistType::kTHnSparseF, {axisPt, axisEta, axisOrigin, axisFlag}});
         registry.add("hPtYWithProngsInAccepanceGenSig", "{D_{S}}^j particles (generated-daughters in acceptance);#it{p}_{T}({D_{S}}^j) (GeV/#it{c});#it{y}({D_{S}}^j)", {HistType::kTHnSparseF, {axisPt, axisEta, axisOrigin, axisFlag}});
