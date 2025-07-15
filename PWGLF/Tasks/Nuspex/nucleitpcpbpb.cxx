@@ -169,7 +169,6 @@ struct NucleitpcPbPb {
   ConfigurableAxis axisrapidity{"axisrapidity", {100, -2, 2}, "rapidity"};
   ConfigurableAxis axismass{"axismass", {100, -10, 10}, "mass^{2}"};
   ConfigurableAxis nsigmaAxis{"nsigmaAxis", {160, -20, 20}, "n#sigma_{#pi^{+}}"};
-  ConfigurableAxis ImptParAxis{"ImptParAxis", {100, 0, 20}, "impact parameter"};
   // CCDB
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<double> bField{"bField", -999, "bz field, -999 is automatic"};
@@ -239,7 +238,7 @@ struct NucleitpcPbPb {
 
     if (doprocessMC) {
       histomc.add("histVtxZgen", "histVtxZgen", kTH1F, {axisVtxZ});
-      histomc.add("ImptParameter", "ImptParameter", kTH1F, {ImptParAxis});
+      histomc.add("ImptParameter", "ImptParameter", kTH1F, {axisImpt});
       histomc.add("histEtagen", "histEtagen", kTH1F, {axiseta});
       histomc.add("histPtgenHe3", "histPtgenHe3", kTH1F, {ptAxis});
       histomc.add("histPtgenAntiHe3", "histPtgenAntiHe3", kTH1F, {ptAxis});
