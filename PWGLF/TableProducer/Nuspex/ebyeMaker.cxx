@@ -83,42 +83,12 @@ void momTotXYZ(std::array<float, 3>& momA, std::array<float, 3> const& momB, std
     momA[i] = momB[i] + momC[i];
   }
 }
-float invMass2Body(std::array<float, 3> const& momA, std::array<float, 3> const& momB, std::array<float, 3> const& momC, float const& massB, float const& massC)
-{
-  float p2B = momB[0] * momB[0] + momB[1] * momB[1] + momB[2] * momB[2];
-  float p2C = momC[0] * momC[0] + momC[1] * momC[1] + momC[2] * momC[2];
-  float eB = std::sqrt(p2B + massB * massB);
-  float eC = std::sqrt(p2C + massC * massC);
-  float eA = eB + eC;
-  float massA = std::sqrt(eA * eA - momA[0] * momA[0] - momA[1] * momA[1] - momA[2] * momA[2]);
-  return massA;
-}
 float alphaAP(std::array<float, 3> const& momA, std::array<float, 3> const& momB, std::array<float, 3> const& momC)
 {
   float momTot = std::sqrt(std::pow(momA[0], 2.) + std::pow(momA[1], 2.) + std::pow(momA[2], 2.));
   float lQlPos = (momB[0] * momA[0] + momB[1] * momA[1] + momB[2] * momA[2]) / momTot;
   float lQlNeg = (momC[0] * momA[0] + momC[1] * momA[1] + momC[2] * momA[2]) / momTot;
   return (lQlPos - lQlNeg) / (lQlPos + lQlNeg);
-}
-float etaFromMom(std::array<float, 3> const& momA, std::array<float, 3> const& momB)
-{
-  if (std::sqrt((1.f * momA[0] + 1.f * momB[0]) * (1.f * momA[0] + 1.f * momB[0]) +
-                (1.f * momA[1] + 1.f * momB[1]) * (1.f * momA[1] + 1.f * momB[1]) +
-                (1.f * momA[2] + 1.f * momB[2]) * (1.f * momA[2] + 1.f * momB[2])) -
-        (1.f * momA[2] + 1.f * momB[2]) <
-      static_cast<float>(1e-7)) {
-    if ((1.f * momA[2] + 1.f * momB[2]) < 0.f)
-      return -100.f;
-    return 100.f;
-  }
-  return 0.5f * std::log((std::sqrt((1.f * momA[0] + 1.f * momB[0]) * (1.f * momA[0] + 1.f * momB[0]) +
-                                    (1.f * momA[1] + 1.f * momB[1]) * (1.f * momA[1] + 1.f * momB[1]) +
-                                    (1.f * momA[2] + 1.f * momB[2]) * (1.f * momA[2] + 1.f * momB[2])) +
-                          (1.f * momA[2] + 1.f * momB[2])) /
-                         (std::sqrt((1.f * momA[0] + 1.f * momB[0]) * (1.f * momA[0] + 1.f * momB[0]) +
-                                    (1.f * momA[1] + 1.f * momB[1]) * (1.f * momA[1] + 1.f * momB[1]) +
-                                    (1.f * momA[2] + 1.f * momB[2]) * (1.f * momA[2] + 1.f * momB[2])) -
-                          (1.f * momA[2] + 1.f * momB[2])));
 }
 float calculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
 {
@@ -208,6 +178,7 @@ struct EbyeMaker {
   float dBz;
   uint8_t nTrackletsColl;
   uint8_t nTracksColl;
+  uint8_t nChPartGen;
 
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {kBetheBlochDefault[0], 2, 6, particleNamesPar, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for deuteron"};
@@ -230,7 +201,7 @@ struct EbyeMaker {
   Configurable<float> etaMaxV0dau{"etaMaxV0dau", 0.8f, "maximum eta V0 daughters"};
   Configurable<float> outerPIDMin{"outerPIDMin", -4.f, "minimum outer PID"};
 
-  Configurable<std::string> genName{"genname", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
+  Configurable<bool> useAllEvSel{"useAllEvSel", false, "use additional event selections fo run 3 analyses"};
   Configurable<uint8_t> triggerCut{"triggerCut", 0x0, "trigger cut to select"};
   Configurable<bool> kINT7Intervals{"kINT7Intervals", false, "toggle kINT7 trigger selection in the 10-30% and 50-90% centrality intervals (2018 Pb-Pb)"};
   Configurable<bool> kUsePileUpCut{"kUsePileUpCut", false, "toggle strong correlation cuts (Run 2)"};
@@ -705,7 +676,7 @@ struct EbyeMaker {
           continue;
         }
 
-        auto etaV0 = etaFromMom(momPos, momNeg);
+        auto etaV0 = RecoDecay::eta(momV0);
         if (std::abs(etaV0) > etaMax) {
           continue;
         }
@@ -714,8 +685,8 @@ struct EbyeMaker {
         bool matter = alpha > 0;
         auto massPos = matter ? o2::constants::physics::MassProton : o2::constants::physics::MassPionCharged;
         auto massNeg = matter ? o2::constants::physics::MassPionCharged : o2::constants::physics::MassProton;
-        auto mLambda = invMass2Body(momV0, momPos, momNeg, massPos, massNeg);
-        auto mK0Short = invMass2Body(momV0, momPos, momNeg, o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged);
+        auto mLambda = RecoDecay::m(std::array<std::array<float, 3>, 2>{momPos, momNeg}, std::array<double, 2>{massPos, massNeg});
+        auto mK0Short = RecoDecay::m(std::array<std::array<float, 3>, 2>{momPos, momNeg}, std::array<double, 2>{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
 
         // pid selections
         float nSigmaTPCPos = getCustomTPCPID(posTrack, massPos);
@@ -816,7 +787,7 @@ struct EbyeMaker {
           auto mcTrack = mcLab.template mcParticle_as<aod::McParticles>();
           if (std::abs(mcTrack.pdgCode()) != kPartPdg[iP])
             continue;
-          if (((mcTrack.flags() & 0x8) && (doprocessMcRun2 || doprocessMiniMcRun2)) || (mcTrack.flags() & 0x2) || ((mcTrack.flags() & 0x1) && !doprocessMiniMcRun2))
+          if ((((mcTrack.flags() & 0x8) || (mcTrack.flags() & 0x2)) && (doprocessMcRun2 || doprocessMiniMcRun2)) || ((mcTrack.flags() & 0x1) && !doprocessMiniMcRun2))
             continue;
 
           if (!mcTrack.isPhysicalPrimary() && !doprocessMiniMcRun2)
@@ -854,7 +825,7 @@ struct EbyeMaker {
               }
               if (!posMother.isPhysicalPrimary() && !posMother.has_mothers())
                 continue;
-              if (((posMother.flags() & 0x8) && (doprocessMcRun2 || doprocessMiniMcRun2)) || (posMother.flags() & 0x2) || (posMother.flags() & 0x1))
+              if (((posMother.flags() & 0x8) || (posMother.flags() & 0x2) || (posMother.flags() & 0x1)) && (doprocessMcRun2 || doprocessMiniMcRun2))
                 continue;
 
               auto genPt = std::hypot(posMother.px(), posMother.py());
@@ -871,15 +842,18 @@ struct EbyeMaker {
 
   void fillMcGen(aod::McParticles const& mcParticles, aod::McTrackLabels const& /*mcLab*/, uint64_t const& collisionId)
   {
+    nChPartGen = 0u;
     auto mcParticlesThisCollision = mcParticles.sliceBy(perCollisionMcParts, collisionId);
     for (const auto& mcPart : mcParticlesThisCollision) {
       auto genEta = mcPart.eta();
       if (std::abs(genEta) > etaMax) {
         continue;
       }
-      if (((mcPart.flags() & 0x8) && (doprocessMcRun2 || doprocessMiniMcRun2)) || (mcPart.flags() & 0x2) || ((mcPart.flags() & 0x1) && !doprocessMiniMcRun2))
+      if ((((mcPart.flags() & 0x8) || (mcPart.flags() & 0x2)) && (doprocessMcRun2 || doprocessMiniMcRun2)) || ((mcPart.flags() & 0x1) && !doprocessMiniMcRun2))
         continue;
       auto pdgCode = mcPart.pdgCode();
+      if (std::abs(pdgCode) == PDG_t::kPiPlus || std::abs(pdgCode) == PDG_t::kElectron || std::abs(pdgCode) == PDG_t::kMuonMinus || std::abs(pdgCode) == PDG_t::kKPlus || std::abs(pdgCode) == PDG_t::kProton)
+        nChPartGen++;
       if (std::abs(pdgCode) == PDG_t::kLambda0) {
         if (!mcPart.isPhysicalPrimary() && !mcPart.has_mothers())
           continue;
@@ -938,10 +912,7 @@ struct EbyeMaker {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
-      if (!collision.sel8() || std::abs(collision.posZ()) > zVtxMax)
-        continue;
-
-      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+      if (std::abs(collision.posZ()) > zVtxMax || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kIsTriggerTVX) || ((!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && useAllEvSel))
         continue;
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
@@ -1119,10 +1090,7 @@ struct EbyeMaker {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
-      if (!collision.sel8() || std::abs(collision.posZ()) > zVtxMax)
-        continue;
-
-      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+      if (std::abs(collision.posZ()) > zVtxMax || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kIsTriggerTVX) || ((!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && useAllEvSel))
         continue;
 
       auto centrality = collision.centFT0C();
@@ -1136,7 +1104,7 @@ struct EbyeMaker {
       fillMcEvent(collision, tracks, v0TableThisCollision, centrality, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
-      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, 0x0, centrality, nTracksColl);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), nChPartGen, 0x0, centrality, nTracksColl);
 
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         int selMask = -1;
@@ -1251,7 +1219,7 @@ struct EbyeMaker {
       fillMcEvent(collision, tracks, v0TableThisCollision, centrality, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
-      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, nTrackletsColl, centrality, nTracksColl);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), nChPartGen, nTrackletsColl, centrality, nTracksColl);
 
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         int selMask = -1;

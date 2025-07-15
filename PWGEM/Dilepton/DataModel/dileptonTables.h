@@ -687,9 +687,22 @@ DECLARE_SOA_TABLE(EMGlobalMuonSelfIds, "AOD", "EMGLMUSELFID", emprimarymuon::Glo
 // iterators
 using EMGlobalMuonSelfId = EMGlobalMuonSelfIds::iterator;
 
+namespace emprimarytrack
+{
+DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);        //!
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
+DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);            //!
+DECLARE_SOA_DYNAMIC_COLUMN(Signed1Pt, signed1Pt, [](float pt, int8_t sign) -> float { return sign * 1. / pt; });
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
+DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
+DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
+} // namespace emprimarytrack
+
 DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_000, "AOD", "EMPRIMARYTRACK", 0, //!
-                            o2::soa::Index<>, emprimaryelectron::CollisionId,
-                            emprimaryelectron::TrackId, emprimaryelectron::Sign,
+                            o2::soa::Index<>, emprimarytrack::CollisionId,
+                            emprimarytrack::TrackId, emprimarytrack::Sign,
                             track::Pt, track::Eta, track::Phi, track::DcaXY, track::DcaZ,
                             track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared, track::TPCChi2NCl,
                             track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap,
@@ -702,15 +715,19 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_000, "AOD", "EMPRIMARYTRACK", 0, //!
                             track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                             track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
                             track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>, track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
-                            emprimaryelectron::Signed1Pt<track::Pt, emprimaryelectron::Sign>,
-                            emprimaryelectron::P<track::Pt, track::Eta>,
-                            emprimaryelectron::Px<track::Pt, track::Phi>,
-                            emprimaryelectron::Py<track::Pt, track::Phi>,
-                            emprimaryelectron::Pz<track::Pt, track::Eta>);
+                            emprimarytrack::Signed1Pt<track::Pt, emprimarytrack::Sign>,
+                            emprimarytrack::P<track::Pt, track::Eta>,
+                            emprimarytrack::Px<track::Pt, track::Phi>,
+                            emprimarytrack::Py<track::Pt, track::Phi>,
+                            emprimarytrack::Pz<track::Pt, track::Eta>);
 
 using EMPrimaryTracks = EMPrimaryTracks_000;
 // iterators
 using EMPrimaryTrack = EMPrimaryTracks::iterator;
+
+DECLARE_SOA_TABLE(EMPrimaryTrackEMEventIds, "AOD", "PRMTRACKEMEVENTID", emprimarytrack::EMEventId); // To be joined with EMPrimaryTracks table at analysis level.
+// iterators
+using EMPrimaryTrackEMEventId = EMPrimaryTrackEMEventIds::iterator;
 
 // Dummy data for MC
 namespace emdummydata
