@@ -61,7 +61,8 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct phiOO {
+struct phiOO
+{
 
   SliceCache cache;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
@@ -77,10 +78,6 @@ struct phiOO {
   Configurable<bool> cfg_Event_Pileup{"cfg_Event_Pileup", true, "Pileup border cut"};
   Configurable<bool> cfg_Event_OccupancyCut{"cfg_Event_OccupancyCut", true, "Occupancy border cut"};
   Configurable<float> cfg_Event_MaxOccupancy{"cfg_Event_MaxOccupancy", 1, "Max TPC Occupancy"};
-
-  ConfigurableAxis cfg_bins_Cent{"cfg_bins_Cent", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
-  ConfigurableAxis cfg_bins_MixVtx{"cfg_bins_MixVtx", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis cfg_bins_MixMult{"cfg_bins_MixMult", {VARIABLE_WIDTH, 0.0f, 1.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f}, "Mixing bins - z-vertex"};
 
   // Track configurables
   Configurable<std::string> cfg_Track_Sel{"cfg_Track_Sel", "globalTracks", "set track selections"};
@@ -120,28 +117,39 @@ struct phiOO {
   Configurable<bool> cfg_Event_CutQA{"cfg_Event_CutsQA", true, "Enables Track QA plots"};
   Configurable<bool> cfg_Track_CutQA{"cfg_Track_CutsQA", true, "Enables Track QA plots"};
 
-  void init(o2::framework::InitContext&)
+  // Configurables for axis
+  ConfigurableAxis binsDCAz{"binsDCAz", {40, -0.2, 0.2}, ""};
+  ConfigurableAxis binsDCAxy{"binsDCAxy", {40, -0.2, 0.2}, ""};
+  ConfigurableAxis cfg_bins_Cent{"cfg_bins_Cent", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
+  ConfigurableAxis cfg_bins_MixVtx{"cfg_bins_MixVtx", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+  ConfigurableAxis cfg_bins_MixMult{"cfg_bins_MixMult", {VARIABLE_WIDTH, 0.0f, 1.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f}, "Mixing bins - z-vertex"};
+
+  void init(o2::framework::InitContext &)
   {
     const AxisSpec MinvAxis = {cfg_Pair_MinvBins, cfg_Pair_MinvMin, cfg_Pair_MinvMax};
     const AxisSpec PtAxis = {200, 0, 20.0};
     const AxisSpec MultAxis = {100, 0, 100};
     const AxisSpec dRAxis = {100, 0, 100};
     const AxisSpec pidAxis = {100, -5, 5};
+    const AxisSpec axisDCAz{binsDCAz, "DCA_{z}"};
+    const AxisSpec axisDCAxy{binsDCAxy, "DCA_{XY}"};
 
     // Event QA
-    if (cfg_Event_CutQA) {
-      histos.add("hPosZ_BC", "PosZ_BC", kTH1F, {{100, 0.0, 15.0}});
-      histos.add("hcentFT0C_BC", "centFT0C_BC", kTH1F, {{100, 0.0, 100.0}});
+    if (cfg_Event_CutQA)
+    {
+      histos.add("hPosZ_BC", "PosZ_BC", kTH1F, {{240, -12.0, 12.0}});
+      histos.add("hcentFT0C_BC", "centFT0C_BC", kTH1F, {{110, 0.0, 110.0}});
       histos.add("hOccupancy_BC", "Occupancy_BC", kTH1F, {{100, 0.0, 20000}});
       //
-      histos.add("hcentFT0C_AC", "centFT0C_AC", kTH1F, {{100, 0.0, 100.0}});
-      histos.add("hPosZ_AC", "PosZ_AC", kTH1F, {{100, 0.0, 15.0}});
+      histos.add("hcentFT0C_AC", "centFT0C_AC", kTH1F, {{110, 0.0, 110.0}});
+      histos.add("hPosZ_AC", "PosZ_AC", kTH1F, {{240, -12.0, 12.0}});
       histos.add("hOccupancy_AC", "Occupancy_AC", kTH1F, {{100, 0.0, 20000}});
     }
     // Track QA
-    if (cfg_Track_CutQA) {
-      histos.add("hDCArToPv_BC", "DCArToPv_BC", kTH1F, {{300, 0.0, 3.0}});
-      histos.add("hDCAzToPv_BC", "DCAzToPv_BC", kTH1F, {{300, 0.0, 3.0}});
+    if (cfg_Track_CutQA)
+    {
+      histos.add("hDCArToPv_BC", "DCArToPv_BC", kTH1F, {axisDCAxy});
+      histos.add("hDCAzToPv_BC", "DCAzToPv_BC", kTH1F, {axisDCAz});
       histos.add("hIsPrim_BC", "hIsPrim_BC", kTH1F, {{2, -0.5, 1.5}});
       histos.add("hIsGood_BC", "hIsGood_BC", kTH1F, {{2, -0.5, 1.5}});
       histos.add("hIsPrimCont_BC", "hIsPrimCont_BC", kTH1F, {{2, -0.5, 1.5}});
@@ -155,8 +163,8 @@ struct phiOO {
       histos.add("hTPC_nSigma_v_pt_BC", "hTPC_nSigma_v_pt_BC", HistType::kTHnSparseD, {pidAxis, PtAxis});
       histos.add("hTOF_nSigma_v_pt_BC", "hTOF_nSigma_v_pt_BC", HistType::kTHnSparseD, {pidAxis, PtAxis});
       //
-      histos.add("hDCArToPv_AC", "DCArToPv_AC", kTH1F, {{300, 0.0, 3.0}});
-      histos.add("hDCAzToPv_AC", "DCAzToPv_AC", kTH1F, {{300, 0.0, 3.0}});
+      histos.add("hDCArToPv_AC", "DCArToPv_AC", kTH1F, {axisDCAxy});
+      histos.add("hDCAzToPv_AC", "DCAzToPv_AC", kTH1F, {axisDCAz});
       histos.add("hIsPrim_AC", "hIsPrim_AC", kTH1F, {{2, -0.5, 1.5}});
       histos.add("hIsGood_AC", "hIsGood_AC", kTH1F, {{2, -0.5, 1.5}});
       histos.add("hIsPrimCont_AC", "hIsPrimCont_AC", kTH1F, {{2, -0.5, 1.5}});
@@ -206,39 +214,47 @@ struct phiOO {
   using BinningTypeVtxCent = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
 
   Partition<TrackCandidates_MC> PosKaon_MC =
-    (aod::track::signed1Pt > static_cast<float>(0)) &&
-    (!cfg_Track_TPCPID || (nabs(aod::pidtpc::tpcNSigmaKa) <= cfg_Track_TPCPID_nSig));
+      (aod::track::signed1Pt > static_cast<float>(0)) &&
+      (!cfg_Track_TPCPID || (nabs(aod::pidtpc::tpcNSigmaKa) <= cfg_Track_TPCPID_nSig));
   Partition<TrackCandidates_MC> NegKaon_MC =
-    (aod::track::signed1Pt < static_cast<float>(0)) &&
-    (!cfg_Track_TPCPID || (nabs(aod::pidtpc::tpcNSigmaKa) <= cfg_Track_TPCPID_nSig));
+      (aod::track::signed1Pt < static_cast<float>(0)) &&
+      (!cfg_Track_TPCPID || (nabs(aod::pidtpc::tpcNSigmaKa) <= cfg_Track_TPCPID_nSig));
   Partition<TrackCandidates> PosKaon =
-    (aod::track::signed1Pt > static_cast<float>(0)) &&
-    (!cfg_Track_TPCPID || (nabs(aod::pidtpc::tpcNSigmaKa) <= cfg_Track_TPCPID_nSig));
+      (aod::track::signed1Pt > static_cast<float>(0)) &&
+      (!cfg_Track_TPCPID || (nabs(aod::pidtpc::tpcNSigmaKa) <= cfg_Track_TPCPID_nSig));
   Partition<TrackCandidates> NegKaon =
-    (aod::track::signed1Pt < static_cast<float>(0)) &&
-    (!cfg_Track_TPCPID || (nabs(aod::pidtpc::tpcNSigmaKa) <= cfg_Track_TPCPID_nSig));
+      (aod::track::signed1Pt < static_cast<float>(0)) &&
+      (!cfg_Track_TPCPID || (nabs(aod::pidtpc::tpcNSigmaKa) <= cfg_Track_TPCPID_nSig));
 
   double massKa = o2::constants::physics::MassKPlus;
   //***********************************//
   // First, we declare some helper functions
   template <typename objType>
-  void fillQA(const bool pass, const objType& obj, const int objecttype = 0)
+  void fillQA(const bool pass, const objType &obj, const int objecttype = 0)
   {
 
-    if (objecttype == 1) {
-      if constexpr (requires { obj.posZ(); }) {
-        if (!pass) {
+    if (objecttype == 1)
+    {
+      if constexpr (requires { obj.posZ(); })
+      {
+        if (!pass)
+        {
           histos.fill(HIST("hPosZ_BC"), obj.posZ());
           histos.fill(HIST("hcentFT0C_BC"), obj.centFT0C());
-        } else {
+        }
+        else
+        {
           histos.fill(HIST("hPosZ_AC"), obj.posZ());
           histos.fill(HIST("hcentFT0C_AC"), obj.centFT0C());
         }
       }
     }
-    if constexpr (requires { obj.tpcCrossedRowsOverFindableCls(); }) {
-      if (objecttype == 2) {
-        if (!pass) {
+    if constexpr (requires { obj.tpcCrossedRowsOverFindableCls(); })
+    {
+      if (objecttype == 2)
+      {
+        if (!pass)
+        {
           histos.fill(HIST("hDCArToPv_BC"), obj.dcaXY());
           histos.fill(HIST("hDCAzToPv_BC"), obj.dcaZ());
           histos.fill(HIST("hIsPrim_BC"), obj.isPrimaryTrack());
@@ -248,7 +264,9 @@ struct phiOO {
           histos.fill(HIST("hFindableTPCRows_BC"), obj.tpcNClsCrossedRows());
           histos.fill(HIST("hClustersVsRows_BC"), obj.tpcCrossedRowsOverFindableCls());
           histos.fill(HIST("hTPCChi2_BC"), obj.tpcChi2NCl());
-        } else {
+        }
+        else
+        {
           histos.fill(HIST("hDCArToPv_AC"), obj.dcaXY());
           histos.fill(HIST("hDCAzToPv_AC"), obj.dcaZ());
           histos.fill(HIST("hIsPrim_AC"), obj.isPrimaryTrack());
@@ -260,13 +278,17 @@ struct phiOO {
           histos.fill(HIST("hTPCChi2_AC"), obj.tpcChi2NCl());
         }
       }
-      if (objecttype == 3) {
-        if (!pass) {
+      if (objecttype == 3)
+      {
+        if (!pass)
+        {
           histos.fill(HIST("hTPC_nSigma_BC"), obj.tpcNSigmaKa());
           histos.fill(HIST("hTOF_nSigma_BC"), obj.tofNSigmaKa());
           histos.fill(HIST("hTPC_nSigma_v_pt_BC"), obj.tpcNSigmaKa(), obj.pt());
           histos.fill(HIST("hTOF_nSigma_v_pt_BC"), obj.tofNSigmaKa(), obj.pt());
-        } else {
+        }
+        else
+        {
           histos.fill(HIST("hTPC_nSigma_AC"), obj.tpcNSigmaKa());
           histos.fill(HIST("hTOF_nSigma_AC"), obj.tofNSigmaKa());
           histos.fill(HIST("hTPC_nSigma_v_pt_AC"), obj.tpcNSigmaKa(), obj.pt());
@@ -345,36 +367,49 @@ struct phiOO {
   // trackpid
 
   template <typename TrackPID>
-  bool trackPIDKaon(const TrackPID& candidate, const bool QA)
+  bool trackPIDKaon(const TrackPID &candidate, const bool QA)
   {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
 
     if (cfg_Track_CutQA && QA)
       fillQA(false, candidate, 3);
 
-    if (!cfg_Track_TPCPID) {
+    if (!cfg_Track_TPCPID)
+    {
       tpcPIDPassed = true;
-    } else {
+    }
+    else
+    {
       if (std::abs(candidate.tpcNSigmaKa()) < cfg_Track_TPCPID_nSig)
         tpcPIDPassed = true;
     }
 
-    if (!cfg_Track_TOFPID) {
+    if (!cfg_Track_TOFPID)
+    {
       tofPIDPassed = true;
-    } else {
-      if (candidate.hasTOF()) {
-        if (std::abs(candidate.tofNSigmaKa()) < cfg_Track_TOFPID_nSig) {
+    }
+    else
+    {
+      if (candidate.hasTOF())
+      {
+        if (std::abs(candidate.tofNSigmaKa()) < cfg_Track_TOFPID_nSig)
+        {
           tofPIDPassed = true;
         }
-      } else if (!cfg_Track_Hard_TOFPID) {
+      }
+      else if (!cfg_Track_Hard_TOFPID)
+      {
         tofPIDPassed = true;
       }
-      if (!candidate.hasTOF()) {
+      if (!candidate.hasTOF())
+      {
         std::cout << candidate.tofNSigmaKa() << std::endl;
       }
     }
-    if (tpcPIDPassed && tofPIDPassed) {
-      if (cfg_Track_CutQA && QA) {
+    if (tpcPIDPassed && tofPIDPassed)
+    {
+      if (cfg_Track_CutQA && QA)
+      {
         fillQA(true, candidate, 3);
       }
       return true;
@@ -383,26 +418,36 @@ struct phiOO {
   }
 
   template <typename CollisionType, typename TracksType>
-  void TrackSlicing(const CollisionType& collision1, const TracksType&, const CollisionType& collision2, const TracksType&, const bool QA, const bool IsMix)
+  void TrackSlicing(const CollisionType &collision1, const TracksType &, const CollisionType &collision2, const TracksType &, const bool QA, const bool IsMix)
   {
     auto slicedtracks1 = PosKaon->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
     auto slicedtracks2 = NegKaon->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
     auto centrality = collision1.centFT0C();
-    for (auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(slicedtracks1, slicedtracks2))) {
+    for (auto &[track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(slicedtracks1, slicedtracks2)))
+    {
       auto [Minv, PhiPt] = minvReconstruction(track1, track2, QA);
       if (Minv < 0)
         continue;
       double conjugate = track1.sign() * track2.sign();
-      if (!IsMix) {
-        if (conjugate < 0) {
+      if (!IsMix)
+      {
+        if (conjugate < 0)
+        {
           histos.fill(HIST("hUSS"), centrality, Minv, PhiPt);
-        } else if (conjugate > 0) {
+        }
+        else if (conjugate > 0)
+        {
           histos.fill(HIST("hLSS"), centrality, Minv, PhiPt);
         }
-      } else {
-        if (conjugate < 0) {
+      }
+      else
+      {
+        if (conjugate < 0)
+        {
           histos.fill(HIST("hUSS_Mix"), centrality, Minv, PhiPt);
-        } else if (conjugate > 0) {
+        }
+        else if (conjugate > 0)
+        {
           histos.fill(HIST("hLSS_Mix"), centrality, Minv, PhiPt);
         }
       }
@@ -410,26 +455,36 @@ struct phiOO {
   } // TrackSlicing
 
   template <typename CollisionType, typename TracksType>
-  void TrackSlicing_MC(const CollisionType& collision1, const TracksType&, const CollisionType& collision2, const TracksType&, const bool QA, const bool IsMix)
+  void TrackSlicing_MC(const CollisionType &collision1, const TracksType &, const CollisionType &collision2, const TracksType &, const bool QA, const bool IsMix)
   {
     auto slicedtracks1 = PosKaon_MC->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
     auto slicedtracks2 = NegKaon_MC->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
     auto centrality = collision1.centFT0C();
-    for (auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(slicedtracks1, slicedtracks2))) {
+    for (auto &[track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(slicedtracks1, slicedtracks2)))
+    {
       auto [Minv, PhiPt] = minvReconstruction(track1, track2, QA);
       if (Minv < 0)
         continue;
       double conjugate = track1.sign() * track2.sign();
-      if (!IsMix) {
-        if (conjugate < 0) {
+      if (!IsMix)
+      {
+        if (conjugate < 0)
+        {
           histos.fill(HIST("hMC_USS"), centrality, Minv, PhiPt);
-        } else if (conjugate > 0) {
+        }
+        else if (conjugate > 0)
+        {
           histos.fill(HIST("hMC_LSS"), centrality, Minv, PhiPt);
         }
-      } else {
-        if (conjugate < 0) {
+      }
+      else
+      {
+        if (conjugate < 0)
+        {
           histos.fill(HIST("hMC_USS_Mix"), centrality, Minv, PhiPt);
-        } else if (conjugate > 0) {
+        }
+        else if (conjugate > 0)
+        {
           histos.fill(HIST("hMC_LSS_Mix"), centrality, Minv, PhiPt);
         }
       }
@@ -450,14 +505,16 @@ struct phiOO {
 
       std::vector<int> mothers1{};
       std::vector<int> mothers1PDG{};
-      for (auto& part1_mom : part1.template mothers_as<aod::McParticles>()) {
+      for (auto &part1_mom : part1.template mothers_as<aod::McParticles>())
+      {
         mothers1.push_back(part1_mom.globalIndex());
         mothers1PDG.push_back(part1_mom.pdgCode());
       }
 
       std::vector<int> mothers2{};
       std::vector<int> mothers2PDG{};
-      for (auto& part2_mom : part2.template mothers_as<aod::McParticles>()) {
+      for (auto &part2_mom : part2.template mothers_as<aod::McParticles>())
+      {
         mothers2.push_back(part2_mom.globalIndex());
         mothers2PDG.push_back(part2_mom.pdgCode());
       }
@@ -476,7 +533,7 @@ struct phiOO {
 
   // Invariant mass
   template <typename TracksType>
-  std::pair<double, double> minvReconstruction(const TracksType& trk1, const TracksType& trk2, const bool QA)
+  std::pair<double, double> minvReconstruction(const TracksType &trk1, const TracksType &trk2, const bool QA)
   {
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
     //====================================================
@@ -484,7 +541,8 @@ struct phiOO {
     if (!trackSelection(trk1, QA) || !trackSelection(trk2, false))
       return {-1.0, -1.0};
 
-    if (cfg_Track_Explicit_PID) {
+    if (cfg_Track_Explicit_PID)
+    {
       if (!trackPIDKaon(trk1, QA) || !trackPIDKaon(trk2, false))
         return {-1.0, -1.0};
     }
@@ -504,11 +562,13 @@ struct phiOO {
   //***************//
 
   int nEvents = 0;
-  void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks)
+  void processSameEvent(EventCandidates::iterator const &collision, TrackCandidates const &tracks)
   {
-    if (cDebugLevel > 0) {
+    if (cDebugLevel > 0)
+    {
       ++nEvents;
-      if (nEvents % 10000 == 0) {
+      if (nEvents % 10000 == 0)
+      {
         std::cout << "Processed Data Events: " << nEvents << std::endl;
       }
     }
@@ -528,16 +588,19 @@ struct phiOO {
   //***************//
 
   int nEvents_Mix = 0;
-  void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
+  void processMixedEvent(EventCandidates const &collisions, TrackCandidates const &tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
     BinningTypeVtxCent colBinning{{cfg_bins_MixVtx, cfg_bins_MixMult}, true};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVtxCent> pairs{colBinning, cfg_Mix_NMixedEvents, -1, collisions, tracksTuple, &cache};
 
-    for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
-      if (cDebugLevel > 0) {
+    for (const auto &[collision1, tracks1, collision2, tracks2] : pairs)
+    {
+      if (cDebugLevel > 0)
+      {
         ++nEvents_Mix;
-        if (nEvents_Mix % 10000 == 0) {
+        if (nEvents_Mix % 10000 == 0)
+        {
           std::cout << "Processed Mixed Events: " << nEvents_Mix << std::endl;
         }
       }
@@ -555,11 +618,13 @@ struct phiOO {
   //***************//
 
   int nEvents_MC = 0;
-  void processSameEvent_MC(EventCandidates::iterator const& collision, TrackCandidates_MC const& tracks, aod::McParticles const&)
+  void processSameEvent_MC(EventCandidates::iterator const &collision, TrackCandidates_MC const &tracks, aod::McParticles const &)
   {
-    if (cDebugLevel > 0) {
+    if (cDebugLevel > 0)
+    {
       ++nEvents_MC;
-      if (nEvents_MC % 10000 == 0) {
+      if (nEvents_MC % 10000 == 0)
+      {
         std::cout << "Processed MC (REC) Events: " << nEvents_MC << std::endl;
       }
     }
@@ -578,15 +643,18 @@ struct phiOO {
   //***************//
 
   int nEvents_MC_Mix = 0;
-  void processMixedEvent_MC(EventCandidates const& collisions, TrackCandidates_MC const& tracks, aod::McParticles const&)
+  void processMixedEvent_MC(EventCandidates const &collisions, TrackCandidates_MC const &tracks, aod::McParticles const &)
   {
     auto tracksTuple = std::make_tuple(tracks);
     BinningTypeVtxCent colBinning{{cfg_bins_MixVtx, cfg_bins_MixMult}, true};
     SameKindPair<EventCandidates, TrackCandidates_MC, BinningTypeVtxCent> pairs{colBinning, cfg_Mix_NMixedEvents, -1, collisions, tracksTuple, &cache};
-    for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
-      if (cDebugLevel > 0) {
+    for (const auto &[collision1, tracks1, collision2, tracks2] : pairs)
+    {
+      if (cDebugLevel > 0)
+      {
         ++nEvents_MC_Mix;
-        if (nEvents_MC_Mix % 10000 == 0) {
+        if (nEvents_MC_Mix % 10000 == 0)
+        {
           std::cout << "Processed Mixed Events: " << nEvents_MC_Mix << std::endl;
         }
       }
@@ -604,11 +672,13 @@ struct phiOO {
   //***************//
 
   int nEvents_True = 0;
-  void processParticles(EventCandidates_True::iterator const& collision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, EventCandidates>> const& recocolls, aod::McParticles const& particles)
+  void processParticles(EventCandidates_True::iterator const &collision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, EventCandidates>> const &recocolls, aod::McParticles const &particles)
   {
-    if (cDebugLevel > 0) {
+    if (cDebugLevel > 0)
+    {
       ++nEvents_True;
-      if (nEvents_True % 10000 == 0) {
+      if (nEvents_True % 10000 == 0)
+      {
         std::cout << "Processed MC (GEN) Events: " << nEvents_True << std::endl;
       }
     }
@@ -616,14 +686,17 @@ struct phiOO {
     if (fabs(collision.posZ()) > cfg_Event_VtxCut)
       return;
 
-    if (recocolls.size() <= 0) { // not reconstructed
-      if (cfg_Force_GenReco) {
+    if (recocolls.size() <= 0)
+    { // not reconstructed
+      if (cfg_Force_GenReco)
+      {
         return;
       }
     }
 
     double centrality = -1;
-    for (auto& recocoll : recocolls) { // poorly reconstructed
+    for (auto &recocoll : recocolls)
+    { // poorly reconstructed
       centrality = recocoll.centFT0C();
       auto [goodEv, code] = eventSelection(recocoll, false);
       histos.fill(HIST("hnEvents_MC_True"), code);
@@ -631,21 +704,27 @@ struct phiOO {
         return;
     }
 
-    for (auto& particle : particles) {
+    for (auto &particle : particles)
+    {
       if (particle.pdgCode() != 333)
         continue;
       if (std::fabs(particle.eta()) > cfg_Track_MaxEta)
         continue;
 
-      if (cfg_Force_BR) {
+      if (cfg_Force_BR)
+      {
         bool baddecay = false;
-        for (auto& phidaughter : particle.daughters_as<aod::McParticles>()) {
-          if (std::fabs(phidaughter.pdgCode()) != 321) {
+        for (auto &phidaughter : particle.daughters_as<aod::McParticles>())
+        {
+          if (std::fabs(phidaughter.pdgCode()) != 321)
+          {
             baddecay = true;
             break;
           }
-          if (cfg_Force_Kaon_Acceptence) {
-            if (std::fabs(phidaughter.eta()) > cfg_Track_MaxEta) {
+          if (cfg_Force_Kaon_Acceptence)
+          {
+            if (std::fabs(phidaughter.eta()) > cfg_Track_MaxEta)
+            {
               baddecay = true;
               break;
             }
@@ -664,7 +743,7 @@ struct phiOO {
 
 }; // end of main struct
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const &cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<phiOO>(cfgc)};
 };
