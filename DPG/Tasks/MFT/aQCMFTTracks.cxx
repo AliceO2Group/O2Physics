@@ -16,19 +16,19 @@
 /// \author David Grund
 /// \since
 
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-
-#include "Framework/DataTypes.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+
+#include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
-#include "Framework/TimingInfo.h"
 #include "DataFormatsITSMFT/ROFRecord.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/DataTypes.h"
+#include "Framework/TimingInfo.h"
+#include "Framework/runDataProcessing.h"
 
 #include <TH1F.h>
 #include <TH2F.h>
@@ -52,7 +52,19 @@ struct CheckMFT {
                               {"mMFTTrackPhi", "Track #phi; #phi; # entries", {HistType::kTH1F, {{100, -3.2, 3.2}}}},
                               {"mMFTTrackTanl", "Track tan #lambda; tan #lambda; # entries", {HistType::kTH1F, {{100, -25, 0}}}},
                               {"mMFTTrackInvQPt", "Track q/p_{T}; q/p_{T} [1/GeV]; # entries", {HistType::kTH1F, {{250, -10, 10}}}}}};
+  Configurable<bool> avClsPlots{"avClsPlots", false, "Enable average cluster plots"};
 
+  void init(o2::framework::InitContext&)
+  {
+    if (avClsPlots) {
+      registry.add("mMFTTrackAvgClusters", "Average number of clusters per track; p;# clusters; # entries", {HistType::kTH2F, {{100, 0, 100}, {100, 0, 100}}});
+      registry.add("mMFTTrackAvgClustersTru", "Average number of clusters per track; p;# clusters; # entries", {HistType::kTH2F, {{100, 0, 100}, {100, 0, 100}}});
+      if (doprocessMC) {
+        registry.add("mMFTTrackAvgClustersHe", "Average number of clusters per track; p;# clusters; # entries", {HistType::kTH2F, {{100, 0, 100}, {100, 0, 100}}});
+        registry.add("mMFTTrackAvgClustersTruHe", "Average number of clusters per track; p;# clusters; # entries", {HistType::kTH2F, {{100, 0, 100}, {100, 0, 100}}});
+      }
+    }
+  }
   void process(aod::MFTTracks const& mfttracks)
   {
     for (auto& track : mfttracks) {
@@ -74,6 +86,35 @@ struct CheckMFT {
           }
         }
       }
+      if (avClsPlots) {
+        std::array<float, 10> clsSize;
+        for (unsigned int layer = 0; layer < 10; layer++) {
+          clsSize[layer] = (track.mftClusterSizesAndTrackFlags() >> (layer * 6)) & 0x3f;
+          // LOG(info) << "Layer " << layer << ": " << clsSize[layer];
+        }
+        float avgCls = 0;
+        for (unsigned int layer = 0; layer < 10; layer++) {
+          avgCls += clsSize[layer];
+        }
+        avgCls /= track.nClusters();
+
+        std::sort(clsSize.begin(), clsSize.end());
+        float truncatedAvgCls = 0;
+        int ncls = 0;
+        for (unsigned int layer = 0; layer < 10; layer++) {
+          if (clsSize[layer] > 0) {
+            truncatedAvgCls += clsSize[layer];
+            ncls++;
+            if (ncls >= 3) {
+              break; // we take the average of the first 5 non-zero clusters
+            }
+          }
+        }
+        truncatedAvgCls /= ncls;
+
+        registry.fill(HIST("mMFTTrackAvgClusters"), track.p(), avgCls);
+        registry.fill(HIST("mMFTTrackAvgClustersTru"), track.p(), truncatedAvgCls);
+      }
       // 1d histograms
       registry.fill(HIST("mMFTTrackEta"), eta);
       registry.fill(HIST("mMFTTrackNumberOfClusters"), nCls);
@@ -82,6 +123,48 @@ struct CheckMFT {
       registry.fill(HIST("mMFTTrackInvQPt"), track.signed1Pt());
     }
   }
+
+  void processMC(soa::Join<aod::MFTTracks, aod::McMFTTrackLabels> const& mfttracks,
+                 aod::McParticles const&)
+  {
+    for (auto& track : mfttracks) {
+      if (avClsPlots) {
+        std::array<float, 10> clsSize;
+        for (unsigned int layer = 0; layer < 10; layer++) {
+          clsSize[layer] = (track.mftClusterSizesAndTrackFlags() >> (layer * 6)) & 0x3f;
+          // LOG(info) << "Layer " << layer << ": " << clsSize[layer];
+        }
+        float avgCls = 0;
+        for (unsigned int layer = 0; layer < 10; layer++) {
+          avgCls += clsSize[layer];
+        }
+        avgCls /= track.nClusters();
+
+        std::sort(clsSize.begin(), clsSize.end());
+        float truncatedAvgCls = 0;
+        int ncls = 0;
+        for (unsigned int layer = 0; layer < 10; layer++) {
+          if (clsSize[layer] > 0) {
+            truncatedAvgCls += clsSize[layer];
+            ncls++;
+            if (ncls >= 3) {
+              break; // we take the average of the first 5 non-zero clusters
+            }
+          }
+        }
+        truncatedAvgCls /= ncls;
+
+        if (track.has_mcParticle()) {
+          const auto& mcParticle = track.mcParticle();
+          if (std::abs(mcParticle.pdgCode()) == 1000020040) { // He4
+            registry.fill(HIST("mMFTTrackAvgClustersHe"), track.p(), avgCls);
+            registry.fill(HIST("mMFTTrackAvgClustersTruHe"), track.p(), truncatedAvgCls);
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(CheckMFT, processMC, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
