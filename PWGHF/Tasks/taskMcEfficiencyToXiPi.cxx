@@ -149,11 +149,11 @@ struct HfTaskMcEfficiencyToXiPi {
       pt = RecoDecay::sqrtSumOfSquares(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
 
       // all candidates (candidateCreator)
-      hCandidates->Fill(kHFStepTracked, pt, mass, candidate.collisionMatched(), candidate.originRec());
+      hCandidates->Fill(kHFStepTracked, pt, mass, candidate.collisionMatched(), candidate.originMcRec());
 
       // check xi-pi candidate passed candidate selector cuts (except PID)
       if (candidate.resultSelections() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
-        hCandidates->Fill(kHFStepTrackedCuts, pt, mass, candidate.collisionMatched(), candidate.originRec());
+        hCandidates->Fill(kHFStepTrackedCuts, pt, mass, candidate.collisionMatched(), candidate.originMcRec());
         selectedKine = true;
       }
       if (!selectedKine) {
@@ -162,7 +162,7 @@ struct HfTaskMcEfficiencyToXiPi {
 
       // check xi-pi candidate passed candidate selector cuts (PID included)
       if (candidate.statusPidCharmBaryon()) {
-        hCandidates->Fill(kHFStepTrackedSelected, pt, mass, candidate.collisionMatched(), candidate.originRec());
+        hCandidates->Fill(kHFStepTrackedSelected, pt, mass, candidate.collisionMatched(), candidate.originMcRec());
         selectedPid = true;
       }
       if (!selectedPid) {
@@ -231,11 +231,11 @@ struct HfTaskMcEfficiencyToXiPi {
       }
 
       // all candidates
-      hCandidates->Fill(kHFStepMC, mcParticle.pt(), mass, true, mcParticle.originGen()); // set matchedCollision to true by default at gen level
+      hCandidates->Fill(kHFStepMC, mcParticle.pt(), mass, true, mcParticle.originMcGen()); // set matchedCollision to true by default at gen level
 
       // candidates with charm baryon within eta range
       if (std::abs(mcParticle.y()) < rapidityCharmBaryonMax) {
-        hCandidates->Fill(kHFStepMcInRapidity, mcParticle.pt(), mass, true, mcParticle.originGen());
+        hCandidates->Fill(kHFStepMcInRapidity, mcParticle.pt(), mass, true, mcParticle.originMcGen());
       }
 
       // exclude cases with undesired decays
@@ -302,14 +302,14 @@ struct HfTaskMcEfficiencyToXiPi {
       }
       // final state candidates pass eta and pt selection
       if (inAcceptance) {
-        hCandidates->Fill(kHFStepAcceptance, mcParticle.pt(), mass, true, mcParticle.originGen());
+        hCandidates->Fill(kHFStepAcceptance, mcParticle.pt(), mass, true, mcParticle.originMcGen());
       }
 
       if (tracked[pionId] && tracked[pionFromCascadeId] && tracked[pionFromLambdaId] && tracked[protonId]) {
         // final state candidates have a mc particleID != 0
-        hCandidates->Fill(kHFStepTrackable, mcParticle.pt(), mass, true, mcParticle.originGen());
+        hCandidates->Fill(kHFStepTrackable, mcParticle.pt(), mass, true, mcParticle.originMcGen());
         if (inAcceptance) {
-          hCandidates->Fill(kHFStepAcceptanceTrackable, mcParticle.pt(), mass, true, mcParticle.originGen());
+          hCandidates->Fill(kHFStepAcceptanceTrackable, mcParticle.pt(), mass, true, mcParticle.originMcGen());
         } else {
           LOGP(debug, "Candidate {} not in acceptance but tracked.", mcParticle.globalIndex());
           LOGP(debug, "MC cascade: pt={} eta={}", cascade.pt(), cascade.eta());
@@ -365,13 +365,13 @@ struct HfTaskMcEfficiencyToXiPi {
 
       // with pion track cuts (see checkTrackGlbTrk and checkTrkItsTrk)
       if (selectedIts[pionId]) {
-        hCandidates->Fill(kHFStepItsTrackableCuts, mcParticle.pt(), mass, true, mcParticle.originGen());
+        hCandidates->Fill(kHFStepItsTrackableCuts, mcParticle.pt(), mass, true, mcParticle.originMcGen());
         if (!inAcceptance) {
           LOGP(debug, "Candidate {} has daughters not in acceptance but pion <-- charm tracked and selected (its only)", mcParticle.globalIndex());
         }
       }
       if (selectedItsTpc[pionId]) {
-        hCandidates->Fill(kHFStepItsTpcTrackableCuts, mcParticle.pt(), mass, true, mcParticle.originGen());
+        hCandidates->Fill(kHFStepItsTpcTrackableCuts, mcParticle.pt(), mass, true, mcParticle.originMcGen());
         if (!inAcceptance) {
           LOGP(debug, "Candidate {} has daughters not in acceptance but pion <-- charm tracked and selected (its & tpc)", mcParticle.globalIndex());
         }

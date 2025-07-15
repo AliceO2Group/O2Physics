@@ -21,10 +21,10 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/DerivedTables.h"
 #include "PWGHF/Utils/utilsDerivedData.h"
-#include "PWGHF/Utils/utilsPid.h"
+// #include "PWGHF/Utils/utilsPid.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
-#include "Common/Core/RecoDecay.h"
+// #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 
@@ -71,22 +71,18 @@ struct HfDerivedDataCreatorXicToXiPiPi {
     rowsCommon;
   // Candidates
   Produces<o2::aod::HfXicToXiPiPiPars> rowCandidatePar;
-  Produces<o2::aod::HfXicToXiPiPiParXis> rowCandidateParXi;
   Produces<o2::aod::HfXicToXiPiPiParEs> rowCandidateParE;
   Produces<o2::aod::HfXicToXiPiPiSels> rowCandidateSel;
   Produces<o2::aod::HfXicToXiPiPiMls> rowCandidateMl;
-  Produces<o2::aod::HfXicToXiPiPiMlXis> rowCandidateMlXi;
   Produces<o2::aod::HfXicToXiPiPiIds> rowCandidateId;
   Produces<o2::aod::HfXicToXiPiPiMcs> rowCandidateMc;
 
   // Switches for filling tables
   HfConfigurableDerivedData confDerData;
   Configurable<bool> fillCandidatePar{"fillCandidatePar", true, "Fill candidate parameters"};
-  Configurable<bool> fillCandidateParXi{"fillCandidateParXi", true, "Fill Xi candidate parameters"};
   Configurable<bool> fillCandidateParE{"fillCandidateParE", true, "Fill candidate extended parameters"};
   Configurable<bool> fillCandidateSel{"fillCandidateSel", true, "Fill candidate selection flags"};
   Configurable<bool> fillCandidateMl{"fillCandidateMl", true, "Fill candidate selection ML scores"};
-  Configurable<bool> fillCandidateMlXi{"fillCandidateMlXi", true, "Fill Xi candidate selection ML scores"};
   Configurable<bool> fillCandidateId{"fillCandidateId", true, "Fill original indices from the candidate table"};
   Configurable<bool> fillCandidateMc{"fillCandidateMc", true, "Fill candidate MC info"};
   // Parameters for production of training samples
@@ -106,9 +102,9 @@ struct HfDerivedDataCreatorXicToXiPiPi {
   using SelectedCandidatesMcMl = soa::Filtered<soa::Join<aod::HfCandXic, aod::HfCandXicMcRec, aod::HfSelXicToXiPiPi, aod::HfMlXicToXiPiPi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandXicMcGen>>;
   using TypeMcCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
-  using THfCandDaughtersMl = soa::Join<aod::Cascades>;
+  using THfCandDaughtersMl = aod::Cascades;
 
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToXiPiPi & static_cast<int8_t>(BIT(aod::SelectionStep::RecoMl - 1))) != 0;
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToXiPiPi & static_cast<int8_t>(BIT(o2::aod::hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoMl - 1))) != 0;
   Filter filterMcGenMatching = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchGen) == static_cast<int8_t>(DecayType::XicToXiPiPi);
 
   Preslice<SelectedCandidates> candidatesPerCollision = aod::hf_cand::collisionId;
@@ -137,69 +133,66 @@ struct HfDerivedDataCreatorXicToXiPiPi {
     rowsCommon.init(confDerData);
   }
 
-  template <typename T, typename U, typename V>
-  void fillTablesCandidate(const T& candidate, const U& prongCascade, const V& prongBachelor0, int candFlag, double invMass,
-                           double ct, double y, int8_t flagMc, int8_t origin, float mlScore, const std::vector<float>& mlScoresCascade)
+  template <typename T>
+  void fillTablesCandidate(const T& candidate, int candFlag, double invMass,
+                           double ct, double y, int8_t flagMc, int8_t origin, const std::vector<float>& mlScores)
   {
     rowsCommon.fillTablesCandidate(candidate, invMass, y);
     if (fillCandidatePar) {
       rowCandidatePar(
+        candidate.ptProng0(),
+        candidate.ptProng1(),
+        candidate.ptProng2(),
+        candidate.invMassXi(),
+        candidate.invMassLambda(),
+        candidate.invMassXiPi0(),
+        candidate.invMassXiPi1(),
         candidate.chi2PCA(),
+        ct,
+        candidate.decayLength(),
+        candidate.decayLengthNormalised(),
+        candidate.decayLengthXY(),
+        candidate.decayLengthXYNormalised(),
         candidate.cpa(),
         candidate.cpaXY(),
-        candidate.decayLength(),
-        candidate.decayLengthXY(),
-        candidate.decayLengthNormalised(),
-        candidate.decayLengthXYNormalised(),
-        candidate.ptProng0(),
-        candidate.ptProng1());
-    }
-    if (fillCandidateParXi) {
-      std::array<std::array<std::array<float, 3>, 2>, 2> sigmas{}; // PID nSigma [Expected][Hypothesis][TPC/TOF/TPC+TOF]
-      if (candFlag == 0) {
-        GET_N_SIGMA_PRONG(sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion], prongCascade, 0, Pi)
-        GET_N_SIGMA_PRONG(sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon], prongCascade, 0, Ka)
-        GET_N_SIGMA_PRONG(sigmas[HfProngSpecies::Kaon][HfProngSpecies::Pion], prongCascade, 1, Pi)
-        GET_N_SIGMA_PRONG(sigmas[HfProngSpecies::Kaon][HfProngSpecies::Kaon], prongCascade, 1, Ka)
-      } else if (candFlag == 1) {
-        GET_N_SIGMA_PRONG(sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion], prongCascade, 1, Pi)
-        GET_N_SIGMA_PRONG(sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon], prongCascade, 1, Ka)
-        GET_N_SIGMA_PRONG(sigmas[HfProngSpecies::Kaon][HfProngSpecies::Pion], prongCascade, 0, Pi)
-        GET_N_SIGMA_PRONG(sigmas[HfProngSpecies::Kaon][HfProngSpecies::Kaon], prongCascade, 0, Ka)
-      }
-      rowCandidateParXi(
-        prongCascade.cpa(),
-        prongCascade.decayLength(),
-        prongCascade.impactParameter0(),
-        prongCascade.impactParameter1(),
-        prongCascade.impactParameterProduct(),
-        sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion][0],
-        sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion][1],
-        sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion][2],
-        sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon][0],
-        sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon][1],
-        sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon][2],
-        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Pion][0],
-        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Pion][1],
-        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Pion][2],
-        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Kaon][0],
-        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Kaon][1],
-        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Kaon][2]);
+        candidate.cpaXi(),
+        candidate.cpaXYXi(),
+        candidate.cpaLambda(),
+        candidate.cpaXYLambda(),
+        candidate.impactParameter0(),
+        candidate.impactParameterNormalised0(),
+        candidate.impactParameter1(),
+        candidate.impactParameterNormalised1(),
+        candidate.impactParameter2(),
+        candidate.impactParameterNormalised2(),
+        candidate.maxNormalisedDeltaIP());
     }
     if (fillCandidateParE) {
       rowCandidateParE(
-        candidate.xSecondaryVertex(),
-        candidate.ySecondaryVertex(),
-        candidate.zSecondaryVertex(),
-        candidate.errorDecayLength(),
-        candidate.errorDecayLengthXY(),
-        candidate.rSecondaryVertex(),
-        RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
-        candidate.pxProng1(),
-        candidate.pyProng1(),
-        candidate.pzProng1(),
-        candidate.errorImpactParameter1(),
-        ct);
+        candidate.cpaLambdaToXi(),
+        candidate.cpaXYLambdaToXi(),
+        candidate.pProng1(),
+        candidate.pProng2(),
+        candidate.pBachelorPi(),
+        candidate.pPiFromLambda(),
+        candidate.pPrFromLambda(),
+        candidate.dcaXiDaughters(),
+        candidate.dcaV0Daughters(),
+        candidate.dcaPosToPV(),
+        candidate.dcaNegToPV(),
+        candidate.dcaBachelorToPV(),
+        candidate.dcaXYCascToPV(),
+        candidate.dcaZCascToPV(),
+        candidate.nSigTpcPiFromXicPlus0(),
+        candidate.nSigTpcPiFromXicPlus1(),
+        candidate.nSigTpcBachelorPi(),
+        candidate.nSigTpcPiFromLambda(),
+        candidate.nSigTpcPrFromLambda(),
+        candidate.nSigTofPiFromXicPlus0(),
+        candidate.nSigTofPiFromXicPlus1(),
+        candidate.nSigTofBachelorPi(),
+        candidate.nSigTofPiFromLambda(),
+        candidate.nSigTofPrFromLambda());
     }
     if (fillCandidateSel) {
       rowCandidateSel(
@@ -207,18 +200,16 @@ struct HfDerivedDataCreatorXicToXiPiPi {
     }
     if (fillCandidateMl) {
       rowCandidateMl(
-        mlScore);
-    }
-    if (fillCandidateMlXi) {
-      rowCandidateMlXi(
-        mlScoresCascade);
+        mlScores);
     }
     if (fillCandidateId) {
       rowCandidateId(
         candidate.collisionId(),
-        prongCascade.prong0Id(),
-        prongCascade.prong1Id(),
-        candidate.prong1Id());
+        candidate.pi0Id(),
+        candidate.pi1Id(),
+        candidate.bachelorId(),
+        candidate.posTrackId(),
+        candidate.negTrackId());
     }
     if (fillCandidateMc) {
       rowCandidateMc(
@@ -263,11 +254,9 @@ struct HfDerivedDataCreatorXicToXiPiPi {
       // Fill candidate properties
       rowsCommon.reserveTablesCandidates(sizeTableCand);
       reserveTable(rowCandidatePar, fillCandidatePar, sizeTableCand);
-      reserveTable(rowCandidateParXi, fillCandidateParXi, sizeTableCand);
       reserveTable(rowCandidateParE, fillCandidateParE, sizeTableCand);
       reserveTable(rowCandidateSel, fillCandidateSel, sizeTableCand);
       reserveTable(rowCandidateMl, fillCandidateMl, sizeTableCand);
-      reserveTable(rowCandidateMlXi, fillCandidateMlXi, sizeTableCand);
       reserveTable(rowCandidateId, fillCandidateId, sizeTableCand);
       if constexpr (isMc) {
         reserveTable(rowCandidateMc, fillCandidateMc, sizeTableCand);
@@ -275,13 +264,13 @@ struct HfDerivedDataCreatorXicToXiPiPi {
       int8_t flagMcRec = 0, origin = 0;
       for (const auto& candidate : candidatesThisColl) {
         if constexpr (isMl) {
-          if (!TESTBIT(candidate.isSelXicToXiPiPi(), aod::SelectionStep::RecoMl)) {
+          if (!TESTBIT(candidate.isSelXicToXiPiPi(), o2::aod::hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoMl)) {
             continue;
           }
         }
         if constexpr (isMc) {
           flagMcRec = candidate.flagMcMatchRec();
-          origin = candidate.originRec();
+          origin = candidate.originMcRec();
           if constexpr (onlyBkg) {
             if (std::abs(flagMcRec) == DecayType::XicToXiPiPi) {
               continue;
@@ -299,30 +288,19 @@ struct HfDerivedDataCreatorXicToXiPiPi {
             }
           }
         }
-        // FIXME
-        auto prongCascade = candidate.template cascade_as<CandCascadeType>();
-        auto prongBachelor0 = candidate.template pi0_as<TracksWPid>();
-        auto prongBachelor1 = candidate.template pi1_as<TracksWPid>();
-        auto prongBachelorWhat = candidate.template bachelor_as<TracksWPid>();
-        auto prongPosTrack = candidate.template posTrack_as<TracksWPid>();
-        auto prongNegTrack = candidate.template negTrack_as<TracksWPid>();
-
-        double ct = hfHelper.ctXic(candidate);
+        // auto prongPi0FromXic = candidate.template pi0_as<TracksWPid>();
         double y = hfHelper.yXic(candidate);
         float massXicToXiPiPi = candidate.invMassXicPlus();
-        float mlScoreXicToXiPiPi{-1.f};
-        std::vector<float> mlScoresXi;
-        bool isXi = prongBachelor0.sign() < 0;
-        if (isXi) { // is Xi
-          std::copy(prongCascade.mlProbXi().begin(), prongCascade.mlProbXi().end(), std::back_inserter(mlScoresXi));
-        } else { // is Xibar
-          std::copy(prongCascade.mlProbXibar().begin(), prongCascade.mlProbXibar().end(), std::back_inserter(mlScoresXi));
-        }
+        double ct = hfHelper.ctXic(candidate);
+        std::vector<float> mlScoreXicToXiPiPi;
+        // float mlScoreXicToXiPiPi{-1.f};
+        // std::vector<float> mlScoresXi;
+        // bool isXi = prongPi0FromXic.sign() < 0;
         if constexpr (isMl) {
-          mlScoreXicToXiPiPi = candidate.mlProbXicToXiPiPi();
+          std::copy(candidate.mlProbXicToXiPiPi().begin(), candidate.mlProbXicToXiPiPi().end(), std::back_inserter(mlScoreXicToXiPiPi));
         }
         // flag = 0 for Xi pi-, flag = 1 for Xibar pi+
-        fillTablesCandidate(candidate, prongCascade, prongBachelor0, isXi ? 0 : 1, massXicToXiPiPi, ct, y, flagMcRec, origin, mlScoreXicToXiPiPi, mlScoresXi);
+        fillTablesCandidate(candidate, 1, massXicToXiPiPi, ct, y, flagMcRec, origin, mlScoreXicToXiPiPi);
       }
     }
   }

@@ -95,7 +95,7 @@ DECLARE_SOA_COLUMN(IsKaonGlbTrkWoDca, isKaonGlbTrkWoDca, bool);
 DECLARE_SOA_COLUMN(KaonItsNCls, kaonItsNCls, uint8_t);
 // from creator - MC
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
-DECLARE_SOA_COLUMN(OriginRec, originRec, int8_t);
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
 DECLARE_SOA_COLUMN(CollisionMatched, collisionMatched, bool);
 // from selector
 DECLARE_SOA_COLUMN(PidTpcInfoStored, pidTpcInfoStored, int);
@@ -136,7 +136,7 @@ DECLARE_SOA_TABLE(HfOmegac0ToOmegaKaLites, "AOD", "HFTOOMEKALITE",
                   full::PidTpcInfoStored, full::PidTofInfoStored,
                   full::TpcNSigmaKaFromCharmBaryon, full::TpcNSigmaKaFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
                   full::TofNSigmaKaFromCharmBaryon, full::TofNSigmaKaFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
-                  full::FlagMcMatchRec, full::OriginRec, full::CollisionMatched);
+                  full::FlagMcMatchRec, full::OriginMcRec, full::CollisionMatched);
 
 } // namespace o2::aod
 
@@ -264,7 +264,7 @@ struct HfTreeCreatorOmegac0ToOmegaKa {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidateLite(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+      fillCandidateLite(candidate, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched());
     }
   }
   PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaKa, processMcLite, "Process MC", false);

@@ -313,7 +313,7 @@ DECLARE_TABLES_3P(Dstar, "DST", dstar, 6);
 #undef B0
 DECLARE_TABLES_4P(B0, "B0", b0, 7);
 #pragma pop_macro("B0")
-DECLARE_TABLES_5P(XicToXiPiPi, "XICTOXIPIPI", xic_to_xi_pi_pi, 6);
+DECLARE_TABLES_5P(XicToXiPiPi, "XICXPP", xic_to_xi_pi_pi, 8);
 
 // ================
 // Additional species-specific candidate tables
@@ -322,26 +322,37 @@ DECLARE_TABLES_5P(XicToXiPiPi, "XICTOXIPIPI", xic_to_xi_pi_pi, 6);
 // Candidate properties used for selection
 namespace hf_cand_par
 {
-DECLARE_SOA_COLUMN(CosThetaStar, cosThetaStar, float);                             //! cosine of theta star
-DECLARE_SOA_COLUMN(Cpa, cpa, float);                                               //! cosine of pointing angle
-DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                           //! cosine of pointing angle in the transverse plane
-DECLARE_SOA_COLUMN(Ct, ct, float);                                                 //! proper lifetime times c
-DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                               //! decay length
-DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);           //! decay length divided by its uncertainty
-DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                           //! decay length in the transverse plane
-DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);       //! decay length in the transverse plane divided by its uncertainty
-DECLARE_SOA_COLUMN(ImpactParameterNormalised0, impactParameterNormalised0, float); //! impact parameter of prong 0 divided by its uncertainty
-DECLARE_SOA_COLUMN(ImpactParameterNormalised1, impactParameterNormalised1, float); //! impact parameter of prong 1 divided by its uncertainty
-DECLARE_SOA_COLUMN(ImpactParameterNormalised2, impactParameterNormalised2, float); //! impact parameter of prong 2 divided by its uncertainty
-DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);         //! product of impact parameters of prong 0 and prong 1
-DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);             //! see RecoDecay::maxNormalisedDeltaIP
-DECLARE_SOA_COLUMN(PProng0, pProng0, float);                                       //! momentum magnitude of prong 0
-DECLARE_SOA_COLUMN(PProng1, pProng1, float);                                       //! momentum magnitude of prong 1
-DECLARE_SOA_COLUMN(PProng2, pProng2, float);                                       //! momentum magnitude of prong 2
-DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);                                     //! transverse momentum of prong 0
-DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);                                     //! transverse momentum of prong 1
-DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);                                     //! transverse momentum of prong 2
-DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);                     //! distance of the secondary vertex from the z axis
+DECLARE_SOA_COLUMN(CosThetaStar, cosThetaStar, float);                                 //! cosine of theta star
+DECLARE_SOA_COLUMN(Cpa, cpa, float);                                                   //! cosine of pointing angle
+DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                               //! cosine of pointing angle in the transverse plane
+DECLARE_SOA_COLUMN(Ct, ct, float);                                                     //! proper lifetime times c
+DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                                   //! decay length
+DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);               //! decay length divided by its uncertainty
+DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                               //! decay length in the transverse plane
+DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);           //! decay length in the transverse plane divided by its uncertainty
+DECLARE_SOA_COLUMN(ImpactParameterNormalised0, impactParameterNormalised0, float);     //! impact parameter of prong 0 divided by its uncertainty
+DECLARE_SOA_COLUMN(ImpactParameterNormalised1, impactParameterNormalised1, float);     //! impact parameter of prong 1 divided by its uncertainty
+DECLARE_SOA_COLUMN(ImpactParameterNormalised2, impactParameterNormalised2, float);     //! impact parameter of prong 2 divided by its uncertainty
+DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);             //! product of impact parameters of prong 0 and prong 1
+DECLARE_SOA_COLUMN(ImpactParameterXi, impactParameterXi, float);                       //! product of impact parameters of prong 0 and prong 1
+DECLARE_SOA_COLUMN(ImpactParameterNormalisedXi, impactParameterNormalisedXi, float);   //! product of impact parameters of prong 0 and prong 1
+DECLARE_SOA_COLUMN(ImpactParameterPi0, impactParameterPi0, float);                     //! product of impact parameters of prong 0 and prong 1
+DECLARE_SOA_COLUMN(ImpactParameterNormalisedPi0, impactParameterNormalisedPi0, float); //! product of impact parameters of prong 0 and prong 1
+DECLARE_SOA_COLUMN(ImpactParameterPi1, impactParameterPi1, float);                     //! product of impact parameters of prong 0 and prong 1
+DECLARE_SOA_COLUMN(ImpactParameterNormalisedPi1, impactParameterNormalisedPi1, float); //! product of impact parameters of prong 0 and prong 1
+DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);                 //! see RecoDecay::maxNormalisedDeltaIP
+DECLARE_SOA_COLUMN(PProng0, pProng0, float);                                           //! momentum magnitude of prong 0
+DECLARE_SOA_COLUMN(PProng1, pProng1, float);                                           //! momentum magnitude of prong 1
+DECLARE_SOA_COLUMN(PProng2, pProng2, float);                                           //! momentum magnitude of prong 2
+DECLARE_SOA_COLUMN(PPi0, pPi0, float);                                                 //! momentum of pion prong 0
+DECLARE_SOA_COLUMN(PPi1, pPi1, float);                                                 //! momentum of pion prong 1
+DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);                                         //! transverse momentum of prong 0
+DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);                                         //! transverse momentum of prong 1
+DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);                                         //! transverse momentum of prong 2
+DECLARE_SOA_COLUMN(PtPi0, ptPi0, float);                                               //! transverse momentum of pion prong 0
+DECLARE_SOA_COLUMN(PtPi1, ptPi1, float);                                               //! transverse momentum of pion prong 1
+DECLARE_SOA_COLUMN(PtXi, ptXi, float);                                                 //! transverse momentum of Xi prong
+DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);                         //! distance of the secondary vertex from the z axis
 // D*± → D0(bar) π±
 DECLARE_SOA_COLUMN(SignProng1, signProng1, int8_t);
 // TOF
@@ -921,77 +932,70 @@ DECLARE_SOA_TABLE_STAGED(HfDstarMcs, "HFDSTMC", //! Table with MC candidate info
                          o2::soa::Marker<MarkerDstar>);
 
 // ----------------
-// Xic+
+// Ξc± → (Ξ∓ → (Λ → p π∓) π∓) π± π±
 // ----------------
 
-DECLARE_SOA_TABLE_STAGED(HfXicToXiPiPiPars, "HFXICTOXIPIPIPAR", //! Table with candidate properties used for selection
+DECLARE_SOA_TABLE_STAGED(HfXicToXiPiPiPars, "HFXICXPPPAR", //! Table with candidate properties used for selection
+                         hf_cand_par::PtXi,
+                         hf_cand_par::PtPi0,
+                         hf_cand_par::PtPi1,
+                         hf_cand_xic_to_xi_pi_pi::InvMassXi,
+                         hf_cand_xic_to_xi_pi_pi::InvMassLambda,
+                         hf_cand_xic_to_xi_pi_pi::InvMassXiPi0,
+                         hf_cand_xic_to_xi_pi_pi::InvMassXiPi1,
                          hf_cand::Chi2PCA,
+                         hf_cand_par::Ct,
+                         hf_cand_par::DecayLength,
+                         hf_cand_par::DecayLengthNormalised,
+                         hf_cand_par::DecayLengthXY,
+                         hf_cand_par::DecayLengthXYNormalised,
                          hf_cand_par::Cpa,
                          hf_cand_par::CpaXY,
-                         hf_cand_par::DecayLength,
-                         hf_cand_par::DecayLengthXY,
-                         hf_cand_par::DecayLengthNormalised,
-                         hf_cand_par::DecayLengthXYNormalised,
-                         hf_cand_par::PtProng0,
-                         hf_cand_par::PtProng1,
-                         hf_cand::ImpactParameter0,
-                         hf_cand::ImpactParameter1,
-                         hf_cand_par::ImpactParameterNormalised0,
-                         hf_cand_par::ImpactParameterNormalised1,
-                         hf_cand_par::NSigTpcPiExpPi,
-                         hf_cand_par::NSigTofPiExpPi,
-                         hf_cand_par::NSigTpcTofPiExpPi,
-                         hf_cand_par::NSigTpcKaExpPi,
-                         hf_cand_par::NSigTofKaExpPi,
-                         hf_cand_par::NSigTpcTofKaExpPi,
+                         hf_cand_xic_to_xi_pi_pi::CpaXi,
+                         hf_cand_xic_to_xi_pi_pi::CpaXYXi,
+                         hf_cand_xic_to_xi_pi_pi::CpaLambda,
+                         hf_cand_xic_to_xi_pi_pi::CpaXYLambda,
+                         hf_cand_par::ImpactParameterXi,
+                         hf_cand_par::ImpactParameterNormalisedXi,
+                         hf_cand_par::ImpactParameterPi0,
+                         hf_cand_par::ImpactParameterNormalisedPi0,
+                         hf_cand_par::ImpactParameterPi1,
+                         hf_cand_par::ImpactParameterNormalisedPi1,
                          hf_cand_par::MaxNormalisedDeltaIP,
-                         hf_cand_par::ImpactParameterProduct,
                          o2::soa::Marker<MarkerXicToXiPiPi>);
 
-DECLARE_SOA_TABLE_STAGED(HfXicToXiPiPiParXis, "HFXICTOXIPIPIPARXI", //! Table with Xi candidate properties used for selection of Xic+
-                         hf_cand_par_charm::CpaCharm,
-                         hf_cand_par_charm::DecayLengthCharm,
-                         hf_cand_par_charm::ImpactParameter0Charm,
-                         hf_cand_par_charm::ImpactParameter1Charm,
-                         hf_cand_par_charm::ImpactParameterProductCharm,
-                         hf_cand_par_charm::NSigTpcPiExpPiCharm,
-                         hf_cand_par_charm::NSigTofPiExpPiCharm,
-                         hf_cand_par_charm::NSigTpcTofPiExpPiCharm,
-                         hf_cand_par_charm::NSigTpcKaExpPiCharm,
-                         hf_cand_par_charm::NSigTofKaExpPiCharm,
-                         hf_cand_par_charm::NSigTpcTofKaExpPiCharm,
-                         hf_cand_par_charm::NSigTpcPiExpKaCharm,
-                         hf_cand_par_charm::NSigTofPiExpKaCharm,
-                         hf_cand_par_charm::NSigTpcTofPiExpKaCharm,
-                         hf_cand_par_charm::NSigTpcKaExpKaCharm,
-                         hf_cand_par_charm::NSigTofKaExpKaCharm,
-                         hf_cand_par_charm::NSigTpcTofKaExpKaCharm);
-
-DECLARE_SOA_TABLE_STAGED(HfXicToXiPiPiParEs, "HFXICTOXIPIPIPARE", //! Table with additional candidate properties used for selection
-                         hf_cand::XSecondaryVertex,
-                         hf_cand::YSecondaryVertex,
-                         hf_cand::ZSecondaryVertex,
-                         hf_cand::ErrorDecayLength,
-                         hf_cand::ErrorDecayLengthXY,
-                         hf_cand_par::RSecondaryVertex,
-                         hf_cand_par::PProng1,
-                         hf_cand::PxProng1,
-                         hf_cand::PyProng1,
-                         hf_cand::PzProng1,
-                         hf_cand::ErrorImpactParameter1,
-                         hf_cand_par::CosThetaStar,
-                         hf_cand_par::Ct,
+DECLARE_SOA_TABLE_STAGED(HfXicToXiPiPiParEs, "HFXICXPPPARE", //! Table with additional candidate properties used for selection
+                         hf_cand_xic_to_xi_pi_pi::CpaLambdaToXi,
+                         hf_cand_xic_to_xi_pi_pi::CpaXYLambdaToXi,
+                         hf_cand_par::PPi0,
+                         hf_cand_par::PPi1,
+                         hf_cand_xic_to_xi_pi_pi::PBachelorPi,
+                         hf_cand_xic_to_xi_pi_pi::PPiFromLambda,
+                         hf_cand_xic_to_xi_pi_pi::PPrFromLambda,
+                         hf_cand_xic_to_xi_pi_pi::DcaXiDaughters,
+                         hf_cand_xic_to_xi_pi_pi::DcaV0Daughters,
+                         hf_cand_xic_to_xi_pi_pi::DcaPosToPV,
+                         hf_cand_xic_to_xi_pi_pi::DcaNegToPV,
+                         hf_cand_xic_to_xi_pi_pi::DcaBachelorToPV,
+                         hf_cand_xic_to_xi_pi_pi::DcaXYCascToPV,
+                         hf_cand_xic_to_xi_pi_pi::DcaZCascToPV,
+                         hf_cand_xic_to_xi_pi_pi::NSigTpcPiFromXicPlus0,
+                         hf_cand_xic_to_xi_pi_pi::NSigTpcPiFromXicPlus1,
+                         hf_cand_xic_to_xi_pi_pi::NSigTpcBachelorPi,
+                         hf_cand_xic_to_xi_pi_pi::NSigTpcPiFromLambda,
+                         hf_cand_xic_to_xi_pi_pi::NSigTpcPrFromLambda,
+                         hf_cand_xic_to_xi_pi_pi::NSigTofPiFromXicPlus0,
+                         hf_cand_xic_to_xi_pi_pi::NSigTofPiFromXicPlus1,
+                         hf_cand_xic_to_xi_pi_pi::NSigTofBachelorPi,
+                         hf_cand_xic_to_xi_pi_pi::NSigTofPiFromLambda,
+                         hf_cand_xic_to_xi_pi_pi::NSigTofPrFromLambda,
                          o2::soa::Marker<MarkerXicToXiPiPi>);
 
-DECLARE_SOA_TABLE_STAGED(HfXicToXiPiPiMls, "HFXICTOXIPIPIML", //! Table with candidate selection ML scores
-                         hf_cand_mc::MlScoreSig,
+DECLARE_SOA_TABLE_STAGED(HfXicToXiPiPiMls, "HFXICXPPML", //! Table with candidate selection ML scores
+                         hf_cand_mc::MlScores,
                          o2::soa::Marker<MarkerXicToXiPiPi>);
 
-DECLARE_SOA_TABLE_STAGED(HfXicToXiPiPiMlXis, "HFXICTOXIPIPIMLXI", //! Table with Xi candidate selection ML scores
-                         hf_cand_mc_charm::MlScoresCharm,
-                         o2::soa::Marker<MarkerXicToXiPiPi>);
-
-DECLARE_SOA_TABLE_STAGED(HfXicToXiPiPiMcs, "HFXICTOXIPIPIMC", //! Table with MC candidate info
+DECLARE_SOA_TABLE_STAGED(HfXicToXiPiPiMcs, "HFXICXPPMC", //! Table with MC candidate info
                          hf_cand_mc::FlagMcMatchRec,
                          hf_cand_mc::OriginMcRec,
                          o2::soa::Marker<MarkerXicToXiPiPi>);
