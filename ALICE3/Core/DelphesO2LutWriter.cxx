@@ -43,7 +43,7 @@
 namespace o2::fastsim
 {
 
-void DelphesO2LutWriter::Print() const
+void DelphesO2LutWriter::print() const
 {
   LOG(info) << " --- Printing configuration of LUT writer --- ";
   LOG(info) << "    -> etaMaxBarrel  = " << etaMaxBarrel;
