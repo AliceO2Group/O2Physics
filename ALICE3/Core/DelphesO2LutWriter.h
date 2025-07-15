@@ -8,7 +8,6 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
 /// \file DelphesO2LutWriter.h
 /// \brief Porting to O2Physics of DelphesO2 code.
 ///        Minimal changes have been made to the original code for adaptation purposes, formatting and commented parts have been considered.

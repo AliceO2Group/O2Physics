@@ -95,16 +95,17 @@ bool DelphesO2LutWriter::fatSolve(lutEntry_t& lutEntry,
   o2::track::TrackParCov trkOut;
   const int status = fat.FastTrack(trkIn, trkOut, nch);
   if (status <= mAtLeastHits) {
-    LOGF(info, " --- fatSolve: FastTrack failed --- \n");
+    LOGF(info, " --- fatSolve: FastTrack failed ---");
     // tlv.Print();
     return false;
   }
-  LOGF(info, " --- fatSolve: FastTrack succeeded %d --- \n", status);
+  LOGF(info, " --- fatSolve: FastTrack succeeded %d ---", status);
   // trkOut.print();
   lutEntry.valid = true;
   lutEntry.itof = fat.GetGoodHitProb(itof);
   lutEntry.otof = fat.GetGoodHitProb(otof);
-  for (int i = 0; i < 15; ++i)
+  static constexpr int nCov = 15;
+  for (int i = 0; i < nCov; ++i)
     lutEntry.covm[i] = trkOut.getCov()[i];
 
   // define the efficiency
@@ -151,20 +152,22 @@ bool DelphesO2LutWriter::fwdPara(lutEntry_t& lutEntry, float pt, float eta, floa
   lutEntry.valid = false;
 
   // parametrised forward response; interpolates between FAT at eta = 1.75 and a fixed parametrisation at eta = 4; only diagonal elements
-  if (std::fabs(eta) < etaMaxBarrel || std::fabs(eta) > 4)
+  static constexpr float etaLimit = 4.0f;
+  if (std::fabs(eta) < etaMaxBarrel || std::fabs(eta) > etaLimit)
     return false;
 
   if (!fatSolve(lutEntry, pt, etaMaxBarrel, mass))
     return false;
-  float covmbarrel[15] = {0};
-  for (int i = 0; i < 15; ++i) {
+  static constexpr int nCov = 15;
+  float covmbarrel[nCov] = {0};
+  for (int i = 0; i < nCov; ++i) {
     covmbarrel[i] = lutEntry.covm[i];
   }
 
   // parametrisation at eta = 4
   const double beta = 1. / std::sqrt(1 + mass * mass / pt / pt / std::cosh(eta) / std::cosh(eta));
   const float dcaPos = 2.5e-4 / std::sqrt(3); // 2.5 micron/sqrt(3)
-  const float r0 = 0.5;                        // layer 0 radius [cm]
+  const float r0 = 0.5;                       // layer 0 radius [cm]
   const float r1 = 1.3;
   const float r2 = 2.5;
   const float x0layer = 0.001; // material budget (rad length) per layer
@@ -198,8 +201,8 @@ bool DelphesO2LutWriter::fwdPara(lutEntry_t& lutEntry, float pt, float eta, floa
   lutEntry.covm[2] = covmbarrel[2];
   if (dcaz2 > lutEntry.covm[2])
     lutEntry.covm[2] = dcaz2;
-  lutEntry.covm[5] = covmbarrel[5];                                // sigma^2 sin(phi)
-  lutEntry.covm[9] = covmbarrel[9];                                // sigma^2 tanl
+  lutEntry.covm[5] = covmbarrel[5];                              // sigma^2 sin(phi)
+  lutEntry.covm[9] = covmbarrel[9];                              // sigma^2 tanl
   lutEntry.covm[14] = momresTot * momresTot / pt / pt / pt / pt; // sigma^2 1/pt
   // Check that all numbers are numbers
   for (int i = 0; i < 15; ++i) {
@@ -283,10 +286,10 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, si
           lutEntry.valid = true;
           if (std::fabs(eta) <= etaMaxBarrel) { // full lever arm ends at etaMaxBarrel
             LOGF(info, "Solving in the barrel");
-            // printf(" --- fatSolve: pt = %f, eta = %f, mass = %f, field=%f \n", lutEntry.pt, lutEntry.eta, lutHeader.mass, lutHeader.field);
+            // LOGF(info, " --- fatSolve: pt = %f, eta = %f, mass = %f, field=%f", lutEntry.pt, lutEntry.eta, lutHeader.mass, lutHeader.field);
             successfullCalls++;
             if (!fatSolve(lutEntry, lutEntry.pt, lutEntry.eta, lutHeader.mass, itof, otof, q)) {
-              // printf(" --- fatSolve: error \n");
+              // LOGF(info, " --- fatSolve: error");
               lutEntry.valid = false;
               lutEntry.eff = 0.;
               lutEntry.eff2 = 0.;
@@ -298,7 +301,7 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, si
             }
           } else {
             LOGF(info, "Solving outside the barrel");
-            // printf(" --- fwdSolve: pt = %f, eta = %f, mass = %f, field=%f \n", lutEntry.pt, lutEntry.eta, lutHeader.mass, lutHeader.field);
+            // LOGF(info, " --- fwdSolve: pt = %f, eta = %f, mass = %f, field=%f", lutEntry.pt, lutEntry.eta, lutHeader.mass, lutHeader.field);
             lutEntry.eff = 1.;
             lutEntry.eff2 = 1.;
             bool retval = true;
@@ -319,7 +322,7 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, si
               lutEntry.eff2 = lutEntryBarrel.eff2;
             }
             if (!retval) {
-              printf(" --- fwdSolve: error \n");
+              LOGF(info, " --- fwdSolve: error");
               lutEntry.valid = false;
               for (int i = 0; i < 15; ++i) {
                 lutEntry.covm[i] = 0.;
