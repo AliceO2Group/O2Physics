@@ -114,10 +114,10 @@ o2physics_add_dpl_workflow(task-lc-to-k0s-p
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(task-omegac0-to-omega-pi #o2-linter: disable=name/o2-workflow (legacy name)
-                    SOURCES taskOmegac0ToOmegapi.cxx #o2-linter: disable=name/o2-workflow (legacy name)
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore #o2-linter: disable=name/o2-workflow (legacy name)
-                    COMPONENT_NAME Analysis) #o2-linter: disable=name/o2-workflow (legacy name)
+o2physics_add_dpl_workflow(task-omegac0-to-omega-pi
+                    SOURCES taskOmegac0ToOmegapi.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-sigmac
                     SOURCES taskSigmac.cxx

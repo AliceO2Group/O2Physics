@@ -496,9 +496,9 @@ struct HfDataCreatorCharmResoReduced {
     auto& trackNegProp = fitter.getTrack(1);
     trackPosProp.getPxPyPzGlo(candidateV0.momPos);
     trackNegProp.getPxPyPzGlo(candidateV0.momNeg);
-    for (int i = 0; i < 3; ++i) { // o2-linter: disable=magic-number (loop on xyz)
-      candidateV0.mom[i] = candidateV0.momPos[i] + candidateV0.momNeg[i];
-    }
+    
+    candidateV0.mom = RecoDecay::pVec(candidateV0.momPos, candidateV0.momNeg);
+    
     candidateV0.pT = std::hypot(candidateV0.mom[0], candidateV0.mom[1]);
     // topological selections:
     // v0 eta
@@ -517,9 +517,8 @@ struct HfDataCreatorCharmResoReduced {
     if (candidateV0.radius < cfgV0Cuts.radiusMin) {
       return false;
     }
-    for (int i = 0; i < 3; i++) { // o2-linter: disable=magic-number (loop on xyz)
-      candidateV0.pos[i] = vtx[i];
-    }
+    std::copy(vtx.begin(), vtx.end(), candidateV0.pos.begin());
+
     // v0 DCA to primary vertex
     candidateV0.dcaV0ToPv = calculateDCAStraightToPV(
       vtx[0], vtx[1], vtx[2],
