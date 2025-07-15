@@ -13,6 +13,8 @@
 /// \brief Reconstruction of Resonance candidates
 ///
 /// \author Luca Aglietta <luca.aglietta@cern.ch>, Università degli Studi di Torino
+/// \author Antonio Palasciano <antonio.palasciano@cern.ch>, INFN Bari
+
 #include "PWGHF/D2H/Core/SelectorCutsRedDataFormat.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
@@ -64,13 +66,25 @@ enum DecayChannel : uint8_t {
   Ds2StarToDplusK0s,
   XcToDplusLambda,
   LambdaDminus,
-  DstarTrack
+  DstarTrack,
+  D0Track
+};
+
+enum DType : uint8_t {
+  Dplus = 1,
+  Dstar,
+  D0
 };
 
 enum V0Type : uint8_t {
   K0s = 0,
   Lambda,
   AntiLambda
+};
+
+enum D0SelectionType : uint8_t {
+  SelectedD0 = 0,
+  SelectedD0Bar
 };
 
 enum DecayTypeMc : uint8_t {
@@ -84,7 +98,7 @@ enum DecayTypeMc : uint8_t {
 };
 
 const int nBinsPt = 7;
-constexpr double binsPt[nBinsPt + 1] = {
+constexpr double BinsPt[nBinsPt + 1] = {
   1.,
   2.,
   4.,
@@ -93,7 +107,7 @@ constexpr double binsPt[nBinsPt + 1] = {
   12.,
   24.,
   1000.};
-auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
+auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + nBinsPt + 1};
 
 struct HfCandidateCreatorCharmResoReduced {
   // Produces: Tables with resonance info
@@ -111,36 +125,41 @@ struct HfCandidateCreatorCharmResoReduced {
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{vecBinsPt}, "Histogram pT bin limits"};
   // Daughters selection cuts
-  Configurable<LabeledArray<double>> cutsD{"cutsDdaughter", {hf_cuts_d_daughter::Cuts[0], hf_cuts_d_daughter::NBinsPt, hf_cuts_d_daughter::NCutVars, hf_cuts_d_daughter::labelsPt, hf_cuts_d_daughter::labelsCutVar}, "D daughter selections"};
+  Configurable<LabeledArray<double>> cutsDDaughter{"cutsDDaughter", {hf_cuts_d_daughter::Cuts[0], hf_cuts_d_daughter::NBinsPt, hf_cuts_d_daughter::NCutVars, hf_cuts_d_daughter::labelsPt, hf_cuts_d_daughter::labelsCutVar}, "D daughter selections"};
   Configurable<std::vector<double>> binsPtD{"binsPtD", std::vector<double>{hf_cuts_d_daughter::vecBinsPt}, "pT bin limits for D daughter cuts"};
-  Configurable<LabeledArray<double>> cutsV0{"cutsV0daughter", {hf_cuts_v0_daughter::Cuts[0], hf_cuts_v0_daughter::NBinsPt, hf_cuts_v0_daughter::NCutVars, hf_cuts_v0_daughter::labelsPt, hf_cuts_v0_daughter::labelsCutVar}, "V0 daughter selections"};
+  Configurable<LabeledArray<double>> cutsV0Daughter{"cutsV0Daughter", {hf_cuts_v0_daughter::Cuts[0], hf_cuts_v0_daughter::NBinsPt, hf_cuts_v0_daughter::NCutVars, hf_cuts_v0_daughter::labelsPt, hf_cuts_v0_daughter::labelsCutVar}, "V0 daughter selections"};
   Configurable<std::vector<double>> binsPtV0{"binsPtV0", std::vector<double>{hf_cuts_v0_daughter::vecBinsPt}, "pT bin limits for V0 daughter cuts"};
 
   // Configurables for ME
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
   Configurable<int> numberEventsToSkip{"numberEventsToSkip", -1, "Number of events to Skip in ME process"};
-  ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0., 45., 60., 75., 95, 250}, "event multiplicity pools (PV contributors for now)"};
-  ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0, -4, -1, 1, 4, 10.0}, "z vertex position pools"};
+
+  SliceCache cache;
 
   using HfRed3PrNoTrksWithMl = soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl>;
+  using HfRed2PrNoTrksWithMl = soa::Join<aod::HfRed2PrNoTrks, aod::HfRed2ProngsMl>;
+
+  Preslice<aod::HfRedVzeros> candsV0PerCollision = aod::hf_track_index_reduced::hfRedCollisionId;
+  Preslice<aod::HfRedTrkNoParams> candsTrackPerCollision = aod::hf_track_index_reduced::hfRedCollisionId;
+  Preslice<aod::HfRed3PrNoTrks> candsDPerCollision = hf_track_index_reduced::hfRedCollisionId;
+  Preslice<aod::HfRed2PrNoTrks> candsD0PerCollision = hf_track_index_reduced::hfRedCollisionId;
+  Preslice<HfRed3PrNoTrksWithMl> candsDPerCollisionWithMl = hf_track_index_reduced::hfRedCollisionId;
+  Preslice<HfRed2PrNoTrksWithMl> candsD0PerCollisionWithMl = hf_track_index_reduced::hfRedCollisionId;
 
   // Partition of V0 candidates based on v0Type
   Partition<aod::HfRedVzeros> candidatesK0s = aod::hf_reso_v0::v0Type == (uint8_t)1 || aod::hf_reso_v0::v0Type == (uint8_t)3 || aod::hf_reso_v0::v0Type == (uint8_t)5;
   Partition<aod::HfRedVzeros> candidatesLambda = aod::hf_reso_v0::v0Type == (uint8_t)2 || aod::hf_reso_v0::v0Type == (uint8_t)4;
 
-  SliceCache cache;
-  Preslice<aod::HfRedVzeros> candsV0PerCollision = aod::hf_track_index_reduced::hfRedCollisionId;
-  Preslice<aod::HfRedTrkNoParams> candsTrackPerCollision = aod::hf_track_index_reduced::hfRedCollisionId;
-  Preslice<aod::HfRed3PrNoTrks> candsDPerCollision = hf_track_index_reduced::hfRedCollisionId;
-  Preslice<HfRed3PrNoTrksWithMl> candsDPerCollisionWithMl = hf_track_index_reduced::hfRedCollisionId;
+  ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0., 45., 60., 75., 95, 250}, "event multiplicity pools (PV contributors for now)"};
+  ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0, -4, -1, 1, 4, 10.0}, "z vertex position pools"};
 
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
   {
     // check that only one process function is enabled
-    std::array<bool, 14> doprocess{doprocessDs2StarToDplusK0s, doprocessDs2StarToDplusK0sWithMl, doprocessDs1ToDstarK0s, doprocessDs1ToDstarK0sWithMl, doprocessDs1ToDstarK0sMixedEvent, doprocessDs1ToDstarK0sMixedEventWithMl, doprocessDs2StarToDplusK0sMixedEventWithMl,
-                                   doprocessXcToDplusLambda, doprocessXcToDplusLambdaWithMl, doprocessLambdaDminus, doprocessLambdaDminusWithMl, doprocessDstarTrack, doprocessDstarTrackWithMl};
+    std::array<bool, 16> doprocess{doprocessDs2StarToDplusK0s, doprocessDs2StarToDplusK0sWithMl, doprocessDs1ToDstarK0s, doprocessDs1ToDstarK0sWithMl, doprocessDs1ToDstarK0sMixedEvent, doprocessDs1ToDstarK0sMixedEventWithMl, doprocessDs2StarToDplusK0sMixedEventWithMl,
+                                   doprocessXcToDplusLambda, doprocessXcToDplusLambdaWithMl, doprocessLambdaDminus, doprocessLambdaDminusWithMl, doprocessDstarTrack, doprocessDstarTrackWithMl, doprocessD0Track, doprocessD0TrackWithMl};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "Only one process function should be enabled! Please check your configuration!");
     }
@@ -152,6 +171,8 @@ struct HfCandidateCreatorCharmResoReduced {
     registry.add("hMassXcRes", "XcRes candidates; m_XcRes (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{300, 1.1, 1.4}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassLambdaDminus", "LambdaDminus candidates; m_LambdaDminus (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{300, 1.1, 1.4}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassDstarTrack", "DstarTrack candidates; m_DstarTrack (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{100, 0.9, 1.4}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassD0Track", "D0Track candidates; m_D0Track (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{100, 0.8, 1.3}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassD0BarTrack", "D0Track candidates; m_D0Track (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{100, 0.8, 1.3}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     if (doprocessDs1ToDstarK0sMixedEvent) {
       registry.add("hNPvContCorr", "Collision number of PV contributors ; N contrib ; N contrib", {HistType::kTH2F, {{100, 0, 250}, {100, 0, 250}}});
       registry.add("hZvertCorr", "Collision Z Vtx ; z PV [cm] ; z PV [cm]", {HistType::kTH2F, {{120, -12., 12.}, {120, -12., 12.}}});
@@ -184,9 +205,9 @@ struct HfCandidateCreatorCharmResoReduced {
     if (ptBin == -1) {
       return false;
     }
-    if (channel == DecayChannel::Ds2StarToDplusK0s || channel == DecayChannel::XcToDplusLambda || channel == DecayChannel::LambdaDminus) {
+    if constexpr (channel == DecayChannel::Ds2StarToDplusK0s || channel == DecayChannel::XcToDplusLambda || channel == DecayChannel::LambdaDminus) {
       invMassD = candD.invMassDplus();
-    } else if (channel == DecayChannel::Ds1ToDstarK0s || channel == DecayChannel::DstarTrack) {
+    } else if constexpr (channel == DecayChannel::Ds1ToDstarK0s || channel == DecayChannel::DstarTrack) {
       if (candD.dType() > 0)
         invMassD = candD.invMassDstar() - candD.invMassD0();
       else
@@ -194,14 +215,21 @@ struct HfCandidateCreatorCharmResoReduced {
     }
     // invariant mass selection
     if (!keepSideBands) {
-      if (invMassD < cutsD->get(ptBin, "invMassSignalLow") || invMassD > cutsD->get(ptBin, "invMassSignalHigh")) {
-        return false;
+      if constexpr (channel == DecayChannel::D0Track) {
+        if ((candD.invMassD0() < cutsDDaughter->get(ptBin, "invMassSignalLow") || candD.invMassD0() > cutsDDaughter->get(ptBin, "invMassSignalHigh")) &&
+            (candD.invMassD0Bar() < cutsDDaughter->get(ptBin, "invMassSignalLow") || candD.invMassD0Bar() > cutsDDaughter->get(ptBin, "invMassSignalHigh"))) {
+          return false;
+        }
+      } else {
+        if (invMassD < cutsDDaughter->get(ptBin, "invMassSignalLow") || invMassD > cutsDDaughter->get(ptBin, "invMassSignalHigh")) {
+          return false;
+        }
       }
     } else {
-      if ((invMassD < cutsD->get(ptBin, "invMassLeftSBLow")) ||
-          (invMassD > cutsD->get(ptBin, "invMassLeftSBHigh") && invMassD < cutsD->get(ptBin, "invMassSignalLow")) ||
-          (invMassD > cutsD->get(ptBin, "invMassSignalHigh") && invMassD < cutsD->get(ptBin, "invMassRightSBLow")) ||
-          (invMassD > cutsD->get(ptBin, "invMassRightSBHigh"))) {
+      if ((invMassD < cutsDDaughter->get(ptBin, "invMassLeftSBLow")) ||
+          (invMassD > cutsDDaughter->get(ptBin, "invMassLeftSBHigh") && invMassD < cutsDDaughter->get(ptBin, "invMassSignalLow")) ||
+          (invMassD > cutsDDaughter->get(ptBin, "invMassSignalHigh") && invMassD < cutsDDaughter->get(ptBin, "invMassRightSBLow")) ||
+          (invMassD > cutsDDaughter->get(ptBin, "invMassRightSBHigh"))) {
         return false;
       }
     }
@@ -244,11 +272,11 @@ struct HfCandidateCreatorCharmResoReduced {
       }
     }
     // selection on V0 candidate mass
-    if ((invMassV0 - massV0) > cutsV0->get(ptBin, "invMassLow") && (massV0 - invMassV0) < cutsV0->get(ptBin, "invMassLow")) {
+    if ((invMassV0 - massV0) > cutsV0Daughter->get(ptBin, "invMassLow") && (massV0 - invMassV0) < cutsV0Daughter->get(ptBin, "invMassLow")) {
       return false;
     }
     // selection on kinematics and topology
-    if (candV0.dca() > cutsV0->get(ptBin, "dcaMax") || candV0.cpa() < cutsV0->get(ptBin, "cpaMin") || candV0.v0Radius() < cutsV0->get(ptBin, "radiusMin")) {
+    if (candV0.dca() > cutsV0Daughter->get(ptBin, "dcaMax") || candV0.cpa() < cutsV0Daughter->get(ptBin, "cpaMin") || candV0.v0Radius() < cutsV0Daughter->get(ptBin, "radiusMin")) {
       return false;
     }
     return true;
@@ -273,15 +301,21 @@ struct HfCandidateCreatorCharmResoReduced {
       }
       float invMassD{0.};
       float invMassD0{0.};
-      if (std::abs(candD.dType()) == 1)
-        invMassD = candD.invMassDplus();
-      if (candD.dType() == 2) {
-        invMassD = candD.invMassDstar();
-        invMassD0 = candD.invMassD0();
-      }
-      if (candD.dType() == -2) {
-        invMassD = candD.invMassAntiDstar();
-        invMassD0 = candD.invMassD0Bar();
+      std::array<std::array<float, 3>, 3> pVectorCharmProngs;
+      if constexpr (channel != DecayChannel::D0Track) {
+        if (std::abs(candD.dType()) == DType::Dplus)
+          invMassD = candD.invMassDplus();
+        if (candD.dType() == DType::Dstar) {
+          invMassD = candD.invMassDstar();
+          invMassD0 = candD.invMassD0();
+        }
+        if (candD.dType() == (-1) * DType::Dstar) {
+          invMassD = candD.invMassAntiDstar();
+          invMassD0 = candD.invMassD0Bar();
+        }
+        pVectorCharmProngs = {candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2()};
+      } else {
+        pVectorCharmProngs = {candD.pVectorProng0(), candD.pVectorProng1(), {0.}};
       }
       std::array<float, 3> pVecD = {candD.px(), candD.py(), candD.pz()};
 
@@ -289,18 +323,25 @@ struct HfCandidateCreatorCharmResoReduced {
       bool alreadyCounted{false};
       for (const auto& candV0Tr : candsV0Tr) {
         if (rejectDV0PairsWithCommonDaughter) {
-          const std::array<int, 3> dDaughtersIDs = {candD.prong0Id(), candD.prong1Id(), candD.prong2Id()};
-          if constexpr (channel == DecayChannel::DstarTrack) {
+          if constexpr (channel == DecayChannel::D0Track) {
+            const std::array<int, 2> dDaughtersIDs = {candD.prong0Id(), candD.prong1Id()};
             if (std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.globalIndex()) != dDaughtersIDs.end()) {
               continue;
             }
           } else {
-            if (std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.prong0Id()) != dDaughtersIDs.end() || std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.prong1Id()) != dDaughtersIDs.end()) {
-              continue;
+            const std::array<int, 3> dDaughtersIDs = {candD.prong0Id(), candD.prong1Id(), candD.prong2Id()};
+            if constexpr (channel == DecayChannel::DstarTrack) {
+              if (std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.globalIndex()) != dDaughtersIDs.end()) {
+                continue;
+              }
+            } else {
+              if (std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.prong0Id()) != dDaughtersIDs.end() || std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.prong1Id()) != dDaughtersIDs.end()) {
+                continue;
+              }
             }
           }
         }
-        if constexpr (channel != DecayChannel::DstarTrack) {
+        if constexpr ((channel != DecayChannel::DstarTrack) && (channel != DecayChannel::D0Track)) {
           if (!isV0Selected<channel>(candV0Tr, candD)) {
             continue;
           }
@@ -313,7 +354,6 @@ struct HfCandidateCreatorCharmResoReduced {
         float invMassReso{0.};
         float invMassV0{0.};
         std::array<float, 3> pVecV0Tr = {candV0Tr.px(), candV0Tr.py(), candV0Tr.pz()};
-        std::array<std::array<float, 3>, 3> pVectorCharmProngs = {candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2()};
         float ptReso = RecoDecay::pt(RecoDecay::sumOfVec(pVecV0Tr, pVecD));
 
         if constexpr (channel == DecayChannel::DstarTrack) {
@@ -323,6 +363,17 @@ struct HfCandidateCreatorCharmResoReduced {
             invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[1], pVectorCharmProngs[0], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassProton});
           }
           registry.fill(HIST("hMassDstarTrack"), invMassReso - invMassD, ptReso);
+        } else if constexpr (channel == DecayChannel::D0Track) {
+          if (TESTBIT(candD.selFlagD0(), D0SelectionType::SelectedD0)) {
+            invMassD = candD.invMassD0();
+            invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassProton});
+            registry.fill(HIST("hMassD0Track"), invMassReso - invMassD, ptReso);
+          }
+          if (TESTBIT(candD.selFlagD0(), D0SelectionType::SelectedD0Bar)) {
+            invMassD = candD.invMassD0Bar();
+            invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[1], pVectorCharmProngs[0], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassProton});
+            registry.fill(HIST("hMassD0BarTrack"), invMassReso - invMassD, ptReso);
+          }
         } else {
           switch (channel) {
             case DecayChannel::Ds1ToDstarK0s:
@@ -367,6 +418,11 @@ struct HfCandidateCreatorCharmResoReduced {
                                 candV0Tr.px(), candV0Tr.py(), candV0Tr.pz(),
                                 invMassReso,
                                 invMassD - invMassD0);
+        } else if constexpr (channel == DecayChannel::D0Track) {
+          rowCandidateResoTrack(pVecD[0], pVecD[1], pVecD[2],
+                                candV0Tr.px(), candV0Tr.py(), candV0Tr.pz(),
+                                invMassReso,
+                                0);
         } else {
           rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
                            pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
@@ -413,13 +469,14 @@ struct HfCandidateCreatorCharmResoReduced {
         // Retrieve D and V0 informations
         float invMassD{0.};
         float invMassD0{0.};
-        if (std::abs(bachD.dType()) == 1)
+        if (std::abs(bachD.dType()) == DType::Dplus) {
           invMassD = bachD.invMassDplus();
-        if (bachD.dType() == 2) {
+        }
+        if (bachD.dType() == DType::Dstar) {
           invMassD = bachD.invMassDstar();
           invMassD0 = bachD.invMassD0();
         }
-        if (bachD.dType() == -2) {
+        if (bachD.dType() == (-1) * DType::Dstar) {
           invMassD = bachD.invMassAntiDstar();
           invMassD0 = bachD.invMassD0Bar();
         }
@@ -641,6 +698,32 @@ struct HfCandidateCreatorCharmResoReduced {
     }
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processDstarTrackWithMl, "Process DStar candidates with Ml info", false);
+
+  void processD0Track(aod::HfRedCollisions const& collisions,
+                      aod::HfRed2PrNoTrks const& candsD,
+                      aod::HfRedTrkNoParams const& candidatesTrack)
+  {
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsD.sliceBy(candsD0PerCollision, thisCollId);
+      auto trackThisColl = candidatesTrack.sliceBy(candsTrackPerCollision, thisCollId);
+      runCandidateCreation<false, DecayChannel::D0Track>(collision, candsDThisColl, trackThisColl);
+    }
+  }
+  PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processD0Track, "Process D0 candidates without Ml info", false);
+
+  void processD0TrackWithMl(aod::HfRedCollisions const& collisions,
+                            HfRed2PrNoTrksWithMl const& candsD,
+                            aod::HfRedTrkNoParams const& candidatesTrack)
+  {
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsD.sliceBy(candsD0PerCollisionWithMl, thisCollId);
+      auto trackThisColl = candidatesTrack.sliceBy(candsTrackPerCollision, thisCollId);
+      runCandidateCreation<true, DecayChannel::D0Track>(collision, candsDThisColl, trackThisColl);
+    }
+  }
+  PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processD0TrackWithMl, "Process D0 candidates with Ml info", false);
 
 }; // struct HfCandidateCreatorCharmResoReduced
 
