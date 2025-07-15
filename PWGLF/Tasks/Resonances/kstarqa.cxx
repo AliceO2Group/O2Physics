@@ -224,8 +224,8 @@ struct Kstarqa {
       // hInvMass.add("multdist_FT0A", "FT0A Multiplicity distribution", kTH1F, {axisMultdist});
       // hInvMass.add("multdist_FT0C", "FT0C Multiplicity distribution", kTH1F, {axisMultdist});
       // hInvMass.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{2000, 0.0f, 10000.0f}});
-      rEventSelection.add("hDcaxy", "Dcaxy distribution", kTH1F, {{50, -1.0f, 1.0f}});
-      rEventSelection.add("hDcaz", "Dcaz distribution", kTH1F, {{50, -1.0f, 1.0f}});
+      rEventSelection.add("hDcaxy", "Dcaxy distribution", kTH1F, {{200, -1.0f, 1.0f}});
+      rEventSelection.add("hDcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
     }
   }
 
@@ -1035,21 +1035,33 @@ struct Kstarqa {
         int track1PDG = std::abs(mctrack1.pdgCode());
         int track2PDG = std::abs(mctrack2.pdgCode());
 
-        if (cQAplots && (mctrack1.pdgCode() == 211 || mctrack2.pdgCode() == 211)) { // pion
+        if (cQAplots && (mctrack2.pdgCode() == 211)) { // pion
           hPID.fill(HIST("Before/h1PID_TPC_pos_pion"), track2.tpcNSigmaPi());
           hPID.fill(HIST("Before/h1PID_TOF_pos_pion"), track2.tofNSigmaPi());
+          hPID.fill(HIST("Before/hNsigmaTPC_Pi_before"), track2.pt(), track2.tpcNSigmaPi());
+          hPID.fill(HIST("Before/hNsigmaTOF_Pi_before"), track2.pt(), track2.tofNSigmaPi());
         }
-        if (cQAplots && (mctrack1.pdgCode() == 321 || mctrack2.pdgCode() == 321)) { // kaon
+        if (cQAplots && (mctrack2.pdgCode() == 321)) { // kaon
           hPID.fill(HIST("Before/h1PID_TPC_pos_kaon"), track2.tpcNSigmaKa());
           hPID.fill(HIST("Before/h1PID_TOF_pos_kaon"), track2.tofNSigmaKa());
+          hPID.fill(HIST("Before/hNsigmaTPC_Ka_before"), track2.pt(), track2.tpcNSigmaKa());
+          hPID.fill(HIST("Before/hNsigmaTOF_Ka_before"), track2.pt(), track2.tofNSigmaKa());
         }
-        if (cQAplots && (mctrack1.pdgCode() == -211 || mctrack2.pdgCode() == -211)) { // negative track pion
-          hPID.fill(HIST("Before/h1PID_TPC_neg_pion"), track1.tpcNSigmaPi());
-          hPID.fill(HIST("Before/h1PID_TOF_neg_pion"), track1.tofNSigmaPi());
+        if (cQAplots && (mctrack2.pdgCode() == -211)) { // negative track pion
+          hPID.fill(HIST("Before/h1PID_TPC_neg_pion"), track2.tpcNSigmaPi());
+          hPID.fill(HIST("Before/h1PID_TOF_neg_pion"), track2.tofNSigmaPi());
+          hPID.fill(HIST("Before/hNsigmaTPC_Pi_before"), track2.pt(), track2.tpcNSigmaPi());
+          hPID.fill(HIST("Before/hNsigmaTOF_Pi_before"), track2.pt(), track2.tofNSigmaPi());
         }
-        if (cQAplots && (mctrack1.pdgCode() == -321 || mctrack2.pdgCode() == -321)) { // negative track kaon
-          hPID.fill(HIST("Before/h1PID_TPC_neg_kaon"), track1.tpcNSigmaKa());
-          hPID.fill(HIST("Before/h1PID_TOF_neg_kaon"), track1.tofNSigmaKa());
+        if (cQAplots && (mctrack2.pdgCode() == -321)) { // negative track kaon
+          hPID.fill(HIST("Before/h1PID_TPC_neg_kaon"), track2.tpcNSigmaKa());
+          hPID.fill(HIST("Before/h1PID_TOF_neg_kaon"), track2.tofNSigmaKa());
+          hPID.fill(HIST("Before/hNsigmaTPC_Ka_before"), track2.pt(), track2.tpcNSigmaKa());
+          hPID.fill(HIST("Before/hNsigmaTOF_Ka_before"), track2.pt(), track2.tofNSigmaKa());
+        }
+        if (cQAplots && (abs(mctrack1.pdgCode()) == 321 && abs(mctrack2.pdgCode()) == 211)) {
+          hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
+          hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track2.tpcNSigmaPi(), track2.tofNSigmaPi());
         }
 
         if (!mctrack1.isPhysicalPrimary()) {
