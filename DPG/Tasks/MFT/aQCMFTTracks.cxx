@@ -91,7 +91,10 @@ struct CheckMFT {
       if (nCls >= 5) {
         registry.fill(HIST("mMFTTrackXY_5_MinClusters"), x, y);
         registry.fill(HIST("mMFTTrackEtaPhi_5_MinClusters"), eta, phi);
-        if (nCls >= 7) {
+      if (nCls >= 6) {
+        registry.fill(HIST("mMFTTrackXY_6_MinClusters"), x, y);
+        registry.fill(HIST("mMFTTrackEtaPhi_6_MinClusters"), eta, phi);
+}        if (nCls >= 7) {
           registry.fill(HIST("mMFTTrackXY_7_MinClusters"), x, y);
           registry.fill(HIST("mMFTTrackEtaPhi_7_MinClusters"), eta, phi);
           if (nCls >= 8) {
@@ -101,13 +104,14 @@ struct CheckMFT {
         }
       }
       if (avClsPlots) {
-        std::array<float, 10> clsSize;
-        for (unsigned int layer = 0; layer < 10; layer++) {
+        static constexpr int kNcls = 10;
+        std::array<float, kNcls> clsSize;
+        for (unsigned int layer = 0; layer < kNcls; layer++) {
           clsSize[layer] = (track.mftClusterSizesAndTrackFlags() >> (layer * 6)) & 0x3f;
           // LOG(info) << "Layer " << layer << ": " << clsSize[layer];
         }
         float avgCls = 0;
-        for (unsigned int layer = 0; layer < 10; layer++) {
+        for (unsigned int layer = 0; layer < kNcls; layer++) {
           avgCls += clsSize[layer];
         }
         avgCls /= track.nClusters();
@@ -115,7 +119,7 @@ struct CheckMFT {
         std::sort(clsSize.begin(), clsSize.end());
         float truncatedAvgCls = 0;
         int ncls = 0;
-        for (unsigned int layer = 0; layer < 10; layer++) {
+        for (unsigned int layer = 0; layer < kNcls; layer++) {
           if (clsSize[layer] > 0) {
             truncatedAvgCls += clsSize[layer];
             ncls++;
