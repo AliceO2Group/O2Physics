@@ -140,16 +140,16 @@ struct CheckMFT {
   void processMC(soa::Join<aod::MFTTracks, aod::McMFTTrackLabels> const& mfttracks,
                  aod::McParticles const&)
   {
+    static constexpr int kNcls = 10;
     for (const auto& track : mfttracks) {
       if (avClsPlots) {
-        static constexpr int kNcls = 10;
-        std::array<float, 10> clsSize;
-        for (unsigned int layer = 0; layer < 10; layer++) {
+        std::array<float, kNcls> clsSize;
+        for (unsigned int layer = 0; layer < kNcls; layer++) {
           clsSize[layer] = (track.mftClusterSizesAndTrackFlags() >> (layer * 6)) & 0x3f;
           // LOG(info) << "Layer " << layer << ": " << clsSize[layer];
         }
         float avgCls = 0;
-        for (unsigned int layer = 0; layer < 10; layer++) {
+        for (unsigned int layer = 0; layer < kNcls; layer++) {
           avgCls += clsSize[layer];
         }
         avgCls /= track.nClusters();
@@ -157,7 +157,7 @@ struct CheckMFT {
         std::sort(clsSize.begin(), clsSize.end());
         float truncatedAvgCls = 0;
         int ncls = 0;
-        for (unsigned int layer = 0; layer < 10; layer++) {
+        for (unsigned int layer = 0; layer < kNcls; layer++) {
           if (clsSize[layer] > 0) {
             truncatedAvgCls += clsSize[layer];
             ncls++;
