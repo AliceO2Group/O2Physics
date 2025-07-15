@@ -38,7 +38,7 @@
 using namespace o2;
 using namespace o2::framework;
 
-MetadataHelper metadataInfo; // Metadata helper
+o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 
 static constexpr int kCentRun2V0Ms = 0;
 static constexpr int kCentRun2V0As = 1;

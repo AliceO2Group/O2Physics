@@ -40,7 +40,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
-MetadataHelper metadataInfo;
+o2::common::core::MetadataHelper metadataInfo;
 
 static constexpr int nCases = 2;
 static constexpr int nParameters = 12;

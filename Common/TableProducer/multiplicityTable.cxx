@@ -40,7 +40,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-MetadataHelper metadataInfo; // Metadata helper
+o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 
 static constexpr int kFV0Mults = 0;
 static constexpr int kFT0Mults = 1;

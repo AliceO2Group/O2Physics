@@ -44,7 +44,7 @@
 using namespace o2;
 using namespace o2::framework;
 
-MetadataHelper metadataInfo; // Metadata helper
+o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 
 using BCsWithRun2InfosAndMatches = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Run2MatchedToBCSparse>;
 using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>;
