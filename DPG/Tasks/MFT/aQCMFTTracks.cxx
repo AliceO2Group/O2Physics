@@ -30,9 +30,10 @@
 #include "Framework/TimingInfo.h"
 #include "Framework/runDataProcessing.h"
 
-#include <algorithm>
 #include <TH1F.h>
 #include <TH2F.h>
+
+#include <algorithm>
 
 using namespace o2;
 using namespace o2::framework;
