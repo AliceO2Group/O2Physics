@@ -199,10 +199,9 @@ struct HfCorrelatorHfeHadrons {
         if (!selAssoHadron(hTrack)) {
           continue;
         }
-        if (nElectron == 0) {
-          registry.fill(HIST("hTracksBin"), poolBin);
-          entryHadron(phiHadron, etaHadron, ptHadron, poolBin, gCollisionId, timeStamp);
-        }
+        ptHadron = hTrack.pt();
+        phiHadron = hTrack.phi();
+        etaHadron = hTrack.eta();
         if (hTrack.globalIndex() == eTrack.trackId()) {
           continue;
         }
@@ -210,10 +209,10 @@ struct HfCorrelatorHfeHadrons {
         if (ptCondition && (ptElectron < ptHadron)) {
           continue;
         }
-        ptHadron = hTrack.pt();
-        phiHadron = hTrack.phi();
-        etaHadron = hTrack.eta();
-
+        if (nElectron == 0) {
+          registry.fill(HIST("hTracksBin"), poolBin);
+          entryHadron(phiHadron, etaHadron, ptHadron, poolBin, gCollisionId, timeStamp);
+        }
         deltaPhi = RecoDecay::constrainAngle(phiElectron - phiHadron, -o2::constants::math::PIHalf);
         deltaEta = etaElectron - etaHadron;
         registry.fill(HIST("hInclusiveEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
