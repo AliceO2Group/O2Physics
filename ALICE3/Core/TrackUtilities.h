@@ -21,8 +21,9 @@
 
 #include "ReconstructionDataFormats/Track.h"
 
-#include <vector>
 #include "TLorentzVector.h"
+
+#include <vector>
 
 namespace o2::upgrade
 {
