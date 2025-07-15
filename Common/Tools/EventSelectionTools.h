@@ -44,8 +44,11 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <limits>
+#include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
 //__________________________________________
 // MultModule
@@ -181,8 +184,9 @@ class BcSelectionModule
   template <typename TCCDB, typename TBCs>
   bool configure(TCCDB& ccdb, TBCs const& bcs)
   {
-    if (bcs.size() == 0)
+    if (bcs.size() == 0) {
       return false;
+    }
     int run = bcs.iteratorAt(0).runNumber();
     if (run != lastRun) {
       lastRun = run;
@@ -256,7 +260,7 @@ class BcSelectionModule
       if (mapRCT == nullptr) {
         LOGP(info, "rct object missing... inserting dummy rct flags");
         mapRCT = new std::map<uint64_t, uint32_t>;
-        uint32_t dummyValue = 1 << 31; // setting bit 31 to indicate that rct object is missing
+        uint32_t dummyValue = 1u << 31; // setting bit 31 to indicate that rct object is missing
         mapRCT->insert(std::pair<uint64_t, uint32_t>(sorTimestamp, dummyValue));
       }
     }
@@ -605,7 +609,7 @@ class EventSelectionModule
   int rofOffset = -1;     // ITS ROF offset, in bc
   int rofLength = -1;     // ITS ROF length, in bc
 
-  int32_t findClosest(int64_t globalBC, std::map<int64_t, int32_t>& bcs)
+  int32_t findClosest(int64_t globalBC, const std::map<int64_t, int32_t>& bcs)
   {
     auto it = bcs.lower_bound(globalBC);
     int64_t bc1 = it->first;
@@ -697,6 +701,9 @@ class EventSelectionModule
   template <typename TCCDB, typename TTimestamps, typename TBCs>
   bool configure(TCCDB& ccdb, TTimestamps const& timestamps, TBCs const& bcs)
   {
+    if (bcs.size() == 0) {
+      return false;
+    }
     int run = bcs.iteratorAt(0).runNumber();
     // extract bc pattern from CCDB for data or anchored MC only
     if (run != lastRun && run >= run3min) {
@@ -1222,8 +1229,8 @@ class EventSelectionModule
       // compare zVtx from FT0 and from PV
       bool isGoodZvtxFT0vsPV = 0;
       if (bcselEntry.foundFT0Id > -1) {
-        auto foundFT0 = ft0s.rawIteratorAt(bcselEntry.foundFT0Id);
-        isGoodZvtxFT0vsPV = std::fabs(foundFT0.posZ() - col.posZ()) < evselOpts.maxDiffZvtxFT0vsPV;
+        auto foundFT0Inner = ft0s.rawIteratorAt(bcselEntry.foundFT0Id);
+        isGoodZvtxFT0vsPV = std::fabs(foundFT0Inner.posZ() - col.posZ()) < evselOpts.maxDiffZvtxFT0vsPV;
       }
 
       // copy alias decisions from bcsel table
@@ -1379,11 +1386,13 @@ class LumiModule
   template <typename TCCDB, typename TTimestamps, typename TBCs>
   bool configure(TCCDB& ccdb, TTimestamps const& timestamps, TBCs const& bcs)
   {
-    if (bcs.size() == 0)
+    if (bcs.size() == 0) {
       return false;
+    }
     int run = bcs.iteratorAt(0).runNumber();
-    if (run < 500000) // o2-linter: disable=magic-number (skip for unanchored MCs)
+    if (run < 500000) { // o2-linter: disable=magic-number (skip for unanchored MCs)
       return false;
+    }
     if (run != lastRun && run >= 520259) { // o2-linter: disable=magic-number (scalers available for runs above 520120)
       lastRun = run;
       int64_t ts = timestamps[0];
