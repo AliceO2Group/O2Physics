@@ -9,10 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file TrackUtilities.h
-///
-/// \brief Set of utilities for the ALICE3 track handling
-///
+/// \file   TrackUtilities.h
+/// \author Nicolò Jacazio, Universita del Piemonte Orientale (IT)
+/// \brief  Set of utilities for the ALICE3 track handling
 /// \since  May 21, 2025
 ///
 
