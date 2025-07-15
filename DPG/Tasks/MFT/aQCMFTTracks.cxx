@@ -95,13 +95,13 @@ struct CheckMFT {
         if (nCls >= 6) {
           registry.fill(HIST("mMFTTrackXY_6_MinClusters"), x, y);
           registry.fill(HIST("mMFTTrackEtaPhi_6_MinClusters"), eta, phi);
-        }
-        if (nCls >= 7) {
-          registry.fill(HIST("mMFTTrackXY_7_MinClusters"), x, y);
-          registry.fill(HIST("mMFTTrackEtaPhi_7_MinClusters"), eta, phi);
-          if (nCls >= 8) {
-            registry.fill(HIST("mMFTTrackXY_8_MinClusters"), x, y);
-            registry.fill(HIST("mMFTTrackEtaPhi_8_MinClusters"), eta, phi);
+          if (nCls >= 7) {
+            registry.fill(HIST("mMFTTrackXY_7_MinClusters"), x, y);
+            registry.fill(HIST("mMFTTrackEtaPhi_7_MinClusters"), eta, phi);
+            if (nCls >= 8) {
+              registry.fill(HIST("mMFTTrackXY_8_MinClusters"), x, y);
+              registry.fill(HIST("mMFTTrackEtaPhi_8_MinClusters"), eta, phi);
+            }
           }
         }
       }
