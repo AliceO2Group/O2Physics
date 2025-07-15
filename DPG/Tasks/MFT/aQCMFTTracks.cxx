@@ -38,24 +38,37 @@ using namespace o2::framework;
 using namespace o2::aod;
 
 struct CheckMFT {
-  HistogramRegistry registry{"registry",
-                             {// 2d histograms
-                              {"mMFTTrackEtaPhi_5_MinClusters", "Track #eta , #phi (NCls >= 5); #eta; #phi", {HistType::kTH2F, {{50, -4, -2}, {100, -3.2, 3.2}}}},
-                              {"mMFTTrackXY_5_MinClusters", "Track Position (NCls >= 5); x; y", {HistType::kTH2F, {{320, -16, 16}, {320, -16, 16}}}},
-                              {"mMFTTrackEtaPhi_7_MinClusters", "Track #eta , #phi (NCls >= 7); #eta; #phi", {HistType::kTH2F, {{50, -4, -2}, {100, -3.2, 3.2}}}},
-                              {"mMFTTrackXY_7_MinClusters", "Track Position (NCls >= 7); x; y", {HistType::kTH2F, {{320, -16, 16}, {320, -16, 16}}}},
-                              {"mMFTTrackEtaPhi_8_MinClusters", "Track #eta , #phi (NCls >= 8); #eta; #phi", {HistType::kTH2F, {{50, -4, -2}, {100, -3.2, 3.2}}}},
-                              {"mMFTTrackXY_8_MinClusters", "Track Position (NCls >= 8); x; y", {HistType::kTH2F, {{320, -16, 16}, {320, -16, 16}}}},
-                              // 1d histograms
-                              {"mMFTTrackEta", "Track #eta; #eta; # entries", {HistType::kTH1F, {{50, -4, -2}}}},
-                              {"mMFTTrackNumberOfClusters", "Number Of Clusters Per Track; # clusters; # entries", {HistType::kTH1F, {{10, 0.5, 10.5}}}},
-                              {"mMFTTrackPhi", "Track #phi; #phi; # entries", {HistType::kTH1F, {{100, -3.2, 3.2}}}},
-                              {"mMFTTrackTanl", "Track tan #lambda; tan #lambda; # entries", {HistType::kTH1F, {{100, -25, 0}}}},
-                              {"mMFTTrackInvQPt", "Track q/p_{T}; q/p_{T} [1/GeV]; # entries", {HistType::kTH1F, {{250, -10, 10}}}}}};
+  HistogramRegistry registry{"registry"};
   Configurable<bool> avClsPlots{"avClsPlots", false, "Enable average cluster plots"};
 
   void init(o2::framework::InitContext&)
   {
+
+    const AxisSpec etaAxis{50, -4, -2, "eta"};
+    const AxisSpec phiAxis{320, -16, 16, "phi"};
+    const AxisSpec xAxis{320, -16, 16, "x"};
+    const AxisSpec clsAxis{10, 0.5, 10.5, "# clusters"};
+    const AxisSpec yAxis{320, -16, 16, "y"};
+    const AxisSpec tanLamAxis{100, -25, 0, "tan #lambda"};
+    const AxisSpec invQPtAxis{250, -10, 10, "q/p_{T} [1/GeV]"};
+
+    registry.add("mMFTTrackPhi", "Track #phi", {HistType::kTH1F, {phiAxis}});
+    registry.add("mMFTTrackTanl", "Track tan #lambda", {HistType::kTH1F, {tanLamAxis}});
+    registry.add("mMFTTrackInvQPt", "Track q/p_{T}", {HistType::kTH1F, {invQPtAxis}});
+    registry.add("mMFTTrackEta", "Track #eta", {HistType::kTH1F, {etaAxis}});
+
+    registry.add("mMFTTrackEtaPhi_5_MinClusters", "Track Position (NCls >= 5)", {HistType::kTH2F, {etaAxis, phiAxis}});
+    registry.add("mMFTTrackEtaPhi_6_MinClusters", "Track Position (NCls >= 6)", {HistType::kTH2F, {etaAxis, phiAxis}});
+    registry.add("mMFTTrackEtaPhi_7_MinClusters", "Track Position (NCls >= 7)", {HistType::kTH2F, {etaAxis, phiAxis}});
+    registry.add("mMFTTrackEtaPhi_8_MinClusters", "Track Position (NCls >= 8)", {HistType::kTH2F, {etaAxis, phiAxis}});
+
+    registry.add("mMFTTrackXY_5_MinClusters", "Track Position (NCls >= 5)", {HistType::kTH2F, {xAxis, yAxis}});
+    registry.add("mMFTTrackXY_6_MinClusters", "Track Position (NCls >= 6)", {HistType::kTH2F, {xAxis, yAxis}});
+    registry.add("mMFTTrackXY_7_MinClusters", "Track Position (NCls >= 7)", {HistType::kTH2F, {xAxis, yAxis}});
+    registry.add("mMFTTrackXY_8_MinClusters", "Track Position (NCls >= 8)", {HistType::kTH2F, {xAxis, yAxis}});
+
+    registry.add("mMFTTrackNumberOfClusters", "Number Of Clusters Per Track", {HistType::kTH1F, {clsAxis}});
+
     if (avClsPlots) {
       registry.add("mMFTTrackAvgClusters", "Average number of clusters per track; p;# clusters; # entries", {HistType::kTH2F, {{100, 0, 100}, {100, 0, 100}}});
       registry.add("mMFTTrackAvgClustersTru", "Average number of clusters per track; p;# clusters; # entries", {HistType::kTH2F, {{100, 0, 100}, {100, 0, 100}}});
@@ -67,7 +80,7 @@ struct CheckMFT {
   }
   void process(aod::MFTTracks const& mfttracks)
   {
-    for (auto& track : mfttracks) {
+    for (const auto& track : mfttracks) {
       // 2d histograms
       float x = track.x();
       float y = track.y();
@@ -127,8 +140,9 @@ struct CheckMFT {
   void processMC(soa::Join<aod::MFTTracks, aod::McMFTTrackLabels> const& mfttracks,
                  aod::McParticles const&)
   {
-    for (auto& track : mfttracks) {
+    for (const auto& track : mfttracks) {
       if (avClsPlots) {
+        static constexpr int kNcls = 10;
         std::array<float, 10> clsSize;
         for (unsigned int layer = 0; layer < 10; layer++) {
           clsSize[layer] = (track.mftClusterSizesAndTrackFlags() >> (layer * 6)) & 0x3f;
