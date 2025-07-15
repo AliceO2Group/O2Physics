@@ -768,20 +768,20 @@ struct he3HadronFemto {
       he3Hadcand.sharedClustersHad,
       he3Hadcand.isBkgUS,
       he3Hadcand.isBkgEM);
-      if (isMC) {
-        outputMcTable(
-          he3Hadcand.momHe3MC,
-          he3Hadcand.etaHe3MC,
-          he3Hadcand.phiHe3MC,
-          he3Hadcand.momHadMC,
-          he3Hadcand.etaHadMC,
-          he3Hadcand.phiHadMC,
-          he3Hadcand.l4PtMC,
-          he3Hadcand.l4MassMC,
-          he3Hadcand.isMotherLi4,
-          he3Hadcand.isHe3Primary,
-          he3Hadcand.isHadPrimary);
-      }
+    if (isMC) {
+      outputMcTable(
+        he3Hadcand.momHe3MC,
+        he3Hadcand.etaHe3MC,
+        he3Hadcand.phiHe3MC,
+        he3Hadcand.momHadMC,
+        he3Hadcand.etaHadMC,
+        he3Hadcand.phiHadMC,
+        he3Hadcand.l4PtMC,
+        he3Hadcand.l4MassMC,
+        he3Hadcand.isMotherLi4,
+        he3Hadcand.isHe3Primary,
+        he3Hadcand.isHadPrimary);
+    }
     if (settingFillMultiplicity) {
       outputMultiplicityTable(
         collision.globalIndex(),
@@ -988,7 +988,7 @@ struct he3HadronFemto {
     for (const auto& collision : collisions) {
 
       mTrackPairs.clear();
-      
+
       if (!selectCollision</*isMC*/ true>(collision, bcs)) {
         continue;
       }
@@ -1018,11 +1018,11 @@ struct he3HadronFemto {
         }
         LOG(info) << "only pi-He3";
 
-        He3HadCandidate he3Hadcand; 
+        He3HadCandidate he3Hadcand;
         if (!fillCandidateInfo(heTrack, piTrack, collBracket, collisions, he3Hadcand, tracks, /*mix*/ false)) {
           continue;
         }
-     
+
         fillCandidateInfoMC(mctrackHe3, mctrackHad, he3Hadcand);
         fillHistograms(he3Hadcand);
         LOG(info) << "fillHistograms done";
