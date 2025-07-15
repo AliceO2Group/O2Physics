@@ -2481,7 +2481,7 @@ struct LFNucleiBATask {
         continue;
       }
 
-      if (nsigmaITSvar.urooooooseITSHeCut && (nITSHe <= nsigmaITSvar.nsigmaITSHe)) {
+      if (nsigmaITSvar.useITSHeCut && (nITSHe <= nsigmaITSvar.nsigmaITSHe)) {
         continue;
       }
 
