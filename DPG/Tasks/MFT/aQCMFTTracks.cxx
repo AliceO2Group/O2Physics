@@ -30,6 +30,7 @@
 #include "Framework/TimingInfo.h"
 #include "Framework/runDataProcessing.h"
 
+#include <algorithm>
 #include <TH1F.h>
 #include <TH2F.h>
 
@@ -44,8 +45,8 @@ struct CheckMFT {
   void init(o2::framework::InitContext&)
   {
 
-    const AxisSpec etaAxis{50, -4, -2, "eta"};
-    const AxisSpec phiAxis{320, -16, 16, "phi"};
+    const AxisSpec etaAxis{50, -4, -2, "#eta"};
+    const AxisSpec phiAxis{100, -3.2, 3.2, "#phi"};
     const AxisSpec xAxis{320, -16, 16, "x"};
     const AxisSpec clsAxis{10, 0.5, 10.5, "# clusters"};
     const AxisSpec yAxis{320, -16, 16, "y"};
