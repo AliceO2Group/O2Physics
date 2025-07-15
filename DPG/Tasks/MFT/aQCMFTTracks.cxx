@@ -30,9 +30,10 @@
 #include "Framework/TimingInfo.h"
 #include "Framework/runDataProcessing.h"
 
-#include <algorithm>
 #include <TH1F.h>
 #include <TH2F.h>
+
+#include <algorithm>
 
 using namespace o2;
 using namespace o2::framework;
@@ -91,10 +92,11 @@ struct CheckMFT {
       if (nCls >= 5) {
         registry.fill(HIST("mMFTTrackXY_5_MinClusters"), x, y);
         registry.fill(HIST("mMFTTrackEtaPhi_5_MinClusters"), eta, phi);
-      if (nCls >= 6) {
-        registry.fill(HIST("mMFTTrackXY_6_MinClusters"), x, y);
-        registry.fill(HIST("mMFTTrackEtaPhi_6_MinClusters"), eta, phi);
-}        if (nCls >= 7) {
+        if (nCls >= 6) {
+          registry.fill(HIST("mMFTTrackXY_6_MinClusters"), x, y);
+          registry.fill(HIST("mMFTTrackEtaPhi_6_MinClusters"), eta, phi);
+        }
+        if (nCls >= 7) {
           registry.fill(HIST("mMFTTrackXY_7_MinClusters"), x, y);
           registry.fill(HIST("mMFTTrackEtaPhi_7_MinClusters"), eta, phi);
           if (nCls >= 8) {
