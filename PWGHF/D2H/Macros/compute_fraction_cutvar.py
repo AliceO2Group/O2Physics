@@ -88,7 +88,7 @@ def main(config):
     hist_covariance_npnp = hist_rawy[0].Clone("hCovNonPromptNonPrompt")
     hist_corrfrac_prompt = hist_rawy[0].Clone("hCorrFracPrompt")
     hist_corrfrac_nonprompt = hist_rawy[0].Clone("hCorrFracNonPrompt")
-    for histo in hist_corry_prompt, hist_corry_nonprompt, hist_covariance, hist_corrfrac_prompt, hist_corrfrac_nonprompt:
+    for histo in hist_corry_prompt, hist_corry_nonprompt, hist_covariance_pnp, hist_covariance_pp, hist_covariance_npnp, hist_corrfrac_prompt, hist_corrfrac_nonprompt:
         histo.Reset()
     hist_corry_prompt.GetYaxis().SetTitle("corrected yields prompt")
     hist_corry_nonprompt.GetYaxis().SetTitle("corrected yields non-prompt")
