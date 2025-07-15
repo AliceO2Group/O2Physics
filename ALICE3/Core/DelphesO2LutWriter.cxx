@@ -346,8 +346,9 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, si
 
 void DelphesO2LutWriter::diagonalise(lutEntry_t& lutEntry)
 {
-  TMatrixDSym m(5);
-  for (int i = 0, k = 0; i < 5; ++i) {
+  static constexpr int kEig = 5;
+  TMatrixDSym m(kEig);
+  for (int i = 0, k = 0; i < kEig; ++i) {
     for (int j = 0; j < i + 1; ++j, ++k) {
       m(i, j) = lutEntry.covm[k];
       m(j, i) = lutEntry.covm[k];
@@ -358,17 +359,17 @@ void DelphesO2LutWriter::diagonalise(lutEntry_t& lutEntry)
   TMatrixDSymEigen eigen(m);
   // eigenvalues vector
   TVectorD eigenVal = eigen.GetEigenValues();
-  for (int i = 0; i < 5; ++i)
+  for (int i = 0; i < kEig; ++i)
     lutEntry.eigval[i] = eigenVal[i];
   // eigenvectors matrix
   TMatrixD eigenVec = eigen.GetEigenVectors();
-  for (int i = 0; i < 5; ++i)
-    for (int j = 0; j < 5; ++j)
+  for (int i = 0; i < kEig; ++i)
+    for (int j = 0; j < kEig; ++j)
       lutEntry.eigvec[i][j] = eigenVec[i][j];
   // inverse eigenvectors matrix
   eigenVec.Invert();
-  for (int i = 0; i < 5; ++i)
-    for (int j = 0; j < 5; ++j)
+  for (int i = 0; i < kEig; ++i)
+    for (int j = 0; j < kEig; ++j)
       lutEntry.eiginv[i][j] = eigenVec[i][j];
 }
 
