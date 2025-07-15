@@ -1047,7 +1047,7 @@ struct EmcalCorrectionTask {
     uint64_t tsNew = 1734853602000; // timestamp corresponding to new gain calib object (new cell compression)
     o2::emcal::GainCalibrationFactors* paramsNew = ccdbMgr.getForTimeStamp<o2::emcal::GainCalibrationFactors>("EMC/Calib/GainCalibFactors", tsNew);
     for (uint16_t i = 0; i < mArrGainCalibDiff.size(); ++i) {
-      mArrGainCalibDiff[i] = paramsOld->getGainCalibFactors(i) == 0 ? 1. : paramsNew->getGainCalibFactors(i) / paramsOld->getGainCalibFactors(i);
+      mArrGainCalibDiff[i] = paramsNew->getGainCalibFactors(i) == 0 ? 1. : paramsOld->getGainCalibFactors(i) / paramsNew->getGainCalibFactors(i);
     }
   }
 };

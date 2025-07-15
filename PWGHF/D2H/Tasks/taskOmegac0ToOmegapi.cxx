@@ -25,6 +25,7 @@
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -121,13 +122,17 @@ struct HfTaskOmegac0ToOmegapi {
   void init(InitContext&)
   {
     std::array<bool, 6> doprocess{doprocessDataWithKFParticle, doprocessDataWithKFParticleMl, doprocessDataWithKFParticleFT0C, doprocessDataWithKFParticleMlFT0C, doprocessDataWithKFParticleFT0M, doprocessDataWithKFParticleMlFT0M};
-    if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
-      LOGP(fatal, "One and only one data process function should be enabled at a time.");
+    if (std::accumulate(doprocess.begin(), doprocess.end(), 0) > 1) {
+      LOGP(fatal, "At most one data process function should be enabled at a time.");
     }
 
     std::array<bool, 2> doprocessMc{doprocessMcWithKFParticle, doprocessMcWithKFParticleMl};
-    if ((std::accumulate(doprocessMc.begin(), doprocessMc.end(), 0)) != 1) {
-      LOGP(fatal, "One and only one MC process function should be enabled at a time.");
+    if (std::accumulate(doprocessMc.begin(), doprocessMc.end(), 0) > 1) {
+      LOGP(fatal, "At most one MC process function should be enabled at a time.");
+    }
+
+    if ((std::accumulate(doprocess.begin(), doprocess.end(), 0) + std::accumulate(doprocessMc.begin(), doprocessMc.end(), 0)) == 0) {
+      LOGP(fatal, "At least one process function should be enabled.");
     }
 
     const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (#Omega#pi) (GeV/#it{c}^{2})"};
