@@ -449,7 +449,7 @@ struct V0PtInvMassPlots {
     rPtAnalysis.fill(HIST("hNK0sh"), 3.5);
     rPtAnalysis.get<TH1>(HIST("hNK0sh"))->GetXaxis()->SetBinLabel(4, "Max_ct");
     rPtAnalysis.fill(HIST("hMassK0ShortvsCuts"), 3.5, v0.mK0Short());
-    if (v0.qtarm() < (K0shparamArmenterosCut * std::abs(v0.alpha())) && doK0shArmenterosCut) { // K0sh Armenteros Cut
+    if (v0.qtarm() < (k0shparamArmenterosCut * std::abs(v0.alpha())) && doK0shArmenterosCut) { // K0sh Armenteros Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNK0sh"), 4.5);
