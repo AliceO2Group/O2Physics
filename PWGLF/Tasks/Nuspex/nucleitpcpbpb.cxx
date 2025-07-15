@@ -336,8 +336,8 @@ struct NucleitpcPbPb {
         fillhmass(track, i);
         if (cfgRequirebetaplot) {
           histos.fill(HIST("Tofsignal"), getRigidity(track) * track.sign(), o2::pid::tof::Beta::GetBeta(track));
-      	}
-      filldedx(track, nParticles);
+        }
+        filldedx(track, nParticles);
       }
       histos.fill(HIST("histeta"), track.eta());
     } // track loop
@@ -547,7 +547,7 @@ struct NucleitpcPbPb {
             int antitriton = 6;
             if (pidGuess == antitriton) {
               ptReco = ptReco - 0.464215 + 0.195771 * ptReco - 0.0183111 * ptReco * ptReco;
-            //  LOG(info) << "we have he3" << pidGuess;
+              //  LOG(info) << "we have he3" << pidGuess;
             }
           }
           float ptGen = matchedMCParticle.pt();
@@ -568,7 +568,7 @@ struct NucleitpcPbPb {
             histomc.fill(HIST("histPtRecoHe4"), ptReco);
           } else if (pdg == -particlePdgCodes.at(5)) {
             histomc.fill(HIST("histPtRecoAntiHe4"), ptReco);
-          } 
+          }
         }
         histos.fill(HIST("histeta"), track.eta());
         /*----------------------------------------------------------------------------------------------------------------*/
