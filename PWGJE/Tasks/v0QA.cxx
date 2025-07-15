@@ -59,18 +59,8 @@ struct V0QA {
   HistogramRegistry registry{"registry"};
 
   Configurable<std::string> evSel{"evSel", "sel8WithoutTimeFrameBorderCut", "choose event selection"};
-  Configurable<float> v0cospaMin{"v0cospaMin", 0.995, "Minimum V0 cosine of pointing angle"};
-  Configurable<float> v0radiusMin{"v0radiusMin", 0.5, "Minimum V0 radius (cm)"};
-  Configurable<float> dcav0dauMax{"dcav0dauMax", 1.0, "Maximum DCA between V0 daughters (cm)"};
-  Configurable<float> dcapiMin{"dcapiMin", 0.1, "Minimum DCA of pion daughter to PV (cm)"};
-  Configurable<float> dcaprMin{"dcaprMin", 0.1, "Minimum DCA of proton daughter to PV (cm)"};
-  Configurable<float> yK0SMax{"yK0SMax", 0.5, "Maximum rapidity of K0S"};
-  Configurable<float> yLambdaMax{"yLambdaMax", 0.5, "Maximum rapidity of Lambda(bar)"};
-  Configurable<float> lifetimeK0SMax{"lifetimeK0SMax", 20.0, "Maximum lifetime of K0S (cm)"};
-  Configurable<float> lifetimeLambdaMax{"lifetimeLambdaMax", 30.0, "Maximum lifetime of Lambda (cm)"};
   Configurable<float> yPartMax{"yPartMax", 0.5, "Maximum rapidity of particles"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0, "Vertex Z cut"};
-  Configurable<float> v0Fraction{"v0Fraction", 0.5, "Fraction of V0s to accept randomly"};
 
   Filter jetCollisionFilter = nabs(aod::jcollision::posZ) < vertexZCut;
 
@@ -1303,9 +1293,6 @@ struct V0QA {
       double ptjetsub = jet.pt();
 
       for (const auto& v0 : jet.template candidates_as<aod::CandidatesV0Data>()) {
-        if (v0.isRejectedCandidate())
-          continue;
-
         double z = v0.pt() / jet.pt();
 
         registry.fill(HIST("tests/nosub/JetPtEtaV0Pt"), jet.pt(), jet.eta(), v0.pt());
@@ -1324,8 +1311,9 @@ struct V0QA {
           registry.fill(HIST("tests/nosub/JetPtEtaAntiLambdaZ"), jet.pt(), jet.eta(), z);
         }
 
-        double r = gRandom->Uniform();
-        if (r < v0Fraction) { // Accepted
+        if (v0.isRejectedCandidate()) {
+          ptjetsub -= v0.pt();
+        } else { // Accepted V0
           v0Pt.push_back(v0.pt());
           if (v0.isK0SCandidate()) {
             v0Type.push_back(0);
@@ -1334,14 +1322,11 @@ struct V0QA {
           } else if (v0.isAntiLambdaCandidate()) {
             v0Type.push_back(2);
           }
-        } else { // Subtracted
-          ptjetsub -= v0.pt();
         }
-      }
+      } // V0s in jet loop
 
+      registry.fill(HIST("tests/sub/JetPtEtaPhi"), ptjetsub, jet.eta(), jet.phi());
       for (unsigned int i = 0; i < v0Pt.size(); ++i) {
-        registry.fill(HIST("tests/sub/JetPtEtaPhi"), ptjetsub, jet.eta(), jet.phi());
-
         int type = v0Type[i];
         double pt = v0Pt[i];
         double z = pt / ptjetsub;
@@ -1359,8 +1344,8 @@ struct V0QA {
           registry.fill(HIST("tests/sub/JetPtEtaAntiLambdaPt"), ptjetsub, jet.eta(), pt);
           registry.fill(HIST("tests/sub/JetPtEtaAntiLambdaZ"), ptjetsub, jet.eta(), z);
         }
-      }
-    }
+      } // Accepted V0s in jet loop
+    } // Jets loop
   }
   PROCESS_SWITCH(V0QA, processTestSubtractedJetFinder, "Test subtracted jet finder", false);
 
