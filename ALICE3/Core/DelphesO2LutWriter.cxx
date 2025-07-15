@@ -163,7 +163,7 @@ bool DelphesO2LutWriter::fwdPara(lutEntry_t& lutEntry, float pt, float eta, floa
 
   // parametrisation at eta = 4
   const double beta = 1. / std::sqrt(1 + mass * mass / pt / pt / std::cosh(eta) / std::cosh(eta));
-  const float dcaPos = 2.5e-4 / std::sqrt(3); // 2.5 micron/sqrt(3)
+  const float dcaPos = 2.5e-4 / std::sqrt(3);  // 2.5 micron/sqrt(3)
   const float r0 = 0.5;                        // layer 0 radius [cm]
   const float r1 = 1.3;
   const float r2 = 2.5;
@@ -200,7 +200,7 @@ bool DelphesO2LutWriter::fwdPara(lutEntry_t& lutEntry, float pt, float eta, floa
     lutEntry.covm[2] = dcaz2;
   lutEntry.covm[5] = covmbarrel[5];                                // sigma^2 sin(phi)
   lutEntry.covm[9] = covmbarrel[9];                                // sigma^2 tanl
-  lutEntry.covm[14] = momresTot * momresTot / pt / pt / pt / pt; // sigma^2 1/pt
+  lutEntry.covm[14] = momresTot * momresTot / pt / pt / pt / pt;   // sigma^2 1/pt
   // Check that all numbers are numbers
   for (int i = 0; i < 15; ++i) {
     if (std::isnan(lutEntry.covm[i])) {
