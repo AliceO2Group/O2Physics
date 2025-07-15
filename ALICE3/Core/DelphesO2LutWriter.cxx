@@ -163,30 +163,30 @@ bool DelphesO2LutWriter::fwdPara(lutEntry_t& lutEntry, float pt, float eta, floa
 
   // parametrisation at eta = 4
   const double beta = 1. / std::sqrt(1 + mass * mass / pt / pt / std::cosh(eta) / std::cosh(eta));
-  const float dca_pos = 2.5e-4 / std::sqrt(3); // 2.5 micron/sqrt(3)
+  const float dcaPos = 2.5e-4 / std::sqrt(3); // 2.5 micron/sqrt(3)
   const float r0 = 0.5;                        // layer 0 radius [cm]
   const float r1 = 1.3;
   const float r2 = 2.5;
   const float x0layer = 0.001; // material budget (rad length) per layer
-  const double sigma_alpha = 0.0136 / beta / pt * std::sqrt(x0layer * std::cosh(eta)) * (1 + 0.038 * std::log(x0layer * std::cosh(eta)));
-  const double dcaxy_ms = sigma_alpha * r0 * std::sqrt(1 + r1 * r1 / (r2 - r0) / (r2 - r0));
-  const double dcaxy2 = dca_pos * dca_pos + dcaxy_ms * dcaxy_ms;
+  const double sigmaAlpha = 0.0136 / beta / pt * std::sqrt(x0layer * std::cosh(eta)) * (1 + 0.038 * std::log(x0layer * std::cosh(eta)));
+  const double dcaxyMs = sigmaAlpha * r0 * std::sqrt(1 + r1 * r1 / (r2 - r0) / (r2 - r0));
+  const double dcaxy2 = dcaPos * dcaPos + dcaxyMs * dcaxyMs;
 
-  const double dcaz_ms = sigma_alpha * r0 * std::cosh(eta);
-  const double dcaz2 = dca_pos * dca_pos + dcaz_ms * dcaz_ms;
+  const double dcazMs = sigmaAlpha * r0 * std::cosh(eta);
+  const double dcaz2 = dcaPos * dcaPos + dcazMs * dcazMs;
 
   const float Leta = 2.8 / std::sinh(eta) - 0.01 * r0; // m
-  const double relmomres_pos = 10e-6 * pt / 0.3 / Bfield / Leta / Leta * std::sqrt(720. / 15.);
+  const double relmomresPos = 10e-6 * pt / 0.3 / Bfield / Leta / Leta * std::sqrt(720. / 15.);
 
-  const float relmomres_barrel = std::sqrt(covmbarrel[14]) * pt;
-  const float Router = 1; // m
-  const float relmomres_pos_barrel = 10e-6 * pt / 0.3 / Bfield / Router / Router / std::sqrt(720. / 15.);
-  const float relmomres_MS_barrel = std::sqrt(relmomres_barrel * relmomres_barrel - relmomres_pos_barrel * relmomres_pos_barrel);
+  const float relmomresBarrel = std::sqrt(covmbarrel[14]) * pt;
+  const float rOuter = 1; // m
+  const float relmomresPosBarrel = 10e-6 * pt / 0.3 / Bfield / rOuter / rOuter / std::sqrt(720. / 15.);
+  const float relmomresMSBarrel = std::sqrt(relmomresBarrel * relmomresBarrel - relmomresPosBarrel * relmomresPosBarrel);
 
   // interpolate MS contrib (rel resolution 0.4 at eta = 4)
-  const float relmomres_MS_eta4 = 0.4 / beta * 0.5 / Bfield;
-  const float relmomres_MS = relmomres_MS_eta4 * std::pow(relmomres_MS_eta4 / relmomres_MS_barrel, (std::fabs(eta) - 4.) / (4. - etaMaxBarrel));
-  const float momres_tot = pt * std::sqrt(relmomres_pos * relmomres_pos + relmomres_MS * relmomres_MS); // total absolute mom reso
+  const float relmomresMSEta4 = 0.4 / beta * 0.5 / Bfield;
+  const float relmomresMS = relmomresMSEta4 * std::pow(relmomresMSEta4 / relmomresMSBarrel, (std::fabs(eta) - 4.) / (4. - etaMaxBarrel));
+  const float momresTot = pt * std::sqrt(relmomresPos * relmomresPos + relmomresMS * relmomresMS); // total absolute mom reso
 
   // Fill cov matrix diag
   for (int i = 0; i < 15; ++i)
@@ -200,7 +200,7 @@ bool DelphesO2LutWriter::fwdPara(lutEntry_t& lutEntry, float pt, float eta, floa
     lutEntry.covm[2] = dcaz2;
   lutEntry.covm[5] = covmbarrel[5];                                // sigma^2 sin(phi)
   lutEntry.covm[9] = covmbarrel[9];                                // sigma^2 tanl
-  lutEntry.covm[14] = momres_tot * momres_tot / pt / pt / pt / pt; // sigma^2 1/pt
+  lutEntry.covm[14] = momresTot * momresTot / pt / pt / pt / pt; // sigma^2 1/pt
   // Check that all numbers are numbers
   for (int i = 0; i < 15; ++i) {
     if (std::isnan(lutEntry.covm[i])) {
