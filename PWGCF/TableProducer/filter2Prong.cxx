@@ -474,7 +474,6 @@ struct Filter2Prong {
       } // end of Lambda and Anti-Lambda processing
     } // end of loop over V0 candidates
 
-    
     // Phi
     if (cfcollisions.size() <= 0 || cftracks.size() <= 0)
       return; // rejected collision
