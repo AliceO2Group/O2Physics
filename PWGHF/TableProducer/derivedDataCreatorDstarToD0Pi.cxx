@@ -126,7 +126,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
   }
 
   template <typename T, typename U>
-  void fillTablesCandidate(const T& candidate, const U& prong0, const U& prong1, const U& prongSoftPi, int candFlag, double invMass,
+  void fillTablesCandidate(const T& candidate, const U& prong0, const U& prong1, const U& prongSoftPi, int candFlag, double invMass, double invMassD0,
                            double y, int8_t flagMc, int8_t flagMcD0, int8_t origin, int8_t nTracksDecayed, double ptBhad, int pdgBhad, const std::vector<float>& mlScores)
   {
     rowsCommon.fillTablesCandidate(candidate, invMass, y);
@@ -160,7 +160,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
         candidate.pxProng1(),
         candidate.pyProng1(),
         candidate.pzProng1(),
-        candidate.invMassD0(),
+        invMassD0,
         candidate.impactParameter0(),
         candidate.impactParameter1(),
         candidate.impactParameterNormalised0(),
@@ -283,15 +283,18 @@ struct HfDerivedDataCreatorDstarToD0Pi {
         auto prong1 = candidate.template prong1_as<TracksWPid>();
         auto prongSoftPi = candidate.template prongPi_as<TracksWPid>();
         double y = candidate.y(o2::constants::physics::MassDStar);
-        double massDstar = candidate.invMassDstar();
         std::vector<float> mlScoresDstarToD0Pi;
         if constexpr (isMl) {
           std::copy(candidate.mlProbDstarToD0Pi().begin(), candidate.mlProbDstarToD0Pi().end(), std::back_inserter(mlScoresDstarToD0Pi));
         }
         if (candidate.signSoftPi() > 0){
-          fillTablesCandidate(candidate, prong0, prong1, prongSoftPi, 0, massDstar, y, flagMcRec, flagMcRecD0, origin, nTracksDecayed, ptBhadMotherPart, pdgBhadMotherPart, mlScoresDstarToD0Pi);
+          double massDstar = candidate.invMassDstar();
+          double invMassD0 = candidate.invMassD0();
+          fillTablesCandidate(candidate, prong0, prong1, prongSoftPi, 0, massDstar, invMassD0, y, flagMcRec, flagMcRecD0, origin, nTracksDecayed, ptBhadMotherPart, pdgBhadMotherPart, mlScoresDstarToD0Pi);
         } else {
-          fillTablesCandidate(candidate, prong1, prong0, prongSoftPi, 1, massDstar, y, flagMcRec, flagMcRecD0, origin, nTracksDecayed, ptBhadMotherPart, pdgBhadMotherPart, mlScoresDstarToD0Pi);
+          double massDstar = candidate.invMassAntiDstar();
+          double invMassD0 = candidate.invMassD0Bar();
+          fillTablesCandidate(candidate, prong1, prong0, prongSoftPi, 1, massDstar, invMassD0, y, flagMcRec, flagMcRecD0, origin, nTracksDecayed, ptBhadMotherPart, pdgBhadMotherPart, mlScoresDstarToD0Pi);
         }
       }
     }
