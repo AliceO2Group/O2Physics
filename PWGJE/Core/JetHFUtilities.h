@@ -886,7 +886,7 @@ void fillDstarCandidateTable(T const& candidate, U& DstarParTable, V& DstarParDa
 
   if constexpr (isMc) {
     DstarMCDTable(
-      candidate.flagMcMatchRec(), 
+      candidate.flagMcMatchRec(),
       candidate.flagMcMatchRecCharm(),
       candidate.originMcRec(),
       candidate.ptBhadMotherPart(),
