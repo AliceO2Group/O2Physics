@@ -39,17 +39,39 @@
 #include <string>
 #include <vector>
 
+// o2 includes.
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
 struct lambdaspincorrderived {
+
+  struct : ConfigurableGroup {
+    Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
+    Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
+  } cfgCcdbParam;
+
+  // Enable access to the CCDB for the offset and correction constants and save them in dedicated variables.
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::ccdb::CcdbApi ccdbApi;
+  TH3D* hweight1;
+  TH3D* hweight2;
+  TH3D* hweight3;
+
+  Configurable<std::string> ConfWeightPathLL{"ConfWeightPathLL", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path"};
+  Configurable<std::string> ConfWeightPathALAL{"ConfWeightPathALAL", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path"};
+  Configurable<std::string> ConfWeightPathLAL{"ConfWeightPathLAL", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path"};
+
   // event sel/////////
   Configurable<float> centMin{"centMin", 0, "Minimum Centrality"};
   Configurable<float> centMax{"centMax", 80, "Maximum Centrality"};
 
   // Lambda selection ////////////
+  Configurable<bool> useweight{"useweight", 1, "Use weight"};
   Configurable<bool> usePDGM{"usePDGM", 1, "Use PDG mass"};
   Configurable<bool> checkDoubleStatus{"checkDoubleStatus", 0, "Check Double status"};
   Configurable<float> cosPA{"cosPA", 0.995, "Cosine Pointing Angle"};
@@ -101,6 +123,16 @@ struct lambdaspincorrderived {
     histos.add("hSparseLambdaLambdaMixed", "hSparseLambdaLambdaMixed", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisCentrality, configThnAxisR}, true);
     histos.add("hSparseLambdaAntiLambdaMixed", "hSparseLambdaAntiLambdaMixed", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisCentrality, configThnAxisR}, true);
     histos.add("hSparseAntiLambdaAntiLambdaMixed", "hSparseAntiLambdaAntiLambdaMixed", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisCentrality, configThnAxisR}, true);
+
+    ccdb->setURL(cfgCcdbParam.cfgURL);
+    ccdbApi.init("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    LOGF(info, "Getting alignment offsets from the CCDB...");
+    hweight1 = ccdb->getForTimeStamp<TH3D>(ConfWeightPathLL.value, cfgCcdbParam.nolaterthan.value);
+    hweight2 = ccdb->getForTimeStamp<TH3D>(ConfWeightPathALAL.value, cfgCcdbParam.nolaterthan.value);
+    hweight3 = ccdb->getForTimeStamp<TH3D>(ConfWeightPathLAL.value, cfgCcdbParam.nolaterthan.value);
   }
 
   template <typename T>
@@ -210,14 +242,22 @@ struct lambdaspincorrderived {
         histos.fill(HIST("hAntiLambdaSameForALAL"), particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F));
       }
     } else if (datatype == 1) {
+      double weight1 = 1.0;
+      double weight2 = 1.0;
+      double weight3 = 1.0;
+      if (useweight) {
+        weight1 = hweight1->GetBinContent(hweight1->FindBin(particle1.Pt() + 0.001, particle1.Eta() + 0.001, particle1.Phi() + 0.001));
+        weight2 = hweight2->GetBinContent(hweight2->FindBin(particle1.Pt() + 0.001, particle1.Eta() + 0.001, particle1.Phi() + 0.001));
+        weight3 = hweight3->GetBinContent(hweight3->FindBin(particle1.Pt() + 0.001, particle1.Eta() + 0.001, particle1.Phi() + 0.001));
+      }
       if (tag1 == 0 && tag2 == 0) {
-        histos.fill(HIST("hSparseLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR);
+        histos.fill(HIST("hSparseLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR, weight1);
         histos.fill(HIST("hLambdaMixForLL"), particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F));
       } else if ((tag1 == 0 && tag2 == 1) || (tag1 == 1 && tag2 == 0)) {
-        histos.fill(HIST("hSparseLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR);
+        histos.fill(HIST("hSparseLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR, weight2);
         histos.fill(HIST("hLambdaMixForLAL"), particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F));
       } else if (tag1 == 1 && tag2 == 1) {
-        histos.fill(HIST("hSparseAntiLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR);
+        histos.fill(HIST("hSparseAntiLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR, weight3);
         histos.fill(HIST("hAntiLambdaMixForALAL"), particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F));
       }
     }
