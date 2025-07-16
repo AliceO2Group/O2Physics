@@ -169,7 +169,7 @@ class FemtoUniverseDetaDphiStar
       }
       auto deta = part1.eta() - part2.eta();
       auto dphiAvg = averagePhiStar(part1, part2, 0);
-      auto dphi = averagePhiStarFrac(part1, part2);     
+      auto dphi = averagePhiStarFrac(part1, part2);
       if (ChosenEventType == femto_universe_container::EventType::same) {
         histdetadpisame[0][0]->Fill(deta, dphiAvg);
       } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
@@ -178,8 +178,8 @@ class FemtoUniverseDetaDphiStar
         LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
       }
 
-      //if (std::pow(dphiAvg, 2) / std::pow(cutDeltaPhiStarMax, 2) + std::pow(deta, 2) / std::pow(cutDeltaEtaMax, 2) < 1.) {
-     if (dphi > 0.02) {
+      // if (std::pow(dphiAvg, 2) / std::pow(cutDeltaPhiStarMax, 2) + std::pow(deta, 2) / std::pow(cutDeltaEtaMax, 2) < 1.) {
+      if (dphi > 0.02) {
         return true;
       } else {
         if (ChosenEventType == femto_universe_container::EventType::same) {
@@ -571,7 +571,7 @@ class FemtoUniverseDetaDphiStar
     double distance = 0;
     int badpoints = 0;
     int allpoints = 0;
-    
+
     for (int i = 0; i < num; i++) {
       if (tmpVec1.at(i) != 999 && tmpVec2.at(i) != 999) {
         dphi = tmpVec1.at(i) - tmpVec2.at(i);
@@ -581,7 +581,7 @@ class FemtoUniverseDetaDphiStar
       }
       dphi = TVector2::Phi_mpi_pi(dphi);
       distance = 2 * TMath::Sin(TMath::Abs(dphi) * 0.5) * TmpRadiiTPC[i];
-      if(distance < 10.0) {
+      if (distance < 10.0) {
         badpoints += 1.0;
       }
       allpoints += 1.0;
