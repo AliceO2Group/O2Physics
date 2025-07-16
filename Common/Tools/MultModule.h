@@ -487,7 +487,6 @@ class MultModule
       internalOpts.mEnabledTables[kPVMults] = 1;
       listOfRequestors[kPVMults].Append(Form("%s ", "dependency check"));
     }
-    
 
     mRunNumber = 0;
     mRunNumberCentrality = 0;
