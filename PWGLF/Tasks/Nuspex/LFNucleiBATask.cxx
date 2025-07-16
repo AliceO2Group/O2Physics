@@ -2312,7 +2312,7 @@ struct LFNucleiBATask {
       float nITSDe = 99.f;
       float nITSTr = 99.f;
       float nITSHe = 99.f;
-      o2::aod::ITSResponse itsResponse;
+      // o2::aod::ITSResponse itsResponse;
 
       if (!IsFilteredData) {
         nITSDe = track.itsNSigmaDe();
