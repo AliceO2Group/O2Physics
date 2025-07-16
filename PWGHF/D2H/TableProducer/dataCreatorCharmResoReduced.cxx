@@ -1215,10 +1215,8 @@ struct HfDataCreatorCharmResoReduced {
                 }
                 varUtils.ptReso = RecoDecay::pt(RecoDecay::sumOfVec(varUtils.pVectorProng0, varUtils.pVectorProng1, candidateV0.mom));
                 if (!cfgQaPlots.applyCutsForQaHistograms ||
-                    ((varUtils.invMassD0 > cfgQaPlots.cutMassDMin &&
-                      varUtils.invMassD0 < cfgQaPlots.cutMassDMax) ||
-                     (varUtils.invMassD0Bar > cfgQaPlots.cutMassDMin &&
-                      varUtils.invMassD0Bar < cfgQaPlots.cutMassDMax) &&
+                    (((varUtils.invMassD0 > cfgQaPlots.cutMassDMin && varUtils.invMassD0 < cfgQaPlots.cutMassDMax) ||
+                     (varUtils.invMassD0Bar > cfgQaPlots.cutMassDMin && varUtils.invMassD0Bar < cfgQaPlots.cutMassDMax)) &&
                        candidateV0.mLambda > cfgQaPlots.cutMassLambdaMin &&
                        candidateV0.mLambda < cfgQaPlots.cutMassLambdaMax)) {
                   if (isLambda) {
