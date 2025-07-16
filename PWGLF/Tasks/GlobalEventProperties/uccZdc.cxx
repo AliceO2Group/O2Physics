@@ -195,11 +195,11 @@ struct UccZdc {
 
     registry.add("zPos", ";;Entries;", kTH1F, {axisZpos});
     registry.add("T0Ccent", ";;Entries", kTH1F, {axisCent});
-    registry.add("NchUncorrected", ";#it{N}_{ch} (|#eta| < 0.8);Entries;", kTH1F, {{300, 0., 3000.}});
+    registry.add("NchUncorrected", ";#it{N}_{ch} (|#eta| < 0.8);Entries;", kTH1F, {{nBinsNch, minNch, maxNch}});
     registry.add("hEventCounter", ";;Events", kTH1F, {axisEvent});
     registry.add("ZNamp", ";ZNA+ZNC;Entries;", kTH1F, {{nBinsZN, -0.5, maxZN}});
     registry.add("ExcludedEvtVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);Entries;", kTH1F, {{nBinsAmpFT0, 0., maxAmpFT0}});
-    registry.add("ExcludedEvtVsNch", ";#it{N}_{ch} (|#eta|<0.8);Entries;", kTH1F, {{300, 0, 3000}});
+    registry.add("ExcludedEvtVsNch", ";#it{N}_{ch} (|#eta|<0.8);Entries;", kTH1F, {{nBinsNch, minNch, maxNch}});
     registry.add("Nch", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);", kTH1F, {{nBinsNch, minNch, maxNch}});
     registry.add("NchVsOneParCorr", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);#LT[#it{p}_{T}^{(1)}]#GT (GeV/#it{c})", kTProfile, {{nBinsNch, minNch, maxNch}});
     registry.add("EtaVsPhi", ";#eta;#varphi", kTH2F, {{{axisEta}, {100, -0.1 * PI, +2.1 * PI}}});
@@ -299,24 +299,24 @@ struct UccZdc {
     if (doprocessQA) {
       registry.add("Debunch", ";t_{ZDC}-t_{ZDA};t_{ZDC}+t_{ZDA}", kTH2F, {{{nBinsTDC, minTdc, maxTdc}, {nBinsTDC, minTdc, maxTdc}}});
       registry.add("NchVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsNch, minNch, maxNch}}});
-      registry.add("NchVsFT0A", ";T0A (#times 1/100, 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{80, 0., 1800.}, {nBinsNch, minNch, maxNch}}});
-      registry.add("NchVsFT0C", ";T0C (#times 1/100, -3.3 < #eta < -2.1);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{80, 0., 600.}, {nBinsNch, minNch, maxNch}}});
+      registry.add("NchVsFT0A", ";T0A (#times 1/100, 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsNch, minNch, maxNch}}});
+      registry.add("NchVsFT0C", ";T0C (#times 1/100, -3.3 < #eta < -2.1);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsNch, minNch, maxNch}}});
       registry.add("NchVsFV0A", ";V0A (#times 1/100, 2.2 < #eta < 5);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{80, 0., maxAmpFV0}, {nBinsNch, minNch, maxNch}}});
       registry.add("NchVsEt", ";#it{E}_{T} (|#eta|<0.8);#LTITS+TPC tracks#GT (|#eta|<0.8);", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsNch, minNch, maxNch}}});
-      registry.add("NchVsNPV", ";#it{N}_{PV} (|#eta|<1);ITS+TPC tracks (|#eta|<0.8);", kTH2F, {{{300, -0.5, 5999.5}, {nBinsNch, minNch, maxNch}}});
-      registry.add("NchVsITStracks", ";ITS tracks nCls >= 5;TITS+TPC tracks (|#eta|<0.8);", kTH2F, {{{300, -0.5, 5999.5}, {nBinsNch, minNch, maxNch}}});
-      registry.add("ZNVsFT0A", ";T0A (#times 1/100);ZNA+ZNC;", kTH2F, {{{80, 0., 1800.}, {nBinsZN, -0.5, maxZN}}});
-      registry.add("ZNVsFT0C", ";T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{80, 0., 600.}, {nBinsZN, -0.5, maxZN}}});
+      registry.add("NchVsNPV", ";#it{N}_{PV} (|#eta|<1);ITS+TPC tracks (|#eta|<0.8);", kTH2F, {{{nBinsITSTrack, minITSTrack, maxITSTrack}, {nBinsNch, minNch, maxNch}}});
+      registry.add("NchVsITStracks", ";ITS tracks nCls >= 5;TITS+TPC tracks (|#eta|<0.8);", kTH2F, {{{nBinsITSTrack, minITSTrack, maxITSTrack}, {nBinsNch, minNch, maxNch}}});
+      registry.add("ZNVsFT0A", ";T0A (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZN, -0.5, maxZN}}});
+      registry.add("ZNVsFT0C", ";T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZN, -0.5, maxZN}}});
       registry.add("ZNVsFT0M", ";T0A+T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZN, -0.5, maxZN}}});
       registry.add("ZNAamp", ";ZNA;Entries;", kTH1F, {{nBinsZN, -0.5, maxZN}});
       registry.add("ZPAamp", ";ZPA;Entries;", kTH1F, {{nBinsZP, -0.5, maxZP}});
       registry.add("ZNCamp", ";ZNC;Entries;", kTH1F, {{nBinsZN, -0.5, maxZN}});
       registry.add("ZPCamp", ";ZPC;Entries;", kTH1F, {{nBinsZP, -0.5, maxZP}});
-      registry.add("ZNAVsZNC", ";ZNC;ZNA", kTH2F, {{{30, -0.5, maxZN}, {30, -0.5, maxZN}}});
-      registry.add("ZPAVsZPC", ";ZPC;ZPA;", kTH2F, {{{100, -0.5, maxZP}, {100, -0.5, maxZP}}});
-      registry.add("ZNAVsZPA", ";ZPA;ZNA;", kTH2F, {{{20, -0.5, maxZP}, {30, -0.5, maxZN}}});
-      registry.add("ZNCVsZPC", ";ZPC;ZNC;", kTH2F, {{{20, -0.5, maxZP}, {30, -0.5, maxZN}}});
-      registry.add("ZNVsZEM", ";ZEM;ZNA+ZNC;", kTH2F, {{{60, -0.5, maxZEM}, {60, -0.5, maxZN}}});
+      registry.add("ZNAVsZNC", ";ZNC;ZNA", kTH2F, {{{nBinsZN, -0.5, maxZN}, {nBinsZN, -0.5, maxZN}}});
+      registry.add("ZPAVsZPC", ";ZPC;ZPA;", kTH2F, {{{nBinsZP, -0.5, maxZP}, {nBinsZP, -0.5, maxZP}}});
+      registry.add("ZNAVsZPA", ";ZPA;ZNA;", kTH2F, {{{nBinsZP, -0.5, maxZP}, {nBinsZN, -0.5, maxZN}}});
+      registry.add("ZNCVsZPC", ";ZPC;ZNC;", kTH2F, {{{nBinsZP, -0.5, maxZP}, {nBinsZN, -0.5, maxZN}}});
+      registry.add("ZNVsZEM", ";ZEM;ZNA+ZNC;", kTH2F, {{{nBinsZN, -0.5, maxZEM}, {nBinsZN, -0.5, maxZN}}});
       registry.add("ZNCVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
       registry.add("ZNAVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
       registry.add("ZNVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA+ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
@@ -464,7 +464,6 @@ struct UccZdc {
       return;
     }
     registry.fill(HIST("hEventCounter"), EvCutLabel::TZero);
-
     if (foundBC.has_fv0a()) {
       for (const auto& amplitude : foundBC.fv0a().amplitude()) {
         aV0A += amplitude;
@@ -492,7 +491,6 @@ struct UccZdc {
     zpC /= kCollEnergy;
     float sumZNs{znA + znC};
     float sumZEMs{aZEM1 + aZEM2};
-
     // TDC cut
     if (isTDCcut) {
       if (std::sqrt(std::pow(tZDCdif, 2.) + std::pow(tZDCsum, 2.)) > tdcCut) {
@@ -543,15 +541,14 @@ struct UccZdc {
       const double nSigmaSelection{nSigmaNchCut * sigmaNch};
       const double diffMeanNch{meanNch - glbTracks};
 
-      if (!(std::abs(diffMeanNch) < nSigmaSelection)) {
+      if (std::abs(diffMeanNch) > nSigmaSelection) {
         registry.fill(HIST("ExcludedEvtVsFT0M"), normT0M);
         registry.fill(HIST("ExcludedEvtVsNch"), glbTracks);
-      } else {
         skipEvent = true;
       }
     }
 
-    if (!skipEvent) {
+    if (useMidRapNchSel && skipEvent) {
       return;
     }
 
@@ -602,9 +599,8 @@ struct UccZdc {
     registry.fill(HIST("ZNCVsNch"), glbTracks, znC);
     registry.fill(HIST("ZNVsNch"), glbTracks, sumZNs);
     registry.fill(HIST("ZNDifVsNch"), glbTracks, znA - znC);
-    if (glbTracks >= minNchSel) {
+    if (glbTracks >= minNchSel)
       registry.fill(HIST("NchVsOneParCorr"), glbTracks, meanpt / glbTracks);
-    }
   }
   PROCESS_SWITCH(UccZdc, processQA, "Process QA", true);
 
