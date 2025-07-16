@@ -41,6 +41,7 @@ DECLARE_SOA_COLUMN(PtSigma, ptSigma, float);                 //! Signed pT of th
 DECLARE_SOA_COLUMN(AlphaAPSigma, alphaAPSigma, float);       //! Alpha of the Sigma
 DECLARE_SOA_COLUMN(QtAPSigma, qtAPSigma, float);             //! qT of the Sigma
 DECLARE_SOA_COLUMN(RadiusSigma, radiusSigma, float);         //! Radius of the Sigma decay vertex
+DECLARE_SOA_COLUMN(PtKink, ptKink, float);                   //! pT of the kink daughter
 DECLARE_SOA_COLUMN(NSigmaTPCPiKink, nSigmaTPCPiKink, float); //! Number of sigmas for the pion candidate from Sigma kink in TPC
 DECLARE_SOA_COLUMN(NSigmaTOFPiKink, nSigmaTOFPiKink, float); //! Number of sigmas for the pion candidate from Sigma kink in TOF
 DECLARE_SOA_COLUMN(NSigmaTPCPrKink, nSigmaTPCPrKink, float); //! Number of sigmas for the proton candidate from Sigma kink in TPC
@@ -63,6 +64,7 @@ DECLARE_SOA_TABLE(Lambda1405Cands, "AOD", "LAMBDA1405",
                   lambda1405::Mass, lambda1405::MassXi1530,
                   lambda1405::SigmaMinusMass, lambda1405::SigmaPlusMass, lambda1405::XiMinusMass,
                   lambda1405::PtSigma, lambda1405::AlphaAPSigma, lambda1405::QtAPSigma, lambda1405::RadiusSigma,
+                  lambda1405::PtKink,
                   lambda1405::NSigmaTPCPiKink, lambda1405::NSigmaTOFPiKink,
                   lambda1405::NSigmaTPCPrKink, lambda1405::NSigmaTOFPrKink,
                   lambda1405::DCAKinkDauToPV,
@@ -74,6 +76,7 @@ DECLARE_SOA_TABLE(Lambda1405CandsMC, "AOD", "MCLAMBDA1405",
                   lambda1405::Mass, lambda1405::MassXi1530,
                   lambda1405::SigmaMinusMass, lambda1405::SigmaPlusMass, lambda1405::XiMinusMass,
                   lambda1405::PtSigma, lambda1405::AlphaAPSigma, lambda1405::QtAPSigma, lambda1405::RadiusSigma,
+                  lambda1405::PtKink,
                   lambda1405::NSigmaTPCPiKink, lambda1405::NSigmaTOFPiKink,
                   lambda1405::NSigmaTPCPrKink, lambda1405::NSigmaTOFPrKink,
                   lambda1405::DCAKinkDauToPV,

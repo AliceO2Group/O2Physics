@@ -50,6 +50,7 @@ struct lambda1405candidate {
   float sigmaPt = -1;         // pT of the Sigma daughter
   float sigmaAlphaAP = -1;    // Alpha of the Sigma
   float sigmaQtAP = -1;       // qT of the Sigma
+  float kinkPt = -1;          // pT of the kink daughter
   float kinkTPCNSigmaPi = -1; // Number of sigmas for the pion candidate from Sigma kink in TPC
   float kinkTOFNSigmaPi = -1; // Number of sigmas for the pion candidate from Sigma kink in TOF
   float kinkTPCNSigmaPr = -1; // Number of sigmas for the proton candidate from Sigma kink in TPC
@@ -266,6 +267,7 @@ struct lambda1405analysis {
       lambda1405Cand.sigmaQtAP = qtAP(sigmaMom, kinkDauMom);
       lambda1405Cand.sigmaPt = sigmaCand.ptMoth();
       lambda1405Cand.sigmaRadius = sigmaRad;
+      lambda1405Cand.kinkPt = kinkDauTrack.pt();
       lambda1405Cand.kinkTPCNSigmaPi = kinkDauTrack.tpcNSigmaPi();
       lambda1405Cand.kinkTOFNSigmaPi = kinkDauTrack.tofNSigmaPi();
       lambda1405Cand.kinkTPCNSigmaPr = kinkDauTrack.tpcNSigmaPr();
@@ -329,6 +331,7 @@ struct lambda1405analysis {
                           lambda1405Cand.mass, lambda1405Cand.massXi1530,
                           lambda1405Cand.sigmaMinusMass, lambda1405Cand.sigmaPlusMass, lambda1405Cand.xiMinusMass,
                           lambda1405Cand.sigmaPt, lambda1405Cand.sigmaAlphaAP, lambda1405Cand.sigmaQtAP, lambda1405Cand.sigmaRadius,
+                          lambda1405Cand.kinkPt,
                           lambda1405Cand.kinkTPCNSigmaPi, lambda1405Cand.kinkTOFNSigmaPi,
                           lambda1405Cand.kinkTPCNSigmaPr, lambda1405Cand.kinkTOFNSigmaPr,
                           lambda1405Cand.dcaKinkDauToPV,
@@ -414,6 +417,7 @@ struct lambda1405analysis {
                               lambda1405Cand.mass, lambda1405Cand.massXi1530,
                               lambda1405Cand.sigmaMinusMass, lambda1405Cand.sigmaPlusMass, lambda1405Cand.xiMinusMass,
                               lambda1405Cand.sigmaPt, lambda1405Cand.sigmaAlphaAP, lambda1405Cand.sigmaQtAP, lambda1405Cand.sigmaRadius,
+                              lambda1405Cand.kinkPt,
                               lambda1405Cand.kinkTPCNSigmaPi, lambda1405Cand.kinkTOFNSigmaPi,
                               lambda1405Cand.kinkTPCNSigmaPr, lambda1405Cand.kinkTOFNSigmaPr,
                               lambda1405Cand.dcaKinkDauToPV,
