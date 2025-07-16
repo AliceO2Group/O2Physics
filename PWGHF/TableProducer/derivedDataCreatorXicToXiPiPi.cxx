@@ -101,7 +101,7 @@ struct HfDerivedDataCreatorXicToXiPiPi {
   using THfCandDaughtersMl = aod::Cascades;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToXiPiPi & static_cast<int8_t>(BIT(o2::aod::hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoMl - 1))) != 0;
-  Filter filterMcGenMatching = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchGen) == static_cast<int8_t>(DecayType::XicToXiPiPi);
+  Filter filterMcGenMatching = aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchGen != 0;
 
   Preslice<SelectedCandidates> candidatesPerCollision = aod::hf_cand::collisionId;
   Preslice<SelectedCandidatesMc> candidatesMcPerCollision = aod::hf_cand::collisionId;
@@ -115,10 +115,10 @@ struct HfDerivedDataCreatorXicToXiPiPi {
   Partition<SelectedCandidatesMl> candidatesMlAll = aod::hf_sel_candidate_xic::isSelXicToXiPiPi >= 0;
   Partition<SelectedCandidatesMcMl> candidatesMcMlAll = aod::hf_sel_candidate_xic::isSelXicToXiPiPi >= 0;
   // partitions for signal and background
-  Partition<SelectedCandidatesMc> candidatesMcSig = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec) == static_cast<int8_t>(DecayType::XicToXiPiPi);
-  Partition<SelectedCandidatesMc> candidatesMcBkg = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec) != static_cast<int8_t>(DecayType::XicToXiPiPi);
-  Partition<SelectedCandidatesMcMl> candidatesMcMlSig = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec) == static_cast<int8_t>(DecayType::XicToXiPiPi);
-  Partition<SelectedCandidatesMcMl> candidatesMcMlBkg = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec) != static_cast<int8_t>(DecayType::XicToXiPiPi);
+  Partition<SelectedCandidatesMc> candidatesMcSig = aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec != 0;
+  Partition<SelectedCandidatesMc> candidatesMcBkg = aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec == 0;
+  Partition<SelectedCandidatesMcMl> candidatesMcMlSig = aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec != 0;
+  Partition<SelectedCandidatesMcMl> candidatesMcMlBkg = aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec == 0;
 
   void init(InitContext const&)
   {
@@ -268,7 +268,7 @@ struct HfDerivedDataCreatorXicToXiPiPi {
           flagMcRec = candidate.flagMcMatchRec();
           origin = candidate.originMcRec();
           if constexpr (onlyBkg) {
-            if (std::abs(flagMcRec) == DecayType::XicToXiPiPi) {
+            if (TESTBIT(std::abs(flagMcRec), DecayType::XicToXiPiPi)) {
               continue;
             }
             if (downSampleBkgFactor < 1.) {
@@ -279,23 +279,19 @@ struct HfDerivedDataCreatorXicToXiPiPi {
             }
           }
           if constexpr (onlySig) {
-            if (std::abs(flagMcRec) != DecayType::XicToXiPiPi) {
+            if (!TESTBIT(std::abs(flagMcRec), DecayType::XicToXiPiPi)) {
               continue;
             }
           }
         }
-        // auto prongPi0FromXic = candidate.template pi0_as<TracksWPid>();
-        double y = hfHelper.yXic(candidate);
         float massXicToXiPiPi = candidate.invMassXicPlus();
         double ct = hfHelper.ctXic(candidate);
+        double y = hfHelper.yXic(candidate);
         std::vector<float> mlScoreXicToXiPiPi;
-        // float mlScoreXicToXiPiPi{-1.f};
-        // std::vector<float> mlScoresXi;
-        // bool isXi = prongPi0FromXic.sign() < 0;
         if constexpr (isMl) {
           std::copy(candidate.mlProbXicToXiPiPi().begin(), candidate.mlProbXicToXiPiPi().end(), std::back_inserter(mlScoreXicToXiPiPi));
         }
-        // flag = 0 for Xi pi-, flag = 1 for Xibar pi+
+        // FIXME: Remove candFlag?
         fillTablesCandidate(candidate, 1, massXicToXiPiPi, ct, y, flagMcRec, origin, mlScoreXicToXiPiPi);
       }
     }
