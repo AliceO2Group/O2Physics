@@ -203,8 +203,8 @@ struct skimmerPrimaryMuon {
     return true;
   }
 
-  template <typename TCollision, typename TFwdTrack, typename TFwdTracks, typename TMFTTracks>
-  void fillFwdTrackTable(TCollision const& collision, TFwdTrack fwdtrack, TFwdTracks const&, TMFTTracks const&, const bool isAmbiguous)
+  template <typename TFwdTracks, typename TMFTTracks, typename TCollision, typename TFwdTrack>
+  void fillFwdTrackTable(TCollision const& collision, TFwdTrack fwdtrack, const bool isAmbiguous)
   {
     if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && fwdtrack.chi2MatchMCHMFT() > maxMatchingChi2MCHMFT) {
       return;
@@ -400,7 +400,7 @@ struct skimmerPrimaryMuon {
         if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
           continue;
         }
-        fillFwdTrackTable(collision, fwdtrack, fwdtracks, mfttracks, false);
+        fillFwdTrackTable<MyFwdTracks, aod::MFTTracks>(collision, fwdtrack, false);
       } // end of fwdtrack loop
     } // end of collision loop
   }
@@ -429,7 +429,7 @@ struct skimmerPrimaryMuon {
         if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
           continue;
         }
-        fillFwdTrackTable(collision, fwdtrack, fwdtracks, mfttracks, mapAmb[fwdtrack.globalIndex()]);
+        fillFwdTrackTable<MyFwdTracks, aod::MFTTracks>(collision, fwdtrack, mapAmb[fwdtrack.globalIndex()]);
       } // end of fwdtrack loop
     } // end of collision loop
     mapAmb.clear();
@@ -455,7 +455,7 @@ struct skimmerPrimaryMuon {
         if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
           continue;
         }
-        fillFwdTrackTable(collision, fwdtrack, fwdtracks, mfttracks, false);
+        fillFwdTrackTable<MyFwdTracks, aod::MFTTracks>(collision, fwdtrack, false);
       } // end of fwdtrack loop
     } // end of collision loop
   }
@@ -486,7 +486,7 @@ struct skimmerPrimaryMuon {
         if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
           continue;
         }
-        fillFwdTrackTable(collision, fwdtrack, fwdtracks, mfttracks, mapAmb[fwdtrack.globalIndex()]);
+        fillFwdTrackTable<MyFwdTracks, aod::MFTTracks>(collision, fwdtrack, mapAmb[fwdtrack.globalIndex()]);
       } // end of fwdtrack loop
     } // end of collision loop
     mapAmb.clear();
@@ -513,7 +513,7 @@ struct skimmerPrimaryMuon {
         if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
           continue;
         }
-        fillFwdTrackTable(collision, fwdtrack, fwdtracks, mfttracks, false);
+        fillFwdTrackTable<MyFwdTracksMC, MFTTracksMC>(collision, fwdtrack, false);
       } // end of fwdtrack loop
     } // end of collision loop
   }
@@ -547,7 +547,7 @@ struct skimmerPrimaryMuon {
         if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
           continue;
         }
-        fillFwdTrackTable(collision, fwdtrack, fwdtracks, mfttracks, mapAmb[fwdtrack.globalIndex()]);
+        fillFwdTrackTable<MyFwdTracksMC, MFTTracksMC>(collision, fwdtrack, mapAmb[fwdtrack.globalIndex()]);
       } // end of fwdtrack loop
     } // end of collision loop
     mapAmb.clear();
@@ -605,8 +605,8 @@ struct associateSameMFT {
         em_same_mft_ids(self_Ids);
         self_Ids.clear();
         self_Ids.shrink_to_fit();
-      } else {                               // for standalone muons
-        em_same_mft_ids(std::vector<int>{}); // empty
+      } else {
+        em_same_mft_ids(std::vector<int>{}); // empty for standalone muons
       }
     } // end of muon loop
   }

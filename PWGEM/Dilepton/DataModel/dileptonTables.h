@@ -725,7 +725,7 @@ using EMPrimaryTracks = EMPrimaryTracks_000;
 // iterators
 using EMPrimaryTrack = EMPrimaryTracks::iterator;
 
-DECLARE_SOA_TABLE(EMPrimaryTrackEMEventIds, "AOD", "PRMTRACKEMEVENTID", emprimarytrack::EMEventId); // To be joined with EMPrimaryTracks table at analysis level.
+DECLARE_SOA_TABLE(EMPrimaryTrackEMEventIds, "AOD", "PRMTRKEMEVENTID", emprimarytrack::EMEventId); // To be joined with EMPrimaryTracks table at analysis level.
 // iterators
 using EMPrimaryTrackEMEventId = EMPrimaryTrackEMEventIds::iterator;
 
