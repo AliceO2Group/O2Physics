@@ -440,6 +440,9 @@ struct Filter2Prong {
   // Phi and V0s invariant mass method candidate finder. Only works for non-identical daughters of opposite charge for now.
   void processDataPhiV0(aod::Collisions::iterator const& collision, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, Filter2Prong::PIDTrack const& tracks, aod::V0Datas const& V0s)
   {
+    if (cfcollisions.size() <= 0)
+      return; // rejected collision
+
     // V0
     for (const auto& v0 : V0s) {    // Loop over V0 candidates
       if (!isV0TrackSelected(v0)) { // Quality selection for V0 prongs
@@ -475,7 +478,7 @@ struct Filter2Prong {
     } // end of loop over V0 candidates
 
     // Phi
-    if (cfcollisions.size() <= 0 || cftracks.size() <= 0)
+    if (cftracks.size() <= 0)
       return; // rejected collision
 
     o2::aod::ITSResponse itsResponse;
