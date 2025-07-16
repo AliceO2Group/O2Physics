@@ -285,7 +285,6 @@ struct HfDerivedDataCreatorDstarToD0Pi {
         double y = candidate.y(o2::constants::physics::MassDStar);
         double massDstar = candidate.invMassDstar();
         std::vector<float> mlScoresDstarToD0Pi;
-        bool isD0 = prongSoftPi.sign() < 0;
         if constexpr (isMl) {
           std::copy(candidate.mlProbDstarToD0Pi().begin(), candidate.mlProbDstarToD0Pi().end(), std::back_inserter(mlScoresDstarToD0Pi));
         }
