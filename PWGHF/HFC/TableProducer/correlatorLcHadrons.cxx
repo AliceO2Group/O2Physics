@@ -16,7 +16,6 @@
 /// \author Zhen Zhang <zhenz@cern.ch>
 /// \author Ravindra Singh <ravindra.singh@cern.ch>
 
-#include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -47,8 +46,6 @@ using namespace o2::constants::math;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::hf_correlations;
-
-using namespace o2::hf_centrality;
 
 ///
 /// Returns deltaPhi values in range [-pi/2., 3.*pi/2.], typically used for correlation studies
@@ -86,12 +83,6 @@ struct HfCorrelatorLcHadronsSelection {
   // filter on selection of Lc and decay channel Lc->PKPi
   Filter lcFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) != static_cast<uint8_t>(0)) && (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
 
-  template <typename Coll>
-  float evaluateCentralityColl(const Coll& collision)
-  {
-    return o2::hf_centrality::getCentralityColl<Coll>(collision);
-  }
-
   /// Code to select collisions with at least one Lc - for real data and data-like analysis
   void processLcSelectionData(SelCollisions::iterator const& collision,
                               CandidatesLcData const& candidates)
@@ -112,7 +103,7 @@ struct HfCorrelatorLcHadronsSelection {
       }
     }
 
-    float cent = evaluateCentralityColl(collision);
+    float cent = collision.centFT0M();
 
     if (useSel8) {
       isSel8 = collision.sel8();
@@ -300,7 +291,7 @@ struct HfCorrelatorLcHadrons {
     registry.add("hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}});
     registry.add("hMultFT0M", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}});
     registry.add("hZvtx", "z vertex;z vertex;entries", {HistType::kTH1F, {{200, -20., 20.}}});
-    registry.add("hCentFT0M", "Centrality FT0M; Centrality;entries", {HistType::kTH1F, {{100, 0., 100.}}});
+    registry.add("hCentFT0M", "Centrality FT0M; Centrality;entries", {HistType::kTH1D, {{100, 0., 100.}}});
     registry.add("hLcBin", "Lc selected in pool Bin;pool Bin;entries", {HistType::kTH1F, {{9, 0., 9.}}});
     registry.add("hTracksBin", "Tracks selected in pool Bin;pool Bin;entries", {HistType::kTH1F, {{9, 0., 9.}}});
     if (isMultiplicityDependent) {
@@ -353,12 +344,6 @@ struct HfCorrelatorLcHadrons {
     corrBinning = {{binsZVtx, binsMultiplicity}, true};
   }
 
-  template <typename Coll>
-  float evaluateCentralityColl(const Coll& collision)
-  {
-    return o2::hf_centrality::getCentralityColl<Coll>(collision);
-  }
-
   /// Lc-hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(SelCollisionsWithLc::iterator const& collision,
                    TracksData const& tracks,
@@ -383,7 +368,7 @@ struct HfCorrelatorLcHadrons {
     int gCollisionId = collision.globalIndex();
     int64_t timeStamp = bc.timestamp();
 
-    float cent = evaluateCentralityColl(collision);
+    float cent = collision.centFT0M();
 
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
     int nTracks = 0;
@@ -428,7 +413,7 @@ struct HfCorrelatorLcHadrons {
         if (isMultiplicityDependent) {
           registry.fill(HIST("hMassLcVsPtvsmult"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), cent, efficiencyWeightLc);
         } else {
-          registry.fill(HIST("hMassLcVsPt"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), cent, efficiencyWeightLc);
+          registry.fill(HIST("hMassLcVsPt"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), efficiencyWeightLc);
         }
         registry.fill(HIST("hMassLcData"), hfHelper.invMassLcToPKPi(candidate), efficiencyWeightLc);
         registry.fill(HIST("hSelectionStatusLcToPKPi"), candidate.isSelLcToPKPi());
@@ -442,7 +427,7 @@ struct HfCorrelatorLcHadrons {
         if (isMultiplicityDependent) {
           registry.fill(HIST("hMassLcVsPtvsmult"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), cent, efficiencyWeightLc);
         } else {
-          registry.fill(HIST("hMassLcVsPt"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), cent, efficiencyWeightLc);
+          registry.fill(HIST("hMassLcVsPt"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), efficiencyWeightLc);
         }
         registry.fill(HIST("hMassLcData"), hfHelper.invMassLcToPiKP(candidate), efficiencyWeightLc);
         registry.fill(HIST("hSelectionStatusLcToPiKP"), candidate.isSelLcToPiKP());
@@ -690,7 +675,7 @@ struct HfCorrelatorLcHadrons {
         }
         //}
       }
-      double_t cent = 100.0; // will be updated later
+      float cent = 100.0; // will be updated later
 
       // Lc-Hadron correlation dedicated section
       // if the candidate is selected as Lc, search for Hadron ad evaluate correlations
@@ -816,6 +801,7 @@ struct HfCorrelatorLcHadrons {
 
     bool isLcPrompt = false;
     bool isLcNonPrompt = false;
+    float cent = 100.0; // will be updated later
 
     // find leading particle
     if (correlateLcWithLeadingParticle) {
@@ -905,7 +891,7 @@ struct HfCorrelatorLcHadrons {
                           particleAssoc.pt() * chargeAssoc / std::abs(chargeAssoc),
                           poolBin,
                           correlationStatus,
-                          mcCollision.multMCFT0A());
+                          cent);
         entryLcHadronPairY(particleAssoc.y() - yL);
         entryLcHadronRecoInfo(MassLambdaCPlus, true);
         entryLcHadronGenInfo(isLcPrompt, particleAssoc.isPhysicalPrimary(), trackOrigin);
@@ -938,7 +924,7 @@ struct HfCorrelatorLcHadrons {
         auto trackPos1 = trigLc.template prong0_as<TracksData>(); // positive daughter (negative for the antiparticles)
         int8_t chargeLc = trackPos1.sign();                       // charge of 1st prong will be the charge of Lc candidate
 
-        double_t cent = 100.0; // will be updated later
+        float cent = 100.0; // will be updated later
 
         std::vector<float> outputMl = {-1., -1., -1.};
         // LcToPKPi and LcToPiKP division
@@ -1037,7 +1023,7 @@ struct HfCorrelatorLcHadrons {
       registry.fill(HIST("hZvtx"), c1.posZ());
       registry.fill(HIST("hTracksPoolBin"), poolBin);
       registry.fill(HIST("hLcPoolBin"), poolBinLc);
-      double_t cent = 100.0; // will be updated later
+      float cent = 100.0; // will be updated later
       for (const auto& [candidate, pAssoc] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         if (std::abs(hfHelper.yLc(candidate)) > yCandMax || candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
           continue;
@@ -1139,7 +1125,7 @@ struct HfCorrelatorLcHadrons {
         }
         int8_t chargeLc = pdg->GetParticle(candidate.pdgCode())->Charge();        // Retrieve charge
         int8_t chargeAssoc = pdg->GetParticle(particleAssoc.pdgCode())->Charge(); // Retrieve charge
-        double_t cent = 100.0;                                                    // will be updated later
+        float cent = 100.0;                                                       // will be updated later
 
         int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
         bool isLcPrompt = candidate.originMcGen() == RecoDecay::OriginType::Prompt;
