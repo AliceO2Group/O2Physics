@@ -266,7 +266,8 @@ struct Phik0shortanalysis {
   // Efficiecy maps
   TH3F* effMapPhi;
   TH3F* effMapK0S;
-  TH3F* effMapPion;
+  TH3F* effMapPionTPC;
+  TH3F* effMapPionTPCTOF;
 
   void init(InitContext&)
   {
@@ -616,7 +617,8 @@ struct Phik0shortanalysis {
       else {
         effMapPhi = nullptr;
         effMapK0S = nullptr;
-        effMapPion = nullptr;
+        effMapPionTPC = nullptr;
+        effMapPionTPCTOF = nullptr;
       }
     }
   }
@@ -965,9 +967,14 @@ struct Phik0shortanalysis {
       LOG(error) << "Problem getting efficiency map for K0S!";
       return;
     }
-    effMapPion = static_cast<TH3F*>(listEfficiencyMaps->FindObject("h3EfficiencyPion"));
-    if (!effMapPion) {
-      LOG(error) << "Problem getting efficiency map for Pion!";
+    effMapPionTPC = static_cast<TH3F*>(listEfficiencyMaps->FindObject("h3EfficiencyPionTPC"));
+    if (!effMapPionTPC) {
+      LOG(error) << "Problem getting efficiency map for Pion with TPC!";
+      return;
+    }
+    effMapPionTPCTOF = static_cast<TH3F*>(listEfficiencyMaps->FindObject("h3EfficiencyPionTPCTOF"));
+    if (!effMapPionTPCTOF) {
+      LOG(error) << "Problem getting efficiency map for Pion with TPC and TOF!";
       return;
     }
   }
@@ -2578,7 +2585,7 @@ struct Phik0shortanalysis {
 
           float efficiencyPhiPion = 1.0f;
           if (applyEfficiency) {
-            efficiencyPhiPion = effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapPion->Interpolate(multiplicity, track.pt(), track.rapidity(massPi));
+            efficiencyPhiPion = track.pt() < trackConfigs.pTToUseTOF ? effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapPionTPC->Interpolate(multiplicity, track.pt(), track.rapidity(massPi)) : effMapPhi->Interpolate(multiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapPionTPCTOF->Interpolate(multiplicity, track.pt(), track.rapidity(massPi));
             if (efficiencyPhiPion == 0)
               efficiencyPhiPion = 1.0f;
           }
@@ -2698,7 +2705,7 @@ struct Phik0shortanalysis {
 
           float efficiencyPhiPion = 1.0f;
           if (applyEfficiency) {
-            efficiencyPhiPion = effMapPhi->Interpolate(genmultiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapPion->Interpolate(genmultiplicity, track.pt(), track.rapidity(massPi));
+            efficiencyPhiPion = track.pt() < trackConfigs.pTToUseTOF ? effMapPhi->Interpolate(genmultiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapPionTPC->Interpolate(genmultiplicity, track.pt(), track.rapidity(massPi)) : effMapPhi->Interpolate(genmultiplicity, recPhi.Pt(), recPhi.Rapidity()) * effMapPionTPCTOF->Interpolate(genmultiplicity, track.pt(), track.rapidity(massPi));
             if (efficiencyPhiPion == 0)
               efficiencyPhiPion = 1.0f;
           }
