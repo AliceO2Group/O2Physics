@@ -21,6 +21,7 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
 #include "PWGHF/HFC/DataModel/DerivedDataCorrelationTables.h"
+#include "PWGHF/HFC/Utils/utilsCorrelations.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -58,6 +59,7 @@ using namespace o2::constants::physics;
 using namespace o2::constants::math;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::analysis::hf_correlations;
 
 enum ResonantChannel : int8_t {
   PhiPi = 1,
@@ -179,6 +181,8 @@ struct HfCorrelatorDsHadrons {
   Configurable<bool> removeCollWSplitVtx{"removeCollWSplitVtx", false, "Flag for rejecting the splitted collisions"};
   Configurable<bool> useSel8{"useSel8", true, "Flag for applying sel8 for collision selection (used only in MC processes)"};
   Configurable<bool> selNoSameBunchPileUpColl{"selNoSameBunchPileUpColl", true, "Flag for rejecting the collisions associated with the same bunch crossing (used only in MC processes)"};
+  Configurable<bool> pidTrkApplied{"pidTrkApplied", false, "Apply PID selection for associated tracks"};
+  Configurable<bool> forceTOF{"forceTOF", false, "force the TOF signal for the PID"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds (avoid the case of flag = 0, no outputMlScore)"};
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
   Configurable<int> decayChannel{"decayChannel", 1, "Resonant decay channels: 1 for Ds->PhiPi->KKpi, 2 for Ds->K0*K->KKPi"};
@@ -193,7 +197,11 @@ struct HfCorrelatorDsHadrons {
   Configurable<float> ptTrackMin{"ptTrackMin", 0.3, "min. track pT"};
   Configurable<float> ptTrackMax{"ptTrackMax", 50., "max. track pT"};
   Configurable<float> zVtxMax{"zVtxMax", 10., "max. position-z of the reconstructed collision"};
+  Configurable<float> tofPIDThreshold{"tofPIDThreshold", 0.75, "minimum pT after which TOF PID is applicable"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
+  Configurable<std::vector<int>> trkPIDspecies{"trkPIDspecies", std::vector<int>{o2::track::PID::Proton, o2::track::PID::Pion, o2::track::PID::Kaon}, "Trk sel: Particles species for PID, proton, pion, kaon"};
+  Configurable<std::vector<float>> pidTPCMax{"pidTPCMax", std::vector<float>{3., 0., 0.}, "maximum nSigma TPC"};
+  Configurable<std::vector<float>> pidTOFMax{"pidTOFMax", std::vector<float>{3., 0., 0.}, "maximum nSigma TOF"};
   Configurable<std::vector<double>> binsPtD{"binsPtD", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots"};
   Configurable<std::vector<double>> binsPtHadron{"binsPtHadron", std::vector<double>{0.3, 2., 4., 8., 12., 50.}, "pT bin limits for assoc particle"};
   Configurable<std::vector<double>> binsPtEfficiencyD{"binsPtEfficiencyD", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for efficiency"};
@@ -761,18 +769,20 @@ struct HfCorrelatorDsHadrons {
       // Ds fill histograms and Ds candidates information stored
       for (const auto& candidate : candsDsThisColl) {
         std::vector<float> outputMl = {-1., -1., -1.};
+        auto prong0 = candidate.template prong0_as<MyTracksData>();
+        int chargeDs = prong0.sign();
         // candidate selected
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
             outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
           }
-          candReduced(indexHfcReducedCollision, candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDsToKKPi(candidate), candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id());
+          candReduced(indexHfcReducedCollision, candidate.phi(), candidate.eta(), candidate.pt() * chargeDs, hfHelper.invMassDsToKKPi(candidate), candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id());
           candSelInfo(indexHfcReducedCollision, outputMl[0], outputMl[2]);
         } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
             outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
           }
-          candReduced(indexHfcReducedCollision, candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDsToPiKK(candidate), candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id());
+          candReduced(indexHfcReducedCollision, candidate.phi(), candidate.eta(), candidate.pt() * chargeDs, hfHelper.invMassDsToPiKK(candidate), candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id());
           candSelInfo(indexHfcReducedCollision, outputMl[0], outputMl[2]);
         }
       }
@@ -782,11 +792,15 @@ struct HfCorrelatorDsHadrons {
         if (!track.isGlobalTrackWoDCA()) {
           continue;
         }
-        assocTrackReduced(indexHfcReducedCollision, track.globalIndex(), track.phi(), track.eta(), track.pt());
+        if (pidTrkApplied) {
+          if (!passPIDSelection(track, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF))
+            continue;
+        }
+        assocTrackReduced(indexHfcReducedCollision, track.globalIndex(), track.phi(), track.eta(), track.pt() * track.sign());
         assocTrackSelInfo(indexHfcReducedCollision, track.tpcNClsCrossedRows(), track.itsClusterMap(), track.itsNCls(), track.dcaXY(), track.dcaZ());
       }
 
-      collReduced(collision.multFT0M(), collision.posZ());
+      collReduced(collision.multFT0M(), collision.numContrib(), collision.posZ());
     }
   }
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processDerivedDataDs, "Process derived data Ds", false);
