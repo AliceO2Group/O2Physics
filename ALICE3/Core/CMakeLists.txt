@@ -11,6 +11,7 @@
 
 o2physics_add_library(ALICE3Core
                       SOURCES TOFResoALICE3.cxx
+                              TrackUtilities.cxx
                               DelphesO2TrackSmearer.cxx
                       PUBLIC_LINK_LIBRARIES O2::Framework
                                             O2Physics::AnalysisCore)

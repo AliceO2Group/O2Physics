@@ -203,6 +203,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   if (!nameStr.compare("MuonForEMu")) {
     cut->AddCut(GetAnalysisCut("muonLowPt5"));
     cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    cut->AddCut(GetAnalysisCut("MCHMID"));
     return cut;
   }
   // ///////////////////////////////////////////////

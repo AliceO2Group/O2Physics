@@ -33,7 +33,7 @@ using namespace o2::framework;
 using namespace o2::header;
 using namespace o2;
 
-MetadataHelper metadataInfo; // Metadata helper
+o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 
 struct TimestampTask {
   Produces<aod::Timestamps> timestampTable; /// Table with SOR timestamps produced by the task
