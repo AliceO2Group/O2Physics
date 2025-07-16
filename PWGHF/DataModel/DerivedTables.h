@@ -215,7 +215,7 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
                            hf_track_index::Prong3Id,                       \
                            o2::soa::Marker<Marker##_hf_type_>);
 
-// Declares the table with global indices for 4-prong candidates (Ids).
+// Declares the table with global indices for 5-prong candidates (Ids).
 #define DECLARE_TABLE_CAND_ID_5P(_hf_type_, _hf_description_)              \
   DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##Ids, "HF" _hf_description_ "ID", \
                            hf_cand::CollisionId,                           \
