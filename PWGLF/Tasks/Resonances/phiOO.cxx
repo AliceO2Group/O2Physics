@@ -78,10 +78,6 @@ struct phiOO {
   Configurable<bool> cfg_Event_OccupancyCut{"cfg_Event_OccupancyCut", true, "Occupancy border cut"};
   Configurable<float> cfg_Event_MaxOccupancy{"cfg_Event_MaxOccupancy", 1, "Max TPC Occupancy"};
 
-  ConfigurableAxis cfg_bins_Cent{"cfg_bins_Cent", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
-  ConfigurableAxis cfg_bins_MixVtx{"cfg_bins_MixVtx", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis cfg_bins_MixMult{"cfg_bins_MixMult", {VARIABLE_WIDTH, 0.0f, 1.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f}, "Mixing bins - z-vertex"};
-
   // Track configurables
   Configurable<std::string> cfg_Track_Sel{"cfg_Track_Sel", "globalTracks", "set track selections"};
   Configurable<float> cfg_Track_MinPt{"cfg_Track_MinPt", 0.15, "set track min pT"};
@@ -120,6 +116,13 @@ struct phiOO {
   Configurable<bool> cfg_Event_CutQA{"cfg_Event_CutsQA", true, "Enables Track QA plots"};
   Configurable<bool> cfg_Track_CutQA{"cfg_Track_CutsQA", true, "Enables Track QA plots"};
 
+  // Configurables for axis
+  ConfigurableAxis binsDCAz{"binsDCAz", {40, -0.2, 0.2}, ""};
+  ConfigurableAxis binsDCAxy{"binsDCAxy", {40, -0.2, 0.2}, ""};
+  ConfigurableAxis cfg_bins_Cent{"cfg_bins_Cent", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
+  ConfigurableAxis cfg_bins_MixVtx{"cfg_bins_MixVtx", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+  ConfigurableAxis cfg_bins_MixMult{"cfg_bins_MixMult", {VARIABLE_WIDTH, 0.0f, 1.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f}, "Mixing bins - z-vertex"};
+
   void init(o2::framework::InitContext&)
   {
     const AxisSpec MinvAxis = {cfg_Pair_MinvBins, cfg_Pair_MinvMin, cfg_Pair_MinvMax};
@@ -127,21 +130,23 @@ struct phiOO {
     const AxisSpec MultAxis = {100, 0, 100};
     const AxisSpec dRAxis = {100, 0, 100};
     const AxisSpec pidAxis = {100, -5, 5};
+    const AxisSpec axisDCAz{binsDCAz, "DCA_{z}"};
+    const AxisSpec axisDCAxy{binsDCAxy, "DCA_{XY}"};
 
     // Event QA
     if (cfg_Event_CutQA) {
-      histos.add("hPosZ_BC", "PosZ_BC", kTH1F, {{100, 0.0, 15.0}});
-      histos.add("hcentFT0C_BC", "centFT0C_BC", kTH1F, {{100, 0.0, 100.0}});
+      histos.add("hPosZ_BC", "PosZ_BC", kTH1F, {{240, -12.0, 12.0}});
+      histos.add("hcentFT0C_BC", "centFT0C_BC", kTH1F, {{110, 0.0, 110.0}});
       histos.add("hOccupancy_BC", "Occupancy_BC", kTH1F, {{100, 0.0, 20000}});
       //
-      histos.add("hcentFT0C_AC", "centFT0C_AC", kTH1F, {{100, 0.0, 100.0}});
-      histos.add("hPosZ_AC", "PosZ_AC", kTH1F, {{100, 0.0, 15.0}});
+      histos.add("hcentFT0C_AC", "centFT0C_AC", kTH1F, {{110, 0.0, 110.0}});
+      histos.add("hPosZ_AC", "PosZ_AC", kTH1F, {{240, -12.0, 12.0}});
       histos.add("hOccupancy_AC", "Occupancy_AC", kTH1F, {{100, 0.0, 20000}});
     }
     // Track QA
     if (cfg_Track_CutQA) {
-      histos.add("hDCArToPv_BC", "DCArToPv_BC", kTH1F, {{300, 0.0, 3.0}});
-      histos.add("hDCAzToPv_BC", "DCAzToPv_BC", kTH1F, {{300, 0.0, 3.0}});
+      histos.add("hDCArToPv_BC", "DCArToPv_BC", kTH1F, {axisDCAxy});
+      histos.add("hDCAzToPv_BC", "DCAzToPv_BC", kTH1F, {axisDCAz});
       histos.add("hIsPrim_BC", "hIsPrim_BC", kTH1F, {{2, -0.5, 1.5}});
       histos.add("hIsGood_BC", "hIsGood_BC", kTH1F, {{2, -0.5, 1.5}});
       histos.add("hIsPrimCont_BC", "hIsPrimCont_BC", kTH1F, {{2, -0.5, 1.5}});
@@ -155,8 +160,8 @@ struct phiOO {
       histos.add("hTPC_nSigma_v_pt_BC", "hTPC_nSigma_v_pt_BC", HistType::kTHnSparseD, {pidAxis, PtAxis});
       histos.add("hTOF_nSigma_v_pt_BC", "hTOF_nSigma_v_pt_BC", HistType::kTHnSparseD, {pidAxis, PtAxis});
       //
-      histos.add("hDCArToPv_AC", "DCArToPv_AC", kTH1F, {{300, 0.0, 3.0}});
-      histos.add("hDCAzToPv_AC", "DCAzToPv_AC", kTH1F, {{300, 0.0, 3.0}});
+      histos.add("hDCArToPv_AC", "DCArToPv_AC", kTH1F, {axisDCAxy});
+      histos.add("hDCAzToPv_AC", "DCAzToPv_AC", kTH1F, {axisDCAz});
       histos.add("hIsPrim_AC", "hIsPrim_AC", kTH1F, {{2, -0.5, 1.5}});
       histos.add("hIsGood_AC", "hIsGood_AC", kTH1F, {{2, -0.5, 1.5}});
       histos.add("hIsPrimCont_AC", "hIsPrimCont_AC", kTH1F, {{2, -0.5, 1.5}});
