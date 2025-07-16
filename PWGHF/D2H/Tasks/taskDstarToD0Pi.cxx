@@ -25,6 +25,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 
+#include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
@@ -52,12 +53,30 @@ using namespace o2::soa;
 /// Dstar analysis task
 struct HfTaskDstarToD0Pi {
   Configurable<bool> selectionFlagDstarToD0Pi{"selectionFlagDstarToD0Pi", true, "Selection Flag for D* decay to D0 & Pi"};
+  Configurable<bool> isCentStudy{"isCentStudy", true, "Flag to select centrality study"};
+
+  // CCDB configuration
+  Configurable<bool> useWeight{"useWeight", true, "Flag to use weights from CCDB"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathForWeight{"ccdbPathForWeight", "Users/d/desharma/weights", "CCDB path for PVContrib weights"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "CCDB timestamp for the weights"};
+  Configurable<std::string> weightFileName{"weightFileName", "Weights.root", "Name of the weight file to be used for PVContrib"};
+
   Configurable<double> yCandDstarRecoMax{"yCandDstarRecoMax", 0.8, "max. candidate Dstar rapidity"};
   Configurable<double> yCandDstarGenMax{"yCandDstarGenMax", 0.5, "max. rapidity of Generator level Particle"};
   Configurable<bool> selectionFlagHfD0ToPiK{"selectionFlagHfD0ToPiK", true, "Selection Flag for HF flagged candidates"};
   Configurable<std::vector<double>> ptBins{"ptBins", std::vector<double>{hf_cuts_dstar_to_d0_pi::vecBinsPt}, "pT bin limits for Dstar"};
 
+  o2::ccdb::CcdbApi ccdbApi;
   SliceCache cache;
+  TH2F* hWeight1 = nullptr;
+  TH2F* hWeight2 = nullptr;
+  TH2F* hWeight3 = nullptr;
+  TH2F* hWeight4 = nullptr;
+  TH2F* hWeight5 = nullptr;
+  TH2F* hWeight6 = nullptr;
+  // std::string weightFileNameLocal;
+  std::vector<double> centVec;
 
   using CandDstarWSelFlag = soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi>;
   using CandDstarWSelFlagWMl = soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfMlDstarToD0Pi>;
@@ -191,6 +210,40 @@ struct HfTaskDstarToD0Pi {
       registry.add("Efficiency/hPtPromptVsCentVsBDTScore", "Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseF, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
       registry.add("Efficiency/hPtNonPromptVsCentVsBDTScore", "Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseF, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
       // registry.add("Efficiency/hPtBkgVsCentVsBDTScore", "Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseF, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
+    }
+
+    // if weights to be applied
+    if (useWeight) {
+      ccdbApi.init(ccdbUrl);
+      centVec = binningCentrality.value;
+      // weightFileNameLocal = weightFileName;
+      std::map<std::string, std::string> metadata;
+      // Retrieve the file from CCDB
+      // std::string weightFilePath = ccdbApi.retrieveBlob(ccdbPathForWeight + "/" + weightFileName);
+      bool isFileAvailable = ccdbApi.retrieveBlob(ccdbPathForWeight, "." , metadata, timestampCCDB, false,  weightFileName);
+      if (!isFileAvailable) {
+        LOGF(error, "Failed to retrieve weight file from CCDB: %s", ccdbPathForWeight.value.c_str());
+        return;
+      }
+
+      if(isCentStudy){
+        // Open the ROOT file
+        TFile* weightFile = TFile::Open(weightFileName.value.c_str(), "READ");
+        if (weightFile && !weightFile->IsZombie()) {
+          // Assuming the histogram names are known, e.g., "hist1", "hist2", ..., "hist6"
+          hWeight1 = (TH2F*)weightFile->Get("hMult1_Weight")->Clone("hWeight1");
+          hWeight2 = (TH2F*)weightFile->Get("hMult2_Weight")->Clone("hWeight2");
+          hWeight3 = (TH2F*)weightFile->Get("hMult3_Weight")->Clone("hWeight3");
+          hWeight4 = (TH2F*)weightFile->Get("hMult4_Weight")->Clone("hWeight4");
+          hWeight5 = (TH2F*)weightFile->Get("hMult5_Weight")->Clone("hWeight5");
+          hWeight6 = (TH2F*)weightFile->Get("hMult6_Weight")->Clone("hWeight6");
+          weightFile->Close();
+          delete weightFile;
+        } else {
+          LOGF(error, "Failed to open weight file from CCDB: %s", weightFileName.value.c_str());
+        }
+      }
+      
     }
   }
 
@@ -421,6 +474,7 @@ struct HfTaskDstarToD0Pi {
           }
         }
         float centFT0MGen;
+        float pvContibutors;
         // assigning centrality to MC Collision using max FT0M amplitute from Reconstructed collisions
         if (recCollisions.size()) {
           std::vector<std::pair<soa::Filtered<CollisionsWCentMcLabel>::iterator, int>> tempRecCols;
@@ -429,12 +483,34 @@ struct HfTaskDstarToD0Pi {
           }
           std::sort(tempRecCols.begin(), tempRecCols.end(), compare);
           centFT0MGen = tempRecCols.at(0).first.centFT0M();
+          pvContibutors = tempRecCols.at(0).second;
         } else {
           centFT0MGen = -999.;
+          pvContibutors = -999.;
         }
         registry.fill(HIST("QA/hEtaDstarGen"), mcParticle.eta());
         registry.fill(HIST("QA/hPtDstarGen"), ptGen);
         registry.fill(HIST("QA/hPtVsYDstarGen"), ptGen, yGen);
+
+        if(useWeight){
+          if (isCentStudy) {
+            if (centFT0MGen > 0. && centFT0MGen <= 5.) {
+              registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centFT0MGen, hWeight1->GetBinContent(hWeight1->FindBin(centFT0MGen, pvContibutors)));
+            } else if (centFT0MGen > 5. && centFT0MGen <= 10.) {
+              registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centFT0MGen, hWeight2->GetBinContent(hWeight2->FindBin(centFT0MGen, pvContibutors)));
+            } else if (centFT0MGen > 10. && centFT0MGen <= 30.) {
+              registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centFT0MGen, hWeight3->GetBinContent(hWeight3->FindBin(centFT0MGen, pvContibutors)));
+            } else if (centFT0MGen > 30. && centFT0MGen <= 50.) {
+              registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centFT0MGen, hWeight4->GetBinContent(hWeight4->FindBin(centFT0MGen, pvContibutors)));
+            } else if (centFT0MGen > 50. && centFT0MGen <= 70.) {
+              registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centFT0MGen, hWeight5->GetBinContent(hWeight5->FindBin(centFT0MGen, pvContibutors)));
+            } else if (centFT0MGen > 70. && centFT0MGen <= 100.) {
+              registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centFT0MGen, hWeight6->GetBinContent(hWeight6->FindBin(centFT0MGen, pvContibutors)));
+            }
+          } else {
+            registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centFT0MGen, 1);
+          }
+        }
         registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centFT0MGen);
         // only promt Dstar candidate at Generator level
         if (mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) {
