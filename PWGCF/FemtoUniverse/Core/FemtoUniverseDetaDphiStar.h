@@ -569,7 +569,6 @@ class FemtoUniverseDetaDphiStar
     int entries = 0;
     double distance = 0;
     int badpoints = 0;
-    int allpoints = 0;
 
     for (int i = 0; i < num; i++) {
       if (tmpVec1.at(i) != 999 && tmpVec2.at(i) != 999) {
