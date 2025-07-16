@@ -1,6 +1,6 @@
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
-// All rights not expressly granted are reserved.
+// All rights not expressly granted are reserved.`
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -494,7 +494,7 @@ struct HfCorrelatorLcScHadrons {
   {
     bool isPhysicalPrimary = false;
     int trackOrigin = -1;
-    double_t cent = 100.0; // will be updated later
+    float cent = 100.0; // will be updated later
 
     entryCandHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                         track.eta() - candidate.eta(),
@@ -1038,7 +1038,7 @@ struct HfCorrelatorLcScHadrons {
 
         int8_t chargeLc = pdg->GetParticle(particle.pdgCode())->Charge();         // Retrieve charge
         int8_t chargeAssoc = pdg->GetParticle(particleAssoc.pdgCode())->Charge(); // Retrieve charge
-        double_t cent = 100.0;                                                    // will be updated later
+        float cent = 100.0;                                                       // will be updated later
 
         int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
         int8_t chargeAssoc = pdg->GetParticle(particleAssoc.pdgCode())->Charge(); // Retrieve charge
@@ -1191,7 +1191,7 @@ struct HfCorrelatorLcScHadrons {
         }
         int8_t chargeLc = pdg->GetParticle(candidate.pdgCode())->Charge();        // Retrieve charge
         int8_t chargeAssoc = pdg->GetParticle(particleAssoc.pdgCode())->Charge(); // Retrieve charge
-        double_t cent = 100.0;                                                    // will be updated later
+        float cent = 100.0;                                                       // will be updated later
 
         int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
         bool isPrompt = candidate.originMcGen() == RecoDecay::OriginType::Prompt;

@@ -228,7 +228,7 @@ struct HfTaskCorrelationLcHadrons {
       registry.add("hDeltaPhiPtIntSidebands", stringLcHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1F, {axisDeltaPhi}});
       registry.add("hCorrel2DPtIntSidebands", stringLcHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{axisDeltaPhi}, {axisDeltaEta}}});
       if (isMultiplicityDependent) {
-        registry.add("hCorrel2DVsPtSidebandsWithCentrality", stringLcHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtLc + stringPtHadron + "entries", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtCorr}, {axisPtHadron}, {axisCentFT0M}, {axisPoolBin}}});
+        registry.add("hCorrel2DVsPtSidebandsWithCentrality", stringLcHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtLc + stringPtHadron + "entries", {HistType::kTHnSparseF, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtCorr}, {axisPtHadron}, {axisPoolBin}, {axisCentFT0M}}});
       } else {
         registry.add("hCorrel2DVsPtSidebands", stringLcHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtLc + stringPtHadron + "entries", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtCorr}, {axisPtHadron}, {axisPoolBin}}});
       }
@@ -239,9 +239,9 @@ struct HfTaskCorrelationLcHadrons {
 
       if (!fillSign) {
         if (isMultiplicityDependent) {
-          registry.add("hCorrel2DVsPtSidebandLeftWithCentrality", stringLcHadron + "Left" + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtLc + stringPtHadron + "entries", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtLc}, {axisPtHadron}, {axisCentFT0M}, {axisPoolBin}}});
-          registry.add("hCorrel2DVsPtSidebandRightWithCentrality", stringLcHadron + "Right" + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtLc + stringPtHadron + "entries", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtLc}, {axisPtHadron}, {axisCentFT0M}, {axisPoolBin}}});
-          registry.add("hCorrel2DVsPtSignalRegionWithCentrality", stringLcHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtLc + stringPtHadron + "entries", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtCorr}, {axisPtHadron}, {axisCentFT0M}, {axisPoolBin}}});
+          registry.add("hCorrel2DVsPtSidebandLeftWithCentrality", stringLcHadron + "Left" + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtLc + stringPtHadron + "entries", {HistType::kTHnSparseF, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtLc}, {axisPtHadron}, {axisPoolBin}, {axisCentFT0M}}});
+          registry.add("hCorrel2DVsPtSidebandRightWithCentrality", stringLcHadron + "Right" + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtLc + stringPtHadron + "entries", {HistType::kTHnSparseF, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtLc}, {axisPtHadron}, {axisPoolBin}, {axisCentFT0M}}});
+          registry.add("hCorrel2DVsPtSignalRegionWithCentrality", stringLcHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtLc + stringPtHadron + "entries", {HistType::kTHnSparseF, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtCorr}, {axisPtHadron}, {axisPoolBin}, {axisCentFT0M}}});
           registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandLeftWithCentrality"))->Sumw2();
           registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandRightWithCentrality"))->Sumw2();
           registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionWithCentrality"))->Sumw2();
@@ -541,7 +541,7 @@ struct HfTaskCorrelationLcHadrons {
         } else {
 
           if (isMultiplicityDependent) {
-            registry.fill(HIST("hCorrel2DVsPtSignalRegionWithCentrality"), deltaPhi, deltaEta, ptLc, ptHadron, centr, poolBin, efficiencyWeight);
+            registry.fill(HIST("hCorrel2DVsPtSignalRegionWithCentrality"), deltaPhi, deltaEta, ptLc, ptHadron, poolBin, centr, efficiencyWeight);
           } else {
             registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, ptLc, ptHadron, poolBin, efficiencyWeight);
           }
@@ -556,7 +556,7 @@ struct HfTaskCorrelationLcHadrons {
           registry.fill(HIST("hCorrel2DVsPtSignSidebandLeft"), deltaPhi, deltaEta, ptLc, ptHadron, signPair, poolBin, efficiencyWeight);
         } else {
           if (isMultiplicityDependent) {
-            registry.fill(HIST("hCorrel2DVsPtSidebandLeftWithCentrality"), deltaPhi, deltaEta, ptLc, ptHadron, centr, poolBin, efficiencyWeight);
+            registry.fill(HIST("hCorrel2DVsPtSidebandLeftWithCentrality"), deltaPhi, deltaEta, ptLc, ptHadron, poolBin, centr, efficiencyWeight);
           } else {
             registry.fill(HIST("hCorrel2DVsPtSidebandLeft"), deltaPhi, deltaEta, ptLc, ptHadron, poolBin, efficiencyWeight);
           }
@@ -564,7 +564,7 @@ struct HfTaskCorrelationLcHadrons {
         registry.fill(HIST("hDeltaEtaPtIntSidebandLeft"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebandLeft"), deltaPhi, efficiencyWeight);
         if (isMultiplicityDependent) {
-          registry.fill(HIST("hCorrel2DVsPtSidebandsWithCentrality"), deltaPhi, deltaEta, ptLc, ptHadron, centr, poolBin, efficiencyWeight);
+          registry.fill(HIST("hCorrel2DVsPtSidebandsWithCentrality"), deltaPhi, deltaEta, ptLc, ptHadron, poolBin, centr, efficiencyWeight);
         } else {
           registry.fill(HIST("hCorrel2DVsPtSidebands"), deltaPhi, deltaEta, ptLc, ptHadron, poolBin, efficiencyWeight);
         }
@@ -578,7 +578,7 @@ struct HfTaskCorrelationLcHadrons {
           registry.fill(HIST("hCorrel2DVsPtSignSidebandRight"), deltaPhi, deltaEta, ptLc, ptHadron, signPair, poolBin, efficiencyWeight);
         } else {
           if (isMultiplicityDependent) {
-            registry.fill(HIST("hCorrel2DVsPtSidebandRightWithCentrality"), deltaPhi, deltaEta, ptLc, ptHadron, centr, poolBin, efficiencyWeight);
+            registry.fill(HIST("hCorrel2DVsPtSidebandRightWithCentrality"), deltaPhi, deltaEta, ptLc, ptHadron, poolBin, centr, efficiencyWeight);
           } else {
             registry.fill(HIST("hCorrel2DVsPtSidebandRight"), deltaPhi, deltaEta, ptLc, ptHadron, poolBin, efficiencyWeight);
           }
@@ -586,7 +586,7 @@ struct HfTaskCorrelationLcHadrons {
         registry.fill(HIST("hDeltaEtaPtIntSidebandRight"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebandRight"), deltaPhi, efficiencyWeight);
         if (isMultiplicityDependent) {
-          registry.fill(HIST("hCorrel2DVsPtSidebandsWithCentrality"), deltaPhi, deltaEta, ptLc, ptHadron, centr, poolBin, efficiencyWeight);
+          registry.fill(HIST("hCorrel2DVsPtSidebandsWithCentrality"), deltaPhi, deltaEta, ptLc, ptHadron, poolBin, centr, efficiencyWeight);
         } else {
           registry.fill(HIST("hCorrel2DVsPtSidebands"), deltaPhi, deltaEta, ptLc, ptHadron, poolBin, efficiencyWeight);
         }
