@@ -247,8 +247,9 @@ struct HfDataCreatorCharmHadPiReduced {
   Preslice<CandsLcFiltered> candsLcPerCollision = aod::track_association::collisionId;
   Preslice<CandsLcFilteredWithMl> candsLcPerCollisionWithMl = aod::track_association::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  PresliceUnsorted<CollisionsWCentAndMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
+
+  PresliceUnsorted<CollisionsWCentAndMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
   std::shared_ptr<TH1> hCandidatesD0, hCandidatesDPlus, hCandidatesDs, hCandidatesLc;
   HistogramRegistry registry{"registry"};
