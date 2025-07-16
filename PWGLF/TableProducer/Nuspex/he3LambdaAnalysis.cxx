@@ -204,7 +204,7 @@ struct he3LambdaAnalysis {
   std::array<double, 6> mBBparamsHe;
   float mBz = 0.0f; // Magnetic field in T
   HistogramRegistry mRegistry{"He3LambdaAnalysis"};
-  int mRunNumber = 0;  // Current run number
+  int mRunNumber = 0; // Current run number
 
   void init(InitContext const&)
   {
