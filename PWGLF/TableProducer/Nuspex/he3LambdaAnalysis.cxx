@@ -106,6 +106,7 @@ std::shared_ptr<TH2> hTPCnSigmaAll;
 std::shared_ptr<TH2> hTPCnSigmaHe3;
 std::shared_ptr<TH2> hArmenterosPodolanskiAll;
 std::shared_ptr<TH2> hArmenterosPodolanskiSelected;
+std::shared_ptr<TH2> hInvariantMass;
 
 }; // namespace
 
@@ -203,8 +204,7 @@ struct he3LambdaAnalysis {
   std::array<double, 6> mBBparamsHe;
   float mBz = 0.0f; // Magnetic field in T
   HistogramRegistry mRegistry{"He3LambdaAnalysis"};
-  int mRunNumber = 0;  // Current run number
-  int mEventIndex = 0; // Current event index
+  int mRunNumber = 0; // Current run number
 
   void init(InitContext const&)
   {
@@ -247,6 +247,9 @@ struct he3LambdaAnalysis {
 
     hArmenterosPodolanskiAll = mRegistry.add<TH2>("hArmenterosPodolanskiAll", "Armenteros-Podolanski All", {HistType::kTH2D, {{100, -1., 1.}, {100, 0., 0.5}}});
     hArmenterosPodolanskiSelected = mRegistry.add<TH2>("hArmenterosPodolanskiSelected", "Armenteros-Podolanski Selected", {HistType::kTH2D, {{100, -1., 1.}, {100, 0., 0.5}}});
+
+    constexpr double ConstituentsMass = o2::constants::physics::MassProton + o2::constants::physics::MassNeutron * 2 + o2::constants::physics::MassSigmaPlus;
+    hInvariantMass = mRegistry.add<TH2>("hInvariantMass", "Invariant Mass", {HistType::kTH2D, {{45, 1., 10}, {100, ConstituentsMass - 0.05, ConstituentsMass + 0.05}}});
 
     LOGF(info, "He3-Lambda analysis initialized");
   }
@@ -426,14 +429,20 @@ struct he3LambdaAnalysis {
     // Fill output tables
     lfHe3V0Collision(collision.posZ(), collision.centFT0C());
     for (const auto& he3 : he3Candidates) {
-      lfHe3(mEventIndex, he3.momentum.Pt(), he3.momentum.Eta(), he3.momentum.Phi(),
+      lfHe3(lfHe3V0Collision.lastIndex(), he3.momentum.Pt(), he3.momentum.Eta(), he3.momentum.Phi(),
             he3.dcaXY, he3.dcaZ, he3.tpcNClsFound, he3.itsClusterSizes, he3.nSigmaTPC, he3.sign);
     }
     for (const auto& lambda : lambdaCandidates) {
-      lfLambda(mEventIndex, lambda.momentum.Pt(), lambda.momentum.Eta(), lambda.momentum.Phi(),
+      lfLambda(lfHe3V0Collision.lastIndex(), lambda.momentum.Pt(), lambda.momentum.Eta(), lambda.momentum.Phi(),
                lambda.mass, lambda.cosPA, lambda.dcaV0Daughters, lambda.dcaProtonToPV, lambda.dcaPionToPV, lambda.v0Radius, lambda.sign);
     }
-    mEventIndex++;
+
+    for (const auto& he3 : he3Candidates) {
+      for (const auto& lambda : lambdaCandidates) {
+        auto pairMomentum = lambda.momentum + he3.momentum; // Calculate invariant mass
+        hInvariantMass->Fill(pairMomentum.Pt(), pairMomentum.M());
+      }
+    }
   }
   PROCESS_SWITCH(he3LambdaAnalysis, processData, "Process data", true);
 };
