@@ -83,14 +83,18 @@ def main(config):
 
     hist_corry_prompt = hist_rawy[0].Clone("hCorrYieldsPrompt")
     hist_corry_nonprompt = hist_rawy[0].Clone("hCorrYieldsNonPrompt")
-    hist_covariance = hist_rawy[0].Clone("hCovPromptNonPrompt")
+    hist_covariance_pnp = hist_rawy[0].Clone("hCovPromptNonPrompt")
+    hist_covariance_pp = hist_rawy[0].Clone("hCovPromptPrompt")
+    hist_covariance_npnp = hist_rawy[0].Clone("hCovNonPromptNonPrompt")
     hist_corrfrac_prompt = hist_rawy[0].Clone("hCorrFracPrompt")
     hist_corrfrac_nonprompt = hist_rawy[0].Clone("hCorrFracNonPrompt")
-    for histo in hist_corry_prompt, hist_corry_nonprompt, hist_covariance, hist_corrfrac_prompt, hist_corrfrac_nonprompt:
+    for histo in hist_corry_prompt, hist_corry_nonprompt, hist_covariance_pnp, hist_covariance_pp, hist_covariance_npnp, hist_corrfrac_prompt, hist_corrfrac_nonprompt:
         histo.Reset()
     hist_corry_prompt.GetYaxis().SetTitle("corrected yields prompt")
     hist_corry_nonprompt.GetYaxis().SetTitle("corrected yields non-prompt")
-    hist_covariance.GetYaxis().SetTitle("#sigma(prompt, non-prompt)")
+    hist_covariance_pnp.GetYaxis().SetTitle("#sigma(prompt, non-prompt)")
+    hist_covariance_pp.GetYaxis().SetTitle("#sigma(prompt, prompt)")
+    hist_covariance_npnp.GetYaxis().SetTitle("#sigma(non-prompt, non-prompt)")
     hist_corrfrac_prompt.GetYaxis().SetTitle("corrected fraction prompt")
     hist_corrfrac_nonprompt.GetYaxis().SetTitle("corrected fraction non-prompt")
     set_object_style(
@@ -105,7 +109,9 @@ def main(config):
         fillstyle=0,
         markerstyle=ROOT.kFullSquare,
     )
-    set_object_style(hist_covariance)
+    set_object_style(hist_covariance_pnp)
+    set_object_style(hist_covariance_pp)
+    set_object_style(hist_covariance_npnp)
     set_object_style(
         hist_corrfrac_prompt,
         color=ROOT.kRed + 1,
@@ -172,62 +178,73 @@ def main(config):
                 print(f"raw yield uncertainties vector elements = {unc_rawy}\n")
 
         minimiser = CutVarMinimiser(rawy, effp, effnp, unc_rawy, unc_effp, unc_effnp)
-        minimiser.minimise_system(cfg["minimisation"]["correlated"])
+        status = minimiser.minimise_system(cfg["minimisation"]["correlated"])
 
-        hist_corry_prompt.SetBinContent(ipt + 1, minimiser.get_prompt_yield_and_error()[0])
-        hist_corry_prompt.SetBinError(ipt + 1, minimiser.get_prompt_yield_and_error()[1])
-        hist_corry_nonprompt.SetBinContent(ipt + 1, minimiser.get_nonprompt_yield_and_error()[0])
-        hist_corry_nonprompt.SetBinError(ipt + 1, minimiser.get_nonprompt_yield_and_error()[1])
-        hist_covariance.SetBinContent(ipt + 1, minimiser.get_prompt_nonprompt_cov())
-        hist_covariance.SetBinError(ipt + 1, 0)
-        corr_frac_prompt = minimiser.get_corr_prompt_fraction()
-        corr_frac_nonprompt = minimiser.get_corr_nonprompt_fraction()
-        hist_corrfrac_prompt.SetBinContent(ipt + 1, corr_frac_prompt[0])
-        hist_corrfrac_prompt.SetBinError(ipt + 1, corr_frac_prompt[1])
-        hist_corrfrac_nonprompt.SetBinContent(ipt + 1, corr_frac_nonprompt[0])
-        hist_corrfrac_nonprompt.SetBinError(ipt + 1, corr_frac_nonprompt[1])
-        if cfg["central_efficiency"]["computerawfrac"]:
-            raw_frac_prompt = minimiser.get_raw_prompt_fraction(
-                hist_central_effp.GetBinContent(ipt + 1), hist_central_effnp.GetBinContent(ipt + 1)
-            )
-            raw_frac_nonprompt = minimiser.get_raw_nonprompt_fraction(
-                hist_central_effp.GetBinContent(ipt + 1), hist_central_effnp.GetBinContent(ipt + 1)
-            )
-            hist_frac_raw_prompt.SetBinContent(ipt + 1, raw_frac_prompt[0])
-            hist_frac_raw_prompt.SetBinError(ipt + 1, raw_frac_prompt[1])
-            hist_frac_raw_nonprompt.SetBinContent(ipt + 1, raw_frac_nonprompt[0])
-            hist_frac_raw_nonprompt.SetBinError(ipt + 1, raw_frac_nonprompt[1])
+        if status:
+            hist_corry_prompt.SetBinContent(ipt + 1, minimiser.get_prompt_yield_and_error()[0])
+            hist_corry_prompt.SetBinError(ipt + 1, minimiser.get_prompt_yield_and_error()[1])
+            hist_corry_nonprompt.SetBinContent(ipt + 1, minimiser.get_nonprompt_yield_and_error()[0])
+            hist_corry_nonprompt.SetBinError(ipt + 1, minimiser.get_nonprompt_yield_and_error()[1])
+            hist_covariance_pnp.SetBinContent(ipt + 1, minimiser.get_prompt_nonprompt_cov())
+            hist_covariance_pnp.SetBinError(ipt + 1, 0)
+            hist_covariance_pp.SetBinContent(ipt + 1, minimiser.get_prompt_prompt_cov())
+            hist_covariance_pp.SetBinError(ipt + 1, 0)
+            hist_covariance_npnp.SetBinContent(ipt + 1, minimiser.get_nonprompt_nonprompt_cov())
+            hist_covariance_npnp.SetBinError(ipt + 1, 0)
+            corr_frac_prompt = minimiser.get_corr_prompt_fraction()
+            corr_frac_nonprompt = minimiser.get_corr_nonprompt_fraction()
+            hist_corrfrac_prompt.SetBinContent(ipt + 1, corr_frac_prompt[0])
+            hist_corrfrac_prompt.SetBinError(ipt + 1, corr_frac_prompt[1])
+            hist_corrfrac_nonprompt.SetBinContent(ipt + 1, corr_frac_nonprompt[0])
+            hist_corrfrac_nonprompt.SetBinError(ipt + 1, corr_frac_nonprompt[1])
+            if cfg["central_efficiency"]["computerawfrac"]:
+                raw_frac_prompt = minimiser.get_raw_prompt_fraction(
+                    hist_central_effp.GetBinContent(ipt + 1), hist_central_effnp.GetBinContent(ipt + 1)
+                )
+                raw_frac_nonprompt = minimiser.get_raw_nonprompt_fraction(
+                    hist_central_effp.GetBinContent(ipt + 1), hist_central_effnp.GetBinContent(ipt + 1)
+                )
+                hist_frac_raw_prompt.SetBinContent(ipt + 1, raw_frac_prompt[0])
+                hist_frac_raw_prompt.SetBinError(ipt + 1, raw_frac_prompt[1])
+                hist_frac_raw_nonprompt.SetBinContent(ipt + 1, raw_frac_nonprompt[0])
+                hist_frac_raw_nonprompt.SetBinError(ipt + 1, raw_frac_nonprompt[1])
 
-        hist_bin_title = f"bin # {ipt+1}; {pt_axis_title}#in ({pt_min}; {pt_max})"
+            hist_bin_title = f"bin # {ipt+1}; {pt_axis_title}#in ({pt_min}; {pt_max})"
 
-        canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt{pt_min}_{pt_max}", hist_bin_title)
-        output.cd()
-        canv_rawy.Write()
-        for _, hist in histos_rawy.items():
-            hist.Write()
+            canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt{pt_min}_{pt_max}", hist_bin_title)
+            output.cd()
+            canv_rawy.Write()
+            for _, hist in histos_rawy.items():
+                hist.Write()
 
-        canv_unc, histos_unc, leg_unc = minimiser.plot_uncertainties(f"_pt{pt_min}_{pt_max}", hist_bin_title)
-        output.cd()
-        canv_unc.Write()
-        for _, hist in histos_unc.items():
-            hist.Write()
+            canv_unc, histos_unc, leg_unc = minimiser.plot_uncertainties(f"_pt{pt_min}_{pt_max}", hist_bin_title)
+            output.cd()
+            canv_unc.Write()
+            for _, hist in histos_unc.items():
+                hist.Write()
 
-        canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(f"_pt{pt_min}_{pt_max}", hist_bin_title)
-        output.cd()
-        canv_eff.Write()
-        for _, hist in histos_eff.items():
-            hist.Write()
+            canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(f"_pt{pt_min}_{pt_max}", hist_bin_title)
+            output.cd()
+            canv_eff.Write()
+            for _, hist in histos_eff.items():
+                hist.Write()
 
-        canv_frac, histos_frac, leg_f = minimiser.plot_fractions(f"_pt{pt_min}_{pt_max}", hist_bin_title)
-        output.cd()
-        canv_frac.Write()
-        for _, hist in histos_frac.items():
-            hist.Write()
+            canv_frac, histos_frac, leg_f = minimiser.plot_fractions(f"_pt{pt_min}_{pt_max}", hist_bin_title)
+            output.cd()
+            canv_frac.Write()
+            for _, hist in histos_frac.items():
+                hist.Write()
 
-        canv_cov, histo_cov = minimiser.plot_cov_matrix(True, f"_pt{pt_min}_{pt_max}", hist_bin_title)
-        output.cd()
-        canv_cov.Write()
-        histo_cov.Write()
+            canv_cov, histo_cov = minimiser.plot_cov_matrix(True, f"_pt{pt_min}_{pt_max}", hist_bin_title)
+            output.cd()
+            canv_cov.Write()
+            histo_cov.Write()
+        else:
+            print(f"Minimization for pT {pt_min}, {pt_max} not successful")
+            canv_rawy = ROOT.TCanvas("c_rawy_minimization_error", "Minimization error", 500, 500)
+            canv_eff = ROOT.TCanvas("c_eff_minimization_error", "Minimization error", 500, 500)
+            canv_frac = ROOT.TCanvas("c_frac_minimization_error", "Minimization error", 500, 500)
+            canv_cov = ROOT.TCanvas("c_conv_minimization_error", "Minimization error", 500, 500)
 
         canv_combined = ROOT.TCanvas(f"canv_combined_{ipt}", "", 1000, 1000)
         canv_combined.Divide(2, 2)
@@ -267,7 +284,9 @@ def main(config):
     output.cd()
     hist_corry_prompt.Write()
     hist_corry_nonprompt.Write()
-    hist_covariance.Write()
+    hist_covariance_pnp.Write()
+    hist_covariance_pp.Write()
+    hist_covariance_npnp.Write()
     hist_corrfrac_prompt.Write()
     hist_corrfrac_nonprompt.Write()
     if cfg["central_efficiency"]["computerawfrac"]:
