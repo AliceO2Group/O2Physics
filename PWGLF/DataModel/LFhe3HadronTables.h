@@ -75,6 +75,10 @@ DECLARE_SOA_COLUMN(Multiplicity, multiplicity, uint16_t);
 DECLARE_SOA_COLUMN(CentralityFT0C, centFT0C, float);
 DECLARE_SOA_COLUMN(MultiplicityFT0C, multiplicityFT0C, float);
 
+DECLARE_SOA_COLUMN(IsMotherLi4, isMotherLi4, bool);
+DECLARE_SOA_COLUMN(IsHe3Primary, isHe3Primary, bool);
+DECLARE_SOA_COLUMN(IsHadPrimary, isHadPrimary, bool);
+
 } // namespace he3HadronTablesNS
 
 DECLARE_SOA_TABLE(he3HadronTable, "AOD", "HE3HADTABLE",
@@ -115,7 +119,10 @@ DECLARE_SOA_TABLE(he3HadronTableMC, "AOD", "HE3HADTABLEMC",
                   he3HadronTablesNS::EtaMCHad,
                   he3HadronTablesNS::PhiMCHad,
                   he3HadronTablesNS::SignedPtMC,
-                  he3HadronTablesNS::MassMC)
+                  he3HadronTablesNS::MassMC,
+                  he3HadronTablesNS::IsMotherLi4,
+                  he3HadronTablesNS::IsHe3Primary,
+                  he3HadronTablesNS::IsHadPrimary)
 DECLARE_SOA_TABLE(he3HadronMult, "AOD", "HE3HADMULT",
                   he3HadronTablesNS::CollisionId,
                   he3HadronTablesNS::ZVertex,
