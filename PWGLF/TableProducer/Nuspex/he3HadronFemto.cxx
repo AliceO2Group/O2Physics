@@ -978,7 +978,7 @@ struct he3HadronFemto {
   }
   PROCESS_SWITCH(he3HadronFemto, processMC, "Process MC", false);
 
-  void processPiHe3MC(const CollisionsFullMC& collisions, const aod::BCsWithTimestamps& bcs, const TrackCandidatesMC& tracks)
+  void processPiHe3MC(const CollisionsFullMC& collisions, const aod::BCsWithTimestamps& bcs, const TrackCandidatesMC& tracks, const aod::McParticles& /* mcParticles */)
   {
     mGoodCollisions.clear();
     mGoodCollisions.resize(collisions.size(), false);
