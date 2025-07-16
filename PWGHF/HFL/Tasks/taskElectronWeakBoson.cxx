@@ -217,9 +217,9 @@ struct HfTaskElectronWeakBoson {
     const AxisSpec axisSign{2, -2, 2, "charge sign"};
 
     // create registrygrams
-    registry.add("hZvtx", "Z vertex", kTH1F, {axisZvtx});
-    registry.add("hEventCounterInit", "hEventCounterInit", kTH1F, {axisCounter});
-    registry.add("hEventCounter", "hEventCounter", kTH1F, {axisCounter});
+    registry.add("hZvtx", "Z vertex", kTH1D, {axisZvtx});
+    registry.add("hEventCounterInit", "hEventCounterInit", kTH1D, {axisCounter});
+    registry.add("hEventCounter", "hEventCounter", kTH1D, {axisCounter});
     registry.add("hITSchi2", "ITS #chi^{2}", kTH1F, {axisChi2});
     registry.add("hTPCchi2", "TPC #chi^{2}", kTH1F, {axisChi2});
     registry.add("hTPCnCls", "TPC NCls", kTH1F, {axisCluster});
@@ -253,7 +253,7 @@ struct HfTaskElectronWeakBoson {
     registry.add("hZptSpectrum", "Z boson p_{T} spectrum", kTH2F, {{axisSign}, {axisPtZ}});
 
     // hisotgram for EMCal trigger
-    registry.add("hEMCalTrigger", "EMCal trigger", kTH1F, {axisTrigger});
+    registry.add("hEMCalTrigger", "EMCal trigger", kTH1D, {axisTrigger});
   }
 
   double getIsolatedCluster(const o2::aod::EMCALCluster& cluster,
