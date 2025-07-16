@@ -287,7 +287,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
         if constexpr (isMl) {
           std::copy(candidate.mlProbDstarToD0Pi().begin(), candidate.mlProbDstarToD0Pi().end(), std::back_inserter(mlScoresDstarToD0Pi));
         }
-        if (candidate.signSoftPi() > 0){
+        if (candidate.signSoftPi() > 0) {
           double massDstar = candidate.invMassDstar();
           double invMassD0 = candidate.invMassD0();
           fillTablesCandidate(candidate, prong0, prong1, prongSoftPi, 0, massDstar, invMassD0, y, flagMcRec, flagMcRecD0, origin, nTracksDecayed, ptBhadMotherPart, pdgBhadMotherPart, mlScoresDstarToD0Pi);
