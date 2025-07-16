@@ -330,28 +330,28 @@ DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                            
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);               //! decay length divided by its uncertainty
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                               //! decay length in the transverse plane
 DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);           //! decay length in the transverse plane divided by its uncertainty
+DECLARE_SOA_COLUMN(ImpactParameterXi, impactParameterXi, float);                       //! impact parameter of the Xi prong
+DECLARE_SOA_COLUMN(ImpactParameterPi0, impactParameterPi0, float);                     //! impact parameter of the first pion prong
+DECLARE_SOA_COLUMN(ImpactParameterPi1, impactParameterPi1, float);                     //! impact parameter of the second pion prong
 DECLARE_SOA_COLUMN(ImpactParameterNormalised0, impactParameterNormalised0, float);     //! impact parameter of prong 0 divided by its uncertainty
 DECLARE_SOA_COLUMN(ImpactParameterNormalised1, impactParameterNormalised1, float);     //! impact parameter of prong 1 divided by its uncertainty
 DECLARE_SOA_COLUMN(ImpactParameterNormalised2, impactParameterNormalised2, float);     //! impact parameter of prong 2 divided by its uncertainty
+DECLARE_SOA_COLUMN(ImpactParameterNormalisedXi, impactParameterNormalisedXi, float);   //! impact parameter of the Xi prong divided by its uncertainty
+DECLARE_SOA_COLUMN(ImpactParameterNormalisedPi0, impactParameterNormalisedPi0, float); //! impact parameter of the first pion prong divided by its uncertainty
+DECLARE_SOA_COLUMN(ImpactParameterNormalisedPi1, impactParameterNormalisedPi1, float); //! impact parameter of the second pion prong divided by its uncertainty
 DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);             //! product of impact parameters of prong 0 and prong 1
-DECLARE_SOA_COLUMN(ImpactParameterXi, impactParameterXi, float);                       //! product of impact parameters of prong 0 and prong 1
-DECLARE_SOA_COLUMN(ImpactParameterNormalisedXi, impactParameterNormalisedXi, float);   //! product of impact parameters of prong 0 and prong 1
-DECLARE_SOA_COLUMN(ImpactParameterPi0, impactParameterPi0, float);                     //! product of impact parameters of prong 0 and prong 1
-DECLARE_SOA_COLUMN(ImpactParameterNormalisedPi0, impactParameterNormalisedPi0, float); //! product of impact parameters of prong 0 and prong 1
-DECLARE_SOA_COLUMN(ImpactParameterPi1, impactParameterPi1, float);                     //! product of impact parameters of prong 0 and prong 1
-DECLARE_SOA_COLUMN(ImpactParameterNormalisedPi1, impactParameterNormalisedPi1, float); //! product of impact parameters of prong 0 and prong 1
 DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);                 //! see RecoDecay::maxNormalisedDeltaIP
 DECLARE_SOA_COLUMN(PProng0, pProng0, float);                                           //! momentum magnitude of prong 0
 DECLARE_SOA_COLUMN(PProng1, pProng1, float);                                           //! momentum magnitude of prong 1
 DECLARE_SOA_COLUMN(PProng2, pProng2, float);                                           //! momentum magnitude of prong 2
-DECLARE_SOA_COLUMN(PPi0, pPi0, float);                                                 //! momentum of pion prong 0
-DECLARE_SOA_COLUMN(PPi1, pPi1, float);                                                 //! momentum of pion prong 1
+DECLARE_SOA_COLUMN(PProngPi0, pProngPi0, float);                                       //! momentum magnitude of the first pion prong
+DECLARE_SOA_COLUMN(PProngPi1, pProngPi1, float);                                       //! momentum magnitude of the second pion prong
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);                                         //! transverse momentum of prong 0
 DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);                                         //! transverse momentum of prong 1
 DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);                                         //! transverse momentum of prong 2
-DECLARE_SOA_COLUMN(PtPi0, ptPi0, float);                                               //! transverse momentum of pion prong 0
-DECLARE_SOA_COLUMN(PtPi1, ptPi1, float);                                               //! transverse momentum of pion prong 1
-DECLARE_SOA_COLUMN(PtXi, ptXi, float);                                                 //! transverse momentum of Xi prong
+DECLARE_SOA_COLUMN(PtProngXi, ptProngXi, float);                                       //! transverse momentum of the Xi prong
+DECLARE_SOA_COLUMN(PtProngPi0, ptProngPi0, float);                                     //! transverse momentum of the first pion prong
+DECLARE_SOA_COLUMN(PtProngPi1, ptProngPi1, float);                                     //! transverse momentum of the second pion prong
 DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);                         //! distance of the secondary vertex from the z axis
 // D*± → D0(bar) π±
 DECLARE_SOA_COLUMN(SignProng1, signProng1, int8_t);
@@ -936,9 +936,9 @@ DECLARE_SOA_TABLE_STAGED(HfDstarMcs, "HFDSTMC", //! Table with MC candidate info
 // ----------------
 
 DECLARE_SOA_TABLE_STAGED(HfXicToXiPiPiPars, "HFXICXPPPAR", //! Table with candidate properties used for selection
-                         hf_cand_par::PtXi,
-                         hf_cand_par::PtPi0,
-                         hf_cand_par::PtPi1,
+                         hf_cand_par::PtProngXi,
+                         hf_cand_par::PtProngPi0,
+                         hf_cand_par::PtProngPi1,
                          hf_cand_xic_to_xi_pi_pi::InvMassXi,
                          hf_cand_xic_to_xi_pi_pi::InvMassLambda,
                          hf_cand_xic_to_xi_pi_pi::InvMassXiPi0,
@@ -967,8 +967,8 @@ DECLARE_SOA_TABLE_STAGED(HfXicToXiPiPiPars, "HFXICXPPPAR", //! Table with candid
 DECLARE_SOA_TABLE_STAGED(HfXicToXiPiPiParEs, "HFXICXPPPARE", //! Table with additional candidate properties used for selection
                          hf_cand_xic_to_xi_pi_pi::CpaLambdaToXi,
                          hf_cand_xic_to_xi_pi_pi::CpaXYLambdaToXi,
-                         hf_cand_par::PPi0,
-                         hf_cand_par::PPi1,
+                         hf_cand_par::PProngPi0,
+                         hf_cand_par::PProngPi1,
                          hf_cand_xic_to_xi_pi_pi::PBachelorPi,
                          hf_cand_xic_to_xi_pi_pi::PPiFromLambda,
                          hf_cand_xic_to_xi_pi_pi::PPrFromLambda,
