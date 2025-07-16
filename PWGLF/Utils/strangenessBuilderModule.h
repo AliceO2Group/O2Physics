@@ -679,11 +679,6 @@ class BuilderModule
     straHelper.cascadeselections.maxDaughterEta = cascadeBuilderOpts.maxDaughterEta;
   }
 
-  bool verifyMask(uint8_t bitmap, uint8_t mask)
-  {
-    return (bitmap & mask) == mask;
-  }
-
   // for sorting
   template <typename T>
   std::vector<std::size_t> sort_indices(const std::vector<T>& v, bool doSorting = false)
@@ -1427,10 +1422,7 @@ class BuilderModule
 
           histos.fill(HIST("hPreselectionV0s"), maskV0Preselection);
 
-          if (!verifyMask(maskV0Preselection, selGamma) &&
-              !verifyMask(maskV0Preselection, selK0Short) &&
-              !verifyMask(maskV0Preselection, selLambda) &&
-              !verifyMask(maskV0Preselection, selAntiLambda)) {
+          if (maskV0Preselection == 0) {
             products.v0dataLink(-1, -1);
             continue;
           }
@@ -1990,10 +1982,7 @@ class BuilderModule
 
           histos.fill(HIST("hPreselectionCascades"), maskCascadePreselection);
 
-          if (!verifyMask(maskCascadePreselection, selXiMinus) &&
-              !verifyMask(maskCascadePreselection, selXiPlus) &&
-              !verifyMask(maskCascadePreselection, selOmegaMinus) &&
-              !verifyMask(maskCascadePreselection, selOmegaPlus)) {
+          if (maskCascadePreselection == 0) {
             products.cascdataLink(-1);
             interlinks.cascadeToCascCores.push_back(-1);
             continue;
