@@ -83,6 +83,8 @@ struct ITSResponse {
   template <o2::track::PID::ID id>
   static float nSigmaITS(uint32_t itsClusterSizes, float momentum, float eta)
   {
+    unsigned int charge = (id == o2::track::PID::Helium3 || id == o2::track::PID::Alpha) ? 2 : 1;
+    momentum *= charge;
     const float exp = expSignal<id>(momentum);
     const float average = averageClusterSize(itsClusterSizes);
     const float coslInv = 1. / std::cosh(eta);
@@ -93,8 +95,7 @@ struct ITSResponse {
   template <o2::track::PID::ID id, typename T>
   static float nSigmaITS(const T& track)
   {
-    unsigned int charge = (id == o2::track::PID::Helium3 || id == o2::track::PID::Alpha) ? 2 : 1;
-    return nSigmaITS<id>(track.itsClusterSizes(), charge * track.p(), track.eta());
+    return nSigmaITS<id>(track.itsClusterSizes(), track.p(), track.eta());
   }
 
   static void setParameters(float p0, float p1, float p2,
