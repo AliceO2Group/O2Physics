@@ -485,7 +485,7 @@ class MultModule
     }
 
     // capture the need for PYTHIA calibration in Pb-Pb runs
-    if(metadataInfo.isMC() && mRunNumber>=544013 && mRunNumber<=545367){
+    if (metadataInfo.isMC() && mRunNumber >= 544013 && mRunNumber <= 545367) {
       internalOpts.generatorName.value = "PYTHIA";
     }
 
