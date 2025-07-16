@@ -127,7 +127,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
 
   template <typename T, typename U>
   void fillTablesCandidate(const T& candidate, const U& prong0, const U& prong1, const U& prongSoftPi, int candFlag, double invMass,
-                           double y, int8_t flagMc, int8_t origin, const std::vector<float>& mlScores)
+                           double y, int8_t flagMc, int8_t flagMcD0, int8_t origin, int8_t nTracksDecayed, double ptBhad, int pdgBhad, const std::vector<float>& mlScores)
   {
     rowsCommon.fillTablesCandidate(candidate, invMass, y);
     if (fillCandidatePar) {
@@ -196,7 +196,11 @@ struct HfDerivedDataCreatorDstarToD0Pi {
     if (fillCandidateMc) {
       rowCandidateMc(
         flagMc,
-        origin);
+        flagMcD0,
+        origin,
+        ptBhad,
+        pdgBhad,
+        nTracksDecayed);
     }
   }
 
@@ -242,7 +246,9 @@ struct HfDerivedDataCreatorDstarToD0Pi {
       if constexpr (isMc) {
         reserveTable(rowCandidateMc, fillCandidateMc, sizeTableCand);
       }
-      int8_t flagMcRec = 0, origin = 0;
+      int8_t flagMcRec = 0, flagMcRecD0 = 0, origin = 0, nTracksDecayed = 0;
+      double ptBhadMotherPart = 0;
+      int pdgBhadMotherPart = 0;
       for (const auto& candidate : candidatesThisColl) {
         if constexpr (isMl) {
           if (!TESTBIT(candidate.isSelDstarToD0Pi(), aod::SelectionStep::RecoMl)) {
@@ -251,7 +257,11 @@ struct HfDerivedDataCreatorDstarToD0Pi {
         }
         if constexpr (isMc) {
           flagMcRec = candidate.flagMcMatchRec();
+          flagMcRecD0 = candidate.flagMcMatchRecD0();
           origin = candidate.originMcRec();
+          nTracksDecayed = candidate.nTracksDecayed();
+          ptBhadMotherPart = candidate.ptBhadMotherPart();
+          pdgBhadMotherPart = candidate.pdgBhadMotherPart();
           if constexpr (onlyBkg) {
             if (std::abs(flagMcRec) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) {
               continue;
@@ -279,7 +289,12 @@ struct HfDerivedDataCreatorDstarToD0Pi {
         if constexpr (isMl) {
           std::copy(candidate.mlProbDstarToD0Pi().begin(), candidate.mlProbDstarToD0Pi().end(), std::back_inserter(mlScoresDstarToD0Pi));
         }
-        fillTablesCandidate(candidate, prong0, prong1, prongSoftPi, isD0 ? 0 : 1, y, massDstar, flagMcRec, origin, mlScoresDstarToD0Pi);
+        if (candidate.signSoftPi() > 0){
+          fillTablesCandidate(candidate, prong0, prong1, prongSoftPi, 0, massDstar, y, flagMcRec, flagMcRecD0, origin, nTracksDecayed, ptBhadMotherPart, pdgBhadMotherPart, mlScoresDstarToD0Pi);
+        } else {
+          fillTablesCandidate(candidate, prong1, prong0, prongSoftPi, 1, massDstar, y, flagMcRec, flagMcRecD0, origin, nTracksDecayed, ptBhadMotherPart, pdgBhadMotherPart, mlScoresDstarToD0Pi);
+        }
+        
       }
     }
   }
