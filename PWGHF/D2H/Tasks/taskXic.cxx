@@ -377,9 +377,9 @@ struct HfTaskXic {
               outputFD = candidate.mlProbXicToPKPi()[2];     /// non-prompt score
             }
             /// Fill the ML outputScores and variables of candidate Xic
-            registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, 0, 0.0, 0.0, false);
+            registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, false);
           } else {
-            registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), 0, 0.0, 0.0, false);
+            registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), false);
           }
         }
         if (candidate.isSelXicToPiKP() >= selectionFlagXic) {
@@ -391,9 +391,9 @@ struct HfTaskXic {
               outputFD = candidate.mlProbXicToPiKP()[2];     /// non-prompt score
             }
             /// Fill the ML outputScores and variables of candidate
-            registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, 0, 0.0, 0.0, false);
+            registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, false);
           } else {
-            registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), 0, 0.0, 0.0, false);
+            registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), false);
           }
         }
       } // thn for Xic
