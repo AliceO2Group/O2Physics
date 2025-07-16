@@ -55,12 +55,13 @@ DECLARE_SOA_DYNAMIC_COLUMN(NSigmaRich, nSigmaRich,                 //! General f
                              }
                            });
 
-DECLARE_SOA_COLUMN(HasSig, hasSig, bool);     //! Has signal in the barrel rich (is particle over threshold)
-DECLARE_SOA_COLUMN(HasSigEl, hasSigEl, bool); //! Has nSigma electron BarrelRich (is electron over threshold)
-DECLARE_SOA_COLUMN(HasSigMu, hasSigMu, bool); //! Has nSigma muon BarrelRich (is muon over threshold)
-DECLARE_SOA_COLUMN(HasSigPi, hasSigPi, bool); //! Has nSigma pion BarrelRich (is pion over threshold)
-DECLARE_SOA_COLUMN(HasSigKa, hasSigKa, bool); //! Has nSigma kaon BarrelRich (is kaon over threshold)
-DECLARE_SOA_COLUMN(HasSigPr, hasSigPr, bool); //! Has nSigma proton BarrelRich (is proton over threshold)
+DECLARE_SOA_COLUMN(HasSig, hasSig, bool);           //! Has signal in the barrel rich (is particle over threshold)
+DECLARE_SOA_COLUMN(HasSigInGas, hasSigInGas, bool); //! Has signal in the gas radiator in the barrel rich (is particle over threshold)
+DECLARE_SOA_COLUMN(HasSigEl, hasSigEl, bool);       //! Has nSigma electron BarrelRich (is electron over threshold)
+DECLARE_SOA_COLUMN(HasSigMu, hasSigMu, bool);       //! Has nSigma muon BarrelRich (is muon over threshold)
+DECLARE_SOA_COLUMN(HasSigPi, hasSigPi, bool);       //! Has nSigma pion BarrelRich (is pion over threshold)
+DECLARE_SOA_COLUMN(HasSigKa, hasSigKa, bool);       //! Has nSigma kaon BarrelRich (is kaon over threshold)
+DECLARE_SOA_COLUMN(HasSigPr, hasSigPr, bool);       //! Has nSigma proton BarrelRich (is proton over threshold)
 
 } // namespace upgrade_rich
 DECLARE_SOA_TABLE(UpgradeRichs, "AOD", "UPGRADERICH",
@@ -83,7 +84,8 @@ DECLARE_SOA_TABLE(UpgradeRichSignals, "AOD", "UPGRADERICHSIG",
                   upgrade_rich::HasSigMu,
                   upgrade_rich::HasSigPi,
                   upgrade_rich::HasSigKa,
-                  upgrade_rich::HasSigPr);
+                  upgrade_rich::HasSigPr,
+                  upgrade_rich::HasSigInGas);
 
 using UpgradeRichSignal = UpgradeRichSignals::iterator;
 
