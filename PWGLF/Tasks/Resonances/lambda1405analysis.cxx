@@ -28,7 +28,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCPi, aod::pidTPCPr, aod::pidTOFFullPi, aod::pidTOFFullPr>;
+using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullPr>;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSel>;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
 
@@ -242,7 +242,6 @@ struct lambda1405analysis {
       auto kinkDauMom = std::array{sigmaCand.pxDaug(), sigmaCand.pyDaug(), sigmaCand.pzDaug()};
       auto sigmaMom = std::array{sigmaCand.pxMoth(), sigmaCand.pyMoth(), sigmaCand.pzMoth()};
       auto piMom = std::array{piTrack.px(), piTrack.py(), piTrack.pz()};
-      double massSigma = lambda1405Cand.isSigmaMinus ? sigmaCand.mSigmaMinus() : sigmaCand.mSigmaPlus();
       float invMass = RecoDecay::m(std::array{sigmaMom, piMom}, std::array{o2::constants::physics::MassSigmaMinus, o2::constants::physics::MassPiPlus});
       float invMassXiPi = RecoDecay::m(std::array{sigmaMom, kinkDauMom}, std::array{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus});
       if (invMass > cutUpperMass) {
