@@ -293,7 +293,6 @@ struct HfDerivedDataCreatorDstarToD0Pi {
         } else {
           fillTablesCandidate(candidate, prong1, prong0, prongSoftPi, 1, massDstar, y, flagMcRec, flagMcRecD0, origin, nTracksDecayed, ptBhadMotherPart, pdgBhadMotherPart, mlScoresDstarToD0Pi);
         }
-        
       }
     }
   }
