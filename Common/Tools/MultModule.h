@@ -483,6 +483,10 @@ class MultModule
       internalOpts.mEnabledTables[kMultsGlobal] = 1;
       listOfRequestors[kMultsGlobal].Append(Form("%s ", "dependency check"));
     }
+    if (internalOpts.embedINELgtZEROselection.value > 0 && !internalOpts.mEnabledTables[kPVMults]) {
+      internalOpts.mEnabledTables[kPVMults] = 1;
+      listOfRequestors[kPVMults].Append(Form("%s ", "dependency check"));
+    }
 
     mRunNumber = 0;
     mRunNumberCentrality = 0;
