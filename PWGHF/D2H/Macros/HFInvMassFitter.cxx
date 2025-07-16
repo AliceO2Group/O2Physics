@@ -589,7 +589,7 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, Int_t writeFitInfo)
       textInfoRight->AddText(Form("mean(free) = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
     }
     if (mTypeOfSgnPdf == DoubleGaus) {
-      auto baseSigmaSgn = mWorkspace->var("sigma");
+      auto const& baseSigmaSgn = mWorkspace->var("sigma");
       if (mFixedSigmaDoubleGaus) {
         textInfoRight->AddText(Form("sigma(fixed) = %.3f #pm %.3f", baseSigmaSgn->getVal(), baseSigmaSgn->getError()));
         textInfoRight->AddText(Form("sigma 2(fixed) = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
@@ -629,7 +629,7 @@ void HFInvMassFitter::drawResidual(TVirtualPad* pad)
   textInfo->AddText(Form("S_{count} = %.0f #pm %.0f ", mRawYieldCounted, mRawYieldCountedErr));
   textInfo->AddText(Form("mean = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
   if (mTypeOfSgnPdf == DoubleGaus) {
-    auto baseSigmaSgn = mWorkspace->var("sigma");
+    auto const& baseSigmaSgn = mWorkspace->var("sigma");
     textInfo->AddText(Form("sigma = %.3f #pm %.3f", baseSigmaSgn->getVal(), baseSigmaSgn->getError()));
     textInfo->AddText(Form("sigma 2 = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
   } else {

@@ -123,17 +123,17 @@ int runMassFitter(const TString& configFileName)
   const Value& fdSecPeakHistoNameValue = config["FDSecPeakHistoName"];
   parseStringArray(fdSecPeakHistoNameValue, fdSecPeakHistoName);
 
-  bool fixSigma = config["FixSigma"].GetBool();
-  std::string sigmaFile = config["SigmaFile"].GetString();
+  const bool fixSigma = config["FixSigma"].GetBool();
+  const std::string sigmaFile = config["SigmaFile"].GetString();
 
-  bool fixMean = config["FixMean"].GetBool();
-  std::string meanFile = config["MeanFile"].GetString();
+  const bool fixMean = config["FixMean"].GetBool();
+  const std::string meanFile = config["MeanFile"].GetString();
 
   const Value& fixSigmaManualValue = config["FixSigmaManual"];
   readArray(fixSigmaManualValue, fixSigmaManual);
 
-  bool fixSecondSigma = config["FixSecondSigma"].GetBool();
-  std::string secondSigmaFile = config["SecondSigmaFile"].GetString();
+  const bool fixSecondSigma = config["FixSecondSigma"].GetBool();
+  const std::string secondSigmaFile = config["SecondSigmaFile"].GetString();
 
   const Value& fixSecondSigmaManualValue = config["FixSecondSigmaManual"];
   readArray(fixSecondSigmaManualValue, fixSecondSigmaManual);
@@ -313,9 +313,9 @@ int runMassFitter(const TString& configFileName)
         return -2;
       }
       hSigmaToFix = inputFileSigma->Get<TH1>("hRawYieldsSigma");
-      hSigmaToFix->SetDirectory(0);
+      hSigmaToFix->SetDirectory(nullptr);
       if (static_cast<unsigned int>(hSigmaToFix->GetNbinsX()) != nSliceVarBins) {
-        printf("WARNING: Different number of bins for this analysis and histo for fix sigma!\n");
+        throw std::runtime_error("Different number of bins for this analysis and histo for fix sigma!");
       }
       inputFileSigma->Close();
     }
@@ -329,9 +329,9 @@ int runMassFitter(const TString& configFileName)
         return -3;
       }
       hMeanToFix = inputFileMean->Get<TH1>("hRawYieldsMean");
-      hMeanToFix->SetDirectory(0);
+      hMeanToFix->SetDirectory(nullptr);
       if (static_cast<unsigned int>(hMeanToFix->GetNbinsX()) != nSliceVarBins) {
-        printf("WARNING: Different number of bins for this analysis and histo for fix mean\n");
+        throw std::runtime_error("Different number of bins for this analysis and histo for fix sigma!");
       }
       inputFileMean->Close();
     }
@@ -345,9 +345,9 @@ int runMassFitter(const TString& configFileName)
         return -2;
       }
       hSecondSigmaToFix = inputFileSecondSigma->Get<TH1>("hRawYieldsSigma");
-      hSecondSigmaToFix->SetDirectory(0);
+      hSecondSigmaToFix->SetDirectory(nullptr);
       if (static_cast<unsigned int>(hSecondSigmaToFix->GetNbinsX()) != nSliceVarBins) {
-        printf("WARNING: Different number of bins for this analysis and histo for fix sigma!\n");
+        throw std::runtime_error("Different number of bins for this analysis and histo for fix sigma!");
       }
       inputFileSecondSigma->Close();
     }
@@ -467,13 +467,11 @@ int runMassFitter(const TString& configFileName)
           printf("*****************************\n");
           printf("FIXED MEAN: %f\n", hMeanToFix->GetBinContent(iSliceVar + 1));
           printf("*****************************\n");
-        } else if (!fixMeanManual.empty()) {
+        } else {
           massFitter->setFixGaussianMean(fixMeanManual[iSliceVar]);
           printf("*****************************\n");
           printf("FIXED MEAN: %f\n", fixMeanManual[iSliceVar]);
           printf("*****************************\n");
-        } else {
-          printf("WARNING: impossible to fix mean! Wrong fix mean file or value!\n");
         }
       }
       if (fixSigma) {
@@ -482,13 +480,11 @@ int runMassFitter(const TString& configFileName)
           printf("*****************************\n");
           printf("FIXED SIGMA: %f\n", hSigmaToFix->GetBinContent(iSliceVar + 1));
           printf("*****************************\n");
-        } else if (!fixSigmaManual.empty()) {
+        } else {
           massFitter->setFixGaussianSigma(fixSigmaManual[iSliceVar]);
           printf("*****************************\n");
           printf("FIXED SIGMA: %f\n", fixSigmaManual[iSliceVar]);
           printf("*****************************\n");
-        } else {
-          printf("WARNING: impossible to fix sigma! Wrong fix sigma file or value!\n");
         }
       }
       if (fixSecondSigma) {
@@ -497,13 +493,11 @@ int runMassFitter(const TString& configFileName)
           printf("*****************************\n");
           printf("FIXED SIGMA: %f\n", hSecondSigmaToFix->GetBinContent(iSliceVar + 1));
           printf("*****************************\n");
-        } else if (!fixSecondSigmaManual.empty()) {
+        } else {
           massFitter->setFixSecondGaussianSigma(fixSecondSigmaManual[iSliceVar]);
           printf("*****************************\n");
           printf("FIXED SIGMA: %f\n", fixSecondSigmaManual[iSliceVar]);
           printf("*****************************\n");
-        } else {
-          printf("WARNING: impossible to fix second sigma! Wrong fix second sigma file or value!\n");
         }
       }
 
