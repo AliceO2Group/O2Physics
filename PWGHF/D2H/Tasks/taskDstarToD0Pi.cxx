@@ -57,10 +57,12 @@ struct HfTaskDstarToD0Pi {
 
   // CCDB configuration
   Configurable<bool> useWeight{"useWeight", true, "Flag to use weights from CCDB"};
+  Configurable<int> nWeights{"nWeights", 6, "Number of weights to be used from CCDB"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathForWeight{"ccdbPathForWeight", "Users/d/desharma/weights", "CCDB path for PVContrib weights"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "CCDB timestamp for the weights"};
   Configurable<std::string> weightFileName{"weightFileName", "Weights.root", "Name of the weight file to be used for PVContrib"};
+  Configurable<std::vector<double>> centRangesForWeights{"centRangesForWeights", {0.0, 5.0, 10.0, 30.0, 50.0, 70.0, 100.0}, "Centrality ranges for weights. Size of ranges should be equal to nWeights + 1"};
 
   Configurable<double> yCandDstarRecoMax{"yCandDstarRecoMax", 0.8, "max. candidate Dstar rapidity"};
   Configurable<double> yCandDstarGenMax{"yCandDstarGenMax", 0.5, "max. rapidity of Generator level Particle"};
@@ -69,14 +71,7 @@ struct HfTaskDstarToD0Pi {
 
   o2::ccdb::CcdbApi ccdbApi;
   SliceCache cache;
-  TH2F* hWeight1 = nullptr;
-  TH2F* hWeight2 = nullptr;
-  TH2F* hWeight3 = nullptr;
-  TH2F* hWeight4 = nullptr;
-  TH2F* hWeight5 = nullptr;
-  TH2F* hWeight6 = nullptr;
-  // std::string weightFileNameLocal;
-  std::vector<double> centVec;
+  std::vector<TH2F*> hWeights;
 
   using CandDstarWSelFlag = soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi>;
   using CandDstarWSelFlagWMl = soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfMlDstarToD0Pi>;
@@ -215,35 +210,37 @@ struct HfTaskDstarToD0Pi {
     // if weights to be applied
     if (useWeight) {
       ccdbApi.init(ccdbUrl);
-      centVec = binningCentrality.value;
-      // weightFileNameLocal = weightFileName;
       std::map<std::string, std::string> metadata;
       // Retrieve the file from CCDB
-      // std::string weightFilePath = ccdbApi.retrieveBlob(ccdbPathForWeight + "/" + weightFileName);
-      bool isFileAvailable = ccdbApi.retrieveBlob(ccdbPathForWeight, "." , metadata, timestampCCDB, false,  weightFileName);
+      bool isFileAvailable = ccdbApi.retrieveBlob(ccdbPathForWeight, ".", metadata, timestampCCDB, false, weightFileName);
       if (!isFileAvailable) {
         LOGF(error, "Failed to retrieve weight file from CCDB: %s", ccdbPathForWeight.value.c_str());
         return;
       }
 
-      if(isCentStudy){
+      if (isCentStudy) {
         // Open the ROOT file
         TFile* weightFile = TFile::Open(weightFileName.value.c_str(), "READ");
         if (weightFile && !weightFile->IsZombie()) {
-          // Assuming the histogram names are known, e.g., "hist1", "hist2", ..., "hist6"
-          hWeight1 = (TH2F*)weightFile->Get("hMult1_Weight")->Clone("hWeight1");
-          hWeight2 = (TH2F*)weightFile->Get("hMult2_Weight")->Clone("hWeight2");
-          hWeight3 = (TH2F*)weightFile->Get("hMult3_Weight")->Clone("hWeight3");
-          hWeight4 = (TH2F*)weightFile->Get("hMult4_Weight")->Clone("hWeight4");
-          hWeight5 = (TH2F*)weightFile->Get("hMult5_Weight")->Clone("hWeight5");
-          hWeight6 = (TH2F*)weightFile->Get("hMult6_Weight")->Clone("hWeight6");
+          // Ensure hWeights is properly sized
+          hWeights.resize(nWeights);
+          for (int i = 0; i < nWeights; ++i) {
+            std::string histName = "hMult" + std::to_string(i + 1) + "_Weight";
+            TH2F* hist = (TH2F*)weightFile->Get(histName.c_str());
+            if (!hist) {
+              LOGF(error, "Histogram %s not found in weight file!", histName.c_str());
+              hWeights[i] = nullptr;
+              return;
+            }
+            hWeights[i] = (TH2F*)hist->Clone(("hWeight" + std::to_string(i + 1)).c_str());
+            hist->Delete(); // Delete the original histogram to avoid memory leaks
+          }
           weightFile->Close();
           delete weightFile;
         } else {
           LOGF(error, "Failed to open weight file from CCDB: %s", weightFileName.value.c_str());
         }
       }
-      
     }
   }
 
@@ -492,20 +489,12 @@ struct HfTaskDstarToD0Pi {
         registry.fill(HIST("QA/hPtDstarGen"), ptGen);
         registry.fill(HIST("QA/hPtVsYDstarGen"), ptGen, yGen);
 
-        if(useWeight){
+        if (useWeight) {
           if (isCentStudy) {
-            if (centFT0MGen > 0. && centFT0MGen <= 5.) {
-              registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centFT0MGen, hWeight1->GetBinContent(hWeight1->FindBin(centFT0MGen, pvContibutors)));
-            } else if (centFT0MGen > 5. && centFT0MGen <= 10.) {
-              registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centFT0MGen, hWeight2->GetBinContent(hWeight2->FindBin(centFT0MGen, pvContibutors)));
-            } else if (centFT0MGen > 10. && centFT0MGen <= 30.) {
-              registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centFT0MGen, hWeight3->GetBinContent(hWeight3->FindBin(centFT0MGen, pvContibutors)));
-            } else if (centFT0MGen > 30. && centFT0MGen <= 50.) {
-              registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centFT0MGen, hWeight4->GetBinContent(hWeight4->FindBin(centFT0MGen, pvContibutors)));
-            } else if (centFT0MGen > 50. && centFT0MGen <= 70.) {
-              registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centFT0MGen, hWeight5->GetBinContent(hWeight5->FindBin(centFT0MGen, pvContibutors)));
-            } else if (centFT0MGen > 70. && centFT0MGen <= 100.) {
-              registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centFT0MGen, hWeight6->GetBinContent(hWeight6->FindBin(centFT0MGen, pvContibutors)));
+            for (int i = 0; i < nWeights; ++i) {
+              if (centFT0MGen > centRangesForWeights.value[i] && centFT0MGen <= centRangesForWeights.value[i + 1]) {
+                registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centFT0MGen, hWeights[i]->GetBinContent(hWeights[i]->FindBin(centFT0MGen, pvContibutors)));
+              }
             }
           } else {
             registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centFT0MGen, 1);
