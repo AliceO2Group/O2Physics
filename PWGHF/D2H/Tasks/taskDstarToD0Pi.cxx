@@ -41,6 +41,8 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <map>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -68,6 +70,8 @@ struct HfTaskDstarToD0Pi {
   Configurable<double> yCandDstarGenMax{"yCandDstarGenMax", 0.5, "max. rapidity of Generator level Particle"};
   Configurable<bool> selectionFlagHfD0ToPiK{"selectionFlagHfD0ToPiK", true, "Selection Flag for HF flagged candidates"};
   Configurable<std::vector<double>> ptBins{"ptBins", std::vector<double>{hf_cuts_dstar_to_d0_pi::vecBinsPt}, "pT bin limits for Dstar"};
+  Configurable<double> lbSignalRegion{"lbSignalRegion", 0.142, "Lower bound of the signal region for Delta Invariant MassDstar"};
+  Configurable<double> ubSignalRegion{"ubSignalRegion", 0.15, "Upper bound of the signal region for Delta Invariant MassDstar"};
 
   o2::ccdb::CcdbApi ccdbApi;
   SliceCache cache;
@@ -226,13 +230,13 @@ struct HfTaskDstarToD0Pi {
           hWeights.resize(nWeights);
           for (int i = 0; i < nWeights; ++i) {
             std::string histName = "hMult" + std::to_string(i + 1) + "_Weight";
-            TH2F* hist = (TH2F*)weightFile->Get(histName.c_str());
+            TH2F* hist = reinterpret_cast<TH2F*>(weightFile->Get(histName.c_str()));
             if (!hist) {
               LOGF(error, "Histogram %s not found in weight file!", histName.c_str());
               hWeights[i] = nullptr;
               return;
             }
-            hWeights[i] = (TH2F*)hist->Clone(("hWeight" + std::to_string(i + 1)).c_str());
+            hWeights[i] = reinterpret_cast<TH2F*>(hist->Clone(("hWeight" + std::to_string(i + 1)).c_str()));
             hist->Delete(); // Delete the original histogram to avoid memory leaks
           }
           weightFile->Close();
@@ -312,7 +316,7 @@ struct HfTaskDstarToD0Pi {
         auto signDstar = candDstar.signSoftPi();
         if (signDstar > 0) {
           auto deltaMDstar = std::abs(invDstar - invD0);
-          if (0.142f < deltaMDstar && deltaMDstar < 0.15f) {
+          if (lbSignalRegion < deltaMDstar && deltaMDstar < ubSignalRegion) {
             nCandsSignalRegion++;
           }
 
@@ -331,7 +335,7 @@ struct HfTaskDstarToD0Pi {
           registry.fill(HIST("QA/hPtProng1D0"), candDstar.ptProng1());
         } else if (signDstar < 0) {
           auto deltaMAntiDstar = std::abs(invAntiDstar - invD0Bar);
-          if (0.142f < deltaMAntiDstar && deltaMAntiDstar < 0.15f) {
+          if (lbSignalRegion < deltaMAntiDstar && deltaMAntiDstar < ubSignalRegion) {
             nCandsSignalRegion++;
           }
 
