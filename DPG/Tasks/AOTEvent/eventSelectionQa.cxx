@@ -348,11 +348,14 @@ struct EventSelectionQaTask {
       // 3D histograms: nGlobalTracks with cls567 as y-axis, V0A as x-axis:
       const AxisSpec axisNtracksPV{160, -0.5, 4000 - 0.5, "n ITS PV tracks"};
       const AxisSpec axisNtracksPVTPC{120, -0.5, 3000 - 0.5, "n ITS-TPC PV tracks"};
-      const AxisSpec axisNtracksTPConly{120, -0.5, 6000 - 0.5, "n TPC-only tracks"};
+      const AxisSpec axisNtracksTPConly{160, -0.5, 8000 - 0.5, "n TPC-only tracks"};
       const AxisSpec axisMultV0AForOccup{20, 0., static_cast<float>(200000), "mult V0A"};
       const AxisSpec axisOccupancyTracks{150, 0., 15000, "occupancy (n ITS tracks weighted)"};
       histos.add("occupancyQA/hNumTracksPV_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksPV, axisOccupancyTracks});
       histos.add("occupancyQA/hNumTracksPVTPC_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksPVTPC, axisOccupancyTracks});
+      histos.add("occupancyQA/hNumTracksPV_vs_V0A_vs_occupancy_NarrowDeltaTimeCut", "", kTH3F, {axisMultV0AForOccup, axisNtracksPV, axisOccupancyTracks});
+      histos.add("occupancyQA/hNumTracksPVTPC_vs_V0A_vs_occupancy_NarrowDeltaTimeCut", "", kTH3F, {axisMultV0AForOccup, axisNtracksPVTPC, axisOccupancyTracks});
+      // requested by TPC experts: nTPConly tracks vs occupancy
       histos.add("occupancyQA/hNumTracksTPConly_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksTPConly, axisOccupancyTracks});
       histos.add("occupancyQA/hNumTracksTPConlyNoITS_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksTPConly, axisOccupancyTracks});
 
@@ -586,10 +589,10 @@ struct EventSelectionQaTask {
         auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
         // first bc of the first orbit
         bcSOR = runInfo.orbitSOR * nBCsPerOrbit;
-        // duration of TF in bcs
-        nBCsPerTF = runInfo.orbitsPerTF * nBCsPerOrbit;
         // number of orbits per TF
         nOrbitsPerTF = runInfo.orbitsPerTF;
+        // duration of TF in bcs
+        nBCsPerTF = nOrbitsPerTF * nBCsPerOrbit;
         // first orbit
         orbitSOR = runInfo.orbitSOR;
         // total number of orbits
@@ -604,7 +607,8 @@ struct EventSelectionQaTask {
         auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", ts);
         rofOffset = alppar->roFrameBiasInBC;
         rofLength = alppar->roFrameLengthInBC;
-        LOGP(debug, "rofOffset={} rofLength={}", rofOffset, rofLength);
+        LOGP(info, "rofOffset={} rofLength={}", rofOffset, rofLength);
+        LOGP(info, "nOrbitsPerTF={} nBCsPerTF={}", nOrbitsPerTF, nBCsPerTF);
 
         // bc patterns
         auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", (tsSOR + tsEOR) / 2);
@@ -719,7 +723,7 @@ struct EventSelectionQaTask {
 
       double minSec = floor(tsSOR / 1000.);
       double maxSec = ceil(tsEOR / 1000.);
-      const AxisSpec axisSeconds{static_cast<int>(maxSec - minSec), minSec, maxSec, "seconds"};
+      const AxisSpec axisSeconds{maxSec - minSec < 5000 ? static_cast<int>(maxSec - minSec) : 5000, minSec, maxSec, "seconds"};
       const AxisSpec axisBcDif{600, -300., 300., "bc difference"};
       histos.add("hSecondsTVXvsBcDif", "", kTH2F, {axisSeconds, axisBcDif});
       histos.add("hSecondsTVXvsBcDifAll", "", kTH2F, {axisSeconds, axisBcDif});
@@ -1169,6 +1173,10 @@ struct EventSelectionQaTask {
           histos.fill(HIST("occupancyQA/hOccupancyByFT0CvsByTracks"), occupancyByTracks, occupancyByFT0C);
           histos.fill(HIST("occupancyQA/hNumTracksPV_vs_V0A_vs_occupancy"), multV0A, nPV, occupancyByTracks);
           histos.fill(HIST("occupancyQA/hNumTracksPVTPC_vs_V0A_vs_occupancy"), multV0A, nContributorsAfterEtaTPCCuts, occupancyByTracks);
+          if (col.selection_bit(kNoCollInTimeRangeNarrow)) {
+            histos.fill(HIST("occupancyQA/hNumTracksPV_vs_V0A_vs_occupancy_NarrowDeltaTimeCut"), multV0A, nPV, occupancyByTracks);
+            histos.fill(HIST("occupancyQA/hNumTracksPVTPC_vs_V0A_vs_occupancy_NarrowDeltaTimeCut"), multV0A, nContributorsAfterEtaTPCCuts, occupancyByTracks);
+          }
           histos.fill(HIST("occupancyQA/hNumTracksTPConly_vs_V0A_vs_occupancy"), multV0A, nTPConly, occupancyByTracks);
           histos.fill(HIST("occupancyQA/hNumTracksTPConlyNoITS_vs_V0A_vs_occupancy"), multV0A, nTPConlyNoITS, occupancyByTracks);
 
