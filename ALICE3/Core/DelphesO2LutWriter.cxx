@@ -19,19 +19,21 @@
 /// @email: preghenella@bo.infn.it
 ///
 
-#include <cstdio>
+#include "ALICE3/Core/DelphesO2LutWriter.h"
 
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
-#include "ALICE3/Core/DelphesO2LutWriter.h"
-#include <iostream>
-#include "TMatrixD.h"
-#include "TVectorD.h"
-#include "TAxis.h"
-#include "TMatrixDSymEigen.h"
-#include "TDatabasePDG.h"
-#include "TLorentzVector.h"
 #include "ALICE3/Core/FastTracker.h"
 #include "ALICE3/Core/TrackUtilities.h"
+
+#include "TAxis.h"
+#include "TDatabasePDG.h"
+#include "TLorentzVector.h"
+#include "TMatrixD.h"
+#include "TMatrixDSymEigen.h"
+#include "TVectorD.h"
+
+#include <cstdio>
+#include <string>
 
 // #define USE_FWD_PARAM
 #ifdef USE_FWD_PARAM
@@ -41,21 +43,42 @@
 namespace o2::fastsim
 {
 
-void DelphesO2LutWriter::printLutWriterConfiguration()
+void DelphesO2LutWriter::print() const
 {
-  std::cout << " --- Printing configuration of LUT writer --- " << std::endl;
-  std::cout << "    -> etaMaxBarrel  = " << etaMaxBarrel << std::endl;
-  std::cout << "    -> usePara       = " << usePara << std::endl;
-  std::cout << "    -> useDipole     = " << useDipole << std::endl;
-  std::cout << "    -> useFlatDipole = " << useFlatDipole << std::endl;
+  LOG(info) << " --- Printing configuration of LUT writer --- ";
+  LOG(info) << "    -> etaMaxBarrel  = " << etaMaxBarrel;
+  LOG(info) << "    -> usePara       = " << usePara;
+  LOG(info) << "    -> useDipole     = " << useDipole;
+  LOG(info) << "    -> useFlatDipole = " << useFlatDipole;
+  LOG(info) << "    -> mAtLeastHits  = " << mAtLeastHits;
+  LOG(info) << "    -> mAtLeastCorr  = " << mAtLeastCorr;
+  LOG(info) << "    -> mAtLeastFake  = " << mAtLeastFake;
+  LOG(info) << "    -> Nch Binning: = " << mNchBinning.toString();
+  LOG(info) << "    -> Radius Binning: = " << mRadiusBinning.toString();
+  LOG(info) << "    -> Eta Binning: = " << mEtaBinning.toString();
+  LOG(info) << "    -> Pt Binning: = " << mPtBinning.toString();
+  LOG(info) << " --- End of configuration --- ";
+}
+
+std::string DelphesO2LutWriter::LutBinning::toString() const
+{
+  std::string str = "";
+  str.append(log ? "log" : "lin");
+  str.append(" nbins: ");
+  str.append(std::to_string(nbins));
+  str.append(" min: ");
+  str.append(std::to_string(min));
+  str.append(" max: ");
+  str.append(std::to_string(max));
+  return str;
 }
 
 bool DelphesO2LutWriter::fatSolve(lutEntry_t& lutEntry,
                                   float pt,
                                   float eta,
                                   const float mass,
-                                  int itof,
-                                  int otof,
+                                  size_t itof,
+                                  size_t otof,
                                   int q,
                                   const float nch)
 {
@@ -65,29 +88,38 @@ bool DelphesO2LutWriter::fatSolve(lutEntry_t& lutEntry,
   tlv.SetPtEtaPhiM(pt, eta, 0., mass);
   o2::track::TrackParCov trkIn;
   o2::upgrade::convertTLorentzVectorToO2Track(q, tlv, {0., 0., 0.}, trkIn);
+  // tlv.Print();
+  // return fmt::format("X:{:+.4e} Alp:{:+.3e} Par: {:+.4e} {:+.4e} {:+.4e} {:+.4e} {:+.4e} |Q|:{:d} {:s}\n",
+  //  getX(), getAlpha(), getY(), getZ(), getSnp(), getTgl(), getQ2Pt(), getAbsCharge(), getPID().getName());
+  // trkIn.print();
   o2::track::TrackParCov trkOut;
   const int status = fat.FastTrack(trkIn, trkOut, nch);
-  if (status <= 0) {
-    Printf(" --- fatSolve: FastTrack failed --- \n");
-    tlv.Print();
+  if (status <= mAtLeastHits) {
+    LOGF(info, " --- fatSolve: FastTrack failed ---");
+    // tlv.Print();
     return false;
   }
+  LOGF(info, " --- fatSolve: FastTrack succeeded %d ---", status);
+  // trkOut.print();
   lutEntry.valid = true;
   lutEntry.itof = fat.GetGoodHitProb(itof);
   lutEntry.otof = fat.GetGoodHitProb(otof);
-  for (int i = 0; i < 15; ++i)
+  static constexpr int nCov = 15;
+  for (int i = 0; i < nCov; ++i)
     lutEntry.covm[i] = trkOut.getCov()[i];
 
   // define the efficiency
   auto totfake = 0.;
   lutEntry.eff = 1.;
-  for (int i = 1; i < 20; ++i) {
+  for (size_t i = 1; i < fat.GetNLayers(); ++i) {
+    if (fat.IsLayerInert(i))
+      continue; // skip inert layers
     auto igoodhit = fat.GetGoodHitProb(i);
     if (igoodhit <= 0. || i == itof || i == otof)
       continue;
     lutEntry.eff *= igoodhit;
     auto pairfake = 0.;
-    for (int j = i + 1; j < 20; ++j) {
+    for (size_t j = i + 1; j < fat.GetNLayers(); ++j) {
       auto jgoodhit = fat.GetGoodHitProb(j);
       if (jgoodhit <= 0. || j == itof || j == otof)
         continue;
@@ -120,42 +152,44 @@ bool DelphesO2LutWriter::fwdPara(lutEntry_t& lutEntry, float pt, float eta, floa
   lutEntry.valid = false;
 
   // parametrised forward response; interpolates between FAT at eta = 1.75 and a fixed parametrisation at eta = 4; only diagonal elements
-  if (std::fabs(eta) < etaMaxBarrel || std::fabs(eta) > 4)
+  static constexpr float etaLimit = 4.0f;
+  if (std::fabs(eta) < etaMaxBarrel || std::fabs(eta) > etaLimit)
     return false;
 
   if (!fatSolve(lutEntry, pt, etaMaxBarrel, mass))
     return false;
-  float covmbarrel[15] = {0};
-  for (int i = 0; i < 15; ++i) {
+  static constexpr int nCov = 15;
+  float covmbarrel[nCov] = {0};
+  for (int i = 0; i < nCov; ++i) {
     covmbarrel[i] = lutEntry.covm[i];
   }
 
   // parametrisation at eta = 4
   const double beta = 1. / std::sqrt(1 + mass * mass / pt / pt / std::cosh(eta) / std::cosh(eta));
-  const float dca_pos = 2.5e-4 / std::sqrt(3); // 2.5 micron/sqrt(3)
-  const float r0 = 0.5;                        // layer 0 radius [cm]
+  const float dcaPos = 2.5e-4 / std::sqrt(3); // 2.5 micron/sqrt(3)
+  const float r0 = 0.5;                       // layer 0 radius [cm]
   const float r1 = 1.3;
   const float r2 = 2.5;
   const float x0layer = 0.001; // material budget (rad length) per layer
-  const double sigma_alpha = 0.0136 / beta / pt * std::sqrt(x0layer * std::cosh(eta)) * (1 + 0.038 * std::log(x0layer * std::cosh(eta)));
-  const double dcaxy_ms = sigma_alpha * r0 * std::sqrt(1 + r1 * r1 / (r2 - r0) / (r2 - r0));
-  const double dcaxy2 = dca_pos * dca_pos + dcaxy_ms * dcaxy_ms;
+  const double sigmaAlpha = 0.0136 / beta / pt * std::sqrt(x0layer * std::cosh(eta)) * (1 + 0.038 * std::log(x0layer * std::cosh(eta)));
+  const double dcaxyMs = sigmaAlpha * r0 * std::sqrt(1 + r1 * r1 / (r2 - r0) / (r2 - r0));
+  const double dcaxy2 = dcaPos * dcaPos + dcaxyMs * dcaxyMs;
 
-  const double dcaz_ms = sigma_alpha * r0 * std::cosh(eta);
-  const double dcaz2 = dca_pos * dca_pos + dcaz_ms * dcaz_ms;
+  const double dcazMs = sigmaAlpha * r0 * std::cosh(eta);
+  const double dcaz2 = dcaPos * dcaPos + dcazMs * dcazMs;
 
-  const float Leta = 2.8 / sinh(eta) - 0.01 * r0; // m
-  const double relmomres_pos = 10e-6 * pt / 0.3 / Bfield / Leta / Leta * std::sqrt(720. / 15.);
+  const float Leta = 2.8 / std::sinh(eta) - 0.01 * r0; // m
+  const double relmomresPos = 10e-6 * pt / 0.3 / Bfield / Leta / Leta * std::sqrt(720. / 15.);
 
-  const float relmomres_barrel = std::sqrt(covmbarrel[14]) * pt;
-  const float Router = 1; // m
-  const float relmomres_pos_barrel = 10e-6 * pt / 0.3 / Bfield / Router / Router / std::sqrt(720. / 15.);
-  const float relmomres_MS_barrel = std::sqrt(relmomres_barrel * relmomres_barrel - relmomres_pos_barrel * relmomres_pos_barrel);
+  const float relmomresBarrel = std::sqrt(covmbarrel[14]) * pt;
+  const float rOuter = 1; // m
+  const float relmomresPosBarrel = 10e-6 * pt / 0.3 / Bfield / rOuter / rOuter / std::sqrt(720. / 15.);
+  const float relmomresMSBarrel = std::sqrt(relmomresBarrel * relmomresBarrel - relmomresPosBarrel * relmomresPosBarrel);
 
   // interpolate MS contrib (rel resolution 0.4 at eta = 4)
-  const float relmomres_MS_eta4 = 0.4 / beta * 0.5 / Bfield;
-  const float relmomres_MS = relmomres_MS_eta4 * pow(relmomres_MS_eta4 / relmomres_MS_barrel, (std::fabs(eta) - 4.) / (4. - etaMaxBarrel));
-  const float momres_tot = pt * std::sqrt(relmomres_pos * relmomres_pos + relmomres_MS * relmomres_MS); // total absolute mom reso
+  const float relmomresMSEta4 = 0.4 / beta * 0.5 / Bfield;
+  const float relmomresMS = relmomresMSEta4 * std::pow(relmomresMSEta4 / relmomresMSBarrel, (std::fabs(eta) - 4.) / (4. - etaMaxBarrel));
+  const float momresTot = pt * std::sqrt(relmomresPos * relmomresPos + relmomresMS * relmomresMS); // total absolute mom reso
 
   // Fill cov matrix diag
   for (int i = 0; i < 15; ++i)
@@ -167,31 +201,31 @@ bool DelphesO2LutWriter::fwdPara(lutEntry_t& lutEntry, float pt, float eta, floa
   lutEntry.covm[2] = covmbarrel[2];
   if (dcaz2 > lutEntry.covm[2])
     lutEntry.covm[2] = dcaz2;
-  lutEntry.covm[5] = covmbarrel[5];                                // sigma^2 sin(phi)
-  lutEntry.covm[9] = covmbarrel[9];                                // sigma^2 tanl
-  lutEntry.covm[14] = momres_tot * momres_tot / pt / pt / pt / pt; // sigma^2 1/pt
+  lutEntry.covm[5] = covmbarrel[5];                              // sigma^2 sin(phi)
+  lutEntry.covm[9] = covmbarrel[9];                              // sigma^2 tanl
+  lutEntry.covm[14] = momresTot * momresTot / pt / pt / pt / pt; // sigma^2 1/pt
   // Check that all numbers are numbers
   for (int i = 0; i < 15; ++i) {
     if (std::isnan(lutEntry.covm[i])) {
-      Printf(" --- lutEntry.covm[%d] is NaN", i);
+      LOGF(info, " --- lutEntry.covm[%d] is NaN", i);
       return false;
     }
   }
   return true;
 }
 
-void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, int itof, int otof)
+void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, size_t itof, size_t otof)
 {
 
   if (useFlatDipole && useDipole) {
-    Printf("Both dipole and dipole flat flags are on, please use only one of them");
+    LOGF(info, "Both dipole and dipole flat flags are on, please use only one of them");
     return;
   }
 
   // output file
   std::ofstream lutFile(filename, std::ofstream::binary);
   if (!lutFile.is_open()) {
-    Printf("Did not manage to open output file!!");
+    LOGF(info, "Did not manage to open output file!!");
     return;
   }
 
@@ -199,33 +233,33 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, in
   lutHeader_t lutHeader;
   // pid
   lutHeader.pdg = pdg;
-  lutHeader.mass = TDatabasePDG::Instance()->GetParticle(pdg)->Mass();
-  const int q = std::abs(TDatabasePDG::Instance()->GetParticle(pdg)->Charge()) / 3;
+  const TParticlePDG* particle = TDatabasePDG::Instance()->GetParticle(pdg);
+  if (!particle) {
+    LOG(fatal) << "Cannot find particle with PDG code " << pdg;
+    return;
+  }
+  lutHeader.mass = particle->Mass();
+  const int q = std::abs(particle->Charge()) / 3;
   if (q <= 0) {
-    Printf("Negative or null charge (%f) for pdg code %i. Fix the charge!", TDatabasePDG::Instance()->GetParticle(pdg)->Charge(), pdg);
+    LOGF(info, "Negative or null charge (%f) for pdg code %i. Fix the charge!", particle->Charge(), pdg);
     return;
   }
   lutHeader.field = field;
+  auto setMap = [](map_t& map, LutBinning b) {
+    map.log = b.log;
+    map.nbins = b.nbins;
+    map.min = b.min;
+    map.max = b.max;
+  };
   // nch
-  lutHeader.nchmap.log = true;
-  lutHeader.nchmap.nbins = 20;
-  lutHeader.nchmap.min = 0.5;
-  lutHeader.nchmap.max = 3.5;
+  setMap(lutHeader.nchmap, mNchBinning);
   // radius
-  lutHeader.radmap.log = false;
-  lutHeader.radmap.nbins = 1;
-  lutHeader.radmap.min = 0.;
-  lutHeader.radmap.max = 100.;
+  setMap(lutHeader.radmap, mRadiusBinning);
   // eta
-  lutHeader.etamap.log = false;
-  lutHeader.etamap.nbins = 80;
-  lutHeader.etamap.min = -4.;
-  lutHeader.etamap.max = 4.;
+  setMap(lutHeader.etamap, mEtaBinning);
   // pt
-  lutHeader.ptmap.log = true;
-  lutHeader.ptmap.nbins = 200;
-  lutHeader.ptmap.min = -2;
-  lutHeader.ptmap.max = 2.;
+  setMap(lutHeader.ptmap, mPtBinning);
+
   lutFile.write(reinterpret_cast<char*>(&lutHeader), sizeof(lutHeader));
 
   // entries
@@ -240,27 +274,27 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, in
   int successfullCalls = 0;
   int failedCalls = 0;
   for (int inch = 0; inch < nnch; ++inch) {
-    Printf(" --- writing nch = %d/%d", inch, nnch);
+    LOGF(info, " --- writing nch = %d/%d", inch, nnch);
     auto nch = lutHeader.nchmap.eval(inch);
     lutEntry.nch = nch;
     fat.SetdNdEtaCent(nch);
     for (int irad = 0; irad < nrad; ++irad) {
-      Printf(" --- writing irad = %d/%d", irad, nrad);
+      LOGF(info, " --- writing irad = %d/%d", irad, nrad);
       for (int ieta = 0; ieta < neta; ++ieta) {
-        nCalls++;
-        Printf(" --- writing ieta = %d/%d", ieta, neta);
+        LOGF(info, " --- writing ieta = %d/%d", ieta, neta);
         auto eta = lutHeader.etamap.eval(ieta);
         lutEntry.eta = lutHeader.etamap.eval(ieta);
         for (int ipt = 0; ipt < npt; ++ipt) {
-          Printf(" --- writing ipt = %d/%d", ipt, npt);
+          nCalls++;
+          LOGF(info, " --- writing ipt = %d/%d", ipt, npt);
           lutEntry.pt = lutHeader.ptmap.eval(ipt);
           lutEntry.valid = true;
           if (std::fabs(eta) <= etaMaxBarrel) { // full lever arm ends at etaMaxBarrel
-            Printf("Solving in the barrel");
-            // printf(" --- fatSolve: pt = %f, eta = %f, mass = %f, field=%f \n", lutEntry.pt, lutEntry.eta, lutHeader.mass, lutHeader.field);
+            LOGF(info, "Solving in the barrel");
+            // LOGF(info, " --- fatSolve: pt = %f, eta = %f, mass = %f, field=%f", lutEntry.pt, lutEntry.eta, lutHeader.mass, lutHeader.field);
             successfullCalls++;
             if (!fatSolve(lutEntry, lutEntry.pt, lutEntry.eta, lutHeader.mass, itof, otof, q)) {
-              // printf(" --- fatSolve: error \n");
+              // LOGF(info, " --- fatSolve: error");
               lutEntry.valid = false;
               lutEntry.eff = 0.;
               lutEntry.eff2 = 0.;
@@ -271,8 +305,8 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, in
               failedCalls++;
             }
           } else {
-            Printf("Solving outside the barrel");
-            // printf(" --- fwdSolve: pt = %f, eta = %f, mass = %f, field=%f \n", lutEntry.pt, lutEntry.eta, lutHeader.mass, lutHeader.field);
+            LOGF(info, "Solving outside the barrel");
+            // LOGF(info, " --- fwdSolve: pt = %f, eta = %f, mass = %f, field=%f", lutEntry.pt, lutEntry.eta, lutHeader.mass, lutHeader.field);
             lutEntry.eff = 1.;
             lutEntry.eff2 = 1.;
             bool retval = true;
@@ -293,7 +327,7 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, in
               lutEntry.eff2 = lutEntryBarrel.eff2;
             }
             if (!retval) {
-              printf(" --- fwdSolve: error \n");
+              LOGF(info, " --- fwdSolve: error");
               lutEntry.valid = false;
               for (int i = 0; i < 15; ++i) {
                 lutEntry.covm[i] = 0.;
@@ -302,50 +336,51 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, in
               failedCalls++;
             }
           }
-          Printf("Diagonalizing");
+          LOGF(info, "Diagonalizing");
           diagonalise(lutEntry);
-          Printf("Writing");
+          LOGF(info, "Writing");
           lutFile.write(reinterpret_cast<char*>(&lutEntry), sizeof(lutEntry_t));
         }
       }
     }
   }
-  Printf(" --- finished writing LUT file %s", filename);
-  Printf(" --- successfull calls: %d/%d, failed calls: %d/%d", successfullCalls, nCalls, failedCalls, nCalls);
+  LOGF(info, " --- finished writing LUT file %s", filename);
+  LOGF(info, " --- successfull calls: %d/%d, failed calls: %d/%d", successfullCalls, nCalls, failedCalls, nCalls);
   lutFile.close();
 }
 
 void DelphesO2LutWriter::diagonalise(lutEntry_t& lutEntry)
 {
-  TMatrixDSym m(5);
-  for (int i = 0, k = 0; i < 5; ++i) {
+  static constexpr int kEig = 5;
+  TMatrixDSym m(kEig);
+  for (int i = 0, k = 0; i < kEig; ++i) {
     for (int j = 0; j < i + 1; ++j, ++k) {
       m(i, j) = lutEntry.covm[k];
       m(j, i) = lutEntry.covm[k];
     }
   }
 
-  m.Print();
+  // m.Print();
   TMatrixDSymEigen eigen(m);
   // eigenvalues vector
   TVectorD eigenVal = eigen.GetEigenValues();
-  for (int i = 0; i < 5; ++i)
+  for (int i = 0; i < kEig; ++i)
     lutEntry.eigval[i] = eigenVal[i];
   // eigenvectors matrix
   TMatrixD eigenVec = eigen.GetEigenVectors();
-  for (int i = 0; i < 5; ++i)
-    for (int j = 0; j < 5; ++j)
+  for (int i = 0; i < kEig; ++i)
+    for (int j = 0; j < kEig; ++j)
       lutEntry.eigvec[i][j] = eigenVec[i][j];
   // inverse eigenvectors matrix
   eigenVec.Invert();
-  for (int i = 0; i < 5; ++i)
-    for (int j = 0; j < 5; ++j)
+  for (int i = 0; i < kEig; ++i)
+    for (int j = 0; j < kEig; ++j)
       lutEntry.eiginv[i][j] = eigenVec[i][j];
 }
 
 TGraph* DelphesO2LutWriter::lutRead(const char* filename, int pdg, int what, int vs, float nch, float radius, float eta, float pt)
 {
-  Printf(" --- reading LUT file %s", filename);
+  LOGF(info, " --- reading LUT file %s", filename);
   // vs
   static const int kNch = 0;
   static const int kEta = 1;
@@ -363,6 +398,7 @@ TGraph* DelphesO2LutWriter::lutRead(const char* filename, int pdg, int what, int
   o2::delphes::DelphesO2TrackSmearer smearer;
   smearer.loadTable(pdg, filename);
   auto lutHeader = smearer.getLUTHeader(pdg);
+  lutHeader->print();
   map_t lutMap;
   switch (vs) {
     case kNch:
@@ -381,52 +417,52 @@ TGraph* DelphesO2LutWriter::lutRead(const char* filename, int pdg, int what, int
   g->SetTitle(Form("LUT for %s, pdg %d, vs %d, what %d", filename, pdg, vs, what));
   switch (vs) {
     case kNch:
-      Printf(" --- vs = kNch");
+      LOGF(info, " --- vs = kNch");
       g->GetXaxis()->SetTitle("Nch");
       break;
     case kEta:
-      Printf(" --- vs = kEta");
+      LOGF(info, " --- vs = kEta");
       g->GetXaxis()->SetTitle("#eta");
       break;
     case kPt:
-      Printf(" --- vs = kPt");
+      LOGF(info, " --- vs = kPt");
       g->GetXaxis()->SetTitle("p_{T} (GeV/c)");
       break;
     default:
-      Printf(" --- error: unknown vs %d", vs);
+      LOGF(info, " --- error: unknown vs %d", vs);
       return nullptr;
   }
   switch (what) {
     case kEfficiency:
-      Printf(" --- what = kEfficiency");
+      LOGF(info, " --- what = kEfficiency");
       g->GetYaxis()->SetTitle("Efficiency (%)");
       break;
     case kEfficiency2:
-      Printf(" --- what = kEfficiency2");
+      LOGF(info, " --- what = kEfficiency2");
       g->GetYaxis()->SetTitle("Efficiency2 (%)");
       break;
     case kEfficiencyInnerTOF:
-      Printf(" --- what = kEfficiencyInnerTOF");
+      LOGF(info, " --- what = kEfficiencyInnerTOF");
       g->GetYaxis()->SetTitle("Inner TOF Efficiency (%)");
       break;
     case kEfficiencyOuterTOF:
-      Printf(" --- what = kEfficiencyOuterTOF");
+      LOGF(info, " --- what = kEfficiencyOuterTOF");
       g->GetYaxis()->SetTitle("Outer TOF Efficiency (%)");
       break;
     case kPtResolution:
-      Printf(" --- what = kPtResolution");
+      LOGF(info, " --- what = kPtResolution");
       g->GetYaxis()->SetTitle("p_{T} Resolution (%)");
       break;
     case kRPhiResolution:
-      Printf(" --- what = kRPhiResolution");
+      LOGF(info, " --- what = kRPhiResolution");
       g->GetYaxis()->SetTitle("R#phi Resolution (#mum)");
       break;
     case kZResolution:
-      Printf(" --- what = kZResolution");
+      LOGF(info, " --- what = kZResolution");
       g->GetYaxis()->SetTitle("Z Resolution (#mum)");
       break;
     default:
-      Printf(" --- error: unknown what %d", what);
+      LOGF(info, " --- error: unknown what %d", what);
       return nullptr;
   }
 
@@ -447,7 +483,7 @@ TGraph* DelphesO2LutWriter::lutRead(const char* filename, int pdg, int what, int
     auto lutEntry = smearer.getLUTEntry(pdg, nch, radius, eta, pt, eff);
     if (!lutEntry->valid || lutEntry->eff == 0.) {
       if (!canBeInvalid) {
-        Printf(" --- warning: it cannot be invalid");
+        LOGF(info, " --- warning: it cannot be invalid");
       }
       continue;
     }
@@ -480,16 +516,16 @@ TGraph* DelphesO2LutWriter::lutRead(const char* filename, int pdg, int what, int
         val = lutEntry->otof * 100.; // efficiency (%)
         break;
       case kPtResolution:
-        val = sqrt(lutEntry->covm[14]) * lutEntry->pt * 100.; // pt resolution (%)
+        val = std::sqrt(lutEntry->covm[14]) * lutEntry->pt * 100.; // pt resolution (%)
         break;
       case kRPhiResolution:
-        val = sqrt(lutEntry->covm[0]) * 1.e4; // rphi resolution (um)
+        val = std::sqrt(lutEntry->covm[0]) * 1.e4; // rphi resolution (um)
         break;
       case kZResolution:
-        val = sqrt(lutEntry->covm[1]) * 1.e4; // z resolution (um)
+        val = std::sqrt(lutEntry->covm[1]) * 1.e4; // z resolution (um)
         break;
       default:
-        Printf(" --- error: unknown what %d", what);
+        LOGF(info, " --- error: unknown what %d", what);
         break;
     }
     g->AddPoint(cen, val);

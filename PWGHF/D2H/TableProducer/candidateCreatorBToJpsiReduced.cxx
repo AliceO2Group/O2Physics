@@ -436,7 +436,7 @@ struct HfCandidateCreatorBToJpsiReducedExpressions {
           if ((rowJpsiHadMcRec.jpsiId() != candB.jpsiId()) || (rowJpsiHadMcRec.bachKaId() != candB.bachKaId())) {
             continue;
           }
-          rowBplusMcRec(rowJpsiHadMcRec.flagMcMatchRec(), rowJpsiHadMcRec.channelMcMatchRec(), rowJpsiHadMcRec.flagWrongCollision(), rowJpsiHadMcRec.debugMcRec(), rowJpsiHadMcRec.ptMother());
+          rowBplusMcRec(rowJpsiHadMcRec.flagMcMatchRec(), rowJpsiHadMcRec.flagMcDecayChanRec(), rowJpsiHadMcRec.flagWrongCollision(), rowJpsiHadMcRec.debugMcRec(), rowJpsiHadMcRec.ptMother());
           filledMcInfo = true;
           break;
         }
@@ -448,7 +448,7 @@ struct HfCandidateCreatorBToJpsiReducedExpressions {
           if ((rowJpsiHadMcRec.jpsiId() != candB.jpsiId()) || (rowJpsiHadMcRec.prong0PhiId() != candB.prong0PhiId()) || (rowJpsiHadMcRec.prong1PhiId() != candB.prong1PhiId())) {
             continue;
           }
-          rowBsMcRec(rowJpsiHadMcRec.flagMcMatchRec(), rowJpsiHadMcRec.channelMcMatchRec(), rowJpsiHadMcRec.flagWrongCollision(), rowJpsiHadMcRec.debugMcRec(), rowJpsiHadMcRec.ptMother());
+          rowBsMcRec(rowJpsiHadMcRec.flagMcMatchRec(), rowJpsiHadMcRec.flagMcDecayChanRec(), rowJpsiHadMcRec.flagWrongCollision(), rowJpsiHadMcRec.debugMcRec(), rowJpsiHadMcRec.ptMother());
           filledMcInfo = true;
           break;
         }

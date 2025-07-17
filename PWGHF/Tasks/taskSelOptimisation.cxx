@@ -287,7 +287,7 @@ struct HfSelOptimisation {
       bool isPrompt = false, isNonPrompt = false, isBkg = false;
       for (int iDecay{0}; iDecay < n2Prong; ++iDecay) {
         if (TESTBIT(cand2Prong.hfflag(), iDecay)) {
-          if (std::abs(cand2Prong.flagMcMatchRec()) == BIT(iDecay)) {
+          if (std::abs(cand2Prong.flagMcMatchRec()) == BIT(iDecay)) { // FIXME: Migrate to DecayChannelMain
             if (cand2Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
               isPrompt = true;
               switch (iDecay) {
@@ -343,7 +343,7 @@ struct HfSelOptimisation {
       bool isPrompt = false, isNonPrompt = false, isBkg = false;
       for (int iDecay{0}; iDecay < n3Prong; ++iDecay) {
         if (TESTBIT(cand3Prong.hfflag(), iDecay)) {
-          if (std::abs(cand3Prong.flagMcMatchRec()) == BIT(iDecay)) {
+          if (std::abs(cand3Prong.flagMcMatchRec()) == BIT(iDecay)) { // FIXME: Migrate to DecayChannelMain
             if (cand3Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
               isPrompt = true;
               switch (iDecay) {

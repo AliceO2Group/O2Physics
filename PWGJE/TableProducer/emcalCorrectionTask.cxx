@@ -35,6 +35,8 @@
 #include "EMCALBase/ClusterFactory.h"
 #include "EMCALBase/Geometry.h"
 #include "EMCALBase/NonlinearityHandler.h"
+#include "EMCALCalib/GainCalibrationFactors.h"
+#include "EMCALCalibration/EMCALTempCalibExtractor.h"
 #include "EMCALReconstruction/Clusterizer.h"
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
@@ -112,6 +114,13 @@ struct EmcalCorrectionTask {
   Configurable<bool> applyCellTimeCorrection{"applyCellTimeCorrection", true, "apply a correction to the cell time for data and MC: Shift both average cell times to 0 and smear MC time distribution to fit data better. For MC requires isMC to be true"};
   Configurable<float> trackMinPt{"trackMinPt", 0.3, "Minimum pT for tracks to perform track matching, to reduce computing time. Tracks below a certain pT will be loopers anyway."};
   Configurable<bool> fillQA{"fillQA", false, "Switch to turn on QA histograms."};
+  Configurable<bool> useCCDBAlignment{"useCCDBAlignment", false, "EXPERTS ONLY! Switch to use the alignment object stored in CCDB instead of using the default alignment from the global geometry object."};
+  Configurable<bool> applyTempCalib{"applyTempCalib", false, "Switch to turn on Temperature calibration."};
+  Configurable<std::string> pathTempCalibCCDB{"pathTempCalibCCDB", "Users/j/jokonig/EMCalTempCalibParams", "Path in the ccdb where slope and intercept for each cell are stored"}; // change to official path as soon as it is available
+  Configurable<bool> useTempCalibMean{"useTempCalibMean", false, "Switch to turn on Temperature mean calculation instead of median."};
+  Configurable<float> mcCellEnergyShift{"mcCellEnergyShift", 1., "Relative shift of the MC cell energy. 1.1 for 10% shift to higher mass, etc. Only applied to MC."};
+  Configurable<float> mcCellEnergyResolutionBroadening{"mcCellEnergyResolutionBroadening", 0., "Relative widening of the MC cell energy resolution. 0 for no widening, 0.1 for 10% widening, etc. Only applied to MC."};
+  Configurable<bool> applyGainCalibShift{"applyGainCalibShift", false, "Apply shift for cell gain calibration to use values before cell format change (Sept. 2023)"};
 
   // Require EMCAL cells (CALO type 1)
   Filter emccellfilter = aod::calo::caloType == selectedCellType;
@@ -141,6 +150,13 @@ struct EmcalCorrectionTask {
   // EMCal geometry
   o2::emcal::Geometry* geometry;
 
+  // EMCal cell temperature calibrator
+  std::unique_ptr<o2::emcal::EMCALTempCalibExtractor> mTempCalibExtractor;
+  bool mIsTempCalibInitialized = false;
+
+  // Gain calibration
+  std::array<float, 17664> mArrGainCalibDiff;
+
   std::vector<std::pair<int, int>> mExtraTimeShiftRunRanges;
 
   // Current run number
@@ -165,6 +181,18 @@ struct EmcalCorrectionTask {
     geometry = o2::emcal::Geometry::GetInstanceFromRunNumber(223409);
     if (!geometry) {
       LOG(error) << "Failure accessing geometry";
+    }
+    if (useCCDBAlignment.value) {
+      geometry->SetMisalMatrixFromCcdb();
+    }
+
+    if (applyTempCalib) {
+      mTempCalibExtractor = std::make_unique<o2::emcal::EMCALTempCalibExtractor>();
+    }
+
+    // gain calibration shift initialization
+    if (applyGainCalibShift) {
+      initializeGainCalibShift();
     }
 
     // read all the cluster definitions specified in the options
@@ -235,6 +263,7 @@ struct EmcalCorrectionTask {
     mHistManager.add("hCellEtaPhi", "hCellEtaPhi", O2HistType::kTH2F, {etaAxis, phiAxis});
     mHistManager.add("hHGCellTimeEnergy", "hCellTime", O2HistType::kTH2F, {{300, -30, 30}, cellEnergyBins}); // Cell time vs energy for high gain cells (low energies)
     mHistManager.add("hLGCellTimeEnergy", "hCellTime", O2HistType::kTH2F, {{300, -30, 30}, cellEnergyBins}); // Cell time vs energy for low gain cells (high energies)
+    mHistManager.add("hTempCalibCorrection", "hTempCalibCorrection", O2HistType::kTH1F, {{5000, 0.5, 1.5}});
     // NOTE: Reversed column and row because it's more natural for presentation.
     mHistManager.add("hCellRowCol", "hCellRowCol;Column;Row", O2HistType::kTH2D, {{96, -0.5, 95.5}, {208, -0.5, 207.5}});
     mHistManager.add("hClusterE", "hClusterE", O2HistType::kTH1D, {energyAxis});
@@ -312,6 +341,11 @@ struct EmcalCorrectionTask {
       // get run number
       runNumber = bc.runNumber();
 
+      if (applyTempCalib && !mIsTempCalibInitialized) { // needs to be called once
+        mTempCalibExtractor->InitializeFromCCDB(pathTempCalibCCDB, static_cast<uint64_t>(runNumber));
+        mIsTempCalibInitialized = true;
+      }
+
       // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
       // In particular, we need to filter only EMCAL cells.
 
@@ -339,6 +373,14 @@ struct EmcalCorrectionTask {
         if (applyCellAbsScale) {
           amplitude *= getAbsCellScale(cell.cellNumber());
         }
+        if (applyGainCalibShift) {
+          amplitude *= mArrGainCalibDiff[cell.cellNumber()];
+        }
+        if (applyTempCalib) {
+          float tempCalibFactor = mTempCalibExtractor->getGainCalibFactor(static_cast<uint16_t>(cell.cellNumber()));
+          amplitude *= tempCalibFactor;
+          mHistManager.fill(HIST("hTempCalibCorrection"), tempCalibFactor);
+        }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
                              cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), runNumber),
@@ -349,12 +391,6 @@ struct EmcalCorrectionTask {
       nCellsProcessed += cellsBC.size();
 
       fillQAHistogram(cellsBC);
-
-      // TODO: Helpful for now, but should be removed.
-      LOG(debug) << "Converted EMCAL cells";
-      for (const auto& cell : cellsBC) {
-        LOG(debug) << cell.getTower() << ": E: " << cell.getEnergy() << ", time: " << cell.getTimeStamp() << ", type: " << cell.getType();
-      }
 
       LOG(debug) << "Converted cells. Contains: " << cellsBC.size() << ". Originally " << cellsInBC.size() << ". About to run clusterizer.";
       //  this is a test
@@ -470,6 +506,12 @@ struct EmcalCorrectionTask {
         if (static_cast<bool>(hasShaperCorrection) && emcal::intToChannelType(cell.cellType()) == emcal::ChannelType_t::LOW_GAIN) { // Apply shaper correction to LG cells
           amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
         }
+        if (mcCellEnergyShift != 1.) {
+          amplitude *= mcCellEnergyShift; // Fine tune the MC cell energy
+        }
+        if (mcCellEnergyResolutionBroadening != 0.) {
+          amplitude *= (1. + normalgaus(rdgen) * mcCellEnergyResolutionBroadening); // Fine tune the MC cell energy resolution
+        }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
                              cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), runNumber),
@@ -481,12 +523,6 @@ struct EmcalCorrectionTask {
       nCellsProcessed += cellsBC.size();
 
       fillQAHistogram(cellsBC);
-
-      // TODO: Helpful for now, but should be removed.
-      LOG(debug) << "Converted EMCAL cells";
-      for (const auto& cell : cellsBC) {
-        LOG(debug) << cell.getTower() << ": E: " << cell.getEnergy() << ", time: " << cell.getTimeStamp() << ", type: " << cell.getType();
-      }
 
       LOG(debug) << "Converted cells. Contains: " << cellsBC.size() << ". Originally " << cellsInBC.size() << ". About to run clusterizer.";
       //  this is a test
@@ -573,6 +609,11 @@ struct EmcalCorrectionTask {
       // get run number
       runNumber = bc.runNumber();
 
+      if (applyTempCalib && !mIsTempCalibInitialized) { // needs to be called once
+        mTempCalibExtractor->InitializeFromCCDB(pathTempCalibCCDB, static_cast<uint64_t>(runNumber));
+        mIsTempCalibInitialized = true;
+      }
+
       auto collisionsInBC = collisions.sliceBy(collisionsPerBC, bc.globalIndex());
       auto cellsInBC = cells.sliceBy(cellsPerFoundBC, bc.globalIndex());
 
@@ -586,9 +627,21 @@ struct EmcalCorrectionTask {
       std::vector<o2::emcal::Cell> cellsBC;
       std::vector<int64_t> cellIndicesBC;
       for (const auto& cell : cellsInBC) {
+        auto amplitude = cell.amplitude();
+        if (static_cast<bool>(hasShaperCorrection) && emcal::intToChannelType(cell.cellType()) == emcal::ChannelType_t::LOW_GAIN) { // Apply shaper correction to LG cells
+          amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
+        }
+        if (applyGainCalibShift) {
+          amplitude *= mArrGainCalibDiff[cell.cellNumber()];
+        }
+        if (applyTempCalib) {
+          float tempCalibFactor = mTempCalibExtractor->getGainCalibFactor(static_cast<uint16_t>(cell.cellNumber()));
+          amplitude *= tempCalibFactor;
+          mHistManager.fill(HIST("hTempCalibCorrection"), tempCalibFactor);
+        }
         cellsBC.emplace_back(cell.cellNumber(),
-                             cell.amplitude(),
-                             cell.time() + getCellTimeShift(cell.cellNumber(), cell.amplitude(), o2::emcal::intToChannelType(cell.cellType()), runNumber),
+                             amplitude,
+                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), runNumber),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
       }
@@ -596,12 +649,6 @@ struct EmcalCorrectionTask {
       nCellsProcessed += cellsBC.size();
 
       fillQAHistogram(cellsBC);
-
-      // TODO: Helpful for now, but should be removed.
-      LOG(debug) << "Converted EMCAL cells";
-      for (const auto& cell : cellsBC) {
-        LOG(debug) << cell.getTower() << ": E: " << cell.getEnergy() << ", time: " << cell.getTimeStamp() << ", type: " << cell.getType();
-      }
 
       LOG(debug) << "Converted cells. Contains: " << cellsBC.size() << ". Originally " << cellsInBC.size() << ". About to run clusterizer.";
 
@@ -991,6 +1038,18 @@ struct EmcalCorrectionTask {
     }
     return timeshift + timesmear;
   };
+
+  void initializeGainCalibShift()
+  {
+    auto& ccdbMgr = o2::ccdb::BasicCCDBManager::instance();
+    uint64_t tsOld = 1634853602000; // timestamp corresponding to LHC22o old gain calib object
+    o2::emcal::GainCalibrationFactors* paramsOld = ccdbMgr.getForTimeStamp<o2::emcal::GainCalibrationFactors>("EMC/Calib/GainCalibFactors", tsOld);
+    uint64_t tsNew = 1734853602000; // timestamp corresponding to new gain calib object (new cell compression)
+    o2::emcal::GainCalibrationFactors* paramsNew = ccdbMgr.getForTimeStamp<o2::emcal::GainCalibrationFactors>("EMC/Calib/GainCalibFactors", tsNew);
+    for (uint16_t i = 0; i < mArrGainCalibDiff.size(); ++i) {
+      mArrGainCalibDiff[i] = paramsNew->getGainCalibFactors(i) == 0 ? 1. : paramsOld->getGainCalibFactors(i) / paramsNew->getGainCalibFactors(i);
+    }
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -49,21 +49,27 @@
 #include <array>
 #include <cmath>
 #include <cstring>
+#include <stdexcept>
+#include <string>
 
 using namespace RooFit;
 
 ClassImp(HFInvMassFitter);
 
 HFInvMassFitter::HFInvMassFitter() : TNamed(),
-                                     mHistoInvMass(0x0),
+                                     mHistoInvMass(nullptr),
                                      mFitOption("L,E"),
                                      mMinMass(0),
                                      mMaxMass(5),
                                      mTypeOfBkgPdf(Expo),
-                                     mMassParticle(TDatabasePDG::Instance()->GetParticle("D0")->Mass()),
                                      mTypeOfSgnPdf(SingleGaus),
                                      mTypeOfReflPdf(1),
+                                     mMassParticle(TDatabasePDG::Instance()->GetParticle("D0")->Mass()),
                                      mMass(1.865),
+                                     mMassLowLimit(0),
+                                     mMassUpLimit(0),
+                                     mMassReflLowLimit(0),
+                                     mMassReflUpLimit(0),
                                      mSecMass(1.969),
                                      mSigmaSgn(0.012),
                                      mSecSigma(0.006),
@@ -74,12 +80,6 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mFixedMean(kFALSE),
                                      mBoundMean(kFALSE),
                                      mBoundReflMean(kFALSE),
-                                     mRooMeanSgn(0x0),
-                                     mRooSigmaSgn(0x0),
-                                     mMassLowLimit(0),
-                                     mMassUpLimit(0),
-                                     mMassReflLowLimit(0),
-                                     mMassReflUpLimit(0),
                                      mFixedSigma(kFALSE),
                                      mFixedSigmaDoubleGaus(kFALSE),
                                      mBoundSigma(kFALSE),
@@ -94,27 +94,34 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mEnableReflections(kFALSE),
                                      mRawYield(0),
                                      mRawYieldErr(0),
+                                     mRawYieldCounted(0),
+                                     mRawYieldCountedErr(0),
                                      mBkgYield(0),
                                      mBkgYieldErr(0),
                                      mSignificance(0),
                                      mSignificanceErr(0),
-                                     mChiSquareOverNdf(0),
-                                     mSgnPdf(0x0),
-                                     mBkgPdf(0x0),
-                                     mReflPdf(0x0),
+                                     mChiSquareOverNdfTotal(0),
+                                     mChiSquareOverNdfBkg(0),
+                                     mFixReflOverSgn(kFALSE),
+                                     mRooMeanSgn(nullptr),
+                                     mRooSigmaSgn(nullptr),
+                                     mSgnPdf(nullptr),
+                                     mBkgPdf(nullptr),
+                                     mReflPdf(nullptr),
+                                     mRooNSgn(nullptr),
+                                     mRooNBkg(nullptr),
+                                     mRooNRefl(nullptr),
+                                     mTotalPdf(nullptr),
+                                     mInvMassFrame(nullptr),
+                                     mReflFrame(nullptr),
+                                     mReflOnlyFrame(nullptr),
+                                     mResidualFrame(nullptr),
+                                     mResidualFrameForCalculation(nullptr),
+                                     mWorkspace(nullptr),
                                      mIntegralHisto(0),
                                      mIntegralBkg(0),
                                      mIntegralSgn(0),
-                                     mRooNSgn(0x0),
-                                     mRooNBkg(0x0),
-                                     mRooNRefl(0x0),
-                                     mTotalPdf(0x0),
-                                     mInvMassFrame(0x0),
-                                     mReflFrame(0x0),
-                                     mReflOnlyFrame(0x0),
-                                     mResidualFrame(0x0),
-                                     mWorkspace(0x0),
-                                     mHistoTemplateRefl(0x0),
+                                     mHistoTemplateRefl(nullptr),
                                      mDrawBgPrefit(kFALSE),
                                      mHighlightPeakRegion(kFALSE)
 {
@@ -122,15 +129,19 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
 }
 
 HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Double_t maxValue, Int_t fitTypeBkg, Int_t fitTypeSgn) : TNamed(),
-                                                                                                                                    mHistoInvMass(0x0),
+                                                                                                                                    mHistoInvMass(nullptr),
                                                                                                                                     mFitOption("L,E"),
                                                                                                                                     mMinMass(minValue),
                                                                                                                                     mMaxMass(maxValue),
                                                                                                                                     mTypeOfBkgPdf(fitTypeBkg),
-                                                                                                                                    mMassParticle(TDatabasePDG::Instance()->GetParticle("D0")->Mass()),
                                                                                                                                     mTypeOfSgnPdf(fitTypeSgn),
                                                                                                                                     mTypeOfReflPdf(1),
+                                                                                                                                    mMassParticle(TDatabasePDG::Instance()->GetParticle("D0")->Mass()),
                                                                                                                                     mMass(1.865),
+                                                                                                                                    mMassLowLimit(0),
+                                                                                                                                    mMassUpLimit(0),
+                                                                                                                                    mMassReflLowLimit(0),
+                                                                                                                                    mMassReflUpLimit(0),
                                                                                                                                     mSecMass(1.969),
                                                                                                                                     mSigmaSgn(0.012),
                                                                                                                                     mSecSigma(0.006),
@@ -141,12 +152,6 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Doubl
                                                                                                                                     mFixedMean(kFALSE),
                                                                                                                                     mBoundMean(kFALSE),
                                                                                                                                     mBoundReflMean(kFALSE),
-                                                                                                                                    mRooMeanSgn(0x0),
-                                                                                                                                    mRooSigmaSgn(0x0),
-                                                                                                                                    mMassLowLimit(0),
-                                                                                                                                    mMassUpLimit(0),
-                                                                                                                                    mMassReflLowLimit(0),
-                                                                                                                                    mMassReflUpLimit(0),
                                                                                                                                     mFixedSigma(kFALSE),
                                                                                                                                     mFixedSigmaDoubleGaus(kFALSE),
                                                                                                                                     mBoundSigma(kFALSE),
@@ -161,33 +166,40 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Doubl
                                                                                                                                     mEnableReflections(kFALSE),
                                                                                                                                     mRawYield(0),
                                                                                                                                     mRawYieldErr(0),
+                                                                                                                                    mRawYieldCounted(0),
+                                                                                                                                    mRawYieldCountedErr(0),
                                                                                                                                     mBkgYield(0),
                                                                                                                                     mBkgYieldErr(0),
                                                                                                                                     mSignificance(0),
                                                                                                                                     mSignificanceErr(0),
-                                                                                                                                    mChiSquareOverNdf(0),
-                                                                                                                                    mSgnPdf(0x0),
-                                                                                                                                    mBkgPdf(0x0),
-                                                                                                                                    mReflPdf(0x0),
+                                                                                                                                    mChiSquareOverNdfTotal(0),
+                                                                                                                                    mChiSquareOverNdfBkg(0),
+                                                                                                                                    mFixReflOverSgn(kFALSE),
+                                                                                                                                    mRooMeanSgn(nullptr),
+                                                                                                                                    mRooSigmaSgn(nullptr),
+                                                                                                                                    mSgnPdf(nullptr),
+                                                                                                                                    mBkgPdf(nullptr),
+                                                                                                                                    mReflPdf(nullptr),
+                                                                                                                                    mRooNSgn(nullptr),
+                                                                                                                                    mRooNBkg(nullptr),
+                                                                                                                                    mRooNRefl(nullptr),
+                                                                                                                                    mTotalPdf(nullptr),
+                                                                                                                                    mInvMassFrame(nullptr),
+                                                                                                                                    mReflFrame(nullptr),
+                                                                                                                                    mReflOnlyFrame(nullptr),
+                                                                                                                                    mResidualFrame(nullptr),
+                                                                                                                                    mResidualFrameForCalculation(nullptr),
+                                                                                                                                    mWorkspace(nullptr),
                                                                                                                                     mIntegralHisto(0),
                                                                                                                                     mIntegralBkg(0),
                                                                                                                                     mIntegralSgn(0),
-                                                                                                                                    mRooNSgn(0x0),
-                                                                                                                                    mRooNBkg(0x0),
-                                                                                                                                    mRooNRefl(0x0),
-                                                                                                                                    mTotalPdf(0x0),
-                                                                                                                                    mInvMassFrame(0x0),
-                                                                                                                                    mReflFrame(0x0),
-                                                                                                                                    mReflOnlyFrame(0x0),
-                                                                                                                                    mResidualFrame(0x0),
-                                                                                                                                    mWorkspace(0x0),
-                                                                                                                                    mHistoTemplateRefl(0x0),
+                                                                                                                                    mHistoTemplateRefl(nullptr),
                                                                                                                                     mDrawBgPrefit(kFALSE),
                                                                                                                                     mHighlightPeakRegion(kFALSE)
 {
   // standard constructor
   mHistoInvMass = dynamic_cast<TH1*>(histoToFit->Clone(histoToFit->GetTitle()));
-  mHistoInvMass->SetDirectory(0);
+  mHistoInvMass->SetDirectory(nullptr);
 }
 
 HFInvMassFitter::~HFInvMassFitter()
@@ -272,6 +284,12 @@ void HFInvMassFitter::doFit()
         mBkgPdf->fitTo(dataHistogram, Range("SBL,SBR"), Save());
       }
     }
+    // define the frame to evaluate background sidebands chi2 (bg pdf needs to be plotted within sideband ranges)
+    RooPlot* frameTemporary = mass->frame(Title(Form("%s_temp", mHistoInvMass->GetTitle())));
+    dataHistogram.plotOn(frameTemporary, Name("data_for_bkgchi2"));
+    mBkgPdf->plotOn(frameTemporary, Range("SBL", "SBR"), Name("Bkg_sidebands"));
+    mChiSquareOverNdfBkg = frameTemporary->chiSquare("Bkg_sidebands", "data_for_bkgchi2"); // calculate reduced chi2 / NDF of background sidebands (pre-fit)
+    delete frameTemporary;
     RooAbsPdf* mBkgPdfPrefit{nullptr};
     if (mDrawBgPrefit) {
       mBkgPdfPrefit = dynamic_cast<RooAbsPdf*>(mBkgPdf->Clone());
@@ -321,9 +339,9 @@ void HFInvMassFitter::doFit()
       mReflPdf = new RooAddPdf("mReflPdf", "reflection fit function", RooArgList(*reflPdf), RooArgList(*mRooNRefl));
       RooAddPdf reflBkgPdf("reflBkgPdf", "reflBkgPdf", RooArgList(*bkgPdf, *reflPdf), RooArgList(*mRooNBkg, *mRooNRefl));
       reflBkgPdf.plotOn(mInvMassFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineStyle(7), LineColor(kRed + 1), Name("ReflBkg_c"));
-      plotBkg(mTotalPdf);                                              // plot bkg pdf in total pdf
-      plotRefl(mTotalPdf);                                             // plot reflection in total pdf
-      mChiSquareOverNdf = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / NDF
+      plotBkg(mTotalPdf);                                                   // plot bkg pdf in total pdf
+      plotRefl(mTotalPdf);                                                  // plot reflection in total pdf
+      mChiSquareOverNdfTotal = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / NDF
 
       // plot residual distribution
       RooHist* residualHistogram = mInvMassFrame->residHist("data_c", "ReflBkg_c");
@@ -340,7 +358,7 @@ void HFInvMassFitter::doFit()
       plotBkg(mTotalPdf);
       mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"), LineColor(kBlue));
       mSgnPdf->plotOn(mInvMassFrame, Normalization(1.0, RooAbsReal::RelativeExpected), DrawOption("F"), FillColor(TColor::GetColorTransparent(kBlue, 0.2)), VLines());
-      mChiSquareOverNdf = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / DNF
+      mChiSquareOverNdfTotal = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / DNF
       // plot residual distribution
       mResidualFrame = mass->frame(Title("Residual Distribution"));
       RooHist* residualHistogram = mInvMassFrame->residHist("data_c", "Bkg_c");
@@ -563,7 +581,7 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, Int_t writeFitInfo)
     }
     if (mTypeOfBkgPdf != NoBkg) {
       textInfoLeft->AddText(Form("Signif (%d#sigma) = %.1f #pm %.1f ", mNSigmaForSidebands, mSignificance, mSignificanceErr));
-      textInfoLeft->AddText(Form("#chi^{2} / ndf  =  %.3f", mChiSquareOverNdf));
+      textInfoLeft->AddText(Form("#chi^{2} / ndf  =  %.3f", mChiSquareOverNdfTotal));
     }
     if (mFixedMean) {
       textInfoRight->AddText(Form("mean(fixed) = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
@@ -712,40 +730,22 @@ void HFInvMassFitter::checkForSignal(Double_t& estimatedSignal)
 // Create Background Fit Function
 RooAbsPdf* HFInvMassFitter::createBackgroundFitFunction(RooWorkspace* workspace) const
 {
-  RooAbsPdf* bkgPdf;
-  switch (mTypeOfBkgPdf) {
-    case 0: // exponential
-    {
-      bkgPdf = workspace->pdf("bkgFuncExpo");
-    } break;
-    case 1: // poly1
-    {
-      bkgPdf = workspace->pdf("bkgFuncPoly1");
-    } break;
-    case 2: {
-      bkgPdf = workspace->pdf("bkgFuncPoly2");
-    } break;
-    case 3: {
-      bkgPdf = workspace->pdf("bkgFuncPow");
-    } break;
-    case 4: {
-      bkgPdf = workspace->pdf("bkgFuncPowExpo");
-    } break;
-    case 5: {
-      bkgPdf = workspace->pdf("bkgFuncPoly3");
-    } break;
-    case 6: // MC
-      break;
-    default:
-      break;
+  RooAbsPdf* bkgPdf{nullptr};
+  if (mTypeOfBkgPdf == NoBkg) {
+    return bkgPdf;
   }
+  if (mTypeOfBkgPdf < 0 || mTypeOfBkgPdf >= NTypesOfBkgPdf) {
+    throw std::runtime_error("createBackgroundFitFunction(): mTypeOfBkgPdf must be within [0; " + std::to_string(NTypesOfBkgPdf) + ") range");
+  }
+  bkgPdf = workspace->pdf(namesOfBkgPdf.at(mTypeOfBkgPdf));
+
   return bkgPdf;
 }
 
 // Create Signal Fit Function
 RooAbsPdf* HFInvMassFitter::createSignalFitFunction(RooWorkspace* workspace)
 {
-  RooAbsPdf* sgnPdf;
+  RooAbsPdf* sgnPdf{nullptr};
   switch (mTypeOfSgnPdf) {
     case 0: {
       sgnPdf = workspace->pdf("sgnFuncGaus");
@@ -776,74 +776,33 @@ RooAbsPdf* HFInvMassFitter::createSignalFitFunction(RooWorkspace* workspace)
 // Create Reflection Fit Function
 RooAbsPdf* HFInvMassFitter::createReflectionFitFunction(RooWorkspace* workspace) const
 {
-  RooAbsPdf* reflPdf;
-  switch (mTypeOfReflPdf) {
-    case 0: {
-      reflPdf = workspace->pdf("reflFuncGaus");
-    } break;
-    case 1: {
-      reflPdf = workspace->pdf("reflFuncDoubleGaus");
-    } break;
-    case 2: {
-      reflPdf = workspace->pdf("reflFuncPoly3");
-    } break;
-    case 3: {
-      reflPdf = workspace->pdf("reflFuncPoly6");
-    } break;
-    default:
-      break;
+  if (mTypeOfReflPdf < 0 || mTypeOfReflPdf >= NTypesOfReflPdf) {
+    throw std::runtime_error("createReflectionFitFunction(): mTypeOfReflPdf must be within [0; " + std::to_string(NTypesOfReflPdf) + ") range");
   }
+  RooAbsPdf* reflPdf = workspace->pdf(namesOfReflPdf.at(mTypeOfReflPdf));
+
   return reflPdf;
 }
 
 // Plot Bkg components of fTotFunction
 void HFInvMassFitter::plotBkg(RooAbsPdf* pdf, Color_t color)
 {
-  switch (mTypeOfBkgPdf) {
-    case 0:
-      pdf->plotOn(mInvMassFrame, Components("bkgFuncExpo"), Name("Bkg_c"), LineColor(color));
-      break;
-    case 1:
-      pdf->plotOn(mInvMassFrame, Components("bkgFuncPoly1"), Name("Bkg_c"), LineColor(color));
-      break;
-    case 2:
-      pdf->plotOn(mInvMassFrame, Components("bkgFuncPoly2"), Name("Bkg_c"), LineColor(color));
-      break;
-    case 3:
-      pdf->plotOn(mInvMassFrame, Components("bkgFuncPow"), Name("Bkg_c"), LineColor(color));
-      break;
-    case 4:
-      pdf->plotOn(mInvMassFrame, Components("bkgFuncPowExp"), Name("Bkg_c"), LineColor(color));
-      break;
-    case 5:
-      pdf->plotOn(mInvMassFrame, Components("bkgFuncPoly3"), Name("Bkg_c"), LineColor(color));
-      break;
-    case 6:
-      break;
-    default:
-      break;
+  if (mTypeOfBkgPdf == NoBkg) {
+    return;
   }
+  if (mTypeOfBkgPdf < 0 || mTypeOfBkgPdf >= NTypesOfBkgPdf) {
+    throw std::runtime_error("plotBkg(): mTypeOfBkgPdf must be within [0; " + std::to_string(NTypesOfBkgPdf) + ") range");
+  }
+  pdf->plotOn(mInvMassFrame, Components(namesOfBkgPdf.at(mTypeOfBkgPdf).c_str()), Name("Bkg_c"), LineColor(color));
 }
 
 // Plot Refl distribution on canvas
 void HFInvMassFitter::plotRefl(RooAbsPdf* pdf)
 {
-  switch (mTypeOfReflPdf) {
-    case 0:
-      pdf->plotOn(mInvMassFrame, Components("reflFuncGaus"), Name("Refl_c"), LineColor(kGreen));
-      break;
-    case 1:
-      pdf->plotOn(mInvMassFrame, Components("reflFuncDoubleGaus"), Name("Refl_c"), LineColor(kGreen));
-      break;
-    case 2:
-      pdf->plotOn(mInvMassFrame, Components("reflFuncPoly3"), Name("Refl_c"), LineColor(kGreen));
-      break;
-    case 3:
-      pdf->plotOn(mInvMassFrame, Components("reflFuncPoly6"), Name("Refl_c"), LineColor(kGreen));
-      break;
-    default:
-      break;
+  if (mTypeOfReflPdf < 0 || mTypeOfReflPdf >= NTypesOfReflPdf) {
+    throw std::runtime_error("plotRefl(): mTypeOfReflPdf must be within [0; " + std::to_string(NTypesOfReflPdf) + ") range");
   }
+  pdf->plotOn(mInvMassFrame, Components(namesOfReflPdf.at(mTypeOfReflPdf).c_str()), Name("Refl_c"), LineColor(kGreen));
 }
 
 // Fix reflection pdf

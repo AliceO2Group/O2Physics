@@ -62,6 +62,7 @@
 #include <cstdint>
 #include <map>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 using namespace o2;
@@ -259,8 +260,8 @@ struct HfDataCreatorCharmResoReduced {
   using CandsDplusFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using CandsDstarFiltered = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi>>;
   using CandsDstarFilteredWithMl = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfMlDstarToD0Pi>>;
-  using CandsD0Filtered = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0>>;
-  using CandsD0FilteredWithMl = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfMlD0>>;
+  using CandsD0Filtered = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
+  using CandsD0FilteredWithMl = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>>;
   using TracksWithPID = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
   using TracksIUWithPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCPi, aod::pidTOFFullPi, aod::pidTPCPr, aod::pidTOFFullPr>;
   using TracksIUWithPIDAndMC = soa::Join<TracksIUWithPID, aod::McTrackLabels>;
@@ -307,43 +308,50 @@ struct HfDataCreatorCharmResoReduced {
     const AxisSpec axisDeltaMassToPr{500, 0.93, 1.93, "inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisDeltaMassToLambda{500, 1.05, 2.05, "inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisMassDsj{400, 0.49f, 0.89f, ""}; // Ds1 and Ds2Star legacy
-    registry.add("hMassVsPtDplusAll", "Dplus candidates (all, regardless the pairing with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDplus}});
-    registry.add("hMassVsPtDstarAll", "Dstar candidates (all, regardless the pairing with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDstar}});
-    registry.add("hMassVsPtD0All", "D0 candidates (all, regardless the pairing with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassD0}});
-    registry.add("hMassVsPtDplusPaired", "Dplus candidates (paired with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDplus}});
-    registry.add("hMassVsPtDstarPaired", "Dstar candidates (paired with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDstar}});
-    registry.add("hMassVsPtD0Paired", "D0 candidates (paired with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassD0}});
-    registry.add("hMassVsPtD0BarPaired", "D0 candidates (paired with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassD0}});
     registry.add("hMassVsPtK0s", "K0^{s} candidates;#it{p}_{T} (GeV/#it{c});inv. mass (#pi^{#plus}#pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassKzero}});
     registry.add("hMassVsPtLambda", "Lambda candidates;#it{p}_{T} (GeV/#it{c});inv. mass (p #pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassLambda}});
     registry.add("hdEdxVsP", "Tracks;#it{p} (GeV/#it{c});d#it{E}/d#it{x};entries", {HistType::kTH2D, {axisP, axisDeDx}});
     registry.add("hDType", "D selection flag", {HistType::kTH1D, {{5, -2.5, 2.5}}});
 
-    // QA reso invariant mass histograms
-    registry.add("hMassD0Pi", "D0Pi candidates; m_{D^{0}#pi^{+}} - m_{D^{0}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToPi}});
-    registry.add("hMassD0K", "D0Kplus candidates; m_{D^{0}K^{+}} - m_{D^{0} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToK}});
-    registry.add("hMassD0Proton", "D0Proton candidates; m_{D^{0}p} - m_{D^{0} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToPr}});
-    registry.add("hMassD0Lambda", "D0Lambda candidates; m_{D^{0}#Lambda} - m_{D^{0} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToLambda}});
-    registry.add("hMassDstarPi", "DstarPi candidates; m_{D^{*+}#pi^{-}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToPi}});
-    registry.add("hMassDstarK", "DstarK candidates; m_{D^{*+}#pi^{-}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToK}});
-    registry.add("hMassDstarProton", "DstarProton candidates; m_{D^{*}p} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToPr}});
-    registry.add("hMassDstarK0s", "DstarK0s candidates; m_{D^{*}K^{0}_{S}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToK}});
-    registry.add("hMassDstarLambda", "DstarLambda candidates; m_{D^{*}#Lambda} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToLambda}});
-    registry.add("hMassDplusK0s", "DplusK0s candidates; m_{D^{+}K^{0}_{S}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToK}});
-    registry.add("hMassDplusPi", "DplusPi candidates; m_{D^{+}#pi^{-}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToPi}});
-    registry.add("hMassDplusK", "DplusK candidates; m_{D^{+}#pi^{-}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToK}});
-    registry.add("hMassDplusProton", "DplusProton candidates; m_{D^{+}p} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToPr}});
-    registry.add("hMassDplusLambda", "DplusLambda candidates; m_{D^{+}#Lambda} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToLambda}});
-    // MC Rec
-    registry.add("hMCRecCounter", "Number of Reconstructed MC Matched candidates per channel", {HistType::kTH1D, {{17, -8.5, 8.5}}});
-    registry.add("hMCRecDebug", "Debug of MC Reco", {HistType::kTH1D, {{16, -0.5, 15.5}}});
-    registry.add("hMCRecOrigin", "Origin of Matched particles", {HistType::kTH1D, {{3, -0.5, 2.5}}});
-    registry.add("hMCRecMassGen", "Generated inv. mass of resoncances", {HistType::kTH1D, {{2000, 1.8, 3.8}}});
-    // MC Gen
-    registry.add("hMCGenCounter", "Number of Generated particles; Decay Channel Flag; pT [GeV/c]", {HistType::kTH2D, {{17, -8.5, 8.5}, {100, 0, 50}}});
-    registry.add("hMCSignCounter", "Sign of Generated particles", {HistType::kTH1D, {{3, -1.5, 1.5}}});
-    registry.add("hMCGenOrigin", "Origin of Generated particles", {HistType::kTH1D, {{3, -0.5, 2.5}}});
-    registry.add("hMCOriginCounterWrongDecay", "Origin of Generated particles in Wrong decay", {HistType::kTH1D, {{3, -0.5, 2.5}}});
+    if (doprocessD0V0 || doprocessD0Track || doprocessD0V0AndTrack || doprocessD0V0WithMl || doprocessD0TrackWithMl || doprocessD0V0AndTrackWithMl) {
+      registry.add("hMassVsPtD0All", "D0 candidates (all, regardless the pairing with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassD0}});
+      registry.add("hMassVsPtD0Paired", "D0 candidates (paired with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassD0}});
+      registry.add("hMassVsPtD0BarPaired", "D0 candidates (paired with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassD0}});
+      registry.add("hMassD0Pi", "D0Pi candidates; m_{D^{0}#pi^{+}} - m_{D^{0}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToPi}});
+      registry.add("hMassD0K", "D0Kplus candidates; m_{D^{0}K^{+}} - m_{D^{0}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToK}});
+      registry.add("hMassD0Proton", "D0Proton candidates; m_{D^{0}p} - m_{D^{0}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToPr}});
+      registry.add("hMassD0Lambda", "D0Lambda candidates; m_{D^{0}#Lambda} - m_{D^{0}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToLambda}});
+    }
+    if (doprocessDstarV0 || doprocessDstarTrack || doprocessDstarV0AndTrack || doprocessDstarV0WithMl || doprocessDstarTrackWithMl || doprocessDstarV0AndTrackWithMl || doprocessDstarV0MCWithMl) {
+      registry.add("hMassVsPtDstarAll", "Dstar candidates (all, regardless the pairing with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDstar}});
+      registry.add("hMassVsPtDstarPaired", "Dstar candidates (paired with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDstar}});
+      registry.add("hMassDstarPi", "DstarPi candidates; m_{D^{*+}#pi^{-}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToPi}});
+      registry.add("hMassDstarK", "DstarK candidates; m_{D^{*+}#pi^{-}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToK}});
+      registry.add("hMassDstarProton", "DstarProton candidates; m_{D^{*}p} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToPr}});
+      registry.add("hMassDstarK0s", "DstarK0s candidates; m_{D^{*}K^{0}_{S}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToK}});
+      registry.add("hMassDstarLambda", "DstarLambda candidates; m_{D^{*}#Lambda} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToLambda}});
+    }
+    if (doprocessDplusV0 || doprocessDplusV0AndTrack || doprocessDplusV0WithMl || doprocessDplusTrackWithMl || doprocessDplusV0AndTrackWithMl || doprocessDplusV0MCWithMl) {
+      registry.add("hMassVsPtDplusAll", "Dplus candidates (all, regardless the pairing with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDplus}});
+      registry.add("hMassVsPtDplusPaired", "Dplus candidates (paired with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDplus}});
+      registry.add("hMassDplusK0s", "DplusK0s candidates; m_{D^{+}K^{0}_{S}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToK}});
+      registry.add("hMassDplusPi", "DplusPi candidates; m_{D^{+}#pi^{-}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToPi}});
+      registry.add("hMassDplusK", "DplusK candidates; m_{D^{+}#pi^{-}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToK}});
+      registry.add("hMassDplusProton", "DplusProton candidates; m_{D^{+}p} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToPr}});
+      registry.add("hMassDplusLambda", "DplusLambda candidates; m_{D^{+}#Lambda} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToLambda}});
+    }
+    if (doprocessDplusV0MCWithMl) {
+      // MC Rec
+      registry.add("hMCRecCounter", "Number of Reconstructed MC Matched candidates per channel", {HistType::kTH1D, {{17, -8.5, 8.5}}});
+      registry.add("hMCRecDebug", "Debug of MC Reco", {HistType::kTH1D, {{16, -0.5, 15.5}}});
+      registry.add("hMCRecOrigin", "Origin of Matched particles", {HistType::kTH1D, {{3, -0.5, 2.5}}});
+      registry.add("hMCRecMassGen", "Generated inv. mass of resoncances", {HistType::kTH1D, {{2000, 1.8, 3.8}}});
+      // MC Gen
+      registry.add("hMCGenCounter", "Number of Generated particles; Decay Channel Flag; pT [GeV/c]", {HistType::kTH2D, {{17, -8.5, 8.5}, {100, 0, 50}}});
+      registry.add("hMCSignCounter", "Sign of Generated particles", {HistType::kTH1D, {{3, -1.5, 1.5}}});
+      registry.add("hMCGenOrigin", "Origin of Generated particles", {HistType::kTH1D, {{3, -0.5, 2.5}}});
+      registry.add("hMCOriginCounterWrongDecay", "Origin of Generated particles in Wrong decay", {HistType::kTH1D, {{3, -0.5, 2.5}}});
+    }
 
     if (doMcRecQa) {
       registry.add("hMassVsPtK0Matched", "K0s candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassKzero}});
@@ -840,8 +848,8 @@ struct HfDataCreatorCharmResoReduced {
     std::map<int64_t, int64_t> selectedV0s;
     std::map<int64_t, int64_t> selectedTracks;
     bool fillHfReducedCollision = false;
-    const bool doTracks = pairingType == PairingType::TrackOnly || pairingType == PairingType::V0AndTrack;
-    const bool doV0s = pairingType == PairingType::V0Only || pairingType == PairingType::V0AndTrack;
+    constexpr bool DoTracks = pairingType == PairingType::TrackOnly || pairingType == PairingType::V0AndTrack;
+    constexpr bool DoV0s = pairingType == PairingType::V0Only || pairingType == PairingType::V0AndTrack;
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {
       LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
@@ -858,7 +866,7 @@ struct HfDataCreatorCharmResoReduced {
       std::array<int, 3> prongIdsD;
       int8_t dtype{0};
       std::array<float, 6> bdtScores = {-1.f, -1.f, -1.f, -1.f, -1.f, -1.f};
-      std::vector<typename TrIU::iterator> charmHadDauTracks{};
+      std::vector<std::decay_t<typename TrIU::iterator>> charmHadDauTracks{};
       varUtils.ptD = candD.pt();
       if constexpr (dType == DType::Dstar) {
         varUtils.signD = candD.signSoftPi();
@@ -875,9 +883,9 @@ struct HfDataCreatorCharmResoReduced {
         prongIdsD[0] = candD.prong0Id();
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prongPiId();
-        std::copy(candD.pVectorProng0().begin(), candD.pVectorProng0().end(), varUtils.pVectorProng0.begin());
-        std::copy(candD.pVectorProng1().begin(), candD.pVectorProng1().end(), varUtils.pVectorProng1.begin());
-        std::copy(candD.pVecSoftPi().begin(), candD.pVecSoftPi().end(), varUtils.pVectorProng2.begin());
+        varUtils.pVectorProng0 = candD.pVectorProng0();
+        varUtils.pVectorProng1 = candD.pVectorProng1();
+        varUtils.pVectorProng2 = candD.pVecSoftPi();
         charmHadDauTracks.push_back(candD.template prong0_as<TrIU>());
         charmHadDauTracks.push_back(candD.template prong1_as<TrIU>());
         charmHadDauTracks.push_back(candD.template prongPi_as<TrIU>());
@@ -896,9 +904,9 @@ struct HfDataCreatorCharmResoReduced {
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prong2Id();
         varUtils.signD = prong0.sign();
-        std::copy(candD.pVectorProng0().begin(), candD.pVectorProng0().end(), varUtils.pVectorProng0.begin());
-        std::copy(candD.pVectorProng1().begin(), candD.pVectorProng1().end(), varUtils.pVectorProng1.begin());
-        std::copy(candD.pVectorProng2().begin(), candD.pVectorProng2().end(), varUtils.pVectorProng2.begin());
+        varUtils.pVectorProng0 = candD.pVectorProng0();
+        varUtils.pVectorProng1 = candD.pVectorProng1();
+        varUtils.pVectorProng2 = candD.pVectorProng2();
         dtype = static_cast<int8_t>(varUtils.signD * DType::Dplus);
         charmHadDauTracks.push_back(candD.template prong0_as<TrIU>());
         charmHadDauTracks.push_back(candD.template prong1_as<TrIU>());
@@ -918,8 +926,8 @@ struct HfDataCreatorCharmResoReduced {
         prongIdsD[2] = -1; // D0 does not have a third prong
         charmHadDauTracks.push_back(candD.template prong0_as<TrIU>());
         charmHadDauTracks.push_back(candD.template prong1_as<TrIU>());
-        std::copy(candD.pVectorProng0().begin(), candD.pVectorProng0().end(), varUtils.pVectorProng0.begin());
-        std::copy(candD.pVectorProng1().begin(), candD.pVectorProng1().end(), varUtils.pVectorProng1.begin());
+        varUtils.pVectorProng0 = candD.pVectorProng0();
+        varUtils.pVectorProng1 = candD.pVectorProng1();
         varUtils.pVectorProng2 = {0.f, 0.f, 0.f}; // D0 does not have a third prong
         if constexpr (withMl) {
           std::copy(candD.mlProbD0().begin(), candD.mlProbD0().end(), bdtScores.begin());
@@ -943,7 +951,7 @@ struct HfDataCreatorCharmResoReduced {
       }
 
       // Loop on the bachelor V0s
-      if constexpr (doV0s) {
+      if constexpr (DoV0s) {
         for (const auto& v0 : bachelorV0s) {
           auto trackPos = v0.template posTrack_as<TrIU>();
           auto trackNeg = v0.template negTrack_as<TrIU>();
@@ -1082,7 +1090,7 @@ struct HfDataCreatorCharmResoReduced {
           fillHfCandD = true;
           // Optional filling of MC Rec table, for now only implemented for Ds1->D*K0s and Ds2*->D+K0s
           if constexpr (doMc && (dType == DType::Dstar || dType == DType::Dplus)) {
-            std::vector<typename Tr::iterator> charmResoDauTracks{};
+            std::vector<std::decay_t<typename TrIU::iterator>> charmResoDauTracks{};
             for (const auto& track : charmHadDauTracks) {
               charmResoDauTracks.push_back(track);
             }
@@ -1095,7 +1103,7 @@ struct HfDataCreatorCharmResoReduced {
         } // end of loop on V0 candidates
       } // end of do V0s
       // Loop on the bachelor tracks
-      if constexpr (doTracks) {
+      if constexpr (DoTracks) {
         for (const auto& trackIndex : bachelorTrks) {
           auto track = tracks.rawIteratorAt(trackIndex.trackId());
           if (!isTrackSelected(track, prongIdsD)) {
@@ -1215,8 +1223,10 @@ struct HfDataCreatorCharmResoReduced {
                 }
                 varUtils.ptReso = RecoDecay::pt(RecoDecay::sumOfVec(varUtils.pVectorProng0, varUtils.pVectorProng1, pVecTrack));
                 if (!cfgQaPlots.applyCutsForQaHistograms ||
-                    (varUtils.invMassD0 > cfgQaPlots.cutMassDMin &&
-                     varUtils.invMassD0 < cfgQaPlots.cutMassDMax)) {
+                    ((varUtils.invMassD0 > cfgQaPlots.cutMassDMin &&
+                      varUtils.invMassD0 < cfgQaPlots.cutMassDMax) ||
+                     (varUtils.invMassD0Bar > cfgQaPlots.cutMassDMin &&
+                      varUtils.invMassD0Bar < cfgQaPlots.cutMassDMax))) {
                   if (track.sign() > 0) {
                     registry.fill(HIST("hMassD0Pi"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD0);
                   } else {
@@ -1233,8 +1243,10 @@ struct HfDataCreatorCharmResoReduced {
                 }
                 varUtils.ptReso = RecoDecay::pt(RecoDecay::sumOfVec(varUtils.pVectorProng0, varUtils.pVectorProng1, pVecTrack));
                 if (!cfgQaPlots.applyCutsForQaHistograms ||
-                    (varUtils.invMassD0 > cfgQaPlots.cutMassDMin &&
-                     varUtils.invMassD0 < cfgQaPlots.cutMassDMax)) {
+                    ((varUtils.invMassD0 > cfgQaPlots.cutMassDMin &&
+                      varUtils.invMassD0 < cfgQaPlots.cutMassDMax) ||
+                     (varUtils.invMassD0Bar > cfgQaPlots.cutMassDMin &&
+                      varUtils.invMassD0Bar < cfgQaPlots.cutMassDMax))) {
                   if (track.sign() > 0) {
                     registry.fill(HIST("hMassD0K"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD0);
                   } else {
@@ -1245,14 +1257,16 @@ struct HfDataCreatorCharmResoReduced {
               // D0 p
               if (std::abs(track.tpcNSigmaPr()) < cfgSingleTrackCuts.maxNsigmaTpcPr) {
                 if (track.sign() > 0) {
-                  varUtils.invMassReso = RecoDecay::m(std::array{varUtils.pVectorProng0, varUtils.pVectorProng1, pVecTrack}, std::array{MassProton, MassKPlus, MassProton});
+                  varUtils.invMassReso = RecoDecay::m(std::array{varUtils.pVectorProng0, varUtils.pVectorProng1, pVecTrack}, std::array{MassPiPlus, MassKPlus, MassProton});
                 } else {
-                  varUtils.invMassReso = RecoDecay::m(std::array{varUtils.pVectorProng1, varUtils.pVectorProng0, pVecTrack}, std::array{MassProton, MassKPlus, MassProton});
+                  varUtils.invMassReso = RecoDecay::m(std::array{varUtils.pVectorProng1, varUtils.pVectorProng0, pVecTrack}, std::array{MassPiPlus, MassKPlus, MassProton});
                 }
                 varUtils.ptReso = RecoDecay::pt(RecoDecay::sumOfVec(varUtils.pVectorProng0, varUtils.pVectorProng1, pVecTrack));
                 if (!cfgQaPlots.applyCutsForQaHistograms ||
-                    (varUtils.invMassD0 > cfgQaPlots.cutMassDMin &&
-                     varUtils.invMassD0 < cfgQaPlots.cutMassDMax)) {
+                    ((varUtils.invMassD0 > cfgQaPlots.cutMassDMin &&
+                      varUtils.invMassD0 < cfgQaPlots.cutMassDMax) ||
+                     (varUtils.invMassD0Bar > cfgQaPlots.cutMassDMin &&
+                      varUtils.invMassD0Bar < cfgQaPlots.cutMassDMax))) {
                   if (track.sign() > 0) {
                     registry.fill(HIST("hMassD0Proton"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD0);
                   } else {
@@ -1485,7 +1499,7 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollision, thisCollId);
       auto v0sThisColl = v0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<false, false, DType::Dstar, PairingType::V0Only>(collision, candsDThisColl, v0sThisColl, v0sThisColl, tracksIU, tracksIU, tracksIU, bcs);
+      runDataCreation<false, false, DType::Dstar, PairingType::V0Only>(collision, candsDThisColl, v0sThisColl, nullptr, tracksIU, tracksIU, nullptr, bcs);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1509,7 +1523,7 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollision, thisCollId);
       auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, false, DType::Dstar, PairingType::TrackOnly>(collision, candsDThisColl, trackIdsThisColl, trackIdsThisColl, tracks, tracks, tracks, bcs);
+      runDataCreation<false, false, DType::Dstar, PairingType::TrackOnly>(collision, candsDThisColl, nullptr, trackIdsThisColl, tracks, tracks, nullptr, bcs);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1559,7 +1573,7 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollision, thisCollId);
       auto v0sThisColl = v0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<false, false, DType::Dplus, PairingType::V0Only>(collision, candsDThisColl, v0sThisColl, v0sThisColl, tracksIU, tracksIU, tracksIU, bcs);
+      runDataCreation<false, false, DType::Dplus, PairingType::V0Only>(collision, candsDThisColl, v0sThisColl, nullptr, tracksIU, tracksIU, nullptr, bcs);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1583,7 +1597,7 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollision, thisCollId);
       auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, false, DType::Dplus, PairingType::TrackOnly>(collision, candsDThisColl, trackIdsThisColl, trackIdsThisColl, tracks, tracks, tracks, bcs);
+      runDataCreation<false, false, DType::Dplus, PairingType::TrackOnly>(collision, candsDThisColl, nullptr, trackIdsThisColl, tracks, tracks, nullptr, bcs);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1633,7 +1647,7 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD0.sliceBy(candsD0PerCollision, thisCollId);
       auto v0sThisColl = v0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<false, false, DType::D0, PairingType::V0Only>(collision, candsDThisColl, v0sThisColl, v0sThisColl, tracksIU, tracksIU, tracksIU, bcs);
+      runDataCreation<false, false, DType::D0, PairingType::V0Only>(collision, candsDThisColl, v0sThisColl, nullptr, tracksIU, tracksIU, nullptr, bcs);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1657,7 +1671,7 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD0.sliceBy(candsD0PerCollision, thisCollId);
       auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, false, DType::D0, PairingType::TrackOnly>(collision, candsDThisColl, trackIdsThisColl, trackIdsThisColl, tracks, tracks, tracks, bcs);
+      runDataCreation<false, false, DType::D0, PairingType::TrackOnly>(collision, candsDThisColl, nullptr, trackIdsThisColl, tracks, tracks, nullptr, bcs);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1709,7 +1723,7 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollision, thisCollId);
       auto v0sThisColl = v0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<false, true, DType::Dstar, PairingType::V0Only>(collision, candsDThisColl, v0sThisColl, v0sThisColl, tracksIU, tracksIU, particlesMc, bcs);
+      runDataCreation<false, true, DType::Dstar, PairingType::V0Only>(collision, candsDThisColl, v0sThisColl, nullptr, tracksIU, tracksIU, particlesMc, bcs);
     }
     runMcGen<DecayChannel::DstarV0>(particlesMc);
     // handle normalization by the right number of collisions
@@ -1735,7 +1749,7 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollision, thisCollId);
       auto v0sThisColl = v0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<false, true, DType::Dplus, PairingType::V0Only>(collision, candsDThisColl, v0sThisColl, v0sThisColl, tracksIU, tracksIU, particlesMc, bcs);
+      runDataCreation<false, true, DType::Dplus, PairingType::V0Only>(collision, candsDThisColl, v0sThisColl, nullptr, tracksIU, tracksIU, particlesMc, bcs);
     }
     runMcGen<DecayChannel::DplusV0>(particlesMc);
     // handle normalization by the right number of collisions
@@ -1764,7 +1778,7 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollisionWithMl, thisCollId);
       auto v0sThisColl = v0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<true, false, DType::Dstar, PairingType::V0Only>(collision, candsDThisColl, v0sThisColl, v0sThisColl, tracksIU, tracksIU, tracksIU, bcs);
+      runDataCreation<true, false, DType::Dstar, PairingType::V0Only>(collision, candsDThisColl, v0sThisColl, nullptr, tracksIU, tracksIU, nullptr, bcs);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1788,7 +1802,7 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollisionWithMl, thisCollId);
       auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runDataCreation<true, false, DType::Dstar, PairingType::TrackOnly>(collision, candsDThisColl, trackIdsThisColl, trackIdsThisColl, tracks, tracks, tracks, bcs);
+      runDataCreation<true, false, DType::Dstar, PairingType::TrackOnly>(collision, candsDThisColl, nullptr, trackIdsThisColl, tracks, tracks, nullptr, bcs);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1838,7 +1852,7 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollisionWithMl, thisCollId);
       auto v0sThisColl = v0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<true, false, DType::Dplus, PairingType::V0Only>(collision, candsDThisColl, v0sThisColl, v0sThisColl, tracksIU, tracksIU, tracksIU, bcs);
+      runDataCreation<true, false, DType::Dplus, PairingType::V0Only>(collision, candsDThisColl, v0sThisColl, nullptr, tracksIU, tracksIU, nullptr, bcs);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1862,7 +1876,7 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollisionWithMl, thisCollId);
       auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runDataCreation<true, false, DType::Dplus, PairingType::TrackOnly>(collision, candsDThisColl, trackIdsThisColl, trackIdsThisColl, tracks, tracks, tracks, bcs);
+      runDataCreation<true, false, DType::Dplus, PairingType::TrackOnly>(collision, candsDThisColl, nullptr, trackIdsThisColl, tracks, tracks, nullptr, bcs);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1912,7 +1926,7 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD0.sliceBy(candsD0PerCollisionWithMl, thisCollId);
       auto v0sThisColl = v0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<true, false, DType::D0, PairingType::V0Only>(collision, candsDThisColl, v0sThisColl, v0sThisColl, tracksIU, tracksIU, tracksIU, bcs);
+      runDataCreation<true, false, DType::D0, PairingType::V0Only>(collision, candsDThisColl, v0sThisColl, nullptr, tracksIU, tracksIU, nullptr, bcs);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1936,7 +1950,7 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD0.sliceBy(candsD0PerCollisionWithMl, thisCollId);
       auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runDataCreation<true, false, DType::D0, PairingType::TrackOnly>(collision, candsDThisColl, trackIdsThisColl, trackIdsThisColl, tracks, tracks, tracks, bcs);
+      runDataCreation<true, false, DType::D0, PairingType::TrackOnly>(collision, candsDThisColl, nullptr, trackIdsThisColl, tracks, tracks, nullptr, bcs);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1988,7 +2002,7 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollision, thisCollId);
       auto v0sThisColl = v0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<true, true, DType::Dstar, PairingType::V0Only>(collision, candsDThisColl, v0sThisColl, v0sThisColl, tracksIU, tracksIU, particlesMc, bcs);
+      runDataCreation<true, true, DType::Dstar, PairingType::V0Only>(collision, candsDThisColl, v0sThisColl, nullptr, tracksIU, tracksIU, particlesMc, bcs);
     }
     runMcGen<DecayChannel::DstarV0>(particlesMc);
     // handle normalization by the right number of collisions
@@ -2014,7 +2028,7 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollision, thisCollId);
       auto v0sThisColl = v0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<true, true, DType::Dplus, PairingType::V0Only>(collision, candsDThisColl, v0sThisColl, v0sThisColl, tracksIU, tracksIU, particlesMc, bcs);
+      runDataCreation<true, true, DType::Dplus, PairingType::V0Only>(collision, candsDThisColl, v0sThisColl, nullptr, tracksIU, tracksIU, particlesMc, bcs);
     }
     runMcGen<DecayChannel::DplusV0>(particlesMc);
     // handle normalization by the right number of collisions
