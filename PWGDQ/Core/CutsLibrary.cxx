@@ -17,6 +17,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <set>
 #include "AnalysisCompositeCut.h"
 #include "VarManager.h"
 
@@ -7099,4 +7100,155 @@ AnalysisCompositeCut* o2::aod::dqcuts::ParseJSONAnalysisCompositeCut(T cut, cons
   }
 
   return retCut;
+}
+
+//________________________________________________________________________________________________
+o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFromJSON(const char* json)
+{
+  LOG(info) << "========================================== interpreting JSON for analysis cuts";
+  LOG(info) << "JSON string: " << json;
+
+  rapidjson::Document document;
+  rapidjson::ParseResult ok = document.Parse(json);
+  if (!ok) {
+    LOG(fatal) << "JSON parse error: " << rapidjson::GetParseErrorFunc(ok.Code()) << " (" << ok.Offset() << ")";
+    return {}; // empty variant
+  }
+
+  for (auto it = document.MemberBegin(); it != document.MemberEnd(); ++it) {
+    const auto& obj = it->value;
+
+    if (!obj.HasMember("type")) {
+      LOG(fatal) << "Missing type (Binary/MultiClass)";
+      return {};
+    }
+
+    TString typeStr = obj["type"].GetString();
+    // int nClasses = (typeStr == "MultiClass") ? 3 : 1;
+
+    std::vector<std::string> namesInputFeatures;
+    if (obj.HasMember("inputFeatures") && obj["inputFeatures"].IsArray()) {
+      for (auto& feature : obj["inputFeatures"].GetArray()) {
+        namesInputFeatures.emplace_back(feature.GetString());
+      }
+    }
+
+    std::vector<std::string> onnxFileNames;
+    if (obj.HasMember("modelFiles") && obj["modelFiles"].IsArray()) {
+      for (const auto& model : obj["modelFiles"].GetArray()) {
+        onnxFileNames.emplace_back(model.GetString());
+      }
+    }
+
+    // Cut storage
+    std::vector<std::pair<double, double>> ptBins;
+    std::vector<std::vector<double>> cutsMl;
+    std::vector<int> cutDirs;
+    bool cutDirsFilled = false;
+
+    for (auto member = obj.MemberBegin(); member != obj.MemberEnd(); ++member) {
+      TString key = member->name.GetString();
+      if (!key.Contains("AddCut"))
+        continue;
+
+      const auto& cut = member->value;
+
+      if (!cut.HasMember("pTMin") || !cut.HasMember("pTMax")) {
+        LOG(fatal) << "Missing pTMin/pTMax in ML cut";
+        return {};
+      }
+
+      double pTMin = cut["pTMin"].GetDouble();
+      double pTMax = cut["pTMax"].GetDouble();
+      ptBins.emplace_back(pTMin, pTMax);
+
+      std::vector<double> binCuts;
+      bool exclude = false;
+
+      for (auto& sub : cut.GetObject()) {
+        TString subKey = sub.name.GetString();
+        if (!subKey.Contains("AddMLCut"))
+          continue;
+
+        const auto& mlcut = sub.value;
+        // const char* var = mlcut["var"].GetString();
+        double cutVal = mlcut.HasMember("cut") ? mlcut["cut"].GetDouble() : 0.5;
+        exclude = mlcut.HasMember("exclude") ? mlcut["exclude"].GetBool() : false;
+
+        binCuts.push_back(cutVal);
+
+        if (!cutDirsFilled) {
+          cutDirs.push_back(exclude ? 1 : 0);
+          cutDirsFilled = true;
+        }
+      }
+
+      cutsMl.push_back(binCuts);
+    }
+
+    // bin edges
+    std::vector<double> binsPt;
+    if (!ptBins.empty()) {
+      std::set<double> binEdges;
+      for (auto& b : ptBins)
+        binEdges.insert(b.first);
+      binEdges.insert(ptBins.back().second);
+      binsPt = std::vector<double>(binEdges.begin(), binEdges.end());
+    } else {
+      LOG(fatal) << "No pT bins found in ML cuts";
+      return {};
+    }
+
+    std::vector<std::string> labelsPt, labelsClass;
+    for (size_t i = 0; i < cutsMl.size(); ++i) {
+      labelsPt.push_back(Form("pT%.1f", binsPt[i]));
+    }
+    for (size_t j = 0; j < cutsMl[0].size(); ++j) {
+      labelsClass.push_back(Form("cls%d", static_cast<int>(j)));
+    }
+
+    // Binary
+    if (typeStr == "Binary") {
+      dqmlcuts::BinaryBdtScoreConfig binaryCfg;
+      binaryCfg.inputFeatures = namesInputFeatures;
+      binaryCfg.onnxFiles = onnxFileNames;
+      binaryCfg.binsPt = binsPt;
+      binaryCfg.cutDirs = cutDirs;
+      binaryCfg.cutsMl = makeLabeledCutsMl(cutsMl, labelsPt, labelsClass);
+
+      return binaryCfg;
+
+      // MultiClass
+    } else if (typeStr == "MultiClass") {
+      dqmlcuts::MultiClassBdtScoreConfig multiCfg;
+      multiCfg.inputFeatures = namesInputFeatures;
+      multiCfg.onnxFiles = onnxFileNames;
+      multiCfg.binsPt = binsPt;
+      multiCfg.cutDirs = cutDirs;
+      multiCfg.cutsMl = makeLabeledCutsMl(cutsMl, labelsPt, labelsClass);
+
+      return multiCfg;
+    }
+
+    LOG(fatal) << "Unsupported classification type: " << typeStr;
+    return {};
+  }
+
+  return {};
+}
+
+o2::framework::LabeledArray<double> o2::aod::dqmlcuts::makeLabeledCutsMl(const std::vector<std::vector<double>>& cuts,
+                                                                         const std::vector<std::string>& labelsPt,
+                                                                         const std::vector<std::string>& labelsClass)
+{
+  const size_t nRows = cuts.size();
+  const size_t nCols = cuts.empty() ? 0 : cuts[0].size();
+  std::vector<double> flat;
+
+  for (const auto& row : cuts) {
+    flat.insert(flat.end(), row.begin(), row.end());
+  }
+
+  o2::framework::Array2D<double> arr(flat.data(), nRows, nCols);
+  return o2::framework::LabeledArray<double>(arr, labelsPt, labelsClass);
 }

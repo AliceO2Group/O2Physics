@@ -20,6 +20,7 @@
 #include "PWGDQ/Core/MixingLibrary.h"
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "PWGDQ/Core/DQMlResponse.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 
@@ -1054,6 +1055,12 @@ struct AnalysisSameEventPairing {
   Configurable<float> fCenterMassEnergy{"energy", 13600, "Center of mass energy in GeV"};
   Configurable<bool> fConfigCumulants{"cfgCumulants", false, "If true, fill Cumulants with Weights different than 0"};
   Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
+  // ML inference
+  Configurable<bool> applyBDT{"applyBDT", false, "Flag to apply ML selections"};
+  Configurable<string> fConfigBdtCutsJSON{"fConfigBdtCutsJSON", "", "Additional list of BDT cuts in JSON format"};
+  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/j/jseo/ML/PbPbPsi/default/"}, "Paths of models on CCDB"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   // Configurables to create output tree (flat tables or minitree)
   struct : ConfigurableGroup {
@@ -1070,6 +1077,10 @@ struct AnalysisSameEventPairing {
   Filter prefilter = aod::dqanalysisflags::isPrefilterVetoed == 0;
 
   HistogramManager* fHistMan;
+
+  o2::analysis::DQMlResponse<float> dqMlResponse;
+  std::vector<float> outputMlPsi2ee = {}; // TODO: check this is needed or not
+  o2::ccdb::CcdbApi ccdbApi;
 
   // NOTE: The track filter produced by the barrel track selection contain a number of electron cut decisions and one last cut for hadrons used in the
   //           dilepton - hadron task downstream. So the bit mask is required to select pairs just based on the electron cuts
@@ -1121,7 +1132,47 @@ struct AnalysisSameEventPairing {
       }
     }
 
-    if (context.mOptions.get<bool>("processDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEESkimmedNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToEESkimmedWithCov") || context.mOptions.get<bool>("processDecayToEESkimmedWithCovNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToEEVertexingSkimmed") || context.mOptions.get<bool>("processVnDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEEPrefilterSkimmed") || context.mOptions.get<bool>("processDecayToEEPrefilterSkimmedNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToEESkimmedWithColl") || context.mOptions.get<bool>("processDecayToEESkimmedWithCollNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToPiPiSkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
+    if (applyBDT) {
+      // BDT cuts via JSON
+      std::vector<double> binsPtMl;
+      o2::framework::LabeledArray<double> cutsMl;
+      std::vector<int> cutDirMl;
+      int nClassesMl = 1; // 1 for binary BDT, 3 for multiclass BDT
+      std::vector<std::string> namesInputFeatures;
+      std::vector<std::string> onnxFileNames;
+
+      auto config = o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFromJSON(fConfigBdtCutsJSON.value.c_str());
+
+      if (std::holds_alternative<dqmlcuts::BinaryBdtScoreConfig>(config)) {
+        auto& cfg = std::get<dqmlcuts::BinaryBdtScoreConfig>(config);
+        binsPtMl = cfg.binsPt;
+        nClassesMl = 1;
+        cutsMl = cfg.cutsMl;
+        cutDirMl = cfg.cutDirs;
+        namesInputFeatures = cfg.inputFeatures;
+        onnxFileNames = cfg.onnxFiles;
+      } else {
+        auto& cfg = std::get<dqmlcuts::MultiClassBdtScoreConfig>(config);
+        binsPtMl = cfg.binsPt;
+        nClassesMl = 3;
+        cutsMl = cfg.cutsMl;
+        cutDirMl = cfg.cutDirs;
+        namesInputFeatures = cfg.inputFeatures;
+        onnxFileNames = cfg.onnxFiles;
+      }
+
+      dqMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdburl);
+        dqMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+      } else {
+        dqMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      dqMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      dqMlResponse.init();
+    }
+
+    if (context.mOptions.get<bool>("processDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEESkimmedNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToEESkimmedWithCov") || context.mOptions.get<bool>("processDecayToEESkimmedWithCovNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToEEVertexingSkimmed") || context.mOptions.get<bool>("processVnDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEEPrefilterSkimmed") || context.mOptions.get<bool>("processDecayToEEPrefilterSkimmedNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToEESkimmedWithColl") || context.mOptions.get<bool>("processDecayToEESkimmedWithCollNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToPiPiSkimmed") || context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processDecayToEESkimmedBDT")) {
       TString cutNames = fConfigTrackCuts.value;
       if (!cutNames.IsNull()) { // if track cuts
         std::unique_ptr<TObjArray> objArray(cutNames.Tokenize(","));
@@ -1317,6 +1368,8 @@ struct AnalysisSameEventPairing {
       dileptonMiniTree.reserve(1);
     }
 
+    bool isSelectedBDT = false;
+
     if (fConfigMultDimuons.value) {
 
       uint32_t mult_dimuons = 0;
@@ -1395,6 +1448,22 @@ struct AnalysisSameEventPairing {
         }
       }
       if constexpr ((TPairType == pairTypeEE) && (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelPID) > 0) {
+        if (applyBDT) {
+          std::vector<float> dqInputFeatures = dqMlResponse.getInputFeatures(t1, t2, VarManager::fgValues);
+
+          if (dqInputFeatures.empty()) {
+            LOG(fatal) << "Input features for ML selection are empty! Please check your configuration.";
+            return;
+          }
+
+          // isSelectedBDT = dqMlResponse.isSelectedMl(dqInputFeatures, VarManager::fgValues[VarManager::kPt]);
+          isSelectedBDT = dqMlResponse.isSelectedMl(dqInputFeatures, VarManager::fgValues[VarManager::kPt], outputMlPsi2ee);
+          VarManager::FillBdtScore(outputMlPsi2ee); // TODO: check if this is needed or not
+        }
+
+        if (applyBDT && !isSelectedBDT)
+          continue;
+
         if (fConfigFlatTables.value) {
           dielectronAllList(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap, dileptonMcDecision,
                             t1.pt(), t1.eta(), t1.phi(), t1.itsClusterMap(), t1.itsChi2NCl(), t1.tpcNClsCrossedRows(), t1.tpcNClsFound(), t1.tpcChi2NCl(), t1.dcaXY(), t1.dcaZ(), t1.tpcSignal(), t1.tpcNSigmaEl(), t1.tpcNSigmaPi(), t1.tpcNSigmaPr(), t1.beta(), t1.tofNSigmaEl(), t1.tofNSigmaPi(), t1.tofNSigmaPr(),
@@ -1467,6 +1536,9 @@ struct AnalysisSameEventPairing {
           isFirst = false;
         }
       }
+
+      if (applyBDT && !isSelectedBDT)
+        continue;
 
       int iCut = 0;
       for (int icut = 0; icut < ncuts; icut++) {
@@ -1606,6 +1678,13 @@ struct AnalysisSameEventPairing {
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
     runSameEventPairing<false, VarManager::kDecayToEE, gkEventFillMap, gkTrackFillMapWithColl>(event, tracks, tracks);
   }
+  void processDecayToEESkimmedBDT(soa::Filtered<MyEventsSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
+  {
+    // Reset the fValues array
+    VarManager::ResetValues(0, VarManager::kNVars);
+    VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
+    runSameEventPairing<false, VarManager::kDecayToEE, gkEventFillMap, gkTrackFillMap>(event, tracks, tracks);
+  }
   void processDecayToMuMuSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyMuonTracksSelected> const& muons)
   {
     // Reset the fValues array
@@ -1710,6 +1789,7 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEEPrefilterSkimmedNoTwoProngFitter, "Run electron-electron pairing, with skimmed tracks and prefilter from AnalysisPrefilterSelection but no two prong fitter", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmedWithColl, "Run electron-electron pairing, with skimmed tracks and with collision information", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmedWithCollNoTwoProngFitter, "Run electron-electron pairing, with skimmed tracks and with collision information but no two prong fitter", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmedBDT, "Run electron-electron pairing, with skimmed tracks and BDT selection", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToMuMuSkimmed, "Run muon-muon pairing, with skimmed muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToMuMuSkimmedWithMult, "Run muon-muon pairing, with skimmed muons and multiplicity", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToMuMuVertexingSkimmed, "Run muon-muon pairing and vertexing, with skimmed muons", false);

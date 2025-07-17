@@ -21,6 +21,7 @@
 #include "PWGDQ/Core/MixingLibrary.h"
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "PWGDQ/Core/DQMlResponse.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TableHelper.h"
@@ -1246,6 +1247,14 @@ struct AnalysisSameEventPairing {
     Configurable<bool> propTrack{"cfgPropTrack", true, "Propgate tracks to associated collision to recalculate DCA and momentum vector"};
     Configurable<bool> useRemoteCollisionInfo{"cfgUseRemoteCollisionInfo", false, "Use remote collision information from CCDB"};
   } fConfigOptions;
+  struct : ConfigurableGroup {
+    Configurable<bool> applyBDT{"applyBDT", false, "Flag to apply ML selections"};
+    Configurable<string> fConfigBdtCutsJSON{"fConfigBdtCutsJSON", "", "Additional list of BDT cuts in JSON format"};
+
+    Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/j/jseo/ML/PbPbPsi/default/"}, "Paths of models on CCDB"};
+    Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+    Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+  } fConfigML;
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
   o2::ccdb::CcdbApi fCCDBApi;
@@ -1253,6 +1262,9 @@ struct AnalysisSameEventPairing {
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected > static_cast<uint8_t>(0);
 
   HistogramManager* fHistMan;
+
+  o2::analysis::DQMlResponse<float> dqMlResponse;
+  std::vector<float> outputMlPsi2ee = {}; // TODO: check this is needed or not
 
   // keep histogram class names in maps, so we don't have to buld their names in the pair loops
   std::map<int, std::vector<TString>> fTrackHistNames;
@@ -1281,7 +1293,7 @@ struct AnalysisSameEventPairing {
   void init(o2::framework::InitContext& context)
   {
     LOG(info) << "Starting initialization of AnalysisSameEventPairing (idstoreh)";
-    fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCovWithMultExtra") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmedNoCov");
+    fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCovWithMultExtra") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlySkimmedBDT");
     fEnableBarrelMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmed");
     fEnableMuonHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmedMultExtra") || context.mOptions.get<bool>("processMixingMuonSkimmed");
     fEnableMuonMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingMuonSkimmed");
@@ -1319,6 +1331,46 @@ struct AnalysisSameEventPairing {
     TObjArray* objArrayMuonCuts = nullptr;
     if (!muonCutsStr.IsNull()) {
       objArrayMuonCuts = muonCutsStr.Tokenize(",");
+    }
+
+    if (fConfigML.applyBDT) {
+      // BDT cuts via JSON
+      std::vector<double> binsPtMl;
+      o2::framework::LabeledArray<double> cutsMl;
+      std::vector<int> cutDirMl;
+      int nClassesMl = 1; // 1 for binary BDT, 3 for multiclass BDT
+      std::vector<std::string> namesInputFeatures;
+      std::vector<std::string> onnxFileNames;
+
+      auto config = o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFromJSON(fConfigML.fConfigBdtCutsJSON.value.c_str());
+
+      if (std::holds_alternative<dqmlcuts::BinaryBdtScoreConfig>(config)) {
+        auto& cfg = std::get<dqmlcuts::BinaryBdtScoreConfig>(config);
+        binsPtMl = cfg.binsPt;
+        nClassesMl = 1;
+        cutsMl = cfg.cutsMl;
+        cutDirMl = cfg.cutDirs;
+        namesInputFeatures = cfg.inputFeatures;
+        onnxFileNames = cfg.onnxFiles;
+      } else {
+        auto& cfg = std::get<dqmlcuts::MultiClassBdtScoreConfig>(config);
+        binsPtMl = cfg.binsPt;
+        nClassesMl = 3;
+        cutsMl = cfg.cutsMl;
+        cutDirMl = cfg.cutDirs;
+        namesInputFeatures = cfg.inputFeatures;
+        onnxFileNames = cfg.onnxFiles;
+      }
+
+      dqMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      if (fConfigML.loadModelsFromCCDB) {
+        fCCDBApi.init(fConfigCCDB.url);
+        dqMlResponse.setModelPathsCCDB(onnxFileNames, fCCDBApi, fConfigML.modelPathsCCDB, fConfigML.timestampCCDB);
+      } else {
+        dqMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      dqMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      dqMlResponse.init();
     }
 
     // get the barrel track selection cuts
@@ -1627,6 +1679,7 @@ struct AnalysisSameEventPairing {
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
     constexpr bool eventHasQvectorCentr = ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0);
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
+    bool isSelectedBDT = false;
 
     for (auto& event : events) {
       if (!event.isEventSelected_bit(0)) {
@@ -1707,6 +1760,22 @@ struct AnalysisSameEventPairing {
           if constexpr (trackHasCov && TTwoProngFitter) {
             dielectronsExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
             if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelPID) > 0) {
+              if (fConfigML.applyBDT) {
+                std::vector<float> dqInputFeatures = dqMlResponse.getInputFeatures(t1, t2, VarManager::fgValues);
+
+                if (dqInputFeatures.empty()) {
+                  LOG(fatal) << "Input features for ML selection are empty! Please check your configuration.";
+                  return;
+                }
+
+                // isSelectedBDT = dqMlResponse.isSelectedMl(dqInputFeatures, VarManager::fgValues[VarManager::kPt]);
+                isSelectedBDT = dqMlResponse.isSelectedMl(dqInputFeatures, VarManager::fgValues[VarManager::kPt], outputMlPsi2ee);
+                VarManager::FillBdtScore(outputMlPsi2ee); // TODO: check if this is needed or not
+              }
+
+              if (fConfigML.applyBDT && !isSelectedBDT)
+                continue;
+
               if (fConfigOptions.flatTables.value) {
                 dielectronAllList(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), twoTrackFilter, dileptonMcDecision,
                                   t1.pt(), t1.eta(), t1.phi(), t1.itsClusterMap(), t1.itsChi2NCl(), t1.tpcNClsCrossedRows(), t1.tpcNClsFound(), t1.tpcChi2NCl(), t1.dcaXY(), t1.dcaZ(), t1.tpcSignal(), t1.tpcNSigmaEl(), t1.tpcNSigmaPi(), t1.tpcNSigmaPr(), t1.beta(), t1.tofNSigmaEl(), t1.tofNSigmaPi(), t1.tofNSigmaPr(),
@@ -1831,6 +1900,10 @@ struct AnalysisSameEventPairing {
         bool isLeg1Ambi = false;
         bool isLeg2Ambi = false;
         bool isAmbiExtra = false;
+
+        if (fConfigML.applyBDT && !isSelectedBDT)
+          continue;
+
         for (int icut = 0; icut < ncuts; icut++) {
           if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             isAmbiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
@@ -2152,6 +2225,13 @@ struct AnalysisSameEventPairing {
     runSameEventPairing<false, VarManager::kDecayToEE, gkEventFillMapWithQvectorCentr, gkTrackFillMap>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
+  void processBarrelOnlySkimmedBDT(MyEventsVtxCovSelected const& events,
+                                   soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
+                                   MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
+  {
+    runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
+  }
+
   void processMuonOnlySkimmed(MyEventsVtxCovSelected const& events,
                               soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
@@ -2195,6 +2275,7 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlySkimmedNoCov, "Run barrel only pairing (no covariances), with skimmed tracks and with collision information", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlySkimmedNoCovWithMultExtra, "Run barrel only pairing (no covariances), with skimmed tracks, with collision information, with MultsExtra", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithQvectorCentrSkimmedNoCov, "Run barrel only pairing (no covariances), with skimmed tracks, with Qvector from central framework", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlySkimmedBDT, "Run electron-electron pairing, with skimmed tracks and BDT selection", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmed, "Run muon only pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmedMultExtra, "Run muon only pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingAllSkimmed, "Run all types of mixed pairing, with skimmed tracks/muons", false);
