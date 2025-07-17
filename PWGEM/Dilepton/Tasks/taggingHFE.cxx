@@ -643,7 +643,7 @@ struct taggingHFE {
       float mEK = RecoDecay::m(std::array{pvec0, pvec1}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassKaonCharged});
       float cpa = RecoDecay::cpa(pVtx, svpos, pvecSum);
       float cpaXY = RecoDecay::cpaXY(pVtx, svpos, pvecSum);
-      float ptEK = RecoDecay::sqrtSumOfSquares(pvec0[0] + pvec1[0], pvec0[1] + pvec1[1]);
+      // float ptEK = RecoDecay::sqrtSumOfSquares(pvec0[0] + pvec1[0], pvec0[1] + pvec1[1]);
 
       float deta = RecoDecay::eta(pvec1) - RecoDecay::eta(pvec0);
       float dphi = RecoDecay::phi(pvec1[0], pvec1[1]) - RecoDecay::phi(pvec0[0], pvec0[1]);
@@ -830,7 +830,7 @@ struct taggingHFE {
       float dca2legs = std::sqrt(fitter.getChi2AtPCACandidate());
       float lxy = std::sqrt(std::pow(svpos[0] - collision.posX(), 2) + std::pow(svpos[1] - collision.posY(), 2));
       float lz = std::fabs(svpos[2] - collision.posZ());
-      float ptEK = RecoDecay::sqrtSumOfSquares(pvec0[0] + pvec1[0], pvec0[1] + pvec1[1]);
+      // float ptEK = RecoDecay::sqrtSumOfSquares(pvec0[0] + pvec1[0], pvec0[1] + pvec1[1]);
 
       float deta = RecoDecay::eta(pvec1) - RecoDecay::eta(pvec0);
       float dphi = RecoDecay::phi(pvec1[0], pvec1[1]) - RecoDecay::phi(pvec0[0], pvec0[1]);
