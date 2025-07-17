@@ -1665,6 +1665,39 @@ struct HfDataCreatorCharmHadPiReduced {
         tables.rowHfLbMcGenReduced(flag, ptParticle, yParticle, etaParticle,
                                    ptProngs[0], yProngs[0], etaProngs[0],
                                    ptProngs[1], yProngs[1], etaProngs[1], hfRejMap, centFT0C, centFT0M);
+      } else if constexpr (decayChannel == DecayChannel::B0ToDstarPi) {
+        // B0 → D* π+
+        if (RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kB0, std::array{+static_cast<int>(Pdg::kDStar), -kPiPlus}, true)) {
+          // Match D- -> π- K+ π-
+          auto candCMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
+          // Printf("Checking D- -> π- K+ π-");
+          if (RecoDecay::isMatchedMCGen(particlesMc, candCMC, +static_cast<int>(Pdg::kDStar), std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 3)) {
+            flag = sign * BIT(hf_cand_b0::DecayType::B0ToDstarPi);
+          }
+        }
+
+        // save information for B0 task
+        if (!TESTBIT(std::abs(flag), hf_cand_b0::DecayType::B0ToDstarPi)) {
+          continue;
+        }
+
+        auto ptParticle = particle.pt();
+        auto yParticle = RecoDecay::y(particle.pVector(), massB);
+        auto etaParticle = particle.eta();
+
+        std::array<float, 2> ptProngs;
+        std::array<float, 2> yProngs;
+        std::array<float, 2> etaProngs;
+        int counter = 0;
+        for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
+          ptProngs[counter] = daught.pt();
+          etaProngs[counter] = daught.eta();
+          yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
+          counter++;
+        }
+        tables.rowHfB0McGenReduced(flag, -1 /*channel*/, ptParticle, yParticle, etaParticle,
+                                   ptProngs[0], yProngs[0], etaProngs[0],
+                                   ptProngs[1], yProngs[1], etaProngs[1], hfRejMap, centFT0C, centFT0M);
       }
     } // gen
   }
