@@ -46,7 +46,6 @@ struct HfTaskSingleElectron {
   Configurable<float> tofNSigmaMax{"tofNSigmaMax", 3., "max of tof nsigma"};
   Configurable<float> tpcNSigmaMin{"tpcNSigmaMin", -1., "min of tpc nsigma"};
   Configurable<float> tpcNSigmaMax{"tpcNSigmaMax", 3., "max of tpc nsigma"};
-
   Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histo"};
 
   // SliceCache
