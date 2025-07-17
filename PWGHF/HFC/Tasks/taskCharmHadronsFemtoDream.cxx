@@ -249,11 +249,12 @@ struct HfTaskCharmHadronsFemtoDream {
     registryMixQa.fill(HIST("MixingQA/hSECollisionBins"), colBinningMult.getBin({col.posZ(), col.multNtr()}));
     registryMixQa.fill(HIST("MixingQA/hSECollisionPool"), col.posZ(), col.multNtr());
   }
-  
+
   /// Compute the charm hadron candidates mass with the daughter masses
-  /// assumes the candidate is either a D+ or Λc+ 
-  template<typename Candidate>
-  float getCharmHadronMass(const Candidate& cand) {
+  /// assumes the candidate is either a D+ or Λc+
+  template <typename Candidate>
+  float getCharmHadronMass(const Candidate& cand)
+  {
     float invMass = 0.0f;
     if (charmHadPDGCode == 4122) {
       if (cand.candidateSelFlag() == 1) {
@@ -400,7 +401,7 @@ struct HfTaskCharmHadronsFemtoDream {
         if (kstar > highkstarCut) {
           continue;
         }
-        
+
         float invMass = getCharmHadronMass(p2);
 
         if (invMass < charmHadMinInvMass || invMass > charmHadMaxInvMass) {
