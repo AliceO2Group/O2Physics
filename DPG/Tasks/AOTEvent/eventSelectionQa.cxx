@@ -346,13 +346,16 @@ struct EventSelectionQaTask {
       histos.add("occupancyQA/hOccupancyByFT0CvsByTracks", "", kTH2D, {{150, 0, 15000}, {150, 0, 150000}});
 
       // 3D histograms: nGlobalTracks with cls567 as y-axis, V0A as x-axis:
-      const AxisSpec axisNtracksPV{160, -0.5, 4000 - 0.5, "n ITS PV tracks"};
-      const AxisSpec axisNtracksPVTPC{120, -0.5, 3000 - 0.5, "n ITS-TPC PV tracks"};
+      const AxisSpec axisNtracksPV{200, -0.5, 5000 - 0.5, "n ITS PV tracks"};
+      const AxisSpec axisNtracksPVTPC{160, -0.5, 4000 - 0.5, "n ITS-TPC PV tracks"};
       const AxisSpec axisNtracksTPConly{160, -0.5, 8000 - 0.5, "n TPC-only tracks"};
       const AxisSpec axisMultV0AForOccup{20, 0., static_cast<float>(200000), "mult V0A"};
       const AxisSpec axisOccupancyTracks{150, 0., 15000, "occupancy (n ITS tracks weighted)"};
       histos.add("occupancyQA/hNumTracksPV_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksPV, axisOccupancyTracks});
       histos.add("occupancyQA/hNumTracksPVTPC_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksPVTPC, axisOccupancyTracks});
+      histos.add("occupancyQA/hNumTracksPVTPCLooseCuts_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksPVTPC, axisOccupancyTracks});
+      histos.add("occupancyQA/hNumTracksITS_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksPV, axisOccupancyTracks});
+      histos.add("occupancyQA/hNumTracksITSTPC_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksPVTPC, axisOccupancyTracks});
       histos.add("occupancyQA/hNumTracksPV_vs_V0A_vs_occupancy_NarrowDeltaTimeCut", "", kTH3F, {axisMultV0AForOccup, axisNtracksPV, axisOccupancyTracks});
       histos.add("occupancyQA/hNumTracksPVTPC_vs_V0A_vs_occupancy_NarrowDeltaTimeCut", "", kTH3F, {axisMultV0AForOccup, axisNtracksPVTPC, axisOccupancyTracks});
       // requested by TPC experts: nTPConly tracks vs occupancy
@@ -1119,6 +1122,11 @@ struct EventSelectionQaTask {
       // int nTPConlyWithDeDxCut = 0;
       int nTPConlyNoITS = 0;
       int nContributorsAfterEtaTPCCuts = 0;
+      int nContributorsAfterEtaTPCLooseCuts = 0;
+
+      int nTracksITS = 0;
+      int nTracksITSTPC = 0;
+
       bool isTVX = col.selection_bit(kIsTriggerTVX);
       for (const auto& track : tracksGrouped) {
         int trackBcDiff = bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS;
@@ -1131,6 +1139,14 @@ struct EventSelectionQaTask {
             nTPConlyNoITS++;
         }
 
+        if (std::fabs(track.eta()) < 0.8 && track.pt() > 0.2) {
+          if (track.hasITS()) {
+            nTracksITS++;
+            if (track.hasTPC())
+              nTracksITSTPC++;
+          }
+        }
+
         if (!track.isPVContributor())
           continue;
 
@@ -1140,6 +1156,9 @@ struct EventSelectionQaTask {
         // high-quality contributors for ROF border QA and occupancy study
         if (std::fabs(track.eta()) < 0.8 && track.pt() > 0.2 && track.itsNCls() >= 5) {
           nPV++;
+          if (track.hasTPC()) {
+            nContributorsAfterEtaTPCLooseCuts++;
+          }
           if (track.tpcNClsFound() > 70 && track.tpcNClsCrossedRows() > 80 && track.itsChi2NCl() < 36 && track.tpcChi2NCl() < 4) {
             nContributorsAfterEtaTPCCuts++;
             // ROF border QA
@@ -1173,6 +1192,9 @@ struct EventSelectionQaTask {
           histos.fill(HIST("occupancyQA/hOccupancyByFT0CvsByTracks"), occupancyByTracks, occupancyByFT0C);
           histos.fill(HIST("occupancyQA/hNumTracksPV_vs_V0A_vs_occupancy"), multV0A, nPV, occupancyByTracks);
           histos.fill(HIST("occupancyQA/hNumTracksPVTPC_vs_V0A_vs_occupancy"), multV0A, nContributorsAfterEtaTPCCuts, occupancyByTracks);
+          histos.fill(HIST("occupancyQA/hNumTracksPVTPCLooseCuts_vs_V0A_vs_occupancy"), multV0A, nContributorsAfterEtaTPCLooseCuts, occupancyByTracks);
+          histos.fill(HIST("occupancyQA/hNumTracksITS_vs_V0A_vs_occupancy"), multV0A, nTracksITS, occupancyByTracks);
+          histos.fill(HIST("occupancyQA/hNumTracksITSTPC_vs_V0A_vs_occupancy"), multV0A, nTracksITSTPC, occupancyByTracks);
           if (col.selection_bit(kNoCollInTimeRangeNarrow)) {
             histos.fill(HIST("occupancyQA/hNumTracksPV_vs_V0A_vs_occupancy_NarrowDeltaTimeCut"), multV0A, nPV, occupancyByTracks);
             histos.fill(HIST("occupancyQA/hNumTracksPVTPC_vs_V0A_vs_occupancy_NarrowDeltaTimeCut"), multV0A, nContributorsAfterEtaTPCCuts, occupancyByTracks);

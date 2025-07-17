@@ -70,6 +70,22 @@ DECLARE_SOA_COLUMN(MainBeautyAncestorPt, mainBeautyAncestorPt, float); //! origi
 DECLARE_SOA_COLUMN(MainBeautyAncestorY, mainBeautyAncestorY, float);   //! original index in MCParticle tree of main mother: needed when chekcing if particles come from same mother
 DECLARE_SOA_COLUMN(MaxEtaDaughter, maxEtaDaughter, float);             //! max (abs) eta of daughter particles, needed to reproduce acceptance cut
 } // namespace filterTracks
+DECLARE_SOA_TABLE(FilterColl, "AOD", "FILTERCOLL",
+                  o2::aod::collision::BCId,
+                  o2::aod::collision::PosX,
+                  o2::aod::collision::PosY,
+                  o2::aod::collision::PosZ,
+                  o2::aod::collision::CovXX,
+                  o2::aod::collision::CovXY,
+                  o2::aod::collision::CovYY,
+                  o2::aod::collision::CovXZ,
+                  o2::aod::collision::CovYZ,
+                  o2::aod::collision::CovZZ,
+                  o2::aod::collision::Flags,
+                  o2::aod::collision::Chi2,
+                  o2::aod::collision::NumContrib,
+                  o2::aod::collision::CollisionTime,
+                  o2::aod::collision::CollisionTimeRes);
 DECLARE_SOA_TABLE(FilterTrack, "AOD", "FILTERTRACK",
                   o2::aod::track::CollisionId,
                   aod::filterTracks::IsInsideBeamPipe,
@@ -128,6 +144,7 @@ struct FilterTracks {
   Produces<aod::FiltTracExtDet> filteredTracksTableExtraDet;
   Produces<aod::FilterTrackMC> filteredTracksMC;
   Produces<aod::GenParticles> selectedGenParticles;
+  Produces<aod::FilterColl> filterCollTable;
 
   //  Configurable<int> dummy{"dummy", 0, "dummy"};
   Configurable<float> minTrackPt{"minTrackPt", 0.25, "min track pt"};
@@ -137,14 +154,15 @@ struct FilterTracks {
   Configurable<float> trackPtWeightMidPt{"trackPtWeightMidPt", 0.10f, "trackPtWeightMidPt"};
 
   Filter trackFilter = requireGlobalTrackWoDCAInFilter() && aod::track::pt > minTrackPt&& nabs(aod::track::dcaXY) < trackDcaXyMax;
+  using CollisionsWithEvSel = soa::Join<aod::Collisions, aod::EvSels>;
   using TracksWithSelAndDca = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::TracksDCACov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
   using TracksWithSelAndDcaMc = soa::Join<TracksWithSelAndDca, aod::McTrackLabels>;
-  Partition<soa::Filtered<TracksWithSelAndDca>> lowPtTracks = aod::track::pt < 2.f && (nabs(aod::track::pt * 10000.f - nround(aod::track::pt * 10000.f)) < trackPtWeightLowPt * 2.f);
-  Partition<soa::Filtered<TracksWithSelAndDca>> midPtTracks = aod::track::pt > 2.f && aod::track::pt < 5.f && (nabs(aod::track::pt * 10000.f - nround(aod::track::pt * 10000.f)) < trackPtWeightMidPt * 2.f);
+  Partition<soa::Filtered<TracksWithSelAndDca>> lowPtTracks = aod::track::pt < 2.f && (nabs(aod::track::pt * 10000.f - nround(aod::track::pt * 10000.f)) < trackPtWeightLowPt.node() * 2.f);
+  Partition<soa::Filtered<TracksWithSelAndDca>> midPtTracks = aod::track::pt > 2.f && aod::track::pt < 5.f && (nabs(aod::track::pt * 10000.f - nround(aod::track::pt * 10000.f)) < trackPtWeightMidPt.node() * 2.f);
   Partition<soa::Filtered<TracksWithSelAndDca>> highPtTracks = aod::track::pt > 5.f;
 
-  Partition<soa::Filtered<TracksWithSelAndDcaMc>> lowPtTracksMC = aod::track::pt < 2.f && (nabs(aod::track::pt * 10000.f - nround(aod::track::pt * 10000.f)) < trackPtWeightLowPt * 2.f);
-  Partition<soa::Filtered<TracksWithSelAndDcaMc>> midPtTracksMC = aod::track::pt > 2.f && aod::track::pt < 5.f && (nabs(aod::track::pt * 10000.f - nround(aod::track::pt * 10000.f)) < trackPtWeightMidPt * 2.f);
+  Partition<soa::Filtered<TracksWithSelAndDcaMc>> lowPtTracksMC = aod::track::pt < 2.f && (nabs(aod::track::pt * 10000.f - nround(aod::track::pt * 10000.f)) < trackPtWeightLowPt.node() * 2.f);
+  Partition<soa::Filtered<TracksWithSelAndDcaMc>> midPtTracksMC = aod::track::pt > 2.f && aod::track::pt < 5.f && (nabs(aod::track::pt * 10000.f - nround(aod::track::pt * 10000.f)) < trackPtWeightMidPt.node() * 2.f);
   Partition<soa::Filtered<TracksWithSelAndDcaMc>> highPtTracksMC = aod::track::pt > 5.f;
 
   std::array<int, 3> pdgSignalParticleArray = {310, 421, 4122}; // K0s, D0 and Lc
@@ -255,6 +273,11 @@ struct FilterTracks {
     }
   }
   PROCESS_SWITCH(FilterTracks, processData, "process data", true);
+  void processCollisions(CollisionsWithEvSel::iterator const& collision)
+  {
+    filterCollTable(collision.bcId(), collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ(), collision.flags(), collision.chi2(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
+  }
+  PROCESS_SWITCH(FilterTracks, processCollisions, "process collisions", true);
 
   void processMC(soa::Filtered<TracksWithSelAndDcaMc> const& tracks, aod::McParticles const& mcParticles)
   {

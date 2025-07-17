@@ -438,6 +438,108 @@ struct Filter2Prong {
   PROCESS_SWITCH(Filter2Prong, processDataInvMass, "Process data generic 2-prong candidates with invariant mass method", false);
 
   // Phi and V0s invariant mass method candidate finder. Only works for non-identical daughters of opposite charge for now.
+  void processDataPhiV0(aod::Collisions::iterator const& collision, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, Filter2Prong::PIDTrack const& tracks, aod::V0Datas const& V0s)
+  {
+    if (cfcollisions.size() <= 0)
+      return; // rejected collision
+
+    // V0
+    for (const auto& v0 : V0s) {    // Loop over V0 candidates
+      if (!isV0TrackSelected(v0)) { // Quality selection for V0 prongs
+        continue;
+      }
+
+      const auto& posTrack = v0.template posTrack_as<PIDTrack>();
+      const auto& negTrack = v0.template negTrack_as<PIDTrack>();
+      double massV0 = 0.0;
+
+      // K0s
+      if (isSelectedV0AsK0s(collision, v0)) { // candidate is K0s
+        output2ProngTracks(cfcollisions.begin().globalIndex(),
+                           posTrack.globalIndex(), negTrack.globalIndex(),
+                           v0.pt(), v0.eta(), v0.phi(), v0.mK0Short(), aod::cf2prongtrack::K0stoPiPi);
+      }
+
+      // Lambda and Anti-Lambda
+      bool LambdaTag = isSelectedV0AsLambda<LambdaPid::kLambda>(collision, v0);
+      bool aLambdaTag = isSelectedV0AsLambda<LambdaPid::kAntiLambda>(collision, v0);
+
+      // Note: candidate compatible with Lambda and Anti-Lambda hypothesis are counted twice (once for each hypothesis)
+      if (LambdaTag) { // candidate is Lambda
+        massV0 = v0.mLambda();
+        output2ProngTracks(cfcollisions.begin().globalIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
+                           v0.pt(), v0.eta(), v0.phi(), massV0, aod::cf2prongtrack::LambdatoPPi);
+      }
+      if (aLambdaTag) { // candidate is Anti-lambda
+        massV0 = v0.mAntiLambda();
+        output2ProngTracks(cfcollisions.begin().globalIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
+                           v0.pt(), v0.eta(), v0.phi(), massV0, aod::cf2prongtrack::AntiLambdatoPiP);
+      } // end of Lambda and Anti-Lambda processing
+    } // end of loop over V0 candidates
+
+    // Phi
+    if (cftracks.size() <= 0)
+      return; // rejected collision
+
+    o2::aod::ITSResponse itsResponse;
+
+    for (const auto& cftrack1 : cftracks) { // Loop over first track
+      const auto& p1 = tracks.iteratorAt(cftrack1.trackId() - tracks.begin().globalIndex());
+      if (p1.sign() != 1) {
+        continue;
+      }
+      if (!selectionTrack(p1)) {
+        continue;
+      }
+      if (grpPhi.ITSPIDSelection && p1.p() < grpPhi.ITSPIDPthreshold.value && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(p1) > grpPhi.lowITSPIDNsigma.value && itsResponse.nSigmaITS<o2::track::PID::Kaon>(p1) < grpPhi.highITSPIDNsigma.value)) { // Check ITS PID condition
+        continue;
+      }
+      if (!selectionPID(p1)) {
+        continue;
+      }
+      if (grpPhi.removefaketrack && isFakeTrack(p1)) { // Check if the track is a fake kaon
+        continue;
+      }
+
+      for (const auto& cftrack2 : cftracks) {                 // Loop over second track
+        if (cftrack2.globalIndex() == cftrack1.globalIndex()) // Skip if it's the same track as the first one
+          continue;
+
+        const auto& p2 = tracks.iteratorAt(cftrack2.trackId() - tracks.begin().globalIndex());
+        if (p2.sign() != -1) {
+          continue;
+        }
+        if (!selectionTrack(p2)) {
+          continue;
+        }
+        if (!selectionPID(p2)) {
+          continue;
+        }
+        if (grpPhi.ITSPIDSelection && p2.p() < grpPhi.ITSPIDPthreshold.value && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(p2) > grpPhi.lowITSPIDNsigma.value && itsResponse.nSigmaITS<o2::track::PID::Kaon>(p2) < grpPhi.highITSPIDNsigma.value)) { // Check ITS PID condition
+          continue;
+        }
+        if (grpPhi.removefaketrack && isFakeTrack(p2)) { // Check if the track is a fake kaon
+          continue;
+        }
+        if (!selectionPair(p1, p2)) {
+          continue;
+        }
+
+        ROOT::Math::PtEtaPhiMVector vec1(p1.pt(), p1.eta(), p1.phi(), cfgImPart1Mass);
+        ROOT::Math::PtEtaPhiMVector vec2(p2.pt(), p2.eta(), p2.phi(), cfgImPart2Mass);
+        ROOT::Math::PtEtaPhiMVector s = vec1 + vec2;
+        if (s.M() < grpPhi.ImMinInvMassPhiMeson || s.M() > grpPhi.ImMaxInvMassPhiMeson) {
+          continue;
+        }
+        float phi = RecoDecay::constrainAngle(s.Phi(), 0.0f);
+        output2ProngTracks(cfcollisions.begin().globalIndex(),
+                           cftrack1.globalIndex(), cftrack2.globalIndex(), s.pt(), s.eta(), phi, s.M(), aod::cf2prongtrack::PhiToKK);
+      } // end of loop over second track
+    } // end of loop over first track
+  }
+  PROCESS_SWITCH(Filter2Prong, processDataPhiV0, "Process data Phi and V0 candidates with invariant mass method", false);
+
+  // Phi and V0s invariant mass method candidate finder. Only works for non-identical daughters of opposite charge for now.
   void processDataV0(aod::Collisions::iterator const& collision, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, Filter2Prong::PIDTrack const&, aod::V0Datas const& V0s)
   {
     if (cfcollisions.size() <= 0 || cftracks.size() <= 0)
