@@ -447,10 +447,8 @@ struct he3LambdaAnalysis {
 
   void processDerived(o2::aod::LFEvents::iterator const& collision, o2::aod::LFHe3 const& he3s, o2::aod::LFLambda const& lambdas)
   {
-
   }
   PROCESS_SWITCH(he3LambdaAnalysis, processDerived, "Process derived", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
