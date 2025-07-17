@@ -2192,7 +2192,7 @@ DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                 // debug fla
 
 // mapping of decay types
 enum DecayType { B0ToDPi = 0,
-                 B0ToDstarPi};
+                 B0ToDstarPi };
 
 enum DecayTypeMc : uint8_t { B0ToDplusPiToPiKPiPi = 0,
                              B0ToDsPiToKKPiPi,
