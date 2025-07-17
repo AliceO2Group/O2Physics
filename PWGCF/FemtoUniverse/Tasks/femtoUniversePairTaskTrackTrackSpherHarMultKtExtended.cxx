@@ -183,6 +183,9 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   Configurable<bool> cfgProcessKtBins{"cfgProcessKtBins", true, "Process kstar histograms in kT bins (if cfgProcessMultBins is set false, this will not be processed regardless this Configurable state)"};
   Configurable<bool> cfgProcessKtMt3DCF{"cfgProcessKtMt3DCF", false, "Process 3D histograms in kT and Mult bins"};
   Configurable<bool> ConfIsFillAngqLCMS{"ConfIsFillAngqLCMS", true, "Fill qLCMS vs dEta vs dPhi"};
+  Configurable<float> confCPRDistMax{"confCPRDistMax", 0.0, "Max. radial seperation between two closed-pairs"};
+  Configurable<float> confCPRFracMax{"confCPRFracMax", 0.0, "Max. allowed fraction bad to all TPC points of radial seperation between two closed-pairs"};
+  Configurable<bool> confCPRDphiAvgOrDist{"confCPRDphiAvgOrDist", true, "Close Pair Rejection by radial or angular seperation"};
 
   FemtoUniverseSHContainer<femto_universe_sh_container::EventType::same, femto_universe_sh_container::Observable::kstar> sameEventCont;
   FemtoUniverseSHContainer<femto_universe_sh_container::EventType::mixed, femto_universe_sh_container::Observable::kstar> mixedEventCont;
@@ -482,7 +485,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         }
 
         if (ConfIsCPR.value) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
+          if (pairCloseRejection.isClosePairFrac(p1, p2, magFieldTesla, femto_universe_container::EventType::same, confCPRDphiAvgOrDist, confCPRDistMax, confCPRFracMax)) {
             continue;
           }
         }
@@ -506,7 +509,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         }
 
         if (ConfIsCPR.value) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
+          if (pairCloseRejection.isClosePairFrac(p1, p2, magFieldTesla, femto_universe_container::EventType::same, confCPRDphiAvgOrDist, confCPRDistMax, confCPRFracMax)) {
             continue;
           }
         }
@@ -664,7 +667,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       }
 
       if (ConfIsCPR.value) {
-        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::mixed)) {
+        if (pairCloseRejection.isClosePairFrac(p1, p2, magFieldTesla, femto_universe_container::EventType::mixed, confCPRDphiAvgOrDist, confCPRDistMax, confCPRFracMax)) {
           continue;
         }
       }
