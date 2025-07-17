@@ -119,6 +119,32 @@ bool ValidateJSONAnalysisCompositeCut(T cut);
 template <typename T>
 AnalysisCompositeCut* ParseJSONAnalysisCompositeCut(T key, const char* cutName);
 } // namespace dqcuts
+namespace dqmlcuts
+{
+struct BinaryBdtScoreConfig {
+  std::vector<std::string> inputFeatures;
+  std::vector<std::string> onnxFiles;
+  std::vector<double> binsPt;
+  o2::framework::LabeledArray<double> cutsMl;
+  std::vector<int> cutDirs;
+};
+
+struct MultiClassBdtScoreConfig {
+  std::vector<std::string> inputFeatures;
+  std::vector<std::string> onnxFiles;
+  std::vector<double> binsPt;
+  o2::framework::LabeledArray<double> cutsMl;
+  std::vector<int> cutDirs;
+};
+
+using BdtScoreConfig = std::variant<BinaryBdtScoreConfig, MultiClassBdtScoreConfig>;
+
+BdtScoreConfig GetBdtScoreCutsAndConfigFromJSON(const char* json);
+
+o2::framework::LabeledArray<double> makeLabeledCutsMl(const std::vector<std::vector<double>>& cuts,
+                                                      const std::vector<std::string>& labelsPt,
+                                                      const std::vector<std::string>& labelsClass);
+} // namespace dqmlcuts
 } // namespace o2::aod
 
 AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName);
