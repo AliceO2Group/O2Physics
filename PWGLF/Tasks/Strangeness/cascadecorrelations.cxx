@@ -246,13 +246,22 @@ struct CascadeSelector {
       registry.add("gen/hXiPlus", "hXiPlus", HistType::kTH2F, {ptAxis, rapidityAxis});
       registry.add("gen/hOmegaMinus", "hOmegaMinus", HistType::kTH2F, {ptAxis, rapidityAxis});
       registry.add("gen/hOmegaPlus", "hOmegaPlus", HistType::kTH2F, {ptAxis, rapidityAxis});
+
+      registry.add("genwithrec/hXiMinus", "hXiMinus", HistType::kTH2F, {ptAxis, rapidityAxis});
+      registry.add("genwithrec/hXiPlus", "hXiPlus", HistType::kTH2F, {ptAxis, rapidityAxis});
+      registry.add("genwithrec/hOmegaMinus", "hOmegaMinus", HistType::kTH2F, {ptAxis, rapidityAxis});
+      registry.add("genwithrec/hOmegaPlus", "hOmegaPlus", HistType::kTH2F, {ptAxis, rapidityAxis});
+
+      registry.add("genwithrec/hNevents", "hNevents", HistType::kTH1F, {{1, 0, 1, "N generated events with reconstructed event"}});
+      registry.add("gen/hNevents", "hNevents", HistType::kTH1F, {{1, 0, 1, "N generated events"}});
     }
   }
 
-  bool eventSelection(MyCollisions::iterator const& collision)
+  template <typename TCollision>
+  bool eventSelection(TCollision const& collision)
   {
     if (useTrigger) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), triggerList);
       bool eventTrigger = zorro.isSelected(bc.globalBC());
       if (eventTrigger) {
@@ -282,7 +291,8 @@ struct CascadeSelector {
     return true;
   }
 
-  void fillMatchedHistos(LabeledCascades::iterator rec, int flag, MyCollisions::iterator collision)
+  template <typename TCollision>
+  void fillMatchedHistos(LabeledCascades::iterator rec, int flag, TCollision collision)
   {
     if (flag == 0)
       return;
@@ -335,8 +345,8 @@ struct CascadeSelector {
     }
   }
 
-  template <typename TCascade>
-  int processCandidate(TCascade const& casc, MyCollisions::iterator const& collision)
+  template <typename TCascade, typename TCollision>
+  int processCandidate(TCascade const& casc, TCollision const& collision)
   {
     // these are the tracks:
     auto bachTrack = casc.template bachelor_as<FullTracksExtIUWithPID>();
@@ -477,8 +487,11 @@ struct CascadeSelector {
     return 0;
   } // processCandidate
 
-  void processGenMC(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, MyCollisionsMult>> const&, aod::McParticles const& mcParticles)
+  void processGenMC(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, MyCollisions>> const& collisions, aod::McParticles const& mcParticles)
   {
+    // N gen events without any event selection or matched reco event
+    registry.fill(HIST("gen/hNevents"), 0);
+
     for (auto const& mcPart : mcParticles) {
       if (!mcPart.isPhysicalPrimary())
         continue;
@@ -501,15 +514,44 @@ struct CascadeSelector {
       }
     }
 
-    // if (matchedCollisions.size() < 1) {
-    //   return;
-    // } else if (matchedCollisions.size() == 1) {
-    //   for (auto const& collision : matchedCollisions) { // not really a loop, as there is only one collision
-    //   }
-    // } else if (matchedCollisions.size() > 1) {
-    //   registry.fill(HIST("MC/hSplitEvents"), matchedCollisions.size());
-    //   return;
-    // }
+    // Do the same thing, but now making sure there is at least one matched reconstructed event:
+    if (collisions.size() < 1) {
+      return;
+    } else {
+      bool evSel = false; // will be true if at least one rec. collision passes evsel
+      for (auto const& collision : collisions) {
+        // can be more than 1 rec. collisions due to event splitting
+        evSel = eventSelection(collision);
+        if (evSel) // exit loop if we find 1 rec. event that passes evsel
+          break;
+      }
+      if (evSel) {
+        // N gen events with a reconstructed event
+        registry.fill(HIST("genwithrec/hNevents"), 0);
+
+        for (auto const& mcPart : mcParticles) {
+          if (!mcPart.isPhysicalPrimary())
+            continue;
+          if (TMath::Abs(mcPart.eta()) > etaCascades)
+            continue;
+
+          switch (mcPart.pdgCode()) {
+            case 3312:
+              registry.fill(HIST("genwithrec/hXiMinus"), mcPart.pt(), mcPart.y());
+              break;
+            case -3312:
+              registry.fill(HIST("genwithrec/hXiPlus"), mcPart.pt(), mcPart.y());
+              break;
+            case 3334:
+              registry.fill(HIST("genwithrec/hOmegaMinus"), mcPart.pt(), mcPart.y());
+              break;
+            case -3334:
+              registry.fill(HIST("genwithrec/hOmegaPlus"), mcPart.pt(), mcPart.y());
+              break;
+          }
+        }
+      }
+    }
   } // processGen
 
   // wrappers for data/MC processes on reco level
@@ -574,8 +616,8 @@ struct CascadeCorrelations {
   ConfigurableAxis multiplicityAxis{"multiplicityAxis", {100, 0, 100}, "Multiplicity (MultFT0M?)"};
   ConfigurableAxis invLambdaMassAxis{"invLambdaMassAxis", {100, 1.07f, 1.17f}, "Inv. Mass (GeV/c^{2})"};
   AxisSpec signAxis{3, -1.5, 1.5, "sign of cascade"};
-  AxisSpec deltaYAxis{40, -2 * maxRapidity, 2 * maxRapidity, "#Delta y"};
-  AxisSpec rapidityAxis{100, -maxRapidity, maxRapidity, "y"};
+  AxisSpec deltaYAxis{40, -2.f, 2.f, "#Delta y"};
+  AxisSpec rapidityAxis{100, -1.f, 1.f, "y"};
   AxisSpec selectionFlagAxis{4, -0.5f, 3.5f, "Selection flag of casc candidate"};
   AxisSpec itsClustersAxis{8, -0.5, 7.5, "number of ITS clusters"};
   AxisSpec tpcRowsAxis{160, -0.5, 159.5, "TPC crossed rows"};
@@ -751,7 +793,7 @@ struct CascadeCorrelations {
           weight = getEfficiency(hEffXiPlus, casc.pt());
         }
         // LOGF(info, "casc pt %f, weight %f", casc.pt(), weight);
-        registry.fill(HIST("hMassXiEffCorrected"), casc.mXi(), casc.pt(), casc.yXi(), collision.posZ(), collision.multFT0M(), weight);
+        registry.fill(HIST("hMassXiEffCorrected"), casc.mXi(), casc.sign(), casc.pt(), casc.yXi(), collision.posZ(), collision.multFT0M(), weight);
         registry.fill(HIST("hRapidityXi"), casc.yXi());
       }
       if (casc.isSelected() >= 2) { // consistent with Omega or both
@@ -762,7 +804,7 @@ struct CascadeCorrelations {
           registry.fill(HIST("hMassOmegaPlus"), casc.mOmega(), casc.pt());
           weight = getEfficiency(hEffOmegaPlus, casc.pt());
         }
-        registry.fill(HIST("hMassOmegaEffCorrected"), casc.mOmega(), casc.pt(), casc.yOmega(), collision.posZ(), collision.multFT0M(), weight);
+        registry.fill(HIST("hMassOmegaEffCorrected"), casc.mOmega(), casc.sign(), casc.pt(), casc.yOmega(), collision.posZ(), collision.multFT0M(), weight);
         registry.fill(HIST("hRapidityOmega"), casc.yOmega());
       }
       registry.fill(HIST("hV0Radius"), casc.v0radius());
@@ -868,7 +910,6 @@ struct CascadeCorrelations {
         registry.fill(HIST("hMEQA"), 0.5);
         continue;
       }
-
       registry.fill(HIST("MixedEvents/hMEVz1"), col1.posZ());
       registry.fill(HIST("MixedEvents/hMEVz2"), col2.posZ());
 

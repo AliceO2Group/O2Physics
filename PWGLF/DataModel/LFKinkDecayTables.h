@@ -15,9 +15,10 @@
 /// \author Francesco Mazzaschi <francesco.mazzaschi@cern.ch>
 ///
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
 #include "Common/Core/RecoDecay.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
 
 #ifndef PWGLF_DATAMODEL_LFKINKDECAYTABLES_H_
 #define PWGLF_DATAMODEL_LFKINKDECAYTABLES_H_
@@ -77,6 +78,13 @@ DECLARE_SOA_DYNAMIC_COLUMN(MSigmaPlus, mSigmaPlus, //! mass under sigma plus hyp
                             float pzneut = pzmoth - pzch;
                             return RecoDecay::m(std::array{std::array{pxch, pych, pzch}, std::array{pxneut, pyneut, pzneut}}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionNeutral}); });
 
+DECLARE_SOA_DYNAMIC_COLUMN(MXiMinus, mXiMinus, //! mass under Xi minus hypothesis
+                           [](float pxmoth, float pymoth, float pzmoth, float pxch, float pych, float pzch) -> float {
+                            float pxneut = pxmoth - pxch;
+                            float pyneut = pymoth - pych;
+                            float pzneut = pzmoth - pzch;
+                            return RecoDecay::m(std::array{std::array{pxch, pych, pzch}, std::array{pxneut, pyneut, pzneut}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassLambda}); });
+
 } // namespace kinkcand
 
 DECLARE_SOA_TABLE(KinkCands, "AOD", "KINKCANDS",
@@ -93,7 +101,24 @@ DECLARE_SOA_TABLE(KinkCands, "AOD", "KINKCANDS",
                   kinkcand::PtMoth<kinkcand::PxMoth, kinkcand::PyMoth>,
                   kinkcand::PtDaug<kinkcand::PxDaug, kinkcand::PyDaug>,
                   kinkcand::MSigmaMinus<kinkcand::PxMoth, kinkcand::PyMoth, kinkcand::PzMoth, kinkcand::PxDaug, kinkcand::PyDaug, kinkcand::PzDaug>,
-                  kinkcand::MSigmaPlus<kinkcand::PxMoth, kinkcand::PyMoth, kinkcand::PzMoth, kinkcand::PxDaug, kinkcand::PyDaug, kinkcand::PzDaug>);
+                  kinkcand::MSigmaPlus<kinkcand::PxMoth, kinkcand::PyMoth, kinkcand::PzMoth, kinkcand::PxDaug, kinkcand::PyDaug, kinkcand::PzDaug>,
+                  kinkcand::MXiMinus<kinkcand::PxMoth, kinkcand::PyMoth, kinkcand::PzMoth, kinkcand::PxDaug, kinkcand::PyDaug, kinkcand::PzDaug>);
+
+DECLARE_SOA_TABLE(KinkCandsUnbound, "AOD", "UBKINKCANDS",
+                  o2::soa::Index<>, kinkcand::XDecVtx, kinkcand::YDecVtx, kinkcand::ZDecVtx,
+                  kinkcand::MothSign, kinkcand::PxMoth, kinkcand::PyMoth, kinkcand::PzMoth,
+                  kinkcand::PxDaug, kinkcand::PyDaug, kinkcand::PzDaug,
+                  kinkcand::DcaMothPv, kinkcand::DcaDaugPv, kinkcand::DcaKinkTopo,
+
+                  // dynamic columns
+                  kinkcand::PxDaugNeut<kinkcand::PxMoth, kinkcand::PxDaug>,
+                  kinkcand::PyDaugNeut<kinkcand::PyMoth, kinkcand::PyDaug>,
+                  kinkcand::PzDaugNeut<kinkcand::PzMoth, kinkcand::PzDaug>,
+                  kinkcand::PtMoth<kinkcand::PxMoth, kinkcand::PyMoth>,
+                  kinkcand::PtDaug<kinkcand::PxDaug, kinkcand::PyDaug>,
+                  kinkcand::MSigmaMinus<kinkcand::PxMoth, kinkcand::PyMoth, kinkcand::PzMoth, kinkcand::PxDaug, kinkcand::PyDaug, kinkcand::PzDaug>,
+                  kinkcand::MSigmaPlus<kinkcand::PxMoth, kinkcand::PyMoth, kinkcand::PzMoth, kinkcand::PxDaug, kinkcand::PyDaug, kinkcand::PzDaug>,
+                  kinkcand::MXiMinus<kinkcand::PxMoth, kinkcand::PyMoth, kinkcand::PzMoth, kinkcand::PxDaug, kinkcand::PyDaug, kinkcand::PzDaug>);
 
 } // namespace o2::aod
 

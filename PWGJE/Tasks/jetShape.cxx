@@ -39,16 +39,24 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct JetShapeTask {
+
+  Configurable<int> nBinsTpcNSigma{"nBinsTpcNSigma", 101, "Number of TPC-nsigma bins"};
+  Configurable<float> tpcNSigmaMin{"tpcNSigmaMin", -10.1f, "Min value of Tpc-nsigma"};
+  Configurable<float> tpcNSigmaMax{"tpcNSigmaMax", 10.1f, "Max value of Tpc-nsigma"};
+  Configurable<int> nBinsTofNSigma{"nBinsTofNSigma", 10, "Number of TOF-nsigma bins"};
+  Configurable<float> tofNSigmaMin{"tofNSigmaMin", -10, "Min value of Tof-nsigma"};
+  Configurable<float> tofNSigmaMax{"tofNSigmaMax", 10, "Max value of Tof-nsigma"};
+
   HistogramRegistry registry{"registry",
-                             {{"tpcTofPi", "tpcTofPi", {HistType::kTHnSparseD, {{101, -10.1f, 10.1f}, {20, -10, 10}, {25, 0, 5}, {14, 0, 0.7}}}},
-                              {"tpcPi", "tpcPi", {HistType::kTH2F, {{100, 0, 5}, {401, -10.025f, 10.025f}}}},
-                              {"tofPi", "tofPi", {HistType::kTH2F, {{100, 0, 5}, {401, -10.025f, 10.025f}}}},
-                              {"tpcTofPr", "tpcTofPr", {HistType::kTHnSparseD, {{101, -10.1f, 10.1f}, {20, -10, 10}, {25, 0, 5}, {14, 0, 0.7}}}},
-                              {"tpcPr", "tpcPr", {HistType::kTH2F, {{100, 0, 5}, {401, -10.025f, 10.025f}}}},
-                              {"tofPr", "tofPr", {HistType::kTH2F, {{100, 0, 5}, {401, -10.025f, 10.025f}}}},
-                              {"tpcDedx", "tpcDedx", {HistType::kTH2F, {{500, 0, 5}, {1000, 0, 1000}}}},
-                              {"tofBeta", "tofBeta", {HistType::kTH2F, {{500, 0, 5}, {450, 0.2, 1.1}}}},
-                              {"tofMass", "tofMass", {HistType::kTH1F, {{3000, 0, 3}}}},
+                             {{"tpcTofPi", "tpcTofPi", {HistType::kTHnSparseD, {{nBinsTpcNSigma, tpcNSigmaMin, tpcNSigmaMax}, {nBinsTofNSigma, tofNSigmaMin, tofNSigmaMax}, {25, 0, 5}, {14, 0, 0.7}}}},
+                              {"tpcPi", "tpcPi", {HistType::kTH2F, {{100, 0, 5}, {101, -10.1f, 10.1f}}}},
+                              {"tofPi", "tofPi", {HistType::kTH2F, {{100, 0, 5}, {101, -10.1f, 10.1f}}}},
+                              {"tpcTofPr", "tpcTofPr", {HistType::kTHnSparseD, {{nBinsTpcNSigma, tpcNSigmaMin, tpcNSigmaMax}, {nBinsTofNSigma, tofNSigmaMin, tofNSigmaMax}, {25, 0, 5}, {14, 0, 0.7}}}},
+                              {"tpcPr", "tpcPr", {HistType::kTH2F, {{50, 0, 5}, {101, -10.1f, 10.1f}}}},
+                              {"tofPr", "tofPr", {HistType::kTH2F, {{50, 0, 5}, {101, -10.1f, 10.1f}}}},
+                              {"tpcDedx", "tpcDedx", {HistType::kTHnSparseD, {{100, 0, 5}, {500, 0, 1000}, {7, 0, 0.7}}}},
+                              {"tofBeta", "tofBeta", {HistType::kTHnSparseD, {{100, 0, 5}, {350, 0.4, 1.1}, {7, 0, 0.7}}}},
+                              {"tofMass", "tofMass", {HistType::kTH1F, {{300, 0, 3}}}},
                               {"jetPt", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
                               {"jetEta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
                               {"jetPhi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
@@ -150,20 +158,17 @@ struct JetShapeTask {
   void processJetShape(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, aod::JetTracks const& tracks, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
   {
 
+    std::vector<float> ptDensity(distanceCategory->size() - 1, 0.f);
+    std::vector<float> ptDensityBg1(distanceCategory->size() - 1, 0.f);
+    std::vector<float> ptDensityBg2(distanceCategory->size() - 1, 0.f);
+
     for (auto const& jet : jets) {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
 
-      std::vector<float> trackPtSum(distanceCategory->size() - 1, 0.f);
-      std::vector<float> trackPtSumBg1(distanceCategory->size() - 1, 0.f);
-      std::vector<float> trackPtSumBg2(distanceCategory->size() - 1, 0.f);
-
       // Get underlying event subtracted jet.pt() as ptCorr
       float ptCorr = jet.pt() - collision.rho() * jet.area();
-
-      float phiBg1 = jet.phi() + (o2::constants::math::PIHalf);
-      float phiBg2 = jet.phi() - (o2::constants::math::PIHalf);
 
       for (const auto& track : tracks) {
         float preDeltaPhi1 = track.phi() - jet.phi();
@@ -177,13 +182,20 @@ struct JetShapeTask {
         registry.fill(HIST("ptVsCentrality"), collision.centrality(), track.pt());
 
         // calculate compornents of jetshapefunction rho(r)
+        std::vector<float> trackPtSum(distanceCategory->size() - 1, 0.f);
+        std::vector<float> trackPtSumBg1(distanceCategory->size() - 1, 0.f);
+        std::vector<float> trackPtSumBg2(distanceCategory->size() - 1, 0.f);
+
+        float phiBg1 = jet.phi() + (o2::constants::math::PIHalf);
+        float phiBg2 = jet.phi() - (o2::constants::math::PIHalf);
 
         float preDeltaPhiBg1 = track.phi() - phiBg1;
-        float deltaPhiBg1 = RecoDecay::constrainAngle(preDeltaPhiBg1);
-        float distanceBg1 = std::sqrt(deltaEta * deltaEta + deltaPhiBg1 * deltaPhiBg1);
-
         float preDeltaPhiBg2 = track.phi() - phiBg2;
+
+        float deltaPhiBg1 = RecoDecay::constrainAngle(preDeltaPhiBg1);
         float deltaPhiBg2 = RecoDecay::constrainAngle(preDeltaPhiBg2);
+
+        float distanceBg1 = std::sqrt(deltaEta * deltaEta + deltaPhiBg1 * deltaPhiBg1);
         float distanceBg2 = std::sqrt(deltaEta * deltaEta + deltaPhiBg2 * deltaPhiBg2);
 
         for (size_t i = 0; i < distanceCategory->size() - 1; i++) {
@@ -194,16 +206,12 @@ struct JetShapeTask {
           if (distanceCategory->at(i) <= distanceBg2 && distanceBg2 < distanceCategory->at(i + 1))
             trackPtSumBg2[i] += track.pt();
         }
-      }
 
-      std::vector<float> ptDensity(distanceCategory->size() - 1, 0.f);
-      std::vector<float> ptDensityBg1(distanceCategory->size() - 1, 0.f);
-      std::vector<float> ptDensityBg2(distanceCategory->size() - 1, 0.f);
-
-      for (size_t i = 0; i < distanceCategory->size() - 1; i++) {
-        ptDensity[i] += trackPtSum[i] / ((distanceCategory->at(i + 1) - distanceCategory->at(i)) * ptCorr);
-        ptDensityBg1[i] += trackPtSumBg1[i] / ((distanceCategory->at(i + 1) - distanceCategory->at(i)) * ptCorr);
-        ptDensityBg2[i] += trackPtSumBg2[i] / ((distanceCategory->at(i + 1) - distanceCategory->at(i)) * ptCorr);
+        for (size_t i = 0; i < distanceCategory->size() - 1; i++) {
+          ptDensity[i] += trackPtSum[i] / ((distanceCategory->at(i + 1) - distanceCategory->at(i)) * ptCorr);
+          ptDensityBg1[i] += trackPtSumBg1[i] / ((distanceCategory->at(i + 1) - distanceCategory->at(i)) * ptCorr);
+          ptDensityBg2[i] += trackPtSumBg2[i] / ((distanceCategory->at(i + 1) - distanceCategory->at(i)) * ptCorr);
+        }
       }
 
       registry.fill(HIST("jetPt"), jet.pt());
@@ -257,8 +265,6 @@ struct JetShapeTask {
           continue;
 
         // PID check
-        registry.fill(HIST("tpcDedx"), track.pt(), track.tpcSignal());
-        registry.fill(HIST("tofBeta"), track.pt(), track.beta());
         registry.fill(HIST("tofMass"), track.mass());
 
         // for calculate purity
@@ -276,6 +282,8 @@ struct JetShapeTask {
         float distance = std::sqrt(deltaEta * deltaEta + deltaPhi1 * deltaPhi1);
 
         registry.fill(HIST("distanceVsTrackpt"), distance, track.pt());
+        registry.fill(HIST("tpcDedx"), track.pt(), track.tpcSignal(), distance);
+        registry.fill(HIST("tofBeta"), track.pt(), track.beta(), distance);
         registry.fill(HIST("tpcTofPi"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), distance);
         registry.fill(HIST("tpcTofPr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt(), distance);
       }

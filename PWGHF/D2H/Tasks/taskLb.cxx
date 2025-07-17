@@ -15,29 +15,44 @@
 /// \author Panos Christakoglou <panos.christakoglou@cern.ch>, Nikhef
 /// \author Martin Voelkl <martin.andreas.volkl@cern.ch>, University of Birmingham
 
-#include <vector>
-#include <array>
-#include <algorithm>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-
-#include "Common/DataModel/Centrality.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TMath.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdlib>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-#include "Framework/runDataProcessing.h"
+using namespace o2::hf_decay::hf_cand_beauty;
 
 /// Λb0 analysis task
 struct HfTaskLb {
@@ -334,9 +349,9 @@ struct HfTaskLb {
         continue;
       }
       auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec>>();
-      int flagMcMatchRecLb = std::abs(candidate.flagMcMatchRec());
+      auto flagMcMatchRecLb = std::abs(candidate.flagMcMatchRec());
 
-      if (TESTBIT(flagMcMatchRecLb, hf_cand_lb::DecayType::LbToLcPi)) {
+      if (flagMcMatchRecLb == DecayChannelMain::LbToLcPi) {
 
         auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong1_as<TracksWExtMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandLbMcGen>>(), o2::constants::physics::Pdg::kLambdaB0, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
@@ -383,7 +398,7 @@ struct HfTaskLb {
 
     // MC gen. level
     for (const auto& particle : mcParticles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << hf_cand_lb::DecayType::LbToLcPi) {
+      if (std::abs(particle.flagMcMatchGen()) == DecayChannelMain::LbToLcPi) {
 
         auto yParticle = RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaB0);
         if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {

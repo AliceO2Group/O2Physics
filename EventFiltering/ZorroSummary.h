@@ -15,6 +15,9 @@
 
 #include <TNamed.h>
 
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -41,9 +44,7 @@ class ZorroSummary : public TNamed
     mRunNumber = runNumber;
     mTVXcounters[runNumber] = tvxCountes;
     mTOIcounters[runNumber] = toiCounters;
-    if (mAnalysedTOIcounters.find(runNumber) == mAnalysedTOIcounters.end()) {
-      mAnalysedTOIcounters[runNumber] = std::vector<ULong64_t>(mNtois, 0ull);
-    }
+    mAnalysedTOIcounters.try_emplace(runNumber, std::vector<ULong64_t>(mNtois, 0ull));
     mCurrentAnalysedTOIcounters = &mAnalysedTOIcounters[runNumber];
   }
   double getNormalisationFactor(int toiId) const;

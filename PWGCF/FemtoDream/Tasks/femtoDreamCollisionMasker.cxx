@@ -244,7 +244,7 @@ struct femoDreamCollisionMasker {
             NegChildPIDTPCBits.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
           }
         }
-      } else if (device.name.find("femto-dream-triplet-task-track-track-track") != std::string::npos) {
+      } else if ((device.name.find("femto-dream-triplet-task-track-track-track") != std::string::npos) || (device.name.find("femto-dream-triplet-task-track-track-track-pb-pb") != std::string::npos)) {
         LOG(info) << "Matched workflow: " << device.name;
         TaskFinder = CollisionMasks::kTrackTrackTrack;
         for (auto const& option : device.options) {
