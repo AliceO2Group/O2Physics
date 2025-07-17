@@ -282,7 +282,8 @@ struct taggingHFE {
     fRegistry.add("e_Kpm/all/hCosPA", "cosPA;cosine of pointing angle", kTH1F, {{200, 0.8, 1}}, false);
     fRegistry.add("e_Kpm/all/hCosPAXY", "cosPA in XY;cosine of pointing angle in XY", kTH1F, {{200, 0.8, 1}}, false);
     fRegistry.add("e_Kpm/all/hDCA2Legs", "distance between 2 legs;distance between 2 legs (cm)", kTH1F, {{500, 0, 0.5}}, false);
-    fRegistry.add("e_Kpm/all/hMass", "mass;mass (GeV/c^{2});p_{T} (GeV/c)", kTH2F, {{40, 0.5, 2.5}, {100, 0, 10}}, false);
+    fRegistry.add("e_Kpm/all/hMass", "mass;mass (GeV/c^{2})", kTH1F, {{200, 0.5, 2.5}}, false);
+    fRegistry.add("e_Kpm/all/hMass_CosPA", "mass vs. cosPA;mass (GeV/c^{2});cosine of pointing angle", kTH2F, {{200, 0.5, 2.5}, {200, 0.8, 1.0}}, false);
     fRegistry.add("e_Kpm/all/hDeltaEtaDeltaPhi", "#Delta#varphi vs. #Delta#eta;#Delta#varphi = #varphi_{h} - #varphi_{e} (rad.);#Delta#eta = #eta_{h} - #eta_{e}", kTH2F, {{180, -M_PI, M_PI}, {200, -2, +2}}, false);
     fRegistry.add("e_Kpm/all/hRelDeltaPt", "rel delta pT;(p_{T,h} - p_{T,e})/p_{T,e}", kTH1F, {{80, -2, +2}}, false);
     fRegistry.add("e_Kpm/all/hProdDCAxy", "product of DCAxy;d_{xy}^{e} #times d_{xy}^{h} (#sigma)^{2}", kTH1F, {{200, -100, +100}}, false);
@@ -642,7 +643,7 @@ struct taggingHFE {
       float mEK = RecoDecay::m(std::array{pvec0, pvec1}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassKaonCharged});
       float cpa = RecoDecay::cpa(pVtx, svpos, pvecSum);
       float cpaXY = RecoDecay::cpaXY(pVtx, svpos, pvecSum);
-      float ptEK = RecoDecay::sqrtSumOfSquares(pvec0[0] + pvec1[0], pvec0[1] + pvec1[1]);
+      // float ptEK = RecoDecay::sqrtSumOfSquares(pvec0[0] + pvec1[0], pvec0[1] + pvec1[1]);
 
       float deta = RecoDecay::eta(pvec1) - RecoDecay::eta(pvec0);
       float dphi = RecoDecay::phi(pvec1[0], pvec1[1]) - RecoDecay::phi(pvec0[0], pvec0[1]);
@@ -658,7 +659,8 @@ struct taggingHFE {
       fRegistry.fill(HIST("e_Kpm/all/hLz"), lz);
       fRegistry.fill(HIST("e_Kpm/all/hCosPAXY"), cpaXY);
       fRegistry.fill(HIST("e_Kpm/all/hCosPA"), cpa);
-      fRegistry.fill(HIST("e_Kpm/all/hMass"), mEK, ptEK);
+      fRegistry.fill(HIST("e_Kpm/all/hMass"), mEK);
+      fRegistry.fill(HIST("e_Kpm/all/hMass_CosPA"), mEK, cpa);
       fRegistry.fill(HIST("e_Kpm/all/hDeltaEtaDeltaPhi"), dphi, deta);
       fRegistry.fill(HIST("e_Kpm/all/hRelDeltaPt"), reldpt);
       fRegistry.fill(HIST("e_Kpm/all/hProdDCAxy"), dcaXY / std::sqrt(eleParCov.getSigmaY2()) * dcaXY_h / std::sqrt(trackParCov.getSigmaY2()));
@@ -687,7 +689,8 @@ struct taggingHFE {
             fRegistry.fill(HIST("e_Kpm/D0/hLz"), lz);
             fRegistry.fill(HIST("e_Kpm/D0/hCosPAXY"), cpaXY);
             fRegistry.fill(HIST("e_Kpm/D0/hCosPA"), cpa);
-            fRegistry.fill(HIST("e_Kpm/D0/hMass"), mEK, ptEK);
+            fRegistry.fill(HIST("e_Kpm/D0/hMass"), mEK);
+            fRegistry.fill(HIST("e_Kpm/D0/hMass_CosPA"), mEK, cpa);
             fRegistry.fill(HIST("e_Kpm/D0/hDeltaEtaDeltaPhi"), dphi, deta);
             fRegistry.fill(HIST("e_Kpm/D0/hRelDeltaPt"), reldpt);
             fRegistry.fill(HIST("e_Kpm/D0/hProdDCAxy"), dcaXY / std::sqrt(eleParCov.getSigmaY2()) * dcaXY_h / std::sqrt(trackParCov.getSigmaY2()));
@@ -704,7 +707,8 @@ struct taggingHFE {
             fRegistry.fill(HIST("e_Kpm/Dpm/hLz"), lz);
             fRegistry.fill(HIST("e_Kpm/Dpm/hCosPAXY"), cpaXY);
             fRegistry.fill(HIST("e_Kpm/Dpm/hCosPA"), cpa);
-            fRegistry.fill(HIST("e_Kpm/Dpm/hMass"), mEK, ptEK);
+            fRegistry.fill(HIST("e_Kpm/Dpm/hMass"), mEK);
+            fRegistry.fill(HIST("e_Kpm/Dpm/hMass_CosPA"), mEK, cpa);
             fRegistry.fill(HIST("e_Kpm/Dpm/hDeltaEtaDeltaPhi"), dphi, deta);
             fRegistry.fill(HIST("e_Kpm/Dpm/hRelDeltaPt"), reldpt);
             fRegistry.fill(HIST("e_Kpm/Dpm/hProdDCAxy"), dcaXY / std::sqrt(eleParCov.getSigmaY2()) * dcaXY_h / std::sqrt(trackParCov.getSigmaY2()));
@@ -721,7 +725,8 @@ struct taggingHFE {
             fRegistry.fill(HIST("e_Kpm/Ds/hLz"), lz);
             fRegistry.fill(HIST("e_Kpm/Ds/hCosPAXY"), cpaXY);
             fRegistry.fill(HIST("e_Kpm/Ds/hCosPA"), cpa);
-            fRegistry.fill(HIST("e_Kpm/Ds/hMass"), mEK, ptEK);
+            fRegistry.fill(HIST("e_Kpm/Ds/hMass"), mEK);
+            fRegistry.fill(HIST("e_Kpm/Ds/hMass_CosPA"), mEK, cpa);
             fRegistry.fill(HIST("e_Kpm/Ds/hDeltaEtaDeltaPhi"), dphi, deta);
             fRegistry.fill(HIST("e_Kpm/Ds/hRelDeltaPt"), reldpt);
             fRegistry.fill(HIST("e_Kpm/Ds/hProdDCAxy"), dcaXY / std::sqrt(eleParCov.getSigmaY2()) * dcaXY_h / std::sqrt(trackParCov.getSigmaY2()));
@@ -743,7 +748,8 @@ struct taggingHFE {
         fRegistry.fill(HIST("e_Kpm/fake/hLz"), lz);
         fRegistry.fill(HIST("e_Kpm/fake/hCosPAXY"), cpaXY);
         fRegistry.fill(HIST("e_Kpm/fake/hCosPA"), cpa);
-        fRegistry.fill(HIST("e_Kpm/fake/hMass"), mEK, ptEK);
+        fRegistry.fill(HIST("e_Kpm/fake/hMass"), mEK);
+        fRegistry.fill(HIST("e_Kpm/fake/hMass_CosPA"), mEK, cpa);
         fRegistry.fill(HIST("e_Kpm/fake/hDeltaEtaDeltaPhi"), dphi, deta);
         fRegistry.fill(HIST("e_Kpm/fake/hRelDeltaPt"), reldpt);
         fRegistry.fill(HIST("e_Kpm/fake/hProdDCAxy"), dcaXY / std::sqrt(eleParCov.getSigmaY2()) * dcaXY_h / std::sqrt(trackParCov.getSigmaY2()));
@@ -824,7 +830,7 @@ struct taggingHFE {
       float dca2legs = std::sqrt(fitter.getChi2AtPCACandidate());
       float lxy = std::sqrt(std::pow(svpos[0] - collision.posX(), 2) + std::pow(svpos[1] - collision.posY(), 2));
       float lz = std::fabs(svpos[2] - collision.posZ());
-      float ptEK = RecoDecay::sqrtSumOfSquares(pvec0[0] + pvec1[0], pvec0[1] + pvec1[1]);
+      // float ptEK = RecoDecay::sqrtSumOfSquares(pvec0[0] + pvec1[0], pvec0[1] + pvec1[1]);
 
       float deta = RecoDecay::eta(pvec1) - RecoDecay::eta(pvec0);
       float dphi = RecoDecay::phi(pvec1[0], pvec1[1]) - RecoDecay::phi(pvec0[0], pvec0[1]);
@@ -855,7 +861,8 @@ struct taggingHFE {
       fRegistry.fill(HIST(pair_names[pairId]) + HIST("all/hLz"), lz);
       fRegistry.fill(HIST(pair_names[pairId]) + HIST("all/hCosPAXY"), cpaXY);
       fRegistry.fill(HIST(pair_names[pairId]) + HIST("all/hCosPA"), cpa);
-      fRegistry.fill(HIST(pair_names[pairId]) + HIST("all/hMass"), mEK, ptEK);
+      fRegistry.fill(HIST(pair_names[pairId]) + HIST("all/hMass"), mEK);
+      fRegistry.fill(HIST(pair_names[pairId]) + HIST("all/hMass_CosPA"), mEK, cpa);
       fRegistry.fill(HIST(pair_names[pairId]) + HIST("all/hDeltaEtaDeltaPhi"), dphi, deta);
       fRegistry.fill(HIST(pair_names[pairId]) + HIST("all/hRelDeltaPt"), reldpt);
 
@@ -882,7 +889,8 @@ struct taggingHFE {
               fRegistry.fill(HIST(pair_names[pairId]) + HIST("D0/hLz"), lz);
               fRegistry.fill(HIST(pair_names[pairId]) + HIST("D0/hCosPAXY"), cpaXY);
               fRegistry.fill(HIST(pair_names[pairId]) + HIST("D0/hCosPA"), cpa);
-              fRegistry.fill(HIST(pair_names[pairId]) + HIST("D0/hMass"), mEK, ptEK);
+              fRegistry.fill(HIST(pair_names[pairId]) + HIST("D0/hMass"), mEK);
+              fRegistry.fill(HIST(pair_names[pairId]) + HIST("D0/hMass_CosPA"), mEK, cpa);
               fRegistry.fill(HIST(pair_names[pairId]) + HIST("D0/hDeltaEtaDeltaPhi"), dphi, deta);
               fRegistry.fill(HIST(pair_names[pairId]) + HIST("D0/hRelDeltaPt"), reldpt);
             } else if (std::abs(cmp.pdgCode()) == 411) { // Dpm
@@ -896,7 +904,8 @@ struct taggingHFE {
               fRegistry.fill(HIST(pair_names[pairId]) + HIST("Dpm/hLz"), lz);
               fRegistry.fill(HIST(pair_names[pairId]) + HIST("Dpm/hCosPAXY"), cpaXY);
               fRegistry.fill(HIST(pair_names[pairId]) + HIST("Dpm/hCosPA"), cpa);
-              fRegistry.fill(HIST(pair_names[pairId]) + HIST("Dpm/hMass"), mEK, ptEK);
+              fRegistry.fill(HIST(pair_names[pairId]) + HIST("Dpm/hMass"), mEK);
+              fRegistry.fill(HIST(pair_names[pairId]) + HIST("Dpm/hMass_CosPA"), mEK, cpa);
               fRegistry.fill(HIST(pair_names[pairId]) + HIST("Dpm/hDeltaEtaDeltaPhi"), dphi, deta);
               fRegistry.fill(HIST(pair_names[pairId]) + HIST("Dpm/hRelDeltaPt"), reldpt);
             } else if (std::abs(cmp.pdgCode()) == 431) { // Ds
@@ -910,7 +919,8 @@ struct taggingHFE {
               fRegistry.fill(HIST(pair_names[pairId]) + HIST("Ds/hLz"), lz);
               fRegistry.fill(HIST(pair_names[pairId]) + HIST("Ds/hCosPAXY"), cpaXY);
               fRegistry.fill(HIST(pair_names[pairId]) + HIST("Ds/hCosPA"), cpa);
-              fRegistry.fill(HIST(pair_names[pairId]) + HIST("Ds/hMass"), mEK, ptEK);
+              fRegistry.fill(HIST(pair_names[pairId]) + HIST("Ds/hMass"), mEK);
+              fRegistry.fill(HIST(pair_names[pairId]) + HIST("Ds/hMass_CosPA"), mEK, cpa);
               fRegistry.fill(HIST(pair_names[pairId]) + HIST("Ds/hDeltaEtaDeltaPhi"), dphi, deta);
               fRegistry.fill(HIST(pair_names[pairId]) + HIST("Ds/hRelDeltaPt"), reldpt);
             }
@@ -928,7 +938,8 @@ struct taggingHFE {
               fRegistry.fill(HIST(pair_names[pairId]) + HIST("Lc/hLz"), lz);
               fRegistry.fill(HIST(pair_names[pairId]) + HIST("Lc/hCosPAXY"), cpaXY);
               fRegistry.fill(HIST(pair_names[pairId]) + HIST("Lc/hCosPA"), cpa);
-              fRegistry.fill(HIST(pair_names[pairId]) + HIST("Lc/hMass"), mEK, ptEK);
+              fRegistry.fill(HIST(pair_names[pairId]) + HIST("Lc/hMass"), mEK);
+              fRegistry.fill(HIST(pair_names[pairId]) + HIST("Lc/hMass_CosPA"), mEK, cpa);
               fRegistry.fill(HIST(pair_names[pairId]) + HIST("Lc/hDeltaEtaDeltaPhi"), dphi, deta);
               fRegistry.fill(HIST(pair_names[pairId]) + HIST("Lc/hRelDeltaPt"), reldpt);
             }
@@ -948,7 +959,8 @@ struct taggingHFE {
         fRegistry.fill(HIST(pair_names[pairId]) + HIST("fake/hLz"), lz);
         fRegistry.fill(HIST(pair_names[pairId]) + HIST("fake/hCosPAXY"), cpaXY);
         fRegistry.fill(HIST(pair_names[pairId]) + HIST("fake/hCosPA"), cpa);
-        fRegistry.fill(HIST(pair_names[pairId]) + HIST("fake/hMass"), mEK, ptEK);
+        fRegistry.fill(HIST(pair_names[pairId]) + HIST("fake/hMass"), mEK);
+        fRegistry.fill(HIST(pair_names[pairId]) + HIST("fake/hMass_CosPA"), mEK, cpa);
         fRegistry.fill(HIST(pair_names[pairId]) + HIST("fake/hDeltaEtaDeltaPhi"), dphi, deta);
         fRegistry.fill(HIST(pair_names[pairId]) + HIST("fake/hRelDeltaPt"), reldpt);
       }
