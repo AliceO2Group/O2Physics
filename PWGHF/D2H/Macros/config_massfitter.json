@@ -32,7 +32,8 @@
         "Ds",
         "LcToPKPi",
         "LcToPK0s",
-        "Dstar"
+        "Dstar",
+        "XicToXiPiPi"
     ],
     "EnableRefl": false,
     "FixSigma": false,

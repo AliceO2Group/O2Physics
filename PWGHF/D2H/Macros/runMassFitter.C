@@ -188,9 +188,10 @@ int runMassFitter(const TString& configFileName)
     {"Ds", {"KK#pi", "D_s+"}},
     {"LcToPKPi", {"pK#pi", "Lambda_c+"}},
     {"LcToPK0s", {"pK^{0}_{s}", "Lambda_c+"}},
-    {"Dstar", {"D^{0}pi^{+}", "D*+"}}};
+    {"Dstar", {"D^{0}pi^{+}", "D*+"}},
+    {"XicToXiPiPi", {"#Xi#pi#pi", "Xi_c+"}}};
   if (particles.find(particleName.Data()) == particles.end()) {
-    throw std::runtime_error("ERROR: only Dplus, D0, Ds, LcToPKPi, LcToPK0s and Dstar particles supported! Exit");
+    throw std::runtime_error("ERROR: only Dplus, D0, Ds, LcToPKPi, LcToPK0s, Dstar and XicToXiPiPi particles supported! Exit");
   }
   const TString massAxisTitle = "#it{M}(" + particles[particleName.Data()].first + ") (GeV/#it{c}^{2})";
   const double massPDG = TDatabasePDG::Instance()->GetParticle(particles[particleName.Data()].second.c_str())->Mass();
