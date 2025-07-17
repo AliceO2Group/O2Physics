@@ -136,7 +136,7 @@ struct F0980pbpbanalysis {
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0}, "Transverse momentum Binning"};
   ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 100}, "Centrality interval"};
 
-  //for event mixing
+  // for event mixing
   SliceCache cache;
   Configurable<int> cfgNMixedEvents{"cfgNMixedEvents", 10, "Number of mixed events per event"};
   ConfigurableAxis mixingAxisVertex{"mixingAxisVertex", {10, -10, 10}, "Vertex axis for mixing bin"};
@@ -200,7 +200,7 @@ struct F0980pbpbanalysis {
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTPCFullKa, aod::pidTOFbeta>>;
   // aod::pidTOFbeta 추가됨
-  
+
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
 
   template <typename T>
@@ -504,7 +504,7 @@ struct F0980pbpbanalysis {
     ROOT::Math::PxPyPzMVector ptl1, ptl2, recoPtl;
     for (auto& [c1, t1, c2, t2] : pair) {
       std::cout << "--------------------------------" << std::endl;
-      std::cout << "1st collision ID: " << c1.globalIndex() << " 1st collision bcID: "<< c1.bcId() << " 2nd collision ID: " << c2.globalIndex() << " 2nd collision bcID: " << c2.bcId() << std::endl;
+      std::cout << "1st collision ID: " << c1.globalIndex() << " 1st collision bcID: " << c1.bcId() << " 2nd collision ID: " << c2.globalIndex() << " 2nd collision bcID: " << c2.bcId() << std::endl;
       if (c1.globalIndex() != c1.index()) {
         std::cout << "WARNING: Mixing events with different global indices!" << std::endl;
       }
