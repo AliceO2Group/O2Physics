@@ -294,8 +294,11 @@ struct HfTreeCreatorDsToKKPi {
   Partition<CandDsData> selectedDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
   Partition<CandDsData> selectedDsToPiKKCand = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
 
-  Partition<CandDsMcReco> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (aod::hf_cand_3prong::flagMcDecayChanRec == channelsResonant[Mother::Ds][decayChannel] || (fillDplusMc && aod::hf_cand_3prong::flagMcDecayChanRec == channelsResonant[Mother::Dplus][decayChannel])); // Do not store Dplus MC if fillDplusMc is false
-  Partition<CandDsMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK);
+  Partition<CandDsMcReco> reconstructedCandSig = (nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && aod::hf_cand_3prong::flagMcDecayChanRec == channelsResonant[Mother::Ds][decayChannel]) || (fillDplusMc && nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKK) && aod::hf_cand_3prong::flagMcDecayChanRec == channelsResonant[Mother::Dplus][decayChannel]); // Do not store Dplus MC if fillDplusMc is false
+  Partition<CandDsMcReco> reconstructedCandBkg = (nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKK)) ||
+                                                 (nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && aod::hf_cand_3prong::flagMcDecayChanRec != channelsResonant[Mother::Ds][decayChannel]) ||
+                                                 (nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKK) && aod::hf_cand_3prong::flagMcDecayChanRec != channelsResonant[Mother::Dplus][decayChannel]) ||
+                                                 (!fillDplusMc && nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKK) && aod::hf_cand_3prong::flagMcDecayChanRec == channelsResonant[Mother::Dplus][decayChannel]);
 
   void init(InitContext const&)
   {
