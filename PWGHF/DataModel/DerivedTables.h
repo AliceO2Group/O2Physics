@@ -936,6 +936,7 @@ DECLARE_SOA_TABLE_STAGED(HfDstarMcs, "HFDSTMC", //! Table with MC candidate info
 // ----------------
 
 DECLARE_SOA_TABLE_STAGED(HfXicToXiPiPiPars, "HFXICXPPPAR", //! Table with candidate properties used for selection
+                         hf_cand_xic_to_xi_pi_pi::Sign,
                          hf_cand_par::PtProngXi,
                          hf_cand_par::PtProngPi0,
                          hf_cand_par::PtProngPi1,

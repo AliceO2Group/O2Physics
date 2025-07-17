@@ -136,6 +136,7 @@ struct HfDerivedDataCreatorXicToXiPiPi {
     rowsCommon.fillTablesCandidate(candidate, invMass, y);
     if (fillCandidatePar) {
       rowCandidatePar(
+        candidate.sign(),
         candidate.ptProng0(),
         candidate.ptProng1(),
         candidate.ptProng2(),
