@@ -503,11 +503,6 @@ struct F0980pbpbanalysis {
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNMixedEvents, -1, collisions, trackTuple, &cache};
     ROOT::Math::PxPyPzMVector ptl1, ptl2, recoPtl;
     for (auto& [c1, t1, c2, t2] : pair) {
-      std::cout << "--------------------------------" << std::endl;
-      std::cout << "1st collision ID: " << c1.globalIndex() << " 1st collision bcID: " << c1.bcId() << " 2nd collision ID: " << c2.globalIndex() << " 2nd collision bcID: " << c2.bcId() << std::endl;
-      if (c1.globalIndex() != c1.index()) {
-        std::cout << "WARNING: Mixing events with different global indices!" << std::endl;
-      }
       if (cfgCentEst == CentEstList::FT0C) {
         centrality = c1.centFT0C();
       } else if (cfgCentEst == CentEstList::FT0M) {
@@ -520,8 +515,6 @@ struct F0980pbpbanalysis {
         continue;
       }
       double eventPlaneDet = std::atan2(c1.qvecIm()[qVecDetInd], c1.qvecRe()[qVecDetInd]) / static_cast<float>(nmode);
-      int total = 0;
-      int survive = 0;
 
       for (auto& trk1 : t1) {
         if (!trackSelected(trk1)) {
