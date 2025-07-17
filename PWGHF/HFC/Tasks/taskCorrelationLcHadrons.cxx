@@ -194,7 +194,7 @@ struct HfTaskCorrelationLcHadrons {
   ConfigurableAxis binsPhi{"binsPhi", {64, -PIHalf, 3. * PIHalf}, "#it{#varphi}"};
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 8000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
-  ConfigurableAxis binscentFT0M{"binsCentFT0M", {100, 0., 100.}, "Centrality percentile (FT0M)"};
+  ConfigurableAxis binsCentFt0m{"binsCentFt0m", {100, 0., 100.}, "Centrality percentile (FT0M)"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -213,7 +213,7 @@ struct HfTaskCorrelationLcHadrons {
     AxisSpec axisBdtScore = {binsBdtScore, "Bdt score"};
     AxisSpec axisCorrelationState = {2, 0., 2., ""};
     AxisSpec axisSignPair = {4, 1., 5.};
-    AxisSpec axisCentFT0M = {binscentFT0M, "Centrality percentile (FT0M)"};
+    AxisSpec axisCentFT0M = {binsCentFt0m, "Centrality percentile (FT0M)"};
 
     // Histograms for data analysis
     registry.add("hBdtScorePrompt", "Lc BDT prompt score", {HistType::kTH1F, {axisBdtScore}});
