@@ -746,18 +746,18 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       }
 
       if (cfgProcessPM) {
-        auto groupPartsOne = One->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
-        auto groupPartsTwo = Two->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+        auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+        auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
         doMixedEvent<false>(groupPartsOne, groupPartsTwo, , magFieldTesla1, multiplicityCol, 1);
       }
       if (cfgProcessPP) {
-        auto groupPartsOne = One->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
-        auto groupPartsTwo = One->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+        auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+        auto groupPartsTwo = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
         doMixedEvent<false>(groupPartsOne, groupPartsTwo, , magFieldTesla1, multiplicityCol, 2);
       }
       if (cfgProcessMM) {
-        auto groupPartsOne = Two->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
-        auto groupPartsTwo = Two->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+        auto groupPartsOne = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+        auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
         doMixedEvent<false>(groupPartsOne, groupPartsTwo, , magFieldTesla1, multiplicityCol, 3);
       }
     }
