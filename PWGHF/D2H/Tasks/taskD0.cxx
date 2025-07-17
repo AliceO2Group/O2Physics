@@ -19,10 +19,12 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-
+#include "Common/DataModel/Centrality.h"
+#include "Framework/AnalysisDataModel.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 
 using namespace o2;
 using namespace o2::analysis;
@@ -64,6 +66,8 @@ struct HfTaskD0 {
   ConfigurableAxis thnConfigAxisCandType{"thnConfigAxisCandType", {4, -0.5, 3.5}, "D0 type"};
   ConfigurableAxis thnConfigAxisGenPtD{"thnConfigAxisGenPtD", {500, 0, 50}, "Gen Pt D"};
   ConfigurableAxis thnConfigAxisGenPtB{"thnConfigAxisGenPtB", {1000, 0, 100}, "Gen Pt B"};
+  ConfigurableAxis binningCentrality{"binningCentrality", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0}, "centrality binning"}; // centrality added 11:02:25
+  ConfigurableAxis axesCentrality{"axesCentrality", {1000, 0.0, 100.0}, "centrality"};
 
   HfHelper hfHelper;
 
@@ -76,6 +80,9 @@ struct HfTaskD0 {
   using D0CandidatesMlMc = soa::Join<D0CandidatesMl, aod::HfCand2ProngMcRec>;
   using D0CandidatesMlKF = soa::Join<D0CandidatesMl, aod::HfCand2ProngKF>;
   using D0CandidatesMlMcKF = soa::Join<D0CandidatesMlKF, aod::HfCand2ProngMcRec>;
+
+  using CollisionsWCent = soa::Join<aod::Collisions, aod::CentFT0Ms>;
+  using CollisionsWCentMcLabel = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Ms>;
 
   Partition<D0Candidates> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
   Partition<D0CandidatesKF> selectedD0CandidatesKF = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
@@ -174,8 +181,17 @@ struct HfTaskD0 {
     }
 
     auto vbins = (std::vector<double>)binsPt;
+    const AxisSpec Centrality = {binningCentrality, "binningcentrality (%)"};
+    const AxisSpec axisCentrality = {axesCentrality, "axescentrality (%)"};
+
+    registry.add("hMassSigD0VsPtVsCent", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{Cent}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, Centrality}}); // 14-feb-2025
+    registry.add("hMassBkgD0VsPtVsCent", "2-prong candidates (checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{Cent}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, Centrality}});
+    registry.add("hMassReflBkgD0VsPtVsCent", "2-prong candidates (matched);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{Cent}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, Centrality}});
+    registry.add("hMassSigBkgD0VsPtVsCent", "2-prong candidates (not checked);#it{m}_{inv} (GeV/#it{c}^{2}); #it{p}_{T}; #it{Cent}", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {150, 0., 30.}, Centrality}});
+
     registry.add("hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassVsPhi", "2-prong candidates vs phi;inv. mass (#pi K) (GeV/#it{c}^{2});phi (rad);entries", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {32, 0, o2::constants::math::TwoPI}}});
+    registry.add("hMassVsCent", "2-prong candidates vs Cent;inv. mass (#pi K) (GeV/#it{c}^{2});Cent (Percentile);entries", {HistType::kTH3F, {{120, 1.5848, 2.1848}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, Centrality}});
     registry.add("hDecLength", "2-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthxy", "2-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLenErr", "2-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{800, 0., 0.2}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -224,6 +240,21 @@ struct HfTaskD0 {
     registry.add("hSparseAcc", "Thn for generated D0 from charm and beauty", HistType::kTHnSparseD, {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin});
     registry.get<THnSparse>(HIST("hSparseAcc"))->Sumw2();
 
+    registry.add("hMassVsPtVsYVsCent", "Thn for D0 candidates", HistType::kTHnSparseD, {thnAxisMass, thnAxisPt, thnAxisY, axisCentrality});
+    registry.get<THnSparse>(HIST("hMassVsPtVsYVsCent"))->Sumw2();
+
+    registry.add("hMassSigD0VsPtVsYVsCent", "Thn for D0 candidates", HistType::kTHnSparseD, {thnAxisMass, thnAxisPt, thnAxisY, axisCentrality});
+    registry.get<THnSparse>(HIST("hMassSigD0VsPtVsYVsCent"))->Sumw2();
+
+    registry.add("hMassBkgD0VsPtVsYVsCent", "Thn for D0 candidates", HistType::kTHnSparseD, {thnAxisMass, thnAxisPt, thnAxisY, axisCentrality});
+    registry.get<THnSparse>(HIST("hMassBkgD0VsPtVsYVsCent"))->Sumw2();
+
+    registry.add("hMassReflBkgD0VsPtVsYVsCent", "Thn for D0 candidates", HistType::kTHnSparseD, {thnAxisMass, thnAxisPt, thnAxisY, axisCentrality});
+    registry.get<THnSparse>(HIST("hMassReflBkgD0VsPtVsYVsCent"))->Sumw2();
+
+    registry.add("hMassSigBkgD0VsPtVsYVsCent", "Thn for D0 candidates", HistType::kTHnSparseD, {thnAxisMass, thnAxisPt, thnAxisY, axisCentrality});
+    registry.get<THnSparse>(HIST("hMassSigBkgD0VsPtVsYVsCent"))->Sumw2();
+
     if (applyMl) {
       const AxisSpec thnAxisBkgScore{thnConfigAxisBkgScore, "BDT score bkg."};
       const AxisSpec thnAxisNonPromptScore{thnConfigAxisNonPromptScore, "BDT score non-prompt."};
@@ -237,291 +268,311 @@ struct HfTaskD0 {
     }
   }
 
-  template <int reconstructionType, bool applyMl, typename CandType>
-  void processData(CandType const& candidates)
+  template <int reconstructionType, bool applyMl, typename CandType, typename CollisionsWCent>
+  void processData(CandType const& candidates, CollisionsWCent const& collcent)
   {
-    for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-        continue;
-      }
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yD0(candidate)) > yCandRecoMax) {
-        continue;
-      }
+    for (auto const& collcents : collcent) {
+      for (const auto& candidate : candidates) {
+        if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+          continue;
+        }
+        if (yCandRecoMax >= 0. && std::abs(hfHelper.yD0(candidate)) > yCandRecoMax) {
+          continue;
+        }
 
-      float massD0, massD0bar;
-      if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
-        massD0 = candidate.kfGeoMassD0();
-        massD0bar = candidate.kfGeoMassD0bar();
-      } else {
-        massD0 = hfHelper.invMassD0ToPiK(candidate);
-        massD0bar = hfHelper.invMassD0barToKPi(candidate);
-      }
-      auto ptCandidate = candidate.pt();
+        float massD0, massD0bar;
+        if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+          massD0 = candidate.kfGeoMassD0();
+          massD0bar = candidate.kfGeoMassD0bar();
+        } else {
+          massD0 = hfHelper.invMassD0ToPiK(candidate);
+          massD0bar = hfHelper.invMassD0barToKPi(candidate);
+        }
+        auto ptCandidate = candidate.pt();
+        auto cent = collcents.centFT0M(); // centrality
+        auto rapidityCandidate = hfHelper.yD0(candidate);
 
-      if (candidate.isSelD0() >= selectionFlagD0) {
-        registry.fill(HIST("hMass"), massD0, ptCandidate);
-        registry.fill(HIST("hMassFinerBinning"), massD0, ptCandidate);
-        registry.fill(HIST("hMassVsPhi"), massD0, ptCandidate, candidate.phi());
-      }
-      if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-        registry.fill(HIST("hMass"), massD0bar, ptCandidate);
-        registry.fill(HIST("hMassFinerBinning"), massD0bar, ptCandidate);
-        registry.fill(HIST("hMassVsPhi"), massD0bar, ptCandidate, candidate.phi());
-      }
-      registry.fill(HIST("hPtCand"), ptCandidate);
-      registry.fill(HIST("hPtProng0"), candidate.ptProng0());
-      registry.fill(HIST("hPtProng1"), candidate.ptProng1());
-      registry.fill(HIST("hDecLength"), candidate.decayLength(), ptCandidate);
-      registry.fill(HIST("hDecLengthxy"), candidate.decayLengthXY(), ptCandidate);
-      registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), ptCandidate);
-      registry.fill(HIST("hDecLenXYErr"), candidate.errorDecayLengthXY(), ptCandidate);
-      registry.fill(HIST("hNormalisedDecLength"), candidate.decayLengthNormalised(), ptCandidate);
-      registry.fill(HIST("hNormalisedDecLengthxy"), candidate.decayLengthXYNormalised(), ptCandidate);
-      registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), ptCandidate);
-      registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), ptCandidate);
-      registry.fill(HIST("hd0ErrProng0"), candidate.errorImpactParameter0(), ptCandidate);
-      registry.fill(HIST("hd0ErrProng1"), candidate.errorImpactParameter1(), ptCandidate);
-      registry.fill(HIST("hd0d0"), candidate.impactParameterProduct(), ptCandidate);
-      registry.fill(HIST("hCTS"), hfHelper.cosThetaStarD0(candidate), ptCandidate);
-      registry.fill(HIST("hCt"), hfHelper.ctD0(candidate), ptCandidate);
-      registry.fill(HIST("hCPA"), candidate.cpa(), ptCandidate);
-      registry.fill(HIST("hEta"), candidate.eta(), ptCandidate);
-      registry.fill(HIST("hSelectionStatus"), candidate.isSelD0() + (candidate.isSelD0bar() * 2), ptCandidate);
-      registry.fill(HIST("hDecLengthFinerBinning"), candidate.decayLength(), ptCandidate);
-      registry.fill(HIST("hDecLengthxyFinerBinning"), candidate.decayLengthXY(), ptCandidate);
-      registry.fill(HIST("hd0Prong0FinerBinning"), candidate.impactParameter0(), ptCandidate);
-      registry.fill(HIST("hd0Prong1FinerBinning"), candidate.impactParameter1(), ptCandidate);
-      registry.fill(HIST("hd0d0FinerBinning"), candidate.impactParameterProduct(), ptCandidate);
-      registry.fill(HIST("hCTSFinerBinning"), hfHelper.cosThetaStarD0(candidate), ptCandidate);
-      registry.fill(HIST("hCtFinerBinning"), hfHelper.ctD0(candidate), ptCandidate);
-      registry.fill(HIST("hCPAFinerBinning"), candidate.cpa(), ptCandidate);
-      registry.fill(HIST("hCPAXYFinerBinning"), candidate.cpaXY(), ptCandidate);
-
-      if constexpr (applyMl) {
         if (candidate.isSelD0() >= selectionFlagD0) {
-          registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, -1, hfHelper.yD0(candidate), 0, SigD0);
+          registry.fill(HIST("hMass"), massD0, ptCandidate);
+          registry.fill(HIST("hMassFinerBinning"), massD0, ptCandidate);
+          registry.fill(HIST("hMassVsPhi"), massD0, ptCandidate, candidate.phi());
+          registry.fill(HIST("hMassVsCent"), massD0, ptCandidate, cent);
+          registry.fill(HIST("hMassVsPtVsYVsCent"), massD0, ptCandidate, rapidityCandidate, cent);
         }
         if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-          registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, -1, hfHelper.yD0(candidate), 0, SigD0bar);
+          registry.fill(HIST("hMass"), massD0bar, ptCandidate);
+          registry.fill(HIST("hMassFinerBinning"), massD0bar, ptCandidate);
+          registry.fill(HIST("hMassVsPhi"), massD0bar, ptCandidate, candidate.phi());
+          registry.fill(HIST("hMassVsCent"), massD0, ptCandidate, cent);
+          registry.fill(HIST("hMassVsPtVsYVsCent"), massD0bar, ptCandidate, rapidityCandidate, cent);
         }
-      } else {
-        if (candidate.isSelD0() >= selectionFlagD0) {
-          registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, -1, hfHelper.yD0(candidate), 0, SigD0);
-        }
-        if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-          registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, -1, hfHelper.yD0(candidate), 0, SigD0bar);
+        registry.fill(HIST("hPtCand"), ptCandidate);
+        registry.fill(HIST("hPtProng0"), candidate.ptProng0());
+        registry.fill(HIST("hPtProng1"), candidate.ptProng1());
+        registry.fill(HIST("hDecLength"), candidate.decayLength(), ptCandidate);
+        registry.fill(HIST("hDecLengthxy"), candidate.decayLengthXY(), ptCandidate);
+        registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), ptCandidate);
+        registry.fill(HIST("hDecLenXYErr"), candidate.errorDecayLengthXY(), ptCandidate);
+        registry.fill(HIST("hNormalisedDecLength"), candidate.decayLengthNormalised(), ptCandidate);
+        registry.fill(HIST("hNormalisedDecLengthxy"), candidate.decayLengthXYNormalised(), ptCandidate);
+        registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), ptCandidate);
+        registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), ptCandidate);
+        registry.fill(HIST("hd0ErrProng0"), candidate.errorImpactParameter0(), ptCandidate);
+        registry.fill(HIST("hd0ErrProng1"), candidate.errorImpactParameter1(), ptCandidate);
+        registry.fill(HIST("hd0d0"), candidate.impactParameterProduct(), ptCandidate);
+        registry.fill(HIST("hCTS"), hfHelper.cosThetaStarD0(candidate), ptCandidate);
+        registry.fill(HIST("hCt"), hfHelper.ctD0(candidate), ptCandidate);
+        registry.fill(HIST("hCPA"), candidate.cpa(), ptCandidate);
+        registry.fill(HIST("hEta"), candidate.eta(), ptCandidate);
+        registry.fill(HIST("hSelectionStatus"), candidate.isSelD0() + (candidate.isSelD0bar() * 2), ptCandidate);
+        registry.fill(HIST("hDecLengthFinerBinning"), candidate.decayLength(), ptCandidate);
+        registry.fill(HIST("hDecLengthxyFinerBinning"), candidate.decayLengthXY(), ptCandidate);
+        registry.fill(HIST("hd0Prong0FinerBinning"), candidate.impactParameter0(), ptCandidate);
+        registry.fill(HIST("hd0Prong1FinerBinning"), candidate.impactParameter1(), ptCandidate);
+        registry.fill(HIST("hd0d0FinerBinning"), candidate.impactParameterProduct(), ptCandidate);
+        registry.fill(HIST("hCTSFinerBinning"), hfHelper.cosThetaStarD0(candidate), ptCandidate);
+        registry.fill(HIST("hCtFinerBinning"), hfHelper.ctD0(candidate), ptCandidate);
+        registry.fill(HIST("hCPAFinerBinning"), candidate.cpa(), ptCandidate);
+        registry.fill(HIST("hCPAXYFinerBinning"), candidate.cpaXY(), ptCandidate);
+
+        if constexpr (applyMl) {
+          if (candidate.isSelD0() >= selectionFlagD0) {
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, -1, hfHelper.yD0(candidate), 0, SigD0);
+          }
+          if (candidate.isSelD0bar() >= selectionFlagD0bar) {
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, -1, hfHelper.yD0(candidate), 0, SigD0bar);
+          }
+        } else {
+          if (candidate.isSelD0() >= selectionFlagD0) {
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, -1, hfHelper.yD0(candidate), 0, SigD0);
+          }
+          if (candidate.isSelD0bar() >= selectionFlagD0bar) {
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, -1, hfHelper.yD0(candidate), 0, SigD0bar);
+          }
         }
       }
     }
   }
-  void processDataWithDCAFitterN(D0Candidates const&)
+  void processDataWithDCAFitterN(D0Candidates const& selectedD0Candidates, CollisionsWCent const& collcent)
   {
-    processData<aod::hf_cand::VertexerType::DCAFitter, false>(selectedD0Candidates);
+    processData<aod::hf_cand::VertexerType::DCAFitter, false>(selectedD0Candidates, collcent);
   }
   PROCESS_SWITCH(HfTaskD0, processDataWithDCAFitterN, "process taskD0 with DCAFitterN", true);
 
-  void processDataWithKFParticle(D0CandidatesKF const&)
+  void processDataWithKFParticle(D0CandidatesKF const& selectedD0CandidatesKF, CollisionsWCent const& collcent)
   {
-    processData<aod::hf_cand::VertexerType::KfParticle, false>(selectedD0CandidatesKF);
+    processData<aod::hf_cand::VertexerType::KfParticle, false>(selectedD0CandidatesKF, collcent);
   }
   PROCESS_SWITCH(HfTaskD0, processDataWithKFParticle, "process taskD0 with KFParticle", false);
 
-  void processDataWithDCAFitterNMl(D0CandidatesMl const&)
+  void processDataWithDCAFitterNMl(D0CandidatesMl const& selectedD0CandidatesMl, CollisionsWCent const& collcent)
   {
-    processData<aod::hf_cand::VertexerType::DCAFitter, true>(selectedD0CandidatesMl);
+    processData<aod::hf_cand::VertexerType::DCAFitter, true>(selectedD0CandidatesMl, collcent);
   }
   PROCESS_SWITCH(HfTaskD0, processDataWithDCAFitterNMl, "process taskD0 with DCAFitterN and ML selections", false);
 
-  void processDataWithKFParticleMl(D0CandidatesMlKF const&)
+  void processDataWithKFParticleMl(D0CandidatesMlKF const& selectedD0CandidatesMlKF, CollisionsWCent const& collcent)
   {
-    processData<aod::hf_cand::VertexerType::KfParticle, true>(selectedD0CandidatesMlKF);
+    processData<aod::hf_cand::VertexerType::KfParticle, true>(selectedD0CandidatesMlKF, collcent);
   }
   PROCESS_SWITCH(HfTaskD0, processDataWithKFParticleMl, "process taskD0 with KFParticle and ML selections", false);
 
-  template <int reconstructionType, bool applyMl, typename CandType>
-  void processMc(CandType const& candidates,
+  template <int reconstructionType, bool applyMl, typename CandType, typename CollisionsWCentMcLabel>
+  void processMc(CandType const& candidates, CollisionsWCentMcLabel const& collcentmcs,
                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                  aod::TracksWMc const&)
   {
     // MC rec.
-    for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-        continue;
-      }
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yD0(candidate)) > yCandRecoMax) {
-        continue;
-      }
-      float massD0, massD0bar;
-      if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
-        massD0 = candidate.kfGeoMassD0();
-        massD0bar = candidate.kfGeoMassD0bar();
-      } else {
-        massD0 = hfHelper.invMassD0ToPiK(candidate);
-        massD0bar = hfHelper.invMassD0barToKPi(candidate);
-      }
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
-        // Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(mcParticles, candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(), o2::constants::physics::Pdg::kD0, true);
-        auto particleMother = mcParticles.rawIteratorAt(indexMother);
-        auto ptGen = particleMother.pt();                                                   // gen. level pT
-        auto yGen = RecoDecay::y(particleMother.pVector(), o2::constants::physics::MassD0); // gen. level y
-        registry.fill(HIST("hPtGenSig"), ptGen);                                            // gen. level pT
-        auto ptRec = candidate.pt();
-        auto yRec = hfHelper.yD0(candidate);
-        if (candidate.isRecoHfFlag() >= selectionFlagHf) {
-          registry.fill(HIST("hPtVsYRecSigRecoHFFlag"), ptRec, yRec);
-          registry.fill(HIST("hPtGenVsPtRecSig"), ptGen, ptRec);
-          registry.fill(HIST("hYGenVsYRecSig"), yGen, yRec);
-          if (candidate.isSelD0() >= selectionFlagD0) {
-            registry.fill(HIST("hMassVsPtGenVsPtRecSig"), massD0, ptGen, ptRec);
-          }
-          if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-            registry.fill(HIST("hMassVsPtGenVsPtRecSig"), massD0bar, ptGen, ptRec);
-          }
+    for (auto const& collcentmc : collcentmcs) {
+      for (const auto& candidate : candidates) {
+        if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+          continue;
         }
-        if (candidate.isRecoTopol() >= selectionTopol) {
-          registry.fill(HIST("hPtVsYRecSigRecoTopol"), ptRec, yRec);
+        if (yCandRecoMax >= 0. && std::abs(hfHelper.yD0(candidate)) > yCandRecoMax) {
+          continue;
         }
-        if (candidate.isRecoCand() >= selectionCand) {
-          registry.fill(HIST("hPtVsYRecSigRecoCand"), ptRec, yRec);
-        }
-        if (candidate.isRecoPid() >= selectionPid) {
-          registry.fill(HIST("hPtVsYRecSig_RecoPID"), ptRec, yRec);
-        }
-        if (candidate.isSelD0() >= selectionFlagD0 || candidate.isSelD0bar() >= selectionFlagD0bar) {
-          registry.fill(HIST("hPtVsYRecSigReco"), ptRec, yRec); // rec. level pT
-          registry.fill(HIST("hPtRecSig"), ptRec);
-        }
-        if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
-          if (candidate.isRecoHfFlag() >= selectionFlagHf) {
-            registry.fill(HIST("hPtVsYRecSigPromptRecoHFFlag"), ptRec, yRec);
-          }
-          if (candidate.isRecoTopol() >= selectionTopol) {
-            registry.fill(HIST("hPtVsYRecSigPromptRecoTopol"), ptRec, yRec);
-          }
-          if (candidate.isRecoCand() >= selectionCand) {
-            registry.fill(HIST("hPtVsYRecSigPromptRecoCand"), ptRec, yRec);
-          }
-          if (candidate.isRecoPid() >= selectionPid) {
-            registry.fill(HIST("hPtVsYRecSigPromptRecoPID"), ptRec, yRec);
-          }
-          if (candidate.isSelD0() >= selectionFlagD0 || candidate.isSelD0bar() >= selectionFlagD0bar) {
-            registry.fill(HIST("hPtVsYRecSigPromptReco"), ptRec, yRec); // rec. level pT, prompt
-            registry.fill(HIST("hPtRecSigPrompt"), ptRec);
-          }
+        float massD0, massD0bar;
+        if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+          massD0 = candidate.kfGeoMassD0();
+          massD0bar = candidate.kfGeoMassD0bar();
         } else {
+          massD0 = hfHelper.invMassD0ToPiK(candidate);
+          massD0bar = hfHelper.invMassD0barToKPi(candidate);
+        }
+        if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
+          // Get the corresponding MC particle.
+          auto indexMother = RecoDecay::getMother(mcParticles, candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(), o2::constants::physics::Pdg::kD0, true);
+          auto particleMother = mcParticles.rawIteratorAt(indexMother);
+          auto ptGen = particleMother.pt();                                                   // gen. level pT
+          auto yGen = RecoDecay::y(particleMother.pVector(), o2::constants::physics::MassD0); // gen. level y
+          registry.fill(HIST("hPtGenSig"), ptGen);                                            // gen. level pT
+          auto ptRec = candidate.pt();
+          auto yRec = hfHelper.yD0(candidate);
           if (candidate.isRecoHfFlag() >= selectionFlagHf) {
-            registry.fill(HIST("hPtVsYRecSigNonPromptRecoHFFlag"), ptRec, yRec);
+            registry.fill(HIST("hPtVsYRecSigRecoHFFlag"), ptRec, yRec);
+            registry.fill(HIST("hPtGenVsPtRecSig"), ptGen, ptRec);
+            registry.fill(HIST("hYGenVsYRecSig"), yGen, yRec);
+            if (candidate.isSelD0() >= selectionFlagD0) {
+              registry.fill(HIST("hMassVsPtGenVsPtRecSig"), massD0, ptGen, ptRec);
+            }
+            if (candidate.isSelD0bar() >= selectionFlagD0bar) {
+              registry.fill(HIST("hMassVsPtGenVsPtRecSig"), massD0bar, ptGen, ptRec);
+            }
           }
           if (candidate.isRecoTopol() >= selectionTopol) {
-            registry.fill(HIST("hPtVsYRecSigNonPromptRecoTopol"), ptRec, yRec);
+            registry.fill(HIST("hPtVsYRecSigRecoTopol"), ptRec, yRec);
           }
           if (candidate.isRecoCand() >= selectionCand) {
-            registry.fill(HIST("hPtVsYRecSigNonPromptRecoCand"), ptRec, yRec);
+            registry.fill(HIST("hPtVsYRecSigRecoCand"), ptRec, yRec);
           }
           if (candidate.isRecoPid() >= selectionPid) {
-            registry.fill(HIST("hPtVsYRecSigNonPromptRecoPID"), ptRec, yRec);
+            registry.fill(HIST("hPtVsYRecSig_RecoPID"), ptRec, yRec);
           }
           if (candidate.isSelD0() >= selectionFlagD0 || candidate.isSelD0bar() >= selectionFlagD0bar) {
-            registry.fill(HIST("hPtVsYRecSigNonPromptReco"), ptRec, yRec); // rec. level pT, non-prompt
-            registry.fill(HIST("hPtRecSigNonPrompt"), ptRec);
+            registry.fill(HIST("hPtVsYRecSigReco"), ptRec, yRec); // rec. level pT
+            registry.fill(HIST("hPtRecSig"), ptRec);
           }
-        }
-        registry.fill(HIST("hCPARecSig"), candidate.cpa());
-        registry.fill(HIST("hEtaRecSig"), candidate.eta());
-      } else {
-        registry.fill(HIST("hPtRecBg"), candidate.pt());
-        registry.fill(HIST("hCPARecBg"), candidate.cpa());
-        registry.fill(HIST("hEtaRecBg"), candidate.eta());
-      }
-      auto ptCandidate = candidate.pt();
-      auto ptProng0 = candidate.ptProng0();
-      auto ptProng1 = candidate.ptProng1();
-      auto rapidityCandidate = hfHelper.yD0(candidate);
-      auto declengthCandidate = candidate.decayLength();
-      auto declengthxyCandidate = candidate.decayLengthXY();
-      auto normaliseddeclengthCandidate = candidate.decayLengthNormalised();
-      auto normaliseddeclengthxyCandidate = candidate.decayLengthXYNormalised();
-      auto d0Prong0 = candidate.impactParameter0();
-      auto d0Prong1 = candidate.impactParameter1();
-      auto d0d0Candidate = candidate.impactParameterProduct();
-      auto ctsCandidate = hfHelper.cosThetaStarD0(candidate);
-      auto ctCandidate = hfHelper.ctD0(candidate);
-      auto cpaCandidate = candidate.cpa();
-      auto cpaxyCandidate = candidate.cpaXY();
-      if (candidate.isSelD0() >= selectionFlagD0) {
-        registry.fill(HIST("hMassSigBkgD0"), massD0, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-          registry.fill(HIST("hPtProng0Sig"), ptProng0, rapidityCandidate);
-          registry.fill(HIST("hPtProng1Sig"), ptProng1, rapidityCandidate);
-          registry.fill(HIST("hDecLengthSig"), declengthCandidate, rapidityCandidate);
-          registry.fill(HIST("hDecLengthXYSig"), declengthxyCandidate, rapidityCandidate);
-          registry.fill(HIST("hNormalisedDecLengthSig"), normaliseddeclengthCandidate, rapidityCandidate);
-          registry.fill(HIST("hNormalisedDecLengthXYSig"), normaliseddeclengthxyCandidate, rapidityCandidate);
-          registry.fill(HIST("hd0Prong0Sig"), d0Prong0, rapidityCandidate);
-          registry.fill(HIST("hd0Prong1Sig"), d0Prong1, rapidityCandidate);
-          registry.fill(HIST("hd0d0Sig"), d0d0Candidate, rapidityCandidate);
-          registry.fill(HIST("hCTSSig"), ctsCandidate, rapidityCandidate);
-          registry.fill(HIST("hCtSig"), ctCandidate, rapidityCandidate);
-          registry.fill(HIST("hCPASig"), cpaCandidate, rapidityCandidate);
-          registry.fill(HIST("hCPAxySig"), cpaxyCandidate, rapidityCandidate);
-          registry.fill(HIST("hd0Prong0VsPtSig"), d0Prong0, ptCandidate);
-          registry.fill(HIST("hd0Prong1VsPtSig"), d0Prong1, ptCandidate);
-          registry.fill(HIST("hd0d0VsPtSig"), d0d0Candidate, ptCandidate);
-          registry.fill(HIST("hCTSVsPtSig"), ctsCandidate, ptCandidate);
-          registry.fill(HIST("hCPAVsPtSig"), cpaCandidate, ptCandidate);
-          registry.fill(HIST("hCPAXYVsPtSig"), cpaxyCandidate, ptCandidate);
-          registry.fill(HIST("hNormalisedDecLengthxyVsPtSig"), normaliseddeclengthxyCandidate, ptCandidate);
-          registry.fill(HIST("hDecLengthVsPtSig"), declengthCandidate, ptCandidate);
-          registry.fill(HIST("hDecLengthxyVsPtSig"), declengthxyCandidate, ptCandidate);
-          registry.fill(HIST("hMassSigD0"), massD0, ptCandidate, rapidityCandidate);
-          if constexpr (applyMl) {
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), SigD0);
+          if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
+            if (candidate.isRecoHfFlag() >= selectionFlagHf) {
+              registry.fill(HIST("hPtVsYRecSigPromptRecoHFFlag"), ptRec, yRec);
+            }
+            if (candidate.isRecoTopol() >= selectionTopol) {
+              registry.fill(HIST("hPtVsYRecSigPromptRecoTopol"), ptRec, yRec);
+            }
+            if (candidate.isRecoCand() >= selectionCand) {
+              registry.fill(HIST("hPtVsYRecSigPromptRecoCand"), ptRec, yRec);
+            }
+            if (candidate.isRecoPid() >= selectionPid) {
+              registry.fill(HIST("hPtVsYRecSigPromptRecoPID"), ptRec, yRec);
+            }
+            if (candidate.isSelD0() >= selectionFlagD0 || candidate.isSelD0bar() >= selectionFlagD0bar) {
+              registry.fill(HIST("hPtVsYRecSigPromptReco"), ptRec, yRec); // rec. level pT, prompt
+              registry.fill(HIST("hPtRecSigPrompt"), ptRec);
+            }
           } else {
-            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), SigD0);
+            if (candidate.isRecoHfFlag() >= selectionFlagHf) {
+              registry.fill(HIST("hPtVsYRecSigNonPromptRecoHFFlag"), ptRec, yRec);
+            }
+            if (candidate.isRecoTopol() >= selectionTopol) {
+              registry.fill(HIST("hPtVsYRecSigNonPromptRecoTopol"), ptRec, yRec);
+            }
+            if (candidate.isRecoCand() >= selectionCand) {
+              registry.fill(HIST("hPtVsYRecSigNonPromptRecoCand"), ptRec, yRec);
+            }
+            if (candidate.isRecoPid() >= selectionPid) {
+              registry.fill(HIST("hPtVsYRecSigNonPromptRecoPID"), ptRec, yRec);
+            }
+            if (candidate.isSelD0() >= selectionFlagD0 || candidate.isSelD0bar() >= selectionFlagD0bar) {
+              registry.fill(HIST("hPtVsYRecSigNonPromptReco"), ptRec, yRec); // rec. level pT, non-prompt
+              registry.fill(HIST("hPtRecSigNonPrompt"), ptRec);
+            }
           }
+          registry.fill(HIST("hCPARecSig"), candidate.cpa());
+          registry.fill(HIST("hEtaRecSig"), candidate.eta());
         } else {
-          registry.fill(HIST("hPtProng0Bkg"), ptProng0, rapidityCandidate);
-          registry.fill(HIST("hPtProng1Bkg"), ptProng1, rapidityCandidate);
-          registry.fill(HIST("hDecLengthBkg"), declengthCandidate, rapidityCandidate);
-          registry.fill(HIST("hDecLengthXYBkg"), declengthxyCandidate, rapidityCandidate);
-          registry.fill(HIST("hNormalisedDecLengthBkg"), normaliseddeclengthCandidate, rapidityCandidate);
-          registry.fill(HIST("hNormalisedDecLengthXYBkg"), normaliseddeclengthxyCandidate, rapidityCandidate);
-          registry.fill(HIST("hd0Prong0Bkg"), d0Prong0, rapidityCandidate);
-          registry.fill(HIST("hd0Prong1Bkg"), d0Prong1, rapidityCandidate);
-          registry.fill(HIST("hd0d0Bkg"), d0d0Candidate, rapidityCandidate);
-          registry.fill(HIST("hCTSBkg"), ctsCandidate, rapidityCandidate);
-          registry.fill(HIST("hCtBkg"), ctCandidate, rapidityCandidate);
-          registry.fill(HIST("hCPABkg"), cpaCandidate, rapidityCandidate);
-          registry.fill(HIST("hCPAxyBkg"), cpaxyCandidate, rapidityCandidate);
-          registry.fill(HIST("hMassBkgD0"), massD0, ptCandidate, rapidityCandidate);
-          if (candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-            registry.fill(HIST("hMassReflBkgD0"), massD0, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hPtRecBg"), candidate.pt());
+          registry.fill(HIST("hCPARecBg"), candidate.cpa());
+          registry.fill(HIST("hEtaRecBg"), candidate.eta());
+        }
+        auto cent = collcentmc.centFT0M(); // centrality
+        auto ptCandidate = candidate.pt();
+        auto ptProng0 = candidate.ptProng0();
+        auto ptProng1 = candidate.ptProng1();
+        auto rapidityCandidate = hfHelper.yD0(candidate);
+        auto declengthCandidate = candidate.decayLength();
+        auto declengthxyCandidate = candidate.decayLengthXY();
+        auto normaliseddeclengthCandidate = candidate.decayLengthNormalised();
+        auto normaliseddeclengthxyCandidate = candidate.decayLengthXYNormalised();
+        auto d0Prong0 = candidate.impactParameter0();
+        auto d0Prong1 = candidate.impactParameter1();
+        auto d0d0Candidate = candidate.impactParameterProduct();
+        auto ctsCandidate = hfHelper.cosThetaStarD0(candidate);
+        auto ctCandidate = hfHelper.ctD0(candidate);
+        auto cpaCandidate = candidate.cpa();
+        auto cpaxyCandidate = candidate.cpaXY();
+        if (candidate.isSelD0() >= selectionFlagD0) {
+          registry.fill(HIST("hMassSigBkgD0"), massD0, ptCandidate, rapidityCandidate);
+          registry.fill(HIST("hMassSigBkgD0VsPtVsCent"), massD0, ptCandidate, cent);
+          registry.fill(HIST("hMassSigBkgD0VsPtVsYVsCent"), massD0, ptCandidate, rapidityCandidate, cent);
+
+          if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+            registry.fill(HIST("hPtProng0Sig"), ptProng0, rapidityCandidate);
+            registry.fill(HIST("hPtProng1Sig"), ptProng1, rapidityCandidate);
+            registry.fill(HIST("hDecLengthSig"), declengthCandidate, rapidityCandidate);
+            registry.fill(HIST("hDecLengthXYSig"), declengthxyCandidate, rapidityCandidate);
+            registry.fill(HIST("hNormalisedDecLengthSig"), normaliseddeclengthCandidate, rapidityCandidate);
+            registry.fill(HIST("hNormalisedDecLengthXYSig"), normaliseddeclengthxyCandidate, rapidityCandidate);
+            registry.fill(HIST("hd0Prong0Sig"), d0Prong0, rapidityCandidate);
+            registry.fill(HIST("hd0Prong1Sig"), d0Prong1, rapidityCandidate);
+            registry.fill(HIST("hd0d0Sig"), d0d0Candidate, rapidityCandidate);
+            registry.fill(HIST("hCTSSig"), ctsCandidate, rapidityCandidate);
+            registry.fill(HIST("hCtSig"), ctCandidate, rapidityCandidate);
+            registry.fill(HIST("hCPASig"), cpaCandidate, rapidityCandidate);
+            registry.fill(HIST("hCPAxySig"), cpaxyCandidate, rapidityCandidate);
+            registry.fill(HIST("hd0Prong0VsPtSig"), d0Prong0, ptCandidate);
+            registry.fill(HIST("hd0Prong1VsPtSig"), d0Prong1, ptCandidate);
+            registry.fill(HIST("hd0d0VsPtSig"), d0d0Candidate, ptCandidate);
+            registry.fill(HIST("hCTSVsPtSig"), ctsCandidate, ptCandidate);
+            registry.fill(HIST("hCPAVsPtSig"), cpaCandidate, ptCandidate);
+            registry.fill(HIST("hCPAXYVsPtSig"), cpaxyCandidate, ptCandidate);
+            registry.fill(HIST("hNormalisedDecLengthxyVsPtSig"), normaliseddeclengthxyCandidate, ptCandidate);
+            registry.fill(HIST("hDecLengthVsPtSig"), declengthCandidate, ptCandidate);
+            registry.fill(HIST("hDecLengthxyVsPtSig"), declengthxyCandidate, ptCandidate);
+            registry.fill(HIST("hMassSigD0"), massD0, ptCandidate, rapidityCandidate);
+            registry.fill(HIST("hMassSigD0VsPtVsCent"), massD0, ptCandidate, cent); // 14-feb-2025
+            registry.fill(HIST("hMassSigD0VsPtVsYVsCent"), massD0, ptCandidate, rapidityCandidate, cent);
             if constexpr (applyMl) {
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), ReflectedD0);
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), SigD0);
             } else {
-              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), ReflectedD0);
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), SigD0);
+            }
+          } else {
+            registry.fill(HIST("hPtProng0Bkg"), ptProng0, rapidityCandidate);
+            registry.fill(HIST("hPtProng1Bkg"), ptProng1, rapidityCandidate);
+            registry.fill(HIST("hDecLengthBkg"), declengthCandidate, rapidityCandidate);
+            registry.fill(HIST("hDecLengthXYBkg"), declengthxyCandidate, rapidityCandidate);
+            registry.fill(HIST("hNormalisedDecLengthBkg"), normaliseddeclengthCandidate, rapidityCandidate);
+            registry.fill(HIST("hNormalisedDecLengthXYBkg"), normaliseddeclengthxyCandidate, rapidityCandidate);
+            registry.fill(HIST("hd0Prong0Bkg"), d0Prong0, rapidityCandidate);
+            registry.fill(HIST("hd0Prong1Bkg"), d0Prong1, rapidityCandidate);
+            registry.fill(HIST("hd0d0Bkg"), d0d0Candidate, rapidityCandidate);
+            registry.fill(HIST("hCTSBkg"), ctsCandidate, rapidityCandidate);
+            registry.fill(HIST("hCtBkg"), ctCandidate, rapidityCandidate);
+            registry.fill(HIST("hCPABkg"), cpaCandidate, rapidityCandidate);
+            registry.fill(HIST("hCPAxyBkg"), cpaxyCandidate, rapidityCandidate);
+            registry.fill(HIST("hMassBkgD0"), massD0, ptCandidate, rapidityCandidate);
+            registry.fill(HIST("hMassBkgD0VsPtVsCent"), massD0, ptCandidate, cent);
+            registry.fill(HIST("hMassBkgD0VsPtVsYVsCent"), massD0, ptCandidate, rapidityCandidate, cent);
+            if (candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+              registry.fill(HIST("hMassReflBkgD0"), massD0, ptCandidate, rapidityCandidate);
+              registry.fill(HIST("hMassReflBkgD0VsPtVsCent"), massD0, ptCandidate, cent);
+              registry.fill(HIST("hMassReflBkgD0VsPtVsYVsCent"), massD0, ptCandidate, rapidityCandidate, cent);
+              if constexpr (applyMl) {
+                registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), ReflectedD0);
+              } else {
+                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), ReflectedD0);
+              }
             }
           }
         }
-      }
-      if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-        registry.fill(HIST("hMassSigBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
-        if (candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-          registry.fill(HIST("hMassSigD0bar"), massD0bar, ptCandidate, rapidityCandidate);
-          if constexpr (applyMl) {
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), SigD0bar);
-          } else {
-            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), SigD0bar);
-          }
-        } else {
-          registry.fill(HIST("hMassBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
-          if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-            registry.fill(HIST("hMassReflBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
+        if (candidate.isSelD0bar() >= selectionFlagD0bar) {
+          registry.fill(HIST("hMassSigBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
+          if (candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+            registry.fill(HIST("hMassSigD0bar"), massD0bar, ptCandidate, rapidityCandidate);
             if constexpr (applyMl) {
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), ReflectedD0bar);
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), SigD0bar);
             } else {
-              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), ReflectedD0bar);
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), SigD0bar);
+            }
+          } else {
+            registry.fill(HIST("hMassBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
+            if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+              registry.fill(HIST("hMassReflBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
+              if constexpr (applyMl) {
+                registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), ReflectedD0bar);
+              } else {
+                registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), ReflectedD0bar);
+              }
             }
           }
         }
@@ -556,35 +607,35 @@ struct HfTaskD0 {
     }
   }
 
-  void processMcWithDCAFitterN(D0CandidatesMc const&,
+  void processMcWithDCAFitterN(D0CandidatesMc const&, CollisionsWCentMcLabel const& collcentmcs,
                                soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                aod::TracksWMc const& tracks)
   {
-    processMc<aod::hf_cand::VertexerType::DCAFitter, false>(selectedD0CandidatesMc, mcParticles, tracks);
+    processMc<aod::hf_cand::VertexerType::DCAFitter, false>(selectedD0CandidatesMc, collcentmcs, mcParticles, tracks);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithDCAFitterN, "Process MC with DCAFitterN", false);
 
-  void processMcWithKFParticle(D0CandidatesMcKF const&,
+  void processMcWithKFParticle(D0CandidatesMcKF const&, CollisionsWCentMcLabel const& collcentmcs,
                                soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                aod::TracksWMc const& tracks)
   {
-    processMc<aod::hf_cand::VertexerType::KfParticle, false>(selectedD0CandidatesMcKF, mcParticles, tracks);
+    processMc<aod::hf_cand::VertexerType::KfParticle, false>(selectedD0CandidatesMcKF, collcentmcs, mcParticles, tracks);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithKFParticle, "Process MC with KFParticle", false);
 
-  void processMcWithDCAFitterNMl(D0CandidatesMlMc const&,
+  void processMcWithDCAFitterNMl(D0CandidatesMlMc const&, CollisionsWCentMcLabel const& collcentmcs,
                                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                  aod::TracksWMc const& tracks)
   {
-    processMc<aod::hf_cand::VertexerType::DCAFitter, true>(selectedD0CandidatesMlMc, mcParticles, tracks);
+    processMc<aod::hf_cand::VertexerType::DCAFitter, true>(selectedD0CandidatesMlMc, collcentmcs, mcParticles, tracks);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithDCAFitterNMl, "Process MC with DCAFitterN and ML selection", false);
 
-  void processMcWithKFParticleMl(D0CandidatesMlMcKF const&,
+  void processMcWithKFParticleMl(D0CandidatesMlMcKF const&, CollisionsWCentMcLabel const& collcentmcs,
                                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                  aod::TracksWMc const& tracks)
   {
-    processMc<aod::hf_cand::VertexerType::KfParticle, true>(selectedD0CandidatesMlMcKF, mcParticles, tracks);
+    processMc<aod::hf_cand::VertexerType::KfParticle, true>(selectedD0CandidatesMlMcKF, collcentmcs, mcParticles, tracks);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
 };
