@@ -128,48 +128,40 @@ struct HfTaskSingleElectron {
   template <typename TrackType>
   bool trackSel(TrackType track)
   {
-    if (track.pt() > ptTrackMax || track.pt() < ptTrackMin)
-	{
+    if (track.pt() > ptTrackMax || track.pt() < ptTrackMin) {
       return false;
-	}
-    if (std::abs(track.eta()) > etaTrackMax)
-	{
+    }
+    if (std::abs(track.eta()) > etaTrackMax) {
       return false;
-	}
+    }
 
     int tpcNClsFound = track.tpcNClsCrossedRows();
     int tpcNClsFindable = track.tpcNClsFindable();
     float tpcFoundOverFindable = (tpcNClsFindable ? static_cast<float>(tpcNClsFound) / static_cast<float>(tpcNClsFindable) : 0);
 
-    if (tpcNClsFound < tpcNCrossedRowMin)
-	{
+    if (tpcNClsFound < tpcNCrossedRowMin) {
       return false;
-	}
+    }
 
-    if (tpcFoundOverFindable < tpcNClsFoundOverFindableMin)
-	{
+    if (tpcFoundOverFindable < tpcNClsFoundOverFindableMin) {
       return false;
-	}
+    }
 
-    if (track.tpcChi2NCl() > tpcChi2perNClMax)
-	{
+    if (track.tpcChi2NCl() > tpcChi2perNClMax) {
       return false;
-	}
+    }
 
-    if (!(track.itsNClsInnerBarrel() == itsIBClsMin))
-	{
+    if (!(track.itsNClsInnerBarrel() == itsIBClsMin)) {
       return false;
-	}
+    }
 
-    if (std::abs(track.dcaXY()) > dcaxyMax)
-	{
+    if (std::abs(track.dcaXY()) > dcaxyMax) {
       return false;
-	}
+    }
 
-    if (std::abs(track.dcaZ()) > dcazMax)
-	{
+    if (std::abs(track.dcaZ()) > dcazMax) {
       return false;
-	}
+    }
 
     histos.fill(HIST("etaTrack"), track.eta());
     histos.fill(HIST("ptTrack"), track.pt());
@@ -187,39 +179,33 @@ struct HfTaskSingleElectron {
   template <typename TrackType>
   bool assoTrackSel(TrackType track)
   {
-    if (std::abs(track.eta()) > etaTrackMax)
-	{
+    if (std::abs(track.eta()) > etaTrackMax) {
       return false;
-	}
+    }
 
-    if (track.pt() < ptAssoTrackMin || track.pt() > ptAssoTrackMax)
-	{
+    if (track.pt() < ptAssoTrackMin || track.pt() > ptAssoTrackMax) {
       return false;
-	}
+    }
 
     int tpcNClsFound = track.tpcNClsCrossedRows();
     int tpcNClsFindable = track.tpcNClsFindable();
     float tpcFoundOverFindable = (tpcNClsFindable ? static_cast<float>(tpcNClsFound) / static_cast<float>(tpcNClsFindable) : 0);
 
-    if (tpcNClsFound < tpcNCrossedRowAssoTrackMin)
-	{
+    if (tpcNClsFound < tpcNCrossedRowAssoTrackMin) {
       return false;
-	}
+    }
 
-    if (track.tpcChi2NCl() > tpcChi2perNClMax)
-	{
+    if (track.tpcChi2NCl() > tpcChi2perNClMax) {
       return false;
-	}
+    }
 
-    if (std::abs(track.dcaXY()) > dcaxyMax)
-	{
+    if (std::abs(track.dcaXY()) > dcaxyMax) {
       return false;
-	}
+    }
 
-    if (std::abs(track.dcaZ()) > dcazMax)
-	{
+    if (std::abs(track.dcaZ()) > dcazMax) {
       return false;
-	}
+    }
 
     histos.fill(HIST("tpcNClsAsso"), tpcNClsFound);
     histos.fill(HIST("tpcFoundFindableAsso"), tpcFoundOverFindable);
@@ -240,16 +226,14 @@ struct HfTaskSingleElectron {
   {
     histos.fill(HIST("hEventCounter"), 0.5);
 
-    if (!collision.sel8())
-	{
+    if (!collision.sel8()) {
       return;
-	}
+    }
     histos.fill(HIST("hEventCounter"), 1.5);
 
-    if (collision.numContrib() < nContribMin)
-	{
+    if (collision.numContrib() < nContribMin) {
       return;
-	}
+    }
     histos.fill(HIST("hEventCounter"), 2.5);
 
     histos.fill(HIST("VtxZ"), collision.posZ());
@@ -258,25 +242,22 @@ struct HfTaskSingleElectron {
 
     for (const auto& track : tracks) {
 
-      if (!trackSel(track))
-	  {
+      if (!trackSel(track)) {
         continue;
-	  }
+      }
 
       histos.fill(HIST("tofNSigPt"), track.pt(), track.tofNSigmaEl());
       histos.fill(HIST("tpcNSigPt"), track.pt(), track.tpcNSigmaEl());
 
-      if (std::abs(track.tofNSigmaEl()) > tofNSigmaMax)
-	  {
+      if (std::abs(track.tofNSigmaEl()) > tofNSigmaMax) {
         continue;
-	  }
+      }
       histos.fill(HIST("tofNSigPtQA"), track.pt(), track.tofNSigmaEl());
       histos.fill(HIST("tpcNSigPtAfterTofCut"), track.pt(), track.tpcNSigmaEl());
 
-      if (track.tpcNSigmaEl() < tpcNSigmaMin || track.tpcNSigmaEl() > tpcNSigmaMax)
-	  {
+      if (track.tpcNSigmaEl() < tpcNSigmaMin || track.tpcNSigmaEl() > tpcNSigmaMax) {
         continue;
-	  }
+      }
       histos.fill(HIST("tpcNSigPtQA"), track.pt(), track.tpcNSigmaEl());
 
       histos.fill(HIST("dcaTrack"), track.pt(), track.dcaXY());
