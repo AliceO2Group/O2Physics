@@ -35,7 +35,7 @@ namespace o2::aod
 // D0 → K− π+
 // Λc → p K− π+
 // D+ → K− π+ π+
-// Ds+ → K− K+ π+ (todo)
+// Ds+ → K− K+ π+
 
 // composite species
 // B0 → D− π+
@@ -306,6 +306,7 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
 DECLARE_TABLES_2P(D0, "D0", d0, 2);
 DECLARE_TABLES_3P(Lc, "LC", lc, 3);
 DECLARE_TABLES_3P(Dplus, "DP", dplus, 4);
+DECLARE_TABLES_3P(Ds, "DS", ds, 9);
 DECLARE_TABLES_3P(Bplus, "BP", bplus, 5);
 DECLARE_TABLES_3P(Dstar, "DST", dstar, 6);
 // Workaround for the existing B0 macro in termios.h
