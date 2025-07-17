@@ -502,7 +502,7 @@ struct F0980pbpbanalysis {
     BinningTypeVertexContributor binningOnPositions{{mixingAxisVertex, mixingAxisMultiplicity}, true};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNMixedEvents, -1, collisions, trackTuple, &cache};
     ROOT::Math::PxPyPzMVector ptl1, ptl2, recoPtl;
-    for (auto& [c1, t1, c2, t2] : pair) {
+    for (const auto& [c1, t1, c2, t2] : pair) {
       if (cfgCentEst == CentEstList::FT0C) {
         centrality = c1.centFT0C();
       } else if (cfgCentEst == CentEstList::FT0M) {
@@ -516,7 +516,7 @@ struct F0980pbpbanalysis {
       }
       double eventPlaneDet = std::atan2(c1.qvecIm()[qVecDetInd], c1.qvecRe()[qVecDetInd]) / static_cast<float>(nmode);
 
-      for (auto& trk1 : t1) {
+      for (const auto& trk1 : t1) {
         if (!trackSelected(trk1)) {
           continue;
         }
@@ -524,7 +524,7 @@ struct F0980pbpbanalysis {
           continue;
         }
 
-        for (auto& trk2 : t2) {
+        for (const auto& trk2 : t2) {
           if (!trackSelected(trk2)) {
             continue;
           }
