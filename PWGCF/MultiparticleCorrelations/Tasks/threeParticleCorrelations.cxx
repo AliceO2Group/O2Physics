@@ -374,8 +374,8 @@ struct ThreeParticleCorrelations {
       if (v0Filters(collision, trigger, tracks)) {
 
         triggSign = v0Sign(trigger);
-	v0Efficiency = v0Eff(hEffLambdas, trigger, collision.centFT0C());
-	
+        v0Efficiency = v0Eff(hEffLambdas, trigger, collision.centFT0C());
+
         rQARegistry.fill(HIST("hPtV0"), trigger.pt(), collision.centFT0C(), triggSign, 1. / v0Efficiency);
         if (triggSign == 1) {
           candMass = trigger.mLambda();
@@ -452,8 +452,8 @@ struct ThreeParticleCorrelations {
           if (radialDistanceFilter(trigger, associate, bField, true) && fakeV0Filter(trigger, associate)) {
 
             triggSign = v0Sign(trigger);
-	    v0Efficiency = v0Eff(hEffLambdas, trigger, coll_1.centFT0C());
-	    
+            v0Efficiency = v0Eff(hEffLambdas, trigger, coll_1.centFT0C());
+
             if (triggSign == 1) {
               candMass = trigger.mLambda();
             } else if (triggSign == -1) {
@@ -836,7 +836,7 @@ struct ThreeParticleCorrelations {
       return 1.0;
     }
   }
-  
+
   template <class TrackCand>
   double trackEff(TH3D** efficiencies, const TrackCand& track, double centrality)
   {
