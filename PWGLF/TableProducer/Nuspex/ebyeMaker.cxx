@@ -555,8 +555,7 @@ struct EbyeMaker {
     for (const auto& track : tracks) {
       if (track.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet && std::abs(track.eta()) < trklEtaMax && !(doprocessRun3 || doprocessMcRun3)) { // tracklet
         nTrackletsColl++;
-      }
-      else if (std::abs(track.eta()) < trklEtaMax && track.itsNcls() > 3 && (doprocessRun3 || doprocessMcRun3)) { // ITS only + global tracks
+      } else if (std::abs(track.eta()) < trklEtaMax && track.itsNcls() > 3 && (doprocessRun3 || doprocessMcRun3)) { // ITS only + global tracks
         nTrackletsColl++;
       }
       if (!selectTrack(track)) {
