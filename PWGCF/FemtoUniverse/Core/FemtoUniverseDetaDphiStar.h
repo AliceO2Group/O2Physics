@@ -410,7 +410,6 @@ class FemtoUniverseDetaDphiStar
     }
   }
 
-
   ///  Check if pair is close or not
   template <typename Part>
   bool isClosePairFrac(Part const& part1, Part const& part2, float lmagfield, uint8_t ChosenEventType, bool IsDphiAvgOrDist, float DistMax, float FracMax)
