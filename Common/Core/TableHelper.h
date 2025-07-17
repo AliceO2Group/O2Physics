@@ -18,11 +18,14 @@
 #ifndef COMMON_CORE_TABLEHELPER_H_
 #define COMMON_CORE_TABLEHELPER_H_
 
-#include <string>
-
 #include "Framework/Configurable.h"
 #include "Framework/InitContext.h"
 #include "Framework/RunningWorkflowInfo.h"
+
+#include <string>
+
+namespace o2::common::core
+{
 
 /// Function to print the table required in the full workflow
 /// @param initContext initContext of the init function
@@ -76,14 +79,16 @@ bool getTaskOptionValue(o2::framework::InitContext& initContext, const std::stri
     }
     if (device.name == taskName) { // Found the mother task
       int optionCounter = 0;
-      for (auto const& option : device.options) {
+      for (const o2::framework::ConfigParamSpec& option : device.options) {
         if (verbose) {
-          LOG(info) << "  Option " << optionCounter++ << " " << option.name << " = '" << option.defaultValue.asString() << "'";
+          LOG(info) << "  Option " << optionCounter++ << " " << option.name << " of type " << static_cast<int>(option.type) << " = '" << option.defaultValue.asString() << "'";
         }
         if (option.name == optName) {
           value = option.defaultValue.get<ValueType>();
           if (verbose) {
-            LOG(info) << "   Found option '" << optName << "' with value '" << value << "'";
+            if constexpr (!std::is_same_v<ValueType, o2::framework::LabeledArray<float>>) {
+              LOG(info) << "   Found option '" << optName << "' with value '" << value << "'";
+            }
             found = true;
           } else {
             return true;
@@ -106,5 +111,12 @@ bool getTaskOptionValue(o2::framework::InitContext& initContext, const std::stri
 {
   return getTaskOptionValue(initContext, taskName, configurable.name, configurable.value, verbose);
 }
+
+} // namespace o2::common::core
+
+using o2::common::core::enableFlagIfTableRequired;
+using o2::common::core::getTaskOptionValue;
+using o2::common::core::isTableRequiredInWorkflow;
+using o2::common::core::printTablesInWorkflow;
 
 #endif // COMMON_CORE_TABLEHELPER_H_

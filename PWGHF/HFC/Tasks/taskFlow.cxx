@@ -15,42 +15,46 @@
 /// \author Katarina Krizkova Gajdosova <katarina.gajdosova@cern.ch>, CERN
 /// \author Maja Kabus <maja.kabus@cern.ch>, CERN
 
-#include <string>
-#include <vector>
-
-#include <TDirectory.h>
-#include <TH1F.h>
-#include <THn.h>
-
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/Logger.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "ReconstructionDataFormats/GlobalTrackID.h"
-
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "CommonConstants/MathConstants.h"
-
-#include "PWGMM/Mult/DataModel/Index.h"
-#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
-
 #include "PWGCF/Core/CorrelationContainer.h"
-#include "PWGCF/Core/PairCuts.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsPid.h"
+#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/StepTHn.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/Utils.h>
+
+#include <THn.h>
+#include <TPDGCode.h>
+#include <TParticlePDG.h>
+
+#include <cstdlib>
+#include <string>
+#include <tuple>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -793,7 +797,7 @@ struct HfTaskFlow {
     auto etaCandidate = mcCandidate.eta();
 
     if constexpr (std::is_same_v<McParticles2ProngMatched, TMcTrack>) { // For now, that means we do D0
-      if (std::abs(mcCandidate.flagMcMatchGen()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
+      if (std::abs(mcCandidate.flagMcMatchGen()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
 
         if (etaCandidateMax >= 0. && std::abs(etaCandidate) > etaCandidateMax) {
           return false;

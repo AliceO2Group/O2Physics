@@ -17,6 +17,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <set>
 #include "AnalysisCompositeCut.h"
 #include "VarManager.h"
 
@@ -1118,6 +1119,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   if (!nameStr.compare("Jpsi_TPCPost_calib_debug9")) {
     cut->AddCut(GetAnalysisCut("jpsi_trackCut_debug4"));
     cut->AddCut(GetAnalysisCut("electronPIDLooseSkimmed3"));
+    return cut;
+  }
+
+  if (!nameStr.compare("Jpsi_TPCPost_calib_debug10")) {
+    cut->AddCut(GetAnalysisCut("jpsiKineSkimmed"));
+    cut->AddCut(GetAnalysisCut("jpsi_trackCut_debug6"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug10"));
     return cut;
   }
 
@@ -3827,9 +3835,9 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
     cut->AddCut(VarManager::kCentFT0C, 0.0, 90.0);
     cut->AddCut(VarManager::kTrackOccupancyInTimeRange, 0., 1000);
-
     return cut;
   }
+
   if (!nameStr.compare("eventStandardSel8PbPbQualityFirmTrackOccupancy")) {
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
     cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
@@ -4397,6 +4405,15 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
     cut->AddCut(VarManager::kTPCncls, 70., 159);
     cut->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsi_trackCut_debug6")) {
+    cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    cut->AddCut(VarManager::kTPCncls, 120., 159);
+    cut->AddCut(VarManager::kTPCnclsCR, 140., 159);
+    cut->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsSPDfirst, 0.5, 1.5);
     return cut;
   }
 
@@ -5027,6 +5044,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCnSigmaEl, -2.5, 4.0);
     cut->AddCut(VarManager::kTPCnSigmaPi, 1.0, 999, false, VarManager::kPin, 3.0, 999.0);
     cut->AddCut(VarManager::kTPCnSigmaPr, 2.0, 999);
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsi_TPCPID_debug10")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl, -1.5, 2.0);
+    cut->AddCut(VarManager::kTPCnSigmaPi, 4.0, 999);
+    cut->AddCut(VarManager::kTPCnSigmaPr, 3.5, 999);
     return cut;
   }
 
@@ -7162,18 +7186,24 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
     }
 
     // bin edges
-    std::set<double> binEdges;
-    for (auto& b : ptBins)
-      binEdges.insert(b.first);
-    binEdges.insert(ptBins.back().second);
-    std::vector<double> binsPt(binEdges.begin(), binEdges.end());
+    std::vector<double> binsPt;
+    if (!ptBins.empty()) {
+      std::set<double> binEdges;
+      for (auto& b : ptBins)
+        binEdges.insert(b.first);
+      binEdges.insert(ptBins.back().second);
+      binsPt = std::vector<double>(binEdges.begin(), binEdges.end());
+    } else {
+      LOG(fatal) << "No pT bins found in ML cuts";
+      return {};
+    }
 
     std::vector<std::string> labelsPt, labelsClass;
     for (size_t i = 0; i < cutsMl.size(); ++i) {
       labelsPt.push_back(Form("pT%.1f", binsPt[i]));
     }
     for (size_t j = 0; j < cutsMl[0].size(); ++j) {
-      labelsClass.push_back(Form("cls%d", int(j)));
+      labelsClass.push_back(Form("cls%d", static_cast<int>(j)));
     }
 
     // Binary

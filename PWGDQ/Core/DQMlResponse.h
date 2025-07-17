@@ -22,6 +22,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)

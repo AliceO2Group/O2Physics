@@ -958,6 +958,7 @@ struct decay3bodyBuilder {
                                    -1., -1., -1.,      // trackDCAzToPV: 0 - proton, 1 - pion, 2 - deuteron
                                    -1., -1., -1.,      // daughterDCAtoSV: 0 - proton, 1 - pion, 2 - deuteron
                                    -1.,                // daughterDCAatSV
+                                   -1., -1.,           // cosPA, ctau
                                    -1., -1., -1., -1., // tpcNsigma: 0 - proton, 1 - pion, 2 - deuteron, 3 - bach with pion hyp
                                    -1.,                // tofNsigmaDeuteron
                                    -1., -1., -1.,      // average ITS cluster sizes: proton, pion, deuteron
@@ -1115,6 +1116,7 @@ struct decay3bodyBuilder {
                              helper.decay3body.trackDCAzToPV[0], helper.decay3body.trackDCAzToPV[1], helper.decay3body.trackDCAzToPV[2],       // 0 - proton, 1 - pion, 2 - deuteron
                              helper.decay3body.daughterDCAtoSV[0], helper.decay3body.daughterDCAtoSV[1], helper.decay3body.daughterDCAtoSV[2], // 0 - proton, 1 - pion, 2 - deuteron
                              helper.decay3body.daughterDCAatSV,
+                             helper.decay3body.cosPA, helper.decay3body.ctau,
                              helper.decay3body.tpcNsigma[0], helper.decay3body.tpcNsigma[1], helper.decay3body.tpcNsigma[2], helper.decay3body.tpcNsigma[2], // 0 - proton, 1 - pion, 2 - deuteron, 3 - bach with pion hyp
                              helper.decay3body.tofNsigmaDeuteron,
                              helper.decay3body.averageITSClSize[0], helper.decay3body.averageITSClSize[1], helper.decay3body.averageITSClSize[2], // 0 - proton, 1 - pion, 2 - deuteron
@@ -1143,6 +1145,7 @@ struct decay3bodyBuilder {
                                helper.decay3body.trackDCAzToPV[0], helper.decay3body.trackDCAzToPV[1], helper.decay3body.trackDCAzToPV[2],       // 0 - proton, 1 - pion, 2 - deuteron
                                helper.decay3body.daughterDCAtoSV[0], helper.decay3body.daughterDCAtoSV[1], helper.decay3body.daughterDCAtoSV[2], // 0 - proton, 1 - pion, 2 - deuteron
                                helper.decay3body.daughterDCAatSV,
+                               helper.decay3body.cosPA, helper.decay3body.ctau,
                                helper.decay3body.tpcNsigma[0], helper.decay3body.tpcNsigma[1], helper.decay3body.tpcNsigma[2], helper.decay3body.tpcNsigma[2], // 0 - proton, 1 - pion, 2 - deuteron, 3 - bach with pion hyp
                                helper.decay3body.tofNsigmaDeuteron,
                                helper.decay3body.averageITSClSize[0], helper.decay3body.averageITSClSize[1], helper.decay3body.averageITSClSize[2], // 0 - proton, 1 - pion, 2 - deuteron

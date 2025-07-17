@@ -17,19 +17,31 @@
 
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
 
+#include <TH1.h>
+
+#include <array>
+#include <cmath>
 #include <memory>
+#include <numeric>
+#include <stdexcept>
 
 using namespace o2;
 using namespace o2::aod;

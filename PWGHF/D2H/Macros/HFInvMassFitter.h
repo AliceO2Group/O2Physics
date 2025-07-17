@@ -16,6 +16,7 @@
 /// \author Mingyu Zhang <mingyu.zang@cern.ch>
 /// \author Xinye Peng  <xinye.peng@cern.ch>
 /// \author Biao Zhang <biao.zhang@cern.ch>
+/// \author Oleksii Lubynets <oleksii.lubynets@cern.ch>
 
 #ifndef PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 #define PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
@@ -23,15 +24,17 @@
 #include <RooPlot.h>
 #include <RooRealVar.h>
 #include <RooWorkspace.h>
-#include <Rtypes.h>
-#include <RtypesCore.h>
-
 #include <TF1.h>
 #include <TH1.h>
 #include <TNamed.h>
 #include <TVirtualPad.h>
 
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
 #include <cstdio>
+#include <string>
+#include <vector>
 
 class HFInvMassFitter : public TNamed
 {
@@ -43,20 +46,25 @@ class HFInvMassFitter : public TNamed
     Pow = 3,
     PowExpo = 4,
     Poly3 = 5,
-    NoBkg = 6
+    NoBkg = 6,
+    NTypesOfBkgPdf
   };
+  std::vector<std::string> namesOfBkgPdf{"bkgFuncExpo", "bkgFuncPoly1", "bkgFuncPoly2", "bkgFuncPow", "bkgFuncPowExpo", "bkgFuncPoly3"};
   enum TypeOfSgnPdf {
     SingleGaus = 0,
     DoubleGaus = 1,
     DoubleGausSigmaRatioPar = 2,
-    GausSec = 3
+    GausSec = 3,
+    NTypesOfSgnPdf
   };
   enum TypeOfReflPdf {
     SingleGausRefl = 0,
     DoubleGausRefl = 1,
     Poly3Refl = 2,
-    Poly6Refl = 3
+    Poly6Refl = 3,
+    NTypesOfReflPdf
   };
+  std::vector<std::string> namesOfReflPdf{"reflFuncGaus", "reflFuncDoubleGaus", "reflFuncPoly3", "reflFuncPoly6"};
   HFInvMassFitter();
   HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Double_t maxValue, Int_t fitTypeBkg = Expo, Int_t fitTypeSgn = SingleGaus);
   ~HFInvMassFitter();
@@ -189,7 +197,8 @@ class HFInvMassFitter : public TNamed
   }
   void setDrawBgPrefit(Bool_t value = true) { mDrawBgPrefit = value; }
   void setHighlightPeakRegion(Bool_t value = true) { mHighlightPeakRegion = value; }
-  Double_t getChiSquareOverNDF() const { return mChiSquareOverNdf; }
+  Double_t getChiSquareOverNDFTotal() const { return mChiSquareOverNdfTotal; }
+  Double_t getChiSquareOverNDFBkg() const { return mChiSquareOverNdfBkg; }
   Double_t getRawYield() const { return mRawYield; }
   Double_t getRawYieldError() const { return mRawYieldErr; }
   Double_t getRawYieldCounted() const { return mRawYieldCounted; }
@@ -268,7 +277,8 @@ class HFInvMassFitter : public TNamed
   Double_t mBkgYieldErr;             /// err on background
   Double_t mSignificance;            /// significance
   Double_t mSignificanceErr;         /// err on significance
-  Double_t mChiSquareOverNdf;        /// chi2/ndf
+  Double_t mChiSquareOverNdfTotal;   /// chi2/ndf of the total fit
+  Double_t mChiSquareOverNdfBkg;     /// chi2/ndf of the background (sidebands) pre-fit
   Bool_t mFixReflOverSgn;            /// switch for fix refl/signal
   RooRealVar* mRooMeanSgn;           /// mean for gaussian of signal
   RooRealVar* mRooSigmaSgn;          /// sigma for gaussian of signal

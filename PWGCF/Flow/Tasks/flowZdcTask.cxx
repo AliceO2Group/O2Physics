@@ -56,19 +56,13 @@ struct FlowZdcTask {
   SliceCache cache;
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for ref tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 10.0f, "Maximal pT for ref tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2, "DCA Z cut")
-  O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 0.2f, "DCA XY cut")
 
   Configurable<int> eventSelection{"eventSelection", 1, "event selection"};
-  Configurable<float> maxZp{"maxZp", 3099.5, "Max ZP signal"};
+  Configurable<float> maxZp{"maxZp", 125.5, "Max ZP signal"};
   Configurable<float> maxZem{"maxZem", 3099.5, "Max ZEM signal"};
   // for ZDC info and analysis
   Configurable<int> nBinsAmp{"nBinsAmp", 1025, "nbinsAmp"};
-  Configurable<float> maxZn{"maxZn", 4099.5, "Max ZN signal"};
+  Configurable<float> maxZn{"maxZn", 125.5, "Max ZN signal"};
   Configurable<float> vtxRange{"vtxRange", 10.0f, "Vertex Z range to consider"};
   Configurable<float> etaRange{"etaRange", 1.0f, "Eta range to consider"};
   // configs for process QA
@@ -96,8 +90,8 @@ struct FlowZdcTask {
   Configurable<bool> isOccupancyCut{"isOccupancyCut", true, "Occupancy cut?"};
   Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "T0C Occu cut?"};
   Configurable<bool> isTDCcut{"isTDCcut", false, "Use TDC cut?"};
-  Configurable<bool> isZEMcut{"isZEMcut", true, "Use ZEM cut?"};
-  Configurable<bool> useMidRapNchSel{"useMidRapNchSel", true, "Use mid-rapidit Nch selection"};
+  Configurable<bool> isZEMcut{"isZEMcut", false, "Use ZEM cut?"};
+  Configurable<bool> useMidRapNchSel{"useMidRapNchSel", false, "Use mid-rapidity Nch selection"};
   Configurable<bool> applyEff{"applyEff", true, "Apply track-by-track efficiency correction"};
   Configurable<bool> applyFD{"applyFD", false, "Apply track-by-track feed down correction"};
   Configurable<bool> correctNch{"correctNch", true, "Correct also Nch"};
@@ -125,12 +119,14 @@ struct FlowZdcTask {
   ConfigurableAxis ft0cMultHistBin{"ft0cMultHistBin", {501, -0.5, 500.5}, ""};
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12}, "pT binning"};
   Configurable<float> posZcut{"posZcut", +10.0, "z-vertex position cut"};
+  Configurable<float> minEta{"minEta", -0.8, "minimum eta"};
+  Configurable<float> maxEta{"maxEta", +0.8, "maximum eta"};
   Configurable<float> minT0CcentCut{"minT0CcentCut", 0.0, "Min T0C Cent. cut"};
   Configurable<float> maxT0CcentCut{"maxT0CcentCut", 90.0, "Max T0C Cent. cut"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
-  using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, o2::aod::CentFT0Cs>;
+  Filter trackFilter = ((aod::track::eta > minEta) && (aod::track::eta < maxEta));
+  using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, o2::aod::CentFT0Cs, aod::TPCMults, o2::aod::BarrelMults, aod::FT0MultZeqs>;
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
   Partition<AodTracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
@@ -140,6 +136,7 @@ struct FlowZdcTask {
   using CollisionDataTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms>;
   using TrackDataTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
   using FilTrackDataTable = soa::Filtered<TrackDataTable>;
+  using TheFilteredTracks = soa::Filtered<TracksSel>;
 
   // CCDB paths
   Configurable<std::string> paTH{"paTH", "Users/s/sahernan/test", "base path to the ccdb object"};
@@ -216,6 +213,8 @@ struct FlowZdcTask {
     histos.add("ZposVsEta", "", kTProfile, {axisZpos});
     histos.add("sigma1Pt", ";;#sigma(p_{T})/p_{T};", kTProfile, {axisPt});
     histos.add("dcaXYvspT", ";DCA_{xy} (cm);;", kTH2F, {{{50, -1., 1.}, {axisPt}}});
+    histos.add("GlobalMult_vs_FT0C", "GlobalMult_vs_FT0C", kTH2F, {axisMult, axisFT0CMult});
+    histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ});
 
     // event selection steps
     histos.add("eventSelectionSteps", "eventSelectionSteps", kTH1D, {axisEvent});
@@ -238,9 +237,6 @@ struct FlowZdcTask {
     xAxis->SetBinLabel(15, "has T0?");
     xAxis->SetBinLabel(16, "Within TDC cut?");
     xAxis->SetBinLabel(17, "Within ZEM cut?");
-
-    histos.add("GlobalMult_vs_FT0C", "GlobalMult_vs_FT0C", kTH2F, {axisMult, axisFT0CMult});
-    histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ});
 
     if (doprocessZdcCollAssoc) { // Check if the process function for ZDCCollAssoc is enabled
       histos.add("ZNAcoll", "ZNAcoll; ZNA amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, maxZn}}});
@@ -295,7 +291,7 @@ struct FlowZdcTask {
       histos.add("ZEM2Vstdc", ";t_{ZEM2};ZEM2;", kTH2F, {{{30, -15., 15.}, {30, -0.5, 2000.5}}});
       histos.add("debunch", ";t_{ZDC}-t_{ZDA};t_{ZDC}+t_{ZDA}", kTH2F, {{{nBinsTDC, minTdc, maxTdc}, {nBinsTDC, minTdc, maxTdc}}});
 
-      histos.add("Nch", "Nch", kTH1F, {{nBinsNch, minNch, maxNch}});
+      histos.add("GlbTracks", "Nch", kTH1F, {{nBinsNch, minNch, maxNch}});
       histos.add("NchVsFT0C", ";T0C (#times 1/100, -3.3 < #eta < -2.1);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., 950.}, {nBinsNch, minNch, maxNch}}});
       histos.add("NchVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., 3000.}, {nBinsNch, minNch, maxNch}}});
       histos.add("NchVsFT0A", ";T0A (#times 1/100, 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsNch, minNch, maxNch}}});
@@ -404,7 +400,7 @@ struct FlowZdcTask {
     return true;
   }
 
-  void processQA(ColEvSels::iterator const& collision, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, aod::FV0As const& /*fv0as*/, aod::FT0s const& /*ft0s*/, AodTracks const& tracks)
+  void processQA(ColEvSels::iterator const& collision, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, aod::FV0As const& /*fv0as*/, aod::FT0s const& /*ft0s*/, TheFilteredTracks const& tracks)
   {
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     if (!isEventSelected(collision)) {
@@ -513,6 +509,8 @@ struct FlowZdcTask {
       } else {
         skipEvent = true;
       }
+    } else {
+      skipEvent = true;
     }
     if (!skipEvent) {
       return;
@@ -541,7 +539,7 @@ struct FlowZdcTask {
     histos.fill(HIST("ZPCcvsZPCsum"), sumZPC / cfgCollisionEnergy, zdc.energyCommonZPC() / cfgCollisionEnergy);
     histos.fill(HIST("ZPAcvsZPAsum"), sumZPA / cfgCollisionEnergy, zdc.energyCommonZPA() / cfgCollisionEnergy);
 
-    histos.fill(HIST("Nch"), glbTracks);
+    histos.fill(HIST("GlbTracks"), glbTracks);
     histos.fill(HIST("ZNA"), znA);
     histos.fill(HIST("ZNC"), znC);
     histos.fill(HIST("ZPA"), zpA);
@@ -614,7 +612,6 @@ struct FlowZdcTask {
       }
     }
     const double normT0M{(ft0aAmp + ft0aAmp) / 100.};
-    histos.fill(HIST("hFT0MAmp"), normT0M);
 
     const auto& zdcread = foundBC.zdc();
     const auto cent = collision.centFT0C();
@@ -708,8 +705,6 @@ struct FlowZdcTask {
     if (!skipEvent) {
       return;
     }
-    std::vector<float> pTs;
-    std::vector<float> vecFD;
     std::vector<float> vecOneOverEff;
     auto efficiency = ccdb->getForTimeStamp<TH1F>(paTHEff.value, foundBC.timestamp());
     if (!efficiency) {
@@ -799,7 +794,7 @@ struct FlowZdcTask {
     histos.fill(HIST("GlobalMult_vs_FT0C"), nchTracks, collision.multFT0C());
   }
 
-  PROCESS_SWITCH(FlowZdcTask, processZdcCollAssoc, "Processing ZDC w. collision association", true);
+  PROCESS_SWITCH(FlowZdcTask, processZdcCollAssoc, "Processing ZDC w. collision association", false);
   PROCESS_SWITCH(FlowZdcTask, processQA, "Process QA", true);
   PROCESS_SWITCH(FlowZdcTask, processCorrelation, "Process correlations", true);
 

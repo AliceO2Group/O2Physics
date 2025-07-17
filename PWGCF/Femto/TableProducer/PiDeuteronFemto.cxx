@@ -15,30 +15,9 @@
 /// \author CMY
 /// \date 2025-04-10
 
-#include <TH1F.h>
-#include <TDirectory.h>
-#include <THn.h>
-#include <TLorentzVector.h>
-#include <TMath.h>
-#include <TObjArray.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TLorentzVector.h>
-
-#include <cmath>
-#include <string>
-#include <algorithm>
-#include <vector>
-#include <array>
-#include <cstdlib>
-#include <iterator> // std::prev
-
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
+#include "PWGCF/Femto/DataModel/PionDeuteronTables.h"
+#include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "PWGLF/Utils/svPoolCreator.h"
 
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
@@ -52,21 +31,40 @@
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
-
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
 
 #include "CCDB/BasicCCDBManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 
-#include "PWGLF/DataModel/EPCalibrationTables.h"
-#include "PWGCF/Femto/DataModel/PionDeuteronTables.h"
-#include "PWGLF/Utils/svPoolCreator.h"
+#include "Math/Boost.h"
+#include "Math/Vector4D.h"
+#include <TDirectory.h>
+#include <TFile.h>
+#include <TH1F.h>
+#include <TH2F.h>
+#include <THn.h>
+#include <TMath.h>
+#include <TObjArray.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <iterator> // std::prev
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -236,6 +234,10 @@ struct PiDeuteronFemto {
      {"hDePitInvMass", "; M(De + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
      {"hDePt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
      {"hPiPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
+     {"hDeEta", "eta distribution; #eta(De)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+     {"hPiEta", "eta distribution; #eta(#pi)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+     {"hDePhi", "phi distribution; phi(De)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
+     {"hPiPhi", "phi distribution; phi(#pi)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
      {"h2dEdxDecandidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
      {"h2NsigmaDeTPC", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
      {"h2NsigmaDeTPC_preselection", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
@@ -250,6 +252,7 @@ struct PiDeuteronFemto {
      {"hkStar_LS_A", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
      {"hkStar_US_M", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
      {"hkStar_US_A", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+     {"hkStar_All", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
      {"hisBkgEM", "; isBkgEM;", {HistType::kTH1F, {{3, -1, 2}}}}},
     OutputObjHandlingPolicy::AnalysisObject,
     false,
@@ -691,6 +694,10 @@ struct PiDeuteronFemto {
   {
     mQaRegistry.fill(HIST("hDePt"), piDecand.recoPtDe());
     mQaRegistry.fill(HIST("hPiPt"), piDecand.recoPtPi());
+    mQaRegistry.fill(HIST("hDeEta"), piDecand.recoEtaDe());
+    mQaRegistry.fill(HIST("hPiEta"), piDecand.recoEtaPi());
+    mQaRegistry.fill(HIST("hDePhi"), piDecand.recoPhiDe());
+    mQaRegistry.fill(HIST("hPiPhi"), piDecand.recoPhiPi());
     mQaRegistry.fill(HIST("hDePitInvMass"), piDecand.invMass);
     mQaRegistry.fill(HIST("hdcaxyDe"), piDecand.dcaxyDe);
     mQaRegistry.fill(HIST("hdcazDe"), piDecand.dcazDe);
@@ -722,21 +729,27 @@ struct PiDeuteronFemto {
 
   double computeKstar(const PiDecandidate& piDecand)
   {
-    TLorentzVector he3, hadron;
-    float massHe3 = 2.80839;
-    float massHad = 0.1395704;
-    he3.SetPtEtaPhiM(abs(piDecand.recoPtDe()), piDecand.recoEtaDe(), piDecand.recoPhiDe(), massHe3);
-    hadron.SetPtEtaPhiM(abs(piDecand.recoPtPi()), piDecand.recoEtaPi(), piDecand.recoPhiPi(), massHad);
+    constexpr double massDe = o2::constants::physics::MassDeuteron;
+    constexpr double massHad = o2::constants::physics::MassPiPlus;
 
-    TLorentzVector p_total_lab = he3 + hadron;
-    TVector3 v_cm = p_total_lab.BoostVector();
-    TLorentzVector p1_cm = he3;
-    TLorentzVector p2_cm = hadron;
-    p1_cm.Boost(-v_cm);
-    p2_cm.Boost(-v_cm);
-    TLorentzVector p_diff_cm = p1_cm - p2_cm;
-    double kStar = sqrt(p_diff_cm.X() * p_diff_cm.X() + p_diff_cm.Y() * p_diff_cm.Y() + p_diff_cm.Z() * p_diff_cm.Z());
-    return kStar / 2.0;
+    const ROOT::Math::PtEtaPhiMVector De(std::abs(piDecand.recoPtDe()), piDecand.recoEtaDe(), piDecand.recoPhiDe(), massDe);
+    const ROOT::Math::PtEtaPhiMVector Had(std::abs(piDecand.recoPtPi()), piDecand.recoEtaPi(), piDecand.recoPhiPi(), massHad);
+    const ROOT::Math::PtEtaPhiMVector trackSum = De + Had;
+
+    const float beta = trackSum.Beta();
+    const float betax = beta * std::cos(trackSum.Phi()) * std::sin(trackSum.Theta());
+    const float betay = beta * std::sin(trackSum.Phi()) * std::sin(trackSum.Theta());
+    const float betaz = beta * std::cos(trackSum.Theta());
+
+    ROOT::Math::PxPyPzMVector DeCMS(De);
+    ROOT::Math::PxPyPzMVector HadCMS(Had);
+
+    const ROOT::Math::Boost boostPRF = ROOT::Math::Boost(-betax, -betay, -betaz);
+    DeCMS = boostPRF(DeCMS);
+    HadCMS = boostPRF(HadCMS);
+
+    const ROOT::Math::PxPyPzMVector RelKstar = DeCMS - HadCMS;
+    return 0.5 * RelKstar.P();
   }
 
   void fillKstar(const PiDecandidate& piDecand)
@@ -771,6 +784,7 @@ struct PiDeuteronFemto {
         mQaRegistry.fill(HIST("hkStar_US_A"), kstar);
       }
     }
+    mQaRegistry.fill(HIST("hkStar_All"), kstar);
   }
 
   // ==================================================================================================================

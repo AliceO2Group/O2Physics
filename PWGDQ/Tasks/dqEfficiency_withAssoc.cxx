@@ -2055,7 +2055,7 @@ struct AnalysisSameEventPairing {
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig->GetName()), VarManager::fgValues);
           if (useMiniTree.fConfigMiniTree) {
             auto mcEvent = mcEvents.rawIteratorAt(mctrack.reducedMCeventId());
-            dileptonMiniTreeGen(mcDecision, mcEvent.impactParameter(), VarManager::fgValues[VarManager::kCentFT0C], mctrack.pt(), mctrack.eta(), mctrack.phi(), -999, -999, -999);
+            dileptonMiniTreeGen(mcDecision, mcEvent.impactParameter(), mctrack.pt(), mctrack.eta(), mctrack.phi(), -999, -999, -999);
           }
         }
       }
@@ -2077,7 +2077,7 @@ struct AnalysisSameEventPairing {
               fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig->GetName()), VarManager::fgValues);
               if (useMiniTree.fConfigMiniTree) {
                 // WARNING! To be checked
-                dileptonMiniTreeGen(mcDecision, -999, VarManager::fgValues[VarManager::kCentFT0C], t1.pt(), t1.eta(), t1.phi(), t2.pt(), t2.eta(), t2.phi());
+                dileptonMiniTreeGen(mcDecision, -999, t1.pt(), t1.eta(), t1.phi(), t2.pt(), t2.eta(), t2.phi());
               }
             }
             isig++;
@@ -2159,11 +2159,16 @@ struct AnalysisSameEventPairing {
         continue;
       }
 
-      auto groupedMCTracks = mcTracks.sliceBy(perReducedMcGenEvent, event.reducedMCeventId());
-      groupedMCTracks.bindInternalIndicesTo(&mcTracks);
-      for (auto& track : groupedMCTracks) {
+      // auto groupedMCTracks = mcTracks.sliceBy(perReducedMcGenEvent, event.reducedMCeventId());
+      // groupedMCTracks.bindInternalIndicesTo(&mcTracks);
+      // for (auto& track : groupedMCTracks) {
+      for (auto& track : mcTracks) {
+        if (track.reducedMCeventId() != event.reducedMCeventId()) {
+          continue;
+        }
         VarManager::FillTrackMC(mcTracks, track);
-        auto track_raw = groupedMCTracks.rawIteratorAt(track.globalIndex());
+        auto track_raw = mcTracks.rawIteratorAt(track.globalIndex());
+        // auto track_raw = groupedMCTracks.rawIteratorAt(track.globalIndex());
         for (auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, track_raw)) {
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), VarManager::fgValues);

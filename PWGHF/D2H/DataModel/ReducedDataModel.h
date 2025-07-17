@@ -34,9 +34,10 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 
 #include <array>
 #include <cmath>
@@ -50,7 +51,7 @@ namespace aod
 namespace hf_reduced_collision
 {
 DECLARE_SOA_COLUMN(Bz, bz, float);                                              //! Magnetic field in z-direction
-DECLARE_SOA_COLUMN(HfCollisionRejectionMap, hfCollisionRejectionMap, uint16_t); //! Bitmask with failed selection criteria
+DECLARE_SOA_COLUMN(HfCollisionRejectionMap, hfCollisionRejectionMap, uint32_t); //! Bitmask with failed selection criteria
 // keep track of the number of studied events (for normalization purposes)
 DECLARE_SOA_COLUMN(OriginalCollisionCount, originalCollisionCount, int);                                                         //! Size of COLLISION table processed
 DECLARE_SOA_COLUMN(ZvtxSelectedCollisionCount, zvtxSelectedCollisionCount, int);                                                 //! Number of COLLISIONS with |zvtx| < zvtxMax
@@ -188,6 +189,7 @@ DECLARE_SOA_COLUMN(HasTOFProng2, hasTOFProng2, bool);                           
 DECLARE_SOA_COLUMN(ItsNCls, itsNCls, int);                                       //! Number of clusters in ITS
 DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, int);                 //! Number of TPC crossed rows
 DECLARE_SOA_COLUMN(TpcChi2NCl, tpcChi2NCl, float);                               //! TPC chi2
+DECLARE_SOA_COLUMN(ItsChi2NCl, itsChi2NCl, float);                               //! ITS chi2
 DECLARE_SOA_COLUMN(ItsNClsProngMin, itsNClsProngMin, int);                       //! minimum value of number of ITS clusters for the decay daughter tracks
 DECLARE_SOA_COLUMN(TpcNClsCrossedRowsProngMin, tpcNClsCrossedRowsProngMin, int); //! minimum value of number of TPC crossed rows for the decay daughter tracks
 DECLARE_SOA_COLUMN(TpcChi2NClProngMax, tpcChi2NClProngMax, float);               //! maximum value of TPC chi2 for the decay daughter tracks
@@ -298,6 +300,7 @@ DECLARE_SOA_TABLE(HfRedBach0Bases, "AOD", "HFREDBACH0BASE", //! Table with track
                   hf_track_vars_reduced::ItsNCls,
                   hf_track_vars_reduced::TpcNClsCrossedRows,
                   hf_track_vars_reduced::TpcChi2NCl,
+                  hf_track_vars_reduced::ItsChi2NCl,
                   hf_track_vars_reduced::HasTPC,
                   hf_track_vars_reduced::HasTOF,
                   pidtpc::TPCNSigmaPi,
@@ -329,6 +332,7 @@ DECLARE_SOA_TABLE(HfRedBach1Bases, "AOD", "HFREDBACH1BASE", //! Table with track
                   hf_track_vars_reduced::ItsNCls,
                   hf_track_vars_reduced::TpcNClsCrossedRows,
                   hf_track_vars_reduced::TpcChi2NCl,
+                  hf_track_vars_reduced::ItsChi2NCl,
                   hf_track_vars_reduced::HasTPC,
                   hf_track_vars_reduced::HasTOF,
                   pidtpc::TPCNSigmaPi,
@@ -387,6 +391,16 @@ DECLARE_SOA_COLUMN(ProngPosId, prongPosId, int);             //! Original track 
 DECLARE_SOA_COLUMN(ProngNegId, prongNegId, int);             //! Original track index
 DECLARE_SOA_COLUMN(HfRedCollisionId, hfRedCollisionId, int); //! Collision index
 DECLARE_SOA_COLUMN(M, m, float);                             //! Invariant mass of candidate in GeV/c2
+
+DECLARE_SOA_COLUMN(ItsNClsDauPos, itsNClsDauPos, int);                       //! Number of clusters in ITS
+DECLARE_SOA_COLUMN(TpcNClsCrossedRowsDauPos, tpcNClsCrossedRowsDauPos, int); //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(TpcChi2NClDauPos, tpcChi2NClDauPos, float);               //! TPC chi2 / Number of clusters
+DECLARE_SOA_COLUMN(ItsChi2NClDauPos, itsChi2NClDauPos, float);               //! ITS chi2 / Number of clusters
+DECLARE_SOA_COLUMN(ItsNClsDauNeg, itsNClsDauNeg, int);                       //! Number of clusters in ITS
+DECLARE_SOA_COLUMN(TpcNClsCrossedRowsDauNeg, tpcNClsCrossedRowsDauNeg, int); //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(TpcChi2NClDauNeg, tpcChi2NClDauNeg, float);               //! TPC chi2 / Number of clusters
+DECLARE_SOA_COLUMN(ItsChi2NClDauNeg, itsChi2NClDauNeg, float);               //! ITS chi2 / Number of clusters
+
 DECLARE_SOA_COLUMN(XDauPos, xDauPos, float);                 //! x
 DECLARE_SOA_COLUMN(XDauNeg, xDauNeg, float);                 //! x
 DECLARE_SOA_COLUMN(YDauPos, yDauPos, float);                 //! y
@@ -555,6 +569,14 @@ DECLARE_SOA_TABLE(HfRedJpsis, "AOD", "HFREDJPSI", //! Table with J/Psi candidate
                   hf_track_index_reduced::HfRedCollisionId,
                   hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex,
                   hf_jpsi_cand_reduced::M,
+                  hf_jpsi_cand_reduced::ItsNClsDauPos,
+                  hf_jpsi_cand_reduced::TpcNClsCrossedRowsDauPos,
+                  hf_jpsi_cand_reduced::TpcChi2NClDauPos,
+                  hf_jpsi_cand_reduced::ItsChi2NClDauPos,
+                  hf_jpsi_cand_reduced::ItsNClsDauNeg,
+                  hf_jpsi_cand_reduced::TpcNClsCrossedRowsDauNeg,
+                  hf_jpsi_cand_reduced::TpcChi2NClDauNeg,
+                  hf_jpsi_cand_reduced::ItsChi2NClDauNeg,
                   hf_jpsi_cand_reduced::XDauPos, hf_jpsi_cand_reduced::XDauNeg,
                   hf_jpsi_cand_reduced::YDauPos, hf_jpsi_cand_reduced::YDauNeg,
                   hf_jpsi_cand_reduced::ZDauPos, hf_jpsi_cand_reduced::ZDauNeg,
@@ -806,7 +828,7 @@ DECLARE_SOA_TABLE(HfMcCheckDpPis, "AOD", "HFMCCHECKDPPI", //! Table with reconst
 // Table with same size as HFCANDB0
 DECLARE_SOA_TABLE(HfMcRecRedB0s, "AOD", "HFMCRECREDB0", //! Reconstruction-level MC information on B0 candidates for reduced workflow
                   hf_cand_b0::FlagMcMatchRec,
-                  hf_cand_b0::ChannelMcMatchRec,
+                  hf_cand_b0::FlagMcDecayChanRec,
                   hf_cand_b0::FlagWrongCollision,
                   hf_cand_b0::DebugMcRec,
                   hf_b0_mc::PtMother);
@@ -822,7 +844,7 @@ DECLARE_SOA_TABLE(HfMcCheckB0s, "AOD", "HFMCCHECKB0", //! Table with reconstruct
 
 DECLARE_SOA_TABLE(HfMcGenRedB0s, "AOD", "HFMCGENREDB0", //! Generation-level MC information on B0 candidates for reduced workflow
                   hf_cand_b0::FlagMcMatchGen,
-                  hf_cand_b0::ChannelMcMatchRec,
+                  hf_cand_b0::FlagMcDecayChanRec,
                   hf_b0_mc::PtTrack,
                   hf_b0_mc::YTrack,
                   hf_b0_mc::EtaTrack,
@@ -831,7 +853,10 @@ DECLARE_SOA_TABLE(HfMcGenRedB0s, "AOD", "HFMCGENREDB0", //! Generation-level MC 
                   hf_b0_mc::EtaProng0,
                   hf_b0_mc::PtProng1,
                   hf_b0_mc::YProng1,
-                  hf_b0_mc::EtaProng1);
+                  hf_b0_mc::EtaProng1,
+                  hf_reduced_collision::HfCollisionRejectionMap,
+                  cent::CentFT0C,
+                  cent::CentFT0M);
 
 // store all configurables values used in the first part of the workflow
 // so we can use them in the B0 part
@@ -881,7 +906,7 @@ DECLARE_SOA_TABLE(HfMcRecRedJPKs, "AOD", "HFMCRECREDJPK", //! Table with reconst
                   hf_cand_bplus_reduced::JpsiId,
                   hf_cand_bplus_reduced::BachKaId,
                   hf_cand_bplus::FlagMcMatchRec,
-                  hf_cand_bplus::ChannelMcMatchRec,
+                  hf_cand_bplus::FlagMcDecayChanRec,
                   hf_cand_bplus::FlagWrongCollision,
                   hf_cand_bplus::DebugMcRec,
                   hf_bplus_mc::PtMother);
@@ -898,7 +923,7 @@ DECLARE_SOA_TABLE(HfMcCheckD0Pis, "AOD", "HFMCCHECKD0PI", //! Table with reconst
 // Table with same size as HFCANDBPLUS
 DECLARE_SOA_TABLE(HfMcRecRedBps, "AOD", "HFMCRECREDBP", //! Reconstruction-level MC information on B+ candidates for reduced workflow
                   hf_cand_bplus::FlagMcMatchRec,
-                  hf_cand_bplus::ChannelMcMatchRec,
+                  hf_cand_bplus::FlagMcDecayChanRec,
                   hf_cand_bplus::FlagWrongCollision,
                   hf_cand_bplus::DebugMcRec,
                   hf_bplus_mc::PtMother);
@@ -913,7 +938,7 @@ DECLARE_SOA_TABLE(HfMcCheckBps, "AOD", "HFMCCHECKBP", //! Table with reconstruct
 
 DECLARE_SOA_TABLE(HfMcGenRedBps, "AOD", "HFMCGENREDBP", //! Generation-level MC information on B+ candidates for reduced workflow
                   hf_cand_bplus::FlagMcMatchGen,
-                  hf_cand_bplus::ChannelMcMatchRec,
+                  hf_cand_bplus::FlagMcDecayChanRec,
                   hf_bplus_mc::PtTrack,
                   hf_bplus_mc::YTrack,
                   hf_bplus_mc::EtaTrack,
@@ -922,7 +947,10 @@ DECLARE_SOA_TABLE(HfMcGenRedBps, "AOD", "HFMCGENREDBP", //! Generation-level MC 
                   hf_bplus_mc::EtaProng0,
                   hf_bplus_mc::PtProng1,
                   hf_bplus_mc::YProng1,
-                  hf_bplus_mc::EtaProng1);
+                  hf_bplus_mc::EtaProng1,
+                  hf_reduced_collision::HfCollisionRejectionMap,
+                  cent::CentFT0C,
+                  cent::CentFT0M);
 
 // store all configurables values used in the first part of the workflow
 // so we can use them in the Bplus part
@@ -980,7 +1008,7 @@ DECLARE_SOA_TABLE(HfMcRecRedJPPhis, "AOD", "HFMCRECREDJPPHI", //! Table with rec
                   hf_cand_bs_reduced::Prong0PhiId,
                   hf_cand_bs_reduced::Prong1PhiId,
                   hf_cand_bs::FlagMcMatchRec,
-                  hf_cand_bs::ChannelMcMatchRec,
+                  hf_cand_bs::FlagMcDecayChanRec,
                   hf_cand_bs::FlagWrongCollision,
                   hf_cand_bs::DebugMcRec,
                   hf_bs_mc::PtMother);
@@ -999,7 +1027,7 @@ DECLARE_SOA_TABLE(HfMcCheckDsPis, "AOD", "HFMCCHECKDSPI", //! Table with reconst
 // Table with same size as HFCANDBS
 DECLARE_SOA_TABLE(HfMcRecRedBss, "AOD", "HFMCRECREDBS", //! Reconstruction-level MC information on Bs candidates for reduced workflow
                   hf_cand_bs::FlagMcMatchRec,
-                  hf_cand_bs::ChannelMcMatchRec,
+                  hf_cand_bs::FlagMcDecayChanRec,
                   hf_cand_bs::FlagWrongCollision,
                   hf_cand_bs::DebugMcRec,
                   hf_bs_mc::PtMother);
@@ -1015,7 +1043,7 @@ DECLARE_SOA_TABLE(HfMcCheckBss, "AOD", "HFMCCHECKBS", //! Table with reconstruct
 
 DECLARE_SOA_TABLE(HfMcGenRedBss, "AOD", "HFMCGENREDBS", //! Generation-level MC information on Bs candidates for reduced workflow
                   hf_cand_bs::FlagMcMatchGen,
-                  hf_cand_bs::ChannelMcMatchRec,
+                  hf_cand_bs::FlagMcDecayChanRec,
                   hf_bs_mc::PtTrack,
                   hf_bs_mc::YTrack,
                   hf_bs_mc::EtaTrack,
@@ -1024,7 +1052,10 @@ DECLARE_SOA_TABLE(HfMcGenRedBss, "AOD", "HFMCGENREDBS", //! Generation-level MC 
                   hf_bs_mc::EtaProng0,
                   hf_bs_mc::PtProng1,
                   hf_bs_mc::YProng1,
-                  hf_bs_mc::EtaProng1);
+                  hf_bs_mc::EtaProng1,
+                  hf_reduced_collision::HfCollisionRejectionMap,
+                  cent::CentFT0C,
+                  cent::CentFT0M);
 
 // store all configurables values used in the first part of the workflow
 // so we can use them in the Bs part
@@ -1108,7 +1139,10 @@ DECLARE_SOA_TABLE(HfMcGenRedLbs, "AOD", "HFMCGENREDLB", //! Generation-level MC 
                   hf_lb_mc::EtaProng0,
                   hf_lb_mc::PtProng1,
                   hf_lb_mc::YProng1,
-                  hf_lb_mc::EtaProng1);
+                  hf_lb_mc::EtaProng1,
+                  hf_reduced_collision::HfCollisionRejectionMap,
+                  cent::CentFT0C,
+                  cent::CentFT0M);
 
 // store all configurables values used in the first part of the workflow
 // so we can use them in the B0 part
@@ -1293,6 +1327,8 @@ DECLARE_SOA_TABLE(HfRed2PrNoTrks, "AOD", "HFRED2PRNOTRK", //! Table with 2 prong
                   hf_track_vars_reduced::EtaProng0<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0>,
                   hf_track_vars_reduced::EtaProng1<hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_reso_2_prong::PVector<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_cand::PVectorProng0<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0>,
+                  hf_cand::PVectorProng1<hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_reso_2_prong::Pt<hf_cand::PxProng0, hf_cand::PxProng1, hf_cand::PyProng0, hf_cand::PyProng1>,
                   // InvMasses
                   hf_cand_dstar::InvMassD0<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
