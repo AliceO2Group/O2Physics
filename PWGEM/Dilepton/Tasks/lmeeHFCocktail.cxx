@@ -15,16 +15,18 @@
 /// \author Daniel Samitz, <daniel.samitz@cern.ch>, SMI Vienna
 ///         Elisa Meninno, <elisa.meninno@cern.ch>, SMI Vienna
 
-#include <vector>
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+#include "PWGEM/Dilepton/Utils/MCUtilities.h"
 
-#include "Math/Vector4D.h"
-#include "MathUtils/Utils.h"
-#include "Framework/Task.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "PWGEM/Dilepton/Utils/MCUtilities.h"
-#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+#include "Framework/Task.h"
+#include "Framework/runDataProcessing.h"
+#include "MathUtils/Utils.h"
+
+#include "Math/Vector4D.h"
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -93,16 +95,30 @@ void doQuark(T& p, std::vector<std::shared_ptr<TH1>> hRapQuark, float ptMin, flo
 }
 
 template <typename T>
-void doSingle(T& p, std::vector<std::shared_ptr<TH1>> hEta, std::vector<std::shared_ptr<TH1>> hPt, std::vector<std::shared_ptr<TH2>> hPtEta, float ptMin, float etaMax)
+void doSingle(T& p, std::vector<std::shared_ptr<TH1>> hEta, std::vector<std::shared_ptr<TH1>> hPhi, std::vector<std::shared_ptr<TH1>> hPt, std::vector<std::shared_ptr<TH2>> hPtEta, float ptMin, float etaMax, float phiMin, float phiMax, float phiMirror, float phiReject)
 {
   float weight[Nstages] = {p.weight(), p.efficiency() * p.weight(), p.efficiency() * p.weight()};
   float pt[Nstages] = {p.pt(), p.ptSmeared(), p.ptSmeared()};
   float eta[Nstages] = {p.eta(), p.etaSmeared(), p.etaSmeared()};
+  float phi[Nstages] = {p.phi(), p.phiSmeared(), p.phiSmeared()};
   float cut_pt[Nstages] = {0., 0., ptMin};
   float cut_eta[Nstages] = {9999., 99999., etaMax};
+  float cut_phiMin[Nstages] = {-9999., -99999., phiMin};
+  float cut_phiMax[Nstages] = {9999., 99999., phiMax};
   for (int i = 0; i < Nstages; i++) {
-    if (pt[i] > cut_pt[i] && fabs(eta[i]) < cut_eta[i]) {
+    bool is_in_phi_range = false;
+    if (!phiMirror) {
+      is_in_phi_range = phi[i] > phiMin && phi[i] < phiMax;
+      is_in_phi_range = phiReject ? !is_in_phi_range : is_in_phi_range;
+    } else {
+      double minTrackPhiMirror = phiMin + TMath::Pi();
+      double maxTrackPhiMirror = phiMax + TMath::Pi();
+      is_in_phi_range = (phi[i] > phiMin && phi[i] < phiMax) || (phi[i] > minTrackPhiMirror && phi[i] < maxTrackPhiMirror);
+      is_in_phi_range = phiReject ? !is_in_phi_range : is_in_phi_range;
+    }
+    if (pt[i] > cut_pt[i] && fabs(eta[i]) < cut_eta[i] && is_in_phi_range) {
       hEta[i]->Fill(eta[i], weight[i]);
+      hPhi[i]->Fill(phi[i], weight[i]);
       hPt[i]->Fill(pt[i], weight[i]);
       hPtEta[i]->Fill(pt[i], eta[i], weight[i]);
     }
@@ -110,7 +126,7 @@ void doSingle(T& p, std::vector<std::shared_ptr<TH1>> hEta, std::vector<std::sha
 }
 
 template <typename T>
-void doPair(T& p1, T& p2, std::vector<std::shared_ptr<TH1>> hMee, std::vector<std::shared_ptr<TH2>> hMeePtee, float ptMin, float etaMax, bool apply_detadphi, float min_deta, float min_dphi)
+void doPair(T& p1, T& p2, std::vector<std::shared_ptr<TH1>> hMee, std::vector<std::shared_ptr<TH2>> hMeePtee, float ptMin, float etaMax, bool apply_detadphi, float min_deta, float min_dphi, float phiMin, float phiMax, float phiMirror, float phiReject)
 {
 
   ROOT::Math::PtEtaPhiMVector v1(p1.ptSmeared(), p1.etaSmeared(), p1.phiSmeared(), o2::constants::physics::MassElectron);
@@ -126,9 +142,16 @@ void doPair(T& p1, T& p2, std::vector<std::shared_ptr<TH1>> hMee, std::vector<st
   float pt2[Nstages] = {p2.pt(), p2.ptSmeared(), p2.ptSmeared()};
   float eta1[Nstages] = {p1.eta(), p1.etaSmeared(), p1.etaSmeared()};
   float eta2[Nstages] = {p2.eta(), p2.etaSmeared(), p2.etaSmeared()};
+  float phi1[Nstages] = {p1.phi(), p1.phiSmeared(), p1.phiSmeared()};
+  float phi2[Nstages] = {p2.phi(), p2.phiSmeared(), p2.phiSmeared()};
+
   float weight[Nstages] = {p1.weight() * p2.weight(), p1.efficiency() * p2.efficiency() * p1.weight() * p2.weight(), p1.efficiency() * p2.efficiency() * p1.weight() * p2.weight()};
   float cut_pt[Nstages] = {0., 0., ptMin};
   float cut_eta[Nstages] = {9999., 99999., etaMax};
+  float cut_phiMin[Nstages] = {-9999., -99999., phiMin};
+  float cut_phiMax[Nstages] = {9999., 99999., phiMax};
+  bool is_in_phi1_range = false;
+  bool is_in_phi2_range = false;
 
   float deta = v1.Eta() - v2.Eta();
   float dphi = v1.Phi() - v2.Phi();
@@ -138,7 +161,21 @@ void doPair(T& p1, T& p2, std::vector<std::shared_ptr<TH1>> hMee, std::vector<st
   }
 
   for (int i = 0; i < Nstages; i++) {
-    if (pt1[i] > cut_pt[i] && pt2[i] > cut_pt[i] && fabs(eta1[i]) < cut_eta[i] && fabs(eta2[i]) < cut_eta[i]) {
+    if (!phiMirror) {
+      is_in_phi1_range = phi1[i] > phiMin && phi1[i] < phiMax;
+      is_in_phi1_range = phiReject ? !is_in_phi1_range : is_in_phi1_range;
+      is_in_phi2_range = phi2[i] > phiMin && phi2[i] < phiMax;
+      is_in_phi2_range = phiReject ? !is_in_phi2_range : is_in_phi2_range;
+
+    } else {
+      double minTrackPhiMirror = phiMin + TMath::Pi();
+      double maxTrackPhiMirror = phiMax + TMath::Pi();
+      is_in_phi1_range = (phi1[i] > phiMin && phi1[i] < phiMax) || (phi1[i] > minTrackPhiMirror && phi1[i] < maxTrackPhiMirror);
+      is_in_phi1_range = phiReject ? !is_in_phi1_range : is_in_phi1_range;
+      is_in_phi2_range = (phi2[i] > phiMin && phi2[i] < phiMax) || (phi2[i] > minTrackPhiMirror && phi2[i] < maxTrackPhiMirror);
+      is_in_phi2_range = phiReject ? !is_in_phi2_range : is_in_phi2_range;
+    }
+    if (pt1[i] > cut_pt[i] && pt2[i] > cut_pt[i] && fabs(eta1[i]) < cut_eta[i] && fabs(eta2[i]) < cut_eta[i] && is_in_phi1_range && is_in_phi2_range) {
       hMee[i]->Fill(mass[i], weight[i]);
       hMeePtee[i]->Fill(mass[i], pt[i], weight[i]);
     }
@@ -148,8 +185,13 @@ void doPair(T& p1, T& p2, std::vector<std::shared_ptr<TH1>> hMee, std::vector<st
 struct MyConfigs : ConfigurableGroup {
   Configurable<float> fConfigPtMin{"cfgPtMin", 0.2, "min. pT of single electrons"};
   Configurable<float> fConfigEtaMax{"cfgEtaMax", 0.8, "max. |eta| of single electrons"};
+  Configurable<float> fConfigMinPhi{"cfgMinPhi", 0.f, "min phi for single track"};
+  Configurable<float> fConfigMaxPhi{"cfgMaxPhi", 6.3, "max phi for single track"};
+  Configurable<bool> fConfigMirrorPhi{"cfgMirrorPhi", false, "mirror the phi cut around Pi, min and max phi should be in 0-Pi"};
+  Configurable<bool> fConfigRejectPhi{"cfgRejectPhi", false, "reject the phi interval"};
   ConfigurableAxis fConfigPtBins{"cfgPtBins", {200, 0.f, 10.f}, "single electron pT binning"};
   ConfigurableAxis fConfigEtaBins{"cfgEtaBins", {200, -10.f, 10.f}, "single electron eta binning"};
+  ConfigurableAxis fConfigPhiBins{"cfgPhiBins", {200, 0, 6.4}, "single electron phi binning"};
   ConfigurableAxis fConfigRapBins{"cfgRapBins", {200, -10.f, 10.f}, "Quark rapidity binning"};
   ConfigurableAxis fConfigMeeBins{"cfgMeeBins", {800, 0.f, 8.f}, "Mee binning"};
   ConfigurableAxis fConfigPteeBins{"cfgPteeBins", {400, 0.f, 10.f}, "pTee binning"};
@@ -275,7 +317,7 @@ struct lmeehfcocktailbeauty {
   HistogramRegistry registry{"registry", {}};
 
   std::vector<std::vector<std::shared_ptr<TH1>>> hRapQuark;
-  std::vector<std::vector<std::shared_ptr<TH1>>> hEta, hPt;
+  std::vector<std::vector<std::shared_ptr<TH1>>> hEta, hPhi, hPt;
   std::vector<std::vector<std::shared_ptr<TH2>>> hPtEta;
   std::vector<std::shared_ptr<TH1>> hLS_Mee, hULS_Mee;
   std::vector<std::shared_ptr<TH2>> hLS_MeePtee, hULS_MeePtee;
@@ -303,6 +345,7 @@ struct lmeehfcocktailbeauty {
 
     AxisSpec rap_axis = {myConfigs.fConfigRapBins, "y_{b}"};
     AxisSpec eta_axis = {myConfigs.fConfigEtaBins, "#eta_{e}"};
+    AxisSpec phi_axis = {myConfigs.fConfigPhiBins, "#varphi_{e}"};
     AxisSpec pt_axis = {myConfigs.fConfigPtBins, "#it{p}_{T,e} (GeV/c)"};
     AxisSpec mass_axis = {myConfigs.fConfigMeeBins, "m_{ee} (GeV/c^{2})"};
     AxisSpec ptee_axis = {myConfigs.fConfigPteeBins, "#it{p}_{T,ee} (GeV/c)"};
@@ -318,14 +361,16 @@ struct lmeehfcocktailbeauty {
 
     // single histograms
     for (int i = 0; i < Nchannels; i++) {
-      std::vector<std::shared_ptr<TH1>> hEta_temp, hPt_temp;
+      std::vector<std::shared_ptr<TH1>> hEta_temp, hPt_temp, hPhi_temp;
       std::vector<std::shared_ptr<TH2>> hPtEta_temp;
       for (int j = 0; j < Nstages; j++) {
         hEta_temp.push_back(registry.add<TH1>(Form("Electron_Eta_%s_%s", typeNamesSingle[i], stageNames[j]), Form("Single Electron Eta %s %s", typeTitlesSingle[i], stageNames[j]), HistType::kTH1F, {eta_axis}, true));
+        hPhi_temp.push_back(registry.add<TH1>(Form("Electron_Phi_%s_%s", typeNamesSingle[i], stageNames[j]), Form("Single Electron Phi %s %s", typeTitlesSingle[i], stageNames[j]), HistType::kTH1F, {phi_axis}, true));
         hPt_temp.push_back(registry.add<TH1>(Form("Electron_Pt_%s_%s", typeNamesSingle[i], stageNames[j]), Form("Single Electron Pt %s %s", typeTitlesSingle[i], stageNames[j]), HistType::kTH1F, {pt_axis}, true));
         hPtEta_temp.push_back(registry.add<TH2>(Form("Electron_PtEta_%s_%s", typeNamesSingle[i], stageNames[j]), Form("Single Electron Pt vs. Eta %s %s", typeTitlesSingle[i], stageNames[j]), HistType::kTH2F, {pt_axis, eta_axis}, true));
       }
       hEta.push_back(hEta_temp);
+      hPhi.push_back(hPhi_temp);
       hPt.push_back(hPt_temp);
       hPtEta.push_back(hPtEta_temp);
     }
@@ -353,7 +398,7 @@ struct lmeehfcocktailbeauty {
   {
     for (auto const& p : mcParticles) {
       int from_quark = p.isHF() - 2;
-      doSingle(p, hEta[from_quark], hPt[from_quark], hPtEta[from_quark], myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+      doSingle(p, hEta[from_quark], hPhi[from_quark], hPt[from_quark], hPtEta[from_quark], myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigMinPhi, myConfigs.fConfigMaxPhi, myConfigs.fConfigMirrorPhi, myConfigs.fConfigRejectPhi);
       doQuark(p, hRapQuark[from_quark], myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, 5);
     }
 
@@ -370,11 +415,11 @@ struct lmeehfcocktailbeauty {
           LOG(error) << "Something is wrong here. There should not be dielectrons with same mother.";
         }
 
-        doPair(particle1, particle2, hULS_Mee, hULS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hULS_Mee, hULS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi, myConfigs.fConfigMinPhi, myConfigs.fConfigMaxPhi, myConfigs.fConfigMirrorPhi, myConfigs.fConfigRejectPhi);
 
         if (particle1.bQuarkOriginId() < 0 || particle2.bQuarkOriginId() < 0 || particle1.bQuarkOriginId() != particle2.bQuarkOriginId())
           continue;
-        doPair(particle1, particle2, hULS_Mee_wPartonicCheck, hULS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hULS_Mee_wPartonicCheck, hULS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi, myConfigs.fConfigMinPhi, myConfigs.fConfigMaxPhi, myConfigs.fConfigMirrorPhi, myConfigs.fConfigRejectPhi);
       }
       // LS spectrum
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(electronsGrouped, electronsGrouped))) {
@@ -383,11 +428,11 @@ struct lmeehfcocktailbeauty {
           LOG(error) << "Something is wrong here. There should not be dielectrons with same mother.";
         }
 
-        doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi, myConfigs.fConfigMinPhi, myConfigs.fConfigMaxPhi, myConfigs.fConfigMirrorPhi, myConfigs.fConfigRejectPhi);
 
         if (particle1.bQuarkOriginId() < 0 || particle2.bQuarkOriginId() < 0 || particle1.bQuarkOriginId() != particle2.bQuarkOriginId())
           continue;
-        doPair(particle1, particle2, hLS_Mee_wPartonicCheck, hLS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hLS_Mee_wPartonicCheck, hLS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi, myConfigs.fConfigMinPhi, myConfigs.fConfigMaxPhi, myConfigs.fConfigMirrorPhi, myConfigs.fConfigRejectPhi);
       }
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(positronsGrouped, positronsGrouped))) {
 
@@ -395,11 +440,11 @@ struct lmeehfcocktailbeauty {
           LOG(error) << "Something is wrong here. There should not be dielectrons with same mother.";
         }
 
-        doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi, myConfigs.fConfigMinPhi, myConfigs.fConfigMaxPhi, myConfigs.fConfigMirrorPhi, myConfigs.fConfigRejectPhi);
 
         if (particle1.bQuarkOriginId() < 0 || particle2.bQuarkOriginId() < 0 || particle1.bQuarkOriginId() != particle2.bQuarkOriginId())
           continue;
-        doPair(particle1, particle2, hLS_Mee_wPartonicCheck, hLS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hLS_Mee_wPartonicCheck, hLS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi, myConfigs.fConfigMinPhi, myConfigs.fConfigMaxPhi, myConfigs.fConfigMirrorPhi, myConfigs.fConfigRejectPhi);
       }
     }
   }
@@ -418,7 +463,7 @@ struct lmeehfcocktailcharm {
   HistogramRegistry registry{"registry", {}};
 
   std::vector<std::shared_ptr<TH1>> hRapQuark;
-  std::vector<std::shared_ptr<TH1>> hEta, hPt, hULS_Mee, hLS_Mee;
+  std::vector<std::shared_ptr<TH1>> hEta, hPhi, hPt, hULS_Mee, hLS_Mee;
   std::vector<std::shared_ptr<TH2>> hPtEta, hULS_MeePtee, hLS_MeePtee;
   std::vector<std::shared_ptr<TH1>> hULS_Mee_wPartonicCheck, hLS_Mee_wPartonicCheck;
   std::vector<std::shared_ptr<TH2>> hULS_MeePtee_wPartonicCheck, hLS_MeePtee_wPartonicCheck;
@@ -442,6 +487,7 @@ struct lmeehfcocktailcharm {
 
     AxisSpec rap_axis = {myConfigs.fConfigRapBins, "y_{c}"};
     AxisSpec eta_axis = {myConfigs.fConfigEtaBins, "#eta_{e}"};
+    AxisSpec phi_axis = {myConfigs.fConfigPhiBins, "#varphi_{e}"};
     AxisSpec pt_axis = {myConfigs.fConfigPtBins, "#it{p}_{T,e} (GeV/c)"};
     AxisSpec mass_axis = {myConfigs.fConfigMeeBins, "m_{ee} (GeV/c^{2})"};
     AxisSpec ptee_axis = {myConfigs.fConfigPteeBins, "#it{p}_{T,ee} (GeV/c)"};
@@ -454,6 +500,7 @@ struct lmeehfcocktailcharm {
     // single histograms
     for (int j = 0; j < Nstages; j++) {
       hEta.push_back(registry.add<TH1>(Form("Electron_Eta_%s_%s", typeNamesSingle, stageNames[j]), Form("Single Electron Eta %s %s", typeTitlesSingle, stageNames[j]), HistType::kTH1F, {eta_axis}, true));
+      hPhi.push_back(registry.add<TH1>(Form("Electron_Phi_%s_%s", typeNamesSingle, stageNames[j]), Form("Single Electron Phi %s %s", typeTitlesSingle, stageNames[j]), HistType::kTH1F, {phi_axis}, true));
       hPt.push_back(registry.add<TH1>(Form("Electron_Pt_%s_%s", typeNamesSingle, stageNames[j]), Form("Single Electron Pt %s %s", typeTitlesSingle, stageNames[j]), HistType::kTH1F, {pt_axis}, true));
       hPtEta.push_back(registry.add<TH2>(Form("Electron_PtEta_%s_%s", typeNamesSingle, stageNames[j]), Form("Single Electron Pt vs. Eta %s %s", typeTitlesSingle, stageNames[j]), HistType::kTH2F, {pt_axis, eta_axis}, true));
     }
@@ -480,7 +527,7 @@ struct lmeehfcocktailcharm {
   void processCharm(aod::McCollisions const& collisions, MyFilteredMcParticlesSmeared const& mcParticles)
   {
     for (auto const& p : mcParticles) {
-      doSingle(p, hEta, hPt, hPtEta, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+      doSingle(p, hEta, hPhi, hPt, hPtEta, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigMinPhi, myConfigs.fConfigMaxPhi, myConfigs.fConfigMirrorPhi, myConfigs.fConfigRejectPhi);
       doQuark(p, hRapQuark, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, 4);
     }
 
@@ -497,11 +544,11 @@ struct lmeehfcocktailcharm {
           LOG(error) << "Something is wrong here. There should not be dielectrons with same mother.";
         }
 
-        doPair(particle1, particle2, hULS_Mee, hULS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hULS_Mee, hULS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi, myConfigs.fConfigMinPhi, myConfigs.fConfigMaxPhi, myConfigs.fConfigMirrorPhi, myConfigs.fConfigRejectPhi);
 
         if (particle1.cQuarkOriginId() < 0 || particle2.cQuarkOriginId() < 0 || particle1.cQuarkOriginId() != particle2.cQuarkOriginId())
           continue;
-        doPair(particle1, particle2, hULS_Mee_wPartonicCheck, hULS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hULS_Mee_wPartonicCheck, hULS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi, myConfigs.fConfigMinPhi, myConfigs.fConfigMaxPhi, myConfigs.fConfigMirrorPhi, myConfigs.fConfigRejectPhi);
       }
       // LS
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(electronsGrouped, electronsGrouped))) {
@@ -510,11 +557,11 @@ struct lmeehfcocktailcharm {
           LOG(error) << "Something is wrong here. There should not be dielectrons with same mother.";
         }
 
-        doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi, myConfigs.fConfigMinPhi, myConfigs.fConfigMaxPhi, myConfigs.fConfigMirrorPhi, myConfigs.fConfigRejectPhi);
 
         if (particle1.cQuarkOriginId() < 0 || particle2.cQuarkOriginId() < 0 || particle1.cQuarkOriginId() != particle2.cQuarkOriginId())
           continue;
-        doPair(particle1, particle2, hLS_Mee_wPartonicCheck, hLS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hLS_Mee_wPartonicCheck, hLS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi, myConfigs.fConfigMinPhi, myConfigs.fConfigMaxPhi, myConfigs.fConfigMirrorPhi, myConfigs.fConfigRejectPhi);
       }
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(positronsGrouped, positronsGrouped))) {
 
@@ -522,11 +569,11 @@ struct lmeehfcocktailcharm {
           LOG(error) << "Something is wrong here. There should not be dielectrons with same mother.";
         }
 
-        doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi, myConfigs.fConfigMinPhi, myConfigs.fConfigMaxPhi, myConfigs.fConfigMirrorPhi, myConfigs.fConfigRejectPhi);
 
         if (particle1.cQuarkOriginId() < 0 || particle2.cQuarkOriginId() < 0 || particle1.cQuarkOriginId() != particle2.cQuarkOriginId())
           continue;
-        doPair(particle1, particle2, hLS_Mee_wPartonicCheck, hLS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi);
+        doPair(particle1, particle2, hLS_Mee_wPartonicCheck, hLS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax, myConfigs.fConfigApplyDEtaDPhi, myConfigs.fConfigMinDEta, myConfigs.fConfigMinDPhi, myConfigs.fConfigMinPhi, myConfigs.fConfigMaxPhi, myConfigs.fConfigMirrorPhi, myConfigs.fConfigRejectPhi);
       }
     }
   }
