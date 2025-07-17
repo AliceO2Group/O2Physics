@@ -7128,7 +7128,7 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
 
     std::vector<std::string> namesInputFeatures;
     if (obj.HasMember("inputFeatures") && obj["inputFeatures"].IsArray()) {
-      for (auto& feature : obj["inputFeatures"].GetArray()) {
+      for (const auto& feature : obj["inputFeatures"].GetArray()) {
         namesInputFeatures.emplace_back(feature.GetString());
       }
     }
@@ -7165,7 +7165,7 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
       std::vector<double> binCuts;
       bool exclude = false;
 
-      for (auto& sub : cut.GetObject()) {
+      for (const auto& sub : cut.GetObject()) {
         TString subKey = sub.name.GetString();
         if (!subKey.Contains("AddMLCut"))
           continue;
@@ -7190,7 +7190,7 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
     std::vector<double> binsPt;
     if (!ptBins.empty()) {
       std::set<double> binEdges;
-      for (auto& b : ptBins)
+      for (const auto& b : ptBins)
         binEdges.insert(b.first);
       binEdges.insert(ptBins.back().second);
       binsPt = std::vector<double>(binEdges.begin(), binEdges.end());
