@@ -307,16 +307,16 @@ struct ThreeParticleCorrelations {
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
-    TList* efficiencyList_ChargedParticles = ccdb->getForTimeStamp<TList>("Users/j/jstaa/Efficiency/ChargedParticles", 1);
-    TList* efficiencyList_Lambdas = ccdb->getForTimeStamp<TList>("Users/j/jstaa/Efficiency/Lambdas", 1);
-    hEffPions[0] = static_cast<TH3D*>(efficiencyList_ChargedParticles->FindObject("hEfficiencyPionP"));
-    hEffPions[1] = static_cast<TH3D*>(efficiencyList_ChargedParticles->FindObject("hEfficiencyPionN"));
-    hEffKaons[0] = static_cast<TH3D*>(efficiencyList_ChargedParticles->FindObject("hEfficiencyKaonP"));
-    hEffKaons[1] = static_cast<TH3D*>(efficiencyList_ChargedParticles->FindObject("hEfficiencyKaonN"));
-    hEffProtons[0] = static_cast<TH3D*>(efficiencyList_ChargedParticles->FindObject("hEfficiencyProtonP"));
-    hEffProtons[1] = static_cast<TH3D*>(efficiencyList_ChargedParticles->FindObject("hEfficiencyProtonN"));
-    hEffLambdas[0] = static_cast<TH3D*>(efficiencyList_Lambdas->FindObject("hEfficiencyLambdaP"));
-    hEffLambdas[1] = static_cast<TH3D*>(efficiencyList_Lambdas->FindObject("hEfficiencyLambdaN"));
+    TList* effListChargedParticles = ccdb->getForTimeStamp<TList>("Users/j/jstaa/Efficiency/ChargedParticles", 1);
+    TList* effListLambdas = ccdb->getForTimeStamp<TList>("Users/j/jstaa/Efficiency/Lambdas", 1);
+    hEffPions[0] = static_cast<TH3D*>(effListChargedParticles->FindObject("hEfficiencyPionP"));
+    hEffPions[1] = static_cast<TH3D*>(effListChargedParticles->FindObject("hEfficiencyPionN"));
+    hEffKaons[0] = static_cast<TH3D*>(effListChargedParticles->FindObject("hEfficiencyKaonP"));
+    hEffKaons[1] = static_cast<TH3D*>(effListChargedParticles->FindObject("hEfficiencyKaonN"));
+    hEffProtons[0] = static_cast<TH3D*>(effListChargedParticles->FindObject("hEfficiencyProtonP"));
+    hEffProtons[1] = static_cast<TH3D*>(effListChargedParticles->FindObject("hEfficiencyProtonN"));
+    hEffLambdas[0] = static_cast<TH3D*>(effListLambdas->FindObject("hEfficiencyLambdaP"));
+    hEffLambdas[1] = static_cast<TH3D*>(effListLambdas->FindObject("hEfficiencyLambdaN"));
   }
 
   //==========================================================================================================================================================================================================================================================================
