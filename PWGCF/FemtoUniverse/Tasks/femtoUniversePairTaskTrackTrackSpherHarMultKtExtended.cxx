@@ -729,7 +729,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// @param cols subscribe to the collisions table (Data)
   /// @param  subscribe to the femtoUniverseParticleTable
   void processMixedEventCent(FilteredFDCollisions const& cols,
-                             FilteredFemtoFullParticles const& )
+                             FilteredFemtoFullParticles const&)
   {
     randgen = new TRandom2(0);
 
@@ -769,7 +769,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// @param cols subscribe to the collisions table (Data)
   /// @param parts subscribe to the femtoUniverseParticleTable
   void processMixedEventNtr(FilteredFDCollisions const& cols,
-                            FilteredFemtoFullParticles const& )
+                            FilteredFemtoFullParticles const&)
   {
     randgen = new TRandom2(0);
 
@@ -830,7 +830,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// @param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// @param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
   void processMixedEventMCCent(o2::aod::FdCollisions const& cols,
-                               soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels> const& ,
+                               soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels> const&,
                                o2::aod::FdMCParticles const&)
   {
     randgen = new TRandom2(0);
@@ -874,7 +874,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// @param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// @param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
   void processMixedEventMCNtr(o2::aod::FdCollisions const& cols,
-                              soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels> const& ,
+                              soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels> const&,
                               o2::aod::FdMCParticles const&)
   {
     randgen = new TRandom2(0);
