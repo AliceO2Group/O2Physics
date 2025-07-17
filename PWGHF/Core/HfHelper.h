@@ -27,6 +27,7 @@
 
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 
 #include <array>
 #include <cmath>
@@ -1263,7 +1264,7 @@ class HfHelper
   /// \param mlScores vector with ml scores of charm hadron (position 0:bkg 1:prompt 2:nonprompt)
   /// \return true if b-hadron candidate passes all selections
   template <typename T1, typename T2>
-  bool applySelectionDmesMlScoresForB(const T1& cuts, const T2& binsPtC, float ptC, std::vector<float> mlScores)
+  bool applySelectionDmesMlScoresForB(const T1& cuts, const T2& binsPtC, float ptC, const std::vector<float>& mlScores)
   {
     int pTBin = o2::analysis::findBin(binsPtC, ptC);
     if (pTBin == -1) {

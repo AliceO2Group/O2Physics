@@ -327,7 +327,7 @@ struct centralityStudy {
     histos.fill(HIST("hCollisionSelection"), 15 /* pass em/upc rejection */);
 
     // if we got here, we also finally fill the FT0C histogram, please
-    histos.fill(HIST("hNPVContributors"), collision.multPVTotalContributors());
+    histos.fill(HIST("hNPVContributors"), collision.multNTracksPV());
     histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C() * scaleSignalFT0C);
     histos.fill(HIST("hFT0M_Collisions"), (collision.multFT0A() + collision.multFT0C()) * scaleSignalFT0M);
     histos.fill(HIST("hFV0A_Collisions"), collision.multFV0A() * scaleSignalFV0A);

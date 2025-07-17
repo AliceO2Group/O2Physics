@@ -17,37 +17,31 @@
 #ifndef PWGJE_CORE_JETFINDINGUTILITIES_H_
 #define PWGJE_CORE_JETFINDINGUTILITIES_H_
 
-#include <array>
-#include <vector>
-#include <string>
-#include <cmath>
-#include <memory>
-#include <TRandom3.h>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Framework/Logger.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-
-// #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetCandidateUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
 
-#include "PWGJE/Core/JetCandidateUtilities.h"
-#include "PWGJE/Core/JetHFUtilities.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+
+#include <THn.h>
+#include <TRandom3.h>
+
+#include <fastjet/ClusterSequenceArea.hh>
+#include <fastjet/PseudoJet.hh>
+
+#include <cmath>
+#include <memory>
+#include <string>
+#include <type_traits>
+#include <vector>
+
+#include <math.h>
 
 namespace jetfindingutilities
 {

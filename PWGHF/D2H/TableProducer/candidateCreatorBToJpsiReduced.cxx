@@ -32,6 +32,7 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/Logger.h>
 #include <Framework/WorkflowSpec.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
@@ -39,8 +40,6 @@
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 
 #include <TH1.h>
-
-#include <fairlogger/Logger.h>
 
 #include <array>
 #include <cmath>
@@ -421,8 +420,6 @@ struct HfCandidateCreatorBToJpsiReduced {
 struct HfCandidateCreatorBToJpsiReducedExpressions {
   Spawns<aod::HfCandBpJPExt> rowCandidateBPlus;
   Spawns<aod::HfCandBsJPExt> rowCandidateBs;
-  Spawns<aod::HfRedBach0Ext> rowTracksExt0;
-  Spawns<aod::HfRedBach1Ext> rowTracksExt1;
   Produces<aod::HfMcRecRedBps> rowBplusMcRec;
   Produces<aod::HfMcRecRedBss> rowBsMcRec;
 
@@ -436,7 +433,7 @@ struct HfCandidateCreatorBToJpsiReducedExpressions {
       bool filledMcInfo{false};
       if constexpr (decChannel == DecayChannel::BplusToJpsiK) {
         for (const auto& rowJpsiHadMcRec : rowsJpsiHadMcRec) {
-          if ((rowJpsiHadMcRec.jpsiId() != candB.jpsiId()) || (rowJpsiHadMcRec.prong1Id() != candB.bachKaId())) {
+          if ((rowJpsiHadMcRec.jpsiId() != candB.jpsiId()) || (rowJpsiHadMcRec.bachKaId() != candB.bachKaId())) {
             continue;
           }
           rowBplusMcRec(rowJpsiHadMcRec.flagMcMatchRec(), rowJpsiHadMcRec.channelMcMatchRec(), rowJpsiHadMcRec.flagWrongCollision(), rowJpsiHadMcRec.debugMcRec(), rowJpsiHadMcRec.ptMother());

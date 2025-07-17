@@ -16,6 +16,7 @@
 /// \author Mingyu Zhang <mingyu.zang@cern.ch>
 /// \author Xinye Peng  <xinye.peng@cern.ch>
 /// \author Biao Zhang <biao.zhang@cern.ch>
+/// \author Oleksii Lubynets <oleksii.lubynets@cern.ch>
 
 #include "HFInvMassFitter.h"
 
@@ -33,9 +34,6 @@
 #include <RooPolynomial.h>
 #include <RooRealVar.h>
 #include <RooWorkspace.h>
-
-#include <Rtypes.h>
-#include <RtypesCore.h>
 #include <TColor.h>
 #include <TDatabasePDG.h>
 #include <TLine.h>
@@ -44,6 +42,9 @@
 #include <TString.h>
 #include <TStyle.h>
 #include <TVirtualPad.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 #include <array>
 #include <cmath>

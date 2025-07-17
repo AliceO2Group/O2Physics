@@ -11,7 +11,7 @@
 
 o2physics_add_dpl_workflow(event-selection-qa
                            SOURCES eventSelectionQa.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2::DetectorsBase
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2::DetectorsBase O2::DataFormatsITSMFT
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lumi-qa

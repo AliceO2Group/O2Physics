@@ -34,6 +34,7 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "Framework/RunningWorkflowInfo.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
@@ -48,6 +49,7 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/Logger.h>
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/WorkflowSpec.h>
 #include <Framework/runDataProcessing.h>
@@ -57,8 +59,6 @@
 #include <TH1.h>
 #include <TH2.h>
 #include <TPDGCode.h>
-
-#include <fairlogger/Logger.h>
 
 #include <array>
 #include <cmath>
@@ -123,6 +123,7 @@ struct HfDataCreatorJpsiHadReduced {
   Produces<aod::HfCfgBpToJpsi> rowCandidateConfigBplus;
   Produces<aod::HfCfgBsToJpsis> rowCandidateConfigBs;
 
+  Configurable<bool> skipRejectedCollisions{"skipRejectedCollisions", true, "skips collisions rejected by the event selection, instead of flagging only"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
@@ -163,10 +164,12 @@ struct HfDataCreatorJpsiHadReduced {
   using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
   using TracksPidWithSelAndMc = soa::Join<TracksPidWithSel, aod::McTrackLabels>;
   using CollisionsWCMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
+  using BCsInfo = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
 
   Preslice<aod::HfCand2ProngWPid> candsJpsiPerCollision = aod::track_association::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   PresliceUnsorted<CollisionsWCMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
+  Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
 
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int runNumber;
@@ -175,13 +178,15 @@ struct HfDataCreatorJpsiHadReduced {
   bool isHfCandBhadConfigFilled = false;
 
   o2::hf_evsel::HfEventSelection hfEvSel;
+  o2::hf_evsel::HfEventSelectionMc hfEvSelMc;
+
   o2::vertexing::DCAFitterN<2> df2;
   o2::vertexing::DCAFitterN<3> df3;
   o2::vertexing::DCAFitterN<4> df4;
 
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext const&)
+  void init(InitContext& initContext)
   {
     std::array<int, 4> doProcess = {doprocessJpsiKData, doprocessJpsiKMc, doprocessJpsiPhiData, doprocessJpsiPhiMc};
     if (std::accumulate(doProcess.begin(), doProcess.end(), 0) != 1) {
@@ -270,6 +275,19 @@ struct HfDataCreatorJpsiHadReduced {
     } else if (doprocessJpsiPhiData || doprocessJpsiPhiMc) {
       invMass2JpsiHadMin = (MassBS - invMassWindowJpsiHad) * (MassBS - invMassWindowJpsiHad);
       invMass2JpsiHadMax = (MassBS + invMassWindowJpsiHad) * (MassBS + invMassWindowJpsiHad);
+    }
+
+    // init HF event selection helper
+    hfEvSel.init(registry);
+    if (doprocessJpsiKMc || doprocessJpsiPhiMc) {
+      const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+      for (const DeviceSpec& device : workflows.devices) {
+        if (device.name.compare("hf-data-creator-jpsi-had-reduced") == 0) {
+          // init HF event selection helper
+          hfEvSelMc.init(device, registry);
+          break;
+        }
+      }
     }
   }
 
@@ -513,10 +531,23 @@ struct HfDataCreatorJpsiHadReduced {
   }
 
   template <uint8_t decChannel>
-  void runMcGen(aod::McParticles const& particlesMc)
+  void runMcGen(aod::McCollision const& mcCollision,
+                aod::McParticles const& particlesMc,
+                CollisionsWCMcLabels const& collisions,
+                BCsInfo const&)
   {
+    // Check event selection
+    float centDummy{-1.f}, centFT0C{-1.f}, centFT0M{-1.f};
+    const auto collSlice = collisions.sliceBy(colPerMcCollision, mcCollision.globalIndex());
+    auto hfRejMap = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::None>(mcCollision, collSlice, centDummy);
+    if (skipRejectedCollisions && hfRejMap != 0) {
+      return;
+    }
+
+    const auto mcParticlesPerMcColl = particlesMc.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
+
     // Match generated particles.
-    for (const auto& particle : particlesMc) {
+    for (const auto& particle : mcParticlesPerMcColl) {
       int8_t sign{0}, flag{0}, channel{0};
       if constexpr (decChannel == DecayChannel::BplusToJpsiK) {
         // B+ → J/Psi K+ → (µ+µ-) K+
@@ -557,7 +588,7 @@ struct HfDataCreatorJpsiHadReduced {
         }
         rowHfBpMcGenReduced(flag, channel, ptParticle, yParticle, etaParticle,
                             ptProngs[0], yProngs[0], etaProngs[0],
-                            ptProngs[1], yProngs[1], etaProngs[1]);
+                            ptProngs[1], yProngs[1], etaProngs[1], hfRejMap, centFT0C, centFT0M);
       } else if constexpr (decChannel == DecayChannel::BsToJpsiPhi) {
         // Bs → J/Psi phi → (µ+µ-) (K+K-)
         if (RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kBS, std::array{static_cast<int>(Pdg::kJPsi), +kKPlus, -kKPlus}, true, &sign, 2)) {
@@ -597,21 +628,28 @@ struct HfDataCreatorJpsiHadReduced {
         }
         rowHfBsMcGenReduced(flag, channel, ptParticle, yParticle, etaParticle,
                             ptProngs[0], yProngs[0], etaProngs[0],
-                            ptProngs[1], yProngs[1], etaProngs[1]);
+                            ptProngs[1], yProngs[1], etaProngs[1], hfRejMap, centFT0C, centFT0M);
       }
     } // gen
   }
 
   // Jpsi candidate selection
-  template <bool doMc, uint8_t decChannel, typename Coll, typename JpsiCands, typename TTracks, typename PParticles>
+  template <bool doMc, uint8_t decChannel, typename Coll, typename JpsiCands, typename TTracks, typename PParticles, typename BBCs>
   void runDataCreation(Coll const& collision,
                        JpsiCands const& candsJpsi,
                        aod::TrackAssoc const& trackIndices,
                        TTracks const&,
                        PParticles const& particlesMc,
                        uint64_t const& indexCollisionMaxNumContrib,
-                       aod::BCsWithTimestamps const&)
+                       BBCs const&)
   {
+
+    registry.fill(HIST("hEvents"), 1 + Event::Processed);
+    float centrality = -1.f;
+    auto hfRejMap = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+    if (skipRejectedCollisions && hfRejMap != 0) {
+      return;
+    }
 
     // helpers for ReducedTables filling
     int indexHfReducedCollision = hfReducedCollision.lastIndex() + 1;
@@ -627,7 +665,7 @@ struct HfDataCreatorJpsiHadReduced {
     // Set the magnetic field from ccdb.
     // The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
     // but this is not true when running on Run2 data/MC already converted into AO2Ds.
-    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    auto bc = collision.template bc_as<BBCs>();
     if (runNumber != bc.runNumber()) {
       LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
       o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, bc.timestamp());
@@ -960,14 +998,11 @@ struct HfDataCreatorJpsiHadReduced {
       }
     } // candsJpsi loop
 
-    registry.fill(HIST("hEvents"), 1 + Event::Processed);
     if (!fillHfReducedCollision) {
       registry.fill(HIST("hEvents"), 1 + Event::NoCharmHadPiSelected);
       return;
     }
     registry.fill(HIST("hEvents"), 1 + Event::CharmHadPiSelected);
-    float centrality = -1.f;
-    uint16_t hfRejMap = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
     // fill collision table if it contains a J/Psi K pair at minimum
     hfReducedCollision(collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), hfRejMap, bz);
     hfReducedCollExtra(collision.covXX(), collision.covXY(), collision.covYY(),
@@ -1048,8 +1083,8 @@ struct HfDataCreatorJpsiHadReduced {
                       aod::TrackAssoc const& trackIndices,
                       TracksPidWithSelAndMc const& tracks,
                       aod::McParticles const& particlesMc,
-                      aod::BCsWithTimestamps const& bcs,
-                      McCollisions const&)
+                      BCsInfo const& bcs,
+                      McCollisions const& mcCollisions)
   {
     // store configurables needed for B+ workflow
     if (!isHfCandBhadConfigFilled) {
@@ -1074,7 +1109,9 @@ struct HfDataCreatorJpsiHadReduced {
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
-    runMcGen<DecayChannel::BplusToJpsiK>(particlesMc);
+    for (const auto& mcCollision : mcCollisions) {
+      runMcGen<DecayChannel::BplusToJpsiK>(mcCollision, particlesMc, collisions, bcs);
+    }
   }
   PROCESS_SWITCH(HfDataCreatorJpsiHadReduced, processJpsiKMc, "Process J/Psi K with MC info", false);
 
@@ -1083,8 +1120,8 @@ struct HfDataCreatorJpsiHadReduced {
                         aod::TrackAssoc const& trackIndices,
                         TracksPidWithSelAndMc const& tracks,
                         aod::McParticles const& particlesMc,
-                        aod::BCsWithTimestamps const& bcs,
-                        McCollisions const&)
+                        BCsInfo const& bcs,
+                        McCollisions const& mcCollisions)
   {
     // store configurables needed for B+ workflow
     if (!isHfCandBhadConfigFilled) {
@@ -1109,7 +1146,9 @@ struct HfDataCreatorJpsiHadReduced {
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
-    runMcGen<DecayChannel::BsToJpsiPhi>(particlesMc);
+    for (const auto& mcCollision : mcCollisions) {
+      runMcGen<DecayChannel::BsToJpsiPhi>(mcCollision, particlesMc, collisions, bcs);
+    }
   }
   PROCESS_SWITCH(HfDataCreatorJpsiHadReduced, processJpsiPhiMc, "Process J/Psi phi with MC info", false);
 };

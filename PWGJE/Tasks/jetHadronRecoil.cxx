@@ -13,34 +13,38 @@
 /// \brief Task for analysing hadron triggered events.
 /// \author Daniel Jones <djones22@liverpool.ac.uk>
 
-#include <vector>
-#include <string>
+#include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetFinder.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include "CommonConstants/MathConstants.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
 
 #include "TRandom3.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <fastjet/ClusterSequenceArea.hh>
+#include <fastjet/JetDefinition.hh>
+#include <fastjet/PseudoJet.hh>
 
-#include "CommonConstants/MathConstants.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/Core/JetFindingUtilities.h"
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-
-#include "EventFiltering/filterTables.h"
-
-#include "PWGJE/DataModel/JetSubstructure.h"
+#include <cmath>
+#include <cstdlib>
+#include <string>
+#include <type_traits>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -526,16 +530,17 @@ struct JetHadronRecoil {
 
           float dphip = RecoDecay::constrainAngle(jetTag.phi() - phiTTPart);
           dRp = getWTAaxisDifference(jetTag, mcpjetsWTA, particles, true);
-
-          registry.fill(HIST("hPtMatched"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), weight);
-          registry.fill(HIST("hPhiMatched"), dphi, dphip, weight);
-          registry.fill(HIST("hPtResolution"), jetTag.pt(), (jetTag.pt() - (jetBase.pt() - (rho * jetBase.area()))) / jetTag.pt(), weight);
-          registry.fill(HIST("hPhiResolution"), dphip, dphip - dphi, weight);
-          registry.fill(HIST("hDeltaRMatched"), dR, dRp, weight);
-          registry.fill(HIST("hDeltaRResolution"), jetTag.pt(), dRp - dR, weight);
-          registry.fill(HIST("hFullMatching"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), dphi, dphip, dR, dRp, weight);
-          registry.fill(HIST("hPtMatched1d"), jetTag.pt(), weight);
-          registry.fill(HIST("hDeltaRMatched1d"), dRp, weight);
+          if ((std::abs(dphi - o2::constants::math::PI) < 0.6) || (std::abs(dphip - o2::constants::math::PI) < 0.6)) {
+            registry.fill(HIST("hPtMatched"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), weight);
+            registry.fill(HIST("hPhiMatched"), dphi, dphip, weight);
+            registry.fill(HIST("hPtResolution"), jetTag.pt(), (jetTag.pt() - (jetBase.pt() - (rho * jetBase.area()))) / jetTag.pt(), weight);
+            registry.fill(HIST("hPhiResolution"), dphip, dphip - dphi, weight);
+            registry.fill(HIST("hDeltaRMatched"), dR, dRp, weight);
+            registry.fill(HIST("hDeltaRResolution"), jetTag.pt(), dRp - dR, weight);
+            registry.fill(HIST("hFullMatching"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), dphi, dphip, dR, dRp, weight);
+            registry.fill(HIST("hPtMatched1d"), jetTag.pt(), weight);
+            registry.fill(HIST("hDeltaRMatched1d"), dRp, weight);
+          }
         }
       }
     }
