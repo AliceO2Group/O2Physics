@@ -214,10 +214,9 @@ struct HfDerivedDataCreatorXicToXiPiPi {
     }
   }
 
-  template <bool isMl, bool isMc, bool onlyBkg, bool onlySig, typename CollType, typename CandType, typename CandCascadeType>
+  template <bool isMl, bool isMc, bool onlyBkg, bool onlySig, typename CollType, typename CandType>
   void processCandidates(CollType const& collisions,
                          Partition<CandType>& candidates,
-                         CandCascadeType const&,
                          TracksWPid const&,
                          aod::BCs const&)
   {
@@ -299,11 +298,10 @@ struct HfDerivedDataCreatorXicToXiPiPi {
 
   void processData(CollisionsWCentMult const& collisions,
                    SelectedCandidates const&,
-                   THfCandDaughtersMl const& candidatesDaughters,
                    TracksWPid const& tracks,
                    aod::BCs const& bcs)
   {
-    processCandidates<false, false, false, false>(collisions, candidatesAll, candidatesDaughters, tracks, bcs);
+    processCandidates<false, false, false, false>(collisions, candidatesAll, tracks, bcs);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorXicToXiPiPi, processData, "Process data", true);
 
@@ -311,12 +309,11 @@ struct HfDerivedDataCreatorXicToXiPiPi {
                     SelectedCandidatesMc const&,
                     TypeMcCollisions const& mcCollisions,
                     MatchedGenCandidatesMc const& mcParticles,
-                    THfCandDaughtersMl const& candidatesDaughters,
                     TracksWPid const& tracks,
                     aod::BCs const& bcs)
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
-    processCandidates<false, true, false, true>(collisions, candidatesMcSig, candidatesDaughters, tracks, bcs);
+    processCandidates<false, true, false, true>(collisions, candidatesMcSig, tracks, bcs);
     rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorXicToXiPiPi, processMcSig, "Process MC only for signals", false);
@@ -325,12 +322,11 @@ struct HfDerivedDataCreatorXicToXiPiPi {
                     SelectedCandidatesMc const&,
                     TypeMcCollisions const& mcCollisions,
                     MatchedGenCandidatesMc const& mcParticles,
-                    THfCandDaughtersMl const& candidatesDaughters,
                     TracksWPid const& tracks,
                     aod::BCs const& bcs)
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
-    processCandidates<false, true, true, false>(collisions, candidatesMcBkg, candidatesDaughters, tracks, bcs);
+    processCandidates<false, true, true, false>(collisions, candidatesMcBkg, tracks, bcs);
     rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorXicToXiPiPi, processMcBkg, "Process MC only for background", false);
@@ -339,12 +335,11 @@ struct HfDerivedDataCreatorXicToXiPiPi {
                     SelectedCandidatesMc const&,
                     TypeMcCollisions const& mcCollisions,
                     MatchedGenCandidatesMc const& mcParticles,
-                    THfCandDaughtersMl const& candidatesDaughters,
                     TracksWPid const& tracks,
                     aod::BCs const& bcs)
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
-    processCandidates<false, true, false, false>(collisions, candidatesMcAll, candidatesDaughters, tracks, bcs);
+    processCandidates<false, true, false, false>(collisions, candidatesMcAll, tracks, bcs);
     rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorXicToXiPiPi, processMcAll, "Process MC", false);
@@ -353,11 +348,10 @@ struct HfDerivedDataCreatorXicToXiPiPi {
 
   void processDataMl(CollisionsWCentMult const& collisions,
                      SelectedCandidatesMl const&,
-                     THfCandDaughtersMl const& candidatesDaughters,
                      TracksWPid const& tracks,
                      aod::BCs const& bcs)
   {
-    processCandidates<true, false, false, false>(collisions, candidatesMlAll, candidatesDaughters, tracks, bcs);
+    processCandidates<true, false, false, false>(collisions, candidatesMlAll, tracks, bcs);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorXicToXiPiPi, processDataMl, "Process data with ML", false);
 
@@ -365,12 +359,11 @@ struct HfDerivedDataCreatorXicToXiPiPi {
                       SelectedCandidatesMcMl const&,
                       TypeMcCollisions const& mcCollisions,
                       MatchedGenCandidatesMc const& mcParticles,
-                      THfCandDaughtersMl const& candidatesDaughters,
                       TracksWPid const& tracks,
                       aod::BCs const& bcs)
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
-    processCandidates<true, true, false, true>(collisions, candidatesMcMlSig, candidatesDaughters, tracks, bcs);
+    processCandidates<true, true, false, true>(collisions, candidatesMcMlSig, tracks, bcs);
     rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorXicToXiPiPi, processMcMlSig, "Process MC with ML only for signals", false);
@@ -379,12 +372,11 @@ struct HfDerivedDataCreatorXicToXiPiPi {
                       SelectedCandidatesMcMl const&,
                       TypeMcCollisions const& mcCollisions,
                       MatchedGenCandidatesMc const& mcParticles,
-                      THfCandDaughtersMl const& candidatesDaughters,
                       TracksWPid const& tracks,
                       aod::BCs const& bcs)
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
-    processCandidates<true, true, true, false>(collisions, candidatesMcMlBkg, candidatesDaughters, tracks, bcs);
+    processCandidates<true, true, true, false>(collisions, candidatesMcMlBkg, tracks, bcs);
     rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorXicToXiPiPi, processMcMlBkg, "Process MC with ML only for background", false);
@@ -393,12 +385,11 @@ struct HfDerivedDataCreatorXicToXiPiPi {
                       SelectedCandidatesMcMl const&,
                       TypeMcCollisions const& mcCollisions,
                       MatchedGenCandidatesMc const& mcParticles,
-                      THfCandDaughtersMl const& candidatesDaughters,
                       TracksWPid const& tracks,
                       aod::BCs const& bcs)
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
-    processCandidates<true, true, false, false>(collisions, candidatesMcMlAll, candidatesDaughters, tracks, bcs);
+    processCandidates<true, true, false, false>(collisions, candidatesMcMlAll, tracks, bcs);
     rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorXicToXiPiPi, processMcMlAll, "Process MC with ML", false);
