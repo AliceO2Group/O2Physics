@@ -42,6 +42,7 @@
 #include <cmath>
 #include <iostream>
 #include <vector>
+#include <map>
 
 using namespace o2;
 using namespace o2::framework;
