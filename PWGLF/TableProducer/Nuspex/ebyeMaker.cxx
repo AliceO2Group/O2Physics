@@ -556,7 +556,9 @@ struct EbyeMaker {
       if (track.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet && std::abs(track.eta()) < trklEtaMax && !(doprocessRun3 || doprocessMcRun3)) { // tracklet
         nTrackletsColl++;
       }
-
+      else if (std::abs(track.eta()) < trklEtaMax && track.itsNcls() > 3 && (doprocessRun3 || doprocessMcRun3)) { // ITS only + global tracks
+        nTrackletsColl++;
+      }
       if (!selectTrack(track)) {
         continue;
       }
@@ -925,7 +927,7 @@ struct EbyeMaker {
       histos.fill(HIST("QA/PvMultVsCent"), centrality, collision.numContrib());
       fillRecoEvent(collision, tracks, v0TableThisCollision, centrality);
 
-      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, 0x0, centrality, nTracksColl);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, nTrackletsColl, centrality, nTracksColl);
 
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
@@ -1104,7 +1106,7 @@ struct EbyeMaker {
       fillMcEvent(collision, tracks, v0TableThisCollision, centrality, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
-      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), nChPartGen, 0x0, centrality, nTracksColl);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), nChPartGen, nTrackletsColl, centrality, nTracksColl);
 
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         int selMask = -1;
