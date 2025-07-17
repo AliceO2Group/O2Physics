@@ -299,12 +299,26 @@ struct DetectorOccupancyQaTask {
       histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_pos", ";#varphi;n tracks", kTH3D, {axisPhi, axisOccupForKine, axisPtForKine});
       histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_neg", ";#varphi;n tracks", kTH3D, {axisPhi, axisOccupForKine, axisPtForKine});
 
+      histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hPt_pos", ";p_{T};weighted occupancy", kTH2D, {axisLogPt, axisOccupForKine});
+      histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hPt_neg", ";p_{T};weighted occupancy", kTH2D, {axisLogPt, axisOccupForKine});
+      histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hEta_pos", ";#eta;weighted occupancy", kTH2D, {axisEta, axisOccupForKine});
+      histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hEta_neg", ";#eta;weighted occupancy", kTH2D, {axisEta, axisOccupForKine});
+      histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hPhi_pos", ";#varphi;n tracks", kTH3D, {axisPhi, axisOccupForKine, axisPtForKine});
+      histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hPhi_neg", ";#varphi;n tracks", kTH3D, {axisPhi, axisOccupForKine, axisPtForKine});
+
       histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPt_pos", ";p_{T};weighted occupancy", kTH2D, {axisLogPt, axisOccupForKine});
       histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPt_neg", ";p_{T};weighted occupancy", kTH2D, {axisLogPt, axisOccupForKine});
       histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hEta_pos", ";#eta;weighted occupancy", kTH2D, {axisEta, axisOccupForKine});
       histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hEta_neg", ";#eta;weighted occupancy", kTH2D, {axisEta, axisOccupForKine});
       histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPhi_pos", ";#varphi;n tracks", kTH3D, {axisPhi, axisOccupForKine, axisPtForKine});
       histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPhi_neg", ";#varphi;n tracks", kTH3D, {axisPhi, axisOccupForKine, axisPtForKine});
+
+      histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hPt_pos", ";p_{T};weighted occupancy", kTH2D, {axisLogPt, axisOccupForKine});
+      histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hPt_neg", ";p_{T};weighted occupancy", kTH2D, {axisLogPt, axisOccupForKine});
+      histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hEta_pos", ";#eta;weighted occupancy", kTH2D, {axisEta, axisOccupForKine});
+      histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hEta_neg", ";#eta;weighted occupancy", kTH2D, {axisEta, axisOccupForKine});
+      histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hPhi_pos", ";#varphi;n tracks", kTH3D, {axisPhi, axisOccupForKine, axisPtForKine});
+      histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hPhi_neg", ";#varphi;n tracks", kTH3D, {axisPhi, axisOccupForKine, axisPtForKine});
 
       AxisSpec axisLogPtFor2D{50, 0.05, 10, "p_{T}"};
       AxisSpec axisLogPtTpcFor2D{50, 0.05, 10, "p_{T} TPC inner"};
@@ -318,12 +332,12 @@ struct DetectorOccupancyQaTask {
       // end of July 2025: to compare data and MC (pt, eta, phi)
 
       // 3D: pt vs centr vs occup
-      if (confFlagManyHeavyHistos) {
-        histos.add("ptGlobal_vs_centr_vs_occup", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisLogPt});
-        histos.add("ptPV_vs_centr_vs_occup", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisLogPt});
-        histos.add("ptGlobal_vs_centr_vs_occup_NoCollStd", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisLogPt});
-        histos.add("ptPV_vs_centr_vs_occup_NoCollStd", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisLogPt});
-      }
+      // if (confFlagManyHeavyHistos) {
+      //   histos.add("ptGlobal_vs_centr_vs_occup", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisLogPt});
+      //   histos.add("ptPV_vs_centr_vs_occup", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisLogPt});
+      //   histos.add("ptGlobal_vs_centr_vs_occup_NoCollStd", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisLogPt});
+      //   histos.add("ptPV_vs_centr_vs_occup_NoCollStd", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisLogPt});
+      // }
     }
     // 2D
     int nBins3D = 80 * confOccupancyHistCoeffNbins3D;
@@ -990,7 +1004,7 @@ struct DetectorOccupancyQaTask {
         // nPV++;
 
         // July 2025: more for data vs MC:
-        if (track.hasTPC() && col.sel8() && occupancy >= 0) {
+        if (track.hasTPC() && occupancy >= 0) {
           float pt = track.pt();
           // pt 0.2-0.5
           if (pt > 0.2 && pt < 0.5) {
@@ -1199,8 +1213,10 @@ struct DetectorOccupancyQaTask {
             continue;
           if (track.itsNCls() < 5)
             continue;
-          if (!(track.isGlobalTrack() && track.tpcNClsFound() >= confCutMinTPCcls))
-            continue;
+          // if (!(track.isGlobalTrack() && track.tpcNClsFound() >= confCutMinTPCcls))
+          // continue;
+
+          bool isGoodGlobal = (track.isGlobalTrack() && track.tpcNClsFound() >= confCutMinTPCcls);
 
           // ### kine distr vs centr vs occup
           float sign = track.sign();
@@ -1209,93 +1225,121 @@ struct DetectorOccupancyQaTask {
           float phi = track.phi();
 
           if (occupancy >= 0 && fabs(eta) < 0.8 && pt > 0.15) {
-            if (confFlagManyHeavyHistos) {
-              histos.fill(HIST("ptGlobal_vs_centr_vs_occup"), nPV, occupancy, pt);
-              histos.fill(HIST("ptPV_vs_centr_vs_occup"), nPV, occupancy, pt);
-              if (col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-                histos.fill(HIST("ptGlobal_vs_centr_vs_occup_NoCollStd"), nPV, occupancy, pt);
-                histos.fill(HIST("ptPV_vs_centr_vs_occup_NoCollStd"), nPV, occupancy, pt);
-              }
-            }
+            // if (confFlagManyHeavyHistos) {
+            //   histos.fill(HIST("ptGlobal_vs_centr_vs_occup"), nPV, occupancy, pt);
+            //   histos.fill(HIST("ptPV_vs_centr_vs_occup"), nPV, occupancy, pt);
+            //   if (col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+            //     histos.fill(HIST("ptGlobal_vs_centr_vs_occup_NoCollStd"), nPV, occupancy, pt);
+            //     histos.fill(HIST("ptPV_vs_centr_vs_occup_NoCollStd"), nPV, occupancy, pt);
+            //   }
+            // }
 
             if (nPV >= 10 && nPV < 200) {
-              if (flagWhichDeltaTimeWin == 1 && flagNoCollNearby) {
-                histos.fill(HIST("track_distr_nITStrThisEv_10_200/hEta_lowOccupInTPC"), eta);
-                histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPhi_lowOccupInTPC"), phi);
-                histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPt_lowOccupInTPC"), pt);
-              }
-              if (flagWhichDeltaTimeWin == 2 && flagNoCollNearby) {
-                histos.fill(HIST("track_distr_nITStrThisEv_10_200/hEta_highOccupInRecentPast"), eta);
-                histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPhi_highOccupInRecentPast"), phi);
-                histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPt_highOccupInRecentPast"), pt);
-              }
-              if (flagWhichDeltaTimeWin == 3 && flagNoCollNearby) {
-                histos.fill(HIST("track_distr_nITStrThisEv_10_200/hEta_highOccupInCloseFuture"), eta);
-                histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPhi_highOccupInCloseFuture"), phi);
-                histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPt_highOccupInCloseFuture"), pt);
-              }
-              if (flagWhichDeltaTimeWin == 4 && flagNoCollNearby) {
-                histos.fill(HIST("track_distr_nITStrThisEv_10_200/hEta_highOccupInDistantFuture"), eta);
-                histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPhi_highOccupInDistantFuture"), phi);
-                histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPt_highOccupInDistantFuture"), pt);
-              }
-              if (flagWhichDeltaTimeWin == 5) {
-                histos.fill(HIST("track_distr_nITStrThisEv_10_200/hEta_highOccupInNeighbourEvents"), eta);
-                histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPhi_highOccupInNeighbourEvents"), phi);
-                histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPt_highOccupInNeighbourEvents"), pt);
-              }
+              if (isGoodGlobal) {
+                if (flagWhichDeltaTimeWin == 1 && flagNoCollNearby) {
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/hEta_lowOccupInTPC"), eta);
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPhi_lowOccupInTPC"), phi);
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPt_lowOccupInTPC"), pt);
+                }
+                if (flagWhichDeltaTimeWin == 2 && flagNoCollNearby) {
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/hEta_highOccupInRecentPast"), eta);
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPhi_highOccupInRecentPast"), phi);
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPt_highOccupInRecentPast"), pt);
+                }
+                if (flagWhichDeltaTimeWin == 3 && flagNoCollNearby) {
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/hEta_highOccupInCloseFuture"), eta);
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPhi_highOccupInCloseFuture"), phi);
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPt_highOccupInCloseFuture"), pt);
+                }
+                if (flagWhichDeltaTimeWin == 4 && flagNoCollNearby) {
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/hEta_highOccupInDistantFuture"), eta);
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPhi_highOccupInDistantFuture"), phi);
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPt_highOccupInDistantFuture"), pt);
+                }
+                if (flagWhichDeltaTimeWin == 5) {
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/hEta_highOccupInNeighbourEvents"), eta);
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPhi_highOccupInNeighbourEvents"), phi);
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPt_highOccupInNeighbourEvents"), pt);
+                }
+                histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPt_vs_tpcInnerPt_vs_occup"), pt, track.tpcInnerParam(), occupancy);
+              } // end of TPC good global
 
               // July 2025: for data vs MC kine distr comparison
-              if (sign > 0) {
-                histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPt_pos"), pt, occupancy);
-                histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hEta_pos"), eta, occupancy);
-                histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_pos"), phi, occupancy, pt);
-              } else {
-                histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPt_neg"), pt, occupancy);
-                histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hEta_neg"), eta, occupancy);
-                histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_neg"), phi, occupancy, pt);
+              if (sign > 0) // positive
+              {
+                histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hPt_pos"), pt, occupancy);
+                histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hEta_pos"), eta, occupancy);
+                histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hPhi_pos"), phi, occupancy, pt);
+                if (isGoodGlobal) {
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPt_pos"), pt, occupancy);
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hEta_pos"), eta, occupancy);
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_pos"), phi, occupancy, pt);
+                }
+              } else // negative
+              {
+                histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hPt_neg"), pt, occupancy);
+                histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hEta_neg"), eta, occupancy);
+                histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hPhi_neg"), phi, occupancy, pt);
+                if (track.hasTPC()) {
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPt_neg"), pt, occupancy);
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hEta_neg"), eta, occupancy);
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_neg"), phi, occupancy, pt);
+                }
               }
-              histos.fill(HIST("track_distr_nITStrThisEv_10_200/hPt_vs_tpcInnerPt_vs_occup"), pt, track.tpcInnerParam(), occupancy);
               // end of July 2025: for data vs MC kine distr comparison
 
             } else if (nPV >= 2000) {
-              if (flagWhichDeltaTimeWin == 1 && flagNoCollNearby) {
-                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hEta_lowOccupInTPC"), eta);
-                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPhi_lowOccupInTPC"), phi);
-                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPt_lowOccupInTPC"), pt);
-              }
-              if (flagWhichDeltaTimeWin == 2 && flagNoCollNearby) {
-                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hEta_highOccupInRecentPast"), eta);
-                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInRecentPast"), phi);
-                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPt_highOccupInRecentPast"), pt);
-              }
-              if (flagWhichDeltaTimeWin == 3 && flagNoCollNearby) {
-                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hEta_highOccupInCloseFuture"), eta);
-                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInCloseFuture"), phi);
-                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPt_highOccupInCloseFuture"), pt);
-              }
-              if (flagWhichDeltaTimeWin == 4 && flagNoCollNearby) {
-                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hEta_highOccupInDistantFuture"), eta);
-                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInDistantFuture"), phi);
-                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPt_highOccupInDistantFuture"), pt);
-              }
-              if (flagWhichDeltaTimeWin == 5) {
-                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hEta_highOccupInNeighbourEvents"), eta);
-                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInNeighbourEvents"), phi);
-                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPt_highOccupInNeighbourEvents"), pt);
-              }
+              if (isGoodGlobal) {
+                if (flagWhichDeltaTimeWin == 1 && flagNoCollNearby) {
+                  histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hEta_lowOccupInTPC"), eta);
+                  histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPhi_lowOccupInTPC"), phi);
+                  histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPt_lowOccupInTPC"), pt);
+                }
+                if (flagWhichDeltaTimeWin == 2 && flagNoCollNearby) {
+                  histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hEta_highOccupInRecentPast"), eta);
+                  histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInRecentPast"), phi);
+                  histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPt_highOccupInRecentPast"), pt);
+                }
+                if (flagWhichDeltaTimeWin == 3 && flagNoCollNearby) {
+                  histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hEta_highOccupInCloseFuture"), eta);
+                  histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInCloseFuture"), phi);
+                  histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPt_highOccupInCloseFuture"), pt);
+                }
+                if (flagWhichDeltaTimeWin == 4 && flagNoCollNearby) {
+                  histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hEta_highOccupInDistantFuture"), eta);
+                  histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInDistantFuture"), phi);
+                  histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPt_highOccupInDistantFuture"), pt);
+                }
+                if (flagWhichDeltaTimeWin == 5) {
+                  histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hEta_highOccupInNeighbourEvents"), eta);
+                  histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPhi_highOccupInNeighbourEvents"), phi);
+                  histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPt_highOccupInNeighbourEvents"), pt);
+                }
+                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPt_vs_tpcInnerPt_vs_occup"), pt, track.tpcInnerParam(), occupancy);
+              } // end of TPC good global
 
               // July 2025: for data vs MC kine distr comparison
-              if (sign > 0) {
-                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPt_pos"), pt, occupancy);
-                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hEta_pos"), eta, occupancy);
-                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPhi_pos"), phi, occupancy, pt);
-              } else {
-                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPt_neg"), pt, occupancy);
-                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hEta_neg"), eta, occupancy);
-                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPhi_neg"), phi, occupancy, pt);
+              if (sign > 0) // positive
+              {
+                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hPt_pos"), pt, occupancy);
+                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hEta_pos"), eta, occupancy);
+                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hPhi_pos"), phi, occupancy, pt);
+                if (isGoodGlobal) {
+                  histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPt_pos"), pt, occupancy);
+                  histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hEta_pos"), eta, occupancy);
+                  histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPhi_pos"), phi, occupancy, pt);
+                }
+              } else // negative
+              {
+                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hPt_neg"), pt, occupancy);
+                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hEta_neg"), eta, occupancy);
+                histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hPhi_neg"), phi, occupancy, pt);
+                if (track.hasTPC()) {
+                  histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPt_neg"), pt, occupancy);
+                  histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hEta_neg"), eta, occupancy);
+                  histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPhi_neg"), phi, occupancy, pt);
+                }
               }
-              histos.fill(HIST("track_distr_nITStrThisEv_above_2000/hPt_vs_tpcInnerPt_vs_occup"), pt, track.tpcInnerParam(), occupancy);
               // end of July 2025: for data vs MC kine distr comparison
             } // end of if (nPV >= 2000)
           } // end of if (occupancy >= 0)
