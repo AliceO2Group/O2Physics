@@ -287,12 +287,12 @@ struct HfDerivedDataCreatorXicToXiPiPi {
         float massXicToXiPiPi = candidate.invMassXicPlus();
         double ct = hfHelper.ctXic(candidate);
         double y = hfHelper.yXic(candidate);
-        std::vector<float> mlScoreXicToXiPiPi;
+        std::vector<float> mlScoresXicToXiPiPi;
         if constexpr (isMl) {
-          std::copy(candidate.mlProbXicToXiPiPi().begin(), candidate.mlProbXicToXiPiPi().end(), std::back_inserter(mlScoreXicToXiPiPi));
+          std::copy(candidate.mlProbXicToXiPiPi().begin(), candidate.mlProbXicToXiPiPi().end(), std::back_inserter(mlScoresXicToXiPiPi));
         }
         // FIXME: Remove candFlag?
-        fillTablesCandidate(candidate, 1, massXicToXiPiPi, ct, y, flagMcRec, origin, mlScoreXicToXiPiPi);
+        fillTablesCandidate(candidate, 1, massXicToXiPiPi, ct, y, flagMcRec, origin, mlScoresXicToXiPiPi);
       }
     }
   }
