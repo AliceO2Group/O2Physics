@@ -172,7 +172,7 @@ struct HfFemtoDreamProducerDplus {
 
   using GeneratedMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
 
-  Filter filterSelectCandidateDplus = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus  || aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus);
+  Filter filterSelectCandidateDplus = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus || aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus);
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry trackRegistry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -560,7 +560,7 @@ struct HfFemtoDreamProducerDplus {
     // Filling particle properties
     rowCandCharmHadGen.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain:: DplusToPiKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
         rowCandCharmHadGen(
           particle.mcCollisionId(),
           particle.flagMcMatchGen(),
