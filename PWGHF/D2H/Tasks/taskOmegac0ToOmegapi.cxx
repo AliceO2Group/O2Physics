@@ -276,10 +276,10 @@ struct HfTaskOmegac0ToOmegapi {
       auto numPvContributors = candidate.template collision_as<CollType>().numContrib();
 
       if constexpr (applyMl) {
-        registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), candidate.mlProbOmegac()[0], candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(), candidate.ptBhadMotherPart(), candidate.originRec(), candidate.flagMcMatchRec(), numPvContributors);
+        registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), candidate.mlProbOmegac()[0], candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(), candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), numPvContributors);
 
       } else {
-        registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(), candidate.ptBhadMotherPart(), candidate.originRec(), candidate.flagMcMatchRec(), numPvContributors);
+        registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(), candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), numPvContributors);
       }
     }
 
@@ -298,7 +298,7 @@ struct HfTaskOmegac0ToOmegapi {
         maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
       }
 
-      if (particle.originGen() == RecoDecay::OriginType::Prompt) {
+      if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
         registry.fill(HIST("hSparseAcc"), ptGen, -1., yGen, RecoDecay::OriginType::Prompt, maxNumContrib);
       } else {
         float ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
