@@ -187,7 +187,7 @@ struct HfFemtoDreamProducer {
 
   using GeneratedMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
 
-  Filter filterSelectCandidateDplus = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagHadron  || aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagHadron);
+  Filter filterSelectCandidateDplus = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagHadron || aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagHadron);
   Filter filterSelectCandidateLc = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagHadron || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagHadron);
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -472,7 +472,7 @@ struct HfFemtoDreamProducer {
       auto trackPos1 = candidate.template prong0_as<TrackType>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.template prong1_as<TrackType>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.template prong2_as<TrackType>(); // positive daughter (negative for the antiparticles)
-      
+
       auto bc = col.template bc_as<aod::BCsWithTimestamps>();
       int64_t timeStamp = bc.timestamp();
       auto fillTable = [&](int CandFlag,
@@ -510,34 +510,34 @@ struct HfFemtoDreamProducer {
           }
       } };
 
-      if constexpr(channel == DecayChannel::DplusToPiKPi) {
+      if constexpr (channel == DecayChannel::DplusToPiKPi) {
         if constexpr (useCharmMl) {
           /// fill with ML information
-          /// BDT index 0: bkg score; BDT index 1: prompt score; BDT index 2: non-prompt score  
+          /// BDT index 0: bkg score; BDT index 1: prompt score; BDT index 2: non-prompt score
           if (applyMlMode == FillMlFromSelector) {
             if (candidate.mlProbDplusToPiKPi().size() > 0) {
               outputMlDplus.at(0) = candidate.mlProbDplusToPiKPi()[0]; /// bkg score
               outputMlDplus.at(1) = candidate.mlProbDplusToPiKPi()[1]; /// prompt score
               outputMlDplus.at(2) = candidate.mlProbDplusToPiKPi()[2]; /// non-prompt score
-              }
-          } else if (applyMlMode == FillMlFromNewBDT) {
-              isSelectedMlDplusToPiKPi = false;
-              if (candidate.mlProbDplusToPiKPi().size() > 0) {
-                std::vector<float> inputFeaturesDplusToPiKPi = hfMlResponseDplus.getInputFeatures(candidate);
-                isSelectedMlDplusToPiKPi = hfMlResponseDplus.isSelectedMl(inputFeaturesDplusToPiKPi, candidate.pt(), outputMlDplus);
-              }
-              if (!isSelectedMlDplusToPiKPi)
-                continue;
-            } else {
-              LOGF(fatal, "Please check your Ml configuration!!");
             }
+          } else if (applyMlMode == FillMlFromNewBDT) {
+            isSelectedMlDplusToPiKPi = false;
+            if (candidate.mlProbDplusToPiKPi().size() > 0) {
+              std::vector<float> inputFeaturesDplusToPiKPi = hfMlResponseDplus.getInputFeatures(candidate);
+              isSelectedMlDplusToPiKPi = hfMlResponseDplus.isSelectedMl(inputFeaturesDplusToPiKPi, candidate.pt(), outputMlDplus);
+            }
+            if (!isSelectedMlDplusToPiKPi)
+              continue;
+          } else {
+            LOGF(fatal, "Please check your Ml configuration!!");
           }
+        }
         fillTable(0, candidate.isSelDplusToPiKPi(), outputMlDplus.at(0), outputMlDplus.at(1), outputMlDplus.at(2));
-        
-      } else if constexpr(channel == DecayChannel::LcToPKPi) {
+
+      } else if constexpr (channel == DecayChannel::LcToPKPi) {
         if constexpr (useCharmMl) {
           /// fill with ML information
-          /// BDT index 0: bkg score; BDT index 1: prompt score; BDT index 2: non-prompt score  
+          /// BDT index 0: bkg score; BDT index 1: prompt score; BDT index 2: non-prompt score
           if (applyMlMode == FillMlFromSelector) {
             if (candidate.mlProbLcToPKPi().size() > 0) {
               outputMlPKPi.at(0) = candidate.mlProbLcToPKPi()[0]; /// bkg score
@@ -629,9 +629,9 @@ struct HfFemtoDreamProducer {
 
   /// DplusToPiKPi
   void processDataDplusToPiKPi(FemtoFullCollision const& col,
-                           aod::BCsWithTimestamps const&,
-                           FemtoHFTracks const& tracks,
-                           soa::Filtered<CandidateDplus> const& candidates)
+                               aod::BCsWithTimestamps const&,
+                               FemtoHFTracks const& tracks,
+                               soa::Filtered<CandidateDplus> const& candidates)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
@@ -642,10 +642,10 @@ struct HfFemtoDreamProducer {
                  "Provide experimental data for DplusToPiKPi femto", false);
 
   void processDataDplusToPiKPiWithML(FemtoFullCollision const& col,
-                                 aod::BCsWithTimestamps const&,
-                                 FemtoHFTracks const& tracks,
-                                 soa::Filtered<soa::Join<CandidateDplus,
-                                                         aod::HfMlDplusToPiKPi>> const& candidates)
+                                     aod::BCsWithTimestamps const&,
+                                     FemtoHFTracks const& tracks,
+                                     soa::Filtered<soa::Join<CandidateDplus,
+                                                             aod::HfMlDplusToPiKPi>> const& candidates)
   {
 
     // get magnetic field for run
@@ -657,10 +657,10 @@ struct HfFemtoDreamProducer {
                  "Provide experimental data for DplusToPiKPi with ml", false);
 
   void processMcDplusToPiKPi(FemtoFullCollisionMc const& col,
-                         aod::BCsWithTimestamps const&,
-                         FemtoHFMcTracks const& tracks,
-                         aod::McParticles const&,
-                         CandidateDplusMc const& candidates)
+                             aod::BCsWithTimestamps const&,
+                             FemtoHFMcTracks const& tracks,
+                             aod::McParticles const&,
+                             CandidateDplusMc const& candidates)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
@@ -670,11 +670,11 @@ struct HfFemtoDreamProducer {
   PROCESS_SWITCH(HfFemtoDreamProducer, processMcDplusToPiKPi, "Provide Mc for DplusToPiKPi", false);
 
   void processMcDplusToPiKPiWithML(FemtoFullCollisionMc const& col,
-                               aod::BCsWithTimestamps const&,
-                               FemtoHFMcTracks const& tracks,
-                               aod::McParticles const&,
-                               soa::Join<CandidateDplusMc,
-                                         aod::HfMlDplusToPiKPi> const& candidates)
+                                   aod::BCsWithTimestamps const&,
+                                   FemtoHFMcTracks const& tracks,
+                                   aod::McParticles const&,
+                                   soa::Join<CandidateDplusMc,
+                                             aod::HfMlDplusToPiKPi> const& candidates)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
@@ -728,7 +728,7 @@ struct HfFemtoDreamProducer {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
 
-    fillCharmHadronTable<DecayChannel::LcToPKPi,true, false>(col, tracks, candidates);
+    fillCharmHadronTable<DecayChannel::LcToPKPi, true, false>(col, tracks, candidates);
   }
   PROCESS_SWITCH(HfFemtoDreamProducer, processMcLcToPKPi, "Provide Mc for lctopkpi", false);
 
