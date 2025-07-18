@@ -258,7 +258,8 @@ struct Phik0shortanalysis {
   // Cache for manual slicing
   SliceCache cache;
 
-  // Preslice for manual sicing
+  // Preslice for manual slicing
+  Preslice<FilteredMCTracks> perColl = aod::track::collisionId;
   Preslice<aod::McParticles> perMCColl = aod::mcparticle::mcCollisionId;
 
   // Positive and negative tracks partitions
@@ -355,7 +356,8 @@ struct Phik0shortanalysis {
     mcEventHist.add("hGenMCRecoMultiplicityPercent", "GenMCReco Multiplicity Percentile", kTH1F, {binnedmultAxis});
 
     // Eta distribution for dN/deta values estimation in MC
-    mcEventHist.add("h2RecMCEtaDistribution", "Eta vs multiplicity in MCReco", kTH2F, {binnedmultAxis, etaAxis});
+    mcEventHist.add("h2RecoMCEtaDistribution", "Eta vs multiplicity in MCReco", kTH2F, {binnedmultAxis, etaAxis});
+    mcEventHist.add("h2RecoCheckMCEtaDistribution", "Eta vs multiplicity in MCReco Check", kTH2F, {binnedmultAxis, etaAxis});
     mcEventHist.add("h2GenMCEtaDistribution", "Eta vs multiplicity in MCGen", kTH2F, {binnedmultAxis, etaAxis});
     mcEventHist.add("h2GenMCEtaDistributionAssocReco", "Eta vs multiplicity in MCGen Assoc Reco", kTH2F, {binnedmultAxis, etaAxis});
     mcEventHist.add("h2GenMCEtaDistributionReco", "Eta vs multiplicity in MCGen Reco", kTH2F, {binnedmultAxis, etaAxis});
@@ -2451,7 +2453,7 @@ struct Phik0shortanalysis {
       if (!mcTrack.isPhysicalPrimary() || std::abs(mcTrack.eta()) > trackConfigs.etaMax)
         continue;
 
-      mcEventHist.fill(HIST("h2RecMCEtaDistribution"), genmultiplicity, mcTrack.eta());
+      mcEventHist.fill(HIST("h2RecoMCEtaDistribution"), genmultiplicity, mcTrack.eta());
     }
 
     for (const auto& mcParticle : mcParticlesThisColl) {
@@ -2464,13 +2466,13 @@ struct Phik0shortanalysis {
       if (pdgTrack->Charge() == trackConfigs.cfgCutCharge)
         continue;
 
-      mcEventHist.fill(HIST("h2GenMCEtaDistributionRecoCheck"), genmultiplicity, mcParticle.eta());
+      mcEventHist.fill(HIST("h2GenMCEtaDistributionReco"), genmultiplicity, mcParticle.eta());
     }
   }
 
   PROCESS_SWITCH(Phik0shortanalysis, processdNdetaWPhiMCReco, "Process function for dN/deta values in MCReco", false);
 
-  void processdNdetaWPhiMCGen(MCCollisions::iterator const& mcCollision, soa::SmallGroups<SimCollisions> const& collisions, aod::McParticles const& mcParticles)
+  void processdNdetaWPhiMCGen(MCCollisions::iterator const& mcCollision, soa::SmallGroups<SimCollisions> const& collisions, FilteredMCTracks const& filteredMCTracks, aod::McParticles const& mcParticles)
   {
     if (std::abs(mcCollision.posZ()) > cutZVertex)
       return;
@@ -2486,6 +2488,18 @@ struct Phik0shortanalysis {
       if (acceptEventQA<true>(collision, false)) {
         mcEventHist.fill(HIST("hGenMCRecoMultiplicityPercent"), genmultiplicity);
 
+        auto filteredMCTracksThisColl = filteredMCTracks.sliceBy(perColl, collision.globalIndex());
+        for (const auto& track : filteredMCTracksThisColl) {
+          if (!track.has_mcParticle())
+            continue;
+
+          auto mcTrack = track.mcParticle();
+          if (!mcTrack.isPhysicalPrimary() || std::abs(mcTrack.eta()) > trackConfigs.etaMax)
+            continue;
+
+          mcEventHist.fill(HIST("h2RecoCheckMCEtaDistribution"), genmultiplicity, mcTrack.eta());
+        }
+
         for (const auto& mcParticle : mcParticles) {
           if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.eta()) > trackConfigs.etaMax)
             continue;
@@ -2496,7 +2510,7 @@ struct Phik0shortanalysis {
           if (pdgTrack->Charge() == trackConfigs.cfgCutCharge)
             continue;
 
-          mcEventHist.fill(HIST("h2GenMCEtaDistributionReco"), genmultiplicity, mcParticle.eta());
+          mcEventHist.fill(HIST("h2GenMCEtaDistributionRecoCheck"), genmultiplicity, mcParticle.eta());
         }
 
         numberAssocColl++;
