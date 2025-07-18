@@ -1714,6 +1714,5 @@ struct cascadeFlow {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<cascadeFlow>(cfgc, TaskName{"lf-cascade-flow"})};
+  return WorkflowSpec{adaptAnalysisTask<cascadeFlow>(cfgc)};
 }
