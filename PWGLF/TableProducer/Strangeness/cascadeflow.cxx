@@ -706,7 +706,7 @@ struct cascadeFlow {
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
 
-    for (auto& casc : Cascades) {
+    for (auto const& casc : Cascades) {
       if (gRandom->Uniform() > downsample) {
         continue;
       }
@@ -756,7 +756,7 @@ struct cascadeFlow {
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
 
-    for (auto& casc : Cascades) {
+    for (auto const& casc : Cascades) {
       if (!casc.has_cascMCCore())
         continue;
 
@@ -829,7 +829,7 @@ struct cascadeFlow {
     resolution.fill(HIST("QVectorsSpecPlane"), spectatorplaneVecZDCC.Dot(spectatorplaneVecZDCA), coll.centFT0C());
 
     std::vector<float> bdtScore[nParticles];
-    for (auto& casc : Cascades) {
+    for (auto const& casc : Cascades) {
 
       /// Add some minimal cuts for single track variables (min number of TPC clusters)
       auto negExtra = casc.negTrackExtra_as<DauTracks>();
@@ -1104,7 +1104,7 @@ struct cascadeFlow {
     resolution.fill(HIST("QVectorsNormTPCAC"), eventplaneVecTPCA.Dot(eventplaneVecTPCC) / (coll.qTPCR() * coll.qTPCL()), coll.centFT0C());
 
     std::vector<float> bdtScore[nParticles];
-    for (auto& casc : Cascades) {
+    for (auto const& casc : Cascades) {
 
       /// Add some minimal cuts for single track variables (min number of TPC clusters)
       auto negExtra = casc.negTrackExtra_as<DauTracks>();
@@ -1383,7 +1383,7 @@ struct cascadeFlow {
     resolution.fill(HIST("QVectorsSpecPlane"), spectatorplaneVecZDCC.Dot(spectatorplaneVecZDCA), coll.centFT0C());
 
     std::vector<float> bdtScore[nParticles];
-    for (auto& casc : Cascades) {
+    for (auto const& casc : Cascades) {
 
       /// Add some minimal cuts for single track variables (min number of TPC clusters)
       auto negExtra = casc.negTrackExtra_as<DauTracks>();
@@ -1425,7 +1425,7 @@ struct cascadeFlow {
         isSelectedCasc[0] = mlResponseXi.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[0]);
         isSelectedCasc[1] = mlResponseOmega.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[1]);
 
-        for (int iS{0}; iS < 2; ++iS) {
+        for (int iS{0}; iS < nParticles; ++iS) {
           // Fill BDT score histograms before selection
           cascadev2::hSignalScoreBeforeSel[iS]->Fill(bdtScore[0][1]);
           cascadev2::hBkgScoreBeforeSel[iS]->Fill(bdtScore[1][0]);
@@ -1499,7 +1499,7 @@ struct cascadeFlow {
     histos.fill(HIST("hMultNTracksITSTPCVsCentrality"), coll.centFT0C(), coll.multNTracksITSTPC());
 
     std::vector<float> bdtScore[nParticles];
-    for (auto& casc : Cascades) {
+    for (auto const& casc : Cascades) {
 
       if (!casc.has_cascMCCore())
         continue;
@@ -1570,7 +1570,7 @@ struct cascadeFlow {
         isSelectedCasc[0] = mlResponseXi.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[0]);
         isSelectedCasc[1] = mlResponseOmega.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[1]);
 
-        for (int iS{0}; iS < 2; ++iS) {
+        for (int iS{0}; iS < nParticles; ++iS) {
           // Fill BDT score histograms before selection
           cascadev2::hSignalScoreBeforeSel[iS]->Fill(bdtScore[0][1]);
           cascadev2::hBkgScoreBeforeSel[iS]->Fill(bdtScore[1][0]);
