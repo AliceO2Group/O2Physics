@@ -261,7 +261,6 @@ struct FilterTracks {
   }
   void processData(FilterCollisionsWithEvSel::iterator const& collision, soa::Filtered<TracksWithSelAndDca> const& tracks)
   {
-    float zvtz = collision.posZ(); // dummy to silent compilation error about unused variable
     if (trackPtSampling == 0) {
       for (auto& track : tracks) {
         fillTableData(track);
@@ -290,7 +289,6 @@ struct FilterTracks {
 
   void processMC(FilterCollisionsWithEvSel::iterator const& collision, soa::Filtered<TracksWithSelAndDcaMc> const& tracks, aod::McParticles const& mcParticles)
   {
-    float zvtz = collision.posZ(); // dummy to silent compilation error about unused variable
     if (trackPtSampling == 0) {
       for (auto& track : tracks) {
         fillTableDataMC(track, mcParticles);
