@@ -256,7 +256,7 @@ struct HfTaskCharmHadronsFemtoDream {
   float getCharmHadronMass(const Candidate& cand)
   {
     float invMass = 0.0f;
-    if (charmHadPDGCode == 4122) {
+    if (charmHadPDGCode == o2::constants::physics::Pdg::kLambdaCPlus) {
       if (cand.candidateSelFlag() == 1) {
         invMass = cand.m(std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
         return invMass;
@@ -266,7 +266,7 @@ struct HfTaskCharmHadronsFemtoDream {
       }
     }
     // D+ → π K π (PDG: 411)
-    if (charmHadPDGCode == 411) {
+    if (charmHadPDGCode == o2::constants::physics::Pdg::kDPlus) {
       invMass = cand.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
       return invMass;
     }
