@@ -162,6 +162,8 @@ struct he3LambdaAnalysis {
     std::string prefix = "cfgHe3";
     Configurable<float> ptMin{"ptMin", 1.0f, "Minimum He3 pT"};
     Configurable<float> ptMax{"ptMax", 10.0f, "Maximum He3 pT"};
+    Configurable<float> etaMax{"etaMax", 0.9f, "Maximum He3 pseudorapidity"};
+    Configurable<float> minTPCrigidity{"minTPCrigidity", 0.5f, "Minimum He3 rigidity"};
     Configurable<float> nSigmaTPCMax{"nSigmaTPCMax", 4.0f, "Maximum He3 TPC nSigma"};
     Configurable<float> dcaxyMax{"dcaxyMax", 0.5f, "Maximum He3 DCA xy"};
     Configurable<float> dcazMax{"dcazMax", 0.5f, "Maximum He3 DCA z"};
@@ -311,14 +313,11 @@ struct he3LambdaAnalysis {
       }
       hTPCsignalAll->Fill(track.tpcInnerParam() * track.sign(), track.tpcSignal());
       const float pt = track.pt() * 2.0f;
-      if (pt < cfgHe3.ptMin || pt > cfgHe3.ptMax) {
-        continue; // Skip tracks outside pT range
-      }
       float expTPCSignal = o2::tpc::BetheBlochAleph(track.tpcInnerParam() * 2.0f / constants::physics::MassHelium3, mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4]);
       double nSigmaTPC = (track.tpcSignal() - expTPCSignal) / (expTPCSignal * mBBparamsHe[5]);
       hTPCnSigmaAll->Fill(track.tpcInnerParam() * track.sign(), nSigmaTPC);
-      if (std::abs(nSigmaTPC) > cfgHe3.nSigmaTPCMax) {
-        continue; // Skip tracks with TPC nSigma outside range
+      if (pt < cfgHe3.ptMin || pt > cfgHe3.ptMax || std::abs(track.eta()) > cfgHe3.etaMax || track.tpcInnerParam() < cfgHe3.minTPCrigidity || std::abs(nSigmaTPC) > cfgHe3.nSigmaTPCMax) {
+        continue; // Skip tracks outside He3 PID+kinematics selection criteria
       }
       setTrackParCov(track, trackParCov);
       std::array<float, 2> dcaInfo;
@@ -445,6 +444,12 @@ struct he3LambdaAnalysis {
     }
   }
   PROCESS_SWITCH(he3LambdaAnalysis, processData, "Process data", true);
+
+  // void processDerived(o2::aod::LFEvents::iterator const& collision, o2::aod::LFHe3 const& he3s, o2::aod::LFLambda const& lambdas)
+  // {
+  //
+  // }
+  // PROCESS_SWITCH(he3LambdaAnalysis, processDerived, "Process derived", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
