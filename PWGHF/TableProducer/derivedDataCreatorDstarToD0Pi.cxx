@@ -296,7 +296,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
         } else {
           massDstar = candidate.invMassAntiDstar();
           invMassD0 = candidate.invMassD0Bar();
-          flagSign = 1
+          flagSign = 1;
         }
         fillTablesCandidate(candidate, prong0, prong1, prongSoftPi, flagSign, massDstar, invMassD0, y, flagMcRec, flagMcRecD0, origin, nTracksDecayed, ptBhadMotherPart, pdgBhadMotherPart, mlScoresDstarToD0Pi);
       }
