@@ -13,6 +13,7 @@
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
 /// \author Ravindra SIngh, GSI, ravindra.singh@cern.ch
 /// \author Biao Zhang, Heidelberg University, biao.zhang@cern.ch
+/// \author Yunfan Liu, Central China Normal University, yunfan.l@cern.ch
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamContainer.h"
@@ -249,6 +250,30 @@ struct HfTaskCharmHadronsFemtoDream {
     registryMixQa.fill(HIST("MixingQA/hSECollisionPool"), col.posZ(), col.multNtr());
   }
 
+  /// Compute the charm hadron candidates mass with the daughter masses
+  /// assumes the candidate is either a D+ or Λc+
+  template <typename Candidate>
+  float getCharmHadronMass(const Candidate& cand)
+  {
+    float invMass = 0.0f;
+    if (charmHadPDGCode == o2::constants::physics::Pdg::kLambdaCPlus) {
+      if (cand.candidateSelFlag() == 1) {
+        invMass = cand.m(std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+        return invMass;
+      } else {
+        invMass = cand.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassProton});
+        return invMass;
+      }
+    }
+    // D+ → π K π (PDG: 411)
+    if (charmHadPDGCode == o2::constants::physics::Pdg::kDPlus) {
+      invMass = cand.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+      return invMass;
+    }
+    // Add more channels as needed
+    return invMass;
+  }
+
   /// This function processes the same event and takes care of all the histogramming
   template <bool isMc, typename PartitionType, typename CandType, typename TableTracks, typename Collision>
   void doSameEvent(PartitionType& sliceTrk1, CandType& sliceCharmHad, TableTracks const& parts, Collision const& col)
@@ -283,12 +308,7 @@ struct HfTaskCharmHadronsFemtoDream {
         continue;
       }
 
-      float invMass;
-      if (p2.candidateSelFlag() == 1) {
-        invMass = p2.m(std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
-      } else {
-        invMass = p2.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassProton});
-      }
+      float invMass = getCharmHadronMass(p2);
 
       if (invMass < charmHadMinInvMass || invMass > charmHadMaxInvMass) {
         continue;
@@ -381,12 +401,8 @@ struct HfTaskCharmHadronsFemtoDream {
         if (kstar > highkstarCut) {
           continue;
         }
-        float invMass;
-        if (p2.candidateSelFlag() == 1) {
-          invMass = p2.m(std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
-        } else {
-          invMass = p2.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassProton});
-        }
+
+        float invMass = getCharmHadronMass(p2);
 
         if (invMass < charmHadMinInvMass || invMass > charmHadMaxInvMass) {
           continue;
@@ -414,12 +430,7 @@ struct HfTaskCharmHadronsFemtoDream {
       allTrackHisto.fillQA<false, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfTempFitVarMomentum.value), col.multNtr(), col.multV0M());
     }
     for (auto const& part : sliceCharmHad) {
-      float invMass;
-      if (part.candidateSelFlag() == 1) {
-        invMass = part.m(std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
-      } else {
-        invMass = part.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassProton});
-      }
+      float invMass = getCharmHadronMass(part);
       registryCharmHadronQa.fill(HIST("CharmHadronQA/hPtVsMass"), part.pt(), invMass);
     }
 
