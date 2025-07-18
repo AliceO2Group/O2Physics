@@ -770,7 +770,7 @@ struct HfDataCreatorJpsiHadReduced {
       // Apply the selections on the J/Psi candidates
       registry.fill(HIST("hSelectionsJpsi"), 1, candidate.pt());
 
-      if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::JpsiToMuMu)) {
+      if (!(candidate.hfflag() & (1 << (runJpsiToee ? aod::hf_cand_2prong::DecayType::JpsiToEE : aod::hf_cand_2prong::DecayType::JpsiToMuMu)))) {
         continue;
       }
       registry.fill(HIST("hSelectionsJpsi"), 2 + aod::SelectionStep::RecoSkims, candidate.pt());
@@ -824,12 +824,7 @@ struct HfDataCreatorJpsiHadReduced {
       registry.fill(HIST("hSelectionsJpsi"), 2 + aod::SelectionStep::RecoPID, candidate.pt());
 
       int indexHfCandJpsi = hfJpsi.lastIndex() + 1;
-      float invMassJpsi{0.f};
-      if (runJpsiToee) {
-        invMassJpsi = hfHelper.invMassJpsiToEE(candidate);
-      } else {
-        invMassJpsi = hfHelper.invMassJpsiToMuMu(candidate);
-      }
+      float invMassJpsi = runJpsiToee ? hfHelper.invMassJpsiToEE(candidate) : hfHelper.invMassJpsiToMuMu(candidate);
       registry.fill(HIST("hMassJpsi"), invMassJpsi);
       registry.fill(HIST("hPtJpsi"), candidate.pt());
       registry.fill(HIST("hCpaJpsi"), candidate.cpa());
