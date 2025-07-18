@@ -59,6 +59,11 @@ o2physics_add_dpl_workflow(femtodream-collision-masker
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femtodream-pair-efficiency
+          SOURCES femtoDreamPairEfficiency.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(femtodream-hash
           SOURCES femtoDreamHashTask.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
