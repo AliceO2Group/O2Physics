@@ -262,7 +262,7 @@ struct cascadeFlow {
       histos.fill(HIST("hNEvents"), 1.5);
 
     // Z vertex selection
-    if (TMath::Abs(collision.posZ()) > cutzvertex) {
+    if (std::abs(collision.posZ()) > cutzvertex) {
       return false;
     }
     if (isFillHisto)
@@ -1064,14 +1064,14 @@ struct cascadeFlow {
 
     // select only events used for the calibration of the event plane
     if (isGoodEventEP) {
-      if (abs(coll.qvecFT0CRe()) > 990 || abs(coll.qvecFT0CIm()) > 990 || abs(coll.qvecBNegRe()) > 990 || abs(coll.qvecBNegIm()) > 990 || abs(coll.qvecBPosRe()) > 990 || abs(coll.qvecBPosIm()) > 990) {
+      if (std::abs(coll.qvecFT0CRe()) > 990 || std::abs(coll.qvecFT0CIm()) > 990 || std::abs(coll.qvecBNegRe()) > 990 || std::abs(coll.qvecBNegIm()) > 990 || std::abs(coll.qvecBPosRe()) > 990 || std::abs(coll.qvecBPosIm()) > 990) {
         return;
       }
     }
 
     // event has FT0C event plane
     bool hasEventPlane = 0;
-    if (abs(coll.qvecFT0CRe()) < 990 && abs(coll.qvecFT0CIm()) < 990)
+    if (std::abs(coll.qvecFT0CRe()) < 990 && std::abs(coll.qvecFT0CIm()) < 990)
       hasEventPlane = 1;
 
     histos.fill(HIST("hNEvents"), 9.5);
@@ -1331,14 +1331,14 @@ struct cascadeFlow {
 
     // select only events used for the calibration of the event plane
     if (isGoodEventEP) {
-      if (abs(coll.qvecFT0CRe()) > 990 || abs(coll.qvecFT0CIm()) > 990 || abs(coll.qvecBNegRe()) > 990 || abs(coll.qvecBNegIm()) > 990 || abs(coll.qvecBPosRe()) > 990 || abs(coll.qvecBPosIm()) > 990) {
+      if (std::abs(coll.qvecFT0CRe()) > 990 || std::abs(coll.qvecFT0CIm()) > 990 || std::abs(coll.qvecBNegRe()) > 990 || std::abs(coll.qvecBNegIm()) > 990 || std::abs(coll.qvecBPosRe()) > 990 || std::abs(coll.qvecBPosIm()) > 990) {
         return;
       }
     }
 
     // event has FT0C event plane
     bool hasEventPlane = 0;
-    if (abs(coll.qvecFT0CRe()) < 990 && abs(coll.qvecFT0CIm()) < 990)
+    if (std::abs(coll.qvecFT0CRe()) < 990 && std::abs(coll.qvecFT0CIm()) < 990)
       hasEventPlane = 1;
 
     // event has spectator plane
@@ -1609,7 +1609,7 @@ struct cascadeFlow {
     histosMCGen.fill(HIST("hZvertexGen"), mcCollision.posZ());
     histosMCGen.fill(HIST("hNEventsMC"), 0.5);
     // Generated with accepted z vertex
-    if (TMath::Abs(mcCollision.posZ()) > cutzvertex) {
+    if (std::abs(mcCollision.posZ()) > cutzvertex) {
       return;
     }
     histosMCGen.fill(HIST("hNEventsMC"), 1.5);
@@ -1642,21 +1642,21 @@ struct cascadeFlow {
     histosMCGen.fill(HIST("hNEventsMC"), 5.5);
 
     for (auto const& cascmc : cascMC) {
-      if (TMath::Abs(cascmc.pdgCode()) == 3312)
+      if (std::abs(cascmc.pdgCode()) == 3312)
         histosMCGen.fill(HIST("hNCascGen"), 0.5);
-      else if (TMath::Abs(cascmc.pdgCode()) == 3334)
+      else if (std::abs(cascmc.pdgCode()) == 3334)
         histosMCGen.fill(HIST("hNCascGen"), 1.5);
       if (!cascmc.has_straMCCollision())
         continue;
-      if (TMath::Abs(cascmc.pdgCode()) == 3312)
+      if (std::abs(cascmc.pdgCode()) == 3312)
         histosMCGen.fill(HIST("hNCascGen"), 2.5);
-      else if (TMath::Abs(cascmc.pdgCode()) == 3334)
+      else if (std::abs(cascmc.pdgCode()) == 3334)
         histosMCGen.fill(HIST("hNCascGen"), 3.5);
       if (!cascmc.isPhysicalPrimary())
         continue;
-      if (TMath::Abs(cascmc.pdgCode()) == 3312)
+      if (std::abs(cascmc.pdgCode()) == 3312)
         histosMCGen.fill(HIST("hNCascGen"), 4.5);
-      else if (TMath::Abs(cascmc.pdgCode()) == 3334)
+      else if (std::abs(cascmc.pdgCode()) == 3334)
         histosMCGen.fill(HIST("hNCascGen"), 5.5);
 
       float ptmc = RecoDecay::sqrtSumOfSquares(cascmc.pxMC(), cascmc.pyMC());
@@ -1675,22 +1675,22 @@ struct cascadeFlow {
       float cascMCeta = -log(std::tan(theta1 / 2));
       float cascMCy = 0;
 
-      if (TMath::Abs(cascmc.pdgCode()) == 3312) {
+      if (std::abs(cascmc.pdgCode()) == 3312) {
         cascMCy = RecoDecay::y(std::array{cascmc.pxMC(), cascmc.pyMC(), cascmc.pzMC()}, constants::physics::MassXiMinus);
-        if (TMath::Abs(cascMCeta) < etaCascMCGen) {
+        if (std::abs(cascMCeta) < etaCascMCGen) {
           histosMCGen.fill(HIST("h2DGenXiEta08"), centrality, ptmc);
           histosMCGen.fill(HIST("hNCascGen"), 6.5);
         }
-        if (TMath::Abs(cascMCy) < yCascMCGen)
+        if (std::abs(cascMCy) < yCascMCGen)
           histosMCGen.fill(HIST("h2DGenXiY05"), centrality, ptmc);
         histosMCGen.fill(HIST("hGenXiY"), cascMCy);
-      } else if (TMath::Abs(cascmc.pdgCode() == 3334)) {
+      } else if (std::abs(cascmc.pdgCode() == 3334)) {
         cascMCy = RecoDecay::y(std::array{cascmc.pxMC(), cascmc.pyMC(), cascmc.pzMC()}, constants::physics::MassOmegaMinus);
-        if (TMath::Abs(cascMCeta) < etaCascMCGen) {
+        if (std::abs(cascMCeta) < etaCascMCGen) {
           histosMCGen.fill(HIST("h2DGenOmegaEta08"), centrality, ptmc);
           histosMCGen.fill(HIST("hNCascGen"), 7.5);
         }
-        if (TMath::Abs(cascMCy) < yCascMCGen)
+        if (std::abs(cascMCy) < yCascMCGen)
           histosMCGen.fill(HIST("h2DGenOmegaY05"), centrality, ptmc);
         histosMCGen.fill(HIST("hGenOmegaY"), cascMCy);
       }
