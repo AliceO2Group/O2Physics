@@ -259,7 +259,6 @@ struct Phik0shortanalysis {
   SliceCache cache;
 
   // Preslice for manual slicing
-  Preslice<FilteredMCTracks> perColl = aod::track::collisionId;
   Preslice<aod::McParticles> perMCColl = aod::mcparticle::mcCollisionId;
 
   // Positive and negative tracks partitions
