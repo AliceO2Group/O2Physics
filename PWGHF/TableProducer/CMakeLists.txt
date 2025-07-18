@@ -320,18 +320,24 @@ o2physics_add_dpl_workflow(derived-data-creator-dplus-to-pi-k-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(derived-data-creator-dstar-to-d0-pi
+                    SOURCES derivedDataCreatorDstarToD0Pi.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(derived-data-creator-lc-to-p-k-pi
                     SOURCES derivedDataCreatorLcToPKPi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(derived-data-creator-dstar-to-d0-pi
-                    SOURCES derivedDataCreatorDstarToD0Pi.cxx
+o2physics_add_dpl_workflow(derived-data-creator-xic-to-xi-pi-pi
+                    SOURCES derivedDataCreatorXicToXiPiPi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
 # Converters
 
 o2physics_add_dpl_workflow(converter-dstar-indices
-                           SOURCES converterDstarIndices.cxx
-                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                           COMPONENT_NAME Analysis)
+                    SOURCES converterDstarIndices.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
