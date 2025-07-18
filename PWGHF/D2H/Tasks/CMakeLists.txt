@@ -139,6 +139,11 @@ o2physics_add_dpl_workflow(task-xic-to-xi-pi-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-xic0-xicp-to-hadronic
+                    SOURCES taskXic0XicpToHadronic.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-xicc
                     SOURCES taskXicc.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
