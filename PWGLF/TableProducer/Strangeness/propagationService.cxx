@@ -146,4 +146,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   WorkflowSpec workflow{adaptAnalysisTask<propagationService>(cfgc)};
   return workflow;
 }
- 
