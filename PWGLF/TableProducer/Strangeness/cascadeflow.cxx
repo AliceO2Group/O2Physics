@@ -762,8 +762,8 @@ struct cascadeFlow {
 
       auto cascMC = casc.cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
       int pdgCode{cascMC.pdgCode()};
-      if (!(std::abs(pdgCode) == PDG_t::kXiMinus && std::abs(cascMC.pdgCodeV0()) == PDG_t::kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == PDG_t::kPiPlus)     // Xi
-          && !(std::abs(pdgCode) == PDG_t::kOmegaMinus && std::abs(cascMC.pdgCodeV0()) == PDG_t::kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == kKPlus)) // Omega
+      if (!(std::abs(pdgCode) == PDG_t::kXiMinus && std::abs(cascMC.pdgCodeV0()) == PDG_t::kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == PDG_t::kPiPlus) // Xi
+          && !(std::abs(pdgCode) == PDG_t::kOmegaMinus && std::abs(cascMC.pdgCodeV0()) == PDG_t::kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == kKPlus))  // Omega
         continue;
 
       auto negExtra = casc.negTrackExtra_as<DauTracks>();
@@ -1016,7 +1016,7 @@ struct cascadeFlow {
             histos.get<TH1>(HIST("massXi_ProtonAcc"))->Fill(casc.mXi());
           }
         }
-	if (fillingConfigs.isFillTHNOmega) {
+        if (fillingConfigs.isFillTHNOmega) {
           if (fillingConfigs.isFillTHN_V2)
             histos.get<THn>(HIST("hOmegaV2"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], v2CEP);
           if (fillingConfigs.isFillTHN_Pz)
@@ -1061,20 +1061,20 @@ struct cascadeFlow {
     }
   }
 
-    void processAnalyseDataEP2CentralFW(CollEventPlaneCentralFW const& coll, CascCandidates const& Cascades, DauTracks const&)
+  void processAnalyseDataEP2CentralFW(CollEventPlaneCentralFW const& coll, CascCandidates const& Cascades, DauTracks const&)
   {
 
     if (!AcceptEvent(coll, 1)) {
       return;
     }
-    
+
     // select only events used for the calibration of the event plane
     if (isGoodEventEP) {
       if (std::abs(coll.qvecFT0CRe()) > 990 || std::abs(coll.qvecFT0CIm()) > 990 || std::abs(coll.qvecBNegRe()) > 990 || std::abs(coll.qvecBNegIm()) > 990 || std::abs(coll.qvecBPosRe()) > 990 || std::abs(coll.qvecBPosIm()) > 990) {
         return;
       }
     }
-    
+
     // event has FT0C event plane
     bool hasEventPlane = 0;
     if (std::abs(coll.qvecFT0CRe()) < 990 && std::abs(coll.qvecFT0CIm()) < 990)
@@ -1283,7 +1283,7 @@ struct cascadeFlow {
             histos.get<TH1>(HIST("massXi_ProtonAcc"))->Fill(casc.mXi());
           }
         }
-	if (fillingConfigs.isFillTHNOmega) {
+        if (fillingConfigs.isFillTHNOmega) {
           if (fillingConfigs.isFillTHN_V2)
             histos.get<THn>(HIST("hOmegaV2"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], v2CEP);
           if (fillingConfigs.isFillTHN_Pz)
@@ -1341,7 +1341,7 @@ struct cascadeFlow {
         return;
       }
     }
-    
+
     // event has FT0C event plane
     bool hasEventPlane = 0;
     if (std::abs(coll.qvecFT0CRe()) < 990 && std::abs(coll.qvecFT0CIm()) < 990)
@@ -1507,7 +1507,7 @@ struct cascadeFlow {
       auto cascMC = casc.cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
 
       int pdgCode{cascMC.pdgCode()};
-      if (!(std::abs(pdgCode) == PDG_t::kXiMinus && std::abs(cascMC.pdgCodeV0()) == PDG_t::kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == PDG_t::kPiPlus)     // Xi
+      if (!(std::abs(pdgCode) == PDG_t::kXiMinus && std::abs(cascMC.pdgCodeV0()) == PDG_t::kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == PDG_t::kPiPlus)       // Xi
           && !(std::abs(pdgCode) == PDG_t::kOmegaMinus && std::abs(cascMC.pdgCodeV0()) == PDG_t::kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == PDG_t::kKPlus)) // Omega
       {
         pdgCode = 0;
