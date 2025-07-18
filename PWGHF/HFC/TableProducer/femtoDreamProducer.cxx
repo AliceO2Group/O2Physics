@@ -612,18 +612,29 @@ struct HfFemtoDreamProducer {
     return true;
   }
 
-  template <typename ParticleType>
+  template <DecayChannel channel, typename ParticleType>
   void fillCharmHadMcGen(ParticleType particles)
   {
     // Filling particle properties
     rowCandCharmHadGen.reserve(particles.size());
-    for (const auto& particle : particles) {
-      if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
-        rowCandCharmHadGen(
-          particle.mcCollisionId(),
-          particle.flagMcMatchGen(),
-          particle.originMcGen());
+    if constexpr (channel == DecayChannel::DplusToPiKPi) {
+      for (const auto& particle : particles) {
+        if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
+          rowCandCharmHadGen(
+            particle.mcCollisionId(),
+            particle.flagMcMatchGen(),
+            particle.originMcGen());
+        }
       }
+    } else if constexpr (channel == DecayChannel::LcToPKPi) {
+     for (const auto& particle : particles) {
+       if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
+         rowCandCharmHadGen(
+           particle.mcCollisionId(),
+           particle.flagMcMatchGen(),
+           particle.originMcGen());
+       }
+     }
     }
   }
 
@@ -686,7 +697,7 @@ struct HfFemtoDreamProducer {
   void processMcDplusToPiKPiGen(GeneratedMc const& particles)
   {
 
-    fillCharmHadMcGen(particles);
+    fillCharmHadMcGen<DecayChannel::DplusToPiKPi>(particles);
   }
   PROCESS_SWITCH(HfFemtoDreamProducer, processMcDplusToPiKPiGen, "Provide Mc Generated DplusToPiKPi", false);
 
@@ -749,7 +760,7 @@ struct HfFemtoDreamProducer {
   void processMcLcToPKPiGen(GeneratedMc const& particles)
   {
 
-    fillCharmHadMcGen(particles);
+    fillCharmHadMcGen<DecayChannel::LcToPKPi>(particles);
   }
   PROCESS_SWITCH(HfFemtoDreamProducer, processMcLcToPKPiGen, "Provide Mc Generated lctopkpi", false);
 };
