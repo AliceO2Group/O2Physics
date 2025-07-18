@@ -290,12 +290,13 @@ struct HfDerivedDataCreatorDstarToD0Pi {
         if (candidate.signSoftPi() > 0) {
           double massDstar = candidate.invMassDstar();
           double invMassD0 = candidate.invMassD0();
-          fillTablesCandidate(candidate, prong0, prong1, prongSoftPi, 0, massDstar, invMassD0, y, flagMcRec, flagMcRecD0, origin, nTracksDecayed, ptBhadMotherPart, pdgBhadMotherPart, mlScoresDstarToD0Pi);
+          int flagSign = 0;
         } else {
           double massDstar = candidate.invMassAntiDstar();
           double invMassD0 = candidate.invMassD0Bar();
-          fillTablesCandidate(candidate, prong1, prong0, prongSoftPi, 1, massDstar, invMassD0, y, flagMcRec, flagMcRecD0, origin, nTracksDecayed, ptBhadMotherPart, pdgBhadMotherPart, mlScoresDstarToD0Pi);
+          int flagSign = 1
         }
+        fillTablesCandidate(candidate, prong0, prong1, prongSoftPi, flagSign, massDstar, invMassD0, y, flagMcRec, flagMcRecD0, origin, nTracksDecayed, ptBhadMotherPart, pdgBhadMotherPart, mlScoresDstarToD0Pi);
       }
     }
   }
