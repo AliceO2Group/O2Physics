@@ -36,7 +36,7 @@ class ZorroSummary : public TNamed
     mNtois = ntois;
     mTOInames = toinames;
   }
-  void setupRunTOIHMNorms(int runNumber, const std::unordered_map<int,int>& toiHMNorms)
+  void setupRunTOIHMNorms(int runNumber, const std::unordered_map<int, int>& toiHMNorms)
   {
     mTOIHMNormalisations[runNumber] = toiHMNorms;
   }
@@ -64,7 +64,8 @@ class ZorroSummary : public TNamed
   const auto& getTOIcounters() const { return mTOIcounters; }
   const auto& getTVXcounters() const { return mTVXcounters; }
   const auto& getAnalysedTOIcounters() const { return mAnalysedTOIcounters; }
-  const auto& getTOIHMNormalisations() const {return mTOIHMNormalisations; }
+  const auto& getTOIHMNormalisations() const { return mTOIHMNormalisations; }
+
  private:
   int mRunNumber = 0;                                            //! Run currently being analysed
   std::vector<ULong64_t>* mCurrentAnalysedTOIcounters = nullptr; //! Analysed TOI counters for the current run
@@ -74,7 +75,7 @@ class ZorroSummary : public TNamed
   std::unordered_map<int, std::vector<ULong64_t>> mAnalysedTOIcounters;
   std::unordered_map<int, std::vector<double>> mTOIcounters;
   std::unordered_map<int, double> mTVXcounters;
-  std::unordered_map<int, std::unordered_map<int,int>> mTOIHMNormalisations;
+  std::unordered_map<int, std::unordered_map<int, int>> mTOIHMNormalisations;
 
   ClassDef(ZorroSummary, 2);
 };

@@ -327,7 +327,7 @@ struct NonPromptCascadeTask {
       std::cout << "Filling mult histos" << std::endl;
       for (const auto& coll : collisions) {
         auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
-        if(runNumber != bc.runNumber()) {
+        if (runNumber != bc.runNumber()) {
           runNumber = bc.runNumber();
           mZorro.initMBRun(runNumber);
         }
@@ -335,17 +335,17 @@ struct NonPromptCascadeTask {
         mRegistry.fill(HIST("hMultVsCent"), coll.centFT0M(), coll.multFT0M());
         mRegistry.fill(HIST("hMultVsCentZoom"), coll.centFT0M(), coll.multFT0M());
         mOmegaAll++;
-        if(coll.multFT0M() > cfgOmegaHighMultCut) {
+        if (coll.multFT0M() > cfgOmegaHighMultCut) {
           mOmegaHighMultNorm++;
         }
-        std::unordered_map<int,int> counts;
+        std::unordered_map<int, int> counts;
         counts[0] = mOmegaAll;
         counts[1] = mOmegaHighMultNorm;
         mZorro.increaseTOIHMNCounters(counts);
         auto norms = mZorro.getZorroSummary()->getTOIHMNormalisations();
-        for(auto const& nn: norms){
+        for (auto const& nn : norms) {
           auto nnn = nn.second;
-          std::cout << nn.first << ":" <<  nnn[0] << "," << nnn[1] << std::endl;
+          std::cout << nn.first << ":" << nnn[0] << "," << nnn[1] << std::endl;
         }
       }
     }
@@ -705,7 +705,7 @@ struct NonPromptCascadeTask {
                                   aod::V0s const& /*v0s*/, TracksExtData const& tracks,
                                   aod::BCsWithTimestamps const&)
   {
-    //fillMultHistos(collisions);
+    // fillMultHistos(collisions);
     std::map<uint64_t, uint32_t> toiMap;
     zorroAccounting(collisions, toiMap);
     fillCandidatesVector<TracksExtData>(collisions, tracks, trackedCascades, gCandidates, toiMap);

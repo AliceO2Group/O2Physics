@@ -64,8 +64,8 @@ void Zorro::populateHistRegistry(o2::framework::HistogramRegistry& histRegistry,
   if (runId > -1) {
     /// Support jobs running on non-continuous run numbers
     mAnalysedTriggers = mAnalysedTriggersList[runId];
-    //mAnalysedTriggersOfInterest = mAnalysedTriggersOfInterestList[runId];
-    //mAnalysedTOIHighMultNorms = mAnalysedTOIHighMultNormsList[runId];
+    // mAnalysedTriggersOfInterest = mAnalysedTriggersOfInterestList[runId];
+    // mAnalysedTOIHighMultNorms = mAnalysedTOIHighMultNormsList[runId];
     return;
   }
   if (mSelections) {
@@ -103,7 +103,7 @@ void Zorro::populateHistRegistry(o2::framework::HistogramRegistry& histRegistry,
     mAnalysedTriggersOfInterest = histRegistry.add<TH1>((folderName + "/" + std::to_string(runNumber) + "/" + "AnalysedTriggersOfInterest").data(), "", o2::framework::HistType::kTH1D, {{static_cast<int>(mTOIs.size()), -0.5, static_cast<double>(mTOIs.size() - 0.5)}}).get();
     for (size_t i{0}; i < mTOIs.size(); ++i) {
       mAnalysedTriggersOfInterest->GetXaxis()->SetBinLabel(i + 1, mTOIs[i].data());
-      //mAnalysedTOIHighMultNorms->GetXaxis()->SetBinLabel(i+1, mTOIs[i].data());
+      // mAnalysedTOIHighMultNorms->GetXaxis()->SetBinLabel(i+1, mTOIs[i].data());
     }
   }
   mAnalysedTriggersList.push_back(mAnalysedTriggers);
@@ -335,21 +335,19 @@ void Zorro::initMBRun(int runNumber)
 {
   if (mRunNumber == runNumber) {
     return;
-  } 
+  }
   mRunNumber = runNumber;
-  mZorroSummary.setupRunTOIHMNorms(mRunNumber,mTOIHMNorms);
+  mZorroSummary.setupRunTOIHMNorms(mRunNumber, mTOIHMNorms);
 }
 void Zorro::populateTOIHMNorms(int runNumber)
 {
-
 }
-void Zorro::increaseTOIHMNCounters(std::unordered_map<int,int> counts)
+void Zorro::increaseTOIHMNCounters(std::unordered_map<int, int> counts)
 {
-  //std::cout << "increase: " << counts[0] << " " << counts[1] << std::endl;
-  for(int i = 0; i < counts.size(); i++) {
+  // std::cout << "increase: " << counts[0] << " " << counts[1] << std::endl;
+  for (int i = 0; i < counts.size(); i++) {
     mTOIHMNorms[i] = counts[i];
   }
-  //std::cout << " 2increase: " << mTOIHMNorms[0] << " " << mTOIHMNorms[1] << std::endl;
-  mZorroSummary.setupRunTOIHMNorms(mRunNumber,mTOIHMNorms);
-
+  // std::cout << " 2increase: " << mTOIHMNorms[0] << " " << mTOIHMNorms[1] << std::endl;
+  mZorroSummary.setupRunTOIHMNorms(mRunNumber, mTOIHMNorms);
 }
