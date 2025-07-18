@@ -450,7 +450,6 @@ struct he3LambdaAnalysis {
   //
   // }
   // PROCESS_SWITCH(he3LambdaAnalysis, processDerived, "Process derived", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
