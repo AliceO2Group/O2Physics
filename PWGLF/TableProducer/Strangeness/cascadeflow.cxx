@@ -1680,7 +1680,7 @@ struct cascadeFlow {
 
       float cascMCeta = -std::log(std::tan(theta1 / 2));
       float cascMCy = 0;
-
+      int pdgCode{cascMC.pdgCode()};
       if (std::abs(cascmc.pdgCode()) == PDG_t::kXiMinus) {
         cascMCy = RecoDecay::y(std::array{cascmc.pxMC(), cascmc.pyMC(), cascmc.pzMC()}, constants::physics::MassXiMinus);
         if (std::abs(cascMCeta) < etaCascMCGen) {
@@ -1690,7 +1690,7 @@ struct cascadeFlow {
         if (std::abs(cascMCy) < yCascMCGen)
           histosMCGen.fill(HIST("h2DGenXiY05"), centrality, ptmc);
         histosMCGen.fill(HIST("hGenXiY"), cascMCy);
-      } else if (std::abs(cascmc.pdgCode() == PDG_t::kOmegaMinus)) {
+      } else if (std::abs(cascmc.pdgCode()) == PDG_t::kOmegaMinus) {
         cascMCy = RecoDecay::y(std::array{cascmc.pxMC(), cascmc.pyMC(), cascmc.pzMC()}, constants::physics::MassOmegaMinus);
         if (std::abs(cascMCeta) < etaCascMCGen) {
           histosMCGen.fill(HIST("h2DGenOmegaEta08"), centrality, ptmc);
