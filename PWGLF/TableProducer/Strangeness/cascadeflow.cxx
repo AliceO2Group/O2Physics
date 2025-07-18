@@ -885,12 +885,12 @@ struct cascadeFlow {
       ROOT::Math::XYZVector cascQvec{std::cos(2 * casc.phi()), std::sin(2 * casc.phi()), 0};
       auto v2CSP = cascQvec.Dot(eventplaneVecT0C); // not normalised by amplitude
       auto cascminuspsiT0C = GetPhiInRange(casc.phi() - PsiT0C);
-      auto v2CEP = TMath::Cos(2.0 * cascminuspsiT0C);
+      auto v2CEP = std::cos(2.0 * cascminuspsiT0C);
       ROOT::Math::XYZVector cascUvec{std::cos(casc.phi()), std::sin(casc.phi()), 0};
       auto v1SP_ZDCA = cascUvec.Dot(spectatorplaneVecZDCA);
       auto v1SP_ZDCC = cascUvec.Dot(spectatorplaneVecZDCC);
-      auto v1EP_ZDCA = TMath::Cos(casc.phi() - coll.psiZDCA());
-      auto v1EP_ZDCC = TMath::Cos(casc.phi() - coll.psiZDCC());
+      auto v1EP_ZDCA = std::cos(casc.phi() - coll.psiZDCA());
+      auto v1EP_ZDCC = std::cos(casc.phi() - coll.psiZDCC());
       float v1SP = 0.5 * (v1SP_ZDCA - v1SP_ZDCC);
       float v1EP = 0.5 * (v1EP_ZDCA - v1EP_ZDCC); // same as v1SP
 
@@ -1160,7 +1160,7 @@ struct cascadeFlow {
       ROOT::Math::XYZVector cascQvec{std::cos(2 * casc.phi()), std::sin(2 * casc.phi()), 0};
       auto v2CSP = cascQvec.Dot(eventplaneVecT0C); // not normalised by amplitude
       auto cascminuspsiT0C = GetPhiInRange(casc.phi() - PsiT0C);
-      auto v2CEP = TMath::Cos(2.0 * cascminuspsiT0C);
+      auto v2CEP = std::cos(2.0 * cascminuspsiT0C);
       ROOT::Math::XYZVector cascUvec{std::cos(casc.phi()), std::sin(casc.phi()), 0};
 
       // polarization variables
@@ -1439,12 +1439,12 @@ struct cascadeFlow {
       ROOT::Math::XYZVector cascQvec{std::cos(2 * casc.phi()), std::sin(2 * casc.phi()), 0};
       auto v2CSP = cascQvec.Dot(eventplaneVecT0C);
       auto cascminuspsiT0C = GetPhiInRange(casc.phi() - PsiT0C);
-      auto v2CEP = TMath::Cos(2.0 * cascminuspsiT0C);
+      auto v2CEP = std::cos(2.0 * cascminuspsiT0C);
       ROOT::Math::XYZVector cascUvec{std::cos(casc.phi()), std::sin(casc.phi()), 0};
       auto v1SP_ZDCA = cascUvec.Dot(spectatorplaneVecZDCA);
       auto v1SP_ZDCC = cascUvec.Dot(spectatorplaneVecZDCC);
-      auto v1EP_ZDCA = TMath::Cos(casc.phi() - coll.psiZDCA());
-      auto v1EP_ZDCC = TMath::Cos(casc.phi() - coll.psiZDCC());
+      auto v1EP_ZDCA = std::cos(casc.phi() - coll.psiZDCA());
+      auto v1EP_ZDCC = std::cos(casc.phi() - coll.psiZDCC());
       float v1SP = 0.5 * (v1SP_ZDCA - v1SP_ZDCC);
       float v1EP = 0.5 * (v1EP_ZDCA - v1EP_ZDCC); // same as v1SP
 
@@ -1670,7 +1670,7 @@ struct cascadeFlow {
         theta1 = theta; // 0 < theta1/2 < pi/4 --> 0 < tan (theta1/2) < 1 --> positive eta
       // if pz is negative (i.e. negative rapidity): -pi/2 < theta < 0 --> we need 0 < theta1/2 < pi/2 for the ln to be defined
       else
-        theta1 = TMath::Pi() + theta; // pi/2 < theta1 < pi --> pi/4 < theta1/2 <  pi/2 --> 1 < tan (theta1/2) --> negative eta
+        theta1 = o2::constants::math::PI + theta; // pi/2 < theta1 < pi --> pi/4 < theta1/2 <  pi/2 --> 1 < tan (theta1/2) --> negative eta
 
       float cascMCeta = -log(std::tan(theta1 / 2));
       float cascMCy = 0;
