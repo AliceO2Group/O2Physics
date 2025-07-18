@@ -47,13 +47,7 @@ struct HfTaskSingleElectron {
   Configurable<float> tpcNSigmaMin{"tpcNSigmaMin", -1., "min of tpc nsigma"};
   Configurable<float> tpcNSigmaMax{"tpcNSigmaMax", 3., "max of tpc nsigma"};
 
-  Configurable<float> ptAssoTrackMax{"ptAssoTrackMax", 6., "max pt cut of asso tracks"};
-  Configurable<float> ptAssoTrackMin{"ptAssoTrackMin", 4., "min pt cut of asso tracks"};
-  Configurable<int> tpcNCrossedRowAssoTrackMin{"tpcNCrossedRowAssoTrackMin", 60, "max of TPC n cluster crossed rows of asso tracks"};
-
   Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histo"};
-  Configurable<int> nBinsDeltaPhi{"nBinsDeltaPhi", 100, "N bins in DeltaPhi histo"};
-  Configurable<int> nBinsDeltaEta{"nBinsDeltaEta", 100, "N bins in DeltaEta histo"};
 
   // SliceCache
   SliceCache cache;
@@ -78,8 +72,6 @@ struct HfTaskSingleElectron {
   const AxisSpec axisPt{nBinsPt, 0., 15., "p_{T}"};
   const AxisSpec axisNsig{800, -20., 20.};
   const AxisSpec axisTrackIp{4000, -0.2, 0.2, "dca"};
-  const AxisSpec axisDeltaPhi{nBinsDeltaPhi, -PIHalf, PI + PIHalf, "#Delta#varphi"};
-  const AxisSpec axisDeltaEta{nBinsDeltaEta, -1.0, +1.0, "#Delta#eta"};
 
   // Histogram registry
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -101,17 +93,6 @@ struct HfTaskSingleElectron {
     histos.add("dcaXYTrack", "", kTH1F, {{600, -3, 3}});
     histos.add("dcaZTrack", "", kTH1F, {{600, -3, 3}});
 
-    // QA plots for associated track selection
-    histos.add("tpcNClsAsso", "tpcNClsAsso", kTH1F, {{200, 0, 200}});
-    histos.add("tpcFoundFindableAsso", "", kTH1F, {{10, 0, 1}});
-    histos.add("tpcChi2Asso", "", kTH1F, {{100, 0, 10}});
-    histos.add("itsIBClsAsso", "", kTH1F, {{10, 0, 10}});
-    histos.add("dcaXYAsso", "", kTH1F, {{600, -3, 3}});
-    histos.add("dcaZAsso", "", kTH1F, {{600, -3, 3}});
-
-    histos.add("correlationFunction", "correlationFunction", kTH1F, {axisDeltaPhi});
-    histos.add("correlationFunction2d", "correlationFunction2d", kTH2F, {axisDeltaPhi, axisDeltaEta});
-
     // pid
     histos.add("tofNSigPt", "", kTH2F, {{axisPtEl}, {axisNsig}});
     histos.add("tofNSigPtQA", "", kTH2F, {{axisPtEl}, {axisNsig}});
@@ -124,20 +105,16 @@ struct HfTaskSingleElectron {
   }
 
   template <typename TrackType>
-  bool trackSel(TrackType track)
+  bool trackSel(const TrackType &track)
   {
-    if (track.pt() > ptTrackMax || track.pt() < ptTrackMin)
+    if ( (track.pt() > ptTrackMax) || (track.pt() < ptTrackMin) )
       return false;
     if (std::abs(track.eta()) > etaTrackMax)
       return false;
 
-    int tpcNClsFound = track.tpcNClsCrossedRows();
-    int tpcNClsFindable = track.tpcNClsFindable();
-    float tpcFoundOverFindable = (tpcNClsFindable ? static_cast<float>(tpcNClsFound) / static_cast<float>(tpcNClsFindable) : 0);
-
-    if (tpcNClsFound < tpcNCrossedRowMin)
+    if (track.tpcNClsCrossedRows() < tpcNCrossedRowMin)
       return false;
-    if (tpcFoundOverFindable < tpcNClsFoundOverFindableMin)
+    if (track.tpcCrossedRowsOverFindableCls() < tpcNClsFoundOverFindableMin)
       return false;
     if (track.tpcChi2NCl() > tpcChi2perNClMax)
       return false;
@@ -150,76 +127,43 @@ struct HfTaskSingleElectron {
     if (std::abs(track.dcaZ()) > dcazMax)
       return false;
 
-    histos.fill(HIST("etaTrack"), track.eta());
-    histos.fill(HIST("ptTrack"), track.pt());
-
-    histos.fill(HIST("tpcNClsTrack"), tpcNClsFound);
-    histos.fill(HIST("tpcFoundFindableTrack"), tpcFoundOverFindable);
-    histos.fill(HIST("tpcChi2Track"), track.tpcChi2NCl());
-    histos.fill(HIST("itsIBClsTrack"), track.itsNClsInnerBarrel());
-    histos.fill(HIST("dcaXYTrack"), track.dcaXY());
-    histos.fill(HIST("dcaZTrack"), track.dcaZ());
-
     return true;
   }
 
-  template <typename TrackType>
-  bool assoTrackSel(TrackType track)
+  void process(soa::Filtered<MyCollisions>::iterator const& collision,
+			   TracksEl const& tracks)
   {
-    if (std::abs(track.eta()) > etaTrackMax)
-      return false;
-    if (track.pt() < ptAssoTrackMin || track.pt() > ptAssoTrackMax)
-      return false;
-
-    int tpcNClsFound = track.tpcNClsCrossedRows();
-    int tpcNClsFindable = track.tpcNClsFindable();
-    float tpcFoundOverFindable = (tpcNClsFindable ? static_cast<float>(tpcNClsFound) / static_cast<float>(tpcNClsFindable) : 0);
-
-    if (tpcNClsFound < tpcNCrossedRowAssoTrackMin)
-      return false;
-    if (track.tpcChi2NCl() > tpcChi2perNClMax)
-      return false;
-
-    if (std::abs(track.dcaXY()) > dcaxyMax)
-      return false;
-    if (std::abs(track.dcaZ()) > dcazMax)
-      return false;
-
-    histos.fill(HIST("tpcNClsAsso"), tpcNClsFound);
-    histos.fill(HIST("tpcFoundFindableAsso"), tpcFoundOverFindable);
-    histos.fill(HIST("tpcChi2Asso"), track.tpcChi2NCl());
-    histos.fill(HIST("itsIBClsAsso"), track.itsNClsInnerBarrel());
-    histos.fill(HIST("dcaXYAsso"), track.dcaXY());
-    histos.fill(HIST("dcaZAsso"), track.dcaZ());
-
-    return true;
-  }
-
-  double computeDeltaPhi(double phi1, double phi2)
-  {
-    return RecoDecay::constrainAngle(phi1 - phi2);
-  }
-
-  void process(soa::Filtered<MyCollisions>::iterator const& collision, TracksEl const& tracks)
-  {
-    histos.fill(HIST("hEventCounter"), 0.5);
+	float flagEventFill = 0.5;
+	float flagAnalysedEvt = 0.5;
+    histos.fill(HIST("hEventCounter"), flagEventFill);
 
     if (!collision.sel8())
       return;
-    histos.fill(HIST("hEventCounter"), 1.5);
+	flagEventFill += 1.;
+    histos.fill(HIST("hEventCounter"), flagEventFill);
 
     if (collision.numContrib() < nContribMin)
       return;
-    histos.fill(HIST("hEventCounter"), 2.5);
+	flagEventFill += 1.;
+    histos.fill(HIST("hEventCounter"), flagEventFill);
 
     histos.fill(HIST("VtxZ"), collision.posZ());
-    histos.fill(HIST("hEventCounter"), 3.5);
-    histos.fill(HIST("nEvents"), 0.5);
+    histos.fill(HIST("nEvents"), flagAnalysedEvt);
 
     for (const auto& track : tracks) {
 
       if (!trackSel(track))
         continue;
+    
+	  histos.fill(HIST("etaTrack"), track.eta());
+	  histos.fill(HIST("ptTrack"), track.pt());
+
+	  histos.fill(HIST("tpcNClsTrack"), track.tpcNClsCrossedRows());
+	  histos.fill(HIST("tpcFoundFindableTrack"), track.tpcCrossedRowsOverFindableCls());
+	  histos.fill(HIST("tpcChi2Track"), track.tpcChi2NCl());
+	  histos.fill(HIST("itsIBClsTrack"), track.itsNClsInnerBarrel());
+	  histos.fill(HIST("dcaXYTrack"), track.dcaXY());
+	  histos.fill(HIST("dcaZTrack"), track.dcaZ());
 
       histos.fill(HIST("tofNSigPt"), track.pt(), track.tofNSigmaEl());
       histos.fill(HIST("tpcNSigPt"), track.pt(), track.tpcNSigmaEl());
