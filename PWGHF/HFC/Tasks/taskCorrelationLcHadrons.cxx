@@ -747,13 +747,13 @@ struct HfTaskCorrelationLcHadrons {
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionMcRec"), deltaPhi, efficiencyWeight);
         if (isPhysicalPrimary) {
           registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, ptLc, ptHadron, statusLcPrompt, poolBin, efficiencyWeight);
-          if (statusLcPrompt == 1 && statusPromptHadron == 1) {
+          if (statusLcPrompt == 1 && statusPromptHadron == RecoDecay::OriginType::Prompt) {
             if (fillSign) {
               registry.fill(HIST("hCorrel2DVsPtSignSignalRegionPromptLcPromptHadronMcRec"), deltaPhi, deltaEta, ptLc, ptHadron, signPair, poolBin, efficiencyWeight);
             } else {
               registry.fill(HIST("hCorrel2DVsPtSignalRegionPromptLcPromptHadronMcRec"), deltaPhi, deltaEta, ptLc, ptHadron, poolBin, efficiencyWeight);
             }
-          } else if (statusLcPrompt == 0 && statusPromptHadron == 2) {
+          } else if (statusLcPrompt == 0 && statusPromptHadron == RecoDecay::OriginType::NonPrompt) {
             if (fillSign) {
               registry.fill(HIST("hCorrel2DVsPtSignSignalRegionNonPromptLcNonPromptHadronMcRec"), deltaPhi, deltaEta, ptLc, ptHadron, signPair, poolBin, efficiencyWeight);
             } else {
@@ -846,7 +846,7 @@ struct HfTaskCorrelationLcHadrons {
         } else {
           registry.fill(HIST("hCorrel2DVsPtMcGenPrompt"), deltaPhi, deltaEta, ptLc, ptHadron, poolBin);
         }
-        if (statusPromptHadron == 1) {
+        if (statusPromptHadron == RecoDecay::OriginType::Prompt) {
           if (fillSign) {
             registry.fill(HIST("hCorrel2DVsPtSignMcGenPromptLcPromptHadron"), deltaPhi, deltaEta, ptLc, ptHadron, signPair, poolBin);
           } else {
@@ -859,7 +859,7 @@ struct HfTaskCorrelationLcHadrons {
         } else {
           registry.fill(HIST("hCorrel2DVsPtMcGenNonPrompt"), deltaPhi, deltaEta, ptLc, ptHadron, poolBin);
         }
-        if (statusPromptHadron == 2) {
+        if (statusPromptHadron == RecoDecay::OriginType::NonPrompt) {
           if (fillSign) {
             registry.fill(HIST("hCorrel2DVsPtSignMcGenNonPromptLcNonPromptHadron"), deltaPhi, deltaEta, ptLc, ptHadron, signPair, poolBin);
           } else {
