@@ -32,6 +32,7 @@
 #include "Framework/HistogramSpec.h"
 #include "Framework/HistogramRegistry.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
 
 #include <array>
 #include <cmath>
