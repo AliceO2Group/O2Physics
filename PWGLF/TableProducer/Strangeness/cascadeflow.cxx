@@ -47,11 +47,14 @@ using MCCollisionsStra = soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>;
 using CascCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs>;
 using CascMCCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascCoreMCLabels>;
 
+const int nParticles = 2;
+const int nParameters = 4;
+
 namespace cascadev2
 {
 enum species { Xi = 0,
                Omega = 1 };
-constexpr double massSigmaParameters[4][2]{
+constexpr double massSigmaParameters[nParameters][nParticles]{
   {4.9736e-3, 0.006815},
   {-2.39594, -2.257},
   {1.8064e-3, 0.00138},
@@ -62,13 +65,13 @@ const double AlphaXi[2] = {-0.390, 0.371};     // decay parameter of XiMinus and
 const double AlphaOmega[2] = {0.0154, -0.018}; // decay parameter of OmegaMinus and OmegaPlus
 const double AlphaLambda[2] = {0.747, -0.757}; // decay parameter of Lambda and AntiLambda
 
-std::shared_ptr<TH2> hMassBeforeSelVsPt[2];
-std::shared_ptr<TH2> hMassAfterSelVsPt[2];
-std::shared_ptr<TH1> hSignalScoreBeforeSel[2];
-std::shared_ptr<TH1> hBkgScoreBeforeSel[2];
-std::shared_ptr<TH1> hSignalScoreAfterSel[2];
-std::shared_ptr<TH1> hBkgScoreAfterSel[2];
-std::shared_ptr<THn> hSparseV2C[2];
+std::shared_ptr<TH2> hMassBeforeSelVsPt[nParticles];
+std::shared_ptr<TH2> hMassAfterSelVsPt[nParticles];
+std::shared_ptr<TH1> hSignalScoreBeforeSel[nParticles];
+std::shared_ptr<TH1> hBkgScoreBeforeSel[nParticles];
+std::shared_ptr<TH1> hSignalScoreAfterSel[nParticles];
+std::shared_ptr<TH1> hBkgScoreAfterSel[nParticles];
+std::shared_ptr<THn> hSparseV2C[nParticles];
 } // namespace cascadev2
 
 namespace cascade_flow_cuts_ml
@@ -379,7 +382,7 @@ struct cascadeFlow {
   Produces<aod::CascAnalysis> analysisSample;
   Configurable<LabeledArray<double>> parSigmaMass{
     "parSigmaMass",
-    {cascadev2::massSigmaParameters[0], 4, 2,
+    {cascadev2::massSigmaParameters[0], nParameters, nParticles,
      cascadev2::massSigmaParameterNames, cascadev2::speciesNames},
     "Mass resolution parameters: [0]*exp([1]*x)+[2]*exp([3]*x)"};
 
@@ -417,9 +420,9 @@ struct cascadeFlow {
   template <class collision_t, class cascade_t>
   void fillAnalysedTable(collision_t coll, bool hasEventPlane, bool hasSpectatorPlane, cascade_t casc, float v2CSP, float v2CEP, float v1SP_ZDCA, float v1SP_ZDCC, float PsiT0C, float BDTresponseXi, float BDTresponseOmega, int pdgCode)
   {
-    double masses[2]{o2::constants::physics::MassXiMinus, o2::constants::physics::MassOmegaMinus};
-    ROOT::Math::PxPyPzMVector cascadeVector[2], lambdaVector, protonVector;
-    float cosThetaStarLambda[2], cosThetaStarProton;
+    double masses[nParticles]{o2::constants::physics::MassXiMinus, o2::constants::physics::MassOmegaMinus};
+    ROOT::Math::PxPyPzMVector cascadeVector[nParticles], lambdaVector, protonVector;
+    float cosThetaStarLambda[nParticles], cosThetaStarProton;
     lambdaVector.SetCoordinates(casc.pxlambda(), casc.pylambda(), casc.pzlambda(), o2::constants::physics::MassLambda);
     ROOT::Math::Boost lambdaBoost{lambdaVector.BoostToCM()};
     if (casc.sign() > 0) {
@@ -429,7 +432,7 @@ struct cascadeFlow {
     }
     auto boostedProton{lambdaBoost(protonVector)};
     cosThetaStarProton = boostedProton.Pz() / boostedProton.P();
-    for (int i{0}; i < 2; ++i) {
+    for (int i{0}; i < nParticles; ++i) {
       cascadeVector[i].SetCoordinates(casc.px(), casc.py(), casc.pz(), masses[i]);
       ROOT::Math::Boost cascadeBoost{cascadeVector[i].BoostToCM()};
       auto boostedLambda{cascadeBoost(lambdaVector)};
@@ -654,7 +657,7 @@ struct cascadeFlow {
       histosMCGen.get<TH1>(HIST("hNCascGen"))->GetXaxis()->SetBinLabel(n, hNCascLabelsMC[n - 1]);
     }
 
-    for (int iS{0}; iS < 2; ++iS) {
+    for (int iS{0}; iS < nParticles; ++iS) {
       cascadev2::hMassBeforeSelVsPt[iS] = histos.add<TH2>(Form("hMassBeforeSelVsPt%s", cascadev2::speciesNames[iS].data()), "hMassBeforeSelVsPt", HistType::kTH2F, {massCascAxis[iS], ptAxis});
       cascadev2::hMassAfterSelVsPt[iS] = histos.add<TH2>(Form("hMassAfterSelVsPt%s", cascadev2::speciesNames[iS].data()), "hMassAfterSelVsPt", HistType::kTH2F, {massCascAxis[iS], ptAxis});
       cascadev2::hSignalScoreBeforeSel[iS] = histos.add<TH1>(Form("hSignalScoreBeforeSel%s", cascadev2::speciesNames[iS].data()), "Signal score before selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
@@ -822,7 +825,7 @@ struct cascadeFlow {
     resolution.fill(HIST("QVectorsNormTPCAC"), eventplaneVecTPCA.Dot(eventplaneVecTPCC) / (coll.qTPCR() * coll.qTPCL()), coll.centFT0C());
     resolution.fill(HIST("QVectorsSpecPlane"), spectatorplaneVecZDCC.Dot(spectatorplaneVecZDCA), coll.centFT0C());
 
-    std::vector<float> bdtScore[2];
+    std::vector<float> bdtScore[nParticles];
     for (auto& casc : Cascades) {
 
       /// Add some minimal cuts for single track variables (min number of TPC clusters)
@@ -865,7 +868,7 @@ struct cascadeFlow {
         isSelectedCasc[0] = mlResponseXi.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[0]);
         isSelectedCasc[1] = mlResponseOmega.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[1]);
 
-        for (int iS{0}; iS < 2; ++iS) {
+        for (int iS{0}; iS < nParticles; ++iS) {
           // Fill BDT score histograms before selection
           cascadev2::hSignalScoreBeforeSel[iS]->Fill(bdtScore[0][1]);
           cascadev2::hBkgScoreBeforeSel[iS]->Fill(bdtScore[1][0]);
@@ -907,7 +910,7 @@ struct cascadeFlow {
       }
       auto boostedProton{lambdaBoost(protonVector)};
       cosThetaStarProton = boostedProton.Pz() / boostedProton.P();
-      for (int i{0}; i < 2; ++i) {
+      for (int i{0}; i < nParticles; ++i) {
         cascadeVector[i].SetCoordinates(casc.px(), casc.py(), casc.pz(), masses[i]);
         ROOT::Math::Boost cascadeBoost{cascadeVector[i].BoostToCM()};
         auto boostedLambda{cascadeBoost(lambdaVector)};
@@ -967,7 +970,7 @@ struct cascadeFlow {
         cascadev2::hSparseV2C[0]->Fill(values);
       }
 
-      float BDTresponse[2]{0.f, 0.f};
+      float BDTresponse[nParticles]{0.f, 0.f};
       if (isApplyML) {
         BDTresponse[0] = bdtScore[0][1];
         BDTresponse[1] = bdtScore[1][1];
@@ -1097,7 +1100,7 @@ struct cascadeFlow {
     resolution.fill(HIST("QVectorsNormT0CTPCC"), eventplaneVecT0C.Dot(eventplaneVecTPCC) / (coll.qTPCL() * coll.sumAmplFT0C()), coll.centFT0C());
     resolution.fill(HIST("QVectorsNormTPCAC"), eventplaneVecTPCA.Dot(eventplaneVecTPCC) / (coll.qTPCR() * coll.qTPCL()), coll.centFT0C());
 
-    std::vector<float> bdtScore[2];
+    std::vector<float> bdtScore[nParticles];
     for (auto& casc : Cascades) {
 
       /// Add some minimal cuts for single track variables (min number of TPC clusters)
@@ -1110,7 +1113,7 @@ struct cascadeFlow {
       histos.fill(HIST("hCascade"), counter);
 
       // ML selections
-      bool isSelectedCasc[2]{false, false};
+      bool isSelectedCasc[nParticles]{false, false};
 
       std::vector<float> inputFeaturesCasc{casc.cascradius(),
                                            casc.v0radius(),
@@ -1125,7 +1128,7 @@ struct cascadeFlow {
                                            casc.bachBaryonCosPA(),
                                            casc.bachBaryonDCAxyToPV()};
 
-      float massCasc[2]{casc.mXi(), casc.mOmega()};
+      float massCasc[nParticles]{casc.mXi(), casc.mOmega()};
 
       // pt cut
       if (casc.pt() < CandidateConfigs.MinPt || casc.pt() > CandidateConfigs.MaxPt) {
@@ -1140,7 +1143,7 @@ struct cascadeFlow {
         isSelectedCasc[0] = mlResponseXi.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[0]);
         isSelectedCasc[1] = mlResponseOmega.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[1]);
 
-        for (int iS{0}; iS < 2; ++iS) {
+        for (int iS{0}; iS < nParticles; ++iS) {
           // Fill BDT score histograms before selection
           cascadev2::hSignalScoreBeforeSel[iS]->Fill(bdtScore[0][1]);
           cascadev2::hBkgScoreBeforeSel[iS]->Fill(bdtScore[1][0]);
@@ -1164,9 +1167,9 @@ struct cascadeFlow {
       ROOT::Math::XYZVector cascUvec{std::cos(casc.phi()), std::sin(casc.phi()), 0};
 
       // polarization variables
-      double masses[2]{o2::constants::physics::MassXiMinus, o2::constants::physics::MassOmegaMinus};
-      ROOT::Math::PxPyPzMVector cascadeVector[2], lambdaVector, protonVector;
-      float cosThetaStarLambda[2], cosThetaStarProton;
+      double masses[nParticles]{o2::constants::physics::MassXiMinus, o2::constants::physics::MassOmegaMinus};
+      ROOT::Math::PxPyPzMVector cascadeVector[nParticles], lambdaVector, protonVector;
+      float cosThetaStarLambda[nParticles], cosThetaStarProton;
       lambdaVector.SetCoordinates(casc.pxlambda(), casc.pylambda(), casc.pzlambda(), o2::constants::physics::MassLambda);
       ROOT::Math::Boost lambdaBoost{lambdaVector.BoostToCM()};
       if (casc.sign() > 0) {
@@ -1176,7 +1179,7 @@ struct cascadeFlow {
       }
       auto boostedProton{lambdaBoost(protonVector)};
       cosThetaStarProton = boostedProton.Pz() / boostedProton.P();
-      for (int i{0}; i < 2; ++i) {
+      for (int i{0}; i < nParticles; ++i) {
         cascadeVector[i].SetCoordinates(casc.px(), casc.py(), casc.pz(), masses[i]);
         ROOT::Math::Boost cascadeBoost{cascadeVector[i].BoostToCM()};
         auto boostedLambda{cascadeBoost(lambdaVector)};
@@ -1234,7 +1237,7 @@ struct cascadeFlow {
         cascadev2::hSparseV2C[0]->Fill(values);
       }
 
-      float BDTresponse[2]{0.f, 0.f};
+      float BDTresponse[nParticles]{0.f, 0.f};
       if (isApplyML) {
         BDTresponse[0] = bdtScore[0][1];
         BDTresponse[1] = bdtScore[1][1];
@@ -1376,7 +1379,7 @@ struct cascadeFlow {
     resolution.fill(HIST("QVectorsNormTPCAC"), eventplaneVecTPCA.Dot(eventplaneVecTPCC) / (NormQvTPCA * NormQvTPCC), coll.centFT0C());
     resolution.fill(HIST("QVectorsSpecPlane"), spectatorplaneVecZDCC.Dot(spectatorplaneVecZDCA), coll.centFT0C());
 
-    std::vector<float> bdtScore[2];
+    std::vector<float> bdtScore[nParticles];
     for (auto& casc : Cascades) {
 
       /// Add some minimal cuts for single track variables (min number of TPC clusters)
@@ -1389,7 +1392,7 @@ struct cascadeFlow {
       histos.fill(HIST("hCascade"), counter);
 
       // ML selections
-      bool isSelectedCasc[2]{false, false};
+      bool isSelectedCasc[nParticles]{false, false};
 
       std::vector<float> inputFeaturesCasc{casc.cascradius(),
                                            casc.v0radius(),
@@ -1404,7 +1407,7 @@ struct cascadeFlow {
                                            casc.bachBaryonCosPA(),
                                            casc.bachBaryonDCAxyToPV()};
 
-      float massCasc[2]{casc.mXi(), casc.mOmega()};
+      float massCasc[nParticles]{casc.mXi(), casc.mOmega()};
 
       // inv mass loose cut
       if (casc.pt() < CandidateConfigs.MinPt || casc.pt() > CandidateConfigs.MaxPt) {
@@ -1463,7 +1466,7 @@ struct cascadeFlow {
         cascadev2::hSparseV2C[0]->Fill(values);
       }
 
-      float BDTresponse[2]{0.f, 0.f};
+      float BDTresponse[nParticles]{0.f, 0.f};
       if (isApplyML) {
         BDTresponse[0] = bdtScore[0][1];
         BDTresponse[1] = bdtScore[1][1];
@@ -1492,7 +1495,7 @@ struct cascadeFlow {
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
     histos.fill(HIST("hMultNTracksITSTPCVsCentrality"), coll.centFT0C(), coll.multNTracksITSTPC());
 
-    std::vector<float> bdtScore[2];
+    std::vector<float> bdtScore[nParticles];
     for (auto& casc : Cascades) {
 
       if (!casc.has_cascMCCore())
@@ -1535,7 +1538,7 @@ struct cascadeFlow {
       histos.fill(HIST("hCascade"), counter);
 
       // ML selections
-      bool isSelectedCasc[2]{false, false};
+      bool isSelectedCasc[nParticles]{false, false};
 
       std::vector<float> inputFeaturesCasc{casc.cascradius(),
                                            casc.v0radius(),
@@ -1550,7 +1553,7 @@ struct cascadeFlow {
                                            casc.bachBaryonCosPA(),
                                            casc.bachBaryonDCAxyToPV()};
 
-      float massCasc[2]{casc.mXi(), casc.mOmega()};
+      float massCasc[nParticles]{casc.mXi(), casc.mOmega()};
 
       if (casc.pt() < CandidateConfigs.MinPt || casc.pt() > CandidateConfigs.MaxPt) {
         continue;
@@ -1583,7 +1586,7 @@ struct cascadeFlow {
 
       histos.fill(HIST("hCascadePhi"), casc.phi());
 
-      float BDTresponse[2]{0.f, 0.f};
+      float BDTresponse[nParticles]{0.f, 0.f};
       const float PsiT0C = 0; // not defined in MC for now
       auto v2CSP = 0;         // not defined in MC for now
       auto v2CEP = 0;         // not defined in MC for now
