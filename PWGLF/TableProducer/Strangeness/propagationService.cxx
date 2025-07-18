@@ -36,7 +36,6 @@
 #include "CCDB/CcdbApi.h"
 #include "CommonConstants/GeomConstants.h"
 #include "CommonUtils/NameConf.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
