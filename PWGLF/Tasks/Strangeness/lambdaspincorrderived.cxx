@@ -44,6 +44,7 @@
 #include <type_traits>
 #include <unordered_map> // <<< CHANGED: for seenMap
 #include <vector>
+#include <utility>
 
 // o2 includes.
 #include "CCDB/BasicCCDBManager.h"
@@ -463,7 +464,7 @@ struct lambdaspincorrderived {
           }
           if (nRepl == 0)
             continue;
-          float invN = 1.0f / float(nRepl);
+          float invN = 1.0f / static_cast<float>(nRepl);
 
           for (auto& t3 : poolB) {
             if (!(selectionV0(t3) && checkKinematics(t1, t3))) {
@@ -507,7 +508,7 @@ struct lambdaspincorrderived {
 
       auto sliced = V0s.sliceBy(tracksPerCollisionV0, collision1.index());
       eventPools[bin].emplace_back(collision1.index(), std::move(sliced));
-      if ((int)eventPools[bin].size() > nEvtMixing) {
+      if (static_cast<int>(eventPools[bin].size()) > nEvtMixing) {
         eventPools[bin].pop_front();
       }
     } // end primary-event loop
