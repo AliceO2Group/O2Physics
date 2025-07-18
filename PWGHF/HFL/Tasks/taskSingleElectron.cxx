@@ -105,9 +105,9 @@ struct HfTaskSingleElectron {
   }
 
   template <typename TrackType>
-  bool trackSel(const TrackType &track)
+  bool trackSel(const TrackType& track)
   {
-    if ( (track.pt() > ptTrackMax) || (track.pt() < ptTrackMin) )
+    if ((track.pt() > ptTrackMax) || (track.pt() < ptTrackMin))
       return false;
     if (std::abs(track.eta()) > etaTrackMax)
       return false;
@@ -131,20 +131,20 @@ struct HfTaskSingleElectron {
   }
 
   void process(soa::Filtered<MyCollisions>::iterator const& collision,
-			   TracksEl const& tracks)
+               TracksEl const& tracks)
   {
-	float flagEventFill = 0.5;
-	float flagAnalysedEvt = 0.5;
+    float flagEventFill = 0.5;
+    float flagAnalysedEvt = 0.5;
     histos.fill(HIST("hEventCounter"), flagEventFill);
 
     if (!collision.sel8())
       return;
-	flagEventFill += 1.;
+    flagEventFill += 1.;
     histos.fill(HIST("hEventCounter"), flagEventFill);
 
     if (collision.numContrib() < nContribMin)
       return;
-	flagEventFill += 1.;
+    flagEventFill += 1.;
     histos.fill(HIST("hEventCounter"), flagEventFill);
 
     histos.fill(HIST("VtxZ"), collision.posZ());
@@ -154,16 +154,16 @@ struct HfTaskSingleElectron {
 
       if (!trackSel(track))
         continue;
-    
-	  histos.fill(HIST("etaTrack"), track.eta());
-	  histos.fill(HIST("ptTrack"), track.pt());
 
-	  histos.fill(HIST("tpcNClsTrack"), track.tpcNClsCrossedRows());
-	  histos.fill(HIST("tpcFoundFindableTrack"), track.tpcCrossedRowsOverFindableCls());
-	  histos.fill(HIST("tpcChi2Track"), track.tpcChi2NCl());
-	  histos.fill(HIST("itsIBClsTrack"), track.itsNClsInnerBarrel());
-	  histos.fill(HIST("dcaXYTrack"), track.dcaXY());
-	  histos.fill(HIST("dcaZTrack"), track.dcaZ());
+      histos.fill(HIST("etaTrack"), track.eta());
+      histos.fill(HIST("ptTrack"), track.pt());
+
+      histos.fill(HIST("tpcNClsTrack"), track.tpcNClsCrossedRows());
+      histos.fill(HIST("tpcFoundFindableTrack"), track.tpcCrossedRowsOverFindableCls());
+      histos.fill(HIST("tpcChi2Track"), track.tpcChi2NCl());
+      histos.fill(HIST("itsIBClsTrack"), track.itsNClsInnerBarrel());
+      histos.fill(HIST("dcaXYTrack"), track.dcaXY());
+      histos.fill(HIST("dcaZTrack"), track.dcaZ());
 
       histos.fill(HIST("tofNSigPt"), track.pt(), track.tofNSigmaEl());
       histos.fill(HIST("tpcNSigPt"), track.pt(), track.tpcNSigmaEl());
