@@ -1378,11 +1378,6 @@ struct HfDataCreatorCharmHadPiReduced {
                 std::copy(candC.mlProbLcToPiKP().begin(), candC.mlProbLcToPiKP().end(), mlScores.begin() + 3);
               }
               tables.hfCand3ProngMl(mlScores[0], mlScores[1], mlScores[2], mlScores[3], mlScores[4], mlScores[5]);
-            } else if constexpr (decChannel == DecayChannel::B0ToDstarPi) {
-              if (candC.mlProbDStarToD0Pi().size() == NSizeMLScore) {
-                std::copy(candC.mlProbDStarToD0Pi().begin(), candC.mlProbDStarToD0Pi().end(), mlScores.begin());
-              }
-              tables.hfCand3ProngMl(mlScores[0], mlScores[1], mlScores[2], -1.f, -1.f, -1.f);
             }
           }
         } else if constexpr (decChannel == DecayChannel::BplusToD0barPi) { // D0(bar) → K± π∓
@@ -1412,24 +1407,23 @@ struct HfDataCreatorCharmHadPiReduced {
             tables.hfCand2ProngMl(mlScores[0], mlScores[1], mlScores[2], mlScores[3], mlScores[4], mlScores[5]);
           }
         } else if constexpr (decChannel == DecayChannel::B0ToDstarPi) {
-          tables.hfCand3Prong(charmHadDauTracks[0].globalIndex(), charmHadDauTracks[1].globalIndex(), charmHadDauTracks[2].globalIndex(),
+          tables.hfCand2Prong(charmHadDauTracks[0].globalIndex(), charmHadDauTracks[1].globalIndex(),
                               indexHfReducedCollision,
                               trackParCovCharmHad.getX(), trackParCovCharmHad.getAlpha(),
                               trackParCovCharmHad.getY(), trackParCovCharmHad.getZ(), trackParCovCharmHad.getSnp(),
                               trackParCovCharmHad.getTgl(), trackParCovCharmHad.getQ2Pt(),
                               candC.xSecondaryVertexD0(), candC.ySecondaryVertexD0(), candC.zSecondaryVertexD0(), invMassC0, invMassC1,
                               ptDauMin, etaDauMin, nItsClsDauMin, nTpcCrossRowsDauMin, chi2TpcDauMax);
-          tables.hfCand3ProngCov(trackParCovCharmHad.getSigmaY2(), trackParCovCharmHad.getSigmaZY(), trackParCovCharmHad.getSigmaZ2(),
+          tables.hfCand2ProngCov(trackParCovCharmHad.getSigmaY2(), trackParCovCharmHad.getSigmaZY(), trackParCovCharmHad.getSigmaZ2(),
                                  trackParCovCharmHad.getSigmaSnpY(), trackParCovCharmHad.getSigmaSnpZ(),
                                  trackParCovCharmHad.getSigmaSnp2(), trackParCovCharmHad.getSigmaTglY(), trackParCovCharmHad.getSigmaTglZ(),
                                  trackParCovCharmHad.getSigmaTglSnp(), trackParCovCharmHad.getSigmaTgl2(),
                                  trackParCovCharmHad.getSigma1PtY(), trackParCovCharmHad.getSigma1PtZ(), trackParCovCharmHad.getSigma1PtSnp(),
                                  trackParCovCharmHad.getSigma1PtTgl(), trackParCovCharmHad.getSigma1Pt2());
-          float nSigmaTpcPr0{-999.f}, nSigmaTpcPr1{-999.f}, nSigmaTpcPr2{-999.f};
-          float nSigmaTofPr0{-999.f}, nSigmaTofPr1{-999.f}, nSigmaTofPr2{-999.f};
+          float nSigmaTpcPr0{-999.f}, nSigmaTpcPr1{-999.f};
+          float nSigmaTofPr0{-999.f}, nSigmaTofPr1{-999.f};
           tables.hfCandPidProng0(candC.nSigTpcPi0(), candC.nSigTofPi0(), candC.nSigTpcKa0(), candC.nSigTofKa0(), nSigmaTpcPr0, nSigmaTofPr0, charmHadDauTracks[0].hasTOF(), charmHadDauTracks[0].hasTPC());
           tables.hfCandPidProng1(candC.nSigTpcPi1(), candC.nSigTofPi1(), candC.nSigTpcKa1(), candC.nSigTofKa1(), nSigmaTpcPr1, nSigmaTofPr1, charmHadDauTracks[1].hasTOF(), charmHadDauTracks[1].hasTPC());
-          tables.hfCandPidProng2(candC.nSigTpcPi2(), candC.nSigTofPi2(), candC.nSigTpcKa2(), candC.nSigTofKa2(), nSigmaTpcPr2, nSigmaTofPr2, charmHadDauTracks[2].hasTOF(), charmHadDauTracks[2].hasTPC());
 
           // Soft pion tables
           auto trackSoftPion = charmHadDauTracks.back();
@@ -1451,6 +1445,13 @@ struct HfDataCreatorCharmHadPiReduced {
                                     trackParCovSoftPion.getSigmaTglSnp(), trackParCovSoftPion.getSigmaTgl2(),
                                     trackParCovSoftPion.getSigma1PtY(), trackParCovSoftPion.getSigma1PtZ(), trackParCovSoftPion.getSigma1PtSnp(),
                                     trackParCovSoftPion.getSigma1PtTgl(), trackParCovSoftPion.getSigma1Pt2());
+          if constexpr (withMl) {            
+            std::array<float, 6> mlScores = {-1.f, -1.f, -1.f, -1.f, -1.f, -1.f};
+            if (candC.mlProbDstarToD0Pi().size() == NSizeMLScore) {
+              std::copy(candC.mlProbDstarToD0Pi().begin(), candC.mlProbDstarToD0Pi().end(), mlScores.begin());
+            }
+            tables.hfCand3ProngMl(mlScores[0], mlScores[1], mlScores[2], -1.f, -1.f, -1.f);
+          }
         }
         fillHfReducedCollision = true;
       }
