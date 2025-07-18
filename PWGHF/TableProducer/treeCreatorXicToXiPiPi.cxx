@@ -81,7 +81,7 @@ DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);          
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiLites, "AOD", "HFXICXI2PILITE",
                   full::ParticleFlag,
-                  hf_cand_xic_to_xi_pi_pi::OriginRec,
+                  hf_cand_xic_to_xi_pi_pi::OriginMcRec,
                   full::CandidateSelFlag,
                   full::Y,
                   full::Eta,
@@ -118,7 +118,7 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiLites, "AOD", "HFXICXI2PILITE",
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteKfs, "AOD", "HFXICXI2PILITKF",
                   full::ParticleFlag,
-                  hf_cand_xic_to_xi_pi_pi::OriginRec,
+                  hf_cand_xic_to_xi_pi_pi::OriginMcRec,
                   full::CandidateSelFlag,
                   full::Y,
                   full::Eta,
@@ -187,7 +187,7 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteKfs, "AOD", "HFXICXI2PILITKF",
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiFulls, "AOD", "HFXICXI2PIFULL",
                   full::ParticleFlag,
-                  hf_cand_xic_to_xi_pi_pi::OriginRec,
+                  hf_cand_xic_to_xi_pi_pi::OriginMcRec,
                   full::CandidateSelFlag,
                   full::Y,
                   full::Eta,
@@ -249,7 +249,7 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFulls, "AOD", "HFXICXI2PIFULL",
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullKfs, "AOD", "HFXICXI2PIFULKF",
                   full::ParticleFlag,
-                  hf_cand_xic_to_xi_pi_pi::OriginRec,
+                  hf_cand_xic_to_xi_pi_pi::OriginMcRec,
                   full::CandidateSelFlag,
                   full::Y,
                   full::Eta,
@@ -329,7 +329,7 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullKfs, "AOD", "HFXICXI2PIFULKF",
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullPs, "AOD", "HFXICXI2PIFULLP",
                   hf_cand_xic_to_xi_pi_pi::FlagMcMatchGen,
-                  hf_cand_xic_to_xi_pi_pi::OriginGen,
+                  hf_cand_xic_to_xi_pi_pi::OriginMcGen,
                   hf_cand::PdgBhadMotherPart,
                   full::Pt,
                   full::Eta,
@@ -379,7 +379,7 @@ struct HfTreeCreatorXicToXiPiPi {
     int8_t originMc = 0;
     if constexpr (doMc) {
       particleFlag = candidate.flagMcMatchRec();
-      originMc = candidate.originRec();
+      originMc = candidate.originMcRec();
     }
     if constexpr (!doKf) {
       if (fillCandidateLiteTable) {
@@ -718,7 +718,7 @@ struct HfTreeCreatorXicToXiPiPi {
       for (const auto& particle : particles) {
         rowCandidateFullParticles(
           particle.flagMcMatchGen(),
-          particle.originGen(),
+          particle.originMcGen(),
           particle.pdgBhadMotherPart(),
           particle.pt(),
           particle.eta(),
@@ -771,7 +771,7 @@ struct HfTreeCreatorXicToXiPiPi {
       for (const auto& particle : particles) {
         rowCandidateFullParticles(
           particle.flagMcMatchGen(),
-          particle.originGen(),
+          particle.originMcGen(),
           particle.pdgBhadMotherPart(),
           particle.pt(),
           particle.eta(),

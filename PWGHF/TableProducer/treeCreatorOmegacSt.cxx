@@ -87,7 +87,7 @@ DECLARE_SOA_COLUMN(DecayLengthCharmedBaryon, decayLengthCharmedBaryon, float);
 DECLARE_SOA_COLUMN(DecayLengthXYCharmedBaryon, decayLengthXYCharmedBaryon, float);
 DECLARE_SOA_COLUMN(DecayLengthCasc, decayLengthCasc, float);
 DECLARE_SOA_COLUMN(DecayLengthXYCasc, decayLengthXYCasc, float);
-DECLARE_SOA_COLUMN(OriginGen, originGen, int);
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int);
 DECLARE_SOA_COLUMN(DecayChannel, decayChannel, int);
 } // namespace hf_st_charmed_baryon_gen
 
@@ -104,7 +104,7 @@ DECLARE_SOA_TABLE(HfStChBarGens, "AOD", "HFSTCHBARGEN",
                   hf_st_charmed_baryon_gen::DecayLengthXYCharmedBaryon,
                   hf_st_charmed_baryon_gen::DecayLengthCasc,
                   hf_st_charmed_baryon_gen::DecayLengthXYCasc,
-                  hf_st_charmed_baryon_gen::OriginGen,
+                  hf_st_charmed_baryon_gen::OriginMcGen,
                   hf_st_charmed_baryon_gen::DecayChannel);
 
 // CharmedBaryon -> Casc + Pion/Kaon
@@ -164,7 +164,7 @@ DECLARE_SOA_COLUMN(DecayLengthCasc, decayLengthCasc, float);
 DECLARE_SOA_COLUMN(DecayLengthXYCasc, decayLengthXYCasc, float);
 DECLARE_SOA_INDEX_COLUMN_FULL(MotherCasc, motherCasc, int, HfStChBarGens, "_Casc");
 DECLARE_SOA_INDEX_COLUMN_FULL(MotherPionOrKaon, motherPionOrKaon, int, HfStChBarGens, "_PionOrKaon");
-DECLARE_SOA_COLUMN(OriginRec, originRec, int);
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int);
 } // namespace hf_st_charmed_baryon
 
 DECLARE_SOA_TABLE(HfStChBars, "AOD", "HFSTCHBAR",
@@ -220,7 +220,7 @@ DECLARE_SOA_TABLE(HfStChBars, "AOD", "HFSTCHBAR",
                   hf_st_charmed_baryon::DecayLengthXYCasc,
                   hf_st_charmed_baryon::MotherCascId,
                   hf_st_charmed_baryon::MotherPionOrKaonId,
-                  hf_st_charmed_baryon::OriginRec);
+                  hf_st_charmed_baryon::OriginMcRec);
 } // namespace o2::aod
 
 struct HfTreeCreatorOmegacSt {

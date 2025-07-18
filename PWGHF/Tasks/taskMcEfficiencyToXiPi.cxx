@@ -54,9 +54,6 @@ struct HfTaskMcEfficiencyToXiPi {
   Configurable<int> nClustersTpcMin{"nClustersTpcMin", 70, "Minimum number of TPC clusters requirement for pion <-- charm baryon"};
   Configurable<int> nClustersItsMin{"nClustersItsMin", 3, "Minimum number of ITS clusters requirement for pion <- charm baryon"};
 
-  ConfigurableAxis axisPt{"axisPt", {200, 0, 20}, "pT axis"};
-  ConfigurableAxis axisMass{"axisMass", {900, 2.1, 3}, "m_inv axis"};
-
   enum HFStep { kHFStepMC = 0,              // all generated mothers
                 kHFStepMcInRapidity,        // MC mother in rapidity |y| < rapidityCharmBaryonMax=0.5
                 kHFStepAcceptance,          // MC mother where all final state candidates pass eta and pt selection
@@ -81,6 +78,9 @@ struct HfTaskMcEfficiencyToXiPi {
   using ParticleInfoXic0 = soa::Join<aod::McParticles, aod::HfXicToXiPiMCGen>;
   using ParticleInfoOmegac0 = soa::Join<aod::McParticles, aod::HfOmegacToXiPiMCGen>;
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+
+  ConfigurableAxis axisPt{"axisPt", {200, 0, 20}, "pT axis"};
+  ConfigurableAxis axisMass{"axisMass", {900, 2.1, 3}, "m_inv axis"};
 
   HistogramRegistry registry{"registry"};
 
@@ -149,11 +149,11 @@ struct HfTaskMcEfficiencyToXiPi {
       pt = RecoDecay::sqrtSumOfSquares(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
 
       // all candidates (candidateCreator)
-      hCandidates->Fill(kHFStepTracked, pt, mass, candidate.collisionMatched(), candidate.originRec());
+      hCandidates->Fill(kHFStepTracked, pt, mass, candidate.collisionMatched(), candidate.originMcRec());
 
       // check xi-pi candidate passed candidate selector cuts (except PID)
       if (candidate.resultSelections() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
-        hCandidates->Fill(kHFStepTrackedCuts, pt, mass, candidate.collisionMatched(), candidate.originRec());
+        hCandidates->Fill(kHFStepTrackedCuts, pt, mass, candidate.collisionMatched(), candidate.originMcRec());
         selectedKine = true;
       }
       if (!selectedKine) {
@@ -162,7 +162,7 @@ struct HfTaskMcEfficiencyToXiPi {
 
       // check xi-pi candidate passed candidate selector cuts (PID included)
       if (candidate.statusPidCharmBaryon()) {
-        hCandidates->Fill(kHFStepTrackedSelected, pt, mass, candidate.collisionMatched(), candidate.originRec());
+        hCandidates->Fill(kHFStepTrackedSelected, pt, mass, candidate.collisionMatched(), candidate.originMcRec());
         selectedPid = true;
       }
       if (!selectedPid) {
@@ -231,17 +231,17 @@ struct HfTaskMcEfficiencyToXiPi {
       }
 
       // all candidates
-      hCandidates->Fill(kHFStepMC, mcParticle.pt(), mass, true, mcParticle.originGen()); // set matchedCollision to true by default at gen level
+      hCandidates->Fill(kHFStepMC, mcParticle.pt(), mass, true, mcParticle.originMcGen()); // set matchedCollision to true by default at gen level
 
       // candidates with charm baryon within eta range
       if (std::abs(mcParticle.y()) < rapidityCharmBaryonMax) {
-        hCandidates->Fill(kHFStepMcInRapidity, mcParticle.pt(), mass, true, mcParticle.originGen());
+        hCandidates->Fill(kHFStepMcInRapidity, mcParticle.pt(), mass, true, mcParticle.originMcGen());
       }
 
       // exclude cases with undesired decays
       int cascId = -999;
       int pionId = -999;
-      for (auto& dauCharm : mcParticle.template daughters_as<T2>()) {
+      for (auto const& dauCharm : mcParticle.template daughters_as<T2>()) {
         if (std::abs(dauCharm.pdgCode()) == kXiMinus && (dauCharm.getProcess() == TMCProcess::kPDecay || dauCharm.getProcess() == TMCProcess::kPPrimary)) {
           cascId = dauCharm.globalIndex();
         } else if (std::abs(dauCharm.pdgCode()) == kPiPlus && (dauCharm.getProcess() == TMCProcess::kPDecay || dauCharm.getProcess() == TMCProcess::kPPrimary)) {
@@ -264,7 +264,7 @@ struct HfTaskMcEfficiencyToXiPi {
       // first create cascade daughters objects
       int lambdaId = -999;
       int pionFromCascadeId = -999;
-      for (auto& dauCasc : cascade.template daughters_as<T2>()) {
+      for (auto const& dauCasc : cascade.template daughters_as<T2>()) {
         if (std::abs(dauCasc.pdgCode()) == kLambda0 && dauCasc.getProcess() == TMCProcess::kPDecay) {
           lambdaId = dauCasc.globalIndex();
         } else if (std::abs(dauCasc.pdgCode()) == kPiPlus && dauCasc.getProcess() == TMCProcess::kPDecay) {
@@ -280,7 +280,7 @@ struct HfTaskMcEfficiencyToXiPi {
       // then create lambda daughters objects
       int protonId = -999;
       int pionFromLambdaId = -999;
-      for (auto& dauV0 : lambda.template daughters_as<T2>()) {
+      for (auto const& dauV0 : lambda.template daughters_as<T2>()) {
         if (std::abs(dauV0.pdgCode()) == kProton && dauV0.getProcess() == TMCProcess::kPDecay) {
           protonId = dauV0.globalIndex();
         } else if (std::abs(dauV0.pdgCode()) == kPiPlus && dauV0.getProcess() == TMCProcess::kPDecay) {
@@ -302,14 +302,14 @@ struct HfTaskMcEfficiencyToXiPi {
       }
       // final state candidates pass eta and pt selection
       if (inAcceptance) {
-        hCandidates->Fill(kHFStepAcceptance, mcParticle.pt(), mass, true, mcParticle.originGen());
+        hCandidates->Fill(kHFStepAcceptance, mcParticle.pt(), mass, true, mcParticle.originMcGen());
       }
 
       if (tracked[pionId] && tracked[pionFromCascadeId] && tracked[pionFromLambdaId] && tracked[protonId]) {
         // final state candidates have a mc particleID != 0
-        hCandidates->Fill(kHFStepTrackable, mcParticle.pt(), mass, true, mcParticle.originGen());
+        hCandidates->Fill(kHFStepTrackable, mcParticle.pt(), mass, true, mcParticle.originMcGen());
         if (inAcceptance) {
-          hCandidates->Fill(kHFStepAcceptanceTrackable, mcParticle.pt(), mass, true, mcParticle.originGen());
+          hCandidates->Fill(kHFStepAcceptanceTrackable, mcParticle.pt(), mass, true, mcParticle.originMcGen());
         } else {
           LOGP(debug, "Candidate {} not in acceptance but tracked.", mcParticle.globalIndex());
           LOGP(debug, "MC cascade: pt={} eta={}", cascade.pt(), cascade.eta());
@@ -365,13 +365,13 @@ struct HfTaskMcEfficiencyToXiPi {
 
       // with pion track cuts (see checkTrackGlbTrk and checkTrkItsTrk)
       if (selectedIts[pionId]) {
-        hCandidates->Fill(kHFStepItsTrackableCuts, mcParticle.pt(), mass, true, mcParticle.originGen());
+        hCandidates->Fill(kHFStepItsTrackableCuts, mcParticle.pt(), mass, true, mcParticle.originMcGen());
         if (!inAcceptance) {
           LOGP(debug, "Candidate {} has daughters not in acceptance but pion <-- charm tracked and selected (its only)", mcParticle.globalIndex());
         }
       }
       if (selectedItsTpc[pionId]) {
-        hCandidates->Fill(kHFStepItsTpcTrackableCuts, mcParticle.pt(), mass, true, mcParticle.originGen());
+        hCandidates->Fill(kHFStepItsTpcTrackableCuts, mcParticle.pt(), mass, true, mcParticle.originMcGen());
         if (!inAcceptance) {
           LOGP(debug, "Candidate {} has daughters not in acceptance but pion <-- charm tracked and selected (its & tpc)", mcParticle.globalIndex());
         }
