@@ -357,7 +357,7 @@ struct tpcPid {
     if (networkInputBatchedMode.value <= 0) {
       track_prop_size = size; // If the networkInputBatchedMode is not set, we use all tracks at once
     }
-    track_properties.resize(track_prop_size * input_dimensions); // If the networkInputBatchedMode is set, we use the number of tracks specified in the config
+    track_properties.resize(track_prop_size * input_dimensions);         // If the networkInputBatchedMode is set, we use the number of tracks specified in the config
     std::vector<float> network_prediction(prediction_size * numSpecies); // For each mass hypotheses
 
     // Filling a std::vector<float> to be evaluated by the network
