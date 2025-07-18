@@ -200,6 +200,7 @@ struct NonPromptCascadeTask {
   Configurable<LabeledArray<float>> cfgCutsPID{"particlesCutsPID", {cutsPID[0], nParticles, nCutsPID, particlesNames, cutsNames}, "Nuclei PID selections"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", true, "Skimmed dataset processing"};
   Configurable<std::string> cfgTriggersOfInterest{"cfgTriggersOfInterest", "fTrackedOmega,fOmegaHighMult", "Triggers of interest, comma separated for Zorro"};
+  Configurable<float> cfgOmegaHighMultCut{"cfgOmegaHighMultCut", 4000.f, "HM cut used in omega trigger in filtering"};
 
   Zorro mZorro;
   OutputObj<ZorroSummary> mZorroSummary{"ZorroSummary"};
@@ -209,6 +210,8 @@ struct NonPromptCascadeTask {
   int mRunNumber = 0;
   float mBz = 0.f;
   o2::vertexing::DCAFitterN<2> mDCAFitter;
+  int mOmegaAll = 0;
+  int mOmegaHighMultNorm = 0;
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
@@ -249,7 +252,7 @@ struct NonPromptCascadeTask {
     AxisSpec centAxis = {101, 0., 101., "Centrality"};
     AxisSpec centAxisZoom = {100, 0., 1., "Centrality"};
     AxisSpec multAxis = {10000, 0, 10000, "Multiplicity"};
-    AxisSpec multAxisZoom = {1000, 0, 1000, "Multiplicity"};
+    AxisSpec multAxisZoom = {9000, 1000, 9000, "Multiplicity"};
 
     std::array<std::string, 7> cutsNames{"# candidates", "hasTOF", "nClusTPC", "nSigmaTPCbach", "nSigmaTPCprotontrack", "nSigmaTPCpiontrack", "cosPA"};
     auto cutsOmega{std::get<std::shared_ptr<TH2>>(mRegistry.add("h_PIDcutsOmega", ";;Invariant mass (GeV/#it{c}^{2})", HistType::kTH2D, {{cutsNames.size(), -0.5, -0.5 + cutsNames.size()}, {125, 1.650, 1.700}}))};
@@ -319,18 +322,34 @@ struct NonPromptCascadeTask {
           toiMap[bc.globalBC()] = toiMask;
         }
       }
+    } else {
+      int runNumber{-1};
+      std::cout << "Filling mult histos" << std::endl;
+      for (const auto& coll : collisions) {
+        auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
+        if(runNumber != bc.runNumber()) {
+          runNumber = bc.runNumber();
+          mZorro.initMBRun(runNumber);
+        }
+        // std::cout << coll.centFT0M() << " mult, cent " << coll.multFT0M() << std::endl;
+        mRegistry.fill(HIST("hMultVsCent"), coll.centFT0M(), coll.multFT0M());
+        mRegistry.fill(HIST("hMultVsCentZoom"), coll.centFT0M(), coll.multFT0M());
+        mOmegaAll++;
+        if(coll.multFT0M() > cfgOmegaHighMultCut) {
+          mOmegaHighMultNorm++;
+        }
+        std::unordered_map<int,int> counts;
+        counts[0] = mOmegaAll;
+        counts[1] = mOmegaHighMultNorm;
+        mZorro.increaseTOIHMNCounters(counts);
+        auto norms = mZorro.getZorroSummary()->getTOIHMNormalisations();
+        for(auto const& nn: norms){
+          auto nnn = nn.second;
+          std::cout << nn.first << ":" <<  nnn[0] << "," << nnn[1] << std::endl;
+        }
+      }
     }
   }
-  void fillMultHistos(const auto& collisions)
-  {
-    std::cout << "Filling mult histos" << std::endl;
-    for (const auto& coll : collisions) {
-      // std::cout << coll.centFT0M() << " mult, cent " << coll.multFT0M() << std::endl;
-      mRegistry.fill(HIST("hMultVsCent"), coll.centFT0M(), coll.multFT0M());
-      mRegistry.fill(HIST("hMultVsCentZoom"), coll.centFT0M(), coll.multFT0M());
-    }
-  };
-
   template <typename TrackType, typename CollisionType>
   void fillCandidatesVector(CollisionType const&, TrackType const& tracks, auto const& cascades, auto& candidates, std::map<uint64_t, uint32_t> toiMap = {})
   {
@@ -686,7 +705,7 @@ struct NonPromptCascadeTask {
                                   aod::V0s const& /*v0s*/, TracksExtData const& tracks,
                                   aod::BCsWithTimestamps const&)
   {
-    fillMultHistos(collisions);
+    //fillMultHistos(collisions);
     std::map<uint64_t, uint32_t> toiMap;
     zorroAccounting(collisions, toiMap);
     fillCandidatesVector<TracksExtData>(collisions, tracks, trackedCascades, gCandidates, toiMap);

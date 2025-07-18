@@ -68,6 +68,10 @@ class Zorro
   void setBCtolerance(int tolerance) { mBCtolerance = tolerance; }
 
   ZorroSummary* getZorroSummary() { return &mZorroSummary; }
+  //
+  void initMBRun(int runNumber);
+  void populateTOIHMNorms(int runNumber);
+  void increaseTOIHMNCounters(std::unordered_map<int,int> counts);
 
  private:
   void setupHelpers(int64_t timestamp);
@@ -80,10 +84,13 @@ class Zorro
   int64_t mOrbitResetTimestamp = 0;
   TH1* mAnalysedTriggers = nullptr;           /// Accounting for all triggers in the current run
   TH1* mAnalysedTriggersOfInterest = nullptr; /// Accounting for triggers of interest in the current run
+  //TH1* mAnalysedTOIHighMultNorms = nullptr; /// Acounting for High Mult trigger normalisations in the current run
 
   std::vector<int> mRunNumberHistos;
   std::vector<TH1*> mAnalysedTriggersList;           /// Per run histograms
   std::vector<TH1*> mAnalysedTriggersOfInterestList; /// Per run histograms
+  //std::vector<TH1*> mAnalysedTOIHighMultNormsList; /// Acounting for High Mult trigger normalisations per run
+
 
   int mBCtolerance = 100;
   uint64_t mLastBCglobalId = 0;
@@ -98,6 +105,7 @@ class Zorro
   std::vector<std::string> mTOIs;
   std::vector<int> mTOIidx;
   std::vector<int> mTOIcounts;
+  std::unordered_map<int, int> mTOIHMNorms; /// Map from toi index to counter (vector of countres to be used if more thresholds for one toi)
   o2::ccdb::BasicCCDBManager* mCCDB = nullptr;
 };
 

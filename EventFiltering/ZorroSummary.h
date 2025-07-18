@@ -31,10 +31,14 @@ class ZorroSummary : public TNamed
   virtual void Copy(TObject& c) const; // NOLINT: Making this override breaks compilation for unknown reason
   virtual Long64_t Merge(TCollection* list);
 
-  void setupTOIs(int ntois, const std::string& toinames)
+  void setupTOIs(int ntois, const std::vector<std::string>& toinames)
   {
     mNtois = ntois;
     mTOInames = toinames;
+  }
+  void setupRunTOIHMNorms(int runNumber, const std::unordered_map<int,int>& toiHMNorms)
+  {
+    mTOIHMNormalisations[runNumber] = toiHMNorms;
   }
   void setupRun(int runNumber, double tvxCountes, const std::vector<double>& toiCounters)
   {
@@ -56,22 +60,23 @@ class ZorroSummary : public TNamed
     mCurrentAnalysedTOIcounters->at(toiId)++;
   }
 
-  std::string getTOInames() const { return mTOInames; }
+  const auto& getTOInames() const { return mTOInames; }
   const auto& getTOIcounters() const { return mTOIcounters; }
   const auto& getTVXcounters() const { return mTVXcounters; }
   const auto& getAnalysedTOIcounters() const { return mAnalysedTOIcounters; }
-
+  const auto& getTOIHMNormalisations() const {return mTOIHMNormalisations; }
  private:
   int mRunNumber = 0;                                            //! Run currently being analysed
   std::vector<ULong64_t>* mCurrentAnalysedTOIcounters = nullptr; //! Analysed TOI counters for the current run
 
   int mNtois = 0;
-  std::string mTOInames;
+  std::vector<std::string> mTOInames;
   std::unordered_map<int, std::vector<ULong64_t>> mAnalysedTOIcounters;
   std::unordered_map<int, std::vector<double>> mTOIcounters;
   std::unordered_map<int, double> mTVXcounters;
+  std::unordered_map<int, std::unordered_map<int,int>> mTOIHMNormalisations;
 
-  ClassDef(ZorroSummary, 1);
+  ClassDef(ZorroSummary, 2);
 };
 
 #endif // EVENTFILTERING_ZORROSUMMARY_H_
