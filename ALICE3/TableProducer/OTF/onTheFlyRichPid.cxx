@@ -105,6 +105,8 @@ struct OnTheFlyRichPid {
   Configurable<bool> flagIncludeTrackAngularRes{"flagIncludeTrackAngularRes", true, "flag to include or exclude track time resolution"};
   Configurable<float> multiplicityEtaRange{"multiplicityEtaRange", 0.800000012, "eta range to compute the multiplicity"};
   Configurable<bool> flagRICHLoadDelphesLUTs{"flagRICHLoadDelphesLUTs", false, "flag to load Delphes LUTs for tracking correction (use recoTrack parameters if false)"};
+  Configurable<float> gasRadiatorRindex{"gasRadiatorRindex", 1.0006f, "gas radiator refractive index"};
+  Configurable<float> gasRichRadiatorThickness{"gasRichRadiatorThickness", 25.f, "gas radiator thickness (cm)"};
   Configurable<float> bRichRefractiveIndexSector0{"bRichRefractiveIndexSector0", 1.03, "barrel RICH refractive index central(s)"};                        // central(s)
   Configurable<float> bRichRefractiveIndexSector1{"bRichRefractiveIndexSector1", 1.03, "barrel RICH refractive index central(s)-1 and central(s)+1"};     // central(s)-1 and central(s)+1
   Configurable<float> bRichRefractiveIndexSector2{"bRichRefractiveIndexSector2", 1.03, "barrel RICH refractive index central(s)-2 and central(s)+2"};     // central(s)-2 and central(s)+2
@@ -505,6 +507,22 @@ struct OnTheFlyRichPid {
     return false; // Particle is below the threshold
   }
 
+  bool isOverTrhesholdInGasRadiator(const float momentum, const float mass)
+  {
+    if (momentum < mass / std::sqrt(gasRadiatorRindex * gasRadiatorRindex - 1.0)) { // Check if particle is above the threshold
+      return false;
+    }
+    const float angle = std::acos(std::sqrt(momentum * momentum + mass * mass) / (momentum * gasRadiatorRindex));
+    const float meanNumberofDetectedPhotons = 230. * std::sin(angle) * std::sin(angle) * gasRichRadiatorThickness;
+
+    // Require at least 3 photons on average for real angle reconstruction
+    static constexpr float kMinPhotons = 3.f;
+    if (meanNumberofDetectedPhotons <= kMinPhotons) {
+      return false;
+    }
+    return true;
+  }
+
   /// returns linear interpolation
   /// \param x the eta we want the resolution for
   /// \param x0 the closest smaller available eta
@@ -742,9 +760,9 @@ struct OnTheFlyRichPid {
 
     for (const auto& track : tracks) {
 
-      auto fillDummyValues = [&]() {
+      auto fillDummyValues = [&](bool gasRich = false) {
         upgradeRich(kErrorValue, kErrorValue, kErrorValue, kErrorValue, kErrorValue);
-        upgradeRichSignal(false, false, false, false, false, false);
+        upgradeRichSignal(false, false, false, false, false, false, gasRich);
       };
 
       // first step: find precise arrival time (if any)
@@ -770,16 +788,17 @@ struct OnTheFlyRichPid {
       }
 
       // find track bRICH sector
-      int iSecor = findSector(o2track.getEta());
+      const int iSecor = findSector(o2track.getEta());
       if (iSecor < 0) {
         fillDummyValues();
         continue;
       }
 
+      const bool expectedAngleBarrelGasRichOk = isOverTrhesholdInGasRadiator(o2track.getP(), pdgInfo->Mass());
       float expectedAngleBarrelRich = kErrorValue;
       const bool expectedAngleBarrelRichOk = cherenkovAngle(o2track.getP(), pdgInfo->Mass(), aerogelRindex[iSecor], expectedAngleBarrelRich);
       if (!expectedAngleBarrelRichOk) {
-        fillDummyValues();
+        fillDummyValues(expectedAngleBarrelGasRichOk);
         continue; // Particle is below the threshold or not enough photons
       }
       // float barrelRICHAngularResolution = angularResolution(o2track.getEta());
@@ -959,7 +978,7 @@ struct OnTheFlyRichPid {
 
       // Sigmas have been fully calculated. Please populate the NSigma helper table (once per track)
       upgradeRich(nSigmaBarrelRich[0], nSigmaBarrelRich[1], nSigmaBarrelRich[2], nSigmaBarrelRich[3], nSigmaBarrelRich[4]);
-      upgradeRichSignal(expectedAngleBarrelRichOk, signalBarrelRich[0], signalBarrelRich[1], signalBarrelRich[2], signalBarrelRich[3], signalBarrelRich[4]);
+      upgradeRichSignal(expectedAngleBarrelRichOk, signalBarrelRich[0], signalBarrelRich[1], signalBarrelRich[2], signalBarrelRich[3], signalBarrelRich[4], expectedAngleBarrelGasRichOk);
     }
   }
 };
