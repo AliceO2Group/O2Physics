@@ -756,8 +756,8 @@ struct cascadeFlow {
 
       auto cascMC = casc.cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
       int pdgCode{cascMC.pdgCode()};
-      if (!(std::abs(pdgCode) == 3312 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 211)     // Xi
-          && !(std::abs(pdgCode) == 3334 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 321)) // Omega
+      if (!(std::abs(pdgCode) == PDG_t::kXiMinus && std::abs(cascMC.pdgCodeV0()) == PDG_t::kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == PDG_t::kPiPlus)     // Xi
+          && !(std::abs(pdgCode) == PDG_t::kOmegaMinus && std::abs(cascMC.pdgCodeV0()) == PDG_t::kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == kKPlus)) // Omega
         continue;
 
       auto negExtra = casc.negTrackExtra_as<DauTracks>();
@@ -1501,8 +1501,8 @@ struct cascadeFlow {
       auto cascMC = casc.cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
 
       int pdgCode{cascMC.pdgCode()};
-      if (!(std::abs(pdgCode) == 3312 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 211)     // Xi
-          && !(std::abs(pdgCode) == 3334 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 321)) // Omega
+      if (!(std::abs(pdgCode) == PDG_t::kXiMinus && std::abs(cascMC.pdgCodeV0()) == PDG_t::kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == PDG_t::kPiPlus)     // Xi
+          && !(std::abs(pdgCode) == PDG_t::kOmegaMinus && std::abs(cascMC.pdgCodeV0()) == PDG_t::kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == PDG_t::kKPlus)) // Omega
       {
         pdgCode = 0;
       }
@@ -1511,13 +1511,13 @@ struct cascadeFlow {
       float XiY = RecoDecay::y(std::array{casc.px(), casc.py(), casc.pz()}, constants::physics::MassXiMinus);
       float OmegaY = RecoDecay::y(std::array{casc.px(), casc.py(), casc.pz()}, constants::physics::MassOmegaMinus);
       // true reco cascades before applying any selection
-      if (std::abs(pdgCode) == 3312 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 211) {
+      if (std::abs(pdgCode) == PDG_t::kXiMinus && std::abs(cascMC.pdgCodeV0()) == PDG_t::kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == PDG_t::kPiPlus) {
         histos.fill(HIST("hXiPtvsCent"), coll.centFT0C(), casc.pt());
         if (std::abs(casc.eta()) < 0.8)
           histos.fill(HIST("hXiPtvsCentEta08"), coll.centFT0C(), casc.pt());
         if (std::abs(XiY) < 0.5)
           histos.fill(HIST("hXiPtvsCentY05"), coll.centFT0C(), casc.pt());
-      } else if (std::abs(pdgCode) == 3334 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 321) {
+      } else if (std::abs(pdgCode) == PDG_t::kOmegaMinus && std::abs(cascMC.pdgCodeV0()) == PDG_t::kLambda0 && std::abs(cascMC.pdgCodeBachelor()) == PDG_t::kKPlus) {
         histos.fill(HIST("hOmegaPtvsCent"), coll.centFT0C(), casc.pt());
         if (std::abs(casc.eta()) < 0.8)
           histos.fill(HIST("hOmegaPtvsCentEta08"), coll.centFT0C(), casc.pt());
@@ -1642,21 +1642,21 @@ struct cascadeFlow {
     histosMCGen.fill(HIST("hNEventsMC"), 5.5);
 
     for (auto const& cascmc : cascMC) {
-      if (std::abs(cascmc.pdgCode()) == 3312)
+      if (std::abs(cascmc.pdgCode()) == PDG_t::kXiMinus)
         histosMCGen.fill(HIST("hNCascGen"), 0.5);
-      else if (std::abs(cascmc.pdgCode()) == 3334)
+      else if (std::abs(cascmc.pdgCode()) == PDG_t::kOmegaMinus)
         histosMCGen.fill(HIST("hNCascGen"), 1.5);
       if (!cascmc.has_straMCCollision())
         continue;
-      if (std::abs(cascmc.pdgCode()) == 3312)
+      if (std::abs(cascmc.pdgCode()) == PDG_t::kXiMinus)
         histosMCGen.fill(HIST("hNCascGen"), 2.5);
-      else if (std::abs(cascmc.pdgCode()) == 3334)
+      else if (std::abs(cascmc.pdgCode()) == PDG_t::kOmegaMinus)
         histosMCGen.fill(HIST("hNCascGen"), 3.5);
       if (!cascmc.isPhysicalPrimary())
         continue;
-      if (std::abs(cascmc.pdgCode()) == 3312)
+      if (std::abs(cascmc.pdgCode()) == PDG_t::kXiMinus)
         histosMCGen.fill(HIST("hNCascGen"), 4.5);
-      else if (std::abs(cascmc.pdgCode()) == 3334)
+      else if (std::abs(cascmc.pdgCode()) == PDG_t::kOmegaMinus)
         histosMCGen.fill(HIST("hNCascGen"), 5.5);
 
       float ptmc = RecoDecay::sqrtSumOfSquares(cascmc.pxMC(), cascmc.pyMC());
@@ -1675,7 +1675,7 @@ struct cascadeFlow {
       float cascMCeta = -std::log(std::tan(theta1 / 2));
       float cascMCy = 0;
 
-      if (std::abs(cascmc.pdgCode()) == 3312) {
+      if (std::abs(cascmc.pdgCode()) == PDG_t::kXiMinus) {
         cascMCy = RecoDecay::y(std::array{cascmc.pxMC(), cascmc.pyMC(), cascmc.pzMC()}, constants::physics::MassXiMinus);
         if (std::abs(cascMCeta) < etaCascMCGen) {
           histosMCGen.fill(HIST("h2DGenXiEta08"), centrality, ptmc);
@@ -1684,7 +1684,7 @@ struct cascadeFlow {
         if (std::abs(cascMCy) < yCascMCGen)
           histosMCGen.fill(HIST("h2DGenXiY05"), centrality, ptmc);
         histosMCGen.fill(HIST("hGenXiY"), cascMCy);
-      } else if (std::abs(cascmc.pdgCode() == 3334)) {
+      } else if (std::abs(cascmc.pdgCode() == PDG_t::kOmegaMinus)) {
         cascMCy = RecoDecay::y(std::array{cascmc.pxMC(), cascmc.pyMC(), cascmc.pzMC()}, constants::physics::MassOmegaMinus);
         if (std::abs(cascMCeta) < etaCascMCGen) {
           histosMCGen.fill(HIST("h2DGenOmegaEta08"), centrality, ptmc);
