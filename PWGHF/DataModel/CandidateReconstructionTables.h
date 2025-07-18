@@ -2192,12 +2192,14 @@ DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t); // reconstru
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                 // debug flag for mis-association reconstruction level
 
 // mapping of decay types
-enum DecayType { B0ToDPi = 0 };
+enum DecayType { B0ToDPi = 0,
+                 B0ToDstarPi };
 
 enum DecayTypeMc : uint8_t { B0ToDplusPiToPiKPiPi = 0,
                              B0ToDsPiToKKPiPi,
                              BsToDsPiToKKPiPi,
                              B0ToDplusKToPiKPiK,
+                             B0ToDstarPiToD0PiPiToKPiPiPi,
                              PartlyRecoDecay,
                              OtherDecay,
                              NDecayTypeMc };
