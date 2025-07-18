@@ -19,18 +19,22 @@
 #ifndef PWGLF_UTILS_STRANGENESSBUILDERMODULE_H_
 #define PWGLF_UTILS_STRANGENESSBUILDERMODULE_H_
 
-#include <memory>
-#include <cstdlib>
-#include <cmath>
-#include <array>
-#include <string>
+#include "TableHelper.h"
+
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/Utils/strangenessBuilderHelper.h"
+
+#include "Common/Core/TPCVDriftManager.h"
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/Configurable.h"
 #include "Framework/HistogramSpec.h"
-#include "TableHelper.h"
-#include "Common/Core/TPCVDriftManager.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/Utils/strangenessBuilderHelper.h"
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <memory>
+#include <string>
 
 //__________________________________________
 // strangeness builder module

@@ -10,40 +10,42 @@
 // or submit itself to any jurisdiction.
 
 /// \file propagationService.cxx
-/// \brief 
+/// \brief
 /// \author ALICE
 
 //===============================================================
 //
-// Merged track propagation + strangeness building task 
-// 
-// Provides a common task to deal with track propagation and 
-// strangeness building in a single DPL device that is particularly 
-// adequate for pipelining. 
+// Merged track propagation + strangeness building task
 //
-// Currently meant for testing and performance evaluation 
+// Provides a common task to deal with track propagation and
+// strangeness building in a single DPL device that is particularly
+// adequate for pipelining.
+//
+// Currently meant for testing and performance evaluation
 //
 //===============================================================
 
+#include "PWGLF/Utils/strangenessBuilderModule.h"
+
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Tools/StandardCCDBLoader.h"
+#include "Common/Tools/TrackPropagationModule.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "CommonConstants/GeomConstants.h"
+#include "CommonUtils/NameConf.h"
+#include "DataFormatsCalibration/MeanVertexObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "CommonUtils/NameConf.h"
-#include "CCDB/CcdbApi.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
 #include "Framework/HistogramRegistry.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "CommonConstants/GeomConstants.h"
-#include "PWGLF/Utils/strangenessBuilderModule.h"
-#include "Common/Tools/TrackPropagationModule.h"
-#include "Common/Tools/StandardCCDBLoader.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/DCA.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -144,3 +146,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   WorkflowSpec workflow{adaptAnalysisTask<propagationService>(cfgc)};
   return workflow;
 }
+ 
