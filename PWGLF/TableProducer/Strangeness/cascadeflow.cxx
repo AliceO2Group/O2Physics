@@ -1680,7 +1680,6 @@ struct cascadeFlow {
 
       float cascMCeta = -std::log(std::tan(theta1 / 2));
       float cascMCy = 0;
-      int pdgCode{cascMC.pdgCode()};
       if (std::abs(cascmc.pdgCode()) == PDG_t::kXiMinus) {
         cascMCy = RecoDecay::y(std::array{cascmc.pxMC(), cascmc.pyMC(), cascmc.pzMC()}, constants::physics::MassXiMinus);
         if (std::abs(cascMCeta) < etaCascMCGen) {
