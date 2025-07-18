@@ -292,7 +292,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
         if (candidate.signSoftPi() > 0) {
           massDstar = candidate.invMassDstar();
           invMassD0 = candidate.invMassD0();
-          flagSign = 1;
+          flagSign = 0;
         } else {
           massDstar = candidate.invMassAntiDstar();
           invMassD0 = candidate.invMassD0Bar();
