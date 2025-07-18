@@ -43,8 +43,8 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map> // <<< CHANGED: for seenMap
-#include <vector>
 #include <utility>
+#include <vector>
 
 // o2 includes.
 #include "CCDB/BasicCCDBManager.h"
