@@ -25,6 +25,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 
+#include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
@@ -40,6 +41,8 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <map>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -52,12 +55,27 @@ using namespace o2::soa;
 /// Dstar analysis task
 struct HfTaskDstarToD0Pi {
   Configurable<bool> selectionFlagDstarToD0Pi{"selectionFlagDstarToD0Pi", true, "Selection Flag for D* decay to D0 & Pi"};
+  Configurable<bool> isCentStudy{"isCentStudy", true, "Flag to select centrality study"};
+
+  // CCDB configuration
+  Configurable<bool> useWeight{"useWeight", true, "Flag to use weights from CCDB"};
+  Configurable<int> nWeights{"nWeights", 6, "Number of weights to be used from CCDB"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathForWeight{"ccdbPathForWeight", "Users/d/desharma/weights", "CCDB path for PVContrib weights"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "CCDB timestamp for the weights"};
+  Configurable<std::string> weightFileName{"weightFileName", "Weights.root", "Name of the weight file to be used for PVContrib"};
+  Configurable<std::vector<double>> centRangesForWeights{"centRangesForWeights", {0.0, 5.0, 10.0, 30.0, 50.0, 70.0, 100.0}, "Centrality ranges for weights. Size of ranges should be equal to nWeights + 1"};
+
   Configurable<double> yCandDstarRecoMax{"yCandDstarRecoMax", 0.8, "max. candidate Dstar rapidity"};
   Configurable<double> yCandDstarGenMax{"yCandDstarGenMax", 0.5, "max. rapidity of Generator level Particle"};
   Configurable<bool> selectionFlagHfD0ToPiK{"selectionFlagHfD0ToPiK", true, "Selection Flag for HF flagged candidates"};
   Configurable<std::vector<double>> ptBins{"ptBins", std::vector<double>{hf_cuts_dstar_to_d0_pi::vecBinsPt}, "pT bin limits for Dstar"};
+  Configurable<double> lbSignalRegion{"lbSignalRegion", 0.142, "Lower bound of the signal region for Delta Invariant MassDstar"};
+  Configurable<double> ubSignalRegion{"ubSignalRegion", 0.15, "Upper bound of the signal region for Delta Invariant MassDstar"};
 
+  o2::ccdb::CcdbApi ccdbApi;
   SliceCache cache;
+  std::vector<TH2F*> hWeights;
 
   using CandDstarWSelFlag = soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi>;
   using CandDstarWSelFlagWMl = soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfMlDstarToD0Pi>;
@@ -192,6 +210,42 @@ struct HfTaskDstarToD0Pi {
       registry.add("Efficiency/hPtNonPromptVsCentVsBDTScore", "Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseF, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
       // registry.add("Efficiency/hPtBkgVsCentVsBDTScore", "Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseF, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
     }
+
+    // if weights to be applied
+    if (useWeight) {
+      ccdbApi.init(ccdbUrl);
+      std::map<std::string, std::string> metadata;
+      // Retrieve the file from CCDB
+      bool isFileAvailable = ccdbApi.retrieveBlob(ccdbPathForWeight, ".", metadata, timestampCCDB, false, weightFileName);
+      if (!isFileAvailable) {
+        LOGF(error, "Failed to retrieve weight file from CCDB: %s", ccdbPathForWeight.value.c_str());
+        return;
+      }
+
+      if (isCentStudy) {
+        // Open the ROOT file
+        TFile* weightFile = TFile::Open(weightFileName.value.c_str(), "READ");
+        if (weightFile && !weightFile->IsZombie()) {
+          // Ensure hWeights is properly sized
+          hWeights.resize(nWeights);
+          for (int i = 0; i < nWeights; ++i) {
+            std::string histName = "hMult" + std::to_string(i + 1) + "_Weight";
+            TH2F* hist = reinterpret_cast<TH2F*>(weightFile->Get(histName.c_str()));
+            if (!hist) {
+              LOGF(error, "Histogram %s not found in weight file!", histName.c_str());
+              hWeights[i] = nullptr;
+              return;
+            }
+            hWeights[i] = reinterpret_cast<TH2F*>(hist->Clone(("hWeight" + std::to_string(i + 1)).c_str()));
+            hist->Delete(); // Delete the original histogram to avoid memory leaks
+          }
+          weightFile->Close();
+          delete weightFile;
+        } else {
+          LOGF(error, "Failed to open weight file from CCDB: %s", weightFileName.value.c_str());
+        }
+      }
+    }
   }
 
   // Comparator function to sort based on the second argument of a tuple
@@ -262,7 +316,7 @@ struct HfTaskDstarToD0Pi {
         auto signDstar = candDstar.signSoftPi();
         if (signDstar > 0) {
           auto deltaMDstar = std::abs(invDstar - invD0);
-          if (0.142f < deltaMDstar && deltaMDstar < 0.15f) {
+          if (lbSignalRegion < deltaMDstar && deltaMDstar < ubSignalRegion) {
             nCandsSignalRegion++;
           }
 
@@ -281,7 +335,7 @@ struct HfTaskDstarToD0Pi {
           registry.fill(HIST("QA/hPtProng1D0"), candDstar.ptProng1());
         } else if (signDstar < 0) {
           auto deltaMAntiDstar = std::abs(invAntiDstar - invD0Bar);
-          if (0.142f < deltaMAntiDstar && deltaMAntiDstar < 0.15f) {
+          if (lbSignalRegion < deltaMAntiDstar && deltaMAntiDstar < ubSignalRegion) {
             nCandsSignalRegion++;
           }
 
@@ -421,6 +475,7 @@ struct HfTaskDstarToD0Pi {
           }
         }
         float centFT0MGen;
+        float pvContibutors;
         // assigning centrality to MC Collision using max FT0M amplitute from Reconstructed collisions
         if (recCollisions.size()) {
           std::vector<std::pair<soa::Filtered<CollisionsWCentMcLabel>::iterator, int>> tempRecCols;
@@ -429,12 +484,26 @@ struct HfTaskDstarToD0Pi {
           }
           std::sort(tempRecCols.begin(), tempRecCols.end(), compare);
           centFT0MGen = tempRecCols.at(0).first.centFT0M();
+          pvContibutors = tempRecCols.at(0).second;
         } else {
           centFT0MGen = -999.;
+          pvContibutors = -999.;
         }
         registry.fill(HIST("QA/hEtaDstarGen"), mcParticle.eta());
         registry.fill(HIST("QA/hPtDstarGen"), ptGen);
         registry.fill(HIST("QA/hPtVsYDstarGen"), ptGen, yGen);
+
+        if (useWeight) {
+          if (isCentStudy) {
+            for (int i = 0; i < nWeights; ++i) {
+              if (centFT0MGen > centRangesForWeights.value[i] && centFT0MGen <= centRangesForWeights.value[i + 1]) {
+                registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centFT0MGen, hWeights[i]->GetBinContent(hWeights[i]->FindBin(centFT0MGen, pvContibutors)));
+              }
+            }
+          } else {
+            registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centFT0MGen, 1);
+          }
+        }
         registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centFT0MGen);
         // only promt Dstar candidate at Generator level
         if (mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) {
