@@ -183,7 +183,7 @@ struct skimmerPrimaryMuon {
       if (maxDCAxy < dcaXY) {
         return false;
       }
-      if (chi2_per_ndf < 0.f || maxChi2GL < chi2_per_ndf) {
+      if (maxChi2GL < chi2_per_ndf) {
         return false;
       }
       if (rAtAbsorberEnd < minRabsGL || maxRabs < rAtAbsorberEnd) {
@@ -193,7 +193,7 @@ struct skimmerPrimaryMuon {
       if (eta < minEtaSA || maxEtaSA < eta) {
         return false;
       }
-      if (chi2_per_ndf < 0.f || maxChi2SA < chi2_per_ndf) {
+      if (maxChi2SA < chi2_per_ndf) {
         return false;
       }
     } else {
@@ -214,14 +214,17 @@ struct skimmerPrimaryMuon {
       return;
     }
 
-    o2::dataformats::GlobalFwdTrack propmuonAtPV = propagateMuon(fwdtrack, collision, propagationPoint::kToVertex);
-    o2::dataformats::GlobalFwdTrack propmuonAtDCA = propagateMuon(fwdtrack, collision, propagationPoint::kToDCA);
+    if (fwdtrack.chi2() < 0.f) { // this should never happen. only for protection.
+      return;
+    }
 
+    o2::dataformats::GlobalFwdTrack propmuonAtPV = propagateMuon(fwdtrack, collision, propagationPoint::kToVertex);
     float pt = propmuonAtPV.getPt();
     float eta = propmuonAtPV.getEta();
     float phi = propmuonAtPV.getPhi();
     o2::math_utils::bringTo02Pi(phi);
 
+    o2::dataformats::GlobalFwdTrack propmuonAtDCA = propagateMuon(fwdtrack, collision, propagationPoint::kToDCA);
     float cXXatDCA = propmuonAtDCA.getSigma2X();
     float cYYatDCA = propmuonAtDCA.getSigma2Y();
     float cXYatDCA = propmuonAtDCA.getSigmaXY();
@@ -255,23 +258,40 @@ struct skimmerPrimaryMuon {
     int ndf_mchmft = 1;
 
     if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+      // apply r-absorber cut here to minimize the number of calling propagateMuon.
+      if (fwdtrack.rAtAbsorberEnd() < minRabsGL || maxRabs < fwdtrack.rAtAbsorberEnd()) {
+        return;
+      }
+
+      // apply dca cut here to minimize the number of calling propagateMuon.
+      if (maxDCAxy < dcaXY) {
+        return;
+      }
+
       const auto& mchtrack = fwdtrack.template matchMCHTrack_as<TFwdTracks>(); // MCH-MID
+      const auto& mfttrack = fwdtrack.template matchMFTTrack_as<TMFTTracks>(); // MFTsa
+      nClustersMFT = mfttrack.nClusters();
+      mftClusterSizesAndTrackFlags = mfttrack.mftClusterSizesAndTrackFlags();
+      ndf_mchmft = 2.f * (mchtrack.nClusters() + nClustersMFT) - 5.f;
+      chi2mft = mfttrack.chi2();
+      // chi2mft = mfttrack.chi2() / (2.f * nClustersMFT - 5.f);
+
+      // apply chi2/ndf cut here to minimize the number of calling propagateMuon.
+      if (maxChi2GL < fwdtrack.chi2() / ndf_mchmft) {
+        return;
+      }
+
       o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = propagateMuon(mchtrack, collision, propagationPoint::kToVertex);
       ptMatchedMCHMID = propmuonAtPV_Matched.getPt();
       etaMatchedMCHMID = propmuonAtPV_Matched.getEta();
       phiMatchedMCHMID = propmuonAtPV_Matched.getPhi();
       o2::math_utils::bringTo02Pi(phiMatchedMCHMID);
+
       o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = propagateMuon(mchtrack, collision, propagationPoint::kToDCA);
       float dcaX_Matched = propmuonAtDCA_Matched.getX() - collision.posX();
       float dcaY_Matched = propmuonAtDCA_Matched.getY() - collision.posY();
       float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
       pDCA = mchtrack.p() * dcaXY_Matched;
-
-      const auto& mfttrack = fwdtrack.template matchMFTTrack_as<TMFTTracks>();
-      nClustersMFT = mfttrack.nClusters();
-      mftClusterSizesAndTrackFlags = mfttrack.mftClusterSizesAndTrackFlags();
-      chi2mft = mfttrack.chi2() / (2.f * nClustersMFT - 5.f);
-      ndf_mchmft = 2.f * (mchtrack.nClusters() + nClustersMFT) - 5.f;
 
       if (refitGlobalMuon) {
         eta = mfttrack.eta();
