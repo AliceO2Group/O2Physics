@@ -60,6 +60,8 @@ struct lambdaspincorrelation {
 
   Produces<aod::LambdaEvents> lambdaEvent;
   Produces<aod::LambdaPairs> lambdaPair;
+  Produces<aod::LambdaEventmcs> lambdaEventmc;
+  Produces<aod::LambdaPairmcs> lambdaPairmc;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -340,7 +342,105 @@ struct lambdaspincorrelation {
       }
     }
   }
-  PROCESS_SWITCH(lambdaspincorrelation, processData, "Process data", true);
+  PROCESS_SWITCH(lambdaspincorrelation, processData, "Process data", false);
+
+  void processMc(EventCandidates::iterator const& collision, AllTrackCandidates const&, ResoV0s const& V0s)
+  {
+    std::vector<ROOT::Math::PxPyPzMVector> lambdaMother, protonDaughter, pionDaughter;
+    std::vector<int> v0Status = {};
+    std::vector<bool> doubleStatus = {};
+    std::vector<float> v0Cospa = {};
+    std::vector<float> v0Radius = {};
+    std::vector<float> dcaPositive = {};
+    std::vector<float> dcaNegative = {};
+    std::vector<int> positiveIndex = {};
+    std::vector<int> negativeIndex = {};
+    std::vector<float> dcaBetweenDaughter = {};
+    int numbV0 = 0;
+    // LOGF(info, "event collisions: (%d)", collision.index());
+    auto centrality = collision.centFT0C();
+    auto vz = collision.posZ();
+    int occupancy = collision.trackOccupancyInTimeRange();
+    histos.fill(HIST("hEvtSelInfo"), 0.5);
+    if ((rctCut.requireRCTFlagChecker && rctChecker(collision)) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) && collision.sel8() && collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) && occupancy < cfgCutOccupancy) {
+      histos.fill(HIST("hEvtSelInfo"), 1.5);
+      for (const auto& v0 : V0s) {
+        // LOGF(info, "v0 index 0 : (%d)", v0.index());
+        auto [lambdaTag, aLambdaTag, isValid] = getLambdaTags(v0, collision);
+        if (isValid) {
+          // LOGF(info, "v0 index 1 : (%d)", v0.index());
+          if (lambdaTag) {
+            histos.fill(HIST("hV0Info"), 0.5);
+          }
+          if (aLambdaTag) {
+            histos.fill(HIST("hV0Info"), 1.5);
+          }
+          if (lambdaTag && aLambdaTag) {
+            doubleStatus.push_back(true);
+            if (std::abs(v0.mLambda() - 1.1154) < std::abs(v0.mAntiLambda() - 1.1154)) {
+              lambdaTag = true;
+              aLambdaTag = false;
+            } else {
+              lambdaTag = false;
+              aLambdaTag = true;
+            }
+          } else {
+            doubleStatus.push_back(false);
+          }
+          if (lambdaTag) {
+            histos.fill(HIST("hV0Info"), 2.5);
+          }
+          if (aLambdaTag) {
+            histos.fill(HIST("hV0Info"), 3.5);
+          }
+          // LOGF(info, "v0 index2: (%d)", v0.index());
+          auto postrack1 = v0.template posTrack_as<AllTrackCandidates>();
+          auto negtrack1 = v0.template negTrack_as<AllTrackCandidates>();
+          positiveIndex.push_back(postrack1.globalIndex());
+          negativeIndex.push_back(negtrack1.globalIndex());
+          v0Cospa.push_back(v0.v0cosPA());
+          v0Radius.push_back(v0.v0radius());
+          dcaPositive.push_back(std::abs(v0.dcapostopv()));
+          dcaNegative.push_back(std::abs(v0.dcanegtopv()));
+          dcaBetweenDaughter.push_back(std::abs(v0.dcaV0daughters()));
+          if (lambdaTag) {
+            v0Status.push_back(0);
+            proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), o2::constants::physics::MassProton);
+            antiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), o2::constants::physics::MassPionCharged);
+            lambda = proton + antiPion;
+            lambdaMother.push_back(lambda);
+            protonDaughter.push_back(proton);
+            pionDaughter.push_back(antiPion);
+            histos.fill(HIST("hLambdaMass"), lambda.M());
+          } else if (aLambdaTag) {
+            v0Status.push_back(1);
+            antiProton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), o2::constants::physics::MassProton);
+            pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), o2::constants::physics::MassPionCharged);
+            antiLambda = antiProton + pion;
+            lambdaMother.push_back(antiLambda);
+            protonDaughter.push_back(antiProton);
+            pionDaughter.push_back(pion);
+            histos.fill(HIST("hLambdaMass"), lambda.M());
+          }
+          numbV0 = numbV0 + 1;
+        }
+      }
+      if (numbV0 > 1 && v0Cospa.size() > 1) {
+        histos.fill(HIST("hEvtSelInfo"), 2.5);
+        lambdaEventmc(centrality, vz);
+        auto indexEvent = lambdaEventmc.lastIndex();
+        //// Fill track table for V0//////////////////
+        for (auto if1 = lambdaMother.begin(); if1 != lambdaMother.end(); ++if1) {
+          auto i5 = std::distance(lambdaMother.begin(), if1);
+          lambdaDummy = lambdaMother.at(i5);
+          protonDummy = protonDaughter.at(i5);
+          pionDummy = pionDaughter.at(i5);
+          lambdaPairmc(indexEvent, v0Status.at(i5), doubleStatus.at(i5), v0Cospa.at(i5), v0Radius.at(i5), dcaPositive.at(i5), dcaNegative.at(i5), dcaBetweenDaughter.at(i5), lambdaDummy.Pt(), lambdaDummy.Eta(), lambdaDummy.Phi(), lambdaDummy.M(), protonDummy.Pt(), protonDummy.Eta(), protonDummy.Phi(), positiveIndex.at(i5), negativeIndex.at(i5));
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(lambdaspincorrelation, processMc, "Process montecarlo", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
