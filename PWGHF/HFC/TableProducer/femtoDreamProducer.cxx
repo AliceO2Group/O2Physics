@@ -627,14 +627,14 @@ struct HfFemtoDreamProducer {
         }
       }
     } else if constexpr (channel == DecayChannel::LcToPKPi) {
-     for (const auto& particle : particles) {
-       if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
-         rowCandCharmHadGen(
-           particle.mcCollisionId(),
-           particle.flagMcMatchGen(),
-           particle.originMcGen());
-       }
-     }
+      for (const auto& particle : particles) {
+        if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
+          rowCandCharmHadGen(
+            particle.mcCollisionId(),
+            particle.flagMcMatchGen(),
+            particle.originMcGen());
+        }
+      }
     }
   }
 
