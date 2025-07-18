@@ -345,19 +345,19 @@ struct tpcPid {
     // Defining some network parameters
     int input_dimensions = network.getNumInputNodes();
     int output_dimensions = network.getNumOutputNodes();
-    const uint64_t track_prop_size = input_dimensions * size;
     const uint64_t prediction_size = output_dimensions * size;
+    const uint8_t numSpecies = 9;
+    const uint64_t total_eval_size = size * numSpecies; // 9 species
 
     const float nNclNormalization = response->GetNClNormalization();
     float duration_network = 0;
 
     uint64_t counter_track_props = 0, exec_counter = 0, in_batch_counter = 0, total_input_count = 0;
-    uint64_t evalSize = networkInputBatchedMode.value;
-    const int numSpecies = 9;
+    uint64_t track_prop_size = networkInputBatchedMode.value;
     if (networkInputBatchedMode.value <= 0) {
-      evalSize = size; // If the networkInputBatchedMode is not set, we use all tracks at once
+      track_prop_size = size; // If the networkInputBatchedMode is not set, we use all tracks at once
     }
-    track_properties.resize(evalSize * input_dimensions); // If the networkInputBatchedMode is set, we use the number of tracks specified in the config
+    track_properties.resize(track_prop_size * input_dimensions); // If the networkInputBatchedMode is set, we use the number of tracks specified in the config
     std::vector<float> network_prediction(prediction_size * numSpecies); // For each mass hypotheses
 
     // Filling a std::vector<float> to be evaluated by the network
@@ -373,9 +373,8 @@ struct tpcPid {
           }
         }
 
-        uint32_t restTracks = total_input_count % size; // Remaining tracks in the batch
-        if ((in_batch_counter == evalSize) || ((restTracks == 0) && (total_input_count != 0))) { // If the batch size is reached, reset the counter
-          int32_t fill_shift = (species * size + restTracks - ((restTracks == 0) ? (total_input_count % evalSize) : evalSize)) * output_dimensions;
+        if ((in_batch_counter == track_prop_size) || (total_input_count == total_eval_size)) { // If the batch size is reached, reset the counter
+          int32_t fill_shift = (exec_counter * track_prop_size - ((total_input_count == total_eval_size) ? (total_input_count % track_prop_size) : 0)) * output_dimensions;
           auto start_network_eval = std::chrono::high_resolution_clock::now();
           float* output_network = network.evalModel(track_properties);
           auto stop_network_eval = std::chrono::high_resolution_clock::now();
@@ -391,7 +390,7 @@ struct tpcPid {
           exec_counter++;
         }
 
-        // LOG(info) << "counter_tracks_props: " << counter_track_props << "; in_batch_counter: " << in_batch_counter << "; total_input_count: " << total_input_count << "; exec_counter: " << exec_counter << "; evalSize: " << evalSize << "; size: " << size << "; track_properties.size(): " << track_properties.size();
+        // LOG(info) << "counter_tracks_props: " << counter_track_props << "; in_batch_counter: " << in_batch_counter << "; total_input_count: " << total_input_count << "; exec_counter: " << exec_counter << "; track_prop_size: " << track_prop_size << "; size: " << size << "; track_properties.size(): " << track_properties.size();
         track_properties[counter_track_props] = trk.tpcInnerParam(); // (tracks.asArrowTable()->GetColumn<float>("tpcInnerParam")).GetData();
         track_properties[counter_track_props + 1] = trk.tgl();
         track_properties[counter_track_props + 2] = trk.signed1Pt();
