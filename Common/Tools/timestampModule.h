@@ -96,6 +96,10 @@ class TimestampModule
         int64_t sorTimestamp = runDuration.first;            // timestamp of the SOR/SOX/STF in ms
         int64_t eorTimestamp = runDuration.second;           // timestamp of the EOR/EOX/ETF in ms
 
+        // clear cache to prevent interference with orbit reset queries from other code
+        // FIXME this should not have been a problem, to be investigated
+        ccdb->clearCache(timestampOpts.orbit_reset_path.value.data());
+
         const bool isUnanchoredRun3MC = runNumber >= 300000 && runNumber < 500000;
         if (timestampOpts.isRun2MC.value == 1 || isUnanchoredRun3MC) {
           // isRun2MC: bc/orbit distributions are not simulated in Run2 MC. All bcs are set to 0.
