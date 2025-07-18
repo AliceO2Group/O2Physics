@@ -385,7 +385,7 @@ struct cascadeFlow {
 
   float getNsigmaMass(const cascadev2::species s, const float pt, const float nsigma = 6)
   {
-    const auto sigma = parSigmaMass->get(0u, s) * exp(parSigmaMass->get(1, s) * pt) + parSigmaMass->get(2, s) * exp(parSigmaMass->get(3, s) * pt);
+    const auto sigma = parSigmaMass->get(0u, s) * std::exp(parSigmaMass->get(1, s) * pt) + parSigmaMass->get(2, s) * std::exp(parSigmaMass->get(3, s) * pt);
     return nsigma * sigma;
   }
 
@@ -914,7 +914,7 @@ struct cascadeFlow {
         cosThetaStarLambda[i] = boostedLambda.Pz() / boostedLambda.P();
       }
 
-      double ptLambda = sqrt(pow(casc.pxlambda(), 2) + pow(casc.pylambda(), 2));
+      double ptLambda = std::sqrt(std::pow(casc.pxlambda(), 2) + std::pow(casc.pylambda(), 2));
       auto etaLambda = RecoDecay::eta(std::array{casc.pxlambda(), casc.pylambda(), casc.pzlambda()});
 
       // acceptance values if requested
@@ -1010,7 +1010,7 @@ struct cascadeFlow {
             histos.get<TH1>(HIST("massXi_ProtonAcc"))->Fill(casc.mXi());
           }
         }
-        if (fillingConfigs.isFillTHNOmega) {
+	if (fillingConfigs.isFillTHNOmega) {
           if (fillingConfigs.isFillTHN_V2)
             histos.get<THn>(HIST("hOmegaV2"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], v2CEP);
           if (fillingConfigs.isFillTHN_Pz)
@@ -1055,20 +1055,20 @@ struct cascadeFlow {
     }
   }
 
-  void processAnalyseDataEP2CentralFW(CollEventPlaneCentralFW const& coll, CascCandidates const& Cascades, DauTracks const&)
+    void processAnalyseDataEP2CentralFW(CollEventPlaneCentralFW const& coll, CascCandidates const& Cascades, DauTracks const&)
   {
 
     if (!AcceptEvent(coll, 1)) {
       return;
     }
-
+    
     // select only events used for the calibration of the event plane
     if (isGoodEventEP) {
       if (std::abs(coll.qvecFT0CRe()) > 990 || std::abs(coll.qvecFT0CIm()) > 990 || std::abs(coll.qvecBNegRe()) > 990 || std::abs(coll.qvecBNegIm()) > 990 || std::abs(coll.qvecBPosRe()) > 990 || std::abs(coll.qvecBPosIm()) > 990) {
         return;
       }
     }
-
+    
     // event has FT0C event plane
     bool hasEventPlane = 0;
     if (std::abs(coll.qvecFT0CRe()) < 990 && std::abs(coll.qvecFT0CIm()) < 990)
@@ -1183,7 +1183,7 @@ struct cascadeFlow {
         cosThetaStarLambda[i] = boostedLambda.Pz() / boostedLambda.P();
       }
 
-      double ptLambda = sqrt(pow(casc.pxlambda(), 2) + pow(casc.pylambda(), 2));
+      double ptLambda = std::sqrt(std::pow(casc.pxlambda(), 2) + std::pow(casc.pylambda(), 2));
       auto etaLambda = RecoDecay::eta(std::array{casc.pxlambda(), casc.pylambda(), casc.pzlambda()});
 
       // acceptance values if requested
@@ -1277,7 +1277,7 @@ struct cascadeFlow {
             histos.get<TH1>(HIST("massXi_ProtonAcc"))->Fill(casc.mXi());
           }
         }
-        if (fillingConfigs.isFillTHNOmega) {
+	if (fillingConfigs.isFillTHNOmega) {
           if (fillingConfigs.isFillTHN_V2)
             histos.get<THn>(HIST("hOmegaV2"))->Fill(coll.centFT0C(), ChargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], v2CEP);
           if (fillingConfigs.isFillTHN_Pz)
@@ -1335,7 +1335,7 @@ struct cascadeFlow {
         return;
       }
     }
-
+    
     // event has FT0C event plane
     bool hasEventPlane = 0;
     if (std::abs(coll.qvecFT0CRe()) < 990 && std::abs(coll.qvecFT0CIm()) < 990)
@@ -1360,9 +1360,9 @@ struct cascadeFlow {
     ROOT::Math::XYZVector spectatorplaneVecZDCA{std::cos(coll.psiZDCA()), std::sin(coll.psiZDCA()), 0}; // eta positive = projectile
     ROOT::Math::XYZVector spectatorplaneVecZDCC{std::cos(coll.psiZDCC()), std::sin(coll.psiZDCC()), 0}; // eta negative = target
 
-    float NormQvT0C = sqrt(eventplaneVecT0C.Dot(eventplaneVecT0C));
-    float NormQvTPCA = sqrt(eventplaneVecTPCA.Dot(eventplaneVecTPCA));
-    float NormQvTPCC = sqrt(eventplaneVecTPCC.Dot(eventplaneVecTPCC));
+    float NormQvT0C = std::sqrt(eventplaneVecT0C.Dot(eventplaneVecT0C));
+    float NormQvTPCA = std::sqrt(eventplaneVecTPCA.Dot(eventplaneVecTPCA));
+    float NormQvTPCC = std::sqrt(eventplaneVecTPCC.Dot(eventplaneVecTPCC));
 
     const float PsiT0C = std::atan2(coll.qvecFT0CIm(), coll.qvecFT0CRe()) * 0.5f;
     histos.fill(HIST("hPsiT0C"), PsiT0C);
