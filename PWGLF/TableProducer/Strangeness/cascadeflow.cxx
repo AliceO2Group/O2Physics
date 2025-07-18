@@ -9,8 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
+/// \file cascadeflow.cxx
+///
 /// \brief Task to create derived data for cascade flow analyses
-/// \authors: Chiara De Martin (chiara.de.martin@cern.ch), Maximiliano Puccio (maximiliano.puccio@cern.ch)
+/// \author Chiara De Martin (chiara.de.martin@cern.ch)
+/// \author Maximiliano Puccio (maximiliano.puccio@cern.ch)
 
 #include <vector>
 #include <string>
