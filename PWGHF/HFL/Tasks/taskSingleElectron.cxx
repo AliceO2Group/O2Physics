@@ -109,31 +109,31 @@ struct HfTaskSingleElectron {
   {
     if ((track.pt() > ptTrackMax) || (track.pt() < ptTrackMin)) {
       return false;
-	}
+    }
     if (std::abs(track.eta()) > etaTrackMax) {
       return false;
-	}
+    }
 
     if (track.tpcNClsCrossedRows() < tpcNCrossedRowMin) {
       return false;
-	}
+    }
     if (track.tpcCrossedRowsOverFindableCls() < tpcNClsFoundOverFindableMin) {
       return false;
-	}
+    }
     if (track.tpcChi2NCl() > tpcChi2perNClMax) {
       return false;
-	}
+    }
 
     if (!(track.itsNClsInnerBarrel() == itsIBClsMin)) {
       return false;
-	}
+    }
 
     if (std::abs(track.dcaXY()) > dcaxyMax) {
       return false;
-	}
+    }
     if (std::abs(track.dcaZ()) > dcazMax) {
       return false;
-	}
+    }
 
     return true;
   }
@@ -147,13 +147,13 @@ struct HfTaskSingleElectron {
 
     if (!collision.sel8()) {
       return;
-	}
+    }
     flagEventFill += 1.;
     histos.fill(HIST("hEventCounter"), flagEventFill);
 
     if (collision.numContrib() < nContribMin) {
       return;
-	}
+    }
     flagEventFill += 1.;
     histos.fill(HIST("hEventCounter"), flagEventFill);
 
@@ -164,7 +164,7 @@ struct HfTaskSingleElectron {
 
       if (!trackSel(track)) {
         continue;
-	  }
+      }
 
       histos.fill(HIST("etaTrack"), track.eta());
       histos.fill(HIST("ptTrack"), track.pt());
@@ -181,13 +181,13 @@ struct HfTaskSingleElectron {
 
       if (std::abs(track.tofNSigmaEl()) > tofNSigmaMax) {
         continue;
-	  }
+      }
       histos.fill(HIST("tofNSigPtQA"), track.pt(), track.tofNSigmaEl());
       histos.fill(HIST("tpcNSigPtAfterTofCut"), track.pt(), track.tpcNSigmaEl());
 
       if (track.tpcNSigmaEl() < tpcNSigmaMin || track.tpcNSigmaEl() > tpcNSigmaMax) {
         continue;
-	  }
+      }
       histos.fill(HIST("tpcNSigPtQA"), track.pt(), track.tpcNSigmaEl());
 
       histos.fill(HIST("dcaTrack"), track.pt(), track.dcaXY());
