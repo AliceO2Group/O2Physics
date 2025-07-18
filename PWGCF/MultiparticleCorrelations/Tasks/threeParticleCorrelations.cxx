@@ -779,7 +779,7 @@ struct ThreeParticleCorrelations {
 
       if (v0Filters(collision, v0, tracks)) {
 
-	v0Efficiency = v0Eff(hEffLambdas, v0, collision.centFT0C());
+        v0Efficiency = v0Eff(hEffLambdas, v0, collision.centFT0C());
 
         // V0 efficiency - Reconstructed
         if (v0Sign(v0) == 1) { // Lambdas
