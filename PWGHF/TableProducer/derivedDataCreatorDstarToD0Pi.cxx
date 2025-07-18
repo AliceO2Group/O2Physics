@@ -283,18 +283,20 @@ struct HfDerivedDataCreatorDstarToD0Pi {
         auto prong1 = candidate.template prong1_as<TracksWPid>();
         auto prongSoftPi = candidate.template prongPi_as<TracksWPid>();
         double y = candidate.y(o2::constants::physics::MassDStar);
+        int flagSign = -1;
+        double massDstar = 0, invMassD0 = 0;
         std::vector<float> mlScoresDstarToD0Pi;
         if constexpr (isMl) {
           std::copy(candidate.mlProbDstarToD0Pi().begin(), candidate.mlProbDstarToD0Pi().end(), std::back_inserter(mlScoresDstarToD0Pi));
         }
         if (candidate.signSoftPi() > 0) {
-          double massDstar = candidate.invMassDstar();
-          double invMassD0 = candidate.invMassD0();
-          int flagSign = 0;
+          massDstar = candidate.invMassDstar();
+          invMassD0 = candidate.invMassD0();
+          flagSign = 1;
         } else {
-          double massDstar = candidate.invMassAntiDstar();
-          double invMassD0 = candidate.invMassD0Bar();
-          int flagSign = 1
+          massDstar = candidate.invMassAntiDstar();
+          invMassD0 = candidate.invMassD0Bar();
+          flagSign = 1
         }
         fillTablesCandidate(candidate, prong0, prong1, prongSoftPi, flagSign, massDstar, invMassD0, y, flagMcRec, flagMcRecD0, origin, nTracksDecayed, ptBhadMotherPart, pdgBhadMotherPart, mlScoresDstarToD0Pi);
       }
