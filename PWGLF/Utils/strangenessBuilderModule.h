@@ -26,13 +26,13 @@
 
 #include "Common/Core/TPCVDriftManager.h"
 
+#include "DataFormatsCalibration/MeanVertexObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisHelpers.h"
 #include "Framework/Configurable.h"
-#include "Framework/HistogramSpec.h"
 #include "Framework/HistogramRegistry.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
+#include "Framework/HistogramSpec.h"
 
 #include <array>
 #include <cmath>
