@@ -146,17 +146,22 @@ struct FilterTracks {
   Produces<aod::GenParticles> selectedGenParticles;
   Produces<aod::FilterColl> filterCollTable;
 
+  SliceCache cache;
   //  Configurable<int> dummy{"dummy", 0, "dummy"};
   Configurable<float> minTrackPt{"minTrackPt", 0.25, "min track pt"};
   Configurable<float> trackDcaXyMax{"trackDcaXyMax", 0.5, "max track pt"};
   Configurable<int> trackPtSampling{"trackPtSampling", 0, "track sampling mode"};
   Configurable<float> trackPtWeightLowPt{"trackPtWeightLowPt", 0.01f, "trackPtWeightLowPt"};
   Configurable<float> trackPtWeightMidPt{"trackPtWeightMidPt", 0.10f, "trackPtWeightMidPt"};
+  Configurable<float> collFilterFraction{"collFilterFraction", 0.05f, "collFilterFraction"};
 
   Filter trackFilter = requireGlobalTrackWoDCAInFilter() && aod::track::pt > minTrackPt&& nabs(aod::track::dcaXY) < trackDcaXyMax;
+  Filter collFilter = nabs(aod::collision::posZ * 10000.f - nround(aod::collision::posZ * 10000.f)) < collFilterFraction.node() * 2.f;
   using CollisionsWithEvSel = soa::Join<aod::Collisions, aod::EvSels>;
   using TracksWithSelAndDca = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::TracksDCACov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
   using TracksWithSelAndDcaMc = soa::Join<TracksWithSelAndDca, aod::McTrackLabels>;
+  using FilterCollisionsWithEvSel = soa::Filtered<CollisionsWithEvSel>;
+
   Partition<soa::Filtered<TracksWithSelAndDca>> lowPtTracks = aod::track::pt < 2.f && (nabs(aod::track::pt * 10000.f - nround(aod::track::pt * 10000.f)) < trackPtWeightLowPt.node() * 2.f);
   Partition<soa::Filtered<TracksWithSelAndDca>> midPtTracks = aod::track::pt > 2.f && aod::track::pt < 5.f && (nabs(aod::track::pt * 10000.f - nround(aod::track::pt * 10000.f)) < trackPtWeightMidPt.node() * 2.f);
   Partition<soa::Filtered<TracksWithSelAndDca>> highPtTracks = aod::track::pt > 5.f;
@@ -254,45 +259,53 @@ struct FilterTracks {
       filteredTracksMC(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     }
   }
-  void processData(soa::Filtered<TracksWithSelAndDca> const& tracks)
+  void processData(FilterCollisionsWithEvSel::iterator const& collision, soa::Filtered<TracksWithSelAndDca> const& tracks)
   {
+    float zvtz = collision.posZ(); // dummy to silent compilation error about unused variable
     if (trackPtSampling == 0) {
       for (auto& track : tracks) {
         fillTableData(track);
       }
     } else {
-      for (auto& track : lowPtTracks) {
+      auto lowPtTracksThisColl = lowPtTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      for (auto& track : lowPtTracksThisColl) {
         fillTableData(track);
       }
-      for (auto& track : midPtTracks) {
+      auto midPtTracksThisColl = midPtTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      for (auto& track : midPtTracksThisColl) {
         fillTableData(track);
       }
-      for (auto& track : highPtTracks) {
+      auto highPtTracksThisColl = highPtTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      for (auto& track : highPtTracksThisColl) {
         fillTableData(track);
       }
     }
   }
   PROCESS_SWITCH(FilterTracks, processData, "process data", true);
-  void processCollisions(CollisionsWithEvSel::iterator const& collision)
+  void processCollisions(FilterCollisionsWithEvSel::iterator const& collision)
   {
     filterCollTable(collision.bcId(), collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ(), collision.flags(), collision.chi2(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
   }
   PROCESS_SWITCH(FilterTracks, processCollisions, "process collisions", true);
 
-  void processMC(soa::Filtered<TracksWithSelAndDcaMc> const& tracks, aod::McParticles const& mcParticles)
+  void processMC(FilterCollisionsWithEvSel::iterator const& collision, soa::Filtered<TracksWithSelAndDcaMc> const& tracks, aod::McParticles const& mcParticles)
   {
+    float zvtz = collision.posZ(); // dummy to silent compilation error about unused variable
     if (trackPtSampling == 0) {
       for (auto& track : tracks) {
         fillTableDataMC(track, mcParticles);
       }
     } else {
-      for (auto& track : lowPtTracksMC) {
+      auto lowPtTracksMCThisColl = lowPtTracksMC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      for (auto& track : lowPtTracksMCThisColl) {
         fillTableDataMC(track, mcParticles);
       }
-      for (auto& track : midPtTracksMC) {
+      auto midPtTracksMCThisColl = midPtTracksMC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      for (auto& track : midPtTracksMCThisColl) {
         fillTableDataMC(track, mcParticles);
       }
-      for (auto& track : highPtTracksMC) {
+      auto highPtTracksMCThisColl = highPtTracksMC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      for (auto& track : highPtTracksMCThisColl) {
         fillTableDataMC(track, mcParticles);
       }
     }
