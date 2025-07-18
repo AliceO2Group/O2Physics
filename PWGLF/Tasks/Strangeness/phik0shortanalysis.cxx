@@ -181,6 +181,9 @@ struct Phik0shortanalysis {
   Configurable<bool> fillMethodSingleWeight{"fillMethodSingleWeight", false, "Fill method Single Weight"};
   Configurable<bool> applyEfficiency{"applyEfficiency", false, "Use efficiency for filling histograms"};
 
+  // Configurable for MCPhi filter
+  Configurable<bool> filterOnMcPhi{"filterOnMcPhi", true, "Filter on MC Phi"};
+
   // Configurable for event mixing
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
 
@@ -243,6 +246,9 @@ struct Phik0shortanalysis {
 
   // Cache for manual slicing
   SliceCache cache;
+
+  // Preslice for manual sicing
+  Preslice<aod::McParticles> perMCColl = aod::mcparticle::mcCollisionId;
 
   // Positive and negative tracks partitions
   Partition<FullTracks> posTracks = aod::track::signed1Pt > trackConfigs.cfgCutCharge;
@@ -2388,9 +2394,9 @@ struct Phik0shortanalysis {
       return;
     const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
 
-    auto mcParticlesThisColl = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+    auto mcParticlesThisColl = mcParticles.sliceBy(perMCColl, mcCollision.globalIndex());
 
-    if (!eventHasMCPhi(mcParticlesThisColl))
+    if (filterOnMcPhi && !eventHasMCPhi(mcParticlesThisColl))
       return;
 
     float genmultiplicity = mcCollision.centFT0M();
@@ -2429,7 +2435,7 @@ struct Phik0shortanalysis {
       return;
     if (!pwglf::isINELgtNmc(mcParticles, 0, pdgDB))
       return;
-    if (!eventHasMCPhi(mcParticles))
+    if (filterOnMcPhi && !eventHasMCPhi(mcParticles))
       return;
 
     float genmultiplicity = mcCollision.centFT0M();
