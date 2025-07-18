@@ -1445,7 +1445,7 @@ struct HfDataCreatorCharmHadPiReduced {
                                     trackParCovSoftPion.getSigmaTglSnp(), trackParCovSoftPion.getSigmaTgl2(),
                                     trackParCovSoftPion.getSigma1PtY(), trackParCovSoftPion.getSigma1PtZ(), trackParCovSoftPion.getSigma1PtSnp(),
                                     trackParCovSoftPion.getSigma1PtTgl(), trackParCovSoftPion.getSigma1Pt2());
-          if constexpr (withMl) {            
+          if constexpr (withMl) {
             std::array<float, 6> mlScores = {-1.f, -1.f, -1.f, -1.f, -1.f, -1.f};
             if (candC.mlProbDstarToD0Pi().size() == NSizeMLScore) {
               std::copy(candC.mlProbDstarToD0Pi().begin(), candC.mlProbDstarToD0Pi().end(), mlScores.begin());
