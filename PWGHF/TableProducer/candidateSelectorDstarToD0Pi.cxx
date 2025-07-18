@@ -234,11 +234,6 @@ struct HfCandidateSelectorDstarToD0Pi {
     if (candidate.decayLengthXYD0() > cutsD0->get(binPt, "max decay length XY")) {
       return false;
     }
-
-    //.............Why is this if condition commented?
-    if (candidate.decayLengthNormalisedD0() * candidate.decayLengthNormalisedD0() < 1.0) {
-      // return false; // add back when getter fixed
-    }
     return true;
   }
 
