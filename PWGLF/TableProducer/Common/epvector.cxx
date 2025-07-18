@@ -102,7 +102,6 @@ struct epvector {
   Configurable<bool> useRecentere{"useRecentere", true, "use Recentering"};
   Configurable<bool> useShift{"useShift", false, "use Shift"};
   Configurable<bool> useShift2{"useShift2", false, "use Shift for others"};
-  Configurable<bool> useFT0Cut{"useFT0Cut", true, "Require FT0 signal"};
   Configurable<bool> useEventSelection{"useEventSelection", true, "Apply event selection centrality wise"};
   Configurable<bool> useTimeFrameCut{"useTimeFrameCut", true, "Reject Time Frame border events"};
   Configurable<bool> useITSFrameCut{"useITSFrameCut", true, "Reject ITS RO Frame border events"};
@@ -310,7 +309,7 @@ struct epvector {
     auto qyTPCL = 0.0;
     auto qxTPCR = 0.0;
     auto qyTPCR = 0.0;
-    if (coll.sel8() && centrality < cfgCutCentrality && TMath::Abs(vz) < cfgCutVertex && (!useFT0Cut || coll.has_foundFT0()) && (!useEventSelection || eventSelected(coll, centrality)) && (!useTimeFrameCut || coll.selection_bit(aod::evsel::kNoTimeFrameBorder)) && (!useITSFrameCut || coll.selection_bit(aod::evsel::kNoITSROFrameBorder)) && (!usePileupCut || coll.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!useITSLayerCut || coll.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))) {
+    if (coll.sel8() && centrality < cfgCutCentrality && TMath::Abs(vz) < cfgCutVertex && coll.has_foundFT0() && (!useEventSelection || eventSelected(coll, centrality)) && (!useTimeFrameCut || coll.selection_bit(aod::evsel::kNoTimeFrameBorder)) && (!useITSFrameCut || coll.selection_bit(aod::evsel::kNoITSROFrameBorder)) && (!usePileupCut || coll.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!useITSLayerCut || coll.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))) {
       triggerevent = true;
       if (useGainCallib && (currentRunNumber != lastRunNumber)) {
         gainprofile = ccdb->getForTimeStamp<TProfile>(ConfGainPath.value, bc.timestamp());
