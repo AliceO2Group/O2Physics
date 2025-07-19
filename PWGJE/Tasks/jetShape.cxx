@@ -187,7 +187,7 @@ struct JetShapeTask {
         float distance = std::sqrt(deltaEta * deltaEta + deltaPhi1 * deltaPhi1);
 
         registry.fill(HIST("ptCorrVsDistance"), distance, ptCorr);
-        registry.fill(HIST("ptVsCentrality"), collision.centrality(), track.pt());
+        registry.fill(HIST("ptVsCentrality"), collision.centFT0M(), track.pt());
 
         // calculate compornents of jetshapefunction rho(r)
         std::vector<float> trackPtSum(distanceCategory->size() - 1, 0.f);

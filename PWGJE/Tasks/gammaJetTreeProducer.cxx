@@ -941,7 +941,7 @@ struct GammaJetTreeProducer {
       return;
     }
 
-    eventsTable(collision.multiplicity(), collision.centrality(), collision.rho(), collision.eventSel(), collision.trackOccupancyInTimeRange(), collision.alias_raw());
+    eventsTable(collision.multFT0M(), collision.centFT0M(), collision.rho(), collision.eventSel(), collision.trackOccupancyInTimeRange(), collision.alias_raw());
     collisionMapping[collision.globalIndex()] = eventsTable.lastIndex();
   }
   PROCESS_SWITCH(GammaJetTreeProducer, processEventData, "Process event data", true);
@@ -971,7 +971,7 @@ struct GammaJetTreeProducer {
     mHistograms.fill(HIST("eventQA"), 7);
 
     // fill rec collision table
-    eventsTable(collision.multiplicity(), collision.centrality(), collision.rho(), collision.eventSel(), collision.trackOccupancyInTimeRange(), collision.alias_raw());
+    eventsTable(collision.multFT0M(), collision.centFT0M(), collision.rho(), collision.eventSel(), collision.trackOccupancyInTimeRange(), collision.alias_raw());
 
     // fill collision mapping
     collisionMapping[collision.globalIndex()] = eventsTable.lastIndex();
