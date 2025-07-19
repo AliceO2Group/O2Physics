@@ -1,0 +1,74 @@
+{
+    "TestCut": {
+        "type": "Binary",
+        "title": "MyBDTModel",
+        "inputFeatures": [
+            "fITSChi2NCl1",
+            "fTPCNClsCR1",
+            "fTPCNClsFound1",
+            "fTPCChi2NCl1",
+            "fDcaXY1",
+            "fDcaZ1",
+            "fTPCNSigmaEl1",
+            "fTPCNSigmaPi1",
+            "fTPCNSigmaPr1",
+            "fTOFNSigmaEl1",
+            "fTOFNSigmaPi1",
+            "fTOFNSigmaPr1",
+            "fITSChi2NCl2",
+            "fTPCNClsCR2",
+            "fTPCNClsFound2",
+            "fTPCChi2NCl2",
+            "fDcaXY2",
+            "fDcaZ2",
+            "fTPCNSigmaEl2",
+            "fTPCNSigmaPi2",
+            "fTPCNSigmaPr2",
+            "fTOFNSigmaEl2",
+            "fTOFNSigmaPi2",
+            "fTOFNSigmaPr2"
+        ],
+        "modelFiles": [
+            "cent_30_50_pt0_2_onnx.onnx",
+            "cent_30_50_pt2_20_onnx.onnx"
+        ],
+        "AddMLCut-pTBin1": {
+            "pTMin": 0,
+            "pTMax": 2,
+            "AddMLCut-background": {
+                "var": "kBdtBackground",
+                "cut": 0.5,
+                "exclude": true
+            },
+            "AddMLCut-prompt": {
+                "var": "kBdtPrompt",
+                "cut": 0.5,
+                "exclude": false
+            },
+            "AddMLCut-nonprompt": {
+                "var": "kBdtNonprompt",
+                "cut": 0.5,
+                "exclude": false
+            }
+        },
+        "AddMLCut-pTBin2": {
+            "pTMin": 2,
+            "pTMax": 20,
+            "AddMLCut-background": {
+                "var": "kBdtBackground",
+                "cut": 0.5,
+                "exclude": true
+            },
+            "AddMLCut-prompt": {
+                "var": "kBdtPrompt",
+                "cut": 0.5,
+                "exclude": false
+            },
+            "AddMLCut-nonprompt": {
+                "var": "kBdtNonprompt",
+                "cut": 0.5,
+                "exclude": false
+            }
+        }
+    }
+}
