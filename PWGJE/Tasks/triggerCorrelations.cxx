@@ -72,6 +72,12 @@ struct TriggerCorrelationsTask {
     fillCorrelationsHistogram(collision);
   }
   PROCESS_SWITCH(TriggerCorrelationsTask, processTriggeredCorrelations, "QA for trigger correlations", true);
+
+  void processTriggeredCorrelationsOffline(aod::JCollision const& collision)
+  {
+    fillCorrelationsHistogram(collision);
+  }
+  PROCESS_SWITCH(TriggerCorrelationsTask, processTriggeredCorrelationsOffline, "QA for trigger correlations in offline analysis", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
