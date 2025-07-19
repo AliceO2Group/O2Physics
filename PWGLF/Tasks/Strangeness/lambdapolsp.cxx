@@ -83,9 +83,6 @@ struct lambdapolsp {
   Configurable<bool> globalpt{"globalpt", true, "select tracks based on pt global vs tpc"};
   Configurable<bool> cqvas{"cqvas", false, "change q vectors after shift correction"};
   Configurable<int> useprofile{"useprofile", 3, "flag to select profile vs Sparse"};
-  Configurable<int> QxyNbins{"QxyNbins", 100, "Number of bins in QxQy histograms"};
-  Configurable<float> lbinQxy{"lbinQxy", -5.0, "lower bin value in QxQy histograms"};
-  Configurable<float> hbinQxy{"hbinQxy", 5.0, "higher bin value in QxQy histograms"};
   Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 1000, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
   Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", 0, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
   Configurable<int> sys{"sys", 1, "flag to select systematic source"};
@@ -132,24 +129,26 @@ struct lambdapolsp {
   Configurable<std::string> ConfAccPathL{"ConfAccPathL", "Users/p/prottay/My/Object/From379780/Fulldata/NewPbPbpass4_28032025/acccorrL", "Path to acceptance correction for Lambda"};
   Configurable<std::string> ConfAccPathAL{"ConfAccPathAL", "Users/p/prottay/My/Object/From379780/Fulldata/NewPbPbpass4_28032025/acccorrAL", "Path to acceptance correction for AntiLambda"};
 
-  // Configurable<int> CentNbins{"CentNbins", 16, "Number of bins in cent histograms"};
-  // Configurable<float> lbinCent{"lbinCent", 0.0, "lower bin value in cent histograms"};
-  // Configurable<float> hbinCent{"hbinCent", 80.0, "higher bin value in cent histograms"};
-  Configurable<int> SANbins{"SANbins", 20, "Number of bins in costhetastar"};
-  Configurable<float> lbinSA{"lbinSA", -1.0, "lower bin value in costhetastar histograms"};
-  Configurable<float> hbinSA{"hbinSA", 1.0, "higher bin value in costhetastar histograms"};
-  Configurable<int> PolNbins{"PolNbins", 20, "Number of bins in polarisation"};
-  Configurable<float> lbinPol{"lbinPol", -1.0, "lower bin value in #phi-#psi histograms"};
-  Configurable<float> hbinPol{"hbinPol", 1.0, "higher bin value in #phi-#psi histograms"};
-  Configurable<int> IMNbins{"IMNbins", 100, "Number of bins in invariant mass"};
-  Configurable<float> lbinIM{"lbinIM", 1.0, "lower bin value in IM histograms"};
-  Configurable<float> hbinIM{"hbinIM", 1.2, "higher bin value in IM histograms"};
-  Configurable<int> resNbins{"resNbins", 50, "Number of bins in reso"};
-  Configurable<float> lbinres{"lbinres", 0.0, "lower bin value in reso histograms"};
-  Configurable<float> hbinres{"hbinres", 10.0, "higher bin value in reso histograms"};
-  Configurable<int> spNbins{"spNbins", 2000, "Number of bins in sp"};
-  Configurable<float> lbinsp{"lbinsp", -1.0, "lower bin value in sp histograms"};
-  Configurable<float> hbinsp{"hbinsp", 1.0, "higher bin value in sp histograms"};
+  struct : ConfigurableGroup {
+    Configurable<int> QxyNbins{"QxyNbins", 100, "Number of bins in QxQy histograms"};
+    Configurable<float> lbinQxy{"lbinQxy", -5.0, "lower bin value in QxQy histograms"};
+    Configurable<float> hbinQxy{"hbinQxy", 5.0, "higher bin value in QxQy histograms"};
+    Configurable<int> PolNbins{"PolNbins", 20, "Number of bins in polarisation"};
+    Configurable<float> lbinPol{"lbinPol", -1.0, "lower bin value in #phi-#psi histograms"};
+    Configurable<float> hbinPol{"hbinPol", 1.0, "higher bin value in #phi-#psi histograms"};
+    Configurable<int> IMNbins{"IMNbins", 100, "Number of bins in invariant mass"};
+    Configurable<float> lbinIM{"lbinIM", 1.0, "lower bin value in IM histograms"};
+    Configurable<float> hbinIM{"hbinIM", 1.2, "higher bin value in IM histograms"};
+    Configurable<int> resNbins{"resNbins", 50, "Number of bins in reso"};
+    Configurable<float> lbinres{"lbinres", 0.0, "lower bin value in reso histograms"};
+    Configurable<float> hbinres{"hbinres", 10.0, "higher bin value in reso histograms"};
+    Configurable<int> spNbins{"spNbins", 2000, "Number of bins in sp"};
+    Configurable<float> lbinsp{"lbinsp", -1.0, "lower bin value in sp histograms"};
+    Configurable<float> hbinsp{"hbinsp", 1.0, "higher bin value in sp histograms"};
+    // Configurable<int> CentNbins{"CentNbins", 16, "Number of bins in cent histograms"};
+    // Configurable<float> lbinCent{"lbinCent", 0.0, "lower bin value in cent histograms"};
+    // Configurable<float> hbinCent{"hbinCent", 80.0, "higher bin value in cent histograms"};
+  } binGrp;
   /*
   ConfigurableAxis configcentAxis{"configcentAxis", {VARIABLE_WIDTH, 0.0, 10.0, 40.0, 80.0}, "Cent V0M"};
   ConfigurableAxis configthnAxispT{"configthnAxisPt", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0, 100.0}, "#it{p}_{T} (GeV/#it{c})"};
@@ -171,6 +170,11 @@ struct lambdapolsp {
     ConfigurableAxis configthnAxisPol{"configthnAxisPol", {VARIABLE_WIDTH, -1.0, -0.6, -0.2, 0, 0.2, 0.4, 0.8}, "Pol"};
     ConfigurableAxis configbinAxis{"configbinAxis", {VARIABLE_WIDTH, -0.8, -0.4, -0.2, 0, 0.2, 0.4, 0.8}, "BA"};
   } axisGrp;
+  struct : ConfigurableGroup {
+    ConfigurableAxis axisVertex{"axisVertex", {5, -10, 10}, "vertex axis for bin"};
+    ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {8, 0, 80}, "multiplicity percentile for bin"};
+    Configurable<int> nMix{"nMix", 5, "number of event mixing"};
+  } meGrp;
 
   RCTFlagsChecker rctChecker;
 
@@ -182,12 +186,11 @@ struct lambdapolsp {
 
     rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
-    AxisSpec thnAxisres{resNbins, lbinres, hbinres, "Reso"};
-    AxisSpec thnAxisInvMass{IMNbins, lbinIM, hbinIM, "#it{M} (GeV/#it{c}^{2})"};
-    AxisSpec thnAxisCosThetaStar{SANbins, lbinSA, hbinSA, "SA"};
-    // AxisSpec centAxis = {CentNbins, lbinCent, hbinCent, "V0M (%)"};
-    AxisSpec spAxis = {spNbins, lbinsp, hbinsp, "Sp"};
-    AxisSpec qxZDCAxis = {QxyNbins, lbinQxy, hbinQxy, "Qx"};
+    AxisSpec thnAxisres{binGrp.resNbins, binGrp.lbinres, binGrp.hbinres, "Reso"};
+    AxisSpec thnAxisInvMass{binGrp.IMNbins, binGrp.lbinIM, binGrp.hbinIM, "#it{M} (GeV/#it{c}^{2})"};
+    AxisSpec spAxis = {binGrp.spNbins, binGrp.lbinsp, binGrp.hbinsp, "Sp"};
+    // AxisSpec qxZDCAxis = {binGrp.QxyNbins, binGrp.lbinQxy, binGrp.hbinQxy, "Qx"};
+    //  AxisSpec centAxis = {CentNbins, lbinCent, hbinCent, "V0M (%)"};
 
     std::vector<AxisSpec> runaxes = {thnAxisInvMass, axisGrp.configthnAxispT, axisGrp.configthnAxisPol, axisGrp.configcentAxis};
     if (needetaaxis)
@@ -1327,6 +1330,133 @@ struct lambdapolsp {
     // lastRunNumber = currentRunNumber;
   }
   PROCESS_SWITCH(lambdapolsp, processDerivedData, "Process derived data", false);
+
+  // Processing Event Mixing
+  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+  BinningType colBinning{{meGrp.axisVertex, meGrp.axisMultiplicityClass}, true};
+  Preslice<v0Candidates> tracksPerCollisionV0Mixed = o2::aod::v0data::straCollisionId; // for derived data only
+
+  void processDerivedDataMixed(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraZDCSP> const& collisions, v0Candidates const& V0s, dauTracks const&)
+  {
+
+    for (auto& [collision1, collision2] : selfCombinations(colBinning, meGrp.nMix, -1, collisions, collisions)) {
+
+      if (collision1.index() == collision2.index()) {
+        continue;
+      }
+
+      if (!collision1.sel8()) {
+        continue;
+      }
+      if (!collision2.sel8()) {
+        continue;
+      }
+
+      if (!collision1.triggereventsp()) { // provided by StraZDCSP
+        continue;
+      }
+      if (!collision2.triggereventsp()) { // provided by StraZDCSP
+        continue;
+      }
+
+      if (rctCut.requireRCTFlagChecker && !rctChecker(collision1)) {
+        continue;
+      }
+      if (rctCut.requireRCTFlagChecker && !rctChecker(collision2)) {
+        continue;
+      }
+
+      if (additionalEvSel && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+      if (additionalEvSel && (!collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+      if (additionalEvSel2 && (collision1.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision1.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+        continue;
+      }
+      if (additionalEvSel2 && (collision2.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision2.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+        continue;
+      }
+      if (additionalEvSel3 && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (additionalEvSel3 && (!collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (additionalEvSel4 && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+      if (additionalEvSel4 && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+
+      auto centrality = collision1.centFT0C();
+      auto qxZDCA = collision2.qxZDCA();
+      auto qxZDCC = collision2.qxZDCC();
+      auto qyZDCA = collision2.qyZDCA();
+      auto qyZDCC = collision2.qyZDCC();
+      auto psiZDCC = collision2.psiZDCC();
+      auto psiZDCA = collision2.psiZDCA();
+      double modqxZDCA;
+      double modqyZDCA;
+      double modqxZDCC;
+      double modqyZDCC;
+
+      modqxZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Cos(psiZDCA);
+      modqyZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Sin(psiZDCA);
+      modqxZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Cos(psiZDCC);
+      modqyZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Sin(psiZDCC);
+
+      auto psiZDC = TMath::ATan2((modqyZDCC - modqyZDCA), (modqxZDCC - modqxZDCA)); // full event plane from collision 2
+      auto groupV0 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision1.index());
+
+      histos.fill(HIST("hCentrality"), centrality);
+
+      for (const auto& v0 : groupV0) {
+
+        bool LambdaTag = isCompatible(v0, 0);
+        bool aLambdaTag = isCompatible(v0, 1);
+        if (!LambdaTag && !aLambdaTag)
+          continue;
+        if (!SelectionV0(collision1, v0))
+          continue;
+        if (LambdaTag) {
+          Proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
+          AntiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
+          Lambdadummy = Proton + AntiPion;
+        }
+        if (aLambdaTag) {
+          AntiProton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
+          Pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
+          AntiLambdadummy = AntiProton + Pion;
+        }
+        if (shouldReject(LambdaTag, aLambdaTag, Lambdadummy, AntiLambdadummy)) {
+          continue;
+        }
+        if (TMath::Abs(v0.eta()) > 0.8)
+          continue;
+        int taga = LambdaTag;
+        int tagb = aLambdaTag;
+
+        if (LambdaTag) {
+          Lambda = Proton + AntiPion;
+          tagb = 0;
+          double acvalue = 1.0;
+          fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mLambda(), v0.pt(), v0.eta(), acvalue);
+        }
+
+        tagb = aLambdaTag;
+        if (aLambdaTag) {
+          AntiLambda = AntiProton + Pion;
+          taga = 0;
+          double acvalue = 1.0;
+          fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mAntiLambda(), v0.pt(), v0.eta(), acvalue);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(lambdapolsp, processDerivedDataMixed, "Process mixed event using derived data", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
