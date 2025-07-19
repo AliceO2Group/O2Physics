@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 /// \author Andrea Rossi <andrea.rossi@cern.ch>
 
-/// \brief Simple task to filter tracks and save infos to trees for DCA-related studies (alignment, HF-related issues)
+/// \brief Simple task to filter tracks and save infos to trees for DCA-related studies (alignment, HF-related issues, ...)
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
