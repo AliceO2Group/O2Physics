@@ -36,7 +36,6 @@
 #include <CCDB/BasicCCDBManager.h>
 
 #include "TPDGCode.h"
-#include <TRandom.h>
 #include <TRandom3.h>
 
 #include <chrono>
@@ -76,6 +75,19 @@ std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsOneParCorr
 std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsTwoParCorrVsZN{};
 std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsThreeParCorrVsZN{};
 std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsFourParCorrVsZN{};
+
+std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hPoissonMC{};
+std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hNchGen{};
+std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pNchvsOneParCorrGen{};
+std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pNchvsTwoParCorrGen{};
+std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pNchvsThreeParCorrGen{};
+std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pNchvsFourParCorrGen{};
+
+std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hNchRec{};
+std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pNchvsOneParCorrRec{};
+std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pNchvsTwoParCorrRec{};
+std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pNchvsThreeParCorrRec{};
+std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pNchvsFourParCorrRec{};
 
 struct UccZdc {
 
@@ -200,7 +212,7 @@ struct UccZdc {
     registry.add("ZNamp", ";ZNA+ZNC;Entries;", kTH1F, {{nBinsZN, -0.5, maxZN}});
     registry.add("ExcludedEvtVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);Entries;", kTH1F, {{nBinsAmpFT0, 0., maxAmpFT0}});
     registry.add("ExcludedEvtVsNch", ";#it{N}_{ch} (|#eta|<0.8);Entries;", kTH1F, {{nBinsNch, minNch, maxNch}});
-    registry.add("Nch", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);", kTH1F, {{nBinsNch, minNch, maxNch}});
+    registry.add("Nch", ";#it{N}_{ch} (|#eta| < 0.8);Entries;", kTH1F, {{nBinsNch, minNch, maxNch}});
     registry.add("NchVsOneParCorr", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);#LT[#it{p}_{T}^{(1)}]#GT (GeV/#it{c})", kTProfile, {{nBinsNch, minNch, maxNch}});
     registry.add("EtaVsPhi", ";#eta;#varphi", kTH2F, {{{axisEta}, {100, -0.1 * PI, +2.1 * PI}}});
     registry.add("ZposVsEta", "", kTProfile, {axisZpos});
@@ -294,6 +306,21 @@ struct UccZdc {
       auto* x = hECMC->GetXaxis();
       x->SetBinLabel(1, "All");
       x->SetBinLabel(13, "VtxZ cut");
+
+      for (int i = 0; i < kSizeBootStrapEnsemble; i++) {
+        hPoissonMC[i] = registry.add<TH1>(Form("PoissonMC_Replica%d", i), ";#it{k};Entries", kTH1F, {{21, -0.5, 20.5}});
+        hNchGen[i] = registry.add<TH1>(Form("NchGen_Replica%d", i), ";#it{N}_{ch} (|#eta| < 0.8);Entries", kTH1F, {{nBinsNch, minNch, maxNch}});
+        pNchvsOneParCorrGen[i] = registry.add<TProfile>(Form("NchvsOneParCorrGen_Replica%d", i), ";#it{N}_{ch}, |#eta| < 0.8; One-particle #it{p}_{T} correlator", kTProfile, {{nBinsNch, minNch, maxNch}});
+        pNchvsTwoParCorrGen[i] = registry.add<TProfile>(Form("NchvsTwoParCorrGen_Replica%d", i), ";#it{N}_{ch}, |#eta| < 0.8; Two-particle #it{p}_{T} correlator", kTProfile, {{nBinsNch, minNch, maxNch}});
+        pNchvsThreeParCorrGen[i] = registry.add<TProfile>(Form("NchvsThreeParCorrGen_Replica%d", i), ";#it{N}_{ch}, |#eta| < 0.8; Three-particle #it{p}_{T} correlator", kTProfile, {{nBinsNch, minNch, maxNch}});
+        pNchvsFourParCorrGen[i] = registry.add<TProfile>(Form("NchvsFourParCorrGen_Replica%d", i), ";#it{N}_{ch}, |#eta| < 0.8; Four-particle #it{p}_{T} correlator", kTProfile, {{nBinsNch, minNch, maxNch}});
+
+        hNchRec[i] = registry.add<TH1>(Form("NchRec_Replica%d", i), ";#it{N}_{ch} (|#eta| < 0.8);Entries", kTH1F, {{nBinsNch, minNch, maxNch}});
+        pNchvsOneParCorrRec[i] = registry.add<TProfile>(Form("NchvsOneParCorrRec_Replica%d", i), ";#it{N}_{ch}, |#eta| < 0.8; One-particle #it{p}_{T} correlator", kTProfile, {{nBinsNch, minNch, maxNch}});
+        pNchvsTwoParCorrRec[i] = registry.add<TProfile>(Form("NchvsTwoParCorrRec_Replica%d", i), ";#it{N}_{ch}, |#eta| < 0.8; Two-particle #it{p}_{T} correlator", kTProfile, {{nBinsNch, minNch, maxNch}});
+        pNchvsThreeParCorrRec[i] = registry.add<TProfile>(Form("NchvsThreeParCorrRec_Replica%d", i), ";#it{N}_{ch}, |#eta| < 0.8; Three-particle #it{p}_{T} correlator", kTProfile, {{nBinsNch, minNch, maxNch}});
+        pNchvsFourParCorrRec[i] = registry.add<TProfile>(Form("NchvsFourParCorrRec_Replica%d", i), ";#it{N}_{ch}, |#eta| < 0.8; Four-particle #it{p}_{T} correlator", kTProfile, {{nBinsNch, minNch, maxNch}});
+      }
     }
 
     if (doprocessQA) {
@@ -338,18 +365,10 @@ struct UccZdc {
     LOG(info) << "\tmaxPtSpectra=" << maxPtSpectra.value;
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
-    // Enabling object caching, otherwise each call goes to the CCDB server
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
-    // Not later than now, will be replaced by the value of the train creation
-    // This avoids that users can replace objects **while** a train is running
     ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
-    // Feed Down is the same for all runs -> use a global object
-    //        fd = ccdb->getForTimeStamp<TH1F>(paTHFD.value,ccdbNoLaterThan.value);
-    //        if (!fd) {
-    //            LOGF(fatal, "Feed Down object not found!");
-    //        }
   }
 
   template <typename CheckCol>
@@ -435,7 +454,6 @@ struct UccZdc {
 
     return true;
   }
-
   void processQA(o2::aod::ColEvSels::iterator const& collision, o2::aod::BCsRun3 const& /**/, aod::Zdcs const& /**/, aod::FV0As const& /**/, aod::FT0s const& /**/, TheFilteredTracks const& tracks)
   {
     // LOG(info) << " Collisions size: " << collisions.size() << " Table's size: " << collisions.tableSize() << "\n";
@@ -603,7 +621,6 @@ struct UccZdc {
       registry.fill(HIST("NchVsOneParCorr"), glbTracks, meanpt / glbTracks);
   }
   PROCESS_SWITCH(UccZdc, processQA, "Process QA", true);
-
   void processZdcCollAss(o2::aod::ColEvSels::iterator const& collision, o2::aod::BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/, aod::FV0As const& /*fv0as*/, aod::FT0s const& /*ft0s*/, TheFilteredTracks const& tracks)
   {
     if (!isEventSelected(collision)) {
@@ -845,7 +862,6 @@ struct UccZdc {
     registry.fill(HIST("NchVsFourParCorrVsZN"), nchMult, sumZNs, fourParCorr, denFourParCorr);
   }
   PROCESS_SWITCH(UccZdc, processZdcCollAss, "Process ZDC W/Coll Ass.", true);
-
   void processEventSampling(o2::aod::ColEvSels::iterator const& collision, o2::aod::BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/, aod::FV0As const& /*fv0as*/, aod::FT0s const& /*ft0s*/, TheFilteredTracks const& tracks)
   {
     if (!isEventSelected(collision)) {
@@ -1089,17 +1105,11 @@ struct UccZdc {
   }
   PROCESS_SWITCH(UccZdc, processEventSampling, "Process Event Sampling 4 Bootstrap", true);
 
-  // Preslice<aod::McParticles> perMCCollision = aod::mcparticle::mcCollisionId;
   Preslice<TheFilteredSimTracks> perCollision = aod::track::collisionId;
   Service<o2::framework::O2DatabasePDG> pdg;
-  TRandom* randPointer = new TRandom();
   void processMCclosure(aod::McCollisions::iterator const& mccollision, soa::SmallGroups<o2::aod::SimCollisions> const& collisions, o2::aod::BCsRun3 const& /*bcs*/, aod::FT0s const& /*ft0s*/, aod::McParticles const& mcParticles, TheFilteredSimTracks const& simTracks)
   {
-    float rndNum = randPointer->Uniform(0.0, 1.0);
-    registry.fill(HIST("RandomNumber"), rndNum);
-
     for (const auto& collision : collisions) {
-
       // Event selection
       if (!isEventSelected(collision)) {
         continue;
@@ -1117,6 +1127,11 @@ struct UccZdc {
 
       const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
 
+      uint64_t timeStamp{foundBC.timestamp()};
+      TRandom3 rndGen(timeStamp);
+      const double rndNum{rndGen.Uniform(0.0, 1.0)};
+      registry.fill(HIST("RandomNumber"), rndNum);
+
       float aT0A = 0., aT0C = 0.;
       if (foundBC.has_ft0()) {
         for (const auto& amplitude : foundBC.ft0().amplitudeA()) {
@@ -1131,7 +1146,7 @@ struct UccZdc {
 
       double nchRaw{0.};
       double nchMult{0.};
-      double nchMC{0};
+      double nchMC{0.};
       double normT0M{0.};
       normT0M = (aT0A + aT0C) / 100.;
 
@@ -1148,8 +1163,11 @@ struct UccZdc {
       const auto& cent{collision.centFT0C()};
       registry.fill(HIST("T0Ccent"), cent);
 
+      const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
+
       // Half of the statistics for MC closure
       if (rndNum >= kZero && rndNum < evtFracMCcl) {
+
         registry.fill(HIST("EvtsDivided"), 0);
 
         // To use run-by-run efficiency
@@ -1166,8 +1184,6 @@ struct UccZdc {
         std::vector<double> pTs;
         std::vector<double> vecFD;
         std::vector<double> vecEff;
-
-        const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
 
         // Calculates the event's Nch to evaluate the efficiency
         for (const auto& track : groupedTracks) {
@@ -1328,10 +1344,191 @@ struct UccZdc {
         registry.fill(HIST("NchvsTwoParCorrGen"), nchMC, twoParCorrMC, denTwoParCorrMC);
         registry.fill(HIST("NchvsThreeParCorrGen"), nchMC, threeParCorrMC, denThreeParCorrMC);
         registry.fill(HIST("NchvsFourParCorrGen"), nchMC, fourParCorrMC, denFourParCorrMC);
+
+        //------------------ Poisson sampling
+        std::vector<uint64_t> vPoisson;
+        for (int replica = 0; replica < kSizeBootStrapEnsemble; ++replica) {
+          vPoisson.emplace_back(rndGen.Poisson(1.));
+        }
+
+        for (int replica = 0; replica < kSizeBootStrapEnsemble; ++replica) {
+          hPoissonMC[replica]->Fill(vPoisson.at(replica));
+
+          for (uint64_t evtRep = 0; evtRep < vPoisson.at(replica); ++evtRep) {
+
+            double nchRaw{0.0};
+            double nchMult{0.0};
+            std::vector<double> pTs;
+            std::vector<double> vecFD;
+            std::vector<double> vecEff;
+
+            //                        const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
+
+            // Calculates the event's Nch to evaluate the efficiency
+            for (const auto& track : groupedTracks) {
+              // Track Selection
+              if (track.eta() < minEta || track.eta() > maxEta) {
+                continue;
+              }
+              if (track.pt() < minPt || track.pt() > maxPt) {
+                continue;
+              }
+              if (!track.isGlobalTrack()) {
+                continue;
+              }
+              nchRaw++;
+            }
+
+            // Calculates the event weight, W_k
+            const int foundNchBin{efficiency->GetXaxis()->FindBin(nchRaw)};
+
+            for (const auto& track : groupedTracks) {
+              // Track Selection
+              if (track.eta() < minEta || track.eta() > maxEta) {
+                continue;
+              }
+              if (track.pt() < minPt || track.pt() > maxPt) {
+                continue;
+              }
+              if (!track.isGlobalTrack()) {
+                continue;
+              }
+              if (!track.has_mcParticle()) {
+                continue;
+              }
+              const auto& particle{track.mcParticle()};
+
+              auto charge{0.};
+              // Get the MC particle
+              auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+              if (pdgParticle != nullptr) {
+                charge = pdgParticle->Charge();
+              } else {
+                continue;
+              }
+
+              // Is it a charged particle?
+              if (std::abs(charge) < kMinCharge) {
+                continue;
+              }
+              // Is it a primary particle?
+              // if (!particle.isPhysicalPrimary()) { continue; }
+
+              const double pt{static_cast<double>(track.pt())};
+              const int foundPtBin{efficiency->GetYaxis()->FindBin(pt)};
+              double effValue{1.};
+              double fdValue{1.};
+
+              if (applyEff) {
+                effValue = efficiency->GetBinContent(foundNchBin, foundPtBin);
+                fdValue = feedDown->GetBinContent(foundNchBin, foundPtBin);
+              }
+              if ((effValue > 0.) && (fdValue > 0.)) {
+                pTs.emplace_back(pt);
+                vecEff.emplace_back(effValue);
+                vecFD.emplace_back(fdValue);
+                nchMult += (std::pow(effValue, -1.0) * fdValue);
+              }
+            }
+
+            if (nchMult < minNchSel) {
+              return;
+            }
+
+            double p1, p2, p3, p4, w1, w2, w3, w4;
+            p1 = p2 = p3 = p4 = w1 = w2 = w3 = w4 = 0.0;
+            getPTpowers(pTs, vecEff, vecFD, p1, w1, p2, w2, p3, w3, p4, w4);
+
+            const double denTwoParCorr{std::pow(w1, 2.) - w2};
+            const double numTwoParCorr{std::pow(p1, 2.) - p2};
+            const double denThreeParCorr{std::pow(w1, 3.) - 3. * w2 * w1 + 2. * w3};
+            const double numThreeParCorr{std::pow(p1, 3.) - 3. * p2 * p1 + 2. * p3};
+            const double denFourParCorr{std::pow(w1, 4.) - 6. * w2 * std::pow(w1, 2.) + 3. * std::pow(w2, 2.) + 8 * w3 * w1 - 6. * w4};
+            const double numFourParCorr{std::pow(p1, 4.) - 6. * p2 * std::pow(p1, 2.) + 3. * std::pow(p2, 2.) + 8 * p3 * p1 - 6. * p4};
+
+            const double oneParCorr{p1 / w1};
+            const double twoParCorr{numTwoParCorr / denTwoParCorr};
+            const double threeParCorr{numThreeParCorr / denThreeParCorr};
+            const double fourParCorr{numFourParCorr / denFourParCorr};
+
+            hNchRec[replica]->Fill(nchMult);
+            pNchvsOneParCorrRec[replica]->Fill(nchMult, oneParCorr, w1);
+            pNchvsTwoParCorrRec[replica]->Fill(nchMult, twoParCorr, denTwoParCorr);
+            pNchvsThreeParCorrRec[replica]->Fill(nchMult, threeParCorr, denThreeParCorr);
+            pNchvsFourParCorrRec[replica]->Fill(nchMult, fourParCorr, denFourParCorr);
+
+            //--------------------------- Generated MC ---------------------------
+            double nchMC{0.0};
+            std::vector<float> pTsMC;
+            std::vector<float> vecFullEff;
+            std::vector<float> vecFDEqualOne;
+
+            // Calculates the event weight, W_k
+            for (const auto& particle : mcParticles) {
+              if (particle.eta() < minEta || particle.eta() > maxEta) {
+                continue;
+              }
+              if (particle.pt() < minPt || particle.pt() > maxPt) {
+                continue;
+              }
+
+              auto charge{0.};
+              // Get the MC particle
+              auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+              if (pdgParticle != nullptr) {
+                charge = pdgParticle->Charge();
+              } else {
+                continue;
+              }
+
+              // Is it a charged particle?
+              if (std::abs(charge) < kMinCharge) {
+                continue;
+              }
+              // Is it a primary particle?
+              if (!particle.isPhysicalPrimary()) {
+                continue;
+              }
+
+              float pt{particle.pt()};
+              pTsMC.emplace_back(pt);
+              vecFullEff.emplace_back(1.);
+              vecFDEqualOne.emplace_back(1.);
+              nchMC++;
+            }
+
+            if (nchMC < minNchSel) {
+              continue;
+            }
+            // printf("nchMult = %f  | nchMC = %f  | nchMult/nchMc = %f\n",nchMult,nchMC,nchMult/nchMC);
+
+            double p1MC, p2MC, p3MC, p4MC, w1MC, w2MC, w3MC, w4MC;
+            p1MC = p2MC = p3MC = p4MC = w1MC = w2MC = w3MC = w4MC = 0.0;
+            getPTpowers(pTsMC, vecFullEff, vecFDEqualOne, p1MC, w1MC, p2MC, w2MC, p3MC, w3MC, p4MC, w4MC);
+
+            const double denTwoParCorrMC{std::pow(w1MC, 2.) - w2MC};
+            const double numTwoParCorrMC{std::pow(p1MC, 2.) - p2MC};
+            const double denThreeParCorrMC{std::pow(w1MC, 3.) - 3. * w2MC * w1MC + 2. * w3MC};
+            const double numThreeParCorrMC{std::pow(p1MC, 3.) - 3. * p2MC * p1MC + 2. * p3MC};
+            const double denFourParCorrMC{std::pow(w1MC, 4.) - 6. * w2MC * std::pow(w1MC, 2.) + 3. * std::pow(w2MC, 2.) + 8 * w3MC * w1MC - 6. * w4MC};
+            const double numFourParCorrMC{std::pow(p1MC, 4.) - 6. * p2MC * std::pow(p1MC, 2.) + 3. * std::pow(p2MC, 2.) + 8 * p3MC * p1MC - 6. * p4MC};
+
+            const double oneParCorrMC{p1MC / w1MC};
+            const double twoParCorrMC{numTwoParCorrMC / denTwoParCorrMC};
+            const double threeParCorrMC{numThreeParCorrMC / denThreeParCorrMC};
+            const double fourParCorrMC{numFourParCorrMC / denFourParCorrMC};
+
+            hNchGen[replica]->Fill(nchMC);
+            pNchvsOneParCorrGen[replica]->Fill(nchMC, oneParCorrMC, w1MC);
+            pNchvsTwoParCorrGen[replica]->Fill(nchMC, twoParCorrMC, w1MC);
+            pNchvsThreeParCorrGen[replica]->Fill(nchMC, threeParCorrMC, w1MC);
+            pNchvsFourParCorrGen[replica]->Fill(nchMC, fourParCorrMC, w1MC);
+          } // events per replica
+        } // replica's loop
       } else { // Correction with the remaining half of the sample
         registry.fill(HIST("EvtsDivided"), 1);
         //----- MC reconstructed -----//
-        const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
+        //                const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
         for (const auto& track : groupedTracks) {
           // Track Selection
           if (track.eta() < minEta || track.eta() > maxEta) {
