@@ -257,6 +257,7 @@ struct EbyeMaker {
   Configurable<float> antidPtItsClsSizeCut{"antidPtItsClsSizeCut", 10.f, "pt for cluster size cut for antideuterons"};
 
   Configurable<float> trklEtaMax{"trklEtaMax", 0.8f, "maximum eta for run 2 tracklets"};
+  Configurable<float> itsGloNclusItsCut{"itsGloNclusItsCut", 3, "Minimum number of ITS clusters for the ITS only + global tracks estimator"};
   Configurable<LabeledArray<float>> cfgTrackSels{"cfgTrackSels", {kTrackSels, 1, 12, particleName, trackSelsNames}, "Track selections"};
 
   std::array<float, kNpart> ptMin;
@@ -555,7 +556,7 @@ struct EbyeMaker {
     for (const auto& track : tracks) {
       if (track.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet && std::abs(track.eta()) < trklEtaMax && !(doprocessRun3 || doprocessMcRun3)) { // tracklet
         nTrackletsColl++;
-      } else if (std::abs(track.eta()) < trklEtaMax && track.itsNCls() > 3 && (doprocessRun3 || doprocessMcRun3)) { // ITS only + global tracks
+      } else if (std::abs(track.eta()) < trklEtaMax && track.itsNCls() > itsGloNclusItsCut && (doprocessRun3 || doprocessMcRun3)) { // ITS only + global tracks
         nTrackletsColl++;
       }
       if (!selectTrack(track)) {
