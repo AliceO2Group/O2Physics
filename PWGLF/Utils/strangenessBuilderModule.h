@@ -397,6 +397,8 @@ class BuilderModule
     return preSelectOpts.massCutOm->get("constant") + pt * preSelectOpts.massCutOm->get("linear") + preSelectOpts.massCutOm->get("expoConstant") * TMath::Exp(-pt / preSelectOpts.massCutOm->get("expoRelax"));
   }
 
+  int nEnabledTables = 0;
+
   // helper object
   o2::pwglf::strangenessBuilderHelper straHelper;
 
@@ -519,6 +521,49 @@ class BuilderModule
     cascadeBuilderOpts = inputCascadeBuilderOpts;
     preSelectOpts = inputPreSelectOpts;
 
+    baseOpts.mEnabledTables.resize(nTables, 0);
+
+    LOGF(info, "Checking if strangeness building is required");
+    auto& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
+
+    nEnabledTables = 0;
+
+    TString listOfRequestors[nTables];
+    for (int i = 0; i < nTables; i++) {
+      int f = baseOpts.enabledTables->get(tableNames[i].c_str(), "enable");
+      if (f == 1) {
+        baseOpts.mEnabledTables[i] = 1;
+        listOfRequestors[i] = "manual enabling";
+      }
+      if (f == -1) {
+        // autodetect this table in other devices
+        for (o2::framework::DeviceSpec const& device : workflows.devices) {
+          // Step 1: check if this device subscribed to the V0data table
+          for (auto const& input : device.inputs) {
+            if (o2::framework::DataSpecUtils::partialMatch(input.matcher, o2::header::DataOrigin("AOD"))) {
+              auto&& [origin, description, version] = o2::framework::DataSpecUtils::asConcreteDataMatcher(input.matcher);
+              std::string tableNameWithVersion = tableNames[i];
+              if (version > 0) {
+                tableNameWithVersion += Form("_%03d", version);
+              }
+              if (input.matcher.binding == tableNameWithVersion) {
+                LOGF(info, "Device %s has subscribed to %s (version %i)", device.name, tableNames[i], version);
+                listOfRequestors[i].Append(Form("%s ", device.name.c_str()));
+                baseOpts.mEnabledTables[i] = 1;
+                nEnabledTables++;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if(nEnabledTables==0){ 
+      LOGF(info, "Strangeness building not required. Will suppress all functionality, including logs, from this point forward.");
+      return;
+    }
+
+
     // setup bookkeeping histogram
     auto h = histos.template add<TH1>("hTableBuildingStatistics", "hTableBuildingStatistics", o2::framework::kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
     auto h2 = histos.template add<TH1>("hInputStatistics", "hInputStatistics", o2::framework::kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
@@ -588,44 +633,12 @@ class BuilderModule
 
     mRunNumber = 0;
 
-    baseOpts.mEnabledTables.resize(nTables, 0);
-
-    LOGF(info, "Configuring tables to generate");
-    auto& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
-
-    TString listOfRequestors[nTables];
     for (int i = 0; i < nTables; i++) {
       // adjust bookkeeping histogram
       h->GetXaxis()->SetBinLabel(i + 1, tableNames[i].c_str());
       h2->GetXaxis()->SetBinLabel(i + 1, tableNames[i].c_str());
-      h->SetBinContent(i + 1, -1); // mark all as disabled to start
-
-      int f = baseOpts.enabledTables->get(tableNames[i].c_str(), "enable");
-      if (f == 1) {
-        baseOpts.mEnabledTables[i] = 1;
-        listOfRequestors[i] = "manual enabling";
-      }
-      if (f == -1) {
-        // autodetect this table in other devices
-        for (o2::framework::DeviceSpec const& device : workflows.devices) {
-          // Step 1: check if this device subscribed to the V0data table
-          for (auto const& input : device.inputs) {
-            if (device.name.compare("strangenessbuilder-initializer") == 0)
-              continue; // don't listen to the initializer
-            if (o2::framework::DataSpecUtils::partialMatch(input.matcher, o2::header::DataOrigin("AOD"))) {
-              auto&& [origin, description, version] = o2::framework::DataSpecUtils::asConcreteDataMatcher(input.matcher);
-              std::string tableNameWithVersion = tableNames[i];
-              if (version > 0) {
-                tableNameWithVersion += Form("_%03d", version);
-              }
-              if (input.matcher.binding == tableNameWithVersion) {
-                LOGF(info, "Device %s has subscribed to %s (version %i)", device.name, tableNames[i], version);
-                listOfRequestors[i].Append(Form("%s ", device.name.c_str()));
-                baseOpts.mEnabledTables[i] = 1;
-              }
-            }
-          }
-        }
+      if(baseOpts.mEnabledTables[i] == false){
+        h->SetBinContent(i + 1, -1); // mark disabled tables, distinguish from zero counts
       }
     }
 
@@ -2509,6 +2522,10 @@ class BuilderModule
   template <typename TCCDB, typename THistoRegistry, typename TCollisions, typename TMCCollisions, typename TV0s, typename TCascades, typename TTrackedCascades, typename TTracks, typename TBCs, typename TMCParticles, typename TProducts>
   void dataProcess(TCCDB& ccdb, THistoRegistry& histos, TCollisions const& collisions, TMCCollisions const& mccollisions, TV0s const& v0s, TCascades const& cascades, TTrackedCascades const& trackedCascades, TTracks const& tracks, TBCs const& bcs, TMCParticles const& mcParticles, TProducts& products)
   {
+    if(nEnabledTables == 0){ 
+      return; // fully suppressed
+    }
+
     if (!initCCDB(ccdb, bcs, collisions))
       return;
 
