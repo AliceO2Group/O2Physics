@@ -853,7 +853,7 @@ struct EbyeMaker {
       if ((((mcPart.flags() & 0x8) || (mcPart.flags() & 0x2)) && (doprocessMcRun2 || doprocessMiniMcRun2)) || ((mcPart.flags() & 0x1) && !doprocessMiniMcRun2))
         continue;
       auto pdgCode = mcPart.pdgCode();
-      if (std::abs(pdgCode) == PDG_t::kPiPlus || std::abs(pdgCode) == PDG_t::kElectron || std::abs(pdgCode) == PDG_t::kMuonMinus || std::abs(pdgCode) == PDG_t::kKPlus || std::abs(pdgCode) == PDG_t::kProton)
+      if ((std::abs(pdgCode) == PDG_t::kPiPlus || std::abs(pdgCode) == PDG_t::kElectron || std::abs(pdgCode) == PDG_t::kMuonMinus || std::abs(pdgCode) == PDG_t::kKPlus || std::abs(pdgCode) == PDG_t::kProton) && mcPart.isPhysicalPrimary())
         nChPartGen++;
       if (std::abs(pdgCode) == PDG_t::kLambda0) {
         if (!mcPart.isPhysicalPrimary() && !mcPart.has_mothers())
