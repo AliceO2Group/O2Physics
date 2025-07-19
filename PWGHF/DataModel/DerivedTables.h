@@ -928,7 +928,11 @@ DECLARE_SOA_TABLE_STAGED(HfDstarMls, "HFDSTML", //! Table with candidate selecti
 
 DECLARE_SOA_TABLE_STAGED(HfDstarMcs, "HFDSTMC", //! Table with MC candidate info
                          hf_cand_mc::FlagMcMatchRec,
+                         hf_cand_mc_charm::FlagMcMatchRecCharm,
                          hf_cand_mc::OriginMcRec,
+                         hf_cand::PtBhadMotherPart,
+                         hf_cand::PdgBhadMotherPart,
+                         hf_cand::NTracksDecayed,
                          o2::soa::Marker<MarkerDstar>);
 
 // ----------------
