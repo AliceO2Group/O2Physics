@@ -42,7 +42,7 @@ class ZorroSummary : public TNamed
     for (size_t i = 1; i < toinames.size(); i++) {
       mTOInames += "," + toinames[i];
     }
-    std::cout << "TOI names:" << mTOInames << std::endl;
+    // std::cout << "TOI names:" << mTOInames << std::endl;
   }
   void setupRun(int runNumber, double tvxCountes, const std::vector<double>& toiCounters)
   {
@@ -71,7 +71,7 @@ class ZorroSummary : public TNamed
 
  private:
   int mRunNumber = 0;                                            //! Run currently being analysed
-  // std::vector<ULong64_t>* mCurrentAnalysedTOIcounters = nullptr; //! Analysed TOI counters for the current run
+  std::vector<ULong64_t>* mCurrentAnalysedTOIcounters = nullptr; //! Analysed TOI counters for the current run
 
   int mNtois = 0;
   std::string mTOInames;
