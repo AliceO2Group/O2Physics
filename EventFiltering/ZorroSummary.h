@@ -18,7 +18,6 @@
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
-#include <iostream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -42,7 +41,6 @@ class ZorroSummary : public TNamed
     for (size_t i = 1; i < toinames.size(); i++) {
       mTOInames += "," + toinames[i];
     }
-    // std::cout << "TOI names:" << mTOInames << std::endl;
   }
   void setupRun(int runNumber, double tvxCountes, const std::vector<double>& toiCounters)
   {
