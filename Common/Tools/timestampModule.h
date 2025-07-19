@@ -108,12 +108,12 @@ class TimestampModule
           orbitResetTimestamp = sorTimestamp * 1000; // from ms to us
         } else if (runNumber < 300000) {             // Run 2
           LOGF(debug, "Getting orbit-reset timestamp using start-of-run timestamp from CCDB");
-          auto ctp = ccdb->template getForTimeStamp<std::vector<int64_t>>(timestampOpts.orbit_reset_path.value.data(), sorTimestamp);
+          auto ctp = ccdb->template getSpecific<std::vector<int64_t>>(timestampOpts.orbit_reset_path.value.data(), sorTimestamp);
           orbitResetTimestamp = (*ctp)[0];
         } else {
           // sometimes orbit is reset after SOR. Using EOR timestamps for orbitReset query is more reliable
           LOGF(debug, "Getting orbit-reset timestamp using end-of-run timestamp from CCDB");
-          auto ctp = ccdb->template getForTimeStamp<std::vector<int64_t>>(timestampOpts.orbit_reset_path.value.data(), eorTimestamp / 2 + sorTimestamp / 2);
+          auto ctp = ccdb->template getSpecific<std::vector<int64_t>>(timestampOpts.orbit_reset_path.value.data(), eorTimestamp / 2 + sorTimestamp / 2);
           orbitResetTimestamp = (*ctp)[0];
         }
 
