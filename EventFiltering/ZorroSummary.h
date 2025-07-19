@@ -18,10 +18,10 @@
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
+#include <iostream>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <iostream>
 
 class ZorroSummary : public TNamed
 {
@@ -35,13 +35,13 @@ class ZorroSummary : public TNamed
   void setupTOIs(int ntois, const std::vector<std::string>& toinames)
   {
     mNtois = ntois;
-    if(toinames.size() == 0) {
+    if (toinames.size() == 0) {
       return;
     }
     mTOInames = toinames[0];
-    for(size_t i = 1; i < toinames.size(); i++) {
+    for (size_t i = 1; i < toinames.size(); i++) {
       mTOInames += "," + toinames[i];
-    } 
+    }
     std::cout << "TOI names:" << mTOInames << std::endl;
   }
   void setupRun(int runNumber, double tvxCountes, const std::vector<double>& toiCounters)
@@ -64,14 +64,14 @@ class ZorroSummary : public TNamed
     mCurrentAnalysedTOIcounters->at(toiId)++;
   }
 
-  const auto& getTOInames() const {return mTOInames; }
+  const auto& getTOInames() const { return mTOInames; }
   const auto& getTOIcounters() const { return mTOIcounters; }
   const auto& getTVXcounters() const { return mTVXcounters; }
   const auto& getAnalysedTOIcounters() const { return mAnalysedTOIcounters; }
 
  private:
   int mRunNumber = 0;                                            //! Run currently being analysed
-  std::vector<ULong64_t>* mCurrentAnalysedTOIcounters = nullptr; //! Analysed TOI counters for the current run
+  // std::vector<ULong64_t>* mCurrentAnalysedTOIcounters = nullptr; //! Analysed TOI counters for the current run
 
   int mNtois = 0;
   std::string mTOInames;

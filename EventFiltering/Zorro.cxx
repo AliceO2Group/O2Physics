@@ -17,8 +17,8 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/LHCConstants.h>
 #include <CommonDataFormat/IRFrame.h>
-#include <CommonUtils/StringUtils.h>
 #include <CommonDataFormat/InteractionRecord.h>
+#include <CommonUtils/StringUtils.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
@@ -199,8 +199,8 @@ std::vector<int> Zorro::initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber
   mLastSelectedIdx = 0;
   mTOIs.clear();
   mTOIidx.clear();
-  std::vector<std::string> tokens = o2::utils::Str::tokenize(tois,','); // tokens are trimmed
-  for(auto const& token:tokens) {
+  std::vector<std::string> tokens = o2::utils::Str::tokenize(tois, ','); // tokens are trimmed
+  for (auto const& token : tokens) {
     int bin = findBin(mSelections, token) - 2;
     mTOIs.push_back(token);
     mTOIidx.push_back(bin);
