@@ -417,7 +417,7 @@ struct HfCandidateSigmac0plusplusMc {
 
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
   using LambdacMc = soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>;
-  using McParticlesLcGenMatch = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
+  using McParticlesLcGenMatch = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>; // including response of particle matching to MC from candidate-creator-3-prong
   using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 
   PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
@@ -466,9 +466,9 @@ struct HfCandidateSigmac0plusplusMc {
   /// @brief process function for MC matching of Σc0,++ → Λc+(→pK-π+) π- reconstructed candidates and counting of generated ones
   /// @param candidatesSigmac reconstructed Σc0,++ candidates
   /// @param mcParticles table of generated particles
-  void processMc(aod::McParticles const& mcParticles,
+  void processMc(McParticlesLcGenMatch const& mcParticles,
                  aod::TracksWMc const& tracks,
-                 LambdacMc const& candsLc, McParticlesLcGenMatch const& mcParticlesLcGenMatch,
+                 LambdacMc const& candsLc,
                  McCollisionsNoCents const& collInfos,
                  aod::McCollisions const&,
                  BCsInfo const&)
@@ -576,7 +576,7 @@ struct HfCandidateSigmac0plusplusMc {
     } /// end loop over reconstructed Σc0,++ candidates
 
     /// Match generated Σc0,++ candidates
-    for (const auto& particle : mcParticlesLcGenMatch) {
+    for (const auto& particle : mcParticles) {
       flag = 0;
       origin = 0;
       std::vector<int> idxBhadMothers{};
@@ -586,9 +586,8 @@ struct HfCandidateSigmac0plusplusMc {
       /// In case of need, readapt the code templetizing the function
       auto mcCollision = particle.mcCollision();
       float centrality{-1.f};
-      uint16_t rejectionMask{0};
       const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
-      rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::None>(mcCollision, collSlice, centrality);
+      auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::None>(mcCollision, collSlice, centrality);
       hfEvSelMc.fillHistograms<o2::hf_centrality::CentralityEstimator::None>(mcCollision, rejectionMask, 0);
       if (rejectionMask != 0) {
         // at least one event selection not satisfied --> reject gen particles from this collision
@@ -603,7 +602,7 @@ struct HfCandidateSigmac0plusplusMc {
       /// → here we check level 1. first, and then levels 2. and 3. are inherited by the Λc+ → pK-π+ MC matching in candidateCreator3Prong.cxx
 
       /// look for Σc0,++(2455)
-      if (RecoDecay::isMatchedMCGen(mcParticlesLcGenMatch, particle, Pdg::kSigmaC0, std::array{static_cast<int>(Pdg::kLambdaCPlus), static_cast<int>(kPiMinus)}, true, &sign, 1)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kSigmaC0, std::array{static_cast<int>(Pdg::kLambdaCPlus), static_cast<int>(kPiMinus)}, true, &sign, 1)) {
         // generated Σc0(2455)
         for (const auto& daughter : particle.daughters_as<McParticlesLcGenMatch>()) {
           // look for Λc+ daughter decaying in pK-π+
@@ -616,7 +615,7 @@ struct HfCandidateSigmac0plusplusMc {
             break;
           }
         }
-      } else if (RecoDecay::isMatchedMCGen(mcParticlesLcGenMatch, particle, Pdg::kSigmaCPlusPlus, std::array{static_cast<int>(Pdg::kLambdaCPlus), static_cast<int>(kPiPlus)}, true, &sign, 1)) {
+      } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kSigmaCPlusPlus, std::array{static_cast<int>(Pdg::kLambdaCPlus), static_cast<int>(kPiPlus)}, true, &sign, 1)) {
         // generated Σc++(2455)
         for (const auto& daughter : particle.daughters_as<McParticlesLcGenMatch>()) {
           // look for Λc+ daughter decaying in pK-π+
@@ -633,7 +632,7 @@ struct HfCandidateSigmac0plusplusMc {
 
       /// look for Σc0,++(2520)
       if (flag == 0) {
-        if (RecoDecay::isMatchedMCGen(mcParticlesLcGenMatch, particle, Pdg::kSigmaCStar0, std::array{static_cast<int>(Pdg::kLambdaCPlus), static_cast<int>(kPiMinus)}, true, &sign, 1)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kSigmaCStar0, std::array{static_cast<int>(Pdg::kLambdaCPlus), static_cast<int>(kPiMinus)}, true, &sign, 1)) {
           // generated Σc0(2520)
           for (const auto& daughter : particle.daughters_as<McParticlesLcGenMatch>()) {
             // look for Λc+ daughter decaying in pK-π+
@@ -646,7 +645,7 @@ struct HfCandidateSigmac0plusplusMc {
               break;
             }
           }
-        } else if (RecoDecay::isMatchedMCGen(mcParticlesLcGenMatch, particle, Pdg::kSigmaCStarPlusPlus, std::array{static_cast<int>(Pdg::kLambdaCPlus), static_cast<int>(kPiPlus)}, true, &sign, 1)) {
+        } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kSigmaCStarPlusPlus, std::array{static_cast<int>(Pdg::kLambdaCPlus), static_cast<int>(kPiPlus)}, true, &sign, 1)) {
           // generated Σc++(2520)
           for (const auto& daughter : particle.daughters_as<McParticlesLcGenMatch>()) {
             // look for Λc+ daughter decaying in pK-π+
@@ -664,7 +663,7 @@ struct HfCandidateSigmac0plusplusMc {
 
       /// check the origin (prompt vs. non-prompt)
       if (flag != 0) {
-        origin = RecoDecay::getCharmHadronOrigin(mcParticlesLcGenMatch, particle, false, &idxBhadMothers);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
       /// fill the table with results of generation level MC matching
       if (origin == RecoDecay::OriginType::NonPrompt) {

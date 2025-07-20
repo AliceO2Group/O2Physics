@@ -10,9 +10,9 @@
 // or submit itself to any jurisdiction.
 //
 ///
-/// \file emcalBcWisePi0.cxx
+/// \file emcalBcWiseGammaGamma.cxx
 ///
-/// \brief Task that extracts pi0s from BC wise derived data of EMCal clusters
+/// \brief Task that extracts pi0s and eta mesons from BC wise derived data of EMCal clusters
 ///
 /// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) Goethe University Frankfurt
 ///
@@ -42,7 +42,8 @@ using SelectedMCClusters = soa::Filtered<soa::Join<aod::BCWiseClusters, aod::BCW
 struct EmcalBcWiseGammaGamma {
   HistogramRegistry mHistManager{"EmcalGammaGammaBcWiseHistograms"};
 
-  Configurable<bool> cfgRequirekTVXinEMC{"cfgRequirekTVXinEMC", true, "Reconstruct pi0s only in kTVXinEMC triggered BCs"};
+  Configurable<bool> cfgRequirekTVXinEMC{"cfgRequirekTVXinEMC", true, "Reconstruct mesons only in kTVXinEMC triggered BCs"};
+  Configurable<bool> cfgRequireEMCCell{"cfgRequireEMCCell", true, "Reconstruct mesons only in BCs containing at least one EMCal cell (workaround for kTVXinEMC trigger)"};
   Configurable<int> cfgSelectOnlyUniqueAmbiguous{"cfgSelectOnlyUniqueAmbiguous", 0, "0: all clusters, 1: only unique clusters, 2: only ambiguous clusters"};
 
   Configurable<int> cfgClusterDefinition{"cfgClusterDefinition", 13, "Clusterizer to be selected, e.g. 13 for kV3MostSplitLowSeed"};
@@ -55,6 +56,8 @@ struct EmcalBcWiseGammaGamma {
   Configurable<float> cfgMinOpenAngle{"cfgMinOpenAngle", 0.0202, "Minimum opening angle between photons"};
   Configurable<int> cfgDistanceToEdge{"cfgDistanceToEdge", 1, "Distance to edge in cells required for rotated cluster to be accepted"};
   Configurable<int> cfgBGEventDownsampling{"cfgBGEventDownsampling", 1, "Only calculate background for every n-th event (performance reasons in PbPb)"};
+  Configurable<int> cfgMinTimeSinceSOF{"cfgMinTimeSinceSOF", -1, "Only analyze events with a time since start of fill larger than this value (in minutes)"};
+  Configurable<int> cfgMaxTimeSinceSOF{"cfgMaxTimeSinceSOF", 100000, "Only analyze events with a time since start of fill smaller than this value (in minutes)"};
 
   ConfigurableAxis cfgCentralityBinning{"cfgCentralityBinning", {VARIABLE_WIDTH, 0.f, 5.f, 10.f, 20.f, 30.f, 40.f, 50.f, 60.f, 70.f, 80.f, 90.f, 100.f, 101.f, 102.f}, "FT0M centrality (%)"};
 
@@ -83,6 +86,7 @@ struct EmcalBcWiseGammaGamma {
     mHistManager.add("Event/Z1VsZ2", "Z vertex positions for BCs with two collisions;#bf{#it{z}_{vtx}^{1} (cm)};#bf{#it{z}_{vtx}^{2} (cm)}", HistType::kTH2F, {{150, -15, 15}, {150, -15, 15}});
     mHistManager.add("Event/dZ", "Distance between vertices for BCs with two collisions;#bf{#Delta #it{z}_{vtx} (cm)};#bf{#it{N}_{BC}}", HistType::kTH1F, {{600, -30, 30}});
     mHistManager.add("Event/Mu", "Probablity of a collision in the BC;#bf{#mu};#bf{#it{N}_{BC}}", HistType::kTH1F, {{1000, 0., 0.1}});
+    mHistManager.add("Event/TimeSinceSOF", "Time of BC since the start of fill;#bf{t-t_{SOF} (min)};#bf{#it{N}_{BC}}", HistType::kTH1F, {{1200, 0., 600}});
 
     mHistManager.add("Event/Centrality", "FT0M centrality;FT0M centrality (%);#bf{#it{N}_{BC}}", HistType::kTH1F, {cfgCentralityBinning});
     mHistManager.add("Event/CentralityVsAmplitude", "FT0M AmplitudeVsCentrality;FT0M Centrality;FT0M Amplitude", HistType::kTH2F, {cfgCentralityBinning, {600, 0, 300000}});
@@ -94,20 +98,30 @@ struct EmcalBcWiseGammaGamma {
     mHistManager.add("Cluster/Exotic", "Is cluster exotic?;#bf{Exotic?};#bf{FT0M centrality (%)};#bf{#it{N}_{clusters}}", HistType::kTH2F, {{2, -0.5, 1.5}, cfgCentralityBinning});
     mHistManager.add("Cluster/EtaPhi", "Eta/Phi distribution of clusters;#eta;#phi;#bf{FT0M centrality (%)};#bf{#it{N}_{clusters}}", HistType::kTH3F, {{400, -0.8, 0.8}, {400, 0, constants::math::TwoPI}, cfgCentralityBinning});
 
-    mHistManager.add("GG/invMassVsPt", "Invariant mass and pT of meson candidates;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{200, 0., 0.4}, {200, 0., 20.}, cfgCentralityBinning});
-    mHistManager.add("GG/invMassVsPtBackground", "Invariant mass and pT of background meson candidates;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{200, 0., 0.4}, {200, 0., 20.}, cfgCentralityBinning});
+    mHistManager.add("GG/invMassVsPt", "Invariant mass and pT of meson candidates;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{400, 0., 0.8}, {200, 0., 20.}, cfgCentralityBinning});
+    mHistManager.add("GG/invMassVsPtBackground", "Invariant mass and pT of background meson candidates;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{400, 0., 0.8}, {200, 0., 20.}, cfgCentralityBinning});
 
     if (cfgIsMC) {
       mHistManager.add("True/clusterERecVsETrue", "True vs reconstructed energy of cluster inducing particle;#bf{#it{E}_{rec} (GeV)};#bf{#it{E}_{true}^{cls inducing part} (GeV)};#bf{FT0M centrality (%)}", HistType::kTH3F, {{200, 0, 20}, {200, 0, 20}, cfgCentralityBinning});
-      mHistManager.add("True/PtRecVsPtTrue", "True vs reconstructed pT of true pi0s;#bf{#it{p}_{T}^{rec} (GeV/#it{c})};#bf{#it{p}_{T}^{true} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{200, 0., 20.}, {200, 0., 20.}, cfgCentralityBinning});
-      mHistManager.add("True/invMassVsPt_Primary", "Reconstructed validated primary pi0;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{200, 0., 0.4}, {200, 0., 20.}, cfgCentralityBinning});
-      mHistManager.add("True/invMassVsPt_Secondary", "Reconstructed validated pi0 from secondary decay;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{200, 0., 0.4}, {200, 0., 20.}, cfgCentralityBinning});
-      mHistManager.add("True/invMassVsPt_HadronicShower", "Reconstructed validated pi0 from hadronic shower;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{200, 0., 0.4}, {200, 0., 20.}, cfgCentralityBinning});
+      mHistManager.add("True/pi0_PtRecVsPtTrue", "True vs reconstructed pT of true pi0s;#bf{#it{p}_{T}^{rec} (GeV/#it{c})};#bf{#it{p}_{T}^{true} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{200, 0., 20.}, {200, 0., 20.}, cfgCentralityBinning});
+      mHistManager.add("True/pi0_invMassVsPt_Primary", "Reconstructed validated primary pi0;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{400, 0., 0.8}, {200, 0., 20.}, cfgCentralityBinning});
+      mHistManager.add("True/pi0_invMassVsPt_Secondary", "Reconstructed validated pi0 from secondary decay;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{400, 0., 0.8}, {200, 0., 20.}, cfgCentralityBinning});
+      mHistManager.add("True/pi0_invMassVsPt_HadronicShower", "Reconstructed validated pi0 from hadronic shower;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{400, 0., 0.8}, {200, 0., 20.}, cfgCentralityBinning});
+      mHistManager.add("True/eta_PtRecVsPtTrue", "True vs reconstructed pT of true eta meson;#bf{#it{p}_{T}^{rec} (GeV/#it{c})};#bf{#it{p}_{T}^{true} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{200, 0., 20.}, {200, 0., 20.}, cfgCentralityBinning});
+      mHistManager.add("True/eta_invMassVsPt_Primary", "Reconstructed validated primary eta meson;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{400, 0., 0.8}, {200, 0., 20.}, cfgCentralityBinning});
+      mHistManager.add("True/eta_invMassVsPt_Secondary", "Reconstructed validated eta meson from secondary decay;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{400, 0., 0.8}, {200, 0., 20.}, cfgCentralityBinning});
+      mHistManager.add("True/eta_invMassVsPt_HadronicShower", "Reconstructed validated eta meson from hadronic shower;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{400, 0., 0.8}, {200, 0., 20.}, cfgCentralityBinning});
 
       mHistManager.add("Generated/pi0_AllBCs", "pT spectrum of generated pi0s in all BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#pi^{0}}^{gen}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
+      mHistManager.add("Generated/pi0_FT0", "pT spectrum of generated pi0s in BCs with found FT0;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#pi^{0}}^{gen}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
       mHistManager.add("Generated/pi0_TVX", "pT spectrum of generated pi0s in TVX triggered BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#pi^{0}}^{gen}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
       mHistManager.add("Generated/pi0_kTVXinEMC", "pT spectrum of generated pi0s in kTVXinEMC triggered BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#pi^{0}}^{gen}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
       mHistManager.add("Accepted/pi0_kTVXinEMC", "pT spectrum of accepted pi0s in kTVXinEMC triggered BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#pi^{0}}^{acc}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
+      mHistManager.add("Generated/eta_AllBCs", "pT spectrum of generated eta mesons in all BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#eta}^{gen}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
+      mHistManager.add("Generated/eta_FT0", "pT spectrum of generated eta mesons in BCs with found FT0;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#eta}^{gen}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
+      mHistManager.add("Generated/eta_TVX", "pT spectrum of generated eta mesons in TVX triggered BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#eta}^{gen}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
+      mHistManager.add("Generated/eta_kTVXinEMC", "pT spectrum of generated eta mesons in kTVXinEMC triggered BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#eta}^{gen}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
+      mHistManager.add("Accepted/eta_kTVXinEMC", "pT spectrum of accepted eta mesons in kTVXinEMC triggered BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#eta}^{acc}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
     }
   }
 
@@ -132,6 +146,7 @@ struct EmcalBcWiseGammaGamma {
     mHistManager.fill(HIST("Event/nBCs"), 0, bc.centrality());
     float mu = bc.mu();
     mHistManager.fill(HIST("Event/Mu"), mu);
+    mHistManager.fill(HIST("Event/TimeSinceSOF"), bc.timeSinceSOF() / 60.);
     double p = mu > 0.001 ? mu / (1 - std::exp(-mu)) : 1.; // No pile-up for small mu (protection against division by zero)
     mHistManager.fill(HIST("Event/nCollisions"), 0, bc.centrality(), p);
     if (bc.hasFT0()) {
@@ -231,10 +246,10 @@ struct EmcalBcWiseGammaGamma {
       }
     }
   }
-  void reconstructTrueMesons(const auto& clusters, const auto& mcPi0s, const auto& bc)
+  void reconstructTrueMesons(const auto& clusters, const auto& mcPi0s, const auto& mcEtas, const auto& bc)
   {
     for (const auto& [g1, g2] : soa::combinations(soa::CombinationsStrictlyUpperIndexPolicy(clusters, clusters))) {
-      if (g1.pi0ID() == -1 || g1.pi0ID() != g2.pi0ID())
+      if (g1.mesonID() != g2.mesonID() || g1.mesonID() == -1)
         continue;
 
       ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
@@ -247,16 +262,29 @@ struct EmcalBcWiseGammaGamma {
       if (openingAngle12 < cfgMinOpenAngle)
         continue;
 
-      const auto& mcPi0 = mcPi0s.iteratorAt(g1.pi0ID() - mcPi0s.offset());
+      if (!g1.isEta()) {
+        const auto& mcPi0 = mcPi0s.iteratorAt(g1.mesonID() - mcPi0s.offset());
 
-      mHistManager.fill(HIST("True/PtRecVsPtTrue"), v12.Pt(), mcPi0.pt(), bc.centrality());
+        mHistManager.fill(HIST("True/pi0_PtRecVsPtTrue"), v12.Pt(), mcPi0.pt(), bc.centrality());
 
-      if (mcPi0.isPrimary())
-        mHistManager.fill(HIST("True/invMassVsPt_Primary"), v12.M(), v12.Pt(), bc.centrality());
-      else if (mcPi0.isFromWD())
-        mHistManager.fill(HIST("True/invMassVsPt_Secondary"), v12.M(), v12.Pt(), bc.centrality());
-      else
-        mHistManager.fill(HIST("True/invMassVsPt_HadronicShower"), v12.M(), v12.Pt(), bc.centrality());
+        if (mcPi0.isPrimary())
+          mHistManager.fill(HIST("True/pi0_invMassVsPt_Primary"), v12.M(), v12.Pt(), bc.centrality());
+        else if (mcPi0.isFromWD())
+          mHistManager.fill(HIST("True/pi0_invMassVsPt_Secondary"), v12.M(), v12.Pt(), bc.centrality());
+        else
+          mHistManager.fill(HIST("True/pi0_invMassVsPt_HadronicShower"), v12.M(), v12.Pt(), bc.centrality());
+      } else {
+        const auto& mcEta = mcEtas.iteratorAt(g1.mesonID() - mcEtas.offset());
+
+        mHistManager.fill(HIST("True/eta_PtRecVsPtTrue"), v12.Pt(), mcEta.pt(), bc.centrality());
+
+        if (mcEta.isPrimary())
+          mHistManager.fill(HIST("True/eta_invMassVsPt_Primary"), v12.M(), v12.Pt(), bc.centrality());
+        else if (mcEta.isFromWD())
+          mHistManager.fill(HIST("True/eta_invMassVsPt_Secondary"), v12.M(), v12.Pt(), bc.centrality());
+        else
+          mHistManager.fill(HIST("True/eta_invMassVsPt_HadronicShower"), v12.M(), v12.Pt(), bc.centrality());
+      }
     }
   }
 
@@ -264,24 +292,43 @@ struct EmcalBcWiseGammaGamma {
   {
     if (cfgRequirekTVXinEMC && !bc.haskTVXinEMC())
       return false;
+    if (cfgRequireEMCCell && !bc.hasEMCCell())
+      return false;
     if (cfgSelectOnlyUniqueAmbiguous == 1 && collisions.size() != 1)
       return false;
     if (cfgSelectOnlyUniqueAmbiguous == 2 && collisions.size() == 1)
       return false;
+    if (cfgMinTimeSinceSOF > bc.timeSinceSOF() / 60 || cfgMaxTimeSinceSOF < bc.timeSinceSOF() / 60)
+      return false;
     return true;
   }
 
-  void fillGeneratedPi0Hists(const auto& mcPi0s, const auto& bc)
+  void fillGeneratedMesonHists(const auto& mcPi0s, const auto& mcEtas, const auto& bc)
   {
     for (const auto& mcPi0 : mcPi0s) {
       if (mcPi0.isPrimary()) {
         mHistManager.fill(HIST("Generated/pi0_AllBCs"), mcPi0.pt(), bc.centrality());
+        if (bc.hasFT0())
+          mHistManager.fill(HIST("Generated/pi0_FT0"), mcPi0.pt(), bc.centrality());
         if (bc.hasTVX())
           mHistManager.fill(HIST("Generated/pi0_TVX"), mcPi0.pt(), bc.centrality());
         if (bc.haskTVXinEMC())
           mHistManager.fill(HIST("Generated/pi0_kTVXinEMC"), mcPi0.pt(), bc.centrality());
         if (mcPi0.isAccepted() && bc.haskTVXinEMC())
           mHistManager.fill(HIST("Accepted/pi0_kTVXinEMC"), mcPi0.pt(), bc.centrality());
+      }
+    }
+    for (const auto& mcEta : mcEtas) {
+      if (mcEta.isPrimary()) {
+        mHistManager.fill(HIST("Generated/eta_AllBCs"), mcEta.pt(), bc.centrality());
+        if (bc.hasFT0())
+          mHistManager.fill(HIST("Generated/eta_FT0"), mcEta.pt(), bc.centrality());
+        if (bc.hasTVX())
+          mHistManager.fill(HIST("Generated/eta_TVX"), mcEta.pt(), bc.centrality());
+        if (bc.haskTVXinEMC())
+          mHistManager.fill(HIST("Generated/eta_kTVXinEMC"), mcEta.pt(), bc.centrality());
+        if (mcEta.isAccepted() && bc.haskTVXinEMC())
+          mHistManager.fill(HIST("Accepted/eta_kTVXinEMC"), mcEta.pt(), bc.centrality());
       }
     }
   }
@@ -298,12 +345,12 @@ struct EmcalBcWiseGammaGamma {
     reconstructMesons(clusters, bc);
   }
 
-  void processMCInfo(aod::BCWiseBCs::iterator const& bc, aod::BCWiseCollisions const& collisions, SelectedMCClusters const& clusters, aod::BCWiseMCPi0s const& mcPi0s)
+  void processMCInfo(aod::BCWiseBCs::iterator const& bc, aod::BCWiseCollisions const& collisions, SelectedMCClusters const& clusters, aod::BCWiseMCPi0s const& mcPi0s, aod::BCWiseMCEtas const& mcEtas)
   {
     if (!cfgIsMC)
       LOG(fatal) << "MC processing is not enabled, but the task is running on MC data. Please set cfgIsMC to true.";
 
-    fillGeneratedPi0Hists(mcPi0s, bc); // Fill before BC selection to also store pi0s in BCs that were not triggered
+    fillGeneratedMesonHists(mcPi0s, mcEtas, bc); // Fill before BC selection to also store pi0s and eta mesons in BCs that were not triggered
 
     if (!isBCSelected(bc, collisions))
       return;
@@ -311,7 +358,7 @@ struct EmcalBcWiseGammaGamma {
     for (const auto& cluster : clusters)
       mHistManager.fill(HIST("True/clusterERecVsETrue"), cluster.e(), cluster.trueE(), bc.centrality());
 
-    reconstructTrueMesons(clusters, mcPi0s, bc);
+    reconstructTrueMesons(clusters, mcPi0s, mcEtas, bc);
   }
   PROCESS_SWITCH(EmcalBcWiseGammaGamma, processMCInfo, "Run true and gen", false);
 };

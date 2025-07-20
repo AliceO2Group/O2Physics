@@ -287,7 +287,7 @@ struct HfTaskMcValidationGen {
     if (storeOccupancy) {
       occupancy = getOccupancyGenColl(recoCollisions, OccupancyEstimator::Its);
     }
-    uint16_t rejectionMask{0};
+    uint32_t rejectionMask{0u};
     if constexpr (centEstimator == CentralityEstimator::FT0C) {
       rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, recoCollisions, centrality);
     } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
@@ -1098,7 +1098,7 @@ struct HfTaskMcValidationRec {
           continue;
         }
         int whichHad = -1;
-        if (isD0Sel && TESTBIT(std::abs(cand2Prong.flagMcMatchRec()), hf_cand_2prong::DecayType::D0ToPiK)) {
+        if (isD0Sel && std::abs(cand2Prong.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           whichHad = DzeroToKPi;
         }
         int whichOrigin;
