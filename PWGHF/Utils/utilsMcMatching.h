@@ -176,6 +176,45 @@ inline std::unordered_map<DecayChannelMain, const std::vector<int>> getDecayChan
 }
 } // namespace hf_cand_3prong
 
+namespace hf_cand_reso
+{
+const std::unordered_map<int, int> particlesToDstarK0s = {
+  {DecayChannelMain::Ds1ToDstarK0s, constants::physics::Pdg::kDS1},
+  {DecayChannelMain::Ds2starToDstarK0s, constants::physics::Pdg::kDS2Star},
+  {DecayChannelMain::Ds1star2700ToDstarK0s, constants::physics::Pdg::kDS1Star2700},
+  {DecayChannelMain::Ds1star2860ToDstarK0s, constants::physics::Pdg::kDS1Star2860},
+  {DecayChannelMain::Ds3star2860ToDstarK0s, constants::physics::Pdg::kDS3Star2860}};
+const std::unordered_map<int, int> particlesToDplusK0s = {
+  {DecayChannelMain::Ds2starToDplusK0s, constants::physics::Pdg::kDS2Star}};
+const std::unordered_map<int, int> particlesToDplusLambda = {
+  {DecayChannelMain::Xic3055plusToDplusLambda, constants::physics::Pdg::kXiC3055Plus},
+  {DecayChannelMain::Xic3080plusToDplusLambda, constants::physics::Pdg::kXiC3080Plus}};
+const std::unordered_map<int, int> particlesToD0Lambda = {
+  {DecayChannelMain::Xic3055zeroToD0Lambda, constants::physics::Pdg::kXiC3055_0},
+  {DecayChannelMain::Xic3080zeroToD0Lambda, constants::physics::Pdg::kXiC3080_0}};
+const std::unordered_map<int, int> particlesToDstarPi = {
+  {DecayChannelMain::D1zeroToDstarPi, constants::physics::Pdg::kD10},
+  {DecayChannelMain::D2starzeroToDstarPi, constants::physics::Pdg::kD2Star0}};
+const std::unordered_map<int, int> particlesToDplusPi = {
+  {DecayChannelMain::D2starzeroToDplusPi, constants::physics::Pdg::kD2Star0}};
+const std::unordered_map<int, int> particlesToD0Pi = {
+  {DecayChannelMain::D2starplusToD0Pi, constants::physics::Pdg::kD2StarPlus}};
+const std::unordered_map<int, int> particlesToD0Kplus = {
+  {DecayChannelMain::Ds2starToD0Kplus, constants::physics::Pdg::kDS2Star}};
+
+enum PartialMatchMc : uint8_t {
+  D0Matched = 0,
+  DstarMatched,
+  DplusMatched,
+  K0Matched,
+  LambdaMatched,
+  PionMatched,
+  KaonMatched,
+  ProtonMatched,
+  ResoPartlyMatched
+};
+} // namespace hf_cand_reso
+
 /// Compare an array of PDG codes with an expected array
 /// \tparam N size of the arrays to be compared
 /// \param arrPdgTested array of PDG codes to be tested

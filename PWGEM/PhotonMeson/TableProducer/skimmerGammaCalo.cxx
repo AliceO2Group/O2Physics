@@ -9,35 +9,44 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file skimmerGammaCalo.cxx
 /// \brief skim cluster information to write photon cluster table in AO2D.root
 /// dependencies: emcal-correction-task
 /// \author marvin.hemmer@cern.ch
 
-#include <algorithm>
-#include <vector>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-
-#include "Common/Core/TableHelper.h"
-
-// includes for the R recalculation
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "CCDB/BasicCCDBManager.h"
-
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/emcalHistoDefinitions.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
+
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct skimmerGammaCalo {
+struct SkimmerGammaCalo {
 
-  Preslice<o2::aod::EMCALClusterCells> CellperCluster = o2::aod::emcalclustercell::emcalclusterId;
-  Preslice<o2::aod::EMCALMatchedTracks> MTperCluster = o2::aod::emcalclustercell::emcalclusterId;
+  Preslice<o2::aod::EMCALClusterCells> psCellperCluster = o2::aod::emcalclustercell::emcalclusterId;
+  Preslice<o2::aod::EMCALMatchedTracks> psMTperCluster = o2::aod::emcalclustercell::emcalclusterId;
 
   Produces<aod::SkimEMCClusters> tableGammaEMCReco;
   Produces<aod::EMCClusterMCLabels> tableEMCClusterMCLabels;
@@ -53,6 +62,7 @@ struct skimmerGammaCalo {
   Configurable<std::vector<int>> clusterDefinitions{"clusterDefinitions", {0, 1, 2, 10, 11, 12, 13, 20, 21, 22, 30, 40, 41, 42, 43, 44, 45}, "Cluster definitions to be accepted (e.g. 13 for kV3MostSplitLowSeed)"};
   Configurable<float> maxdEta{"maxdEta", 0.1, "Set a maximum difference in eta for tracks and cluster to still count as matched"};
   Configurable<float> maxdPhi{"maxdPhi", 0.1, "Set a maximum difference in phi for tracks and cluster to still count as matched"};
+  Configurable<bool> needEMCTrigger{"needEMCTrigger", false, "flag to only save events which have kTVXinEMC trigger bit. To reduce PbPb derived data size"};
 
   HistogramRegistry historeg{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
@@ -84,6 +94,9 @@ struct skimmerGammaCalo {
   void processRec(soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>::iterator const& collision, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks, aod::FullTracks const&)
   {
     if (!collision.isSelected()) {
+      return;
+    }
+    if (needEMCTrigger.value && !collision.alias_bit(kTVXinEMC)) {
       return;
     }
 
@@ -124,7 +137,7 @@ struct skimmerGammaCalo {
       historeg.fill(HIST("TimeOut"), emccluster.time());
 
       // Skimmed cell table
-      auto groupedCells = emcclustercells.sliceBy(CellperCluster, emccluster.globalIndex());
+      auto groupedCells = emcclustercells.sliceBy(psCellperCluster, emccluster.globalIndex());
       for (const auto& emcclustercell : groupedCells) {
         tableCellEMCReco(emcclustercell.emcalclusterId(), emcclustercell.caloId());
       }
@@ -135,7 +148,7 @@ struct skimmerGammaCalo {
       std::vector<float> vPhi;
       std::vector<float> vP;
       std::vector<float> vPt;
-      auto groupedMTs = emcmatchedtracks.sliceBy(MTperCluster, emccluster.globalIndex());
+      auto groupedMTs = emcmatchedtracks.sliceBy(psMTperCluster, emccluster.globalIndex());
       vTrackIds.reserve(groupedMTs.size());
       vEta.reserve(groupedMTs.size());
       vPhi.reserve(groupedMTs.size());
@@ -195,18 +208,18 @@ struct skimmerGammaCalo {
       mcLabels.clear();
     }
   }
-  PROCESS_SWITCH(skimmerGammaCalo, processRec, "process only reconstructed info", true);
-  PROCESS_SWITCH(skimmerGammaCalo, processMC, "process MC info", false); // Run this in addition to processRec for MCs to copy the cluster mc labels from the EMCALMCClusters to the skimmed EMCClusterMCLabels table
+  PROCESS_SWITCH(SkimmerGammaCalo, processRec, "process only reconstructed info", true);
+  PROCESS_SWITCH(SkimmerGammaCalo, processMC, "process MC info", false); // Run this in addition to processRec for MCs to copy the cluster mc labels from the EMCALMCClusters to the skimmed EMCClusterMCLabels table
 
   void processDummy(aod::Collision const&)
   {
     // do nothing
   }
-  PROCESS_SWITCH(skimmerGammaCalo, processDummy, "Dummy function", false);
+  PROCESS_SWITCH(SkimmerGammaCalo, processDummy, "Dummy function", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<skimmerGammaCalo>(cfgc, TaskName{"skimmer-gamma-calo"})};
+  WorkflowSpec workflow{adaptAnalysisTask<SkimmerGammaCalo>(cfgc)};
   return workflow;
 }

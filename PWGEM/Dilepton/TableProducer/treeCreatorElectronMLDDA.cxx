@@ -183,10 +183,10 @@ struct TreeCreatorElectronMLDDA {
     Configurable<float> cfg_max_mass_photon{"cfg_max_mass_photon", 0.02, "max mass for photon conversion"};
     Configurable<float> cfg_min_mass_k0s{"cfg_min_mass_k0s", 0.490, "min mass for K0S"};
     Configurable<float> cfg_max_mass_k0s{"cfg_max_mass_k0s", 0.505, "max mass for K0S"};
-    Configurable<float> cfg_min_mass_lambda{"cfg_min_mass_lambda", 1.11, "min mass for Lambda rejection"};
-    Configurable<float> cfg_max_mass_lambda{"cfg_max_mass_lambda", 1.12, "max mass for Lambda rejection"};
-    Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.999, "min cospa for v0"};
-    Configurable<float> cfg_max_dcadau{"cfg_max_dcadau", 0.5, "max distance between 2 legs for v0"};
+    Configurable<float> cfg_min_mass_lambda{"cfg_min_mass_lambda", 1.113, "min mass for Lambda rejection"};
+    Configurable<float> cfg_max_mass_lambda{"cfg_max_mass_lambda", 1.118, "max mass for Lambda rejection"};
+    Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.9998, "min cospa for v0"};
+    Configurable<float> cfg_max_dcadau{"cfg_max_dcadau", 0.2, "max distance between 2 legs for v0"};
     Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.8, "min. TPC Ncr/Nf ratio"};
     Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 0.7, "max fraction of shared clusters in TPC"};
     Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 70, "min ncrossed rows"};
@@ -194,28 +194,28 @@ struct TreeCreatorElectronMLDDA {
     Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 2, "min ncluster its"};
     Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 0, "min ncluster itsib"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 5.0, "max chi2/NclsTPC"};
-    Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 6.0, "max chi2/NclsITS"};
-    Configurable<float> cfg_min_dcaxy_v0leg{"cfg_min_dcaxy_v0leg", 0.1, "min dca XY for v0 legs in cm"};
+    Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 36.0, "max chi2/NclsITS"};
+    Configurable<float> cfg_min_dcaxy_v0leg{"cfg_min_dcaxy_v0leg", 0.1, "min dca XY to PV for v0 legs in cm"};
     Configurable<bool> cfg_includeITSsa{"cfg_includeITSsa", false, "Flag to include ITSsa tracks"};
     Configurable<float> cfg_max_pt_itssa{"cfg_max_pt_itssa", 0.15, "mix pt for ITSsa track"};
 
-    Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -4, "min n sigma e in TPC"};
-    Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +4, "max n sigma e in TPC"};
-    Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", -4, "min n sigma pi in TPC"};
-    Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", +4, "max n sigma pi in TPC"};
-    Configurable<float> cfg_min_TPCNsigmaKa{"cfg_min_TPCNsigmaKa", -4, "min n sigma ka in TPC"};
-    Configurable<float> cfg_max_TPCNsigmaKa{"cfg_max_TPCNsigmaKa", +4, "max n sigma ka in TPC"};
-    Configurable<float> cfg_min_TPCNsigmaPr{"cfg_min_TPCNsigmaPr", -4, "min n sigma pr in TPC"};
-    Configurable<float> cfg_max_TPCNsigmaPr{"cfg_max_TPCNsigmaPr", +4, "max n sigma pr in TPC"};
+    Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -5, "min n sigma e in TPC"};
+    Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +5, "max n sigma e in TPC"};
+    Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", -5, "min n sigma pi in TPC"};
+    Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", +5, "max n sigma pi in TPC"};
+    Configurable<float> cfg_min_TPCNsigmaKa{"cfg_min_TPCNsigmaKa", -5, "min n sigma ka in TPC"};
+    Configurable<float> cfg_max_TPCNsigmaKa{"cfg_max_TPCNsigmaKa", +5, "max n sigma ka in TPC"};
+    Configurable<float> cfg_min_TPCNsigmaPr{"cfg_min_TPCNsigmaPr", -5, "min n sigma pr in TPC"};
+    Configurable<float> cfg_max_TPCNsigmaPr{"cfg_max_TPCNsigmaPr", +5, "max n sigma pr in TPC"};
 
-    Configurable<float> cfg_min_TOFNsigmaEl{"cfg_min_TOFNsigmaEl", -4, "min n sigma e in TOF"};
-    Configurable<float> cfg_max_TOFNsigmaEl{"cfg_max_TOFNsigmaEl", +4, "max n sigma e in TOF"};
-    Configurable<float> cfg_min_TOFNsigmaPi{"cfg_min_TOFNsigmaPi", -4, "min n sigma pi in TOF"};
-    Configurable<float> cfg_max_TOFNsigmaPi{"cfg_max_TOFNsigmaPi", +4, "max n sigma pi in TOF"};
-    Configurable<float> cfg_min_TOFNsigmaKa{"cfg_min_TOFNsigmaKa", -4, "min n sigma ka in TOF"};
-    Configurable<float> cfg_max_TOFNsigmaKa{"cfg_max_TOFNsigmaKa", +4, "max n sigma ka in TOF"};
-    Configurable<float> cfg_min_TOFNsigmaPr{"cfg_min_TOFNsigmaPr", -4, "min n sigma pr in TOF"};
-    Configurable<float> cfg_max_TOFNsigmaPr{"cfg_max_TOFNsigmaPr", +4, "max n sigma pr in TOF"};
+    Configurable<float> cfg_min_TOFNsigmaEl{"cfg_min_TOFNsigmaEl", -5, "min n sigma e in TOF"};
+    Configurable<float> cfg_max_TOFNsigmaEl{"cfg_max_TOFNsigmaEl", +5, "max n sigma e in TOF"};
+    Configurable<float> cfg_min_TOFNsigmaPi{"cfg_min_TOFNsigmaPi", -5, "min n sigma pi in TOF"};
+    Configurable<float> cfg_max_TOFNsigmaPi{"cfg_max_TOFNsigmaPi", +5, "max n sigma pi in TOF"};
+    Configurable<float> cfg_min_TOFNsigmaKa{"cfg_min_TOFNsigmaKa", -5, "min n sigma ka in TOF"};
+    Configurable<float> cfg_max_TOFNsigmaKa{"cfg_max_TOFNsigmaKa", +5, "max n sigma ka in TOF"};
+    Configurable<float> cfg_min_TOFNsigmaPr{"cfg_min_TOFNsigmaPr", -5, "min n sigma pr in TOF"};
+    Configurable<float> cfg_max_TOFNsigmaPr{"cfg_max_TOFNsigmaPr", +5, "max n sigma pr in TOF"};
 
     Configurable<float> cfg_min_TPCNsigmaEl_tight{"cfg_min_TPCNsigmaEl_tight", -2, "min n sigma e in TPC for pi0->eeg"};
     Configurable<float> cfg_max_TPCNsigmaEl_tight{"cfg_max_TPCNsigmaEl_tight", +2, "max n sigma e in TPC for pi0->eeg"};
@@ -237,14 +237,14 @@ struct TreeCreatorElectronMLDDA {
     std::string prefix = "cascadecut_group";
     Configurable<float> cfg_min_mass_lambda{"cfg_min_mass_lambda", 1.11, "min mass for lambda in cascade"};
     Configurable<float> cfg_max_mass_lambda{"cfg_max_mass_lambda", 1.12, "max mass for lambda in cascade"};
-    Configurable<float> cfg_min_mass_Xi{"cfg_min_mass_Xi", 1.317, "min mass for Xi"};
-    Configurable<float> cfg_max_mass_Xi{"cfg_max_mass_Xi", 1.327, "max mass for Xi"};
-    Configurable<float> cfg_min_mass_Omega{"cfg_min_mass_Omega", 1.667, "min mass for Omega"};
-    Configurable<float> cfg_max_mass_Omega{"cfg_max_mass_Omega", 1.677, "max mass for Omega"};
+    Configurable<float> cfg_min_mass_Xi{"cfg_min_mass_Xi", 1.31, "min mass for Xi"}; // this is for veto.
+    Configurable<float> cfg_max_mass_Xi{"cfg_max_mass_Xi", 1.33, "max mass for Xi"}; // this is for veto.
+    Configurable<float> cfg_min_mass_Omega{"cfg_min_mass_Omega", 1.669, "min mass for Omega"};
+    Configurable<float> cfg_max_mass_Omega{"cfg_max_mass_Omega", 1.675, "max mass for Omega"};
     Configurable<float> cfg_min_cospa_v0{"cfg_min_cospa_v0", 0.97, "minimum V0 CosPA in cascade"};
     Configurable<float> cfg_max_dcadau_v0{"cfg_max_dcadau_v0", 0.2, "max distance between V0 Daughters in cascade"};
-    Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.999, "minimum cascade CosPA"};
-    Configurable<float> cfg_max_dcadau{"cfg_max_dcadau", 0.4, "max distance between bachelor and V0"};
+    Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.9998, "minimum cascade CosPA"};
+    Configurable<float> cfg_max_dcadau{"cfg_max_dcadau", 0.2, "max distance between bachelor and V0"};
     Configurable<float> cfg_min_rxy_v0{"cfg_min_rxy_v0", 1.2, "minimum V0 rxy in cascade"};
     Configurable<float> cfg_min_rxy{"cfg_min_rxy", 0.5, "minimum V0 rxy in cascade"};
     Configurable<float> cfg_min_dcaxy_v0leg{"cfg_min_dcaxy_v0leg", 0.1, "min dca XY for v0 legs in cm"};
@@ -834,7 +834,7 @@ struct TreeCreatorElectronMLDDA {
           }
         }
 
-        if (!(v0cuts.cfg_min_mass_lambda < cascade.mLambda() && cascade.mLambda() < v0cuts.cfg_max_mass_lambda)) {
+        if (!(cascadecuts.cfg_min_mass_lambda < cascade.mLambda() && cascade.mLambda() < cascadecuts.cfg_max_mass_lambda)) {
           continue;
         }
 
