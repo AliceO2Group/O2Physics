@@ -219,8 +219,8 @@ struct TrHeAnalysis {
   Configurable<float> cfgCutMinItsClusterSizeHe{"cfgCutMinItsClusterSizeHe", 1.f, "Minimum ITS Cluster Size for He"};
   Configurable<float> cfgCutMaxItsClusterSizeH3{"cfgCutMaxItsClusterSizeH3", 4.f, "Maximum ITS Cluster Size for Tr"};
   Configurable<float> cfgCutMinItsClusterSizeH3{"cfgCutMinItsClusterSizeH3", 1.f, "Minimum ITS Cluster Size for Tr"};
-  Configurable<float> cfgCutMinTofMassH3{"cfgCutMinTofMassH3", 2.24f, "Minimum Tof mass H3"};
-  Configurable<float> cfgCutMaxTofMassH3{"cfgCutMaxTofMassH3", 3.32f, "Maximum TOF mass H3"};
+  Configurable<float> cfgCutMinTofMassH3{"cfgCutMinTofMassH3", 5f, "Minimum Tof mass H3"};
+  Configurable<float> cfgCutMaxTofMassH3{"cfgCutMaxTofMassH3", 11f, "Maximum TOF mass H3"};
   // Set the kinematic and PID cuts for tracks
   struct : ConfigurableGroup {
     Configurable<float> pCut{"pCut", 0.6f, "Value of the p selection for spectra (default 0.3)"};
@@ -706,35 +706,36 @@ struct TrHeAnalysis {
     return hePID ? track.tpcInnerParam() / 2 : track.tpcInnerParam();
   }
   template <class T>
-  float getMass(const T& track)
-  {
-    if (cfgMassMethod == 0) {
-      return track.mass();
-    }
-    if (cfgMassMethod == 1) {
-      const float beta = track.beta();
-      const float rigidity = getRigidity(track);
-      float gamma = 1 / std::sqrt(1 - beta * beta);
-      float mass = (rigidity / std::sqrt(gamma * gamma - 1.f));
-      return mass;
-    }
-    if (cfgMassMethod == 2) {
-      const float rigidity = getRigidity(track);
-      float tofStartTime = track.evTimeForTrack();
-      float tofTime = track.tofSignal();
-      constexpr float CInCmPs = 2.99792458e-2f;
-      float length = track.length();
-      float time = tofTime - tofStartTime;
-      if (time > 0.f && length > 0.f) {
-        float beta = length / (CInCmPs * time);
-        float gamma = 1 / std::sqrt(1 - beta * beta);
-        float mass = rigidity / std::sqrt(gamma * gamma - 1.f);
-        return mass;
-      }
-      return -1.f;
+float getMassSquared(const T& track)
+{
+  if (cfgMassMethod == 0) {
+    float m = track.mass();
+    return m * m;
+  }
+  if (cfgMassMethod == 1) {
+    const float beta = track.beta();
+    const float rigidity = getRigidity(track);
+    float gamma = 1.f / std::sqrt(1.f - beta * beta);
+    float mass = rigidity / std::sqrt(gamma * gamma - 1.f);
+    return mass * mass;
+  }
+  if (cfgMassMethod == 2) {
+    const float rigidity = getRigidity(track);
+    float tofStartTime = track.evTimeForTrack();
+    float tofTime = track.tofSignal();
+    constexpr float CInCmPs = 2.99792458e-2f;
+    float length = track.length();
+    float time = tofTime - tofStartTime;
+    if (time > 0.f && length > 0.f) {
+      float beta = length / (CInCmPs * time);
+      float gamma = 1.f / std::sqrt(1.f - beta * beta);
+      float mass = rigidity / std::sqrt(gamma * gamma - 1.f);
+      return mass * mass;
     }
     return -1.f;
   }
+  return -1.f;
+}
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
