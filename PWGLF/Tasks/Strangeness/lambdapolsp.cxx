@@ -1412,7 +1412,8 @@ struct lambdapolsp {
       auto groupV0 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision1.index());
 
       histos.fill(HIST("hCentrality"), centrality);
-
+      histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
+      histos.fill(HIST("hpResSin"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA - psiZDCC))));
       for (const auto& v0 : groupV0) {
 
         bool LambdaTag = isCompatible(v0, 0);
