@@ -99,7 +99,7 @@ class TrackPropagationModule
     fillTracksDCA = isTableRequiredInWorkflow(initContext, "TracksDCA");
     fillTracksDCACov = isTableRequiredInWorkflow(initContext, "TracksDCACov");
 
-    if(!fillTracks){ 
+    if (!fillTracks) {
       LOGF(info, "Track propagation to PV not required. Suppressing all further processing and logs.");
     }
 
@@ -135,7 +135,7 @@ class TrackPropagationModule
   template <bool isMc, typename TConfigurableGroup, typename TCCDBLoader, typename TCollisions, typename TTracks, typename TOutputGroup, typename THistoRegistry>
   void fillTrackTables(TConfigurableGroup const& cGroup, TCCDBLoader const& ccdbLoader, TCollisions const& collisions, TTracks const& tracks, TOutputGroup& cursors, THistoRegistry& registry)
   {
-    if(!fillTracks){ 
+    if (!fillTracks) {
       return; // suppress everything
     }
 
