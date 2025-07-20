@@ -558,11 +558,10 @@ class BuilderModule
       }
     }
 
-    if(nEnabledTables==0){ 
+    if (nEnabledTables == 0) {
       LOGF(info, "Strangeness building not required. Will suppress all functionality, including logs, from this point forward.");
       return;
     }
-
 
     // setup bookkeeping histogram
     auto h = histos.template add<TH1>("hTableBuildingStatistics", "hTableBuildingStatistics", o2::framework::kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
@@ -637,7 +636,7 @@ class BuilderModule
       // adjust bookkeeping histogram
       h->GetXaxis()->SetBinLabel(i + 1, tableNames[i].c_str());
       h2->GetXaxis()->SetBinLabel(i + 1, tableNames[i].c_str());
-      if(baseOpts.mEnabledTables[i] == false){
+      if (baseOpts.mEnabledTables[i] == false) {
         h->SetBinContent(i + 1, -1); // mark disabled tables, distinguish from zero counts
       }
     }
@@ -2522,7 +2521,7 @@ class BuilderModule
   template <typename TCCDB, typename THistoRegistry, typename TCollisions, typename TMCCollisions, typename TV0s, typename TCascades, typename TTrackedCascades, typename TTracks, typename TBCs, typename TMCParticles, typename TProducts>
   void dataProcess(TCCDB& ccdb, THistoRegistry& histos, TCollisions const& collisions, TMCCollisions const& mccollisions, TV0s const& v0s, TCascades const& cascades, TTrackedCascades const& trackedCascades, TTracks const& tracks, TBCs const& bcs, TMCParticles const& mcParticles, TProducts& products)
   {
-    if(nEnabledTables == 0){ 
+    if (nEnabledTables == 0) {
       return; // fully suppressed
     }
 
