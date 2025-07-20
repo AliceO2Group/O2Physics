@@ -413,8 +413,8 @@ class MultModule
   CalibrationInfo nGlobalInfo = CalibrationInfo("NGlobal");
   CalibrationInfo mftInfo = CalibrationInfo("MFT");
 
-  template <typename TConfigurables, typename TInitContext>
-  void init(TConfigurables& opts, TInitContext& context)
+  template <typename TMetadatainfo, typename TConfigurables, typename TInitContext>
+  void init(TMetadatainfo const& metadataInfo, TConfigurables& opts, TInitContext& context)
   {
     // read in configurations from the task where it's used
     internalOpts = opts;
@@ -486,6 +486,11 @@ class MultModule
     if (internalOpts.embedINELgtZEROselection.value > 0 && !internalOpts.mEnabledTables[kPVMults]) {
       internalOpts.mEnabledTables[kPVMults] = 1;
       listOfRequestors[kPVMults].Append(Form("%s ", "dependency check"));
+    }
+
+    // capture the need for PYTHIA calibration in Pb-Pb runs
+    if (metadataInfo.isMC() && mRunNumber >= 544013 && mRunNumber <= 545367) {
+      internalOpts.generatorName.value = "PYTHIA";
     }
 
     mRunNumber = 0;

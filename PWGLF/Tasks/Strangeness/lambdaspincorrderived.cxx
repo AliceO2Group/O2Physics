@@ -22,6 +22,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/BinningPolicy.h"
 #include "Framework/StepTHn.h"
 #include "Framework/runDataProcessing.h"
 #include <Framework/Configurable.h>
@@ -34,9 +35,15 @@
 
 #include <fairlogger/Logger.h>
 
+#include <cmath> // for std::fabs
+#include <deque>
 #include <iostream>
 #include <iterator>
+#include <set> // <<< CHANGED: for dedup sets
 #include <string>
+#include <type_traits>
+#include <unordered_map> // <<< CHANGED: for seenMap
+#include <utility>
 #include <vector>
 
 // o2 includes.
@@ -49,7 +56,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 
 struct lambdaspincorrderived {
-
+  // BinningType colBinning;
   struct : ConfigurableGroup {
     Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
     Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
@@ -71,6 +78,7 @@ struct lambdaspincorrderived {
   Configurable<float> centMax{"centMax", 80, "Maximum Centrality"};
 
   // Lambda selection ////////////
+  Configurable<unsigned> harmonic{"harmonic", 1, "Harmonic delta phi"};
   Configurable<bool> useweight{"useweight", 1, "Use weight"};
   Configurable<bool> usePDGM{"usePDGM", 1, "Use PDG mass"};
   Configurable<bool> checkDoubleStatus{"checkDoubleStatus", 0, "Check Double status"};
@@ -183,7 +191,7 @@ struct lambdaspincorrderived {
     if (std::abs(candidate1.lambdaEta() - candidate2.lambdaEta()) > etaMix) {
       return false;
     }
-    if (std::abs(RecoDecay::constrainAngle(candidate1.lambdaPhi(), 0.0F) - RecoDecay::constrainAngle(candidate2.lambdaPhi(), 0.0F)) > phiMix) {
+    if (std::abs(RecoDecay::constrainAngle(candidate1.lambdaPhi(), 0.0F, harmonic) - RecoDecay::constrainAngle(candidate2.lambdaPhi(), 0.0F, harmonic)) > phiMix) {
       return false;
     }
     if (std::abs(candidate1.lambdaMass() - candidate2.lambdaMass()) > massMix) {
@@ -195,7 +203,7 @@ struct lambdaspincorrderived {
   void fillHistograms(int tag1, int tag2,
                       const ROOT::Math::PtEtaPhiMVector& particle1, const ROOT::Math::PtEtaPhiMVector& particle2,
                       const ROOT::Math::PtEtaPhiMVector& daughpart1, const ROOT::Math::PtEtaPhiMVector& daughpart2,
-                      double centrality, int datatype)
+                      double centrality, int datatype, float mixpairweight)
   {
 
     auto lambda1Mass = 0.0;
@@ -230,41 +238,42 @@ struct lambdaspincorrderived {
 
     auto cosThetaDiff = -999.0;
     cosThetaDiff = proton1LambdaRF.Vect().Unit().Dot(proton2LambdaRF.Vect().Unit());
-    double deltaPhi = std::abs(RecoDecay::constrainAngle(particle1Dummy.Phi(), 0.0F) - RecoDecay::constrainAngle(particle2Dummy.Phi(), 0.0F));
+    double deltaPhi = std::abs(RecoDecay::constrainAngle(particle1Dummy.Phi(), 0.0F, harmonic) - RecoDecay::constrainAngle(particle2Dummy.Phi(), 0.0F, harmonic));
     double deltaEta = particle1Dummy.Eta() - particle2Dummy.Eta();
     double deltaR = TMath::Sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
 
     if (datatype == 0) {
-      histos.fill(HIST("hPtYSame"), particle1.Pt(), particle1.Rapidity());
+      mixpairweight = 1.0;
+      histos.fill(HIST("hPtYSame"), particle1.Pt(), particle1.Rapidity(), mixpairweight);
       if (tag1 == 0 && tag2 == 0) {
-        histos.fill(HIST("hSparseLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR);
-        histos.fill(HIST("hLambdaSameForLL"), particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F));
+        histos.fill(HIST("hSparseLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR, mixpairweight);
+        histos.fill(HIST("hLambdaSameForLL"), particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F, harmonic), mixpairweight);
       } else if ((tag1 == 0 && tag2 == 1) || (tag1 == 1 && tag2 == 0)) {
-        histos.fill(HIST("hSparseLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR);
-        histos.fill(HIST("hLambdaSameForLAL"), particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F));
+        histos.fill(HIST("hSparseLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR, mixpairweight);
+        histos.fill(HIST("hLambdaSameForLAL"), particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F, harmonic), mixpairweight);
       } else if (tag1 == 1 && tag2 == 1) {
-        histos.fill(HIST("hSparseAntiLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR);
-        histos.fill(HIST("hAntiLambdaSameForALAL"), particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F));
+        histos.fill(HIST("hSparseAntiLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR, mixpairweight);
+        histos.fill(HIST("hAntiLambdaSameForALAL"), particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F, harmonic), mixpairweight);
       }
     } else if (datatype == 1) {
-      double weight1 = 1.0;
-      double weight2 = 1.0;
-      double weight3 = 1.0;
+      double weight1 = mixpairweight;
+      double weight2 = mixpairweight;
+      double weight3 = mixpairweight;
       if (useweight) {
-        weight1 = hweight1->GetBinContent(hweight1->FindBin(particle1.Pt(), particle1.Eta(), particle1.Phi()));
-        weight2 = hweight2->GetBinContent(hweight2->FindBin(particle1.Pt(), particle1.Eta(), particle1.Phi()));
-        weight3 = hweight3->GetBinContent(hweight3->FindBin(particle1.Pt(), particle1.Eta(), particle1.Phi()));
+        weight1 = mixpairweight * hweight1->GetBinContent(hweight1->FindBin(particle1.Pt(), particle1.Eta(), particle1.Phi()));
+        weight2 = mixpairweight * hweight2->GetBinContent(hweight2->FindBin(particle1.Pt(), particle1.Eta(), particle1.Phi()));
+        weight3 = mixpairweight * hweight3->GetBinContent(hweight3->FindBin(particle1.Pt(), particle1.Eta(), particle1.Phi()));
       }
       histos.fill(HIST("hPtYMix"), particle1.Pt(), particle1.Rapidity());
       if (tag1 == 0 && tag2 == 0) {
         histos.fill(HIST("hSparseLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR, weight1);
-        histos.fill(HIST("hLambdaMixForLL"), particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F), weight1);
+        histos.fill(HIST("hLambdaMixForLL"), particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F, harmonic), weight1);
       } else if ((tag1 == 0 && tag2 == 1) || (tag1 == 1 && tag2 == 0)) {
         histos.fill(HIST("hSparseLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR, weight2);
-        histos.fill(HIST("hLambdaMixForLAL"), particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F), weight2);
+        histos.fill(HIST("hLambdaMixForLAL"), particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F, harmonic), weight2);
       } else if (tag1 == 1 && tag2 == 1) {
         histos.fill(HIST("hSparseAntiLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR, weight3);
-        histos.fill(HIST("hAntiLambdaMixForALAL"), particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F), weight3);
+        histos.fill(HIST("hAntiLambdaMixForALAL"), particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F, harmonic), weight3);
       }
     }
   }
@@ -310,7 +319,7 @@ struct lambdaspincorrderived {
         }
         proton2 = ROOT::Math::PtEtaPhiMVector(v02.protonPt(), v02.protonEta(), v02.protonPhi(), o2::constants::physics::MassProton);
         lambda2 = ROOT::Math::PtEtaPhiMVector(v02.lambdaPt(), v02.lambdaEta(), v02.lambdaPhi(), v02.lambdaMass());
-        histos.fill(HIST("deltaPhiSame"), std::abs(RecoDecay::constrainAngle(v0.lambdaPhi(), 0.0F) - RecoDecay::constrainAngle(v02.lambdaPhi(), 0.0F)));
+        histos.fill(HIST("deltaPhiSame"), std::abs(RecoDecay::constrainAngle(v0.lambdaPhi(), 0.0F, harmonic) - RecoDecay::constrainAngle(v02.lambdaPhi(), 0.0F, harmonic)));
         if (std::abs(lambda2.Rapidity()) > rapidity) {
           continue;
         }
@@ -318,16 +327,16 @@ struct lambdaspincorrderived {
           continue;
         }
         if (v0.v0Status() == 0 && v02.v0Status() == 0) {
-          fillHistograms(0, 0, lambda, lambda2, proton, proton2, centrality, 0);
+          fillHistograms(0, 0, lambda, lambda2, proton, proton2, centrality, 0, 1.0);
         }
         if (v0.v0Status() == 0 && v02.v0Status() == 1) {
-          fillHistograms(0, 1, lambda, lambda2, proton, proton2, centrality, 0);
+          fillHistograms(0, 1, lambda, lambda2, proton, proton2, centrality, 0, 1.0);
         }
         if (v0.v0Status() == 1 && v02.v0Status() == 0) {
-          fillHistograms(1, 0, lambda2, lambda, proton2, proton, centrality, 0);
+          fillHistograms(1, 0, lambda2, lambda, proton2, proton, centrality, 0, 1.0);
         }
         if (v0.v0Status() == 1 && v02.v0Status() == 1) {
-          fillHistograms(1, 1, lambda, lambda2, proton, proton2, centrality, 0);
+          fillHistograms(1, 1, lambda, lambda2, proton, proton2, centrality, 0, 1.0);
         }
       }
     }
@@ -388,7 +397,7 @@ struct lambdaspincorrderived {
           lambda = ROOT::Math::PtEtaPhiMVector(t3.lambdaPt(), t3.lambdaEta(), t3.lambdaPhi(), t3.lambdaMass());
           proton2 = ROOT::Math::PtEtaPhiMVector(t2.protonPt(), t2.protonEta(), t2.protonPhi(), o2::constants::physics::MassProton);
           lambda2 = ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass());
-          histos.fill(HIST("deltaPhiMix"), std::abs(RecoDecay::constrainAngle(t3.lambdaPhi(), 0.0F) - RecoDecay::constrainAngle(t2.lambdaPhi(), 0.0F)));
+          histos.fill(HIST("deltaPhiMix"), std::abs(RecoDecay::constrainAngle(t3.lambdaPhi(), 0.0F, harmonic) - RecoDecay::constrainAngle(t2.lambdaPhi(), 0.0F, harmonic)));
           if (std::abs(lambda.Rapidity()) > rapidity) {
             continue;
           }
@@ -402,22 +411,109 @@ struct lambdaspincorrderived {
             continue;
           }
           if (t3.v0Status() == 0 && t2.v0Status() == 0) {
-            fillHistograms(0, 0, lambda, lambda2, proton, proton2, centrality, 1);
+            fillHistograms(0, 0, lambda, lambda2, proton, proton2, centrality, 1, 1.0);
           }
           if (t3.v0Status() == 0 && t2.v0Status() == 1) {
-            fillHistograms(0, 1, lambda, lambda2, proton, proton2, centrality, 1);
+            fillHistograms(0, 1, lambda, lambda2, proton, proton2, centrality, 1, 1.0);
           }
           if (t3.v0Status() == 1 && t2.v0Status() == 0) {
-            fillHistograms(1, 0, lambda2, lambda, proton2, proton, centrality, 1);
+            fillHistograms(1, 0, lambda2, lambda, proton2, proton, centrality, 1, 1.0);
           }
           if (t3.v0Status() == 1 && t2.v0Status() == 1) {
-            fillHistograms(1, 1, lambda, lambda2, proton, proton2, centrality, 1);
+            fillHistograms(1, 1, lambda, lambda2, proton, proton2, centrality, 1, 1.0);
           }
         }
       } // replacement track pair
     } // collision pair
   }
   PROCESS_SWITCH(lambdaspincorrderived, processME, "Process data ME", false);
+
+  void processMEV2(EventCandidates const& collisions, AllTrackCandidates const& V0s)
+  {
+    auto nBins = colBinning.getAllBinsCount();
+    std::vector<std::deque<std::pair<int, AllTrackCandidates>>> eventPools(nBins);
+
+    for (auto& collision1 : collisions) {
+      int bin = colBinning.getBin(std::make_tuple(collision1.posz(), collision1.cent()));
+      auto poolA = V0s.sliceBy(tracksPerCollisionV0, collision1.index());
+      float centrality = collision1.cent();
+
+      // <<< CHANGED: map old collision index → set of (t2.idx, t3.idx) we've already filled
+      std::unordered_map<int, std::set<std::pair<int, int>>> seenMap;
+
+      for (auto& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(poolA, poolA))) {
+        if (!selectionV0(t1) || !selectionV0(t2))
+          continue;
+        if (t2.index() <= t1.index())
+          continue;
+        if (t1.protonIndex() == t2.protonIndex())
+          continue;
+        if (t1.pionIndex() == t2.pionIndex())
+          continue;
+
+        int mixes = 0;
+        for (auto it = eventPools[bin].rbegin(); it != eventPools[bin].rend() && mixes < nEvtMixing; ++it, ++mixes) {
+          int collision2idx = it->first;
+          AllTrackCandidates& poolB = it->second;
+
+          int nRepl = 0;
+          for (auto& t3 : poolB) {
+            if (selectionV0(t3) && checkKinematics(t1, t3)) {
+              ++nRepl;
+            }
+          }
+          if (nRepl == 0)
+            continue;
+          float invN = 1.0f / static_cast<float>(nRepl);
+
+          for (auto& t3 : poolB) {
+            if (!(selectionV0(t3) && checkKinematics(t1, t3))) {
+              continue;
+            }
+            if (collision1.index() == collision2idx) {
+              continue;
+            }
+
+            // <<< CHANGED: dedupe (t2, t3) pairs per prior collision
+            auto key = std::make_pair(t2.index(), t3.index());
+            auto& seen = seenMap[collision2idx];
+            if (!seen.insert(key).second) {
+              continue;
+            }
+
+            // reconstruct 4-vectors
+            auto proton = ROOT::Math::PtEtaPhiMVector(t3.protonPt(), t3.protonEta(), t3.protonPhi(), o2::constants::physics::MassProton);
+            auto lambda = ROOT::Math::PtEtaPhiMVector(t3.lambdaPt(), t3.lambdaEta(), t3.lambdaPhi(), t3.lambdaMass());
+            auto proton2 = ROOT::Math::PtEtaPhiMVector(t2.protonPt(), t2.protonEta(), t2.protonPhi(), o2::constants::physics::MassProton);
+            auto lambda2 = ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass());
+
+            float dPhi = std::fabs(RecoDecay::constrainAngle(lambda.Phi(), 0.0F, harmonic) - RecoDecay::constrainAngle(lambda2.Phi(), 0.0F, harmonic));
+            histos.fill(HIST("deltaPhiMix"), dPhi, invN);
+
+            if (t3.v0Status() == 0 && t2.v0Status() == 0) {
+              fillHistograms(0, 0, lambda, lambda2, proton, proton2, centrality, 1, invN);
+            }
+            if (t3.v0Status() == 0 && t2.v0Status() == 1) {
+              fillHistograms(0, 1, lambda, lambda2, proton, proton2, centrality, 1, invN);
+            }
+            if (t3.v0Status() == 1 && t2.v0Status() == 0) {
+              fillHistograms(1, 0, lambda2, lambda, proton2, proton, centrality, 1, invN);
+            }
+            if (t3.v0Status() == 1 && t2.v0Status() == 1) {
+              fillHistograms(1, 1, lambda, lambda2, proton, proton2, centrality, 1, invN);
+            }
+          }
+        } // end mixing-event loop
+      } // end same-event pair loop
+
+      auto sliced = V0s.sliceBy(tracksPerCollisionV0, collision1.index());
+      eventPools[bin].emplace_back(collision1.index(), std::move(sliced));
+      if (static_cast<int>(eventPools[bin].size()) > nEvtMixing) {
+        eventPools[bin].pop_front();
+      }
+    } // end primary-event loop
+  }
+  PROCESS_SWITCH(lambdaspincorrderived, processMEV2, "Process data ME", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

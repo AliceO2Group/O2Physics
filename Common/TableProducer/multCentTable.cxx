@@ -75,7 +75,7 @@ struct MultCentTable {
     ccdb->setFatalWhenNull(false); // please never crash on your own, all exceptions captured (as they always should)
 
     // task-specific
-    module.init(opts, initContext);
+    module.init(metadataInfo, opts, initContext);
   }
 
   void processRun2(soa::Join<aod::Collisions, aod::Run2MatchedSparse> const& collisions,
