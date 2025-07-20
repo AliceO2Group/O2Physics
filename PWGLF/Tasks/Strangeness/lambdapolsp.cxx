@@ -90,8 +90,7 @@ struct lambdapolsp {
   Configurable<bool> needetaaxis{"needetaaxis", false, "flag to use last axis"};
   struct : ConfigurableGroup {
     Configurable<bool> doRandomPsi{"doRandomPsi", false, "randomize psi"};
-  };
-  randGrp;
+  } randGrp;
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 50.0f, "Accepted maximum Centrality"};
