@@ -79,82 +79,89 @@ struct Lstaranalysis {
   /// Event cuts
   o2::analysis::CollisonCuts colCuts;
 
-  Configurable<float> cfgEvtZvtx{"cfgEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
-  Configurable<int> cfgEvtOccupancyInTimeRangeMax{"cfgEvtOccupancyInTimeRangeMax", -1, "Evt sel: maximum track occupancy"};
-  Configurable<int> cfgEvtOccupancyInTimeRangeMin{"cfgEvtOccupancyInTimeRangeMin", -1, "Evt sel: minimum track occupancy"};
-  Configurable<bool> cfgEvtTriggerCheck{"cfgEvtTriggerCheck", false, "Evt sel: check for trigger"};
-  Configurable<bool> cfgEvtOfflineCheck{"cfgEvtOfflineCheck", true, "Evt sel: check for offline selection"};
-  Configurable<bool> cfgEvtTriggerTVXSel{"cfgEvtTriggerTVXSel", false, "Evt sel: triggerTVX selection (MB)"};
-  Configurable<bool> cfgEvtTFBorderCut{"cfgEvtTFBorderCut", false, "Evt sel: apply TF border cut"};
-  Configurable<bool> cfgEvtUseITSTPCvertex{"cfgEvtUseITSTPCvertex", false, "Evt sel: use at lease on ITS-TPC track for vertexing"};
-  Configurable<bool> cfgEvtZvertexTimedifference{"cfgEvtZvertexTimedifference", false, "Evt sel: apply Z-vertex time difference"};
-  Configurable<bool> cfgEvtPileupRejection{"cfgEvtPileupRejection", false, "Evt sel: apply pileup rejection"};
-  Configurable<bool> cfgEvtNoITSROBorderCut{"cfgEvtNoITSROBorderCut", false, "Evt sel: apply NoITSRO border cut"};
-  Configurable<bool> cfgEvtCollInTimeRangeStandard{"cfgEvtCollInTimeRangeStandard", false, "Evt sel: apply NoCollInTimeRangeStandard"};
+  struct : ConfigurableGroup {
+    Configurable<float> cfgEvtZvtx{"cfgEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
+    Configurable<int> cfgEvtOccupancyInTimeRangeMax{"cfgEvtOccupancyInTimeRangeMax", -1, "Evt sel: maximum track occupancy"};
+    Configurable<int> cfgEvtOccupancyInTimeRangeMin{"cfgEvtOccupancyInTimeRangeMin", -1, "Evt sel: minimum track occupancy"};
+    Configurable<bool> cfgEvtTriggerCheck{"cfgEvtTriggerCheck", false, "Evt sel: check for trigger"};
+    Configurable<bool> cfgEvtOfflineCheck{"cfgEvtOfflineCheck", true, "Evt sel: check for offline selection"};
+    Configurable<bool> cfgEvtTriggerTVXSel{"cfgEvtTriggerTVXSel", false, "Evt sel: triggerTVX selection (MB)"};
+    Configurable<bool> cfgEvtTFBorderCut{"cfgEvtTFBorderCut", false, "Evt sel: apply TF border cut"};
+    Configurable<bool> cfgEvtUseITSTPCvertex{"cfgEvtUseITSTPCvertex", false, "Evt sel: use at lease on ITS-TPC track for vertexing"};
+    Configurable<bool> cfgEvtZvertexTimedifference{"cfgEvtZvertexTimedifference", false, "Evt sel: apply Z-vertex time difference"};
+    Configurable<bool> cfgEvtPileupRejection{"cfgEvtPileupRejection", false, "Evt sel: apply pileup rejection"};
+    Configurable<bool> cfgEvtNoITSROBorderCut{"cfgEvtNoITSROBorderCut", false, "Evt sel: apply NoITSRO border cut"};
+    Configurable<bool> cfgEvtCollInTimeRangeStandard{"cfgEvtCollInTimeRangeStandard", false, "Evt sel: apply NoCollInTimeRangeStandard"};
+  } configEvents;
 
-  Configurable<float> cfgEventCentralityMin{"cfgEventCentralityMin", 0.0f, "Event sel: minimum centrality"};
-  Configurable<float> cfgEventCentralityMax{"cfgEventCentralityMax", 100.0f, "Event sel: maximum centrality"};
+  struct : ConfigurableGroup {
+    // Pre-selection Track cuts
+    Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
+    Configurable<float> cMinPtcut{"cMinPtcut", 0.15f, "Minimal pT for tracks"};
+    Configurable<float> cMinTPCNClsFound{"cMinTPCNClsFound", 120, "minimum TPCNClsFound value for good track"};
+    Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta range for tracks"};
+    Configurable<int> cfgMinCrossedRows{"cfgMinCrossedRows", 70, "min crossed rows for good track"};
 
-  // Configurables
-  // Pre-selection Track cuts
-  Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
-  Configurable<float> cMinPtcut{"cMinPtcut", 0.15f, "Minimal pT for tracks"};
-  Configurable<float> cMinTPCNClsFound{"cMinTPCNClsFound", 120, "minimum TPCNClsFound value for good track"};
-  Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
-  Configurable<int> cfgMinCrossedRows{"cfgMinCrossedRows", 70, "min crossed rows for good track"};
+    // DCA Selections
+    // DCAr to PV
+    Configurable<float> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.1f, "Track DCAr cut to PV Maximum"};
+    // DCAz to PV
+    Configurable<float> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 0.1f, "Track DCAz cut to PV Maximum"};
 
-  // DCA Selections
-  // DCAr to PV
-  Configurable<float> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.1f, "Track DCAr cut to PV Maximum"};
-  // DCAz to PV
-  Configurable<float> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 0.1f, "Track DCAz cut to PV Maximum"};
+    // Track selections
+    Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
+    Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
+    Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", false, "Global track selection"};                      // kGoldenChi2 | kDCAxy | kDCAz
+    Configurable<bool> cfgPVContributor{"cfgPVContributor", false, "PV contributor track selection"};          // PV Contriuibutor
+    Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
+    Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"};
+    Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
+    Configurable<bool> cTPCNClsFound{"cTPCNClsFound", false, "Switch to turn on/off TPCNClsFound cut"};
+    Configurable<bool> cDCAr7SigCut{"cDCAr7SigCut", false, "Track DCAr 7 Sigma cut to PV Maximum"};
+  } configTracks;
 
-  // Track selections
-  Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
-  Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
-  Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", false, "Global track selection"};                      // kGoldenChi2 | kDCAxy | kDCAz
-  Configurable<bool> cfgPVContributor{"cfgPVContributor", false, "PV contributor track selection"};          // PV Contriuibutor
-  Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
-  Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"};
-  Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
-  Configurable<bool> cTPCNClsFound{"cTPCNClsFound", false, "Switch to turn on/off TPCNClsFound cut"};
-  Configurable<bool> cDCAr7SigCut{"cDCAr7SigCut", false, "Track DCAr 7 Sigma cut to PV Maximum"};
+  struct : ConfigurableGroup {
+    /// PID Selections
+    Configurable<float> pidnSigmaPreSelectionCut{"pidnSigmaPreSelectionCut", 4.0f, "pidnSigma Cut for pre-selection of tracks"};
+    Configurable<bool> cByPassTOF{"cByPassTOF", false, "By pass TOF PID selection"};                       // By pass TOF PID selection
+    Configurable<int> cPIDcutType{"cPIDcutType", 2, "cPIDcutType = 1 for square cut, 2 for circular cut"}; // By pass TOF PID selection
 
-  /// PID Selections
-  Configurable<bool> cByPassTOF{"cByPassTOF", false, "By pass TOF PID selection"};                       // By pass TOF PID selection
-  Configurable<int> cPIDcutType{"cPIDcutType", 2, "cPIDcutType = 1 for square cut, 2 for circular cut"}; // By pass TOF PID selection
+    // Kaon
+    Configurable<std::vector<float>> kaonTPCPIDpTintv{"kaonTPCPIDpTintv", {0.5}, "pT intervals for Kaon TPC PID cuts"};
+    Configurable<std::vector<float>> kaonTPCPIDcuts{"kaonTPCPIDcuts", {2}, "nSigma list for Kaon TPC PID cuts"};
+    Configurable<std::vector<float>> kaonTOFPIDpTintv{"kaonTOFPIDpTintv", {999.}, "pT intervals for Kaon TOF PID cuts"};
+    Configurable<std::vector<float>> kaonTOFPIDcuts{"kaonTOFPIDcuts", {2}, "nSigma list for Kaon TOF PID cuts"};
+    Configurable<std::vector<float>> kaonTPCTOFCombinedpTintv{"kaonTPCTOFCombinedpTintv", {999.}, "pT intervals for Kaon TPC-TOF PID cuts"};
+    Configurable<std::vector<float>> kaonTPCTOFCombinedPIDcuts{"kaonTPCTOFCombinedPIDcuts", {2}, "nSigma list for Kaon TPC-TOF PID cuts"};
 
-  // Kaon
-  Configurable<std::vector<float>> kaonTPCPIDpTintv{"kaonTPCPIDpTintv", {0.5}, "pT intervals for Kaon TPC PID cuts"};
-  Configurable<std::vector<float>> kaonTPCPIDcuts{"kaonTPCPIDcuts", {2}, "nSigma list for Kaon TPC PID cuts"};
-  Configurable<std::vector<float>> kaonTOFPIDpTintv{"kaonTOFPIDpTintv", {999.}, "pT intervals for Kaon TOF PID cuts"};
-  Configurable<std::vector<float>> kaonTOFPIDcuts{"kaonTOFPIDcuts", {2}, "nSigma list for Kaon TOF PID cuts"};
-  Configurable<std::vector<float>> kaonTPCTOFCombinedpTintv{"kaonTPCTOFCombinedpTintv", {999.}, "pT intervals for Kaon TPC-TOF PID cuts"};
-  Configurable<std::vector<float>> kaonTPCTOFCombinedPIDcuts{"kaonTPCTOFCombinedPIDcuts", {2}, "nSigma list for Kaon TPC-TOF PID cuts"};
+    // Proton
+    Configurable<std::vector<float>> protonTPCPIDpTintv{"protonTPCPIDpTintv", {0.9}, "pT intervals for Kaon TPC PID cuts"};
+    Configurable<std::vector<float>> protonTPCPIDcuts{"protonTPCPIDcuts", {2}, "nSigma list for Kaon TPC PID cuts"};
+    Configurable<std::vector<float>> protonTOFPIDpTintv{"protonTOFPIDpTintv", {999.}, "pT intervals for Kaon TOF PID cuts"};
+    Configurable<std::vector<float>> protonTOFPIDcuts{"protonTOFPIDcuts", {2}, "nSigma list for Kaon TOF PID cuts"};
+    Configurable<std::vector<float>> protonTPCTOFCombinedpTintv{"protonTPCTOFCombinedpTintv", {999.}, "pT intervals for Proton TPC-TOF PID cuts"};
+    Configurable<std::vector<float>> protonTPCTOFCombinedPIDcuts{"protonTPCTOFCombinedPIDcuts", {2}, "nSigma list for Proton TPC-TOF PID cuts"};
+  } configPID;
 
-  // Proton
-  Configurable<std::vector<float>> protonTPCPIDpTintv{"protonTPCPIDpTintv", {0.9}, "pT intervals for Kaon TPC PID cuts"};
-  Configurable<std::vector<float>> protonTPCPIDcuts{"protonTPCPIDcuts", {2}, "nSigma list for Kaon TPC PID cuts"};
-  Configurable<std::vector<float>> protonTOFPIDpTintv{"protonTOFPIDpTintv", {999.}, "pT intervals for Kaon TOF PID cuts"};
-  Configurable<std::vector<float>> protonTOFPIDcuts{"protonTOFPIDcuts", {2}, "nSigma list for Kaon TOF PID cuts"};
-  Configurable<std::vector<float>> protonTPCTOFCombinedpTintv{"protonTPCTOFCombinedpTintv", {999.}, "pT intervals for Proton TPC-TOF PID cuts"};
-  Configurable<std::vector<float>> protonTPCTOFCombinedPIDcuts{"protonTPCTOFCombinedPIDcuts", {2}, "nSigma list for Proton TPC-TOF PID cuts"};
+  struct : ConfigurableGroup {
+    /// Event Mixing
+    Configurable<int> nEvtMixing{"nEvtMixing", 10, "Number of events to mix"};
+    ConfigurableAxis cfgVtxBins{"cfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+    ConfigurableAxis cfgMultBins{"cfgMultBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Mixing bins - multiplicity"};
+
+    // Rotational background
+    Configurable<int> rotationalcut{"rotationalcut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
+    Configurable<int> cNofRotations{"cNofRotations", 3, "Number of random rotations in the rotational background"};
+    Configurable<bool> cfgRotPr{"cfgRotPr", true, "rotate Proton"};
+  } configBkg;
 
   // Additional purity check
   Configurable<bool> crejectPion{"crejectPion", false, "Switch to turn on/off pion contamination"};
-  Configurable<bool> cApplyOpeningAngle{"cApplyOpeningAngle", false, "Kinematic Cuts for p-K pair opening angle"};
-  Configurable<float> cMinOpeningAngle{"cMinOpeningAngle", 1.4, "Maximum deltaEta between daughters"};
-  Configurable<float> cMaxOpeningAngle{"cMaxOpeningAngle", 2.4, "Maximum deltaPhi between daughters"};
-
-  /// Event Mixing
-  Configurable<int> nEvtMixing{"nEvtMixing", 10, "Number of events to mix"};
-  ConfigurableAxis cfgVtxBins{"cfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis cfgMultBins{"cfgMultBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Mixing bins - multiplicity"};
-
-  // Rotational background
-  Configurable<bool> isCalcRotBkg{"isCalcRotBkg", true, "Calculate rotational background"};
-  Configurable<int> rotationalcut{"rotationalcut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
-  Configurable<int> cNofRotations{"cNofRotations", 3, "Number of random rotations in the rotational background"};
+  Configurable<bool> cUseOpeningAngleCut{"cUseOpeningAngleCut", false, "Kinematic Cuts for p-K pair opening angle"};
+  Configurable<float> cMinOpeningAngle{"cMinOpeningAngle", 1.4, "Minimum opening angle between daughters"};
+  Configurable<float> cMaxOpeningAngle{"cMaxOpeningAngle", 2.4, "Maximum opening angle between daughters"};
+  Configurable<bool> cfgUseDeltaEtaPhiCuts{"cfgUseDeltaEtaPhiCuts", false, "Switch to turn on/off delta eta and delta phi cuts"};
+  Configurable<bool> cfgUseDaughterEtaCutMC{"cfgUseDaughterEtaCutMC", false, "Switch to turn on/off eta cuts for daughters in MC"};
 
   // MC selection cut
   Configurable<float> cZvertCutMC{"cZvertCutMC", 10.0, "MC Z-vertex cut"};
@@ -163,7 +170,7 @@ struct Lstaranalysis {
   Configurable<bool> cUseEtacutMC{"cUseEtacutMC", true, "MC eta cut"};
 
   // cuts on mother
-  Configurable<bool> cfgCutsOnMother{"cfgCutsOnMother", false, "Enable additional cuts on mother"};
+  Configurable<bool> cfgUseCutsOnMother{"cfgUseCutsOnMother", false, "Enable additional cuts on mother"};
   Configurable<float> cMaxPtMotherCut{"cMaxPtMotherCut", 10.0, "Maximum pt of mother cut"};
   Configurable<float> cMaxMinvMotherCut{"cMaxMinvMotherCut", 3.0, "Maximum Minv of mother cut"};
   Configurable<float> cMaxDeltaEtaCut{"cMaxDeltaEtaCut", 0.7, "Maximum deltaEta between daughters"};
@@ -174,23 +181,28 @@ struct Lstaranalysis {
   Configurable<bool> cFilladditionalQAeventPlots{"cFilladditionalQAeventPlots", false, "Additional QA event plots"};
   Configurable<bool> cFilladditionalMEPlots{"cFilladditionalMEPlots", false, "Additional Mixed event plots"};
   Configurable<bool> cFilldeltaEtaPhiPlots{"cFilldeltaEtaPhiPlots", false, "Enamble additional cuts on daughters"};
-  Configurable<bool> cFillinvmass1DPlots{"cFillinvmass1DPlots", false, "Invariant mass 1D"};
-  Configurable<int> multEstimator{"multEstimator", 0, "Select multiplicity estimator: 0 - FT0M, 1 - FT0A, 2 - FT0C"};
-
-  Configurable<int> cfgCentEst{"cfgCentEst", 2, "Centrality estimator, 1: FT0C, 2: FT0M"};
+  Configurable<bool> cFill1DQAs{"cFill1DQAs", false, "Invariant mass 1D"};
+  Configurable<int> centEstimator{"centEstimator", 0, "Select centrality estimator: 0 - FT0M, 1 - FT0A, 2 - FT0C"};
 
   TRandom* rn = new TRandom();
 
   // Pre-filters for efficient process
-  // Filter tofPIDFilter = aod::track::tofExpMom < 0.f || ((aod::track::tofExpMom > 0.f) && ((nabs(aod::pidtof::tofNSigmaPi) < pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaKa) < pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaPr) < pidnSigmaPreSelectionCut))); // TOF
-  // Filter tpcPIDFilter = nabs(aod::pidtpc::tpcNSigmaPi) < pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaKa) < pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaPr) < pidnSigmaPreSelectionCut; // TPC
-  /* Filter trackFilter = (trackSelection == 0) ||
-                       ((trackSelection == 1) && requireGlobalTrackInFilter()) ||
-                       ((trackSelection == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
-                       ((trackSelection == 3) && requireGlobalTrackWoDCAInFilter()) ||
-                       ((trackSelection == 4) && requireQualityTracksInFilter()) ||
-                       ((trackSelection == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks)); */
-  Filter trackEtaFilter = nabs(aod::track::eta) < cfgCutEta; // Eta cut
+  Filter zVtxFilter = (nabs(o2::aod::collision::posZ) <= configEvents.cfgEvtZvtx);
+  Filter collisionFilter_MC = nabs(aod::mccollision::posZ) <= configEvents.cfgEvtZvtx;
+  // Filter centralityFilter = nabs(aod::cent::centFT0C) <= cfg_Event_CentralityMax;
+  // Filter triggerFilter = (o2::aod::evsel::sel8 == true);
+
+  Filter tofPIDFilter = aod::track::tofExpMom < 0.f || ((aod::track::tofExpMom > 0.f) && (/* (nabs(aod::pidtof::tofNSigmaPi) < configPID.pidnSigmaPreSelectionCut) || */ (nabs(aod::pidtof::tofNSigmaKa) < configPID.pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaPr) < configPID.pidnSigmaPreSelectionCut))); // TOF
+  Filter tpcPIDFilter = /* nabs(aod::pidtpc::tpcNSigmaPi) < configPID.pidnSigmaPreSelectionCut || */ nabs(aod::pidtpc::tpcNSigmaKa) < configPID.pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaPr) < configPID.pidnSigmaPreSelectionCut;                                                                           // TPC
+  Filter trackFilter = (configTracks.trackSelection == 0) ||
+                       ((configTracks.trackSelection == 1) && requireGlobalTrackInFilter()) ||
+                       ((configTracks.trackSelection == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+                       ((configTracks.trackSelection == 3) && requireGlobalTrackWoDCAInFilter()) ||
+                       ((configTracks.trackSelection == 4) && requireQualityTracksInFilter()) ||
+                       ((configTracks.trackSelection == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+  Filter acceptanceFilter = (nabs(aod::track::eta) < configTracks.cfgCutEta && nabs(aod::track::pt) > configTracks.cMinPtcut);
+  // Filter DCAcutFilter = (nabs(aod::track::dcaXY) < configTracks.cfgCutDCAxy) && (nabs(aod::track::dcaZ) < configTracks.cfgCutDCAz);
+  // Filter primarytrackFilter = requirePVContributor() && requirePrimaryTrack() && requireGlobalTrackWoDCA();
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::FullTracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>>;
@@ -211,22 +223,18 @@ struct Lstaranalysis {
   ConfigurableAxis binsnTPCSignal{"binsnTPCSignal", {1000, 0, 1000}, ""};
   ConfigurableAxis binsEtaPhi{"binsEtaPhi", {350, -3.5, 3.5}, ""};
 
-  float centrality;
-
   void init(framework::InitContext&)
   {
-    centrality = -999;
-
-    colCuts.setCuts(cfgEvtZvtx, cfgEvtTriggerCheck, cfgEvtOfflineCheck, /*checkRun3*/ true, /*triggerTVXsel*/ false, cfgEvtOccupancyInTimeRangeMax, cfgEvtOccupancyInTimeRangeMin);
+    colCuts.setCuts(configEvents.cfgEvtZvtx, configEvents.cfgEvtTriggerCheck, configEvents.cfgEvtOfflineCheck, /*checkRun3*/ true, /*triggerTVXsel*/ false, configEvents.cfgEvtOccupancyInTimeRangeMax, configEvents.cfgEvtOccupancyInTimeRangeMin);
 
     colCuts.init(&histos);
-    colCuts.setTriggerTVX(cfgEvtTriggerTVXSel);
-    colCuts.setApplyTFBorderCut(cfgEvtTFBorderCut);
-    colCuts.setApplyITSTPCvertex(cfgEvtUseITSTPCvertex);
-    colCuts.setApplyZvertexTimedifference(cfgEvtZvertexTimedifference);
-    colCuts.setApplyPileupRejection(cfgEvtPileupRejection);
-    colCuts.setApplyNoITSROBorderCut(cfgEvtNoITSROBorderCut);
-    colCuts.setApplyCollInTimeRangeStandard(cfgEvtCollInTimeRangeStandard);
+    colCuts.setTriggerTVX(configEvents.cfgEvtTriggerTVXSel);
+    colCuts.setApplyTFBorderCut(configEvents.cfgEvtTFBorderCut);
+    colCuts.setApplyITSTPCvertex(configEvents.cfgEvtUseITSTPCvertex);
+    colCuts.setApplyZvertexTimedifference(configEvents.cfgEvtZvertexTimedifference);
+    colCuts.setApplyPileupRejection(configEvents.cfgEvtPileupRejection);
+    colCuts.setApplyNoITSROBorderCut(configEvents.cfgEvtNoITSROBorderCut);
+    colCuts.setApplyCollInTimeRangeStandard(configEvents.cfgEvtCollInTimeRangeStandard);
     colCuts.printCuts();
 
     // axes
@@ -244,19 +252,15 @@ struct Lstaranalysis {
     AxisSpec axisMClabel{6, -1.5, 5.5, "MC Label"};
     AxisSpec axisEtaPhi{binsEtaPhi, ""};
     AxisSpec axisPhi{350, 0, 7, "#Phi"};
-    AxisSpec axisMultMix{cfgMultBins, "Multiplicity"};
-    AxisSpec axisVtxMix{cfgVtxBins, "Vertex Z (cm)"};
+    AxisSpec axisMultMix{configBkg.cfgMultBins, "Multiplicity"};
+    AxisSpec axisVtxMix{configBkg.cfgVtxBins, "Vertex Z (cm)"};
     AxisSpec idxMCAxis = {26, -0.5, 25.5, "Index"};
 
     if (cFilladditionalQAeventPlots) {
       // event histograms
       if (doprocessData) {
-        histos.add("TestME/hPairsCounterSameE", "tot n pairs sameE", HistType::kTH1F, {{1, 0.5f, 1.5f}});
-        histos.add("QAevent/hEvtCounterSameE", "Number of analyzed Same Events", HistType::kTH1F, {{1, 0.5, 1.5}});
-        histos.add("QAevent/hVertexZSameE", "Collision Vertex Z position", HistType::kTH1F, {{100, -15., 15.}});
-        histos.add("QAevent/hMultiplicityPercentSameE", "Multiplicity percentile of collision", HistType::kTH1F, {{120, 0.0f, 120.0f}});
-        histos.add("TestME/hCollisionIndexSameE", "coll index sameE", HistType::kTH1F, {{500, 0.0f, 500.0f}});
-        histos.add("TestME/hnTrksSameE", "n tracks per event SameE", HistType::kTH1F, {{1000, 0.0f, 1000.0f}});
+        histos.add("QAevent/hPairsCounterSameE", "total valid no. of pairs sameE", HistType::kTH1F, {{1, 0.5f, 1.5f}});
+        histos.add("QAevent/hnTrksSameE", "n tracks per event SameE", HistType::kTH1F, {{1000, 0.0f, 1000.0f}});
       }
       // Test on Mixed event
       if (doprocessME) {
@@ -266,12 +270,10 @@ struct Lstaranalysis {
         histos.add("QAevent/hMixPool_Multiplicity", "Mixed Event Pool: Multiplicity;Multiplicity;Counts", HistType::kTH1F, {axisMultMix});
         histos.add("QAevent/hMixPool_VtxZ_vs_Multiplicity", "Mixed Event Pool: Vertex Z vs Multiplicity;Counts", HistType::kTH2F, {axisVtxMix, axisMultMix});
 
-        histos.add("TestME/hPairsCounterMixedE", "tot n pairs mixedE", HistType::kTH1F, {{1, 0.5f, 1.5f}});
-        histos.add("QAevent/hEvtCounterMixedE", "Number of analyzed Mixed Events", HistType::kTH1F, {{1, 0.5, 1.5}});
+        histos.add("QAevent/hPairsCounterMixedE", "total valid no. of pairs mixedE", HistType::kTH1F, {{1, 0.5f, 1.5f}});
         histos.add("QAevent/hVertexZMixedE", "Collision Vertex Z position", HistType::kTH1F, {{100, -15., 15.}});
         histos.add("QAevent/hMultiplicityPercentMixedE", "Multiplicity percentile of collision", HistType::kTH1F, {{120, 0.0f, 120.0f}});
-        histos.add("TestME/hCollisionIndexMixedE", "coll index mixedE", HistType::kTH1F, {{500, 0.0f, 500.0f}});
-        histos.add("TestME/hnTrksMixedE", "n tracks per event MixedE", HistType::kTH1F, {{1000, 0.0f, 1000.0f}});
+        histos.add("QAevent/hnTrksMixedE", "n tracks per event MixedE", HistType::kTH1F, {{1000, 0.0f, 1000.0f}});
       }
     }
 
@@ -326,7 +328,7 @@ struct Lstaranalysis {
       histos.add("QA/QAafter/Proton/TPCnclusterPhipr", "TPC ncluster vs phi", kTHnSparseF, {{160, 0, 160, "TPC nCluster"}, {63, 0, 6.28, "#phi"}});
 
       //  Mass QA 1D for quick check
-      if (cFillinvmass1DPlots) {
+      if (cFill1DQAs) {
         histos.add("Result/Data/lambda1520invmass", "Invariant mass of #Lambda(1520) K^{#pm}p^{#mp}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}});
         histos.add("Result/Data/antilambda1520invmass", "Invariant mass of #Lambda(1520) K^{#mp}p^{#pm}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}});
         histos.add("Result/Data/lambda1520invmassLSPP", "Invariant mass of #Lambda(1520) Like Sign Method K^{#plus}p^{#plus}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}});   // K+ + Pr
@@ -340,16 +342,8 @@ struct Lstaranalysis {
         histos.add("QAafter/deltaEta", "deltaEta of kaon and proton candidates", HistType::kTH1F, {axisEtaPhi});
         histos.add("QAafter/deltaPhi", "deltaPhi of kaon and proton candidates", HistType::kTH1F, {axisEtaPhi});
 
-        histos.add("QAafter/deltaEtaafter", "deltaEta of kaon and proton candidates", HistType::kTH1F, {axisEtaPhi});
-        histos.add("QAafter/deltaPhiafter", "deltaPhi of kaon and proton candidates", HistType::kTH1F, {axisEtaPhi});
-        histos.add("QAafter/EtaPrafter", "Eta of  proton candidates", HistType::kTH1F, {axisEta});
         histos.add("QAafter/PhiPrafter", "Phi of  proton candidates", HistType::kTH1F, {axisPhi});
-        histos.add("QAafter/EtaKaafter", "Eta of kaon  candidates", HistType::kTH1F, {axisEta});
         histos.add("QAafter/PhiKaafter", "Phi of kaon  candidates", HistType::kTH1F, {axisPhi});
-      }
-
-      if (isCalcRotBkg) {
-        histos.add("Result/Data/h3lambda1520InvMassRotation", "Invariant mass of #Lambda(1520) rotation", kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
       }
 
       // 3d histogram
@@ -358,15 +352,31 @@ struct Lstaranalysis {
       histos.add("Result/Data/h3lambda1520invmassLSPP", "Invariant mass of #Lambda(1520) Like Sign Method K^{#plus}p^{#plus}", HistType::kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});   // K+ + Pr
       histos.add("Result/Data/h3lambda1520invmassLSMM", "Invariant mass of #Lambda(1520) Like Sign Method K^{#minus}p^{#minus}", HistType::kTHnSparseF, {axisMult, axisPt, axisMassLambda1520}); // K- + anti-Pr
     }
-    if (doprocessME) {
-      if (cFillinvmass1DPlots) {
-        histos.add("Result/Data/lambda1520invmassME", "Invariant mass of #Lambda(1520) mixed event K^{#pm}p^{#mp}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}});
+
+    if (doprocessRotational) {
+      if (cFill1DQAs) {
+        histos.add("Result/Data/lambda1520InvMassRotation", "Invariant mass of #Lambda(1520) Like Sign Method K^{#plus}p^{#plus}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}});       // K+ + Pr
+        histos.add("Result/Data/antilambda1520InvMassRotation", "Invariant mass of #Lambda(1520) Like Sign Method K^{#minus}p^{#minus}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}}); // K- + anti-Pr
       }
-      histos.add("Result/Data/h3lambda1520invmassME", "Invariant mass of #Lambda(1520) mixed event K^{#pm}p^{#mp}", HistType::kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
+      histos.add("Result/Data/h3lambda1520InvMassRotation", "Invariant mass of #Lambda(1520) rotation", kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
+      histos.add("Result/Data/h3antilambda1520InvMassRotation", "Invariant mass of #Lambda(1520) rotation", kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
+    }
+    // Mixed event histograms
+    if (doprocessME) {
+      if (cFill1DQAs) {
+        histos.add("Result/Data/lambda1520invmassME_UnlikeSign", "Invariant mass of #Lambda(1520) mixed event K^{#pm}p^{#mp}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}});
+        histos.add("Result/Data/antilambda1520invmassME_UnlikeSign", "Invariant mass of #Lambda(1520) mixed event K^{#pm}p^{#mp}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}});
+      }
+      histos.add("Result/Data/h3lambda1520invmassME_UnlikeSign", "Invariant mass of #Lambda(1520) mixed event K^{#pm}p^{#mp}", HistType::kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
+      histos.add("Result/Data/h3antilambda1520invmassME_UnlikeSign", "Invariant mass of #Lambda(1520) mixed event K^{#pm}p^{#mp}", HistType::kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
 
       if (cFilladditionalMEPlots) {
-        histos.add("Result/Data/h3lambda1520invmassME_DS", "Invariant mass of #Lambda(1520) mixed event DS", kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
-        histos.add("Result/Data/h3lambda1520invmassME_DSAnti", "Invariant mass of #Lambda(1520) mixed event DSAnti", kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
+        if (cFill1DQAs) {
+          histos.add("Result/Data/lambda1520invmassME_LSPP", "Invariant mass of #Lambda(1520) Like Sign Method K^{#plus}p^{#plus}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}});   // K+ + Pr
+          histos.add("Result/Data/lambda1520invmassME_LSMM", "Invariant mass of #Lambda(1520) Like Sign Method K^{#minus}p^{#minus}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}}); // K- + anti-Pr
+        }
+        histos.add("Result/Data/h3lambda1520invmassME_LSPP", "Invariant mass of #Lambda(1520) mixed event Like Sign Method K^{#plus}p^{#plus}", HistType::kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});   // K+ + Pr
+        histos.add("Result/Data/h3lambda1520invmassME_LSMM", "Invariant mass of #Lambda(1520) mixed event Like Sign Method K^{#minus}p^{#minus}", HistType::kTHnSparseF, {axisMult, axisPt, axisMassLambda1520}); // K- + anti-Pr
       }
     }
 
@@ -407,38 +417,28 @@ struct Lstaranalysis {
 
   float massKa = MassKaonCharged;
   float massPr = MassProton;
+  double pi = o2::constants::math::PI;
+  double twopi = o2::constants::math::TwoPI;
 
   int kLambda1520PDG = static_cast<int>(102134); // PDG code for Lambda(1520)
 
-  template <typename CollisionType>
-  float getCentrality(CollisionType const& collision)
-  {
-    if (cfgCentEst == static_cast<int>(1)) {
-      return collision.multFT0C();
-    } else if (cfgCentEst == static_cast<int>(2)) {
-      return collision.multFT0M();
-    } else {
-      return -999;
-    }
-  }
-
   // Centralicity estimator selection
-  template <typename ResoColl>
-  float centEst(ResoColl ResoEvents)
+  template <typename Coll>
+  float centEst(Coll collisions)
   {
     float returnValue = -999.0;
-    switch (multEstimator) {
+    switch (centEstimator) {
       case 0:
-        returnValue = ResoEvents.centFT0M();
+        returnValue = collisions.centFT0M();
         break;
       case 1:
-        returnValue = ResoEvents.centFT0A();
+        returnValue = collisions.centFT0A();
         break;
       case 2:
-        returnValue = ResoEvents.centFT0C();
+        returnValue = collisions.centFT0C();
         break;
       default:
-        returnValue = ResoEvents.centFT0M();
+        returnValue = collisions.centFT0M();
         break;
     }
     return returnValue;
@@ -466,34 +466,34 @@ struct Lstaranalysis {
   bool trackCut(const TrackType track)
   {
     // basic track cuts
-    if (std::abs(track.pt()) < cMinPtcut)
+    if (std::abs(track.pt()) < configTracks.cMinPtcut)
       return false;
-    if (cDCAr7SigCut) {
+    if (configTracks.cDCAr7SigCut) {
       if (std::abs(track.dcaXY()) > (0.004f + 0.0130f / (track.pt()))) // 7 - Sigma cut
         return false;
     } else {
-      if (std::abs(track.dcaXY()) > cMaxDCArToPVcut)
+      if (std::abs(track.dcaXY()) > configTracks.cMaxDCArToPVcut)
         return false;
     }
-    if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
+    if (std::abs(track.dcaZ()) > configTracks.cMaxDCAzToPVcut)
       return false;
-    if (cTPCNClsFound && (track.tpcNClsFound() < cMinTPCNClsFound))
+    if (configTracks.cTPCNClsFound && (track.tpcNClsFound() < configTracks.cMinTPCNClsFound))
       return false;
-    if (track.tpcNClsCrossedRows() < cfgMinCrossedRows)
+    if (track.tpcNClsCrossedRows() < configTracks.cfgMinCrossedRows)
       return false;
-    if (cfgHasTOF && !track.hasTOF())
+    if (configTracks.cfgHasTOF && !track.hasTOF())
       return false;
-    if (cfgPrimaryTrack && !track.isPrimaryTrack())
+    if (configTracks.cfgPrimaryTrack && !track.isPrimaryTrack())
       return false;
-    if (cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
+    if (configTracks.cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
       return false;
-    if (cfgPVContributor && !track.isPVContributor())
+    if (configTracks.cfgPVContributor && !track.isPVContributor())
       return false;
-    if (cfgGlobalTrack && !track.isGlobalTrack())
+    if (configTracks.cfgGlobalTrack && !track.isGlobalTrack())
       return false;
-    if (cfgUseITSRefit && !track.passedITSRefit())
+    if (configTracks.cfgUseITSRefit && !track.passedITSRefit())
       return false;
-    if (cfgUseTPCRefit && !track.passedTPCRefit())
+    if (configTracks.cfgUseTPCRefit && !track.passedTPCRefit())
       return false;
 
     return true;
@@ -505,30 +505,32 @@ struct Lstaranalysis {
   template <typename T>
   bool pTdependentPIDProton(const T& candidate)
   {
-    auto vProtonTPCPIDpTintv = static_cast<std::vector<float>>(protonTPCPIDpTintv);
-    vProtonTPCPIDpTintv.insert(vProtonTPCPIDpTintv.begin(), cMinPtcut);
-    auto vProtonTPCPIDcuts = static_cast<std::vector<float>>(protonTPCPIDcuts);
-    auto vProtonTOFPIDpTintv = static_cast<std::vector<float>>(protonTOFPIDpTintv);
-    auto vProtonTPCTOFCombinedpTintv = static_cast<std::vector<float>>(protonTPCTOFCombinedpTintv);
-    auto vProtonTPCTOFCombinedPIDcuts = static_cast<std::vector<float>>(protonTPCTOFCombinedPIDcuts);
-    auto vProtonTOFPIDcuts = static_cast<std::vector<float>>(protonTOFPIDcuts);
+    auto vProtonTPCPIDpTintv = static_cast<std::vector<float>>(configPID.protonTPCPIDpTintv);
+    vProtonTPCPIDpTintv.insert(vProtonTPCPIDpTintv.begin(), configTracks.cMinPtcut);
+    auto vProtonTPCPIDcuts = static_cast<std::vector<float>>(configPID.protonTPCPIDcuts);
+    auto vProtonTOFPIDpTintv = static_cast<std::vector<float>>(configPID.protonTOFPIDpTintv);
+    auto vProtonTPCTOFCombinedpTintv = static_cast<std::vector<float>>(configPID.protonTPCTOFCombinedpTintv);
+    auto vProtonTPCTOFCombinedPIDcuts = static_cast<std::vector<float>>(configPID.protonTPCTOFCombinedPIDcuts);
+    auto vProtonTOFPIDcuts = static_cast<std::vector<float>>(configPID.protonTOFPIDcuts);
 
     float pt = candidate.pt();
     float ptSwitchToTOF = vProtonTPCPIDpTintv.back();
+    float tpcNsigmaPr = candidate.tpcNSigmaPr();
+    float tofNsigmaPr = candidate.tofNSigmaPr();
 
     bool tpcPIDPassed = false;
 
     // TPC PID (interval check)
     for (size_t i = 0; i < vProtonTPCPIDpTintv.size() - 1; ++i) {
       if (pt > vProtonTPCPIDpTintv[i] && pt < vProtonTPCPIDpTintv[i + 1]) {
-        if (std::abs(candidate.tpcNSigmaPr()) < vProtonTPCPIDcuts[i])
+        if (std::abs(tpcNsigmaPr) < vProtonTPCPIDcuts[i])
           tpcPIDPassed = true;
       }
     }
 
     // TOF bypass option (for QA or MC)
-    if (cByPassTOF) {
-      return std::abs(candidate.tpcNSigmaPr()) < vProtonTPCPIDcuts.back();
+    if (configPID.cByPassTOF) {
+      return std::abs(tpcNsigmaPr) < vProtonTPCPIDcuts.back();
     }
 
     // Case 1: No TOF and pt ≤ threshold → accept only via TPC PID
@@ -543,22 +545,22 @@ struct Lstaranalysis {
 
     // Case 3: Has TOF → use TPC + TOF (square or circular)
     if (candidate.hasTOF()) {
-      if (cPIDcutType == 1) {
+      if (configPID.cPIDcutType == 1) {
         // Rectangular cut
         for (size_t i = 0; i < vProtonTOFPIDpTintv.size(); ++i) {
           if (pt < vProtonTOFPIDpTintv[i]) {
-            if (std::abs(candidate.tofNSigmaPr()) < vProtonTOFPIDcuts[i] &&
-                std::abs(candidate.tpcNSigmaPr()) < vProtonTPCPIDcuts.back())
+            if (std::abs(tofNsigmaPr) < vProtonTOFPIDcuts[i] &&
+                std::abs(tpcNsigmaPr) < vProtonTPCPIDcuts.back())
               return true;
           }
         }
-      } else if (cPIDcutType == 2) {
+      } else if (configPID.cPIDcutType == 2) {
         // Circular cut
         for (size_t i = 0; i < vProtonTPCTOFCombinedpTintv.size(); ++i) {
           if (pt < vProtonTPCTOFCombinedpTintv[i]) {
             float combinedSigma2 =
-              candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr() +
-              candidate.tofNSigmaPr() * candidate.tofNSigmaPr();
+              tpcNsigmaPr * tpcNsigmaPr +
+              tofNsigmaPr * tofNsigmaPr;
             if (combinedSigma2 < vProtonTPCTOFCombinedPIDcuts[i] * vProtonTPCTOFCombinedPIDcuts[i])
               return true;
           }
@@ -572,23 +574,25 @@ struct Lstaranalysis {
   template <typename T>
   bool pTdependentPIDKaon(const T& candidate)
   {
-    auto vKaonTPCPIDpTintv = static_cast<std::vector<float>>(kaonTPCPIDpTintv);
-    vKaonTPCPIDpTintv.insert(vKaonTPCPIDpTintv.begin(), cMinPtcut);
-    auto vKaonTPCPIDcuts = static_cast<std::vector<float>>(kaonTPCPIDcuts);
-    auto vKaonTOFPIDpTintv = static_cast<std::vector<float>>(kaonTOFPIDpTintv);
-    auto vKaonTPCTOFCombinedpTintv = static_cast<std::vector<float>>(kaonTPCTOFCombinedpTintv);
-    auto vKaonTPCTOFCombinedPIDcuts = static_cast<std::vector<float>>(kaonTPCTOFCombinedPIDcuts);
-    auto vKaonTOFPIDcuts = static_cast<std::vector<float>>(kaonTOFPIDcuts);
+    auto vKaonTPCPIDpTintv = static_cast<std::vector<float>>(configPID.kaonTPCPIDpTintv);
+    vKaonTPCPIDpTintv.insert(vKaonTPCPIDpTintv.begin(), configTracks.cMinPtcut);
+    auto vKaonTPCPIDcuts = static_cast<std::vector<float>>(configPID.kaonTPCPIDcuts);
+    auto vKaonTOFPIDpTintv = static_cast<std::vector<float>>(configPID.kaonTOFPIDpTintv);
+    auto vKaonTPCTOFCombinedpTintv = static_cast<std::vector<float>>(configPID.kaonTPCTOFCombinedpTintv);
+    auto vKaonTPCTOFCombinedPIDcuts = static_cast<std::vector<float>>(configPID.kaonTPCTOFCombinedPIDcuts);
+    auto vKaonTOFPIDcuts = static_cast<std::vector<float>>(configPID.kaonTOFPIDcuts);
 
     float pt = candidate.pt();
     float ptSwitchToTOF = vKaonTPCPIDpTintv.back();
+    float tpcNsigmaKa = candidate.tpcNSigmaKa();
+    float tofNsigmaKa = candidate.tofNSigmaKa();
 
     bool tpcPIDPassed = false;
 
     // TPC PID interval-based check
     for (size_t i = 0; i < vKaonTPCPIDpTintv.size() - 1; ++i) {
       if (pt > vKaonTPCPIDpTintv[i] && pt < vKaonTPCPIDpTintv[i + 1]) {
-        if (std::abs(candidate.tpcNSigmaKa()) < vKaonTPCPIDcuts[i]) {
+        if (std::abs(tpcNsigmaKa) < vKaonTPCPIDcuts[i]) {
           tpcPIDPassed = true;
           break;
         }
@@ -596,8 +600,8 @@ struct Lstaranalysis {
     }
 
     // TOF bypass option
-    if (cByPassTOF) {
-      return std::abs(candidate.tpcNSigmaKa()) < vKaonTPCPIDcuts.back();
+    if (configPID.cByPassTOF) {
+      return std::abs(tpcNsigmaKa) < vKaonTPCPIDcuts.back();
     }
 
     // Case 1: No TOF and pt ≤ ptSwitch → use TPC-only
@@ -612,22 +616,22 @@ struct Lstaranalysis {
 
     // Case 3: TOF is available → apply TPC+TOF PID logic
     if (candidate.hasTOF()) {
-      if (cPIDcutType == 1) {
+      if (configPID.cPIDcutType == 1) {
         // Rectangular cut
         for (size_t i = 0; i < vKaonTOFPIDpTintv.size(); ++i) {
           if (pt < vKaonTOFPIDpTintv[i]) {
-            if (std::abs(candidate.tofNSigmaKa()) < vKaonTOFPIDcuts[i] &&
-                std::abs(candidate.tpcNSigmaKa()) < vKaonTPCPIDcuts.back()) {
+            if (std::abs(tofNsigmaKa) < vKaonTOFPIDcuts[i] &&
+                std::abs(tpcNsigmaKa) < vKaonTPCPIDcuts.back()) {
               return true;
             }
           }
         }
-      } else if (cPIDcutType == 2) {
+      } else if (configPID.cPIDcutType == 2) {
         // Circular cut
         for (size_t i = 0; i < vKaonTPCTOFCombinedpTintv.size(); ++i) {
           if (pt < vKaonTPCTOFCombinedpTintv[i]) {
-            float combinedSigma2 = candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() +
-                                   candidate.tofNSigmaKa() * candidate.tofNSigmaKa();
+            float combinedSigma2 = tpcNsigmaKa * tpcNsigmaKa +
+                                   tofNsigmaKa * tofNsigmaKa;
             if (combinedSigma2 < vKaonTPCTOFCombinedPIDcuts[i] * vKaonTPCTOFCombinedPIDcuts[i]) {
               return true;
             }
@@ -648,83 +652,85 @@ struct Lstaranalysis {
     return true;
   }
 
-  template <bool IsData, bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
+  template <bool IsData, bool IsRot, bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
   {
-    auto multiplicity = collision.centFT0M();
+    auto centrality = centEst(collision);
 
     // Multiplicity correlation calibration plots
     if (cFillMultQA) {
       if constexpr (IsData) {
-        histos.fill(HIST("MultCalib/centGloPVpr"), multiplicity, dTracks1.size(), collision.multNTracksPV());
-        histos.fill(HIST("MultCalib/centGloPVka"), multiplicity, dTracks2.size(), collision.multNTracksPV());
+        histos.fill(HIST("MultCalib/centGloPVpr"), centrality, dTracks1.size(), collision.multNTracksPV());
+        histos.fill(HIST("MultCalib/centGloPVka"), centrality, dTracks2.size(), collision.multNTracksPV());
       }
     }
 
     if (cFilladditionalQAeventPlots) {
-      if constexpr (!IsMix) {
-        histos.fill(HIST("QAevent/hVertexZSameE"), collision.posZ());
-        histos.fill(HIST("QAevent/hMultiplicityPercentSameE"), multiplicity);
-        histos.fill(HIST("TestME/hCollisionIndexSameE"), collision.globalIndex());
-        histos.fill(HIST("TestME/hnTrksSameE"), dTracks1.size());
-      } else {
+      if constexpr (IsData) {
+        histos.fill(HIST("QAevent/hnTrksSameE"), dTracks1.size());
+      } else if constexpr (IsMix) {
         histos.fill(HIST("QAevent/hVertexZMixedE"), collision.posZ());
-        histos.fill(HIST("QAevent/hMultiplicityPercentMixedE"), multiplicity);
-        histos.fill(HIST("TestME/hCollisionIndexMixedE"), collision.globalIndex());
-        histos.fill(HIST("TestME/hnTrksMixedE"), dTracks1.size());
+        histos.fill(HIST("QAevent/hMultiplicityPercentMixedE"), centrality);
+        histos.fill(HIST("QAevent/hnTrksMixedE"), dTracks1.size());
       }
     }
     // LOG(info) << "After pass, Collision index:" << collision.index() << "multiplicity: " << collision.centFT0M() << endl;
 
-    LorentzVectorPtEtaPhiMass lDecayDaughter1, lDecayDaughter2, lResonance, ldaughterRot, lresonanceRot;
+    LorentzVectorPtEtaPhiMass lDecayDaughter1, lDecayDaughter2, lResonance, ldaughterRot, lResonanceRot;
 
     for (const auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
       // Full index policy is needed to consider all possible combinations
       if (trk1.index() == trk2.index())
         continue; // We need to run (0,1), (1,0) pairs as well. but same id pairs are not needed.
 
-      if (cFilladditionalQAeventPlots) {
-        if constexpr (IsData) {
-          histos.fill(HIST("TestME/hPairsCounterSameE"), 1.0);
-        } else if (IsMix) {
-          histos.fill(HIST("TestME/hPairsCounterMixedE"), 1.0);
-        }
-      }
-
       // apply the track cut
       if (!trackCut(trk1) || !trackCut(trk2))
         continue;
 
       //// Initialize variables
-      // Trk1: Proton, Trk2: Kaon
+      // Trk1: Proton
       auto isTrk1hasTOF = trk1.hasTOF();
-      auto isTrk2hasTOF = trk2.hasTOF();
-
       auto trk1ptPr = trk1.pt();
+      auto trk1etaPr = trk1.eta();
+      auto trk1phiPr = trk1.phi();
       auto trk1NSigmaPrTPC = trk1.tpcNSigmaPr();
       auto trk1NSigmaPrTOF = (isTrk1hasTOF) ? trk1.tofNSigmaPr() : -999.;
+
+      // Trk2: Kaon
+      auto isTrk2hasTOF = trk2.hasTOF();
       auto trk2ptKa = trk2.pt();
+      auto trk2etaKa = trk2.eta();
+      auto trk2phiKa = trk2.phi();
       auto trk2NSigmaKaTPC = trk2.tpcNSigmaKa();
       auto trk2NSigmaKaTOF = (isTrk2hasTOF) ? trk2.tofNSigmaKa() : -999.;
 
-      auto deltaEta = std::abs(trk1.eta() - trk2.eta());
-      auto deltaPhi = std::abs(trk1.phi() - trk2.phi());
-      deltaPhi = (deltaPhi > constants::math::PI) ? (constants::math::TwoPI - deltaPhi) : deltaPhi;
+      auto deltaEta = 0;
+      auto deltaPhi = 0;
+
+      if (cfgUseDeltaEtaPhiCuts) {
+        deltaEta = std::abs(trk1etaPr - trk2etaKa);
+        deltaPhi = std::abs(trk1phiPr - trk2phiKa);
+        deltaPhi = (deltaPhi > pi) ? (twopi - deltaPhi) : deltaPhi;
+        if (deltaEta >= cMaxDeltaEtaCut)
+          continue;
+        if (deltaPhi >= cMaxDeltaPhiCut)
+          continue;
+      }
 
       //// QA plots before the selection
       //  --- Track QA all
       if constexpr (IsData) {
-        histos.fill(HIST("QA/QAbefore/Track/TPC_Nsigma_pr_all"), multiplicity, trk1ptPr, trk1NSigmaPrTPC);
+        histos.fill(HIST("QA/QAbefore/Track/TPC_Nsigma_pr_all"), centrality, trk1ptPr, trk1NSigmaPrTPC);
         if (isTrk1hasTOF) {
-          histos.fill(HIST("QA/QAbefore/Track/TOF_Nsigma_pr_all"), multiplicity, trk1ptPr, trk1NSigmaPrTOF);
+          histos.fill(HIST("QA/QAbefore/Track/TOF_Nsigma_pr_all"), centrality, trk1ptPr, trk1NSigmaPrTOF);
           histos.fill(HIST("QA/QAbefore/Track/TOF_TPC_Map_pr_all"), trk1NSigmaPrTOF, trk1NSigmaPrTPC);
         }
         if (!isTrk1hasTOF) {
           histos.fill(HIST("QA/QAbefore/Track/TPConly_Nsigma_pr"), trk1ptPr, trk1NSigmaPrTPC);
         }
-        histos.fill(HIST("QA/QAbefore/Track/TPC_Nsigma_ka_all"), multiplicity, trk2ptKa, trk2NSigmaKaTPC);
+        histos.fill(HIST("QA/QAbefore/Track/TPC_Nsigma_ka_all"), centrality, trk2ptKa, trk2NSigmaKaTPC);
         if (isTrk2hasTOF) {
-          histos.fill(HIST("QA/QAbefore/Track/TOF_Nsigma_ka_all"), multiplicity, trk2ptKa, trk2NSigmaKaTOF);
+          histos.fill(HIST("QA/QAbefore/Track/TOF_Nsigma_ka_all"), centrality, trk2ptKa, trk2NSigmaKaTOF);
           histos.fill(HIST("QA/QAbefore/Track/TOF_TPC_Map_ka_all"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
         }
         if (!isTrk2hasTOF) {
@@ -735,7 +741,7 @@ struct Lstaranalysis {
         histos.fill(HIST("QA/QAbefore/Track/dcaXY"), trk1ptPr, trk1.dcaXY());
         histos.fill(HIST("QA/QAbefore/Track/TPC_CR"), trk1ptPr, trk1.tpcNClsCrossedRows());
         histos.fill(HIST("QA/QAbefore/Track/pT"), trk1ptPr);
-        histos.fill(HIST("QA/QAbefore/Track/eta"), trk1.eta());
+        histos.fill(HIST("QA/QAbefore/Track/eta"), trk1etaPr);
         if (cFilldeltaEtaPhiPlots) {
           histos.fill(HIST("QAbefore/deltaEta"), deltaEta);
           histos.fill(HIST("QAbefore/deltaPhi"), deltaPhi);
@@ -743,7 +749,7 @@ struct Lstaranalysis {
       }
 
       //// Apply the pid selection
-      if (crejectPion && rejectPion(trk2))
+      if (crejectPion && rejectPion(trk2)) // to remove pion contamination from the kaon track
         continue;
 
       if (!pTdependentPIDProton(trk1) || !pTdependentPIDKaon(trk2))
@@ -751,10 +757,10 @@ struct Lstaranalysis {
 
       //// QA plots after the selection
       if constexpr (IsData) { //  --- PID QA Proton
-        histos.fill(HIST("QA/QAafter/Proton/TPC_Nsigma_pr_all"), multiplicity, trk1ptPr, trk1NSigmaPrTPC);
+        histos.fill(HIST("QA/QAafter/Proton/TPC_Nsigma_pr_all"), centrality, trk1ptPr, trk1NSigmaPrTPC);
         histos.fill(HIST("QA/QAafter/Proton/TPC_Signal_pr_all"), trk1.tpcInnerParam(), trk1.tpcSignal());
         if (isTrk1hasTOF) {
-          histos.fill(HIST("QA/QAafter/Proton/TOF_Nsigma_pr_all"), multiplicity, trk1ptPr, trk1NSigmaPrTOF);
+          histos.fill(HIST("QA/QAafter/Proton/TOF_Nsigma_pr_all"), centrality, trk1ptPr, trk1NSigmaPrTOF);
           histos.fill(HIST("QA/QAafter/Proton/TOF_TPC_Map_pr_all"), trk1NSigmaPrTOF, trk1NSigmaPrTPC);
         }
         if (!isTrk1hasTOF) {
@@ -764,14 +770,14 @@ struct Lstaranalysis {
         histos.fill(HIST("QA/QAafter/Proton/dcaXY"), trk1ptPr, trk1.dcaXY());
         histos.fill(HIST("QA/QAafter/Proton/TPC_CR"), trk1ptPr, trk1.tpcNClsCrossedRows());
         histos.fill(HIST("QA/QAafter/Proton/pT"), trk1ptPr);
-        histos.fill(HIST("QA/QAafter/Proton/eta"), trk1.eta());
-        histos.fill(HIST("QA/QAafter/Proton/TPCnclusterPhipr"), trk1.tpcNClsFound(), trk1.phi());
+        histos.fill(HIST("QA/QAafter/Proton/eta"), trk1etaPr);
+        histos.fill(HIST("QA/QAafter/Proton/TPCnclusterPhipr"), trk1.tpcNClsFound(), trk1phiPr);
 
         //  --- PID QA Kaon
-        histos.fill(HIST("QA/QAafter/Kaon/TPC_Nsigma_ka_all"), multiplicity, trk2ptKa, trk2NSigmaKaTPC);
+        histos.fill(HIST("QA/QAafter/Kaon/TPC_Nsigma_ka_all"), centrality, trk2ptKa, trk2NSigmaKaTPC);
         histos.fill(HIST("QA/QAafter/Kaon/TPC_Signal_ka_all"), trk2.tpcInnerParam(), trk2.tpcSignal());
         if (isTrk2hasTOF) {
-          histos.fill(HIST("QA/QAafter/Kaon/TOF_Nsigma_ka_all"), multiplicity, trk2ptKa, trk2NSigmaKaTOF);
+          histos.fill(HIST("QA/QAafter/Kaon/TOF_Nsigma_ka_all"), centrality, trk2ptKa, trk2NSigmaKaTOF);
           histos.fill(HIST("QA/QAafter/Kaon/TOF_TPC_Map_ka_all"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
         }
         if (!isTrk2hasTOF) {
@@ -781,98 +787,124 @@ struct Lstaranalysis {
         histos.fill(HIST("QA/QAafter/Kaon/dcaXY"), trk2ptKa, trk2.dcaXY());
         histos.fill(HIST("QA/QAafter/Kaon/TPC_CR"), trk2ptKa, trk2.tpcNClsCrossedRows());
         histos.fill(HIST("QA/QAafter/Kaon/pT"), trk2ptKa);
-        histos.fill(HIST("QA/QAafter/Kaon/eta"), trk2.eta());
-        histos.fill(HIST("QA/QAafter/Kaon/TPCnclusterPhika"), trk2.tpcNClsFound(), trk2.phi());
+        histos.fill(HIST("QA/QAafter/Kaon/eta"), trk2etaKa);
+        histos.fill(HIST("QA/QAafter/Kaon/TPCnclusterPhika"), trk2.tpcNClsFound(), trk2phiKa);
 
         if (cFilldeltaEtaPhiPlots) {
+          histos.fill(HIST("QAafter/PhiPrafter"), trk1phiPr);
+          histos.fill(HIST("QAafter/PhiKaafter"), trk2phiKa);
           histos.fill(HIST("QAafter/deltaEta"), deltaEta);
           histos.fill(HIST("QAafter/deltaPhi"), deltaPhi);
         }
       }
 
+      //// Resonance reconstruction
+      lDecayDaughter1 = LorentzVectorPtEtaPhiMass(trk1ptPr, trk1etaPr, trk1phiPr, massPr);
+      lDecayDaughter2 = LorentzVectorPtEtaPhiMass(trk2ptKa, trk2etaKa, trk2phiKa, massKa);
+
       // Apply kinematic opening angle cut
-      if (cApplyOpeningAngle) {
-        TVector3 v1(trk1.px(), trk1.py(), trk1.pz());
-        TVector3 v2(trk2.px(), trk2.py(), trk2.pz());
-        float alpha = v1.Angle(v2);
+      if (cUseOpeningAngleCut) {
+        auto v1 = lDecayDaughter1.Vect();
+        auto v2 = lDecayDaughter2.Vect();
+        float alpha = std::acos(v1.Dot(v2) / (v1.R() * v2.R()));
         if (alpha > cMinOpeningAngle && alpha < cMaxOpeningAngle)
           continue;
       }
 
-      //// Resonance reconstruction
-      lDecayDaughter1 = LorentzVectorPtEtaPhiMass(trk1.pt(), trk1.eta(), trk1.phi(), massPr);
-      lDecayDaughter2 = LorentzVectorPtEtaPhiMass(trk2.pt(), trk2.eta(), trk2.phi(), massKa);
       lResonance = lDecayDaughter1 + lDecayDaughter2;
+
+      auto resonanceMass = lResonance.M();
+      auto resonancePt = lResonance.Pt();
+      auto resonanceRapidity = lResonance.Rapidity();
 
       if constexpr (IsData || IsMix) {
         // Rapidity cut
-        if (std::abs(lResonance.Rapidity()) > static_cast<float>(0.5))
+        if (std::abs(resonanceRapidity) > static_cast<float>(0.5))
           continue;
       }
 
-      if (cfgCutsOnMother) {
-        if (lResonance.Pt() >= cMaxPtMotherCut) // excluding candidates in overflow
+      if (cfgUseCutsOnMother) {
+        if (resonancePt >= cMaxPtMotherCut) // excluding candidates in overflow
           continue;
-        if (lResonance.M() >= cMaxMinvMotherCut) // excluding candidates in overflow
+        if (resonanceMass >= cMaxMinvMotherCut) // excluding candidates in overflow
           continue;
       }
 
-      if (cFilldeltaEtaPhiPlots) {
-        if (deltaEta >= cMaxDeltaEtaCut)
-          continue;
-        if (deltaPhi >= cMaxDeltaPhiCut)
-          continue;
-
-        if constexpr (!IsMix) {
-          histos.fill(HIST("QAafter/EtaPrafter"), trk1.eta());
-          histos.fill(HIST("QAafter/PhiPrafter"), trk1.phi());
-          histos.fill(HIST("QAafter/EtaKaafter"), trk2.eta());
-          histos.fill(HIST("QAafter/PhiKaafter"), trk2.phi());
-          histos.fill(HIST("QAafter/deltaEtaafter"), deltaEta);
-          histos.fill(HIST("QAafter/deltaPhiafter"), deltaPhi);
+      if (cFilladditionalQAeventPlots) {
+        if constexpr (IsData) {
+          histos.fill(HIST("QAevent/hPairsCounterSameE"), 1.0);
+        } else if (IsMix) {
+          histos.fill(HIST("QAevent/hPairsCounterMixedE"), 1.0);
         }
       }
 
       //// Un-like sign pair only
       if (trk1.sign() * trk2.sign() < 0) {
-        if constexpr (IsData) {
-          if (isCalcRotBkg) {
-            for (int i = 0; i < cNofRotations; i++) {
-              float theta2 = rn->Uniform(constants::math::PI - constants::math::PI / rotationalcut, constants::math::PI + constants::math::PI / rotationalcut);
-              ldaughterRot = LorentzVectorPtEtaPhiMass(trk2.pt(), trk2.eta(), trk2.phi() + theta2, massKa); // for rotated background
-              lresonanceRot = lDecayDaughter1 + ldaughterRot;
-              histos.fill(HIST("Result/Data/h3lambda1520InvMassRotation"), multiplicity, lresonanceRot.Pt(), lresonanceRot.M());
+        if constexpr (IsRot) {
+          for (int i = 0; i < configBkg.cNofRotations; i++) {
+            float theta = rn->Uniform(pi - pi / configBkg.rotationalcut, pi + pi / configBkg.rotationalcut);
+            if (configBkg.cfgRotPr) {
+              ldaughterRot = LorentzVectorPtEtaPhiMass(trk1ptPr, trk1etaPr, trk1phiPr + theta, massPr);
+              lResonanceRot = ldaughterRot + lDecayDaughter2;
+            } else {
+              ldaughterRot = LorentzVectorPtEtaPhiMass(trk2ptKa, trk2etaKa, trk2phiKa + theta, massKa);
+              lResonanceRot = lDecayDaughter1 + ldaughterRot;
+            }
+            auto resonanceRotMass = lResonanceRot.M();
+            auto resonanceRotPt = lResonanceRot.Pt();
+
+            // Rapidity cut
+            if (std::abs(lResonanceRot.Rapidity()) >= 0.5)
+              continue;
+
+            if (cfgUseCutsOnMother) {
+              if (resonanceRotPt >= cMaxPtMotherCut) // excluding candidates in overflow
+                continue;
+              if (resonanceRotMass >= cMaxMinvMotherCut) // excluding candidates in overflow
+                continue;
+            }
+            if (trk1.sign() < 0) {
+              if (cFill1DQAs) {
+                histos.fill(HIST("Result/Data/lambda1520InvMassRotation"), resonanceRotMass);
+              }
+              histos.fill(HIST("Result/Data/h3lambda1520InvMassRotation"), centrality, resonanceRotPt, resonanceRotMass);
+            } else if (trk1.sign() > 0) {
+              if (cFill1DQAs) {
+                histos.fill(HIST("Result/Data/antilambda1520InvMassRotation"), resonanceRotMass);
+              }
+              histos.fill(HIST("Result/Data/h3antilambda1520InvMassRotation"), centrality, resonanceRotPt, resonanceRotMass);
             }
           }
-
+        }
+        if constexpr (IsData) {
           if (trk1.sign() < 0) {
-            if (cFillinvmass1DPlots) {
-              histos.fill(HIST("Result/Data/lambda1520invmass"), lResonance.M());
+            if (cFill1DQAs) {
+              histos.fill(HIST("Result/Data/lambda1520invmass"), resonanceMass);
             }
-            histos.fill(HIST("Result/Data/h3lambda1520invmass"), multiplicity, lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmass"), centrality, resonancePt, resonanceMass);
           } else if (trk1.sign() > 0) {
-            if (cFillinvmass1DPlots) {
-              histos.fill(HIST("Result/Data/antilambda1520invmass"), lResonance.M());
+            if (cFill1DQAs) {
+              histos.fill(HIST("Result/Data/antilambda1520invmass"), resonanceMass);
             }
-            histos.fill(HIST("Result/Data/h3antilambda1520invmass"), multiplicity, lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3antilambda1520invmass"), centrality, resonancePt, resonanceMass);
           }
         } else if (IsMix) {
-          if (cFillinvmass1DPlots) {
-            histos.fill(HIST("Result/Data/lambda1520invmassME"), lResonance.M());
-          }
-          histos.fill(HIST("Result/Data/h3lambda1520invmassME"), multiplicity, lResonance.Pt(), lResonance.M());
-          if (cFilladditionalMEPlots) {
-            if (trk1.sign() < 0) {
-              histos.fill(HIST("Result/Data/h3lambda1520invmassME_DS"), multiplicity, lResonance.Pt(), lResonance.M());
-            } else if (trk1.sign() > 0) {
-              histos.fill(HIST("Result/Data/h3lambda1520invmassME_DSAnti"), multiplicity, lResonance.Pt(), lResonance.M());
+          if (trk1.sign() < 0) {
+            if (cFill1DQAs) {
+              histos.fill(HIST("Result/Data/lambda1520invmassME_UnlikeSign"), resonanceMass);
             }
+            histos.fill(HIST("Result/Data/h3lambda1520invmassME_UnlikeSign"), centrality, resonancePt, resonanceMass);
+          } else if (trk1.sign() > 0) {
+            if (cFill1DQAs) {
+              histos.fill(HIST("Result/Data/antilambda1520invmassME_UnlikeSign"), resonanceMass);
+            }
+            histos.fill(HIST("Result/Data/h3antilambda1520invmassME_UnlikeSign"), centrality, resonancePt, resonanceMass);
           }
         }
 
         // MC
         if constexpr (IsMC) {
-
+          // now we do mc true
           // ------ Temporal lambda function to prevent error in build
           auto getMothersIndeces = [&](auto const& theMcParticle) {
             std::vector<int> lMothersIndeces{};
@@ -933,11 +965,11 @@ struct Lstaranalysis {
           if (cUseEtacutMC && std::abs(lResonance.Eta()) > cEtacutMC) // eta cut
             continue;
 
-          if (cUseRapcutMC && std::abs(lResonance.Rapidity()) > static_cast<float>(0.5)) // rapidity cut
+          if (cUseRapcutMC && std::abs(resonanceRapidity) > static_cast<float>(0.5)) // rapidity cut
             continue;
 
-          histos.fill(HIST("QA/MC/h2RecoEtaPt_after"), lResonance.Eta(), lResonance.Pt());
-          histos.fill(HIST("QA/MC/h2RecoPhiRapidity_after"), lResonance.Phi(), lResonance.Rapidity());
+          histos.fill(HIST("QA/MC/h2RecoEtaPt_after"), lResonance.Eta(), resonancePt);
+          histos.fill(HIST("QA/MC/h2RecoPhiRapidity_after"), lResonance.Phi(), resonanceRapidity);
 
           // Track selection check.
           histos.fill(HIST("QA/MC/trkDCAxy_pr"), trk1ptPr, trk1.dcaXY());
@@ -945,35 +977,50 @@ struct Lstaranalysis {
           histos.fill(HIST("QA/MC/trkDCAz_pr"), trk1ptPr, trk1.dcaZ());
           histos.fill(HIST("QA/MC/trkDCAz_ka"), trk2ptKa, trk2.dcaZ());
 
-          histos.fill(HIST("QA/MC/TPC_Nsigma_pr_all"), multiplicity, trk1ptPr, trk1NSigmaPrTPC);
+          histos.fill(HIST("QA/MC/TPC_Nsigma_pr_all"), centrality, trk1ptPr, trk1NSigmaPrTPC);
           if (isTrk1hasTOF) {
-            histos.fill(HIST("QA/MC/TOF_Nsigma_pr_all"), multiplicity, trk1ptPr, trk1NSigmaPrTOF);
+            histos.fill(HIST("QA/MC/TOF_Nsigma_pr_all"), centrality, trk1ptPr, trk1NSigmaPrTOF);
           }
-          histos.fill(HIST("QA/MC/TPC_Nsigma_ka_all"), multiplicity, trk2ptKa, trk2NSigmaKaTPC);
+          histos.fill(HIST("QA/MC/TPC_Nsigma_ka_all"), centrality, trk2ptKa, trk2NSigmaKaTPC);
           if (isTrk2hasTOF) {
-            histos.fill(HIST("QA/MC/TOF_Nsigma_ka_all"), multiplicity, trk2ptKa, trk2NSigmaKaTOF);
+            histos.fill(HIST("QA/MC/TOF_Nsigma_ka_all"), centrality, trk2ptKa, trk2NSigmaKaTOF);
           }
 
           // MC histograms
           if (mothersPDGtrk1[0] > 0) {
-            histos.fill(HIST("Result/MC/h3lambda1520Recoinvmass"), multiplicity, lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/MC/h3lambda1520Recoinvmass"), centrality, resonancePt, resonanceMass);
           } else {
-            histos.fill(HIST("Result/MC/h3antilambda1520Recoinvmass"), multiplicity, lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/MC/h3antilambda1520Recoinvmass"), centrality, resonancePt, resonanceMass);
           }
         }
       } else {
         if constexpr (IsData) {
           // Like sign pair ++
           if (trk1.sign() > 0) {
-            if (cFillinvmass1DPlots) {
-              histos.fill(HIST("Result/Data/lambda1520invmassLSPP"), lResonance.M());
+            if (cFill1DQAs) {
+              histos.fill(HIST("Result/Data/lambda1520invmassLSPP"), resonanceMass);
             }
-            histos.fill(HIST("Result/Data/h3lambda1520invmassLSPP"), multiplicity, lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassLSPP"), centrality, resonancePt, resonanceMass);
           } else { // Like sign pair --
-            if (cFillinvmass1DPlots) {
-              histos.fill(HIST("Result/Data/lambda1520invmassLSMM"), lResonance.M());
+            if (cFill1DQAs) {
+              histos.fill(HIST("Result/Data/lambda1520invmassLSMM"), resonanceMass);
             }
-            histos.fill(HIST("Result/Data/h3lambda1520invmassLSMM"), multiplicity, lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassLSMM"), centrality, resonancePt, resonanceMass);
+          }
+        } else if (IsMix) {
+          if (cFilladditionalMEPlots) {
+            // Like sign pair ++
+            if (trk1.sign() > 0) {
+              if (cFill1DQAs) {
+                histos.fill(HIST("Result/Data/lambda1520invmassME_LSPP"), resonanceMass);
+              }
+              histos.fill(HIST("Result/Data/h3lambda1520invmassME_LSPP"), centrality, resonancePt, resonanceMass);
+            } else { // Like sign pair --
+              if (cFill1DQAs) {
+                histos.fill(HIST("Result/Data/lambda1520invmassME_LSMM"), resonanceMass);
+              }
+              histos.fill(HIST("Result/Data/h3lambda1520invmassME_LSMM"), centrality, resonancePt, resonanceMass);
+            }
           }
         }
       }
@@ -988,11 +1035,18 @@ struct Lstaranalysis {
 
     colCuts.fillQA(collision);
 
-    if (cFilladditionalQAeventPlots)
-      histos.fill(HIST("QAevent/hEvtCounterSameE"), 1.0);
-    fillHistograms<true, false, false>(collision, tracks, tracks);
+    fillHistograms<true, false, false, false>(collision, tracks, tracks);
   }
   PROCESS_SWITCH(Lstaranalysis, processData, "Process Event for data without partition", false);
+
+  void processRotational(EventCandidates::iterator const& collision, TrackCandidates const& tracks)
+  {
+    if (!colCuts.isSelected(collision, false)) // Default event selection
+      return;
+
+    fillHistograms<false, true, false, false>(collision, tracks, tracks);
+  }
+  PROCESS_SWITCH(Lstaranalysis, processRotational, "Process Rotational Background", false);
 
   void processMC(MCEventCandidates::iterator const& collision,
                  aod::McCollisions const&,
@@ -1003,7 +1057,7 @@ struct Lstaranalysis {
     if (std::abs(collision.posZ()) > cZvertCutMC) // Z-vertex cut
       return;
 
-    fillHistograms<false, true, false>(collision, tracks, tracks);
+    fillHistograms<false, false, true, false>(collision, tracks, tracks);
   }
   PROCESS_SWITCH(Lstaranalysis, processMC, "Process Event for MC Light without partition", false);
 
@@ -1016,9 +1070,7 @@ struct Lstaranalysis {
     bool isTriggerTVX = collision.selection_bit(aod::evsel::kIsTriggerTVX);
     bool isSel8 = collision.sel8();
     bool isTrueINELgt0 = isTrueINEL0(collision, mcParticles);
-    centrality = centEst(collision);
-
-    auto multiplicity = collision.centFT0M();
+    auto centrality = centEst(collision);
 
     auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
 
@@ -1052,6 +1104,13 @@ struct Lstaranalysis {
       if (cUseRapcutMC && std::abs(part.y()) > static_cast<float>(0.5)) // rapidity cut
         continue;
 
+      if (cfgUseDaughterEtaCutMC) {
+        for (auto& daughters : part.daughters_as<aod::McParticles>()) {
+          if (std::fabs(daughters.eta()) > configTracks.cfgCutEta)
+            continue; // eta cut for daughters
+        } // loop over daughters
+      }
+
       histos.fill(HIST("QA/MC/h2GenEtaPt_afterRapcut"), part.eta(), part.pt());
       histos.fill(HIST("QA/MC/h2GenPhiRapidity_afterRapcut"), part.phi(), part.y());
 
@@ -1063,37 +1122,37 @@ struct Lstaranalysis {
 
       // without any event selection
       if (part.pdgCode() > 0)
-        histos.fill(HIST("Result/MC/Genlambda1520pt"), 0, part.pt(), multiplicity);
+        histos.fill(HIST("Result/MC/Genlambda1520pt"), 0, part.pt(), centrality);
       else
-        histos.fill(HIST("Result/MC/Genantilambda1520pt"), 0, part.pt(), multiplicity);
+        histos.fill(HIST("Result/MC/Genantilambda1520pt"), 0, part.pt(), centrality);
 
       if (inVtx10) // INEL10
       {
         if (part.pdgCode() > 0)
-          histos.fill(HIST("Result/MC/Genlambda1520pt"), 1, part.pt(), multiplicity);
+          histos.fill(HIST("Result/MC/Genlambda1520pt"), 1, part.pt(), centrality);
         else
-          histos.fill(HIST("Result/MC/Genantilambda1520pt"), 1, part.pt(), multiplicity);
+          histos.fill(HIST("Result/MC/Genantilambda1520pt"), 1, part.pt(), centrality);
       }
       if (inVtx10 && isSel8) // INEL>10, vtx10
       {
         if (part.pdgCode() > 0)
-          histos.fill(HIST("Result/MC/Genlambda1520pt"), 2, part.pt(), multiplicity);
+          histos.fill(HIST("Result/MC/Genlambda1520pt"), 2, part.pt(), centrality);
         else
-          histos.fill(HIST("Result/MC/Genantilambda1520pt"), 2, part.pt(), multiplicity);
+          histos.fill(HIST("Result/MC/Genantilambda1520pt"), 2, part.pt(), centrality);
       }
       if (inVtx10 && isTriggerTVX) // vtx10, TriggerTVX
       {
         if (part.pdgCode() > 0)
-          histos.fill(HIST("Result/MC/Genlambda1520pt"), 3, part.pt(), multiplicity);
+          histos.fill(HIST("Result/MC/Genlambda1520pt"), 3, part.pt(), centrality);
         else
-          histos.fill(HIST("Result/MC/Genantilambda1520pt"), 3, part.pt(), multiplicity);
+          histos.fill(HIST("Result/MC/Genantilambda1520pt"), 3, part.pt(), centrality);
       }
       if (isInAfterAllCuts) // after all event selection
       {
         if (part.pdgCode() > 0)
-          histos.fill(HIST("Result/MC/Genlambda1520pt"), 4, part.pt(), multiplicity);
+          histos.fill(HIST("Result/MC/Genlambda1520pt"), 4, part.pt(), centrality);
         else
-          histos.fill(HIST("Result/MC/Genantilambda1520pt"), 4, part.pt(), multiplicity);
+          histos.fill(HIST("Result/MC/Genantilambda1520pt"), 4, part.pt(), centrality);
       }
     }
 
@@ -1140,13 +1199,14 @@ struct Lstaranalysis {
 
   // Processing Event Mixing
   using BinningTypeVtxZT0M = ColumnBinningPolicy<collision::PosZ, cent::CentFT0M>;
-  BinningTypeVtxZT0M colBinning{{cfgVtxBins, cfgMultBins}, true};
 
   void processME(EventCandidates const& collision,
                  TrackCandidates const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
-    SameKindPair<EventCandidates, TrackCandidates, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collision, tracksTuple, &cache}; // -1 is the number of the bin to skip
+
+    BinningTypeVtxZT0M colBinning{{configBkg.cfgVtxBins, configBkg.cfgMultBins}, true};
+    SameKindPair<EventCandidates, TrackCandidates, BinningTypeVtxZT0M> pairs{colBinning, configBkg.nEvtMixing, -1, collision, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       // LOGF(info, "Mixed event collisions: (%d, %d)", collision1.globalIndex(), collision2.globalIndex());
@@ -1158,18 +1218,18 @@ struct Lstaranalysis {
       if (cFilladditionalQAeventPlots) {
         // Fill histograms for the characteristics of the *mixed* events (collision1 and collision2)
         // This will show the distribution of events that are actually being mixed.
-        histos.fill(HIST("QAevent/hMixPool_VtxZ"), collision1.posZ());
-        histos.fill(HIST("QAevent/hMixPool_Multiplicity"), collision1.centFT0M()); // Assuming getCentrality() gives multiplicity
+        if (cFill1DQAs) {
+          histos.fill(HIST("QAevent/hMixPool_VtxZ"), collision1.posZ());
+          histos.fill(HIST("QAevent/hMixPool_Multiplicity"), collision1.centFT0M());
+        }
         histos.fill(HIST("QAevent/hMixPool_VtxZ_vs_Multiplicity"), collision1.posZ(), collision1.centFT0M());
 
         // You might also want to fill for collision2 if you want to see both partners' distributions
         // histos.fill(HIST("QAevent/hMixPool_VtxZ"), collision2.posZ());
-        // histos.fill(HIST("QAevent/hMixPool_Multiplicity"), collision2.getCentrality());
-        // histos.fill(HIST("QAevent/hMixPool_VtxZ_vs_Multiplicity"), collision2.posZ(), collision2.getCentrality());
-
-        histos.fill(HIST("QAevent/hEvtCounterMixedE"), 1.f);
+        // histos.fill(HIST("QAevent/hMixPool_Multiplicity"), collision2.centFT0M());
+        // histos.fill(HIST("QAevent/hMixPool_VtxZ_vs_Multiplicity"), collision2.posZ(), collision2.centFT0M());
       }
-      fillHistograms<false, false, true>(collision1, tracks1, tracks2);
+      fillHistograms<false, false, false, true>(collision1, tracks1, tracks2);
     }
   }
   PROCESS_SWITCH(Lstaranalysis, processME, "Process EventMixing light without partition", false);
