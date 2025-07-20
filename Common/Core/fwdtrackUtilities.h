@@ -102,42 +102,42 @@ o2::dataformats::GlobalFwdTrack propagateMuon(TFwdTrack const& muon, TCollision 
 template <typename TFwdTrack, typename TMFTTrack>
 o2::dataformats::GlobalFwdTrack refitGlobalMuonCov(TFwdTrack const& muon, TMFTTrack const& mft)
 {
-   auto muonCov = muon.getCovariances();
-   auto mftCov = mft.getCovariances();
+  auto muonCov = muon.getCovariances();
+  auto mftCov = mft.getCovariances();
 
-   SMatrix55Std jacob = ROOT::Math::SMatrixIdentity();
-   auto tl = muon.getTgl();
-   auto invQPt = muon.getInvQPt();
-   jacob(4, 3) = tl/(invQPt*std::sqrt(1+tl*tl));
-   jacob(4, 4) = -std::sqrt(1+tl*tl)/(invQPt*invQPt);
+  SMatrix55Std jacob = ROOT::Math::SMatrixIdentity();
+  auto tl = muon.getTgl();
+  auto invQPt = muon.getInvQPt();
+  jacob(4, 3) = tl / (invQPt * std::sqrt(1 + tl * tl));
+  jacob(4, 4) = -std::sqrt(1 + tl * tl) / (invQPt * invQPt);
 
-   auto covQP = ROOT::Math::Similarity(jacob, muonCov);
-   mftCov(4,0) = 0;
-   mftCov(4,1) = 0;
-   mftCov(4,2) = 0;
-   mftCov(4,3) = 0;
+  auto covQP = ROOT::Math::Similarity(jacob, muonCov);
+  mftCov(4, 0) = 0;
+  mftCov(4, 1) = 0;
+  mftCov(4, 2) = 0;
+  mftCov(4, 3) = 0;
 
-   mftCov(0, 4) = 0;
-   mftCov(1, 4) = 0;
-   mftCov(2, 4) = 0;
-   mftCov(3, 4) = 0;
-   mftCov(4,4) = covQP(4,4);
+  mftCov(0, 4) = 0;
+  mftCov(1, 4) = 0;
+  mftCov(2, 4) = 0;
+  mftCov(3, 4) = 0;
+  mftCov(4, 4) = covQP(4, 4);
 
-   SMatrix55Std jacobInv = ROOT::Math::SMatrixIdentity();
-   auto qp = std::sqrt(1+tl*tl)/invQPt;
-   auto tl_mft = mft.getTgl();
-   jacobInv(4, 3) = tl_mft/(qp*std::sqrt(1+tl_mft*tl_mft));
-   jacobInv(4, 4) = -std::sqrt(1+tl_mft*tl_mft)/(qp*qp);
-   auto globalCov = ROOT::Math::Similarity(jacobInv, covQP);
+  SMatrix55Std jacobInv = ROOT::Math::SMatrixIdentity();
+  auto qp = std::sqrt(1 + tl * tl) / invQPt;
+  auto tl_mft = mft.getTgl();
+  jacobInv(4, 3) = tl_mft / (qp * std::sqrt(1 + tl_mft * tl_mft));
+  jacobInv(4, 4) = -std::sqrt(1 + tl_mft * tl_mft) / (qp * qp);
+  auto globalCov = ROOT::Math::Similarity(jacobInv, covQP);
 
-   auto invQPt_new = std::sqrt(1+tl_mft*tl_mft)/qp;
+  auto invQPt_new = std::sqrt(1 + tl_mft * tl_mft) / qp;
 
-   o2::dataformats::GlobalFwdTrack globalTrack;
-   globalTrack.setParameters(mft.getParameters());
-   globalTrack.setInvQPt(invQPt_new);
-   globalTrack.setCovariances(globalCov);
+  o2::dataformats::GlobalFwdTrack globalTrack;
+  globalTrack.setParameters(mft.getParameters());
+  globalTrack.setInvQPt(invQPt_new);
+  globalTrack.setCovariances(globalCov);
 
-   return globalTrack;
+  return globalTrack;
 }
 
 } // namespace fwdtrackutils
