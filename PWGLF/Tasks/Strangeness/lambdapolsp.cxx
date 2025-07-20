@@ -88,6 +88,10 @@ struct lambdapolsp {
   Configurable<int> sys{"sys", 1, "flag to select systematic source"};
   Configurable<bool> dosystematic{"dosystematic", false, "flag to perform systematic study"};
   Configurable<bool> needetaaxis{"needetaaxis", false, "flag to use last axis"};
+  struct : ConfigurableGroup {
+    Configurable<bool> doRandomPsi{"doRandomPsi", false, "randomize psi"};
+  };
+  randGrp;
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 50.0f, "Accepted maximum Centrality"};
@@ -1335,6 +1339,7 @@ struct lambdapolsp {
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   BinningType colBinning{{meGrp.axisVertex, meGrp.axisMultiplicityClass}, true};
   Preslice<v0Candidates> tracksPerCollisionV0Mixed = o2::aod::v0data::straCollisionId; // for derived data only
+  TRandom3 randGen(0);
 
   void processDerivedDataMixed(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraZDCSP> const& collisions, v0Candidates const& V0s, dauTracks const&)
   {
@@ -1414,6 +1419,12 @@ struct lambdapolsp {
       histos.fill(HIST("hCentrality"), centrality);
       histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
       histos.fill(HIST("hpResSin"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA - psiZDCC))));
+
+      if (randGrp.doRandomPsi) {
+        psiZDC = randGen.Uniform(0, 2 * TMath::Pi());
+        ;
+      }
+
       for (const auto& v0 : groupV0) {
 
         bool LambdaTag = isCompatible(v0, 0);
