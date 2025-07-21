@@ -2505,7 +2505,7 @@ struct Phik0shortanalysis {
           if (!track.has_mcParticle())
             continue;
 
-          auto mcTrack = track.mcParticle_();
+          auto mcTrack = track.mcParticle();
           if (!mcTrack.isPhysicalPrimary() || std::abs(mcTrack.eta()) > trackConfigs.etaMax)
             continue;
 
