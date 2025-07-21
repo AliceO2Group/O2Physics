@@ -127,7 +127,7 @@ struct HfFemtoDreamProducer {
   Configurable<bool> isRun3{"isRun3", true, "Running on Run3 or pilot"};
 
   /// Charm hadron table
-  Configurable<int> selectionFlagHadron{"selectionFlagHadron", 1, "Selection Flag for Charm Hadron"};
+  Configurable<int> selectionFlagHadron{"selectionFlagHadron", 1, "Selection Flag for Charm Hadron: 1 for Lc, 7 for Dplus (Topologic and PID cuts)"};
   Configurable<bool> useCent{"useCent", false, "Enable centrality for Charm Hadron"};
 
   Configurable<int> trkPDGCode{"trkPDGCode", 2212, "PDG code of the selected track for Monte Carlo truth"};
