@@ -256,7 +256,6 @@ struct LfTreeCreatorClusterStudies {
   Produces<o2::aod::ClStTable> m_ClusterStudiesTable;
   Produces<o2::aod::ClStTableExtra> m_ClusterStudiesTableExtra;
   Produces<o2::aod::ClStTableMc> m_ClusterStudiesTableMc;
-  Produces<o2::aod::ClStTableMcExt> m_ClusterStudiesTableMcExtra;
 
   struct V0TrackParCov {
     int64_t globalIndex;
@@ -732,6 +731,37 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
 
+    m_ClusterStudiesTable(
+      std::hypot(momPos[0], momPos[1], momPos[2]) * posTrack.sign(),   // p_pos
+      RecoDecay::eta(momPos),                                          // eta_pos
+      RecoDecay::phi(momPos),                                          // phi_pos
+      posTrack.itsClusterSizes(),                                      // itsClsize_pos
+      partID_pos);                                                     // partID_pos
+    m_ClusterStudiesTable(
+      std::hypot(momNeg[0], momNeg[1], momNeg[2]) * negTrack.sign(),   // p_neg
+      RecoDecay::eta(momNeg),                                          // eta_neg
+      RecoDecay::phi(momNeg),                                          // phi_neg
+      negTrack.itsClusterSizes(),                                      // itsClsize_neg
+      partID_neg);                                                     // partID_neg
+    if (!setting_smallTable) {
+      m_ClusterStudiesTableExtra(
+        posTrack.tpcInnerParam() * posTrack.sign(),                    // pTPC_pos
+        posTrack.pidForTracking(),                                     // pidInTrk_pos
+        -999.f,                                                        // TpcNSigma_pos
+        -999.f,                                                        // TofNSigma_pos
+        -999.f,                                                        // TofMass_pos
+        cosPA,                                                         // cosPA
+        massV0);                                                       // massV0
+      m_ClusterStudiesTableExtra(
+        negTrack.tpcInnerParam() * negTrack.sign(),                    // pTPC_neg
+        negTrack.pidForTracking(),                                     // pidInTrk_neg
+        -999.f,                                                        // TpcNSigma_neg
+        -999.f,                                                        // TofNSigma_neg
+        -999.f,                                                        // TofMass_neg
+        cosPA,                                                         // cosPA
+        massV0);                                                       // massV0
+    }
+
     if constexpr (isMC) { // MC
       if (!posTrack.has_mcParticle() || !negTrack.has_mcParticle()) {
         return;
@@ -740,93 +770,10 @@ struct LfTreeCreatorClusterStudies {
       auto posMcParticle = posTrack.mcParticle();
       auto negMcParticle = negTrack.mcParticle();
 
-      if (setting_smallTable) {
-        m_ClusterStudiesTableMc(
-          std::hypot(momPos[0], momPos[1], momPos[2]) * posTrack.sign(), // p_pos
-          RecoDecay::eta(momPos),                                        // eta_pos
-          RecoDecay::phi(momPos),                                        // phi_pos
-          posTrack.itsClusterSizes(),                                    // itsClsize_pos
-          partID_pos,                                                    // partID_pos
-          posMcParticle.pdgCode());                                      // pdgCode_pos
-        m_ClusterStudiesTableMc(
-          std::hypot(momNeg[0], momNeg[1], momNeg[2]) * negTrack.sign(), // p_neg
-          RecoDecay::eta(momNeg),                                        // eta_neg
-          RecoDecay::phi(momNeg),                                        // phi_neg
-          negTrack.itsClusterSizes(),                                    // itsClsize_neg
-          partID_neg,                                                    // partID_neg
-          negMcParticle.pdgCode());                                      // pdgCode_neg
-      } else {
-        m_ClusterStudiesTableMcExtra(
-          std::hypot(momPos[0], momPos[1], momPos[2]) * posTrack.sign(), // p_pos
-          RecoDecay::eta(momPos),                                        // eta_pos
-          RecoDecay::phi(momPos),                                        // phi_pos
-          posTrack.itsClusterSizes(),                                    // itsClsize_pos
-          partID_pos,                                                    // partID_pos
-          posMcParticle.pdgCode(),                                       // pdgCode_pos
-          posTrack.tpcInnerParam() * posTrack.sign(),                    // pTPC_pos
-          posTrack.pidForTracking(),                                     // pidInTrk_pos
-          -999.f,                                                        // TpcNSigma_pos
-          -999.f,                                                        // TofNSigma_pos
-          -999.f,                                                        // TofMass_pos
-          cosPA,                                                         // cosPA
-          massV0);                                                       // massV0
-        m_ClusterStudiesTableMcExtra(
-          std::hypot(momNeg[0], momNeg[1], momNeg[2]) * negTrack.sign(), // p_neg
-          RecoDecay::eta(momNeg),                                        // eta_neg
-          RecoDecay::phi(momNeg),                                        // phi_neg
-          negTrack.itsClusterSizes(),                                    // itsClsize_neg
-          partID_neg,                                                    // partID_neg
-          negMcParticle.pdgCode(),                                       // pdgCode_pos
-          negTrack.tpcInnerParam() * negTrack.sign(),                    // pTPC_neg
-          negTrack.pidForTracking(),                                     // pidInTrk_neg
-          -999.f,                                                        // TpcNSigma_neg
-          -999.f,                                                        // TofNSigma_neg
-          -999.f,                                                        // TofMass_neg
-          cosPA,                                                         // cosPA
-          massV0);                                                       // massV0
-      }
-    } else { // data
-      if (setting_smallTable) {
-        m_ClusterStudiesTable(
-          std::hypot(momPos[0], momPos[1], momPos[2]) * posTrack.sign(), // p_pos
-          RecoDecay::eta(momPos),                                        // eta_pos
-          RecoDecay::phi(momPos),                                        // phi_pos
-          posTrack.itsClusterSizes(),                                    // itsClsize_pos
-          partID_pos);                                                   // partID_pos
-        m_ClusterStudiesTable(
-          std::hypot(momNeg[0], momNeg[1], momNeg[2]) * negTrack.sign(), // p_neg
-          RecoDecay::eta(momNeg),                                        // eta_neg
-          RecoDecay::phi(momNeg),                                        // phi_neg
-          negTrack.itsClusterSizes(),                                    // itsClsize_neg
-          partID_neg);                                                   // partID_neg
-      } else {
-        m_ClusterStudiesTableExtra(
-          std::hypot(momPos[0], momPos[1], momPos[2]) * posTrack.sign(), // p_pos
-          RecoDecay::eta(momPos),                                        // eta_pos
-          RecoDecay::phi(momPos),                                        // phi_pos
-          posTrack.itsClusterSizes(),                                    // itsClsize_pos
-          partID_pos,                                                    // partID_pos
-          posTrack.tpcInnerParam() * posTrack.sign(),                    // pTPC_pos
-          posTrack.pidForTracking(),                                     // pidInTrk_pos
-          -999.f,                                                        // TpcNSigma_pos
-          -999.f,                                                        // TofNSigma_pos
-          -999.f,                                                        // TofMass_pos
-          cosPA,                                                         // cosPA
-          massV0);                                                       // massV0
-        m_ClusterStudiesTableExtra(
-          std::hypot(momNeg[0], momNeg[1], momNeg[2]) * negTrack.sign(), // p_neg
-          RecoDecay::eta(momNeg),                                        // eta_neg
-          RecoDecay::phi(momNeg),                                        // phi_neg
-          negTrack.itsClusterSizes(),                                    // itsClsize_neg
-          partID_neg,                                                    // partID_neg
-          negTrack.tpcInnerParam() * negTrack.sign(),                    // pTPC_neg
-          negTrack.pidForTracking(),                                     // pidInTrk_neg
-          -999.f,                                                        // TpcNSigma_neg
-          -999.f,                                                        // TofNSigma_neg
-          -999.f,                                                        // TofMass_neg
-          cosPA,                                                         // cosPA
-          massV0);                                                       // massV0
-      }
+      m_ClusterStudiesTableMc(
+        posMcParticle.pdgCode());                                      // pdgCode_pos
+      m_ClusterStudiesTableMc(
+        negMcParticle.pdgCode());                                      // pdgCode_neg
     }
 
     m_hAnalysis.fill(HIST("isPositive"), true);
@@ -891,59 +838,31 @@ struct LfTreeCreatorClusterStudies {
 
     uint8_t partID_bachelor = PartID::ka;
 
+    m_ClusterStudiesTable(
+      std::hypot(momBachelor[0], momBachelor[1], momBachelor[2]) * bachelorTrack.sign(),   // p_K
+      RecoDecay::eta(momBachelor),                                                         // eta_K
+      RecoDecay::phi(momBachelor),                                                         // phi_K
+      bachelorTrack.itsClusterSizes(),                                                     // itsClSize_K
+      partID_bachelor);                                                                    // partID_K
+    if (!setting_smallTable) {
+      m_ClusterStudiesTableExtra(
+        bachelorTrack.tpcInnerParam() * bachelorTrack.sign(),                              // pTPC_K
+        bachelorTrack.pidForTracking(),                                                    // PIDinTrk_K
+        -999.f,                                                                            // TpcNSigma_K
+        -999.f,                                                                            // TofNSigma_K
+        -999.f,                                                                            // TofMass_K
+        cosPA,                                                                             // cosPA
+        massOmega);
+    }
+
     if constexpr (isMC) {
       if (!bachelorTrack.has_mcParticle()) {
         return;
       }
       auto mcParticle = bachelorTrack.mcParticle();
-
-      if (setting_smallTable) {
-        m_ClusterStudiesTableMc(
-          std::hypot(momBachelor[0], momBachelor[1], momBachelor[2]) * bachelorTrack.sign(), // p_K
-          RecoDecay::eta(momBachelor),                                                       // eta_K
-          RecoDecay::phi(momBachelor),                                                       // phi_K
-          bachelorTrack.itsClusterSizes(),                                                   // itsClSize_K
-          partID_bachelor,                                                                   // partID_K
-          mcParticle.pdgCode());                                                             // pdgCode_K
-      } else {
-        m_ClusterStudiesTableMcExtra(
-          std::hypot(momBachelor[0], momBachelor[1], momBachelor[2]) * bachelorTrack.sign(), // p_K
-          RecoDecay::eta(momBachelor),                                                       // eta_K
-          RecoDecay::phi(momBachelor),                                                       // phi_K
-          bachelorTrack.itsClusterSizes(),                                                   // itsClSize_K
-          partID_bachelor,                                                                   // partID_K
-          mcParticle.pdgCode(),                                                              // pdgCode_K
-          bachelorTrack.tpcInnerParam() * bachelorTrack.sign(),                              // pTPC_K
-          bachelorTrack.pidForTracking(),                                                    // PIDinTrk_K
-          -999.f,                                                                            // TpcNSigma_K
-          -999.f,                                                                            // TofNSigma_K
-          -999.f,                                                                            // TofMass_K
-          cosPA,                                                                             // cosPA
-          massOmega);                                                                        // massMother
-      }
-    } else {
-      if (setting_smallTable) {
-        m_ClusterStudiesTable(
-          std::hypot(momBachelor[0], momBachelor[1], momBachelor[2]) * bachelorTrack.sign(), // p_K
-          RecoDecay::eta(momBachelor),                                                       // eta_K
-          RecoDecay::phi(momBachelor),                                                       // phi_K
-          bachelorTrack.itsClusterSizes(),                                                   // itsClSize_K
-          partID_bachelor);                                                                  // partID_K
-      } else {
-        m_ClusterStudiesTableExtra(
-          std::hypot(momBachelor[0], momBachelor[1], momBachelor[2]) * bachelorTrack.sign(), // p_K
-          RecoDecay::eta(momBachelor),                                                       // eta_K
-          RecoDecay::phi(momBachelor),                                                       // phi_K
-          bachelorTrack.itsClusterSizes(),                                                   // itsClSize_K
-          partID_bachelor,                                                                   // partID_K
-          bachelorTrack.tpcInnerParam() * bachelorTrack.sign(),                              // pTPC_K
-          bachelorTrack.pidForTracking(),                                                    // PIDinTrk_K
-          -999.f,                                                                            // TpcNSigma_K
-          -999.f,                                                                            // TofNSigma_K
-          -999.f,                                                                            // TofMass_K
-          cosPA,                                                                             // cosPA
-          massOmega);
-      }
+      
+      m_ClusterStudiesTableMc(
+        mcParticle.pdgCode());                                                             // pdgCode_K
     }
 
     m_hAnalysis.fill(HIST("isPositive"), bachelorTrack.p() > 0);
@@ -976,6 +895,23 @@ struct LfTreeCreatorClusterStudies {
 
     uint8_t partID = PartID::de;
 
+    m_ClusterStudiesTable(
+      track.p() * track.sign(),               // p_De,
+      track.eta(),                            // eta_De,
+      track.phi(),                            // phi_De,
+      track.itsClusterSizes(),                // itsClSize_De,
+      partID);                                // partID_De
+    if (!setting_smallTable) {
+      m_ClusterStudiesTableExtra(
+        track.tpcInnerParam() * track.sign(), // pTPC_De,
+        track.pidForTracking(),               // PIDinTrk_De,
+        computeNSigmaDe(track),               // TpcNSigma_De,
+        track.tofNSigmaDe(),                  // TofNSigma_De,
+        computeTOFmassDe<isMC>(track),        // TofMass_De,
+        -999.f,                               // cosPA,
+        -999.f);                              // massMother
+    }
+
     if constexpr (isMC) {
       if (!track.has_mcParticle() || track.sign() > 0) {
         return;
@@ -983,53 +919,9 @@ struct LfTreeCreatorClusterStudies {
 
       auto mcParticle = track.mcParticle();
 
-      if (setting_smallTable) {
-        m_ClusterStudiesTableMc(
-          track.p() * track.sign(), // p_De,
-          track.eta(),              // eta_De,
-          track.phi(),              // phi_De,
-          track.itsClusterSizes(),  // itsClSize_De,
-          partID,                   // pdgCode_De,
-          mcParticle.pdgCode());    // pdgCodeMc_De
-      } else {
-        m_ClusterStudiesTableMcExtra(
-          track.p() * track.sign(),             // p_De,
-          track.eta(),                          // eta_De,
-          track.phi(),                          // phi_De,
-          track.itsClusterSizes(),              // itsClSize_De,
-          partID,                               // pdgCode_De,
-          mcParticle.pdgCode(),                 // pdgCodeMc_De
-          track.tpcInnerParam() * track.sign(), // pTPC_De,
-          track.pidForTracking(),               // PIDinTrk_De,
-          computeNSigmaDe(track),               // TpcNSigma_De,
-          track.tofNSigmaDe(),                  // TofNSigma_De,
-          computeTOFmassDe<isMC>(track),        // TofMass_De,
-          -999.f,                               // cosPA,
-          -999.f);                              // massMother
-      }
-    } else {
-      if (setting_smallTable) {
-        m_ClusterStudiesTable(
-          track.p() * track.sign(), // p_De,
-          track.eta(),              // eta_De,
-          track.phi(),              // phi_De,
-          track.itsClusterSizes(),  // itsClSize_De,
-          partID);                  // pdgCode_De
-      } else {
-        m_ClusterStudiesTableExtra(
-          track.p() * track.sign(),             // p_De,
-          track.eta(),                          // eta_De,
-          track.phi(),                          // phi_De,
-          track.itsClusterSizes(),              // itsClSize_De,
-          partID,                               // pdgCode_De,
-          track.tpcInnerParam() * track.sign(), // pTPC_De,
-          track.pidForTracking(),               // PIDinTrk_De,
-          computeNSigmaDe(track),               // TpcNSigma_De,
-          track.tofNSigmaDe(),                  // TofNSigma_De,
-          computeTOFmassDe<isMC>(track),        // TofMass_De,
-          -999.f,                               // cosPA,
-          -999.f);                              // massMother
-      }
+      m_ClusterStudiesTableMc(
+        mcParticle.pdgCode());    // pdgCode_De
+      
     }
 
     m_hAnalysis.fill(HIST("isPositive"), track.sign() > 0);
@@ -1062,60 +954,31 @@ struct LfTreeCreatorClusterStudies {
     m_hAnalysis.fill(HIST("TOFmassHe"), track.p() * track.sign(), tofMass);
     m_hAnalysis.fill(HIST("pmatchingHe"), track.sign() * correctedTPCinnerParam, (correctedTPCinnerParam - track.p()) / correctedTPCinnerParam);
 
+    m_ClusterStudiesTable(
+      track.p() * track.sign(),                 // p_He3,
+      track.eta(),                              // eta_He3,
+      track.phi(),                              // phi_He3,
+      track.itsClusterSizes(),                  // itsClSize_He3,
+      partID);                                  // partID_He3
+    if (!setting_smallTable) {
+      m_ClusterStudiesTableExtra(
+        correctedTPCinnerParam * track.sign(),  // pTPC_He3,
+        track.pidForTracking(),                 // PIDinTrk_He3,
+        computeNSigmaHe3(track),                // TpcNSigma_He3,
+        -999.f,                                 // TofNSigma_He3,
+        tofMass,                                // TofMass_He3,
+        -999.f,                                 // cosPA,
+        -999.f);                                // massMother
+    }
+
     if constexpr (isMC) {
       if (!track.has_mcParticle()) {
         return;
       }
       auto mcParticle = track.mcParticle();
-
-      if (setting_smallTable) {
-        m_ClusterStudiesTableMc(
-          track.p() * track.sign(), // p_He3,
-          track.eta(),              // eta_He3,
-          track.phi(),              // phi_He3,
-          track.itsClusterSizes(),  // itsClSize_He3,
-          partID,                   // pdgCode_He3,
-          mcParticle.pdgCode());    // pdgCodeMc_He3
-      } else {
-        m_ClusterStudiesTableMcExtra(
-          track.p() * track.sign(),              // p_He3
-          track.eta(),                           // eta_He3
-          track.phi(),                           // phi_He3
-          track.itsClusterSizes(),               // itsClSize_He3
-          partID,                                // pdgCode_He3
-          mcParticle.pdgCode(),                  // pdgCodeMc_He3
-          correctedTPCinnerParam * track.sign(), // pTPC_He3
-          track.pidForTracking(),                // PIDinTrk_He3
-          computeNSigmaHe3(track),               // TpcNSigma_He3
-          -999.f,                                // TofNSigma_He3
-          tofMass,                               // TofMass_He3
-          -999.f,                                // cosPA_He3
-          -999.f);                               // massMother_He3
-      }
-
-    } else {
-      if (setting_smallTable) {
-        m_ClusterStudiesTable(
-          track.p() * track.sign(), // p_He3,
-          track.eta(),              // eta_He3,
-          track.phi(),              // phi_He3,
-          track.itsClusterSizes(),  // itsClSize_He3,
-          partID);                  // pdgCode_He3
-      } else {
-        m_ClusterStudiesTableExtra(
-          track.p() * track.sign(),              // p_He3,
-          track.eta(),                           // eta_He3,
-          track.phi(),                           // phi_He3,
-          track.itsClusterSizes(),               // itsClSize_He3,
-          partID,                                // pdgCode_He3,
-          correctedTPCinnerParam * track.sign(), // pTPC_He3,
-          track.pidForTracking(),                // PIDinTrk_He3,
-          computeNSigmaHe3(track),               // TpcNSigma_He3,
-          -999.f,                                // TofNSigma_He3,
-          tofMass,                               // TofMass_He3,
-          -999.f,                                // cosPA,
-          -999.f);                               // massMother
-      }
+      
+      m_ClusterStudiesTableMc(
+        mcParticle.pdgCode());                  // pdgCodeMc_He3
     }
 
     m_hAnalysis.fill(HIST("isPositive"), track.sign() > 0);
