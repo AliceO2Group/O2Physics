@@ -138,6 +138,22 @@ enum PartID {
   he
 };
 
+struct Candidate {
+  float p = -999.f;             // momentum * charge
+  float eta = -999.f;  
+  float phi = -999.f; 
+  uint32_t itsClusterSize = 0;
+  uint8_t partID = PartID::none;
+  float pTPC = -999.f; 
+  uint32_t pidInTrk = 0;        // PID in tracking
+  float nsigmaTPC = -999.f;      
+  float nsigmaTOF = -999.f;      
+  float tofMass = -999.f;        
+  float cosPAMother = -999.f;   // Cosine of the pointing angle of the mother
+  float massMother = -999.f;    // Invariant mass of the mother
+  int pdgCode = 0;
+}
+
 struct LfTreeCreatorClusterStudies {
 
   Service<o2::ccdb::BasicCCDBManager> m_ccdb;
