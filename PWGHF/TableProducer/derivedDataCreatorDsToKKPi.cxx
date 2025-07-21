@@ -153,14 +153,20 @@ struct HfDerivedDataCreatorDsToKKPi {
         candidate.impactParameterNormalised1(),
         candidate.impactParameterNormalised2(),
         candidate.nSigTpcPi0(),
+        candidate.nSigTpcKa0(),
         candidate.nSigTofPi0(),
+        candidate.nSigTofKa0(),
         candidate.tpcTofNSigmaPi0(),
+        candidate.tpcTofNSigmaKa0(),
         candidate.nSigTpcKa1(),
         candidate.nSigTofKa1(),
         candidate.tpcTofNSigmaKa1(),
         candidate.nSigTpcPi2(),
+        candidate.nSigTpcKa2(),
         candidate.nSigTofPi2(),
-        candidate.tpcTofNSigmaPi2());
+        candidate.nSigTofKa2(),
+        candidate.tpcTofNSigmaPi2(),
+        candidate.tpcTofNSigmaKa2());
     }
     if (fillCandidateParE) {
       rowCandidateParE(
