@@ -93,6 +93,7 @@ struct DndetaMFTPbPb {
     Configurable<float> maxEta{"maxEta", -2.5f, ""};
     Configurable<int> minNclusterMft{"minNclusterMft", 5,
                                      "minimum number of MFT clusters"};
+    Configurable<bool> useChi2Cut{"useChi2Cut", false, "use track chi2 cut"};
     Configurable<float> maxChi2{"maxChi2", 10.f, ""};
     Configurable<double> minPt{"minPt", 0., "minimum pT of the MFT tracks"};
     Configurable<bool> requireCA{
@@ -762,8 +763,10 @@ struct DndetaMFTPbPb {
   {
     if (track.eta() < trackCuts.minEta || track.eta() > trackCuts.maxEta)
       return false;
-    if (track.chi2() > trackCuts.maxChi2)
-      return false;
+    if (trackCuts.useChi2Cut) {
+      if (track.chi2() > trackCuts.maxChi2)
+        return false;
+    }
     if (trackCuts.requireCA && !track.isCA())
       return false;
     if (track.nClusters() < trackCuts.minNclusterMft)
