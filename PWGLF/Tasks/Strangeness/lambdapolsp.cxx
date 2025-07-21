@@ -89,7 +89,8 @@ struct lambdapolsp {
   Configurable<bool> dosystematic{"dosystematic", false, "flag to perform systematic study"};
   Configurable<bool> needetaaxis{"needetaaxis", false, "flag to use last axis"};
   struct : ConfigurableGroup {
-    Configurable<bool> doRandomPsi{"doRandomPsi", false, "randomize psi"};
+    Configurable<bool> doRandomPsi{"doRandomPsi", true, "randomize psi"};
+    Configurable<bool> doRandomPsiAC{"doRandomPsiAC", true, "randomize psiAC"};
   } randGrp;
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
@@ -1338,10 +1339,10 @@ struct lambdapolsp {
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   BinningType colBinning{{meGrp.axisVertex, meGrp.axisMultiplicityClass}, true};
   Preslice<v0Candidates> tracksPerCollisionV0Mixed = o2::aod::v0data::straCollisionId; // for derived data only
-  TRandom3 randGen(0);
 
   void processDerivedDataMixed(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraZDCSP> const& collisions, v0Candidates const& V0s, dauTracks const&)
   {
+    TRandom3 randGen(0);
 
     for (auto& [collision1, collision2] : selfCombinations(colBinning, meGrp.nMix, -1, collisions, collisions)) {
 
@@ -1416,13 +1417,17 @@ struct lambdapolsp {
       auto groupV0 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision1.index());
 
       histos.fill(HIST("hCentrality"), centrality);
-      histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
-      histos.fill(HIST("hpResSin"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA - psiZDCC))));
 
       if (randGrp.doRandomPsi) {
         psiZDC = randGen.Uniform(0, 2 * TMath::Pi());
-        ;
       }
+      if (randGrp.doRandomPsiAC) {
+        psiZDCA = randGen.Uniform(0, 2 * TMath::Pi());
+        psiZDCC = randGen.Uniform(0, 2 * TMath::Pi());
+      }
+
+      histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
+      histos.fill(HIST("hpResSin"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA - psiZDCC))));
 
       for (const auto& v0 : groupV0) {
 
@@ -1468,6 +1473,123 @@ struct lambdapolsp {
     }
   }
   PROCESS_SWITCH(lambdapolsp, processDerivedDataMixed, "Process mixed event using derived data", false);
+  /*
+  void processDerivedDataMixedFIFO(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraZDCSP> const& collisions, v0Candidates const& V0s, dauTracks const& dV0s)
+  {
+
+    auto nBins = colBinning.getAllBinsCount();
+    std::vector<std::deque<std::pair<int, v0Candidates>>> eventPools(nBins); // Pool per centrality bin holding (eventIndex, V0 candidates)
+
+    for (auto& collision1 : collisions) {
+      int bin = colBinning.getBin(std::make_tuple(collision1.posZ(), collision1.centFT0C()));
+      auto groupV0_evt1 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision1.index());
+      float centrality = collision1.centFT0C();
+
+      auto qxZDCA = collision1.qxZDCA();
+      auto qxZDCC = collision1.qxZDCC();
+      auto qyZDCA = collision1.qyZDCA();
+      auto qyZDCC = collision1.qyZDCC();
+      auto psiZDCC = collision1.psiZDCC();
+      auto psiZDCA = collision1.psiZDCA();
+      double modqxZDCA;
+      double modqyZDCA;
+      double modqxZDCC;
+      double modqyZDCC;
+
+      modqxZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Cos(psiZDCA);
+      modqyZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Sin(psiZDCA);
+      modqxZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Cos(psiZDCC);
+      modqyZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Sin(psiZDCC);
+
+      auto psiZDC = TMath::ATan2((modqyZDCC - modqyZDCA), (modqxZDCC - modqxZDCA)); // full event plane from collision
+
+      histos.fill(HIST("hCentrality"), centrality);
+      histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
+
+      // For deduplication of (v0_evt1, v0_evt2) pairs per mixed event
+      std::unordered_map<int, std::set<std::pair<int, int>>> seenMap;
+
+      // Loop over Λ candidates in collision1 (keep psi from here)
+      for (auto& v0_evt1 : groupV0_evt1) {
+  if (!SelectionV0(collision1, v0_evt1)) continue;
+  bool LambdaTag1 = isCompatible(v0_evt1, 0);
+  bool aLambdaTag1 = isCompatible(v0_evt1, 1);
+  ROOT::Math::PxPyPzMVector proton1, pion1, antiproton1, antipion1, LambdaTag1dummy, AntiLambdaTag1dummy;
+  if (LambdaTag1) {
+    proton1 = {v0_evt1.pxpos(), v0_evt1.pypos(), v0_evt1.pzpos(), massPr};
+    antipion1 = {v0_evt1.pxneg(), v0_evt1.pyneg(), v0_evt1.pzneg(), massPi};
+    LambdaTag1dummy=proton1+antipion1;
+  } if (aLambdaTag1) {
+    antiproton1 = {v0_evt1.pxneg(), v0_evt1.pyneg(), v0_evt1.pzneg(), massPr};
+    pion1 = {v0_evt1.pxpos(), v0_evt1.pypos(), v0_evt1.pzpos(), massPi};
+    AntiLambdaTag1dummy=antiproton1+pion1;
+    }
+  if (shouldReject(LambdaTag1, aLambdaTag1, LambdaTag1dummy, AntiLambdaTag1dummy)) {
+    continue;
+  }
+  if (TMath::Abs(v0_evt1.eta()) > 0.8)
+    continue;
+  // Loop over all FIFO pool events (mixed events) for this centrality bin
+  int nMixedEvents = 0;
+  for (auto it = eventPools[bin].rbegin(); it != eventPools[bin].rend() && nMixedEvents < meGrp.nMix; ++it, ++nMixedEvents) {
+    int collision2idx = it->first;
+    v0Candidates& groupV0_evt2 = it->second;
+
+    // Now loop over Λ candidates in collision2 to randomize proton phi* (randomize decay angle)
+    for (auto& v0_evt2 : groupV0_evt2) {
+      if (collision1.index() == collision2idx) continue;
+      /*bool LambdaTag2 = isCompatible(v0_evt2, 0);
+      bool aLambdaTag2 = isCompatible(v0_evt2, 1);
+      if (!LambdaTag2 && !aLambdaTag2) continue;
+
+      // Deduplicate (v0_evt1, v0_evt2) pairs per collision2idx
+      auto key = std::make_pair(v0_evt1.index(), v0_evt2.index());
+      if (!seenMap[collision2idx].insert(key).second) continue;
+
+      ROOT::Math::PxPyPzMVector proton_mix, antiproton_mix, pion_mix, antipion_mix, LambdaTag2dummy, AntiLambdaTag2dummy;
+      if (LambdaTag2) {
+        proton_mix = {v0_evt2.pxpos(), v0_evt2.pypos(), v0_evt2.pzpos(), massPr};
+        antipion_mix = {v0_evt2.pxneg(), v0_evt2.pyneg(), v0_evt2.pzneg(), massPi};
+        LambdaTag2dummy=proton_mix+antipion_mix;
+      } if (aLambdaTag2) {
+        antiproton_mix = {v0_evt2.pxneg(), v0_evt2.pyneg(), v0_evt2.pzneg(), massPr};
+        pion_mix = {v0_evt2.pxpos(), v0_evt2.pypos(), v0_evt2.pzpos(), massPi};
+        AntiLambdaTag2dummy=antiproton_mix+pion_mix;
+      }
+      if (shouldReject(LambdaTag2, aLambdaTag2, LambdaTag2dummy, AntiLambdaTag2dummy)) {
+        continue;
+      }
+      if (TMath::Abs(v0_evt2.eta()) > 0.8)
+        continue;
+      if (LambdaTag1)
+        {
+    double acvalue = 1.0;
+    fillHistograms(1, 0, LambdaTag1dummy, proton_mix, psiZDCC, psiZDCA, psiZDC, centrality, v0_evt1.mLambda(), v0_evt1.pt(), v0_evt1.eta(), acvalue);
+        }
+      if (aLambdaTag1)
+        {
+    double acvalue = 1.0;
+    fillHistograms(0, 1, AntiLambdaTag1dummy, antiproton_mix, psiZDCC, psiZDCA, psiZDC, centrality, v0_evt1.mAntiLambda(), v0_evt1.pt(), v0_evt1.eta(), acvalue);
+    }
+  }
+      }
+
+      } //
+    }
+  }
+      }
+
+      // After processing all mixes, add current event V0s to pool for future mixing
+      auto sliced = V0s.sliceBy(tracksPerCollisionV0Mixed, collision1.index());
+      eventPools[bin].emplace_back(collision1.index(), std::move(sliced));
+
+      // Keep only N last events in FIFO queue
+      if (static_cast<int>(eventPools[bin].size()) > meGrp.nMix) {
+      eventPools[bin].pop_front();
+      }
+    }
+  }
+  PROCESS_SWITCH(lambdapolsp, processDerivedDataMixedFIFO, "Process mixed event using derived data with FIFO method", false);*/
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
