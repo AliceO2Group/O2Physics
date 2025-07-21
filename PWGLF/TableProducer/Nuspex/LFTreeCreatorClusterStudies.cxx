@@ -1004,20 +1004,14 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
 
-    if (setting_smallTable) {
-      m_ClusterStudiesTable(
-        track.p() * track.sign(),
-        track.eta(),
-        track.phi(),
-        track.itsClusterSizes(),
-        partID);
-    } else {
+    m_ClusterStudiesTable(
+      track.p() * track.sign(),
+      track.eta(),
+      track.phi(),
+      track.itsClusterSizes(),
+      partID);
+    if (!setting_smallTable) {
       m_ClusterStudiesTableExtra(
-        track.p() * track.sign(),             // p,
-        track.eta(),                          // eta,
-        track.phi(),                          // phi,
-        track.itsClusterSizes(),              // itsClSize,
-        partID,                               // pdgCode,
         track.tpcInnerParam() * track.sign(), // pTPC,
         track.pidForTracking(),               // PIDinTrk,
         tpcNSigma,                            // TpcNSigma,
