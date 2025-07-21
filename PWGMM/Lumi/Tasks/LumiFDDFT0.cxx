@@ -162,7 +162,6 @@ struct LumiFDDFT0 {
     }};
 
   bool doPVrefit = true;
-
   void init(InitContext&)
   {
     if (doprocessLite == true && doprocessFull == true) {
