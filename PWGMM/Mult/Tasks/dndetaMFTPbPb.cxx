@@ -65,6 +65,7 @@ AxisSpec dcaxyAxis = {500, -1, 50};
 AxisSpec phiAxis = {629, 0, TwoPI, "Rad", "#phi"};
 AxisSpec etaAxis = {20, -4., -2.};
 AxisSpec centAxis{100, 0, 100, "centrality"};
+AxisSpec chiSqAxis = {100, 0., 1000.};
 
 struct DndetaMFTPbPb {
   SliceCache cache;
@@ -275,10 +276,10 @@ struct DndetaMFTPbPb {
       qaregistry.add(
         {"Tracks/Chi2Eta",
          "; #chi^{2}; #it{#eta}; occupancy",
-         {HistType::kTHnSparseF, {{600, 0, 20}, etaAxis, occupancyAxis}}});
+         {HistType::kTHnSparseF, {chiSqAxis, etaAxis, occupancyAxis}}});
       qaregistry.add({"Tracks/Chi2",
                       "; #chi^{2};",
-                      {HistType::kTH2F, {{600, 0, 20}, occupancyAxis}}});
+                      {HistType::kTH2F, {chiSqAxis, occupancyAxis}}});
       qaregistry.add(
         {"Tracks/NclustersEta",
          "; nClusters; #eta; occupancy",
@@ -376,11 +377,11 @@ struct DndetaMFTPbPb {
         {"Tracks/Centrality/Chi2Eta",
          "; #chi^{2}; #it{#eta}; centrality; occupancy",
          {HistType::kTHnSparseF,
-          {{600, 0, 20}, etaAxis, centralityAxis, occupancyAxis}}});
+          {chiSqAxis, etaAxis, centralityAxis, occupancyAxis}}});
       qaregistry.add({"Tracks/Centrality/Chi2",
                       "; #chi^{2}; centrality; occupancy",
                       {HistType::kTHnSparseF,
-                       {{600, 0, 20}, centralityAxis, occupancyAxis}}});
+                       {chiSqAxis, centralityAxis, occupancyAxis}}});
       qaregistry.add({"Tracks/Centrality/NclustersEta",
                       "; nClusters; #eta; centrality; occupancy",
                       {HistType::kTHnSparseF,
