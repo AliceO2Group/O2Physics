@@ -14,21 +14,20 @@
 ///
 /// \author Fabio Colamaria <fabio.colamaria@ba.infn.it>, INFN Bari
 
-#include <vector>
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/HFC/DataModel/CorrelationTables.h"
+
+#include "ALICE3/DataModel/A3DecayFinderTables.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "ALICE3/DataModel/A3DecayFinderTables.h"
-
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/HFC/DataModel/CorrelationTables.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -240,7 +239,7 @@ struct alice3correlatorddbar {
       if (candidate1.isSelD0() >= selectionFlagD0) {                                                 // only reco as D0
         if (candidate1.mcTruthInfo() == 1) {                                                         // also matched as D0
           registry.fill(HIST("hMassD0MCRecSig"), candidate1.m(), candidate1.pt(), efficiencyWeight); // here m is univoque, since a given candidate passes the selection with only a single mass option
-          registry.fill(HIST("hMassD0MCRecSig_NoEff"), candidate1.m(), candidate1.pt());          
+          registry.fill(HIST("hMassD0MCRecSig_NoEff"), candidate1.m(), candidate1.pt());
         } else if (candidate1.mcTruthInfo() == 2) {
           registry.fill(HIST("hMassD0MCRecRefl"), candidate1.m(), candidate1.pt(), efficiencyWeight);
           registry.fill(HIST("hMassD0MCRecRefl_NoEff"), candidate1.m(), candidate1.pt());
