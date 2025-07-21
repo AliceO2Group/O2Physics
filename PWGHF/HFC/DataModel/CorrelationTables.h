@@ -16,15 +16,15 @@
 #ifndef PWGHF_HFC_DATAMODEL_CORRELATIONTABLES_H_
 #define PWGHF_HFC_DATAMODEL_CORRELATIONTABLES_H_
 
-#include <CommonConstants/MathConstants.h>
-#include <Framework/AnalysisDataModel.h> // NOLINT
-#include <Framework/ASoA.h>
-
-#include <cstdint>
+#include "PWGHF/DataModel/CandidateReconstructionTables.h" // IWYU pragma: keep
 
 #include "Common/Core/RecoDecay.h"
 
-#include "PWGHF/DataModel/CandidateReconstructionTables.h" // NOLINT
+#include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {
@@ -147,6 +147,7 @@ DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                             //! D
 DECLARE_SOA_COLUMN(DeltaY, deltaY, float);                                 //! DeltaY between Lc and Hadrons
 DECLARE_SOA_COLUMN(PtLc, ptLc, float);                                     //! Transverse momentum of Lc
 DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);                             //! Transverse momentum of Hadron
+DECLARE_SOA_COLUMN(ChargeCand, chargeCand, int);                           //! store charge of Lc and Sc
 DECLARE_SOA_COLUMN(MLc, mLc, float);                                       //! Invariant mass of Lc
 DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);                         //! ML background score for Lc selection
 DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);                   //! ML prompt score for Lc selection
@@ -216,8 +217,14 @@ DECLARE_SOA_TABLE(TrkRecInfoLc, "AOD", "TRKRECINFOLC", //! Tracks Reconstructed 
                   aod::hf_correlation_lc_hadron::TrackDcaXY,
                   aod::hf_correlation_lc_hadron::TrackDcaZ,
                   aod::hf_correlation_lc_hadron::TrackTPCNClsCrossedRows);
-DECLARE_SOA_TABLE(LcHadronPairY, "AOD", "LCHPAIRY", //! Lc candidates Generated Information
+
+DECLARE_SOA_TABLE(LcHadronPairY, "AOD", "LCHPAIRY",
                   aod::hf_correlation_lc_hadron::DeltaY);
+DECLARE_SOA_TABLE(CandChargePair, "AOD", "CANDCHARGEPAIR",
+                  aod::hf_correlation_lc_hadron::ChargeCand);
+DECLARE_SOA_TABLE(CandCharge, "AOD", "CANDCHARGE",
+                  aod::hf_correlation_lc_hadron::ChargeCand);
+
 // definition of columns and tables for Ds-Hadron correlation pairs
 namespace hf_correlation_ds_hadron
 {

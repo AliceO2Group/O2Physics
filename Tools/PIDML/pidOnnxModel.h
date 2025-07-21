@@ -17,30 +17,31 @@
 #ifndef TOOLS_PIDML_PIDONNXMODEL_H_
 #define TOOLS_PIDML_PIDONNXMODEL_H_
 
-#include <Framework/ASoA.h>
-#include <array>
-#include <algorithm>
-#include <cstdint>
-#include <cstring>
-#include <cstdio>
-#include <limits>
-#include <optional>
-#include <string>
-#include <map>
-#include <type_traits>
-#include <utility>
-#include <memory>
-#include <vector>
-#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
-#else
-#include <onnxruntime_cxx_api.h>
-#endif
-
-#include "rapidjson/document.h"
-#include "rapidjson/filereadstream.h"
-#include "CCDB/CcdbApi.h"
 #include "Tools/PIDML/pidUtils.h"
+//
+#include <CCDB/CcdbApi.h>
+#include <Framework/ASoA.h>
+#include <Framework/Logger.h>
+
+#include <onnxruntime_c_api.h>
+#include <onnxruntime_cxx_api.h>
+#include <rapidjson/document.h>
+#include <rapidjson/filereadstream.h>
+
+#include <algorithm>
+#include <array>
+#include <cassert>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <limits>
+#include <map>
+#include <memory>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 enum PidMLDetector {
   kTPCOnly = 0,
@@ -61,7 +62,7 @@ constexpr MomentumLimitsMatrix defaultModelPLimits({0.0, 0.5, 0.8});
 // TODO: Copied from cefpTask, shall we put it in some common utils code?
 namespace
 {
-bool readJsonFile(const std::string& config, rapidjson::Document& d)
+bool readJsonFile(std::string const& config, rapidjson::Document& d)
 {
   FILE* fp = fopen(config.data(), "rb");
   if (!fp) {
@@ -81,7 +82,7 @@ bool readJsonFile(const std::string& config, rapidjson::Document& d)
 template <typename T>
 struct PidONNXModel {
  public:
-  PidONNXModel(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp,
+  PidONNXModel(std::string const& localPath, std::string const& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi const& ccdbApi, uint64_t timestamp,
                int pid, double minCertainty, const double* pLimits = &pidml_pt_cuts::defaultModelPLimits[0])
     : mPid(pid), mMinCertainty(minCertainty), mPLimits(pLimits, pLimits + kNDetectors)
   {
@@ -93,19 +94,9 @@ struct PidONNXModel {
     Ort::SessionOptions sessionOptions;
     mEnv = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "pid-onnx-inferer");
     LOG(info) << "Loading ONNX model from file: " << modelFile;
-#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-    mSession.reset(new Ort::Experimental::Session{*mEnv, modelFile, sessionOptions});
-#else
     mSession.reset(new Ort::Session{*mEnv, modelFile.c_str(), sessionOptions});
-#endif
     LOG(info) << "ONNX model loaded";
 
-#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-    mInputNames = mSession->GetInputNames();
-    mInputShapes = mSession->GetInputShapes();
-    mOutputNames = mSession->GetOutputNames();
-    mOutputShapes = mSession->GetOutputShapes();
-#else
     Ort::AllocatorWithDefaultOptions tmpAllocator;
     for (size_t i = 0; i < mSession->GetInputCount(); ++i) {
       mInputNames.push_back(mSession->GetInputNameAllocated(i, tmpAllocator).get());
@@ -119,7 +110,6 @@ struct PidONNXModel {
     for (size_t i = 0; i < mSession->GetOutputCount(); ++i) {
       mOutputShapes.emplace_back(mSession->GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape());
     }
-#endif
 
     LOG(debug) << "Input Node Name/Shape (" << mInputNames.size() << "):";
     for (size_t i = 0; i < mInputNames.size(); i++) {
@@ -151,8 +141,8 @@ struct PidONNXModel {
     return getModelOutput(track) >= mMinCertainty;
   }
 
-  int mPid;
-  double mMinCertainty;
+  int mPid{0};
+  double mMinCertainty{0};
 
  private:
   void getModelPaths(std::string const& path, std::string& modelDir, std::string& modelFile, std::string& modelPath, int pid, std::string const& ext)
@@ -170,7 +160,7 @@ struct PidONNXModel {
     modelPath = modelDir + "/" + modelFile;
   }
 
-  void downloadFromCCDB(o2::ccdb::CcdbApi& ccdbApi, std::string const& ccdbFile, uint64_t timestamp, std::string const& localDir, std::string const& localFile)
+  void downloadFromCCDB(o2::ccdb::CcdbApi const& ccdbApi, std::string const& ccdbFile, uint64_t timestamp, std::string const& localDir, std::string const& localFile)
   {
     std::map<std::string, std::string> metadata;
     bool retrieveSuccess = ccdbApi.retrieveBlob(ccdbFile, localDir, metadata, timestamp, false, localFile);
@@ -182,7 +172,7 @@ struct PidONNXModel {
     }
   }
 
-  void loadInputFiles(std::string const& localPath, std::string const& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, int pid, std::string& modelPath)
+  void loadInputFiles(std::string const& localPath, std::string const& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi const& ccdbApi, uint64_t timestamp, int pid, std::string& modelPath)
   {
     rapidjson::Document trainColumnsDoc;
     rapidjson::Document scalingParamsDoc;
@@ -274,12 +264,8 @@ struct PidONNXModel {
     std::vector<float> inputTensorValues = getValues(track);
     std::vector<Ort::Value> inputTensors;
 
-#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-    inputTensors.emplace_back(Ort::Experimental::Value::CreateTensor<float>(inputTensorValues.data(), inputTensorValues.size(), inputShape));
-#else
     Ort::MemoryInfo memInfo = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
     inputTensors.emplace_back(Ort::Value::CreateTensor<float>(memInfo, inputTensorValues.data(), inputTensorValues.size(), inputShape.data(), inputShape.size()));
-#endif
 
     // Double-check the dimensions of the input tensor
     assert(inputTensors[0].IsTensor() &&
@@ -287,9 +273,6 @@ struct PidONNXModel {
     LOG(debug) << "input tensor shape: " << printShape(inputTensors[0].GetTensorTypeAndShapeInfo().GetShape());
 
     try {
-#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-      auto outputTensors = mSession->Run(mInputNames, inputTensors, mOutputNames);
-#else
       Ort::RunOptions runOptions;
       std::vector<const char*> inputNamesChar(mInputNames.size(), nullptr);
       std::transform(std::begin(mInputNames), std::end(mInputNames), std::begin(inputNamesChar),
@@ -299,7 +282,6 @@ struct PidONNXModel {
       std::transform(std::begin(mOutputNames), std::end(mOutputNames), std::begin(outputNamesChar),
                      [&](const std::string& str) { return str.c_str(); });
       auto outputTensors = mSession->Run(runOptions, inputNamesChar.data(), inputTensors.data(), inputTensors.size(), outputNamesChar.data(), outputNamesChar.size());
-#endif
 
       // Double-check the dimensions of the output tensors
       // The number of output tensors is equal to the number of output nodes specified in the Run() call
@@ -331,11 +313,7 @@ struct PidONNXModel {
 
   std::shared_ptr<Ort::Env> mEnv = nullptr;
   // No empty constructors for Session, we need a pointer
-#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-  std::shared_ptr<Ort::Experimental::Session> mSession = nullptr;
-#else
   std::shared_ptr<Ort::Session> mSession = nullptr;
-#endif
 
   std::vector<double> mPLimits;
   std::vector<std::string> mInputNames;

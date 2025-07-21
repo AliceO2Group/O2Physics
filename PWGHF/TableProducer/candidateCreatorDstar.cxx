@@ -16,31 +16,49 @@
 /// \author Deependra Sharma <deependra.sharma@cern.ch>, IITB
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
-// C++
-#include <memory>
-#include <string>
-#include <vector>
-// ROOT
-#include <TPDGCode.h>
-// O2
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-// O2Physics
-#include "Common/Core/trackUtilities.h"
-// PWGLF
-#include "PWGLF/DataModel/mcCentrality.h"
-// PWGHF
 #include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/Utils/utilsPid.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
+
+#include <TH1.h>
+#include <TPDGCode.h>
+
+#include <array>
+#include <cstdint>
+#include <cstdlib>
+#include <memory>
+#include <numeric>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::hf_evsel;
@@ -638,10 +656,10 @@ struct HfCandidateCreatorDstarExpressions {
       }
 
       if (indexRecDstar > -1) {
-        flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
+        flagDstar = signDstar * hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi;
       }
       if (indexRecD0 > -1) {
-        flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiK));
+        flagD0 = signD0 * hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;
       }
 
       // check partly reconstructed decays, namely D0->Kpipi0
@@ -673,11 +691,11 @@ struct HfCandidateCreatorDstarExpressions {
           auto motherParticleDstar = mcParticles.rawIteratorAt(indexRecDstar);
           if (signDstar > 0) {
             if (RecoDecay::isMatchedMCGen(mcParticles, motherParticleDstar, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus, +kPi0}, false, &signDstar, 2)) {
-              flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0PiPi0));
+              flagDstar = signDstar * hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0;
             }
           } else {
             if (RecoDecay::isMatchedMCGen(mcParticles, motherParticleDstar, -Pdg::kDStar, std::array{-kPiPlus, -kPiPlus, +kKPlus, +kPi0}, false, &signDstar, 2)) {
-              flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0PiPi0));
+              flagDstar = signDstar * hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0;
             }
           }
         }
@@ -686,11 +704,11 @@ struct HfCandidateCreatorDstarExpressions {
           auto motherParticleD0 = mcParticles.rawIteratorAt(indexRecD0);
           if (signD0 > 0) {
             if (RecoDecay::isMatchedMCGen(mcParticles, motherParticleD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus, +kPi0}, false, &signD0)) {
-              flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiKPi0));
+              flagD0 = signD0 * hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0;
             }
           } else {
             if (RecoDecay::isMatchedMCGen(mcParticles, motherParticleD0, -Pdg::kD0, std::array{-kPiPlus, +kKPlus, +kPi0}, false, &signD0)) {
-              flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiKPi0));
+              flagD0 = signD0 * hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0;
             }
           }
         }
@@ -714,7 +732,7 @@ struct HfCandidateCreatorDstarExpressions {
       const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
       // Slice the collisions table to get the collision info for the current MC collision
       float centrality{-1.f};
-      uint16_t rejectionMask{0};
+      uint32_t rejectionMask{0u};
       int nSplitColl = 0;
       if constexpr (centEstimator == CentralityEstimator::FT0C) {
         const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());
@@ -764,11 +782,11 @@ struct HfCandidateCreatorDstarExpressions {
             }
           }
           if (RecoDecay::isMatchedMCGen(mcParticles, particleD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0)) {
-            flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
-            flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiK));
+            flagDstar = signDstar * hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi;
+            flagD0 = signD0 * hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;
           } else if (RecoDecay::isMatchedMCGen(mcParticles, particleD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus, +kPi0}, false, &signD0) || RecoDecay::isMatchedMCGen(mcParticles, particleD0, -Pdg::kD0, std::array{-kPiPlus, +kKPlus, +kPi0}, false, &signD0)) {
-            flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0PiPi0));
-            flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiKPi0));
+            flagDstar = signDstar * hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0;
+            flagD0 = signD0 * hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0;
           }
         }
 

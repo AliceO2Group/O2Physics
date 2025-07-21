@@ -15,24 +15,36 @@
 ///
 /// \author Mingze Li <mingze.li@cern.cn>, CCNU
 
-#include <algorithm>
-#include <map>
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-
-#include "PWGLF/DataModel/mcCentrality.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/DerivedTables.h"
 #include "PWGHF/Utils/utilsDerivedData.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <Rtypes.h>
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <cstdlib>
+#include <iterator>
+#include <map>
+#include <numeric>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -53,6 +65,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
     rowsCommon;
   // Candidates
   Produces<o2::aod::HfDstarPars> rowCandidatePar;
+  Produces<o2::aod::HfDstarParD0s> rowCandidateParD0;
   Produces<o2::aod::HfDstarSels> rowCandidateSel;
   Produces<o2::aod::HfDstarMls> rowCandidateMl;
   Produces<o2::aod::HfDstarIds> rowCandidateId;
@@ -61,6 +74,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
   // Switches for filling tables
   HfConfigurableDerivedData confDerData;
   Configurable<bool> fillCandidatePar{"fillCandidatePar", true, "Fill candidate parameters"};
+  Configurable<bool> fillCandidateParD0{"fillCandidateParD0", true, "Fill charm daughter parameters"};
   Configurable<bool> fillCandidateSel{"fillCandidateSel", true, "Fill candidate selection flags"};
   Configurable<bool> fillCandidateMl{"fillCandidateMl", true, "Fill candidate selection ML scores"};
   Configurable<bool> fillCandidateId{"fillCandidateId", true, "Fill original indices from the candidate table"};
@@ -83,7 +97,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
   using TypeMcCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == true;
-  Filter filterMcGenMatching = nabs(aod::hf_cand_dstar::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
+  Filter filterMcGenMatching = nabs(aod::hf_cand_dstar::flagMcMatchGen) == static_cast<int8_t>(hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi);
 
   Preslice<SelectedCandidates> candidatesPerCollision = aod::hf_cand::collisionId;
   Preslice<SelectedCandidatesMc> candidatesMcPerCollision = aod::hf_cand::collisionId;
@@ -97,10 +111,10 @@ struct HfDerivedDataCreatorDstarToD0Pi {
   Partition<SelectedCandidatesMl> candidatesMlAll = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == true;
   Partition<SelectedCandidatesMcMl> candidatesMcMlAll = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == true;
   // partitions for signal and background
-  Partition<SelectedCandidatesMc> candidatesMcSig = nabs(aod::hf_cand_dstar::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
-  Partition<SelectedCandidatesMc> candidatesMcBkg = nabs(aod::hf_cand_dstar::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
-  Partition<SelectedCandidatesMcMl> candidatesMcMlSig = nabs(aod::hf_cand_dstar::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
-  Partition<SelectedCandidatesMcMl> candidatesMcMlBkg = nabs(aod::hf_cand_dstar::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
+  Partition<SelectedCandidatesMc> candidatesMcSig = nabs(aod::hf_cand_dstar::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi);
+  Partition<SelectedCandidatesMc> candidatesMcBkg = nabs(aod::hf_cand_dstar::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi);
+  Partition<SelectedCandidatesMcMl> candidatesMcMlSig = nabs(aod::hf_cand_dstar::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi);
+  Partition<SelectedCandidatesMcMl> candidatesMcMlBkg = nabs(aod::hf_cand_dstar::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi);
 
   void init(InitContext const&)
   {
@@ -118,6 +132,21 @@ struct HfDerivedDataCreatorDstarToD0Pi {
     rowsCommon.fillTablesCandidate(candidate, invMass, y);
     if (fillCandidatePar) {
       rowCandidatePar(
+        candidate.pxD0(),
+        candidate.pyD0(),
+        candidate.pzD0(),
+        candidate.pxSoftPi(),
+        candidate.pySoftPi(),
+        candidate.pzSoftPi(),
+        candidate.signSoftPi(),
+        candidate.impParamSoftPi(),
+        candidate.normalisedImpParamSoftPi(),
+        prongSoftPi.tpcNSigmaPi(),
+        prongSoftPi.tofNSigmaPi(),
+        prongSoftPi.tpcTofNSigmaPi());
+    }
+    if (fillCandidateParD0) {
+      rowCandidateParD0(
         candidate.chi2PCAD0(),
         candidate.cpaD0(),
         candidate.cpaXYD0(),
@@ -131,29 +160,23 @@ struct HfDerivedDataCreatorDstarToD0Pi {
         candidate.pxProng1(),
         candidate.pyProng1(),
         candidate.pzProng1(),
-        candidate.pxD0(),
-        candidate.pyD0(),
-        candidate.pzD0(),
-        candidate.pxSoftPi(),
-        candidate.pySoftPi(),
-        candidate.pzSoftPi(),
-        candidate.signSoftPi(),
         candidate.invMassD0(),
         candidate.impactParameter0(),
         candidate.impactParameter1(),
-        candidate.impParamSoftPi(),
         candidate.impactParameterNormalised0(),
         candidate.impactParameterNormalised1(),
-        candidate.normalisedImpParamSoftPi(),
         prong0.tpcNSigmaPi(),
         prong0.tofNSigmaPi(),
         prong0.tpcTofNSigmaPi(),
+        prong0.tpcNSigmaKa(),
+        prong0.tofNSigmaKa(),
+        prong0.tpcTofNSigmaKa(),
+        prong1.tpcNSigmaPi(),
+        prong1.tofNSigmaPi(),
+        prong1.tpcTofNSigmaPi(),
         prong1.tpcNSigmaKa(),
         prong1.tofNSigmaKa(),
-        prong1.tpcTofNSigmaKa(),
-        prongSoftPi.tpcNSigmaPi(),
-        prongSoftPi.tofNSigmaPi(),
-        prongSoftPi.tpcTofNSigmaPi());
+        prong1.tpcTofNSigmaKa());
     }
     if (fillCandidateSel) {
       rowCandidateSel(
@@ -212,6 +235,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
       // Fill candidate properties
       rowsCommon.reserveTablesCandidates(sizeTableCand);
       reserveTable(rowCandidatePar, fillCandidatePar, sizeTableCand);
+      reserveTable(rowCandidateParD0, fillCandidateParD0, sizeTableCand);
       reserveTable(rowCandidateSel, fillCandidateSel, sizeTableCand);
       reserveTable(rowCandidateMl, fillCandidateMl, sizeTableCand);
       reserveTable(rowCandidateId, fillCandidateId, sizeTableCand);
@@ -229,7 +253,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
           flagMcRec = candidate.flagMcMatchRec();
           origin = candidate.originMcRec();
           if constexpr (onlyBkg) {
-            if (TESTBIT(std::abs(flagMcRec), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) {
+            if (std::abs(flagMcRec) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) {
               continue;
             }
             if (downSampleBkgFactor < 1.) {
@@ -240,7 +264,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
             }
           }
           if constexpr (onlySig) {
-            if (!TESTBIT(std::abs(flagMcRec), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) {
+            if (std::abs(flagMcRec) != hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) {
               continue;
             }
           }

@@ -11,39 +11,39 @@
 //
 // Build hypertriton candidates from V0s and tracks
 
-#include <memory>
-#include <string>
-#include <array>
-#include <vector>
-#include <algorithm>
+#include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "PWGLF/DataModel/LFHypernucleiTables.h"
+#include "PWGLF/Utils/svPoolCreator.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
+#include "Common/Core/PID/PIDTOF.h"
+#include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "PWGLF/DataModel/EPCalibrationTables.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-
+#include "Common/TableProducer/PID/pidTOFBase.h"
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
 
-#include "Common/Core/PID/TPCPIDResponse.h"
-#include "Common/Core/PID/PIDTOF.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "DCAFitter/DCAFitterN.h"
-#include "PWGLF/Utils/svPoolCreator.h"
-#include "PWGLF/DataModel/LFHypernucleiTables.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <algorithm>
+#include <array>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -113,6 +113,8 @@ struct hyperCandidate {
   float massTOFHe3 = 0.f;
   uint8_t nTPCClustersHe3 = 0u;
   uint8_t nTPCClustersPi = 0u;
+  uint8_t nTPCpidClusHe3 = 0u;
+  uint8_t nTPCpidClusPi = 0u;
   uint32_t clusterSizeITSHe3 = 0u;
   uint32_t clusterSizeITSPi = 0u;
 
@@ -168,6 +170,7 @@ struct hyperRecoTask {
 
   Configurable<bool> useCustomVertexer{"useCustomVertexer", false, "Use custom vertexer"};
   Configurable<bool> skipAmbiTracks{"skipAmbiTracks", false, "Skip ambiguous tracks"};
+  Configurable<bool> disableITSROFCut{"disableITSROFCut", false, "Disable ITS ROC cut for event selection"};
   Configurable<float> customVertexerTimeMargin{"customVertexerTimeMargin", 800, "Time margin for custom vertexer (ns)"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 1, 6, particleName, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for He3"};
   Configurable<bool> cfgCompensatePIDinTracking{"cfgCompensatePIDinTracking", true, "If true, divide tpcInnerParam by the electric charge"};
@@ -341,7 +344,7 @@ struct hyperRecoTask {
       initCCDB(bc);
       hEvents->Fill(0.);
 
-      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && !disableITSROFCut) {
         continue;
       }
 
@@ -404,8 +407,10 @@ struct hyperRecoTask {
     hypCand.nSigmaHe3 = computeNSigmaHe3(heTrack);
     hypCand.nTPCClustersHe3 = heTrack.tpcNClsFound();
     hypCand.tpcSignalHe3 = heTrack.tpcSignal();
+    hypCand.nTPCpidClusHe3 = (int16_t)heTrack.tpcNClsFindable() - heTrack.tpcNClsFindableMinusPID();
     hypCand.clusterSizeITSHe3 = heTrack.itsClusterSizes();
     hypCand.nTPCClustersPi = piTrack.tpcNClsFound();
+    hypCand.nTPCpidClusPi = (int16_t)piTrack.tpcNClsFindable() - piTrack.tpcNClsFindableMinusPID();
     hypCand.tpcSignalPi = piTrack.tpcSignal();
     hypCand.tpcChi2He3 = heTrack.tpcChi2NCl();
     hypCand.clusterSizeITSPi = piTrack.itsClusterSizes();
@@ -681,6 +686,7 @@ struct hyperRecoTask {
                       hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
                       hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                       hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
+                      hypCand.nTPCpidClusHe3, hypCand.nTPCpidClusPi,
                       hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3,
                       hypCand.massTOFHe3,
                       hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize);
@@ -715,6 +721,7 @@ struct hyperRecoTask {
                               hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
                               hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                               hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
+                              hypCand.nTPCpidClusHe3, hypCand.nTPCpidClusPi,
                               hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3,
                               hypCand.massTOFHe3,
                               hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize);
@@ -749,7 +756,7 @@ struct hyperRecoTask {
                     hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
                     hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
                     hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
-                    hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
+                    hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi, hypCand.nTPCpidClusHe3, hypCand.nTPCpidClusPi,
                     hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3,
                     hypCand.massTOFHe3,
                     hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize,
@@ -824,7 +831,7 @@ struct hyperRecoTask {
                     -1, -1, -1,
                     -1, -1, -1,
                     -1, -1, -1,
-                    -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, -1, -1, 0, 0,
                     -1, -1, -1, false,
                     chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
                     hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2],

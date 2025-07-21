@@ -13,34 +13,27 @@
 /// \brief Charged-particle jet spectra task
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, Aimeric Landou <aimeric.landou@cern.ch>, Wenhui Feng <wenhui.feng@cern.ch>
 
-#include <cmath>
-#include <TRandom3.h>
-#include <THn.h>
-#include <THnSparse.h>
-#include <string>
-#include <vector>
-
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetFinder.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
 
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
-#include "EventFiltering/filterTables.h"
+#include <THn.h>
+
+#include <cmath>
+#include <string>
+#include <type_traits>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -556,7 +549,7 @@ struct JetSpectraCharged {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
       return;
     }
-    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+    if (std::abs(collision.posZ()) > vertexZCut) {
       return;
     }
     for (auto const& track : tracks) {
@@ -598,7 +591,7 @@ struct JetSpectraCharged {
     }
     registry.fill(HIST("h_collisions"), 1.5);
     registry.fill(HIST("h_collisions_weighted"), 1.5, eventWeight);
-    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+    if (std::abs(collision.posZ()) > vertexZCut) {
       return;
     }
     registry.fill(HIST("h_collisions"), 2.5);
@@ -876,6 +869,7 @@ struct JetSpectraCharged {
     }
     registry.fill(HIST("h_mcColl_counts"), 2.5);
     registry.fill(HIST("h_mcColl_counts_weight"), 2.5, eventWeight);
+    registry.fill(HIST("h_mc_zvertex"), mccollision.posZ(), eventWeight);
 
     bool hasSel8Coll = false;
     for (auto const& collision : collisions) {

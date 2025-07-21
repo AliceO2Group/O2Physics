@@ -14,27 +14,33 @@
 ///
 /// \author Gijs van Weelden <g.van.weelden@cern.ch>
 
-#include <string>
-#include <vector>
-#include "TH1F.h"
-#include "TTree.h"
+#include "JetDerivedDataUtilities.h"
+#include "RecoDecay.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/RunningWorkflowInfo.h"
+#include "PWGJE/Core/JetFindingUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
 
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/Core/JetUtilities.h"
-#include "PWGJE/Core/JetFindingUtilities.h"
-#include "PWGLF/DataModel/V0SelectorTables.h"
+#include <cmath>
+#include <cstdint>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -56,9 +62,9 @@ using MatchedMCPJetsWithConstituents = soa::Join<MCPJets, aod::ChargedMCParticle
 
 // V0 jets
 using DataV0JetsWithConstituents = soa::Join<aod::V0ChargedJets, aod::V0ChargedJetConstituents>;
-using CandidatesV0DataWithFlags = soa::Join<aod::CandidatesV0Data, aod::V0SignalFlags>;
+using CandidatesV0DataWithFlags = aod::CandidatesV0Data;
 
-using CandidatesV0MCDWithLabelsAndFlags = soa::Join<aod::CandidatesV0MCD, aod::McV0Labels, aod::V0SignalFlags>;
+using CandidatesV0MCDWithLabelsAndFlags = soa::Join<aod::CandidatesV0MCD, aod::McV0Labels>;
 using MCDV0Jets = aod::V0ChargedMCDetectorLevelJets;
 using MCDV0JetsWithConstituents = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorLevelJetConstituents>;
 using MatchedMCDV0Jets = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
@@ -2652,9 +2658,9 @@ struct JetFragmentation {
         std::vector<int> state = convertState(M, nV0inJet, nV0Classes);
         std::vector<double> corrected;
         if (doCorrectionWithTracks)
-          corrected = correctedValues(state, values);
-        else
           corrected = correctedValuesPlusTracks<CandidatesV0DataWithFlags, aod::JetTracks>(state, jet);
+        else
+          corrected = correctedValues(state, values);
 
         double ws = stateWeight(state, weights);
         double jetpt = corrected[nV0inJet];

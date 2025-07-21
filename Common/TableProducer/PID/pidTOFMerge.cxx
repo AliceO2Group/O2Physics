@@ -15,29 +15,30 @@
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 ///
 
+#include <map>
+#include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
-#include <string>
-#include <map>
-#include <unordered_map>
 
 // O2 includes
-#include "Framework/runDataProcessing.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "CCDB/BasicCCDBManager.h"
 #include "TOFBase/EventTimeMaker.h"
 
 // O2Physics includes
-#include "TableHelper.h"
-#include "MetadataHelper.h"
 #include "CollisionTypeHelper.h"
+#include "MetadataHelper.h"
+#include "TableHelper.h"
 #include "pidTOFBase.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -45,7 +46,7 @@ using namespace o2::pid;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
-MetadataHelper metadataInfo;
+o2::common::core::MetadataHelper metadataInfo;
 
 // Input data types
 using Run3Trks = o2::soa::Join<aod::TracksIU, aod::TracksExtra>;
@@ -924,7 +925,7 @@ struct tofPidMerge {
       doprocessRun2.value = false;
     } else {
       if (mTOFCalibConfig.autoSetProcessFunctions()) {
-        LOG(info) << "Autodetecting process functions for mass and beta";
+        LOG(info) << "Autodetecting process functions";
         if (metadataInfo.isFullyDefined()) {
           if (metadataInfo.isRun3()) {
             doprocessRun3.value = true;
@@ -972,9 +973,11 @@ struct tofPidMerge {
       doprocessRun2BetaM.value = false;
       doprocessRun3BetaM.value = false;
     } else {
+      LOG(info) << "Table for TOF beta is " << (enableTableBeta ? "enabled" : "disabled");
+      LOG(info) << "Table for TOF mass is " << (enableTableMass ? "enabled" : "disabled");
       if (mTOFCalibConfig.autoSetProcessFunctions()) {
         LOG(info) << "Autodetecting process functions for mass and beta";
-        if (metadataInfo.isFullyDefined()) {
+        if (metadataInfo.isInitialized()) {
           if (metadataInfo.isRun3()) {
             doprocessRun3BetaM.value = true;
             doprocessRun2BetaM.value = false;
@@ -982,7 +985,12 @@ struct tofPidMerge {
             doprocessRun2BetaM.value = true;
             doprocessRun3BetaM.value = false;
           }
+        } else {
+          metadataInfo.print();
+          LOG(warning) << "Metadata is not defined, cannot autodetect process functions for mass and beta";
         }
+      } else {
+        LOG(info) << "Process functions for mass and beta are set manually";
       }
       if (doprocessRun2BetaM && doprocessRun3BetaM) {
         LOG(fatal) << "Both processRun2BetaM and processRun3BetaM are enabled. Pick one of the two";

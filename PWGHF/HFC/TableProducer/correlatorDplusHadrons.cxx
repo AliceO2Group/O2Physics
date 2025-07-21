@@ -13,24 +13,41 @@
 /// \brief D+-Hadrons correlator task - data-like, MC-reco and MC-Gen analyses
 /// \author Shyam Kumar <shyam.kumar@cern.ch>
 
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TPDGCode.h>
+
+#include <array>
+#include <cstdint>
+#include <cstdlib>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -422,7 +439,7 @@ struct HfCorrelatorDplusHadrons {
           efficiencyWeightD = 1. / efficiencyD->at(effBinD);
         }
         // Dplus flag
-        isDplusSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::DplusToPiKPi);
+        isDplusSignal = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi;
         // prompt and non-prompt division
         isDplusPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
         isDplusNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
@@ -531,7 +548,7 @@ struct HfCorrelatorDplusHadrons {
       if (std::abs(particle1.pdgCode()) != Pdg::kDPlus) {
         continue;
       }
-      if (!TESTBIT(std::abs(particle1.flagMcMatchGen()), aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
+      if (std::abs(particle1.flagMcMatchGen()) != hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
         continue;
       }
       double yD = RecoDecay::y(particle1.pVector(), MassDPlus);
@@ -637,7 +654,7 @@ struct HfCorrelatorDplusHadrons {
         continue;
       }
       // Dplus flag
-      bool isDplusSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::DplusToPiKPi);
+      bool isDplusSignal = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi;
       // prompt and non-prompt division
       bool isDplusPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
       bool isDplusNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
@@ -675,7 +692,7 @@ struct HfCorrelatorDplusHadrons {
         std::vector<float> outputMl = {-1., -1., -1.};
         bool isPhysicalPrimary = false;
         int trackOrigin = -1;
-        bool isDplusSignal = std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi;
+        bool isDplusSignal = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi;
         // prompt and non-prompt division
         bool isDplusPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
         if (pAssoc.has_mcParticle()) {

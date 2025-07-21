@@ -12,7 +12,7 @@ import sys
 import numpy as np  # pylint: disable=import-error
 import ROOT  # pylint: disable=import-error
 sys.path.insert(0, '..')
-from utils.style_formatter import set_global_style, set_object_style
+from style_formatter import set_global_style, set_object_style
 
 
 # pylint: disable=too-many-instance-attributes
@@ -110,9 +110,9 @@ class CutVarMinimiser:
         self.unc_frac_nonprompt = np.zeros(shape=self.n_sets)
 
         for i_set, (rawy, effp, effnp) in enumerate(zip(self.raw_yields, self.eff_prompt, self.eff_nonprompt)):
-            self.m_rawy.itemset(i_set, rawy)
-            self.m_eff.itemset((i_set, 0), effp)
-            self.m_eff.itemset((i_set, 1), effnp)
+            self.m_rawy[i_set] = rawy
+            self.m_eff[(i_set, 0)] = effp
+            self.m_eff[(i_set, 1)] = effnp
 
     # pylint: disable=too-many-locals
     def minimise_system(self, correlated=True, precision=1.0e-8, max_iterations=100):
@@ -136,7 +136,7 @@ class CutVarMinimiser:
         self.m_eff = np.matrix(self.m_eff)
         m_corr_yields_old = np.zeros(shape=(2, 1))
 
-        for _ in range(max_iterations):
+        for iteration in range(max_iterations):
             for i_row, (rw_unc_row, effp_unc_row, effnp_unc_row) in enumerate(
                 zip(self.unc_raw_yields, self.unc_eff_prompt, self.unc_eff_nonprompt)
             ):
@@ -165,15 +165,21 @@ class CutVarMinimiser:
                         else:
                             rho = 0.0
                     cov_row_col = rho * unc_row * unc_col
-                    self.m_cov_sets.itemset((i_row, i_col), cov_row_col)
+                    self.m_cov_sets[i_row, i_col] = cov_row_col
 
             self.m_cov_sets = np.matrix(self.m_cov_sets)
-            self.m_weights = np.linalg.inv(np.linalg.cholesky(self.m_cov_sets))
+            try:
+                self.m_weights = np.linalg.inv(np.linalg.cholesky(self.m_cov_sets))
+            except np.linalg.LinAlgError:
+                return False
             self.m_weights = self.m_weights.T * self.m_weights
             m_eff_tr = self.m_eff.T
 
             self.m_covariance = (m_eff_tr * self.m_weights) * self.m_eff
-            self.m_covariance = np.linalg.inv(np.linalg.cholesky(self.m_covariance))
+            try:
+                self.m_covariance = np.linalg.inv(np.linalg.cholesky(self.m_covariance))
+            except np.linalg.LinAlgError:
+                return False
             self.m_covariance = self.m_covariance.T * self.m_covariance
 
             self.m_corr_yields = self.m_covariance * (m_eff_tr * self.m_weights) * self.m_rawy
@@ -188,6 +194,13 @@ class CutVarMinimiser:
                 break
 
             m_corr_yields_old = np.copy(self.m_corr_yields)
+
+        print(f"INFO: number of processed iterations = {iteration+1}\n")
+        if correlated:
+            m_cov_sets_diag = np.diag(self.m_cov_sets)
+            if not (np.all(m_cov_sets_diag[1:] > m_cov_sets_diag[:-1]) or np.all(m_cov_sets_diag[1:] < m_cov_sets_diag[:-1])):
+                print("WARNING! minimise_system(): the residual vector uncertainties elements are not monotonous. Check the input for stability.")
+                print(f"residual vector uncertainties elements = {np.sqrt(m_cov_sets_diag)}\n")
 
         # chi2
         self.chi_2 = float(np.transpose(self.m_res) * self.m_weights * self.m_res)
@@ -211,10 +224,12 @@ class CutVarMinimiser:
                 + der_fnp_np**2 * self.m_covariance.item(1, 1)
                 + 2 * der_fnp_p * der_fnp_np * self.m_covariance.item(1, 0)
             )
-            self.frac_prompt.itemset(i_set, rawyp / (rawyp + rawynp))
-            self.frac_nonprompt.itemset(i_set, rawynp / (rawyp + rawynp))
-            self.unc_frac_prompt.itemset(i_set, unc_fp)
-            self.unc_frac_nonprompt.itemset(i_set, unc_fnp)
+            self.frac_prompt[i_set] = rawyp / (rawyp + rawynp)
+            self.frac_nonprompt[i_set] = rawynp / (rawyp + rawynp)
+            self.unc_frac_prompt[i_set] = unc_fp
+            self.unc_frac_nonprompt[i_set] = unc_fnp
+
+        return True
 
     def get_red_chi2(self):
         """
@@ -263,6 +278,30 @@ class CutVarMinimiser:
         """
 
         return self.m_covariance.item(1, 0)
+
+    def get_prompt_prompt_cov(self):
+        """
+        Helper function to get covariance between prompt and prompt corrected yields
+
+        Returns
+        -----------------------------------------------------
+        - cov_p_np: float
+            covariance between prompt and prompt corrected yields
+        """
+
+        return self.m_covariance.item(0, 0)
+
+    def get_nonprompt_nonprompt_cov(self):
+        """
+        Helper function to get covariance between non-prompt and non-prompt corrected yields
+
+        Returns
+        -----------------------------------------------------
+        - cov_p_np: float
+            covariance between non-prompt and non-prompt corrected yields
+        """
+
+        return self.m_covariance.item(1, 1)
 
     def get_raw_prompt_fraction(self, effacc_p, effacc_np):
         """
@@ -424,7 +463,7 @@ class CutVarMinimiser:
         return self.get_raw_nonprompt_fraction(1.0, 1.0)
 
     # pylint: disable=no-member
-    def plot_result(self, suffix=""):
+    def plot_result(self, suffix="", title=""):
         """
         Helper function to plot minimisation result as a function of cut set
 
@@ -432,6 +471,8 @@ class CutVarMinimiser:
         -----------------------------------------------------
         - suffix: str
             suffix to be added in the name of the output objects
+        - title: str
+            title to be written at the top margin of the output objects
 
         Returns
         -----------------------------------------------------
@@ -528,6 +569,9 @@ class CutVarMinimiser:
         hist_raw_yield_prompt.Draw("histsame")
         hist_raw_yield_nonprompt.Draw("histsame")
         hist_raw_yield_sum.Draw("histsame")
+        tex = ROOT.TLatex()
+        tex.SetTextSize(0.04)
+        tex.DrawLatexNDC(0.05, 0.95, title)
         canvas.Modified()
         canvas.Update()
 
@@ -540,7 +584,7 @@ class CutVarMinimiser:
 
         return canvas, histos, leg
 
-    def plot_cov_matrix(self, correlated=True, suffix=""):
+    def plot_cov_matrix(self, correlated=True, suffix="", title=""):
         """
         Helper function to plot covariance matrix
 
@@ -550,6 +594,8 @@ class CutVarMinimiser:
             correlation between cut sets
         - suffix: str
             suffix to be added in the name of the output objects
+        - title: str
+            title to be written at the top margin of the output objects
 
         Returns
         -----------------------------------------------------
@@ -563,6 +609,7 @@ class CutVarMinimiser:
             padleftmargin=0.14,
             padbottommargin=0.12,
             padrightmargin=0.12,
+            padtopmargin = 0.075,
             palette=ROOT.kRainBow,
         )
 
@@ -592,12 +639,15 @@ class CutVarMinimiser:
 
         canvas = ROOT.TCanvas(f"cCorrMatrixCutSets{suffix}", "", 500, 500)
         hist_corr_matrix.Draw("colz")
+        tex = ROOT.TLatex()
+        tex.SetTextSize(0.04)
+        tex.DrawLatexNDC(0.05, 0.95, title)
         canvas.Modified()
         canvas.Update()
 
         return canvas, hist_corr_matrix
 
-    def plot_efficiencies(self, suffix=""):
+    def plot_efficiencies(self, suffix="", title=""):
         """
         Helper function to plot efficiencies as a function of cut set
 
@@ -605,6 +655,8 @@ class CutVarMinimiser:
         -----------------------------------------------------
         - suffix: str
             suffix to be added in the name of the output objects
+        - title: str
+            title to be written at the top margin of the output objects
 
         Returns
         -----------------------------------------------------
@@ -616,7 +668,7 @@ class CutVarMinimiser:
             needed otherwise it is destroyed
         """
 
-        set_global_style(padleftmargin=0.14, padbottommargin=0.12, titleoffset=1.2)
+        set_global_style(padleftmargin=0.14, padbottommargin=0.12, titleoffset=1.2, padtopmargin = 0.075)
 
         hist_eff_prompt = ROOT.TH1F(
             f"hEffPromptVsCut{suffix}",
@@ -678,12 +730,15 @@ class CutVarMinimiser:
         leg.AddEntry(hist_eff_prompt, "prompt", "pl")
         leg.AddEntry(hist_eff_nonprompt, "non-prompt", "pl")
         leg.Draw()
+        tex = ROOT.TLatex()
+        tex.SetTextSize(0.04)
+        tex.DrawLatexNDC(0.05, 0.95, title)
         canvas.Modified()
         canvas.Update()
 
         return canvas, histos, leg
 
-    def plot_fractions(self, suffix=""):
+    def plot_fractions(self, suffix="", title=""):
         """
         Helper function to plot fractions as a function of cut set
 
@@ -691,6 +746,8 @@ class CutVarMinimiser:
         -----------------------------------------------------
         - suffix: str
             suffix to be added in the name of the output objects
+        - title: str
+            title to be written at the top margin of the output objects
 
         Returns
         -----------------------------------------------------
@@ -702,7 +759,7 @@ class CutVarMinimiser:
             needed otherwise it is destroyed
         """
 
-        set_global_style(padleftmargin=0.14, padbottommargin=0.12, titleoffset=1.2)
+        set_global_style(padleftmargin=0.14, padbottommargin=0.12, titleoffset=1.2, padtopmargin = 0.075)
 
         hist_f_prompt = ROOT.TH1F(
             f"hFracPromptVsCut{suffix}",
@@ -757,7 +814,91 @@ class CutVarMinimiser:
         leg.AddEntry(hist_f_prompt, "prompt", "pl")
         leg.AddEntry(hist_f_nonprompt, "non-prompt", "pl")
         leg.Draw()
+        tex = ROOT.TLatex()
+        tex.SetTextSize(0.04)
+        tex.DrawLatexNDC(0.05, 0.95, title)
         canvas.Modified()
         canvas.Update()
+
+        return canvas, histos, leg
+
+    # pylint: disable=no-member
+    def plot_uncertainties(self, suffix="", title=""):
+        """
+        Helper function to plot uncertainties as a function of cut set
+
+        Parameters
+        -----------------------------------------------------
+        - suffix: str
+            suffix to be added in the name of the output objects
+        - title: str
+            title to be written at the top margin of the output objects
+
+        Returns
+        -----------------------------------------------------
+        - canvas: ROOT.TCanvas
+            canvas with plot
+        - histos: dict
+            dictionary of ROOT.TH1F with uncertainties distributions for
+            raw yield and residual vector
+        - leg: ROOT.TLegend
+            needed otherwise it is destroyed
+        """
+
+        set_global_style(padleftmargin=0.16, padbottommargin=0.12, padtopmargin=0.075, titleoffsety=1.6)
+
+        hist_raw_yield_unc = ROOT.TH1F(
+            f"hRawYieldUncVsCut{suffix}",
+            ";cut set;runc.",
+            self.n_sets,
+            -0.5,
+            self.n_sets - 0.5,
+        )
+
+        hist_residual_unc = ROOT.TH1F(
+            f"hResidualUncVsCut{suffix}",
+            ";cut set;unc.",
+            self.n_sets,
+            -0.5,
+            self.n_sets - 0.5,
+        )
+
+        m_cov_sets_diag = np.diag(self.m_cov_sets)
+        m_cov_sets_diag = np.sqrt(m_cov_sets_diag)
+
+        for i_bin, (unc_rawy, unc_res) in enumerate(zip(self.unc_raw_yields, m_cov_sets_diag)):
+            hist_raw_yield_unc.SetBinContent(i_bin + 1, unc_rawy)
+            hist_residual_unc.SetBinContent(i_bin+1, unc_res)
+
+        set_object_style(hist_raw_yield_unc, color=ROOT.kRed + 1, fillstyle=0)
+        set_object_style(hist_residual_unc, color=ROOT.kAzure + 4, fillstyle=0)
+
+        canvas = ROOT.TCanvas(f"cUncVsCut{suffix}", "", 500, 500)
+        canvas.DrawFrame(
+            -0.5,
+            0.0,
+            self.n_sets - 0.5,
+            hist_residual_unc.GetMaximum() * 1.2,
+            ";cut set;unc.",
+        )
+        leg = ROOT.TLegend(0.6, 0.75, 0.8, 0.85)
+        leg.SetBorderSize(0)
+        leg.SetFillStyle(0)
+        leg.SetTextSize(0.04)
+        leg.AddEntry(hist_raw_yield_unc, "raw yield", "l")
+        leg.AddEntry(hist_residual_unc, "residual vector", "l")
+        leg.Draw()
+        hist_raw_yield_unc.Draw("histsame")
+        hist_residual_unc.Draw("histsame")
+        tex = ROOT.TLatex()
+        tex.SetTextSize(0.04)
+        tex.DrawLatexNDC(0.05, 0.95, title)
+        canvas.Modified()
+        canvas.Update()
+
+        histos = {
+            "rawy": hist_raw_yield_unc,
+            "residual": hist_residual_unc,
+        }
 
         return canvas, histos, leg

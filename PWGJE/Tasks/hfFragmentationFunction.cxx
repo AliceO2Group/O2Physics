@@ -16,36 +16,36 @@
 ///
 /// The task store data relevant to the calculation of hadronization observables radial
 /// profile and/or jet momentum fraction for charmed hadrons
-#include <vector>
-#include <string>
+
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+//
+#include "PWGHF/Core/DecayChannels.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
 #include "TVector3.h"
+#include <TH1.h>
 
-#include "fastjet/PseudoJet.hh"
-#include "fastjet/ClusterSequenceArea.hh"
+#include <Rtypes.h>
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/JetSubstructure.h"
-#include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetHFUtilities.h"
-#include "PWGJE/Core/JetUtilities.h"
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -327,7 +327,7 @@ struct HfFragmentationFunction {
 
           // reflection information for storage: D0 = +1, D0bar = -1, neither = 0
           int matchedFrom = 0;
-          int decayChannel = 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;
+          int decayChannel = o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;
           int selectedAs = 0;
 
           if (mcdd0cand.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level
@@ -418,7 +418,7 @@ struct HfFragmentationFunction {
 
           // reflection information for storage: D0 = +1, D0bar = -1, neither = 0
           int matchedFrom = 0;
-          int decayChannel = 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;
+          int decayChannel = o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;
           int selectedAs = 0;
 
           if (mcdd0cand.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level

@@ -76,8 +76,8 @@ using CollBracket = o2::math_utils::Bracket<int>;
 
 using McIter = aod::McParticles::iterator;
 using CollBracket = o2::math_utils::Bracket<int>;
-using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults>;
-using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults>;
+using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::FT0Mults>;
+using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::FT0Mults>;
 using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::TOFSignal, aod::TOFEvTime>;
 using TrackCandidatesMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
 
@@ -91,6 +91,7 @@ static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3",
 // constexpr float pionchargedMass = o2::constants::physics::MassPiPlus;
 constexpr int Li4PDG = 1000030040;
 constexpr int ProtonPDG = PDG_t::kProton;
+constexpr int PionPDG = PDG_t::kPiPlus;
 constexpr int He3PDG = o2::constants::physics::Pdg::kHelium3;
 constexpr float CommonInite = 0.0f;
 // constexpr int pichargedPDG = 211;
@@ -161,6 +162,10 @@ struct He3HadCandidate {
   float momHadMC = -99.f;
   float etaHadMC = -99.f;
   float phiHadMC = -99.f;
+
+  bool isHe3Primary = false;
+  bool isHadPrimary = false;
+  bool isMotherLi4 = false;
 
   // collision information
   int32_t collisionID = 0;
@@ -243,7 +248,10 @@ struct he3HadronFemto {
   HistogramRegistry mQaRegistry{
     "QA",
     {
+      {"hVtxZBefore", "Vertex distribution in Z before selections;Z (cm)", {HistType::kTH1F, {{400, -20.0, 20.0}}}},
       {"hVtxZ", "Vertex distribution in Z;Z (cm)", {HistType::kTH1F, {{400, -20.0, 20.0}}}},
+      {"hCentralityFT0A", ";Centrality FT0A", {HistType::kTH1F, {{100, 0, 100.0}}}},
+      {"hCentralityFT0C", ";Centrality FT0C", {HistType::kTH1F, {{100, 0, 100.0}}}},
       {"hNcontributor", "Number of primary vertex contributor", {HistType::kTH1F, {{2000, 0.0f, 2000.0f}}}},
       {"hTrackSel", "Accepted tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
       {"hEvents", "; Events;", {HistType::kTH1F, {{3, -0.5, 2.5}}}},
@@ -360,6 +368,7 @@ struct he3HadronFemto {
   bool selectCollision(const Tcollision& collision, const aod::BCsWithTimestamps&)
   {
     mQaRegistry.fill(HIST("hEvents"), 0);
+    mQaRegistry.fill(HIST("hVtxZBefore"), collision.posZ());
 
     if constexpr (isMC) {
       if (/*!collision.sel8() ||*/ std::abs(collision.posZ()) > settingCutVertex) {
@@ -383,6 +392,8 @@ struct he3HadronFemto {
     mQaRegistry.fill(HIST("hEvents"), 1);
     mQaRegistry.fill(HIST("hNcontributor"), collision.numContrib());
     mQaRegistry.fill(HIST("hVtxZ"), collision.posZ());
+    mQaRegistry.fill(HIST("hCentralityFT0A"), collision.centFT0A());
+    mQaRegistry.fill(HIST("hCentralityFT0C"), collision.centFT0C());
     return true;
   }
 
@@ -632,17 +643,26 @@ struct he3HadronFemto {
   }
 
   template <typename Mc>
-  void fillCandidateInfoMC(const Mc& mctrackHe3, const Mc& mctrackHad, const Mc& mctrackMother, He3HadCandidate& he3Hadcand)
+  void fillCandidateInfoMC(const Mc& mctrackHe3, const Mc& mctrackHad, He3HadCandidate& he3Hadcand)
   {
+    LOG(info) << "--------------------------Filling candidate info MC";
     he3Hadcand.momHe3MC = mctrackHe3.pt() * (mctrackHe3.pdgCode() > 0 ? 1 : -1);
     he3Hadcand.etaHe3MC = mctrackHe3.eta();
     he3Hadcand.phiHe3MC = mctrackHe3.phi();
     he3Hadcand.momHadMC = mctrackHad.pt() * (mctrackHad.pdgCode() > 0 ? 1 : -1);
     he3Hadcand.etaHadMC = mctrackHad.eta();
     he3Hadcand.phiHadMC = mctrackHad.phi();
+    he3Hadcand.isHe3Primary = mctrackHe3.isPhysicalPrimary();
+    he3Hadcand.isHadPrimary = mctrackHad.isPhysicalPrimary();
+  }
+
+  template <typename Mc>
+  void fillMotherInfoMC(const Mc& mctrackHe3, const Mc& mctrackHad, const Mc& mctrackMother, He3HadCandidate& he3Hadcand)
+  {
     he3Hadcand.l4PtMC = mctrackMother.pt() * (mctrackMother.pdgCode() > 0 ? 1 : -1);
     const double eLit = mctrackHe3.e() + mctrackHad.e();
     he3Hadcand.l4MassMC = std::sqrt(eLit * eLit - mctrackMother.p() * mctrackMother.p());
+    he3Hadcand.isMotherLi4 = std::abs(mctrackMother.pdgCode()) == Li4PDG;
   }
 
   template <typename Ttrack>
@@ -757,7 +777,10 @@ struct he3HadronFemto {
         he3Hadcand.etaHadMC,
         he3Hadcand.phiHadMC,
         he3Hadcand.l4PtMC,
-        he3Hadcand.l4MassMC);
+        he3Hadcand.l4MassMC,
+        he3Hadcand.isMotherLi4,
+        he3Hadcand.isHe3Primary,
+        he3Hadcand.isHadPrimary);
     }
     if (settingFillMultiplicity) {
       outputMultiplicityTable(
@@ -830,7 +853,8 @@ struct he3HadronFemto {
       }
       if (daughtHe3 && daughtHad) {
         He3HadCandidate he3Hadcand;
-        fillCandidateInfoMC(mcHe3, mcHad, mcParticle, he3Hadcand);
+        fillCandidateInfoMC(mcHe3, mcHad, he3Hadcand);
+        fillMotherInfoMC(mcHe3, mcHad, mcParticle, he3Hadcand);
         auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
         fillTable(he3Hadcand, collision, /*isMC*/ true);
       }
@@ -939,7 +963,8 @@ struct he3HadronFemto {
             if (!fillCandidateInfo(heTrack, prTrack, collBracket, collisions, he3Hadcand, tracks, /*mix*/ false)) {
               continue;
             }
-            fillCandidateInfoMC(mctrackHe3, mctrackHad, mothertrack, he3Hadcand);
+            fillCandidateInfoMC(mctrackHe3, mctrackHad, he3Hadcand);
+            fillMotherInfoMC(mctrackHe3, mctrackHad, mothertrack, he3Hadcand);
             fillHistograms(he3Hadcand);
             auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
             fillTable(he3Hadcand, collision, /*isMC*/ true);
@@ -952,6 +977,61 @@ struct he3HadronFemto {
     fillMcParticles(collisions, mcParticles, filledMothers);
   }
   PROCESS_SWITCH(he3HadronFemto, processMC, "Process MC", false);
+
+  void processPiHe3MC(const CollisionsFullMC& collisions, const aod::BCsWithTimestamps& bcs, const TrackCandidatesMC& tracks, const aod::McParticles& /* mcParticles */)
+  {
+    mGoodCollisions.clear();
+    mGoodCollisions.resize(collisions.size(), false);
+
+    LOG(info) << "processPiHe3MC begin";
+
+    for (const auto& collision : collisions) {
+
+      mTrackPairs.clear();
+
+      if (!selectCollision</*isMC*/ true>(collision, bcs)) {
+        continue;
+      }
+
+      const uint64_t collIdx = collision.globalIndex();
+      mGoodCollisions[collIdx] = true;
+      auto trackTableThisCollision = tracks.sliceBy(mPerColMC, collIdx);
+      trackTableThisCollision.bindExternalIndices(&tracks);
+
+      pairTracksSameEvent(trackTableThisCollision);
+
+      for (const auto& trackPair : mTrackPairs) {
+
+        auto heTrack = tracks.rawIteratorAt(trackPair.tr0Idx);
+        auto piTrack = tracks.rawIteratorAt(trackPair.tr1Idx);
+        auto collBracket = trackPair.collBracket;
+
+        if (!heTrack.has_mcParticle() || !piTrack.has_mcParticle()) {
+          continue;
+        }
+
+        auto mctrackHe3 = heTrack.mcParticle();
+        auto mctrackHad = piTrack.mcParticle();
+
+        if (std::abs(mctrackHe3.pdgCode()) != He3PDG || std::abs(mctrackHad.pdgCode()) != PionPDG) {
+          continue;
+        }
+        LOG(info) << "only pi-He3";
+
+        He3HadCandidate he3Hadcand;
+        if (!fillCandidateInfo(heTrack, piTrack, collBracket, collisions, he3Hadcand, tracks, /*mix*/ false)) {
+          continue;
+        }
+
+        fillCandidateInfoMC(mctrackHe3, mctrackHad, he3Hadcand);
+        fillHistograms(he3Hadcand);
+        LOG(info) << "fillHistograms done";
+        auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
+        fillTable(he3Hadcand, collision, /*isMC*/ true);
+      }
+    }
+  }
+  PROCESS_SWITCH(he3HadronFemto, processPiHe3MC, "Process pi-He3 MC", false);
 
   void processSameEventPools(const CollisionsFull& collisions, const TrackCandidates& tracks, const aod::AmbiguousTracks& ambiguousTracks, const aod::BCsWithTimestamps& bcs)
   {
@@ -1067,7 +1147,8 @@ struct he3HadronFemto {
           if (!fillCandidateInfo(heTrack, prTrack, collBracket, collisions, he3Hadcand, tracks, /*mix*/ false)) {
             continue;
           }
-          fillCandidateInfoMC(mctrackHe3, mctrackHad, mothertrackHe, he3Hadcand);
+          fillCandidateInfoMC(mctrackHe3, mctrackHad, he3Hadcand);
+          fillMotherInfoMC(mctrackHe3, mctrackHad, mothertrackHe, he3Hadcand);
           fillHistograms(he3Hadcand);
           auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
           fillTable(he3Hadcand, collision, /*isMC*/ true);

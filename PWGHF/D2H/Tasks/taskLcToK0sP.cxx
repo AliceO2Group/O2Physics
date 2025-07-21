@@ -17,16 +17,25 @@
 ///
 /// \note based on taskD0.cxx, taskLc.cxx
 
-#include <vector>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdlib>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -257,17 +266,9 @@ struct HfTaskLcToK0sP {
                TracksWPid const&)
   {
     for (const auto& candidate : candidates) {
-      /*
-      // no such selection for LcK0sp for now - it is the only cascade
-      if (!(candidate.hfflag() & 1 << D0ToPiK)) {
-        continue;
-      }
-      */
-
       if (etaCandMax >= 0. && std::abs(candidate.eta()) > etaCandMax) {
         continue;
       }
-
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandRecoMax) {
         continue;
       }

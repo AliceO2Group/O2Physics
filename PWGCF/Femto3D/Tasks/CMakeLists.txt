@@ -23,3 +23,8 @@ o2physics_add_dpl_workflow(femto3d-pair-task-mc
     SOURCES femto3dPairTaskMC.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto3d-pid-optimization
+    SOURCES PIDoptimization.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)

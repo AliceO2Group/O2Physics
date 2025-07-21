@@ -47,7 +47,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::evsel;
 
-MetadataHelper metadataInfo; // Metadata helper
+o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 
 using BCsWithRun2InfosTimestampsAndMatches = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>;
 using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
@@ -1223,7 +1223,7 @@ struct LumiTask {
     LOGP(debug, "Dummy process function for Run 2");
   }
 
-  PROCESS_SWITCH(LumiTask, processRun2, "Process Run2 lumi task", false);
+  PROCESS_SWITCH(LumiTask, processRun2, "Process Run2 lumi task", true);
 
   void processRun3(BCsWithBcSelsRun3 const& bcs, aod::FT0s const&)
   {
