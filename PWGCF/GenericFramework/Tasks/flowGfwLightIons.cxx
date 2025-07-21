@@ -869,7 +869,7 @@ struct FlowGfwLightIons {
         if (acceptedTracks.nPos < 2 || acceptedTracks.nNeg < 2) // o2-linter: disable=magic-number (at least two tracks in each subevent)
           return;
       if (cfgConsistentEventFlag & 8)
-        if (acceptedTracks.nPos < 2 || acceptedTracks.nMid < 2 || acceptedTracks.nNeg < 2)  // o2-linter: disable=magic-number (at least two tracks in all three subevents)
+        if (acceptedTracks.nPos < 2 || acceptedTracks.nMid < 2 || acceptedTracks.nNeg < 2) // o2-linter: disable=magic-number (at least two tracks in all three subevents)
           return;
     }
     if (!cfgFillWeights)
