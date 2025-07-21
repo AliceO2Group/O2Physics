@@ -26,11 +26,16 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCPi>;
+using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa>;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSel>;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSel>;
 
 struct sigmaminustask {
+
+  // Output Tables
+  Produces<aod::SlimKinkCands> outputDataTable;
+  Produces<aod::SlimKinkCandsMC> outputDataTableMC;
+
   // Histograms are defined with HistogramRegistry
   HistogramRegistry rEventSelection{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rSigmaMinus{"sigmaminus", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -39,6 +44,8 @@ struct sigmaminustask {
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<float> cutNSigmaPi{"cutNSigmaPi", 4, "NSigmaTPCPion"};
 
+  Configurable<bool> fillOutputTree{"fillOutputTree", true, "If true, fill the output tree with Kink candidates"};
+  
   Preslice<aod::KinkCands> mPerCol = aod::track::collisionId;
 
   void init(InitContext const&)
@@ -71,14 +78,26 @@ struct sigmaminustask {
       return;
     }
     rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
+
     for (const auto& kinkCand : KinkCands) {
       auto dauTrack = kinkCand.trackDaug_as<TracksFull>();
+
       if (abs(dauTrack.tpcNSigmaPi()) > cutNSigmaPi) {
         continue;
       }
+
       rSigmaMinus.fill(HIST("h2MassSigmaMinusPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
       rSigmaMinus.fill(HIST("h2SigmaMassVsXiMass"), kinkCand.mXiMinus(), kinkCand.mSigmaMinus());
       rSigmaMinus.fill(HIST("h2NSigmaPiPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tpcNSigmaPi());
+    
+      if(fillOutputTree) {
+        outputDataTable(kinkCand.xDecVtx(), kinkCand.yDecVtx(), kinkCand.zDecVtx(),
+                        kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth(),
+                        kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug(),
+                        kinkCand.dcaMothPv(), kinkCand.dcaDaugPv(), kinkCand.dcaKinkTopo(),
+                        kinkCand.mothSign(), dauTrack.tpcNSigmaPi(), dauTrack.tpcNSigmaPr(), dauTrack.tpcNSigmaKa());
+      }
+
     }
   }
   PROCESS_SWITCH(sigmaminustask, processData, "Data processing", true);
@@ -92,7 +111,9 @@ struct sigmaminustask {
 
       rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
       auto kinkCandPerColl = KinkCands.sliceBy(mPerCol, collision.globalIndex());
+
       for (const auto& kinkCand : kinkCandPerColl) {
+
         auto dauTrack = kinkCand.trackDaug_as<TracksFull>();
         auto mothTrack = kinkCand.trackMoth_as<TracksFull>();
         if (dauTrack.sign() != mothTrack.sign()) {
@@ -106,6 +127,7 @@ struct sigmaminustask {
         rSigmaMinus.fill(HIST("h2MassSigmaMinusPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
         rSigmaMinus.fill(HIST("h2SigmaMassVsXiMass"), kinkCand.mXiMinus(), kinkCand.mSigmaMinus());
         rSigmaMinus.fill(HIST("h2NSigmaPiPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tpcNSigmaPi());
+        
         // do MC association
         auto mcLabSigma = trackLabelsMC.rawIteratorAt(mothTrack.globalIndex());
         auto mcLabPiDau = trackLabelsMC.rawIteratorAt(dauTrack.globalIndex());
@@ -123,10 +145,23 @@ struct sigmaminustask {
               continue;
             }
             rSigmaMinus.fill(HIST("h2MassPtMCRec"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
+
+            // fill the output table with Mc information
+            outputDataTableMC(kinkCand.xDecVtx(), kinkCand.yDecVtx(), kinkCand.zDecVtx(),
+                              kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth(),
+                              kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug(),
+                              kinkCand.dcaMothPv(), kinkCand.dcaDaugPv(), kinkCand.dcaKinkTopo(),
+                              kinkCand.mothSign(),
+                              dauTrack.tpcNSigmaPi(), dauTrack.tpcNSigmaPr(), dauTrack.tpcNSigmaKa(),
+                              mcTrackSigma.pdgCode(), mcTrackPiDau.pdgCode(),
+                              kinkCand.ptMoth(), kinkCand.mSigmaMinus());
+
           }
-        }
-      }
-    }
+        } // MC association and selection
+      } // kink cand loop
+    } // collision loop
+
+    // Loop over all generated particles to fill MC histograms
     for (const auto& mcPart : particlesMC) {
       if (std::abs(mcPart.pdgCode()) != 3112 || std::abs(mcPart.y()) > 0.5) {
         continue;
@@ -136,7 +171,7 @@ struct sigmaminustask {
       }
       bool hasSigmaDaughter = false;
       for (const auto& daughter : mcPart.daughters_as<aod::McParticles>()) {
-        if (std::abs(daughter.pdgCode()) == 211) { // Sigma PDG code
+        if (std::abs(daughter.pdgCode()) == 211) { // Pi PDG code
           hasSigmaDaughter = true;
           break; // Found a pi daughter, exit loop
         }
@@ -149,6 +184,7 @@ struct sigmaminustask {
       rSigmaMinus.fill(HIST("h2MassPtMCGen"), sigmaSign * mcPart.pt(), mcMass);
     }
   }
+
   PROCESS_SWITCH(sigmaminustask, processMC, "MC processing", false);
 };
 

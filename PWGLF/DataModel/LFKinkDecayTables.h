@@ -47,6 +47,17 @@ DECLARE_SOA_COLUMN(DcaMothPv, dcaMothPv, float);     //! DCA of the mother to th
 DECLARE_SOA_COLUMN(DcaDaugPv, dcaDaugPv, float);     //! DCA of the daughter kink to the primary vertex
 DECLARE_SOA_COLUMN(DcaKinkTopo, dcaKinkTopo, float); //! DCA of the kink topology
 
+DECLARE_SOA_COLUMN(NSigmaTPCPi, nSigmaTPCPi, float); //! Number of sigmas for the pion candidate from Sigma kink in TPC
+DECLARE_SOA_COLUMN(NSigmaTPCPr, nSigmaTPCPr, float); //! Number of sigmas for the proton candidate from Sigma kink in TPC
+DECLARE_SOA_COLUMN(NSigmaTPCKa, nSigmaTPCKa, float); //! Number of sigmas for the kaon candidate from Sigma kink in TPC
+
+// MC Columns
+DECLARE_SOA_COLUMN(MothPdgCode, mothPdgCode, int);      //! PDG code of the Sigma daughter
+DECLARE_SOA_COLUMN(DaugPdgCode, daugPdgCode, int);      //! PDG code of the kink daughter
+DECLARE_SOA_COLUMN(PtMC, ptMC, float);                   //! pT of the candidate in MC
+DECLARE_SOA_COLUMN(MassMC, massMC, float);               //! Invariant mass of the candidate in MC
+
+
 // DYNAMIC COLUMNS
 
 DECLARE_SOA_DYNAMIC_COLUMN(PxDaugNeut, pxDaugNeut, //! Px of the daughter neutral particle
@@ -119,6 +130,26 @@ DECLARE_SOA_TABLE(KinkCandsUnbound, "AOD", "UBKINKCANDS",
                   kinkcand::MSigmaMinus<kinkcand::PxMoth, kinkcand::PyMoth, kinkcand::PzMoth, kinkcand::PxDaug, kinkcand::PyDaug, kinkcand::PzDaug>,
                   kinkcand::MSigmaPlus<kinkcand::PxMoth, kinkcand::PyMoth, kinkcand::PzMoth, kinkcand::PxDaug, kinkcand::PyDaug, kinkcand::PzDaug>,
                   kinkcand::MXiMinus<kinkcand::PxMoth, kinkcand::PyMoth, kinkcand::PzMoth, kinkcand::PxDaug, kinkcand::PyDaug, kinkcand::PzDaug>);
+
+DECLARE_SOA_TABLE(SlimKinkCands, "AOD", "SLIMKINKCANDS", 
+                  kinkcand::XDecVtx, kinkcand::YDecVtx, kinkcand::ZDecVtx,
+                  kinkcand::PxMoth, kinkcand::PyMoth, kinkcand::PzMoth,
+                  kinkcand::PxDaug, kinkcand::PyDaug, kinkcand::PzDaug,
+                  kinkcand::DcaMothPv, kinkcand::DcaDaugPv, kinkcand::DcaKinkTopo,
+                  kinkcand::MothSign, 
+                  kinkcand::NSigmaTPCPi, kinkcand::NSigmaTPCPr, kinkcand::NSigmaTPCKa);
+
+DECLARE_SOA_TABLE(SlimKinkCandsMC, "AOD", "SLIMKINKCANDSMC", 
+                  kinkcand::XDecVtx, kinkcand::YDecVtx, kinkcand::ZDecVtx,
+                  kinkcand::PxMoth, kinkcand::PyMoth, kinkcand::PzMoth,
+                  kinkcand::PxDaug, kinkcand::PyDaug, kinkcand::PzDaug,
+                  kinkcand::DcaMothPv, kinkcand::DcaDaugPv, kinkcand::DcaKinkTopo,
+                  kinkcand::MothSign,
+                  kinkcand::NSigmaTPCPi, kinkcand::NSigmaTPCPr, kinkcand::NSigmaTPCKa,
+                  kinkcand::MothPdgCode, kinkcand::DaugPdgCode,
+                  kinkcand::PtMC, kinkcand::MassMC);
+
+
 
 } // namespace o2::aod
 
