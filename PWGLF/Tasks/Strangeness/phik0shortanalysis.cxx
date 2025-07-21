@@ -970,7 +970,7 @@ struct Phik0shortanalysis {
     auto pdgTrack = pdgDB->GetParticle(mcParticle.pdgCode());
     if (pdgTrack == nullptr)
       return false;
-    if (pdgTrack->Charge() < trackConfigs.cfgMinAbsCharge)
+    if (std::abs(pdgTrack->Charge()) < trackConfigs.cfgMinAbsCharge)
       return false;
 
     return true;
