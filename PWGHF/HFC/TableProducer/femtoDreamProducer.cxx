@@ -713,7 +713,7 @@ struct HfFemtoDreamProducer {
     fillCharmHadronTable<DecayChannel::LcToPKPi, false, false>(col, tracks, candidates);
   }
   PROCESS_SWITCH(HfFemtoDreamProducer, processDataLcToPKPi,
-                 "Provide experimental data for lctopkpi femto", false);
+                 "Provide experimental data for Lc(PKPi)-proton femto", false);
 
   void processDataLcToPKPiWithML(FemtoFullCollision const& col,
                                  aod::BCsWithTimestamps const&,
