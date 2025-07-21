@@ -476,7 +476,7 @@ struct HfCorrelatorLcScHadrons {
   {
     bool isPhysicalPrimary = false;
     int trackOrigin = -1;
-    double_t cent = 100.0; // will be updated later
+    float cent = 100.0; // will be updated later
 
     entryCandHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                         track.eta() - candidate.eta(),
@@ -1022,7 +1022,7 @@ struct HfCorrelatorLcScHadrons {
         int8_t chargeAssoc = pdg->GetParticle(particleAssoc.pdgCode())->Charge(); // Retrieve charge
         chargeAssoc = chargeAssoc / std::abs(chargeAssoc);
         registry.fill(HIST("hPtParticleAssocMcGen"), particleAssoc.pt());
-        double_t cent = 100.0; // will be updated later
+        float cent = 100.0; // will be updated later
 
         entryCandHadronPair(getDeltaPhi(particleAssoc.phi(), particle.phi()),
                             particleAssoc.eta() - particle.eta(),
@@ -1171,7 +1171,7 @@ struct HfCorrelatorLcScHadrons {
         }
         int8_t chargeLc = pdg->GetParticle(candidate.pdgCode())->Charge();        // Retrieve charge
         int8_t chargeAssoc = pdg->GetParticle(particleAssoc.pdgCode())->Charge(); // Retrieve charge
-        double_t cent = 100.0;                                                    // will be updated later
+        float cent = 100.0;                                                       // will be updated later
 
         int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
         bool isPrompt = candidate.originMcGen() == RecoDecay::OriginType::Prompt;

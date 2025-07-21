@@ -162,7 +162,6 @@ DECLARE_SOA_COLUMN(IsPrompt, isPrompt, bool);                              //! U
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);            //! Used in MC-Rec, primary associated particles
 DECLARE_SOA_COLUMN(IsAutoCorrelated, isAutoCorrelated, bool);              //! Correlation Status
 DECLARE_SOA_COLUMN(Cent, cent, float);
-DECLARE_SOA_COLUMN(Zv, zv, float);
 DECLARE_SOA_COLUMN(PrNsigmTPC, prNsigmTPC, float); //! Associated Particle TPC nSigma proton
 DECLARE_SOA_COLUMN(KaNsigmTPC, kaNsigmTPC, float); //! Associated Particle TPC nSigma Kaon
 DECLARE_SOA_COLUMN(PiNsigmTPC, piNsigmTPC, float); //! Associated Particle TPC nSigma Pion
