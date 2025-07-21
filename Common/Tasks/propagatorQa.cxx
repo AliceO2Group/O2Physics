@@ -102,12 +102,12 @@ struct propagatorQa {
     ccdb->setFatalWhenNull(false);
 
     // output objects
-    const AxisSpec axisX{(int)NbinsX, 0.0f, +250.0f, "X value"};
-    const AxisSpec axisDCAxy{(int)NbinsDCA, -windowDCA, windowDCA, "DCA_{xy} (cm)"};
-    const AxisSpec axisPt{(int)NbinsPt, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec axisPtCoarse{(int)NbinsPtCoarse, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec axisTanLambda{(int)NbinsTanLambda, -TanLambdaLimit, +TanLambdaLimit, "tan(#lambda)"};
-    const AxisSpec axisDeltaPt{(int)NbinsDeltaPt, -DeltaPtLimit, +DeltaPtLimit, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisX{NbinsX, 0.0f, +250.0f, "X value"};
+    const AxisSpec axisDCAxy{NbinsDCA, -windowDCA, windowDCA, "DCA_{xy} (cm)"};
+    const AxisSpec axisPt{NbinsPt, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisPtCoarse{NbinsPtCoarse, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisTanLambda{NbinsTanLambda, -TanLambdaLimit, +TanLambdaLimit, "tan(#lambda)"};
+    const AxisSpec axisDeltaPt{NbinsDeltaPt, -DeltaPtLimit, +DeltaPtLimit, "#it{p}_{T} (GeV/#it{c})"};
 
     // All tracks
     histos.add("hTrackX", "hTrackX", kTH1F, {axisX});
@@ -147,8 +147,8 @@ struct propagatorQa {
     histos.add("hdcaXYusedInSVertexer", "hdcaXYusedInSVertexer", kTH1F, {axisDCAxy});
     histos.add("hUpdateRadiiusedInSVertexer", "hUpdateRadiiusedInSVertexer", kTH1F, {axisX});
     // bit packed ITS cluster map
-    const AxisSpec axisITSCluMap{(int)128, -0.5f, +127.5f, "Packed ITS map"};
-    const AxisSpec axisRadius{(int)dQANBinsRadius, 0.0f, +50.0f, "Radius (cm)"};
+    const AxisSpec axisITSCluMap{128, -0.5f, +127.5f, "Packed ITS map"};
+    const AxisSpec axisRadius{dQANBinsRadius, 0.0f, +50.0f, "Radius (cm)"};
 
     // Histogram to bookkeep cluster maps
     histos.add("h2dITSCluMap", "h2dITSCluMap", kTH3D, {axisITSCluMap, axisRadius, axisPtCoarse});
@@ -275,7 +275,7 @@ struct propagatorQa {
       // ITS cluster map
       float lMCCreation = TMath::Sqrt(mctrack.vx() * mctrack.vx() + mctrack.vy() * mctrack.vy());
 
-      histos.fill(HIST("h2dITSCluMap"), (float)track.itsClusterMap(), lMCCreation, track.pt());
+      histos.fill(HIST("h2dITSCluMap"), static_cast<float>(track.itsClusterMap()), lMCCreation, track.pt());
 
       if (lIsPrimary) {
         histos.fill(HIST("hPrimaryDeltaTanLambdaVsPt"), track.tgl(), track.tgl() - lTrackParametrization.getTgl());
@@ -293,7 +293,7 @@ struct propagatorQa {
         histos.fill(HIST("hPrimaryDeltaDCAs"), lCircleDCA - lDCA);
         histos.fill(HIST("hPrimaryDeltaDCAsVsPt"), track.pt(), lCircleDCA - lDCA);
         histos.fill(HIST("hPrimaryRecalculatedDeltaDCAsVsPt"), track.pt(), lRecalculatedDCA - lDCA);
-        histos.fill(HIST("h2dITSCluMapPrimaries"), (float)track.itsClusterMap(), lMCCreation, track.pt());
+        histos.fill(HIST("h2dITSCluMapPrimaries"), static_cast<float>(track.itsClusterMap()), lMCCreation, track.pt());
       }
       // determine if track was used in svertexer
       bool usedInSVertexer = false;
@@ -390,7 +390,7 @@ struct propagatorQa {
       // ITS cluster map
       float lMCCreation = 0.1; // dummy value, we don't know
 
-      histos.fill(HIST("h2dITSCluMap"), (float)track.itsClusterMap(), lMCCreation, track.pt());
+      histos.fill(HIST("h2dITSCluMap"), static_cast<float>(track.itsClusterMap()), lMCCreation, track.pt());
 
       // A hack: use DCA as equiv to primary
       if (TMath::Abs(lDCA) < 0.05) { // 500 microns
@@ -408,7 +408,7 @@ struct propagatorQa {
         histos.fill(HIST("hPrimaryDeltaDCAs"), lCircleDCA - lDCA);
         histos.fill(HIST("hPrimaryDeltaDCAsVsPt"), track.pt(), lCircleDCA - lDCA);
         histos.fill(HIST("hPrimaryRecalculatedDeltaDCAsVsPt"), track.pt(), lRecalculatedDCA - lDCA);
-        histos.fill(HIST("h2dITSCluMapPrimaries"), (float)track.itsClusterMap(), lMCCreation, track.pt());
+        histos.fill(HIST("h2dITSCluMapPrimaries"), static_cast<float>(track.itsClusterMap()), lMCCreation, track.pt());
       }
 
       // determine if track was used in svertexer
