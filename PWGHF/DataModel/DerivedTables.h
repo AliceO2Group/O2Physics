@@ -940,7 +940,7 @@ DECLARE_SOA_TABLE_STAGED(HfDsMls, "HFDSML", //! Table with candidate selection M
 DECLARE_SOA_TABLE_STAGED(HfDsMcs, "HFDSMC", //! Table with MC candidate info
                          hf_cand_mc::FlagMcMatchRec,
                          hf_cand_mc::OriginMcRec,
-                         hf_cand_mc::IsCandidateSwapped, // useless
+                         hf_cand_mc::IsCandidateSwapped,
                          hf_cand_mc::FlagMcDecayChanRec,
                          o2::soa::Marker<MarkerDs>);
 
