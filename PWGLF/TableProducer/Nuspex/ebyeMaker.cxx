@@ -257,6 +257,7 @@ struct EbyeMaker {
   Configurable<float> antidPtItsClsSizeCut{"antidPtItsClsSizeCut", 10.f, "pt for cluster size cut for antideuterons"};
 
   Configurable<float> trklEtaMax{"trklEtaMax", 0.8f, "maximum eta for run 2 tracklets"};
+  Configurable<bool> ptCutForMixing{"ptCutForMixing", true, "toggle pt range to select global tracks for mixing"};
   Configurable<LabeledArray<float>> cfgTrackSels{"cfgTrackSels", {kTrackSels, 1, 12, particleName, trackSelsNames}, "Track selections"};
 
   std::array<float, kNpart> ptMin;
@@ -571,7 +572,9 @@ struct EbyeMaker {
         continue;
       }
       histos.fill(HIST("QA/tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
-
+      if ((trackPt < ptMin[0] || trackPt > ptMax[0]) && ptCutForMixing) {
+        continue;
+      }
       nTracksColl++;
 
       for (int iP{0}; iP < kNpart; ++iP) {
