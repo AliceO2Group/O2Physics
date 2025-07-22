@@ -102,7 +102,6 @@ struct PiDecandidate {
   std::array<float, 3> momDe = {99.f, 99.f, 99.f};
   std::array<float, 3> momPi = {99.f, 99.f, 99.f};
 
-
   float signDe = 1.f;
   float signPi = 1.f;
   float invMass = -10.f;
@@ -288,7 +287,7 @@ struct PiDeuteronFemto {
     for (int i = 0; i < numParticles; i++) {
       mBBparamsDe[i] = settingBetheBlochParams->get("De", Form("p%i", i));
     }
-    mBBparamsDe[5] = settingBetheBlochParams->get("De", "resolution"); 
+    mBBparamsDe[5] = settingBetheBlochParams->get("De", "resolution");
 
     std::vector<std::string> selectionLabels = {"All", "Track selection", "PID"};
     for (int i = 0; i < Selections::kAll; i++) {
@@ -403,7 +402,7 @@ struct PiDeuteronFemto {
     auto tpcNSigmaPi = candidate.tpcNSigmaPi();
     mQaRegistry.fill(HIST("h2NsigmaPiTPC_preselection"), candidate.tpcInnerParam(), tpcNSigmaPi);
     if (std::abs(candidate.pt()) < settingCutPiptMin || std::abs(candidate.pt()) > settingCutPiptMax)
-    return false;
+      return false;
     if (candidate.hasTOF() && candidate.tpcInnerParam() > settingCutPinMinTOFPi) {
       auto tofNSigmaPi = candidate.tofNSigmaPi();
       auto combNsigma = std::sqrt(tofNSigmaPi * tofNSigmaPi + tpcNSigmaPi * tpcNSigmaPi);
@@ -415,12 +414,12 @@ struct PiDeuteronFemto {
       if (combNsigma > settingCutNsigmaTOFTPCPi) {
         return false;
       }
-      mQaRegistry.fill(HIST("h2NsigmaPiTPC"), candidate.sign() *candidate.pt(), tpcNSigmaPi);
-      mQaRegistry.fill(HIST("h2NsigmaPiTOF"), candidate.sign() *candidate.pt(), tofNSigmaPi);
-      mQaRegistry.fill(HIST("h2NsigmaPiComb"), candidate.sign() *candidate.pt(), combNsigma);
+      mQaRegistry.fill(HIST("h2NsigmaPiTPC"), candidate.sign() * candidate.pt(), tpcNSigmaPi);
+      mQaRegistry.fill(HIST("h2NsigmaPiTOF"), candidate.sign() * candidate.pt(), tofNSigmaPi);
+      mQaRegistry.fill(HIST("h2NsigmaPiComb"), candidate.sign() * candidate.pt(), combNsigma);
       return true;
     } else if (std::abs(tpcNSigmaPi) < settingCutNsigmaTPCPi) {
-      mQaRegistry.fill(HIST("h2NsigmaPiTPC"), candidate.sign() *candidate.pt(), tpcNSigmaPi);
+      mQaRegistry.fill(HIST("h2NsigmaPiTPC"), candidate.sign() * candidate.pt(), tpcNSigmaPi);
       return true;
     }
     return false;
@@ -444,16 +443,16 @@ struct PiDeuteronFemto {
       return false;
     }
     float tpcNSigmaDe;
-   if(settingUseBBcomputeDeNsigma) {
-     tpcNSigmaDe = computeNSigmaDe(candidate);
-    }else{
-     tpcNSigmaDe = candidate.tpcNSigmaDe();
+    if (settingUseBBcomputeDeNsigma) {
+      tpcNSigmaDe = computeNSigmaDe(candidate);
+    } else {
+      tpcNSigmaDe = candidate.tpcNSigmaDe();
     }
-  
+
     mQaRegistry.fill(HIST("h2NsigmaDeTPC_preselection"), candidate.sign() * candidate.pt(), tpcNSigmaDe);
     mQaRegistry.fill(HIST("h2NsigmaDeTPC_preselecComp"), candidate.sign() * candidate.pt(), candidate.tpcNSigmaDe());
     if (std::abs(candidate.pt()) < settingCutDeptMin || std::abs(candidate.pt()) > settingCutDeptMax)
-    return false;
+      return false;
     if (candidate.hasTOF() && candidate.tpcInnerParam() > settingCutPinMinTOFITSDe) {
       auto tofNSigmaDe = candidate.tofNSigmaDe();
       auto combNsigma = std::sqrt(tofNSigmaDe * tofNSigmaDe + tpcNSigmaDe * tpcNSigmaDe);
@@ -475,7 +474,7 @@ struct PiDeuteronFemto {
       }
       mQaRegistry.fill(HIST("h2NsigmaDeTPC"), candidate.sign() * candidate.pt(), tpcNSigmaDe);
       mQaRegistry.fill(HIST("h2NSigmaDeITS"), candidate.sign() * candidate.pt(), itsnSigmaDe);
-      //mQaRegistry.fill(HIST("h2NsigmaDeComb"), candidate.sign() * candidate.pt(), combNsigma);
+      // mQaRegistry.fill(HIST("h2NsigmaDeComb"), candidate.sign() * candidate.pt(), combNsigma);
       mQaRegistry.fill(HIST("h2dEdxDecandidates"), candidate.sign() * tpcInnerParam, candidate.tpcSignal());
       return true;
     }
