@@ -37,6 +37,7 @@
 #include "TPDGCode.h"
 #include "TRandom.h"
 #include "TVector3.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::soa;
