@@ -171,15 +171,15 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 
 	void init(InitContext const&)
 	{
-		std::vector<bool> allProcesses{doprocessXic0WithDCAFitterNoCent, doprocessXic0WithKFParticleNoCent, doprocessXicpWithDCAFitterNoCent, doprocessXicpWithKFParticleNoCent, doprocessCollisionsNoCent};
+		//std::vector<bool> allProcesses{doprocessXic0WithDCAFitterNoCent, doprocessXic0WithKFParticleNoCent, doprocessXicpWithDCAFitterNoCent, doprocessXicpWithKFParticleNoCent, doprocessCollisionsNoCent};
 		std::vector<bool> processesXic0{doprocessXic0WithDCAFitterNoCent, doprocessXic0WithKFParticleNoCent};
 		std::vector<bool> processesXicp{doprocessXicpWithDCAFitterNoCent, doprocessXicpWithKFParticleNoCent};
 		std::vector<bool> processesCollMonitoring{doprocessCollisionsNoCent};
 
 		// Exit if workflow is not configured correctly - None of the workflows were enablec 
-		if (std::accumulate(allProcesses.begin(), allProcesses.end(), 0) == 0) {
-			LOGP(fatal, "No process function enabled or More than one process function enabled. Select one process function");
-		}
+		//if (std::accumulate(allProcesses.begin(), allProcesses.end(), 0) == 0) {
+		//		LOGP(fatal, "No process function enabled or More than one process function enabled. Select one process function");
+		//}
 
 		// Exit if workflow is not configured correctly - More than one process enabled for Xic0
 		if (std::accumulate(processesXic0.begin(), processesXic0.end(), 0) > 1) {
@@ -192,7 +192,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 		}
 
 		// Exit if workflow is not configured correctly - More than one process enabled for collision monitoring 
-		if (std::accumulate(processesCollMonitoring.begin(), processesCollMonitoring.end(), 1) > 1) {
+		if (std::accumulate(processesCollMonitoring.begin(), processesCollMonitoring.end(), 0) > 1) {
 			LOGP(fatal, "More than one process fucntion for CollMonitoring was enabled. Please choose only one process function");
 		}
 
@@ -347,7 +347,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 			}
 			auto casc = cascAodElement.cascData_as<CascFull>(); 
 			auto trackCharmBachelor = cand.prong0_as<TracksWCovDcaExtraPidPrPi>();
-			auto cascCharge = casc.sign() > 0 ? 1 : -1;
+			auto chargeCasc = casc.sign() > 0 ? 1 : -1;
 
 			if (configs.doCascadePreselection) {
 				if (std::abs(casc.dcaXYCascToPV()) > configs.dcaXYToPVCascadeMax) {
@@ -391,9 +391,9 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 			}
 			
 			o2::track::TrackParCov trackCasc;
-			if (cascCharge < 0) { // Xi-
+			if (chargeCasc < 0) { // Xi-
 				trackCasc = o2::track::TrackParCov(vertexCasc, pVecCasc, covCasc, -1, true);
-			} else if(cascCharge >0 ) { // Xi+
+			} else if(chargeCasc >0 ) { // Xi+
 				trackCasc = o2::track::TrackParCov(vertexCasc, pVecCasc, covCasc, 1, true);
 			} else {
 				continue;
@@ -462,32 +462,26 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 			auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
 			
 			//------------------------------Get PID Information-----------------------------
+			// Charm Bachelor Pion
 			float nSigTpcPiFromXic0 = trackCharmBachelor.tpcNSigmaPi();
 			float nSigTofPiFromXic0 = trackCharmBachelor.tofNSigmaPi();
-			
+			// Bachelor pion
 			auto trackPionFromXi = casc.bachelor_as<TracksWCovDcaExtraPidPrPi>();
 			float nSigTpcBachelorPi = trackPionFromXi.tpcNSigmaPi();
 			float nSigTofBachelorPi = trackPionFromXi.tofNSigmaPi();
+			// V0 daughters 
+			auto trackPosLambdaDaughter = casc.posTrack_as<TracksWCovDcaExtraPidPrPi>(); // If charge of cascade is negative, this should be track of proton
+			auto trackNegLambdaDaughter = casc.negTrack_as<TracksWCovDcaExtraPidPrPi>(); // If charge of cascade is negative, this shoud be track of pion
 
-			auto trackPosLambdaDaughter = casc.posTrack_as<TracksWCovDcaExtraPidPrPi>();
-			auto trackNegLambdaDaughter = casc.negTrack_as<TracksWCovDcaExtraPidPrPi>();
-			float pPiFromLambda, pPrFromLambda;
-			float nSigTpcPiFromLambda, nSigTofPiFromLambda, nSigTpcPrFromLambda, nSigTofPrFromLambda;
-			if (cascCharge < 0) { // Xi- -> Lambda0 + Pi- -> (Pr + Pi-) + Pi-
-				pPiFromLambda = trackNegLambdaDaughter.p();
-				nSigTpcPiFromLambda = trackNegLambdaDaughter.tpcNSigmaPi();
-				nSigTofPiFromLambda = trackNegLambdaDaughter.tofNSigmaPi();
-				pPrFromLambda = trackPosLambdaDaughter.p();
-				nSigTpcPrFromLambda = trackPosLambdaDaughter.tpcNSigmaPr();
-				nSigTofPrFromLambda = trackPosLambdaDaughter.tofNSigmaPr();
-			} else {	// Xi+ -> anit-lambda0 + Pi+ -> (anti-Pr + Pi+) + pi+
-				pPiFromLambda = trackPosLambdaDaughter.p();
-				nSigTpcPiFromLambda = trackPosLambdaDaughter.tpcNSigmaPi();
-				nSigTofPiFromLambda = trackPosLambdaDaughter.tofNSigmaPi();
-				pPrFromLambda = trackNegLambdaDaughter.p();
-				nSigTpcPrFromLambda = trackNegLambdaDaughter.tpcNSigmaPr();
-				nSigTofPrFromLambda = trackNegLambdaDaughter.tofNSigmaPr();
-			}
+			auto trackProtonFromLambda = chargeCasc < 0 ? trackPosLambdaDaughter : trackNegLambdaDaughter;
+			auto trackPionFromLambda = chargeCasc < 0 ? trackNegLambdaDaughter : trackPosLambdaDaughter;
+
+			float pPrFromLambda = trackProtonFromLambda.p();
+			float nSigTpcPrFromLambda = trackProtonFromLambda.tpcNSigmaPr();
+			float nSigTofPrFromLambda = trackProtonFromLambda.tofNSigmaPr();
+			float pPiFromLambda = trackPionFromLambda.p();
+			float nSigTpcPiFromLambda = trackPionFromLambda.tpcNSigmaPi();
+			float nSigTofPiFromLambda = trackPionFromLambda.tofNSigmaPi();
 
 			//------------------------------Fill QA histograms-----------------------------
 			if (configs.fillHistograms) {
@@ -523,7 +517,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 				/* Decay length error */
 				errorDecayLength, errorDecayLengthXY,
 				/* Chi2CPA, InvMass, cascade charge */
-				chi2SV, massXiPi, cascCharge,
+				chi2SV, massXiPi, chargeCasc,
 				/* Cascade, charm bachelor's momentum */
 				pVecXi[0], pVecXi[1], pVecXi[2],
 				pVecPi[0], pVecPi[1], pVecPi[2],
@@ -580,8 +574,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 				continue;
 			}
 			auto casc = cascAodElement.kfCascData_as<KFCascFull>(); // -> Need to understand this
-			auto trackCharmBachelor = cand.prong0_as<TracksWCovDcaExtraPidPrPi>();
-			auto cascCharge = casc.sign() > 0 ? 1 : -1;
+			auto chargeCasc = casc.sign() > 0 ? 1 : -1;
 
 			if (configs.doCascadePreselection) {
 				if (std::abs(casc.dcaXYCascToPV()) > configs.dcaXYToPVCascadeMax) {
@@ -591,7 +584,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 					continue;
 				}
 			}
-
+			
 			if (configs.fillHistograms) {
 				registry.fill(HIST("hCandCounter"), CascPreSel); 
 				registry.fill(HIST("hXiMassAfterConstrain"), casc.mXi());
@@ -624,6 +617,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 			KFParticle kfPv(kfpVertex); // -> For calculation of DCAs to PV
 
 			// convert charm bachelor pion tracks into KFParticle object
+			auto trackCharmBachelor = cand.prong0_as<TracksWCovDcaExtraPidPrPi>();
 			KFPTrack kfpTrackCharmBachelor = createKFPTrackFromTrack(trackCharmBachelor);
 			KFParticle kfCharmBachelor(kfpTrackCharmBachelor, kPiPlus);
 
@@ -739,6 +733,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 			float kfDecayLengthXYNormalised = ldlXYFromKF(kfXic0, kfPv);
 
 			//-----Get PID information-----
+			// Charm Bachelor pion
 			float nSigTpcPiFromXic0 = trackCharmBachelor.tpcNSigmaPi();
 			float nSigTofPiFromXic0 = trackCharmBachelor.tofNSigmaPi();
 			// Bachelor pion(pion from cascade decay)
@@ -746,27 +741,18 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 			float nSigTpcBachelorPi = trackPionFromXi.tpcNSigmaPi();
 			float nSigTofBachelorPi = trackPionFromXi.tofNSigmaPi();
 			// V0 daughters
-			auto trackPosLambdaDaughter = casc.posTrack_as<TracksWCovDcaExtraPidPrPi>();
-			auto trackNegLambdaDaughter = casc.negTrack_as<TracksWCovDcaExtraPidPrPi>();
-			float pPiFromLambda, pPrFromLambda;
-			float nSigTpcPiFromLambda, nSigTofPiFromLambda;
-			float nSigTpcPrFromLambda, nSigTofPrFromLambda;
-			if (casc.sign() < 0) { // xi- -> lambda pi- -> (p pi-)pi-
-								   // FIXME If this hypothesis is correct, bachelor pion's sign should be negative -> Please check!
-				pPrFromLambda = trackPosLambdaDaughter.p();
-				pPiFromLambda = trackNegLambdaDaughter.p();
-				nSigTpcPrFromLambda = trackPosLambdaDaughter.tpcNSigmaPr();
-				nSigTofPrFromLambda = trackPosLambdaDaughter.tofNSigmaPr();
-				nSigTpcPiFromLambda = trackNegLambdaDaughter.tpcNSigmaPi();
-				nSigTofPiFromLambda = trackNegLambdaDaughter.tofNSigmaPi();
-			} else { // xi+ -> lambda pi+ -> (anti-p pi+)pi+
-				pPrFromLambda = trackNegLambdaDaughter.p();
-				pPiFromLambda = trackPosLambdaDaughter.p();
-				nSigTpcPrFromLambda = trackNegLambdaDaughter.tpcNSigmaPr();
-				nSigTofPrFromLambda = trackNegLambdaDaughter.tofNSigmaPr();
-				nSigTpcPiFromLambda = trackPosLambdaDaughter.tpcNSigmaPi();
-				nSigTofPiFromLambda = trackPosLambdaDaughter.tofNSigmaPi();
-			}
+			auto trackPosLambdaDaughter = casc.posTrack_as<TracksWCovDcaExtraPidPrPi>(); // If charge of cascade is negative, this should be track of proton
+			auto trackNegLambdaDaughter = casc.negTrack_as<TracksWCovDcaExtraPidPrPi>(); // If charge of cascade is negative, this shoud be track of pion
+
+			auto trackProtonFromLambda = chargeCasc < 0 ? trackPosLambdaDaughter : trackNegLambdaDaughter;
+			auto trackPionFromLambda = chargeCasc < 0 ? trackNegLambdaDaughter : trackPosLambdaDaughter;
+
+			float pPrFromLambda = trackProtonFromLambda.p();
+			float nSigTpcPrFromLambda = trackProtonFromLambda.tpcNSigmaPr();
+			float nSigTofPrFromLambda = trackProtonFromLambda.tofNSigmaPr();
+			float pPiFromLambda = trackPionFromLambda.p();
+			float nSigTpcPiFromLambda = trackPionFromLambda.tpcNSigmaPi();
+			float nSigTofPiFromLambda = trackPionFromLambda.tofNSigmaPi();
 
 			//------------------------------Calculate physical quantities and fill candidate table------------------------------
 			if (configs.fillHistograms) {
@@ -803,7 +789,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 					/*DecayLength error*/
 					errKfDecayLength, errKfDecayLengthXY,
 					/*Chi2 of Geo from KF method, Invmass, cascade charge*/
-					chi2GeoXic0, massXiPi, cascCharge,
+					chi2GeoXic0, massXiPi, chargeCasc,
 					/*Cascade, charm bachelor's momentum*/
 					kfXi.GetPx(), kfXi.GetPy(), kfXi.GetPz(),
 					kfCharmBachelor.GetPx(), kfCharmBachelor.GetPy(), kfCharmBachelor.GetPz(),
@@ -1322,9 +1308,9 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 			auto trackNegLambdaDaughter = casc.negTrack_as<TracksWCovDcaExtraPidPrPi>();
 			float pPiFromLambda, pPrFromLambda, nSigTpcPiFromLambda, nSigTofPiFromLambda, nSigTpcPrFromLambda, nSigTofPrFromLambda;
 
-			auto cascCharge = casc.sign() > 0 ? 1 : -1;
+			auto chargeCasc = casc.sign() > 0 ? 1 : -1;
 
-			if (cascCharge < 0) {
+			if (chargeCasc < 0) {
 				pPiFromLambda = trackNegLambdaDaughter.p();
 				nSigTpcPiFromLambda = trackNegLambdaDaughter.tpcNSigmaPi();
 				nSigTofPiFromLambda = trackNegLambdaDaughter.tofNSigmaPi();
