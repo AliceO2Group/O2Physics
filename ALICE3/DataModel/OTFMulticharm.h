@@ -95,7 +95,6 @@ DECLARE_SOA_COLUMN(PiccHasRichSignal, piccHasRichSignal, bool);
 DECLARE_SOA_COLUMN(PiccRichNSigma, piccRichNSigma, float);
 DECLARE_SOA_COLUMN(PiccPdgCode, piccPdgCode, int);
 
-
 // Daughter info
 DECLARE_SOA_COLUMN(PosPt, posPt, float);
 DECLARE_SOA_COLUMN(PosEta, posEta, float);
@@ -125,8 +124,8 @@ DECLARE_SOA_TABLE(MCharmCores, "AOD", "MCharmCores",
                   otfmulticharm::XiccDauDCA,
                   otfmulticharm::XicMass,
                   otfmulticharm::XiccMass,
-                  otfmulticharm::Pt,
-                  otfmulticharm::Eta,
+                  otfmulticharm::XiccPt,
+                  otfmulticharm::XiccEta,
 
                   otfmulticharm::XiDCAxy,
                   otfmulticharm::XiDCAz,
@@ -150,7 +149,7 @@ DECLARE_SOA_TABLE(MCharmCores, "AOD", "MCharmCores",
                   otfmulticharm::Pi1cPt,
                   otfmulticharm::Pi2cPt,
                   otfmulticharm::PiccPt);
-                  
+
 DECLARE_SOA_TABLE(MCharmPID, "AOD", "MCharmPID",
                   otfmulticharm::Pi1cTofDeltaInner,
                   otfmulticharm::Pi1cTofNSigmaInner,
@@ -159,7 +158,7 @@ DECLARE_SOA_TABLE(MCharmPID, "AOD", "MCharmPID",
                   otfmulticharm::Pi1cHasRichSignal,
                   otfmulticharm::Pi1cRichNSigma,
                   otfmulticharm::Pi1cPdgCode,
-                  
+
                   otfmulticharm::Pi2cTofDeltaInner,
                   otfmulticharm::Pi2cTofNSigmaInner,
                   otfmulticharm::Pi2cTofDeltaOuter,
@@ -176,7 +175,6 @@ DECLARE_SOA_TABLE(MCharmPID, "AOD", "MCharmPID",
                   otfmulticharm::PiccRichNSigma,
                   otfmulticharm::PiccPdgCode);
 
-
 DECLARE_SOA_TABLE(MCharmExtra, "AOD", "MCharmExtra",
                   otfmulticharm::BachPt,
                   otfmulticharm::BachEta,
@@ -187,7 +185,7 @@ DECLARE_SOA_TABLE(MCharmExtra, "AOD", "MCharmExtra",
                   otfmulticharm::PosEta,
                   otfmulticharm::PosDCAxy,
                   otfmulticharm::PosDCAz,
-                  
+
                   otfmulticharm::NegPt,
                   otfmulticharm::NegEta,
                   otfmulticharm::NegDCAxy,
@@ -196,7 +194,6 @@ DECLARE_SOA_TABLE(MCharmExtra, "AOD", "MCharmExtra",
                   otfmulticharm::Pi1cEta,
                   otfmulticharm::Pi2cEta,
                   otfmulticharm::PiccEta);
-
 
 } // namespace o2::aod
 

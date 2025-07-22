@@ -17,41 +17,43 @@
 //    HF decays. Work in progress: use at your own risk!
 //
 
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include <map>
-#include <iterator>
-#include <utility>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "ALICE3/DataModel/OTFTOF.h"
-#include "ALICE3/DataModel/OTFRICH.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
-#include "ALICE3/DataModel/OTFStrangeness.h"
 #include "ALICE3/DataModel/OTFMulticharm.h"
+#include "ALICE3/DataModel/OTFRICH.h"
+#include "ALICE3/DataModel/OTFStrangeness.h"
+#include "ALICE3/DataModel/OTFTOF.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsCalibration/MeanVertexObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
 #include "DetectorsVertexing/PVertexer.h"
 #include "DetectorsVertexing/PVertexerHelpers.h"
-#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <iterator>
+#include <map>
+#include <utility>
 
 using namespace o2;
 using namespace o2::framework;
@@ -104,7 +106,6 @@ struct alice3multicharm {
   Configurable<float> xiccMinProperLength{"xiccMinProperLength", -1, "Minimum proper length for Xicc decay (cm)"};
   Configurable<float> xiccMaxProperLength{"xiccMaxProperLength", 1e+4, "Minimum proper length for Xicc decay (cm)"};
 
-
   void init(InitContext&)
   {
     histos.add("SelectionQA/hDCAXicDaughters", "hDCAXicDaughters; DCA between Xic daughters (#mum)", kTH1D, {axisDcaDaughters});
@@ -147,7 +148,7 @@ struct alice3multicharm {
     hMCharmBuilding->GetXaxis()->SetBinLabel(20, "xiccMinProperLength");
     hMCharmBuilding->GetXaxis()->SetBinLabel(21, "xiccMaxProperLength");
     hMCharmBuilding->GetXaxis()->SetBinLabel(22, "xicMinDecayDistanceFromPV");
-    
+
     if (doprocessXiccPID || doprocessXiccExtra) {
       auto hPdgCodes = histos.add<TH2>("PIDQA/hPdgCodes", "hPdgCodes", kTH2D, {{3, 0.5, 3.5}, {5, 0.5, 5.5}});
       hPdgCodes->GetXaxis()->SetBinLabel(1, "pi1c");
@@ -163,14 +164,14 @@ struct alice3multicharm {
       pdgToBin.insert({kPiPlus, 3});
       pdgToBin.insert({kKPlus, 4});
       pdgToBin.insert({kProton, 5});
-  
+
       histos.add("PIDQA/hInnerTofTimeDeltaPi1c", "hInnerTofTimeDeltaPi1c; Reco - expected pion (ps)", kTH1D, {axisTofTrackDelta});
       histos.add("PIDQA/hInnerTofTimeDeltaPi2c", "hInnerTofTimeDeltaPi2c; Reco - expected pion (ps)", kTH1D, {axisTofTrackDelta});
       histos.add("PIDQA/hInnerTofTimeDeltaPicc", "hInnerTofTimeDeltaPicc; Reco - expected pion (ps)", kTH1D, {axisTofTrackDelta});
       histos.add("PIDQA/hOuterTofTimeDeltaPi1c", "hOuterTofTimeDeltaPi1c; Reco - expected pion (ps)", kTH1D, {axisTofTrackDelta});
       histos.add("PIDQA/hOuterTofTimeDeltaPi2c", "hOuterTofTimeDeltaPi2c; Reco - expected pion (ps)", kTH1D, {axisTofTrackDelta});
       histos.add("PIDQA/hOuterTofTimeDeltaPicc", "hOuterTofTimeDeltaPicc; Reco - expected pion (ps)", kTH1D, {axisTofTrackDelta});
-      
+
       histos.add("PIDQA/hInnerTofNSigmaPi1c", "hInnerTofNSigmaPi1c; TOF NSigma pion", kTH2D, {axisPt, axisNSigma});
       histos.add("PIDQA/hOuterTofNSigmaPi1c", "hOuterTofNSigmaPi1c; TOF NSigma pion", kTH2D, {axisPt, axisNSigma});
       histos.add("PIDQA/hInnerTofNSigmaPi2c", "hInnerTofNSigmaPi2c; TOF NSigma pion", kTH2D, {axisPt, axisNSigma});
@@ -192,96 +193,96 @@ struct alice3multicharm {
     }
     histos.add("h3dXicc", "h3dXicc; Xicc pT (GeV/#it(c)); Xicc #eta; Xicc mass (GeV/#it(c)^{2})", kTH3D, {axisPt, axisEta, axisXiccMass});
   }
-  
+
   template <typename TMCharmCands>
   void genericProcessXicc(TMCharmCands xiccCands)
   {
     for (const auto& xiccCand : xiccCands) {
-      
+
       histos.fill(HIST("hMCharmBuilding"), 0);
-      if (xiccCand.xicDauDCA() > xicMaxDauDCA) 
+      if (xiccCand.xicDauDCA() > xicMaxDauDCA)
         continue;
-      
+
       histos.fill(HIST("hMCharmBuilding"), 1);
       if (xiccCand.xiccDauDCA() > xiccMaxDauDCA)
         continue;
-      
+
       histos.fill(HIST("hMCharmBuilding"), 2);
       if (std::fabs(xiccCand.xiDCAxy()) < xiMinDCAxy)
         continue;
-      
+
       histos.fill(HIST("hMCharmBuilding"), 3);
       if (std::fabs(xiccCand.xiDCAz()) < xiMinDCAz)
         continue;
-      
+
       histos.fill(HIST("hMCharmBuilding"), 4);
       if (std::fabs(xiccCand.pi1cDCAxy()) < picMinDCAxy)
         continue;
-      
+
       histos.fill(HIST("hMCharmBuilding"), 5);
       if (std::fabs(xiccCand.pi1cDCAz()) < picMinDCAz)
         continue;
-      
+
       histos.fill(HIST("hMCharmBuilding"), 6);
       if (std::fabs(xiccCand.pi2cDCAxy()) < picMinDCAxy)
         continue;
-      
+
       histos.fill(HIST("hMCharmBuilding"), 7);
       if (std::fabs(xiccCand.pi2cDCAz()) < picMinDCAz)
         continue;
-      
+
       histos.fill(HIST("hMCharmBuilding"), 8);
       if (std::fabs(xiccCand.piccDCAxy()) < piccMinDCAxy)
         continue;
-      
+
       histos.fill(HIST("hMCharmBuilding"), 9);
       if (std::fabs(xiccCand.piccDCAz()) < piccMinDCAz)
         continue;
-      
+
       histos.fill(HIST("hMCharmBuilding"), 10);
       if (std::fabs(xiccCand.xicDCAxy()) < xicMinDCAxy)
         continue;
-      
+
       histos.fill(HIST("hMCharmBuilding"), 11);
       if (std::fabs(xiccCand.xicDCAz()) < xicMinDCAz)
         continue;
-      
+
       histos.fill(HIST("hMCharmBuilding"), 12);
       if (std::fabs(xiccCand.xiccDCAxy()) > xiccMaxDCAxy)
         continue;
-      
+
       histos.fill(HIST("hMCharmBuilding"), 13);
       if (std::fabs(xiccCand.xiccDCAz()) > xiccMaxDCAz)
         continue;
-      
+
       histos.fill(HIST("hMCharmBuilding"), 14);
       if (xiccCand.xicDecayRadius2D() < xicMinRadius)
         continue;
-      
+
       histos.fill(HIST("hMCharmBuilding"), 15);
       if (xiccCand.xiccDecayRadius2D() < xiccMinRadius)
         continue;
-      
+
       histos.fill(HIST("hMCharmBuilding"), 16);
       if (xiccCand.xicProperLength() < xicMinProperLength)
         continue;
-      
+
       histos.fill(HIST("hMCharmBuilding"), 17);
       if (xiccCand.xicProperLength() > xicMaxProperLength)
         continue;
-      
+
       histos.fill(HIST("hMCharmBuilding"), 18);
       if (xiccCand.xiccProperLength() < xiccMinProperLength)
         continue;
-      
+
       histos.fill(HIST("hMCharmBuilding"), 19);
       if (xiccCand.xiccProperLength() > xiccMaxProperLength)
         continue;
-      
+
       histos.fill(HIST("hMCharmBuilding"), 20);
       if (xiccCand.xicDistanceFromPV() < xicMinDecayDistanceFromPV)
         continue;
-      
+
       histos.fill(HIST("hMCharmBuilding"), 21);
       histos.fill(HIST("SelectionQA/hDCAXicDaughters"), xiccCand.xicDauDCA() * 1e+4);
       histos.fill(HIST("SelectionQA/hDCAXiccDaughters"), xiccCand.xiccDauDCA() * 1e+4);
@@ -307,27 +308,27 @@ struct alice3multicharm {
         histos.fill(HIST("PIDQA/hOuterTofTimeDeltaPi1c"), xiccCand.pi1cTofDeltaOuter());
         histos.fill(HIST("PIDQA/hOuterTofTimeDeltaPi2c"), xiccCand.pi2cTofDeltaOuter());
         histos.fill(HIST("PIDQA/hOuterTofTimeDeltaPicc"), xiccCand.piccTofDeltaOuter());
-        histos.fill(HIST("PIDQA/hInnerTofNSigmaPi1c"), xiccCand.pi1cPt(), xiccCand.pi1cTofNSigmaInner()); 
-        histos.fill(HIST("PIDQA/hOuterTofNSigmaPi1c"), xiccCand.pi1cPt(), xiccCand.pi1cTofNSigmaOuter()); 
-        histos.fill(HIST("PIDQA/hInnerTofNSigmaPi2c"), xiccCand.pi2cPt(), xiccCand.pi2cTofNSigmaInner()); 
-        histos.fill(HIST("PIDQA/hOuterTofNSigmaPi2c"), xiccCand.pi2cPt(), xiccCand.pi2cTofNSigmaOuter()); 
-        histos.fill(HIST("PIDQA/hInnerTofNSigmaPicc"), xiccCand.piccPt(), xiccCand.piccTofNSigmaInner()); 
-        histos.fill(HIST("PIDQA/hOuterTofNSigmaPicc"), xiccCand.piccPt(), xiccCand.piccTofNSigmaOuter()); 
+        histos.fill(HIST("PIDQA/hInnerTofNSigmaPi1c"), xiccCand.pi1cPt(), xiccCand.pi1cTofNSigmaInner());
+        histos.fill(HIST("PIDQA/hOuterTofNSigmaPi1c"), xiccCand.pi1cPt(), xiccCand.pi1cTofNSigmaOuter());
+        histos.fill(HIST("PIDQA/hInnerTofNSigmaPi2c"), xiccCand.pi2cPt(), xiccCand.pi2cTofNSigmaInner());
+        histos.fill(HIST("PIDQA/hOuterTofNSigmaPi2c"), xiccCand.pi2cPt(), xiccCand.pi2cTofNSigmaOuter());
+        histos.fill(HIST("PIDQA/hInnerTofNSigmaPicc"), xiccCand.piccPt(), xiccCand.piccTofNSigmaInner());
+        histos.fill(HIST("PIDQA/hOuterTofNSigmaPicc"), xiccCand.piccPt(), xiccCand.piccTofNSigmaOuter());
         if (xiccCand.pi1cHasRichSignal()) {
-          histos.fill(HIST("PIDQA/hRichNSigmaPi1c"), xiccCand.pi1cPt(), xiccCand.pi1cRichNSigma()); 
+          histos.fill(HIST("PIDQA/hRichNSigmaPi1c"), xiccCand.pi1cPt(), xiccCand.pi1cRichNSigma());
         }
         if (xiccCand.pi2cHasRichSignal()) {
-          histos.fill(HIST("PIDQA/hRichNSigmaPi2c"), xiccCand.pi2cPt(), xiccCand.pi2cRichNSigma()); 
+          histos.fill(HIST("PIDQA/hRichNSigmaPi2c"), xiccCand.pi2cPt(), xiccCand.pi2cRichNSigma());
         }
         if (xiccCand.piccHasRichSignal()) {
-          histos.fill(HIST("PIDQA/hRichNSigmaPicc"), xiccCand.piccPt(), xiccCand.piccRichNSigma()); 
+          histos.fill(HIST("PIDQA/hRichNSigmaPicc"), xiccCand.piccPt(), xiccCand.piccRichNSigma());
         }
-        
-        histos.fill(HIST("PIDQA/hPdgCodes"), 1, pdgToBin.at(std::abs(xiccCand.pi1cPdgCode()))); 
-        histos.fill(HIST("PIDQA/hPdgCodes"), 2, pdgToBin.at(std::abs(xiccCand.pi2cPdgCode()))); 
-        histos.fill(HIST("PIDQA/hPdgCodes"), 3, pdgToBin.at(std::abs(xiccCand.piccPdgCode()))); 
+
+        histos.fill(HIST("PIDQA/hPdgCodes"), 1, pdgToBin.at(std::abs(xiccCand.pi1cPdgCode())));
+        histos.fill(HIST("PIDQA/hPdgCodes"), 2, pdgToBin.at(std::abs(xiccCand.pi2cPdgCode())));
+        histos.fill(HIST("PIDQA/hPdgCodes"), 3, pdgToBin.at(std::abs(xiccCand.piccPdgCode())));
       }
-      
+
       if constexpr (requires { xiccCand.negPt(); }) { // if extra table
         histos.fill(HIST("XiccProngs/h3dNeg"), xiccCand.xiccPt(), xiccCand.negPt(), xiccCand.negEta());
         histos.fill(HIST("XiccProngs/h3dPos"), xiccCand.xiccPt(), xiccCand.posPt(), xiccCand.posEta());
@@ -340,17 +341,17 @@ struct alice3multicharm {
       histos.fill(HIST("h3dXicc"), xiccCand.xiccPt(), xiccCand.XiccEta(), xiccCand.xiccMass());
     }
   }
-  
+
   void processXicc(aod::MCharmCores const& multiCharmTracks)
   {
     genericProcessXicc(multiCharmTracks);
   }
-  
+
   void processXiccPID(multiCharmTracksPID const& multiCharmTracks)
   {
     genericProcessXicc(multiCharmTracks);
   }
-  
+
   void processXiccExtra(multiCharmTracksFull const& multiCharmTracks)
   {
     genericProcessXicc(multiCharmTracks);
