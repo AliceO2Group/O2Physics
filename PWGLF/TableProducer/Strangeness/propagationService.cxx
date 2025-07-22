@@ -21,7 +21,7 @@
 // strangeness building in a single DPL device that is particularly
 // adequate for pipelining.
 //
-// Currently meant for testing and performance checks
+// Currently meant for testing and performance check
 //
 //===============================================================
 
