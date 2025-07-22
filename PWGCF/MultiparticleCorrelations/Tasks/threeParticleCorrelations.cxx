@@ -379,10 +379,10 @@ struct ThreeParticleCorrelations {
         rQARegistry.fill(HIST("hPtV0"), trigger.pt(), collision.centFT0C(), triggSign, 1. / v0Efficiency);
         if (triggSign == 1) {
           candMass = trigger.mLambda();
-          rQARegistry.fill(HIST("hInvMassLambda"), trigger.mLambda(), trigger.pt(), collision.centFT0C());
+          rQARegistry.fill(HIST("hInvMassLambda"), trigger.mLambda(), trigger.pt(), collision.centFT0C(), 1. / v0Efficiency);
         } else if (triggSign == -1) {
           candMass = trigger.mAntiLambda();
-          rQARegistry.fill(HIST("hInvMassAntiLambda"), trigger.mAntiLambda(), trigger.pt(), collision.centFT0C());
+          rQARegistry.fill(HIST("hInvMassAntiLambda"), trigger.mAntiLambda(), trigger.pt(), collision.centFT0C(), 1. / v0Efficiency);
         }
 
         for (const auto& associate : tracks) {
@@ -779,14 +779,16 @@ struct ThreeParticleCorrelations {
 
       if (v0Filters(collision, v0, tracks)) {
 
+        v0Efficiency = v0Eff(hEffLambdas, v0, collision.centFT0C());
+
         // V0 efficiency - Reconstructed
         if (v0Sign(v0) == 1) { // Lambdas
           candMass = v0.mLambda();
-          rQARegistry.fill(HIST("hInvMassLambda_MC"), v0.mLambda(), v0.pt(), collision.centFT0C());
+          rQARegistry.fill(HIST("hInvMassLambda_MC"), v0.mLambda(), v0.pt(), collision.centFT0C(), 1. / v0Efficiency);
           rMCRegistry.fill(HIST("hRecLambdaP"), v0.pt(), v0.eta(), collision.centFT0C());
         } else if (v0Sign(v0) == -1) { // AntiLambdas
           candMass = v0.mAntiLambda();
-          rQARegistry.fill(HIST("hInvMassAntiLambda_MC"), v0.mAntiLambda(), v0.pt(), collision.centFT0C());
+          rQARegistry.fill(HIST("hInvMassAntiLambda_MC"), v0.mAntiLambda(), v0.pt(), collision.centFT0C(), 1. / v0Efficiency);
           rMCRegistry.fill(HIST("hRecLambdaN"), v0.pt(), v0.eta(), collision.centFT0C());
         }
       }
