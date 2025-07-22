@@ -534,7 +534,7 @@ struct JetHadronRecoil {
             registry.fill(HIST("hPtMatched"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), weight);
             registry.fill(HIST("hPhiMatched"), dphi, dphip, weight);
             registry.fill(HIST("hPtResolution"), jetTag.pt(), (jetTag.pt() - (jetBase.pt() - (rho * jetBase.area()))) / jetTag.pt(), weight);
-            registry.fill(HIST("hPhiResolution"), dphip, dphip - dphi, weight);
+            registry.fill(HIST("hPhiResolution"), jetTag.pt(), dphip - dphi, weight);
             registry.fill(HIST("hDeltaRMatched"), dR, dRp, weight);
             registry.fill(HIST("hDeltaRResolution"), jetTag.pt(), dRp - dR, weight);
             registry.fill(HIST("hFullMatching"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), dphi, dphip, dR, dRp, weight);
