@@ -68,7 +68,7 @@ enum {
   kAllCutsINELg010,
 };
 
-struct Lstaranalysis {
+struct Lflambda1520analysisinpp {
   // Define slice per Resocollision
   SliceCache cache;
   Preslice<Tracks> perCollision = o2::aod::track::collisionId;
@@ -413,7 +413,7 @@ struct Lstaranalysis {
     }
 
     // Print output histograms statistics
-    LOG(info) << "Size of the histograms in LstarAnalysis:";
+    LOG(info) << "Size of the histograms in Lflambda1520analysisinpp:";
     histos.print();
   }
 
@@ -1039,7 +1039,7 @@ struct Lstaranalysis {
 
     fillHistograms<true, false, false, false>(collision, tracks, tracks);
   }
-  PROCESS_SWITCH(Lstaranalysis, processData, "Process Event for data without partition", false);
+  PROCESS_SWITCH(Lflambda1520analysisinpp, processData, "Process Event for data without partition", false);
 
   void processRotational(EventCandidates::iterator const& collision, TrackCandidates const& tracks)
   {
@@ -1048,7 +1048,7 @@ struct Lstaranalysis {
 
     fillHistograms<false, true, false, false>(collision, tracks, tracks);
   }
-  PROCESS_SWITCH(Lstaranalysis, processRotational, "Process Rotational Background", false);
+  PROCESS_SWITCH(Lflambda1520analysisinpp, processRotational, "Process Rotational Background", false);
 
   void processMC(MCEventCandidates::iterator const& collision,
                  aod::McCollisions const&,
@@ -1061,7 +1061,7 @@ struct Lstaranalysis {
 
     fillHistograms<false, false, true, false>(collision, tracks, tracks);
   }
-  PROCESS_SWITCH(Lstaranalysis, processMC, "Process Event for MC Light without partition", false);
+  PROCESS_SWITCH(Lflambda1520analysisinpp, processMC, "Process Event for MC Light without partition", false);
 
   Partition<aod::McParticles> selectedMCParticles = (nabs(aod::mcparticle::pdgCode) == kLambda1520PDG); // Lambda(1520)
 
@@ -1197,7 +1197,7 @@ struct Lstaranalysis {
     if (isInAfterAllCuts && isTrueINELgt0 && inVtx10)
       histos.fill(HIST("Event/hMCEventIndices"), centrality, kAllCutsINELg010);
   }
-  PROCESS_SWITCH(Lstaranalysis, processMCTrue, "Process Event for MC only", false);
+  PROCESS_SWITCH(Lflambda1520analysisinpp, processMCTrue, "Process Event for MC only", false);
 
   // Processing Event Mixing
   using BinningTypeVtxZT0M = ColumnBinningPolicy<collision::PosZ, cent::CentFT0M>;
@@ -1234,10 +1234,10 @@ struct Lstaranalysis {
       fillHistograms<false, false, false, true>(collision1, tracks1, tracks2);
     }
   }
-  PROCESS_SWITCH(Lstaranalysis, processME, "Process EventMixing light without partition", false);
+  PROCESS_SWITCH(Lflambda1520analysisinpp, processME, "Process EventMixing light without partition", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<Lstaranalysis>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<Lflambda1520analysisinpp>(cfgc)};
 }
