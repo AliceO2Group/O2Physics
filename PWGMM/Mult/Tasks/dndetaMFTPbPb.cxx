@@ -1125,7 +1125,7 @@ struct DndetaMFTPbPb {
     }
     if (eventCuts.cfgSelInteractionRate) {
       auto bc = collision.template foundBC_as<CollBCs>();
-      double ir = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(),"ZNC hadronic") * 1.e-3;
+      double ir = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), "ZNC hadronic") * 1.e-3;
       if (!isIRSelected(bc, true)) {
         return;
       }
