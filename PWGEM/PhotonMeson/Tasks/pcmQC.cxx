@@ -37,7 +37,7 @@ using namespace o2::aod::pwgem::photon;
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0PhotonsKFCov, aod::V0KFEMEventIds>;
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
 struct PCMQC {
@@ -151,11 +151,6 @@ struct PCMQC {
     fRegistry.add("V0/hKFChi2vsX", "KF chi2 vs. conversion point in X;X (cm);KF chi2/NDF", kTH2F, {{200, -100.0f, 100.0f}, {100, 0.f, 100.0f}}, false);
     fRegistry.add("V0/hKFChi2vsY", "KF chi2 vs. conversion point in Y;Y (cm);KF chi2/NDF", kTH2F, {{200, -100.0f, 100.0f}, {100, 0.f, 100.0f}}, false);
     fRegistry.add("V0/hKFChi2vsZ", "KF chi2 vs. conversion point in Z;Z (cm);KF chi2/NDF", kTH2F, {{200, -100.0f, 100.0f}, {100, 0.f, 100.0f}}, false);
-    fRegistry.add("V0/hPResolution", "p resolution;p_{#gamma} (GeV/c);#Deltap/p", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.1}}, false);
-    fRegistry.add("V0/hPtResolution", "p_{T} resolution;p_{#gamma} (GeV/c);#Deltap_{T}/p_{T}", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.1}}, false);
-    fRegistry.add("V0/hEtaResolution", "#eta resolution;p_{#gamma} (GeV/c);#Delta#eta", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
-    fRegistry.add("V0/hThetaResolution", "#theta resolution;p_{#gamma} (GeV/c);#Delta#theta (rad.)", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
-    fRegistry.add("V0/hPhiResolution", "#varphi resolution;p_{#gamma} (GeV/c);#Delta#varphi (rad.)", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
     fRegistry.add("V0/hsConvPoint", "photon conversion point;r_{xy} (cm);#varphi (rad.);#eta;", kTHnSparseF, {{100, 0.0f, 100}, {90, 0, 2 * M_PI}, {80, -2, +2}}, false);
     fRegistry.add("V0/hNgamma", "Number of #gamma candidates per collision", kTH1F, {{101, -0.5f, 100.5f}});
 
@@ -292,11 +287,6 @@ struct PCMQC {
     fRegistry.fill(HIST("V0/hKFChi2vsX"), v0.vx(), v0.chiSquareNDF());
     fRegistry.fill(HIST("V0/hKFChi2vsY"), v0.vy(), v0.chiSquareNDF());
     fRegistry.fill(HIST("V0/hKFChi2vsZ"), v0.vz(), v0.chiSquareNDF());
-    fRegistry.fill(HIST("V0/hPResolution"), v0.p(), getPResolution(v0) / v0.p());
-    fRegistry.fill(HIST("V0/hPtResolution"), v0.p(), getPtResolution(v0) / v0.pt());
-    fRegistry.fill(HIST("V0/hEtaResolution"), v0.p(), getEtaResolution(v0));
-    fRegistry.fill(HIST("V0/hThetaResolution"), v0.p(), getThetaResolution(v0));
-    fRegistry.fill(HIST("V0/hPhiResolution"), v0.p(), getPhiResolution(v0));
 
     float phi_cp = std::atan2(v0.vy(), v0.vx());
     o2::math_utils::bringTo02Pi(phi_cp);

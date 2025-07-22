@@ -80,6 +80,8 @@ struct FlowEseTask {
 
   static constexpr float kMinAmplitudeThreshold = 1e-4f;
   static constexpr int kDefaultModulation = 2;
+  static constexpr std::array<double, 11> kCent = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
+  static constexpr std::array<double, 20> kSeparator = {125, 204, 110, 172, 92, 143, 74, 116, 57, 92, 43, 70, 31, 50, 21, 34, 14, 22, 5, 9};
 
   EventPlaneHelper helperEP;
 
@@ -101,6 +103,36 @@ struct FlowEseTask {
     histosQA.add(Form("histEvtPlV2"), "", {HistType::kTH2F, {axisEvtPl, axisCent}});
     histosQA.add(Form("histQvecRes_SigRefAV2"), "", {HistType::kTH2F, {axisQvecF, axisCent}});
     histosQA.add(Form("histCosDetV2"), "", {HistType::kTH3F, {axisCentMerged, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_0010Left"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_0010Mid"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_0010Right"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_1020Left"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_1020Mid"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_1020Right"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_2030Left"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_2030Mid"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_2030Right"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_3040Left"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_3040Mid"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_3040Right"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_4050Left"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_4050Mid"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_4050Right"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_5060Left"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_5060Mid"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_5060Right"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_6070Left"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_6070Mid"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_6070Right"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_7080Left"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_7080Mid"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_7080Right"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_8090Left"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_8090Mid"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_8090Right"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_9010Left"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_9010Mid"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
+    histosQA.add(Form("histCosDetV2_9010Right"), "", {HistType::kTH3F, {axisQvecF, axisPt, axisCos}});
     histosQA.add(Form("histMult_Cent"), "", {HistType::kTH2F, {axisMultNum, axisCent}});
   }
 
@@ -176,6 +208,7 @@ struct FlowEseTask {
   template <typename CollType, typename TrackType>
   void fillHistosFlow(CollType const& collision, TrackType const& tracks, int nmode)
   {
+    double q2 = std::sqrt(collision.qvecFT0CReVec()[0] * collision.qvecFT0CReVec()[0] + collision.qvecFT0CImVec()[0] * collision.qvecFT0CImVec()[0]) * std::sqrt(collision.sumAmplFT0C());
     if (collision.sumAmplFT0C() < kMinAmplitudeThreshold) {
       return;
     }
@@ -189,6 +222,216 @@ struct FlowEseTask {
                                                             helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
                                                                                    collision.qvecFT0CImVec()[0],
                                                                                    nmode))));
+        if (collision.centFT0C() > kCent[0] && collision.centFT0C() <= kCent[1] && q2 < kSeparator[0]) {
+          histosQA.fill(HIST("histCosDetV2_0010Left"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[0] && collision.centFT0C() <= kCent[1] && q2 > kSeparator[0] && q2 <= kSeparator[1]) {
+          histosQA.fill(HIST("histCosDetV2_0010Mid"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[0] && collision.centFT0C() <= kCent[1] && q2 > kSeparator[1]) {
+          histosQA.fill(HIST("histCosDetV2_0010Right"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[1] && collision.centFT0C() <= kCent[2] && q2 < kSeparator[2]) {
+          histosQA.fill(HIST("histCosDetV2_1020Left"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[1] && collision.centFT0C() <= kCent[2] && q2 > kSeparator[2] && q2 <= kSeparator[3]) {
+          histosQA.fill(HIST("histCosDetV2_1020Mid"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[1] && collision.centFT0C() <= kCent[2] && q2 > kSeparator[3]) {
+          histosQA.fill(HIST("histCosDetV2_1020Right"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[2] && collision.centFT0C() <= kCent[3] && q2 < kSeparator[4]) {
+          histosQA.fill(HIST("histCosDetV2_2030Left"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[2] && collision.centFT0C() <= kCent[3] && q2 > kSeparator[4] && q2 <= kSeparator[5]) {
+          histosQA.fill(HIST("histCosDetV2_2030Mid"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[2] && collision.centFT0C() <= kCent[3] && q2 > kSeparator[5]) {
+          histosQA.fill(HIST("histCosDetV2_2030Right"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[3] && collision.centFT0C() <= kCent[4] && q2 < kSeparator[6]) {
+          histosQA.fill(HIST("histCosDetV2_3040Left"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[3] && collision.centFT0C() <= kCent[4] && q2 > kSeparator[6] && q2 <= kSeparator[7]) {
+          histosQA.fill(HIST("histCosDetV2_3040Mid"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[3] && collision.centFT0C() <= kCent[4] && q2 > kSeparator[7]) {
+          histosQA.fill(HIST("histCosDetV2_3040Right"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[4] && collision.centFT0C() <= kCent[5] && q2 < kSeparator[8]) {
+          histosQA.fill(HIST("histCosDetV2_4050Left"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[4] && collision.centFT0C() <= kCent[5] && q2 > kSeparator[8] && q2 <= kSeparator[9]) {
+          histosQA.fill(HIST("histCosDetV2_4050Mid"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[4] && collision.centFT0C() <= kCent[5] && q2 > kSeparator[9]) {
+          histosQA.fill(HIST("histCosDetV2_4050Right"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[5] && collision.centFT0C() <= kCent[6] && q2 < kSeparator[10]) {
+          histosQA.fill(HIST("histCosDetV2_5060Left"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[5] && collision.centFT0C() <= kCent[6] && q2 > kSeparator[10] && q2 <= kSeparator[11]) {
+          histosQA.fill(HIST("histCosDetV2_5060Mid"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[5] && collision.centFT0C() <= kCent[6] && q2 > kSeparator[11]) {
+          histosQA.fill(HIST("histCosDetV2_5060Right"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[6] && collision.centFT0C() <= kCent[7] && q2 < kSeparator[12]) {
+          histosQA.fill(HIST("histCosDetV2_6070Left"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[6] && collision.centFT0C() <= kCent[7] && q2 > kSeparator[12] && q2 <= kSeparator[13]) {
+          histosQA.fill(HIST("histCosDetV2_6070Mid"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[6] && collision.centFT0C() <= kCent[7] && q2 > kSeparator[13]) {
+          histosQA.fill(HIST("histCosDetV2_6070Right"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[7] && collision.centFT0C() <= kCent[8] && q2 < kSeparator[14]) {
+          histosQA.fill(HIST("histCosDetV2_7080Left"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[7] && collision.centFT0C() <= kCent[8] && q2 > kSeparator[14] && q2 <= kSeparator[15]) {
+          histosQA.fill(HIST("histCosDetV2_7080Mid"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[7] && collision.centFT0C() <= kCent[8] && q2 > kSeparator[15]) {
+          histosQA.fill(HIST("histCosDetV2_7080Right"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[8] && collision.centFT0C() <= kCent[9] && q2 < kSeparator[16]) {
+          histosQA.fill(HIST("histCosDetV2_8090Left"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[8] && collision.centFT0C() <= kCent[9] && q2 > kSeparator[16] && q2 <= kSeparator[17]) {
+          histosQA.fill(HIST("histCosDetV2_8090Mid"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[8] && collision.centFT0C() <= kCent[9] && q2 > kSeparator[17]) {
+          histosQA.fill(HIST("histCosDetV2_8090Right"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[9] && collision.centFT0C() <= kCent[10] && q2 < kSeparator[18]) {
+          histosQA.fill(HIST("histCosDetV2_9010Left"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[9] && collision.centFT0C() <= kCent[10] && q2 > kSeparator[18] && q2 <= kSeparator[19]) {
+          histosQA.fill(HIST("histCosDetV2_9010Mid"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
+        if (collision.centFT0C() > kCent[9] && collision.centFT0C() <= kCent[10] && q2 > kSeparator[19]) {
+          histosQA.fill(HIST("histCosDetV2_9010Right"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), trk.pt(),
+                        std::cos(static_cast<float>(nmode) * (trk.phi() -
+                                                              helperEP.GetEventPlane(collision.qvecFT0CReVec()[0],
+                                                                                     collision.qvecFT0CImVec()[0],
+                                                                                     nmode))));
+        }
       }
     }
   }

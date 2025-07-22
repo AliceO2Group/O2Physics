@@ -121,8 +121,12 @@ struct HfCandidateCreator2Prong {
   float toMicrometers = 10000.; // from cm to µm
   double massPi{0.};
   double massK{0.};
+  double massE{0.};
+  double massMu{0.};
   double massPiK{0.};
   double massKPi{0.};
+  double massEE{0.};
+  double massMuMu{0.};
   double bz{0.};
 
   std::shared_ptr<TH1> hCandidates;
@@ -170,6 +174,8 @@ struct HfCandidateCreator2Prong {
 
     // histograms
     registry.add("hMass2", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {axisMass}});
+    registry.add("hMassEE", "2-prong candidates;inv. mass (e e) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {axisMass}});
+    registry.add("hMassMuMu", "2-prong candidates;inv. mass (#mu #mu) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {axisMass}});
     registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
     registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
     registry.add("hCovPVYY", "2-prong candidates;YY element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
@@ -188,6 +194,8 @@ struct HfCandidateCreator2Prong {
 
     massPi = MassPiPlus;
     massK = MassKPlus;
+    massE = MassElectron;
+    massMu = MassMuon;
 
     if (std::accumulate(doprocessDF.begin(), doprocessDF.end(), 0) == 1) {
       registry.fill(HIST("hVertexerType"), aod::hf_cand::VertexerType::DCAFitter);
@@ -361,8 +369,12 @@ struct HfCandidateCreator2Prong {
         auto arrayMomenta = std::array{pvec0, pvec1};
         massPiK = RecoDecay::m(arrayMomenta, std::array{massPi, massK});
         massKPi = RecoDecay::m(arrayMomenta, std::array{massK, massPi});
+        massEE = RecoDecay::m(arrayMomenta, std::array{massE, massE});
+        massMuMu = RecoDecay::m(arrayMomenta, std::array{massMu, massMu});
         registry.fill(HIST("hMass2"), massPiK);
         registry.fill(HIST("hMass2"), massKPi);
+        registry.fill(HIST("hMassEE"), massEE);
+        registry.fill(HIST("hMassMuMu"), massMuMu);
       }
     }
   }

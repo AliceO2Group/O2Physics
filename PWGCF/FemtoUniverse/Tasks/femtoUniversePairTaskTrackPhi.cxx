@@ -513,13 +513,6 @@ struct FemtoUniversePairTaskTrackPhi {
       if constexpr (isMC) {
         // reco
         effCorrection.fillRecoHist<ParticleNo::ONE, FilteredFDCollisions>(phicandidate, 333);
-        // truth
-        auto mcPartId1 = phicandidate.fdMCParticleId();
-        auto const& mcpart1 = mcParts.iteratorAt(mcPartId1);
-        if (mcpart1.pdgMCTruth() != 333) {
-          continue;
-        }
-        effCorrection.fillTruthHist<ParticleNo::ONE, FilteredFDCollisions>(phicandidate);
       }
     }
 
@@ -560,14 +553,6 @@ struct FemtoUniversePairTaskTrackPhi {
 
       if constexpr (isMC) {
         effCorrection.fillRecoHist<ParticleNo::TWO, FilteredFDCollisions>(track, ConfTrackPDGCode);
-
-        // truth
-        auto mcPartId2 = track.fdMCParticleId();
-        auto const& mcpart2 = mcParts.iteratorAt(mcPartId2);
-        if (mcpart2.pdgMCTruth() != ConfTrackPDGCode) {
-          continue;
-        }
-        effCorrection.fillTruthHist<ParticleNo::TWO, FilteredFDCollisions>(track);
       }
     }
 
@@ -728,6 +713,10 @@ struct FemtoUniversePairTaskTrackPhi {
         continue;
       }
 
+      if (pdgCode == ConfTrackPDGCode) {
+        effCorrection.fillTruthHist<ParticleNo::TWO, FilteredFDCollisions>(part);
+      }
+
       // charge +
       if (pdgParticle->Charge() > 0.0) {
         registryMCtruth.fill(HIST("MCtruthAllPositivePt"), part.pt());
@@ -745,6 +734,7 @@ struct FemtoUniversePairTaskTrackPhi {
       if (pdgCode == 333) {
         registryMCtruth.fill(HIST("MCtruthPhi"), part.pt(), part.eta());
         registryMCtruth.fill(HIST("MCtruthPhiPt"), part.pt());
+        effCorrection.fillTruthHist<ParticleNo::ONE, FilteredFDCollisions>(part);
         continue;
       }
 
