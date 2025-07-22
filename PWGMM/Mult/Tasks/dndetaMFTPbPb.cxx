@@ -84,6 +84,10 @@ struct DndetaMFTPbPb {
     false,
     true};
 
+  Configurable<bool> cfgDoIR{"cfgDoIR", false, "Flag to retrieve Interaction rate from CCDB"};
+  Configurable<bool> cfgIRCrashOnNull{"cfgIRCrashOnNull", false, "Flag to avoid CTP RateFetcher crash"};
+  Configurable<std::string> cfgIRSource{"cfgIRSource", "T0VTX", "Estimator of the interaction rate (Pb-Pb: ZNC hadronic)"};
+
   struct : ConfigurableGroup {
     Configurable<bool> usephiCut{"usephiCut", false, "use azimuthal angle cut"};
     Configurable<float> phiCut{"phiCut", 0.1f,
@@ -129,7 +133,6 @@ struct DndetaMFTPbPb {
       "minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
     Configurable<float> maxOccupancy{
       "maxOccupancy", -1, "maximum occupancy from neighbouring collisions"};
-    Configurable<bool> cfgSelInteractionRate{"cfgSelInteractionRate", false, " Get Interaction rate from CCDB"};
     Configurable<float> minIR{"minIR", -1, "minimum IR (kHz) collisions"};
     Configurable<float> maxIR{"maxIR", -1, "maximum IR (kHz) collisions"};
   } eventCuts;
@@ -259,8 +262,10 @@ struct DndetaMFTPbPb {
       x->SetBinLabel(1, "All");
       x->SetBinLabel(2, "Selected");
 
-      qaregistry.add("hOccIRate", "hOccIRate", HistType::kTH2F,
-                     {occupancyAxis, irBins});
+      if (cfgDoIR) {
+        qaregistry.add("hOccIRate", "hOccIRate", HistType::kTH2F,
+                       {occupancyAxis, irBins});
+      }
 
       registry.add({"Events/NtrkZvtx",
                     "; N_{trk}; Z_{vtx} (cm); occupancy",
@@ -345,8 +350,10 @@ struct DndetaMFTPbPb {
       hstat->GetAxis(0)->SetBinLabel(1, "All");
       hstat->GetAxis(0)->SetBinLabel(2, "Selected");
 
-      qaregistry.add("hCentOccIRate", "hCentOccIRate", HistType::kTHnSparseF,
-                     {centralityAxis, occupancyAxis, irBins});
+      if (cfgDoIR) {
+        qaregistry.add("hCentOccIRate", "hCentOccIRate", HistType::kTHnSparseF,
+                       {centralityAxis, occupancyAxis, irBins});
+      }
 
       qaregistry.add({"Events/Centrality/hCent",
                       "; centrality; occupancy",
@@ -714,7 +721,6 @@ struct DndetaMFTPbPb {
 
   /// Joined tables
   using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
-  using CollBCs = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
   using Colls = soa::Join<aod::Collisions, aod::EvSels>;
   using Coll = Colls::iterator;
   using CollsCentFT0C = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
@@ -736,28 +742,6 @@ struct DndetaMFTPbPb {
   using FiltMcMftTracks = soa::Filtered<MFTTracksLabeled>;
   using FiltBestTracks = soa::Filtered<aod::BestCollisionsFwd>;
   using FiltParticles = soa::Filtered<aod::McParticles>;
-
-  bool isIRSelected(CollBCs::iterator const& bc, bool fillHis = false)
-  {
-    double ir = (eventCuts.minIR >= 0 || eventCuts.maxIR >= 0)
-                  ? rateFetcher.fetch(ccdb.service, bc.timestamp(),
-                                      bc.runNumber(), "ZNC hadronic") *
-                      1.e-3
-                  : -1;
-    if (eventCuts.minIR >= 0 && ir < eventCuts.minIR) {
-      return false;
-    }
-    if (fillHis) {
-      registry.fill(HIST("hEvtSel"), 13);
-    }
-    if (eventCuts.maxIR >= 0 && ir > eventCuts.maxIR) {
-      return false;
-    }
-    if (fillHis) {
-      registry.fill(HIST("hEvtSel"), 14);
-    }
-    return true;
-  }
 
   template <typename T>
   bool isTrackSelected(const T& track)
@@ -1016,6 +1000,19 @@ struct DndetaMFTPbPb {
     if constexpr (fillHis) {
       registry.fill(HIST("hEvtSel"), 12);
     }
+    double ir = (eventCuts.minIR >= 0 || eventCuts.maxIR >= 0) ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), cfgIRSource, cfgIRCrashOnNull) * 1.e-3 : -1;
+    if (eventCuts.minIR >= 0 && ir < eventCuts.minIR) {
+      return false;
+    }
+    if (fillHis) {
+      registry.fill(HIST("hEvtSel"), 13);
+    }
+    if (eventCuts.maxIR >= 0 && ir > eventCuts.maxIR) {
+      return false;
+    }
+    if (fillHis) {
+      registry.fill(HIST("hEvtSel"), 14);
+    }
     return true;
   }
 
@@ -1109,13 +1106,14 @@ struct DndetaMFTPbPb {
   /// @brief process function for counting tracks
   template <typename C>
   void processData(typename C::iterator const& collision,
-                   FiltMftTracks const& tracks, CollBCs const& /*bcs*/)
+                   FiltMftTracks const& tracks)
   {
     auto occ = getOccupancy(collision, eventCuts.occupancyEstimator);
     float c = getRecoCent(collision);
-    auto bc = collision.template foundBC_as<CollBCs>();
-    double ir = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), "ZNC hadronic") * 1.e-3;
-
+    float ir = -1;
+    if (cfgDoIR) {
+      ir = rateFetcher.fetch(ccdb.service, coll.timestamp(), coll.runNumber(), cfgIRSource, cfgIRCrashOnNull) * 1.e-3;
+    }
     if constexpr (has_reco_cent<C>) {
       registry.fill(HIST("Events/Centrality/Selection"), 1., c, occ);
     } else {
@@ -1125,23 +1123,17 @@ struct DndetaMFTPbPb {
     if (!isGoodEvent<true>(collision)) {
       return;
     }
-    if (eventCuts.cfgSelInteractionRate) {
-      if (!isIRSelected(bc, true)) {
-        return;
-      }
-    }
 
     auto z = collision.posZ();
     if constexpr (has_reco_cent<C>) {
       registry.fill(HIST("Events/Centrality/Selection"), 2., c, occ);
       qaregistry.fill(HIST("Events/Centrality/hZvtxCent"), z, c, occ);
       qaregistry.fill(HIST("Events/Centrality/hCent"), c, occ);
-      if (eventCuts.cfgSelInteractionRate) {
+      if (cfgDoIR) {
         qaregistry.fill(HIST("hCentOccIRate"), c, occ, ir);
       }
-
     } else {
-      if (eventCuts.cfgSelInteractionRate) {
+      if (cfgDoIR) {
         qaregistry.fill(HIST("hOccIRate"), occ, ir);
       }
       registry.fill(HIST("Events/Selection"), 2., occ);
@@ -1161,14 +1153,14 @@ struct DndetaMFTPbPb {
   template <typename C>
   void processDatawBestTracks(
     typename C::iterator const& collision, FiltMftTracks const& tracks,
-    soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks,
-    CollBCs const& /*bcs*/)
+    soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks)
   {
     auto occ = getOccupancy(collision, eventCuts.occupancyEstimator);
     float c = getRecoCent(collision);
-    auto bc = collision.template foundBC_as<CollBCs>();
-    double ir = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), "ZNC hadronic") * 1.e-3;
-
+    float ir = -1;
+    if (cfgDoIR) {
+      ir = rateFetcher.fetch(ccdb.service, coll.timestamp(), coll.runNumber(), cfgIRSource, cfgIRCrashOnNull) * 1.e-3;
+    }
     if constexpr (has_reco_cent<C>) {
       registry.fill(HIST("Events/Centrality/Selection"), 1., c, occ);
     } else {
@@ -1178,21 +1170,16 @@ struct DndetaMFTPbPb {
     if (!isGoodEvent<false>(collision)) {
       return;
     }
-    if (eventCuts.cfgSelInteractionRate) {
-      if (!isIRSelected(bc, true)) {
-        return;
-      }
-    }
 
     auto z = collision.posZ();
     if constexpr (has_reco_cent<C>) {
       registry.fill(HIST("Events/Centrality/Selection"), 2., c, occ);
-      if (eventCuts.cfgSelInteractionRate) {
+      if (cfgDoIR) {
         qaregistry.fill(HIST("hCentOccIRate"), c, occ, ir);
       }
     } else {
       registry.fill(HIST("Events/Selection"), 2., occ);
-      if (eventCuts.cfgSelInteractionRate) {
+      if (cfgDoIR) {
         qaregistry.fill(HIST("hOccIRate"), occ, ir);
       }
     }
@@ -1208,18 +1195,18 @@ struct DndetaMFTPbPb {
   }
 
   void processDataInclusive(Colls::iterator const& collision,
-                            FiltMftTracks const& tracks, CollBCs const& bcs)
+                            FiltMftTracks const& tracks)
   {
-    processData<Colls>(collision, tracks, bcs);
+    processData<Colls>(collision, tracks);
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processDataInclusive,
                  "Count tracks (inclusive)", false);
 
   void processDataCentFT0C(CollsCentFT0C::iterator const& collision,
-                           FiltMftTracks const& tracks, CollBCs const& bcs)
+                           FiltMftTracks const& tracks)
   {
-    processData<CollsCentFT0C>(collision, tracks, bcs);
+    processData<CollsCentFT0C>(collision, tracks);
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processDataCentFT0C,
@@ -1227,36 +1214,36 @@ struct DndetaMFTPbPb {
 
   void
     processDataCentFT0CVariant1(CollsCentFT0CVariant1::iterator const& collision,
-                                FiltMftTracks const& tracks, CollBCs const& bcs)
+                                FiltMftTracks const& tracks)
   {
-    processData<CollsCentFT0CVariant1>(collision, tracks, bcs);
+    processData<CollsCentFT0CVariant1>(collision, tracks);
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processDataCentFT0CVariant1,
                  "Count tracks in FT0CVariant1 centrality bins", false);
 
   void processDataCentFT0M(CollsCentFT0M::iterator const& collision,
-                           FiltMftTracks const& tracks, CollBCs const& bcs)
+                           FiltMftTracks const& tracks)
   {
-    processData<CollsCentFT0M>(collision, tracks, bcs);
+    processData<CollsCentFT0M>(collision, tracks);
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processDataCentFT0M,
                  "Count tracks in FT0M centrality bins", false);
 
   void processDataCentNGlobal(CollsCentNGlobal::iterator const& collision,
-                              FiltMftTracks const& tracks, CollBCs const& bcs)
+                              FiltMftTracks const& tracks)
   {
-    processData<CollsCentNGlobal>(collision, tracks, bcs);
+    processData<CollsCentNGlobal>(collision, tracks);
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processDataCentNGlobal,
                  "Count tracks in NGlobal centrality bins", false);
 
   void processDataCentMFT(CollsCentMFT::iterator const& collision,
-                          FiltMftTracks const& tracks, CollBCs const& bcs)
+                          FiltMftTracks const& tracks)
   {
-    processData<CollsCentMFT>(collision, tracks, bcs);
+    processData<CollsCentMFT>(collision, tracks);
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processDataCentMFT,
@@ -1264,10 +1251,9 @@ struct DndetaMFTPbPb {
 
   void processDatawBestTracksInclusive(
     Colls::iterator const& collision, FiltMftTracks const& tracks,
-    soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks,
-    CollBCs const& bcs)
+    soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks)
   {
-    processDatawBestTracks<Colls>(collision, tracks, besttracks, bcs);
+    processDatawBestTracks<Colls>(collision, tracks, besttracks);
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processDatawBestTracksInclusive,
@@ -1276,10 +1262,9 @@ struct DndetaMFTPbPb {
 
   void processDatawBestTracksCentFT0C(
     CollsCentFT0C::iterator const& collision, FiltMftTracks const& tracks,
-    soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks,
-    CollBCs const& bcs)
+    soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks)
   {
-    processDatawBestTracks<CollsCentFT0C>(collision, tracks, besttracks, bcs);
+    processDatawBestTracks<CollsCentFT0C>(collision, tracks, besttracks);
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processDatawBestTracksCentFT0C,
@@ -1289,11 +1274,9 @@ struct DndetaMFTPbPb {
   void processDatawBestTracksCentFT0CVariant1(
     CollsCentFT0CVariant1::iterator const& collision,
     FiltMftTracks const& tracks,
-    soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks,
-    CollBCs const& bcs)
+    soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks)
   {
-    processDatawBestTracks<CollsCentFT0CVariant1>(collision, tracks, besttracks,
-                                                  bcs);
+    processDatawBestTracks<CollsCentFT0CVariant1>(collision, tracks, besttracks);
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processDatawBestTracksCentFT0CVariant1,
@@ -1303,10 +1286,9 @@ struct DndetaMFTPbPb {
 
   void processDatawBestTracksCentFT0M(
     CollsCentFT0M::iterator const& collision, FiltMftTracks const& tracks,
-    soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks,
-    CollBCs const& bcs)
+    soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks)
   {
-    processDatawBestTracks<CollsCentFT0M>(collision, tracks, besttracks, bcs);
+    processDatawBestTracks<CollsCentFT0M>(collision, tracks, besttracks);
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processDatawBestTracksCentFT0M,
@@ -1315,11 +1297,9 @@ struct DndetaMFTPbPb {
 
   void processDatawBestTracksCentNGlobal(
     CollsCentNGlobal::iterator const& collision, FiltMftTracks const& tracks,
-    soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks,
-    CollBCs const& bcs)
+    soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks)
   {
-    processDatawBestTracks<CollsCentNGlobal>(collision, tracks, besttracks,
-                                             bcs);
+    processDatawBestTracks<CollsCentNGlobal>(collision, tracks, besttracks);
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processDatawBestTracksCentNGlobal,
@@ -1329,10 +1309,9 @@ struct DndetaMFTPbPb {
 
   void processDatawBestTracksCentMFT(
     CollsCentMFT::iterator const& collision, FiltMftTracks const& tracks,
-    soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks,
-    CollBCs const& bcs)
+    soa::SmallGroups<aod::BestCollisionsFwd> const& besttracks)
   {
-    processDatawBestTracks<CollsCentMFT>(collision, tracks, besttracks, bcs);
+    processDatawBestTracks<CollsCentMFT>(collision, tracks, besttracks);
   }
 
   PROCESS_SWITCH(DndetaMFTPbPb, processDatawBestTracksCentMFT,
