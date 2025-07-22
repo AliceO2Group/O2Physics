@@ -144,6 +144,7 @@ DECLARE_SOA_TABLE(GenParticles, "AOD", "GENPARTICLES",
 } // namespace o2::aod
 
 struct FilterTracks {
+  const static int nStudiedParticlesMc = 3;
 
   Produces<aod::FilterTrackExtr> filteredTracksTableExtra;
   Produces<aod::FilterTrack> filteredTracksTable;
@@ -179,7 +180,6 @@ struct FilterTracks {
   Partition<soa::Filtered<TracksWithSelAndDcaMc>> midPtTracksMC = aod::track::pt > lowPtThreshold&& aod::track::pt < midPtThreshold && (nabs(aod::track::pt * nDigitScaleFactor - nround(aod::track::pt * nDigitScaleFactor)) < trackPtWeightMidPt.node() * lowPtThreshold);
   Partition<soa::Filtered<TracksWithSelAndDcaMc>> highPtTracksMC = aod::track::pt > midPtThreshold;
 
-  const static int nStudiedParticlesMc = 3;
   std::array<int, nStudiedParticlesMc> pdgSignalParticleArray = {kK0Short, o2::constants::physics::Pdg::kD0, o2::constants::physics::Pdg::kLambdaCPlus}; // K0s, D0 and Lc
   std::array<int, 3> pdgDecayLc = {kProton, kKMinus, kPiPlus};
   std::array<int, 2> pdgDecayDzero = {kKMinus, kPiPlus};
@@ -345,7 +345,7 @@ struct FilterTracks {
         // }
       }
       if (isMatchedToSignal) {
-        for (auto const mcpartdaughtIdx : indxDaughers) {
+        for (auto const& mcpartdaughtIdx : indxDaughers) {
           auto mcPartDaught = mcParticles.rawIteratorAt(mcpartdaughtIdx);
           double eta = std::abs(mcPartDaught.eta());
           if ((eta) > etamax) {
