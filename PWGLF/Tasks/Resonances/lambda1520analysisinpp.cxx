@@ -513,15 +513,15 @@ struct Lambda1520analysisinpp {
   //    candidate.tpcNSigmaPr(), candidate.tofNSigmaPr(), tpcPIDPassed, tofPIDPassed, tpcPIDPassed || tofPIDPassed);
 
   template <typename T>
-  bool pTdependentPIDProton(const T& candidate)
+  bool ptDependentPidProton(const T& candidate)
   {
-    auto vProtonTPCPIDpTintv = static_cast<std::vector<float>>(configPID.protonTPCPIDpTintv);
+    auto vProtonTPCPIDpTintv = std::vector<float>(configPID.protonTPCPIDpTintv);
     vProtonTPCPIDpTintv.insert(vProtonTPCPIDpTintv.begin(), configTracks.cMinPtcut);
-    auto vProtonTPCPIDcuts = static_cast<std::vector<float>>(configPID.protonTPCPIDcuts);
-    auto vProtonTOFPIDpTintv = static_cast<std::vector<float>>(configPID.protonTOFPIDpTintv);
-    auto vProtonTPCTOFCombinedpTintv = static_cast<std::vector<float>>(configPID.protonTPCTOFCombinedpTintv);
-    auto vProtonTPCTOFCombinedPIDcuts = static_cast<std::vector<float>>(configPID.protonTPCTOFCombinedPIDcuts);
-    auto vProtonTOFPIDcuts = static_cast<std::vector<float>>(configPID.protonTOFPIDcuts);
+    auto vProtonTPCPIDcuts = std::vector<float>(configPID.protonTPCPIDcuts);
+    auto vProtonTOFPIDpTintv = std::vector<float>(configPID.protonTOFPIDpTintv);
+    auto vProtonTPCTOFCombinedpTintv = std::vector<float>(configPID.protonTPCTOFCombinedpTintv);
+    auto vProtonTPCTOFCombinedPIDcuts = std::vector<float>(configPID.protonTPCTOFCombinedPIDcuts);
+    auto vProtonTOFPIDcuts = std::vector<float>(configPID.protonTOFPIDcuts);
 
     float pt = candidate.pt();
     float ptSwitchToTOF = vProtonTPCPIDpTintv.back();
@@ -582,15 +582,15 @@ struct Lambda1520analysisinpp {
   }
 
   template <typename T>
-  bool pTdependentPIDKaon(const T& candidate)
+  bool ptDependentPidKaon(const T& candidate)
   {
-    auto vKaonTPCPIDpTintv = static_cast<std::vector<float>>(configPID.kaonTPCPIDpTintv);
+    auto vKaonTPCPIDpTintv = std::vector<float>(configPID.kaonTPCPIDpTintv);
     vKaonTPCPIDpTintv.insert(vKaonTPCPIDpTintv.begin(), configTracks.cMinPtcut);
-    auto vKaonTPCPIDcuts = static_cast<std::vector<float>>(configPID.kaonTPCPIDcuts);
-    auto vKaonTOFPIDpTintv = static_cast<std::vector<float>>(configPID.kaonTOFPIDpTintv);
-    auto vKaonTPCTOFCombinedpTintv = static_cast<std::vector<float>>(configPID.kaonTPCTOFCombinedpTintv);
-    auto vKaonTPCTOFCombinedPIDcuts = static_cast<std::vector<float>>(configPID.kaonTPCTOFCombinedPIDcuts);
-    auto vKaonTOFPIDcuts = static_cast<std::vector<float>>(configPID.kaonTOFPIDcuts);
+    auto vKaonTPCPIDcuts = std::vector<float>(configPID.kaonTPCPIDcuts);
+    auto vKaonTOFPIDpTintv = std::vector<float>(configPID.kaonTOFPIDpTintv);
+    auto vKaonTPCTOFCombinedpTintv = std::vector<float>(configPID.kaonTPCTOFCombinedpTintv);
+    auto vKaonTPCTOFCombinedPIDcuts = std::vector<float>(configPID.kaonTPCTOFCombinedPIDcuts);
+    auto vKaonTOFPIDcuts = std::vector<float>(configPID.kaonTOFPIDcuts);
 
     float pt = candidate.pt();
     float ptSwitchToTOF = vKaonTPCPIDpTintv.back();
@@ -768,7 +768,7 @@ struct Lambda1520analysisinpp {
       if (crejectPion && rejectPion(trk2)) // to remove pion contamination from the kaon track
         continue;
 
-      if (!pTdependentPIDProton(trk1) || !pTdependentPIDKaon(trk2))
+      if (!ptDependentPidProton(trk1) || !ptDependentPidKaon(trk2))
         continue;
 
       //// QA plots after the selection
