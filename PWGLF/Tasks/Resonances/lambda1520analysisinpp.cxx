@@ -1,3 +1,4 @@
+
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
@@ -9,21 +10,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-///
 /// \file lambda1520analysisinpp.cxx
 /// \brief This standalone task reconstructs track-track decay of lambda(1520) resonance candidate
 /// \author Hirak Kumar Koley <hirak.koley@cern.ch>
-///
 
-// 1. Own header (doesn't exist)
-
-// 2. C system headers (none)
-
-// 3. C++ system headers
-#include <string>
-#include <vector>
-
-// 4. Other includes: O2 framework, ROOT, etc.
 #include "PWGLF/Utils/collisionCuts.h"
 
 #include "Common/DataModel/Centrality.h"
@@ -39,6 +29,9 @@
 #include "Math/Vector4D.h"
 #include "TPDGCode.h"
 #include "TRandom.h"
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::soa;
@@ -66,6 +59,20 @@ enum {
   kAllCuts10,
   kAllCutsINELg0,
   kAllCutsINELg010,
+};
+
+enum TrackSelectionType {
+  kAllTracks = 0,
+  kGlobalTracks,
+  kGlobalTracksWoPtEta,
+  kGlobalTracksWoDCA,
+  kQualityTracks,
+  kInAcceptanceTracks,
+};
+
+enum PIDCutType {
+  kSquareType = 1,
+  kCircularType,
 };
 
 struct Lambda1520analysisinpp {
@@ -196,12 +203,13 @@ struct Lambda1520analysisinpp {
 
   Filter tofPIDFilter = aod::track::tofExpMom < 0.f || ((aod::track::tofExpMom > 0.f) && (/* (nabs(aod::pidtof::tofNSigmaPi) < configPID.pidnSigmaPreSelectionCut) || */ (nabs(aod::pidtof::tofNSigmaKa) < configPID.pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaPr) < configPID.pidnSigmaPreSelectionCut))); // TOF
   Filter tpcPIDFilter = /* nabs(aod::pidtpc::tpcNSigmaPi) < configPID.pidnSigmaPreSelectionCut || */ nabs(aod::pidtpc::tpcNSigmaKa) < configPID.pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaPr) < configPID.pidnSigmaPreSelectionCut;                                                                           // TPC
-  Filter trackFilter = (configTracks.trackSelection == static_cast<int>(0)) ||
-                       ((configTracks.trackSelection == static_cast<int>(1)) && requireGlobalTrackInFilter()) ||
-                       ((configTracks.trackSelection == static_cast<int>(2)) && requireGlobalTrackWoPtEtaInFilter()) ||
-                       ((configTracks.trackSelection == static_cast<int>(3)) && requireGlobalTrackWoDCAInFilter()) ||
-                       ((configTracks.trackSelection == static_cast<int>(4)) && requireQualityTracksInFilter()) ||
-                       ((configTracks.trackSelection == static_cast<int>(5)) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+  Filter trackFilter = (configTracks.trackSelection == kAllTracks) ||
+                       ((configTracks.trackSelection == kGlobalTracks) && requireGlobalTrackInFilter()) ||
+                       ((configTracks.trackSelection == kGlobalTracksWoPtEta) && requireGlobalTrackWoPtEtaInFilter()) ||
+                       ((configTracks.trackSelection == kGlobalTracksWoDCA) && requireGlobalTrackWoDCAInFilter()) ||
+                       ((configTracks.trackSelection == kQualityTracks) && requireQualityTracksInFilter()) ||
+                       ((configTracks.trackSelection == kInAcceptanceTracks) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+
   Filter acceptanceFilter = (nabs(aod::track::eta) < configTracks.cfgCutEta && nabs(aod::track::pt) > configTracks.cMinPtcut);
   // Filter DCAcutFilter = (nabs(aod::track::dcaXY) < configTracks.cfgCutDCAxy) && (nabs(aod::track::dcaZ) < configTracks.cfgCutDCAz);
   // Filter primarytrackFilter = requirePVContributor() && requirePrimaryTrack() && requireGlobalTrackWoDCA();
@@ -419,8 +427,6 @@ struct Lambda1520analysisinpp {
 
   float massKa = MassKaonCharged;
   float massPr = MassProton;
-  double pi = o2::constants::math::PI;
-  double twopi = o2::constants::math::TwoPI;
 
   int kLambda1520PDG = static_cast<int>(102134); // PDG code for Lambda(1520)
 
@@ -455,8 +461,8 @@ struct Lambda1520analysisinpp {
         continue;
       auto p = pdg->GetParticle(mcparticle.pdgCode());
       if (p != nullptr) {
-        if (std::abs(p->Charge()) >= static_cast<int>(3)) {
-          if (std::abs(mcparticle.eta()) < static_cast<float>(1.0))
+        if (std::abs(p->Charge()) >= 3) {
+          if (std::abs(mcparticle.eta()) < 1.0)
             return true;
         }
       }
@@ -547,7 +553,7 @@ struct Lambda1520analysisinpp {
 
     // Case 3: Has TOF → use TPC + TOF (square or circular)
     if (candidate.hasTOF()) {
-      if (configPID.cPIDcutType == 1) {
+      if (configPID.cPIDcutType == kSquareType) {
         // Rectangular cut
         for (size_t i = 0; i < vProtonTOFPIDpTintv.size(); ++i) {
           if (pt < vProtonTOFPIDpTintv[i]) {
@@ -556,7 +562,7 @@ struct Lambda1520analysisinpp {
               return true;
           }
         }
-      } else if (configPID.cPIDcutType == static_cast<int>(2)) {
+      } else if (configPID.cPIDcutType == kCircularType) {
         // Circular cut
         for (size_t i = 0; i < vProtonTPCTOFCombinedpTintv.size(); ++i) {
           if (pt < vProtonTPCTOFCombinedpTintv[i]) {
@@ -618,7 +624,7 @@ struct Lambda1520analysisinpp {
 
     // Case 3: TOF is available → apply TPC+TOF PID logic
     if (candidate.hasTOF()) {
-      if (configPID.cPIDcutType == 1) {
+      if (configPID.cPIDcutType == kSquareType) {
         // Rectangular cut
         for (size_t i = 0; i < vKaonTOFPIDpTintv.size(); ++i) {
           if (pt < vKaonTOFPIDpTintv[i]) {
@@ -628,7 +634,7 @@ struct Lambda1520analysisinpp {
             }
           }
         }
-      } else if (configPID.cPIDcutType == static_cast<int>(2)) {
+      } else if (configPID.cPIDcutType == kCircularType) {
         // Circular cut
         for (size_t i = 0; i < vKaonTPCTOFCombinedpTintv.size(); ++i) {
           if (pt < vKaonTPCTOFCombinedpTintv[i]) {
@@ -712,7 +718,7 @@ struct Lambda1520analysisinpp {
       if (cfgUseDeltaEtaPhiCuts) {
         deltaEta = std::abs(trk1etaPr - trk2etaKa);
         deltaPhi = std::abs(trk1phiPr - trk2phiKa);
-        deltaPhi = (deltaPhi > pi) ? (twopi - deltaPhi) : deltaPhi;
+        deltaPhi = (deltaPhi > o2::constants::math::PI) ? (o2::constants::math::TwoPI - deltaPhi) : deltaPhi;
         if (deltaEta >= cMaxDeltaEtaCut)
           continue;
         if (deltaPhi >= cMaxDeltaPhiCut)
@@ -844,7 +850,7 @@ struct Lambda1520analysisinpp {
       if (trk1.sign() * trk2.sign() < 0) {
         if constexpr (IsRot) {
           for (int i = 0; i < configBkg.cNofRotations; i++) {
-            float theta = rn->Uniform(pi - pi / configBkg.rotationalcut, pi + pi / configBkg.rotationalcut);
+            float theta = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / configBkg.rotationalcut, o2::constants::math::PI + o2::constants::math::PI / configBkg.rotationalcut);
             if (configBkg.cfgRotPr) {
               ldaughterRot = LorentzVectorPtEtaPhiMass(trk1ptPr, trk1etaPr, trk1phiPr + theta, massPr);
               lResonanceRot = ldaughterRot + lDecayDaughter2;
