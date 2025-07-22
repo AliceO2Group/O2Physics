@@ -416,29 +416,6 @@ struct kstarInOO {
       if (!goodEv1 || !goodEv2)
         continue;
 
-      //////////////////
-
-      // if (std::fabs(collision1.posZ()) > cfg_Event_VtxCut || std::fabs(collision2.posZ()) > cfg_Event_VtxCut)
-      // 	return;
-
-      // bool INELgt0 = false;
-      // for (const auto& tracks1 : tracks) {
-      // 	if (std::fabs(tracks1.eta()) < cfg_Track_MaxEta) {
-      // 	  INELgt0 = true;
-      // 	  break;
-      // 	}
-      // }
-      // for (const auto& tracks2 : tracks) {
-      // 	if (std::fabs(tracks2.eta()) < cfg_Track_MaxEta) {
-      // 	  INELgt0 = true;
-      // 	  break;
-      // 	}
-      // }
-      // if (!INELgt0)
-      // 	return;
-
-      /////////////////////
-
       OOhistos.fill(HIST("nEvents_MC_Mix"), 1.5);
 
       TrackSlicing_MC(collision1, tracks1, collision2, tracks2, true);
