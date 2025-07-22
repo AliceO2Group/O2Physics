@@ -23,7 +23,7 @@
 
 namespace o2::aod
 {
-namespace zdcTableLiIo
+namespace zdcdmoxygen
 {
 DECLARE_SOA_COLUMN(ZnaTdc, znaTdc, float);                 //! Tdc ZNA
 DECLARE_SOA_COLUMN(ZnaAmpl, znaAmpl, float);               //! amplitude ZNA
@@ -41,55 +41,55 @@ DECLARE_SOA_COLUMN(ZncPm3, zncPm3, float);                 //! ADC Pm3 ZNC
 DECLARE_SOA_COLUMN(ZncPm4, zncPm4, float);                 //! ADC Pm4 ZNC
 DECLARE_SOA_COLUMN(ZpaTdc, zpaTdc, float);                 //! Tdc ZPA
 DECLARE_SOA_COLUMN(ZpaAmpl, zpAmplc, float);               //! amplitude ZPA
-DECLARE_SOA_COLUMN(ZpaPmc, zpaPmC, float);                 //! ADC PmC ZPA
+DECLARE_SOA_COLUMN(ZpaPmc, zpaPmc, float);                 //! ADC PmC ZPA
 DECLARE_SOA_COLUMN(ZpcTdc, zpcTdc, float);                 //! Tdc ZPC
 DECLARE_SOA_COLUMN(ZpcAmpl, zpcAmpl, float);               //! amplitude ZPA
 DECLARE_SOA_COLUMN(ZpcPmc, zpcPmc, float);                 //! ADC PmC ZPA
 DECLARE_SOA_COLUMN(Zem1Tdc, zem1Tdc, float);               //! Tdc ZEM1
-DECLARE_SOA_COLUMN(Zem1Ampl, zemampl, float);              //! amplitude ZEM1
+DECLARE_SOA_COLUMN(Zem1Ampl, zem1Ampl, float);              //! amplitude ZEM1
 DECLARE_SOA_COLUMN(Zem2Tdc, zem2Tdc, float);               //! Tdc ZEM2
 DECLARE_SOA_COLUMN(Zem2Ampl, zem2Ampl, float);             //! amplitude ZEM2
 DECLARE_SOA_COLUMN(MultFt0a, multFt0a, float);             //! mult. FIT-A
 DECLARE_SOA_COLUMN(MultFt0c, multFt0c, float);             //! mult. FIT-C
 DECLARE_SOA_COLUMN(MultV0a, multV0a, float);               //! mult. V0-A
-DECLARE_SOA_COLUMN(Zvertex, zVertex, float);               //! Z vertex
+DECLARE_SOA_COLUMN(VertexZ, vertexZ, float);               //! Z vertex
 DECLARE_SOA_COLUMN(CentralityFt0c, centralityFt0c, float); //! Centrality
 DECLARE_SOA_COLUMN(CentralityFt0a, centralityFt0a, float); //! Centrality
 DECLARE_SOA_COLUMN(CentralityFt0m, centralityFt0m, float); //! Centrality
 DECLARE_SOA_COLUMN(SelectionBits, selectionBits, uint8_t); //! Selection Flags
-} // namespace zdcTableLiIo
+} // namespace zdcdmoxygen
 
-DECLARE_SOA_TABLE(ZdcTable, "AOD", "ZdcTeble",
-                  zdcTableLiIo::ZnaTdc,
-                  zdcTableLiIo::ZnaAmpl,
-                  zdcTableLiIo::ZnaPmc,
-                  zdcTableLiIo::ZnaPm1,
-                  zdcTableLiIo::ZnaPm2,
-                  zdcTableLiIo::ZnaPm3,
-                  zdcTableLiIo::ZnaPm4,
-                  zdcTableLiIo::ZncTdc,
-                  zdcTableLiIo::ZncAmpl,
-                  zdcTableLiIo::ZncPmc,
-                  zdcTableLiIo::ZncPm1,
-                  zdcTableLiIo::ZncPm2,
-                  zdcTableLiIo::ZncPm3,
-                  zdcTableLiIo::ZncPm4,
-                  zdcTableLiIo::ZpaTdc,
-                  zdcTableLiIo::ZpaAmpl,
-                  zdcTableLiIo::ZpcTdc,
-                  zdcTableLiIo::ZpcAmpl,
-                  zdcTableLiIo::Zem1Tdc,
-                  zdcTableLiIo::Zem1Ampl,
-                  zdcTableLiIo::Zem2Tdc,
-                  zdcTableLiIo::Zem2Ampl,
-                  zdcTableLiIo::MultFt0a,
-                  zdcTableLiIo::MultFt0c,
-                  zdcTableLiIo::MultV0a,
-                  zdcTableLiIo::Zvertex,
-                  zdcTableLiIo::CentralityFt0c,
-                  zdcTableLiIo::CentralityFt0a,
-                  zdcTableLiIo::CentralityFt0m,
-                  zdcTableLiIo::SelectionBits);
+DECLARE_SOA_TABLE(ZDCdmOxygen, "AOD", "ZDCTABLELIGHTIONS",
+                  zdcdmoxygen::ZnaTdc,
+                  zdcdmoxygen::ZnaAmpl,
+                  zdcdmoxygen::ZnaPmc,
+                  zdcdmoxygen::ZnaPm1,
+                  zdcdmoxygen::ZnaPm2,
+                  zdcdmoxygen::ZnaPm3,
+                  zdcdmoxygen::ZnaPm4,
+                  zdcdmoxygen::ZncTdc,
+                  zdcdmoxygen::ZncAmpl,
+                  zdcdmoxygen::ZncPmc,
+                  zdcdmoxygen::ZncPm1,
+                  zdcdmoxygen::ZncPm2,
+                  zdcdmoxygen::ZncPm3,
+                  zdcdmoxygen::ZncPm4,
+                  zdcdmoxygen::ZpaTdc,
+                  zdcdmoxygen::ZpaAmpl,
+                  zdcdmoxygen::ZpcTdc,
+                  zdcdmoxygen::ZpcAmpl,
+                  zdcdmoxygen::Zem1Tdc,
+                  zdcdmoxygen::Zem1Ampl,
+                  zdcdmoxygen::Zem2Tdc,
+                  zdcdmoxygen::Zem2Ampl,
+                  zdcdmoxygen::MultFt0a,
+                  zdcdmoxygen::MultFt0c,
+                  zdcdmoxygen::MultV0a,
+                  zdcdmoxygen::VertexZ,
+                  zdcdmoxygen::CentralityFt0c,
+                  zdcdmoxygen::CentralityFt0a,
+                  zdcdmoxygen::CentralityFt0m,
+                  zdcdmoxygen::SelectionBits);
 } // namespace o2::aod
 
 #endif // PWGMM_DATAMODEL_ZDCDMOXYGEN_H_

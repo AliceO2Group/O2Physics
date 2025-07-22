@@ -42,7 +42,7 @@ using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::C
 
 struct ZdcTaskOxygen {
 
-  Produces<aod::ZdcTable> zdcTableoo;
+  Produces<aod::ZDCdmOxygen> zdcTableoo;
 
   // Configurable parameters
   Configurable<int> nBinsTiming{"nBinsTiming", 200, "n bins for debunching histo"};
