@@ -51,6 +51,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 using namespace o2;
 using namespace o2::framework;
@@ -736,6 +737,8 @@ struct Kstarqa {
       multiplicity = collision.centFT0C();
     } else if (cSelectMultEstimator == 3) {
       multiplicity = collision.centFV0A();
+    } else {
+      multiplicity = collision.centFT0M();
     }
     /* else if (cSelectMultEstimator == 4) {
       multiplicity = collision.centMFT();
@@ -746,9 +749,6 @@ struct Kstarqa {
     /* else if (cSelectMultEstimator == 6) {
       multiplicity = collision.centNTPV();
     } */
-    else {
-      multiplicity = collision.centFT0M();
-    }
 
     // Fill the event counter
     if (cQAevents) {
