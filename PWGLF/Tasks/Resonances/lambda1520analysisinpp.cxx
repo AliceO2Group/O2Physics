@@ -19,6 +19,7 @@
 
 // 3. C++ system headers
 #include <string>
+#include <vector>
 
 // 4. Other includes: O2 framework, ROOT, etc.
 #include "PWGLF/Utils/collisionCuts.h"
@@ -37,7 +38,6 @@
 #include "TPDGCode.h"
 #include "TRandom.h"
 #include "TVector3.h"
-#include <vector>
 
 using namespace o2;
 using namespace o2::soa;
