@@ -42,36 +42,36 @@ using namespace o2::constants::physics;
 using LorentzVectorPtEtaPhiMass = ROOT::Math::PtEtaPhiMVector;
 
 enum {
-  inel = 1,
-  inel10,
-  inelg0,
-  inelg010,
-  trig,
-  trig10,
-  trigINELg0,
-  trigINELg010,
-  sel8,
-  sel810,
-  sel8INELg0,
-  sel8INELg010,
-  allCuts,
-  allCuts10,
-  allCutsINELg0,
-  allCutsINELg010,
+  Inel = 1,
+  Inel10,
+  Inelg0,
+  Inelg010,
+  Trig,
+  Trig10,
+  TrigINELg0,
+  TrigINELg010,
+  Sel8,
+  Sel810,
+  Sel8INELg0,
+  Sel8INELg010,
+  AllCuts,
+  AllCuts10,
+  AllCutsINELg0,
+  AllCutsINELg010,
 };
 
 enum TrackSelectionType {
-  allTracks = 0,
-  globalTracks,
-  globalTracksWoPtEta,
-  globalTracksWoDCA,
-  qualityTracks,
-  inAcceptanceTracks,
+  AllTracks = 0,
+  GlobalTracks,
+  GlobalTracksWoPtEta,
+  GlobalTracksWoDCA,
+  QualityTracks,
+  InAcceptanceTracks,
 };
 
 enum PIDCutType {
-  squareType = 1,
-  circularType,
+  SquareType = 1,
+  CircularType,
 };
 
 struct Lambda1520analysisinpp {
@@ -202,12 +202,12 @@ struct Lambda1520analysisinpp {
 
   Filter tofPIDFilter = aod::track::tofExpMom < 0.f || ((aod::track::tofExpMom > 0.f) && (/* (nabs(aod::pidtof::tofNSigmaPi) < configPID.pidnSigmaPreSelectionCut) || */ (nabs(aod::pidtof::tofNSigmaKa) < configPID.pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaPr) < configPID.pidnSigmaPreSelectionCut))); // TOF
   Filter tpcPIDFilter = /* nabs(aod::pidtpc::tpcNSigmaPi) < configPID.pidnSigmaPreSelectionCut || */ nabs(aod::pidtpc::tpcNSigmaKa) < configPID.pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaPr) < configPID.pidnSigmaPreSelectionCut;                                                                           // TPC
-  Filter trackFilter = (configTracks.trackSelection == allTracks) ||
-                       ((configTracks.trackSelection == globalTracks) && requireGlobalTrackInFilter()) ||
-                       ((configTracks.trackSelection == globalTracksWoPtEta) && requireGlobalTrackWoPtEtaInFilter()) ||
-                       ((configTracks.trackSelection == globalTracksWoDCA) && requireGlobalTrackWoDCAInFilter()) ||
-                       ((configTracks.trackSelection == qualityTracks) && requireQualityTracksInFilter()) ||
-                       ((configTracks.trackSelection == inAcceptanceTracks) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+  Filter trackFilter = (configTracks.trackSelection == AllTracks) ||
+                       ((configTracks.trackSelection == GlobalTracks) && requireGlobalTrackInFilter()) ||
+                       ((configTracks.trackSelection == GlobalTracksWoPtEta) && requireGlobalTrackWoPtEtaInFilter()) ||
+                       ((configTracks.trackSelection == GlobalTracksWoDCA) && requireGlobalTrackWoDCAInFilter()) ||
+                       ((configTracks.trackSelection == QualityTracks) && requireQualityTracksInFilter()) ||
+                       ((configTracks.trackSelection == InAcceptanceTracks) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
 
   Filter acceptanceFilter = (nabs(aod::track::eta) < configTracks.cfgCutEta && nabs(aod::track::pt) > configTracks.cMinPtcut);
   // Filter DCAcutFilter = (nabs(aod::track::dcaXY) < configTracks.cfgCutDCAxy) && (nabs(aod::track::dcaZ) < configTracks.cfgCutDCAz);
@@ -427,7 +427,7 @@ struct Lambda1520analysisinpp {
   float massKa = MassKaonCharged;
   float massPr = MassProton;
 
-  int cLambda1520PDG = static_cast<int>(102134); // PDG code for Lambda(1520)
+  auto static constexpr Lambda1520PDG = 102134; // PDG code for Lambda(1520)
 
   // Centralicity estimator selection
   template <typename Coll>
@@ -451,7 +451,7 @@ struct Lambda1520analysisinpp {
     return returnValue;
   }
 
-  auto static constexpr cTripleCharge = 3.f;
+  auto static constexpr TripleCharge = 3.f;
 
   // Check if the collision is INEL>0
   template <typename MCColl, typename MCPart>
@@ -462,7 +462,7 @@ struct Lambda1520analysisinpp {
         continue;
       auto p = pdg->GetParticle(mcparticle.pdgCode());
       if (p != nullptr) {
-        if (std::abs(p->Charge()) >= cTripleCharge) { // check if the particle is charged
+        if (std::abs(p->Charge()) >= TripleCharge) { // check if the particle is charged
           if (std::abs(mcparticle.eta()) < 1.0)
             return true;
         }
@@ -554,7 +554,7 @@ struct Lambda1520analysisinpp {
 
     // Case 3: Has TOF → use TPC + TOF (square or circular)
     if (candidate.hasTOF()) {
-      if (configPID.cPIDcutType == squareType) {
+      if (configPID.cPIDcutType == SquareType) {
         // Rectangular cut
         for (size_t i = 0; i < vProtonTOFPIDpTintv.size(); ++i) {
           if (pt < vProtonTOFPIDpTintv[i]) {
@@ -563,7 +563,7 @@ struct Lambda1520analysisinpp {
               return true;
           }
         }
-      } else if (configPID.cPIDcutType == circularType) {
+      } else if (configPID.cPIDcutType == CircularType) {
         // Circular cut
         for (size_t i = 0; i < vProtonTPCTOFCombinedpTintv.size(); ++i) {
           if (pt < vProtonTPCTOFCombinedpTintv[i]) {
@@ -625,7 +625,7 @@ struct Lambda1520analysisinpp {
 
     // Case 3: TOF is available → apply TPC+TOF PID logic
     if (candidate.hasTOF()) {
-      if (configPID.cPIDcutType == squareType) {
+      if (configPID.cPIDcutType == SquareType) {
         // Rectangular cut
         for (size_t i = 0; i < vKaonTOFPIDpTintv.size(); ++i) {
           if (pt < vKaonTOFPIDpTintv[i]) {
@@ -635,7 +635,7 @@ struct Lambda1520analysisinpp {
             }
           }
         }
-      } else if (configPID.cPIDcutType == circularType) {
+      } else if (configPID.cPIDcutType == CircularType) {
         // Circular cut
         for (size_t i = 0; i < vKaonTPCTOFCombinedpTintv.size(); ++i) {
           if (pt < vKaonTPCTOFCombinedpTintv[i]) {
@@ -966,7 +966,7 @@ struct Lambda1520analysisinpp {
           if (motherstrk1[0] != motherstrk2[0]) // Same mother
             continue;
 
-          if (std::abs(mothersPDGtrk1[0]) != cLambda1520PDG)
+          if (std::abs(mothersPDGtrk1[0]) != Lambda1520PDG)
             continue;
 
           // LOGF(info, "mother trk1 id: %d, mother trk1: %d, trk1 id: %d, trk1 pdgcode: %d, mother trk2 id: %d, mother trk2: %d, trk2 id: %d, trk2 pdgcode: %d", motherstrk1[0], mothersPDGtrk1[0], trk1.globalIndex(), mctrk1.pdgCode(), motherstrk2[0], mothersPDGtrk2[0], trk2.globalIndex(), mctrk2.pdgCode());
@@ -1070,7 +1070,7 @@ struct Lambda1520analysisinpp {
   }
   PROCESS_SWITCH(Lambda1520analysisinpp, processMC, "Process Event for MC Light without partition", false);
 
-  Partition<aod::McParticles> selectedMCParticles = (nabs(aod::mcparticle::pdgCode) == cLambda1520PDG); // Lambda(1520)
+  Partition<aod::McParticles> selectedMCParticles = (nabs(aod::mcparticle::pdgCode) == Lambda1520PDG); // Lambda(1520)
 
   void processMCTrue(MCEventCandidates::iterator const& collision, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
@@ -1086,7 +1086,7 @@ struct Lambda1520analysisinpp {
     // Not related to the real collisions
     for (const auto& part : mcParts) { // loop over all MC particles
 
-      if (std::abs(part.pdgCode()) != cLambda1520PDG) // Lambda1520(0)
+      if (std::abs(part.pdgCode()) != Lambda1520PDG) // Lambda1520(0)
         continue;
 
       std::vector<int> daughterPDGs;
@@ -1166,43 +1166,43 @@ struct Lambda1520analysisinpp {
     }
 
     // QA for Trigger efficiency
-    histos.fill(HIST("Event/hMCEventIndices"), centrality, inel);
+    histos.fill(HIST("Event/hMCEventIndices"), centrality, Inel);
     if (inVtx10)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, inel10);
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, Inel10);
     if (isTrueINELgt0)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, inelg0);
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, Inelg0);
     if (inVtx10 && isTrueINELgt0)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, inelg010);
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, Inelg010);
 
     // TVX MB trigger
     if (isTriggerTVX)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, trig);
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, Trig);
     if (isTriggerTVX && inVtx10)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, trig10);
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, Trig10);
     if (isTriggerTVX && isTrueINELgt0)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, trigINELg0);
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, TrigINELg0);
     if (isTriggerTVX && isTrueINELgt0 && inVtx10)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, trigINELg010);
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, TrigINELg010);
 
     // Sel8 event selection
     if (isSel8)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, sel8);
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, Sel8);
     if (isSel8 && inVtx10)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, sel810);
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, Sel810);
     if (isSel8 && isTrueINELgt0)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, sel8INELg0);
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, Sel8INELg0);
     if (isSel8 && isTrueINELgt0 && inVtx10)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, sel8INELg010);
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, Sel8INELg010);
 
     // CollisionCuts selection
     if (isInAfterAllCuts)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, allCuts);
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, AllCuts);
     if (isInAfterAllCuts && inVtx10)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, allCuts10);
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, AllCuts10);
     if (isInAfterAllCuts && isTrueINELgt0)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, allCutsINELg0);
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, AllCutsINELg0);
     if (isInAfterAllCuts && isTrueINELgt0 && inVtx10)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, allCutsINELg010);
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, AllCutsINELg010);
   }
   PROCESS_SWITCH(Lambda1520analysisinpp, processMCTrue, "Process Event for MC only", false);
 
