@@ -46,6 +46,11 @@ enum class DileptonAnalysisType : int {
   kHFll = 6,
 };
 
+enum class DileptonHadronAnalysisType : int {
+  kCumulant = 0,
+  kCorrelationFunction = 1,
+};
+
 enum class DileptonPrefilterBit : int {
   kElFromPC = 0,    // electron from photon conversion
   kElFromPi0_1 = 1, // electron from pi0 dalitz decay, threshold 1
