@@ -1046,8 +1046,8 @@ struct DileptonHadron {
     return true;
   }
 
-  template <int ev_id, typename TCollision, typename TRefTrack>
-  bool fillHadronHadron(TCollision const& collision, TRefTrack const& t1, TRefTrack const& t2)
+  template <int ev_id, typename TRefTrack>
+  bool fillHadronHadron(TRefTrack const& t1, TRefTrack const& t2)
   {
     if constexpr (ev_id == 0) {
       if (!fEMTrackCut.IsSelected(t1) || !fEMTrackCut.IsSelected(t2)) { // for charged track
@@ -1255,7 +1255,7 @@ struct DileptonHadron {
           nlspp++;
         }
         for (const auto& reftrack : refTracks_per_coll) {
-          bool is_pair_ok = fillDileptonHadron<0>(collision, pos1, pos2, cut, tracks, reftrack);
+          fillDileptonHadron<0>(collision, pos1, pos2, cut, tracks, reftrack);
         }
       }
       for (const auto& [neg1, neg2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
@@ -1264,12 +1264,12 @@ struct DileptonHadron {
           nlsmm++;
         }
         for (const auto& reftrack : refTracks_per_coll) {
-          bool is_pair_ok = fillDileptonHadron<0>(collision, neg1, neg2, cut, tracks, reftrack);
+          fillDileptonHadron<0>(collision, neg1, neg2, cut, tracks, reftrack);
         }
       }
 
       for (const auto& [trg, ref] : combinations(CombinationsStrictlyUpperIndexPolicy(refTracks_per_coll, refTracks_per_coll))) {
-        bool is_pair_ok = fillHadronHadron<0>(collision, trg, ref);
+        fillHadronHadron<0>(trg, ref);
       }
 
       if (!cfgDoMix || !(nuls > 0 || nlspp > 0 || nlsmm > 0)) {
