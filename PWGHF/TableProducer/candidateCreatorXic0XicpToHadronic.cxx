@@ -29,7 +29,6 @@
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Core/CentralityEstimation.h" // -> This was updated --> no use
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -171,15 +170,11 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 
 	void init(InitContext const&)
 	{
-		//std::vector<bool> allProcesses{doprocessXic0WithDCAFitterNoCent, doprocessXic0WithKFParticleNoCent, doprocessXicpWithDCAFitterNoCent, doprocessXicpWithKFParticleNoCent, doprocessCollisionsNoCent};
-		std::vector<bool> processesXic0{doprocessXic0WithDCAFitterNoCent, doprocessXic0WithKFParticleNoCent};
-		std::vector<bool> processesXicp{doprocessXicpWithDCAFitterNoCent, doprocessXicpWithKFParticleNoCent};
-		std::vector<bool> processesCollMonitoring{doprocessCollisionsNoCent};
-
-		// Exit if workflow is not configured correctly - None of the workflows were enablec 
-		//if (std::accumulate(allProcesses.begin(), allProcesses.end(), 0) == 0) {
-		//		LOGP(fatal, "No process function enabled or More than one process function enabled. Select one process function");
-		//}
+		std::vector<bool> processesXic0{doprocessXic0WithDCAFitterNoCent, doprocessXic0WithDCAFitterCentFT0C, doprocessXic0WithDCAFitterCentFT0M,
+										doprocessXic0WithKFParticleNoCent, doprocessXic0WithKFParticleCentFT0C, doprocessXic0WithKFParticleCentFT0M};
+		std::vector<bool> processesXicp{doprocessXicpWithDCAFitterNoCent, doprocessXicpWithDCAFitterCentFT0C, doprocessXicpWithDCAFitterCentFT0M,
+										doprocessXicpWithKFParticleNoCent, doprocessXicpWithKFParticleCentFT0C, doprocessXicpWithKFParticleCentFT0M};
+		std::vector<bool> processesCollMonitoring{doprocessCollisionsNoCent, doprocessCollisionsCentFT0C, doprocessCollisionsCentFT0M};
 
 		// Exit if workflow is not configured correctly - More than one process enabled for Xic0
 		if (std::accumulate(processesXic0.begin(), processesXic0.end(), 0) > 1) {
