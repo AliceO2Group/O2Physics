@@ -64,7 +64,7 @@ using MyMCElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectrons
 using MyMCElectron = MyMCElectrons::iterator;
 using FilteredMyMCElectrons = soa::Filtered<MyMCElectrons>;
 
-using MyMCMuons = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMEventIds, aod::EMAmbiguousMuonSelfIds, aod::EMGlobalMuonSelfIds, aod::EMPrimaryMuonMCLabels>;
+using MyMCMuons = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMEventIds, aod::EMAmbiguousMuonSelfIds, aod::EMGlobalMuonSelfIds, aod::EMPrimaryMuonMCLabels, aod::EMMFTMCLabels>;
 using MyMCMuon = MyMCMuons::iterator;
 using FilteredMyMCMuons = soa::Filtered<MyMCMuons>;
 
@@ -100,10 +100,10 @@ struct SingleTrackQCMC {
     std::string prefix = "eventcut_group";
     Configurable<float> cfgZvtxMin{"cfgZvtxMin", -10.f, "min. Zvtx"};
     Configurable<float> cfgZvtxMax{"cfgZvtxMax", +10.f, "max. Zvtx"};
-    Configurable<bool> cfgRequireSel8{"cfgRequireSel8", true, "require sel8 in event cut"};
+    Configurable<bool> cfgRequireSel8{"cfgRequireSel8", false, "require sel8 in event cut"};
     Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", true, "require FT0AND in event cut"};
-    Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", true, "require No time frame border in event cut"};
-    Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", true, "require no ITS readout frame border in event cut"};
+    Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", false, "require No time frame border in event cut"};
+    Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", false, "require no ITS readout frame border in event cut"};
     Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
     Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"};             // ITS-TPC matched track contributes PV.
     Configurable<bool> cfgRequireVertexTOFmatched{"cfgRequireVertexTOFmatched", false, "require Vertex TOFmatched in event cut"}; // ITS-TPC-TOF matched track contributes PV.
@@ -390,6 +390,9 @@ struct SingleTrackQCMC {
     if (doprocessQCMC && doprocessQCMC_Smeared) {
       LOGF(fatal, "Cannot enable processQCMC and processQCMC_Smeared at the same time. Please choose one.");
     }
+    if (doprocessQCMC) {
+      fillGenValuesForRec = true;
+    }
 
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
@@ -399,10 +402,6 @@ struct SingleTrackQCMC {
 
     DefineEMEventCut();
     addhistograms();
-
-    if (doprocessQCMC) {
-      fillGenValuesForRec = true;
-    }
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       pdg_lepton = 11;
@@ -854,7 +853,9 @@ struct SingleTrackQCMC {
             fillTrackInfo<7, TMCParticles>(track);
           }
         } else {
-          fillTrackInfo<2, TMCParticles>(track);
+          if (pdg_mother == 22) { // photon conversion
+            fillTrackInfo<2, TMCParticles>(track);
+          }
         }
       } // end of track loop
 
