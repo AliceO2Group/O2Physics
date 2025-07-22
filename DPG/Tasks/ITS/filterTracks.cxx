@@ -179,11 +179,12 @@ struct FilterTracks {
   Partition<soa::Filtered<TracksWithSelAndDcaMc>> midPtTracksMC = aod::track::pt > lowPtThreshold&& aod::track::pt < midPtThreshold && (nabs(aod::track::pt * nDigitScaleFactor - nround(aod::track::pt * nDigitScaleFactor)) < trackPtWeightMidPt.node() * lowPtThreshold);
   Partition<soa::Filtered<TracksWithSelAndDcaMc>> highPtTracksMC = aod::track::pt > midPtThreshold;
 
-  const int nStudiedParticlesMc = 3;
-  std::array<int, 3> pdgSignalParticleArray = {kK0Short, o2::constants::physics::Pdg::kD0, o2::constants::physics::Pdg::kLambdaCPlus}; // K0s, D0 and Lc
+  const static int nStudiedParticlesMc = 3;
+  std::array<int, nStudiedParticlesMc> pdgSignalParticleArray = {kK0Short, o2::constants::physics::Pdg::kD0, o2::constants::physics::Pdg::kLambdaCPlus}; // K0s, D0 and Lc
   std::array<int, 3> pdgDecayLc = {kProton, kKMinus, kPiPlus};
   std::array<int, 2> pdgDecayDzero = {kKMinus, kPiPlus};
   std::array<int, 2> pdgDecayKzero = {kPiMinus, kPiPlus};
+  const int nK0sShortDaught=2;
 
   void init(InitContext&)
   {
@@ -221,7 +222,7 @@ struct FilterTracks {
           if (pdgParticleMother == kK0Short) {
             auto daughtersSlice = mcparticle.template daughters_as<aod::McParticles>();
             int ndaught = daughtersSlice.size(); // might not be accurate in case K0s interact with material before decaying
-            if (ndaught != 2)
+            if (ndaught != nK0sShortDaught)
               ndaught *= -1;
             filteredTracksMC(mcparticle.pdgCode(), mcparticle.isPhysicalPrimary(), particleMother.pdgCode(), 0, motherIndex, ndaught, particleMother.pt(), particleMother.y(), 0, 0);
             //  std::cout<<"FOUND K0s, MATCHED!  size array "<<ndaught<<std::endl;
@@ -249,7 +250,7 @@ struct FilterTracks {
           if (RecoDecay::getCharmHadronOrigin(mcParticles, particleMother, false, &idxBhadMothers) == RecoDecay::OriginType::NonPrompt) {
             if (idxBhadMothers.size() > 1) {
               LOG(info) << "more than 1 B mother hadron found, should not be: ";
-              for (int64_t iBhM = 0; iBhM < idxBhadMothers.size(); iBhM++) {
+              for (uint64_t iBhM = 0; iBhM < idxBhadMothers.size(); iBhM++) {
                 auto particleBhadr = mcParticles.rawIteratorAt(idxBhadMothers[iBhM]);
                 LOG(info) << particleBhadr.pdgCode();
               }
@@ -344,7 +345,7 @@ struct FilterTracks {
         // }
       }
       if (isMatchedToSignal) {
-        for (auto mcpartdaughtIdx : indxDaughers) {
+        for (auto const mcpartdaughtIdx : indxDaughers) {
           auto mcPartDaught = mcParticles.rawIteratorAt(mcpartdaughtIdx);
           double eta = std::abs(mcPartDaught.eta());
           if ((eta) > etamax) {
@@ -359,7 +360,7 @@ struct FilterTracks {
         if (RecoDecay::getCharmHadronOrigin(mcParticles, mcpart, false, &idxBhadMothers) == RecoDecay::OriginType::NonPrompt) {
           if (idxBhadMothers.size() > 1) {
             LOG(info) << "loop on gen particles: more than 1 B mother hadron found, should not be: ";
-            for (int64_t iBhM = 0; iBhM < idxBhadMothers.size(); iBhM++) {
+            for (uint64_t iBhM = 0; iBhM < idxBhadMothers.size(); iBhM++) {
               auto particleBhadr = mcParticles.rawIteratorAt(idxBhadMothers[iBhM]);
               LOG(info) << particleBhadr.pdgCode();
             }
