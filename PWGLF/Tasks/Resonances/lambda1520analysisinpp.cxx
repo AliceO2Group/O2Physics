@@ -460,7 +460,7 @@ struct Lambda1520analysisinpp {
         continue;
       auto p = pdg->GetParticle(mcparticle.pdgCode());
       if (p != nullptr) {
-        if (std::abs(p->Charge()/3.0) >= 1.0) {
+        if (std::abs(p->Charge() / 3.0) >= 1.0) {
           if (std::abs(mcparticle.eta()) < 1.0)
             return true;
         }
