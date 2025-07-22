@@ -378,7 +378,7 @@ struct EmcalCorrectionTask {
         }
         if (applyTempCalib) {
           float tempCalibFactor = mTempCalibExtractor->getGainCalibFactor(static_cast<uint16_t>(cell.cellNumber()));
-          amplitude *= tempCalibFactor;
+          amplitude /= tempCalibFactor;
           mHistManager.fill(HIST("hTempCalibCorrection"), tempCalibFactor);
         }
         cellsBC.emplace_back(cell.cellNumber(),
@@ -636,7 +636,7 @@ struct EmcalCorrectionTask {
         }
         if (applyTempCalib) {
           float tempCalibFactor = mTempCalibExtractor->getGainCalibFactor(static_cast<uint16_t>(cell.cellNumber()));
-          amplitude *= tempCalibFactor;
+          amplitude /= tempCalibFactor;
           mHistManager.fill(HIST("hTempCalibCorrection"), tempCalibFactor);
         }
         cellsBC.emplace_back(cell.cellNumber(),
