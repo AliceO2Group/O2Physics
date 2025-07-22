@@ -38,6 +38,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TPDGCode.h>
+
 #include <cmath>
 #include <cstdint>
 #include <string>
@@ -1540,7 +1541,7 @@ struct JetFragmentation {
     const int nCones = 2;
     double perpConeR = jet.r() * 1e-2;
     double conePhi[nCones] = {RecoDecay::constrainAngle(jet.phi() - constants::math::PIHalf, -constants::math::PI),
-                         RecoDecay::constrainAngle(jet.phi() + constants::math::PIHalf, -constants::math::PI)};
+                              RecoDecay::constrainAngle(jet.phi() + constants::math::PIHalf, -constants::math::PI)};
     double conePt[nCones] = {0., 0.};
     int nV0sinCone[nCones] = {0, 0};
     for (const auto& v0 : v0s) {
@@ -1548,7 +1549,7 @@ struct JetFragmentation {
       bool v0InCones = false;
       double dEta = v0.eta() - jet.eta();
       double dPhi[nCones] = {RecoDecay::constrainAngle(v0.phi() - conePhi[0], -constants::math::PI),
-                        RecoDecay::constrainAngle(v0.phi() - conePhi[1], -constants::math::PI)};
+                             RecoDecay::constrainAngle(v0.phi() - conePhi[1], -constants::math::PI)};
       for (int i = 0; i < nCones; i++) {
         if (std::sqrt(dEta * dEta + dPhi[i] * dPhi[i]) < perpConeR) {
           conePt[i] += v0.pt();
@@ -1904,7 +1905,7 @@ struct JetFragmentation {
     const int nCones = 2;
     double perpConeR = mcdjet.r() * 1e-2;
     double conePhi[nCones] = {RecoDecay::constrainAngle(mcdjet.phi() - constants::math::PIHalf, -constants::math::PI),
-                         RecoDecay::constrainAngle(mcdjet.phi() + constants::math::PIHalf, -constants::math::PI)};
+                              RecoDecay::constrainAngle(mcdjet.phi() + constants::math::PIHalf, -constants::math::PI)};
     double coneMatchedPt[nCones] = {0., 0.};
     double coneFakePt[nCones] = {0., 0.};
     int nMatchedV0sinCone[nCones] = {0, 0};
@@ -1913,7 +1914,7 @@ struct JetFragmentation {
     for (const auto& v0 : v0s) {
       double dEta = v0.eta() - mcdjet.eta();
       double dPhi[nCones] = {RecoDecay::constrainAngle(v0.phi() - conePhi[0], -constants::math::PI),
-                        RecoDecay::constrainAngle(v0.phi() - conePhi[1], -constants::math::PI)};
+                             RecoDecay::constrainAngle(v0.phi() - conePhi[1], -constants::math::PI)};
       for (int i = 0; i < nCones; i++) {
         if (std::sqrt(dEta * dEta + dPhi[i] * dPhi[i]) > perpConeR) {
           continue;
@@ -1974,7 +1975,7 @@ struct JetFragmentation {
     const int nCones = 2;
     double perpConeR = mcdjet.r() * 1e-2;
     double conePhi[nCones] = {RecoDecay::constrainAngle(mcdjet.phi() - constants::math::PIHalf, -constants::math::PI),
-                         RecoDecay::constrainAngle(mcdjet.phi() + constants::math::PIHalf, -constants::math::PI)};
+                              RecoDecay::constrainAngle(mcdjet.phi() + constants::math::PIHalf, -constants::math::PI)};
     double coneMatchedPt[nCones] = {0., 0.};
     double coneFakePt[nCones] = {0., 0.};
     int nMatchedV0sinCone[nCones] = {0, 0};
@@ -1983,7 +1984,7 @@ struct JetFragmentation {
     for (const auto& v0 : v0s) {
       double dEta = v0.eta() - mcdjet.eta();
       double dPhi[nCones] = {RecoDecay::constrainAngle(v0.phi() - conePhi[0], -constants::math::PI),
-                        RecoDecay::constrainAngle(v0.phi() - conePhi[1], -constants::math::PI)};
+                             RecoDecay::constrainAngle(v0.phi() - conePhi[1], -constants::math::PI)};
       for (int i = 0; i < nCones; i++) {
         if (std::sqrt(dEta * dEta + dPhi[i] * dPhi[i]) > perpConeR) {
           continue;
