@@ -387,8 +387,7 @@ struct Hyperhelium4sigmaRecoTask {
     mBz = grpmag->getNominalL3Field();
 
     if (!lut) {
-      auto timestamp = bc.timestamp();
-      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForTimeStamp<o2::base::MatLayerCylSet>(lutPath, timestamp));
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
     }
     o2::base::Propagator::Instance()->setMatLUT(lut);
     LOG(info) << "Task initialized for run " << mRunNumber << " with magnetic field " << mBz << " kZG";
