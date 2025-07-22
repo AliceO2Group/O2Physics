@@ -885,7 +885,13 @@ void fillDstarCandidateTable(T const& candidate, U& DstarParTable, V& DstarParDa
   DstarMlTable(mlScoresVector);
 
   if constexpr (isMc) {
-    DstarMCDTable(candidate.flagMcMatchRec(), candidate.originMcRec());
+    DstarMCDTable(
+      candidate.flagMcMatchRec(),
+      candidate.flagMcMatchRecCharm(),
+      candidate.originMcRec(),
+      candidate.ptBhadMotherPart(),
+      candidate.pdgBhadMotherPart(),
+      candidate.nTracksDecayed());
   }
 }
 
