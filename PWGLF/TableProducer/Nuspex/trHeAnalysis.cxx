@@ -195,6 +195,7 @@ struct TrHeAnalysis {
   Configurable<int> cfgMassMethod{"cfgMassMethod", 0, "0: Using built in 1: mass calculated with beta 2: mass calculated with the event time"};
   Configurable<bool> cfgEnableItsClusterSizeCut{"cfgEnableItsClusterSizeCut", false, "Enable ITS cluster size cut"};
   Configurable<bool> cfgEnableTofMassCut{"cfgEnableTofMassCut", false, "Enable TOF mass cut"};
+  Configurable<float> cfgTofMassCutPt{"cfgTofMassCutPt", 1.6f, "Pt value for which the TOF-cut starts to be used"};
   // Set the multiplity event limits
   Configurable<float> cfgLowMultCut{"cfgLowMultCut", 0.0f, "Accepted multiplicity percentage lower limit"};
   Configurable<float> cfgHighMultCut{"cfgHighMultCut", 100.0f, "Accepted multiplicity percentage higher limit"};
@@ -400,7 +401,7 @@ struct TrHeAnalysis {
                 continue;
               }
             }
-            if (cfgEnableTofMassCut) {
+            if (cfgEnableTofMassCut && track.pt() > cfgTofMassCutPt) {
               if (getMass(track) < cfgCutMinTofMassH3 || getMass(track) > cfgCutMaxTofMassH3) {
                 histos.fill(HIST("histogram/cuts"), 13);
                 continue;
@@ -565,7 +566,7 @@ struct TrHeAnalysis {
                 continue;
               }
             }
-            if (cfgEnableTofMassCut) {
+            if (cfgEnableTofMassCut && track.pt() > cfgTofMassCutPt) {
               if (getMass(track) < cfgCutMinTofMassH3 || getMass(track) > cfgCutMaxTofMassH3) {
                 histos.fill(HIST("histogram/cuts"), 13);
                 continue;
