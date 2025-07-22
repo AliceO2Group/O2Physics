@@ -1302,13 +1302,9 @@ struct JetFragmentation {
     // Vice versa for AntiLambda
     double negM = (isLambda ? constants::physics::MassProton : constants::physics::MassPionCharged);
     double posM = (isLambda ? constants::physics::MassPionCharged : constants::physics::MassProton);
-    double negPsq = v0.pxneg() * v0.pxneg() + v0.pyneg() * v0.pyneg() + v0.pzneg() * v0.pzneg();
-    double posPsq = v0.pxpos() * v0.pxpos() + v0.pypos() * v0.pypos() + v0.pzpos() * v0.pzpos();
-    double negE = std::sqrt(negM * negM + negPsq);
-    double posE = std::sqrt(posM * posM + posPsq);
-    double sqE = (negE + posE) * (negE + posE);
-    double sqP = v0.p() * v0.p();
-    return std::sqrt(sqE - sqP);
+    std::array<std::array<double, 3>, 2> momenta = {{v0.pxpos(), v0.pypos(), v0.pzpos()}, {v0.pxneg(), v0.pyneg(), v0.pzneg()}};
+    std::array<double, 2> masses = {posM, negM};
+    return RecoDecay::m(momenta, masses);
   }
   template <typename Jet, typename Constituent>
   double getMomFrac(Jet const& jet, Constituent const& constituent)
