@@ -57,7 +57,14 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <deque>
+#include <iostream>
+#include <iterator>
+#include <set> // <<< CHANGED: for dedup sets
 #include <string>
+#include <type_traits>
+#include <unordered_map> // <<< CHANGED: for seenMap
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -91,6 +98,7 @@ struct lambdapolsp {
   struct : ConfigurableGroup {
     Configurable<bool> doRandomPsi{"doRandomPsi", true, "randomize psi"};
     Configurable<bool> doRandomPsiAC{"doRandomPsiAC", true, "randomize psiAC"};
+    Configurable<bool> doRandomPhi{"doRandomPhi", true, "randomize phi"};
   } randGrp;
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
@@ -487,6 +495,7 @@ struct lambdapolsp {
     }
 
     // check TPC tracking properties
+
     if (posTrackExtra.tpcNClsCrossedRows() < cfgTPCcluster || negTrackExtra.tpcNClsCrossedRows() < cfgTPCcluster) {
       return false;
     }
@@ -588,10 +597,14 @@ struct lambdapolsp {
                       double psiZDCC, double psiZDCA, double psiZDC, double centrality,
                       double candmass, double candpt, float desbinvalue, double acvalue)
   {
+    TRandom3 randPhi(0);
 
     ROOT::Math::Boost boost{particle.BoostToCM()};
     auto fourVecDauCM = boost(daughter);
     auto phiangle = TMath::ATan2(fourVecDauCM.Py(), fourVecDauCM.Px());
+    if (randGrp.doRandomPhi) {
+      phiangle = randPhi.Uniform(0, 2 * TMath::Pi());
+    }
     auto phiminuspsiC = GetPhiInRange(phiangle - psiZDCC);
     auto phiminuspsiA = GetPhiInRange(phiangle - psiZDCA);
     auto phiminuspsi = GetPhiInRange(phiangle - psiZDC);
@@ -1473,18 +1486,41 @@ struct lambdapolsp {
     }
   }
   PROCESS_SWITCH(lambdapolsp, processDerivedDataMixed, "Process mixed event using derived data", false);
-  /*
-  void processDerivedDataMixedFIFO(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraZDCSP> const& collisions, v0Candidates const& V0s, dauTracks const& dV0s)
+
+  void processDerivedDataMixedFIFO(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraZDCSP> const& collisions, v0Candidates const& V0s, dauTracks const&)
   {
 
     auto nBins = colBinning.getAllBinsCount();
-    std::vector<std::deque<std::pair<int, v0Candidates>>> eventPools(nBins); // Pool per centrality bin holding (eventIndex, V0 candidates)
+    std::vector<std::deque<int>> eventPools(nBins); // Pool per bin holding just event indices
 
     for (auto& collision1 : collisions) {
+
+      if (!collision1.sel8()) {
+        continue;
+      }
+      if (!collision1.triggereventsp()) { // provided by StraZDCSP
+        continue;
+      }
+      if (rctCut.requireRCTFlagChecker && !rctChecker(collision1)) {
+        continue;
+      }
+
+      if (additionalEvSel && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+      if (additionalEvSel2 && (collision1.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision1.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+        continue;
+      }
+      if (additionalEvSel3 && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (additionalEvSel4 && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+
       int bin = colBinning.getBin(std::make_tuple(collision1.posZ(), collision1.centFT0C()));
       auto groupV0_evt1 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision1.index());
       float centrality = collision1.centFT0C();
-
       auto qxZDCA = collision1.qxZDCA();
       auto qxZDCC = collision1.qxZDCC();
       auto qyZDCA = collision1.qyZDCA();
@@ -1496,6 +1532,8 @@ struct lambdapolsp {
       double modqxZDCC;
       double modqyZDCC;
 
+      if (bin < 0)
+        continue;
       modqxZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Cos(psiZDCA);
       modqyZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Sin(psiZDCA);
       modqxZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Cos(psiZDCC);
@@ -1510,86 +1548,87 @@ struct lambdapolsp {
       std::unordered_map<int, std::set<std::pair<int, int>>> seenMap;
 
       // Loop over Λ candidates in collision1 (keep psi from here)
+
       for (auto& v0_evt1 : groupV0_evt1) {
-  if (!SelectionV0(collision1, v0_evt1)) continue;
-  bool LambdaTag1 = isCompatible(v0_evt1, 0);
-  bool aLambdaTag1 = isCompatible(v0_evt1, 1);
-  ROOT::Math::PxPyPzMVector proton1, pion1, antiproton1, antipion1, LambdaTag1dummy, AntiLambdaTag1dummy;
-  if (LambdaTag1) {
-    proton1 = {v0_evt1.pxpos(), v0_evt1.pypos(), v0_evt1.pzpos(), massPr};
-    antipion1 = {v0_evt1.pxneg(), v0_evt1.pyneg(), v0_evt1.pzneg(), massPi};
-    LambdaTag1dummy=proton1+antipion1;
-  } if (aLambdaTag1) {
-    antiproton1 = {v0_evt1.pxneg(), v0_evt1.pyneg(), v0_evt1.pzneg(), massPr};
-    pion1 = {v0_evt1.pxpos(), v0_evt1.pypos(), v0_evt1.pzpos(), massPi};
-    AntiLambdaTag1dummy=antiproton1+pion1;
-    }
-  if (shouldReject(LambdaTag1, aLambdaTag1, LambdaTag1dummy, AntiLambdaTag1dummy)) {
-    continue;
-  }
-  if (TMath::Abs(v0_evt1.eta()) > 0.8)
-    continue;
-  // Loop over all FIFO pool events (mixed events) for this centrality bin
-  int nMixedEvents = 0;
-  for (auto it = eventPools[bin].rbegin(); it != eventPools[bin].rend() && nMixedEvents < meGrp.nMix; ++it, ++nMixedEvents) {
-    int collision2idx = it->first;
-    v0Candidates& groupV0_evt2 = it->second;
-
-    // Now loop over Λ candidates in collision2 to randomize proton phi* (randomize decay angle)
-    for (auto& v0_evt2 : groupV0_evt2) {
-      if (collision1.index() == collision2idx) continue;
-      /*bool LambdaTag2 = isCompatible(v0_evt2, 0);
-      bool aLambdaTag2 = isCompatible(v0_evt2, 1);
-      if (!LambdaTag2 && !aLambdaTag2) continue;
-
-      // Deduplicate (v0_evt1, v0_evt2) pairs per collision2idx
-      auto key = std::make_pair(v0_evt1.index(), v0_evt2.index());
-      if (!seenMap[collision2idx].insert(key).second) continue;
-
-      ROOT::Math::PxPyPzMVector proton_mix, antiproton_mix, pion_mix, antipion_mix, LambdaTag2dummy, AntiLambdaTag2dummy;
-      if (LambdaTag2) {
-        proton_mix = {v0_evt2.pxpos(), v0_evt2.pypos(), v0_evt2.pzpos(), massPr};
-        antipion_mix = {v0_evt2.pxneg(), v0_evt2.pyneg(), v0_evt2.pzneg(), massPi};
-        LambdaTag2dummy=proton_mix+antipion_mix;
-      } if (aLambdaTag2) {
-        antiproton_mix = {v0_evt2.pxneg(), v0_evt2.pyneg(), v0_evt2.pzneg(), massPr};
-        pion_mix = {v0_evt2.pxpos(), v0_evt2.pypos(), v0_evt2.pzpos(), massPi};
-        AntiLambdaTag2dummy=antiproton_mix+pion_mix;
-      }
-      if (shouldReject(LambdaTag2, aLambdaTag2, LambdaTag2dummy, AntiLambdaTag2dummy)) {
-        continue;
-      }
-      if (TMath::Abs(v0_evt2.eta()) > 0.8)
-        continue;
-      if (LambdaTag1)
-        {
-    double acvalue = 1.0;
-    fillHistograms(1, 0, LambdaTag1dummy, proton_mix, psiZDCC, psiZDCA, psiZDC, centrality, v0_evt1.mLambda(), v0_evt1.pt(), v0_evt1.eta(), acvalue);
+        if (!SelectionV0(collision1, v0_evt1))
+          continue;
+        bool LambdaTag1 = isCompatible(v0_evt1, 0);
+        bool aLambdaTag1 = isCompatible(v0_evt1, 1);
+        ROOT::Math::PxPyPzMVector proton1, pion1, antiproton1, antipion1, LambdaTag1dummy, AntiLambdaTag1dummy;
+        if (LambdaTag1) {
+          proton1 = {v0_evt1.pxpos(), v0_evt1.pypos(), v0_evt1.pzpos(), massPr};
+          antipion1 = {v0_evt1.pxneg(), v0_evt1.pyneg(), v0_evt1.pzneg(), massPi};
+          LambdaTag1dummy = proton1 + antipion1;
         }
-      if (aLambdaTag1)
-        {
-    double acvalue = 1.0;
-    fillHistograms(0, 1, AntiLambdaTag1dummy, antiproton_mix, psiZDCC, psiZDCA, psiZDC, centrality, v0_evt1.mAntiLambda(), v0_evt1.pt(), v0_evt1.eta(), acvalue);
-    }
-  }
-      }
+        if (aLambdaTag1) {
+          antiproton1 = {v0_evt1.pxneg(), v0_evt1.pyneg(), v0_evt1.pzneg(), massPr};
+          pion1 = {v0_evt1.pxpos(), v0_evt1.pypos(), v0_evt1.pzpos(), massPi};
+          AntiLambdaTag1dummy = antiproton1 + pion1;
+        }
+        if (shouldReject(LambdaTag1, aLambdaTag1, LambdaTag1dummy, AntiLambdaTag1dummy)) {
+          continue;
+        }
+        if (TMath::Abs(v0_evt1.eta()) > 0.8)
+          continue;
 
-      } //
-    }
-  }
-      }
+        // Loop over all FIFO pool events (mixed events) for this centrality bin
+        int nMixedEvents = 0;
+        for (auto it = eventPools[bin].rbegin(); it != eventPools[bin].rend() && nMixedEvents < meGrp.nMix; ++it, ++nMixedEvents) {
+          int collision2idx = *it;
+          if (collision1.index() == collision2idx)
+            continue;
+          auto groupV0_evt2 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision2idx);
 
+          // Now loop over Λ candidates in collision2 to randomize proton phi* (randomize decay angle)
+          for (auto& v0_evt2 : groupV0_evt2) {
+            if (!SelectionV0(collision1, v0_evt2))
+              continue;
+            bool LambdaTag2 = isCompatible(v0_evt2, 0);
+            bool aLambdaTag2 = isCompatible(v0_evt2, 1);
+            if (!LambdaTag2 && !aLambdaTag2)
+              continue;
+
+            // Deduplicate (v0_evt1, v0_evt2) pairs per collision2idx
+            auto key = std::make_pair(v0_evt1.index(), v0_evt2.index());
+            if (!seenMap[collision2idx].insert(key).second)
+              continue;
+
+            ROOT::Math::PxPyPzMVector proton_mix, antiproton_mix, pion_mix, antipion_mix, LambdaTag2dummy, AntiLambdaTag2dummy;
+            if (LambdaTag2) {
+              proton_mix = {v0_evt2.pxpos(), v0_evt2.pypos(), v0_evt2.pzpos(), massPr};
+              antipion_mix = {v0_evt2.pxneg(), v0_evt2.pyneg(), v0_evt2.pzneg(), massPi};
+              LambdaTag2dummy = proton_mix + antipion_mix;
+            }
+            if (aLambdaTag2) {
+              antiproton_mix = {v0_evt2.pxneg(), v0_evt2.pyneg(), v0_evt2.pzneg(), massPr};
+              pion_mix = {v0_evt2.pxpos(), v0_evt2.pypos(), v0_evt2.pzpos(), massPi};
+              AntiLambdaTag2dummy = antiproton_mix + pion_mix;
+            }
+            if (shouldReject(LambdaTag2, aLambdaTag2, LambdaTag2dummy, AntiLambdaTag2dummy)) {
+              continue;
+            }
+            if (TMath::Abs(v0_evt2.eta()) > 0.8)
+              continue;
+            if (LambdaTag1) {
+              double acvalue = 1.0;
+              fillHistograms(1, 0, LambdaTag1dummy, proton_mix, psiZDCC, psiZDCA, psiZDC, centrality, v0_evt1.mLambda(), v0_evt1.pt(), v0_evt1.eta(), acvalue);
+            }
+            if (aLambdaTag1) {
+              double acvalue = 1.0;
+              fillHistograms(0, 1, AntiLambdaTag1dummy, antiproton_mix, psiZDCC, psiZDCA, psiZDC, centrality, v0_evt1.mAntiLambda(), v0_evt1.pt(), v0_evt1.eta(), acvalue);
+            }
+          }
+        }
+      }
       // After processing all mixes, add current event V0s to pool for future mixing
-      auto sliced = V0s.sliceBy(tracksPerCollisionV0Mixed, collision1.index());
-      eventPools[bin].emplace_back(collision1.index(), std::move(sliced));
-
+      eventPools[bin].push_back(collision1.index());
       // Keep only N last events in FIFO queue
       if (static_cast<int>(eventPools[bin].size()) > meGrp.nMix) {
-      eventPools[bin].pop_front();
+        eventPools[bin].pop_front();
       }
     }
   }
-  PROCESS_SWITCH(lambdapolsp, processDerivedDataMixedFIFO, "Process mixed event using derived data with FIFO method", false);*/
+  PROCESS_SWITCH(lambdapolsp, processDerivedDataMixedFIFO, "Process mixed event using derived data with FIFO method", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
