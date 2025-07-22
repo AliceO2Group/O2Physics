@@ -22,6 +22,7 @@
 
 // O2 includes
 #include "Framework/AnalysisDataModel.h"
+#include "ALICE3/DataModel/OTFStrangeness.h"
 
 namespace o2::aod
 {

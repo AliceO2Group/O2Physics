@@ -338,7 +338,7 @@ struct alice3multicharm {
         histos.fill(HIST("XiccProngs/h3dPicc"), xiccCand.xiccPt(), xiccCand.piccPt(), xiccCand.piccEta());
       }
 
-      histos.fill(HIST("h3dXicc"), xiccCand.xiccPt(), xiccCand.XiccEta(), xiccCand.xiccMass());
+      histos.fill(HIST("h3dXicc"), xiccCand.xiccPt(), xiccCand.xiccEta(), xiccCand.xiccMass());
     }
   }
 
