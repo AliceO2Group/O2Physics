@@ -1113,6 +1113,8 @@ struct DndetaMFTPbPb {
   {
     auto occ = getOccupancy(collision, eventCuts.occupancyEstimator);
     float c = getRecoCent(collision);
+    auto bc = collision.template foundBC_as<CollBCs>();
+    double ir = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), "ZNC hadronic") * 1.e-3;
 
     if constexpr (has_reco_cent<C>) {
       registry.fill(HIST("Events/Centrality/Selection"), 1., c, occ);
@@ -1124,8 +1126,6 @@ struct DndetaMFTPbPb {
       return;
     }
     if (eventCuts.cfgSelInteractionRate) {
-      auto bc = collision.template foundBC_as<CollBCs>();
-      double ir = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), "ZNC hadronic") * 1.e-3;
       if (!isIRSelected(bc, true)) {
         return;
       }
@@ -1166,6 +1166,8 @@ struct DndetaMFTPbPb {
   {
     auto occ = getOccupancy(collision, eventCuts.occupancyEstimator);
     float c = getRecoCent(collision);
+    auto bc = collision.template foundBC_as<CollBCs>();
+    double ir = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), "ZNC hadronic") * 1.e-3;
 
     if constexpr (has_reco_cent<C>) {
       registry.fill(HIST("Events/Centrality/Selection"), 1., c, occ);
@@ -1177,8 +1179,6 @@ struct DndetaMFTPbPb {
       return;
     }
     if (eventCuts.cfgSelInteractionRate) {
-      auto bc = collision.template foundBC_as<CollBCs>();
-      double ir = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), "ZNC hadronic") * 1.e-3;
       if (!isIRSelected(bc, true)) {
         return;
       }
