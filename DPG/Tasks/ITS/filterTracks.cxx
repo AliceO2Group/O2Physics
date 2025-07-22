@@ -202,8 +202,8 @@ struct FilterTracks {
   {
 
     fillTableData(track);
-    bool has_McParticle = track.has_mcParticle();
-    if (has_McParticle) {
+    bool hasMcParticle = track.has_mcParticle();
+    if (hasMcParticle) {
       /// the track is not fake
 
       // check whether the particle comes from a charm or beauty hadron and store its index
