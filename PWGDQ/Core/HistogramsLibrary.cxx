@@ -1969,7 +1969,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
 
   if (subGroupStr.Contains("DY-dimuon")) {
     hm->AddHistogram(histClass, "DY_mass", "", false, 5000, 0.0, 50.0, VarManager::kMass); // 10 MeV mass res
-    hm->AddHistogram(histClass, "DY_pT", "", false, 2000, 0.0, 100.0, VarManager::kPt); // 50 MeV pT res
+    hm->AddHistogram(histClass, "DY_pT", "", false, 2000, 0.0, 100.0, VarManager::kPt);    // 50 MeV pT res
     hm->AddHistogram(histClass, "DY_y", "", false, 20, 2.0, 4.0, VarManager::kRap);
     hm->AddHistogram(histClass, "DY_phi", "", false, 180, constants::math::PI, 2 * constants::math::PI, VarManager::kPhi);
   }
