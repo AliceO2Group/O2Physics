@@ -21,8 +21,9 @@
 #define ALICE3_DATAMODEL_OTFMULTICHARM_H_
 
 // O2 includes
-#include "Framework/AnalysisDataModel.h"
 #include "ALICE3/DataModel/OTFStrangeness.h"
+
+#include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
 {
