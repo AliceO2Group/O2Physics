@@ -74,17 +74,21 @@ struct sigmaminustask {
 
   void processData(CollisionsFull::iterator const& collision, aod::KinkCands const& KinkCands, TracksFull const&)
   {
+    /*
     if (std::abs(collision.posZ()) > cutzvertex || !collision.sel8()) {
       return;
     }
+    */
     rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
 
     for (const auto& kinkCand : KinkCands) {
       auto dauTrack = kinkCand.trackDaug_as<TracksFull>();
 
+      /*
       if (abs(dauTrack.tpcNSigmaPi()) > cutNSigmaPi) {
         continue;
       }
+      */
 
       rSigmaMinus.fill(HIST("h2MassSigmaMinusPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
       rSigmaMinus.fill(HIST("h2SigmaMassVsXiMass"), kinkCand.mXiMinus(), kinkCand.mSigmaMinus());
