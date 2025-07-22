@@ -1113,10 +1113,6 @@ struct DndetaMFTPbPb {
   {
     auto occ = getOccupancy(collision, eventCuts.occupancyEstimator);
     float c = getRecoCent(collision);
-    auto bc = collision.template foundBC_as<CollBCs>();
-    double ir = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(),
-                                  "ZNC hadronic") *
-                1.e-3;
 
     if constexpr (has_reco_cent<C>) {
       registry.fill(HIST("Events/Centrality/Selection"), 1., c, occ);
@@ -1128,6 +1124,8 @@ struct DndetaMFTPbPb {
       return;
     }
     if (eventCuts.cfgSelInteractionRate) {
+      auto bc = collision.template foundBC_as<CollBCs>();
+      double ir = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(),"ZNC hadronic") * 1.e-3;
       if (!isIRSelected(bc, true)) {
         return;
       }
@@ -1138,10 +1136,14 @@ struct DndetaMFTPbPb {
       registry.fill(HIST("Events/Centrality/Selection"), 2., c, occ);
       qaregistry.fill(HIST("Events/Centrality/hZvtxCent"), z, c, occ);
       qaregistry.fill(HIST("Events/Centrality/hCent"), c, occ);
-      qaregistry.fill(HIST("hCentOccIRate"), c, occ, ir);
+      if (eventCuts.cfgSelInteractionRate) {
+        qaregistry.fill(HIST("hCentOccIRate"), c, occ, ir);
+      }
 
     } else {
-      qaregistry.fill(HIST("hOccIRate"), occ, ir);
+      if (eventCuts.cfgSelInteractionRate) {
+        qaregistry.fill(HIST("hOccIRate"), occ, ir);
+      }
       registry.fill(HIST("Events/Selection"), 2., occ);
     }
 
@@ -1164,10 +1166,6 @@ struct DndetaMFTPbPb {
   {
     auto occ = getOccupancy(collision, eventCuts.occupancyEstimator);
     float c = getRecoCent(collision);
-    auto bc = collision.template foundBC_as<CollBCs>();
-    double ir = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(),
-                                  "ZNC hadronic") *
-                1.e-3;
 
     if constexpr (has_reco_cent<C>) {
       registry.fill(HIST("Events/Centrality/Selection"), 1., c, occ);
@@ -1179,6 +1177,8 @@ struct DndetaMFTPbPb {
       return;
     }
     if (eventCuts.cfgSelInteractionRate) {
+      auto bc = collision.template foundBC_as<CollBCs>();
+      double ir = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), "ZNC hadronic") * 1.e-3;
       if (!isIRSelected(bc, true)) {
         return;
       }
@@ -1187,10 +1187,14 @@ struct DndetaMFTPbPb {
     auto z = collision.posZ();
     if constexpr (has_reco_cent<C>) {
       registry.fill(HIST("Events/Centrality/Selection"), 2., c, occ);
-      qaregistry.fill(HIST("hCentOccIRate"), c, occ, ir);
+      if (eventCuts.cfgSelInteractionRate) {
+        qaregistry.fill(HIST("hCentOccIRate"), c, occ, ir);
+      }
     } else {
       registry.fill(HIST("Events/Selection"), 2., occ);
-      qaregistry.fill(HIST("hOccIRate"), occ, ir);
+      if (eventCuts.cfgSelInteractionRate) {
+        qaregistry.fill(HIST("hOccIRate"), occ, ir);
+      }
     }
 
     auto nBestTrks = countBestTracks<C, true>(tracks, besttracks, z, c, occ);
