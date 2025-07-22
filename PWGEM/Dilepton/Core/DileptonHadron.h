@@ -1246,7 +1246,7 @@ struct DileptonHadron {
           nuls++;
         }
         for (const auto& reftrack : refTracks_per_coll) {
-          bool is_pair_ok = fillDileptonHadron<0>(collision, pos, neg, cut, tracks, reftrack);
+          fillDileptonHadron<0>(collision, pos, neg, cut, tracks, reftrack);
         }
       }
       for (const auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
