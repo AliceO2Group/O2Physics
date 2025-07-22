@@ -37,7 +37,6 @@
 #include "Math/Vector4D.h"
 #include "TPDGCode.h"
 #include "TRandom.h"
-#include "TVector3.h"
 
 using namespace o2;
 using namespace o2::soa;
@@ -189,18 +188,18 @@ struct Lstaranalysis {
 
   // Pre-filters for efficient process
   Filter zVtxFilter = (nabs(o2::aod::collision::posZ) <= configEvents.cfgEvtZvtx);
-  Filter collisionFilter_MC = nabs(aod::mccollision::posZ) <= configEvents.cfgEvtZvtx;
+  Filter collisionFilterMC = nabs(aod::mccollision::posZ) <= configEvents.cfgEvtZvtx;
   // Filter centralityFilter = nabs(aod::cent::centFT0C) <= cfg_Event_CentralityMax;
   // Filter triggerFilter = (o2::aod::evsel::sel8 == true);
 
   Filter tofPIDFilter = aod::track::tofExpMom < 0.f || ((aod::track::tofExpMom > 0.f) && (/* (nabs(aod::pidtof::tofNSigmaPi) < configPID.pidnSigmaPreSelectionCut) || */ (nabs(aod::pidtof::tofNSigmaKa) < configPID.pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaPr) < configPID.pidnSigmaPreSelectionCut))); // TOF
   Filter tpcPIDFilter = /* nabs(aod::pidtpc::tpcNSigmaPi) < configPID.pidnSigmaPreSelectionCut || */ nabs(aod::pidtpc::tpcNSigmaKa) < configPID.pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaPr) < configPID.pidnSigmaPreSelectionCut;                                                                           // TPC
-  Filter trackFilter = (configTracks.trackSelection == 0) ||
-                       ((configTracks.trackSelection == 1) && requireGlobalTrackInFilter()) ||
-                       ((configTracks.trackSelection == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
-                       ((configTracks.trackSelection == 3) && requireGlobalTrackWoDCAInFilter()) ||
-                       ((configTracks.trackSelection == 4) && requireQualityTracksInFilter()) ||
-                       ((configTracks.trackSelection == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+  Filter trackFilter = (configTracks.trackSelection == static_cast<int>(0)) ||
+                       ((configTracks.trackSelection == static_cast<int>(1)) && requireGlobalTrackInFilter()) ||
+                       ((configTracks.trackSelection == static_cast<int>(2)) && requireGlobalTrackWoPtEtaInFilter()) ||
+                       ((configTracks.trackSelection == static_cast<int>(3)) && requireGlobalTrackWoDCAInFilter()) ||
+                       ((configTracks.trackSelection == static_cast<int>(4)) && requireQualityTracksInFilter()) ||
+                       ((configTracks.trackSelection == static_cast<int>(5)) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
   Filter acceptanceFilter = (nabs(aod::track::eta) < configTracks.cfgCutEta && nabs(aod::track::pt) > configTracks.cMinPtcut);
   // Filter DCAcutFilter = (nabs(aod::track::dcaXY) < configTracks.cfgCutDCAxy) && (nabs(aod::track::dcaZ) < configTracks.cfgCutDCAz);
   // Filter primarytrackFilter = requirePVContributor() && requirePrimaryTrack() && requireGlobalTrackWoDCA();
@@ -454,8 +453,8 @@ struct Lstaranalysis {
         continue;
       auto p = pdg->GetParticle(mcparticle.pdgCode());
       if (p != nullptr) {
-        if (std::abs(p->Charge()) >= 3) {
-          if (std::abs(mcparticle.eta()) < 1)
+        if (std::abs(p->Charge()) >= static_cast<int>(3)) {
+          if (std::abs(mcparticle.eta()) < static_cast<float>(1.0))
             return true;
         }
       }
@@ -555,7 +554,7 @@ struct Lstaranalysis {
               return true;
           }
         }
-      } else if (configPID.cPIDcutType == 2) {
+      } else if (configPID.cPIDcutType == static_cast<int>(2)) {
         // Circular cut
         for (size_t i = 0; i < vProtonTPCTOFCombinedpTintv.size(); ++i) {
           if (pt < vProtonTPCTOFCombinedpTintv[i]) {
@@ -627,7 +626,7 @@ struct Lstaranalysis {
             }
           }
         }
-      } else if (configPID.cPIDcutType == 2) {
+      } else if (configPID.cPIDcutType == static_cast<int>(2)) {
         // Circular cut
         for (size_t i = 0; i < vKaonTPCTOFCombinedpTintv.size(); ++i) {
           if (pt < vKaonTPCTOFCombinedpTintv[i]) {
@@ -855,7 +854,7 @@ struct Lstaranalysis {
             auto resonanceRotPt = lResonanceRot.Pt();
 
             // Rapidity cut
-            if (std::abs(lResonanceRot.Rapidity()) >= 0.5)
+            if (std::abs(lResonanceRot.Rapidity()) >= static_cast<float>(0.5))
               continue;
 
             if (cfgUseCutsOnMother) {
@@ -937,7 +936,7 @@ struct Lstaranalysis {
             motherstrk1 = getMothersIndeces(mctrk1);
             mothersPDGtrk1 = getMothersPDGCodes(mctrk1);
           }
-          while (motherstrk1.size() > 2) {
+          while (motherstrk1.size() > static_cast<int>(2)) {
             motherstrk1.pop_back();
             mothersPDGtrk1.pop_back();
           }
@@ -947,18 +946,18 @@ struct Lstaranalysis {
             motherstrk2 = getMothersIndeces(mctrk2);
             mothersPDGtrk2 = getMothersPDGCodes(mctrk2);
           }
-          while (motherstrk2.size() > 2) {
+          while (motherstrk2.size() > static_cast<int>(2)) {
             motherstrk2.pop_back();
             mothersPDGtrk2.pop_back();
           }
 
-          if (std::abs(mctrk1.pdgCode()) != 2212 || std::abs(mctrk2.pdgCode()) != 321)
+          if (std::abs(mctrk1.pdgCode()) != kProton || std::abs(mctrk2.pdgCode()) != kKPlus)
             continue;
 
           if (motherstrk1[0] != motherstrk2[0]) // Same mother
             continue;
 
-          if (std::abs(mothersPDGtrk1[0]) != 102134)
+          if (std::abs(mothersPDGtrk1[0]) != kLambda1520PDG)
             continue;
 
           // LOGF(info, "mother trk1 id: %d, mother trk1: %d, trk1 id: %d, trk1 pdgcode: %d, mother trk2 id: %d, mother trk2: %d, trk2 id: %d, trk2 pdgcode: %d", motherstrk1[0], mothersPDGtrk1[0], trk1.globalIndex(), mctrk1.pdgCode(), motherstrk2[0], mothersPDGtrk2[0], trk2.globalIndex(), mctrk2.pdgCode());
@@ -1062,12 +1061,12 @@ struct Lstaranalysis {
   }
   PROCESS_SWITCH(Lstaranalysis, processMC, "Process Event for MC Light without partition", false);
 
-  Partition<aod::McParticles> selectedMCParticles = (nabs(aod::mcparticle::pdgCode) == 102134); // Lambda(1520)
+  Partition<aod::McParticles> selectedMCParticles = (nabs(aod::mcparticle::pdgCode) == kLambda1520PDG); // Lambda(1520)
 
   void processMCTrue(MCEventCandidates::iterator const& collision, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
     bool isInAfterAllCuts = colCuts.isSelected(collision);
-    bool inVtx10 = (std::abs(collision.mcCollision().posZ()) > 10.) ? false : true;
+    bool inVtx10 = (std::abs(collision.mcCollision().posZ()) > static_cast<float>(10.0)) ? false : true;
     bool isTriggerTVX = collision.selection_bit(aod::evsel::kIsTriggerTVX);
     bool isSel8 = collision.sel8();
     bool isTrueINELgt0 = isTrueINEL0(collision, mcParticles);
@@ -1106,7 +1105,7 @@ struct Lstaranalysis {
         continue;
 
       if (cfgUseDaughterEtaCutMC) {
-        for (auto& daughters : part.daughters_as<aod::McParticles>()) {
+        for (auto const& daughters : part.daughters_as<aod::McParticles>()) {
           if (std::fabs(daughters.eta()) > configTracks.cfgCutEta)
             continue; // eta cut for daughters
         } // loop over daughters
