@@ -108,6 +108,7 @@ struct Lambda1520analysisinpp {
     Configurable<float> cMinPtcut{"cMinPtcut", 0.15f, "Minimal pT for tracks"};
     Configurable<float> cMinTPCNClsFound{"cMinTPCNClsFound", 120, "minimum TPCNClsFound value for good track"};
     Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta range for tracks"};
+    Configurable<float> cfgCutRapidity{"cfgCutRapidity", 0.5, "rapidity range for particles"};
     Configurable<int> cfgMinCrossedRows{"cfgMinCrossedRows", 70, "min crossed rows for good track"};
 
     // DCA Selections
@@ -652,14 +653,20 @@ struct Lambda1520analysisinpp {
     return false;
   }
 
+  auto static constexpr MinPtforPionRejection = 1.f;
+  auto static constexpr MaxPtforPionRejection = 2.f;
+  auto static constexpr MaxnSigmaforPionRejection = 2.f;
+
   template <typename T>
   bool rejectPion(const T& candidate)
   {
-    if (candidate.pt() > static_cast<float>(1.0) && candidate.pt() < static_cast<float>(2.0) && !candidate.hasTOF() && candidate.tpcNSigmaPi() < static_cast<float>(2)) {
+    if (candidate.pt() > MinPtforPionRejection && candidate.pt() < MaxPtforPionRejection && !candidate.hasTOF() && candidate.tpcNSigmaPi() < MaxnSigmaforPionRejection) {
       return false;
     }
     return true;
   }
+
+  auto static constexpr MaxNoLambda1520Daughters = 2;
 
   template <bool IsData, bool IsRot, bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
@@ -828,7 +835,7 @@ struct Lambda1520analysisinpp {
 
       if constexpr (IsData || IsMix) {
         // Rapidity cut
-        if (std::abs(resonanceRapidity) > static_cast<float>(0.5))
+        if (std::abs(resonanceRapidity) > configTracks.cfgCutRapidity)
           continue;
       }
 
@@ -863,7 +870,7 @@ struct Lambda1520analysisinpp {
             auto resonanceRotPt = lResonanceRot.Pt();
 
             // Rapidity cut
-            if (std::abs(lResonanceRot.Rapidity()) >= static_cast<float>(0.5))
+            if (std::abs(lResonanceRot.Rapidity()) >= configTracks.cfgCutRapidity)
               continue;
 
             if (cfgUseCutsOnMother) {
@@ -945,7 +952,7 @@ struct Lambda1520analysisinpp {
             motherstrk1 = getMothersIndeces(mctrk1);
             mothersPDGtrk1 = getMothersPDGCodes(mctrk1);
           }
-          while (motherstrk1.size() > static_cast<int>(2)) {
+          while (motherstrk1.size() > MaxNoLambda1520Daughters) {
             motherstrk1.pop_back();
             mothersPDGtrk1.pop_back();
           }
@@ -955,7 +962,7 @@ struct Lambda1520analysisinpp {
             motherstrk2 = getMothersIndeces(mctrk2);
             mothersPDGtrk2 = getMothersPDGCodes(mctrk2);
           }
-          while (motherstrk2.size() > static_cast<int>(2)) {
+          while (motherstrk2.size() > MaxNoLambda1520Daughters) {
             motherstrk2.pop_back();
             mothersPDGtrk2.pop_back();
           }
@@ -974,7 +981,7 @@ struct Lambda1520analysisinpp {
           if (cUseEtacutMC && std::abs(lResonance.Eta()) > cEtacutMC) // eta cut
             continue;
 
-          if (cUseRapcutMC && std::abs(resonanceRapidity) > static_cast<float>(0.5)) // rapidity cut
+          if (cUseRapcutMC && std::abs(resonanceRapidity) > configTracks.cfgCutRapidity) // rapidity cut
             continue;
 
           histos.fill(HIST("QA/MC/h2RecoEtaPt_after"), lResonance.Eta(), resonancePt);
@@ -1075,7 +1082,7 @@ struct Lambda1520analysisinpp {
   void processMCTrue(MCEventCandidates::iterator const& collision, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
     bool isInAfterAllCuts = colCuts.isSelected(collision);
-    bool inVtx10 = (std::abs(collision.mcCollision().posZ()) > static_cast<float>(10.0)) ? false : true;
+    bool inVtx10 = (std::abs(collision.mcCollision().posZ()) > configEvents.cfgEvtZvtx) ? false : true;
     bool isTriggerTVX = collision.selection_bit(aod::evsel::kIsTriggerTVX);
     bool isSel8 = collision.sel8();
     bool isTrueINELgt0 = isTrueINEL0(collision, mcParticles);
@@ -1110,7 +1117,7 @@ struct Lambda1520analysisinpp {
       histos.fill(HIST("QA/MC/h2GenEtaPt_beforeanycut"), part.eta(), part.pt());
       histos.fill(HIST("QA/MC/h2GenPhiRapidity_beforeanycut"), part.phi(), part.y());
 
-      if (cUseRapcutMC && std::abs(part.y()) > static_cast<float>(0.5)) // rapidity cut
+      if (cUseRapcutMC && std::abs(part.y()) > configTracks.cfgCutRapidity) // rapidity cut
         continue;
 
       if (cfgUseDaughterEtaCutMC) {
