@@ -91,7 +91,6 @@ struct SginclusivePhiKstarSD {
   Configurable<float> nsigmaTpcCut1{"nsigmaTpcCut1", 3.0, "nsigma tpc cut1"};
   Configurable<float> nsigmaTpcCut2{"nsigmaTpcCut2", 3.0, "nsigma tpc cut2"};
   Configurable<float> nsigmaTpcCut3{"nsigmaTpcCut3", 3.0, "nsigma tpc cut3"};
-  Configurable<float> nsigmaTpcCut4{"nsigmaTpcCut4", 3.0, "nsigma tpc cut4"};
   Configurable<float> nsigmaTpcCut{"nsigmaTpcCut", 3.0, "nsigma tpc cut"};
   Configurable<float> nsigmaTofCut{"nsigmaTofCut", 9.0, "nsigma tpc+tof cut"};
   Configurable<float> nsigmaTofCut1{"nsigmaTofCut1", 3.0, "nsigma tof cut"};
@@ -162,12 +161,12 @@ struct SginclusivePhiKstarSD {
       registry.add("os_KK_rot_pT_2", "kaon pair mix event", kTH3F, {{305, 0.98, 2.2}, {80, -2.0, 2.0}, {100, 0, 10}});
     }
     if (rho) {
-      registry.add("os_pp_pT_0", "pt pion pair", kTH3F, {{120, 1.44, 2.04}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_pp_pT_1", "pt pion pair", kTH3F, {{120, 1.44, 2.04}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_pp_pT_2", "pt pion pair", kTH3F, {{120, 1.44, 2.04}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_pp_ls_pT_0", "pion pair like sign", kTH3F, {{120, 1.44, 2.04}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_pp_ls_pT_1", "pion pair like sign", kTH3F, {{120, 1.44, 2.04}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_pp_ls_pT_2", "pion pair like sign", kTH3F, {{120, 1.44, 2.04}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_pp_pT_0", "pt pion pair", kTH3F, {{200, 1.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_pp_pT_1", "pt pion pair", kTH3F, {{200, 1.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_pp_pT_2", "pt pion pair", kTH3F, {{200, 1.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_pp_ls_pT_0", "pion pair like sign", kTH3F, {{200, 1.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_pp_ls_pT_1", "pion pair like sign", kTH3F, {{200, 1.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_pp_ls_pT_2", "pion pair like sign", kTH3F, {{200, 1.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
     }
     if (kstar) {
       registry.add("os_pk_pT_0", "pion-kaon pair", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
