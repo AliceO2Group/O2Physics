@@ -184,7 +184,7 @@ struct FilterTracks {
   std::array<int, 3> pdgDecayLc = {kProton, kKMinus, kPiPlus};
   std::array<int, 2> pdgDecayDzero = {kKMinus, kPiPlus};
   std::array<int, 2> pdgDecayKzero = {kPiMinus, kPiPlus};
-  const int nK0sShortDaught=2;
+  const int nK0sShortDaught = 2;
 
   void init(InitContext&)
   {
