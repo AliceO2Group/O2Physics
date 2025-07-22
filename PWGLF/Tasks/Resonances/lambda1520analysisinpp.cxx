@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file lstaranalysis.cxx
+/// \file lambda1520analysisinpp.cxx
 /// \brief This standalone task reconstructs track-track decay of lambda(1520) resonance candidate
 /// \author Hirak Kumar Koley <hirak.koley@cern.ch>
 ///
