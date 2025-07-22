@@ -19,5 +19,6 @@
 #pragma link C++ class EMEventCut + ;
 #pragma link C++ class DielectronCut + ;
 #pragma link C++ class DimuonCut + ;
+#pragma link C++ class EMTrackCut + ;
 
 #endif // PWGEM_DILEPTON_CORE_PWGEMDILEPTONCORELINKDEF_H_

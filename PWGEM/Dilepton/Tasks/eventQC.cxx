@@ -159,7 +159,7 @@ struct eventQC {
 
   // for RCT
   Configurable<bool> cfgRequireGoodRCT{"cfgRequireGoodRCT", false, "require good detector flag in run condtion table"};
-  Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_hadron", "select 1 [CBT, CBT_hadron, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
+  Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
   Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "set ZDC flag for PbPb"};
   Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
@@ -249,7 +249,7 @@ struct eventQC {
     const AxisSpec axis_pt_tmp{tmp_ptbins, "p_{T} (GeV/c)"};
 
     const AxisSpec axis_pt{ConfPtBins, "p_{T} (GeV/c)"};
-    const AxisSpec axis_eta{cfgNbinsEta, -1.0, +1.0, "#eta"};
+    const AxisSpec axis_eta{cfgNbinsEta, -2.0, +2.0, "#eta"};
     const AxisSpec axis_phi{cfgNbinsPhi, 0.0, 2 * M_PI, "#varphi (rad.)"};
     const AxisSpec axis_sign{3, -1.5, +1.5, "sign"};
     const AxisSpec axis_cent{20, 0, 100, "centrality FT0C (%)"};
