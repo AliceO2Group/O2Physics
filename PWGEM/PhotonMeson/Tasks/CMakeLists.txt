@@ -149,3 +149,13 @@ o2physics_add_dpl_workflow(tagging-pi0-mc-pcmdalitzee
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(diphoton-hadron-2pc-pcmpcm
+                    SOURCES diphotonHadron2PCPCMPCM.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(diphoton-hadron-2pc-pcmdalitzee
+                    SOURCES diphotonHadron2PCPCMDalitzEE.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
+                    COMPONENT_NAME Analysis)
+
