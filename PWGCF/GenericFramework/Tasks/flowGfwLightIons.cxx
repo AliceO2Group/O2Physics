@@ -123,6 +123,7 @@ struct FlowGfwLightIons {
   O2_DEFINE_CONFIGURABLE(cfgFixedMultMin, int, 1, "Minimum for fixed nch range");
   O2_DEFINE_CONFIGURABLE(cfgFixedMultMax, int, 3000, "Maximum for fixed nch range");
   O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFlowWeights, bool, true, "Enable or disable the use of multiplicity-based event weighting");
+  O2_DEFINE_CONFIGURABLE(cfgConsistentEventFlag, int, 0, "Flag to select consistent events - 0: off, 1: v2{2} gap calculable, 2: v2{4} full calculable, 4: v2{4} gap calculable, 8: v2{4} 3sub calculable");
   O2_DEFINE_CONFIGURABLE(cfgUseDensityDependentCorrection, bool, false, "Use density dependent efficiency correction based on Run 2 measurements");
   Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.7217476707, 0.7384792571, 0.7542625668, 0.7640680200, 0.7701951667, 0.7755299053, 0.7805901710, 0.7849446786, 0.7957356586, 0.8113039262, 0.8211968966, 0.8280558878, 0.8329342135}, "parameter 0 for track density efficiency correction"};
   Configurable<std::vector<double>> cfgTrackDensityP1{"cfgTrackDensityP1", std::vector<double>{-2.169488e-05, -2.191913e-05, -2.295484e-05, -2.556538e-05, -2.754463e-05, -2.816832e-05, -2.846502e-05, -2.843857e-05, -2.705974e-05, -2.477018e-05, -2.321730e-05, -2.203315e-05, -2.109474e-05}, "parameter 1 for track density efficiency correction"};
@@ -183,7 +184,6 @@ struct FlowGfwLightIons {
     kCentNGlobal,
     kCentMFT
   };
-
   enum EventSelFlags {
     kFilteredEvent = 1,
     kSel8,
@@ -225,6 +225,12 @@ struct FlowGfwLightIons {
     int density;
     DensityCorr() : psi2Est(0.), psi3Est(0.), psi4Est(0.), v2(0.), v3(0.), v4(0.), density(0) {}
   };
+
+  // region indices for consistency flag
+  int posRegionIndex = -1;
+  int negRegionIndex = -1;
+  int fullRegionIndex = -1;
+  int midRegionIndex = -1;
 
   // Event selection cuts - Alex
   TF1* fMultPVCutLow = nullptr;
@@ -276,7 +282,6 @@ struct FlowGfwLightIons {
     cfgGFWBinning->Print();
     o2::analysis::gfw::multGlobalCorrCutPars = cfgMultGlobalCutPars;
     o2::analysis::gfw::multPVCorrCutPars = cfgMultPVCutPars;
-
     o2::analysis::gfw::firstRunsOfFill = cfgFirstRunsOfFill;
     if (cfgTimeDependent && !std::is_sorted(o2::analysis::gfw::firstRunsOfFill.begin(), o2::analysis::gfw::firstRunsOfFill.end())) {
       std::sort(o2::analysis::gfw::firstRunsOfFill.begin(), o2::analysis::gfw::firstRunsOfFill.end());
@@ -458,7 +463,6 @@ struct FlowGfwLightIons {
     fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgDCAxy->c_str()), 0.001, 100);
     fPtDepDCAxy->SetParameter(0, cfgDCAxyNSigma);
     LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", cfgDCAxy->c_str()));
-
     if (cfgUseAdditionalEventCut) {
       fMultPVCutLow = new TF1("fMultPVCutLow", cfgMultCorrLowCutFunction->c_str(), 0, 100);
       fMultPVCutLow->SetParameters(&(o2::analysis::gfw::multPVCorrCutPars[0]));
@@ -486,6 +490,32 @@ struct FlowGfwLightIons {
       funcV3->SetParameters(0.0174056, 0.000703329, -1.45044e-05, 1.91991e-07, -1.62137e-09);
       funcV4 = new TF1("funcV4", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
       funcV4->SetParameters(0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10);
+    }
+    if (cfgConsistentEventFlag) {
+      posRegionIndex = [&]() {
+        auto begin = cfgRegions->GetNames().begin();
+        auto end = cfgRegions->GetNames().end();
+        auto it = std::find(begin, end, "refP");
+        return (it != end) ? std::distance(begin, it) : -1;
+      }();
+      negRegionIndex = [&]() {
+        auto begin = cfgRegions->GetNames().begin();
+        auto end = cfgRegions->GetNames().end();
+        auto it = std::find(begin, end, "refN");
+        return (it != end) ? std::distance(begin, it) : -1;
+      }();
+      fullRegionIndex = [&]() {
+        auto begin = cfgRegions->GetNames().begin();
+        auto end = cfgRegions->GetNames().end();
+        auto it = std::find(begin, end, "refFull");
+        return (it != end) ? std::distance(begin, it) : -1;
+      }();
+      midRegionIndex = [&]() {
+        auto begin = cfgRegions->GetNames().begin();
+        auto end = cfgRegions->GetNames().end();
+        auto it = std::find(begin, end, "refMid");
+        return (it != end) ? std::distance(begin, it) : -1;
+      }();
     }
   }
 
@@ -757,6 +787,13 @@ struct FlowGfwLightIons {
     double time;
   };
 
+  struct AcceptedTracks {
+    int nPos;
+    int nNeg;
+    int nFull;
+    int nMid;
+  };
+
   template <DataType dt, typename TCollision, typename TTracks>
   void processCollision(TCollision collision, TTracks tracks, const XAxis& xaxis, const int& run)
   {
@@ -819,9 +856,21 @@ struct FlowGfwLightIons {
       densitycorrections.v4 = v4;
       densitycorrections.density = tracks.size();
     }
-
+    AcceptedTracks acceptedTracks{0, 0, 0, 0};
     for (const auto& track : tracks) {
-      processTrack(track, vtxz, xaxis.multiplicity, run, densitycorrections);
+      processTrack(track, vtxz, xaxis.multiplicity, run, densitycorrections, acceptedTracks);
+      if (cfgConsistentEventFlag & 1)
+        if (!acceptedTracks.nPos || !acceptedTracks.nNeg)
+          return;
+      if (cfgConsistentEventFlag & 2)
+        if (acceptedTracks.nFull < 4) // o2-linter: disable=magic-number (at least four tracks in full acceptance)
+          return;
+      if (cfgConsistentEventFlag & 4)
+        if (acceptedTracks.nPos < 2 || acceptedTracks.nNeg < 2) // o2-linter: disable=magic-number (at least two tracks in each subevent)
+          return;
+      if (cfgConsistentEventFlag & 8)
+        if (acceptedTracks.nPos < 2 || acceptedTracks.nMid < 2 || acceptedTracks.nNeg < 2) // o2-linter: disable=magic-number (at least two tracks in all three subevents)
+          return;
     }
     if (!cfgFillWeights)
       fillOutputContainers<dt>((cfgTimeDependent) ? xaxis.time : (cfgUseNch) ? xaxis.multiplicity
@@ -845,7 +894,20 @@ struct FlowGfwLightIons {
   }
 
   template <typename TTrack>
-  inline void processTrack(TTrack const& track, const float& vtxz, const int& multiplicity, const int& run, DensityCorr densitycorrections)
+  void fillAcceptedTracks(TTrack track, AcceptedTracks& acceptedTracks)
+  {
+    if (posRegionIndex >= 0 && track.eta() > o2::analysis::gfw::regions.GetEtaMin()[posRegionIndex] && track.eta() < o2::analysis::gfw::regions.GetEtaMax()[posRegionIndex])
+      ++acceptedTracks.nPos;
+    if (negRegionIndex >= 0 && track.eta() > o2::analysis::gfw::regions.GetEtaMin()[negRegionIndex] && track.eta() < o2::analysis::gfw::regions.GetEtaMax()[negRegionIndex])
+      ++acceptedTracks.nNeg;
+    if (fullRegionIndex >= 0 && track.eta() > o2::analysis::gfw::regions.GetEtaMin()[fullRegionIndex] && track.eta() < o2::analysis::gfw::regions.GetEtaMax()[fullRegionIndex])
+      ++acceptedTracks.nFull;
+    if (midRegionIndex >= 0 && track.eta() > o2::analysis::gfw::regions.GetEtaMin()[midRegionIndex] && track.eta() < o2::analysis::gfw::regions.GetEtaMax()[midRegionIndex])
+      ++acceptedTracks.nMid;
+  }
+
+  template <typename TTrack>
+  inline void processTrack(TTrack const& track, const float& vtxz, const int& multiplicity, const int& run, DensityCorr densitycorrections, AcceptedTracks& acceptedTracks)
   {
     if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TTrack::all_columns>) {
       if (track.mcParticleId() < 0 || !(track.has_mcParticle()))
@@ -868,6 +930,7 @@ struct FlowGfwLightIons {
       } else {
         fillPtSums<kReco>(track);
         fillGFW<kReco>(track, vtxz, densitycorrections);
+        fillAcceptedTracks(track, acceptedTracks);
       }
 
       if (cfgFillQA) {
@@ -885,7 +948,7 @@ struct FlowGfwLightIons {
 
       fillPtSums<kGen>(track);
       fillGFW<kGen>(track, vtxz, densitycorrections);
-
+      fillAcceptedTracks(track, acceptedTracks);
       if (cfgFillQA) {
         fillTrackQA<kGen, kAfter>(track, vtxz);
         registry.fill(HIST("MCGen/trackQA/nch_pt"), multiplicity, track.pt());
@@ -903,6 +966,7 @@ struct FlowGfwLightIons {
       } else {
         fillPtSums<kReco>(track);
         fillGFW<kReco>(track, vtxz, densitycorrections);
+        fillAcceptedTracks(track, acceptedTracks);
       }
       if (cfgFillQA) {
         fillTrackQA<kReco, kAfter>(track, vtxz);
@@ -914,6 +978,7 @@ struct FlowGfwLightIons {
         }
       }
     }
+    return;
   }
 
   template <DataType dt, typename TTrack>
@@ -954,7 +1019,7 @@ struct FlowGfwLightIons {
     double weff = (dt == kGen) ? 1. : getEfficiency(track);
     if (weff < 0)
       return;
-    if (std::abs(track.eta()) < cfgEtaPtPt) {
+    if (std::abs(track.eta()) < cfgEtaPtPt && track.pt() > o2::analysis::gfw::ptreflow && track.pt() < o2::analysis::gfw::ptrefup) {
       (dt == kGen) ? fFCptgen->fill(1., track.pt()) : fFCpt->fill(weff, track.pt());
     }
   }
