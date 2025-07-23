@@ -470,7 +470,7 @@ struct LfTreeCreatorClusterStudies {
     } else if (TESTBIT(v0Bitmask, AntiLambda)) {
       if (qtAP < lambdasetting_qtAPcut)
         return false;
-      if (std::abs(posTrack.tpcNSigmaPi()) > v0setting_nsigmatpcPr || std::abs(negTrack.tpcNSigmaPr()) > v0setting_nsigmatpcPi)
+      if (std::abs(posTrack.tpcNSigmaPi()) > v0setting_nsigmatpcPi || std::abs(negTrack.tpcNSigmaPr()) > v0setting_nsigmatpcPr)
         return false;
       if (std::hypot(momMother[0], momMother[1], momMother[2]) < lambdasetting_pmin)
         return false;
