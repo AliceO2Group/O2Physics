@@ -381,7 +381,7 @@ struct ExclusiveRhoTo4Pi {
   Produces<aod::BkgroundData> bkgFromData;
   // Histogram Registry
   HistogramRegistry histosData{"histosData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  // Configurable Event parameters:1
+  // Configurable Event parameters
   Configurable<bool> ifCheckUPCmode{"ifCheckUPCmode", false, "Enable UPC reconstruction only"};
   Configurable<float> vZCut{"vZCut", 10., "Vertex Cut"};
   Configurable<float> fv0Cut{"fv0Cut", 50., "FV0A threshold"};
@@ -394,22 +394,28 @@ struct ExclusiveRhoTo4Pi {
   Configurable<int> itsROFbCut{"itsROFbCut", 1, "itsROFbCut"};
   Configurable<int> vtxITSTPCcut{"vtxITSTPCcut", 1, "vtxITSTPCcut"};
   Configurable<int> tfbCut{"tfbCut", 1, "tfbCut"};
-  // Configurable Track parameters:1
+  // track Selection mode
+  Configurable<int> trackSelectionMode{"trackSelectionMode", 0, "Different modes of track selection"};
+  // Configurable Track parameters common to mode 0 and 1
   Configurable<bool> useOnlyPVtracks{"useOnlyPVtracks", true, "Use Only PV tracks"};
   Configurable<bool> useITS{"useITS", true, "only use tracks with hit in ITS"};
-  Configurable<uint8_t> itsNClsCut{"itsNClsCut", 4, "Min No of itsNCls"};
-  Configurable<uint8_t> itsClusterMapCut{"itsClusterMapCut", 1, "min no of ITS clusters in cluster map"};
-  Configurable<float> itsChi2NClCut{"itsChi2NClCut", 3.0, "Max ITS Chi2/NCl"};
   Configurable<bool> useTPC{"useTPC", true, "has TPC hit"};
-  Configurable<float> minFoundTPCclusters{"minFoundTPCclusters", 120, "Min TPC Findable Clusters"};
-  Configurable<float> tpcChi2NClsMin{"tpcChi2NClsMin", 1.0, "Min TPC Chi2/NCls"};
-  Configurable<float> tpcChi2NClsMax{"tpcChi2NClsMax", 3.0, "Max TPC Chi2/NCls"};
   Configurable<float> tpcNClsFindableCut{"tpcNClsFindableCut", 70, "Min TPC Findable Clusters"};
-  Configurable<float> tpcNClsCrossedRowsCut{"tpcNClsCrossedRowsCut", 130, "Min TPC Crossed Rows"};
-  Configurable<float> tpcCrossedRowsOverFindableCut{"tpcCrossedRowsOverFindableCut", 1.0, "Min TPC Crossed Rows over Findable Clusters"};
   Configurable<float> pTcut{"pTcut", 0.1, "Track Pt"};
   Configurable<float> dcaZcut{"dcaZcut", 1, "dcaZ cut"};
   Configurable<float> etaCut{"etaCut", 0.9, "Track Pseudorapidity"};
+  // Configurable Track parameters for mode 0 only
+  Configurable<uint8_t> itsNClsCut{"itsNClsCut", 4, "Min No of itsNCls"};
+  Configurable<uint8_t> itsClusterMapCut{"itsClusterMapCut", 1, "min no of ITS clusters in cluster map"};
+  Configurable<float> itsChi2NClCut{"itsChi2NClCut", 3.0, "Max ITS Chi2/NCl"};
+  Configurable<float> minFoundTPCclusters{"minFoundTPCclusters", 120, "Min TPC Findable Clusters"};
+  Configurable<float> tpcChi2NClsMin{"tpcChi2NClsMin", 1.0, "Min TPC Chi2/NCls"};
+  Configurable<float> tpcChi2NClsMax{"tpcChi2NClsMax", 3.0, "Max TPC Chi2/NCls"};
+  Configurable<float> tpcNClsCrossedRowsCut{"tpcNClsCrossedRowsCut", 130, "Min TPC Crossed Rows"};
+  Configurable<float> tpcCrossedRowsOverFindableCut{"tpcCrossedRowsOverFindableCut", 1.0, "Min TPC Crossed Rows over Findable Clusters"};
+  // Configurable Track parameters for mode: 1 only
+  Configurable<float> itsChi2Cut{"itsChi2Cut", 36, "ITS Chi2"};
+  Configurable<float> tpcChi2Cut{"tpcChi2Cut", 4.0, "TPC Chi2"};
   // Configurable PID parameters
   Configurable<bool> useTOF{"useTOF", true, "has TOF for PID"};
   Configurable<float> nSigmaTPCcut{"nSigmaTPCcut", 3, "TPC cut"};
@@ -640,81 +646,145 @@ struct ExclusiveRhoTo4Pi {
     for (const auto& t0 : tracks) {
 
       ROOT::Math::PxPyPzMVector trackVector(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassPionCharged);
-
       // no Cuts
       histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 0);
 
-      // is PV Contributor
-      if (!(t0.isPVContributor() == useOnlyPVtracks)) {
-        continue;
-      }
-      histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 1);
+      if (trackSelectionMode == 0) {
 
-      // has ITS hit
-      if ((useITS == true) && (t0.hasITS() != true)) {
-        continue;
-      }
-      histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 2);
+        // is PV Contributor
+        if (!(t0.isPVContributor() == useOnlyPVtracks)) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 1);
 
-      // min no of itsNCls
-      if (t0.itsNCls() < itsNClsCut) {
-        continue;
-      }
-      histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 3);
+        // has ITS hit
+        if ((useITS == true) && (t0.hasITS() != true)) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 2);
 
-      // min ITS chi2NCl
-      if (t0.itsChi2NCl() > itsChi2NClCut) {
-        continue;
-      }
-      histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 4);
+        // min no of itsNCls
+        if (t0.itsNCls() < itsNClsCut) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 3);
 
-      // has TPC hit
-      if ((useTPC == true) && (t0.hasTPC() != true)) {
-        continue;
-      }
-      histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 5);
+        // min ITS chi2NCl
+        if (t0.itsChi2NCl() > itsChi2NClCut) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 4);
 
-      // min no of found TPC clusters
-      if (t0.tpcNClsFindable() - t0.tpcNClsFindableMinusFound() < minFoundTPCclusters) {
-        continue;
-      }
-      histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 6);
+        // has TPC hit
+        if ((useTPC == true) && (t0.hasTPC() != true)) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 5);
 
-      // range of tpcChi2NCl
-      if (!((tpcChi2NClsMin < t0.tpcChi2NCl()) && (t0.tpcChi2NCl() < tpcChi2NClsMax))) {
-        continue;
-      }
-      histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 7);
+        // min no of found TPC clusters
+        if (t0.tpcNClsFindable() - t0.tpcNClsFindableMinusFound() < minFoundTPCclusters) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 6);
 
-      // tpcNClsCrossedRows
-      if (t0.tpcNClsCrossedRows() < tpcNClsCrossedRowsCut) {
-        continue;
-      }
-      histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 8);
+        // range of tpcChi2NCl
+        if (!((tpcChi2NClsMin < t0.tpcChi2NCl()) && (t0.tpcChi2NCl() < tpcChi2NClsMax))) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 7);
 
-      // ratio of crossed TPC rows over findable clusters
-      if ((t0.tpcNClsCrossedRows() / t0.tpcNClsFindable()) < tpcCrossedRowsOverFindableCut) {
-        continue;
-      }
-      histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 9);
+        // tpcNClsCrossedRows
+        if (t0.tpcNClsCrossedRows() < tpcNClsCrossedRowsCut) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 8);
 
-      // pT cut
-      if (trackVector.Pt() < pTcut) {
-        continue;
-      }
-      histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 10);
+        // ratio of crossed TPC rows over findable clusters
+        if ((t0.tpcNClsCrossedRows() / t0.tpcNClsFindable()) < tpcCrossedRowsOverFindableCut) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 9);
 
-      // dcaZ cut
-      if ((std::abs(t0.dcaZ()) > dcaZcut) || (t0.dcaXY() > getMaxDCAxy(trackVector.Pt()))) {
-        continue;
-      }
-      histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 11);
+        // pT cut
+        if (trackVector.Pt() < pTcut) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 10);
 
-      // eta cut
-      if (std::abs(trackVector.Eta()) > etaCut) {
-        continue;
-      }
-      histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 12);
+        // dcaZ cut
+        if ((std::abs(t0.dcaZ()) > dcaZcut) || (t0.dcaXY() > getMaxDCAxy(trackVector.Pt()))) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 11);
+
+        // eta cut
+        if (std::abs(trackVector.Eta()) > etaCut) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 12);
+      } // end of trackSelectionMode == 0
+
+      if (trackSelectionMode == 1) {
+        // is PV Contributor
+        if (!(t0.isPVContributor() == useOnlyPVtracks)) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 1);
+
+        // pT cut
+        if (trackVector.Pt() < pTcut) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 2);
+
+        // eta cut
+        if (std::abs(trackVector.Eta()) > etaCut) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 3);
+
+        // dcaZ cut
+        if ((std::abs(t0.dcaZ()) > dcaZcut)) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 4);
+
+        // dcaXY cut
+        if (std::abs(t0.dcaXY()) > getMaxDCAxy(trackVector.Pt())) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 5);
+
+        // has ITS hit
+        if ((useITS == true) && (t0.hasITS() != true)) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 6);
+
+        // has TPC hit
+        if ((useTPC == true) && (t0.hasTPC() != true)) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 7);
+
+        // ITS Chi2 Cut
+        if (t0.itsChi2NCl() > itsChi2Cut) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 8);
+
+        // TPC Chi2 Cut
+        if (t0.tpcChi2NCl() > tpcChi2Cut) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 9);
+
+        // TPC Clusters findable cut
+        if (t0.tpcNClsFindable() < tpcNClsFindableCut) {
+          continue;
+        }
+        histosData.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 10);
+      } // end of trackSelectionMode == 1
 
       selectedTracks.push_back(t0);
       if (selectionPIDPion(t0, useTOF, nSigmaTPCcut, nSigmaTOFcut)) {
