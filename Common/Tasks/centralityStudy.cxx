@@ -352,12 +352,12 @@ struct centralityStudy {
     initRun(collision);
     histos.fill(HIST("hCollisionSelection"), 0); // all collisions
     getHist(TH1, histPath + "hCollisionSelection")->Fill(0);
-    
+
     if (applySel8 && !collision.multSel8())
       return;
     histos.fill(HIST("hCollisionSelection"), 1);
     getHist(TH1, histPath + "hCollisionSelection")->Fill(1);
-    
+
     if (applyVtxZ && TMath::Abs(collision.multPVz()) > 10)
       return;
     histos.fill(HIST("hCollisionSelection"), 2);
@@ -459,7 +459,7 @@ struct centralityStudy {
     }
     histos.fill(HIST("hCollisionSelection"), 15 /* pass em/upc rejection */);
     getHist(TH1, histPath + "hCollisionSelection")->Fill(15);
-    
+
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hNPVContributors"), collision.multNTracksPV());
     histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C() * scaleSignalFT0C);
@@ -482,7 +482,7 @@ struct centralityStudy {
     getHist(TProfile, histPath + "hFV0AvsPVz_Collisions")->Fill(collision.multPVz(), collision.multFV0A() * scaleSignalFV0A);
     getHist(TProfile, histPath + "hNGlobalTracksvsPVz_Collisions")->Fill(collision.multPVz(), collision.multNTracksGlobal());
     getHist(TProfile, histPath + "hNMFTTracksvsPVz_Collisions")->Fill(collision.multPVz(), collision.mftNtracks());
-    
+
     if (collision.multFT0C() > minFT0CforVertexZ) {
       histos.fill(HIST("hFT0CvsPVz_Collisions"), collision.multPVz(), collision.multFT0C() * scaleSignalFT0C);
       getHist(TProfile, histPath + "hFT0CvsPVz_Collisions")->Fill(collision.multPVz(), collision.multFT0C() * scaleSignalFT0C);
@@ -571,8 +571,8 @@ struct centralityStudy {
       uint64_t bcTimestamp = multbc.timestamp();
       o2::parameters::GRPECSObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPECSObject>(pathGRPECSObject, bcTimestamp);
       uint64_t startOfRunTimestamp = grpo->getTimeStart();
-      float hoursAfterStartOfRun = static_cast<float>(bcTimestamp - startOfRunTimestamp) / 3600000.0;      
-      
+      float hoursAfterStartOfRun = static_cast<float>(bcTimestamp - startOfRunTimestamp) / 3600000.0;
+
       getHist(TH2, histPath + "hFT0AVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0A());
       getHist(TH2, histPath + "hFT0CVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0C());
       getHist(TH2, histPath + "hFT0MVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0M());
@@ -586,7 +586,7 @@ struct centralityStudy {
       if (doTimeStudyFV0AOuterVsFT0A3d) {
         histos.fill(HIST("h3dFV0AVsTime"), hoursAfterStartOfRun, collision.multFV0A(), collision.multFV0AOuter());
       }
-      
+
       if (irDoRateVsTime) {
         float interactionRate = mRateFetcher.fetch(ccdb.service, bcTimestamp, mRunNumber, irSource.value, irCrashOnNull) / 1000.; // kHz
         getHist(TProfile, histPath + "hIRProfileVsTime")->Fill(hoursAfterStartOfRun, interactionRate);
