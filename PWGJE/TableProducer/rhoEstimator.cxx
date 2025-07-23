@@ -191,7 +191,7 @@ struct RhoEstimatorTask {
 
   void processChargedCollisions(aod::JetCollision const& collision, soa::Filtered<aod::JetTracks> const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || collision.centrality() < config.centralityMin || collision.centrality() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || collision.centFT0M() < config.centralityMin || collision.centFT0M() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
       rhoChargedTable(0.0, 0.0);
       return;
     }
@@ -226,7 +226,7 @@ struct RhoEstimatorTask {
   void processD0Collisions(aod::JetCollision const& collision, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesD0Data const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || collision.centrality() < config.centralityMin || collision.centrality() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || collision.centFT0M() < config.centralityMin || collision.centFT0M() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
         rhoD0Table(0.0, 0.0);
         continue;
       }
@@ -254,7 +254,7 @@ struct RhoEstimatorTask {
   void processDplusCollisions(aod::JetCollision const& collision, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesDplusData const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || collision.centrality() < config.centralityMin || collision.centrality() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || collision.centFT0M() < config.centralityMin || collision.centFT0M() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
         rhoDplusTable(0.0, 0.0);
         continue;
       }
@@ -282,7 +282,7 @@ struct RhoEstimatorTask {
   void processDstarCollisions(aod::JetCollision const& collision, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesDstarData const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || collision.centrality() < config.centralityMin || collision.centrality() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || collision.centFT0M() < config.centralityMin || collision.centFT0M() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
         rhoDstarTable(0.0, 0.0);
         continue;
       }
@@ -310,7 +310,7 @@ struct RhoEstimatorTask {
   void processLcCollisions(aod::JetCollision const& collision, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesLcData const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || collision.centrality() < config.centralityMin || collision.centrality() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || collision.centFT0M() < config.centralityMin || collision.centFT0M() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
         rhoLcTable(0.0, 0.0);
         continue;
       }
@@ -338,7 +338,7 @@ struct RhoEstimatorTask {
   void processB0Collisions(aod::JetCollision const& collision, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesB0Data const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || collision.centrality() < config.centralityMin || collision.centrality() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || collision.centFT0M() < config.centralityMin || collision.centFT0M() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
         rhoB0Table(0.0, 0.0);
         continue;
       }
@@ -366,7 +366,7 @@ struct RhoEstimatorTask {
   void processBplusCollisions(aod::JetCollision const& collision, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesBplusData const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || collision.centrality() < config.centralityMin || collision.centrality() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || collision.centFT0M() < config.centralityMin || collision.centFT0M() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
         rhoBplusTable(0.0, 0.0);
         continue;
       }
@@ -394,7 +394,7 @@ struct RhoEstimatorTask {
   void processDielectronCollisions(aod::JetCollision const& collision, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesDielectronData const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || collision.centrality() < config.centralityMin || collision.centrality() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || collision.centFT0M() < config.centralityMin || collision.centFT0M() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
         rhoDielectronTable(0.0, 0.0);
         continue;
       }

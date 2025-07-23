@@ -183,7 +183,7 @@ struct JetDerivedDataSelector {
 
   void processDoCollisionSelections(aod::JCollision const& collision)
   { // can also add event selection like sel8 but goes a little against the derived data idea
-    if (collision.centrality() < config.centralityMin || collision.centrality() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
+    if (collision.centFT0M() < config.centralityMin || collision.centFT0M() >= config.centralityMax || collision.trackOccupancyInTimeRange() > config.trackOccupancyInTimeRangeMax || std::abs(collision.posZ()) > config.vertexZCut) {
       collisionFlag[collision.globalIndex()] = false;
     }
   }

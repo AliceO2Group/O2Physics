@@ -22,7 +22,6 @@
 #include "PWGJE/DataModel/JetReducedData.h"
 
 #include "Common/CCDB/TriggerAliases.h"
-#include "Common/DataModel/Multiplicity.h"
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisTask.h"
@@ -446,8 +445,8 @@ struct FullJetSpectra {
 
   // Applying some cuts(filters) on collisions, tracks, clusters
 
-  Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centrality >= centralityMin && aod::jcollision::centrality < centralityMax);
-  // Filter EMCeventCuts = (nabs(aod::collision::posZ) < vertexZCut && aod::collision::centrality >= centralityMin && aod::collision::centrality < centralityMax);
+  Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centFT0M >= centralityMin && aod::jcollision::centFT0M < centralityMax);
+  // Filter EMCeventCuts = (nabs(aod::collision::posZ) < vertexZCut && aod::collision::v >= centralityMin && aod::collision::centFT0M < centralityMax);
   Filter trackCuts = (aod::jtrack::pt >= trackpTMin && aod::jtrack::pt < trackpTMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax && aod::jtrack::phi >= trackPhiMin && aod::jtrack::phi <= trackPhiMax);
   aod::EMCALClusterDefinition clusterDefinition = aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
   Filter clusterFilter = (aod::jcluster::definition == static_cast<int>(clusterDefinition) && aod::jcluster::eta > clusterEtaMin && aod::jcluster::eta < clusterEtaMax && aod::jcluster::phi >= clusterPhiMin && aod::jcluster::phi <= clusterPhiMax && aod::jcluster::energy >= clusterEnergyMin && aod::jcluster::time > clusterTimeMin && aod::jcluster::time < clusterTimeMax && (clusterRejectExotics && aod::jcluster::isExotic != true));
@@ -1568,7 +1567,7 @@ struct FullJetSpectra {
   }
   PROCESS_SWITCH(FullJetSpectra, processTracksWeighted, "Full Jet tracks weighted", false);
 
-  void processCollisionsWeightedWithMultiplicity(soa::Filtered<soa::Join<EMCCollisionsMCD, aod::FT0Mults>>::iterator const& collision, JetTableMCDWeightedJoined const& mcdjets, aod::JMcCollisions const&, soa::Filtered<aod::JetTracks> const& tracks, soa::Filtered<aod::JetClusters> const& clusters)
+  void processCollisionsWeightedWithMultiplicity(soa::Filtered<EMCCollisionsMCD>::iterator const& collision, JetTableMCDWeightedJoined const& mcdjets, aod::JMcCollisions const&, soa::Filtered<aod::JetTracks> const& tracks, soa::Filtered<aod::JetClusters> const& clusters)
   {
     bool eventAccepted = false;
     float eventWeight = collision.mcCollision().weight();
@@ -1619,7 +1618,7 @@ struct FullJetSpectra {
       }
     }
     registry.fill(HIST("hEventmultiplicityCounter"), 7.5, eventWeight); // EMCAcceptedWeightedCollAfterTrackSel
-    registry.fill(HIST("h_FT0Mults_occupancy"), collision.multiplicity(), eventWeight);
+    registry.fill(HIST("h_FT0Mults_occupancy"), collision.multFT0M(), eventWeight);
 
     for (auto const& mcdjet : mcdjets) {
       float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
@@ -1635,18 +1634,18 @@ struct FullJetSpectra {
       if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
         continue;
       }
-      registry.fill(HIST("h2_full_jet_jetpTDetVsFT0Mults"), mcdjet.pt(), collision.multiplicity(), eventWeight);
+      registry.fill(HIST("h2_full_jet_jetpTDetVsFT0Mults"), mcdjet.pt(), collision.multFT0M(), eventWeight);
 
       for (auto const& cluster : clusters) {
         neutralEnergy += cluster.energy();
       }
       auto nef = neutralEnergy / mcdjet.energy();
-      registry.fill(HIST("h3_full_jet_jetpTDet_FT0Mults_nef"), mcdjet.pt(), collision.multiplicity(), nef, eventWeight);
+      registry.fill(HIST("h3_full_jet_jetpTDet_FT0Mults_nef"), mcdjet.pt(), collision.multFT0M(), nef, eventWeight);
     }
   }
   PROCESS_SWITCH(FullJetSpectra, processCollisionsWeightedWithMultiplicity, "Weighted Collisions for Full Jets Multiplicity Studies", false);
 
-  void processMBCollisionsWithMultiplicity(soa::Filtered<soa::Join<EMCCollisionsMCD, aod::FT0Mults>>::iterator const& collision, JetTableMCDJoined const& mcdjets, aod::JMcCollisions const&, soa::Filtered<aod::JetTracks> const& tracks, soa::Filtered<aod::JetClusters> const& clusters)
+  void processMBCollisionsWithMultiplicity(soa::Filtered<EMCCollisionsMCD>::iterator const& collision, JetTableMCDJoined const& mcdjets, aod::JMcCollisions const&, soa::Filtered<aod::JetTracks> const& tracks, soa::Filtered<aod::JetClusters> const& clusters)
   {
     bool eventAccepted = false;
     float pTHat = 10. / (std::pow(1.0, 1.0 / pTHatExponent));
@@ -1694,7 +1693,7 @@ struct FullJetSpectra {
       }
     }
     registry.fill(HIST("hEventmultiplicityCounter"), 7.5); // EMCAcceptedCollAfterTrackSel
-    registry.fill(HIST("h_FT0Mults_occupancy"), collision.multiplicity());
+    registry.fill(HIST("h_FT0Mults_occupancy"), collision.multFT0M());
 
     for (auto const& mcdjet : mcdjets) {
       if (mcdjet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) { // MCD (Detector Level) Outlier Rejection
@@ -1709,18 +1708,18 @@ struct FullJetSpectra {
       if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
         continue;
       }
-      registry.fill(HIST("h2_full_jet_jetpTDetVsFT0Mults"), mcdjet.pt(), collision.multiplicity(), 1.0);
+      registry.fill(HIST("h2_full_jet_jetpTDetVsFT0Mults"), mcdjet.pt(), collision.multFT0M(), 1.0);
 
       for (auto const& cluster : clusters) {
         neutralEnergy += cluster.energy();
       }
       auto nef = neutralEnergy / mcdjet.energy();
-      registry.fill(HIST("h3_full_jet_jetpTDet_FT0Mults_nef"), mcdjet.pt(), collision.multiplicity(), nef, 1.0);
+      registry.fill(HIST("h3_full_jet_jetpTDet_FT0Mults_nef"), mcdjet.pt(), collision.multFT0M(), nef, 1.0);
     }
   }
   PROCESS_SWITCH(FullJetSpectra, processMBCollisionsWithMultiplicity, "MB MCD Collisions for Full Jets Multiplicity Studies", false);
 
-  void processMBCollisionsDATAWithMultiplicity(soa::Filtered<soa::Join<EMCCollisionsData, aod::FT0Mults>>::iterator const& collision, FullJetTableDataJoined const& jets, soa::Filtered<aod::JetTracks> const& tracks, soa::Filtered<aod::JetClusters> const& clusters)
+  void processMBCollisionsDATAWithMultiplicity(soa::Filtered<EMCCollisionsData>::iterator const& collision, FullJetTableDataJoined const& jets, soa::Filtered<aod::JetTracks> const& tracks, soa::Filtered<aod::JetClusters> const& clusters)
   {
     bool eventAccepted = false;
     float neutralEnergy = 0.0;
@@ -1766,7 +1765,7 @@ struct FullJetSpectra {
       }
     }
     registry.fill(HIST("hEventmultiplicityCounter"), 7.5); // EMCAcceptedCollAfterTrackSel
-    registry.fill(HIST("h_FT0Mults_occupancy"), collision.multiplicity());
+    registry.fill(HIST("h_FT0Mults_occupancy"), collision.multFT0M());
 
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -1778,13 +1777,13 @@ struct FullJetSpectra {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
-      registry.fill(HIST("h2_full_jet_jetpTDetVsFT0Mults"), jet.pt(), collision.multiplicity(), 1.0);
+      registry.fill(HIST("h2_full_jet_jetpTDetVsFT0Mults"), jet.pt(), collision.multFT0M(), 1.0);
 
       for (auto const& cluster : clusters) {
         neutralEnergy += cluster.energy();
       }
       auto nef = neutralEnergy / jet.energy();
-      registry.fill(HIST("h3_full_jet_jetpTDet_FT0Mults_nef"), jet.pt(), collision.multiplicity(), nef, 1.0);
+      registry.fill(HIST("h3_full_jet_jetpTDet_FT0Mults_nef"), jet.pt(), collision.multFT0M(), nef, 1.0);
     }
   }
   PROCESS_SWITCH(FullJetSpectra, processMBCollisionsDATAWithMultiplicity, "MB DATA Collisions for Full Jets Multiplicity Studies", false);
