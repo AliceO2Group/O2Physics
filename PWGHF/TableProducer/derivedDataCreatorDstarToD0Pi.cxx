@@ -208,9 +208,9 @@ struct HfDerivedDataCreatorDstarToD0Pi {
 
   template <typename CollisionType, typename ParticleType, typename MatchMap>
   void processGenMc(CollisionType const& mcCollisions,
-                          o2::framework::Preslice<ParticleType> const& mcParticlesPerMcCollision,
-                          ParticleType const& mcParticles,
-                          MatchMap const& matchMap)
+                    o2::framework::Preslice<ParticleType> const& mcParticlesPerMcCollision,
+                    ParticleType const& mcParticles,
+                    MatchMap const& matchMap)
   {
     // Fill MC collision properties
     for (const auto& mcCollision : mcCollisions) {
