@@ -468,8 +468,8 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 			auto trackPosLambdaDaughter = casc.posTrack_as<TracksWCovDcaExtraPidPrPi>(); // If charge of cascade is negative, this should be track of proton
 			auto trackNegLambdaDaughter = casc.negTrack_as<TracksWCovDcaExtraPidPrPi>(); // If charge of cascade is negative, this shoud be track of pion
 
-			auto trackProtonFromLambda = chargeCasc < 0 ? trackPosLambdaDaughter : trackNegLambdaDaughter;
-			auto trackPionFromLambda = chargeCasc < 0 ? trackNegLambdaDaughter : trackPosLambdaDaughter;
+			const auto& trackProtonFromLambda = chargeCasc < 0 ? trackPosLambdaDaughter : trackNegLambdaDaughter;
+			const auto& trackPionFromLambda = chargeCasc < 0 ? trackNegLambdaDaughter : trackPosLambdaDaughter;
 
 			float pPrFromLambda = trackProtonFromLambda.p();
 			float nSigTpcPrFromLambda = trackProtonFromLambda.tpcNSigmaPr();
@@ -739,8 +739,8 @@ struct HfCandidateCreatorXic0XicpToHadronic {
 			auto trackPosLambdaDaughter = casc.posTrack_as<TracksWCovDcaExtraPidPrPi>(); // If charge of cascade is negative, this should be track of proton
 			auto trackNegLambdaDaughter = casc.negTrack_as<TracksWCovDcaExtraPidPrPi>(); // If charge of cascade is negative, this shoud be track of pion
 
-			auto trackProtonFromLambda = chargeCasc < 0 ? trackPosLambdaDaughter : trackNegLambdaDaughter;
-			auto trackPionFromLambda = chargeCasc < 0 ? trackNegLambdaDaughter : trackPosLambdaDaughter;
+			const auto& trackProtonFromLambda = chargeCasc < 0 ? trackPosLambdaDaughter : trackNegLambdaDaughter;
+			const auto& trackPionFromLambda = chargeCasc < 0 ? trackNegLambdaDaughter : trackPosLambdaDaughter;
 
 			float pPrFromLambda = trackProtonFromLambda.p();
 			float nSigTpcPrFromLambda = trackProtonFromLambda.tpcNSigmaPr();
