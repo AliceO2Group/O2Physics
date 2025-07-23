@@ -223,6 +223,9 @@ struct TrHeAnalysis {
   Configurable<float> cfgCutMinItsClusterSizeH3{"cfgCutMinItsClusterSizeH3", 1.f, "Minimum ITS Cluster Size for Tr"};
   Configurable<float> cfgCutMinTofMassH3{"cfgCutMinTofMassH3", 5.f, "Minimum Tof mass H3"};
   Configurable<float> cfgCutMaxTofMassH3{"cfgCutMaxTofMassH3", 11.f, "Maximum TOF mass H3"};
+  Configurable<float> cfgMaxRigidity{"cfgMaxRigidity", 10.f, "Maximum rigidity value"};
+  Configurable<float> cfgMaxPt{"cfgMaxPt", 10.f, "Maximum pT value"};
+
   // Set the kinematic and PID cuts for tracks
   struct : ConfigurableGroup {
     Configurable<float> pCut{"pCut", 0.6f, "Value of the p selection for spectra (default 0.3)"};
@@ -312,6 +315,8 @@ struct TrHeAnalysis {
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& event,
                TracksFull const& tracks)
   {
+    template <typename T>
+    float getMass(const T& track);
     bool trRapCut = kFALSE;
     bool heRapCut = kFALSE;
     histos.fill(HIST("event/eventSelection"), 0);
@@ -345,6 +350,9 @@ struct TrHeAnalysis {
         }
         if (std::abs(track.eta()) > kinemOptions.etaCut) {
           histos.fill(HIST("histogram/cuts"), 2);
+          continue;
+        }
+        if (track.pt() > cfgMaxPt || getRigidity(track) > cfgMaxRigidity) {
           continue;
         }
         if (track.tpcNClsFound() < cfgCutTpcClusters) {
@@ -512,6 +520,9 @@ struct TrHeAnalysis {
         }
         if (std::abs(track.eta()) > kinemOptions.etaCut) {
           histos.fill(HIST("histogram/cuts"), 2);
+          continue;
+        }
+        if (track.pt() > cfgMaxPt || getRigidity(track) > cfgMaxRigidity) {
           continue;
         }
         if (track.tpcNClsFound() < cfgCutTpcClusters) {
