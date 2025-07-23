@@ -85,6 +85,7 @@ struct DndetaMFTPbPb {
     true};
 
   Configurable<bool> cfgDoIR{"cfgDoIR", false, "Flag to retrieve Interaction rate from CCDB"};
+  Configurable<bool> cfgUseIRCut{"cfgUseIRCut", false, "Flag to cut on IR rate"};
   Configurable<bool> cfgIRCrashOnNull{"cfgIRCrashOnNull", false, "Flag to avoid CTP RateFetcher crash"};
   Configurable<std::string> cfgIRSource{"cfgIRSource", "T0VTX", "Estimator of the interaction rate (Pb-Pb: ZNC hadronic)"};
 
@@ -159,7 +160,13 @@ struct DndetaMFTPbPb {
     "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch",
                                     "url of the ccdb repository"};
+
+  int mRunNumber{-1};
+  uint64_t mSOR{0};
+  double mMinSeconds{-1.};
+  std::unordered_map<int, TH2*> gHadronicRate;
   ctpRateFetcher rateFetcher;
+  TH2* gCurrentHadronicRate;            
 
   /// @brief init function, definition of histograms
   void init(InitContext&)
@@ -226,7 +233,7 @@ struct DndetaMFTPbPb {
     }
 
     auto hev = registry.add<TH1>("hEvtSel", "hEvtSel", HistType::kTH1F,
-                                 {{16, -0.5f, +15.5f}});
+                                 {{14, -0.5f, +13.5f}});
     hev->GetXaxis()->SetBinLabel(1, "All collisions");
     hev->GetXaxis()->SetBinLabel(2, "Ev. sel.");
     hev->GetXaxis()->SetBinLabel(3, "kIsGoodZvtxFT0vsPV");
@@ -240,8 +247,6 @@ struct DndetaMFTPbPb {
     hev->GetXaxis()->SetBinLabel(11, "kNoHighMultCollInPrevRof");
     hev->GetXaxis()->SetBinLabel(12, "Below min occup.");
     hev->GetXaxis()->SetBinLabel(13, "Above max occup.");
-    hev->GetXaxis()->SetBinLabel(14, "Below min IR (kHz)");
-    hev->GetXaxis()->SetBinLabel(15, "Above max IR (kHz)");
 
     auto hBcSel = registry.add<TH1>("hBcSel", "hBcSel", HistType::kTH1F,
                                     {{3, -0.5f, +2.5f}});
@@ -261,11 +266,6 @@ struct DndetaMFTPbPb {
       auto* x = hstat->GetXaxis();
       x->SetBinLabel(1, "All");
       x->SetBinLabel(2, "Selected");
-
-      if (cfgDoIR) {
-        qaregistry.add("hOccIRate", "hOccIRate", HistType::kTH2F,
-                       {occupancyAxis, irBins});
-      }
 
       registry.add({"Events/NtrkZvtx",
                     "; N_{trk}; Z_{vtx} (cm); occupancy",
@@ -349,11 +349,6 @@ struct DndetaMFTPbPb {
       auto hstat = registry.get<THnSparse>(HIST("Events/Centrality/Selection"));
       hstat->GetAxis(0)->SetBinLabel(1, "All");
       hstat->GetAxis(0)->SetBinLabel(2, "Selected");
-
-      if (cfgDoIR) {
-        qaregistry.add("hCentOccIRate", "hCentOccIRate", HistType::kTHnSparseF,
-                       {centralityAxis, occupancyAxis, irBins});
-      }
 
       qaregistry.add({"Events/Centrality/hCent",
                       "; centrality; occupancy",
@@ -917,6 +912,24 @@ struct DndetaMFTPbPb {
     return -1.f;
   }
 
+  void initHadronicRate(CollBCs::iterator const& bc)
+  {
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+    mRunNumber = bc.runNumber();
+    if (gHadronicRate.find(mRunNumber) == gHadronicRate.end()) {
+      auto runDuration = ccdb->getRunDuration(mRunNumber);
+      mSOR = runDuration.first;
+      mMinSeconds = std::floor(mSOR * 1.e-3);                /// round tsSOR to the highest integer lower than tsSOR
+      double maxSec = std::ceil(runDuration.second * 1.e-3); /// round tsEOR to the lowest integer higher than tsEOR
+      const AxisSpec axisSeconds{static_cast<int>((maxSec - mMinSeconds) / 20.f), 0, maxSec - mMinSeconds, "Seconds since SOR"};
+      int hadronicRateBins = static_cast<int>(eventCuts.maxIR - eventCuts.minIR);
+      gHadronicRate[mRunNumber] = registry.add<TH2>(Form("HadronicRate/%i", mRunNumber), ";Time since SOR (s);Hadronic rate (kHz)", kTH2D, {axisSeconds, {hadronicRateBins, eventCuts.minIR, eventCuts.maxIR}}).get();
+    }
+    gCurrentHadronicRate = gHadronicRate[mRunNumber];
+  }
+                             
   template <bool fillHis = false, typename C>
   bool isGoodEvent(C const& collision)
   {
@@ -1000,19 +1013,6 @@ struct DndetaMFTPbPb {
     }
     if constexpr (fillHis) {
       registry.fill(HIST("hEvtSel"), 12);
-    }
-    double ir = (eventCuts.minIR >= 0 || eventCuts.maxIR >= 0) ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), cfgIRSource, cfgIRCrashOnNull) * 1.e-3 : -1;
-    if (eventCuts.minIR >= 0 && ir < eventCuts.minIR) {
-      return false;
-    }
-    if (fillHis) {
-      registry.fill(HIST("hEvtSel"), 13);
-    }
-    if (eventCuts.maxIR >= 0 && ir > eventCuts.maxIR) {
-      return false;
-    }
-    if (fillHis) {
-      registry.fill(HIST("hEvtSel"), 14);
     }
     return true;
   }
@@ -1112,10 +1112,6 @@ struct DndetaMFTPbPb {
     auto occ = getOccupancy(collision, eventCuts.occupancyEstimator);
     float c = getRecoCent(collision);
     auto bc = collision.template foundBC_as<CollBCs>();
-    float ir = -1;
-    if (cfgDoIR) {
-      ir = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), cfgIRSource, cfgIRCrashOnNull) * 1.e-3;
-    }
     if constexpr (has_reco_cent<C>) {
       registry.fill(HIST("Events/Centrality/Selection"), 1., c, occ);
     } else {
@@ -1126,18 +1122,22 @@ struct DndetaMFTPbPb {
       return;
     }
 
+    if (cfgDoIR) {
+      initHadronicRate(bc);
+      double ir = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), cfgIRSource, cfgIRCrashOnNull) * 1.e-3;
+      double seconds = bc.timestamp() * 1.e-3 - mMinSeconds;
+      if (cfgUseIRCut && (ir < eventCuts.minIR || ir > eventCuts.maxIR)) { // cut on hadronic rate
+        return;
+      }
+      gCurrentHadronicRate->Fill(seconds, ir);
+    }    
+
     auto z = collision.posZ();
     if constexpr (has_reco_cent<C>) {
       registry.fill(HIST("Events/Centrality/Selection"), 2., c, occ);
       qaregistry.fill(HIST("Events/Centrality/hZvtxCent"), z, c, occ);
       qaregistry.fill(HIST("Events/Centrality/hCent"), c, occ);
-      if (cfgDoIR) {
-        qaregistry.fill(HIST("hCentOccIRate"), c, occ, ir);
-      }
     } else {
-      if (cfgDoIR) {
-        qaregistry.fill(HIST("hOccIRate"), occ, ir);
-      }
       registry.fill(HIST("Events/Selection"), 2., occ);
     }
 
@@ -1160,10 +1160,6 @@ struct DndetaMFTPbPb {
     auto occ = getOccupancy(collision, eventCuts.occupancyEstimator);
     float c = getRecoCent(collision);
     auto bc = collision.template foundBC_as<CollBCs>();
-    float ir = -1;
-    if (cfgDoIR) {
-      ir = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), cfgIRSource, cfgIRCrashOnNull) * 1.e-3;
-    }
     if constexpr (has_reco_cent<C>) {
       registry.fill(HIST("Events/Centrality/Selection"), 1., c, occ);
     } else {
@@ -1174,17 +1170,21 @@ struct DndetaMFTPbPb {
       return;
     }
 
+    if (cfgDoIR) {
+      initHadronicRate(bc);
+      double ir = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), cfgIRSource, cfgIRCrashOnNull) * 1.e-3;
+      double seconds = bc.timestamp() * 1.e-3 - mMinSeconds;
+      if (cfgUseIRCut && (ir < eventCuts.minIR || ir > eventCuts.maxIR)) { // cut on hadronic rate
+        return;
+      }
+      gCurrentHadronicRate->Fill(seconds, ir);
+    }    
+    
     auto z = collision.posZ();
     if constexpr (has_reco_cent<C>) {
       registry.fill(HIST("Events/Centrality/Selection"), 2., c, occ);
-      if (cfgDoIR) {
-        qaregistry.fill(HIST("hCentOccIRate"), c, occ, ir);
-      }
     } else {
       registry.fill(HIST("Events/Selection"), 2., occ);
-      if (cfgDoIR) {
-        qaregistry.fill(HIST("hOccIRate"), occ, ir);
-      }
     }
 
     auto nBestTrks = countBestTracks<C, true>(tracks, besttracks, z, c, occ);
