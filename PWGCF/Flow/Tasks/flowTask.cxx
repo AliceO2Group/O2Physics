@@ -352,19 +352,6 @@ struct FlowTask {
     }
     delete oba;
 
-    gfwConfigs.SetCorrs(cfgUserPtVnCorrConfig->GetCorrs());
-    gfwConfigs.SetHeads(cfgUserPtVnCorrConfig->GetHeads());
-    gfwConfigs.SetpTDifs(cfgUserPtVnCorrConfig->GetpTDifs());
-    // Mask 1: vn-[pT], 2: vn-[pT^2], 4: vn-[pT^3]
-    gfwConfigs.SetpTCorrMasks(cfgUserPtVnCorrConfig->GetpTCorrMasks());
-    gfwConfigs.Print();
-    fFCpt->setUseCentralMoments(cfgUseCentralMoments);
-    fFCpt->setUseGapMethod(true);
-    fFCpt->initialise(axisIndependent, cfgMpar, gfwConfigs, cfgNbootstrap);
-    for (auto i = 0; i < gfwConfigs.GetSize(); ++i) {
-      corrconfigsPtVn.push_back(fGFW->GetCorrelatorConfig(gfwConfigs.GetCorrs()[i], gfwConfigs.GetHeads()[i], gfwConfigs.GetpTDifs()[i]));
-    }
-
     // eta region
     fGFW->AddRegion("full", -0.8, 0.8, 1, 1);
     fGFW->AddRegion("refN00", -0.8, 0., 1, 1);   // gap0 negative region
@@ -447,6 +434,19 @@ struct FlowTask {
       }
     }
     fGFW->CreateRegions();
+
+    gfwConfigs.SetCorrs(cfgUserPtVnCorrConfig->GetCorrs());
+    gfwConfigs.SetHeads(cfgUserPtVnCorrConfig->GetHeads());
+    gfwConfigs.SetpTDifs(cfgUserPtVnCorrConfig->GetpTDifs());
+    // Mask 1: vn-[pT], 2: vn-[pT^2], 4: vn-[pT^3]
+    gfwConfigs.SetpTCorrMasks(cfgUserPtVnCorrConfig->GetpTCorrMasks());
+    gfwConfigs.Print();
+    fFCpt->setUseCentralMoments(cfgUseCentralMoments);
+    fFCpt->setUseGapMethod(true);
+    fFCpt->initialise(axisIndependent, cfgMpar, gfwConfigs, cfgNbootstrap);
+    for (auto i = 0; i < gfwConfigs.GetSize(); ++i) {
+      corrconfigsPtVn.push_back(fGFW->GetCorrelatorConfig(gfwConfigs.GetCorrs()[i], gfwConfigs.GetHeads()[i], gfwConfigs.GetpTDifs()[i]));
+    }
 
     if (cfgUseAdditionalEventCut) {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
