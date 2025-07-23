@@ -238,7 +238,6 @@ struct HfDerivedDataCreatorDstarToD0Pi {
             pdgMother);
         }
       }
-      
     }
   }
 
