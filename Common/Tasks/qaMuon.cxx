@@ -45,6 +45,11 @@
 #include "Math/Vector4D.h"
 #include "TGeoGlobalMagField.h"
 
+#include <utility>
+#include <string>
+#include <algorithm>
+#include <map>
+#include <vector>
 #include <chrono>
 
 using namespace std;
@@ -1818,7 +1823,7 @@ struct muonQa {
     std::vector<std::array<double, 2>> yPos;
     std::vector<std::array<double, 2>> thetax;
     std::vector<std::array<double, 2>> thetay;
-    for (int zi = 0; zi < int(zRefPlane.size()); zi++) {
+    for (int zi = 0; zi < static_cast<int>(zRefPlane.size()); zi++) {
       xPos.emplace_back(std::array<double, 2>{fgVectorsMCH[zi].x, fgVectorsMFT[zi].x});
       yPos.emplace_back(std::array<double, 2>{fgVectorsMCH[zi].y, fgVectorsMFT[zi].y});
       thetax.emplace_back(std::array<double, 2>{
@@ -1829,7 +1834,7 @@ struct muonQa {
         std::atan2(fgVectorsMFT[zi].py, -1.0 * fgVectorsMFT[zi].pz) * 180 / TMath::Pi()});
     }
 
-    for (int i = 0; i < int(zRefPlane.size()); i++) {
+    for (int i = 0; i < static_cast<int>(zRefPlane.size()); i++) {
       if (same) {
         std::get<std::shared_ptr<TH2>>(trackResidualsHistos[i][quadrant]["dx_vs_x"])->Fill(std::fabs(xPos[i][1]), xPos[i][0] - xPos[i][1]);
         std::get<std::shared_ptr<TH2>>(trackResidualsHistos[i][quadrant]["dx_vs_y"])->Fill(std::fabs(yPos[i][1]), xPos[i][0] - xPos[i][1]);
@@ -2202,7 +2207,7 @@ struct muonQa {
       }
 
       // Loop over attached clusters
-      for (int iCls = 0; iCls < int(fgValuesClsTmp.posClusters.size()); iCls++) {
+      for (static_cast<int> iCls = 0; iCls < int(fgValuesClsTmp.posClusters.size()); iCls++) {
 
         double phiCls = std::atan2(fgValuesClsTmp.posClusters[iCls][1], fgValuesClsTmp.posClusters[iCls][0]) * 180 / TMath::Pi();
         int quadrantCls = GetQuadrantPhi(phiCls);
@@ -2349,7 +2354,7 @@ struct muonQa {
       FillMatching(muontrack, fgValuesMCH, fgValuesMFT);
 
       //// Fill global informations
-      registry.get<TH1>(HIST("global-muons/NCandidates"))->Fill(int(globalMuonsVector.size()));
+      registry.get<TH1>(HIST("global-muons/NCandidates"))->Fill(static_cast<int>(globalMuonsVector.size()));
       for (size_t candidateIndex = 0; candidateIndex < globalMuonsVector.size(); candidateIndex++) {
         auto const& muon = muons.rawIteratorAt(globalMuonsVector[candidateIndex]);
         registry.get<TH2>(HIST("global-muons/MatchChi2"))->Fill(muon.chi2MatchMCHMFT(), candidateIndex);
@@ -2391,7 +2396,7 @@ struct muonQa {
       }
 
       //// Fill global muon candidates info
-      for (int i = 0; i < int(globalMuonsVector.size()); i++) {
+      for (int i = 0; i < static_cast<int>(globalMuonsVector.size()); i++) {
         VarTrack fgValuesTmp;
         auto muonCandidate = muons.rawIteratorAt(globalMuonsVector[i]);
         FillTrack<0>(muonCandidate, fgValuesTmp);
