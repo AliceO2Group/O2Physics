@@ -8,50 +8,49 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// ========================
-/// \file strangenessbuilder.cxx
-/// \brief Strangeness builder task
-/// \author David Dobrigkeit Chinellato (david.dobrigkeit.chinellato@cern.ch)
-// ========================
-//
-// This task produces all tables that may be necessary for
-// strangeness analyses. A single device is provided to
-// ensure better computing resource (memory) management.
-//
-//  process functions:
-//
-//  -- processRealData[Run2] .........: use this OR processMonteCarlo but NOT both
-//  -- processMonteCarlo[Run2] .......: use this OR processRealData but NOT both
-//
-//  Most important configurables:
-//  -- enabledTables ......: key control bools to decide which tables to generate
-//                           task will adapt algorithm to spare / spend CPU accordingly
-//  -- mc_findableMode ....: 0: only found (default), 1: add findable to found, 2: all findable
-//                           When using findables, refer to FoundTag bools for checking if found
-//  -- v0builderopts ......: V0-specific building options (topological, deduplication, etc)
-//  -- cascadebuilderopts .: cascade-specific building options (topological, etc)
 
-#include <string>
-#include <vector>
+/// \file strangenessBuilderModule.h
+/// \brief strangeness builder module
+/// \author ALICE
 
-#include "Framework/DataSpecUtils.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/PIDResponse.h"
+// simple checkers, but ensure 8 bit integers
+#define BITSET(var, nbit) ((var) |= (static_cast<uint8_t>(1) << static_cast<uint8_t>(nbit)))
+
+#ifndef PWGLF_UTILS_STRANGENESSBUILDERMODULE_H_
+#define PWGLF_UTILS_STRANGENESSBUILDERMODULE_H_
+
 #include "TableHelper.h"
+
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/Utils/strangenessBuilderHelper.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
+
 #include "Common/Core/TPCVDriftManager.h"
 
-using namespace o2;
-using namespace o2::framework;
+#include "DataFormatsCalibration/MeanVertexObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisHelpers.h"
+#include "Framework/Configurable.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/HistogramSpec.h"
 
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <memory>
+#include <string>
+
+//__________________________________________
+// strangeness builder module
+
+namespace o2
+{
+namespace pwglf
+{
+namespace strangenessbuilder // avoid polluting other namespaces
+{
+
+// statics necessary for the configurables in this namespace
 static constexpr int nParameters = 1;
 static const std::vector<std::string> tableNames{
   "V0Indices",          //.0 (standard analysis: V0Cores)
@@ -135,274 +134,252 @@ static const int defaultParameters[nTablesConst][nParameters]{
   {-1},
   {-1}};
 
-// use parameters + cov mat non-propagated, aux info + (extension propagated)
-using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
-using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
-using FullTracksExtWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::pidTPCFullHe>;
-using FullTracksExtIUWithPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::pidTPCFullHe>;
-using FullTracksExtLabeled = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::McTrackLabels>;
-using FullTracksExtLabeledIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::McTrackLabels>;
-using FullTracksExtLabeledWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::pidTPCFullHe, aod::McTrackLabels>;
-using FullTracksExtLabeledIUWithPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::pidTPCFullHe, aod::McTrackLabels>;
-using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
+// table index : match order above
+enum tableIndex { kV0Indices = 0,
+                  kV0CoresBase,
+                  kV0Covs,
+                  kCascIndices,
+                  kKFCascIndices,
+                  kTraCascIndices,
+                  kStoredCascCores,
+                  kStoredKFCascCores,
+                  kStoredTraCascCores,
+                  kCascCovs,
+                  kKFCascCovs,
+                  kTraCascCovs,
+                  kV0TrackXs,
+                  kCascTrackXs,
+                  kCascBBs,
+                  kV0DauCovs,
+                  kV0DauCovIUs,
+                  kV0TraPosAtDCAs,
+                  kV0TraPosAtIUs,
+                  kV0Ivanovs,
+                  kMcV0Labels,
+                  kV0MCCores,
+                  kV0CoreMCLabels,
+                  kV0MCCollRefs,
+                  kMcCascLabels,
+                  kMcKFCascLabels,
+                  kMcTraCascLabels,
+                  kMcCascBBTags,
+                  kCascMCCores,
+                  kCascCoreMCLabels,
+                  kCascMCCollRefs,
+                  kCascToTraRefs,
+                  kCascToKFRefs,
+                  kTraToCascRefs,
+                  kKFToCascRefs,
+                  kV0FoundTags,
+                  kCascFoundTags,
+                  nTables };
 
-// For dE/dx association in pre-selection
-using TracksExtraWithPID = soa::Join<aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::pidTPCFullHe>;
+enum V0PreSelection : uint8_t { selGamma = 0,
+                                selK0Short,
+                                selLambda,
+                                selAntiLambda };
 
-// simple checkers, but ensure 8 bit integers
-#define BITSET(var, nbit) ((var) |= (static_cast<uint8_t>(1) << static_cast<uint8_t>(nbit)))
+enum CascPreSelection : uint8_t { selXiMinus = 0,
+                                  selXiPlus,
+                                  selOmegaMinus,
+                                  selOmegaPlus };
 
-struct StrangenessBuilder {
-  // helper object
-  o2::pwglf::strangenessBuilderHelper straHelper;
+static constexpr float defaultK0MassWindowParameters[1][4] = {{2.81882e-03, 1.14057e-03, 1.72138e-03, 5.00262e-01}};
+static constexpr float defaultLambdaWindowParameters[1][4] = {{1.17518e-03, 1.24099e-04, 5.47937e-03, 3.08009e-01}};
+static constexpr float defaultXiMassWindowParameters[1][4] = {{1.43210e-03, 2.03561e-04, 2.43187e-03, 7.99668e-01}};
+static constexpr float defaultOmMassWindowParameters[1][4] = {{1.43210e-03, 2.03561e-04, 2.43187e-03, 7.99668e-01}};
 
-  // table index : match order above
-  enum tableIndex { kV0Indices = 0,
-                    kV0CoresBase,
-                    kV0Covs,
-                    kCascIndices,
-                    kKFCascIndices,
-                    kTraCascIndices,
-                    kStoredCascCores,
-                    kStoredKFCascCores,
-                    kStoredTraCascCores,
-                    kCascCovs,
-                    kKFCascCovs,
-                    kTraCascCovs,
-                    kV0TrackXs,
-                    kCascTrackXs,
-                    kCascBBs,
-                    kV0DauCovs,
-                    kV0DauCovIUs,
-                    kV0TraPosAtDCAs,
-                    kV0TraPosAtIUs,
-                    kV0Ivanovs,
-                    kMcV0Labels,
-                    kV0MCCores,
-                    kV0CoreMCLabels,
-                    kV0MCCollRefs,
-                    kMcCascLabels,
-                    kMcKFCascLabels,
-                    kMcTraCascLabels,
-                    kMcCascBBTags,
-                    kCascMCCores,
-                    kCascCoreMCLabels,
-                    kCascMCCollRefs,
-                    kCascToTraRefs,
-                    kCascToKFRefs,
-                    kTraToCascRefs,
-                    kKFToCascRefs,
-                    kV0FoundTags,
-                    kCascFoundTags,
-                    nTables };
+static constexpr float defaultLifetimeCuts[1][4] = {{20, 60, 40, 20}};
 
-  enum V0PreSelection : uint8_t { selGamma = 0,
-                                  selK0Short,
-                                  selLambda,
-                                  selAntiLambda };
+struct products : o2::framework::ProducesGroup {
+  //__________________________________________________
+  // V0 tables
+  o2::framework::Produces<aod::V0Indices> v0indices; // standard part of V0Datas
+  o2::framework::Produces<aod::V0CoresBase> v0cores; // standard part of V0Datas
+  o2::framework::Produces<aod::V0Covs> v0covs;       // for decay chain reco
 
-  enum CascPreSelection : uint8_t { selXiMinus = 0,
-                                    selXiPlus,
-                                    selOmegaMinus,
-                                    selOmegaPlus };
+  //__________________________________________________
+  // cascade tables
+  o2::framework::Produces<aod::CascIndices> cascidx;            // standard part of CascDatas
+  o2::framework::Produces<aod::KFCascIndices> kfcascidx;        // standard part of KFCascDatas
+  o2::framework::Produces<aod::TraCascIndices> tracascidx;      // standard part of TraCascDatas
+  o2::framework::Produces<aod::StoredCascCores> cascdata;       // standard part of CascDatas
+  o2::framework::Produces<aod::StoredKFCascCores> kfcascdata;   // standard part of KFCascDatas
+  o2::framework::Produces<aod::StoredTraCascCores> tracascdata; // standard part of TraCascDatas
+  o2::framework::Produces<aod::CascCovs> casccovs;              // for decay chain reco
+  o2::framework::Produces<aod::KFCascCovs> kfcasccovs;          // for decay chain reco
+  o2::framework::Produces<aod::TraCascCovs> tracasccovs;        // for decay chain reco
 
-  struct : ProducesGroup {
-    //__________________________________________________
-    // V0 tables
-    Produces<aod::V0Indices> v0indices; // standard part of V0Datas
-    Produces<aod::V0CoresBase> v0cores; // standard part of V0Datas
-    Produces<aod::V0Covs> v0covs;       // for decay chain reco
+  //__________________________________________________
+  // interlink tables
+  o2::framework::Produces<aod::V0DataLink> v0dataLink;           // de-refs V0s -> V0Data
+  o2::framework::Produces<aod::CascDataLink> cascdataLink;       // de-refs Cascades -> CascData
+  o2::framework::Produces<aod::KFCascDataLink> kfcascdataLink;   // de-refs Cascades -> KFCascData
+  o2::framework::Produces<aod::TraCascDataLink> tracascdataLink; // de-refs Cascades -> TraCascData
 
-    //__________________________________________________
-    // cascade tables
-    Produces<aod::CascIndices> cascidx;            // standard part of CascDatas
-    Produces<aod::KFCascIndices> kfcascidx;        // standard part of KFCascDatas
-    Produces<aod::TraCascIndices> tracascidx;      // standard part of TraCascDatas
-    Produces<aod::StoredCascCores> cascdata;       // standard part of CascDatas
-    Produces<aod::StoredKFCascCores> kfcascdata;   // standard part of KFCascDatas
-    Produces<aod::StoredTraCascCores> tracascdata; // standard part of TraCascDatas
-    Produces<aod::CascCovs> casccovs;              // for decay chain reco
-    Produces<aod::KFCascCovs> kfcasccovs;          // for decay chain reco
-    Produces<aod::TraCascCovs> tracasccovs;        // for decay chain reco
+  //__________________________________________________
+  // secondary auxiliary tables
+  o2::framework::Produces<aod::V0TrackXs> v0trackXs;     // for decay chain reco
+  o2::framework::Produces<aod::CascTrackXs> cascTrackXs; // for decay chain reco
 
-    //__________________________________________________
-    // interlink tables
-    Produces<aod::V0DataLink> v0dataLink;           // de-refs V0s -> V0Data
-    Produces<aod::CascDataLink> cascdataLink;       // de-refs Cascades -> CascData
-    Produces<aod::KFCascDataLink> kfcascdataLink;   // de-refs Cascades -> KFCascData
-    Produces<aod::TraCascDataLink> tracascdataLink; // de-refs Cascades -> TraCascData
+  //__________________________________________________
+  // further auxiliary / optional if desired
+  o2::framework::Produces<aod::CascBBs> cascbb;
+  o2::framework::Produces<aod::V0DauCovs> v0daucovs;            // covariances of daughter tracks
+  o2::framework::Produces<aod::V0DauCovIUs> v0daucovIUs;        // covariances of daughter tracks
+  o2::framework::Produces<aod::V0TraPosAtDCAs> v0dauPositions;  // auxiliary debug information
+  o2::framework::Produces<aod::V0TraPosAtIUs> v0dauPositionsIU; // auxiliary debug information
+  o2::framework::Produces<aod::V0Ivanovs> v0ivanovs;            // information for Marian's tests
 
-    //__________________________________________________
-    // secondary auxiliary tables
-    Produces<aod::V0TrackXs> v0trackXs;     // for decay chain reco
-    Produces<aod::CascTrackXs> cascTrackXs; // for decay chain reco
+  //__________________________________________________
+  // MC information: V0
+  o2::framework::Produces<aod::McV0Labels> v0labels;           // MC labels for V0s
+  o2::framework::Produces<aod::V0MCCores> v0mccores;           // mc info storage
+  o2::framework::Produces<aod::V0CoreMCLabels> v0CoreMCLabels; // interlink V0Cores -> V0MCCores
+  o2::framework::Produces<aod::V0MCCollRefs> v0mccollref;      // references collisions from V0MCCores
 
-    //__________________________________________________
-    // further auxiliary / optional if desired
-    Produces<aod::CascBBs> cascbb;
-    Produces<aod::V0DauCovs> v0daucovs;            // covariances of daughter tracks
-    Produces<aod::V0DauCovIUs> v0daucovIUs;        // covariances of daughter tracks
-    Produces<aod::V0TraPosAtDCAs> v0dauPositions;  // auxiliary debug information
-    Produces<aod::V0TraPosAtIUs> v0dauPositionsIU; // auxiliary debug information
-    Produces<aod::V0Ivanovs> v0ivanovs;            // information for Marian's tests
+  // MC information: Cascades
+  o2::framework::Produces<aod::McCascLabels> casclabels;           // MC labels for cascades
+  o2::framework::Produces<aod::McKFCascLabels> kfcasclabels;       // MC labels for KF cascades
+  o2::framework::Produces<aod::McTraCascLabels> tracasclabels;     // MC labels for tracked cascades
+  o2::framework::Produces<aod::McCascBBTags> bbtags;               // bb tags (inv structure tagging in mc)
+  o2::framework::Produces<aod::CascMCCores> cascmccores;           // mc info storage
+  o2::framework::Produces<aod::CascCoreMCLabels> cascCoreMClabels; // interlink CascCores -> CascMCCores
+  o2::framework::Produces<aod::CascMCCollRefs> cascmccollrefs;     // references MC collisions from MC cascades
 
-    //__________________________________________________
-    // MC information: V0
-    Produces<aod::McV0Labels> v0labels;           // MC labels for V0s
-    Produces<aod::V0MCCores> v0mccores;           // mc info storage
-    Produces<aod::V0CoreMCLabels> v0CoreMCLabels; // interlink V0Cores -> V0MCCores
-    Produces<aod::V0MCCollRefs> v0mccollref;      // references collisions from V0MCCores
+  //__________________________________________________
+  // cascade interlinks
+  // FIXME: commented out until strangederivedbuilder adjusted accordingly
+  // o2::framework::Produces<aod::CascToTraRefs> cascToTraRefs; // cascades -> tracked
+  // o2::framework::Produces<aod::CascToKFRefs> cascToKFRefs;   // cascades -> KF
+  // o2::framework::Produces<aod::TraToCascRefs> traToCascRefs; // tracked -> cascades
+  // o2::framework::Produces<aod::KFToCascRefs> kfToCascRefs;   // KF -> cascades
 
-    // MC information: Cascades
-    Produces<aod::McCascLabels> casclabels;           // MC labels for cascades
-    Produces<aod::McKFCascLabels> kfcasclabels;       // MC labels for KF cascades
-    Produces<aod::McTraCascLabels> tracasclabels;     // MC labels for tracked cascades
-    Produces<aod::McCascBBTags> bbtags;               // bb tags (inv structure tagging in mc)
-    Produces<aod::CascMCCores> cascmccores;           // mc info storage
-    Produces<aod::CascCoreMCLabels> cascCoreMClabels; // interlink CascCores -> CascMCCores
-    Produces<aod::CascMCCollRefs> cascmccollrefs;     // references MC collisions from MC cascades
+  //__________________________________________________
+  // Findable tags
+  o2::framework::Produces<aod::V0FoundTags> v0FoundTag;
+  o2::framework::Produces<aod::CascFoundTags> cascFoundTag;
+};
 
-    //__________________________________________________
-    // cascade interlinks
-    // FIXME: commented out until strangederivedbuilder adjusted accordingly
-    // Produces<aod::CascToTraRefs> cascToTraRefs; // cascades -> tracked
-    // Produces<aod::CascToKFRefs> cascToKFRefs;   // cascades -> KF
-    // Produces<aod::TraToCascRefs> traToCascRefs; // tracked -> cascades
-    // Produces<aod::KFToCascRefs> kfToCascRefs;   // KF -> cascades
-
-    //__________________________________________________
-    // Findable tags
-    Produces<aod::V0FoundTags> v0FoundTag;
-    Produces<aod::CascFoundTags> cascFoundTag;
-  } products;
-
-  Configurable<LabeledArray<int>> enabledTables{"enabledTables",
-                                                {defaultParameters[0], nTables, nParameters, tableNames, parameterNames},
-                                                "Produce this table: -1 for autodetect; otherwise, 0/1 is false/true"};
+// strangenessBuilder: 1st-order configurables
+struct coreConfigurables : o2::framework::ConfigurableGroup {
+  o2::framework::Configurable<o2::framework::LabeledArray<int>> enabledTables{"enabledTables",
+                                                                              {defaultParameters[0], nTables, nParameters, tableNames, parameterNames},
+                                                                              "Produce this table: -1 for autodetect; otherwise, 0/1 is false/true"};
   std::vector<int> mEnabledTables; // Vector of enabled tables
-
-  // CCDB options
-  struct : ConfigurableGroup {
-    std::string prefix = "ccdb";
-    Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-    Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-    Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-    Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-    Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  } ccdbConfigurations;
 
   // first order deduplication implementation
   // more algorithms to be added as necessary
-  Configurable<int> deduplicationAlgorithm{"deduplicationAlgorithm", 1, "0: disabled; 1: best pointing angle wins; 2: best DCA daughters wins; 3: best pointing and best DCA wins"};
+  o2::framework::Configurable<int> deduplicationAlgorithm{"deduplicationAlgorithm", 1, "0: disabled; 1: best pointing angle wins; 2: best DCA daughters wins; 3: best pointing and best DCA wins"};
 
   // V0 buffer for V0s used in cascades: master switch
   // exchanges CPU (generate V0s again) with memory (save pre-generated V0s)
-  Configurable<bool> useV0BufferForCascades{"useV0BufferForCascades", false, "store array of V0s for cascades or not. False (default): save RAM, use more CPU; true: save CPU, use more RAM"};
+  o2::framework::Configurable<bool> useV0BufferForCascades{"useV0BufferForCascades", false, "store array of V0s for cascades or not. False (default): save RAM, use more CPU; true: save CPU, use more RAM"};
 
-  Configurable<int> mc_findableMode{"mc_findableMode", 0, "0: disabled; 1: add findable-but-not-found to existing V0s from AO2D; 2: reset V0s and generate only findable-but-not-found"};
+  o2::framework::Configurable<int> mc_findableMode{"mc_findableMode", 0, "0: disabled; 1: add findable-but-not-found to existing V0s from AO2D; 2: reset V0s and generate only findable-but-not-found"};
+};
 
-  // Autoconfigure process functions
-  Configurable<bool> autoConfigureProcess{"autoConfigureProcess", false, "if true, will configure process function switches based on metadata"};
+// strangenessBuilder: V0 building options
+struct v0Configurables : o2::framework::ConfigurableGroup {
+  std::string prefix = "v0BuilderOpts";
+  o2::framework::Configurable<bool> generatePhotonCandidates{"generatePhotonCandidates", false, "generate gamma conversion candidates (V0s using TPC-only tracks)"};
+  o2::framework::Configurable<bool> moveTPCOnlyTracks{"moveTPCOnlyTracks", true, "if dealing with TPC-only tracks, move them according to TPC drift / time info"};
 
-  // V0 building options
-  struct : ConfigurableGroup {
-    std::string prefix = "v0BuilderOpts";
-    Configurable<bool> generatePhotonCandidates{"generatePhotonCandidates", false, "generate gamma conversion candidates (V0s using TPC-only tracks)"};
-    Configurable<bool> moveTPCOnlyTracks{"moveTPCOnlyTracks", true, "if dealing with TPC-only tracks, move them according to TPC drift / time info"};
+  // baseline conditionals of V0 building
+  o2::framework::Configurable<int> minCrossedRows{"minCrossedRows", 50, "minimum TPC crossed rows for daughter tracks"};
+  o2::framework::Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
+  o2::framework::Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
+  o2::framework::Configurable<double> v0cospa{"v0cospa", 0.95, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
+  o2::framework::Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
+  o2::framework::Configurable<float> v0radius{"v0radius", 0.9, "v0radius"};
+  o2::framework::Configurable<float> maxDaughterEta{"maxDaughterEta", 5.0, "Maximum daughter eta (in abs value)"};
 
-    // baseline conditionals of V0 building
-    Configurable<int> minCrossedRows{"minCrossedRows", 50, "minimum TPC crossed rows for daughter tracks"};
-    Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
-    Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
-    Configurable<double> v0cospa{"v0cospa", 0.95, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
-    Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
-    Configurable<float> v0radius{"v0radius", 0.9, "v0radius"};
-    Configurable<float> maxDaughterEta{"maxDaughterEta", 5.0, "Maximum daughter eta (in abs value)"};
+  // MC builder options
+  o2::framework::Configurable<bool> mc_populateV0MCCoresSymmetric{"mc_populateV0MCCoresSymmetric", false, "populate V0MCCores table for derived data analysis, keep V0MCCores joinable with V0Cores"};
+  o2::framework::Configurable<bool> mc_populateV0MCCoresAsymmetric{"mc_populateV0MCCoresAsymmetric", true, "populate V0MCCores table for derived data analysis, create V0Cores -> V0MCCores interlink. Saves only labeled V0s."};
+  o2::framework::Configurable<bool> mc_treatPiToMuDecays{"mc_treatPiToMuDecays", true, "if true, will correctly capture pi -> mu and V0 label will still point to originating V0 decay in those cases. Nota bene: prong info will still be for the muon!"};
+  o2::framework::Configurable<float> mc_rapidityWindow{"mc_rapidityWindow", 0.5, "rapidity window to save non-recoed candidates"};
+  o2::framework::Configurable<bool> mc_keepOnlyPhysicalPrimary{"mc_keepOnlyPhysicalPrimary", false, "Keep only physical primary generated V0s if not recoed"};
+  o2::framework::Configurable<bool> mc_addGeneratedK0Short{"mc_addGeneratedK0Short", true, "add V0MCCore entry for generated, not-recoed K0Short"};
+  o2::framework::Configurable<bool> mc_addGeneratedLambda{"mc_addGeneratedLambda", true, "add V0MCCore entry for generated, not-recoed Lambda"};
+  o2::framework::Configurable<bool> mc_addGeneratedAntiLambda{"mc_addGeneratedAntiLambda", true, "add V0MCCore entry for generated, not-recoed AntiLambda"};
+  o2::framework::Configurable<bool> mc_addGeneratedGamma{"mc_addGeneratedGamma", false, "add V0MCCore entry for generated, not-recoed Gamma"};
+  o2::framework::Configurable<bool> mc_addGeneratedGammaMakeCollinear{"mc_addGeneratedGammaMakeCollinear", true, "when adding findable gammas, mark them as collinear"};
+  o2::framework::Configurable<bool> mc_findableDetachedV0{"mc_findableDetachedV0", false, "if true, generate findable V0s that have collisionId -1. Caution advised."};
+};
 
-    // MC builder options
-    Configurable<bool> mc_populateV0MCCoresSymmetric{"mc_populateV0MCCoresSymmetric", false, "populate V0MCCores table for derived data analysis, keep V0MCCores joinable with V0Cores"};
-    Configurable<bool> mc_populateV0MCCoresAsymmetric{"mc_populateV0MCCoresAsymmetric", true, "populate V0MCCores table for derived data analysis, create V0Cores -> V0MCCores interlink. Saves only labeled V0s."};
-    Configurable<bool> mc_treatPiToMuDecays{"mc_treatPiToMuDecays", true, "if true, will correctly capture pi -> mu and V0 label will still point to originating V0 decay in those cases. Nota bene: prong info will still be for the muon!"};
-    Configurable<float> mc_rapidityWindow{"mc_rapidityWindow", 0.5, "rapidity window to save non-recoed candidates"};
-    Configurable<bool> mc_keepOnlyPhysicalPrimary{"mc_keepOnlyPhysicalPrimary", false, "Keep only physical primary generated V0s if not recoed"};
-    Configurable<bool> mc_addGeneratedK0Short{"mc_addGeneratedK0Short", true, "add V0MCCore entry for generated, not-recoed K0Short"};
-    Configurable<bool> mc_addGeneratedLambda{"mc_addGeneratedLambda", true, "add V0MCCore entry for generated, not-recoed Lambda"};
-    Configurable<bool> mc_addGeneratedAntiLambda{"mc_addGeneratedAntiLambda", true, "add V0MCCore entry for generated, not-recoed AntiLambda"};
-    Configurable<bool> mc_addGeneratedGamma{"mc_addGeneratedGamma", false, "add V0MCCore entry for generated, not-recoed Gamma"};
-    Configurable<bool> mc_addGeneratedGammaMakeCollinear{"mc_addGeneratedGammaMakeCollinear", true, "when adding findable gammas, mark them as collinear"};
-    Configurable<bool> mc_findableDetachedV0{"mc_findableDetachedV0", false, "if true, generate findable V0s that have collisionId -1. Caution advised."};
-  } v0BuilderOpts;
+// strangenessBuilder: cascade building options
+struct cascadeConfigurables : o2::framework::ConfigurableGroup {
+  std::string prefix = "cascadeBuilderOpts";
+  o2::framework::Configurable<bool> useCascadeMomentumAtPrimVtx{"useCascadeMomentumAtPrimVtx", false, "use cascade momentum at PV"};
 
-  // cascade building options
-  struct : ConfigurableGroup {
-    std::string prefix = "cascadeBuilderOpts";
-    Configurable<bool> useCascadeMomentumAtPrimVtx{"useCascadeMomentumAtPrimVtx", false, "use cascade momentum at PV"};
+  // conditionals
+  o2::framework::Configurable<int> minCrossedRows{"minCrossedRows", 50, "minimum TPC crossed rows for daughter tracks"};
+  o2::framework::Configurable<float> dcabachtopv{"dcabachtopv", .05, "DCA Bach To PV"};
+  o2::framework::Configurable<float> cascradius{"cascradius", 0.9, "cascradius"};
+  o2::framework::Configurable<float> casccospa{"casccospa", 0.95, "casccospa"};
+  o2::framework::Configurable<float> dcacascdau{"dcacascdau", 1.0, "DCA cascade Daughters"};
+  o2::framework::Configurable<float> lambdaMassWindow{"lambdaMassWindow", .010, "Distance from Lambda mass (does not apply to KF path)"};
+  o2::framework::Configurable<float> maxDaughterEta{"maxDaughterEta", 5.0, "Maximum daughter eta (in abs value)"};
 
-    // conditionals
-    Configurable<int> minCrossedRows{"minCrossedRows", 50, "minimum TPC crossed rows for daughter tracks"};
-    Configurable<float> dcabachtopv{"dcabachtopv", .05, "DCA Bach To PV"};
-    Configurable<float> cascradius{"cascradius", 0.9, "cascradius"};
-    Configurable<float> casccospa{"casccospa", 0.95, "casccospa"};
-    Configurable<float> dcacascdau{"dcacascdau", 1.0, "DCA cascade Daughters"};
-    Configurable<float> lambdaMassWindow{"lambdaMassWindow", .010, "Distance from Lambda mass (does not apply to KF path)"};
-    Configurable<float> maxDaughterEta{"maxDaughterEta", 5.0, "Maximum daughter eta (in abs value)"};
+  // KF building specific
+  o2::framework::Configurable<bool> kfTuneForOmega{"kfTuneForOmega", false, "if enabled, take main cascade properties from Omega fit instead of Xi fit (= default)"};
+  o2::framework::Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "KF Construct Method"};
+  o2::framework::Configurable<bool> kfUseV0MassConstraint{"kfUseV0MassConstraint", true, "KF: use Lambda mass constraint"};
+  o2::framework::Configurable<bool> kfUseCascadeMassConstraint{"kfUseCascadeMassConstraint", false, "KF: use Cascade mass constraint - WARNING: not adequate for inv mass analysis of Xi"};
+  o2::framework::Configurable<bool> kfDoDCAFitterPreMinimV0{"kfDoDCAFitterPreMinimV0", true, "KF: do DCAFitter pre-optimization before KF fit to include material corrections for V0"};
+  o2::framework::Configurable<bool> kfDoDCAFitterPreMinimCasc{"kfDoDCAFitterPreMinimCasc", true, "KF: do DCAFitter pre-optimization before KF fit to include material corrections for Xi"};
 
-    // KF building specific
-    Configurable<bool> kfTuneForOmega{"kfTuneForOmega", false, "if enabled, take main cascade properties from Omega fit instead of Xi fit (= default)"};
-    Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "KF Construct Method"};
-    Configurable<bool> kfUseV0MassConstraint{"kfUseV0MassConstraint", true, "KF: use Lambda mass constraint"};
-    Configurable<bool> kfUseCascadeMassConstraint{"kfUseCascadeMassConstraint", false, "KF: use Cascade mass constraint - WARNING: not adequate for inv mass analysis of Xi"};
-    Configurable<bool> kfDoDCAFitterPreMinimV0{"kfDoDCAFitterPreMinimV0", true, "KF: do DCAFitter pre-optimization before KF fit to include material corrections for V0"};
-    Configurable<bool> kfDoDCAFitterPreMinimCasc{"kfDoDCAFitterPreMinimCasc", true, "KF: do DCAFitter pre-optimization before KF fit to include material corrections for Xi"};
+  // MC builder options
+  o2::framework::Configurable<bool> mc_populateCascMCCoresSymmetric{"mc_populateCascMCCoresSymmetric", false, "populate CascMCCores table for derived data analysis, keep CascMCCores joinable with CascCores"};
+  o2::framework::Configurable<bool> mc_populateCascMCCoresAsymmetric{"mc_populateCascMCCoresAsymmetric", true, "populate CascMCCores table for derived data analysis, create CascCores -> CascMCCores interlink. Saves only labeled Cascades."};
+  o2::framework::Configurable<bool> mc_addGeneratedXiMinus{"mc_addGeneratedXiMinus", true, "add CascMCCore entry for generated, not-recoed XiMinus"};
+  o2::framework::Configurable<bool> mc_addGeneratedXiPlus{"mc_addGeneratedXiPlus", true, "add CascMCCore entry for generated, not-recoed XiPlus"};
+  o2::framework::Configurable<bool> mc_addGeneratedOmegaMinus{"mc_addGeneratedOmegaMinus", true, "add CascMCCore entry for generated, not-recoed OmegaMinus"};
+  o2::framework::Configurable<bool> mc_addGeneratedOmegaPlus{"mc_addGeneratedOmegaPlus", true, "add CascMCCore entry for generated, not-recoed OmegaPlus"};
+  o2::framework::Configurable<bool> mc_treatPiToMuDecays{"mc_treatPiToMuDecays", true, "if true, will correctly capture pi -> mu and V0 label will still point to originating V0 decay in those cases. Nota bene: prong info will still be for the muon!"};
+  o2::framework::Configurable<float> mc_rapidityWindow{"mc_rapidityWindow", 0.5, "rapidity window to save non-recoed candidates"};
+  o2::framework::Configurable<bool> mc_keepOnlyPhysicalPrimary{"mc_keepOnlyPhysicalPrimary", false, "Keep only physical primary generated cascades if not recoed"};
+  o2::framework::Configurable<bool> mc_findableDetachedCascade{"mc_findableDetachedCascade", false, "if true, generate findable cascades that have collisionId -1. Caution advised."};
+};
 
-    // MC builder options
-    Configurable<bool> mc_populateCascMCCoresSymmetric{"mc_populateCascMCCoresSymmetric", false, "populate CascMCCores table for derived data analysis, keep CascMCCores joinable with CascCores"};
-    Configurable<bool> mc_populateCascMCCoresAsymmetric{"mc_populateCascMCCoresAsymmetric", true, "populate CascMCCores table for derived data analysis, create CascCores -> CascMCCores interlink. Saves only labeled Cascades."};
-    Configurable<bool> mc_addGeneratedXiMinus{"mc_addGeneratedXiMinus", true, "add CascMCCore entry for generated, not-recoed XiMinus"};
-    Configurable<bool> mc_addGeneratedXiPlus{"mc_addGeneratedXiPlus", true, "add CascMCCore entry for generated, not-recoed XiPlus"};
-    Configurable<bool> mc_addGeneratedOmegaMinus{"mc_addGeneratedOmegaMinus", true, "add CascMCCore entry for generated, not-recoed OmegaMinus"};
-    Configurable<bool> mc_addGeneratedOmegaPlus{"mc_addGeneratedOmegaPlus", true, "add CascMCCore entry for generated, not-recoed OmegaPlus"};
-    Configurable<bool> mc_treatPiToMuDecays{"mc_treatPiToMuDecays", true, "if true, will correctly capture pi -> mu and V0 label will still point to originating V0 decay in those cases. Nota bene: prong info will still be for the muon!"};
-    Configurable<float> mc_rapidityWindow{"mc_rapidityWindow", 0.5, "rapidity window to save non-recoed candidates"};
-    Configurable<bool> mc_keepOnlyPhysicalPrimary{"mc_keepOnlyPhysicalPrimary", false, "Keep only physical primary generated cascades if not recoed"};
-    Configurable<bool> mc_findableDetachedCascade{"mc_findableDetachedCascade", false, "if true, generate findable cascades that have collisionId -1. Caution advised."};
-  } cascadeBuilderOpts;
+// preselection options
+struct preSelectOpts : o2::framework::ConfigurableGroup {
+  std::string prefix = "preSelectOpts";
+  o2::framework::Configurable<bool> preselectOnlyDesiredV0s{"preselectOnlyDesiredV0s", false, "preselect only V0s with compatible TPC PID and mass info"};
+  o2::framework::Configurable<bool> preselectOnlyDesiredCascades{"preselectOnlyDesiredCascades", false, "preselect only Cascades with compatible TPC PID and mass info"};
 
-  static constexpr float defaultK0MassWindowParameters[1][4] = {{2.81882e-03, 1.14057e-03, 1.72138e-03, 5.00262e-01}};
-  static constexpr float defaultLambdaWindowParameters[1][4] = {{1.17518e-03, 1.24099e-04, 5.47937e-03, 3.08009e-01}};
-  static constexpr float defaultXiMassWindowParameters[1][4] = {{1.43210e-03, 2.03561e-04, 2.43187e-03, 7.99668e-01}};
-  static constexpr float defaultOmMassWindowParameters[1][4] = {{1.43210e-03, 2.03561e-04, 2.43187e-03, 7.99668e-01}};
+  // lifetime preselection options
+  // apply lifetime cuts to V0 and cascade candidates
+  // unit of measurement: centimeters
+  // lifetime of K0Short ~2.6844 cm, no feeddown and plenty to cut
+  // lifetime of Lambda ~7.9 cm but keep in mind feeddown from cascades
+  // lifetime of Xi ~4.91 cm
+  // lifetime of Omega ~2.461 cm
+  o2::framework::Configurable<o2::framework::LabeledArray<float>> lifetimeCut{"lifetimeCut", {defaultLifetimeCuts[0], 4, {"lifetimeCutK0S", "lifetimeCutLambda", "lifetimeCutXi", "lifetimeCutOmega"}}, "Lifetime cut for V0s and cascades (cm)"};
 
-  static constexpr float defaultLifetimeCuts[1][4] = {{20, 60, 40, 20}};
+  // mass preselection options
+  o2::framework::Configurable<float> massCutPhoton{"massCutPhoton", 0.3, "Photon max mass"};
+  o2::framework::Configurable<o2::framework::LabeledArray<float>> massCutK0{"massCutK0", {defaultK0MassWindowParameters[0], 4, {"constant", "linear", "expoConstant", "expoRelax"}}, "mass parameters for K0"};
+  o2::framework::Configurable<o2::framework::LabeledArray<float>> massCutLambda{"massCutLambda", {defaultLambdaWindowParameters[0], 4, {"constant", "linear", "expoConstant", "expoRelax"}}, "mass parameters for Lambda"};
+  o2::framework::Configurable<o2::framework::LabeledArray<float>> massCutXi{"massCutXi", {defaultXiMassWindowParameters[0], 4, {"constant", "linear", "expoConstant", "expoRelax"}}, "mass parameters for Xi"};
+  o2::framework::Configurable<o2::framework::LabeledArray<float>> massCutOm{"massCutOm", {defaultOmMassWindowParameters[0], 4, {"constant", "linear", "expoConstant", "expoRelax"}}, "mass parameters for Omega"};
+  o2::framework::Configurable<float> massWindownumberOfSigmas{"massWindownumberOfSigmas", 20, "number of sigmas around mass peaks to keep"};
+  o2::framework::Configurable<float> massWindowSafetyMargin{"massWindowSafetyMargin", 0.001, "Extra mass window safety margin (in GeV/c2)"};
 
-  // preselection options
-  struct : ConfigurableGroup {
-    std::string prefix = "preSelectOpts";
-    Configurable<bool> preselectOnlyDesiredV0s{"preselectOnlyDesiredV0s", false, "preselect only V0s with compatible TPC PID and mass info"};
-    Configurable<bool> preselectOnlyDesiredCascades{"preselectOnlyDesiredCascades", false, "preselect only Cascades with compatible TPC PID and mass info"};
+  // TPC PID preselection options
+  o2::framework::Configurable<float> maxTPCpidNsigma{"maxTPCpidNsigma", 5.0, "Maximum TPC PID N sigma (in abs value)"};
+};
 
-    // lifetime preselection options
-    // apply lifetime cuts to V0 and cascade candidates
-    // unit of measurement: centimeters
-    // lifetime of K0Short ~2.6844 cm, no feeddown and plenty to cut
-    // lifetime of Lambda ~7.9 cm but keep in mind feeddown from cascades
-    // lifetime of Xi ~4.91 cm
-    // lifetime of Omega ~2.461 cm
-    Configurable<LabeledArray<float>> lifetimeCut{"lifetimeCut", {defaultLifetimeCuts[0], 4, {"lifetimeCutK0S", "lifetimeCutLambda", "lifetimeCutXi", "lifetimeCutOmega"}}, "Lifetime cut for V0s and cascades (cm)"};
+class BuilderModule
+{
+ public:
+  BuilderModule()
+  {
+    // constructor
+  }
 
-    // mass preselection options
-    Configurable<float> massCutPhoton{"massCutPhoton", 0.3, "Photon max mass"};
-    Configurable<LabeledArray<float>> massCutK0{"massCutK0", {defaultK0MassWindowParameters[0], 4, {"constant", "linear", "expoConstant", "expoRelax"}}, "mass parameters for K0"};
-    Configurable<LabeledArray<float>> massCutLambda{"massCutLambda", {defaultLambdaWindowParameters[0], 4, {"constant", "linear", "expoConstant", "expoRelax"}}, "mass parameters for Lambda"};
-    Configurable<LabeledArray<float>> massCutXi{"massCutXi", {defaultXiMassWindowParameters[0], 4, {"constant", "linear", "expoConstant", "expoRelax"}}, "mass parameters for Xi"};
-    Configurable<LabeledArray<float>> massCutOm{"massCutOm", {defaultOmMassWindowParameters[0], 4, {"constant", "linear", "expoConstant", "expoRelax"}}, "mass parameters for Omega"};
-    Configurable<float> massWindownumberOfSigmas{"massWindownumberOfSigmas", 20, "number of sigmas around mass peaks to keep"};
-    Configurable<float> massWindowSafetyMargin{"massWindowSafetyMargin", 0.001, "Extra mass window safety margin (in GeV/c2)"};
-
-    // TPC PID preselection options
-    Configurable<float> maxTPCpidNsigma{"maxTPCpidNsigma", 5.0, "Maximum TPC PID N sigma (in abs value)"};
-  } preSelectOpts;
-
+  // mass windows
   float getMassSigmaK0Short(float pt)
   {
     return preSelectOpts.massCutK0->get("constant") + pt * preSelectOpts.massCutK0->get("linear") + preSelectOpts.massCutK0->get("expoConstant") * TMath::Exp(-pt / preSelectOpts.massCutK0->get("expoRelax"));
@@ -420,13 +397,13 @@ struct StrangenessBuilder {
     return preSelectOpts.massCutOm->get("constant") + pt * preSelectOpts.massCutOm->get("linear") + preSelectOpts.massCutOm->get("expoConstant") * TMath::Exp(-pt / preSelectOpts.massCutOm->get("expoRelax"));
   }
 
-  o2::ccdb::CcdbApi ccdbApi;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  int nEnabledTables = 0;
 
-  int mRunNumber;
-  o2::base::MatLayerCylSet* lut = nullptr;
+  // helper object
+  o2::pwglf::strangenessBuilderHelper straHelper;
 
   // for handling TPC-only tracks (photons)
+  int mRunNumber;
   o2::aod::common::TPCVDriftManager mVDriftMgr;
 
   // for establishing CascData/KFData/TraCascData interlinks
@@ -517,8 +494,6 @@ struct StrangenessBuilder {
   mcCascinfo thisCascInfo;
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
   std::vector<v0Entry> v0List;
   std::vector<cascadeEntry> cascadeList;
   std::vector<std::size_t> sorted_v0;
@@ -529,21 +504,78 @@ struct StrangenessBuilder {
   std::vector<int> ao2dV0toV0List;                     // index to relate v0s -> v0List
   std::vector<int> v0Map;                              // index to relate v0List -> v0sFromCascades
 
-  void init(InitContext& context)
+  // declaration of structs here
+  // (N.B.: will be invisible to the outside, create your own copies)
+  o2::pwglf::strangenessbuilder::coreConfigurables baseOpts;
+  o2::pwglf::strangenessbuilder::v0Configurables v0BuilderOpts;
+  o2::pwglf::strangenessbuilder::cascadeConfigurables cascadeBuilderOpts;
+  o2::pwglf::strangenessbuilder::preSelectOpts preSelectOpts;
+
+  template <typename TBaseConfigurables, typename TV0Configurables, typename TCascadeConfigurables, typename TPreSelOpts, typename THistoRegistry, typename TInitContext>
+  void init(TBaseConfigurables const& inputBaseOpts, TV0Configurables const& inputV0BuilderOpts, TCascadeConfigurables const& inputCascadeBuilderOpts, TPreSelOpts const& inputPreSelectOpts, THistoRegistry& histos, TInitContext& context)
   {
+    // read in configurations from the task where it's used
+    // could be grouped even further, but should work
+    baseOpts = inputBaseOpts;
+    v0BuilderOpts = inputV0BuilderOpts;
+    cascadeBuilderOpts = inputCascadeBuilderOpts;
+    preSelectOpts = inputPreSelectOpts;
+
+    baseOpts.mEnabledTables.resize(nTables, 0);
+
+    LOGF(info, "Checking if strangeness building is required");
+    auto& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
+
+    nEnabledTables = 0;
+
+    TString listOfRequestors[nTables];
+    for (int i = 0; i < nTables; i++) {
+      int f = baseOpts.enabledTables->get(tableNames[i].c_str(), "enable");
+      if (f == 1) {
+        baseOpts.mEnabledTables[i] = 1;
+        listOfRequestors[i] = "manual enabling";
+      }
+      if (f == -1) {
+        // autodetect this table in other devices
+        for (o2::framework::DeviceSpec const& device : workflows.devices) {
+          // Step 1: check if this device subscribed to the V0data table
+          for (auto const& input : device.inputs) {
+            if (o2::framework::DataSpecUtils::partialMatch(input.matcher, o2::header::DataOrigin("AOD"))) {
+              auto&& [origin, description, version] = o2::framework::DataSpecUtils::asConcreteDataMatcher(input.matcher);
+              std::string tableNameWithVersion = tableNames[i];
+              if (version > 0) {
+                tableNameWithVersion += Form("_%03d", version);
+              }
+              if (input.matcher.binding == tableNameWithVersion) {
+                LOGF(info, "Device %s has subscribed to %s (version %i)", device.name, tableNames[i], version);
+                listOfRequestors[i].Append(Form("%s ", device.name.c_str()));
+                baseOpts.mEnabledTables[i] = 1;
+                nEnabledTables++;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (nEnabledTables == 0) {
+      LOGF(info, "Strangeness building not required. Will suppress all functionality, including logs, from this point forward.");
+      return;
+    }
+
     // setup bookkeeping histogram
-    auto h = histos.add<TH1>("hTableBuildingStatistics", "hTableBuildingStatistics", kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
-    auto h2 = histos.add<TH1>("hInputStatistics", "hInputStatistics", kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
+    auto h = histos.template add<TH1>("hTableBuildingStatistics", "hTableBuildingStatistics", o2::framework::kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
+    auto h2 = histos.template add<TH1>("hInputStatistics", "hInputStatistics", o2::framework::kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
     h2->SetTitle("Input table sizes");
 
     if (v0BuilderOpts.generatePhotonCandidates.value == true) {
-      auto hDeduplicationStatistics = histos.add<TH1>("hDeduplicationStatistics", "hDeduplicationStatistics", kTH1D, {{2, -0.5f, 1.5f}});
+      auto hDeduplicationStatistics = histos.template add<TH1>("hDeduplicationStatistics", "hDeduplicationStatistics", o2::framework::kTH1D, {{2, -0.5f, 1.5f}});
       hDeduplicationStatistics->GetXaxis()->SetBinLabel(1, "AO2D V0s");
       hDeduplicationStatistics->GetXaxis()->SetBinLabel(2, "Deduplicated V0s");
     }
 
     if (preSelectOpts.preselectOnlyDesiredV0s.value == true) {
-      auto hPreselectionV0s = histos.add<TH1>("hPreselectionV0s", "hPreselectionV0s", kTH1D, {{16, -0.5f, 15.5f}});
+      auto hPreselectionV0s = histos.template add<TH1>("hPreselectionV0s", "hPreselectionV0s", o2::framework::kTH1D, {{16, -0.5f, 15.5f}});
       hPreselectionV0s->GetXaxis()->SetBinLabel(1, "Not preselected");
       hPreselectionV0s->GetXaxis()->SetBinLabel(2, "#gamma");
       hPreselectionV0s->GetXaxis()->SetBinLabel(3, "K^{0}_{S}");
@@ -563,7 +595,7 @@ struct StrangenessBuilder {
     }
 
     if (preSelectOpts.preselectOnlyDesiredCascades.value == true) {
-      auto hPreselectionCascades = histos.add<TH1>("hPreselectionCascades", "hPreselectionCascades", kTH1D, {{16, -0.5f, 15.5f}});
+      auto hPreselectionCascades = histos.template add<TH1>("hPreselectionCascades", "hPreselectionCascades", o2::framework::kTH1D, {{16, -0.5f, 15.5f}});
       hPreselectionCascades->GetXaxis()->SetBinLabel(1, "Not preselected");
       hPreselectionCascades->GetXaxis()->SetBinLabel(2, "#Xi^{-}");
       hPreselectionCascades->GetXaxis()->SetBinLabel(3, "#Xi^{+}");
@@ -582,10 +614,10 @@ struct StrangenessBuilder {
       hPreselectionCascades->GetXaxis()->SetBinLabel(16, "#Xi^{-}, #Xi^{+}, #Omega^{-}, #Omega^{+}");
     }
 
-    if (mc_findableMode.value > 0) {
+    if (baseOpts.mc_findableMode.value > 0) {
       // save statistics of findable candidate processing
-      auto hFindable = histos.add<TH1>("hFindableStatistics", "hFindableStatistics", kTH1D, {{6, -0.5f, 5.5f}});
-      hFindable->SetTitle(Form("Findable mode: %i", static_cast<int>(mc_findableMode.value)));
+      auto hFindable = histos.template add<TH1>("hFindableStatistics", "hFindableStatistics", o2::framework::kTH1D, {{6, -0.5f, 5.5f}});
+      hFindable->SetTitle(Form("Findable mode: %i", static_cast<int>(baseOpts.mc_findableMode.value)));
       hFindable->GetXaxis()->SetBinLabel(1, "AO2D V0s");
       hFindable->GetXaxis()->SetBinLabel(2, "V0s to be built");
       hFindable->GetXaxis()->SetBinLabel(3, "V0s with collId -1");
@@ -594,50 +626,18 @@ struct StrangenessBuilder {
       hFindable->GetXaxis()->SetBinLabel(6, "Cascades with collId -1");
     }
 
-    auto hPrimaryV0s = histos.add<TH1>("hPrimaryV0s", "hPrimaryV0s", kTH1D, {{2, -0.5f, 1.5f}});
+    auto hPrimaryV0s = histos.template add<TH1>("hPrimaryV0s", "hPrimaryV0s", o2::framework::kTH1D, {{2, -0.5f, 1.5f}});
     hPrimaryV0s->GetXaxis()->SetBinLabel(1, "All V0s");
     hPrimaryV0s->GetXaxis()->SetBinLabel(2, "Primary V0s");
 
     mRunNumber = 0;
 
-    mEnabledTables.resize(nTables, 0);
-
-    LOGF(info, "Configuring tables to generate");
-    auto& workflows = context.services().get<RunningWorkflowInfo const>();
-
-    TString listOfRequestors[nTables];
     for (int i = 0; i < nTables; i++) {
       // adjust bookkeeping histogram
       h->GetXaxis()->SetBinLabel(i + 1, tableNames[i].c_str());
       h2->GetXaxis()->SetBinLabel(i + 1, tableNames[i].c_str());
-      h->SetBinContent(i + 1, -1); // mark all as disabled to start
-
-      int f = enabledTables->get(tableNames[i].c_str(), "enable");
-      if (f == 1) {
-        mEnabledTables[i] = 1;
-        listOfRequestors[i] = "manual enabling";
-      }
-      if (f == -1) {
-        // autodetect this table in other devices
-        for (DeviceSpec const& device : workflows.devices) {
-          // Step 1: check if this device subscribed to the V0data table
-          for (auto const& input : device.inputs) {
-            if (device.name.compare("strangenessbuilder-initializer") == 0)
-              continue; // don't listen to the initializer
-            if (DataSpecUtils::partialMatch(input.matcher, o2::header::DataOrigin("AOD"))) {
-              auto&& [origin, description, version] = DataSpecUtils::asConcreteDataMatcher(input.matcher);
-              std::string tableNameWithVersion = tableNames[i];
-              if (version > 0) {
-                tableNameWithVersion += Form("_%03d", version);
-              }
-              if (input.matcher.binding == tableNameWithVersion) {
-                LOGF(info, "Device %s has subscribed to %s (version %i)", device.name, tableNames[i], version);
-                listOfRequestors[i].Append(Form("%s ", device.name.c_str()));
-                mEnabledTables[i] = 1;
-              }
-            }
-          }
-        }
+      if (baseOpts.mEnabledTables[i] == false) {
+        h->SetBinContent(i + 1, -1); // mark disabled tables, distinguish from zero counts
       }
     }
 
@@ -645,22 +645,10 @@ struct StrangenessBuilder {
     LOGF(info, " Strangeness builder: basic configuration listing");
     LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
 
-    if (doprocessRealData) {
-      LOGF(info, " ===> process function enabled: processRealData");
-    }
-    if (doprocessRealDataRun2) {
-      LOGF(info, " ===> process function enabled: processRealDataRun2");
-    }
-    if (doprocessMonteCarlo) {
-      LOGF(info, " ===> process function enabled: processMonteCarlo");
-    }
-    if (doprocessMonteCarloRun2) {
-      LOGF(info, " ===> process function enabled: processMonteCarloRun2");
-    }
-    if (mc_findableMode.value == 1) {
+    if (baseOpts.mc_findableMode.value == 1) {
       LOGF(info, " ===> findable mode 1 is enabled: complement reco-ed with non-found findable");
     }
-    if (mc_findableMode.value == 2) {
+    if (baseOpts.mc_findableMode.value == 2) {
       LOGF(info, " ===> findable mode 2 is enabled: re-generate all findable from scratch");
     }
 
@@ -668,7 +656,7 @@ struct StrangenessBuilder {
 
     for (int i = 0; i < nTables; i++) {
       // printout to be improved in the future
-      if (mEnabledTables[i]) {
+      if (baseOpts.mEnabledTables[i]) {
         LOGF(info, " -~> Table enabled: %s, requested by %s", tableNames[i], listOfRequestors[i].Data());
         h->SetBinContent(i + 1, 0); // mark enabled
       }
@@ -691,11 +679,6 @@ struct StrangenessBuilder {
     LOGF(info, "-~> Cascade | Lambda mass window .......: %f", cascadeBuilderOpts.lambdaMassWindow.value);
     LOGF(info, "-~> Cascade | Maximum daughter eta .....: %f", cascadeBuilderOpts.maxDaughterEta.value);
     LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
-
-    ccdb->setURL(ccdbConfigurations.ccdburl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(false);
 
     // set V0 parameters in the helper
     straHelper.v0selections.minCrossedRows = v0BuilderOpts.minCrossedRows;
@@ -730,8 +713,8 @@ struct StrangenessBuilder {
     return idx;
   }
 
-  template <typename TCollisions>
-  bool initCCDB(aod::BCsWithTimestamps const& bcs, TCollisions const& collisions)
+  template <typename TCollisions, typename TCCDB>
+  bool initCCDB(TCCDB& ccdb, aod::BCsWithTimestamps const& bcs, TCollisions const& collisions)
   {
     auto bc = collisions.size() ? collisions.begin().template bc_as<aod::BCsWithTimestamps>() : bcs.begin();
     if (!bcs.size()) {
@@ -744,33 +727,13 @@ struct StrangenessBuilder {
     }
 
     auto timestamp = bc.timestamp();
-    o2::parameters::GRPObject* grpo = 0x0;
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (doprocessRealDataRun2) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbConfigurations.grpPath, timestamp);
-      if (!grpo) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << ccdbConfigurations.grpPath << " of object GRPObject for timestamp " << timestamp;
-      }
-      o2::base::Propagator::initFieldFromGRP(grpo);
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbConfigurations.grpmagPath, timestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << ccdbConfigurations.grpmagPath << " of object GRPMagField for timestamp " << timestamp;
-      }
-      o2::base::Propagator::initFieldFromGRP(grpmag);
-    }
+
     // Fetch magnetic field from ccdb for current collision
     auto magneticField = o2::base::Propagator::Instance()->getNominalBz();
-    LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << magneticField << " kG";
+    LOG(info) << "Configuring for timestamp " << timestamp << " with magnetic field of " << magneticField << " kG";
 
     // Set magnetic field value once known
     straHelper.fitter.setBz(magneticField);
-
-    // acquire LUT for this timestamp
-    LOG(info) << "Loading material look-up table for timestamp: " << timestamp;
-    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForTimeStamp<o2::base::MatLayerCylSet>(ccdbConfigurations.lutPath, timestamp));
-    o2::base::Propagator::Instance()->setMatLUT(lut);
-    straHelper.lut = lut;
 
     LOG(info) << "Fully configured for run: " << bc.runNumber();
     // mmark this run as configured
@@ -826,8 +789,8 @@ struct StrangenessBuilder {
   }
 
   //__________________________________________________
-  template <class TBCs, typename TCollisions, typename TMCCollisions, typename TV0s, typename TCascades, typename TTracks, typename TMCParticles>
-  void prepareBuildingLists(TCollisions const& collisions, TMCCollisions const& mcCollisions, TV0s const& v0s, TCascades const& cascades, TTracks const& tracks, TMCParticles const& mcParticles)
+  template <class TBCs, typename THistoRegistry, typename TCollisions, typename TMCCollisions, typename TV0s, typename TCascades, typename TTracks, typename TMCParticles>
+  void prepareBuildingLists(THistoRegistry& histos, TCollisions const& collisions, TMCCollisions const& mcCollisions, TV0s const& v0s, TCascades const& cascades, TTracks const& tracks, TMCParticles const& mcParticles)
   {
     // this function prepares the v0List and cascadeList depending on
     // how the task has been set up. Standard operation simply uses
@@ -861,7 +824,7 @@ struct StrangenessBuilder {
     int collisionLessV0s = 0;
     int collisionLessCascades = 0;
 
-    if (mc_findableMode.value > 0) {
+    if (baseOpts.mc_findableMode.value > 0) {
       if constexpr (soa::is_table<TMCCollisions>) {
         // if mcCollisions exist, assemble mcColl -> bestRecoColl map here
         bestCollisionArray.clear();
@@ -881,11 +844,11 @@ struct StrangenessBuilder {
       } // end is_table<TMCCollisions>
     } // end findable mode check
 
-    if (mc_findableMode.value < 2) {
+    if (baseOpts.mc_findableMode.value < 2) {
       // keep all unless de-duplication active
       ao2dV0toV0List.resize(v0s.size(), -1); // -1 means keep, -2 means do not keep
 
-      if (deduplicationAlgorithm > 0 && v0BuilderOpts.generatePhotonCandidates) {
+      if (baseOpts.deduplicationAlgorithm > 0 && v0BuilderOpts.generatePhotonCandidates) {
         // handle duplicates explicitly: group V0s according to (p,n) indices
         // will provide a list of collisionIds (in V0group), allowing for
         // easy de-duplication when passing to the v0List
@@ -964,13 +927,13 @@ struct StrangenessBuilder {
           for (size_t ic = 0; ic < v0tableGrouped[iV0].collisionIds.size(); ic++) {
             ao2dV0toV0List[v0tableGrouped[iV0].V0Ids[ic]] = -2;
             // algorithm 1: best pointing angle
-            if (bestPointingAngleIndex == ic && deduplicationAlgorithm.value == 1) {
+            if (bestPointingAngleIndex == ic && baseOpts.deduplicationAlgorithm.value == 1) {
               ao2dV0toV0List[v0tableGrouped[iV0].V0Ids[ic]] = -1; // keep best only
             }
-            if (bestDCADaughtersIndex == ic && deduplicationAlgorithm.value == 2) {
+            if (bestDCADaughtersIndex == ic && baseOpts.deduplicationAlgorithm.value == 2) {
               ao2dV0toV0List[v0tableGrouped[iV0].V0Ids[ic]] = -1; // keep best only
             }
-            if (bestDCADaughtersIndex == ic && bestPointingAngleIndex == ic && deduplicationAlgorithm.value == 3) {
+            if (bestDCADaughtersIndex == ic && bestPointingAngleIndex == ic && baseOpts.deduplicationAlgorithm.value == 3) {
               ao2dV0toV0List[v0tableGrouped[iV0].V0Ids[ic]] = -1; // keep best only
             }
           }
@@ -995,7 +958,7 @@ struct StrangenessBuilder {
     }
     // any mode other than 0 will require mcParticles
     if constexpr (soa::is_table<TMCCollisions>) {
-      if (mc_findableMode.value > 0) {
+      if (baseOpts.mc_findableMode.value > 0) {
         // for search if existing or not
         int v0ListReconstructedSize = v0List.size();
 
@@ -1047,7 +1010,7 @@ struct StrangenessBuilder {
               continue; // not the same originating particle
             }
             // findable mode 1: add non-reconstructed as v0Type 8
-            if (mc_findableMode.value == 1) {
+            if (baseOpts.mc_findableMode.value == 1) {
               bool detected = false;
               for (int ii = 0; ii < v0ListReconstructedSize; ii++) {
                 // check if this particular combination already exists in v0List
@@ -1083,7 +1046,7 @@ struct StrangenessBuilder {
               }
             }
             // findable mode 2
-            if (mc_findableMode.value == 2) {
+            if (baseOpts.mc_findableMode.value == 2) {
               currentV0Entry.globalId = -1;
               currentV0Entry.collisionId = bestCollisionArray[positiveTrackIndex.mcCollisionId];
               currentV0Entry.posTrackId = positiveTrackIndex.globalId;
@@ -1126,11 +1089,11 @@ struct StrangenessBuilder {
     // determine properly collision-id-sorted index array for later use
     // N.B.: necessary also before cascade part
     sorted_v0.clear();
-    sorted_v0 = sort_indices(v0List, (mc_findableMode.value > 0));
+    sorted_v0 = sort_indices(v0List, (baseOpts.mc_findableMode.value > 0));
 
     // Cascade part if cores are requested, skip otherwise
-    if (mEnabledTables[kStoredCascCores] || mEnabledTables[kStoredKFCascCores]) {
-      if (mc_findableMode.value < 2) {
+    if (baseOpts.mEnabledTables[kStoredCascCores] || baseOpts.mEnabledTables[kStoredKFCascCores]) {
+      if (baseOpts.mc_findableMode.value < 2) {
         // simple passthrough: copy existing cascades to build list
         for (const auto& cascade : cascades) {
           auto const& v0 = cascade.v0();
@@ -1147,7 +1110,7 @@ struct StrangenessBuilder {
 
       // any mode other than 0 will require mcParticles
       if constexpr (soa::is_table<TMCCollisions>) {
-        if (mc_findableMode.value > 0) {
+        if (baseOpts.mc_findableMode.value > 0) {
           // for search if existing or not
           size_t cascadeListReconstructedSize = cascadeList.size();
 
@@ -1222,7 +1185,7 @@ struct StrangenessBuilder {
               }
               // if we are here: v0 origin is 3312 or 3334, bachelor origin matches V0 origin
               // findable mode 1: add non-reconstructed as cascadeType 1
-              if (mc_findableMode.value == 1) {
+              if (baseOpts.mc_findableMode.value == 1) {
                 bool detected = false;
                 for (size_t ii = 0; ii < cascadeListReconstructedSize; ii++) {
                   // check if this particular combination already exists in cascadeList
@@ -1256,7 +1219,7 @@ struct StrangenessBuilder {
 
               // findable mode 2: determine type based on cascade table,
               // with type 1 being reserved to findable-but-not-found
-              if (mc_findableMode.value == 2) {
+              if (baseOpts.mc_findableMode.value == 2) {
                 currentCascadeEntry.globalId = -1;
                 currentCascadeEntry.collisionId = bestCollisionArray[bachelorTrackIndex.mcCollisionId];
                 currentCascadeEntry.v0Id = v0i; // fill this in one go later
@@ -1289,7 +1252,7 @@ struct StrangenessBuilder {
           // at this stage, cascadeList is alright, but the v0 indices are still not
           // correct. We'll have to loop over all V0s and find the appropriate matches
           // ---> but only in mode 1, and only for AO2D-native V0s
-          if (mc_findableMode.value == 1) {
+          if (baseOpts.mc_findableMode.value == 1) {
             for (size_t casci = 0; casci < cascadeListReconstructedSize; casci++) {
               // loop over v0List to find corresponding v0 index, but do it in sorted way
               for (size_t v0i = 0; v0i < v0List.size(); v0i++) {
@@ -1312,7 +1275,7 @@ struct StrangenessBuilder {
 
       // we need to allow for sorted use of cascadeList
       sorted_cascade.clear();
-      sorted_cascade = sort_indices(cascadeList, (mc_findableMode.value > 0));
+      sorted_cascade = sort_indices(cascadeList, (baseOpts.mc_findableMode.value > 0));
     }
 
     LOGF(info, "AO2D input: %i V0s, %i cascades. Building list sizes: %i V0s, %i cascades", v0s.size(), cascades.size(), v0List.size(), cascadeList.size());
@@ -1326,10 +1289,10 @@ struct StrangenessBuilder {
     v0sFromCascades.clear();
     v0Map.clear();
     v0Map.resize(v0List.size(), -2); // marks not used
-    if (useV0BufferForCascades.value == false) {
+    if (baseOpts.useV0BufferForCascades.value == false) {
       return; // don't attempt to mark needlessly
     }
-    if (mEnabledTables[kStoredCascCores]) {
+    if (baseOpts.mEnabledTables[kStoredCascCores]) {
       for (const auto& cascade : cascadeList) {
         if (cascade.v0Id < 0)
           continue;
@@ -1342,11 +1305,10 @@ struct StrangenessBuilder {
     int trackedCascadeCount = 0;
     if constexpr (soa::is_table<TTrackedCascades>) {
       // tracked only created outside of findable mode
-      if (mEnabledTables[kStoredTraCascCores] && mc_findableMode.value == 0) {
+      if (baseOpts.mEnabledTables[kStoredTraCascCores] && baseOpts.mc_findableMode.value == 0) {
         trackedCascadeCount = trackedCascades.size();
         for (const auto& trackedCascade : trackedCascades) {
           auto const& cascade = trackedCascade.cascade();
-          LOGF(info, "trouble: cascade.v0Id() = %i but v0Map size %i", ao2dV0toV0List[cascade.v0Id()], v0Map.size());
           if (v0Map[ao2dV0toV0List[cascade.v0Id()]] == -2) {
             v0sUsedInCascades++;
           }
@@ -1358,8 +1320,8 @@ struct StrangenessBuilder {
   }
 
   //__________________________________________________
-  template <class TBCs, typename TCollisions, typename TTracks, typename TV0s, typename TMCParticles>
-  void buildV0s(TCollisions const& collisions, TV0s const& v0s, TTracks const& tracks, TMCParticles const& mcParticles)
+  template <class TBCs, typename THistoRegistry, typename TCollisions, typename TTracks, typename TV0s, typename TMCParticles, typename TProducts>
+  void buildV0s(THistoRegistry& histos, TCollisions const& collisions, TV0s const& v0s, TTracks const& tracks, TMCParticles const& mcParticles, TProducts& products)
   {
     // prepare MC containers (not necessarily used)
     std::vector<mcV0info> mcV0infos; // V0MCCore information
@@ -1376,7 +1338,7 @@ struct StrangenessBuilder {
     for (size_t iv0 = 0; iv0 < v0List.size(); iv0++) {
       const auto& v0 = v0List[sorted_v0[iv0]];
 
-      if (!mEnabledTables[kV0CoresBase] && v0Map[iv0] == -2) {
+      if (!baseOpts.mEnabledTables[kV0CoresBase] && v0Map[iv0] == -2) {
         // this v0 hasn't been used by cascades and we're not generating V0s, so skip it
         products.v0dataLink(-1, -1);
         continue;
@@ -1425,7 +1387,7 @@ struct StrangenessBuilder {
         }
       }
 
-      if (!straHelper.buildV0Candidate(v0.collisionId, pvX, pvY, pvZ, posTrack, negTrack, posTrackPar, negTrackPar, v0.isCollinearV0, mEnabledTables[kV0Covs], v0BuilderOpts.generatePhotonCandidates)) {
+      if (!straHelper.buildV0Candidate(v0.collisionId, pvX, pvY, pvZ, posTrack, negTrack, posTrackPar, negTrackPar, v0.isCollinearV0, baseOpts.mEnabledTables[kV0Covs], true)) {
         products.v0dataLink(-1, -1);
         continue;
       }
@@ -1486,25 +1448,25 @@ struct StrangenessBuilder {
           }
         }
       }
-      if (v0Map[iv0] == -1 && useV0BufferForCascades) {
+      if (v0Map[iv0] == -1 && baseOpts.useV0BufferForCascades) {
         v0Map[iv0] = v0sFromCascades.size(); // provide actual valid index in buffer
         v0sFromCascades.push_back(straHelper.v0);
       }
       // fill requested cursors only if type is not 0
       if (v0.v0Type == 1 || (v0.v0Type > 1 && v0BuilderOpts.generatePhotonCandidates)) {
         nV0s++;
-        if (mEnabledTables[kV0Indices]) {
+        if (baseOpts.mEnabledTables[kV0Indices]) {
           // for referencing (especially - but not only - when using derived data)
           products.v0indices(v0.posTrackId, v0.negTrackId,
                              v0.collisionId, iv0);
           histos.fill(HIST("hTableBuildingStatistics"), kV0Indices);
         }
-        if (mEnabledTables[kV0TrackXs]) {
+        if (baseOpts.mEnabledTables[kV0TrackXs]) {
           // further decay chains may need this
           products.v0trackXs(straHelper.v0.positiveTrackX, straHelper.v0.negativeTrackX);
           histos.fill(HIST("hTableBuildingStatistics"), kV0TrackXs);
         }
-        if (mEnabledTables[kV0CoresBase]) {
+        if (baseOpts.mEnabledTables[kV0CoresBase]) {
           // standard analysis
           products.v0cores(straHelper.v0.position[0], straHelper.v0.position[1], straHelper.v0.position[2],
                            straHelper.v0.positiveMomentum[0], straHelper.v0.positiveMomentum[1], straHelper.v0.positiveMomentum[2],
@@ -1518,13 +1480,13 @@ struct StrangenessBuilder {
           products.v0dataLink(products.v0cores.lastIndex(), -1);
           histos.fill(HIST("hTableBuildingStatistics"), kV0CoresBase);
         }
-        if (mEnabledTables[kV0TraPosAtDCAs]) {
+        if (baseOpts.mEnabledTables[kV0TraPosAtDCAs]) {
           // for tracking studies
           products.v0dauPositions(straHelper.v0.positivePosition[0], straHelper.v0.positivePosition[1], straHelper.v0.positivePosition[2],
                                   straHelper.v0.negativePosition[0], straHelper.v0.negativePosition[1], straHelper.v0.negativePosition[2]);
           histos.fill(HIST("hTableBuildingStatistics"), kV0TraPosAtDCAs);
         }
-        if (mEnabledTables[kV0TraPosAtIUs]) {
+        if (baseOpts.mEnabledTables[kV0TraPosAtIUs]) {
           // for tracking studies
           std::array<float, 3> positivePositionIU;
           std::array<float, 3> negativePositionIU;
@@ -1536,7 +1498,7 @@ struct StrangenessBuilder {
                                     negativePositionIU[0], negativePositionIU[1], negativePositionIU[2]);
           histos.fill(HIST("hTableBuildingStatistics"), kV0TraPosAtIUs);
         }
-        if (mEnabledTables[kV0Covs]) {
+        if (baseOpts.mEnabledTables[kV0Covs]) {
           products.v0covs(straHelper.v0.positionCovariance, straHelper.v0.momentumCovariance);
           histos.fill(HIST("hTableBuildingStatistics"), kV0Covs);
         }
@@ -1545,7 +1507,7 @@ struct StrangenessBuilder {
         // MC handling part
         if constexpr (soa::is_table<TMCParticles>) {
           // only worry about this if someone else worried about this
-          if ((mEnabledTables[kV0MCCores] || mEnabledTables[kMcV0Labels] || mEnabledTables[kV0MCCollRefs])) {
+          if ((baseOpts.mEnabledTables[kV0MCCores] || baseOpts.mEnabledTables[kMcV0Labels] || baseOpts.mEnabledTables[kV0MCCollRefs])) {
             thisInfo.label = -1;
             thisInfo.motherLabel = -1;
             thisInfo.pdgCode = 0;
@@ -1612,13 +1574,13 @@ struct StrangenessBuilder {
 
             } // end association check
             // Construct label table (note: this will be joinable with V0Datas!)
-            if (mEnabledTables[kMcV0Labels]) {
+            if (baseOpts.mEnabledTables[kMcV0Labels]) {
               products.v0labels(thisInfo.label, thisInfo.motherLabel);
               histos.fill(HIST("hTableBuildingStatistics"), kMcV0Labels);
             }
 
             // Construct found tag
-            if (mEnabledTables[kV0FoundTags]) {
+            if (baseOpts.mEnabledTables[kV0FoundTags]) {
               products.v0FoundTag(v0.found);
               histos.fill(HIST("hTableBuildingStatistics"), kV0FoundTags);
             }
@@ -1633,7 +1595,7 @@ struct StrangenessBuilder {
             // this is the most pedagogical approach, but it is also more limited
             // and it might use more disk space unnecessarily.
             if (v0BuilderOpts.mc_populateV0MCCoresSymmetric) {
-              if (mEnabledTables[kV0MCCores]) {
+              if (baseOpts.mEnabledTables[kV0MCCores]) {
                 products.v0mccores(
                   thisInfo.label, thisInfo.pdgCode,
                   thisInfo.pdgCodeMother, thisInfo.pdgCodePositive, thisInfo.pdgCodeNegative,
@@ -1646,7 +1608,7 @@ struct StrangenessBuilder {
                 if (thisInfo.isPhysicalPrimary)
                   histos.fill(HIST("hPrimaryV0s"), 1);
               }
-              if (mEnabledTables[kV0MCCollRefs]) {
+              if (baseOpts.mEnabledTables[kV0MCCollRefs]) {
                 products.v0mccollref(thisInfo.mcCollision);
                 histos.fill(HIST("hTableBuildingStatistics"), kV0MCCollRefs);
               }
@@ -1654,7 +1616,7 @@ struct StrangenessBuilder {
               // n.b. placing the interlink index here allows for the writing of
               //      code that is agnostic with respect to the joinability of
               //      V0Cores and V0MCCores (always dereference -> safe)
-              if (mEnabledTables[kV0CoreMCLabels]) {
+              if (baseOpts.mEnabledTables[kV0CoreMCLabels]) {
                 products.v0CoreMCLabels(iv0); // interlink index
                 histos.fill(HIST("hTableBuildingStatistics"), kV0CoreMCLabels);
               }
@@ -1678,7 +1640,7 @@ struct StrangenessBuilder {
                 thisV0MCCoreIndex = mcV0infos.size();
                 mcV0infos.push_back(thisInfo);
               }
-              if (mEnabledTables[kV0CoreMCLabels]) {
+              if (baseOpts.mEnabledTables[kV0CoreMCLabels]) {
                 products.v0CoreMCLabels(thisV0MCCoreIndex); // interlink index
                 histos.fill(HIST("hTableBuildingStatistics"), kV0CoreMCLabels);
               }
@@ -1690,7 +1652,7 @@ struct StrangenessBuilder {
 
     // finish populating V0MCCores if in asymmetric mode
     if constexpr (soa::is_table<TMCParticles>) {
-      if (v0BuilderOpts.mc_populateV0MCCoresAsymmetric && (mEnabledTables[kV0MCCores] || mEnabledTables[kV0MCCollRefs])) {
+      if (v0BuilderOpts.mc_populateV0MCCoresAsymmetric && (baseOpts.mEnabledTables[kV0MCCores] || baseOpts.mEnabledTables[kV0MCCollRefs])) {
         // first step: add any un-recoed v0mmcores that were requested
         for (const auto& mcParticle : mcParticles) {
           thisInfo.label = -1;
@@ -1770,7 +1732,7 @@ struct StrangenessBuilder {
         }
 
         for (const auto& info : mcV0infos) {
-          if (mEnabledTables[kV0MCCores]) {
+          if (baseOpts.mEnabledTables[kV0MCCores]) {
             products.v0mccores(
               info.label, info.pdgCode,
               info.pdgCodeMother, info.pdgCodePositive, info.pdgCodeNegative,
@@ -1783,7 +1745,7 @@ struct StrangenessBuilder {
             if (info.isPhysicalPrimary)
               histos.fill(HIST("hPrimaryV0s"), 1);
           }
-          if (mEnabledTables[kV0MCCollRefs]) {
+          if (baseOpts.mEnabledTables[kV0MCCollRefs]) {
             products.v0mccollref(info.mcCollision);
             histos.fill(HIST("hTableBuildingStatistics"), kV0MCCollRefs);
           }
@@ -1890,8 +1852,8 @@ struct StrangenessBuilder {
   }
 
   //__________________________________________________
-  template <typename TCollisions, typename TTracks, typename TCascades, typename TMCParticles>
-  void buildCascades(TCollisions const& collisions, TCascades const& cascades, TTracks const& tracks, TMCParticles const& mcParticles)
+  template <typename THistoRegistry, typename TCollisions, typename TTracks, typename TCascades, typename TMCParticles, typename TProducts>
+  void buildCascades(THistoRegistry& histos, TCollisions const& collisions, TCascades const& cascades, TTracks const& tracks, TMCParticles const& mcParticles, TProducts& products)
   {
     // prepare MC containers (not necessarily used)
     std::vector<mcCascinfo> mcCascinfos; // V0MCCore information
@@ -1902,7 +1864,7 @@ struct StrangenessBuilder {
       mcParticleIsReco.resize(mcParticles.size(), false);
     }
 
-    if (!mEnabledTables[kStoredCascCores]) {
+    if (!baseOpts.mEnabledTables[kStoredCascCores]) {
       return; // don't do if no request for cascades in place
     }
     int nCascades = 0;
@@ -1923,7 +1885,7 @@ struct StrangenessBuilder {
       auto const& posTrack = tracks.rawIteratorAt(cascade.posTrackId);
       auto const& negTrack = tracks.rawIteratorAt(cascade.negTrackId);
       auto const& bachTrack = tracks.rawIteratorAt(cascade.bachTrackId);
-      if (useV0BufferForCascades) {
+      if (baseOpts.useV0BufferForCascades) {
         // this processing path uses a buffer of V0s so that no
         // additional minimization step is redone. It consumes less
         // CPU at the cost of more memory. Since memory is a more
@@ -1942,9 +1904,9 @@ struct StrangenessBuilder {
                                               posTrack,
                                               negTrack,
                                               bachTrack,
-                                              mEnabledTables[kCascBBs],
+                                              baseOpts.mEnabledTables[kCascBBs],
                                               cascadeBuilderOpts.useCascadeMomentumAtPrimVtx,
-                                              mEnabledTables[kCascCovs])) {
+                                              baseOpts.mEnabledTables[kCascCovs])) {
           products.cascdataLink(-1);
           interlinks.cascadeToCascCores.push_back(-1);
           continue; // didn't work out, skip
@@ -1956,9 +1918,9 @@ struct StrangenessBuilder {
                                               posTrack,
                                               negTrack,
                                               bachTrack,
-                                              mEnabledTables[kCascBBs],
+                                              baseOpts.mEnabledTables[kCascBBs],
                                               cascadeBuilderOpts.useCascadeMomentumAtPrimVtx,
-                                              mEnabledTables[kCascCovs])) {
+                                              baseOpts.mEnabledTables[kCascCovs])) {
           products.cascdataLink(-1);
           interlinks.cascadeToCascCores.push_back(-1);
           continue; // didn't work out, skip
@@ -2049,13 +2011,13 @@ struct StrangenessBuilder {
       }
 
       // generate analysis tables as required
-      if (mEnabledTables[kCascIndices]) {
+      if (baseOpts.mEnabledTables[kCascIndices]) {
         products.cascidx(cascade.globalId,
                          straHelper.cascade.positiveTrack, straHelper.cascade.negativeTrack,
                          straHelper.cascade.bachelorTrack, straHelper.cascade.collisionId);
         histos.fill(HIST("hTableBuildingStatistics"), kCascIndices);
       }
-      if (mEnabledTables[kStoredCascCores]) {
+      if (baseOpts.mEnabledTables[kStoredCascCores]) {
         products.cascdata(straHelper.cascade.charge, straHelper.cascade.massXi, straHelper.cascade.massOmega,
                           straHelper.cascade.cascadePosition[0], straHelper.cascade.cascadePosition[1], straHelper.cascade.cascadePosition[2],
                           straHelper.cascade.v0Position[0], straHelper.cascade.v0Position[1], straHelper.cascade.v0Position[2],
@@ -2074,15 +2036,15 @@ struct StrangenessBuilder {
         interlinks.cascadeToCascCores.push_back(products.cascdata.lastIndex());
       }
 
-      if (mEnabledTables[kCascTrackXs]) {
+      if (baseOpts.mEnabledTables[kCascTrackXs]) {
         products.cascTrackXs(straHelper.cascade.positiveTrackX, straHelper.cascade.negativeTrackX, straHelper.cascade.bachelorTrackX);
         histos.fill(HIST("hTableBuildingStatistics"), kCascTrackXs);
       }
-      if (mEnabledTables[kCascBBs]) {
+      if (baseOpts.mEnabledTables[kCascBBs]) {
         products.cascbb(straHelper.cascade.bachBaryonCosPA, straHelper.cascade.bachBaryonDCAxyToPV);
         histos.fill(HIST("hTableBuildingStatistics"), kCascBBs);
       }
-      if (mEnabledTables[kCascCovs]) {
+      if (baseOpts.mEnabledTables[kCascCovs]) {
         products.casccovs(straHelper.cascade.covariance);
         histos.fill(HIST("hTableBuildingStatistics"), kCascCovs);
       }
@@ -2091,18 +2053,18 @@ struct StrangenessBuilder {
       // MC handling part
       if constexpr (soa::is_table<TMCParticles>) {
         // only worry about this if someone else worried about this
-        if ((mEnabledTables[kCascMCCores] || mEnabledTables[kMcCascLabels] || mEnabledTables[kCascMCCollRefs])) {
+        if ((baseOpts.mEnabledTables[kCascMCCores] || baseOpts.mEnabledTables[kMcCascLabels] || baseOpts.mEnabledTables[kCascMCCollRefs])) {
           extractMonteCarloProperties(posTrack, negTrack, bachTrack, mcParticles);
 
           // Construct label table (note: this will be joinable with CascDatas)
-          if (mEnabledTables[kMcCascLabels]) {
+          if (baseOpts.mEnabledTables[kMcCascLabels]) {
             products.casclabels(
               thisCascInfo.label, thisCascInfo.motherLabel);
             histos.fill(HIST("hTableBuildingStatistics"), kMcCascLabels);
           }
 
           // Construct found tag
-          if (mEnabledTables[kCascFoundTags]) {
+          if (baseOpts.mEnabledTables[kCascFoundTags]) {
             products.cascFoundTag(cascade.found);
             histos.fill(HIST("hTableBuildingStatistics"), kCascFoundTags);
           }
@@ -2113,7 +2075,7 @@ struct StrangenessBuilder {
           }
 
           if (cascadeBuilderOpts.mc_populateCascMCCoresSymmetric) {
-            if (mEnabledTables[kCascMCCores]) {
+            if (baseOpts.mEnabledTables[kCascMCCores]) {
               products.cascmccores(
                 thisCascInfo.pdgCode, thisCascInfo.pdgCodeMother, thisCascInfo.pdgCodeV0, thisCascInfo.isPhysicalPrimary,
                 thisCascInfo.pdgCodePositive, thisCascInfo.pdgCodeNegative, thisCascInfo.pdgCodeBachelor,
@@ -2125,7 +2087,7 @@ struct StrangenessBuilder {
                 thisCascInfo.momentum[0], thisCascInfo.momentum[1], thisCascInfo.momentum[2]);
               histos.fill(HIST("hTableBuildingStatistics"), kCascMCCores);
             }
-            if (mEnabledTables[kCascMCCollRefs]) {
+            if (baseOpts.mEnabledTables[kCascMCCollRefs]) {
               products.cascmccollrefs(thisCascInfo.mcCollision);
               histos.fill(HIST("hTableBuildingStatistics"), kCascMCCollRefs);
             }
@@ -2146,7 +2108,7 @@ struct StrangenessBuilder {
               thisCascMCCoreIndex = mcCascinfos.size();
               mcCascinfos.push_back(thisCascInfo);
             }
-            if (mEnabledTables[kCascCoreMCLabels]) {
+            if (baseOpts.mEnabledTables[kCascCoreMCLabels]) {
               products.cascCoreMClabels(thisCascMCCoreIndex); // interlink: reconstructed -> MC index
               histos.fill(HIST("hTableBuildingStatistics"), kCascCoreMCLabels);
             }
@@ -2155,7 +2117,7 @@ struct StrangenessBuilder {
         } // enabled tables check
 
         // if BB tags requested, generate them now
-        if (mEnabledTables[kMcCascBBTags]) {
+        if (baseOpts.mEnabledTables[kMcCascBBTags]) {
           bool bbTag = false;
           if (bachTrack.has_mcParticle()) {
             auto bachelorParticle = bachTrack.template mcParticle_as<aod::McParticles>();
@@ -2199,7 +2161,7 @@ struct StrangenessBuilder {
     //_________________________________________________________
     // MC handling part
     if constexpr (soa::is_table<TMCParticles>) {
-      if ((mEnabledTables[kCascMCCores] || mEnabledTables[kMcCascLabels] || mEnabledTables[kCascMCCollRefs])) {
+      if ((baseOpts.mEnabledTables[kCascMCCores] || baseOpts.mEnabledTables[kMcCascLabels] || baseOpts.mEnabledTables[kCascMCCollRefs])) {
         // now populate V0MCCores if in asymmetric mode
         if (cascadeBuilderOpts.mc_populateCascMCCoresAsymmetric) {
           // first step: add any un-recoed v0mmcores that were requested
@@ -2297,7 +2259,7 @@ struct StrangenessBuilder {
           }
 
           for (const auto& thisInfoToFill : mcCascinfos) {
-            if (mEnabledTables[kCascMCCores]) {
+            if (baseOpts.mEnabledTables[kCascMCCores]) {
               products.cascmccores( // a lot of the info below will be compressed in case of not-recoed MC (good!)
                 thisInfoToFill.pdgCode, thisInfoToFill.pdgCodeMother, thisInfoToFill.pdgCodeV0, thisInfoToFill.isPhysicalPrimary,
                 thisInfoToFill.pdgCodePositive, thisInfoToFill.pdgCodeNegative, thisInfoToFill.pdgCodeBachelor,
@@ -2309,7 +2271,7 @@ struct StrangenessBuilder {
                 thisInfoToFill.momentum[0], thisInfoToFill.momentum[1], thisInfoToFill.momentum[2]);
               histos.fill(HIST("hTableBuildingStatistics"), kCascMCCores);
             }
-            if (mEnabledTables[kCascMCCollRefs]) {
+            if (baseOpts.mEnabledTables[kCascMCCollRefs]) {
               products.cascmccollrefs(thisInfoToFill.mcCollision);
               histos.fill(HIST("hTableBuildingStatistics"), kCascMCCollRefs);
             }
@@ -2322,10 +2284,10 @@ struct StrangenessBuilder {
   }
 
   //__________________________________________________
-  template <typename TCollisions, typename TCascades, typename TTracks, typename TMCParticles>
-  void buildKFCascades(TCollisions const& collisions, TCascades const& cascades, TTracks const& tracks, TMCParticles const& mcParticles)
+  template <typename THistoRegistry, typename TCollisions, typename TCascades, typename TTracks, typename TMCParticles, typename TProducts>
+  void buildKFCascades(THistoRegistry& histos, TCollisions const& collisions, TCascades const& cascades, TTracks const& tracks, TMCParticles const& mcParticles, TProducts& products)
   {
-    if (!mEnabledTables[kStoredKFCascCores]) {
+    if (!baseOpts.mEnabledTables[kStoredKFCascCores]) {
       return; // don't do if no request for cascades in place
     }
     int nCascades = 0;
@@ -2350,7 +2312,7 @@ struct StrangenessBuilder {
                                                   posTrack,
                                                   negTrack,
                                                   bachTrack,
-                                                  mEnabledTables[kCascBBs],
+                                                  baseOpts.mEnabledTables[kCascBBs],
                                                   cascadeBuilderOpts.kfConstructMethod,
                                                   cascadeBuilderOpts.kfTuneForOmega,
                                                   cascadeBuilderOpts.kfUseV0MassConstraint,
@@ -2364,13 +2326,13 @@ struct StrangenessBuilder {
       nCascades++;
 
       // generate analysis tables as required
-      if (mEnabledTables[kKFCascIndices]) {
+      if (baseOpts.mEnabledTables[kKFCascIndices]) {
         products.kfcascidx(cascade.globalId,
                            straHelper.cascade.positiveTrack, straHelper.cascade.negativeTrack,
                            straHelper.cascade.bachelorTrack, straHelper.cascade.collisionId);
         histos.fill(HIST("hTableBuildingStatistics"), kKFCascIndices);
       }
-      if (mEnabledTables[kStoredKFCascCores]) {
+      if (baseOpts.mEnabledTables[kStoredKFCascCores]) {
         products.kfcascdata(straHelper.cascade.charge, straHelper.cascade.massXi, straHelper.cascade.massOmega,
                             straHelper.cascade.cascadePosition[0], straHelper.cascade.cascadePosition[1], straHelper.cascade.cascadePosition[2],
                             straHelper.cascade.v0Position[0], straHelper.cascade.v0Position[1], straHelper.cascade.v0Position[2],
@@ -2392,7 +2354,7 @@ struct StrangenessBuilder {
         interlinks.kfCascCoreToCascades.push_back(cascade.globalId);
         interlinks.cascadeToKFCascCores.push_back(products.kfcascdata.lastIndex());
       }
-      if (mEnabledTables[kKFCascCovs]) {
+      if (baseOpts.mEnabledTables[kKFCascCovs]) {
         products.kfcasccovs(straHelper.cascade.covariance, straHelper.cascade.kfTrackCovarianceV0, straHelper.cascade.kfTrackCovariancePos, straHelper.cascade.kfTrackCovarianceNeg);
         histos.fill(HIST("hTableBuildingStatistics"), kKFCascCovs);
       }
@@ -2401,7 +2363,7 @@ struct StrangenessBuilder {
       // MC handling part (labels only)
       if constexpr (soa::is_table<TMCParticles>) {
         // only worry about this if someone else worried about this
-        if ((mEnabledTables[kMcKFCascLabels])) {
+        if ((baseOpts.mEnabledTables[kMcKFCascLabels])) {
           extractMonteCarloProperties(posTrack, negTrack, bachTrack, mcParticles);
 
           // Construct label table (note: this will be joinable with KFCascDatas)
@@ -2415,10 +2377,10 @@ struct StrangenessBuilder {
   }
 
   //__________________________________________________
-  template <class TTracks, typename TCollisions, typename TStrangeTracks, typename TMCParticles>
-  void buildTrackedCascades(TCollisions const& collisions, TStrangeTracks const& cascadeTracks, TMCParticles const& mcParticles)
+  template <class TTracks, typename THistoRegistry, typename TCollisions, typename TStrangeTracks, typename TMCParticles, typename TProducts>
+  void buildTrackedCascades(THistoRegistry& histos, TCollisions const& collisions, TStrangeTracks const& cascadeTracks, TMCParticles const& mcParticles, TProducts& products)
   {
-    if (!mEnabledTables[kStoredTraCascCores] || mc_findableMode.value != 0) {
+    if (!baseOpts.mEnabledTables[kStoredTraCascCores] || baseOpts.mc_findableMode.value != 0) {
       return; // don't do if no request for cascades in place or findable mode used
     }
     int nCascades = 0;
@@ -2449,9 +2411,9 @@ struct StrangenessBuilder {
                                             posTrack,
                                             negTrack,
                                             bachTrack,
-                                            mEnabledTables[kCascBBs],
+                                            baseOpts.mEnabledTables[kCascBBs],
                                             cascadeBuilderOpts.useCascadeMomentumAtPrimVtx,
-                                            mEnabledTables[kCascCovs])) {
+                                            baseOpts.mEnabledTables[kCascCovs])) {
         products.tracascdataLink(-1);
         interlinks.cascadeToTraCascCores.push_back(-1);
         continue; // didn't work out, skip
@@ -2472,13 +2434,13 @@ struct StrangenessBuilder {
       nCascades++;
 
       // generate analysis tables as required
-      if (mEnabledTables[kTraCascIndices]) {
+      if (baseOpts.mEnabledTables[kTraCascIndices]) {
         products.tracascidx(cascade.globalIndex(),
                             straHelper.cascade.positiveTrack, straHelper.cascade.negativeTrack,
                             straHelper.cascade.bachelorTrack, cascadeTrack.trackId(), straHelper.cascade.collisionId);
         histos.fill(HIST("hTableBuildingStatistics"), kTraCascIndices);
       }
-      if (mEnabledTables[kStoredTraCascCores]) {
+      if (baseOpts.mEnabledTables[kStoredTraCascCores]) {
         products.tracascdata(straHelper.cascade.charge, cascadeTrack.xiMass(), cascadeTrack.omegaMass(),
                              cascadeTrack.decayX(), cascadeTrack.decayY(), cascadeTrack.decayZ(),
                              straHelper.cascade.v0Position[0], straHelper.cascade.v0Position[1], straHelper.cascade.v0Position[2],
@@ -2497,7 +2459,7 @@ struct StrangenessBuilder {
         interlinks.traCascCoreToCascades.push_back(cascade.globalIndex());
         interlinks.cascadeToTraCascCores.push_back(products.tracascdata.lastIndex());
       }
-      if (mEnabledTables[kCascCovs]) {
+      if (baseOpts.mEnabledTables[kCascCovs]) {
         std::array<float, 21> traCovMat = {0.};
         strangeTrackParCov.getCovXYZPxPyPzGlo(traCovMat);
         float traCovMatArray[21];
@@ -2512,7 +2474,7 @@ struct StrangenessBuilder {
       // MC handling part (labels only)
       if constexpr (soa::is_table<TMCParticles>) {
         // only worry about this if someone else worried about this
-        if ((mEnabledTables[kMcTraCascLabels])) {
+        if ((baseOpts.mEnabledTables[kMcTraCascLabels])) {
           extractMonteCarloProperties(posTrack, negTrack, bachTrack, mcParticles);
 
           // Construct label table (note: this will be joinable with KFCascDatas)
@@ -2556,157 +2518,43 @@ struct StrangenessBuilder {
   }
 
   //__________________________________________________
-  template <typename TCollisions, typename TMCCollisions, typename TV0s, typename TCascades, typename TTrackedCascades, typename TTracks, typename TBCs, typename TMCParticles>
-  void dataProcess(TCollisions const& collisions, TMCCollisions const& mccollisions, TV0s const& v0s, TCascades const& cascades, TTrackedCascades const& trackedCascades, TTracks const& tracks, TBCs const& bcs, TMCParticles const& mcParticles)
+  template <typename TCCDB, typename THistoRegistry, typename TCollisions, typename TMCCollisions, typename TV0s, typename TCascades, typename TTrackedCascades, typename TTracks, typename TBCs, typename TMCParticles, typename TProducts>
+  void dataProcess(TCCDB& ccdb, THistoRegistry& histos, TCollisions const& collisions, TMCCollisions const& mccollisions, TV0s const& v0s, TCascades const& cascades, TTrackedCascades const& trackedCascades, TTracks const& tracks, TBCs const& bcs, TMCParticles const& mcParticles, TProducts& products)
   {
-    if (!initCCDB(bcs, collisions))
+    if (nEnabledTables == 0) {
+      return; // fully suppressed
+    }
+
+    if (!initCCDB(ccdb, bcs, collisions))
       return;
 
     // reset vectors for cascade interlinks
     resetInterlinks();
 
     // prepare v0List, cascadeList
-    prepareBuildingLists<TBCs>(collisions, mccollisions, v0s, cascades, tracks, mcParticles);
+    prepareBuildingLists<TBCs>(histos, collisions, mccollisions, v0s, cascades, tracks, mcParticles);
 
     // mark V0s that will be buffered for the cascade building
     markV0sUsedInCascades(v0List, cascadeList, trackedCascades);
 
     // build V0s
-    buildV0s<TBCs>(collisions, v0List, tracks, mcParticles);
+    buildV0s<TBCs>(histos, collisions, v0List, tracks, mcParticles, products);
 
     // build cascades
-    buildCascades(collisions, cascadeList, tracks, mcParticles);
-    buildKFCascades(collisions, cascadeList, tracks, mcParticles);
+    buildCascades(histos, collisions, cascadeList, tracks, mcParticles, products);
+    buildKFCascades(histos, collisions, cascadeList, tracks, mcParticles, products);
 
     // build tracked cascades only if subscription is Run 3 like (doesn't exist in Run 2)
     if constexpr (soa::is_table<TTrackedCascades>) {
-      buildTrackedCascades<TTracks>(collisions, trackedCascades, mcParticles);
+      buildTrackedCascades<TTracks>(histos, collisions, trackedCascades, mcParticles, products);
     }
 
     populateCascadeInterlinks();
   }
+}; // end BuilderModule
 
-  void processRealData(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs)
-  {
-    dataProcess(collisions, static_cast<TObject*>(nullptr), v0s, cascades, trackedCascades, tracks, bcs, static_cast<TObject*>(nullptr));
-  }
+} // namespace strangenessbuilder
+} // namespace pwglf
+} // namespace o2
 
-  void processRealDataRun2(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExt const& tracks, aod::BCsWithTimestamps const& bcs)
-  {
-    dataProcess(collisions, static_cast<TObject*>(nullptr), v0s, cascades, static_cast<TObject*>(nullptr), tracks, bcs, static_cast<TObject*>(nullptr));
-  }
-
-  void processMonteCarlo(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mccollisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtLabeledIU const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
-  {
-    dataProcess(collisions, mccollisions, v0s, cascades, trackedCascades, tracks, bcs, mcParticles);
-  }
-
-  void processMonteCarloRun2(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mccollisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExtLabeled const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
-  {
-    dataProcess(collisions, mccollisions, v0s, cascades, static_cast<TObject*>(nullptr), tracks, bcs, mcParticles);
-  }
-
-  void processRealDataWithPID(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtIUWithPID const& tracks, aod::BCsWithTimestamps const& bcs)
-  {
-    dataProcess(collisions, static_cast<TObject*>(nullptr), v0s, cascades, trackedCascades, tracks, bcs, static_cast<TObject*>(nullptr));
-  }
-
-  void processRealDataRun2WithPID(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExtWithPID const& tracks, aod::BCsWithTimestamps const& bcs)
-  {
-    dataProcess(collisions, static_cast<TObject*>(nullptr), v0s, cascades, static_cast<TObject*>(nullptr), tracks, bcs, static_cast<TObject*>(nullptr));
-  }
-
-  void processMonteCarloWithPID(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mccollisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtLabeledIUWithPID const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
-  {
-    dataProcess(collisions, mccollisions, v0s, cascades, trackedCascades, tracks, bcs, mcParticles);
-  }
-
-  void processMonteCarloRun2WithPID(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mccollisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExtLabeledWithPID const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
-  {
-    dataProcess(collisions, mccollisions, v0s, cascades, static_cast<TObject*>(nullptr), tracks, bcs, mcParticles);
-  }
-
-  PROCESS_SWITCH(StrangenessBuilder, processRealData, "process real data", true);
-  PROCESS_SWITCH(StrangenessBuilder, processRealDataRun2, "process real data (Run 2)", false);
-  PROCESS_SWITCH(StrangenessBuilder, processMonteCarlo, "process monte carlo", false);
-  PROCESS_SWITCH(StrangenessBuilder, processMonteCarloRun2, "process monte carlo (Run 2)", false);
-  PROCESS_SWITCH(StrangenessBuilder, processRealDataWithPID, "process real data", false);
-  PROCESS_SWITCH(StrangenessBuilder, processRealDataRun2WithPID, "process real data (Run 2)", false);
-  PROCESS_SWITCH(StrangenessBuilder, processMonteCarloWithPID, "process monte carlo", false);
-  PROCESS_SWITCH(StrangenessBuilder, processMonteCarloRun2WithPID, "process monte carlo (Run 2)", false);
-};
-
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  auto strangenessBuilderTask = adaptAnalysisTask<StrangenessBuilder>(cfgc);
-  bool isRun3 = true, hasRunInfo = false;
-  bool isMC = false, hasDataTypeInfo = false;
-  if (cfgc.options().hasOption("aod-metadata-Run") == true) {
-    hasRunInfo = true;
-    if (cfgc.options().get<std::string>("aod-metadata-Run") == "2") {
-      isRun3 = false;
-    }
-  }
-  if (cfgc.options().hasOption("aod-metadata-DataType") == true) {
-    hasDataTypeInfo = true;
-    if (cfgc.options().get<std::string>("aod-metadata-DataType") == "MC") {
-      isMC = true;
-    }
-  }
-
-  int idxSwitches[8]; // 8 switches (real / real r2 / MC / MC r2 + PID)
-  bool autoConfigureProcessConfig = true;
-  bool withPID = false;
-
-  for (size_t ipar = 0; ipar < strangenessBuilderTask.options.size(); ipar++) {
-    auto option = strangenessBuilderTask.options[ipar];
-    if (option.name == "processRealData") {
-      idxSwitches[0] = ipar;
-    }
-    if (option.name == "processRealDataRun2") {
-      idxSwitches[1] = ipar;
-    }
-    if (option.name == "processMonteCarlo") {
-      idxSwitches[2] = ipar;
-    }
-    if (option.name == "processMonteCarloRun2") {
-      idxSwitches[3] = ipar;
-    }
-    if (option.name == "processRealDataWithPID") {
-      idxSwitches[4] = ipar;
-    }
-    if (option.name == "processRealDataRun2WithPID") {
-      idxSwitches[5] = ipar;
-    }
-    if (option.name == "processMonteCarloWithPID") {
-      idxSwitches[6] = ipar;
-    }
-    if (option.name == "processMonteCarloRun2WithPID") {
-      idxSwitches[7] = ipar;
-    }
-    if (option.name == "autoConfigureProcess") {
-      autoConfigureProcessConfig = option.defaultValue.get<bool>(); // check if autoconfig requested
-    }
-    // use withPID in case preselection is requested
-    if (option.name == "preSelectOpts.preselectOnlyDesiredV0s" || option.name == "preSelectOpts.preselectOnlyDesiredCascades") {
-      withPID = withPID || option.defaultValue.get<bool>();
-    }
-  }
-  if ((!hasRunInfo || !hasDataTypeInfo) && autoConfigureProcessConfig) {
-    throw std::runtime_error("Autoconfigure requested but no metadata information found! Please check if --aod-file <file> was used in the last workflow added in the execution and if the AO2D in question has metadata saved in it.");
-  }
-
-  // positions of switches are known. Next: flip if asked for
-  if (autoConfigureProcessConfig) {
-    int relevantProcess = static_cast<int>(!isRun3) + 2 * static_cast<int>(isMC) + 4 * static_cast<int>(withPID);
-    LOGF(info, "Automatic configuration of process switches requested! Autodetected settings: isRun3? %i, isMC? %i, withPID? %i (switch #%i)", hasRunInfo, hasDataTypeInfo, isRun3, isMC, withPID, relevantProcess);
-    for (size_t idx = 0; idx < 8; idx++) {
-      auto option = strangenessBuilderTask.options[idxSwitches[idx]];
-      option.defaultValue = false; // switch all off
-    }
-    strangenessBuilderTask.options[idxSwitches[relevantProcess]].defaultValue = true;
-  }
-
-  return WorkflowSpec{
-    strangenessBuilderTask};
-}
+#endif // PWGLF_UTILS_STRANGENESSBUILDERMODULE_H_
