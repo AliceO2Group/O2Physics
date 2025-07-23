@@ -125,16 +125,16 @@ o2::dataformats::GlobalFwdTrack refitGlobalMuonCov(TFwdTrack const& muon, TMFTTr
 
   SMatrix55Std jacobInv = ROOT::Math::SMatrixIdentity();
   auto qp = std::sqrt(1 + tl * tl) / invQPt;
-  auto tl_mft = mft.getTgl();
-  jacobInv(4, 3) = tl_mft / (qp * std::sqrt(1 + tl_mft * tl_mft));
-  jacobInv(4, 4) = -std::sqrt(1 + tl_mft * tl_mft) / (qp * qp);
+  auto tlMFT = mft.getTgl();
+  jacobInv(4, 3) = tlMFT / (qp * std::sqrt(1 + tlMFT * tlMFT));
+  jacobInv(4, 4) = -std::sqrt(1 + tlMFT * tlMFT) / (qp * qp);
   auto globalCov = ROOT::Math::Similarity(jacobInv, mftCov);
 
-  auto invQPt_new = std::sqrt(1 + tl_mft * tl_mft) / qp;
+  auto invQPtGlob = std::sqrt(1 + tlMFT * tlMFT) / qp;
 
   o2::dataformats::GlobalFwdTrack globalTrack;
   globalTrack.setParameters(mft.getParameters());
-  globalTrack.setInvQPt(invQPt_new);
+  globalTrack.setInvQPt(invQPtGlob);
   globalTrack.setCovariances(globalCov);
 
   return globalTrack;
