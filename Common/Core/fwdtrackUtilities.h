@@ -128,7 +128,7 @@ o2::dataformats::GlobalFwdTrack refitGlobalMuonCov(TFwdTrack const& muon, TMFTTr
   auto tl_mft = mft.getTgl();
   jacobInv(4, 3) = tl_mft / (qp * std::sqrt(1 + tl_mft * tl_mft));
   jacobInv(4, 4) = -std::sqrt(1 + tl_mft * tl_mft) / (qp * qp);
-  auto globalCov = ROOT::Math::Similarity(jacobInv, covQP);
+  auto globalCov = ROOT::Math::Similarity(jacobInv, mftCov);
 
   auto invQPt_new = std::sqrt(1 + tl_mft * tl_mft) / qp;
 
