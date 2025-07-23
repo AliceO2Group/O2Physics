@@ -14,32 +14,33 @@
 // This code produces information on prefilter for photon.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include <string>
-#include <vector>
-#include <unordered_map>
 #include <map>
+#include <string>
 #include <tuple>
+#include <unordered_map>
+#include <vector>
 
 // #include "TString.h"
-#include "Math/Vector4D.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Math/Vector4D.h"
 // #include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-
+#include "PWGEM/Dilepton/Utils/PairUtilities.h"
+#include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
+#include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
+#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
-#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
-#include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
-#include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
-#include "PWGEM/Dilepton/Utils/PairUtilities.h"
+
+#include "Common/Core/trackUtilities.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -51,7 +52,7 @@ using namespace o2::aod::pwgem::photonmeson::photonpair;
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0PhotonsKFCov, aod::V0KFEMEventIds>;
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
 using MyPrimaryElectrons = soa::Join<aod::EMPrimaryElectronsFromDalitz, aod::EMPrimaryElectronEMEventIds>;
