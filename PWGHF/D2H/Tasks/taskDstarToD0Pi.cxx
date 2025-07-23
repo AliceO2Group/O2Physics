@@ -279,7 +279,7 @@ struct HfTaskDstarToD0Pi {
           hWeights.resize(nWeights);
           for (int ithWeight = 0; ithWeight < nWeights; ++ithWeight) {
             std::string histName = "hMult" + std::to_string(ithWeight + 1) + "_Weight";
-            hWeights[ithWeight] = reinterpret_cast<TH2F*> weightFile->Get(histName.c_str());
+            hWeights[ithWeight] = reinterpret_cast<TH2F*> (weightFile->Get(histName.c_str()));
             if (!hWeights[ithWeight]) {
               LOGF(error, "Histogram %s not found in weight file!", histName.c_str());
               return;
