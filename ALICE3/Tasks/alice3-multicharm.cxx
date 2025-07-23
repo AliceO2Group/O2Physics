@@ -83,12 +83,10 @@ struct alice3multicharm {
 
   Configurable<float> picMinDCAxy{"picMinDCAxy", -1, "[0] in |DCAz| > [0]+[1]/pT"};
   Configurable<float> picMinDCAz{"picMinDCAz", -1, "[0] in |DCAxy| > [0]+[1]/pT"};
-  Configurable<float> picMaxTofDiffInner{"picTofDiffInner", 1e+4, "|signal - expected| (ps)"};
   Configurable<float> picMinPt{"picMinPt", -1, "Minimum pT for Xic pions"};
 
   Configurable<float> piccMinDCAxy{"piccMinDCAxy", -1, "[0] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> piccMinDCAz{"piccMinDCAz", -1, "[0] in |DCAz| > [0]+[1]/pT"};
-  Configurable<float> piccMaxTofDiffInner{"piccMaxTofDiffInner", 1e+4, "|signal - expected| (ps)"};
   Configurable<float> piccMinPt{"piccMinPt", -1, "Minimum pT for Xicc pions"};
 
   Configurable<float> xicMaxDauDCA{"xicMaxDauDCA", 1e+4, "DCA between Xic daughters (cm)"};
@@ -150,7 +148,7 @@ struct alice3multicharm {
     hMCharmBuilding->GetXaxis()->SetBinLabel(22, "xicMinDecayDistanceFromPV");
 
     if (doprocessXiccPID || doprocessXiccExtra) {
-      auto hPdgCodes = histos.add<TH2>("PIDQA/hPdgCodes", "hPdgCodes", kTH2D, {{3, 0.5, 3.5}, {5, 0.5, 5.5}});
+      auto hPdgCodes = histos.add<TH2>("PIDQA/hPdgCodes", "hPdgCodes", kTH2D, {{3, 0.5, 3.5}, {7, 0.5, 7.5}});
       hPdgCodes->GetXaxis()->SetBinLabel(1, "pi1c");
       hPdgCodes->GetXaxis()->SetBinLabel(2, "pi2c");
       hPdgCodes->GetXaxis()->SetBinLabel(3, "picc");
@@ -159,11 +157,14 @@ struct alice3multicharm {
       hPdgCodes->GetYaxis()->SetBinLabel(3, "pi");
       hPdgCodes->GetYaxis()->SetBinLabel(4, "ka");
       hPdgCodes->GetYaxis()->SetBinLabel(5, "pr");
+      hPdgCodes->GetYaxis()->SetBinLabel(6, "xi");
+      hPdgCodes->GetYaxis()->SetBinLabel(7, "other");
       pdgToBin.insert({kElectron, 1});
       pdgToBin.insert({kMuonMinus, 2});
       pdgToBin.insert({kPiPlus, 3});
       pdgToBin.insert({kKPlus, 4});
       pdgToBin.insert({kProton, 5});
+      pdgToBin.insert({kXiMinus, 6});
 
       histos.add("PIDQA/hInnerTofTimeDeltaPi1c", "hInnerTofTimeDeltaPi1c; Reco - expected pion (ps)", kTH1D, {axisTofTrackDelta});
       histos.add("PIDQA/hInnerTofTimeDeltaPi2c", "hInnerTofTimeDeltaPi2c; Reco - expected pion (ps)", kTH1D, {axisTofTrackDelta});
@@ -192,6 +193,12 @@ struct alice3multicharm {
       histos.add("XiccProngs/h3dPicc", "h3dPicc; Xicc pT (GeV/#it(c)); Picc pT (GeV/#it(c)); Picc #eta", kTH3D, {axisPt, axisPt, axisEta});
     }
     histos.add("h3dXicc", "h3dXicc; Xicc pT (GeV/#it(c)); Xicc #eta; Xicc mass (GeV/#it(c)^{2})", kTH3D, {axisPt, axisEta, axisXiccMass});
+  }
+
+  int getBin(const std::map<int, int>& pdgToBin, int pdg)
+  {
+    auto it = pdgToBin.find(pdg);
+    return (it != pdgToBin.end()) ? it->second : 7;
   }
 
   template <typename TMCharmCands>
@@ -324,9 +331,9 @@ struct alice3multicharm {
           histos.fill(HIST("PIDQA/hRichNSigmaPicc"), xiccCand.piccPt(), xiccCand.piccRichNSigma());
         }
 
-        histos.fill(HIST("PIDQA/hPdgCodes"), 1, pdgToBin.at(std::abs(xiccCand.pi1cPdgCode())));
-        histos.fill(HIST("PIDQA/hPdgCodes"), 2, pdgToBin.at(std::abs(xiccCand.pi2cPdgCode())));
-        histos.fill(HIST("PIDQA/hPdgCodes"), 3, pdgToBin.at(std::abs(xiccCand.piccPdgCode())));
+        histos.fill(HIST("PIDQA/hPdgCodes"), 1, getBin(pdgToBin, std::abs(xiccCand.pi1cPdgCode())));
+        histos.fill(HIST("PIDQA/hPdgCodes"), 2, getBin(pdgToBin, std::abs(xiccCand.pi2cPdgCode())));
+        histos.fill(HIST("PIDQA/hPdgCodes"), 3, getBin(pdgToBin, std::abs(xiccCand.piccPdgCode())));
       }
 
       if constexpr (requires { xiccCand.negPt(); }) { // if extra table
