@@ -1300,10 +1300,10 @@ struct JetFragmentation {
     // If V0 is Lambda, posTrack = proton, negTrack = pion
     // In that case, we assign pion mass to posTrack and proton mass to negTrack to calculate the reflection
     // Vice versa for AntiLambda
-    double negM = (isLambda ? constants::physics::MassProton : constants::physics::MassPionCharged);
-    double posM = (isLambda ? constants::physics::MassPionCharged : constants::physics::MassProton);
-    std::array<std::array<double, 3>, 2> momenta = {{v0.pxpos(), v0.pypos(), v0.pzpos()}, {v0.pxneg(), v0.pyneg(), v0.pzneg()}};
-    std::array<double, 2> masses = {posM, negM};
+    float negM = (isLambda ? constants::physics::MassProton : constants::physics::MassPionCharged);
+    float posM = (isLambda ? constants::physics::MassPionCharged : constants::physics::MassProton);
+    std::array<std::array<float, 3>, 2> momenta = {std::array{v0.pxpos(), v0.pypos(), v0.pzpos()}, std::array{v0.pxneg(), v0.pyneg(), v0.pzneg()}};
+    std::array<float, 2> masses = {posM, negM};
     return RecoDecay::m(momenta, masses);
   }
   template <typename Jet, typename Constituent>
