@@ -162,6 +162,7 @@ DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);                   //! MC parti
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);         //! flag for generator level matching
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! particle origin, generator level
 DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant decay channel flag, generator level
+DECLARE_SOA_COLUMN(PdgMother, pdgMother, int32_t);                  //! PDG code of the mother particle
 } // namespace hf_mc_particle
 
 // Declares the base table with candidates (Bases).
@@ -492,6 +493,7 @@ DECLARE_SOA_COLUMN(MlScoreBkgCharm, mlScoreBkgCharm, float);                  //
 DECLARE_SOA_COLUMN(MlScorePromptCharm, mlScorePromptCharm, float);            //! ML score for prompt class
 DECLARE_SOA_COLUMN(MlScoreNonPromptCharm, mlScoreNonPromptCharm, float);      //! ML score for non-prompt class
 DECLARE_SOA_COLUMN(MlScoresCharm, mlScoresCharm, std::vector<float>);         //! vector of ML scores
+DECLARE_SOA_COLUMN(FlagMcMatchGenCharm, flagMcMatchGenCharm, int8_t);         //! flag for generator level matching
 } // namespace hf_cand_mc_charm
 
 // ----------------
@@ -933,6 +935,11 @@ DECLARE_SOA_TABLE_STAGED(HfDstarMcs, "HFDSTMC", //! Table with MC candidate info
                          hf_cand::PtBhadMotherPart,
                          hf_cand::PdgBhadMotherPart,
                          hf_cand::NTracksDecayed,
+                         o2::soa::Marker<MarkerDstar>);
+
+DECLARE_SOA_TABLE_STAGED(HfDstarGenMcs, "HFDSTGENMC", //! Table with MC candidate info for generated D*+
+                         hf_cand_mc_charm::FlagMcMatchGenCharm,
+                         hf_mc_particle::PdgMother,
                          o2::soa::Marker<MarkerDstar>);
 
 // ----------------

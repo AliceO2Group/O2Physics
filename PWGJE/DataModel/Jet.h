@@ -237,7 +237,7 @@ using CandidatesDstarMCD = o2::soa::Join<HfDstarBases, HfDstarPars, HfDstarParD0
 using JetTracksSubDstar = JTrackDstarSubs;
 using JetParticlesSubDstar = JMcParticleDstarSubs;
 using McCollisionsDstar = o2::soa::Join<HfDstarMcCollBases, JDstarMcCollisionIds>;
-using CandidatesDstarMCP = o2::soa::Join<HfDstarPBases, JDstarPIds>;
+using CandidatesDstarMCP = o2::soa::Join<HfDstarPBases, JDstarPIds, HfDstarGenMcs>;
 
 using CollisionsLc = o2::soa::Join<HfLcCollBases, JLcCollisionIds>;
 using CandidatesLcData = o2::soa::Join<HfLcBases, HfLcPars, HfLcParEs, HfLcSels, HfLcMls, JLcIds>;
