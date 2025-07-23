@@ -166,7 +166,7 @@ struct DndetaMFTPbPb {
   double mMinSeconds{-1.};
   std::unordered_map<int, TH2*> gHadronicRate;
   ctpRateFetcher rateFetcher;
-  TH2* gCurrentHadronicRate;            
+  TH2* gCurrentHadronicRate;
 
   /// @brief init function, definition of histograms
   void init(InitContext&)
@@ -929,7 +929,7 @@ struct DndetaMFTPbPb {
     }
     gCurrentHadronicRate = gHadronicRate[mRunNumber];
   }
-                             
+
   template <bool fillHis = false, typename C>
   bool isGoodEvent(C const& collision)
   {
@@ -1130,7 +1130,7 @@ struct DndetaMFTPbPb {
         return;
       }
       gCurrentHadronicRate->Fill(seconds, ir);
-    }    
+    }
 
     auto z = collision.posZ();
     if constexpr (has_reco_cent<C>) {
@@ -1178,8 +1178,8 @@ struct DndetaMFTPbPb {
         return;
       }
       gCurrentHadronicRate->Fill(seconds, ir);
-    }    
-    
+    }
+
     auto z = collision.posZ();
     if constexpr (has_reco_cent<C>) {
       registry.fill(HIST("Events/Centrality/Selection"), 2., c, occ);
