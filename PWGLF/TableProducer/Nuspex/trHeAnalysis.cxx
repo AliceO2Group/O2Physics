@@ -721,7 +721,7 @@ struct TrHeAnalysis {
     return hePID ? track.tpcInnerParam() / 2 : track.tpcInnerParam();
   }
   template <class T>
-  float getMassSquared(const T& track)
+  float getMass(const T& track)
   {
     if (cfgMassMethod == 0) {
       float m = track.mass();
