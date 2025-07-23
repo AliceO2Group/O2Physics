@@ -17,41 +17,43 @@
 //    HF decays. Work in progress: use at your own risk!
 //
 
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include <map>
-#include <iterator>
-#include <utility>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "ALICE3/DataModel/OTFTOF.h"
-#include "ALICE3/DataModel/RICH.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
-#include "ALICE3/DataModel/OTFStrangeness.h"
 #include "ALICE3/DataModel/OTFMulticharm.h"
+#include "ALICE3/DataModel/OTFRICH.h"
+#include "ALICE3/DataModel/OTFStrangeness.h"
+#include "ALICE3/DataModel/OTFTOF.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsCalibration/MeanVertexObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
 #include "DetectorsVertexing/PVertexer.h"
 #include "DetectorsVertexing/PVertexerHelpers.h"
-#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <iterator>
+#include <map>
+#include <utility>
 
 using namespace o2;
 using namespace o2::framework;
@@ -68,14 +70,16 @@ using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov>;
 // For MC association in pre-selection
 using labeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 using tofTracks = soa::Join<aod::Tracks, aod::UpgradeTofs>;
-using richTracks = soa::Join<aod::Tracks, aod::RICHs>;
-using alice3tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::Alice3DecayMaps, aod::McTrackLabels, aod::TracksDCA, aod::TracksExtraA3, aod::UpgradeTofs, aod::UpgradeTofExpectedTimes>;
+using richTracks = soa::Join<aod::Tracks, aod::UpgradeRichs, aod::UpgradeRichSignals>;
+using alice3tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::Alice3DecayMaps, aod::McTrackLabels, aod::TracksDCA, aod::TracksExtraA3, aod::UpgradeTofs, aod::UpgradeTofExpectedTimes, aod::UpgradeRichs, aod::UpgradeRichSignals>;
 
 struct alice3multicharmTable {
   SliceCache cache;
 
   Produces<aod::MCharmIndices> multiCharmIdx;
   Produces<aod::MCharmCores> multiCharmCore;
+  Produces<aod::MCharmPID> multiCharmPID;
+  Produces<aod::MCharmExtra> multiCharmExtra;
 
   // Operation and minimisation criteria
   Configurable<bool> fillDerivedTable{"fillDerivedTable", false, "fill MCharm[] tables (careful: memory)"};
@@ -319,6 +323,13 @@ struct alice3multicharmTable {
     thisXiCcandidate.pt = std::hypot(thisXiCcandidate.prong0mom[0] + thisXiCcandidate.prong1mom[0] + thisXiCcandidate.prong2mom[0], thisXiCcandidate.prong0mom[1] + thisXiCcandidate.prong1mom[1] + thisXiCcandidate.prong2mom[1]);
     thisXiCcandidate.eta = RecoDecay::eta(array{thisXiCcandidate.prong0mom[0] + thisXiCcandidate.prong1mom[0] + thisXiCcandidate.prong2mom[0], thisXiCcandidate.prong0mom[1] + thisXiCcandidate.prong1mom[1] + thisXiCcandidate.prong2mom[1], thisXiCcandidate.prong0mom[2] + thisXiCcandidate.prong1mom[2] + thisXiCcandidate.prong2mom[2]});
     return true;
+  }
+
+  template <typename TTrackType>
+  int getPdgCodeForTrack(TTrackType track)
+  {
+    auto mcParticle = track.template mcParticle_as<aod::McParticles>();
+    return mcParticle.pdgCode();
   }
 
   /// function to check if tracks have the same mother in MC
@@ -729,27 +740,43 @@ struct alice3multicharmTable {
                 xi.dcaXY(), xi.dcaZ(),
                 xicdcaXY, xicdcaZ,
                 xiccdcaXY, xiccdcaZ,
-                piFromXi.dcaXY(), piFromXi.dcaZ(),
-                piFromLa.dcaXY(), piFromLa.dcaZ(),
-                prFromLa.dcaXY(), prFromLa.dcaZ(),
                 pi1c.dcaXY(), pi1c.dcaZ(),
                 pi2c.dcaXY(), pi2c.dcaZ(),
                 picc.dcaXY(), picc.dcaZ(),
                 xicDecayRadius2D, xiccDecayRadius2D,
-                xicProperLength, xicDecayDistanceFromPV,
+                xicProperLength,
+                xicDecayDistanceFromPV,
                 xiccProperLength,
+                pi1c.pt(),
+                pi2c.pt(),
+                picc.pt());
+
+              multiCharmPID(
                 pi1cTOFDiffInner, pi1c.nSigmaPionInnerTOF(),
                 pi1cTOFDiffOuter, pi1c.nSigmaPionOuterTOF(),
+                pi1c.hasSigPi(), pi1c.nSigmaPionRich(),
+                getPdgCodeForTrack(pi1c),
+
                 pi2cTOFDiffInner, pi2c.nSigmaPionInnerTOF(),
                 pi2cTOFDiffOuter, pi2c.nSigmaPionOuterTOF(),
+                pi2c.hasSigPi(), pi2c.nSigmaPionRich(),
+                getPdgCodeForTrack(pi2c),
+
                 piccTOFDiffInner, picc.nSigmaPionInnerTOF(),
                 piccTOFDiffOuter, picc.nSigmaPionOuterTOF(),
+                picc.hasSigPi(), picc.nSigmaPionRich(),
+                getPdgCodeForTrack(picc));
+
+              multiCharmExtra(
                 piFromXi.pt(), piFromXi.eta(),
+                piFromXi.dcaXY(), piFromXi.dcaZ(),
                 prFromLa.pt(), prFromLa.eta(),
+                prFromLa.dcaXY(), prFromLa.dcaZ(),
                 piFromLa.pt(), piFromLa.eta(),
-                pi1c.pt(), pi1c.eta(),
-                pi2c.pt(), pi2c.eta(),
-                picc.pt(), picc.eta());
+                piFromLa.dcaXY(), piFromLa.dcaZ(),
+                pi1c.eta(),
+                pi2c.eta(),
+                picc.eta());
             }
           }
           histos.fill(HIST("hCombinationsXiCC"), nCombinationsCC);
