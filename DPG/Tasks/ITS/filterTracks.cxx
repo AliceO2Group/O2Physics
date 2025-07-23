@@ -324,9 +324,9 @@ struct FilterTracks {
     if (produceCollTableFull)
       filterCollTable(collision.bcId(), collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ(), collision.flags(), collision.chi2(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
     if (produceCollTableLite)
-      filterCollTable(collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ(), collision.chi2(), collision.numContrib(), collision.collisionTime());
+      filterCollLiteTable(collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ(), collision.chi2(), collision.numContrib(), collision.collisionTime());
     if (produceCollTableExtraLite)
-      filterCollTable(collision.posX(), collision.posY(), collision.posZ(), collision.chi2(), collision.numContrib(), collision.collisionTime());
+      filterCollPosTable(collision.posX(), collision.posY(), collision.posZ(), collision.chi2(), collision.numContrib(), collision.collisionTime());
   }
   PROCESS_SWITCH(FilterTracks, processCollisions, "process collisions", true);
 
