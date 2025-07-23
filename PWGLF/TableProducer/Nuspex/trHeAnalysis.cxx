@@ -221,8 +221,8 @@ struct TrHeAnalysis {
   Configurable<float> cfgCutMinItsClusterSizeHe{"cfgCutMinItsClusterSizeHe", 1.f, "Minimum ITS Cluster Size for He"};
   Configurable<float> cfgCutMaxItsClusterSizeH3{"cfgCutMaxItsClusterSizeH3", 4.f, "Maximum ITS Cluster Size for Tr"};
   Configurable<float> cfgCutMinItsClusterSizeH3{"cfgCutMinItsClusterSizeH3", 1.f, "Minimum ITS Cluster Size for Tr"};
-  Configurable<float> cfgCutMinTofMassH3{"cfgCutMinTofMassH3", 5f, "Minimum Tof mass H3"};
-  Configurable<float> cfgCutMaxTofMassH3{"cfgCutMaxTofMassH3", 11f, "Maximum TOF mass H3"};
+  Configurable<float> cfgCutMinTofMassH3{"cfgCutMinTofMassH3", 5.f, "Minimum Tof mass H3"};
+  Configurable<float> cfgCutMaxTofMassH3{"cfgCutMaxTofMassH3", 11.f, "Maximum TOF mass H3"};
   // Set the kinematic and PID cuts for tracks
   struct : ConfigurableGroup {
     Configurable<float> pCut{"pCut", 0.6f, "Value of the p selection for spectra (default 0.3)"};
