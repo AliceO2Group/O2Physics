@@ -45,12 +45,12 @@
 #include "Math/Vector4D.h"
 #include "TGeoGlobalMagField.h"
 
-#include <utility>
-#include <string>
 #include <algorithm>
-#include <map>
-#include <vector>
 #include <chrono>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace std;
 using namespace o2;
