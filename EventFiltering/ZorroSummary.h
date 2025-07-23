@@ -77,7 +77,7 @@ class ZorroSummary : public TNamed
   std::unordered_map<int, std::vector<double>> mTOIcounters;
   std::unordered_map<int, double> mTVXcounters;
 
-  ClassDef(ZorroSummary, 2);
+  ClassDef(ZorroSummary, 1);
 };
 
 #endif // EVENTFILTERING_ZORROSUMMARY_H_
