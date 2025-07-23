@@ -315,8 +315,6 @@ struct TrHeAnalysis {
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& event,
                TracksFull const& tracks)
   {
-    template <typename T>
-    float getMass(const T& track);
     bool trRapCut = kFALSE;
     bool heRapCut = kFALSE;
     histos.fill(HIST("event/eventSelection"), 0);
