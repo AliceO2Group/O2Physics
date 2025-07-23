@@ -35,7 +35,7 @@ namespace o2::aod
 // D0 → K− π+
 // Λc → p K− π+
 // D+ → K− π+ π+
-// Ds+ → K− K+ π+ (todo)
+// Ds+ → K− K+ π+
 
 // composite species
 // B0 → D− π+
@@ -306,6 +306,7 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
 DECLARE_TABLES_2P(D0, "D0", d0, 2);
 DECLARE_TABLES_3P(Lc, "LC", lc, 3);
 DECLARE_TABLES_3P(Dplus, "DP", dplus, 4);
+DECLARE_TABLES_3P(Ds, "DS", ds, 9);
 DECLARE_TABLES_3P(Bplus, "BP", bplus, 5);
 DECLARE_TABLES_3P(Dstar, "DST", dstar, 6);
 // Workaround for the existing B0 macro in termios.h
@@ -867,6 +868,81 @@ DECLARE_SOA_TABLE_STAGED(HfDplusMcs, "HFDPMC", //! Table with MC candidate info
                          hf_cand_mc::IsCandidateSwapped, // useless
                          hf_cand_mc::FlagMcDecayChanRec,
                          o2::soa::Marker<MarkerDplus>);
+
+// ----------------
+// Ds+
+// ----------------
+
+DECLARE_SOA_TABLE_STAGED(HfDsPars, "HFDSPAR", //! Table with candidate properties used for selection
+                         hf_cand::Chi2PCA,
+                         hf_cand::NProngsContributorsPV,
+                         hf_cand_par::Cpa,
+                         hf_cand_par::CpaXY,
+                         hf_cand_par::DecayLength,
+                         hf_cand_par::DecayLengthXY,
+                         hf_cand_par::DecayLengthNormalised,
+                         hf_cand_par::DecayLengthXYNormalised,
+                         hf_cand_par::PtProng0,
+                         hf_cand_par::PtProng1,
+                         hf_cand_par::PtProng2,
+                         hf_cand::ImpactParameter0,
+                         hf_cand::ImpactParameter1,
+                         hf_cand::ImpactParameter2,
+                         hf_cand_par::ImpactParameterNormalised0,
+                         hf_cand_par::ImpactParameterNormalised1,
+                         hf_cand_par::ImpactParameterNormalised2,
+                         hf_cand_par::NSigTpcPi0,
+                         hf_cand_par::NSigTpcKa0,
+                         hf_cand_par::NSigTofPi0,
+                         hf_cand_par::NSigTofKa0,
+                         hf_cand_par::NSigTpcTofPi0,
+                         hf_cand_par::NSigTpcTofKa0,
+                         hf_cand_par::NSigTpcKa1,
+                         hf_cand_par::NSigTofKa1,
+                         hf_cand_par::NSigTpcTofKa1,
+                         hf_cand_par::NSigTpcPi2,
+                         hf_cand_par::NSigTpcKa2,
+                         hf_cand_par::NSigTofPi2,
+                         hf_cand_par::NSigTofKa2,
+                         hf_cand_par::NSigTpcTofPi2,
+                         hf_cand_par::NSigTpcTofKa2,
+                         o2::soa::Marker<MarkerDs>);
+
+DECLARE_SOA_TABLE_STAGED(HfDsParEs, "HFDSPARE", //! Table with additional candidate properties used for selection
+                         hf_cand::XSecondaryVertex,
+                         hf_cand::YSecondaryVertex,
+                         hf_cand::ZSecondaryVertex,
+                         hf_cand::ErrorDecayLength,
+                         hf_cand::ErrorDecayLengthXY,
+                         hf_cand_par::RSecondaryVertex,
+                         hf_cand_par::PProng0,
+                         hf_cand_par::PProng1,
+                         hf_cand_par::PProng2,
+                         hf_cand::PxProng0,
+                         hf_cand::PyProng0,
+                         hf_cand::PzProng0,
+                         hf_cand::PxProng1,
+                         hf_cand::PyProng1,
+                         hf_cand::PzProng1,
+                         hf_cand::PxProng2,
+                         hf_cand::PyProng2,
+                         hf_cand::PzProng2,
+                         hf_cand::ErrorImpactParameter0,
+                         hf_cand::ErrorImpactParameter1,
+                         hf_cand::ErrorImpactParameter2,
+                         hf_cand_par::Ct,
+                         o2::soa::Marker<MarkerDs>);
+
+DECLARE_SOA_TABLE_STAGED(HfDsMls, "HFDSML", //! Table with candidate selection ML scores
+                         hf_cand_mc::MlScores,
+                         o2::soa::Marker<MarkerDs>);
+
+DECLARE_SOA_TABLE_STAGED(HfDsMcs, "HFDSMC", //! Table with MC candidate info
+                         hf_cand_mc::FlagMcMatchRec,
+                         hf_cand_mc::OriginMcRec,
+                         hf_cand_mc::IsCandidateSwapped,
+                         hf_cand_mc::FlagMcDecayChanRec,
+                         o2::soa::Marker<MarkerDs>);
 
 // ----------------
 // D*+
