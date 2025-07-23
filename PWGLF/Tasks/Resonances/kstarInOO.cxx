@@ -313,16 +313,17 @@ struct kstarInOO {
         }
       }
 
-      else {
-        if (conjugate < 0) {
-          OOhistos.fill(HIST("hMC_USS_Mix"), centrality, KstarPt, Minv);
-        } else if (conjugate > 0) {
-          OOhistos.fill(HIST("hMC_LSS_Mix"), centrality, KstarPt, Minv);
-        }
-      }
+      else
+	{
+	  if (conjugate < 0) {
+	    OOhistos.fill(HIST("hMC_USS_Mix"), centrality, KstarPt, Minv);
+	  } else if (conjugate > 0) {
+	    OOhistos.fill(HIST("hMC_LSS_Mix"), centrality, KstarPt, Minv);
+	  }
+	}
     }
   }
-
+  
   template <typename TracksType>
   std::pair<double, double> minvReconstruction(const TracksType& trk1, const TracksType& trk2)
   {
