@@ -88,7 +88,7 @@ struct Lambda1520analysisinpp {
   o2::analysis::CollisonCuts colCuts;
 
   struct : ConfigurableGroup {
-    Configurable<float> cfgEvtZvtx{"cfgEvtZvtx", 10.0, "Evt sel: Max. z-Vertex (cm)"};
+    Configurable<float> cfgEvtZvtx{"cfgEvtZvtx", 10.0f, "Evt sel: Max. z-Vertex (cm)"};
     Configurable<int> cfgEvtOccupancyInTimeRangeMax{"cfgEvtOccupancyInTimeRangeMax", -1, "Evt sel: maximum track occupancy"};
     Configurable<int> cfgEvtOccupancyInTimeRangeMin{"cfgEvtOccupancyInTimeRangeMin", -1, "Evt sel: minimum track occupancy"};
     Configurable<bool> cfgEvtTriggerCheck{"cfgEvtTriggerCheck", false, "Evt sel: check for trigger"};
@@ -105,17 +105,17 @@ struct Lambda1520analysisinpp {
   struct : ConfigurableGroup {
     // Pre-selection Track cuts
     Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
-    Configurable<float> cMinPtcut{"cMinPtcut", 0.15, "Minimal pT for tracks"};
+    Configurable<float> cMinPtcut{"cMinPtcut", 0.15f, "Minimal pT for tracks"};
     Configurable<float> cMinTPCNClsFound{"cMinTPCNClsFound", 120, "minimum TPCNClsFound value for good track"};
-    Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta range for tracks"};
-    Configurable<float> cfgCutRapidity{"cfgCutRapidity", 0.5, "rapidity range for particles"};
+    Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
+    Configurable<float> cfgCutRapidity{"cfgCutRapidity", 0.5f, "rapidity range for particles"};
     Configurable<int> cfgMinCrossedRows{"cfgMinCrossedRows", 70, "min crossed rows for good track"};
 
     // DCA Selections
     // DCAr to PV
-    Configurable<float> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.1, "Track DCAr cut to PV Maximum"};
+    Configurable<float> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.1f, "Track DCAr cut to PV Maximum"};
     // DCAz to PV
-    Configurable<float> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 0.1, "Track DCAz cut to PV Maximum"};
+    Configurable<float> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 0.1f, "Track DCAz cut to PV Maximum"};
 
     // Track selections
     Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
@@ -131,32 +131,32 @@ struct Lambda1520analysisinpp {
 
   struct : ConfigurableGroup {
     /// PID Selections
-    Configurable<float> pidnSigmaPreSelectionCut{"pidnSigmaPreSelectionCut", 4.0, "pidnSigma Cut for pre-selection of tracks"};
+    Configurable<float> pidnSigmaPreSelectionCut{"pidnSigmaPreSelectionCut", 4.0f, "pidnSigma Cut for pre-selection of tracks"};
     Configurable<bool> cByPassTOF{"cByPassTOF", false, "By pass TOF PID selection"};                       // By pass TOF PID selection
     Configurable<int> cPIDcutType{"cPIDcutType", 2, "cPIDcutType = 1 for square cut, 2 for circular cut"}; // By pass TOF PID selection
 
     // Kaon
-    Configurable<std::vector<float>> kaonTPCPIDpTintv{"kaonTPCPIDpTintv", {0.5}, "pT intervals for Kaon TPC PID cuts"};
+    Configurable<std::vector<float>> kaonTPCPIDpTintv{"kaonTPCPIDpTintv", {0.5f}, "pT intervals for Kaon TPC PID cuts"};
     Configurable<std::vector<float>> kaonTPCPIDcuts{"kaonTPCPIDcuts", {2}, "nSigma list for Kaon TPC PID cuts"};
-    Configurable<std::vector<float>> kaonTOFPIDpTintv{"kaonTOFPIDpTintv", {999.}, "pT intervals for Kaon TOF PID cuts"};
+    Configurable<std::vector<float>> kaonTOFPIDpTintv{"kaonTOFPIDpTintv", {999.0f}, "pT intervals for Kaon TOF PID cuts"};
     Configurable<std::vector<float>> kaonTOFPIDcuts{"kaonTOFPIDcuts", {2}, "nSigma list for Kaon TOF PID cuts"};
-    Configurable<std::vector<float>> kaonTPCTOFCombinedpTintv{"kaonTPCTOFCombinedpTintv", {999.}, "pT intervals for Kaon TPC-TOF PID cuts"};
+    Configurable<std::vector<float>> kaonTPCTOFCombinedpTintv{"kaonTPCTOFCombinedpTintv", {999.0f}, "pT intervals for Kaon TPC-TOF PID cuts"};
     Configurable<std::vector<float>> kaonTPCTOFCombinedPIDcuts{"kaonTPCTOFCombinedPIDcuts", {2}, "nSigma list for Kaon TPC-TOF PID cuts"};
 
     // Proton
-    Configurable<std::vector<float>> protonTPCPIDpTintv{"protonTPCPIDpTintv", {0.9}, "pT intervals for Kaon TPC PID cuts"};
+    Configurable<std::vector<float>> protonTPCPIDpTintv{"protonTPCPIDpTintv", {0.9f}, "pT intervals for Kaon TPC PID cuts"};
     Configurable<std::vector<float>> protonTPCPIDcuts{"protonTPCPIDcuts", {2}, "nSigma list for Kaon TPC PID cuts"};
-    Configurable<std::vector<float>> protonTOFPIDpTintv{"protonTOFPIDpTintv", {999.}, "pT intervals for Kaon TOF PID cuts"};
+    Configurable<std::vector<float>> protonTOFPIDpTintv{"protonTOFPIDpTintv", {999.0f}, "pT intervals for Kaon TOF PID cuts"};
     Configurable<std::vector<float>> protonTOFPIDcuts{"protonTOFPIDcuts", {2}, "nSigma list for Kaon TOF PID cuts"};
-    Configurable<std::vector<float>> protonTPCTOFCombinedpTintv{"protonTPCTOFCombinedpTintv", {999.}, "pT intervals for Proton TPC-TOF PID cuts"};
+    Configurable<std::vector<float>> protonTPCTOFCombinedpTintv{"protonTPCTOFCombinedpTintv", {999.0f}, "pT intervals for Proton TPC-TOF PID cuts"};
     Configurable<std::vector<float>> protonTPCTOFCombinedPIDcuts{"protonTPCTOFCombinedPIDcuts", {2}, "nSigma list for Proton TPC-TOF PID cuts"};
   } configPID;
 
   struct : ConfigurableGroup {
     /// Event Mixing
     Configurable<int> nEvtMixing{"nEvtMixing", 10, "Number of events to mix"};
-    ConfigurableAxis cfgVtxBins{"cfgVtxBins", {VARIABLE_WIDTH, -10.0, -8.0, -6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0, 8.0, 10.0}, "Mixing bins - z-vertex"};
-    ConfigurableAxis cfgMultBins{"cfgMultBins", {VARIABLE_WIDTH, 0.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Mixing bins - multiplicity"};
+    ConfigurableAxis cfgVtxBins{"cfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.0f, -6.0f, -4.0f, -2.0f, 0.0f, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f}, "Mixing bins - z-vertex"};
+    ConfigurableAxis cfgMultBins{"cfgMultBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Mixing bins - multiplicity"};
 
     // Rotational background
     Configurable<int> rotationalcut{"rotationalcut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
@@ -167,23 +167,23 @@ struct Lambda1520analysisinpp {
   // Additional purity check
   Configurable<bool> crejectPion{"crejectPion", false, "Switch to turn on/off pion contamination"};
   Configurable<bool> cUseOpeningAngleCut{"cUseOpeningAngleCut", false, "Kinematic Cuts for p-K pair opening angle"};
-  Configurable<float> cMinOpeningAngle{"cMinOpeningAngle", 1.4, "Minimum opening angle between daughters"};
-  Configurable<float> cMaxOpeningAngle{"cMaxOpeningAngle", 2.4, "Maximum opening angle between daughters"};
+  Configurable<float> cMinOpeningAngle{"cMinOpeningAngle", 1.4f, "Minimum opening angle between daughters"};
+  Configurable<float> cMaxOpeningAngle{"cMaxOpeningAngle", 2.4f, "Maximum opening angle between daughters"};
   Configurable<bool> cfgUseDeltaEtaPhiCuts{"cfgUseDeltaEtaPhiCuts", false, "Switch to turn on/off delta eta and delta phi cuts"};
   Configurable<bool> cfgUseDaughterEtaCutMC{"cfgUseDaughterEtaCutMC", false, "Switch to turn on/off eta cuts for daughters in MC"};
 
   // MC selection cut
-  Configurable<float> cZvertCutMC{"cZvertCutMC", 10.0, "MC Z-vertex cut"};
-  Configurable<float> cEtacutMC{"cEtacutMC", 0.5, "MC eta cut"};
+  Configurable<float> cZvertCutMC{"cZvertCutMC", 10.0f, "MC Z-vertex cut"};
+  Configurable<float> cEtacutMC{"cEtacutMC", 0.5f, "MC eta cut"};
   Configurable<bool> cUseRapcutMC{"cUseRapcutMC", true, "MC eta cut"};
   Configurable<bool> cUseEtacutMC{"cUseEtacutMC", true, "MC eta cut"};
 
   // cuts on mother
   Configurable<bool> cfgUseCutsOnMother{"cfgUseCutsOnMother", false, "Enable additional cuts on mother"};
-  Configurable<float> cMaxPtMotherCut{"cMaxPtMotherCut", 10.0, "Maximum pt of mother cut"};
-  Configurable<float> cMaxMinvMotherCut{"cMaxMinvMotherCut", 3.0, "Maximum Minv of mother cut"};
-  Configurable<float> cMaxDeltaEtaCut{"cMaxDeltaEtaCut", 0.7, "Maximum deltaEta between daughters"};
-  Configurable<float> cMaxDeltaPhiCut{"cMaxDeltaPhiCut", 1.5, "Maximum deltaPhi between daughters"};
+  Configurable<float> cMaxPtMotherCut{"cMaxPtMotherCut", 10.0f, "Maximum pt of mother cut"};
+  Configurable<float> cMaxMinvMotherCut{"cMaxMinvMotherCut", 3.0f, "Maximum Minv of mother cut"};
+  Configurable<float> cMaxDeltaEtaCut{"cMaxDeltaEtaCut", 0.7f, "Maximum deltaEta between daughters"};
+  Configurable<float> cMaxDeltaPhiCut{"cMaxDeltaPhiCut", 1.5f, "Maximum deltaPhi between daughters"};
 
   // switches
   Configurable<bool> cFillMultQA{"cFillMultQA", false, "Turn on/off additional QA plots"};
@@ -201,8 +201,8 @@ struct Lambda1520analysisinpp {
   // Filter centralityFilter = nabs(aod::cent::centFT0C) <= cfg_Event_CentralityMax;
   // Filter triggerFilter = (o2::aod::evsel::sel8 == true);
 
-  Filter tofPIDFilter = aod::track::tofExpMom < 0.0 || ((aod::track::tofExpMom > 0.0) && (/* (nabs(aod::pidtof::tofNSigmaPi) < configPID.pidnSigmaPreSelectionCut) || */ (nabs(aod::pidtof::tofNSigmaKa) < configPID.pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaPr) < configPID.pidnSigmaPreSelectionCut))); // TOF
-  Filter tpcPIDFilter = /* nabs(aod::pidtpc::tpcNSigmaPi) < configPID.pidnSigmaPreSelectionCut || */ nabs(aod::pidtpc::tpcNSigmaKa) < configPID.pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaPr) < configPID.pidnSigmaPreSelectionCut;                                                                           // TPC
+  Filter tofPIDFilter = aod::track::tofExpMom < 0.0f || ((aod::track::tofExpMom > 0.0f) && (/* (nabs(aod::pidtof::tofNSigmaPi) < configPID.pidnSigmaPreSelectionCut) || */ (nabs(aod::pidtof::tofNSigmaKa) < configPID.pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaPr) < configPID.pidnSigmaPreSelectionCut))); // TOF
+  Filter tpcPIDFilter = /* nabs(aod::pidtpc::tpcNSigmaPi) < configPID.pidnSigmaPreSelectionCut || */ nabs(aod::pidtpc::tpcNSigmaKa) < configPID.pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaPr) < configPID.pidnSigmaPreSelectionCut;                                                                             // TPC
   Filter trackFilter = (configTracks.trackSelection == AllTracks) ||
                        ((configTracks.trackSelection == GlobalTracks) && requireGlobalTrackInFilter()) ||
                        ((configTracks.trackSelection == GlobalTracksWoPtEta) && requireGlobalTrackWoPtEtaInFilter()) ||
@@ -221,17 +221,17 @@ struct Lambda1520analysisinpp {
   using MCTrackCandidates = soa::Filtered<soa::Join<TrackCandidates, aod::McTrackLabels>>;
 
   /// Figures
-  ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.25, 1.3, 1.4, 1.5, 1.6, 1.7, 1.75, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.5, 4.6, 4.8, 4.9, 5.0, 5.5, 5.6, 6.0, 6.4, 6.5, 7.0, 7.2, 8.0, 9.0, 9.5, 9.6, 10.0, 11.0, 11.5, 12.0, 13.0, 14.0, 14.4, 15.0, 16.0, 18.0, 19.2, 20.}, "Binning of the pT axis"};
-  ConfigurableAxis binsPtQA{"binsPtQA", {VARIABLE_WIDTH, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 7.0, 7.2, 7.4, 7.6, 7.8, 8.0, 8.2, 8.4, 8.6, 8.8, 9.0, 9.2, 9.4, 9.6, 9.8, 10.0, 10.2, 10.4, 10.6, 10.8, 11, 11.2, 11.4, 11.6, 11.8, 12, 12.2, 12.4, 12.6, 12.8, 13, 13.2, 13.4, 13.6, 13.8, 14, 14.2, 14.4, 14.6, 14.8, 15, 15.2, 15.4, 15.6, 15.8, 16, 16.2, 16.4, 16.6, 16.8, 17, 17.2, 17.4, 17.6, 17.8, 18, 18.2, 18.4, 18.6, 18.8, 19, 19.2, 19.4, 19.6, 19.8, 20}, "Binning of the pT axis"};
-  ConfigurableAxis binsEta{"binsEta", {150, -1.5, 1.5}, ""};
-  ConfigurableAxis binsMass{"binsMass", {70, 1.3, 2.0}, "Invariant Mass (GeV/#it{c}^2)"};
-  ConfigurableAxis binsMult{"binsMult", {105, 0.0, 105.0}, "mult_{FT0M}"};
-  ConfigurableAxis binsDCAz{"binsDCAz", {40, -0.2, 0.2}, ""};
-  ConfigurableAxis binsDCAxy{"binsDCAxy", {40, -0.2, 0.2}, ""};
+  ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.12f, 0.14f, 0.16f, 0.18f, 0.2f, 0.25f, 0.3f, 0.35f, 0.4f, 0.45f, 0.5f, 0.55f, 0.6f, 0.65f, 0.7f, 0.75f, 0.8f, 0.85f, 0.9f, 0.95f, 1.0f, 1.1f, 1.2f, 1.25f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.75f, 1.8f, 1.9f, 2.0f, 2.1f, 2.2f, 2.3f, 2.4f, 2.5f, 2.6f, 2.7f, 2.8f, 2.9f, 3.0f, 3.1f, 3.2f, 3.3f, 3.4f, 3.6f, 3.7f, 3.8f, 3.9f, 4.0f, 4.1f, 4.2f, 4.5f, 4.6f, 4.8f, 4.9f, 5.0f, 5.5f, 5.6f, 6.0f, 6.4f, 6.5f, 7.0f, 7.2f, 8.0f, 9.0f, 9.5f, 9.6f, 10.0f, 11.0f, 11.5f, 12.0f, 13.0f, 14.0f, 14.4f, 15.0f, 16.0f, 18.0f, 19.2f, 20.0f}, "Binning of the pT axis"};
+  ConfigurableAxis binsPtQA{"binsPtQA", {VARIABLE_WIDTH, 0.0f, 0.2f, 0.4f, 0.6f, 0.8f, 1.0f, 1.2f, 1.4f, 1.6f, 1.8f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.2f, 4.4f, 4.6f, 4.8f, 5.0f, 5.2f, 5.4f, 5.6f, 5.8f, 6.0f, 6.2f, 6.4f, 6.6f, 6.8f, 7.0f, 7.2f, 7.4f, 7.6f, 7.8f, 8.0f, 8.2f, 8.4f, 8.6f, 8.8f, 9.0f, 9.2f, 9.4f, 9.6f, 9.8f, 10.0f, 10.2f, 10.4f, 10.6f, 10.8f, 11.0f, 11.2f, 11.4f, 11.6f, 11.8f, 12.0f, 12.2f, 12.4f, 12.6f, 12.8f, 13.0f, 13.2f, 13.4f, 13.6f, 13.8f, 14f, 14.2f, 14.4f, 14.6f, 14.8f, 15.0f, 15.2f, 15.4f, 15.6f, 15.8f, 16.0f, 16.2f, 16.4f, 16.6f, 16.8f, 17.0f, 17.2f, 17.4f, 17.6f, 17.8f, 18.0f, 18.2f, 18.4f, 18.6f, 18.8f, 19.0f, 19.2f, 19.4f, 19.6f, 19.8f, 20.0f}, "Binning of the pT axis"};
+  ConfigurableAxis binsEta{"binsEta", {150, -1.5f, 1.5f}, ""};
+  ConfigurableAxis binsMass{"binsMass", {70, 1.3f, 2.0f}, "Invariant Mass (GeV/#it{c}^2)"};
+  ConfigurableAxis binsMult{"binsMult", {105, 0.0f, 105.0f}, "mult_{FT0M}"};
+  ConfigurableAxis binsDCAz{"binsDCAz", {40, -0.2f, 0.2f}, ""};
+  ConfigurableAxis binsDCAxy{"binsDCAxy", {40, -0.2f, 0.2f}, ""};
   ConfigurableAxis binsTPCXrows{"binsTPCXrows", {100, 60, 160}, ""};
-  ConfigurableAxis binsnSigma{"binsnSigma", {130, -6.5, 6.5}, ""};
+  ConfigurableAxis binsnSigma{"binsnSigma", {130, -6.5f, 6.5f}, ""};
   ConfigurableAxis binsnTPCSignal{"binsnTPCSignal", {1000, 0, 1000}, ""};
-  ConfigurableAxis binsEtaPhi{"binsEtaPhi", {350, -3.5, 3.5}, ""};
+  ConfigurableAxis binsEtaPhi{"binsEtaPhi", {350, -3.5f, 3.5f}, ""};
 
   void init(framework::InitContext&)
   {
@@ -259,17 +259,17 @@ struct Lambda1520analysisinpp {
     AxisSpec axisTPCXrow{binsTPCXrows, "#Xrows_{TPC}"};
     AxisSpec axisPIDQA{binsnSigma, "#sigma"};
     AxisSpec axisTPCSignal{binsnTPCSignal, ""};
-    AxisSpec axisMClabel{6, -1.5, 5.5, "MC Label"};
+    AxisSpec axisMClabel{6, -1.5f, 5.5f, "MC Label"};
     AxisSpec axisEtaPhi{binsEtaPhi, ""};
     AxisSpec axisPhi{350, 0, 7, "#Phi"};
     AxisSpec axisMultMix{configBkg.cfgMultBins, "Multiplicity"};
     AxisSpec axisVtxMix{configBkg.cfgVtxBins, "Vertex Z (cm)"};
-    AxisSpec idxMCAxis = {26, -0.5, 25.5, "Index"};
+    AxisSpec idxMCAxis = {26, -0.5f, 25.5f, "Index"};
 
     if (cFilladditionalQAeventPlots) {
       // event histograms
       if (doprocessData) {
-        histos.add("QAevent/hPairsCounterSameE", "total valid no. of pairs sameE", HistType::kTH1F, {{1, 0.5, 1.5}});
+        histos.add("QAevent/hPairsCounterSameE", "total valid no. of pairs sameE", HistType::kTH1F, {{1, 0.5f, 1.5f}});
         histos.add("QAevent/hnTrksSameE", "n tracks per event SameE", HistType::kTH1F, {{1000, 0.0, 1000.0}});
       }
       // Test on Mixed event
@@ -280,10 +280,10 @@ struct Lambda1520analysisinpp {
         histos.add("QAevent/hMixPool_Multiplicity", "Mixed Event Pool: Multiplicity;Multiplicity;Counts", HistType::kTH1F, {axisMultMix});
         histos.add("QAevent/hMixPool_VtxZ_vs_Multiplicity", "Mixed Event Pool: Vertex Z vs Multiplicity;Counts", HistType::kTH2F, {axisVtxMix, axisMultMix});
 
-        histos.add("QAevent/hPairsCounterMixedE", "total valid no. of pairs mixedE", HistType::kTH1F, {{1, 0.5, 1.5}});
-        histos.add("QAevent/hVertexZMixedE", "Collision Vertex Z position", HistType::kTH1F, {{100, -15., 15.}});
-        histos.add("QAevent/hMultiplicityPercentMixedE", "Multiplicity percentile of collision", HistType::kTH1F, {{120, 0.0, 120.0}});
-        histos.add("QAevent/hnTrksMixedE", "n tracks per event MixedE", HistType::kTH1F, {{1000, 0.0, 1000.0}});
+        histos.add("QAevent/hPairsCounterMixedE", "total valid no. of pairs mixedE", HistType::kTH1F, {{1, 0.5f, 1.5f}});
+        histos.add("QAevent/hVertexZMixedE", "Collision Vertex Z position", HistType::kTH1F, {{100, -15.0f, 15.0f}});
+        histos.add("QAevent/hMultiplicityPercentMixedE", "Multiplicity percentile of collision", HistType::kTH1F, {{120, 0.0f, 120.0f}});
+        histos.add("QAevent/hnTrksMixedE", "n tracks per event MixedE", HistType::kTH1F, {{1000, 0.0f, 1000.0f}});
       }
     }
 
@@ -322,7 +322,7 @@ struct Lambda1520analysisinpp {
       histos.add("QA/QAafter/Kaon/pT", "pT distribution of Kaons; #it{p}_{T} (GeV/#it{c}); Counts;", {HistType::kTH1F, {axisPt}});
       histos.add("QA/QAafter/Kaon/eta", "#eta distribution of Kaons; #eta; Counts;", {HistType::kTH1F, {axisEta}});
       histos.add("QA/QAafter/Kaon/TPC_Signal_ka_all", "TPC Signal for Kaon;#it{p} (GeV/#it{c});TPC Signal (A.U.)", {HistType::kTH2F, {axisPt, axisTPCSignal}});
-      histos.add("QA/QAafter/Kaon/TPCnclusterPhika", "TPC ncluster vs phi", kTHnSparseF, {{160, 0, 160, "TPC nCluster"}, {63, 0, 6.28, "#phi"}});
+      histos.add("QA/QAafter/Kaon/TPCnclusterPhika", "TPC ncluster vs phi", kTHnSparseF, {{160, 0, 160, "TPC nCluster"}, {63, 0.0f, 6.28f, "#phi"}});
 
       //  --- Proton
       histos.add("QA/QAafter/Proton/TOF_TPC_Map_pr_all", "TOF + TPC Combined PID for Proton;{#sigma_{TOF}^{Proton}};{#sigma_{TPC}^{Proton}}", {HistType::kTH2F, {axisPIDQA, axisPIDQA}});
@@ -335,7 +335,7 @@ struct Lambda1520analysisinpp {
       histos.add("QA/QAafter/Proton/pT", "pT distribution of Protons; #it{p}_{T} (GeV/#it{c}); Counts;", {HistType::kTH1F, {axisPt}});
       histos.add("QA/QAafter/Proton/eta", "#eta distribution of Protons; #eta; Counts;", {HistType::kTH1F, {axisEta}});
       histos.add("QA/QAafter/Proton/TPC_Signal_pr_all", "TPC Signal for Proton;#it{p} (GeV/#it{c});TPC Signal (A.U.)", {HistType::kTH2F, {axisPt, axisTPCSignal}});
-      histos.add("QA/QAafter/Proton/TPCnclusterPhipr", "TPC ncluster vs phi", kTHnSparseF, {{160, 0, 160, "TPC nCluster"}, {63, 0, 6.28, "#phi"}});
+      histos.add("QA/QAafter/Proton/TPCnclusterPhipr", "TPC ncluster vs phi", kTHnSparseF, {{160, 0, 160, "TPC nCluster"}, {63, 0.0f, 6.28f, "#phi"}});
 
       //  Mass QA 1D for quick check
       if (cFill1DQAs) {
@@ -432,7 +432,7 @@ struct Lambda1520analysisinpp {
   template <typename Coll>
   float centEst(Coll collisions)
   {
-    float returnValue = -999.0;
+    float returnValue = -999.0f;
     switch (centEstimator) {
       case 0:
         returnValue = collisions.centFT0M();
@@ -450,7 +450,7 @@ struct Lambda1520analysisinpp {
     return returnValue;
   }
 
-  auto static constexpr TripleCharge = 3.0;
+  auto static constexpr TripleCharge = 3.0f;
 
   // Check if the collision is INEL>0
   template <typename MCColl, typename MCPart>
@@ -462,7 +462,7 @@ struct Lambda1520analysisinpp {
       auto p = pdg->GetParticle(mcparticle.pdgCode());
       if (p != nullptr) {
         if (std::abs(p->Charge()) >= TripleCharge) { // check if the particle is charged
-          if (std::abs(mcparticle.eta()) < 1.0)
+          if (std::abs(mcparticle.eta()) < 1.0f)
             return true;
         }
       }
@@ -477,7 +477,7 @@ struct Lambda1520analysisinpp {
     if (std::abs(track.pt()) < configTracks.cMinPtcut)
       return false;
     if (configTracks.cDCAr7SigCut) {
-      if (std::abs(track.dcaXY()) > (0.004 + 0.0130 / (track.pt()))) // 7 - Sigma cut
+      if (std::abs(track.dcaXY()) > (0.004f + 0.013f / (track.pt()))) // 7 - Sigma cut
         return false;
     } else {
       if (std::abs(track.dcaXY()) > configTracks.cMaxDCArToPVcut)
@@ -651,9 +651,9 @@ struct Lambda1520analysisinpp {
     return false;
   }
 
-  auto static constexpr MinPtforPionRejection = 1.0;
-  auto static constexpr MaxPtforPionRejection = 2.0;
-  auto static constexpr MaxnSigmaforPionRejection = 2.0;
+  auto static constexpr MinPtforPionRejection = 1.0f;
+  auto static constexpr MaxPtforPionRejection = 2.0f;
+  auto static constexpr MaxnSigmaforPionRejection = 2.0f;
 
   template <typename T>
   bool rejectPion(const T& candidate)
@@ -708,7 +708,7 @@ struct Lambda1520analysisinpp {
       auto trk1etaPr = trk1.eta();
       auto trk1phiPr = trk1.phi();
       auto trk1NSigmaPrTPC = trk1.tpcNSigmaPr();
-      auto trk1NSigmaPrTOF = (isTrk1hasTOF) ? trk1.tofNSigmaPr() : -999.;
+      auto trk1NSigmaPrTOF = (isTrk1hasTOF) ? trk1.tofNSigmaPr() : -999.0f;
 
       // Trk2: Kaon
       auto isTrk2hasTOF = trk2.hasTOF();
@@ -716,10 +716,10 @@ struct Lambda1520analysisinpp {
       auto trk2etaKa = trk2.eta();
       auto trk2phiKa = trk2.phi();
       auto trk2NSigmaKaTPC = trk2.tpcNSigmaKa();
-      auto trk2NSigmaKaTOF = (isTrk2hasTOF) ? trk2.tofNSigmaKa() : -999.;
+      auto trk2NSigmaKaTOF = (isTrk2hasTOF) ? trk2.tofNSigmaKa() : -999.0f;
 
-      auto deltaEta = 0;
-      auto deltaPhi = 0;
+      auto deltaEta = 0.0f;
+      auto deltaPhi = 0.0f;
 
       if (cfgUseDeltaEtaPhiCuts) {
         deltaEta = std::abs(trk1etaPr - trk2etaKa);
@@ -846,9 +846,9 @@ struct Lambda1520analysisinpp {
 
       if (cFilladditionalQAeventPlots) {
         if constexpr (IsData) {
-          histos.fill(HIST("QAevent/hPairsCounterSameE"), 1.0);
+          histos.fill(HIST("QAevent/hPairsCounterSameE"), 1.0f);
         } else if (IsMix) {
-          histos.fill(HIST("QAevent/hPairsCounterMixedE"), 1.0);
+          histos.fill(HIST("QAevent/hPairsCounterMixedE"), 1.0f);
         }
       }
 
