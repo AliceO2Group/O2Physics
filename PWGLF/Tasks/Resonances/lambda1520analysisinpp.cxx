@@ -88,7 +88,7 @@ struct Lambda1520analysisinpp {
   o2::analysis::CollisonCuts colCuts;
 
   struct : ConfigurableGroup {
-    Configurable<float> cfgEvtZvtx{"cfgEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
+    Configurable<float> cfgEvtZvtx{"cfgEvtZvtx", 10.0, "Evt sel: Max. z-Vertex (cm)"};
     Configurable<int> cfgEvtOccupancyInTimeRangeMax{"cfgEvtOccupancyInTimeRangeMax", -1, "Evt sel: maximum track occupancy"};
     Configurable<int> cfgEvtOccupancyInTimeRangeMin{"cfgEvtOccupancyInTimeRangeMin", -1, "Evt sel: minimum track occupancy"};
     Configurable<bool> cfgEvtTriggerCheck{"cfgEvtTriggerCheck", false, "Evt sel: check for trigger"};
@@ -105,7 +105,7 @@ struct Lambda1520analysisinpp {
   struct : ConfigurableGroup {
     // Pre-selection Track cuts
     Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
-    Configurable<float> cMinPtcut{"cMinPtcut", 0.15f, "Minimal pT for tracks"};
+    Configurable<float> cMinPtcut{"cMinPtcut", 0.15, "Minimal pT for tracks"};
     Configurable<float> cMinTPCNClsFound{"cMinTPCNClsFound", 120, "minimum TPCNClsFound value for good track"};
     Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta range for tracks"};
     Configurable<float> cfgCutRapidity{"cfgCutRapidity", 0.5, "rapidity range for particles"};
@@ -113,9 +113,9 @@ struct Lambda1520analysisinpp {
 
     // DCA Selections
     // DCAr to PV
-    Configurable<float> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.1f, "Track DCAr cut to PV Maximum"};
+    Configurable<float> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.1, "Track DCAr cut to PV Maximum"};
     // DCAz to PV
-    Configurable<float> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 0.1f, "Track DCAz cut to PV Maximum"};
+    Configurable<float> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 0.1, "Track DCAz cut to PV Maximum"};
 
     // Track selections
     Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
@@ -131,7 +131,7 @@ struct Lambda1520analysisinpp {
 
   struct : ConfigurableGroup {
     /// PID Selections
-    Configurable<float> pidnSigmaPreSelectionCut{"pidnSigmaPreSelectionCut", 4.0f, "pidnSigma Cut for pre-selection of tracks"};
+    Configurable<float> pidnSigmaPreSelectionCut{"pidnSigmaPreSelectionCut", 4.0, "pidnSigma Cut for pre-selection of tracks"};
     Configurable<bool> cByPassTOF{"cByPassTOF", false, "By pass TOF PID selection"};                       // By pass TOF PID selection
     Configurable<int> cPIDcutType{"cPIDcutType", 2, "cPIDcutType = 1 for square cut, 2 for circular cut"}; // By pass TOF PID selection
 
@@ -155,8 +155,8 @@ struct Lambda1520analysisinpp {
   struct : ConfigurableGroup {
     /// Event Mixing
     Configurable<int> nEvtMixing{"nEvtMixing", 10, "Number of events to mix"};
-    ConfigurableAxis cfgVtxBins{"cfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-    ConfigurableAxis cfgMultBins{"cfgMultBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Mixing bins - multiplicity"};
+    ConfigurableAxis cfgVtxBins{"cfgVtxBins", {VARIABLE_WIDTH, -10.0, -8.0, -6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0, 8.0, 10.0}, "Mixing bins - z-vertex"};
+    ConfigurableAxis cfgMultBins{"cfgMultBins", {VARIABLE_WIDTH, 0.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Mixing bins - multiplicity"};
 
     // Rotational background
     Configurable<int> rotationalcut{"rotationalcut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
@@ -201,7 +201,7 @@ struct Lambda1520analysisinpp {
   // Filter centralityFilter = nabs(aod::cent::centFT0C) <= cfg_Event_CentralityMax;
   // Filter triggerFilter = (o2::aod::evsel::sel8 == true);
 
-  Filter tofPIDFilter = aod::track::tofExpMom < 0.f || ((aod::track::tofExpMom > 0.f) && (/* (nabs(aod::pidtof::tofNSigmaPi) < configPID.pidnSigmaPreSelectionCut) || */ (nabs(aod::pidtof::tofNSigmaKa) < configPID.pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaPr) < configPID.pidnSigmaPreSelectionCut))); // TOF
+  Filter tofPIDFilter = aod::track::tofExpMom < 0.0 || ((aod::track::tofExpMom > 0.0) && (/* (nabs(aod::pidtof::tofNSigmaPi) < configPID.pidnSigmaPreSelectionCut) || */ (nabs(aod::pidtof::tofNSigmaKa) < configPID.pidnSigmaPreSelectionCut) || (nabs(aod::pidtof::tofNSigmaPr) < configPID.pidnSigmaPreSelectionCut))); // TOF
   Filter tpcPIDFilter = /* nabs(aod::pidtpc::tpcNSigmaPi) < configPID.pidnSigmaPreSelectionCut || */ nabs(aod::pidtpc::tpcNSigmaKa) < configPID.pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaPr) < configPID.pidnSigmaPreSelectionCut;                                                                           // TPC
   Filter trackFilter = (configTracks.trackSelection == AllTracks) ||
                        ((configTracks.trackSelection == GlobalTracks) && requireGlobalTrackInFilter()) ||
@@ -269,8 +269,8 @@ struct Lambda1520analysisinpp {
     if (cFilladditionalQAeventPlots) {
       // event histograms
       if (doprocessData) {
-        histos.add("QAevent/hPairsCounterSameE", "total valid no. of pairs sameE", HistType::kTH1F, {{1, 0.5f, 1.5f}});
-        histos.add("QAevent/hnTrksSameE", "n tracks per event SameE", HistType::kTH1F, {{1000, 0.0f, 1000.0f}});
+        histos.add("QAevent/hPairsCounterSameE", "total valid no. of pairs sameE", HistType::kTH1F, {{1, 0.5, 1.5}});
+        histos.add("QAevent/hnTrksSameE", "n tracks per event SameE", HistType::kTH1F, {{1000, 0.0, 1000.0}});
       }
       // Test on Mixed event
       if (doprocessME) {
@@ -280,10 +280,10 @@ struct Lambda1520analysisinpp {
         histos.add("QAevent/hMixPool_Multiplicity", "Mixed Event Pool: Multiplicity;Multiplicity;Counts", HistType::kTH1F, {axisMultMix});
         histos.add("QAevent/hMixPool_VtxZ_vs_Multiplicity", "Mixed Event Pool: Vertex Z vs Multiplicity;Counts", HistType::kTH2F, {axisVtxMix, axisMultMix});
 
-        histos.add("QAevent/hPairsCounterMixedE", "total valid no. of pairs mixedE", HistType::kTH1F, {{1, 0.5f, 1.5f}});
+        histos.add("QAevent/hPairsCounterMixedE", "total valid no. of pairs mixedE", HistType::kTH1F, {{1, 0.5, 1.5}});
         histos.add("QAevent/hVertexZMixedE", "Collision Vertex Z position", HistType::kTH1F, {{100, -15., 15.}});
-        histos.add("QAevent/hMultiplicityPercentMixedE", "Multiplicity percentile of collision", HistType::kTH1F, {{120, 0.0f, 120.0f}});
-        histos.add("QAevent/hnTrksMixedE", "n tracks per event MixedE", HistType::kTH1F, {{1000, 0.0f, 1000.0f}});
+        histos.add("QAevent/hMultiplicityPercentMixedE", "Multiplicity percentile of collision", HistType::kTH1F, {{120, 0.0, 120.0}});
+        histos.add("QAevent/hnTrksMixedE", "n tracks per event MixedE", HistType::kTH1F, {{1000, 0.0, 1000.0}});
       }
     }
 
@@ -428,8 +428,6 @@ struct Lambda1520analysisinpp {
   float massKa = MassKaonCharged;
   float massPr = MassProton;
 
-  auto static constexpr Lambda1520PDG = 102134; // PDG code for Lambda(1520)
-
   // Centralicity estimator selection
   template <typename Coll>
   float centEst(Coll collisions)
@@ -452,7 +450,7 @@ struct Lambda1520analysisinpp {
     return returnValue;
   }
 
-  auto static constexpr TripleCharge = 3.f;
+  auto static constexpr TripleCharge = 3.0;
 
   // Check if the collision is INEL>0
   template <typename MCColl, typename MCPart>
@@ -479,7 +477,7 @@ struct Lambda1520analysisinpp {
     if (std::abs(track.pt()) < configTracks.cMinPtcut)
       return false;
     if (configTracks.cDCAr7SigCut) {
-      if (std::abs(track.dcaXY()) > (0.004f + 0.0130f / (track.pt()))) // 7 - Sigma cut
+      if (std::abs(track.dcaXY()) > (0.004 + 0.0130 / (track.pt()))) // 7 - Sigma cut
         return false;
     } else {
       if (std::abs(track.dcaXY()) > configTracks.cMaxDCArToPVcut)
@@ -515,13 +513,13 @@ struct Lambda1520analysisinpp {
   template <typename T>
   bool ptDependentPidProton(const T& candidate)
   {
-    auto vProtonTPCPIDpTintv = std::vector<float>(configPID.protonTPCPIDpTintv);
+    auto vProtonTPCPIDpTintv = configPID.protonTPCPIDpTintv.value;
     vProtonTPCPIDpTintv.insert(vProtonTPCPIDpTintv.begin(), configTracks.cMinPtcut);
-    auto vProtonTPCPIDcuts = std::vector<float>(configPID.protonTPCPIDcuts);
-    auto vProtonTOFPIDpTintv = std::vector<float>(configPID.protonTOFPIDpTintv);
-    auto vProtonTPCTOFCombinedpTintv = std::vector<float>(configPID.protonTPCTOFCombinedpTintv);
-    auto vProtonTPCTOFCombinedPIDcuts = std::vector<float>(configPID.protonTPCTOFCombinedPIDcuts);
-    auto vProtonTOFPIDcuts = std::vector<float>(configPID.protonTOFPIDcuts);
+    auto vProtonTPCPIDcuts = configPID.protonTPCPIDcuts.value;
+    auto vProtonTOFPIDpTintv = configPID.protonTOFPIDpTintv.value;
+    auto vProtonTPCTOFCombinedpTintv = configPID.protonTPCTOFCombinedpTintv.value;
+    auto vProtonTPCTOFCombinedPIDcuts = configPID.protonTPCTOFCombinedPIDcuts.value;
+    auto vProtonTOFPIDcuts = configPID.protonTOFPIDcuts.value;
 
     float pt = candidate.pt();
     float ptSwitchToTOF = vProtonTPCPIDpTintv.back();
@@ -584,13 +582,13 @@ struct Lambda1520analysisinpp {
   template <typename T>
   bool ptDependentPidKaon(const T& candidate)
   {
-    auto vKaonTPCPIDpTintv = std::vector<float>(configPID.kaonTPCPIDpTintv);
+    auto vKaonTPCPIDpTintv = configPID.kaonTPCPIDpTintv.value;
     vKaonTPCPIDpTintv.insert(vKaonTPCPIDpTintv.begin(), configTracks.cMinPtcut);
-    auto vKaonTPCPIDcuts = std::vector<float>(configPID.kaonTPCPIDcuts);
-    auto vKaonTOFPIDpTintv = std::vector<float>(configPID.kaonTOFPIDpTintv);
-    auto vKaonTPCTOFCombinedpTintv = std::vector<float>(configPID.kaonTPCTOFCombinedpTintv);
-    auto vKaonTPCTOFCombinedPIDcuts = std::vector<float>(configPID.kaonTPCTOFCombinedPIDcuts);
-    auto vKaonTOFPIDcuts = std::vector<float>(configPID.kaonTOFPIDcuts);
+    auto vKaonTPCPIDcuts = configPID.kaonTPCPIDcuts.value;
+    auto vKaonTOFPIDpTintv = configPID.kaonTOFPIDpTintv.value;
+    auto vKaonTPCTOFCombinedpTintv = configPID.kaonTPCTOFCombinedpTintv.value;
+    auto vKaonTPCTOFCombinedPIDcuts = configPID.kaonTPCTOFCombinedPIDcuts.value;
+    auto vKaonTOFPIDcuts = configPID.kaonTOFPIDcuts.value;
 
     float pt = candidate.pt();
     float ptSwitchToTOF = vKaonTPCPIDpTintv.back();
@@ -653,9 +651,9 @@ struct Lambda1520analysisinpp {
     return false;
   }
 
-  auto static constexpr MinPtforPionRejection = 1.f;
-  auto static constexpr MaxPtforPionRejection = 2.f;
-  auto static constexpr MaxnSigmaforPionRejection = 2.f;
+  auto static constexpr MinPtforPionRejection = 1.0;
+  auto static constexpr MaxPtforPionRejection = 2.0;
+  auto static constexpr MaxnSigmaforPionRejection = 2.0;
 
   template <typename T>
   bool rejectPion(const T& candidate)
@@ -973,7 +971,7 @@ struct Lambda1520analysisinpp {
           if (motherstrk1[0] != motherstrk2[0]) // Same mother
             continue;
 
-          if (std::abs(mothersPDGtrk1[0]) != Lambda1520PDG)
+          if (std::abs(mothersPDGtrk1[0]) != kLambda1520_Py)
             continue;
 
           // LOGF(info, "mother trk1 id: %d, mother trk1: %d, trk1 id: %d, trk1 pdgcode: %d, mother trk2 id: %d, mother trk2: %d, trk2 id: %d, trk2 pdgcode: %d", motherstrk1[0], mothersPDGtrk1[0], trk1.globalIndex(), mctrk1.pdgCode(), motherstrk2[0], mothersPDGtrk2[0], trk2.globalIndex(), mctrk2.pdgCode());
@@ -1077,7 +1075,7 @@ struct Lambda1520analysisinpp {
   }
   PROCESS_SWITCH(Lambda1520analysisinpp, processMC, "Process Event for MC Light without partition", false);
 
-  Partition<aod::McParticles> selectedMCParticles = (nabs(aod::mcparticle::pdgCode) == Lambda1520PDG); // Lambda(1520)
+  Partition<aod::McParticles> selectedMCParticles = (nabs(aod::mcparticle::pdgCode) == kLambda1520_Py); // Lambda(1520)
 
   void processMCTrue(MCEventCandidates::iterator const& collision, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
@@ -1093,7 +1091,7 @@ struct Lambda1520analysisinpp {
     // Not related to the real collisions
     for (const auto& part : mcParts) { // loop over all MC particles
 
-      if (std::abs(part.pdgCode()) != Lambda1520PDG) // Lambda1520(0)
+      if (std::abs(part.pdgCode()) != kLambda1520_Py) // Lambda1520(0)
         continue;
 
       std::vector<int> daughterPDGs;
