@@ -102,6 +102,7 @@ struct Phik0shortanalysis {
   // Configurables for track selection (not necessarily common for trigger and the two associated particles)
   struct : ConfigurableGroup {
     Configurable<float> cfgCutCharge{"cfgCutCharge", 0.0f, "Cut on charge"};
+    Configurable<float> cfgMinAbsCharge{"cfgMinAbsCharge", 3.0f, "Cut on absolute charge"};
     Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"};
     Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
     Configurable<float> cMinKaonPtcut{"cMinKaonPtcut", 0.15f, "Track minimum pt cut"};
@@ -259,7 +260,10 @@ struct Phik0shortanalysis {
   SliceCache cache;
 
   // Preslice for manual slicing
-  Preslice<aod::McParticles> perMCColl = aod::mcparticle::mcCollisionId;
+  struct : PresliceGroup {
+    Preslice<aod::Tracks> perColl = aod::track::collisionId;
+    Preslice<aod::McParticles> perMCColl = aod::mcparticle::mcCollisionId;
+  } preslices;
 
   // Positive and negative tracks partitions
   Partition<FullTracks> posTracks = aod::track::signed1Pt > trackConfigs.cfgCutCharge;
@@ -955,6 +959,21 @@ struct Phik0shortanalysis {
     if (nPhi > 0)
       return true;
     return false;
+  }
+
+  template <typename T>
+  bool isGenParticleCharged(const T& mcParticle)
+  {
+    if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.eta()) > trackConfigs.etaMax)
+      return false;
+
+    auto pdgTrack = pdgDB->GetParticle(mcParticle.pdgCode());
+    if (pdgTrack == nullptr)
+      return false;
+    if (std::abs(pdgTrack->Charge()) < trackConfigs.cfgMinAbsCharge)
+      return false;
+
+    return true;
   }
 
   // Get phi-meson purity functions from CCDB
@@ -2436,7 +2455,7 @@ struct Phik0shortanalysis {
       return;
     const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
 
-    auto mcParticlesThisColl = mcParticles.sliceBy(perMCColl, mcCollision.globalIndex());
+    auto mcParticlesThisColl = mcParticles.sliceBy(preslices.perMCColl, mcCollision.globalIndex());
 
     if (filterOnMcPhi && !eventHasMCPhi(mcParticlesThisColl))
       return;
@@ -2456,13 +2475,7 @@ struct Phik0shortanalysis {
     }
 
     for (const auto& mcParticle : mcParticlesThisColl) {
-      if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.eta()) > trackConfigs.etaMax)
-        continue;
-
-      auto pdgTrack = pdgDB->GetParticle(mcParticle.pdgCode());
-      if (pdgTrack == nullptr)
-        continue;
-      if (pdgTrack->Charge() == trackConfigs.cfgCutCharge)
+      if (!isGenParticleCharged(mcParticle))
         continue;
 
       mcEventHist.fill(HIST("h2GenMCEtaDistributionReco"), genmultiplicity, mcParticle.eta());
@@ -2471,7 +2484,7 @@ struct Phik0shortanalysis {
 
   PROCESS_SWITCH(Phik0shortanalysis, processdNdetaWPhiMCReco, "Process function for dN/deta values in MCReco", false);
 
-  void processdNdetaWPhiMCGen(MCCollisions::iterator const& mcCollision, soa::SmallGroups<SimCollisions> const& collisions, aod::McParticles const& mcParticles)
+  void processdNdetaWPhiMCGen(MCCollisions::iterator const& mcCollision, soa::SmallGroups<SimCollisions> const& collisions, FilteredMCTracks const& filteredMCTracks, aod::McParticles const& mcParticles)
   {
     if (std::abs(mcCollision.posZ()) > cutZVertex)
       return;
@@ -2487,14 +2500,20 @@ struct Phik0shortanalysis {
       if (acceptEventQA<true>(collision, false)) {
         mcEventHist.fill(HIST("hGenMCRecoMultiplicityPercent"), genmultiplicity);
 
-        for (const auto& mcParticle : mcParticles) {
-          if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.eta()) > trackConfigs.etaMax)
+        auto filteredMCTracksThisColl = filteredMCTracks.sliceBy(preslices.perColl, collision.globalIndex());
+        for (const auto& track : filteredMCTracksThisColl) {
+          if (!track.has_mcParticle())
             continue;
 
-          auto pdgTrack = pdgDB->GetParticle(mcParticle.pdgCode());
-          if (pdgTrack == nullptr)
+          auto mcTrack = track.mcParticle();
+          if (!mcTrack.isPhysicalPrimary() || std::abs(mcTrack.eta()) > trackConfigs.etaMax)
             continue;
-          if (pdgTrack->Charge() == trackConfigs.cfgCutCharge)
+
+          mcEventHist.fill(HIST("h2RecoCheckMCEtaDistribution"), genmultiplicity, mcTrack.eta());
+        }
+
+        for (const auto& mcParticle : mcParticles) {
+          if (!isGenParticleCharged(mcParticle))
             continue;
 
           mcEventHist.fill(HIST("h2GenMCEtaDistributionRecoCheck"), genmultiplicity, mcParticle.eta());
@@ -2509,13 +2528,7 @@ struct Phik0shortanalysis {
       mcEventHist.fill(HIST("hGenMCAssocRecoMultiplicityPercent"), genmultiplicity);
 
     for (const auto& mcParticle : mcParticles) {
-      if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.eta()) > trackConfigs.etaMax)
-        continue;
-
-      auto pdgTrack = pdgDB->GetParticle(mcParticle.pdgCode());
-      if (pdgTrack == nullptr)
-        continue;
-      if (pdgTrack->Charge() == trackConfigs.cfgCutCharge)
+      if (!isGenParticleCharged(mcParticle))
         continue;
 
       mcEventHist.fill(HIST("h2GenMCEtaDistribution"), genmultiplicity, mcParticle.eta());
