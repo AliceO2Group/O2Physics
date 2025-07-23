@@ -31,6 +31,7 @@
 #include "TProfile.h"
 
 #include <string>
+#include <map>
 
 using namespace o2;
 using namespace o2::framework;
