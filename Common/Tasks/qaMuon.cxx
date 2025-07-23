@@ -2207,7 +2207,7 @@ struct muonQa {
       }
 
       // Loop over attached clusters
-      for (static_cast<int> iCls = 0; iCls < int(fgValuesClsTmp.posClusters.size()); iCls++) {
+      for (int iCls = 0; iCls < static_cast<int>(fgValuesClsTmp.posClusters.size()); iCls++) {
 
         double phiCls = std::atan2(fgValuesClsTmp.posClusters[iCls][1], fgValuesClsTmp.posClusters[iCls][0]) * 180 / TMath::Pi();
         int quadrantCls = GetQuadrantPhi(phiCls);
