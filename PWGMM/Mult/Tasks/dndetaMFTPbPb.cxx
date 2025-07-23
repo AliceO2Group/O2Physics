@@ -20,6 +20,7 @@
 #include <cmath>
 #include <numeric>
 #include <vector>
+#include <unordered_map>
 #include <string>
 
 #include "CCDB/BasicCCDBManager.h"
