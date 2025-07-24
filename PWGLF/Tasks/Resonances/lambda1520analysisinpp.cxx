@@ -1075,7 +1075,7 @@ struct Lambda1520analysisinpp {
   }
   PROCESS_SWITCH(Lambda1520analysisinpp, processMC, "Process Event for MC Light without partition", false);
 
-  Partition<aod::McParticles> selectedMCParticles = (nabs(aod::mcparticle::pdgCode) == (int)Pdg::kLambda1520_Py); // Lambda(1520)
+  Partition<aod::McParticles> selectedMCParticles = (nabs(aod::mcparticle::pdgCode) == static_cast<int>(Pdg::kLambda1520_Py)); // Lambda(1520)
 
   void processMCTrue(MCEventCandidates::iterator const& collision, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
