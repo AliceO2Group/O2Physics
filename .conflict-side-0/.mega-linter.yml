@@ -1,0 +1,43 @@
+---
+# Configuration file for Mega-Linter
+# See all available variables at https://oxsecurity.github.io/megalinter/configuration/ and in linters documentation
+
+APPLY_FIXES: all # all, none, or list of linter keys
+DEFAULT_BRANCH: master # Usually master or main
+# ENABLE: # If you use ENABLE variable, all other languages/formats/tooling-formats will be disabled by default
+# ENABLE_LINTERS: # If you use ENABLE_LINTERS variable, all other linters will be disabled by default
+DISABLE:
+  - C
+  - COPYPASTE # abusive copy-pastes
+  - SPELL # spelling mistakes
+DISABLE_LINTERS:
+  - BASH_EXEC
+  - BASH_SHFMT
+  - CPP_CLANG_FORMAT
+  - JSON_PRETTIER
+  - PYTHON_BLACK
+  - PYTHON_FLAKE8
+  - PYTHON_ISORT
+  - REPOSITORY_DEVSKIM
+  - REPOSITORY_GITLEAKS
+  - REPOSITORY_KICS
+  - REPOSITORY_SECRETLINT
+  - REPOSITORY_TRIVY
+  - YAML_PRETTIER
+  - YAML_V8R
+DISABLE_ERRORS_LINTERS: # If errors are found by these linters, they will be considered as non blocking.
+  - PYTHON_BANDIT # The bandit check is overly broad and complains about subprocess usage.
+SHOW_ELAPSED_TIME: true
+FILEIO_REPORTER: false
+GITHUB_COMMENT_REPORTER: false
+UPDATED_SOURCES_REPORTER: true
+PRINT_ALPACA: false # Don't print ASCII alpaca in the log
+PRINT_ALL_FILES: true # Print all processed files
+FLAVOR_SUGGESTIONS: false # Don't show suggestions about different MegaLinter flavors
+PYTHON_ISORT_CONFIG_FILE: pyproject.toml
+PYTHON_PYRIGHT_CONFIG_FILE: pyproject.toml
+PYTHON_RUFF_CONFIG_FILE: pyproject.toml
+CPP_CPPLINT_FILE_EXTENSIONS: [".C", ".c", ".c++", ".cc", ".cl", ".cpp", ".cu", ".cuh", ".cxx", ".cxx.in", ".h", ".h++", ".hh", ".h.in", ".hpp", ".hxx", ".inc", ".inl", ".macro"]
+CPP_CLANG_FORMAT_FILE_EXTENSIONS: [".C", ".c", ".c++", ".cc", ".cl", ".cpp", ".cu", ".cuh", ".cxx", ".cxx.in", ".h", ".h++", ".hh", ".h.in", ".hpp", ".hxx", ".inc", ".inl", ".macro"]
+CPP_CPPCHECK_ARGUMENTS: --language=c++ --std=c++20 --check-level=exhaustive --suppressions-list=cppcheck_config
+REPOSITORY_GITLEAKS_PR_COMMITS_SCAN: true

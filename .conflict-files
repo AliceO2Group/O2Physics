@@ -1,0 +1,3 @@
+ancestorEntries = []
+ourEntries = ["PWGLF/DataModel/LFSlimHeLambda.h", "PWGLF/Tasks/Nuspex/he3LambdaDerivedAnalysis.cxx"]
+theirEntries = ["PWGLF/DataModel/LFSlimHeLambda.h", "PWGLF/Tasks/Nuspex/he3LambdaDerivedAnalysis.cxx"]

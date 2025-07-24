@@ -1,0 +1,109 @@
+---
+# MegaLinter GitHub Action configuration file
+# More info at https://megalinter.io
+name: MegaLinter
+
+'on': [pull_request_target]
+
+permissions: {}
+
+env:
+  # Apply linter fixes configuration
+  APPLY_FIXES: all
+  PR_NUMBER: ${{ github.event.pull_request.number }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  megalinter:
+    name: MegaLinter
+    runs-on: ubuntu-latest
+    steps:
+      # Git Checkout
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          # Checkout the HEAD of the PR instead of the merge commit.
+          ref: ${{ github.event.pull_request.head.sha }}
+          # Checkout the merge commit. (If a fixing PR is made, it will include also missing commits from upstream.)
+          # ref: refs/pull/${{ github.event.number }}/merge
+          fetch-depth: 0
+          # So we can use secrets.ALIBUILD_GITHUB_TOKEN to push later.
+          persist-credentials: false
+
+      # MegaLinter
+      - name: MegaLinter
+        id: ml
+        # You can override MegaLinter flavor used to have faster performances
+        # More info at https://megalinter.io/flavors/
+        uses: oxsecurity/megalinter@v8.7.0
+        env:
+          # All available variables are described in documentation:
+          # https://megalinter.io/configuration/
+          # Validates all source when push on master, else just the diff with
+          # master. Override with true if you always want to lint all sources.
+          VALIDATE_ALL_CODEBASE: false
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Upload MegaLinter artifacts
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: MegaLinter reports
+          path: |
+            megalinter-reports
+            mega-linter.log
+
+      # Create or delete the cleanup branch
+      - name: Update cleanup branch
+        if: ${{ github.event.repository.owner.login == 'AliceO2Group' }}
+        env:
+          REMOTE_URL: "https://alibuild:${{ secrets.ALIBUILD_GITHUB_TOKEN }}@\
+            github.com/alibuild/${{ github.event.repository.name }}"
+        run: |
+          git config --global user.email 'alibuild@cern.ch'
+          git config --global user.name 'ALICE Action Bot'
+          # An empty CLEANUP_COMMIT means delete the branch.
+          CLEANUP_COMMIT=""
+          if [ "${{ steps.ml.outputs.has_updated_sources }}" = 1 ]
+          then
+            CLEANUP_COMMIT="HEAD"
+            git commit -am "MegaLinter fixes"
+          fi
+          git push -f "$REMOTE_URL" "$CLEANUP_COMMIT:refs/heads/alibot-cleanup-ml-$PR_NUMBER"
+
+      - name: Create pull request with applied fixes
+        uses: alisw/pull-request@v2
+        if: >-
+          steps.ml.outputs.has_updated_sources == 1 &&
+          github.event.repository.owner.login == 'AliceO2Group'
+        with:
+          source_branch: 'alibuild:alibot-cleanup-ml-${{ env.PR_NUMBER }}'
+          destination_branch: '${{ github.event.pull_request.head.label }}'
+          github_token: ${{ secrets.ALIBUILD_GITHUB_TOKEN }}
+          pr_title: >-
+            [MegaLinter] Apply linters automatic fixes to #${{ env.PR_NUMBER }}
+          pr_body: >-
+            Your PR ${{ github.event.repository.full_name }}#${{ env.PR_NUMBER }}
+            cannot be merged as is. You should either run MegaLinter
+            yourself and update the pull request, or merge this PR in yours.
+
+            You can find how to run MegaLinter locally at
+            <https://megalinter.io/latest/mega-linter-runner/>.
+        # We do not create PRs if the branch is not there.
+        continue-on-error: true
+
+      - name: Exit with error if the PR is not clean
+        run: |
+          case "${{ steps.ml.outputs.has_updated_sources }}" in
+            0) echo '::notice::PR is clean' ; exit 0 ;;
+            1) echo '::error::MegaLinter found errors'
+               echo "::notice::Check $pr_url$q for a pull request with fixes."
+               exit 1 ;;
+          esac
+        env:
+          pr_url: https://github.com/${{ github.event.pull_request.head.repo.full_name }}/pulls
+          q: ?q=is%3Apr+is%3Aopen+MegaLinter+%23${{ github.event.pull_request.number }}

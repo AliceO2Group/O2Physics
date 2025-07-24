@@ -1,0 +1,72 @@
+# Codeowners for ALICE O2.
+#
+# Map top directories only for now.
+# Add the lower lever directories where appropriate.
+# Order is important; the last matching pattern takes the most
+# precedence.
+
+# These owners will be the default owners for everything in
+# the repo. Unless a later match takes precedence.
+# **DO NOT USE** @AliceO2Group/core for anything else.
+
+# @alibuild has to be in each line to allow self approval of PRs
+
+* @AliceO2Group/core @alibuild @jgrosseo @iarsene @ktf @ddobrigk
+/Common/CCDB @alibuild @jgrosseo @iarsene @ekryshen @ddobrigk
+/Common/Tools/Multiplicity @alibuild @ddobrigk @victor-gonzalez
+/ALICE3 @alibuild @njacazio @hscheid
+/DPG @alibuild @chiarazampolli @alcaliva @catalinristea
+/DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo @altsybee
+/DPG/Tasks/AOTTrack @alibuild @mfaggin @iouribelikov @njacazio @lbariogl @f3sch
+/DPG/Tasks/TOF @alibuild @noferini @njacazio
+/DPG/Tasks/FT0 @alibuild @jotwinow @sahilupadhyaya92 @andreasmolander @afurs
+/DPG/Tasks/FV0 @alibuild @jotwinow @sahilupadhyaya92 @andreasmolander @afurs
+/DPG/Tasks/FDD @alibuild @jotwinow @sahilupadhyaya92 @andreasmolander @afurs
+/EventFiltering @alibuild @mpuccio @lietava
+/EventFiltering/PWGHF @alibuild @fgrosa @zhangbiao-phy @mpuccio @lietava
+/EventFiltering/PWGUD @alibuild @pbuehler @mpuccio @lietava
+/EventFiltering/PWGLF @alibuild @mpuccio @ercolessi @ChiaraDeMartin95 @lietava
+/EventFiltering/PWGCF @alibuild @lauraser @mpuccio @lietava
+/EventFiltering/PWGMM @alibuild @aortizve @mpuccio @lietava
+/EventFiltering/PWGJE @alibuild @fkrizek @nzardosh @mpuccio @lietava
+/PWGCF               @alibuild @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
+/PWGCF/Core          @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
+/PWGCF/DataModel     @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
+/PWGCF/TableProducer @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
+/PWGCF/Tasks         @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
+/PWGDQ @alibuild @iarsene @mcoquet642 @lucamicheletti93
+/PWGEM @alibuild @feisenhu @dsekihat @ivorobye
+/PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu @hscheid
+/PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky @mhemmer-cern @dsekihat
+/PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @NicoleBastid @hahassan7 @jpxrk @apalasciano @zhangbiao-phy @gluparel
+# PWG-LF
+/PWGLF @alibuild @sustripathy @skundu692
+/PWGLF/DataModel @alibuild @sustripathy @skundu692 @gbencedi @abmodak @fmazzasc @maciacco @dmallick2 @smaff92 @ercolessi @romainschotter
+/PWGLF/Tasks/GlobalEventProperties @alibuild @sustripathy @skundu692 @gbencedi @abmodak @omvazque
+/PWGLF/TableProducer/GlobalEventProperties @alibuild @sustripathy @skundu692 @gbencedi @abmodak @omvazque
+/PWGLF/Tasks/Nuspex @alibuild @sustripathy @skundu692 @fmazzasc @maciacco
+/PWGLF/TableProducer/Nuspex @alibuild @sustripathy @skundu692 @fmazzasc @maciacco
+/PWGLF/Tasks/Resonances @alibuild @sustripathy @skundu692 @dmallick2 @smaff92
+/PWGLF/TableProducer/Resonances @alibuild @sustripathy @skundu692 @dmallick2 @smaff92
+/PWGLF/Tasks/Strangeness @alibuild @sustripathy @skundu692 @ercolessi @romainschotter
+/PWGLF/TableProducer/Strangeness @alibuild @sustripathy @skundu692 @ercolessi @romainschotter
+/PWGLF/Utils @alibuild @sustripathy @skundu692 @gbencedi @abmodak @fmazzasc @maciacco @dmallick2 @smaff92 @ercolessi @romainschotter
+
+# PWG-MM
+/PWGMM      @alibuild @sustripathy @skundu692 @aalkin @jgcn
+/PWGMM/Mult @alibuild @sustripathy @skundu692 @aalkin @aortizve @ddobrigk @gbencedi @jgcn
+/PWGMM/Lumi @alibuild @aalkin @jgcn
+/PWGMM/UE   @alibuild @aalkin @aortizve @jgcn
+
+/PWGUD @alibuild @pbuehler @abylinkin @rolavick
+/PWGJE @alibuild @lhavener @maoyx @nzardosh @fjonasALICE @mfasDa @mhemmer-cern
+/Tools/PIDML @alibuild @saganatt
+/Tools/ML @alibuild @fcatalan92 @fmazzasc
+/Tutorials/PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
+/Tutorials/PWGDQ @alibuild @iarsene @mcoquet @lucamicheletti93
+/Tutorials/PWGEM @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
+/Tutorials/PWGHF @alibuild @vkucera @fcolamar @fgrosa @gluparel
+/Tutorials/PWGJE @alibuild @lhavener @maoyx @nzardosh @mfasDa @fjonasALICE
+/Tutorials/PWGLF @alibuild @alcaliva @lbariogl @chiarapinto @BongHwi @lbarnby @ercolessi @iravasen @njacazio @romainschotter @skundu692
+/Tutorials/PWGMM @alibuild @aalkin @ddobrigk
+/Tutorials/PWGUD @alibuild @pbuehler

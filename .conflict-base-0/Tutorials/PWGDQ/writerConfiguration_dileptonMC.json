@@ -1,0 +1,52 @@
+{
+    "OutputDirector": {
+        "debugmode": true,
+        "resfile": "dileptonAOD",
+        "resfilemode": "RECREATE",
+        "ntfmerge": 1,
+        "OutputDescriptors": [
+            {
+                "table": "AOD/REDUCEDEVENT/0"
+            },
+            {
+                "table": "AOD/REEXTENDED/0"
+            },
+            {
+                "table": "AOD/REVTXCOV/0"
+            },
+            {
+                "table": "AOD/RTMUON/0"
+            },
+            {
+                "table": "AOD/RTMUONEXTRA/0"
+            },
+            {
+                "table": "AOD/RTMUONCOV/0"
+            },
+            {
+                "table": "AOD/REDUCEDMCEVENT/0"
+            },
+            {
+                "table": "AOD/REDUCEDMCTRACK/0"
+            },
+            {
+                "table": "AOD/RTMUONSLABELS/0"
+            },
+            {
+                "table": "AOD/REMCCOLLBL/0"
+            },
+            {
+                "table": "AOD/RTDILEPTON/0"
+            },
+            {
+                "table": "AOD/RTDILEPTONEXTRA/0"
+            },
+            {
+                "table": "AOD/RTDIMUONALL/0"
+            },
+            {
+                "table": "AOD/RTDILEPTONTRACK/0"
+            }
+        ]
+    }
+}
