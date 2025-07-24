@@ -34,6 +34,8 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TPDGCode.h>
+
 #include <cstdlib>
 #include <string>
 #include <vector>
@@ -59,43 +61,33 @@ struct V0QA {
   HistogramRegistry registry{"registry"};
 
   Configurable<std::string> evSel{"evSel", "sel8WithoutTimeFrameBorderCut", "choose event selection"};
-  Configurable<float> v0cospaMin{"v0cospaMin", 0.995, "Minimum V0 cosine of pointing angle"};
-  Configurable<float> v0radiusMin{"v0radiusMin", 0.5, "Minimum V0 radius (cm)"};
-  Configurable<float> dcav0dauMax{"dcav0dauMax", 1.0, "Maximum DCA between V0 daughters (cm)"};
-  Configurable<float> dcapiMin{"dcapiMin", 0.1, "Minimum DCA of pion daughter to PV (cm)"};
-  Configurable<float> dcaprMin{"dcaprMin", 0.1, "Minimum DCA of proton daughter to PV (cm)"};
-  Configurable<float> yK0SMax{"yK0SMax", 0.5, "Maximum rapidity of K0S"};
-  Configurable<float> yLambdaMax{"yLambdaMax", 0.5, "Maximum rapidity of Lambda(bar)"};
-  Configurable<float> lifetimeK0SMax{"lifetimeK0SMax", 20.0, "Maximum lifetime of K0S (cm)"};
-  Configurable<float> lifetimeLambdaMax{"lifetimeLambdaMax", 30.0, "Maximum lifetime of Lambda (cm)"};
   Configurable<float> yPartMax{"yPartMax", 0.5, "Maximum rapidity of particles"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0, "Vertex Z cut"};
-  Configurable<float> v0Fraction{"v0Fraction", 0.5, "Fraction of V0s to accept randomly"};
 
   Filter jetCollisionFilter = nabs(aod::jcollision::posZ) < vertexZCut;
 
-  ConfigurableAxis binPtJet{"ptJet", {100., 0.0f, 50.0f}, ""};
-  ConfigurableAxis binPtV0{"ptV0", {100., 0.0f, 50.0f}, ""};
-  ConfigurableAxis binZV0{"zV0", {100., 1e-3f, 1 + 1e-3f}, ""};
+  ConfigurableAxis binPtJet{"binPtJet", {100., 0.0f, 50.0f}, ""};
+  ConfigurableAxis binPtV0{"binPtV0", {100., 0.0f, 50.0f}, ""};
+  ConfigurableAxis binZV0{"binZV0", {100., 1e-3f, 1 + 1e-3f}, ""};
   ConfigurableAxis binEta{"binEta", {100, -1.0f, 1.0f}, ""};
   ConfigurableAxis binPhi{"binPhi", {constants::math::PI * 10 / 2, 0.0f, constants::math::TwoPI}, ""};
 
   ConfigurableAxis binInvMassK0S{"binInvMassK0S", {200, 0.4f, 0.6f}, ""};
   ConfigurableAxis binInvMassLambda{"binInvMassLambda", {200, 1.07f, 1.17f}, ""};
-  ConfigurableAxis binV0Radius{"R", {100., 0.0f, 50.0f}, ""};
-  ConfigurableAxis binV0CosPA{"cosPA", {50., 0.95f, 1.0f}, ""};
+  ConfigurableAxis binV0Radius{"binV0Radius", {100., 0.0f, 50.0f}, ""};
+  ConfigurableAxis binV0CosPA{"binV0CosPA", {50., 0.95f, 1.0f}, ""};
 
   ConfigurableAxis binsDcaXY{"binsDcaXY", {100, -0.5f, 0.5f}, ""};
   ConfigurableAxis binsDcaZ{"binsDcaZ", {100, -5.f, 5.f}, ""};
-  ConfigurableAxis binPtDiff{"ptdiff", {200., -49.5f, 50.5f}, ""};
-  ConfigurableAxis binPtRelDiff{"ptreldiff", {100., -1.0f, 1.0f}, ""};
-  ConfigurableAxis binITSNCl{"ITSNCl", {8, -0.5, 7.5}, ""};
-  ConfigurableAxis binITSChi2NCl{"ITSChi2NCl", {100, 0, 40}, ""};
+  ConfigurableAxis binPtDiff{"binPtDiff", {200., -49.5f, 50.5f}, ""};
+  ConfigurableAxis binPtRelDiff{"binPtRelDiff", {100., -1.0f, 1.0f}, ""};
+  ConfigurableAxis binITSNCl{"binITSNCl", {8, -0.5, 7.5}, ""};
+  ConfigurableAxis binITSChi2NCl{"binITSChi2NCl", {100, 0, 40}, ""};
 
-  ConfigurableAxis binTPCNCl{"TPCNCl", {165, -0.5, 164.5}, ""};
-  ConfigurableAxis binTPCChi2NCl{"TPCChi2NCl", {100, 0, 10}, ""};
-  ConfigurableAxis binTPCNClSharedFraction{"sharedFraction", {100, 0., 1.}, ""};
-  ConfigurableAxis binTPCCrossedRowsOverFindableCl{"crossedOverFindable", {120, 0.0, 1.2}, ""};
+  ConfigurableAxis binTPCNCl{"binTPCNCl", {165, -0.5, 164.5}, ""};
+  ConfigurableAxis binTPCChi2NCl{"binTPCChi2NCl", {100, 0, 10}, ""};
+  ConfigurableAxis binTPCNClSharedFraction{"binTPCNClSharedFraction", {100, 0., 1.}, ""};
+  ConfigurableAxis binTPCCrossedRowsOverFindableCl{"binTPCCrossedRowsOverFindableCl", {120, 0.0, 1.2}, ""};
 
   std::vector<int> eventSelectionBits;
 
@@ -737,17 +729,16 @@ struct V0QA {
         continue;
 
       int pdg = v0.mcParticle().pdgCode();
-      // K0S
-      if (std::abs(pdg) == 310) {
+      if (std::abs(pdg) == PDG_t::kK0Short) {
         registry.fill(HIST("inclusive/K0SPtEtaMass"), v0.pt(), v0.eta(), v0.mK0Short(), weight);
         registry.fill(HIST("inclusive/InvMassK0STrue"), v0.pt(), v0.v0radius(), v0.mK0Short(), weight);
       }
       // Lambda
-      if (pdg == 3122) {
+      if (pdg == PDG_t::kLambda0) {
         registry.fill(HIST("inclusive/LambdaPtEtaMass"), v0.pt(), v0.eta(), v0.mLambda(), weight);
         registry.fill(HIST("inclusive/InvMassLambdaTrue"), v0.pt(), v0.v0radius(), v0.mLambda(), weight);
       }
-      if (pdg == -3122) {
+      if (pdg == PDG_t::kLambda0Bar) {
         registry.fill(HIST("inclusive/AntiLambdaPtEtaMass"), v0.pt(), v0.eta(), v0.mAntiLambda(), weight);
         registry.fill(HIST("inclusive/InvMassAntiLambdaTrue"), v0.pt(), v0.v0radius(), v0.mAntiLambda(), weight);
       }
@@ -785,16 +776,16 @@ struct V0QA {
         continue;
 
       // Can calculate this from aod::CandidatesV0MCD (contains decay vertex)
-      double r_Decay = 1.0;
+      double rDecay = 1.0;
 
-      if (pv0.pdgCode() == 310) {
-        registry.fill(HIST("inclusive/GeneratedK0S"), pv0.pt(), pv0.eta(), r_Decay, weight);
+      if (pv0.pdgCode() == PDG_t::kK0Short) {
+        registry.fill(HIST("inclusive/GeneratedK0S"), pv0.pt(), pv0.eta(), rDecay, weight);
       }
-      if (pv0.pdgCode() == 3122) {
-        registry.fill(HIST("inclusive/GeneratedLambda"), pv0.pt(), pv0.eta(), r_Decay, weight);
+      if (pv0.pdgCode() == PDG_t::kLambda0) {
+        registry.fill(HIST("inclusive/GeneratedLambda"), pv0.pt(), pv0.eta(), rDecay, weight);
       }
-      if (pv0.pdgCode() == -3122) {
-        registry.fill(HIST("inclusive/GeneratedAntiLambda"), pv0.pt(), pv0.eta(), r_Decay, weight);
+      if (pv0.pdgCode() == PDG_t::kLambda0Bar) {
+        registry.fill(HIST("inclusive/GeneratedAntiLambda"), pv0.pt(), pv0.eta(), rDecay, weight);
       }
     }
   }
@@ -822,16 +813,16 @@ struct V0QA {
           continue;
 
         // K0S
-        if (std::abs(pdg) == 310) {
+        if (std::abs(pdg) == PDG_t::kK0Short) {
           registry.fill(HIST("jets/JetPtEtaK0SPt"), mcdjet.pt(), mcdjet.eta(), v0.pt(), weight);
           registry.fill(HIST("jets/InvMassJetK0STrue"), mcdjet.pt(), v0.pt(), v0.mK0Short(), weight);
         }
         // Lambda
-        if (pdg == 3122) {
+        if (pdg == PDG_t::kLambda0) {
           registry.fill(HIST("jets/JetPtEtaLambdaPt"), mcdjet.pt(), mcdjet.eta(), v0.pt(), weight);
           registry.fill(HIST("jets/InvMassJetLambdaTrue"), mcdjet.pt(), v0.pt(), v0.mLambda(), weight);
         }
-        if (pdg == -3122) {
+        if (pdg == PDG_t::kLambda0Bar) {
           registry.fill(HIST("jets/JetPtEtaAntiLambdaPt"), mcdjet.pt(), mcdjet.eta(), v0.pt(), weight);
           registry.fill(HIST("jets/InvMassJetAntiLambdaTrue"), mcdjet.pt(), v0.pt(), v0.mAntiLambda(), weight);
         }
@@ -866,16 +857,16 @@ struct V0QA {
               continue;
 
             // K0S
-            if (std::abs(pdg) == 310) {
+            if (std::abs(pdg) == PDG_t::kK0Short) {
               registry.fill(HIST("jets/JetsPtEtaK0SPt"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), v0.pt(), weight);
               registry.fill(HIST("jets/InvMassJetsK0STrue"), mcpjet.pt(), mcdjet.pt(), v0.pt(), v0.mK0Short(), weight);
             }
             // Lambda
-            if (pdg == 3122) {
+            if (pdg == PDG_t::kLambda0) {
               registry.fill(HIST("jets/JetsPtEtaLambdaPt"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), v0.pt(), weight);
               registry.fill(HIST("jets/InvMassJetsLambdaTrue"), mcpjet.pt(), mcdjet.pt(), v0.pt(), v0.mLambda(), weight);
             }
-            if (pdg == -3122) {
+            if (pdg == PDG_t::kLambda0Bar) {
               registry.fill(HIST("jets/JetsPtEtaAntiLambdaPt"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), v0.pt(), weight);
               registry.fill(HIST("jets/InvMassJetsAntiLambdaTrue"), mcpjet.pt(), mcdjet.pt(), v0.pt(), v0.mAntiLambda(), weight);
             }
@@ -917,13 +908,13 @@ struct V0QA {
         if (!pv0.isPhysicalPrimary())
           continue;
 
-        if (pv0.pdgCode() == 310) {
+        if (pv0.pdgCode() == PDG_t::kK0Short) {
           registry.fill(HIST("jets/GeneratedJetK0S"), jet.pt(), jet.eta(), pv0.pt(), weight);
         }
-        if (pv0.pdgCode() == 3122) {
+        if (pv0.pdgCode() == PDG_t::kLambda0) {
           registry.fill(HIST("jets/GeneratedJetLambda"), jet.pt(), jet.eta(), pv0.pt(), weight);
         }
-        if (pv0.pdgCode() == -3122) {
+        if (pv0.pdgCode() == PDG_t::kLambda0Bar) {
           registry.fill(HIST("jets/GeneratedJetAntiLambda"), jet.pt(), jet.eta(), pv0.pt(), weight);
         }
       }
@@ -956,19 +947,19 @@ struct V0QA {
       if (!correctCollision) {
         registry.fill(HIST("collisions/V0PtEtaWrongColl"), pv0.pt(), pv0.eta(), weight);
       }
-      if (std::abs(pdg) == 310) {
+      if (std::abs(pdg) == PDG_t::kK0Short) {
         registry.fill(HIST("collisions/K0SPtEtaMass"), pv0.pt(), pv0.eta(), v0.mK0Short(), weight);
         if (!correctCollision) {
           registry.fill(HIST("collisions/K0SPtEtaMassWrongColl"), pv0.pt(), pv0.eta(), v0.mK0Short(), weight);
         }
       }
-      if (pdg == 3122) {
+      if (pdg == PDG_t::kLambda0) {
         registry.fill(HIST("collisions/LambdaPtEtaMass"), pv0.pt(), pv0.eta(), v0.mLambda(), weight);
         if (!correctCollision) {
           registry.fill(HIST("collisions/LambdaPtEtaMassWrongColl"), pv0.pt(), pv0.eta(), v0.mLambda(), weight);
         }
       }
-      if (pdg == -3122) {
+      if (pdg == PDG_t::kLambda0Bar) {
         registry.fill(HIST("collisions/AntiLambdaPtEtaMass"), pv0.pt(), pv0.eta(), v0.mAntiLambda(), weight);
         if (!correctCollision) {
           registry.fill(HIST("collisions/AntiLambdaPtEtaMassWrongColl"), pv0.pt(), pv0.eta(), v0.mAntiLambda(), weight);
@@ -982,13 +973,13 @@ struct V0QA {
       pdg = mother.pdgCode();
       correctCollision = (mcColl.mcCollisionId() == mother.mcCollisionId());
 
-      if (pdg == 3312) { // Xi-
+      if (pdg == PDG_t::kXiMinus) {
         registry.fill(HIST("collisions/XiMinusPtYLambdaPt"), mother.pt(), mother.y(), pv0.pt(), weight);
         if (!correctCollision) {
           registry.fill(HIST("collisions/XiMinusPtYLambdaPtWrongColl"), mother.pt(), mother.y(), pv0.pt(), weight);
         }
       }
-      if (pdg == -3312) { // Xi+
+      if (pdg == PDG_t::kXiPlusBar) {
         registry.fill(HIST("collisions/XiPlusPtYAntiLambdaPt"), mother.pt(), mother.y(), pv0.pt(), weight);
         if (!correctCollision) {
           registry.fill(HIST("collisions/XiPlusPtYAntiLambdaPtWrongColl"), mother.pt(), mother.y(), pv0.pt(), weight);
@@ -1024,19 +1015,19 @@ struct V0QA {
         if (!correctCollision) {
           registry.fill(HIST("collisions/JetPtEtaV0PtWrongColl"), mcdjet.pt(), mcdjet.eta(), pv0.pt(), weight);
         }
-        if (std::abs(pdg) == 310) {
+        if (std::abs(pdg) == PDG_t::kK0Short) {
           registry.fill(HIST("collisions/JetPtEtaK0SPtMass"), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mK0Short(), weight);
           if (!correctCollision) {
             registry.fill(HIST("collisions/JetPtEtaK0SPtMassWrongColl"), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mK0Short(), weight);
           }
         }
-        if (pdg == 3122) {
+        if (pdg == PDG_t::kLambda0) {
           registry.fill(HIST("collisions/JetPtEtaLambdaPtMass"), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mLambda(), weight);
           if (!correctCollision) {
             registry.fill(HIST("collisions/JetPtEtaLambdaPtMassWrongColl"), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mLambda(), weight);
           }
         }
-        if (pdg == -3122) {
+        if (pdg == PDG_t::kLambda0Bar) {
           registry.fill(HIST("collisions/JetPtEtaAntiLambdaPtMass"), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mAntiLambda(), weight);
           if (!correctCollision) {
             registry.fill(HIST("collisions/JetPtEtaAntiLambdaPtMassWrongColl"), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mAntiLambda(), weight);
@@ -1049,13 +1040,13 @@ struct V0QA {
         auto mother = v0.mcMotherParticle();
         pdg = mother.pdgCode();
         correctCollision = (mcColl.mcCollisionId() == mother.mcCollisionId());
-        if (pdg == 3312) { // Xi-
+        if (pdg == PDG_t::kXiMinus) {
           registry.fill(HIST("collisions/JetPtEtaXiMinusPtLambdaPt"), mcdjet.pt(), mcdjet.eta(), mother.pt(), pv0.pt(), weight);
           if (!correctCollision) {
             registry.fill(HIST("collisions/JetPtEtaXiMinusPtLambdaPtWrongColl"), mcdjet.pt(), mcdjet.eta(), mother.pt(), pv0.pt(), weight);
           }
         }
-        if (pdg == -3312) { // Xi+
+        if (pdg == PDG_t::kXiPlusBar) {
           registry.fill(HIST("collisions/JetPtEtaXiPlusPtAntiLambdaPt"), mcdjet.pt(), mcdjet.eta(), mother.pt(), pv0.pt(), weight);
           if (!correctCollision) {
             registry.fill(HIST("collisions/JetPtEtaXiPlusPtAntiLambdaPtWrongColl"), mcdjet.pt(), mcdjet.eta(), mother.pt(), pv0.pt(), weight);
@@ -1095,19 +1086,19 @@ struct V0QA {
             if (!correctCollision) {
               registry.fill(HIST("collisions/JetsPtEtaV0PtWrongColl"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), pv0.pt(), weight);
             }
-            if (std::abs(pdg) == 310) {
+            if (std::abs(pdg) == PDG_t::kK0Short) {
               registry.fill(HIST("collisions/JetsPtEtaK0SPtMass"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mK0Short(), weight);
               if (!correctCollision) {
                 registry.fill(HIST("collisions/JetsPtEtaK0SPtMassWrongColl"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mK0Short(), weight);
               }
             }
-            if (pdg == 3122) {
+            if (pdg == PDG_t::kLambda0) {
               registry.fill(HIST("collisions/JetsPtEtaLambdaPtMass"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mLambda(), weight);
               if (!correctCollision) {
                 registry.fill(HIST("collisions/JetsPtEtaLambdaPtMassWrongColl"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mLambda(), weight);
               }
             }
-            if (pdg == -3122) {
+            if (pdg == PDG_t::kLambda0Bar) {
               registry.fill(HIST("collisions/JetsPtEtaAntiLambdaPtMass"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mAntiLambda(), weight);
               if (!correctCollision) {
                 registry.fill(HIST("collisions/JetsPtEtaAntiLambdaPtMassWrongColl"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mAntiLambda(), weight);
@@ -1120,13 +1111,13 @@ struct V0QA {
             auto mother = v0.mcMotherParticle();
             pdg = mother.pdgCode();
             correctCollision = (mcColl.mcCollisionId() == mother.mcCollisionId());
-            if (pdg == 3312) { // Xi-
+            if (pdg == PDG_t::kXiMinus) {
               registry.fill(HIST("collisions/JetsPtEtaXiMinusPtLambdaPt"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), mother.pt(), pv0.pt(), weight);
               if (!correctCollision) {
                 registry.fill(HIST("collisions/JetsPtEtaXiMinusPtLambdaPtWrongColl"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), mother.pt(), pv0.pt(), weight);
               }
             }
-            if (pdg == -3312) { // Xi+
+            if (pdg == PDG_t::kXiPlusBar) {
               registry.fill(HIST("collisions/JetsPtEtaXiPlusPtAntiLambdaPt"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), mother.pt(), pv0.pt(), weight);
               if (!correctCollision) {
                 registry.fill(HIST("collisions/JetsPtEtaXiPlusPtAntiLambdaPtWrongColl"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), mother.pt(), pv0.pt(), weight);
@@ -1165,10 +1156,10 @@ struct V0QA {
       auto mother = v0.mcMotherParticle();
       pdg = mother.pdgCode();
 
-      if (pdg == 3312) { // Xi-
+      if (pdg == PDG_t::kXiMinus) {
         registry.fill(HIST("feeddown/XiMinusPtYLambdaPt"), mother.pt(), mother.y(), pv0.pt(), weight);
       }
-      if (pdg == -3312) { // Xi+
+      if (pdg == PDG_t::kXiPlusBar) {
         registry.fill(HIST("feeddown/XiPlusPtYAntiLambdaPt"), mother.pt(), mother.y(), pv0.pt(), weight);
       }
     }
@@ -1202,10 +1193,10 @@ struct V0QA {
         auto mother = v0.mcMotherParticle();
         pdg = mother.pdgCode();
 
-        if (pdg == 3312) { // Xi-
+        if (pdg == PDG_t::kXiMinus) {
           registry.fill(HIST("feeddown/JetPtXiMinusPtLambdaPt"), mcdjet.pt(), mother.pt(), pv0.pt(), weight);
         }
-        if (pdg == -3312) { // Xi+
+        if (pdg == PDG_t::kXiPlusBar) {
           registry.fill(HIST("feeddown/JetPtXiPlusPtAntiLambdaPt"), mcdjet.pt(), mother.pt(), pv0.pt(), weight);
         }
       }
@@ -1242,10 +1233,10 @@ struct V0QA {
 
             auto mother = v0.mcMotherParticle();
             pdg = mother.pdgCode();
-            if (pdg == 3312) { // Xi-
+            if (pdg == PDG_t::kXiMinus) {
               registry.fill(HIST("feeddown/JetsPtXiMinusPtLambdaPt"), mcpjet.pt(), mcdjet.pt(), mother.pt(), pv0.pt(), weight);
             }
-            if (pdg == -3312) { // Xi+
+            if (pdg == PDG_t::kXiPlusBar) {
               registry.fill(HIST("feeddown/JetsPtXiPlusPtAntiLambdaPt"), mcpjet.pt(), mcdjet.pt(), mother.pt(), pv0.pt(), weight);
             }
           }
@@ -1299,13 +1290,10 @@ struct V0QA {
       registry.fill(HIST("tests/nosub/JetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
 
       std::vector<double> v0Pt;
-      std::vector<int> v0Type; // 0: K0S, 1: Lambda, 2: AntiLambda
+      std::vector<int> v0Type;
       double ptjetsub = jet.pt();
 
       for (const auto& v0 : jet.template candidates_as<aod::CandidatesV0Data>()) {
-        if (v0.isRejectedCandidate())
-          continue;
-
         double z = v0.pt() / jet.pt();
 
         registry.fill(HIST("tests/nosub/JetPtEtaV0Pt"), jet.pt(), jet.eta(), v0.pt());
@@ -1324,24 +1312,22 @@ struct V0QA {
           registry.fill(HIST("tests/nosub/JetPtEtaAntiLambdaZ"), jet.pt(), jet.eta(), z);
         }
 
-        double r = gRandom->Uniform();
-        if (r < v0Fraction) { // Accepted
+        if (v0.isRejectedCandidate()) {
+          ptjetsub -= v0.pt();
+        } else { // Accepted V0
           v0Pt.push_back(v0.pt());
           if (v0.isK0SCandidate()) {
-            v0Type.push_back(0);
+            v0Type.push_back(PDG_t::kK0Short);
           } else if (v0.isLambdaCandidate()) {
-            v0Type.push_back(1);
+            v0Type.push_back(PDG_t::kLambda0);
           } else if (v0.isAntiLambdaCandidate()) {
-            v0Type.push_back(2);
+            v0Type.push_back(PDG_t::kLambda0Bar);
           }
-        } else { // Subtracted
-          ptjetsub -= v0.pt();
         }
-      }
+      } // V0s in jet loop
 
+      registry.fill(HIST("tests/sub/JetPtEtaPhi"), ptjetsub, jet.eta(), jet.phi());
       for (unsigned int i = 0; i < v0Pt.size(); ++i) {
-        registry.fill(HIST("tests/sub/JetPtEtaPhi"), ptjetsub, jet.eta(), jet.phi());
-
         int type = v0Type[i];
         double pt = v0Pt[i];
         double z = pt / ptjetsub;
@@ -1349,18 +1335,18 @@ struct V0QA {
         registry.fill(HIST("tests/sub/JetPtEtaV0Pt"), ptjetsub, jet.eta(), pt);
         registry.fill(HIST("tests/sub/JetPtEtaV0Z"), ptjetsub, jet.eta(), z);
 
-        if (type == 0) { // K0S
+        if (type == PDG_t::kK0Short) {
           registry.fill(HIST("tests/sub/JetPtEtaK0SPt"), ptjetsub, jet.eta(), pt);
           registry.fill(HIST("tests/sub/JetPtEtaK0SZ"), ptjetsub, jet.eta(), z);
-        } else if (type == 1) { // Lambda
+        } else if (type == PDG_t::kLambda0) {
           registry.fill(HIST("tests/sub/JetPtEtaLambdaPt"), ptjetsub, jet.eta(), pt);
           registry.fill(HIST("tests/sub/JetPtEtaLambdaZ"), ptjetsub, jet.eta(), z);
-        } else if (type == 2) { // AntiLambda
+        } else if (type == PDG_t::kLambda0Bar) {
           registry.fill(HIST("tests/sub/JetPtEtaAntiLambdaPt"), ptjetsub, jet.eta(), pt);
           registry.fill(HIST("tests/sub/JetPtEtaAntiLambdaZ"), ptjetsub, jet.eta(), z);
         }
-      }
-    }
+      } // Accepted V0s in jet loop
+    } // Jets loop
   }
   PROCESS_SWITCH(V0QA, processTestSubtractedJetFinder, "Test subtracted jet finder", false);
 
