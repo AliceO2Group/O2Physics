@@ -2163,7 +2163,7 @@ struct LFNucleiBATask {
       if (evselOptions.removeTFBorder && !event.selection_bit(aod::evsel::kNoTimeFrameBorder))
         return;
     }
-    if (event.centFT0M() < cfgMultCutLow || event.centFT0M() > cfgMultCutHigh) {
+    if (event.centFT0M() <= cfgMultCutLow || event.centFT0M() > cfgMultCutHigh) {
       return;
     }
     histos.fill(HIST("event/eventSelection"), 7);
@@ -4519,6 +4519,7 @@ struct LFNucleiBATask {
         }
         histos.fill(HIST("tracks/deuteron/h1DeuteronSpectra"), DPt);
         histos.fill(HIST("tracks/deuteron/h2DeuteronYvsPt"), track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Deuteron)), DPt);
+        histos.fill(HIST("tracks/deuteron/h2DeuteronEtavsPt"), track.eta(), DPt);
         histos.fill(HIST("tracks/deuteron/h2DeuteronVspNSigmaITSDe_wTPCpid"), track.p(), nITSDe);
 
         if (outFlagOptions.enablePIDplot)
@@ -4531,6 +4532,7 @@ struct LFNucleiBATask {
         }
         histos.fill(HIST("tracks/deuteron/h1antiDeuteronSpectra"), antiDPt);
         histos.fill(HIST("tracks/deuteron/h2antiDeuteronYvsPt"), track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Deuteron)), antiDPt);
+        histos.fill(HIST("tracks/deuteron/h2antiDeuteronEtavsPt"), track.eta(), antiDPt);
         histos.fill(HIST("tracks/deuteron/h2antiDeuteronVspNSigmaITSDe_wTPCpid"), track.p(), nITSDe);
 
         if (outFlagOptions.enablePIDplot)
