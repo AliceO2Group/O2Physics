@@ -75,7 +75,7 @@ struct JetSubstructureHFOutputTask {
   } products;
 
   Produces<aod::StoredHfDstarGenMcs> storedDstarGenMcsTable;
-  
+
   struct : ConfigurableGroup {
     Configurable<float> jetPtMinData{"jetPtMinData", 0.0, "minimum jet pT cut for data jets"};
     Configurable<float> jetPtMinDataSub{"jetPtMinDataSub", 0.0, "minimum jet pT cut for eventwise constituent subtracted data jets"};
