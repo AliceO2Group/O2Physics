@@ -438,8 +438,8 @@ struct HfEventSelectionMc {
   std::shared_ptr<TH1> hRecCollisionsCentMc;
   static constexpr char NameHistNSplitVertices[] = "hNSplitVertices";
   std::shared_ptr<TH1> hNSplitVertices;
-  static constexpr char NameHistParticles[] = "hParticles";
-  std::shared_ptr<TH1> hParticles;
+  static constexpr char NameHistGenCollisions[] = "hGenCollisions";
+  std::shared_ptr<TH1> hGenCollisions;
 
   /// \brief Adds collision monitoring histograms in the histogram registry.
   /// \param registry reference to the histogram registry
@@ -448,9 +448,9 @@ struct HfEventSelectionMc {
     hGenCollisionsCent = registry.add<TH1>(NameHistGenCollisionsCent, "HF event counter;T0M;# of generated collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
     hRecCollisionsCentMc = registry.add<TH1>(NameHistRecCollisionsCentMc, "HF event counter;T0M;# of reconstructed collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
     hNSplitVertices = registry.add<TH1>(NameHistNSplitVertices, "HF split vertices counter;;# of reconstructed collisions per mc collision", {o2::framework::HistType::kTH1D, {{4, 1., 5.}}});
-    hParticles = registry.add<TH1>(NameHistParticles, "HF particle counter;;# of accepted particles", {o2::framework::HistType::kTH1D, {axisEvents}});
+    hGenCollisions = registry.add<TH1>(NameHistGenCollisions, "HF event counter;;# of accepted collisions", {o2::framework::HistType::kTH1D, {axisEvents}});
     // Puts labels on the collision monitoring histogram.
-    setEventRejectionLabels(hParticles);
+    setEventRejectionLabels(hGenCollisions);
   }
 
   /// \brief Configures the object from the reco workflow
@@ -563,7 +563,7 @@ struct HfEventSelectionMc {
   template <o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
   void fillHistograms(Coll const& mcCollision, const uint32_t rejectionMask, int nSplitColl = 0)
   {
-    hParticles->Fill(EventRejection::None);
+    hGenCollisions->Fill(EventRejection::None);
 
     if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
       if (!TESTBIT(rejectionMask, EventRejection::TimeFrameBorderCut) && !TESTBIT(rejectionMask, EventRejection::ItsRofBorderCut) && !TESTBIT(rejectionMask, EventRejection::PositionZ)) {
@@ -575,7 +575,7 @@ struct HfEventSelectionMc {
       if (TESTBIT(rejectionMask, reason)) {
         return;
       }
-      hParticles->Fill(reason);
+      hGenCollisions->Fill(reason);
     }
 
     if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
