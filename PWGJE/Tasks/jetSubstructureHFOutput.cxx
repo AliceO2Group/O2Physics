@@ -74,6 +74,8 @@ struct JetSubstructureHFOutputTask {
     Produces<CandidateMCPOutputTable> hfParticlesTable;
   } products;
 
+  Produces<aod::StoredHfDstarGenMcs> storedDstarGenMcsTable;
+  
   struct : ConfigurableGroup {
     Configurable<float> jetPtMinData{"jetPtMinData", 0.0, "minimum jet pT cut for data jets"};
     Configurable<float> jetPtMinDataSub{"jetPtMinDataSub", 0.0, "minimum jet pT cut for eventwise constituent subtracted data jets"};
@@ -370,6 +372,9 @@ struct JetSubstructureHFOutputTask {
             }
             jetcandidateutilities::fillCandidateMcTable(candidate, candidateCollisionIndex, products.hfParticlesTable);
             candidateMap.insert(std::make_pair(candidate.globalIndex(), products.hfParticlesTable.lastIndex()));
+            if constexpr (jethfutilities::isDstarMcCandidate<U>()) {
+              storedDstarGenMcsTable(candidate.flagMcMatchGenCharm(), candidate.pdgMother());
+            }
           } else {
             auto hfCollisionIndex = candidateCollisionMapping.find(jetcandidateutilities::getCandidateCollisionId(candidate));
             if (hfCollisionIndex != candidateCollisionMapping.end()) {
