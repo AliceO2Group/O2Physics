@@ -92,6 +92,26 @@ DECLARE_SOA_TABLE(FilterColl, "AOD", "FILTERCOLL",
                   o2::aod::collision::NumContrib,
                   o2::aod::collision::CollisionTime,
                   o2::aod::collision::CollisionTimeRes);
+DECLARE_SOA_TABLE(FilterCollLite, "AOD", "FILTERCOLLLITE",
+                  o2::aod::collision::PosX,
+                  o2::aod::collision::PosY,
+                  o2::aod::collision::PosZ,
+                  o2::aod::collision::CovXX,
+                  o2::aod::collision::CovXY,
+                  o2::aod::collision::CovYY,
+                  o2::aod::collision::CovXZ,
+                  o2::aod::collision::CovYZ,
+                  o2::aod::collision::CovZZ,
+                  o2::aod::collision::Chi2,
+                  o2::aod::collision::NumContrib,
+                  o2::aod::collision::CollisionTime);
+DECLARE_SOA_TABLE(FilterCollPos, "AOD", "FILTERCOLLPOS",
+                  o2::aod::collision::PosX,
+                  o2::aod::collision::PosY,
+                  o2::aod::collision::PosZ,
+                  o2::aod::collision::Chi2,
+                  o2::aod::collision::NumContrib,
+                  o2::aod::collision::CollisionTime);
 DECLARE_SOA_TABLE(FilterTrack, "AOD", "FILTERTRACK",
                   o2::aod::track::CollisionId,
                   aod::filtertracks::IsInsideBeamPipe,
@@ -152,12 +172,17 @@ struct FilterTracks {
   Produces<aod::FilterTrackMC> filteredTracksMC;
   Produces<aod::GenParticles> selectedGenParticles;
   Produces<aod::FilterColl> filterCollTable;
+  Produces<aod::FilterCollLite> filterCollLiteTable;
+  Produces<aod::FilterCollPos> filterCollPosTable;
 
   SliceCache cache;
   //  Configurable<int> dummy{"dummy", 0, "dummy"};
   Configurable<float> minTrackPt{"minTrackPt", 0.25, "min track pt"};
   Configurable<float> trackDcaXyMax{"trackDcaXyMax", 0.5, "max track pt"};
   Configurable<int> trackPtSampling{"trackPtSampling", 0, "track sampling mode"};
+  Configurable<bool> produceCollTableFull{"produceCollTableFull", false, "produce full collision table"};
+  Configurable<bool> produceCollTableLite{"produceCollTableLite", false, "produce lite collision table"};
+  Configurable<bool> produceCollTableExtraLite{"produceCollTableExtraLite", true, "produce extra lite collision table"};
   Configurable<float> trackPtWeightLowPt{"trackPtWeightLowPt", 0.01f, "trackPtWeightLowPt"};
   Configurable<float> trackPtWeightMidPt{"trackPtWeightMidPt", 0.10f, "trackPtWeightMidPt"};
   Configurable<float> collFilterFraction{"collFilterFraction", 0.05f, "collFilterFraction"};
@@ -296,7 +321,12 @@ struct FilterTracks {
   PROCESS_SWITCH(FilterTracks, processData, "process data", true);
   void processCollisions(FilterCollisionsWithEvSel::iterator const& collision)
   {
-    filterCollTable(collision.bcId(), collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ(), collision.flags(), collision.chi2(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
+    if (produceCollTableFull)
+      filterCollTable(collision.bcId(), collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ(), collision.flags(), collision.chi2(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
+    if (produceCollTableLite)
+      filterCollLiteTable(collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ(), collision.chi2(), collision.numContrib(), collision.collisionTime());
+    if (produceCollTableExtraLite)
+      filterCollPosTable(collision.posX(), collision.posY(), collision.posZ(), collision.chi2(), collision.numContrib(), collision.collisionTime());
   }
   PROCESS_SWITCH(FilterTracks, processCollisions, "process collisions", true);
 
