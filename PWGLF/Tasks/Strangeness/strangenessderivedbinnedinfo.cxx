@@ -285,7 +285,7 @@ struct strangenessderivedbinnedinfo {
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, +100.0f}});
     histos.add("hEventOccupancy", "hEventOccupancy", kTH1F, {axisOccupancy});
 
-    histos.add("h7dCentOccQoverPtMassRadiusPhiEta", "h7dCentOccQoverPtMassRadiusPhiEta", kTHnD, {axisCentrality, axisOccupancy, axisPt, axisMass, axisRadius, axisPhi, axisEta});
+    histos.add("h7dCentOccQoverPtMassRadiusPhiEta", "h7dCentOccQoverPtMassRadiusPhiEta", kTHnSparseF, {axisCentrality, axisOccupancy, axisPt, axisMass, axisRadius, axisPhi, axisEta});
 
     if (cfgSkimmedProcessing) {
       zorroSummary.setObject(zorro.getZorroSummary());
