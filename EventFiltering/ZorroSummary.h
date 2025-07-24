@@ -31,10 +31,16 @@ class ZorroSummary : public TNamed
   virtual void Copy(TObject& c) const; // NOLINT: Making this override breaks compilation for unknown reason
   virtual Long64_t Merge(TCollection* list);
 
-  void setupTOIs(int ntois, const std::string& toinames)
+  void setupTOIs(int ntois, const std::vector<std::string>& toinames)
   {
     mNtois = ntois;
-    mTOInames = toinames;
+    if (toinames.size() == 0) {
+      return;
+    }
+    mTOInames = toinames[0];
+    for (size_t i = 1; i < toinames.size(); i++) {
+      mTOInames += "," + toinames[i];
+    }
   }
   void setupRun(int runNumber, double tvxCountes, const std::vector<double>& toiCounters)
   {
@@ -56,7 +62,7 @@ class ZorroSummary : public TNamed
     mCurrentAnalysedTOIcounters->at(toiId)++;
   }
 
-  std::string getTOInames() const { return mTOInames; }
+  const auto& getTOInames() const { return mTOInames; }
   const auto& getTOIcounters() const { return mTOIcounters; }
   const auto& getTVXcounters() const { return mTVXcounters; }
   const auto& getAnalysedTOIcounters() const { return mAnalysedTOIcounters; }

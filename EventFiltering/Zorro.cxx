@@ -18,6 +18,7 @@
 #include <CommonConstants/LHCConstants.h>
 #include <CommonDataFormat/IRFrame.h>
 #include <CommonDataFormat/InteractionRecord.h>
+#include <CommonUtils/StringUtils.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
@@ -198,24 +199,18 @@ std::vector<int> Zorro::initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber
   mLastSelectedIdx = 0;
   mTOIs.clear();
   mTOIidx.clear();
-  while (!tois.empty()) {
-    size_t pos = tois.find(",");
-    pos = (pos == std::string::npos) ? tois.size() : pos;
-    std::string token = tois.substr(0, pos);
-    // Trim leading and trailing whitespaces from the token
-    token.erase(0, token.find_first_not_of(" "));
-    token.erase(token.find_last_not_of(" ") + 1);
+  std::vector<std::string> tokens = o2::utils::Str::tokenize(tois, ','); // tokens are trimmed
+  for (auto const& token : tokens) {
     int bin = findBin(mSelections, token) - 2;
     mTOIs.push_back(token);
     mTOIidx.push_back(bin);
-    tois = tois.erase(0, pos + 1);
   }
   mTOIcounts.resize(mTOIs.size(), 0);
   LOGF(info, "Zorro initialized for run %d, triggers of interest:", runNumber);
   for (size_t i{0}; i < mTOIs.size(); ++i) {
     LOGF(info, ">>> %s : %i", mTOIs[i].data(), mTOIidx[i]);
   }
-  mZorroSummary.setupTOIs(mTOIs.size(), tois);
+  mZorroSummary.setupTOIs(mTOIs.size(), mTOIs);
   std::vector<double> toiCounters(mTOIs.size(), 0.);
   for (size_t i{0}; i < mTOIs.size(); ++i) {
     toiCounters[i] = mSelections->GetBinContent(mTOIidx[i] + 2);
