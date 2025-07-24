@@ -113,6 +113,8 @@ enum class InputFeaturesDstarToD0Pi : uint8_t {
   ptSoftPi,
   impactParameter0,
   impactParameter1,
+  impactParameterXY0,
+  impactParameterXY1,
   impactParameterZ0,
   impactParameterZ1,
   impParamSoftPi,
@@ -219,6 +221,28 @@ class HfMlResponseDstarToD0Pi : public HfMlResponse<TypeOutputScore>
     return inputFeatures;
   }
 
+  /// Method to get the input features used for D0 in HF triggers
+  /// \param candidate is the D* candidate
+  /// \return inputFeatures vector
+  template <typename T1>
+  std::vector<float> getInputFeaturesTrigger(T1 const& candidate)
+  {
+    std::vector<float> inputFeatures;
+
+    for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
+      switch (idx) {
+        CHECK_AND_FILL_VEC_DSTAR(ptProng0);
+        CHECK_AND_FILL_VEC_DSTAR_GETTER(impactParameterXY0, impactParameter0);
+        CHECK_AND_FILL_VEC_DSTAR(impactParameterZ0);
+        CHECK_AND_FILL_VEC_DSTAR(ptProng1);
+        CHECK_AND_FILL_VEC_DSTAR_GETTER(impactParameterXY1, impactParameter1);
+        CHECK_AND_FILL_VEC_DSTAR(impactParameterZ1);
+      }
+    }
+
+    return inputFeatures;
+  }
+
  protected:
   /// Method to fill the map of available input features
   void setAvailableInputFeatures()
@@ -238,6 +262,8 @@ class HfMlResponseDstarToD0Pi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_DSTAR(ptSoftPi),
       FILL_MAP_DSTAR(impactParameter0),
       FILL_MAP_DSTAR(impactParameter1),
+      FILL_MAP_DSTAR(impactParameterXY0),
+      FILL_MAP_DSTAR(impactParameterXY1),
       FILL_MAP_DSTAR(impactParameterZ0),
       FILL_MAP_DSTAR(impactParameterZ1),
       FILL_MAP_DSTAR(impParamSoftPi),
