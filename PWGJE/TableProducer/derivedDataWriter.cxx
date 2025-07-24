@@ -137,6 +137,7 @@ struct JetDerivedDataWriter {
       Produces<aod::StoredHfDstarMcRCollIds> storedDstarMcCollisionsMatchingTable;
       Produces<aod::StoredHfDstarPBases> storedDstarParticlesTable;
       Produces<aod::StoredJDstarPIds> storedDstarParticleIdsTable;
+      Produces<aod::StoredHfDstarGenMcs> storedDstarGenMcsTable;
     } productsDstar;
 
     struct : ProducesGroup {
@@ -653,6 +654,7 @@ struct JetDerivedDataWriter {
         for (const auto& DstarParticle : dstarParticlesPerMcCollision) {
           jethfutilities::fillHFCandidateMcTable(DstarParticle, products.productsDstar.storedDstarMcCollisionsTable.lastIndex(), products.productsDstar.storedDstarParticlesTable);
           products.productsDstar.storedDstarParticleIdsTable(mcCollisionMapping[mcCollision.globalIndex()], particleMapping[DstarParticle.mcParticleId()]);
+          products.productsDstar.storedDstarGenMcsTable(DstarParticle.flagMcMatchGenCharm(), DstarParticle.pdgMother());
         }
       }
     }
