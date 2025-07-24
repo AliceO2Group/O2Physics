@@ -148,7 +148,7 @@ struct PhotonChargedTriggerCorrelation {
                                                   {-10000, 10000},
                                                   "zPv mixing bins"};
   Configurable<std::vector<double>> binsMultMcTrue{"binsMultMcTrue",
-                                                   {-0.5, 5.5, 10.5, 15.5, 20.5, 25.5, 30.5, 35.5, 40.5},
+                                                   {-0.5, 10.5, 15.5, 20.5, 25.5, 30.5, 35.5, 40.5, 50.5, 64},
                                                    "multiplicity mixing bins for mc true"};
 
   // configurables from other tasks
@@ -212,7 +212,7 @@ struct PhotonChargedTriggerCorrelation {
   // (possibly replace by some advanced derived data method and O2 event mixing in future?)
   class MixingTriggerMemory
   {
-  public:
+   public:
     // finds bin that value belongs to (assumes ordered bins) (starts at 0; includes underflow (return -1) and overlflow (return bins.size() - 1))
     // should be faster than some std binary search due to small number of bins (zPv, mult)
     static int findIntervalBin(double value, const std::vector<double>& bins)
@@ -262,7 +262,7 @@ struct PhotonChargedTriggerCorrelation {
       return savedTriggersZPvMult[iBinCorrZPv][iBinCorrMult];
     }
 
-  private:
+   private:
     double const zPvRoundingErrorAdjust = 1.0001;
     int nTriggerSavedForMixing;
     std::vector<double> triggerBinValuesZPv;
@@ -1082,7 +1082,7 @@ struct PhotonChargedTriggerCorrelation {
                                           Photon = 2,
                                           Pi0 = 3,
                                           Eta = 4 };
-  static constexpr const char* mcHistPaths[2][2][5] = {
+  static constexpr const char* McHistPaths[2][2][5] = {
     {{"mc/true/corr/h6_corr_hadron", "mc/true/corr/h6_corr_pipm", "mc/true/corr/h6_corr_photon",
       "mc/true/corr/h6_corr_pi0", "mc/true/corr/h6_corr_eta"},
      {"mc/true/corr/h6_mix_hadron", "mc/true/corr/h6_mix_pipm", "mc/true/corr/h6_mix_photon",
@@ -1093,7 +1093,7 @@ struct PhotonChargedTriggerCorrelation {
       "mc/recoCol_true/corr/h6_mix_pi0", "mc/recoCol_true/corr/h6_mix_eta"}}};
   static constexpr const char* getMcHistPath(McCorrEventType eventType, McCorrCorrelationType correlationType, McCorrAssociatedType associatedType)
   {
-    return mcHistPaths[static_cast<int>(eventType)][static_cast<int>(correlationType)][static_cast<int>(associatedType)];
+    return McHistPaths[static_cast<int>(eventType)][static_cast<int>(correlationType)][static_cast<int>(associatedType)];
   }
 
   // fill mc correaltion histograms based on given associated mc particle
