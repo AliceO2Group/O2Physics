@@ -585,9 +585,9 @@ struct PseudorapidityDensityMFT {
         float phi = track.phi();
         o2::math_utils::bringTo02Pi(phi);
         if (usePhiCut) {
-           if ((phi <= 0.02) || ((phi >= 3.10) && (phi <= 3.23)) || (phi >= 6.21))
-              continue;
-          }
+          if ((phi <= 0.02) || ((phi >= 3.10) && (phi <= 3.23)) || (phi >= 6.21))
+            continue;
+        }
         if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0 && chi2ndf < cfgChi2NDFMax && (phi > cfgPhiCut1 && phi < cfgPhiCut2)) {
           registry.fill(HIST("Tracks/2Danalysis/EtaZvtx"), track.eta(), z);
         }
@@ -651,7 +651,7 @@ struct PseudorapidityDensityMFT {
               if (usePhiCut) {
                 if ((phi <= 0.02) || ((phi >= 3.10) && (phi <= 3.23)) || (phi >= 6.21))
                   continue;
-              }              
+              }
               registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
               if (midtracks.size() > 0 && retrack.ambDegree() > 0) {
                 registry.fill(HIST("Tracks/EtaZvtx_gt0"), track.eta(), z);
@@ -889,7 +889,7 @@ struct PseudorapidityDensityMFT {
       if (!disableITSROFCut && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
         return;
       }
-      if (!useEvSel || (useEvSel && collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder)  && collision.selection_bit(aod::evsel::kNoSameBunchPileup))) {
+      if (!useEvSel || (useEvSel && collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoSameBunchPileup))) {
         atLeastOne = true;
         auto perCollisionSample = sample->sliceByCached(
           o2::aod::fwdtrack::collisionId, collision.globalIndex(), cache);
@@ -936,11 +936,11 @@ struct PseudorapidityDensityMFT {
           continue;
         }
         float phi = particle.phi();
-          o2::math_utils::bringTo02Pi(phi);
-          if (usePhiCut) {
-            if ((phi <= 0.02) || ((phi >= 3.10) && (phi <= 3.23)) || (phi >= 6.21))
-              continue;
-          }
+        o2::math_utils::bringTo02Pi(phi);
+        if (usePhiCut) {
+          if ((phi <= 0.02) || ((phi >= 3.10) && (phi <= 3.23)) || (phi >= 6.21))
+            continue;
+        }
         if (cfgnEta1 < particle.eta() && particle.eta() < cfgnEta2 && (phi > cfgPhiCut1 && phi < cfgPhiCut2)) {
           registry.fill(HIST("TracksEtaZvtxGen_t"), particle.eta(),
                         mcCollision.posZ());
