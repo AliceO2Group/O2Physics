@@ -26,7 +26,9 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>;
+using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, 
+                             aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa,
+                             aod::pidTOFFullPi, aod::pidTOFFullPr, aod::pidTOFFullKa>;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSel>;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSel>;
 
@@ -95,7 +97,9 @@ struct sigmaminustask {
                         kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth(),
                         kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug(),
                         kinkCand.dcaMothPv(), kinkCand.dcaDaugPv(), kinkCand.dcaKinkTopo(),
-                        kinkCand.mothSign(), dauTrack.tpcNSigmaPi(), dauTrack.tpcNSigmaPr(), dauTrack.tpcNSigmaKa());
+                        kinkCand.mothSign(), 
+                        dauTrack.tpcNSigmaPi(), dauTrack.tpcNSigmaPr(), dauTrack.tpcNSigmaKa(),
+                        dauTrack.tofNSigmaPi(), dauTrack.tofNSigmaPr(), dauTrack.tofNSigmaKa());
       }
 
     }
@@ -141,7 +145,10 @@ struct sigmaminustask {
             if (piMother.globalIndex() != mcTrackSigma.globalIndex()) {
               continue;
             }
-            if (std::abs(mcTrackSigma.pdgCode()) != 3112 || std::abs(mcTrackPiDau.pdgCode()) != 211) {
+            if (std::abs(mcTrackSigma.pdgCode()) != 3112) {
+              continue;
+            }
+            if (std::abs(mcTrackPiDau.pdgCode()) != 211 && std::abs(mcTrackPiDau.pdgCode()) != 2212) {
               continue;
             }
             rSigmaMinus.fill(HIST("h2MassPtMCRec"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
@@ -154,6 +161,7 @@ struct sigmaminustask {
                               kinkCand.dcaMothPv(), kinkCand.dcaDaugPv(), kinkCand.dcaKinkTopo(),
                               kinkCand.mothSign(),
                               dauTrack.tpcNSigmaPi(), dauTrack.tpcNSigmaPr(), dauTrack.tpcNSigmaKa(),
+                              dauTrack.tofNSigmaPi(), dauTrack.tofNSigmaPr(), dauTrack.tofNSigmaKa(),
                               mcTrackSigma.pdgCode(), mcTrackPiDau.pdgCode(),
                               kinkCand.ptMoth(), kinkCand.mSigmaMinus());
             }
@@ -164,25 +172,27 @@ struct sigmaminustask {
 
     // Loop over all generated particles to fill MC histograms
     for (const auto& mcPart : particlesMC) {
-      if (std::abs(mcPart.pdgCode()) != 3112 || std::abs(mcPart.y()) > 0.5) {
+      if (std::abs(mcPart.pdgCode()) != 3112 || std::abs(mcPart.y()) > 1.0) { // only sigma mothers and rapidity cut
         continue;
       }
       if (!mcPart.has_daughters()) {
         continue; // Skip if no daughters
       }
       bool hasSigmaDaughter = false;
+      int daug_pdg = 0;
       std::array<float, 3> secVtx;
       std::array<float, 3> momDaug;
       for (const auto& daughter : mcPart.daughters_as<aod::McParticles>()) {
-        if (std::abs(daughter.pdgCode()) == 211) { // Pi PDG code
+        if (std::abs(daughter.pdgCode()) == 211 || std::abs(daughter.pdgCode()) == 2212) { // Pi or proton daughter
           hasSigmaDaughter = true;
           secVtx = {daughter.vx(), daughter.vy(), daughter.vz()};
           momDaug = {daughter.px(), daughter.py(), daughter.pz()};
-          break; // Found a pi daughter, exit loop
+          daug_pdg = daughter.pdgCode();
+          break; // Found a daughter, exit loop
         }
       }
       if (!hasSigmaDaughter) {
-        continue; // Skip if no pi daughter found
+        continue; // Skip if no pi/proton daughter found
       }
       float mcMass = std::sqrt(mcPart.e() * mcPart.e() - mcPart.p() * mcPart.p());
       int sigmaSign = mcPart.pdgCode() > 0 ? 1 : -1; // Determine the sign of the Sigma
@@ -190,13 +200,14 @@ struct sigmaminustask {
 
       // Fill output table with non reconstructed MC candidates
       if (fillOutputTree) {
-        outputDataTableMC(mcPart.vx(), mcPart.vy(), mcPart.vz(),
-                          mcPart.px(), mcPart.py(), mcPart.pz(),
-                          momDaug[0], momDaug[1], momDaug[2],
-                          -999, -999, -999, // DCA values not reconstructed
+        outputDataTableMC(-999, -999, -999,
+                          -999, -999, -999,
+                          -999, -999, -999,
+                          -999, -999, -999, 
                           sigmaSign,
-                          -999, -999, -999, // NSigmaTPC values not reconstructed
-                          mcPart.pdgCode(), 211,
+                          -999, -999, -999,
+                          -999, -999, -999,
+                          mcPart.pdgCode(), daug_pdg,
                           mcPart.pt(), mcMass);
       }
     }

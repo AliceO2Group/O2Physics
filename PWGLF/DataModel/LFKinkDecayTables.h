@@ -50,12 +50,15 @@ DECLARE_SOA_COLUMN(DcaKinkTopo, dcaKinkTopo, float); //! DCA of the kink topolog
 DECLARE_SOA_COLUMN(NSigmaTPCPi, nSigmaTPCPi, float); //! Number of sigmas for the pion candidate from Sigma kink in TPC
 DECLARE_SOA_COLUMN(NSigmaTPCPr, nSigmaTPCPr, float); //! Number of sigmas for the proton candidate from Sigma kink in TPC
 DECLARE_SOA_COLUMN(NSigmaTPCKa, nSigmaTPCKa, float); //! Number of sigmas for the kaon candidate from Sigma kink in TPC
+DECLARE_SOA_COLUMN(NSigmaTOFPi, nSigmaTOFPi, float); //! Number of sigmas for the pion candidate from Sigma kink in TOF
+DECLARE_SOA_COLUMN(NSigmaTOFPr, nSigmaTOFPr, float); //! Number of sigmas for the proton candidate from Sigma kink in TOF
+DECLARE_SOA_COLUMN(NSigmaTOFKa, nSigmaTOFKa, float); //! Number of sigmas for the kaon candidate from Sigma kink in TOF
 
 // MC Columns
-DECLARE_SOA_COLUMN(MothPdgCode, mothPdgCode, int);      //! PDG code of the Sigma daughter
-DECLARE_SOA_COLUMN(DaugPdgCode, daugPdgCode, int);      //! PDG code of the kink daughter
-DECLARE_SOA_COLUMN(PtMC, ptMC, float);                   //! pT of the candidate in MC
-DECLARE_SOA_COLUMN(MassMC, massMC, float);               //! Invariant mass of the candidate in MC
+DECLARE_SOA_COLUMN(MothPdgCode, mothPdgCode, int);   //! PDG code of the Sigma daughter
+DECLARE_SOA_COLUMN(DaugPdgCode, daugPdgCode, int);   //! PDG code of the kink daughter
+DECLARE_SOA_COLUMN(PtMC, ptMC, float);               //! pT of the candidate in MC
+DECLARE_SOA_COLUMN(MassMC, massMC, float);           //! Invariant mass of the candidate in MC
 
 
 // DYNAMIC COLUMNS
@@ -137,7 +140,8 @@ DECLARE_SOA_TABLE(SlimKinkCands, "AOD", "SLIMKINKCANDS",
                   kinkcand::PxDaug, kinkcand::PyDaug, kinkcand::PzDaug,
                   kinkcand::DcaMothPv, kinkcand::DcaDaugPv, kinkcand::DcaKinkTopo,
                   kinkcand::MothSign, 
-                  kinkcand::NSigmaTPCPi, kinkcand::NSigmaTPCPr, kinkcand::NSigmaTPCKa);
+                  kinkcand::NSigmaTPCPi, kinkcand::NSigmaTPCPr, kinkcand::NSigmaTPCKa,
+                  kinkcand::NSigmaTOFPi, kinkcand::NSigmaTOFPr, kinkcand::NSigmaTOFKa);
 
 DECLARE_SOA_TABLE(SlimKinkCandsMC, "AOD", "SLIMKINKCANDSMC", 
                   kinkcand::XDecVtx, kinkcand::YDecVtx, kinkcand::ZDecVtx,
@@ -146,6 +150,7 @@ DECLARE_SOA_TABLE(SlimKinkCandsMC, "AOD", "SLIMKINKCANDSMC",
                   kinkcand::DcaMothPv, kinkcand::DcaDaugPv, kinkcand::DcaKinkTopo,
                   kinkcand::MothSign,
                   kinkcand::NSigmaTPCPi, kinkcand::NSigmaTPCPr, kinkcand::NSigmaTPCKa,
+                  kinkcand::NSigmaTOFPi, kinkcand::NSigmaTOFPr, kinkcand::NSigmaTOFKa,
                   kinkcand::MothPdgCode, kinkcand::DaugPdgCode,
                   kinkcand::PtMC, kinkcand::MassMC);
 
