@@ -91,7 +91,7 @@ struct eventselectionRun2 {
 
     // task-specific
     timestampMod.init(timestampConfigurables, metadataInfo);
-    bcselmodule.init(context, bcselOpts, histos);
+    bcselmodule.init(context, bcselOpts, histos, metadataInfo);
     evselmodule.init(context, evselOpts, histos, metadataInfo);
   }
 
@@ -154,7 +154,7 @@ struct eventselectionRun3 {
 
     // task-specific
     timestampMod.init(timestampConfigurables, metadataInfo);
-    bcselmodule.init(context, bcselOpts, histos);
+    bcselmodule.init(context, bcselOpts, histos, metadataInfo);
     evselmodule.init(context, evselOpts, histos, metadataInfo);
     lumimodule.init(context, lumiOpts, histos);
   }
