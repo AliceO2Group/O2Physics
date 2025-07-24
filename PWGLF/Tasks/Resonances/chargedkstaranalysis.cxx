@@ -853,8 +853,7 @@ struct chargedkstaranalysis {
           histos.fill(HIST("QA/after/kstarinvmass"), lResoKstar.M());
           histos.fill(HIST("hInvmass_Kstar"), collision.centFT0M(), lResoKstar.Pt(), lResoKstar.M());
 
-        } // IsMix
-        else {
+        } else {
 
           histos.fill(HIST("hInvmass_KstarME"), collision.centFT0M(), lResoKstar.Pt(), lResoKstar.M());
         }
