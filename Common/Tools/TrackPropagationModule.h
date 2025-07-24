@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file TrackPropagationModule.h
-/// \brief track propagation module functionality to be used in tasks
+/// \brief track propagation module functionality to be used in core services
 /// \author ALICE
 
 #ifndef COMMON_TOOLS_TRACKPROPAGATIONMODULE_H_
