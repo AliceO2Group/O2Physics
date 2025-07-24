@@ -484,7 +484,7 @@ struct CorrelationTask {
         if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u) {
           continue; // skip particles that do not match the decay mask
         }
-        if (cfgV0RapidityMax > 0 && abs(getV0Rapidity(track1)) > cfgV0RapidityMax) {
+        if (cfgV0RapidityMax > 0 && std::abs(getV0Rapidity(track1)) > cfgV0RapidityMax) {
           continue; // V0s are not allowed to be outside the rapidity range
         }
         registry.fill(HIST("yvspt"), getV0Rapidity(track1), track1.pt());
@@ -565,7 +565,7 @@ struct CorrelationTask {
           if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track2.decay()))) == 0u) {
             continue; // skip particles that do not match the decay mask
           }
-          if (cfgV0RapidityMax > 0 && abs(getV0Rapidity(track1)) > cfgV0RapidityMax) {
+          if (cfgV0RapidityMax > 0 && std::abs(getV0Rapidity(track1)) > cfgV0RapidityMax) {
             continue; // V0s are not allowed to be outside the rapidity range
           }
         }
