@@ -427,6 +427,7 @@ struct Lambda1520analysisinpp {
 
   float massKa = MassKaonCharged;
   float massPr = MassProton;
+  int Lambda1520Pdg = Pdg::kLambda1520_Py; // PDG code for Lambda(1520)
 
   // Centralicity estimator selection
   template <typename Coll>
@@ -971,7 +972,7 @@ struct Lambda1520analysisinpp {
           if (motherstrk1[0] != motherstrk2[0]) // Same mother
             continue;
 
-          if (std::abs(mothersPDGtrk1[0]) != Pdg::kLambda1520_Py)
+          if (std::abs(mothersPDGtrk1[0]) != Lambda1520Pdg)
             continue;
 
           // LOGF(info, "mother trk1 id: %d, mother trk1: %d, trk1 id: %d, trk1 pdgcode: %d, mother trk2 id: %d, mother trk2: %d, trk2 id: %d, trk2 pdgcode: %d", motherstrk1[0], mothersPDGtrk1[0], trk1.globalIndex(), mctrk1.pdgCode(), motherstrk2[0], mothersPDGtrk2[0], trk2.globalIndex(), mctrk2.pdgCode());
@@ -1075,7 +1076,7 @@ struct Lambda1520analysisinpp {
   }
   PROCESS_SWITCH(Lambda1520analysisinpp, processMC, "Process Event for MC Light without partition", false);
 
-  Partition<aod::McParticles> selectedMCParticles = (aod::mcparticle::pdgCode.abs() == Pdg::kLambda1520_Py); // Lambda(1520)
+  Partition<aod::McParticles> selectedMCParticles = (nabs(aod::mcparticle::pdgCode) == Lambda1520Pdg); // Lambda(1520)
 
   void processMCTrue(MCEventCandidates::iterator const& collision, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
@@ -1091,7 +1092,7 @@ struct Lambda1520analysisinpp {
     // Not related to the real collisions
     for (const auto& part : mcParts) { // loop over all MC particles
 
-      if (std::abs(part.pdgCode()) != Pdg::kLambda1520_Py) // Lambda1520(0)
+      if (std::abs(part.pdgCode()) != Lambda1520Pdg) // Lambda1520(0)
         continue;
 
       std::vector<int> daughterPDGs;
