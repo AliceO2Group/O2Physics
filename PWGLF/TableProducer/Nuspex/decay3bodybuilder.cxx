@@ -231,6 +231,7 @@ struct decay3bodyBuilder {
     bool isTrueH3L;
     bool isTrueAntiH3L;
     bool isReco;
+    int motherPdgCode;
     int daughterPrPdgCode;
     int daughterPiPdgCode;
     int daughterDePdgCode;
@@ -849,7 +850,7 @@ struct decay3bodyBuilder {
         // get generated mother MC info
         if (motherID > 0) {
           auto mcTrackH3L = mcParticles.rawIteratorAt(motherID);
-          int chargeFactor = mcTrackH3L.pdgCode() > 0 ? 1 : -1;
+          this3BodyMCInfo.motherPdgCode = mcTrackH3L.pdgCode();
           this3BodyMCInfo.label = motherID;
           this3BodyMCInfo.genMomentum = {mcTrackH3L.px(), mcTrackH3L.py(), mcTrackH3L.pz()};
           this3BodyMCInfo.genDecVtx = {mcTrackProton.vx(), mcTrackProton.vy(), mcTrackProton.vz()};
@@ -857,8 +858,8 @@ struct decay3bodyBuilder {
           this3BodyMCInfo.genPhi = mcTrackH3L.phi();
           this3BodyMCInfo.genEta = mcTrackH3L.eta();
           this3BodyMCInfo.genRapidity = mcTrackH3L.y();
-          this3BodyMCInfo.isTrueH3L = chargeFactor > 0;
-          this3BodyMCInfo.isTrueAntiH3L = chargeFactor < 0;
+          this3BodyMCInfo.isTrueH3L = this3BodyMCInfo.motherPdgCode > 0 ? true : false;
+          this3BodyMCInfo.isTrueAntiH3L = this3BodyMCInfo.motherPdgCode < 0 ? true : false;
         }
 
         // fill analysis tables (only McVtx3BodyDatas is filled here)
@@ -878,12 +879,12 @@ struct decay3bodyBuilder {
       for (const auto& mcparticle : mcParticles) {
         // MC info
         resetMCInfo(this3BodyMCInfo);
-        this3BodyMCInfo.isReco = false;
 
         // skip MC particle if reconstructed and already filled previously
         if (mcParticleIsReco[mcparticle.globalIndex()] == true) {
           continue;
         }
+        this3BodyMCInfo.isReco = false;
 
         // set flag if corresponding MC collision has matched reconstructed collision which passed event selection
         this3BodyMCInfo.survivedEventSel = isGoodCollision[mcparticle.mcCollisionId()];
@@ -912,7 +913,7 @@ struct decay3bodyBuilder {
         }
 
         // check if hypertriton decayed via 3-body decay and is particle or anti-particle
-        if ((haveProton && haveAntiPion && haveDeuteron) || (haveAntiProton && havePion && haveAntiDeuteron)) {
+        if ((haveProton && haveAntiPion && haveDeuteron && !(haveAntiProton || havePion || haveAntiDeuteron)) || (haveAntiProton && havePion && haveAntiDeuteron && !(haveProton || haveAntiPion || haveDeuteron))) {
           if (mcparticle.pdgCode() > 0) {
             this3BodyMCInfo.isTrueH3L = true;
           } else if (mcparticle.pdgCode() < 0) {
@@ -973,6 +974,7 @@ struct decay3bodyBuilder {
                                    this3BodyMCInfo.genPtProton, this3BodyMCInfo.genPtPion, this3BodyMCInfo.genPtDeuteron,
                                    this3BodyMCInfo.isTrueH3L, this3BodyMCInfo.isTrueAntiH3L,
                                    this3BodyMCInfo.isReco,
+                                   mcparticle.pdgCode(),
                                    this3BodyMCInfo.daughterPrPdgCode, this3BodyMCInfo.daughterPiPdgCode, this3BodyMCInfo.daughterDePdgCode,
                                    this3BodyMCInfo.isDeuteronPrimary,
                                    this3BodyMCInfo.survivedEventSel);
@@ -1160,6 +1162,7 @@ struct decay3bodyBuilder {
                                this3BodyMCInfo.genPtProton, this3BodyMCInfo.genPtPion, this3BodyMCInfo.genPtDeuteron,
                                this3BodyMCInfo.isTrueH3L, this3BodyMCInfo.isTrueAntiH3L,
                                this3BodyMCInfo.isReco,
+                               this3BodyMCInfo.motherPdgCode,
                                this3BodyMCInfo.daughterPrPdgCode, this3BodyMCInfo.daughterPiPdgCode, this3BodyMCInfo.daughterDePdgCode,
                                this3BodyMCInfo.isDeuteronPrimary,
                                this3BodyMCInfo.survivedEventSel);
@@ -1240,7 +1243,7 @@ struct decay3bodyBuilder {
 
   // ______________________________________________________________
   // function to reset MCInfo
-  void resetMCInfo(mc3Bodyinfo mcInfo)
+  void resetMCInfo(mc3Bodyinfo& mcInfo)
   {
     mcInfo.label = -1;
     mcInfo.genMomentum[0] = -1., mcInfo.genMomentum[1] = -1., mcInfo.genMomentum[2] = -1.;
@@ -1251,6 +1254,7 @@ struct decay3bodyBuilder {
     mcInfo.genPtProton = -1., mcInfo.genPtPion = -1., mcInfo.genPtDeuteron = -1.;
     mcInfo.isTrueH3L = false, mcInfo.isTrueAntiH3L = false;
     mcInfo.isReco = false;
+    mcInfo.motherPdgCode = -1;
     mcInfo.daughterPrPdgCode = -1, mcInfo.daughterPiPdgCode = -1, mcInfo.daughterDePdgCode = -1;
     mcInfo.isDeuteronPrimary = false;
     mcInfo.survivedEventSel = false;

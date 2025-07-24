@@ -122,6 +122,7 @@ DECLARE_SOA_COLUMN(GenPtPi, genPtPi, float);            //! generated transverse
 DECLARE_SOA_COLUMN(GenPtDe, genPtDe, float);            //! generated transverse momentum deuteron daughter particle
 DECLARE_SOA_COLUMN(IsTrueH3L, isTrueH3l, bool);         //! flag for true hypertriton candidate
 DECLARE_SOA_COLUMN(IsTrueAntiH3L, isTrueAntiH3l, bool); //! flag for true anti-hypertriton candidate
+DECLARE_SOA_COLUMN(MotherPdgCode, motherPdgCode, int);  //! PDG code of the mother particle
 DECLARE_SOA_COLUMN(PrPdgCode, prPdgCode, int);          //! MC particle proton PDG code
 DECLARE_SOA_COLUMN(PiPdgCode, piPdgCode, int);          //! MC particle pion PDG code
 DECLARE_SOA_COLUMN(DePdgCode, dePdgCode, int);          //! MC particle deuteron PDG code
@@ -276,6 +277,7 @@ DECLARE_SOA_TABLE(McVtx3BodyDatas, "AOD", "MC3BODYDATA", //!
                   vtx3body::GenPtPr, vtx3body::GenPtPi, vtx3body::GenPtDe,
                   vtx3body::IsTrueH3L, vtx3body::IsTrueAntiH3L,
                   vtx3body::IsReco,
+                  vtx3body::MotherPdgCode,
                   vtx3body::PrPdgCode, vtx3body::PiPdgCode, vtx3body::DePdgCode,
                   vtx3body::IsDePrimary,
                   vtx3body::IsSurvEvSel,
