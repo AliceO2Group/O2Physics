@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file kstarInOO.cxx
+/// \brief the pT spectra of k*0(892) resonance analysis in OO collisions
 /// \author Jimun Lee <jimun.lee@cern.ch>
 
 #include "Common/DataModel/Centrality.h"
@@ -215,6 +216,9 @@ struct kstarInOO {
     if (cfg_Track_PrimaryTrack && !track.isPrimaryTrack())
       return false;
 
+    if (cfg_Track_GlobalWoDCATrack && !track.isGlobalTrackWoDCA())
+      return false;
+
     if (track.tpcNClsFindable() < cfg_Track_nFindableTPCClusters)
       return false;
 
@@ -311,9 +315,7 @@ struct kstarInOO {
         } else if (conjugate > 0) {
           OOhistos.fill(HIST("hMC_LSS"), centrality, KstarPt, Minv);
         }
-      }
-
-      else {
+      } else {
         if (conjugate < 0) {
           OOhistos.fill(HIST("hMC_USS_Mix"), centrality, KstarPt, Minv);
         } else if (conjugate > 0) {
