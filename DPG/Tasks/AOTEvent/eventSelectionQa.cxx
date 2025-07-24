@@ -12,7 +12,7 @@
 /// \file eventSelectionQa.cxx
 /// \brief Event selection QA task
 ///
-/// \author Evgeny Kryshen <evgeny.kryshen@cern.ch>
+/// \author Evgeny Kryshen <evgeny.kryshen@cern.ch> and Igor Altsybeev <Igor.Altsybeev@cern.ch>
 
 #include <map>
 #include <vector>
@@ -361,7 +361,17 @@ struct EventSelectionQaTask {
       // requested by TPC experts: nTPConly tracks vs occupancy
       histos.add("occupancyQA/hNumTracksTPConly_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksTPConly, axisOccupancyTracks});
       histos.add("occupancyQA/hNumTracksTPConlyNoITS_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksTPConly, axisOccupancyTracks});
+      // request from experts to add track properties vs occupancy, to compare data vs MC
+      const AxisSpec axisOccupancyForTrackQA{60, 0., 15000, "occupancy (n ITS tracks weighted)"};
+      const AxisSpec axisNTPCcls{150, 0, 150, "n TPC clusters"};
+      histos.add("occupancyQA/tpcNClsFound_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNTPCcls, axisOccupancyForTrackQA});
+      histos.add("occupancyQA/tpcNClsFindable_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNTPCcls, axisOccupancyForTrackQA});
+      histos.add("occupancyQA/tpcNClsShared_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNTPCcls, axisOccupancyForTrackQA});
+      histos.add("occupancyQA/tpcNCrossedRows_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNTPCcls, axisOccupancyForTrackQA});
+      const AxisSpec axisChi2TPC{150, 0, 15, "chi2Ncl TPC"};
+      histos.add("occupancyQA/tpcChi2_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisChi2TPC, axisOccupancyForTrackQA});
 
+      // ITS in-ROF occupancy
       histos.add("occupancyQA/hITSTracks_ev1_vs_ev2_2coll_in_ROF", ";nITStracks event #1;nITStracks event #2", kTH2D, {{200, 0., 6000}, {200, 0., 6000}});
       histos.add("occupancyQA/hITSTracks_ev1_vs_ev2_2coll_in_ROF_UPC", ";nITStracks event #1;nITStracks event #2", kTH2D, {{41, -0.5, 40.5}, {41, -0.5, 40.5}});
       histos.add("occupancyQA/hITSTracks_ev1_vs_ev2_2coll_in_ROF_nonUPC", ";nITStracks event #1;nITStracks event #2", kTH2D, {{200, 0., 6000}, {200, 0., 6000}});
@@ -1128,6 +1138,10 @@ struct EventSelectionQaTask {
       int nTracksITSTPC = 0;
 
       bool isTVX = col.selection_bit(kIsTriggerTVX);
+
+      int occupancyByTracks = col.trackOccupancyInTimeRange();
+      float occupancyByFT0C = col.ft0cOccupancyInTimeRange();
+
       for (const auto& track : tracksGrouped) {
         int trackBcDiff = bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS;
 
@@ -1158,7 +1172,19 @@ struct EventSelectionQaTask {
           nPV++;
           if (track.hasTPC()) {
             nContributorsAfterEtaTPCLooseCuts++;
-          }
+
+            if (!isLowFlux && col.sel8() && col.selection_bit(kNoSameBunchPileup) && fabs(col.posZ()) < 10 && occupancyByTracks >= 0) {
+              histos.fill(HIST("occupancyQA/tpcNClsFound_vs_V0A_vs_occupancy"), multV0A, track.tpcNClsFound(), occupancyByTracks);
+              histos.fill(HIST("occupancyQA/tpcNClsFindable_vs_V0A_vs_occupancy"), multV0A, track.tpcNClsFindable(), occupancyByTracks);
+              histos.fill(HIST("occupancyQA/tpcNClsShared_vs_V0A_vs_occupancy"), multV0A, track.tpcNClsShared(), occupancyByTracks);
+              histos.fill(HIST("occupancyQA/tpcChi2_vs_V0A_vs_occupancy"), multV0A, track.tpcChi2NCl(), occupancyByTracks);
+              int tpcNClsFindableMinusCrossedRowsCorrected = track.tpcNClsFindableMinusCrossedRows();
+              // correct for a buggy behaviour due to int8 and uint8 difference:
+              if (tpcNClsFindableMinusCrossedRowsCorrected < -70)
+                tpcNClsFindableMinusCrossedRowsCorrected += 256;
+              histos.fill(HIST("occupancyQA/tpcNCrossedRows_vs_V0A_vs_occupancy"), multV0A, track.tpcNClsFindable() - tpcNClsFindableMinusCrossedRowsCorrected, occupancyByTracks);
+            }
+          } // end of hasTPC
           if (track.tpcNClsFound() > 70 && track.tpcNClsCrossedRows() > 80 && track.itsChi2NCl() < 36 && track.tpcChi2NCl() < 4) {
             nContributorsAfterEtaTPCCuts++;
             // ROF border QA
@@ -1183,10 +1209,8 @@ struct EventSelectionQaTask {
 
       histos.fill(HIST("hNcontribAfterCutsVsBcInTF"), bcInTF, nContributorsAfterEtaTPCCuts);
 
-      if (!isLowFlux && col.sel8() && fabs(col.posZ()) < 10) {
-        int occupancyByTracks = col.trackOccupancyInTimeRange();
+      if (!isLowFlux && col.sel8() && col.selection_bit(kNoSameBunchPileup) && fabs(col.posZ()) < 10) {
         histos.fill(HIST("occupancyQA/hOccupancyByTracks"), occupancyByTracks);
-        float occupancyByFT0C = col.ft0cOccupancyInTimeRange();
         histos.fill(HIST("occupancyQA/hOccupancyByFT0C"), occupancyByFT0C);
         if (occupancyByTracks >= 0) {
           histos.fill(HIST("occupancyQA/hOccupancyByFT0CvsByTracks"), occupancyByTracks, occupancyByFT0C);
