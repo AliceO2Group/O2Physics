@@ -9,6 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "PWGLF/DataModel/LFSlimHeLambda.h"
+
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -16,7 +18,6 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
-#include "PWGLF/DataModel/LFSlimHeLambda.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <DCAFitter/DCAFitterN.h>
@@ -46,7 +47,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
-
 
 namespace
 {
