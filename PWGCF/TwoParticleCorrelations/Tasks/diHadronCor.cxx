@@ -14,38 +14,43 @@
 /// \author Zhiyong Lu (zhiyong.lu@cern.ch)
 /// \since  May/03/2025
 
-#include <CCDB/BasicCCDBManager.h>
-#include "TRandom3.h"
-#include "TF1.h"
-#include <vector>
-#include <string>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/StepTHn.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "CommonConstants/MathConstants.h"
-#include "Common/Core/RecoDecay.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "PWGCF/DataModel/CorrelationsDerived.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
-#include "PWGCF/GenericFramework/Core/GFWPowerArray.h"
+#include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "PWGCF/GenericFramework/Core/GFW.h"
 #include "PWGCF/GenericFramework/Core/GFWCumulant.h"
+#include "PWGCF/GenericFramework/Core/GFWPowerArray.h"
 #include "PWGCF/GenericFramework/Core/GFWWeights.h"
-#include "DataFormatsParameters/GRPObject.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CommonConstants/MathConstants.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/PID.h"
+#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+
+#include "TF1.h"
+#include "TRandom3.h"
 #include <TPDGCode.h>
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -98,6 +103,9 @@ struct DiHadronCor {
   O2_DEFINE_CONFIGURABLE(cfgUseEventWeights, bool, false, "Use event weights for mixed event")
   O2_DEFINE_CONFIGURABLE(cfgUsePtOrder, bool, true, "enable trigger pT < associated pT cut")
   O2_DEFINE_CONFIGURABLE(cfgUsePtOrderInMixEvent, bool, true, "enable trigger pT < associated pT cut in mixed event")
+  O2_DEFINE_CONFIGURABLE(cfgPIDUseITSPID, bool, true, "Use ITS PID for particle identification")
+  O2_DEFINE_CONFIGURABLE(cfgPIDTofPtCut, float, 0.5f, "Minimum pt to use TOF N-sigma")
+  O2_DEFINE_CONFIGURABLE(cfgPIDParticle, int, 0, "1 = pion, 2 = kaon, 3 = proton, 0 for no PID")
 
   SliceCache cache;
 
@@ -112,6 +120,9 @@ struct DiHadronCor {
   ConfigurableAxis axisVtxMix{"axisVtxMix", {VARIABLE_WIDTH, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "vertex axis for mixed event histograms"};
   ConfigurableAxis axisMultMix{"axisMultMix", {VARIABLE_WIDTH, 0, 10, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260}, "multiplicity / centrality axis for mixed event histograms"};
   ConfigurableAxis axisSample{"axisSample", {cfgSampleSize, 0, cfgSampleSize}, "sample axis for histograms"};
+  Configurable<std::vector<double>> pidTofNsigmaCut{"pidTofNsigmaCut", std::vector<double>{1.5, 1.5, 1.5, -1.5, -1.5, -1.5}, "TOF n-sigma cut for pions_posNsigma, kaons_posNsigma, protons_posNsigma, pions_negNsigma, kaons_negNsigma, protons_negNsigma"};
+  Configurable<std::vector<double>> pidItsNsigmaCut{"pidItsNsigmaCut", std::vector<double>{3, 3, 3, -3, -3, -3}, "ITS n-sigma cut for pions_posNsigma, kaons_posNsigma, protons_posNsigma, pions_negNsigma, kaons_negNsigma, protons_negNsigma"};
+  Configurable<std::vector<double>> pidTpcNsigmaCut{"pidTpcNsigmaCut", std::vector<double>{10, 10, 10, -10, -10, -10}, "TOF n-sigma cut for pions_posNsigma, kaons_posNsigma, protons_posNsigma, pions_negNsigma, kaons_negNsigma, protons_negNsigma"};
 
   ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
@@ -121,7 +132,7 @@ struct DiHadronCor {
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVtxZ);
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
   using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
-  using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
+  using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
   using FilteredTracksWithMCLabels = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>>;
 
   // Filter for MCParticle
@@ -159,6 +170,15 @@ struct DiHadronCor {
   enum EventType {
     SameEvent = 1,
     MixedEvent = 3
+  };
+  std::vector<double> tofNsigmaCut;
+  std::vector<double> itsNsigmaCut;
+  std::vector<double> tpcNsigmaCut;
+  o2::aod::ITSResponse itsResponse;
+  enum Particles {
+    PIONS,
+    KAONS,
+    PROTONS
   };
 
   // persistent caches
@@ -290,6 +310,10 @@ struct DiHadronCor {
     same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
     mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, userAxis));
 
+    tofNsigmaCut = pidTofNsigmaCut;
+    itsNsigmaCut = pidItsNsigmaCut;
+    tpcNsigmaCut = pidTpcNsigmaCut;
+
     LOGF(info, "End of init");
   }
 
@@ -334,6 +358,9 @@ struct DiHadronCor {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
+    if (cfgPIDParticle && getNsigmaPID(track) != cfgPIDParticle) {
+      return false;
+    }
     return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgCutITSclu));
   }
 
@@ -962,6 +989,56 @@ struct DiHadronCor {
     }
   }
   PROCESS_SWITCH(DiHadronCor, processOntheflyMixed, "Process on-the-fly mixed events", false);
+
+  template <typename TTrack>
+  int getNsigmaPID(TTrack track)
+  {
+    // Computing Nsigma arrays for pion, kaon, and protons
+    std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
+    std::array<float, 3> nSigmaTOF = {track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr()};
+    std::array<float, 3> nSigmaITS = {itsResponse.nSigmaITS<o2::track::PID::Pion>(track), itsResponse.nSigmaITS<o2::track::PID::Kaon>(track), itsResponse.nSigmaITS<o2::track::PID::Proton>(track)};
+    int pid = -1;
+
+    std::array<float, 3> nSigmaToUse = cfgPIDUseITSPID ? nSigmaITS : nSigmaTPC;            // Choose which nSigma to use: TPC or ITS
+    std::vector<double> detectorNsigmaCut = cfgPIDUseITSPID ? itsNsigmaCut : tpcNsigmaCut; // Choose which nSigma to use: TPC or ITS
+
+    bool isPion, isKaon, isProton;
+    bool isDetectedPion = nSigmaToUse[0] < detectorNsigmaCut[0] && nSigmaToUse[0] > detectorNsigmaCut[0 + 3];
+    bool isDetectedKaon = nSigmaToUse[1] < detectorNsigmaCut[1] && nSigmaToUse[1] > detectorNsigmaCut[1 + 3];
+    bool isDetectedProton = nSigmaToUse[2] < detectorNsigmaCut[2] && nSigmaToUse[2] > detectorNsigmaCut[2 + 3];
+
+    bool isTofPion = nSigmaTOF[0] < tofNsigmaCut[0] && nSigmaTOF[0] > tofNsigmaCut[0 + 3];
+    bool isTofKaon = nSigmaTOF[1] < tofNsigmaCut[1] && nSigmaTOF[1] > tofNsigmaCut[1 + 3];
+    bool isTofProton = nSigmaTOF[2] < tofNsigmaCut[2] && nSigmaTOF[2] > tofNsigmaCut[2 + 3];
+
+    if (track.pt() > cfgPIDTofPtCut && !track.hasTOF()) {
+      return 0;
+    } else if (track.pt() > cfgPIDTofPtCut && track.hasTOF()) {
+      isPion = isTofPion && isDetectedPion;
+      isKaon = isTofKaon && isDetectedKaon;
+      isProton = isTofProton && isDetectedProton;
+    } else {
+      isPion = isDetectedPion;
+      isKaon = isDetectedKaon;
+      isProton = isDetectedProton;
+    }
+
+    if ((isPion && isKaon) || (isPion && isProton) || (isKaon && isProton)) {
+      return 0; // more than one particle satisfy the criteria
+    }
+
+    if (isPion) {
+      pid = PIONS;
+    } else if (isKaon) {
+      pid = KAONS;
+    } else if (isProton) {
+      pid = PROTONS;
+    } else {
+      return 0; // no particle satisfies the criteria
+    }
+
+    return pid + 1; // shift the pid by 1, 1 = pion, 2 = kaon, 3 = proton
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
