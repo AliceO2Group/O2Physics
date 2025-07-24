@@ -42,6 +42,7 @@ enum class propagationPoint : int {
   kToRabs = 2,
 };
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
+using SMatrix55Std = ROOT::Math::SMatrix<double, 5>;
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
 
 /// propagate fwdtrack to a certain point.
