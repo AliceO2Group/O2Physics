@@ -150,3 +150,8 @@ o2physics_add_dpl_workflow(lambdaspincorrderived
     SOURCES lambdaspincorrderived.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(strangenessderivedbinnedinfo
+    SOURCES strangenessderivedbinnedinfo.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
