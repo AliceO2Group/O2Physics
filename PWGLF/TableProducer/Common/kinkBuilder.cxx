@@ -314,8 +314,8 @@ struct kinkBuilder {
         continue;
       }
 
-      // update the mother track parameters using the primary vertex if requested
       if (updateMothTrackUsePV) {
+        // update the mother track parameters using the primary vertex
         trackParCovMoth = trackParCovMothPV;
         if (!trackParCovMoth.update(primaryVertex)) {
           continue;
