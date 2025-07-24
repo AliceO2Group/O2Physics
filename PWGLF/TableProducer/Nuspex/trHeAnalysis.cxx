@@ -194,6 +194,8 @@ struct TrHeAnalysis {
   Configurable<bool> cfgTPCPidMethod{"cfgTPCPidMethod", false, "Using own or built in bethe parametrization"}; // false for built in
   Configurable<int> cfgMassMethod{"cfgMassMethod", 0, "0: Using built in 1: mass calculated with beta 2: mass calculated with the event time"};
   Configurable<bool> cfgEnableItsClusterSizeCut{"cfgEnableItsClusterSizeCut", false, "Enable ITS cluster size cut"};
+  Configurable<bool> cfgEnableTofMassCut{"cfgEnableTofMassCut", false, "Enable TOF mass cut"};
+  Configurable<float> cfgTofMassCutPt{"cfgTofMassCutPt", 1.6f, "Pt value for which the TOF-cut starts to be used"};
   // Set the multiplity event limits
   Configurable<float> cfgLowMultCut{"cfgLowMultCut", 0.0f, "Accepted multiplicity percentage lower limit"};
   Configurable<float> cfgHighMultCut{"cfgHighMultCut", 100.0f, "Accepted multiplicity percentage higher limit"};
@@ -219,8 +221,11 @@ struct TrHeAnalysis {
   Configurable<float> cfgCutMinItsClusterSizeHe{"cfgCutMinItsClusterSizeHe", 1.f, "Minimum ITS Cluster Size for He"};
   Configurable<float> cfgCutMaxItsClusterSizeH3{"cfgCutMaxItsClusterSizeH3", 4.f, "Maximum ITS Cluster Size for Tr"};
   Configurable<float> cfgCutMinItsClusterSizeH3{"cfgCutMinItsClusterSizeH3", 1.f, "Minimum ITS Cluster Size for Tr"};
-  Configurable<float> cfgCutMinTofMassH3{"cfgCutMinTofMassH3", 2.24f, "Minimum Tof mass H3"};
-  Configurable<float> cfgCutMaxTofMassH3{"cfgCutMaxTofMassH3", 3.32f, "Maximum TOF mass H3"};
+  Configurable<float> cfgCutMinTofMassH3{"cfgCutMinTofMassH3", 5.f, "Minimum Tof mass H3"};
+  Configurable<float> cfgCutMaxTofMassH3{"cfgCutMaxTofMassH3", 11.f, "Maximum TOF mass H3"};
+  Configurable<float> cfgMaxRigidity{"cfgMaxRigidity", 10.f, "Maximum rigidity value"};
+  Configurable<float> cfgMaxPt{"cfgMaxPt", 10.f, "Maximum pT value"};
+
   // Set the kinematic and PID cuts for tracks
   struct : ConfigurableGroup {
     Configurable<float> pCut{"pCut", 0.6f, "Value of the p selection for spectra (default 0.3)"};
@@ -345,6 +350,9 @@ struct TrHeAnalysis {
           histos.fill(HIST("histogram/cuts"), 2);
           continue;
         }
+        if (track.pt() > cfgMaxPt || getRigidity(track) > cfgMaxRigidity) {
+          continue;
+        }
         if (track.tpcNClsFound() < cfgCutTpcClusters) {
           histos.fill(HIST("histogram/cuts"), 3);
           continue;
@@ -399,9 +407,11 @@ struct TrHeAnalysis {
                 continue;
               }
             }
-            if (getMass(track) < cfgCutMinTofMassH3 || getMass(track) > cfgCutMaxTofMassH3) {
-              histos.fill(HIST("histogram/cuts"), 13);
-              continue;
+            if (cfgEnableTofMassCut && track.pt() > cfgTofMassCutPt) {
+              if (getMass(track) < cfgCutMinTofMassH3 || getMass(track) > cfgCutMaxTofMassH3) {
+                histos.fill(HIST("histogram/cuts"), 13);
+                continue;
+              }
             }
             histos.fill(HIST("histogram/H3/H3-TPCsignVsTPCmomentum"),
                         getRigidity(track) * track.sign(),
@@ -510,6 +520,9 @@ struct TrHeAnalysis {
           histos.fill(HIST("histogram/cuts"), 2);
           continue;
         }
+        if (track.pt() > cfgMaxPt || getRigidity(track) > cfgMaxRigidity) {
+          continue;
+        }
         if (track.tpcNClsFound() < cfgCutTpcClusters) {
           histos.fill(HIST("histogram/cuts"), 3);
           continue;
@@ -562,9 +575,11 @@ struct TrHeAnalysis {
                 continue;
               }
             }
-            if (getMass(track) < cfgCutMinTofMassH3 || getMass(track) > cfgCutMaxTofMassH3) {
-              histos.fill(HIST("histogram/cuts"), 13);
-              continue;
+            if (cfgEnableTofMassCut && track.pt() > cfgTofMassCutPt) {
+              if (getMass(track) < cfgCutMinTofMassH3 || getMass(track) > cfgCutMaxTofMassH3) {
+                histos.fill(HIST("histogram/cuts"), 13);
+                continue;
+              }
             }
             histos.fill(HIST("histogram/H3/H3-TPCsignVsTPCmomentum"),
                         getRigidity(track) * (1.f * track.sign()),
@@ -709,14 +724,15 @@ struct TrHeAnalysis {
   float getMass(const T& track)
   {
     if (cfgMassMethod == 0) {
-      return track.mass();
+      float m = track.mass();
+      return m * m;
     }
     if (cfgMassMethod == 1) {
       const float beta = track.beta();
       const float rigidity = getRigidity(track);
-      float gamma = 1 / std::sqrt(1 - beta * beta);
-      float mass = (rigidity / std::sqrt(gamma * gamma - 1.f));
-      return mass;
+      float gamma = 1.f / std::sqrt(1.f - beta * beta);
+      float mass = rigidity / std::sqrt(gamma * gamma - 1.f);
+      return mass * mass;
     }
     if (cfgMassMethod == 2) {
       const float rigidity = getRigidity(track);
@@ -727,9 +743,9 @@ struct TrHeAnalysis {
       float time = tofTime - tofStartTime;
       if (time > 0.f && length > 0.f) {
         float beta = length / (CInCmPs * time);
-        float gamma = 1 / std::sqrt(1 - beta * beta);
+        float gamma = 1.f / std::sqrt(1.f - beta * beta);
         float mass = rigidity / std::sqrt(gamma * gamma - 1.f);
-        return mass;
+        return mass * mass;
       }
       return -1.f;
     }
