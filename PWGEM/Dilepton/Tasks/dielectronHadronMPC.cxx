@@ -11,24 +11,17 @@
 //
 // ========================
 //
-// This code loops over photons and makes pairs for neutral mesons analyses.
+// This code is for dielectron analyses.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include "PWGEM/PhotonMeson/Core/DiphotonHadron2PC.h"
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
+#include "PWGEM/Dilepton/Core/DileptonHadronMPC.h"
 
 #include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-
-using namespace o2;
-using namespace o2::aod;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<DiphotonHadron2PC<PairType::kPCMPCM, MyV0Photons, aod::V0Legs>>(cfgc, TaskName{"diphoton-hadron-2pc-pcmpcm"}),
-  };
+    adaptAnalysisTask<DileptonHadronMPC<o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron, MyEMH_electron, FilteredMyElectrons>>(cfgc, TaskName{"dielectron-hadron-2pc"})};
 }
