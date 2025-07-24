@@ -230,7 +230,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
           auto origin = particle.originMcGen();
           int idxMotherPart = 0;
           if (origin == RecoDecay::OriginType::NonPrompt) {
-            idxMotherPart = particle.idxBhadMotherPart()
+            idxMotherPart = particle.idxBhadMotherPart();
           }
           rowCandidateGenMc(
             particle.flagMcMatchGenD0(),

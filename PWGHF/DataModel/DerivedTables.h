@@ -939,7 +939,7 @@ DECLARE_SOA_TABLE_STAGED(HfDstarMcs, "HFDSTMC", //! Table with MC candidate info
 
 DECLARE_SOA_TABLE_STAGED(HfDstarGenMcs, "HFDSTGENMC", //! Table with MC candidate info for generated D*+
                          hf_cand_mc_charm::FlagMcMatchGenCharm,
-                         hf_mc_particle::idxMotherPart,
+                         hf_mc_particle::IdxMotherPart,
                          o2::soa::Marker<MarkerDstar>);
 
 // ----------------
