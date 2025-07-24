@@ -228,14 +228,13 @@ struct HfDerivedDataCreatorDstarToD0Pi {
       if (fillCandidateGenMc) {
         for (const auto& particle : particlesThisMcColl) {
           auto origin = particle.originMcGen();
-          int pdgMother = 0;
+          int idxMotherPart = 0;
           if (origin == RecoDecay::OriginType::NonPrompt) {
-            auto bHadMother = mcParticles.rawIteratorAt(particle.idxBhadMotherPart() - particlesThisMcColl.offset());
-            pdgMother = std::abs(bHadMother.pdgCode());
+            idxMotherPart = particle.idxBhadMotherPart()
           }
           rowCandidateGenMc(
             particle.flagMcMatchGenD0(),
-            pdgMother);
+            idxMotherPart);
         }
       }
     }

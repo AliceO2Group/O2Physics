@@ -373,7 +373,7 @@ struct JetSubstructureHFOutputTask {
             jetcandidateutilities::fillCandidateMcTable(candidate, candidateCollisionIndex, products.hfParticlesTable);
             candidateMap.insert(std::make_pair(candidate.globalIndex(), products.hfParticlesTable.lastIndex()));
             if constexpr (jethfutilities::isDstarMcCandidate<U>()) {
-              storedDstarGenMcsTable(candidate.flagMcMatchGenCharm(), candidate.pdgMother());
+              storedDstarGenMcsTable(candidate.flagMcMatchGenCharm(), candidate.idxMotherPart());
             }
           } else {
             auto hfCollisionIndex = candidateCollisionMapping.find(jetcandidateutilities::getCandidateCollisionId(candidate));
