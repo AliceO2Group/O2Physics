@@ -102,6 +102,7 @@ struct PiDecandidate {
   std::array<float, 3> momDe = {99.f, 99.f, 99.f};
   std::array<float, 3> momPi = {99.f, 99.f, 99.f};
 
+
   float signDe = 1.f;
   float signPi = 1.f;
   float invMass = -10.f;
@@ -230,6 +231,7 @@ struct PiDeuteronFemto {
      {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
      {"hdcaxyDe", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hdcazDe", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+     {"hdcazDe_min", ";DCA_{z}-min (cm)", {HistType::kTH1F, {{20, -1.0f, 1.0f}}}},
      {"hNClsDeITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
      {"hNClsPiITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
      {"hDePitInvMass", "; M(De + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
@@ -287,7 +289,7 @@ struct PiDeuteronFemto {
     for (int i = 0; i < numParticles; i++) {
       mBBparamsDe[i] = settingBetheBlochParams->get("De", Form("p%i", i));
     }
-    mBBparamsDe[5] = settingBetheBlochParams->get("De", "resolution");
+    mBBparamsDe[5] = settingBetheBlochParams->get("De", "resolution"); 
 
     std::vector<std::string> selectionLabels = {"All", "Track selection", "PID"};
     for (int i = 0; i < Selections::kAll; i++) {
@@ -402,7 +404,7 @@ struct PiDeuteronFemto {
     auto tpcNSigmaPi = candidate.tpcNSigmaPi();
     mQaRegistry.fill(HIST("h2NsigmaPiTPC_preselection"), candidate.tpcInnerParam(), tpcNSigmaPi);
     if (std::abs(candidate.pt()) < settingCutPiptMin || std::abs(candidate.pt()) > settingCutPiptMax)
-      return false;
+    return false;
     if (candidate.hasTOF() && candidate.tpcInnerParam() > settingCutPinMinTOFPi) {
       auto tofNSigmaPi = candidate.tofNSigmaPi();
       auto combNsigma = std::sqrt(tofNSigmaPi * tofNSigmaPi + tpcNSigmaPi * tpcNSigmaPi);
@@ -414,12 +416,12 @@ struct PiDeuteronFemto {
       if (combNsigma > settingCutNsigmaTOFTPCPi) {
         return false;
       }
-      mQaRegistry.fill(HIST("h2NsigmaPiTPC"), candidate.sign() * candidate.pt(), tpcNSigmaPi);
-      mQaRegistry.fill(HIST("h2NsigmaPiTOF"), candidate.sign() * candidate.pt(), tofNSigmaPi);
-      mQaRegistry.fill(HIST("h2NsigmaPiComb"), candidate.sign() * candidate.pt(), combNsigma);
+      mQaRegistry.fill(HIST("h2NsigmaPiTPC"), candidate.sign() *candidate.pt(), tpcNSigmaPi);
+      mQaRegistry.fill(HIST("h2NsigmaPiTOF"), candidate.sign() *candidate.pt(), tofNSigmaPi);
+      mQaRegistry.fill(HIST("h2NsigmaPiComb"), candidate.sign() *candidate.pt(), combNsigma);
       return true;
     } else if (std::abs(tpcNSigmaPi) < settingCutNsigmaTPCPi) {
-      mQaRegistry.fill(HIST("h2NsigmaPiTPC"), candidate.sign() * candidate.pt(), tpcNSigmaPi);
+      mQaRegistry.fill(HIST("h2NsigmaPiTPC"), candidate.sign() *candidate.pt(), tpcNSigmaPi);
       return true;
     }
     return false;
@@ -443,16 +445,16 @@ struct PiDeuteronFemto {
       return false;
     }
     float tpcNSigmaDe;
-    if (settingUseBBcomputeDeNsigma) {
-      tpcNSigmaDe = computeNSigmaDe(candidate);
-    } else {
-      tpcNSigmaDe = candidate.tpcNSigmaDe();
+   if(settingUseBBcomputeDeNsigma) {
+     tpcNSigmaDe = computeNSigmaDe(candidate);
+    }else{
+     tpcNSigmaDe = candidate.tpcNSigmaDe();
     }
-
+  
     mQaRegistry.fill(HIST("h2NsigmaDeTPC_preselection"), candidate.sign() * candidate.pt(), tpcNSigmaDe);
     mQaRegistry.fill(HIST("h2NsigmaDeTPC_preselecComp"), candidate.sign() * candidate.pt(), candidate.tpcNSigmaDe());
     if (std::abs(candidate.pt()) < settingCutDeptMin || std::abs(candidate.pt()) > settingCutDeptMax)
-      return false;
+    return false;
     if (candidate.hasTOF() && candidate.tpcInnerParam() > settingCutPinMinTOFITSDe) {
       auto tofNSigmaDe = candidate.tofNSigmaDe();
       auto combNsigma = std::sqrt(tofNSigmaDe * tofNSigmaDe + tpcNSigmaDe * tpcNSigmaDe);
@@ -464,8 +466,10 @@ struct PiDeuteronFemto {
       mQaRegistry.fill(HIST("h2NsigmaDeTPC"), candidate.sign() * candidate.pt(), tpcNSigmaDe);
       mQaRegistry.fill(HIST("h2NsigmaDeTOF"), candidate.sign() * candidate.pt(), tofNSigmaDe);
       return true;
-    } else if (std::abs(tpcNSigmaDe) < settingCutNsigmaTPCDe) {
-
+    } else if (candidate.tpcInnerParam() <= settingCutPinMinTOFITSDe) {
+      if (std::abs(tpcNSigmaDe) > settingCutNsigmaTPCDe) {
+        return false;
+      }
       o2::aod::ITSResponse mResponseITS;
       auto itsnSigmaDe = mResponseITS.nSigmaITS<o2::track::PID::Deuteron>(candidate.itsClusterSizes(), candidate.p(), candidate.eta());
       mQaRegistry.fill(HIST("h2NSigmaDeITS_preselection"), candidate.sign() * candidate.pt(), itsnSigmaDe);
@@ -474,7 +478,7 @@ struct PiDeuteronFemto {
       }
       mQaRegistry.fill(HIST("h2NsigmaDeTPC"), candidate.sign() * candidate.pt(), tpcNSigmaDe);
       mQaRegistry.fill(HIST("h2NSigmaDeITS"), candidate.sign() * candidate.pt(), itsnSigmaDe);
-      // mQaRegistry.fill(HIST("h2NsigmaDeComb"), candidate.sign() * candidate.pt(), combNsigma);
+      //mQaRegistry.fill(HIST("h2NsigmaDeComb"), candidate.sign() * candidate.pt(), combNsigma);
       mQaRegistry.fill(HIST("h2dEdxDecandidates"), candidate.sign() * tpcInnerParam, candidate.tpcSignal());
       return true;
     }
@@ -719,6 +723,7 @@ struct PiDeuteronFemto {
     mQaRegistry.fill(HIST("hDePitInvMass"), piDecand.invMass);
     mQaRegistry.fill(HIST("hdcaxyDe"), piDecand.dcaxyDe);
     mQaRegistry.fill(HIST("hdcazDe"), piDecand.dcazDe);
+    mQaRegistry.fill(HIST("hdcazDe_min"), (abs(piDecand.dcazDe) - settingCutDeDCAzMin));
     mQaRegistry.fill(HIST("hNClsDeITS"), piDecand.nClsItsDe);
     mQaRegistry.fill(HIST("hNClsPiITS"), piDecand.nClsItsPi);
     mQaRegistry.fill(HIST("hisBkgEM"), piDecand.isBkgEM);
@@ -781,7 +786,7 @@ struct PiDeuteronFemto {
     float DeDCAxyMin = 0.015 + 0.0305 / TMath::Power(piDecand.recoPtDe(), 1.1);
     if (abs(piDecand.dcaxyDe) > DeDCAxyMin || abs(piDecand.dcazDe) > settingCutDeDCAzMin || abs(piDecand.dcaxyPi) > settingCutPiDCAxyMin || abs(piDecand.dcazPi) > settingCutPiDCAzMin)
       return;
-
+    std::cout << "[DEBUG] Passed all DCA cuts." << std::endl;
     fillHistograms(piDecand);
 
     double kstar = computeKstar(piDecand);
