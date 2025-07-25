@@ -45,6 +45,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+ #include <utility>
 
 using namespace o2;
 using namespace o2::framework;
@@ -673,7 +674,7 @@ struct FlowSP {
     return grpo->getNominalL3Field();
   }
 
-  std::pair<float, long> getCrossingAngleCCDB(uint64_t timestamp)
+  std::pair<float, uint16_t> getCrossingAngleCCDB(uint64_t timestamp)
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
     auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timestamp);
@@ -682,7 +683,7 @@ struct FlowSP {
       return {0, 0};
     }
     float crossingAngle = grpo->getCrossingAngle();
-    long crossingAngleTime = grpo->getCrossingAngleTime();
+    uint16_t crossingAngleTime = grpo->getCrossingAngleTime();
     return {crossingAngle, crossingAngleTime};
   }
 
