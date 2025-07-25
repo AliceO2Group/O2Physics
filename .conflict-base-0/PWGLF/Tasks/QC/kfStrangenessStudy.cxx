@@ -15,26 +15,29 @@
 
 /// \brief cascadebuilder.cxx and lambdakzerobuilder.cxx tasks need to be added to the workflow. Flag createCascCovMats needs to be enabled!
 
+#include "PWGLF/DataModel/kfStrangenessStudy.h"
+
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
 #include <cmath>
 #include <iostream>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/kfStrangenessStudy.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -462,9 +465,9 @@ struct kfStrangenessStudy {
           } else {
             LOG(debug) << "Daughter is no Lambda and/or has no daughters. V0 PDG code: " << MCv0.pdgCode();
           } // end v0 has daughters and is Lambda
-        }   // end loop cascade daughters
-      }     // end cascade has daughters
-    }       // end cascade has MC particle
+        } // end loop cascade daughters
+      } // end cascade has daughters
+    } // end cascade has MC particle
   }
 
   template <typename TCollision>
@@ -699,7 +702,7 @@ struct kfStrangenessStudy {
         fillCascDataTable(collision);
       }
     } // end cascade loop
-  }   // end process
+  } // end process
   PROCESS_SWITCH(kfStrangenessStudy, processData, "process data", false);
 
   void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
@@ -801,7 +804,7 @@ struct kfStrangenessStudy {
       }
 
     } // end cascade loop
-  }   // end process
+  } // end process
   PROCESS_SWITCH(kfStrangenessStudy, processMC, "process MC", true);
 };
 

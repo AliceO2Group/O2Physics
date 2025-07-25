@@ -11,16 +11,17 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 
 // O2 includes
-#include "ReconstructionDataFormats/Track.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "MathUtils/Utils.h"
 #include "DataModel/LFDerived.h"
 
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "MathUtils/Utils.h"
+#include "ReconstructionDataFormats/Track.h"
 
 #include <TLorentzVector.h>
 

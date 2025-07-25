@@ -14,15 +14,6 @@
 /// \author Dmitri Peresunko <Dmitri.Peresunko@cern.ch>
 ///
 
-#include <array>
-#include <climits>
-#include <cstdlib>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
-
-#include <TLorentzVector.h>
 #include "Common/DataModel/CaloClusters.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -30,18 +21,27 @@
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
 
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonDataFormat/InteractionRecord.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/ConfigParamSpec.h"
 #include "Framework/HistogramRegistry.h"
-
+#include "Framework/runDataProcessing.h"
 #include "PHOSBase/Geometry.h"
-#include "CommonDataFormat/InteractionRecord.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
+
+#include <TLorentzVector.h>
+
+#include <array>
+#include <climits>
+#include <cstdlib>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod::evsel;

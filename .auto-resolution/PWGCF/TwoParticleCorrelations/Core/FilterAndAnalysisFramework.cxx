@@ -9,14 +9,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <fairlogger/Logger.h>
-#include <iomanip>
-#include <map>
-#include <string>
+#include "FilterAndAnalysisFramework.h"
+
 #include <TList.h>
 #include <TObjString.h>
 
-#include "FilterAndAnalysisFramework.h"
+#include <fairlogger/Logger.h>
+
+#include <iomanip>
+#include <map>
+#include <string>
 
 using namespace o2;
 using namespace o2::analysis::PWGCF;

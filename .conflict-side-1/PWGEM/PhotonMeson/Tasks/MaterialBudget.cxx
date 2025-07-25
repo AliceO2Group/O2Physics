@@ -14,27 +14,30 @@
 // This code loops over v0 photons for studying material budget.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include <cstring>
-#include <iterator>
-
-#include "TString.h"
-#include "Math/Vector4D.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/RecoDecay.h"
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
-#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
-#include "PWGEM/PhotonMeson/Core/PairCut.h"
 #include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
 #include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
+#include "PWGEM/PhotonMeson/Core/PairCut.h"
+#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include "Math/Vector4D.h"
+#include "TString.h"
+
+#include <cstring>
+#include <iterator>
 
 using namespace o2;
 using namespace o2::aod;
@@ -112,8 +115,8 @@ struct MaterialBudget {
           THashList* list_pair_subsys_paircut = reinterpret_cast<THashList*>(list_pair_subsys_photoncut->FindObject(pair_cut_name.data()));
           o2::aod::pwgem::photon::histogram::DefineHistograms(list_pair_subsys_paircut, "material_budget_study", "Pair");
         } // end of cut3 loop pair cut
-      }   // end of cut2 loop
-    }     // end of cut1 loop
+      } // end of cut2 loop
+    } // end of cut1 loop
   }
 
   static constexpr std::string_view pairnames[9] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PCMDalitzEE", "PCMDalitzMuMu", "PHOSEMC", "DalitzEEDalitzEE"};
@@ -245,7 +248,7 @@ struct MaterialBudget {
           reinterpret_cast<THnSparseF*>(list_v0->FindObject(cut.GetName())->FindObject("hs_conv_point"))->Fill(value);
 
         } // end of photon loop
-      }   // end of cut loop
+      } // end of cut loop
 
     } // end of collision loop
   }
@@ -298,11 +301,11 @@ struct MaterialBudget {
                 value[5] = eta_cp2;
                 reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.GetName(), probecut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_conv_point_same"))->Fill(value);
               } // end of pair cut loop
-            }   // end of g2 loop
-          }     // end of g1 loop
-        }       // end of probecut loop
-      }         // end of tagcut loop
-    }           // end of collision loop
+            } // end of g2 loop
+          } // end of g1 loop
+        } // end of probecut loop
+      } // end of tagcut loop
+    } // end of collision loop
   }
 
   Configurable<int> ndepth{"ndepth", 10, "depth for event mixing"};
@@ -368,11 +371,11 @@ struct MaterialBudget {
                 reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.GetName(), probecut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_conv_point_mix"))->Fill(value);
 
               } // end of pair cut loop
-            }   // end of g2 loop
-          }     // end of g1 loop
-        }       // end of probecut loop
-      }         // end of tagcut loop
-    }           // end of different collision combinations
+            } // end of g2 loop
+          } // end of g1 loop
+        } // end of probecut loop
+      } // end of tagcut loop
+    } // end of different collision combinations
   }
 
   Partition<MyCollisions> grouped_collisions = cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax; // this goes to same event.

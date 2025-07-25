@@ -11,13 +11,15 @@
 
 /// \author Luca Micheletti <luca.micheletti@cern.ch>, CERN
 
+#include "VWGPdf.h"
+
 #include "Riostream.h"
 
-#include "VWGPdf.h"
-#include "RooAbsReal.h"
 #include "RooAbsCategory.h"
-#include <math.h>
+#include "RooAbsReal.h"
 #include "TMath.h"
+
+#include <math.h>
 
 ClassImp(VWGPdf);
 

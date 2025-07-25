@@ -13,22 +13,24 @@
 /// \author Salman Malik
 /// \author Balwan Singh
 
-#include <iostream>
-#include <array>
-#include <TH1F.h>
 #include "TRandom.h"
+#include <TH1F.h>
+
+#include <array>
+#include <iostream>
 // O2 includes
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "Framework/ASoAHelpers.h"
 using std::array;
 using namespace o2;
 using namespace o2::framework;

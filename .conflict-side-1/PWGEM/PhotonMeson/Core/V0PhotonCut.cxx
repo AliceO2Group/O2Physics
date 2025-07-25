@@ -13,11 +13,12 @@
 // Class for v0 photon selection
 //
 
-#include <set>
-#include <utility>
+#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 
 #include "Framework/Logger.h"
-#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+
+#include <set>
+#include <utility>
 
 ClassImp(V0PhotonCut);
 

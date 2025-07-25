@@ -14,11 +14,11 @@
 #ifndef CB2PDF
 #define CB2PDF
 
-#include "RooAbsPdf.h"
-#include "RooRealProxy.h"
-#include "RooCategoryProxy.h"
-#include "RooAbsReal.h"
 #include "RooAbsCategory.h"
+#include "RooAbsPdf.h"
+#include "RooAbsReal.h"
+#include "RooCategoryProxy.h"
+#include "RooRealProxy.h"
 
 class CB2Pdf : public RooAbsPdf
 {

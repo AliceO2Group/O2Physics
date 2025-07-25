@@ -16,8 +16,8 @@
 /// \author
 /// \since
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -65,7 +65,7 @@ struct IterateMuonsSparse {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    //adaptAnalysisTask<IterateMuonsExclusives>(cfgc), // currently does not work
+    // adaptAnalysisTask<IterateMuonsExclusives>(cfgc), // currently does not work
     adaptAnalysisTask<IterateMuons>(cfgc),
     adaptAnalysisTask<IterateMuonsSparse>(cfgc),
   };

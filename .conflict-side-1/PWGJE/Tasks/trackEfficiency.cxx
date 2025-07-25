@@ -554,7 +554,7 @@ struct TrackEfficiency {
 
       registry.fill(HIST("h3_particle_pt_high_particle_eta_particle_phi_mcpartofinterest"), jMcParticle.pt(), jMcParticle.eta(), jMcParticle.phi(), mcCollEventWeight);
 
-      if ((std::abs(jMcParticle.eta()) < trackEtaAcceptanceCountQA)) { // removed from actual cuts for now because all the histograms have an eta axis
+      if ((std::abs(jMcParticle.eta()) < trackEtaAcceptanceCountQA)) {       // removed from actual cuts for now because all the histograms have an eta axis
         registry.fill(HIST("hMcPartCutsCounts"), 3.5, mcCollision.weight()); // etaAccept // not actually applied here but it will give an idea of what will be done in the post processing
       }
     }

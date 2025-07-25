@@ -24,12 +24,13 @@
 #ifndef ALICE3_CORE_DELPHESO2TRACKSMEARER_H_
 #define ALICE3_CORE_DELPHESO2TRACKSMEARER_H_
 
-#include <map>
-#include <iostream>
-#include <fstream>
+#include "ReconstructionDataFormats/Track.h"
 
 #include "TRandom.h"
-#include "ReconstructionDataFormats/Track.h"
+
+#include <fstream>
+#include <iostream>
+#include <map>
 
 ///////////////////////////////
 /// DelphesO2/src/lutCovm.hh //
@@ -85,7 +86,7 @@ struct map_t {
     if (bin > nbins - 1)
       return nbins - 1;
     return bin;
-  }                                                                                                            //;
+  } //;
   void print() { printf("nbins = %d, min = %f, max = %f, log = %s \n", nbins, min, max, log ? "on" : "off"); } //;
 };
 
@@ -214,8 +215,8 @@ class TrackSmearer
         return 7; // Helium3
       default:
         return 2; // Default: pion
-    }             //;
-  }               //;
+    } //;
+  } //;
 
   void setdNdEta(float val) { mdNdEta = val; } //;
 

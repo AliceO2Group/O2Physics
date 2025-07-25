@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include "configurableCut.h"
+
 #include <iostream>
 
 std::ostream& operator<<(std::ostream& os, configurableCut const& c)

@@ -12,22 +12,22 @@
 /// \author Diana Krupova, diana.krupova@cern.ch
 /// \since 04.06.2024
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include "PWGUD/DataModel/UDTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
-#include "TGeoGlobalMagField.h"
-#include "Field/MagneticField.h"
 #include "DetectorsBase/Propagator.h"
+#include "Field/MagneticField.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 #include "GlobalTracking/MatchGlobalFwd.h"
 #include "MCHTracking/TrackExtrap.h"
 #include "MCHTracking/TrackParam.h"
-#include "Math/SMatrix.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
 
-#include "PWGUD/DataModel/UDTables.h"
+#include "Math/SMatrix.h"
+#include "TGeoGlobalMagField.h"
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;

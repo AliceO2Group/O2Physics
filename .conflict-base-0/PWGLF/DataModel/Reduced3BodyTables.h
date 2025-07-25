@@ -17,13 +17,16 @@
 #ifndef PWGLF_DATAMODEL_REDUCED3BODYTABLES_H_
 #define PWGLF_DATAMODEL_REDUCED3BODYTABLES_H_
 
-#include <cmath>
-#include "Framework/AnalysisDataModel.h"
-#include "Common/Core/RecoDecay.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
 #include "PWGLF/DataModel/Vtx3BodyTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/AnalysisDataModel.h"
+
+#include <cmath>
 
 namespace o2::aod
 {

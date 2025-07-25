@@ -16,12 +16,12 @@
 #ifndef PWGLF_UTILS_RSNOUTPUT_H_
 #define PWGLF_UTILS_RSNOUTPUT_H_
 
-#include <utility>
-#include <string>
-#include <vector>
-
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
+
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace o2::analysis
 {

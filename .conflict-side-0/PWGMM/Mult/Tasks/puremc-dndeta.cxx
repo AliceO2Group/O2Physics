@@ -9,16 +9,18 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "Axes.h"
+#include "Histograms.h"
+
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+
 #include <TDatabasePDG.h>
 #include <TPDGCode.h>
-
-#include "Axes.h"
-#include "Histograms.h"
 
 using namespace o2;
 using namespace o2::framework;

@@ -19,9 +19,9 @@
 #ifndef COMMON_DATAMODEL_PIDRESPONSE_H_
 #define COMMON_DATAMODEL_PIDRESPONSE_H_
 
+#include "PIDResponseCombined.h"
 #include "PIDResponseTOF.h"
 #include "PIDResponseTPC.h"
-#include "PIDResponseCombined.h"
 
 namespace o2::aod
 {

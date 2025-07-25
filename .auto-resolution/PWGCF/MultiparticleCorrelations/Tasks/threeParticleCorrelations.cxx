@@ -13,19 +13,22 @@
 /// \brief Task for producing particle correlations
 /// \author Joey Staa <joey.staa@fysik.lu.se>
 
-#include <algorithm>
+#include "RecoDecay.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "CCDB/BasicCCDBManager.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "RecoDecay.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
 #include "TPDGCode.h"
+
+#include <algorithm>
 
 using namespace o2;
 using namespace o2::framework;

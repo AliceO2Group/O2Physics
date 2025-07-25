@@ -21,9 +21,9 @@
 #include "Framework/runDataProcessing.h"
 
 // includes for the R recalculation
+#include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DetectorsBase/GeometryManager.h"
-#include "CCDB/BasicCCDBManager.h"
 
 using namespace o2;
 using namespace o2::framework;

@@ -15,11 +15,12 @@
 #ifndef PWGDQ_CORE_CUTSLIBRARY_H_
 #define PWGDQ_CORE_CUTSLIBRARY_H_
 
+#include "PWGDQ/Core/AnalysisCompositeCut.h"
+#include "PWGDQ/Core/AnalysisCut.h"
+#include "PWGDQ/Core/VarManager.h"
+
 #include <string>
 #include <vector>
-#include "PWGDQ/Core/AnalysisCut.h"
-#include "PWGDQ/Core/AnalysisCompositeCut.h"
-#include "PWGDQ/Core/VarManager.h"
 
 // ///////////////////////////////////////////////
 //   These are the Cuts used in the CEFP Task   //

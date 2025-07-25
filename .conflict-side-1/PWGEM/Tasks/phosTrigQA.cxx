@@ -9,28 +9,28 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "Common/DataModel/CaloClusters.h"
+#include "Common/DataModel/EventSelection.h"
+#include "EventFiltering/filterTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonDataFormat/InteractionRecord.h"
+#include "CommonUtils/NameConf.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "Framework/ASoA.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/ConfigParamSpec.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include "PHOSBase/Geometry.h"
+
 #include <climits>
 #include <cstdlib>
 #include <map>
 #include <memory>
 #include <vector>
-#include "Common/DataModel/CaloClusters.h"
-#include "Common/DataModel/EventSelection.h"
-
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-#include "CommonUtils/NameConf.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-
-#include "PHOSBase/Geometry.h"
-#include "CommonDataFormat/InteractionRecord.h"
-#include "EventFiltering/filterTables.h"
 
 /// \struct PHOS trigger QA
 /// \brief Monitoring task for PHOS related quantities

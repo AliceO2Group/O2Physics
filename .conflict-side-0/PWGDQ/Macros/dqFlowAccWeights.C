@@ -14,18 +14,20 @@
 ///
 /// \author Chi ZHANG, CEA-Saclay, chi.zhang@cern.ch
 
-#include <gsl/span>
+#include "PWGCF/GenericFramework/Core/GFWWeights.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/Logger.h"
+
+#include <TFile.h>
+#include <TSystem.h>
+
 #include <cmath>
+#include <gsl/span>
+#include <iostream>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <iostream>
-
-#include <TSystem.h>
-#include <TFile.h>
-#include "Framework/Logger.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "PWGCF/GenericFramework/Core/GFWWeights.h"
 
 using namespace o2;
 using namespace std;

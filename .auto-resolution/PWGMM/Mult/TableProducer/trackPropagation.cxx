@@ -17,24 +17,25 @@
 // collisions to this track, picks the one with the smallest DCAxy and puts it
 // in a table
 
-#include "CCDB/BasicCCDBManager.h"
+#include "bestCollisionTable.h"
+
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/GeomConstants.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DetectorsBase/Propagator.h"
+#include "Field/MagneticField.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
+
 #include "Math/MatrixFunctions.h"
 #include "Math/SMatrix.h"
-
-#include "Field/MagneticField.h"
 #include "TGeoGlobalMagField.h"
-
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "bestCollisionTable.h"
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<Double_t, 5>;

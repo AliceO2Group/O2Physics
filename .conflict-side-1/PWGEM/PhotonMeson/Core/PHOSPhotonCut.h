@@ -16,14 +16,17 @@
 #ifndef PWGEM_PHOTONMESON_CORE_PHOSPHOTONCUT_H_
 #define PWGEM_PHOTONMESON_CORE_PHOSPHOTONCUT_H_
 
-#include <set>
-#include <vector>
-#include <utility>
-#include <string>
-#include "Framework/Logger.h"
-#include "Framework/DataTypes.h"
 #include "Rtypes.h"
+
+#include "Framework/DataTypes.h"
+#include "Framework/Logger.h"
+
 #include "TNamed.h"
+
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 class PHOSPhotonCut : public TNamed
 {

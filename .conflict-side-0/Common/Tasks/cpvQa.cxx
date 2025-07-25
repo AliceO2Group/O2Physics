@@ -13,9 +13,9 @@
 /// \author Sergey Evdokimov
 /// \since 25.10.2022
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/StaticFor.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;

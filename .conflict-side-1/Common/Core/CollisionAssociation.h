@@ -20,13 +20,13 @@
 #ifndef COMMON_CORE_COLLISIONASSOCIATION_H_
 #define COMMON_CORE_COLLISIONASSOCIATION_H_
 
-#include <vector>
+#include "CommonConstants/LHCConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+
 #include <memory>
 #include <utility>
-
-#include "CommonConstants/LHCConstants.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
+#include <vector>
 
 namespace o2::aod
 {

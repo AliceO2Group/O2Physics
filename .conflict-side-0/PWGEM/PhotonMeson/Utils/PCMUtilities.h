@@ -15,11 +15,13 @@
 #ifndef PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_
 #define PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_
 
-#include <TVector2.h>
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+
 #include "DCAFitter/HelixHelper.h"
 #include "DetectorsBase/Propagator.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/RecoDecay.h"
+
+#include <TVector2.h>
 
 //_______________________________________________________________________
 inline bool checkAP(const float alpha, const float qt, const float alpha_max = 0.95, const float qt_max = 0.05)

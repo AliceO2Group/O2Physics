@@ -16,10 +16,10 @@
 /// \brief  Basic struct to hold information regarding a detector layer to be used in fast simulation
 ///
 
-#include <vector>
-#include <string>
-
 #include "DetLayer.h"
+
+#include <string>
+#include <vector>
 
 namespace o2::fastsim
 {

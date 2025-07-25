@@ -14,33 +14,36 @@
 ///
 /// \author Laura Serksnyte, TU München, laura.serksnyte@cern.ch; Anton Riedel, TU München, anton.riedel@cern.ch
 
-#include <Framework/Configurable.h>
-#include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h>
-#include <TMath.h>
-#include <cstdint>
-#include <iostream>
-#include <iterator>
-#include <string>
-
 #include "../filterTables.h"
 
+#include "PWGCF/DataModel/FemtoDerived.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "CommonConstants/MathConstants.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "CommonConstants/MathConstants.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGCF/DataModel/FemtoDerived.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
+#include <Framework/Configurable.h>
+
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector4D.h>
+#include <TMath.h>
+
+#include <cstdint>
+#include <iostream>
+#include <iterator>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;

@@ -9,16 +9,19 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-#include <Framework/AnalysisDataModel.h>
-#include <fairlogger/Logger.h>
-#include <cstdint>
+#include "PWGDQ/Core/VarManager.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "PWGUD/Core/SGSelector.h"
+
+#include "CommonConstants/LHCConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGDQ/Core/VarManager.h"
-#include "CommonConstants/LHCConstants.h"
 #include "ReconstructionDataFormats/Vertex.h"
-#include "PWGUD/Core/SGSelector.h"
+#include <Framework/AnalysisDataModel.h>
+
+#include <fairlogger/Logger.h>
+
+#include <cstdint>
 
 using namespace std;
 

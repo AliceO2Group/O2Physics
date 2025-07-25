@@ -118,7 +118,7 @@ struct he3LambdaDerivedAnalysis {
       }
       for (int iEta{0}; iEta <= cfgMirrorEta; ++iEta) {
         for (int iR{0}; iR <= cfgNrotations; ++iR) {
-          auto he3Momentum = ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double>>(he3.momentum.Pt(), (1. - iEta * 2.) * he3.momentum.Eta(), he3.momentum.Phi() + TMath::Pi() * (0.75  + 0.5 * iR / cfgNrotations), he3.momentum.M());
+          auto he3Momentum = ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double>>(he3.momentum.Pt(), (1. - iEta * 2.) * he3.momentum.Eta(), he3.momentum.Phi() + TMath::Pi() * (0.75 + 0.5 * iR / cfgNrotations), he3.momentum.M());
           for (const auto& lambda : lambdaCandidates) {
             auto pairMomentum = lambda.momentum + he3Momentum; // Calculate invariant mass
             (he3.sign * lambda.sign > 0 ? hRotationInvariantMassLS : hRotationInvariantMassUS)[he3.sign > 0]->Fill(pairMomentum.Pt(), pairMomentum.M());

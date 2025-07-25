@@ -9,11 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <boost/regex.hpp>
-#include <TObjArray.h>
+#include "EventSelectionFilterAndAnalysis.h"
 
 #include "Framework/AnalysisTask.h"
-#include "EventSelectionFilterAndAnalysis.h"
+
+#include <TObjArray.h>
+
+#include <boost/regex.hpp>
 
 using namespace o2;
 using namespace o2::analysis::PWGCF;

@@ -14,9 +14,10 @@
 
 // encapsulate histogram and corrections for correlation analysis
 
+#include "Framework/HistogramSpec.h"
+
 #include "TNamed.h"
 #include "TString.h"
-#include "Framework/HistogramSpec.h"
 
 class TH1;
 class TH1F;

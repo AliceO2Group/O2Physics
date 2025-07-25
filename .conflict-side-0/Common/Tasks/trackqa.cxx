@@ -13,15 +13,16 @@
 // Task producing basic tracking qa histograms
 //
 
-#include <utility> // std::swap
-#include <vector>
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
+
+#include <utility> // std::swap
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

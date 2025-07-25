@@ -9,35 +9,36 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "FlowContainer.h"
+#include "FlowPtContainer.h"
+#include "GFW.h"
+#include "GFWConfig.h"
+#include "GFWCumulant.h"
+#include "GFWPowerArray.h"
+#include "GFWWeights.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
 #include <CCDB/BasicCCDBManager.h>
-#include <DataFormatsParameters/GRPObject.h>
 #include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+
+#include <TF1.h>
+#include <TProfile.h>
+#include <TRandom3.h>
+
 #include <algorithm>
 #include <numeric>
 #include <vector>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-
-#include "GFWPowerArray.h"
-#include "GFW.h"
-#include "GFWCumulant.h"
-#include "FlowContainer.h"
-#include "FlowPtContainer.h"
-#include "GFWConfig.h"
-#include "GFWWeights.h"
-#include <TProfile.h>
-#include <TRandom3.h>
-#include <TF1.h>
 
 using namespace o2;
 using namespace o2::framework;

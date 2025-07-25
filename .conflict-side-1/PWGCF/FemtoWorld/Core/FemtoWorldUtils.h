@@ -18,8 +18,9 @@
 #ifndef FEMTOWORLD_UTILS_H_
 #define FEMTOWORLD_UTILS_H_
 
-#include "Framework/ASoAHelpers.h"
 #include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
+
+#include "Framework/ASoAHelpers.h"
 #include <CCDB/BasicCCDBManager.h>
 
 #include <vector>

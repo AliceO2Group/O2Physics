@@ -13,8 +13,8 @@
 /// \author
 /// \since
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 // define columns in a sub-namespace of o2::aod
 // and tables in namespace o2::aod

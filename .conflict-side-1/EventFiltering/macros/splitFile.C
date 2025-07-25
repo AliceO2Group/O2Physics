@@ -10,11 +10,12 @@
 // or submit itself to any jurisdiction.
 // O2 includes
 
+#include "TDirectory.h"
+#include "TFile.h"
+#include "TTree.h"
+
 #include <iostream>
 #include <string>
-#include "TFile.h"
-#include "TDirectory.h"
-#include "TTree.h"
 
 void splitFile(const char* inputFileName = "bcSelection.root", const char* outputFileName1 = "bcRanges.root")
 {

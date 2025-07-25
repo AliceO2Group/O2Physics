@@ -73,9 +73,9 @@ DECLARE_SOA_COLUMN(StoredFT0MAmplitude, storedFT0MAmplitude, uint16_t); //! ft0a
 DECLARE_SOA_COLUMN(StoredMu, storedMu, uint16_t);                       //! probability of TVX collision per BC (x1000)
 DECLARE_SOA_COLUMN(StoredTimeSinceSOF, storedTimeSinceSOF, uint16_t);   //! time since decreation of ADJUST in seconds (x2)
 
-DECLARE_SOA_DYNAMIC_COLUMN(Centrality, centrality, [](uint8_t storedcentrality) -> float { return std::nextafter(storedcentrality / emdownscaling::downscalingFactors[emdownscaling::kFT0MCent], std::numeric_limits<float>::infinity()); });           //! Centrality (0-100)
-DECLARE_SOA_DYNAMIC_COLUMN(FT0MAmplitude, ft0Amplitude, [](uint16_t storedFT0MAmplitude) -> float { return std::nextafter(storedFT0MAmplitude / emdownscaling::downscalingFactors[emdownscaling::kFT0Amp], std::numeric_limits<float>::infinity()); }); //! FT0M amplitude
-DECLARE_SOA_DYNAMIC_COLUMN(Mu, mu, [](uint16_t storedMu) -> float { return std::nextafter(storedMu / emdownscaling::downscalingFactors[emdownscaling::kMu], std::numeric_limits<float>::infinity()); });                                                //! probability of TVX collision per BC
+DECLARE_SOA_DYNAMIC_COLUMN(Centrality, centrality, [](uint8_t storedcentrality) -> float { return std::nextafter(storedcentrality / emdownscaling::downscalingFactors[emdownscaling::kFT0MCent], std::numeric_limits<float>::infinity()); });              //! Centrality (0-100)
+DECLARE_SOA_DYNAMIC_COLUMN(FT0MAmplitude, ft0Amplitude, [](uint16_t storedFT0MAmplitude) -> float { return std::nextafter(storedFT0MAmplitude / emdownscaling::downscalingFactors[emdownscaling::kFT0Amp], std::numeric_limits<float>::infinity()); });    //! FT0M amplitude
+DECLARE_SOA_DYNAMIC_COLUMN(Mu, mu, [](uint16_t storedMu) -> float { return std::nextafter(storedMu / emdownscaling::downscalingFactors[emdownscaling::kMu], std::numeric_limits<float>::infinity()); });                                                   //! probability of TVX collision per BC
 DECLARE_SOA_DYNAMIC_COLUMN(TimeSinceSOF, timeSinceSOF, [](uint16_t storedTimeSinceSOF) -> float { return std::nextafter(storedTimeSinceSOF / emdownscaling::downscalingFactors[emdownscaling::kTimeSinceSOF], std::numeric_limits<float>::infinity()); }); //! probability of TVX collision per BC
 } // namespace bcwisebc
 DECLARE_SOA_TABLE(BCWiseBCs, "AOD", "BCWISEBC", //! table of bc wise centrality estimation and event selection input

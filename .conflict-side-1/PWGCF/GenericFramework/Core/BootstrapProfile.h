@@ -16,11 +16,11 @@
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_BOOTSTRAPPROFILE_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_BOOTSTRAPPROFILE_H_
 
-#include "TProfile.h"
-#include "TList.h"
-#include "TString.h"
 #include "TCollection.h"
+#include "TList.h"
 #include "TMath.h"
+#include "TProfile.h"
+#include "TString.h"
 
 class BootstrapProfile : public TProfile
 {

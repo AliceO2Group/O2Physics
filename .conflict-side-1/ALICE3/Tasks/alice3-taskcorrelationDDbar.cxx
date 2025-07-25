@@ -14,15 +14,15 @@
 ///
 /// \author Fabio Colamaria <fabio.colamaria@ba.infn.it>, INFN Bari
 
-#include <vector>
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/HFC/DataModel/CorrelationTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/Utils/utilsAnalysis.h"
-#include "PWGHF/HFC/DataModel/CorrelationTables.h"
+#include <vector>
 // #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 // #include "PWGHF/DataModel/CandidateSelectionTables.h"
 

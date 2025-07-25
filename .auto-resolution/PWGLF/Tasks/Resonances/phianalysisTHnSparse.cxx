@@ -13,21 +13,24 @@
 /// \brief Analysis of phi resonance using THnSparse histograms.
 /// \author Veronika Barbasova (veronika.barbasova@cern.ch)
 
-#include <TLorentzVector.h>
-#include <vector>
-#include <string>
+#include "PWGLF/Utils/rsnOutput.h"
 
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/PID.h"
-#include "PWGLF/Utils/rsnOutput.h"
+
+#include <TLorentzVector.h>
+
+#include <string>
+#include <vector>
 // #include "TDatabasePDG.h"
 
 using namespace o2;

@@ -15,20 +15,22 @@
 // Author: Jan Fiete Grosse-Oetringhaus
 
 #include "PWGCF/Core/CorrelationContainer.h"
-#include "Framework/StepTHn.h"
+
+#include "CommonConstants/MathConstants.h"
+#include "Framework/HistogramSpec.h"
 #include "Framework/Logger.h"
-#include "THnSparse.h"
-#include "TMath.h"
-#include "TList.h"
+#include "Framework/StepTHn.h"
+
+#include "TCanvas.h"
 #include "TCollection.h"
+#include "TF1.h"
 #include "TH1D.h"
 #include "TH2D.h"
 #include "TH3D.h"
-#include "TCanvas.h"
-#include "TF1.h"
 #include "THn.h"
-#include "Framework/HistogramSpec.h"
-#include "CommonConstants/MathConstants.h"
+#include "THnSparse.h"
+#include "TList.h"
+#include "TMath.h"
 
 using namespace o2;
 using namespace o2::framework;

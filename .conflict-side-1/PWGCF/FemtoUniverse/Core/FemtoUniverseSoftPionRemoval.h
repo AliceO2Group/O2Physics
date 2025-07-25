@@ -16,10 +16,11 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSESOFTPIONREMOVAL_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSESOFTPIONREMOVAL_H_
 
-#include <vector>
-
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
+
 #include "Framework/HistogramRegistry.h"
+
+#include <vector>
 
 namespace o2::analysis::femto_universe
 {

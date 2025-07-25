@@ -13,35 +13,40 @@
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 
-#include <CCDB/BasicCCDBManager.h>
-#include <fairlogger/Logger.h>
-#include <vector>
-#include <string>
+#include "PWGCF/DataModel/FemtoDerived.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamCascadeSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamCollisionSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamV0Selection.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "EventFiltering/Zorro.h"
+
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamCollisionSelection.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamV0Selection.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamCascadeSelection.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "EventFiltering/Zorro.h"
-#include "PWGCF/DataModel/FemtoDerived.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "TMath.h"
+#include <CCDB/BasicCCDBManager.h>
+
 #include "Math/Vector4D.h"
+#include "TMath.h"
+
+#include <fairlogger/Logger.h>
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

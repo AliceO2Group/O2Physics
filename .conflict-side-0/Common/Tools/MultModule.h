@@ -16,22 +16,27 @@
 #ifndef COMMON_TOOLS_MULTMODULE_H_
 #define COMMON_TOOLS_MULTMODULE_H_
 
-#include <vector>
-#include <memory>
-#include <cstdlib>
-#include <cmath>
-#include <array>
-#include <string>
-#include <map>
+#include "TableHelper.h"
+
+#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
+
+#include "Common/Core/TPCVDriftManager.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/Configurable.h"
 #include "Framework/HistogramSpec.h"
-#include "TableHelper.h"
-#include "Common/Core/TPCVDriftManager.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
+
 #include "TFormula.h"
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 //__________________________________________
 // MultModule

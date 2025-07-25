@@ -9,26 +9,26 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "Common/DataModel/EventSelection.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonDataFormat/InteractionRecord.h"
+#include "DataFormatsPHOS/CalibParams.h"
+#include "DataFormatsPHOS/Cell.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/ConfigParamSpec.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include "PHOSBase/Geometry.h"
+
 #include <climits>
 #include <cstdlib>
 #include <map>
 #include <memory>
-#include <vector>
 #include <string>
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/DataModel/EventSelection.h"
-#include "DataFormatsPHOS/Cell.h"
-#include "DataFormatsPHOS/CalibParams.h"
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "PHOSBase/Geometry.h"
-#include "CommonDataFormat/InteractionRecord.h"
+#include <vector>
 
 /// \struct PHOS QA
 /// \brief Monitoring task for PHOS related quantities

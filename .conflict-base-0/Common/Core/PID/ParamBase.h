@@ -26,10 +26,10 @@
 #include <vector>    // std::vector
 
 // ROOT includes
-#include "TNamed.h"
-#include "TFile.h"
-
 #include "Framework/Logger.h"
+
+#include "TFile.h"
+#include "TNamed.h"
 
 namespace o2::pid
 {

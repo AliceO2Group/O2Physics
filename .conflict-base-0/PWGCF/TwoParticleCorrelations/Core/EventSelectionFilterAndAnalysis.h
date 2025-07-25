@@ -11,15 +11,17 @@
 #ifndef EVENTSELECTIONFILTERANDANALYSIS_H
 #define EVENTSELECTIONFILTERANDANALYSIS_H
 
-#include <Rtypes.h>
-#include <TString.h>
-#include <TObject.h>
-#include <TNamed.h>
+#include "SelectionFilterAndAnalysis.h"
+#include "SkimmingConfigurableCuts.h"
+
 #include <TList.h>
+#include <TNamed.h>
+#include <TObject.h>
+#include <TString.h>
 
 #include <fairlogger/Logger.h>
-#include "SkimmingConfigurableCuts.h"
-#include "SelectionFilterAndAnalysis.h"
+
+#include <Rtypes.h>
 
 namespace o2
 {

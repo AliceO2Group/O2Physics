@@ -18,11 +18,10 @@
 
 #include "Tools/ML/MlResponse.h"
 
-#include <onnxruntime_cxx_api.h>
-
 #include <Framework/Logger.h>
 
 #include <onnxruntime_c_api.h>
+#include <onnxruntime_cxx_api.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -330,6 +329,7 @@ class TensorAllocator
 {
  protected:
   Ort::MemoryInfo memInfo;
+
  public:
   TensorAllocator()
     : memInfo(Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault))

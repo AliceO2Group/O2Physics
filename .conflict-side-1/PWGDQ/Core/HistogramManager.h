@@ -17,17 +17,17 @@
 #ifndef PWGDQ_CORE_HISTOGRAMMANAGER_H_
 #define PWGDQ_CORE_HISTOGRAMMANAGER_H_
 
-#include <TString.h>
-#include <TNamed.h>
-#include <TList.h>
-#include <THashList.h>
-#include <TAxis.h>
 #include <TArrayD.h>
+#include <TAxis.h>
+#include <THashList.h>
+#include <TList.h>
+#include <TNamed.h>
+#include <TString.h>
 
-#include <string>
-#include <map>
-#include <vector>
 #include <list>
+#include <map>
+#include <string>
+#include <vector>
 
 class HistogramManager : public TNamed
 {
@@ -103,10 +103,10 @@ class HistogramManager : public TNamed
   std::map<std::string, std::list<std::vector<int>>> fVariablesMap; //!  map holding identifiers for all variables needed by histograms
 
   // various
-  bool fUseDefaultVariableNames;    //! toggle the usage of default variable names and units
-  uint64_t fBinsAllocated;          //! number of allocated bins
-  TString* fVariableNames;          //! variable names
-  TString* fVariableUnits;          //! variable units
+  bool fUseDefaultVariableNames; //! toggle the usage of default variable names and units
+  uint64_t fBinsAllocated;       //! number of allocated bins
+  TString* fVariableNames;       //! variable names
+  TString* fVariableUnits;       //! variable units
 
   void MakeAxisLabels(TAxis* ax, const char* labels);
 

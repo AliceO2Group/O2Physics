@@ -15,13 +15,15 @@
 #ifndef PWGCF_JCORRAN_CORE_JFFLUCANALYSIS_H_
 #define PWGCF_JCORRAN_CORE_JFFLUCANALYSIS_H_
 
-#include <experimental/type_traits>
 #include "JQVectors.h"
+
 #include <TComplex.h>
-#include <TNamed.h>
 #include <TH1.h>
 #include <THn.h>
 #include <THnSparse.h>
+#include <TNamed.h>
+
+#include <experimental/type_traits>
 
 class JFFlucAnalysis : public TNamed
 {

@@ -9,14 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <cmath>
+#include "PWGCF/TwoParticleCorrelations/DataModel/IdentifiedBfFiltered.h"
+#include "PWGCF/TwoParticleCorrelations/TableProducer/identifiedBfFilter.h"
 
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "PWGCF/TwoParticleCorrelations/DataModel/IdentifiedBfFiltered.h"
-#include "PWGCF/TwoParticleCorrelations/TableProducer/identifiedBfFilter.h"
+
+#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;

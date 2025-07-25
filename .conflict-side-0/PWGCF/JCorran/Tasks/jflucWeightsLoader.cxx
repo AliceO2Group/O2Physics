@@ -12,27 +12,27 @@
 /// \since May 2024
 // o2-linter: disable='doc/file'
 
-#include <experimental/type_traits>
-#include <string>
+#include "PWGCF/DataModel/CorrelationsDerived.h"
+#include "PWGCF/JCorran/DataModel/JCatalyst.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/V0.h"
+
 #include <TFile.h>
 #include <THn.h>
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "ReconstructionDataFormats/V0.h"
-
-#include "CCDB/BasicCCDBManager.h"
-
-#include "PWGCF/JCorran/DataModel/JCatalyst.h"
-#include "PWGCF/DataModel/CorrelationsDerived.h"
-#include "Framework/runDataProcessing.h"
+#include <experimental/type_traits>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;

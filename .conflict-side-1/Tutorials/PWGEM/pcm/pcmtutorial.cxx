@@ -12,16 +12,18 @@
 /// \brief tutorial for pcm analysis.
 /// \author daiki.sekihata@cern.ch
 
-#include <TMath.h>
-#include <Math/Vector4D.h>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/Core/trackUtilities.h"
-#include "CommonConstants/PhysicsConstants.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
+
+#include "Common/Core/trackUtilities.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include <Math/Vector4D.h>
+#include <TMath.h>
 
 using namespace o2;
 using namespace o2::soa;

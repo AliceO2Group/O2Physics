@@ -14,47 +14,48 @@
 /// \since  11/2024
 /// \brief  In this task the energy calibration and recentring of Q-vectors constructed in the ZDCs will be done
 
-#include <stdlib.h>
-#include <cmath>
-#include <algorithm>
-#include <numeric>
-#include <vector>
-#include <typeinfo>
-#include <memory>
-#include <string>
+#include "PWGCF/DataModel/SPTableZDC.h"
 
-#include "CCDB/BasicCCDBManager.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StaticFor.h"
-
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "PWGCF/DataModel/SPTableZDC.h"
 
-#include "TH1F.h"
-#include "TH2F.h"
-#include "TProfile.h"
-#include "TObjArray.h"
+#include "TCanvas.h"
 #include "TF1.h"
 #include "TFitResult.h"
-#include "TCanvas.h"
-#include "TSystem.h"
+#include "TH1F.h"
+#include "TH2F.h"
+#include "TObjArray.h"
+#include "TProfile.h"
 #include "TROOT.h"
+#include "TSystem.h"
+
+#include <algorithm>
+#include <cmath>
+#include <memory>
+#include <numeric>
+#include <string>
+#include <typeinfo>
+#include <vector>
+
+#include <stdlib.h>
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
@@ -80,7 +81,7 @@ std::vector<double> pyZDC = {-1.75, -1.75, 1.75, 1.75};
 double alphaZDC = 0.395;
 
 // q-vectors before (q) and after (qRec) recentering.
-std::vector<double> q(4); // start values of [QxA, QyA, QxC, QyC]
+std::vector<double> q(4);     // start values of [QxA, QyA, QxC, QyC]
 std::vector<double> qNoEq(4); // start values of [QxA, QyA, QxC, QyC]
 
 // for energy calibration

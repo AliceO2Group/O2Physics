@@ -25,8 +25,8 @@ void customize(std::vector<ConfigParamSpec>& workflowOptions)
   // workflowOptions.push_back(ConfigParamSpec{"isMC", VariantType::Bool, false, {"Check also MC tables if set"}});
 }
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 using namespace o2::framework::expressions;
 
 template <typename Table>

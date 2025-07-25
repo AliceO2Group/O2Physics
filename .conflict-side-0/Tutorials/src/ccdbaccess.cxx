@@ -18,10 +18,10 @@
 /// \author Nicolo' Jacazio
 /// \since 2020-06-22
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include <CCDB/BasicCCDBManager.h>
 #include "CommonDataFormat/InteractionRecord.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
 
 #include <chrono>
 

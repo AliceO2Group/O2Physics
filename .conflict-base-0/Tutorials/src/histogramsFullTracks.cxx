@@ -13,9 +13,11 @@
 /// \author
 /// \since
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
 #include <TH2F.h>
+
 #include <cmath>
 
 using namespace o2;

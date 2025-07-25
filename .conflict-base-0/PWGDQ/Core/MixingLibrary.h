@@ -11,9 +11,10 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
-#include <TString.h>
 #include "PWGDQ/Core/MixingHandler.h"
 #include "PWGDQ/Core/VarManager.h"
+
+#include <TString.h>
 
 namespace o2::aod
 {

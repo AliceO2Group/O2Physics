@@ -16,18 +16,19 @@
 //  Creates V0 extension tables for derived data.
 //  A minimal task that saves a lot of disk space.
 
-#include <cmath>
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+
 #include <array>
+#include <cmath>
 #include <cstdlib>
 #include <iterator>
 #include <utility>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 using namespace o2;
 using namespace o2::framework;

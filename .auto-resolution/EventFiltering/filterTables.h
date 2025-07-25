@@ -12,10 +12,10 @@
 #define EVENTFILTERING_FILTERTABLES_H_
 
 #include <array>
-#include <unordered_map>
-#include <string>
-#include <vector>
 #include <cstdint>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace o2::aod
 {

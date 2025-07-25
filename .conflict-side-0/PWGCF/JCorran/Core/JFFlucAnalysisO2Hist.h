@@ -15,6 +15,7 @@
 #define PWGCF_JCORRAN_CORE_JFFLUCANALYSISO2HIST_H_
 
 #include "JFFlucAnalysis.h"
+
 #include "Framework/HistogramRegistry.h"
 
 using namespace o2;

@@ -9,16 +9,19 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <bitset>
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
+
 #include "DataFormatsFT0/Digit.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+
 #include "TH1F.h"
 #include "TH2F.h"
+
+#include <bitset>
 
 using namespace o2;
 using namespace o2::framework;

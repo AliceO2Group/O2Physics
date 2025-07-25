@@ -16,12 +16,12 @@
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMMATH_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMMATH_H_
 
-#include <iostream>
-
-#include "Math/Vector4D.h"
 #include "Math/Boost.h"
+#include "Math/Vector4D.h"
 #include "TLorentzVector.h"
 #include "TMath.h"
+
+#include <iostream>
 
 namespace o2::analysis::femtoDream
 {

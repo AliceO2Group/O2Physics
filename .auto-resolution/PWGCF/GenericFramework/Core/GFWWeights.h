@@ -18,13 +18,13 @@
 
 #include "Framework/Logger.h"
 
-#include "TObjArray.h"
-#include "TNamed.h"
-#include "TH3D.h"
-#include "TH2D.h"
-#include "TH1D.h"
-#include "TFile.h"
 #include "TCollection.h"
+#include "TFile.h"
+#include "TH1D.h"
+#include "TH2D.h"
+#include "TH3D.h"
+#include "TNamed.h"
+#include "TObjArray.h"
 #include "TString.h"
 
 class GFWWeights : public TNamed

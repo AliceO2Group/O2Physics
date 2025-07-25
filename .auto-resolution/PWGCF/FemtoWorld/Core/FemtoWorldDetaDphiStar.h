@@ -17,12 +17,13 @@
 #ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDDETADPHISTAR_H_
 #define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDDETADPHISTAR_H_
 
-#include <string>
-#include <memory>
-#include <vector>
-
 #include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
+
 #include "Framework/HistogramRegistry.h"
+
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace o2::analysis
 {

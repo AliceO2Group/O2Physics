@@ -16,11 +16,12 @@
 #ifndef COMMON_TOOLS_STANDARDCCDBLOADER_H_
 #define COMMON_TOOLS_STANDARDCCDBLOADER_H_
 
-#include <string>
-#include <cstdlib>
-#include <cmath>
-#include <array>
 #include "Framework/AnalysisDataModel.h"
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <string>
 
 //__________________________________________
 // Standard class to load stuff

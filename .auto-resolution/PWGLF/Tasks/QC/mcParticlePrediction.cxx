@@ -16,18 +16,20 @@
 /// \brief Task to build the predictions from the models based on the generated particles
 ///
 
-#include "Framework/runDataProcessing.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/Utils/inelGt.h"
+#include "PWGLF/Utils/mcParticle.h"
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/Multiplicity.h"
+
+#include "CommonConstants/LHCConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "Framework/StaticFor.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include "Common/DataModel/FT0Corrected.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "PWGLF/Utils/mcParticle.h"
-#include "PWGLF/Utils/inelGt.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "CommonConstants/LHCConstants.h"
+#include "Framework/StaticFor.h"
+#include "Framework/runDataProcessing.h"
 
 #include "TPDGCode.h"
 
@@ -60,9 +62,9 @@ struct Estimators {
   static constexpr estID ITSIB = 13;
   static constexpr estID ETA05 = 14;
   static constexpr estID ETA08 = 15;
-  static constexpr estID V0A = 16;  // (Run2)
-  static constexpr estID V0C = 17;  // (Run2)
-  static constexpr estID V0AC = 18; // (Run2 V0M)
+  static constexpr estID V0A = 16;             // (Run2)
+  static constexpr estID V0C = 17;             // (Run2)
+  static constexpr estID V0AC = 18;            // (Run2 V0M)
   static constexpr estID ImpactParameter = 19; // (Run2 V0M)
   static constexpr estID nEstimators = 20;
 

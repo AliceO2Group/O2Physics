@@ -15,26 +15,27 @@
 #ifndef PWGEM_PHOTONMESON_CORE_HISTOGRAMSLIBRARY_H_
 #define PWGEM_PHOTONMESON_CORE_HISTOGRAMSLIBRARY_H_
 
-#include <iostream>
-#include <array>
-#include <TString.h>
-#include <THashList.h>
-#include <TObject.h>
-#include <TObjArray.h>
-#include <THashList.h>
-#include <TMath.h>
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
+
+#include <TClass.h>
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TH3F.h>
-#include <TProfile.h>
-#include <TProfile2D.h>
-#include <TProfile3D.h>
+#include <THashList.h>
 #include <THn.h>
 #include <THnSparse.h>
 #include <TIterator.h>
-#include <TClass.h>
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/Core/RecoDecay.h"
+#include <TMath.h>
+#include <TObjArray.h>
+#include <TObject.h>
+#include <TProfile.h>
+#include <TProfile2D.h>
+#include <TProfile3D.h>
+#include <TString.h>
+
+#include <array>
+#include <iostream>
 
 enum EMHistType {
   kEvent = 0,

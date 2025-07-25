@@ -14,28 +14,31 @@
 // This code is for data-driven efficiency for photon analyses. tag and probe method
 //    Please write to: daiki.sekihata@cern.ch
 
-#include <cstring>
-#include <iterator>
-
-#include "TString.h"
-#include "Math/Vector4D.h"
-#include "Math/Vector3D.h"
-#include "Math/LorentzRotation.h"
-#include "Math/Rotation3D.h"
-#include "Math/AxisAngle.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/Core/RecoDecay.h"
+#include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
+#include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
+#include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/PairCut.h"
+#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
-#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
-#include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
-#include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
-#include "PWGEM/PhotonMeson/Core/PairCut.h"
-#include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
-#include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Math/AxisAngle.h"
+#include "Math/LorentzRotation.h"
+#include "Math/Rotation3D.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "TString.h"
+
+#include <cstring>
+#include <iterator>
 
 using namespace o2;
 using namespace o2::aod;
@@ -126,7 +129,7 @@ struct TagAndProbe {
         THashList* list_pair_subsys_paircut = reinterpret_cast<THashList*>(list_pair_subsys_photoncut->FindObject(pair_cut_name.data()));
         o2::aod::pwgem::photon::histogram::DefineHistograms(list_pair_subsys_paircut, "tag_and_probe", pairname.data());
       } // end of cut3 loop pair cut
-    }   // end of cut2 loop
+    } // end of cut2 loop
   }
 
   static constexpr std::string_view pairnames[6] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PHOSEMC"};
@@ -318,10 +321,10 @@ struct TagAndProbe {
                 RotationBackground<aod::SkimEMCClusters>(v12, v1, v2, photons2_coll, g1.globalIndex(), g2.globalIndex(), probecut, paircut, emcmatchedtracks);
               }
             } // end of probe cut loop
-          }   // end of pair cut loop
-        }     // end of g2 loop
-      }       // end of g1 loop
-    }         // end of collision loop
+          } // end of pair cut loop
+        } // end of g2 loop
+      } // end of g1 loop
+    } // end of collision loop
   }
 
   Configurable<int> ndepth{"ndepth", 10, "depth for event mixing"};
@@ -406,10 +409,10 @@ struct TagAndProbe {
               reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.GetName(), probecut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_PassingProbe_Mixed"))->Fill(v12.M(), v2.Pt());
 
             } // end of probe cut loop
-          }   // end of pair cut loop
-        }     // end of g2 loop
-      }       // end of g1 loop
-    }         // end of different collision combinations
+          } // end of pair cut loop
+        } // end of g2 loop
+      } // end of g1 loop
+    } // end of different collision combinations
   }
 
   /// \brief Calculate background (using rotation background method only for EMCal!)

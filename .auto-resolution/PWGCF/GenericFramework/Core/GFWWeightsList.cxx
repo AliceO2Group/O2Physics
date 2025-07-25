@@ -14,8 +14,9 @@
 /// \since  Dec/25/2024
 /// \brief  one object to hold a list of GFWWeights objects,
 
-#include <utility>
 #include "GFWWeightsList.h"
+
+#include <utility>
 
 GFWWeightsList::GFWWeightsList() : TNamed("", ""), list(0)
 {

@@ -13,12 +13,13 @@
 /// \author
 /// \since
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include <TParameter.h>
 
+#include "Framework/AnalysisTask.h"
 #include "Framework/StaticFor.h"
+#include "Framework/runDataProcessing.h"
+
+#include <TParameter.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -30,7 +31,7 @@ struct EtaPhiHistograms {
     {
       {"eta", "#eta", {HistType::kTH1F, {{102, -2.01, 2.01}}}},     //
       {"phi", "#varphi", {HistType::kTH1F, {{100, 0., 2. * M_PI}}}} //
-    }                                                               //
+    } //
   };
 
   void process(aod::Tracks const& tracks)
@@ -49,7 +50,7 @@ struct FilteredHistograms {
     {
       {"eta", "#eta", {HistType::kTH1F, {{102, -2.01, 2.01}}}},                            //
       {"ptToPt", "#ptToPt", {HistType::kTH2F, {{100, -0.01, 10.01}, {100, -0.01, 10.01}}}} //
-    }                                                                                      //
+    } //
   };
 
   void process(aod::Tracks const& tracks)
@@ -259,7 +260,7 @@ struct TListTest {
     {
       {"eta", "#eta", {HistType::kTH1F, {{102, -2.01, 2.01}}}},     //
       {"phi", "#varphi", {HistType::kTH1F, {{100, 0., 2. * M_PI}}}} //
-    }                                                               //
+    } //
   };
 
   void init(InitContext const&)

@@ -11,8 +11,9 @@
 
 #ifndef PWGLF_DATAMODEL_PIDTOFGENERIC_H_
 #define PWGLF_DATAMODEL_PIDTOFGENERIC_H_
-#include "CommonDataFormat/InteractionRecord.h"
 #include "Common/Core/PID/PIDTOF.h"
+
+#include "CommonDataFormat/InteractionRecord.h"
 
 namespace o2::aod
 {

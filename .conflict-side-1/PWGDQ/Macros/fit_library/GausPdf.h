@@ -14,11 +14,11 @@
 #ifndef GAUSPDF
 #define GAUSPDF
 
-#include "RooAbsPdf.h"
-#include "RooRealProxy.h"
-#include "RooCategoryProxy.h"
-#include "RooAbsReal.h"
 #include "RooAbsCategory.h"
+#include "RooAbsPdf.h"
+#include "RooAbsReal.h"
+#include "RooCategoryProxy.h"
+#include "RooRealProxy.h"
 
 class GausPdf : public RooAbsPdf
 {

@@ -15,10 +15,13 @@
 #ifndef PWGDQ_CORE_HISTOGRAMSLIBRARY_H_
 #define PWGDQ_CORE_HISTOGRAMSLIBRARY_H_
 
-#include <TString.h>
 #include "PWGDQ/Core/HistogramManager.h"
 #include "PWGDQ/Core/VarManager.h"
+
 #include "CommonConstants/MathConstants.h"
+
+#include <TString.h>
+
 #include "rapidjson/document.h"
 
 namespace o2::aod
@@ -29,7 +32,7 @@ void DefineHistograms(HistogramManager* hm, const char* histClass, const char* g
 template <typename T>
 bool ValidateJSONHistogram(T hist);
 void AddHistogramsFromJSON(HistogramManager* hm, const char* json);
-}
+} // namespace dqhistograms
 } // namespace o2::aod
 
 #endif // PWGDQ_CORE_HISTOGRAMSLIBRARY_H_

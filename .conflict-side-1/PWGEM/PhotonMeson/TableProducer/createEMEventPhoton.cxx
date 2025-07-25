@@ -14,23 +14,22 @@
 ///
 /// \author Daiki Sekihata, daiki.sekihata@cern.ch
 
-#include <string>
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGJE/DataModel/Jet.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
 #include "Common/CCDB/TriggerAliases.h"
 
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
 
-#include "PWGJE/DataModel/Jet.h"
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;

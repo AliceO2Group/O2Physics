@@ -57,7 +57,7 @@ DECLARE_SOA_TABLE(LFLambda, "AOD", "LFLAMBDA", lfv0he3::LFEventId, lfv0he3::Pt, 
 
 struct he3Candidate {
   ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double>> momentum; // 4-momentum of the He3 candidate
-  float nSigmaTPC = -999.f;                                                     // TPC nSigma for He3
+  float nSigmaTPC = -999.f;                                            // TPC nSigma for He3
   float dcaXY = -999.f;
   float dcaZ = -999.f;
   int tpcNClsFound = 0;         // Number of TPC clusters found
@@ -68,12 +68,12 @@ struct he3Candidate {
 
 struct lambdaCandidate {
   ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double>> momentum;
-  float mass = -1.f;       // Lambda mass
-  float cosPA = -2.f;          // Cosine of pointing angle
-  float dcaV0Daughters = -999.f; // DCA between V0 daughters
-  float dcaProtonToPV = -999.f;  // DCA of the proton to primary vertex
-  float dcaPionToPV = -999.f;    // DCA of the pion to primary vertex
-  float v0Radius = -1.f; // V0 radius
+  float mass = -1.f;              // Lambda mass
+  float cosPA = -2.f;             // Cosine of pointing angle
+  float dcaV0Daughters = -999.f;  // DCA between V0 daughters
+  float dcaProtonToPV = -999.f;   // DCA of the proton to primary vertex
+  float dcaPionToPV = -999.f;     // DCA of the pion to primary vertex
+  float v0Radius = -1.f;          // V0 radius
   float protonNSigmaTPC = -999.f; // Proton TPC nSigma
   float pionNSigmaTPC = -999.f;
   int8_t sign = 0; // Charge sign of the Lambda candidate

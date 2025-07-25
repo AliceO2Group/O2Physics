@@ -19,28 +19,27 @@
 ///
 
 // C++/ROOT includes.
-#include <chrono>
-#include <string>
-#include <vector>
 #include <TComplex.h>
 #include <TH3F.h>
 
-// o2Physics includes.
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
+#include <chrono>
+#include <string>
+#include <vector>
 
+// o2Physics includes.
 #include "Common/Core/EventPlaneHelper.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-
 #include "Common/DataModel/Qvectors.h"
-
-#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
 // o2 includes.
 #include "CCDB/BasicCCDBManager.h"
 #include "DetectorsCommonDataFormats/AlignParam.h"

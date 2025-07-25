@@ -9,18 +9,19 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "Common/CCDB/ctpRateFetcher.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
 #include <algorithm>
 #include <cmath>
 #include <deque>
 #include <string>
-#include <vector>
 #include <utility>
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/CCDB/ctpRateFetcher.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

@@ -16,14 +16,14 @@
 #ifndef PWGUD_CORE_UPCPAIRCUTS_H_
 #define PWGUD_CORE_UPCPAIRCUTS_H_
 
-#include <cmath>
+#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
 
-#include "Framework/Logger.h"
-#include "Framework/HistogramRegistry.h"
 #include "CommonConstants/MathConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/Logger.h"
 
-#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
+#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;

@@ -17,15 +17,16 @@
 /// \since  May 27, 2025
 ///
 
-#include <map>
-#include <vector>
-
 #include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
 #include "Framework/ConfigParamRegistry.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
 #include "TEfficiency.h"
 #include "THashList.h"
+
+#include <map>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

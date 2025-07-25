@@ -13,27 +13,28 @@
 #include <iostream>
 
 // root headers
+#include "TLorentzVector.h"
+#include "TMath.h"
 #include <TH1F.h>
 #include <TH2F.h>
-#include "TMath.h"
-#include "TLorentzVector.h"
 
 // framework headers
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 // for track propagation
-#include "ReconstructionDataFormats/TrackFwd.h"
-#include "Math/MatrixFunctions.h"
-#include "Math/SMatrix.h"
-#include "MathUtils/Utils.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsMFT/TrackMFT.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DetectorsBase/Propagator.h"
-#include "TGeoGlobalMagField.h"
 #include "Field/MagneticField.h"
-#include "DataFormatsMFT/TrackMFT.h"
+#include "MathUtils/Utils.h"
+#include "ReconstructionDataFormats/TrackFwd.h"
+
+#include "Math/MatrixFunctions.h"
+#include "Math/SMatrix.h"
+#include "TGeoGlobalMagField.h"
 
 // define namespaces
 using namespace o2;

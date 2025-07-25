@@ -12,17 +12,18 @@
 #ifndef PWGUD_CORE_DECAYTREE_H_
 #define PWGUD_CORE_DECAYTREE_H_
 
-#include <utility>
-#include <map>
-#include <vector>
-#include <string>
-
 #include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
-#include "TLorentzVector.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+
 #include "TDatabasePDG.h"
+#include "TLorentzVector.h"
+
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

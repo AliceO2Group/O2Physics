@@ -12,9 +12,9 @@
 // ZDC converter to new format
 // to be used with Run 2 converted data and older AO2Ds
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 #include "ZDCBase/Constants.h"
 
 using namespace o2;

@@ -17,9 +17,10 @@
 /// \author
 /// \since
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 #include <CCDB/BasicCCDBManager.h>
+
 #include <chrono>
 
 using namespace o2::framework;
@@ -56,7 +57,7 @@ struct EfficiencyGlobal {
   {
     for (auto& track : tracks) {
       pt->Fill(track.pt(), efficiency->GetBinContent(efficiency->FindBin(track.pt())));
-      //LOGF(info, "Efficiency %f for pt %f", efficiency->GetBinContent(efficiency->FindBin(track.pt())), track.pt());
+      // LOGF(info, "Efficiency %f for pt %f", efficiency->GetBinContent(efficiency->FindBin(track.pt())), track.pt());
     }
   }
 };

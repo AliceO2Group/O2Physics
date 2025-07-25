@@ -17,20 +17,22 @@
 /// \since  May 13, 2025
 ///
 
-#include <utility>
-#include <map>
-#include <string>
-#include <vector>
+#include "ALICE3/DataModel/OTFRICH.h"
+#include "ALICE3/DataModel/OTFTOF.h"
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
 #include "Framework/HistogramRegistry.h"
-#include "TProfile2D.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+
 #include "THashList.h"
-#include "ALICE3/DataModel/OTFTOF.h"
-#include "ALICE3/DataModel/OTFRICH.h"
+#include "TProfile2D.h"
+
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

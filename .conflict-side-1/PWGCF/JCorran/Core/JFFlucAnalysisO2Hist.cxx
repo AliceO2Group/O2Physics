@@ -12,9 +12,11 @@
 /// \since Sep 2024
 
 #include "JFFlucAnalysisO2Hist.h"
-#include <vector>
-#include <memory>
+
 #include "CommonConstants/MathConstants.h"
+
+#include <memory>
+#include <vector>
 
 using namespace o2;
 

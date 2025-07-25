@@ -13,35 +13,38 @@
 /// \brief Provides efficiency extraction and QC for track cuts and PID
 /// \author victor.gonzalez.sebastian@gmail.com
 
-#include <TH2F.h>
-#include <TProfile2D.h>
-#include <THnSparse.h>
-#include <TPDGCode.h>
-#include <TMCProcess.h>
+#include "PWGCF/Core/AnalysisConfigurableCuts.h"
+#include "PWGCF/DataModel/DptDptFiltered.h"
+#include "PWGCF/TableProducer/dptDptFilter.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TableHelper.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/Expressions.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/PID.h"
 #include <CCDB/BasicCCDBManager.h>
-#include <vector>
+
+#include "Math/MatrixFunctions.h"
+#include "Math/SMatrix.h"
+#include <TH2F.h>
+#include <THnSparse.h>
+#include <TMCProcess.h>
+#include <TPDGCode.h>
+#include <TProfile2D.h>
+
 #include <algorithm>
 #include <cstdio>
 #include <memory>
 #include <string>
-#include "ReconstructionDataFormats/PID.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TableHelper.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/Expressions.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Math/MatrixFunctions.h"
-#include "Math/SMatrix.h"
-
-#include "PWGCF/Core/AnalysisConfigurableCuts.h"
-#include "PWGCF/DataModel/DptDptFiltered.h"
-#include "PWGCF/TableProducer/dptDptFilter.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

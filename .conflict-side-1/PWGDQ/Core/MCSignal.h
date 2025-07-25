@@ -57,10 +57,11 @@ process(aod::McParticles const& mcTracks) {
 #define PWGDQ_CORE_MCSIGNAL_H_
 
 #include "MCProng.h"
+
 #include "TNamed.h"
 
-#include <vector>
 #include <iostream>
+#include <vector>
 
 class MCSignal : public TNamed
 {

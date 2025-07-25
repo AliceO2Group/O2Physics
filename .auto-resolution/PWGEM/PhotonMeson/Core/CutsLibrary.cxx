@@ -11,10 +11,11 @@
 //
 // Contact: daiki.sekihata@cern.ch
 //
+#include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
+
+#include <regex>
 #include <string>
 #include <vector>
-#include <regex>
-#include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
 
 //_______________________________________________
 int customAtoi(const std::string& str)

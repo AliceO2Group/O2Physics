@@ -24,9 +24,11 @@
 #ifndef TRACKSELECTIONREQUEST_H
 #define TRACKSELECTIONREQUEST_H
 
-#include <iosfwd>
-#include <Rtypes.h>
 #include <TMath.h>
+
+#include <Rtypes.h>
+
+#include <iosfwd>
 
 class trackSelectionRequest
 {

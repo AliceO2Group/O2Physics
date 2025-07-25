@@ -9,11 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <regex>
+#include "PWGCF/TwoParticleCorrelations/Core/SkimmingConfigurableCuts.h"
+
 #include <TObjArray.h>
 
 #include <fairlogger/Logger.h>
-#include "PWGCF/TwoParticleCorrelations/Core/SkimmingConfigurableCuts.h"
+
+#include <regex>
 
 using namespace o2;
 using namespace o2::analysis::PWGCF;

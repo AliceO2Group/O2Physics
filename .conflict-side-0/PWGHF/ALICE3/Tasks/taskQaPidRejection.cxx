@@ -16,16 +16,7 @@
 /// \author Henrique J C Zanoli <henrique.zanoli@cern.ch>, Utrecht University
 /// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
 
-#include <utility>
-#include <vector>
-
-#include <TEfficiency.h>
-#include <TList.h>
-#include <TPDGCode.h>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/DCA.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 #include "ALICE3/DataModel/MID.h"
 #include "ALICE3/DataModel/RICH.h"
@@ -33,7 +24,16 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "ReconstructionDataFormats/DCA.h"
+
+#include <TEfficiency.h>
+#include <TList.h>
+#include <TPDGCode.h>
+
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

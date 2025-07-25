@@ -1114,9 +1114,9 @@ struct statPromptPhoton {
 
     histos.fill(HIST("DATA_nEvents"), 2.5);
 
-      if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
-        return;
-      }
+    if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
+      return;
+    }
 
     histos.fill(HIST("DATA_nEvents"), 3.5);
 

@@ -25,8 +25,8 @@
 // O2 includes
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
-#include "ReconstructionDataFormats/PID.h"
 #include "Framework/Logger.h"
+#include "ReconstructionDataFormats/PID.h"
 
 namespace o2::aod
 {

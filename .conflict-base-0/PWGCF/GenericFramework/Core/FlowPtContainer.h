@@ -16,17 +16,20 @@
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_FLOWPTCONTAINER_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_FLOWPTCONTAINER_H_
 
-#include <algorithm>
-#include <vector>
-#include <complex>
-#include <variant>
 #include "BootstrapProfile.h"
-#include "TNamed.h"
-#include "TList.h"
-#include "TCollection.h"
-#include "Framework/HistogramSpec.h"
 #include "GFW.h"
 #include "GFWConfig.h"
+
+#include "Framework/HistogramSpec.h"
+
+#include "TCollection.h"
+#include "TList.h"
+#include "TNamed.h"
+
+#include <algorithm>
+#include <complex>
+#include <variant>
+#include <vector>
 
 namespace o2::analysis::genericframework::eventweight
 {

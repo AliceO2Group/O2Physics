@@ -13,10 +13,11 @@
 /// \brief Converts UDCollisionSelExtras table from version 000 to 002 and 001 to 002
 /// \author Roman Lavicka <roman.lavicka@cern.ch>
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "PWGUD/DataModel/UDTables.h"
+
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;

@@ -14,8 +14,8 @@
 /// \brief Slim tables for he3Hadron
 ///
 
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
 
 #ifndef PWGLF_DATAMODEL_LFHE3HADRONTABLES_H_
 #define PWGLF_DATAMODEL_LFHE3HADRONTABLES_H_

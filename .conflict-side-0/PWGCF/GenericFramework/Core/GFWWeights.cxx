@@ -10,7 +10,9 @@
 // or submit itself to any jurisdiction.
 
 #include "GFWWeights.h"
+
 #include "TMath.h"
+
 #include <cstdio>
 
 GFWWeights::GFWWeights() : TNamed("", ""),

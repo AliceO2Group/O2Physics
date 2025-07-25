@@ -18,22 +18,24 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include <map>
-#include <iterator>
-#include <utility>
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <iterator>
+#include <map>
+#include <utility>
 
 using namespace o2;
 using namespace o2::framework;
@@ -45,11 +47,11 @@ using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 struct cascademcbuilder {
-  Produces<aod::McCascLabels> casclabels;       // MC labels for cascades
-  Produces<aod::McKFCascLabels> kfcasclabels;   // MC labels for tracked cascades
-  Produces<aod::McTraCascLabels> tracasclabels; // MC labels for tracked cascades
-  Produces<aod::McCascBBTags> bbtags;           // bb tags (inv structure tagging)
-  Produces<aod::CascMCCores> cascmccores;       // optionally aggregate information from MC side for posterior analysis (derived data)
+  Produces<aod::McCascLabels> casclabels;           // MC labels for cascades
+  Produces<aod::McKFCascLabels> kfcasclabels;       // MC labels for tracked cascades
+  Produces<aod::McTraCascLabels> tracasclabels;     // MC labels for tracked cascades
+  Produces<aod::McCascBBTags> bbtags;               // bb tags (inv structure tagging)
+  Produces<aod::CascMCCores> cascmccores;           // optionally aggregate information from MC side for posterior analysis (derived data)
   Produces<aod::CascCoreMCLabels> cascCoreMClabels; // optionally aggregate information from MC side for posterior analysis (derived data)
   Produces<aod::CascMCCollRefs> cascmccollrefs;     // references MC collisions from MC cascades
 
@@ -225,7 +227,7 @@ struct cascademcbuilder {
             } // end v0 mother loop
           } // end has_mothers check for V0
         } // end conditional of pos/neg originating being the same
-      }     // end association check
+      } // end association check
       // Construct label table (note: this will be joinable with CascDatas)
       casclabels(
         thisInfo.label, thisInfo.motherLabel);
@@ -421,11 +423,11 @@ struct cascademcbuilder {
                     }
                   }
                 } // end conditional V0-bach pair
-              }   // end neg = pos mother conditional
+              } // end neg = pos mother conditional
             }
           } // end loop neg/pos mothers
-        }   // end conditional of mothers existing
-      }     // end association check
+        } // end conditional of mothers existing
+      } // end association check
       // Construct label table (note: this will be joinable with CascDatas)
       kfcasclabels(
         lLabel);
@@ -464,11 +466,11 @@ struct cascademcbuilder {
                     }
                   }
                 } // end conditional V0-bach pair
-              }   // end neg = pos mother conditional
+              } // end neg = pos mother conditional
             }
           } // end loop neg/pos mothers
-        }   // end conditional of mothers existing
-      }     // end association check
+        } // end conditional of mothers existing
+      } // end association check
       // Construct label table (note: this will be joinable with CascDatas)
       tracasclabels(
         lLabel);
@@ -505,7 +507,7 @@ struct cascademcbuilder {
               }
             }
           }
-        }                                         // end if-pion
+        } // end if-pion
         if (bachelorParticle.pdgCode() == -211) { // pi-, look for proton in positive prong
           if (lNegTrack.has_mcParticle()) {
             auto baryonParticle = lPosTrack.mcParticle_as<aod::McParticles>();
@@ -520,7 +522,7 @@ struct cascademcbuilder {
             }
           }
         } // end if-pion
-      }   // end bachelor has mcparticle
+      } // end bachelor has mcparticle
       // Construct label table (note: this will be joinable with CascDatas)
       bbtags(bbTag);
     } // end casctable loop

@@ -15,42 +15,44 @@
 /// \author Abhi Modak (abhi.modak@cern.ch) and Debojit sarkar (debojit.sarkar@cern.ch)
 /// \since April 22, 2025
 
-#include <TH1F.h>
-#include <chrono>
-#include <string>
-#include <vector>
-#include <TComplex.h>
-#include <TMath.h>
-#include <cstdio>
-
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/TrackSelection.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/FT0Corrected.h"
-#include "Common/Core/RecoDecay.h"
-#include "CommonConstants/MathConstants.h"
-#include "FT0Base/Geometry.h"
-#include "FV0Base/Geometry.h"
-#include "PWGCF/DataModel/CorrelationsDerived.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
+#include "PWGCF/DataModel/CorrelationsDerived.h"
 
-#include "CCDB/CcdbApi.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "CommonConstants/MathConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "DetectorsCommonDataFormats/AlignParam.h"
+#include "FT0Base/Geometry.h"
+#include "FV0Base/Geometry.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <TComplex.h>
+#include <TH1F.h>
+#include <TMath.h>
+
+#include <chrono>
+#include <cstdio>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

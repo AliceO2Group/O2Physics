@@ -11,19 +11,20 @@
 
 // author: arvind.khuntia@cern.ch
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
-#include "DataFormatsFDD/Digit.h"
-#include "DataFormatsFIT/Triggers.h"
 #include "Common/DataModel/FT0Corrected.h"
 
+#include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
 #include "CommonDataFormat/BunchFilling.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsFDD/Digit.h"
+#include "DataFormatsFIT/Triggers.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
 #include "TH1F.h"
 #include "TH2F.h"
 
@@ -111,7 +112,7 @@ struct VdMAO2D {
           registry.get<TH1>(HIST("FT0/bcVertexCollBC"))->Fill(localBC);
         }
       } // vertex
-    }   // ft0
+    } // ft0
     nTF++;
   } // process
 
@@ -174,7 +175,7 @@ struct VdMAO2D {
         }
 
       } // vertex
-    }   // fdd
+    } // fdd
   }
   PROCESS_SWITCH(VdMAO2D, processFDD, "Process FDD trigger rates for VdM", true);
 

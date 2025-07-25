@@ -14,13 +14,15 @@
 // \author P. Buehler, paul.buehler@oeaw.ac.at
 // \since December, 2022
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "PWGUD/TableProducer/DGBCCandProducer.h"
+#include "../filterTables.h"
+
 #include "PWGUD/Core/DGCutparHolder.h"
 #include "PWGUD/Core/DGSelector.h"
 #include "PWGUD/Core/UDHelpers.h"
-#include "../filterTables.h"
+#include "PWGUD/TableProducer/DGBCCandProducer.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;

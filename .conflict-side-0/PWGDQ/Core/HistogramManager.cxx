@@ -11,28 +11,29 @@
 
 #include "PWGDQ/Core/HistogramManager.h"
 
-#include <iostream>
-#include <memory>
-#include <fstream>
-#include <list>
-#include <vector>
-#include <algorithm>
 #include "Framework/Logger.h"
+
+#include <algorithm>
+#include <fstream>
+#include <iostream>
+#include <list>
+#include <memory>
+#include <vector>
 using namespace std;
 
-#include <TObject.h>
-#include <TObjArray.h>
-#include <THashList.h>
+#include <TClass.h>
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TH3F.h>
-#include <TProfile.h>
-#include <TProfile2D.h>
-#include <TProfile3D.h>
+#include <THashList.h>
 #include <THn.h>
 #include <THnSparse.h>
 #include <TIterator.h>
-#include <TClass.h>
+#include <TObjArray.h>
+#include <TObject.h>
+#include <TProfile.h>
+#include <TProfile2D.h>
+#include <TProfile3D.h>
 
 ClassImp(HistogramManager);
 

@@ -9,10 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <vector>
-#include <string>
-#include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+
+#include <string>
+#include <vector>
 
 struct : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<std::string>> bfield{"evtflt_bfield", {"positive-yes", "negative-yes"}, "B filed polarity cut: both 'yes' default, anything else alternative"};

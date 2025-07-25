@@ -16,11 +16,13 @@
 ///
 
 // O2 includes
+#include "TableHelper.h"
+#include "pidTOFBase.h"
+
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "pidTOFBase.h"
-#include "TableHelper.h"
 
 // O2Physics includes
 #include "PID/PIDTOF.h"

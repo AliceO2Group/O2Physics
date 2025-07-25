@@ -16,16 +16,18 @@
 #ifndef PWGEM_PHOTONMESON_CORE_V0PHOTONCUT_H_
 #define PWGEM_PHOTONMESON_CORE_V0PHOTONCUT_H_
 
-#include <algorithm>
-#include <set>
-#include <vector>
-#include <utility>
-#include <string>
 #include "Rtypes.h"
-#include "TNamed.h"
-#include "TMath.h"
 
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
+
+#include "TMath.h"
+#include "TNamed.h"
+
+#include <algorithm>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 using namespace o2::pwgem::photonmeson;
 
 class V0PhotonCut : public TNamed

@@ -16,19 +16,22 @@
 #ifndef PWGUD_CORE_UDHELPERS_H_
 #define PWGUD_CORE_UDHELPERS_H_
 
-#include <vector>
-#include <bitset>
+#include "PWGUD/Core/DGCutparHolder.h"
+#include "PWGUD/Core/UPCHelpers.h"
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CommonConstants/LHCConstants.h"
+#include "DataFormatsFIT/Triggers.h"
+#include "DataFormatsFT0/Digit.h"
+#include "Framework/Logger.h"
 
 #include "TLorentzVector.h"
-#include "Framework/Logger.h"
-#include "DataFormatsFT0/Digit.h"
-#include "DataFormatsFIT/Triggers.h"
-#include "CommonConstants/LHCConstants.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "PWGUD/Core/UPCHelpers.h"
-#include "PWGUD/Core/DGCutparHolder.h"
+
+#include <bitset>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

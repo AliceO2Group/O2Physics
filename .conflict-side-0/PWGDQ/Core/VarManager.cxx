@@ -8,12 +8,14 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#include "PWGDQ/Core/VarManager.h"
+
+#include "Tools/KFparticle/KFUtilities.h"
+
 #include <cmath>
 #include <iostream>
-#include <vector>
 #include <map>
-#include "PWGDQ/Core/VarManager.h"
-#include "Tools/KFparticle/KFUtilities.h"
+#include <vector>
 
 using std::cout;
 using std::endl;
@@ -28,7 +30,7 @@ bool VarManager::fgUsedVars[VarManager::kNVars] = {false};
 bool VarManager::fgUsedKF = false;
 float VarManager::fgMagField = 0.5;
 float VarManager::fgValues[VarManager::kNVars] = {0.0f};
-float VarManager::fgTPCInterSectorBoundary = 1.0;       // cm
+float VarManager::fgTPCInterSectorBoundary = 1.0; // cm
 int VarManager::fgITSROFbias = 0;
 int VarManager::fgITSROFlength = 100;
 int VarManager::fgITSROFBorderMarginLow = 0;

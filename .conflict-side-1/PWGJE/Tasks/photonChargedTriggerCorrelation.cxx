@@ -18,36 +18,37 @@
 /// Also contains checks and monte-carlo (efficiency, purity, mc-true correlation,...)
 /// End goal of studying correlations between direct photons and jets
 
-#include <cmath>
-#include <deque>
-#include <string>
-#include <vector>
-#include <algorithm>
-#include <chrono>
-#include <memory>
-#include <random>
-
-#include "TMath.h"
-#include "Math/Vector4D.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/TableHelper.h"
+#include "PWGJE/DataModel/PhotonChargedTriggerCorrelation.h"
 
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
-
 #include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/PhotonChargedTriggerCorrelation.h"
+
+#include "Common/Core/TableHelper.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Math/Vector4D.h"
+#include "TMath.h"
+
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <deque>
+#include <memory>
+#include <random>
+#include <string>
+#include <vector>
 
 const double absEtaMax = 0.8;
 #define DPHI_SCALE constants::math::TwoPI - constants::math::PIHalf

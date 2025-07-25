@@ -18,7 +18,6 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
-#include "PWGLF/DataModel/LFSlimHeLambda.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <DCAFitter/DCAFitterN.h>

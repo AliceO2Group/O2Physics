@@ -14,11 +14,11 @@
 #ifndef POL4EXPPDF
 #define POL4EXPPDF
 
-#include "RooAbsPdf.h"
-#include "RooRealProxy.h"
-#include "RooCategoryProxy.h"
-#include "RooAbsReal.h"
 #include "RooAbsCategory.h"
+#include "RooAbsPdf.h"
+#include "RooAbsReal.h"
+#include "RooCategoryProxy.h"
+#include "RooRealProxy.h"
 
 TString nameParameters[] = {"p0", "p1", "p2", "p3", "p4", "p5", "N_bkg", "N_sig", "mean", "width"};
 

@@ -16,8 +16,9 @@
 #ifndef COMMON_DATAMODEL_MULTIPLICITY_H_
 #define COMMON_DATAMODEL_MULTIPLICITY_H_
 
-#include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
+
+#include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
 {

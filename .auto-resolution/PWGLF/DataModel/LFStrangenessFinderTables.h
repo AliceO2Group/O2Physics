@@ -16,9 +16,11 @@
 #ifndef O2_ANALYSIS_STRANGENESSFINDERTABLES_H_
 #define O2_ANALYSIS_STRANGENESSFINDERTABLES_H_
 
-#include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
+
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/AnalysisDataModel.h"
+
 #include <cmath>
 
 // V0 auxiliary tables

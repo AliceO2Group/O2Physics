@@ -12,12 +12,13 @@
 /// \brief Simple QC task to run
 /// \author Fabrizio Grosa, fabrizio.grosa@cern.ch (CERN)
 
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -36,7 +37,7 @@ struct mcSimpleQc {
       {"histNumGlobalTracks", ";#it{N}_{global tracks};entries", {HistType::kTH1F, {{200, -0.5, 200.}}}},                               //
       {"histNumPvContributors", ";#it{N}_{PV contributors};entries", {HistType::kTH1F, {{200, -0.5, 200.}}}},                           //
       {"histFracAmbiguousTracks", ";#it{N}_{ambiguous tracks} / #it{N}_{tracks};entries", {HistType::kTH1F, {{100, 0., 1.}}}}           //
-    }                                                                                                                                   //
+    } //
   };
 
   using CollisionsWithMCLabels = soa::Join<aod::Collisions, aod::McCollisionLabels>;
@@ -85,3 +86,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<mcSimpleQc>(cfgc)};
 }
+ 

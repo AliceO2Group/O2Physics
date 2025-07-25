@@ -16,11 +16,11 @@
 
 #include "FFitWeights.h"
 
-#include <string>
-#include <cstdio>
-#include <vector>
-
 #include <TSpline.h>
+
+#include <cstdio>
+#include <string>
+#include <vector>
 
 ClassImp(FFitWeights)
 

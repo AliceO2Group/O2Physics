@@ -12,14 +12,16 @@
 #ifndef PWGUD_CORE_DGSELECTOR_H_
 #define PWGUD_CORE_DGSELECTOR_H_
 
-#include <vector>
+#include "PWGUD/Core/DGCutparHolder.h"
+#include "PWGUD/Core/UDHelpers.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/Logger.h"
 
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
-#include "Framework/Logger.h"
-#include "Framework/AnalysisTask.h"
-#include "PWGUD/Core/UDHelpers.h"
-#include "PWGUD/Core/DGCutparHolder.h"
+
+#include <vector>
 
 // -----------------------------------------------------------------------------
 // add here Selectors for different types of diffractive events

@@ -9,15 +9,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "filterTables.h"
+
 #include "Common/DataModel/EventSelection.h"
+
 #include "CommonConstants/LHCConstants.h"
-#include "CommonDataFormat/InteractionRecord.h"
 #include "CommonDataFormat/IRFrame.h"
+#include "CommonDataFormat/InteractionRecord.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/Logger.h"
 #include "Framework/runDataProcessing.h"
-
-#include "filterTables.h"
 
 using namespace o2;
 using namespace o2::framework;

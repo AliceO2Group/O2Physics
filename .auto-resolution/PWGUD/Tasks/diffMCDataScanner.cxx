@@ -13,9 +13,10 @@
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  01.10.2021
 
-#include "Framework/AnalysisTask.h"
-#include "PWGUD/DataModel/McPIDTable.h"
 #include "PWGUD/Core/UDHelpers.h"
+#include "PWGUD/DataModel/McPIDTable.h"
+
+#include "Framework/AnalysisTask.h"
 
 using namespace o2;
 using namespace o2::framework;

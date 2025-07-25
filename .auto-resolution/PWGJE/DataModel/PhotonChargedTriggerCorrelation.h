@@ -18,11 +18,12 @@
 #ifndef PWGJE_DATAMODEL_PHOTONCHARGEDTRIGGERCORRELATION_H_
 #define PWGJE_DATAMODEL_PHOTONCHARGEDTRIGGERCORRELATION_H_
 
-#include "Framework/AnalysisDataModel.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/DataModel/Jet.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+
+#include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
 {

@@ -13,13 +13,15 @@
 /// \brief This task reconstructs track-track decay lambda(1520) resonance candidate
 /// \author Hirak Kumar Koley <hirak.koley@cern.ch>
 
-#include "TLorentzVector.h"
-#include "TF1.h"
-#include "TRandom3.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
+
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include "TF1.h"
+#include "TLorentzVector.h"
+#include "TRandom3.h"
 
 using namespace o2;
 using namespace o2::framework;

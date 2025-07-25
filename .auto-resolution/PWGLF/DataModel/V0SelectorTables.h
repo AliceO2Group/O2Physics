@@ -11,8 +11,9 @@
 #ifndef PWGLF_DATAMODEL_V0SELECTORTABLES_H_
 #define PWGLF_DATAMODEL_V0SELECTORTABLES_H_
 
-#include <cstdint>
 #include <Framework/ASoA.h>
+
+#include <cstdint>
 namespace o2::aod
 {
 

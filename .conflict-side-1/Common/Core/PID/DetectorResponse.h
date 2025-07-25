@@ -20,17 +20,20 @@
 #ifndef O2_ANALYSIS_PID_DETECTORRESPONSE_H_
 #define O2_ANALYSIS_PID_DETECTORRESPONSE_H_
 
+#include "Framework/Logger.h"
+
 #include <array>
 #include <vector>
-#include "Framework/Logger.h"
 // ROOT includes
 #include "Rtypes.h"
-#include "TMath.h"
+
 #include "TFile.h"
+#include "TMath.h"
 
 // O2 includes
-#include "ReconstructionDataFormats/PID.h"
 #include "Common/Core/PID/ParamBase.h"
+
+#include "ReconstructionDataFormats/PID.h"
 
 namespace o2::pid
 {

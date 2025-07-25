@@ -12,35 +12,36 @@
 // Full Jet Filter
 // Author: Gijs van Weelden
 
-#include <array>
-#include <cmath>
-#include <string>
-#include <string_view>
-#include <TMath.h>
+#include "../filterTables.h"
 
-#include <boost/algorithm/string/case_conv.hpp>
+#include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetFinder.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGJE/DataModel/Jet.h"
+
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsCTP/Configuration.h"
 #include "EMCALBase/Geometry.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
 
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/CCDB/TriggerAliases.h"
+#include <TMath.h>
 
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
-#include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/Core/FastJetUtilities.h"
+#include <boost/algorithm/string/case_conv.hpp>
 
-#include "../filterTables.h"
+#include <array>
+#include <cmath>
+#include <string>
+#include <string_view>
 
 using namespace o2;
 using namespace o2::framework;

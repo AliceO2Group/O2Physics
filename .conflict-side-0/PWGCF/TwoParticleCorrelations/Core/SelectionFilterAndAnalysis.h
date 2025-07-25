@@ -11,11 +11,12 @@
 #ifndef SELECTIONFILTERANDANALYSIS_H
 #define SELECTIONFILTERANDANALYSIS_H
 
-#include <Rtypes.h>
-#include <TString.h>
-#include <TObject.h>
-#include <TNamed.h>
 #include <TList.h>
+#include <TNamed.h>
+#include <TObject.h>
+#include <TString.h>
+
+#include <Rtypes.h>
 
 namespace o2
 {

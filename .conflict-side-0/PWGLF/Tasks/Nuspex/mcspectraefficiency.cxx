@@ -10,14 +10,15 @@
 // or submit itself to any jurisdiction.
 
 // O2 includes
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+
 // ROOT includes
-#include <TH1F.h>
 #include "TPDGCode.h"
+#include <TH1F.h>
 
 using namespace o2;
 using namespace o2::framework;

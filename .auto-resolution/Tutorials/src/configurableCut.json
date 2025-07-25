@@ -10,12 +10,12 @@
     "internal-dpl-aod-spawner": "",
     "configurable-demo": {
         "cut": {
-		"cut": "0.1",
-		"state": "1"
-	},
+            "cut": "0.1",
+            "state": "1"
+        },
         "mutable_cut": {
-		"cut": "0.2",
-		"state": "-1"
-	}
+            "cut": "0.2",
+            "state": "-1"
+        }
     }
 }

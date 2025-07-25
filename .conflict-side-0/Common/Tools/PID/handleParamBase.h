@@ -19,12 +19,15 @@
 #ifndef COMMON_TOOLS_PID_HANDLEPARAMBASE_H_
 #define COMMON_TOOLS_PID_HANDLEPARAMBASE_H_
 
+#include "CCDB/CcdbApi.h"
+#include "Framework/Logger.h"
+
+#include "TFile.h"
+
+#include <boost/program_options.hpp>
+
 #include <map>
 #include <string>
-#include "CCDB/CcdbApi.h"
-#include <boost/program_options.hpp>
-#include "Framework/Logger.h"
-#include "TFile.h"
 
 // Global executable arguments
 namespace bpo = boost::program_options;

@@ -9,26 +9,27 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "Axes.h"
+#include "Functions.h"
+#include "Gencentralities.h"
+#include "Histograms.h"
+#include "Index.h"
+#include "Selections.h"
+#include "bestCollisionTable.h"
+
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/Configurable.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
+
 #include <TDatabasePDG.h>
 #include <TPDGCode.h>
-
-#include "Gencentralities.h"
-#include "Index.h"
-#include "bestCollisionTable.h"
-
-#include "Axes.h"
-#include "Functions.h"
-#include "Selections.h"
-#include "Histograms.h"
 
 using namespace o2;
 using namespace o2::aod::track;

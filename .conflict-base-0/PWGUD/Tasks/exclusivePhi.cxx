@@ -9,15 +9,19 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-#include <vector>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include <iostream>
 #include "PWGUD/DataModel/UDTables.h"
-#include <TString.h>
-#include "TLorentzVector.h"
+
 #include "Common/DataModel/PIDResponse.h"
+
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include "TLorentzVector.h"
+#include <TString.h>
+
+#include <iostream>
+#include <vector>
 
 using std::array;
 using namespace std;
@@ -648,7 +652,7 @@ struct ExclusivePhi {
         }
       }
     } // Kaon Band
-  }   // end of process
+  } // end of process
 
 }; // end of struct
 

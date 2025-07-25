@@ -14,15 +14,18 @@
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  30.09.2022
 
-#include <algorithm>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "ReconstructionDataFormats/Vertex.h"
-#include "PWGUD/DataModel/UDTables.h"
+#include "DGBCCandProducer.h"
+
+#include "PWGUD/Core/DGSelector.h"
 #include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/UPCHelpers.h"
-#include "PWGUD/Core/DGSelector.h"
-#include "DGBCCandProducer.h"
+#include "PWGUD/DataModel/UDTables.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Vertex.h"
+
+#include <algorithm>
 
 using namespace o2;
 using namespace o2::framework;
