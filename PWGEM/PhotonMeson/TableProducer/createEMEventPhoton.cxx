@@ -52,6 +52,7 @@ using MyCollisionsMCCent = soa::Join<MyCollisionsMC, aod::CentFT0Ms, aod::CentFT
 using MyCollisionsMCCentQvec = soa::Join<MyCollisionsMCCent, MyQvectors>;
 
 struct CreateEMEventPhoton {
+  Produces<o2::aod::EMBCs> embc;
   Produces<o2::aod::EMEvents> event;
   // Produces<o2::aod::EMEventsCov> eventCov;
   Produces<o2::aod::EMEventsMult> eventMult;
@@ -135,8 +136,14 @@ struct CreateEMEventPhoton {
   }
 
   template <bool isMC, bool isTriggerAnalysis, EMEventType eventtype, typename TCollisions, typename TBCs>
-  void skimEvent(TCollisions const& collisions, TBCs const&)
+  void skimEvent(TCollisions const& collisions, TBCs const& bcs)
   {
+    for (const auto& bc : bcs) {
+      if (bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        embc(bc.alias_raw(), bc.selection_raw(), bc.rct_raw()); // TVX is fired.
+      }
+    } // end of bc loop
+
     for (const auto& collision : collisions) {
       if constexpr (isMC) {
         if (!collision.has_mcCollision()) {
@@ -328,11 +335,13 @@ struct AssociatePhotonToEMEvent {
   Produces<o2::aod::EMPrimaryElectronEMEventIds> prmeleventid;
   Produces<o2::aod::PHOSEMEventIds> phoseventid;
   Produces<o2::aod::EMCEMEventIds> emceventid;
+  Produces<o2::aod::EMPrimaryTrackEMEventIds> prmtrackeventid;
 
   Preslice<aod::V0PhotonsKF> perCollisionPCM = aod::v0photonkf::collisionId;
   PresliceUnsorted<aod::EMPrimaryElectronsFromDalitz> perCollisionEl = aod::emprimaryelectron::collisionId;
   Preslice<aod::PHOSClusters> perCollisionPHOS = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollisionEMC = aod::skimmedcluster::collisionId;
+  PresliceUnsorted<aod::EMPrimaryTracks> perCollisionTrack = aod::emprimarytrack::collisionId;
 
   void init(o2::framework::InitContext&) {}
 
@@ -359,6 +368,11 @@ struct AssociatePhotonToEMEvent {
   void processElectronFromDalitz(aod::EMEvents const& collisions, aod::EMPrimaryElectronsFromDalitz const& tracks)
   {
     fillEventId(collisions, tracks, prmeleventid, perCollisionEl);
+  }
+
+  void processChargedTrack(aod::EMEvents const& collisions, aod::EMPrimaryTracks const& tracks)
+  {
+    fillEventId(collisions, tracks, prmtrackeventid, perCollisionTrack);
   }
 
   void processPHOS(aod::EMEvents const& collisions, aod::PHOSClusters const& photons)

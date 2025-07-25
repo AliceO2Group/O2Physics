@@ -97,10 +97,11 @@ struct DiphotonHadronMPC {
   Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
   Configurable<float> maxY{"maxY", 0.8, "maximum rapidity for diphoton"};
   Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing"};
-  Configurable<int> ndepth{"ndepth", 100, "depth for event mixing"};
+  Configurable<int> ndepth_photon{"ndepth_photon", 100, "depth for event mixing between photon-photon"};
+  Configurable<int> ndepth_hadron{"ndepth_hadron", 2, "depth for event mixing between hadron-hadron"};
   Configurable<uint64_t> ndiff_bc_mix{"ndiff_bc_mix", 594, "difference in global BC required in mixed events"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
+  ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 0.1, 1, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
   ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {VARIABLE_WIDTH, -1, 1e+10}, "Mixing bins - occupancy"};
 
   ConfigurableAxis ConfMggBins{"ConfMggBins", {200, 0.0, 0.8}, "mgg bins for output histograms"};
@@ -109,8 +110,8 @@ struct DiphotonHadronMPC {
   ConfigurableAxis ConfPtHadronBins{"ConfPtHadronBins", {VARIABLE_WIDTH, 0.00, 0.15, 0.2, 0.3, 0.4, 0.50, 1.00, 2.00, 3.00, 4.00, 5.00}, "pT,h bins for output histograms"};
   ConfigurableAxis ConfDEtaBins{"ConfDEtaBins", {60, -3, 3}, "deta bins for output histograms"};
   Configurable<int> cfgNbinsDPhi{"cfgNbinsDPhi", 36, "nbins in dphi for output histograms"};
-  Configurable<int> cfgNbinsCosNDPhi{"cfgNbinsCosNDPhi", 200, "nbins in cos(n(dphi)) for output histograms"};
-  Configurable<int> cfgNmod{"cfgNmod", 2, "n-th harmonics"};
+  // Configurable<int> cfgNbinsCosNDPhi{"cfgNbinsCosNDPhi", 100, "nbins in cos(n(dphi)) for output histograms"};
+  // Configurable<int> cfgNmod{"cfgNmod", 2, "n-th harmonics"};
 
   EMPhotonEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -202,11 +203,11 @@ struct DiphotonHadronMPC {
   EMTrackCut fEMTrackCut;
   struct : ConfigurableGroup {
     std::string prefix = "trackcut_group";
-    Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.15, "min pT for ref. track"};
+    Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.2, "min pT for ref. track"};
     Configurable<float> cfg_max_pt_track{"cfg_max_pt_track", 3.0, "max pT for ref. track"};
-    Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -1.2, "min eta for ref. track"};
-    Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", +1.2, "max eta for ref. track"};
-    Configurable<float> cfg_min_phi_track{"cfg_min_phi_track", 0., "min phi for ref. track"};
+    Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -0.8, "min eta for ref. track"};
+    Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", +0.8, "max eta for ref. track"};
+    Configurable<float> cfg_min_phi_track{"cfg_min_phi_track", 0.0, "min phi for ref. track"};
     Configurable<float> cfg_max_phi_track{"cfg_max_phi_track", 6.3, "max phi for ref. track"};
     Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 5, "min ncluster its"};
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
@@ -246,8 +247,10 @@ struct DiphotonHadronMPC {
     occ_bin_edges = std::vector<float>(ConfOccupancyBins.value.begin(), ConfOccupancyBins.value.end());
     occ_bin_edges.erase(occ_bin_edges.begin());
 
-    emh1 = new MyEMH(ndepth);
-    emh2 = new MyEMH(ndepth);
+    emh1 = new MyEMH(ndepth_photon);
+    emh2 = new MyEMH(ndepth_photon);
+    emh_diphoton = new MyEMH_track(ndepth_photon);
+    emh_ref = new MyEMH_track(ndepth_hadron);
 
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
     addHistograms();
@@ -258,7 +261,7 @@ struct DiphotonHadronMPC {
     DefineDileptonCut();
 
     fRegistry.add("Diphoton/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", kTH1D, {{10001, -0.5, 10000.5}}, true);
-    if (doprocess2PCwithTrigger) {
+    if (doprocessTriggerAnalysis) {
       fRegistry.add("Event/hNInspectedTVX", "N inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
     }
 
@@ -293,8 +296,9 @@ struct DiphotonHadronMPC {
     auto run3grp_timestamp = collision.timestamp();
     o2::parameters::GRPObject* grpo = 0x0;
     o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!skipGRPOquery)
+    if (!skipGRPOquery) {
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    }
     if (grpo) {
       // Fetch magnetic field from ccdb for current collision
       d_bz = grpo->getNominalL3Field();
@@ -323,11 +327,18 @@ struct DiphotonHadronMPC {
     emh1 = 0x0;
     delete emh2;
     emh2 = 0x0;
+    delete emh_diphoton;
+    emh_diphoton = 0x0;
+    delete emh_ref;
+    emh_ref = 0x0;
 
     used_photonIds.clear();
     used_photonIds.shrink_to_fit();
     used_dileptonIds.clear();
     used_dileptonIds.shrink_to_fit();
+    used_refTrackIds.clear();
+    used_refTrackIds.shrink_to_fit();
+
     map_mixed_eventId_to_globalBC.clear();
   }
 
@@ -337,22 +348,23 @@ struct DiphotonHadronMPC {
     std::string pair_pt_axis_title = "p_{T,#gamma#gamma} (GeV/c)";
     std::string deta_axis_title = "#Delta#eta = #eta_{#gamma#gamma} - #eta_{h}";
     std::string dphi_axis_title = "#Delta#varphi = #varphi_{#gamma#gamma} - #varphi_{h} (rad.)";
-    std::string cosndphi_axis_title = std::format("cos({0:d}(#varphi_{{#gamma#gamma}} - #varphi_{{h}}))", cfgNmod.value);
+    // std::string cosndphi_axis_title = std::format("cos({0:d}(#varphi_{{#gamma#gamma}} - #varphi_{{h}}))", cfgNmod.value);
 
     if constexpr (pairtype == PairType::kPCMDalitzEE) {
       mass_axis_title = "m_{ee#gamma} (GeV/c^{2})";
       pair_pt_axis_title = "p_{T,ee#gamma} (GeV/c)";
       deta_axis_title = "#Delta#eta = #eta_{ee#gamma} - #eta_{h}";
       dphi_axis_title = "#Delta#varphi = #varphi_{ee#gamma} - #varphi_{h} (rad.)";
-      cosndphi_axis_title = std::format("cos({0:d}(#varphi_{{ee#gamma}} - #varphi_{{h}}))", cfgNmod.value);
+      // cosndphi_axis_title = std::format("cos({0:d}(#varphi_{{ee#gamma}} - #varphi_{{h}}))", cfgNmod.value);
     }
 
     // photon info
     const AxisSpec axis_pt_single{ConfPtggBins, "p_{T,#gamma} (GeV/c)"};
-    const AxisSpec axis_eta_single{40, -2, +2, "#eta_{#gamma}"};
+    const AxisSpec axis_eta_single{20, -1, +1, "#eta_{#gamma}"};
     const AxisSpec axis_phi_single{36, 0, 2 * M_PI, "#varphi_{#gamma} (rad.)"};
     const AxisSpec axis_deta_single{ConfDEtaBins, "#Delta#eta = #eta_{#gamma} - #eta_{h}"};
-    const AxisSpec axis_cos_ndphi_single{cfgNbinsCosNDPhi, -1, +1, std::format("cos({0:d}(#varphi_{{#gamma}} - #varphi_{{h}}))", cfgNmod.value)};
+    const AxisSpec axis_dphi_single{cfgNbinsDPhi, -M_PI / 2, +3 * M_PI / 2, "#Delta#varphi = #varphi_{#gamma} - #varphi_{h} (rad.)"};
+    // const AxisSpec axis_cos_ndphi_single{cfgNbinsCosNDPhi, -1, +1, std::format("cos({0:d}(#varphi_{{#gamma}} - #varphi_{{h}}))", cfgNmod.value)};
 
     // diphoton info
     const AxisSpec axis_mass{ConfMggBins, mass_axis_title};
@@ -361,26 +373,26 @@ struct DiphotonHadronMPC {
     // diphoton-hadron info
     const AxisSpec axis_pt_ref{ConfPtHadronBins, "p_{T,h}^{ref} (GeV/c)"};
     const AxisSpec axis_deta{ConfDEtaBins, deta_axis_title};
-    const AxisSpec axis_cos_ndphi{cfgNbinsCosNDPhi, -1, +1, cosndphi_axis_title};
+    const AxisSpec axis_dphi{cfgNbinsDPhi, -M_PI / 2, +3 * M_PI / 2, dphi_axis_title};
 
-    const AxisSpec axis_pt_trg{ConfPtHadronBins, "p_{T,h} (GeV/c)"};
-    const AxisSpec axis_eta_trg{40, -2, +2, "#eta_{h}"};
-    const AxisSpec axis_phi_trg{36, 0, 2 * M_PI, "#varphi_{h} (rad.)"};
+    const AxisSpec axis_pt_hadron{ConfPtHadronBins, "p_{T,h} (GeV/c)"};
+    const AxisSpec axis_eta_hadron{40, -2, +2, "#eta_{h}"};
+    const AxisSpec axis_phi_hadron{36, 0, 2 * M_PI, "#varphi_{h} (rad.)"};
 
-    fRegistry.add("Hadron/hs", "hadron", kTHnSparseD, {axis_pt_trg, axis_eta_trg, axis_phi_trg}, true);
-    fRegistry.add("Photon/hs", "photon", kTHnSparseD, {axis_pt_single, axis_eta_single, axis_phi_single}, true);
+    fRegistry.add("Hadron/hs", "hadron", kTHnSparseD, {axis_pt_hadron, axis_eta_hadron, axis_phi_hadron}, true);
 
     fRegistry.add("Diphoton/same/hs", "diphoton", kTHnSparseD, {axis_mass, axis_pt}, true);
     fRegistry.addClone("Diphoton/same/", "Diphoton/mix/");
 
-    fRegistry.add("DiphotonHadron/same/hs", "diphoton-hadron 2PC", kTHnSparseD, {axis_mass, axis_pt, axis_pt_ref, axis_deta, axis_cos_ndphi}, true);
-    fRegistry.add("PhotonHadron/same/hs", "photon-hadron 2PC", kTHnSparseD, {axis_pt_single, axis_pt_ref, axis_deta_single, axis_cos_ndphi_single}, true);
+    fRegistry.add("DiphotonHadron/same/hs", "diphoton-hadron 2PC", kTHnSparseD, {axis_mass, axis_pt, axis_pt_ref, axis_deta, axis_dphi}, true);
+    fRegistry.addClone("DiphotonHadron/same/", "DiphotonHadron/mix/");
 
     // hadron-hadron
-    const AxisSpec axis_deta_hh{ConfDEtaBins, "#Delta#eta = #eta_{h}^{trg} - #eta_{h}^{ref}"};
-    const AxisSpec axis_cosndphi_hh{cfgNbinsCosNDPhi, -1, +1, std::format("cos({0:d}(#varphi_{{h}}^{{trg}} - #varphi_{{h}}^{{ref}}))", cfgNmod.value)};
-    fRegistry.add("HadronHadron_for_Diphoton/same/hs", "hadron-hadron 2PC", kTHnSparseD, {axis_pt_trg, axis_pt_ref, axis_deta_hh, axis_cosndphi_hh}, true);
-    fRegistry.addClone("HadronHadron_for_Diphoton/same/hs", "HadronHadron_for_Photon/same/hs");
+    const AxisSpec axis_deta_hh{ConfDEtaBins, "#Delta#eta = #eta_{h}^{ref1} - #eta_{h}^{ref2}"};
+    const AxisSpec axis_dphi_hh{cfgNbinsDPhi, -M_PI / 2, +3 * M_PI / 2, "#Delta#varphi = #varphi_{h}^{ref1} - #varphi_{h}^{ref2} (rad.)"};
+    // const AxisSpec axis_cosndphi_hh{cfgNbinsCosNDPhi, -1, +1, std::format("cos({0:d}(#varphi_{{h}}^{{ref1}} - #varphi_{{h}}^{{ref2}}))", cfgNmod.value)};
+    fRegistry.add("HadronHadron/same/hs", "hadron-hadron 2PC", kTHnSparseD, {axis_pt_hadron, axis_pt_ref, axis_deta_hh, axis_dphi_hh}, true);
+    fRegistry.addClone("HadronHadron/same/", "HadronHadron/mix/");
   }
 
   void DefineEMEventCut()
@@ -490,8 +502,14 @@ struct DiphotonHadronMPC {
   using MyEMH = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, EMTrack>;
   MyEMH* emh1 = nullptr;
   MyEMH* emh2 = nullptr;
+  using MyEMH_track = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, EMTrack>; // for charged track
+  MyEMH_track* emh_diphoton = nullptr;
+  MyEMH_track* emh_ref = nullptr;
+
   std::vector<std::pair<int, int>> used_photonIds;              // <ndf, trackId>
   std::vector<std::tuple<int, int, int, int>> used_dileptonIds; // <ndf, trackId>
+  std::vector<std::pair<int, int>> used_refTrackIds;            // <ndf, trackId>
+  std::vector<std::tuple<int, int, int, int>> used_diphotonIds; // <ndf, trackId>
   std::map<std::pair<int, int>, uint64_t> map_mixed_eventId_to_globalBC;
 
   template <bool isTriggerAnalysis, typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2, typename TRefTracks>
@@ -502,7 +520,6 @@ struct DiphotonHadronMPC {
     for (const auto& collision : collisions) {
       initCCDB<isTriggerAnalysis>(collision);
       int ndiphoton = 0;
-      int nphoton = 0;
 
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
@@ -574,22 +591,6 @@ struct DiphotonHadronMPC {
         auto photons1_per_collision = photons1.sliceBy(perCollision1, collision.globalIndex());
         auto photons2_per_collision = photons2.sliceBy(perCollision2, collision.globalIndex());
 
-        for (const auto& photon : photons1_per_collision) { // single photon
-          if (cut1.template IsSelected<TSubInfos1>(photon)) {
-            fRegistry.fill(HIST("Photon/hs"), photon.pt(), photon.eta(), photon.phi());
-            nphoton++;
-            for (const auto& track : refTracks_per_collision) {
-              if (fEMTrackCut.IsSelected(track)) {
-                float deta = photon.eta() - track.eta();
-                float dphi = photon.phi() - track.phi();
-                o2::math_utils::bringTo02Pi(dphi);
-
-                fRegistry.fill(HIST("PhotonHadron/same/hs"), photon.pt(), track.pt(), deta, std::cos(cfgNmod * dphi));
-              }
-            } // end of ref track loop
-          }
-        } // end of photon loop
-
         for (const auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons1_per_collision, photons2_per_collision))) {
           if (!cut1.template IsSelected<TSubInfos1>(g1) || !cut2.template IsSelected<TSubInfos2>(g2)) {
             continue;
@@ -601,27 +602,53 @@ struct DiphotonHadronMPC {
           if (std::fabs(v12.Rapidity()) > maxY) {
             continue;
           }
-
           fRegistry.fill(HIST("Diphoton/same/hs"), v12.M(), v12.Pt());
+          auto pos1 = g1.template posTrack_as<TSubInfos1>();
+          auto ele1 = g1.template negTrack_as<TSubInfos1>();
+          auto pos2 = g2.template posTrack_as<TSubInfos2>();
+          auto ele2 = g2.template negTrack_as<TSubInfos2>();
+
+          int npair = 0;
           for (const auto& track : refTracks_per_collision) {
+            if (pos1.trackId() == track.trackId() || ele1.trackId() == track.trackId()) {
+              continue;
+            }
+            if (pos2.trackId() == track.trackId() || ele2.trackId() == track.trackId()) {
+              continue;
+            }
+
             if (fEMTrackCut.IsSelected(track)) {
               ROOT::Math::PtEtaPhiMVector v3(track.pt(), track.eta(), track.phi(), 0.139);
               float deta = v12.Eta() - v3.Eta();
               float dphi = v12.Phi() - v3.Phi();
-              o2::math_utils::bringTo02Pi(dphi);
-              fRegistry.fill(HIST("DiphotonHadron/same/hs"), v12.M(), v12.Pt(), v3.Pt(), deta, std::cos(cfgNmod * dphi));
+              // o2::math_utils::bringTo02Pi(dphi);
+              dphi = RecoDecay::constrainAngle(dphi, -M_PI / 2, 1U);
+              fRegistry.fill(HIST("DiphotonHadron/same/hs"), v12.M(), v12.Pt(), v3.Pt(), deta, dphi);
+              npair++;
+              std::pair<int, int> pair_tmp_ref = std::make_pair(ndf, track.globalIndex());
+              if (std::find(used_refTrackIds.begin(), used_refTrackIds.end(), pair_tmp_ref) == used_refTrackIds.end()) { // add a ref track in mixing pool
+                emh_ref->AddTrackToEventPool(key_df_collision, EMTrack(ndf, track.globalIndex(), collision.globalIndex(), track.globalIndex(), track.pt(), track.eta(), track.phi(), 0.139));
+                used_refTrackIds.emplace_back(pair_tmp_ref);
+              }
             }
           } // end of ref track loop
 
+          if (npair > 0) {
+            std::tuple<int, int, int, int> tuple_tmp_diphoton = std::make_tuple(ndf, g1.globalIndex(), g2.globalIndex(), -1);
+            if (std::find(used_diphotonIds.begin(), used_diphotonIds.end(), tuple_tmp_diphoton) == used_diphotonIds.end()) {
+              emh_diphoton->AddTrackToEventPool(key_df_collision, EMTrack(ndf, -1, collision.globalIndex(), -1, v12.Pt(), v12.Eta(), v12.Phi(), v12.M()));
+              used_diphotonIds.emplace_back(tuple_tmp_diphoton);
+            }
+          }
+
           std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
           std::pair<int, int> pair_tmp_id2 = std::make_pair(ndf, g2.globalIndex());
-
           if (std::find(used_photonIds.begin(), used_photonIds.end(), pair_tmp_id1) == used_photonIds.end()) {
-            emh1->AddTrackToEventPool(key_df_collision, EMTrack(-1, g1.globalIndex(), collision.globalIndex(), g1.globalIndex(), g1.pt(), g1.eta(), g1.phi(), 0));
+            emh1->AddTrackToEventPool(key_df_collision, EMTrack(ndf, g1.globalIndex(), collision.globalIndex(), g1.globalIndex(), g1.pt(), g1.eta(), g1.phi(), 0));
             used_photonIds.emplace_back(pair_tmp_id1);
           }
           if (std::find(used_photonIds.begin(), used_photonIds.end(), pair_tmp_id2) == used_photonIds.end()) {
-            emh1->AddTrackToEventPool(key_df_collision, EMTrack(-1, g2.globalIndex(), collision.globalIndex(), g2.globalIndex(), g2.pt(), g2.eta(), g2.phi(), 0));
+            emh1->AddTrackToEventPool(key_df_collision, EMTrack(ndf, g2.globalIndex(), collision.globalIndex(), g2.globalIndex(), g2.pt(), g2.eta(), g2.phi(), 0));
             used_photonIds.emplace_back(pair_tmp_id2);
           }
           ndiphoton++;
@@ -630,22 +657,6 @@ struct DiphotonHadronMPC {
         auto photons1_per_collision = photons1.sliceBy(perCollision1, collision.globalIndex());
         auto positrons_per_collision = positrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
         auto electrons_per_collision = electrons->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
-
-        for (const auto& photon : photons1_per_collision) { // single photon
-          if (cut1.template IsSelected<TSubInfos1>(photon)) {
-            fRegistry.fill(HIST("Photon/hs"), photon.pt(), photon.eta(), photon.phi());
-            nphoton++;
-            for (const auto& track : refTracks_per_collision) {
-              if (fEMTrackCut.IsSelected(track)) {
-                float deta = photon.eta() - track.eta();
-                float dphi = photon.phi() - track.phi();
-                o2::math_utils::bringTo02Pi(dphi);
-
-                fRegistry.fill(HIST("PhotonHadron/same/hs"), photon.pt(), track.pt(), deta, std::cos(cfgNmod * dphi));
-              }
-            } // end of ref track loop
-          }
-        } // end of photon loop
 
         for (const auto& g1 : photons1_per_collision) {
           if (!cut1.template IsSelected<TSubInfos1>(g1)) {
@@ -679,24 +690,48 @@ struct DiphotonHadronMPC {
             if (std::fabs(veeg.Rapidity()) > maxY) {
               continue;
             }
-
             fRegistry.fill(HIST("Diphoton/same/hs"), veeg.M(), veeg.Pt());
+
+            int npair = 0;
             for (const auto& track : refTracks_per_collision) {
+              if (pos1.trackId() == track.trackId() || ele1.trackId() == track.trackId()) {
+                continue;
+              }
+              if (pos2.trackId() == track.trackId() || ele2.trackId() == track.trackId()) {
+                continue;
+              }
+
               ROOT::Math::PtEtaPhiMVector v3(track.pt(), track.eta(), track.phi(), 0.139);
               float deta = veeg.Eta() - v3.Eta();
               float dphi = veeg.Phi() - v3.Phi();
-              o2::math_utils::bringTo02Pi(dphi);
-              fRegistry.fill(HIST("DiphotonHadron/same/hs"), veeg.M(), veeg.Pt(), v3.Pt(), deta, std::cos(cfgNmod * dphi));
+              // o2::math_utils::bringTo02Pi(dphi);
+              dphi = RecoDecay::constrainAngle(dphi, -M_PI / 2, 1U);
+              fRegistry.fill(HIST("DiphotonHadron/same/hs"), veeg.M(), veeg.Pt(), v3.Pt(), deta, dphi);
+              npair++;
+
+              std::pair<int, int> pair_tmp_ref = std::make_pair(ndf, track.globalIndex());
+              if (std::find(used_refTrackIds.begin(), used_refTrackIds.end(), pair_tmp_ref) == used_refTrackIds.end()) { // add a ref track in mixing pool
+                emh_ref->AddTrackToEventPool(key_df_collision, EMTrack(ndf, track.globalIndex(), collision.globalIndex(), track.globalIndex(), track.pt(), track.eta(), track.phi(), 0.139));
+                used_refTrackIds.emplace_back(pair_tmp_ref);
+              }
             } // end of ref track loop
+
+            if (npair > 0) {
+              std::tuple<int, int, int, int> tuple_tmp_diphoton = std::make_tuple(ndf, g1.globalIndex(), pos2.trackId(), ele2.trackId());
+              if (std::find(used_diphotonIds.begin(), used_diphotonIds.end(), tuple_tmp_diphoton) == used_diphotonIds.end()) {
+                emh_diphoton->AddTrackToEventPool(key_df_collision, EMTrack(ndf, -1, collision.globalIndex(), -1, veeg.Pt(), veeg.Eta(), veeg.Phi(), veeg.M()));
+                used_diphotonIds.emplace_back(tuple_tmp_diphoton);
+              }
+            }
 
             std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
             std::tuple<int, int, int, int> tuple_tmp_id2 = std::make_tuple(ndf, collision.globalIndex(), pos2.trackId(), ele2.trackId());
             if (std::find(used_photonIds.begin(), used_photonIds.end(), pair_tmp_id1) == used_photonIds.end()) {
-              emh1->AddTrackToEventPool(key_df_collision, EMTrack(-1, g1.globalIndex(), collision.globalIndex(), -1, g1.pt(), g1.eta(), g1.phi(), 0));
+              emh1->AddTrackToEventPool(key_df_collision, EMTrack(ndf, g1.globalIndex(), collision.globalIndex(), -1, g1.pt(), g1.eta(), g1.phi(), 0));
               used_photonIds.emplace_back(pair_tmp_id1);
             }
             if (std::find(used_dileptonIds.begin(), used_dileptonIds.end(), tuple_tmp_id2) == used_dileptonIds.end()) {
-              emh2->AddTrackToEventPool(key_df_collision, EMTrack(-1, -1, collision.globalIndex(), -1, v_ee.Pt(), v_ee.Eta(), v_ee.Phi(), v_ee.M()));
+              emh2->AddTrackToEventPool(key_df_collision, EMTrack(ndf, -1, collision.globalIndex(), -1, v_ee.Pt(), v_ee.Eta(), v_ee.Phi(), v_ee.M()));
               used_dileptonIds.emplace_back(tuple_tmp_id2);
             }
             ndiphoton++;
@@ -704,24 +739,14 @@ struct DiphotonHadronMPC {
         } // end of g1 loop
       } // end of pairing in same event
 
-      if (nphoton > 0) {
-        for (const auto& [trg, ref] : combinations(CombinationsStrictlyUpperIndexPolicy(refTracks_per_collision, refTracks_per_collision))) {
-          if (fEMTrackCut.IsSelected(trg) && fEMTrackCut.IsSelected(ref)) {
-            float deta = trg.eta() - ref.eta();
-            float dphi = trg.phi() - ref.phi();
-            o2::math_utils::bringTo02Pi(dphi);
-            fRegistry.fill(HIST("HadronHadron_for_Photon/same/hs"), trg.pt(), ref.pt(), deta, std::cos(cfgNmod * dphi));
-          }
-        }
-      }
-
       if (ndiphoton > 0) {
-        for (const auto& [trg, ref] : combinations(CombinationsStrictlyUpperIndexPolicy(refTracks_per_collision, refTracks_per_collision))) {
-          if (fEMTrackCut.IsSelected(trg) && fEMTrackCut.IsSelected(ref)) {
-            float deta = trg.eta() - ref.eta();
-            float dphi = trg.phi() - ref.phi();
-            o2::math_utils::bringTo02Pi(dphi);
-            fRegistry.fill(HIST("HadronHadron_for_Diphoton/same/hs"), trg.pt(), ref.pt(), deta, std::cos(cfgNmod * dphi));
+        for (const auto& [ref1, ref2] : combinations(CombinationsStrictlyUpperIndexPolicy(refTracks_per_collision, refTracks_per_collision))) {
+          if (fEMTrackCut.IsSelected(ref1) && fEMTrackCut.IsSelected(ref2)) {
+            float deta = ref1.eta() - ref2.eta();
+            float dphi = ref1.phi() - ref2.phi();
+            // o2::math_utils::bringTo02Pi(dphi);
+            dphi = RecoDecay::constrainAngle(dphi, -M_PI / 2, 1U);
+            fRegistry.fill(HIST("HadronHadron/same/hs"), ref1.pt(), ref2.pt(), deta, dphi);
           }
         }
       }
@@ -734,9 +759,13 @@ struct DiphotonHadronMPC {
       // make a vector of selected photons in this collision.
       auto selected_photons1_in_this_event = emh1->GetTracksPerCollision(key_df_collision);
       auto selected_photons2_in_this_event = emh2->GetTracksPerCollision(key_df_collision);
+      auto selected_refTracks_in_this_event = emh_ref->GetTracksPerCollision(key_df_collision);
+      auto selected_diphotons_in_this_event = emh_diphoton->GetTracksPerCollision(key_df_collision);
 
       auto collisionIds1_in_mixing_pool = emh1->GetCollisionIdsFromEventPool(key_bin);
       auto collisionIds2_in_mixing_pool = emh2->GetCollisionIdsFromEventPool(key_bin);
+      auto collisionIdsRef_in_mixing_pool = emh_ref->GetCollisionIdsFromEventPool(key_bin);
+      auto collisionIdsDiphoton_in_mixing_pool = emh_diphoton->GetCollisionIdsFromEventPool(key_bin);
 
       if constexpr (pairtype == PairType::kPCMPCM) { // same kinds pairing
         for (const auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
@@ -765,11 +794,36 @@ struct DiphotonHadronMPC {
               if (std::fabs(v12.Rapidity()) > maxY) {
                 continue;
               }
-
               fRegistry.fill(HIST("Diphoton/mix/hs"), v12.M(), v12.Pt(), 1.f);
             }
           }
-        } // end of loop over mixed event pool
+        } // end of loop over mixed event pool between photon-photon
+
+        for (const auto& mix_dfId_collisionId : collisionIdsRef_in_mixing_pool) {
+          int mix_dfId = mix_dfId_collisionId.first;
+          int64_t mix_collisionId = mix_dfId_collisionId.second;
+
+          if (collision.globalIndex() == mix_collisionId && ndf == mix_dfId) { // this never happens. only protection.
+            continue;
+          }
+
+          auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
+          uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
+          if (diffBC < ndiff_bc_mix) {
+            continue;
+          }
+
+          auto refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
+          for (const auto& trg : selected_diphotons_in_this_event) {
+            for (const auto& ref : refTracks_from_event_pool) {
+              float deta = trg.eta() - ref.eta();
+              float dphi = trg.phi() - ref.phi();
+              // o2::math_utils::bringTo02Pi(dphi);
+              dphi = RecoDecay::constrainAngle(dphi, -M_PI / 2, 1U);
+              fRegistry.fill(HIST("DiphotonHadron/mix/hs"), trg.mass(), trg.pt(), ref.pt(), deta, dphi);
+            }
+          }
+        } // end of loop over mixed event pool between diphoton-hadron
 
       } else { // [photon1 from event1, photon2 from event2] and [photon1 from event2, photon2 from event1]
         for (const auto& mix_dfId_collisionId : collisionIds2_in_mixing_pool) {
@@ -804,7 +858,8 @@ struct DiphotonHadronMPC {
               fRegistry.fill(HIST("Diphoton/mix/hs"), v12.M(), v12.Pt(), 1.f);
             }
           }
-        } // end of loop over mixed event pool
+        } // end of loop over mixed event pool between photon-photon
+
         for (const auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
           int mix_dfId = mix_dfId_collisionId.first;
           int64_t mix_collisionId = mix_dfId_collisionId.second;
@@ -837,12 +892,67 @@ struct DiphotonHadronMPC {
               fRegistry.fill(HIST("Diphoton/mix/hs"), v12.M(), v12.Pt(), 1.f);
             }
           }
-        } // end of loop over mixed event pool
+        } // end of loop over mixed event pool between photon-photon
+
+        for (const auto& mix_dfId_collisionId : collisionIdsRef_in_mixing_pool) {
+          int mix_dfId = mix_dfId_collisionId.first;
+          int64_t mix_collisionId = mix_dfId_collisionId.second;
+
+          if (collision.globalIndex() == mix_collisionId && ndf == mix_dfId) { // this never happens. only protection.
+            continue;
+          }
+
+          auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
+          uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
+          if (diffBC < ndiff_bc_mix) {
+            continue;
+          }
+
+          auto refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
+          for (const auto& trg : selected_diphotons_in_this_event) {
+            for (const auto& ref : refTracks_from_event_pool) {
+              float deta = trg.eta() - ref.eta();
+              float dphi = trg.phi() - ref.phi();
+              // o2::math_utils::bringTo02Pi(dphi);
+              dphi = RecoDecay::constrainAngle(dphi, -M_PI / 2, 1U);
+              fRegistry.fill(HIST("DiphotonHadron/mix/hs"), trg.mass(), trg.pt(), ref.pt(), deta, dphi);
+            }
+          }
+        } // end of loop over mixed event pool between diphoton-hadron
       }
+
+      // hadron-hadron mixed event
+      for (const auto& mix_dfId_collisionId : collisionIdsRef_in_mixing_pool) {
+        int mix_dfId = mix_dfId_collisionId.first;
+        int64_t mix_collisionId = mix_dfId_collisionId.second;
+
+        if (collision.globalIndex() == mix_collisionId && ndf == mix_dfId) { // this never happens. only protection.
+          continue;
+        }
+
+        auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
+        uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
+        if (diffBC < ndiff_bc_mix) {
+          continue;
+        }
+
+        auto refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
+        for (const auto& ref1 : selected_refTracks_in_this_event) {
+          for (const auto& ref2 : refTracks_from_event_pool) {
+            float deta = ref1.eta() - ref2.eta();
+            float dphi = ref1.phi() - ref2.phi();
+            // o2::math_utils::bringTo02Pi(dphi);
+            dphi = RecoDecay::constrainAngle(dphi, -M_PI / 2, 1U);
+            fRegistry.fill(HIST("HadronHadron/mix/hs"), ref1.pt(), ref2.pt(), deta, dphi);
+          }
+        }
+      } // end of loop over mixed event pool between hadron-hadron
 
       if (ndiphoton > 0) {
         emh1->AddCollisionIdAtLast(key_bin, key_df_collision);
         emh2->AddCollisionIdAtLast(key_bin, key_df_collision);
+        emh_diphoton->AddCollisionIdAtLast(key_bin, key_df_collision);
+        emh_ref->AddCollisionIdAtLast(key_bin, key_df_collision);
         map_mixed_eventId_to_globalBC[key_df_collision] = collision.globalBC();
       }
 
@@ -858,7 +968,7 @@ struct DiphotonHadronMPC {
   Filter prefilter_primaryelectron = ifnode(dileptoncuts.cfg_apply_cuts_from_prefilter_derived.node(), o2::aod::emprimaryelectron::pfbderived == static_cast<uint16_t>(0), true);
 
   int ndf = 0;
-  void process2PC(FilteredMyCollisions const& collisions, MyTracks const& refTracks, Types const&... args)
+  void processAnalysis(FilteredMyCollisions const& collisions, MyTracks const& refTracks, Types const&... args)
   {
     // LOGF(info, "ndf = %d", ndf);
     if constexpr (pairtype == PairType::kPCMPCM) {
@@ -874,10 +984,10 @@ struct DiphotonHadronMPC {
     }
     ndf++;
   }
-  PROCESS_SWITCH(DiphotonHadronMPC, process2PC, "process pair analysis", true);
+  PROCESS_SWITCH(DiphotonHadronMPC, processAnalysis, "process pair analysis", true);
 
   using FilteredMyCollisionsWithSWT = soa::Filtered<MyCollisionsWithSWT>;
-  void process2PCwithTrigger(FilteredMyCollisionsWithSWT const& collisions, MyTracks const& refTracks, Types const&... args)
+  void processTriggerAnalysis(FilteredMyCollisionsWithSWT const& collisions, MyTracks const& refTracks, Types const&... args)
   {
     // LOGF(info, "ndf = %d", ndf);
     if constexpr (pairtype == PairType::kPCMPCM) {
@@ -893,7 +1003,7 @@ struct DiphotonHadronMPC {
     }
     ndf++;
   }
-  PROCESS_SWITCH(DiphotonHadronMPC, process2PCwithTrigger, "process pair analysis", false);
+  PROCESS_SWITCH(DiphotonHadronMPC, processTriggerAnalysis, "process pair analysis with software trigger", false);
 
   void processDummy(MyCollisions const&) {}
   PROCESS_SWITCH(DiphotonHadronMPC, processDummy, "Dummy function", false);

@@ -47,8 +47,8 @@ enum class DileptonAnalysisType : int {
 };
 
 enum class DileptonHadronAnalysisType : int {
-  kCumulant = 0,
-  kCorrelationFunction = 1,
+  kAzimuthalCorrelation = 0,
+  kCumulant = 1,
 };
 
 enum class DileptonPrefilterBit : int {
