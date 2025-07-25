@@ -59,7 +59,7 @@ DECLARE_SOA_COLUMN(MothPdgCode, mothPdgCode, int);   //! PDG code of the Sigma d
 DECLARE_SOA_COLUMN(DaugPdgCode, daugPdgCode, int);   //! PDG code of the kink daughter
 DECLARE_SOA_COLUMN(PtMC, ptMC, float);               //! pT of the candidate in MC
 DECLARE_SOA_COLUMN(MassMC, massMC, float);           //! Invariant mass of the candidate in MC
-
+DECLARE_SOA_COLUMN(DecayRadiusMC, decayRadiusMC, float); //! Decay radius of the candidate in MC
 
 // DYNAMIC COLUMNS
 
@@ -152,7 +152,7 @@ DECLARE_SOA_TABLE(SlimKinkCandsMC, "AOD", "SLIMKINKCANDSMC",
                   kinkcand::NSigmaTPCPi, kinkcand::NSigmaTPCPr, kinkcand::NSigmaTPCKa,
                   kinkcand::NSigmaTOFPi, kinkcand::NSigmaTOFPr, kinkcand::NSigmaTOFKa,
                   kinkcand::MothPdgCode, kinkcand::DaugPdgCode,
-                  kinkcand::PtMC, kinkcand::MassMC);
+                  kinkcand::PtMC, kinkcand::MassMC, kinkcand::DecayRadiusMC);
 
 
 
