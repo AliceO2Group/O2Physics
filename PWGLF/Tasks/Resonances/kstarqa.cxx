@@ -337,6 +337,12 @@ struct Kstarqa {
     if (fillHist)
       rEventSelection.fill(HIST("hEventCutFlow"), 10);
 
+    if (selectionConfig.isINELgt0 && !collision.isInelGt0()) {
+      return false;
+    }
+    if (fillHist)
+      rEventSelection.fill(HIST("hEventCutFlow"), 11);
+
     return true;
   }
 
