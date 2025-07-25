@@ -40,6 +40,8 @@ DECLARE_SOA_COLUMN(XiccMass, xiccMass, float);
 // kine vars
 DECLARE_SOA_COLUMN(XiccPt, xiccPt, float);
 DECLARE_SOA_COLUMN(XiccEta, xiccEta, float);
+DECLARE_SOA_COLUMN(XicPt, xicPt, float);
+DECLARE_SOA_COLUMN(XicEta, xicEta, float);
 
 // topo vars
 DECLARE_SOA_COLUMN(XiDCAz, xiDCAz, float);
@@ -122,12 +124,15 @@ DECLARE_SOA_TABLE(MCharmIndices, "AOD", "MCharmIndices",
                   otfmulticharm::XiCCPionId);
 
 DECLARE_SOA_TABLE(MCharmCores, "AOD", "MCharmCores",
-                  otfmulticharm::XicDauDCA,
-                  otfmulticharm::XiccDauDCA,
-                  otfmulticharm::XicMass,
                   otfmulticharm::XiccMass,
                   otfmulticharm::XiccPt,
                   otfmulticharm::XiccEta,
+                  otfmulticharm::XiccDauDCA,
+
+                  otfmulticharm::XicMass,
+                  otfmulticharm::XicPt,
+                  otfmulticharm::XicEta,
+                  otfmulticharm::XicDauDCA,
 
                   otfmulticharm::XiDCAxy,
                   otfmulticharm::XiDCAz,
