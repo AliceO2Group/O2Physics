@@ -44,8 +44,8 @@
 #include <numeric>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
- #include <utility>
 
 using namespace o2;
 using namespace o2::framework;
