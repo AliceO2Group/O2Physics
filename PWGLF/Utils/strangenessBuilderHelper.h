@@ -160,6 +160,8 @@ struct v0candidate {
   float daughterDCA = 1000.0f;
   float pointingAngle = 1.0f;
   float dcaToPV = 0.0f;
+  float v0DCAToPVxy = 0.0f;
+  float v0DCAToPVz = 0.0f;
 
   // calculated masses for convenience
   float massGamma;
@@ -345,6 +347,16 @@ class strangenessBuilderHelper
       return false;
     }
     fitter.setCollinear(false); // proper cleaning: when exiting this loop, always reset to not collinear
+
+    // Calculate DCAToPV of the V0
+    o2::track::TrackPar V0Temp = fitter.createParentTrackPar();
+    V0Temp.setAbsCharge(0); // charge zero
+    std::array<float, 2> dcaV0Info;
+
+    // propagate to collision vertex
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, V0Temp, 2.f, fitter.getMatCorrType(), &dcaV0Info);
+    v0.v0DCAToPVxy = dcaV0Info[0];
+    v0.v0DCAToPVz = dcaV0Info[1];
 
     v0.positiveTrackX = fitter.getTrack(0).getX();
     v0.negativeTrackX = fitter.getTrack(1).getX();
