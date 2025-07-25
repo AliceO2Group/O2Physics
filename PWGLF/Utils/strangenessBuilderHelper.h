@@ -355,7 +355,7 @@ class strangenessBuilderHelper
 
     // propagate to collision vertex
     o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, V0Temp, 2.f, fitter.getMatCorrType(), &dcaV0Info);
-    v0.v0DCAToPVxy = dcaV0Info[0]; 
+    v0.v0DCAToPVxy = dcaV0Info[0];
     v0.v0DCAToPVz = dcaV0Info[1];
 
     v0.positiveTrackX = fitter.getTrack(0).getX();
