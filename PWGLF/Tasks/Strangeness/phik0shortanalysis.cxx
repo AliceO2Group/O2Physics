@@ -194,7 +194,8 @@ struct Phik0shortanalysis {
   Configurable<bool> fillMethodSingleWeight{"fillMethodSingleWeight", false, "Fill method Single Weight"};
   Configurable<bool> applyEfficiency{"applyEfficiency", false, "Use efficiency for filling histograms"};
 
-  // Configurable for MCPhi filter
+  // Configurables for dN/deta with phi computation
+  Configurable<bool> furtherCheckonMcCollision{"furtherCheckonMcCollision", true, "Further check on MC collisions"};
   Configurable<bool> filterOnMcPhi{"filterOnMcPhi", true, "Filter on MC Phi"};
 
   // Configurable for event mixing
@@ -2454,10 +2455,12 @@ struct Phik0shortanalysis {
       return;
     if (!collision.has_mcCollision())
       return;
-    const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
 
+    const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
     auto mcParticlesThisColl = mcParticles.sliceBy(preslices.perMCColl, mcCollision.globalIndex());
 
+    if (furtherCheckonMcCollision && (std::abs(mcCollision.posZ()) > cutZVertex || !pwglf::isINELgtNmc(mcParticlesThisColl, 0, pdgDB)))
+      return;
     if (filterOnMcPhi && !eventHasMCPhi(mcParticlesThisColl))
       return;
 
