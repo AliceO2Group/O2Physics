@@ -96,6 +96,7 @@ struct CorrelationTask {
   O2_DEFINE_CONFIGURABLE(cfgVerbosity, int, 1, "Verbosity level (0 = major, 1 = per collision)")
 
   O2_DEFINE_CONFIGURABLE(cfgDecayParticleMask, int, 0, "Selection bitmask for the decay particles: 0 = no selection")
+  O2_DEFINE_CONFIGURABLE(cfgV0RapidityMax, float, 0.8, "Maximum rapidity for the decay particles (0 = no selection)")
   O2_DEFINE_CONFIGURABLE(cfgMassAxis, int, 0, "Use invariant mass axis (0 = OFF, 1 = ON)")
   O2_DEFINE_CONFIGURABLE(cfgMcTriggerPDGs, std::vector<int>, {}, "MC PDG codes to use exclusively as trigger particles and exclude from associated particles. Empty = no selection.")
 
@@ -175,6 +176,7 @@ struct CorrelationTask {
       }
     }
     registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{1000, 0, 100, "/multiplicity/centrality"}}});
+    registry.add("yvspt", "y vs pT", {HistType::kTH2F, {{100, -1, 1, "y"}, {100, 0, 20, "p_{T}"}}}); // y vs pT for all tracks (control histogram)
 
     const int maxMixBin = AxisSpec(axisMultiplicity).getNbins() * AxisSpec(axisVertex).getNbins();
     // The bin numbers for the control histograms (eventcount_*) come from getBin(...) and are the following: #mult_bin * #number_of_z_bins + #zbin
@@ -398,6 +400,40 @@ struct CorrelationTask {
   template <class T>
   using HasPartDaugh1Id = decltype(std::declval<T&>().cfParticleDaugh1Id());
 
+  template <typename T>
+  float getV0Rapidity(const T& track)
+  {
+    const float pt = track.pt();
+    const float eta = track.eta();
+    const float phi = track.phi();
+
+    const float px = pt * std::cos(phi);
+    const float py = pt * std::sin(phi);
+    const float pz = pt * std::sinh(eta);
+
+    const float p2 = px * px + py * py + pz * pz;
+
+    if constexpr (std::experimental::is_detected<HasDecay, T>::value) {
+      const auto decayType = track.decay();
+      float mass = 0.f;
+
+      if (decayType == aod::cf2prongtrack::K0stoPiPi) {
+        mass = o2::constants::physics::MassK0Short;
+      } else if (decayType == aod::cf2prongtrack::LambdatoPPi || decayType == aod::cf2prongtrack::AntiLambdatoPiP) {
+        mass = o2::constants::physics::MassLambda;
+      } else if (decayType == aod::cf2prongtrack::PhiToKK) {
+        mass = o2::constants::physics::MassPhi;
+      } else {
+        return -999.f; // unsupported decay type, return dummy rapidity
+      }
+
+      const float E = std::sqrt(p2 + mass * mass);
+      return 0.5f * std::log((E + pz) / (E - pz));
+    }
+
+    return -999.f; // no decay type, return dummy rapidity
+  }
+
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTracks1, typename TTracks2>
   void fillCorrelations(TTarget target, TTracks1& tracks1, TTracks2& tracks2, float multiplicity, float posZ, int magField, float eventWeight)
   {
@@ -445,8 +481,13 @@ struct CorrelationTask {
         if (((track1.mcDecay() != aod::cf2prongtrack::D0ToPiK) && (track1.mcDecay() != aod::cf2prongtrack::D0barToKPi)) || (track1.decay() & aod::cf2prongmcpart::Prompt) == 0)
           continue;
       } else if constexpr (std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value) {
-        if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u)
-          continue;
+        if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u) {
+          continue; // skip particles that do not match the decay mask
+        }
+        if (cfgV0RapidityMax > 0 && std::abs(getV0Rapidity(track1)) > cfgV0RapidityMax) {
+          continue; // V0s are not allowed to be outside the rapidity range
+        }
+        registry.fill(HIST("yvspt"), getV0Rapidity(track1), track1.pt());
       }
 
       if constexpr (std::experimental::is_detected<HasPartDaugh0Id, typename TTracks1::iterator>::value) {
@@ -521,8 +562,12 @@ struct CorrelationTask {
           if ((((track2.mcDecay()) != aod::cf2prongtrack::D0ToPiK) && ((track2.mcDecay()) != aod::cf2prongtrack::D0barToKPi)) || (track2.decay() & aod::cf2prongmcpart::Prompt) == 0)
             continue;
         } else if constexpr (std::experimental::is_detected<HasDecay, typename TTracks2::iterator>::value) {
-          if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track2.decay()))) == 0u)
-            continue;
+          if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track2.decay()))) == 0u) {
+            continue; // skip particles that do not match the decay mask
+          }
+          if (cfgV0RapidityMax > 0 && std::abs(getV0Rapidity(track1)) > cfgV0RapidityMax) {
+            continue; // V0s are not allowed to be outside the rapidity range
+          }
         }
 
         if constexpr (std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value && std::experimental::is_detected<HasDecay, typename TTracks2::iterator>::value) {
