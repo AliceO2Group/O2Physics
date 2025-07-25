@@ -1927,6 +1927,24 @@ struct AnalysisSameEventPairing {
 
                       float dileptonMass = VarManager::fgValues[VarManager::kMass];
                       if (dileptonMass > useMiniTree.fConfigMiniTreeMinMass && dileptonMass < useMiniTree.fConfigMiniTreeMaxMass) {
+                        // In the miniTree the positive daughter is positioned as first
+                        if (t1.sign() > 0) {
+                          dileptonMiniTreeRec(mcDecision,
+                                              VarManager::fgValues[VarManager::kMass],
+                                              VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kCentFT0C],
+                                              t1.reducedMCTrack().pt(), t1.reducedMCTrack().eta(), t1.reducedMCTrack().phi(),
+                                              t2.reducedMCTrack().pt(), t2.reducedMCTrack().eta(), t2.reducedMCTrack().phi(),
+                                              t1.pt(), t1.eta(), t1.phi(),
+                                              t2.pt(), t2.eta(), t2.phi());
+                        } else {
+                          dileptonMiniTreeRec(mcDecision,
+                                              VarManager::fgValues[VarManager::kMass],
+                                              VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kCentFT0C],
+                                              t2.reducedMCTrack().pt(), t2.reducedMCTrack().eta(), t2.reducedMCTrack().phi(),
+                                              t1.reducedMCTrack().pt(), t1.reducedMCTrack().eta(), t1.reducedMCTrack().phi(),
+                                              t2.pt(), t2.eta(), t2.phi(),
+                                              t2.pt(), t2.eta(), t2.phi());
+                        }
                         dileptonMiniTreeRec(mcDecision,
                                             VarManager::fgValues[VarManager::kMass],
                                             VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kCentFT0C],
@@ -2159,11 +2177,16 @@ struct AnalysisSameEventPairing {
         continue;
       }
 
-      auto groupedMCTracks = mcTracks.sliceBy(perReducedMcGenEvent, event.reducedMCeventId());
-      groupedMCTracks.bindInternalIndicesTo(&mcTracks);
-      for (auto& track : groupedMCTracks) {
+      // auto groupedMCTracks = mcTracks.sliceBy(perReducedMcGenEvent, event.reducedMCeventId());
+      // groupedMCTracks.bindInternalIndicesTo(&mcTracks);
+      // for (auto& track : groupedMCTracks) {
+      for (auto& track : mcTracks) {
+        if (track.reducedMCeventId() != event.reducedMCeventId()) {
+          continue;
+        }
         VarManager::FillTrackMC(mcTracks, track);
-        auto track_raw = groupedMCTracks.rawIteratorAt(track.globalIndex());
+        auto track_raw = mcTracks.rawIteratorAt(track.globalIndex());
+        // auto track_raw = groupedMCTracks.rawIteratorAt(track.globalIndex());
         for (auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, track_raw)) {
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), VarManager::fgValues);

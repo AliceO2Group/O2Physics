@@ -27,6 +27,7 @@
 
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 
 #include <array>
 #include <cmath>
@@ -1205,7 +1206,7 @@ class HfHelper
     }
 
     // Lc pt
-    if (ptLc < cuts->get(pTBin, "pT Lc")) {
+    if (ptLc < cuts->get(pTBin, "pT Lc+")) {
       return false;
     }
 
@@ -1235,7 +1236,7 @@ class HfHelper
     }
 
     // d0 of Lc
-    if (std::abs(candLb.impactParameter0()) < cuts->get(pTBin, "d0 Lc")) {
+    if (std::abs(candLb.impactParameter0()) < cuts->get(pTBin, "d0 Lc+")) {
       return false;
     }
 

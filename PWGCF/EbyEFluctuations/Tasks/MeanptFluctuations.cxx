@@ -9,32 +9,40 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <CCDB/BasicCCDBManager.h>
-#include <algorithm>
-#include <numeric>
-#include <cmath>
-#include <vector>
+/// \file MeanptFluctuations.cxx
+/// \brief Task for analyzing <pT> fluctuation upto fourth order of inclusive hadrons
+/// \author Swati Saha
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
+#include "CommonConstants/MathConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+
+#include "TF1.h"
+#include "TH1D.h"
+#include "TH2D.h"
 #include "TList.h"
+#include "TMath.h"
 #include "TProfile.h"
 #include "TProfile2D.h"
-#include "TH2D.h"
-#include "TH1D.h"
 #include "TRandom3.h"
-#include "TMath.h"
-#include "TF1.h"
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <numeric>
+#include <string>
+#include <vector>
 
 namespace o2::aod
 {
@@ -62,16 +70,20 @@ struct MeanptFluctuations_QA_QnTable {
   Configurable<float> cfgCutPtLower{"cfgCutPtLower", 0.2f, "Lower pT cut"};
   Configurable<float> cfgCutPtUpper{"cfgCutPtUpper", 3.0f, "Higher pT cut"};
   Configurable<float> cfgCutTpcChi2NCl{"cfgCutTpcChi2NCl", 2.5f, "Maximum TPCchi2NCl"};
-  // Configurable<float> cfgCutTrackDcaXY{"cfgCutTrackDcaXY", 0.2f, "Maximum DcaXY"};
+  Configurable<float> cfgCutItsChi2NCl{"cfgCutItsChi2NCl", 36.0f, "Maximum ITSchi2NCl"};
   Configurable<float> cfgCutTrackDcaZ{"cfgCutTrackDcaZ", 2.0f, "Maximum DcaZ"};
+  Configurable<int> cfgITScluster{"cfgITScluster", 1, "Minimum Number of ITS cluster"};
+  Configurable<int> cfgTPCcluster{"cfgTPCcluster", 80, "Minimum Number of TPC cluster"};
+  Configurable<int> cfgTPCnCrossedRows{"cfgTPCnCrossedRows", 70, "Minimum Number of TPC crossed-rows"};
   ConfigurableAxis nchAxis{"nchAxis", {5000, 0.5, 5000.5}, ""};
+  Configurable<bool> cfgEvSelkNoSameBunchPileup{"cfgEvSelkNoSameBunchPileup", true, "Pileup removal"};
+  Configurable<bool> cfgUseGoodITSLayerAllCut{"cfgUseGoodITSLayerAllCut", true, "Remove time interval with dead ITS zone"};
 
   O2_DEFINE_CONFIGURABLE(cfgUse22sEventCut, bool, true, "Use 22s event cut on mult correlations")
 
   // Filter command***********
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < 0.8f) && (aod::track::pt > cfgCutPtLower) && (aod::track::pt < 5.0f) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutTpcChi2NCl) && (nabs(aod::track::dcaZ) < cfgCutTrackDcaZ);
-  // Filter trackFilter = (nabs(aod::track::eta) < 0.8f) && (aod::track::pt > cfgCutPtLower) && (aod::track::pt < 5.0f) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutTpcChi2NCl) && (nabs(aod::track::dcaXY) < cfgCutTrackDcaZ) && (nabs(aod::track::dcaZ) < cfgCutTrackDcaZ);
+  Filter trackFilter = (nabs(aod::track::eta) < 0.8f) && (aod::track::pt > cfgCutPtLower) && (aod::track::pt < 5.0f) && (requireGlobalTrackInFilter()) && (aod::track::tpcChi2NCl < cfgCutTpcChi2NCl) && (aod::track::itsChi2NCl < cfgCutItsChi2NCl) && (nabs(aod::track::dcaZ) < cfgCutTrackDcaZ);
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -108,7 +120,7 @@ struct MeanptFluctuations_QA_QnTable {
     histos.add("hZvtx_after_sel", ";Z (cm)", kTH1F, {vtxZAxis});
     histos.add("hP", ";#it{p} (GeV/#it{c})", kTH1F, {{35, 0.2, 4.}});
     histos.add("hPt", ";#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
-    histos.add("hPhi", ";#phi", kTH1F, {{100, 0., 2. * M_PI}});
+    histos.add("hPhi", ";#phi", kTH1F, {{100, 0., o2::constants::math::TwoPI}});
     histos.add("hEta", ";#eta", kTH1F, {{100, -2.01, 2.01}});
     histos.add("hCentrality", ";centrality (%)", kTH1F, {{90, 0, 90}});
     histos.add("hDcaXY", ";#it{dca}_{XY}", kTH1F, {{1000, -5, 5}});
@@ -144,7 +156,7 @@ struct MeanptFluctuations_QA_QnTable {
     float vtxz = -999;
     if (collision.numContrib() > 1) {
       vtxz = collision.posZ();
-      float zRes = TMath::Sqrt(collision.covZZ());
+      float zRes = std::sqrt(collision.covZZ());
       if (zRes > 0.25 && collision.numContrib() < 20)
         vtxz = -999;
     }
@@ -171,8 +183,15 @@ struct MeanptFluctuations_QA_QnTable {
   // void process(aod::Collision const& coll, aod::Tracks const& inputTracks)
   void process(aodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, aodTracks const& inputTracks)
   {
-    if (!coll.sel8())
+    if (!coll.sel8()) {
       return;
+    }
+    if (cfgUseGoodITSLayerAllCut && !(coll.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))) {
+      return;
+    }
+    if (cfgEvSelkNoSameBunchPileup && !(coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
+      return;
+    }
 
     const auto CentralityFT0C = coll.centFT0C();
     if (cfgUse22sEventCut && !eventSelected(coll, inputTracks.size(), CentralityFT0C))
@@ -194,7 +213,19 @@ struct MeanptFluctuations_QA_QnTable {
     float q4 = 0.0;
     float n_ch = 0.0;
 
-    for (auto track : inputTracks) { // Loop over tracks
+    for (const auto& track : inputTracks) { // Loop over tracks
+
+      if (!track.has_collision()) {
+        continue;
+      }
+
+      if (!track.isPVContributor()) {
+        continue;
+      }
+
+      if (!(track.itsNCls() > cfgITScluster) || !(track.tpcNClsFound() >= cfgTPCcluster) || !(track.tpcNClsCrossedRows() >= cfgTPCnCrossedRows)) {
+        continue;
+      }
 
       histos.fill(HIST("hP"), track.p());
       histos.fill(HIST("hPt"), track.pt());
@@ -209,10 +240,10 @@ struct MeanptFluctuations_QA_QnTable {
       float pT = track.pt();
       // calculating Q1, Q2, Q3, Q4. N_ch
       if (track.pt() > cfgCutPtLower && track.pt() < cfgCutPtUpper && track.sign() != 0) {
-        q1 = q1 + pow(pT, 1.0);
-        q2 = q2 + pow(pT, 2.0);
-        q3 = q3 + pow(pT, 3.0);
-        q4 = q4 + pow(pT, 4.0);
+        q1 = q1 + std::pow(pT, 1.0);
+        q2 = q2 + std::pow(pT, 2.0);
+        q3 = q3 + std::pow(pT, 3.0);
+        q4 = q4 + std::pow(pT, 4.0);
         n_ch = n_ch + 1;
       }
     }
@@ -280,9 +311,9 @@ struct MeanptFluctuations_analysis {
 
     // calculating observables
     mean_term1 = event_ptqn.q1() / event_ptqn.n_ch();
-    variance_term1 = (TMath::Power(event_ptqn.q1(), 2.0f) - event_ptqn.q2()) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f));
-    skewness_term1 = (TMath::Power(event_ptqn.q1(), 3.0f) - 3.0f * event_ptqn.q2() * event_ptqn.q1() + 2.0f * event_ptqn.q3()) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f) * (event_ptqn.n_ch() - 2.0f));
-    kurtosis_term1 = (TMath::Power(event_ptqn.q1(), 4.0f) - (6.0f * event_ptqn.q4()) + (8.0f * event_ptqn.q1() * event_ptqn.q3()) - (6.0f * TMath::Power(event_ptqn.q1(), 2.0f) * event_ptqn.q2()) + (3.0f * TMath::Power(event_ptqn.q2(), 2.0f))) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f) * (event_ptqn.n_ch() - 2.0f) * (event_ptqn.n_ch() - 3.0f));
+    variance_term1 = (std::pow(event_ptqn.q1(), 2.0f) - event_ptqn.q2()) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f));
+    skewness_term1 = (std::pow(event_ptqn.q1(), 3.0f) - 3.0f * event_ptqn.q2() * event_ptqn.q1() + 2.0f * event_ptqn.q3()) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f) * (event_ptqn.n_ch() - 2.0f));
+    kurtosis_term1 = (std::pow(event_ptqn.q1(), 4.0f) - (6.0f * event_ptqn.q4()) + (8.0f * event_ptqn.q1() * event_ptqn.q3()) - (6.0f * std::pow(event_ptqn.q1(), 2.0f) * event_ptqn.q2()) + (3.0f * std::pow(event_ptqn.q2(), 2.0f))) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f) * (event_ptqn.n_ch() - 2.0f) * (event_ptqn.n_ch() - 3.0f));
 
     // filling profiles and histograms for central values
     registry.get<TProfile2D>(HIST("Prof_mean_t1"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), mean_term1);

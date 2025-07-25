@@ -171,7 +171,7 @@ struct DeDxCorrection {
   }
   PROCESS_SWITCH(DeDxCorrection, processRun3, "dEdx correction process", false);
 
-  void processDummy(ColEvSels const&) {}
+  void processDummy(aod::Collisions const&) {}
 
   PROCESS_SWITCH(DeDxCorrection, processDummy, "Do nothing", true);
 };

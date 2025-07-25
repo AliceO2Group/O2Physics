@@ -125,6 +125,7 @@ DECLARE_SOA_TABLE(MFTMults, "AOD", "MFTMULT", //! Multiplicity with MFT
                   mult::MFTNalltracks, mult::MFTNtracks);
 using BarrelMults = soa::Join<TrackletMults, TPCMults, PVMults>;
 using Mults = soa::Join<BarrelMults, FV0Mults, FT0Mults, FDDMults, ZDCMults>;
+using MultsRun3 = soa::Join<TPCMults, PVMults, FV0Mults, FT0Mults, FDDMults, ZDCMults>;
 using FT0Mult = FT0Mults::iterator;
 using MFTMult = MFTMults::iterator;
 using Mult = Mults::iterator;

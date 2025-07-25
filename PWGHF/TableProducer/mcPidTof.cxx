@@ -21,23 +21,43 @@
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <DataFormatsTOF/ParameterContainers.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/Track.h>
+#include <PID/PIDTOF.h>
+#include <ReconstructionDataFormats/PID.h>
 #include <TOFBase/EventTimeMaker.h>
 
+#include <TGraph.h>
+#include <TH2.h>
 #include <TPDGCode.h>
+#include <TString.h>
 
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <map>
+#include <memory>
 #include <string>
-#include <unordered_map>
-#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -46,7 +66,7 @@ using namespace o2::pid;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
-MetadataHelper metadataInfo;
+o2::common::core::MetadataHelper metadataInfo;
 
 // Input data types
 using Trks = o2::soa::Join<aod::TracksIU, aod::TracksExtra>;

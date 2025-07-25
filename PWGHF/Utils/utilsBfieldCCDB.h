@@ -16,14 +16,13 @@
 #ifndef PWGHF_UTILS_UTILSBFIELDCCDB_H_
 #define PWGHF_UTILS_UTILSBFIELDCCDB_H_
 
-#include <fairlogger/Logger.h>
-
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsParameters/GRPObject.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/Logger.h>
 
 #include <string> // std::string
 

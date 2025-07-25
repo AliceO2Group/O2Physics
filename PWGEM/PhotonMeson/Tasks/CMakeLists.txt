@@ -64,6 +64,11 @@ o2physics_add_dpl_workflow(heavy-neutral-meson
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(omega-meson-emc
+                    SOURCES OmegaMesonEMC.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(phos-qc
                     SOURCES phosQC.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
@@ -146,6 +151,16 @@ o2physics_add_dpl_workflow(tagging-pi0-pcmdalitzee
 
 o2physics_add_dpl_workflow(tagging-pi0-mc-pcmdalitzee
                     SOURCES TaggingPi0MCPCMDalitzEE.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(diphoton-hadron-mpc-pcmpcm
+                    SOURCES diphotonHadronMPCPCMPCM.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(diphoton-hadron-mpc-pcmdalitzee
+                    SOURCES diphotonHadronMPCPCMDalitzEE.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
                     COMPONENT_NAME Analysis)
 

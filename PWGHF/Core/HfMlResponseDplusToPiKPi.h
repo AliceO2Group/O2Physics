@@ -16,11 +16,12 @@
 #ifndef PWGHF_CORE_HFMLRESPONSEDPLUSTOPIKPI_H_
 #define PWGHF_CORE_HFMLRESPONSEDPLUSTOPIKPI_H_
 
-#include <map>
-#include <string>
-#include <vector>
-
 #include "PWGHF/Core/HfMlResponse.h"
+
+#include "Tools/ML/MlResponse.h"
+
+#include <cstdint>
+#include <vector>
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)

@@ -21,40 +21,64 @@
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 /// \author Ruiqi Yin <ruiqi.yin@cern.ch>, Fudan University
 
-#include <algorithm> // std::find
-#include <iterator>  // std::distance
-#include <string>    // std::string
-#include <vector>    // std::vector
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "CCDB/BasicCCDBManager.h"             // for PV refit
-#include "DataFormatsParameters/GRPMagField.h" // for PV refit
-#include "DataFormatsParameters/GRPObject.h"   // for PV refit
-#include "DCAFitter/DCAFitterN.h"
-#include "DetectorsBase/Propagator.h"     // for PV refit
-#include "DetectorsVertexing/PVertexer.h" // for PV refit
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/V0.h"
-#include "ReconstructionDataFormats/Vertex.h" // for PV refit
-
-#include "Common/Core/TrackSelectorPID.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Tools/ML/MlResponse.h"
-
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelectorPID.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Tools/ML/MlResponse.h"
+
+#include <CCDB/BasicCCDBManager.h> // for PV refit
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <CommonUtils/ConfigurableParam.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>     // for PV refit
+#include <DetectorsVertexing/PVertexer.h> // for PV refit
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/Vertex.h> // for PV refit
+
+#include <TH1.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
+#include <algorithm> // std::find
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <iterator> // std::distance
+#include <numeric>
+#include <string> // std::string
+#include <vector> // std::vector
 
 using namespace o2;
 using namespace o2::analysis;
@@ -108,7 +132,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
   void init(InitContext const&)
   {
-    std::array<int, 6> doProcess = {doprocessTrigAndCentFT0ASel, doprocessTrigAndCentFT0CSel, doprocessTrigAndCentFT0MSel, doprocessTrigAndCentFV0ASel, doprocessTrigSel, doprocessNoTrigSel};
+    std::array<int, 7> doProcess = {doprocessTrigAndCentFT0ASel, doprocessTrigAndCentFT0CSel, doprocessTrigAndCentFT0MSel, doprocessTrigAndCentFV0ASel, doprocessTrigSel, doprocessNoTrigSel, doprocessUpcSel};
     if (std::accumulate(doProcess.begin(), doProcess.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function for collision selection can be enabled at a time!");
     }
@@ -132,11 +156,19 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
   /// Collision selection
   /// \param collision  collision table with
-  template <bool applyTrigSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Col, typename BCs>
-  void selectCollision(const Col& collision, const BCs&)
+  template <bool applyTrigSel, bool applyUpcSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Col, typename BCsType>
+  void selectCollision(const Col& collision, const BCsType& bcs)
   {
     float centrality = -1.;
-    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<applyTrigSel, centEstimator, BCs>(collision, centrality, ccdb, registry);
+    uint32_t rejectionMask;
+
+    if constexpr (applyUpcSel) {
+      rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<applyTrigSel, centEstimator, BCsType>(
+        collision, centrality, ccdb, registry, bcs);
+    } else {
+      rejectionMask = hfEvSel.getHfCollisionRejectionMask<applyTrigSel, centEstimator, BCsType>(
+        collision, centrality, ccdb, registry);
+    }
 
     if (fillHistograms) {
       hfEvSel.fillHistograms(collision, rejectionMask, centrality);
@@ -155,46 +187,69 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   }
 
   /// Event selection with trigger and FT0A centrality selection
-  void processTrigAndCentFT0ASel(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As>::iterator const& collision, aod::BCsWithTimestamps const& bcs)
+  void processTrigAndCentFT0ASel(soa::Join<aod::Collisions,
+                                           aod::EvSels, aod::CentFT0As>::iterator const& collision,
+                                 aod::BcFullInfos const& bcs)
   {
-    selectCollision<true, CentralityEstimator::FT0A>(collision, bcs);
+    selectCollision<true, false, CentralityEstimator::FT0A>(collision, bcs);
   }
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigAndCentFT0ASel, "Use trigger and centrality selection with FT0A", false);
 
   /// Event selection with trigger and FT0C centrality selection
-  void processTrigAndCentFT0CSel(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator const& collision, aod::BCsWithTimestamps const& bcs)
+  void processTrigAndCentFT0CSel(soa::Join<aod::Collisions,
+                                           aod::EvSels, aod::CentFT0Cs>::iterator const& collision,
+                                 aod::BcFullInfos const& bcs)
   {
-    selectCollision<true, CentralityEstimator::FT0C>(collision, bcs);
+    selectCollision<true, false, CentralityEstimator::FT0C>(collision, bcs);
   }
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigAndCentFT0CSel, "Use trigger and centrality selection with FT0C", false);
 
   /// Event selection with trigger and FT0M centrality selection
-  void processTrigAndCentFT0MSel(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision, aod::BCsWithTimestamps const& bcs)
+  void processTrigAndCentFT0MSel(soa::Join<aod::Collisions,
+                                           aod::EvSels, aod::CentFT0Ms>::iterator const& collision,
+                                 aod::BcFullInfos const& bcs)
   {
-    selectCollision<true, CentralityEstimator::FT0M>(collision, bcs);
+    selectCollision<true, false, CentralityEstimator::FT0M>(collision, bcs);
   }
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigAndCentFT0MSel, "Use trigger and centrality selection with FT0M", false);
 
   /// Event selection with trigger and FV0A centrality selection
-  void processTrigAndCentFV0ASel(soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As>::iterator const& collision, aod::BCsWithTimestamps const& bcs)
+  void processTrigAndCentFV0ASel(soa::Join<aod::Collisions,
+                                           aod::EvSels, aod::CentFV0As>::iterator const& collision,
+                                 aod::BcFullInfos const& bcs)
   {
-    selectCollision<true, CentralityEstimator::FV0A>(collision, bcs);
+    selectCollision<true, false, CentralityEstimator::FV0A>(collision, bcs);
   }
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigAndCentFV0ASel, "Use trigger and centrality selection with FV0A", false);
 
   /// Event selection with trigger selection
-  void processTrigSel(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::BCsWithTimestamps const& bcs)
+  void processTrigSel(soa::Join<aod::Collisions,
+                                aod::EvSels>::iterator const& collision,
+                      aod::BcFullInfos const& bcs)
   {
-    selectCollision<true, CentralityEstimator::None>(collision, bcs);
+    selectCollision<true, false, CentralityEstimator::None>(collision, bcs);
   }
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processTrigSel, "Use trigger selection", false);
 
   /// Event selection without trigger selection
-  void processNoTrigSel(aod::Collision const& collision, aod::BCsWithTimestamps const& bcs)
+  void processNoTrigSel(aod::Collision const& collision,
+                        aod::BcFullInfos const& bcs)
   {
-    selectCollision<false, CentralityEstimator::None>(collision, bcs);
+    selectCollision<false, false, CentralityEstimator::None>(collision, bcs);
   }
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processNoTrigSel, "Do not use trigger selection", true);
+
+  /// Event selection with UPC
+  void processUpcSel(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+                     aod::BcFullInfos const& bcs,
+                     aod::FT0s const& /*ft0s*/,
+                     aod::FV0As const& /*fv0as*/,
+                     aod::FDDs const& /*fdds*/,
+                     aod::Zdcs const& /*zdcs*/)
+  {
+    selectCollision<true, true, CentralityEstimator::None>(collision, bcs);
+  }
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelCollisions, processUpcSel, "Use UPC event selection", false);
 };
 
 /// Track selection
@@ -1246,7 +1301,7 @@ struct HfTrackIndexSkimCreator {
   using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
 
   // filter collisions
-  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == static_cast<uint16_t>(0));
+  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == static_cast<uint32_t>(0));
   // filter track indices
   Filter filterSelectTrackIds = ((aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::Cand2Prong))) != 0u) || ((aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::Cand3Prong))) != 0u) || ((aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandDstar))) != 0u);
 
@@ -3058,7 +3113,7 @@ struct HfTrackIndexSkimCreatorCascades {
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
   using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
 
-  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == static_cast<uint16_t>(0));
+  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == static_cast<uint32_t>(0));
   Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandV0bachelor))) != 0u && (config.applyProtonPid == false || (aod::hf_sel_track::isIdentifiedPid & static_cast<uint32_t>(BIT(ChannelsProtonPid::LcToPK0S))) != 0u);
 
   Preslice<FilteredTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId;
@@ -3337,7 +3392,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
   using CascFull = soa::Join<aod::CascDatas, aod::CascCovs>;
   using V0Full = soa::Join<aod::V0Datas, aod::V0Covs>;
 
-  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == static_cast<uint16_t>(0));
+  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == static_cast<uint32_t>(0));
   Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandCascadeBachelor))) != 0u;
 
   Preslice<aod::TracksWCovDca> tracksPerCollision = aod::track::collisionId;                     // needed for PV refit
