@@ -260,7 +260,7 @@ struct DetectorOccupancyQaTask {
       histos.add("track_distr_nITStrThisEv_above_2000/hEta_highOccupInDistantFuture", ";#eta;n tracks", kTH1D, {axisEta});
       histos.add("track_distr_nITStrThisEv_above_2000/hEta_highOccupInNeighbourEvents", ";#eta;n tracks", kTH1D, {axisEta});
 
-      const int nPhiBins = 800;
+      const int nPhiBins = 810;                                 // 18*45
       AxisSpec axisPhi{nPhiBins, 0, TMath::TwoPi(), "#varphi"}; // o2-linter: disable=external-pi (temporary fix)
       histos.add("track_distr_nITStrThisEv_10_200/hPhi_lowOccupInTPC", ";#varphi;n tracks", kTH1D, {axisPhi});
       histos.add("track_distr_nITStrThisEv_10_200/hPhi_highOccupInRecentPast", ";#varphi;n tracks", kTH1D, {axisPhi});
