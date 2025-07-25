@@ -30,6 +30,8 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Tools/ML/MlResponse.h"
+#include "Tools/ML/model.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
@@ -53,20 +55,45 @@
 #include <cstdlib>
 #include <iterator>
 #include <map>
+#include <string>
 #include <utility>
+#include <vector>
 
 using namespace o2;
+using namespace o2::ml;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 using multiCharmTracksPID = soa::Join<aod::MCharmCores, aod::MCharmPID>;
 using multiCharmTracksFull = soa::Join<aod::MCharmCores, aod::MCharmPID, aod::MCharmExtra>;
+#define getHist(type, name) std::get<std::shared_ptr<type>>(histPointers[name])
 
 struct alice3multicharm {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  std::map<std::string, HistPtr> histPointers;
+  std::string histPath;
+
   std::map<int, int> pdgToBin;
+  o2::ml::OnnxModel bdtMCharm;
+
+  std::map<std::string, std::string> metadata;
+  o2::ccdb::CcdbApi ccdbApi;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  struct : ConfigurableGroup {
+    std::string prefix = "bdt"; // JSON group name
+    Configurable<std::string> ccdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<std::string> localPath{"localPath", "MCharm_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
+    Configurable<std::string> pathCCDB{"btdPathCCDB", "Users/j/jekarlss/MLModels2", "Path on CCDB"};
+    Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
+    Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+    Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
+    Configurable<bool> enableML{"enableML", false, "Enables bdt model"};
+    Configurable<std::vector<float>> requiredScores{"requiredScores", {0.5, 0.75, 0.85, 0.9, 0.95, 0.99}, "Vector of different scores to try"};
+  } bdt;
 
   ConfigurableAxis axisEta{"axisEta", {80, -4.0f, +4.0f}, "#eta"};
+  ConfigurableAxis axisXicMass{"axisXicMass", {200, 2.368f, 2.568f}, "XiC Inv Mass (GeV/c^{2})"};
   ConfigurableAxis axisXiccMass{"axisXiccMass", {200, 3.521f, 3.721f}, "Xicc Inv Mass (GeV/c^{2})"};
   ConfigurableAxis axisDCA{"axisDCA", {400, 0, 400}, "DCA (#mum)"};
   ConfigurableAxis axisRadiusLarge{"axisRadiusLarge", {1000, 0, 20}, "Decay radius (cm)"};
@@ -106,6 +133,21 @@ struct alice3multicharm {
 
   void init(InitContext&)
   {
+    ccdb->setURL(bdt.ccdbUrl.value);
+    if (bdt.loadModelsFromCCDB) {
+      ccdbApi.init(bdt.ccdbUrl);
+      LOG(info) << "Fetching model for timestamp: " << bdt.timestampCCDB.value;
+      bool retrieveSuccessMCharm = ccdbApi.retrieveBlob(bdt.pathCCDB.value, ".", metadata, bdt.timestampCCDB.value, false, bdt.localPath.value);
+
+      if (retrieveSuccessMCharm) {
+        bdtMCharm.initModel(bdt.localPath.value, bdt.enableOptimizations.value);
+      } else {
+        LOG(fatal) << "Error encountered while fetching/loading the MCharm model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
+      }
+    } else {
+      bdtMCharm.initModel(bdt.localPath.value, bdt.enableOptimizations.value);
+    }
+
     histos.add("SelectionQA/hDCAXicDaughters", "hDCAXicDaughters; DCA between Xic daughters (#mum)", kTH1D, {axisDcaDaughters});
     histos.add("SelectionQA/hDCAXiccDaughters", "hDCAXiccDaughters; DCA between Xicc daughters (#mum)", kTH1D, {axisDcaDaughters});
     histos.add("SelectionQA/hDCAxyXi", "hDCAxyXi; Xi DCAxy to PV (#mum)", kTH1D, {axisDCA});
@@ -119,6 +161,12 @@ struct alice3multicharm {
     histos.add("SelectionQA/hDecayDistanceFromPVXic", "hDecayDistanceFromPVXic; Distance (#mum)", kTH1D, {axisDecayLength});
     histos.add("SelectionQA/hProperLengthXic", "hProperLengthXic; Distance (#mum)", kTH1D, {axisDecayLength});
     histos.add("SelectionQA/hProperLengthXicc", "hProperLengthXicc; Distance (#mum)", kTH1D, {axisDecayLength});
+    histos.add("SelectionQA/hPi1cDCAxy", "hPi1cDCAxy; Pi1c DCAxy (#mum)", kTH1D, {axisDCA});
+    histos.add("SelectionQA/hPi1cDCAz", "hPi1cDCAz; Pi1c DCAz (#mum)", kTH1D, {axisDCA});
+    histos.add("SelectionQA/hPi2cDCAxy", "hPi2cDCAxy; Pi2c DCAxy (#mum)", kTH1D, {axisDCA});
+    histos.add("SelectionQA/hPi2cDCAz", "hPi2cDCAz; Pi2c DCAz (#mum)", kTH1D, {axisDCA});
+    histos.add("SelectionQA/hPiccDCAxy", "hPiccDCAxy; Picc DCAxy (#mum)", kTH1D, {axisDCA});
+    histos.add("SelectionQA/hPiccDCAz", "hPiccDCAz; Picc DCAz (#mum)", kTH1D, {axisDCA});
     histos.add("SelectionQA/hPi1cPt", "hPi1cPt; Pi1c pT (Gev/#it(c))", kTH1D, {axisPt});
     histos.add("SelectionQA/hPi2cPt", "hPi2cPt; Pi2c pT (Gev/#it(c))", kTH1D, {axisPt});
     histos.add("SelectionQA/hPiccPt", "hPiccPt; Picc pT (Gev/#it(c))", kTH1D, {axisPt});
@@ -129,10 +177,10 @@ struct alice3multicharm {
     hMCharmBuilding->GetXaxis()->SetBinLabel(3, "xiccMaxDauDCA");
     hMCharmBuilding->GetXaxis()->SetBinLabel(4, "xiMinDCAxy");
     hMCharmBuilding->GetXaxis()->SetBinLabel(5, "xiMinDCAz");
-    hMCharmBuilding->GetXaxis()->SetBinLabel(6, "picMinDCAxy");
-    hMCharmBuilding->GetXaxis()->SetBinLabel(7, "picMinDCAz");
-    hMCharmBuilding->GetXaxis()->SetBinLabel(8, "picMinDCAxy");
-    hMCharmBuilding->GetXaxis()->SetBinLabel(9, "picMinDCAz");
+    hMCharmBuilding->GetXaxis()->SetBinLabel(6, "pi1cMinDCAxy");
+    hMCharmBuilding->GetXaxis()->SetBinLabel(7, "pi1cMinDCAz");
+    hMCharmBuilding->GetXaxis()->SetBinLabel(8, "pi2cMinDCAxy");
+    hMCharmBuilding->GetXaxis()->SetBinLabel(9, "pi2cMinDCAz");
     hMCharmBuilding->GetXaxis()->SetBinLabel(10, "piccMinDCAxy");
     hMCharmBuilding->GetXaxis()->SetBinLabel(11, "piccMinDCAz");
     hMCharmBuilding->GetXaxis()->SetBinLabel(12, "xicMinDCAxy");
@@ -179,6 +227,7 @@ struct alice3multicharm {
       histos.add("PIDQA/hOuterTofNSigmaPi2c", "hOuterTofNSigmaPi2c; TOF NSigma pion", kTH2D, {axisPt, axisNSigma});
       histos.add("PIDQA/hInnerTofNSigmaPicc", "hInnerTofNSigmaPicc; TOF NSigma pion", kTH2D, {axisPt, axisNSigma});
       histos.add("PIDQA/hOuterTofNSigmaPicc", "hOuterTofNSigmaPicc; TOF NSigma pion", kTH2D, {axisPt, axisNSigma});
+
       histos.add("PIDQA/hRichNSigmaPi1c", "hRichNSigmaPi1c; RICH NSigma pion", kTH2D, {axisPt, axisNSigma});
       histos.add("PIDQA/hRichNSigmaPi2c", "hRichNSigmaPi2c; RICH NSigma pion", kTH2D, {axisPt, axisNSigma});
       histos.add("PIDQA/hRichNSigmaPicc", "hRichNSigmaPicc; RICH NSigma pion", kTH2D, {axisPt, axisNSigma});
@@ -192,7 +241,45 @@ struct alice3multicharm {
       histos.add("XiccProngs/h3dPi2c", "h3dPi2c; Xicc pT (GeV/#it(c)); Pi2c pT (GeV/#it(c)); Pi2c #eta", kTH3D, {axisPt, axisPt, axisEta});
       histos.add("XiccProngs/h3dPicc", "h3dPicc; Xicc pT (GeV/#it(c)); Picc pT (GeV/#it(c)); Picc #eta", kTH3D, {axisPt, axisPt, axisEta});
     }
+
+    histos.add("hXiccMass", "hXiccMass", kTH1D, {axisXiccMass});
+    histos.add("hXicMass", "hXicMass", kTH1D, {axisXicMass});
+    histos.add("hXiccPt", "hXiccPt", kTH1D, {axisPt});
+    histos.add("hXicPt", "hXicPt", kTH1D, {axisPt});
     histos.add("h3dXicc", "h3dXicc; Xicc pT (GeV/#it(c)); Xicc #eta; Xicc mass (GeV/#it(c)^{2})", kTH3D, {axisPt, axisEta, axisXiccMass});
+
+    if (bdt.enableML) {
+      for (const auto& score : bdt.requiredScores.value) {
+        histPath = std::format("MLQA/RequiredBDTScore_{}/", static_cast<int>(score * 100));
+        histPointers.insert({histPath + "hDCAXicDaughters", histos.add((histPath + "hDCAXicDaughters").c_str(), "hDCAXicDaughters", {kTH1D, {{axisDcaDaughters}}})});
+        histPointers.insert({histPath + "hDCAXiccDaughters", histos.add((histPath + "hDCAXiccDaughters").c_str(), "hDCAXiccDaughters", {kTH1D, {{axisDcaDaughters}}})});
+        histPointers.insert({histPath + "hDCAxyXi", histos.add((histPath + "hDCAxyXi").c_str(), "hDCAxyXi", {kTH1D, {{axisDCA}}})});
+        histPointers.insert({histPath + "hDCAzXi", histos.add((histPath + "hDCAzXi").c_str(), "hDCAzXi", {kTH1D, {{axisDCA}}})});
+        histPointers.insert({histPath + "hDCAxyXic", histos.add((histPath + "hDCAxyXic").c_str(), "hDCAxyXic", {kTH1D, {{axisDCA}}})});
+        histPointers.insert({histPath + "hDCAzXic", histos.add((histPath + "hDCAzXic").c_str(), "hDCAzXic", {kTH1D, {{axisDCA}}})});
+        histPointers.insert({histPath + "hDCAxyXicc", histos.add((histPath + "hDCAxyXicc").c_str(), "hDCAxyXicc", {kTH1D, {{axisDCA}}})});
+        histPointers.insert({histPath + "hDCAzXicc", histos.add((histPath + "hDCAzXicc").c_str(), "hDCAzXicc", {kTH1D, {{axisDCA}}})});
+        histPointers.insert({histPath + "hDecayRadiusXic", histos.add((histPath + "hDecayRadiusXic").c_str(), "hDecayRadiusXic", {kTH1D, {{axisRadius}}})});
+        histPointers.insert({histPath + "hDecayRadiusXicc", histos.add((histPath + "hDecayRadiusXicc").c_str(), "hDecayRadiusXicc", {kTH1D, {{axisRadius}}})});
+        histPointers.insert({histPath + "hDecayDistanceFromPVXic", histos.add((histPath + "hDecayDistanceFromPVXic").c_str(), "hDecayDistanceFromPVXic", {kTH1D, {{axisDecayLength}}})});
+        histPointers.insert({histPath + "hProperLengthXic", histos.add((histPath + "hProperLengthXic").c_str(), "hProperLengthXic", {kTH1D, {{axisDecayLength}}})});
+        histPointers.insert({histPath + "hProperLengthXicc", histos.add((histPath + "hProperLengthXicc").c_str(), "hProperLengthXicc", {kTH1D, {{axisDecayLength}}})});
+        histPointers.insert({histPath + "hPi1cDCAxy", histos.add((histPath + "hPi1cDCAxy").c_str(), "hPi1cDCAxy", {kTH1D, {{axisDCA}}})});
+        histPointers.insert({histPath + "hPi1cDCAz", histos.add((histPath + "hPi1cDCAz").c_str(), "hPi1cDCAxy", {kTH1D, {{axisDCA}}})});
+        histPointers.insert({histPath + "hPi2cDCAxy", histos.add((histPath + "hPi2cDCAxy").c_str(), "hPi2cDCAxy", {kTH1D, {{axisDCA}}})});
+        histPointers.insert({histPath + "hPi2cDCAz", histos.add((histPath + "hPi2cDCAz").c_str(), "hPi2cDCAz", {kTH1D, {{axisDCA}}})});
+        histPointers.insert({histPath + "hPiccDCAxy", histos.add((histPath + "hPiccDCAxy").c_str(), "hPiccDCAxy", {kTH1D, {{axisDCA}}})});
+        histPointers.insert({histPath + "hPiccDCAz", histos.add((histPath + "hPiccDCAz").c_str(), "hPiccDCAz", {kTH1D, {{axisDCA}}})});
+        histPointers.insert({histPath + "hPi1cPt", histos.add((histPath + "hPi1cPt").c_str(), "hPi1cPt", {kTH1D, {{axisPt}}})});
+        histPointers.insert({histPath + "hPi2cPt", histos.add((histPath + "hPi2cPt").c_str(), "hPi2cPt", {kTH1D, {{axisPt}}})});
+        histPointers.insert({histPath + "hPiccPt", histos.add((histPath + "hPiccPt").c_str(), "hPiccPt", {kTH1D, {{axisPt}}})});
+        histPointers.insert({histPath + "h3dXicc", histos.add((histPath + "h3dXicc").c_str(), "h3dXicc", {kTH3D, {{axisPt, axisEta, axisXiccMass}}})});
+        histPointers.insert({histPath + "hXiccMass", histos.add((histPath + "hXiccMass").c_str(), "hXiccMass", {kTH1D, {{axisXiccMass}}})});
+        histPointers.insert({histPath + "hXicMass", histos.add((histPath + "hXicMass").c_str(), "hXicMass", {kTH1D, {{axisXicMass}}})});
+        histPointers.insert({histPath + "hXiccPt", histos.add((histPath + "hXiccPt").c_str(), "hXiccPt", {kTH1D, {{axisPt}}})});
+        histPointers.insert({histPath + "hXicPt", histos.add((histPath + "hXicPt").c_str(), "hXicPt", {kTH1D, {{axisPt}}})});
+      }
+    }
   }
 
   int getBin(const std::map<int, int>& pdgToBin, int pdg)
@@ -206,91 +293,192 @@ struct alice3multicharm {
   {
     for (const auto& xiccCand : xiccCands) {
 
+      if (bdt.enableML) {
+        std::vector<float> inputFeatures{
+          xiccCand.xicDauDCA(),
+          xiccCand.xiccDauDCA(),
+          xiccCand.xiDCAxy(),
+          xiccCand.xicDCAxy(),
+          xiccCand.xiccDCAxy(),
+          xiccCand.xiDCAz(),
+          xiccCand.xicDCAz(),
+          xiccCand.xiccDCAz(),
+          xiccCand.pi1cDCAxy(),
+          xiccCand.pi2cDCAxy(),
+          xiccCand.piccDCAxy(),
+          xiccCand.pi1cDCAz(),
+          xiccCand.pi2cDCAz(),
+          xiccCand.piccDCAz(),
+          xiccCand.xicDecayRadius2D(),
+          xiccCand.xiccDecayRadius2D(),
+          xiccCand.xicProperLength(),
+          xiccCand.xicDistanceFromPV(),
+          xiccCand.xiccProperLength()};
+
+        float* probabilityMCharm = bdtMCharm.evalModel(inputFeatures);
+        float bdtScore = probabilityMCharm[1];
+
+        for (const auto& requiredScore : bdt.requiredScores.value) {
+          if (bdtScore > requiredScore) {
+            histPath = std::format("MLQA/RequiredBDTScore_{}/", static_cast<int>(requiredScore * 100));
+            getHist(TH1, histPath + "hDCAXicDaughters")->Fill(xiccCand.xicDauDCA() * 1e+4);
+            getHist(TH1, histPath + "hDCAXiccDaughters")->Fill(xiccCand.xiccDauDCA() * 1e+4);
+            getHist(TH1, histPath + "hDCAxyXi")->Fill(std::fabs(xiccCand.xiDCAxy() * 1e+4));
+            getHist(TH1, histPath + "hDCAzXi")->Fill(std::fabs(xiccCand.xiDCAz() * 1e+4));
+            getHist(TH1, histPath + "hDCAxyXic")->Fill(std::fabs(xiccCand.xicDCAxy() * 1e+4));
+            getHist(TH1, histPath + "hDCAzXic")->Fill(std::fabs(xiccCand.xicDCAz() * 1e+4));
+            getHist(TH1, histPath + "hDCAxyXicc")->Fill(std::fabs(xiccCand.xiccDCAxy() * 1e+4));
+            getHist(TH1, histPath + "hDCAzXicc")->Fill(std::fabs(xiccCand.xiccDCAz() * 1e+4));
+            getHist(TH1, histPath + "hDecayRadiusXic")->Fill(xiccCand.xicDecayRadius2D() * 1e+4);
+            getHist(TH1, histPath + "hDecayRadiusXicc")->Fill(xiccCand.xiccDecayRadius2D() * 1e+4);
+            getHist(TH1, histPath + "hDecayDistanceFromPVXic")->Fill(xiccCand.xicDistanceFromPV() * 1e+4);
+            getHist(TH1, histPath + "hProperLengthXic")->Fill(xiccCand.xicProperLength() * 1e+4);
+            getHist(TH1, histPath + "hProperLengthXicc")->Fill(xiccCand.xiccProperLength() * 1e+4);
+            getHist(TH1, histPath + "hPi1cDCAxy")->Fill(xiccCand.pi1cDCAxy() * 1e+4);
+            getHist(TH1, histPath + "hPi1cDCAz")->Fill(xiccCand.pi1cDCAz() * 1e+4);
+            getHist(TH1, histPath + "hPi2cDCAxy")->Fill(xiccCand.pi2cDCAxy() * 1e+4);
+            getHist(TH1, histPath + "hPi2cDCAz")->Fill(xiccCand.pi2cDCAz() * 1e+4);
+            getHist(TH1, histPath + "hPiccDCAxy")->Fill(xiccCand.piccDCAxy() * 1e+4);
+            getHist(TH1, histPath + "hPiccDCAz")->Fill(xiccCand.piccDCAz() * 1e+4);
+            getHist(TH1, histPath + "hPi1cDCAz")->Fill(xiccCand.pi1cPt());
+            getHist(TH1, histPath + "hPi2cDCAz")->Fill(xiccCand.pi2cPt());
+            getHist(TH1, histPath + "hPiccDCAz")->Fill(xiccCand.piccPt());
+            getHist(TH1, histPath + "hXiccMass")->Fill(xiccCand.xiccMass());
+            getHist(TH1, histPath + "hXicMass")->Fill(xiccCand.xicMass());
+            getHist(TH1, histPath + "hXiccPt")->Fill(xiccCand.xiccPt());
+            getHist(TH1, histPath + "hXicPt")->Fill(xiccCand.xicPt());
+            getHist(TH3, histPath + "h3dXicc")->Fill(xiccCand.xiccPt(), xiccCand.xiccEta(), xiccCand.xiccMass());
+          }
+        }
+      }
+
       histos.fill(HIST("hMCharmBuilding"), 0);
-      if (xiccCand.xicDauDCA() > xicMaxDauDCA)
+      if (xiccCand.xicDauDCA() > xicMaxDauDCA) {
         continue;
+      } else {
+        histos.fill(HIST("hMCharmBuilding"), 1);
+      }
 
-      histos.fill(HIST("hMCharmBuilding"), 1);
-      if (xiccCand.xiccDauDCA() > xiccMaxDauDCA)
+      if (xiccCand.xiccDauDCA() > xiccMaxDauDCA) {
         continue;
+      } else {
+        histos.fill(HIST("hMCharmBuilding"), 2);
+      }
 
-      histos.fill(HIST("hMCharmBuilding"), 2);
-      if (std::fabs(xiccCand.xiDCAxy()) < xiMinDCAxy)
+      if (std::fabs(xiccCand.xiDCAxy()) < xiMinDCAxy) {
         continue;
+      } else {
+        histos.fill(HIST("hMCharmBuilding"), 3);
+      }
 
-      histos.fill(HIST("hMCharmBuilding"), 3);
-      if (std::fabs(xiccCand.xiDCAz()) < xiMinDCAz)
+      if (std::fabs(xiccCand.xiDCAz()) < xiMinDCAz) {
         continue;
+      } else {
+        histos.fill(HIST("hMCharmBuilding"), 4);
+      }
 
-      histos.fill(HIST("hMCharmBuilding"), 4);
-      if (std::fabs(xiccCand.pi1cDCAxy()) < picMinDCAxy)
+      if (std::fabs(xiccCand.pi1cDCAxy()) < picMinDCAxy) {
         continue;
+      } else {
+        histos.fill(HIST("hMCharmBuilding"), 5);
+      }
 
-      histos.fill(HIST("hMCharmBuilding"), 5);
-      if (std::fabs(xiccCand.pi1cDCAz()) < picMinDCAz)
+      if (std::fabs(xiccCand.pi1cDCAz()) < picMinDCAz) {
         continue;
+      } else {
+        histos.fill(HIST("hMCharmBuilding"), 6);
+      }
 
-      histos.fill(HIST("hMCharmBuilding"), 6);
-      if (std::fabs(xiccCand.pi2cDCAxy()) < picMinDCAxy)
+      if (std::fabs(xiccCand.pi2cDCAxy()) < picMinDCAxy) {
         continue;
+      } else {
+        histos.fill(HIST("hMCharmBuilding"), 7);
+      }
 
-      histos.fill(HIST("hMCharmBuilding"), 7);
-      if (std::fabs(xiccCand.pi2cDCAz()) < picMinDCAz)
+      if (std::fabs(xiccCand.pi2cDCAz()) < picMinDCAz) {
         continue;
+      } else {
+        histos.fill(HIST("hMCharmBuilding"), 8);
+      }
 
-      histos.fill(HIST("hMCharmBuilding"), 8);
-      if (std::fabs(xiccCand.piccDCAxy()) < piccMinDCAxy)
+      if (std::fabs(xiccCand.piccDCAxy()) < piccMinDCAxy) {
         continue;
+      } else {
+        histos.fill(HIST("hMCharmBuilding"), 9);
+      }
 
-      histos.fill(HIST("hMCharmBuilding"), 9);
-      if (std::fabs(xiccCand.piccDCAz()) < piccMinDCAz)
+      if (std::fabs(xiccCand.piccDCAz()) < piccMinDCAz) {
         continue;
+      } else {
+        histos.fill(HIST("hMCharmBuilding"), 10);
+      }
 
-      histos.fill(HIST("hMCharmBuilding"), 10);
-      if (std::fabs(xiccCand.xicDCAxy()) < xicMinDCAxy)
+      if (std::fabs(xiccCand.xicDCAxy()) < xicMinDCAxy) {
         continue;
+      } else {
+        histos.fill(HIST("hMCharmBuilding"), 11);
+      }
 
-      histos.fill(HIST("hMCharmBuilding"), 11);
-      if (std::fabs(xiccCand.xicDCAz()) < xicMinDCAz)
+      if (std::fabs(xiccCand.xicDCAz()) < xicMinDCAz) {
         continue;
+      } else {
+        histos.fill(HIST("hMCharmBuilding"), 12);
+      }
 
-      histos.fill(HIST("hMCharmBuilding"), 12);
-      if (std::fabs(xiccCand.xiccDCAxy()) > xiccMaxDCAxy)
+      if (std::fabs(xiccCand.xiccDCAxy()) > xiccMaxDCAxy) {
         continue;
+      } else {
+        histos.fill(HIST("hMCharmBuilding"), 13);
+      }
 
-      histos.fill(HIST("hMCharmBuilding"), 13);
-      if (std::fabs(xiccCand.xiccDCAz()) > xiccMaxDCAz)
+      if (std::fabs(xiccCand.xiccDCAz()) > xiccMaxDCAz) {
         continue;
+      } else {
+        histos.fill(HIST("hMCharmBuilding"), 14);
+      }
 
-      histos.fill(HIST("hMCharmBuilding"), 14);
-      if (xiccCand.xicDecayRadius2D() < xicMinRadius)
+      if (xiccCand.xicDecayRadius2D() < xicMinRadius) {
         continue;
+      } else {
+        histos.fill(HIST("hMCharmBuilding"), 15);
+      }
 
-      histos.fill(HIST("hMCharmBuilding"), 15);
-      if (xiccCand.xiccDecayRadius2D() < xiccMinRadius)
+      if (xiccCand.xiccDecayRadius2D() < xiccMinRadius) {
         continue;
+      } else {
+        histos.fill(HIST("hMCharmBuilding"), 16);
+      }
 
-      histos.fill(HIST("hMCharmBuilding"), 16);
-      if (xiccCand.xicProperLength() < xicMinProperLength)
+      if (xiccCand.xicProperLength() < xicMinProperLength) {
         continue;
+      } else {
+        histos.fill(HIST("hMCharmBuilding"), 17);
+      }
 
-      histos.fill(HIST("hMCharmBuilding"), 17);
-      if (xiccCand.xicProperLength() > xicMaxProperLength)
+      if (xiccCand.xicProperLength() > xicMaxProperLength) {
         continue;
+      } else {
+        histos.fill(HIST("hMCharmBuilding"), 18);
+      }
 
-      histos.fill(HIST("hMCharmBuilding"), 18);
-      if (xiccCand.xiccProperLength() < xiccMinProperLength)
+      if (xiccCand.xiccProperLength() < xiccMinProperLength) {
         continue;
+      } else {
+        histos.fill(HIST("hMCharmBuilding"), 19);
+      }
 
-      histos.fill(HIST("hMCharmBuilding"), 19);
-      if (xiccCand.xiccProperLength() > xiccMaxProperLength)
+      if (xiccCand.xiccProperLength() > xiccMaxProperLength) {
         continue;
+      } else {
+        histos.fill(HIST("hMCharmBuilding"), 20);
+      }
 
-      histos.fill(HIST("hMCharmBuilding"), 20);
-      if (xiccCand.xicDistanceFromPV() < xicMinDecayDistanceFromPV)
+      if (xiccCand.xicDistanceFromPV() < xicMinDecayDistanceFromPV) {
         continue;
+      } else {
+        histos.fill(HIST("hMCharmBuilding"), 21);
+      }
 
-      histos.fill(HIST("hMCharmBuilding"), 21);
       histos.fill(HIST("SelectionQA/hDCAXicDaughters"), xiccCand.xicDauDCA() * 1e+4);
       histos.fill(HIST("SelectionQA/hDCAXiccDaughters"), xiccCand.xiccDauDCA() * 1e+4);
       histos.fill(HIST("SelectionQA/hDCAxyXi"), std::fabs(xiccCand.xiDCAxy() * 1e+4));
@@ -304,6 +492,12 @@ struct alice3multicharm {
       histos.fill(HIST("SelectionQA/hDecayDistanceFromPVXic"), xiccCand.xicDistanceFromPV() * 1e+4);
       histos.fill(HIST("SelectionQA/hProperLengthXic"), xiccCand.xicProperLength() * 1e+4);
       histos.fill(HIST("SelectionQA/hProperLengthXicc"), xiccCand.xiccProperLength() * 1e+4);
+      histos.fill(HIST("SelectionQA/hPi1cDCAxy"), xiccCand.pi1cDCAxy() * 1e+4);
+      histos.fill(HIST("SelectionQA/hPi1cDCAz"), xiccCand.pi1cDCAz() * 1e+4);
+      histos.fill(HIST("SelectionQA/hPi2cDCAxy"), xiccCand.pi2cDCAxy() * 1e+4);
+      histos.fill(HIST("SelectionQA/hPi2cDCAz"), xiccCand.pi2cDCAz() * 1e+4);
+      histos.fill(HIST("SelectionQA/hPiccDCAxy"), xiccCand.piccDCAxy() * 1e+4);
+      histos.fill(HIST("SelectionQA/hPiccDCAz"), xiccCand.piccDCAz() * 1e+4);
       histos.fill(HIST("SelectionQA/hPi1cPt"), xiccCand.pi1cPt());
       histos.fill(HIST("SelectionQA/hPi2cPt"), xiccCand.pi2cPt());
       histos.fill(HIST("SelectionQA/hPiccPt"), xiccCand.piccPt());
@@ -345,6 +539,10 @@ struct alice3multicharm {
         histos.fill(HIST("XiccProngs/h3dPicc"), xiccCand.xiccPt(), xiccCand.piccPt(), xiccCand.piccEta());
       }
 
+      histos.fill(HIST("hXiccMass"), xiccCand.xiccMass());
+      histos.fill(HIST("hXicMass"), xiccCand.xicMass());
+      histos.fill(HIST("hXiccPt"), xiccCand.xiccPt());
+      histos.fill(HIST("hXicPt"), xiccCand.xicPt());
       histos.fill(HIST("h3dXicc"), xiccCand.xiccPt(), xiccCand.xiccEta(), xiccCand.xiccMass());
     }
   }

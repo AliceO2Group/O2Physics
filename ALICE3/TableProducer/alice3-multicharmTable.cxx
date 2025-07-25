@@ -734,9 +734,10 @@ struct alice3multicharmTable {
                 picc.globalIndex());
 
               multiCharmCore(
-                thisXiCcandidate.dca, thisXiCCcandidate.dca,
-                thisXiCcandidate.mass, thisXiCCcandidate.mass,
-                thisXiCCcandidate.pt, thisXiCCcandidate.eta,
+                thisXiCCcandidate.mass, thisXiCCcandidate.pt,
+                thisXiCCcandidate.eta, thisXiCCcandidate.dca,
+                thisXiCcandidate.mass, thisXiCcandidate.pt,
+                thisXiCcandidate.eta, thisXiCcandidate.dca,
                 xi.dcaXY(), xi.dcaZ(),
                 xicdcaXY, xicdcaZ,
                 xiccdcaXY, xiccdcaZ,
@@ -756,12 +757,10 @@ struct alice3multicharmTable {
                 pi1cTOFDiffOuter, pi1c.nSigmaPionOuterTOF(),
                 pi1c.hasSigPi(), pi1c.nSigmaPionRich(),
                 getPdgCodeForTrack(pi1c),
-
                 pi2cTOFDiffInner, pi2c.nSigmaPionInnerTOF(),
                 pi2cTOFDiffOuter, pi2c.nSigmaPionOuterTOF(),
                 pi2c.hasSigPi(), pi2c.nSigmaPionRich(),
                 getPdgCodeForTrack(pi2c),
-
                 piccTOFDiffInner, picc.nSigmaPionInnerTOF(),
                 piccTOFDiffOuter, picc.nSigmaPionOuterTOF(),
                 picc.hasSigPi(), picc.nSigmaPionRich(),
@@ -774,9 +773,7 @@ struct alice3multicharmTable {
                 prFromLa.dcaXY(), prFromLa.dcaZ(),
                 piFromLa.pt(), piFromLa.eta(),
                 piFromLa.dcaXY(), piFromLa.dcaZ(),
-                pi1c.eta(),
-                pi2c.eta(),
-                picc.eta());
+                pi1c.eta(), pi2c.eta(), picc.eta());
             }
           }
           histos.fill(HIST("hCombinationsXiCC"), nCombinationsCC);
