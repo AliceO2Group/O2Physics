@@ -105,16 +105,16 @@ class TrackPropagationModule
 
     LOGF(info, " Track propagation table detection results:");
     LOGF(info, " ---> Will generate Tracks table.");
-    if(fillTracksCov){ 
+    if (fillTracksCov) {
       LOGF(info, "---> Will generate TracksCov table.");
     }
-    if(fillTracksDCA){ 
+    if (fillTracksDCA) {
       LOGF(info, "---> Will generate TracksDCA table.");
     }
-    if(fillTracksDCACov){ 
+    if (fillTracksDCACov) {
       LOGF(info, "---> Will generate TracksDCACov table.");
     }
-    if(fillTracksCov){ 
+    if (fillTracksCov) {
       LOGF(info, "**************************************************************");
       LOGF(info, " Warning: TracksCov has been requested due to a subscription!");
       LOGF(info, " Please be mindful that generating track covariances requires");
