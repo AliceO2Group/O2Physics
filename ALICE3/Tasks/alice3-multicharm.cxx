@@ -110,12 +110,10 @@ struct alice3multicharm {
 
   Configurable<float> picMinDCAxy{"picMinDCAxy", -1, "[0] in |DCAz| > [0]+[1]/pT"};
   Configurable<float> picMinDCAz{"picMinDCAz", -1, "[0] in |DCAxy| > [0]+[1]/pT"};
-  Configurable<float> picMaxTofDiffInner{"picTofDiffInner", 1e+4, "|signal - expected| (ps)"};
   Configurable<float> picMinPt{"picMinPt", -1, "Minimum pT for Xic pions"};
 
   Configurable<float> piccMinDCAxy{"piccMinDCAxy", -1, "[0] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> piccMinDCAz{"piccMinDCAz", -1, "[0] in |DCAz| > [0]+[1]/pT"};
-  Configurable<float> piccMaxTofDiffInner{"piccMaxTofDiffInner", 1e+4, "|signal - expected| (ps)"};
   Configurable<float> piccMinPt{"piccMinPt", -1, "Minimum pT for Xicc pions"};
 
   Configurable<float> xicMaxDauDCA{"xicMaxDauDCA", 1e+4, "DCA between Xic daughters (cm)"};
