@@ -83,16 +83,20 @@ struct PseudorapidityDensityMFT {
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
   Configurable<bool> disableITSROFCut{"disableITSROFCut", false, "Disable ITS ROF cut for event selection"};
   ConfigurableAxis multBinning{"multBinning", {701, -0.5, 700.5}, ""};
-  ConfigurableAxis EtaAxis = {"etaBinning", {18, -4.6, -1.}, ""};
+  ConfigurableAxis EtaAxis = {"etaBinning", {36, -4.6, -1.}, ""};
 
   Configurable<bool> useZDiffCut{"useZDiffCut", true, "use Z difference cut"};
   Configurable<float> maxZDiff{
     "maxZDiff", 1.0f,
     "max allowed Z difference for reconstructed collisions (cm)"};
 
-  Configurable<bool> usePhiCut{"usePhiCut", false, "use azimuthal angle cut"};
+  Configurable<bool> usePhiCut{"usePhiCut", true, "use azimuthal angle cut"};
   Configurable<float> cfgPhiCut{"cfgPhiCut", 0.1f,
                                 "Cut on azimuthal angle of MFT tracks"};
+  Configurable<float> cfgPhiCut1{"cfgPhiCut1", 0.0f,
+                                 "low Cut on azimuthal angle of MFT tracks"};
+  Configurable<float> cfgPhiCut2{"cfgPhiCut2", 6.3f,
+                                 "high Cut on azimuthal angle of MFT tracks"};
   Configurable<float> cfgVzCut1{"cfgVzCut1", -30.0f,
                                 "Cut1 on vertex position of MFT tracks"};
   Configurable<float> cfgVzCut2{"cfgVzCut2", 30.0f,
@@ -576,7 +580,15 @@ struct PseudorapidityDensityMFT {
       registry.fill(HIST("EventSelection"), 2.);
       for (const auto& retrack : retracks) {
         auto track = retrack.mfttrack();
-        if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0) {
+        float ndf = std::max(2.0f * track.nClusters() - 5.0f, 1.0f);
+        float chi2ndf = track.chi2() / ndf;
+        float phi = track.phi();
+        o2::math_utils::bringTo02Pi(phi);
+        if (usePhiCut) {
+          if ((phi <= 0.02) || ((phi >= 3.10) && (phi <= 3.23)) || (phi >= 6.21))
+            continue;
+        }
+        if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0 && chi2ndf < cfgChi2NDFMax && (phi > cfgPhiCut1 && phi < cfgPhiCut2)) {
           registry.fill(HIST("Tracks/2Danalysis/EtaZvtx"), track.eta(), z);
         }
       }
@@ -584,7 +596,7 @@ struct PseudorapidityDensityMFT {
         return;
       }
       registry.fill(HIST("EventSelection"), 3.);
-      if (!useEvSel || (useEvSel && collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
+      if (!useEvSel || (useEvSel && collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoSameBunchPileup))) {
         registry.fill(HIST("EventSelection"), 4.);
         registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_sel8"), Ntrk, z);
         std::unordered_set<int> uniqueEvents;
@@ -610,7 +622,13 @@ struct PseudorapidityDensityMFT {
           auto track = retrack.mfttrack();
           float ndf = std::max(2.0f * track.nClusters() - 5.0f, 1.0f);
           float chi2ndf = track.chi2() / ndf;
-          if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0 && chi2ndf < cfgChi2NDFMax) {
+          float phi = track.phi();
+          o2::math_utils::bringTo02Pi(phi);
+          if (usePhiCut) {
+            if ((phi <= 0.02) || ((phi >= 3.10) && (phi <= 3.23)) || (phi >= 6.21))
+              continue;
+          }
+          if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0 && chi2ndf < cfgChi2NDFMax && (phi > cfgPhiCut1 && phi < cfgPhiCut2)) {
             registry.fill(HIST("Tracks/Control/Chi2NDF"), chi2ndf);
             registry.fill(HIST("Tracks/2Danalysis/EtaZvtx_sel8"), track.eta(), z);
             if (midtracks.size() > 0 && retrack.ambDegree() > 0) {
@@ -627,8 +645,13 @@ struct PseudorapidityDensityMFT {
             auto track = retrack.mfttrack();
             float ndf = std::max(2.0f * track.nClusters() - 5.0f, 1.0f);
             float chi2ndf = track.chi2() / ndf;
-
-            if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && chi2ndf < cfgChi2NDFMax) {
+            float phi = track.phi();
+            o2::math_utils::bringTo02Pi(phi);
+            if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && chi2ndf < cfgChi2NDFMax && (phi > cfgPhiCut1 && phi < cfgPhiCut2)) {
+              if (usePhiCut) {
+                if ((phi <= 0.02) || ((phi >= 3.10) && (phi <= 3.23)) || (phi >= 6.21))
+                  continue;
+              }
               registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
               if (midtracks.size() > 0 && retrack.ambDegree() > 0) {
                 registry.fill(HIST("Tracks/EtaZvtx_gt0"), track.eta(), z);
@@ -866,7 +889,7 @@ struct PseudorapidityDensityMFT {
       if (!disableITSROFCut && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
         return;
       }
-      if (!useEvSel || (useEvSel && collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
+      if (!useEvSel || (useEvSel && collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoSameBunchPileup))) {
         atLeastOne = true;
         auto perCollisionSample = sample->sliceByCached(
           o2::aod::fwdtrack::collisionId, collision.globalIndex(), cache);
@@ -912,7 +935,13 @@ struct PseudorapidityDensityMFT {
         if (std::abs(charge) < 3.) {
           continue;
         }
-        if (cfgnEta1 < particle.eta() && particle.eta() < cfgnEta2) {
+        float phi = particle.phi();
+        o2::math_utils::bringTo02Pi(phi);
+        if (usePhiCut) {
+          if ((phi <= 0.02) || ((phi >= 3.10) && (phi <= 3.23)) || (phi >= 6.21))
+            continue;
+        }
+        if (cfgnEta1 < particle.eta() && particle.eta() < cfgnEta2 && (phi > cfgPhiCut1 && phi < cfgPhiCut2)) {
           registry.fill(HIST("TracksEtaZvtxGen_t"), particle.eta(),
                         mcCollision.posZ());
           if (perCollisionMCSampleCentral.size() > 0) {
