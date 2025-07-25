@@ -1,0 +1,116 @@
+---
+name: PR self-approval
+
+'on':
+  # We need pull_request_target so we can use ${{ secrets.* }}.
+  pull_request_target:
+    types:
+      - auto_merge_enabled
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  approve:
+    runs-on: ubuntu-22.04
+    # Only run if the PR author enabled auto-merge, not someone else.
+    # Also run if a new approval was created, as this affects whether we can
+    # auto-approve. There is a risk of infinite loops here, though -- when we
+    # submit our review, that'll trigger this workflow again, so only run if
+    # someone other than us (i.e. alibuild) reviewed.
+    if: >-
+      (github.event.action == 'auto_merge_enabled' &&
+       github.event.sender.login == github.event.pull_request.user.login)
+
+    steps:
+      - name: Install dependencies
+        run: pip install codeowners PyGithub
+
+      # Approve the PR, if the author is only editing files owned by themselves.
+      - name: Auto-approve PR if permitted
+        shell: python
+        env:
+          submitter: ${{ github.event.pull_request.user.login }}
+          pr: ${{ github.event.pull_request.number }}
+          repo: ${{ github.event.repository.full_name }}
+          github_token: ${{ secrets.ALIBUILD_GITHUB_TOKEN }}
+        run: |
+          import os
+          import sys
+          from functools import lru_cache
+          from codeowners import CodeOwners
+          from github import Github, UnknownObjectException
+
+          # Cache results of this function so we don't have to look up team
+          # membership multiple times.
+          @lru_cache(maxsize=None)
+          def matches_owner(owner):
+              '''Return whether the PR's submitter matches the given owner.
+
+              owner is a (type, name) tuple, as returned by the CodeOwners.of
+              function. EMAIL owners cannot be handled currently, and will raise
+              a ValueError.
+              '''
+              owner_type, owner_name = owner
+              if owner_type == 'USERNAME':
+                  return owner_name.lstrip('@') == os.environ['submitter']
+              elif owner_type == 'TEAM':
+                  org, _, team_name = owner_name.lstrip('@').partition('/')
+                  try:
+                      gh.get_organization(org) \
+                        .get_team_by_slug(team_name) \
+                        .get_team_membership(os.environ['submitter'])
+                  except UnknownObjectException:
+                      return False   # submitter is not a member of this team
+                  return True
+              elif owner_type == 'EMAIL':
+                  # We can't resolve email addresses to GitHub usernames using
+                  # GitHub's API.
+                  raise ValueError("can't handle email addresses in CODEOWNERS")
+              else:
+                  raise ValueError(f'unknown owner type {owner_type}')
+
+          gh = Github(os.environ['github_token'])
+          repo = gh.get_repo(os.environ['repo'])
+          pr = repo.get_pull(int(os.environ['pr']))
+          owners = CodeOwners(repo.get_contents('CODEOWNERS')
+                                  .decoded_content.decode('utf-8'))
+          approvals_from = {review.user.login for review in pr.get_reviews()
+                            if review.state == 'APPROVED'}
+
+          # At least one username per CODEOWNERS line must match the submitter
+          # (taking teams into account), and all lines must have a matching
+          # username. If the PR author is not the codeowner for a file, then if
+          # a codeowner of that file approved this PR, we'll still auto-approve.
+          auto_approve = True
+          for filename in (f.filename for f in pr.get_files()):
+              file_owners, line, *_ = owners.matching_line(filename)
+              file_owners_names = {name.lstrip('@') for _, name in file_owners}
+              if approvals_from & file_owners_names:
+                  print(f'{filename}: OK: you have approval from the code'
+                        ' owners of this file, specifically:',
+                        ', '.join(approvals_from & file_owners_names),
+                        f' (CODEOWNERS line {line})', file=sys.stderr)
+              elif any(map(matches_owner, file_owners)):
+                  print(f'{filename}: OK: you are a code owner of this file'
+                        f' (CODEOWNERS line {line})', file=sys.stderr)
+              else:
+                  print('::warning::Not auto-approving as none of',
+                        ', '.join(file_owners_names),
+                        f'have approved this PR as owners of {filename}'
+                        f' (CODEOWNERS line {line})', file=sys.stderr)
+                  # Don't break out of the loop, so that we print every
+                  # non-matching CODEOWNERS rule for information.
+                  auto_approve = False
+
+          if auto_approve:
+              print('Approving PR', file=sys.stderr)
+              pr.create_review(event='APPROVE', body=(
+                  f'Auto-approving on behalf of @{os.environ["submitter"]}.'
+              ))
+          else:
+              print('::warning::Not approving PR. You can see whose approval'
+                    ' you need in the messages above. This check will run again'
+                    " when the PR's author disables and reenables auto-merge.",
+                    file=sys.stderr)

@@ -1,0 +1,186 @@
+{
+  "input": {
+    "input_file_name": "tutorial.root",
+    "input_name": "histMass",
+    "pdf_dictionary": {
+      "pdf": [
+        "CB2",
+        "CB2",
+        "VWG",
+        "SUM"
+      ],
+      "pdfName": [
+        "Jpsi",
+        "Psi2s",
+        "Bkg",
+        "SUM"
+      ],
+      "pdfNameForLegend": [
+        "J/#psi",
+        "#psi(2S)",
+        "Background",
+        "Fit"
+      ],
+      "pdfColor": [
+        861,
+        417,
+        1
+      ],
+      "pdfStyle": [
+        1,
+        1,
+        2
+      ],
+      "parVal": [
+        [
+          3.096,
+          1.2e-01,
+          1.089,
+          3.393,
+          2.097,
+          8.694
+        ],
+        [
+          3.096,
+          1.2e-01,
+          1.089,
+          3.393,
+          2.097,
+          8.694
+        ],
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          1000,
+          100,
+          100000
+        ]
+      ],
+      "parLimMin": [
+        [
+          2.9,
+          7.0e-02,
+          1.089,
+          3.393,
+          2.097,
+          8.694
+        ],
+        [
+          2.9,
+          7.0e-02,
+          1.089,
+          3.393,
+          2.097,
+          8.694
+        ],
+        [
+          -10,
+          0,
+          -100
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "parLimMax": [
+        [
+          3.5,
+          1.9e-01,
+          1.089,
+          3.393,
+          2.097,
+          8.694
+        ],
+        [
+          3.9,
+          1.9e-01,
+          1.089,
+          3.393,
+          2.097,
+          8.694
+        ],
+        [
+          10,
+          100,
+          100
+        ],
+        [
+          5000000,
+          5000000,
+          50000000
+        ]
+      ],
+      "parName": [
+        [
+          "mean_Jpsi",
+          "width_Jpsi",
+          "a_Jpsi",
+          "b_Jpsi",
+          "c_Jpsi",
+          "d_Jpsi"
+        ],
+        [
+          "sum::mean_Psi2s(mean_Jpsi,0.584)",
+          "prod::width_Psi2s(width_Jpsi,1.05)",
+          "a_Psi2s",
+          "b_Psi2s",
+          "c_Psi2s",
+          "d_Psi2s"
+        ],
+        [
+          "aa",
+          "bb",
+          "cc"
+        ],
+        [
+          "sig_Jpsi",
+          "sig_Psi2s",
+          "bkg"
+        ]
+      ],
+      "fitRangeMin": [
+        2,
+        2.1,
+        2.2
+      ],
+      "fitRangeMax": [
+        5,
+        4.9,
+        4.8
+      ],
+      "doPropagandaPlot": true,
+      "parForPropagandaPlot": [
+        "mean_Jpsi",
+        "width_Jpsi",
+        "sig_Jpsi",
+        "sig_Psi2s"
+      ],
+      "parNameForPropagandaPlot": [
+        "#mu_{J/#psi}",
+        "#sigma_{J/#psi}",
+        "#it{N}_{J/#psi}",
+        "#it{N}_{#psi(2S)}"
+      ],
+      "textForPropagandaPlot": [
+        [
+          0.20,
+          0.87,
+          "Simulation, toy MC"
+        ],
+        [
+          0.20,
+          0.80,
+          "2.5 < #it{y} < 4, J/#psi #rightarrow #mu^{+}#mu^{-}"
+        ]
+      ]
+    }
+  },
+  "output": {
+    "output_file_name": "output/"
+  }
+}

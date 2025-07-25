@@ -1,0 +1,37 @@
+# Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+# See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+# All rights not expressly granted are reserved.
+#
+# This software is distributed under the terms of the GNU General Public
+# License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+#
+# In applying this license CERN does not waive the privileges and immunities
+# granted to it by virtue of its status as an Intergovernmental Organization
+# or submit itself to any jurisdiction.
+
+include_guard()
+
+function(o2physics_define_output_paths)
+
+  # Set CMAKE_INSTALL_LIBDIR explicitly to lib (to avoid lib64 on CC7)
+  set(CMAKE_INSTALL_LIBDIR lib PARENT_SCOPE)
+
+  include(GNUInstallDirs)
+
+  if(NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY
+        ${CMAKE_BINARY_DIR}/stage/${CMAKE_INSTALL_BINDIR}
+        PARENT_SCOPE)
+  endif()
+  if(NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY
+        ${CMAKE_BINARY_DIR}/stage/${CMAKE_INSTALL_LIBDIR}
+        PARENT_SCOPE)
+  endif()
+  if(NOT CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY
+        ${CMAKE_BINARY_DIR}/stage/${CMAKE_INSTALL_LIBDIR}
+        PARENT_SCOPE)
+  endif()
+
+endfunction()
