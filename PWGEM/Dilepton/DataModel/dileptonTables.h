@@ -694,6 +694,7 @@ DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);        //!
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
 DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);            //!
+DECLARE_SOA_COLUMN(TrackBit, trackBit, uint16_t);  //!
 DECLARE_SOA_DYNAMIC_COLUMN(Signed1Pt, signed1Pt, [](float pt, int8_t sign) -> float { return sign * 1. / pt; });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
@@ -704,18 +705,20 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt 
 DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_000, "AOD", "EMPRIMARYTRACK", 0, //!
                             o2::soa::Index<>, emprimarytrack::CollisionId,
                             emprimarytrack::TrackId, emprimarytrack::Sign,
-                            track::Pt, track::Eta, track::Phi, track::DcaXY, track::DcaZ,
-                            track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared, track::TPCChi2NCl,
-                            track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap,
+                            track::Pt, track::Eta, track::Phi, track::DcaXY, track::DcaZ, emprimarytrack::TrackBit,
 
-                            // dynamic column
-                            track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
-                            track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
-                            track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
-                            track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
-                            track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
-                            track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
-                            track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>, track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
+                            // track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared, track::TPCChi2NCl,
+                            // track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap,
+
+                            // // dynamic column
+                            // track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            // track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            // track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            // track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            // track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            // track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
+
+                            // track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>, track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
                             emprimarytrack::Signed1Pt<track::Pt, emprimarytrack::Sign>,
                             emprimarytrack::P<track::Pt, track::Eta>,
                             emprimarytrack::Px<track::Pt, track::Phi>,
