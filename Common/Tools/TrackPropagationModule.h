@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file TrackPropagationModule.h
-/// \brief track propagation module functionality to be used in tasks
+/// \brief track propagation module functionality to be used in core services
 /// \author ALICE
 
 #ifndef COMMON_TOOLS_TRACKPROPAGATIONMODULE_H_
@@ -73,6 +73,7 @@ class TrackPropagationModule
   }
 
   // controls behaviour
+  bool fillTracks = false;
   bool fillTracksCov = false;
   bool fillTracksDCA = false;
   bool fillTracksDCACov = false;
@@ -93,9 +94,14 @@ class TrackPropagationModule
   void init(TConfigurableGroup const& cGroup, THistoRegistry& registry, TInitContext& initContext)
   {
     // Checking if the tables are requested in the workflow and enabling them
+    fillTracks = isTableRequiredInWorkflow(initContext, "Tracks");
     fillTracksCov = isTableRequiredInWorkflow(initContext, "TracksCov");
     fillTracksDCA = isTableRequiredInWorkflow(initContext, "TracksDCA");
     fillTracksDCACov = isTableRequiredInWorkflow(initContext, "TracksDCACov");
+
+    if (!fillTracks) {
+      LOGF(info, "Track propagation to PV not required. Suppressing all further processing and logs.");
+    }
 
     /// TrackTuner initialization
     if (cGroup.useTrackTuner.value) {
@@ -129,6 +135,10 @@ class TrackPropagationModule
   template <bool isMc, typename TConfigurableGroup, typename TCCDBLoader, typename TCollisions, typename TTracks, typename TOutputGroup, typename THistoRegistry>
   void fillTrackTables(TConfigurableGroup const& cGroup, TCCDBLoader const& ccdbLoader, TCollisions const& collisions, TTracks const& tracks, TOutputGroup& cursors, THistoRegistry& registry)
   {
+    if (!fillTracks) {
+      return; // suppress everything
+    }
+
     if (fillTracksCov) {
       cursors.tracksParCovPropagated.reserve(tracks.size());
       cursors.tracksParCovExtensionPropagated.reserve(tracks.size());
