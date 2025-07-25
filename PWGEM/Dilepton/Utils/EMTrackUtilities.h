@@ -26,6 +26,20 @@
 //_______________________________________________________________________
 namespace o2::aod::pwgem::dilepton::utils::emtrackutil
 {
+
+enum class RefTrackBit : uint16_t { // This is not for leptons, but charged particles for ref. flow.
+  kNclsITS5 = 1,
+  kNclsITS6 = 2,
+  kNcrTPC70 = 4,
+  kNcrTPC90 = 8,
+  kNclsTPC50 = 16, // (not necessary, if ncr is used.)
+  kNclsTPC70 = 32, // (not necessary, if ncr is used.)
+  kNclsTPC90 = 64, // (not necessary, if ncr is used.)
+  kChi2TPC4 = 128,
+  kChi2TPC3 = 256,
+  kFracSharedTPC07 = 512,
+};
+
 //_______________________________________________________________________
 template <typename T>
 float dca3DinSigma(T const& track)

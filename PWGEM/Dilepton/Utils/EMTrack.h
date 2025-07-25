@@ -15,15 +15,16 @@
 #ifndef PWGEM_DILEPTON_UTILS_EMTRACK_H_
 #define PWGEM_DILEPTON_UTILS_EMTRACK_H_
 
-#include <vector>
 #include "Math/Vector4D.h"
+
+#include <vector>
 
 namespace o2::aod::pwgem::dilepton::utils
 {
 class EMTrack
 {
  public:
-  EMTrack(int dfId, int globalId, int collisionId, int trackId, float pt, float eta, float phi, float mass, int8_t charge = 0, float dcaXY = 0.f, float dcaZ = 0.f, std::vector<int> amb_ele_self_ids = {})
+  EMTrack(int dfId, int globalId, int collisionId, int trackId, float pt, float eta, float phi, float mass, int8_t charge = 0, float dcaXY = 0.f, float dcaZ = 0.f, std::vector<int> amb_ele_self_ids = {}, float CYY = 0, float CZY = 0, float CZZ = 0)
   {
     fDFId = dfId;
     fGlobalId = globalId;
@@ -36,6 +37,9 @@ class EMTrack
     fCharge = charge;
     fDCAxy = dcaXY;
     fDCAz = dcaZ;
+    fCYY = CYY;
+    fCZY = CZY;
+    fCZZ = CZZ;
     fPairDCA3DinSigmaOTF = 0;
 
     fAmbEleSelfIds = amb_ele_self_ids;
@@ -78,6 +82,11 @@ class EMTrack
   int8_t sign() const { return fCharge; }
   float dcaXY() const { return fDCAxy; }
   float dcaZ() const { return fDCAz; }
+
+  float cYY() const { return fCYY; }
+  float cZY() const { return fCZY; }
+  float cZZ() const { return fCZZ; }
+
   float p() const { return fPt * std::cosh(fEta); }
   float px() const { return fPt * std::cos(fPhi); }
   float py() const { return fPt * std::sin(fPhi); }
@@ -130,6 +139,10 @@ class EMTrack
   std::vector<int> ambiguousPosLegIds() const { return fAmbPosLegSelfIds; }
   std::vector<int> ambiguousNegLegIds() const { return fAmbNegLegSelfIds; }
 
+  void setCYY(float cYY) { fCYY = cYY; }
+  void setCZY(float cZY) { fCZY = cZY; }
+  void setCZZ(float cZZ) { fCZZ = cZZ; }
+
  protected:
   int fDFId;
   int fGlobalId;
@@ -142,6 +155,11 @@ class EMTrack
   int8_t fCharge;
   float fDCAxy;
   float fDCAz;
+
+  float fCYY;
+  float fCZY;
+  float fCZZ;
+
   float fPairDCA3DinSigmaOTF;
   bool fIsAmbiguous;
   std::vector<int> fAmbEleSelfIds;
@@ -199,9 +217,6 @@ class EMTrackWithCov : public EMTrack
   float snp() const { return fSnp; }
   float tgl() const { return fTgl; }
 
-  float cYY() const { return fCYY; }
-  float cZY() const { return fCZY; }
-  float cZZ() const { return fCZZ; }
   float cSnpY() const { return fCSnpY; }
   float cSnpZ() const { return fCSnpZ; }
   float cSnpSnp() const { return fCSnpSnp; }
@@ -215,10 +230,6 @@ class EMTrackWithCov : public EMTrack
   float c1PtTgl() const { return fC1PtTgl; }
   float c1Pt21Pt2() const { return fC1Pt21Pt2; }
 
-  void setCYY(float cYY) { fCYY = cYY; }
-  void setCZY(float cZY) { fCZY = cZY; }
-  void setCZZ(float cZZ) { fCZZ = cZZ; }
-
  protected:
   float fX;
   float fY;
@@ -226,9 +237,6 @@ class EMTrackWithCov : public EMTrack
   float fAlpha;
   float fSnp;
   float fTgl;
-  float fCYY;
-  float fCZY;
-  float fCZZ;
   float fCSnpY;
   float fCSnpZ;
   float fCSnpSnp;
