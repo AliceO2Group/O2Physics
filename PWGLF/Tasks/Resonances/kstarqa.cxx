@@ -75,13 +75,13 @@ struct Kstarqa {
   struct : ConfigurableGroup {
     // Configurables for event selections
     Configurable<bool> isINELgt0{"isINELgt0", true, "INEL>0 selection"};
-    Configurable<bool> IsTriggerTVX{"IsTriggerTVX", false, "TriggerTVX"};
-    Configurable<bool> IsGoodZvtxFT0vsPV{"IsGoodZvtxFT0vsPV", false, "IsGoodZvtxFT0vsPV"};
-    Configurable<bool> ApplyOccCut{"ApplyOccCut", true, "Apply occupancy cut"};
-    Configurable<bool> NoSameBunchPileup{"NoSameBunchPileup", true, "kNoSameBunchPileup"};
-    Configurable<bool> allLayersGoodITS{"allLayersGoodITS", true, "Require all ITS layers to be good"};
-    Configurable<bool> NoTimeFrameBorder{"NoTimeFrameBorder", true, "kNoTimeFrameBorder"};
-    Configurable<bool> NoITSROFrameBorder{"NoITSROFrameBorder", true, "kNoITSROFrameBorder"};
+    Configurable<bool> isTriggerTVX{"isTriggerTVX", false, "TriggerTVX"};
+    Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", false, "IsGoodZvtxFT0vsPV"};
+    Configurable<bool> isApplyOccCut{"isApplyOccCut", true, "Apply occupancy cut"};
+    Configurable<bool> isNoSameBunchPileup{"isNoSameBunchPileup", true, "kNoSameBunchPileup"};
+    Configurable<bool> isAllLayersGoodITS{"isAllLayersGoodITS", true, "Require all ITS layers to be good"};
+    Configurable<bool> isNoTimeFrameBorder{"isNoTimeFrameBorder", true, "kNoTimeFrameBorder"};
+    Configurable<bool> isNoITSROFrameBorder{"isNoITSROFrameBorder", true, "kNoITSROFrameBorder"};
 
     Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
     Configurable<float> configOccCut{"configOccCut", 1000., "Occupancy cut"};
@@ -294,30 +294,30 @@ struct Kstarqa {
     if (fillHist)
       rEventSelection.fill(HIST("hEventCutFlow"), 2);
 
-    if (selectionConfig.NoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+    if (selectionConfig.isNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
       return false;
     if (fillHist)
       rEventSelection.fill(HIST("hEventCutFlow"), 3);
 
-    if (selectionConfig.NoITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+    if (selectionConfig.isNoITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
       return false;
     if (fillHist)
       rEventSelection.fill(HIST("hEventCutFlow"), 4);
 
-    if (selectionConfig.NoSameBunchPileup && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)))
+    if (selectionConfig.isNoSameBunchPileup && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)))
       return false;
     if (fillHist)
       rEventSelection.fill(HIST("hEventCutFlow"), 5);
 
-    if (selectionConfig.allLayersGoodITS && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
+    if (selectionConfig.isAllLayersGoodITS && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
       return false;
     if (fillHist)
       rEventSelection.fill(HIST("hEventCutFlow"), 6);
 
-    if (selectionConfig.ApplyOccCut && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)))
+    if (selectionConfig.isApplyOccCut && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)))
       return false;
 
-    if (selectionConfig.ApplyOccCut && (std::abs(collision.trackOccupancyInTimeRange()) > selectionConfig.configOccCut))
+    if (selectionConfig.isApplyOccCut && (std::abs(collision.trackOccupancyInTimeRange()) > selectionConfig.configOccCut))
       return false;
     if (fillHist)
       rEventSelection.fill(HIST("hEventCutFlow"), 7);
@@ -327,12 +327,12 @@ struct Kstarqa {
     if (fillHist)
       rEventSelection.fill(HIST("hEventCutFlow"), 8);
 
-    if (selectionConfig.IsTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX))
+    if (selectionConfig.isTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX))
       return false;
     if (fillHist)
       rEventSelection.fill(HIST("hEventCutFlow"), 9);
 
-    if (selectionConfig.IsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+    if (selectionConfig.isGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
       return false;
     if (fillHist)
       rEventSelection.fill(HIST("hEventCutFlow"), 10);
@@ -995,19 +995,19 @@ struct Kstarqa {
       if (!collision.sel8()) {
         continue;
       }
-      if (selectionConfig.NoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      if (selectionConfig.isNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
         continue;
       }
-      if (selectionConfig.IsTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+      if (selectionConfig.isTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
         continue;
       }
       if (selectionConfig.isINELgt0 && !collision.isInelGt0()) {
         continue;
       }
-      if (selectionConfig.NoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+      if (selectionConfig.isNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
         continue;
       }
-      if (selectionConfig.IsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      if (selectionConfig.isGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
         continue;
       }
       multiplicity = collision.centFT0M();
@@ -1124,12 +1124,12 @@ struct Kstarqa {
     }
     rEventSelection.fill(HIST("events_checkrec"), 2.5);
 
-    if (selectionConfig.NoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+    if (selectionConfig.isNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return;
     }
     rEventSelection.fill(HIST("events_checkrec"), 3.5);
 
-    if (selectionConfig.IsTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+    if (selectionConfig.isTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
       return;
     }
     rEventSelection.fill(HIST("events_checkrec"), 4.5);
@@ -1138,10 +1138,10 @@ struct Kstarqa {
       return;
     }
 
-    if (selectionConfig.NoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+    if (selectionConfig.isNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return;
     }
-    if (selectionConfig.IsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (selectionConfig.isGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return;
     }
 
