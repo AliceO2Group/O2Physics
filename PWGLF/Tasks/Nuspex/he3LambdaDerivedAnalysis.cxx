@@ -11,8 +11,8 @@
 
 #include "PWGLF/DataModel/LFSlimHeLambda.h"
 
-#include <Framework/AnalysisTask.h>
 #include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/runDataProcessing.h>
 
@@ -20,17 +20,18 @@
 
 #include <memory>
 
-namespace {
-  std::shared_ptr<TH2> hInvariantMassUS[2];
-  std::shared_ptr<TH2> hInvariantMassLS[2];
-  std::shared_ptr<TH2> hRotationInvariantMassUS[2];
-  std::shared_ptr<TH2> hRotationInvariantMassLS[2];
-  std::shared_ptr<TH2> hRotationInvariantMassAntiLSeta[2];
-  std::shared_ptr<TH2> hInvariantMassLambda[2];
-  std::shared_ptr<TH2> hCosPALambda;
-  std::shared_ptr<TH2> hNsigmaHe3;
-  std::shared_ptr<TH2> hNsigmaProton;
-};
+namespace
+{
+std::shared_ptr<TH2> hInvariantMassUS[2];
+std::shared_ptr<TH2> hInvariantMassLS[2];
+std::shared_ptr<TH2> hRotationInvariantMassUS[2];
+std::shared_ptr<TH2> hRotationInvariantMassLS[2];
+std::shared_ptr<TH2> hRotationInvariantMassAntiLSeta[2];
+std::shared_ptr<TH2> hInvariantMassLambda[2];
+std::shared_ptr<TH2> hCosPALambda;
+std::shared_ptr<TH2> hNsigmaHe3;
+std::shared_ptr<TH2> hNsigmaProton;
+}; // namespace
 
 using namespace o2;
 using namespace o2::framework;
@@ -51,13 +52,12 @@ struct he3LambdaDerivedAnalysis {
   {
     constexpr double ConstituentsMass = o2::constants::physics::MassProton + o2::constants::physics::MassNeutron * 2 + o2::constants::physics::MassSigmaPlus;
     for (int i = 0; i < 2; ++i) {
-      hInvariantMassUS[i] = mRegistry.add<TH2>(Form("hInvariantMassUS%i",i), "Invariant Mass", {HistType::kTH2D, {{45, 1., 10}, {100, ConstituentsMass - 0.05, ConstituentsMass + 0.05}}});
-      hInvariantMassLS[i] = mRegistry.add<TH2>(Form("hInvariantMassLS%i",i), "Invariant Mass", {HistType::kTH2D, {{45, 1., 10}, {100, ConstituentsMass - 0.05, ConstituentsMass + 0.05}}});
-      hRotationInvariantMassUS[i] = mRegistry.add<TH2>(Form("hRotationInvariantMassUS%i",i), "Rotation Invariant Mass", {HistType::kTH2D, {{45, 1., 10}, {100, ConstituentsMass - 0.05, ConstituentsMass + 0.05}}});
-      hRotationInvariantMassLS[i] = mRegistry.add<TH2>(Form("hRotationInvariantMassLS%i",i), "Rotation Invariant Mass", {HistType::kTH2D, {{45, 1., 10}, {100, ConstituentsMass - 0.05, ConstituentsMass + 0.05}}});
-      hInvariantMassLambda[i] = mRegistry.add<TH2>(Form("hInvariantMassLambda%i",i), "Invariant Mass Lambda", {HistType::kTH2D, {{50, 0., 10.}, {30, o2::constants::physics::MassLambda0 - 0.015, o2::constants::physics::MassLambda0 + 0.015}}});
-      hRotationInvariantMassAntiLSeta[i] = mRegistry.add<TH2>(Form("hRotationInvariantMassAntiLSeta%i",i), "Rotation Invariant Mass Anti-Lambda", {HistType::kTH2D, {{45, 1., 10}, {100, ConstituentsMass - 0.05, ConstituentsMass + 0.05}}});
-
+      hInvariantMassUS[i] = mRegistry.add<TH2>(Form("hInvariantMassUS%i", i), "Invariant Mass", {HistType::kTH2D, {{45, 1., 10}, {100, ConstituentsMass - 0.05, ConstituentsMass + 0.05}}});
+      hInvariantMassLS[i] = mRegistry.add<TH2>(Form("hInvariantMassLS%i", i), "Invariant Mass", {HistType::kTH2D, {{45, 1., 10}, {100, ConstituentsMass - 0.05, ConstituentsMass + 0.05}}});
+      hRotationInvariantMassUS[i] = mRegistry.add<TH2>(Form("hRotationInvariantMassUS%i", i), "Rotation Invariant Mass", {HistType::kTH2D, {{45, 1., 10}, {100, ConstituentsMass - 0.05, ConstituentsMass + 0.05}}});
+      hRotationInvariantMassLS[i] = mRegistry.add<TH2>(Form("hRotationInvariantMassLS%i", i), "Rotation Invariant Mass", {HistType::kTH2D, {{45, 1., 10}, {100, ConstituentsMass - 0.05, ConstituentsMass + 0.05}}});
+      hInvariantMassLambda[i] = mRegistry.add<TH2>(Form("hInvariantMassLambda%i", i), "Invariant Mass Lambda", {HistType::kTH2D, {{50, 0., 10.}, {30, o2::constants::physics::MassLambda0 - 0.015, o2::constants::physics::MassLambda0 + 0.015}}});
+      hRotationInvariantMassAntiLSeta[i] = mRegistry.add<TH2>(Form("hRotationInvariantMassAntiLSeta%i", i), "Rotation Invariant Mass Anti-Lambda", {HistType::kTH2D, {{45, 1., 10}, {100, ConstituentsMass - 0.05, ConstituentsMass + 0.05}}});
     }
     hCosPALambda = mRegistry.add<TH2>("hCosPALambda", "Cosine of Pointing Angle for Lambda", {HistType::kTH2D, {{50, 0., 10.}, {500, 0.9, 1.}}});
     hNsigmaHe3 = mRegistry.add<TH2>("hNsigmaHe3", "nSigma TPC for He3", {HistType::kTH2D, {{100, -10., 10.}, {200, -5, 5.}}});
@@ -118,7 +118,7 @@ struct he3LambdaDerivedAnalysis {
       }
       for (int iEta{0}; iEta <= cfgMirrorEta; ++iEta) {
         for (int iR{0}; iR <= cfgNrotations; ++iR) {
-          auto he3Momentum = ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double>>(he3.momentum.Pt(), (1. - iEta * 2.) * he3.momentum.Eta(), he3.momentum.Phi() + TMath::Pi() * (0.75  + 0.5 * iR / cfgNrotations), he3.momentum.M());
+          auto he3Momentum = ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double>>(he3.momentum.Pt(), (1. - iEta * 2.) * he3.momentum.Eta(), he3.momentum.Phi() + TMath::Pi() * (0.75 + 0.5 * iR / cfgNrotations), he3.momentum.M());
           for (const auto& lambda : lambdaCandidates) {
             auto pairMomentum = lambda.momentum + he3Momentum; // Calculate invariant mass
             (he3.sign * lambda.sign > 0 ? hRotationInvariantMassLS : hRotationInvariantMassUS)[he3.sign > 0]->Fill(pairMomentum.Pt(), pairMomentum.M());
@@ -128,7 +128,6 @@ struct he3LambdaDerivedAnalysis {
           }
         }
       }
-
     }
   }
   PROCESS_SWITCH(he3LambdaDerivedAnalysis, processSameEvent, "Process same event", true);
