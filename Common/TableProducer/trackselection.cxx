@@ -17,14 +17,17 @@
 /// \brief Task performing basic track selection.
 ///
 
+#include "Common/Core/TrackSelection.h"
+
+#include "TableHelper.h"
+
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
-#include "TableHelper.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -149,7 +152,7 @@ struct TrackSelectionTask {
       return;
     }
     if (isRun3) {
-      for (auto& track : tracks) {
+      for (const auto& track : tracks) {
 
         if (produceTable == 1) {
           filterTable((uint8_t)0,
@@ -190,7 +193,7 @@ struct TrackSelectionTask {
       return;
     }
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       o2::aod::track::TrackSelectionFlags::flagtype trackflagGlob = globalTracks.IsSelectedMask(track);
       if (produceTable == 1) {
         filterTable((uint8_t)globalTracksSDD.IsSelected(track),
