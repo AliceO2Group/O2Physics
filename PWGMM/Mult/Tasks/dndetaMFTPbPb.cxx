@@ -100,7 +100,7 @@ struct DndetaMFTPbPb {
     Configurable<int> minNclusterMft{"minNclusterMft", 5,
                                      "minimum number of MFT clusters"};
     Configurable<bool> useChi2Cut{"useChi2Cut", false, "use track chi2 cut"};
-    Configurable<float> maxChi2{"maxChi2", 10.f, ""};
+    Configurable<float> maxChi2NCl{"maxChi2NCl", 1000.f, "maximum chi2 per MFT clusters"};
     Configurable<double> minPt{"minPt", 0., "minimum pT of the MFT tracks"};
     Configurable<bool> requireCA{
       "requireCA", false, "Use Cellular Automaton track-finding algorithm"};
@@ -747,7 +747,9 @@ struct DndetaMFTPbPb {
     if (track.eta() < trackCuts.minEta || track.eta() > trackCuts.maxEta)
       return false;
     if (trackCuts.useChi2Cut) {
-      if (track.chi2() > trackCuts.maxChi2)
+      float nclMft = std::max(2.0f * track.nClusters() - 5.0f, 1.0f);
+      float mftChi2NCl = track.chi2() / nclMft;
+      if (mftChi2NCl > trackCuts.maxChi2NCl)
         return false;
     }
     if (trackCuts.requireCA && !track.isCA())
