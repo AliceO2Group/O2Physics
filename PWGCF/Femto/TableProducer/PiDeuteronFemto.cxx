@@ -785,7 +785,6 @@ struct PiDeuteronFemto {
     float DeDCAxyMin = 0.015 + 0.0305 / TMath::Power(piDecand.recoPtDe(), 1.1);
     if (abs(piDecand.dcaxyDe) > DeDCAxyMin || abs(piDecand.dcazDe) > settingCutDeDCAzMin || abs(piDecand.dcaxyPi) > settingCutPiDCAxyMin || abs(piDecand.dcazPi) > settingCutPiDCAzMin)
       return;
-    std::cout << "[DEBUG] Passed all DCA cuts." << std::endl;
     fillHistograms(piDecand);
 
     double kstar = computeKstar(piDecand);
