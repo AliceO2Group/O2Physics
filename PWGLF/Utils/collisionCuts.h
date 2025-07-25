@@ -16,15 +16,17 @@
 /// original author: Laura Serksnyte, TU München
 ///
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
+/// \author Hirak Kumar Koley <hirak.koley@cern.ch>
 
 #ifndef PWGLF_UTILS_COLLISIONCUTS_H_
 #define PWGLF_UTILS_COLLISIONCUTS_H_
 
-#include <vector>
+#include "Common/DataModel/EventSelection.h"
 
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
-#include "Common/DataModel/EventSelection.h"
+
+#include <vector>
 
 namespace o2::analysis
 {
@@ -185,13 +187,15 @@ class CollisonCuts
   /// \param col Collision
   /// \return whether or not the collisions fulfills the specified selections
   template <typename T>
-  bool isSelected(T const& col)
+  bool isSelected(T const& col, const bool QA = true)
   {
-    mHistogramRegistry->fill(HIST("Event/posZ_noCut"), col.posZ());
-    if (mCheckIsRun3) {
-      mHistogramRegistry->fill(HIST("Event/trackOccupancyInTimeRange_noCut"), col.trackOccupancyInTimeRange());
+    if (QA) {
+      mHistogramRegistry->fill(HIST("Event/posZ_noCut"), col.posZ());
+      if (mCheckIsRun3) {
+        mHistogramRegistry->fill(HIST("Event/trackOccupancyInTimeRange_noCut"), col.trackOccupancyInTimeRange());
+      }
+      mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kAllEvent);
     }
-    mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kAllEvent);
     if (std::abs(col.posZ()) > mZvtxMax) {
       LOGF(debug, "Vertex out of range");
       return false;
@@ -204,48 +208,66 @@ class CollisonCuts
       }
       mInitialColBitScan = false;
     }
-    mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagZvertex);
+    if (QA) {
+      mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagZvertex);
+    }
     if (mCheckIsRun3) { // Run3 case
       if (!col.selection_bit(aod::evsel::kIsTriggerTVX) && mTriggerTVXselection) {
         LOGF(debug, "Offline selection TVX failed (Run3)");
         return false;
       }
-      mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagTrigerTVX);
+      if (QA) {
+        mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagTrigerTVX);
+      }
       if (!col.selection_bit(aod::evsel::kNoTimeFrameBorder) && mApplyTFBorderCut) {
         LOGF(debug, "Time frame border cut failed");
         return false;
       }
-      mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagTimeFrameBorder);
+      if (QA) {
+        mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagTimeFrameBorder);
+      }
       if (!col.selection_bit(aod::evsel::kNoITSROFrameBorder) && mApplyNoITSROBorderCut) {
         LOGF(debug, "NoITSRO frame border cut failed");
         return false;
       }
-      mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagITSROFrameBorder);
+      if (QA) {
+        mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagITSROFrameBorder);
+      }
       if (!col.sel8() && mCheckOffline) {
         LOGF(debug, "Offline selection failed (Run3)");
         return false;
       }
-      mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagSel8);
+      if (QA) {
+        mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagSel8);
+      }
       if (!col.selection_bit(o2::aod::evsel::kIsVertexITSTPC) && mApplyITSTPCvertex) {
         LOGF(debug, "ITS-TPC matching cut failed");
         return false;
       }
-      mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagVertexITSTPC);
+      if (QA) {
+        mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagVertexITSTPC);
+      }
       if (!col.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && mApplyPileupRejection) {
         LOGF(debug, "Pileup rejection failed");
         return false;
       }
-      mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagBunchPileup);
+      if (QA) {
+        mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagBunchPileup);
+      }
       if (!col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow) && mApplyCollInTimeRangeNarrow) {
         LOGF(debug, "NoCollInTimeRangeNarrow selection failed");
         return false;
       }
-      mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kNoCollInTimeRangeNarrow);
+      if (QA) {
+        mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kNoCollInTimeRangeNarrow);
+      }
       if (!col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) && mApplyZvertexTimedifference) {
         LOGF(debug, "Z-vertex time difference cut failed");
         return false;
       }
-      mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagZvtxFT0vsPV);
+      if (QA) {
+        mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagZvtxFT0vsPV);
+      }
       if (mtrackOccupancyInTimeRangeMax > 0 && col.trackOccupancyInTimeRange() > mtrackOccupancyInTimeRangeMax) {
         LOGF(debug, "trackOccupancyInTimeRange selection failed");
         return false;
@@ -254,12 +276,16 @@ class CollisonCuts
         LOGF(debug, "trackOccupancyInTimeRange selection failed");
         return false;
       }
-      mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagOccupancy);
+      if (QA) {
+        mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kFlagOccupancy);
+      }
       if ((!col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) && mApplyCollInTimeRangeStandard) {
         LOGF(debug, "NoCollInTimeRangeStandard selection failed");
         return false;
       }
-      mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kNoCollInTimeRangeStandard);
+      if (QA) {
+        mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kNoCollInTimeRangeStandard);
+      }
     } else { // Run2 case
       if (mCheckOffline && !col.sel7()) {
         LOGF(debug, "Offline selection failed (sel7)");
@@ -275,9 +301,13 @@ class CollisonCuts
         LOGF(debug, "INELgtZERO selection failed");
         return false;
       }
+      if (QA) {
+        mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kAllpassed);
+      }
+    }
+    if (QA) {
       mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kAllpassed);
     }
-    mHistogramRegistry->fill(HIST("CollCutCounts"), EvtSel::kAllpassed);
     return true;
   }
 
