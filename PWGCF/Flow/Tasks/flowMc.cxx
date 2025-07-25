@@ -131,6 +131,7 @@ struct FlowMc {
   std::vector<GFW::CorrConfig> corrconfigsTruth;
   std::vector<GFW::CorrConfig> corrconfigsReco;
   TRandom3* fRndm = new TRandom3(0);
+  double epsilon = 1e-6;
 
   void init(InitContext&)
   {
@@ -532,10 +533,10 @@ struct FlowMc {
             if (track.hasTPC()) {
               validTPCTrack = true;
             }
-            if (track.hasITS() && track.itsChi2NCl() > -1e-6) {
+            if (track.hasITS() && track.itsChi2NCl() > -1. * epsilon) {
               validITSTrack = true;
             }
-            if (track.hasITS() && track.itsChi2NCl() < -1e-6) {
+            if (track.hasITS() && track.itsChi2NCl() < -1. * epsilon) {
               validITSABTrack = true;
             }
           }
