@@ -975,7 +975,7 @@ struct Kstarqa {
     int nChInel = 0;
     for (const auto& mcParticle : mcParticles) {
       auto pdgcode = std::abs(mcParticle.pdgCode());
-      if (mcParticle.isPhysicalPrimary() && (pdgcode == 211 || pdgcode == 321 || pdgcode == 2212 || pdgcode == 11 || pdgcode == 13)) {
+      if (mcParticle.isPhysicalPrimary() && (pdgcode == PDG_t::kPiPlus || pdgcode == PDG_t::kKPlus || pdgcode == PDG_t::kProton || pdgcode == std::abs(PDG_t::kElectron) || pdgcode == std::abs(PDG_t::kMuonMinus))) {
         if (std::abs(mcParticle.eta()) < 1.0) {
           nChInel = nChInel + 1;
         }
@@ -1030,7 +1030,7 @@ struct Kstarqa {
       }
       rEventSelection.fill(HIST("events_check"), 5.5);
 
-      if (std::abs(mcParticle.pdgCode()) != 313) {
+      if (std::abs(mcParticle.pdgCode()) != o2::constants::physics::kK0Star892) {
         continue;
       }
       rEventSelection.fill(HIST("events_check"), 6.5);
@@ -1049,11 +1049,11 @@ struct Kstarqa {
         }
         rEventSelection.fill(HIST("events_check"), 8.5);
 
-        if (std::abs(kCurrentDaughter.pdgCode()) == 321) {
+        if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kKPlus) {
           passkaon = true;
           daughter1 = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massKa);
 
-        } else if (std::abs(kCurrentDaughter.pdgCode()) == 211) {
+        } else if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kPiPlus) {
           passpion = true;
           daughter2 = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massPi);
         }
@@ -1092,7 +1092,7 @@ struct Kstarqa {
 
       // Generated MC
       for (const auto& mcPart : mcParticles) {
-        if (std::abs(mcPart.y()) >= 0.5 || std::abs(mcPart.pdgCode()) != 313)
+        if (std::abs(mcPart.y()) >= 0.5 || std::abs(mcPart.pdgCode()) != o2::constants::physics::kK0Star892)
           continue;
 
         // signal loss estimation
@@ -1188,31 +1188,31 @@ struct Kstarqa {
         int track1PDG = std::abs(mctrack1.pdgCode());
         int track2PDG = std::abs(mctrack2.pdgCode());
 
-        if (cQAplots && (mctrack2.pdgCode() == 211)) { // pion
+        if (cQAplots && (mctrack2.pdgCode() == PDG_t::kPiPlus)) { // pion
           hPID.fill(HIST("Before/h1PID_TPC_pos_pion"), track2.tpcNSigmaPi());
           hPID.fill(HIST("Before/h1PID_TOF_pos_pion"), track2.tofNSigmaPi());
           hPID.fill(HIST("Before/hNsigmaTPC_Pi_before"), track2.pt(), track2.tpcNSigmaPi());
           hPID.fill(HIST("Before/hNsigmaTOF_Pi_before"), track2.pt(), track2.tofNSigmaPi());
         }
-        if (cQAplots && (mctrack2.pdgCode() == 321)) { // kaon
+        if (cQAplots && (mctrack2.pdgCode() == PDG_t::kKPlus)) { // kaon
           hPID.fill(HIST("Before/h1PID_TPC_pos_kaon"), track2.tpcNSigmaKa());
           hPID.fill(HIST("Before/h1PID_TOF_pos_kaon"), track2.tofNSigmaKa());
           hPID.fill(HIST("Before/hNsigmaTPC_Ka_before"), track2.pt(), track2.tpcNSigmaKa());
           hPID.fill(HIST("Before/hNsigmaTOF_Ka_before"), track2.pt(), track2.tofNSigmaKa());
         }
-        if (cQAplots && (mctrack2.pdgCode() == -211)) { // negative track pion
+        if (cQAplots && (mctrack2.pdgCode() == -PDG_t::kPiMinus)) { // negative track pion
           hPID.fill(HIST("Before/h1PID_TPC_neg_pion"), track2.tpcNSigmaPi());
           hPID.fill(HIST("Before/h1PID_TOF_neg_pion"), track2.tofNSigmaPi());
           hPID.fill(HIST("Before/hNsigmaTPC_Pi_before"), track2.pt(), track2.tpcNSigmaPi());
           hPID.fill(HIST("Before/hNsigmaTOF_Pi_before"), track2.pt(), track2.tofNSigmaPi());
         }
-        if (cQAplots && (mctrack2.pdgCode() == -321)) { // negative track kaon
+        if (cQAplots && (mctrack2.pdgCode() == -PDG_t::kKMinus)) { // negative track kaon
           hPID.fill(HIST("Before/h1PID_TPC_neg_kaon"), track2.tpcNSigmaKa());
           hPID.fill(HIST("Before/h1PID_TOF_neg_kaon"), track2.tofNSigmaKa());
           hPID.fill(HIST("Before/hNsigmaTPC_Ka_before"), track2.pt(), track2.tpcNSigmaKa());
           hPID.fill(HIST("Before/hNsigmaTOF_Ka_before"), track2.pt(), track2.tofNSigmaKa());
         }
-        if (cQAplots && (std::abs(mctrack1.pdgCode()) == 321 && std::abs(mctrack2.pdgCode()) == 211)) {
+        if (cQAplots && (std::abs(mctrack1.pdgCode()) == PDG_t::kKPlus && std::abs(mctrack2.pdgCode()) == PDG_t::kPiPlus)) {
           hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
           hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track2.tpcNSigmaPi(), track2.tofNSigmaPi());
         }
@@ -1227,13 +1227,13 @@ struct Kstarqa {
         }
         rEventSelection.fill(HIST("events_checkrec"), 12.5);
 
-        // if (!(track1PDG == 321 && track2PDG == 211)) {
+        // if (!(track1PDG == PDG_t::kKPlus && track2PDG == PDG_t::kPiPlus)) {
         //   continue;
         // }
-        if ((track1PDG != 211) && (track1PDG != 321)) {
+        if ((track1PDG != PDG_t::kPiPlus) && (track1PDG != PDG_t::kKPlus)) {
           continue;
         }
-        if ((track2PDG != 211) && (track2PDG != 321)) {
+        if ((track2PDG != PDG_t::kPiPlus) && (track2PDG != PDG_t::kKPlus)) {
           continue;
         }
         rEventSelection.fill(HIST("events_checkrec"), 13.5);
@@ -1261,11 +1261,11 @@ struct Kstarqa {
             }
             rEventSelection.fill(HIST("events_checkrec"), 18.5);
 
-            if (std::abs(mothertrack1.pdgCode()) != 313) {
+            if (std::abs(mothertrack1.pdgCode()) != o2::constants::physics::kK0Star892) {
               continue;
             }
 
-            if (track1PDG == 211) {
+            if (track1PDG == PDG_t::kPiPlus) {
               if (!applypTdepPID && !(selectionPID(track1, 0) && selectionPID(track2, 1))) { // pion and kaon
                 continue;
               } else if (applypTdepPID && !(selectionPIDNew(track1, 0) && selectionPIDNew(track2, 1))) { // pion and kaon
