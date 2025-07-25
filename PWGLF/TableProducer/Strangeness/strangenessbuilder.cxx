@@ -312,8 +312,7 @@ struct StrangenessBuilder {
                                               "5: selects on PA (not a winner takes it all approach!);"
                                               "6: selects on BDT score (not a winner takes it all approach!)"};
 
-    // BDT settings                                          
-    Configurable<std::string> ccdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    // BDT settings                                              
     Configurable<std::string> BDTLocalPath{"BDTLocalPath", "Deduplication_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
     Configurable<std::string> BDTPathCCDB{"BDTPathCCDB", "Users/g/gsetouel/MLModels2", "Path on CCDB"};
     Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
@@ -555,7 +554,7 @@ struct StrangenessBuilder {
     bool isBuildOk;
     float PA;    
     float V0DCAToPVz;
-    float V0z;
+    float V0zVtx;
     float MLScore;
   };
 
@@ -768,9 +767,7 @@ struct StrangenessBuilder {
         // Loading BDT model
     if (DeduplicationOpts.deduplicationAlgorithm.value==4 || DeduplicationOpts.deduplicationAlgorithm.value==6){
       if (DeduplicationOpts.loadModelsFromCCDB) { 
-        // Retrieve the model from CCDB
-        ccdbApi.init(DeduplicationOpts.ccdbUrl);
-
+        
         /// Fetching model for specific timestamp
         LOG(info) << "Fetching model for timestamp: " << DeduplicationOpts.timestampCCDB.value;
         
@@ -884,7 +881,7 @@ struct StrangenessBuilder {
       v0DuplicateInfo.isBuildOk = false;
       v0DuplicateInfo.PA = 10; 
       v0DuplicateInfo.V0DCAToPVz = 999.f; 
-      v0DuplicateInfo.V0z = 999.f; 
+      v0DuplicateInfo.V0zVtx = 999.f; 
       v0DuplicateInfo.MLScore = -1;
 
       // We include V0DuplicateExtra info in the vector at this point to avoid indexing issues later
@@ -942,7 +939,7 @@ struct StrangenessBuilder {
         V0DuplicateExtras[ic].isBuildOk = true;        
         V0DuplicateExtras[ic].PA = straHelper.v0.pointingAngle;        
         V0DuplicateExtras[ic].V0DCAToPVz = std::abs(straHelper.v0.v0DCAToPVz); 
-        V0DuplicateExtras[ic].V0z = std::abs(straHelper.v0.position[2]); 
+        V0DuplicateExtras[ic].V0zVtx = std::abs(straHelper.v0.position[2]); 
       } // end build V0
     } // end candidate loop
     
@@ -967,12 +964,12 @@ struct StrangenessBuilder {
 
         // Input vector for BDT
         std::vector<float> inputFeatures{V0DuplicateExtras[ic].V0DCAToPVz,      // 1. V0DCAToPVz
-                                         V0DuplicateExtras[ic].PA,              // 2. PointingAngle
-                                         V0DuplicateExtras[ic].V0z,             // 3. V0z 
-                                         static_cast<float>(paRanks[ic]),       // 4. V0PARank
-                                         static_cast<float>(NDuplicates),       // 5. V0NDuplicates
-                                         AvgPA,                                 // 6. V0AvgPA
-                                         static_cast<float>(v0zRanks[ic])};     // 7. V0ZRank 
+                                         V0DuplicateExtras[ic].PA,              // 2. Pointing Angle
+                                         V0DuplicateExtras[ic].V0zVtx,          // 3. V0 Vtx z-position 
+                                         static_cast<float>(paRanks[ic]),       // 4. Pointing Angle Rank
+                                         static_cast<float>(NDuplicates),       // 5. N. of Duplicates
+                                         AvgPA,                                 // 6. Avg Pointing Angle
+                                         static_cast<float>(v0zRanks[ic])};     // 7. V0 Vtx z Rank 
 
 
         float* BDTProbability = deduplication_bdt.evalModel(inputFeatures); 
@@ -1187,26 +1184,26 @@ struct StrangenessBuilder {
           for (size_t ic = 0; ic < v0tableGrouped[iV0].collisionIds.size(); ic++) {
             ao2dV0toV0List[v0tableGrouped[iV0].V0Ids[ic]] = -2;
             // algorithm 1: best pointing angle
-            if (deduplicationOutput[ic].isBestPA && DeduplicationOpts.deduplicationAlgorithm.value == 1) {
+            if (DeduplicationOpts.deduplicationAlgorithm.value == 1 && deduplicationOutput[ic].isBestPA) {
               ao2dV0toV0List[v0tableGrouped[iV0].V0Ids[ic]] = -1; // keep best only
             }
             // algorithm 2: best DCA between daughters
-            if (deduplicationOutput[ic].isBestDCADau && DeduplicationOpts.deduplicationAlgorithm.value == 2) {
+            if (DeduplicationOpts.deduplicationAlgorithm.value == 2 && deduplicationOutput[ic].isBestDCADau) {
               ao2dV0toV0List[v0tableGrouped[iV0].V0Ids[ic]] = -1; // keep best only
             }
             // algorithm 3: best PA AND DCA between daughters
-            if (deduplicationOutput[ic].isBestDCADau && deduplicationOutput[ic].isBestPA && DeduplicationOpts.deduplicationAlgorithm.value == 3) {
+            if (DeduplicationOpts.deduplicationAlgorithm.value == 3 && deduplicationOutput[ic].isBestDCADau && deduplicationOutput[ic].isBestPA) {
               ao2dV0toV0List[v0tableGrouped[iV0].V0Ids[ic]] = -1; // keep best only
             }
             // algorithm 4: best ML Score
-            if (deduplicationOutput[ic].isBestMLScore && DeduplicationOpts.deduplicationAlgorithm.value == 4) {
+            if (DeduplicationOpts.deduplicationAlgorithm.value == 4 && deduplicationOutput[ic].isBestMLScore) {
               ao2dV0toV0List[v0tableGrouped[iV0].V0Ids[ic]] = -1; // keep best only
             }
             // Selection-based duplicate removal
-            if (deduplicationOutput[ic].PA <= DeduplicationOpts.PAthreshold && DeduplicationOpts.deduplicationAlgorithm.value == 5) {
+            if (DeduplicationOpts.deduplicationAlgorithm.value == 5 && deduplicationOutput[ic].PA <= DeduplicationOpts.PAthreshold) {
               ao2dV0toV0List[v0tableGrouped[iV0].V0Ids[ic]] = -1; // keep best only
             }
-            if (deduplicationOutput[ic].MLScore >= DeduplicationOpts.BDTthreshold && DeduplicationOpts.deduplicationAlgorithm.value == 6) {
+            if (DeduplicationOpts.deduplicationAlgorithm.value == 6 && deduplicationOutput[ic].MLScore >= DeduplicationOpts.BDTthreshold) {
               ao2dV0toV0List[v0tableGrouped[iV0].V0Ids[ic]] = -1; // keep best only
             }
           }
