@@ -14,6 +14,7 @@
 /// \author Sawan <sawan.sawan@cern.ch>
 
 // #include <TDatabasePDG.h>
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h" //
 
 #include "Common/Core/TrackSelection.h"
@@ -837,8 +838,282 @@ struct HigherMassResonances {
     }
     v0indexes.clear();
   }
-
   PROCESS_SWITCH(HigherMassResonances, processSE, "same event process", true);
+
+  using EventCandidatesDerivedData = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraZDCSP>;
+  using V0CandidatesDerivedData = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
+  using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
+
+  void processSEderived(EventCandidatesDerivedData::iterator const& collision, TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s)
+  {
+    hglue.fill(HIST("heventscheck"), 0.5);
+    multiplicity = 0.0;
+    if (config.cfgMultFOTM) {
+      multiplicity = collision.centFT0M();
+    } else {
+      multiplicity = collision.centFT0C();
+    }
+    if (!eventselection(collision)) {
+      return;
+    }
+
+    if (rctCut.requireRCTFlagChecker && !rctCut.rctChecker(collision)) {
+      return;
+    }
+
+    // auto occupancyNumber = collision.trackOccupancyInTimeRange();
+    // if (applyOccupancyCut && occupancyNumber < occupancyCut) {
+    //   return;
+    // }
+
+    if (config.qAevents) {
+      rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
+      rEventSelection.fill(HIST("hmultiplicity"), multiplicity);
+      // rEventSelection.fill(HIST("multdist_FT0M"), collision.multFT0M());
+      // rEventSelection.fill(HIST("multdist_FT0A"), collision.multFT0A());
+      // rEventSelection.fill(HIST("multdist_FT0C"), collision.multFT0C());
+      // rEventSelection.fill(HIST("hNcontributor"), collision.numContrib());
+    }
+
+    std::vector<int> v0indexes;
+    bool allConditionsMet = 0;
+
+    for (const auto& [v1, v2] : combinations(CombinationsFullIndexPolicy(V0s, V0s))) {
+
+      if (v1.size() == 0 || v2.size() == 0) {
+        continue;
+      }
+
+      if (!selectionV0(collision, v1, multiplicity)) {
+        continue;
+      }
+      if (!selectionV0(collision, v2, multiplicity)) {
+        continue;
+      }
+
+      auto postrack1 = v1.template posTrack_as<TrackCandidates>();
+      auto negtrack1 = v1.template negTrack_as<TrackCandidates>();
+      auto postrack2 = v2.template posTrack_as<TrackCandidates>();
+      auto negtrack2 = v2.template negTrack_as<TrackCandidates>();
+
+      double nTPCSigmaPos1{postrack1.tpcNSigmaPi()};
+      double nTPCSigmaNeg1{negtrack1.tpcNSigmaPi()};
+      double nTPCSigmaPos2{postrack2.tpcNSigmaPi()};
+      double nTPCSigmaNeg2{negtrack2.tpcNSigmaPi()};
+
+      if (!(isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1, v1) && isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1, v1))) {
+        continue;
+      }
+      if (!(isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2, v2) && isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, v2))) {
+        continue;
+      }
+
+      if (std::find(v0indexes.begin(), v0indexes.end(), v1.globalIndex()) == v0indexes.end()) {
+        v0indexes.push_back(v1.globalIndex());
+      }
+      // if (!(std::find(v0indexes.begin(), v0indexes.end(), v2.globalIndex()) != v0indexes.end())) {
+      //   v0indexes.push_back(v2.globalIndex());
+      // }
+
+      if (v2.globalIndex() <= v1.globalIndex()) {
+        continue;
+      }
+
+      // if (config.qAv0Daughters) {
+      //   rKzeroShort.fill(HIST("negative_pt"), negtrack1.pt());
+      //   rKzeroShort.fill(HIST("positive_pt"), postrack1.pt());
+      //   rKzeroShort.fill(HIST("negative_eta"), negtrack1.eta());
+      //   rKzeroShort.fill(HIST("positive_eta"), postrack1.eta());
+      //   rKzeroShort.fill(HIST("negative_phi"), negtrack1.phi());
+      //   rKzeroShort.fill(HIST("positive_phi"), postrack1.phi());
+      // }
+
+      if (postrack1.globalIndex() == postrack2.globalIndex()) {
+        continue;
+      }
+      if (negtrack1.globalIndex() == negtrack2.globalIndex()) {
+        continue;
+      }
+
+      if (!applyAngSep(v1, v2)) {
+        continue;
+      }
+
+      if (config.qAv0) {
+        rKzeroShort.fill(HIST("hMasscorrelationbefore"), v1.mK0Short(), v2.mK0Short());
+      }
+      allConditionsMet = 1;
+      daughter1 = ROOT::Math::PxPyPzMVector(v1.px(), v1.py(), v1.pz(), o2::constants::physics::MassK0Short); // Kshort
+      daughter2 = ROOT::Math::PxPyPzMVector(v2.px(), v2.py(), v2.pz(), o2::constants::physics::MassK0Short); // Kshort
+
+      mother = daughter1 + daughter2; // invariant mass of Kshort pair
+      isMix = false;
+
+      if (!config.selectTWOKsOnly)
+        fillInvMass(mother, multiplicity, daughter1, daughter2, isMix);
+    }
+    int sizeofv0indexes = v0indexes.size();
+    rKzeroShort.fill(HIST("NksProduced"), sizeofv0indexes);
+    if (config.selectTWOKsOnly && sizeofv0indexes == 2 && allConditionsMet) {
+      fillInvMass(mother, multiplicity, daughter1, daughter2, false);
+    }
+    v0indexes.clear();
+  }
+  PROCESS_SWITCH(HigherMassResonances, processSEderived, "same event process in strangeness derived data", true);
+
+  ConfigurableAxis mevz = {"mevz", {10, -10., 10.}, "mixed event vertex z binning"};
+  ConfigurableAxis memult = {"memult", {20, 0, 100}, "mixed event multiplicity binning"};
+
+  // Processing Event Mixing
+  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+  BinningType colBinning{{mevz, memult}, true};
+  Preslice<V0CandidatesDerivedData> tracksPerCollisionV0Mixed = o2::aod::v0data::straCollisionId; // for derived data only
+
+  void processMEderived(EventCandidatesDerivedData const& collisions, TrackCandidates const& /*tracks*/, V0CandidatesDerivedData const& v0s)
+  {
+    // auto tracksTuple = std::make_tuple(v0s);
+    // BinningTypeVertexContributor binningOnPositions1{{mevz, memult}, true};
+    // BinningTypeCentralityM binningOnPositions2{{mevz, memult}, true};
+
+    // SameKindPair<EventCandidates, V0TrackCandidate, BinningTypeVertexContributor> pair1{binningOnPositions1, config.cfgNmixedEvents, -1, collisions, tracksTuple, &cache}; // for PbPb
+    // SameKindPair<EventCandidates, V0TrackCandidate, BinningTypeCentralityM> pair2{binningOnPositions2, config.cfgNmixedEvents, -1, collisions, tracksTuple, &cache};       // for pp
+
+    // if (config.cfgMultFOTM) {
+    for (const auto& [c1, c2] : selfCombinations(colBinning, config.cfgNmixedEvents, -1, collisions, collisions)) // two different centrality c1 and c2 and tracks corresponding to them
+    {
+
+      multiplicity = 0.0;
+      multiplicity = c1.centFT0M();
+
+      if (!eventselection(c1) || !eventselection(c2)) {
+        continue;
+      }
+      // auto occupancyNumber = c1.trackOccupancyInTimeRange();
+      // auto occupancyNumber2 = c2.trackOccupancyInTimeRange();
+      // if (applyOccupancyCut && (occupancyNumber < occupancyCut || occupancyNumber2 < occupancyCut)) {
+      //   return;
+      // }
+
+      if (rctCut.requireRCTFlagChecker && !rctCut.rctChecker(c1)) {
+        return;
+      }
+      if (rctCut.requireRCTFlagChecker && !rctCut.rctChecker(c2)) {
+        return;
+      }
+      auto groupV01 = v0s.sliceBy(tracksPerCollisionV0Mixed, c1.index());
+      auto groupV02 = v0s.sliceBy(tracksPerCollisionV0Mixed, c2.index());
+      for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupV01, groupV02))) {
+
+        if (t1.size() == 0 || t2.size() == 0) {
+          continue;
+        }
+
+        if (!selectionV0(c1, t1, multiplicity))
+          continue;
+        if (!selectionV0(c2, t2, multiplicity))
+          continue;
+
+        auto postrack1 = t1.template posTrackExtra_as<TrackCandidates>();
+        auto negtrack1 = t1.template negTrackExtra_as<TrackCandidates>();
+        auto postrack2 = t2.template posTrackExtra_as<TrackCandidates>();
+        auto negtrack2 = t2.template negTrackExtra_as<TrackCandidates>();
+
+        if (postrack1.globalIndex() == postrack2.globalIndex()) {
+          continue;
+        }
+        if (negtrack1.globalIndex() == negtrack2.globalIndex()) {
+          continue;
+        }
+        double nTPCSigmaPos1{postrack1.tpcNSigmaPi()};
+        double nTPCSigmaNeg1{negtrack1.tpcNSigmaPi()};
+        double nTPCSigmaPos2{postrack2.tpcNSigmaPi()};
+        double nTPCSigmaNeg2{negtrack2.tpcNSigmaPi()};
+
+        if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1, t1)) {
+          continue;
+        }
+        if (!isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2, t2)) {
+          continue;
+        }
+        if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1, t1)) {
+          continue;
+        }
+        if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, t2)) {
+          continue;
+        }
+
+        daughter1 = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassK0Short); // Kshort
+        daughter2 = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), o2::constants::physics::MassK0Short); // Kshort
+
+        mother = daughter1 + daughter2; // invariant mass of Kshort pair
+        isMix = true;
+        fillInvMass(mother, multiplicity, daughter1, daughter2, isMix);
+      }
+    }
+    // }
+    //  else {
+    //   for (const auto& [c1, tracks1, c2, tracks2] : pair1) // two different centrality c1 and c2 and tracks corresponding to them
+    //   {
+    //     multiplicity = 0.0f;
+    //     multiplicity = c1.centFT0C();
+
+    //     if (!eventselection(c1) || !eventselection(c2)) {
+    //       continue;
+    //     }
+    //     // auto occupancyNumber = c1.trackOccupancyInTimeRange();
+    //     // auto occupancyNumber2 = c2.trackOccupancyInTimeRange();
+    //     // if (applyOccupancyCut && (occupancyNumber < occupancyCut || occupancyNumber2 < occupancyCut)) {
+    //     //   return;
+    //     // }
+
+    //     for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+    //       if (t1.size() == 0 || t2.size() == 0) {
+    //         continue;
+    //       }
+
+    //       if (!selectionV0(c1, t1, multiplicity))
+    //         continue;
+    //       if (!selectionV0(c2, t2, multiplicity))
+    //         continue;
+
+    //       auto postrack1 = t1.template posTrack_as<TrackCandidates>();
+    //       auto negtrack1 = t1.template negTrack_as<TrackCandidates>();
+    //       auto postrack2 = t2.template posTrack_as<TrackCandidates>();
+    //       auto negtrack2 = t2.template negTrack_as<TrackCandidates>();
+    //       if (postrack1.globalIndex() == postrack2.globalIndex()) {
+    //         continue;
+    //       }
+    //       if (negtrack1.globalIndex() == negtrack2.globalIndex()) {
+    //         continue;
+    //       }
+    //       double nTPCSigmaPos1{postrack1.tpcNSigmaPi()};
+    //       double nTPCSigmaNeg1{negtrack1.tpcNSigmaPi()};
+    //       double nTPCSigmaPos2{postrack2.tpcNSigmaPi()};
+    //       double nTPCSigmaNeg2{negtrack2.tpcNSigmaPi()};
+
+    //       if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1, t1)) {
+    //         continue;
+    //       }
+    //       if (!isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2, t2)) {
+    //         continue;
+    //       }
+    //       if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1, t1)) {
+    //         continue;
+    //       }
+    //       if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, t2)) {
+    //         continue;
+    //       }
+    //       daughter1 = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassK0Short); // Kshort
+    //       daughter2 = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), o2::constants::physics::MassK0Short); // Kshort
+
+    //       mother = daughter1 + daughter2; // invariant mass of Kshort pair
+    //       isMix = true;
+    //       fillInvMass(mother, multiplicity, daughter1, daughter2, isMix);
+    //     }
+    //   }
+    // }
+  }
+  PROCESS_SWITCH(HigherMassResonances, processMEderived, "mixed event process in derived data", true);
 
   array<float, 3> pvec0;
   array<float, 3> pvec1;
@@ -846,8 +1121,6 @@ struct HigherMassResonances {
   using BinningTypeTPCMultiplicity = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
   using BinningTypeCentralityM = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-  ConfigurableAxis mevz = {"mevz", {10, -10., 10.}, "mixed event vertex z binning"};
-  ConfigurableAxis memult = {"memult", {2000, 0, 10000}, "mixed event multiplicity binning"};
 
   void processME(EventCandidates const& collisions, TrackCandidates const& /*tracks*/, V0TrackCandidate const& v0s)
   {
