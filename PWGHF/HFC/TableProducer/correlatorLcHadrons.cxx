@@ -316,7 +316,7 @@ struct HfCorrelatorLcHadrons {
     registry.add("hLcBin", "Lc selected in pool Bin;pool Bin;entries", {HistType::kTH1F, {{9, 0., 9.}}});
     registry.add("hTracksBin", "Tracks selected in pool Bin;pool Bin;entries", {HistType::kTH1F, {{9, 0., 9.}}});
     if (isMultiplicityDependent) {
-      registry.add("hMassLcVsPtvsMult", "Lc candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH3F, {{axisMassLc}, {axisPtLc}, {axisCent}}});
+      registry.add("hMassLcVsPtvsCent", "Lc candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH3F, {{axisMassLc}, {axisPtLc}, {axisCent}}});
     } else {
       registry.add("hMassLcVsPt", "Lc candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{axisMassLc}, {axisPtLc}}});
     }
@@ -432,7 +432,7 @@ struct HfCorrelatorLcHadrons {
 
       if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
         if (isMultiplicityDependent) {
-          registry.fill(HIST("hMassLcVsPtvsMult"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), cent, efficiencyWeightLc);
+          registry.fill(HIST("hMassLcVsPtvsCent"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), cent, efficiencyWeightLc);
         } else {
           registry.fill(HIST("hMassLcVsPt"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), efficiencyWeightLc);
         }
@@ -446,7 +446,7 @@ struct HfCorrelatorLcHadrons {
       }
       if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
         if (isMultiplicityDependent) {
-          registry.fill(HIST("hMassLcVsPtvsMult"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), cent, efficiencyWeightLc);
+          registry.fill(HIST("hMassLcVsPtvsCent"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), cent, efficiencyWeightLc);
         } else {
           registry.fill(HIST("hMassLcVsPt"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), efficiencyWeightLc);
         }
