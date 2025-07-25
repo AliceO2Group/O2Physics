@@ -111,6 +111,7 @@ struct kinkBuilder {
   Configurable<float> nTPCClusMinDaug{"nTPCClusMinDaug", 80, "daug NTPC clusters cut"};
   Configurable<bool> askTOFforDaug{"askTOFforDaug", false, "If true, ask for TOF signal"};
   Configurable<bool> doSVRadiusCut{"doSVRadiusCut", true, "If true, apply the cut on the radius of the secondary vertex and tracksIU"};
+  Configurable<bool> updateMothTrackUsePV{"updateMothTrackUsePV", false, "If true, update the mother track parameters using the primary vertex"};
 
   o2::vertexing::DCAFitterN<2> fitter;
   o2::base::MatLayerCylSet* lut = nullptr;
@@ -311,6 +312,14 @@ struct kinkBuilder {
       o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, trackParCovDaug, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfoDaug);
       if (std::abs(dcaInfoDaug[0]) < minDCADaugToPV) {
         continue;
+      }
+
+      if (updateMothTrackUsePV) {
+        // update the mother track parameters using the primary vertex
+        trackParCovMoth = trackParCovMothPV;
+        if (!trackParCovMoth.update(primaryVertex)) {
+          continue;
+        }
       }
 
       int nCand = 0;
