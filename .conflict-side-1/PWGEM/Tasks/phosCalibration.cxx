@@ -9,35 +9,35 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "Common/DataModel/CaloClusters.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonDataFormat/InteractionRecord.h"
+#include "CommonUtils/NameConf.h"
+#include "DataFormatsPHOS/BadChannelsMap.h"
+#include "DataFormatsPHOS/CalibParams.h"
+#include "DataFormatsPHOS/Cell.h"
+#include "DataFormatsPHOS/Cluster.h"
+#include "DataFormatsPHOS/TriggerRecord.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/ConfigParamSpec.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include "PHOSBase/Geometry.h"
+#include "PHOSReconstruction/Clusterer.h"
+
+#include "TFile.h"
+#include "TGrid.h"
+#include "TLorentzVector.h"
+
 #include <climits>
 #include <cstdlib>
 #include <map>
 #include <memory>
 #include <vector>
-#include "TFile.h"
-#include "TGrid.h"
-#include "TLorentzVector.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/CaloClusters.h"
-#include "DataFormatsPHOS/Cell.h"
-#include "DataFormatsPHOS/Cluster.h"
-#include "DataFormatsPHOS/TriggerRecord.h"
-#include "DataFormatsPHOS/BadChannelsMap.h"
-#include "DataFormatsPHOS/CalibParams.h"
-#include "PHOSBase/Geometry.h"
-#include "PHOSReconstruction/Clusterer.h"
-
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/HistogramRegistry.h"
-#include "CommonUtils/NameConf.h"
-#include "CCDB/BasicCCDBManager.h"
-
-#include "CommonDataFormat/InteractionRecord.h"
 
 using namespace o2;
 using namespace o2::aod::evsel;

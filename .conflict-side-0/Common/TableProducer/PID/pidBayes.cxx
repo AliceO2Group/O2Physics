@@ -16,29 +16,30 @@
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
 
-#include <utility>
 #include <algorithm>
-#include <vector>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 // O2 includes
+#include "pidTOFBase.h"
+
+#include "Common/Core/PID/DetectorResponse.h"
+#include "Common/Core/PID/PIDTOF.h"
+#include "Common/Core/PID/ParamBase.h"
+#include "Common/Core/PID/TPCPIDResponse.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseCombined.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/Array2D.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
-#include "Framework/Array2D.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/Core/PID/TPCPIDResponse.h"
-#include "Common/Core/PID/DetectorResponse.h"
-#include "Common/Core/PID/ParamBase.h"
-#include "Common/Core/PID/PIDTOF.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponseCombined.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-
-#include "pidTOFBase.h"
 
 using namespace o2;
 using namespace o2::framework;

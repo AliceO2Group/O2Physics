@@ -14,11 +14,11 @@
 // Analysis task for single electron QC
 //    Please write to: daiki.sekihata@cern.ch
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-
 #include "PWGEM/Dilepton/Core/SingleTrackQC.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

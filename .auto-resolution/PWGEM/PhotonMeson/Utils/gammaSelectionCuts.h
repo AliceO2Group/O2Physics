@@ -12,10 +12,11 @@
 /// \brief cut selection and cut functions for photon candidates
 /// \author marvin.hemmer@cern.ch
 
-#include <vector>
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
 #include "Framework/AnalysisTask.h"
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+
+#include <vector>
 
 #ifndef PWGEM_PHOTONMESON_UTILS_GAMMASELECTIONCUTS_H_
 #define PWGEM_PHOTONMESON_UTILS_GAMMASELECTIONCUTS_H_

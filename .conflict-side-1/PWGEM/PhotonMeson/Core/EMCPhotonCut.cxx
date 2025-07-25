@@ -13,10 +13,13 @@
 // Class for EMCal cluster selection
 //
 
-#include <string>
-#include "Framework/Logger.h"
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
+
 #include "PWGJE/DataModel/EMCALClusters.h"
+
+#include "Framework/Logger.h"
+
+#include <string>
 
 ClassImp(EMCPhotonCut);
 

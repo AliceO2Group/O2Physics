@@ -18,11 +18,13 @@
 #define COMMON_CCDB_RCTSELECTIONFLAGS_H_
 
 #include <CommonUtils/EnumFlags.h>
-#include <Rtypes.h>
+
 #include <TMath.h>
 
-#include <stdexcept>
+#include <Rtypes.h>
+
 #include <algorithm>
+#include <stdexcept>
 #include <string>
 #include <vector>
 

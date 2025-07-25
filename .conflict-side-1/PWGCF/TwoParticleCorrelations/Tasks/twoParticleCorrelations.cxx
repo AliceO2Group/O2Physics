@@ -9,25 +9,27 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "PWGCF/Core/AnalysisConfigurableCuts.h"
+#include "PWGCF/Core/PairCuts.h"
+#include "PWGCF/TwoParticleCorrelations/Core/FilterAndAnalysisFramework.h"
+#include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsSkimmed.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 #include <DataFormatsParameters/GRPObject.h>
-#include <cmath>
-#include <TROOT.h>
+
 #include <TDatabasePDG.h>
-#include <TParameter.h>
-#include <TList.h>
 #include <TDirectory.h>
 #include <TFolder.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
+#include <TList.h>
+#include <TParameter.h>
 #include <TProfile3D.h>
+#include <TROOT.h>
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "PWGCF/Core/AnalysisConfigurableCuts.h"
-#include "PWGCF/TwoParticleCorrelations/Core/FilterAndAnalysisFramework.h"
-#include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsSkimmed.h"
-#include "PWGCF/Core/PairCuts.h"
+#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;

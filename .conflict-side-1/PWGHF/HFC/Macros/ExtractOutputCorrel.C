@@ -16,12 +16,14 @@
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 /// \author Swapnesh Santosh Khade <swapnesh.santosh.khade@cern.ch>
 
+#include "DhCorrelationExtraction.h"
 #include "Riostream.h"
+
 #include <TROOT.h>
 #include <TStyle.h>
+
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
-#include "DhCorrelationExtraction.h"
 
 using namespace rapidjson;
 

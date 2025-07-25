@@ -14,34 +14,37 @@
 ///
 /// \author Evgeny Kryshen <evgeny.kryshen@cern.ch> and Igor Altsybeev <Igor.Altsybeev@cern.ch>
 
-#include <vector>
-#include <map>
-#include <string>
-#include <limits>
-
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
+
+#include "MetadataHelper.h"
+
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
-#include "Framework/HistogramRegistry.h"
-#include "DataFormatsFT0/Digit.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "DataFormatsParameters/GRPECSObject.h"
-#include "ITSMFTBase/DPLAlpideParam.h"
-#include "MetadataHelper.h"
-#include "DataFormatsParameters/AggregatedRunInfo.h"
-#include "DataFormatsITSMFT/NoiseMap.h" // missing include in TimeDeadMap.h
-#include "DataFormatsITSMFT/TimeDeadMap.h"
-#include "ITSMFTReconstruction/ChipMappingITS.h"
 #include "DataFormatsCTP/Configuration.h"
 #include "DataFormatsCTP/Scalers.h"
+#include "DataFormatsFT0/Digit.h"
+#include "DataFormatsITSMFT/NoiseMap.h" // missing include in TimeDeadMap.h
+#include "DataFormatsITSMFT/TimeDeadMap.h"
+#include "DataFormatsParameters/AggregatedRunInfo.h"
+#include "DataFormatsParameters/GRPECSObject.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/ConfigParamSpec.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include "ITSMFTBase/DPLAlpideParam.h"
+#include "ITSMFTReconstruction/ChipMappingITS.h"
 
 #include "TH1D.h"
+
+#include <limits>
+#include <map>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

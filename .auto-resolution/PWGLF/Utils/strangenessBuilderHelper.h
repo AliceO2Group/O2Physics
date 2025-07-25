@@ -12,25 +12,27 @@
 #ifndef PWGLF_UTILS_STRANGENESSBUILDERHELPER_H_
 #define PWGLF_UTILS_STRANGENESSBUILDERHELPER_H_
 
-#include <cstdlib>
-#include <cmath>
-#include <array>
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisDataModel.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "CommonConstants/PhysicsConstants.h"
 #include "Common/Core/trackUtilities.h"
 #include "Tools/KFparticle/KFUtilities.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "Framework/AnalysisDataModel.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
 
 #ifndef HomogeneousField
 #define HomogeneousField
 #endif
 
 /// includes KFParticle
-#include "KFParticle.h"
 #include "KFPTrack.h"
 #include "KFPVertex.h"
+#include "KFParticle.h"
 #include "KFParticleBase.h"
 #include "KFVertex.h"
 

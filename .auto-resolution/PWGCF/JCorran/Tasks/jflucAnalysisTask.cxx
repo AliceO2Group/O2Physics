@@ -12,25 +12,27 @@
 /// \author Dong Jo Kim (djkim@jyu.fi)
 /// \since Sep 2022
 
-#include <deque>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
 #include "ReconstructionDataFormats/V0.h"
+
+#include <deque>
 
 // #include "CCDB/BasicCCDBManager.h"
 
-#include "PWGCF/JCorran/DataModel/JCatalyst.h"
-#include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "JFFlucAnalysis.h"
 #include "JFFlucAnalysisO2Hist.h"
+
+#include "PWGCF/DataModel/CorrelationsDerived.h"
+#include "PWGCF/JCorran/DataModel/JCatalyst.h"
+
 #include "Framework/runDataProcessing.h"
 
 using namespace o2;

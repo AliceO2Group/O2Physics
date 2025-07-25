@@ -16,10 +16,11 @@
 #ifndef PWGUD_CORE_UPCJPSICENTRALBARRELCORRHELPER_H_
 #define PWGUD_CORE_UPCJPSICENTRALBARRELCORRHELPER_H_
 
-#include <vector>
-#include <algorithm>
 #include "CommonConstants/MathConstants.h"
+
+#include <algorithm>
 #include <random>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

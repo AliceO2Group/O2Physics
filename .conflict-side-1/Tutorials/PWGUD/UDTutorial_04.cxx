@@ -13,13 +13,14 @@
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
 // \since  October 2023
 
-#include "Framework/runDataProcessing.h"
+#include "PWGUD/Core/UDHelpers.h"
+#include "PWGUD/DataModel/UDTables.h"
+
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
-#include "PWGUD/DataModel/UDTables.h"
-#include "PWGUD/Core/UDHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;

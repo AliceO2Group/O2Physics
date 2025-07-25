@@ -16,15 +16,17 @@
 #define PWGCF_JCORRAN_CORE_FLOWJSPCANALYSIS_H_
 
 /* Header files. */
-#include <array>
-#include <vector>
 #include <TComplex.h>
 #include <TProfile.h>
 
+#include <array>
+#include <vector>
+
 // O2 headers. //
-#include "Framework/HistogramRegistry.h"
 #include "PWGCF/JCorran/Core/JQVectors.h"
+
 #include "CommonConstants/MathConstants.h"
+#include "Framework/HistogramRegistry.h"
 
 class FlowJSPCAnalysis
 {

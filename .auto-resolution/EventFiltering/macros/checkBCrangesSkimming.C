@@ -10,16 +10,18 @@
 // or submit itself to any jurisdiction.
 // O2 includes
 
-#include <cmath>
-#include <vector>
-#include <regex>
-#include <iostream>
+#include "CommonDataFormat/IRFrame.h"
+#include "CommonDataFormat/InteractionRecord.h"
+
 #include <TFile.h>
 #include <TGrid.h>
 #include <TH1.h>
 #include <TTree.h>
-#include "CommonDataFormat/InteractionRecord.h"
-#include "CommonDataFormat/IRFrame.h"
+
+#include <cmath>
+#include <iostream>
+#include <regex>
+#include <vector>
 
 using o2::InteractionRecord;
 using o2::dataformats::IRFrame;

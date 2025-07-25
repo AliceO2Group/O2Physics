@@ -14,13 +14,16 @@
 // This code produces event selection table for PWG-EM.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include <string>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/CCDB/RCTSelectionFlags.h"
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+
+#include "Common/CCDB/RCTSelectionFlags.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;

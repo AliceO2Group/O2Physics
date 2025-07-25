@@ -14,25 +14,25 @@
 // This code loops over v0 photons and makes pairs for photon HBT analysis.
 //    Please write to: daiki.sekihata@cern.ch
 
+#include "PWGEM/Dilepton/Core/PhotonHBT.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Math/GenVector/Boost.h"
+#include "Math/LorentzRotation.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "TString.h"
+
 #include <cstring>
 #include <iterator>
-
-#include "TString.h"
-#include "Math/Vector4D.h"
-#include "Math/Vector3D.h"
-#include "Math/LorentzRotation.h"
-#include "Math/GenVector/Boost.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-
-#include "PWGEM/Dilepton/Core/PhotonHBT.h"
 
 using namespace o2;
 using namespace o2::aod;

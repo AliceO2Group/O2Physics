@@ -13,13 +13,14 @@
 /// \author
 /// \since 08/11/2023
 
-#include <TLorentzVector.h>
+#include "PWGLF/DataModel/LFResonanceTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "PWGLF/DataModel/LFResonanceTables.h"
+
+#include <TLorentzVector.h>
 
 using namespace o2;
 using namespace o2::framework;

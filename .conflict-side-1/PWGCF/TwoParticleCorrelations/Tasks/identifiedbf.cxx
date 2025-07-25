@@ -12,7 +12,25 @@
 /// \file identifiedbf.cxx
 /// \brief Fills histograms with particles and tracks to calculate the Balance Function
 /// \author bghanley1995@gmail.com
+#include "PWGCF/Core/AnalysisConfigurableCuts.h"
+#include "PWGCF/Core/PairCuts.h"
+#include "PWGCF/TwoParticleCorrelations/DataModel/IdentifiedBfFiltered.h"
+#include "PWGCF/TwoParticleCorrelations/TableProducer/identifiedBfFilter.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
 #include <CCDB/BasicCCDBManager.h>
+
 #include <TDirectory.h>
 #include <TFolder.h>
 #include <TH1.h>
@@ -23,27 +41,12 @@
 #include <TProfile3D.h>
 #include <TROOT.h>
 #include <TVector2.h>
-#include <cmath>
-#include <ctime>
-#include <vector>
-#include <string>
-#include <cstdio>
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/RecoDecay.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "PWGCF/Core/AnalysisConfigurableCuts.h"
-#include "PWGCF/Core/PairCuts.h"
-#include "PWGCF/TwoParticleCorrelations/DataModel/IdentifiedBfFiltered.h"
-#include "PWGCF/TwoParticleCorrelations/TableProducer/identifiedBfFilter.h"
+#include <cmath>
+#include <cstdio>
+#include <ctime>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -93,24 +96,24 @@ struct IdentifiedbfTask {
     // The IdentifiedBfCorrelationsAnalysisTask output objects
     //============================================================================================
     /* histograms */
-    TH1F* fhVertexZA;                                                             //!<! the z vertex distribution for the current multiplicity/centrality class
-    std::vector<TH1F*> fhN1VsPt{nch, nullptr};                                    //!<! weighted single particle distribution vs \f$p_T\f$, for the different species
-    std::vector<TH2F*> fhN1VsEtaPhi{nch, nullptr};                                //!<! weighted single particle distribution vs \f$\eta,\;\phi\f$, for the different species
-    std::vector<TH2F*> fhSum1PtVsEtaPhi{nch, nullptr};                            //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\eta,\;\phi\f$, for the different species
-    std::vector<TH3F*> fhN1VsZEtaPhiPt{nch + 1, nullptr};                         //!<! single particle distribution vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
-    std::vector<TH3F*> fhN1VsZEtaPhiPtPrimary{nch, nullptr};                      //!<! single particle distribution of primary particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
-    std::vector<TH3F*> fhN1VsZEtaPhiPtSecondary{nch, nullptr};                    //!<! single particle distribution of primary particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
-    std::vector<TH3F*> fhN1VsZEtaPhiPtPure{nch + 1, nullptr};                     //!<! single particle distribution of pure particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
-    std::vector<TH3F*> fhSum1PtVsZEtaPhiPt{nch, nullptr};                         //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
-    std::vector<TH3*> fhNuaNueVsZEtaPhiPt{nch, nullptr};                          //!<! NUA+NUE correction vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the differents species
-    std::vector<TH2*> fhPtAvgVsEtaPhi{nch, nullptr};                              //!<! average \f$p_T\f$ vs \f$\eta,\;\phi\f$, for the different species
-    std::vector<std::vector<TH2F*>> fhN2VsPtPt{nch, {nch, nullptr}};              //!<! weighted two particle distribution vs \f${p_T}_1, {p_T}_2\f$ for the different species combinations
-    std::vector<std::vector<TH2F*>> fhN2VsDEtaDPhi{nch, {nch, nullptr}};          //!<! two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
-    std::vector<std::vector<TH2F*>> fhN2ContVsDEtaDPhi{nch, {nch, nullptr}};      //!<! two-particle distribution continuous vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
-    std::vector<std::vector<TH2F*>> fhSum2PtPtVsDEtaDPhi{nch, {nch, nullptr}};    //!<! two-particle  \f$\sum {p_T}_1 {p_T}_2\f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
-    std::vector<std::vector<TH2F*>> fhSum2DptDptVsDEtaDPhi{nch, {nch, nullptr}};  //!<! two-particle  \f$\sum ({p_T}_1- <{p_T}_1>) ({p_T}_2 - <{p_T}_2>) \f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
-    std::vector<std::vector<TH2F*>> fhSupN1N1VsDEtaDPhi{nch, {nch, nullptr}};     //!<! suppressed n1n1 two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
-    std::vector<std::vector<TH2F*>> fhSupPt1Pt1VsDEtaDPhi{nch, {nch, nullptr}};   //!<! suppressed \f${p_T}_1 {p_T}_2\f$ two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
+    TH1F* fhVertexZA;                                                            //!<! the z vertex distribution for the current multiplicity/centrality class
+    std::vector<TH1F*> fhN1VsPt{nch, nullptr};                                   //!<! weighted single particle distribution vs \f$p_T\f$, for the different species
+    std::vector<TH2F*> fhN1VsEtaPhi{nch, nullptr};                               //!<! weighted single particle distribution vs \f$\eta,\;\phi\f$, for the different species
+    std::vector<TH2F*> fhSum1PtVsEtaPhi{nch, nullptr};                           //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\eta,\;\phi\f$, for the different species
+    std::vector<TH3F*> fhN1VsZEtaPhiPt{nch + 1, nullptr};                        //!<! single particle distribution vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
+    std::vector<TH3F*> fhN1VsZEtaPhiPtPrimary{nch, nullptr};                     //!<! single particle distribution of primary particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
+    std::vector<TH3F*> fhN1VsZEtaPhiPtSecondary{nch, nullptr};                   //!<! single particle distribution of primary particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
+    std::vector<TH3F*> fhN1VsZEtaPhiPtPure{nch + 1, nullptr};                    //!<! single particle distribution of pure particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
+    std::vector<TH3F*> fhSum1PtVsZEtaPhiPt{nch, nullptr};                        //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
+    std::vector<TH3*> fhNuaNueVsZEtaPhiPt{nch, nullptr};                         //!<! NUA+NUE correction vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the differents species
+    std::vector<TH2*> fhPtAvgVsEtaPhi{nch, nullptr};                             //!<! average \f$p_T\f$ vs \f$\eta,\;\phi\f$, for the different species
+    std::vector<std::vector<TH2F*>> fhN2VsPtPt{nch, {nch, nullptr}};             //!<! weighted two particle distribution vs \f${p_T}_1, {p_T}_2\f$ for the different species combinations
+    std::vector<std::vector<TH2F*>> fhN2VsDEtaDPhi{nch, {nch, nullptr}};         //!<! two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
+    std::vector<std::vector<TH2F*>> fhN2ContVsDEtaDPhi{nch, {nch, nullptr}};     //!<! two-particle distribution continuous vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
+    std::vector<std::vector<TH2F*>> fhSum2PtPtVsDEtaDPhi{nch, {nch, nullptr}};   //!<! two-particle  \f$\sum {p_T}_1 {p_T}_2\f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
+    std::vector<std::vector<TH2F*>> fhSum2DptDptVsDEtaDPhi{nch, {nch, nullptr}}; //!<! two-particle  \f$\sum ({p_T}_1- <{p_T}_1>) ({p_T}_2 - <{p_T}_2>) \f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
+    std::vector<std::vector<TH2F*>> fhSupN1N1VsDEtaDPhi{nch, {nch, nullptr}};    //!<! suppressed n1n1 two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
+    std::vector<std::vector<TH2F*>> fhSupPt1Pt1VsDEtaDPhi{nch, {nch, nullptr}};  //!<! suppressed \f${p_T}_1 {p_T}_2\f$ two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
     /* versus centrality/multiplicity  profiles */
     std::vector<TProfile*> fhN1VsC{nch, nullptr};                               //!<! weighted single particle distribution vs event centrality/multiplicity, track 1 and 2
     std::vector<TProfile*> fhSum1PtVsC{nch, nullptr};                           //!<! accumulated sum of weighted \f$p_T\f$ vs event centrality/multiplicity, track 1 and 2

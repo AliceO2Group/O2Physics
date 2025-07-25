@@ -17,9 +17,9 @@
 // copts="--configuration json://tautauConfig.json -b"
 // o2-analysis-ud-tautau13topo $copts > output.log
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 // #include "TDatabasePDG.h" // not recommended in o2
 #include "Framework/O2DatabasePDGPlugin.h"
@@ -28,13 +28,13 @@
 // #include "Common/DataModel/EventSelection.h"
 // #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Common/DataModel/PIDResponse.h"
-#include "PWGUD/DataModel/UDTables.h"
-#include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/DGPIDSelector.h"
 #include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/Core/UDHelpers.h"
+#include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/PIDResponse.h"
 // #include <CommonUtils/EnumFlags.h>
 #include "TPDGCode.h"
 

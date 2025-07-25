@@ -15,19 +15,19 @@
 #ifndef PWGEM_DILEPTON_UTILS_MOMENTUMSMEARER_H_
 #define PWGEM_DILEPTON_UTILS_MOMENTUMSMEARER_H_
 
-#include <vector>
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/Logger.h"
 
+#include <TFile.h>
+#include <TGrid.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
 #include <THnSparse.h>
-#include <TString.h>
-#include <TGrid.h>
-#include <TFile.h>
 #include <TKey.h>
+#include <TString.h>
 
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/Logger.h"
+#include <vector>
 
 using namespace o2::framework;
 using namespace o2;

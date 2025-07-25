@@ -14,23 +14,23 @@
 /// \date 10.10.2024
 
 // O2 headers
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 // O2Physics headers
-#include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/UDHelpers.h"
+#include "PWGUD/DataModel/UDTables.h"
+
 #include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
 #include "DataFormatsParameters/GRPECSObject.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
 
 // ROOT headers
-#include "TSystem.h"
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
-#include "TLorentzVector.h"
 #include "TMath.h"
+#include "TSystem.h"
 
 using namespace o2;
 using namespace o2::framework;

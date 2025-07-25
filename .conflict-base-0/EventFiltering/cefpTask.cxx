@@ -10,6 +10,19 @@
 // or submit itself to any jurisdiction.
 // O2 includes
 
+#include "filterTables.h"
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CommonConstants/LHCConstants.h"
+#include "CommonDataFormat/InteractionRecord.h"
+#include "DataFormatsCTP/Scalers.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+
 #include <fmt/format.h>
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
@@ -18,21 +31,9 @@
 #include <random>
 #include <string>
 #include <string_view>
-#include <vector>
 #include <unordered_map>
 #include <utility>
-
-#include "filterTables.h"
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "CommonConstants/LHCConstants.h"
-#include "CommonDataFormat/InteractionRecord.h"
-#include "DataFormatsCTP/Scalers.h"
+#include <vector>
 
 // we need to add workflow options before including Framework/runDataProcessing
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)

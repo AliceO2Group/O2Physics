@@ -15,8 +15,12 @@
 ///
 /// \author Alessandro De Falco <alessandro.de.falco@ca.infn.it>, Cagliari University
 
-#include <utility>
-#include <vector>
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "ALICE3/DataModel/ECAL.h"
+#include "Common/Core/trackUtilities.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
@@ -24,12 +28,8 @@
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
 
-#include "ALICE3/DataModel/ECAL.h"
-#include "Common/Core/trackUtilities.h"
-
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -201,9 +201,9 @@ struct HfCandidateCreatorChic {
           hMassChicToJpsiToMuMuGamma->Fill(massJpsiGamma);
         }
       } // ecal loop
-    }   // Jpsi loop
-  }     // process
-};      // struct
+    } // Jpsi loop
+  } // process
+}; // struct
 
 /// Extends the base table with expression columns.
 struct HfCandidateCreatorChicExpressions {
@@ -299,8 +299,8 @@ struct HfCandidateCreatorChicMc {
 
       rowMcMatchGen(flag, origin, channel);
     } // candidate loop
-  }   // process
-};    // struct
+  } // process
+}; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

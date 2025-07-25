@@ -20,10 +20,10 @@
 #ifndef PWGLF_UTILS_MCPARTICLE_H_
 #define PWGLF_UTILS_MCPARTICLE_H_
 
+#include "ReconstructionDataFormats/PID.h"
+
 #include <string>
 #include <vector>
-
-#include "ReconstructionDataFormats/PID.h"
 
 namespace o2
 {

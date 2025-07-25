@@ -16,28 +16,30 @@
 ///         In order to redo TOF PID for tracks which are linked to wrong collisions
 ///
 
+#include <string>
 #include <utility>
 #include <vector>
-#include <string>
 
 // O2 includes
 #include "CCDB/BasicCCDBManager.h"
-#include "TOFBase/EventTimeMaker.h"
 #include "Framework/AnalysisTask.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "TOFBase/EventTimeMaker.h"
 
 // O2Physics includes
+#include "PWGLF/DataModel/pidTOFGeneric.h"
+
 #include "Common/Core/TableHelper.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "PID/ParamBase.h"
 #include "PID/PIDTOF.h"
-#include "PWGLF/DataModel/pidTOFGeneric.h"
+#include "PID/ParamBase.h"
 
 using namespace o2;
 using namespace o2::framework;

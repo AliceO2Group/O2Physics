@@ -12,13 +12,17 @@
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
 #include "PWGDQ/Core/CutsLibrary.h"
-#include <RtypesCore.h>
-#include <TF1.h>
-#include <vector>
-#include <string>
-#include <iostream>
+
 #include "AnalysisCompositeCut.h"
 #include "VarManager.h"
+
+#include <TF1.h>
+
+#include <RtypesCore.h>
+
+#include <iostream>
+#include <string>
+#include <vector>
 
 using std::cout;
 using std::endl;

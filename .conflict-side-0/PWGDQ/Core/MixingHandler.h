@@ -17,15 +17,15 @@
 #ifndef MixingHandler_H
 #define MixingHandler_H
 
-#include <TNamed.h>
+#include "PWGDQ/Core/HistogramManager.h"
+#include "PWGDQ/Core/VarManager.h"
+
 #include <TArrayF.h>
 #include <TArrayI.h>
 #include <TClonesArray.h>
 #include <TList.h>
+#include <TNamed.h>
 #include <TString.h>
-
-#include "PWGDQ/Core/HistogramManager.h"
-#include "PWGDQ/Core/VarManager.h"
 
 class MixingHandler : public TNamed
 {

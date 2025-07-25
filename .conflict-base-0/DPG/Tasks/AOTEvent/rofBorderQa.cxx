@@ -12,27 +12,26 @@
 /// \brief QA task to study ROF border effect for different event, track and particle selection parameters
 /// \author Igor Altsybeev, Igor.Altsybeev@cern.ch
 
-#include <iostream>
-#include <string>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsFT0/Digit.h"
 #include "DataFormatsParameters/GRPECSObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
-#include "Common/DataModel/FT0Corrected.h"
-#include "DataFormatsFT0/Digit.h"
+#include <iostream>
+#include <string>
 
 using namespace std;
 using namespace o2;

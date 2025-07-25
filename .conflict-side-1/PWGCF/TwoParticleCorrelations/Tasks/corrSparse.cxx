@@ -13,30 +13,32 @@
 /// \brief Provides a sparse with usefull two particle correlation info
 /// \author Thor Jensen (thor.kjaersgaard.jensen@cern.ch)
 
-#include <CCDB/BasicCCDBManager.h>
-#include "TRandom3.h"
-#include <vector>
+#include "PWGCF/Core/CorrelationContainer.h"
+#include "PWGCF/Core/PairCuts.h"
+#include "PWGCF/DataModel/CorrelationsDerived.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/StepTHn.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "CommonConstants/MathConstants.h"
 #include "Common/Core/RecoDecay.h"
-
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "PWGCF/DataModel/CorrelationsDerived.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "PWGCF/Core/CorrelationContainer.h"
-#include "PWGCF/Core/PairCuts.h"
-#include "DataFormatsParameters/GRPObject.h"
+
+#include "CommonConstants/MathConstants.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+
+#include "TRandom3.h"
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

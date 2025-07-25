@@ -16,17 +16,19 @@
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 /// \author Swapnesh Santosh Khade <swapnesh.santosh.khade@cern.ch>
 
+#include "DhCorrelationFitter.h"
 #include "Riostream.h"
-#include <TROOT.h>
+
 #include <TF1.h>
 #include <TH1D.h>
 #include <TMath.h>
 #include <TPaveText.h>
-#include <TSystem.h>
+#include <TROOT.h>
 #include <TStyle.h>
+#include <TSystem.h>
+
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
-#include "DhCorrelationFitter.h"
 
 using namespace rapidjson;
 

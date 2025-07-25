@@ -18,11 +18,14 @@
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMPARTICLEHISTO_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMPARTICLEHISTO_H_
 
-#include <TMath.h>
-#include <string>
 #include "PWGCF/DataModel/FemtoDerived.h"
-#include "Framework/HistogramRegistry.h"
+
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/HistogramRegistry.h"
+
+#include <TMath.h>
+
+#include <string>
 
 using namespace o2::framework;
 

@@ -16,15 +16,18 @@
 #ifndef PWGEM_PHOTONMESON_CORE_EMCPHOTONCUT_H_
 #define PWGEM_PHOTONMESON_CORE_EMCPHOTONCUT_H_
 
-#include <set>
-#include <vector>
-#include <utility>
-#include <string>
-#include <optional>
-#include "Framework/Logger.h"
-#include "Framework/DataTypes.h"
 #include "Rtypes.h"
+
+#include "Framework/DataTypes.h"
+#include "Framework/Logger.h"
+
 #include "TNamed.h"
+
+#include <optional>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 class EMCPhotonCut : public TNamed
 {

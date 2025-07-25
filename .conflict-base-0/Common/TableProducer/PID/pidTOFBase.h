@@ -22,10 +22,11 @@
 #include <vector>
 
 // O2Physics
-#include "PID/ParamBase.h"
-#include "PID/PIDTOF.h"
-#include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+
+#include "PID/PIDTOF.h"
+#include "PID/ParamBase.h"
 
 static constexpr int nSpecies = 9;
 static constexpr int nParameters = 1;

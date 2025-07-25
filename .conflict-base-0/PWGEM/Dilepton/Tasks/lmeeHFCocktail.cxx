@@ -15,16 +15,18 @@
 /// \author Daniel Samitz, <daniel.samitz@cern.ch>, SMI Vienna
 ///         Elisa Meninno, <elisa.meninno@cern.ch>, SMI Vienna
 
-#include <vector>
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+#include "PWGEM/Dilepton/Utils/MCUtilities.h"
 
-#include "Math/Vector4D.h"
-#include "MathUtils/Utils.h"
-#include "Framework/Task.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "PWGEM/Dilepton/Utils/MCUtilities.h"
-#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+#include "Framework/Task.h"
+#include "Framework/runDataProcessing.h"
+#include "MathUtils/Utils.h"
+
+#include "Math/Vector4D.h"
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

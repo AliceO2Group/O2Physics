@@ -17,9 +17,10 @@
 
 // O2 includes
 #include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+
 #include "TDatabasePDG.h"
 #include "TMCProcess.h"
 

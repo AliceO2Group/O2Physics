@@ -19,22 +19,25 @@
 #ifndef PWGEM_PHOTONMESON_UTILS_HNMUTILITIES_H_
 #define PWGEM_PHOTONMESON_UTILS_HNMUTILITIES_H_
 
-#include <CommonConstants/MathConstants.h>
-#include <CommonConstants/PhysicsConstants.h>
-#include <vector>
-#include "TVector3.h"
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Common/DataModel/EventSelection.h"
-#include "EMCALBase/Geometry.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
+
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "EventFiltering/filterTables.h"
+
+#include "EMCALBase/Geometry.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+
+#include "TVector3.h"
+
+#include <vector>
 
 namespace o2::aod::pwgem::photonmeson::hnmutilities
 {

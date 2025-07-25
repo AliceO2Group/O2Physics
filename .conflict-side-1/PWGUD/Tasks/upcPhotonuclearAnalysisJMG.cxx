@@ -13,15 +13,10 @@
 /// \author Josué Martínez García, josuem@cern.ch
 /// \file   upcPhotonuclearAnalysisJMG.cxx
 
-#include <vector>
-
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/StepTHn.h"
-#include "CommonConstants/MathConstants.h"
-#include <TTree.h>
+#include "PWGCF/Core/CorrelationContainer.h"
+#include "PWGUD/Core/UPCPairCuts.h"
+#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
+#include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
@@ -29,12 +24,18 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGCF/Core/CorrelationContainer.h"
-#include "DataFormatsParameters/GRPObject.h"
 
-#include "PWGUD/DataModel/UDTables.h"
-#include "PWGUD/Core/UPCPairCuts.h"
-#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/MathConstants.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+
+#include <TTree.h>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

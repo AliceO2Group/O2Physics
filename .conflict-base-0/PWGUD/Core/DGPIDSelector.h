@@ -12,12 +12,15 @@
 #ifndef PWGUD_CORE_DGPIDSELECTOR_H_
 #define PWGUD_CORE_DGPIDSELECTOR_H_
 
-#include <gandiva/projector.h>
-#include <vector>
-#include <TVector3.h>
+#include "Framework/Logger.h"
+
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
-#include "Framework/Logger.h"
+#include <TVector3.h>
+
+#include <gandiva/projector.h>
+
+#include <vector>
 
 const int numDGPIDCutParameters = 9;
 float particleMass(TDatabasePDG* pdg, int pid);

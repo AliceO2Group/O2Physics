@@ -11,12 +11,14 @@
 #ifndef PWGCF_CORE_ANALYSISCONFIGURABLECUTS_H_
 #define PWGCF_CORE_ANALYSISCONFIGURABLECUTS_H_
 
+#include <TMath.h>
+#include <TNamed.h>
+#include <TObject.h>
+
+#include <Rtypes.h>
+
 #include <string>
 #include <vector>
-#include <Rtypes.h>
-#include <TObject.h>
-#include <TNamed.h>
-#include <TMath.h>
 
 namespace o2
 {

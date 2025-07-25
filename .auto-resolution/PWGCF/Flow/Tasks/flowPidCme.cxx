@@ -14,39 +14,40 @@
 /// \brief  task to calculate the pikp cme signal and bacground.
 // C++/ROOT includes.
 #include <CCDB/BasicCCDBManager.h>
-#include <chrono>
-#include <string>
-#include <vector>
-#include <utility>
-#include <memory>
-#include <TF1.h>
+
 #include <TComplex.h>
+#include <TF1.h>
 #include <TH1F.h>
 #include <TH2D.h>
 #include <TMath.h>
 #include <TVector2.h>
 
-// o2Physics includes.
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StaticFor.h"
+#include <chrono>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
-#include "Common/DataModel/Qvectors.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
+// o2Physics includes.
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoA.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StaticFor.h"
+#include "Framework/runDataProcessing.h"
 
 // o2 includes.
 

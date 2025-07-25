@@ -9,15 +9,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <map>
-#include <vector>
+#include "Common/CCDB/ctpRateFetcher.h"
 
+#include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
 #include "DataFormatsCTP/Configuration.h"
 #include "DataFormatsCTP/Scalers.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/CCDB/ctpRateFetcher.h"
+
+#include <map>
+#include <vector>
 
 struct ctpRateFetcher {
   ctpRateFetcher() = default;

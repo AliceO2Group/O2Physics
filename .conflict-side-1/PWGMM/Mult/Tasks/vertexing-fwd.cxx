@@ -16,18 +16,19 @@
 // \brief This code loops over every ambiguous MFT tracks and associates
 // them to a collision that has the smallest DCAxy
 
-#include <cmath>
+#include "CommonConstants/LHCConstants.h"
+#include "CommonConstants/MathConstants.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/Configurable.h"
+#include "Framework/runDataProcessing.h"
+#include "MathUtils/Utils.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
+
 #include "Math/MatrixFunctions.h"
 #include "Math/SMatrix.h"
-#include "MathUtils/Utils.h"
-#include "Framework/Configurable.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/runDataProcessing.h"
 
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/LHCConstants.h"
+#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;

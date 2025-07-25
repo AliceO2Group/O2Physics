@@ -12,28 +12,29 @@
 /// \author Dong Jo Kim (djkim@jyu.fi)
 /// \since Sep 2022
 
-#include <CCDB/BasicCCDBManager.h>
-#include <Math/Vector4D.h>
-#include <Math/LorentzVector.h>
-#include <TRandom.h>
-
-#include "Framework/runDataProcessing.h"
+#include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/RunningWorkflowInfo.h"
-#include "Framework/ASoAHelpers.h"
+#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+
+#include <Math/LorentzVector.h>
+#include <Math/Vector4D.h>
+#include <TRandom.h>
 
 // centrality
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 ////TODO: remove redundant:
-#include "Framework/HistogramRegistry.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+
+#include "Common/Core/trackUtilities.h"
 
 #include "DCAFitter/DCAFitterN.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "Common/Core/trackUtilities.h"
+#include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
 ////

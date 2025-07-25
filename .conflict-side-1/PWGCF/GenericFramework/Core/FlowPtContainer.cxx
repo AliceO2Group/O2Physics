@@ -14,9 +14,10 @@
 /// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch
 
 #include "FlowPtContainer.h"
+
 #include <algorithm>
-#include <vector>
 #include <cstdio>
+#include <vector>
 
 FlowPtContainer::FlowPtContainer() : fCMTermList(0),
                                      fCorrList(0),

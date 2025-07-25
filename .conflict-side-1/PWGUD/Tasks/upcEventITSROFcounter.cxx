@@ -15,23 +15,23 @@
 /// \author Roman Lavicka <roman.lavicka@cern.ch>, Austrian Academy of Sciences & SMI
 /// \since  09.08.2024
 
-#include <utility>
-#include <vector>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "ITSMFTBase/DPLAlpideParam.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "ReconstructionDataFormats/Vertex.h"
+#include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
 
-#include "PWGUD/DataModel/UDTables.h"
-#include "PWGUD/Core/SGSelector.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ITSMFTBase/DPLAlpideParam.h"
+#include "ReconstructionDataFormats/Vertex.h"
 
 #include <TH1D.h>
+
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

@@ -14,15 +14,17 @@
 /// \author Karwowska Maja
 /// \since
 
-#include <vector>
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+
+#include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/SliceCache.h"
 #include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -39,7 +41,7 @@ struct MixedEventsEmptyTables {
   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   using BinningType = ColumnBinningPolicy<aod::collision::PosX, aod::collision::PosY>;
-  BinningType binningOnPositions{{xBins, yBins}, true};                                 // true is for 'ignore overflows' (true by default)
+  BinningType binningOnPositions{{xBins, yBins}, true};                                         // true is for 'ignore overflows' (true by default)
   SameKindPair<aod::Collisions, MyTracks, BinningType> pair{binningOnPositions, 5, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   void process(aod::Collisions const& collisions, MyTracks const& tracks)
@@ -71,7 +73,7 @@ struct MixedEventsJoinedTracks {
   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
   std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
   using BinningType = ColumnBinningPolicy<aod::collision::PosX, aod::collision::PosY>;
-  BinningType binningOnPositions{{xBins, yBins}, true};                                        // true is for 'ignore overflows' (true by default)
+  BinningType binningOnPositions{{xBins, yBins}, true};                                                // true is for 'ignore overflows' (true by default)
   SameKindPair<aod::Collisions, aod::FullTracks, BinningType> pair{binningOnPositions, 5, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   void process(aod::Collisions const& collisions, aod::FullTracks const& tracks)

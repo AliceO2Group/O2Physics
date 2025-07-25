@@ -15,8 +15,9 @@
 #ifndef PWGEM_DILEPTON_UTILS_EMTRACK_H_
 #define PWGEM_DILEPTON_UTILS_EMTRACK_H_
 
-#include <vector>
 #include "Math/Vector4D.h"
+
+#include <vector>
 
 namespace o2::aod::pwgem::dilepton::utils
 {

@@ -8,20 +8,23 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#include <CCDB/BasicCCDBManager.h> // megalinter thinks this is a C header...
-#include <bitset>
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
+#include "TableHelper.h"
+
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "DataFormatsFIT/Triggers.h"
-#include "TableHelper.h"
+
 #include "CCDB/CcdbApi.h"
 #include "CommonDataFormat/BunchFilling.h"
-#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsFIT/Triggers.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/ConfigParamSpec.h"
+#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h> // megalinter thinks this is a C header...
+
+#include <bitset>
 
 using namespace o2;
 using namespace o2::framework;

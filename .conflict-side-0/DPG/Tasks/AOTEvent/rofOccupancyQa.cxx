@@ -14,20 +14,21 @@
 ///
 /// \author Igor Altsybeev <Igor.Altsybeev@cern.ch>
 
-#include <vector>
-
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/DataModel/EventSelection.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/ConfigParamSpec.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
+#include <vector>
 // #include "DataFormatsParameters/GRPLHCIFData.h"
-#include "ITSMFTBase/DPLAlpideParam.h"
 #include "DataFormatsParameters/AggregatedRunInfo.h"
+#include "ITSMFTBase/DPLAlpideParam.h"
 
 using namespace o2;
 using namespace o2::framework;

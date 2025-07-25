@@ -9,19 +9,20 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
-#include "DataFormatsFDD/Digit.h"
-#include "DataFormatsFIT/Triggers.h"
 #include "Common/DataModel/FT0Corrected.h"
 
+#include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
 #include "CommonDataFormat/BunchFilling.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsFDD/Digit.h"
+#include "DataFormatsFIT/Triggers.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
 #include "TH1F.h"
 #include "TH2F.h"
 

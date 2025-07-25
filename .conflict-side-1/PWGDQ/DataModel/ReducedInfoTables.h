@@ -752,7 +752,7 @@ DECLARE_SOA_COLUMN(CosThetaRM, costhetaRM, float);             //! Cosine in the
 DECLARE_SOA_COLUMN(CosThetaStarTPC, costhetaStarTPC, float);   //! global polarization, event plane reconstructed from TPC tracks
 DECLARE_SOA_COLUMN(CosThetaStarFT0A, costhetaStarFT0A, float); //! global polarization, event plane reconstructed from FT0A tracks
 DECLARE_SOA_COLUMN(CosThetaStarFT0C, costhetaStarFT0C, float); //! global polarization, event plane reconstructed from FT0C tracks
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //!
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px,                             //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!
                            [](float pt, float phi) -> float { return pt * std::sin(phi); });

@@ -16,12 +16,13 @@
 #ifndef PWGUD_TABLEPRODUCER_DGBCCANDPRODUCER_H_
 #define PWGUD_TABLEPRODUCER_DGBCCANDPRODUCER_H_
 
-#include <map>
-#include <vector>
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
-#include "MathUtils/Utils.h"
 #include "Framework/DataTypes.h"
+#include "MathUtils/Utils.h"
+
+#include <map>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

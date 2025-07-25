@@ -11,20 +11,23 @@
 #ifndef SKIMMING_CONFIGURABLE_CUTS_CLASSES_H
 #define SKIMMING_CONFIGURABLE_CUTS_CLASSES_H
 
-#include <Rtypes.h>
-#include <TString.h>
-#include <TObject.h>
-#include <TNamed.h>
-#include <TMath.h>
-#include <TList.h>
+#include "Framework/DataTypes.h"
+
 #include <TF1.h>
-#include <set>
-#include <vector>
-#include <regex>
+#include <TList.h>
+#include <TMath.h>
+#include <TNamed.h>
 #include <TObjArray.h>
+#include <TObject.h>
+#include <TString.h>
 
 #include <fairlogger/Logger.h>
-#include "Framework/DataTypes.h"
+
+#include <Rtypes.h>
+
+#include <regex>
+#include <set>
+#include <vector>
 
 namespace o2
 {

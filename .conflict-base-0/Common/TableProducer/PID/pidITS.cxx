@@ -19,21 +19,22 @@
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
 
+#include <string>
 #include <utility>
 #include <vector>
-#include <string>
 
 // O2 includes
-#include "Framework/runDataProcessing.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "CCDB/BasicCCDBManager.h"
 #include "TOFBase/EventTimeMaker.h"
 
 // O2Physics includes
-#include "Common/DataModel/PIDResponseITS.h"
 #include "MetadataHelper.h"
+
+#include "Common/DataModel/PIDResponseITS.h"
 
 using namespace o2;
 using namespace o2::framework;

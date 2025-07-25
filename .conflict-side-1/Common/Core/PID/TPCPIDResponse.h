@@ -17,14 +17,15 @@
 #ifndef COMMON_CORE_PID_TPCPIDRESPONSE_H_
 #define COMMON_CORE_PID_TPCPIDRESPONSE_H_
 
-#include <array>
-#include <vector>
-#include <cmath>
 #include "Framework/Logger.h"
+
+#include <array>
+#include <cmath>
+#include <vector>
 // O2 includes
-#include "ReconstructionDataFormats/PID.h"
-#include "Framework/DataTypes.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
+#include "Framework/DataTypes.h"
+#include "ReconstructionDataFormats/PID.h"
 
 namespace o2::pid::tpc
 {

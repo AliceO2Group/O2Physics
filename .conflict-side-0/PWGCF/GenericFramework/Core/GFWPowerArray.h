@@ -16,9 +16,9 @@
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_GFWPOWERARRAY_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_GFWPOWERARRAY_H_
 
-#include <vector>
 #include <cmath>
 #include <string>
+#include <vector>
 
 typedef std::vector<int> HarSet;
 class GFWPowerArray

@@ -11,14 +11,14 @@
 
 #include "ctpRateFetcher.h"
 
-#include <map>
-#include <vector>
-
+#include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
 #include "DataFormatsCTP/Configuration.h"
 #include "DataFormatsCTP/Scalers.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
-#include "CCDB/BasicCCDBManager.h"
+
+#include <map>
+#include <vector>
 
 namespace o2
 {

@@ -28,11 +28,15 @@
 // This workflow is used to create a flat tree for model training
 // Use o2-aod-merger to combine dataframes in output AnalysisResults_trees.root
 
-#include <onnxruntime_cxx_api.h>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "TrainingTree.h"
+
+#include "Common/DataModel/Multiplicity.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include <onnxruntime_cxx_api.h>
+
 #include <cmath>
 
 using namespace o2;

@@ -18,25 +18,26 @@
 ///
 
 // C++/ROOT includes.
+#include <TComplex.h>
+#include <TH1F.h>
+#include <TMath.h>
+#include <TProfile.h>
+
 #include <chrono>
 #include <string>
 #include <vector>
-#include <TComplex.h>
-#include <TProfile.h>
-#include <TMath.h>
-#include <TH1F.h>
 
 // o2Physics includes.
+#include "Common/Core/EventPlaneHelper.h"
+#include "Common/DataModel/EvtPlanes.h"
+
+#include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StaticFor.h"
-
-#include "Common/DataModel/EvtPlanes.h"
-#include "Common/Core/EventPlaneHelper.h"
+#include "Framework/runDataProcessing.h"
 
 // o2 includes.
 
@@ -146,7 +147,7 @@ struct evtPlanesResolution {
         fillHistosEvtPl<7>(evPl);
         break;
     } // End switch(centBin)
-  }   // End void process(...)
+  } // End void process(...)
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

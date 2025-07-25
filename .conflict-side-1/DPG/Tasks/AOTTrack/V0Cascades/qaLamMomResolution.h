@@ -14,9 +14,10 @@
 #ifndef DPG_TASKS_AOTTRACK_V0CASCADES_QALAMMOMRESOLUTION_H_
 #define DPG_TASKS_AOTTRACK_V0CASCADES_QALAMMOMRESOLUTION_H_
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Common/Core/trackUtilities.h"
+
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 
 namespace o2::aod
 {

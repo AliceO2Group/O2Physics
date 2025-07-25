@@ -18,21 +18,25 @@
 ///
 
 // O2 includes
-#include "CCDB/BasicCCDBManager.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "CCDB/CcdbApi.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+
+#include "TableHelper.h"
+
+#include "PWGLF/Utils/inelGt.h"
+
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/AnalysisTask.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StaticFor.h"
-#include "TableHelper.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Common/DataModel/Centrality.h"
-#include "PWGLF/DataModel/mcCentrality.h"
-#include "PWGLF/Utils/inelGt.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
 
 using namespace o2;
 using namespace o2::framework;

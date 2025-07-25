@@ -13,14 +13,15 @@
 /// \brief Task to compute and evaluate DCA quantities
 /// \author Nicolas Bizé <nicolas.bize@cern.ch>, SUBATECH
 //
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "GlobalTracking/MatchGlobalFwd.h"
+#include "PWGDQ/Core/VarManager.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGDQ/Core/VarManager.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "GlobalTracking/MatchGlobalFwd.h"
 
 using namespace o2;
 using namespace o2::framework;

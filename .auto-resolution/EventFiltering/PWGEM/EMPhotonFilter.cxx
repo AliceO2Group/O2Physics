@@ -12,16 +12,19 @@
 // \brief software trigger for EM photon
 // \author daiki.sekihata@cern.ch
 
-#include "Math/Vector4D.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/CaloClusters.h"
-#include "DataFormatsPHOS/TriggerRecord.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+
+#include "Common/DataModel/CaloClusters.h"
 #include "EventFiltering/filterTables.h"
+
+#include "DataFormatsPHOS/TriggerRecord.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Math/Vector4D.h"
 
 using namespace o2;
 using namespace o2::soa;

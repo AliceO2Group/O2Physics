@@ -14,47 +14,46 @@
 ///
 /// \author M. Hemmer, marvin.hemmer@cern.ch
 
-#include <numbers>
-#include <iterator>
-#include <array>
-#include <string>
-#include <map>
-#include <algorithm>
-#include <vector>
-#include <tuple>
-#include <utility>
-#include <cmath>
-
-#include "Math/Vector4D.h"
-#include "Math/Vector3D.h"
-#include "Math/LorentzRotation.h"
-#include "Math/Rotation3D.h"
-#include "Math/AxisAngle.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/EventPlaneHelper.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/Qvectors.h"
-#include "CommonConstants/MathConstants.h"
-
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsEMCAL/Constants.h"
-#include "EMCALBase/Geometry.h"
-#include "EMCALCalib/BadChannelMap.h"
-
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/emcalHistoDefinitions.h"
-#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/NMHistograms.h"
+#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
+#include "PWGEM/PhotonMeson/Utils/emcalHistoDefinitions.h"
+
+#include "Common/Core/EventPlaneHelper.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Qvectors.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/MathConstants.h"
+#include "DataFormatsEMCAL/Constants.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "EMCALBase/Geometry.h"
+#include "EMCALCalib/BadChannelMap.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Math/AxisAngle.h"
+#include "Math/LorentzRotation.h"
+#include "Math/Rotation3D.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <iterator>
+#include <map>
+#include <numbers>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;

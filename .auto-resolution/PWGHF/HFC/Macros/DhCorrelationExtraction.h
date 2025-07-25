@@ -17,8 +17,6 @@
 #ifndef PWGHF_HFC_MACROS_DHCORRELATIONEXTRACTION_H_
 #define PWGHF_HFC_MACROS_DHCORRELATIONEXTRACTION_H_
 
-#include <Rtypes.h>
-#include <RtypesCore.h>
 #include <TAttMarker.h>
 #include <TDirectoryFile.h>
 #include <TFile.h>
@@ -27,6 +25,9 @@
 #include <TLegend.h>
 #include <TObject.h>
 #include <TString.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 class DhCorrelationExtraction : public TObject
 {

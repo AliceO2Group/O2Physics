@@ -12,11 +12,11 @@
 #ifndef O2_ANALYSIS_PAIRCUTS_H
 #define O2_ANALYSIS_PAIRCUTS_H
 
-#include <cmath>
-
-#include "Framework/Logger.h"
-#include "Framework/HistogramRegistry.h"
 #include "CommonConstants/MathConstants.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/Logger.h"
+
+#include <cmath>
 
 // Functions which cut on particle pairs (decays, conversions, two-track cuts)
 //
@@ -147,7 +147,7 @@ bool PairCuts::twoTrackCut(T const& track1, T const& track2, int magField)
       }
 
       if (dphistarminabs < mTwoTrackDistance && std::fabs(deta) < mTwoTrackDistance) {
-        //LOGF(debug, "Removed track pair %ld %ld with %f %f %f %f %d %f %f %d %d", track1.index(), track2.index(), deta, dphistarminabs, track1.phi2(), track1.pt(), track1.sign(), track2.phi2(), track2.pt(), track2.sign(), magField);
+        // LOGF(debug, "Removed track pair %ld %ld with %f %f %f %f %d %f %f %d %d", track1.index(), track2.index(), deta, dphistarminabs, track1.phi2(), track1.pt(), track1.sign(), track2.phi2(), track2.pt(), track2.sign(), magField);
         return true;
       }
 
@@ -163,7 +163,7 @@ bool PairCuts::twoTrackCut(T const& track1, T const& track2, int magField)
 template <typename T>
 bool PairCuts::conversionCut(T const& track1, T const& track2, Particle conv, double cut)
 {
-  //LOGF(info, "pt is %f %f", track1.pt(), track2.pt());
+  // LOGF(info, "pt is %f %f", track1.pt(), track2.pt());
 
   if (cut < 0) {
     return false;
@@ -304,7 +304,7 @@ double PairCuts::getInvMassSquaredFast(T const& track1, double m0_1, T const& tr
 
   double mass2 = m0_1 * m0_1 + m0_2 * m0_2 + 2.0f * (std::sqrt(e1squ * e2squ) - (pt1 * pt2 * (cosDeltaPhi + 1.0f / tantheta1 / tantheta2)));
 
-  //LOGF(debug, "%f %f %f %f %f %f %f %f %f", pt1, eta1, phi1, pt2, eta2, phi2, m0_1, m0_2, mass2);
+  // LOGF(debug, "%f %f %f %f %f %f %f %f %f", pt1, eta1, phi1, pt2, eta2, phi2, m0_1, m0_2, mass2);
 
   return mass2;
 }

@@ -12,15 +12,17 @@
 #ifndef PWGLF_UTILS_SVPOOLCREATOR_H_
 #define PWGLF_UTILS_SVPOOLCREATOR_H_
 
+#include "Common/Core/trackUtilities.h"
+
+#include "DCAFitter/DCAFitterN.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+
 #include <array>
 #include <unordered_map>
-#include <vector>
 #include <utility>
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/Core/trackUtilities.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisDataModel.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::constants;

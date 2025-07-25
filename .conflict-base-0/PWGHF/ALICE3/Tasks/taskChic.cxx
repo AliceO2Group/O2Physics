@@ -15,16 +15,16 @@
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 /// \author Alessandro De Falco <alessandro.de.falco@ca.infn.it>, Cagliari University
 
-#include <vector>
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -101,8 +101,8 @@ struct HfTaskChic {
       registry.fill(HIST("hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
       //      registry.fill(HIST("hEGamma"), candidate.prong1().e());
     } // candidate loop
-  }   // process
-};    // struct
+  } // process
+}; // struct
 
 struct HfTaskChicMc {
   Configurable<int> selectionFlagChic{"selectionFlagChic", 1, "Selection Flag for Chic"};
@@ -225,8 +225,8 @@ struct HfTaskChicMc {
         registry.fill(HIST("hPtProng1Gen"), ptProngs[1], particle.pt());
       }
     } // gen
-  }   // process
-};    // struct
+  } // process
+}; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

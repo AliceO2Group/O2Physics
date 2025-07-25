@@ -17,11 +17,13 @@
 #ifndef COMMON_CORE_TRACKUTILITIES_H_
 #define COMMON_CORE_TRACKUTILITIES_H_
 
-#include <utility> // std::move
+#include "Common/Core/RecoDecay.h"
+
 #include "CommonConstants/MathConstants.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "ReconstructionDataFormats/Vertex.h"
-#include "Common/Core/RecoDecay.h"
+
+#include <utility> // std::move
 
 /// Extracts track parameters from a track.
 template <typename TrackPrecision = float, typename T>

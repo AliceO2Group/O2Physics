@@ -15,21 +15,22 @@
 
 #include "PWGEM/PhotonMeson/Tasks/gammaConversions.h"
 
-#include <map>
-#include <vector>
-#include <string>
-#include <memory>
-
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/gammaConvDefinitions.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/runDataProcessing.h"
 #include "Common/Core/RecoDecay.h"
 
-#include <TVector3.h>
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
 #include <TMath.h> // for ATan2, Cos, Sin, Sqrt
+#include <TVector3.h>
+
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

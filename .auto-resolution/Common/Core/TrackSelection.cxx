@@ -13,8 +13,9 @@
 // Class for track selection
 //
 
-#include "Framework/Logger.h"
 #include "Common/Core/TrackSelection.h"
+
+#include "Framework/Logger.h"
 
 bool TrackSelection::FulfillsITSHitRequirements(uint8_t itsClusterMap) const
 {

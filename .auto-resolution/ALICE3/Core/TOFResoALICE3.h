@@ -20,9 +20,9 @@
 #define O2_ANALYSIS_PID_TOFRESOALICE3_H_
 
 // O2 includes
-#include "PID/ParamBase.h"
 #include "PID/DetectorResponse.h"
 #include "PID/PIDTOF.h"
+#include "PID/ParamBase.h"
 #include "ReconstructionDataFormats/PID.h"
 
 namespace o2::pid::tof

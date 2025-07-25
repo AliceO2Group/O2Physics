@@ -12,10 +12,11 @@
 #ifndef COMMON_CCDB_TRIGGERALIASES_H_
 #define COMMON_CCDB_TRIGGERALIASES_H_
 
+#include <Rtypes.h>
+
 #include <cstdint>
 #include <map>
 #include <string>
-#include <Rtypes.h>
 
 enum triggerAliases {
   kINT7 = 0,

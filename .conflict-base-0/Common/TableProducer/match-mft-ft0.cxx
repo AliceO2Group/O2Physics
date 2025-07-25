@@ -18,31 +18,27 @@
 //        called aod::BCofMFT
 // \date 03/09/24
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
+#include "Common/Core/trackUtilities.h" //for getTrackPar()
 
-#include "MathUtils/Utils.h"
 #include "CommonConstants/LHCConstants.h"
-#include "Common/Core/trackUtilities.h"         //for getTrackPar()
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "MathUtils/Utils.h"
 #include "ReconstructionDataFormats/TrackFwd.h" //for propagate
 // https://github.com/AliceO2Group/AliceO2/blob/dev/DataFormats/Reconstruction/include/ReconstructionDataFormats/TrackFwd.h
-#include "CommonConstants/LHCConstants.h"
-#include "Math/MatrixFunctions.h"
-#include "Math/SMatrix.h"
+#include "Common/DataModel/MatchMFTFT0.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
-
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "Field/MagneticField.h"
-#include "TGeoGlobalMagField.h"
-
+#include "CommonConstants/LHCConstants.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
+#include "Field/MagneticField.h"
 
-#include "Common/DataModel/MatchMFTFT0.h"
+#include "Math/MatrixFunctions.h"
+#include "Math/SMatrix.h"
+#include "TGeoGlobalMagField.h"
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<Double_t, 5>;

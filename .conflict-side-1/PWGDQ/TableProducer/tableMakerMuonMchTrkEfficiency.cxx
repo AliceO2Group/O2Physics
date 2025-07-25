@@ -19,34 +19,35 @@
 /// \author Zaida Conesa del Valle <zaida.conesa.del.valle@cern.ch>
 ///
 
-#include <vector>
-#include <memory>
-#include <string>
-#include <algorithm>
+#include "TDatabasePDG.h"
 #include <TH1F.h>
 #include <TH3F.h>
 #include <THashList.h>
 #include <TList.h>
-#include <TString.h>
 #include <TLorentzVector.h>
-#include "TDatabasePDG.h"
+#include <TString.h>
+
+#include <algorithm>
+#include <memory>
+#include <string>
+#include <vector>
 //
 #include "Common/DataModel/TrackSelectionTables.h"
 //
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
 #include "Framework/runDataProcessing.h"
 //
-#include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
+#include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/CutsLibrary.h"
 #include "PWGDQ/Core/VarManager.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGDQ/DataModel/MchTrkEffTables.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 using namespace o2;
 using namespace o2::aod;

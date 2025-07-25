@@ -14,26 +14,29 @@
 // This code produces photon data tables.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include <array>
-#include <vector>
-#include <algorithm>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include <algorithm>
+#include <array>
+#include <vector>
 
 using namespace o2;
 using namespace o2::soa;
@@ -443,9 +446,9 @@ struct createPCM {
               //     collision_in_sw.globalIndex(), ele.collisionId(), pos.collisionId(), ele.globalIndex(), pos.globalIndex());
               fillV0Table(collision_in_sw, ele, pos, false);
             } // end of searching window loop
-          }   // end of pairing loop
-        }     // end of pos track loop in sw
-      }       // end of pos track loop in sw
+          } // end of pairing loop
+        } // end of pos track loop in sw
+      } // end of pos track loop in sw
 
       // LOGF(info, "possible number of V0 = %d", cospa_map.size());
       std::map<std::pair<uint32_t, uint32_t>, bool> used_pair_map;
@@ -550,7 +553,7 @@ struct createPCM {
         }
       }
     } // end of collision loop
-  }   // end of process
+  } // end of process
   PROCESS_SWITCH(createPCM, processTrkCollAsso, "create V0s with track-to-collision associator", false);
 };
 

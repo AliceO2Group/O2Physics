@@ -18,6 +18,7 @@
 #define AnalysisCompositeCut_H
 
 #include "PWGDQ/Core/AnalysisCut.h"
+
 #include <vector>
 
 //_________________________________________________________________________

@@ -16,13 +16,14 @@
 /// \brief  A task to create a reverse index from UDMcCollisions to UDCollisions
 ///
 
-#include <vector>
+#include "PWGUD/DataModel/UDIndex.h"
+#include "PWGUD/DataModel/UDTables.h"
 
-#include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
-#include "PWGUD/DataModel/UDTables.h"
-#include "PWGUD/DataModel/UDIndex.h"
+#include "Framework/runDataProcessing.h"
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

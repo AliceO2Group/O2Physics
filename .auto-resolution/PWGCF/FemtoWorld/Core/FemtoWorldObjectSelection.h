@@ -18,8 +18,8 @@
 
 #include "PWGCF/FemtoWorld/Core/FemtoWorldSelection.h"
 
-#include "ReconstructionDataFormats/PID.h"
 #include "Framework/HistogramRegistry.h"
+#include "ReconstructionDataFormats/PID.h"
 
 using namespace o2::framework;
 

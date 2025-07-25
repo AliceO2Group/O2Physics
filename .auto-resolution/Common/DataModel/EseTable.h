@@ -17,10 +17,10 @@
 #ifndef COMMON_DATAMODEL_ESETABLE_H_
 #define COMMON_DATAMODEL_ESETABLE_H_
 
-#include <vector>
-
-#include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+
+#include <vector>
 
 namespace o2::aod
 {

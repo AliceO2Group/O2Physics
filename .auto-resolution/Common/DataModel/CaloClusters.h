@@ -12,8 +12,9 @@
 #ifndef COMMON_DATAMODEL_CALOCLUSTERS_H_
 #define COMMON_DATAMODEL_CALOCLUSTERS_H_
 
-#include <vector>
 #include "Framework/AnalysisDataModel.h"
+
+#include <vector>
 
 namespace o2::aod
 {

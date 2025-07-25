@@ -16,11 +16,13 @@
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMDETADPHISTAR_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMDETADPHISTAR_H_
 
+#include "PWGCF/DataModel/FemtoDerived.h"
+
+#include "Framework/HistogramRegistry.h"
+
 #include <memory>
 #include <string>
 #include <vector>
-#include "PWGCF/DataModel/FemtoDerived.h"
-#include "Framework/HistogramRegistry.h"
 
 using namespace o2;
 using namespace o2::framework;

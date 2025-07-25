@@ -15,10 +15,12 @@
 #ifndef PWGLF_DATAMODEL_LFSTRANGENESSPIDTABLES_H_
 #define PWGLF_DATAMODEL_LFSTRANGENESSPIDTABLES_H_
 
-#include <cmath>
-#include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
+
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/AnalysisDataModel.h"
+
+#include <cmath>
 
 namespace o2::aod
 {
@@ -55,8 +57,8 @@ DECLARE_SOA_COLUMN(PosTOFSignal, posTOFSignal, float);         //! positive trac
 DECLARE_SOA_COLUMN(NegTOFSignal, negTOFSignal, float);         //! negative track signal
 DECLARE_SOA_COLUMN(PosTOFEventTime, posTOFEventTime, float);   //! positive track event time
 DECLARE_SOA_COLUMN(NegTOFEventTime, negTOFEventTime, float);   //! negative track event time
-DECLARE_SOA_COLUMN(PosTOFLength, posTOFLength, float); //! positive track length, recalculated
-DECLARE_SOA_COLUMN(NegTOFLength, negTOFLength, float); //! negative track length, recalculated
+DECLARE_SOA_COLUMN(PosTOFLength, posTOFLength, float);         //! positive track length, recalculated
+DECLARE_SOA_COLUMN(NegTOFLength, negTOFLength, float);         //! negative track length, recalculated
 
 // delta-times
 DECLARE_SOA_COLUMN(PosTOFDeltaTLaPi, posTOFDeltaTLaPi, float); //! positive track TOFDeltaT from pion <- lambda expectation

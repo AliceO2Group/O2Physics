@@ -16,11 +16,11 @@
 /// \brief  A task to create a reverse index from McParticles to Tracks
 ///
 
-#include "Framework/runDataProcessing.h"
+#include "Index.h"
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
-
-#include "Index.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;

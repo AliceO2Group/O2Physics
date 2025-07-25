@@ -18,11 +18,12 @@
 ///
 /// \author Luca Quaglia <luca.quaglia@cern.ch
 
+#include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/CallbackService.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "Framework/CallbackService.h"
-#include "Framework/ASoAHelpers.h"
+
 #include <iostream>
 
 // O2 physics classes
@@ -30,13 +31,12 @@
 
 // O2
 #include "DataFormatsMID/Track.h" //MID track from O2
-#include "Framework/Variant.h"
-#include "Framework/ConfigParamSpec.h"
 #include "Framework/CompletionPolicyHelpers.h"
-
-#include "MIDEfficiency/Efficiency.h"
+#include "Framework/ConfigParamSpec.h"
+#include "Framework/Variant.h"
 #include "MIDBase/DetectorParameters.h"
 #include "MIDBase/Mapping.h"
+#include "MIDEfficiency/Efficiency.h"
 
 using namespace o2;
 using namespace o2::aod;

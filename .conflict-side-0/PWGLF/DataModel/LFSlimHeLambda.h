@@ -19,6 +19,7 @@
 
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
+
 #include <Math/Vector4D.h>
 
 namespace o2::aod
@@ -77,6 +78,5 @@ struct lambdaCandidate {
   float pionNSigmaTPC;
   int8_t sign; // Charge sign of the Lambda candidate
 };
-
 
 #endif // PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_

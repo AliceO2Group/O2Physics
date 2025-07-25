@@ -8,24 +8,25 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#include <cmath>
-#include "Framework/Configurable.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RuntimeError.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-
-#include "ReconstructionDataFormats/GlobalTrackID.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "CommonConstants/MathConstants.h"
-#include "TDatabasePDG.h"
 
+#include "CommonConstants/MathConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/Configurable.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/RuntimeError.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/GlobalTrackID.h"
+
+#include "TDatabasePDG.h"
 #include <TF1.h>
+
+#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;
@@ -56,7 +57,7 @@ struct PseudorapidityDensity {
       {"TracksEtaZvtx_gt0", "; #eta; Z_{vtx}; tracks", {HistType::kTH2F, {{21, -2.1, 2.1}, {201, -20.1, 20.1}}}},    //
       {"TracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {{600, 0, 2 * M_PI}, {21, -2.1, 2.1}}}},         //
       {"EventSelection", ";status;events", {HistType::kTH1F, {{4, 0.5, 4.5}}}}                                       //
-    }                                                                                                                //
+    } //
   };
 
   void init(InitContext&)

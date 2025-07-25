@@ -20,13 +20,13 @@
 
 #include "Common/Core/EventPlaneHelper.h"
 
-#include <algorithm>
-#include <iterator>
-#include <vector>
-#include <memory>
-
 #include "TMath.h"
 #include "TVector3.h"
+
+#include <algorithm>
+#include <iterator>
+#include <memory>
+#include <vector>
 
 double EventPlaneHelper::GetPhiFV0(int chno, o2::fv0::Geometry* fv0geom)
 {

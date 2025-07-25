@@ -13,23 +13,27 @@
 /// \brief multiparticle-correlations-ar - Task belonging to Anton Riedel for computing multiparticle correlations
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
-#include <TMath.h>
-#include "fairlogger/Logger.h"
-#include <algorithm>
-#include <cstdint>
-#include <iostream>
-#include <string_view>
-#include <string>
-#include <vector>
-#include <array>
-#include <numeric>
-#include "TComplex.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Expressions.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/Expressions.h"
+#include "Framework/runDataProcessing.h"
+
+#include "TComplex.h"
+#include <TMath.h>
+
+#include "fairlogger/Logger.h"
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <iostream>
+#include <numeric>
+#include <string>
+#include <string_view>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

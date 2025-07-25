@@ -16,8 +16,11 @@
 /// \author Rik Spijkers <r.spijkers@students.uu.nl>, Utrecht University
 /// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
 
-#include <utility>
-#include <vector>
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Common/Core/trackUtilities.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
@@ -25,11 +28,8 @@
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
 
-#include "Common/Core/trackUtilities.h"
-
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -255,10 +255,10 @@ struct HfCandidateCreatorX {
             hMassXToJpsiToMuMuPiPi->Fill(massJpsiPiPi);
           }
         } // pi- loop
-      }   // pi+ loop
-    }     // Jpsi loop
-  }       // process
-};        // struct
+      } // pi+ loop
+    } // Jpsi loop
+  } // process
+}; // struct
 
 /// Extends the base table with expression columns.
 struct HfCandidateCreatorXExpressions {
@@ -363,8 +363,8 @@ struct HfCandidateCreatorXMc {
 
       rowMcMatchGen(flag, origin, channel);
     } // candidate loop
-  }   // process
-};    // struct
+  } // process
+}; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

@@ -14,38 +14,40 @@
 /// \author Zhiyong Lu (zhiyong.lu@cern.ch)
 /// \since  May/03/2025
 
-#include <CCDB/BasicCCDBManager.h>
-#include "TRandom3.h"
-#include "TF1.h"
-#include <vector>
-#include <string>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/StepTHn.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "CommonConstants/MathConstants.h"
-#include "Common/Core/RecoDecay.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "PWGCF/DataModel/CorrelationsDerived.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
-#include "PWGCF/GenericFramework/Core/GFWPowerArray.h"
+#include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "PWGCF/GenericFramework/Core/GFW.h"
 #include "PWGCF/GenericFramework/Core/GFWCumulant.h"
+#include "PWGCF/GenericFramework/Core/GFWPowerArray.h"
 #include "PWGCF/GenericFramework/Core/GFWWeights.h"
-#include "DataFormatsParameters/GRPObject.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CommonConstants/MathConstants.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+
+#include "TF1.h"
+#include "TRandom3.h"
 #include <TPDGCode.h>
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

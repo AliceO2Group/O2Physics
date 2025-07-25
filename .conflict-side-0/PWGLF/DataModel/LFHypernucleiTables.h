@@ -14,8 +14,8 @@
 /// \brief Slim hypernuclei tables
 ///
 
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
 
 #ifndef PWGLF_DATAMODEL_LFHYPERNUCLEITABLES_H_
 #define PWGLF_DATAMODEL_LFHYPERNUCLEITABLES_H_

@@ -19,9 +19,9 @@
 #ifndef ALICE3_CORE_DETLAYER_H_
 #define ALICE3_CORE_DETLAYER_H_
 
-#include <string>
-
 #include "TString.h"
+
+#include <string>
 
 namespace o2::fastsim
 {

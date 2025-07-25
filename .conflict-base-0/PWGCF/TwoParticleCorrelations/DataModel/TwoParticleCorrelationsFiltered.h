@@ -11,9 +11,10 @@
 #ifndef O2_ANALYSIS_TWOPARTFILTERED_H
 #define O2_ANALYSIS_TWOPARTFILTERED_H
 
+#include "TwoParticleCorrelationsSkimmed.h"
+
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
-#include "TwoParticleCorrelationsSkimmed.h"
 
 namespace o2
 {

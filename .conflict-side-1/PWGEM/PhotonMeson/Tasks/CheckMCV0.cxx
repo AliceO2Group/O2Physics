@@ -13,23 +13,25 @@
 /// \dependencies: o2-analysis-lf-lambdakzeromcfinder
 /// \author daiki.sekihata@cern.ch felix.schlepper@cern.ch
 
-#include "TDatabasePDG.h"
-#include "TMath.h"
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StaticFor.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "DetectorsBase/Propagator.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "PWGEM/PhotonMeson/DataModel/mcV0Tables.h"
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGEM/PhotonMeson/DataModel/mcV0Tables.h"
-#include "DataFormatsParameters/GRPMagField.h"
+
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/StaticFor.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include "TDatabasePDG.h"
+#include "TMath.h"
 
 using namespace o2;
 using namespace o2::framework;

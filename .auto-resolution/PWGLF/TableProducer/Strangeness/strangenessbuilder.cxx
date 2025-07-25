@@ -32,22 +32,25 @@
 //  -- v0builderopts ......: V0-specific building options (topological, deduplication, etc)
 //  -- cascadebuilderopts .: cascade-specific building options (topological, etc)
 
-#include <string>
-#include <vector>
+#include "TableHelper.h"
 
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/Utils/strangenessBuilderHelper.h"
+
+#include "Common/Core/TPCVDriftManager.h"
+#include "Common/DataModel/PIDResponse.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/DataSpecUtils.h"
 #include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "TableHelper.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
-#include "PWGLF/Utils/strangenessBuilderHelper.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "Common/Core/TPCVDriftManager.h"
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

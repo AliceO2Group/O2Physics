@@ -14,14 +14,17 @@
 // \author P. Buehler, paul.buehler@oeaw.ac.at
 // \since June 1, 2021
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/StaticFor.h"
-#include "Common/DataModel/EventSelection.h"
+#include "../filterTables.h"
+
 #include "PWGUD/Core/DGCutparHolder.h"
 #include "PWGUD/Core/DGSelector.h"
 #include "PWGUD/Core/UDHelpers.h"
-#include "../filterTables.h"
+
+#include "Common/DataModel/EventSelection.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/StaticFor.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;

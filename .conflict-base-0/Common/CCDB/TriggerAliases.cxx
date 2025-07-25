@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include "Common/CCDB/TriggerAliases.h"
+
 #include "Framework/Logger.h"
 
 std::string aliasLabels[kNaliases] = {

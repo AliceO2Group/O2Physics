@@ -14,21 +14,21 @@
 /// \author marvin.hemmer@cern.ch
 
 // TODO: add PCM table
-#include <typeinfo>
-
 #include "PWGEM/PhotonMeson/Utils/gammaSelectionCuts.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include <typeinfo>
 
 // includes for the R recalculation
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "CCDB/BasicCCDBManager.h"
-
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/emcalHistoDefinitions.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
 
 using namespace o2;
 using namespace o2::framework;

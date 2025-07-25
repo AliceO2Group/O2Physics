@@ -15,35 +15,38 @@
 
 #include "PWGCF/TwoParticleCorrelations/TableProducer/identifiedBfFilter.h"
 
-#include <cmath>
-#include <algorithm>
-#include <string>
-#include <vector>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
 #include "PWGCF/TwoParticleCorrelations/DataModel/IdentifiedBfFiltered.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
-#include "Framework/runDataProcessing.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include <TROOT.h>
-#include <TParameter.h>
-#include <TPDGCode.h>
-#include <TList.h>
+#include "Framework/runDataProcessing.h"
+
 #include <TDirectory.h>
 #include <TFolder.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
+#include <TList.h>
+#include <TPDGCode.h>
+#include <TParameter.h>
 #include <TProfile3D.h>
+#include <TROOT.h>
+
+#include <algorithm>
+#include <cmath>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -1843,8 +1846,8 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
     for (int sp = 0; (sp < kIdBfNoOfSpecies) && !doublematch; ++sp) { // iterate over all species while there's no double match and we're in the list
       if (sp != spMinNSigma) {                                        // for species not current minimum nsigma species
         // LOGF(info, "looking at Reject Range");
-        if (std::fabs(nsigmas[sp]) < rejectRange[spMinNSigma][sp]) {  // If secondary species is in rejection range
-          doublematch = true;                                         // Set double match true
+        if (std::fabs(nsigmas[sp]) < rejectRange[spMinNSigma][sp]) { // If secondary species is in rejection range
+          doublematch = true;                                        // Set double match true
           spDouble = MatchRecoGenSpecies(sp);
         }
       }
@@ -1921,11 +1924,11 @@ inline int8_t IdentifiedBfFilterTracks::acceptTrack(TrackObject const& track)
       if (!(sp < 0)) {
         fillTrackHistosAfterSelection(track, sp); //<Fill accepted track histo with PID
         if (track.sign() > 0) {                   // if positive
-          trkMultPos[sp]++; //<< Update Particle Multiplicity
+          trkMultPos[sp]++;                       //<< Update Particle Multiplicity
           return speciesChargeValue1[sp];
         }
         if (track.sign() < 0) { // if negative
-          trkMultNeg[sp]++; //<< Update Particle Multiplicity
+          trkMultNeg[sp]++;     //<< Update Particle Multiplicity
           return speciesChargeValue1[sp] + 1;
         }
       }

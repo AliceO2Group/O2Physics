@@ -13,21 +13,21 @@
 // Analysis task to produce smeared pt, eta, phi for electrons/muons in dilepton analysis
 //    Please write to: daiki.sekihata@cern.ch
 
-#include <array>
-#include <string>
-#include <chrono>
-
 #include "CCDB/BasicCCDBManager.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
 #include "Framework/ASoA.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/DataTypes.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
+#include <array>
+#include <chrono>
+#include <string>
 // #include "PWGDQ/DataModel/ReducedInfoTables.h" // remove this later, because 2 data tables (covariant matrix) in this header confilict against EM tables.
-#include "PWGEM/Dilepton/Utils/MomentumSmearer.h"
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+#include "PWGEM/Dilepton/Utils/MomentumSmearer.h"
 
 using namespace o2;
 using namespace o2::framework;

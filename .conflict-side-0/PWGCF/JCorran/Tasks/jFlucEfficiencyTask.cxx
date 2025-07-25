@@ -14,20 +14,23 @@
 /// \author DongJo Kim, Jasper Parkkila, Bong-Hwi Lim (djkim@cern.ch, jparkkil@cern.ch, bong-hwi.lim@cern.ch)
 /// \since March 2024
 
-#include <vector>
-#include <string>
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/O2DatabasePDGPlugin.h"
+#include "PWGCF/DataModel/CorrelationsDerived.h"
+#include "PWGLF/Utils/collisionCuts.h"
+
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGCF/DataModel/CorrelationsDerived.h"
-#include "PWGLF/Utils/collisionCuts.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

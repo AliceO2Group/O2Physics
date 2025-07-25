@@ -14,35 +14,34 @@
 ///
 /// \author Dmitri Peresunko <Dmitri.Peresunko@cern.ch>
 
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CaloClusters.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonUtils/NameConf.h"
+#include "DataFormatsPHOS/BadChannelsMap.h"
+#include "DataFormatsPHOS/CalibParams.h"
+#include "DataFormatsPHOS/Cell.h"
+#include "DataFormatsPHOS/Cluster.h"
+#include "DataFormatsPHOS/MCLabel.h"
+#include "DataFormatsPHOS/TriggerRecord.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/ConfigParamSpec.h"
+#include "Framework/runDataProcessing.h"
+#include "PHOSBase/Geometry.h"
+#include "PHOSReconstruction/Clusterer.h"
+#include "ReconstructionDataFormats/TrackParametrization.h"
+#include "SimulationDataFormat/MCTruthContainer.h"
+
 #include <algorithm>
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
-
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/CaloClusters.h"
-#include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/TrackParametrization.h"
-#include "DetectorsBase/Propagator.h"
-
-#include "CommonUtils/NameConf.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "SimulationDataFormat/MCTruthContainer.h"
-
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsPHOS/Cell.h"
-#include "DataFormatsPHOS/Cluster.h"
-#include "DataFormatsPHOS/TriggerRecord.h"
-#include "DataFormatsPHOS/MCLabel.h"
-#include "DataFormatsPHOS/BadChannelsMap.h"
-#include "DataFormatsPHOS/CalibParams.h"
-#include "PHOSBase/Geometry.h"
-#include "PHOSReconstruction/Clusterer.h"
 
 using namespace o2::framework;
 using namespace o2;

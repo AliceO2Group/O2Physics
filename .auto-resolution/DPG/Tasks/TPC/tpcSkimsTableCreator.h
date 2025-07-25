@@ -19,10 +19,11 @@
 #ifndef DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
 #define DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/PIDResponse.h"
+
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 
 namespace o2::aod
 {
