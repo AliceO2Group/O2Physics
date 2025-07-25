@@ -13,30 +13,31 @@
 /// \brief Builder task for kink decay topologies using ITS standalone tracks for the mother
 /// \author Francesco Mazzaschi <francesco.mazzaschi@cern.ch>
 
-#include <memory>
-#include <string>
-#include <array>
-#include <vector>
-#include <algorithm>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DCAFitter/DCAFitterN.h"
-
+#include "PWGLF/DataModel/LFKinkDecayTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "PWGLF/Utils/svPoolCreator.h"
-#include "PWGLF/DataModel/LFKinkDecayTables.h"
+
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <algorithm>
+#include <array>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -93,9 +94,12 @@ struct kinkBuilder {
                   kHyperhelium4sigma };
 
   Produces<aod::KinkCands> outputDataTable;
+  Produces<aod::KinkCandsUnbound> outputDataTableUB;
+
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   Configurable<int> hypoMoth{"hypoMoth", kSigmaMinus, "Mother particle hypothesis"};
+  Configurable<bool> fillDebugTable{"fillDebugTable", false, "If true, fill the debug table with all candidates unbound"};
   // Selection criteria
   Configurable<float> maxDCAMothToPV{"maxDCAMothToPV", 0.1, "Max DCA of the mother to the PV"};
   Configurable<float> minDCADaugToPV{"minDCADaugToPV", 0., "Min DCA of the daughter to the PV"};
@@ -430,11 +434,18 @@ struct kinkBuilder {
     std::sort(kinkCandidates.begin(), kinkCandidates.end(), [](const kinkCandidate& a, const kinkCandidate& b) { return a.collisionID < b.collisionID; });
 
     for (const auto& kinkCand : kinkCandidates) {
-      outputDataTable(kinkCand.collisionID, kinkCand.mothTrackID, kinkCand.daugTrackID,
-                      kinkCand.decVtx[0], kinkCand.decVtx[1], kinkCand.decVtx[2],
-                      kinkCand.mothSign, kinkCand.momMoth[0], kinkCand.momMoth[1], kinkCand.momMoth[2],
-                      kinkCand.momDaug[0], kinkCand.momDaug[1], kinkCand.momDaug[2],
-                      kinkCand.dcaXYmoth, kinkCand.dcaXYdaug, kinkCand.dcaKinkTopo);
+      if (fillDebugTable) {
+        outputDataTableUB(kinkCand.decVtx[0], kinkCand.decVtx[1], kinkCand.decVtx[2],
+                          kinkCand.mothSign, kinkCand.momMoth[0], kinkCand.momMoth[1], kinkCand.momMoth[2],
+                          kinkCand.momDaug[0], kinkCand.momDaug[1], kinkCand.momDaug[2],
+                          kinkCand.dcaXYmoth, kinkCand.dcaXYdaug, kinkCand.dcaKinkTopo);
+      } else {
+        outputDataTable(kinkCand.collisionID, kinkCand.mothTrackID, kinkCand.daugTrackID,
+                        kinkCand.decVtx[0], kinkCand.decVtx[1], kinkCand.decVtx[2],
+                        kinkCand.mothSign, kinkCand.momMoth[0], kinkCand.momMoth[1], kinkCand.momMoth[2],
+                        kinkCand.momDaug[0], kinkCand.momDaug[1], kinkCand.momDaug[2],
+                        kinkCand.dcaXYmoth, kinkCand.dcaXYdaug, kinkCand.dcaKinkTopo);
+      }
     }
   }
 };

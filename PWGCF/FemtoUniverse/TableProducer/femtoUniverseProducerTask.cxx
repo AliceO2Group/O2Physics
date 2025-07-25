@@ -17,45 +17,49 @@
 /// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@cern.ch
 /// \author Shirajum Monira, WUT Warsaw, shirajum.monira@cern.ch
 
-#include <experimental/type_traits>
-#include <CCDB/BasicCCDBManager.h>
-#include <TPDGCode.h>
-#include <vector>
-#include <algorithm>
-#include <set>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/CCDB/ctpRateFetcher.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseCascadeSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseCollisionSelection.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniversePhiSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseV0Selection.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseCascadeSelection.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniversePhiSelection.h"
 #include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
+#include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Core/HfHelper.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Math/Vector4D.h"
-#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "TMath.h"
-#include "TLorentzVector.h"
 #include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+
+#include "Math/Vector4D.h"
+#include "TLorentzVector.h"
+#include "TMath.h"
+#include <TPDGCode.h>
+
+#include <algorithm>
+#include <experimental/type_traits>
+#include <set>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis::femto_universe;
@@ -786,7 +790,7 @@ struct FemtoUniverseProducerTask {
   template <typename ParticleType>
   void fillMCParticleD0(ParticleType const& hfCand)
   {
-    if (std::abs(hfCand.flagMcMatchRec()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
+    if (std::abs(hfCand.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
       // get corresponding MC particle and its info
       int pdgCode = 0;
       int hfCandOrigin = 99;
@@ -1807,7 +1811,7 @@ struct FemtoUniverseProducerTask {
 
         auto mcD0origin = aod::femtouniverseparticle::ParticleType::kMCTruthTrack;
         float ptGenB = -1;
-        if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
+        if (std::abs(particle.flagMcMatchGen()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           if (ConfD0Selection.yD0D0barCandGenMax >= 0. && std::abs(RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0)) > ConfD0Selection.yD0D0barCandGenMax) {
             continue;
           }
@@ -1907,9 +1911,6 @@ struct FemtoUniverseProducerTask {
         fillPhi<isMC>(col, tracks);
       }
     }
-    // if (confIsActivateCascade) {
-    //   fillCascade<false>(col, fullCascades, tracks);
-    // }
   }
 
   void processFullData(aod::FemtoFullCollision const& col,
@@ -1951,6 +1952,26 @@ struct FemtoUniverseProducerTask {
     }
   }
   PROCESS_SWITCH(FemtoUniverseProducerTask, processTrackCascadeData, "Provide experimental data for track cascades", false);
+
+  void processTrackV0Cascade(aod::FemtoFullCollision const& col,
+                             aod::BCsWithTimestamps const&,
+                             soa::Filtered<aod::FemtoFullTracks> const& tracks,
+                             o2::aod::V0Datas const& fullV0s,
+                             o2::aod::CascDatas const& fullCascades)
+  {
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    const auto colcheck = fillCollisions<false>(col, tracks);
+    if (colcheck) {
+      fillTracks<false>(tracks);
+      if (confIsActivateV0) {
+        fillV0<false>(col, fullV0s, tracks);
+      }
+      if (confIsActivateCascade) {
+        fillCascade<false>(col, fullCascades, tracks);
+      }
+    }
+  }
+  PROCESS_SWITCH(FemtoUniverseProducerTask, processTrackV0Cascade, "Provide experimental data for track, v0 and cascades", false);
 
   /*void processTrackV0CentRun3(aod::FemtoFullCollisionCentRun3 const& col,
                               aod::BCsWithTimestamps const&,

@@ -44,7 +44,7 @@ using MyCollision = MyCollisions::iterator;
 using MyMCCollisions = soa::Join<aod::EMMCEvents, aod::BinnedGenPts>;
 using MyMCCollision = MyMCCollisions::iterator;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0PhotonsKFCov, aod::V0KFEMEventIds>;
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
 using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
@@ -196,11 +196,6 @@ struct PCMQCMC {
     fRegistry.add("V0/primary/hKFChi2vsX", "KF chi2 vs. conversion point in X;X (cm);KF chi2/NDF", kTH2F, {{200, -100.0f, 100.0f}, {100, 0.f, 100.0f}}, false);
     fRegistry.add("V0/primary/hKFChi2vsY", "KF chi2 vs. conversion point in Y;Y (cm);KF chi2/NDF", kTH2F, {{200, -100.0f, 100.0f}, {100, 0.f, 100.0f}}, false);
     fRegistry.add("V0/primary/hKFChi2vsZ", "KF chi2 vs. conversion point in Z;Z (cm);KF chi2/NDF", kTH2F, {{200, -100.0f, 100.0f}, {100, 0.f, 100.0f}}, false);
-    fRegistry.add("V0/primary/hPResolution", "p resolution;p_{#gamma} (GeV/c);#Deltap/p", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.1}}, false);
-    fRegistry.add("V0/primary/hPtResolution", "p_{T} resolution;p_{#gamma} (GeV/c);#Deltap_{T}/p_{T}", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.1}}, false);
-    fRegistry.add("V0/primary/hEtaResolution", "#eta resolution;p_{#gamma} (GeV/c);#Delta#eta", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
-    fRegistry.add("V0/primary/hThetaResolution", "#theta resolution;p_{#gamma} (GeV/c);#Delta#theta (rad.)", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
-    fRegistry.add("V0/primary/hPhiResolution", "#varphi resolution;p_{#gamma} (GeV/c);#Delta#varphi (rad.)", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
     fRegistry.add("V0/primary/hNgamma", "Number of true #gamma per collision;N_{#gamma} per event;Number of events", kTH1F, {{101, -0.5f, 100.5f}});
     fRegistry.add("V0/primary/hConvPoint_diffX", "conversion point diff X MC;X_{MC} (cm);X_{rec} - X_{MC} (cm)", kTH2F, {{200, -100, +100}, {100, -50.0f, 50.0f}}, true);
     fRegistry.add("V0/primary/hConvPoint_diffY", "conversion point diff Y MC;Y_{MC} (cm);Y_{rec} - Y_{MC} (cm)", kTH2F, {{200, -100, +100}, {100, -50.0f, 50.0f}}, true);
@@ -402,11 +397,6 @@ struct PCMQCMC {
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hKFChi2vsX"), v0.vx(), v0.chiSquareNDF());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hKFChi2vsY"), v0.vy(), v0.chiSquareNDF());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hKFChi2vsZ"), v0.vz(), v0.chiSquareNDF());
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hPResolution"), v0.p(), getPResolution(v0) / v0.p());
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hPtResolution"), v0.p(), getPtResolution(v0) / v0.pt());
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hEtaResolution"), v0.p(), getEtaResolution(v0));
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hThetaResolution"), v0.p(), getThetaResolution(v0));
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hPhiResolution"), v0.p(), getPhiResolution(v0));
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hPtGen_DeltaPtOverPtGen"), mcphoton.pt(), (v0.pt() - mcphoton.pt()) / mcphoton.pt());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hPtGen_DeltaEta"), mcphoton.pt(), v0.eta() - mcphoton.eta());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hPtGen_DeltaPhi"), mcphoton.pt(), v0.phi() - mcphoton.phi());

@@ -26,17 +26,19 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/OccupancyTables.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "CommonDataFormat/InteractionRecord.h"
 #include "Tools/ML/MlResponse.h"
 
+#include "CommonDataFormat/InteractionRecord.h"
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/runDataProcessing.h>
 #include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/detail/TypeTruncation.h>
 #include <ReconstructionDataFormats/DCA.h>
 
 #include <TH1D.h>
@@ -47,6 +49,7 @@
 #include <cmath>
 #include <map>
 #include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -57,9 +60,9 @@ using namespace o2::hf_calib;
 
 struct DerivedDataCreatorD0Calibration {
 
-  Produces<aod::D0CalibColl> collTable;
-  Produces<aod::D0CalibTrack> trackTable;
-  Produces<aod::D0CalibCand> candTable;
+  Produces<aod::D0CalibColls> collTable;
+  Produces<aod::D0CalibTracks> trackTable;
+  Produces<aod::D0CalibCands> candTable;
 
   struct : ConfigurableGroup {
     Configurable<float> ptMin{"ptMin", 0.4, "min. track pT"};
@@ -101,8 +104,9 @@ struct DerivedDataCreatorD0Calibration {
     std::string prefix = "ml";
   } cfgMl;
 
-  using TracksWCovExtraPid = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
+  using TracksWCovExtraPid = soa::Join<aod::Tracks, aod::TrackToTmo, aod::TrackToTracksQA, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using CollisionsWEvSel = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
+  using TrackMeanOccs = soa::Join<aod::TmoTrackIds, aod::TmoPrim, aod::TmoT0V0, aod::TmoRT0V0Prim, aod::TwmoPrim, aod::TwmoT0V0, aod::TwmoRT0V0Prim>;
 
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
@@ -120,6 +124,8 @@ struct DerivedDataCreatorD0Calibration {
   // tolerances for preselections before vertex reconstruction
   const float ptTolerance{0.1f};
   const float invMassTolerance{0.05f};
+  uint32_t precisionCovMask{0xFFFFE000}; // 10 bits
+  uint32_t precisionDcaMask{0xFFFFFC00}; // 13 bits
 
   OutputObj<TH1D> histDownSampl{"histDownSampl"};
 
@@ -165,7 +171,9 @@ struct DerivedDataCreatorD0Calibration {
   void process(CollisionsWEvSel const& collisions,
                aod::TrackAssoc const& trackIndices,
                TracksWCovExtraPid const&,
-               aod::BCsWithTimestamps const&)
+               aod::BCsWithTimestamps const&,
+               TrackMeanOccs const&,
+               aod::TracksQAVersion const&)
   {
     std::map<int, int> selectedCollisions; // map with indices of selected collisions (key: original AOD Collision table index, value: D0 collision index)
     std::map<int, int> selectedTracks;     // map with indices of selected tracks (key: original AOD Track table index, value: D0 daughter track index)
@@ -439,36 +447,376 @@ struct DerivedDataCreatorD0Calibration {
           // collision
           if (!selectedCollisions.count(collision.globalIndex())) {
             // fill collision table if not yet present
-            collTable(collision.posX(), collision.posY(), collision.posZ(),
-                      collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(),
-                      collision.numContrib(), uint8_t(std::round(collision.centFT0C())), getCompressedOccupancy(collision.trackOccupancyInTimeRange()), getCompressedOccupancy(collision.ft0cOccupancyInTimeRange()),
-                      eventIR.orbit, runNumber);
+            collTable(collision.posX(),
+                      collision.posY(),
+                      collision.posZ(),
+                      collision.covXX(),
+                      collision.covXY(),
+                      collision.covXZ(),
+                      collision.covYY(),
+                      collision.covYZ(),
+                      collision.covZZ(),
+                      collision.numContrib(),
+                      uint8_t(std::round(collision.centFT0C())),
+                      getCompressedOccupancy(collision.trackOccupancyInTimeRange()),
+                      getCompressedOccupancy(collision.ft0cOccupancyInTimeRange()),
+                      eventIR.orbit,
+                      runNumber);
             selectedCollisions[collision.globalIndex()] = collTable.lastIndex();
           }
           // tracks
           if (!selectedTracks.count(trackPos.globalIndex())) {
             // fill track table with positive track if not yet present
-            trackTable(selectedCollisions[collision.globalIndex()],
-                       trackPos.x(), trackPos.alpha(), trackPos.y(), trackPos.z(), trackPos.snp(), trackPos.tgl(), trackPos.signed1Pt(), // stored at PV
-                       trackPos.cYY(), trackPos.cZY(), trackPos.cZZ(), trackPos.cSnpY(), trackPos.cSnpZ(), trackPos.cSnpSnp(), trackPos.cTglY(), trackPos.cTglZ(), trackPos.cTglSnp(), trackPos.cTglTgl(), trackPos.c1PtY(), trackPos.c1PtZ(), trackPos.c1PtSnp(), trackPos.c1PtTgl(), trackPos.c1Pt21Pt2(),
-                       trackPos.tpcInnerParam(), trackPos.flags(), trackPos.itsClusterSizes(), trackPos.tpcNClsFindable(), trackPos.tpcNClsFindableMinusFound(), trackPos.tpcNClsFindableMinusCrossedRows(), trackPos.tpcNClsShared(), trackPos.trdPattern(), getCompressedChi2(trackPos.itsChi2NCl()), getCompressedChi2(trackPos.tpcChi2NCl()), getCompressedChi2(trackPos.trdChi2()), getCompressedChi2(trackPos.tofChi2()), trackPos.tpcSignal(), trackPos.trdSignal(), trackPos.length(), trackPos.tofExpMom(), trackPos.trackTime(), trackPos.trackTimeRes(),
-                       dcaPos.getY(), dcaPos.getZ(), getCompressedNumSigmaPid(trackPos.tpcNSigmaPi()), getCompressedNumSigmaPid(trackPos.tpcNSigmaKa()), getCompressedNumSigmaPid(trackPos.tofNSigmaPi()), getCompressedNumSigmaPid(trackPos.tofNSigmaKa()));
+            uint8_t tmoPrimUnfm80{0u};
+            uint8_t tmoFV0AUnfm80{0u};
+            uint8_t tmoFT0AUnfm80{0u};
+            uint8_t tmoFT0CUnfm80{0u};
+            uint8_t twmoPrimUnfm80{0u};
+            uint8_t twmoFV0AUnfm80{0u};
+            uint8_t twmoFT0AUnfm80{0u};
+            uint8_t twmoFT0CUnfm80{0u};
+            uint8_t tmoRobustT0V0PrimUnfm80{0u};
+            uint8_t twmoRobustT0V0PrimUnfm80{0u};
+            if (trackPos.has_tmo()) {
+              auto tmoFromTrack = trackPos.tmo_as<TrackMeanOccs>(); // obtain track mean occupancies
+              tmoPrimUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoPrimUnfm80());
+              tmoFV0AUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFV0AUnfm80());
+              tmoFT0AUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFT0AUnfm80());
+              tmoFT0CUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFT0CUnfm80());
+              twmoPrimUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoPrimUnfm80());
+              twmoFV0AUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoFV0AUnfm80());
+              twmoFT0AUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoFT0AUnfm80());
+              twmoFT0CUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoFT0CUnfm80());
+              tmoRobustT0V0PrimUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoRobustT0V0PrimUnfm80());
+              twmoRobustT0V0PrimUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoRobustT0V0PrimUnfm80());
+            }
+            float tpcTime0{0.f};
+            float tpcdEdxNorm{0.f};
+            int16_t tpcDcaR{0};
+            int16_t tpcDcaZ{0};
+            uint8_t tpcClusterByteMask{0u};
+            uint8_t tpcdEdxMax0R{0u};
+            uint8_t tpcdEdxMax1R{0u};
+            uint8_t tpcdEdxMax2R{0u};
+            uint8_t tpcdEdxMax3R{0u};
+            uint8_t tpcdEdxTot0R{0u};
+            uint8_t tpcdEdxTot1R{0u};
+            uint8_t tpcdEdxTot2R{0u};
+            uint8_t tpcdEdxTot3R{0u};
+            int8_t deltaRefContParamY{0};
+            int8_t deltaRefITSParamZ{0};
+            int8_t deltaRefContParamSnp{0};
+            int8_t deltaRefContParamTgl{0};
+            int8_t deltaRefContParamQ2Pt{0};
+            int8_t deltaRefGloParamY{0};
+            int8_t deltaRefGloParamZ{0};
+            int8_t deltaRefGloParamSnp{0};
+            int8_t deltaRefGloParamTgl{0};
+            int8_t deltaRefGloParamQ2Pt{0};
+            int8_t deltaTOFdX{0};
+            int8_t deltaTOFdZ{0};
+            if (trackPos.has_trackQA()) {
+              auto trackQA = trackPos.trackQA_as<aod::TracksQAVersion>(); // obtain track QA
+              tpcTime0 = trackQA.tpcTime0();
+              tpcdEdxNorm = trackQA.tpcdEdxNorm();
+              tpcDcaR = trackQA.tpcdcaR();
+              tpcDcaZ = trackQA.tpcdcaZ();
+              tpcClusterByteMask = trackQA.tpcClusterByteMask();
+              tpcdEdxMax0R = trackQA.tpcdEdxMax0R();
+              tpcdEdxMax1R = trackQA.tpcdEdxMax1R();
+              tpcdEdxMax2R = trackQA.tpcdEdxMax2R();
+              tpcdEdxMax3R = trackQA.tpcdEdxMax3R();
+              tpcdEdxTot0R = trackQA.tpcdEdxTot0R();
+              tpcdEdxTot1R = trackQA.tpcdEdxTot1R();
+              tpcdEdxTot2R = trackQA.tpcdEdxTot2R();
+              tpcdEdxTot3R = trackQA.tpcdEdxTot3R();
+              deltaRefContParamY = trackQA.deltaRefContParamY();
+              deltaRefITSParamZ = trackQA.deltaRefITSParamZ();
+              deltaRefContParamSnp = trackQA.deltaRefContParamSnp();
+              deltaRefContParamTgl = trackQA.deltaRefContParamTgl();
+              deltaRefContParamQ2Pt = trackQA.deltaRefContParamQ2Pt();
+              deltaRefGloParamY = trackQA.deltaRefGloParamY();
+              deltaRefGloParamZ = trackQA.deltaRefGloParamZ();
+              deltaRefGloParamSnp = trackQA.deltaRefGloParamSnp();
+              deltaRefGloParamTgl = trackQA.deltaRefGloParamTgl();
+              deltaRefGloParamQ2Pt = trackQA.deltaRefGloParamQ2Pt();
+              deltaTOFdX = trackQA.deltaTOFdX();
+              deltaTOFdZ = trackQA.deltaTOFdZ();
+            }
+
+            trackTable(selectedCollisions[collision.globalIndex()], // stored at PV
+                       trackPos.x(),
+                       trackPos.alpha(),
+                       trackPos.y(),
+                       trackPos.z(),
+                       trackPos.snp(),
+                       trackPos.tgl(),
+                       trackPos.signed1Pt(),
+                       o2::math_utils::detail::truncateFloatFraction(trackPos.cYY(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackPos.cZY(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackPos.cZZ(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackPos.cSnpY(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackPos.cSnpZ(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackPos.cSnpSnp(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackPos.cTglY(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackPos.cTglZ(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackPos.cTglSnp(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackPos.cTglTgl(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackPos.c1PtY(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackPos.c1PtZ(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackPos.c1PtSnp(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackPos.c1PtTgl(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackPos.c1Pt21Pt2(), precisionCovMask),
+                       trackPos.tpcInnerParam(),
+                       trackPos.flags(),
+                       trackPos.itsClusterSizes(),
+                       trackPos.tpcNClsFindable(),
+                       trackPos.tpcNClsFindableMinusFound(),
+                       trackPos.tpcNClsFindableMinusCrossedRows(),
+                       trackPos.tpcNClsShared(),
+                       trackPos.trdPattern(),
+                       getCompressedChi2(trackPos.itsChi2NCl()),
+                       getCompressedChi2(trackPos.tpcChi2NCl()),
+                       getCompressedChi2(trackPos.trdChi2()),
+                       getCompressedChi2(trackPos.tofChi2()),
+                       trackPos.tpcSignal(),
+                       trackPos.trdSignal(),
+                       trackPos.length(),
+                       trackPos.tofExpMom(),
+                       trackPos.trackTime(),
+                       trackPos.trackTimeRes(),
+                       tpcTime0,
+                       tpcdEdxNorm,
+                       tpcDcaR,
+                       tpcDcaZ,
+                       tpcClusterByteMask,
+                       tpcdEdxMax0R,
+                       tpcdEdxMax1R,
+                       tpcdEdxMax2R,
+                       tpcdEdxMax3R,
+                       tpcdEdxTot0R,
+                       tpcdEdxTot1R,
+                       tpcdEdxTot2R,
+                       tpcdEdxTot3R,
+                       deltaRefContParamY,
+                       deltaRefITSParamZ,
+                       deltaRefContParamSnp,
+                       deltaRefContParamTgl,
+                       deltaRefContParamQ2Pt,
+                       deltaRefGloParamY,
+                       deltaRefGloParamZ,
+                       deltaRefGloParamSnp,
+                       deltaRefGloParamTgl,
+                       deltaRefGloParamQ2Pt,
+                       deltaTOFdX,
+                       deltaTOFdZ,
+                       o2::math_utils::detail::truncateFloatFraction(dcaPos.getY(), precisionDcaMask),
+                       o2::math_utils::detail::truncateFloatFraction(dcaPos.getZ(), precisionDcaMask),
+                       getCompressedNumSigmaPid(trackPos.tpcNSigmaPi()),
+                       getCompressedNumSigmaPid(trackPos.tpcNSigmaKa()),
+                       getCompressedNumSigmaPid(trackPos.tofNSigmaPi()),
+                       getCompressedNumSigmaPid(trackPos.tofNSigmaKa()),
+                       tmoPrimUnfm80,
+                       tmoFV0AUnfm80,
+                       tmoFT0AUnfm80,
+                       tmoFT0CUnfm80,
+                       twmoPrimUnfm80,
+                       twmoFV0AUnfm80,
+                       twmoFT0AUnfm80,
+                       twmoFT0CUnfm80,
+                       tmoRobustT0V0PrimUnfm80,
+                       twmoRobustT0V0PrimUnfm80);
             selectedTracks[trackPos.globalIndex()] = trackTable.lastIndex();
           }
           if (!selectedTracks.count(trackNeg.globalIndex())) {
             // fill track table with negative track if not yet present
-            trackTable(selectedCollisions[collision.globalIndex()],
-                       trackNeg.x(), trackNeg.alpha(), trackNeg.y(), trackNeg.z(), trackNeg.snp(), trackNeg.tgl(), trackNeg.signed1Pt(), // stored at PV
-                       trackNeg.cYY(), trackNeg.cZY(), trackNeg.cZZ(), trackNeg.cSnpY(), trackNeg.cSnpZ(), trackNeg.cSnpSnp(), trackNeg.cTglY(), trackNeg.cTglZ(), trackNeg.cTglSnp(), trackNeg.cTglTgl(), trackNeg.c1PtY(), trackNeg.c1PtZ(), trackNeg.c1PtSnp(), trackNeg.c1PtTgl(), trackNeg.c1Pt21Pt2(),
-                       trackNeg.tpcInnerParam(), trackNeg.flags(), trackNeg.itsClusterSizes(), trackNeg.tpcNClsFindable(), trackNeg.tpcNClsFindableMinusFound(), trackNeg.tpcNClsFindableMinusCrossedRows(), trackNeg.tpcNClsShared(), trackNeg.trdPattern(), getCompressedChi2(trackNeg.itsChi2NCl()), getCompressedChi2(trackNeg.tpcChi2NCl()), getCompressedChi2(trackNeg.trdChi2()), getCompressedChi2(trackNeg.tofChi2()), trackNeg.tpcSignal(), trackNeg.trdSignal(), trackNeg.length(), trackNeg.tofExpMom(), trackNeg.trackTime(), trackNeg.trackTimeRes(),
-                       dcaNeg.getY(), dcaNeg.getZ(), getCompressedNumSigmaPid(trackNeg.tpcNSigmaPi()), getCompressedNumSigmaPid(trackNeg.tpcNSigmaKa()), getCompressedNumSigmaPid(trackNeg.tofNSigmaPi()), getCompressedNumSigmaPid(trackNeg.tofNSigmaKa()));
+            uint8_t tmoPrimUnfm80{0u};
+            uint8_t tmoFV0AUnfm80{0u};
+            uint8_t tmoFT0AUnfm80{0u};
+            uint8_t tmoFT0CUnfm80{0u};
+            uint8_t twmoPrimUnfm80{0u};
+            uint8_t twmoFV0AUnfm80{0u};
+            uint8_t twmoFT0AUnfm80{0u};
+            uint8_t twmoFT0CUnfm80{0u};
+            uint8_t tmoRobustT0V0PrimUnfm80{0u};
+            uint8_t twmoRobustT0V0PrimUnfm80{0u};
+            if (trackNeg.has_tmo()) {
+              auto tmoFromTrack = trackNeg.tmo_as<TrackMeanOccs>(); // obtain track mean occupancies
+              tmoPrimUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoPrimUnfm80());
+              tmoFV0AUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFV0AUnfm80());
+              tmoFT0AUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFT0AUnfm80());
+              tmoFT0CUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoFT0CUnfm80());
+              twmoPrimUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoPrimUnfm80());
+              twmoFV0AUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoFV0AUnfm80());
+              twmoFT0AUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoFT0AUnfm80());
+              twmoFT0CUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoFT0CUnfm80());
+              tmoRobustT0V0PrimUnfm80 = getCompressedOccupancy(tmoFromTrack.tmoRobustT0V0PrimUnfm80());
+              twmoRobustT0V0PrimUnfm80 = getCompressedOccupancy(tmoFromTrack.twmoRobustT0V0PrimUnfm80());
+            }
+            float tpcTime0{0.f};
+            float tpcdEdxNorm{0.f};
+            int16_t tpcDcaR{0};
+            int16_t tpcDcaZ{0};
+            uint8_t tpcClusterByteMask{0u};
+            uint8_t tpcdEdxMax0R{0u};
+            uint8_t tpcdEdxMax1R{0u};
+            uint8_t tpcdEdxMax2R{0u};
+            uint8_t tpcdEdxMax3R{0u};
+            uint8_t tpcdEdxTot0R{0u};
+            uint8_t tpcdEdxTot1R{0u};
+            uint8_t tpcdEdxTot2R{0u};
+            uint8_t tpcdEdxTot3R{0u};
+            int8_t deltaRefContParamY{0};
+            int8_t deltaRefITSParamZ{0};
+            int8_t deltaRefContParamSnp{0};
+            int8_t deltaRefContParamTgl{0};
+            int8_t deltaRefContParamQ2Pt{0};
+            int8_t deltaRefGloParamY{0};
+            int8_t deltaRefGloParamZ{0};
+            int8_t deltaRefGloParamSnp{0};
+            int8_t deltaRefGloParamTgl{0};
+            int8_t deltaRefGloParamQ2Pt{0};
+            int8_t deltaTOFdX{0};
+            int8_t deltaTOFdZ{0};
+            if (trackNeg.has_trackQA()) {
+              auto trackQA = trackNeg.trackQA_as<aod::TracksQAVersion>(); // obtain track QA
+              tpcTime0 = trackQA.tpcTime0();
+              tpcdEdxNorm = trackQA.tpcdEdxNorm();
+              tpcDcaR = trackQA.tpcdcaR();
+              tpcDcaZ = trackQA.tpcdcaZ();
+              tpcClusterByteMask = trackQA.tpcClusterByteMask();
+              tpcdEdxMax0R = trackQA.tpcdEdxMax0R();
+              tpcdEdxMax1R = trackQA.tpcdEdxMax1R();
+              tpcdEdxMax2R = trackQA.tpcdEdxMax2R();
+              tpcdEdxMax3R = trackQA.tpcdEdxMax3R();
+              tpcdEdxTot0R = trackQA.tpcdEdxTot0R();
+              tpcdEdxTot1R = trackQA.tpcdEdxTot1R();
+              tpcdEdxTot2R = trackQA.tpcdEdxTot2R();
+              tpcdEdxTot3R = trackQA.tpcdEdxTot3R();
+              deltaRefContParamY = trackQA.deltaRefContParamY();
+              deltaRefITSParamZ = trackQA.deltaRefITSParamZ();
+              deltaRefContParamSnp = trackQA.deltaRefContParamSnp();
+              deltaRefContParamTgl = trackQA.deltaRefContParamTgl();
+              deltaRefContParamQ2Pt = trackQA.deltaRefContParamQ2Pt();
+              deltaRefGloParamY = trackQA.deltaRefGloParamY();
+              deltaRefGloParamZ = trackQA.deltaRefGloParamZ();
+              deltaRefGloParamSnp = trackQA.deltaRefGloParamSnp();
+              deltaRefGloParamTgl = trackQA.deltaRefGloParamTgl();
+              deltaRefGloParamQ2Pt = trackQA.deltaRefGloParamQ2Pt();
+              deltaTOFdX = trackQA.deltaTOFdX();
+              deltaTOFdZ = trackQA.deltaTOFdZ();
+            }
+
+            trackTable(selectedCollisions[collision.globalIndex()], // stored at PV
+                       trackNeg.x(),
+                       trackNeg.alpha(),
+                       trackNeg.y(),
+                       trackNeg.z(),
+                       trackNeg.snp(),
+                       trackNeg.tgl(),
+                       trackNeg.signed1Pt(),
+                       o2::math_utils::detail::truncateFloatFraction(trackNeg.cYY(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackNeg.cZY(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackNeg.cZZ(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackNeg.cSnpY(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackNeg.cSnpZ(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackNeg.cSnpSnp(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackNeg.cTglY(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackNeg.cTglZ(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackNeg.cTglSnp(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackNeg.cTglTgl(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackNeg.c1PtY(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackNeg.c1PtZ(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackNeg.c1PtSnp(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackNeg.c1PtTgl(), precisionCovMask),
+                       o2::math_utils::detail::truncateFloatFraction(trackNeg.c1Pt21Pt2(), precisionCovMask),
+                       trackNeg.tpcInnerParam(),
+                       trackNeg.flags(),
+                       trackNeg.itsClusterSizes(),
+                       trackNeg.tpcNClsFindable(),
+                       trackNeg.tpcNClsFindableMinusFound(),
+                       trackNeg.tpcNClsFindableMinusCrossedRows(),
+                       trackNeg.tpcNClsShared(),
+                       trackNeg.trdPattern(),
+                       getCompressedChi2(trackNeg.itsChi2NCl()),
+                       getCompressedChi2(trackNeg.tpcChi2NCl()),
+                       getCompressedChi2(trackNeg.trdChi2()),
+                       getCompressedChi2(trackNeg.tofChi2()),
+                       trackNeg.tpcSignal(),
+                       trackNeg.trdSignal(),
+                       trackNeg.length(),
+                       trackNeg.tofExpMom(),
+                       trackNeg.trackTime(),
+                       trackNeg.trackTimeRes(),
+                       tpcTime0,
+                       tpcdEdxNorm,
+                       tpcDcaR,
+                       tpcDcaZ,
+                       tpcClusterByteMask,
+                       tpcdEdxMax0R,
+                       tpcdEdxMax1R,
+                       tpcdEdxMax2R,
+                       tpcdEdxMax3R,
+                       tpcdEdxTot0R,
+                       tpcdEdxTot1R,
+                       tpcdEdxTot2R,
+                       tpcdEdxTot3R,
+                       deltaRefContParamY,
+                       deltaRefITSParamZ,
+                       deltaRefContParamSnp,
+                       deltaRefContParamTgl,
+                       deltaRefContParamQ2Pt,
+                       deltaRefGloParamY,
+                       deltaRefGloParamZ,
+                       deltaRefGloParamSnp,
+                       deltaRefGloParamTgl,
+                       deltaRefGloParamQ2Pt,
+                       deltaTOFdX,
+                       deltaTOFdZ,
+                       o2::math_utils::detail::truncateFloatFraction(dcaNeg.getY(), precisionDcaMask),
+                       o2::math_utils::detail::truncateFloatFraction(dcaNeg.getZ(), precisionDcaMask),
+                       getCompressedNumSigmaPid(trackNeg.tpcNSigmaPi()),
+                       getCompressedNumSigmaPid(trackNeg.tpcNSigmaKa()),
+                       getCompressedNumSigmaPid(trackNeg.tofNSigmaPi()),
+                       getCompressedNumSigmaPid(trackNeg.tofNSigmaKa()),
+                       tmoPrimUnfm80,
+                       tmoFV0AUnfm80,
+                       tmoFT0AUnfm80,
+                       tmoFT0CUnfm80,
+                       twmoPrimUnfm80,
+                       twmoFV0AUnfm80,
+                       twmoFT0AUnfm80,
+                       twmoFT0CUnfm80,
+                       tmoRobustT0V0PrimUnfm80,
+                       twmoRobustT0V0PrimUnfm80);
             selectedTracks[trackNeg.globalIndex()] = trackTable.lastIndex();
           }
 
           // candidate
-          candTable(selectedCollisions[collision.globalIndex()], selectedTracks[trackPos.globalIndex()], selectedTracks[trackNeg.globalIndex()], massHypo, ptD0, etaD0, phiD0, invMassD0, invMassD0bar,
-                    getCompressedDecayLength(decLenD0), getCompressedDecayLength(decLenXYD0), getCompressedNormDecayLength(decLenD0 / errorDecayLengthD0), getCompressedNormDecayLength(decLenXYD0 / errorDecayLengthXYD0),
-                    getCompressedCosPa(cosPaD0), getCompressedCosPa(cosPaXYD0), getCompressedPointingAngle(paD0), getCompressedPointingAngle(paXYD0), getCompressedChi2(chi2PCA), getCompressedBdtScoreBkg(bdtScoresD0[0]), getCompressedBdtScoreSgn(bdtScoresD0[1]), getCompressedBdtScoreSgn(bdtScoresD0[2]), getCompressedBdtScoreBkg(bdtScoresD0bar[0]), getCompressedBdtScoreSgn(bdtScoresD0bar[1]), getCompressedBdtScoreSgn(bdtScoresD0bar[2]));
+          candTable(selectedCollisions[collision.globalIndex()],
+                    selectedTracks[trackPos.globalIndex()],
+                    selectedTracks[trackNeg.globalIndex()],
+                    massHypo,
+                    ptD0,
+                    etaD0,
+                    phiD0,
+                    invMassD0,
+                    invMassD0bar,
+                    getCompressedDecayLength(decLenD0),
+                    getCompressedDecayLength(decLenXYD0),
+                    getCompressedNormDecayLength(decLenD0 / errorDecayLengthD0),
+                    getCompressedNormDecayLength(decLenXYD0 / errorDecayLengthXYD0),
+                    getCompressedCosPa(cosPaD0),
+                    getCompressedCosPa(cosPaXYD0),
+                    getCompressedPointingAngle(paD0),
+                    getCompressedPointingAngle(paXYD0),
+                    getCompressedChi2(chi2PCA),
+                    getCompressedBdtScoreBkg(bdtScoresD0[0]),
+                    getCompressedBdtScoreSgn(bdtScoresD0[1]),
+                    getCompressedBdtScoreSgn(bdtScoresD0[2]),
+                    getCompressedBdtScoreBkg(bdtScoresD0bar[0]),
+                    getCompressedBdtScoreSgn(bdtScoresD0bar[1]),
+                    getCompressedBdtScoreSgn(bdtScoresD0bar[2]));
         } // end loop over negative tracks
       } // end loop over positive tracks
     } // end loop over collisions tracks

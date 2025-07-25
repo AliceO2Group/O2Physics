@@ -42,16 +42,17 @@ enum class Track_Type : uint8_t {
 
 } // namespace pwgem::dilepton::ml
 
-namespace emprimarytrack
+namespace emmltrack
 {
-// DECLARE_SOA_COLUMN(CollisionId, collisionId, int);               //!
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                   //!
 DECLARE_SOA_COLUMN(PIDLabel, pidlabel, uint8_t);                     //!
 DECLARE_SOA_COLUMN(TrackType, tracktype, uint8_t);                   //!
 DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, uint8_t);             //!
 DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t); //!
 DECLARE_SOA_COLUMN(IsForValidation, isForValidation, bool);          //!
 DECLARE_SOA_COLUMN(Sign, sign, short);                               //!
-DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
+DECLARE_SOA_COLUMN(P, p, float);                                     //!
+// DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITS, meanClusterSizeITS, [](uint32_t itsClusterSizes) -> float {
   int total_cluster_size = 0, nl = 0;
   for (unsigned int layer = 0; layer < 7; layer++) {
@@ -82,26 +83,24 @@ DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32
     return 0;
   }
 });
-} // namespace emprimarytrack
+} // namespace emmltrack
 
 // reconstructed track information
-DECLARE_SOA_TABLE(EMPrimaryTracks, "AOD", "EMPTRACK", //!
-                  o2::soa::Index<>, collision::PosZ, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange,
-                  track::Pt, track::Eta, track::Phi, track::Tgl, emprimarytrack::Sign,
-                  track::DcaXY, track::DcaZ, track::CYY, track::CZZ, track::CZY,
-                  track::TPCNClsFindable, emprimarytrack::TPCNClsFound, emprimarytrack::TPCNClsCrossedRows,
+DECLARE_SOA_TABLE(EMTracksForMLPID, "AOD", "EMTRACKMLPID", //!
+                  o2::soa::Index<>, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange,
+                  emmltrack::P, track::Tgl, emmltrack::Sign,
+                  track::TPCNClsFindable, emmltrack::TPCNClsFound, emmltrack::TPCNClsCrossedRows,
                   track::TPCChi2NCl, track::TPCInnerParam,
-                  track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
-                  pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,
-                  track::ITSClusterSizes, track::ITSChi2NCl, track::TOFChi2, track::DetectorMap, emprimarytrack::PIDLabel, emprimarytrack::TrackType, emprimarytrack::IsForValidation,
+                  track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
+                  pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,
+                  track::ITSClusterSizes, track::ITSChi2NCl, track::TOFChi2, track::DetectorMap, emmltrack::PIDLabel, emmltrack::IsForValidation,
 
                   // dynamic column
-                  emprimarytrack::P<track::Pt, track::Eta>,
-                  emprimarytrack::MeanClusterSizeITS<track::ITSClusterSizes>,
-                  emprimarytrack::MeanClusterSizeITSob<track::ITSClusterSizes>);
+                  emmltrack::MeanClusterSizeITS<track::ITSClusterSizes>,
+                  emmltrack::MeanClusterSizeITSob<track::ITSClusterSizes>);
 
 // iterators
-using EMPrimaryTrack = EMPrimaryTracks::iterator;
+using EMTrackForMLPID = EMTracksForMLPID::iterator;
 
 } // namespace o2::aod
 

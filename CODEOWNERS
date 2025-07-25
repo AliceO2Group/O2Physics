@@ -36,7 +36,7 @@
 /PWGCF/Tasks         @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
 /PWGDQ @alibuild @iarsene @mcoquet642 @lucamicheletti93
 /PWGEM @alibuild @feisenhu @dsekihat @ivorobye
-/PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
+/PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu @hscheid
 /PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky @mhemmer-cern @dsekihat
 /PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @NicoleBastid @hahassan7 @jpxrk @apalasciano @zhangbiao-phy @gluparel
 # PWG-LF
@@ -50,6 +50,7 @@
 /PWGLF/TableProducer/Resonances @alibuild @sustripathy @skundu692 @dmallick2 @smaff92
 /PWGLF/Tasks/Strangeness @alibuild @sustripathy @skundu692 @ercolessi @romainschotter
 /PWGLF/TableProducer/Strangeness @alibuild @sustripathy @skundu692 @ercolessi @romainschotter
+/PWGLF/Utils @alibuild @sustripathy @skundu692 @gbencedi @abmodak @fmazzasc @maciacco @dmallick2 @smaff92 @ercolessi @romainschotter
 
 # PWG-MM
 /PWGMM      @alibuild @sustripathy @skundu692 @aalkin @jgcn

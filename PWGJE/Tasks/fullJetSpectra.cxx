@@ -22,7 +22,6 @@
 #include "PWGJE/DataModel/JetReducedData.h"
 
 #include "Common/CCDB/TriggerAliases.h"
-#include "Common/DataModel/Multiplicity.h"
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisTask.h"
@@ -1996,7 +1995,7 @@ void processTracksWeighted(soa::Filtered<EMCCollisionsMCD>::iterator const& coll
       }
     }
     registry.fill(HIST("hEventmultiplicityCounter"), 7.5, eventWeight); // EMCAcceptedWeightedCollAfterTrackSel
-    registry.fill(HIST("h_FT0Mults_occupancy"), collision.multiplicity(), eventWeight);
+    registry.fill(HIST("h_FT0Mults_occupancy"), collision.multFT0M(), eventWeight);
 
     for (auto const& mcdjet : mcdjets) {
       float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
@@ -2012,13 +2011,13 @@ void processTracksWeighted(soa::Filtered<EMCCollisionsMCD>::iterator const& coll
       if (!isAcceptedRecoJet<aod::JetTracks,aod::JetClusters>(mcdjet)) {
         continue;
       }
-      registry.fill(HIST("h2_full_jet_jetpTDetVsFT0Mults"), mcdjet.pt(), collision.multiplicity(), eventWeight);
+      registry.fill(HIST("h2_full_jet_jetpTDetVsFT0Mults"), mcdjet.pt(), collision.multFT0M(), eventWeight);
 
       for (auto const& cluster : clusters) {
         neutralEnergy += cluster.energy();
       }
       auto nef = neutralEnergy / mcdjet.energy();
-      registry.fill(HIST("h3_full_jet_jetpTDet_FT0Mults_nef"), mcdjet.pt(), collision.multiplicity(), nef, eventWeight);
+      registry.fill(HIST("h3_full_jet_jetpTDet_FT0Mults_nef"), mcdjet.pt(), collision.multFT0M(), nef, eventWeight);
     }
   }
   PROCESS_SWITCH(FullJetSpectra, processCollisionsWeightedWithMultiplicity, "Weighted Collisions for Full Jets Multiplicity Studies", false);

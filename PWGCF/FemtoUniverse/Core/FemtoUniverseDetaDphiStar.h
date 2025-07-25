@@ -412,6 +412,64 @@ class FemtoUniverseDetaDphiStar
 
   ///  Check if pair is close or not
   template <typename Part>
+  bool isClosePairFrac(Part const& part1, Part const& part2, float lmagfield, uint8_t ChosenEventType, bool IsDphiAvgOrDist, float DistMax, float FracMax)
+  {
+    magfield = lmagfield;
+
+    if constexpr (kPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && kPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kTrack) {
+      /// Track-Track combination
+      // check if provided particles are in agreement with the class instantiation
+      if (part1.partType() != o2::aod::femtouniverseparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kTrack) {
+        LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar instantiation! Please provide kTrack,kTrack candidates.";
+        return false;
+      }
+      auto deta = part1.eta() - part2.eta();
+      auto dphiAvg = averagePhiStar(part1, part2, 0);
+      auto distfrac = averagePhiStarFrac(part1, part2, DistMax);
+      if (ChosenEventType == femto_universe_container::EventType::same) {
+        histdetadpisame[0][0]->Fill(deta, dphiAvg);
+      } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
+        histdetadpimixed[0][0]->Fill(deta, dphiAvg);
+      } else {
+        LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
+      }
+
+      if (IsDphiAvgOrDist) {
+        if (std::pow(dphiAvg, 2) / std::pow(cutDeltaPhiStarMax, 2) + std::pow(deta, 2) / std::pow(cutDeltaEtaMax, 2) < 1.) {
+          return true;
+        } else {
+          if (ChosenEventType == femto_universe_container::EventType::same) {
+            histdetadpisame[0][1]->Fill(deta, dphiAvg);
+          } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
+            histdetadpimixed[0][1]->Fill(deta, dphiAvg);
+          } else {
+            LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
+          }
+          return false;
+        }
+      } else {
+        if (distfrac > FracMax) {
+          return true;
+        } else {
+          if (ChosenEventType == femto_universe_container::EventType::same) {
+            histdetadpisame[0][1]->Fill(deta, dphiAvg);
+          } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
+            histdetadpimixed[0][1]->Fill(deta, dphiAvg);
+          } else {
+            LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
+          }
+          return false;
+        }
+      }
+
+    } else {
+      LOG(fatal) << "FemtoUniversePairCleaner: Combination of objects not defined - quitting!";
+      return false;
+    }
+  }
+
+  ///  Check if pair is close or not
+  template <typename Part>
   void ClosePairqLCMS(Part const& part1, Part const& part2, float lmagfield, uint8_t ChosenEventType, double qlcms) // add typename Parts and variable parts for adding MClabels
   {
     magfield = lmagfield;
@@ -552,6 +610,36 @@ class FemtoUniverseDetaDphiStar
       }
     }
     return dPhiAvg / static_cast<float>(entries);
+  }
+
+  ///  Calculate average phi
+  template <typename T1, typename T2>
+  float averagePhiStarFrac(const T1& part1, const T2& part2, float maxdist)
+  {
+    std::vector<float> tmpVec1;
+    std::vector<float> tmpVec2;
+    phiAtRadiiTPC(part1, tmpVec1);
+    phiAtRadiiTPC(part2, tmpVec2);
+    int num = tmpVec1.size();
+    float dphi = 0;
+    int entries = 0;
+    double distance = 0;
+    int badpoints = 0;
+
+    for (int i = 0; i < num; i++) {
+      if (tmpVec1.at(i) != 999 && tmpVec2.at(i) != 999) {
+        dphi = tmpVec1.at(i) - tmpVec2.at(i);
+        entries++;
+      } else {
+        dphi = 0;
+      }
+      dphi = TVector2::Phi_mpi_pi(dphi);
+      distance = 2 * TMath::Sin(TMath::Abs(dphi) * 0.5) * TmpRadiiTPC[i];
+      if (distance < maxdist) {
+        badpoints++;
+      }
+    }
+    return badpoints / entries;
   }
 
   // Get particle charge from mask

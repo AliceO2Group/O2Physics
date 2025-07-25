@@ -21,6 +21,8 @@
 #define ALICE3_DATAMODEL_OTFMULTICHARM_H_
 
 // O2 includes
+#include "ALICE3/DataModel/OTFStrangeness.h"
+
 #include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
@@ -36,8 +38,8 @@ DECLARE_SOA_COLUMN(XicMass, xicMass, float);
 DECLARE_SOA_COLUMN(XiccMass, xiccMass, float);
 
 // kine vars
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(XiccPt, xiccPt, float);
+DECLARE_SOA_COLUMN(XiccEta, xiccEta, float);
 
 // topo vars
 DECLARE_SOA_COLUMN(XiDCAz, xiDCAz, float);
@@ -49,18 +51,18 @@ DECLARE_SOA_COLUMN(XiccDauDCA, xiccDauDCA, float);
 DECLARE_SOA_COLUMN(XiccDCAxy, xiccDCAxy, float);
 DECLARE_SOA_COLUMN(XiccDCAz, xiccDCAz, float);
 
-DECLARE_SOA_COLUMN(PiFromXiDCAxy, piFromXiDCAxy, float);
-DECLARE_SOA_COLUMN(PiFromLaDCAxy, piFromLaDCAxy, float);
-DECLARE_SOA_COLUMN(PrFromLaDCAxy, prFromLaDCAxy, float);
-DECLARE_SOA_COLUMN(PiFromXiDCAz, piFromXiDCAz, float);
-DECLARE_SOA_COLUMN(PiFromLaDCAz, piFromLaDCAz, float);
-DECLARE_SOA_COLUMN(PrFromLaDCAz, prFromLaDCAz, float);
+DECLARE_SOA_COLUMN(BachDCAxy, bachDCAxy, float);
+DECLARE_SOA_COLUMN(BachDCAz, bachDCAz, float);
+DECLARE_SOA_COLUMN(PosDCAxy, posDCAxy, float);
+DECLARE_SOA_COLUMN(PosDCAz, posDCAz, float);
+DECLARE_SOA_COLUMN(NegDCAxy, negDCAxy, float);
+DECLARE_SOA_COLUMN(NegDCAz, negDCAz, float);
 
 DECLARE_SOA_COLUMN(Pi1cDCAxy, pi1cDCAxy, float);
-DECLARE_SOA_COLUMN(Pi2cDCAxy, pi2cDCAxy, float);
-DECLARE_SOA_COLUMN(PiccDCAxy, piccDCAxy, float);
 DECLARE_SOA_COLUMN(Pi1cDCAz, pi1cDCAz, float);
+DECLARE_SOA_COLUMN(Pi2cDCAxy, pi2cDCAxy, float);
 DECLARE_SOA_COLUMN(Pi2cDCAz, pi2cDCAz, float);
+DECLARE_SOA_COLUMN(PiccDCAxy, piccDCAxy, float);
 DECLARE_SOA_COLUMN(PiccDCAz, piccDCAz, float);
 
 // Lengths
@@ -75,14 +77,25 @@ DECLARE_SOA_COLUMN(Pi1cTofDeltaInner, pi1cTofDeltaInner, float);
 DECLARE_SOA_COLUMN(Pi1cTofNSigmaInner, pi1cTofNSigmaInner, float);
 DECLARE_SOA_COLUMN(Pi1cTofDeltaOuter, pi1cTofDeltaOuter, float);
 DECLARE_SOA_COLUMN(Pi1cTofNSigmaOuter, pi1cTofNSigmaOuter, float);
+DECLARE_SOA_COLUMN(Pi1cHasRichSignal, pi1cHasRichSignal, bool);
+DECLARE_SOA_COLUMN(Pi1cRichNSigma, pi1cRichNSigma, float);
+DECLARE_SOA_COLUMN(Pi1cPdgCode, pi1cPdgCode, int);
+
 DECLARE_SOA_COLUMN(Pi2cTofDeltaInner, pi2cTofDeltaInner, float);
 DECLARE_SOA_COLUMN(Pi2cTofNSigmaInner, pi2cTofNSigmaInner, float);
 DECLARE_SOA_COLUMN(Pi2cTofDeltaOuter, pi2cTofDeltaOuter, float);
 DECLARE_SOA_COLUMN(Pi2cTofNSigmaOuter, pi2cTofNSigmaOuter, float);
+DECLARE_SOA_COLUMN(Pi2cHasRichSignal, pi2cHasRichSignal, bool);
+DECLARE_SOA_COLUMN(Pi2cRichNSigma, pi2cRichNSigma, float);
+DECLARE_SOA_COLUMN(Pi2cPdgCode, pi2cPdgCode, int);
+
 DECLARE_SOA_COLUMN(PiccTofDeltaInner, piccTofDeltaInner, float);
 DECLARE_SOA_COLUMN(PiccTofNSigmaInner, piccTofNSigmaInner, float);
 DECLARE_SOA_COLUMN(PiccTofDeltaOuter, piccTofDeltaOuter, float);
 DECLARE_SOA_COLUMN(PiccTofNSigmaOuter, piccTofNSigmaOuter, float);
+DECLARE_SOA_COLUMN(PiccHasRichSignal, piccHasRichSignal, bool);
+DECLARE_SOA_COLUMN(PiccRichNSigma, piccRichNSigma, float);
+DECLARE_SOA_COLUMN(PiccPdgCode, piccPdgCode, int);
 
 // Daughter info
 DECLARE_SOA_COLUMN(PosPt, posPt, float);
@@ -100,6 +113,7 @@ DECLARE_SOA_COLUMN(PiccPt, piccPt, float);
 DECLARE_SOA_COLUMN(PiccEta, piccEta, float);
 
 } // namespace otfmulticharm
+
 DECLARE_SOA_TABLE(MCharmIndices, "AOD", "MCharmIndices",
                   o2::soa::Index<>,
                   otfmulticharm::CascadeId,
@@ -112,8 +126,8 @@ DECLARE_SOA_TABLE(MCharmCores, "AOD", "MCharmCores",
                   otfmulticharm::XiccDauDCA,
                   otfmulticharm::XicMass,
                   otfmulticharm::XiccMass,
-                  otfmulticharm::Pt,
-                  otfmulticharm::Eta,
+                  otfmulticharm::XiccPt,
+                  otfmulticharm::XiccEta,
 
                   otfmulticharm::XiDCAxy,
                   otfmulticharm::XiDCAz,
@@ -121,13 +135,6 @@ DECLARE_SOA_TABLE(MCharmCores, "AOD", "MCharmCores",
                   otfmulticharm::XicDCAz,
                   otfmulticharm::XiccDCAxy,
                   otfmulticharm::XiccDCAz,
-
-                  otfmulticharm::PiFromXiDCAxy,
-                  otfmulticharm::PiFromXiDCAz,
-                  otfmulticharm::PiFromLaDCAxy,
-                  otfmulticharm::PiFromLaDCAz,
-                  otfmulticharm::PrFromLaDCAxy,
-                  otfmulticharm::PrFromLaDCAz,
 
                   otfmulticharm::Pi1cDCAxy,
                   otfmulticharm::Pi1cDCAz,
@@ -141,38 +148,53 @@ DECLARE_SOA_TABLE(MCharmCores, "AOD", "MCharmCores",
                   otfmulticharm::XicProperLength,
                   otfmulticharm::XicDistanceFromPV,
                   otfmulticharm::XiccProperLength,
+                  otfmulticharm::Pi1cPt,
+                  otfmulticharm::Pi2cPt,
+                  otfmulticharm::PiccPt);
 
+DECLARE_SOA_TABLE(MCharmPID, "AOD", "MCharmPID",
                   otfmulticharm::Pi1cTofDeltaInner,
                   otfmulticharm::Pi1cTofNSigmaInner,
                   otfmulticharm::Pi1cTofDeltaOuter,
                   otfmulticharm::Pi1cTofNSigmaOuter,
+                  otfmulticharm::Pi1cHasRichSignal,
+                  otfmulticharm::Pi1cRichNSigma,
+                  otfmulticharm::Pi1cPdgCode,
 
                   otfmulticharm::Pi2cTofDeltaInner,
                   otfmulticharm::Pi2cTofNSigmaInner,
                   otfmulticharm::Pi2cTofDeltaOuter,
                   otfmulticharm::Pi2cTofNSigmaOuter,
+                  otfmulticharm::Pi2cHasRichSignal,
+                  otfmulticharm::Pi2cRichNSigma,
+                  otfmulticharm::Pi2cPdgCode,
 
                   otfmulticharm::PiccTofDeltaInner,
                   otfmulticharm::PiccTofNSigmaInner,
                   otfmulticharm::PiccTofDeltaOuter,
                   otfmulticharm::PiccTofNSigmaOuter,
+                  otfmulticharm::PiccHasRichSignal,
+                  otfmulticharm::PiccRichNSigma,
+                  otfmulticharm::PiccPdgCode);
 
+DECLARE_SOA_TABLE(MCharmExtra, "AOD", "MCharmExtra",
                   otfmulticharm::BachPt,
                   otfmulticharm::BachEta,
+                  otfmulticharm::BachDCAxy,
+                  otfmulticharm::BachDCAz,
 
                   otfmulticharm::PosPt,
                   otfmulticharm::PosEta,
+                  otfmulticharm::PosDCAxy,
+                  otfmulticharm::PosDCAz,
 
                   otfmulticharm::NegPt,
                   otfmulticharm::NegEta,
+                  otfmulticharm::NegDCAxy,
+                  otfmulticharm::NegDCAz,
 
-                  otfmulticharm::Pi1cPt,
                   otfmulticharm::Pi1cEta,
-
-                  otfmulticharm::Pi2cPt,
                   otfmulticharm::Pi2cEta,
-
-                  otfmulticharm::PiccPt,
                   otfmulticharm::PiccEta);
 
 } // namespace o2::aod

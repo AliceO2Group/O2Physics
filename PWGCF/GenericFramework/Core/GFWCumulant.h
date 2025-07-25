@@ -9,13 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/*
-Author: Vytautas Vislavicius
-Extention of Generic Flow (https://arxiv.org/abs/1312.3572 by A. Bilandzic et al.)
-A part of <GFW.cxx/h>
-A container to store Q vectors for one subevent with an extra layer to recursively calculate particle correlations.
-If used, modified, or distributed, please aknowledge the author of this code.
-*/
+/// \file GFWCumulant.h/.cxx
+/// \brief A container to store Q vectors for one subevent with an extra layer to recursively calculate particle correlations.
+/// \author Emil Gorm Nielsen (ack. V. Vislavicius), NBI, emil.gorm.nielsen@cern.ch
+
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_GFWCUMULANT_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_GFWCUMULANT_H_
 

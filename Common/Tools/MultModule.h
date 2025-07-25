@@ -62,9 +62,9 @@ static const std::vector<std::string> tableNames{
   "FDDMultZeqs",
   "PVMultZeqs",
   "MultMCExtras",
-  "kMult2MCExtras",
-  "kMFTMults",
-  "kMultsGlobal",
+  "Mult2MCExtras",
+  "MFTMults",
+  "MultsGlobal",
 
   // centrality subcomponent
   "CentRun2V0Ms",
@@ -413,8 +413,8 @@ class MultModule
   CalibrationInfo nGlobalInfo = CalibrationInfo("NGlobal");
   CalibrationInfo mftInfo = CalibrationInfo("MFT");
 
-  template <typename TConfigurables, typename TInitContext>
-  void init(TConfigurables& opts, TInitContext& context)
+  template <typename TMetadatainfo, typename TConfigurables, typename TInitContext>
+  void init(TMetadatainfo const& metadataInfo, TConfigurables& opts, TInitContext& context)
   {
     // read in configurations from the task where it's used
     internalOpts = opts;
@@ -474,6 +474,23 @@ class MultModule
     if (internalOpts.mEnabledTables[kCentFDDMs] && !internalOpts.mEnabledTables[kFDDMultZeqs]) {
       internalOpts.mEnabledTables[kFDDMultZeqs] = 1;
       listOfRequestors[kFDDMultZeqs].Append(Form("%s ", "dependency check"));
+    }
+    if (internalOpts.mEnabledTables[kCentMFTs] && !internalOpts.mEnabledTables[kMFTMults]) {
+      internalOpts.mEnabledTables[kMFTMults] = 1;
+      listOfRequestors[kMFTMults].Append(Form("%s ", "dependency check"));
+    }
+    if (internalOpts.mEnabledTables[kCentNGlobals] && !internalOpts.mEnabledTables[kMultsGlobal]) {
+      internalOpts.mEnabledTables[kMultsGlobal] = 1;
+      listOfRequestors[kMultsGlobal].Append(Form("%s ", "dependency check"));
+    }
+    if (internalOpts.embedINELgtZEROselection.value > 0 && !internalOpts.mEnabledTables[kPVMults]) {
+      internalOpts.mEnabledTables[kPVMults] = 1;
+      listOfRequestors[kPVMults].Append(Form("%s ", "dependency check"));
+    }
+
+    // capture the need for PYTHIA calibration in Pb-Pb runs
+    if (metadataInfo.isMC() && mRunNumber >= 544013 && mRunNumber <= 545367) {
+      internalOpts.generatorName.value = "PYTHIA";
     }
 
     mRunNumber = 0;
@@ -781,8 +798,8 @@ class MultModule
         }
 
         // global counters: do them only in case information is provided in tracks table
-        if constexpr (requires { tracks.isQualityTrack(); }) {
-          if (track.pt() < internalOpts.maxPtGlobalTrack.value && track.pt() > internalOpts.minPtGlobalTrack.value && std::fabs(track.eta()) < 1.0f && track.isPVContributor() && tracks.isQualityTrack()) {
+        if constexpr (requires { track.isQualityTrack(); }) {
+          if (track.pt() < internalOpts.maxPtGlobalTrack.value && track.pt() > internalOpts.minPtGlobalTrack.value && std::fabs(track.eta()) < 1.0f && track.isPVContributor() && track.isQualityTrack()) {
             if (track.itsNCls() < internalOpts.minNclsITSGlobalTrack || track.itsNClsInnerBarrel() < internalOpts.minNclsITSibGlobalTrack) {
               continue;
             }

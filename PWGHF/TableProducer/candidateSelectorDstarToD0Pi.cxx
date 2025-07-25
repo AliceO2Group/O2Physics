@@ -15,25 +15,35 @@
 /// \author Deependra Sharma <deependra.sharma@cern.ch>, IITB
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
-#include <algorithm>
-#include <string>
-#include <vector>
-
-// O2
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Logger.h"
-#include "Framework/runDataProcessing.h"
-// O2Physics
-#include "Common/Core/TrackSelectorPID.h"
-// PWGHF
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/HfMlResponseD0ToKPi.h"
 #include "PWGHF/Core/HfMlResponseDstarToD0Pi.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
+
+#include "Common/Core/TrackSelectorPID.h"
+
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH2.h>
+
+#include <Rtypes.h>
+
+#include <cstdint>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::constants::physics;
@@ -81,18 +91,27 @@ struct HfCandidateSelectorDstarToD0Pi {
 
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
-  // ML inference
+  // ML inference D*
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
+  // ML inference D0
+  Configurable<bool> applyMlD0Daug{"applyMlD0Daug", false, "Flag to apply ML selections on D0 daughter"};
+  Configurable<std::vector<double>> binsPtMlD0Daug{"binsPtMlD0Daug", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application on D0 daughter"};
+  Configurable<std::vector<int>> cutDirMlD0Daug{"cutDirMlD0Daug", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold on D0 daughter"};
+  Configurable<LabeledArray<double>> cutsMlD0Daug{"cutsMlD0Daug", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin on D0 daughter"};
+  Configurable<int> nClassesMlD0Daug{"nClassesMlD0Daug", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model on D0 daughter"};
+  Configurable<std::vector<std::string>> namesInputFeaturesD0Daug{"namesInputFeaturesD0Daug", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features on D0 daughter"};
 
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{""}, "Paths of models on CCDB"};
+  Configurable<std::vector<std::string>> modelPathsCCDBD0Daug{"modelPathsCCDBD0Daug", std::vector<std::string>{""}, "Paths of models on CCDB for D0 daughter"};
   Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"Model.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<std::vector<std::string>> onnxFileNamesD0Daug{"onnxFileNamesD0Daug", std::vector<std::string>{"Model.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path) for D0 daughter"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
@@ -101,7 +120,9 @@ struct HfCandidateSelectorDstarToD0Pi {
 
   HfHelper hfHelper;
   o2::analysis::HfMlResponseDstarToD0Pi<float> hfMlResponse;
+  o2::analysis::HfMlResponseDstarToD0Pi<float> hfMlResponseD0Daughter;
   std::vector<float> outputMlDstarToD0Pi = {};
+  std::vector<float> outputMlD0ToKPi = {};
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
@@ -162,6 +183,18 @@ struct HfCandidateSelectorDstarToD0Pi {
       }
       hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
       hfMlResponse.init();
+    }
+
+    if (applyMlD0Daug) {
+      hfMlResponseD0Daughter.configure(binsPtMlD0Daug, cutsMlD0Daug, cutDirMlD0Daug, nClassesMlD0Daug);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdbUrl);
+        hfMlResponseD0Daughter.setModelPathsCCDB(onnxFileNamesD0Daug, ccdbApi, modelPathsCCDBD0Daug, timestampCCDB);
+      } else {
+        hfMlResponseD0Daughter.setModelPathsLocal(onnxFileNamesD0Daug);
+      }
+      hfMlResponseD0Daughter.cacheInputFeaturesIndices(namesInputFeaturesD0Daug);
+      hfMlResponseD0Daughter.init();
     }
   }
 
@@ -226,9 +259,13 @@ struct HfCandidateSelectorDstarToD0Pi {
       return false;
     }
 
-    //.............Why is this if condition commented?
-    if (candidate.decayLengthNormalisedD0() * candidate.decayLengthNormalisedD0() < 1.0) {
-      // return false; // add back when getter fixed
+    if (applyMlD0Daug) {
+      outputMlD0ToKPi.clear();
+      std::vector<float> inputFeaturesD0 = hfMlResponseD0Daughter.getInputFeaturesTrigger(candidate);
+      bool isSelectedMlD0 = hfMlResponseD0Daughter.isSelectedMl(inputFeaturesD0, candpT, outputMlD0ToKPi);
+      if (!isSelectedMlD0) {
+        return false;
+      }
     }
     return true;
   }
