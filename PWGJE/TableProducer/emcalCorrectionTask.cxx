@@ -18,12 +18,13 @@
 /// \author Raymond Ehlers (raymond.ehlers@cern.ch) ORNL, Florian Jonas (florian.jonas@cern.ch)
 ///
 
-#include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/Core/emcalCrossTalkEmulation.h"
+#include "PWGJE/Core/utilsTrackMatchingEMC.h"
 #include "PWGJE/DataModel/EMCALClusterDefinition.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/EMCALMatchedCollisions.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -65,6 +66,7 @@
 #include <gsl/span>
 #include <memory>
 #include <random>
+#include <span>
 #include <sstream>
 #include <string>
 #include <tuple>
@@ -76,12 +78,20 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::emccrosstalk;
+using namespace tmemcutilities;
 using MyGlobTracks = o2::soa::Join<o2::aod::FullTracks, o2::aod::TrackSelection>;
 using BcEvSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
 using CollEventSels = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
 using FilteredCells = o2::soa::Filtered<aod::Calos>;
 using McCells = o2::soa::Join<aod::Calos, aod::McCaloLabels_001>;
 using FilteredMcCells = o2::soa::Filtered<McCells>;
+
+enum CellScaleMode {
+  ModeNone = 0,
+  ModeSMWise = 1,
+  ModeColumnWise = 2,
+  NumberModes = 3
+};
 
 struct EmcalCorrectionTask {
   Produces<o2::aod::EMCALClusters> clusters;
@@ -442,9 +452,9 @@ struct EmcalCorrectionTask {
 
               std::vector<std::vector<int>> clusterToTrackIndexMap;
               std::vector<std::vector<int>> trackToClusterIndexMap;
-              std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>> indexMapPair{clusterToTrackIndexMap, trackToClusterIndexMap};
+              MatchResult indexMapPair;
               std::vector<int64_t> trackGlobalIndex;
-              doTrackMatching<CollEventSels::filtered_iterator>(col, tracks, indexMapPair, vertexPos, trackGlobalIndex);
+              doTrackMatching<CollEventSels::filtered_iterator>(col, tracks, indexMapPair, trackGlobalIndex);
 
               // Store the clusters in the table where a matching collision could
               // be identified.
@@ -612,9 +622,9 @@ struct EmcalCorrectionTask {
 
               std::vector<std::vector<int>> clusterToTrackIndexMap;
               std::vector<std::vector<int>> trackToClusterIndexMap;
-              std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>> indexMapPair{clusterToTrackIndexMap, trackToClusterIndexMap};
+              MatchResult indexMapPair;
               std::vector<int64_t> trackGlobalIndex;
-              doTrackMatching<CollEventSels::filtered_iterator>(col, tracks, indexMapPair, vertexPos, trackGlobalIndex);
+              doTrackMatching<CollEventSels::filtered_iterator>(col, tracks, indexMapPair, trackGlobalIndex);
 
               // Store the clusters in the table where a matching collision could
               // be identified.
@@ -798,16 +808,16 @@ struct EmcalCorrectionTask {
   }
 
   template <typename Collision>
-  void fillClusterTable(Collision const& col, math_utils::Point3D<float> const& vertexPos, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, const std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>>* indexMapPair = nullptr, const std::vector<int64_t>* trackGlobalIndex = nullptr)
+  void fillClusterTable(Collision const& col, math_utils::Point3D<float> const& vertexPos, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, MatchResult* indexMapPair = nullptr, const std::vector<int64_t>* trackGlobalIndex = nullptr)
   {
     // average number of cells per cluster, only used the reseve a reasonable amount for the clustercells table
-    const size_t NAvgNcells = 3;
+    const size_t nAvgNcells = 3;
     // we found a collision, put the clusters into the none ambiguous table
     clusters.reserve(mAnalysisClusters.size());
     if (!mClusterLabels.empty()) {
       mcclusters.reserve(mClusterLabels.size());
     }
-    clustercells.reserve(mAnalysisClusters.size() * NAvgNcells);
+    clustercells.reserve(mAnalysisClusters.size() * nAvgNcells);
 
     // get the clusterType once
     const auto clusterType = static_cast<int>(mClusterDefinitions[iClusterizer]);
@@ -867,10 +877,10 @@ struct EmcalCorrectionTask {
         mHistManager.fill(HIST("hClusterFCrossSigmaShortE"), cluster.E(), cluster.getFCross(), cluster.getM20());
       }
       if (indexMapPair && trackGlobalIndex) {
-        for (unsigned int iTrack = 0; iTrack < std::get<0>(*indexMapPair)[iCluster].size(); iTrack++) {
-          if (std::get<0>(*indexMapPair)[iCluster][iTrack] >= 0) {
-            LOG(debug) << "Found track " << (*trackGlobalIndex)[std::get<0>(*indexMapPair)[iCluster][iTrack]] << " in cluster " << cluster.getID();
-            matchedTracks(clusters.lastIndex(), (*trackGlobalIndex)[std::get<0>(*indexMapPair)[iCluster][iTrack]]);
+        for (unsigned int iTrack = 0; iTrack < indexMapPair->matchIndexTrack[iCluster].size(); iTrack++) {
+          if (indexMapPair->matchIndexTrack[iCluster][iTrack] >= 0) {
+            LOG(debug) << "Found track " << (*trackGlobalIndex)[indexMapPair->matchIndexTrack[iCluster][iTrack]] << " in cluster " << cluster.getID();
+            matchedTracks(clusters.lastIndex(), (*trackGlobalIndex)[indexMapPair->matchIndexTrack[iCluster][iTrack]], indexMapPair->matchDeltaPhi[iCluster][iTrack], indexMapPair->matchDeltaEta[iCluster][iTrack]);
           }
         }
       }
@@ -882,13 +892,13 @@ struct EmcalCorrectionTask {
   void fillAmbigousClusterTable(BC const& bc, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, bool hasCollision)
   {
     // average number of cells per cluster, only used the reseve a reasonable amount for the clustercells table
-    const size_t NAvgNcells = 3;
+    const size_t nAvgNcells = 3;
     int cellindex = -1;
     clustersAmbiguous.reserve(mAnalysisClusters.size());
     if (mClusterLabels.size() > 0) {
       mcclustersAmbiguous.reserve(mClusterLabels.size());
     }
-    clustercellsambiguous.reserve(mAnalysisClusters.size() * NAvgNcells);
+    clustercellsambiguous.reserve(mAnalysisClusters.size() * nAvgNcells);
     unsigned int iCluster = 0;
     float energy = 0.f;
     for (const auto& cluster : mAnalysisClusters) {
@@ -933,12 +943,12 @@ struct EmcalCorrectionTask {
   }
 
   template <typename Collision>
-  void doTrackMatching(Collision const& col, MyGlobTracks const& tracks, std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>>& indexMapPair, math_utils::Point3D<float>& vertexPos, std::vector<int64_t>& trackGlobalIndex)
+  void doTrackMatching(Collision const& col, MyGlobTracks const& tracks, MatchResult& indexMapPair, std::vector<int64_t>& trackGlobalIndex)
   {
     auto groupedTracks = tracks.sliceBy(perCollision, col.globalIndex());
     int nTracksInCol = groupedTracks.size();
-    std::vector<double> trackPhi;
-    std::vector<double> trackEta;
+    std::vector<float> trackPhi;
+    std::vector<float> trackEta;
     // reserve memory to reduce on the fly memory allocation
     trackPhi.reserve(nTracksInCol);
     trackEta.reserve(nTracksInCol);
@@ -946,8 +956,8 @@ struct EmcalCorrectionTask {
     fillTrackInfo<decltype(groupedTracks)>(groupedTracks, trackPhi, trackEta, trackGlobalIndex);
 
     int nClusterInCol = mAnalysisClusters.size();
-    std::vector<double> clusterPhi;
-    std::vector<double> clusterEta;
+    std::vector<float> clusterPhi;
+    std::vector<float> clusterEta;
     clusterPhi.reserve(nClusterInCol);
     clusterEta.reserve(nClusterInCol);
 
@@ -957,20 +967,14 @@ struct EmcalCorrectionTask {
       // Determine the cluster eta, phi, correcting for the vertex
       // position.
       auto pos = cluster.getGlobalPosition();
-      pos = pos - vertexPos;
-      // Normalize the vector and rescale by energy.
-      pos *= (cluster.E() / std::sqrt(pos.Mag2()));
       clusterPhi.emplace_back(TVector2::Phi_0_2pi(pos.Phi()));
       clusterEta.emplace_back(pos.Eta());
     }
-    indexMapPair =
-      jetutilities::MatchClustersAndTracks(clusterPhi, clusterEta,
-                                           trackPhi, trackEta,
-                                           maxMatchingDistance, 20);
+    indexMapPair = matchTracksToCluster(clusterPhi, clusterEta, trackPhi, trackEta, maxMatchingDistance, 20);
   }
 
   template <typename Tracks>
-  void fillTrackInfo(Tracks const& tracks, std::vector<double>& trackPhi, std::vector<double>& trackEta, std::vector<int64_t>& trackGlobalIndex)
+  void fillTrackInfo(Tracks const& tracks, std::vector<float>& trackPhi, std::vector<float>& trackEta, std::vector<int64_t>& trackGlobalIndex)
   {
     int nTrack = 0;
     for (const auto& track : tracks) {
@@ -986,10 +990,10 @@ struct EmcalCorrectionTask {
         continue;
       }
       nTrack++;
-      trackPhi.emplace_back(TVector2::Phi_0_2pi(track.trackPhiEmcal()));
+      trackPhi.emplace_back(RecoDecay::constrainAngle(track.trackPhiEmcal()));
       trackEta.emplace_back(track.trackEtaEmcal());
       mHistManager.fill(HIST("hGlobalTrackEtaPhi"), track.trackEtaEmcal(),
-                        TVector2::Phi_0_2pi(track.trackPhiEmcal()));
+                        RecoDecay::constrainAngle(track.trackPhiEmcal()));
       trackGlobalIndex.emplace_back(track.globalIndex());
     }
     mHistManager.fill(HIST("hGlobalTrackMult"), nTrack);
@@ -1040,12 +1044,12 @@ struct EmcalCorrectionTask {
   {
     // Apply cell scale based on SM types (Full, Half (not used), EMC 1/3, DCal, DCal 1/3)
     // Same as in Run2 data
-    if (applyCellAbsScale == 1) {
+    if (applyCellAbsScale == CellScaleMode::ModeSMWise) {
       int iSM = mClusterizers.at(0)->getGeometry()->GetSuperModuleNumber(cellID);
       return cellAbsScaleFactors.value[mClusterizers.at(0)->getGeometry()->GetSMType(iSM)];
 
       // Apply cell scale based on columns to accoutn for material of TRD structures
-    } else if (applyCellAbsScale == 2) {
+    } else if (applyCellAbsScale == CellScaleMode::ModeColumnWise) {
       auto res = mClusterizers.at(0)->getGeometry()->GlobalRowColFromIndex(cellID);
       return cellAbsScaleFactors.value[std::get<1>(res)];
     } else {
@@ -1063,6 +1067,9 @@ struct EmcalCorrectionTask {
     }
     float timeshift = 0.f;
     float timesmear = 0.f;
+    const float minLeaderEnergy = 0.3f;
+    const float lowEnergyRegime = 4.f;
+    const float highEnergyRegime = 30.f;
     if (isMC) { // ---> MC
       // Shift the time to 0, as the TOF was simulated -> eta dependent shift (as larger eta values are further away from collision point)
       // Use distance between vertex and EMCal (at eta = 0) and distance on EMCal surface (cell size times column) to calculate distance to cell
@@ -1071,7 +1078,7 @@ struct EmcalCorrectionTask {
       timeshift = -std::sqrt(215.f + timeCol * timeCol);            // 215 is 14.67ns^2 (time it takes to get the cell at eta = 0)
 
       // Also smear the time to account for the broader time resolution in data than in MC
-      if (cellEnergy < 0.3)                                                       // Cells with tless than 300 MeV cannot be the leading cell in the cluster, so their time does not require precise calibration
+      if (cellEnergy < minLeaderEnergy)                                           // Cells with tless than 300 MeV cannot be the leading cell in the cluster, so their time does not require precise calibration
         timesmear = 0.;                                                           // They will therefore not be smeared and only get their shift
       else if (cellType == emcal::ChannelType_t::HIGH_GAIN)                       // High gain cells -> Low energies
         timesmear = normalgaus(rdgen) * (1.6 + 9.5 * std::exp(-3. * cellEnergy)); // Parameters extracted from LHC24f3b & LHC22o (pp), but also usable for other periods
@@ -1079,15 +1086,15 @@ struct EmcalCorrectionTask {
         timesmear = normalgaus(rdgen) * (5.0);                                    // Parameters extracted from LHC24g4 & LHC24aj (pp), but also usable for other periods
 
     } else {                                                    // ---> Data
-      if (cellEnergy < 0.3) {                                   // Cells with tless than 300 MeV cannot be the leading cell in the cluster, so their time does not require precise calibration
+      if (cellEnergy < minLeaderEnergy) {                       // Cells with tless than 300 MeV cannot be the leading cell in the cluster, so their time does not require precise calibration
         timeshift = 0.;                                         // In data they will not be shifted (they are close to 0 anyways)
       } else if (cellType == emcal::ChannelType_t::HIGH_GAIN) { // High gain cells -> Low energies
-        if (cellEnergy < 4.)                                    // Low energy regime
+        if (cellEnergy < lowEnergyRegime)                       // Low energy regime
           timeshift = 0.8 * std::log(2.7 * cellEnergy);         // Parameters extracted from LHC22o (pp), but also usable for other periods
         else                                                    // Medium energy regime
           timeshift = 1.5 * std::log(0.9 * cellEnergy);         // Parameters extracted from LHC22o (pp), but also usable for other periods
       } else if (cellType == emcal::ChannelType_t::LOW_GAIN) {  // Low gain cells -> High energies
-        if (cellEnergy < 30.)                                   // High energy regime
+        if (cellEnergy < highEnergyRegime)                      // High energy regime
           timeshift = 1.9 * std::log(0.09 * cellEnergy);        // Parameters extracted from LHC24aj (pp), but also usable for other periods
         else                                                    // Very high energy regime
           timeshift = 1.9;                                      // Parameters extracted from LHC24aj (pp), but also usable for other periods
