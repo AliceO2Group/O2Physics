@@ -37,6 +37,7 @@
 
 #include "TPDGCode.h"
 #include <TRandom3.h>
+#include <TString.h>
 
 #include <chrono>
 #include <cmath>
@@ -118,6 +119,7 @@ struct UccZdc {
   Configurable<bool> applyFD{"applyFD", false, "Apply track-by-track feed down correction"};
   Configurable<bool> correctNch{"correctNch", true, "Correct also Nch"};
   Configurable<bool> skipRecoColGTOne{"skipRecoColGTOne", true, "Remove collisions if reconstructed more than once"};
+  Configurable<std::string> detector4Calibration{"detector4Calibration", "T0M", "Detector for nSigma-Nch rejection"};
 
   // Event selection
   Configurable<float> posZcut{"posZcut", +10.0, "z-vertex position cut"};
@@ -243,6 +245,7 @@ struct UccZdc {
     registry.add("NchUncorrected", Form(";%s;Entries;", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
     registry.add("hEventCounter", ";;Events", kTH1F, {axisEvent});
     registry.add("ExcludedEvtVsFT0M", Form(";%s;Entries;", tiT0M), kTH1F, {{nBinsAmpFT0, 0., maxAmpFT0}});
+    registry.add("ExcludedEvtVsFV0A", Form(";%s;Entries;", tiT0M), kTH1F, {{nBinsAmpV0A, 0., maxAmpV0A}});
     registry.add("ExcludedEvtVsNch", Form(";%s;Entries;", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
     registry.add("Nch", Form(";%s;Entries;", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
     registry.add("NchVsOneParCorr", Form(";%s;%s;", tiNch, tiOneParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
@@ -403,6 +406,7 @@ struct UccZdc {
     LOG(info) << "\tpaTHEff=" << paTHEff.value;
     LOG(info) << "\tpaTHFD=" << paTHFD.value;
     LOG(info) << "\tuseMidRapNchSel=" << useMidRapNchSel.value;
+    LOG(info) << "\tdetector4Calibration=" << detector4Calibration.value;
     LOG(info) << "\tnSigmaNchCut=" << nSigmaNchCut.value;
     LOG(info) << "\tpaTHmeanNch=" << paTHmeanNch.value;
     LOG(info) << "\tpaTHsigmaNch=" << paTHsigmaNch.value;
@@ -599,14 +603,24 @@ struct UccZdc {
       if (!(cfgNch.hMeanNch && cfgNch.hSigmaNch))
         return;
 
-      const int binT0M{cfgNch.hMeanNch->FindBin(normT0M)};
-      const double meanNch{cfgNch.hMeanNch->GetBinContent(binT0M)};
-      const double sigmaNch{cfgNch.hSigmaNch->GetBinContent(binT0M)};
+      TString s1 = TString(detector4Calibration.value);
+      double xEval{1.};
+      if (s1 == "T0M") {
+        xEval = normT0M;
+      }
+      if (s1 == "V0A") {
+        xEval = normV0A;
+      }
+
+      const int bin4Calibration{cfgNch.hMeanNch->FindBin(xEval)};
+      const double meanNch{cfgNch.hMeanNch->GetBinContent(bin4Calibration)};
+      const double sigmaNch{cfgNch.hSigmaNch->GetBinContent(bin4Calibration)};
       const double nSigmaSelection{nSigmaNchCut * sigmaNch};
       const double diffMeanNch{meanNch - glbTracks};
 
       if (std::abs(diffMeanNch) > nSigmaSelection) {
         registry.fill(HIST("ExcludedEvtVsFT0M"), normT0M);
+        registry.fill(HIST("ExcludedEvtVsFV0A"), normV0A);
         registry.fill(HIST("ExcludedEvtVsNch"), glbTracks);
         skipEvent = true;
       }
@@ -763,19 +777,28 @@ struct UccZdc {
 
     bool skipEvent{false};
     if (useMidRapNchSel) {
-
       loadNchCalibrations(foundBC.timestamp());
       if (!(cfgNch.hMeanNch && cfgNch.hSigmaNch))
         return;
 
-      const int binT0M{cfgNch.hMeanNch->FindBin(normT0M)};
-      const double meanNch{cfgNch.hMeanNch->GetBinContent(binT0M)};
-      const double sigmaNch{cfgNch.hSigmaNch->GetBinContent(binT0M)};
+      TString s1 = TString(detector4Calibration.value);
+      double xEval{1.};
+      if (s1 == "T0M") {
+        xEval = normT0M;
+      }
+      if (s1 == "V0A") {
+        xEval = normV0A;
+      }
+
+      const int bin4Calibration{cfgNch.hMeanNch->FindBin(xEval)};
+      const double meanNch{cfgNch.hMeanNch->GetBinContent(bin4Calibration)};
+      const double sigmaNch{cfgNch.hSigmaNch->GetBinContent(bin4Calibration)};
       const double nSigmaSelection{nSigmaNchCut * sigmaNch};
       const double diffMeanNch{meanNch - glbTracks};
 
       if (std::abs(diffMeanNch) > nSigmaSelection) {
         registry.fill(HIST("ExcludedEvtVsFT0M"), normT0M);
+        registry.fill(HIST("ExcludedEvtVsFV0A"), normV0A);
         registry.fill(HIST("ExcludedEvtVsNch"), glbTracks);
         skipEvent = true;
       }
