@@ -334,6 +334,7 @@ struct ZdcQVectors {
       }
       registry.fill(HIST("hEventCount"), evSel_kNoSameBunchPileup);
     }
+
     if (cfgEvSelsIsGoodZvtxFT0vsPV) {
       if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
         // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
