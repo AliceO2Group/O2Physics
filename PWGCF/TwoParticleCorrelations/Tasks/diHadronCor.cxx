@@ -95,6 +95,7 @@ struct DiHadronCor {
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 2000, "High cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyLow, int, 0, "Low cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
+  O2_DEFINE_CONFIGURABLE(cfgCentralityWeight, std::string, "", "CCDB path to centrality weight object")
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, bool, false, "Use local efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgVerbosity, bool, false, "Verbose output")
   O2_DEFINE_CONFIGURABLE(cfgUseEventWeights, bool, false, "Use event weights for mixed event")
@@ -156,6 +157,7 @@ struct DiHadronCor {
 
   // Corrections
   TH3D* mEfficiency = nullptr;
+  TH1D* mCentralityWeight = nullptr;
   bool correctionsLoaded = false;
 
   // Define the outputs
@@ -381,7 +383,7 @@ struct DiHadronCor {
     return true;
   }
 
-  void loadEfficiency(uint64_t timestamp)
+  void loadCorrection(uint64_t timestamp)
   {
     if (correctionsLoaded) {
       return;
@@ -397,6 +399,13 @@ struct DiHadronCor {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
       }
       LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)mEfficiency);
+    }
+    if (cfgCentralityWeight.value.empty() == false) {
+      mCentralityWeight = ccdb->getForTimeStamp<TH1D>(cfgCentralityWeight, timestamp);
+      if (mCentralityWeight == nullptr) {
+        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgCentralityWeight.value.c_str());
+      }
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgCentralityWeight.value.c_str(), (void*)mCentralityWeight);
     }
     correctionsLoaded = true;
   }
@@ -415,6 +424,19 @@ struct DiHadronCor {
     if (eff == 0)
       return false;
     weight_nue = 1. / eff;
+    return true;
+  }
+
+  bool getCentralityWeight(float& weightCent, const float centrality)
+  {
+    float weight = 1.;
+    if (mCentralityWeight)
+      weight = mCentralityWeight->GetBinContent(mCentralityWeight->FindBin(centrality));
+    else
+      weight = 1.0;
+    if (weight == 0)
+      return false;
+    weightCent = weight;
     return true;
   }
 
@@ -713,12 +735,15 @@ struct DiHadronCor {
       return;
     }
 
-    loadEfficiency(bc.timestamp());
+    loadCorrection(bc.timestamp());
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
     fillYield(collision, tracks);
+    float weightCent = 1.0f;
+    if (!cfgCentTableUnavailable)
+      getCentralityWeight(weightCent, cent);
 
     same->fillEvent(tracks.size(), CorrelationContainer::kCFStepReconstructed);
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, getMagneticField(bc.timestamp()), cent, 1.0f);
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, getMagneticField(bc.timestamp()), cent, weightCent);
   }
   PROCESS_SWITCH(DiHadronCor, processSame, "Process same event", true);
 
@@ -768,13 +793,16 @@ struct DiHadronCor {
 
       registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
-      loadEfficiency(bc.timestamp());
+      loadCorrection(bc.timestamp());
       float eventWeight = 1.0f;
       if (cfgUseEventWeights) {
         eventWeight = 1.0f / it.currentWindowNeighbours();
       }
+      float weightCent = 1.0f;
+      if (!cfgCentTableUnavailable)
+        getCentralityWeight(weightCent, cent1);
 
-      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent, getMagneticField(bc.timestamp()), cent1, eventWeight);
+      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent, getMagneticField(bc.timestamp()), cent1, eventWeight * weightCent);
     }
   }
 
