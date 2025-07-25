@@ -282,6 +282,7 @@ struct HfCorrelatorD0Hadrons {
     AxisSpec axisTrkCount = {5, 0., 5.};
     AxisSpec axisBdtScoreBkg = {100, 0., 1., "Bdt score background"};
     AxisSpec axisBdtScorePrompt = {100, 0., 1., "Bdt score prompt"};
+    AxisSpec axisOrigin = {10, 0., 10., "Candidate origin"};
 
     // Histograms for Data
     registry.add("hPtCand", "D0, D0bar candidates", {HistType::kTH1F, {axisPtD}});
@@ -297,7 +298,7 @@ struct HfCorrelatorD0Hadrons {
     registry.add("hMass1D", "D0, D0bar candidates mass", {HistType::kTH1F, {axisMassD}});
     registry.add("hMassD01D", "D0 candidates mass", {HistType::kTH1F, {axisMassD}});
     registry.add("hMassD0bar1D", "D0bar candidates mass", {HistType::kTH1F, {axisMassD}});
-    registry.add("hMLScoresVsMassVsPt", "D0, D0bar candidates massVsPt", {HistType::kTHnSparseD, {{axisBdtScoreBkg}, {axisBdtScorePrompt}, {axisMassD}, {axisPtD}}});
+    registry.add("hMLScoresVsMassVsPtVsOrigin", "D0, D0bar candidates massVsPt", {HistType::kTHnSparseD, {{axisBdtScoreBkg}, {axisBdtScorePrompt}, {axisMassD}, {axisPtD}, {axisOrigin}}});
     // Histograms for MC Reco
     registry.add("hPtCandRec", "D0, D0bar candidates - MC reco", {HistType::kTH1F, {axisPtD}});
     registry.add("hPtProng0Rec", "D0, D0bar candidates prong 0 - MC reco", {HistType::kTH1F, {axisPtD}});
@@ -313,8 +314,8 @@ struct HfCorrelatorD0Hadrons {
     registry.add("hMassD0barRecSig", "D0bar signal candidates massVsPt - MC reco", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
     registry.add("hMassD0barRecRef", "D0bar reflection candidates massVsPt - MC reco", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
     registry.add("hMassD0barRecBg", "D0bar background candidates massVsPt - MC reco", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
-    registry.add("hPtCandRecSigPrompt", "D+,Hadron candidates Prompt - MC Reco", {HistType::kTH1F, {axisPtD}});
-    registry.add("hPtCandRecSigNonPrompt", "D+,Hadron candidates Non Prompt - MC Reco", {HistType::kTH1F, {axisPtD}});
+    registry.add("hPtCandRecSigPrompt", "D0,Hadron candidates Prompt - MC Reco", {HistType::kTH1F, {axisPtD}});
+    registry.add("hPtCandRecSigNonPrompt", "D0,Hadron candidates Non Prompt - MC Reco", {HistType::kTH1F, {axisPtD}});
     registry.add("hPtVsMultiplicityRecPrompt", "Multiplicity FT0M - MC Rec Prompt", {HistType::kTH2F, {{axisPtD}, {axisMultFT0M}}});
     registry.add("hPtVsMultiplicityRecNonPrompt", "Multiplicity FT0M - MC Rec Non Prompt", {HistType::kTH2F, {{axisPtD}, {axisMultFT0M}}});
     registry.add("hPtParticleAssocVsCandRec", "Associated Particle - MC reco", {HistType::kTH2F, {{axisPtHadron}, {axisPtD}}});
@@ -406,7 +407,7 @@ struct HfCorrelatorD0Hadrons {
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMlD0[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
         }
-        registry.fill(HIST("hMLScoresVsMassVsPt"), outputMlD0[0], outputMlD0[2], hfHelper.invMassD0ToPiK(candidate), candidate.pt());
+        registry.fill(HIST("hMLScoresVsMassVsPtVsOrigin"), outputMlD0[0], outputMlD0[2], hfHelper.invMassD0ToPiK(candidate), candidate.pt(), candidate.isSelD0bar() ? o2::aod::hf_correlation_d0_hadron::D0D0barBoth : o2::aod::hf_correlation_d0_hadron::D0Only);
       }
       if (candidate.isSelD0bar() >= selectionFlagD0bar) {
         registry.fill(HIST("hMass"), hfHelper.invMassD0barToKPi(candidate), candidate.pt(), efficiencyWeight);
@@ -415,7 +416,7 @@ struct HfCorrelatorD0Hadrons {
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMlD0bar[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
         }
-        registry.fill(HIST("hMLScoresVsMassVsPt"), outputMlD0bar[0], outputMlD0bar[2], hfHelper.invMassD0barToKPi(candidate), candidate.pt());
+        registry.fill(HIST("hMLScoresVsMassVsPtVsOrigin"), outputMlD0bar[0], outputMlD0bar[2], hfHelper.invMassD0barToKPi(candidate), candidate.pt(), candidate.isSelD0() ? o2::aod::hf_correlation_d0_hadron::D0D0barBoth : o2::aod::hf_correlation_d0_hadron::D0barOnly);
       }
       entryD0CandRecoInfo(hfHelper.invMassD0ToPiK(candidate), hfHelper.invMassD0barToKPi(candidate), candidate.pt(), outputMlD0[0], outputMlD0[2], outputMlD0bar[0], outputMlD0bar[2]);
 
