@@ -14,35 +14,37 @@
 /// \since  01/12/2024
 /// \brief  task to evaluate flow with respect to spectator plane.
 
-#include <algorithm>
-#include <numeric>
-#include <vector>
-#include <string>
-#include <unordered_map>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "GFWWeights.h"
 
 #include "PWGCF/DataModel/SPTableZDC.h"
-#include "GFWWeights.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+
 #include "TF1.h"
 #include "TPDGCode.h"
+
+#include <algorithm>
+#include <numeric>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -376,7 +378,7 @@ struct FlowSP {
         registry.add("incl/QA/after/hCrossedRows_pt", "", {HistType::kTH2D, {axisPt, axisCl}});
         registry.add("incl/QA/after/hCrossedRows_vs_SharedClusters", "", {HistType::kTH2D, {axisCl, axisShCl}});
 
-        if(cfgTrackSelDoTrackQAvsCent){ 
+        if (cfgTrackSelDoTrackQAvsCent) {
           registry.add<TH2>("incl/QA/after/hPt", "", kTH2D, {axisPt, axisCent});
           registry.add<TH2>("incl/QA/after/hPt_forward", "", kTH2D, {axisPt, axisCent});
           registry.add<TH2>("incl/QA/after/hPt_forward_uncorrected", "", kTH2D, {axisPt, axisCent});
@@ -386,8 +388,8 @@ struct FlowSP {
           registry.add<TH2>("incl/QA/after/hPhi_uncorrected", "", kTH2D, {axisPhi, axisCent});
           registry.add<TH2>("incl/QA/after/hEta", "", kTH2D, {axisEta, axisCent});
           registry.add<TH2>("incl/QA/after/hEta_uncorrected", "", kTH2D, {axisEta, axisCent});
-        } else { 
-           registry.add<TH1>("incl/QA/after/hPt", "", kTH1D, {axisPt});
+        } else {
+          registry.add<TH1>("incl/QA/after/hPt", "", kTH1D, {axisPt});
           registry.add<TH1>("incl/QA/after/hPt_forward", "", kTH1D, {axisPt});
           registry.add<TH1>("incl/QA/after/hPt_forward_uncorrected", "", kTH1D, {axisPt});
           registry.add<TH1>("incl/QA/after/hPt_backward", "", kTH1D, {axisPt});
@@ -656,7 +658,7 @@ struct FlowSP {
     return -1;
   }
 
-    int getMagneticField(uint64_t timestamp)
+  int getMagneticField(uint64_t timestamp)
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
     static o2::parameters::GRPMagField* grpo = nullptr;
@@ -674,14 +676,14 @@ struct FlowSP {
   std::pair<float, long> getCrossingAngleCCDB(uint64_t timestamp)
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
-      auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timestamp);
-      if (grpo == nullptr) {
-        LOGF(fatal, "GRP object for Crossing Angle not found for timestamp %llu", timestamp);
-        return {0, 0};
-      }
-      float crossingAngle = grpo->getCrossingAngle(); 
-      long crossingAngleTime = grpo->getCrossingAngleTime();
-      return {crossingAngle, crossingAngleTime}; 
+    auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timestamp);
+    if (grpo == nullptr) {
+      LOGF(fatal, "GRP object for Crossing Angle not found for timestamp %llu", timestamp);
+      return {0, 0};
+    }
+    float crossingAngle = grpo->getCrossingAngle();
+    long crossingAngleTime = grpo->getCrossingAngleTime();
+    return {crossingAngle, crossingAngleTime};
   }
 
   // From Generic Framework
@@ -1131,7 +1133,6 @@ struct FlowSP {
     registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_vs_SharedClusters"), track.tpcNClsFound(), track.tpcFractionSharedCls(), wacc * weff);
   }
 
-
   template <FillType ft, ChargeType ct, typename TrackObject>
   inline void fillPIDQA(TrackObject track)
   {
@@ -1201,21 +1202,21 @@ struct FlowSP {
   template <FillType ft, ParticleType ct, typename TrackObject>
   void fillAllQA(TrackObject track, double vtxz, double centrality, bool pos, float wacc = 1, float weff = 1, float waccP = 1, float weffP = 1, float waccN = 1, float weffN = 1)
   {
-    if(!cfgTrackSelDoTrackQAvsCent) {
+    if (!cfgTrackSelDoTrackQAvsCent) {
       fillTrackQA<ft, kInclusive, ct>(track, vtxz, wacc, weff);
     } else {
       fillTrackQA<ft, kInclusive, ct>(track, vtxz, centrality, wacc, weff);
-      }
+    }
     fillPIDQA<ft, kInclusive>(track);
     if (pos) {
-     if(!cfgTrackSelDoTrackQAvsCent) {
-      fillTrackQA<ft, kPositive, ct>(track, vtxz, waccP, weffP);
-     } else {
-      fillTrackQA<ft, kPositive, ct>(track, vtxz, centrality, waccP, weffP);
-    }
+      if (!cfgTrackSelDoTrackQAvsCent) {
+        fillTrackQA<ft, kPositive, ct>(track, vtxz, waccP, weffP);
+      } else {
+        fillTrackQA<ft, kPositive, ct>(track, vtxz, centrality, waccP, weffP);
+      }
       fillPIDQA<ft, kPositive>(track);
     } else {
-      if(!cfgTrackSelDoTrackQAvsCent) {
+      if (!cfgTrackSelDoTrackQAvsCent) {
         fillTrackQA<ft, kNegative, ct>(track, vtxz, waccN, weffN);
       } else {
         fillTrackQA<ft, kNegative, ct>(track, vtxz, centrality, waccN, weffN);
