@@ -183,13 +183,15 @@ struct HfTaskDplus {
       std::vector<AxisSpec> axes = {thnAxisMass, thnAxisPt};
 
       if (doprocessDataWithMl) {
-        axes.insert(axes.end(), {thnAxisMlScore0, thnAxisMlScore1, thnAxisMlScore2});
+        axes.push_back(thnAxisMlScore0);
+        axes.push_back(thnAxisMlScore1);
+        axes.push_back(thnAxisMlScore2);
       }
       if (storeCentrality) {
-        axes.insert(axes.end(), {thnAxisCent});
+        axes.push_back(thnAxisCent);
       }
       if (storeOccupancy) {
-        axes.insert(axes.end(), {thnAxisOccupancy});
+        axes.push_back(thnAxisOccupancy);
       }
 
       registry.add("hSparseMass", "THn for Dplus", HistType::kTHnSparseF, axes);
@@ -205,28 +207,28 @@ struct HfTaskDplus {
         axesFD.insert(axesFD.end(), {thnAxisMlScore0, thnAxisMlScore1, thnAxisMlScore2});
       }
       if (storeCentrality) {
-        axes.insert(axes.end(), {thnAxisCent});
-        axesFD.insert(axesFD.end(), {thnAxisCent});
-        axesGenPrompt.insert(axesGenPrompt.end(), {thnAxisCent});
-        axesGenFD.insert(axesGenFD.end(), {thnAxisCent});
+        axes.push_back(thnAxisCent);
+        axesFD.push_back(thnAxisCent);
+        axesGenPrompt.push_back(thnAxisCent);
+        axesGenFD.push_back(thnAxisCent);
       }
       if (storeOccupancy) {
-        axes.insert(axes.end(), {thnAxisOccupancy});
-        axesFD.insert(axesFD.end(), {thnAxisOccupancy});
-        axesGenPrompt.insert(axesGenPrompt.end(), {thnAxisOccupancy});
-        axesGenFD.insert(axesGenFD.end(), {thnAxisOccupancy});
+        axes.push_back(thnAxisOccupancy);
+        axesFD.push_back(thnAxisOccupancy);
+        axesGenPrompt.push_back(thnAxisOccupancy);
+        axesGenFD.push_back(thnAxisOccupancy);
       }
       if (storePvContributors) {
-        axes.insert(axes.end(), {thnAxisPvContributors});
-        axesFD.insert(axesFD.end(), {thnAxisPvContributors});
-        axesGenPrompt.insert(axesGenPrompt.end(), {thnAxisPvContributors});
-        axesGenFD.insert(axesGenFD.end(), {thnAxisPvContributors});
+        axes.push_back(thnAxisPvContributors);
+        axesFD.push_back(thnAxisPvContributors);
+        axesGenPrompt.push_back(thnAxisPvContributors);
+        axesGenFD.push_back(thnAxisPvContributors);
       }
 
-      axesFD.insert(axesFD.end(), {thnAxisPtBHad});
-      axesFD.insert(axesFD.end(), {thnAxisFlagBHad});
-      axesGenFD.insert(axesGenFD.end(), {thnAxisPtBHad});
-      axesGenFD.insert(axesGenFD.end(), {thnAxisFlagBHad});
+      axesFD.push_back(thnAxisPtBHad);
+      axesFD.push_back(thnAxisFlagBHad);
+      axesGenFD.push_back(thnAxisPtBHad);
+      axesGenFD.push_back(thnAxisFlagBHad);
 
       registry.add("hSparseMassPrompt", "THn for Dplus Prompt", HistType::kTHnSparseF, axes);
       registry.add("hSparseMassFD", "THn for Dplus FD", HistType::kTHnSparseF, axesFD);
@@ -636,7 +638,7 @@ struct HfTaskDplus {
           ptGenB = bHadMother.pt();
         }
         for (const auto& recCol : mcRecoCollisions) {
-          numPvContr = recCol.numContrib() > numPvContr ? recCol.numContrib() : numPvContr;
+          numPvContr = std::max<float>(numPvContr, recCol.numContrib());
         }
         fillHistoMCGen(particle);
         if constexpr (fillMl) {
