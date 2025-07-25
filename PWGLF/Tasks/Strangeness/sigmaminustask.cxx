@@ -26,7 +26,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, 
+using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
                              aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa,
                              aod::pidTOFFullPi, aod::pidTOFFullPr, aod::pidTOFFullKa>;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSel>;
@@ -47,7 +47,7 @@ struct sigmaminustask {
   Configurable<float> cutNSigmaPi{"cutNSigmaPi", 4, "NSigmaTPCPion"};
 
   Configurable<bool> fillOutputTree{"fillOutputTree", true, "If true, fill the output tree with Kink candidates"};
-  
+
   Preslice<aod::KinkCands> mPerCol = aod::track::collisionId;
 
   void init(InitContext const&)
@@ -62,7 +62,7 @@ struct sigmaminustask {
 
     const AxisSpec ptResolutionAxis{100, -0.5, 0.5, "#it{p}_{T}^{rec} - #it{p}_{T}^{gen} (GeV/#it{c})"};
     const AxisSpec massResolutionAxis{100, -0.1, 0.1, "m_{rec} - m_{gen} (GeV/#it{c}^{2})"};
-    
+
     // Event selection
     rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
     // Sigma-minus reconstruction
@@ -99,17 +99,16 @@ struct sigmaminustask {
       rSigmaMinus.fill(HIST("h2MassSigmaMinusPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
       rSigmaMinus.fill(HIST("h2SigmaMassVsXiMass"), kinkCand.mXiMinus(), kinkCand.mSigmaMinus());
       rSigmaMinus.fill(HIST("h2NSigmaPiPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tpcNSigmaPi());
-    
-      if(fillOutputTree) {
+
+      if (fillOutputTree) {
         outputDataTable(kinkCand.xDecVtx(), kinkCand.yDecVtx(), kinkCand.zDecVtx(),
                         kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth(),
                         kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug(),
                         kinkCand.dcaMothPv(), kinkCand.dcaDaugPv(), kinkCand.dcaKinkTopo(),
-                        kinkCand.mothSign(), 
+                        kinkCand.mothSign(),
                         dauTrack.tpcNSigmaPi(), dauTrack.tpcNSigmaPr(), dauTrack.tpcNSigmaKa(),
                         dauTrack.tofNSigmaPi(), dauTrack.tofNSigmaPr(), dauTrack.tofNSigmaKa());
       }
-
     }
   }
   PROCESS_SWITCH(sigmaminustask, processData, "Data processing", true);
@@ -139,7 +138,7 @@ struct sigmaminustask {
         rSigmaMinus.fill(HIST("h2MassSigmaMinusPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
         rSigmaMinus.fill(HIST("h2SigmaMassVsXiMass"), kinkCand.mXiMinus(), kinkCand.mSigmaMinus());
         rSigmaMinus.fill(HIST("h2NSigmaPiPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tpcNSigmaPi());
-        
+
         // do MC association
         auto mcLabSigma = trackLabelsMC.rawIteratorAt(mothTrack.globalIndex());
         auto mcLabPiDau = trackLabelsMC.rawIteratorAt(dauTrack.globalIndex());
@@ -159,7 +158,7 @@ struct sigmaminustask {
             if (std::abs(mcTrackPiDau.pdgCode()) != 211 && std::abs(mcTrackPiDau.pdgCode()) != 2212) {
               continue;
             }
-            
+
             float MotherMassMC = std::sqrt(piMother.e() * piMother.e() - piMother.p() * piMother.p());
             float MotherpTMC = piMother.pt();
             float decayRadiusMC = std::sqrt(mcTrackPiDau.vx() * mcTrackPiDau.vx() + mcTrackPiDau.vy() * mcTrackPiDau.vy());
@@ -176,14 +175,14 @@ struct sigmaminustask {
             // fill the output table with Mc information
             if (fillOutputTree) {
               outputDataTableMC(kinkCand.xDecVtx(), kinkCand.yDecVtx(), kinkCand.zDecVtx(),
-                              kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth(),
-                              kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug(),
-                              kinkCand.dcaMothPv(), kinkCand.dcaDaugPv(), kinkCand.dcaKinkTopo(),
-                              kinkCand.mothSign(),
-                              dauTrack.tpcNSigmaPi(), dauTrack.tpcNSigmaPr(), dauTrack.tpcNSigmaKa(),
-                              dauTrack.tofNSigmaPi(), dauTrack.tofNSigmaPr(), dauTrack.tofNSigmaKa(),
-                              mcTrackSigma.pdgCode(), mcTrackPiDau.pdgCode(),
-                              MotherpTMC, MotherMassMC, decayRadiusMC);
+                                kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth(),
+                                kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug(),
+                                kinkCand.dcaMothPv(), kinkCand.dcaDaugPv(), kinkCand.dcaKinkTopo(),
+                                kinkCand.mothSign(),
+                                dauTrack.tpcNSigmaPi(), dauTrack.tpcNSigmaPr(), dauTrack.tpcNSigmaKa(),
+                                dauTrack.tofNSigmaPi(), dauTrack.tofNSigmaPr(), dauTrack.tofNSigmaKa(),
+                                mcTrackSigma.pdgCode(), mcTrackPiDau.pdgCode(),
+                                MotherpTMC, MotherMassMC, decayRadiusMC);
             }
           }
         } // MC association and selection
@@ -224,7 +223,7 @@ struct sigmaminustask {
         outputDataTableMC(-999, -999, -999,
                           -999, -999, -999,
                           -999, -999, -999,
-                          -999, -999, -999, 
+                          -999, -999, -999,
                           sigmaSign,
                           -999, -999, -999,
                           -999, -999, -999,
