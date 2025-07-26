@@ -773,7 +773,7 @@ struct StrangenessBuilder {
 
         // Retrieve the model from CCDB
         ccdbApi.init(ccdbConfigurations.ccdburl);
-        
+
         /// Fetching model for specific timestamp
         LOG(info) << "Fetching model for timestamp: " << DeduplicationOpts.timestampCCDB.value;
 
