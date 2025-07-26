@@ -69,8 +69,8 @@ using SimTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, 
 
 static constexpr int kSizeBootStrapEnsemble{8};
 
-std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hPoisson{};
 std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hNch{};
+std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hPoisson{};
 std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsOneParCorrVsZN{};
 std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsTwoParCorrVsZN{};
 std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsThreeParCorrVsZN{};
@@ -83,18 +83,24 @@ std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pOneParCorrVsV0A{}
 std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pTwoParCorrVsV0A{};
 std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pThreeParCorrVsV0A{};
 
+std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pOneParCorrVsNch{};
+std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pTwoParCorrVsNch{};
+std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pThreeParCorrVsNch{};
+
 std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hPoissonMC{};
 std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hNchGen{};
-std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pNchvsOneParCorrGen{};
-std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pNchvsTwoParCorrGen{};
-std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pNchvsThreeParCorrGen{};
-std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pNchvsFourParCorrGen{};
 
-std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hNchRec{};
-std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pNchvsOneParCorrRec{};
-std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pNchvsTwoParCorrRec{};
-std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pNchvsThreeParCorrRec{};
-std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pNchvsFourParCorrRec{};
+// std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pOneParCorrVsT0MGen{};
+// std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pTwoParCorrVsT0MGen{};
+// std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pThreeParCorrVsT0MGen{};
+//
+// std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pOneParCorrVsV0AGen{};
+// std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pTwoParCorrVsV0AGen{};
+// std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pThreeParCorrVsV0AGen{};
+
+std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pOneParCorrVsNchGen{};
+std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pTwoParCorrVsNchGen{};
+std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pThreeParCorrVsNchGen{};
 
 struct UccZdc {
 
@@ -317,34 +323,32 @@ struct UccZdc {
       xEvtsDiv->SetBinLabel(1, "MC closure");
       xEvtsDiv->SetBinLabel(2, "Corrections");
       // MC closure
-      registry.add("NchGen", "MC closure;#it{N}_{ch} (|#eta| < 0.8);Entries;", kTH1F, {{nBinsNch, minNch, maxNch}});
-      registry.add("NchvsOneParCorrGen", "MC closure;#it{N}_{ch} (|#eta| < 0.8);#LT[#it{p}_{T}^{(1)}]#GT (GeV/#it{c})", kTProfile, {{nBinsNch, minNch, maxNch}});
-      registry.add("NchvsTwoParCorrGen", "MC closure;#it{N}_{ch} (|#eta| < 0.8);#LT[#it{p}_{T}^{(2)}]#GT", kTProfile, {{nBinsNch, minNch, maxNch}});
-      registry.add("NchvsThreeParCorrGen", "MC closure;#it{N}_{ch} (|#eta| < 0.8);#LT[#it{p}_{T}^{(3)}]#GT", kTProfile, {{nBinsNch, minNch, maxNch}});
-      registry.add("NchvsFourParCorrGen", "MC closure;#it{N}_{ch} (|#eta| < 0.8);#LT[#it{p}_{T}^{(4)}]#GT", kTProfile, {{nBinsNch, minNch, maxNch}});
-      registry.add("NchVsTwoParCorr", "MC closure;#it{N}_{ch} (|#eta| < 0.8, Corrected);#LT[#it{p}_{T}^{(2)}]#GT", kTProfile, {{nBinsNch, minNch, maxNch}});
-      registry.add("NchVsThreeParCorr", "MC closure;#it{N}_{ch} (|#eta| < 0.8, Corrected);#LT[#it{p}_{T}^{(3)}]#GT", kTProfile, {{nBinsNch, minNch, maxNch}});
-      registry.add("NchVsFourParCorr", "MC closure;#it{N}_{ch} (|#eta| < 0.8, Corrected);#LT[#it{p}_{T}^{(4)}]#GT", kTProfile, {{nBinsNch, minNch, maxNch}});
+      registry.add("NchGen", Form("MC Closure;%s;Entries", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
+      registry.add("NchvsOneParCorrGen", Form("MC Closure;%s;%s", tiNch, tiOneParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+      registry.add("NchvsTwoParCorrGen", Form("MC Closure;%s;%s", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+      registry.add("NchvsThreeParCorrGen", Form("MC Closure;%s;%s", tiNch, tiThreeParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+      registry.add("NchVsTwoParCorr", Form("MC Closure;%s;%s", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+      registry.add("NchVsThreeParCorr", Form("MC Closure;%s;%s", tiNch, tiThreeParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
       // Corrections
       registry.add("zPosMC", "Filled at MC closure + Corrections;;Entries;", kTH1F, {axisZpos});
       registry.add("hEventCounterMC", "Event counter", kTH1F, {axisEvent});
       registry.add("nRecColvsCent", "", kTH2F, {{6, -0.5, 5.5}, {{axisCent}}});
-      registry.add("Pt_all_ch", "Corrections;#it{N}_{ch} (|#eta|<0.8);;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
-      registry.add("Pt_ch", "Corrections;#it{N}_{ch} (|#eta|<0.8);;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
-      registry.add("Pt_pi", "Corrections;#it{N}_{ch} (|#eta|<0.8);;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
-      registry.add("Pt_ka", "Corrections;#it{N}_{ch} (|#eta|<0.8);;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
-      registry.add("Pt_pr", "Corrections;#it{N}_{ch} (|#eta|<0.8);;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
-      registry.add("Pt_sigpos", "Corrections;;;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
-      registry.add("Pt_signeg", "Corrections;;;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
-      registry.add("Pt_re", "Corrections;;;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
-      registry.add("PtMC_ch", "Corrections;;;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
-      registry.add("PtMC_pi", "Corrections;;;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
-      registry.add("PtMC_ka", "Corrections;;;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
-      registry.add("PtMC_pr", "Corrections;;;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
-      registry.add("PtMC_sigpos", "Corrections;;;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
-      registry.add("PtMC_signeg", "Corrections;;;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
-      registry.add("PtMC_re", "Corrections;;;", kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
-      registry.add("McNchVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsNch, minNch, maxNch}}});
+      registry.add("Pt_all_ch", Form("Corrections;%s;%s", tiNch, tiPt), kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("Pt_ch", Form("Corrections;%s;%s", tiNch, tiPt), kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("Pt_pi", Form("Corrections;%s;%s", tiNch, tiPt), kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("Pt_ka", Form("Corrections;%s;%s", tiNch, tiPt), kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("Pt_pr", Form("Corrections;%s;%s", tiNch, tiPt), kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("Pt_sigpos", Form("Corrections;%s;%s", tiNch, tiPt), kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("Pt_signeg", Form("Corrections;%s;%s", tiNch, tiPt), kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("Pt_re", Form("Corrections;%s;%s", tiNch, tiPt), kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("PtMC_ch", Form("Corrections;%s;%s", tiNch, tiPt), kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("PtMC_pi", Form("Corrections;%s;%s", tiNch, tiPt), kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("PtMC_ka", Form("Corrections;%s;%s", tiNch, tiPt), kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("PtMC_pr", Form("Corrections;%s;%s", tiNch, tiPt), kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("PtMC_sigpos", Form("Corrections;%s;%s", tiNch, tiPt), kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("PtMC_signeg", Form("Corrections;%s;%s", tiNch, tiPt), kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("PtMC_re", Form("Corrections;%s;%s", tiNch, tiPt), kTH2F, {{nBinsNch, minNch, maxNch}, {axisPt}});
+      registry.add("McNchVsFT0M", Form("Corrections;%s;%s", tiT0M, tiNch), kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsNch, minNch, maxNch}}});
 
       auto hECMC = registry.get<TH1>(HIST("hEventCounterMC"));
       auto* x = hECMC->GetXaxis();
@@ -352,18 +356,36 @@ struct UccZdc {
       x->SetBinLabel(13, "VtxZ cut");
 
       for (int i = 0; i < kSizeBootStrapEnsemble; i++) {
-        hPoissonMC[i] = registry.add<TH1>(Form("PoissonMC_Replica%d", i), ";#it{k};Entries", kTH1F, {{21, -0.5, 20.5}});
-        hNchGen[i] = registry.add<TH1>(Form("NchGen_Replica%d", i), ";#it{N}_{ch} (|#eta| < 0.8);Entries", kTH1F, {{nBinsNch, minNch, maxNch}});
-        pNchvsOneParCorrGen[i] = registry.add<TProfile>(Form("NchvsOneParCorrGen_Replica%d", i), ";#it{N}_{ch}, |#eta| < 0.8; One-particle #it{p}_{T} correlator", kTProfile, {{nBinsNch, minNch, maxNch}});
-        pNchvsTwoParCorrGen[i] = registry.add<TProfile>(Form("NchvsTwoParCorrGen_Replica%d", i), ";#it{N}_{ch}, |#eta| < 0.8; Two-particle #it{p}_{T} correlator", kTProfile, {{nBinsNch, minNch, maxNch}});
-        pNchvsThreeParCorrGen[i] = registry.add<TProfile>(Form("NchvsThreeParCorrGen_Replica%d", i), ";#it{N}_{ch}, |#eta| < 0.8; Three-particle #it{p}_{T} correlator", kTProfile, {{nBinsNch, minNch, maxNch}});
-        pNchvsFourParCorrGen[i] = registry.add<TProfile>(Form("NchvsFourParCorrGen_Replica%d", i), ";#it{N}_{ch}, |#eta| < 0.8; Four-particle #it{p}_{T} correlator", kTProfile, {{nBinsNch, minNch, maxNch}});
 
-        hNchRec[i] = registry.add<TH1>(Form("NchRec_Replica%d", i), ";#it{N}_{ch} (|#eta| < 0.8);Entries", kTH1F, {{nBinsNch, minNch, maxNch}});
-        pNchvsOneParCorrRec[i] = registry.add<TProfile>(Form("NchvsOneParCorrRec_Replica%d", i), ";#it{N}_{ch}, |#eta| < 0.8; One-particle #it{p}_{T} correlator", kTProfile, {{nBinsNch, minNch, maxNch}});
-        pNchvsTwoParCorrRec[i] = registry.add<TProfile>(Form("NchvsTwoParCorrRec_Replica%d", i), ";#it{N}_{ch}, |#eta| < 0.8; Two-particle #it{p}_{T} correlator", kTProfile, {{nBinsNch, minNch, maxNch}});
-        pNchvsThreeParCorrRec[i] = registry.add<TProfile>(Form("NchvsThreeParCorrRec_Replica%d", i), ";#it{N}_{ch}, |#eta| < 0.8; Three-particle #it{p}_{T} correlator", kTProfile, {{nBinsNch, minNch, maxNch}});
-        pNchvsFourParCorrRec[i] = registry.add<TProfile>(Form("NchvsFourParCorrRec_Replica%d", i), ";#it{N}_{ch}, |#eta| < 0.8; Four-particle #it{p}_{T} correlator", kTProfile, {{nBinsNch, minNch, maxNch}});
+        hPoissonMC[i] = registry.add<TH1>(Form("PoissonMC_Replica%d", i), ";#it{k};Entries", kTH1F, {{11, -0.5, 10.5}});
+        hNchGen[i] = registry.add<TH1>(Form("NchGen_Replica%d", i), Form(";%s;Entries", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
+
+        pOneParCorrVsNchGen[i] = registry.add<TProfile>(Form("OneParCorrVsNchGen_Replica%d", i), Form(";%s;%s;", tiNch, tiOneParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+        pTwoParCorrVsNchGen[i] = registry.add<TProfile>(Form("TwoParCorrVsNchGen_Replica%d", i), Form(";%s;%s;", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+        pThreeParCorrVsNchGen[i] = registry.add<TProfile>(Form("ThreeParCorrVsNchGen_Replica%d", i), Form(";%s;%s;", tiNch, tiThreeParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+
+        //                pOneParCorrVsT0MGen[i] = registry.add<TProfile>(Form("OneParCorrVsT0MGen_Replica%d",i),Form(";%s;%s;",tiT0M,tiOneParCorr), kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
+        //                pTwoParCorrVsT0MGen[i] = registry.add<TProfile>(Form("TwoParCorrVsT0MGen_Replica%d",i),Form(";%s;%s;",tiT0M,tiTwoParCorr), kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
+        //                pThreeParCorrVsT0MGen[i] = registry.add<TProfile>(Form("ThreeParCorrVsT0MGen_Replica%d",i),Form(";%s;%s;",tiT0M,tiThreeParCorr), kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
+
+        //                pOneParCorrVsV0AGen[i] = registry.add<TProfile>(Form("OneParCorrVsV0AGen_Replica%d",i),Form(";%s;%s;",tiT0M,tiOneParCorr), kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
+        //                pTwoParCorrVsV0AGen[i] = registry.add<TProfile>(Form("TwoParCorrVsV0AGen_Replica%d",i),Form(";%s;%s;",tiT0M,tiTwoParCorr), kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
+        //                pThreeParCorrVsV0AGen[i] = registry.add<TProfile>(Form("ThreeParCorrVsV0AGen_Replica%d",i),Form(";%s;%s;",tiT0M,tiThreeParCorr), kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
+
+        hNch[i] = registry.add<TH1>(Form("Nch_Replica%d", i), Form(";%s;Entries", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
+        hPoisson[i] = registry.add<TH1>(Form("Poisson_Replica%d", i), ";#it{k};Entries", kTH1F, {{11, -0.5, 10.5}});
+
+        pOneParCorrVsNch[i] = registry.add<TProfile>(Form("OneParCorrVsNch_Replica%d", i), Form(";%s;%s;", tiNch, tiOneParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+        pTwoParCorrVsNch[i] = registry.add<TProfile>(Form("TwoParCorrVsNch_Replica%d", i), Form(";%s;%s;", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+        pThreeParCorrVsNch[i] = registry.add<TProfile>(Form("ThreeParCorrVsNch_Replica%d", i), Form(";%s;%s;", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+
+        //                pOneParCorrVsT0M[i] = registry.add<TProfile>(Form("OneParCorrVsT0M_Replica%d",i),Form(";%s;%s;",tiT0M,tiOneParCorr),kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
+        //                pTwoParCorrVsT0M[i] = registry.add<TProfile>(Form("TwoParCorrVsT0M_Replica%d",i),Form(";%s;%s;",tiT0M,tiTwoParCorr),kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
+        //                pThreeParCorrVsT0M[i] = registry.add<TProfile>(Form("ThreeParCorrVsT0M_Replica%d",i),Form(";%s;%s;",tiT0M,tiThreeParCorr),kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
+        //
+        //                pOneParCorrVsV0A[i] = registry.add<TProfile>(Form("OneParCorrVsV0A_Replica%d",i),Form(";%s;%s;",tiV0A,tiOneParCorr),kTProfile,{{nBinsAmpV0A,0.,maxAmpV0A}});
+        //                pTwoParCorrVsV0A[i] = registry.add<TProfile>(Form("TwoParCorrVsV0A_Replica%d",i),Form(";%s;%s;",tiV0A,tiTwoParCorr),kTProfile,{{nBinsAmpV0A,0.,maxAmpV0A}});
+        //                pThreeParCorrVsV0A[i] = registry.add<TProfile>(Form("ThreeParCorrVsV0A_Replica%d",i),Form(";%s;%s;",tiV0A,tiThreeParCorr),kTProfile,{{nBinsAmpV0A,0.,maxAmpV0A}});
       }
     }
 
@@ -756,7 +778,7 @@ struct UccZdc {
     }
 
     // Nch-based selection
-    int glbTracks = 0;
+    int glbTracks{0};
     for (const auto& track : tracks) {
       // Track Selection
       if (!track.isGlobalTrack()) {
@@ -809,7 +831,7 @@ struct UccZdc {
       return;
     }
 
-    double nchMult{0.};
+    double nchMult{static_cast<double>(glbTracks)};
     std::vector<float> pTs;
     std::vector<float> vecFD;
     std::vector<float> vecEff;
@@ -952,6 +974,631 @@ struct UccZdc {
     eventSampling(tracks, normV0A, normT0M, sumZNs, timeStamp);
   }
   PROCESS_SWITCH(UccZdc, processZdcCollAss, "Process ZDC W/Coll Ass.", true);
+
+  Preslice<TheFilteredSimTracks> perCollision = aod::track::collisionId;
+  Service<o2::framework::O2DatabasePDG> pdg;
+  void processMCclosure(aod::McCollisions::iterator const& mccollision, soa::SmallGroups<o2::aod::SimCollisions> const& collisions, o2::aod::BCsRun3 const& /*bcs*/, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::McParticles const& mcParticles, TheFilteredSimTracks const& simTracks)
+  {
+    for (const auto& collision : collisions) {
+      // Event selection
+      if (!isEventSelected(collision)) {
+        continue;
+      }
+      // MC collision?
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
+
+      registry.fill(HIST("hEventCounterMC"), EvCutLabel::All);
+      // Vtx_z selection MC
+      if (std::fabs(mccollision.posZ()) > posZcut) {
+        continue;
+      }
+
+      const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
+
+      uint64_t timeStamp{foundBC.timestamp()};
+      TRandom3 rndGen(timeStamp);
+      const double rndNum{rndGen.Uniform(0.0, 1.0)};
+      registry.fill(HIST("RandomNumber"), rndNum);
+
+      double aT0A = 0., aT0C = 0.;
+      if (foundBC.has_ft0()) {
+        for (const auto& amplitude : foundBC.ft0().amplitudeA()) {
+          aT0A += amplitude;
+        }
+        for (const auto& amplitude : foundBC.ft0().amplitudeC()) {
+          aT0C += amplitude;
+        }
+      } else {
+        return;
+      }
+
+      // double aV0A{-999.};
+      // if (foundBC.has_fv0a()) {
+      //     for (const auto& amplitude : foundBC.fv0a().amplitude()) { aV0A += amplitude; }
+      // }
+
+      const double normT0M{(aT0A + aT0C) / 100.};
+      // const double normV0A{aV0A/100.};
+
+      double nchRaw{0.};
+      double nchMult{0.};
+      double nchMC{0.};
+
+      registry.fill(HIST("zPos"), collision.posZ());
+      registry.fill(HIST("zPosMC"), mccollision.posZ());
+      registry.fill(HIST("hEventCounterMC"), EvCutLabel::VtxZ);
+
+      if (skipRecoColGTOne && (collisions.size() > kOne)) {
+        continue;
+      }
+
+      registry.fill(HIST("nRecColvsCent"), collisions.size(), collision.centFT0C());
+
+      const auto& cent{collision.centFT0C()};
+      registry.fill(HIST("T0Ccent"), cent);
+
+      const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
+
+      // Half of the statistics for MC closure
+      if (rndNum >= kZero && rndNum < evtFracMCcl) {
+
+        registry.fill(HIST("EvtsDivided"), 0);
+
+        // Run-by-run efficiency
+        loadCorrections(foundBC.timestamp());
+        if (!(cfg.hEfficiency && cfg.hFeedDown)) {
+          continue;
+        }
+
+        std::vector<double> pTs;
+        std::vector<double> vecFD;
+        std::vector<double> vecEff;
+
+        // Calculates the event's Nch to evaluate the efficiency
+        for (const auto& track : groupedTracks) {
+          // Track Selection
+          if (track.eta() < minEta || track.eta() > maxEta) {
+            continue;
+          }
+          if (track.pt() < minPt || track.pt() > maxPt) {
+            continue;
+          }
+          if (!track.isGlobalTrack()) {
+            continue;
+          }
+          nchRaw++;
+        }
+
+        // Reject event if nchRaw less than a lower cutoff
+        if (nchRaw < minNchSel) {
+          return;
+        }
+
+        // Calculates the event weight, W_k
+        const int foundNchBin{cfg.hEfficiency->GetXaxis()->FindBin(nchRaw)};
+
+        for (const auto& track : groupedTracks) {
+          // Track Selection
+          if (track.eta() < minEta || track.eta() > maxEta) {
+            continue;
+          }
+          if (track.pt() < minPt || track.pt() > maxPt) {
+            continue;
+          }
+          if (!track.isGlobalTrack()) {
+            continue;
+          }
+          if (!track.has_mcParticle()) {
+            continue;
+          }
+          const auto& particle{track.mcParticle()};
+
+          auto charge{0.};
+          // Get the MC particle
+          auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+          if (pdgParticle != nullptr) {
+            charge = pdgParticle->Charge();
+          } else {
+            continue;
+          }
+
+          // Is it a charged particle?
+          if (std::abs(charge) < kMinCharge) {
+            continue;
+          }
+          // Is it a primary particle?
+          // if (!particle.isPhysicalPrimary()) { continue; }
+
+          const double pt{static_cast<double>(track.pt())};
+          const int foundPtBin{cfg.hEfficiency->GetYaxis()->FindBin(pt)};
+          const double effValue{cfg.hEfficiency->GetBinContent(foundNchBin, foundPtBin)};
+          double fdValue{1.};
+
+          if (applyFD)
+            fdValue = cfg.hFeedDown->GetBinContent(foundNchBin, foundPtBin);
+          if ((effValue > 0.) && (fdValue > 0.)) {
+            pTs.emplace_back(pt);
+            vecEff.emplace_back(effValue);
+            vecFD.emplace_back(fdValue);
+            nchMult += (std::pow(effValue, -1.0) * fdValue);
+          }
+        }
+
+        double p1, p2, p3, p4, w1, w2, w3, w4;
+        p1 = p2 = p3 = p4 = w1 = w2 = w3 = w4 = 0.0;
+        getPTpowers(pTs, vecEff, vecFD, p1, w1, p2, w2, p3, w3, p4, w4);
+
+        const double denTwoParCorr{std::pow(w1, 2.) - w2};
+        const double numTwoParCorr{std::pow(p1, 2.) - p2};
+        const double denThreeParCorr{std::pow(w1, 3.) - 3. * w2 * w1 + 2. * w3};
+        const double numThreeParCorr{std::pow(p1, 3.) - 3. * p2 * p1 + 2. * p3};
+        // const double denFourParCorr{std::pow(w1, 4.) - 6. * w2 * std::pow(w1, 2.) + 3. * std::pow(w2, 2.) + 8 * w3 * w1 - 6. * w4};
+        // const double numFourParCorr{std::pow(p1, 4.) - 6. * p2 * std::pow(p1, 2.) + 3. * std::pow(p2, 2.) + 8 * p3 * p1 - 6. * p4};
+
+        const double oneParCorr{p1 / w1};
+        const double twoParCorr{numTwoParCorr / denTwoParCorr};
+        const double threeParCorr{numThreeParCorr / denThreeParCorr};
+
+        registry.fill(HIST("Nch"), nchMult);
+        registry.fill(HIST("NchUncorrected"), nchRaw);
+        registry.fill(HIST("NchVsOneParCorr"), nchMult, oneParCorr, w1);
+        registry.fill(HIST("NchVsTwoParCorr"), nchMult, twoParCorr, denTwoParCorr);
+        registry.fill(HIST("NchVsThreeParCorr"), nchMult, threeParCorr, denThreeParCorr);
+
+        //--------------------------- Generated MC ---------------------------
+        std::vector<float> pTsMC;
+        std::vector<float> vecFullEff;
+        std::vector<float> vecFDEqualOne;
+
+        // Calculates the event weight, W_k
+        for (const auto& particle : mcParticles) {
+          if (particle.eta() < minEta || particle.eta() > maxEta) {
+            continue;
+          }
+          if (particle.pt() < minPt || particle.pt() > maxPt) {
+            continue;
+          }
+
+          auto charge{0.};
+          // Get the MC particle
+          auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+          if (pdgParticle != nullptr) {
+            charge = pdgParticle->Charge();
+          } else {
+            continue;
+          }
+
+          // Is it a charged particle?
+          if (std::abs(charge) < kMinCharge) {
+            continue;
+          }
+          // Is it a primary particle?
+          if (!particle.isPhysicalPrimary()) {
+            continue;
+          }
+
+          float pt{particle.pt()};
+          pTsMC.emplace_back(pt);
+          vecFullEff.emplace_back(1.);
+          vecFDEqualOne.emplace_back(1.);
+          nchMC++;
+        }
+
+        if (nchMC < minNchSel) {
+          continue;
+        }
+        // printf("nchMult = %f  | nchMC = %f  | nchMult/nchMc = %f\n",nchMult,nchMC,nchMult/nchMC);
+
+        double p1MC, p2MC, p3MC, p4MC, w1MC, w2MC, w3MC, w4MC;
+        p1MC = p2MC = p3MC = p4MC = w1MC = w2MC = w3MC = w4MC = 0.0;
+        getPTpowers(pTsMC, vecFullEff, vecFDEqualOne, p1MC, w1MC, p2MC, w2MC, p3MC, w3MC, p4MC, w4MC);
+
+        const double denTwoParCorrMC{std::pow(w1MC, 2.) - w2MC};
+        const double numTwoParCorrMC{std::pow(p1MC, 2.) - p2MC};
+        const double denThreeParCorrMC{std::pow(w1MC, 3.) - 3. * w2MC * w1MC + 2. * w3MC};
+        const double numThreeParCorrMC{std::pow(p1MC, 3.) - 3. * p2MC * p1MC + 2. * p3MC};
+        // const double denFourParCorrMC{std::pow(w1MC, 4.) - 6. * w2MC * std::pow(w1MC, 2.) + 3. * std::pow(w2MC, 2.) + 8 * w3MC * w1MC - 6. * w4MC};
+        // const double numFourParCorrMC{std::pow(p1MC, 4.) - 6. * p2MC * std::pow(p1MC, 2.) + 3. * std::pow(p2MC, 2.) + 8 * p3MC * p1MC - 6. * p4MC};
+
+        const double oneParCorrMC{p1MC / w1MC};
+        const double twoParCorrMC{numTwoParCorrMC / denTwoParCorrMC};
+        const double threeParCorrMC{numThreeParCorrMC / denThreeParCorrMC};
+        // const double fourParCorrMC{numFourParCorrMC / denFourParCorrMC};
+
+        registry.fill(HIST("NchGen"), nchMC);
+        registry.fill(HIST("NchvsOneParCorrGen"), nchMC, oneParCorrMC, w1MC);
+        registry.fill(HIST("NchvsTwoParCorrGen"), nchMC, twoParCorrMC, denTwoParCorrMC);
+        registry.fill(HIST("NchvsThreeParCorrGen"), nchMC, threeParCorrMC, denThreeParCorrMC);
+
+        //------------------ Poisson sampling
+        eventSamplingMC(mcParticles, timeStamp);
+        eventSamplingMCRec(groupedTracks, timeStamp);
+      } else { // Correction with the remaining half of the sample
+        registry.fill(HIST("EvtsDivided"), 1);
+        //----- MC reconstructed -----//
+        //                const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
+        for (const auto& track : groupedTracks) {
+          // Track Selection
+          if (track.eta() < minEta || track.eta() > maxEta) {
+            continue;
+          }
+          if (track.pt() < minPt || track.pt() > maxPt) {
+            continue;
+          }
+          if (!track.isGlobalTrack()) {
+            continue;
+          }
+          registry.fill(HIST("ZposVsEta"), collision.posZ(), track.eta());
+          registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
+          registry.fill(HIST("dcaXYvspT"), track.dcaXY(), track.pt());
+          nchRaw++;
+        }
+
+        for (const auto& track : groupedTracks) {
+          // Track Selection
+          if (track.eta() < minEta || track.eta() > maxEta) {
+            continue;
+          }
+          if (track.pt() < minPt || track.pt() > maxPt) {
+            continue;
+          }
+          if (!track.isGlobalTrack()) {
+            continue;
+          }
+          // Has MC particle?
+          if (!track.has_mcParticle()) {
+            continue;
+          }
+          // Get the MC particle
+          const auto& particle{track.mcParticle()};
+          auto charge{0.};
+          auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+          if (pdgParticle != nullptr) {
+            charge = pdgParticle->Charge();
+          } else {
+            continue;
+          }
+
+          // Is it a charged particle?
+          if (std::abs(charge) < kMinCharge) {
+            continue;
+          }
+          // All charged particles
+          registry.fill(HIST("Pt_all_ch"), nchRaw, track.pt());
+          // Is it a primary particle?
+          if (!particle.isPhysicalPrimary()) {
+            continue;
+          }
+
+          registry.fill(HIST("Pt_ch"), nchRaw, track.pt());
+          if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
+            registry.fill(HIST("Pt_pi"), nchRaw, track.pt());
+          } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
+            registry.fill(HIST("Pt_ka"), nchRaw, track.pt());
+          } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
+            registry.fill(HIST("Pt_pr"), nchRaw, track.pt());
+          } else if (particle.pdgCode() == PDG_t::kSigmaPlus || particle.pdgCode() == PDG_t::kSigmaBarMinus) {
+            registry.fill(HIST("Pt_sigpos"), nchRaw, track.pt());
+          } else if (particle.pdgCode() == PDG_t::kSigmaMinus || particle.pdgCode() == PDG_t::kSigmaBarPlus) {
+            registry.fill(HIST("Pt_signeg"), nchRaw, track.pt());
+          } else {
+            registry.fill(HIST("Pt_re"), nchRaw, track.pt());
+          }
+        }
+
+        // Generated MC
+        for (const auto& particle : mcParticles) {
+          if (particle.eta() < minEta || particle.eta() > maxEta) {
+            continue;
+          }
+          if (particle.pt() < minPt || particle.pt() > maxPt) {
+            continue;
+          }
+
+          auto charge{0.};
+          // Get the MC particle
+          auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+          if (pdgParticle != nullptr) {
+            charge = pdgParticle->Charge();
+          } else {
+            continue;
+          }
+
+          // Is it a charged particle?
+          if (std::abs(charge) < kMinCharge) {
+            continue;
+          }
+          // Is it a primary particle?
+          if (!particle.isPhysicalPrimary()) {
+            continue;
+          }
+
+          registry.fill(HIST("PtMC_ch"), nchRaw, particle.pt());
+          if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) { // pion
+            registry.fill(HIST("PtMC_pi"), nchRaw, particle.pt());
+          } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) { // kaon
+            registry.fill(HIST("PtMC_ka"), nchRaw, particle.pt());
+          } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) { // proton
+            registry.fill(HIST("PtMC_pr"), nchRaw, particle.pt());
+          } else if (particle.pdgCode() == PDG_t::kSigmaPlus || particle.pdgCode() == PDG_t::kSigmaBarMinus) { // positive sigma
+            registry.fill(HIST("PtMC_sigpos"), nchRaw, particle.pt());
+          } else if (particle.pdgCode() == PDG_t::kSigmaMinus || particle.pdgCode() == PDG_t::kSigmaBarPlus) { // negative sigma
+            registry.fill(HIST("PtMC_signeg"), nchRaw, particle.pt());
+          } else { // rest
+            registry.fill(HIST("PtMC_re"), nchRaw, particle.pt());
+          }
+        }
+      } // Half of statistics for corrections
+      registry.fill(HIST("McNchVsFT0M"), normT0M, nchRaw);
+    } // Collisions
+  }
+  PROCESS_SWITCH(UccZdc, processMCclosure, "Process MC closure", false);
+
+  template <typename T, typename U>
+  void getPTpowers(const T& pTs, const T& vecEff, const T& vecFD, U& pOne, U& wOne, U& pTwo, U& wTwo, U& pThree, U& wThree, U& pFour, U& wFour)
+  {
+    pOne = wOne = pTwo = wTwo = pThree = wThree = pFour = wFour = 0.;
+    for (std::size_t i = 0; i < pTs.size(); ++i) {
+      const double pTi{pTs.at(i)};
+      const double eFFi{vecEff.at(i)};
+      const double fDi{vecFD.at(i)};
+      const double wEighti{std::pow(eFFi, -1.) * fDi};
+      pOne += wEighti * pTi;
+      wOne += wEighti;
+      pTwo += std::pow(wEighti * pTi, 2.);
+      wTwo += std::pow(wEighti, 2.);
+      pThree += std::pow(wEighti * pTi, 3.);
+      wThree += std::pow(wEighti, 3.);
+      pFour += std::pow(wEighti * pTi, 4.);
+      wFour += std::pow(wEighti, 4.);
+    }
+  }
+
+  template <typename T, typename V>
+  void eventSamplingMC(const T& mcParticles, const V& timeStamp)
+  {
+    TRandom3 rndGen(timeStamp);
+    std::vector<uint64_t> vPoisson;
+    for (int replica = 0; replica < kSizeBootStrapEnsemble; ++replica)
+      vPoisson.emplace_back(rndGen.Poisson(1.));
+
+    for (int replica = 0; replica < kSizeBootStrapEnsemble; ++replica) {
+
+      hPoissonMC[replica]->Fill(vPoisson.at(replica));
+
+      for (uint64_t evtRep = 0; evtRep < vPoisson.at(replica); ++evtRep) {
+
+        double nchMult{0.};
+        std::vector<float> pTs;
+        std::vector<float> vecFD;
+        std::vector<float> vecEff;
+
+        // Calculates the event weight, W_k
+        for (const auto& particle : mcParticles) {
+          if (particle.eta() < minEta || particle.eta() > maxEta) {
+            continue;
+          }
+          if (particle.pt() < minPt || particle.pt() > maxPt) {
+            continue;
+          }
+
+          auto charge{0.};
+          // Get the MC particle
+          auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+          if (pdgParticle != nullptr) {
+            charge = pdgParticle->Charge();
+          } else {
+            continue;
+          }
+
+          // Is it a charged particle?
+          if (std::abs(charge) < kMinCharge) {
+            continue;
+          }
+          // Is it a primary particle?
+          if (!particle.isPhysicalPrimary()) {
+            continue;
+          }
+
+          float pt{particle.pt()};
+          pTs.emplace_back(pt);
+          vecEff.emplace_back(1.);
+          vecFD.emplace_back(1.);
+          nchMult++;
+        }
+
+        if (nchMult < minNchSel) {
+          continue;
+        }
+        // printf("nchMult = %f  | nchMC = %f  | nchMult/nchMc = %f\n",nchMult,nchMC,nchMult/nchMC);
+
+        double p1, p2, p3, p4, w1, w2, w3, w4;
+        p1 = p2 = p3 = p4 = w1 = w2 = w3 = w4 = 0.0;
+        getPTpowers(pTs, vecEff, vecFD, p1, w1, p2, w2, p3, w3, p4, w4);
+
+        // EbE one-particle pT correlation
+        const double oneParCorr{p1 / w1};
+
+        // EbE two-particle pT correlation
+        const double denTwoParCorr{std::pow(w1, 2.) - w2};
+        const double numTwoParCorr{std::pow(p1, 2.) - p2};
+        const double twoParCorr{numTwoParCorr / denTwoParCorr};
+
+        // EbE three-particle pT correlation
+        const double denThreeParCorr{std::pow(w1, 3.) - 3. * w2 * w1 + 2. * w3};
+        const double numThreeParCorr{std::pow(p1, 3.) - 3. * p2 * p1 + 2. * p3};
+        const double threeParCorr{numThreeParCorr / denThreeParCorr};
+
+        hNchGen[replica]->Fill(nchMult);
+
+        pOneParCorrVsNchGen[replica]->Fill(nchMult, oneParCorr, w1);
+        pTwoParCorrVsNchGen[replica]->Fill(nchMult, twoParCorr, denTwoParCorr);
+        pThreeParCorrVsNchGen[replica]->Fill(nchMult, threeParCorr, denThreeParCorr);
+
+        //                pOneParCorrVsV0AGen[replica]->Fill(normV0A, oneParCorr, w1);
+        //                pTwoParCorrVsV0AGen[replica]->Fill(normV0A, twoParCorr, denTwoParCorr);
+        //                pThreeParCorrVsV0AGen[replica]->Fill(normV0A, threeParCorr, denThreeParCorr);
+
+        //                pOneParCorrVsT0MGen[replica]->Fill(normT0M, oneParCorr, w1);
+        //                pTwoParCorrVsT0MGen[replica]->Fill(normT0M, twoParCorr, denTwoParCorr);
+        //                pThreeParCorrVsT0MGen[replica]->Fill(normT0M, threeParCorr, denThreeParCorr);
+      } // event per replica
+    } // replica's loop
+  }
+
+  template <typename T, typename V>
+  void eventSamplingMCRec(const T& tracks, const V& timeStamp)
+  {
+    TRandom3 rndGen(timeStamp);
+    std::vector<uint64_t> vPoisson;
+    for (int replica = 0; replica < kSizeBootStrapEnsemble; ++replica)
+      vPoisson.emplace_back(rndGen.Poisson(1.));
+
+    for (int replica = 0; replica < kSizeBootStrapEnsemble; ++replica) {
+
+      hPoisson[replica]->Fill(vPoisson.at(replica));
+
+      for (uint64_t evtRep = 0; evtRep < vPoisson.at(replica); ++evtRep) {
+
+        double nchMult{0.};
+        int glbTracks{0};
+        std::vector<float> pTs;
+        std::vector<float> vecFD;
+        std::vector<float> vecEff;
+
+        // Calculates the uncorrected Nch multiplicity
+        for (const auto& track : tracks) {
+          // Track Selection
+          if (!track.isGlobalTrack()) {
+            continue;
+          }
+          if ((track.pt() < minPt) || (track.pt() > maxPt)) {
+            continue;
+          }
+          if ((track.eta() < minEta) || (track.eta() > maxEta)) {
+            continue;
+          }
+          glbTracks++;
+        }
+
+        if (glbTracks < minNchSel) {
+          continue;
+        }
+
+        // Calculates the Nch multiplicity if corrections are loaded
+        if (cfg.correctionsLoaded) {
+          const int foundNchBin{cfg.hEfficiency->GetXaxis()->FindBin(glbTracks)};
+          for (const auto& track : tracks) {
+            // Track Selection
+            if (!track.isGlobalTrack()) {
+              continue;
+            }
+            if ((track.pt() < minPt) || (track.pt() > maxPt)) {
+              continue;
+            }
+            if ((track.eta() < minEta) || (track.eta() > maxEta)) {
+              continue;
+            }
+
+            float pt{track.pt()};
+            double fdValue{1.};
+            int foundPtBin{cfg.hEfficiency->GetYaxis()->FindBin(pt)};
+            double effValue{cfg.hEfficiency->GetBinContent(foundNchBin, foundPtBin)};
+
+            if (applyFD)
+              fdValue = cfg.hFeedDown->GetBinContent(foundNchBin, foundPtBin);
+            if ((effValue > 0.) && (fdValue > 0.)) {
+              nchMult += (std::pow(effValue, -1.) * fdValue);
+            }
+          }
+        }
+
+        if (!applyEff)
+          nchMult = static_cast<double>(glbTracks);
+        if (applyEff && !correctNch)
+          nchMult = static_cast<double>(glbTracks);
+
+        // Fill vectors for [pT] measurement
+        if (cfg.correctionsLoaded) {
+          const int foundNchBin{cfg.hEfficiency->GetXaxis()->FindBin(glbTracks)};
+          // Fill vectors for [pT] measurement
+          for (const auto& track : tracks) {
+            // Track Selection
+            if (!track.isGlobalTrack()) {
+              continue;
+            }
+            if ((track.pt() < minPt) || (track.pt() > maxPtSpectra)) {
+              continue;
+            }
+            if ((track.eta() < minEta) || (track.eta() > maxEta)) {
+              continue;
+            }
+
+            float pt{track.pt()};
+            double fdValue{1.};
+            int foundPtBin{cfg.hEfficiency->GetYaxis()->FindBin(pt)};
+            double effValue{cfg.hEfficiency->GetBinContent(foundNchBin, foundPtBin)};
+
+            if (applyFD)
+              fdValue = cfg.hFeedDown->GetBinContent(foundNchBin, foundPtBin);
+
+            if ((effValue > 0.) && (fdValue > 0.)) {
+              pTs.emplace_back(pt);
+              vecEff.emplace_back(effValue);
+              vecFD.emplace_back(fdValue);
+            }
+          }
+        } else {
+          for (const auto& track : tracks) {
+            // Track Selection
+            if (!track.isGlobalTrack()) {
+              continue;
+            }
+            if ((track.pt() < minPt) || (track.pt() > maxPtSpectra)) {
+              continue;
+            }
+
+            pTs.emplace_back(track.pt());
+            vecEff.emplace_back(1.);
+            vecFD.emplace_back(1.);
+          }
+        }
+
+        double p1, p2, p3, p4, w1, w2, w3, w4;
+        p1 = p2 = p3 = p4 = w1 = w2 = w3 = w4 = 0.0;
+        getPTpowers(pTs, vecEff, vecFD, p1, w1, p2, w2, p3, w3, p4, w4);
+
+        // EbE one-particle pT correlation
+        const double oneParCorr{p1 / w1};
+
+        // EbE two-particle pT correlation
+        const double denTwoParCorr{std::pow(w1, 2.) - w2};
+        const double numTwoParCorr{std::pow(p1, 2.) - p2};
+        const double twoParCorr{numTwoParCorr / denTwoParCorr};
+
+        // EbE three-particle pT correlation
+        const double denThreeParCorr{std::pow(w1, 3.) - 3. * w2 * w1 + 2. * w3};
+        const double numThreeParCorr{std::pow(p1, 3.) - 3. * p2 * p1 + 2. * p3};
+        const double threeParCorr{numThreeParCorr / denThreeParCorr};
+
+        hNch[replica]->Fill(nchMult);
+
+        pOneParCorrVsNch[replica]->Fill(nchMult, oneParCorr, w1);
+        pTwoParCorrVsNch[replica]->Fill(nchMult, twoParCorr, denTwoParCorr);
+        pThreeParCorrVsNch[replica]->Fill(nchMult, threeParCorr, denThreeParCorr);
+
+        //                pOneParCorrVsV0A[replica]->Fill(normV0A, oneParCorr, w1);
+        //                pTwoParCorrVsV0A[replica]->Fill(normV0A, twoParCorr, denTwoParCorr);
+        //                pThreeParCorrVsV0A[replica]->Fill(normV0A, threeParCorr, denThreeParCorr);
+        //
+        //                pOneParCorrVsT0M[replica]->Fill(normT0M, oneParCorr, w1);
+        //                pTwoParCorrVsT0M[replica]->Fill(normT0M, twoParCorr, denTwoParCorr);
+        //                pThreeParCorrVsT0M[replica]->Fill(normT0M, threeParCorr, denThreeParCorr);
+      } // event per replica
+    } // replica's loop
+  }
 
   template <typename T, typename U, typename V>
   void eventSampling(const T& tracks, const U& normV0A, const U& normT0M, const U& sumZNs, const V& timeStamp)
@@ -1107,567 +1754,6 @@ struct UccZdc {
         pThreeParCorrVsT0M[replica]->Fill(normT0M, threeParCorr, denThreeParCorr);
       } // event per replica
     } // replica's loop
-  }
-
-  Preslice<TheFilteredSimTracks> perCollision = aod::track::collisionId;
-  Service<o2::framework::O2DatabasePDG> pdg;
-  void processMCclosure(aod::McCollisions::iterator const& mccollision, soa::SmallGroups<o2::aod::SimCollisions> const& collisions, o2::aod::BCsRun3 const& /*bcs*/, aod::FT0s const& /*ft0s*/, aod::McParticles const& mcParticles, TheFilteredSimTracks const& simTracks)
-  {
-    for (const auto& collision : collisions) {
-      // Event selection
-      if (!isEventSelected(collision)) {
-        continue;
-      }
-      // MC collision?
-      if (!collision.has_mcCollision()) {
-        continue;
-      }
-
-      registry.fill(HIST("hEventCounterMC"), EvCutLabel::All);
-      // Vtx_z selection MC
-      if (std::fabs(mccollision.posZ()) > posZcut) {
-        continue;
-      }
-
-      const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
-
-      uint64_t timeStamp{foundBC.timestamp()};
-      TRandom3 rndGen(timeStamp);
-      const double rndNum{rndGen.Uniform(0.0, 1.0)};
-      registry.fill(HIST("RandomNumber"), rndNum);
-
-      float aT0A = 0., aT0C = 0.;
-      if (foundBC.has_ft0()) {
-        for (const auto& amplitude : foundBC.ft0().amplitudeA()) {
-          aT0A += amplitude;
-        }
-        for (const auto& amplitude : foundBC.ft0().amplitudeC()) {
-          aT0C += amplitude;
-        }
-      } else {
-        return;
-      }
-
-      double nchRaw{0.};
-      double nchMult{0.};
-      double nchMC{0.};
-      double normT0M{0.};
-      normT0M = (aT0A + aT0C) / 100.;
-
-      registry.fill(HIST("zPos"), collision.posZ());
-      registry.fill(HIST("zPosMC"), mccollision.posZ());
-      registry.fill(HIST("hEventCounterMC"), EvCutLabel::VtxZ);
-
-      if (skipRecoColGTOne && (collisions.size() > kOne)) {
-        continue;
-      }
-
-      registry.fill(HIST("nRecColvsCent"), collisions.size(), collision.centFT0C());
-
-      const auto& cent{collision.centFT0C()};
-      registry.fill(HIST("T0Ccent"), cent);
-
-      const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
-
-      // Half of the statistics for MC closure
-      if (rndNum >= kZero && rndNum < evtFracMCcl) {
-
-        registry.fill(HIST("EvtsDivided"), 0);
-
-        // To use run-by-run efficiency
-        auto efficiency = ccdb->getForTimeStamp<TH2F>(paTHEff.value, foundBC.timestamp());
-        if (!efficiency) {
-          return;
-        }
-
-        auto feedDown = ccdb->getForTimeStamp<TH2F>(paTHFD.value, foundBC.timestamp());
-        if (!feedDown) {
-          return;
-        }
-
-        std::vector<double> pTs;
-        std::vector<double> vecFD;
-        std::vector<double> vecEff;
-
-        // Calculates the event's Nch to evaluate the efficiency
-        for (const auto& track : groupedTracks) {
-          // Track Selection
-          if (track.eta() < minEta || track.eta() > maxEta) {
-            continue;
-          }
-          if (track.pt() < minPt || track.pt() > maxPt) {
-            continue;
-          }
-          if (!track.isGlobalTrack()) {
-            continue;
-          }
-          nchRaw++;
-        }
-
-        // Calculates the event weight, W_k
-        const int foundNchBin{efficiency->GetXaxis()->FindBin(nchRaw)};
-
-        for (const auto& track : groupedTracks) {
-          // Track Selection
-          if (track.eta() < minEta || track.eta() > maxEta) {
-            continue;
-          }
-          if (track.pt() < minPt || track.pt() > maxPt) {
-            continue;
-          }
-          if (!track.isGlobalTrack()) {
-            continue;
-          }
-          if (!track.has_mcParticle()) {
-            continue;
-          }
-          const auto& particle{track.mcParticle()};
-
-          auto charge{0.};
-          // Get the MC particle
-          auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-          if (pdgParticle != nullptr) {
-            charge = pdgParticle->Charge();
-          } else {
-            continue;
-          }
-
-          // Is it a charged particle?
-          if (std::abs(charge) < kMinCharge) {
-            continue;
-          }
-          // Is it a primary particle?
-          // if (!particle.isPhysicalPrimary()) { continue; }
-
-          const double pt{static_cast<double>(track.pt())};
-          const int foundPtBin{efficiency->GetYaxis()->FindBin(pt)};
-          double effValue{1.};
-          double fdValue{1.};
-
-          if (applyEff) {
-            effValue = efficiency->GetBinContent(foundNchBin, foundPtBin);
-            fdValue = feedDown->GetBinContent(foundNchBin, foundPtBin);
-          }
-          if ((effValue > 0.) && (fdValue > 0.)) {
-            pTs.emplace_back(pt);
-            vecEff.emplace_back(effValue);
-            vecFD.emplace_back(fdValue);
-            nchMult += (std::pow(effValue, -1.0) * fdValue);
-          }
-        }
-
-        if (nchMult < minNchSel) {
-          return;
-        }
-
-        double p1, p2, p3, p4, w1, w2, w3, w4;
-        p1 = p2 = p3 = p4 = w1 = w2 = w3 = w4 = 0.0;
-        getPTpowers(pTs, vecEff, vecFD, p1, w1, p2, w2, p3, w3, p4, w4);
-
-        const double denTwoParCorr{std::pow(w1, 2.) - w2};
-        const double numTwoParCorr{std::pow(p1, 2.) - p2};
-        const double denThreeParCorr{std::pow(w1, 3.) - 3. * w2 * w1 + 2. * w3};
-        const double numThreeParCorr{std::pow(p1, 3.) - 3. * p2 * p1 + 2. * p3};
-        const double denFourParCorr{std::pow(w1, 4.) - 6. * w2 * std::pow(w1, 2.) + 3. * std::pow(w2, 2.) + 8 * w3 * w1 - 6. * w4};
-        const double numFourParCorr{std::pow(p1, 4.) - 6. * p2 * std::pow(p1, 2.) + 3. * std::pow(p2, 2.) + 8 * p3 * p1 - 6. * p4};
-
-        const double oneParCorr{p1 / w1};
-        const double twoParCorr{numTwoParCorr / denTwoParCorr};
-        const double threeParCorr{numThreeParCorr / denThreeParCorr};
-        const double fourParCorr{numFourParCorr / denFourParCorr};
-
-        registry.fill(HIST("Nch"), nchMult);
-        registry.fill(HIST("NchUncorrected"), nchRaw);
-        registry.fill(HIST("NchVsOneParCorr"), nchMult, oneParCorr, w1);
-        registry.fill(HIST("NchVsTwoParCorr"), nchMult, twoParCorr, denTwoParCorr);
-        registry.fill(HIST("NchVsThreeParCorr"), nchMult, threeParCorr, denThreeParCorr);
-        registry.fill(HIST("NchVsFourParCorr"), nchMult, fourParCorr, denFourParCorr);
-
-        //--------------------------- Generated MC ---------------------------
-        std::vector<float> pTsMC;
-        std::vector<float> vecFullEff;
-        std::vector<float> vecFDEqualOne;
-
-        // Calculates the event weight, W_k
-        for (const auto& particle : mcParticles) {
-          if (particle.eta() < minEta || particle.eta() > maxEta) {
-            continue;
-          }
-          if (particle.pt() < minPt || particle.pt() > maxPt) {
-            continue;
-          }
-
-          auto charge{0.};
-          // Get the MC particle
-          auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-          if (pdgParticle != nullptr) {
-            charge = pdgParticle->Charge();
-          } else {
-            continue;
-          }
-
-          // Is it a charged particle?
-          if (std::abs(charge) < kMinCharge) {
-            continue;
-          }
-          // Is it a primary particle?
-          if (!particle.isPhysicalPrimary()) {
-            continue;
-          }
-
-          float pt{particle.pt()};
-          pTsMC.emplace_back(pt);
-          vecFullEff.emplace_back(1.);
-          vecFDEqualOne.emplace_back(1.);
-          nchMC++;
-        }
-
-        if (nchMC < minNchSel) {
-          continue;
-        }
-        // printf("nchMult = %f  | nchMC = %f  | nchMult/nchMc = %f\n",nchMult,nchMC,nchMult/nchMC);
-
-        double p1MC, p2MC, p3MC, p4MC, w1MC, w2MC, w3MC, w4MC;
-        p1MC = p2MC = p3MC = p4MC = w1MC = w2MC = w3MC = w4MC = 0.0;
-        getPTpowers(pTsMC, vecFullEff, vecFDEqualOne, p1MC, w1MC, p2MC, w2MC, p3MC, w3MC, p4MC, w4MC);
-
-        const double denTwoParCorrMC{std::pow(w1MC, 2.) - w2MC};
-        const double numTwoParCorrMC{std::pow(p1MC, 2.) - p2MC};
-        const double denThreeParCorrMC{std::pow(w1MC, 3.) - 3. * w2MC * w1MC + 2. * w3MC};
-        const double numThreeParCorrMC{std::pow(p1MC, 3.) - 3. * p2MC * p1MC + 2. * p3MC};
-        const double denFourParCorrMC{std::pow(w1MC, 4.) - 6. * w2MC * std::pow(w1MC, 2.) + 3. * std::pow(w2MC, 2.) + 8 * w3MC * w1MC - 6. * w4MC};
-        const double numFourParCorrMC{std::pow(p1MC, 4.) - 6. * p2MC * std::pow(p1MC, 2.) + 3. * std::pow(p2MC, 2.) + 8 * p3MC * p1MC - 6. * p4MC};
-
-        const double oneParCorrMC{p1MC / w1MC};
-        const double twoParCorrMC{numTwoParCorrMC / denTwoParCorrMC};
-        const double threeParCorrMC{numThreeParCorrMC / denThreeParCorrMC};
-        const double fourParCorrMC{numFourParCorrMC / denFourParCorrMC};
-
-        registry.fill(HIST("NchGen"), nchMC);
-        registry.fill(HIST("NchvsOneParCorrGen"), nchMC, oneParCorrMC, w1MC);
-        registry.fill(HIST("NchvsTwoParCorrGen"), nchMC, twoParCorrMC, denTwoParCorrMC);
-        registry.fill(HIST("NchvsThreeParCorrGen"), nchMC, threeParCorrMC, denThreeParCorrMC);
-        registry.fill(HIST("NchvsFourParCorrGen"), nchMC, fourParCorrMC, denFourParCorrMC);
-
-        //------------------ Poisson sampling
-        std::vector<uint64_t> vPoisson;
-        for (int replica = 0; replica < kSizeBootStrapEnsemble; ++replica) {
-          vPoisson.emplace_back(rndGen.Poisson(1.));
-        }
-
-        for (int replica = 0; replica < kSizeBootStrapEnsemble; ++replica) {
-          hPoissonMC[replica]->Fill(vPoisson.at(replica));
-
-          for (uint64_t evtRep = 0; evtRep < vPoisson.at(replica); ++evtRep) {
-
-            double nchRaw{0.0};
-            double nchMult{0.0};
-            std::vector<double> pTs;
-            std::vector<double> vecFD;
-            std::vector<double> vecEff;
-
-            //                        const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
-
-            // Calculates the event's Nch to evaluate the efficiency
-            for (const auto& track : groupedTracks) {
-              // Track Selection
-              if (track.eta() < minEta || track.eta() > maxEta) {
-                continue;
-              }
-              if (track.pt() < minPt || track.pt() > maxPt) {
-                continue;
-              }
-              if (!track.isGlobalTrack()) {
-                continue;
-              }
-              nchRaw++;
-            }
-
-            // Calculates the event weight, W_k
-            const int foundNchBin{efficiency->GetXaxis()->FindBin(nchRaw)};
-
-            for (const auto& track : groupedTracks) {
-              // Track Selection
-              if (track.eta() < minEta || track.eta() > maxEta) {
-                continue;
-              }
-              if (track.pt() < minPt || track.pt() > maxPt) {
-                continue;
-              }
-              if (!track.isGlobalTrack()) {
-                continue;
-              }
-              if (!track.has_mcParticle()) {
-                continue;
-              }
-              const auto& particle{track.mcParticle()};
-
-              auto charge{0.};
-              // Get the MC particle
-              auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-              if (pdgParticle != nullptr) {
-                charge = pdgParticle->Charge();
-              } else {
-                continue;
-              }
-
-              // Is it a charged particle?
-              if (std::abs(charge) < kMinCharge) {
-                continue;
-              }
-              // Is it a primary particle?
-              // if (!particle.isPhysicalPrimary()) { continue; }
-
-              const double pt{static_cast<double>(track.pt())};
-              const int foundPtBin{efficiency->GetYaxis()->FindBin(pt)};
-              double effValue{1.};
-              double fdValue{1.};
-
-              if (applyEff) {
-                effValue = efficiency->GetBinContent(foundNchBin, foundPtBin);
-                fdValue = feedDown->GetBinContent(foundNchBin, foundPtBin);
-              }
-              if ((effValue > 0.) && (fdValue > 0.)) {
-                pTs.emplace_back(pt);
-                vecEff.emplace_back(effValue);
-                vecFD.emplace_back(fdValue);
-                nchMult += (std::pow(effValue, -1.0) * fdValue);
-              }
-            }
-
-            if (nchMult < minNchSel) {
-              return;
-            }
-
-            double p1, p2, p3, p4, w1, w2, w3, w4;
-            p1 = p2 = p3 = p4 = w1 = w2 = w3 = w4 = 0.0;
-            getPTpowers(pTs, vecEff, vecFD, p1, w1, p2, w2, p3, w3, p4, w4);
-
-            const double denTwoParCorr{std::pow(w1, 2.) - w2};
-            const double numTwoParCorr{std::pow(p1, 2.) - p2};
-            const double denThreeParCorr{std::pow(w1, 3.) - 3. * w2 * w1 + 2. * w3};
-            const double numThreeParCorr{std::pow(p1, 3.) - 3. * p2 * p1 + 2. * p3};
-            const double denFourParCorr{std::pow(w1, 4.) - 6. * w2 * std::pow(w1, 2.) + 3. * std::pow(w2, 2.) + 8 * w3 * w1 - 6. * w4};
-            const double numFourParCorr{std::pow(p1, 4.) - 6. * p2 * std::pow(p1, 2.) + 3. * std::pow(p2, 2.) + 8 * p3 * p1 - 6. * p4};
-
-            const double oneParCorr{p1 / w1};
-            const double twoParCorr{numTwoParCorr / denTwoParCorr};
-            const double threeParCorr{numThreeParCorr / denThreeParCorr};
-            const double fourParCorr{numFourParCorr / denFourParCorr};
-
-            hNchRec[replica]->Fill(nchMult);
-            pNchvsOneParCorrRec[replica]->Fill(nchMult, oneParCorr, w1);
-            pNchvsTwoParCorrRec[replica]->Fill(nchMult, twoParCorr, denTwoParCorr);
-            pNchvsThreeParCorrRec[replica]->Fill(nchMult, threeParCorr, denThreeParCorr);
-            pNchvsFourParCorrRec[replica]->Fill(nchMult, fourParCorr, denFourParCorr);
-
-            //--------------------------- Generated MC ---------------------------
-            double nchMC{0.0};
-            std::vector<float> pTsMC;
-            std::vector<float> vecFullEff;
-            std::vector<float> vecFDEqualOne;
-
-            // Calculates the event weight, W_k
-            for (const auto& particle : mcParticles) {
-              if (particle.eta() < minEta || particle.eta() > maxEta) {
-                continue;
-              }
-              if (particle.pt() < minPt || particle.pt() > maxPt) {
-                continue;
-              }
-
-              auto charge{0.};
-              // Get the MC particle
-              auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-              if (pdgParticle != nullptr) {
-                charge = pdgParticle->Charge();
-              } else {
-                continue;
-              }
-
-              // Is it a charged particle?
-              if (std::abs(charge) < kMinCharge) {
-                continue;
-              }
-              // Is it a primary particle?
-              if (!particle.isPhysicalPrimary()) {
-                continue;
-              }
-
-              float pt{particle.pt()};
-              pTsMC.emplace_back(pt);
-              vecFullEff.emplace_back(1.);
-              vecFDEqualOne.emplace_back(1.);
-              nchMC++;
-            }
-
-            if (nchMC < minNchSel) {
-              continue;
-            }
-            // printf("nchMult = %f  | nchMC = %f  | nchMult/nchMc = %f\n",nchMult,nchMC,nchMult/nchMC);
-
-            double p1MC, p2MC, p3MC, p4MC, w1MC, w2MC, w3MC, w4MC;
-            p1MC = p2MC = p3MC = p4MC = w1MC = w2MC = w3MC = w4MC = 0.0;
-            getPTpowers(pTsMC, vecFullEff, vecFDEqualOne, p1MC, w1MC, p2MC, w2MC, p3MC, w3MC, p4MC, w4MC);
-
-            const double denTwoParCorrMC{std::pow(w1MC, 2.) - w2MC};
-            const double numTwoParCorrMC{std::pow(p1MC, 2.) - p2MC};
-            const double denThreeParCorrMC{std::pow(w1MC, 3.) - 3. * w2MC * w1MC + 2. * w3MC};
-            const double numThreeParCorrMC{std::pow(p1MC, 3.) - 3. * p2MC * p1MC + 2. * p3MC};
-            const double denFourParCorrMC{std::pow(w1MC, 4.) - 6. * w2MC * std::pow(w1MC, 2.) + 3. * std::pow(w2MC, 2.) + 8 * w3MC * w1MC - 6. * w4MC};
-            const double numFourParCorrMC{std::pow(p1MC, 4.) - 6. * p2MC * std::pow(p1MC, 2.) + 3. * std::pow(p2MC, 2.) + 8 * p3MC * p1MC - 6. * p4MC};
-
-            const double oneParCorrMC{p1MC / w1MC};
-            const double twoParCorrMC{numTwoParCorrMC / denTwoParCorrMC};
-            const double threeParCorrMC{numThreeParCorrMC / denThreeParCorrMC};
-            const double fourParCorrMC{numFourParCorrMC / denFourParCorrMC};
-
-            hNchGen[replica]->Fill(nchMC);
-            pNchvsOneParCorrGen[replica]->Fill(nchMC, oneParCorrMC, w1MC);
-            pNchvsTwoParCorrGen[replica]->Fill(nchMC, twoParCorrMC, w1MC);
-            pNchvsThreeParCorrGen[replica]->Fill(nchMC, threeParCorrMC, w1MC);
-            pNchvsFourParCorrGen[replica]->Fill(nchMC, fourParCorrMC, w1MC);
-          } // events per replica
-        } // replica's loop
-      } else { // Correction with the remaining half of the sample
-        registry.fill(HIST("EvtsDivided"), 1);
-        //----- MC reconstructed -----//
-        //                const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
-        for (const auto& track : groupedTracks) {
-          // Track Selection
-          if (track.eta() < minEta || track.eta() > maxEta) {
-            continue;
-          }
-          if (track.pt() < minPt || track.pt() > maxPt) {
-            continue;
-          }
-          if (!track.isGlobalTrack()) {
-            continue;
-          }
-          registry.fill(HIST("ZposVsEta"), collision.posZ(), track.eta());
-          registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
-          registry.fill(HIST("dcaXYvspT"), track.dcaXY(), track.pt());
-          nchRaw++;
-        }
-
-        for (const auto& track : groupedTracks) {
-          // Track Selection
-          if (track.eta() < minEta || track.eta() > maxEta) {
-            continue;
-          }
-          if (track.pt() < minPt || track.pt() > maxPt) {
-            continue;
-          }
-          if (!track.isGlobalTrack()) {
-            continue;
-          }
-          // Has MC particle?
-          if (!track.has_mcParticle()) {
-            continue;
-          }
-          // Get the MC particle
-          const auto& particle{track.mcParticle()};
-          auto charge{0.};
-          auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-          if (pdgParticle != nullptr) {
-            charge = pdgParticle->Charge();
-          } else {
-            continue;
-          }
-
-          // Is it a charged particle?
-          if (std::abs(charge) < kMinCharge) {
-            continue;
-          }
-          // All charged particles
-          registry.fill(HIST("Pt_all_ch"), nchRaw, track.pt());
-          // Is it a primary particle?
-          if (!particle.isPhysicalPrimary()) {
-            continue;
-          }
-
-          registry.fill(HIST("Pt_ch"), nchRaw, track.pt());
-          if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
-            registry.fill(HIST("Pt_pi"), nchRaw, track.pt());
-          } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
-            registry.fill(HIST("Pt_ka"), nchRaw, track.pt());
-          } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
-            registry.fill(HIST("Pt_pr"), nchRaw, track.pt());
-          } else if (particle.pdgCode() == PDG_t::kSigmaPlus || particle.pdgCode() == PDG_t::kSigmaBarMinus) {
-            registry.fill(HIST("Pt_sigpos"), nchRaw, track.pt());
-          } else if (particle.pdgCode() == PDG_t::kSigmaMinus || particle.pdgCode() == PDG_t::kSigmaBarPlus) {
-            registry.fill(HIST("Pt_signeg"), nchRaw, track.pt());
-          } else {
-            registry.fill(HIST("Pt_re"), nchRaw, track.pt());
-          }
-        }
-
-        // Generated MC
-        for (const auto& particle : mcParticles) {
-          if (particle.eta() < minEta || particle.eta() > maxEta) {
-            continue;
-          }
-          if (particle.pt() < minPt || particle.pt() > maxPt) {
-            continue;
-          }
-
-          auto charge{0.};
-          // Get the MC particle
-          auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-          if (pdgParticle != nullptr) {
-            charge = pdgParticle->Charge();
-          } else {
-            continue;
-          }
-
-          // Is it a charged particle?
-          if (std::abs(charge) < kMinCharge) {
-            continue;
-          }
-          // Is it a primary particle?
-          if (!particle.isPhysicalPrimary()) {
-            continue;
-          }
-
-          registry.fill(HIST("PtMC_ch"), nchRaw, particle.pt());
-          if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) { // pion
-            registry.fill(HIST("PtMC_pi"), nchRaw, particle.pt());
-          } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) { // kaon
-            registry.fill(HIST("PtMC_ka"), nchRaw, particle.pt());
-          } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) { // proton
-            registry.fill(HIST("PtMC_pr"), nchRaw, particle.pt());
-          } else if (particle.pdgCode() == PDG_t::kSigmaPlus || particle.pdgCode() == PDG_t::kSigmaBarMinus) { // positive sigma
-            registry.fill(HIST("PtMC_sigpos"), nchRaw, particle.pt());
-          } else if (particle.pdgCode() == PDG_t::kSigmaMinus || particle.pdgCode() == PDG_t::kSigmaBarPlus) { // negative sigma
-            registry.fill(HIST("PtMC_signeg"), nchRaw, particle.pt());
-          } else { // rest
-            registry.fill(HIST("PtMC_re"), nchRaw, particle.pt());
-          }
-        }
-      } // Half of statistics for corrections
-      registry.fill(HIST("McNchVsFT0M"), normT0M, nchRaw);
-    } // Collisions
-  }
-  PROCESS_SWITCH(UccZdc, processMCclosure, "Process MC closure", false);
-
-  template <typename T, typename U>
-  void getPTpowers(const T& pTs, const T& vecEff, const T& vecFD, U& pOne, U& wOne, U& pTwo, U& wTwo, U& pThree, U& wThree, U& pFour, U& wFour)
-  {
-    pOne = wOne = pTwo = wTwo = pThree = wThree = pFour = wFour = 0.;
-    for (std::size_t i = 0; i < pTs.size(); ++i) {
-      const double pTi{pTs.at(i)};
-      const double eFFi{vecEff.at(i)};
-      const double fDi{vecFD.at(i)};
-      const double wEighti{std::pow(eFFi, -1.) * fDi};
-      pOne += wEighti * pTi;
-      wOne += wEighti;
-      pTwo += std::pow(wEighti * pTi, 2.);
-      wTwo += std::pow(wEighti, 2.);
-      pThree += std::pow(wEighti * pTi, 3.);
-      wThree += std::pow(wEighti, 3.);
-      pFour += std::pow(wEighti * pTi, 4.);
-      wFour += std::pow(wEighti, 4.);
-    }
   }
 
   void loadCorrections(uint64_t timeStamp)
