@@ -260,7 +260,7 @@ struct DetectorOccupancyQaTask {
       histos.add("track_distr_nITStrThisEv_above_2000/hEta_highOccupInDistantFuture", ";#eta;n tracks", kTH1D, {axisEta});
       histos.add("track_distr_nITStrThisEv_above_2000/hEta_highOccupInNeighbourEvents", ";#eta;n tracks", kTH1D, {axisEta});
 
-      const int nPhiBins = 800;
+      const int nPhiBins = 810;                                 // 18*45
       AxisSpec axisPhi{nPhiBins, 0, TMath::TwoPi(), "#varphi"}; // o2-linter: disable=external-pi (temporary fix)
       histos.add("track_distr_nITStrThisEv_10_200/hPhi_lowOccupInTPC", ";#varphi;n tracks", kTH1D, {axisPhi});
       histos.add("track_distr_nITStrThisEv_10_200/hPhi_highOccupInRecentPast", ";#varphi;n tracks", kTH1D, {axisPhi});
@@ -290,7 +290,8 @@ struct DetectorOccupancyQaTask {
       histos.add("track_distr_nITStrThisEv_above_2000/hPt_highOccupInNeighbourEvents", ";p_{T};n tracks", kTH1D, {axisLogPt});
 
       // July 2025: to compare data and MC (pt, eta, phi)
-      AxisSpec axisOccupForKine{{0, 500, 1000, 2000, 4000, 6000, 20000}, "weighted occupancy"};
+      // AxisSpec axisOccupForKine{{0, 500, 1000, 2000, 4000, 6000, 20000}, "weighted occupancy"};
+      AxisSpec axisOccupForKine{{0, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000}, "weighted occupancy"};
       AxisSpec axisPtForKine{{0.2, 0.6, 1.0, 2.0, 10}, "centrality percentile"};
       histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPt_pos", ";p_{T};weighted occupancy", kTH2D, {axisLogPt, axisOccupForKine});
       histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPt_neg", ";p_{T};weighted occupancy", kTH2D, {axisLogPt, axisOccupForKine});

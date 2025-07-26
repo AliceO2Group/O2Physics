@@ -1185,7 +1185,7 @@ struct EventSelectionQaTask {
               histos.fill(HIST("occupancyQA/tpcNCrossedRows_vs_V0A_vs_occupancy"), multV0A, track.tpcNClsFindable() - tpcNClsFindableMinusCrossedRowsCorrected, occupancyByTracks);
             }
           } // end of hasTPC
-          if (track.tpcNClsFound() > 70 && track.tpcNClsCrossedRows() > 80 && track.itsChi2NCl() < 36 && track.tpcChi2NCl() < 4) {
+          if (track.tpcNClsFound() > 50 && track.tpcNClsCrossedRows() > 80 && track.itsChi2NCl() < 36 && track.tpcChi2NCl() < 4) {
             nContributorsAfterEtaTPCCuts++;
             // ROF border QA
             histos.fill(HIST("ITSROFborderQA/hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks"), localBC, track.itsNCls());
@@ -1232,7 +1232,7 @@ struct EventSelectionQaTask {
               continue;
             if (std::fabs(track.eta()) < 0.8 && track.pt() > 0.2 && track.itsNCls() >= 5) {
               float signedP = track.sign() * track.tpcInnerParam();
-              if (std::fabs(signedP) > 0.38 && std::fabs(signedP) < 0.4 && track.tpcNClsFound() > 70 && track.tpcNClsCrossedRows() > 80 && track.itsChi2NCl() < 36 && track.tpcChi2NCl() < 4) {
+              if (std::fabs(signedP) > 0.38 && std::fabs(signedP) < 0.4 && track.tpcNClsFound() > 50 && track.tpcNClsCrossedRows() > 80 && track.itsChi2NCl() < 36 && track.tpcChi2NCl() < 4) {
                 float dEdx = track.tpcSignal();
                 histos.fill(HIST("occupancyQA/dEdx_vs_centr_vs_occup_narrow_p_win"), nPV, occupancyByTracks, dEdx);
               }
