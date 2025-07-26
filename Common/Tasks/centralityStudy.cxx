@@ -47,6 +47,7 @@ struct centralityStudy {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   ctpRateFetcher mRateFetcher;
   int mRunNumber;
+  uint64_t startOfRunTimestamp;
 
   // Configurables
   Configurable<bool> do2DPlots{"do2DPlots", true, "0 - no, 1 - yes"};
@@ -256,8 +257,8 @@ struct centralityStudy {
 
     if (doTimeStudies) {
       ccdb->setURL(ccdbURL);
-      ccdb->setCaching(true);
-      ccdb->setLocalObjectValidityChecking();
+      // ccdb->setCaching(true);
+      // ccdb->setLocalObjectValidityChecking();
       ccdb->setFatalWhenNull(false);
       if (doTimeStudyFV0AOuterVsFT0A3d) {
         histos.add((histPath + "h3dFV0AVsTime").c_str(), "", {kTH3F, {{axisDeltaTimestamp, axisMultCoarseFV0A, axisMultCoarseFV0A}}});
@@ -273,6 +274,13 @@ struct centralityStudy {
     }
 
     mRunNumber = collision.multRunNumber();
+
+    LOGF(info, "Setting up for run: %i", mRunNumber);
+
+    // only get object when switching runs
+    o2::parameters::GRPECSObject* grpo = ccdb->getForRun<o2::parameters::GRPECSObject>(pathGRPECSObject, mRunNumber);
+    startOfRunTimestamp = grpo->getTimeStart();
+
     histPath = std::format("Run_{}/", mRunNumber);
 
     if (doprocessCollisions || doprocessCollisionsWithCentrality) {
@@ -351,6 +359,7 @@ struct centralityStudy {
   // process this collisions
   {
     initRun(collision);
+
     histos.fill(HIST("hCollisionSelection"), 0); // all collisions
     getHist(TH1, histPath + "hCollisionSelection")->Fill(0);
 
@@ -567,11 +576,9 @@ struct centralityStudy {
     }
 
     if (doTimeStudies && collision.has_multBC()) {
-      initRun(collision);
       auto multbc = collision.template multBC_as<aod::MultBCs>();
       uint64_t bcTimestamp = multbc.timestamp();
-      o2::parameters::GRPECSObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPECSObject>(pathGRPECSObject, bcTimestamp);
-      uint64_t startOfRunTimestamp = grpo->getTimeStart();
+
       float hoursAfterStartOfRun = static_cast<float>(bcTimestamp - startOfRunTimestamp) / 3600000.0;
 
       getHist(TH2, histPath + "hFT0AVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0A());
