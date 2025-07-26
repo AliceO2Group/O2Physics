@@ -690,9 +690,9 @@ using EMGlobalMuonSelfId = EMGlobalMuonSelfIds::iterator;
 
 namespace emprimarytrack
 {
-DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent); //!
+DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);        //!
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
-DECLARE_SOA_COLUMN(TrackId, trackId, int); //!
+DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
 // DECLARE_SOA_COLUMN(Sign, sign, int8_t);            //!
 DECLARE_SOA_COLUMN(TrackBit, trackBit, uint16_t); //!
 DECLARE_SOA_COLUMN(PtUINT16, ptuint16, uint16_t); //!
@@ -704,7 +704,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](uint16_t ptuint16) -> float { return stati
 // DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
 } // namespace emprimarytrack
 
-DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_000, "AOD", "EMPRIMARYTRACK", 0, //!
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_000, "AOD", "EMPRIMARYTRACK", 0,                        //!
                             o2::soa::Index<>, emprimarytrack::CollisionId, emprimarytrack::TrackId, /* emprimarytrack::Sign,*/
                             emprimarytrack::PtUINT16, track::Eta, track::Phi, track::DcaXY, track::DcaZ, emprimarytrack::TrackBit,
 
