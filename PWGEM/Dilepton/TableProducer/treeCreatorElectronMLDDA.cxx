@@ -76,7 +76,7 @@ struct TreeCreatorElectronMLDDA {
       {"V0/hXY_Gamma", "photon conversion point in XY;X (cm);Y (cm)", {HistType::kTH2F, {{400, -100, +100}, {400, -100, +100}}}},
       {"V0/hMassGamma_Rxy", "V0 mass gamma", {HistType::kTH2F, {{200, 0, 100}, {100, 0, 0.1}}}},
       {"V0/hCosPA", "V0 cosine of pointing angle", {HistType::kTH1F, {{100, 0.99, 1.f}}}},
-      {"V0/hPCA", "V0 distance between 2 legs", {HistType::kTH1F, {{200, 0.f, 2.f}}}},
+      {"V0/hPCA", "V0 distance between 2 legs", {HistType::kTH1F, {{50, 0.f, 0.5f}}}},
       {"V0/hMassGamma", "V0 mass gamma", {HistType::kTH1F, {{100, 0, 0.1}}}},
       {"V0/hMassK0Short", "V0 mass K0S", {HistType::kTH1F, {{200, 0.4, 0.6}}}},
       {"V0/hMassLambda", "V0 mass Lambda", {HistType::kTH1F, {{100, 1.08, 1.18}}}},
@@ -95,10 +95,10 @@ struct TreeCreatorElectronMLDDA {
       {"Cascade/hRxy_Omega", "R_{xy} of cascade vs. mass;m_{#LambdaK};R_{xy} (cm)", {HistType::kTH2F, {{200, 1.6, 1.8}, {200, 0, 20.f}}}},
       {"Cascade/hCTau_Xi", "c#tau vs. mass;m_{#Lambda#pi};c#tau (cm)", {HistType::kTH2F, {{200, 1.2, 1.4}, {200, 0, 20.f}}}},
       {"Cascade/hCTau_Omega", "c#tau vs. mass;m_{#LambdaK};c#tau (cm)", {HistType::kTH2F, {{200, 1.6, 1.8}, {200, 0, 20.f}}}},
-      {"Cascade/hV0CosPA", "V0 cosine of pointing angle", {HistType::kTH1F, {{50, 0.95, 1.f}}}},
-      {"Cascade/hV0PCA", "V0 distance between 2 legs", {HistType::kTH1F, {{200, 0.f, 2.f}}}},
+      {"Cascade/hV0CosPA", "V0 cosine of pointing angle", {HistType::kTH1F, {{100, 0.99, 1.f}}}},
+      {"Cascade/hV0PCA", "V0 distance between 2 legs", {HistType::kTH1F, {{50, 0.f, 0.5}}}},
       {"Cascade/hCosPA", "cascade cosine of pointing angle", {HistType::kTH1F, {{100, 0.99, 1.f}}}},
-      {"Cascade/hPCA", "cascade distance between 2 legs", {HistType::kTH1F, {{200, 0.f, 2.f}}}},
+      {"Cascade/hPCA", "cascade distance between 2 legs", {HistType::kTH1F, {{50, 0.f, 0.5}}}},
       {"Cascade/hMassLambda", "V0 mass Lambda in cascade", {HistType::kTH1F, {{100, 1.08, 1.18}}}},
       {"Cascade/hMassXi", "cascade mass #Xi", {HistType::kTH1F, {{200, 1.2, 1.4}}}},
       {"Cascade/hMassOmega", "cascade mass #Omega", {HistType::kTH1F, {{200, 1.6, 1.8}}}},
@@ -119,10 +119,10 @@ struct TreeCreatorElectronMLDDA {
   Configurable<double> d_bz_input{"d_bz_input", -999, "bz field, -999 is automatic"};
   Configurable<int> useMatCorrType{"useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
 
-  Configurable<float> downscaling_electron{"downscaling_electron", 0.005, "down scaling factor to store electron"};
-  Configurable<float> downscaling_pion{"downscaling_pion", 0.001, "down scaling factor to store pion"};
+  Configurable<float> downscaling_electron{"downscaling_electron", 0.01, "down scaling factor to store electron"};
+  Configurable<float> downscaling_pion{"downscaling_pion", 0.01, "down scaling factor to store pion"};
   Configurable<float> downscaling_kaon{"downscaling_kaon", 1.1, "down scaling factor to store kaon"};
-  Configurable<float> downscaling_proton{"downscaling_proton", 0.005, "down scaling factor to store proton"};
+  Configurable<float> downscaling_proton{"downscaling_proton", 0.01, "down scaling factor to store proton"};
 
   Configurable<float> max_p_for_downscaling_electron{"max_p_for_downscaling_electron", 2.0, "max p to apply down scaling factor to store electron"};
   Configurable<float> max_p_for_downscaling_pion{"max_p_for_downscaling_pion", 2.0, "max p to apply down scaling factor to store pion"};
@@ -189,7 +189,7 @@ struct TreeCreatorElectronMLDDA {
     Configurable<float> cfg_max_mass_lambda_veto{"cfg_max_mass_lambda_veto", 1.125, "max mass for Lambda veto"};
 
     Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.9998, "min cospa for v0"};
-    Configurable<float> cfg_max_dcadau{"cfg_max_dcadau", 0.2, "max distance between 2 legs for v0"};
+    Configurable<float> cfg_max_dcadau{"cfg_max_dcadau", 0.1, "max distance between 2 legs for v0"};
     Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.8, "min. TPC Ncr/Nf ratio"};
     Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 0.7, "max fraction of shared clusters in TPC"};
     Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 70, "min ncrossed rows"};
@@ -244,23 +244,15 @@ struct TreeCreatorElectronMLDDA {
     Configurable<float> cfg_max_mass_Xi_veto{"cfg_max_mass_Xi_veto", 1.33, "max mass for Xi veto"};
     Configurable<float> cfg_min_mass_Omega{"cfg_min_mass_Omega", 1.669, "min mass for Omega"};
     Configurable<float> cfg_max_mass_Omega{"cfg_max_mass_Omega", 1.675, "max mass for Omega"};
-    Configurable<float> cfg_min_cospa_v0{"cfg_min_cospa_v0", 0.97, "minimum V0 CosPA in cascade"};
-    Configurable<float> cfg_max_dcadau_v0{"cfg_max_dcadau_v0", 0.2, "max distance between V0 Daughters in cascade"};
+    Configurable<float> cfg_min_cospa_v0{"cfg_min_cospa_v0", 0.995, "minimum V0 CosPA in cascade"};
+    Configurable<float> cfg_max_dcadau_v0{"cfg_max_dcadau_v0", 0.1, "max distance between V0 Daughters in cascade"};
     Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.9998, "minimum cascade CosPA"};
-    Configurable<float> cfg_max_dcadau{"cfg_max_dcadau", 0.2, "max distance between bachelor and V0"};
+    Configurable<float> cfg_max_dcadau{"cfg_max_dcadau", 0.1, "max distance between bachelor and V0"};
     Configurable<float> cfg_min_rxy_v0{"cfg_min_rxy_v0", 1.2, "minimum V0 rxy in cascade"};
     Configurable<float> cfg_min_rxy{"cfg_min_rxy", 0.5, "minimum V0 rxy in cascade"};
     Configurable<float> cfg_min_dcaxy_v0leg{"cfg_min_dcaxy_v0leg", 0.1, "min dca XY for v0 legs in cm"};
     Configurable<float> cfg_min_dcaxy_bachelor{"cfg_min_dcaxy_bachelor", 0.1, "min dca XY for bachelor in cm"};
   } cascadecuts;
-
-  struct : ConfigurableGroup {
-    std::string prefix = "dalitzcut_group";
-    Configurable<float> cfg_min_mass_ee{"cfg_min_mass_ee", 0.000, "min mass for ee from pi0 dalitz decay in GeV/c2"};
-    Configurable<float> cfg_max_mass_ee{"cfg_max_mass_ee", 0.005, "max mass for ee from pi0 dalitz decay in GeV/c2"};
-    Configurable<float> cfg_min_phiv_ee{"cfg_min_phiv_ee", 0.0, "min phiv for ee from pi0 dalitz decay in rad."};
-    Configurable<float> cfg_max_phiv_ee{"cfg_max_phiv_ee", M_PI / 2, "max phiv for ee from pi0 dalitz decay in rad."};
-  } dalitzcuts;
 
   // for RCT
   Configurable<bool> cfgRequireGoodRCT{"cfgRequireGoodRCT", false, "require good detector flag in run condtion table"};
@@ -777,13 +769,13 @@ struct TreeCreatorElectronMLDDA {
               registry.fill(HIST("V0/hTOFbeta_P_Pi"), neg.tpcInnerParam(), neg.beta());
               fillTrackTable(collision, neg, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kPion));
             }
-            if (isPion(pos) && isPionTight(neg)) {
-              registry.fill(HIST("V0/hMassK0Short"), v0.mK0Short());
-              if (v0cuts.cfg_min_mass_k0s < v0.mK0Short() && v0.mK0Short() < v0cuts.cfg_max_mass_k0s) {
-                registry.fill(HIST("V0/hTPCdEdx_P_Pi"), pos.tpcInnerParam(), pos.tpcSignal());
-                registry.fill(HIST("V0/hTOFbeta_P_Pi"), pos.tpcInnerParam(), pos.beta());
-                fillTrackTable(collision, pos, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kPion));
-              }
+          }
+          if (isPion(pos) && isPionTight(neg)) {
+            registry.fill(HIST("V0/hMassK0Short"), v0.mK0Short());
+            if (v0cuts.cfg_min_mass_k0s < v0.mK0Short() && v0.mK0Short() < v0cuts.cfg_max_mass_k0s) {
+              registry.fill(HIST("V0/hTPCdEdx_P_Pi"), pos.tpcInnerParam(), pos.tpcSignal());
+              registry.fill(HIST("V0/hTOFbeta_P_Pi"), pos.tpcInnerParam(), pos.beta());
+              fillTrackTable(collision, pos, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kPion));
             }
           }
         }
