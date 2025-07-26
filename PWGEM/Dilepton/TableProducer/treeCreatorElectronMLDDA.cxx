@@ -201,6 +201,7 @@ struct TreeCreatorElectronMLDDA {
     Configurable<float> cfg_min_dcaxy_v0leg{"cfg_min_dcaxy_v0leg", 0.1, "min dca XY to PV for v0 legs in cm"};
     Configurable<bool> cfg_includeITSsa{"cfg_includeITSsa", false, "Flag to include ITSsa tracks"};
     Configurable<float> cfg_max_pt_itssa{"cfg_max_pt_itssa", 0.15, "mix pt for ITSsa track"};
+    Configurable<float> cfg_min_qt_strangeness{"cfg_min_qt_strangeness", 0.015, "min qt for Lambda and K0S"};
 
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -5, "min n sigma e in TPC"};
     Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +5, "max n sigma e in TPC"};
@@ -761,43 +762,45 @@ struct TreeCreatorElectronMLDDA {
         registry.fill(HIST("V0/hCosPA"), v0.v0cosPA());
         registry.fill(HIST("V0/hAP"), v0.alpha(), v0.qtarm());
 
-        if (!(v0cuts.cfg_min_mass_lambda_veto < v0.mLambda() && v0.mLambda() < v0cuts.cfg_max_mass_lambda_veto) && !(v0cuts.cfg_min_mass_lambda_veto < v0.mAntiLambda() && v0.mAntiLambda() < v0cuts.cfg_max_mass_lambda_veto)) {
-          if (isPionTight(pos) && isPion(neg)) {
-            registry.fill(HIST("V0/hMassK0Short"), v0.mK0Short());
-            if (v0cuts.cfg_min_mass_k0s < v0.mK0Short() && v0.mK0Short() < v0cuts.cfg_max_mass_k0s) {
-              registry.fill(HIST("V0/hTPCdEdx_P_Pi"), neg.tpcInnerParam(), neg.tpcSignal());
-              registry.fill(HIST("V0/hTOFbeta_P_Pi"), neg.tpcInnerParam(), neg.beta());
-              fillTrackTable(collision, neg, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kPion));
+        if (v0cuts.cfg_min_qt_strangeness < v0.qtarm()) {
+          if (!(v0cuts.cfg_min_mass_lambda_veto < v0.mLambda() && v0.mLambda() < v0cuts.cfg_max_mass_lambda_veto) && !(v0cuts.cfg_min_mass_lambda_veto < v0.mAntiLambda() && v0.mAntiLambda() < v0cuts.cfg_max_mass_lambda_veto)) {
+            if (isPionTight(pos) && isPion(neg)) {
+              registry.fill(HIST("V0/hMassK0Short"), v0.mK0Short());
+              if (v0cuts.cfg_min_mass_k0s < v0.mK0Short() && v0.mK0Short() < v0cuts.cfg_max_mass_k0s) {
+                registry.fill(HIST("V0/hTPCdEdx_P_Pi"), neg.tpcInnerParam(), neg.tpcSignal());
+                registry.fill(HIST("V0/hTOFbeta_P_Pi"), neg.tpcInnerParam(), neg.beta());
+                fillTrackTable(collision, neg, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kPion));
+              }
+            }
+            if (isPion(pos) && isPionTight(neg)) {
+              registry.fill(HIST("V0/hMassK0Short"), v0.mK0Short());
+              if (v0cuts.cfg_min_mass_k0s < v0.mK0Short() && v0.mK0Short() < v0cuts.cfg_max_mass_k0s) {
+                registry.fill(HIST("V0/hTPCdEdx_P_Pi"), pos.tpcInnerParam(), pos.tpcSignal());
+                registry.fill(HIST("V0/hTOFbeta_P_Pi"), pos.tpcInnerParam(), pos.beta());
+                fillTrackTable(collision, pos, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kPion));
+              }
             }
           }
-          if (isPion(pos) && isPionTight(neg)) {
-            registry.fill(HIST("V0/hMassK0Short"), v0.mK0Short());
-            if (v0cuts.cfg_min_mass_k0s < v0.mK0Short() && v0.mK0Short() < v0cuts.cfg_max_mass_k0s) {
-              registry.fill(HIST("V0/hTPCdEdx_P_Pi"), pos.tpcInnerParam(), pos.tpcSignal());
-              registry.fill(HIST("V0/hTOFbeta_P_Pi"), pos.tpcInnerParam(), pos.beta());
-              fillTrackTable(collision, pos, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kPion));
-            }
-          }
-        }
 
-        if (!(v0cuts.cfg_min_mass_k0s_veto < v0.mK0Short() && v0.mK0Short() < v0cuts.cfg_max_mass_k0s_veto)) {
-          if (isProton(pos) && isPionTight(neg)) {
-            registry.fill(HIST("V0/hMassLambda"), v0.mLambda());
-            if (v0cuts.cfg_min_mass_lambda < v0.mLambda() && v0.mLambda() < v0cuts.cfg_max_mass_lambda) {
-              fillTrackTable(collision, pos, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kProton));
-              registry.fill(HIST("V0/hTPCdEdx_P_Pr"), pos.tpcInnerParam(), pos.tpcSignal());
-              registry.fill(HIST("V0/hTOFbeta_P_Pr"), pos.tpcInnerParam(), pos.beta());
+          if (!(v0cuts.cfg_min_mass_k0s_veto < v0.mK0Short() && v0.mK0Short() < v0cuts.cfg_max_mass_k0s_veto)) {
+            if (isProton(pos) && isPionTight(neg)) {
+              registry.fill(HIST("V0/hMassLambda"), v0.mLambda());
+              if (v0cuts.cfg_min_mass_lambda < v0.mLambda() && v0.mLambda() < v0cuts.cfg_max_mass_lambda) {
+                fillTrackTable(collision, pos, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kProton));
+                registry.fill(HIST("V0/hTPCdEdx_P_Pr"), pos.tpcInnerParam(), pos.tpcSignal());
+                registry.fill(HIST("V0/hTOFbeta_P_Pr"), pos.tpcInnerParam(), pos.beta());
+              }
+            }
+            if (isPionTight(pos) && isProton(neg)) {
+              registry.fill(HIST("V0/hMassAntiLambda"), v0.mAntiLambda());
+              if (v0cuts.cfg_min_mass_lambda < v0.mAntiLambda() && v0.mAntiLambda() < v0cuts.cfg_max_mass_lambda) {
+                fillTrackTable(collision, neg, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kProton));
+                registry.fill(HIST("V0/hTPCdEdx_P_Pr"), neg.tpcInnerParam(), neg.tpcSignal());
+                registry.fill(HIST("V0/hTOFbeta_P_Pr"), neg.tpcInnerParam(), neg.beta());
+              }
             }
           }
-          if (isPionTight(pos) && isProton(neg)) {
-            registry.fill(HIST("V0/hMassAntiLambda"), v0.mAntiLambda());
-            if (v0cuts.cfg_min_mass_lambda < v0.mAntiLambda() && v0.mAntiLambda() < v0cuts.cfg_max_mass_lambda) {
-              fillTrackTable(collision, neg, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kProton));
-              registry.fill(HIST("V0/hTPCdEdx_P_Pr"), neg.tpcInnerParam(), neg.tpcSignal());
-              registry.fill(HIST("V0/hTOFbeta_P_Pr"), neg.tpcInnerParam(), neg.beta());
-            }
-          }
-        }
+        } // end of stangeness
 
         if (isElectronTight(pos) && isElectron(neg)) {
           registry.fill(HIST("V0/hMassGamma"), v0.mGamma());
