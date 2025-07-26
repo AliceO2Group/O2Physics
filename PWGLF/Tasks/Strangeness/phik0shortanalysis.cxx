@@ -62,6 +62,22 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::track;
 
+enum {
+  kGlobalplusITSonly = 0,
+  kGlobalonly,
+  kITSonly
+};
+
+enum {
+  kSpAll = 0,
+  kSpPion,
+  kSpKaon,
+  kSpProton,
+  kSpOther,
+  kSpStrangeDecay,
+  kSpNotPrimary
+};
+
 struct Phik0shortanalysis {
   // Histograms are defined with HistogramRegistry
   HistogramRegistry dataEventHist{"dataEventHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -172,13 +188,14 @@ struct Phik0shortanalysis {
   Configurable<std::vector<double>> binspTPi{"binspTPi", {0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for pions"};
 
   // Configurables for delta y selection
-  Configurable<int> nBinsY{"nBinsY", 20, "Number of bins in y axis"};
-  Configurable<int> nBinsDeltaY{"nBinsDeltaY", 20, "Number of bins in deltay axis"};
-  Configurable<float> cfgYAcceptance{"cfgYAcceptance", 0.5f, "Rapidity acceptance"};
-  Configurable<float> cfgYAcceptanceSmear{"cfgYAcceptanceSmear", 0.8f, "Rapidity acceptance for smearing matrix study"};
-  Configurable<float> cfgFCutOnDeltaY{"cfgFCutOnDeltaY", 0.5f, "First upper bound on Deltay selection"};
-  Configurable<float> cfgSCutOnDeltaY{"cfgSCutOnDeltaY", 0.1f, "Second upper bound on Deltay selection"};
-  Configurable<std::vector<float>> cfgDeltaYAcceptanceBins{"cfgDeltaYAcceptanceBins", {0.5f}, "Rapidity acceptance bins"};
+  struct : ConfigurableGroup {
+    Configurable<int> nBinsY{"nBinsY", 20, "Number of bins in y axis"};
+    Configurable<int> nBinsDeltaY{"nBinsDeltaY", 20, "Number of bins in deltay axis"};
+    Configurable<float> cfgYAcceptance{"cfgYAcceptance", 0.5f, "Rapidity acceptance"};
+    Configurable<float> cfgFCutOnDeltaY{"cfgFCutOnDeltaY", 0.5f, "First upper bound on Deltay selection"};
+    Configurable<float> cfgSCutOnDeltaY{"cfgSCutOnDeltaY", 0.1f, "Second upper bound on Deltay selection"};
+    Configurable<std::vector<float>> cfgDeltaYAcceptanceBins{"cfgDeltaYAcceptanceBins", {0.5f}, "Rapidity acceptance bins"};
+  } deltaYConfigs;
 
   // Configurable for RecMC
   Configurable<bool> cfgiskNoITSROFrameBorder{"cfgiskNoITSROFrameBorder", false, "kNoITSROFrameBorder request on RecMC collisions"};
@@ -193,7 +210,8 @@ struct Phik0shortanalysis {
   Configurable<bool> fillMethodSingleWeight{"fillMethodSingleWeight", false, "Fill method Single Weight"};
   Configurable<bool> applyEfficiency{"applyEfficiency", false, "Use efficiency for filling histograms"};
 
-  // Configurable for MCPhi filter
+  // Configurables for dN/deta with phi computation
+  Configurable<bool> furtherCheckonMcCollision{"furtherCheckonMcCollision", true, "Further check on MC collisions"};
   Configurable<bool> filterOnMcPhi{"filterOnMcPhi", true, "Filter on MC Phi"};
 
   // Configurable for event mixing
@@ -299,8 +317,8 @@ struct Phik0shortanalysis {
     AxisSpec nSigmaPiAxis = {100, -10.0f, 10.0f, "N#sigma #pi"};
     AxisSpec vertexZAxis = {100, -15.f, 15.f, "vrtx_{Z} [cm]"};
     AxisSpec etaAxis = {16, -trackConfigs.etaMax, trackConfigs.etaMax, "#eta"};
-    AxisSpec yAxis = {nBinsY, -cfgYAcceptance, cfgYAcceptance, "#it{y}"};
-    AxisSpec deltayAxis = {nBinsDeltaY, -1.0f, 1.0f, "#Delta#it{y}"};
+    AxisSpec yAxis = {deltaYConfigs.nBinsY, -deltaYConfigs.cfgYAcceptance, deltaYConfigs.cfgYAcceptance, "#it{y}"};
+    AxisSpec deltayAxis = {deltaYConfigs.nBinsDeltaY, -1.0f, 1.0f, "#Delta#it{y}"};
     AxisSpec multAxis = {120, 0.0f, 120.0f, "centFT0M"};
     AxisSpec binnedmultAxis{(std::vector<double>)binsMult, "centFT0M"};
     AxisSpec pTPhiAxis = {120, 0.0f, 12.0f, "#it{p}_{T} (GeV/#it{c})"};
@@ -324,9 +342,10 @@ struct Phik0shortanalysis {
     dataEventHist.add("hVertexZ", "hVertexZ", kTH1F, {vertexZAxis});
     dataEventHist.add("hMultiplicityPercent", "Multiplicity Percentile", kTH1F, {multAxis});
     dataEventHist.add("hMultiplicityPercentWithPhi", "Multiplicity Percentile in Events with a Phi Candidate", kTH1F, {multAxis});
+    dataEventHist.add("h2VertexZvsMult", "Vertex Z vs Multiplicity Percentile", kTH2F, {vertexZAxis, binnedmultAxis});
 
     // Eta distribution for dN/deta values estimation in Data
-    dataEventHist.add("h2EtaDistribution", "Eta vs multiplicity in Data", kTH2F, {binnedmultAxis, etaAxis});
+    dataEventHist.add("h4EtaDistribution", "Eta vs multiplicity in Data", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, {3, -0.5f, 2.5f}});
 
     // Number of MC events per selection for Rec and Gen
     mcEventHist.add("hRecMCEventSelection", "hRecMCEventSelection", kTH1F, {{9, -0.5f, 8.5f}});
@@ -348,23 +367,26 @@ struct Phik0shortanalysis {
     mcEventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(5, "With at least a reco coll");
 
     // MC Event information for Rec and Gen
-    mcEventHist.add("hRecMCVertexZ", "hRecMCVertexZ", kTH1F, {vertexZAxis});
-    mcEventHist.add("hRecMCMultiplicityPercent", "RecMC Multiplicity Percentile", kTH1F, {multAxis});
-    mcEventHist.add("hRecMCGenMultiplicityPercent", "RecMC Gen Multiplicity Percentile", kTH1F, {binnedmultAxis});
-    mcEventHist.add("hRecMCGenMultiplicityPercentWithPhi", "RecMC Gen Multiplicity Percentile in Events with a Phi Candidate", kTH1F, {binnedmultAxis});
+    mcEventHist.add("hRecoMCVertexZ", "hRecoMCVertexZ", kTH1F, {vertexZAxis});
+    mcEventHist.add("hUnbinnedRecoMCMultiplicityPercent", "RecoMC Multiplicity Percentile", kTH1F, {multAxis});
+    mcEventHist.add("hRecoMCMultiplicityPercent", "RecoMC Multiplicity Percentile", kTH1F, {binnedmultAxis});
+    mcEventHist.add("hRecoMCMultiplicityPercentWithPhi", "RecoMC Multiplicity Percentile in Events with a Phi Candidate", kTH1F, {binnedmultAxis});
+    mcEventHist.add("h2RecoMCVertexZvsMult", "RecoMC Vertex Z vs Multiplicity Percentile", kTH2F, {vertexZAxis, binnedmultAxis});
 
     mcEventHist.add("hGenMCVertexZ", "hGenMCVertexZ", kTH1F, {vertexZAxis});
     mcEventHist.add("hGenMCMultiplicityPercent", "GenMC Multiplicity Percentile", kTH1F, {binnedmultAxis});
     mcEventHist.add("hGenMCAssocRecoMultiplicityPercent", "GenMC AssocReco Multiplicity Percentile", kTH1F, {binnedmultAxis});
     mcEventHist.add("hGenMCRecoMultiplicityPercent", "GenMCReco Multiplicity Percentile", kTH1F, {binnedmultAxis});
+    mcEventHist.add("h2GenMCRecoVertexZvsMult", "GenMCReco Vertex Z vs Multiplicity Percentile", kTH2F, {vertexZAxis, binnedmultAxis});
 
     // Eta distribution for dN/deta values estimation in MC
-    mcEventHist.add("h2RecoMCEtaDistribution", "Eta vs multiplicity in MCReco", kTH2F, {binnedmultAxis, etaAxis});
-    mcEventHist.add("h2RecoCheckMCEtaDistribution", "Eta vs multiplicity in MCReco Check", kTH2F, {binnedmultAxis, etaAxis});
+    mcEventHist.add("h5RecoMCEtaDistribution", "Eta vs multiplicity in MCReco", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, {3, -0.5f, 2.5f}, {6, -0.5f, 5.5f}});
+    mcEventHist.add("h5RecoCheckMCEtaDistribution", "Eta vs multiplicity in MCReco Check", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, {3, -0.5f, 2.5f}, {6, -0.5f, 5.5f}});
+
     mcEventHist.add("h2GenMCEtaDistribution", "Eta vs multiplicity in MCGen", kTH2F, {binnedmultAxis, etaAxis});
     mcEventHist.add("h2GenMCEtaDistributionAssocReco", "Eta vs multiplicity in MCGen Assoc Reco", kTH2F, {binnedmultAxis, etaAxis});
-    mcEventHist.add("h2GenMCEtaDistributionReco", "Eta vs multiplicity in MCGen Reco", kTH2F, {binnedmultAxis, etaAxis});
-    mcEventHist.add("h2GenMCEtaDistributionRecoCheck", "Eta vs multiplicity in MCGen Reco Check", kTH2F, {binnedmultAxis, etaAxis});
+    mcEventHist.add("h4GenMCEtaDistributionReco", "Eta vs multiplicity in MCGen Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, {6, -0.5f, 5.5f}});
+    mcEventHist.add("h4GenMCEtaDistributionRecoCheck", "Eta vs multiplicity in MCGen Reco Check", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, {6, -0.5f, 5.5f}});
 
     // Phi topological/PID cuts
     dataPhiHist.add("h2DauTracksPhiDCAxyPreCutData", "Dcaxy distribution vs pt before DCAxy cut", kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
@@ -380,16 +402,16 @@ struct Phik0shortanalysis {
       // Phi invariant mass for computing purities and normalisation
       dataPhiHist.add("h3PhipurData", "Invariant mass of Phi for Purity (no K0S/Pi) in Data", kTH3F, {binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
 
-      dataPhiHist.add("h4PhipurK0SData", "Invariant mass of Phi for Purity (K0S) in Data", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
+      dataPhiHist.add("h4PhipurK0SData", "Invariant mass of Phi for Purity (K0S) in Data", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
       dataPhiHist.get<THnSparse>(HIST("h4PhipurK0SData"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
-      for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-        dataPhiHist.get<THnSparse>(HIST("h4PhipurK0SData"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
+      for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+        dataPhiHist.get<THnSparse>(HIST("h4PhipurK0SData"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
 
-      dataPhiHist.add("h4PhipurPiData", "Invariant mass of Phi for Purity (Pi) in Data", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
+      dataPhiHist.add("h4PhipurPiData", "Invariant mass of Phi for Purity (Pi) in Data", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
       dataPhiHist.get<THnSparse>(HIST("h4PhipurPiData"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
-      for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-        dataPhiHist.get<THnSparse>(HIST("h4PhipurPiData"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
+      for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+        dataPhiHist.get<THnSparse>(HIST("h4PhipurPiData"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
     }
 
@@ -403,16 +425,16 @@ struct Phik0shortanalysis {
       // MCPhi invariant mass for computing purities
       closureMCPhiHist.add("h3PhipurMCClosure", "Invariant mass of Phi for Purity (no K0S/Pi)", kTH3F, {binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
 
-      closureMCPhiHist.add("h4PhipurK0SMCClosure", "Invariant mass of Phi for Purity (K0S) in MCClosure", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
+      closureMCPhiHist.add("h4PhipurK0SMCClosure", "Invariant mass of Phi for Purity (K0S) in MCClosure", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
       closureMCPhiHist.get<THnSparse>(HIST("h4PhipurK0SMCClosure"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
-      for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-        closureMCPhiHist.get<THnSparse>(HIST("h4PhipurK0SMCClosure"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
+      for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+        closureMCPhiHist.get<THnSparse>(HIST("h4PhipurK0SMCClosure"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
 
-      closureMCPhiHist.add("h4PhipurPiMCClosure", "Invariant mass of Phi for Purity (Pi) in MCClosure", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
+      closureMCPhiHist.add("h4PhipurPiMCClosure", "Invariant mass of Phi for Purity (Pi) in MCClosure", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
       closureMCPhiHist.get<THnSparse>(HIST("h4PhipurPiMCClosure"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
-      for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-        closureMCPhiHist.get<THnSparse>(HIST("h4PhipurPiMCClosure"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
+      for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+        closureMCPhiHist.get<THnSparse>(HIST("h4PhipurPiMCClosure"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
     }
 
@@ -424,10 +446,10 @@ struct Phik0shortanalysis {
 
     if (analysisModeConfigs.isData) {
       // 2D mass of Phi and K0S for Data
-      dataPhiK0SHist.add("h5PhiK0SData", "2D Invariant mass of Phi and K0Short for Data", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTK0SAxis, massK0SAxis, sigmassPhiAxis});
+      dataPhiK0SHist.add("h5PhiK0SData", "2D Invariant mass of Phi and K0Short for Data", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTK0SAxis, massK0SAxis, sigmassPhiAxis});
       dataPhiK0SHist.get<THnSparse>(HIST("h5PhiK0SData"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
-      for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-        dataPhiK0SHist.get<THnSparse>(HIST("h5PhiK0SData"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
+      for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+        dataPhiK0SHist.get<THnSparse>(HIST("h5PhiK0SData"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
 
       // 1D mass of K0S for Data
@@ -441,32 +463,32 @@ struct Phik0shortanalysis {
 
     if (analysisModeConfigs.isMC) {
       // RecMC K0S coupled to Phi
-      mcPhiK0SHist.add("h4PhiK0SMCReco", "K0S coupled to Phi in MCReco", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTK0SAxis, massK0SAxis});
+      mcPhiK0SHist.add("h4PhiK0SMCReco", "K0S coupled to Phi in MCReco", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTK0SAxis, massK0SAxis});
       mcPhiK0SHist.get<THnSparse>(HIST("h4PhiK0SMCReco"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
-      for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-        mcPhiK0SHist.get<THnSparse>(HIST("h4PhiK0SMCReco"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
+      for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+        mcPhiK0SHist.get<THnSparse>(HIST("h4PhiK0SMCReco"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
 
       // GenMC K0S coupled to Phi
-      mcPhiK0SHist.add("h3PhiK0SMCGen", "K0S coupled toPhi in MCGen", kTH3F, {{static_cast<int>(cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTK0SAxis});
+      mcPhiK0SHist.add("h3PhiK0SMCGen", "K0S coupled toPhi in MCGen", kTH3F, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTK0SAxis});
       mcPhiK0SHist.get<TH3>(HIST("h3PhiK0SMCGen"))->GetXaxis()->SetBinLabel(1, "Inclusive");
-      for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-        mcPhiK0SHist.get<TH3>(HIST("h3PhiK0SMCGen"))->GetXaxis()->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
+      for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+        mcPhiK0SHist.get<TH3>(HIST("h3PhiK0SMCGen"))->GetXaxis()->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
 
-      mcPhiK0SHist.add("h3PhiK0SMCGenAssocReco", "K0S coupled toPhi in MCGen Associated MCReco Collision", kTH3F, {{static_cast<int>(cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTK0SAxis});
+      mcPhiK0SHist.add("h3PhiK0SMCGenAssocReco", "K0S coupled toPhi in MCGen Associated MCReco Collision", kTH3F, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTK0SAxis});
       mcPhiK0SHist.get<TH3>(HIST("h3PhiK0SMCGenAssocReco"))->GetXaxis()->SetBinLabel(1, "Inclusive");
-      for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-        mcPhiK0SHist.get<TH3>(HIST("h3PhiK0SMCGenAssocReco"))->GetXaxis()->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
+      for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+        mcPhiK0SHist.get<TH3>(HIST("h3PhiK0SMCGenAssocReco"))->GetXaxis()->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
     }
 
     if (analysisModeConfigs.isClosure) {
       // 2D mass of Phi and K0S for Closure Test
-      closureMCPhiK0SHist.add("h5PhiK0SMCClosure", "2D Invariant mass of Phi and K0Short for MC Closure Test", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTK0SAxis, massK0SAxis, sigmassPhiAxis});
+      closureMCPhiK0SHist.add("h5PhiK0SMCClosure", "2D Invariant mass of Phi and K0Short for MC Closure Test", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTK0SAxis, massK0SAxis, sigmassPhiAxis});
       closureMCPhiK0SHist.get<THnSparse>(HIST("h5PhiK0SMCClosure"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
-      for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-        closureMCPhiK0SHist.get<THnSparse>(HIST("h5PhiK0SMCClosure"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
+      for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+        closureMCPhiK0SHist.get<THnSparse>(HIST("h5PhiK0SMCClosure"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
 
       // 1D mass of K0S for Closure Test
@@ -477,10 +499,10 @@ struct Phik0shortanalysis {
 
     if (analysisModeConfigs.isData) {
       // Phi mass vs Pion NSigma dE/dx for Data
-      dataPhiPionHist.add("h6PhiPiData", "Phi Invariant mass vs Pion nSigma TPC/TOF for Data", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigmassPhiAxis});
+      dataPhiPionHist.add("h6PhiPiData", "Phi Invariant mass vs Pion nSigma TPC/TOF for Data", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigmassPhiAxis});
       dataPhiPionHist.get<THnSparse>(HIST("h6PhiPiData"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
-      for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-        dataPhiPionHist.get<THnSparse>(HIST("h6PhiPiData"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
+      for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+        dataPhiPionHist.get<THnSparse>(HIST("h6PhiPiData"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
 
       // Pion NSigma dE/dx for Data
@@ -511,38 +533,38 @@ struct Phik0shortanalysis {
 
     if (analysisModeConfigs.isMC) {
       // RecMC Pion coupled to Phi with TPC
-      mcPhiPionHist.add("h4PhiPiTPCMCReco", "Pion coupled to Phi in MCReco (TPC)", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis, {100, -10.0f, 10.0f}});
+      mcPhiPionHist.add("h4PhiPiTPCMCReco", "Pion coupled to Phi in MCReco (TPC)", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis, {100, -10.0f, 10.0f}});
       mcPhiPionHist.get<THnSparse>(HIST("h4PhiPiTPCMCReco"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
-      for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-        mcPhiPionHist.get<THnSparse>(HIST("h4PhiPiTPCMCReco"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
+      for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+        mcPhiPionHist.get<THnSparse>(HIST("h4PhiPiTPCMCReco"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
 
       // RecMC Pion coupled to Phi with TPC and TOF
-      mcPhiPionHist.add("h5PhiPiTPCTOFMCReco", "Pion coupled to Phi in MCReco (TPC and TOF)", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}});
+      mcPhiPionHist.add("h5PhiPiTPCTOFMCReco", "Pion coupled to Phi in MCReco (TPC and TOF)", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}});
       mcPhiPionHist.get<THnSparse>(HIST("h5PhiPiTPCTOFMCReco"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
-      for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-        mcPhiPionHist.get<THnSparse>(HIST("h5PhiPiTPCTOFMCReco"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
+      for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+        mcPhiPionHist.get<THnSparse>(HIST("h5PhiPiTPCTOFMCReco"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
 
-      mcPhiPionHist.add("h3PhiPiMCGen", "Pion coupled to Phi in MCGen", kTH3F, {{static_cast<int>(cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis});
+      mcPhiPionHist.add("h3PhiPiMCGen", "Pion coupled to Phi in MCGen", kTH3F, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis});
       mcPhiPionHist.get<TH3>(HIST("h3PhiPiMCGen"))->GetXaxis()->SetBinLabel(1, "Inclusive");
-      for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-        mcPhiPionHist.get<TH3>(HIST("h3PhiPiMCGen"))->GetXaxis()->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
+      for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+        mcPhiPionHist.get<TH3>(HIST("h3PhiPiMCGen"))->GetXaxis()->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
 
-      mcPhiPionHist.add("h3PhiPiMCGenAssocReco", "Pion coupled to Phi in MCGen Associated Reco Collision", kTH3F, {{static_cast<int>(cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis});
+      mcPhiPionHist.add("h3PhiPiMCGenAssocReco", "Pion coupled to Phi in MCGen Associated Reco Collision", kTH3F, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis});
       mcPhiPionHist.get<TH3>(HIST("h3PhiPiMCGenAssocReco"))->GetXaxis()->SetBinLabel(1, "Inclusive");
-      for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-        mcPhiPionHist.get<TH3>(HIST("h3PhiPiMCGenAssocReco"))->GetXaxis()->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
+      for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+        mcPhiPionHist.get<TH3>(HIST("h3PhiPiMCGenAssocReco"))->GetXaxis()->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
     }
 
     if (analysisModeConfigs.isClosure) {
       // Phi mass vs Pion NSigma dE/dx for Closure Test
-      closureMCPhiPionHist.add("h6PhiPiMCClosure", "Phi Invariant mass vs Pion nSigma TPC/TOF for MC Closure Test", kTHnSparseF, {{static_cast<int>(cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigmassPhiAxis});
+      closureMCPhiPionHist.add("h6PhiPiMCClosure", "Phi Invariant mass vs Pion nSigma TPC/TOF for MC Closure Test", kTHnSparseF, {{static_cast<int>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1), -0.5f, static_cast<float>(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1.0f - 0.5f)}, binnedmultAxis, binnedpTPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigmassPhiAxis});
       closureMCPhiPionHist.get<THnSparse>(HIST("h6PhiPiMCClosure"))->GetAxis(0)->SetBinLabel(1, "Inclusive");
-      for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-        closureMCPhiPionHist.get<THnSparse>(HIST("h6PhiPiMCClosure"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", cfgDeltaYAcceptanceBins->at(i)));
+      for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+        closureMCPhiPionHist.get<THnSparse>(HIST("h6PhiPiMCClosure"))->GetAxis(0)->SetBinLabel(i + 2, Form("|Delta#it{y}| < %.1f", deltaYConfigs.cfgDeltaYAcceptanceBins->at(i)));
       }
 
       // Phi mass vs Pion NSigma dE/dx for Closure Test
@@ -664,9 +686,9 @@ struct Phik0shortanalysis {
       if (fillMethodSingleWeight)
         getPhiPurityFunctionsFromCCDB();
 
-      if (applyEfficiency)
+      if (applyEfficiency) {
         getEfficiencyMapsFromCCDB();
-      else {
+      } else {
         effMapPhi = nullptr;
         effMapK0S = nullptr;
         effMapPionTPC = nullptr;
@@ -716,7 +738,7 @@ struct Phik0shortanalysis {
         return false;
       if (QA) {
         mcEventHist.fill(HIST("hRecMCEventSelection"), 4); // vertex-Z selected
-        mcEventHist.fill(HIST("hRecMCVertexZ"), collision.posZ());
+        mcEventHist.fill(HIST("hRecoMCVertexZ"), collision.posZ());
       }
       if (!collision.isInelGt0())
         return false;
@@ -928,7 +950,7 @@ struct Phik0shortanalysis {
           continue;
         if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
           continue;
-        if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
+        if (std::abs(recPhi.Rapidity()) > deltaYConfigs.cfgYAcceptance)
           continue;
 
         nPhi++;
@@ -950,7 +972,7 @@ struct Phik0shortanalysis {
         continue;
       if (mcParticle.pt() < minPhiPt || mcParticle.pt() > maxPhiPt)
         continue;
-      if (std::abs(mcParticle.y()) > cfgYAcceptance)
+      if (std::abs(mcParticle.y()) > deltaYConfigs.cfgYAcceptance)
         continue;
 
       nPhi++;
@@ -974,6 +996,27 @@ struct Phik0shortanalysis {
       return false;
 
     return true;
+  }
+
+  int fromPDGToEnum(int pdgCode)
+  {
+    int pid = kSpAll;
+    switch (std::abs(pdgCode)) {
+      case PDG_t::kPiPlus:
+        pid = kSpPion;
+        break;
+      case PDG_t::kKPlus:
+        pid = kSpKaon;
+        break;
+      case PDG_t::kProton:
+        pid = kSpProton;
+        break;
+      default:
+        pid = kSpOther;
+        break;
+    }
+
+    return pid;
   }
 
   // Get phi-meson purity functions from CCDB
@@ -1053,15 +1096,15 @@ struct Phik0shortanalysis {
     for (const auto& Phi : listPhi) {
       if constexpr (!isMC) { // same event
         dataPhiK0SHist.fill(HIST("h5PhiK0SData"), 0, multiplicity, V0.pt(), V0.mK0Short(), Phi.M(), weights.at(0));
-        for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-          if (std::abs(V0.yK0Short() - Phi.Rapidity()) > cfgDeltaYAcceptanceBins->at(i))
+        for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+          if (std::abs(V0.yK0Short() - Phi.Rapidity()) > deltaYConfigs.cfgDeltaYAcceptanceBins->at(i))
             continue;
           dataPhiK0SHist.fill(HIST("h5PhiK0SData"), i + 1, multiplicity, V0.pt(), V0.mK0Short(), Phi.M(), weights.at(i + 1));
         }
       } else { // MC event
         closureMCPhiK0SHist.fill(HIST("h5PhiK0SMCClosure"), 0, multiplicity, V0.pt(), V0.mK0Short(), Phi.M(), weights.at(0));
-        for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-          if (std::abs(V0.yK0Short() - Phi.Rapidity()) > cfgDeltaYAcceptanceBins->at(i))
+        for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+          if (std::abs(V0.yK0Short() - Phi.Rapidity()) > deltaYConfigs.cfgDeltaYAcceptanceBins->at(i))
             continue;
           closureMCPhiK0SHist.fill(HIST("h5PhiK0SMCClosure"), i + 1, multiplicity, V0.pt(), V0.mK0Short(), Phi.M(), weights.at(i + 1));
         }
@@ -1078,15 +1121,15 @@ struct Phik0shortanalysis {
     for (const auto& Phi : listPhi) {
       if constexpr (!isMC) { // same event
         dataPhiPionHist.fill(HIST("h6PhiPiData"), 0, multiplicity, Pi.pt(), Pi.tpcNSigmaPi(), nSigmaTOFPi, Phi.M(), weights.at(0));
-        for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-          if (std::abs(Pi.rapidity(massPi) - Phi.Rapidity()) > cfgDeltaYAcceptanceBins->at(i))
+        for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+          if (std::abs(Pi.rapidity(massPi) - Phi.Rapidity()) > deltaYConfigs.cfgDeltaYAcceptanceBins->at(i))
             continue;
           dataPhiPionHist.fill(HIST("h6PhiPiData"), i + 1, multiplicity, Pi.pt(), Pi.tpcNSigmaPi(), nSigmaTOFPi, Phi.M(), weights.at(i + 1));
         }
       } else { // MC event
         closureMCPhiPionHist.fill(HIST("h6PhiPiMCClosure"), 0, multiplicity, Pi.pt(), Pi.tpcNSigmaPi(), nSigmaTOFPi, Phi.M(), weights.at(0));
-        for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-          if (std::abs(Pi.rapidity(massPi) - Phi.Rapidity()) > cfgDeltaYAcceptanceBins->at(i))
+        for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+          if (std::abs(Pi.rapidity(massPi) - Phi.Rapidity()) > deltaYConfigs.cfgDeltaYAcceptanceBins->at(i))
             continue;
           closureMCPhiPionHist.fill(HIST("h6PhiPiMCClosure"), i + 1, multiplicity, Pi.pt(), Pi.tpcNSigmaPi(), nSigmaTOFPi, Phi.M(), weights.at(i + 1));
         }
@@ -1167,7 +1210,7 @@ struct Phik0shortanalysis {
         ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
         if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
           continue;
-        if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
+        if (std::abs(recPhi.Rapidity()) > deltaYConfigs.cfgYAcceptance)
           continue;
 
         if (!isCountedPhi) {
@@ -1181,7 +1224,7 @@ struct Phik0shortanalysis {
 
         dataPhiHist.fill(HIST("h3PhipurData"), multiplicity, recPhi.Pt(), recPhi.M());
 
-        std::vector<int> countsK0S(cfgDeltaYAcceptanceBins->size() + 1, 0);
+        std::vector<int> countsK0S(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1, 0);
 
         // V0 already reconstructed by the builder
         for (const auto& v0 : V0s) {
@@ -1205,43 +1248,43 @@ struct Phik0shortanalysis {
             }
           }
 
-          if (std::abs(v0.yK0Short()) > cfgYAcceptance)
+          if (std::abs(v0.yK0Short()) > deltaYConfigs.cfgYAcceptance)
             continue;
 
           countsK0S.at(0)++;
-          for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-            if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgDeltaYAcceptanceBins->at(i))
+          for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+            if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > deltaYConfigs.cfgDeltaYAcceptanceBins->at(i))
               continue;
             countsK0S.at(i + 1)++;
           }
         }
 
-        for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size() + 1; i++) {
+        for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1; i++) {
           if (countsK0S.at(i) > 0)
             dataPhiHist.fill(HIST("h4PhipurK0SData"), i, multiplicity, recPhi.Pt(), recPhi.M());
         }
 
         isFilledhV0 = true;
 
-        std::vector<int> countsPi(cfgDeltaYAcceptanceBins->size(), 0);
+        std::vector<int> countsPi(deltaYConfigs.cfgDeltaYAcceptanceBins->size(), 0);
 
         // Loop over all primary pion candidates
         for (const auto& track : fullTracks) {
           if (!selectionPion<true, false>(track, false))
             continue;
 
-          if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
+          if (std::abs(track.rapidity(massPi)) > deltaYConfigs.cfgYAcceptance)
             continue;
 
           countsPi.at(0)++;
-          for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-            if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgDeltaYAcceptanceBins->at(i))
+          for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+            if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > deltaYConfigs.cfgDeltaYAcceptanceBins->at(i))
               continue;
             countsPi.at(i + 1)++;
           }
         }
 
-        for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size() + 1; i++) {
+        for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1; i++) {
           if (countsPi.at(i) > 0)
             dataPhiHist.fill(HIST("h4PhipurPiData"), i, multiplicity, recPhi.Pt(), recPhi.M());
         }
@@ -1279,12 +1322,12 @@ struct Phik0shortanalysis {
 
       dataK0SHist.fill(HIST("h3K0SRapidityData"), multiplicity, v0.pt(), v0.yK0Short());
 
-      if (std::abs(v0.yK0Short()) > cfgYAcceptance)
+      if (std::abs(v0.yK0Short()) > deltaYConfigs.cfgYAcceptance)
         continue;
 
       std::vector<ROOT::Math::PxPyPzMVector> listrecPhi;
-      std::vector<int> counts(cfgDeltaYAcceptanceBins->size() + 1, 0);
-      std::vector<float> weights(cfgDeltaYAcceptanceBins->size() + 1, 1);
+      std::vector<int> counts(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1, 0);
+      std::vector<float> weights(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1, 1);
 
       // Phi reconstruction
       // Loop over positive tracks
@@ -1308,7 +1351,7 @@ struct Phik0shortanalysis {
             continue;
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
-          if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
+          if (std::abs(recPhi.Rapidity()) > deltaYConfigs.cfgYAcceptance)
             continue;
 
           double phiPurity{};
@@ -1320,8 +1363,8 @@ struct Phik0shortanalysis {
 
           counts.at(0)++;
           weights.at(0) *= (1 - phiPurity);
-          for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-            if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgDeltaYAcceptanceBins->at(i))
+          for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+            if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > deltaYConfigs.cfgDeltaYAcceptanceBins->at(i))
               continue;
             counts.at(i + 1)++;
             weights.at(i + 1) *= (1 - phiPurity);
@@ -1330,12 +1373,12 @@ struct Phik0shortanalysis {
       }
 
       if (fillMethodMultipleWeights) {
-        for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size() + 1; i++) {
+        for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1; i++) {
           weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
         }
         fillInvMass2D<false>(v0, listrecPhi, multiplicity, weights);
       } else if (fillMethodSingleWeight) {
-        for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size() + 1; i++) {
+        for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1; i++) {
           weights.at(i) = (counts.at(i) > 0 ? 1 - weights.at(i) : 0);
         }
         fillInvMass<false>(v0, multiplicity, weights);
@@ -1366,12 +1409,12 @@ struct Phik0shortanalysis {
 
       dataPionHist.fill(HIST("h3PiRapidityData"), multiplicity, track.pt(), track.rapidity(massPi));
 
-      if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
+      if (std::abs(track.rapidity(massPi)) > deltaYConfigs.cfgYAcceptance)
         continue;
 
       std::vector<ROOT::Math::PxPyPzMVector> listrecPhi;
-      std::vector<int> counts(cfgDeltaYAcceptanceBins->size() + 1, 0);
-      std::vector<float> weights(cfgDeltaYAcceptanceBins->size() + 1, 1);
+      std::vector<int> counts(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1, 0);
+      std::vector<float> weights(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1, 1);
 
       // Phi reconstruction
       // Loop over positive tracks
@@ -1395,7 +1438,7 @@ struct Phik0shortanalysis {
             continue;
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
-          if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
+          if (std::abs(recPhi.Rapidity()) > deltaYConfigs.cfgYAcceptance)
             continue;
 
           double phiPurity{};
@@ -1407,8 +1450,8 @@ struct Phik0shortanalysis {
 
           counts.at(0)++;
           weights.at(0) *= (1 - phiPurity);
-          for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-            if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgDeltaYAcceptanceBins->at(i))
+          for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+            if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > deltaYConfigs.cfgDeltaYAcceptanceBins->at(i))
               continue;
             counts.at(i + 1)++;
             weights.at(i + 1) *= (1 - phiPurity);
@@ -1417,12 +1460,12 @@ struct Phik0shortanalysis {
       }
 
       if (fillMethodMultipleWeights) {
-        for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size() + 1; i++) {
+        for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1; i++) {
           weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
         }
         fillInvMassNSigma<false>(track, listrecPhi, multiplicity, weights);
       } else if (fillMethodSingleWeight) {
-        for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size() + 1; i++) {
+        for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1; i++) {
           weights.at(i) = (counts.at(i) > 0 ? 1 - weights.at(i) : 0);
         }
         fillNSigma<false>(track, multiplicity, weights);
@@ -1438,7 +1481,7 @@ struct Phik0shortanalysis {
       return;
 
     float multiplicity = collision.centFT0M();
-    mcEventHist.fill(HIST("hRecMCMultiplicityPercent"), multiplicity);
+    mcEventHist.fill(HIST("hUnbinnedRecoMCMultiplicityPercent"), multiplicity);
 
     if (!collision.has_mcCollision())
       return;
@@ -1446,7 +1489,7 @@ struct Phik0shortanalysis {
 
     const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
     float genmultiplicity = mcCollision.centFT0M();
-    mcEventHist.fill(HIST("hRecMCGenMultiplicityPercent"), genmultiplicity);
+    mcEventHist.fill(HIST("hRecoMCMultiplicityPercent"), genmultiplicity);
 
     // Defining positive and negative tracks for phi reconstruction
     auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -1502,7 +1545,7 @@ struct Phik0shortanalysis {
 
         mcPhiHist.fill(HIST("h3PhiRapiditySmearing"), genmultiplicity, recPhi.Rapidity(), mcMotherPhi.y());
 
-        if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
+        if (std::abs(recPhi.Rapidity()) > deltaYConfigs.cfgYAcceptance)
           continue;
 
         if (!isCountedPhi) {
@@ -1533,19 +1576,19 @@ struct Phik0shortanalysis {
           if (v0Configs.cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
             continue;
 
-          if (std::abs(v0.yK0Short()) > cfgYAcceptance)
+          if (std::abs(v0.yK0Short()) > deltaYConfigs.cfgYAcceptance)
             continue;
           if (!isCountedK0S.at(0)) {
             mcPhiHist.fill(HIST("h3PhieffK0SInvMassInc"), genmultiplicity, v0.pt(), recPhi.M());
             isCountedK0S.at(0) = true;
           }
-          if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgFCutOnDeltaY)
+          if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > deltaYConfigs.cfgFCutOnDeltaY)
             continue;
           if (!isCountedK0S.at(1)) {
             mcPhiHist.fill(HIST("h3PhieffK0SInvMassFCut"), genmultiplicity, v0.pt(), recPhi.M());
             isCountedK0S.at(1) = true;
           }
-          if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgSCutOnDeltaY)
+          if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > deltaYConfigs.cfgSCutOnDeltaY)
             continue;
           if (!isCountedK0S.at(2)) {
             mcPhiHist.fill(HIST("h3PhieffK0SInvMassSCut"), genmultiplicity, v0.pt(), recPhi.M());
@@ -1567,19 +1610,19 @@ struct Phik0shortanalysis {
           if (!selectionPion<true, true>(track, false))
             continue;
 
-          if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
+          if (std::abs(track.rapidity(massPi)) > deltaYConfigs.cfgYAcceptance)
             continue;
           if (!isCountedPi.at(0)) {
             mcPhiHist.fill(HIST("h3PhieffPiInvMassInc"), genmultiplicity, track.pt(), recPhi.M());
             isCountedPi.at(0) = true;
           }
-          if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgFCutOnDeltaY)
+          if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > deltaYConfigs.cfgFCutOnDeltaY)
             continue;
           if (!isCountedPi.at(1)) {
             mcPhiHist.fill(HIST("h3PhieffPiInvMassFCut"), genmultiplicity, track.pt(), recPhi.M());
             isCountedPi.at(1) = true;
           }
-          if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgSCutOnDeltaY)
+          if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > deltaYConfigs.cfgSCutOnDeltaY)
             continue;
           if (!isCountedPi.at(2)) {
             mcPhiHist.fill(HIST("h3PhieffPiInvMassSCut"), genmultiplicity, track.pt(), recPhi.M());
@@ -1629,30 +1672,30 @@ struct Phik0shortanalysis {
 
         mcK0SHist.fill(HIST("h4K0SRapiditySmearing"), genmultiplicity, v0.pt(), v0.yK0Short(), v0mcparticle.y());
 
-        if (std::abs(v0mcparticle.y()) > cfgYAcceptance)
+        if (std::abs(v0mcparticle.y()) > deltaYConfigs.cfgYAcceptance)
           continue;
 
         mcK0SHist.fill(HIST("h3K0SMCReco"), genmultiplicity, v0mcparticle.pt(), v0.mK0Short());
 
-        std::vector<int> counts(cfgDeltaYAcceptanceBins->size() + 1, 0);
+        std::vector<int> counts(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1, 0);
 
         for (const auto& mcParticle : mcParticlesThisColl) {
           if (mcParticle.pdgCode() != o2::constants::physics::Pdg::kPhi)
             continue;
           if (mcParticle.pt() < minPhiPt || mcParticle.pt() > maxPhiPt)
             continue;
-          if (std::abs(mcParticle.y()) > cfgYAcceptance)
+          if (std::abs(mcParticle.y()) > deltaYConfigs.cfgYAcceptance)
             continue;
 
           counts.at(0)++;
-          for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-            if (std::abs(v0mcparticle.y() - mcParticle.y()) > cfgDeltaYAcceptanceBins->at(i))
+          for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+            if (std::abs(v0mcparticle.y() - mcParticle.y()) > deltaYConfigs.cfgDeltaYAcceptanceBins->at(i))
               continue;
             counts.at(i + 1)++;
           }
         }
 
-        for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size() + 1; i++) {
+        for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1; i++) {
           if (counts.at(i) > 0)
             mcPhiK0SHist.fill(HIST("h4PhiK0SMCReco"), i, genmultiplicity, v0mcparticle.pt(), v0.mK0Short());
         }
@@ -1693,7 +1736,7 @@ struct Phik0shortanalysis {
         if (std::abs(mcTrack.pdgCode()) != PDG_t::kPiPlus)
           continue;
 
-        if (std::abs(mcTrack.y()) > cfgYAcceptance)
+        if (std::abs(mcTrack.y()) > deltaYConfigs.cfgYAcceptance)
           continue;
 
         // Primary pion selection
@@ -1712,25 +1755,25 @@ struct Phik0shortanalysis {
 
         mcPionHist.fill(HIST("h3PiTPCMCReco"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi());
 
-        std::vector<int> countsTPC(cfgDeltaYAcceptanceBins->size() + 1, 0);
+        std::vector<int> countsTPC(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1, 0);
 
         for (const auto& mcParticle : mcParticlesThisColl) {
           if (mcParticle.pdgCode() != o2::constants::physics::Pdg::kPhi)
             continue;
           if (mcParticle.pt() < minPhiPt || mcParticle.pt() > maxPhiPt)
             continue;
-          if (std::abs(mcParticle.y()) > cfgYAcceptance)
+          if (std::abs(mcParticle.y()) > deltaYConfigs.cfgYAcceptance)
             continue;
 
           countsTPC.at(0)++;
-          for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-            if (std::abs(mcTrack.y() - mcParticle.y()) > cfgDeltaYAcceptanceBins->at(i))
+          for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+            if (std::abs(mcTrack.y() - mcParticle.y()) > deltaYConfigs.cfgDeltaYAcceptanceBins->at(i))
               continue;
             countsTPC.at(i + 1)++;
           }
         }
 
-        for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size() + 1; i++) {
+        for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1; i++) {
           if (countsTPC.at(i) > 0)
             mcPhiPionHist.fill(HIST("h4PhiPiTPCMCReco"), i, genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi());
         }
@@ -1740,25 +1783,25 @@ struct Phik0shortanalysis {
 
         mcPionHist.fill(HIST("h4PiTPCTOFMCReco"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
 
-        std::vector<int> countsTPCTOF(cfgDeltaYAcceptanceBins->size() + 1, 0);
+        std::vector<int> countsTPCTOF(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1, 0);
 
         for (const auto& mcParticle : mcParticlesThisColl) {
           if (mcParticle.pdgCode() != o2::constants::physics::Pdg::kPhi)
             continue;
           if (mcParticle.pt() < minPhiPt || mcParticle.pt() > maxPhiPt)
             continue;
-          if (std::abs(mcParticle.y()) > cfgYAcceptance)
+          if (std::abs(mcParticle.y()) > deltaYConfigs.cfgYAcceptance)
             continue;
 
           countsTPCTOF.at(0)++;
-          for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-            if (std::abs(mcTrack.y() - mcParticle.y()) > cfgDeltaYAcceptanceBins->at(i))
+          for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+            if (std::abs(mcTrack.y() - mcParticle.y()) > deltaYConfigs.cfgDeltaYAcceptanceBins->at(i))
               continue;
             countsTPCTOF.at(i + 1)++;
           }
         }
 
-        for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size() + 1; i++) {
+        for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1; i++) {
           if (countsTPCTOF.at(i) > 0)
             mcPhiPionHist.fill(HIST("h5PhiPiTPCTOFMCReco"), i, genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
         }
@@ -1779,7 +1822,7 @@ struct Phik0shortanalysis {
 
     const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
     float genmultiplicity = mcCollision.centFT0M();
-    mcEventHist.fill(HIST("hRecMCGenMultiplicityPercent"), genmultiplicity);
+    mcEventHist.fill(HIST("hRecoMCMultiplicityPercent"), genmultiplicity);
 
     // Defining positive and negative tracks for phi reconstruction
     auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -1808,12 +1851,12 @@ struct Phik0shortanalysis {
         ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
         if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
           continue;
-        if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
+        if (std::abs(recPhi.Rapidity()) > deltaYConfigs.cfgYAcceptance)
           continue;
 
         if (!isCountedPhi) {
           mcEventHist.fill(HIST("hRecMCEventSelection"), 7); // at least a Phi candidate in the event
-          mcEventHist.fill(HIST("hRecMCGenMultiplicityPercentWithPhi"), genmultiplicity);
+          mcEventHist.fill(HIST("hRecoMCMultiplicityPercentWithPhi"), genmultiplicity);
           isCountedPhi = true;
         }
 
@@ -1822,7 +1865,7 @@ struct Phik0shortanalysis {
 
         closureMCPhiHist.fill(HIST("h3PhipurMCClosure"), genmultiplicity, recPhi.Pt(), recPhi.M());
 
-        std::vector<int> countsK0S(cfgDeltaYAcceptanceBins->size() + 1, 0);
+        std::vector<int> countsK0S(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1, 0);
 
         // V0 already reconstructed by the builder
         for (const auto& v0 : V0s) {
@@ -1842,23 +1885,23 @@ struct Phik0shortanalysis {
           if (v0Configs.cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
             continue;
 
-          if (std::abs(v0.yK0Short()) > cfgYAcceptance)
+          if (std::abs(v0.yK0Short()) > deltaYConfigs.cfgYAcceptance)
             continue;
 
           countsK0S.at(0)++;
-          for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-            if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgDeltaYAcceptanceBins->at(i))
+          for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+            if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > deltaYConfigs.cfgDeltaYAcceptanceBins->at(i))
               continue;
             countsK0S.at(i + 1)++;
           }
         }
 
-        for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size() + 1; i++) {
+        for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1; i++) {
           if (countsK0S.at(i) > 0)
             closureMCPhiHist.fill(HIST("h4PhipurK0SInvMass"), i, genmultiplicity, recPhi.Pt(), recPhi.M());
         }
 
-        std::vector<int> countsPi(cfgDeltaYAcceptanceBins->size() + 1, 0);
+        std::vector<int> countsPi(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1, 0);
 
         // Loop over all primary pion candidates
         for (const auto& track : fullMCTracks) {
@@ -1873,18 +1916,18 @@ struct Phik0shortanalysis {
           if (!selectionPion<true, true>(track, false))
             continue;
 
-          if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
+          if (std::abs(track.rapidity(massPi)) > deltaYConfigs.cfgYAcceptance)
             continue;
 
           countsPi.at(0)++;
-          for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-            if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgDeltaYAcceptanceBins->at(i))
+          for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+            if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > deltaYConfigs.cfgDeltaYAcceptanceBins->at(i))
               continue;
             countsPi.at(i + 1)++;
           }
         }
 
-        for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size() + 1; i++) {
+        for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1; i++) {
           if (countsPi.at(i) > 0)
             closureMCPhiHist.fill(HIST("h4PhipurPiInvMass"), i, genmultiplicity, recPhi.Pt(), recPhi.M());
         }
@@ -1930,12 +1973,12 @@ struct Phik0shortanalysis {
       if (v0Configs.cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
         continue;
 
-      if (std::abs(v0.yK0Short()) > cfgYAcceptance)
+      if (std::abs(v0.yK0Short()) > deltaYConfigs.cfgYAcceptance)
         continue;
 
       std::vector<ROOT::Math::PxPyPzMVector> listrecPhi;
-      std::vector<int> counts(cfgDeltaYAcceptanceBins->size() + 1, 0);
-      std::vector<float> weights(cfgDeltaYAcceptanceBins->size() + 1, 1);
+      std::vector<int> counts(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1, 0);
+      std::vector<float> weights(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1, 1);
 
       // Phi reconstruction
       for (const auto& track1 : posThisColl) { // loop over all selected tracks
@@ -1986,7 +2029,7 @@ struct Phik0shortanalysis {
             continue;
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
-          if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
+          if (std::abs(recPhi.Rapidity()) > deltaYConfigs.cfgYAcceptance)
             continue;
 
           double phiPurity{};
@@ -1998,8 +2041,8 @@ struct Phik0shortanalysis {
 
           counts.at(0)++;
           weights.at(0) *= (1 - phiPurity);
-          for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-            if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgDeltaYAcceptanceBins->at(i))
+          for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+            if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > deltaYConfigs.cfgDeltaYAcceptanceBins->at(i))
               continue;
             counts.at(i + 1)++;
             weights.at(i + 1) *= (1 - phiPurity);
@@ -2008,12 +2051,12 @@ struct Phik0shortanalysis {
       }
 
       if (fillMethodMultipleWeights) {
-        for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size() + 1; i++) {
+        for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1; i++) {
           weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
         }
         fillInvMass2D<true>(v0, listrecPhi, genmultiplicity, weights);
       } else if (fillMethodSingleWeight) {
-        for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size() + 1; i++) {
+        for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1; i++) {
           weights.at(i) = (counts.at(i) > 0 ? 1 - weights.at(i) : 0);
         }
         fillInvMass<true>(v0, genmultiplicity, weights);
@@ -2052,12 +2095,12 @@ struct Phik0shortanalysis {
       if (!selectionPion<true, true>(track, true))
         continue;
 
-      if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
+      if (std::abs(track.rapidity(massPi)) > deltaYConfigs.cfgYAcceptance)
         continue;
 
       std::vector<ROOT::Math::PxPyPzMVector> listrecPhi;
-      std::vector<int> counts(cfgDeltaYAcceptanceBins->size() + 1, 0);
-      std::vector<float> weights(cfgDeltaYAcceptanceBins->size() + 1, 1);
+      std::vector<int> counts(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1, 0);
+      std::vector<float> weights(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1, 1);
 
       // Phi reconstruction
       for (const auto& track1 : posThisColl) { // loop over all selected tracks
@@ -2108,7 +2151,7 @@ struct Phik0shortanalysis {
             continue;
           if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
             continue;
-          if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
+          if (std::abs(recPhi.Rapidity()) > deltaYConfigs.cfgYAcceptance)
             continue;
 
           double phiPurity{};
@@ -2120,8 +2163,8 @@ struct Phik0shortanalysis {
 
           counts.at(0)++;
           weights.at(0) *= (1 - phiPurity);
-          for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-            if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgDeltaYAcceptanceBins->at(i))
+          for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+            if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > deltaYConfigs.cfgDeltaYAcceptanceBins->at(i))
               continue;
             counts.at(i + 1)++;
             weights.at(i + 1) *= (1 - phiPurity);
@@ -2130,12 +2173,12 @@ struct Phik0shortanalysis {
       }
 
       if (fillMethodMultipleWeights) {
-        for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size() + 1; i++) {
+        for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1; i++) {
           weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
         }
         fillInvMassNSigma<true>(track, listrecPhi, genmultiplicity, weights);
       } else if (fillMethodSingleWeight) {
-        for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size() + 1; i++) {
+        for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1; i++) {
           weights.at(i) = (counts.at(i) > 0 ? 1 - weights.at(i) : 0);
         }
         fillNSigma<true>(track, genmultiplicity, weights);
@@ -2184,7 +2227,7 @@ struct Phik0shortanalysis {
       }
       if (!isPosKaon || !isNegKaon)
         continue;
-      if (std::abs(mcParticle1.y()) > cfgYAcceptance)
+      if (std::abs(mcParticle1.y()) > deltaYConfigs.cfgYAcceptance)
         continue;
 
       if (!isCountedPhi) {
@@ -2206,7 +2249,7 @@ struct Phik0shortanalysis {
         if (!mcParticle2.isPhysicalPrimary())
           continue;
 
-        if (std::abs(mcParticle2.y()) > cfgYAcceptance)
+        if (std::abs(mcParticle2.y()) > deltaYConfigs.cfgYAcceptance)
           continue;
         if (!isCountedK0S.at(0)) {
           mcPhiHist.fill(HIST("h2PhieffK0SGenMCInc"), genmultiplicity, mcParticle2.pt());
@@ -2214,7 +2257,7 @@ struct Phik0shortanalysis {
             mcPhiHist.fill(HIST("h2PhieffK0SGenMCFCutAssocReco"), genmultiplicity, mcParticle2.pt());
           isCountedK0S.at(0) = true;
         }
-        if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgFCutOnDeltaY)
+        if (std::abs(mcParticle1.y() - mcParticle2.y()) > deltaYConfigs.cfgFCutOnDeltaY)
           continue;
         if (!isCountedK0S.at(1)) {
           mcPhiHist.fill(HIST("h2PhieffK0SGenMCFCut"), genmultiplicity, mcParticle2.pt());
@@ -2222,7 +2265,7 @@ struct Phik0shortanalysis {
             mcPhiHist.fill(HIST("h2PhieffK0SGenMCFCutAssocReco"), genmultiplicity, mcParticle2.pt());
           isCountedK0S.at(1) = true;
         }
-        if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgSCutOnDeltaY)
+        if (std::abs(mcParticle1.y() - mcParticle2.y()) > deltaYConfigs.cfgSCutOnDeltaY)
           continue;
         if (!isCountedK0S.at(2)) {
           mcPhiHist.fill(HIST("h2PhieffK0SGenMCSCut"), genmultiplicity, mcParticle2.pt());
@@ -2240,7 +2283,7 @@ struct Phik0shortanalysis {
         if (!mcParticle2.isPhysicalPrimary())
           continue;
 
-        if (std::abs(mcParticle2.y()) > cfgYAcceptance)
+        if (std::abs(mcParticle2.y()) > deltaYConfigs.cfgYAcceptance)
           continue;
         if (!isCountedPi.at(0)) {
           mcPhiHist.fill(HIST("h2PhieffPiGenMCInc"), genmultiplicity, mcParticle2.pt());
@@ -2248,7 +2291,7 @@ struct Phik0shortanalysis {
             mcPhiHist.fill(HIST("h2PhieffPiGenMCIncAssocReco"), genmultiplicity, mcParticle2.pt());
           isCountedPi.at(0) = true;
         }
-        if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgFCutOnDeltaY)
+        if (std::abs(mcParticle1.y() - mcParticle2.y()) > deltaYConfigs.cfgFCutOnDeltaY)
           continue;
         if (!isCountedPi.at(1)) {
           mcPhiHist.fill(HIST("h2PhieffPiGenMCFCut"), genmultiplicity, mcParticle2.pt());
@@ -2256,7 +2299,7 @@ struct Phik0shortanalysis {
             mcPhiHist.fill(HIST("h2PhieffPiGenMCFCutAssocReco"), genmultiplicity, mcParticle2.pt());
           isCountedPi.at(1) = true;
         }
-        if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgSCutOnDeltaY)
+        if (std::abs(mcParticle1.y() - mcParticle2.y()) > deltaYConfigs.cfgSCutOnDeltaY)
           continue;
         if (!isCountedPi.at(2)) {
           mcPhiHist.fill(HIST("h2PhieffPiGenMCSCut"), genmultiplicity, mcParticle2.pt());
@@ -2296,14 +2339,14 @@ struct Phik0shortanalysis {
 
       mcK0SHist.fill(HIST("h3K0SRapidityGenMC"), genmultiplicity, mcParticle1.pt(), mcParticle1.y());
 
-      if (std::abs(mcParticle1.y()) > cfgYAcceptance)
+      if (std::abs(mcParticle1.y()) > deltaYConfigs.cfgYAcceptance)
         continue;
 
       mcK0SHist.fill(HIST("h2K0SMCGen"), genmultiplicity, mcParticle1.pt());
       if (isAssocColl)
         mcK0SHist.fill(HIST("h2K0SMCGenAssocReco"), genmultiplicity, mcParticle1.pt());
 
-      std::vector<int> counts(cfgDeltaYAcceptanceBins->size() + 1, 0);
+      std::vector<int> counts(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1, 0);
 
       for (const auto& mcParticle2 : mcParticles) {
         if (mcParticle2.pdgCode() != o2::constants::physics::Pdg::kPhi)
@@ -2324,18 +2367,18 @@ struct Phik0shortanalysis {
         }
         if (mcParticle2.pt() < minPhiPt || mcParticle2.pt() > maxPhiPt)
           continue;
-        if (std::abs(mcParticle2.y()) > cfgYAcceptance)
+        if (std::abs(mcParticle2.y()) > deltaYConfigs.cfgYAcceptance)
           continue;
 
         counts.at(0)++;
-        for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-          if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgDeltaYAcceptanceBins->at(i))
+        for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+          if (std::abs(mcParticle1.y() - mcParticle2.y()) > deltaYConfigs.cfgDeltaYAcceptanceBins->at(i))
             continue;
           counts.at(i + 1)++;
         }
       }
 
-      for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size() + 1; i++) {
+      for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1; i++) {
         if (counts.at(i) > 0) {
           mcPhiK0SHist.fill(HIST("h3PhiK0SMCGen"), i, genmultiplicity, mcParticle1.pt());
           if (isAssocColl)
@@ -2373,14 +2416,14 @@ struct Phik0shortanalysis {
 
       mcPionHist.fill(HIST("h3PiRapidityGenMC"), genmultiplicity, mcParticle1.pt(), mcParticle1.y());
 
-      if (std::abs(mcParticle1.y()) > cfgYAcceptance)
+      if (std::abs(mcParticle1.y()) > deltaYConfigs.cfgYAcceptance)
         continue;
 
       mcPionHist.fill(HIST("h2PiMCGen"), genmultiplicity, mcParticle1.pt());
       if (isAssocColl)
         mcPionHist.fill(HIST("h2PiMCGenAssocReco"), genmultiplicity, mcParticle1.pt());
 
-      std::vector<int> counts(cfgDeltaYAcceptanceBins->size() + 1, 0);
+      std::vector<int> counts(deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1, 0);
 
       for (const auto& mcParticle2 : mcParticles) {
         if (mcParticle2.pdgCode() != o2::constants::physics::Pdg::kPhi)
@@ -2401,18 +2444,18 @@ struct Phik0shortanalysis {
         }
         if (mcParticle2.pt() < minPhiPt || mcParticle2.pt() > maxPhiPt)
           continue;
-        if (std::abs(mcParticle2.y()) > cfgYAcceptance)
+        if (std::abs(mcParticle2.y()) > deltaYConfigs.cfgYAcceptance)
           continue;
 
         counts.at(0)++;
-        for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
-          if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgDeltaYAcceptanceBins->at(i))
+        for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size(); i++) {
+          if (std::abs(mcParticle1.y() - mcParticle2.y()) > deltaYConfigs.cfgDeltaYAcceptanceBins->at(i))
             continue;
           counts.at(i + 1)++;
         }
       }
 
-      for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size() + 1; i++) {
+      for (size_t i = 0; i < deltaYConfigs.cfgDeltaYAcceptanceBins->size() + 1; i++) {
         if (counts.at(i) > 0) {
           mcPhiPionHist.fill(HIST("h3PhiPiMCGen"), i, genmultiplicity, mcParticle1.pt());
           if (isAssocColl)
@@ -2438,11 +2481,17 @@ struct Phik0shortanalysis {
     if (!eventHasPhi(posThisColl, negThisColl))
       return;
 
-    float multiplicity = collision.centFT0M();
-    dataEventHist.fill(HIST("hMultiplicityPercent"), multiplicity);
+    dataEventHist.fill(HIST("hMultiplicityPercent"), collision.centFT0M());
+    dataEventHist.fill(HIST("h2VertexZvsMult"), collision.posZ(), collision.centFT0M());
 
-    for (const auto& track : filteredTracks)
-      dataEventHist.fill(HIST("h2EtaDistribution"), multiplicity, track.eta());
+    for (const auto& track : filteredTracks) {
+      dataEventHist.fill(HIST("h4EtaDistribution"), collision.posZ(), collision.centFT0M(), track.eta(), kGlobalplusITSonly);
+      if (track.hasTPC()) {
+        dataEventHist.fill(HIST("h4EtaDistribution"), collision.posZ(), collision.centFT0M(), track.eta(), kGlobalonly);
+      } else {
+        dataEventHist.fill(HIST("h4EtaDistribution"), collision.posZ(), collision.centFT0M(), track.eta(), kITSonly);
+      }
+    }
   }
 
   PROCESS_SWITCH(Phik0shortanalysis, processdNdetaWPhiData, "Process function for dN/deta values in Data", false);
@@ -2453,15 +2502,17 @@ struct Phik0shortanalysis {
       return;
     if (!collision.has_mcCollision())
       return;
-    const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
 
+    const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
     auto mcParticlesThisColl = mcParticles.sliceBy(preslices.perMCColl, mcCollision.globalIndex());
 
+    if (furtherCheckonMcCollision && (std::abs(mcCollision.posZ()) > cutZVertex || !pwglf::isINELgtNmc(mcParticlesThisColl, 0, pdgDB)))
+      return;
     if (filterOnMcPhi && !eventHasMCPhi(mcParticlesThisColl))
       return;
 
-    float genmultiplicity = mcCollision.centFT0M();
-    mcEventHist.fill(HIST("hRecMCGenMultiplicityPercent"), genmultiplicity);
+    mcEventHist.fill(HIST("hRecoMCMultiplicityPercent"), mcCollision.centFT0M());
+    mcEventHist.fill(HIST("h2RecoMCVertexZvsMult"), collision.posZ(), mcCollision.centFT0M());
 
     for (const auto& track : filteredMCTracks) {
       if (!track.has_mcParticle())
@@ -2471,14 +2522,25 @@ struct Phik0shortanalysis {
       if (!mcTrack.isPhysicalPrimary() || std::abs(mcTrack.eta()) > trackConfigs.etaMax)
         continue;
 
-      mcEventHist.fill(HIST("h2RecoMCEtaDistribution"), genmultiplicity, mcTrack.eta());
+      mcEventHist.fill(HIST("h5RecoMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), kGlobalplusITSonly, kSpAll);
+      if (track.hasTPC()) {
+        mcEventHist.fill(HIST("h5RecoMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), kGlobalonly, kSpAll);
+      } else {
+        mcEventHist.fill(HIST("h5RecoMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), kITSonly, kSpAll);
+      }
+
+      int pid = fromPDGToEnum(mcTrack.pdgCode());
+      mcEventHist.fill(HIST("h5RecoMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), kGlobalplusITSonly, pid);
     }
 
     for (const auto& mcParticle : mcParticlesThisColl) {
       if (!isGenParticleCharged(mcParticle))
         continue;
 
-      mcEventHist.fill(HIST("h2GenMCEtaDistributionReco"), genmultiplicity, mcParticle.eta());
+      mcEventHist.fill(HIST("h4GenMCEtaDistributionReco"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), kSpAll);
+
+      int pid = fromPDGToEnum(mcParticle.pdgCode());
+      mcEventHist.fill(HIST("h4GenMCEtaDistributionReco"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), pid);
     }
   }
 
@@ -2493,12 +2555,11 @@ struct Phik0shortanalysis {
     if (filterOnMcPhi && !eventHasMCPhi(mcParticles))
       return;
 
-    float genmultiplicity = mcCollision.centFT0M();
-
     uint64_t numberAssocColl = 0;
     for (const auto& collision : collisions) {
       if (acceptEventQA<true>(collision, false)) {
-        mcEventHist.fill(HIST("hGenMCRecoMultiplicityPercent"), genmultiplicity);
+        mcEventHist.fill(HIST("hGenMCRecoMultiplicityPercent"), mcCollision.centFT0M());
+        mcEventHist.fill(HIST("h2GenMCRecoVertexZvsMult"), collision.posZ(), mcCollision.centFT0M());
 
         auto filteredMCTracksThisColl = filteredMCTracks.sliceBy(preslices.perColl, collision.globalIndex());
         for (const auto& track : filteredMCTracksThisColl) {
@@ -2509,31 +2570,42 @@ struct Phik0shortanalysis {
           if (!mcTrack.isPhysicalPrimary() || std::abs(mcTrack.eta()) > trackConfigs.etaMax)
             continue;
 
-          mcEventHist.fill(HIST("h2RecoCheckMCEtaDistribution"), genmultiplicity, mcTrack.eta());
+          mcEventHist.fill(HIST("h5RecoCheckMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), kGlobalplusITSonly, kSpAll);
+          if (track.hasTPC()) {
+            mcEventHist.fill(HIST("h5RecoCheckMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), kGlobalonly, kSpAll);
+          } else {
+            mcEventHist.fill(HIST("h5RecoCheckMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), kITSonly, kSpAll);
+          }
+
+          int pid = fromPDGToEnum(mcTrack.pdgCode());
+          mcEventHist.fill(HIST("h5RecoCheckMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), kGlobalplusITSonly, pid);
         }
 
         for (const auto& mcParticle : mcParticles) {
           if (!isGenParticleCharged(mcParticle))
             continue;
 
-          mcEventHist.fill(HIST("h2GenMCEtaDistributionRecoCheck"), genmultiplicity, mcParticle.eta());
+          mcEventHist.fill(HIST("h4GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), kSpAll);
+
+          int pid = fromPDGToEnum(mcParticle.pdgCode());
+          mcEventHist.fill(HIST("h4GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), pid);
         }
 
         numberAssocColl++;
       }
     }
 
-    mcEventHist.fill(HIST("hGenMCMultiplicityPercent"), genmultiplicity);
+    mcEventHist.fill(HIST("hGenMCMultiplicityPercent"), mcCollision.centFT0M());
     if (numberAssocColl > 0)
-      mcEventHist.fill(HIST("hGenMCAssocRecoMultiplicityPercent"), genmultiplicity);
+      mcEventHist.fill(HIST("hGenMCAssocRecoMultiplicityPercent"), mcCollision.centFT0M());
 
     for (const auto& mcParticle : mcParticles) {
       if (!isGenParticleCharged(mcParticle))
         continue;
 
-      mcEventHist.fill(HIST("h2GenMCEtaDistribution"), genmultiplicity, mcParticle.eta());
+      mcEventHist.fill(HIST("h2GenMCEtaDistribution"), mcCollision.centFT0M(), mcParticle.eta());
       if (numberAssocColl > 0)
-        mcEventHist.fill(HIST("h2GenMCEtaDistributionAssocReco"), genmultiplicity, mcParticle.eta());
+        mcEventHist.fill(HIST("h2GenMCEtaDistributionAssocReco"), mcCollision.centFT0M(), mcParticle.eta());
     }
   }
 
@@ -2579,7 +2651,7 @@ struct Phik0shortanalysis {
         ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
         if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
           continue;
-        if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
+        if (std::abs(recPhi.Rapidity()) > deltaYConfigs.cfgYAcceptance)
           continue;
 
         if (!isCountedPhi) {
@@ -2619,7 +2691,7 @@ struct Phik0shortanalysis {
             }
           }
 
-          if (std::abs(v0.yK0Short()) > cfgYAcceptance)
+          if (std::abs(v0.yK0Short()) > deltaYConfigs.cfgYAcceptance)
             continue;
 
           float efficiencyPhiK0S = 1.0f;
@@ -2639,7 +2711,7 @@ struct Phik0shortanalysis {
           if (!selectionPion<true, false>(track, false))
             continue;
 
-          if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
+          if (std::abs(track.rapidity(massPi)) > deltaYConfigs.cfgYAcceptance)
             continue;
 
           float efficiencyPhiPion = 1.0f;
@@ -2670,7 +2742,7 @@ struct Phik0shortanalysis {
 
     const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
     float genmultiplicity = mcCollision.centFT0M();
-    mcEventHist.fill(HIST("hRecMCGenMultiplicityPercent"), genmultiplicity);
+    mcEventHist.fill(HIST("hRecoMCMultiplicityPercent"), genmultiplicity);
 
     // Defining positive and negative tracks for phi reconstruction
     auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -2697,12 +2769,12 @@ struct Phik0shortanalysis {
         ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
         if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
           continue;
-        if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
+        if (std::abs(recPhi.Rapidity()) > deltaYConfigs.cfgYAcceptance)
           continue;
 
         if (!isCountedPhi) {
           mcEventHist.fill(HIST("hRecMCEventSelection"), 7); // at least a Phi candidate in the event
-          mcEventHist.fill(HIST("hRecMCGenMultiplicityPercentWithPhi"), genmultiplicity);
+          mcEventHist.fill(HIST("hRecoMCMultiplicityPercentWithPhi"), genmultiplicity);
           isCountedPhi = true;
         }
 
@@ -2733,7 +2805,7 @@ struct Phik0shortanalysis {
           if (v0Configs.cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
             continue;
 
-          if (std::abs(v0.yK0Short()) > cfgYAcceptance)
+          if (std::abs(v0.yK0Short()) > deltaYConfigs.cfgYAcceptance)
             continue;
 
           float efficiencyPhiK0S = 1.0f;
@@ -2759,7 +2831,7 @@ struct Phik0shortanalysis {
           if (!selectionPion<true, true>(track, false))
             continue;
 
-          if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
+          if (std::abs(track.rapidity(massPi)) > deltaYConfigs.cfgYAcceptance)
             continue;
 
           float efficiencyPhiPion = 1.0f;
@@ -2840,7 +2912,7 @@ struct Phik0shortanalysis {
 
         if (!isMCMotherPhi)
           continue;
-        if (pTMother < minPhiPt || std::abs(yMother) > cfgYAcceptance)
+        if (pTMother < minPhiPt || std::abs(yMother) > deltaYConfigs.cfgYAcceptance)
           continue;
 
         mcPhiHist.fill(HIST("h3PhiMCRecoNewProc"), genmultiplicity, pTMother, yMother);
@@ -2862,7 +2934,7 @@ struct Phik0shortanalysis {
         continue;
       if (v0Configs.cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
         continue;
-      if (std::abs(v0mcparticle.y()) > cfgYAcceptance)
+      if (std::abs(v0mcparticle.y()) > deltaYConfigs.cfgYAcceptance)
         continue;
 
       mcK0SHist.fill(HIST("h3K0SMCRecoNewProc"), genmultiplicity, v0mcparticle.pt(), v0mcparticle.y());
@@ -2880,7 +2952,7 @@ struct Phik0shortanalysis {
       if (std::abs(mcTrack.pdgCode()) != PDG_t::kPiPlus)
         continue;
 
-      if (std::abs(mcTrack.y()) > cfgYAcceptance)
+      if (std::abs(mcTrack.y()) > deltaYConfigs.cfgYAcceptance)
         continue;
 
       // Primary pion selection
@@ -2907,7 +2979,7 @@ struct Phik0shortanalysis {
     auto mcParticlesThisColl = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
 
     for (const auto& mcParticle : mcParticlesThisColl) {
-      if (std::abs(mcParticle.y()) > cfgYAcceptance)
+      if (std::abs(mcParticle.y()) > deltaYConfigs.cfgYAcceptance)
         continue;
 
       // Phi selection
@@ -2943,7 +3015,7 @@ struct Phik0shortanalysis {
         for (const auto& mcParticle : mcParticles) {
           // The inclusive number of particles is the signal loss denominator,
           //  while the number of associated particles is the signal loss numerator
-          if (std::abs(mcParticle.y()) > cfgYAcceptance)
+          if (std::abs(mcParticle.y()) > deltaYConfigs.cfgYAcceptance)
             continue;
 
           // Phi selection
@@ -2972,7 +3044,7 @@ struct Phik0shortanalysis {
     for (const auto& mcParticle : mcParticles) {
       // The inclusive number of particles is the signal loss denominator,
       //  while the number of associated particles is the signal loss numerator
-      if (std::abs(mcParticle.y()) > cfgYAcceptance)
+      if (std::abs(mcParticle.y()) > deltaYConfigs.cfgYAcceptance)
         continue;
 
       // Phi selection
@@ -3024,7 +3096,7 @@ struct Phik0shortanalysis {
         ROOT::Math::PxPyPzMVector recPhi = recMother(posTrack1, negTrack1, massKa, massKa);
         if (recPhi.Pt() < minPhiPt)
           continue;
-        if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
+        if (std::abs(recPhi.Rapidity()) > deltaYConfigs.cfgYAcceptance)
           continue;
 
         const auto& posDaughterTrack = v0.posTrack_as<V0DauTracks>();
@@ -3034,7 +3106,7 @@ struct Phik0shortanalysis {
           continue;
         if (v0Configs.cfgFurtherV0Selection && !furtherSelectionV0(v0, collision2))
           continue;
-        if (std::abs(v0.yK0Short()) > cfgYAcceptance)
+        if (std::abs(v0.yK0Short()) > deltaYConfigs.cfgYAcceptance)
           continue;
 
         float efficiencyPhiK0S = 1.0f;
@@ -3075,12 +3147,12 @@ struct Phik0shortanalysis {
         ROOT::Math::PxPyPzMVector recPhi = recMother(posTrack1, negTrack1, massKa, massKa);
         if (recPhi.Pt() < minPhiPt)
           continue;
-        if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
+        if (std::abs(recPhi.Rapidity()) > deltaYConfigs.cfgYAcceptance)
           continue;
 
         if (!selectionPion<true, false>(track, false))
           continue;
-        if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
+        if (std::abs(track.rapidity(massPi)) > deltaYConfigs.cfgYAcceptance)
           continue;
 
         float efficiencyPhiPion = 1.0f;
