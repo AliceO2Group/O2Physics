@@ -16,7 +16,7 @@
 #ifndef PWGEM_DILEPTON_CORE_EMTRACKCUT_H_
 #define PWGEM_DILEPTON_CORE_EMTRACKCUT_H_
 
-// #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
+#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/DataTypes.h"
@@ -31,7 +31,7 @@
 #include <utility>
 #include <vector>
 
-// using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
+using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 
 class EMTrackCut : public TNamed
 {
@@ -45,24 +45,25 @@ class EMTrackCut : public TNamed
     kTrackPtRange,
     kTrackEtaRange,
     kTrackPhiRange,
+    kDCAxy,
+    kDCAz,
     kTPCNCls,
     kTPCCrossedRows,
     kTPCCrossedRowsOverNCls,
     kTPCFracSharedClusters,
     kTPCChi2NDF,
-    kDCAxy,
-    kDCAz,
     kITSNCls,
     kITSChi2NDF,
+    kTrackBits,
     kNCuts
   };
 
   template <typename TTrack>
   bool IsSelected(TTrack const& track) const
   {
-    if (!track.hasITS() || !track.hasTPC()) {
-      return false;
-    }
+    // if (!track.hasITS() || !track.hasTPC()) {
+    //   return false;
+    // }
 
     if (!IsSelectedTrack(track, EMTrackCuts::kTrackPtRange)) {
       return false;
@@ -70,55 +71,58 @@ class EMTrackCut : public TNamed
     if (!IsSelectedTrack(track, EMTrackCuts::kTrackEtaRange)) {
       return false;
     }
-
     if (!IsSelectedTrack(track, EMTrackCuts::kTrackPhiRange)) {
       return false;
     }
+
     if (!IsSelectedTrack(track, EMTrackCuts::kDCAxy)) {
       return false;
     }
     if (!IsSelectedTrack(track, EMTrackCuts::kDCAz)) {
       return false;
     }
-
-    // ITS cuts
-    if (!IsSelectedTrack(track, EMTrackCuts::kITSNCls)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, EMTrackCuts::kITSChi2NDF)) {
+    if (!IsSelectedTrack(track, EMTrackCuts::kTrackBits)) {
       return false;
     }
 
-    if (mRequireITSibAny) {
-      auto hits_ib = std::count_if(its_ib_any_Requirement.second.begin(), its_ib_any_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
-      if (hits_ib < its_ib_any_Requirement.first) {
-        return false;
-      }
-    }
-
-    if (mRequireITSib1st) {
-      auto hits_ib = std::count_if(its_ib_1st_Requirement.second.begin(), its_ib_1st_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
-      if (hits_ib < its_ib_1st_Requirement.first) {
-        return false;
-      }
-    }
-
-    // TPC cuts
-    if (!IsSelectedTrack(track, EMTrackCuts::kTPCNCls)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, EMTrackCuts::kTPCCrossedRows)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, EMTrackCuts::kTPCCrossedRowsOverNCls)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, EMTrackCuts::kTPCFracSharedClusters)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, EMTrackCuts::kTPCChi2NDF)) {
-      return false;
-    }
+    //    // ITS cuts
+    //    if (!IsSelectedTrack(track, EMTrackCuts::kITSNCls)) {
+    //      return false;
+    //    }
+    //    if (!IsSelectedTrack(track, EMTrackCuts::kITSChi2NDF)) {
+    //      return false;
+    //    }
+    //
+    //    if (mRequireITSibAny) {
+    //      auto hits_ib = std::count_if(its_ib_any_Requirement.second.begin(), its_ib_any_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
+    //      if (hits_ib < its_ib_any_Requirement.first) {
+    //        return false;
+    //      }
+    //    }
+    //
+    //    if (mRequireITSib1st) {
+    //      auto hits_ib = std::count_if(its_ib_1st_Requirement.second.begin(), its_ib_1st_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
+    //      if (hits_ib < its_ib_1st_Requirement.first) {
+    //        return false;
+    //      }
+    //    }
+    //
+    //    // TPC cuts
+    //    if (!IsSelectedTrack(track, EMTrackCuts::kTPCNCls)) {
+    //      return false;
+    //    }
+    //    if (!IsSelectedTrack(track, EMTrackCuts::kTPCCrossedRows)) {
+    //      return false;
+    //    }
+    //    if (!IsSelectedTrack(track, EMTrackCuts::kTPCCrossedRowsOverNCls)) {
+    //      return false;
+    //    }
+    //    if (!IsSelectedTrack(track, EMTrackCuts::kTPCFracSharedClusters)) {
+    //      return false;
+    //    }
+    //    if (!IsSelectedTrack(track, EMTrackCuts::kTPCChi2NDF)) {
+    //      return false;
+    //    }
 
     return true;
   }
@@ -136,32 +140,35 @@ class EMTrackCut : public TNamed
       case EMTrackCuts::kTrackPhiRange:
         return track.phi() > mMinTrackPhi && track.phi() < mMaxTrackPhi;
 
-      case EMTrackCuts::kTPCNCls:
-        return track.tpcNClsFound() >= mMinNClustersTPC;
-
-      case EMTrackCuts::kTPCCrossedRows:
-        return track.tpcNClsCrossedRows() >= mMinNCrossedRowsTPC;
-
-      case EMTrackCuts::kTPCCrossedRowsOverNCls:
-        return track.tpcCrossedRowsOverFindableCls() > mMinNCrossedRowsOverFindableClustersTPC;
-
-      case EMTrackCuts::kTPCFracSharedClusters:
-        return track.tpcFractionSharedCls() < mMaxFracSharedClustersTPC;
-
-      case EMTrackCuts::kTPCChi2NDF:
-        return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
-
       case EMTrackCuts::kDCAxy:
         return std::fabs(track.dcaXY()) < ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
 
       case EMTrackCuts::kDCAz:
         return std::fabs(track.dcaZ()) < mMaxDcaZ;
 
-      case EMTrackCuts::kITSNCls:
-        return mMinNClustersITS <= track.itsNCls() && track.itsNCls() <= mMaxNClustersITS;
+      case EMTrackCuts::kTrackBits:
+        return true;
 
-      case EMTrackCuts::kITSChi2NDF:
-        return mMinChi2PerClusterITS < track.itsChi2NCl() && track.itsChi2NCl() < mMaxChi2PerClusterITS;
+        //      case EMTrackCuts::kTPCNCls:
+        //        return track.tpcNClsFound() >= mMinNClustersTPC;
+        //
+        //      case EMTrackCuts::kTPCCrossedRows:
+        //        return track.tpcNClsCrossedRows() >= mMinNCrossedRowsTPC;
+        //
+        //      case EMTrackCuts::kTPCCrossedRowsOverNCls:
+        //        return track.tpcCrossedRowsOverFindableCls() > mMinNCrossedRowsOverFindableClustersTPC;
+        //
+        //      case EMTrackCuts::kTPCFracSharedClusters:
+        //        return track.tpcFractionSharedCls() < mMaxFracSharedClustersTPC;
+        //
+        //      case EMTrackCuts::kTPCChi2NDF:
+        //        return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
+        //
+        //      case EMTrackCuts::kITSNCls:
+        //        return mMinNClustersITS <= track.itsNCls() && track.itsNCls() <= mMaxNClustersITS;
+        //
+        //      case EMTrackCuts::kITSChi2NDF:
+        //        return mMinChi2PerClusterITS < track.itsChi2NCl() && track.itsChi2NCl() < mMaxChi2PerClusterITS;
 
       default:
         return false;
@@ -186,6 +193,7 @@ class EMTrackCut : public TNamed
   void SetTrackMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
   void RequireITSibAny(bool flag);
   void RequireITSib1st(bool flag);
+  void SetTrackBits(uint16_t bits);
 
  private:
   static const std::pair<int8_t, std::set<uint8_t>> its_ib_any_Requirement;
@@ -206,6 +214,7 @@ class EMTrackCut : public TNamed
   float mMinChi2PerClusterITS{0.f}, mMaxChi2PerClusterITS{1e10f}; // max its fit chi2 per ITS cluster
   bool mRequireITSibAny{true};
   bool mRequireITSib1st{false};
+  uint16_t mTrackBits{0};
 
   float mMaxDcaXY{1.0f};                        // max dca in xy plane
   float mMaxDcaZ{1.0f};                         // max dca in z direction

@@ -99,6 +99,9 @@ struct lambdapolsp {
     Configurable<bool> doRandomPsi{"doRandomPsi", true, "randomize psi"};
     Configurable<bool> doRandomPsiAC{"doRandomPsiAC", true, "randomize psiAC"};
     Configurable<bool> doRandomPhi{"doRandomPhi", true, "randomize phi"};
+    Configurable<double> etaMix{"etaMix", 0.1, "eta difference in mixing"};
+    Configurable<double> ptMix{"ptMix", 0.1, "pt difference in mixing"};
+    Configurable<double> phiMix{"phiMix", 0.1, "phi difference in mixing"};
   } randGrp;
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
@@ -1486,6 +1489,159 @@ struct lambdapolsp {
     }
   }
   PROCESS_SWITCH(lambdapolsp, processDerivedDataMixed, "Process mixed event using derived data", false);
+
+  void processDerivedDataMixed2(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraZDCSP> const& collisions, v0Candidates const& V0s, dauTracks const&)
+  {
+    TRandom3 randGen(0);
+
+    for (auto& [collision1, collision2] : selfCombinations(colBinning, meGrp.nMix, -1, collisions, collisions)) {
+
+      if (collision1.index() == collision2.index()) {
+        continue;
+      }
+
+      if (!collision1.sel8()) {
+        continue;
+      }
+      if (!collision2.sel8()) {
+        continue;
+      }
+
+      if (!collision1.triggereventsp()) { // provided by StraZDCSP
+        continue;
+      }
+      if (!collision2.triggereventsp()) { // provided by StraZDCSP
+        continue;
+      }
+
+      if (rctCut.requireRCTFlagChecker && !rctChecker(collision1)) {
+        continue;
+      }
+      if (rctCut.requireRCTFlagChecker && !rctChecker(collision2)) {
+        continue;
+      }
+
+      if (additionalEvSel && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+      if (additionalEvSel && (!collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+      if (additionalEvSel2 && (collision1.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision1.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+        continue;
+      }
+      if (additionalEvSel2 && (collision2.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision2.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+        continue;
+      }
+      if (additionalEvSel3 && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (additionalEvSel3 && (!collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (additionalEvSel4 && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+      if (additionalEvSel4 && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+
+      auto centrality = collision1.centFT0C();
+      auto qxZDCA = collision1.qxZDCA();
+      auto qxZDCC = collision1.qxZDCC();
+      auto qyZDCA = collision1.qyZDCA();
+      auto qyZDCC = collision1.qyZDCC();
+      auto psiZDCC = collision1.psiZDCC();
+      auto psiZDCA = collision1.psiZDCA();
+      double modqxZDCA;
+      double modqyZDCA;
+      double modqxZDCC;
+      double modqyZDCC;
+
+      modqxZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Cos(psiZDCA);
+      modqyZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Sin(psiZDCA);
+      modqxZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Cos(psiZDCC);
+      modqyZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Sin(psiZDCC);
+
+      auto psiZDC = TMath::ATan2((modqyZDCC - modqyZDCA), (modqxZDCC - modqxZDCA)); // full event plane from collision 2
+
+      histos.fill(HIST("hCentrality"), centrality);
+      histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
+      histos.fill(HIST("hpResSin"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA - psiZDCC))));
+
+      // V0s from collision1 to match kinematics
+      auto v0sCol1 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision1.index());
+      // V0s from collision2 to test
+      auto v0sCol2 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision2.index());
+
+      for (const auto& v0_2 : v0sCol2) {
+
+        bool LambdaTag = isCompatible(v0_2, 0);
+        bool aLambdaTag = isCompatible(v0_2, 1);
+        if (!LambdaTag && !aLambdaTag)
+          continue;
+        if (!SelectionV0(collision2, v0_2))
+          continue;
+        if (LambdaTag) {
+          Proton = ROOT::Math::PxPyPzMVector(v0_2.pxpos(), v0_2.pypos(), v0_2.pzpos(), massPr);
+          AntiPion = ROOT::Math::PxPyPzMVector(v0_2.pxneg(), v0_2.pyneg(), v0_2.pzneg(), massPi);
+          Lambdadummy = Proton + AntiPion;
+        }
+        if (aLambdaTag) {
+          AntiProton = ROOT::Math::PxPyPzMVector(v0_2.pxneg(), v0_2.pyneg(), v0_2.pzneg(), massPr);
+          Pion = ROOT::Math::PxPyPzMVector(v0_2.pxpos(), v0_2.pypos(), v0_2.pzpos(), massPi);
+          AntiLambdadummy = AntiProton + Pion;
+        }
+        if (shouldReject(LambdaTag, aLambdaTag, Lambdadummy, AntiLambdadummy)) {
+          continue;
+        }
+        if (TMath::Abs(v0_2.eta()) > 0.8)
+          continue;
+
+        // Check if lambda kinematics from collision2 matches with collision1
+        bool matched = false;
+        for (const auto& v0_1 : v0sCol1) {
+          bool LambdaTag1 = isCompatible(v0_1, 0);
+          bool aLambdaTag1 = isCompatible(v0_1, 1);
+          if (!LambdaTag1 && !aLambdaTag1)
+            continue;
+          if (!SelectionV0(collision1, v0_1))
+            continue;
+          if (TMath::Abs(v0_1.eta()) > 0.8)
+            continue;
+
+          double deta = std::abs(v0_1.eta() - v0_2.eta());
+          double dpt = std::abs(v0_1.pt() - v0_2.pt());
+          double dphi = RecoDecay::constrainAngle(v0_1.phi() - v0_2.phi(), 0.0);
+          if (deta < randGrp.etaMix && dpt < randGrp.ptMix && dphi < randGrp.phiMix && ((v0_1.eta() * v0_2.eta()) > 0.0)) {
+            matched = true;
+            break;
+          }
+        }
+        if (!matched)
+          continue;
+
+        int taga = LambdaTag;
+        int tagb = aLambdaTag;
+
+        if (LambdaTag) {
+          Lambda = Proton + AntiPion;
+          tagb = 0;
+          double acvalue = 1.0;
+          fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, psiZDC, centrality, v0_2.mLambda(), v0_2.pt(), v0_2.eta(), acvalue);
+        }
+
+        tagb = aLambdaTag;
+        if (aLambdaTag) {
+          AntiLambda = AntiProton + Pion;
+          taga = 0;
+          double acvalue = 1.0;
+          fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0_2.mAntiLambda(), v0_2.pt(), v0_2.eta(), acvalue);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(lambdapolsp, processDerivedDataMixed2, "Process mixed event2 using derived data", false);
 
   void processDerivedDataMixedFIFO(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraZDCSP> const& collisions, v0Candidates const& V0s, dauTracks const&)
   {
