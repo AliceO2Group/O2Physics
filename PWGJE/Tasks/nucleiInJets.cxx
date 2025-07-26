@@ -415,18 +415,18 @@ struct nucleiInJets {
 
     if (cEnableProtonQA) {
       jetHist.add<TH2>("tracks/proton/dca/after/hDCAxyVsPtProton", "DCAxy vs Pt (p)", HistType::kTH2F, {{dcaxyAxis}, {PtAxis}});
-      jetHist.add<TH2>("tracksInc/proton/dca/after/hDCAxyVsPtProton", "DCAxy vs Pt (p)", HistType::kTH2F, {{dcaxyAxis}, {PtAxis}});
+      jetHist.add<TH3>("tracksInc/proton/dca/after/hDCAxyVsPtProton", "DCAxy vs Pt (p)", HistType::kTH3F, {{dcaxyAxis}, {PtAxis}, {CentAxis}});
       jetHist.add<TH2>("tracks/antiProton/dca/after/hDCAxyVsPtantiProton", "DCAxy vs Pt (#bar{p})", HistType::kTH2F, {{dcaxyAxis}, {PtAxis}});
       jetHist.add<TH2>("tracks/proton/dca/after/hDCAzVsPtProton", "DCAz vs Pt (p)", HistType::kTH2F, {{dcazAxis}, {PtAxis}});
-      jetHist.add<TH2>("tracksInc/proton/dca/after/hDCAzVsPtProton", "DCAz vs Pt (p)", HistType::kTH2F, {{dcazAxis}, {PtAxis}});
+      jetHist.add<TH3>("tracksInc/proton/dca/after/hDCAzVsPtProton", "DCAz vs Pt (p)", HistType::kTH3F, {{dcazAxis}, {PtAxis}, {CentAxis}});
       jetHist.add<TH2>("tracks/antiProton/dca/after/hDCAzVsPtantiProton", "DCAz vs Pt (#bar{p})", HistType::kTH2F, {{dcazAxis}, {PtAxis}});
     }
     if (cEnableDeuteronQA) {
       jetHist.add<TH2>("tracks/deuteron/dca/after/hDCAxyVsPtDeuteron", "DCAxy vs Pt (d)", HistType::kTH2F, {{dcaxyAxis}, {PtAxis}});
-      jetHist.add<TH2>("tracksInc/deuteron/dca/after/hDCAxyVsPtDeuteron", "DCAxy vs Pt (d)", HistType::kTH2F, {{dcaxyAxis}, {PtAxis}});
+      jetHist.add<TH3>("tracksInc/deuteron/dca/after/hDCAxyVsPtDeuteron", "DCAxy vs Pt (d)", HistType::kTH3F, {{dcaxyAxis}, {PtAxis}, {CentAxis}});
       jetHist.add<TH2>("tracks/antiDeuteron/dca/after/hDCAxyVsPtantiDeuteron", "DCAxy vs Pt (#bar{d})", HistType::kTH2F, {{dcaxyAxis}, {PtAxis}});
       jetHist.add<TH2>("tracks/deuteron/dca/after/hDCAzVsPtDeuteron", "DCAz vs Pt (d)", HistType::kTH2F, {{dcazAxis}, {PtAxis}});
-      jetHist.add<TH2>("tracksInc/deuteron/dca/after/hDCAzVsPtDeuteron", "DCAz vs Pt (d)", HistType::kTH2F, {{dcazAxis}, {PtAxis}});
+      jetHist.add<TH3>("tracksInc/deuteron/dca/after/hDCAzVsPtDeuteron", "DCAz vs Pt (d)", HistType::kTH3F, {{dcazAxis}, {PtAxis}, {CentAxis}});
       jetHist.add<TH2>("tracks/antiDeuteron/dca/after/hDCAzVsPtantiDeuteron", "DCAz vs Pt (#bar{d})", HistType::kTH2F, {{dcazAxis}, {PtAxis}});
     }
     if (cEnableTritonQA) {
@@ -463,20 +463,20 @@ struct nucleiInJets {
     jetHist.add<TH2>("tracks/helium/h2TOFmass2HeliumVsPt", "#Delta M^{2} (t) vs #it{p}_{T}t; TOFmass2; #it{p}_{T}/z (GeV)", HistType::kTH2F, {{massHeAxis}, {ptZHeAxis}});
     jetHist.add<TH2>("tracks/antiHelium/h2TOFmass2antiHeliumVsPt", "#Delta M^{2} (t) vs #it{p}_{T}; TOFmass2; #it{p}_{T}/z (GeV)", HistType::kTH2F, {{massHeAxis}, {ptZHeAxis}});
 
-    jetHist.add<TH2>("tracksInc/proton/h2TOFmassProtonVsPt", "h2TOFmassProtonVsPt; TOFmass; #it{p}_{T} (GeV)", HistType::kTH2F, {{80, 0.4, 4.}, {50, 0., 5.}});
-    jetHist.add<TH2>("tracksInc/antiProton/h2TOFmassantiProtonVsPt", "h2TOFmassantiProtonVsPt; TOFmass; #it{p}_{T} (GeV)", HistType::kTH2F, {{80, 0.4, 4.}, {50, 0., 5.}});
-    jetHist.add<TH2>("tracksInc/deuteron/h2TOFmassDeuteronVsPt", "h2TOFmassDeuteronVsPt; TOFmass; #it{p}_{T} (GeV)", HistType::kTH2F, {{80, 0.4, 4.}, {50, 0., 5.}});
-    jetHist.add<TH2>("tracksInc/antiDeuteron/h2TOFmassantiDeuteronVsPt", "h2TOFmassantiDeuteronVsPt; TOFmass; #it{p}_{T} (GeV)", HistType::kTH2F, {{80, 0.4, 4.}, {50, 0., 5.}});
+    jetHist.add<TH3>("tracksInc/proton/h2TOFmassProtonVsPt", "h2TOFmassProtonVsPt; TOFmass; #it{p}_{T} (GeV)", HistType::kTH3F, {{80, 0.4, 4.}, {50, 0., 5.}, {CentAxis}});
+    jetHist.add<TH3>("tracksInc/antiProton/h2TOFmassantiProtonVsPt", "h2TOFmassantiProtonVsPt; TOFmass; #it{p}_{T} (GeV)", HistType::kTH3F, {{80, 0.4, 4.}, {50, 0., 5.}, {CentAxis}});
+    jetHist.add<TH3>("tracksInc/deuteron/h2TOFmassDeuteronVsPt", "h2TOFmassDeuteronVsPt; TOFmass; #it{p}_{T} (GeV)", HistType::kTH3F, {{80, 0.4, 4.}, {50, 0., 5.}, {CentAxis}});
+    jetHist.add<TH3>("tracksInc/antiDeuteron/h2TOFmassantiDeuteronVsPt", "h2TOFmassantiDeuteronVsPt; TOFmass; #it{p}_{T} (GeV)", HistType::kTH3F, {{80, 0.4, 4.}, {50, 0., 5.}, {CentAxis}});
 
-    jetHist.add<TH2>("tracksInc/proton/h2TOFmass2ProtonVsPt", "#Delta M^{2} (t) vs #it{p}_{T}; TOFmass2; #it{p}_{T} (GeV)", HistType::kTH2F, {{massPrAxis}, {250, 0., 5.}});
-    jetHist.add<TH2>("tracksInc/antiProton/h2TOFmass2antiProtonVsPt", "#Delta M^{2} (t) vs #it{p}_{T}; TOFmass2; #it{p}_{T} (GeV)", HistType::kTH2F, {{massPrAxis}, {250, 0., 5.}});
-    jetHist.add<TH2>("tracksInc/deuteron/h2TOFmass2DeuteronVsPt", "#Delta M^{2} (t) vs #it{p}_{T}; TOFmass2; #it{p}_{T} (GeV)", HistType::kTH2F, {{massDeAxis}, {250, 0., 5.}});
-    jetHist.add<TH2>("tracksInc/antiDeuteron/h2TOFmass2antiDeuteronVsPt", "#Delta M^{2} (t) vs #it{p}_{T}; TOFmass2; #it{p}_{T} (GeV)", HistType::kTH2F, {{massDeAxis}, {250, 0., 5.}});
+    jetHist.add<TH3>("tracksInc/proton/h2TOFmass2ProtonVsPt", "#Delta M^{2} (t) vs #it{p}_{T}; TOFmass2; #it{p}_{T} (GeV)", HistType::kTH3F, {{massPrAxis}, {250, 0., 5.}, {CentAxis}});
+    jetHist.add<TH3>("tracksInc/antiProton/h2TOFmass2antiProtonVsPt", "#Delta M^{2} (t) vs #it{p}_{T}; TOFmass2; #it{p}_{T} (GeV)", HistType::kTH3F, {{massPrAxis}, {250, 0., 5.}, {CentAxis}});
+    jetHist.add<TH3>("tracksInc/deuteron/h2TOFmass2DeuteronVsPt", "#Delta M^{2} (t) vs #it{p}_{T}; TOFmass2; #it{p}_{T} (GeV)", HistType::kTH3F, {{massDeAxis}, {250, 0., 5.}, {CentAxis}});
+    jetHist.add<TH3>("tracksInc/antiDeuteron/h2TOFmass2antiDeuteronVsPt", "#Delta M^{2} (t) vs #it{p}_{T}; TOFmass2; #it{p}_{T} (GeV)", HistType::kTH3F, {{massDeAxis}, {250, 0., 5.}, {CentAxis}});
 
-    jetHist.add<TH2>("tracksInc/proton/h2TofNsigmaProtonVsPt", "h2TofNsigmaProtonVsPt; TofNsigma; #it{p}_{T} (GeV)", HistType::kTH2F, {{100, -5, 5}, {100, 0., 10.}});
-    jetHist.add<TH2>("tracksInc/antiProton/h2TofNsigmaantiProtonVsPt", "h2TofNsigmaantiProtonVsPt;        TofNsigma; #it{p}_{T} (GeV)", HistType::kTH2F, {{100, -5, 5}, {100, 0., 10.}});
-    jetHist.add<TH2>("tracksInc/deuteron/h2TofNsigmaDeuteronVsPt", "h2TofNsigmaDeuteronVsPt; TofNsigma; #it{p}_{T} (GeV)", HistType::kTH2F, {{100, -5, 5}, {100, 0., 10.}});
-    jetHist.add<TH2>("tracksInc/antiDeuteron/h2TofNsigmaantiDeuteronVsPt", "h2TofNsigmaantiDeuteronVsPt; TofNsigma; #it{p}_{T} (GeV)", HistType::kTH2F, {{100, -5, 5}, {100, 0., 10.}});
+    jetHist.add<TH3>("tracksInc/proton/h2TofNsigmaProtonVsPt", "h2TofNsigmaProtonVsPt; TofNsigma; #it{p}_{T} (GeV)", HistType::kTH3F, {{100, -5, 5}, {100, 0., 10.}, {CentAxis}});
+    jetHist.add<TH3>("tracksInc/antiProton/h2TofNsigmaantiProtonVsPt", "h2TofNsigmaantiProtonVsPt;        TofNsigma; #it{p}_{T} (GeV)", HistType::kTH3F, {{100, -5, 5}, {100, 0., 10.}, {CentAxis}});
+    jetHist.add<TH3>("tracksInc/deuteron/h2TofNsigmaDeuteronVsPt", "h2TofNsigmaDeuteronVsPt; TofNsigma; #it{p}_{T} (GeV)", HistType::kTH3F, {{100, -5, 5}, {100, 0., 10.}, {CentAxis}});
+    jetHist.add<TH3>("tracksInc/antiDeuteron/h2TofNsigmaantiDeuteronVsPt", "h2TofNsigmaantiDeuteronVsPt; TofNsigma; #it{p}_{T} (GeV)", HistType::kTH3F, {{100, -5, 5}, {100, 0., 10.}, {CentAxis}});
 
     // TOF hist nSigma
     jetHist.add<TH2>("tracks/proton/h2TofNsigmaProtonVsPt", "h2TofNsigmaProtonVsPt; TofNsigma; #it{p}_{T} (GeV)", HistType::kTH2F, {{100, -5, 5}, {50, 0., 5.}});
@@ -1429,12 +1429,12 @@ struct nucleiInJets {
         }
 
         if (cEnableProtonQA && std::abs(trk.tpcNSigmaPr()) < cfgnTPCPIDPr) {
-          jetHist.fill(HIST("tracksInc/proton/dca/after/hDCAxyVsPtProton"), trk.dcaXY(), trk.pt());
-          jetHist.fill(HIST("tracksInc/proton/dca/after/hDCAzVsPtProton"), trk.dcaZ(), trk.pt());
+          jetHist.fill(HIST("tracksInc/proton/dca/after/hDCAxyVsPtProton"), trk.dcaXY(), trk.pt(), centrality);
+          jetHist.fill(HIST("tracksInc/proton/dca/after/hDCAzVsPtProton"), trk.dcaZ(), trk.pt(), centrality);
         }
         if (cEnableDeuteronQA && std::abs(trk.tpcNSigmaDe()) < cfgnTPCPIDDe) {
-          jetHist.fill(HIST("tracksInc/deuteron/dca/after/hDCAxyVsPtDeuteron"), trk.dcaXY(), trk.pt());
-          jetHist.fill(HIST("tracksInc/deuteron/dca/after/hDCAzVsPtDeuteron"), trk.dcaZ(), trk.pt());
+          jetHist.fill(HIST("tracksInc/deuteron/dca/after/hDCAxyVsPtDeuteron"), trk.dcaXY(), trk.pt(), centrality);
+          jetHist.fill(HIST("tracksInc/deuteron/dca/after/hDCAzVsPtDeuteron"), trk.dcaZ(), trk.pt(), centrality);
         }
 
       } else { // anti-particle info
@@ -1466,27 +1466,27 @@ struct nucleiInJets {
         if (addTOFplots && trk.hasTOF()) {
           massTOF = trk.p() * TMath::Sqrt(1.f / (trk.beta() * trk.beta()) - 1.f);
           if (!useTPCpreSel) {
-            jetHist.fill(HIST("tracksInc/antiProton/h2TOFmassantiProtonVsPt"), massTOF, trk.pt());
-            jetHist.fill(HIST("tracksInc/antiProton/h2TOFmass2antiProtonVsPt"), massTOF * massTOF - gMassProton * gMassProton, trk.pt());
-            jetHist.fill(HIST("tracksInc/antiProton/h2TofNsigmaantiProtonVsPt"), trk.tofNSigmaPr(), trk.pt());
+            jetHist.fill(HIST("tracksInc/antiProton/h2TOFmassantiProtonVsPt"), massTOF, trk.pt(), centrality);
+            jetHist.fill(HIST("tracksInc/antiProton/h2TOFmass2antiProtonVsPt"), massTOF * massTOF - gMassProton * gMassProton, trk.pt(), centrality);
+            jetHist.fill(HIST("tracksInc/antiProton/h2TofNsigmaantiProtonVsPt"), trk.tofNSigmaPr(), trk.pt(), centrality);
 
-            jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmassantiDeuteronVsPt"), massTOF, trk.pt());
-            jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - gMassDeuteron * gMassDeuteron, trk.pt());
-            jetHist.fill(HIST("tracksInc/antiDeuteron/h2TofNsigmaantiDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt());
+            jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmassantiDeuteronVsPt"), massTOF, trk.pt(), centrality);
+            jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - gMassDeuteron * gMassDeuteron, trk.pt(), centrality);
+            jetHist.fill(HIST("tracksInc/antiDeuteron/h2TofNsigmaantiDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt(), centrality);
           } else {
             if (std::abs(trk.tpcNSigmaPr()) < cfgnTPCPIDPr) {
-              jetHist.fill(HIST("tracksInc/antiProton/h2TOFmassantiProtonVsPt"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracksInc/antiProton/h2TOFmass2antiProtonVsPt"), massTOF * massTOF - gMassProton * gMassProton, trk.pt());
-              jetHist.fill(HIST("tracksInc/antiProton/h2TofNsigmaantiProtonVsPt"), trk.tofNSigmaPr(), trk.pt());
+              jetHist.fill(HIST("tracksInc/antiProton/h2TOFmassantiProtonVsPt"), massTOF, trk.pt(), centrality);
+              jetHist.fill(HIST("tracksInc/antiProton/h2TOFmass2antiProtonVsPt"), massTOF * massTOF - gMassProton * gMassProton, trk.pt(), centrality);
+              jetHist.fill(HIST("tracksInc/antiProton/h2TofNsigmaantiProtonVsPt"), trk.tofNSigmaPr(), trk.pt(), centrality);
             }
             if (std::abs(trk.tpcNSigmaDe()) < cfgnTPCPIDDe) {
-              jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmassantiDeuteronVsPt"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - gMassDeuteron * gMassDeuteron, trk.pt());
-              jetHist.fill(HIST("tracksInc/antiDeuteron/h2TofNsigmaantiDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt());
+              jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmassantiDeuteronVsPt"), massTOF, trk.pt(), centrality);
+              jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - gMassDeuteron * gMassDeuteron, trk.pt(), centrality);
+              jetHist.fill(HIST("tracksInc/antiDeuteron/h2TofNsigmaantiDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt(), centrality);
             } else {
-              jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmassantiDeuteronVsPt"), massTOF, trk.pt());
-              jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - gMassDeuteron * gMassDeuteron, trk.pt());
-              jetHist.fill(HIST("tracksInc/antiDeuteron/h2TofNsigmaantiDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt());
+              jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmassantiDeuteronVsPt"), massTOF, trk.pt(), centrality);
+              jetHist.fill(HIST("tracksInc/antiDeuteron/h2TOFmass2antiDeuteronVsPt"), massTOF * massTOF - gMassDeuteron * gMassDeuteron, trk.pt(), centrality);
+              jetHist.fill(HIST("tracksInc/antiDeuteron/h2TofNsigmaantiDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt(), centrality);
             }
           }
         }
