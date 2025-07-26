@@ -146,8 +146,8 @@ struct DedxAnalysis {
     AxisSpec ptAxis = {binP, "pT (GeV/c)"};
     AxisSpec etaAxis{8, -0.8, 0.8, "#eta"};
     AxisSpec pAxis = {binP, "#it{p}/Z (GeV/c)"};
-    fphiCutLow = new TF1("StandardPhiCutLow", "0.1/x/x+pi/18.0-0.025", 0, 50);
-    fphiCutHigh = new TF1("StandardPhiCutHigh", "0.12/x+pi/18.0+0.035", 0, 50);
+    fphiCutLow = new TF1("StandardPhiCutLow", "0.119297/x/x+pi/18.0-0.000379693", 0, 50);
+    fphiCutHigh = new TF1("StandardPhiCutHigh", "0.16685/x+pi/18.0+0.00981942", 0, 50);
     if (calibrationMode) {
       // MIP for pions
       registryDeDx.add(
