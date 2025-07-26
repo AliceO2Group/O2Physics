@@ -15,7 +15,7 @@
 //    Please write to: daiki.sekihata@cern.ch
 
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
+// #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
@@ -25,6 +25,7 @@
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "EventFiltering/Zorro.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/ASoAHelpers.h"
@@ -47,25 +48,25 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
-using MyQvectors = soa::Join<aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorBPosVecs, aod::QvectorBNegVecs, aod::QvectorBTotVecs>;
-
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
-using MyCollisions_Qvec = soa::Join<MyCollisions, MyQvectors>;
-
-using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov,
-                           aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                           aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
-using MyTrack = MyTracks::iterator;
-
 struct eventQC {
+  using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
+  using MyQvectors = soa::Join<aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorBPosVecs, aod::QvectorBNegVecs, aod::QvectorBTotVecs>;
+
+  using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
+  using MyCollisions_Qvec = soa::Join<MyCollisions, MyQvectors>;
+
+  using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov,
+                             aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                             aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
+  using MyTrack = MyTracks::iterator;
+
   // Configurables
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
+  Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fHighTrackMult", "desired software trigger name"};
   Configurable<bool> cfgFillEvent{"cfgFillEvent", false, "fill event histograms"};
   Configurable<bool> cfgFillTrack{"cfgFillTrack", false, "fill track histograms"};
   Configurable<bool> cfgFillPID{"cfgFillPID", false, "fill PID histograms"};
-  Configurable<bool> cfgFillPIDITS{"cfgFillPIDITS", false, "fill PID ITS histograms"};
   Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2, 3}, "Modulation of interest. Please keep increasing order"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 0, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
@@ -164,6 +165,12 @@ struct eventQC {
   Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
 
+  Zorro zorro;
+  std::vector<int> mTOIidx;
+  uint64_t mNinspectedTVX{0};
+  std::vector<std::string> swt_names;
+
+  int mRunNumber;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
@@ -171,6 +178,7 @@ struct eventQC {
 
   void init(InitContext&)
   {
+    mRunNumber = 0;
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -178,12 +186,27 @@ struct eventQC {
     rctChecker.init(cfgRCTLabel.value, cfgCheckZDC.value, cfgTreatLimitedAcceptanceAsBad.value);
 
     addhistograms();
-    if (doprocessEventQC_V0_PID) {
-      addV0histograms();
-    }
   }
 
   ~eventQC() {}
+
+  template <typename TBC>
+  void initCCDB(TBC const& bc)
+  {
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+
+    mTOIidx = zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfg_swt_name.value);
+    for (auto& idx : mTOIidx) {
+      LOGF(info, "Trigger of Interest : index = %d", idx);
+    }
+    mNinspectedTVX = zorro.getInspectedTVX()->GetBinContent(1);
+    LOGF(info, "total inspected TVX events = %d in run number %d", mNinspectedTVX, bc.runNumber());
+    fRegistry.fill(HIST("hNInspectedTVX"), bc.runNumber(), mNinspectedTVX);
+
+    mRunNumber = bc.runNumber();
+  }
 
   void addhistograms()
   {
@@ -212,14 +235,37 @@ struct eventQC {
     hCollisionCounter->GetXaxis()->SetBinLabel(19, "GoodITSLayersAll");
     hCollisionCounter->GetXaxis()->SetBinLabel(nbin_ev, "accepted");
 
+    fRegistry.add("hNInspectedTVX", "N inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
+
+    const AxisSpec axis_cent_ft0m{{0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+                                   20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+                                   40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
+                                   60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
+                                   80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110},
+                                  "centrality FT0M (%)"};
+
+    const AxisSpec axis_cent_ft0a{{0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+                                   20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+                                   40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
+                                   60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
+                                   80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110},
+                                  "centrality FT0A (%)"};
+
+    const AxisSpec axis_cent_ft0c{{0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+                                   20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+                                   40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
+                                   60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
+                                   80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110},
+                                  "centrality FT0C (%)"};
+
     if (cfgFillEvent) {
       fRegistry.add("Event/before/hZvtx", "vertex z; Z_{vtx} (cm)", kTH1F, {{100, -50, +50}}, false);
       fRegistry.add("Event/before/hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", kTH1F, {{6001, -0.5, 6000.5}}, false);
       fRegistry.add("Event/before/hMultNTracksPVeta1", "hMultNTracksPVeta1; N_{track} to PV", kTH1F, {{6001, -0.5, 6000.5}}, false);
       fRegistry.add("Event/before/hMultFT0", "hMultFT0;mult. FT0A;mult. FT0C", kTH2F, {{200, 0, 200000}, {60, 0, 60000}}, false);
-      fRegistry.add("Event/before/hCentFT0A", "hCentFT0A;centrality FT0A (%)", kTH1F, {{110, 0, 110}}, false);
-      fRegistry.add("Event/before/hCentFT0C", "hCentFT0C;centrality FT0C (%)", kTH1F, {{110, 0, 110}}, false);
-      fRegistry.add("Event/before/hCentFT0M", "hCentFT0M;centrality FT0M (%)", kTH1F, {{110, 0, 110}}, false);
+      fRegistry.add("Event/before/hCentFT0A", "hCentFT0A;centrality FT0A (%)", kTH1F, {{axis_cent_ft0a}}, false);
+      fRegistry.add("Event/before/hCentFT0C", "hCentFT0C;centrality FT0C (%)", kTH1F, {{axis_cent_ft0c}}, false);
+      fRegistry.add("Event/before/hCentFT0M", "hCentFT0M;centrality FT0M (%)", kTH1F, {{axis_cent_ft0m}}, false);
       fRegistry.add("Event/before/hCentFT0CvsMultNTracksPV", "hCentFT0CvsMultNTracksPV;centrality FT0C (%);N_{track} to PV", kTH2F, {{100, 0, 100}, {600, 0, 6000}}, false);
       fRegistry.add("Event/before/hMultFT0CvsMultNTracksPV", "hMultFT0CvsMultNTracksPV;mult. FT0C;N_{track} to PV", kTH2F, {{60, 0, 60000}, {600, 0, 6000}}, false);
       fRegistry.add("Event/before/hMultFT0CvsOccupancy", "hMultFT0CvsOccupancy;mult. FT0C;N_{track} in time range", kTH2F, {{60, 0, 60000}, {200, 0, 20000}}, false);
@@ -336,9 +382,6 @@ struct eventQC {
       fRegistry.add("Track/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5.f, +5.f}}, false);
       fRegistry.add("Track/hTPCNsigmaKa", "TPC n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5.f, +5.f}}, false);
       fRegistry.add("Track/hTPCNsigmaPr", "TPC n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5.f, +5.f}}, false);
-      if (doprocessEventQC_V0_PID) {
-        fRegistry.add("Track/hsEID", "TPC n sigma el;p_{in} (GeV/c);#eta;n #sigma_{e}^{TPC};", kTHnSparseF, {{200, 0, 10}, {20, -1, +1}, {100, -5, +5}}, false);
-      }
       fRegistry.add("Track/hTOFbeta", "TOF #beta;p_{pv} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {240, 0, 1.2}}, false);
       fRegistry.add("Track/hTOFNsigmaEl", "TOF n sigma el;p_{pv} (GeV/c);n #sigma_{e}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTOFNsigmaMu", "TOF n sigma mu;p_{pv} (GeV/c);n #sigma_{#mu}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
@@ -346,36 +389,8 @@ struct eventQC {
       fRegistry.add("Track/hTOFNsigmaKa", "TOF n sigma ka;p_{pv} (GeV/c);n #sigma_{K}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTOFNsigmaPr", "TOF n sigma pr;p_{pv} (GeV/c);n #sigma_{p}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
 
-      if (cfgFillPIDITS) {
-        fRegistry.add("Track/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda);", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
-        fRegistry.add("Track/hITSNsigmaEl", "ITS n sigma el;p_{pv} (GeV/c);n #sigma_{e}^{ITS}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-        fRegistry.add("Track/hITSNsigmaMu", "ITS n sigma mu;p_{pv} (GeV/c);n #sigma_{#mu}^{ITS}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-        fRegistry.add("Track/hITSNsigmaPi", "ITS n sigma pi;p_{pv} (GeV/c);n #sigma_{#pi}^{ITS}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-        fRegistry.add("Track/hITSNsigmaKa", "ITS n sigma ka;p_{pv} (GeV/c);n #sigma_{K}^{ITS}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-        fRegistry.add("Track/hITSNsigmaPr", "ITS n sigma pr;p_{pv} (GeV/c);n #sigma_{p}^{ITS}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-      }
+      fRegistry.add("Track/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda);", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
     }
-  }
-
-  void addV0histograms()
-  {
-    fRegistry.add("V0/hAP", "AP plot", kTH2F, {{200, -1, +1}, {250, 0, 0.25}}, false);
-    fRegistry.add("V0/hPCA", "distance between 2 legs", kTH1F, {{200, 0, 2}}, false);
-    fRegistry.add("V0/hCosPA", "cos pointing angle", kTH1F, {{100, 0.99, 1}}, false);
-    fRegistry.add("V0/hRadius", "radius", kTH1F, {{200, 0, 20}}, false);
-    fRegistry.add("V0/K0S/pion/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
-    fRegistry.add("V0/K0S/pion/hsEID", "TPC n sigma el;p_{in} (GeV/c);#eta;n #sigma_{e}^{TPC};", kTHnSparseF, {{200, 0, 10}, {20, -1, +1}, {100, -5, +5}}, false);
-
-    fRegistry.add("V0/K0S/hMass", "mass vs. p_{T} of K^{0}_{S}", kTH2F, {{200, 0.4, 0.6}, {100, 0, 10}}, false);
-    fRegistry.add("V0/Lambda/hMass", "mass vs. p_{T} of #Lambda", kTH2F, {{100, 1.08, 1.18}, {100, 0, 10}}, false);
-    fRegistry.add("V0/AntiLambda/hMass", "mass vs. p_{T} of #bar{#Lambda}", kTH2F, {{100, 1.08, 1.18}, {100, 0, 10}}, false);
-    fRegistry.add("V0/GammaTMP/hMass", "mass vs. p_{T} of #gamma", kTH2F, {{100, 0.0, 0.1}, {100, 0, 10}}, false);
-
-    fRegistry.add("V0/Photon/hMass", "mass vs. p_{T}", kTH2F, {{100, 0, 0.1}, {100, 0, 10}}, false);
-    fRegistry.add("V0/Photon/hChi2", "radius vs. KF chi2", kTH2F, {{100, 0, 100}, {100, 0, 100}}, false);
-    fRegistry.add("V0/Photon/hXY", "photon conversion point;X (cm);Y(cm)", kTH2F, {{400, -100, +100}, {400, -100, 100}}, false);
-    fRegistry.add("V0/Photon/electron/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
-    fRegistry.add("V0/Photon/electron/hsEID", "TPC n sigma el;p_{in} (GeV/c);#eta;n #sigma_{e}^{TPC};", kTHnSparseF, {{200, 0, 10}, {20, -1, +1}, {100, -5, +5}}, false);
   }
 
   template <typename TTrack>
@@ -416,21 +431,11 @@ struct eventQC {
       fRegistry.fill(HIST("Track/hTOFNsigmaKa"), track.p(), track.tofNSigmaKa());
       fRegistry.fill(HIST("Track/hTOFNsigmaPr"), track.p(), track.tofNSigmaPr());
 
-      if (cfgFillPIDITS) {
-        int nsize = 0;
-        for (int il = 0; il < 7; il++) {
-          nsize += track.itsClsSizeInLayer(il);
-        }
-        fRegistry.fill(HIST("Track/hMeanClusterSizeITS"), track.p(), static_cast<float>(nsize) / static_cast<float>(track.itsNCls()) * std::cos(std::atan(track.tgl())));
-        fRegistry.fill(HIST("Track/hITSNsigmaEl"), track.p(), track.itsNSigmaEl());
-        fRegistry.fill(HIST("Track/hITSNsigmaMu"), track.p(), track.itsNSigmaMu());
-        fRegistry.fill(HIST("Track/hITSNsigmaPi"), track.p(), track.itsNSigmaPi());
-        fRegistry.fill(HIST("Track/hITSNsigmaKa"), track.p(), track.itsNSigmaKa());
-        fRegistry.fill(HIST("Track/hITSNsigmaPr"), track.p(), track.itsNSigmaPr());
+      int nsize = 0;
+      for (int il = 0; il < 7; il++) {
+        nsize += track.itsClsSizeInLayer(il);
       }
-    }
-    if (doprocessEventQC_V0_PID) {
-      fRegistry.fill(HIST("Track/hsEID"), track.tpcInnerParam(), track.eta(), track.tpcNSigmaEl());
+      fRegistry.fill(HIST("Track/hMeanClusterSizeITS"), track.p(), static_cast<float>(nsize) / static_cast<float>(track.itsNCls()) * std::cos(std::atan(track.tgl())));
     }
   }
 
@@ -883,21 +888,28 @@ struct eventQC {
 
   SliceCache cache;
   Preslice<aod::Tracks> perCol = o2::aod::track::collisionId;
-  Preslice<aod::V0PhotonsKF> perCol_pcm = o2::aod::v0photonkf::collisionId;
-  Preslice<aod::V0Datas> perCol_v0 = o2::aod::v0data::collisionId;
-  Preslice<aod::CascDatas> perCol_casc = o2::aod::cascdata::collisionId;
 
-  template <bool doV0s, typename TCollisions, typename TTracks, typename TV0Photons, typename TV0Legs, typename TV0StrHadrons>
-  void runQC(TCollisions const& collisions, TTracks const& tracks, TV0Photons const& v0photons, TV0Legs const&, TV0StrHadrons const& v0strhadrons)
+  template <bool isTriggerAnalysis, typename TBCs, typename TCollisions, typename TTracks>
+  void runQC(TBCs const&, TCollisions const& collisions, TTracks const& tracks)
   {
     for (auto& collision : collisions) {
+      if constexpr (isTriggerAnalysis) {
+        const auto& bc = collision.template bc_as<TBCs>(); // don't use foundBC for CEFP.
+        initCCDB(bc);
+        if (!zorro.isSelected(bc.globalBC())) { // triggered event
+          continue;
+        }
+      }
+
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
+
       if (cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
         continue;
       }
+
       if (cfgFillEvent) {
         fillEventInfo<0>(collision);
       }
@@ -949,139 +961,26 @@ struct eventQC {
         fRegistry.fill(HIST("Event/after/hCentFT0CvsMultNGlobalTracksPV"), collision.centFT0C(), nGlobalTracksPV);
       }
 
-      // for V0 PID
-      if constexpr (doV0s) {
-        auto v0hadrons_per_coll = v0strhadrons.sliceBy(perCol_v0, collision.globalIndex());
-        for (auto& v0hadron : v0hadrons_per_coll) {
-          if (v0hadron.dcaV0daughters() > v0cuts.cfg_max_pca_v0hadron || v0hadron.v0cosPA() < v0cuts.cfg_min_cospa_v0hadron || v0hadron.v0radius() < v0cuts.cfg_min_radius_v0hadron) {
-            continue;
-          }
-
-          fRegistry.fill(HIST("V0/hAP"), v0hadron.alpha(), v0hadron.qtarm());
-          fRegistry.fill(HIST("V0/hPCA"), v0hadron.dcaV0daughters());
-          fRegistry.fill(HIST("V0/hCosPA"), v0hadron.v0cosPA());
-          fRegistry.fill(HIST("V0/hRadius"), v0hadron.v0radius());
-
-          fRegistry.fill(HIST("V0/K0S/hMass"), v0hadron.mK0Short(), v0hadron.pt());
-          if (v0cuts.cfg_min_mass_k0s < v0hadron.mK0Short() && v0hadron.mK0Short() < v0cuts.cfg_max_mass_k0s) { // K0S
-            fRegistry.fill(HIST("V0/GammaTMP/hMass"), v0hadron.mGamma(), v0hadron.pt());
-            fRegistry.fill(HIST("V0/Lambda/hMass"), v0hadron.mLambda(), v0hadron.pt());
-            fRegistry.fill(HIST("V0/AntiLambda/hMass"), v0hadron.mAntiLambda(), v0hadron.pt());
-            if (v0cuts.cfg_min_mass_lambda < v0hadron.mLambda() && v0hadron.mLambda() < v0cuts.cfg_max_mass_lambda) { // Lambda rejection
-              continue;
-            }
-            if (v0cuts.cfg_min_mass_lambda < v0hadron.mAntiLambda() && v0hadron.mAntiLambda() < v0cuts.cfg_max_mass_lambda) { // AntiLambda rejection
-              continue;
-            }
-            if (v0cuts.cfg_min_mass_photon < v0hadron.mGamma() && v0hadron.mGamma() < v0cuts.cfg_max_mass_photon) { // photon conversion rejection
-              continue;
-            }
-
-            auto pos = tracks.rawIteratorAt(v0hadron.posTrackId());
-            auto neg = tracks.rawIteratorAt(v0hadron.negTrackId());
-            if (!isSelectedV0Leg(pos) || !isSelectedV0Leg(neg)) {
-              continue;
-            }
-            if (!pos.hasITS() || !neg.hasITS()) {
-              continue;
-            }
-            if (std::fabs(pos.dcaXY()) < v0cuts.cfg_min_dcaxy_v0leg || std::fabs(neg.dcaXY()) < v0cuts.cfg_min_dcaxy_v0leg) {
-              continue;
-            }
-
-            // if (pos.tpcNSigmaPi() < v0cuts.cfg_min_TPCNsigmaPi || v0cuts.cfg_max_TPCNsigmaPi < pos.tpcNSigmaPi()) {
-            //   continue;
-            // }
-            // if (neg.tpcNSigmaPi() < v0cuts.cfg_min_TPCNsigmaPi || v0cuts.cfg_max_TPCNsigmaPi < neg.tpcNSigmaPi()) {
-            //   continue;
-            // }
-
-            bool isTPCOK_pos = pos.hasTPC() && v0cuts.cfg_min_TPCNsigmaPi < pos.tpcNSigmaPi() && pos.tpcNSigmaPi() < v0cuts.cfg_max_TPCNsigmaPi;
-            bool isTPCOK_neg = neg.hasTPC() && v0cuts.cfg_min_TPCNsigmaPi < neg.tpcNSigmaPi() && neg.tpcNSigmaPi() < v0cuts.cfg_max_TPCNsigmaPi;
-            bool isTOFOK_pos = pos.hasTOF() && pos.tofChi2() < v0cuts.cfg_max_chi2tof && v0cuts.cfg_min_TOFNsigmaPi < pos.tofNSigmaPi() && pos.tofNSigmaPi() < v0cuts.cfg_max_TOFNsigmaPi;
-            bool isTOFOK_neg = neg.hasTOF() && neg.tofChi2() < v0cuts.cfg_max_chi2tof && v0cuts.cfg_min_TOFNsigmaPi < neg.tofNSigmaPi() && neg.tofNSigmaPi() < v0cuts.cfg_max_TOFNsigmaPi;
-
-            if (isTPCOK_neg && isTOFOK_neg) { // K0S is tagged by neg and pos is probe.
-              fRegistry.fill(HIST("V0/K0S/pion/hTPCdEdx"), pos.tpcInnerParam(), pos.tpcSignal());
-              fRegistry.fill(HIST("V0/K0S/pion/hsEID"), pos.tpcInnerParam(), pos.eta(), pos.tpcNSigmaEl());
-            }
-            if (isTPCOK_pos && isTOFOK_pos) { // K0S is tagged by pos and neg is probe.
-              fRegistry.fill(HIST("V0/K0S/pion/hTPCdEdx"), neg.tpcInnerParam(), neg.tpcSignal());
-              fRegistry.fill(HIST("V0/K0S/pion/hsEID"), neg.tpcInnerParam(), neg.eta(), neg.tpcNSigmaEl());
-            }
-          } // end of K0S
-        } // end of v0hadron loop
-
-        auto v0photons_per_coll = v0photons.sliceBy(perCol_pcm, collision.globalIndex());
-        for (auto& v0photon : v0photons_per_coll) {
-          if (v0photon.chiSquareNDF() > v0cuts.cfg_max_kfchi2) {
-            continue;
-          }
-
-          fRegistry.fill(HIST("V0/Photon/hMass"), v0photon.mGamma(), v0photon.pt());
-          fRegistry.fill(HIST("V0/Photon/hXY"), v0photon.vx(), v0photon.vy());
-          fRegistry.fill(HIST("V0/Photon/hChi2"), v0photon.v0radius(), v0photon.chiSquareNDF());
-          auto pos_v0leg = v0photon.template posTrack_as<TV0Legs>();
-          auto neg_v0leg = v0photon.template negTrack_as<TV0Legs>();
-          auto pos = tracks.rawIteratorAt(pos_v0leg.trackId());
-          auto neg = tracks.rawIteratorAt(neg_v0leg.trackId());
-
-          if (!isSelectedV0Leg(pos) || !isSelectedV0Leg(neg)) {
-            continue;
-          }
-          if (std::fabs(pos.dcaXY()) < v0cuts.cfg_min_dcaxy_v0leg || std::fabs(neg.dcaXY()) < v0cuts.cfg_min_dcaxy_v0leg) {
-            continue;
-          }
-
-          // if (pos.tpcNSigmaEl() < v0cuts.cfg_min_TPCNsigmaEl || v0cuts.cfg_max_TPCNsigmaEl < pos.tpcNSigmaEl()) {
-          //   continue;
-          // }
-          // if (neg.tpcNSigmaEl() < v0cuts.cfg_min_TPCNsigmaEl || v0cuts.cfg_max_TPCNsigmaEl < neg.tpcNSigmaEl()) {
-          //   continue;
-          // }
-
-          bool isTPCOK_pos = pos.hasTPC() && v0cuts.cfg_min_TPCNsigmaEl < pos.tpcNSigmaEl() && pos.tpcNSigmaEl() < v0cuts.cfg_max_TPCNsigmaEl;
-          bool isTPCOK_neg = neg.hasTPC() && v0cuts.cfg_min_TPCNsigmaEl < neg.tpcNSigmaEl() && neg.tpcNSigmaEl() < v0cuts.cfg_max_TPCNsigmaEl;
-          bool isTOFOK_pos = pos.hasTOF() && pos.tofChi2() < v0cuts.cfg_max_chi2tof && v0cuts.cfg_min_TOFNsigmaEl < pos.tofNSigmaEl() && pos.tofNSigmaEl() < v0cuts.cfg_max_TOFNsigmaEl;
-          bool isTOFOK_neg = neg.hasTOF() && neg.tofChi2() < v0cuts.cfg_max_chi2tof && v0cuts.cfg_min_TOFNsigmaEl < neg.tofNSigmaEl() && neg.tofNSigmaEl() < v0cuts.cfg_max_TOFNsigmaEl;
-
-          if (isTPCOK_neg && isTOFOK_neg) { // photon conversion is tagged by neg and pos is probe.
-            fRegistry.fill(HIST("V0/Photon/electron/hTPCdEdx"), pos.tpcInnerParam(), pos.tpcSignal());
-            fRegistry.fill(HIST("V0/Photon/electron/hsEID"), pos.tpcInnerParam(), pos.eta(), pos.tpcNSigmaEl());
-          }
-          if (isTPCOK_pos && isTOFOK_pos) { // photon conversion is tagged by pos and neg is probe.
-            fRegistry.fill(HIST("V0/Photon/electron/hTPCdEdx"), neg.tpcInnerParam(), neg.tpcSignal());
-            fRegistry.fill(HIST("V0/Photon/electron/hsEID"), neg.tpcInnerParam(), neg.eta(), neg.tpcNSigmaEl());
-          }
-        } // end of v0photon loop
-      } // end of V0 PID
     } // end of collision loop
   } // end of process
 
-  void processEventQC(FilteredMyCollisions const& collisions, FilteredMyTracks const& tracks)
+  void processEventQC(MyBCs const& bcs, FilteredMyCollisions const& collisions, FilteredMyTracks const& tracks)
   {
-    auto tracksWithITSPid = soa::Attach<FilteredMyTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaMu, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(tracks);
-    runQC<false>(collisions, tracksWithITSPid, nullptr, nullptr, nullptr);
+    runQC<false>(bcs, collisions, tracks);
   }
   PROCESS_SWITCH(eventQC, processEventQC, "event QC", true);
 
-  void processEventQC_Cent_Qvec(FilteredMyCollisions_Qvec const& collisions, FilteredMyTracks const& tracks)
+  void processEventQC_SWT(MyBCs const& bcs, FilteredMyCollisions const& collisions, FilteredMyTracks const& tracks)
   {
-    auto tracksWithITSPid = soa::Attach<FilteredMyTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaMu, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(tracks);
-    runQC<false>(collisions, tracksWithITSPid, nullptr, nullptr, nullptr);
+    runQC<true>(bcs, collisions, tracks);
+  }
+  PROCESS_SWITCH(eventQC, processEventQC_SWT, "event QC", false);
+
+  void processEventQC_Cent_Qvec(MyBCs const& bcs, FilteredMyCollisions_Qvec const& collisions, FilteredMyTracks const& tracks)
+  {
+    runQC<false>(bcs, collisions, tracks);
   }
   PROCESS_SWITCH(eventQC, processEventQC_Cent_Qvec, "event QC + q vector", false);
-
-  //! type of V0. 0: built solely for cascades (does not pass standard V0 cuts), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1.
-  Filter v0Filter = o2::aod::v0data::v0Type == uint8_t(1) && o2::aod::v0data::v0cosPA > v0cuts.cfg_min_cospa_v0hadron&& o2::aod::v0data::dcaV0daughters < v0cuts.cfg_max_pca_v0hadron;
-  using filteredV0s = soa::Filtered<aod::V0Datas>;
-
-  void processEventQC_V0_PID(FilteredMyCollisions const& collisions, FilteredMyTracks const& tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, filteredV0s const& v0strhadrons)
-  {
-    auto tracksWithITSPid = soa::Attach<MyTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaMu, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(tracks);
-    runQC<true>(collisions, tracksWithITSPid, v0photons, v0legs, v0strhadrons);
-  }
-  PROCESS_SWITCH(eventQC, processEventQC_V0_PID, "event QC + V0 PID", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
