@@ -40,6 +40,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Tools/ML/model.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -49,6 +50,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
+
 
 namespace o2::aod
 {
@@ -158,6 +160,43 @@ int getPIDIndex(const int pdgCode) // Get O2 PID index corresponding to MC PDG c
   }
 }
 
+typedef struct Str_dEdx_correction {
+  TMatrixD fMatrix;
+  bool warning = true;
+
+  // void init(std::vector<double>& params)
+  void init()
+  {
+    double elements[32] = {0.99091, -0.015053, 0.0018912, -0.012305,
+                           0.081387, 0.003205, -0.0087404, -0.0028608,
+                           0.013066, 0.017012, -0.0018469, -0.0052177,
+                           -0.0035655, 0.0017846, 0.0019127, -0.00012964,
+                           0.0049428, 0.0055592, -0.0010618, -0.0016134,
+                           -0.0059098, 0.0013335, 0.00052133, 3.1119e-05,
+                           -0.004882, 0.00077317, -0.0013827, 0.003249,
+                           -0.00063689, 0.0016218, -0.00045215, -1.5815e-05};
+    fMatrix.ResizeTo(4, 8);
+    fMatrix.SetMatrixArray(elements);
+  }
+
+  float fReal_fTPCSignalN(std::vector<float> vec1, std::vector<float> vec2)
+  {
+    float result = 0.f;
+    // push 1.
+    vec1.insert(vec1.begin(), 1.0);
+    vec2.insert(vec2.begin(), 1.0);
+    for (int i = 0; i < fMatrix.GetNrows(); i++) {
+      for (int j = 0; j < fMatrix.GetNcols(); j++) {
+        double param = fMatrix(i, j);
+        double value1 = i > static_cast<int>(vec1.size()) ? 0 : vec1[i];
+        double value2 = j > static_cast<int>(vec2.size()) ? 0 : vec2[j];
+        result += param * value1 * value2;
+      }
+    }
+    return result;
+  }
+} Str_dEdx_correction;
+
 class pidTPCModule
 {
  public:
@@ -180,6 +219,10 @@ class pidTPCModule
 
   // Parametrization configuration
   bool useCCDBParam = false;
+
+  // for dEdx correction
+  ctpRateFetcher mRateFetcher;
+  Str_dEdx_correction str_dedx_correction;
 
   //__________________________________________________
   template <typename TCCDB, typename TCCDBApi, typename TContext, typename TpidTPCOpts, typename TMetadataInfo>
@@ -547,7 +590,75 @@ class pidTPCModule
     uint64_t count_tracks = 0;
 
     for (auto const& trk : tracks) {
-      // Loop on Tracks
+      // get the TPC signal to be used in the PID 
+      float tpcSignalToEvaluatePID = trk.tpcSignal(); 
+
+      // if corrected dE/dx is requested, correct it here on the spot and use that
+      if(pidTPCopts.useCorrecteddEdx){
+        double hadronicRate;
+        int multTPC;
+        int occupancy;
+        if (trk.has_collision()) {
+          auto collision = cols.iteratorAt(trk.collisionId());
+          auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+          const int runnumber = bc.runNumber();
+          hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, "ZNC hadronic") * 1.e-3; // kHz
+          multTPC = pidmults[trk.collisionId()];
+          occupancy = collision.trackOccupancyInTimeRange();
+        } else {
+          auto bc = bcs.begin();
+          const int runnumber = bc.runNumber();
+          hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, "ZNC hadronic") * 1.e-3; // kHz
+          multTPC = 0;
+          occupancy = 0;
+        }
+
+        float fTPCSignal = trk.tpcSignal();
+        float fNormMultTPC = multTPC / 11000.;
+
+        float fTrackOccN = occupancy / 1000.;
+        float fOccTPCN = fNormMultTPC * 10; //(fNormMultTPC*10).clip(0,12)
+        if (fOccTPCN > 12)
+          fOccTPCN = 12;
+        else if (fOccTPCN < 0)
+          fOccTPCN = 0;
+
+        float fTrackOccMeanN = hadronicRate / 5;
+        float side = trk.tgl() > 0 ? 1 : 0;
+        float a1pt = std::abs(trk.signed1Pt());
+        float a1pt2 = a1pt * a1pt;
+        float atgl = std::abs(trk.tgl());
+        float mbb0R = 50 / fTPCSignal;
+        if (mbb0R > 1.05)
+          mbb0R = 1.05;
+        else if (mbb0R < 0.05)
+          mbb0R = 0.05;
+        // float mbb0R =  max(0.05,  min(50 / fTPCSignal, 1.05));
+        float a1ptmbb0R = a1pt * mbb0R;
+        float atglmbb0R = atgl * mbb0R;
+
+        std::vector<float> vec_occu = {fTrackOccN, fOccTPCN, fTrackOccMeanN};
+        std::vector<float> vec_track = {mbb0R, a1pt, atgl, atglmbb0R, a1ptmbb0R, side, a1pt2};
+
+        float fTPCSignalN_CR0 = str_dedx_correction.fReal_fTPCSignalN(vec_occu, vec_track);
+
+        float mbb0R1 = 50 / (fTPCSignal / fTPCSignalN_CR0);
+        if (mbb0R1 > 1.05)
+          mbb0R1 = 1.05;
+        else if (mbb0R1 < 0.05)
+          mbb0R1 = 0.05;
+
+        std::vector<float> vec_track1 = {mbb0R1, a1pt, atgl, atgl * mbb0R1, a1pt * mbb0R1, side, a1pt2};
+        float fTPCSignalN_CR1 = str_dedx_correction.fReal_fTPCSignalN(vec_occu, vec_track1);
+
+        // change the signal used for PID
+        tpcSignalToEvaluatePID = fTPCSignal / fTPCSignalN_CR1;
+
+        if(pidTPCopts.savedEdxsCorrected){ 
+          // populated cursor if requested or autodetected
+          products.dEdxCorrected(tpcSignalToEvaluatePID);
+        }
+      }
 
       const auto& bc = trk.has_collision() ? cols.iteratorAt(trk.collisionId()).template bc_as<aod::BCsWithTimestamps>() : bcs.begin();
       if (useCCDBParam && pidTPCopts.ccdbTimestamp.value == 0 && !ccdb->isCachedObjectValid(pidTPCopts.ccdbPath.value, bc.timestamp())) { // Updating parametrisation only if the initial timestamp is 0
@@ -570,8 +681,8 @@ class pidTPCModule
         response->PrintAll();
       }
 
-      auto makePidTablesDefault = [&trk, &cols, &pidmults, &network_prediction, &count_tracks, &tracksForNet_size, this](const int flagFull, auto& tableFull, const int flagTiny, auto& tableTiny, const o2::track::PID::ID pid) {
-        makePidTables(flagFull, tableFull, flagTiny, tableTiny, pid, trk.tpcSignal(), trk, cols, pidmults[trk.collisionId()], network_prediction, count_tracks, tracksForNet_size);
+      auto makePidTablesDefault = [&trk, &tpcSignalToEvaluatePID, &cols, &pidmults, &network_prediction, &count_tracks, &tracksForNet_size, this](const int flagFull, auto& tableFull, const int flagTiny, auto& tableTiny, const o2::track::PID::ID pid) {
+        makePidTables(flagFull, tableFull, flagTiny, tableTiny, pid, tpcSignalToEvaluatePID, trk, cols, pidmults[trk.collisionId()], network_prediction, count_tracks, tracksForNet_size);
       };
 
       makePidTablesDefault(pidTPCopts.pidFullEl, products.tablePIDFullEl, pidTPCopts.pidTinyEl, products.tablePIDTinyEl, o2::track::PID::Electron);
