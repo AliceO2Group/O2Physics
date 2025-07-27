@@ -54,7 +54,7 @@ using namespace o2::framework;
 
 o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 
-struct pidTPCService {
+struct pidTpcService {
 
   // CCDB boilerplate declarations
   o2::framework::Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -94,9 +94,9 @@ struct pidTPCService {
     pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
   }
 
-  PROCESS_SWITCH(pidTPCService, processTracks, "Process Tracks", false);
-  PROCESS_SWITCH(pidTPCService, processTracksMC, "Process Tracks in MC (enables tune-on-data)", false);
-  PROCESS_SWITCH(pidTPCService, processTracksIU, "Process TracksIU (experimental)", true);
+  PROCESS_SWITCH(pidTpcService, processTracks, "Process Tracks", false);
+  PROCESS_SWITCH(pidTpcService, processTracksMC, "Process Tracks in MC (enables tune-on-data)", false);
+  PROCESS_SWITCH(pidTpcService, processTracksIU, "Process TracksIU (experimental)", true);
 };
 
 //****************************************************************************************
@@ -109,6 +109,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   // Parse the metadata for later too
   metadataInfo.initMetadata(cfgc);
 
-  WorkflowSpec workflow{adaptAnalysisTask<pidTPCService>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<pidTpcService>(cfgc)};
   return workflow;
 }
