@@ -247,15 +247,18 @@ struct NonPromptCascadeTask {
     std::vector<double> ptBinning = {0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 2.8, 3.2, 3.6, 4.0, 4.4, 4.8, 5.2, 5.6, 6.0};
     // AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec centAxis = {101, 0., 101., "Centrality"};
-    AxisSpec centAxisZoom = {100, 0., 1., "Centrality"};
-    AxisSpec multAxis = {10000, 0, 10000, "Multiplicity"};
-    AxisSpec multAxisZoom = {1000, 0, 1000, "Multiplicity"};
+    AxisSpec centAxisZoom = {100, 0., 10., "Centrality"};
+    AxisSpec multAxis = {10000, 0, 10000, "Multiplicity FT0M"};
+    AxisSpec multAxisZoom = {7000, 3000, 10000, "Multiplicity FT0M"};
+    AxisSpec nTracksAxis = {100, 0., 100., "NTracksGlobal"};
 
     std::array<std::string, 7> cutsNames{"# candidates", "hasTOF", "nClusTPC", "nSigmaTPCbach", "nSigmaTPCprotontrack", "nSigmaTPCpiontrack", "cosPA"};
     auto cutsOmega{std::get<std::shared_ptr<TH2>>(mRegistry.add("h_PIDcutsOmega", ";;Invariant mass (GeV/#it{c}^{2})", HistType::kTH2D, {{cutsNames.size(), -0.5, -0.5 + cutsNames.size()}, {125, 1.650, 1.700}}))};
     auto cutsXi{std::get<std::shared_ptr<TH2>>(mRegistry.add("h_PIDcutsXi", ";;Invariant mass (GeV/#it{c}^{2})", HistType::kTH2D, {{6, -0.5, 5.5}, {125, 1.296, 1.346}}))};
     mRegistry.add("hMultVsCent", "hMultVsCent", HistType::kTH2F, {centAxis, multAxis});
     mRegistry.add("hMultVsCentZoom", "hMultVsCentZoom", HistType::kTH2F, {centAxisZoom, multAxisZoom});
+    mRegistry.add("hNTracksVsCent", "hNTracksVsCent", HistType::kTH2F, {centAxis, nTracksAxis});
+    mRegistry.add("hNTracksVsCentZoom", "hNTracksVsCentZoom", HistType::kTH2F, {centAxisZoom, nTracksAxis});
 
     for (size_t iBin{0}; iBin < cutsNames.size(); ++iBin) {
       cutsOmega->GetYaxis()->SetBinLabel(iBin + 1, cutsNames[iBin].c_str());
@@ -323,11 +326,13 @@ struct NonPromptCascadeTask {
   }
   void fillMultHistos(const auto& collisions)
   {
-    std::cout << "Filling mult histos" << std::endl;
+    // std::cout << "Filling mult histos" << std::endl;
     for (const auto& coll : collisions) {
-      // std::cout << coll.centFT0M() << " mult, cent " << coll.multFT0M() << std::endl;
+      // std::cout << coll.centFT0M() << " mult, cent " << coll.multNTracksGlobal() << std::endl;
       mRegistry.fill(HIST("hMultVsCent"), coll.centFT0M(), coll.multFT0M());
       mRegistry.fill(HIST("hMultVsCentZoom"), coll.centFT0M(), coll.multFT0M());
+      mRegistry.fill(HIST("hNTracksVsCent"), coll.centFT0M(), (float)coll.multNTracksGlobal());
+      mRegistry.fill(HIST("hNTracksVsCentZoom"), coll.centFT0M(), coll.multNTracksGlobal());
     }
   };
 
