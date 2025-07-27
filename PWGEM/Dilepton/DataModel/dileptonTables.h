@@ -693,19 +693,20 @@ namespace emprimarytrack
 DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);        //!
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
 DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
-DECLARE_SOA_COLUMN(Sign, sign, int8_t);            //!
-DECLARE_SOA_COLUMN(TrackBit, trackBit, uint16_t);  //!
-DECLARE_SOA_DYNAMIC_COLUMN(Signed1Pt, signed1Pt, [](float pt, int8_t sign) -> float { return sign * 1. / pt; });
-DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
-DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
-DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
+// DECLARE_SOA_COLUMN(Sign, sign, int8_t);            //!
+DECLARE_SOA_COLUMN(TrackBit, trackBit, uint16_t); //!
+DECLARE_SOA_COLUMN(PtUINT16, ptuint16, uint16_t); //!
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](uint16_t ptuint16) -> float { return static_cast<float>(ptuint16) * 1e-4; });
+// DECLARE_SOA_DYNAMIC_COLUMN(Signed1Pt, signed1Pt, [](float pt, int8_t sign) -> float { return sign * 1. / pt; });
+// DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
+// DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
+// DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
+// DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
 } // namespace emprimarytrack
 
-DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_000, "AOD", "EMPRIMARYTRACK", 0, //!
-                            o2::soa::Index<>, emprimarytrack::CollisionId,
-                            emprimarytrack::TrackId, emprimarytrack::Sign,
-                            track::Pt, track::Eta, track::Phi, track::DcaXY, track::DcaZ, emprimarytrack::TrackBit,
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_000, "AOD", "EMPRIMARYTRACK", 0,                        //!
+                            o2::soa::Index<>, emprimarytrack::CollisionId, emprimarytrack::TrackId, /* emprimarytrack::Sign,*/
+                            emprimarytrack::PtUINT16, track::Eta, track::Phi, track::DcaXY, track::DcaZ, emprimarytrack::TrackBit,
 
                             // track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared, track::TPCChi2NCl,
                             // track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap,
@@ -719,11 +720,12 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_000, "AOD", "EMPRIMARYTRACK", 0, //!
                             // track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
 
                             // track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>, track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
-                            emprimarytrack::Signed1Pt<track::Pt, emprimarytrack::Sign>,
-                            emprimarytrack::P<track::Pt, track::Eta>,
-                            emprimarytrack::Px<track::Pt, track::Phi>,
-                            emprimarytrack::Py<track::Pt, track::Phi>,
-                            emprimarytrack::Pz<track::Pt, track::Eta>);
+                            // emprimarytrack::Signed1Pt<track::Pt, emprimarytrack::Sign>,
+                            // emprimarytrack::P<track::Pt, track::Eta>,
+                            // emprimarytrack::Px<track::Pt, track::Phi>,
+                            // emprimarytrack::Py<track::Pt, track::Phi>,
+                            // emprimarytrack::Pz<track::Pt, track::Eta>
+                            emprimarytrack::Pt<emprimarytrack::PtUINT16>);
 
 using EMPrimaryTracks = EMPrimaryTracks_000;
 // iterators
@@ -732,6 +734,10 @@ using EMPrimaryTrack = EMPrimaryTracks::iterator;
 DECLARE_SOA_TABLE(EMPrimaryTrackEMEventIds, "AOD", "PRMTRKEMEVENTID", emprimarytrack::EMEventId); // To be joined with EMPrimaryTracks table at analysis level.
 // iterators
 using EMPrimaryTrackEMEventId = EMPrimaryTrackEMEventIds::iterator;
+
+// DECLARE_SOA_TABLE(EMPrimaryTrackEMEventIdsTMP, "AOD", "PRMTRKEVIDTMP", track::CollisionId); // To be joined with EMPrimaryTracks in associateDileptonToEMEvent
+// // iterators
+// using EMPrimaryTrackEMEventIdTMP = EMPrimaryTrackEMEventIdsTMP::iterator;
 
 // Dummy data for MC
 namespace emdummydata
