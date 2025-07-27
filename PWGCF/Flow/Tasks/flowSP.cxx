@@ -14,34 +14,38 @@
 /// \since  01/12/2024
 /// \brief  task to evaluate flow with respect to spectator plane.
 
-#include <CCDB/BasicCCDBManager.h>
-#include <DataFormatsParameters/GRPObject.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <algorithm>
-#include <numeric>
-#include <vector>
-#include <string>
-#include <unordered_map>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "GFWWeights.h"
 
 #include "PWGCF/DataModel/SPTableZDC.h"
-#include "GFWWeights.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+
 #include "TF1.h"
 #include "TPDGCode.h"
+
+#include <algorithm>
+#include <numeric>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -85,12 +89,15 @@ struct FlowSP {
   O2_DEFINE_CONFIGURABLE(cfgFillWeights, bool, true, "Fill NUA weights");
   O2_DEFINE_CONFIGURABLE(cfgFillWeightsPOS, bool, true, "Fill NUA weights only for positive charges");
   O2_DEFINE_CONFIGURABLE(cfgFillWeightsNEG, bool, true, "Fill NUA weights only for negative charges");
+  O2_DEFINE_CONFIGURABLE(cfguseNUA1D, bool, false, "Use 1D NUA weights (only phi)");
+  O2_DEFINE_CONFIGURABLE(cfguseNUA2D, bool, true, "Use 2D NUA weights (phi and eta)");
   // Additional track Selections
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsUseAdditionalTrackCut, bool, false, "Bool to enable Additional Track Cut");
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsDoDCApt, bool, false, "Apply Pt dependent DCAz cut");
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsDCApt1, float, 0.1, "DcaZ < a * b / pt^1.1 -> this sets a");
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsDCApt2, float, 0.035, "DcaZ < a * b / pt^1.1 -> this sets b");
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsPIDNsigma, float, 2.0, "nSigma cut for PID");
+  O2_DEFINE_CONFIGURABLE(cfgTrackSelDoTrackQAvsCent, bool, true, "Do track selection QA plots as function of centrality");
   // Additional event selections
   O2_DEFINE_CONFIGURABLE(cfgEvSelsUseAdditionalEventCut, bool, true, "Bool to enable Additional Event Cut");
   O2_DEFINE_CONFIGURABLE(cfgEvSelsMaxOccupancy, int, 10000, "Maximum occupancy of selected events");
@@ -146,6 +153,7 @@ struct FlowSP {
   struct Config {
     std::vector<TH1D*> mEfficiency = {};
     std::vector<GFWWeights*> mAcceptance = {};
+    std::vector<TH3D*> mAcceptance2D = {};
     bool correctionsLoaded = false;
     int lastRunNumber = 0;
 
@@ -161,10 +169,10 @@ struct FlowSP {
 
   } cfg;
 
-  // define output objects
   OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
   OutputObj<GFWWeights> fWeightsPOS{GFWWeights("weights_positive")};
   OutputObj<GFWWeights> fWeightsNEG{GFWWeights("weights_negative")};
+
   HistogramRegistry registry{"registry"};
 
   // Event selection cuts - Alex
@@ -247,7 +255,7 @@ struct FlowSP {
     AxisSpec axisDCAxy = {100, -.5, .5, "DCA_{xy} (cm)"};
     AxisSpec axisPhiMod = {100, 0, constants::math::PI / 9, "fmod(#varphi,#pi/9)"};
     AxisSpec axisPhi = {60, 0, constants::math::TwoPI, "#varphi"};
-    AxisSpec axisEta = {64, -1.8, 1.8, "#eta"};
+    AxisSpec axisEta = {64, -1.6, 1.6, "#eta"};
     AxisSpec axisEtaVn = {8, -.8, .8, "#eta"};
     AxisSpec axisVx = {40, -0.01, 0.01, "v_{x}"};
     AxisSpec axisVy = {40, -0.01, 0.01, "v_{y}"};
@@ -295,14 +303,21 @@ struct FlowSP {
     registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_ParticleWeights + 1, "Apply weights");
 
     if (cfgFillWeights) {
-      fWeights->setPtBins(ptbins, &ptbinning[0]);
-      fWeights->init(true, false);
+      if (cfguseNUA2D) {
+        registry.add<TH3>("weights/hPhi_Eta_vz", "", kTH3D, {axisPhi, axisEta, axisVz});
+        registry.add<TH3>("weights/hPhi_Eta_vz_positive", "", kTH3D, {axisPhi, axisEta, axisVz});
+        registry.add<TH3>("weights/hPhi_Eta_vz_negative", "", kTH3D, {axisPhi, axisEta, axisVz});
+      } else {
+        // define output objects
+        fWeights->setPtBins(ptbins, &ptbinning[0]);
+        fWeights->init(true, false);
 
-      fWeightsPOS->setPtBins(ptbins, &ptbinning[0]);
-      fWeightsPOS->init(true, false);
+        fWeightsPOS->setPtBins(ptbins, &ptbinning[0]);
+        fWeightsPOS->init(true, false);
 
-      fWeightsNEG->setPtBins(ptbins, &ptbinning[0]);
-      fWeightsNEG->init(true, false);
+        fWeightsNEG->setPtBins(ptbins, &ptbinning[0]);
+        fWeightsNEG->init(true, false);
+      }
     }
 
     if (cfgFillEventQA) {
@@ -356,10 +371,6 @@ struct FlowSP {
 
       if (cfgFillTrackQA) {
         registry.add("QA/after/pt_phi", "", {HistType::kTH2D, {axisPt, axisPhiMod}});
-        registry.add<TH1>("incl/QA/after/hPt", "", kTH1D, {axisPt});
-        registry.add<TH1>("incl/QA/after/hPhi", "", kTH1D, {axisPhi});
-        registry.add<TH1>("incl/QA/after/hPhi_uncorrected", "", kTH1D, {axisPhi});
-        registry.add<TH1>("incl/QA/after/hEta", "", kTH1D, {axisEta});
         registry.add<TH3>("incl/QA/after/hPhi_Eta_vz", "", kTH3D, {axisPhi, axisEta, axisVz});
         registry.add<TH3>("incl/QA/after/hPhi_Eta_vz_corrected", "", kTH3D, {axisPhi, axisEta, axisVz});
         registry.add<TH2>("incl/QA/after/hDCAxy_pt", "", kTH2D, {axisPt, axisDCAxy});
@@ -367,6 +378,28 @@ struct FlowSP {
         registry.add("incl/QA/after/hSharedClusters_pt", "", {HistType::kTH2D, {axisPt, axisShCl}});
         registry.add("incl/QA/after/hCrossedRows_pt", "", {HistType::kTH2D, {axisPt, axisCl}});
         registry.add("incl/QA/after/hCrossedRows_vs_SharedClusters", "", {HistType::kTH2D, {axisCl, axisShCl}});
+
+        if (cfgTrackSelDoTrackQAvsCent) {
+          registry.add<TH2>("incl/QA/after/hPt", "", kTH2D, {axisPt, axisCent});
+          registry.add<TH2>("incl/QA/after/hPt_forward", "", kTH2D, {axisPt, axisCent});
+          registry.add<TH2>("incl/QA/after/hPt_forward_uncorrected", "", kTH2D, {axisPt, axisCent});
+          registry.add<TH2>("incl/QA/after/hPt_backward", "", kTH2D, {axisPt, axisCent});
+          registry.add<TH2>("incl/QA/after/hPt_backward_uncorrected", "", kTH2D, {axisPt, axisCent});
+          registry.add<TH2>("incl/QA/after/hPhi", "", kTH2D, {axisPhi, axisCent});
+          registry.add<TH2>("incl/QA/after/hPhi_uncorrected", "", kTH2D, {axisPhi, axisCent});
+          registry.add<TH2>("incl/QA/after/hEta", "", kTH2D, {axisEta, axisCent});
+          registry.add<TH2>("incl/QA/after/hEta_uncorrected", "", kTH2D, {axisEta, axisCent});
+        } else {
+          registry.add<TH1>("incl/QA/after/hPt", "", kTH1D, {axisPt});
+          registry.add<TH1>("incl/QA/after/hPt_forward", "", kTH1D, {axisPt});
+          registry.add<TH1>("incl/QA/after/hPt_forward_uncorrected", "", kTH1D, {axisPt});
+          registry.add<TH1>("incl/QA/after/hPt_backward", "", kTH1D, {axisPt});
+          registry.add<TH1>("incl/QA/after/hPt_backward_uncorrected", "", kTH1D, {axisPt});
+          registry.add<TH1>("incl/QA/after/hPhi", "", kTH1D, {axisPhi});
+          registry.add<TH1>("incl/QA/after/hPhi_uncorrected", "", kTH1D, {axisPhi});
+          registry.add<TH1>("incl/QA/after/hEta", "", kTH1D, {axisEta});
+          registry.add<TH1>("incl/QA/after/hEta_uncorrected", "", kTH1D, {axisEta});
+        }
 
         if (cfgFillQABefore)
           registry.addClone("incl/QA/after/", "incl/QA/before/");
@@ -568,6 +601,17 @@ struct FlowSP {
     }
   } // end of init
 
+  float getNUA2D(TH3D* hNUA, float eta, float phi, float vtxz)
+  {
+    int xind = hNUA->GetXaxis()->FindBin(phi);
+    int etaind = hNUA->GetYaxis()->FindBin(eta);
+    int vzind = hNUA->GetZaxis()->FindBin(vtxz);
+    float weight = hNUA->GetBinContent(xind, etaind, vzind);
+    if (weight != 0)
+      return 1. / weight;
+    return 1;
+  }
+
   template <typename TrackObject>
   int getTrackPID(TrackObject track)
   {
@@ -630,6 +674,19 @@ struct FlowSP {
     return grpo->getNominalL3Field();
   }
 
+  std::pair<float, uint16_t> getCrossingAngleCCDB(uint64_t timestamp)
+  {
+    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
+    auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timestamp);
+    if (grpo == nullptr) {
+      LOGF(fatal, "GRP object for Crossing Angle not found for timestamp %llu", timestamp);
+      return {0, 0};
+    }
+    float crossingAngle = grpo->getCrossingAngle();
+    uint16_t crossingAngleTime = grpo->getCrossingAngleTime();
+    return {crossingAngle, crossingAngleTime};
+  }
+
   // From Generic Framework
   void loadCorrections(uint64_t timestamp)
   {
@@ -639,19 +696,34 @@ struct FlowSP {
 
     int nWeights = 3;
 
-    if (cfgCCDB_NUA.value.empty() == false) {
-      TList* listCorrections = ccdb->getForTimeStamp<TList>(cfgCCDB_NUA, timestamp);
-      cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights")));
-      cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights_positive")));
-      cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights_negative")));
-      int sizeAcc = cfg.mAcceptance.size();
-      if (sizeAcc < nWeights)
-        LOGF(fatal, "Could not load acceptance weights from %s", cfgCCDB_NUA.value.c_str());
-      else
-        LOGF(info, "Loaded acceptance weights from %s", cfgCCDB_NUA.value.c_str());
-    } else {
-      LOGF(info, "cfgCCDB_NUA empty! No corrections loaded");
+    if (cfguseNUA1D) {
+      if (cfgCCDB_NUA.value.empty() == false) {
+        TList* listCorrections = ccdb->getForTimeStamp<TList>(cfgCCDB_NUA, timestamp);
+        cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights")));
+        cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights_positive")));
+        cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights_negative")));
+        int sizeAcc = cfg.mAcceptance.size();
+        if (sizeAcc < nWeights)
+          LOGF(fatal, "Could not load acceptance weights from %s", cfgCCDB_NUA.value.c_str());
+        else
+          LOGF(info, "Loaded acceptance weights from %s", cfgCCDB_NUA.value.c_str());
+      } else {
+        LOGF(info, "cfgCCDB_NUA empty! No corrections loaded");
+      }
+    } else if (cfguseNUA2D) {
+      if (cfgCCDB_NUA.value.empty() == false) {
+        TH3D* hNUA2D = ccdb->getForTimeStamp<TH3D>(cfgCCDB_NUA, timestamp);
+        if (!hNUA2D) {
+          LOGF(fatal, "Could not load acceptance weights from %s", cfgCCDB_NUA.value.c_str());
+        } else {
+          LOGF(info, "Loaded acceptance weights from %s", cfgCCDB_NUA.value.c_str());
+          cfg.mAcceptance2D.push_back(hNUA2D);
+        }
+      } else {
+        LOGF(info, "cfgCCDB_NUA empty! No corrections loaded");
+      }
     }
+    // Get Efficiency correction
     if (cfgCCDB_NUE.value.empty() == false) {
       TList* listCorrections = ccdb->getForTimeStamp<TList>(cfgCCDB_NUE, timestamp);
       cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency")));
@@ -680,11 +752,20 @@ struct FlowSP {
     if (eff == 0)
       return false;
     weight_nue = 1. / eff;
-    int sizeAcc = cfg.mAcceptance.size();
-    if (sizeAcc > pID) {
-      weight_nua = cfg.mAcceptance[pID]->getNUA(phi, eta, vtxz);
-    } else {
-      weight_nua = 1;
+
+    if (cfguseNUA1D) {
+      int sizeAcc = cfg.mAcceptance.size();
+      if (sizeAcc > pID) {
+        weight_nua = cfg.mAcceptance[pID]->getNUA(phi, eta, vtxz);
+      } else {
+        weight_nua = 1;
+      }
+    } else if (cfguseNUA2D) {
+      if (cfg.mAcceptance2D.size() > 0) {
+        weight_nua = getNUA2D(cfg.mAcceptance2D[0], eta, phi, vtxz);
+      } else {
+        weight_nua = 1;
+      }
     }
     return true;
   }
@@ -866,7 +947,7 @@ struct FlowSP {
     registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentNGlobal"), collision.centFT0C(), collision.centNGlobal(), centWeight);
 
     if (cfgFillEventPlaneQA) {
-      if constexpr (framework::has_type_v<aod::sptablezdc::Vx, typename CollisionObject::all_columns>) {
+      if constexpr (o2::framework::has_type_v<aod::sptablezdc::Vx, typename CollisionObject::all_columns>) {
         double psiA = 1.0 * std::atan2(collision.qyA(), collision.qxA());
         double psiC = 1.0 * std::atan2(collision.qyC(), collision.qxC());
         double psiFull = 1.0 * std::atan2(collision.qyA() + collision.qyC(), collision.qxA() + collision.qxC());
@@ -1004,9 +1085,46 @@ struct FlowSP {
     static constexpr std::string_view Time[] = {"before/", "after/"};
     // NOTE: species[kUnidentified] = "" (when no PID)
     registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt"), track.pt(), wacc * weff);
+    if (track.eta() > 0) {
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_forward"), track.pt(), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_forward_uncorrected"), track.pt());
+    } else {
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_backward"), track.pt(), wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_backward_uncorrected"), track.pt());
+    }
     registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi"), track.phi(), wacc);
     registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_uncorrected"), track.phi());
     registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hEta"), track.eta(), wacc);
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hEta_uncorrected"), track.eta());
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_vz"), track.phi(), track.eta(), vz);
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_vz_corrected"), track.phi(), track.eta(), vz, wacc);
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hDCAxy_pt"), track.pt(), track.dcaXY(), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hDCAz_pt"), track.pt(), track.dcaZ(), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hSharedClusters_pt"), track.pt(), track.tpcFractionSharedCls(), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_pt"), track.pt(), track.tpcNClsFound(), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_vs_SharedClusters"), track.tpcNClsFound(), track.tpcFractionSharedCls(), wacc * weff);
+  }
+
+  template <FillType ft, ChargeType ct, ParticleType pt, typename TrackObject>
+  inline void fillTrackQA(TrackObject track, double vz, double centrality, float wacc = 1, float weff = 1)
+  {
+    if (!cfgFillTrackQA)
+      return;
+
+    static constexpr std::string_view Time[] = {"before/", "after/"};
+    // NOTE: species[kUnidentified] = "" (when no PID)
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt"), track.pt(), centrality, wacc * weff);
+    if (track.eta() > 0) {
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_forward"), track.pt(), centrality, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_forward_uncorrected"), track.pt(), centrality);
+    } else {
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_backward"), track.pt(), centrality, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_backward_uncorrected"), track.pt(), centrality);
+    }
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi"), track.phi(), centrality, wacc);
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_uncorrected"), track.phi(), centrality);
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hEta"), track.eta(), centrality, wacc);
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hEta_uncorrected"), track.eta(), centrality);
     registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_vz"), track.phi(), track.eta(), vz);
     registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_vz_corrected"), track.phi(), track.eta(), vz, wacc);
     registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hDCAxy_pt"), track.pt(), track.dcaXY(), wacc * weff);
@@ -1083,15 +1201,27 @@ struct FlowSP {
   }
 
   template <FillType ft, ParticleType ct, typename TrackObject>
-  void fillAllQA(TrackObject track, double vtxz, bool pos, float wacc = 1, float weff = 1, float waccP = 1, float weffP = 1, float waccN = 1, float weffN = 1)
+  void fillAllQA(TrackObject track, double vtxz, double centrality, bool pos, float wacc = 1, float weff = 1, float waccP = 1, float weffP = 1, float waccN = 1, float weffN = 1)
   {
-    fillTrackQA<ft, kInclusive, ct>(track, vtxz, wacc, weff);
+    if (!cfgTrackSelDoTrackQAvsCent) {
+      fillTrackQA<ft, kInclusive, ct>(track, vtxz, wacc, weff);
+    } else {
+      fillTrackQA<ft, kInclusive, ct>(track, vtxz, centrality, wacc, weff);
+    }
     fillPIDQA<ft, kInclusive>(track);
     if (pos) {
-      fillTrackQA<ft, kPositive, ct>(track, vtxz, waccP, weffP);
+      if (!cfgTrackSelDoTrackQAvsCent) {
+        fillTrackQA<ft, kPositive, ct>(track, vtxz, waccP, weffP);
+      } else {
+        fillTrackQA<ft, kPositive, ct>(track, vtxz, centrality, waccP, weffP);
+      }
       fillPIDQA<ft, kPositive>(track);
     } else {
-      fillTrackQA<ft, kNegative, ct>(track, vtxz, waccN, weffN);
+      if (!cfgTrackSelDoTrackQAvsCent) {
+        fillTrackQA<ft, kNegative, ct>(track, vtxz, waccN, weffN);
+      } else {
+        fillTrackQA<ft, kNegative, ct>(track, vtxz, centrality, waccN, weffN);
+      }
       fillPIDQA<ft, kNegative>(track);
     }
   }
@@ -1233,16 +1363,16 @@ struct FlowSP {
         if (cfgFillQABefore) {
           switch (trackPID) {
             case kUnidentified:
-              fillAllQA<kBefore, kUnidentified>(track, vtxz, pos);
+              fillAllQA<kBefore, kUnidentified>(track, vtxz, centrality, pos);
               break;
             case kPion:
-              fillAllQA<kBefore, kPion>(track, vtxz, pos);
+              fillAllQA<kBefore, kPion>(track, vtxz, centrality, pos);
               break;
             case kKaon:
-              fillAllQA<kBefore, kKaon>(track, vtxz, pos);
+              fillAllQA<kBefore, kKaon>(track, vtxz, centrality, pos);
               break;
             case kProton:
-              fillAllQA<kBefore, kProton>(track, vtxz, pos);
+              fillAllQA<kBefore, kProton>(track, vtxz, centrality, pos);
               break;
           }
         }
@@ -1252,6 +1382,15 @@ struct FlowSP {
 
         // constrain angle to 0 -> [0,0+2pi]
         auto phi = RecoDecay::constrainAngle(track.phi(), 0);
+
+        if (cfguseNUA2D && cfgFillWeights) {
+          registry.fill(HIST("weights/hPhi_Eta_vz"), phi, track.eta(), vtxz, 1);
+          if (pos) {
+            registry.fill(HIST("weights/hPhi_Eta_vz_positive"), phi, track.eta(), vtxz, 1);
+          } else {
+            registry.fill(HIST("weights/hPhi_Eta_vz_negative"), phi, track.eta(), vtxz, 1);
+          }
+        }
 
         // Fill NUA weights (last 0 is for Data see GFWWeights class (not a weight))
         if (cfgFillWeights) {
@@ -1278,16 +1417,16 @@ struct FlowSP {
 
         switch (trackPID) {
           case kUnidentified:
-            fillAllQA<kAfter, kUnidentified>(track, vtxz, pos, wacc, weff, waccP, weffP, waccN, weffN);
+            fillAllQA<kAfter, kUnidentified>(track, vtxz, centrality, pos, wacc, weff, waccP, weffP, waccN, weffN);
             break;
           case kPion:
-            fillAllQA<kAfter, kPion>(track, vtxz, pos, wacc, weff, waccP, weffP, waccN, weffN);
+            fillAllQA<kAfter, kPion>(track, vtxz, centrality, pos, wacc, weff, waccP, weffP, waccN, weffN);
             break;
           case kKaon:
-            fillAllQA<kAfter, kKaon>(track, vtxz, pos, wacc, weff, waccP, weffP, waccN, weffN);
+            fillAllQA<kAfter, kKaon>(track, vtxz, centrality, pos, wacc, weff, waccP, weffP, waccN, weffN);
             break;
           case kProton:
-            fillAllQA<kAfter, kProton>(track, vtxz, pos, wacc, weff, waccP, weffP, waccN, weffN);
+            fillAllQA<kAfter, kProton>(track, vtxz, centrality, pos, wacc, weff, waccP, weffP, waccN, weffN);
             break;
         }
 

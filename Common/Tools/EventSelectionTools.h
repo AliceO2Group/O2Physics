@@ -138,6 +138,8 @@ class BcSelectionModule
   int mITSROFrameEndBorderMargin = 20;   // default value
   int mTimeFrameStartBorderMargin = 300; // default value
   int mTimeFrameEndBorderMargin = 4000;  // default value
+  std::string strLPMProductionTag = "";  // MC production tag to be retrieved from AO2D metadata
+
   TriggerAliases* aliases = nullptr;
   EventSelectionParams* par = nullptr;
   std::map<uint64_t, uint32_t>* mapRCT = nullptr;
@@ -148,8 +150,8 @@ class BcSelectionModule
   bool isGoodITSLayer0123 = true;                           // default value
   bool isGoodITSLayersAll = true;                           // default value
 
-  template <typename TContext, typename TBcSelOpts, typename THistoRegistry>
-  void init(TContext& context, TBcSelOpts const& external_bcselopts, THistoRegistry& histos)
+  template <typename TContext, typename TBcSelOpts, typename THistoRegistry, typename TMetadataInfo>
+  void init(TContext& context, TBcSelOpts const& external_bcselopts, THistoRegistry& histos, TMetadataInfo const& metadataInfo)
   {
     // read in configurations from the task where it's used
     bcselOpts = external_bcselopts;
@@ -172,6 +174,7 @@ class BcSelectionModule
         return;
       }
     }
+    strLPMProductionTag = metadataInfo.get("LPMProductionTag"); // to extract info from ccdb by the tag
 
     // add counter
     histos.add("bcselection/hCounterInvalidBCTimestamp", "", o2::framework::kTH1D, {{1, 0., 1.}});
@@ -199,7 +202,7 @@ class BcSelectionModule
         // duration of TF in bcs
         nBCsPerTF = 32; // hard-coded for Run3 MC (no info from ccdb at the moment)
       } else {
-        auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
+        auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run, strLPMProductionTag);
         // SOR and EOR timestamps
         sorTimestamp = runInfo.sor;
         eorTimestamp = runInfo.eor;
@@ -600,10 +603,11 @@ class EventSelectionModule
   int lastRun = -1;                     // last run number (needed to access ccdb only if run!=lastRun)
   std::bitset<nBCsPerOrbit> bcPatternB; // bc pattern of colliding bunches
 
-  int64_t bcSOR = -1;     // global bc of the start of the first orbit
-  int64_t nBCsPerTF = -1; // duration of TF in bcs, should be 128*3564 or 32*3564
-  int rofOffset = -1;     // ITS ROF offset, in bc
-  int rofLength = -1;     // ITS ROF length, in bc
+  int64_t bcSOR = -1;                   // global bc of the start of the first orbit
+  int64_t nBCsPerTF = -1;               // duration of TF in bcs, should be 128*3564 or 32*3564
+  int rofOffset = -1;                   // ITS ROF offset, in bc
+  int rofLength = -1;                   // ITS ROF length, in bc
+  std::string strLPMProductionTag = ""; // MC production tag to be retrieved from AO2D metadata
 
   int32_t findClosest(int64_t globalBC, std::map<int64_t, int32_t>& bcs)
   {
@@ -687,6 +691,7 @@ class EventSelectionModule
         }
       }
     }
+    strLPMProductionTag = metadataInfo.get("LPMProductionTag"); // to extract info from ccdb by the tag
 
     histos.add("eventselection/hColCounterAll", "", framework::kTH1D, {{1, 0., 1.}});
     histos.add("eventselection/hColCounterTVX", "", framework::kTH1D, {{1, 0., 1.}});
@@ -701,7 +706,7 @@ class EventSelectionModule
     // extract bc pattern from CCDB for data or anchored MC only
     if (run != lastRun && run >= run3min) {
       lastRun = run;
-      auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
+      auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run, strLPMProductionTag);
       // first bc of the first orbit
       bcSOR = runInfo.orbitSOR * nBCsPerOrbit;
       // duration of TF in bcs
@@ -1395,14 +1400,20 @@ class LumiModule
       float sqrts = grplhcif->getSqrtS();
       int nCollidingBCs = grplhcif->getBunchFilling().getNBunches();
       bcPatternB = grplhcif->getBunchFilling().getBCPattern();
-
+      LOGP(info, "beamZ1={} beamZ2={} sqrts={}", beamZ1, beamZ2, sqrts);
       // visible cross sections in ub. Using dummy -1 if lumi estimator is not reliable for this colliding system
       csTVX = -1;
       csTCE = -1;
       csZEM = -1;
       csZNC = -1;
       // Temporary workaround to get visible cross section. TODO: store run-by-run visible cross sections in CCDB
-      if (beamZ1 == 1 && beamZ2 == 1) {
+      if (beamZ1 == 8 && beamZ2 == 1) {
+        csTVX = 0.3874e6; // eff(TVX) = 0.807 (based on LHC25e6f); sigma(INEL)=0.48b; arxiv:2507.05853
+      } else if (beamZ1 == 8 && beamZ2 == 8) {
+        csTVX = 1.2050e6; // eff(TVX) = 0.886 (based on LHC25e6b); sigma(INEL)=1.36b; arxiv:2507.05853
+      } else if (beamZ1 == 10 && beamZ2 == 10) {
+        csTVX = 1.5411e6; // eff(TVX) = 0.896 (based on LHC25e6g); sigma(INEL)=1.72b; arxiv:2507.05853
+      } else if (beamZ1 == 1 && beamZ2 == 1) {
         if (std::fabs(sqrts - 900.) < 100.) {          // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
           csTVX = 0.0357e6;                            // ub
         } else if (std::fabs(sqrts - 5360.) < 100.) {  // pp-ref     // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)

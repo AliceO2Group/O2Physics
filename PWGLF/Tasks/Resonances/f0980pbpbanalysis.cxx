@@ -47,6 +47,7 @@
 #include "Framework/StepTHn.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
+#include <Framework/SliceCache.h>
 
 #include "Math/GenVector/Boost.h"
 #include "Math/Vector3D.h"
@@ -135,6 +136,13 @@ struct F0980pbpbanalysis {
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0}, "Transverse momentum Binning"};
   ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 100}, "Centrality interval"};
 
+  // for event mixing
+  SliceCache cache;
+  Configurable<int> cfgNMixedEvents{"cfgNMixedEvents", 10, "Number of mixed events per event"};
+  ConfigurableAxis mixingAxisVertex{"mixingAxisVertex", {10, -10, 10}, "Vertex axis for mixing bin"};
+  ConfigurableAxis mixingAxisMultiplicity{"mixingAxisMultiplicity", {VARIABLE_WIDTH, 0, 10, 20, 50, 100}, "multiplicity percentile for mixing bin"};
+  // ConfigurableAxis mixingAxisMultiplicity{"mixingAxisMultiplicity", {2000, 0, 10000}, "TPC multiplicity for bin"};
+
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
 
@@ -151,6 +159,7 @@ struct F0980pbpbanalysis {
   double angle;
   double relPhi;
   double relPhiRot;
+  double relPhiMix;
 
   // double massPi = o2::constants::physics::MassPionCharged;
   double massPtl;
@@ -191,6 +200,8 @@ struct F0980pbpbanalysis {
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTPCFullKa, aod::pidTOFbeta>>;
   // aod::pidTOFbeta 추가됨
+
+  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
 
   template <typename T>
   int getDetId(const T& name)
@@ -481,6 +492,102 @@ struct F0980pbpbanalysis {
       }
     }
   }
+
+  void processEventMixing(EventCandidates const& collisions, TrackCandidates const& tracks)
+  {
+    int nmode = 2; // second order
+    qVecDetInd = detId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+
+    auto trackTuple = std::make_tuple(tracks);
+    BinningTypeVertexContributor binningOnPositions{{mixingAxisVertex, mixingAxisMultiplicity}, true};
+    SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNMixedEvents, -1, collisions, trackTuple, &cache};
+    ROOT::Math::PxPyPzMVector ptl1, ptl2, recoPtl;
+    for (const auto& [c1, t1, c2, t2] : pair) {
+      if (cfgCentEst == CentEstList::FT0C) {
+        centrality = c1.centFT0C();
+      } else if (cfgCentEst == CentEstList::FT0M) {
+        centrality = c1.centFT0M();
+      }
+      if (!eventSelected(c1) || !eventSelected(c2)) {
+        continue;
+      }
+      if (c1.bcId() == c2.bcId()) {
+        continue;
+      }
+      double eventPlaneDet = std::atan2(c1.qvecIm()[qVecDetInd], c1.qvecRe()[qVecDetInd]) / static_cast<float>(nmode);
+
+      for (const auto& trk1 : t1) {
+        if (!trackSelected(trk1)) {
+          continue;
+        }
+        if (!selectionPID(trk1)) {
+          continue;
+        }
+
+        for (const auto& trk2 : t2) {
+          if (!trackSelected(trk2)) {
+            continue;
+          }
+          if (!selectionPID(trk2)) {
+            continue;
+          }
+          if (!indexSelection(trk1, trk2)) {
+            continue;
+          }
+          if (!selectionPair(trk1, trk2)) {
+            continue;
+          }
+          ptl1 = ROOT::Math::PxPyPzMVector(trk1.px(), trk1.py(), trk1.pz(), massPtl);
+          ptl2 = ROOT::Math::PxPyPzMVector(trk2.px(), trk2.py(), trk2.pz(), massPtl);
+          recoPtl = ptl1 + ptl2;
+          if (recoPtl.Rapidity() > cfgRapMax || recoPtl.Rapidity() < cfgRapMin) {
+            continue;
+          }
+
+          relPhiMix = TVector2::Phi_0_2pi((recoPtl.Phi() - eventPlaneDet) * static_cast<float>(nmode));
+
+          if (trk1.sign() * trk2.sign() < 0) {
+            histos.fill(HIST("hInvMass_f0980_MixedUS_EPA"), recoPtl.M(), recoPtl.Pt(), centrality, relPhiMix);
+          } else if (trk1.sign() > 0 && trk2.sign() > 0) {
+            histos.fill(HIST("hInvMass_f0980_MixedLSpp_EPA"), recoPtl.M(), recoPtl.Pt(), centrality, relPhiMix);
+          } else if (trk1.sign() < 0 && trk2.sign() < 0) {
+            histos.fill(HIST("hInvMass_f0980_MixedLSmm_EPA"), recoPtl.M(), recoPtl.Pt(), centrality, relPhiMix);
+          }
+        }
+      }
+      // for (auto& [trk1, trk2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(t1, t2))) {
+      //   if (!trackSelected(trk1) || !trackSelected(trk2)) {
+      //     continue;
+      //   }
+      //   if (!selectionPID(trk1) || !selectionPID(trk2)) {
+      //     continue;
+      //   }
+      //   if (!indexSelection(trk1, trk2)) {
+      //     continue;
+      //   }
+      //   if (!selectionPair(trk1, trk2)) {
+      //     continue;
+      //   }
+      //   ptl1 = ROOT::Math::PxPyPzMVector(trk1.px(), trk1.py(), trk1.pz(), massPtl);
+      //   ptl2 = ROOT::Math::PxPyPzMVector(trk2.px(), trk2.py(), trk2.pz(), massPtl);
+      //   recoPtl = ptl1 + ptl2;
+      //   if (recoPtl.Rapidity() > cfgRapMax || recoPtl.Rapidity() < cfgRapMin) {
+      //     continue;
+      //   }
+
+      //   relPhiMix = TVector2::Phi_0_2pi((recoPtl.Phi() - eventPlaneDet) * static_cast<float>(nmode));
+
+      //   if (trk1.sign() * trk2.sign() < 0) {
+      //     histos.fill(HIST("hInvMass_f0980_MixedUS_EPA"), recoPtl.M(), recoPtl.Pt(), centrality, relPhiMix);
+      //   } else if (trk1.sign() > 0 && trk2.sign() > 0) {
+      //     histos.fill(HIST("hInvMass_f0980_MixedLSpp_EPA"), recoPtl.M(), recoPtl.Pt(), centrality, relPhiMix);
+      //   } else if (trk1.sign() < 0 && trk2.sign() < 0) {
+      //     histos.fill(HIST("hInvMass_f0980_MixedLSmm_EPA"), recoPtl.M(), recoPtl.Pt(), centrality, relPhiMix);
+      //   }
+      // }
+    }
+  }
+  PROCESS_SWITCH(F0980pbpbanalysis, processEventMixing, "Process Event mixing", true);
 
   void init(o2::framework::InitContext&)
   {

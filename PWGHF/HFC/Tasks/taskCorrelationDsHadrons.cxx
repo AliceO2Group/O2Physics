@@ -41,7 +41,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/OutputObjHeader.h>
-#include <Framework/StepTHn.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>

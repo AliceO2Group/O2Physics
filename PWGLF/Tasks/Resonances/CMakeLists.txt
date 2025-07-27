@@ -49,8 +49,13 @@ o2physics_add_dpl_workflow(lambda1520analysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lstaranalysis
-    SOURCES lstaranalysis.cxx
+o2physics_add_dpl_workflow(lambda1520analysisinpp
+    SOURCES lambda1520analysisinpp.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lambda1520analysisinoo
+    SOURCES lambda1520analysisinOO.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
@@ -226,5 +231,10 @@ o2physics_add_dpl_workflow(double-resonance-scan
 
 o2physics_add_dpl_workflow(kstar-in-oo
     SOURCES kstarInOO.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+  o2physics_add_dpl_workflow(phioo
+    SOURCES phiOO.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

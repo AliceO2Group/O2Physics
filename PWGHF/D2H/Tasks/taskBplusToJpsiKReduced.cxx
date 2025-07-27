@@ -27,6 +27,7 @@
 #include "Common/Core/TrackSelectorPID.h"
 
 #include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
@@ -45,6 +46,7 @@
 #include <Rtypes.h>
 
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <numeric>
 #include <string>

@@ -12,13 +12,31 @@
 
 #include "Zorro.h"
 
+#include "EventFiltering/ZorroHelper.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <CommonDataFormat/IRFrame.h>
+#include <CommonDataFormat/InteractionRecord.h>
+#include <CommonUtils/StringUtils.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
 #include <algorithm>
+#include <bitset>
+#include <cstddef>
+#include <cstdint>
 #include <map>
-
-#include <TList.h>
-
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonDataFormat/InteractionRecord.h"
+#include <memory>
+#include <string>
+#include <vector>
 
 using o2::InteractionRecord;
 
@@ -181,24 +199,18 @@ std::vector<int> Zorro::initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber
   mLastSelectedIdx = 0;
   mTOIs.clear();
   mTOIidx.clear();
-  while (!tois.empty()) {
-    size_t pos = tois.find(",");
-    pos = (pos == std::string::npos) ? tois.size() : pos;
-    std::string token = tois.substr(0, pos);
-    // Trim leading and trailing whitespaces from the token
-    token.erase(0, token.find_first_not_of(" "));
-    token.erase(token.find_last_not_of(" ") + 1);
+  std::vector<std::string> tokens = o2::utils::Str::tokenize(tois, ','); // tokens are trimmed
+  for (auto const& token : tokens) {
     int bin = findBin(mSelections, token) - 2;
     mTOIs.push_back(token);
     mTOIidx.push_back(bin);
-    tois = tois.erase(0, pos + 1);
   }
   mTOIcounts.resize(mTOIs.size(), 0);
   LOGF(info, "Zorro initialized for run %d, triggers of interest:", runNumber);
   for (size_t i{0}; i < mTOIs.size(); ++i) {
     LOGF(info, ">>> %s : %i", mTOIs[i].data(), mTOIidx[i]);
   }
-  mZorroSummary.setupTOIs(mTOIs.size(), tois);
+  mZorroSummary.setupTOIs(mTOIs.size(), mTOIs);
   std::vector<double> toiCounters(mTOIs.size(), 0.);
   for (size_t i{0}; i < mTOIs.size(); ++i) {
     toiCounters[i] = mSelections->GetBinContent(mTOIidx[i] + 2);
@@ -212,7 +224,7 @@ std::bitset<128> Zorro::fetch(uint64_t bcGlobalId, uint64_t tolerance)
 {
   mLastResult.reset();
   if (bcGlobalId < mBCranges.front().getMin().toLong() - tolerance || bcGlobalId > mBCranges.back().getMax().toLong() + tolerance) {
-    setupHelpers((mOrbitResetTimestamp + int64_t(bcGlobalId * o2::constants::lhc::LHCBunchSpacingNS * 1e-3)) / 1000);
+    setupHelpers((mOrbitResetTimestamp + static_cast<int64_t>(bcGlobalId * o2::constants::lhc::LHCBunchSpacingNS * 1e-3)) / 1000);
   }
 
   o2::dataformats::IRFrame bcFrame{InteractionRecord::long2IR(bcGlobalId) - tolerance, InteractionRecord::long2IR(bcGlobalId) + tolerance};
@@ -306,7 +318,7 @@ void Zorro::setupHelpers(int64_t timestamp)
   std::sort(mZorroHelpers->begin(), mZorroHelpers->end(), [](const auto& a, const auto& b) { return std::min(a.bcAOD, a.bcEvSel) < std::min(b.bcAOD, b.bcEvSel); });
   mBCranges.clear();
   mAccountedBCranges.clear();
-  for (auto helper : *mZorroHelpers) {
+  for (const auto& helper : *mZorroHelpers) {
     mBCranges.emplace_back(InteractionRecord::long2IR(std::min(helper.bcAOD, helper.bcEvSel)), InteractionRecord::long2IR(std::max(helper.bcAOD, helper.bcEvSel)));
   }
   mAccountedBCranges.resize(mBCranges.size(), false);

@@ -28,8 +28,6 @@ bool VarManager::fgUsedVars[VarManager::kNVars] = {false};
 bool VarManager::fgUsedKF = false;
 float VarManager::fgMagField = 0.5;
 float VarManager::fgValues[VarManager::kNVars] = {0.0f};
-float VarManager::fgCenterOfMassEnergy = 13600;         // GeV
-float VarManager::fgMassofCollidingParticle = 9.382720; // GeV
 float VarManager::fgTPCInterSectorBoundary = 1.0;       // cm
 int VarManager::fgITSROFbias = 0;
 int VarManager::fgITSROFlength = 100;
@@ -37,6 +35,8 @@ int VarManager::fgITSROFBorderMarginLow = 0;
 int VarManager::fgITSROFBorderMarginHigh = 0;
 uint64_t VarManager::fgSOR = 0;
 uint64_t VarManager::fgEOR = 0;
+ROOT::Math::PxPyPzEVector VarManager::fgBeamA(0, 0, 6799.99, 6800);  // GeV, beam from A-side 4-momentum vector
+ROOT::Math::PxPyPzEVector VarManager::fgBeamC(0, 0, -6799.99, 6800); // GeV, beam from C-side 4-momentum vector
 o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
 o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
 o2::vertexing::DCAFitterN<4> VarManager::fgFitterFourProngBarrel;
@@ -114,15 +114,75 @@ void VarManager::SetCollisionSystem(TString system, float energy)
   //
   // Set the collision system and the center of mass energy
   //
-  fgCenterOfMassEnergy = energy;
-
-  if (system.Contains("PbPb")) {
-    fgMassofCollidingParticle = MassProton * 208;
-  }
-  if (system.Contains("pp")) {
-    fgMassofCollidingParticle = MassProton;
+  int NumberOfNucleonsA = 1; // default value for pp collisions
+  int NumberOfNucleonsC = 1; // default value for pp collisions
+  int NumberOfProtonsA = 1;  // default value for pp collisions
+  int NumberOfProtonsC = 1;  // default value for pp collisions
+  if (system.EqualTo("PbPb")) {
+    NumberOfNucleonsA = 208;
+    NumberOfNucleonsC = 208;
+    NumberOfProtonsA = 82; // Pb has 82 protons
+    NumberOfProtonsC = 82; // Pb has 82 protons
+  } else if (system.EqualTo("pp")) {
+    NumberOfNucleonsA = 1;
+    NumberOfNucleonsC = 1;
+    NumberOfProtonsA = 1; // proton has 1 proton
+    NumberOfProtonsC = 1; // proton has 1 proton
+  } else if (system.EqualTo("XeXe")) {
+    NumberOfNucleonsA = 129;
+    NumberOfNucleonsC = 129;
+    NumberOfProtonsA = 54; // Xe has 54 protons
+    NumberOfProtonsC = 54; // Xe has 54 protons
+  } else if (system.EqualTo("pPb")) {
+    NumberOfNucleonsA = 1;
+    NumberOfNucleonsC = 208;
+    NumberOfProtonsA = 1;  // proton has 1 proton
+    NumberOfProtonsC = 82; // Pb has 82 protons
+  } else if (system.EqualTo("Pbp")) {
+    NumberOfNucleonsA = 208;
+    NumberOfNucleonsC = 1;
+    NumberOfProtonsA = 82; // Pb has 82 protons
+    NumberOfProtonsC = 1;  // proton has 1 proton
+  } else if (system.EqualTo("OO")) {
+    NumberOfNucleonsA = 16;
+    NumberOfNucleonsC = 16;
+    NumberOfProtonsA = 8; // O has 8 protons
+    NumberOfProtonsC = 8; // O has 8 protons
+  } else if (system.EqualTo("pO")) {
+    NumberOfNucleonsA = 1;
+    NumberOfNucleonsC = 16;
+    NumberOfProtonsA = 1; // proton has 1 proton
+    NumberOfProtonsC = 8; // O has 8 protons
+  } else if (system.EqualTo("NeNe")) {
+    NumberOfNucleonsA = 20;
+    NumberOfNucleonsC = 20;
+    NumberOfProtonsA = 10; // Ne has 5 protons
+    NumberOfProtonsC = 10; // Ne has 5 protons
   }
   // TO Do: add more systems
+
+  // set the beam 4-momentum vectors
+  float beamAEnergy = energy / 2.0 * sqrt(NumberOfProtonsA * NumberOfProtonsC / NumberOfProtonsC / NumberOfProtonsA); // GeV
+  float beamCEnergy = energy / 2.0 * sqrt(NumberOfProtonsC * NumberOfProtonsA / NumberOfProtonsA / NumberOfProtonsC); // GeV
+  float beamAMomentum = std::sqrt(beamAEnergy * beamAEnergy - NumberOfNucleonsA * NumberOfNucleonsA * MassProton * MassProton);
+  float beamCMomentum = std::sqrt(beamCEnergy * beamCEnergy - NumberOfNucleonsC * NumberOfNucleonsC * MassProton * MassProton);
+  fgBeamA.SetPxPyPzE(0, 0, beamAMomentum, beamAEnergy);
+  fgBeamC.SetPxPyPzE(0, 0, -beamCMomentum, beamCEnergy);
+}
+
+//__________________________________________________________________
+void VarManager::SetCollisionSystem(o2::parameters::GRPLHCIFData* grplhcif)
+{
+  //
+  // Set the collision system and the center of mass energy from the GRP information
+  double beamAEnergy = grplhcif->getBeamEnergyPerNucleonInGeV(o2::constants::lhc::BeamDirection::BeamA);
+  double beamCEnergy = grplhcif->getBeamEnergyPerNucleonInGeV(o2::constants::lhc::BeamDirection::BeamC);
+  double beamANucleons = grplhcif->getBeamA(o2::constants::lhc::BeamDirection::BeamA);
+  double beamCNucleons = grplhcif->getBeamA(o2::constants::lhc::BeamDirection::BeamC);
+  double beamAMomentum = std::sqrt(beamAEnergy * beamAEnergy - beamANucleons * beamANucleons * MassProton * MassProton);
+  double beamCMomentum = std::sqrt(beamCEnergy * beamCEnergy - beamCNucleons * beamCNucleons * MassProton * MassProton);
+  fgBeamA.SetPxPyPzE(0, 0, beamAMomentum, beamAEnergy);
+  fgBeamC.SetPxPyPzE(0, 0, -beamCMomentum, beamCEnergy);
 }
 
 //__________________________________________________________________

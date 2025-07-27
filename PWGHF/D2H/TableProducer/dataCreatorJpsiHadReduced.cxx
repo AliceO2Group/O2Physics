@@ -27,6 +27,7 @@
 #include "PWGHF/Utils/utilsTrkCandHf.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelectorPID.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -34,7 +35,6 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/RunningWorkflowInfo.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
@@ -46,11 +46,13 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/RunningWorkflowInfo.h>
 #include <Framework/WorkflowSpec.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
@@ -768,7 +770,7 @@ struct HfDataCreatorJpsiHadReduced {
       // Apply the selections on the J/Psi candidates
       registry.fill(HIST("hSelectionsJpsi"), 1, candidate.pt());
 
-      if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::JpsiToMuMu)) {
+      if (!(candidate.hfflag() & (1 << (runJpsiToee ? aod::hf_cand_2prong::DecayType::JpsiToEE : aod::hf_cand_2prong::DecayType::JpsiToMuMu)))) {
         continue;
       }
       registry.fill(HIST("hSelectionsJpsi"), 2 + aod::SelectionStep::RecoSkims, candidate.pt());
@@ -822,12 +824,7 @@ struct HfDataCreatorJpsiHadReduced {
       registry.fill(HIST("hSelectionsJpsi"), 2 + aod::SelectionStep::RecoPID, candidate.pt());
 
       int indexHfCandJpsi = hfJpsi.lastIndex() + 1;
-      float invMassJpsi{0.f};
-      if (runJpsiToee) {
-        invMassJpsi = hfHelper.invMassJpsiToEE(candidate);
-      } else {
-        invMassJpsi = hfHelper.invMassJpsiToMuMu(candidate);
-      }
+      float invMassJpsi = runJpsiToee ? hfHelper.invMassJpsiToEE(candidate) : hfHelper.invMassJpsiToMuMu(candidate);
       registry.fill(HIST("hMassJpsi"), invMassJpsi);
       registry.fill(HIST("hPtJpsi"), candidate.pt());
       registry.fill(HIST("hCpaJpsi"), candidate.cpa());
