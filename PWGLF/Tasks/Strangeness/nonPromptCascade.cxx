@@ -326,13 +326,13 @@ struct NonPromptCascadeTask {
   }
   void fillMultHistos(const auto& collisions)
   {
-    //std::cout << "Filling mult histos" << std::endl;
+    // std::cout << "Filling mult histos" << std::endl;
     for (const auto& coll : collisions) {
-      //std::cout << coll.centFT0M() << " mult, cent " << coll.multNTracksGlobal() << std::endl;
+      // std::cout << coll.centFT0M() << " mult, cent " << coll.multNTracksGlobal() << std::endl;
       mRegistry.fill(HIST("hMultVsCent"), coll.centFT0M(), coll.multFT0M());
       mRegistry.fill(HIST("hMultVsCentZoom"), coll.centFT0M(), coll.multFT0M());
-      mRegistry.fill(HIST("hNTracksVsCent"), coll.centFT0M(), (float) coll.multNTracksGlobal());
-      mRegistry.fill(HIST("hNTracksVsCentZoom"), coll.centFT0M(), coll.multNTracksGlobal() );
+      mRegistry.fill(HIST("hNTracksVsCent"), coll.centFT0M(), (float)coll.multNTracksGlobal());
+      mRegistry.fill(HIST("hNTracksVsCentZoom"), coll.centFT0M(), coll.multNTracksGlobal());
     }
   };
 
