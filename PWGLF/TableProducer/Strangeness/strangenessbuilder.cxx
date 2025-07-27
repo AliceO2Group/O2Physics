@@ -771,6 +771,9 @@ struct StrangenessBuilder {
     if (DeduplicationOpts.deduplicationAlgorithm.value == 4 || DeduplicationOpts.deduplicationAlgorithm.value == 6) {
       if (DeduplicationOpts.loadModelsFromCCDB) {
 
+        // Retrieve the model from CCDB
+        ccdbApi.init(ccdbConfigurations.ccdburl);
+
         /// Fetching model for specific timestamp
         LOG(info) << "Fetching model for timestamp: " << DeduplicationOpts.timestampCCDB.value;
 
