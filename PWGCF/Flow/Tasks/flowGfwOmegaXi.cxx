@@ -743,7 +743,7 @@ struct FlowGfwOmegaXi {
       dnx = dnx - dnxol;
       if (dnx == 0)
         continue;
-      val = (fGFW->Calculate(corrconf, (ptbin - 1) + ((massbin - 1) * nptbins), kFALSE).real() - fGFW->Calculate(corrconfol, (ptbin - 1) + ((massbin - 1) * nptbins), kFALSE).real())/ dnx;
+      val = (fGFW->Calculate(corrconf, (ptbin - 1) + ((massbin - 1) * nptbins), kFALSE).real() - fGFW->Calculate(corrconfol, (ptbin - 1) + ((massbin - 1) * nptbins), kFALSE).real()) / dnx;
 
       if (std::fabs(val) < 1) {
         registry.fill(tarName, fpt->GetBinCenter(ptbin), fMass->GetBinCenter(massbin), cent, val, dnx);
@@ -837,7 +837,7 @@ struct FlowGfwOmegaXi {
       dnx = dnx - dnxol;
       if (dnx == 0)
         continue;
-      val = (fGFW->Calculate(corrconf, (ptbin - 1) + ((massbin - 1) * nptbins), kFALSE).real() - fGFW->Calculate(corrconfol, (ptbin - 1) + ((massbin - 1) * nptbins), kFALSE).real())/ dnx;
+      val = (fGFW->Calculate(corrconf, (ptbin - 1) + ((massbin - 1) * nptbins), kFALSE).real() - fGFW->Calculate(corrconfol, (ptbin - 1) + ((massbin - 1) * nptbins), kFALSE).real()) / dnx;
       if (std::fabs(val) < 1) {
         TProfile3D->Fill(fpt->GetBinCenter(ptbin), fMass->GetBinCenter(massbin), cent, val, dnx);
       }
