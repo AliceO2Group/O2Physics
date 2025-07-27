@@ -36,11 +36,11 @@
 #include "TableHelper.h"
 #include "pidTPCBase.h"
 
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/CCDB/ctpRateFetcher.h"
 #include "Tools/ML/model.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -51,7 +51,6 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 
-
 namespace o2::aod
 {
 namespace pid
@@ -61,7 +60,7 @@ struct pidTPCProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<aod::DEdxsCorrected> dEdxCorrected;
   o2::framework::Produces<aod::PIDMults> mult;
 
-  // Tables produced by TPC component 
+  // Tables produced by TPC component
   o2::framework::Produces<o2::aod::pidTPCFullEl> tablePIDFullEl;
   o2::framework::Produces<o2::aod::pidTPCFullMu> tablePIDFullMu;
   o2::framework::Produces<o2::aod::pidTPCFullPi> tablePIDFullPi;
@@ -354,7 +353,7 @@ class pidTPCModule
         return;
       }
     }
-  } // end init 
+  } // end init
 
   //__________________________________________________
   template <typename TCCDB, typename TCCDBApi, typename C, typename M, typename T, typename B>
@@ -490,7 +489,7 @@ class pidTPCModule
     }
     auto expSignal = response->GetExpectedSignal(trk, pid);
     auto expSigma = trk.has_collision() ? response->GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), multTPC, trk, pid) : 0.07 * expSignal; // use default sigma value of 7% if no collision information to estimate resolution
-    if (expSignal < 0. || expSigma < 0.) {                                                                                                   // skip if expected signal invalid
+    if (expSignal < 0. || expSigma < 0.) {                                                                                                            // skip if expected signal invalid
       if (flagFull)
         tableFull(-999.f, -999.f);
       if (flagTiny)
@@ -538,17 +537,17 @@ class pidTPCModule
     }
 
     // preparatory step: we need the multiplicities for each collision
-    std::vector<int> pidmults; 
+    std::vector<int> pidmults;
     long totalTPCtracks = 0;
     long totalTPCnotStandalone = 0;
     pidmults.resize(cols.size(), 0);
 
     // faster counting
     for (const auto& track : tracks) {
-      if(track.hasTPC()&&track.collisionId()>-1){ 
+      if (track.hasTPC() && track.collisionId() > -1) {
         pidmults[track.collisionId()]++;
         totalTPCtracks++;
-        if(track.hasITS()||track.hasTOF()||track.hasTRD()){
+        if (track.hasITS() || track.hasTOF() || track.hasTRD()) {
           totalTPCnotStandalone++;
         }
       }
@@ -594,11 +593,11 @@ class pidTPCModule
     uint64_t count_tracks = 0;
 
     for (auto const& trk : tracks) {
-      // get the TPC signal to be used in the PID 
-      float tpcSignalToEvaluatePID = trk.tpcSignal(); 
+      // get the TPC signal to be used in the PID
+      float tpcSignalToEvaluatePID = trk.tpcSignal();
 
       // if corrected dE/dx is requested, correct it here on the spot and use that
-      if(pidTPCopts.useCorrecteddEdx){
+      if (pidTPCopts.useCorrecteddEdx) {
         double hadronicRate;
         int multTPC;
         int occupancy;
@@ -658,7 +657,7 @@ class pidTPCModule
         // change the signal used for PID
         tpcSignalToEvaluatePID = fTPCSignal / fTPCSignalN_CR1;
 
-        if(pidTPCopts.savedEdxsCorrected){ 
+        if (pidTPCopts.savedEdxsCorrected) {
           // populated cursor if requested or autodetected
           products.dEdxCorrected(tpcSignalToEvaluatePID);
         }
@@ -686,7 +685,7 @@ class pidTPCModule
         response->PrintAll();
       }
 
-      // if this is a MC process function, go for MC tune on data processing 
+      // if this is a MC process function, go for MC tune on data processing
       if constexpr (soa::is_table<TMCParticles>) {
         // Perform TuneOnData sampling for MC dE/dx
         float mcTunedTPCSignal = 0.;

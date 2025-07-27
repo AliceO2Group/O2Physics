@@ -124,7 +124,7 @@ template <typename CollisionType, typename TrackType>
 inline float Response::GetExpectedSigma(const CollisionType& collision, const TrackType& track, const o2::track::PID::ID id) const
 {
   // use multTPC (legacy behaviour) if multTPC not provided
-  return Response::GetExpectedSigma(collision, collision.multTPC(), track, id); 
+  return Response::GetExpectedSigma(collision, collision.multTPC(), track, id);
 }
 
 /// Gets the expected resolution of the measurement
