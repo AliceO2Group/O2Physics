@@ -246,6 +246,8 @@ struct nucleiInJets {
     jetHist.get<TH1>(HIST("hNEventsInc"))->GetXaxis()->SetBinLabel(2, "Sel8");
     jetHist.get<TH1>(HIST("hNEventsInc"))->GetXaxis()->SetBinLabel(3, "|Vz|<10");
 
+    jetHist.add("hNEventsIncVsCent", "hNEventsIncVsCent", {HistType::kTH2D, {{4, 0.f, 4.f}, {CentAxis}}});
+
     // TPC nSigma vs pT (inclusive)
     jetHist.add<TH3>("tracksInc/proton/h3PtVsProtonNSigmaTPCVsPt", "pT(p) vs NSigmaTPC (p) vs centrality; #it{p}_{T} (GeV/#it{c}); NSigmaTPC; centrality", HistType::kTH3F, {PtAxis, {200, -10, 10}, CentAxis});
     jetHist.add<TH3>("tracksInc/antiProton/h3PtVsantiProtonNSigmaTPCVsPt", "pT(#bar{p}) vs NSigmaTPC (#bar{p}) vs centrality; #it{p}_{T} (GeV/#it{c}); NSigmaTPC; centrality", HistType::kTH3F, {PtAxis, {200, -10, 10}, CentAxis});
@@ -495,7 +497,7 @@ struct nucleiInJets {
       jetHist.get<TH1>(HIST("recInc/eventStat"))->GetXaxis()->SetBinLabel(2, "Sel8");
       jetHist.get<TH1>(HIST("recInc/eventStat"))->GetXaxis()->SetBinLabel(3, "|Vz|<10");
 
-      jetHist.add<TH1>("recInc/vertexZ", "vertexZ (inclusive)", HistType::kTH1F, {{100, -15.0, 15.0}});
+      jetHist.add<TH2>("recInc/vertexZ", "vertexZ (inclusive)", HistType::kTH2F, {{100, -15.0, 15.0}, {CentAxis}});
       jetHist.add<TH3>("recInc/pt/PtParticleTypeTPC", "Pt vs ParticleType vs Centrality (TPC)", HistType::kTH3F, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}});
       jetHist.add<TH3>("recInc/pt/PtParticleTypeTPCTOF", "Pt vs ParticleType vs Centrality (TPC+TOF)", HistType::kTH3F, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}});
       jetHist.add<TH3>("recInc/pt/PtParticleTypeTPCTOFVeto", "Pt vs ParticleType vs Centrality (TPC+TOF Veto)", HistType::kTH3F, {{100, 0.f, 10.f}, {14, -7, 7}, {100, 0, 100}});
@@ -1369,7 +1371,7 @@ struct nucleiInJets {
       default:
         centrality = -999;
     }
-
+    jetHist.fill(HIST("hNEventsIncVsCent"), coll.posZ(), centrality);
     for (const auto& track : tracks) {
       auto trk = track.track_as<TrackCandidates>();
       if (!isTrackSelected(trk)) {
@@ -1971,8 +1973,6 @@ struct nucleiInJets {
     jetHist.fill(HIST("recInc/eventStat"), 1.5);
     if (std::abs(coll.posZ()) > 10) // bad vertex
       return;
-
-    jetHist.fill(HIST("recInc/vertexZ"), coll.posZ());
     jetHist.fill(HIST("recInc/eventStat"), 2.5);
 
     float centrality = -999;
@@ -1989,7 +1989,7 @@ struct nucleiInJets {
       default:
         centrality = -999;
     }
-
+    jetHist.fill(HIST("recInc/vertexZ"), coll.posZ(), centrality);
     for (const auto& track : tracks) {
       if (!isTrackSelected(track)) {
         continue;
