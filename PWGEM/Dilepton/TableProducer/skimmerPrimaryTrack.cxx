@@ -13,7 +13,6 @@
 /// \author daiki.sekihata@cern.ch
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
-// #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 
 #include "Common/Core/TableHelper.h"
@@ -59,6 +58,7 @@ struct skimmerPrimaryTrack {
   SliceCache cache;
   Preslice<aod::TracksIU> perCol = o2::aod::track::collisionId;
   Produces<aod::EMPrimaryTracks> emprimarytracks;
+  // Produces<aod::EMPrimaryTrackEMEventIdsTMP> prmtrackeventidtmp;
 
   // Configurables
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -72,11 +72,11 @@ struct skimmerPrimaryTrack {
   Configurable<bool> fillQAHistogram{"fillQAHistogram", false, "flag to fill QA histograms"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
-  Configurable<float> minpt{"minpt", 0.15, "min pt for ITS-TPC track"};
-  Configurable<float> maxpt{"maxpt", 5.0, "max pt for ITS-TPC track"};
-  Configurable<float> maxeta{"maxeta", 2.0, "eta acceptance"};
-  Configurable<float> dca_xy_max{"dca_xy_max", 1.0, "max DCAxy in cm"};
-  Configurable<float> dca_z_max{"dca_z_max", 1.0, "max DCAz in cm"};
+  Configurable<float> minpt{"minpt", 0.2, "min pt for ITS-TPC track"};
+  Configurable<float> maxpt{"maxpt", 3.0, "max pt for ITS-TPC track"};
+  Configurable<float> maxeta{"maxeta", 1.4, "eta acceptance"};
+  Configurable<float> dca_xy_max{"dca_xy_max", 0.5, "max DCAxy in cm"};
+  Configurable<float> dca_z_max{"dca_z_max", 0.5, "max DCAz in cm"};
 
   // Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
   // Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};
@@ -246,6 +246,9 @@ struct skimmerPrimaryTrack {
     if (std::fabs(trackParCov.getEta()) > maxeta || trackParCov.getPt() < minpt || maxpt < trackParCov.getPt()) {
       return false;
     }
+    if (trackParCov.getPt() > 5.f) {
+      return false;
+    }
 
     return true;
   }
@@ -311,7 +314,8 @@ struct skimmerPrimaryTrack {
         trackBit |= static_cast<uint16_t>(RefTrackBit::kFracSharedTPC07);
       }
 
-      emprimarytracks(collision.globalIndex(), track.globalIndex(), track.sign(), pt, eta, phi, dcaXY, dcaZ, trackBit);
+      emprimarytracks(collision.globalIndex(), track.globalIndex(), /*track.sign(),*/ static_cast<uint16_t>(pt * 1e+4), eta, phi, dcaXY, dcaZ, trackBit);
+      // prmtrackeventidtmp(collision.globalIndex());
 
       stored_trackIds.emplace_back(std::pair<int, int>{collision.globalIndex(), track.globalIndex()});
 

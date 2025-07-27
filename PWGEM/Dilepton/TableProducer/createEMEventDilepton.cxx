@@ -303,7 +303,7 @@ struct AssociateDileptonToEMEvent {
   Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
   PresliceUnsorted<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
   PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
-  PresliceUnsorted<aod::EMPrimaryTracks> perCollision_track = aod::emprimarytrack::collisionId;
+  Preslice<aod::EMPrimaryTracks> perCollision_track = aod::emprimarytrack::collisionId;
 
   void init(o2::framework::InitContext&) {}
 
