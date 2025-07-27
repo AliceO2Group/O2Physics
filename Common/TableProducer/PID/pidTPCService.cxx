@@ -81,16 +81,22 @@ struct pidTPCService {
 
   void processTracks(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::Tracks, aod::TracksExtra> const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, products);
+    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
+  }
+
+  void processTracksMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels> const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
+  {
+    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, mcParticles, products);
   }
 
   void processTracksIU(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra> const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, products);
+    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
   }
 
   PROCESS_SWITCH(pidTPCService, processTracks, "Process Tracks", false);
-  PROCESS_SWITCH(pidTPCService, processTracksIU, "Process TracksIU", true);
+  PROCESS_SWITCH(pidTPCService, processTracksMC, "Process Tracks in MC (enables tune-on-data)", false);
+  PROCESS_SWITCH(pidTPCService, processTracksIU, "Process TracksIU (experimental)", true);
 };
 
 //****************************************************************************************
