@@ -66,11 +66,13 @@ namespace
 {
 std::vector<std::shared_ptr<TProfile>> refV2;
 std::vector<std::shared_ptr<TProfile3D>> phiV2;
+std::vector<std::shared_ptr<TProfile3D>> lsPhiV2;
 std::vector<std::shared_ptr<TProfile3D>> k0V2;
 std::vector<std::shared_ptr<TProfile3D>> lambdaV2;
 
 std::vector<std::vector<std::shared_ptr<TProfile>>> refBoot;
 std::vector<std::vector<std::shared_ptr<TProfile3D>>> phiBoot;
+std::vector<std::vector<std::shared_ptr<TProfile3D>>> lsPhiBoot;
 std::vector<std::vector<std::shared_ptr<TProfile3D>>> k0Boot;
 std::vector<std::vector<std::shared_ptr<TProfile3D>>> lambdaBoot;
 } // namespace
@@ -203,7 +205,7 @@ struct ResonancesGfwFlow {
   O2_DEFINE_CONFIGURABLE(cfgUseBootStrap, bool, true, "Use bootstrap for error estimation")
   O2_DEFINE_CONFIGURABLE(cfgTrackDensityCorrUse, bool, true, "Use track density efficiency correction")
   O2_DEFINE_CONFIGURABLE(cfgV0AT0Acut, int, 5, "V0AT0A cut")
-
+  O2_DEFINE_CONFIGURABLE(cfgUseLsPhi, bool, true, "Use LikeSign for Phi v2")
   O2_DEFINE_CONFIGURABLE(cfgUseOnlyTPC, bool, true, "Use only TPC PID for daughter selection")
   O2_DEFINE_CONFIGURABLE(cfgUseStrictPID, bool, true, "Use strict PID cuts for TPC")
   O2_DEFINE_CONFIGURABLE(cfgUseAsymmetricPID, bool, false, "Use asymmetric PID cuts")
@@ -314,6 +316,7 @@ struct ResonancesGfwFlow {
 
     refBoot.resize(cfgNbootstrap);
     phiBoot.resize(cfgNbootstrap);
+    lsPhiBoot.resize(cfgNbootstrap);
     k0Boot.resize(cfgNbootstrap);
     lambdaBoot.resize(cfgNbootstrap);
 
@@ -328,6 +331,14 @@ struct ResonancesGfwFlow {
         } // end of bootstrap condition
       } // end of phi loop
 
+      if (cfgUseLsPhi && configs.GetHeads()[i].starts_with("LsPhi")) {
+        lsPhiV2.push_back(histos.add<TProfile3D>(Form("h%spt", configs.GetHeads()[i].c_str()), "", {HistType::kTProfile3D, {axisPt, axisPhiMass, axisMultiplicity}}));
+        if (cfgUseBootStrap) {
+          for (int j = 0; j < cfgNbootstrap; ++j) {
+            phiBoot[j].push_back(histos.add<TProfile3D>(Form("BootStrap/h%spt_boot_%d", configs.GetHeads()[i].c_str(), j), "", {HistType::kTProfile3D, {axisPt, axisPhiMass, axisMultiplicity}}));
+          }
+        } // end of bootstrap condition
+      }
       if (resoSwitchVals[K0][kUseParticle] && configs.GetHeads()[i].starts_with("K0")) {
         k0V2.push_back(histos.add<TProfile3D>(Form("h%spt", configs.GetHeads()[i].c_str()), "", {HistType::kTProfile3D, {axisPt, axisK0Mass, axisMultiplicity}}));
         if (cfgUseBootStrap) {
@@ -357,6 +368,10 @@ struct ResonancesGfwFlow {
 
     } // end of configs loop
 
+    if (cfgUseLsPhi) {
+      histos.add("hLsPhiMass_sparse", "", {HistType::kTHnSparseD, {{axisPhiMass, axisPt, axisMultiplicity}}});
+    }
+
     if (resoSwitchVals[PHI][kUseParticle]) {
       histos.add("KaPlusTPC", "", {HistType::kTH2D, {{axisPt, axisNsigmaTPC}}});
       histos.add("KaMinusTPC", "", {HistType::kTH2D, {{axisPt, axisNsigmaTPC}}});
@@ -365,7 +380,6 @@ struct ResonancesGfwFlow {
       histos.add("hPhiPhi", "", {HistType::kTH1D, {axisPhi}});
       histos.add("hPhiEta", "", {HistType::kTH1D, {axisEta}});
       histos.add("hPhiMass_sparse", "", {HistType::kTHnSparseD, {{axisPhiMass, axisPt, axisMultiplicity}}});
-      histos.add("hPhimassSparse_RD", "", {HistType::kTHnSparseD, {{axisPhiMass, axisPt, axisMultiplicity}}});
 
       histos.add("hPhiCount", "Number of Phi;; Count", {HistType::kTH1D, {{5, 0, 5}}});
       histos.get<TH1>(HIST("hPhiCount"))->GetXaxis()->SetBinLabel(1, "Phi candidates");
@@ -878,74 +892,6 @@ struct ResonancesGfwFlow {
     }
   }
 
-  template <typename TTrack, typename vector, char... chars, typename TCollision>
-  void resurrectPhi(TTrack trackplus, TTrack trackminus, const TCollision collision, vector plusdaug, vector minusdaug, vector mom, double plusmass, const ConstStr<chars...>& hist)
-  {
-    for (auto const& [partplus, partminus] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(trackplus, trackminus))) {
-      histos.fill(HIST("hPhiCount"), 0.5);
-      if (!selectionV0Daughter(partplus, KAONS) || !selectionV0Daughter(partminus, KAONS)) // 0 = pion, 1 = kaon, 2 = proton
-        continue;
-      histos.fill(HIST("hPhiCount"), 1.5);
-
-      if (isFakeKaon(partplus) || isFakeKaon(partminus))
-        continue;
-      histos.fill(HIST("hPhiCount"), 2.5);
-
-      if (resoSwitchVals[PHI][kUseCosPA] && cosinePointingAngle(partplus, partminus) < resoCutVals[PHI][kCosPA])
-        continue;
-      histos.fill(HIST("hPhiCount"), 3.5);
-
-      histos.fill(HIST("KaPlusTPC"), partplus.pt(), partplus.tpcNSigmaKa());
-      histos.fill(HIST("KaPlusTOF"), partplus.pt(), partplus.tofNSigmaKa());
-      histos.fill(HIST("KaMinusTPC"), partminus.pt(), partminus.tpcNSigmaKa());
-      histos.fill(HIST("KaMinusTOF"), partminus.pt(), partminus.tofNSigmaKa());
-
-      std::array<std::array<double, 3>, 2> ptarr = {{{partplus.px(), partplus.py(), partplus.pz()}, {partminus.px(), partminus.py(), partminus.pz()}}};
-      std::array<double, 2> massarr = {plusmass, plusmass};
-
-      // Calculation using RecoDecay
-      double invMassRD = RecoDecay::m2(ptarr, massarr);
-      double ptRD = std::sqrt(RecoDecay::sumOfSquares(partplus.pt(), partminus.pt()));
-
-      // Calculation using ROOT vectors
-      plusdaug = ROOT::Math::PxPyPzMVector(partplus.px(), partplus.py(), partplus.pz(), plusmass);
-      minusdaug = ROOT::Math::PxPyPzMVector(partminus.px(), partminus.py(), partminus.pz(), plusmass);
-      mom = plusdaug + minusdaug;
-
-      double pt = mom.Pt();
-      double invMass = mom.M();
-      double phi = mom.Phi();
-      bool withinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
-      bool withinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);
-
-      phi = RecoDecay::constrainAngle(phi, 0.0, 1); // constrain azimuthal angle to [0,2pi]
-
-      if (std::abs(mom.Rapidity()) < resoCutVals[PHI][kRapidity]) {
-        histos.fill(HIST("hPhiCount"), 4.5);
-
-        histos.fill(hist, invMass, pt, collision.centFT0C());
-        histos.fill(HIST("hPhiPhi"), phi);
-        histos.fill(HIST("hPhiEta"), mom.Eta());
-        histos.fill(HIST("hPhimassSparse_RD"), invMassRD, ptRD, collision.centFT0C()); // fill RecoDecay mass and pt
-
-        // Fill Phi weights
-        if (cfgOutputNUAWeights && withinPtPOI) {
-          histos.fill(HIST("NUA/hPhiEtaVtxz_phi"), phi, mom.Eta(), collision.posZ());
-          histos.fill(HIST("NUA/hPhiPtCent_phi"), phi, pt, collision.centFT0C());
-          histos.fill(HIST("NUA/hPhiEtaPt_phi"), phi, mom.Eta(), pt);
-        }
-        double weff = 1;
-        double waccPOI = getAcceptancePhi(mom, collision, PHI);
-
-        if (withinPtPOI)
-          fGFW->Fill(mom.Eta(), ((fPtAxis->FindBin(pt) - 1) * fPhiMassAxis->GetNbins()) + (fPhiMassAxis->FindBin(invMass) - 1), phi, weff * waccPOI, 2);
-        if (withinPtPOI && withinPtRef)
-          fGFW->Fill(mom.Eta(), ((fPtAxis->FindBin(pt) - 1) * fPhiMassAxis->GetNbins()) + (fPhiMassAxis->FindBin(invMass) - 1), phi, weff * waccPOI, 32);
-      }
-    }
-    return;
-  }
-
   template <typename TTrack>
   bool selectionV0Daughter(TTrack const& track, int pid)
   {
@@ -973,6 +919,104 @@ struct ResonancesGfwFlow {
     }
 
     return true;
+  }
+
+  template <typename TTrack, typename vector, char... chars, typename TCollision>
+  void resurrectPhi(TTrack trackplus, TTrack trackminus, const TCollision collision, vector plusdaug, vector minusdaug, vector mom, double plusmass, const ConstStr<chars...>& hist)
+  {
+    for (auto const& [partplus, partminus] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(trackplus, trackminus))) {
+      histos.fill(HIST("hPhiCount"), 0.5);
+      if (!selectionV0Daughter(partplus, KAONS) || !selectionV0Daughter(partminus, KAONS)) // 0 = pion, 1 = kaon, 2 = proton
+        continue;
+      histos.fill(HIST("hPhiCount"), 1.5);
+
+      if (isFakeKaon(partplus) || isFakeKaon(partminus))
+        continue;
+      histos.fill(HIST("hPhiCount"), 2.5);
+
+      if (resoSwitchVals[PHI][kUseCosPA] && cosinePointingAngle(partplus, partminus) < resoCutVals[PHI][kCosPA])
+        continue;
+      histos.fill(HIST("hPhiCount"), 3.5);
+
+      histos.fill(HIST("KaPlusTPC"), partplus.pt(), partplus.tpcNSigmaKa());
+      histos.fill(HIST("KaPlusTOF"), partplus.pt(), partplus.tofNSigmaKa());
+      histos.fill(HIST("KaMinusTPC"), partminus.pt(), partminus.tpcNSigmaKa());
+      histos.fill(HIST("KaMinusTOF"), partminus.pt(), partminus.tofNSigmaKa());
+
+      // Calculation using ROOT vectors
+      plusdaug = ROOT::Math::PxPyPzMVector(partplus.px(), partplus.py(), partplus.pz(), plusmass);
+      minusdaug = ROOT::Math::PxPyPzMVector(partminus.px(), partminus.py(), partminus.pz(), plusmass);
+      mom = plusdaug + minusdaug;
+
+      double pt = mom.Pt();
+      double invMass = mom.M();
+      double phi = mom.Phi();
+      bool withinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
+      bool withinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);
+
+      phi = RecoDecay::constrainAngle(phi, 0.0, 1); // constrain azimuthal angle to [0,2pi]
+
+      if (std::abs(mom.Rapidity()) < resoCutVals[PHI][kRapidity]) {
+        histos.fill(HIST("hPhiCount"), 4.5);
+
+        histos.fill(hist, invMass, pt, collision.centFT0C());
+        histos.fill(HIST("hPhiPhi"), phi);
+        histos.fill(HIST("hPhiEta"), mom.Eta());
+
+        // Fill Phi weights
+        if (cfgOutputNUAWeights && withinPtPOI) {
+          histos.fill(HIST("NUA/hPhiEtaVtxz_phi"), phi, mom.Eta(), collision.posZ());
+          histos.fill(HIST("NUA/hPhiPtCent_phi"), phi, pt, collision.centFT0C());
+          histos.fill(HIST("NUA/hPhiEtaPt_phi"), phi, mom.Eta(), pt);
+        }
+        double weff = 1;
+        double waccPOI = getAcceptancePhi(mom, collision, PHI);
+
+        if (withinPtPOI)
+          fGFW->Fill(mom.Eta(), ((fPtAxis->FindBin(pt) - 1) * fPhiMassAxis->GetNbins()) + (fPhiMassAxis->FindBin(invMass) - 1), phi, weff * waccPOI, 2);
+        if (withinPtPOI && withinPtRef)
+          fGFW->Fill(mom.Eta(), ((fPtAxis->FindBin(pt) - 1) * fPhiMassAxis->GetNbins()) + (fPhiMassAxis->FindBin(invMass) - 1), phi, weff * waccPOI, 32);
+      }
+    } // end of combinations loop
+    return;
+  }
+
+  template <typename TTrack, char... chars, typename TCollision>
+  void likeSignPhi(TTrack track, const TCollision collision, double plusmass, const ConstStr<chars...>& hist)
+  {
+    ROOT::Math::PxPyPzMVector daug1, daug2, mom;
+    for (auto const& [part1, part2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(track, track))) {
+
+      if (!selectionV0Daughter(part1, KAONS) || !selectionV0Daughter(part2, KAONS)) // 0 = pion, 1 = kaon, 2 = proton
+        continue;
+      if (isFakeKaon(part1) || isFakeKaon(part2))
+        continue;
+
+      // Calculation using ROOT vectors
+      daug1 = ROOT::Math::PxPyPzMVector(part1.px(), part1.py(), part1.pz(), plusmass);
+      daug2 = ROOT::Math::PxPyPzMVector(part2.px(), part2.py(), part2.pz(), plusmass);
+      mom = daug1 + daug2;
+
+      double pt = mom.Pt();
+      double invMass = mom.M();
+      double phi = mom.Phi();
+      bool withinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
+      bool withinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);
+
+      phi = RecoDecay::constrainAngle(phi, 0.0, 1); // constrain azimuthal angle to [0,2pi]
+
+      if (std::abs(mom.Rapidity()) < resoCutVals[PHI][kRapidity]) {
+        histos.fill(hist, invMass, pt, collision.centFT0C());
+        double weff = 1;
+        double waccPOI = 1;
+
+        if (withinPtPOI)
+          fGFW->Fill(mom.Eta(), ((fPtAxis->FindBin(pt) - 1) * fPhiMassAxis->GetNbins()) + (fPhiMassAxis->FindBin(invMass) - 1), phi, weff * waccPOI, 512);
+        if (withinPtPOI && withinPtRef)
+          fGFW->Fill(mom.Eta(), ((fPtAxis->FindBin(pt) - 1) * fPhiMassAxis->GetNbins()) + (fPhiMassAxis->FindBin(invMass) - 1), phi, weff * waccPOI, 1024);
+      }
+    } // end of positive combinations loop
+    return;
   }
 
   template <typename TCollision, typename V0>
@@ -1348,6 +1392,11 @@ struct ResonancesGfwFlow {
       resurrectPhi(posSlicedTracks, negSlicedTracks, collision, kaonPlus, kaonMinus, phiMom, massKaPlus, HIST("hPhiMass_sparse"));
     }
 
+    if (cfgUseLsPhi) {
+      likeSignPhi(posSlicedTracks, collision, massKaPlus, HIST("hLsPhiMass_sparse"));
+      likeSignPhi(negSlicedTracks, collision, massKaPlus, HIST("hLsPhiMass_sparse"));
+    }
+
     // ---------------------- Analyzing the V0s
     for (auto const& v0s : V0s) {
       if (resoSwitchVals[K0][kUseParticle]) {
@@ -1373,6 +1422,15 @@ struct ResonancesGfwFlow {
           fillProfileBoot3D(corrconfigs.at(i), phiBoot[bootId][pIndex], cent, fPhiMassAxis);
         }
       } // end of phi condition
+
+      if (cfgUseLsPhi && corrconfigs.at(i).Head.starts_with("LsPhi")) {
+        int pIndex = findComponent(lsPhiV2, Form("h%spt", corrconfigs.at(i).Head.c_str()));
+        fillProfileBoot3D(corrconfigs.at(i), lsPhiV2[pIndex], cent, fPhiMassAxis);
+
+        if (cfgUseBootStrap) {
+          fillProfileBoot3D(corrconfigs.at(i), phiBoot[bootId][pIndex], cent, fPhiMassAxis);
+        }
+      } // end of LikeSign phi condition
 
       if (resoSwitchVals[K0][kUseParticle] && corrconfigs.at(i).Head.starts_with("K0")) {
         int pIndex = findComponent(k0V2, Form("h%spt", corrconfigs.at(i).Head.c_str()));
