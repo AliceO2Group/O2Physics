@@ -381,9 +381,9 @@ struct centralityStudy {
     bool passRejectCollInTimeRangeNarrow = !(rejectCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow));
     // _______________________________________________________
     // sidestep vertex-Z rejection for vertex-Z profile histograms
-    if(passRejectITSROFBorder && passRejectTFBorder && passRequireIsVertexITSTPC && passRequireIsGoodZvtxFT0VsPV &&
-    passRequireIsVertexTOFmatched && passRequireIsVertexTRDmatched && passRejectSameBunchPileup && passRejectITSinROFpileupStandard && passRejectITSinROFpileupStrict &&
-     passSelectUPCcollisions && passRejectCollInTimeRangeNarrow){
+    if (passRejectITSROFBorder && passRejectTFBorder && passRequireIsVertexITSTPC && passRequireIsGoodZvtxFT0VsPV &&
+        passRequireIsVertexTOFmatched && passRequireIsVertexTRDmatched && passRejectSameBunchPileup && passRejectITSinROFpileupStandard && passRejectITSinROFpileupStrict &&
+        passSelectUPCcollisions && passRejectCollInTimeRangeNarrow) {
       getHist(TProfile, histPath + "hFT0CvsPVz_Collisions_All")->Fill(collision.multPVz(), collision.multFT0C() * scaleSignalFT0C);
       getHist(TProfile, histPath + "hFT0CvsPVz_Collisions")->Fill(collision.multPVz(), collision.multFT0C() * scaleSignalFT0C);
       getHist(TProfile, histPath + "hFT0AvsPVz_Collisions")->Fill(collision.multPVz(), collision.multFT0A() * scaleSignalFT0C);
