@@ -279,7 +279,7 @@ struct centralityStudy {
     // only get object when switching runs
     o2::parameters::GRPECSObject* grpo = ccdb->getForRun<o2::parameters::GRPECSObject>(pathGRPECSObject, mRunNumber);
     startOfRunTimestamp = grpo->getTimeStart();
-    
+
     histPath = std::format("Run_{}/", mRunNumber);
 
     if (doprocessCollisions || doprocessCollisionsWithCentrality) {
