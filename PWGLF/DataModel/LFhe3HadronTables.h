@@ -78,7 +78,7 @@ DECLARE_SOA_COLUMN(MultiplicityFT0C, multiplicityFT0C, float);
 /* Flags: 0 - both primary,
           1 - both from Li4,
           2 - both from hypertriton,
-          3 - mixed pair (a primary and one from Li4/hypertriton/material/other decays)
+          3 - mixed pair (a primary and one from Li4/hypertriton/material/other decays or any other combination)
 */
 DECLARE_SOA_COLUMN(Flags, flags, uint8_t);
 
