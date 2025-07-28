@@ -1,4 +1,4 @@
-// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
+2// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -532,7 +532,7 @@ struct HfFemtoDreamProducer {
             LOGF(fatal, "Please check your Ml configuration!!");
           }
         }
-        fillTable(0, candidate.isSelDplusToPiKPi(), outputMlDplus.at(0), outputMlDplus.at(1), outputMlDplus.at(2));
+        fillTable(2, candidate.isSelDplusToPiKPi(), outputMlDplus.at(0), outputMlDplus.at(1), outputMlDplus.at(2));
 
       } else if constexpr (channel == DecayChannel::LcToPKPi) {
         if constexpr (useCharmMl) {
