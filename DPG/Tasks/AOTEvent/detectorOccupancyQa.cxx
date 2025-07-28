@@ -316,6 +316,10 @@ struct DetectorOccupancyQaTask {
       histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hEta_neg", ";#eta;weighted occupancy", kTH2D, {axisEta, confAxisOccupForKine});
       histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPhi_pos", ";#varphi;n tracks", kTH3D, {axisPhi, confAxisOccupForKine, confAxisPtBinsForPhiStudy});
       histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPhi_neg", ";#varphi;n tracks", kTH3D, {axisPhi, confAxisOccupForKine, confAxisPtBinsForPhiStudy});
+      histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPhi_posInitialQA", ";#varphi;n tracks", kTH1D, {{3 * 810, -TMath::TwoPi(), 2 * TMath::TwoPi(), "#varphi"}});
+      histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPhi_posModifiedQA", ";#varphi;n tracks", kTH1D, {{3 * 810, -TMath::TwoPi(), 2 * TMath::TwoPi(), "#varphi"}});
+      histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPhi_negInitialQA", ";#varphi;n tracks", kTH1D, {{3 * 810, -TMath::TwoPi(), 2 * TMath::TwoPi(), "#varphi"}});
+      histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPhi_negModifiedQA", ";#varphi;n tracks", kTH1D, {{3 * 810, -TMath::TwoPi(), 2 * TMath::TwoPi(), "#varphi"}});
 
       histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hPt_pos", ";p_{T};weighted occupancy", kTH2D, {axisLogPt, confAxisOccupForKine});
       histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hPt_neg", ";p_{T};weighted occupancy", kTH2D, {axisLogPt, confAxisOccupForKine});
@@ -1221,15 +1225,17 @@ struct DetectorOccupancyQaTask {
           // continue;
 
           bool isGoodGlobal = (track.isGlobalTrack() && track.tpcNClsFound() >= confCutMinTPCcls);
+          bool hasTPCspecCuts = (track.hasTPC() && track.tpcNClsFound() >= confCutMinTPCcls && track.tpcNClsCrossedRows() > 80 && track.tpcChi2NCl() < 4);
 
           // ### kine distr vs centr vs occup
           float sign = track.sign();
           float pt = track.pt();
           float eta = track.eta();
           float phi = track.phi();
+          float phiInitial = phi;
 
           if (confUsePhiAtTPCinnerR) {
-            phi += asin(0.8 /*inner TPC radius*/ / 2 * 0.3 * sign * 0.5 / pt);
+            phi -= asin(0.8 /*inner TPC radius*/ / 2 * 0.3 * sign * 0.5 / pt);
             if (phi < 0)
               phi += TMath::TwoPi();
             else if (phi > TMath::TwoPi())
@@ -1279,7 +1285,7 @@ struct DetectorOccupancyQaTask {
                 histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hPt_pos"), pt, occupancy);
                 histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hEta_pos"), eta, occupancy);
                 histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hPhi_pos"), phi, occupancy, pt);
-                if (isGoodGlobal) {
+                if (hasTPCspecCuts) {
                   histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPt_pos"), pt, occupancy);
                   histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hEta_pos"), eta, occupancy);
                   histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_pos"), phi, occupancy, pt);
@@ -1289,7 +1295,7 @@ struct DetectorOccupancyQaTask {
                 histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hPt_neg"), pt, occupancy);
                 histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hEta_neg"), eta, occupancy);
                 histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hPhi_neg"), phi, occupancy, pt);
-                if (track.hasTPC()) {
+                if (hasTPCspecCuts) {
                   histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPt_neg"), pt, occupancy);
                   histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hEta_neg"), eta, occupancy);
                   histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_neg"), phi, occupancy, pt);
@@ -1333,20 +1339,28 @@ struct DetectorOccupancyQaTask {
                 histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hPt_pos"), pt, occupancy);
                 histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hEta_pos"), eta, occupancy);
                 histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hPhi_pos"), phi, occupancy, pt);
-                if (isGoodGlobal) {
+                if (hasTPCspecCuts) {
                   histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPt_pos"), pt, occupancy);
                   histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hEta_pos"), eta, occupancy);
                   histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPhi_pos"), phi, occupancy, pt);
+                  if (pt > 0.7 && pt < 1.0) {
+                    histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPhi_posInitialQA"), phiInitial);
+                    histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPhi_posModifiedQA"), phi);
+                  }
                 }
               } else // negative tracks
               {
                 histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hPt_neg"), pt, occupancy);
                 histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hEta_neg"), eta, occupancy);
                 histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hPhi_neg"), phi, occupancy, pt);
-                if (track.hasTPC()) {
+                if (hasTPCspecCuts) {
                   histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPt_neg"), pt, occupancy);
                   histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hEta_neg"), eta, occupancy);
                   histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPhi_neg"), phi, occupancy, pt);
+                  if (pt > 0.7 && pt < 1.0) {
+                    histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPhi_negInitialQA"), phiInitial);
+                    histos.fill(HIST("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/hPhi_negModifiedQA"), phi);
+                  }
                 }
               }
               // end of July 2025: for data vs MC kine distr comparison
