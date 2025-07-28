@@ -18,28 +18,31 @@
 /// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) Goethe University Frankfurt
 ///
 
+#include "EMPhotonEventCut.h"
+
+#include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/PhotonMeson/Utils/ClusterHistograms.h"
+#include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+
+#include <cmath>
+#include <cstdlib>
 #include <string>
 #include <vector>
-#include <array>
-#include "TString.h"
-#include "THashList.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/RecoDecay.h"
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
-#include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
-#include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
-#include "PWGEM/PhotonMeson/Utils/ClusterHistograms.h"
 
 using namespace o2;
 using namespace o2::aod;
