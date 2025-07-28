@@ -242,6 +242,9 @@ struct skimmerPrimaryTrack {
     if (std::fabs(dcaXY) > dca_xy_max || std::fabs(dcaZ) > dca_z_max) {
       return false;
     }
+    if (std::fabs(dcaZ) > 3.f) {
+      return false;
+    }
 
     if (std::fabs(trackParCov.getEta()) > maxeta || trackParCov.getPt() < minpt || maxpt < trackParCov.getPt()) {
       return false;
@@ -304,17 +307,17 @@ struct skimmerPrimaryTrack {
       if (track.tpcNClsFound() >= 90) {
         trackBit |= static_cast<uint16_t>(RefTrackBit::kNclsTPC90);
       }
-      if (track.tpcChi2NCl() < 4) {
+      if (track.tpcChi2NCl() < 4.f) {
         trackBit |= static_cast<uint16_t>(RefTrackBit::kChi2TPC4);
       }
-      if (track.tpcChi2NCl() < 3) {
+      if (track.tpcChi2NCl() < 3.f) {
         trackBit |= static_cast<uint16_t>(RefTrackBit::kChi2TPC3);
       }
       if (track.tpcFractionSharedCls() < 0.7) {
         trackBit |= static_cast<uint16_t>(RefTrackBit::kFracSharedTPC07);
       }
 
-      emprimarytracks(collision.globalIndex(), track.globalIndex(), /*track.sign(),*/ static_cast<uint16_t>(pt * 1e+4), eta, phi, dcaXY, dcaZ, trackBit);
+      emprimarytracks(collision.globalIndex(), track.globalIndex(), static_cast<uint16_t>(pt * 1e+4), eta, phi, dcaXY, static_cast<int16_t>(dcaZ * 1e+4), trackBit);
       // prmtrackeventidtmp(collision.globalIndex());
 
       stored_trackIds.emplace_back(std::pair<int, int>{collision.globalIndex(), track.globalIndex()});
