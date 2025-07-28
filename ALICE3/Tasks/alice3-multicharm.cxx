@@ -240,7 +240,7 @@ struct alice3multicharm {
         ccdbApi.init(bdt.ccdbUrl);
         LOG(info) << "Fetching model for timestamp: " << bdt.timestampCCDB.value;
         bool retrieveSuccessMCharm = ccdbApi.retrieveBlob(bdt.pathCCDB.value, ".", metadata, bdt.timestampCCDB.value, false, bdt.localPath.value);
-        
+
         if (retrieveSuccessMCharm) {
           bdtMCharm.initModel(bdt.localPath.value, bdt.enableOptimizations.value);
         } else {
