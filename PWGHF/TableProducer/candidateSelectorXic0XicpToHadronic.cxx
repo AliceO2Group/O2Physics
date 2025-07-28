@@ -10,26 +10,27 @@
 // or submit itself to any jurisdiction.
 
 /// \file candidateSelectorXic0XicpToHadronic.cxx
-/// \brief Selection of Xic0 and Xicp candidates 
+/// \brief Selection of Xic0 and Xicp candidates
 ///
 /// \author Jinhyun Park <jinhyun.park@cern.ch>, Pusan National University
 /// \author Krista Smith <krista.lizbeth.smith@cern.ch>, Pusan National University
 
-#include <vector>
 #include <string>
+#include <vector>
 
 // Mandatory includes
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
 // For selection
-#include "Common/Core/TrackSelectorPID.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h" // -> findBin function
 
-// Related to ML 
+#include "Common/Core/TrackSelectorPID.h"
+
+// Related to ML
 
 using namespace o2;
 using namespace o2::aod;
@@ -38,478 +39,270 @@ using namespace o2::analysis;
 
 struct HfCandidateSelectorXic0XicpToHadronic {
 
-	// cursors to fill the tables
-	struct : ProducesGroup {
-		Produces<aod::HfSelXic0ToXiPi> hfSelXic0ToXiPiCandidate;
-		Produces<aod::HfMlXic0ToXiPi> hfMlXic0ToXiPiCandidate;
-		Produces<aod::HfSelXicpToXiPiPi> hfSelXicpToXiPiPiCandidate;
-		Produces<aod::HfMlXicpToXiPiPi> hfMlXicpToXiPiPiCandidate;
-	} cursors;
+  // cursors to fill the tables
+  struct : ProducesGroup {
+    Produces<aod::HfSelXic0ToXiPi> hfSelXic0ToXiPiCandidate;
+    Produces<aod::HfMlXic0ToXiPi> hfMlXic0ToXiPiCandidate;
+  } cursors;
 
-	struct : ConfigurableGroup {
+  struct : ConfigurableGroup {
 
-		Configurable<float> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
-		Configurable<float> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
-		// Topological cuts - Xic0
-		Configurable<std::vector<double>> binsPtXic0{"binsPtXic0", std::vector{hf_cuts_xic0_xicp_to_hadronic::xic0::vecBinsPt}, "pT bin limits of Xic0"};
-		Configurable<LabeledArray<double>> cutsXic0{"cutsXic0", {hf_cuts_xic0_xicp_to_hadronic::xic0::Cuts[0], 
-													hf_cuts_xic0_xicp_to_hadronic::xic0::NBinsPt, 
-													hf_cuts_xic0_xicp_to_hadronic::xic0::NCutVars,
-													hf_cuts_xic0_xicp_to_hadronic::xic0::labelsPt,
-													hf_cuts_xic0_xicp_to_hadronic::xic0::labelsCutVar}, "Xic0 candidate selection per pT bin"};
-		// Topological cuts - Xic0
-		Configurable<std::vector<double>> binsPtXicp{"binsPtXicp", std::vector{hf_cuts_xic0_xicp_to_hadronic::xicp::vecBinsPt}, "pT bin limits of Xicp"};
-		Configurable<LabeledArray<double>> cutsXicp{"cutsXicp", {hf_cuts_xic0_xicp_to_hadronic::xicp::Cuts[0], 
-													hf_cuts_xic0_xicp_to_hadronic::xicp::NBinsPt, 
-													hf_cuts_xic0_xicp_to_hadronic::xicp::NCutVars,
-													hf_cuts_xic0_xicp_to_hadronic::xicp::labelsPt,
-													hf_cuts_xic0_xicp_to_hadronic::xicp::labelsCutVar}, "Xicp candidate selection per pT bin"};
-		// QA switch
-		Configurable<bool> activateQA{"activateQA", true, "Flag to enable QA histograms"};
-		// Enable PID
-		Configurable<bool> usePid{"usePid", true, "Switch for PID selection at track level"};
-		Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept status::NotApplicable [(NotApplicable for one detector) and NotApplicable or Conditional for the other)] in PID selection"};
-		// TPC PID
-		Configurable<float> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
-		Configurable<float> ptPidTpcMax{"ptPidTpcMax", 20., "Lower bound of track pT for TPC PID"};
-		Configurable<float> nSigmaTpcMax{"nSigmaTpcMax", 5., "Nsigma on TPC only"};
-		Configurable<float> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 5., "Nsigma cut on TPC combined with TOF"};
-		// TOF PID
-		Configurable<float> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
-		Configurable<float> ptPidTofMax{"ptPidTofMax", 20., "Lower bound of track pT for TOF PID"};
-		Configurable<float> nSigmaTofMax{"nSigmaTofMax", 5., "Nsigma on TOF only"};
-		Configurable<float> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
-		// ML interface
-		// -> Will be implemented in the future 
+    Configurable<float> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
+    Configurable<float> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
+    // Topological cuts - Xic0
+    Configurable<std::vector<double>> binsPtXic0{"binsPtXic0", std::vector{hf_cuts_xic0_xicp_to_hadronic::xic0::vecBinsPt}, "pT bin limits of Xic0"};
+    Configurable<LabeledArray<double>> cutsXic0{"cutsXic0", {hf_cuts_xic0_xicp_to_hadronic::xic0::Cuts[0], hf_cuts_xic0_xicp_to_hadronic::xic0::NBinsPt, hf_cuts_xic0_xicp_to_hadronic::xic0::NCutVars, hf_cuts_xic0_xicp_to_hadronic::xic0::labelsPt, hf_cuts_xic0_xicp_to_hadronic::xic0::labelsCutVar}, "Xic0 candidate selection per pT bin"};
+    // QA switch
+    Configurable<bool> activateQA{"activateQA", true, "Flag to enable QA histograms"};
+    // Enable PID
+    Configurable<bool> usePid{"usePid", true, "Switch for PID selection at track level"};
+    Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept status::NotApplicable [(NotApplicable for one detector) and NotApplicable or Conditional for the other)] in PID selection"};
+    // TPC PID
+    Configurable<float> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
+    Configurable<float> ptPidTpcMax{"ptPidTpcMax", 20., "Lower bound of track pT for TPC PID"};
+    Configurable<float> nSigmaTpcMax{"nSigmaTpcMax", 5., "Nsigma on TPC only"};
+    Configurable<float> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 5., "Nsigma cut on TPC combined with TOF"};
+    // TOF PID
+    Configurable<float> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
+    Configurable<float> ptPidTofMax{"ptPidTofMax", 20., "Lower bound of track pT for TOF PID"};
+    Configurable<float> nSigmaTofMax{"nSigmaTofMax", 5., "Nsigma on TOF only"};
+    Configurable<float> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
+    // ML interface
+    // -> Will be implemented in the future
 
-		// CCDB
-		Configurable<std::string> ccdbUrl{"ccdbUrl", "https://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    // CCDB
+    Configurable<std::string> ccdbUrl{"ccdbUrl", "https://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
-	} configs;
+  } configs;
 
-	TrackSelectorPi selectorPion;
-	TrackSelectorPr selectorProton;
+  TrackSelectorPi selectorPion;
+  TrackSelectorPr selectorProton;
 
-	using TracksPidWithSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TrackSelection>;
+  using TracksPidWithSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TrackSelection>;
 
-	HistogramRegistry registry{"registry"};
+  HistogramRegistry registry{"registry"};
 
-	void init(InitContext&)
-	{
-		// Initialize TrackSelector
-		if (configs.usePid) {
-			// pion
-			selectorPion.setRangePtTpc(configs.ptPidTpcMin, configs.ptPidTpcMax);
-			selectorPion.setRangeNSigmaTpc(-configs.nSigmaTpcMax, configs.nSigmaTpcMax);
-			selectorPion.setRangeNSigmaTpcCondTof(-configs.nSigmaTpcCombinedMax, configs.nSigmaTpcCombinedMax);
-			selectorPion.setRangePtTof(configs.ptPidTofMin, configs.ptPidTofMax);
-			selectorPion.setRangeNSigmaTof(-configs.nSigmaTofMax, configs.nSigmaTofMax);
-			selectorPion.setRangeNSigmaTofCondTpc(-configs.nSigmaTofCombinedMax, configs.nSigmaTofCombinedMax);
-			// proton 
-			selectorProton.setRangePtTpc(configs.ptPidTpcMin, configs.ptPidTpcMax);
-			selectorProton.setRangeNSigmaTpc(-configs.nSigmaTpcMax, configs.nSigmaTpcMax);
-			selectorProton.setRangeNSigmaTpcCondTof(-configs.nSigmaTpcCombinedMax, configs.nSigmaTpcCombinedMax);
-			selectorProton.setRangePtTof(configs.ptPidTofMin, configs.ptPidTofMax);
-			selectorProton.setRangeNSigmaTof(-configs.nSigmaTofMax, configs.nSigmaTofMax);
-			selectorProton.setRangeNSigmaTofCondTpc(-configs.nSigmaTofCombinedMax, configs.nSigmaTofCombinedMax);
-		}
+  void init(InitContext&)
+  {
+    // Initialize TrackSelector
+    if (configs.usePid) {
+      // pion
+      selectorPion.setRangePtTpc(configs.ptPidTpcMin, configs.ptPidTpcMax);
+      selectorPion.setRangeNSigmaTpc(-configs.nSigmaTpcMax, configs.nSigmaTpcMax);
+      selectorPion.setRangeNSigmaTpcCondTof(-configs.nSigmaTpcCombinedMax, configs.nSigmaTpcCombinedMax);
+      selectorPion.setRangePtTof(configs.ptPidTofMin, configs.ptPidTofMax);
+      selectorPion.setRangeNSigmaTof(-configs.nSigmaTofMax, configs.nSigmaTofMax);
+      selectorPion.setRangeNSigmaTofCondTpc(-configs.nSigmaTofCombinedMax, configs.nSigmaTofCombinedMax);
+      // proton
+      selectorProton.setRangePtTpc(configs.ptPidTpcMin, configs.ptPidTpcMax);
+      selectorProton.setRangeNSigmaTpc(-configs.nSigmaTpcMax, configs.nSigmaTpcMax);
+      selectorProton.setRangeNSigmaTpcCondTof(-configs.nSigmaTpcCombinedMax, configs.nSigmaTpcCombinedMax);
+      selectorProton.setRangePtTof(configs.ptPidTofMin, configs.ptPidTofMax);
+      selectorProton.setRangeNSigmaTof(-configs.nSigmaTofMax, configs.nSigmaTofMax);
+      selectorProton.setRangeNSigmaTofCondTpc(-configs.nSigmaTofCombinedMax, configs.nSigmaTofCombinedMax);
+    }
 
-		// Initializing QA histogram
-		if (configs.activateQA) {
+    // Initializing QA histogram
+    if (configs.activateQA) {
 
-			if (doprocessXic0)
-			{
-				constexpr int kNBinsSelections = 1 + SelectionStep::NSelectionSteps;
-				std::string labels[kNBinsSelections];
-				labels[0] = "No selection";
-				labels[1 + SelectionStep::RecoSkims] = "Skims selection";
-				labels[1 + SelectionStep::RecoTopol] = "Skims & Topological selections";
-				labels[1 + SelectionStep::RecoPID] = "Skims & Topological & PID selections";
-				labels[1 + SelectionStep::RecoMl] = "Skims & Topological & PID & ML selections";
+      if (doprocessXic0) {
+        constexpr int kNBinsSelections = 1 + SelectionStep::NSelectionSteps;
+        std::string labels[kNBinsSelections];
+        labels[0] = "No selection";
+        labels[1 + SelectionStep::RecoSkims] = "Skims selection";
+        labels[1 + SelectionStep::RecoTopol] = "Skims & Topological selections";
+        labels[1 + SelectionStep::RecoPID] = "Skims & Topological & PID selections";
+        labels[1 + SelectionStep::RecoMl] = "Skims & Topological & PID & ML selections";
 
-				static const AxisSpec axisSelections = {kNBinsSelections, 0.5, kNBinsSelections+0.5, ""};
+        static const AxisSpec axisSelections = {kNBinsSelections, 0.5, kNBinsSelections + 0.5, ""};
 
-				registry.add("hSelectionsXic0", "Selections;;#it{p}_{T} (GeV/#it{c})", {kTH2F, {axisSelections, {(std::vector<double>)configs.binsPtXic0, "#it{p}_{T} (GeV/#it{c})"}}});
-				
-				for (int iBin=0; iBin<kNBinsSelections; ++iBin) {
-					registry.get<TH2>(HIST("hSelectionsXic0"))->GetXaxis()->SetBinLabel(iBin+1, labels[iBin].data());
-				}
-			} // end of making QA histograms of Xic0
-			  
-			if (doprocessXicp)
-			{
-				constexpr int kNBinsSelections = 1 + SelectionStep::NSelectionSteps;
-				std::string labels[kNBinsSelections];
-				labels[0] = "No selection";
-				labels[1 + SelectionStep::RecoSkims] = "Skims selection";
-				labels[1 + SelectionStep::RecoTopol] = "Skims & Topological selections";
-				labels[1 + SelectionStep::RecoPID] = "Skims & Topological & PID selections";
-				labels[1 + SelectionStep::RecoMl] = "Skims & Topological & PID & ML selections";
+        registry.add("hSelectionsXic0", "Selections;;#it{p}_{T} (GeV/#it{c})", {kTH2F, {axisSelections, {(std::vector<double>)configs.binsPtXic0, "#it{p}_{T} (GeV/#it{c})"}}});
 
-				static const AxisSpec axisSelections = {kNBinsSelections, 0.5, kNBinsSelections+0.5, ""};
+        for (int iBin = 0; iBin < kNBinsSelections; ++iBin) {
+          registry.get<TH2>(HIST("hSelectionsXic0"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
+        }
+      } // end of making QA histograms of Xic0
+    }
+    // Initializing ML
+    // -> Will be implemented in the future
+  }
 
-				registry.add("hSelectionsXicp", "Selections;;#it{p}_{T} (GeV/#it{c})", {kTH2F, {axisSelections, {(std::vector<double>)configs.binsPtXicp, "#it{p}_{T} (GeV/#it{c})"}}});
-				
-				for (int iBin=0; iBin<kNBinsSelections; ++iBin) {
-					registry.get<TH2>(HIST("hSelectionsXicp"))->GetXaxis()->SetBinLabel(iBin+1, labels[iBin].data());
-				}
-			} // end of making QA histograms of Xic0
-		}
-		
-		// Initializing ML
-	}
+  // Conjugate independent topological cuts
+  // \param candidate is candidate
+  // \return true if candidate passes all cuts
+  template <typename T1>
+  bool selectionTopolXic0(const T1& hfCandXic0)
+  {
+    auto candPt = hfCandXic0.pt();
+    int ptBin = findBin(configs.binsPtXic0, candPt);
+    if (ptBin == -1) {
+      return false;
+    }
 
-	// Conjugate independent topological cuts
-	// \param candidate is candidate
-	// \return true if candidate passes all cuts
-	template <typename T1>
-	bool selectionTopolXic0(const T1& hfCandXic0)
-	{
-		auto candPt = hfCandXic0.pt();
-		int ptBin = findBin(configs.binsPtXic0, candPt);
-		if (ptBin==-1) {
-			return false;
-		}
-	
-		// check if the candidate pt is within analysis range
-		if (candPt < configs.ptCandMin || candPt >= configs.ptCandMax) {
-			return false;
-		}
+    // check if the candidate pt is within analysis range
+    if (candPt < configs.ptCandMin || candPt >= configs.ptCandMax) {
+      return false;
+    }
 
-		// check if candidate Xic0  mass is within a defined mass window
-		if (std::abs(hfCandXic0.invMassXic0() - o2::constants::physics::MassXiC0) > configs.cutsXic0->get(ptBin, "m")) {
-			return false;
-		}
+    // check if candidate Xic0  mass is within a defined mass window
+    if (std::abs(hfCandXic0.invMassXic0() - o2::constants::physics::MassXiC0) > configs.cutsXic0->get(ptBin, "m")) {
+      return false;
+    }
 
-		// cosine of pointing angle
-		if (hfCandXic0.cpa() <= configs.cutsXic0->get(ptBin, "cosine pointing angle")) {
-			return false;
-		}
+    // cosine of pointing angle
+    if (hfCandXic0.cpa() <= configs.cutsXic0->get(ptBin, "cosine pointing angle")) {
+      return false;
+    }
 
-		// cosine of pointing angle xy
-		if (hfCandXic0.cpaXY() <= configs.cutsXic0->get(ptBin, "cosine pointing angle XY")) {
-			return false;	
-		}
-		
-		#if 1 
-		// maximum decay length
-		if (hfCandXic0.decayLength() > configs.cutsXic0->get(ptBin, "max decay length")) {
-			return false;
-		}
+    // cosine of pointing angle xy
+    if (hfCandXic0.cpaXY() <= configs.cutsXic0->get(ptBin, "cosine pointing angle XY")) {
+      return false;
+    }
 
-		// maximum decay length XY
-		if (hfCandXic0.decayLengthXY() > configs.cutsXic0->get(ptBin, "max decay length XY")) {
-			return false;
-		}
+#if 1
+    // maximum decay length
+    if (hfCandXic0.decayLength() > configs.cutsXic0->get(ptBin, "max decay length")) {
+      return false;
+    }
 
-		// candidate chi2PCA
-		if (hfCandXic0.chi2PCA() > configs.cutsXic0->get(ptBin, "chi2PCA")) {
-			return false;
-		}
+    // maximum decay length XY
+    if (hfCandXic0.decayLengthXY() > configs.cutsXic0->get(ptBin, "max decay length XY")) {
+      return false;
+    }
 
-		// maximum DCA of daughters of xic0
-		if (std::abs(hfCandXic0.impactParameter0()) > configs.cutsXic0->get(ptBin, "max impParXY Xi") ||
-			std::abs(hfCandXic0.impactParameter1()) > configs.cutsXic0->get(ptBin, "max impParXY Pi")) {
-			return false;
-		}
+    // candidate chi2PCA
+    if (hfCandXic0.chi2PCA() > configs.cutsXic0->get(ptBin, "chi2PCA")) {
+      return false;
+    }
 
-		// cuts on daughter pT
-		if (hfCandXic0.ptProng0() < configs.cutsXic0->get(ptBin, "pT Xi") ||
-			hfCandXic0.ptProng1() < configs.cutsXic0->get(ptBin, "pT Pi")) {
-			return false;
-		}
-		#endif	
-		// candidate reached by here passed all the topoplodical cuts
-		return true;
-	}
+    // maximum DCA of daughters of xic0
+    if (std::abs(hfCandXic0.impactParameter0()) > configs.cutsXic0->get(ptBin, "max impParXY Xi") ||
+        std::abs(hfCandXic0.impactParameter1()) > configs.cutsXic0->get(ptBin, "max impParXY Pi")) {
+      return false;
+    }
 
-	// Conjugate independent topological cuts
-	// \param candidate is candidate
-	// \return true if candidate passes all cuts
-	template <typename T2>
-	bool selectionTopolXicp(const T2& hfCandXicp)
-	{
-		auto candpT = hfCandXicp.pt();
-		int pTBin = findBin(configs.binsPtXicp, candpT);
-		if (pTBin == -1) {
-			return false;
-		}
+    // cuts on daughter pT
+    if (hfCandXic0.ptProng0() < configs.cutsXic0->get(ptBin, "pT Xi") ||
+        hfCandXic0.ptProng1() < configs.cutsXic0->get(ptBin, "pT Pi")) {
+      return false;
+    }
+#endif
+    // candidate reached by here passed all the topoplodical cuts
+    return true;
+  }
 
-		// check that the candidate pT is within the analysis range
-		if (candpT < configs.ptCandMin || candpT >= configs.ptCandMax) {
-			return false;
-		}
+  // Apply PID selection
+  // \param pidTrackPi0 PID status of trackPi(Prong1 of Xic0 candidate)
+  // \param pidTrackPr PID status of trackPr(positive daughter from V0 candidate
+  // \param pidTrackPiLam PID status of trackPiLam (negative daughter from V0 candidate)
+  // \param pidTrackPiXi PID status of trackPiXi (bachelor candidate of cascade candidate)
+  // \param acceptPIDNotApplicable switch to accept Status::NotApplicable
+  // \return true if prongs of Xic0 candidate passes all selections
+  bool selectionPidXic0(TrackSelectorPID::Status const pidTrackPi0,
+                        TrackSelectorPID::Status const pidTrackPr,
+                        TrackSelectorPID::Status const pidTrackPiLam,
+                        TrackSelectorPID::Status const pidTrackPiXi,
+                        bool const acceptPIDNotApplicable)
+  {
+    if (!acceptPIDNotApplicable && (pidTrackPi0 != TrackSelectorPID::Accepted ||
+                                    pidTrackPr != TrackSelectorPID::Accepted ||
+                                    pidTrackPiLam != TrackSelectorPID::Accepted ||
+                                    pidTrackPiXi != TrackSelectorPID::Accepted)) {
+      return false;
+    }
 
-		// check candidate mass is within a defined mass window
-		if (std::abs(hfCandXicp.invMassXicPlus() - o2::constants::physics::MassXiCPlus) > configs.cutsXicp->get(pTBin, "m")) {
-			return false;
-		}
+    if (acceptPIDNotApplicable && (pidTrackPi0 == TrackSelectorPID::Rejected ||
+                                   pidTrackPr == TrackSelectorPID::Rejected ||
+                                   pidTrackPiLam == TrackSelectorPID::Rejected ||
+                                   pidTrackPiXi == TrackSelectorPID::Rejected)) {
+      return false;
+    }
 
-		// cosine of pointing angle
-		if (hfCandXicp.cpa() <= configs.cutsXicp->get(pTBin, "cos pointing angle")) {
-			return false;
-		}
+    return true;
+  }
 
-		// cosine of pointing angle XY
-		if (hfCandXicp.cpaXY() <= configs.cutsXicp->get(pTBin, "cos pointing angle XY")) {
-			return false;
-		}
+  //////////////////////////////////////
+  //                                  //
+  //            Xic0 selection        //
+  //                                  //
+  //////////////////////////////////////
+  void processXic0(aod::HfCandXic0 const& hfCandsXic0,
+                   TracksPidWithSel const&)
+  {
+    for (auto const& hfCandXic0 : hfCandsXic0) {
 
-		// candidate maximum decay length
-		if (hfCandXicp.decayLength() > configs.cutsXicp->get(pTBin, "max decay length")) {
-			return false;
-		}
+      int statusXic0ToXiPi = 0;
+      auto ptCandXic0 = hfCandXic0.pt();
 
-		// candidate maximum decay length XY
-		if (hfCandXicp.decayLengthXY() > configs.cutsXicp->get(pTBin, "max decay length XY")) {
-			return false;
-		}
+      if (configs.activateQA) {
+        registry.fill(HIST("hSelectionsXic0"), 1, ptCandXic0);
+      }
 
-		// candidate chi2PC
-		if (hfCandXicp.chi2PCA() > configs.cutsXicp->get(pTBin, "chi2PCA")) {
-			return false;
-		}
+      // No hfflag -> By default skim selected
+      SETBIT(statusXic0ToXiPi, SelectionStep::RecoSkims);
+      if (configs.activateQA) {
+        registry.fill(HIST("hSelectionsXic0"), 2 + SelectionStep::RecoSkims, ptCandXic0);
+      }
 
-		// maximum DCA of daughters
+      // Topological cuts
+      if (!selectionTopolXic0(hfCandXic0)) {
+        cursors.hfSelXic0ToXiPiCandidate(statusXic0ToXiPi);
+        continue;
+      }
+      SETBIT(statusXic0ToXiPi, SelectionStep::RecoTopol);
+      if (configs.activateQA) {
+        registry.fill(HIST("hSelectionsXic0"), 2 + SelectionStep::RecoTopol, ptCandXic0);
+      }
 
-		if ((std::abs(hfCandXicp.impactParameter0()) > configs.cutsXicp->get(pTBin, "max impParXY Xi")) ||
-			(std::abs(hfCandXicp.impactParameter1()) > configs.cutsXicp->get(pTBin, "max impParXY Pi0")) ||
-			(std::abs(hfCandXicp.impactParameter2()) > configs.cutsXicp->get(pTBin, "max impParXY Pi1"))) {
-			return false;
-		}
+      // Track-level PID selection
+      if (configs.usePid) {
 
-		// cut on daughter pT
-		if (hfCandXicp.ptProng0() < configs.cutsXicp->get(pTBin, "pT Xi") ||
-			hfCandXicp.ptProng1() < configs.cutsXicp->get(pTBin, "pT Pi0") ||
-			hfCandXicp.ptProng2() < configs.cutsXicp->get(pTBin, "pT Pi1")) {
-			return false;
-		}
+        // Get tracks
+        auto trackPi = hfCandXic0.pi_as<TracksPidWithSel>();
+        auto trackV0Pos = hfCandXic0.posTrack_as<TracksPidWithSel>();
+        auto trackV0Neg = hfCandXic0.negTrack_as<TracksPidWithSel>();
+        auto trackPiFromXi = hfCandXic0.bachelor_as<TracksPidWithSel>();
 
-		return true;
-	} // end selection toplogy Xicp
+        // assign proton and pion hypothesis by cascade sign. By default, Xi sign is considered negative
+        auto trackPrFromLambda = trackV0Pos;
+        auto trackPiFromLambda = trackV0Neg;
+        if (hfCandXic0.cascSign() > 0) {
 
-	// Apply PID selection
-	// \param pidTrackPi0 PID status of trackPi(Prong1 of Xic0 candidate)
-	// \param pidTrackPr PID status of trackPr(positive daughter from V0 candidate
-	// \param pidTrackPiLam PID status of trackPiLam (negative daughter from V0 candidate)
-	// \param pidTrackPiXi PID status of trackPiXi (bachelor candidate of cascade candidate)
-	// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
-	// \return true if prongs of Xic0 candidate passes all selections	
-	bool selectionPidXic0(TrackSelectorPID::Status const pidTrackPi0,
-					  TrackSelectorPID::Status const pidTrackPr,
-					  TrackSelectorPID::Status const pidTrackPiLam,
-					  TrackSelectorPID::Status const pidTrackPiXi,
-					  bool const acceptPIDNotApplicable)
-	{
-		if (!acceptPIDNotApplicable && (pidTrackPi0 != TrackSelectorPID::Accepted ||
-										pidTrackPr != TrackSelectorPID::Accepted ||
-										pidTrackPiLam != TrackSelectorPID::Accepted ||
-										pidTrackPiXi != TrackSelectorPID::Accepted)) 
-		{
-			return false;
-		}
+          // Brief sign check
+          if (trackPiFromXi.sign() < 0) {
+            LOG(info) << ">>>>>>>>>>>>>>> Cascade sign and Pi from cascade sign doesn't match";
+          }
 
-		if (acceptPIDNotApplicable && (pidTrackPi0 == TrackSelectorPID::Rejected ||
-									   pidTrackPr == TrackSelectorPID::Rejected ||
-									   pidTrackPiLam == TrackSelectorPID::Rejected ||
-									   pidTrackPiXi == TrackSelectorPID::Rejected)) 
-		{
-			return false;
-		}
-		
-		return true;
-	}
+          trackPrFromLambda = trackV0Neg;
+          trackPiFromLambda = trackV0Pos;
+        }
 
-	// Apply PID selection
-	// \param pidTrackPi0 PID status of trackPi0(Prong1 of Xicp candidate)
-	// \param pidTrackPi1 PID status of trackPi0(Prong2 of Xicp candidate)
-	// \param pidTrackPr PID status of trackPr(positive daughter from V0 candidate
-	// \param pidTrackPiLam PID status of trackPiLam (negative daughter from V0 candidate)
-	// \param pidTrackPiXi PID status of trackPiXi (bachelor candidate of cascade candidate)
-	// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
-	// \return true if prongs of Xic0 candidate passes all selections	
-	bool selectionPidXicp(TrackSelectorPID::Status const pidTrackPi0,
-						TrackSelectorPID::Status const pidTrackPi1,
-						TrackSelectorPID::Status const pidTrackPr,
-						TrackSelectorPID::Status const pidTrackPiLam,
-						TrackSelectorPID::Status const pidTrackPiXi,
-						bool const acceptPIDNotApplicable)
-	{
-		if (!acceptPIDNotApplicable && (pidTrackPi0 != TrackSelectorPID::Accepted || 
-										pidTrackPi1 != TrackSelectorPID::Accepted || 
-										pidTrackPr != TrackSelectorPID::Accepted || 
-										pidTrackPiLam != TrackSelectorPID::Accepted || 
-										pidTrackPiXi != TrackSelectorPID::Accepted)) 
-		{
-			return false;
-		}
+        // PID info
+        TrackSelectorPID::Status pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
+        TrackSelectorPID::Status pidTrackPiFromXi = selectorPion.statusTpcAndTof(trackPiFromXi);
+        TrackSelectorPID::Status pidTrackPrFromLambda = selectorProton.statusTpcAndTof(trackPrFromLambda);
+        TrackSelectorPID::Status pidTrackPiFromLambda = selectorPion.statusTpcAndTof(trackPiFromLambda);
 
-		if (acceptPIDNotApplicable && (pidTrackPi0 == TrackSelectorPID::Rejected || 
-									   pidTrackPi1 == TrackSelectorPID::Rejected || 
-									   pidTrackPr == TrackSelectorPID::Rejected || 
-									   pidTrackPiLam == TrackSelectorPID::Rejected || 
-									   pidTrackPiXi == TrackSelectorPID::Rejected)) 
-		{
-			return false;
-		}
+        if (!selectionPidXic0(pidTrackPi, pidTrackPiFromXi, pidTrackPrFromLambda, pidTrackPiFromLambda, configs.acceptPIDNotApplicable.value)) {
+          cursors.hfSelXic0ToXiPiCandidate(statusXic0ToXiPi);
+          continue;
+        }
 
-		return true;
-	}
+        SETBIT(statusXic0ToXiPi, SelectionStep::RecoPID);
+        if (configs.activateQA) {
+          registry.fill(HIST("hSelectionsXic0"), 2 + SelectionStep::RecoPID, ptCandXic0);
+        }
 
-	//////////////////////////////////////
-	//									//
-	//			Xic0 selection			//
-	//									//
-	//////////////////////////////////////
-	void processXic0(aod::HfCandXic0 const& hfCandsXic0,
-				 TracksPidWithSel const&)
-	{
-		for (auto const& hfCandXic0 : hfCandsXic0) {
+        cursors.hfSelXic0ToXiPiCandidate(statusXic0ToXiPi); // -> This part will be moved into if (configs.applyMl) part later
+      }
 
-			int statusXic0ToXiPi=0;
-			auto ptCandXic0 = hfCandXic0.pt();
-
-			if (configs.activateQA) {
-				registry.fill(HIST("hSelectionsXic0"), 1, ptCandXic0);	
-			}
-
-			// No hfflag -> By default skim selected
-			SETBIT(statusXic0ToXiPi, SelectionStep::RecoSkims);
-			if (configs.activateQA) {
-				registry.fill(HIST("hSelectionsXic0"), 2+SelectionStep::RecoSkims, ptCandXic0);
-			}
-	
-			// Topological cuts
-			if (!selectionTopolXic0(hfCandXic0)) {
-				cursors.hfSelXic0ToXiPiCandidate(statusXic0ToXiPi);
-				continue;
-			}
-			SETBIT(statusXic0ToXiPi, SelectionStep::RecoTopol);
-			if (configs.activateQA) {
-				registry.fill(HIST("hSelectionsXic0"), 2+SelectionStep::RecoTopol, ptCandXic0);
-			}
-
-			// Track-level PID selection
-			if (configs.usePid) {
-			
-				// Get tracks
-				auto trackPi = hfCandXic0.pi_as<TracksPidWithSel>();
-				auto trackV0Pos = hfCandXic0.posTrack_as<TracksPidWithSel>();
-				auto trackV0Neg = hfCandXic0.negTrack_as<TracksPidWithSel>();
-				auto trackPiFromXi = hfCandXic0.bachelor_as<TracksPidWithSel>();
-
-				// assign proton and pion hypothesis by cascade sign. By default, Xi sign is considered negative
-				auto trackPrFromLambda = trackV0Pos;
-				auto trackPiFromLambda = trackV0Neg;
-				if (hfCandXic0.cascSign() > 0) {
-					
-					// Brief sign check
-					if (trackPiFromXi.sign() < 0) {
-						LOG(info) << ">>>>>>>>>>>>>>> Cascade sign and Pi from cascade sign doesn't match";
-					}
-
-					trackPrFromLambda = trackV0Neg;
-					trackPiFromLambda = trackV0Pos;
-				}
-				
-				// PID info
-				TrackSelectorPID::Status pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
-				TrackSelectorPID::Status pidTrackPiFromXi = selectorPion.statusTpcAndTof(trackPiFromXi);
-				TrackSelectorPID::Status pidTrackPrFromLambda = selectorProton.statusTpcAndTof(trackPrFromLambda);
-				TrackSelectorPID::Status pidTrackPiFromLambda = selectorPion.statusTpcAndTof(trackPiFromLambda);
-
-				if (!selectionPidXic0(pidTrackPi, pidTrackPiFromXi, pidTrackPrFromLambda, pidTrackPiFromLambda, configs.acceptPIDNotApplicable.value)) {
-					cursors.hfSelXic0ToXiPiCandidate(statusXic0ToXiPi);
-					continue;
-				}
-
-				SETBIT(statusXic0ToXiPi, SelectionStep::RecoPID);
-				if (configs.activateQA) {
-					registry.fill(HIST("hSelectionsXic0"), 2+SelectionStep::RecoPID, ptCandXic0);
-				}
-
-				cursors.hfSelXic0ToXiPiCandidate(statusXic0ToXiPi); // -> This part will be moved into if (configs.applyMl) part later
-			}
-
-		}// candidate loop
-	}
-	PROCESS_SWITCH(HfCandidateSelectorXic0XicpToHadronic, processXic0, "Selection for Xic0 candidates", true);
-
-	//////////////////////////////////////
-	//									//
-	//			Xicp selection			//
-	//									//
-	//////////////////////////////////////
-	void processXicp(aod::HfCandXic const& hfCandsXic,
-					 TracksPidWithSel const&)
-	{
-		for (const auto& hfCandXic : hfCandsXic) {
-			int statusXicpToXiPiPi = 0;
-
-			auto ptCandXic = hfCandXic.pt();
-
-			if (configs.activateQA) {
-				registry.fill(HIST("hSelectionsXicp"), 1, ptCandXic);
-			}
-
-			// No hfflag -> by default skim selected
-			SETBIT(statusXicpToXiPiPi, SelectionStep::RecoSkims); // RecoSkims = 0 --> statusXicToXiPiPi = 1
-			if (configs.activateQA) {
-				registry.fill(HIST("hSelectionsXicp"), 2 + SelectionStep::RecoSkims, ptCandXic);
-			}
-
-			// topological cuts
-			if (!selectionTopolXicp(hfCandXic)) {
-				cursors.hfSelXicpToXiPiPiCandidate(statusXicpToXiPiPi);
-				continue;
-			}
-			SETBIT(statusXicpToXiPiPi, SelectionStep::RecoTopol); // RecoTopol = 1 --> statusXicToXiPiPi = 3
-			if (configs.activateQA) {
-				registry.fill(HIST("hSelectionsXicp"), 2 + SelectionStep::RecoTopol, ptCandXic);
-			}
-
-			// track-level PID selection
-			if (configs.usePid) {
-				auto trackPi0 = hfCandXic.pi0_as<TracksPidWithSel>();
-				auto trackPi1 = hfCandXic.pi1_as<TracksPidWithSel>();
-				auto trackV0PosDau = hfCandXic.posTrack_as<TracksPidWithSel>();
-				auto trackV0NegDau = hfCandXic.negTrack_as<TracksPidWithSel>();
-				auto trackPiFromXi = hfCandXic.bachelor_as<TracksPidWithSel>();
-				// assign proton and pion hypothesis to V0 daughters
-				auto trackPr = trackV0PosDau;
-				auto trackPiFromLam = trackV0NegDau;
-				if (hfCandXic.sign() < 0) {
-					trackPr = trackV0NegDau;
-					trackPiFromLam = trackV0PosDau;
-				}
-				// PID info
-				TrackSelectorPID::Status pidTrackPi0 = selectorPion.statusTpcAndTof(trackPi0);
-				TrackSelectorPID::Status pidTrackPi1 = selectorPion.statusTpcAndTof(trackPi1);
-				TrackSelectorPID::Status pidTrackPr = selectorProton.statusTpcAndTof(trackPr);
-				TrackSelectorPID::Status pidTrackPiLam = selectorPion.statusTpcAndTof(trackPiFromLam);
-				TrackSelectorPID::Status pidTrackPiXi = selectorPion.statusTpcAndTof(trackPiFromXi);
-
-				if (!selectionPidXicp(pidTrackPi0, pidTrackPi1, pidTrackPr, pidTrackPiLam, pidTrackPiXi, configs.acceptPIDNotApplicable.value)) {
-					cursors.hfSelXicpToXiPiPiCandidate(statusXicpToXiPiPi);
-					continue;
-				}
-				SETBIT(statusXicpToXiPiPi, SelectionStep::RecoPID); // RecoPID = 2 --> statusXicToXiPiPi = 7
-				if (configs.activateQA) {
-					registry.fill(HIST("hSelectionsXicp"), 2 + SelectionStep::RecoPID, ptCandXic);
-				}
-			}
-
-			// ML selection
-			// [ empty for now ]
-
-			cursors.hfSelXicpToXiPiPiCandidate(statusXicpToXiPiPi);
-		}
-	}
-	PROCESS_SWITCH(HfCandidateSelectorXic0XicpToHadronic, processXicp, "Selection for Xicp candidates", false);
+    } // candidate loop
+  }
+  PROCESS_SWITCH(HfCandidateSelectorXic0XicpToHadronic, processXic0, "Selection for Xic0 candidates", true);
 
 }; // end struct candidate selector
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-	return WorkflowSpec{adaptAnalysisTask<HfCandidateSelectorXic0XicpToHadronic>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfCandidateSelectorXic0XicpToHadronic>(cfgc)};
 }
