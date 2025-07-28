@@ -1327,7 +1327,7 @@ struct Kstarqa {
 
               hInvMass.fill(HIST("h2KstarRecpt2"), mothertrack1.pt(), multiplicity, std::sqrt(mothertrack1.e() * mothertrack1.e() - mothertrack1.p() * mothertrack1.p()));
 
-              if (applyRecMotherRapidity && mother.Rapidity() >= 0) {
+              if (applyRecMotherRapidity && mother.Rapidity() >= 0.5) {
                 continue;
               }
 
