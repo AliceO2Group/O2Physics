@@ -1470,11 +1470,6 @@ struct cascadeFlow {
       }
     }
 
-    // event has FT0C event plane
-    bool hasEventPlane = 0;
-    if (std::abs(coll.qvecFT0CRe()) < 990 && std::abs(coll.qvecFT0CIm()) < 990)
-      hasEventPlane = 1;
-
     histos.fill(HIST("hNEvents"), 9.5);
     histos.fill(HIST("hEventNchCorrelationAfterEP"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
     histos.fill(HIST("hEventPVcontributorsVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksPVeta1());
