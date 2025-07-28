@@ -695,8 +695,10 @@ DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
 DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
 // DECLARE_SOA_COLUMN(Sign, sign, int8_t);            //!
 DECLARE_SOA_COLUMN(TrackBit, trackBit, uint16_t); //!
-DECLARE_SOA_COLUMN(PtUINT16, ptuint16, uint16_t); //!
+DECLARE_SOA_COLUMN(PtUINT16, ptuint16, uint16_t); //! 0 - 65536
+DECLARE_SOA_COLUMN(DcaZINT16, dcaZint16, int16_t); //! -32768 - +32768
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](uint16_t ptuint16) -> float { return static_cast<float>(ptuint16) * 1e-4; });
+DECLARE_SOA_DYNAMIC_COLUMN(DcaZ, dcaZ, [](int16_t dcaZint16) -> float { return static_cast<float>(dcaZint16) * 1e-4; });
 // DECLARE_SOA_DYNAMIC_COLUMN(Signed1Pt, signed1Pt, [](float pt, int8_t sign) -> float { return sign * 1. / pt; });
 // DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 // DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
@@ -706,7 +708,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](uint16_t ptuint16) -> float { return stati
 
 DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_000, "AOD", "EMPRIMARYTRACK", 0,                        //!
                             o2::soa::Index<>, emprimarytrack::CollisionId, emprimarytrack::TrackId, /* emprimarytrack::Sign,*/
-                            emprimarytrack::PtUINT16, track::Eta, track::Phi, track::DcaXY, track::DcaZ, emprimarytrack::TrackBit,
+                            emprimarytrack::PtUINT16, track::Eta, track::Phi, track::DcaXY, emprimarytrack::DcaZINT16, emprimarytrack::TrackBit,
 
                             // track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared, track::TPCChi2NCl,
                             // track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap,
@@ -725,7 +727,8 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_000, "AOD", "EMPRIMARYTRACK", 0,    
                             // emprimarytrack::Px<track::Pt, track::Phi>,
                             // emprimarytrack::Py<track::Pt, track::Phi>,
                             // emprimarytrack::Pz<track::Pt, track::Eta>
-                            emprimarytrack::Pt<emprimarytrack::PtUINT16>);
+                            emprimarytrack::Pt<emprimarytrack::PtUINT16>,
+                            emprimarytrack::DcaZ<emprimarytrack::DcaZINT16>);
 
 using EMPrimaryTracks = EMPrimaryTracks_000;
 // iterators
