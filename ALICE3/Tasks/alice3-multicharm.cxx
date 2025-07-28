@@ -251,7 +251,8 @@ struct alice3multicharm {
       }
 
       histos.add("hBDTScore", "hBDTScore", kTH1D, {axisBDTScore});
-      histos.add("hBDTScoreVsMassXicc", "hBDTScoreVsMassXicc", kTH2D, {axisXiccMass, axisBDTScore});
+      histos.add("hBDTScoreVsXiccMass", "hBDTScoreVsXiccMass", kTH2D, {axisXiccMass, axisBDTScore});
+      histos.add("hBDTScoreVsXiccPt", "hBDTScoreVsXiccPt", kTH2D, {axisXiccMass, axisPt});
       for (const auto& score : bdt.requiredScores.value) {
         histPath = std::format("MLQA/RequiredBDTScore_{}/", static_cast<int>(score * 100));
         histPointers.insert({histPath + "hDCAXicDaughters", histos.add((histPath + "hDCAXicDaughters").c_str(), "hDCAXicDaughters", {kTH1D, {{axisDcaDaughters}}})});
@@ -321,7 +322,8 @@ struct alice3multicharm {
         float bdtScore = probabilityMCharm[1];
 
         histos.fill(HIST("hBDTScore"), bdtScore);
-        histos.fill(HIST("hBDTScoreVsMassXicc"), xiccCand.xiccMass(), bdtScore);
+        histos.fill(HIST("hBDTScoreVsXiccMass"), xiccCand.xiccMass(), bdtScore);
+        histos.fill(HIST("hBDTScoreVsXiccPt"), xiccCand.xiccPt(), bdtScore);
 
         for (const auto& requiredScore : bdt.requiredScores.value) {
           if (bdtScore > requiredScore) {
