@@ -112,8 +112,8 @@ void EMTrackCut::RequireITSib1st(bool flag)
   LOG(info) << "EMTrack Cut, require ITS ib 1st: " << mRequireITSib1st;
 }
 
-void EMTrackCut::SetTrackBits(uint16_t bits)
+void EMTrackCut::SetTrackBit(uint16_t bit)
 {
-  mTrackBits = bits;
-  LOG(info) << "EMTrack Cut, require track bits: " << mTrackBits;
+  mTrackBit = bit;
+  LOG(info) << "EMTrack Cut, require track bits: " << mTrackBit;
 }
