@@ -47,7 +47,6 @@ struct centralityStudy {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   ctpRateFetcher mRateFetcher;
   int mRunNumber;
-  uint64_t startOfRunTimestamp;
 
   // Configurables
   Configurable<bool> do2DPlots{"do2DPlots", true, "0 - no, 1 - yes"};
@@ -64,10 +63,10 @@ struct centralityStudy {
   // Apply extra event selections
   Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border"};
   Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border"};
-  Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", true, "require events with at least one ITS-TPC track"};
-  Configurable<bool> requireIsGoodZvtxFT0VsPV{"requireIsGoodZvtxFT0VsPV", true, "require events with PV position along z consistent (within 1 cm) between PV reconstructed using tracks and PV using FT0 A-C time difference"};
-  Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", true, "require events with at least one of vertex contributors matched to TOF"};
-  Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", true, "require events with at least one of vertex contributors matched to TRD"};
+  Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "require events with at least one ITS-TPC track"};
+  Configurable<bool> requireIsGoodZvtxFT0VsPV{"requireIsGoodZvtxFT0VsPV", false, "require events with PV position along z consistent (within 1 cm) between PV reconstructed using tracks and PV using FT0 A-C time difference"};
+  Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", false, "require events with at least one of vertex contributors matched to TOF"};
+  Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", false, "require events with at least one of vertex contributors matched to TRD"};
   Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC"};
 
   Configurable<bool> rejectITSinROFpileupStandard{"rejectITSinROFpileupStandard", false, "reject collisions in case of in-ROF ITS pileup (standard)"};
@@ -82,7 +81,7 @@ struct centralityStudy {
   Configurable<float> vertexZwithT0{"vertexZwithT0", 1000.0f, "require a certain vertex-Z in BC analysis"};
 
   Configurable<float> minTimeDelta{"minTimeDelta", -1.0f, "reject collision if another collision is this close or less in time"};
-  Configurable<float> minFT0CforVertexZ{"minFT0CforVertexZ", 250, "minimum FT0C for vertex-Z profile calculation"};
+  Configurable<float> minFT0CforVertexZ{"minFT0CforVertexZ", -1.0f, "minimum FT0C for vertex-Z profile calculation"};
 
   Configurable<float> scaleSignalFT0C{"scaleSignalFT0C", 1.00f, "scale FT0C signal for convenience"};
   Configurable<float> scaleSignalFT0M{"scaleSignalFT0M", 1.00f, "scale FT0M signal for convenience"};
@@ -257,8 +256,8 @@ struct centralityStudy {
 
     if (doTimeStudies) {
       ccdb->setURL(ccdbURL);
-      // ccdb->setCaching(true);
-      // ccdb->setLocalObjectValidityChecking();
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
       ccdb->setFatalWhenNull(false);
       if (doTimeStudyFV0AOuterVsFT0A3d) {
         histos.add((histPath + "h3dFV0AVsTime").c_str(), "", {kTH3F, {{axisDeltaTimestamp, axisMultCoarseFV0A, axisMultCoarseFV0A}}});
@@ -274,13 +273,6 @@ struct centralityStudy {
     }
 
     mRunNumber = collision.multRunNumber();
-
-    LOGF(info, "Setting up for run: %i", mRunNumber);
-
-    // only get object when switching runs
-    o2::parameters::GRPECSObject* grpo = ccdb->getForRun<o2::parameters::GRPECSObject>(pathGRPECSObject, mRunNumber);
-    startOfRunTimestamp = grpo->getTimeStart();
-
     histPath = std::format("Run_{}/", mRunNumber);
 
     if (doprocessCollisions || doprocessCollisionsWithCentrality) {
@@ -307,10 +299,12 @@ struct centralityStudy {
       histPointers.insert({histPath + "hNPVContributors", histos.add((histPath + "hNPVContributors").c_str(), "hNPVContributors", {kTH1D, {{axisMultUltraFinePVContributors}}})});
 
       histPointers.insert({histPath + "hFT0CvsPVz_Collisions_All", histos.add((histPath + "hFT0CvsPVz_Collisions_All").c_str(), "hFT0CvsPVz_Collisions_All", {kTProfile, {{axisPVz}}})});
+      histPointers.insert({histPath + "hFT0AvsPVz_Collisions", histos.add((histPath + "hFT0AvsPVz_Collisions").c_str(), "hFT0AvsPVz_Collisions", {kTProfile, {{axisPVz}}})});
       histPointers.insert({histPath + "hFT0CvsPVz_Collisions", histos.add((histPath + "hFT0CvsPVz_Collisions").c_str(), "hFT0CvsPVz_Collisions", {kTProfile, {{axisPVz}}})});
       histPointers.insert({histPath + "hFV0AvsPVz_Collisions", histos.add((histPath + "hFV0AvsPVz_Collisions").c_str(), "hFV0AvsPVz_Collisions", {kTProfile, {{axisPVz}}})});
       histPointers.insert({histPath + "hNGlobalTracksvsPVz_Collisions", histos.add((histPath + "hNGlobalTracksvsPVz_Collisions").c_str(), "hNGlobalTracksvsPVz_Collisions", {kTProfile, {{axisPVz}}})});
       histPointers.insert({histPath + "hNMFTTracksvsPVz_Collisions", histos.add((histPath + "hNMFTTracksvsPVz_Collisions").c_str(), "hNMFTTracksvsPVz_Collisions", {kTProfile, {{axisPVz}}})});
+      histPointers.insert({histPath + "hNTPVvsPVz_Collisions", histos.add((histPath + "hNTPVvsPVz_Collisions").c_str(), "hNTPVvsPVz_Collisions", {kTProfile, {{axisPVz}}})});
     }
 
     if (do2DPlots) {
@@ -359,7 +353,6 @@ struct centralityStudy {
   // process this collisions
   {
     initRun(collision);
-
     histos.fill(HIST("hCollisionSelection"), 0); // all collisions
     getHist(TH1, histPath + "hCollisionSelection")->Fill(0);
 
@@ -368,6 +361,33 @@ struct centralityStudy {
     histos.fill(HIST("hCollisionSelection"), 1);
     getHist(TH1, histPath + "hCollisionSelection")->Fill(1);
 
+    bool passRejectITSROFBorder = !(rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder));
+    bool passRejectTFBorder = !(rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder));
+    bool passRequireIsVertexITSTPC = !(requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC));
+    bool passRequireIsGoodZvtxFT0VsPV = !(requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV));
+    bool passRequireIsVertexTOFmatched = !(requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched));
+    bool passRequireIsVertexTRDmatched = !(requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched));
+    bool passRejectSameBunchPileup = !(rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup));
+    bool passRejectITSinROFpileupStandard = !(rejectITSinROFpileupStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard));
+    bool passRejectITSinROFpileupStrict = !(rejectITSinROFpileupStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict));
+    bool passSelectUPCcollisions = !(selectUPCcollisions && collision.flags() < 1);
+    bool passRejectCollInTimeRangeNarrow = !(rejectCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow));
+    // _______________________________________________________
+    // sidestep vertex-Z rejection for vertex-Z profile histograms
+    if(passRejectITSROFBorder && passRejectTFBorder && passRequireIsVertexITSTPC && passRequireIsGoodZvtxFT0VsPV &&
+    passRequireIsVertexTOFmatched && passRequireIsVertexTRDmatched && passRejectSameBunchPileup && passRejectITSinROFpileupStandard && passRejectITSinROFpileupStrict &&
+     passSelectUPCcollisions && passRejectCollInTimeRangeNarrow){
+      getHist(TProfile, histPath + "hFT0CvsPVz_Collisions_All")->Fill(collision.multPVz(), collision.multFT0C() * scaleSignalFT0C);
+      getHist(TProfile, histPath + "hFT0CvsPVz_Collisions")->Fill(collision.multPVz(), collision.multFT0C() * scaleSignalFT0C);
+      getHist(TProfile, histPath + "hFT0AvsPVz_Collisions")->Fill(collision.multPVz(), collision.multFT0A() * scaleSignalFT0C);
+      getHist(TProfile, histPath + "hFV0AvsPVz_Collisions")->Fill(collision.multPVz(), collision.multFV0A() * scaleSignalFV0A);
+      getHist(TProfile, histPath + "hNGlobalTracksvsPVz_Collisions")->Fill(collision.multPVz(), collision.multNTracksGlobal());
+      getHist(TProfile, histPath + "hNMFTTracksvsPVz_Collisions")->Fill(collision.multPVz(), collision.mftNtracks());
+      getHist(TProfile, histPath + "hNTPVvsPVz_Collisions")->Fill(collision.multPVz(), collision.multNTracksPV());
+    }
+
+    // _______________________________________________________
+
     if (applyVtxZ && TMath::Abs(collision.multPVz()) > 10)
       return;
     histos.fill(HIST("hCollisionSelection"), 2);
@@ -375,43 +395,43 @@ struct centralityStudy {
 
     // _______________________________________________________
     // Extra event selections start here
-    if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+    if (!passRejectITSROFBorder) {
       return;
     }
     histos.fill(HIST("hCollisionSelection"), 3 /* Not at ITS ROF border */);
     getHist(TH1, histPath + "hCollisionSelection")->Fill(3);
 
-    if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+    if (!passRejectTFBorder) {
       return;
     }
     histos.fill(HIST("hCollisionSelection"), 4 /* Not at TF border */);
     getHist(TH1, histPath + "hCollisionSelection")->Fill(4);
 
-    if (requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+    if (!passRequireIsVertexITSTPC) {
       return;
     }
     histos.fill(HIST("hCollisionSelection"), 5 /* Contains at least one ITS-TPC track */);
     getHist(TH1, histPath + "hCollisionSelection")->Fill(5);
 
-    if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (!passRequireIsGoodZvtxFT0VsPV) {
       return;
     }
     histos.fill(HIST("hCollisionSelection"), 6 /* PV position consistency check */);
     getHist(TH1, histPath + "hCollisionSelection")->Fill(6);
 
-    if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+    if (!passRequireIsVertexTOFmatched) {
       return;
     }
     histos.fill(HIST("hCollisionSelection"), 7 /* PV with at least one contributor matched with TOF */);
     getHist(TH1, histPath + "hCollisionSelection")->Fill(7);
 
-    if (requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+    if (!passRequireIsVertexTRDmatched) {
       return;
     }
     histos.fill(HIST("hCollisionSelection"), 8 /* PV with at least one contributor matched with TRD */);
     getHist(TH1, histPath + "hCollisionSelection")->Fill(8);
 
-    if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    if (!passRejectSameBunchPileup) {
       return;
     }
     histos.fill(HIST("hCollisionSelection"), 9 /* Not at same bunch pile-up */);
@@ -430,25 +450,25 @@ struct centralityStudy {
       getHist(TH1, histPath + "hCollisionSelection")->Fill(10);
     }
 
-    if (rejectITSinROFpileupStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+    if (!passRejectITSinROFpileupStandard) {
       return;
     }
     histos.fill(HIST("hCollisionSelection"), 11 /* Not ITS ROF pileup (standard) */);
     getHist(TH1, histPath + "hCollisionSelection")->Fill(11);
 
-    if (rejectITSinROFpileupStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+    if (!passRejectITSinROFpileupStrict) {
       return;
     }
     histos.fill(HIST("hCollisionSelection"), 12 /* Not ITS ROF pileup (strict) */);
     getHist(TH1, histPath + "hCollisionSelection")->Fill(12);
 
-    if (selectUPCcollisions && collision.flags() < 1) { // if zero then NOT upc, otherwise UPC
+    if (!passSelectUPCcollisions) { // if zero then NOT upc, otherwise UPC
       return;
     }
     histos.fill(HIST("hCollisionSelection"), 13 /* is UPC event */);
     getHist(TH1, histPath + "hCollisionSelection")->Fill(13);
 
-    if (rejectCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+    if (!passRejectCollInTimeRangeNarrow) {
       return;
     }
     histos.fill(HIST("hCollisionSelection"), 14 /* Not ITS ROF pileup (strict) */);
@@ -488,10 +508,6 @@ struct centralityStudy {
     getHist(TH1, histPath + "hFV0A_Collisions")->Fill(collision.multFV0A() * scaleSignalFV0A);
     getHist(TH1, histPath + "hNGlobalTracks")->Fill(collision.multNTracksGlobal());
     getHist(TH1, histPath + "hNMFTTracks")->Fill(collision.mftNtracks());
-    getHist(TProfile, histPath + "hFT0CvsPVz_Collisions_All")->Fill(collision.multPVz(), collision.multFT0C() * scaleSignalFT0C);
-    getHist(TProfile, histPath + "hFV0AvsPVz_Collisions")->Fill(collision.multPVz(), collision.multFV0A() * scaleSignalFV0A);
-    getHist(TProfile, histPath + "hNGlobalTracksvsPVz_Collisions")->Fill(collision.multPVz(), collision.multNTracksGlobal());
-    getHist(TProfile, histPath + "hNMFTTracksvsPVz_Collisions")->Fill(collision.multPVz(), collision.mftNtracks());
 
     if (collision.multFT0C() > minFT0CforVertexZ) {
       histos.fill(HIST("hFT0CvsPVz_Collisions"), collision.multPVz(), collision.multFT0C() * scaleSignalFT0C);
@@ -576,9 +592,11 @@ struct centralityStudy {
     }
 
     if (doTimeStudies && collision.has_multBC()) {
+      initRun(collision);
       auto multbc = collision.template multBC_as<aod::MultBCs>();
       uint64_t bcTimestamp = multbc.timestamp();
-
+      o2::parameters::GRPECSObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPECSObject>(pathGRPECSObject, bcTimestamp);
+      uint64_t startOfRunTimestamp = grpo->getTimeStart();
       float hoursAfterStartOfRun = static_cast<float>(bcTimestamp - startOfRunTimestamp) / 3600000.0;
 
       getHist(TH2, histPath + "hFT0AVsTime")->Fill(hoursAfterStartOfRun, collision.multFT0A());
