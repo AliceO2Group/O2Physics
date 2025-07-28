@@ -167,9 +167,8 @@ struct He3HadCandidate {
   float etaHadMC = -99.f;
   float phiHadMC = -99.f;
 
-  bool isHe3Primary = false;
-  bool isHadPrimary = false;
-  bool isMotherLi4 = false;
+  uint8_t flagsHe3 = 0; // flags for He3
+  uint8_t flagsHad = 0; // flags for hadron
 
   // collision information
   int32_t collisionID = 0;
@@ -666,7 +665,6 @@ struct he3HadronFemto {
     he3Hadcand.l4PtMC = mctrackMother.pt() * (mctrackMother.pdgCode() > 0 ? 1 : -1);
     const double eLit = mctrackHe3.e() + mctrackHad.e();
     he3Hadcand.l4MassMC = std::sqrt(eLit * eLit - mctrackMother.p() * mctrackMother.p());
-    he3Hadcand.isMotherLi4 = std::abs(mctrackMother.pdgCode()) == Li4PDG;
   }
 
   template <typename Ttrack>
@@ -782,9 +780,8 @@ struct he3HadronFemto {
         he3Hadcand.phiHadMC,
         he3Hadcand.l4PtMC,
         he3Hadcand.l4MassMC,
-        he3Hadcand.isMotherLi4,
-        he3Hadcand.isHe3Primary,
-        he3Hadcand.isHadPrimary);
+        he3Hadcand.flagsHe3,
+        he3Hadcand.flagsHad);
     }
     if (settingFillMultiplicity) {
       outputMultiplicityTable(
