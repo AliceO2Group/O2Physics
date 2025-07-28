@@ -230,6 +230,7 @@ struct PiDeuteronFemto {
      {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
      {"hdcaxyDe", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hdcazDe", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+     {"hdcazDe_min", ";DCA_{z}-min (cm)", {HistType::kTH1F, {{20, -1.0f, 1.0f}}}},
      {"hNClsDeITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
      {"hNClsPiITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
      {"hDePitInvMass", "; M(De + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
@@ -464,8 +465,10 @@ struct PiDeuteronFemto {
       mQaRegistry.fill(HIST("h2NsigmaDeTPC"), candidate.sign() * candidate.pt(), tpcNSigmaDe);
       mQaRegistry.fill(HIST("h2NsigmaDeTOF"), candidate.sign() * candidate.pt(), tofNSigmaDe);
       return true;
-    } else if (std::abs(tpcNSigmaDe) < settingCutNsigmaTPCDe) {
-
+    } else if (candidate.tpcInnerParam() <= settingCutPinMinTOFITSDe) {
+      if (std::abs(tpcNSigmaDe) > settingCutNsigmaTPCDe) {
+        return false;
+      }
       o2::aod::ITSResponse mResponseITS;
       auto itsnSigmaDe = mResponseITS.nSigmaITS<o2::track::PID::Deuteron>(candidate.itsClusterSizes(), candidate.p(), candidate.eta());
       mQaRegistry.fill(HIST("h2NSigmaDeITS_preselection"), candidate.sign() * candidate.pt(), itsnSigmaDe);
@@ -719,6 +722,7 @@ struct PiDeuteronFemto {
     mQaRegistry.fill(HIST("hDePitInvMass"), piDecand.invMass);
     mQaRegistry.fill(HIST("hdcaxyDe"), piDecand.dcaxyDe);
     mQaRegistry.fill(HIST("hdcazDe"), piDecand.dcazDe);
+    mQaRegistry.fill(HIST("hdcazDe_min"), (abs(piDecand.dcazDe) - settingCutDeDCAzMin));
     mQaRegistry.fill(HIST("hNClsDeITS"), piDecand.nClsItsDe);
     mQaRegistry.fill(HIST("hNClsPiITS"), piDecand.nClsItsPi);
     mQaRegistry.fill(HIST("hisBkgEM"), piDecand.isBkgEM);
@@ -781,7 +785,6 @@ struct PiDeuteronFemto {
     float DeDCAxyMin = 0.015 + 0.0305 / TMath::Power(piDecand.recoPtDe(), 1.1);
     if (abs(piDecand.dcaxyDe) > DeDCAxyMin || abs(piDecand.dcazDe) > settingCutDeDCAzMin || abs(piDecand.dcaxyPi) > settingCutPiDCAxyMin || abs(piDecand.dcazPi) > settingCutPiDCAzMin)
       return;
-
     fillHistograms(piDecand);
 
     double kstar = computeKstar(piDecand);
