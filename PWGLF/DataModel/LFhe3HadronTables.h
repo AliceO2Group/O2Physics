@@ -75,14 +75,12 @@ DECLARE_SOA_COLUMN(Multiplicity, multiplicity, uint16_t);
 DECLARE_SOA_COLUMN(CentralityFT0C, centFT0C, float);
 DECLARE_SOA_COLUMN(MultiplicityFT0C, multiplicityFT0C, float);
 
-/* Flags: 0 - primary,
-          1 - from Li4,
-          2 - from hypertriton,
-          3 - from other decay,
-          4 - from material
+/* Flags: 0 - both primary,
+          1 - both from Li4,
+          2 - both from hypertriton,
+          3 - mixed pair (a primary and one from Li4/hypertriton/material/other decays)
 */
-DECLARE_SOA_COLUMN(FlagHe3, flagHe3, uint8_t);
-DECLARE_SOA_COLUMN(FlagHad, flagHad, uint8_t);
+DECLARE_SOA_COLUMN(Flags, flags, uint8_t);
 
 } // namespace he3HadronTablesNS
 
@@ -125,8 +123,7 @@ DECLARE_SOA_TABLE(he3HadronTableMC, "AOD", "HE3HADTABLEMC",
                   he3HadronTablesNS::PhiMCHad,
                   he3HadronTablesNS::SignedPtMC,
                   he3HadronTablesNS::MassMC,
-                  he3HadronTablesNS::FlagHe3,
-                  he3HadronTablesNS::FlagHad)
+                  he3HadronTablesNS::Flags)
 DECLARE_SOA_TABLE(he3HadronMult, "AOD", "HE3HADMULT",
                   he3HadronTablesNS::CollisionId,
                   he3HadronTablesNS::ZVertex,
