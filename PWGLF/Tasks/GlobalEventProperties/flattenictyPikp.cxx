@@ -538,6 +538,17 @@ struct FlattenictyPikp {
       flatchrg.add("hPtVsDCAxyAll", "hPtVsDCAxyAll", HistType::kTH2D, {ptAxis, dcaXYAxis});
       flatchrg.add({"ResponseGen", " ; N_{part}; F_{FV0};", {HistType::kTHnSparseD, {multAxis, flatAxis}}});
       flatchrg.add("h1flatencityFV0MCGen", "", HistType::kTH1D, {{102, -0.01, 1.01, "1-flatencityFV0"}});
+
+      // Hash list for efficiency
+      listEfficiency.setObject(new THashList);
+      static_for<0, 1>([&](auto pidSgn) {
+        bookMcHist<pidSgn, o2::track::PID::Pion>();
+        bookMcHist<pidSgn, o2::track::PID::Kaon>();
+        bookMcHist<pidSgn, o2::track::PID::Proton>();
+        initEfficiency<pidSgn, o2::track::PID::Pion>();
+        initEfficiency<pidSgn, o2::track::PID::Kaon>();
+        initEfficiency<pidSgn, o2::track::PID::Proton>();
+      });
     }
 
     if (doprocessMCclosure) {
@@ -573,17 +584,6 @@ struct FlattenictyPikp {
         flatchrg.add({fmt::format(kPtGenRecCollPrimSgnINELF.data(), kSpecies[i]).c_str(), " ; p_{T} (GeV/c)", {HistType::kTH3D, {multAxis, flatAxis, ptAxis}}});
       }
     }
-
-    // Hash list for efficiency
-    listEfficiency.setObject(new THashList);
-    static_for<0, 1>([&](auto pidSgn) {
-      bookMcHist<pidSgn, o2::track::PID::Pion>();
-      bookMcHist<pidSgn, o2::track::PID::Kaon>();
-      bookMcHist<pidSgn, o2::track::PID::Proton>();
-      initEfficiency<pidSgn, o2::track::PID::Pion>();
-      initEfficiency<pidSgn, o2::track::PID::Kaon>();
-      initEfficiency<pidSgn, o2::track::PID::Proton>();
-    });
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -675,7 +675,7 @@ struct FlattenictyPikp {
   void fillNsigma(T const& tracks, const C& collision)
   {
     const float mult = getMult(collision);
-    const float flat = fillFlat<true>(collision);
+    const float flat = fillFlat<false>(collision);
     for (const auto& track : tracks) {
       checkNsigma<id>(track, mult, flat);
     }
@@ -1064,7 +1064,7 @@ struct FlattenictyPikp {
   inline void filldEdxQA(T const& track, C const& collision, const float dEdx)
   {
     const float mult = getMult(collision);
-    const float flat = fillFlat<true>(collision);
+    const float flat = fillFlat<false>(collision);
     // float dEdx = track.tpcSignal();
     if constexpr (fillHist) {
       if (track.tpcInnerParam() >= trkSelOpt.cfgMomMIPMin && track.tpcInnerParam() <= trkSelOpt.cfgMomMIPMax) {
