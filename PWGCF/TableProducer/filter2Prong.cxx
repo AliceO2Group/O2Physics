@@ -115,9 +115,12 @@ struct Filter2Prong {
 
   using HFCandidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
   using HFCandidatesML = soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>;
+  using HFCandidatesMCRecoML = soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec, aod::HfSelD0, aod::HfMlD0>;
 
   template <class T>
   using HasMLProb = decltype(std::declval<T&>().mlProbD0());
+  template <class T>
+  using HasFlagMcMatchRec = decltype(std::declval<T&>().flagMcMatchRec());
 
   using PIDTrack = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta, aod::TracksDCA>;
   using ResoV0s = aod::V0Datas;
@@ -170,6 +173,10 @@ struct Filter2Prong {
         continue;
       if (cfgYMax >= 0.0f && std::abs(hfHelper.yD0(c)) > cfgYMax)
         continue;
+      if constexpr (std::experimental::is_detected<HasFlagMcMatchRec, typename HFCandidatesType::iterator>::value) {
+        if (std::abs(c.flagMcMatchRec()) != o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK)
+          continue;
+      }
 
       if (c.isSelD0() > 0) {
         output2ProngTracks(cfcollisions.begin().globalIndex(),
@@ -213,6 +220,12 @@ struct Filter2Prong {
   }
   PROCESS_SWITCH(Filter2Prong, processData, "Process data D0 candidates", true);
 
+  void processMCRecoML(aod::Collisions::iterator const& col, aod::BCsWithTimestamps const& bcs, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, HFCandidatesMCRecoML const& candidates)
+  {
+    processDataT(col, bcs, cfcollisions, cftracks, candidates);
+  }
+  PROCESS_SWITCH(Filter2Prong, processMCRecoML, "Process data D0 candidates together with reco information and ML", false);
+
   using HFMCTrack = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
   void processMC(aod::McCollisions::iterator const&, aod::CFMcParticleRefs const& cfmcparticles, [[maybe_unused]] HFMCTrack const& mcparticles)
   {
@@ -233,7 +246,7 @@ struct Filter2Prong {
         }
       }
       output2ProngMcParts(prongCFId[0], prongCFId[1],
-                          (mcParticle.pdgCode() >= 0 ? aod::cf2prongtrack::D0ToPiK : aod::cf2prongtrack::D0barToKPi) | ((mcParticle.originMcGen() & RecoDecay::OriginType::Prompt) ? aod::cf2prongmcpart::Prompt : 0));
+                          (mcParticle.pdgCode() >= 0 ? aod::cf2prongtrack::D0ToPiK : aod::cf2prongtrack::D0barToKPi) | ((mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) ? aod::cf2prongmcpart::Prompt : 0));
     }
   }
   PROCESS_SWITCH(Filter2Prong, processMC, "Process MC 2-prong daughters", false);
