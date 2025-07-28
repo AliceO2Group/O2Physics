@@ -78,6 +78,9 @@ struct MeanptFluctuations_QA_QnTable {
   ConfigurableAxis nchAxis{"nchAxis", {5000, 0.5, 5000.5}, ""};
   Configurable<bool> cfgEvSelkNoSameBunchPileup{"cfgEvSelkNoSameBunchPileup", true, "Pileup removal"};
   Configurable<bool> cfgUseGoodITSLayerAllCut{"cfgUseGoodITSLayerAllCut", true, "Remove time interval with dead ITS zone"};
+  Configurable<bool> cfgEvSelkNoITSROFrameBorder{"cfgEvSelkNoITSROFrameBorder", true, "ITSROFrame border event selection cut"};
+  Configurable<bool> cfgEvSelkNoTimeFrameBorder{"cfgEvSelkNoTimeFrameBorder", true, "TimeFrame border event selection cut"};
+  Configurable<int> cfgCentralityEstimator{"cfgCentralityEstimator", 1, "Centrlaity estimatore choice: 1-->FT0C, 2-->FT0A; 3-->FT0M, 4-->FV0A"};
 
   O2_DEFINE_CONFIGURABLE(cfgUse22sEventCut, bool, true, "Use 22s event cut on mult correlations")
 
@@ -93,7 +96,7 @@ struct MeanptFluctuations_QA_QnTable {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // filtering collisions and tracks***********
-  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
+  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFV0As, aod::Mults>>;
   // using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
 
@@ -192,18 +195,35 @@ struct MeanptFluctuations_QA_QnTable {
     if (cfgEvSelkNoSameBunchPileup && !(coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
       return;
     }
+    if (cfgEvSelkNoITSROFrameBorder && !(coll.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+      return;
+    }
+    if (cfgEvSelkNoTimeFrameBorder && !(coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))) {
+      return;
+    }
 
     const auto CentralityFT0C = coll.centFT0C();
     if (cfgUse22sEventCut && !eventSelected(coll, inputTracks.size(), CentralityFT0C))
       return;
 
     histos.fill(HIST("hZvtx_after_sel"), coll.posZ());
-    histos.fill(HIST("hCentrality"), coll.centFT0C());
+
+    double cent = 0.0;
+    if (cfgCentralityEstimator == 1)
+      cent = coll.centFT0C();
+    else if (cfgCentralityEstimator == 2)
+      cent = coll.centFT0A();
+    else if (cfgCentralityEstimator == 3)
+      cent = coll.centFT0M();
+    else if (cfgCentralityEstimator == 4)
+      cent = coll.centFV0A();
+
+    histos.fill(HIST("hCentrality"), cent);
+
     histos.fill(HIST("Hist2D_globalTracks_PVTracks"), coll.multNTracksPV(), inputTracks.size());
     histos.fill(HIST("Hist2D_cent_nch"), inputTracks.size(), CentralityFT0C);
 
     // variables
-    double cent = coll.centFT0C();
     double pT_sum = 0.0;
     double N = 0.0;
 
