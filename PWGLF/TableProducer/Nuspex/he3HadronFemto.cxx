@@ -103,6 +103,14 @@ enum Selections {
   kAll
 };
 
+enum Flags {
+  kPrimary = BIT(0), 
+  kFromLi4 = BIT(1),
+  kFromHypertriton = BIT(2),
+  kFromOtherDecay = BIT(3),
+  kFromMaterial = BIT(4)
+};
+
 } // namespace
 
 struct He3HadCandidate {
