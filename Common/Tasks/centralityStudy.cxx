@@ -273,13 +273,13 @@ struct centralityStudy {
       return;
     }
 
+    mRunNumber = collision.multRunNumber();
     LOGF(info, "Setting up for run: %i", mRunNumber);
 
     // only get object when switching runs
     o2::parameters::GRPECSObject* grpo = ccdb->getForRun<o2::parameters::GRPECSObject>(pathGRPECSObject, mRunNumber);
     startOfRunTimestamp = grpo->getTimeStart();
-
-    mRunNumber = collision.multRunNumber();
+    
     histPath = std::format("Run_{}/", mRunNumber);
 
     if (doprocessCollisions || doprocessCollisionsWithCentrality) {
