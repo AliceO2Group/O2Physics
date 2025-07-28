@@ -209,16 +209,17 @@ struct DiphotonHadronMPC {
     Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", +0.8, "max eta for ref. track"};
     Configurable<float> cfg_min_phi_track{"cfg_min_phi_track", 0.0, "min phi for ref. track"};
     Configurable<float> cfg_max_phi_track{"cfg_max_phi_track", 6.3, "max phi for ref. track"};
-    Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 5, "min ncluster its"};
-    Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
-    Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 70, "min ncrossed rows"};
-    Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 0.7, "max fraction of shared clusters in TPC"};
-    Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
-    Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 36.0, "max chi2/NclsITS"};
-    Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
-    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
-    Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", true, "flag to require ITS ib any hits"};
-    Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", false, "flag to require ITS ib 1st hit"};
+    Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 0.5, "max dca XY for single track in cm"};
+    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 0.5, "max dca Z for single track in cm"};
+    Configurable<uint16_t> cfg_track_bits{"cfg_track_bits", 645, "required track bits"}; // default:645, loose:0, tight:778
+    // Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 5, "min ncluster its"};
+    // Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
+    // Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 70, "min ncrossed rows"};
+    // Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 0.7, "max fraction of shared clusters in TPC"};
+    // Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
+    // Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 36.0, "max chi2/NclsITS"};
+    // Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", true, "flag to require ITS ib any hits"};
+    // Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", false, "flag to require ITS ib 1st hit"};
   } trackcuts;
 
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
@@ -478,17 +479,18 @@ struct DiphotonHadronMPC {
     fEMTrackCut.SetTrackPtRange(trackcuts.cfg_min_pt_track, trackcuts.cfg_max_pt_track);
     fEMTrackCut.SetTrackEtaRange(trackcuts.cfg_min_eta_track, trackcuts.cfg_max_eta_track);
     fEMTrackCut.SetTrackPhiRange(trackcuts.cfg_min_phi_track, trackcuts.cfg_max_phi_track);
-    fEMTrackCut.SetMinNClustersTPC(trackcuts.cfg_min_ncluster_tpc);
-    fEMTrackCut.SetMinNCrossedRowsTPC(trackcuts.cfg_min_ncrossedrows);
-    fEMTrackCut.SetMinNCrossedRowsOverFindableClustersTPC(0.8);
-    fEMTrackCut.SetMaxFracSharedClustersTPC(trackcuts.cfg_max_frac_shared_clusters_tpc);
-    fEMTrackCut.SetChi2PerClusterTPC(0.0, trackcuts.cfg_max_chi2tpc);
-    fEMTrackCut.SetChi2PerClusterITS(0.0, trackcuts.cfg_max_chi2its);
-    fEMTrackCut.SetNClustersITS(trackcuts.cfg_min_ncluster_its, 7);
     fEMTrackCut.SetTrackMaxDcaXY(trackcuts.cfg_max_dcaxy);
     fEMTrackCut.SetTrackMaxDcaZ(trackcuts.cfg_max_dcaz);
-    fEMTrackCut.RequireITSibAny(trackcuts.cfg_require_itsib_any);
-    fEMTrackCut.RequireITSib1st(trackcuts.cfg_require_itsib_1st);
+    fEMTrackCut.SetTrackBit(trackcuts.cfg_track_bits);
+    // fEMTrackCut.SetMinNClustersTPC(trackcuts.cfg_min_ncluster_tpc);
+    // fEMTrackCut.SetMinNCrossedRowsTPC(trackcuts.cfg_min_ncrossedrows);
+    // fEMTrackCut.SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+    // fEMTrackCut.SetMaxFracSharedClustersTPC(trackcuts.cfg_max_frac_shared_clusters_tpc);
+    // fEMTrackCut.SetChi2PerClusterTPC(0.0, trackcuts.cfg_max_chi2tpc);
+    // fEMTrackCut.SetChi2PerClusterITS(0.0, trackcuts.cfg_max_chi2its);
+    // fEMTrackCut.SetNClustersITS(trackcuts.cfg_min_ncluster_its, 7);
+    // fEMTrackCut.RequireITSibAny(trackcuts.cfg_require_itsib_any);
+    // fEMTrackCut.RequireITSib1st(trackcuts.cfg_require_itsib_1st);
   }
 
   SliceCache cache;

@@ -42,7 +42,8 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 using namespace o2::pwgem::photonmeson;
 
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::EMEventsNgPCM>;
+// using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::EMEventsNgPCM>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>;
 using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
 
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
@@ -71,7 +72,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
   Configurable<int> min_ncluster_its{"min_ncluster_its", 4, "min ncluster its"};
   Configurable<int> min_ncluster_itsib{"min_ncluster_itsib", 1, "min ncluster itsib"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
-  Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
+  Configurable<float> maxchi2its{"maxchi2its", 36.0, "max. chi2/NclsITS"};
   Configurable<float> minpt{"minpt", 0.05, "min pt for ITS-TPC track"};
   Configurable<float> maxeta{"maxeta", 2.0, "max eta acceptance"};
   Configurable<float> dca_xy_max{"dca_xy_max", 1, "max DCAxy in cm"};
@@ -444,9 +445,9 @@ struct skimmerPrimaryElectronFromDalitzEE {
         continue;
       }
 
-      if (collision.ngpcm() < 1) {
-        continue;
-      }
+      // if (collision.ngpcm() < 1) {
+      //   continue;
+      // }
 
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
@@ -474,9 +475,9 @@ struct skimmerPrimaryElectronFromDalitzEE {
         continue;
       }
 
-      if (collision.ngpcm() < 1) {
-        continue;
-      }
+      // if (collision.ngpcm() < 1) {
+      //   continue;
+      // }
 
       if (collision.swtaliastmp_raw() == 0) {
         continue;
@@ -515,9 +516,9 @@ struct skimmerPrimaryElectronFromDalitzEE {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
-      if (collision.ngpcm() < 1) {
-        continue;
-      }
+      // if (collision.ngpcm() < 1) {
+      //   continue;
+      // }
 
       auto posTracks_per_coll = posTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
