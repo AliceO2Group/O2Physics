@@ -545,7 +545,7 @@ class pidTPCModule
     // faster counting
     for (const auto& track : tracks) {
       if (track.hasTPC()) {
-        if(track.collisionId() > -1){
+        if (track.collisionId() > -1) {
           pidmults[track.collisionId()]++;
         }
         totalTPCtracks++;
