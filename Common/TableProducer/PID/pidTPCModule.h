@@ -544,8 +544,8 @@ class pidTPCModule
 
     // faster counting
     for (const auto& track : tracks) {
-      if(track.hasTPC()){ 
-        if(track.collisionId()>-1){
+      if (track.hasTPC()) {
+        if (track.collisionId() > -1) {
           pidmults[track.collisionId()]++;
         }
         totalTPCtracks++;
@@ -726,7 +726,7 @@ class pidTPCModule
       }
 
       int multTPCtoUse = 1;
-      if(trk.has_collision()){
+      if (trk.has_collision()) {
         multTPCtoUse = pidmults[trk.collisionId()];
       }
       auto makePidTablesDefault = [&trk, &tpcSignalToEvaluatePID, &cols, &multTPCtoUse, &network_prediction, &count_tracks, &tracksForNet_size, this](const int flagFull, auto& tableFull, const int flagTiny, auto& tableTiny, const o2::track::PID::ID pid) {
