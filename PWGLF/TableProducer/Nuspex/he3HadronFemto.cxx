@@ -86,15 +86,11 @@ namespace
 constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 
-// constexpr float he3Mass = o2::constants::physics::MassHelium3;
-// constexpr float protonMass = o2::constants::physics::MassProton;
-// constexpr float pionchargedMass = o2::constants::physics::MassPiPlus;
-constexpr int Li4PDG = 1000030040;
+constexpr int Li4PDG = o2::constants::physics::Pdg::kLithium4;
 constexpr int ProtonPDG = PDG_t::kProton;
 constexpr int PionPDG = PDG_t::kPiPlus;
 constexpr int He3PDG = o2::constants::physics::Pdg::kHelium3;
 constexpr float CommonInite = 0.0f;
-// constexpr int pichargedPDG = 211;
 
 enum Selections {
   kNoCuts = 0,
