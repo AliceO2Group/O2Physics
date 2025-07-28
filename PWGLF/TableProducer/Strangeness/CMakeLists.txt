@@ -91,6 +91,11 @@ o2physics_add_dpl_workflow(lambdakzerospawner
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(sigmaminus-task
+    SOURCES sigmaminustask.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(strange-tree-creator
     SOURCES strangeTreeCreator.cxx
     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
