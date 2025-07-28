@@ -92,8 +92,8 @@ struct he3LambdaAnalysis {
   o2::vertexing::DCAFitterN<2> fitter;
 
   Produces<o2::aod::LFEvents> lfHe3V0Collision;
-  Produces<o2::aod::LFHe3> lfHe3;
-  Produces<o2::aod::LFLambda> lfLambda;
+  Produces<o2::aod::LFHe3_001> lfHe3;
+  Produces<o2::aod::LFLambda_001> lfLambda;
 
   // Configurables for event selection
   struct : ConfigurableGroup {
@@ -280,6 +280,7 @@ struct he3LambdaAnalysis {
       candidate.dcaXY = dcaInfo[0];
       candidate.dcaZ = dcaInfo[1];
       candidate.tpcNClsFound = track.tpcNClsFound();
+      candidate.tpcNClsPID = track.tpcNClsPID();
       candidate.itsNCls = track.itsNCls();
       candidate.itsClusterSizes = track.itsClusterSizes();
       candidate.sign = track.sign() > 0 ? 1 : -1;
@@ -376,11 +377,11 @@ struct he3LambdaAnalysis {
     lfHe3V0Collision(collision.posZ(), collision.centFT0C());
     for (const auto& he3 : he3Candidates) {
       lfHe3(lfHe3V0Collision.lastIndex(), he3.momentum.Pt(), he3.momentum.Eta(), he3.momentum.Phi(),
-            he3.dcaXY, he3.dcaZ, he3.tpcNClsFound, he3.itsClusterSizes, he3.nSigmaTPC, he3.sign);
+            he3.dcaXY, he3.dcaZ, he3.tpcNClsFound, he3.tpcNClsPID, he3.itsClusterSizes, he3.nSigmaTPC, he3.sign);
     }
     for (const auto& lambda : lambdaCandidates) {
       lfLambda(lfHe3V0Collision.lastIndex(), lambda.momentum.Pt(), lambda.momentum.Eta(), lambda.momentum.Phi(),
-               lambda.mass, lambda.cosPA, lambda.dcaV0Daughters, lambda.dcaProtonToPV, lambda.dcaPionToPV, lambda.v0Radius, lambda.sign);
+               lambda.mass, lambda.cosPA, lambda.dcaV0Daughters, lambda.dcaProtonToPV, lambda.dcaPionToPV, lambda.v0Radius, lambda.protonNSigmaTPC, lambda.pionNSigmaTPC, lambda.sign);
     }
 
     for (const auto& he3 : he3Candidates) {
@@ -391,12 +392,6 @@ struct he3LambdaAnalysis {
     }
   }
   PROCESS_SWITCH(he3LambdaAnalysis, processData, "Process data", true);
-
-  // void processDerived(o2::aod::LFEvents::iterator const& collision, o2::aod::LFHe3 const& he3s, o2::aod::LFLambda const& lambdas)
-  // {
-  //
-  // }
-  // PROCESS_SWITCH(he3LambdaAnalysis, processDerived, "Process derived", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
