@@ -544,8 +544,8 @@ class pidTPCModule
 
     // faster counting
     for (const auto& track : tracks) {
-      if (track.hasTPC()) {
-        if (track.collisionId() > -1) {
+      if(track.hasTPC()){ 
+        if(track.collisionId()>-1){
           pidmults[track.collisionId()]++;
         }
         totalTPCtracks++;
@@ -725,8 +725,12 @@ class pidTPCModule
           products.tableTuneOnData(mcTunedTPCSignal);
       }
 
-      auto makePidTablesDefault = [&trk, &tpcSignalToEvaluatePID, &cols, &pidmults, &network_prediction, &count_tracks, &tracksForNet_size, this](const int flagFull, auto& tableFull, const int flagTiny, auto& tableTiny, const o2::track::PID::ID pid) {
-        makePidTables(flagFull, tableFull, flagTiny, tableTiny, pid, tpcSignalToEvaluatePID, trk, cols, pidmults[trk.collisionId()], network_prediction, count_tracks, tracksForNet_size);
+      int multTPCtoUse = 1;
+      if(trk.has_collision()){
+        multTPCtoUse = pidmults[trk.collisionId()];
+      }
+      auto makePidTablesDefault = [&trk, &tpcSignalToEvaluatePID, &cols, &multTPCtoUse, &network_prediction, &count_tracks, &tracksForNet_size, this](const int flagFull, auto& tableFull, const int flagTiny, auto& tableTiny, const o2::track::PID::ID pid) {
+        makePidTables(flagFull, tableFull, flagTiny, tableTiny, pid, tpcSignalToEvaluatePID, trk, cols, multTPCtoUse, network_prediction, count_tracks, tracksForNet_size);
       };
 
       makePidTablesDefault(pidTPCopts.pidFullEl, products.tablePIDFullEl, pidTPCopts.pidTinyEl, products.tablePIDTinyEl, o2::track::PID::Electron);

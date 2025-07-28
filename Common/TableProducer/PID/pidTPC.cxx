@@ -457,7 +457,7 @@ struct tpcPid {
         LOGF(fatal, "Network output-dimensions incompatible!");
       }
     } else {
-      nSigma = response->GetNumberOfSigmaMCTuned(collisions.iteratorAt(trk.collisionId()), trk, pid, tpcSignal);
+      nSigma = response->GetNumberOfSigmaMCTuned(collisions.iteratorAt(trk.collisionId()), 1, trk, pid, tpcSignal);
     }
     if (flagFull)
       tableFull(expSigma, nSigma);
