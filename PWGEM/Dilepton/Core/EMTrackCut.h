@@ -47,14 +47,14 @@ class EMTrackCut : public TNamed
     kTrackPhiRange,
     kDCAxy,
     kDCAz,
-    kTPCNCls,
-    kTPCCrossedRows,
-    kTPCCrossedRowsOverNCls,
-    kTPCFracSharedClusters,
-    kTPCChi2NDF,
-    kITSNCls,
-    kITSChi2NDF,
-    kTrackBits,
+    // kTPCNCls,
+    // kTPCCrossedRows,
+    // kTPCCrossedRowsOverNCls,
+    // kTPCFracSharedClusters,
+    // kTPCChi2NDF,
+    // kITSNCls,
+    // kITSChi2NDF,
+    kTrackBit,
     kNCuts
   };
 
@@ -81,7 +81,7 @@ class EMTrackCut : public TNamed
     if (!IsSelectedTrack(track, EMTrackCuts::kDCAz)) {
       return false;
     }
-    if (!IsSelectedTrack(track, EMTrackCuts::kTrackBits)) {
+    if (!IsSelectedTrack(track, EMTrackCuts::kTrackBit)) {
       return false;
     }
 
@@ -146,29 +146,36 @@ class EMTrackCut : public TNamed
       case EMTrackCuts::kDCAz:
         return std::fabs(track.dcaZ()) < mMaxDcaZ;
 
-      case EMTrackCuts::kTrackBits:
-        return true;
+      case EMTrackCuts::kTrackBit: {
+        // for (int i = 0; i < 10; i++) {
+        //   if ((mTrackBit & (1 << i)) > 0 && !((track.trackBit() & (1 << i)) > 0)) {
+        //     return false;
+        //   }
+        // }
+        // return true;
+        return (track.trackBit() & mTrackBit) >= mTrackBit;
+      }
 
-        //      case EMTrackCuts::kTPCNCls:
-        //        return track.tpcNClsFound() >= mMinNClustersTPC;
-        //
-        //      case EMTrackCuts::kTPCCrossedRows:
-        //        return track.tpcNClsCrossedRows() >= mMinNCrossedRowsTPC;
-        //
-        //      case EMTrackCuts::kTPCCrossedRowsOverNCls:
-        //        return track.tpcCrossedRowsOverFindableCls() > mMinNCrossedRowsOverFindableClustersTPC;
-        //
-        //      case EMTrackCuts::kTPCFracSharedClusters:
-        //        return track.tpcFractionSharedCls() < mMaxFracSharedClustersTPC;
-        //
-        //      case EMTrackCuts::kTPCChi2NDF:
-        //        return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
-        //
-        //      case EMTrackCuts::kITSNCls:
-        //        return mMinNClustersITS <= track.itsNCls() && track.itsNCls() <= mMaxNClustersITS;
-        //
-        //      case EMTrackCuts::kITSChi2NDF:
-        //        return mMinChi2PerClusterITS < track.itsChi2NCl() && track.itsChi2NCl() < mMaxChi2PerClusterITS;
+        // case EMTrackCuts::kTPCNCls:
+        //   return track.tpcNClsFound() >= mMinNClustersTPC;
+
+        // case EMTrackCuts::kTPCCrossedRows:
+        //   return track.tpcNClsCrossedRows() >= mMinNCrossedRowsTPC;
+
+        // case EMTrackCuts::kTPCCrossedRowsOverNCls:
+        //   return track.tpcCrossedRowsOverFindableCls() > mMinNCrossedRowsOverFindableClustersTPC;
+
+        // case EMTrackCuts::kTPCFracSharedClusters:
+        //   return track.tpcFractionSharedCls() < mMaxFracSharedClustersTPC;
+
+        // case EMTrackCuts::kTPCChi2NDF:
+        //   return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
+
+        // case EMTrackCuts::kITSNCls:
+        //   return mMinNClustersITS <= track.itsNCls() && track.itsNCls() <= mMaxNClustersITS;
+
+        // case EMTrackCuts::kITSChi2NDF:
+        //   return mMinChi2PerClusterITS < track.itsChi2NCl() && track.itsChi2NCl() < mMaxChi2PerClusterITS;
 
       default:
         return false;
@@ -193,7 +200,7 @@ class EMTrackCut : public TNamed
   void SetTrackMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
   void RequireITSibAny(bool flag);
   void RequireITSib1st(bool flag);
-  void SetTrackBits(uint16_t bits);
+  void SetTrackBit(uint16_t bits);
 
  private:
   static const std::pair<int8_t, std::set<uint8_t>> its_ib_any_Requirement;
@@ -214,7 +221,7 @@ class EMTrackCut : public TNamed
   float mMinChi2PerClusterITS{0.f}, mMaxChi2PerClusterITS{1e10f}; // max its fit chi2 per ITS cluster
   bool mRequireITSibAny{true};
   bool mRequireITSib1st{false};
-  uint16_t mTrackBits{0};
+  uint16_t mTrackBit{0};
 
   float mMaxDcaXY{1.0f};                        // max dca in xy plane
   float mMaxDcaZ{1.0f};                         // max dca in z direction
