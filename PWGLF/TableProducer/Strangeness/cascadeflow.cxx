@@ -1244,7 +1244,7 @@ struct cascadeFlow {
       int counter = 0;
       IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
       histos.fill(HIST("hCascade"), counter);
-      
+
       // ML selections
       bool isSelectedCasc[nParticles]{false, false};
 
@@ -1506,11 +1506,13 @@ struct cascadeFlow {
       int counterALambda = 0;
       bool isLambdaCandidate = 0;
       bool isALambdaCandidate = 0;
-      if (isLambdaAccepted(negExtra, posExtra, counterLambda)) isLambdaCandidate = 1;
-      if (isAntiLambdaAccepted(negExtra, posExtra, counterALambda)) isALambdaCandidate = 1;
+      if (isLambdaAccepted(negExtra, posExtra, counterLambda))
+        isLambdaCandidate = 1;
+      if (isAntiLambdaAccepted(negExtra, posExtra, counterALambda))
+        isALambdaCandidate = 1;
       histos.fill(HIST("hLambdaDauSel"), counterLambda);
       histos.fill(HIST("hALambdaDauSel"), counterALambda);
-      
+
       // pt cut
       if (v0.pt() < V0Configs.MinPtV0 || v0.pt() > V0Configs.MaxPtV0) {
         continue;
@@ -1527,26 +1529,28 @@ struct cascadeFlow {
         isSelectedV0[1] = true;
 
       int chargeIndex = -1;
-      if (isSelectedV0[0] && !isSelectedV0[1]) { //Lambdas
-	histos.fill(HIST("hLambdaCandidate"), 0);
-	chargeIndex = 0;
+      if (isSelectedV0[0] && !isSelectedV0[1]) { // Lambdas
+        histos.fill(HIST("hLambdaCandidate"), 0);
+        chargeIndex = 0;
       }
-      if (isSelectedV0[1] && !isSelectedV0[0]) { //AntiLambdas
-	histos.fill(HIST("hLambdaCandidate"), 1);
-	chargeIndex = 1;
+      if (isSelectedV0[1] && !isSelectedV0[0]) { // AntiLambdas
+        histos.fill(HIST("hLambdaCandidate"), 1);
+        chargeIndex = 1;
       }
       if (isSelectedV0[0] && isSelectedV0[1]) {
-	histos.fill(HIST("hLambdaCandidate"), 2);
-	if (v0.mLambda() > V0Configs.MinMassLambda && v0.mLambda() < V0Configs.MaxMassLambda && v0.mAntiLambda() > V0Configs.MinMassLambda && v0.mAntiLambda() < V0Configs.MaxMassLambda) {
-	  histos.fill(HIST("hLambdaCandidate"), 3);
-	  continue; //in case of ambiguity between Lambda and AntiLambda, I skip the particle
-	}
-	if (v0.mLambda() > V0Configs.MinMassLambda && v0.mLambda() < V0Configs.MaxMassLambda)  chargeIndex = 0;
-	else  if (v0.mAntiLambda() > V0Configs.MinMassLambda && v0.mAntiLambda() < V0Configs.MaxMassLambda) chargeIndex = 1;
-	else {
-	  histos.fill(HIST("hLambdaCandidate"), 4);
-	  continue;  //in case of ambiguity between Lambda and AntiLambda, I skip the particle
-	}
+        histos.fill(HIST("hLambdaCandidate"), 2);
+        if (v0.mLambda() > V0Configs.MinMassLambda && v0.mLambda() < V0Configs.MaxMassLambda && v0.mAntiLambda() > V0Configs.MinMassLambda && v0.mAntiLambda() < V0Configs.MaxMassLambda) {
+          histos.fill(HIST("hLambdaCandidate"), 3);
+          continue; // in case of ambiguity between Lambda and AntiLambda, I skip the particle
+        }
+        if (v0.mLambda() > V0Configs.MinMassLambda && v0.mLambda() < V0Configs.MaxMassLambda)
+          chargeIndex = 0;
+        else if (v0.mAntiLambda() > V0Configs.MinMassLambda && v0.mAntiLambda() < V0Configs.MaxMassLambda)
+          chargeIndex = 1;
+        else {
+          histos.fill(HIST("hLambdaCandidate"), 4);
+          continue; // in case of ambiguity between Lambda and AntiLambda, I skip the particle
+        }
       }
       if (!isSelectedV0[0] && !isSelectedV0[1])
         continue;
@@ -1583,14 +1587,13 @@ struct cascadeFlow {
       double cos2ThetaLambda = 0;
       double cosThetaLambda = 0;
       if (chargeIndex == 0) {
-	pzs2Lambda = cosThetaStarProton[0] * std::sin(2 * (v0.phi() - psiT0C)) / lambdav2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda;
-	cos2ThetaLambda = cosThetaStarProton[0] * cosThetaStarProton[0];
-	cosThetaLambda = cosThetaStarProton[0] / cascadev2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda;
-      }
-      else {
-	pzs2Lambda = cosThetaStarProton[1] * std::sin(2 * (v0.phi() - psiT0C)) / lambdav2::AlphaLambda[1] / meanCos2ThetaProtonFromLambda;
-	cos2ThetaLambda = cosThetaStarProton[1] * cosThetaStarProton[1];
-	cosThetaLambda = cosThetaStarProton[1] / cascadev2::AlphaLambda[1] / meanCos2ThetaProtonFromLambda;
+        pzs2Lambda = cosThetaStarProton[0] * std::sin(2 * (v0.phi() - psiT0C)) / lambdav2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda;
+        cos2ThetaLambda = cosThetaStarProton[0] * cosThetaStarProton[0];
+        cosThetaLambda = cosThetaStarProton[0] / cascadev2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda;
+      } else {
+        pzs2Lambda = cosThetaStarProton[1] * std::sin(2 * (v0.phi() - psiT0C)) / lambdav2::AlphaLambda[1] / meanCos2ThetaProtonFromLambda;
+        cos2ThetaLambda = cosThetaStarProton[1] * cosThetaStarProton[1];
+        cosThetaLambda = cosThetaStarProton[1] / cascadev2::AlphaLambda[1] / meanCos2ThetaProtonFromLambda;
       }
 
       histos.fill(HIST("hv2CEPvsFT0C"), coll.centFT0C(), v2CEP);
@@ -1599,19 +1602,19 @@ struct cascadeFlow {
       histos.fill(HIST("hlambdaminuspsiT0C"), lambdaminuspsiT0C);
 
       if (fillingConfigs.isFillTHNLambda) {
-	if (fillingConfigs.isFillTHN_V2)
-	  histos.get<THn>(HIST("hLambdaV2"))->Fill(coll.centFT0C(), chargeIndex, v0.pt(), v0.mLambda(), v2CEP);
-	if (fillingConfigs.isFillTHN_Pz){
-	  histos.get<THn>(HIST("hLambdaPzs2"))->Fill(coll.centFT0C(), chargeIndex, v0.pt(), v0.mLambda(), pzs2Lambda);
-	}
-	if (fillingConfigs.isFillTHN_Acc)
-	  histos.get<THn>(HIST("hLambdaCos2Theta"))->Fill(coll.centFT0C(), chargeIndex, v0.eta(), v0.pt(), v0.mLambda(), cos2ThetaLambda);
+        if (fillingConfigs.isFillTHN_V2)
+          histos.get<THn>(HIST("hLambdaV2"))->Fill(coll.centFT0C(), chargeIndex, v0.pt(), v0.mLambda(), v2CEP);
+        if (fillingConfigs.isFillTHN_Pz) {
+          histos.get<THn>(HIST("hLambdaPzs2"))->Fill(coll.centFT0C(), chargeIndex, v0.pt(), v0.mLambda(), pzs2Lambda);
+        }
+        if (fillingConfigs.isFillTHN_Acc)
+          histos.get<THn>(HIST("hLambdaCos2Theta"))->Fill(coll.centFT0C(), chargeIndex, v0.eta(), v0.pt(), v0.mLambda(), cos2ThetaLambda);
       }
       if (fillingConfigs.isFillTHNLambda_PzVsPsi) {
-	if (fillingConfigs.isFillTHN_Pz)
-	  histos.get<THn>(HIST("hLambdaPzVsPsi"))->Fill(coll.centFT0C(), chargeIndex, v0.pt(), v0.mLambda(), cosThetaLambda, 2 * lambdaminuspsiT0C);
-	if (fillingConfigs.isFillTHN_Acc)
-	  histos.get<THn>(HIST("hLambdaCos2ThetaVsPsi"))->Fill(coll.centFT0C(), chargeIndex, v0.eta(), v0.pt(), v0.mLambda(), cos2ThetaLambda, 2 * lambdaminuspsiT0C);
+        if (fillingConfigs.isFillTHN_Pz)
+          histos.get<THn>(HIST("hLambdaPzVsPsi"))->Fill(coll.centFT0C(), chargeIndex, v0.pt(), v0.mLambda(), cosThetaLambda, 2 * lambdaminuspsiT0C);
+        if (fillingConfigs.isFillTHN_Acc)
+          histos.get<THn>(HIST("hLambdaCos2ThetaVsPsi"))->Fill(coll.centFT0C(), chargeIndex, v0.eta(), v0.pt(), v0.mLambda(), cos2ThetaLambda, 2 * lambdaminuspsiT0C);
       }
     }
   }
@@ -1681,7 +1684,7 @@ struct cascadeFlow {
       int counter = 0;
       IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
       histos.fill(HIST("hCascade"), counter);
-      
+
       // ML selections
       bool isSelectedCasc[nParticles]{false, false};
 
