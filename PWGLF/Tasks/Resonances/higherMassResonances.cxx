@@ -43,7 +43,6 @@
 #include <TH1F.h>
 #include <TH2F.h>
 #include <THn.h>
-#include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
 #include <TPDGCode.h>
@@ -143,7 +142,7 @@ struct HigherMassResonances {
     Configurable<bool> cTVXEvsel{"cTVXEvsel", true, "Triggger selection"};
     Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", false, "avoid split track in MC"};
     Configurable<int> selectMCparticles{"selectMCparticles", 1, "0: f0(1710), 1: f2(1525), 2: a2(1320), 3: f0(1370), 4: f0(1500)"};
-    Configurable<bool> apply_rapidityMC{"apply_rapidityMC", true, "Apply rapidity cut on generated and reconstructed particles"};
+    Configurable<bool> applyRapidityMC{"applyRapidityMC", true, "Apply rapidity cut on generated and reconstructed particles"};
     std::vector<int> pdgCodes = {10331, 335, 115, 10221, 9030221};
 
     // output THnSparses
@@ -182,13 +181,13 @@ struct HigherMassResonances {
   ROOT::Math::PxPyPzMVector daughter1, daughter2, daughterRot, daughterRotCM, mother, motherRot, fourVecDauCM, fourVecDauCM1;
   ROOT::Math::PxPyPzEVector mother1;
   ROOT::Math::XYZVector randomVec, beamVec, normalVec;
-  ROOT::Math::XYZVectorF v1_CM, zaxis_HE, yaxis_HE, xaxis_HE;
+  ROOT::Math::XYZVectorF v1CM, zaxisHE, yaxisHE, xaxisHE;
   // ROOT::Math::XYZVector threeVecDauCM, helicityVec, randomVec, beamVec, normalVec;
   ROOT::Math::XYZVector zBeam;                                        // ẑ: beam direction in lab frame
-  double BeamMomentum = std::sqrt(13600 * 13600 / 4 - 0.938 * 0.938); // GeV
-  ROOT::Math::PxPyPzEVector Beam1{0., 0., -BeamMomentum, 13600. / 2.};
-  ROOT::Math::PxPyPzEVector Beam2{0., 0., BeamMomentum, 13600. / 2.};
-  ROOT::Math::XYZVectorF Beam1_CM, Beam2_CM;
+  double beamMomentum = std::sqrt(13600 * 13600 / 4 - 0.938 * 0.938); // GeV
+  ROOT::Math::PxPyPzEVector beam1{0., 0., -beamMomentum, 13600. / 2.};
+  ROOT::Math::PxPyPzEVector beam2{0., 0., beamMomentum, 13600. / 2.};
+  ROOT::Math::XYZVectorF beam1CM, beam2CM;
 
   // const double massK0s = o2::constants::physics::MassK0Short;
   bool isMix = false;
@@ -615,8 +614,8 @@ struct HigherMassResonances {
     fourVecDauCM = boost(daughter1);             // boost the frame of daughter to the center of mass frame
     // threeVecDauCM = fourVecDauCM.Vect();         // get the 3 vector of daughter in the frame of mother
 
-    Beam1_CM = ROOT::Math::XYZVectorF((boost(Beam1).Vect()).Unit());
-    Beam2_CM = ROOT::Math::XYZVectorF((boost(Beam2).Vect()).Unit());
+    beam1CM = ROOT::Math::XYZVectorF((boost(beam1).Vect()).Unit());
+    beam2CM = ROOT::Math::XYZVectorF((boost(beam2).Vect()).Unit());
 
     // define y = zBeam x z: Normal to the production plane
     // ẑ: mother direction in lab, boosted into mother's rest frame
@@ -634,22 +633,22 @@ struct HigherMassResonances {
     // auto p_proj_y = threeVecDauCM.Dot(y_axis);
 
     // // Calculate φ in [-π, π]
-    // auto angle_phi = std::atan2(p_proj_y, p_proj_x); // φ in radians
+    // auto anglePhi = std::atan2(p_proj_y, p_proj_x); // φ in radians
 
-    v1_CM = ROOT::Math::XYZVectorF(boost(daughter1).Vect()).Unit();
+    v1CM = ROOT::Math::XYZVectorF(boost(daughter1).Vect()).Unit();
     // ROOT::Math::XYZVectorF v2_CM{(boost(daughter1).Vect()).Unit()};
     // using positive sign convention for the first track
-    // ROOT::Math::XYZVectorF v_CM = (t1.sign() > 0 ? v1_CM : v2_CM); // here selected decay daughter momentum is intested. here you can choose one decay daughter no need to check both case as it is neutral particle for our case
+    // ROOT::Math::XYZVectorF v_CM = (t1.sign() > 0 ? v1CM : v2_CM); // here selected decay daughter momentum is intested. here you can choose one decay daughter no need to check both case as it is neutral particle for our case
     // Helicity frame
-    zaxis_HE = ROOT::Math::XYZVectorF(mother.Vect()).Unit();
-    yaxis_HE = ROOT::Math::XYZVectorF(Beam1_CM.Cross(Beam2_CM)).Unit();
-    xaxis_HE = ROOT::Math::XYZVectorF(yaxis_HE.Cross(zaxis_HE)).Unit();
+    zaxisHE = ROOT::Math::XYZVectorF(mother.Vect()).Unit();
+    yaxisHE = ROOT::Math::XYZVectorF(beam1CM.Cross(beam2CM)).Unit();
+    xaxisHE = ROOT::Math::XYZVectorF(yaxisHE.Cross(zaxisHE)).Unit();
 
-    // CosThetaHE = zaxis_HE.Dot(v_CM);
+    // CosThetaHE = zaxisHE.Dot(v_CM);
 
-    auto angle_phi = TMath::ATan2(yaxis_HE.Dot(v1_CM), xaxis_HE.Dot(v1_CM));
-    if (angle_phi < 0) {
-      angle_phi += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
+    auto anglePhi = std::atan2(yaxisHE.Dot(v1CM), xaxisHE.Dot(v1CM));
+    if (anglePhi < 0) {
+      anglePhi += 2 * o2::constants::math::PI; // ensure phi is in [0, 2pi]
     }
 
     // if (std::abs(mother.Rapidity()) < 0.5) {
@@ -659,7 +658,7 @@ struct HigherMassResonances {
       auto cosThetaStarHelicity = mother.Vect().Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(mother.Vect().Mag2()));
       if (!isMix) {
         if (std::abs(mother.Rapidity()) < 0.5) {
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, mother.Pt(), mother.M(), cosThetaStarHelicity, angle_phi);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, mother.Pt(), mother.M(), cosThetaStarHelicity, anglePhi);
         }
 
         for (int i = 0; i < config.cRotations; i++) {
@@ -674,11 +673,11 @@ struct HigherMassResonances {
 
           auto cosThetaStarHelicityRot = motherRot.Vect().Dot(daughterRotCM.Vect()) / (std::sqrt(daughterRotCM.Vect().Mag2()) * std::sqrt(motherRot.Vect().Mag2()));
           if (motherRot.Rapidity() < 0.5)
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarHelicityRot, angle_phi);
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarHelicityRot, anglePhi);
         }
       } else {
         if (std::abs(mother.Rapidity()) < 0.5) {
-          hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), cosThetaStarHelicity, angle_phi);
+          hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), cosThetaStarHelicity, anglePhi);
         }
       }
     } else if (config.activateTHnSparseCosThStarProduction) {
@@ -686,18 +685,18 @@ struct HigherMassResonances {
       auto cosThetaStarProduction = normalVec.Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(normalVec.Mag2()));
       if (!isMix) {
         if (std::abs(mother.Rapidity()) < 0.5) {
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, mother.Pt(), mother.M(), cosThetaStarProduction, angle_phi);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, mother.Pt(), mother.M(), cosThetaStarProduction, anglePhi);
         }
         for (int i = 0; i < config.cRotations; i++) {
           theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
           motherRot = ROOT::Math::PxPyPzMVector(mother.Px() * std::cos(theta2) - mother.Py() * std::sin(theta2), mother.Px() * std::sin(theta2) + mother.Py() * std::cos(theta2), mother.Pz(), mother.M());
           if (std::abs(motherRot.Rapidity()) < 0.5) {
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarProduction, angle_phi);
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarProduction, anglePhi);
           }
         }
       } else {
         if (std::abs(mother.Rapidity()) < 0.5) {
-          hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), cosThetaStarProduction, angle_phi);
+          hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), cosThetaStarProduction, anglePhi);
         }
       }
     } else if (config.activateTHnSparseCosThStarBeam) {
@@ -705,18 +704,18 @@ struct HigherMassResonances {
       auto cosThetaStarBeam = beamVec.Dot(fourVecDauCM.Vect()) / std::sqrt(fourVecDauCM.Vect().Mag2());
       if (!isMix) {
         if (std::abs(mother.Rapidity()) < 0.5) {
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, mother.Pt(), mother.M(), cosThetaStarBeam, angle_phi);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, mother.Pt(), mother.M(), cosThetaStarBeam, anglePhi);
         }
         for (int i = 0; i < config.cRotations; i++) {
           theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
           motherRot = ROOT::Math::PxPyPzMVector(mother.Px() * std::cos(theta2) - mother.Py() * std::sin(theta2), mother.Px() * std::sin(theta2) + mother.Py() * std::cos(theta2), mother.Pz(), mother.M());
           if (std::abs(motherRot.Rapidity()) < 0.5) {
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarBeam, angle_phi);
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarBeam, anglePhi);
           }
         }
       } else {
         if (std::abs(mother.Rapidity()) < 0.5) {
-          hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), cosThetaStarBeam, angle_phi);
+          hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), cosThetaStarBeam, anglePhi);
         }
       }
     } else if (config.activateTHnSparseCosThStarRandom) {
@@ -727,18 +726,18 @@ struct HigherMassResonances {
       auto cosThetaStarRandom = randomVec.Dot(fourVecDauCM.Vect()) / std::sqrt(fourVecDauCM.Vect().Mag2());
       if (!isMix) {
         if (std::abs(mother.Rapidity()) < 0.5) {
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, mother.Pt(), mother.M(), cosThetaStarRandom, angle_phi);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, mother.Pt(), mother.M(), cosThetaStarRandom, anglePhi);
         }
         for (int i = 0; i < config.cRotations; i++) {
           theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
           motherRot = ROOT::Math::PxPyPzMVector(mother.Px() * std::cos(theta2) - mother.Py() * std::sin(theta2), mother.Px() * std::sin(theta2) + mother.Py() * std::cos(theta2), mother.Pz(), mother.M());
           if (std::abs(motherRot.Rapidity()) < 0.5) {
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarRandom, angle_phi);
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarRandom, anglePhi);
           }
         }
       } else {
         if (std::abs(mother.Rapidity()) < 0.5) {
-          hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), cosThetaStarRandom, angle_phi);
+          hglue.fill(HIST("h3glueInvMassME"), multiplicity, mother.Pt(), mother.M(), cosThetaStarRandom, anglePhi);
         }
       }
     }
@@ -864,7 +863,7 @@ struct HigherMassResonances {
 
   using EventCandidatesDerivedData = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraZDCSP>;
   using V0CandidatesDerivedData = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
-  using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
+  using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
   void processSEderived(EventCandidatesDerivedData::iterator const& collision, TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s)
   {
@@ -1290,8 +1289,8 @@ struct HigherMassResonances {
   int counter = 0;
   float multiplicityGen = 0.0;
   std::vector<bool> passKs;
-  ROOT::Math::PxPyPzMVector lResonance_gen1;
-  ROOT::Math::PxPyPzEVector lResonance_gen;
+  ROOT::Math::PxPyPzMVector lResonanceGen1;
+  ROOT::Math::PxPyPzEVector lResonanceGen;
 
   void processGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
@@ -1349,7 +1348,7 @@ struct HigherMassResonances {
       }
       hMChists.fill(HIST("events_check"), 5.5);
 
-      if (config.apply_rapidityMC && std::abs(mcParticle.y()) >= 0.5) {
+      if (config.applyRapidityMC && std::abs(mcParticle.y()) >= 0.5) {
         continue;
       }
       hMChists.fill(HIST("events_check"), 6.5);
@@ -1382,33 +1381,33 @@ struct HigherMassResonances {
         }
       }
       if (passKs.size() == 2) {
-        lResonance_gen = ROOT::Math::PxPyPzEVector(mcParticle.pt(), mcParticle.eta(), mcParticle.phi(), mcParticle.e());
-        lResonance_gen1 = daughter1 + daughter2;
+        lResonanceGen = ROOT::Math::PxPyPzEVector(mcParticle.pt(), mcParticle.eta(), mcParticle.phi(), mcParticle.e());
+        lResonanceGen1 = daughter1 + daughter2;
 
-        ROOT::Math::Boost boost{lResonance_gen.BoostToCM()};
-        ROOT::Math::Boost boost1{lResonance_gen1.BoostToCM()};
+        ROOT::Math::Boost boost{lResonanceGen.BoostToCM()};
+        ROOT::Math::Boost boost1{lResonanceGen1.BoostToCM()};
 
         fourVecDauCM = boost(daughter1);
         fourVecDauCM1 = boost1(daughter1);
 
-        auto helicity_gen = lResonance_gen.Vect().Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(lResonance_gen.Vect().Mag2()));
-        auto helicity_gen1 = lResonance_gen1.Vect().Dot(fourVecDauCM1.Vect()) / (std::sqrt(fourVecDauCM1.Vect().Mag2()) * std::sqrt(lResonance_gen1.Vect().Mag2()));
+        auto helicityGen = lResonanceGen.Vect().Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(lResonanceGen.Vect().Mag2()));
+        auto helicityGen1 = lResonanceGen1.Vect().Dot(fourVecDauCM1.Vect()) / (std::sqrt(fourVecDauCM1.Vect().Mag2()) * std::sqrt(lResonanceGen1.Vect().Mag2()));
 
-        hMChists.fill(HIST("Genf1710"), multiplicityGen, lResonance_gen.pt(), helicity_gen);
-        hMChists.fill(HIST("Genf1710_mass"), lResonance_gen.M());
+        hMChists.fill(HIST("Genf1710"), multiplicityGen, lResonanceGen.pt(), helicityGen);
+        hMChists.fill(HIST("Genf1710_mass"), lResonanceGen.M());
         hMChists.fill(HIST("GenRapidity"), mcParticle.y());
         hMChists.fill(HIST("GenEta"), mcParticle.eta());
         hMChists.fill(HIST("GenPhi"), mcParticle.phi());
 
-        if (config.applyPairRapidityGen && std::abs(lResonance_gen1.Y()) >= 0.5) {
+        if (config.applyPairRapidityGen && std::abs(lResonanceGen1.Rapidity()) >= 0.5) {
           continue;
         }
 
-        hMChists.fill(HIST("Genf17102"), multiplicityGen, lResonance_gen1.pt(), helicity_gen1);
-        hMChists.fill(HIST("Genf1710_mass2"), lResonance_gen1.M());
-        hMChists.fill(HIST("GenRapidity2"), lResonance_gen1.Y());
-        hMChists.fill(HIST("GenEta2"), lResonance_gen1.Eta());
-        hMChists.fill(HIST("GenPhi2"), lResonance_gen1.Phi());
+        hMChists.fill(HIST("Genf17102"), multiplicityGen, lResonanceGen1.pt(), helicityGen1);
+        hMChists.fill(HIST("Genf1710_mass2"), lResonanceGen1.M());
+        hMChists.fill(HIST("GenRapidity2"), lResonanceGen1.Rapidity());
+        hMChists.fill(HIST("GenEta2"), lResonanceGen1.Eta());
+        hMChists.fill(HIST("GenPhi2"), lResonanceGen1.Phi());
       }
       passKs.clear(); // clear the vector for the next iteration
     }
@@ -1555,7 +1554,7 @@ struct HigherMassResonances {
             }
             hMChists.fill(HIST("events_checkrec"), 18.5);
 
-            if (config.apply_rapidityMC && std::abs(mothertrack1.y()) >= 0.5) {
+            if (config.applyRapidityMC && std::abs(mothertrack1.y()) >= 0.5) {
               continue;
             }
             hMChists.fill(HIST("events_checkrec"), 19.5);
@@ -1578,21 +1577,21 @@ struct HigherMassResonances {
             fourVecDauCM = boost(daughter1);
             fourVecDauCM1 = boost1(daughter1);
 
-            auto helicity_rec = mother.Vect().Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(mother.Vect().Mag2()));
+            auto helicityRec = mother.Vect().Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(mother.Vect().Mag2()));
 
-            auto helicity_rec2 = mother1.Vect().Dot(fourVecDauCM1.Vect()) / (std::sqrt(fourVecDauCM1.Vect().Mag2()) * std::sqrt(mother1.Vect().Mag2()));
+            auto helicityRec2 = mother1.Vect().Dot(fourVecDauCM1.Vect()) / (std::sqrt(fourVecDauCM1.Vect().Mag2()) * std::sqrt(mother1.Vect().Mag2()));
 
-            hMChists.fill(HIST("Recf1710_pt1"), multiplicity, mothertrack1.pt(), mother1.M(), helicity_rec2);
+            hMChists.fill(HIST("Recf1710_pt1"), multiplicity, mothertrack1.pt(), mother1.M(), helicityRec2);
             hMChists.fill(HIST("RecRapidity"), mothertrack1.y());
             hMChists.fill(HIST("RecPhi"), mothertrack1.phi());
             hMChists.fill(HIST("RecEta"), mothertrack1.eta());
 
-            if (config.applyPairRapidityRec && std::abs(mother.Y()) >= 0.5) {
+            if (config.applyPairRapidityRec && std::abs(mother.Rapidity()) >= 0.5) {
               continue;
             }
 
-            hMChists.fill(HIST("Recf1710_pt2"), multiplicity, mother.Pt(), mother.M(), helicity_rec);
-            hMChists.fill(HIST("RecRapidity2"), mother.Y());
+            hMChists.fill(HIST("Recf1710_pt2"), multiplicity, mother.Pt(), mother.M(), helicityRec);
+            hMChists.fill(HIST("RecRapidity2"), mother.Rapidity());
             hMChists.fill(HIST("RecPhi2"), mother.Phi());
             hMChists.fill(HIST("RecEta2"), mother.Eta());
           }
