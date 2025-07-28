@@ -42,17 +42,22 @@ DECLARE_SOA_COLUMN(CosPA, cosPA, float);
 DECLARE_SOA_COLUMN(DCAxy, dcaXY, float);
 DECLARE_SOA_COLUMN(DCAz, dcaZ, float);
 DECLARE_SOA_COLUMN(TPCnCls, tpcNCls, int);
+DECLARE_SOA_COLUMN(TPCnClsPID, tpcNClsPID, int);
 DECLARE_SOA_COLUMN(ITSClusterSizes, itsClusterSizes, uint32_t);
+DECLARE_SOA_COLUMN(NsigmaTPCPion, nSigmaTPCPion, float);
+DECLARE_SOA_COLUMN(NsigmaTPCProton, nSigmaTPCProton, float);
 DECLARE_SOA_COLUMN(NsigmaTPC, nSigmaTPC, float);
-// DECLARE_SOA_COLUMN(NsigmaTPCproton, nSigmaTPCproton, float);
 DECLARE_SOA_COLUMN(DCAdaughters, dcaDaughters, float);
 DECLARE_SOA_COLUMN(DCAPVProton, dcaPVProton, float);
 DECLARE_SOA_COLUMN(DCAPVPion, dcaPVPion, float);
 DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);
 } // namespace lfv0he3
-DECLARE_SOA_TABLE(LFHe3, "AOD", "LFHE3V0", lfv0he3::LFEventId, lfv0he3::Pt, lfv0he3::Eta, lfv0he3::Phi, lfv0he3::DCAxy, lfv0he3::DCAz, lfv0he3::TPCnCls, lfv0he3::ITSClusterSizes, lfv0he3::NsigmaTPC, lfv0he3::Sign);
-DECLARE_SOA_TABLE(LFLambda, "AOD", "LFLAMBDA", lfv0he3::LFEventId, lfv0he3::Pt, lfv0he3::Eta, lfv0he3::Phi, lfv0he3::Mass, lfv0he3::CosPA, lfv0he3::DCAdaughters, lfv0he3::DCAPVProton, lfv0he3::DCAPVPion, lfv0he3::V0Radius, lfv0he3::Sign);
+DECLARE_SOA_TABLE_VERSIONED(LFHe3_000, "AOD", "LFHE3V0", 0, lfv0he3::LFEventId, lfv0he3::Pt, lfv0he3::Eta, lfv0he3::Phi, lfv0he3::DCAxy, lfv0he3::DCAz, lfv0he3::TPCnCls, lfv0he3::ITSClusterSizes, lfv0he3::NsigmaTPC, lfv0he3::Sign);
+DECLARE_SOA_TABLE_VERSIONED(LFLambda_000, "AOD", "LFLAMBDA", 0, lfv0he3::LFEventId, lfv0he3::Pt, lfv0he3::Eta, lfv0he3::Phi, lfv0he3::Mass, lfv0he3::CosPA, lfv0he3::DCAdaughters, lfv0he3::DCAPVProton, lfv0he3::DCAPVPion, lfv0he3::V0Radius, lfv0he3::Sign);
+
+DECLARE_SOA_TABLE_VERSIONED(LFHe3_001, "AOD", "LFHE3V0", 1, lfv0he3::LFEventId, lfv0he3::Pt, lfv0he3::Eta, lfv0he3::Phi, lfv0he3::DCAxy, lfv0he3::DCAz, lfv0he3::TPCnCls, lfv0he3::TPCnClsPID, lfv0he3::ITSClusterSizes, lfv0he3::NsigmaTPC, lfv0he3::Sign);
+DECLARE_SOA_TABLE_VERSIONED(LFLambda_001, "AOD", "LFLAMBDA", 1, lfv0he3::LFEventId, lfv0he3::Pt, lfv0he3::Eta, lfv0he3::Phi, lfv0he3::Mass, lfv0he3::CosPA, lfv0he3::DCAdaughters, lfv0he3::DCAPVProton, lfv0he3::DCAPVPion, lfv0he3::V0Radius, lfv0he3::NsigmaTPCProton, lfv0he3::NsigmaTPCPion, lfv0he3::Sign);
 } // namespace o2::aod
 
 struct he3Candidate {
@@ -61,6 +66,7 @@ struct he3Candidate {
   float dcaXY = -999.f;
   float dcaZ = -999.f;
   int tpcNClsFound = 0;         // Number of TPC clusters found
+  int tpcNClsPID = 0;           // Number of TPC clusters used for PID
   int itsNCls = 0;              // Number of ITS clusters
   uint32_t itsClusterSizes = 0; // ITS cluster sizes
   int8_t sign = 0;              // Charge sign of the He3 candidate
@@ -75,7 +81,7 @@ struct lambdaCandidate {
   float dcaPionToPV = -999.f;     // DCA of the pion to primary vertex
   float v0Radius = -1.f;          // V0 radius
   float protonNSigmaTPC = -999.f; // Proton TPC nSigma
-  float pionNSigmaTPC = -999.f;
+  float pionNSigmaTPC = -999.f;   // Pion TPC nSigma
   int8_t sign = 0; // Charge sign of the Lambda candidate
 };
 
