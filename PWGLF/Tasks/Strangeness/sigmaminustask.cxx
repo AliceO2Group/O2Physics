@@ -45,6 +45,7 @@ struct sigmaminustask {
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<float> cutNSigmaPi{"cutNSigmaPi", 4, "NSigmaTPCPion"};
+  Configurable<float> cutEtaMotherMC{"cutEtaMotherMC", 1.0f, "Eta cut for mother Sigma in MC"};
 
   Configurable<bool> fillOutputTree{"fillOutputTree", true, "If true, fill the output tree with Kink candidates"};
 
@@ -92,7 +93,7 @@ struct sigmaminustask {
     for (const auto& kinkCand : KinkCands) {
       auto dauTrack = kinkCand.trackDaug_as<TracksFull>();
 
-      if (abs(dauTrack.tpcNSigmaPi()) > cutNSigmaPi) {
+      if (std::abs(dauTrack.tpcNSigmaPi()) > cutNSigmaPi) {
         continue;
       }
 
@@ -131,7 +132,7 @@ struct sigmaminustask {
           LOG(info) << "Skipping kink candidate with opposite sign daughter and mother: " << kinkCand.globalIndex();
           continue; // Skip if the daughter has the opposite sign as the mother
         }
-        if (abs(dauTrack.tpcNSigmaPi()) > cutNSigmaPi) {
+        if (std::abs(dauTrack.tpcNSigmaPi()) > cutNSigmaPi) {
           continue;
         }
 
@@ -161,7 +162,13 @@ struct sigmaminustask {
 
             float MotherMassMC = std::sqrt(piMother.e() * piMother.e() - piMother.p() * piMother.p());
             float MotherpTMC = piMother.pt();
-            float decayRadiusMC = std::sqrt(mcTrackPiDau.vx() * mcTrackPiDau.vx() + mcTrackPiDau.vy() * mcTrackPiDau.vy());
+            float deltaXMother = mcTrackPiDau.vx() - piMother.vx();
+            float deltaYMother = mcTrackPiDau.vy() - piMother.vy();
+            float decayRadiusMC = std::sqrt(deltaXMother * deltaXMother + deltaYMother * deltaYMother);
+
+            // Check coherence of MCcollision Id for daughter MCparticle and reconstructed collision
+            auto mcCollision = mcTrackPiDau.template mcCollision_as<aod::McCollisions>();
+            bool mcCollisionIdCheck = collision.mcCollisionId() == mcCollision.globalIndex();
 
             rSigmaMinus.fill(HIST("h2MassPtMCRec"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
             if (mcTrackSigma.pdgCode() > 0) {
@@ -182,7 +189,7 @@ struct sigmaminustask {
                                 dauTrack.tpcNSigmaPi(), dauTrack.tpcNSigmaPr(), dauTrack.tpcNSigmaKa(),
                                 dauTrack.tofNSigmaPi(), dauTrack.tofNSigmaPr(), dauTrack.tofNSigmaKa(),
                                 mcTrackSigma.pdgCode(), mcTrackPiDau.pdgCode(),
-                                MotherpTMC, MotherMassMC, decayRadiusMC);
+                                MotherpTMC, MotherMassMC, decayRadiusMC, mcCollisionIdCheck);
             }
           }
         } // MC association and selection
@@ -191,7 +198,7 @@ struct sigmaminustask {
 
     // Loop over all generated particles to fill MC histograms
     for (const auto& mcPart : particlesMC) {
-      if (std::abs(mcPart.pdgCode()) != 3112 || std::abs(mcPart.y()) > 1.0) { // only sigma mothers and rapidity cut
+      if (std::abs(mcPart.pdgCode()) != 3112 || std::abs(mcPart.y()) > cutEtaMotherMC) { // only sigma mothers and rapidity cut
         continue;
       }
       if (!mcPart.has_daughters()) {
@@ -214,7 +221,7 @@ struct sigmaminustask {
         continue; // Skip if no pi/proton daughter found
       }
       float mcMass = std::sqrt(mcPart.e() * mcPart.e() - mcPart.p() * mcPart.p());
-      float mcDecayRadius = std::sqrt(secVtx[0] * secVtx[0] + secVtx[1] * secVtx[1]);
+      float mcDecayRadius = std::sqrt((secVtx[0] - mcPart.vx()) * (secVtx[0] - mcPart.vx()) + (secVtx[1] - mcPart.vy()) * (secVtx[1] - mcPart.vy()));
       int sigmaSign = mcPart.pdgCode() > 0 ? 1 : -1; // Determine the sign of the Sigma
       rSigmaMinus.fill(HIST("h2MassPtMCGen"), sigmaSign * mcPart.pt(), mcMass);
 
@@ -228,7 +235,7 @@ struct sigmaminustask {
                           -999, -999, -999,
                           -999, -999, -999,
                           mcPart.pdgCode(), daug_pdg,
-                          mcPart.pt(), mcMass, mcDecayRadius);
+                          mcPart.pt(), mcMass, mcDecayRadius, false);
       }
     }
   }
