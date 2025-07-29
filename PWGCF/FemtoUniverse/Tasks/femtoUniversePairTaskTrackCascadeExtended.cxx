@@ -964,9 +964,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
           }
           registryMCreco.fill(HIST("plus/MCrecoPr"), mcpart.pt(), mcpart.eta());
           registryMCreco.fill(HIST("plus/MCrecoPrPt"), mcpart.pt());
-        }
-
-        else if (part.mAntiLambda() < 0) {
+        } else if (part.mAntiLambda() < 0) {
           registryMCreco.fill(HIST("minus/MCrecoAllPt"), mcpart.pt());
           if (mcpart.pdgMCTruth() != kProtonBar)
             continue;
