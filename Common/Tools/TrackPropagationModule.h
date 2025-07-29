@@ -103,6 +103,27 @@ class TrackPropagationModule
       LOGF(info, "Track propagation to PV not required. Suppressing all further processing and logs.");
     }
 
+    LOGF(info, " Track propagation table detection results:");
+    LOGF(info, " ---> Will generate Tracks table.");
+    if (fillTracksCov) {
+      LOGF(info, "---> Will generate TracksCov table.");
+    }
+    if (fillTracksDCA) {
+      LOGF(info, "---> Will generate TracksDCA table.");
+    }
+    if (fillTracksDCACov) {
+      LOGF(info, "---> Will generate TracksDCACov table.");
+    }
+    if (fillTracksCov) {
+      LOGF(info, "**************************************************************");
+      LOGF(info, " Warning: TracksCov has been requested due to a subscription!");
+      LOGF(info, " Please be mindful that generating track covariances requires");
+      LOGF(info, " a significant extra amount of CPU and memory. If not strictly");
+      LOGF(info, " necessary, requesting TracksCov should be avoided to save");
+      LOGF(info, " these additional resouces.");
+      LOGF(info, "**************************************************************");
+    }
+
     /// TrackTuner initialization
     if (cGroup.useTrackTuner.value) {
       std::string outputStringParams = "";
