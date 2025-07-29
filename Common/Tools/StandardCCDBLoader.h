@@ -20,6 +20,11 @@
 #include <cstdlib>
 #include <cmath>
 #include <array>
+#include "DataFormatsCalibration/MeanVertexObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisDataModel.h"
 
 //__________________________________________
