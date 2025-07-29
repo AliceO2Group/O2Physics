@@ -435,10 +435,10 @@ struct tpcPid {
     }
 
     float nSigma = -999.f;
-    int multTPC = 0; 
-    if(trk.has_collision()){ 
+    int multTPC = 0;
+    if (trk.has_collision()) {
       auto collision = collisions.rawIteratorAt(trk.collisionId());
-      multTPC = collision.multTPC(); 
+      multTPC = collision.multTPC();
     }
     float bg = trk.tpcInnerParam() / o2::track::pid_constants::sMasses[pid]; // estimated beta-gamma for network cutoff
     if (useNetworkCorrection && speciesNetworkFlags[pid] && trk.has_collision() && bg > networkBetaGammaCutoff) {
