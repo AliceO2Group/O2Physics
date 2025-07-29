@@ -693,7 +693,6 @@ struct he3HadronFemto {
   template <typename Mc>
   void fillMotherInfoMC(const Mc& mctrackHe3, const Mc& mctrackHad, const Mc& mctrackMother, He3HadCandidate& he3Hadcand)
   {
-    LOG(info) << "Mother track: " << mctrackMother.pdgCode() << " " << mctrackMother.pt() << " " << mctrackMother.eta() << " " << mctrackMother.phi();
     he3Hadcand.l4PtMC = mctrackMother.pt() * (mctrackMother.pdgCode() > 0 ? 1 : -1);
     const double eLit = mctrackHe3.e() + mctrackHad.e();
     he3Hadcand.l4MassMC = std::sqrt(eLit * eLit - mctrackMother.p() * mctrackMother.p());
