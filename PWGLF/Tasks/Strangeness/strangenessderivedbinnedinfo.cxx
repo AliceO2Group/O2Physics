@@ -240,6 +240,8 @@ struct strangenessderivedbinnedinfo {
   ConfigurableAxis axisEta{"axisEta", {10, -1.0f, 1.0f}, "Pseudo-rapidity #eta"};
   ConfigurableAxis axisRadius{"axisRadius", {10, 0.0f, 250.0f}, "Decay radius (cm)"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.2f, 0.4f, 0.6f, 0.8f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 4.0f, 5.0f, 7.0f, 9.0f, 11.0f, 15.0f, 30.0f}, "#it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis axisAlphaV0{"axisAlphaV0", {1, -1.0f, 1.f}, "V0 #alpha Armenteros"};
+  ConfigurableAxis axisPtArmV0{"axisPtArmV0", {1, 0.0f, 10.f}, "V0 #it{p}_{T} Armenteros"};
 
   // PDG database
   Service<o2::framework::O2DatabasePDG> pdgDB;
@@ -285,7 +287,7 @@ struct strangenessderivedbinnedinfo {
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, +100.0f}});
     histos.add("hEventOccupancy", "hEventOccupancy", kTH1F, {axisOccupancy});
 
-    histos.add("h7dCentOccQoverPtMassRadiusPhiEta", "h7dCentOccQoverPtMassRadiusPhiEta", kTHnSparseF, {axisCentrality, axisOccupancy, axisPt, axisMass, axisRadius, axisPhi, axisEta});
+    histos.add("h9dCentOccQoverPtMassRadiusPhiEtaPtArmV0AlphaV0", "h9dCentOccQoverPtMassRadiusPhiEtaPtArmV0AlphaV0", kTHnSparseF, {axisCentrality, axisOccupancy, axisPt, axisMass, axisRadius, axisPhi, axisEta, axisPtArmV0, axisAlphaV0});
 
     if (cfgSkimmedProcessing) {
       zorroSummary.setObject(zorro.getZorroSummary());
@@ -762,13 +764,13 @@ struct strangenessderivedbinnedinfo {
           continue; // skip V0s that are not standard
 
         if (analyseK0Short && isV0Selected(v0, collision, v0.yK0Short())) {
-          histos.fill(HIST("h7dCentOccQoverPtMassRadiusPhiEta"), centrality, occupancy, v0.pt(), v0.mK0Short(), v0.v0radius(), v0.phi(), v0.eta());
+          histos.fill(HIST("h9dCentOccQoverPtMassRadiusPhiEtaPtArmV0AlphaV0"), centrality, occupancy, v0.pt(), v0.mK0Short(), v0.v0radius(), v0.phi(), v0.eta(), v0.qtarm(), v0.alpha());
         }
         if (analyseLambda && isV0Selected(v0, collision, v0.yLambda())) {
-          histos.fill(HIST("h7dCentOccQoverPtMassRadiusPhiEta"), centrality, occupancy, v0.pt(), v0.mLambda(), v0.v0radius(), v0.phi(), v0.eta());
+          histos.fill(HIST("h9dCentOccQoverPtMassRadiusPhiEtaPtArmV0AlphaV0"), centrality, occupancy, v0.pt(), v0.mLambda(), v0.v0radius(), v0.phi(), v0.eta(), v0.qtarm(), v0.alpha());
         }
         if (analyseAntiLambda && isV0Selected(v0, collision, v0.yLambda())) {
-          histos.fill(HIST("h7dCentOccQoverPtMassRadiusPhiEta"), centrality, occupancy, v0.pt(), v0.mAntiLambda(), v0.v0radius(), v0.phi(), v0.eta());
+          histos.fill(HIST("h9dCentOccQoverPtMassRadiusPhiEtaPtArmV0AlphaV0"), centrality, occupancy, v0.pt(), v0.mAntiLambda(), v0.v0radius(), v0.phi(), v0.eta(), v0.qtarm(), v0.alpha());
         }
       } // end v0 loop
     }
@@ -781,10 +783,10 @@ struct strangenessderivedbinnedinfo {
           continue; // remove acceptance that's badly reproduced by MC / superfluous in future
 
         if (analyseXi && isCascadeSelected(cascade, collision, cascade.yXi())) {
-          histos.fill(HIST("h7dCentOccQoverPtMassRadiusPhiEta"), centrality, occupancy, cascade.pt(), cascade.m(1), cascade.cascradius(), cascade.phi(), cascade.eta());
+          histos.fill(HIST("h9dCentOccQoverPtMassRadiusPhiEtaPtArmV0AlphaV0"), centrality, occupancy, cascade.pt(), cascade.m(1), cascade.cascradius(), cascade.phi(), cascade.eta(), 0., 0.);
         }
         if (analyseOmega && isCascadeSelected(cascade, collision, cascade.yOmega())) {
-          histos.fill(HIST("h7dCentOccQoverPtMassRadiusPhiEta"), centrality, occupancy, cascade.pt(), cascade.m(2), cascade.cascradius(), cascade.phi(), cascade.eta());
+          histos.fill(HIST("h9dCentOccQoverPtMassRadiusPhiEtaPtArmV0AlphaV0"), centrality, occupancy, cascade.pt(), cascade.m(2), cascade.cascradius(), cascade.phi(), cascade.eta(), 0., 0.);
         }
       } // end cascade loop
     }
