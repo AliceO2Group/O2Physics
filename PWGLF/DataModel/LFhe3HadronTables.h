@@ -36,6 +36,7 @@ DECLARE_SOA_COLUMN(DCAxyHe3, dcaxyHe3, float);
 DECLARE_SOA_COLUMN(DCAzHe3, dcazHe3, float);
 DECLARE_SOA_COLUMN(DCAxyHad, dcaxyHad, float);
 DECLARE_SOA_COLUMN(DCAzHad, dcazHad, float);
+DECLARE_SOA_COLUMN(DCApair, dcapair, float);
 
 DECLARE_SOA_COLUMN(SignalTPCHe3, signalTPCHe3, float);
 DECLARE_SOA_COLUMN(InnerParamTPCHe3, innerParamTPCHe3, float);
@@ -95,6 +96,7 @@ DECLARE_SOA_TABLE(he3HadronTable, "AOD", "HE3HADTABLE",
                   he3HadronTablesNS::DCAzHe3,
                   he3HadronTablesNS::DCAxyHad,
                   he3HadronTablesNS::DCAzHad,
+                  he3HadronTablesNS::DCApair,
                   he3HadronTablesNS::SignalTPCHe3,
                   he3HadronTablesNS::InnerParamTPCHe3,
                   he3HadronTablesNS::SignalTPCHad,
