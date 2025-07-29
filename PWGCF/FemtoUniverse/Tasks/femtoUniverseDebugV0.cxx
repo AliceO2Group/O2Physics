@@ -150,7 +150,7 @@ struct FemtoUniverseDebugV0 {
   }
   PROCESS_SWITCH(FemtoUniverseDebugV0, processData, "Enable processing on real data", true);
 
-  /// Produce QA plots for V0 and its children on MonteCarlo data
+  /// Produce QA plots for V0 and its children on Monte Carlo
   void processMC(o2::aod::FdCollision const& col, soa::Join<FemtoFullParticles, aod::FDMCLabels> const& parts, o2::aod::FdMCParticles const&)
   {
     auto groupPartsOne = partsOneMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
