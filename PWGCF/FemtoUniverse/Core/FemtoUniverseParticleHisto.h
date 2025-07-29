@@ -20,11 +20,13 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPARTICLEHISTO_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPARTICLEHISTO_H_
 
-#include <string>
-#include <optional>
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
-#include "Framework/HistogramRegistry.h"
+
 #include "CommonConstants/MathConstants.h"
+#include "Framework/HistogramRegistry.h"
+
+#include <optional>
+#include <string>
 
 using namespace o2::framework; // o2-linter: disable=using-directive
 
