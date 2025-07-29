@@ -59,6 +59,9 @@ struct TrackPropagationTester {
   o2::common::TrackPropagationProducts trackPropagationProducts;
   o2::common::TrackPropagationConfigurables trackPropagationConfigurables;
 
+  // the track tuner object -> needs to be here as it inherits from ConfigurableGroup (+ has its own copy of ccdbApi)
+  TrackTuner trackTunerObj;
+
   // CCDB boilerplate declarations
   o2::framework::Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -76,14 +79,14 @@ struct TrackPropagationTester {
     ccdb->setURL(ccdburl.value);
 
     // task-specific
-    trackPropagation.init(trackPropagationConfigurables, registry, initContext);
+    trackPropagation.init(trackPropagationConfigurables, trackTunerObj, registry, initContext);
   }
 
   void processReal(aod::Collisions const& collisions, soa::Join<aod::StoredTracksIU, aod::TracksCovIU, aod::TracksExtra> const& tracks, aod::Collisions const&, aod::BCs const& bcs)
   {
     // task-specific
     ccdbLoader.initCCDBfromBCs(standardCCDBLoaderConfigurables, ccdb, bcs);
-    trackPropagation.fillTrackTables<false>(trackPropagationConfigurables, ccdbLoader, collisions, tracks, trackPropagationProducts, registry);
+    trackPropagation.fillTrackTables<false>(trackPropagationConfigurables, trackTunerObj, ccdbLoader, collisions, tracks, trackPropagationProducts, registry);
   }
   PROCESS_SWITCH(TrackPropagationTester, processReal, "Process Real Data", true);
 
@@ -91,7 +94,7 @@ struct TrackPropagationTester {
   void processMc(aod::Collisions const& collisions, soa::Join<aod::StoredTracksIU, aod::McTrackLabels, aod::TracksCovIU, aod::TracksExtra> const& tracks, aod::McParticles const&, aod::Collisions const&, aod::BCs const& bcs)
   {
     ccdbLoader.initCCDBfromBCs(standardCCDBLoaderConfigurables, ccdb, bcs);
-    trackPropagation.fillTrackTables<false>(trackPropagationConfigurables, ccdbLoader, collisions, tracks, trackPropagationProducts, registry);
+    trackPropagation.fillTrackTables<false>(trackPropagationConfigurables, trackTunerObj, ccdbLoader, collisions, tracks, trackPropagationProducts, registry);
   }
   PROCESS_SWITCH(TrackPropagationTester, processMc, "Process Monte Carlo", false);
 };
