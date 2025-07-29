@@ -489,7 +489,7 @@ class pidTPCModule
     }
     auto expSignal = response->GetExpectedSignal(trk, pid);
     auto expSigma = trk.has_collision() ? response->GetExpectedSigmaAtMultiplicity(multTPC, trk, pid) : 0.07 * expSignal; // use default sigma value of 7% if no collision information to estimate resolution
-    if (expSignal < 0. || expSigma < 0.) {                                                                                                            // skip if expected signal invalid
+    if (expSignal < 0. || expSigma < 0.) {                                                                                // skip if expected signal invalid
       if (flagFull)
         tableFull(-999.f, -999.f);
       if (flagTiny)
@@ -532,7 +532,7 @@ class pidTPCModule
   template <typename TCCDB, typename TCCDBApi, typename TBCs, typename TCollisions, typename TTracks, typename TTracksQA, typename TProducts>
   void process(TCCDB& ccdb, TCCDBApi& ccdbApi, TBCs const& bcs, TCollisions const& cols, TTracks const& tracks, TTracksQA const& tracksQA, TProducts& products)
   {
-    if(tracks.size()==0){ 
+    if (tracks.size() == 0) {
       return; // empty protection
     }
     auto trackiterator = tracks.begin();
@@ -612,8 +612,8 @@ class pidTPCModule
       // get the TPC signal to be used in the PID
       float tpcSignalToEvaluatePID = trk.tpcSignal();
 
-      int multTPC = 0; 
-      if(trk.has_collision()){ 
+      int multTPC = 0;
+      if (trk.has_collision()) {
         multTPC = pidmults[trk.collisionId()];
       }
 
@@ -679,7 +679,7 @@ class pidTPCModule
         // bypass TPC signal in case TracksQA information present
         if constexpr (soa::is_table<TTracksQA>) {
           tpcSignalToEvaluatePID = -999.f;
-          if(indexTrack2TrackQA[trk.globalIndex()]!=-1){ 
+          if (indexTrack2TrackQA[trk.globalIndex()] != -1) {
             auto trackQA = tracksQA.rawIteratorAt(indexTrack2TrackQA[trk.globalIndex()]);
             tpcSignalToEvaluatePID = trackQA.tpcdEdxNorm();
           }

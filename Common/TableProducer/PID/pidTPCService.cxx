@@ -88,7 +88,6 @@ struct pidTpcService {
     pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, tracksQA, products);
   }
 
-
   void processTracksMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels> const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const&)
   {
     pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
