@@ -340,26 +340,26 @@ struct LongrangeCorrelation {
   template <int mode, typename TTracks>
   void fillYield(TTracks tracks, bool mixing)
   {
-    static constexpr std::string_view subDirSE[] = {"Ft0aGlobal/SE/", "Ft0cGlobal/SE/", "Fv0Global/SE/",
+    static constexpr std::string_view SubDirSE[] = {"Ft0aGlobal/SE/", "Ft0cGlobal/SE/", "Fv0Global/SE/",
                                                     "MftGlobal/SE/", "Fv0Mft/SE/"};
-    static constexpr std::string_view subDirME[] = {"Ft0aGlobal/ME/", "Ft0cGlobal/ME/", "Fv0Global/ME/",
+    static constexpr std::string_view SubDirME[] = {"Ft0aGlobal/ME/", "Ft0cGlobal/ME/", "Fv0Global/ME/",
                                                     "MftGlobal/ME/", "Fv0Mft/ME/"};
 
     if (mixing) {
-      histos.fill(HIST(subDirME[mode]) + HIST("hMult"), tracks.size());
+      histos.fill(HIST(SubDirME[mode]) + HIST("hMult"), tracks.size());
       for (auto const& triggerTrack : tracks) {
-        histos.fill(HIST(subDirME[mode]) + HIST("Trig_etavsphi"), triggerTrack.phi(), triggerTrack.eta());
-        histos.fill(HIST(subDirME[mode]) + HIST("Trig_eta"), triggerTrack.eta());
-        histos.fill(HIST(subDirME[mode]) + HIST("Trig_phi"), triggerTrack.phi());
-        histos.fill(HIST(subDirME[mode]) + HIST("Trig_pt"), triggerTrack.pt());
+        histos.fill(HIST(SubDirME[mode]) + HIST("Trig_etavsphi"), triggerTrack.phi(), triggerTrack.eta());
+        histos.fill(HIST(SubDirME[mode]) + HIST("Trig_eta"), triggerTrack.eta());
+        histos.fill(HIST(SubDirME[mode]) + HIST("Trig_phi"), triggerTrack.phi());
+        histos.fill(HIST(SubDirME[mode]) + HIST("Trig_pt"), triggerTrack.pt());
       }
     } else {
-      histos.fill(HIST(subDirSE[mode]) + HIST("hMult"), tracks.size());
+      histos.fill(HIST(SubDirSE[mode]) + HIST("hMult"), tracks.size());
       for (auto const& triggerTrack : tracks) {
-        histos.fill(HIST(subDirSE[mode]) + HIST("Trig_etavsphi"), triggerTrack.phi(), triggerTrack.eta());
-        histos.fill(HIST(subDirSE[mode]) + HIST("Trig_eta"), triggerTrack.eta());
-        histos.fill(HIST(subDirSE[mode]) + HIST("Trig_phi"), triggerTrack.phi());
-        histos.fill(HIST(subDirSE[mode]) + HIST("Trig_pt"), triggerTrack.pt());
+        histos.fill(HIST(SubDirSE[mode]) + HIST("Trig_etavsphi"), triggerTrack.phi(), triggerTrack.eta());
+        histos.fill(HIST(SubDirSE[mode]) + HIST("Trig_eta"), triggerTrack.eta());
+        histos.fill(HIST(SubDirSE[mode]) + HIST("Trig_phi"), triggerTrack.phi());
+        histos.fill(HIST(SubDirSE[mode]) + HIST("Trig_pt"), triggerTrack.pt());
       }
     }
   }
