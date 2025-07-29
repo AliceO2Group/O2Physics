@@ -336,9 +336,9 @@ DECLARE_SOA_TABLE(HfSelXicToPKPi, "AOD", "HFSELXIC", //!
 DECLARE_SOA_TABLE(HfMlXicToPKPi, "AOD", "HFMLXIC", //!
                   hf_sel_candidate_xic::MlProbXicToPKPi, hf_sel_candidate_xic::MlProbXicToPiKP);
 DECLARE_SOA_TABLE(HfMseXicToPKPi, "AOD", "HFMSEXIC", //! new table for MSE
-                  hf_sel_candidate_xic::MseXicToPKPi, hf_sel_candidate_xic::MseXicToPiKP); 
+                  hf_sel_candidate_xic::MseXicToPKPi, hf_sel_candidate_xic::MseXicToPiKP);
 DECLARE_SOA_TABLE(HfAeOutXicToPKPi, "AOD", "HFAEXIC", //! new table for AE output
-                  hf_sel_candidate_xic::AeOutputXicToPKPi, hf_sel_candidate_xic::AeOutputXicToPiKP); 
+                  hf_sel_candidate_xic::AeOutputXicToPKPi, hf_sel_candidate_xic::AeOutputXicToPiKP);
 // XicPlus to Xi Pi Pi
 DECLARE_SOA_TABLE(HfSelXicToXiPiPi, "AOD", "HFSELXICTOXI2PI", //!
                   hf_sel_candidate_xic::IsSelXicToXiPiPi);
