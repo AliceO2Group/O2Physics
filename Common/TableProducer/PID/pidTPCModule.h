@@ -465,8 +465,8 @@ class pidTPCModule
   }
 
   //__________________________________________________
-  template <typename C, typename T, typename NSF, typename NST>
-  void makePidTables(const int flagFull, NSF& tableFull, const int flagTiny, NST& tableTiny, const o2::track::PID::ID pid, const float tpcSignal, const T& trk, const C& collisions, const long multTPC, const std::vector<float>& network_prediction, const int& count_tracks, const int& tracksForNet_size)
+  template <typename T, typename NSF, typename NST>
+  void makePidTables(const int flagFull, NSF& tableFull, const int flagTiny, NST& tableTiny, const o2::track::PID::ID pid, const float tpcSignal, const T& trk, const long multTPC, const std::vector<float>& network_prediction, const int& count_tracks, const int& tracksForNet_size)
   {
     if (flagFull != 1 && flagTiny != 1) {
       return;
@@ -488,7 +488,7 @@ class pidTPCModule
       }
     }
     auto expSignal = response->GetExpectedSignal(trk, pid);
-    auto expSigma = trk.has_collision() ? response->GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), multTPC, trk, pid) : 0.07 * expSignal; // use default sigma value of 7% if no collision information to estimate resolution
+    auto expSigma = trk.has_collision() ? response->GetExpectedSigmaAtMultiplicity(multTPC, trk, pid) : 0.07 * expSignal; // use default sigma value of 7% if no collision information to estimate resolution
     if (expSignal < 0. || expSigma < 0.) {                                                                                                            // skip if expected signal invalid
       if (flagFull)
         tableFull(-999.f, -999.f);
@@ -520,7 +520,7 @@ class pidTPCModule
         LOGF(fatal, "Network output-dimensions incompatible!");
       }
     } else {
-      nSigma = response->GetNumberOfSigmaMCTuned(collisions.iteratorAt(trk.collisionId()), multTPC, trk, pid, tpcSignal);
+      nSigma = response->GetNumberOfSigmaMCTunedAtMultiplicity(multTPC, trk, pid, tpcSignal);
     }
     if (flagFull)
       tableFull(expSigma, nSigma);
@@ -529,10 +529,14 @@ class pidTPCModule
   };
 
   //__________________________________________________
-  template <typename TCCDB, typename TCCDBApi, typename TBCs, typename TCollisions, typename TTracks, typename TMCParticles, typename TProducts>
-  void process(TCCDB& ccdb, TCCDBApi& ccdbApi, TBCs const& bcs, TCollisions const& cols, TTracks const& tracks, TMCParticles const& mcParticles, TProducts& products)
+  template <typename TCCDB, typename TCCDBApi, typename TBCs, typename TCollisions, typename TTracks, typename TTracksQA, typename TProducts>
+  void process(TCCDB& ccdb, TCCDBApi& ccdbApi, TBCs const& bcs, TCollisions const& cols, TTracks const& tracks, TTracksQA const& tracksQA, TProducts& products)
   {
-    if constexpr (soa::is_table<TMCParticles>) {
+    if(tracks.size()==0){ 
+      return; // empty protection
+    }
+    auto trackiterator = tracks.begin();
+    if constexpr (requires { trackiterator.mcParticleId(); }) {
       gRandom->SetSeed(0); // Ensure unique seed from UUID for each process call
     }
 
@@ -594,27 +598,39 @@ class pidTPCModule
 
     uint64_t count_tracks = 0;
 
+    //_______________________________________
+    // process tracksQA in case present
+    std::vector<int64_t> indexTrack2TrackQA;
+    if constexpr (soa::is_table<TTracksQA>) {
+      for (const auto& trackQA : tracksQA) {
+        indexTrack2TrackQA[trackQA.trackId()] = trackQA.globalIndex();
+      }
+    }
+    //_______________________________________
+
     for (auto const& trk : tracks) {
       // get the TPC signal to be used in the PID
       float tpcSignalToEvaluatePID = trk.tpcSignal();
 
+      int multTPC = 0; 
+      if(trk.has_collision()){ 
+        multTPC = pidmults[trk.collisionId()];
+      }
+
       // if corrected dE/dx is requested, correct it here on the spot and use that
       if (pidTPCopts.useCorrecteddEdx) {
         double hadronicRate;
-        int multTPC;
         int occupancy;
         if (trk.has_collision()) {
           auto collision = cols.iteratorAt(trk.collisionId());
           auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
           const int runnumber = bc.runNumber();
           hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, "ZNC hadronic") * 1.e-3; // kHz
-          multTPC = pidmults[trk.collisionId()];
           occupancy = collision.trackOccupancyInTimeRange();
         } else {
           auto bc = bcs.begin();
           const int runnumber = bc.runNumber();
           hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, "ZNC hadronic") * 1.e-3; // kHz
-          multTPC = 0;
           occupancy = 0;
         }
 
@@ -659,13 +675,23 @@ class pidTPCModule
         // change the signal used for PID
         tpcSignalToEvaluatePID = fTPCSignal / fTPCSignalN_CR1;
 
+        //_________________________________________________________
+        // bypass TPC signal in case TracksQA information present
+        if constexpr (soa::is_table<TTracksQA>) {
+          tpcSignalToEvaluatePID = -999.f;
+          if(indexTrack2TrackQA[trk.globalIndex()]!=-1){ 
+            auto trackQA = tracksQA.rawIteratorAt(indexTrack2TrackQA[trk.globalIndex()]);
+            tpcSignalToEvaluatePID = trackQA.tpcdEdxNorm();
+          }
+        }
+        //_________________________________________________________
+
         if (pidTPCopts.savedEdxsCorrected) {
           // populated cursor if requested or autodetected
           products.dEdxCorrected(tpcSignalToEvaluatePID);
         }
       }
 
-      auto collision = cols.rawIteratorAt(trk.collisionId());
       const auto& bc = trk.has_collision() ? cols.rawIteratorAt(trk.collisionId()).template bc_as<aod::BCsWithTimestamps>() : bcs.begin();
       if (useCCDBParam && pidTPCopts.ccdbTimestamp.value == 0 && !ccdb->isCachedObjectValid(pidTPCopts.ccdbPath.value, bc.timestamp())) { // Updating parametrisation only if the initial timestamp is 0
         if (pidTPCopts.recoPass.value == "") {
@@ -688,7 +714,7 @@ class pidTPCModule
       }
 
       // if this is a MC process function, go for MC tune on data processing
-      if constexpr (soa::is_table<TMCParticles>) {
+      if constexpr (requires { trk.mcParticleId(); }) {
         // Perform TuneOnData sampling for MC dE/dx
         float mcTunedTPCSignal = 0.;
         if (!trk.hasTPC()) {
@@ -702,7 +728,7 @@ class pidTPCModule
           int pid = getPIDIndex(trk.mcParticle().pdgCode());
 
           auto expSignal = response->GetExpectedSignal(trk, pid);
-          auto expSigma = response->GetExpectedSigma(cols.iteratorAt(trk.collisionId()), pidmults[trk.collisionId()], trk, pid);
+          auto expSigma = response->GetExpectedSigmaAtMultiplicity(multTPC, trk, pid);
           if (expSignal < 0. || expSigma < 0.) { // if expectation invalid then give undefined signal
             mcTunedTPCSignal = -999.f;
           }
@@ -725,12 +751,8 @@ class pidTPCModule
           products.tableTuneOnData(mcTunedTPCSignal);
       }
 
-      int multTPCtoUse = 1;
-      if (trk.has_collision()) {
-        multTPCtoUse = pidmults[trk.collisionId()];
-      }
-      auto makePidTablesDefault = [&trk, &tpcSignalToEvaluatePID, &cols, &multTPCtoUse, &network_prediction, &count_tracks, &tracksForNet_size, this](const int flagFull, auto& tableFull, const int flagTiny, auto& tableTiny, const o2::track::PID::ID pid) {
-        makePidTables(flagFull, tableFull, flagTiny, tableTiny, pid, tpcSignalToEvaluatePID, trk, cols, multTPCtoUse, network_prediction, count_tracks, tracksForNet_size);
+      auto makePidTablesDefault = [&trk, &tpcSignalToEvaluatePID, &multTPC, &network_prediction, &count_tracks, &tracksForNet_size, this](const int flagFull, auto& tableFull, const int flagTiny, auto& tableTiny, const o2::track::PID::ID pid) {
+        makePidTables(flagFull, tableFull, flagTiny, tableTiny, pid, tpcSignalToEvaluatePID, trk, multTPC, network_prediction, count_tracks, tracksForNet_size);
       };
 
       makePidTablesDefault(pidTPCopts.pidFullEl, products.tablePIDFullEl, pidTPCopts.pidTinyEl, products.tablePIDTinyEl, o2::track::PID::Electron);
