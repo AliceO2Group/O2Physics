@@ -155,6 +155,9 @@ struct Phik0shortanalysis {
     Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
     Configurable<int> minITSnCls{"minITSnCls", 4, "min number of ITS clusters"};
     Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
+
+    Configurable<bool> applyExtraPhiCuts{"applyExtraPhiCuts", false, "Enable extra phi cut"};
+    Configurable<std::vector<float>> extraPhiCuts{"extraPhiCuts", {3.07666f, 3.12661f, 0.03f, 6.253f}, "Extra phi cuts"};
   } trackConfigs;
 
   // Configurables on phi pT bins
@@ -2493,6 +2496,10 @@ struct Phik0shortanalysis {
     dataEventHist.fill(HIST("h2VertexZvsMult"), collision.posZ(), collision.centFT0M());
 
     for (const auto& track : filteredTracks) {
+      if (trackConfigs.applyExtraPhiCuts && ((track.phi() > trackConfigs.extraPhiCuts->at(0) && track.phi() < trackConfigs.extraPhiCuts->at(1)) ||
+                                             track.phi() <= trackConfigs.extraPhiCuts->at(2) || track.phi() >= trackConfigs.extraPhiCuts->at(3)))
+        continue;
+
       dataEventHist.fill(HIST("h5EtaDistribution"), collision.posZ(), collision.centFT0M(), track.eta(), track.phi(), kGlobalplusITSonly);
       if (track.hasTPC()) {
         dataEventHist.fill(HIST("h5EtaDistribution"), collision.posZ(), collision.centFT0M(), track.eta(), track.phi(), kGlobalonly);
@@ -2523,6 +2530,9 @@ struct Phik0shortanalysis {
     mcEventHist.fill(HIST("h2RecoMCVertexZvsMult"), collision.posZ(), mcCollision.centFT0M());
 
     for (const auto& track : filteredMCTracks) {
+      if (trackConfigs.applyExtraPhiCuts && ((track.phi() > trackConfigs.extraPhiCuts->at(0) && track.phi() < trackConfigs.extraPhiCuts->at(1)) ||
+                                             track.phi() <= trackConfigs.extraPhiCuts->at(2) || track.phi() >= trackConfigs.extraPhiCuts->at(3)))
+        continue;
       if (!track.has_mcParticle())
         continue;
 
@@ -2578,6 +2588,9 @@ struct Phik0shortanalysis {
 
         auto filteredMCTracksThisColl = filteredMCTracks.sliceBy(preslices.perColl, collision.globalIndex());
         for (const auto& track : filteredMCTracksThisColl) {
+          if (trackConfigs.applyExtraPhiCuts && ((track.phi() > trackConfigs.extraPhiCuts->at(0) && track.phi() < trackConfigs.extraPhiCuts->at(1)) ||
+                                                 track.phi() <= trackConfigs.extraPhiCuts->at(2) || track.phi() >= trackConfigs.extraPhiCuts->at(3)))
+            continue;
           if (!track.has_mcParticle())
             continue;
 
