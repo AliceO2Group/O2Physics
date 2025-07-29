@@ -266,6 +266,10 @@ class FemtoUniverseParticleHisto
     if constexpr (mc == o2::aod::femtouniverse_mc_particle::MCType::kRecon) {
       mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST(o2::aod::femtouniverseparticle::TempFitVarName[mParticleType]), part.pt(), part.tempFitVar());
     }
+    if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascade) {
+      mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hInvMassXi"), part.mLambda());
+      mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hInvMassOmega"), part.mAntiLambda());
+    }
   }
 
   template <o2::aod::femtouniverse_mc_particle::MCType mc, typename T, typename H>
@@ -318,8 +322,6 @@ class FemtoUniverseParticleHisto
       mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hDecayVtxX"), part.decayVtxX());
       mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hDecayVtxY"), part.decayVtxY());
       mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hDecayVtxZ"), part.decayVtxZ());
-      mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hInvMassXi"), part.mLambda());
-      mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hInvMassOmega"), part.mAntiLambda());
     }
   }
 
