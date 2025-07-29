@@ -100,11 +100,18 @@ enum Selections {
 };
 
 enum Flags {
-  kPrimary = BIT(0), 
-  kFromLi4 = BIT(1),
-  kFromHypertriton = BIT(2),
-  kFromOtherDecay = BIT(3),
-  kFromMaterial = BIT(4)
+  kBothPrimaries = BIT(0), 
+  kBothFromLi4 = BIT(1),
+  kBothFromHypertriton = BIT(2),
+  kMixedPair = BIT(3), // a primary and one from Li4/hypertriton/material/other decays (or any other combination)
+};
+
+enum ParticleFlags {
+  kPhysicalPrimary = BIT(0), // primary particle
+  kFromLi4 = BIT(1), // from Li4 decay
+  kFromHypertriton = BIT(2), // from hypertriton decay
+  kFromMaterial = BIT(3), // from material
+  kFromOtherDecays = BIT(4), // from other decays
 };
 
 } // namespace
@@ -169,6 +176,7 @@ struct He3HadCandidate {
 
   uint8_t flagsHe3 = 0; // flags for He3
   uint8_t flagsHad = 0; // flags for hadron
+  uint8_t flags = 0; // flags for the pair
 
   // collision information
   int32_t collisionID = 0;
@@ -655,8 +663,6 @@ struct he3HadronFemto {
     he3Hadcand.momHadMC = mctrackHad.pt() * (mctrackHad.pdgCode() > 0 ? 1 : -1);
     he3Hadcand.etaHadMC = mctrackHad.eta();
     he3Hadcand.phiHadMC = mctrackHad.phi();
-    he3Hadcand.isHe3Primary = mctrackHe3.isPhysicalPrimary();
-    he3Hadcand.isHadPrimary = mctrackHad.isPhysicalPrimary();
   }
 
   template <typename Mc>
@@ -780,8 +786,7 @@ struct he3HadronFemto {
         he3Hadcand.phiHadMC,
         he3Hadcand.l4PtMC,
         he3Hadcand.l4MassMC,
-        he3Hadcand.flagsHe3,
-        he3Hadcand.flagsHad);
+        he3Hadcand.flags);
     }
     if (settingFillMultiplicity) {
       outputMultiplicityTable(
@@ -824,6 +829,47 @@ struct he3HadronFemto {
       fillHistograms(he3Hadcand);
       auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
       fillTable(he3Hadcand, collision, /*isMC*/ false);
+    }
+  }
+
+  template <typename TmcParticle>
+  void setMcParticleFlag(const TmcParticle& mcParticle, std::vector<unsigned int>& mothers, uint8_t& flag)
+  {
+    if (mcParticle.isPhysicalPrimary() == true) {
+      
+      flag |= ParticleFlags::kPhysicalPrimary;
+      if (!mcParticle.has_mothers()) {
+        return;
+      }
+
+      for (const auto& mother : mcParticle.mothers_as<aod::McParticles>()) {
+        mothers.push_back(mother.globalIndex());
+        if (std::abs(mother.pdgCode()) == Li4PDG) {
+          flag |= ParticleFlags::kFromLi4;
+        } else if (std::abs(mother.pdgCode()) == o2::constants::physics::Pdg::kHyperTriton) {
+          flag |= ParticleFlags::kFromHypertriton;
+        } else {
+          flag |= ParticleFlags::kFromOtherDecays;
+        }
+      }
+      
+    } else {
+      
+      if (!mcParticle.has_mothers()) {
+        flag |= ParticleFlags::kFromMaterial;
+        return;
+      }
+
+      for (const auto& mother : mothers) {
+        mothers.push_back(mother.globalIndex());
+        if (std::abs(mother.pdgCode()) == Li4PDG) {
+          flag |= ParticleFlags::kFromLi4;
+        } else if (std::abs(mother.pdgCode()) == o2::constants::physics::Pdg::kHyperTriton) {
+          flag |= ParticleFlags::kFromHypertriton;
+        } else {
+          flag |= ParticleFlags::kFromOtherDecays;
+        } 
+      }
     }
   }
 
@@ -953,25 +999,62 @@ struct he3HadronFemto {
           continue;
         }
 
-        for (const auto& mothertrack : mctrackHe3.mothers_as<aod::McParticles>()) {
-          for (const auto& mothertrackHad : mctrackHad.mothers_as<aod::McParticles>()) {
+        He3HadCandidate he3Hadcand;
+        McIter motherParticle;
+        std::vector<unsigned int> motherHe3Idxs, motherHadIdxs;
+        setMcParticleFlag(mctrackHe3, motherHe3Idxs, he3Hadcand.flagsHe3);
+        setMcParticleFlag(mctrackHad, motherHadIdxs, he3Hadcand.flagsHad);
 
-            if (mothertrack != mothertrackHad || std::abs(mothertrack.pdgCode()) != Li4PDG || std::abs(mothertrack.y()) > 1) {
+        if ((he3Hadcand.flagsHe3 == ParticleFlags::kPhysicalPrimary && he3Hadcand.flagsHad == ParticleFlags::kPhysicalPrimary)) {
+          he3Hadcand.flags |= Flags::kBothPrimaries;
+        
+        } else if ((he3Hadcand.flagsHe3 & ParticleFlags::kFromLi4) && (he3Hadcand.flagsHad & ParticleFlags::kFromLi4)) {
+          he3Hadcand.flags |= Flags::kFromLi4;
+          
+          std::unordered_set<unsigned int> motherHe3SetIdxs(motherHe3Idxs.begin(), motherHe3Idxs.end());
+          for (const auto& motherHadIdx : motherHadIdxs) {
+            if (motherHe3SetIdxs.contains(motherHadIdx)) {
               continue;
             }
-
-            He3HadCandidate he3Hadcand;
-            if (!fillCandidateInfo(heTrack, prTrack, collBracket, collisions, he3Hadcand, tracks, /*mix*/ false)) {
-              continue;
+            
+            motherParticle = mcParticles.rawIteratorAt(motherHadIdx);
+            if (!motherParticle.pdgCode() == Li4PDG || std::abs(motherParticle.y()) > 1) {
+                continue;
             }
-            fillCandidateInfoMC(mctrackHe3, mctrackHad, he3Hadcand);
-            fillMotherInfoMC(mctrackHe3, mctrackHad, mothertrack, he3Hadcand);
-            fillHistograms(he3Hadcand);
-            auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
-            fillTable(he3Hadcand, collision, /*isMC*/ true);
-            filledMothers.push_back(mothertrack.globalIndex());
           }
+
+        } else if ((he3Hadcand.flagsHe3 & ParticleFlags::kFromHypertriton) && (he3Hadcand.flagsHad & ParticleFlags::kFromHypertriton)) {
+          he3Hadcand.flags |= Flags::kFromHypertriton;
+
+          std::unordered_set<unsigned int> motherHe3SetIdxs(motherHe3Idxs.begin(), motherHe3Idxs.end());
+          for (const auto& motherHadIdx : motherHadIdxs) {
+            if (motherHe3SetIdxs.contains(motherHadIdx)) {
+              continue;
+            }
+            
+            motherParticle = mcParticles.rawIteratorAt(motherHadIdx);
+            if (!motherParticle.pdgCode() == o2::constants::physics::Pdg::kHyperTriton || std::abs(motherParticle.y()) > 1) {
+                continue;
+            }
+          }
+
+        } else {
+          he3Hadcand.flags |= Flags::kMixedPair;
         }
+
+        if (!fillCandidateInfo(heTrack, prTrack, collBracket, collisions, he3Hadcand, tracks, /*mix*/ false)) {
+          continue;
+        }
+        fillCandidateInfoMC(mctrackHe3, mctrackHad, he3Hadcand);
+        
+        if ((he3Hadcand.flags == Flags::kBothFromLi4) || (he3Hadcand.flags == Flags::kBothFromHypertriton)) {
+          fillMotherInfoMC(mctrackHe3, mctrackHad, mothertrack, he3Hadcand);
+          filledMothers.push_back(motherParticle.globalIndex()); 
+        }
+
+        fillHistograms(he3Hadcand);
+        auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
+        fillTable(he3Hadcand, collision, /*isMC*/ true);
       }
     }
 
