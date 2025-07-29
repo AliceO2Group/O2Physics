@@ -8,33 +8,24 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// Contact: daiki.sekihata@cern.ch
-//
+
+/// \file HistogramsLibrary.h
+/// \brief Small histogram library for photon and meson analysis.
+/// \author D. Sekihata, daiki.sekihata@cern.ch
 
 #ifndef PWGEM_PHOTONMESON_CORE_HISTOGRAMSLIBRARY_H_
 #define PWGEM_PHOTONMESON_CORE_HISTOGRAMSLIBRARY_H_
 
-#include <iostream>
-#include <array>
-#include <TString.h>
-#include <THashList.h>
-#include <TObject.h>
-#include <TObjArray.h>
-#include <THashList.h>
-#include <TMath.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TH3F.h>
-#include <TProfile.h>
-#include <TProfile2D.h>
-#include <TProfile3D.h>
-#include <THn.h>
-#include <THnSparse.h>
-#include <TIterator.h>
-#include <TClass.h>
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
+
+#include <TH2.h>
+#include <THashList.h>
+#include <TString.h>
+
+#include <array>
+#include <cmath>
+#include <cstddef>
 
 enum EMHistType {
   kEvent = 0,
@@ -47,6 +38,8 @@ enum EMHistType {
   kPHOSCluster = 7,
   kEMCCluster = 8,
 };
+
+const float maxZ = 10.f;
 
 namespace o2::aod
 {
@@ -81,7 +74,7 @@ void FillHistClass(THashList* list, const char* subGroup, T1 const& obj1 /*, con
     if (obj1.sel8()) {
       reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->Fill("sel8", 1.f);
     }
-    if (abs(obj1.posZ()) < 10.0) {
+    if (std::abs(obj1.posZ()) < maxZ) {
       reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->Fill("|Z_{vtx}| < 10 cm", 1.f);
     }
 
@@ -176,9 +169,9 @@ void FillHistClass(THashList* list, const char* subGroup, T1 const& obj1 /*, con
     reinterpret_cast<TH1F*>(list->FindObject("hQoverPt"))->Fill(obj1.sign() / obj1.pt());
     reinterpret_cast<TH2F*>(list->FindObject("hEtaPhi"))->Fill(obj1.phi(), obj1.eta());
     reinterpret_cast<TH2F*>(list->FindObject("hDCAxyz"))->Fill(obj1.dcaXY(), obj1.dcaZ());
-    reinterpret_cast<TH2F*>(list->FindObject("hDCAxyzSigma"))->Fill(obj1.dcaXY() / sqrt(obj1.cYY()), obj1.dcaZ() / sqrt(obj1.cZZ()));
-    reinterpret_cast<TH2F*>(list->FindObject("hDCAxyRes_Pt"))->Fill(obj1.pt(), sqrt(obj1.cYY()) * 1e+4); // convert cm to um
-    reinterpret_cast<TH2F*>(list->FindObject("hDCAzRes_Pt"))->Fill(obj1.pt(), sqrt(obj1.cZZ()) * 1e+4);  // convert cm to um
+    reinterpret_cast<TH2F*>(list->FindObject("hDCAxyzSigma"))->Fill(obj1.dcaXY() / std::sqrt(obj1.cYY()), obj1.dcaZ() / std::sqrt(obj1.cZZ()));
+    reinterpret_cast<TH2F*>(list->FindObject("hDCAxyRes_Pt"))->Fill(obj1.pt(), std::sqrt(obj1.cYY()) * 1e+4); // convert cm to um
+    reinterpret_cast<TH2F*>(list->FindObject("hDCAzRes_Pt"))->Fill(obj1.pt(), std::sqrt(obj1.cZZ()) * 1e+4);  // convert cm to um
     reinterpret_cast<TH1F*>(list->FindObject("hNclsITS"))->Fill(obj1.itsNCls());
     reinterpret_cast<TH1F*>(list->FindObject("hNclsTPC"))->Fill(obj1.tpcNClsFound());
     reinterpret_cast<TH1F*>(list->FindObject("hNcrTPC"))->Fill(obj1.tpcNClsCrossedRows());
@@ -225,8 +218,8 @@ void FillHistClass(THashList* list, const char* subGroup, T1 const& obj1 /*, con
     reinterpret_cast<TH1F*>(list->FindObject("hPt"))->Fill(obj1.pt());
     reinterpret_cast<TH1F*>(list->FindObject("hE"))->Fill(obj1.e());
     reinterpret_cast<TH2F*>(list->FindObject("hEtaPhi"))->Fill(obj1.phi(), obj1.eta());
-    for (size_t itrack = 0; itrack < obj1.tracketa().size(); itrack++) { // Fill TrackEtaPhi histogram with delta phi and delta eta of all tracks saved in the vectors in skimmerGammaCalo.cxx
-      reinterpret_cast<TH2F*>(list->FindObject("hTrackEtaPhi"))->Fill(obj1.trackphi()[itrack] - obj1.phi(), obj1.tracketa()[itrack] - obj1.eta());
+    for (size_t itrack = 0; itrack < obj1.deltaEta().size(); itrack++) { // Fill TrackEtaPhi histogram with delta phi and delta eta of all tracks saved in the vectors in skimmerGammaCalo.cxx
+      reinterpret_cast<TH2F*>(list->FindObject("hTrackEtaPhi"))->Fill(obj1.deltaPhi()[itrack], obj1.deltaEta()[itrack]);
     }
   }
 }

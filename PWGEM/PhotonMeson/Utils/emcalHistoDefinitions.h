@@ -12,9 +12,9 @@
 /// \brief commonly used histogram (axis) definitions for emcal in PWGEM
 /// \author marvin.hemmer@cern.ch
 
-#include <vector>
+#include <Framework/HistogramSpec.h>
 
-#include "Framework/AnalysisTask.h"
+#include <vector>
 
 #ifndef PWGEM_PHOTONMESON_UTILS_EMCALHISTODEFINITIONS_H_
 #define PWGEM_PHOTONMESON_UTILS_EMCALHISTODEFINITIONS_H_
