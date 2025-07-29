@@ -30,6 +30,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Tools/StandardCCDBLoader.h"
+#include "Common/Tools/TrackTuner.h"
 #include "Common/Tools/TrackPropagationModule.h"
 
 #include "CCDB/BasicCCDBManager.h"

@@ -39,6 +39,7 @@
 #include "Framework/HistogramRegistry.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CommonConstants/GeomConstants.h"
+#include "Common/Tools/TrackTuner.h"
 #include "Common/Tools/TrackPropagationModule.h"
 #include "Common/Tools/StandardCCDBLoader.h"
 

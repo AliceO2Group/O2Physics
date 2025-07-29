@@ -89,8 +89,8 @@ class TrackPropagationModule
   o2::track::TrackParametrization<float> mTrackPar;
   o2::track::TrackParametrizationWithError<float> mTrackParCov;
 
-  template <typename TConfigurableGroup, typename TTrackTuner, typename TInitContext, typename THistoRegistry>
-  void init(TConfigurableGroup const& cGroup, TTrackTuner& trackTunerObj, THistoRegistry& registry, TInitContext& initContext)
+  template <typename TConfigurableGroup, typename TInitContext, typename THistoRegistry>
+  void init(TConfigurableGroup const& cGroup, TrackTuner& trackTunerObj, THistoRegistry& registry, TInitContext& initContext)
   {
     // Checking if the tables are requested in the workflow and enabling them
     fillTracks = isTableRequiredInWorkflow(initContext, "Tracks");
@@ -152,8 +152,8 @@ class TrackPropagationModule
     registry.template add<TH2>("hDCAzVsPtMC", "hDCAzVsPtMC", o2::framework::kTH2F, {axisBinsDCA, cGroup.axisPtQA});
   }
 
-  template <bool isMc, typename TConfigurableGroup, typename TTrackTuner, typename TCCDBLoader, typename TCollisions, typename TTracks, typename TOutputGroup, typename THistoRegistry>
-  void fillTrackTables(TConfigurableGroup const& cGroup, TTrackTuner& trackTunerObj, TCCDBLoader const& ccdbLoader, TCollisions const& collisions, TTracks const& tracks, TOutputGroup& cursors, THistoRegistry& registry)
+  template <bool isMc, typename TConfigurableGroup, typename TCCDBLoader, typename TCollisions, typename TTracks, typename TOutputGroup, typename THistoRegistry>
+  void fillTrackTables(TConfigurableGroup const& cGroup, TrackTuner& trackTunerObj, TCCDBLoader const& ccdbLoader, TCollisions const& collisions, TTracks const& tracks, TOutputGroup& cursors, THistoRegistry& registry)
   {
     if (!fillTracks) {
       return; // suppress everything
