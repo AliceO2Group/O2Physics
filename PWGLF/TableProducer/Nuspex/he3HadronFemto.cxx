@@ -382,13 +382,14 @@ struct he3HadronFemto {
     mQaRegistry.fill(HIST("hEvents"), 0);
     mQaRegistry.fill(HIST("hVtxZBefore"), collision.posZ());
 
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
+
     if constexpr (isMC) {
       if (/*!collision.sel8() ||*/ std::abs(collision.posZ()) > settingCutVertex) {
         return false;
       }
     } else {
-      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
 
       if (!collision.sel8() || std::abs(collision.posZ()) > settingCutVertex) {
         return false;
@@ -528,53 +529,66 @@ struct he3HadronFemto {
 
   // ==================================================================================================================
 
+  template <typename Tcollisions>
+  std::array<float, 3> getCollisionVertex(const Tcollisions& collisions, int32_t collisionID)
+  {
+    auto collision = collisions.rawIteratorAt(collisionID);
+    std::array<float, 3> collisionVertex = {collision.posX(), collision.posY(), collision.posZ()};
+    return collisionVertex;
+  }
+
+  template <typename Ttrack, typename Tcollisions>
+  int32_t getCollisionID(const Ttrack& trackHe3, const Ttrack& trackHad, const CollBracket& collBracket, const Tcollisions& collisions, bool isMixedEvent)
+  {
+    if (isMixedEvent) {
+      return collBracket.getMin();
+    }
+
+    auto trackCovHe3 = getTrackParCov(trackHe3);
+    auto trackCovHad = getTrackParCov(trackHad);
+    int nCand = CommonInite;
+    try {
+      nCand = mFitter.process(trackCovHe3, trackCovHad);
+    } catch (...) {
+      LOG(error) << "Exception caught in DCA fitter process call!";
+      return false;
+    }
+    if (nCand == 0) {
+      return false;
+    }
+
+    // associate collision id as the one that minimises the distance between the vertex and the PCAs of the daughters
+    double distanceMin = -1;
+    unsigned int collIdxMin = 0;
+    const float defaultTodistance = 0.0f;
+    for (int collIdx = collBracket.getMin(); collIdx <= collBracket.getMax(); collIdx++) {
+      std::array<float, 3> collisionVertex = getCollisionVertex(collisions, collIdx);
+      const auto& pca = mFitter.getPCACandidate();
+      float distance = defaultTodistance;
+      for (int i = 0; i < 3; i++) {
+        distance += (pca[i] - collisionVertex[i]) * (pca[i] - collisionVertex[i]);
+      }
+      if (distanceMin < 0 || distance < distanceMin) {
+        distanceMin = distance;
+        collIdxMin = collIdx;
+      }
+    }
+
+    if (!mGoodCollisions[collIdxMin]) {
+      return false;
+    }
+    return collIdxMin;
+
+  }
+
   template <typename Ttrack, typename Tcollisions, typename Ttracks>
   bool fillCandidateInfo(const Ttrack& trackHe3, const Ttrack& trackHad, const CollBracket& collBracket, const Tcollisions& collisions, He3HadCandidate& he3Hadcand, const Ttracks& /*trackTable*/, bool isMixedEvent)
   {
-    const int numCoordinates = 3;
-    if (!isMixedEvent) {
-      auto trackCovHe3 = getTrackParCov(trackHe3);
-      auto trackCovHad = getTrackParCov(trackHad);
-      int nCand = CommonInite;
-      try {
-        nCand = mFitter.process(trackCovHe3, trackCovHad);
-      } catch (...) {
-        LOG(error) << "Exception caught in DCA fitter process call!";
-        return false;
-      }
-      if (nCand == 0) {
-        return false;
-      }
-
-      // associate collision id as the one that minimises the distance between the vertex and the PCAs of the daughters
-      double distanceMin = -1;
-      unsigned int collIdxMin = 0;
-      const float defaultTodistance = 0.0f;
-      for (int collIdx = collBracket.getMin(); collIdx <= collBracket.getMax(); collIdx++) {
-        auto collision = collisions.rawIteratorAt(collIdx);
-        std::array<float, 3> collVtx = {collision.posX(), collision.posY(), collision.posZ()};
-        const auto& pca = mFitter.getPCACandidate();
-        float distance = defaultTodistance;
-        for (int i = 0; i < numCoordinates; i++) {
-          distance += (pca[i] - collVtx[i]) * (pca[i] - collVtx[i]);
-        }
-        if (distanceMin < 0 || distance < distanceMin) {
-          distanceMin = distance;
-          collIdxMin = collIdx;
-        }
-      }
-
-      if (!mGoodCollisions[collIdxMin]) {
-        return false;
-      }
-      he3Hadcand.collisionID = collIdxMin;
-
-    } else {
-      he3Hadcand.collisionID = collBracket.getMin();
-    }
+    he3Hadcand.collisionID = getCollisionID(trackHe3, trackHad, collBracket, collisions, isMixedEvent);
+    std::array<float, 3> collisionVertex = getCollisionVertex(collisions, he3Hadcand.collisionID);
 
     he3Hadcand.momHe3 = std::array{trackHe3.px(), trackHe3.py(), trackHe3.pz()};
-    for (int i = 0; i < numCoordinates; i++)
+    for (int i = 0; i < 3; i++)
       he3Hadcand.momHe3[i] = he3Hadcand.momHe3[i] * 2;
     he3Hadcand.momHad = std::array{trackHad.px(), trackHad.py(), trackHad.pz()};
     float invMass = CommonInite;
@@ -668,7 +682,6 @@ struct he3HadronFemto {
   template <typename Mc>
   void fillCandidateInfoMC(const Mc& mctrackHe3, const Mc& mctrackHad, He3HadCandidate& he3Hadcand)
   {
-    LOG(info) << "--------------------------Filling candidate info MC";
     he3Hadcand.momHe3MC = mctrackHe3.pt() * (mctrackHe3.pdgCode() > 0 ? 1 : -1);
     he3Hadcand.etaHe3MC = mctrackHe3.eta();
     he3Hadcand.phiHe3MC = mctrackHe3.phi();
@@ -680,6 +693,7 @@ struct he3HadronFemto {
   template <typename Mc>
   void fillMotherInfoMC(const Mc& mctrackHe3, const Mc& mctrackHad, const Mc& mctrackMother, He3HadCandidate& he3Hadcand)
   {
+    LOG(info) << "Mother track: " << mctrackMother.pdgCode() << " " << mctrackMother.pt() << " " << mctrackMother.eta() << " " << mctrackMother.phi();
     he3Hadcand.l4PtMC = mctrackMother.pt() * (mctrackMother.pdgCode() > 0 ? 1 : -1);
     const double eLit = mctrackHe3.e() + mctrackHad.e();
     he3Hadcand.l4MassMC = std::sqrt(eLit * eLit - mctrackMother.p() * mctrackMother.p());
@@ -848,15 +862,16 @@ struct he3HadronFemto {
   template <typename TmcParticle>
   void setMcParticleFlag(const TmcParticle& mcParticle, std::vector<unsigned int>& mothers, uint8_t& flag)
   {
-    if (mcParticle.isPhysicalPrimary() == true) {
+    if (mcParticle.isPhysicalPrimary()) {
       
       flag |= ParticleFlags::kPhysicalPrimary;
       if (!mcParticle.has_mothers()) {
         return;
       }
 
-      for (const auto& mother : mcParticle.mothers_as<aod::McParticles>()) {
+      for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
         mothers.push_back(mother.globalIndex());
+        LOG(info) << "Mother PDG code: " << mother.pdgCode() << ", global index: " << mother.globalIndex();
         if (std::abs(mother.pdgCode()) == Li4PDG) {
           flag |= ParticleFlags::kFromLi4;
         } else if (std::abs(mother.pdgCode()) == o2::constants::physics::Pdg::kHyperTriton) {
@@ -873,8 +888,9 @@ struct he3HadronFemto {
         return;
       }
 
-      for (const auto& mother : mothers) {
+      for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
         mothers.push_back(mother.globalIndex());
+        LOG(info) << "Mother PDG code: " << mother.pdgCode() << ", global index: " << mother.globalIndex();
         if (std::abs(mother.pdgCode()) == Li4PDG) {
           flag |= ParticleFlags::kFromLi4;
         } else if (std::abs(mother.pdgCode()) == o2::constants::physics::Pdg::kHyperTriton) {
@@ -1014,44 +1030,61 @@ struct he3HadronFemto {
 
         He3HadCandidate he3Hadcand;
         McIter motherParticle;
+        unsigned int motherIdx;
         std::vector<unsigned int> motherHe3Idxs, motherHadIdxs;
         setMcParticleFlag(mctrackHe3, motherHe3Idxs, he3Hadcand.flagsHe3);
         setMcParticleFlag(mctrackHad, motherHadIdxs, he3Hadcand.flagsHad);
 
+        bool isMixedPair = true;
+
         if ((he3Hadcand.flagsHe3 == ParticleFlags::kPhysicalPrimary && he3Hadcand.flagsHad == ParticleFlags::kPhysicalPrimary)) {
           he3Hadcand.flags |= Flags::kBothPrimaries;
+          isMixedPair = false;
         
         } else if ((he3Hadcand.flagsHe3 & ParticleFlags::kFromLi4) && (he3Hadcand.flagsHad & ParticleFlags::kFromLi4)) {
-          he3Hadcand.flags |= Flags::kFromLi4;
           
           std::unordered_set<unsigned int> motherHe3SetIdxs(motherHe3Idxs.begin(), motherHe3Idxs.end());
           for (const auto& motherHadIdx : motherHadIdxs) {
-            if (motherHe3SetIdxs.contains(motherHadIdx)) {
+            if (!motherHe3SetIdxs.contains(motherHadIdx)) {
               continue;
             }
             
             motherParticle = mcParticles.rawIteratorAt(motherHadIdx);
-            if (!motherParticle.pdgCode() == Li4PDG || std::abs(motherParticle.y()) > 1) {
+            motherIdx = motherHadIdx;
+            if (std::abs(motherParticle.pdgCode()) != Li4PDG || std::abs(motherParticle.y()) > 1) {
                 continue;
             }
+            isMixedPair = false;
+            break;
+          }
+          if (!isMixedPair) {
+            he3Hadcand.flags |= Flags::kBothFromLi4;
           }
 
         } else if ((he3Hadcand.flagsHe3 & ParticleFlags::kFromHypertriton) && (he3Hadcand.flagsHad & ParticleFlags::kFromHypertriton)) {
-          he3Hadcand.flags |= Flags::kFromHypertriton;
 
           std::unordered_set<unsigned int> motherHe3SetIdxs(motherHe3Idxs.begin(), motherHe3Idxs.end());
           for (const auto& motherHadIdx : motherHadIdxs) {
-            if (motherHe3SetIdxs.contains(motherHadIdx)) {
+            if (!motherHe3SetIdxs.contains(motherHadIdx)) {
               continue;
             }
             
             motherParticle = mcParticles.rawIteratorAt(motherHadIdx);
-            if (!motherParticle.pdgCode() == o2::constants::physics::Pdg::kHyperTriton || std::abs(motherParticle.y()) > 1) {
+            motherIdx = motherHadIdx;
+            if (std::abs(motherParticle.pdgCode()) != o2::constants::physics::Pdg::kHyperTriton || std::abs(motherParticle.y()) > 1) {
                 continue;
             }
+            isMixedPair = false;
+            break;
           }
 
-        } else {
+          if (!isMixedPair) {
+            he3Hadcand.flags |= Flags::kBothFromHypertriton;
+          }
+
+        } 
+        
+        if (isMixedPair) {
           he3Hadcand.flags |= Flags::kMixedPair;
         }
 
@@ -1061,8 +1094,8 @@ struct he3HadronFemto {
         fillCandidateInfoMC(mctrackHe3, mctrackHad, he3Hadcand);
         
         if ((he3Hadcand.flags == Flags::kBothFromLi4) || (he3Hadcand.flags == Flags::kBothFromHypertriton)) {
-          fillMotherInfoMC(mctrackHe3, mctrackHad, mothertrack, he3Hadcand);
-          filledMothers.push_back(motherParticle.globalIndex()); 
+          fillMotherInfoMC(mctrackHe3, mctrackHad, motherParticle, he3Hadcand);
+          filledMothers.push_back(motherIdx);
         }
 
         fillHistograms(he3Hadcand);
