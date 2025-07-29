@@ -67,6 +67,13 @@ void uploadOTSobjects(std::string inputList, std::string passName, bool useAlien
     api.storeAsTFile(scalers, baseCCDBpath + "FilterCounters", metadata, duration.first, duration.second + 1);
     api.storeAsTFile(filters, baseCCDBpath + "SelectionCounters", metadata, duration.first, duration.second + 1);
     TH1* hCounterTVX = static_cast<TH1*>(scalersFile->Get("bc-selection-task/hCounterTVX"));
+    if (!hCounterTVX) {
+      hCounterTVX = static_cast<TH1*>(scalersFile->Get("lumi-task/hCounterTVX"));
+      if (!hCounterTVX) {
+        std::cout << "No hCounterTVX histogram found in the file, skipping upload for run " << runString << std::endl;
+        continue;
+      }
+    }
     api.storeAsTFile(hCounterTVX, baseCCDBpath + "InspectedTVX", metadata, duration.first, duration.second + 1);
 
     std::vector<ZorroHelper> zorroHelpers;
