@@ -49,8 +49,6 @@ struct PairTrackTrack {
   struct : ConfigurableGroup {
     std::string prefix = std::string("Options");
     Configurable<bool> correlatedPlots{"correlatedPlots", false, "Enable multidimensional histogramms. High memory consumption."};
-    Configurable<bool> sameSpecies{"sameSpecies", false, "Enable if track1 and track2 are the same particle"};
-    Configurable<int> randomizePairSeed{"randomizePairSeed", -1, "Seed to randomize track1 and track2. Set to negative value to deactivate. Set to 0 to generate unique seed in time."};
   } Options;
 
   // setup tables
@@ -92,13 +90,14 @@ struct PairTrackTrack {
   std::vector<double> defaultVtxBins{10, -10, 10};
   std::vector<double> defaultMultBins{50, 0, 200};
   std::vector<double> defaultCentBins{10, 0, 100};
-  ColumnBinningPolicy<femtocollisions::PosZ, femtocollisions::Mult> mixBinningMult{{defaultVtxBins, defaultMultBins}, true};
-  ColumnBinningPolicy<aod::femtocollisions::PosZ, aod::femtocollisions::Cent> mixBinningCent{{defaultVtxBins, defaultCentBins}, true};
-  ColumnBinningPolicy<aod::femtocollisions::PosZ, aod::femtocollisions::Mult, aod::femtocollisions::Cent> mixBinningMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}, true};
+  ColumnBinningPolicy<femtocollisions::PosZ, femtocollisions::Mult> mixBinsVtxMult{{defaultVtxBins, defaultMultBins}, true};
+  ColumnBinningPolicy<aod::femtocollisions::PosZ, aod::femtocollisions::Cent> mixBinsVtxCent{{defaultVtxBins, defaultCentBins}, true};
+  ColumnBinningPolicy<aod::femtocollisions::PosZ, aod::femtocollisions::Mult, aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}, true};
   pairhistmanager::ConfMixing confMixing;
 
   HistogramRegistry hRegistry{"FemtoTrackTrack", {}, OutputObjHandlingPolicy::AnalysisObject};
   std::mt19937 rng;
+  bool mixParticles = false;
 
   // setup cpr
   closepairrejection::ConfCpr confCpr;
@@ -111,9 +110,9 @@ struct PairTrackTrack {
 
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
-    mixBinningMult = {{confMixing.vtxBins, confMixing.multBins.value}, true};
-    mixBinningCent = {{confMixing.vtxBins.value, confMixing.centBins.value}, true};
-    mixBinningMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
+    mixBinsVtxMult = {{confMixing.vtxBins, confMixing.multBins.value}, true};
+    mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}, true};
+    mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
 
     // setup histograms for tracks
     auto colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
@@ -135,144 +134,65 @@ struct PairTrackTrack {
     // setup histograms for cpr
     auto cprHistSpec = closepairrejection::makeCprHistSpecMap(confCpr);
     cprSe.init<modes::Mode::kANALYSIS>(&hRegistry, cprHistSpec);
-    cprSe.setLimits(confCpr.detaMax, confCpr.dphistarMax);
+    cprSe.activate(confCpr.on.value);
+    cprSe.setLimits(confCpr.detaMax.value, confCpr.dphistarMax.value);
     cprMe.init<modes::Mode::kANALYSIS>(&hRegistry, cprHistSpec);
+    cprMe.activate(confCpr.on.value);
     cprMe.setLimits(confCpr.detaMax, confCpr.dphistarMax);
 
     // setup rng if necessary
-    if (Options.randomizePairSeed.value >= 0) {
+    if (confMixing.seed.value >= 0) {
       uint64_t randomSeed = 0;
-      if (Options.randomizePairSeed.value == 0) {
+      mixParticles = true;
+      if (confMixing.seed.value == 0) {
         randomSeed = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
       } else {
-        randomSeed = static_cast<uint64_t>(Options.randomizePairSeed.value);
+        randomSeed = static_cast<uint64_t>(confMixing.seed.value);
       }
       rng = std::mt19937(randomSeed);
     }
   };
 
-  template <modes::Mode mode, typename P1, typename P2>
-  void doSameEvent(P1 SliceTrk1, P2 SliceTrk2)
-  {
-    // fill single particle histograms
-    for (auto const& part : SliceTrk1) {
-      trackHistManager1.fill<mode>(part);
-    }
-
-    if (!Options.sameSpecies.value) {
-      for (auto const& part : SliceTrk2) {
-        trackHistManager2.fill<mode>(part);
-      }
-    }
-
-    /// Now build the combinations
-    std::uniform_real_distribution<float> dist(0, 1);
-    float rand = 0.;
-    if (Options.sameSpecies.value) {
-      for (auto const& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(SliceTrk1, SliceTrk1))) {
-
-        if (confCpr.on.value) {
-          cprSe.setPair(p1, p2);
-          if (cprSe.isClosePair()) {
-            continue;
-          }
-        }
-        // track cleaning
-        if (!pc.isCleanTrackPair(p1, p2)) {
-          continue;
-        }
-        // randomize track1 and track2 if configured
-        if (Options.randomizePairSeed.value >= 0) {
-          rand = dist(rng);
-        }
-        if (rand <= 0.5) {
-          pairHistManagerSe.setPair(p1, p2);
-        } else {
-          pairHistManagerSe.setPair(p2, p1);
-        }
-        cprSe.fill<mode>();
-        pairHistManagerSe.fill<mode>();
-      }
-    } else {
-      for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceTrk2))) {
-        if (confCpr.on.value) {
-          cprSe.setPair(p1, p2);
-          if (cprSe.isClosePair()) {
-            continue;
-          }
-        }
-        // pair cleaning
-        if (!pc.isCleanTrackPair(p1, p2)) {
-          continue;
-        }
-        cprSe.fill<mode>();
-        pairHistManagerSe.setPair(p1, p2);
-        pairHistManagerSe.fill<mode>();
-      }
-    }
-  }
-
-  // template <modes::Mode mode, typename CT, typename TT, typename BP>
-  // void doMixedEvent(CT const& cols, TT const& /*parts*/, BP policy)
-  // {
-  //   for (auto const& [collision1, collision2] : soa::selfCombinations(policy, Mixing.depth.value, -1, cols, cols)) {
-  //     if (collision1.globalIndex() == collision2.globalIndex()) {
-  //       continue;
-  //     }
-  //     auto sliceTrk1 = TrackPartition1->sliceByCached(aod::femtobase::collisionId, collision1.globalIndex(), cache);
-  //     auto sliceTrk2 = TrackPartition1->sliceByCached(aod::femtobase::collisionId, collision2.globalIndex(), cache);
-  //     if (sliceTrk1.size() == 0 || sliceTrk2.size() == 0) {
-  //       continue;
-  //     }
-  //     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(sliceTrk1, sliceTrk2))) {
-  //       if (ConfCpr.on.value) {
-  //         cprMe.setMagField(collision1.magField());
-  //         cprMe.setPair(p1, p2);
-  //         if (cprMe.isClosePair()) {
-  //           continue;
-  //         }
-  //       }
-  //       // pair cleaning
-  //       if (!pc.isCleanTrackPair(p1, p2)) {
-  //         continue;
-  //       }
-  //       cprMe.fill<mode>();
-  //       pairHistManagerMe.setPair(p1, p2);
-  //       pairHistManagerMe.fill<mode>();
-  //     }
-  //   }
-  // }
-
   void processSameEvent(FilteredCollision const& col, Tracks const& /*tracks*/)
   {
-    colHistManager.fill<modes::Mode::kANALYSIS>(col);
-    auto trackSlice1 = trackPartition1->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
-    auto trackSlice2 = trackPartition2->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
-    if (trackSlice1.size() == 0 || trackSlice2.size() == 0) {
-      return;
+    if (confMixing.sameSpecies) {
+      auto trackSlice1 = trackPartition1->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
+      if (trackSlice1.size() == 0) {
+        return;
+      }
+      colHistManager.fill<modes::Mode::kANALYSIS>(col);
+      cprSe.setMagField(col.magField());
+      pairhistmanager::processSameEvent<modes::Mode::kANALYSIS>(trackSlice1, trackHistManager1, pairHistManagerSe, cprSe, rng, mixParticles);
+    } else {
+      auto trackSlice1 = trackPartition1->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
+      auto trackSlice2 = trackPartition2->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
+      if (trackSlice1.size() == 0 || trackSlice2.size() == 0) {
+        return;
+      }
+      colHistManager.fill<modes::Mode::kANALYSIS>(col);
+      cprSe.setMagField(col.magField());
+      pairhistmanager::processSameEvent<modes::Mode::kANALYSIS>(trackSlice1, trackSlice2, trackHistManager1, trackHistManager2, pairHistManagerSe, cprSe, pc);
     }
-    cprSe.setMagField(col.magField());
-    doSameEvent<modes::Mode::kANALYSIS>(trackSlice1, trackSlice1);
   }
-  PROCESS_SWITCH(PairTrackTrack, processSameEvent, "Enable processing same event", true);
+  PROCESS_SWITCH(PairTrackTrack, processSameEvent, "Enable processing same event processing", true);
 
-  // void processMixedEvent(FilteredCollisions const& cols, Tracks const& tracks)
-  // {
-  //   switch (Mixing.policy.value) {
-  //     case 0:
-  //       doMixedEvent<modes::Mode::kANALYSIS>(cols, tracks, colBinningMult);
-  //       break;
-  //     case 1:
-  //       doMixedEvent<modes::Mode::kANALYSIS>(cols, tracks, colBinningMultPercentile);
-  //       break;
-  //     case 2:
-  //       doMixedEvent<modes::Mode::kANALYSIS>(cols, tracks, colBinningMultMultPercentile);
-  //       break;
-  //     default:
-  //       LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
-  //   }
-  // }
-  // PROCESS_SWITCH(PairTrackTrack, processMixedEvent, "Enable processing mixed event", true);
+  void processMixedEvent(FilteredCollisions const& cols, Tracks const& /*tracks*/)
+  {
+    switch (confMixing.policy.value) {
+      case static_cast<int>(pairhistmanager::kVtxMult):
+        pairhistmanager::processMixedEvent<modes::Mode::kANALYSIS>(cols, trackPartition1, trackPartition2, cache, mixBinsVtxMult, confMixing.depth.value, trackHistManager1, trackHistManager2, pairHistManagerMe, cprMe, pc);
+        break;
+      case static_cast<int>(pairhistmanager::kVtxCent):
+        pairhistmanager::processMixedEvent<modes::Mode::kANALYSIS>(cols, trackPartition1, trackPartition2, cache, mixBinsVtxCent, confMixing.depth.value, trackHistManager1, trackHistManager2, pairHistManagerMe, cprMe, pc);
+        break;
+      case static_cast<int>(pairhistmanager::kVtxMultCent):
+        pairhistmanager::processMixedEvent<modes::Mode::kANALYSIS>(cols, trackPartition1, trackPartition2, cache, mixBinsVtxMultCent, confMixing.depth.value, trackHistManager1, trackHistManager2, pairHistManagerMe, cprMe, pc);
+        break;
+      default:
+        LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+    }
+  }
+  PROCESS_SWITCH(PairTrackTrack, processMixedEvent, "Enable processing mixed event processing", true);
 };
 
 WorkflowSpec

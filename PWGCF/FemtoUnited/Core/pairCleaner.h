@@ -19,8 +19,7 @@
 #include "PWGCF/FemtoUnited/Core/dataTypes.h"
 #include "PWGCF/FemtoUnited/Core/histManager.h"
 #include "PWGCF/FemtoUnited/Core/modes.h"
-
-#include "Framework/HistogramRegistry.h"
+#include "PWGCF/FemtoUnited/DataModel/FemtoTracksDerived.h"
 
 namespace o2::analysis::femtounited
 {
@@ -34,13 +33,14 @@ class PairCleaner
  public:
   /// Destructor
   virtual ~PairCleaner() = default;
-  /// Initializes histograms for the task
-  /// \param registry Histogram registry to be passed
-  ///
+
   template <typename T1, typename T2>
-  bool isCleanTrackPair(T1 track1, T2 track2)
+  bool isCleanPair(T1 particle1, T2 particle2)
   {
-    return track1.globalIndex() != track2.globalIndex();
+    if constexpr (std::is_same_v<T1, o2::aod::FUTracks::iterator> && std::is_same_v<T2, o2::aod::FUTracks::iterator>) {
+      return particle1.globalIndex() != particle2.globalIndex();
+    }
+    return true;
   };
 
  private:

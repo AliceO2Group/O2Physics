@@ -20,8 +20,10 @@
 #include "PWGCF/FemtoUnited/Core/femtoUtils.h"
 #include "PWGCF/FemtoUnited/Core/histManager.h"
 #include "PWGCF/FemtoUnited/Core/modes.h"
+#include "PWGCF/FemtoUnited/DataModel/FemtoBaseDerived.h"
 
 #include "Framework/Configurable.h"
+#include "Framework/GroupedCombinations.h"
 #include "Framework/HistogramRegistry.h"
 
 #include "Math/Boost.h"
@@ -30,6 +32,7 @@
 
 #include <array>
 #include <map>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -54,6 +57,13 @@ enum PairHist {
   kPairHistogramLast
 };
 
+enum MixingPoliciy {
+  kVtxMult,
+  kVtxCent,
+  kVtxMultCent,
+  kMixingPolicyLast
+};
+
 // Mixing configurables
 struct ConfMixing : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("Mixing");
@@ -62,6 +72,8 @@ struct ConfMixing : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis vtxBins{"vtxBins", {o2::framework::VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   o2::framework::Configurable<int> depth{"depth", 5, "Number of events for mixing"};
   o2::framework::Configurable<int> policy{"policy", 0, "Binning policy for mixing (alywas in combination with z-vertex) -> 0: multiplicity, -> 1: centrality, -> 2: both"};
+  o2::framework::Configurable<bool> sameSpecies{"sameSpecies", false, "Enable if partilce 1 and particle 2 are the same"};
+  o2::framework::Configurable<int> seed{"seed", -1, "Seed to randomize particle 1 and particle 2 (if they are identical). Set to negative value to deactivate. Set to 0 to generate unique seed in time."};
 };
 
 struct ConfPairBinning : o2::framework::ConfigurableGroup {
@@ -99,6 +111,130 @@ auto makePairHistSpecMap(const T1& confPairBinning, const T2& confObject1Binning
     {kPt1VsMt, {confObject1Binning.pt, confPairBinning.mt}},
     {kPt2VsMt, {confObject2Binning.pt, confPairBinning.mt}}};
 };
+
+template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
+void processSameEvent(const T1& SliceParticle,
+                      T2& ParticleHistManager,
+                      T3& PairHistManager,
+                      T4& CprManager,
+                      T5& rng,
+                      bool randomize)
+{
+  // Fill single particle histograms
+  for (auto const& part : SliceParticle) {
+    ParticleHistManager.template fill<mode>(part);
+  }
+
+  std::uniform_real_distribution<float> dist(0.f, 1.f);
+
+  for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle))) {
+
+    // Close pair rejection
+    if (CprManager.isActivated()) {
+      CprManager.setPair(p1, p2);
+      if (CprManager.isClosePair()) {
+        continue;
+      }
+    }
+    CprManager.template fill<mode>();
+
+    // Randomize pair order if enabled
+    float threshold = 0.5f;
+    bool swapPair = randomize ? (dist(rng) > threshold) : false;
+    if (swapPair) {
+      PairHistManager.setPair(p2, p1);
+    } else {
+      PairHistManager.setPair(p1, p2);
+    }
+
+    PairHistManager.template fill<mode>();
+  }
+}
+
+template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
+void processSameEvent(const T1& SliceParticle1,
+                      const T2& SliceParticle2,
+                      T3& ParticleHistManager1,
+                      T4& ParticleHistManager2,
+                      T5& PairHistManager,
+                      T6& CprManager,
+                      T7& PcManager)
+{
+  // Fill single particle histograms
+  for (auto const& part : SliceParticle1) {
+    ParticleHistManager1.template fill<mode>(part);
+  }
+
+  for (auto const& part : SliceParticle2) {
+    ParticleHistManager2.template fill<mode>(part);
+  }
+
+  for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2))) {
+    // pair cleaning
+    if (!PcManager.template isCleanPair(p1, p2)) {
+      continue;
+    }
+    // Close pair rejection
+    if (CprManager.isActivated()) {
+      CprManager.setPair(p1, p2);
+      if (CprManager.isClosePair()) {
+        continue;
+      }
+    }
+    CprManager.template fill<mode>();
+    PairHistManager.setPair(p1, p2);
+    PairHistManager.template fill<mode>();
+  }
+}
+
+template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11>
+void processMixedEvent(T1& Collisions,
+                       T2& Partition1,
+                       T3& Partition2,
+                       T4& cache,
+                       T5& policy,
+                       T6& depth,
+                       T7& ParticleHistManager1,
+                       T8& ParticleHistManager2,
+                       T9& PairHistManager,
+                       T10& CprManager,
+                       T11& PcManager)
+{
+  for (auto const& [collision1, collision2] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions)) {
+    auto sliceParticle1 = Partition1->sliceByCached(o2::aod::femtobase::stored::collisionId, collision1.globalIndex(), cache);
+    auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtobase::stored::collisionId, collision2.globalIndex(), cache);
+    if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0) {
+      continue;
+    }
+
+    // Fill single particle histograms
+    for (auto const& part : sliceParticle1) {
+      ParticleHistManager1.template fill<mode>(part);
+    }
+
+    for (auto const& part : sliceParticle2) {
+      ParticleHistManager2.template fill<mode>(part);
+    }
+
+    for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(sliceParticle1, sliceParticle2))) {
+
+      // pair cleaning
+      if (!PcManager.template isCleanPair(p1, p2)) {
+        continue;
+      }
+      // Close pair rejection
+      if (CprManager.isActivated()) {
+        CprManager.setPair(p1, p2);
+        if (CprManager.isClosePair()) {
+          continue;
+        }
+      }
+      CprManager.template fill<mode>();
+      PairHistManager.setPair(p1, p2);
+      PairHistManager.template fill<mode>();
+    }
+  }
+}
 
 constexpr char PrefixTrackTrackSe[] = "TrackTrack/SE/";
 constexpr char PrefixTrackTrackMe[] = "TrackTrack/ME/";

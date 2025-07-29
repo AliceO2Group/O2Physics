@@ -25,16 +25,16 @@
     (femtocollisions::magField >= (selection).magFieldMin && femtocollisions::magField <= (selection).magFieldMax)
 
 // standard track partition
-#define MAKE_TRACK_PARTITION(selection)                                                                                                                                                                     \
-  ifnode(selection.sign.node() > 0, femtobase::stored::signedPt > 0.f, femtobase::stored::signedPt < 0.f) &&                                                                                                \
-    (nabs(femtobase::stored::signedPt) > selection.ptMin) &&                                                                                                                                                \
-    (nabs(femtobase::stored::signedPt) < selection.ptMax) &&                                                                                                                                                \
-    (femtobase::stored::eta > selection.etaMin) &&                                                                                                                                                          \
-    (femtobase::stored::eta < selection.etaMax) &&                                                                                                                                                          \
-    (femtobase::stored::phi > selection.phiMin) &&                                                                                                                                                          \
-    (femtobase::stored::phi < selection.phiMax) &&                                                                                                                                                          \
-    ifnode(nabs(femtobase::stored::signedPt) * (nexp(femtobase::stored::eta) + nexp(-1.f * femtobase::stored::eta)) / 2.f <= selection.pidThres, /*// o2-linter: disable=magic-number (formula for cosh) */ \
-           ncheckbit(femtotracks::trackMask, selection.maskLowMomentum),                                                                                                                                    \
+#define MAKE_TRACK_PARTITION(selection)                                                                                                          \
+  ifnode(selection.sign.node() > 0, femtobase::stored::signedPt > 0.f, femtobase::stored::signedPt < 0.f) &&                                     \
+    (nabs(femtobase::stored::signedPt) > selection.ptMin) &&                                                                                     \
+    (nabs(femtobase::stored::signedPt) < selection.ptMax) &&                                                                                     \
+    (femtobase::stored::eta > selection.etaMin) &&                                                                                               \
+    (femtobase::stored::eta < selection.etaMax) &&                                                                                               \
+    (femtobase::stored::phi > selection.phiMin) &&                                                                                               \
+    (femtobase::stored::phi < selection.phiMax) &&                                                                                               \
+    ifnode(nabs(femtobase::stored::signedPt) * (nexp(femtobase::stored::eta) + nexp(-1.f * femtobase::stored::eta)) / 2.f <= selection.pidThres, \
+           ncheckbit(femtotracks::trackMask, selection.maskLowMomentum),                                                                         \
            ncheckbit(femtotracks::trackMask, selection.maskHighMomentum))
 
 // partition for phis and rhos, i.e. resonance that are their own antiparticle
