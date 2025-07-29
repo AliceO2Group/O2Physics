@@ -14,34 +14,38 @@
 /// \since  01/12/2024
 /// \brief  task to evaluate flow with respect to spectator plane.
 
-#include <CCDB/BasicCCDBManager.h>
-#include <DataFormatsParameters/GRPObject.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <algorithm>
-#include <numeric>
-#include <vector>
-#include <string>
-#include <unordered_map>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "GFWWeights.h"
 
 #include "PWGCF/DataModel/SPTableZDC.h"
-#include "GFWWeights.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+
 #include "TF1.h"
 #include "TPDGCode.h"
+
+#include <algorithm>
+#include <numeric>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -93,6 +97,7 @@ struct FlowSP {
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsDCApt1, float, 0.1, "DcaZ < a * b / pt^1.1 -> this sets a");
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsDCApt2, float, 0.035, "DcaZ < a * b / pt^1.1 -> this sets b");
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsPIDNsigma, float, 2.0, "nSigma cut for PID");
+  O2_DEFINE_CONFIGURABLE(cfgTrackSelDoTrackQAvsCent, bool, true, "Do track selection QA plots as function of centrality");
   // Additional event selections
   O2_DEFINE_CONFIGURABLE(cfgEvSelsUseAdditionalEventCut, bool, true, "Bool to enable Additional Event Cut");
   O2_DEFINE_CONFIGURABLE(cfgEvSelsMaxOccupancy, int, 10000, "Maximum occupancy of selected events");
@@ -366,15 +371,6 @@ struct FlowSP {
 
       if (cfgFillTrackQA) {
         registry.add("QA/after/pt_phi", "", {HistType::kTH2D, {axisPt, axisPhiMod}});
-        registry.add<TH1>("incl/QA/after/hPt", "", kTH1D, {axisPt});
-        registry.add<TH1>("incl/QA/after/hPt_forward", "", kTH1D, {axisPt});
-        registry.add<TH1>("incl/QA/after/hPt_forward_uncorrected", "", kTH1D, {axisPt});
-        registry.add<TH1>("incl/QA/after/hPt_backward", "", kTH1D, {axisPt});
-        registry.add<TH1>("incl/QA/after/hPt_backward_uncorrected", "", kTH1D, {axisPt});
-        registry.add<TH1>("incl/QA/after/hPhi", "", kTH1D, {axisPhi});
-        registry.add<TH1>("incl/QA/after/hPhi_uncorrected", "", kTH1D, {axisPhi});
-        registry.add<TH1>("incl/QA/after/hEta", "", kTH1D, {axisEta});
-        registry.add<TH1>("incl/QA/after/hEta_uncorrected", "", kTH1D, {axisEta});
         registry.add<TH3>("incl/QA/after/hPhi_Eta_vz", "", kTH3D, {axisPhi, axisEta, axisVz});
         registry.add<TH3>("incl/QA/after/hPhi_Eta_vz_corrected", "", kTH3D, {axisPhi, axisEta, axisVz});
         registry.add<TH2>("incl/QA/after/hDCAxy_pt", "", kTH2D, {axisPt, axisDCAxy});
@@ -382,6 +378,28 @@ struct FlowSP {
         registry.add("incl/QA/after/hSharedClusters_pt", "", {HistType::kTH2D, {axisPt, axisShCl}});
         registry.add("incl/QA/after/hCrossedRows_pt", "", {HistType::kTH2D, {axisPt, axisCl}});
         registry.add("incl/QA/after/hCrossedRows_vs_SharedClusters", "", {HistType::kTH2D, {axisCl, axisShCl}});
+
+        if (cfgTrackSelDoTrackQAvsCent) {
+          registry.add<TH2>("incl/QA/after/hPt", "", kTH2D, {axisPt, axisCent});
+          registry.add<TH2>("incl/QA/after/hPt_forward", "", kTH2D, {axisPt, axisCent});
+          registry.add<TH2>("incl/QA/after/hPt_forward_uncorrected", "", kTH2D, {axisPt, axisCent});
+          registry.add<TH2>("incl/QA/after/hPt_backward", "", kTH2D, {axisPt, axisCent});
+          registry.add<TH2>("incl/QA/after/hPt_backward_uncorrected", "", kTH2D, {axisPt, axisCent});
+          registry.add<TH2>("incl/QA/after/hPhi", "", kTH2D, {axisPhi, axisCent});
+          registry.add<TH2>("incl/QA/after/hPhi_uncorrected", "", kTH2D, {axisPhi, axisCent});
+          registry.add<TH2>("incl/QA/after/hEta", "", kTH2D, {axisEta, axisCent});
+          registry.add<TH2>("incl/QA/after/hEta_uncorrected", "", kTH2D, {axisEta, axisCent});
+        } else {
+          registry.add<TH1>("incl/QA/after/hPt", "", kTH1D, {axisPt});
+          registry.add<TH1>("incl/QA/after/hPt_forward", "", kTH1D, {axisPt});
+          registry.add<TH1>("incl/QA/after/hPt_forward_uncorrected", "", kTH1D, {axisPt});
+          registry.add<TH1>("incl/QA/after/hPt_backward", "", kTH1D, {axisPt});
+          registry.add<TH1>("incl/QA/after/hPt_backward_uncorrected", "", kTH1D, {axisPt});
+          registry.add<TH1>("incl/QA/after/hPhi", "", kTH1D, {axisPhi});
+          registry.add<TH1>("incl/QA/after/hPhi_uncorrected", "", kTH1D, {axisPhi});
+          registry.add<TH1>("incl/QA/after/hEta", "", kTH1D, {axisEta});
+          registry.add<TH1>("incl/QA/after/hEta_uncorrected", "", kTH1D, {axisEta});
+        }
 
         if (cfgFillQABefore)
           registry.addClone("incl/QA/after/", "incl/QA/before/");
@@ -656,6 +674,19 @@ struct FlowSP {
     return grpo->getNominalL3Field();
   }
 
+  std::pair<float, uint16_t> getCrossingAngleCCDB(uint64_t timestamp)
+  {
+    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
+    auto grpo = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timestamp);
+    if (grpo == nullptr) {
+      LOGF(fatal, "GRP object for Crossing Angle not found for timestamp %llu", timestamp);
+      return {0, 0};
+    }
+    float crossingAngle = grpo->getCrossingAngle();
+    uint16_t crossingAngleTime = grpo->getCrossingAngleTime();
+    return {crossingAngle, crossingAngleTime};
+  }
+
   // From Generic Framework
   void loadCorrections(uint64_t timestamp)
   {
@@ -916,7 +947,7 @@ struct FlowSP {
     registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentNGlobal"), collision.centFT0C(), collision.centNGlobal(), centWeight);
 
     if (cfgFillEventPlaneQA) {
-      if constexpr (framework::has_type_v<aod::sptablezdc::Vx, typename CollisionObject::all_columns>) {
+      if constexpr (o2::framework::has_type_v<aod::sptablezdc::Vx, typename CollisionObject::all_columns>) {
         double psiA = 1.0 * std::atan2(collision.qyA(), collision.qxA());
         double psiC = 1.0 * std::atan2(collision.qyC(), collision.qxC());
         double psiFull = 1.0 * std::atan2(collision.qyA() + collision.qyC(), collision.qxA() + collision.qxC());
@@ -1074,6 +1105,35 @@ struct FlowSP {
     registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_vs_SharedClusters"), track.tpcNClsFound(), track.tpcFractionSharedCls(), wacc * weff);
   }
 
+  template <FillType ft, ChargeType ct, ParticleType pt, typename TrackObject>
+  inline void fillTrackQA(TrackObject track, double vz, double centrality, float wacc = 1, float weff = 1)
+  {
+    if (!cfgFillTrackQA)
+      return;
+
+    static constexpr std::string_view Time[] = {"before/", "after/"};
+    // NOTE: species[kUnidentified] = "" (when no PID)
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt"), track.pt(), centrality, wacc * weff);
+    if (track.eta() > 0) {
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_forward"), track.pt(), centrality, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_forward_uncorrected"), track.pt(), centrality);
+    } else {
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_backward"), track.pt(), centrality, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_backward_uncorrected"), track.pt(), centrality);
+    }
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi"), track.phi(), centrality, wacc);
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_uncorrected"), track.phi(), centrality);
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hEta"), track.eta(), centrality, wacc);
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hEta_uncorrected"), track.eta(), centrality);
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_vz"), track.phi(), track.eta(), vz);
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_vz_corrected"), track.phi(), track.eta(), vz, wacc);
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hDCAxy_pt"), track.pt(), track.dcaXY(), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hDCAz_pt"), track.pt(), track.dcaZ(), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hSharedClusters_pt"), track.pt(), track.tpcFractionSharedCls(), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_pt"), track.pt(), track.tpcNClsFound(), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_vs_SharedClusters"), track.tpcNClsFound(), track.tpcFractionSharedCls(), wacc * weff);
+  }
+
   template <FillType ft, ChargeType ct, typename TrackObject>
   inline void fillPIDQA(TrackObject track)
   {
@@ -1141,15 +1201,27 @@ struct FlowSP {
   }
 
   template <FillType ft, ParticleType ct, typename TrackObject>
-  void fillAllQA(TrackObject track, double vtxz, bool pos, float wacc = 1, float weff = 1, float waccP = 1, float weffP = 1, float waccN = 1, float weffN = 1)
+  void fillAllQA(TrackObject track, double vtxz, double centrality, bool pos, float wacc = 1, float weff = 1, float waccP = 1, float weffP = 1, float waccN = 1, float weffN = 1)
   {
-    fillTrackQA<ft, kInclusive, ct>(track, vtxz, wacc, weff);
+    if (!cfgTrackSelDoTrackQAvsCent) {
+      fillTrackQA<ft, kInclusive, ct>(track, vtxz, wacc, weff);
+    } else {
+      fillTrackQA<ft, kInclusive, ct>(track, vtxz, centrality, wacc, weff);
+    }
     fillPIDQA<ft, kInclusive>(track);
     if (pos) {
-      fillTrackQA<ft, kPositive, ct>(track, vtxz, waccP, weffP);
+      if (!cfgTrackSelDoTrackQAvsCent) {
+        fillTrackQA<ft, kPositive, ct>(track, vtxz, waccP, weffP);
+      } else {
+        fillTrackQA<ft, kPositive, ct>(track, vtxz, centrality, waccP, weffP);
+      }
       fillPIDQA<ft, kPositive>(track);
     } else {
-      fillTrackQA<ft, kNegative, ct>(track, vtxz, waccN, weffN);
+      if (!cfgTrackSelDoTrackQAvsCent) {
+        fillTrackQA<ft, kNegative, ct>(track, vtxz, waccN, weffN);
+      } else {
+        fillTrackQA<ft, kNegative, ct>(track, vtxz, centrality, waccN, weffN);
+      }
       fillPIDQA<ft, kNegative>(track);
     }
   }
@@ -1291,16 +1363,16 @@ struct FlowSP {
         if (cfgFillQABefore) {
           switch (trackPID) {
             case kUnidentified:
-              fillAllQA<kBefore, kUnidentified>(track, vtxz, pos);
+              fillAllQA<kBefore, kUnidentified>(track, vtxz, centrality, pos);
               break;
             case kPion:
-              fillAllQA<kBefore, kPion>(track, vtxz, pos);
+              fillAllQA<kBefore, kPion>(track, vtxz, centrality, pos);
               break;
             case kKaon:
-              fillAllQA<kBefore, kKaon>(track, vtxz, pos);
+              fillAllQA<kBefore, kKaon>(track, vtxz, centrality, pos);
               break;
             case kProton:
-              fillAllQA<kBefore, kProton>(track, vtxz, pos);
+              fillAllQA<kBefore, kProton>(track, vtxz, centrality, pos);
               break;
           }
         }
@@ -1345,16 +1417,16 @@ struct FlowSP {
 
         switch (trackPID) {
           case kUnidentified:
-            fillAllQA<kAfter, kUnidentified>(track, vtxz, pos, wacc, weff, waccP, weffP, waccN, weffN);
+            fillAllQA<kAfter, kUnidentified>(track, vtxz, centrality, pos, wacc, weff, waccP, weffP, waccN, weffN);
             break;
           case kPion:
-            fillAllQA<kAfter, kPion>(track, vtxz, pos, wacc, weff, waccP, weffP, waccN, weffN);
+            fillAllQA<kAfter, kPion>(track, vtxz, centrality, pos, wacc, weff, waccP, weffP, waccN, weffN);
             break;
           case kKaon:
-            fillAllQA<kAfter, kKaon>(track, vtxz, pos, wacc, weff, waccP, weffP, waccN, weffN);
+            fillAllQA<kAfter, kKaon>(track, vtxz, centrality, pos, wacc, weff, waccP, weffP, waccN, weffN);
             break;
           case kProton:
-            fillAllQA<kAfter, kProton>(track, vtxz, pos, wacc, weff, waccP, weffP, waccN, weffN);
+            fillAllQA<kAfter, kProton>(track, vtxz, centrality, pos, wacc, weff, waccP, weffP, waccN, weffN);
             break;
         }
 

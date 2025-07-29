@@ -341,7 +341,7 @@ struct AssociatePhotonToEMEvent {
   PresliceUnsorted<aod::EMPrimaryElectronsFromDalitz> perCollisionEl = aod::emprimaryelectron::collisionId;
   Preslice<aod::PHOSClusters> perCollisionPHOS = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollisionEMC = aod::skimmedcluster::collisionId;
-  PresliceUnsorted<aod::EMPrimaryTracks> perCollisionTrack = aod::emprimarytrack::collisionId;
+  Preslice<aod::EMPrimaryTracks> perCollision_track = aod::emprimarytrack::collisionId;
 
   void init(o2::framework::InitContext&) {}
 
@@ -370,11 +370,6 @@ struct AssociatePhotonToEMEvent {
     fillEventId(collisions, tracks, prmeleventid, perCollisionEl);
   }
 
-  void processChargedTrack(aod::EMEvents const& collisions, aod::EMPrimaryTracks const& tracks)
-  {
-    fillEventId(collisions, tracks, prmtrackeventid, perCollisionTrack);
-  }
-
   void processPHOS(aod::EMEvents const& collisions, aod::PHOSClusters const& photons)
   {
     fillEventId(collisions, photons, phoseventid, perCollisionPHOS);
@@ -385,12 +380,18 @@ struct AssociatePhotonToEMEvent {
     fillEventId(collisions, photons, emceventid, perCollisionEMC);
   }
 
+  void processChargedTrack(aod::EMEvents const& collisions, aod::EMPrimaryTracks const& tracks)
+  {
+    fillEventId(collisions, tracks, prmtrackeventid, perCollision_track);
+  }
+
   void processDummy(aod::EMEvents const&) {}
 
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPCM, "process pcm-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processElectronFromDalitz, "process dalitzee-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPHOS, "process phos-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processEMC, "process emc-event indexing", false);
+  PROCESS_SWITCH(AssociatePhotonToEMEvent, processChargedTrack, "process indexing for charged tracks", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processDummy, "process dummy", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
