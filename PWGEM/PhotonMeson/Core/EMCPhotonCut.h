@@ -9,22 +9,19 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-//
-// Class for emcal photon selection
-//
+/// \file EMCPhotonCut.h
+/// \brief Header of class for emcal photon selection.
+/// \author M. Hemmer, marvin.hemmer@cern.ch; N. Strangmann, nicolas.strangmann@cern.ch
 
 #ifndef PWGEM_PHOTONMESON_CORE_EMCPHOTONCUT_H_
 #define PWGEM_PHOTONMESON_CORE_EMCPHOTONCUT_H_
 
-#include <set>
-#include <vector>
-#include <utility>
+#include <TNamed.h>
+
+#include <Rtypes.h>
+
+#include <functional>
 #include <string>
-#include <optional>
-#include "Framework/Logger.h"
-#include "Framework/DataTypes.h"
-#include "Rtypes.h"
-#include "TNamed.h"
 
 class EMCPhotonCut : public TNamed
 {
@@ -95,14 +92,14 @@ class EMCPhotonCut : public TNamed
         return mMinTime <= cluster.time() && cluster.time() <= mMaxTime;
 
       case EMCPhotonCuts::kTM: {
-        auto trackseta = cluster.tracketa(); // std:vector<float>
-        auto tracksphi = cluster.trackphi(); // std:vector<float>
-        auto trackspt = cluster.trackpt();   // std:vector<float>
-        auto tracksp = cluster.trackp();     // std:vector<float>
+        auto dEtas = cluster.deltaEta();   // std:vector<float>
+        auto dPhis = cluster.deltaPhi();   // std:vector<float>
+        auto trackspt = cluster.trackpt(); // std:vector<float>
+        auto tracksp = cluster.trackp();   // std:vector<float>
         int ntrack = tracksp.size();
         for (int itr = 0; itr < ntrack; itr++) {
-          float dEta = fabs(trackseta[itr] - cluster.eta());
-          float dPhi = fabs(tracksphi[itr] - cluster.phi());
+          float dEta = std::fabs(dEtas[itr]);
+          float dPhi = std::fabs(dPhis[itr]);
           bool result = (dEta > mTrackMatchingEta(trackspt[itr])) || (dPhi > mTrackMatchingPhi(trackspt[itr])) || (cluster.e() / tracksp[itr] >= mMinEoverP);
           if (!result) {
             return false;

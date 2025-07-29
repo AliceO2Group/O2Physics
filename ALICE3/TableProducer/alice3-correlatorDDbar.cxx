@@ -14,23 +14,20 @@
 ///
 /// \author Fabio Colamaria <fabio.colamaria@ba.infn.it>, INFN Bari
 
-#include <vector>
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/HFC/DataModel/CorrelationTables.h"
+
+#include "ALICE3/DataModel/A3DecayFinderTables.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "ALICE3/DataModel/A3DecayFinderTables.h"
-
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/HFC/DataModel/CorrelationTables.h"
-// #include "PWGHF/DataModel/CandidateReconstructionTables.h"
-// #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -121,6 +118,15 @@ struct alice3correlatorddbar {
     registry.add("hMassD0barMCRecSig", "D0bar signal candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassD0barMCRecRefl", "D0bar reflection candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassD0barMCRecBkg", "D0bar background candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMass_NoEff", "D0,D0bar candidates (wo efficiency);inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassD0_NoEff", "D0,D0bar candidates (wo efficiency);inv. mass D0 only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassD0bar_NoEff", "D0,D0bar candidates (wo efficiency);inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassD0MCRecSig_NoEff", "D0 signal candidates - MC reco (wo efficiency);inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassD0MCRecRefl_NoEff", "D0 reflection candidates - MC reco (wo efficiency);inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassD0MCRecBkg_NoEff", "D0 background candidates - MC reco (wo efficiency);inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassD0barMCRecSig_NoEff", "D0bar signal candidates - MC reco (wo efficiency);inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassD0barMCRecRefl_NoEff", "D0bar reflection candidates - MC reco (wo efficiency);inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassD0barMCRecBkg_NoEff", "D0bar background candidates - MC reco (wo efficiency);inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
   /// D0-D0bar correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
@@ -139,10 +145,14 @@ struct alice3correlatorddbar {
       if (candidate1.isSelD0() >= selectionFlagD0) {
         registry.fill(HIST("hMass"), candidate1.m(), candidate1.pt(), efficiencyWeight);
         registry.fill(HIST("hMassD0"), candidate1.m(), candidate1.pt(), efficiencyWeight);
+        registry.fill(HIST("hMass_NoEff"), candidate1.m(), candidate1.pt());
+        registry.fill(HIST("hMassD0_NoEff"), candidate1.m(), candidate1.pt());
       }
       if (candidate1.isSelD0bar() >= selectionFlagD0bar) {
         registry.fill(HIST("hMass"), candidate1.m(), candidate1.pt(), efficiencyWeight);
         registry.fill(HIST("hMassD0bar"), candidate1.m(), candidate1.pt(), efficiencyWeight);
+        registry.fill(HIST("hMass_NoEff"), candidate1.m(), candidate1.pt());
+        registry.fill(HIST("hMassD0bar_NoEff"), candidate1.m(), candidate1.pt());
       }
       registry.fill(HIST("hPtCand"), candidate1.pt());
       registry.fill(HIST("hPtProng0"), candidate1.ptProng0());
@@ -229,19 +239,25 @@ struct alice3correlatorddbar {
       if (candidate1.isSelD0() >= selectionFlagD0) {                                                 // only reco as D0
         if (candidate1.mcTruthInfo() == 1) {                                                         // also matched as D0
           registry.fill(HIST("hMassD0MCRecSig"), candidate1.m(), candidate1.pt(), efficiencyWeight); // here m is univoque, since a given candidate passes the selection with only a single mass option
+          registry.fill(HIST("hMassD0MCRecSig_NoEff"), candidate1.m(), candidate1.pt());
         } else if (candidate1.mcTruthInfo() == 2) {
           registry.fill(HIST("hMassD0MCRecRefl"), candidate1.m(), candidate1.pt(), efficiencyWeight);
+          registry.fill(HIST("hMassD0MCRecRefl_NoEff"), candidate1.m(), candidate1.pt());
         } else {
           registry.fill(HIST("hMassD0MCRecBkg"), candidate1.m(), candidate1.pt(), efficiencyWeight);
+          registry.fill(HIST("hMassD0MCRecBkg_NoEff"), candidate1.m(), candidate1.pt());
         }
       }
       if (candidate1.isSelD0bar() >= selectionFlagD0bar) {                                              // only reco as D0bar
         if (candidate1.mcTruthInfo() == 2) {                                                            // also matched as D0bar
           registry.fill(HIST("hMassD0barMCRecSig"), candidate1.m(), candidate1.pt(), efficiencyWeight); // here m is univoque, since a given candidate passes the selection with only a single mass option
+          registry.fill(HIST("hMassD0barMCRecSig_NoEff"), candidate1.m(), candidate1.pt());
         } else if (candidate1.mcTruthInfo() == 1) {
           registry.fill(HIST("hMassD0barMCRecRefl"), candidate1.m(), candidate1.pt(), efficiencyWeight);
+          registry.fill(HIST("hMassD0barMCRecRefl_NoEff"), candidate1.m(), candidate1.pt());
         } else {
           registry.fill(HIST("hMassD0barMCRecBkg"), candidate1.m(), candidate1.pt(), efficiencyWeight);
+          registry.fill(HIST("hMassD0barMCRecBkg_NoEff"), candidate1.m(), candidate1.pt());
         }
       }
 
