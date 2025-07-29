@@ -26,13 +26,11 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
-
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StepTHn.h"
 #include "Framework/runDataProcessing.h"
-
 #include "ReconstructionDataFormats/PID.h"
 
 #include <fairlogger/Logger.h>
