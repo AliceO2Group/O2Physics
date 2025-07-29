@@ -15,30 +15,9 @@
 /// \author Your Name (your.email@cern.ch)
 /// \since April 2025
 
-#include <TH1F.h>
-#include <TDirectory.h>
-#include <THn.h>
-#include <TMath.h>
-#include <TObjArray.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
-
-#include <cmath>
-#include <string>
-#include <algorithm>
-#include <vector>
-#include <array>
-#include <cstdlib>
-#include <iterator> // std::prev
-
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
+#include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "PWGLF/DataModel/LFhe3HadronTables.h"
+#include "PWGLF/Utils/svPoolCreator.h"
 
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
@@ -52,21 +31,40 @@
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
-
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
 
 #include "CCDB/BasicCCDBManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 
-#include "PWGLF/DataModel/EPCalibrationTables.h"
-#include "PWGLF/DataModel/LFhe3HadronTables.h"
-#include "PWGLF/Utils/svPoolCreator.h"
+#include <TDatabasePDG.h>
+#include <TDirectory.h>
+#include <TFile.h>
+#include <TH1F.h>
+#include <TH2F.h>
+#include <THn.h>
+#include <TMath.h>
+#include <TObjArray.h>
+#include <TPDGCode.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <iterator> // std::prev
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -100,7 +98,7 @@ enum Selections {
 };
 
 enum Flags {
-  kBothPrimaries = BIT(0), 
+  kBothPrimaries = BIT(0),
   kBothFromLi4 = BIT(1),
   kBothFromHypertriton = BIT(2),
   kMixedPair = BIT(3), // a primary and one from Li4/hypertriton/material/other decays (or any other combination)
@@ -108,9 +106,9 @@ enum Flags {
 
 enum ParticleFlags {
   kPhysicalPrimary = BIT(0), // primary particle
-  kFromLi4 = BIT(1), // from Li4 decay
+  kFromLi4 = BIT(1),         // from Li4 decay
   kFromHypertriton = BIT(2), // from hypertriton decay
-  kFromMaterial = BIT(3), // from material
+  kFromMaterial = BIT(3),    // from material
   kFromOtherDecays = BIT(4), // from other decays
 };
 
@@ -177,7 +175,7 @@ struct He3HadCandidate {
 
   uint8_t flagsHe3 = 0; // flags for He3
   uint8_t flagsHad = 0; // flags for hadron
-  uint8_t flags = 0; // flags for the pair
+  uint8_t flags = 0;    // flags for the pair
 
   // collision information
   int32_t collisionID = 0;
@@ -578,7 +576,6 @@ struct he3HadronFemto {
       return false;
     }
     return collIdxMin;
-
   }
 
   template <typename Ttrack, typename Tcollisions, typename Ttracks>
@@ -611,10 +608,10 @@ struct he3HadronFemto {
     he3Hadcand.signHe3 = trackHe3.sign();
     he3Hadcand.signHad = trackHad.sign();
 
-    //he3Hadcand.dcaxyHe3 = trackHe3.dcaXY();
-    //he3Hadcand.dcaxyHad = trackHad.dcaXY();
-    //he3Hadcand.dcazHe3 = trackHe3.dcaZ();
-    //he3Hadcand.dcazHad = trackHad.dcaZ();
+    // he3Hadcand.dcaxyHe3 = trackHe3.dcaXY();
+    // he3Hadcand.dcaxyHad = trackHad.dcaXY();
+    // he3Hadcand.dcazHe3 = trackHe3.dcaZ();
+    // he3Hadcand.dcazHad = trackHad.dcaZ();
     auto trackCovHe3 = getTrackParCov(trackHe3);
     auto trackCovHad = getTrackParCov(trackHad);
     std::array<float, 2> dcaInfo;
@@ -625,7 +622,6 @@ struct he3HadronFemto {
     he3Hadcand.dcaxyHad = dcaInfo[0];
     he3Hadcand.dcazHad = dcaInfo[1];
     he3Hadcand.dcaPair = std::sqrt(std::abs(mFitter.getChi2AtPCACandidate()));
-
 
     he3Hadcand.tpcSignalHe3 = trackHe3.tpcSignal();
     bool heliumPID = trackHe3.pidForTracking() == o2::track::PID::Helium3 || trackHe3.pidForTracking() == o2::track::PID::Alpha;
@@ -862,7 +858,7 @@ struct he3HadronFemto {
   void setMcParticleFlag(const TmcParticle& mcParticle, std::vector<unsigned int>& mothers, uint8_t& flag)
   {
     if (mcParticle.isPhysicalPrimary()) {
-      
+
       flag |= ParticleFlags::kPhysicalPrimary;
       if (!mcParticle.has_mothers()) {
         return;
@@ -879,9 +875,9 @@ struct he3HadronFemto {
           flag |= ParticleFlags::kFromOtherDecays;
         }
       }
-      
+
     } else {
-      
+
       if (!mcParticle.has_mothers()) {
         flag |= ParticleFlags::kFromMaterial;
         return;
@@ -896,7 +892,7 @@ struct he3HadronFemto {
           flag |= ParticleFlags::kFromHypertriton;
         } else {
           flag |= ParticleFlags::kFromOtherDecays;
-        } 
+        }
       }
     }
   }
@@ -1039,19 +1035,19 @@ struct he3HadronFemto {
         if ((he3Hadcand.flagsHe3 == ParticleFlags::kPhysicalPrimary && he3Hadcand.flagsHad == ParticleFlags::kPhysicalPrimary)) {
           he3Hadcand.flags |= Flags::kBothPrimaries;
           isMixedPair = false;
-        
+
         } else if ((he3Hadcand.flagsHe3 & ParticleFlags::kFromLi4) && (he3Hadcand.flagsHad & ParticleFlags::kFromLi4)) {
-          
+
           std::unordered_set<unsigned int> motherHe3SetIdxs(motherHe3Idxs.begin(), motherHe3Idxs.end());
           for (const auto& motherHadIdx : motherHadIdxs) {
             if (!motherHe3SetIdxs.contains(motherHadIdx)) {
               continue;
             }
-            
+
             motherParticle = mcParticles.rawIteratorAt(motherHadIdx);
             motherIdx = motherHadIdx;
             if (std::abs(motherParticle.pdgCode()) != Li4PDG || std::abs(motherParticle.y()) > 1) {
-                continue;
+              continue;
             }
             isMixedPair = false;
             break;
@@ -1067,11 +1063,11 @@ struct he3HadronFemto {
             if (!motherHe3SetIdxs.contains(motherHadIdx)) {
               continue;
             }
-            
+
             motherParticle = mcParticles.rawIteratorAt(motherHadIdx);
             motherIdx = motherHadIdx;
             if (std::abs(motherParticle.pdgCode()) != o2::constants::physics::Pdg::kHyperTriton || std::abs(motherParticle.y()) > 1) {
-                continue;
+              continue;
             }
             isMixedPair = false;
             break;
@@ -1080,9 +1076,8 @@ struct he3HadronFemto {
           if (!isMixedPair) {
             he3Hadcand.flags |= Flags::kBothFromHypertriton;
           }
+        }
 
-        } 
-        
         if (isMixedPair) {
           he3Hadcand.flags |= Flags::kMixedPair;
         }
@@ -1091,7 +1086,7 @@ struct he3HadronFemto {
           continue;
         }
         fillCandidateInfoMC(mctrackHe3, mctrackHad, he3Hadcand);
-        
+
         if ((he3Hadcand.flags == Flags::kBothFromLi4) || (he3Hadcand.flags == Flags::kBothFromHypertriton)) {
           fillMotherInfoMC(mctrackHe3, mctrackHad, motherParticle, he3Hadcand);
           filledMothers.push_back(motherIdx);
