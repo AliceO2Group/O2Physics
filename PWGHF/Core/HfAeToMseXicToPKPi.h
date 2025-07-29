@@ -1,3 +1,14 @@
+// Copyright 2020-2022 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
 /// \file HfAeToMseXicToPKPi.h
 /// \brief Class to compute the mse for the Autoencoder for Xic+ → p K- π+ analysis selections
 /// \author Maria Teresa Camerlingo
@@ -13,13 +24,13 @@ namespace o2::analysis
 	template <typename TypeOutputScore = float>
 	class HfAeToMseXicToPKPi : public HfMlResponse<TypeOutputScore>
 	{
-	  public:
+		public:
 		/// Default constructor
-  		HfAeToMseXicToPKPi() = default;
-  		/// Default destructor
-  		virtual ~HfAeToMseXicToPKPi() = default;
-  		
-  		std::vector<float> yScaled, yOutRescaled;
+		HfAeToMseXicToPKPi() = default;
+		/// Default destructor
+		virtual ~HfAeToMseXicToPKPi() = default;
+		
+		std::vector<float> yScaled, yOutRescaled;
 		//private :
 		void setMinMaxScaling(std::vector<float>& yOut, std::vector<float> yIn, std::vector<float> scaleMin, std::vector<float> scaleMax)
 		{	yOut.clear();//initial clear to avoid multiple filling if setMinMax o setScaling are called more than once				
@@ -88,7 +99,7 @@ namespace o2::analysis
 				  }
 				  else{//MSE    
 						for (size_t j = 0; j < yPred.size(); ++j) { //for over the features 
-								sum += pow(((yTrueScaled).at(j) - (yPred).at(j)), 2); //has dimensions
+								sum += std::pow(((yTrueScaled).at(j) - (yPred).at(j)), 2); //has dimensions
 								LOG(debug)<<"getMse Local feature = "<<j<<" ----> input = "<<yTrueScaled.at(j)<<" AE prediction = "<< yPred.at(j);           
 						}
 						mse = sum/yPred.size(); //MSE of a candidate 

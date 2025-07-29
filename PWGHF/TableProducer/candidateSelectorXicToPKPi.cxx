@@ -87,8 +87,8 @@ struct HfCandidateSelectorXicToPKPi {
   Configurable<bool> applyMSE{"applyMSE", false, "Flag to calculate MSE for autoencoders"};
   Configurable<bool> applyMinMax{"applyMinMax", false, "Flag to MinMax feature preprocessing"};
   /// Parameter vectors for feature preprocessing - external scaling
-  Configurable<std::vector<float>> ScaleMin{"ScaleMin", {0.,0.,0.}, "vector of scaling parameter min"};  
-  Configurable<std::vector<float>> ScaleMax{"ScaleMax", {1.,1.,1.}, "vector of scaling parameter max"};
+  Configurable<std::vector<float>> scaleMin{"scaleMin", {0.,0.,0.}, "vector of scaling parameter min"};  
+  Configurable<std::vector<float>> scaleMax{"scaleMax", {1.,1.,1.}, "vector of scaling parameter max"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"EventFiltering/PWGHF/BDTXic"}, "Paths of models on CCDB"};
@@ -414,12 +414,12 @@ struct HfCandidateSelectorXicToPKPi {
           isSelectedMlXicToPKPi = hfMlResponse.isSelectedMl(inputFeaturesXicToPKPi, ptCand, outputMlXicToPKPi);
           if(applyMSE){ 
 						/// fill outputAeXicToPKPi with rescaled AE output since ML output is automatically scaled
-          	hfAeResponse.unsetScaling(applyMSE, scaleType, outputMlXicToPKPi, ScaleMin, ScaleMax);      	       	
+          	hfAeResponse.unsetScaling(applyMSE, scaleType, outputMlXicToPKPi, scaleMin, scaleMax);      	       	
           	outputAeXicToPKPi = hfAeResponse.getPostprocessedOutput(); 
           	/// fill outputMSEXicToPKPi vector with MSE
-          	hfAeResponse.setScaling(applyMSE, scaleType, inputFeaturesXicToPKPi, ScaleMin, ScaleMax);         	
-          	float MsePKPi = hfAeResponse.getMse(inputFeaturesXicToPKPi, outputMlXicToPKPi); /// args are not-scaled input, automatically scaled ML output 
-          	outputMseXicToPKPi.push_back(MsePKPi);          	
+          	hfAeResponse.setScaling(applyMSE, scaleType, inputFeaturesXicToPKPi, scaleMin, scaleMax);         	
+          	float msePKPi = hfAeResponse.getMse(inputFeaturesXicToPKPi, outputMlXicToPKPi); /// args are not-scaled input, automatically scaled ML output 
+          	outputMseXicToPKPi.push_back(msePKPi);          	
           }
         }
         if (topolXicToPiKP && pidXicToPiKP) {
@@ -427,12 +427,12 @@ struct HfCandidateSelectorXicToPKPi {
           isSelectedMlXicToPiKP = hfMlResponse.isSelectedMl(inputFeaturesXicToPiKP, ptCand, outputMlXicToPiKP);
 					if(applyMSE){ 
 						/// fill outputAeXicToPiKP with rescaled AE output since ML output is automatically scaled
-          	hfAeResponse.unsetScaling(applyMSE, scaleType, outputMlXicToPiKP, ScaleMin, ScaleMax); 
+          	hfAeResponse.unsetScaling(applyMSE, scaleType, outputMlXicToPiKP, scaleMin, scaleMax); 
           	outputAeXicToPiKP = hfAeResponse.getPostprocessedOutput();
           	/// fill outputMSEXicToPiKP vector with MSE	
-          	hfAeResponse.setScaling(applyMSE, scaleType, inputFeaturesXicToPiKP, ScaleMin, ScaleMax); 
-          	float MsePiKP = hfAeResponse.getMse(inputFeaturesXicToPiKP, outputMlXicToPiKP); /// args are not-scaled input, automatically scaled ML output 
-          	outputMseXicToPiKP.push_back(MsePiKP);	          	
+          	hfAeResponse.setScaling(applyMSE, scaleType, inputFeaturesXicToPiKP, scaleMin, scaleMax); 
+          	float msePiKP = hfAeResponse.getMse(inputFeaturesXicToPiKP, outputMlXicToPiKP); /// args are not-scaled input, automatically scaled ML output 
+          	outputMseXicToPiKP.push_back(msePiKP);	          	
           }
         }
 
