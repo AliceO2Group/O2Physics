@@ -110,7 +110,6 @@ struct HfCandidateCreator3Prong {
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<bool> fillHistograms{"fillHistograms", true, "do validation plots"};
-  Configurable<int> occEstimator{"occEstimator", 1, "Occupancy estimation (1: ITS, 2: FT0C)"};
   // magnetic field setting from CCDB
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -895,7 +894,7 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      float occupancy = getOccupancyColl(collision, occEstimator);
+      float occupancy = getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
@@ -913,7 +912,7 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      float occupancy = getOccupancyColl(collision, occEstimator);
+      float occupancy = getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
@@ -931,7 +930,7 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      float occupancy = getOccupancyColl(collision, occEstimator);
+      float occupancy = getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
@@ -954,7 +953,7 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      float occupancy = getOccupancyColl(collision, occEstimator);
+      float occupancy = getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, CentralityEstimator::None, aod::BcFullInfos>(collision, centrality, ccdb, registry, bcs);
 
       /// monitor the satisfied event selections
