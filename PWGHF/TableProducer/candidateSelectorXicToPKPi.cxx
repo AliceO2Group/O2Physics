@@ -157,7 +157,7 @@ struct HfCandidateSelectorXicToPKPi {
       /// AE feature preprocessing - MinMax scaling initialization
       if(applyMinMax == 1) {
         LOG(info)<<"MinMax scaling will be applied";
-      	scaleType = 1;
+        scaleType = 1;
       } else LOG(info)<<"No external preprocessing transformation will be applied";
     }
   }
@@ -418,7 +418,7 @@ struct HfCandidateSelectorXicToPKPi {
             outputAeXicToPKPi = hfAeResponse.getPostprocessedOutput();
             /// fill outputMSEXicToPKPi vector with MSE
             hfAeResponse.setScaling(applyMSE, scaleType, inputFeaturesXicToPKPi, scaleMin, scaleMax);
-            float msePKPi = hfAeResponse.getMse(inputFeaturesXicToPKPi, outputMlXicToPKPi); /// args are not-scaled input, automatically scaled ML output 
+            float msePKPi = hfAeResponse.getMse(inputFeaturesXicToPKPi, outputMlXicToPKPi); /// args are not-scaled input, automatically scaled ML output
             outputMseXicToPKPi.push_back(msePKPi);
           }
         }
@@ -430,8 +430,8 @@ struct HfCandidateSelectorXicToPKPi {
             hfAeResponse.unsetScaling(applyMSE, scaleType, outputMlXicToPiKP, scaleMin, scaleMax);
             outputAeXicToPiKP = hfAeResponse.getPostprocessedOutput();
             /// fill outputMSEXicToPiKP vector with MSE
-            hfAeResponse.setScaling(applyMSE, scaleType, inputFeaturesXicToPiKP, scaleMin, scaleMax); 
-            float msePiKP = hfAeResponse.getMse(inputFeaturesXicToPiKP, outputMlXicToPiKP); /// args are not-scaled input, automatically scaled ML output 
+            hfAeResponse.setScaling(applyMSE, scaleType, inputFeaturesXicToPiKP, scaleMin, scaleMax);
+            float msePiKP = hfAeResponse.getMse(inputFeaturesXicToPiKP, outputMlXicToPiKP); /// args are not-scaled input, automatically scaled ML output
             outputMseXicToPiKP.push_back(msePiKP);	          	
           }
         }
