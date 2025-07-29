@@ -9,19 +9,20 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HfMlResponsBsToDsPi.h
+/// \file HfMlResponseBsToDsPi.h
 /// \brief Class to compute the ML response for Bs → Ds∓ π± analysis selections
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, CERN
 
 #ifndef PWGHF_CORE_HFMLRESPONSEBSTODSPI_H_
 #define PWGHF_CORE_HFMLRESPONSEBSTODSPI_H_
 
-#include <map>
-#include <string>
-#include <vector>
-
 #include "PWGHF/Core/HfMlResponse.h"
 #include "PWGHF/D2H/Utils/utilsRedDataFormat.h"
+
+#include "Tools/ML/MlResponse.h"
+
+#include <cstdint>
+#include <vector>
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)

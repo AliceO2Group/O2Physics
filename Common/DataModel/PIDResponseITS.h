@@ -23,10 +23,12 @@
 #define COMMON_DATAMODEL_PIDRESPONSEITS_H_
 
 // O2 includes
+#include "TableHelper.h"
+
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
-#include "ReconstructionDataFormats/PID.h"
 #include "Framework/Logger.h"
+#include "ReconstructionDataFormats/PID.h"
 
 namespace o2::aod
 {
@@ -34,19 +36,24 @@ namespace o2::aod
 struct ITSResponse {
   static float averageClusterSize(uint32_t itsClusterSizes)
   {
-    float average = 0;
+    float sum = 0;
     int nclusters = 0;
-
+    int max = 0;
     for (int layer = 0; layer < 7; layer++) {
-      if ((itsClusterSizes >> (layer * 4)) & 0xf) {
+      int clsize = (itsClusterSizes >> (layer * 4)) & 0xf;
+      if (clsize > 0) {
         nclusters++;
-        average += (itsClusterSizes >> (layer * 4)) & 0xf;
+        sum += clsize;
+        if (clsize > max) {
+          max = clsize;
+        }
       }
     }
     if (nclusters == 0) {
       return 0;
     }
-    return average / nclusters;
+    // truncated mean
+    return (sum - max) / (nclusters - 1);
   };
 
   template <o2::track::PID::ID id>
@@ -67,13 +74,17 @@ struct ITSResponse {
     static constexpr float inverseMass = 1. / o2::track::pid_constants::sMasses[id];
     // static constexpr float charge = static_cast<float>(o2::track::pid_constants::sCharges[id]);
     const float bg = momentum * inverseMass;
-    float relRes = mResolutionParams[0] * std::erf((bg - mResolutionParams[1]) / mResolutionParams[2]);
-    return relRes;
+    if (id == o2::track::PID::Helium3 || id == o2::track::PID::Alpha) {
+      return mResolutionParamsZ2[1] > -999.0 ? mResolutionParamsZ2[0] * std::erf((bg - mResolutionParamsZ2[1]) / mResolutionParamsZ2[2]) : mResolutionParamsZ2[0];
+    }
+    return mResolutionParams[1] > -999.0 ? mResolutionParams[0] * std::erf((bg - mResolutionParams[1]) / mResolutionParams[2]) : mResolutionParams[0];
   }
 
   template <o2::track::PID::ID id>
   static float nSigmaITS(uint32_t itsClusterSizes, float momentum, float eta)
   {
+    unsigned int charge = (id == o2::track::PID::Helium3 || id == o2::track::PID::Alpha) ? 2 : 1;
+    momentum *= charge;
     const float exp = expSignal<id>(momentum);
     const float average = averageClusterSize(itsClusterSizes);
     const float coslInv = 1. / std::cosh(eta);
@@ -87,7 +98,10 @@ struct ITSResponse {
     return nSigmaITS<id>(track.itsClusterSizes(), track.p(), track.eta());
   }
 
-  static void setParameters(float p0, float p1, float p2, float p0_Z2, float p1_Z2, float p2_Z2, float p0_res, float p1_res, float p2_res)
+  static void setParameters(float p0, float p1, float p2,
+                            float p0_Z2, float p1_Z2, float p2_Z2,
+                            float p0_res, float p1_res, float p2_res,
+                            float p0_res_Z2, float p1_res_Z2, float p2_res_Z2)
   {
     if (mIsInitialized) {
       LOG(fatal) << "ITSResponse parameters already initialized";
@@ -102,19 +116,66 @@ struct ITSResponse {
     mResolutionParams[0] = p0_res;
     mResolutionParams[1] = p1_res;
     mResolutionParams[2] = p2_res;
+    mResolutionParamsZ2[0] = p0_res_Z2;
+    mResolutionParamsZ2[1] = p1_res_Z2;
+    mResolutionParamsZ2[2] = p2_res_Z2;
+  }
+
+  static void setMCDefaultParameters()
+  {
+    setParameters(1.63806, 1.58847, 2.52275,
+                  2.66505, 1.48405, 6.90453,
+                  1.40487e-01, -4.31078e-01, 1.50052,
+                  0.09, -999., -999.);
+  }
+
+  /// Initialize the TOF response parameters in the init function of each task
+  /// \param initContext Initialization context. Gets the configuration parameters from the pidITS task
+  static void setParameters(o2::framework::InitContext& initContext, bool isMC = false)
+  {
+    float p0 = 0, p1 = 0, p2 = 0;
+    float p0_Z2 = 0, p1_Z2 = 0, p2_Z2 = 0;
+    float p0_res = 0, p1_res = 0, p2_res = 0;
+    float p0_res_Z2 = 0, p1_res_Z2 = 0, p2_res_Z2 = 0;
+    o2::framework::LabeledArray<float> itsParams;
+    getTaskOptionValue(initContext, "its-pid", "itsParams", itsParams, true);
+    auto data = itsParams.getData();
+    const int col = isMC ? 1 : 0; // 0 for Data, 1 for MC
+    if (data.rows != 2 || data.cols != 12) {
+      LOG(fatal) << "ITSResponse parameters not initialized, check the itsParams configuration";
+    }
+    p0 = data(col, 0);
+    p1 = data(col, 1);
+    p2 = data(col, 2);
+    p0_Z2 = data(col, 3);
+    p1_Z2 = data(col, 4);
+    p2_Z2 = data(col, 5);
+    p0_res = data(col, 6);
+    p1_res = data(col, 7);
+    p2_res = data(col, 8);
+    p0_res_Z2 = data(col, 9);
+    p1_res_Z2 = data(col, 10);
+    p2_res_Z2 = data(col, 11);
+
+    setParameters(p0, p1, p2,
+                  p0_Z2, p1_Z2, p2_Z2,
+                  p0_res, p1_res, p2_res,
+                  p0_res_Z2, p1_res_Z2, p2_res_Z2);
   }
 
  private:
   static std::array<float, 3> mITSRespParams;
   static std::array<float, 3> mITSRespParamsZ2;
   static std::array<float, 3> mResolutionParams;
+  static std::array<float, 3> mResolutionParamsZ2;
   static bool mIsInitialized;
 };
 
-std::array<float, 3> ITSResponse::mITSRespParams = {1.1576, 1.684, 1.9453};
-std::array<float, 3> ITSResponse::mITSRespParamsZ2 = {2.8752, 1.1246, 5.0259};
+std::array<float, 3> ITSResponse::mITSRespParams = {1.18941, 1.53792, 1.69961};
+std::array<float, 3> ITSResponse::mITSRespParamsZ2 = {2.35117, 1.80347, 5.14355};
 // relative resolution is modelled with an erf function: [0]*TMath::Erf((x-[1])/[2])
-std::array<float, 3> ITSResponse::mResolutionParams = {0.2431, -0.3293, 1.533};
+std::array<float, 3> ITSResponse::mResolutionParams = {1.94669e-01, -2.08616e-01, 1.30753};
+std::array<float, 3> ITSResponse::mResolutionParamsZ2 = {0.09, -999., -999.};
 bool ITSResponse::mIsInitialized = false;
 
 namespace pidits

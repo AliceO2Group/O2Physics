@@ -9,15 +9,21 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <vector>
-#include <TMath.h>
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/CaloClusters.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 
-#include "PWGJE/DataModel/EMCALClusters.h"
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <vector>
 
 #ifndef PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_
 #define PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_
@@ -227,6 +233,8 @@ DECLARE_SOA_COLUMN(MGamma, mGamma, float);                              //! inva
 DECLARE_SOA_COLUMN(DCAxyToPV, dcaXYtopv, float);                        //! DCAxy of V0 to PV
 DECLARE_SOA_COLUMN(DCAzToPV, dcaZtopv, float);                          //! DCAz of V0 to PV
 DECLARE_SOA_COLUMN(CosPA, cospa, float);                                //!
+DECLARE_SOA_COLUMN(CosPAXY, cospaXY, float);                            //!
+DECLARE_SOA_COLUMN(CosPARZ, cospaRZ, float);                            //!
 DECLARE_SOA_COLUMN(PCA, pca, float);                                    //!
 DECLARE_SOA_COLUMN(Alpha, alpha, float);                                //!
 DECLARE_SOA_COLUMN(QtArm, qtarm, float);                                //!
@@ -237,6 +245,7 @@ DECLARE_SOA_COLUMN(SigmaPz2, sigmaPz2, float);                          //! erro
 DECLARE_SOA_COLUMN(SigmaPxPy, sigmaPxPy, float);                        //! error of px x py in covariant matrix
 DECLARE_SOA_COLUMN(SigmaPyPz, sigmaPyPz, float);                        //! error of py x pz in covariant matrix
 DECLARE_SOA_COLUMN(SigmaPzPx, sigmaPzPx, float);                        //! error of pz x px in covariant matrix
+DECLARE_SOA_COLUMN(PrefilterBitDerived, pfbderived, uint16_t);          //!
 
 DECLARE_SOA_DYNAMIC_COLUMN(E, e, [](float px, float py, float pz, float m = 0) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz, m); }); //! energy of v0 photn, mass to be given as argument when getter is called!
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
@@ -251,7 +260,7 @@ DECLARE_SOA_TABLE(V0PhotonsKF, "AOD", "V0PHOTONKF", //!
                   v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz,
                   v0photonkf::MGamma,
                   v0photonkf::DCAxyToPV, v0photonkf::DCAzToPV,
-                  v0photonkf::CosPA, v0photonkf::PCA,
+                  v0photonkf::CosPA, v0photonkf::CosPAXY, v0photonkf::CosPARZ, v0photonkf::PCA,
                   v0photonkf::Alpha, v0photonkf::QtArm,
                   v0photonkf::ChiSquareNDF,
 
@@ -274,14 +283,19 @@ DECLARE_SOA_TABLE(V0PhotonsKFCov, "AOD", "V0PHOTONKFCOV", //! To be joined with 
 // iterators
 using V0PhotonKFCov = V0PhotonsKFCov::iterator;
 
+DECLARE_SOA_TABLE(V0PhotonsKFPrefilterBitDerived, "AOD", "V0PHOTONKFPFBPI0", v0photonkf::PrefilterBitDerived); // To be joined with V0PhotonsKF table at analysis level.
+// iterators
+using V0PhotonKFPrefilterBitDerived = V0PhotonsKFPrefilterBitDerived::iterator;
+
 DECLARE_SOA_TABLE(EMPrimaryElectronsFromDalitz, "AOD", "EMPRIMARYELDA", //!
                   o2::soa::Index<>, emprimaryelectron::CollisionId,
                   emprimaryelectron::TrackId, emprimaryelectron::Sign,
-                  track::Pt, track::Eta, track::Phi, track::DcaXY, track::DcaZ,
-                  track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows,
+                  track::Pt, track::Eta, track::Phi, track::DcaXY, track::DcaZ, track::CYY, track::CZY, track::CZZ,
+                  track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,
                   track::TPCChi2NCl, track::TPCInnerParam,
                   track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi,
-                  track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap, track::Tgl,
+                  pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaPi,
+                  track::ITSClusterSizes, track::ITSChi2NCl, track::TOFChi2, track::DetectorMap, track::Tgl,
 
                   // dynamic column
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
@@ -289,6 +303,7 @@ DECLARE_SOA_TABLE(EMPrimaryElectronsFromDalitz, "AOD", "EMPRIMARYELDA", //!
                   track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
+                  track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>,
                   track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
                   emprimaryelectron::Signed1Pt<track::Pt, emprimaryelectron::Sign>,
@@ -453,16 +468,16 @@ DECLARE_SOA_COLUMN(Time, time, float);                                          
 DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                                                                                 //! flag to mark cluster as exotic
 DECLARE_SOA_COLUMN(Definition, definition, int);                                                                              //! cluster definition, see EMCALClusterDefinition.h
 DECLARE_SOA_ARRAY_INDEX_COLUMN(Track, track);                                                                                 //! TrackIds
-DECLARE_SOA_COLUMN(TrackEta, tracketa, std::vector<float>);                                                                   //! eta values of the matched tracks
-DECLARE_SOA_COLUMN(TrackPhi, trackphi, std::vector<float>);                                                                   //! phi values of the matched tracks
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, std::vector<float>);                                                                   //! phi values of the matched tracks
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, std::vector<float>);                                                                   //! eta values of the matched tracks
 DECLARE_SOA_COLUMN(TrackP, trackp, std::vector<float>);                                                                       //! momentum values of the matched tracks
 DECLARE_SOA_COLUMN(TrackPt, trackpt, std::vector<float>);                                                                     //! pt values of the matched tracks
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float e, float eta, float m = 0) -> float { return sqrt(e * e - m * m) / cosh(eta); }); //! cluster pt, mass to be given as argument when getter is called!
 } // namespace emccluster
-DECLARE_SOA_TABLE(SkimEMCClusters, "AOD", "SKIMEMCCLUSTERS", //! table of skimmed EMCal clusters
+DECLARE_SOA_TABLE(SkimEMCClusters, "AOD", "SKIMEMCCLUSTER", //! table of skimmed EMCal clusters
                   o2::soa::Index<>, skimmedcluster::CollisionId, emccluster::Definition, skimmedcluster::E, skimmedcluster::Eta, skimmedcluster::Phi,
-                  skimmedcluster::M02, skimmedcluster::NCells, skimmedcluster::Time, emccluster::IsExotic, emccluster::TrackEta,
-                  emccluster::TrackPhi, emccluster::TrackP, emccluster::TrackPt, emccluster::Pt<skimmedcluster::E, skimmedcluster::Eta>);
+                  skimmedcluster::M02, skimmedcluster::NCells, skimmedcluster::Time, emccluster::IsExotic, emccluster::DeltaPhi,
+                  emccluster::DeltaEta, emccluster::TrackP, emccluster::TrackPt, emccluster::Pt<skimmedcluster::E, skimmedcluster::Eta>);
 using SkimEMCCluster = SkimEMCClusters::iterator;
 
 DECLARE_SOA_TABLE(EMCEMEventIds, "AOD", "EMCEMEVENTID", emccluster::EMEventId); // To be joined with SkimEMCClusters table at analysis level.
@@ -514,42 +529,11 @@ namespace caloextra
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Cluster, cluster, int, SkimEMCClusters, ""); //! reference to the gamma in the skimmed EMCal table
 DECLARE_SOA_INDEX_COLUMN_FULL(Cell, cell, int, Calos, "");                 //! reference to the gamma in the skimmed EMCal table
-// DECLARE_SOA_INDEX_COLUMN(Track, track);                   //! TrackID
-DECLARE_SOA_COLUMN(TrackEta, tracketa, float); //! eta of the matched track
-DECLARE_SOA_COLUMN(TrackPhi, trackphi, float); //! phi of the matched track
-DECLARE_SOA_COLUMN(TrackP, trackp, float);     //! momentum of the matched track
-DECLARE_SOA_COLUMN(TrackPt, trackpt, float);   //! pt of the matched track
 } // namespace caloextra
 
 DECLARE_SOA_TABLE(SkimEMCCells, "AOD", "SKIMEMCCELLS",                        //! table of link between skimmed EMCal clusters and their cells
                   o2::soa::Index<>, caloextra::ClusterId, caloextra::CellId); //!
 using SkimEMCCell = SkimEMCCells::iterator;
-
-DECLARE_SOA_TABLE(SkimEMCMTs, "AOD", "SKIMEMCMTS", //! table of link between skimmed EMCal clusters and their matched tracks
-                  o2::soa::Index<>, caloextra::ClusterId, caloextra::TrackEta,
-                  caloextra::TrackPhi, caloextra::TrackP, caloextra::TrackPt);
-using SkimEMCMT = SkimEMCMTs::iterator;
-
-namespace gammareco
-{
-DECLARE_SOA_COLUMN(Method, method, int);                                         //! cut bit for PCM photon candidates
-DECLARE_SOA_INDEX_COLUMN_FULL(SkimmedPCM, skimmedPCM, int, V0PhotonsKF, "");     //! reference to the gamma in the skimmed PCM table
-DECLARE_SOA_INDEX_COLUMN_FULL(SkimmedPHOS, skimmedPHOS, int, PHOSClusters, "");  //! reference to the gamma in the skimmed PHOS table
-DECLARE_SOA_INDEX_COLUMN_FULL(SkimmedEMC, skimmedEMC, int, SkimEMCClusters, ""); //! reference to the gamma in the skimmed EMCal table
-DECLARE_SOA_COLUMN(PCMCutBit, pcmcutbit, uint64_t);                              //! cut bit for PCM photon candidates
-DECLARE_SOA_COLUMN(PHOSCutBit, phoscutbit, uint64_t);                            //! cut bit for PHOS photon candidates
-DECLARE_SOA_COLUMN(EMCCutBit, emccutbit, uint64_t);                              //! cut bit for EMCal photon candidates
-} // namespace gammareco
-DECLARE_SOA_TABLE(SkimGammas, "AOD", "SKIMGAMMAS", //! table of all gamma candidates (PCM, EMCal and PHOS) after cuts
-                  o2::soa::Index<>, skimmedcluster::CollisionId, gammareco::Method,
-                  skimmedcluster::E, skimmedcluster::Eta, skimmedcluster::Phi,
-                  gammareco::SkimmedEMCId, gammareco::SkimmedPHOSId);
-DECLARE_SOA_TABLE(SkimPCMCuts, "AOD", "SKIMPCMCUTS",                                  //! table of link between skimmed PCM photon candidates and their cuts
-                  o2::soa::Index<>, gammareco::SkimmedPCMId, gammareco::PCMCutBit);   //!
-DECLARE_SOA_TABLE(SkimPHOSCuts, "AOD", "SKIMPHOSCUTS",                                //! table of link between skimmed PHOS photon candidates and their cuts
-                  o2::soa::Index<>, gammareco::SkimmedPHOSId, gammareco::PHOSCutBit); //!
-DECLARE_SOA_TABLE(SkimEMCCuts, "AOD", "SKIMEMCCUTS",                                  //! table of link between skimmed EMCal photon candidates and their cuts
-                  o2::soa::Index<>, gammareco::SkimmedEMCId, gammareco::EMCCutBit);   //!
 } // namespace o2::aod
 
 #endif // PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_

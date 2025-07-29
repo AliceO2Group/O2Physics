@@ -18,16 +18,19 @@
 #ifndef PWGJE_CORE_JETUTILITIES_H_
 #define PWGJE_CORE_JETUTILITIES_H_
 
-#include <cmath>
-#include <limits>
-#include <numeric>
-#include <tuple>
-#include <vector>
+#include "Common/Core/RecoDecay.h"
 
 #include <TKDTree.h>
 
-#include "Framework/Logger.h"
-#include "Common/Core/RecoDecay.h"
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <limits>
+#include <stdexcept>
+#include <tuple>
+#include <vector>
+
+#include <math.h>
 
 namespace jetutilities
 {
@@ -72,11 +75,6 @@ std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>> MatchCl
   if (trackPhi.size() != trackEta.size()) {
     throw std::invalid_argument("track collection eta and phi sizes don't match. Check the inputs.");
   }
-
-  // for (std::size_t iTrack = 0; iTrack < nTracks; iTrack++) {
-  //   if (trackEta[iTrack] == 0)
-  //     LOG(warning) << "Track eta is 0!";
-  // }
 
   // Build the KD-trees using vectors
   // We build two trees:

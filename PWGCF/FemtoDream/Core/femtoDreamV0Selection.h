@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -471,10 +471,10 @@ bool FemtoDreamV0Selection::isSelectedMinimal(C const& /*col*/, V const& v0,
   // v0
   auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
   auto nSigmaPrPos = posTrack.tpcNSigmaPr();
-  if (!(abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
-        abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) &&
-      !(abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
-        abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax)) {
+  if (!(std::abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
+        std::abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) &&
+      !(std::abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
+        std::abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax)) {
     return false;
   }
 
@@ -550,16 +550,16 @@ template <typename cutContainerType, typename C, typename V, typename T>
 std::array<cutContainerType, 5>
   FemtoDreamV0Selection::getCutContainer(C const& /*col*/, V const& v0, T const& posTrack, T const& negTrack)
 {
-  auto outputPosTrack = PosDaughTrack.getCutContainer<cutContainerType>(posTrack, v0.positivept(), v0.positiveeta(), v0.dcapostopv());
-  auto outputNegTrack = NegDaughTrack.getCutContainer<cutContainerType>(negTrack, v0.negativept(), v0.negativeeta(), v0.dcanegtopv());
+  auto outputPosTrack = PosDaughTrack.getCutContainer<false, cutContainerType>(posTrack, v0.positivept(), v0.positiveeta(), v0.dcapostopv());
+  auto outputNegTrack = NegDaughTrack.getCutContainer<false, cutContainerType>(negTrack, v0.negativept(), v0.negativeeta(), v0.dcanegtopv());
   cutContainerType output = 0;
   size_t counter = 0;
 
   auto lambdaMassNominal = o2::constants::physics::MassLambda;
   auto lambdaMassHypothesis = v0.mLambda();
   auto antiLambdaMassHypothesis = v0.mAntiLambda();
-  auto diffLambda = abs(lambdaMassNominal - lambdaMassHypothesis);
-  auto diffAntiLambda = abs(antiLambdaMassHypothesis - lambdaMassHypothesis);
+  auto diffLambda = std::abs(lambdaMassNominal - lambdaMassHypothesis);
+  auto diffAntiLambda = std::abs(antiLambdaMassHypothesis - lambdaMassHypothesis);
 
   float sign = 0.;
   int nSigmaPIDMax = PosDaughTrack.getSigmaPIDMax();
@@ -568,15 +568,15 @@ std::array<cutContainerType, 5>
   auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
   auto nSigmaPrPos = posTrack.tpcNSigmaPr();
   // check the mass and the PID of daughters
-  if (abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && diffAntiLambda > diffLambda) {
+  if (std::abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && std::abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && diffAntiLambda > diffLambda) {
     sign = -1.;
-  } else if (abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && diffAntiLambda < diffLambda) {
+  } else if (std::abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && std::abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && diffAntiLambda < diffLambda) {
     sign = 1.;
   } else {
     // if it happens that none of these are true, ignore the invariant mass
-    if (abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
+    if (std::abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && std::abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
       sign = -1.;
-    } else if (abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
+    } else if (std::abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && std::abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
       sign = 1.;
     }
   }

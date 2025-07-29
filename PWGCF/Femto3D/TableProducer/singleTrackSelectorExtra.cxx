@@ -34,27 +34,13 @@ struct singleTrackSelectorDummy {
 
   Produces<o2::aod::SingleCollExtras> tableRowCollExtra;
 
-  void processDefault(aod::SingleCollSels::iterator const&)
+  void process(aod::SingleCollSels::iterator const&)
   {
     uint64_t selection = 0;
     tableRowCollExtra(selection,
                       0.0,
                       0);
   }
-  PROCESS_SWITCH(singleTrackSelectorDummy, processDefault, "filling the CollExtra table with dummy values", true);
-
-  void processExtra_v0(soa::Join<aod::SingleCollSels, aod::SingleCollExtras_v0>::iterator const& collision)
-  {
-    uint64_t selection = 0;
-    selection |= collision.isNoSameBunchPileup() ? BIT(evsel::kNoSameBunchPileup) : 0;
-    selection |= collision.isGoodZvtxFT0vsPV() ? BIT(evsel::kIsGoodZvtxFT0vsPV) : 0;
-    selection |= collision.isVertexITSTPC() ? BIT(evsel::kIsVertexITSTPC) : 0;
-
-    tableRowCollExtra(selection,
-                      collision.hadronicRate(),
-                      0);
-  }
-  PROCESS_SWITCH(singleTrackSelectorDummy, processExtra_v0, "process using info from the previous version of stored CollExtra table", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

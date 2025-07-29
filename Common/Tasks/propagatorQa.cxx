@@ -208,7 +208,7 @@ struct propagatorQa {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
 
     for (auto& track : tracks) {
       if (track.tpcNClsFound() < minTPCClustersRequired)
@@ -328,7 +328,7 @@ struct propagatorQa {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
 
     for (auto& track : tracks) {
       if (track.tpcNClsFound() < minTPCClustersRequired)
@@ -444,7 +444,7 @@ struct propagatorQa {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
 
     for (auto& trackIU : tracksIU) {
       if (trackIU.tpcNClsFound() < minTPCClustersRequired)

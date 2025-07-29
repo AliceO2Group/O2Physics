@@ -17,34 +17,30 @@
 // Task performing jet reclustering and producing primary Lund Plane histograms
 //
 
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <string>
-
-#include "fastjet/contrib/LundGenerator.hh"
-#include "fastjet/PseudoJet.hh"
-#include "fastjet/ClusterSequenceArea.hh"
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "TDatabasePDG.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "Common/Core/RecoDecay.h"
-
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/DataModel/JetSubstructure.h"
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetFinder.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include "fastjet/ClusterSequenceArea.hh"
+#include "fastjet/PseudoJet.hh"
+#include <fastjet/JetDefinition.hh>
+
+#include <cmath>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::track;
@@ -67,11 +63,11 @@ struct JetLundReclustering {
   Configurable<float> jet_max_eta{"jet_max_eta", 0.5, "maximum jet eta"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
 
   void init(InitContext const&)
   {
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
 
     registry.add("PrimaryLundPlane_kT", "Primary Lund 3D plane;ln(R/Delta);ln(k_{t}/GeV);{p}_{t}", {HistType::kTH3F, {{100, 0, 10}, {100, -10, 10}, {20, 0, 200}}});
     registry.add("PrimaryLundPlane_z", "Primary Lund 3D plane;ln(R/Delta);ln(1/z);{p}_{t}", {HistType::kTH3F, {{100, 0, 10}, {100, 0, 10}, {20, 0, 200}}});
@@ -122,7 +118,7 @@ struct JetLundReclustering {
                           soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& jets,
                           aod::JetTracks const&)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     for (const auto& jet : jets) {

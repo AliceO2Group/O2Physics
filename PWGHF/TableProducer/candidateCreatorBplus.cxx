@@ -18,25 +18,51 @@
 /// \author Deepa Thomas <deepa.thomas@cern.ch>, UT Austin
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari & INFN, Sezione di Bari
 
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/V0.h"
-
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsMcGen.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/V0.h>
+
+#include <TH1.h>
+#include <TPDGCode.h>
+
+#include <Rtypes.h>
+
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -45,6 +71,7 @@ using namespace o2::aod;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::hf_decay::hf_cand_beauty;
 
 /// Reconstruction of B± → D0bar(D0) π± → (K± π∓) π±
 struct HfCandidateCreatorBplus {
@@ -64,7 +91,7 @@ struct HfCandidateCreatorBplus {
   Configurable<bool> usePionIsGlobalTrackWoDCA{"usePionIsGlobalTrackWoDCA", true, "check isGlobalTrackWoDCA status for pions, for Run3 studies"};
   Configurable<double> ptPionMin{"ptPionMin", 0.2, "minimum pion pT threshold (GeV/c)"};
   Configurable<std::vector<double>> binsPtPion{"binsPtPion", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for pion DCA XY pT-dependent cut"};
-  Configurable<LabeledArray<double>> cutsTrackPionDCA{"cutsTrackPionDCA", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for pions"};
+  Configurable<LabeledArray<double>> cutsTrackPionDCA{"cutsTrackPionDCA", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for pions"};
   Configurable<double> invMassWindowBplus{"invMassWindowBplus", 0.3, "invariant-mass window for B^{+} candidates"};
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
@@ -99,14 +126,14 @@ struct HfCandidateCreatorBplus {
   Preslice<CandsDFiltered> candsDPerCollision = aod::track_association::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
+  std::shared_ptr<TH1> hCandidatesD, hCandidatesB;
+  HistogramRegistry registry{"registry"};
+
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
   OutputObj<TH1F> hRapidityD0{TH1F("hRapidityD0", "D0 candidates;#it{y};entries", 100, -2, 2)};
   OutputObj<TH1F> hEtaPi{TH1F("hEtaPi", "Pion track;#it{#eta};entries", 400, -2., 2.)};
   OutputObj<TH1F> hMassBplusToD0Pi{TH1F("hMassBplusToD0Pi", "2-prong candidates;inv. mass (B^{+} #rightarrow #bar{D^{0}}#pi^{+}) (GeV/#it{c}^{2});entries", 500, 3., 8.)};
-
-  std::shared_ptr<TH1> hCandidatesD, hCandidatesB;
-  HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
   {
@@ -341,11 +368,11 @@ struct HfCandidateCreatorBplus {
                            std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()));
 
           rowCandidateProngs(candD0.globalIndex(), trackPion.globalIndex()); // index D0 and bachelor
-        }                                                                    // track loop
-      }                                                                      // D0 cand loop
-    }                                                                        // collision
-  }                                                                          // process
-};                                                                           // struct
+        } // track loop
+      } // D0 cand loop
+    } // collision
+  } // process
+}; // struct
 
 /// Extends the base table with expression columns and performs MC matching
 struct HfCandidateCreatorBplusExpressions {
@@ -363,15 +390,16 @@ struct HfCandidateCreatorBplusExpressions {
 
     int indexRec = -1, indexRecD0 = -1;
     int8_t signB = 0, signD0 = 0;
-    int8_t flag = 0;
+    int8_t flagChannelMain = 0;
+    int8_t flagChannelReso = 0;
     int8_t origin = 0;
-    int kD0pdg = Pdg::kD0;
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
     for (const auto& candidate : candsBplus) {
 
-      flag = 0;
+      flagChannelMain = 0;
+      flagChannelReso = 0;
       origin = 0;
       auto candDaughterD0 = candidate.prong0();
       auto arrayDaughtersD0 = std::array{candDaughterD0.prong0_as<aod::TracksWMc>(), candDaughterD0.prong1_as<aod::TracksWMc>()};
@@ -382,36 +410,12 @@ struct HfCandidateCreatorBplusExpressions {
       indexRecD0 = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersD0, -Pdg::kD0, std::array{+kKPlus, -kPiPlus}, true, &signD0, 1);
 
       if (indexRecD0 > -1 && indexRec > -1) {
-        flag = signB * (1 << hf_cand_bplus::DecayType::BplusToD0Pi);
+        flagChannelMain = signB * DecayChannelMain::BplusToD0Pi;
       }
-      rowMcMatchRec(flag, origin);
+      rowMcMatchRec(flagChannelMain, flagChannelReso, origin);
     }
-
-    // Match generated particles.
-    for (const auto& particle : mcParticles) {
-      flag = 0;
-      origin = 0;
-      signB = 0;
-      signD0 = 0;
-      int indexGenD0 = -1;
-
-      // B± → D0bar(D0) π± → (K± π∓) π±
-      std::vector<int> arrayDaughterB;
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kBPlus, std::array{-kD0pdg, +kPiPlus}, true, &signB, 1, &arrayDaughterB)) {
-        // D0(bar) → π± K∓
-        for (auto iD : arrayDaughterB) {
-          auto candDaughterMC = mcParticles.rawIteratorAt(iD);
-          if (std::abs(candDaughterMC.pdgCode()) == kD0pdg) {
-            indexGenD0 = RecoDecay::isMatchedMCGen(mcParticles, candDaughterMC, Pdg::kD0, std::array{-kKPlus, +kPiPlus}, true, &signD0, 1);
-          }
-        }
-        if (indexGenD0 > -1) {
-          flag = signB * (1 << hf_cand_bplus::DecayType::BplusToD0Pi);
-        }
-      }
-      rowMcMatchGen(flag, origin);
-    } // B candidate
-  }   // process
+    hf_mc_gen::fillMcMatchGenBplus(mcParticles, rowMcMatchGen); // gen
+  } // process
   PROCESS_SWITCH(HfCandidateCreatorBplusExpressions, processMc, "Process MC", false);
 }; // struct
 

@@ -22,7 +22,7 @@
 
 namespace o2
 {
-double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string sourceName)
+double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string sourceName, bool fCrashOnNull)
 {
   setupRun(runNumber, ccdb, timeStamp);
   if (sourceName.find("ZNC") != std::string::npos) {
@@ -43,7 +43,7 @@ double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStam
       if (ret < 0.) {
         LOG(info) << "Trying different class";
         ret = fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVX-NONE");
-        if (ret < 0) {
+        if ((ret < 0) && fCrashOnNull) {
           LOG(fatal) << "None of the classes used for lumi found";
         }
       }

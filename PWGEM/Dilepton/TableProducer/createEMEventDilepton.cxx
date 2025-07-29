@@ -14,22 +14,22 @@
 // This code produces reduced events for photon analyses.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include <string>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/Core/TableHelper.h"
-
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+
+#include "Common/Core/TableHelper.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -52,6 +52,7 @@ using MyCollisionsMC_Cent = soa::Join<MyCollisionsMC, aod::CentFT0Ms, aod::CentF
 using MyCollisionsMC_Cent_Qvec = soa::Join<MyCollisionsMC_Cent, MyQvectors>;
 
 struct CreateEMEventDilepton {
+  Produces<o2::aod::EMBCs> embc;
   Produces<o2::aod::EMEvents> event;
   // Produces<o2::aod::EMEventsCov> eventcov;
   Produces<o2::aod::EMEventsMult> event_mult;
@@ -133,14 +134,23 @@ struct CreateEMEventDilepton {
     mRunNumber = bc.runNumber();
   }
 
-  Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
-  PresliceUnsorted<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
-  PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
+  Preslice<aod::Collisions> perBC = aod::collision::bcId;
+  // Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
+  // PresliceUnsorted<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
+  // PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
 
   template <bool isMC, bool isTriggerAnalysis, EMEventType eventtype, typename TCollisions, typename TBCs>
-  void skimEvent(TCollisions const& collisions, TBCs const&)
+  void skimEvent(TCollisions const& collisions, TBCs const& bcs)
   {
-    for (auto& collision : collisions) {
+    for (const auto& bc : bcs) {
+      if (bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        // const auto& collisions_perBC = collisions.sliceBy(perBC, bc.globalIndex());
+        // embc(bc.selection_bit(o2::aod::evsel::kIsTriggerTVX), bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder), bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder), static_cast<bool>(collisions_perBC.size() > 0)); // TVX is fired.
+        embc(bc.alias_raw(), bc.selection_raw(), bc.rct_raw()); // TVX is fired.
+      }
+    } // end of bc loop
+
+    for (const auto& collision : collisions) {
       if constexpr (isMC) {
         if (!collision.has_mcCollision()) {
           continue;
@@ -151,15 +161,19 @@ struct CreateEMEventDilepton {
       auto bc = collision.template foundBC_as<TBCs>();
       initCCDB(bc);
 
-      if constexpr (eventtype == EMEventType::kEvent) {
-        event_norm_info(collision.alias_raw(), collision.selection_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
-      } else if constexpr (eventtype == EMEventType::kEvent_Cent || eventtype == EMEventType::kEvent_Cent_Qvec) {
-        event_norm_info(collision.alias_raw(), collision.selection_raw(), static_cast<int16_t>(10.f * collision.posZ()), collision.centFT0C());
-      } else {
-        event_norm_info(collision.alias_raw(), collision.selection_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+      if (!collision.isSelected()) { // minimal cut for MB
+        continue;
       }
 
-      if (!collision.isSelected() || !collision.isEoI()) {
+      if constexpr (eventtype == EMEventType::kEvent) {
+        event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+      } else if constexpr (eventtype == EMEventType::kEvent_Cent || eventtype == EMEventType::kEvent_Cent_Qvec) {
+        event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), collision.centFT0C());
+      } else {
+        event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+      }
+
+      if (!collision.isEoI()) { // events with at least 1 lepton for data reduction.
         continue;
       }
 
@@ -173,7 +187,7 @@ struct CreateEMEventDilepton {
 
       registry.fill(HIST("hEventCounter"), 2);
 
-      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(),
+      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), bc.timestamp(),
             collision.posX(), collision.posY(), collision.posZ(),
             collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
 
@@ -284,17 +298,19 @@ struct AssociateDileptonToEMEvent {
   Produces<o2::aod::V0KFEMEventIds> v0kfeventid;
   Produces<o2::aod::EMPrimaryElectronEMEventIds> prmeleventid;
   Produces<o2::aod::EMPrimaryMuonEMEventIds> prmmueventid;
+  Produces<o2::aod::EMPrimaryTrackEMEventIds> prmtrackeventid;
 
   Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
   PresliceUnsorted<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
   PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
+  Preslice<aod::EMPrimaryTracks> perCollision_track = aod::emprimarytrack::collisionId;
 
   void init(o2::framework::InitContext&) {}
 
   template <typename TCollisions, typename TLeptons, typename TEventIds, typename TPreslice>
   void fillEventId(TCollisions const& collisions, TLeptons const& leptons, TEventIds& eventIds, TPreslice const& perCollision)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       auto leptons_coll = leptons.sliceBy(perCollision, collision.collisionId());
       int nl = leptons_coll.size();
       // LOGF(info, "collision.collisionId() = %d , nl = %d", collision.collisionId(), nl);
@@ -322,11 +338,17 @@ struct AssociateDileptonToEMEvent {
     fillEventId(collisions, tracks, prmmueventid, perCollision_mu);
   }
 
+  void processChargedTrack(aod::EMEvents const& collisions, aod::EMPrimaryTracks const& tracks)
+  {
+    fillEventId(collisions, tracks, prmtrackeventid, perCollision_track);
+  }
+
   void processDummy(aod::EMEvents const&) {}
 
-  PROCESS_SWITCH(AssociateDileptonToEMEvent, processPCM, "process pcm-event indexing", false);
-  PROCESS_SWITCH(AssociateDileptonToEMEvent, processElectron, "process dalitzee-event indexing", false);
-  PROCESS_SWITCH(AssociateDileptonToEMEvent, processFwdMuon, "process forward muon indexing", false);
+  PROCESS_SWITCH(AssociateDileptonToEMEvent, processPCM, "process indexing for PCM", false);
+  PROCESS_SWITCH(AssociateDileptonToEMEvent, processElectron, "process indexing for electrons", false);
+  PROCESS_SWITCH(AssociateDileptonToEMEvent, processFwdMuon, "process indexing for forward muons", false);
+  PROCESS_SWITCH(AssociateDileptonToEMEvent, processChargedTrack, "process indexing for charged tracks", false);
   PROCESS_SWITCH(AssociateDileptonToEMEvent, processDummy, "process dummy", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

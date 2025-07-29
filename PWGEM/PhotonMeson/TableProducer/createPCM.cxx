@@ -554,15 +554,8 @@ struct createPCM {
   PROCESS_SWITCH(createPCM, processTrkCollAsso, "create V0s with track-to-collision associator", false);
 };
 
-// Extends the v0data table with expression columns
-struct v0Initializer {
-  Spawns<aod::V0Cores> v0cores;
-  void init(InitContext const&) {}
-};
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<createPCM>(cfgc, TaskName{"v0-finder"}),
-    adaptAnalysisTask<v0Initializer>(cfgc, TaskName{"v0-initializer"})};
+    adaptAnalysisTask<createPCM>(cfgc, TaskName{"v0-finder"})};
 }

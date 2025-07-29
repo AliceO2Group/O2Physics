@@ -13,30 +13,31 @@
 /// \brief Builder task for kink decay topologies using ITS standalone tracks for the mother
 /// \author Francesco Mazzaschi <francesco.mazzaschi@cern.ch>
 
-#include <memory>
-#include <string>
-#include <array>
-#include <vector>
-#include <algorithm>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DCAFitter/DCAFitterN.h"
-
+#include "PWGLF/DataModel/LFKinkDecayTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "PWGLF/Utils/svPoolCreator.h"
-#include "PWGLF/DataModel/LFKinkDecayTables.h"
+
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <algorithm>
+#include <array>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -56,7 +57,7 @@ std::shared_ptr<TH2> h2ClsMapPtMoth;
 std::shared_ptr<TH2> h2ClsMapPtDaug;
 std::shared_ptr<TH2> h2DeDxDaugSel;
 std::shared_ptr<TH2> h2KinkAnglePt;
-std::shared_ptr<TH2> h2SigmaMinusMassPt;
+std::shared_ptr<TH2> h2MothMassPt;
 } // namespace
 
 struct kinkCandidate {
@@ -89,9 +90,16 @@ struct kinkCandidate {
 
 struct kinkBuilder {
 
+  enum PartType { kSigmaMinus = 0,
+                  kHyperhelium4sigma };
+
   Produces<aod::KinkCands> outputDataTable;
+  Produces<aod::KinkCandsUnbound> outputDataTableUB;
+
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
+  Configurable<int> hypoMoth{"hypoMoth", kSigmaMinus, "Mother particle hypothesis"};
+  Configurable<bool> fillDebugTable{"fillDebugTable", false, "If true, fill the debug table with all candidates unbound"};
   // Selection criteria
   Configurable<float> maxDCAMothToPV{"maxDCAMothToPV", 0.1, "Max DCA of the mother to the PV"};
   Configurable<float> minDCADaugToPV{"minDCADaugToPV", 0., "Min DCA of the daughter to the PV"};
@@ -102,12 +110,14 @@ struct kinkBuilder {
   Configurable<float> etaMax{"etaMax", 1., "eta daughter"};
   Configurable<float> nTPCClusMinDaug{"nTPCClusMinDaug", 80, "daug NTPC clusters cut"};
   Configurable<bool> askTOFforDaug{"askTOFforDaug", false, "If true, ask for TOF signal"};
+  Configurable<bool> doSVRadiusCut{"doSVRadiusCut", true, "If true, apply the cut on the radius of the secondary vertex and tracksIU"};
+  Configurable<bool> updateMothTrackUsePV{"updateMothTrackUsePV", false, "If true, update the mother track parameters using the primary vertex"};
 
   o2::vertexing::DCAFitterN<2> fitter;
   o2::base::MatLayerCylSet* lut = nullptr;
 
   // constants
-  float radToDeg = 180. / M_PI;
+  float radToDeg = o2::constants::math::Rad2Deg;
   svPoolCreator svCreator;
 
   // bethe bloch parameters
@@ -118,12 +128,9 @@ struct kinkBuilder {
   Configurable<bool> unlikeSignBkg{"unlikeSignBkg", false, "Use unlike sign background"};
 
   // CCDB options
-  Configurable<double> inputBz{"inputBz", -999, "bz field, -999 is automatic"};
   Configurable<std::string> ccdbPath{"ccdbPath", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
   // PDG codes
 
@@ -141,8 +148,25 @@ struct kinkBuilder {
   float mBz;
   std::array<float, 6> mBBparamsDaug;
 
+  // mother and daughter tracks' properties (absolute charge and mass)
+  int charge = 1;
+  float mothMass = o2::constants::physics::MassSigmaMinus;
+  float chargedDauMass = o2::constants::physics::MassPiMinus;
+  float neutDauMass = o2::constants::physics::MassNeutron;
+
   void init(InitContext const&)
   {
+    if (hypoMoth == kSigmaMinus) {
+      charge = 1;
+      mothMass = o2::constants::physics::MassSigmaMinus;
+      chargedDauMass = o2::constants::physics::MassPiMinus;
+      neutDauMass = o2::constants::physics::MassNeutron;
+    } else if (hypoMoth == kHyperhelium4sigma) {
+      charge = 2;
+      mothMass = o2::constants::physics::MassHyperHelium4;
+      chargedDauMass = o2::constants::physics::MassAlpha;
+      neutDauMass = o2::constants::physics::MassPi0;
+    }
 
     // dummy values, 1 for mother, 0 for daughter
     svCreator.setPDGs(1, 0);
@@ -153,7 +177,6 @@ struct kinkBuilder {
     ccdb->setURL(ccdbPath);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(false);
     fitter.setPropagateToPCA(true);
     fitter.setMaxR(200.);
     fitter.setMinParamChange(1e-3);
@@ -161,10 +184,6 @@ struct kinkBuilder {
     fitter.setMaxDZIni(1e9);
     fitter.setMaxChi2(1e9);
     fitter.setUseAbsDCA(true);
-
-    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
-    int mat{static_cast<int>(cfgMaterialCorrection)};
-    fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
 
     svCreator.setTimeMargin(customVertexerTimeMargin);
     if (skipAmbiTracks) {
@@ -174,15 +193,26 @@ struct kinkBuilder {
     const AxisSpec itsClusterMapAxis(128, 0, 127, "ITS cluster map");
     const AxisSpec rigidityAxis{rigidityBins, "#it{p}^{TPC}/#it{z}"};
     const AxisSpec ptAxis{rigidityBins, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec sigmaMassAxis{100, 1.1, 1.4, "m (GeV/#it{c}^{2})"};
     const AxisSpec kinkAngleAxis{100, 0, 180, "#theta_{kink} (deg)"};
     const AxisSpec dedxAxis{dedxBins, "d#it{E}/d#it{x}"};
 
+    AxisSpec massAxis(100, 1.1, 1.4, "m (GeV/#it{c}^{2})");
+    if (hypoMoth == kSigmaMinus) {
+      massAxis = AxisSpec{100, 1.1, 1.4, "m (GeV/#it{c}^{2})"};
+    } else if (hypoMoth == kHyperhelium4sigma) {
+      massAxis = AxisSpec{100, 3.85, 4.25, "m (GeV/#it{c}^{2})"};
+    }
+
     h2DeDxDaugSel = qaRegistry.add<TH2>("h2DeDxDaugSel", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dedxAxis});
     h2KinkAnglePt = qaRegistry.add<TH2>("h2KinkAnglePt", "; p_{T} (GeV/#it{c}); #theta_{kink} (deg)", HistType::kTH2F, {ptAxis, kinkAngleAxis});
-    h2SigmaMinusMassPt = qaRegistry.add<TH2>("h2SigmaMinusMassPt", "; p_{T} (GeV/#it{c}); m (GeV/#it{c}^{2})", HistType::kTH2F, {ptAxis, sigmaMassAxis});
+    h2MothMassPt = qaRegistry.add<TH2>("h2MothMassPt", "; p_{T} (GeV/#it{c}); m (GeV/#it{c}^{2})", HistType::kTH2F, {ptAxis, massAxis});
     h2ClsMapPtMoth = qaRegistry.add<TH2>("h2ClsMapPtMoth", "; p_{T} (GeV/#it{c}); ITS cluster map", HistType::kTH2F, {ptAxis, itsClusterMapAxis});
     h2ClsMapPtDaug = qaRegistry.add<TH2>("h2ClsMapPtDaug", "; p_{T} (GeV/#it{c}); ITS cluster map", HistType::kTH2F, {ptAxis, itsClusterMapAxis});
+
+    for (int i = 0; i < 5; i++) {
+      mBBparamsDaug[i] = cfgBetheBlochParams->get("Daughter", Form("p%i", i));
+    }
+    mBBparamsDaug[5] = cfgBetheBlochParams->get("Daughter", "resolution");
   }
 
   template <typename T>
@@ -220,12 +250,12 @@ struct kinkBuilder {
   }
 
   template <class Tcolls, class Ttracks>
-  void fillCandidateData(const Tcolls& collisions, const Ttracks& tracks, aod::AmbiguousTracks const& ambiguousTracks, aod::BCsWithTimestamps const& bcs)
+  void fillCandidateData(const Tcolls& collisions, const Ttracks& tracks, aod::AmbiguousTracks const& ambiguousTracks, aod::BCs const& bcs)
   {
     svCreator.clearPools();
     svCreator.fillBC2Coll(collisions, bcs);
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (std::abs(track.eta()) > etaMax)
         continue;
 
@@ -240,14 +270,14 @@ struct kinkBuilder {
     }
     auto& kinkPool = svCreator.getSVCandPool(collisions, !unlikeSignBkg);
 
-    for (auto& svCand : kinkPool) {
+    for (const auto& svCand : kinkPool) {
       kinkCandidate kinkCand;
 
       auto trackMoth = tracks.rawIteratorAt(svCand.tr0Idx);
       auto trackDaug = tracks.rawIteratorAt(svCand.tr1Idx);
 
       auto const& collision = trackMoth.template collision_as<Tcolls>();
-      auto const& bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      auto const& bc = collision.template bc_as<aod::BCs>();
       initCCDB(bc);
 
       o2::dataformats::VertexBase primaryVertex;
@@ -256,10 +286,10 @@ struct kinkBuilder {
       kinkCand.primVtx = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
 
       o2::track::TrackParCov trackParCovMoth = getTrackParCov(trackMoth);
+      o2::track::TrackParCov trackParCovMothPV{trackParCovMoth};
       o2::base::Propagator::Instance()->PropagateToXBxByBz(trackParCovMoth, LayerRadii[trackMoth.itsNCls() - 1]);
 
-      o2::track::TrackParCov trackParCovMothPV = getTrackParCov(trackMoth);
-      gpu::gpustd::array<float, 2> dcaInfoMoth;
+      std::array<float, 2> dcaInfoMoth;
       o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, trackParCovMothPV, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfoMoth);
 
       if (std::abs(dcaInfoMoth[0]) > maxDCAMothToPV) {
@@ -278,10 +308,18 @@ struct kinkBuilder {
       }
 
       // propagate to PV
-      gpu::gpustd::array<float, 2> dcaInfoDaug;
+      std::array<float, 2> dcaInfoDaug;
       o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, trackParCovDaug, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfoDaug);
       if (std::abs(dcaInfoDaug[0]) < minDCADaugToPV) {
         continue;
+      }
+
+      if (updateMothTrackUsePV) {
+        // update the mother track parameters using the primary vertex
+        trackParCovMoth = trackParCovMothPV;
+        if (!trackParCovMoth.update(primaryVertex)) {
+          continue;
+        }
       }
 
       int nCand = 0;
@@ -305,7 +343,7 @@ struct kinkBuilder {
 
       // cut on decay radius to 17 cm
       float decRad2 = kinkCand.decVtx[0] * kinkCand.decVtx[0] + kinkCand.decVtx[1] * kinkCand.decVtx[1];
-      if (decRad2 < LayerRadii[3] * LayerRadii[3]) {
+      if (doSVRadiusCut && decRad2 < LayerRadii[3] * LayerRadii[3]) {
         continue;
       }
 
@@ -324,11 +362,11 @@ struct kinkBuilder {
         }
       }
 
-      if (lastLayerMoth >= firstLayerDaug) {
+      if (doSVRadiusCut && lastLayerMoth >= firstLayerDaug) {
         continue;
       }
 
-      if (decRad2 < LayerRadii[lastLayerMoth] * LayerRadii[lastLayerMoth]) {
+      if (doSVRadiusCut && decRad2 < LayerRadii[lastLayerMoth] * LayerRadii[lastLayerMoth]) {
         continue;
       }
 
@@ -338,8 +376,12 @@ struct kinkBuilder {
 
       propMothTrack.getPxPyPzGlo(kinkCand.momMoth);
       propDaugTrack.getPxPyPzGlo(kinkCand.momDaug);
-      float pMoth = propMothTrack.getP();
-      float pDaug = propDaugTrack.getP();
+      for (int i = 0; i < 3; i++) {
+        kinkCand.momMoth[i] *= charge;
+        kinkCand.momDaug[i] *= charge;
+      }
+      float pMoth = propMothTrack.getP() * charge;
+      float pDaug = propDaugTrack.getP() * charge;
       float spKink = kinkCand.momMoth[0] * kinkCand.momDaug[0] + kinkCand.momMoth[1] * kinkCand.momDaug[1] + kinkCand.momMoth[2] * kinkCand.momDaug[2];
       kinkCand.kinkAngle = std::acos(spKink / (pMoth * pDaug));
 
@@ -348,15 +390,15 @@ struct kinkBuilder {
         neutDauMom[i] = kinkCand.momMoth[i] - kinkCand.momDaug[i];
       }
 
-      float piMinusE = std::sqrt(neutDauMom[0] * neutDauMom[0] + neutDauMom[1] * neutDauMom[1] + neutDauMom[2] * neutDauMom[2] + 0.13957 * 0.13957);
-      float neutronE = std::sqrt(pDaug * pDaug + 0.93957 * 0.93957);
-      float invMass = std::sqrt((piMinusE + neutronE) * (piMinusE + neutronE) - (pMoth * pMoth));
+      float chargedDauE = std::sqrt(pDaug * pDaug + chargedDauMass * chargedDauMass);
+      float neutE = std::sqrt(neutDauMom[0] * neutDauMom[0] + neutDauMom[1] * neutDauMom[1] + neutDauMom[2] * neutDauMom[2] + neutDauMass * neutDauMass);
+      float invMass = std::sqrt((chargedDauE + neutE) * (chargedDauE + neutE) - (pMoth * pMoth));
 
       h2DeDxDaugSel->Fill(trackDaug.tpcInnerParam() * trackDaug.sign(), trackDaug.tpcSignal());
-      h2KinkAnglePt->Fill(trackMoth.pt() * trackMoth.sign(), kinkCand.kinkAngle * radToDeg);
-      h2SigmaMinusMassPt->Fill(trackMoth.pt() * trackMoth.sign(), invMass);
-      h2ClsMapPtMoth->Fill(trackMoth.pt() * trackMoth.sign(), trackMoth.itsClusterMap());
-      h2ClsMapPtDaug->Fill(trackDaug.pt() * trackDaug.sign(), trackDaug.itsClusterMap());
+      h2KinkAnglePt->Fill(trackMoth.pt() * charge * trackMoth.sign(), kinkCand.kinkAngle * radToDeg);
+      h2MothMassPt->Fill(trackMoth.pt() * charge * trackMoth.sign(), invMass);
+      h2ClsMapPtMoth->Fill(trackMoth.pt() * charge * trackMoth.sign(), trackMoth.itsClusterMap());
+      h2ClsMapPtDaug->Fill(trackDaug.pt() * charge * trackDaug.sign(), trackDaug.itsClusterMap());
 
       kinkCand.collisionID = collision.globalIndex();
       kinkCand.mothTrackID = trackMoth.globalIndex();
@@ -370,51 +412,28 @@ struct kinkBuilder {
     }
   }
 
-  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  void initCCDB(aod::BCs::iterator const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-    auto run3grp_timestamp = bc.timestamp();
-
-    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (grpo) {
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      if (inputBz < -990) {
-        // Fetch magnetic field from ccdb for current collision
-        mBz = grpo->getNominalL3Field();
-        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << mBz << " kZG";
-      } else {
-        mBz = inputBz;
-      }
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-      }
-      o2::base::Propagator::initFieldFromGRP(grpmag);
-      if (inputBz < -990) {
-        // Fetch magnetic field from ccdb for current collision
-        mBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << mBz << " kZG";
-      } else {
-        mBz = inputBz;
-      }
-    }
-
-    for (int i = 0; i < 5; i++) {
-      mBBparamsDaug[i] = cfgBetheBlochParams->get("Daughter", Form("p%i", i));
-    }
-    mBBparamsDaug[5] = cfgBetheBlochParams->get("Daughter", "resolution");
-
-    fitter.setBz(mBz);
     mRunNumber = bc.runNumber();
+    LOG(info) << "Initializing CCDB for run " << mRunNumber;
+    o2::parameters::GRPMagField* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>(grpmagPath, mRunNumber);
+    o2::base::Propagator::initFieldFromGRP(grpmag);
+    mBz = grpmag->getNominalL3Field();
+    fitter.setBz(mBz);
+
+    if (!lut) {
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+      int mat{static_cast<int>(cfgMaterialCorrection)};
+      fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
+    }
     o2::base::Propagator::Instance()->setMatLUT(lut);
     LOG(info) << "Task initialized for run " << mRunNumber << " with magnetic field " << mBz << " kZG";
   }
 
-  void process(aod::Collisions const& collisions, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs)
+  void process(aod::Collisions const& collisions, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCs const& bcs)
   {
 
     kinkCandidates.clear();
@@ -423,12 +442,19 @@ struct kinkBuilder {
     // sort kinkCandidates by collisionID to allow joining with collision table
     std::sort(kinkCandidates.begin(), kinkCandidates.end(), [](const kinkCandidate& a, const kinkCandidate& b) { return a.collisionID < b.collisionID; });
 
-    for (auto& kinkCand : kinkCandidates) {
-      outputDataTable(kinkCand.collisionID, kinkCand.mothTrackID, kinkCand.daugTrackID,
-                      kinkCand.decVtx[0], kinkCand.decVtx[1], kinkCand.decVtx[2],
-                      kinkCand.mothSign, kinkCand.momMoth[0], kinkCand.momMoth[1], kinkCand.momMoth[2],
-                      kinkCand.momDaug[0], kinkCand.momDaug[1], kinkCand.momDaug[2],
-                      kinkCand.dcaXYmoth, kinkCand.dcaXYdaug, kinkCand.dcaKinkTopo);
+    for (const auto& kinkCand : kinkCandidates) {
+      if (fillDebugTable) {
+        outputDataTableUB(kinkCand.decVtx[0], kinkCand.decVtx[1], kinkCand.decVtx[2],
+                          kinkCand.mothSign, kinkCand.momMoth[0], kinkCand.momMoth[1], kinkCand.momMoth[2],
+                          kinkCand.momDaug[0], kinkCand.momDaug[1], kinkCand.momDaug[2],
+                          kinkCand.dcaXYmoth, kinkCand.dcaXYdaug, kinkCand.dcaKinkTopo);
+      } else {
+        outputDataTable(kinkCand.collisionID, kinkCand.mothTrackID, kinkCand.daugTrackID,
+                        kinkCand.decVtx[0], kinkCand.decVtx[1], kinkCand.decVtx[2],
+                        kinkCand.mothSign, kinkCand.momMoth[0], kinkCand.momMoth[1], kinkCand.momMoth[2],
+                        kinkCand.momDaug[0], kinkCand.momDaug[1], kinkCand.momDaug[2],
+                        kinkCand.dcaXYmoth, kinkCand.dcaXYdaug, kinkCand.dcaKinkTopo);
+      }
     }
   }
 };

@@ -22,12 +22,17 @@ o2physics_add_dpl_workflow(tree-creator-electron-ml-dda
 
 o2physics_add_dpl_workflow(skimmer-primary-electron
                     SOURCES skimmerPrimaryElectron.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(skimmer-primary-muon
                     SOURCES skimmerPrimaryMuon.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::GlobalTracking
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(skimmer-primary-track
+                    SOURCES skimmerPrimaryTrack.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(skimmer-secondary-electron

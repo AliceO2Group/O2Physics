@@ -111,8 +111,8 @@ o2physics_add_dpl_workflow(mcinelgt0
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(tracked-cascade-properties
-    SOURCES tracked_cascade_properties.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    SOURCES trackedCascadeProperties.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(mc-particle-predictions
@@ -123,4 +123,19 @@ o2physics_add_dpl_workflow(mc-particle-predictions
 o2physics_add_dpl_workflow(strange-derived-qa
     SOURCES strangederivedqa.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(str-derived-genqa
+    SOURCES strderivedGenQA.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(its-tpc-matching-vzeros
+    SOURCES lfITSTPCMatchingSecondaryTracksQA.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(v0assoqa
+    SOURCES v0assoqa.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::TPCDriftManager
     COMPONENT_NAME Analysis)

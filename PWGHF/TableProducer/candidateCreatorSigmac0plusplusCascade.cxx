@@ -15,17 +15,26 @@
 /// \author Rutuparna Rath <rrath@cern.ch>, INFN BOLOGNA and GSI Darmstadt
 /// In collaboration with Andrea Alici <aalici@cern.ch>, INFN BOLOGNA
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+
+#include <cstdint>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -66,6 +75,8 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
   Configurable<float> softPiDcaZMax{"softPiDcaZMax", 0.065, "Soft pion max dcaZ (cm)"};
   Configurable<bool> addQA{"addQA", true, "Switch for the qa PLOTS"};
 
+  HfHelper hfHelper;
+
   using TracksWithPID = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidKa>;
 
   /// Filter the candidate Λc+ used for the Σc0,++ creation
@@ -76,7 +87,6 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
   Preslice<TracksWithPID> trackIndicesPerCollision = aod::track::collisionId;
 
   HistogramRegistry registry;
-  HfHelper hfHelper;
 
   void init(InitContext&)
   {
@@ -288,9 +298,9 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
         continue;
       }
       registry.fill(HIST("candidateStat"), 1);
-      auto K0short = candidateLc.v0_as<o2::aod::V0s>(); // get the soft pions for the given collId
-      auto pos = K0short.template posTrack_as<TracksWithPID>();
-      auto neg = K0short.template negTrack_as<TracksWithPID>();
+      auto k0Short = candidateLc.v0_as<o2::aod::V0s>(); // get the soft pions for the given collId
+      auto pos = k0Short.template posTrack_as<TracksWithPID>();
+      auto neg = k0Short.template negTrack_as<TracksWithPID>();
       for (const auto& trackSoftPi : tracksInThisCollision) {
         int chargeSoftPi = trackSoftPi.sign();
         if (chargeSoftPi == pos.sign() && trackSoftPi.globalIndex() == pos.globalIndex()) {

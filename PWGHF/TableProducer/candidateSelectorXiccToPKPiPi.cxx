@@ -14,15 +14,24 @@
 ///
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include "Common/Core/TrackSelectorPID.h"
 
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -47,7 +56,7 @@ struct HfCandidateSelectorXiccToPKPiPi {
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xicc_to_p_k_pi_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_xicc_to_p_k_pi_pi::cuts[0], hf_cuts_xicc_to_p_k_pi_pi::nBinsPt, hf_cuts_xicc_to_p_k_pi_pi::nCutVars, hf_cuts_xicc_to_p_k_pi_pi::labelsPt, hf_cuts_xicc_to_p_k_pi_pi::labelsCutVar}, "Xicc candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_xicc_to_p_k_pi_pi::Cuts[0], hf_cuts_xicc_to_p_k_pi_pi::NBinsPt, hf_cuts_xicc_to_p_k_pi_pi::NCutVars, hf_cuts_xicc_to_p_k_pi_pi::labelsPt, hf_cuts_xicc_to_p_k_pi_pi::labelsCutVar}, "Xicc candidate selection per pT bin"};
 
   HfHelper hfHelper;
   TrackSelectorPi selectorPion;

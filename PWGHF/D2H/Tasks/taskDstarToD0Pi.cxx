@@ -17,18 +17,31 @@
 
 /// \brief Dstar production analysis task (With and Without ML)
 
-#include <algorithm>
-#include <utility>
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -174,6 +187,7 @@ struct HfTaskDstarToD0Pi {
       registry.add("Yield/hDeltaInvMassVsPtVsCentVsBDTScore", "#Delta #it{M}_{inv} Vs Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseF, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
     }
     if (doprocessMcWML) {
+      registry.add("Efficiency/hPtVsCentVsBDTScore", "Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseF, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
       registry.add("Efficiency/hPtPromptVsCentVsBDTScore", "Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseF, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
       registry.add("Efficiency/hPtNonPromptVsCentVsBDTScore", "Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseF, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
       // registry.add("Efficiency/hPtBkgVsCentVsBDTScore", "Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseF, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
@@ -270,6 +284,12 @@ struct HfTaskDstarToD0Pi {
           if (0.142f < deltaMAntiDstar && deltaMAntiDstar < 0.15f) {
             nCandsSignalRegion++;
           }
+
+          if constexpr (applyMl) {
+            auto mlBdtScore = candDstar.mlProbDstarToD0Pi();
+            registry.fill(HIST("Yield/hDeltaInvMassVsPtVsCentVsBDTScore"), deltaMAntiDstar, candDstar.pt(), centrality, mlBdtScore[0], mlBdtScore[1], mlBdtScore[2]);
+          }
+
           registry.fill(HIST("Yield/hDeltaInvMassDstar3D"), deltaMAntiDstar, candDstar.pt(), centrality);
           registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), deltaMAntiDstar, candDstar.pt());
           registry.fill(HIST("Yield/hInvMassD0"), invD0Bar, candDstar.ptD0());
@@ -306,8 +326,8 @@ struct HfTaskDstarToD0Pi {
         continue;
       }
       auto collision = candDstarMcRec.template collision_as<CollisionsWCentMcLabel>();
-      auto centrality = collision.centFT0M();                                                               // 0-100%
-      if (TESTBIT(std::abs(candDstarMcRec.flagMcMatchRec()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // if MC matching is successful at Reconstruction Level
+      auto centrality = collision.centFT0M();                                                                     // 0-100%
+      if (std::abs(candDstarMcRec.flagMcMatchRec()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) { // if MC matching is successful at Reconstruction Level
         // LOGF(info, "MC Rec Dstar loop MC Matched");
         // get MC Mother particle
         auto prong0 = candDstarMcRec.template prong0_as<aod::TracksWMc>();
@@ -326,6 +346,10 @@ struct HfTaskDstarToD0Pi {
         if (candDstarMcRec.isSelDstarToD0Pi()) { // if all selection passed
           registry.fill(HIST("QA/hPtFullRecoDstarRecSig"), ptDstarRecSig);
           registry.fill(HIST("Efficiency/hPtVsCentFullRecoDstarRecSig"), ptDstarRecSig, centrality);
+          if constexpr (applyMl) {
+            auto bdtScore = candDstarMcRec.mlProbDstarToD0Pi();
+            registry.fill(HIST("Efficiency/hPtVsCentVsBDTScore"), ptDstarRecSig, centrality, bdtScore[0], bdtScore[1], bdtScore[2]);
+          }
         }
         registry.fill(HIST("QA/hCPASkimD0RecSig"), candDstarMcRec.cpaD0());
         registry.fill(HIST("QA/hEtaSkimD0RecSig"), candDstarMcRec.etaD0());
@@ -343,10 +367,8 @@ struct HfTaskDstarToD0Pi {
           if (candDstarMcRec.isSelDstarToD0Pi()) { // if all selection passed
             registry.fill(HIST("QA/hPtFullRecoPromptDstarRecSig"), ptDstarRecSig);
             if constexpr (applyMl) {
-              // LOGF(info, "Deep: Prompt MC Rec Task Dstar: ML applied");
               auto bdtScore = candDstarMcRec.mlProbDstarToD0Pi();
               registry.fill(HIST("Efficiency/hPtPromptVsCentVsBDTScore"), ptDstarRecSig, centrality, bdtScore[0], bdtScore[1], bdtScore[2]);
-              // LOGF(info, "Deep: Prompt MC Rec Task Dstar: ML applied, Efficiency filled");
             }
           }
         } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) { // only non-prompt signal at reconstruction level
@@ -374,7 +396,6 @@ struct HfTaskDstarToD0Pi {
         }
       }
     } // candidate loop ends
-    // LOGF(info, "Deep: MC Rec Task Dstar finished");
   }
 
   /// @brief This function runs over MC at gen level to obatin efficiency
@@ -384,7 +405,7 @@ struct HfTaskDstarToD0Pi {
   {
     // MC Gen level
     for (auto const& mcParticle : rowsMcPartilces) {
-      if (TESTBIT(std::abs(mcParticle.flagMcMatchGen()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // MC Matching is successful at Generator Level
+      if (std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) { // MC Matching is successful at Generator Level
         auto ptGen = mcParticle.pt();
         auto yGen = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDStar);
         if (yCandDstarGenMax >= 0. && std::abs(yGen) > yCandDstarGenMax) {

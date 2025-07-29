@@ -17,33 +17,20 @@
 #ifndef PWGJE_CORE_JETV0UTILITIES_H_
 #define PWGJE_CORE_JETV0UTILITIES_H_
 
-#include <array>
-#include <vector>
-#include <string>
-#include <optional>
+#include "PWGJE/DataModel/Jet.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include <Framework/ASoA.h>
 
 #include <TPDGCode.h>
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/O2DatabasePDGPlugin.h"
+#include <Rtypes.h>
 
-#include "Framework/Logger.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/DataModel/DerivedTables.h"
-
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/DataModel/Jet.h"
+#include <array>
+#include <cstdint>
+#include <string>
+#include <type_traits>
 
 namespace jetv0utilities
 {

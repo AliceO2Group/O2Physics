@@ -15,7 +15,19 @@
 
 #include "PWGJE/Tasks/jetSubstructureHF.cxx"
 
-using JetSubstructureBplus = JetSubstructureHFTask<soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents>, soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents>, soa::Join<aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents>, soa::Join<aod::BplusChargedEventWiseSubtractedJets, aod::BplusChargedEventWiseSubtractedJetConstituents>, aod::CandidatesBplusData, aod::CandidatesBplusMCP, aod::BplusCJetSSs, aod::BplusCMCDJetSSs, aod::BplusCMCPJetSSs, aod::BplusCEWSJetSSs, aod::JTrackBplusSubs>;
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetSubstructure.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/ConfigContext.h>
+#include <Framework/DataProcessorSpec.h>
+#include <Framework/runDataProcessing.h>
+
+#include <vector>
+
+using JetSubstructureBplus = JetSubstructureHFTask<soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents>, soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents>, soa::Join<aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents>, soa::Join<aod::BplusChargedEventWiseSubtractedJets, aod::BplusChargedEventWiseSubtractedJetConstituents>, aod::CandidatesBplusData, aod::CandidatesBplusMCP, aod::BplusCJetSSs, aod::BplusChargedSPs, aod::BplusChargedPRs, aod::BplusCMCDJetSSs, aod::BplusChargedMCDetectorLevelSPs, aod::BplusChargedMCDetectorLevelPRs, aod::BplusCMCPJetSSs, aod::BplusChargedMCParticleLevelSPs, aod::BplusChargedMCParticleLevelPRs, aod::BplusCEWSJetSSs, aod::BplusChargedEventWiseSubtractedSPs, aod::BplusChargedEventWiseSubtractedPRs, aod::JTrackBplusSubs>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

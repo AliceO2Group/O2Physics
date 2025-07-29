@@ -71,8 +71,12 @@ static constexpr int trkCutIdxN = 23;
 static constexpr int nSpecies = o2::track::PID::NIDs; // One per PDG
 static constexpr int nCharges = 2;
 static constexpr int nParticles = nSpecies * nCharges;
-static constexpr const char* particleTitle[nParticles] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha",
-                                                          "e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha"};
+static constexpr const char* particleTitle[nParticles] = {"e^{-}", "#mu^{-}", "#pi^{+}",
+                                                          "K^{+}", "p", "d",
+                                                          "t", "^{3}He", "#alpha",
+                                                          "e^{+}", "#mu^{+}", "#pi^{-}",
+                                                          "K^{-}", "#bar{p}", "#bar{d}",
+                                                          "#bar{t}", "^{3}#bar{He}", "#bar{#alpha}"};
 static constexpr int PDGs[nParticles] = {11, 13, 211, 321, 2212, 1000010020, 1000010030, 1000020030, 1000020040,
                                          -11, -13, -211, -321, -2212, -1000010020, -1000010030, -1000020030, -1000020040};
 
@@ -203,6 +207,7 @@ struct QaEfficiency {
   Configurable<bool> checkForMothers{"checkForMothers", false, "Flag to use the array of mothers to check if the particle of interest come from any of those particles"};
   Configurable<std::vector<int>> mothersPDGs{"mothersPDGs", std::vector<int>{3312, -3312}, "PDGs of origin of the particle under study"};
   Configurable<bool> keepOnlyHfParticles{"keepOnlyHfParticles", false, "Flag to decide wheter to consider only HF particles"};
+  Configurable<int> eventGeneratorType{"eventGeneratorType", -1, "Flag to check specific event generator (for HF): -1 -> no check, 0 -> MB events, 4 -> charm triggered, 5 -> beauty triggered"};
   // Track only selection, options to select only specific tracks
   Configurable<bool> trackSelection{"trackSelection", true, "Local track selection"};
   Configurable<int> globalTrackSelection{"globalTrackSelection", 0, "Global track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks, 6 -> custom track cuts via Configurable"};
@@ -226,6 +231,7 @@ struct QaEfficiency {
   Configurable<bool> doPtEta{"doPtEta", false, "Flag to produce the efficiency vs pT and Eta"};
   Configurable<bool> doPtRadius{"doPtRadius", false, "Flag to produce the efficiency vs pT and Radius"};
   Configurable<int> applyEvSel{"applyEvSel", 0, "Flag to apply event selection: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
+  Configurable<bool> applyTimeFrameBorderCut{"applyTimeFrameBorderCut", false, "Flag to apply the TF border cut"};
   // Custom track cuts for debug purposes
   TrackSelection customTrackCuts;
   struct : ConfigurableGroup {
@@ -259,6 +265,7 @@ struct QaEfficiency {
   using CollisionCandidatesMC = o2::soa::Join<CollisionCandidates, o2::aod::McCollisionLabels>;
   using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension, o2::aod::TracksDCA>;
   using TrackCandidatesMC = o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels>;
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -365,7 +372,7 @@ struct QaEfficiency {
     hPtItsTpcTofStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/its_tpc_tof", PDGs[histogramIndex]), "ITS-TPC-TOF tracks (from weak decays) " + tagPt, kTH1D, {axisPt});
     hPtGeneratedStr[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/generated", PDGs[histogramIndex]), "Generated (from weak decays) " + tagPt, kTH1D, {axisPt});
     hPtmotherGenerated[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/generated_mother", PDGs[histogramIndex]), "Generated Mother " + tagPt, kTH1D, {axisPt});
-    hdecaylengthmother[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/decayLength", PDGs[histogramIndex]), "Decay Length of mother particle" + tagPt, kTH1D, {axisPt});
+    hdecaylengthmother[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/str/decayLength", PDGs[histogramIndex]), "Decay Length of mother particle" + tagPt, kTH1D, {axisDecayLength});
 
     // Ter
     hPtItsTpcTer[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/ter/its_tpc", PDGs[histogramIndex]), "ITS-TPC tracks (from secondary weak decays) " + tagPt, kTH1D, {axisPt});
@@ -967,6 +974,7 @@ struct QaEfficiency {
 
     histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(3, "Passed Contrib.");
     histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(4, "Passed Position");
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(5, "Passed Time Frame border cut");
 
     if (doprocessMC) {
       histos.add("MC/generatedCollisions", "Generated Collisions", kTH1D, {{10, 0.5, 10.5, "Generated collisions"}});
@@ -1260,7 +1268,7 @@ struct QaEfficiency {
           for (const auto& mother : mothers) {
             for (const auto& pdgToCheck : mothersPDGs.value) {
               if (mother.pdgCode() == pdgToCheck) {
-                motherIsAccepted = true; // Mother matches the list of specified PDGs
+                motherIsAccepted = true;                               // Mother matches the list of specified PDGs
                 hPtmotherGenerated[histogramIndex]->Fill(mother.pt()); // Fill generated pT for mother
                 break;
               }
@@ -1448,6 +1456,12 @@ struct QaEfficiency {
     }
     if constexpr (doFillHistograms) {
       histos.fill(HIST("eventSelection"), 4);
+    }
+    if (applyTimeFrameBorderCut && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+    if constexpr (doFillHistograms) {
+      histos.fill(HIST("eventSelection"), 5);
     }
     return true;
   }
@@ -1738,7 +1752,8 @@ struct QaEfficiency {
                  // o2::soa::SmallGroups<CollisionCandidatesMC> const& collisions,
                  CollisionCandidatesMC const& collisions,
                  TrackCandidatesMC const& tracks,
-                 o2::aod::McParticles const& mcParticles)
+                 o2::aod::McParticles const& mcParticles,
+                 BCsInfo const&)
   {
 
     /// loop over generated collisions
@@ -1777,6 +1792,11 @@ struct QaEfficiency {
         }
       }
       histos.fill(HIST("MC/generatedCollisions"), 3);
+
+      if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+        LOG(debug) << "Skipping event with different type of generator than the one requested";
+        continue;
+      }
 
       /// loop over reconstructed collisions
       for (const auto& collision : groupedCollisions) {
@@ -1864,6 +1884,13 @@ struct QaEfficiency {
               continue;
             }
           }
+          // apply time-frame border cut also to the generated collision
+          if (applyTimeFrameBorderCut) {
+            auto bc = mcCollision.bc_as<BCsInfo>();
+            if (!bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+              continue;
+            }
+          }
         }
 
         /// only to fill denominator of ITS-TPC matched primary tracks only in MC events with at least 1 reco. vtx
@@ -1909,6 +1936,13 @@ struct QaEfficiency {
       if (applyPvZCutGenColl) {
         const float genPvZ = mcCollision.posZ();
         if (genPvZ < vertexZMin || genPvZ > vertexZMax) {
+          continue;
+        }
+      }
+      // apply time-frame border cut also to the generated collision
+      if (applyTimeFrameBorderCut) {
+        auto bc = mcCollision.bc_as<BCsInfo>();
+        if (!bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
           continue;
         }
       }
@@ -1966,7 +2000,8 @@ struct QaEfficiency {
   void processMCWithoutCollisions(TrackCandidatesMC const& tracks,
                                   o2::aod::Collisions const&,
                                   o2::aod::McParticles const& mcParticles,
-                                  o2::aod::McCollisions const&)
+                                  o2::aod::McCollisions const&,
+                                  BCsInfo const&)
   {
     // Track loop
     for (const auto& track : tracks) {
@@ -2015,6 +2050,14 @@ struct QaEfficiency {
         const auto mcCollision = mcParticle.mcCollision();
         const float posZ = mcCollision.posZ();
         if (posZ < vertexZMin || posZ > vertexZMax) {
+          continue;
+        }
+      }
+      // apply time-frame border cut also to the generated collision
+      if (applyTimeFrameBorderCut) {
+        const auto mcCollision = mcParticle.mcCollision();
+        auto bc = mcCollision.bc_as<BCsInfo>();
+        if (!bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
           continue;
         }
       }

@@ -120,12 +120,27 @@ TrackSelection getGlobalTrackSelectionRun3HF()
 // Reduced default track selection for jet validation based on hybrid cuts for converted (based on ESD's from run 2) A02D's
 TrackSelection getJEGlobalTrackSelectionRun2()
 {
-  TrackSelection selectedTracks = getGlobalTrackSelection();
-  selectedTracks.SetPtRange(0.15f, 1e15f);
-  selectedTracks.SetRequireGoldenChi2(false);
-  selectedTracks.SetMaxDcaXYPtDep([](float /*pt*/) { return 1e+10; });
+  TrackSelection selectedTracks;
+
+  // These track selections are the same as the global track selections as of Jan 2025. Implemented seperately to prevent future
+  // global track selection changes from affecting the Run 2 hybrid track selections.
+  selectedTracks.SetTrackType(o2::aod::track::Run2Track); // Run 2 track asked by default
+  selectedTracks.SetRequireITSRefit(true);
+  selectedTracks.SetRequireTPCRefit(true);
+  selectedTracks.SetRequireGoldenChi2(true);
+  selectedTracks.SetMinNCrossedRowsTPC(70);
+  selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
+  selectedTracks.SetMaxChi2PerClusterTPC(4.f);
+  selectedTracks.SetMaxChi2PerClusterITS(36.f);
+
+  // These track selections are different to the global track selections as of Jan 2025.
+  selectedTracks.SetPtRange(0.15f, 1000.f);
   selectedTracks.SetEtaRange(-0.9f, 0.9f);
+  selectedTracks.SetMaxDcaXYPtDep([](float /*pt*/) { return 1e+10; });
   selectedTracks.SetMaxDcaXY(2.4f);
   selectedTracks.SetMaxDcaZ(3.2f);
+  selectedTracks.SetRequireHitsInITSLayers(0, {0, 1}); // no minimum required number of hits in any SPD layer
+  selectedTracks.SetMaxTPCFractionSharedCls(0.4f);     // This cut machinery was added since it's used in hybrid tracks Run 2
+
   return selectedTracks;
 }

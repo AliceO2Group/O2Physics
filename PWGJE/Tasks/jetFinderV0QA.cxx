@@ -13,35 +13,30 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include <TRandom3.h>
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetFindingUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
 
-#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/Configurable.h>
+#include <Framework/DataProcessorSpec.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include <TMathBase.h>
 
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include <cmath>
+#include <string>
+#include <type_traits>
+#include <vector>
 
-#include "PWGJE/DataModel/Jet.h"
-
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetHFUtilities.h"
-#include "PWGJE/Core/JetV0Utilities.h"
-#include "PWGJE/Core/JetFindingUtilities.h"
-
-#include "EventFiltering/filterTables.h"
+#include <math.h>
 
 using namespace o2;
-using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -68,12 +63,12 @@ struct JetFinderV0QATask {
   Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
   Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
   int trackSelection = -1;
 
   void init(o2::framework::InitContext&)
   {
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
     auto jetRadiiBins = (std::vector<double>)jetRadii;
@@ -164,7 +159,7 @@ struct JetFinderV0QATask {
   using JetTableMCPMatchedWeightedJoined = soa::Join<JetTableMCD, JetConstituentTableMCP, JetMatchingTableMCPMCD, JetTableMCPWeighted>;
 
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
-  Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centrality >= centralityMin && aod::jcollision::centrality < centralityMax);
+  Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centFT0M >= centralityMin && aod::jcollision::centFT0M < centralityMax);
 
   template <typename T, typename U, typename V>
   bool isAcceptedJet(V const& jet)
@@ -297,10 +292,10 @@ struct JetFinderV0QATask {
       if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
         continue;
       }
-      registry.fill(HIST("h2_centrality_track_pt"), collision.centrality(), track.pt(), weight);
-      registry.fill(HIST("h2_centrality_track_eta"), collision.centrality(), track.eta(), weight);
-      registry.fill(HIST("h2_centrality_track_phi"), collision.centrality(), track.phi(), weight);
-      registry.fill(HIST("h2_centrality_track_energy"), collision.centrality(), track.energy(), weight);
+      registry.fill(HIST("h2_centrality_track_pt"), collision.centFT0M(), track.pt(), weight);
+      registry.fill(HIST("h2_centrality_track_eta"), collision.centFT0M(), track.eta(), weight);
+      registry.fill(HIST("h2_centrality_track_phi"), collision.centFT0M(), track.phi(), weight);
+      registry.fill(HIST("h2_centrality_track_energy"), collision.centFT0M(), track.energy(), weight);
     }
   }
 
@@ -318,7 +313,7 @@ struct JetFinderV0QATask {
       if (!isAcceptedJet<aod::JetTracks, CandidateTableData>(jet)) {
         continue;
       }
-      fillHistograms<typename JetTableDataJoined::iterator, CandidateTableData>(jet, collision.centrality());
+      fillHistograms<typename JetTableDataJoined::iterator, CandidateTableData>(jet, collision.centFT0M());
     }
   }
   PROCESS_SWITCH(JetFinderV0QATask, processJetsData, "jet finder HF QA data", false);
@@ -332,7 +327,7 @@ struct JetFinderV0QATask {
       if (!isAcceptedJet<aod::JetTracks, CandidateTableMCD>(jet)) {
         continue;
       }
-      fillHistograms<typename JetTableMCDJoined::iterator, CandidateTableMCD>(jet, collision.centrality());
+      fillHistograms<typename JetTableMCDJoined::iterator, CandidateTableMCD>(jet, collision.centFT0M());
     }
   }
   PROCESS_SWITCH(JetFinderV0QATask, processJetsMCD, "jet finder HF QA mcd", false);
@@ -346,7 +341,7 @@ struct JetFinderV0QATask {
       if (!isAcceptedJet<aod::JetTracks, CandidateTableMCD>(jet)) {
         continue;
       }
-      fillHistograms<typename JetTableMCDWeightedJoined::iterator, CandidateTableMCD>(jet, collision.centrality(), jet.eventWeight());
+      fillHistograms<typename JetTableMCDWeightedJoined::iterator, CandidateTableMCD>(jet, collision.centFT0M(), jet.eventWeight());
     }
   }
   PROCESS_SWITCH(JetFinderV0QATask, processJetsMCDWeighted, "jet finder HF QA mcd on weighted events", false);
@@ -385,12 +380,12 @@ struct JetFinderV0QATask {
                      soa::Filtered<aod::JetTracks> const& tracks)
   {
     registry.fill(HIST("h_collisions"), 0.5);
-    registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 0.5);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    registry.fill(HIST("h2_centrality_collisions"), collision.centFT0M(), 0.5);
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
-    registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 1.5);
+    registry.fill(HIST("h2_centrality_collisions"), collision.centFT0M(), 1.5);
     fillTrackHistograms(collision, tracks);
   }
   PROCESS_SWITCH(JetFinderV0QATask, processTracks, "QA for charged tracks", false);
@@ -402,7 +397,7 @@ struct JetFinderV0QATask {
     float eventWeight = collision.mcCollision().weight();
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h_collisions_weighted"), 0.5, eventWeight);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
@@ -421,7 +416,7 @@ struct JetFinderV0QATask {
       registry.fill(HIST("h_candidate_pt"), candidate.pt());
       registry.fill(HIST("h_candidate_y"), candidate.y());
     }
-    registry.fill(HIST("h2_centrality_ncandidates"), collision.centrality(), candidates.size());
+    registry.fill(HIST("h2_centrality_ncandidates"), collision.centFT0M(), candidates.size());
   }
   PROCESS_SWITCH(JetFinderV0QATask, processCandidates, "HF candidate QA", false);
 };

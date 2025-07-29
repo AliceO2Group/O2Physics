@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -14,24 +14,35 @@
 /// \author Ravindra SIngh, GSI, ravindra.singh@cern.ch
 /// \author Biao Zhang, Heidelberg University, biao.zhang@cern.ch
 
-#include <vector>
-#include <string>
-
-#include "Framework/Expressions.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-
 #include "PWGCF/DataModel/FemtoDerived.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamPairCleaner.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamContainer.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamDetaDphiStar.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamMath.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamPairCleaner.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TMath.h>
+
+#include <array>
+#include <cstdint>
+#include <string>
 
 using namespace o2;
 using namespace o2::aod;
@@ -45,12 +56,6 @@ struct HfTaskCharmHadronsFemtoDream {
   enum TrackCharge {
     PositiveCharge = 1,
     NegativeCharge = -1
-  };
-
-  enum PairSign {
-    PairNotDefined = 0,
-    LikeSignPair = 1,
-    UnLikeSignPair = 2
   };
 
   /// Binning configurables
@@ -195,7 +200,9 @@ struct HfTaskCharmHadronsFemtoDream {
 
   SliceCache cache;
   Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
-  Produces<o2::aod::FDResultsHF> fillFemtoResult;
+  Produces<o2::aod::FDHfCharm> rowFemtoResultCharm;
+  Produces<o2::aod::FDHfTrk> rowFemtoResultTrk;
+  Produces<o2::aod::FDHfColl> rowFemtoResultColl;
 
   void init(InitContext& /*context*/)
   {
@@ -204,8 +211,8 @@ struct HfTaskCharmHadronsFemtoDream {
     colBinningMultPercentile = {{mixingBinVztx, mixingBinMultPercentile}, true};
     colBinningMultMultPercentile = {{mixingBinVztx, mixingBinMult, mixingBinMultPercentile}, true};
     eventHisto.init(&registry);
-    allTrackHisto.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, isMc, pdgCodeTrack1, true);
-    selectedTrackHisto.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, isMc, pdgCodeTrack1, true);
+    allTrackHisto.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, dummy, isMc, pdgCodeTrack1, true);
+    selectedTrackHisto.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, dummy, isMc, pdgCodeTrack1, true);
 
     sameEventCont.init<true>(&registry,
                              binkstar, binpTTrack, binkT, binmT, mixingBinMult, mixingBinMultPercentile,
@@ -248,8 +255,6 @@ struct HfTaskCharmHadronsFemtoDream {
   {
     fillCollision(col);
 
-    processType = 1; // for same event
-
     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(sliceTrk1, sliceCharmHad))) {
 
       if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id() || p1.trackId() == p2.prong2Id())
@@ -273,23 +278,10 @@ struct HfTaskCharmHadronsFemtoDream {
         chargeTrack = NegativeCharge;
       }
 
-      int pairSign = 0;
-      if (chargeTrack == p2.charge()) {
-        pairSign = LikeSignPair;
-      } else {
-        pairSign = UnLikeSignPair;
-      }
-
       float kstar = FemtoDreamMath::getkstar(p1, massOne, p2, massTwo);
       if (kstar > highkstarCut) {
         continue;
       }
-
-      // if (chargeTrack == 1) {
-      //   partSign = 1;
-      // } else {
-      //   partSign = 1 << 1;
-      // }
 
       float invMass;
       if (p2.candidateSelFlag() == 1) {
@@ -314,23 +306,39 @@ struct HfTaskCharmHadronsFemtoDream {
         charmHadMc = p2.flagMc();
         originType = p2.originMcRec();
       }
-      fillFemtoResult(
+
+      rowFemtoResultCharm(
+        col.globalIndex(),
+        p2.timeStamp(),
         invMass,
         p2.pt(),
-        p1.pt(),
+        p2.eta(),
+        p2.phi(),
+        p2.charge(),
         p2.bdtBkg(),
         p2.bdtPrompt(),
         p2.bdtFD(),
-        kstar,
-        FemtoDreamMath::getkT(p1, massOne, p2, massTwo),
-        FemtoDreamMath::getmT(p1, massOne, p2, massTwo),
-        col.multNtr(),
-        col.multV0M(),
-        p2.charge(),
-        pairSign,
-        processType,
         charmHadMc,
         originType);
+
+      rowFemtoResultTrk(
+        col.globalIndex(),
+        p2.timeStamp(),
+        p1.pt(),
+        p1.eta(),
+        p1.phi(),
+        chargeTrack,
+        p1.tpcNClsFound(),
+        p1.tpcNClsFindable(),
+        p1.tpcNClsCrossedRows(),
+        p1.tpcNSigmaPr(),
+        p1.tofNSigmaPr());
+
+      rowFemtoResultColl(
+        col.globalIndex(),
+        p2.timeStamp(),
+        col.posZ(),
+        col.multNtr());
 
       sameEventCont.setPair<isMc, true>(p1, p2, col.multNtr(), col.multV0M(), use4D, extendedPlots, smearingByOrigin);
     }
@@ -341,8 +349,6 @@ struct HfTaskCharmHadronsFemtoDream {
   {
 
     // Mixed events that contain the pair of interest
-    processType = 2; // for mixed event
-
     Partition<CollisionType> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & BitMask) == BitMask;
     PartitionMaskedCol1.bindTable(cols);
 
@@ -371,20 +377,6 @@ struct HfTaskCharmHadronsFemtoDream {
           continue;
         }
 
-        float chargeTrack = 0.;
-        if ((p1.cut() & 2) == 2) {
-          chargeTrack = PositiveCharge;
-        } else {
-          chargeTrack = NegativeCharge;
-        }
-
-        int pairSign = 0;
-        if (chargeTrack == p2.charge()) {
-          pairSign = LikeSignPair;
-        } else {
-          pairSign = UnLikeSignPair;
-        }
-
         float kstar = FemtoDreamMath::getkstar(p1, massOne, p2, massTwo);
         if (kstar > highkstarCut) {
           continue;
@@ -403,30 +395,6 @@ struct HfTaskCharmHadronsFemtoDream {
         if (p2.pt() < charmHadMinPt || p2.pt() > charmHadMaxPt) {
           continue;
         }
-
-        int charmHadMc = 0;
-        int originType = 0;
-        if constexpr (isMc) {
-          charmHadMc = p2.flagMc();
-          originType = p2.originMcRec();
-        }
-        fillFemtoResult(
-          invMass,
-          p2.pt(),
-          p1.pt(),
-          p2.bdtBkg(),
-          p2.bdtPrompt(),
-          p2.bdtFD(),
-          kstar,
-          FemtoDreamMath::getkT(p1, massOne, p2, massTwo),
-          FemtoDreamMath::getmT(p1, massOne, p2, massTwo),
-          collision1.multNtr(),
-          collision1.multV0M(),
-          p2.charge(),
-          pairSign,
-          processType,
-          charmHadMc,
-          originType);
 
         // if constexpr (!isMc) mixedEventCont.setPair<isMc, true>(p1, p2, collision1.multNtr(), collision1.multV0M(), use4D, extendedPlots, smearingByOrigin);
         mixedEventCont.setPair<isMc, true>(p1, p2, collision1.multNtr(), collision1.multV0M(), use4D, extendedPlots, smearingByOrigin);

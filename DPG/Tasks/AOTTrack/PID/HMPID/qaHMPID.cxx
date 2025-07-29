@@ -159,8 +159,8 @@ struct pidHmpidQa {
 
       histos.fill(HIST("hmpidSignal"), t.hmpidSignal());
       histos.fill(HIST("PhivsEta"), t.track_as<TrackCandidates>().eta(), t.track_as<TrackCandidates>().phi());
-      histos.fill(HIST("hmpidMomvsTrackMom"), t.track_as<TrackCandidates>().p(), abs(t.hmpidMom()));
-      histos.fill(HIST("hmpidCkovvsMom"), abs(t.hmpidMom()), t.hmpidSignal());
+      histos.fill(HIST("hmpidMomvsTrackMom"), t.track_as<TrackCandidates>().p(), std::abs(t.hmpidMom()));
+      histos.fill(HIST("hmpidCkovvsMom"), std::abs(t.hmpidMom()), t.hmpidSignal());
       histos.fill(HIST("hmpidXTrack"), t.hmpidXTrack());
       histos.fill(HIST("hmpidYTrack"), t.hmpidYTrack());
       histos.fill(HIST("hmpidXMip"), t.hmpidXMip());
@@ -173,7 +173,7 @@ struct pidHmpidQa {
       histos.fill(HIST("hmpidQMip"), t.hmpidQMip());
       histos.fill(HIST("hmpidClusSize"), (t.hmpidClusSize() % 1000000) / 1000);
       histos.fill(HIST("TrackMom"), t.track_as<TrackCandidates>().p());
-      histos.fill(HIST("hmpidMom"), abs(t.hmpidMom()));
+      histos.fill(HIST("hmpidMom"), std::abs(t.hmpidMom()));
       for (int i = 0; i < 10; i++) {
         if (t.hmpidPhotsCharge()[i] > 0)
           histos.fill(HIST("hmpidPhotsCharge"), t.hmpidPhotsCharge()[i]);
@@ -190,7 +190,7 @@ struct pidHmpidQa {
         histos.fill(HIST("hmpidQMip0"), t.hmpidQMip());
         histos.fill(HIST("hmpidClusSize0"), (t.hmpidClusSize() % 1000000) / 1000);
         histos.fill(HIST("TrackMom0"), t.track_as<TrackCandidates>().p());
-        histos.fill(HIST("hmpidMom0"), abs(t.hmpidMom()));
+        histos.fill(HIST("hmpidMom0"), std::abs(t.hmpidMom()));
         for (int i = 0; i < 10; i++) {
           if (t.hmpidPhotsCharge()[i] > 0)
             histos.fill(HIST("hmpidPhotsCharge0"), t.hmpidPhotsCharge()[i]);
@@ -208,7 +208,7 @@ struct pidHmpidQa {
         histos.fill(HIST("hmpidQMip1"), t.hmpidQMip());
         histos.fill(HIST("hmpidClusSize1"), (t.hmpidClusSize() % 1000000) / 1000);
         histos.fill(HIST("TrackMom1"), t.track_as<TrackCandidates>().p());
-        histos.fill(HIST("hmpidMom1"), abs(t.hmpidMom()));
+        histos.fill(HIST("hmpidMom1"), std::abs(t.hmpidMom()));
         for (int i = 0; i < 10; i++) {
           if (t.hmpidPhotsCharge()[i] > 0)
             histos.fill(HIST("hmpidPhotsCharge1"), t.hmpidPhotsCharge()[i]);
@@ -226,7 +226,7 @@ struct pidHmpidQa {
         histos.fill(HIST("hmpidQMip2"), t.hmpidQMip());
         histos.fill(HIST("hmpidClusSize2"), (t.hmpidClusSize() % 1000000) / 1000);
         histos.fill(HIST("TrackMom2"), t.track_as<TrackCandidates>().p());
-        histos.fill(HIST("hmpidMom2"), abs(t.hmpidMom()));
+        histos.fill(HIST("hmpidMom2"), std::abs(t.hmpidMom()));
         for (int i = 0; i < 10; i++) {
           if (t.hmpidPhotsCharge()[i] > 0)
             histos.fill(HIST("hmpidPhotsCharge2"), t.hmpidPhotsCharge()[i]);
@@ -244,7 +244,7 @@ struct pidHmpidQa {
         histos.fill(HIST("hmpidQMip3"), t.hmpidQMip());
         histos.fill(HIST("hmpidClusSize3"), (t.hmpidClusSize() % 1000000) / 1000);
         histos.fill(HIST("TrackMom3"), t.track_as<TrackCandidates>().p());
-        histos.fill(HIST("hmpidMom3"), abs(t.hmpidMom()));
+        histos.fill(HIST("hmpidMom3"), std::abs(t.hmpidMom()));
         for (int i = 0; i < 10; i++) {
           if (t.hmpidPhotsCharge()[i] > 0)
             histos.fill(HIST("hmpidPhotsCharge3"), t.hmpidPhotsCharge()[i]);
@@ -262,7 +262,7 @@ struct pidHmpidQa {
         histos.fill(HIST("hmpidQMip4"), t.hmpidQMip());
         histos.fill(HIST("hmpidClusSize4"), (t.hmpidClusSize() % 1000000) / 1000);
         histos.fill(HIST("TrackMom4"), t.track_as<TrackCandidates>().p());
-        histos.fill(HIST("hmpidMom4"), abs(t.hmpidMom()));
+        histos.fill(HIST("hmpidMom4"), std::abs(t.hmpidMom()));
         for (int i = 0; i < 10; i++) {
           if (t.hmpidPhotsCharge()[i] > 0)
             histos.fill(HIST("hmpidPhotsCharge4"), t.hmpidPhotsCharge()[i]);
@@ -280,7 +280,7 @@ struct pidHmpidQa {
         histos.fill(HIST("hmpidQMip5"), t.hmpidQMip());
         histos.fill(HIST("hmpidClusSize5"), (t.hmpidClusSize() % 1000000) / 1000);
         histos.fill(HIST("TrackMom5"), t.track_as<TrackCandidates>().p());
-        histos.fill(HIST("hmpidMom5"), abs(t.hmpidMom()));
+        histos.fill(HIST("hmpidMom5"), std::abs(t.hmpidMom()));
         for (int i = 0; i < 10; i++) {
           if (t.hmpidPhotsCharge()[i] > 0)
             histos.fill(HIST("hmpidPhotsCharge5"), t.hmpidPhotsCharge()[i]);
@@ -298,7 +298,7 @@ struct pidHmpidQa {
         histos.fill(HIST("hmpidQMip6"), t.hmpidQMip());
         histos.fill(HIST("hmpidClusSize6"), (t.hmpidClusSize() % 1000000) / 1000);
         histos.fill(HIST("TrackMom6"), t.track_as<TrackCandidates>().p());
-        histos.fill(HIST("hmpidMom6"), abs(t.hmpidMom()));
+        histos.fill(HIST("hmpidMom6"), std::abs(t.hmpidMom()));
         for (int i = 0; i < 10; i++) {
           if (t.hmpidPhotsCharge()[i] > 0)
             histos.fill(HIST("hmpidPhotsCharge6"), t.hmpidPhotsCharge()[i]);

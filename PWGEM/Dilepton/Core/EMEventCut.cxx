@@ -13,8 +13,9 @@
 // Class for em event selection
 //
 
-#include "Framework/Logger.h"
 #include "PWGEM/Dilepton/Core/EMEventCut.h"
+
+#include "Framework/Logger.h"
 
 ClassImp(EMEventCut);
 
@@ -61,6 +62,12 @@ void EMEventCut::SetRequireVertexITSTPC(bool flag)
   LOG(info) << "EM Event Cut, require vertex reconstructed by ITS-TPC matched track: " << mRequireVertexITSTPC;
 }
 
+void EMEventCut::SetRequireVertexTOFmatched(bool flag)
+{
+  mRequireVertexTOFmatched = flag;
+  LOG(info) << "EM Event Cut, require vertex reconstructed by ITS-TPC matched track: " << mRequireVertexTOFmatched;
+}
+
 void EMEventCut::SetRequireGoodZvtxFT0vsPV(bool flag)
 {
   mRequireGoodZvtxFT0vsPV = flag;
@@ -94,4 +101,22 @@ void EMEventCut::SetRequireNoHighMultCollInPrevRof(bool flag)
 {
   mRequireNoHighMultCollInPrevRof = flag;
   LOG(info) << "EM Event Cut, require No HM collision in previous ITS ROF: " << mRequireNoHighMultCollInPrevRof;
+}
+
+void EMEventCut::SetRequireGoodITSLayer3(bool flag)
+{
+  mRequireGoodITSLayer3 = flag;
+  LOG(info) << "EM Event Cut, require GoodITSLayer3: " << mRequireGoodITSLayer3;
+}
+
+void EMEventCut::SetRequireGoodITSLayer0123(bool flag)
+{
+  mRequireGoodITSLayer0123 = flag;
+  LOG(info) << "EM Event Cut, require GoodITSLayer0123: " << mRequireGoodITSLayer0123;
+}
+
+void EMEventCut::SetRequireGoodITSLayersAll(bool flag)
+{
+  mRequireGoodITSLayersAll = flag;
+  LOG(info) << "EM Event Cut, require GoodITSLayersAll: " << mRequireGoodITSLayersAll;
 }

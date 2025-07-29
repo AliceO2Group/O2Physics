@@ -14,16 +14,19 @@
 // This code produces trigger information. OTS = offline trigger selection.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+
+#include "Common/Core/TableHelper.h"
+#include "EventFiltering/Zorro.h"
 
 #include "CCDB/BasicCCDBManager.h"
-#include "EventFiltering/Zorro.h"
-#include "Common/Core/TableHelper.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
-#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -100,7 +103,7 @@ struct skimmerOTS {
   void process(MyCollisions const& collisions, MyBCs const&)
   {
     for (auto& collision : collisions) {
-      auto bc = collision.template foundBC_as<MyBCs>();
+      auto bc = collision.template bc_as<MyBCs>(); // don't use foundBC.
       initCCDB(bc);
 
       uint16_t trigger_bitmap = 0;

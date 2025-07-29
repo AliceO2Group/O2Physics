@@ -17,38 +17,57 @@
 #ifndef PWGJE_DATAMODEL_JETREDUCEDDATAHF_H_
 #define PWGJE_DATAMODEL_JETREDUCEDDATAHF_H_
 
-#include <cmath>
-#include <vector>
-#include "Framework/AnalysisDataModel.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGJE/DataModel/EMCALClusters.h" // IWYU pragma: keep
 #include "PWGJE/DataModel/JetReducedData.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h> // IWYU pragma: keep
+
+#include <sys/types.h>
+
+#include <cmath>
 
 namespace o2::aod
 {
 
-namespace jd0indices
+constexpr uint JMarkerD0 = 1;
+constexpr uint JMarkerDplus = 2;
+constexpr uint JMarkerLc = 3;
+constexpr uint JMarkerBplus = 4;
+constexpr uint JMarkerDielectron = 5;
+constexpr uint JMarkerDstar = 6;
+constexpr uint JMarkerB0 = 7;
+
+namespace jcandidateindices
 {
 DECLARE_SOA_INDEX_COLUMN(JCollision, collision);
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, JTracks, "_0");
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, JTracks, "_1");
 DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
 DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
+} // namespace jcandidateindices
+
+namespace jd0indices
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, JTracks, "_0");
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, JTracks, "_1");
 } // namespace jd0indices
 
 DECLARE_SOA_TABLE_STAGED(JD0CollisionIds, "JD0COLLID",
-                         jd0indices::JCollisionId);
+                         jcandidateindices::JCollisionId,
+                         o2::soa::Marker<JMarkerD0>);
 
 DECLARE_SOA_TABLE_STAGED(JD0McCollisionIds, "JD0MCCOLLID",
-                         jd0indices::JMcCollisionId);
+                         jcandidateindices::JMcCollisionId,
+                         o2::soa::Marker<JMarkerD0>);
 
 DECLARE_SOA_TABLE_STAGED(JD0Ids, "JD0ID",
-                         jd0indices::JCollisionId,
+                         jcandidateindices::JCollisionId,
                          jd0indices::Prong0Id,
                          jd0indices::Prong1Id);
 
 DECLARE_SOA_TABLE_STAGED(JD0PIds, "JD0PID",
-                         jd0indices::JMcCollisionId,
-                         jd0indices::JMcParticleId);
+                         jcandidateindices::JMcCollisionId,
+                         jcandidateindices::JMcParticleId,
+                         o2::soa::Marker<JMarkerD0>);
 
 namespace jdummyd0
 {
@@ -63,31 +82,113 @@ DECLARE_SOA_TABLE(JDumD0MlDaus, "AOD", "JDumD0MLDAU",
                   jdummyd0::DummyD0,
                   o2::soa::Marker<2>);
 
-namespace jlcindices
+namespace jdplusindices
 {
-DECLARE_SOA_INDEX_COLUMN(JCollision, collision);
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, JTracks, "_0");
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, JTracks, "_1");
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong2, prong2, int, JTracks, "_2");
-DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
-DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
+} // namespace jdplusindices
+
+DECLARE_SOA_TABLE_STAGED(JDplusCollisionIds, "JDPCOLLID",
+                         jcandidateindices::JCollisionId,
+                         o2::soa::Marker<JMarkerDplus>);
+
+DECLARE_SOA_TABLE_STAGED(JDplusMcCollisionIds, "JDPMCCOLLID",
+                         jcandidateindices::JMcCollisionId,
+                         o2::soa::Marker<JMarkerDplus>);
+
+DECLARE_SOA_TABLE_STAGED(JDplusIds, "JDPID",
+                         jcandidateindices::JCollisionId,
+                         jdplusindices::Prong0Id,
+                         jdplusindices::Prong1Id,
+                         jdplusindices::Prong2Id);
+
+DECLARE_SOA_TABLE_STAGED(JDplusPIds, "JDPPID",
+                         jcandidateindices::JMcCollisionId,
+                         jcandidateindices::JMcParticleId,
+                         o2::soa::Marker<JMarkerDplus>);
+
+namespace jdummydplus
+{
+
+DECLARE_SOA_COLUMN(DummyDplus, dummyDplus, bool);
+
+} // namespace jdummydplus
+DECLARE_SOA_TABLE(JDumDplusParDaus, "AOD", "JDUMDPPARDAU",
+                  jdummydplus::DummyDplus,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(JDumDplusMlDaus, "AOD", "JDUMDPMLDAU",
+                  jdummydplus::DummyDplus,
+                  o2::soa::Marker<2>);
+
+// might have to update!!!!!!!!!!!!!!!!!!!!!!
+
+namespace jdstarindices
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, JTracks, "_0");
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, JTracks, "_1");
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong2, prong2, int, JTracks, "_2");
+} // namespace jdstarindices
+
+DECLARE_SOA_TABLE_STAGED(JDstarCollisionIds, "JDSTCOLLID",
+                         jcandidateindices::JCollisionId,
+                         o2::soa::Marker<JMarkerDstar>);
+
+DECLARE_SOA_TABLE_STAGED(JDstarMcCollisionIds, "JDSTMCCOLLID",
+                         jcandidateindices::JMcCollisionId,
+                         o2::soa::Marker<JMarkerDstar>);
+
+DECLARE_SOA_TABLE_STAGED(JDstarIds, "JDSTID",
+                         jcandidateindices::JCollisionId,
+                         jdstarindices::Prong0Id,
+                         jdstarindices::Prong1Id,
+                         jdstarindices::Prong2Id);
+
+DECLARE_SOA_TABLE_STAGED(JDstarPIds, "JDSTPID",
+                         jcandidateindices::JMcCollisionId,
+                         jcandidateindices::JMcParticleId,
+                         o2::soa::Marker<JMarkerDstar>);
+
+namespace jdummydstar
+{
+
+DECLARE_SOA_COLUMN(DummyDstar, dummyDstar, bool);
+
+} // namespace jdummydstar
+DECLARE_SOA_TABLE(JDumDstarParEs, "AOD", "JDUMDSTPARE",
+                  jdummydstar::DummyDstar,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(JDumDstarMlDaus, "AOD", "JDUMDSTMLDAU",
+                  jdummydstar::DummyDstar,
+                  o2::soa::Marker<2>);
+
+namespace jlcindices
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, JTracks, "_0");
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, JTracks, "_1");
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong2, prong2, int, JTracks, "_2");
 } // namespace jlcindices
 
 DECLARE_SOA_TABLE_STAGED(JLcCollisionIds, "JLCCOLLID",
-                         jlcindices::JCollisionId);
+                         jcandidateindices::JCollisionId,
+                         o2::soa::Marker<JMarkerLc>);
 
 DECLARE_SOA_TABLE_STAGED(JLcMcCollisionIds, "JLCMCCOLLID",
-                         jlcindices::JMcCollisionId);
+                         jcandidateindices::JMcCollisionId,
+                         o2::soa::Marker<JMarkerLc>);
 
 DECLARE_SOA_TABLE_STAGED(JLcIds, "JLCID",
-                         jlcindices::JCollisionId,
+                         jcandidateindices::JCollisionId,
                          jlcindices::Prong0Id,
                          jlcindices::Prong1Id,
                          jlcindices::Prong2Id);
 
 DECLARE_SOA_TABLE_STAGED(JLcPIds, "JLCPID",
-                         jlcindices::JMcCollisionId,
-                         jlcindices::JMcParticleId);
+                         jcandidateindices::JMcCollisionId,
+                         jcandidateindices::JMcParticleId,
+                         o2::soa::Marker<JMarkerLc>);
 
 namespace jdummylc
 {
@@ -103,31 +204,59 @@ DECLARE_SOA_TABLE(JDumLcMlDaus, "AOD", "JDUMLCMLDAU",
                   jdummylc::DummyLc,
                   o2::soa::Marker<2>);
 
-namespace jbplusindices
+namespace jb0indices
 {
-DECLARE_SOA_INDEX_COLUMN(JCollision, collision);
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, JTracks, "_0");
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, JTracks, "_1");
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong2, prong2, int, JTracks, "_2");
-DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
-DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong3, prong3, int, JTracks, "_3");
+} // namespace jb0indices
+
+DECLARE_SOA_TABLE_STAGED(JB0CollisionIds, "JB0COLLID",
+                         jcandidateindices::JCollisionId,
+                         o2::soa::Marker<JMarkerB0>);
+
+DECLARE_SOA_TABLE_STAGED(JB0McCollisionIds, "JB0MCCOLLID",
+                         jcandidateindices::JMcCollisionId,
+                         o2::soa::Marker<JMarkerB0>);
+
+DECLARE_SOA_TABLE_STAGED(JB0Ids, "JB0ID",
+                         jcandidateindices::JCollisionId,
+                         jb0indices::Prong0Id,
+                         jb0indices::Prong1Id,
+                         jb0indices::Prong2Id,
+                         jb0indices::Prong3Id);
+
+DECLARE_SOA_TABLE_STAGED(JB0PIds, "JB0PID",
+                         jcandidateindices::JMcCollisionId,
+                         jcandidateindices::JMcParticleId,
+                         o2::soa::Marker<JMarkerB0>);
+
+namespace jbplusindices
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, JTracks, "_0");
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, JTracks, "_1");
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong2, prong2, int, JTracks, "_2");
 } // namespace jbplusindices
 
 DECLARE_SOA_TABLE_STAGED(JBplusCollisionIds, "JBPCOLLID",
-                         jbplusindices::JCollisionId);
+                         jcandidateindices::JCollisionId,
+                         o2::soa::Marker<JMarkerBplus>);
 
 DECLARE_SOA_TABLE_STAGED(JBplusMcCollisionIds, "JBPMCCOLLID",
-                         jbplusindices::JMcCollisionId);
+                         jcandidateindices::JMcCollisionId,
+                         o2::soa::Marker<JMarkerBplus>);
 
 DECLARE_SOA_TABLE_STAGED(JBplusIds, "JBPID",
-                         jbplusindices::JCollisionId,
+                         jcandidateindices::JCollisionId,
                          jbplusindices::Prong0Id,
                          jbplusindices::Prong1Id,
                          jbplusindices::Prong2Id);
 
 DECLARE_SOA_TABLE_STAGED(JBplusPIds, "JBPPID",
-                         jbplusindices::JMcCollisionId,
-                         jbplusindices::JMcParticleId);
+                         jcandidateindices::JMcCollisionId,
+                         jcandidateindices::JMcParticleId,
+                         o2::soa::Marker<JMarkerBplus>);
 
 } // namespace o2::aod
 

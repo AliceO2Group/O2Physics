@@ -15,32 +15,46 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
-#include <algorithm>
-#include <map>
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-
-#include "PWGLF/DataModel/mcCentrality.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/DerivedTables.h"
 #include "PWGHF/Utils/utilsDerivedData.h"
 #include "PWGHF/Utils/utilsPid.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <Rtypes.h>
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <cstdlib>
+#include <iterator>
+#include <map>
+#include <numeric>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::pid_tpc_tof_utils;
 using namespace o2::analysis::hf_derived;
+using namespace o2::hf_decay::hf_cand_beauty;
 
 /// Writes the full information in an output TTree
 struct HfDerivedDataCreatorBplusToD0Pi {
@@ -91,11 +105,10 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   using SelectedCandidatesMcMl = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfCandBplusMcRec, aod::HfSelBplusToD0Pi, aod::HfMlBplusToD0Pi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>;
   using TypeMcCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
-  using THfCandDaughters = aod::HfCand2ProngWPid;
-  using THfCandDaughtersMl = soa::Join<THfCandDaughters, aod::HfMlD0>;
+  using THfCandDaughtersMl = soa::Join<aod::HfCand2ProngWPid, aod::HfMlD0>;
 
-  Filter filterSelectCandidates = aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= 1;
-  Filter filterMcGenMatching = nabs(aod::hf_cand_bplus::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_bplus::DecayType::BplusToD0Pi));
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_bplus::isSelBplusToD0Pi & static_cast<int8_t>(BIT(aod::SelectionStep::RecoMl - 1))) != 0;
+  Filter filterMcGenMatching = nabs(aod::hf_cand_bplus::flagMcMatchGen) == static_cast<int8_t>(DecayChannelMain::BplusToD0Pi);
 
   Preslice<SelectedCandidates> candidatesPerCollision = aod::hf_cand::collisionId;
   Preslice<SelectedCandidatesMc> candidatesMcPerCollision = aod::hf_cand::collisionId;
@@ -109,14 +122,14 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   Partition<SelectedCandidatesMl> candidatesMlAll = aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= 0;
   Partition<SelectedCandidatesMcMl> candidatesMcMlAll = aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= 0;
   // partitions for signal and background
-  Partition<SelectedCandidatesMc> candidatesMcSig = nabs(aod::hf_cand_bplus::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_bplus::DecayType::BplusToD0Pi));
-  Partition<SelectedCandidatesMc> candidatesMcBkg = nabs(aod::hf_cand_bplus::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_bplus::DecayType::BplusToD0Pi));
-  Partition<SelectedCandidatesMcMl> candidatesMcMlSig = nabs(aod::hf_cand_bplus::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_bplus::DecayType::BplusToD0Pi));
-  Partition<SelectedCandidatesMcMl> candidatesMcMlBkg = nabs(aod::hf_cand_bplus::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_bplus::DecayType::BplusToD0Pi));
+  Partition<SelectedCandidatesMc> candidatesMcSig = nabs(aod::hf_cand_bplus::flagMcMatchRec) == static_cast<int8_t>(DecayChannelMain::BplusToD0Pi);
+  Partition<SelectedCandidatesMc> candidatesMcBkg = nabs(aod::hf_cand_bplus::flagMcMatchRec) != static_cast<int8_t>(DecayChannelMain::BplusToD0Pi);
+  Partition<SelectedCandidatesMcMl> candidatesMcMlSig = nabs(aod::hf_cand_bplus::flagMcMatchRec) == static_cast<int8_t>(DecayChannelMain::BplusToD0Pi);
+  Partition<SelectedCandidatesMcMl> candidatesMcMlBkg = nabs(aod::hf_cand_bplus::flagMcMatchRec) != static_cast<int8_t>(DecayChannelMain::BplusToD0Pi);
 
   void init(InitContext const&)
   {
-    std::array<bool, 8> doprocess{doprocessData, doprocessMcSig, doprocessMcBkg, doprocessMcAll, doprocessDataMl, doprocessMcMlSig, doprocessMcMlBkg, doprocessMcMlAll};
+    std::array<bool, 9> doprocess{doprocessData, doprocessMcSig, doprocessMcBkg, doprocessMcAll, doprocessDataMl, doprocessMcMlSig, doprocessMcMlBkg, doprocessMcMlAll, doprocessMcGenOnly};
     if (std::accumulate(doprocess.begin(), doprocess.end(), 0) != 1) {
       LOGP(fatal, "Only one process function can be enabled at a time.");
     }
@@ -273,11 +286,16 @@ struct HfDerivedDataCreatorBplusToD0Pi {
       }
       int8_t flagMcRec = 0, origin = 0;
       for (const auto& candidate : candidatesThisColl) {
+        if constexpr (isMl) {
+          if (!TESTBIT(candidate.isSelBplusToD0Pi(), aod::SelectionStep::RecoMl)) {
+            continue;
+          }
+        }
         if constexpr (isMc) {
           flagMcRec = candidate.flagMcMatchRec();
           origin = candidate.originMcRec();
           if constexpr (onlyBkg) {
-            if (TESTBIT(std::abs(flagMcRec), aod::hf_cand_bplus::DecayType::BplusToD0Pi)) {
+            if (std::abs(flagMcRec) == DecayChannelMain::BplusToD0Pi) {
               continue;
             }
             if (downSampleBkgFactor < 1.) {
@@ -288,7 +306,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
             }
           }
           if constexpr (onlySig) {
-            if (!TESTBIT(std::abs(flagMcRec), aod::hf_cand_bplus::DecayType::BplusToD0Pi)) {
+            if (std::abs(flagMcRec) != DecayChannelMain::BplusToD0Pi) {
               continue;
             }
           }
@@ -300,14 +318,14 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         float massBplusToD0Pi = hfHelper.invMassBplusToD0Pi(candidate);
         float mlScoreBplusToD0Pi{-1.f};
         std::vector<float> mlScoresD0;
-        bool isD0 = prongBachelor.sign() < 0; // D0 or D0bar
+        bool isD0 = prongBachelor.sign() < 0;
+        if (isD0) { // is D0
+          std::copy(prongCharm.mlProbD0().begin(), prongCharm.mlProbD0().end(), std::back_inserter(mlScoresD0));
+        } else { // is D0bar
+          std::copy(prongCharm.mlProbD0bar().begin(), prongCharm.mlProbD0bar().end(), std::back_inserter(mlScoresD0));
+        }
         if constexpr (isMl) {
           mlScoreBplusToD0Pi = candidate.mlProbBplusToD0Pi();
-          if (isD0) {
-            std::copy(prongCharm.mlProbD0().begin(), prongCharm.mlProbD0().end(), std::back_inserter(mlScoresD0));
-          } else {
-            std::copy(prongCharm.mlProbD0bar().begin(), prongCharm.mlProbD0bar().end(), std::back_inserter(mlScoresD0));
-          }
         }
         // flag = 0 for D0 pi-, flag = 1 for D0bar pi+
         fillTablesCandidate(candidate, prongCharm, prongBachelor, isD0 ? 0 : 1, massBplusToD0Pi, ct, y, flagMcRec, origin, mlScoreBplusToD0Pi, mlScoresD0);
@@ -317,7 +335,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
 
   void processData(CollisionsWCentMult const& collisions,
                    SelectedCandidates const&,
-                   THfCandDaughters const& candidatesDaughters,
+                   THfCandDaughtersMl const& candidatesDaughters,
                    TracksWPid const& tracks,
                    aod::BCs const& bcs)
   {
@@ -329,7 +347,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
                     SelectedCandidatesMc const&,
                     TypeMcCollisions const& mcCollisions,
                     MatchedGenCandidatesMc const& mcParticles,
-                    THfCandDaughters const& candidatesDaughters,
+                    THfCandDaughtersMl const& candidatesDaughters,
                     TracksWPid const& tracks,
                     aod::BCs const& bcs)
   {
@@ -343,7 +361,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
                     SelectedCandidatesMc const&,
                     TypeMcCollisions const& mcCollisions,
                     MatchedGenCandidatesMc const& mcParticles,
-                    THfCandDaughters const& candidatesDaughters,
+                    THfCandDaughtersMl const& candidatesDaughters,
                     TracksWPid const& tracks,
                     aod::BCs const& bcs)
   {
@@ -357,7 +375,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
                     SelectedCandidatesMc const&,
                     TypeMcCollisions const& mcCollisions,
                     MatchedGenCandidatesMc const& mcParticles,
-                    THfCandDaughters const& candidatesDaughters,
+                    THfCandDaughtersMl const& candidatesDaughters,
                     TracksWPid const& tracks,
                     aod::BCs const& bcs)
   {
@@ -420,6 +438,13 @@ struct HfDerivedDataCreatorBplusToD0Pi {
     rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorBplusToD0Pi, processMcMlAll, "Process MC with ML", false);
+
+  void processMcGenOnly(TypeMcCollisions const& mcCollisions,
+                        MatchedGenCandidatesMc const& mcParticles)
+  {
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+  }
+  PROCESS_SWITCH(HfDerivedDataCreatorBplusToD0Pi, processMcGenOnly, "Process MC gen. only", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

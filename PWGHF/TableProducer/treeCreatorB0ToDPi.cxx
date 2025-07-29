@@ -16,17 +16,29 @@
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
+#include "Common/Core/RecoDecay.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdint>
+#include <cstdlib>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::hf_decay::hf_cand_beauty;
 
 namespace o2::aod
 {
@@ -162,7 +174,7 @@ struct HfTreeCreatorB0ToDPi {
   Produces<o2::aod::HfCandB0FullPs> rowCandidateFullParticles;
   Produces<o2::aod::HfCandB0Lites> rowCandidateLite;
 
-  Configurable<int> selectionFlagB0{"selectionB0", 1, "Selection Flag for B0"};
+  Configurable<int> selectionFlagB0{"selectionFlagB0", 1, "Selection Flag for B0"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
   // parameters for production of training samples
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to fill derived tables with signal for ML trainings"};
@@ -177,8 +189,8 @@ struct HfTreeCreatorB0ToDPi {
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_b0::isSelB0ToDPi >= selectionFlagB0;
 
-  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_b0::flagMcMatchRec) == (int8_t)BIT(aod::hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi);
-  Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_b0::flagMcMatchRec) != (int8_t)BIT(aod::hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi);
+  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_b0::flagMcMatchRec) == static_cast<int8_t>(DecayChannelMain::B0ToDminusPi);
+  Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_b0::flagMcMatchRec) != static_cast<int8_t>(DecayChannelMain::B0ToDminusPi);
 
   void init(InitContext const&)
   {
@@ -300,7 +312,7 @@ struct HfTreeCreatorB0ToDPi {
     }
     for (const auto& candidate : candidates) {
       if (fillOnlyBackground) {
-        float pseudoRndm = candidate.ptProng1() * 1000. - (int64_t)(candidate.ptProng1() * 1000);
+        float pseudoRndm = candidate.ptProng1() * 1000. - static_cast<int64_t>(candidate.ptProng1() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
@@ -340,7 +352,7 @@ struct HfTreeCreatorB0ToDPi {
         rowCandidateLite.reserve(recBg.size());
       }
       for (const auto& candidate : recBg) {
-        float pseudoRndm = candidate.ptProng1() * 1000. - (int64_t)(candidate.ptProng1() * 1000);
+        float pseudoRndm = candidate.ptProng1() * 1000. - static_cast<int64_t>(candidate.ptProng1() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
@@ -361,7 +373,7 @@ struct HfTreeCreatorB0ToDPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi)) {
+      if (std::abs(particle.flagMcMatchGen()) == DecayChannelMain::B0ToDminusPi) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
           particle.pt(),
