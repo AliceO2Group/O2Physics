@@ -104,11 +104,21 @@ struct Kstarqa {
     Configurable<float> cfgTPCChi2NCl{"cfgTPCChi2NCl", 4.0, "TPC Chi2/NCl"};
 
     // Other fixed variables
-    float lowpTcutinpTdepPID = 0.5;
-    std::array<int, 6> numbers = {0, 1, 2, 3, 4, 5};
+    float lowPtCutPID = 0.5;
+    int noOfDaughters = 2;
     float rapidityMotherData = 0.5;
 
   } selectionConfig;
+
+  enum MultEstimator {
+    kFT0M,
+    kFT0A,
+    kFT0C,
+    kFV0A,
+    kFV0C,
+    kFV0M,
+    kNEstimators // useful if you want to iterate or size things
+  };
 
   // Histograms are defined with HistogramRegistry
   HistogramRegistry rEventSelection{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -498,23 +508,23 @@ struct Kstarqa {
   bool selectionPIDNew(const T& candidate, int PID)
   {
     if (PID == 0) {
-      if (candidate.pt() < selectionConfig.lowpTcutinpTdepPID && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPCPi) {
+      if (candidate.pt() < selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPCPi) {
         return true;
       }
-      if (candidate.pt() >= selectionConfig.lowpTcutinpTdepPID && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPCPi && candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < nsigmaCutTOFPi) {
+      if (candidate.pt() >= selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPCPi && candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < nsigmaCutTOFPi) {
         return true;
       }
-      if (candidate.pt() >= selectionConfig.lowpTcutinpTdepPID && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPCPi && !candidate.hasTOF()) {
+      if (candidate.pt() >= selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPCPi && !candidate.hasTOF()) {
         return true;
       }
     } else if (PID == 1) {
-      if (candidate.pt() < selectionConfig.lowpTcutinpTdepPID && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPCKa) {
+      if (candidate.pt() < selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPCKa) {
         return true;
       }
-      if (candidate.pt() >= selectionConfig.lowpTcutinpTdepPID && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPCKa && candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < nsigmaCutTOFKa) {
+      if (candidate.pt() >= selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPCKa && candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < nsigmaCutTOFKa) {
         return true;
       }
-      if (candidate.pt() >= selectionConfig.lowpTcutinpTdepPID && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPCKa && !candidate.hasTOF()) {
+      if (candidate.pt() >= selectionConfig.lowPtCutPID && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPCKa && !candidate.hasTOF()) {
         return true;
       }
     }
@@ -799,17 +809,18 @@ struct Kstarqa {
 
     multiplicity = -1;
 
-    if (cSelectMultEstimator == selectionConfig.numbers[0]) { // FT0M
+    if (cSelectMultEstimator == kFT0M) {
       multiplicity = collision.centFT0M();
-    } else if (cSelectMultEstimator == selectionConfig.numbers[1]) {
+    } else if (cSelectMultEstimator == kFT0A) {
       multiplicity = collision.centFT0A();
-    } else if (cSelectMultEstimator == selectionConfig.numbers[2]) {
+    } else if (cSelectMultEstimator == kFT0C) {
       multiplicity = collision.centFT0C();
-    } else if (cSelectMultEstimator == selectionConfig.numbers[3]) {
+    } else if (cSelectMultEstimator == kFV0A) {
       multiplicity = collision.centFV0A();
     } else {
-      multiplicity = collision.centFT0M();
+      multiplicity = collision.centFT0M(); // default
     }
+
     /* else if (cSelectMultEstimator == 4) {
       multiplicity = collision.centMFT();
     } */
@@ -998,13 +1009,13 @@ struct Kstarqa {
     };
 
     // Call mixing based on selected estimator
-    if (cSelectMultEstimator == selectionConfig.numbers[0]) { // FT0M
+    if (cSelectMultEstimator == kFT0M) {
       runMixing(pair1, [](const auto& c) { return c.centFT0M(); });
-    } else if (cSelectMultEstimator == selectionConfig.numbers[1]) {
+    } else if (cSelectMultEstimator == kFT0A) {
       runMixing(pair2, [](const auto& c) { return c.centFT0A(); });
-    } else if (cSelectMultEstimator == selectionConfig.numbers[2]) {
+    } else if (cSelectMultEstimator == kFT0C) {
       runMixing(pair3, [](const auto& c) { return c.centFT0C(); });
-    } else if (cSelectMultEstimator == selectionConfig.numbers[3]) {
+    } else if (cSelectMultEstimator == kFV0A) {
       runMixing(pair4, [](const auto& c) { return c.centFV0A(); });
     }
   }
@@ -1099,7 +1110,7 @@ struct Kstarqa {
       hInvMass.fill(HIST("hAllKstarGenCollisisons1Rec"), multiplicity, mcParticle.pt());
 
       auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
-      if (kDaughters.size() != selectionConfig.numbers[2]) {
+      if (kDaughters.size() != selectionConfig.noOfDaughters) {
         continue;
       }
 

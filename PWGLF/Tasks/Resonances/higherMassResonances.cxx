@@ -173,8 +173,9 @@ struct HigherMassResonances {
 
     // fixed variables
     float rapidityMotherData = 0.5;
-    std::array<int, 6> numbers = {0, 1, 2, 3, 4, 5};
-    double beamMomentum = std::sqrt(13600 * 13600 / 4 - o2::constants::physics::MassProton * o2::constants::physics::MassProton); // GeV
+    float beamEnergy = 13600.0;
+    double beamMomentum = std::sqrt(beamEnergy * beamEnergy / 4 - o2::constants::physics::MassProton * o2::constants::physics::MassProton); // GeV
+    int noOfDaughters = 2;
   } config;
 
   // Service<o2::framework::O2DatabasePDG> PDGdatabase;
@@ -859,7 +860,7 @@ struct HigherMassResonances {
     }
     int sizeofv0indexes = v0indexes.size();
     rKzeroShort.fill(HIST("NksProduced"), sizeofv0indexes);
-    if (config.selectTWOKsOnly && sizeofv0indexes == config.numbers[2] && allConditionsMet) {
+    if (config.selectTWOKsOnly && sizeofv0indexes == config.noOfDaughters && allConditionsMet) {
       fillInvMass(mother, multiplicity, daughter1, daughter2, false);
     }
     v0indexes.clear();
@@ -980,7 +981,7 @@ struct HigherMassResonances {
     }
     int sizeofv0indexes = v0indexes.size();
     rKzeroShort.fill(HIST("NksProduced"), sizeofv0indexes);
-    if (config.selectTWOKsOnly && sizeofv0indexes == config.numbers[2] && allConditionsMet) {
+    if (config.selectTWOKsOnly && sizeofv0indexes == config.noOfDaughters && allConditionsMet) {
       fillInvMass(mother, multiplicity, daughter1, daughter2, false);
     }
     v0indexes.clear();
@@ -1363,7 +1364,7 @@ struct HigherMassResonances {
       // counter++;
 
       auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
-      if (kDaughters.size() != config.numbers[2]) {
+      if (kDaughters.size() != config.noOfDaughters) {
         continue;
       }
       hMChists.fill(HIST("events_check"), 7.5);
@@ -1380,12 +1381,12 @@ struct HigherMassResonances {
           hMChists.fill(HIST("events_check"), 9.5);
           if (passKs.size() == 1) {
             daughter1 = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassK0Short);
-          } else if (passKs.size() == config.numbers[2]) {
+          } else if (static_cast<int>(passKs.size()) == config.noOfDaughters) {
             daughter2 = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassK0Short);
           }
         }
       }
-      if (passKs.size() == config.numbers[2]) {
+      if (static_cast<int>(passKs.size()) == config.noOfDaughters) {
         lResonanceGen = ROOT::Math::PxPyPzEVector(mcParticle.pt(), mcParticle.eta(), mcParticle.phi(), mcParticle.e());
         lResonanceGen1 = daughter1 + daughter2;
 
