@@ -81,6 +81,8 @@ struct HfTaskXic {
   ConfigurableAxis thnConfigAxisBdtScoreBkg{"thnConfigAxisBdtScoreBkg", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisBdtScoreSignal{"thnConfigAxisBdtScoreSignal", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisYMC{"thnConfigAxisYMC", {100, -2., 2.}, ""};
+  ConfigurableAxis thnConfigAxisMseXic{"thnConfigAxisMseXic", {502, -0.0002, 1}, ""}; // MSE axis
+  ConfigurableAxis thnConfigAxisAeOutputXic{"thnConfigAxisAeOutputXic", {20, 0.8, 1},""}; // an AE output axis
   //
 
   float etaMaxAcceptance = 0.8;
@@ -248,9 +250,12 @@ struct HfTaskXic {
       const AxisSpec thnAxisBdtScoreXicNonPrompt{thnConfigAxisBdtScoreSignal, "BDT non-prompt score (Xic)"};
       const AxisSpec thnAxisMcOrigin{3, -0.5, 2.5, "MC origin"};
       const AxisSpec thnAxisMCAllProngAccepted{2, -0.5, 1.5, "All MC prongs accepted"};
+      const AxisSpec thnAxisMseXic{thnConfigAxisMseXic, "MSE (Xic)"};
+      const AxisSpec thnAxisAeOutputXic{thnConfigAxisAeOutputXic, "AE Output (Xic)"};
 
       if (doprocessDataWithMl || doprocessMcWithMl) { // with ML
         registry.add("hnXicVarsWithBdt", "THn for Xic candidates with BDT scores", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisBdtScoreXicBkg, thnAxisBdtScoreXicPrompt, thnAxisBdtScoreXicNonPrompt, thnAxisMcOrigin});
+        registry.add("hnXicVarsWithMse", "THn for Xic candidates with MSE using AD", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisDecLength, thnAxisCPA, thnAxisAeOutputXic, thnAxisMcOrigin, thnAxisMseXic}); 
       } else {
         registry.add("hnXicVars", "THn for Xic candidates", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisChi2PCA, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisMcOrigin});
       }
@@ -366,7 +371,7 @@ struct HfTaskXic {
       // THnSparse
       if (enableTHn) {
         double massXic(-1);
-        double outputBkg(-1), outputPrompt(-1), outputFD(-1);
+        double outputBkg(-1), outputPrompt(-1), outputFD(-1), outputMSE(-1), outputAE(-1);
         const int ternaryCl = 3;
         if (candidate.isSelXicToPKPi() >= selectionFlagXic) {
           massXic = hfHelper.invMassXicToPKPi(candidate);
@@ -375,9 +380,14 @@ struct HfTaskXic {
               outputBkg = candidate.mlProbXicToPKPi()[0];    /// bkg score
               outputPrompt = candidate.mlProbXicToPKPi()[1]; /// prompt score
               outputFD = candidate.mlProbXicToPKPi()[2];     /// non-prompt score
-            }
-            /// Fill the ML outputScores and variables of candidate Xic
-            registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, false);
+              /// Fill the ML outputScores and variables of candidate Xic
+              registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, false);
+            } else {
+              outputAE = candidate.aeOutputXicToPKPi()[0];    /// AE output of feature 0
+              outputMSE = candidate.mseXicToPKPi()[0];        /// MSE
+              LOG(debug)<<"Global mse in taskXic for PKPi Data "<<outputMSE;
+              registry.get<THnSparse>(HIST("hnXicVarsWithMse"))->Fill(massXic, ptCandidate, candidate.decayLength(), candidate.cpa(), outputAE, 0, 0.0, 0.0, false, outputMSE);
+            }    
           } else {
             registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), false);
           }
@@ -389,9 +399,14 @@ struct HfTaskXic {
               outputBkg = candidate.mlProbXicToPiKP()[0];    /// bkg score
               outputPrompt = candidate.mlProbXicToPiKP()[1]; /// prompt score
               outputFD = candidate.mlProbXicToPiKP()[2];     /// non-prompt score
-            }
-            /// Fill the ML outputScores and variables of candidate
-            registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, false);
+              /// Fill the ML outputScores and variables of candidate
+              registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, false);
+            } else {
+              outputAE = candidate.aeOutputXicToPiKP()[0];    /// AE output of feature 0
+              outputMSE = candidate.mseXicToPiKP()[0];        /// MSE
+              LOG(debug)<<"Global mse in taskXic for PiKP Data "<<outputMSE;
+              registry.get<THnSparse>(HIST("hnXicVarsWithMse"))->Fill(massXic, ptCandidate, candidate.decayLength(), candidate.cpa(), outputAE, false, outputMSE);
+            }                
           } else {
             registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), false);
           }
@@ -409,7 +424,7 @@ struct HfTaskXic {
   PROCESS_SWITCH(HfTaskXic, processDataStd, "Process Data with the standard method", true);
 
   void processDataWithMl(aod::Collision const& collision,
-                         soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelXicToPKPi, aod::HfMlXicToPKPi>> const& candidatesMl, aod::TracksWDca const& tracks)
+                         soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelXicToPKPi, aod::HfMlXicToPKPi, aod::HfMseXicToPKPi, aod::HfAeOutXicToPKPi>> const& candidatesMl, aod::TracksWDca const& tracks)
   {
     analysisData<true>(collision, candidatesMl, tracks);
   }
@@ -503,7 +518,7 @@ struct HfTaskXic {
         }
 
         if (enableTHn) {
-          double outputBkg(-1), outputPrompt(-1), outputFD(-1);
+          double outputBkg(-1), outputPrompt(-1), outputFD(-1), outputMSE(-1), outputAE(-1);
           const int ternaryCl = 3;
           if ((candidate.isSelXicToPKPi() >= selectionFlagXic) && pdgCodeProng0 == kProton) {
             if constexpr (useMl) {
@@ -511,9 +526,13 @@ struct HfTaskXic {
                 outputBkg = candidate.mlProbXicToPKPi()[0];    /// bkg score
                 outputPrompt = candidate.mlProbXicToPKPi()[1]; /// prompt score
                 outputFD = candidate.mlProbXicToPKPi()[2];     /// non-prompt score
-              }
-              /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
-              registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXicToPKPi, ptCandidate, outputBkg, outputPrompt, outputFD, origin);
+                /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
+                registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXicToPKPi, ptCandidate, outputBkg, outputPrompt, outputFD, origin);
+              } else {
+		 outputAE =  candidate.aeOutputXicToPKPi()[0]; /// AE output of feature 0
+		 outputMSE = candidate.mseXicToPKPi()[0];      /// MSE
+		 registry.get<THnSparse>(HIST("hnXicVarsWithMse"))->Fill(massXicToPKPi, ptCandidate, candidate.decayLength(), candidate.cpa(), outputAE, origin, outputMSE);
+              }                
             } else {
               registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXicToPKPi, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), origin);
             }
@@ -524,10 +543,14 @@ struct HfTaskXic {
                 outputBkg = candidate.mlProbXicToPiKP()[0];    /// bkg score
                 outputPrompt = candidate.mlProbXicToPiKP()[1]; /// prompt score
                 outputFD = candidate.mlProbXicToPiKP()[2];     /// non-prompt score
-              }
-              /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
-              // add here the pT_Mother, y_Mother, level (reco, Gen, Gen + Acc)
-              registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXicToPiKP, ptCandidate, outputBkg, outputPrompt, outputFD, origin);
+                /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
+                // add here the pT_Mother, y_Mother, level (reco, Gen, Gen + Acc)
+                registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXicToPiKP, ptCandidate, outputBkg, outputPrompt, outputFD, origin);
+              } else {
+		outputAE = candidate.aeOutputXicToPiKP()[0];  /// AE output of feature 0
+		outputMSE = candidate.mseXicToPiKP()[0];      /// MSE
+		registry.get<THnSparse>(HIST("hnXicVarsWithMse"))->Fill(massXicToPiKP, ptCandidate, candidate.decayLength(), candidate.cpa(), outputAE, origin, outputMSE);
+              }              
             } else {
               registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXicToPiKP, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), origin);
             }
@@ -603,7 +626,7 @@ struct HfTaskXic {
   }
   PROCESS_SWITCH(HfTaskXic, processMcStd, "Process MC with the standard method", false);
 
-  void processMcWithMl(soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelXicToPKPi, aod::HfMlXicToPKPi, aod::HfCand3ProngMcRec>> const& selectedCandidatesMlMc,
+  void processMcWithMl(soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelXicToPKPi, aod::HfMlXicToPKPi, aod::HfMseXicToPKPi, aod::HfAeOutXicToPKPi, aod::HfCand3ProngMcRec>> const& selectedCandidatesMlMc,
                        soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                        aod::TracksWMc const& tracksWithMc)
   {
