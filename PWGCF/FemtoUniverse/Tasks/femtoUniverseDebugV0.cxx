@@ -73,7 +73,6 @@ struct FemtoUniverseDebugV0 {
 
   Configurable<bool> confIsMC{"confIsMC", false, "Enable additional histograms in the case of a Monte Carlo run"};
 
-
   /// Partitioning
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
   Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) && ((aod::femtouniverseparticle::cut & V0configs.confCutV0) == V0configs.confCutV0);
@@ -81,7 +80,6 @@ struct FemtoUniverseDebugV0 {
   Partition<soa::Join<FemtoFullParticles, aod::FDMCLabels>> partsOneMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kV0)) && ((aod::femtouniverseparticle::cut & V0configs.confCutV0) == V0configs.confCutV0);
 
   Preslice<FemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
-
 
   /// Histogramming
   FemtoUniverseEventHisto eventHisto;
@@ -93,7 +91,6 @@ struct FemtoUniverseDebugV0 {
   HistogramRegistry eventRegistry{"Event", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry V0Registry{"FullV0QA", {}, OutputObjHandlingPolicy::AnalysisObject}; // o2-linter: disable=name/function-variable
   HistogramRegistry thetaRegistry{"ThetaQA", {}, OutputObjHandlingPolicy::AnalysisObject};
-
 
   void init(InitContext&)
   {
@@ -110,7 +107,6 @@ struct FemtoUniverseDebugV0 {
     thetaRegistry.add("Theta/NegativeChild/hThetaEta", " ; #eta; cos(#theta)", kTH2F, {{100, -1, 1}, {110, -1.1, 1.1}});
     thetaRegistry.add("Theta/NegativeChild/hThetaPhi", " ; #phi; cos(#theta)", kTH2F, {{100, -1, 7}, {110, -1.1, 1.1}});
   }
-
 
   /// Produce QA plots for V0 and its children on real data
   void processData(o2::aod::FdCollision const& col, FemtoFullParticles const& parts)
@@ -154,7 +150,6 @@ struct FemtoUniverseDebugV0 {
   }
   PROCESS_SWITCH(FemtoUniverseDebugV0, processData, "Enable processing on real data", true);
 
-
   /// Produce QA plots for V0 and its children on MonteCarlo data
   void processMC(o2::aod::FdCollision const& col, soa::Join<FemtoFullParticles, aod::FDMCLabels> const& parts, o2::aod::FdMCParticles const&)
   {
@@ -197,7 +192,6 @@ struct FemtoUniverseDebugV0 {
   }
   PROCESS_SWITCH(FemtoUniverseDebugV0, processMC, "Enable processing on Monte Carlo", false);
 };
-
 
 WorkflowSpec
   defineDataProcessing(ConfigContext const& cfgc)
