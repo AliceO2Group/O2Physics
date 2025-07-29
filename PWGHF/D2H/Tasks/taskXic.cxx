@@ -532,7 +532,7 @@ struct HfTaskXic {
                  outputAE = candidate.aeOutputXicToPKPi()[0]; /// AE output of feature 0
                  outputMSE = candidate.mseXicToPKPi()[0];     /// MSE
                  registry.get<THnSparse>(HIST("hnXicVarsWithMse"))->Fill(massXicToPKPi, ptCandidate, candidate.decayLength(), candidate.cpa(), outputAE, origin, outputMSE);
-              }         
+              }
             } else {
               registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXicToPKPi, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), origin);
             }
@@ -550,7 +550,7 @@ struct HfTaskXic {
                  outputAE = candidate.aeOutputXicToPiKP()[0];  /// AE output of feature 0
                  outputMSE = candidate.mseXicToPiKP()[0];      /// MSE
                  registry.get<THnSparse>(HIST("hnXicVarsWithMse"))->Fill(massXicToPiKP, ptCandidate, candidate.decayLength(), candidate.cpa(), outputAE, origin, outputMSE);
-              }         
+              }
             } else {
               registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXicToPiKP, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), origin);
             }

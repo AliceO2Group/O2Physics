@@ -414,7 +414,7 @@ struct HfCandidateSelectorXicToPKPi {
           isSelectedMlXicToPKPi = hfMlResponse.isSelectedMl(inputFeaturesXicToPKPi, ptCand, outputMlXicToPKPi);
           if(applyMSE){
             /// fill outputAeXicToPKPi with rescaled AE output since ML output is automatically scaled
-            hfAeResponse.unsetScaling(applyMSE, scaleType, outputMlXicToPKPi, scaleMin, scaleMax);  	       	
+            hfAeResponse.unsetScaling(applyMSE, scaleType, outputMlXicToPKPi, scaleMin, scaleMax);
             outputAeXicToPKPi = hfAeResponse.getPostprocessedOutput();
             /// fill outputMSEXicToPKPi vector with MSE
             hfAeResponse.setScaling(applyMSE, scaleType, inputFeaturesXicToPKPi, scaleMin, scaleMax);
@@ -432,7 +432,7 @@ struct HfCandidateSelectorXicToPKPi {
             /// fill outputMSEXicToPiKP vector with MSE
             hfAeResponse.setScaling(applyMSE, scaleType, inputFeaturesXicToPiKP, scaleMin, scaleMax);
             float msePiKP = hfAeResponse.getMse(inputFeaturesXicToPiKP, outputMlXicToPiKP); /// args are not-scaled input, automatically scaled ML output
-            outputMseXicToPiKP.push_back(msePiKP);	          	
+            outputMseXicToPiKP.push_back(msePiKP);
           }
         }
 
