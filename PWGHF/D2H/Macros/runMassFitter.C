@@ -32,8 +32,10 @@
 #include <rapidjson/filereadstream.h>
 
 #include <cstdio> // for fclose
+#include <map>
 #include <stdexcept>
 #include <string> // std::string
+#include <utility>
 #include <vector> // std::vector
 
 #endif
@@ -97,6 +99,8 @@ int runMassFitter(const TString& configFileName)
   std::vector<double> massMin;
   std::vector<double> massMax;
   std::vector<double> fixSigmaManual;
+  std::vector<double> fixSecondSigmaManual;
+  std::vector<double> fixMeanManual;
   std::vector<int> nRebin;
   std::vector<int> bkgFuncConfig;
   std::vector<int> sgnFuncConfig;
@@ -119,14 +123,23 @@ int runMassFitter(const TString& configFileName)
   const Value& fdSecPeakHistoNameValue = config["FDSecPeakHistoName"];
   parseStringArray(fdSecPeakHistoNameValue, fdSecPeakHistoName);
 
-  bool fixSigma = config["FixSigma"].GetBool();
-  std::string sigmaFile = config["SigmaFile"].GetString();
+  const bool fixSigma = config["FixSigma"].GetBool();
+  const std::string sigmaFile = config["SigmaFile"].GetString();
 
-  bool fixMean = config["FixMean"].GetBool();
-  std::string meanFile = config["MeanFile"].GetString();
+  const bool fixMean = config["FixMean"].GetBool();
+  const std::string meanFile = config["MeanFile"].GetString();
 
   const Value& fixSigmaManualValue = config["FixSigmaManual"];
   readArray(fixSigmaManualValue, fixSigmaManual);
+
+  const bool fixSecondSigma = config["FixSecondSigma"].GetBool();
+  const std::string secondSigmaFile = config["SecondSigmaFile"].GetString();
+
+  const Value& fixSecondSigmaManualValue = config["FixSecondSigmaManual"];
+  readArray(fixSecondSigmaManualValue, fixSecondSigmaManual);
+
+  const Value& fixMeanManualValue = config["FixMeanManual"];
+  readArray(fixMeanManualValue, fixMeanManual);
 
   sliceVarName = config["SliceVarName"].GetString();
   sliceVarUnit = config["SliceVarUnit"].GetString();
@@ -155,10 +168,10 @@ int runMassFitter(const TString& configFileName)
   const Value& sgnFuncValue = config["SgnFunc"];
   readArray(sgnFuncValue, sgnFuncConfig);
 
-  bool enableRefl = config["EnableRefl"].GetBool();
+  const bool enableRefl = config["EnableRefl"].GetBool();
 
-  bool drawBgPrefit = config["drawBgPrefit"].GetBool();
-  bool highlightPeakRegion = config["highlightPeakRegion"].GetBool();
+  const bool drawBgPrefit = config["drawBgPrefit"].GetBool();
+  const bool highlightPeakRegion = config["highlightPeakRegion"].GetBool();
 
   const unsigned int nSliceVarBins = sliceVarMin.size();
   std::vector<int> bkgFunc(nSliceVarBins);
@@ -169,40 +182,30 @@ int runMassFitter(const TString& configFileName)
     sliceVarLimits[iSliceVar] = sliceVarMin[iSliceVar];
     sliceVarLimits[iSliceVar + 1] = sliceVarMax[iSliceVar];
 
-    if (bkgFuncConfig[iSliceVar] < HFInvMassFitter::Expo || bkgFuncConfig[iSliceVar] > HFInvMassFitter::NoBkg) {
+    if (bkgFuncConfig[iSliceVar] < 0 || bkgFuncConfig[iSliceVar] >= HFInvMassFitter::NTypesOfBkgPdf) {
       throw std::runtime_error("ERROR: only Expo, Poly1, Poly2, Pow and PowEx background functions supported! Exit");
     }
     bkgFunc[iSliceVar] = bkgFuncConfig[iSliceVar];
 
-    if (sgnFuncConfig[iSliceVar] < HFInvMassFitter::SingleGaus || sgnFuncConfig[iSliceVar] > HFInvMassFitter::DoubleGausSigmaRatioPar) {
+    if (sgnFuncConfig[iSliceVar] < 0 || sgnFuncConfig[iSliceVar] >= HFInvMassFitter::NTypesOfSgnPdf) {
       throw std::runtime_error("ERROR: only SingleGaus, DoubleGaus and DoubleGausSigmaRatioPar signal functions supported! Exit");
     }
     sgnFunc[iSliceVar] = sgnFuncConfig[iSliceVar];
   }
 
-  TString massAxisTitle = "";
-  double massPDG;
-  if (particleName == "Dplus") {
-    massAxisTitle = "#it{M}(K#pi#pi) (GeV/#it{c}^{2})";
-    massPDG = TDatabasePDG::Instance()->GetParticle("D+")->Mass();
-  } else if (particleName == "D0") {
-    massAxisTitle = "#it{M}(K#pi) (GeV/#it{c}^{2})";
-    massPDG = TDatabasePDG::Instance()->GetParticle("D0")->Mass();
-  } else if (particleName == "Ds") {
-    massAxisTitle = "#it{M}(KK#pi) (GeV/#it{c}^{2})";
-    massPDG = TDatabasePDG::Instance()->GetParticle("D_s+")->Mass();
-  } else if (particleName == "LcToPKPi") {
-    massAxisTitle = "#it{M}(pK#pi) (GeV/#it{c}^{2})";
-    massPDG = TDatabasePDG::Instance()->GetParticle("Lambda_c+")->Mass();
-  } else if (particleName == "LcToPK0s") {
-    massAxisTitle = "#it{M}(pK^{0}_{s}) (GeV/#it{c}^{2})";
-    massPDG = TDatabasePDG::Instance()->GetParticle("Lambda_c+")->Mass();
-  } else if (particleName == "Dstar") {
-    massAxisTitle = "#it{M}(pi^{+}) (GeV/#it{c}^{2})";
-    massPDG = TDatabasePDG::Instance()->GetParticle("D*+")->Mass();
-  } else {
-    throw std::runtime_error("ERROR: only Dplus, D0, Ds, LcToPKPi, LcToPK0s and Dstar particles supported! Exit");
+  std::map<std::string, std::pair<std::string, std::string>> particles{
+    {"Dplus", {"K#pi#pi", "D+"}},
+    {"D0", {"K#pi", "D0"}},
+    {"Ds", {"KK#pi", "D_s+"}},
+    {"LcToPKPi", {"pK#pi", "Lambda_c+"}},
+    {"LcToPK0s", {"pK^{0}_{s}", "Lambda_c+"}},
+    {"Dstar", {"D^{0}pi^{+}", "D*+"}},
+    {"XicToXiPiPi", {"#Xi#pi#pi", "Xi_c+"}}};
+  if (particles.find(particleName.Data()) == particles.end()) {
+    throw std::runtime_error("ERROR: only Dplus, D0, Ds, LcToPKPi, LcToPK0s, Dstar and XicToXiPiPi particles supported! Exit");
   }
+  const TString massAxisTitle = "#it{M}(" + particles[particleName.Data()].first + ") (GeV/#it{c}^{2})";
+  const double massPDG = TDatabasePDG::Instance()->GetParticle(particles[particleName.Data()].second.c_str())->Mass();
 
   // load inv-mass histograms
   auto inputFile = TFile::Open(inputFileName.Data());
@@ -252,69 +255,31 @@ int runMassFitter(const TString& configFileName)
   inputFile->Close();
 
   // define output histos
-  auto hRawYields = new TH1D("hRawYields", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield",
-                             nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsCounted = new TH1D("hRawYieldsCounted", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield via bin count",
-                                    nSliceVarBins, sliceVarLimits.data());
+  auto hRawYieldsSignal = new TH1D("hRawYieldsSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield",
+                                   nSliceVarBins, sliceVarLimits.data());
+  auto hRawYieldsSignalCounted = new TH1D("hRawYieldsSignalCounted", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield via bin count",
+                                          nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSigma = new TH1D(
     "hRawYieldsSigma", ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})",
-    nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSigmaRatio = new TH1D(
-    "hRawYieldsSigmaRatio",
-    ";" + sliceVarName + "(" + sliceVarUnit + ");ratio #sigma_{1}/#sigma_{2}", nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSigma2 = new TH1D(
-    "hRawYieldsSigma2", ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})",
     nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsMean = new TH1D(
     "hRawYieldsMean", ";" + sliceVarName + "(" + sliceVarUnit + ");mean (GeV/#it{c}^{2})",
     nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsFracGaus2 = new TH1D(
-    "hRawYieldsFracGaus2",
-    ";" + sliceVarName + "(" + sliceVarUnit + ");second-gaussian fraction", nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSignificance = new TH1D(
     "hRawYieldsSignificance",
     ";" + sliceVarName + "(" + sliceVarUnit + ");significance (3#sigma)", nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSgnOverBkg =
     new TH1D("hRawYieldsSgnOverBkg", ";" + sliceVarName + "(" + sliceVarUnit + ");S/B (3#sigma)",
              nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSignal =
-    new TH1D("hRawYieldsSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");Signal (3#sigma)",
-             nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsBkg =
     new TH1D("hRawYieldsBkg", ";" + sliceVarName + "(" + sliceVarUnit + ");Background (3#sigma)",
              nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsChiSquare =
-    new TH1D("hRawYieldsChiSquare",
+  auto hRawYieldsChiSquareBkg =
+    new TH1D("hRawYieldsChiSquareBkg",
              ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSecondPeak = new TH1D(
-    "hRawYieldsSecondPeak", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield second peak",
-    nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsMeanSecondPeak =
-    new TH1D("hRawYieldsMeanSecondPeak",
-             ";" + sliceVarName + "(" + sliceVarUnit + ");mean second peak (GeV/#it{c}^{2})",
-             nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSigmaSecondPeak =
-    new TH1D("hRawYieldsSigmaSecondPeak",
-             ";" + sliceVarName + "(" + sliceVarUnit + ");width second peak (GeV/#it{c}^{2})",
-             nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSignificanceSecondPeak =
-    new TH1D("hRawYieldsSignificanceSecondPeak",
-             ";" + sliceVarName + "(" + sliceVarUnit + ");signficance second peak (3#sigma)",
-             nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSigmaRatioSecondFirstPeak =
-    new TH1D("hRawYieldsSigmaRatioSecondFirstPeak",
-             ";" + sliceVarName + "(" + sliceVarUnit + ");width second peak / width first peak",
-             nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSoverBSecondPeak = new TH1D(
-    "hRawYieldsSoverBSecondPeak",
-    ";" + sliceVarName + "(" + sliceVarUnit + ");S/B second peak (3#sigma)", nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSignalSecondPeak = new TH1D(
-    "hRawYieldsSignalSecondPeak",
-    ";" + sliceVarName + "(" + sliceVarUnit + ");Signal second peak (3#sigma)", nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsBkgSecondPeak =
-    new TH1D("hRawYieldsBkgSecondPeak",
-             ";" + sliceVarName + "(" + sliceVarUnit + ");Background second peak (3#sigma)",
-             nSliceVarBins, sliceVarLimits.data());
+  auto hRawYieldsChiSquareTotal =
+    new TH1D("hRawYieldsChiSquareTotal",
+             ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nSliceVarBins, sliceVarLimits.data());
   auto hReflectionOverSignal =
     new TH1D("hReflectionOverSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");Refl/Signal",
              nSliceVarBins, sliceVarLimits.data());
@@ -330,56 +295,40 @@ int runMassFitter(const TString& configFileName)
     hFitConfig->GetXaxis()->SetBinLabel(i + 1, hFitConfigXLabel[i]);
   }
 
-  setHistoStyle(hRawYields);
-  setHistoStyle(hRawYieldsCounted);
+  setHistoStyle(hRawYieldsSignal);
+  setHistoStyle(hRawYieldsSignalCounted);
   setHistoStyle(hRawYieldsSigma);
-  setHistoStyle(hRawYieldsSigma2);
   setHistoStyle(hRawYieldsMean);
-  setHistoStyle(hRawYieldsFracGaus2);
   setHistoStyle(hRawYieldsSignificance);
   setHistoStyle(hRawYieldsSgnOverBkg);
-  setHistoStyle(hRawYieldsSignal);
   setHistoStyle(hRawYieldsBkg);
-  setHistoStyle(hRawYieldsChiSquare);
-  setHistoStyle(hRawYieldsSecondPeak, kRed + 1);
-  setHistoStyle(hRawYieldsMeanSecondPeak, kRed + 1);
-  setHistoStyle(hRawYieldsSigmaSecondPeak, kRed + 1);
-  setHistoStyle(hRawYieldsSignificanceSecondPeak, kRed + 1);
-  setHistoStyle(hRawYieldsSigmaRatioSecondFirstPeak, kRed + 1);
-  setHistoStyle(hRawYieldsSoverBSecondPeak, kRed + 1);
-  setHistoStyle(hRawYieldsSignalSecondPeak, kRed + 1);
-  setHistoStyle(hRawYieldsBkgSecondPeak, kRed + 1);
+  setHistoStyle(hRawYieldsChiSquareBkg);
+  setHistoStyle(hRawYieldsChiSquareTotal);
   setHistoStyle(hReflectionOverSignal, kRed + 1);
 
-  TH1* hSigmaToFix = nullptr;
-  if (fixSigma) {
-    if (fixSigmaManual.empty()) {
-      auto inputFileSigma = TFile::Open(sigmaFile.data());
-      if (!inputFileSigma) {
-        return -2;
+  auto getHistToFix = [&nSliceVarBins](bool const& isFix, std::vector<double> const& fixManual, std::string const& fixFileName, std::string const& var) -> TH1* {
+    TH1* histToFix = nullptr;
+    if (isFix) {
+      if (fixManual.empty()) {
+        auto fixInputFile = TFile::Open(fixFileName.data());
+        if (!fixInputFile) {
+          throw std::runtime_error("Cannot open file for fixed " + var);
+        }
+        const std::string histName = "hRawYields" + var;
+        histToFix = fixInputFile->Get<TH1>(histName.data());
+        histToFix->SetDirectory(nullptr);
+        if (static_cast<unsigned int>(histToFix->GetNbinsX()) != nSliceVarBins) {
+          throw std::runtime_error("Different number of bins for this analysis and histo for fixed " + var);
+        }
+        fixInputFile->Close();
       }
-      hSigmaToFix = inputFileSigma->Get<TH1>("hRawYieldsSigma");
-      hSigmaToFix->SetDirectory(0);
-      if (static_cast<unsigned int>(hSigmaToFix->GetNbinsX()) != nSliceVarBins) {
-        printf("WARNING: Different number of bins for this analysis and histo for fix sigma!\n");
-      }
-      inputFileSigma->Close();
     }
-  }
+    return histToFix;
+  };
 
-  TH1* hMeanToFix = nullptr;
-  if (fixMean) {
-    auto inputFileMean = TFile::Open(meanFile.data());
-    if (!inputFileMean) {
-      return -3;
-    }
-    hMeanToFix = inputFileMean->Get<TH1>("hRawYieldsMean");
-    hMeanToFix->SetDirectory(0);
-    if (static_cast<unsigned int>(hMeanToFix->GetNbinsX()) != nSliceVarBins) {
-      printf("WARNING: Different number of bins for this analysis and histo for fix mean\n");
-    }
-    inputFileMean->Close();
-  }
+  TH1* hSigmaToFix = getHistToFix(fixSigma, fixSigmaManual, sigmaFile, "Sigma");
+  TH1* hMeanToFix = getHistToFix(fixMean, fixMeanManual, meanFile, "Mean");
+  TH1* hSecondSigmaToFix = getHistToFix(fixSecondSigma, fixSecondSigmaManual, secondSigmaFile, "Sigma");
 
   // fit histograms
 
@@ -394,12 +343,12 @@ int runMassFitter(const TString& configFileName)
   }
 
   Int_t nCanvasesMax = 20; // do not put more than 20 bins per canvas to make them visible
-  const Int_t nCanvases = ceil(static_cast<float>(nSliceVarBins) / nCanvasesMax);
+  const Int_t nCanvases = std::ceil(static_cast<float>(nSliceVarBins) / nCanvasesMax);
   std::vector<TCanvas*> canvasMass(nCanvases);
   std::vector<TCanvas*> canvasResiduals(nCanvases);
   std::vector<TCanvas*> canvasRefl(nCanvases);
   for (int iCanvas = 0; iCanvas < nCanvases; iCanvas++) {
-    int nPads = (nCanvases == 1) ? nSliceVarBins : nCanvasesMax;
+    const int nPads = (nCanvases == 1) ? nSliceVarBins : nCanvasesMax;
     canvasMass[iCanvas] = new TCanvas(Form("canvasMass%d", iCanvas), Form("canvasMass%d", iCanvas),
                                       canvasSize[0], canvasSize[1]);
     divideCanvas(canvasMass[iCanvas], nPads);
@@ -413,7 +362,7 @@ int runMassFitter(const TString& configFileName)
   }
 
   for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
-    Int_t iCanvas = floor(static_cast<float>(iSliceVar) / nCanvasesMax);
+    const Int_t iCanvas = std::floor(static_cast<float>(iSliceVar) / nCanvasesMax);
 
     hMassForFit[iSliceVar] = static_cast<TH1*>(hMass[iSliceVar]->Rebin(nRebin[iSliceVar]));
     TString ptTitle =
@@ -453,27 +402,30 @@ int runMassFitter(const TString& configFileName)
 
       massFitter->drawFit(gPad);
 
-      Double_t rawYield = massFitter->getRawYield();
-      Double_t rawYieldErr = massFitter->getRawYieldError();
-      Double_t rawYieldCounted = massFitter->getRawYieldCounted();
-      Double_t rawYieldCountedErr = massFitter->getRawYieldCountedError();
+      const Double_t rawYield = massFitter->getRawYield();
+      const Double_t rawYieldErr = massFitter->getRawYieldError();
+      const Double_t rawYieldCounted = massFitter->getRawYieldCounted();
+      const Double_t rawYieldCountedErr = massFitter->getRawYieldCountedError();
 
-      Double_t sigma = massFitter->getSigma();
-      Double_t sigmaErr = massFitter->getSigmaUncertainty();
-      Double_t mean = massFitter->getMean();
-      Double_t meanErr = massFitter->getMeanUncertainty();
-      Double_t reducedChiSquare = massFitter->getChiSquareOverNDF();
+      const Double_t sigma = massFitter->getSigma();
+      const Double_t sigmaErr = massFitter->getSigmaUncertainty();
+      const Double_t mean = massFitter->getMean();
+      const Double_t meanErr = massFitter->getMeanUncertainty();
+      const Double_t reducedChiSquareBkg = massFitter->getChiSquareOverNDFBkg();
+      const Double_t reducedChiSquareTotal = massFitter->getChiSquareOverNDFTotal();
 
-      hRawYields->SetBinContent(iSliceVar + 1, rawYield);
-      hRawYields->SetBinError(iSliceVar + 1, rawYieldErr);
-      hRawYieldsCounted->SetBinContent(iSliceVar + 1, rawYieldCounted);
-      hRawYieldsCounted->SetBinError(iSliceVar + 1, rawYieldCountedErr);
+      hRawYieldsSignal->SetBinContent(iSliceVar + 1, rawYield);
+      hRawYieldsSignal->SetBinError(iSliceVar + 1, rawYieldErr);
+      hRawYieldsSignalCounted->SetBinContent(iSliceVar + 1, rawYieldCounted);
+      hRawYieldsSignalCounted->SetBinError(iSliceVar + 1, rawYieldCountedErr);
       hRawYieldsSigma->SetBinContent(iSliceVar + 1, sigma);
       hRawYieldsSigma->SetBinError(iSliceVar + 1, sigmaErr);
       hRawYieldsMean->SetBinContent(iSliceVar + 1, mean);
       hRawYieldsMean->SetBinError(iSliceVar + 1, meanErr);
-      hRawYieldsChiSquare->SetBinContent(iSliceVar + 1, reducedChiSquare);
-      hRawYieldsChiSquare->SetBinError(iSliceVar + 1, 0.);
+      hRawYieldsChiSquareBkg->SetBinContent(iSliceVar + 1, reducedChiSquareBkg);
+      hRawYieldsChiSquareBkg->SetBinError(iSliceVar + 1, 0.);
+      hRawYieldsChiSquareTotal->SetBinContent(iSliceVar + 1, reducedChiSquareTotal);
+      hRawYieldsChiSquareTotal->SetBinError(iSliceVar + 1, 0.);
     } else {
       HFInvMassFitter* massFitter;
       massFitter = new HFInvMassFitter(hMassForFit[iSliceVar], massMin[iSliceVar], massMax[iSliceVar],
@@ -486,24 +438,26 @@ int runMassFitter(const TString& configFileName)
       if (useLikelihood) {
         massFitter->setUseLikelihoodFit();
       }
-      if (fixMean) {
-        massFitter->setFixGaussianMean(hMeanToFix->GetBinContent(iSliceVar + 1));
-      }
-      if (fixSigma) {
-        if (fixSigmaManual.empty()) {
-          massFitter->setFixGaussianSigma(hSigmaToFix->GetBinContent(iSliceVar + 1));
-          printf("*****************************\n");
-          printf("FIXED SIGMA: %f\n", hSigmaToFix->GetBinContent(iSliceVar + 1));
-          printf("*****************************\n");
-        } else if (!fixSigmaManual.empty()) {
-          massFitter->setFixGaussianSigma(fixSigmaManual[iSliceVar]);
-          printf("*****************************\n");
-          printf("FIXED SIGMA: %f\n", fixSigmaManual[iSliceVar]);
-          printf("*****************************\n");
-        } else {
-          printf("WARNING: impossible to fix sigma! Wrong fix sigma file or value!\n");
+
+      auto setFixedValue = [&massFitter, &iSliceVar](bool const& isFix, std::vector<double> const& fixManual, const TH1* histToFix, std::function<void(Double_t)> setFunc, std::string const& var) -> void {
+        if (isFix) {
+          if (fixManual.empty()) {
+            setFunc(histToFix->GetBinContent(iSliceVar + 1));
+            printf("*****************************\n");
+            printf("FIXED %s: %f\n", var.data(), histToFix->GetBinContent(iSliceVar + 1));
+            printf("*****************************\n");
+          } else {
+            setFunc(fixManual[iSliceVar]);
+            printf("*****************************\n");
+            printf("FIXED %s: %f\n", var.data(), fixManual[iSliceVar]);
+            printf("*****************************\n");
+          }
         }
-      }
+      };
+
+      setFixedValue(fixMean, fixMeanManual, hMeanToFix, std::bind(&HFInvMassFitter::setFixGaussianMean, massFitter, std::placeholders::_1), "MEAN");
+      setFixedValue(fixSigma, fixSigmaManual, hSigmaToFix, std::bind(&HFInvMassFitter::setFixGaussianSigma, massFitter, std::placeholders::_1), "SIGMA");
+      setFixedValue(fixSecondSigma, fixSecondSigmaManual, hSecondSigmaToFix, std::bind(&HFInvMassFitter::setFixSecondGaussianSigma, massFitter, std::placeholders::_1), "SECOND SIGMA");
 
       if (enableRefl) {
         reflOverSgn = hMassForSgn[iSliceVar]->Integral(hMassForSgn[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassForSgn[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999));
@@ -514,24 +468,25 @@ int runMassFitter(const TString& configFileName)
 
       massFitter->doFit();
 
-      double rawYield = massFitter->getRawYield();
-      double rawYieldErr = massFitter->getRawYieldError();
-      double rawYieldCounted = massFitter->getRawYieldCounted();
-      double rawYieldCountedErr = massFitter->getRawYieldCountedError();
-      double sigma = massFitter->getSigma();
-      double sigmaErr = massFitter->getSigmaUncertainty();
-      double mean = massFitter->getMean();
-      double meanErr = massFitter->getMeanUncertainty();
-      double reducedChiSquare = massFitter->getChiSquareOverNDF();
-      double significance = massFitter->getSignificance();
-      double significanceErr = massFitter->getSignificanceError();
-      double bkg = massFitter->getBkgYield();
-      double bkgErr = massFitter->getBkgYieldError();
+      const double rawYield = massFitter->getRawYield();
+      const double rawYieldErr = massFitter->getRawYieldError();
+      const double rawYieldCounted = massFitter->getRawYieldCounted();
+      const double rawYieldCountedErr = massFitter->getRawYieldCountedError();
+      const double sigma = massFitter->getSigma();
+      const double sigmaErr = massFitter->getSigmaUncertainty();
+      const double mean = massFitter->getMean();
+      const double meanErr = massFitter->getMeanUncertainty();
+      const double reducedChiSquareBkg = massFitter->getChiSquareOverNDFBkg();
+      const double reducedChiSquareTotal = massFitter->getChiSquareOverNDFTotal();
+      const double significance = massFitter->getSignificance();
+      const double significanceErr = massFitter->getSignificanceError();
+      const double bkg = massFitter->getBkgYield();
+      const double bkgErr = massFitter->getBkgYieldError();
 
-      hRawYields->SetBinContent(iSliceVar + 1, rawYield);
-      hRawYields->SetBinError(iSliceVar + 1, rawYieldErr);
-      hRawYieldsCounted->SetBinContent(iSliceVar + 1, rawYieldCounted);
-      hRawYieldsCounted->SetBinError(iSliceVar + 1, rawYieldCountedErr);
+      hRawYieldsSignal->SetBinContent(iSliceVar + 1, rawYield);
+      hRawYieldsSignal->SetBinError(iSliceVar + 1, rawYieldErr);
+      hRawYieldsSignalCounted->SetBinContent(iSliceVar + 1, rawYieldCounted);
+      hRawYieldsSignalCounted->SetBinError(iSliceVar + 1, rawYieldCountedErr);
       hRawYieldsSigma->SetBinContent(iSliceVar + 1, sigma);
       hRawYieldsSigma->SetBinError(iSliceVar + 1, sigmaErr);
       hRawYieldsMean->SetBinContent(iSliceVar + 1, mean);
@@ -540,12 +495,12 @@ int runMassFitter(const TString& configFileName)
       hRawYieldsSignificance->SetBinError(iSliceVar + 1, significanceErr);
       hRawYieldsSgnOverBkg->SetBinContent(iSliceVar + 1, rawYield / bkg);
       hRawYieldsSgnOverBkg->SetBinError(iSliceVar + 1, rawYield / bkg * std::sqrt(rawYieldErr / rawYield * rawYieldErr / rawYield + bkgErr / bkg * bkgErr / bkg));
-      hRawYieldsSignal->SetBinContent(iSliceVar + 1, rawYield);
-      hRawYieldsSignal->SetBinError(iSliceVar + 1, rawYieldErr);
       hRawYieldsBkg->SetBinContent(iSliceVar + 1, bkg);
       hRawYieldsBkg->SetBinError(iSliceVar + 1, bkgErr);
-      hRawYieldsChiSquare->SetBinContent(iSliceVar + 1, reducedChiSquare);
-      hRawYieldsChiSquare->SetBinError(iSliceVar + 1, 1.e-20);
+      hRawYieldsChiSquareBkg->SetBinContent(iSliceVar + 1, reducedChiSquareBkg);
+      hRawYieldsChiSquareBkg->SetBinError(iSliceVar + 1, 1.e-20);
+      hRawYieldsChiSquareTotal->SetBinContent(iSliceVar + 1, reducedChiSquareTotal);
+      hRawYieldsChiSquareTotal->SetBinError(iSliceVar + 1, 1.e-20);
       if (enableRefl) {
         hReflectionOverSignal->SetBinContent(iSliceVar + 1, reflOverSgn);
       }
@@ -607,25 +562,18 @@ int runMassFitter(const TString& configFileName)
   for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     hMass[iSliceVar]->Write();
   }
-  hRawYields->Write();
-  hRawYieldsCounted->Write();
+  hRawYieldsSignal->Write();
+  hRawYieldsSignalCounted->Write();
   hRawYieldsSigma->Write();
   hRawYieldsMean->Write();
   hRawYieldsSignificance->Write();
   hRawYieldsSgnOverBkg->Write();
-  hRawYieldsSignal->Write();
   hRawYieldsBkg->Write();
-  hRawYieldsChiSquare->Write();
-  hRawYieldsSigma2->Write();
-  hRawYieldsFracGaus2->Write();
-  hRawYieldsSecondPeak->Write();
-  hRawYieldsMeanSecondPeak->Write();
-  hRawYieldsSigmaSecondPeak->Write();
-  hRawYieldsSignificanceSecondPeak->Write();
-  hRawYieldsSigmaRatioSecondFirstPeak->Write();
-  hRawYieldsSoverBSecondPeak->Write();
-  hRawYieldsSignalSecondPeak->Write();
-  hRawYieldsBkgSecondPeak->Write();
+  hRawYieldsChiSquareBkg->Write();
+  hRawYieldsChiSquareTotal->Write();
+  if (enableRefl) {
+    hReflectionOverSignal->Write();
+  }
   hFitConfig->Write();
 
   outputFile.Close();

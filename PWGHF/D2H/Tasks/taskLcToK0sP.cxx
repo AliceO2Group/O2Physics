@@ -266,17 +266,9 @@ struct HfTaskLcToK0sP {
                TracksWPid const&)
   {
     for (const auto& candidate : candidates) {
-      /*
-      // no such selection for LcK0sp for now - it is the only cascade
-      if (!(candidate.hfflag() & 1 << D0ToPiK)) {
-        continue;
-      }
-      */
-
       if (etaCandMax >= 0. && std::abs(candidate.eta()) > etaCandMax) {
         continue;
       }
-
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandRecoMax) {
         continue;
       }

@@ -90,7 +90,6 @@ static constexpr std::string_view kSpeciesAll[Npart] = {"El", "Mu", "Pi", "Ka", 
 // histogram naming
 static constexpr std::string_view kCharge[] = {"all/", "pos/", "neg/"};
 static constexpr std::string_view kPrefix = "Tracks/";
-static constexpr std::string_view kQA = "QA/";
 static constexpr std::string_view kPrefixCleanTof = "Tracks/CleanTof/";
 static constexpr std::string_view kPrefixCleanV0 = "Tracks/CleanV0/";
 static constexpr std::string_view kStatus[] = {"preSel/", "postSel/"};
@@ -122,6 +121,7 @@ enum TrkSelNoFilt {
   trkSelEta,
   trkSelPt,
   trkSelDCA,
+  trkNRowsTPC,
   trkSelNCls,
   trkSelTPCBndr,
   nTrkSel
@@ -196,7 +196,9 @@ struct FlattenictyPikp {
   Configurable<bool> applyCalibGain{"applyCalibGain", true, "equalize detector amplitudes"};
   Configurable<bool> applyCalibVtx{"applyCalibVtx", false, "equalize Amp vs vtx"};
   Configurable<bool> applyCalibDeDx{"applyCalibDeDx", true, "calibration of dedx signal"};
-  Configurable<bool> cfgFillQAHisto{"cfgFillQAHisto", true, "fill QA histograms"};
+  Configurable<bool> cfgFillTrackQaHist{"cfgFillTrackQaHist", false, "fill track QA histograms"};
+  Configurable<bool> cfgFilldEdxQaHist{"cfgFilldEdxQaHist", false, "fill dEdx QA histograms"};
+  Configurable<bool> cfgFillNsigmaQAHist{"cfgFillNsigmaQAHist", false, "fill nsigma QA histograms"};
   Configurable<bool> cfgFillChrgType{"cfgFillChrgType", true, "fill histograms per charge types"};
   Configurable<std::vector<float>> paramsFuncMIPposEta{"paramsFuncMIPposEta", std::vector<float>{-1.f}, "parameters of pol2"};
   Configurable<std::vector<float>> paramsFuncMIPnegEta{"paramsFuncMIPnegEta", std::vector<float>{-1.f}, "parameters of pol2"};
@@ -224,7 +226,7 @@ struct FlattenictyPikp {
   } flatSelOpt;
 
   struct : ConfigurableGroup {
-    ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, "pT binning"};
+    ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0}, "pT binning"};
     ConfigurableAxis axisMultPerc{"axisMultPerc", {100, 0, 100}, "Multiplicity percentiles binning"};
     ConfigurableAxis axisVertexZ{"axisVertexZ", {60, -15., 15.}, "Vertex z binning"};
     ConfigurableAxis axisMult{"axisMult", {301, -0.5, 300.5}, "Multiplicity binning"};
@@ -242,9 +244,12 @@ struct FlattenictyPikp {
     Configurable<float> cfgTrkEtaMax{"cfgTrkEtaMax", 0.8f, "Eta range for tracks"};
     Configurable<float> cfgRapMax{"cfgRapMax", 0.5f, "Maximum range of rapidity for tracks"};
     Configurable<float> cfgTrkPtMin{"cfgTrkPtMin", 0.15f, "Minimum pT of tracks"};
+    Configurable<float> cfgNclTPCMin{"cfgNclTPCMin", 100.0f, "Minimum of number of TPC clusters"};
     Configurable<float> cfgPhiCutPtMin{"cfgPhiCutPtMin", 2.0f, "Minimum pT for phi cut"};
     Configurable<float> cfgTOFBetaPion{"cfgTOFBetaPion", 1.0f, "Minimum beta for TOF pions"};
     Configurable<bool> cfgUseExtraTrkCut{"cfgUseExtraTrkCut", true, "Use extra track cut"};
+    Configurable<std::string> cfgGeoTrkCutMin{"cfgGeoTrkCutMin", "0.06/x+pi/18.0-0.06", "ROOT TF1 formula for minimum phi cut in TPC"};
+    Configurable<std::string> cfgGeoTrkCutMax{"cfgGeoTrkCutMax", "0.1/x+pi/18.0+0.06", "ROOT TF1 formula for maximum phi cut in TPC"};
     Configurable<float> cfgMomMIPMax{"cfgMomMIPMax", 0.6f, "Maximum momentum of MIP pions"};
     Configurable<float> cfgMomMIPMin{"cfgMomMIPMin", 0.4f, "Minimum momentum of MIP pions"};
     Configurable<float> cfgDeDxMIPMax{"cfgDeDxMIPMax", 60.0f, "Maximum range of MIP dedx"};
@@ -299,7 +304,7 @@ struct FlattenictyPikp {
   Configurable<int> minITSnClusters{"minITSnClusters", 5, "minimum number of found ITS clusters"};
   Configurable<float> maxDcaXYFactor{"maxDcaXYFactor", 1.f, "Multiplicative factor on the maximum value of the DCA xy"};
   Configurable<float> maxDcaZ{"maxDcaZ", 2.f, "Additional cut on the maximum value of the DCA z"};
-  Configurable<float> minTPCNClsFound{"minTPCNClsFound", 0.f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
+  Configurable<float> minTPCNClsFound{"minTPCNClsFound", 70.0f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
 
   TF1* fPhiCutLow = nullptr;
   TF1* fPhiCutHigh = nullptr;
@@ -396,74 +401,77 @@ struct FlattenictyPikp {
     flatchrg.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelEta + 1, "Eta");
     flatchrg.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelPt + 1, "Pt");
     flatchrg.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelDCA + 1, "DCA");
-    flatchrg.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelNCls + 1, "NCls");
+    flatchrg.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkNRowsTPC + 1, "trkNRowsTPC");
+    flatchrg.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelNCls + 1, "NClsTPC");
     flatchrg.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelTPCBndr + 1, "TPC Boundary");
 
     if (trkSelOpt.cfgUseExtraTrkCut) {
-      fPhiCutLow = new TF1("fPhiCutLow", "0.06/x+pi/18.0-0.06", 0, 100);
-      fPhiCutHigh = new TF1("fPhiCutHigh", "0.1/x+pi/18.0+0.06", 0, 100);
+      fPhiCutLow = new TF1("fPhiCutLow", trkSelOpt.cfgGeoTrkCutMin.value.c_str(), 0, 100);
+      fPhiCutHigh = new TF1("fPhiCutHigh", trkSelOpt.cfgGeoTrkCutMax.value.c_str(), 0, 100);
     }
 
     if (doprocessFlat) {
       flatchrg.add("Events/hVtxZ", "Measured vertex z position", HistType::kTH1D, {vtxzAxis});
       flatchrg.add("Events/hFlatVsMultEst", "hFlatVsMultEst", HistType::kTH2D, {flatAxis, multAxis});
-
-      if (cfgFillQAHisto) {
-        flatchrg.add("Tracks/postSel/hPtPhi", "; #it{p}_{T} (GeV/#it{c}); fmod(#varphi,#pi/9)", {HistType::kTH2D, {ptAxis, phiAxisMod}});
-        // P vs PT vs ETA
-        flatchrg.add("Tracks/postSel/hPVsPtEta", "; #it{p} (GeV/#it{c}); #it{p}_{T} (GeV/#it{c}); #eta;", {HistType::kTH3D, {pAxis, ptAxis, etaAxis}});
-        flatchrg.addClone("Tracks/postSel/", "Tracks/preSel/");
-        // dEdx MIP, Plateau
-        flatchrg.add("Tracks/postCalib/all/hMIP", "; mult; flat; #eta; #LT dE/dx #GT_{MIP, primary tracks};", {HistType::kTHnSparseD, {multAxis, flatAxis, etaAxis, dEdxAxis}});
-        flatchrg.add("Tracks/postCalib/all/hPlateau", "; mult; flat; #eta; #LT dE/dx #GT_{Plateau, primary tracks};", {HistType::kTHnSparseD, {multAxis, flatAxis, etaAxis, dEdxAxis}});
-        flatchrg.add("Tracks/postCalib/all/hMIPVsEta", "; #eta; #LT dE/dx #GT_{MIP, primary tracks};", {HistType::kTH2D, {etaAxis, dEdxAxis}});
-        flatchrg.add("Tracks/postCalib/all/pMIPVsEta", "; #eta; #LT dE/dx #GT_{MIP, primary tracks};", {HistType::kTProfile, {etaAxis}});
-        flatchrg.add("Tracks/postCalib/all/hMIPVsPhi", "; #varphi; #LT dE/dx #GT_{MIP, primary tracks};", {HistType::kTH2D, {phiAxis, dEdxAxis}});
-        flatchrg.add("Tracks/postCalib/all/pMIPVsPhi", "; #varphi; #LT dE/dx #GT_{MIP, primary tracks};", {HistType::kTProfile, {phiAxis}});
-        flatchrg.add("Tracks/postCalib/all/hMIPVsPhiVsEta", "; #varphi; #LT dE/dx #GT_{MIP, primary tracks}; #eta;", {HistType::kTH3D, {phiAxis, dEdxAxis, etaAxis}});
-        flatchrg.add("Tracks/postCalib/all/hPlateauVsEta", "; #eta; #LT dE/dx #GT_{Plateau, primary tracks};", {HistType::kTH2D, {etaAxis, dEdxAxis}});
-        flatchrg.add("Tracks/postCalib/all/pPlateauVsEta", "; #eta; #LT dE/dx #GT_{Plateau, primary tracks};", {HistType::kTProfile, {etaAxis}});
-        flatchrg.add("Tracks/postCalib/all/hPlateauVsPhi", "; #varphi; #LT dE/dx #GT_{Plateau, primary tracks};", {HistType::kTH2D, {phiAxis, dEdxAxis}});
-        flatchrg.add("Tracks/postCalib/all/pPlateauVsPhi", "; #varphi; #LT dE/dx #GT_{Plateau, primary tracks};", {HistType::kTProfile, {phiAxis}});
-        flatchrg.add("Tracks/postCalib/all/hPlateauVsPhiVsEta", "; #varphi; #LT dE/dx #GT_{Plateau, primary tracks}; #eta;", {HistType::kTH3D, {phiAxis, dEdxAxis, etaAxis}});
-        if (cfgFillChrgType) {
-          flatchrg.addClone("Tracks/postCalib/all/", "Tracks/postCalib/pos/");
-          flatchrg.addClone("Tracks/postCalib/all/", "Tracks/postCalib/neg/");
-          flatchrg.addClone("Tracks/postCalib/all/", "Tracks/preCalib/all/");
-          flatchrg.addClone("Tracks/preCalib/all/", "Tracks/preCalib/pos/");
-          flatchrg.addClone("Tracks/preCalib/all/", "Tracks/preCalib/neg/");
+      flatchrg.add("Tracks/postSel/hPVsPtEta", "; #it{p} (GeV/#it{c}); #it{p}_{T} (GeV/#it{c}); #eta;", {HistType::kTH3D, {pAxis, ptAxis, etaAxis}});
+      if (cfgFillTrackQaHist || cfgFilldEdxQaHist || cfgFillNsigmaQAHist) {
+        if (cfgFillTrackQaHist) {
+          flatchrg.add("Tracks/postSel/hPtPhi", "; #it{p}_{T} (GeV/#it{c}); fmod(#varphi,#pi/9)", {HistType::kTH2D, {ptAxis, phiAxisMod}});
+          flatchrg.add("Tracks/postSel/hPtVsWOcutDCA", "hPtVsWOcutDCA", HistType::kTH2D, {ptAxis, dcaXYAxis});
+          flatchrg.add("Tracks/postSel/hPt", "", HistType::kTH1D, {ptAxis});
+          flatchrg.add("Tracks/postSel/hPhi", "", HistType::kTH1D, {phiAxis});
+          flatchrg.add("Tracks/postSel/hEta", "", HistType::kTH1D, {etaAxis});
+          flatchrg.add("Tracks/postSel/hDCAXYvsPt", "", HistType::kTH2D, {ptAxis, dcaXYAxis});
+          flatchrg.add("Tracks/postSel/hDCAZvsPt", "", HistType::kTH2D, {ptAxis, dcaZAxis});
+          // tpc
+          flatchrg.add("Tracks/postSel/hPtPhiTPCCluster", "; #it{p}_{T} (GeV/#it{c}); fmod(#varphi,#pi/9); N_{cluster}", {HistType::kTHnSparseD, {ptAxis, phiAxisMod, clTpcAxis}});
+          flatchrg.add("Tracks/postSel/hShTpcClvsPt", "", {HistType::kTH2D, {ptAxis, shCluserAxis}});
+          flatchrg.add("Tracks/postSel/hCrossTPCvsPt", "", {HistType::kTH2D, {ptAxis, clTpcAxis}});
+          flatchrg.add("Tracks/postSel/hTPCCluster", "N_{cluster}", HistType::kTH1D, {clTpcAxis});
+          flatchrg.add("Tracks/postSel/tpcNClsShared", " ; # shared TPC clusters TPC", HistType::kTH1D, {{165, -0.5, 164.5}});
+          flatchrg.add("Tracks/postSel/tpcCrossedRows", " ; # crossed TPC rows", HistType::kTH1D, {{165, -0.5, 164.5}});
+          flatchrg.add("Tracks/postSel/tpcCrossedRowsOverFindableCls", " ; crossed rows / findable TPC clusters", HistType::kTH1D, {{60, 0.7, 1.3}});
+          // its
+          flatchrg.add("Tracks/postSel/itsNCls", " ; # ITS clusters", HistType::kTH1D, {{8, -0.5, 7.5}});
+          flatchrg.add("Tracks/postSel/hChi2ITSTrkSegment", "chi2ITS", HistType::kTH1D, {{100, -0.5, 99.5}});
+          // tof
+          flatchrg.add("Tracks/postSel/hTOFPvsBeta", "Beta from TOF; #it{p} (GeV/#it{c}); #beta", {HistType::kTH2D, {pAxis, {120, 0.0, 1.2}}});
+          flatchrg.add("Tracks/postSel/hTOFpi", "Primary Pions from TOF; #eta; #it{p} (GeV/#it{c}); dEdx", {HistType::kTHnSparseD, {etaAxis, pAxis, dEdxAxis}});
         }
-        // fillTrackQA
-        flatchrg.add("Tracks/QA/hPtVsWOcutDCA", "hPtVsWOcutDCA", HistType::kTH2D, {ptAxis, dcaXYAxis});
-        flatchrg.add("Tracks/QA/hPt", "", HistType::kTH1D, {ptAxis});
-        flatchrg.add("Tracks/QA/hPhi", "", HistType::kTH1D, {phiAxis});
-        flatchrg.add("Tracks/QA/hEta", "", HistType::kTH1D, {etaAxis});
-        flatchrg.add("Tracks/QA/hDCAXYvsPt", "", HistType::kTH2D, {ptAxis, dcaXYAxis});
-        flatchrg.add("Tracks/QA/hDCAZvsPt", "", HistType::kTH2D, {ptAxis, dcaZAxis});
-        // tpc
-        flatchrg.add("Tracks/QA/hShTpcClvsPt", "", {HistType::kTH2D, {ptAxis, shCluserAxis}});
-        flatchrg.add("Tracks/QA/hCrossTPCvsPt", "", {HistType::kTH2D, {ptAxis, clTpcAxis}});
-        flatchrg.add("Tracks/QA/hTPCCluster", "N_{cluster}", HistType::kTH1D, {{200, -0.5, 199.5}});
-        flatchrg.add("Tracks/QA/tpcNClsShared", " ; # shared TPC clusters TPC", HistType::kTH1D, {{165, -0.5, 164.5}});
-        flatchrg.add("Tracks/QA/tpcCrossedRows", " ; # crossed TPC rows", HistType::kTH1D, {{165, -0.5, 164.5}});
-        flatchrg.add("Tracks/QA/tpcCrossedRowsOverFindableCls", " ; crossed rows / findable TPC clusters", HistType::kTH1D, {{60, 0.7, 1.3}});
-        // its
-        flatchrg.add("Tracks/QA/itsNCls", " ; # ITS clusters", HistType::kTH1D, {{8, -0.5, 7.5}});
-        flatchrg.add("Tracks/QA/hChi2ITSTrkSegment", "chi2ITS", HistType::kTH1D, {{100, -0.5, 99.5}});
-        // tof
-        flatchrg.add("Tracks/QA/hTOFPvsBeta", "Beta from TOF; #it{p} (GeV/#it{c}); #beta", {HistType::kTH2D, {pAxis, {120, 0.0, 1.2}}});
-        flatchrg.add("Tracks/QA/hTOFpi", "Primary Pions from TOF; #eta; #it{p} (GeV/#it{c}); dEdx", {HistType::kTHnSparseD, {etaAxis, pAxis, dEdxAxis}});
-        // nsigma
-        for (int i = 0; i < NpartChrg; i++) {
-          const std::string strID = Form("/%s/%s", (i < Npart) ? "pos" : "neg", Pid[i % Npart]);
-          hPtNsigmaTPC[i] = flatchrg.add<TH2>("Tracks/hPtNsigmaTPC" + strID, " ; p_{T} (GeV/c)", HistType::kTH2D, {ptAxis, nSigmaTPCAxis});
-          if (cfgStoreThnSparse) {
-            hThPtNsigmaTPC[i] = flatchrg.add<THnSparse>("Tracks/hThPtNsigmaTPC" + strID, " ; p_{T} (GeV/c)", HistType::kTHnSparseD, {ptAxis, nSigmaTPCAxis, multAxis, flatAxis});
+        if (cfgFilldEdxQaHist) {
+          flatchrg.add("Tracks/postCalib/all/hMIP", "; mult; flat; #eta; #LT dE/dx #GT_{MIP, primary tracks};", {HistType::kTHnSparseD, {multAxis, flatAxis, etaAxis, dEdxAxis}});
+          flatchrg.add("Tracks/postCalib/all/hPlateau", "; mult; flat; #eta; #LT dE/dx #GT_{Plateau, primary tracks};", {HistType::kTHnSparseD, {multAxis, flatAxis, etaAxis, dEdxAxis}});
+          flatchrg.add("Tracks/postCalib/all/hMIPVsEta", "; #eta; #LT dE/dx #GT_{MIP, primary tracks};", {HistType::kTH2D, {etaAxis, dEdxAxis}});
+          flatchrg.add("Tracks/postCalib/all/pMIPVsEta", "; #eta; #LT dE/dx #GT_{MIP, primary tracks};", {HistType::kTProfile, {etaAxis}});
+          flatchrg.add("Tracks/postCalib/all/hMIPVsPhi", "; #varphi; #LT dE/dx #GT_{MIP, primary tracks};", {HistType::kTH2D, {phiAxis, dEdxAxis}});
+          flatchrg.add("Tracks/postCalib/all/pMIPVsPhi", "; #varphi; #LT dE/dx #GT_{MIP, primary tracks};", {HistType::kTProfile, {phiAxis}});
+          flatchrg.add("Tracks/postCalib/all/hMIPVsPhiVsEta", "; #varphi; #LT dE/dx #GT_{MIP, primary tracks}; #eta;", {HistType::kTH3D, {phiAxis, dEdxAxis, etaAxis}});
+          flatchrg.add("Tracks/postCalib/all/hPlateauVsEta", "; #eta; #LT dE/dx #GT_{Plateau, primary tracks};", {HistType::kTH2D, {etaAxis, dEdxAxis}});
+          flatchrg.add("Tracks/postCalib/all/pPlateauVsEta", "; #eta; #LT dE/dx #GT_{Plateau, primary tracks};", {HistType::kTProfile, {etaAxis}});
+          flatchrg.add("Tracks/postCalib/all/hPlateauVsPhi", "; #varphi; #LT dE/dx #GT_{Plateau, primary tracks};", {HistType::kTH2D, {phiAxis, dEdxAxis}});
+          flatchrg.add("Tracks/postCalib/all/pPlateauVsPhi", "; #varphi; #LT dE/dx #GT_{Plateau, primary tracks};", {HistType::kTProfile, {phiAxis}});
+          flatchrg.add("Tracks/postCalib/all/hPlateauVsPhiVsEta", "; #varphi; #LT dE/dx #GT_{Plateau, primary tracks}; #eta;", {HistType::kTH3D, {phiAxis, dEdxAxis, etaAxis}});
+          if (cfgFillChrgType) {
+            flatchrg.addClone("Tracks/postCalib/all/", "Tracks/postCalib/pos/");
+            flatchrg.addClone("Tracks/postCalib/all/", "Tracks/postCalib/neg/");
+            flatchrg.addClone("Tracks/postCalib/all/", "Tracks/preCalib/all/");
+            flatchrg.addClone("Tracks/preCalib/all/", "Tracks/preCalib/pos/");
+            flatchrg.addClone("Tracks/preCalib/all/", "Tracks/preCalib/neg/");
           }
-          hPtNsigmaTOF[i] = flatchrg.add<TH2>("Tracks/hPtNsigmaTOF" + strID, " ; p_{T} (GeV/c)", HistType::kTH2D, {ptAxis, nSigmaTOFAxis});
-          hPtNsigmaTPCTOF[i] = flatchrg.add<TH2>("Tracks/hPtNsigmaTPCTOF" + strID, PidChrg[i], HistType::kTH2D, {nSigmaTPCAxis, nSigmaTOFAxis});
+        }
+        if (cfgFillNsigmaQAHist) {
+          for (int i = 0; i < NpartChrg; i++) {
+            const std::string strID = Form("/%s/%s", (i < Npart) ? "pos" : "neg", Pid[i % Npart]);
+            hPtNsigmaTPC[i] = flatchrg.add<TH2>("Tracks/hPtNsigmaTPC" + strID, " ; p_{T} (GeV/c)", HistType::kTH2D, {ptAxis, nSigmaTPCAxis});
+            if (cfgStoreThnSparse) {
+              hThPtNsigmaTPC[i] = flatchrg.add<THnSparse>("Tracks/hThPtNsigmaTPC" + strID, " ; p_{T} (GeV/c)", HistType::kTHnSparseD, {ptAxis, nSigmaTPCAxis, multAxis, flatAxis});
+            }
+            hPtNsigmaTOF[i] = flatchrg.add<TH2>("Tracks/hPtNsigmaTOF" + strID, " ; p_{T} (GeV/c)", HistType::kTH2D, {ptAxis, nSigmaTOFAxis});
+            hPtNsigmaTPCTOF[i] = flatchrg.add<TH2>("Tracks/hPtNsigmaTPCTOF" + strID, PidChrg[i], HistType::kTH2D, {nSigmaTPCAxis, nSigmaTOFAxis});
+          }
         }
       }
+      flatchrg.addClone("Tracks/postSel/", "Tracks/preSel/");
       // FV0 QA
       flatchrg.add("FV0/hFV0AmplWCalib", "", HistType::kTH2D, {{48, -0.5, 47.5, "channel"}, {500, -0.5, +19999.5, "FV0 amplitude"}});
       flatchrg.add("FV0/hFV0AmplvsVtxzWoCalib", "", HistType::kTH2D, {{30, -15.0, +15.0, "z vtx (cm)"}, {1000, -0.5, +39999.5, "FV0 amplitude"}});
@@ -530,6 +538,17 @@ struct FlattenictyPikp {
       flatchrg.add("hPtVsDCAxyAll", "hPtVsDCAxyAll", HistType::kTH2D, {ptAxis, dcaXYAxis});
       flatchrg.add({"ResponseGen", " ; N_{part}; F_{FV0};", {HistType::kTHnSparseD, {multAxis, flatAxis}}});
       flatchrg.add("h1flatencityFV0MCGen", "", HistType::kTH1D, {{102, -0.01, 1.01, "1-flatencityFV0"}});
+
+      // Hash list for efficiency
+      listEfficiency.setObject(new THashList);
+      static_for<0, 1>([&](auto pidSgn) {
+        bookMcHist<pidSgn, o2::track::PID::Pion>();
+        bookMcHist<pidSgn, o2::track::PID::Kaon>();
+        bookMcHist<pidSgn, o2::track::PID::Proton>();
+        initEfficiency<pidSgn, o2::track::PID::Pion>();
+        initEfficiency<pidSgn, o2::track::PID::Kaon>();
+        initEfficiency<pidSgn, o2::track::PID::Proton>();
+      });
     }
 
     if (doprocessMCclosure) {
@@ -565,17 +584,6 @@ struct FlattenictyPikp {
         flatchrg.add({fmt::format(kPtGenRecCollPrimSgnINELF.data(), kSpecies[i]).c_str(), " ; p_{T} (GeV/c)", {HistType::kTH3D, {multAxis, flatAxis, ptAxis}}});
       }
     }
-
-    // Hash list for efficiency
-    listEfficiency.setObject(new THashList);
-    static_for<0, 1>([&](auto pidSgn) {
-      bookMcHist<pidSgn, o2::track::PID::Pion>();
-      bookMcHist<pidSgn, o2::track::PID::Kaon>();
-      bookMcHist<pidSgn, o2::track::PID::Proton>();
-      initEfficiency<pidSgn, o2::track::PID::Pion>();
-      initEfficiency<pidSgn, o2::track::PID::Kaon>();
-      initEfficiency<pidSgn, o2::track::PID::Proton>();
-    });
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -667,7 +675,7 @@ struct FlattenictyPikp {
   void fillNsigma(T const& tracks, const C& collision)
   {
     const float mult = getMult(collision);
-    const float flat = fillFlat<true>(collision);
+    const float flat = fillFlat<false>(collision);
     for (const auto& track : tracks) {
       checkNsigma<id>(track, mult, flat);
     }
@@ -694,30 +702,32 @@ struct FlattenictyPikp {
     for (const auto& track : tracks) {
       float dEdx = track.tpcSignal();
       bool posP = (track.sign() * track.tpcInnerParam() > 0) ? true : false;
-      if (cfgFillQAHisto) {
+      if (cfgFillTrackQaHist) {
         fillTrackQA<kBefore, true>(track);
       }
       if (!isGoodTrack(track, magField)) {
         continue;
       }
-      if (cfgFillQAHisto) {
+      if (cfgFillTrackQaHist) {
         fillTrackQA<kAfter, true>(track);
-        filldEdxQA<kAll, kBefore, true>(track, collision);
+      }
+      if (cfgFilldEdxQaHist) {
+        filldEdxQA<kAll, kBefore, true>(track, collision, dEdx);
         if (posP) {
-          filldEdxQA<kPos, kBefore, true>(track, collision);
+          filldEdxQA<kPos, kBefore, true>(track, collision, dEdx);
         } else {
-          filldEdxQA<kNeg, kBefore, true>(track, collision);
+          filldEdxQA<kNeg, kBefore, true>(track, collision, dEdx);
         }
       }
       if (applyCalibDeDx) {
         dEdx *= (50.0 / getCalibration(true, track.eta()));
       }
-      if (cfgFillQAHisto) {
-        filldEdxQA<kAll, kAfter, true>(track, collision);
+      if (cfgFilldEdxQaHist) {
+        filldEdxQA<kAll, kAfter, true>(track, collision, dEdx);
         if (posP) {
-          filldEdxQA<kPos, kAfter, true>(track, collision);
+          filldEdxQA<kPos, kAfter, true>(track, collision, dEdx);
         } else {
-          filldEdxQA<kNeg, kAfter, true>(track, collision);
+          filldEdxQA<kNeg, kAfter, true>(track, collision, dEdx);
         }
       }
 
@@ -783,6 +793,7 @@ struct FlattenictyPikp {
     if (eta < 0.) {
       if (isMIP) {
         valCalib = fDeDxVsEtaNeg->Eval(eta);
+        // LOGF(info, "--------> \t fDeDxVsEtaNeg->Eval(%f) = %f", eta, valCalib);
       } else {
         valCalib = fEDeDxVsEtaNeg->Eval(eta);
       }
@@ -823,14 +834,20 @@ struct FlattenictyPikp {
     phimodn += o2::constants::math::PI / 18.0; // to center gap in the middle
     phimodn = std::fmod(phimodn, o2::constants::math::PI / 9.0);
 
-    if (cfgFillQAHisto) {
+    if (cfgFillTrackQaHist) {
       flatchrg.fill(HIST("Tracks/preSel/hPtPhi"), track.pt(), phimodn);
+      if (track.hasTPC() && track.hasITS()) {
+        flatchrg.fill(HIST("Tracks/preSel/hPtPhiTPCCluster"), track.pt(), phimodn, track.tpcNClsFindable() - track.tpcNClsFindableMinusFound());
+      }
     }
     if (phimodn < fphiCutHigh->Eval(track.pt()) && phimodn > fphiCutLow->Eval(track.pt())) {
       return false;
     }
-    if (cfgFillQAHisto) {
+    if (cfgFillTrackQaHist) {
       flatchrg.fill(HIST("Tracks/postSel/hPtPhi"), track.pt(), phimodn);
+      if (track.hasTPC() && track.hasITS()) {
+        flatchrg.fill(HIST("Tracks/postSel/hPtPhiTPCCluster"), track.pt(), phimodn, track.tpcNClsFindable() - track.tpcNClsFindableMinusFound());
+      }
     }
     return true;
   }
@@ -851,6 +868,11 @@ struct FlattenictyPikp {
     }
     flatchrg.fill(HIST("Tracks/hTrkSel"), trkSelDCA);
     if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC) {
+      return false;
+    }
+    flatchrg.fill(HIST("Tracks/hTrkSel"), trkNRowsTPC);
+    auto nClusterTPC = track.tpcNClsFindable() - track.tpcNClsFindableMinusFound();
+    if (nClusterTPC < trkSelOpt.cfgNclTPCMin) {
       return false;
     }
     flatchrg.fill(HIST("Tracks/hTrkSel"), trkSelNCls);
@@ -1004,47 +1026,46 @@ struct FlattenictyPikp {
   inline void fillTrackQA(T const& track)
   {
     if constexpr (fillHist) {
-      flatchrg.fill(HIST(kPrefix) + HIST(kQA) + HIST("hPt"), track.pt());
-      flatchrg.fill(HIST(kPrefix) + HIST(kQA) + HIST("hPhi"), track.phi());
-      flatchrg.fill(HIST(kPrefix) + HIST(kQA) + HIST("hEta"), track.eta());
-      flatchrg.fill(HIST(kPrefix) + HIST(kQA) + HIST("hDCAXYvsPt"), track.pt(), track.dcaXY());
-      flatchrg.fill(HIST(kPrefix) + HIST(kQA) + HIST("hDCAZvsPt"), track.pt(), track.dcaZ());
+      flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hPt"), track.pt());
+      flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hPhi"), track.phi());
+      flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hEta"), track.eta());
+      flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hDCAXYvsPt"), track.pt(), track.dcaXY());
+      flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hDCAZvsPt"), track.pt(), track.dcaZ());
 
       if (track.hasTPC() && track.hasITS()) {
         int nFindable = track.tpcNClsFindable();
         int nMinusFound = track.tpcNClsFindableMinusFound();
         int nCluster = nFindable - nMinusFound;
-        flatchrg.fill(HIST(kPrefix) + HIST(kQA) + HIST("hTPCCluster"), nCluster);
-        flatchrg.fill(HIST(kPrefix) + HIST(kQA) + HIST("hShTpcClvsPt"), track.pt(), track.tpcFractionSharedCls());
-        flatchrg.fill(HIST(kPrefix) + HIST(kQA) + HIST("hCrossTPCvsPt"), track.pt(), track.tpcNClsFound());
-        flatchrg.fill(HIST(kPrefix) + HIST(kQA) + HIST("tpcNClsShared"), track.tpcNClsShared());
-        flatchrg.fill(HIST(kPrefix) + HIST(kQA) + HIST("tpcCrossedRows"), track.tpcNClsCrossedRows());
-        flatchrg.fill(HIST(kPrefix) + HIST(kQA) + HIST("tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
-        flatchrg.fill(HIST(kPrefix) + HIST(kQA) + HIST("hChi2ITSTrkSegment"), track.itsChi2NCl());
-        flatchrg.fill(HIST(kPrefix) + HIST(kQA) + HIST("itsNCls"), track.itsNCls());
+        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hTPCCluster"), nCluster);
+        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hShTpcClvsPt"), track.pt(), track.tpcFractionSharedCls());
+        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hCrossTPCvsPt"), track.pt(), track.tpcNClsFound());
+        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("tpcNClsShared"), track.tpcNClsShared());
+        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("tpcCrossedRows"), track.tpcNClsCrossedRows());
+        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
+        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hChi2ITSTrkSegment"), track.itsChi2NCl());
+        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("itsNCls"), track.itsNCls());
       }
 
-      flatchrg.fill(HIST(kPrefix) + HIST(kQA) + HIST("hTOFPvsBeta"), track.tpcInnerParam(), track.beta());
+      flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hTOFPvsBeta"), track.tpcInnerParam(), track.beta());
       if (track.beta() > trkSelOpt.cfgTOFBetaPion && track.beta() < trkSelOpt.cfgTOFBetaPion + 0.05) { // TOF pions
-        flatchrg.fill(HIST(kPrefix) + HIST(kQA) + HIST("hTOFpi"), track.eta(), track.tpcInnerParam(), track.tpcSignal());
+        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hTOFpi"), track.eta(), track.tpcInnerParam(), track.tpcSignal());
       }
 
       if (std::abs(track.eta()) < trkSelOpt.cfgTrkEtaMax) {
         if (isDCAxyWoCut(track)) {
-          flatchrg.fill(HIST(kPrefix) + HIST(kQA) + HIST("hPtVsWOcutDCA"), track.pt(), track.dcaXY());
+          flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hPtVsWOcutDCA"), track.pt(), track.dcaXY());
         }
       }
     }
-
     flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hPVsPtEta"), track.tpcInnerParam(), track.pt(), track.eta());
   }
 
   template <ChargeType chrg, FillType ft, bool fillHist = false, typename T, typename C>
-  inline void filldEdxQA(T const& track, C const& collision)
+  inline void filldEdxQA(T const& track, C const& collision, const float dEdx)
   {
     const float mult = getMult(collision);
-    const float flat = fillFlat<true>(collision);
-    float dEdx = track.tpcSignal();
+    const float flat = fillFlat<false>(collision);
+    // float dEdx = track.tpcSignal();
     if constexpr (fillHist) {
       if (track.tpcInnerParam() >= trkSelOpt.cfgMomMIPMin && track.tpcInnerParam() <= trkSelOpt.cfgMomMIPMax) {
         if (dEdx > trkSelOpt.cfgDeDxMIPMin && dEdx < trkSelOpt.cfgDeDxMIPMax) { // MIP pions
@@ -1423,7 +1444,7 @@ struct FlattenictyPikp {
       auto v0sPerCollision = v0s.sliceBy(perColV0s, collision.globalIndex());
       v0sPerCollision.bindExternalIndices(&tracks);
       filldEdx(tracksPerCollision, v0sPerCollision, collision, bcs);
-      if (cfgFillQAHisto) {
+      if (cfgFillNsigmaQAHist) {
         fillNsigma<o2::track::PID::Pion>(tracksPerCollision, collision);
         fillNsigma<o2::track::PID::Kaon>(tracksPerCollision, collision);
         fillNsigma<o2::track::PID::Proton>(tracksPerCollision, collision);

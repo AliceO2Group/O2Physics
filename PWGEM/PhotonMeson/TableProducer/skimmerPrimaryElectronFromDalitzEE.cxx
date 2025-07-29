@@ -42,7 +42,10 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 using namespace o2::pwgem::photonmeson;
 
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::EMEventsNgPCM>;
+// using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::EMEventsNgPCM>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>;
+using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
+
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFbeta>;
 using MyTrack = MyTracks::iterator;
@@ -69,7 +72,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
   Configurable<int> min_ncluster_its{"min_ncluster_its", 4, "min ncluster its"};
   Configurable<int> min_ncluster_itsib{"min_ncluster_itsib", 1, "min ncluster itsib"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
-  Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
+  Configurable<float> maxchi2its{"maxchi2its", 36.0, "max. chi2/NclsITS"};
   Configurable<float> minpt{"minpt", 0.05, "min pt for ITS-TPC track"};
   Configurable<float> maxeta{"maxeta", 2.0, "max eta acceptance"};
   Configurable<float> dca_xy_max{"dca_xy_max", 1, "max DCAxy in cm"};
@@ -97,6 +100,10 @@ struct skimmerPrimaryElectronFromDalitzEE {
 
   void init(InitContext&)
   {
+    if (doprocessRec && doprocessRec_SWT) {
+      LOGF(fatal, "Cannot enable doprocessRec and doprocessRec_SWT at the same time. Please choose one.");
+    }
+
     mRunNumber = 0;
     d_bz = 0;
 
@@ -438,7 +445,41 @@ struct skimmerPrimaryElectronFromDalitzEE {
         continue;
       }
 
-      if (collision.ngpcm() < 1) {
+      // if (collision.ngpcm() < 1) {
+      //   continue;
+      // }
+
+      auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+      auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+
+      fillPairInfo<false, 0>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
+      if (fillLS) {
+        fillPairInfo<false, 1>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
+        fillPairInfo<false, 2>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
+      }
+    } // end of collision loop
+
+    stored_trackIds.clear();
+    stored_trackIds.shrink_to_fit();
+  }
+  PROCESS_SWITCH(skimmerPrimaryElectronFromDalitzEE, processRec, "process reconstructed info only", true); // standalone
+
+  void processRec_SWT(MyCollisionsWithSWT const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const& tracks)
+  {
+    stored_trackIds.reserve(tracks.size());
+
+    for (const auto& collision : collisions) {
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      if (!collision.isSelected()) {
+        continue;
+      }
+
+      // if (collision.ngpcm() < 1) {
+      //   continue;
+      // }
+
+      if (collision.swtaliastmp_raw() == 0) {
         continue;
       }
 
@@ -455,7 +496,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
     stored_trackIds.clear();
     stored_trackIds.shrink_to_fit();
   }
-  PROCESS_SWITCH(skimmerPrimaryElectronFromDalitzEE, processRec, "process reconstructed info only", true); // standalone
+  PROCESS_SWITCH(skimmerPrimaryElectronFromDalitzEE, processRec_SWT, "process reconstructed info with CEFP", false); // with cefp
 
   using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;
   Partition<MyFilteredTracksMC> posTracksMC = o2::aod::track::signed1Pt > 0.f;
@@ -475,9 +516,9 @@ struct skimmerPrimaryElectronFromDalitzEE {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
-      if (collision.ngpcm() < 1) {
-        continue;
-      }
+      // if (collision.ngpcm() < 1) {
+      //   continue;
+      // }
 
       auto posTracks_per_coll = posTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);

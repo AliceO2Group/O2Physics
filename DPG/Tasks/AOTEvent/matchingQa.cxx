@@ -27,7 +27,7 @@ using FullTracksIUwithLabels = soa::Join<aod::TracksIU, aod::TracksExtra, aod::M
 float bcNS = o2::constants::lhc::LHCBunchSpacingNS;
 int32_t nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
 
-MetadataHelper metadataInfo; // Metadata helper
+o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 
 struct MatchingQaTask {
   Service<o2::ccdb::BasicCCDBManager> ccdb;

@@ -195,7 +195,7 @@ struct HfTaskCharmHadImpactPar {
       if (candidate.isSelD0()) { // D0 -> Kpi
         if constexpr (doMc) {
           if (fillOnlySignal) {
-            if (std::abs(candidate.flagMcMatchRec()) != 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
+            if (std::abs(candidate.flagMcMatchRec()) != o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
               return;
             }
           }

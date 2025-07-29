@@ -16,49 +16,50 @@
 // (5) particle = 2 --> lambdastar
 // (6) 4 process function (a) Data same event (b) Data mixed event (c) MC generated (d) MC reconstructed
 
-#include <TH1F.h>
+#include "PWGLF/DataModel/EPCalibrationTables.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include "Math/GenVector/Boost.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "TF1.h"
+#include "TRandom3.h"
+#include <TDatabasePDG.h>
 #include <TDirectory.h>
+#include <TFile.h>
+#include <TH1F.h>
+#include <TH2F.h>
 #include <THn.h>
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TLorentzVector.h>
 #include <TPDGCode.h>
-#include <TDatabasePDG.h>
-#include <cmath>
+
 #include <array>
+#include <cmath>
 #include <cstdlib>
-#include <vector>
 #include <string>
-
-#include "TRandom3.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "Math/GenVector/Boost.h"
-#include "TF1.h"
-
-#include "PWGLF/DataModel/EPCalibrationTables.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/TrackSelection.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -88,8 +89,10 @@ struct phianalysisrun3_PbPb {
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
   Configurable<bool> fillOccupancy{"fillOccupancy", true, "fill Occupancy"};
   Configurable<bool> isNoTOF{"isNoTOF", false, "isNoTOF"};
+  Configurable<bool> additionalEvSel1{"additionalEvSel1", true, "Additional evsel1"};
   Configurable<bool> additionalEvSel2{"additionalEvSel2", true, "Additional evsel2"};
   Configurable<bool> additionalEvSel3{"additionalEvSel3", true, "Additional evsel3"};
+  Configurable<bool> additionalEvSel4{"additionalEvSel4", true, "Additional evsel4"};
   Configurable<bool> cfgMultFT0{"cfgMultFT0", true, "cfgMultFT0"};
   Configurable<bool> iscustomDCAcut{"iscustomDCAcut", false, "iscustomDCAcut"};
   Configurable<bool> ismanualDCAcut{"ismanualDCAcut", true, "ismanualDCAcut"};
@@ -108,10 +111,8 @@ struct phianalysisrun3_PbPb {
   ConfigurableAxis binsImpactPar{"binsImpactPar", {VARIABLE_WIDTH, 0, 3.5, 5.67, 7.45, 8.85, 10.0, 11.21, 12.26, 13.28, 14.23, 15.27}, "Binning of the impact parameter axis"};
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 12.0}, "Binning of the pT axis"};
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
-  Configurable<float> cfgCutCentrality{"cfgCutCentrality", 80.0f, "Accepted maximum Centrality"};
-  Configurable<float> cfgCutMaxOccupancy{"cfgCutMaxOccupancy", 2000.0f, "Accepted maximum Occupancy"};
-  Configurable<bool> cfgApplyOccupancyCut{"cfgApplyOccupancyCut", false, "Apply maximum Occupancy"};
   Configurable<int> cfgCutOccupancy{"cfgCutOccupancy", 3000, "Occupancy cut"};
+  Configurable<int> centestimator{"centestimator", 0, "Select multiplicity estimator: 0 - FT0C, 1 - FT0A, 2 - FT0M, 3 - FV0A, 4 - PVTracks"};
 
   Configurable<bool> genacceptancecut{"genacceptancecut", true, "use acceptance cut for generated"};
   // MC
@@ -132,6 +133,7 @@ struct phianalysisrun3_PbPb {
       histos.add("h3PhiInvMassMixed", "Invariant mass of Phi meson Mixed", kTH3F, {{200, 0.0, 200.0}, {200, 0.0f, 20.0f}, {200, 0.9, 1.1}});
       histos.add("h3PhiInvMassRot", "Invariant mass of Phi meson Rotation", kTH3F, {{200, 0.0, 200.0}, {200, 0.0f, 20.0f}, {200, 0.9, 1.1}});
       histos.add("h3PhiInvMassSame", "Invariant mass of Phi meson same", kTH3F, {{200, 0.0, 200.0}, {200, 0.0f, 20.0f}, {200, 0.9, 1.1}});
+      histos.add("h2PhiRapidity", "phi meson Rapidity", kTH2F, {{200, 0.0f, 20.0f}, {200, -4, 4}});
     } else if (isMC) {
       histos.add("hMC", "MC Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
       histos.add("EL1", "MC Event statistics", kTH1F, {impactParAxis});
@@ -145,6 +147,8 @@ struct phianalysisrun3_PbPb {
       histos.add("h1PhiRecsplit", "Phi meson Rec split", kTH1F, {{200, 0.0f, 20.0f}});
       histos.add("Centrec", "MC Centrality", kTH1F, {{200, 0.0, 200.0}});
       histos.add("Centgen", "MC Centrality", kTH1F, {{200, 0.0, 200.0}});
+      histos.add("hVtxZgen", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
+      histos.add("hVtxZrec", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
       histos.add("h2PhiRec2", "Phi meson Rec", kTH2F, {{200, 0.0f, 20.0f}, {200, 0.0, 200.0}});
       histos.add("h3PhiRec3", "Phi meson Rec", kTH3F, {{200, 0.0f, 20.0f}, {200, 0.0, 200.0}, {200, 0.9, 1.1}});
       histos.add("h3Phi1Rec3", "Phi meson Rec", kTH3F, {{200, 0.0f, 20.0f}, {200, 0.0, 200.0}, {200, 0.9, 1.1}});
@@ -178,6 +182,9 @@ struct phianalysisrun3_PbPb {
       }
     }
 
+    histos.add("hEta", "eta of kaon track candidates", HistType::kTH2F, {{200, -1.0f, 1.0f}, {200, 0.0f, 20.0f}});
+    histos.add("hPhi", "phi of kaon track candidates", HistType::kTH2F, {{65, 0, 6.5}, {200, 0.0f, 20.0f}});
+
     // DCA QA
     // DCA histograms: separate for positive and negative kaons, range [-1.0, 1.0]
     histos.add("QAbefore/trkDCAxy_pos", "DCAxy distribution of positive kaon track candidates", HistType::kTH1F, {{150, -1.0f, 1.0f}});
@@ -185,10 +192,20 @@ struct phianalysisrun3_PbPb {
     histos.add("QAbefore/trkDCAz_pos", "DCAz distribution of positive kaon track candidates", HistType::kTH1F, {{150, -1.0f, 1.0f}});
     histos.add("QAbefore/trkDCAz_neg", "DCAz distribution of negative kaon track candidates", HistType::kTH1F, {{150, -1.0f, 1.0f}});
 
+    histos.add("QAbefore/trkDCAxypt_pos", "DCAxy distribution of positive kaon track candidates", HistType::kTH2F, {{150, -1.0f, 1.0f}, {200, 0.0f, 20.0f}});
+    histos.add("QAbefore/trkDCAxypt_neg", "DCAxy distribution of negative kaon track candidates", HistType::kTH2F, {{150, -1.0f, 1.0f}, {200, 0.0f, 20.0f}});
+    histos.add("QAbefore/trkDCAzpt_pos", "DCAz distribution of positive kaon track candidates", HistType::kTH2F, {{150, -1.0f, 1.0f}, {200, 0.0f, 20.0f}});
+    histos.add("QAbefore/trkDCAzpt_neg", "DCAz distribution of negative kaon track candidates", HistType::kTH2F, {{150, -1.0f, 1.0f}, {200, 0.0f, 20.0f}});
+
     histos.add("QAafter/trkDCAxy_pos", "DCAxy distribution of positive kaon track candidates", HistType::kTH1F, {{150, -1.0f, 1.0f}});
     histos.add("QAafter/trkDCAxy_neg", "DCAxy distribution of negative kaon track candidates", HistType::kTH1F, {{150, -1.0f, 1.0f}});
     histos.add("QAafter/trkDCAz_pos", "DCAz distribution of positive kaon track candidates", HistType::kTH1F, {{150, -1.0f, 1.0f}});
     histos.add("QAafter/trkDCAz_neg", "DCAz distribution of negative kaon track candidates", HistType::kTH1F, {{150, -1.0f, 1.0f}});
+
+    histos.add("QAafter/trkDCAxypt_pos", "DCAxy distribution of positive kaon track candidates", HistType::kTH2F, {{150, -1.0f, 1.0f}, {200, 0.0f, 20.0f}});
+    histos.add("QAafter/trkDCAxypt_neg", "DCAxy distribution of negative kaon track candidates", HistType::kTH2F, {{150, -1.0f, 1.0f}, {200, 0.0f, 20.0f}});
+    histos.add("QAafter/trkDCAzpt_pos", "DCAz distribution of positive kaon track candidates", HistType::kTH2F, {{150, -1.0f, 1.0f}, {200, 0.0f, 20.0f}});
+    histos.add("QAafter/trkDCAzpt_neg", "DCAz distribution of negative kaon track candidates", HistType::kTH2F, {{150, -1.0f, 1.0f}, {200, 0.0f, 20.0f}});
     // PID QA before cuts
     histos.add("QAbefore/TOF_TPC_Mapka_all_pos", "TOF + TPC Combined PID for positive Kaon;#sigma_{TOF}^{K^{+}};#sigma_{TPC}^{K^{+}}", {HistType::kTH2D, {{100, -6, 6}, {100, -6, 6}}});
     histos.add("QAbefore/TOF_TPC_Mapka_all_neg", "TOF + TPC Combined PID for negative Kaon;#sigma_{TOF}^{K^{-}};#sigma_{TPC}^{K^{-}}", {HistType::kTH2D, {{100, -6, 6}, {100, -6, 6}}});
@@ -306,6 +323,7 @@ struct phianalysisrun3_PbPb {
     if (std::abs(rapidity) < 0.5 && track1Sign * track2Sign < 0) {
       if (unlike) {
         histos.fill(HIST("h3PhiInvMassUnlikeSign"), multiplicity, pT, mass);
+        histos.fill(HIST("h2PhiRapidity"), pT, rapidity);
       }
       if (mix) {
         histos.fill(HIST("h3PhiInvMassMixed"), multiplicity, pT, mass);
@@ -316,11 +334,11 @@ struct phianalysisrun3_PbPb {
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
-  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
+  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa>>;
 
   // using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::McCollisionLabels>;
-  using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
+  using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentFV0As>;
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                                     aod::pidTPCFullKa, aod::pidTOFFullKa,
                                                     aod::McTrackLabels>>;
@@ -331,14 +349,16 @@ struct phianalysisrun3_PbPb {
   using FilTrackMCRecTable = soa::Filtered<TrackMCRecTable>;
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
-  ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {20, 0, 100}, "multiplicity percentile for bin"};
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2000, 0, 10000}, "TPC multiplicity  for bin"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2000, 0, 10000}, "multiplicity  for bin"};
 
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
 
   SliceCache cache;
 
-  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+  using BinningTypeVertexContributor1 = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+  using BinningTypeVertexContributor2 = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0A>;
+  using BinningTypeVertexContributor3 = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+  using BinningTypeVertexContributor4 = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFV0A>;
   ROOT::Math::PxPyPzMVector PhiMesonMother, KaonPlus, KaonMinus;
   void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
@@ -351,22 +371,38 @@ struct phianalysisrun3_PbPb {
       return;
     }
     histos.fill(HIST("hEvtSelInfo"), 2.5);
-    if (additionalEvSel2 && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+    if (additionalEvSel1 && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return;
     }
     histos.fill(HIST("hEvtSelInfo"), 3.5);
-    if (additionalEvSel3 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+    if (additionalEvSel2 && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return;
     }
     histos.fill(HIST("hEvtSelInfo"), 4.5);
+    if (additionalEvSel3 && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+      return;
+    }
+    histos.fill(HIST("hEvtSelInfo"), 5.5);
+    if (additionalEvSel4 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      return;
+    }
+    histos.fill(HIST("hEvtSelInfo"), 6.5);
     int occupancy = collision.trackOccupancyInTimeRange();
     if (fillOccupancy && (occupancy > cfgCutOccupancy)) {
       return;
     }
-    histos.fill(HIST("hEvtSelInfo"), 5.5);
+    histos.fill(HIST("hEvtSelInfo"), 7.5);
     float multiplicity{-1};
-    if (cfgMultFT0)
+    if (centestimator == 0) {
       multiplicity = collision.centFT0C();
+    } else if (centestimator == 1) {
+      multiplicity = collision.centFT0A();
+    } else if (centestimator == 2) {
+      multiplicity = collision.centFT0M();
+    } else if (centestimator == 3) {
+      multiplicity = collision.centFV0A();
+    }
+
     histos.fill(HIST("hCentrality"), multiplicity);
     histos.fill(HIST("hVtxZ"), collision.posZ());
     histos.fill(HIST("hOccupancy"), occupancy);
@@ -376,17 +412,23 @@ struct phianalysisrun3_PbPb {
       }
       int track1Sign = track1.sign(); // or track1.charge(), assuming it returns ±1
 
+      histos.fill(HIST("hEta"), track1.eta(), track1.pt());
+      histos.fill(HIST("hPhi"), track1.phi(), track1.pt());
       if (track1Sign > 0) { // Positive kaon
         histos.fill(HIST("QAbefore/TPC_Nsigma_all_pos"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
         histos.fill(HIST("QAbefore/TOF_Nsigma_all_pos"), track1.tofNSigmaKa(), multiplicity, track1.pt());
         histos.fill(HIST("QAbefore/trkDCAxy_pos"), track1.dcaXY());
         histos.fill(HIST("QAbefore/trkDCAz_pos"), track1.dcaZ());
+        histos.fill(HIST("QAbefore/trkDCAxypt_pos"), track1.dcaXY(), track1.pt());
+        histos.fill(HIST("QAbefore/trkDCAzpt_pos"), track1.dcaZ(), track1.pt());
         histos.fill(HIST("QAbefore/TOF_TPC_Mapka_all_pos"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
       } else if (track1Sign < 0) { // Negative kaon
         histos.fill(HIST("QAbefore/TPC_Nsigma_all_neg"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
         histos.fill(HIST("QAbefore/TOF_Nsigma_all_neg"), track1.tofNSigmaKa(), multiplicity, track1.pt());
         histos.fill(HIST("QAbefore/trkDCAxy_neg"), track1.dcaXY());
         histos.fill(HIST("QAbefore/trkDCAz_neg"), track1.dcaZ());
+        histos.fill(HIST("QAbefore/trkDCAxypt_neg"), track1.dcaXY(), track1.pt());
+        histos.fill(HIST("QAbefore/trkDCAzpt_neg"), track1.dcaZ(), track1.pt());
         histos.fill(HIST("QAbefore/TOF_TPC_Mapka_all_neg"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
       }
 
@@ -412,12 +454,16 @@ struct phianalysisrun3_PbPb {
             histos.fill(HIST("QAafter/TOF_Nsigma_all_pos"), track1.tofNSigmaKa(), multiplicity, track1.pt());
             histos.fill(HIST("QAafter/trkDCAxy_pos"), track1.dcaXY());
             histos.fill(HIST("QAafter/trkDCAz_pos"), track1.dcaZ());
+            histos.fill(HIST("QAafter/trkDCAxypt_pos"), track1.dcaXY(), track1.pt());
+            histos.fill(HIST("QAafter/trkDCAzpt_pos"), track1.dcaZ(), track1.pt());
             histos.fill(HIST("QAafter/TOF_TPC_Mapka_all_pos"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
           } else if (track1Sign < 0) { // Negative kaon
             histos.fill(HIST("QAafter/TPC_Nsigma_all_neg"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
             histos.fill(HIST("QAafter/TOF_Nsigma_all_neg"), track1.tofNSigmaKa(), multiplicity, track1.pt());
             histos.fill(HIST("QAafter/trkDCAxy_neg"), track1.dcaXY());
             histos.fill(HIST("QAafter/trkDCAz_neg"), track1.dcaZ());
+            histos.fill(HIST("QAafter/trkDCAxypt_neg"), track1.dcaXY(), track1.pt());
+            histos.fill(HIST("QAafter/trkDCAzpt_neg"), track1.dcaZ(), track1.pt());
             histos.fill(HIST("QAafter/TOF_TPC_Mapka_all_neg"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
           }
 
@@ -432,12 +478,16 @@ struct phianalysisrun3_PbPb {
             histos.fill(HIST("QAafter/TOF_Nsigma_all_pos"), track1.tofNSigmaKa(), multiplicity, track1.pt());
             histos.fill(HIST("QAafter/trkDCAxy_pos"), track1.dcaXY());
             histos.fill(HIST("QAafter/trkDCAz_pos"), track1.dcaZ());
+            histos.fill(HIST("QAafter/trkDCAxypt_pos"), track1.dcaXY(), track1.pt());
+            histos.fill(HIST("QAafter/trkDCAzpt_pos"), track1.dcaZ(), track1.pt());
             histos.fill(HIST("QAafter/TOF_TPC_Mapka_all_pos"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
           } else if (track1Sign < 0) { // Negative kaon
             histos.fill(HIST("QAafter/TPC_Nsigma_all_neg"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
             histos.fill(HIST("QAafter/TOF_Nsigma_all_neg"), track1.tofNSigmaKa(), multiplicity, track1.pt());
             histos.fill(HIST("QAafter/trkDCAxy_neg"), track1.dcaXY());
             histos.fill(HIST("QAafter/trkDCAz_neg"), track1.dcaZ());
+            histos.fill(HIST("QAafter/trkDCAxypt_neg"), track1.dcaXY(), track1.pt());
+            histos.fill(HIST("QAafter/trkDCAzpt_neg"), track1.dcaZ(), track1.pt());
             histos.fill(HIST("QAafter/TOF_TPC_Mapka_all_neg"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
           }
 
@@ -448,12 +498,12 @@ struct phianalysisrun3_PbPb {
   }
 
   PROCESS_SWITCH(phianalysisrun3_PbPb, processSameEvent, "Process Same event", false);
-  void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
+  void processMixedEvent1(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
     //////// currently mixing the event with similar TPC multiplicity ////////
-    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
-    SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
+    BinningTypeVertexContributor1 binningOnPositions{{axisVertex, axisMultiplicity}, true};
+    SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor1> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
       if (rctCut.requireRCTFlagChecker && !rctChecker(c1)) {
         continue;
@@ -467,32 +517,87 @@ struct phianalysisrun3_PbPb {
       if (!c2.sel8()) {
         continue;
       }
-      if (additionalEvSel2 && (!c1.selection_bit(aod::evsel::kNoSameBunchPileup) || !c1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      if (additionalEvSel1 && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
         continue;
       }
-      if (additionalEvSel2 && (!c2.selection_bit(aod::evsel::kNoSameBunchPileup) || !c2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      if (additionalEvSel2 && (!c1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !c2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
         continue;
       }
-      if (additionalEvSel3 && (!c1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+      if (additionalEvSel3 && (!c1.selection_bit(aod::evsel::kNoSameBunchPileup) || !c2.selection_bit(aod::evsel::kNoSameBunchPileup))) {
         continue;
       }
-      if (additionalEvSel3 && (!c2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+      if (additionalEvSel4 && (!c1.selection_bit(aod::evsel::kIsGoodITSLayersAll) || !c2.selection_bit(aod::evsel::kIsGoodITSLayersAll))) {
         continue;
       }
       int occupancy1 = c1.trackOccupancyInTimeRange();
       int occupancy2 = c2.trackOccupancyInTimeRange();
-      if (fillOccupancy && (occupancy1 > cfgCutOccupancy)) {
-        continue;
-      }
-      if (fillOccupancy && (occupancy2 > cfgCutOccupancy)) {
+
+      if (fillOccupancy && (occupancy1 > cfgCutOccupancy || occupancy2 > cfgCutOccupancy)) {
         continue;
       }
       float multiplicity;
-      if (cfgMultFT0)
-        multiplicity = c1.centFT0C();
-      if (!cfgMultFT0)
-        multiplicity = c1.numContrib();
+      multiplicity = c1.centFT0C();
+      for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+        bool unlike = false;
+        bool mix = true;
+        if (!selectionTrack(t1)) {
+          continue;
+        }
+        if (!selectionTrack(t2)) {
+          continue;
+        }
+        if (!selectionPair(t1, t2)) {
+          continue;
+        }
+        if (!ispTdepPID && selectionPID(t1) && selectionPID(t2)) {
+          FillinvMass(t1, t2, multiplicity, unlike, mix, massKa, massKa);
+        }
+        if (ispTdepPID && selectionPIDpTdependent(t1) && selectionPIDpTdependent(t2)) {
+          FillinvMass(t1, t2, multiplicity, unlike, mix, massKa, massKa);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(phianalysisrun3_PbPb, processMixedEvent1, "Process Mixed event", false);
+  void processMixedEvent2(EventCandidates const& collisions, TrackCandidates const& tracks)
+  {
+    auto tracksTuple = std::make_tuple(tracks);
+    //////// currently mixing the event with similar TPC multiplicity ////////
+    BinningTypeVertexContributor2 binningOnPositions{{axisVertex, axisMultiplicity}, true};
+    SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor2> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
+    for (auto& [c1, tracks1, c2, tracks2] : pair) {
+      if (rctCut.requireRCTFlagChecker && !rctChecker(c1)) {
+        continue;
+      }
+      if (rctCut.requireRCTFlagChecker && !rctChecker(c2)) {
+        continue;
+      }
+      if (!c1.sel8()) {
+        continue;
+      }
+      if (!c2.sel8()) {
+        continue;
+      }
+      if (additionalEvSel1 && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
+        continue;
+      }
+      if (additionalEvSel2 && (!c1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !c2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (additionalEvSel3 && (!c1.selection_bit(aod::evsel::kNoSameBunchPileup) || !c2.selection_bit(aod::evsel::kNoSameBunchPileup))) {
+        continue;
+      }
+      if (additionalEvSel4 && (!c1.selection_bit(aod::evsel::kIsGoodITSLayersAll) || !c2.selection_bit(aod::evsel::kIsGoodITSLayersAll))) {
+        continue;
+      }
+      int occupancy1 = c1.trackOccupancyInTimeRange();
+      int occupancy2 = c2.trackOccupancyInTimeRange();
 
+      if (fillOccupancy && (occupancy1 > cfgCutOccupancy || occupancy2 > cfgCutOccupancy)) {
+        continue;
+      }
+      float multiplicity;
+      multiplicity = c1.centFT0A();
       for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         bool unlike = false;
         bool mix = true;
@@ -515,7 +620,131 @@ struct phianalysisrun3_PbPb {
     }
   }
 
-  PROCESS_SWITCH(phianalysisrun3_PbPb, processMixedEvent, "Process Mixed event", false);
+  PROCESS_SWITCH(phianalysisrun3_PbPb, processMixedEvent2, "Process Mixed event", false);
+  void processMixedEvent3(EventCandidates const& collisions, TrackCandidates const& tracks)
+  {
+    auto tracksTuple = std::make_tuple(tracks);
+    //////// currently mixing the event with similar TPC multiplicity ////////
+    BinningTypeVertexContributor3 binningOnPositions{{axisVertex, axisMultiplicity}, true};
+    SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor3> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
+    for (auto& [c1, tracks1, c2, tracks2] : pair) {
+      if (rctCut.requireRCTFlagChecker && !rctChecker(c1)) {
+        continue;
+      }
+      if (rctCut.requireRCTFlagChecker && !rctChecker(c2)) {
+        continue;
+      }
+      if (!c1.sel8()) {
+        continue;
+      }
+      if (!c2.sel8()) {
+        continue;
+      }
+      if (additionalEvSel1 && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
+        continue;
+      }
+      if (additionalEvSel2 && (!c1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !c2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (additionalEvSel3 && (!c1.selection_bit(aod::evsel::kNoSameBunchPileup) || !c2.selection_bit(aod::evsel::kNoSameBunchPileup))) {
+        continue;
+      }
+      if (additionalEvSel4 && (!c1.selection_bit(aod::evsel::kIsGoodITSLayersAll) || !c2.selection_bit(aod::evsel::kIsGoodITSLayersAll))) {
+        continue;
+      }
+      int occupancy1 = c1.trackOccupancyInTimeRange();
+      int occupancy2 = c2.trackOccupancyInTimeRange();
+
+      if (fillOccupancy && (occupancy1 > cfgCutOccupancy || occupancy2 > cfgCutOccupancy)) {
+        continue;
+      }
+      float multiplicity;
+      multiplicity = c1.centFT0M();
+      for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+        bool unlike = false;
+        bool mix = true;
+        if (!selectionTrack(t1)) {
+          continue;
+        }
+        if (!selectionTrack(t2)) {
+          continue;
+        }
+        if (!selectionPair(t1, t2)) {
+          continue;
+        }
+        if (!ispTdepPID && selectionPID(t1) && selectionPID(t2)) {
+          FillinvMass(t1, t2, multiplicity, unlike, mix, massKa, massKa);
+        }
+        if (ispTdepPID && selectionPIDpTdependent(t1) && selectionPIDpTdependent(t2)) {
+          FillinvMass(t1, t2, multiplicity, unlike, mix, massKa, massKa);
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(phianalysisrun3_PbPb, processMixedEvent3, "Process Mixed event", false);
+  void processMixedEvent4(EventCandidates const& collisions, TrackCandidates const& tracks)
+  {
+    auto tracksTuple = std::make_tuple(tracks);
+    //////// currently mixing the event with similar TPC multiplicity ////////
+    BinningTypeVertexContributor4 binningOnPositions{{axisVertex, axisMultiplicity}, true};
+    SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor4> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
+    for (auto& [c1, tracks1, c2, tracks2] : pair) {
+      if (rctCut.requireRCTFlagChecker && !rctChecker(c1)) {
+        continue;
+      }
+      if (rctCut.requireRCTFlagChecker && !rctChecker(c2)) {
+        continue;
+      }
+      if (!c1.sel8()) {
+        continue;
+      }
+      if (!c2.sel8()) {
+        continue;
+      }
+      if (additionalEvSel1 && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
+        continue;
+      }
+      if (additionalEvSel2 && (!c1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !c2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (additionalEvSel3 && (!c1.selection_bit(aod::evsel::kNoSameBunchPileup) || !c2.selection_bit(aod::evsel::kNoSameBunchPileup))) {
+        continue;
+      }
+      if (additionalEvSel4 && (!c1.selection_bit(aod::evsel::kIsGoodITSLayersAll) || !c2.selection_bit(aod::evsel::kIsGoodITSLayersAll))) {
+        continue;
+      }
+      int occupancy1 = c1.trackOccupancyInTimeRange();
+      int occupancy2 = c2.trackOccupancyInTimeRange();
+
+      if (fillOccupancy && (occupancy1 > cfgCutOccupancy || occupancy2 > cfgCutOccupancy)) {
+        continue;
+      }
+      float multiplicity;
+      multiplicity = c1.centFV0A();
+      for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+        bool unlike = false;
+        bool mix = true;
+        if (!selectionTrack(t1)) {
+          continue;
+        }
+        if (!selectionTrack(t2)) {
+          continue;
+        }
+        if (!selectionPair(t1, t2)) {
+          continue;
+        }
+        if (!ispTdepPID && selectionPID(t1) && selectionPID(t2)) {
+          FillinvMass(t1, t2, multiplicity, unlike, mix, massKa, massKa);
+        }
+        if (ispTdepPID && selectionPIDpTdependent(t1) && selectionPIDpTdependent(t2)) {
+          FillinvMass(t1, t2, multiplicity, unlike, mix, massKa, massKa);
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(phianalysisrun3_PbPb, processMixedEvent4, "Process Mixed event", false);
   void processRotEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
     if (!collision.sel8()) {
@@ -802,6 +1031,7 @@ struct phianalysisrun3_PbPb {
       histos.fill(HIST("hOccupancy1"), occupancy);
       multiplicity = collision.centFT0C();
       histos.fill(HIST("Centgen"), multiplicity);
+      histos.fill(HIST("hVtxZgen"), collision.mcCollision().posZ());
       histos.fill(HIST("hImpactParameterGenCen"), imp, multiplicity);
 
       SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
@@ -870,6 +1100,7 @@ struct phianalysisrun3_PbPb {
     }
     auto multiplicity = collision.centFT0C();
     histos.fill(HIST("Centrec"), multiplicity);
+    histos.fill(HIST("hVtxZrec"), collision.posZ());
     float imp = collision.mcCollision().impactParameter();
     histos.fill(HIST("hImpactParameterRec"), imp);
     histos.fill(HIST("hImpactParameterRecCen"), imp, multiplicity);
@@ -1049,8 +1280,8 @@ struct phianalysisrun3_PbPb {
   {
 
     auto tracksTuple = std::make_tuple(RecTracks);
-    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
-    SameKindPair<EventCandidatesMC, TrackCandidatesMC, BinningTypeVertexContributor> pairs{binningOnPositions, cfgNoMixedEvents, -1, recCollisions, tracksTuple, &cache};
+    BinningTypeVertexContributor1 binningOnPositions{{axisVertex, axisMultiplicity}, true};
+    SameKindPair<EventCandidatesMC, TrackCandidatesMC, BinningTypeVertexContributor1> pairs{binningOnPositions, cfgNoMixedEvents, -1, recCollisions, tracksTuple, &cache};
 
     for (auto& [c1, tracks1, c2, tracks2] : pairs) {
       if (!c1.sel8()) {
