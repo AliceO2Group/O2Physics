@@ -47,7 +47,12 @@ struct RecoDecay {
                     Prompt,
                     NonPrompt };
 
-  static constexpr int8_t StatusCodeAfterFlavourOscillation = 92; // decay products after B0(s) flavour oscillation
+  static constexpr int8_t StatusCodeAfterFlavourOscillation{92}; // decay products after B0(s) flavour oscillation
+  static constexpr int PdgQuarkMax{8};                           // largest quark PDG code; o2-linter: disable=pdg/explicit-code (t' does not have a named constant.)
+  static constexpr int PdgBosonMin{PDG_t::kGluon};               // smallest boson PDG code
+  static constexpr int PdgBosonMax{37};                          // largest boson PDG code; o2-linter: disable=pdg/explicit-code (H+ does not have a named constant.)
+  static constexpr int PdgDivisorMeson{100};                     // order of magnitude of the meson PDG codes
+  static constexpr int PdgDivisorBaryon{1000};                   // order of magnitude of the baryon PDG codes
 
   // Auxiliary functions
 
@@ -445,7 +450,7 @@ struct RecoDecay {
     std::array<double, 3> momTotal{0., 0., 0.}; // candidate momentum vector
     double energyTot{0.};                       // candidate energy
     for (std::size_t iProng = 0; iProng < N; ++iProng) {
-      for (std::size_t iMom = 0; iMom < 3; ++iMom) {
+      for (std::size_t iMom = 0; iMom < 3; ++iMom) { // o2-linter: disable=magic-number ({x, y, z} coordinates)
         momTotal[iMom] += arrMom[iProng][iMom];
       } // loop over momentum components
       energyTot += e(arrMom[iProng], arrMass[iProng]);
@@ -1014,7 +1019,7 @@ struct RecoDecay {
     arrayIds.push_back(initVec); // the first vector contains the index of the original particle
     auto pdgParticle = std::abs(particle.pdgCode());
     bool couldBePrompt = false;
-    if (pdgParticle / 100 == kCharm || pdgParticle / 1000 == kCharm) {
+    if (pdgParticle / PdgDivisorMeson == kCharm || pdgParticle / PdgDivisorBaryon == kCharm) {
       couldBePrompt = true;
     }
     while (arrayIds[-stage].size() > 0) {
@@ -1024,11 +1029,11 @@ struct RecoDecay {
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
 
-          // we exit immediately if searchUpToQuark is false and the first mother is a parton (an hadron should never be the mother of a parton)
+          // we exit immediately if searchUpToQuark is false and the first mother is a quark or a boson (a hadron should never be the mother of a parton)
           if (!searchUpToQuark) {
             auto mother = particlesMC.rawIteratorAt(particleMother.mothersIds().front() - particlesMC.offset());
             auto pdgParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
-            if (pdgParticleIMother < 9 || (pdgParticleIMother > 20 && pdgParticleIMother < 38)) {
+            if (pdgParticleIMother <= PdgQuarkMax || (pdgParticleIMother >= PdgBosonMin && pdgParticleIMother <= PdgBosonMax)) {
               return OriginType::Prompt;
             }
           }
@@ -1047,8 +1052,8 @@ struct RecoDecay {
 
             if (searchUpToQuark) {
               if (idxBhadMothers) {
-                if (pdgParticleIMother / 100 == kBottom || // b mesons
-                    pdgParticleIMother / 1000 == kBottom)  // b baryons
+                if (pdgParticleIMother / PdgDivisorMeson == kBottom || // b mesons
+                    pdgParticleIMother / PdgDivisorBaryon == kBottom)  // b baryons
                 {
                   idxBhadMothers->push_back(iMother);
                 }
@@ -1061,8 +1066,8 @@ struct RecoDecay {
               }
             } else {
               if (
-                (pdgParticleIMother / 100 == kBottom || // b mesons
-                 pdgParticleIMother / 1000 == kBottom)  // b baryons
+                (pdgParticleIMother / PdgDivisorMeson == kBottom || // b mesons
+                 pdgParticleIMother / PdgDivisorBaryon == kBottom)  // b baryons
               ) {
                 if (idxBhadMothers) {
                   idxBhadMothers->push_back(iMother);
@@ -1070,8 +1075,8 @@ struct RecoDecay {
                 return OriginType::NonPrompt;
               }
               if (
-                (pdgParticleIMother / 100 == kCharm || // c mesons
-                 pdgParticleIMother / 1000 == kCharm)  // c baryons
+                (pdgParticleIMother / PdgDivisorMeson == kCharm || // c mesons
+                 pdgParticleIMother / PdgDivisorBaryon == kCharm)  // c baryons
               ) {
                 couldBePrompt = true;
               }
@@ -1112,7 +1117,7 @@ struct RecoDecay {
     arrayIds.push_back(initVec); // the first vector contains the index of the original particle
     auto pdgParticle = std::abs(particle.pdgCode());
     bool couldBeCharm = false;
-    if (pdgParticle / 100 == kCharm || pdgParticle / 1000 == kCharm) {
+    if (pdgParticle / PdgDivisorMeson == kCharm || pdgParticle / PdgDivisorBaryon == kCharm) {
       couldBeCharm = true;
     }
     while (arrayIds[-stage].size() > 0) {
@@ -1122,21 +1127,21 @@ struct RecoDecay {
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
 
-          // we break immediately if searchUpToQuark is false and the first mother is a parton (an hadron should never be the mother of a parton)
+          // we exit immediately if searchUpToQuark is false and the first mother is a quark or a boson (a hadron should never be the mother of a parton)
           if (!searchUpToQuark) {
             auto mother = particlesMC.rawIteratorAt(particleMother.mothersIds().front() - particlesMC.offset());
             auto pdgParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
-            if (pdgParticleIMother < 9 || (pdgParticleIMother > 20 && pdgParticleIMother < 38)) {
+            if (pdgParticleIMother <= PdgQuarkMax || (pdgParticleIMother >= PdgBosonMin && pdgParticleIMother <= PdgBosonMax)) {
               // auto PDGPaticle = std::abs(particleMother.pdgCode());
               if (
-                (pdgParticle / 100 == kBottom || // b mesons
-                 pdgParticle / 1000 == kBottom)  // b baryons
+                (pdgParticle / PdgDivisorMeson == kBottom || // b mesons
+                 pdgParticle / PdgDivisorBaryon == kBottom)  // b baryons
               ) {
                 return OriginType::NonPrompt; // beauty
               }
               if (
-                (pdgParticle / 100 == kCharm || // c mesons
-                 pdgParticle / 1000 == kCharm)  // c baryons
+                (pdgParticle / PdgDivisorMeson == kCharm || // c mesons
+                 pdgParticle / PdgDivisorBaryon == kCharm)  // c baryons
               ) {
                 return OriginType::Prompt; // charm
               }
@@ -1160,8 +1165,8 @@ struct RecoDecay {
 
             if (searchUpToQuark) {
               if (idxBhadMothers) {
-                if (pdgParticleIMother / 100 == kBottom || // b mesons
-                    pdgParticleIMother / 1000 == kBottom)  // b baryons
+                if (pdgParticleIMother / PdgDivisorMeson == kBottom || // b mesons
+                    pdgParticleIMother / PdgDivisorBaryon == kBottom)  // b baryons
                 {
                   idxBhadMothers->push_back(iMother);
                 }
@@ -1174,8 +1179,8 @@ struct RecoDecay {
               }
             } else {
               if (
-                (pdgParticleIMother / 100 == kBottom || // b mesons
-                 pdgParticleIMother / 1000 == kBottom)  // b baryons
+                (pdgParticleIMother / PdgDivisorMeson == kBottom || // b mesons
+                 pdgParticleIMother / PdgDivisorBaryon == kBottom)  // b baryons
               ) {
                 if (idxBhadMothers) {
                   idxBhadMothers->push_back(iMother);
@@ -1183,8 +1188,8 @@ struct RecoDecay {
                 return OriginType::NonPrompt; // beauty
               }
               if (
-                (pdgParticleIMother / 100 == kCharm || // c mesons
-                 pdgParticleIMother / 1000 == kCharm)  // c baryons
+                (pdgParticleIMother / PdgDivisorMeson == kCharm || // c mesons
+                 pdgParticleIMother / PdgDivisorBaryon == kCharm)  // c baryons
               ) {
                 couldBeCharm = true;
               }
