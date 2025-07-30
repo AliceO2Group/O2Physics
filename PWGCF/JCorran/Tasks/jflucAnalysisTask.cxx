@@ -54,6 +54,7 @@ struct jflucAnalysisTask {
   O2_DEFINE_CONFIGURABLE(etamax, float, 0.8, "Maximum eta for tracks");
   O2_DEFINE_CONFIGURABLE(ptmin, float, 0.2, "Minimum pt for tracks");
   O2_DEFINE_CONFIGURABLE(ptmax, float, 5.0, "Maximum pt for tracks");
+  O2_DEFINE_CONFIGURABLE(cfgCentBinsForMC, int, 0, "0 = OFF and 1 = ON for data like multiplicity/centrality bins for MC process");
 
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity / centrality axis for histograms"};
   ConfigurableAxis phiAxis{"axisPhi", {50, 0.0, o2::constants::math::TwoPI}, "phi axis for histograms"};
@@ -169,9 +170,24 @@ struct jflucAnalysisTask {
   }
   PROCESS_SWITCH(jflucAnalysisTask, processCF2ProngDerivedCorrected, "Process CF derived data with 2-prongs as POI and charged particles as REF with corrections.", false);
 
-  void processMCCFDerived(aod::CFMcCollision const& mcCollision, soa::Filtered<aod::CFMcParticles> const& particles)
+  void processMCCFDerived(aod::CFMcCollision const& mcCollision, soa::Filtered<aod::CFMcParticles> const& particles, soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions)
   {
-    analyze(mcCollision, particles);
+    auto multiplicity = mcCollision.multiplicity();
+    if (cfgCentBinsForMC > 0) {
+      if (collisions.size() == 0) {
+        return;
+      }
+      for (const auto& collision : collisions) {
+        multiplicity = collision.multiplicity();
+      }
+    }
+    pcf->Init();
+    pcf->SetEventCentrality(multiplicity);
+    pcf->SetEventVertex(mcCollision.posZ());
+    pcf->FillQA(particles);
+    qvecs.Calculate(particles, etamin, etamax);
+    pcf->SetJQVectors(&qvecs);
+    pcf->UserExec("");
   }
   PROCESS_SWITCH(jflucAnalysisTask, processMCCFDerived, "Process CF derived MC data", false);
 
