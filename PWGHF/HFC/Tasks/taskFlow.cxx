@@ -153,8 +153,8 @@ struct HfTaskFlow {
                        (aod::track::pt > ptTpcTrackMin) &&
                        requireGlobalTrackWoPtEtaInFilter();
 
-  Filter mftTrackEtaFilter = (aod::fwdtrack::eta < etaMftTrackMin) &&
-                             (aod::fwdtrack::eta > etaMftTrackMax);
+  Filter mftTrackEtaFilter = (aod::fwdtrack::eta < etaMftTrackMax) &&
+                             (aod::fwdtrack::eta > etaMftTrackMin);
 
   // Filters below will be used for uncertainties
   // Filter mftTrackCollisionIdFilter = (aod::fwdtrack::bestCollisionId >= 0);
