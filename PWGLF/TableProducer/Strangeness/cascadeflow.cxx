@@ -907,7 +907,8 @@ struct cascadeFlow {
       histos.fill(HIST("hCascadeSignal"), counter);
 
       // PDG cascades
-      if (isCascCandidate)  fillTrainingTable(coll, casc, pdgCode); //I only store cascades that passed PID and track quality selections
+      if (isCascCandidate)
+        fillTrainingTable(coll, casc, pdgCode); // I only store cascades that passed PID and track quality selections
     }
   }
 
@@ -970,10 +971,11 @@ struct cascadeFlow {
 
       int counter = 0;
       bool isCascCandidate = 0;
-      isCascCandidate =  IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
+      isCascCandidate = IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
       histos.fill(HIST("hCascade"), counter);
       histos.fill(HIST("hCascadeDauSel"), (int)isCascCandidate);
-      if (!isCascCandidate) continue;
+      if (!isCascCandidate)
+        continue;
 
       // ML selections
       bool isSelectedCasc[2]{false, false};
@@ -1251,7 +1253,8 @@ struct cascadeFlow {
       isCascCandidate = IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
       histos.fill(HIST("hCascade"), counter);
       histos.fill(HIST("hCascadeDauSel"), (int)isCascCandidate);
-      if (!isCascCandidate) continue;
+      if (!isCascCandidate)
+        continue;
 
       // ML selections
       bool isSelectedCasc[nParticles]{false, false};
@@ -1694,8 +1697,8 @@ struct cascadeFlow {
       isCascCandidate = IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
       histos.fill(HIST("hCascade"), counter);
       histos.fill(HIST("hCascadeDauSel"), (int)isCascCandidate);
-      if (!isCascCandidate) continue;
-
+      if (!isCascCandidate)
+        continue;
 
       // ML selections
       bool isSelectedCasc[nParticles]{false, false};
@@ -1844,7 +1847,8 @@ struct cascadeFlow {
       isCascCandidate = IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
       histos.fill(HIST("hCascade"), counter);
       histos.fill(HIST("hCascadeDauSel"), (int)isCascCandidate);
-      if (!isCascCandidate) continue;
+      if (!isCascCandidate)
+        continue;
 
       // ML selections
       bool isSelectedCasc[nParticles]{false, false};
