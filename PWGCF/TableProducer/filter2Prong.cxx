@@ -251,6 +251,29 @@ struct Filter2Prong {
   }
   PROCESS_SWITCH(Filter2Prong, processMC, "Process MC 2-prong daughters", false);
 
+  void processMCGeneric(aod::McCollisions::iterator const&, aod::CFMcParticleRefs const& cfmcparticles)
+  {
+    // The main filter outputs the primary MC particles. Here we just resolve the daughter indices that are needed for the efficiency matching.
+    for (const auto& r : cfmcparticles) {
+      const auto& mcParticle = r.mcParticle();
+      if (mcParticle.daughtersIds().size() != 2) {
+        output2ProngMcParts(-1, -1, aod::cf2prongtrack::Generic2Prong); // not a 2-prong
+        continue;
+      }
+      int prongCFId[2] = {-1, -1};
+      for (uint i = 0; i < 2; ++i) {
+        for (const auto& cfmcpart : cfmcparticles) {
+          if (mcParticle.daughtersIds()[i] == cfmcpart.mcParticleId()) {
+            prongCFId[i] = cfmcpart.globalIndex();
+            break;
+          }
+        }
+      }
+      output2ProngMcParts(prongCFId[0], prongCFId[1], aod::cf2prongtrack::Generic2Prong); // the 2-prong Phi, for example, can be checked through its daughters
+    }
+  }
+  PROCESS_SWITCH(Filter2Prong, processMCGeneric, "Process generic MC 2-prong daughters", false);
+
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
