@@ -897,7 +897,7 @@ struct he3HadronFemto {
     }
   }
 
-  void searchForCommonMotherTrack(const std::vector<unsigned int>& motherHe3Idxs, const std::vector<unsigned int>& motherHadIdxs, const aod::McParticles& mcParticles, McIter& motherParticle, He3HadCandidate& he3Hadcand, bool & isMixedPair, const int motherPdgCode)
+  void searchForCommonMotherTrack(const std::vector<unsigned int>& motherHe3Idxs, const std::vector<unsigned int>& motherHadIdxs, const aod::McParticles& mcParticles, McIter& motherParticle, He3HadCandidate& he3Hadcand, bool& isMixedPair, const int motherPdgCode)
   {
     std::unordered_set<unsigned int> motherHe3SetIdxs(motherHe3Idxs.begin(), motherHe3Idxs.end());
     for (const auto& motherHadIdx : motherHadIdxs) {
@@ -915,7 +915,6 @@ struct he3HadronFemto {
     if (!isMixedPair) {
       he3Hadcand.flags |= Flags::kBothFromLi4;
     }
-
   }
 
   template <typename Tcollisions, typename TmcParticles>
