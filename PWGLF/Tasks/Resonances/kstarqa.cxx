@@ -102,6 +102,12 @@ struct Kstarqa {
     Configurable<float> cfgRCRFC{"cfgRCRFC", 0.8f, "Crossed Rows to Findable Clusters"};
     Configurable<float> cfgITSChi2NCl{"cfgITSChi2NCl", 36.0, "ITS Chi2/NCl"};
     Configurable<float> cfgTPCChi2NCl{"cfgTPCChi2NCl", 4.0, "TPC Chi2/NCl"};
+    Configurable<bool> cfgUseITSTPCRefit{"cfgUseITSTPCRefit", false, "Require ITS Refit"};
+
+    // cuts on mother
+    Configurable<bool> isApplyCutsOnMother{"isApplyCutsOnMother", false, "Enable additional cuts on Kstar mother"};
+    Configurable<float> cMaxPtMotherCut{"cMaxPtMotherCut", 15.0, "Maximum pt of mother cut"};
+    Configurable<float> cMaxMinvMotherCut{"cMaxMinvMotherCut", 1.5, "Maximum mass of mother cut"};
 
     // Other fixed variables
     float lowPtCutPID = 0.5;
@@ -405,8 +411,31 @@ struct Kstarqa {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (selectionConfig.isGlobalTracks && !(candidate.isGlobalTrackWoDCA() && candidate.isPVContributor() && std::abs(candidate.dcaXY()) < selectionConfig.cfgCutDCAxy && std::abs(candidate.dcaZ()) < selectionConfig.cfgCutDCAz && candidate.itsNCls() > selectionConfig.cfgITScluster && candidate.tpcNClsFound() > selectionConfig.cfgTPCcluster && std::abs(candidate.eta()) < selectionConfig.cfgCutEta && std::abs(candidate.pt()) > selectionConfig.cfgCutPT)) {
-      return false;
+    if (selectionConfig.isGlobalTracks) {
+      if (!candidate.isGlobalTrackWoDCA())
+        return false;
+      if (std::abs(candidate.pt()) < selectionConfig.cfgCutPT)
+        return false;
+      if (std::abs(candidate.eta()) > selectionConfig.cfgCutEta)
+        return false;
+      if (std::abs(candidate.dcaXY()) > selectionConfig.cfgCutDCAxy)
+        return false;
+      if (std::abs(candidate.dcaZ()) > selectionConfig.cfgCutDCAz)
+        return false;
+      if (candidate.tpcCrossedRowsOverFindableCls() < selectionConfig.cfgRCRFC)
+        return false;
+      if (candidate.itsNCls() < selectionConfig.cfgITScluster)
+        return false;
+      if (candidate.tpcNClsFound() < selectionConfig.cfgTPCcluster)
+        return false;
+      if (candidate.itsChi2NCl() >= selectionConfig.cfgITSChi2NCl)
+        return false;
+      if (candidate.tpcChi2NCl() >= selectionConfig.cfgTPCChi2NCl)
+        return false;
+      if (selectionConfig.cfgPVContributor && !candidate.isPVContributor())
+        return false;
+      if (selectionConfig.cfgUseITSTPCRefit && (!(o2::aod::track::ITSrefit) || !(o2::aod::track::TPCrefit)))
+        return false;
     } else if (!selectionConfig.isGlobalTracks) {
       if (std::abs(candidate.pt()) < selectionConfig.cfgCutPT)
         return false;
@@ -944,6 +973,13 @@ struct Kstarqa {
       daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
       mother = daughter1 + daughter2; // Kstar meson
 
+      if (selectionConfig.isApplyCutsOnMother) {
+        if (mother.Pt() >= selectionConfig.cMaxPtMotherCut) // excluding candidates in overflow
+          continue;
+        if (mother.M() >= selectionConfig.cMaxMinvMotherCut) // excluding candidates in overflow
+          continue;
+      }
+
       hOthers.fill(HIST("hKstar_Rap"), mother.Rapidity());
       hOthers.fill(HIST("hKstar_Eta"), mother.Eta());
 
@@ -1102,6 +1138,13 @@ struct Kstarqa {
 
       if (std::abs(mcParticle.y()) >= selectionConfig.rapidityMotherData) {
         continue;
+      }
+
+      if (selectionConfig.isApplyCutsOnMother) {
+        if (mcParticle.pt() >= selectionConfig.cMaxPtMotherCut) // excluding candidates in overflow
+          continue;
+        if ((std::sqrt(mcParticle.e() * mcParticle.e() - mcParticle.p() * mcParticle.p())) >= selectionConfig.cMaxMinvMotherCut) // excluding candidates in overflow
+          continue;
       }
 
       if (std::abs(mcParticle.pdgCode()) != o2::constants::physics::kK0Star892) {
@@ -1347,6 +1390,13 @@ struct Kstarqa {
               } else if (applypTdepPID && !(selectionPIDNew(track1, 1) && selectionPIDNew(track2, 0))) { // kaon and pion
                 continue;
               }
+            }
+
+            if (selectionConfig.isApplyCutsOnMother) {
+              if (mothertrack1.pt() >= selectionConfig.cMaxPtMotherCut) // excluding candidates in overflow
+                continue;
+              if ((std::sqrt(mothertrack1.e() * mothertrack1.e() - mothertrack1.p() * mothertrack1.p())) >= selectionConfig.cMaxMinvMotherCut) // excluding candidates in overflow
+                continue;
             }
 
             if (avoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
