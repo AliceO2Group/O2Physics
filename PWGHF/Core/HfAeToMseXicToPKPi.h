@@ -66,7 +66,7 @@ class HfAeToMseXicToPKPi : public HfMlResponse<TypeOutputScore>
   void unsetMinMaxScaling(std::vector<float>& yOut, std::vector<float> yIn, std::vector<float> scaleMin, std::vector<float> scaleMax)
   {
     yOut.clear();                             // initial clear to avoid multiple filling if setMinMax o setScaling are called more than once
-    for (size_t j = 0; j < yIn.size(); ++j ){ // loop for over the features
+    for (size_t j = 0; j < yIn.size(); ++j ) { // loop for over the features
       // MinMax scaling of the input features
       LOG(debug) << "--------------> MinMax unscaling Debug \t" << scaleMin.at(j) << "\t" << scaleMax.at(j);
       yOut.push_back(yIn.at(j) * (scaleMax.at(j) - scaleMin.at(j)) + scaleMin.at(j));
