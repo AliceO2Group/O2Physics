@@ -752,7 +752,7 @@ class pidTPCModule
       }
 
       auto makePidTablesDefault = [&trk, &tpcSignalToEvaluatePID, &multTPC, &network_prediction, &count_tracks, &tracksForNet_size, this](const int flagFull, auto& tableFull, const int flagTiny, auto& tableTiny, const o2::track::PID::ID pid) {
-        makePidTables(flagFull, tableFull, flagTiny, tableTiny, pid, tpcSignalToEvaluatePID, trk, multTPC, network_prediction, count_tracks, tracksForNet_size);
+        this->makePidTables(flagFull, tableFull, flagTiny, tableTiny, pid, tpcSignalToEvaluatePID, trk, multTPC, network_prediction, count_tracks, tracksForNet_size);
       };
 
       makePidTablesDefault(pidTPCopts.pidFullEl, products.tablePIDFullEl, pidTPCopts.pidTinyEl, products.tablePIDTinyEl, o2::track::PID::Electron);
