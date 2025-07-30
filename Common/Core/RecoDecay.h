@@ -116,7 +116,7 @@ struct RecoDecay {
 
   /// Calculates scalar product of vectors.
   /// \note Promotes numbers to double to avoid precision loss in float multiplication.
-  /// \param N  dimension
+  /// \tparam N  dimension
   /// \param vec1,vec2  vectors
   /// \return scalar product
   template <std::size_t N, typename T, typename U>
@@ -143,7 +143,7 @@ struct RecoDecay {
   }
 
   /// Calculates magnitude squared of a vector.
-  /// \param N  dimension
+  /// \tparam N  dimension
   /// \param vec  vector
   /// \return magnitude squared
   template <std::size_t N, typename T>
@@ -441,7 +441,7 @@ struct RecoDecay {
   }
 
   /// Calculates invariant mass squared from momenta and masses of several particles (prongs).
-  /// \param N  number of prongs
+  /// \tparam N  number of prongs
   /// \param arrMom  array of N 3-momentum arrays
   /// \param arrMass  array of N masses (in the same order as arrMom)
   /// \return invariant mass squared
@@ -541,6 +541,7 @@ struct RecoDecay {
   }
 
   /// Finds the mother of an MC particle by looking for the expected PDG code in the mother chain.
+  /// \tparam acceptFlavourOscillation  switch to accept decays where the mother oscillated (e.g. B0 -> B0bar)
   /// \param particlesMC  table with MC particles
   /// \param particle  MC particle
   /// \param pdgMother  expected mother PDG code
@@ -619,7 +620,7 @@ struct RecoDecay {
   }
 
   /// Gets the complete list of indices of final-state daughters of an MC particle.
-  /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
+  /// \tparam checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \param particle  MC particle
   /// \param list  vector where the indices of final-state daughters will be added
   /// \param arrPdgFinal  array of PDG codes of particles to be considered final if found
@@ -692,7 +693,7 @@ struct RecoDecay {
   }
 
   /// Checks whether the reconstructed decay candidate is the expected decay.
-  /// \tparam acceptFlavourOscillation  switch to accept flavour oscillastion (i.e. B0 -> B0bar -> D+pi-)
+  /// \tparam acceptFlavourOscillation  switch to accept decays where the mother oscillated (e.g. B0 -> B0bar)
   /// \tparam checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \tparam acceptIncompleteReco  switch to accept candidates with only part of the daughters reconstructed
   /// \tparam acceptTrackDecay  switch to accept candidates with daughter tracks of pions and kaons which decayed
@@ -877,7 +878,8 @@ struct RecoDecay {
   }
 
   /// Checks whether the MC particle is the expected one.
-  /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
+  /// \tparam acceptFlavourOscillation  switch to accept decays where the mother oscillated (e.g. B0 -> B0bar)
+  /// \tparam checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \param particlesMC  table with MC particles
   /// \param candidate  candidate MC particle
   /// \param pdgParticle  expected particle PDG code
@@ -896,7 +898,8 @@ struct RecoDecay {
   }
 
   /// Check whether the MC particle is the expected one and whether it decayed via the expected decay channel.
-  /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
+  /// \tparam acceptFlavourOscillation  switch to accept decays where the mother oscillated (e.g. B0 -> B0bar)
+  /// \tparam checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \param particlesMC  table with MC particles
   /// \param candidate  candidate MC particle
   /// \param pdgParticle  expected particle PDG code
