@@ -12,25 +12,27 @@
 /// \author Dong Jo Kim (djkim@jyu.fi)
 /// \since Sep 2022
 
-#include <deque>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
 #include "ReconstructionDataFormats/V0.h"
+
+#include <deque>
 
 // #include "CCDB/BasicCCDBManager.h"
 
-#include "PWGCF/JCorran/DataModel/JCatalyst.h"
-#include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "JFFlucAnalysis.h"
 #include "JFFlucAnalysisO2Hist.h"
+
+#include "PWGCF/DataModel/CorrelationsDerived.h"
+#include "PWGCF/JCorran/DataModel/JCatalyst.h"
+
 #include "Framework/runDataProcessing.h"
 
 using namespace o2;
@@ -60,8 +62,9 @@ struct jflucAnalysisTask {
   ConfigurableAxis ptAxis{"axisPt", {60, 0.0, 300.0}, "pt axis for histograms"};
   ConfigurableAxis massAxis{"axisMass", {1, 0.0, 10.0}, "mass axis for histograms"};
 
-  Filter jtrackFilter = (aod::jtrack::pt > ptmin) && (aod::jtrack::pt < ptmax);    // eta cuts done by jfluc
-  Filter cftrackFilter = (aod::cftrack::pt > ptmin) && (aod::cftrack::pt < ptmax); // eta cuts done by jfluc
+  Filter jtrackFilter = (aod::jtrack::pt > ptmin) && (aod::jtrack::pt < ptmax);                   // eta cuts done by jfluc
+  Filter cftrackFilter = (aod::cftrack::pt > ptmin) && (aod::cftrack::pt < ptmax);                // eta cuts done by jfluc
+  Filter cfmcparticleFilter = (aod::cfmcparticle::pt > ptmin) && (aod::cfmcparticle::pt < ptmax); // eta cuts done by jfluc
   Filter cf2pFilter = (aod::cf2prongtrack::pt > ptmin) && (aod::cf2prongtrack::pt < ptmax);
 
   HistogramRegistry registry{"registry"};
@@ -165,6 +168,12 @@ struct jflucAnalysisTask {
     analyze(collision, p2tracks, tracks);
   }
   PROCESS_SWITCH(jflucAnalysisTask, processCF2ProngDerivedCorrected, "Process CF derived data with 2-prongs as POI and charged particles as REF with corrections.", false);
+
+  void processMCCFDerived(aod::CFMcCollision const& mcCollision, soa::Filtered<aod::CFMcParticles> const& particles)
+  {
+    analyze(mcCollision, particles);
+  }
+  PROCESS_SWITCH(jflucAnalysisTask, processMCCFDerived, "Process CF derived MC data", false);
 
   JFFlucAnalysis::JQVectorsT qvecs;
   JFFlucAnalysis::JQVectorsT qvecsRef;
