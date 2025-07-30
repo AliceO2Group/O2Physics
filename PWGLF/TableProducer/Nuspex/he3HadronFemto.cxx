@@ -896,6 +896,27 @@ struct he3HadronFemto {
     }
   }
 
+  void searchForCommonMotherTrack(std::vector<unsigned int>& motherHe3Idxs, std::vector<unsigned int>& motherHadIdxs, McIter& motherParticle, bool & isMixedPair, const int motherPdgCode)
+  {
+    std::unordered_set<unsigned int> motherHe3SetIdxs(motherHe3Idxs.begin(), motherHe3Idxs.end());
+    for (const auto& motherHadIdx : motherHadIdxs) {
+      if (!motherHe3SetIdxs.contains(motherHadIdx)) {
+        continue;
+      }
+
+      motherParticle = mcParticles.rawIteratorAt(motherHadIdx);
+      if (std::abs(motherParticle.pdgCode()) != motherPdgCode || std::abs(motherParticle.y()) > 1) {
+        continue;
+      }
+      isMixedPair = false;
+      break;
+    }
+    if (!isMixedPair) {
+      he3Hadcand.flags |= Flags::kBothFromLi4;
+    }
+
+  }
+
   template <typename Tcollisions, typename TmcParticles>
   void fillMcParticles(const Tcollisions& collisions, const TmcParticles& mcParticles, std::vector<unsigned int>& filledMothers)
   {
@@ -1024,7 +1045,6 @@ struct he3HadronFemto {
 
         He3HadCandidate he3Hadcand;
         McIter motherParticle;
-        unsigned int motherIdx;
         std::vector<unsigned int> motherHe3Idxs, motherHadIdxs;
         setMcParticleFlag(mctrackHe3, motherHe3Idxs, he3Hadcand.flagsHe3);
         setMcParticleFlag(mctrackHad, motherHadIdxs, he3Hadcand.flagsHad);
@@ -1037,41 +1057,14 @@ struct he3HadronFemto {
 
         } else if ((he3Hadcand.flagsHe3 & ParticleFlags::kFromLi4) && (he3Hadcand.flagsHad & ParticleFlags::kFromLi4)) {
 
-          std::unordered_set<unsigned int> motherHe3SetIdxs(motherHe3Idxs.begin(), motherHe3Idxs.end());
-          for (const auto& motherHadIdx : motherHadIdxs) {
-            if (!motherHe3SetIdxs.contains(motherHadIdx)) {
-              continue;
-            }
-
-            motherParticle = mcParticles.rawIteratorAt(motherHadIdx);
-            motherIdx = motherHadIdx;
-            if (std::abs(motherParticle.pdgCode()) != Li4PDG || std::abs(motherParticle.y()) > 1) {
-              continue;
-            }
-            isMixedPair = false;
-            break;
-          }
+          searchForCommonMotherTrack(motherHe3Idxs, motherHadIdxs, motherParticle, isMixedPair, Li4PDG);
           if (!isMixedPair) {
             he3Hadcand.flags |= Flags::kBothFromLi4;
           }
 
         } else if ((he3Hadcand.flagsHe3 & ParticleFlags::kFromHypertriton) && (he3Hadcand.flagsHad & ParticleFlags::kFromHypertriton)) {
 
-          std::unordered_set<unsigned int> motherHe3SetIdxs(motherHe3Idxs.begin(), motherHe3Idxs.end());
-          for (const auto& motherHadIdx : motherHadIdxs) {
-            if (!motherHe3SetIdxs.contains(motherHadIdx)) {
-              continue;
-            }
-
-            motherParticle = mcParticles.rawIteratorAt(motherHadIdx);
-            motherIdx = motherHadIdx;
-            if (std::abs(motherParticle.pdgCode()) != o2::constants::physics::Pdg::kHyperTriton || std::abs(motherParticle.y()) > 1) {
-              continue;
-            }
-            isMixedPair = false;
-            break;
-          }
-
+          searchForCommonMotherTrack(motherHe3Idxs, motherHadIdxs, motherParticle, isMixedPair, o2::constants::physics::Pdg::kHyperTriton);
           if (!isMixedPair) {
             he3Hadcand.flags |= Flags::kBothFromHypertriton;
           }
@@ -1092,7 +1085,7 @@ struct he3HadronFemto {
 
         if ((he3Hadcand.flags == Flags::kBothFromLi4) || (he3Hadcand.flags == Flags::kBothFromHypertriton)) {
           fillMotherInfoMC(mctrackHe3, mctrackHad, motherParticle, he3Hadcand);
-          filledMothers.push_back(motherIdx);
+          filledMothers.push_back(motherParticle.globalIndex());
         }
 
         fillHistograms(he3Hadcand);
