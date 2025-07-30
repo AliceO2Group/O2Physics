@@ -314,8 +314,8 @@ DECLARE_SOA_COLUMN(IsSelXicToPKPi, isSelXicToPKPi, int);                  //!
 DECLARE_SOA_COLUMN(IsSelXicToPiKP, isSelXicToPiKP, int);                  //!
 DECLARE_SOA_COLUMN(MlProbXicToPKPi, mlProbXicToPKPi, std::vector<float>); //!
 DECLARE_SOA_COLUMN(MlProbXicToPiKP, mlProbXicToPiKP, std::vector<float>); //!
-DECLARE_SOA_COLUMN(MseXicToPKPi, mseXicToPKPi, std::vector<float>); //! new column for MSE
-DECLARE_SOA_COLUMN(MseXicToPiKP, mseXicToPiKP, std::vector<float>); //! new column for MSE
+DECLARE_SOA_COLUMN(MseXicToPKPi, mseXicToPKPi, std::vector<float>);       //! new column for MSE
+DECLARE_SOA_COLUMN(MseXicToPiKP, mseXicToPiKP, std::vector<float>);       //! new column for MSE
 DECLARE_SOA_COLUMN(AeOutputXicToPKPi, aeOutputXicToPKPi, std::vector<float>); //! new column for AE output
 DECLARE_SOA_COLUMN(AeOutputXicToPiKP, aeOutputXicToPiKP, std::vector<float>); //! new column for AE output
 // XicPlus to Xi Pi Pi

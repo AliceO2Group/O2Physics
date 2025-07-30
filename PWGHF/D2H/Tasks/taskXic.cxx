@@ -81,8 +81,8 @@ struct HfTaskXic {
   ConfigurableAxis thnConfigAxisBdtScoreBkg{"thnConfigAxisBdtScoreBkg", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisBdtScoreSignal{"thnConfigAxisBdtScoreSignal", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisYMC{"thnConfigAxisYMC", {100, -2., 2.}, ""};
-  ConfigurableAxis thnConfigAxisMseXic{"thnConfigAxisMseXic", {502, -0.0002, 1}, ""};     // MSE axis
-  ConfigurableAxis thnConfigAxisAeOutputXic{"thnConfigAxisAeOutputXic", {20, 0.8, 1},""}; // an AE output axis
+  ConfigurableAxis thnConfigAxisMseXic{"thnConfigAxisMseXic", {502, -0.0002, 1}, ""};      // MSE axis
+  ConfigurableAxis thnConfigAxisAeOutputXic{"thnConfigAxisAeOutputXic", {20, 0.8, 1}, ""}; // an AE output axis
   //
 
   float etaMaxAcceptance = 0.8;
@@ -547,8 +547,8 @@ struct HfTaskXic {
                 // add here the pT_Mother, y_Mother, level (reco, Gen, Gen + Acc)
                 registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXicToPiKP, ptCandidate, outputBkg, outputPrompt, outputFD, origin);
               } else {
-                outputAE = candidate.aeOutputXicToPiKP()[0];  /// AE output of feature 0
-                outputMSE = candidate.mseXicToPiKP()[0];      /// MSE
+                outputAE = candidate.aeOutputXicToPiKP()[0]; /// AE output of feature 0
+                outputMSE = candidate.mseXicToPiKP()[0];     /// MSE
                 registry.get<THnSparse>(HIST("hnXicVarsWithMse"))->Fill(massXicToPiKP, ptCandidate, candidate.decayLength(), candidate.cpa(), outputAE, origin, outputMSE);
               }
             } else {

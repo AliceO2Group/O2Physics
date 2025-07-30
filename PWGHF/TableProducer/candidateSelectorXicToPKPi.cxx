@@ -17,10 +17,10 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Cristina Terrevoli <cristina.terrevoli@cern.ch>, INFN BARI
 
+#include "PWGHF/Core/HfAeToMseXicToPKPi.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseXicToPKPi.h"
 #include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/Core/HfAeToMseXicToPKPi.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -156,9 +156,9 @@ struct HfCandidateSelectorXicToPKPi {
       hfMlResponse.init();
       /// AE feature preprocessing - MinMax scaling initialization
       if (applyMinMax == 1) {
-        LOG(info)<<"MinMax scaling will be applied";
+        LOG(info) << "MinMax scaling will be applied";
         scaleType = 1;
-      } else 
+      } else
         LOG(info) << "No external preprocessing transformation will be applied";
     }
   }
