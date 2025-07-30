@@ -262,8 +262,9 @@ struct DiHadronCor {
       registry.add("pTCorrected", "pTCorrected", {HistType::kTH1D, {axisPtTrigger}});
       registry.add("Nch", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}});
       registry.add("Nch_used", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}}); // histogram to see how many events are in the same and mixed event
-      registry.add("Centrality", hCentTitle.c_str(), {HistType::kTH1D, {axisCentrality}});
-      registry.add("Centrality_used", hCentTitle.c_str(), {HistType::kTH1D, {axisCentrality}}); // histogram to see how many events are in the same and mixed event
+      registry.add("Centrality", hCentTitle.c_str(), {HistType::kTH1D, {{100, 0, 100}}});
+      registry.add("CentralityWeighted", hCentTitle.c_str(), {HistType::kTH1D, {{100, 0, 100}}});
+      registry.add("Centrality_used", hCentTitle.c_str(), {HistType::kTH1D, {{100, 0, 100}}}); // histogram to see how many events are in the same and mixed event
       registry.add("zVtx", "zVtx", {HistType::kTH1D, {axisVertex}});
       registry.add("zVtx_used", "zVtx_used", {HistType::kTH1D, {axisVertex}});
       registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
@@ -718,13 +719,16 @@ struct DiHadronCor {
       return;
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     float cent = -1.;
-    if (!cfgCentTableUnavailable)
-      cent = getCentrality(collision);
+    float weightCent = 1.0f;
     if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent, true))
       return;
-
-    if (!cfgCentTableUnavailable)
+    loadCorrection(bc.timestamp());
+    if (!cfgCentTableUnavailable) {
+      cent = getCentrality(collision);
+      getCentralityWeight(weightCent, cent);
       registry.fill(HIST("Centrality"), cent);
+      registry.fill(HIST("CentralityWeighted"), cent, weightCent);
+    }
     registry.fill(HIST("Nch"), tracks.size());
     registry.fill(HIST("zVtx"), collision.posZ());
 
@@ -735,12 +739,8 @@ struct DiHadronCor {
       return;
     }
 
-    loadCorrection(bc.timestamp());
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
     fillYield(collision, tracks);
-    float weightCent = 1.0f;
-    if (!cfgCentTableUnavailable)
-      getCentralityWeight(weightCent, cent);
 
     same->fillEvent(tracks.size(), CorrelationContainer::kCFStepReconstructed);
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, getMagneticField(bc.timestamp()), cent, weightCent);
