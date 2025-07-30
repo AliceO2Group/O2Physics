@@ -363,6 +363,10 @@ class pidTPCModule
         return;
       }
     }
+
+    if(pidTPCopts.useCorrecteddEdx.value && networkVersion != "5"){ 
+      LOGF(fatal, "Using corrected dE/dx with a network version other than 5 will not work. Crashing now.");
+    }
   } // end init
 
   //__________________________________________________
