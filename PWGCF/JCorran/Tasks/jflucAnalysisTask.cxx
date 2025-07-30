@@ -62,9 +62,9 @@ struct jflucAnalysisTask {
   ConfigurableAxis ptAxis{"axisPt", {60, 0.0, 300.0}, "pt axis for histograms"};
   ConfigurableAxis massAxis{"axisMass", {1, 0.0, 10.0}, "mass axis for histograms"};
 
-  Filter jtrackFilter = (aod::jtrack::pt > ptmin) && (aod::jtrack::pt < ptmax);                   // eta cuts done by jfluc
-  Filter cftrackFilter = (aod::cftrack::pt > ptmin) && (aod::cftrack::pt < ptmax);                // eta cuts done by jfluc
-  Filter cfmcparticleFilter = (aod::cfmcparticle::pt > ptmin) && (aod::cfmcparticle::pt < ptmax); // eta cuts done by jfluc
+  Filter jtrackFilter = (aod::jtrack::pt > ptmin) && (aod::jtrack::pt < ptmax);                                                     // eta cuts done by jfluc
+  Filter cftrackFilter = (aod::cftrack::pt > ptmin) && (aod::cftrack::pt < ptmax);                                                  // eta cuts done by jfluc
+  Filter cfmcparticleFilter = (aod::cfmcparticle::pt > ptmin) && (aod::cfmcparticle::pt < ptmax) && (aod::cfmcparticle::sign != 0); // eta cuts done by jfluc
   Filter cf2pFilter = (aod::cf2prongtrack::pt > ptmin) && (aod::cf2prongtrack::pt < ptmax);
 
   HistogramRegistry registry{"registry"};
