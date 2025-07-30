@@ -790,7 +790,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processMixedEventCascBitmask, "Enable processing mixed event for cascade - cascade using bitmask for PID", false);
 
-  // MC truth
+  // MC truth for track - cascade
   void processSameEventMCgen(const FilteredFDCollision& col, [[maybe_unused]] const aod::FDParticles& parts)
   {
     const int multCol = confUseCent ? col.multV0M() : col.multNtr();
@@ -835,6 +835,44 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processSameEventMCgen, "Enable processing same event MC truth for track - cascade", false);
 
+  // MC truth for cascade - cascade
+  void processSameEventCascMCgen(const FilteredFDCollision& col, [[maybe_unused]] const aod::FDParticles& parts)
+  {
+    const int multCol = confUseCent ? col.multV0M() : col.multNtr();
+
+    auto groupPartsTwo = partsTwoMCgenBasic->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+
+    eventHisto.fillQA(col);
+
+    for (const auto& part : groupPartsTwo) {
+      int pdgCode = static_cast<int>(part.pidCut());
+      if ((confCascType1 == 0 && pdgCode != kOmegaMinus) || (confCascType1 == 2 && pdgCode != kOmegaPlusBar) || (confCascType1 == 1 && pdgCode != kXiMinus) || (confCascType1 == 3 && pdgCode != kXiPlusBar))
+        continue;
+
+      cascQAHistos.fillQA<false, false>(part);
+
+      auto pairProcessFunc = [&](auto& p1, auto& p2) -> void {
+        int pdgCodeCasc1 = static_cast<int>(p1.pidCut());
+        if ((confCascType1 == 0 && pdgCodeCasc1 != kOmegaMinus) || (confCascType1 == 2 && pdgCodeCasc1 != kOmegaPlusBar) || (confCascType1 == 1 && pdgCodeCasc1 != kXiMinus) || (confCascType1 == 3 && pdgCodeCasc1 != kXiPlusBar))
+          return;
+        int pdgCodeCasc2 = static_cast<int>(p2.pidCut());
+        if ((confCascType2 == 0 && pdgCodeCasc2 != kOmegaMinus) || (confCascType2 == 2 && pdgCodeCasc2 != kOmegaPlusBar) || (confCascType2 == 1 && pdgCodeCasc2 != kXiMinus) || (confCascType2 == 3 && pdgCodeCasc2 != kXiPlusBar))
+          return;
+        sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
+      };
+
+      if (confCascType1 == confCascType2) {
+        for (const auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo)))
+          pairProcessFunc(p1, p2);
+      } else {
+        for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo)))
+          pairProcessFunc(p1, p2);
+      }
+    }
+  }
+  PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processSameEventCascMCgen, "Enable processing same event MC truth for cascade - cascade", false);
+
+  // MC truth for track - cascade
   void processMixedEventMCgen(const FilteredFDCollisions& cols, [[maybe_unused]] const aod::FDParticles& parts)
   {
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
@@ -862,6 +900,36 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processMixedEventMCgen, "Enable processing mixed event MC truth for track - cascade", false);
+
+  // MC truth for cascade - cascade
+  void processMixedEventCascMCgen(const FilteredFDCollisions& cols, [[maybe_unused]] const aod::FDParticles& parts)
+  {
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
+
+    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+      const int multCol = confUseCent ? collision1.multV0M() : collision1.multNtr();
+
+      auto groupPartsOne = partsTwoMCgenBasic->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsTwo = partsTwoMCgenBasic->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+
+      const auto& magFieldTesla1 = collision1.magField();
+      const auto& magFieldTesla2 = collision2.magField();
+
+      if (magFieldTesla1 != magFieldTesla2) {
+        continue;
+      }
+      for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        int pdgCodeCasc1 = static_cast<int>(p1.pidCut());
+        if ((confCascType1 == 0 && pdgCodeCasc1 != kOmegaMinus) || (confCascType1 == 2 && pdgCodeCasc1 != kOmegaPlusBar) || (confCascType1 == 1 && pdgCodeCasc1 != kXiMinus) || (confCascType1 == 3 && pdgCodeCasc1 != kXiPlusBar))
+          continue;
+        int pdgCodeCasc2 = static_cast<int>(p2.pidCut());
+        if ((confCascType2 == 0 && pdgCodeCasc2 != kOmegaMinus) || (confCascType2 == 2 && pdgCodeCasc2 != kOmegaPlusBar) || (confCascType2 == 1 && pdgCodeCasc2 != kXiMinus) || (confCascType2 == 3 && pdgCodeCasc2 != kXiPlusBar))
+          continue;
+        mixedEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
+      }
+    }
+  }
+  PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processMixedEventCascMCgen, "Enable processing mixed event MC truth for cascade - cascade", false);
 
   /// This function fills MC truth particles from derived MC table
   void processMCgen(aod::FDParticles const& parts)
