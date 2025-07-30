@@ -1,6 +1,6 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright
-// holders. All rights not expressly granted are reserved.
+// Copyright 2020-2022 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -97,21 +97,18 @@ struct RecoilJets {
   Configurable<float> trkEtaCut{"trkEtaCut", 0.9, "Eta acceptance of TPC"};
   Configurable<float> jetR{"jetR", 0.4, "Jet cone radius"};
 
-  Configurable<std::string> triggerMasks{
-      "triggerMasks", "", "Relevant trigger masks: fTrackLowPt,fTrackHighPt"};
-  Configurable<bool> skipMBGapEvents{
-      "skipMBGapEvents", false,
-      "flag to choose to reject min. bias gap events; jet-level rejection "
-      "applied at the jet finder level, here rejection is applied for "
-      "collision and track process functions"};
+  Configurable<std::string> triggerMasks{"triggerMasks", "",
+                                         "Relevant trigger masks: fTrackLowPt,fTrackHighPt"};
+  Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false,
+                                     "flag to choose to reject min. bias gap events; jet-level rejection "
+                                     "applied at the jet finder level, here rejection is applied for "
+                                     "collision and track process functions"};
 
   // List of configurable parameters for MC
-  Configurable<float> pTHatExponent{
-      "pTHatExponent", 4.0,
-      "Exponent of the event weight for the calculation of pTHat"};
-  Configurable<float> pTHatMax{
-      "pTHatMax", 999.0,
-      "Maximum fraction of hard scattering for jet acceptance in MC"};
+  Configurable<float> pTHatExponent{"pTHatExponent", 4.0,
+                                    "Exponent of the event weight for the calculation of pTHat"};
+  Configurable<float> pTHatMax{"pTHatMax", 999.0,
+                               "Maximum fraction of hard scattering for jet acceptance in MC"};
 
   // Parameters for recoil jet selection
   Configurable<float> ptTTrefMin{"ptTTrefMin", 5.,
@@ -124,8 +121,8 @@ struct RecoilJets {
                                    "Width of recoil acceptance"};
 
   // List of configurable parameters for histograms
-  Configurable<uint16_t> histJetPt{
-      "histJetPt", 100, "Maximum value of jet pT shown in histograms"};
+  Configurable<uint16_t> histJetPt{"histJetPt", 100,
+                                   "Maximum value of jet pT shown in histograms"};
 
   // Axes specification
   AxisSpec pT{histJetPt, 0.0, histJetPt * 1.0, "#it{p}_{T} (GeV/#it{c})"};
@@ -426,8 +423,8 @@ struct RecoilJets {
 
   // Fill histograms with raw or MC det. level data
   template <typename Collision, typename Jets, typename Tracks>
-  void fillHistograms(Collision const &collision, Jets const &jets,
-                      Tracks const &tracks, float weight = 1.) {
+  void fillHistograms(Collision const& collision, Jets const& jets,
+                      Tracks const& tracks, float weight = 1.) {
     bool bSigEv = false;
     std::vector<double> vPhiOfTT;
     double phiTT = 0.;
@@ -439,14 +436,14 @@ struct RecoilJets {
       bSigEv = true;
 
     // Remove whole event if jet passes the outlier removal condition
-    for (const auto &jet : jets) {
+    for (const auto& jet : jets) {
       if (jet.pt() > pTHatMax * pTHat) {
         spectra.fill(HIST("hEventSelectionCount"), 2.5);
         return;
       }
     }
 
-    for (const auto &track : tracks) {
+    for (const auto& track : tracks) {
       spectra.fill(HIST("hTrackSelectionCount"), 0.5);
 
       if (skipTrack(track))
@@ -482,7 +479,7 @@ struct RecoilJets {
       }
     }
 
-    for (const auto &jet : jets) {
+    for (const auto& jet : jets) {
       spectra.fill(HIST("hJetPtEtaPhiRhoArea"), jet.pt(), jet.eta(), jet.phi(),
                    collision.rho(), jet.area(), weight);
 
@@ -534,14 +531,14 @@ struct RecoilJets {
     if (dice < fracSig)
       bSigEv = true;
 
-    for (const auto &jet : jets) {
+    for (const auto& jet : jets) {
       if (jet.pt() > pTHatMax * pTHat) {
         spectra.fill(HIST("hEventSelectionCountPartLevel"), 1.5);
         return;
       }
     }
 
-    for (const auto &particle : particles) {
+    for (const auto& particle : particles) {
       auto pdgParticle = pdg->GetParticle(particle.pdgCode());
       if (!pdgParticle)
         continue;
@@ -580,7 +577,7 @@ struct RecoilJets {
       }
     }
 
-    for (const auto &jet : jets) {
+    for (const auto& jet : jets) {
       spectra.fill(HIST("hJetPtEtaPhiRhoArea_Part"), jet.pt(), jet.eta(),
                    jet.phi(), collision.rho(), jet.area(), weight);
 
@@ -628,12 +625,12 @@ struct RecoilJets {
     double phiTTSig = 0.;
     float pTHat = getPtHat(weight);
 
-    for (const auto &jetBase : jetsBase) {
+    for (const auto& jetBase : jetsBase) {
       if (jetBase.pt() > pTHatMax * pTHat)
         return;
     }
 
-    for (const auto &track : tracks) {
+    for (const auto& track : tracks) {
       if (skipTrack(track))
         continue;
 
@@ -647,7 +644,7 @@ struct RecoilJets {
     if (bIsThereTTSig)
       phiTTSig = getPhiTT(vPhiOfTT);
 
-    for (const auto &jetBase : jetsBase) {
+    for (const auto& jetBase : jetsBase) {
       bool bIsBaseJetRecoil =
           get<1>(isRecoilJet(jetBase, phiTTSig)) && bIsThereTTSig;
       dataForUnfolding(jetBase, jetsTag, bIsBaseJetRecoil, weight);
@@ -678,8 +675,8 @@ struct RecoilJets {
 
   //------------------------------------------------------------------------------
   // Process functions
-  void processData(FilteredColl const &collision, FilteredTracks const &tracks,
-                   FilteredJets const &jets) {
+  void processData(FilteredColl const& collision, FilteredTracks const& tracks,
+                   FilteredJets const& jets) {
     spectra.fill(HIST("hEventSelectionCount"), 0.5);
 
     if (skipEvent(collision))
@@ -692,9 +689,9 @@ struct RecoilJets {
   }
   PROCESS_SWITCH(RecoilJets, processData, "process data", true);
 
-  void processMCDetLevel(FilteredColl const &collision,
-                         FilteredTracks const &tracks,
-                         FilteredJetsDetLevel const &jets) {
+  void processMCDetLevel(FilteredColl const& collision,
+                         FilteredTracks const& tracks,
+                         FilteredJetsDetLevel const& jets) {
     spectra.fill(HIST("hEventSelectionCount"), 0.5);
     if (skipEvent(collision) || skipMBGapEvent(collision))
       return;
@@ -707,10 +704,10 @@ struct RecoilJets {
   PROCESS_SWITCH(RecoilJets, processMCDetLevel, "process MC detector level",
                  false);
 
-  void processMCDetLevelWeighted(FilteredCollDetLevelGetWeight const &collision,
-                                 aod::JetMcCollisions const &,
-                                 FilteredTracks const &tracks,
-                                 FilteredJetsDetLevel const &jets) {
+  void processMCDetLevelWeighted(FilteredCollDetLevelGetWeight const& collision,
+                                 aod::JetMcCollisions const&,
+                                 FilteredTracks const& tracks,
+                                 FilteredJetsDetLevel const& jets) {
     spectra.fill(HIST("hEventSelectionCount"), 0.5);
     if (skipEvent(collision) || skipMBGapEvent(collision))
       return;
@@ -731,9 +728,9 @@ struct RecoilJets {
   PROCESS_SWITCH(RecoilJets, processMCDetLevelWeighted,
                  "process MC detector level with event weight", false);
 
-  void processMCPartLevel(FilteredCollPartLevel const &collision,
-                          FilteredParticles const &particles,
-                          FilteredJetsPartLevel const &jets) {
+  void processMCPartLevel(FilteredCollPartLevel const& collision,
+                          FilteredParticles const& particles,
+                          FilteredJetsPartLevel const& jets) {
     spectra.fill(HIST("hEventSelectionCountPartLevel"), 0.5);
     if (skipMBGapEvent(collision))
       return;
@@ -744,9 +741,9 @@ struct RecoilJets {
   PROCESS_SWITCH(RecoilJets, processMCPartLevel, "process MC particle level",
                  false);
 
-  void processMCPartLevelWeighted(FilteredCollPartLevel const &collision,
-                                  FilteredParticles const &particles,
-                                  FilteredJetsPartLevel const &jets) {
+  void processMCPartLevelWeighted(FilteredCollPartLevel const& collision,
+                                  FilteredParticles const& particles,
+                                  FilteredJetsPartLevel const& jets) {
     spectra.fill(HIST("hEventSelectionCountPartLevel"), 0.5);
     if (skipMBGapEvent(collision))
       return;
@@ -767,11 +764,11 @@ struct RecoilJets {
   PROCESS_SWITCH(RecoilJets, processMCPartLevelWeighted,
                  "process MC particle level with event weight", false);
 
-  void processJetsMatched(FilteredCollDetLevelGetWeight const &collision,
-                          aod::JetMcCollisions const &,
-                          FilteredTracks const &tracks,
-                          FilteredMatchedJetsDetLevel const &mcdjets,
-                          FilteredMatchedJetsPartLevel const &mcpjets) {
+  void processJetsMatched(FilteredCollDetLevelGetWeight const& collision,
+                          aod::JetMcCollisions const&,
+                          FilteredTracks const& tracks,
+                          FilteredMatchedJetsDetLevel const& mcdjets,
+                          FilteredMatchedJetsPartLevel const& mcpjets) {
     if (skipEvent(collision) || skipMBGapEvent(collision))
       return;
 
@@ -784,11 +781,11 @@ struct RecoilJets {
                  "process matching of MC jets (no weight)", false);
 
   void
-  processJetsMatchedWeighted(FilteredCollDetLevelGetWeight const &collision,
-                             aod::JetMcCollisions const &,
-                             FilteredTracks const &tracks,
-                             FilteredMatchedJetsDetLevel const &mcdjets,
-                             FilteredMatchedJetsPartLevel const &mcpjets) {
+  processJetsMatchedWeighted(FilteredCollDetLevelGetWeight const& collision,
+                             aod::JetMcCollisions const&,
+                             FilteredTracks const& tracks,
+                             FilteredMatchedJetsDetLevel const& mcdjets,
+                             FilteredMatchedJetsPartLevel const& mcpjets) {
     if (skipEvent(collision) || skipMBGapEvent(collision))
       return;
 
@@ -801,7 +798,7 @@ struct RecoilJets {
   PROCESS_SWITCH(RecoilJets, processJetsMatchedWeighted,
                  "process matching of MC jets (weighted)", false);
 
-  void processMultiplicity(FilteredEventMultiplicity const &collision) {
+  void processMultiplicity(FilteredEventMultiplicity const& collision) {
     if (skipEvent(collision))
       return;
 
@@ -852,10 +849,10 @@ struct RecoilJets {
     bool bIsThereMatchedJet = partJet.has_matchedJetGeo();
 
     if (bIsThereMatchedJet) {
-      const auto &jetsMatched =
+      const auto& jetsMatched =
           partJet.template matchedJetGeo_as<std::decay_t<DetJet>>();
 
-      for (const auto &jetMatched : jetsMatched) {
+      for (const auto& jetMatched : jetsMatched) {
         spectra.fill(HIST("hNumberMatchedJetsPerOneBaseJet"),
                      jetsMatched.size(), jetMatched.pt(), weight);
         spectra.fill(HIST("hJetPt_DetLevel_vs_PartLevel"), jetMatched.pt(),
@@ -884,7 +881,7 @@ struct RecoilJets {
     }
 
     // Fake jets
-    for (const auto &detJet : detJets) {
+    for (const auto& detJet : detJets) {
       bIsThereMatchedJet = detJet.has_matchedJetGeo();
       if (!bIsThereMatchedJet) {
         spectra.fill(HIST("hFakeJets_pT"), detJet.pt(), weight);
