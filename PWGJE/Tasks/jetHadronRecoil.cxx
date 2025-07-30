@@ -224,7 +224,6 @@ struct JetHadronRecoil {
     double leadingPT = 0;
     double leadingTrackPt = 0;
     double leadingJetPt = 0;
-    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
     float rhoReference = rho + rhoReferenceShift;
 
     float dice = rand->Rndm();
@@ -374,7 +373,6 @@ struct JetHadronRecoil {
     int nTT = 0;
     double leadingPartPt = 0;
     double leadingJetPt = 0;
-    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
     float dice = rand->Rndm();
     if (dice < fracSig)
       isSigCol = true;
