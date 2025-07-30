@@ -85,6 +85,7 @@ constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 
 constexpr int Li4PDG = o2::constants::physics::Pdg::kLithium4;
+constexpr int H3LPDG = o2::constants::physics::Pdg::kHyperTriton;
 constexpr int ProtonPDG = PDG_t::kProton;
 constexpr int PionPDG = PDG_t::kPiPlus;
 constexpr int He3PDG = o2::constants::physics::Pdg::kHelium3;
@@ -869,7 +870,7 @@ struct he3HadronFemto {
         mothers.push_back(mother.globalIndex());
         if (std::abs(mother.pdgCode()) == Li4PDG) {
           flag |= ParticleFlags::kFromLi4;
-        } else if (std::abs(mother.pdgCode()) == o2::constants::physics::Pdg::kHyperTriton) {
+        } else if (std::abs(mother.pdgCode()) == H3LPDG) {
           flag |= ParticleFlags::kFromHypertriton;
         } else {
           flag |= ParticleFlags::kFromOtherDecays;
@@ -887,7 +888,7 @@ struct he3HadronFemto {
         mothers.push_back(mother.globalIndex());
         if (std::abs(mother.pdgCode()) == Li4PDG) {
           flag |= ParticleFlags::kFromLi4;
-        } else if (std::abs(mother.pdgCode()) == o2::constants::physics::Pdg::kHyperTriton) {
+        } else if (std::abs(mother.pdgCode()) == H3LPDG) {
           flag |= ParticleFlags::kFromHypertriton;
         } else {
           flag |= ParticleFlags::kFromOtherDecays;
@@ -896,7 +897,7 @@ struct he3HadronFemto {
     }
   }
 
-  void searchForCommonMotherTrack(std::vector<unsigned int>& motherHe3Idxs, std::vector<unsigned int>& motherHadIdxs, McIter& motherParticle, bool & isMixedPair, const int motherPdgCode)
+  void searchForCommonMotherTrack(const std::vector<unsigned int>& motherHe3Idxs, const std::vector<unsigned int>& motherHadIdxs, const aod::McParticles& mcParticles, McIter& motherParticle, He3HadCandidate& he3Hadcand, bool & isMixedPair, const int motherPdgCode)
   {
     std::unordered_set<unsigned int> motherHe3SetIdxs(motherHe3Idxs.begin(), motherHe3Idxs.end());
     for (const auto& motherHadIdx : motherHadIdxs) {
@@ -1057,14 +1058,14 @@ struct he3HadronFemto {
 
         } else if ((he3Hadcand.flagsHe3 & ParticleFlags::kFromLi4) && (he3Hadcand.flagsHad & ParticleFlags::kFromLi4)) {
 
-          searchForCommonMotherTrack(motherHe3Idxs, motherHadIdxs, motherParticle, isMixedPair, Li4PDG);
+          searchForCommonMotherTrack(motherHe3Idxs, motherHadIdxs, mcParticles, motherParticle, he3Hadcand, isMixedPair, Li4PDG);
           if (!isMixedPair) {
             he3Hadcand.flags |= Flags::kBothFromLi4;
           }
 
         } else if ((he3Hadcand.flagsHe3 & ParticleFlags::kFromHypertriton) && (he3Hadcand.flagsHad & ParticleFlags::kFromHypertriton)) {
 
-          searchForCommonMotherTrack(motherHe3Idxs, motherHadIdxs, motherParticle, isMixedPair, o2::constants::physics::Pdg::kHyperTriton);
+          searchForCommonMotherTrack(motherHe3Idxs, motherHadIdxs, mcParticles, motherParticle, he3Hadcand, isMixedPair, H3LPDG);
           if (!isMixedPair) {
             he3Hadcand.flags |= Flags::kBothFromHypertriton;
           }
