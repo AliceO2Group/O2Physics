@@ -50,31 +50,31 @@ using namespace o2::framework::expressions;
 
 // Shorthand notations
 using FilteredColl =
-    soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator;
+  soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator;
 using FilteredCollPartLevel =
-    soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos,
-                            aod::JMcCollisionOutliers>>::iterator;
+  soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos,
+                          aod::JMcCollisionOutliers>>::iterator;
 using FilteredCollDetLevelGetWeight =
-    soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos,
-                            aod::JCollisionOutliers>>::iterator;
+  soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos,
+                          aod::JCollisionOutliers>>::iterator;
 using FilteredEventMultiplicity =
-    soa::Filtered<soa::Join<aod::JetCollisions, aod::ZDCMults>>::iterator;
+  soa::Filtered<soa::Join<aod::JetCollisions, aod::ZDCMults>>::iterator;
 
 using FilteredJets =
-    soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
+  soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
 using FilteredJetsDetLevel =
-    soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets,
-                            aod::ChargedMCDetectorLevelJetConstituents>>;
+  soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets,
+                          aod::ChargedMCDetectorLevelJetConstituents>>;
 using FilteredJetsPartLevel =
-    soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets,
-                            aod::ChargedMCParticleLevelJetConstituents>>;
+  soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets,
+                          aod::ChargedMCParticleLevelJetConstituents>>;
 
 using FilteredMatchedJetsDetLevel = soa::Filtered<soa::Join<
-    aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents,
-    aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>>;
+  aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents,
+  aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>>;
 using FilteredMatchedJetsPartLevel = soa::Filtered<soa::Join<
-    aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents,
-    aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
+  aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents,
+  aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
 
 using FilteredTracks = soa::Filtered<aod::JetTracks>;
 using FilteredParticles = soa::Filtered<aod::JetParticles>;
@@ -138,9 +138,9 @@ struct RecoilJets {
   AxisSpec rho{50, 0.0, 50., "#it{#rho}"};
 
   Preslice<FilteredMatchedJetsPartLevel> partJetsPerCollision =
-      aod::jet::mcCollisionId;
+    aod::jet::mcCollisionId;
 
-  TRandom3 *rand = new TRandom3(0);
+  TRandom3* rand = new TRandom3(0);
 
   // Declare filter on collision Z vertex
   Filter collisionFilter = nabs(aod::jcollision::posZ) < vertexZCut;
@@ -148,8 +148,8 @@ struct RecoilJets {
 
   // Declare filters on accepted tracks and MC particles (settings for jet reco
   // are provided in the jet finder wagon)
-  Filter trackFilter = aod::jtrack::pt > trkPtMin &&aod::jtrack::pt <
-                       trkPtMax &&nabs(aod::jtrack::eta) < trkEtaCut;
+  Filter trackFilter = aod::jtrack::pt > trkPtMin&& aod::jtrack::pt <
+                       trkPtMax&& nabs(aod::jtrack::eta) < trkEtaCut;
   Filter partFilter = nabs(aod::jmcparticle::eta) < trkEtaCut;
 
   // Declare filter on jets
@@ -163,31 +163,32 @@ struct RecoilJets {
 
   Service<o2::framework::O2DatabasePDG> pdg;
 
-  void init(InitContext const &) {
+  void init(InitContext const&)
+  {
     std::string evSelToString = static_cast<std::string>(evSel);
     std::string trkSelToString = static_cast<std::string>(trkSel);
 
     eventSelectionBits =
-        jetderiveddatautilities::initialiseEventSelectionBits(evSelToString);
+      jetderiveddatautilities::initialiseEventSelectionBits(evSelToString);
     trackSelection =
-        jetderiveddatautilities::initialiseTrackSelection(trkSelToString);
+      jetderiveddatautilities::initialiseTrackSelection(trkSelToString);
     triggerMaskBits =
-        jetderiveddatautilities::initialiseTriggerMaskBits(triggerMasks);
+      jetderiveddatautilities::initialiseTriggerMaskBits(triggerMasks);
 
     // List of raw and MC det. distributions
     if (doprocessData || doprocessMCDetLevel || doprocessMCDetLevelWeighted) {
       spectra.add("hEventSelectionCount", "Count # of events in the analysis",
                   kTH1F, {{3, 0.0, 3.}});
       spectra.get<TH1>(HIST("hEventSelectionCount"))
-          ->GetXaxis()
-          ->SetBinLabel(1, "Total # of events");
+        ->GetXaxis()
+        ->SetBinLabel(1, "Total # of events");
       spectra.get<TH1>(HIST("hEventSelectionCount"))
-          ->GetXaxis()
-          ->SetBinLabel(
-              2, Form("# of events after sel. %s", evSelToString.data()));
+        ->GetXaxis()
+        ->SetBinLabel(
+          2, Form("# of events after sel. %s", evSelToString.data()));
       spectra.get<TH1>(HIST("hEventSelectionCount"))
-          ->GetXaxis()
-          ->SetBinLabel(3, "# of events w. outlier");
+        ->GetXaxis()
+        ->SetBinLabel(3, "# of events w. outlier");
 
       spectra.add("vertexZ", "Z vertex of collisions", kTH1F,
                   {{60, -12., 12.}});
@@ -195,29 +196,29 @@ struct RecoilJets {
                   "Has det. level coll. associat. MC coll.", kTH1F,
                   {{2, 0.0, 2.}});
       spectra.get<TH1>(HIST("hHasAssocMcCollision"))
-          ->GetXaxis()
-          ->SetBinLabel(1, "Yes");
+        ->GetXaxis()
+        ->SetBinLabel(1, "Yes");
       spectra.get<TH1>(HIST("hHasAssocMcCollision"))
-          ->GetXaxis()
-          ->SetBinLabel(2, "No");
+        ->GetXaxis()
+        ->SetBinLabel(2, "No");
 
       spectra.add("hTrackSelectionCount", "Count # of tracks in the analysis",
                   kTH1F, {{2, 0.0, 2.}});
       spectra.get<TH1>(HIST("hTrackSelectionCount"))
-          ->GetXaxis()
-          ->SetBinLabel(1, "Total # of tracks");
+        ->GetXaxis()
+        ->SetBinLabel(1, "Total # of tracks");
       spectra.get<TH1>(HIST("hTrackSelectionCount"))
-          ->GetXaxis()
-          ->SetBinLabel(
-              2, Form("# of tracks after sel. %s", trkSelToString.data()));
+        ->GetXaxis()
+        ->SetBinLabel(
+          2, Form("# of tracks after sel. %s", trkSelToString.data()));
 
       spectra.add("hTrackPtEtaPhi", "Charact. of tracks", kTH3F,
                   {pT, pseudorap, phiAngle});
 
       spectra.add(
-          "hTTSig_pT", "pT spectrum of all found TT_{Sig} cand.", kTH1F,
-          {{40, 10.,
-            50.}}); // needed to distinguish merged data from diff. wagons
+        "hTTSig_pT", "pT spectrum of all found TT_{Sig} cand.", kTH1F,
+        {{40, 10.,
+          50.}}); // needed to distinguish merged data from diff. wagons
 
       spectra.add("hNtrig", "Total number of selected triggers per class",
                   kTH1F, {{2, 0.0, 2.}});
@@ -274,29 +275,29 @@ struct RecoilJets {
                   "Count # of events in the part. level analysis", kTH1F,
                   {{2, 0.0, 2.}});
       spectra.get<TH1>(HIST("hEventSelectionCountPartLevel"))
-          ->GetXaxis()
-          ->SetBinLabel(1, "Total # of events");
+        ->GetXaxis()
+        ->SetBinLabel(1, "Total # of events");
       spectra.get<TH1>(HIST("hEventSelectionCountPartLevel"))
-          ->GetXaxis()
-          ->SetBinLabel(2, "# of events w. outlier");
+        ->GetXaxis()
+        ->SetBinLabel(2, "# of events w. outlier");
 
       spectra.add("hCountNumberOutliersFrameWork",
                   "Count # of outlier events based on flag from JE fw", kTH1F,
                   {{1, 0.0, 1.}});
       spectra.get<TH1>(HIST("hCountNumberOutliersFrameWork"))
-          ->GetXaxis()
-          ->SetBinLabel(1, "Oulier flag true");
+        ->GetXaxis()
+        ->SetBinLabel(1, "Oulier flag true");
 
       spectra.add("hPartPtEtaPhi", "Charact. of particles", kTH3F,
                   {pT, pseudorap, phiAngle});
       spectra.add("hNtrig_Part", "Total number of selected triggers per class",
                   kTH1F, {{2, 0.0, 2.}});
       spectra.get<TH1>(HIST("hNtrig_Part"))
-          ->GetXaxis()
-          ->SetBinLabel(1, "TT_{ref}");
+        ->GetXaxis()
+        ->SetBinLabel(1, "TT_{ref}");
       spectra.get<TH1>(HIST("hNtrig_Part"))
-          ->GetXaxis()
-          ->SetBinLabel(2, "TT_{sig}");
+        ->GetXaxis()
+        ->SetBinLabel(2, "TT_{sig}");
 
       spectra.add("hTTRef_per_event_Part", "Number of TT_{Ref} per event",
                   kTH1F, {{15, 0.5, 15.5}});
@@ -376,13 +377,13 @@ struct RecoilJets {
       // matched pair", kTH1F, {jetPTcorr});
 
       spectra.add(
-          "hJetPt_resolution",
-          "Jet p_{T} relative resolution as a func. of jet #it{p}_{T, part}",
-          kTH2F, {{100, -5., 5.}, pT});
+        "hJetPt_resolution",
+        "Jet p_{T} relative resolution as a func. of jet #it{p}_{T, part}",
+        kTH2F, {{100, -5., 5.}, pT});
       spectra.add(
-          "hJetPt_resolution_RecoilJets",
-          "Jet p_{T} relative resolution as a func. of jet #it{p}_{T, part}",
-          kTH2F, {{100, -5., 5.}, pT});
+        "hJetPt_resolution_RecoilJets",
+        "Jet p_{T} relative resolution as a func. of jet #it{p}_{T, part}",
+        kTH2F, {{100, -5., 5.}, pT});
 
       spectra.add("hJetPhi_resolution",
                   "#varphi resolution as a func. of jet #it{p}_{T, part}",
@@ -424,7 +425,8 @@ struct RecoilJets {
   // Fill histograms with raw or MC det. level data
   template <typename Collision, typename Jets, typename Tracks>
   void fillHistograms(Collision const& collision, Jets const& jets,
-                      Tracks const& tracks, float weight = 1.) {
+                      Tracks const& tracks, float weight = 1.)
+  {
     bool bSigEv = false;
     std::vector<double> vPhiOfTT;
     double phiTT = 0.;
@@ -518,8 +520,9 @@ struct RecoilJets {
   }
 
   template <typename Collision, typename Jets, typename Particles>
-  void fillMCPHistograms(Collision const &collision, Jets const &jets,
-                         Particles const &particles, float weight = 1.) {
+  void fillMCPHistograms(Collision const& collision, Jets const& jets,
+                         Particles const& particles, float weight = 1.)
+  {
     bool bSigEv = false;
     std::vector<double> vPhiOfTT;
     double phiTT = 0.;
@@ -618,9 +621,10 @@ struct RecoilJets {
   }
 
   template <typename TracksTable, typename JetsBase, typename JetsTag>
-  void fillMatchedHistograms(TracksTable const &tracks,
-                             JetsBase const &jetsBase, JetsTag const &jetsTag,
-                             float weight = 1.) {
+  void fillMatchedHistograms(TracksTable const& tracks,
+                             JetsBase const& jetsBase, JetsTag const& jetsTag,
+                             float weight = 1.)
+  {
     std::vector<double> vPhiOfTT;
     double phiTTSig = 0.;
     float pTHat = getPtHat(weight);
@@ -646,14 +650,15 @@ struct RecoilJets {
 
     for (const auto& jetBase : jetsBase) {
       bool bIsBaseJetRecoil =
-          get<1>(isRecoilJet(jetBase, phiTTSig)) && bIsThereTTSig;
+        get<1>(isRecoilJet(jetBase, phiTTSig)) && bIsThereTTSig;
       dataForUnfolding(jetBase, jetsTag, bIsBaseJetRecoil, weight);
     }
   }
 
   template <typename Collision>
-  void fillMultiplicityHistograms(Collision const &collision,
-                                  float weight = 1.0) {
+  void fillMultiplicityHistograms(Collision const& collision,
+                                  float weight = 1.0)
+  {
 
     spectra.fill(HIST("hMultFT0A"), collision.multFT0A(), weight);
     spectra.fill(HIST("hMultFT0C"), collision.multFT0C(), weight);
@@ -676,7 +681,8 @@ struct RecoilJets {
   //------------------------------------------------------------------------------
   // Process functions
   void processData(FilteredColl const& collision, FilteredTracks const& tracks,
-                   FilteredJets const& jets) {
+                   FilteredJets const& jets)
+  {
     spectra.fill(HIST("hEventSelectionCount"), 0.5);
 
     if (skipEvent(collision))
@@ -691,7 +697,8 @@ struct RecoilJets {
 
   void processMCDetLevel(FilteredColl const& collision,
                          FilteredTracks const& tracks,
-                         FilteredJetsDetLevel const& jets) {
+                         FilteredJetsDetLevel const& jets)
+  {
     spectra.fill(HIST("hEventSelectionCount"), 0.5);
     if (skipEvent(collision) || skipMBGapEvent(collision))
       return;
@@ -707,7 +714,8 @@ struct RecoilJets {
   void processMCDetLevelWeighted(FilteredCollDetLevelGetWeight const& collision,
                                  aod::JetMcCollisions const&,
                                  FilteredTracks const& tracks,
-                                 FilteredJetsDetLevel const& jets) {
+                                 FilteredJetsDetLevel const& jets)
+  {
     spectra.fill(HIST("hEventSelectionCount"), 0.5);
     if (skipEvent(collision) || skipMBGapEvent(collision))
       return;
@@ -730,7 +738,8 @@ struct RecoilJets {
 
   void processMCPartLevel(FilteredCollPartLevel const& collision,
                           FilteredParticles const& particles,
-                          FilteredJetsPartLevel const& jets) {
+                          FilteredJetsPartLevel const& jets)
+  {
     spectra.fill(HIST("hEventSelectionCountPartLevel"), 0.5);
     if (skipMBGapEvent(collision))
       return;
@@ -743,7 +752,8 @@ struct RecoilJets {
 
   void processMCPartLevelWeighted(FilteredCollPartLevel const& collision,
                                   FilteredParticles const& particles,
-                                  FilteredJetsPartLevel const& jets) {
+                                  FilteredJetsPartLevel const& jets)
+  {
     spectra.fill(HIST("hEventSelectionCountPartLevel"), 0.5);
     if (skipMBGapEvent(collision))
       return;
@@ -768,12 +778,13 @@ struct RecoilJets {
                           aod::JetMcCollisions const&,
                           FilteredTracks const& tracks,
                           FilteredMatchedJetsDetLevel const& mcdjets,
-                          FilteredMatchedJetsPartLevel const& mcpjets) {
+                          FilteredMatchedJetsPartLevel const& mcpjets)
+  {
     if (skipEvent(collision) || skipMBGapEvent(collision))
       return;
 
     auto mcpjetsPerMCCollision =
-        mcpjets.sliceBy(partJetsPerCollision, collision.mcCollisionId());
+      mcpjets.sliceBy(partJetsPerCollision, collision.mcCollisionId());
 
     fillMatchedHistograms(tracks, mcpjetsPerMCCollision, mcdjets);
   }
@@ -781,16 +792,17 @@ struct RecoilJets {
                  "process matching of MC jets (no weight)", false);
 
   void
-  processJetsMatchedWeighted(FilteredCollDetLevelGetWeight const& collision,
-                             aod::JetMcCollisions const&,
-                             FilteredTracks const& tracks,
-                             FilteredMatchedJetsDetLevel const& mcdjets,
-                             FilteredMatchedJetsPartLevel const& mcpjets) {
+    processJetsMatchedWeighted(FilteredCollDetLevelGetWeight const& collision,
+                               aod::JetMcCollisions const&,
+                               FilteredTracks const& tracks,
+                               FilteredMatchedJetsDetLevel const& mcdjets,
+                               FilteredMatchedJetsPartLevel const& mcpjets)
+  {
     if (skipEvent(collision) || skipMBGapEvent(collision))
       return;
 
     auto mcpjetsPerMCCollision =
-        mcpjets.sliceBy(partJetsPerCollision, collision.mcCollisionId());
+      mcpjets.sliceBy(partJetsPerCollision, collision.mcCollisionId());
     auto weight = collision.mcCollision().weight();
 
     fillMatchedHistograms(tracks, mcpjetsPerMCCollision, mcdjets, weight);
@@ -798,7 +810,8 @@ struct RecoilJets {
   PROCESS_SWITCH(RecoilJets, processJetsMatchedWeighted,
                  "process matching of MC jets (weighted)", false);
 
-  void processMultiplicity(FilteredEventMultiplicity const& collision) {
+  void processMultiplicity(FilteredEventMultiplicity const& collision)
+  {
     if (skipEvent(collision))
       return;
 
@@ -809,48 +822,58 @@ struct RecoilJets {
 
   //------------------------------------------------------------------------------
   // Auxiliary functions
-  template <typename Collision> bool skipEvent(const Collision &coll) {
+  template <typename Collision>
+  bool skipEvent(const Collision& coll)
+  {
     /// \brief: trigger cut is needed for pp data
     return !jetderiveddatautilities::selectCollision(coll,
                                                      eventSelectionBits) ||
            !jetderiveddatautilities::selectTrigger(coll, triggerMaskBits);
   }
 
-  template <typename Collision> bool skipMBGapEvent(const Collision &coll) {
+  template <typename Collision>
+  bool skipMBGapEvent(const Collision& coll)
+  {
     return skipMBGapEvents &&
            coll.subGeneratorId() ==
-               jetderiveddatautilities::JCollisionSubGeneratorId::mbGap;
+             jetderiveddatautilities::JCollisionSubGeneratorId::mbGap;
   }
 
-  template <typename Track> bool skipTrack(const Track &track) {
+  template <typename Track>
+  bool skipTrack(const Track& track)
+  {
     return !jetderiveddatautilities::selectTrack(track, trackSelection);
   }
 
   template <typename Jet>
-  std::tuple<double, bool> isRecoilJet(const Jet &jet, double phiTT) {
+  std::tuple<double, bool> isRecoilJet(const Jet& jet, double phiTT)
+  {
     double dphi = std::fabs(
-        RecoDecay::constrainAngle(jet.phi() - phiTT, -constants::math::PI));
+      RecoDecay::constrainAngle(jet.phi() - phiTT, -constants::math::PI));
     return {dphi, (constants::math::PI - recoilRegion) < dphi};
   }
 
-  double getPhiTT(const std::vector<double> &vPhiOfTT) {
+  double getPhiTT(const std::vector<double>& vPhiOfTT)
+  {
     auto iTrig = rand->Integer(vPhiOfTT.size());
     return vPhiOfTT[iTrig];
   }
 
-  float getPtHat(float weight) {
+  float getPtHat(float weight)
+  {
     return 10. / (std::pow(weight, 1.0 / pTHatExponent));
   }
 
   template <typename PartJet, typename DetJet>
-  void dataForUnfolding(PartJet const &partJet, DetJet const &detJets,
-                        bool bIsBaseJetRecoil, float weight = 1.0) {
+  void dataForUnfolding(PartJet const& partJet, DetJet const& detJets,
+                        bool bIsBaseJetRecoil, float weight = 1.0)
+  {
 
     bool bIsThereMatchedJet = partJet.has_matchedJetGeo();
 
     if (bIsThereMatchedJet) {
       const auto& jetsMatched =
-          partJet.template matchedJetGeo_as<std::decay_t<DetJet>>();
+        partJet.template matchedJetGeo_as<std::decay_t<DetJet>>();
 
       for (const auto& jetMatched : jetsMatched) {
         spectra.fill(HIST("hNumberMatchedJetsPerOneBaseJet"),
@@ -892,6 +915,7 @@ struct RecoilJets {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const &cfgc) {
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{adaptAnalysisTask<RecoilJets>(cfgc)};
 }
