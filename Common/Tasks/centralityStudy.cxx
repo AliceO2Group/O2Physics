@@ -49,7 +49,20 @@ struct centralityStudy {
   int mRunNumber;
   uint64_t startOfRunTimestamp;
 
+  // vertex Z equalization
+  TList* hCalibObjects;
+  TProfile* hVtxZFV0A;
+  TProfile* hVtxZFT0A;
+  TProfile* hVtxZFT0C;
+  TProfile* hVtxZNTracks;
+  TProfile* hVtxZNGlobals;
+  TProfile* hVtxZMFT;
+  TProfile* hVtxZFDDA;
+  TProfile* hVtxZFDDC;
+
   // Configurables
+  Configurable<bool> applyVertexZEqualization{"applyVertexZEqualization", false, "0 - no, 1 - yes"};
+
   Configurable<bool> do2DPlots{"do2DPlots", true, "0 - no, 1 - yes"};
   Configurable<bool> doOccupancyStudyVsCentrality2d{"doOccupancyStudyVsCentrality2d", true, "0 - no, 1 - yes"};
   Configurable<bool> doOccupancyStudyVsRawValues2d{"doOccupancyStudyVsRawValues2d", true, "0 - no, 1 - yes"};
@@ -90,6 +103,7 @@ struct centralityStudy {
 
   Configurable<std::string> ccdbURL{"ccdbURL", "http://alice-ccdb.cern.ch", "ccdb url"};
   Configurable<std::string> pathGRPECSObject{"pathGRPECSObject", "GLO/Config/GRPECS", "Path to GRPECS object"};
+  Configurable<std::string> pathVertexZ{"pathVertexZ", "Users/d/ddobrigk/Centrality/Calibration", "Path to vertexZ profiles"};
   Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Source of the interaction rate: (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
   Configurable<bool> irCrashOnNull{"irCrashOnNull", false, "Flag to avoid CTP RateFetcher crash."};
   Configurable<bool> irDoRateVsTime{"irDoRateVsTime", true, "Do IR plots"};
@@ -148,6 +162,16 @@ struct centralityStudy {
 
   void init(InitContext&)
   {
+    hCalibObjects = nullptr;
+    hVtxZFV0A = nullptr;
+    hVtxZFT0A = nullptr;
+    hVtxZFT0C = nullptr;
+    hVtxZNTracks = nullptr;
+    hVtxZNGlobals = nullptr;
+    hVtxZMFT = nullptr;
+    hVtxZFDDA = nullptr;
+    hVtxZFDDC = nullptr;
+
     if (doprocessCollisions || doprocessCollisionsWithCentrality) {
       const AxisSpec axisCollisions{100, -0.5f, 99.5f, "Number of collisions"};
       histos.add("hCollisionSelection", "hCollisionSelection", kTH1D, {{20, -0.5f, +19.5f}});
@@ -280,6 +304,26 @@ struct centralityStudy {
     o2::parameters::GRPECSObject* grpo = ccdb->getForRun<o2::parameters::GRPECSObject>(pathGRPECSObject, mRunNumber);
     startOfRunTimestamp = grpo->getTimeStart();
 
+    if (applyVertexZEqualization.value) {
+      // acquire vertex-Z equalization histograms if requested
+      LOGF(info, "Acquiring vertex-Z profiles for run %i", mRunNumber);
+      hCalibObjects = ccdb->getForRun<TList>(pathVertexZ, mRunNumber);
+
+      hVtxZFV0A = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFV0A"));
+      hVtxZFT0A = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFT0A"));
+      hVtxZFT0C = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFT0C"));
+      // hVtxZFDDA = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFDDA"));
+      // hVtxZFDDC = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZFDDC"));
+      hVtxZNTracks = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZNTracksPV"));
+      hVtxZNGlobals = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZNGlobals"));
+      hVtxZMFT = static_cast<TProfile*>(hCalibObjects->FindObject("hVtxZMFT"));
+
+      // Capture error
+      if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZNTracks || !hVtxZNGlobals || !hVtxZMFT) {
+        LOGF(error, "Problem loading CCDB objects! Please check");
+      }
+    }
+
     histPath = std::format("Run_{}/", mRunNumber);
 
     if (doprocessCollisions || doprocessCollisionsWithCentrality) {
@@ -304,6 +348,15 @@ struct centralityStudy {
       histPointers.insert({histPath + "hNGlobalTracks", histos.add((histPath + "hNGlobalTracks").c_str(), "hNGlobalTracks", {kTH1D, {{axisMultUltraFineGlobalTracks}}})});
       histPointers.insert({histPath + "hNMFTTracks", histos.add((histPath + "hNMFTTracks").c_str(), "hNMFTTracks", {kTH1D, {{axisMultUltraFineMFTTracks}}})});
       histPointers.insert({histPath + "hNPVContributors", histos.add((histPath + "hNPVContributors").c_str(), "hNPVContributors", {kTH1D, {{axisMultUltraFinePVContributors}}})});
+
+      if (applyVertexZEqualization) {
+        histPointers.insert({histPath + "hFT0C_Collisions_Unequalized", histos.add((histPath + "hFT0C_Collisions_Unequalized").c_str(), "hFT0C_Collisions_Unequalized", {kTH1D, {{axisMultUltraFineFT0C}}})});
+        histPointers.insert({histPath + "hFT0M_Collisions_Unequalized", histos.add((histPath + "hFT0M_Collisions_Unequalized").c_str(), "hFT0M_Collisions_Unequalized", {kTH1D, {{axisMultUltraFineFT0M}}})});
+        histPointers.insert({histPath + "hFV0A_Collisions_Unequalized", histos.add((histPath + "hFV0A_Collisions_Unequalized").c_str(), "hFV0A_Collisions_Unequalized", {kTH1D, {{axisMultUltraFineFV0A}}})});
+        histPointers.insert({histPath + "hNGlobalTracks_Unequalized", histos.add((histPath + "hNGlobalTracks_Unequalized").c_str(), "hNGlobalTracks_Unequalized", {kTH1D, {{axisMultUltraFineGlobalTracks}}})});
+        histPointers.insert({histPath + "hNMFTTracks_Unequalized", histos.add((histPath + "hNMFTTracks_Unequalized").c_str(), "hNMFTTracks_Unequalized", {kTH1D, {{axisMultUltraFineMFTTracks}}})});
+        histPointers.insert({histPath + "hNPVContributors_Unequalized", histos.add((histPath + "hNPVContributors_Unequalized").c_str(), "hNPVContributors_Unequalized", {kTH1D, {{axisMultUltraFinePVContributors}}})});
+      }
 
       histPointers.insert({histPath + "hFT0CvsPVz_Collisions_All", histos.add((histPath + "hFT0CvsPVz_Collisions_All").c_str(), "hFT0CvsPVz_Collisions_All", {kTProfile, {{axisPVz}}})});
       histPointers.insert({histPath + "hFT0AvsPVz_Collisions", histos.add((histPath + "hFT0AvsPVz_Collisions").c_str(), "hFT0AvsPVz_Collisions", {kTProfile, {{axisPVz}}})});
@@ -368,6 +421,42 @@ struct centralityStudy {
     histos.fill(HIST("hCollisionSelection"), 1);
     getHist(TH1, histPath + "hCollisionSelection")->Fill(1);
 
+    // calculate vertex-Z-equalized quantities if desired
+    float multFV0A = collision.multFV0A();
+    float multFT0A = collision.multFT0A();
+    float multFT0C = collision.multFT0C();
+    float multNTracksGlobal = collision.multNTracksGlobal();
+    float mftNtracks = collision.mftNtracks();
+    float multNTracksPV = collision.multNTracksPV();
+    if (applyVertexZEqualization) {
+      float epsilon = 1e-2; // average value after which this collision will be disregarded
+      multFV0A = -1.0f;
+      multFT0A = -1.0f;
+      multFT0C = -1.0f;
+      multNTracksGlobal = -1.0f;
+      mftNtracks = -1.0f;
+      multNTracksPV = -1.0f;
+
+      if (hVtxZFV0A->Interpolate(collision.multPVz()) > epsilon) {
+        multFV0A = hVtxZFV0A->Interpolate(0.0) * collision.multFV0A() / hVtxZFV0A->Interpolate(collision.multPVz());
+      }
+      if (hVtxZFT0A->Interpolate(collision.multPVz()) > epsilon) {
+        multFT0A = hVtxZFT0A->Interpolate(0.0) * collision.multFT0A() / hVtxZFT0A->Interpolate(collision.multPVz());
+      }
+      if (hVtxZFT0C->Interpolate(collision.multPVz()) > epsilon) {
+        multFT0C = hVtxZFT0C->Interpolate(0.0) * collision.multFT0C() / hVtxZFT0C->Interpolate(collision.multPVz());
+      }
+      if (hVtxZNGlobals->Interpolate(collision.multPVz()) > epsilon) {
+        multNTracksGlobal = hVtxZNGlobals->Interpolate(0.0) * collision.multNTracksGlobal() / hVtxZNGlobals->Interpolate(collision.multPVz());
+      }
+      if (hVtxZMFT->Interpolate(collision.multPVz()) > epsilon) {
+        mftNtracks = hVtxZMFT->Interpolate(0.0) * collision.mftNtracks() / hVtxZMFT->Interpolate(collision.multPVz());
+      }
+      if (hVtxZNTracks->Interpolate(collision.multPVz()) > epsilon) {
+        multNTracksPV = hVtxZNTracks->Interpolate(0.0) * collision.multNTracksPV() / hVtxZNTracks->Interpolate(collision.multPVz());
+      }
+    }
+
     bool passRejectITSROFBorder = !(rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder));
     bool passRejectTFBorder = !(rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder));
     bool passRequireIsVertexITSTPC = !(requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC));
@@ -384,13 +473,13 @@ struct centralityStudy {
     if (passRejectITSROFBorder && passRejectTFBorder && passRequireIsVertexITSTPC && passRequireIsGoodZvtxFT0VsPV &&
         passRequireIsVertexTOFmatched && passRequireIsVertexTRDmatched && passRejectSameBunchPileup && passRejectITSinROFpileupStandard && passRejectITSinROFpileupStrict &&
         passSelectUPCcollisions && passRejectCollInTimeRangeNarrow) {
-      getHist(TProfile, histPath + "hFT0CvsPVz_Collisions_All")->Fill(collision.multPVz(), collision.multFT0C() * scaleSignalFT0C);
-      getHist(TProfile, histPath + "hFT0CvsPVz_Collisions")->Fill(collision.multPVz(), collision.multFT0C() * scaleSignalFT0C);
-      getHist(TProfile, histPath + "hFT0AvsPVz_Collisions")->Fill(collision.multPVz(), collision.multFT0A() * scaleSignalFT0C);
-      getHist(TProfile, histPath + "hFV0AvsPVz_Collisions")->Fill(collision.multPVz(), collision.multFV0A() * scaleSignalFV0A);
-      getHist(TProfile, histPath + "hNGlobalTracksvsPVz_Collisions")->Fill(collision.multPVz(), collision.multNTracksGlobal());
-      getHist(TProfile, histPath + "hNMFTTracksvsPVz_Collisions")->Fill(collision.multPVz(), collision.mftNtracks());
-      getHist(TProfile, histPath + "hNTPVvsPVz_Collisions")->Fill(collision.multPVz(), collision.multNTracksPV());
+      getHist(TProfile, histPath + "hFT0CvsPVz_Collisions_All")->Fill(collision.multPVz(), multFT0C * scaleSignalFT0C);
+      getHist(TProfile, histPath + "hFT0CvsPVz_Collisions")->Fill(collision.multPVz(), multFT0C * scaleSignalFT0C);
+      getHist(TProfile, histPath + "hFT0AvsPVz_Collisions")->Fill(collision.multPVz(), multFT0A * scaleSignalFT0C);
+      getHist(TProfile, histPath + "hFV0AvsPVz_Collisions")->Fill(collision.multPVz(), multFV0A * scaleSignalFV0A);
+      getHist(TProfile, histPath + "hNGlobalTracksvsPVz_Collisions")->Fill(collision.multPVz(), multNTracksGlobal);
+      getHist(TProfile, histPath + "hNMFTTracksvsPVz_Collisions")->Fill(collision.multPVz(), mftNtracks);
+      getHist(TProfile, histPath + "hNTPVvsPVz_Collisions")->Fill(collision.multPVz(), multNTracksPV);
     }
 
     // _______________________________________________________
@@ -509,17 +598,24 @@ struct centralityStudy {
     histos.fill(HIST("hNGlobalTracksvsPVz_Collisions"), collision.multPVz(), collision.multNTracksGlobal());
     histos.fill(HIST("hNMFTTracksvsPVz_Collisions"), collision.multPVz(), collision.mftNtracks());
 
-    getHist(TH1, histPath + "hNPVContributors")->Fill(collision.multNTracksPV());
-    getHist(TH1, histPath + "hFT0C_Collisions")->Fill(collision.multFT0C() * scaleSignalFT0C);
-    getHist(TH1, histPath + "hFT0M_Collisions")->Fill((collision.multFT0A() + collision.multFT0C()) * scaleSignalFT0M);
-    getHist(TH1, histPath + "hFV0A_Collisions")->Fill(collision.multFV0A() * scaleSignalFV0A);
-    getHist(TH1, histPath + "hNGlobalTracks")->Fill(collision.multNTracksGlobal());
-    getHist(TH1, histPath + "hNMFTTracks")->Fill(collision.mftNtracks());
+    // save vertex-Z equalized
+    getHist(TH1, histPath + "hNPVContributors")->Fill(multNTracksPV);
+    getHist(TH1, histPath + "hFT0C_Collisions")->Fill(multFT0C * scaleSignalFT0C);
+    getHist(TH1, histPath + "hFT0M_Collisions")->Fill((multFT0A + multFT0C) * scaleSignalFT0M);
+    getHist(TH1, histPath + "hFV0A_Collisions")->Fill(multFV0A * scaleSignalFV0A);
+    getHist(TH1, histPath + "hNGlobalTracks")->Fill(multNTracksGlobal);
+    getHist(TH1, histPath + "hNMFTTracks")->Fill(mftNtracks);
 
-    if (collision.multFT0C() > minFT0CforVertexZ) {
-      histos.fill(HIST("hFT0CvsPVz_Collisions"), collision.multPVz(), collision.multFT0C() * scaleSignalFT0C);
-      getHist(TProfile, histPath + "hFT0CvsPVz_Collisions")->Fill(collision.multPVz(), collision.multFT0C() * scaleSignalFT0C);
+    if (applyVertexZEqualization.value) {
+      // save unequalized for cross-checks
+      getHist(TH1, histPath + "hNPVContributors_Unequalized")->Fill(collision.multNTracksPV());
+      getHist(TH1, histPath + "hFT0C_Collisions_Unequalized")->Fill(collision.multFT0C() * scaleSignalFT0C);
+      getHist(TH1, histPath + "hFT0M_Collisions_Unequalized")->Fill((collision.multFT0A() + collision.multFT0C()) * scaleSignalFT0M);
+      getHist(TH1, histPath + "hFV0A_Collisions_Unequalized")->Fill(collision.multFV0A() * scaleSignalFV0A);
+      getHist(TH1, histPath + "hNGlobalTracks_Unequalized")->Fill(collision.multNTracksGlobal());
+      getHist(TH1, histPath + "hNMFTTracks_Unequalized")->Fill(collision.mftNtracks());
     }
+
     if (do2DPlots) {
       histos.fill(HIST("hNContribsVsFT0C"), collision.multFT0C() * scaleSignalFT0C, collision.multPVTotalContributors());
       histos.fill(HIST("hNContribsVsFV0A"), collision.multFV0A() * scaleSignalFV0A, collision.multPVTotalContributors());
