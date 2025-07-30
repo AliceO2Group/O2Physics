@@ -87,8 +87,8 @@ struct HfCandidateSelectorXicToPKPi {
   Configurable<bool> applyMSE{"applyMSE", false, "Flag to calculate MSE for autoencoders"};
   Configurable<bool> applyMinMax{"applyMinMax", false, "Flag to MinMax feature preprocessing"};
   /// Parameter vectors for feature preprocessing - external scaling
-  Configurable<std::vector<float>> scaleMin{"scaleMin", {0.,0.,0.}, "vector of scaling parameter min"};
-  Configurable<std::vector<float>> scaleMax{"scaleMax", {1.,1.,1.}, "vector of scaling parameter max"};
+  Configurable<std::vector<float>> scaleMin{"scaleMin", {0., 0., 0.}, "vector of scaling parameter min"};
+  Configurable<std::vector<float>> scaleMax{"scaleMax", {1., 1., 1.}, "vector of scaling parameter max"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"EventFiltering/PWGHF/BDTXic"}, "Paths of models on CCDB"};
@@ -155,10 +155,11 @@ struct HfCandidateSelectorXicToPKPi {
       hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
       hfMlResponse.init();
       /// AE feature preprocessing - MinMax scaling initialization
-      if(applyMinMax == 1) {
+      if (applyMinMax == 1) {
         LOG(info)<<"MinMax scaling will be applied";
         scaleType = 1;
-      } else LOG(info)<<"No external preprocessing transformation will be applied";
+      } else 
+        LOG(info) << "No external preprocessing transformation will be applied";
     }
   }
 
@@ -280,7 +281,7 @@ struct HfCandidateSelectorXicToPKPi {
         if (applyMl) {
           hfMlXicToPKPiCandidate(outputMlXicToPKPi, outputMlXicToPiKP);
           hfMseXicToPKPiCandidate(outputMseXicToPKPi, outputMseXicToPiKP); // MSE
-          hfAeXicToPKPiCandidate(outputAeXicToPKPi, outputAeXicToPiKP); // autoencoder outputs
+          hfAeXicToPKPiCandidate(outputAeXicToPKPi, outputAeXicToPiKP);    // autoencoder outputs
         }
         if (activateQA) {
           registry.fill(HIST("hSelections"), 1, ptCand);
@@ -305,7 +306,7 @@ struct HfCandidateSelectorXicToPKPi {
         if (applyMl) {
           hfMlXicToPKPiCandidate(outputMlXicToPKPi, outputMlXicToPiKP);
           hfMseXicToPKPiCandidate(outputMseXicToPKPi, outputMseXicToPiKP); // MSE
-          hfAeXicToPKPiCandidate(outputAeXicToPKPi, outputAeXicToPiKP); // autoencoder outputs
+          hfAeXicToPKPiCandidate(outputAeXicToPKPi, outputAeXicToPiKP);    // autoencoder outputs
         }
         continue;
       }
@@ -320,7 +321,7 @@ struct HfCandidateSelectorXicToPKPi {
         if (applyMl) {
           hfMlXicToPKPiCandidate(outputMlXicToPKPi, outputMlXicToPiKP);
           hfMseXicToPKPiCandidate(outputMseXicToPKPi, outputMseXicToPiKP); // MSE
-          hfAeXicToPKPiCandidate(outputAeXicToPKPi, outputAeXicToPiKP); // autoencoder outputs
+          hfAeXicToPKPiCandidate(outputAeXicToPKPi, outputAeXicToPiKP);    // autoencoder outputs
         }
         continue;
       }
@@ -389,7 +390,7 @@ struct HfCandidateSelectorXicToPKPi {
         if (applyMl) {
           hfMlXicToPKPiCandidate(outputMlXicToPKPi, outputMlXicToPiKP);
           hfMseXicToPKPiCandidate(outputMseXicToPKPi, outputMseXicToPiKP); // MSE
-          hfAeXicToPKPiCandidate(outputAeXicToPKPi, outputAeXicToPiKP); // autoencoder outputs
+          hfAeXicToPKPiCandidate(outputAeXicToPKPi, outputAeXicToPiKP);    // autoencoder outputs
         }
         continue;
       }
@@ -412,7 +413,7 @@ struct HfCandidateSelectorXicToPKPi {
         if (topolXicToPKPi && pidXicToPKPi) {
           std::vector<float> inputFeaturesXicToPKPi = hfMlResponse.getInputFeatures(candidate, true);
           isSelectedMlXicToPKPi = hfMlResponse.isSelectedMl(inputFeaturesXicToPKPi, ptCand, outputMlXicToPKPi);
-          if(applyMSE){
+          if (applyMSE) {
             /// fill outputAeXicToPKPi with rescaled AE output since ML output is automatically scaled
             hfAeResponse.unsetScaling(applyMSE, scaleType, outputMlXicToPKPi, scaleMin, scaleMax);
             outputAeXicToPKPi = hfAeResponse.getPostprocessedOutput();
@@ -425,7 +426,7 @@ struct HfCandidateSelectorXicToPKPi {
         if (topolXicToPiKP && pidXicToPiKP) {
           std::vector<float> inputFeaturesXicToPiKP = hfMlResponse.getInputFeatures(candidate, false);
           isSelectedMlXicToPiKP = hfMlResponse.isSelectedMl(inputFeaturesXicToPiKP, ptCand, outputMlXicToPiKP);
-          if(applyMSE){
+          if (applyMSE) {
             /// fill outputAeXicToPiKP with rescaled AE output since ML output is automatically scaled
             hfAeResponse.unsetScaling(applyMSE, scaleType, outputMlXicToPiKP, scaleMin, scaleMax);
             outputAeXicToPiKP = hfAeResponse.getPostprocessedOutput();

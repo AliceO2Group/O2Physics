@@ -81,7 +81,7 @@ struct HfTaskXic {
   ConfigurableAxis thnConfigAxisBdtScoreBkg{"thnConfigAxisBdtScoreBkg", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisBdtScoreSignal{"thnConfigAxisBdtScoreSignal", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisYMC{"thnConfigAxisYMC", {100, -2., 2.}, ""};
-  ConfigurableAxis thnConfigAxisMseXic{"thnConfigAxisMseXic", {502, -0.0002, 1}, ""}; // MSE axis
+  ConfigurableAxis thnConfigAxisMseXic{"thnConfigAxisMseXic", {502, -0.0002, 1}, ""};     // MSE axis
   ConfigurableAxis thnConfigAxisAeOutputXic{"thnConfigAxisAeOutputXic", {20, 0.8, 1},""}; // an AE output axis
   //
 
@@ -383,10 +383,10 @@ struct HfTaskXic {
               /// Fill the ML outputScores and variables of candidate Xic
               registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, false);
             } else {
-              outputAE = candidate.aeOutputXicToPKPi()[0];    /// AE output of feature 0
-              outputMSE = candidate.mseXicToPKPi()[0];        /// MSE
-              LOG(debug)<<"Global mse in taskXic for PKPi Data "<<outputMSE;
-              registry.get<THnSparse>(HIST("hnXicVarsWithMse"))->Fill(massXic, ptCandidate, candidate.decayLength(), candidate.cpa(), outputAE, 0, 0.0, 0.0, false, outputMSE);
+              outputAE = candidate.aeOutputXicToPKPi()[0]; /// AE output of feature 0
+              outputMSE = candidate.mseXicToPKPi()[0];     /// MSE
+              LOG(debug) << "Global mse in taskXic for PKPi Data " << outputMSE;
+              registry.get<THnSparse>(HIST("hnXicVarsWithMse"))->Fill(massXic, ptCandidate, candidate.decayLength(), candidate.cpa(), outputAE, false, outputMSE);
             }
           } else {
             registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), false);
@@ -402,9 +402,9 @@ struct HfTaskXic {
               /// Fill the ML outputScores and variables of candidate
               registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, false);
             } else {
-              outputAE = candidate.aeOutputXicToPiKP()[0];    /// AE output of feature 0
-              outputMSE = candidate.mseXicToPiKP()[0];        /// MSE
-              LOG(debug)<<"Global mse in taskXic for PiKP Data "<<outputMSE;
+              outputAE = candidate.aeOutputXicToPiKP()[0]; /// AE output of feature 0
+              outputMSE = candidate.mseXicToPiKP()[0];     /// MSE
+              LOG(debug) << "Global mse in taskXic for PiKP Data " << outputMSE;
               registry.get<THnSparse>(HIST("hnXicVarsWithMse"))->Fill(massXic, ptCandidate, candidate.decayLength(), candidate.cpa(), outputAE, false, outputMSE);
             }
           } else {
@@ -529,9 +529,9 @@ struct HfTaskXic {
                 /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
                 registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXicToPKPi, ptCandidate, outputBkg, outputPrompt, outputFD, origin);
               } else {
-                 outputAE = candidate.aeOutputXicToPKPi()[0]; /// AE output of feature 0
-                 outputMSE = candidate.mseXicToPKPi()[0];     /// MSE
-                 registry.get<THnSparse>(HIST("hnXicVarsWithMse"))->Fill(massXicToPKPi, ptCandidate, candidate.decayLength(), candidate.cpa(), outputAE, origin, outputMSE);
+                outputAE = candidate.aeOutputXicToPKPi()[0]; /// AE output of feature 0
+                outputMSE = candidate.mseXicToPKPi()[0];     /// MSE
+                registry.get<THnSparse>(HIST("hnXicVarsWithMse"))->Fill(massXicToPKPi, ptCandidate, candidate.decayLength(), candidate.cpa(), outputAE, origin, outputMSE);
               }
             } else {
               registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXicToPKPi, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), origin);
@@ -547,9 +547,9 @@ struct HfTaskXic {
                 // add here the pT_Mother, y_Mother, level (reco, Gen, Gen + Acc)
                 registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXicToPiKP, ptCandidate, outputBkg, outputPrompt, outputFD, origin);
               } else {
-                 outputAE = candidate.aeOutputXicToPiKP()[0];  /// AE output of feature 0
-                 outputMSE = candidate.mseXicToPiKP()[0];      /// MSE
-                 registry.get<THnSparse>(HIST("hnXicVarsWithMse"))->Fill(massXicToPiKP, ptCandidate, candidate.decayLength(), candidate.cpa(), outputAE, origin, outputMSE);
+                outputAE = candidate.aeOutputXicToPiKP()[0];  /// AE output of feature 0
+                outputMSE = candidate.mseXicToPiKP()[0];      /// MSE
+                registry.get<THnSparse>(HIST("hnXicVarsWithMse"))->Fill(massXicToPiKP, ptCandidate, candidate.decayLength(), candidate.cpa(), outputAE, origin, outputMSE);
               }
             } else {
               registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXicToPiKP, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), origin);
