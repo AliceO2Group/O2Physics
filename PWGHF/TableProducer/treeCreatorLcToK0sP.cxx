@@ -70,8 +70,8 @@ DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);
 DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);
-DECLARE_SOA_COLUMN(CPA, cpa, float);
-DECLARE_SOA_COLUMN(CPAXY, cpaXY, float);
+DECLARE_SOA_COLUMN(Cpa, cpa, float);
+DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);
 DECLARE_SOA_COLUMN(Ct, ct, float);
 DECLARE_SOA_COLUMN(PtV0Pos, ptV0Pos, float);
 DECLARE_SOA_COLUMN(PtV0Neg, ptV0Neg, float);
@@ -123,8 +123,8 @@ DECLARE_SOA_TABLE(HfCandCascLites, "AOD", "HFCANDCASCLITE",
                   full::NSigmaTOFPr0,
                   full::M,
                   full::Pt,
-                  full::CPA,
-                  full::CPAXY,
+                  full::Cpa,
+                  full::CpaXY,
                   full::Ct,
                   full::Eta,
                   full::Phi,
@@ -196,8 +196,8 @@ DECLARE_SOA_TABLE(HfCandCascFulls, "AOD", "HFCANDCASCFULL",
                   full::M,
                   full::Pt,
                   full::P,
-                  full::CPA,
-                  full::CPAXY,
+                  full::Cpa,
+                  full::CpaXY,
                   full::Ct,
                   full::Eta,
                   full::Phi,
@@ -245,9 +245,9 @@ struct HfTreeCreatorLcToK0sP {
 
   HfHelper hfHelper;
 
-  Filter filterSelectCandidates = aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= 1;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPr>;
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandCascade, aod::HfCandCascadeMcRec, aod::HfSelLcToK0sP>>;
+  Filter filterSelectCandidates = aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= 1;
 
   void init(InitContext const&)
   {
