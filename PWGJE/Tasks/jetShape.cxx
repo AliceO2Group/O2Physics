@@ -52,6 +52,10 @@ struct JetShapeTask {
   Configurable<int> nBinsDistance{"nBinsDistance", 7, "Number of distance bins"};
   Configurable<float> distanceMax{"distanceMax", 0.7f, "Max value of distance"};
   Configurable<float> nSigmaTofCut{"nSigmaTofCut", 2.0f, "Number of sigma cut for TOF PID"};
+  Configurable<float> tpcNSigmaPrMin{"tpcNSigmaPrMin", -3.5f, "Min value of tpcNsigmaProton"};
+  Configurable<float> tpcNSigmaPrMax{"tpcNSigmaPrMax", 0.5f, "Max value of tpcNsigmaProton"};
+  Configurable<float> tpcNSigmaPiMin{"tpcNSigmaPiMin", -0.5f, "Min value of tpcNsigmaPion"};
+  Configurable<float> tpcNSigmaPiMax{"tpcNSigmaPiMax", 3.5f, "Max value of tpcNsigmaPion"};
 
   HistogramRegistry registry{"registry",
                              {{"tpcTofPi", "tpcTofPi", {HistType::kTHnSparseD, {{35, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}, {nBinsDistance, 0, distanceMax}}}},
@@ -334,13 +338,17 @@ struct JetShapeTask {
         registry.fill(HIST("tofBeta"), track.p(), track.beta(), distance);
 
         if (std::abs(track.tofNSigmaPr()) < nSigmaTofCut) {
-          registry.fill(HIST("pVsPtForProton"), track.p(), track.pt(), distance);
           registry.fill(HIST("tpcTofPr"), track.p(), track.tpcNSigmaPr(), distance);
+          if (track.tpcNSigmaPr() > tpcNSigmaPrMin && track.tpcNSigmaPr() < tpcNSigmaPrMax) {
+            registry.fill(HIST("pVsPtForProton"), track.p(), track.pt(), distance);
+          }
         }
 
         if (std::abs(track.tofNSigmaPi()) < nSigmaTofCut) {
-          registry.fill(HIST("pVsPtForPion"), track.p(), track.pt(), distance);
           registry.fill(HIST("tpcTofPi"), track.p(), track.tpcNSigmaPi(), distance);
+          if (track.tpcNSigmaPi() > tpcNSigmaPiMin && track.tpcNSigmaPi() < tpcNSigmaPiMax) {
+            registry.fill(HIST("pVsPtForPion"), track.p(), track.pt(), distance);
+          }
         }
       }
     }
