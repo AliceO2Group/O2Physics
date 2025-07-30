@@ -111,6 +111,7 @@ struct DileptonMC {
 
   ConfigurableAxis ConfDPtBins{"ConfDPtBins", {220, -1.0, +10.0}, "dpt bins for output histograms"};
   ConfigurableAxis ConfDCAllNarrowBins{"ConfDCAllNarrowBins", {200, 0.0, 10.0}, "narrow DCAll bins for output histograms"};
+  ConfigurableAxis ConfTrackDCA{"ConfTrackDCA", {VARIABLE_WIDTH, -10, -9, -8, -7, -6, -5, -4.5, -4, -3.5, -3, -2.5, -2, -1.9, -1.8, -1.7, -1.6, -1.5, -1.4, -1.3, -1.2, -1.1, -1, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10}, "DCA binning for single tacks"};
 
   ConfigurableAxis ConfYllBins{"ConfYllBins", {VARIABLE_WIDTH, -10.f, +10.f}, "yll bins for output histograms"};
 
@@ -346,6 +347,8 @@ struct DileptonMC {
 
     const AxisSpec axis_dca_narrow{ConfDCAllNarrowBins, pair_dca_axis_title};
     const AxisSpec axis_dpt{ConfDPtBins, "#Delta p_{T,1}^{gen-rec} + #Delta p_{T,2}^{gen-rec} (GeV/c)"};
+    const AxisSpec axis_dca_track1{ConfTrackDCA, "DCA_{e,1}^{Z} (#sigma)"};
+    const AxisSpec axis_dca_track2{ConfTrackDCA, "DCA_{e,2}^{Z} (#sigma)"};
 
     const AxisSpec axis_dphi_ee{cfg_nbin_dphi_ee, -M_PI / 2., 3. / 2. * M_PI, "#Delta#varphi = #varphi_{l1} - #varphi_{l2} (rad.)"}; // for kHFll
     const AxisSpec axis_deta_ee{cfg_nbin_deta_ee, -2., 2., "#Delta#eta = #eta_{l1} - #eta_{l2}"};                                    // for kHFll
@@ -438,6 +441,8 @@ struct DileptonMC {
       fRegistry.add("Pair/sm/NonPromptPi0/hDeltaPtvsDCA", "#Delta p_{T,1}^{gen-rec} + #Delta p_{T,2}^{gen-rec} vs. DCA_{ee}", kTH2F, {axis_dca_narrow, axis_dpt}, true);
       fRegistry.add("Pair/sm/PromptJPsi/hDeltaPtvsDCA", "#Delta p_{T,1}^{gen-rec} + #Delta p_{T,2}^{gen-rec} vs. DCA_{ee}", kTH2F, {axis_dca_narrow, axis_dpt}, true);
       fRegistry.add("Pair/sm/NonPromptJPsi/hDeltaPtvsDCA", "#Delta p_{T,1}^{gen-rec} + #Delta p_{T,2}^{gen-rec} vs. DCA_{ee}", kTH2F, {axis_dca_narrow, axis_dpt}, true);
+      fRegistry.add("Pair/sm/PromptPi0/hDCAz1vsDCAz2", "DCA_{z,1} vs DCA_{z,2}", kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+      fRegistry.add("Pair/sm/PromptJPsi/hDCAz1vsDCAz2", "DCA_{z,1} vs DCA_{z,2}", kTH2F, {axis_dca_track1, axis_dca_track2}, true);
     }
 
     fRegistry.add("Pair/ccbar/c2l_c2l/hadron_hadron/hs", "hs pair", kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
@@ -1003,6 +1008,7 @@ struct DileptonMC {
                 if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
                   fRegistry.fill(HIST("Pair/sm/PromptPi0/hDeltaPtvsDCA"), pair_dca, deltaPt1 + deltaPt2);
                   fRegistry.fill(HIST("Pair/sm/PromptPi0/hMvsPhiV"), phiv, v12.M());
+                  fRegistry.fill(HIST("Pair/sm/PromptPi0/hDCAz1vsDCAz2"), dcaZinSigma(t1), dcaZinSigma(t2));
                 }
               } else { // non-prompt pi0
                 fRegistry.fill(HIST("Pair/sm/NonPromptPi0/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, std::fabs(cos_thetaCS), std::fabs(phiCS), aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
@@ -1043,6 +1049,7 @@ struct DileptonMC {
                 fRegistry.fill(HIST("Pair/sm/PromptJPsi/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, std::fabs(cos_thetaCS), std::fabs(phiCS), aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
                 if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
                   fRegistry.fill(HIST("Pair/sm/PromptJPsi/hDeltaPtvsDCA"), pair_dca, deltaPt1 + deltaPt2);
+                  fRegistry.fill(HIST("Pair/sm/PromptJPsi/hDCAz1vsDCAz2"), dcaZinSigma(t1), dcaZinSigma(t2));
                 }
               }
               break;
