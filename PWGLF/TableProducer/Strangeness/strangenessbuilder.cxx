@@ -905,7 +905,7 @@ struct StrangenessBuilder {
           posTrackPar.setPID(o2::track::PID::Electron);
           negTrackPar.setPID(o2::track::PID::Electron);
           if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, pTrack, posTrackPar)) {
-            continue;
+	    continue;
           }
         }
         if (isNegTPCOnly) {
@@ -913,7 +913,7 @@ struct StrangenessBuilder {
           posTrackPar.setPID(o2::track::PID::Electron);
           negTrackPar.setPID(o2::track::PID::Electron);
           if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, nTrack, negTrackPar)) {
-            continue;
+	    continue;
           }
         }
       } // end TPC drift treatment
@@ -1648,7 +1648,8 @@ struct StrangenessBuilder {
 
           auto const& collision = collisions.rawIteratorAt(v0.collisionId);
           if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, posTrack, posTrackPar)) {
-            return;
+	    products.v0dataLink(-1, -1);
+            continue;
           }
         }
 
@@ -1660,7 +1661,8 @@ struct StrangenessBuilder {
 
           auto const& collision = collisions.rawIteratorAt(v0.collisionId);
           if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, negTrack, negTrackPar)) {
-            return;
+	    products.v0dataLink(-1, -1);
+            continue;
           }
         }
       }
