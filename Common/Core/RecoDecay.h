@@ -757,11 +757,11 @@ struct RecoDecay {
         auto motherI = particleI.template mothers_first_as<T>();
         auto pdgI = std::abs(particleI.pdgCode());
         auto pdgMotherI = std::abs(motherI.pdgCode());
-        if (pdgI == kMuonMinus && pdgMotherI == kPiPlus) {
+        if (pdgI == PDG_t::kMuonMinus && pdgMotherI == PDG_t::kPiPlus) {
           // π → μ
           nPiToMuLocal++;
           particleI = motherI;
-        } else if (pdgI == kPiPlus && pdgMotherI == kKPlus) {
+        } else if (pdgI == PDG_t::kPiPlus && pdgMotherI == PDG_t::kKPlus) {
           // K → π
           nKaToPiLocal++;
           particleI = motherI;
@@ -1021,7 +1021,7 @@ struct RecoDecay {
     arrayIds.push_back(initVec); // the first vector contains the index of the original particle
     auto pdgParticle = std::abs(particle.pdgCode());
     bool couldBePrompt = false;
-    if (pdgParticle / PdgDivisorMeson == kCharm || pdgParticle / PdgDivisorBaryon == kCharm) {
+    if (pdgParticle / PdgDivisorMeson == PDG_t::kCharm || pdgParticle / PdgDivisorBaryon == PDG_t::kCharm) {
       couldBePrompt = true;
     }
     while (arrayIds[-stage].size() > 0) {
@@ -1054,22 +1054,22 @@ struct RecoDecay {
 
             if (searchUpToQuark) {
               if (idxBhadMothers) {
-                if (pdgParticleIMother / PdgDivisorMeson == kBottom || // b mesons
-                    pdgParticleIMother / PdgDivisorBaryon == kBottom)  // b baryons
+                if (pdgParticleIMother / PdgDivisorMeson == PDG_t::kBottom || // b mesons
+                    pdgParticleIMother / PdgDivisorBaryon == PDG_t::kBottom)  // b baryons
                 {
                   idxBhadMothers->push_back(iMother);
                 }
               }
-              if (pdgParticleIMother == kBottom) { // b quark
+              if (pdgParticleIMother == PDG_t::kBottom) { // b quark
                 return OriginType::NonPrompt;
               }
-              if (pdgParticleIMother == kCharm) { // c quark
+              if (pdgParticleIMother == PDG_t::kCharm) { // c quark
                 return OriginType::Prompt;
               }
             } else {
               if (
-                (pdgParticleIMother / PdgDivisorMeson == kBottom || // b mesons
-                 pdgParticleIMother / PdgDivisorBaryon == kBottom)  // b baryons
+                (pdgParticleIMother / PdgDivisorMeson == PDG_t::kBottom || // b mesons
+                 pdgParticleIMother / PdgDivisorBaryon == PDG_t::kBottom)  // b baryons
               ) {
                 if (idxBhadMothers) {
                   idxBhadMothers->push_back(iMother);
@@ -1077,8 +1077,8 @@ struct RecoDecay {
                 return OriginType::NonPrompt;
               }
               if (
-                (pdgParticleIMother / PdgDivisorMeson == kCharm || // c mesons
-                 pdgParticleIMother / PdgDivisorBaryon == kCharm)  // c baryons
+                (pdgParticleIMother / PdgDivisorMeson == PDG_t::kCharm || // c mesons
+                 pdgParticleIMother / PdgDivisorBaryon == PDG_t::kCharm)  // c baryons
               ) {
                 couldBePrompt = true;
               }
@@ -1119,7 +1119,7 @@ struct RecoDecay {
     arrayIds.push_back(initVec); // the first vector contains the index of the original particle
     auto pdgParticle = std::abs(particle.pdgCode());
     bool couldBeCharm = false;
-    if (pdgParticle / PdgDivisorMeson == kCharm || pdgParticle / PdgDivisorBaryon == kCharm) {
+    if (pdgParticle / PdgDivisorMeson == PDG_t::kCharm || pdgParticle / PdgDivisorBaryon == PDG_t::kCharm) {
       couldBeCharm = true;
     }
     while (arrayIds[-stage].size() > 0) {
@@ -1136,14 +1136,14 @@ struct RecoDecay {
             if (pdgParticleIMother <= PdgQuarkMax || (pdgParticleIMother >= PdgBosonMin && pdgParticleIMother <= PdgBosonMax)) {
               // auto PDGPaticle = std::abs(particleMother.pdgCode());
               if (
-                (pdgParticle / PdgDivisorMeson == kBottom || // b mesons
-                 pdgParticle / PdgDivisorBaryon == kBottom)  // b baryons
+                (pdgParticle / PdgDivisorMeson == PDG_t::kBottom || // b mesons
+                 pdgParticle / PdgDivisorBaryon == PDG_t::kBottom)  // b baryons
               ) {
                 return OriginType::NonPrompt; // beauty
               }
               if (
-                (pdgParticle / PdgDivisorMeson == kCharm || // c mesons
-                 pdgParticle / PdgDivisorBaryon == kCharm)  // c baryons
+                (pdgParticle / PdgDivisorMeson == PDG_t::kCharm || // c mesons
+                 pdgParticle / PdgDivisorBaryon == PDG_t::kCharm)  // c baryons
               ) {
                 return OriginType::Prompt; // charm
               }
@@ -1167,22 +1167,22 @@ struct RecoDecay {
 
             if (searchUpToQuark) {
               if (idxBhadMothers) {
-                if (pdgParticleIMother / PdgDivisorMeson == kBottom || // b mesons
-                    pdgParticleIMother / PdgDivisorBaryon == kBottom)  // b baryons
+                if (pdgParticleIMother / PdgDivisorMeson == PDG_t::kBottom || // b mesons
+                    pdgParticleIMother / PdgDivisorBaryon == PDG_t::kBottom)  // b baryons
                 {
                   idxBhadMothers->push_back(iMother);
                 }
               }
-              if (pdgParticleIMother == kBottom) { // b quark
-                return OriginType::NonPrompt;      // beauty
+              if (pdgParticleIMother == PDG_t::kBottom) { // b quark
+                return OriginType::NonPrompt;             // beauty
               }
-              if (pdgParticleIMother == kCharm) { // c quark
-                return OriginType::Prompt;        // charm
+              if (pdgParticleIMother == PDG_t::kCharm) { // c quark
+                return OriginType::Prompt;               // charm
               }
             } else {
               if (
-                (pdgParticleIMother / PdgDivisorMeson == kBottom || // b mesons
-                 pdgParticleIMother / PdgDivisorBaryon == kBottom)  // b baryons
+                (pdgParticleIMother / PdgDivisorMeson == PDG_t::kBottom || // b mesons
+                 pdgParticleIMother / PdgDivisorBaryon == PDG_t::kBottom)  // b baryons
               ) {
                 if (idxBhadMothers) {
                   idxBhadMothers->push_back(iMother);
@@ -1190,8 +1190,8 @@ struct RecoDecay {
                 return OriginType::NonPrompt; // beauty
               }
               if (
-                (pdgParticleIMother / PdgDivisorMeson == kCharm || // c mesons
-                 pdgParticleIMother / PdgDivisorBaryon == kCharm)  // c baryons
+                (pdgParticleIMother / PdgDivisorMeson == PDG_t::kCharm || // c mesons
+                 pdgParticleIMother / PdgDivisorBaryon == PDG_t::kCharm)  // c baryons
               ) {
                 couldBeCharm = true;
               }
