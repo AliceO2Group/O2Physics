@@ -50,8 +50,8 @@ struct RecoDecay {
 
   static constexpr int8_t StatusCodeAfterFlavourOscillation{92}; // decay products after B0(s) flavour oscillation
   static constexpr int PdgQuarkMax{8};                           // largest quark PDG code; o2-linter: disable=pdg/explicit-code (t' does not have a named constant.)
-  static constexpr int PdgBosonMin{PDG_t::kGluon};               // smallest boson PDG code
-  static constexpr int PdgBosonMax{37};                          // largest boson PDG code; o2-linter: disable=pdg/explicit-code (H+ does not have a named constant.)
+  static constexpr int PdgBosonMin{PDG_t::kGluon};               // smallest boson (gauge or H) PDG code
+  static constexpr int PdgBosonMax{37};                          // largest boson (gauge or H) PDG code; o2-linter: disable=pdg/explicit-code (H+ does not have a named constant.)
   static constexpr int PdgDivisorMeson{100};                     // order of magnitude of the meson PDG codes
   static constexpr int PdgDivisorBaryon{1000};                   // order of magnitude of the baryon PDG codes
 
@@ -1131,7 +1131,7 @@ struct RecoDecay {
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
 
-          // we exit immediately if searchUpToQuark is false and the first mother is a quark or a boson (a hadron should never be the mother of a parton)
+          // we break immediately if searchUpToQuark is false and the first mother is a quark or a boson (a hadron should never be the mother of a parton)
           if (!searchUpToQuark) {
             auto mother = particlesMC.rawIteratorAt(particleMother.mothersIds().front() - particlesMC.offset());
             auto pdgParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
