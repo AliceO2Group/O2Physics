@@ -77,7 +77,7 @@ struct jflucAnalysisTask {
     auto axisSpecZvt = AxisSpec(zvtAxis);
     auto axisSpecPt = AxisSpec(ptAxis);
     auto axisSpecMass = AxisSpec(massAxis);
-    if (doprocessJDerived || doprocessJDerivedCorrected || doprocessCFDerived || doprocessCFDerivedCorrected) {
+    if (doprocessJDerived || doprocessJDerivedCorrected || doprocessCFDerived || doprocessCFDerivedCorrected || doprocessMCCFDerived) {
       pcf = new JFFlucAnalysisO2Hist(registry, axisSpecMult, axisSpecPhi, axisSpecEta, axisSpecZvt, axisSpecPt, axisSpecMass, "jfluc");
       pcf->AddFlags(JFFlucAnalysis::kFlucEbEWeighting);
       pcf->UserCreateOutputObjects();
