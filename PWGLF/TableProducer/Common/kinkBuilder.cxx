@@ -91,6 +91,7 @@ struct kinkCandidate {
 struct kinkBuilder {
 
   enum PartType { kSigmaMinus = 0,
+                  kHypertriton,
                   kHyperhelium4sigma };
 
   Produces<aod::KinkCands> outputDataTable;
@@ -161,6 +162,11 @@ struct kinkBuilder {
       mothMass = o2::constants::physics::MassSigmaMinus;
       chargedDauMass = o2::constants::physics::MassPiMinus;
       neutDauMass = o2::constants::physics::MassNeutron;
+    } else if (hypoMoth == kHypertriton) {
+      charge = 1;
+      mothMass = o2::constants::physics::MassHyperTriton;
+      chargedDauMass = o2::constants::physics::MassTriton;
+      neutDauMass = o2::constants::physics::MassPi0;
     } else if (hypoMoth == kHyperhelium4sigma) {
       charge = 2;
       mothMass = o2::constants::physics::MassHyperHelium4;
@@ -199,6 +205,8 @@ struct kinkBuilder {
     AxisSpec massAxis(100, 1.1, 1.4, "m (GeV/#it{c}^{2})");
     if (hypoMoth == kSigmaMinus) {
       massAxis = AxisSpec{100, 1.1, 1.4, "m (GeV/#it{c}^{2})"};
+    } else if (hypoMoth == kHypertriton) {
+      massAxis = AxisSpec{100, 2.94, 3.2, "m (GeV/#it{c}^{2})"};
     } else if (hypoMoth == kHyperhelium4sigma) {
       massAxis = AxisSpec{100, 3.85, 4.25, "m (GeV/#it{c}^{2})"};
     }
