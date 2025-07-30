@@ -67,10 +67,10 @@ DECLARE_SOA_COLUMN(DCAZTrackPiToPV, dcaZtrackPiToPv, float);   //! DCAZ of pion 
 DECLARE_SOA_COLUMN(DCAZTrackDeToPV, dcaZtrackDeToPv, float);   //! DCAZ of deuteron to PV
 
 // DCAs to SV
-DECLARE_SOA_COLUMN(DCATrackPrToSV, dcaTrackPrToSv, float);   //! DCA of proton to SV
-DECLARE_SOA_COLUMN(DCATrackPiToSV, dcaTrackPiToSv, float);   //! DCA of pion to SV
-DECLARE_SOA_COLUMN(DCATrackDeToSV, dcaTrackDeToSv, float);   //! DCA of deuteron to SV
-DECLARE_SOA_COLUMN(DCAVtxDaughters, dcaVtxdaughters, float); //! Quadratic sum of DCA between daughters at SV
+DECLARE_SOA_COLUMN(DCATrackPrToSV, dcaTrackPrToSv, float);           //! DCA of proton to SV
+DECLARE_SOA_COLUMN(DCATrackPiToSV, dcaTrackPiToSv, float);           //! DCA of pion to SV
+DECLARE_SOA_COLUMN(DCATrackDeToSV, dcaTrackDeToSv, float);           //! DCA of deuteron to SV
+DECLARE_SOA_COLUMN(DCAVtxToDaughtersAv, dcaVtxToDaughtersAv, float); //! Quadratic sum of DCA between daughters at SV
 
 // CosPA
 DECLARE_SOA_COLUMN(CosPA, cosPA, float); //! Cosine of pointing angle of the 3body candidate
@@ -211,7 +211,7 @@ DECLARE_SOA_TABLE(Vtx3BodyDatas, "AOD", "VTX3BODYDATA", //!
                   vtx3body::DCAXYTrackPrToPV, vtx3body::DCAXYTrackPiToPV, vtx3body::DCAXYTrackDeToPV,
                   vtx3body::DCAZTrackPrToPV, vtx3body::DCAZTrackPiToPV, vtx3body::DCAZTrackDeToPV,
                   vtx3body::DCATrackPrToSV, vtx3body::DCATrackPiToSV, vtx3body::DCATrackDeToSV,
-                  vtx3body::DCAVtxDaughters,
+                  vtx3body::DCAVtxToDaughtersAv,
                   vtx3body::CosPA, vtx3body::Ct,
                   vtx3body::TPCNSigmaPr, vtx3body::TPCNSigmaPi, vtx3body::TPCNSigmaDe, vtx3body::TPCNSigmaPiBach,
                   vtx3body::TOFNSigmaDe,
@@ -260,7 +260,7 @@ DECLARE_SOA_TABLE(McVtx3BodyDatas, "AOD", "MC3BODYDATA", //!
                   vtx3body::DCAXYTrackPrToPV, vtx3body::DCAXYTrackPiToPV, vtx3body::DCAXYTrackDeToPV,
                   vtx3body::DCAZTrackPrToPV, vtx3body::DCAZTrackPiToPV, vtx3body::DCAZTrackDeToPV,
                   vtx3body::DCATrackPrToSV, vtx3body::DCATrackPiToSV, vtx3body::DCATrackDeToSV,
-                  vtx3body::DCAVtxDaughters,
+                  vtx3body::DCAVtxToDaughtersAv,
                   vtx3body::CosPA, vtx3body::Ct,
                   vtx3body::TPCNSigmaPr, vtx3body::TPCNSigmaPi, vtx3body::TPCNSigmaDe, vtx3body::TPCNSigmaPiBach,
                   vtx3body::TOFNSigmaDe,
