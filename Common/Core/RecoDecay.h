@@ -22,13 +22,15 @@
 #include <TMCProcess.h> // for VMC Particle Production Process
 #include <TPDGCode.h>   // for PDG codes
 
-#include <algorithm> // std::find
-#include <array>     // std::array
-#include <cmath>     // std::abs, std::sqrt
-#include <cstdio>
-#include <tuple>   // std::apply
-#include <utility> // std::move
-#include <vector>  // std::vector
+#include <algorithm>   // std::find
+#include <array>       // std::array
+#include <cmath>       // std::abs, std::sqrt
+#include <cstddef>     // std::size_t
+#include <cstdint>     // intX_t
+#include <tuple>       // std::apply
+#include <type_traits> // std::decay_t
+#include <utility>     // std::move
+#include <vector>      // std::vector
 
 /// Base class for calculating properties of reconstructed decays
 ///
