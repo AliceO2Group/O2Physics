@@ -129,6 +129,8 @@ struct JetHadronRecoil {
                               {"hEtaTrack", "Track #eta;#eta;entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
                               {"hPhiTrack", "Track #phi;#phi;entries", {HistType::kTH1F, {{100, 0.0, o2::constants::math::TwoPI}}}},
                               {"hTrack3D", "3D tracks histogram;p_{T};#eta;#phi", {HistType::kTH3F, {{200, 0, 200}, {100, -1.0, 1.0}, {100, 0.0, o2::constants::math::TwoPI}}}},
+                              {"hTrackPtHard", "Tracks vs pThard;#frac{p_{T}}{#hat{p}};p_{T}", {HistType::kTH2F, {{20, 0, 5}, {200, 0, 200}}}},
+                              {"hPartPtHard", "Part vs pThard;#frac{p_{T}}{#hat{p}};p_{T}", {HistType::kTH2F, {{20, 0, 5}, {200, 0, 200}}}},
                               {"hPtTrackPtHard", "Track p_{T} vs #hat{p};p_{T};#frac{p_{T}}{#hat{p}}", {HistType::kTH2F, {{200, 0, 200}, {20, 0, 5}}}},
                               {"hConstituents3D", "3D constituents histogram;p_{T};#eta;#phi", {HistType::kTH3F, {{200, 0, 200}, {100, -1.0, 1.0}, {100, 0.0, o2::constants::math::TwoPI}}}},
                               {"hReferencePtDPhi", "jet p_{T} vs DPhi;#Delta#phi;p_{T,jet}", {HistType::kTH2F, {{100, 0, o2::constants::math::TwoPI}, {500, -100, 400}}}},
@@ -146,6 +148,8 @@ struct JetHadronRecoil {
                               {"hJetEta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
                               {"hJetPhi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{100, 0.0, o2::constants::math::TwoPI}}}},
                               {"hJet3D", "3D jet distribution;p_{T};#eta;#phi", {HistType::kTH3F, {{500, -100, 400}, {100, -1.0, 1.0}, {100, 0.0, o2::constants::math::TwoPI}}}},
+                              {"hTracksvsJets", "comparing leading tracks and jets;p_{T,track};p_{T,jet};#hat{p}", {HistType::kTH3F, {{200, 0, 200}, {500, -100, 400}, {195, 5, 200}}}},
+                              {"hPartvsJets", "comparing leading particles and jets;p_{T,part};p_{T,jet};#hat{p}", {HistType::kTH3F, {{200, 0, 200}, {500, -100, 400}, {195, 5, 200}}}},
                               {"hPtPart", "Particle p_{T};p_{T};entries", {HistType::kTH1F, {{200, 0, 200}}}},
                               {"hEtaPart", "Particle #eta;#eta;entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
                               {"hPhiPart", "Particle #phi;#phi;entries", {HistType::kTH1F, {{100, 0.0, o2::constants::math::TwoPI}}}},
@@ -177,7 +181,7 @@ struct JetHadronRecoil {
                               {"hPtMatched1d", "p_{T} matching 1d;p_{T,part}", {HistType::kTH1F, {{400, 0, 400}}}},
                               {"hDeltaRMatched1d", "#DeltaR matching 1d;#DeltaR_{part}", {HistType::kTH1F, {dRAxisPart}}},
                               {"hPtResolution", "p_{T} resolution;p_{T,part};Relative Resolution", {HistType::kTH2F, {{400, 0, 400}, {1000, -5.0, 5.0}}}},
-                              {"hPhiResolution", "#phi resolution;#p{T,part};Resolution", {HistType::kTH2F, {{400, 0, 400}, {1000, -7.0, 7.0}}}},
+                              {"hPhiResolution", "#phi resolution;#p_{T,part};Resolution", {HistType::kTH2F, {{400, 0, 400}, {1000, -7.0, 7.0}}}},
                               {"hDeltaRResolution", "#DeltaR Resolution;p_{T,part};Resolution", {HistType::kTH2F, {{400, 0, 400}, {1000, -0.15, 0.15}}}},
                               {"hFullMatching", "Full 6D matching;p_{T,det};p_{T,part};#phi_{det};#phi_{part};#DeltaR_{det};#DeltaR_{part}", {HistType::kTHnSparseD, {ptAxisDet, ptAxisPart, phiAxisDet, phiAxisPart, dRAxisDet, dRAxisPart}}}}};
 
@@ -210,11 +214,16 @@ struct JetHadronRecoil {
     bool isSigCol;
     std::vector<double> phiTTAr;
     std::vector<double> ptTTAr;
+    std::vector<double> tracksAr;
     double phiTT = 0;
     double ptTT = 0;
+    double ptRandTrack = 0;
     int trigNumber = 0;
+    int trackNumber = 0;
     int nTT = 0;
     double leadingPT = 0;
+    double leadingTrackPt = 0;
+    double leadingJetPt = 0;
     float rhoReference = rho + rhoReferenceShift;
 
     float dice = rand->Rndm();
@@ -226,6 +235,10 @@ struct JetHadronRecoil {
     for (const auto& track : tracks) {
       if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
         continue;
+      }
+      tracksAr.push_back(track.pt());
+      if (track.pt() > leadingTrackPt) {
+        leadingTrackPt = track.pt();
       }
       if (track.pt() > pTHatTrackMaxMCD * pTHat) {
         if (outlierRejectEvent) {
@@ -253,6 +266,10 @@ struct JetHadronRecoil {
       registry.fill(HIST("hPtTrackPtHard"), track.pt(), track.pt() / pTHat, weight);
     }
 
+    trackNumber = rand->Integer(tracksAr.size());
+    ptRandTrack = tracksAr[trackNumber];
+    registry.fill(HIST("hTrackPtHard"), ptRandTrack / pTHat, ptRandTrack, weight);
+
     if (nTT > 0) {
       trigNumber = rand->Integer(nTT);
       phiTT = phiTTAr[trigNumber];
@@ -274,6 +291,9 @@ struct JetHadronRecoil {
       }
     }
     for (const auto& jet : jets) {
+      if (jet.pt() > leadingJetPt) {
+        leadingJetPt = jet.pt();
+      }
       if (jet.pt() > pTHatMaxMCD * pTHat) {
         if (outlierRejectEvent) {
           return;
@@ -335,6 +355,7 @@ struct JetHadronRecoil {
         }
       }
     }
+    registry.fill(HIST("hTracksvsJets"), leadingTrackPt, leadingJetPt, pTHat, weight);
   }
 
   template <typename T, typename W, typename U>
@@ -343,11 +364,15 @@ struct JetHadronRecoil {
     bool isSigCol;
     std::vector<double> phiTTAr;
     std::vector<double> ptTTAr;
+    std::vector<double> partAr;
     double phiTT = 0;
     double ptTT = 0;
+    double ptRandPart = 0;
     int trigNumber = 0;
+    int partNumber = 0;
     int nTT = 0;
-
+    double leadingPartPt = 0;
+    double leadingJetPt = 0;
     float dice = rand->Rndm();
     if (dice < fracSig)
       isSigCol = true;
@@ -355,6 +380,10 @@ struct JetHadronRecoil {
       isSigCol = false;
 
     for (const auto& particle : particles) {
+      partAr.push_back(particle.pt());
+      if (particle.pt() > leadingPartPt) {
+        leadingPartPt = particle.pt();
+      }
       if (particle.pt() > pTHatTrackMaxMCD * pTHat) {
         if (outlierRejectEvent) {
           return;
@@ -386,6 +415,10 @@ struct JetHadronRecoil {
       registry.fill(HIST("hPtPartPtHard"), particle.pt(), particle.pt() / pTHat, weight);
     }
 
+    partNumber = rand->Integer(partAr.size());
+    ptRandPart = partAr[partNumber];
+    registry.fill(HIST("hPartPtHard"), ptRandPart / pTHat, ptRandPart, weight);
+
     if (nTT > 0) {
       trigNumber = rand->Integer(nTT);
       phiTT = phiTTAr[trigNumber];
@@ -403,6 +436,9 @@ struct JetHadronRecoil {
     }
 
     for (const auto& jet : jets) {
+      if (jet.pt() > leadingJetPt) {
+        leadingJetPt = jet.pt();
+      }
       if (jet.pt() > pTHatMaxMCP * pTHat) {
         if (outlierRejectEvent) {
           return;
@@ -450,6 +486,7 @@ struct JetHadronRecoil {
         }
       }
     }
+    registry.fill(HIST("hPartvsJets"), leadingPartPt, leadingJetPt, pTHat, weight);
   }
 
   template <typename T, typename V, typename W, typename U, typename X, typename Y>
