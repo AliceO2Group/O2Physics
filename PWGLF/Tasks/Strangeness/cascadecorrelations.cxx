@@ -86,6 +86,7 @@ using LabeledCascades = soa::Join<aod::CascDataExt, aod::McCascLabels>;
 
 struct CascadeSelector {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdgDB;
 
   Produces<aod::CascadeFlags> cascflags;
 
@@ -99,6 +100,8 @@ struct CascadeSelector {
   Configurable<int> INEL{"INEL", 0, "Number of charged tracks within |eta| < 1 has to be greater than value"};
   Configurable<double> maxVertexZ{"maxVertexZ", 10., "Maximum value of z coordinate of PV"};
   Configurable<float> etaCascades{"etaCascades", 0.8, "min/max of eta for cascades"};
+  Configurable<bool> doCompetingMassCut{"doCompetingMassCut", true, "Switch to apply a competing mass cut for the Omega's"};
+  Configurable<float> competingMassWindow{"competingMassWindow", 0.01, "Mass window for the competing mass cut"};
 
   // Tracklevel
   Configurable<float> tpcNsigmaBachelor{"tpcNsigmaBachelor", 3, "TPC NSigma bachelor"};
@@ -451,12 +454,24 @@ struct CascadeSelector {
     registry.fill(HIST("hSelectionStatus"), 7); // passes V0 daughters PID
     // registry.fill(HIST("hMassXi4"), casc.mXi(), casc.pt());
 
-    // Bachelor check
-    if (TMath::Abs(bachTrack.tpcNSigmaPi()) < tpcNsigmaBachelor) {
-      if (TMath::Abs(bachTrack.tpcNSigmaKa()) < tpcNsigmaBachelor) {
-        // consistent with both!
+    // setting selection flag based on bachelor PID (and competing mass cut for omega's)
+    int flag = 0;
+    if (TMath::Abs(bachTrack.tpcNSigmaPi()) < tpcNsigmaBachelor)
+      flag = 1;
+    if (TMath::Abs(bachTrack.tpcNSigmaKa()) < tpcNsigmaBachelor && (!doCompetingMassCut || TMath::Abs(pdgDB->Mass(3312) - casc.mXi()) < competingMassWindow))
+      flag = 3 - flag; // 3 if only consistent with omega, 2 if consistent with both
+
+    switch (flag) {
+      case 1:                                       // only Xi
         registry.fill(HIST("hSelectionStatus"), 8); // passes bach PID
-        // registry.fill(HIST("hMassXi5"), casc.mXi(), casc.pt());
+        if (casc.sign() < 0) {
+          registry.fill(HIST("hMassXiMinus"), casc.mXi(), casc.pt(), casc.yXi());
+        } else {
+          registry.fill(HIST("hMassXiPlus"), casc.mXi(), casc.pt(), casc.yXi());
+        }
+        break;
+      case 2:                                       // Xi or Omega
+        registry.fill(HIST("hSelectionStatus"), 8); // passes bach PID
         if (casc.sign() < 0) {
           registry.fill(HIST("hMassXiMinus"), casc.mXi(), casc.pt(), casc.yXi());
           registry.fill(HIST("hMassOmegaMinus"), casc.mOmega(), casc.pt(), casc.yOmega());
@@ -464,27 +479,19 @@ struct CascadeSelector {
           registry.fill(HIST("hMassXiPlus"), casc.mXi(), casc.pt(), casc.yXi());
           registry.fill(HIST("hMassOmegaPlus"), casc.mOmega(), casc.pt(), casc.yOmega());
         }
-        return 2;
-      }
-      registry.fill(HIST("hSelectionStatus"), 8); // passes bach PID
-      // registry.fill(HIST("hMassXi5"), casc.mXi(), casc.pt());
-      if (casc.sign() < 0) {
-        registry.fill(HIST("hMassXiMinus"), casc.mXi(), casc.pt(), casc.yXi());
-      } else {
-        registry.fill(HIST("hMassXiPlus"), casc.mXi(), casc.pt(), casc.yXi());
-      }
-      return 1;
-    } else if (TMath::Abs(bachTrack.tpcNSigmaKa()) < tpcNsigmaBachelor) {
-      registry.fill(HIST("hSelectionStatus"), 8); // passes bach PID
-      if (casc.sign() < 0) {
-        registry.fill(HIST("hMassOmegaMinus"), casc.mOmega(), casc.pt(), casc.yOmega());
-      } else {
-        registry.fill(HIST("hMassOmegaPlus"), casc.mOmega(), casc.pt(), casc.yOmega());
-      }
-      return 3;
+        break;
+      case 3:                                       // only Omega
+        registry.fill(HIST("hSelectionStatus"), 8); // passes bach PID
+        if (casc.sign() < 0) {
+          registry.fill(HIST("hMassOmegaMinus"), casc.mOmega(), casc.pt(), casc.yOmega());
+        } else {
+          registry.fill(HIST("hMassOmegaPlus"), casc.mOmega(), casc.pt(), casc.yOmega());
+        }
+        break;
     }
-    // if we reach here, the bachelor was neither pion nor kaon
-    return 0;
+
+    return flag;
+
   } // processCandidate
 
   void processGenMC(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, MyCollisions>> const& collisions, aod::McParticles const& mcParticles)
