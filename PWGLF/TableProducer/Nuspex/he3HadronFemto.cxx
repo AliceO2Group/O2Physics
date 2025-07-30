@@ -1074,7 +1074,7 @@ struct he3HadronFemto {
           he3Hadcand.flags |= Flags::kMixedPair;
         }
 
-        if (settingFillPrimariesAndMixedMc && ((he3Hadcand.flags & Flags::kMixedPair) || he3Hadcand.flags == Flags::kBothPrimaries)) {
+        if (!settingFillPrimariesAndMixedMc && ((he3Hadcand.flags == Flags::kMixedPair) || he3Hadcand.flags == Flags::kBothPrimaries)) {
           continue;
         }
 
