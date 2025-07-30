@@ -143,7 +143,9 @@ struct decay3bodyBuilder {
     // building options
     Configurable<bool> useKFParticle{"useKFParticle", false, "Use KFParticle for decay3body building"};
     Configurable<bool> kfSetTopologicalConstraint{"kfSetTopologicalConstraint", false, "Set topological vertex constraint in case of KFParticle reconstruction"};
+    Configurable<bool> buildOnlyTracked{"buildOnlyTracked", false, "Build only tracked decay3bodys"};
     Configurable<bool> useSelections{"useSelections", true, "Apply selections during decay3body building"};
+    Configurable<bool> useChi2Selection{"useChi2Selection", true, "Apply chi2 selection during decay3body building"};
     Configurable<bool> useTPCforPion{"useTPCforPion", false, "Flag to ask for TPC info for pion track (PID, nClusters), false: pion track can be ITS only"};
     Configurable<bool> acceptTPCOnly{"acceptTPCOnly", false, "Accept TPC only tracks as daughters"};
     Configurable<bool> askOnlyITSMatch{"askOnlyITSMatch", true, "ask only ITS match to distinguish TPC only tracks"};
@@ -166,7 +168,7 @@ struct decay3bodyBuilder {
     Configurable<float> minTOFnSigmaDeuteron{"minTOFnSigmaDeuteron", -5.0, "Min TOF nSigma of deuteron daughter"};
     Configurable<float> maxTOFnSigmaDeuteron{"maxTOFnSigmaDeuteron", 5.0, "Max TOF nSigma of deuteron daughter"};
     Configurable<float> minPDeuteronUseTOF{"minPDeuteronUseTOF", 1.0, "Min P of deuteron to use TOF PID"};
-    Configurable<float> maxDCADauAtSV{"maxDCADauAtSV", 0.5, "Max DCA of daughters at SV (quadratic sum of daughter DCAs between each other)"};
+    Configurable<float> maxDCADauToSVaverage{"maxDCADauToSVaverage", 0.5, "Max DCA of daughters to SV (quadratic sum of daughter DCAs to SV / 3)"};
     // candidate selections
     Configurable<float> maxRapidity{"maxRapidity", 1.0, "Max rapidity of decay3body vertex"};
     Configurable<float> minPt{"minPt", 2.0, "Min Pt of decay3body candidate"};
@@ -326,7 +328,7 @@ struct decay3bodyBuilder {
     helper.decay3bodyselections.minTOFnSigmaDeuteron = decay3bodyBuilderOpts.minTOFnSigmaDeuteron;
     helper.decay3bodyselections.maxTOFnSigmaDeuteron = decay3bodyBuilderOpts.maxTOFnSigmaDeuteron;
     helper.decay3bodyselections.minPDeuteronUseTOF = decay3bodyBuilderOpts.minPDeuteronUseTOF;
-    helper.decay3bodyselections.maxDCADauAtSV = decay3bodyBuilderOpts.maxDCADauAtSV;
+    helper.decay3bodyselections.maxDCADauToSVaverage = decay3bodyBuilderOpts.maxDCADauToSVaverage;
     helper.decay3bodyselections.maxRapidity = decay3bodyBuilderOpts.maxRapidity;
     helper.decay3bodyselections.minPt = decay3bodyBuilderOpts.minPt;
     helper.decay3bodyselections.maxPt = decay3bodyBuilderOpts.maxPt;
@@ -393,7 +395,7 @@ struct decay3bodyBuilder {
     LOGF(info, "-~> min TOF nSigma deuteron ......: %f", decay3bodyBuilderOpts.minTOFnSigmaDeuteron.value);
     LOGF(info, "-~> max TOF nSigma deuteron ......: %f", decay3bodyBuilderOpts.maxTOFnSigmaDeuteron.value);
     LOGF(info, "-~> min p bach use TOF ...........: %f", decay3bodyBuilderOpts.minPDeuteronUseTOF.value);
-    LOGF(info, "-~> max DCA dau at SV ............: %f", decay3bodyBuilderOpts.maxDCADauAtSV.value);
+    LOGF(info, "-~> max DCA dau at SV ............: %f", decay3bodyBuilderOpts.maxDCADauToSVaverage.value);
     LOGF(info, "-~> max rapidity .................: %f", decay3bodyBuilderOpts.maxRapidity.value);
     LOGF(info, "-~> min pT .......................: %f", decay3bodyBuilderOpts.minPt.value);
     LOGF(info, "-~> max pT .......................: %f", decay3bodyBuilderOpts.maxPt.value);
@@ -720,6 +722,11 @@ struct decay3bodyBuilder {
     registry.fill(HIST("Counters/hInputStatistics"), kVtx3BodyDatas, decay3bodys.size());
     int lastRunNumber = -1;
     for (const auto& decay3body : decay3bodys) {
+      // only build tracked decay3body if aksed
+      if (decay3bodyBuilderOpts.buildOnlyTracked && fTrackedClSizeVector[decay3body.globalIndex()] == 0) {
+        continue;
+      }
+
       // skip decay3body without assigned collision
       /// TODO: do we want this??
       if (decay3body.collisionId() < 0) {
@@ -782,6 +789,7 @@ struct decay3bodyBuilder {
                                            decay3bodyBuilderOpts.useKFParticle,
                                            decay3bodyBuilderOpts.kfSetTopologicalConstraint,
                                            decay3bodyBuilderOpts.useSelections,
+                                           decay3bodyBuilderOpts.useChi2Selection,
                                            decay3bodyBuilderOpts.useTPCforPion,
                                            decay3bodyBuilderOpts.acceptTPCOnly,
                                            decay3bodyBuilderOpts.askOnlyITSMatch,
@@ -958,7 +966,7 @@ struct decay3bodyBuilder {
                                    -1., -1., -1.,      // trackDCAxyToPV: 0 - proton, 1 - pion, 2 - deuteron
                                    -1., -1., -1.,      // trackDCAzToPV: 0 - proton, 1 - pion, 2 - deuteron
                                    -1., -1., -1.,      // daughterDCAtoSV: 0 - proton, 1 - pion, 2 - deuteron
-                                   -1.,                // daughterDCAatSV
+                                   -1.,                // daughterDCAtoSVaverage
                                    -1., -1.,           // cosPA, ctau
                                    -1., -1., -1., -1., // tpcNsigma: 0 - proton, 1 - pion, 2 - deuteron, 3 - bach with pion hyp
                                    -1.,                // tofNsigmaDeuteron
@@ -1117,7 +1125,7 @@ struct decay3bodyBuilder {
                              helper.decay3body.trackDCAxyToPV[0], helper.decay3body.trackDCAxyToPV[1], helper.decay3body.trackDCAxyToPV[2],    // 0 - proton, 1 - pion, 2 - deuteron
                              helper.decay3body.trackDCAzToPV[0], helper.decay3body.trackDCAzToPV[1], helper.decay3body.trackDCAzToPV[2],       // 0 - proton, 1 - pion, 2 - deuteron
                              helper.decay3body.daughterDCAtoSV[0], helper.decay3body.daughterDCAtoSV[1], helper.decay3body.daughterDCAtoSV[2], // 0 - proton, 1 - pion, 2 - deuteron
-                             helper.decay3body.daughterDCAatSV,
+                             helper.decay3body.daughterDCAtoSVaverage,
                              helper.decay3body.cosPA, helper.decay3body.ctau,
                              helper.decay3body.tpcNsigma[0], helper.decay3body.tpcNsigma[1], helper.decay3body.tpcNsigma[2], helper.decay3body.tpcNsigma[2], // 0 - proton, 1 - pion, 2 - deuteron, 3 - bach with pion hyp
                              helper.decay3body.tofNsigmaDeuteron,
@@ -1146,7 +1154,7 @@ struct decay3bodyBuilder {
                                helper.decay3body.trackDCAxyToPV[0], helper.decay3body.trackDCAxyToPV[1], helper.decay3body.trackDCAxyToPV[2],    // 0 - proton, 1 - pion, 2 - deuteron
                                helper.decay3body.trackDCAzToPV[0], helper.decay3body.trackDCAzToPV[1], helper.decay3body.trackDCAzToPV[2],       // 0 - proton, 1 - pion, 2 - deuteron
                                helper.decay3body.daughterDCAtoSV[0], helper.decay3body.daughterDCAtoSV[1], helper.decay3body.daughterDCAtoSV[2], // 0 - proton, 1 - pion, 2 - deuteron
-                               helper.decay3body.daughterDCAatSV,
+                               helper.decay3body.daughterDCAtoSVaverage,
                                helper.decay3body.cosPA, helper.decay3body.ctau,
                                helper.decay3body.tpcNsigma[0], helper.decay3body.tpcNsigma[1], helper.decay3body.tpcNsigma[2], helper.decay3body.tpcNsigma[2], // 0 - proton, 1 - pion, 2 - deuteron, 3 - bach with pion hyp
                                helper.decay3body.tofNsigmaDeuteron,
@@ -1184,6 +1192,7 @@ struct decay3bodyBuilder {
                                         decay3bodyBuilderOpts.useKFParticle,
                                         decay3bodyBuilderOpts.kfSetTopologicalConstraint,
                                         decay3bodyBuilderOpts.useSelections,
+                                        decay3bodyBuilderOpts.useChi2Selection,
                                         decay3bodyBuilderOpts.useTPCforPion,
                                         decay3bodyBuilderOpts.acceptTPCOnly,
                                         decay3bodyBuilderOpts.askOnlyITSMatch,
