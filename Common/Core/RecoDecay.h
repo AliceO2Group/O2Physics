@@ -43,9 +43,11 @@
 
 struct RecoDecay {
   // mapping of charm-hadron origin type
-  enum OriginType { None = 0,
-                    Prompt,
-                    NonPrompt };
+  enum OriginType {
+    None = 0,
+    Prompt,
+    NonPrompt
+  };
 
   static constexpr int8_t StatusCodeAfterFlavourOscillation{92}; // decay products after B0(s) flavour oscillation
   static constexpr int PdgQuarkMax{8};                           // largest quark PDG code; o2-linter: disable=pdg/explicit-code (t' does not have a named constant.)
