@@ -866,7 +866,6 @@ struct he3HadronFemto {
 
       for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
         mothers.push_back(mother.globalIndex());
-        LOG(info) << "Mother PDG code: " << mother.pdgCode() << ", global index: " << mother.globalIndex();
         if (std::abs(mother.pdgCode()) == Li4PDG) {
           flag |= ParticleFlags::kFromLi4;
         } else if (std::abs(mother.pdgCode()) == o2::constants::physics::Pdg::kHyperTriton) {
@@ -885,7 +884,6 @@ struct he3HadronFemto {
 
       for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
         mothers.push_back(mother.globalIndex());
-        LOG(info) << "Mother PDG code: " << mother.pdgCode() << ", global index: " << mother.globalIndex();
         if (std::abs(mother.pdgCode()) == Li4PDG) {
           flag |= ParticleFlags::kFromLi4;
         } else if (std::abs(mother.pdgCode()) == o2::constants::physics::Pdg::kHyperTriton) {
@@ -1081,6 +1079,8 @@ struct he3HadronFemto {
         if (isMixedPair) {
           he3Hadcand.flags |= Flags::kMixedPair;
         }
+
+
 
         if (!fillCandidateInfo(heTrack, prTrack, collBracket, collisions, he3Hadcand, tracks, /*mix*/ false)) {
           continue;
