@@ -1019,7 +1019,7 @@ struct he3HadronFemto {
         auto mctrackHe3 = heTrack.mcParticle();
         auto mctrackHad = prTrack.mcParticle();
 
-        if (std::abs(mctrackHe3.pdgCode()) != He3PDG || std::abs(mctrackHad.pdgCode()) != ProtonPDG) {
+        if (std::abs(mctrackHe3.pdgCode()) != He3PDG || std::abs(mctrackHad.pdgCode()) != settingHadPDGCode) {
           continue;
         }
 
