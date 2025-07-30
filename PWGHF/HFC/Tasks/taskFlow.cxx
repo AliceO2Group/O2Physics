@@ -73,7 +73,7 @@ struct HfTaskFlow {
   Configurable<bool> processRun3{"processRun3", true, "Flag to run on Run 3 data"};
   Configurable<bool> processMc{"processMc", false, "Flag to run on MC"};
   Configurable<int> nMixedEvents{"nMixedEvents", 5, "Number of mixed events per event"};
-  Configurable<float> twoTrackCutMinRadius{"twoTrackCutMinradius", 0.8f, "Two track cut : radius in m from which two tracks cuts are applied"};
+  Configurable<float> twoTrackCutMinRadius{"twoTrackCutMinRadius", 0.8f, "Two track cut : radius in m from which two tracks cuts are applied"};
   //  configurables for collisions
   Configurable<float> zVertexMax{"zVertexMax", 7.0f, "Accepted z-vertex range"};
   //  configurables for TPC tracks
@@ -97,6 +97,7 @@ struct HfTaskFlow {
   HfHelper hfHelper;
   SliceCache cache;
   Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
   std::vector<int> hfIndexCache;
 
   // =========================
@@ -152,8 +153,8 @@ struct HfTaskFlow {
                        (aod::track::pt > ptTpcTrackMin) &&
                        requireGlobalTrackWoPtEtaInFilter();
 
-  Filter mftTrackEtaFilter = (aod::fwdtrack::eta < -1.0f) &&
-                             (aod::fwdtrack::eta > -6.0f);
+  Filter mftTrackEtaFilter = (aod::fwdtrack::eta < etaMftTrackMin) &&
+                             (aod::fwdtrack::eta > etaMftTrackMax);
 
   // Filters below will be used for uncertainties
   // Filter mftTrackCollisionIdFilter = (aod::fwdtrack::bestCollisionId >= 0);
@@ -221,8 +222,6 @@ struct HfTaskFlow {
   ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
 
   HistogramRegistry registry{"registry"};
-
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // Correlation containers used for data
   OutputObj<CorrelationContainer> sameEvent{"sameEvent"};
