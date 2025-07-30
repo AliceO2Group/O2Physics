@@ -171,7 +171,7 @@ struct sigmaminustask {
             if (collision.has_mcCollision()) {
               mcCollisionIdCheck = collision.mcCollision().globalIndex() == mcTrackPiDau.mcCollisionId();
             }
-            
+
             rSigmaMinus.fill(HIST("h2MassPtMCRec"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
             if (mcTrackSigma.pdgCode() > 0) {
               rSigmaMinus.fill(HIST("h2MassResolution_plus"), kinkCand.mSigmaMinus(), kinkCand.mSigmaMinus() - MotherMassMC);

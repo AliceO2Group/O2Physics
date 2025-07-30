@@ -101,6 +101,8 @@ struct FlowCorrelationsUpc {
   O2_DEFINE_CONFIGURABLE(cfgMinMult, int, 0, "Minimum multiplicity for collision")
   O2_DEFINE_CONFIGURABLE(cfgMaxMult, int, 10, "Maximum multiplicity for collision")
   O2_DEFINE_CONFIGURABLE(cfgSampleSize, double, 10, "Sample size for mixed event")
+  O2_DEFINE_CONFIGURABLE(cfgUsePtOrder, bool, true, "enable trigger pT < associated pT cut")
+  O2_DEFINE_CONFIGURABLE(cfgUsePtOrderInMixEvent, bool, true, "enable trigger pT < associated pT cut in mixed event")
 
   ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
@@ -208,8 +210,10 @@ struct FlowCorrelationsUpc {
 
       for (auto const& track2 : tracks2) {
 
-        if (track1.pt() <= track2.pt())
-          continue; // skip if the trigger pt is less than the associate p
+        if (track1.globalIndex() == track2.globalIndex())
+          continue; // For pt-differential correlations, skip if the trigger and associate are the same track
+        if (system == SameEvent && track1.pt() <= track2.pt())
+          continue; // Without pt-differential correlations, skip if the trigger pt is less than the associate pt
 
         auto momentum1 = std::array<double, 3>{track1.px(), track1.py(), track1.pz()};
         auto momentum2 = std::array<double, 3>{track2.px(), track2.py(), track2.pz()};

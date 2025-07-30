@@ -113,7 +113,7 @@ o2physics_add_dpl_workflow(strangederivedbuilder
 
 o2physics_add_dpl_workflow(strangenessbuilder
     SOURCES strangenessbuilder.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::TPCDriftManager
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::TPCDriftManager O2Physics::MLCore
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(v0-selector
@@ -170,4 +170,9 @@ o2physics_add_dpl_workflow(stracents
 o2physics_add_dpl_workflow(lambdaspincorrelation
     SOURCES lambdaspincorrelation.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(propagationservice
+    SOURCES propagationService.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::TPCDriftManager
     COMPONENT_NAME Analysis)

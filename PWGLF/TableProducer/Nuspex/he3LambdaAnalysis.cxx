@@ -9,6 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "PWGLF/DataModel/LFSlimHeLambda.h"
+
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -45,39 +47,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
-
-namespace o2::aod
-{
-namespace lfv0he3
-{
-DECLARE_SOA_COLUMN(Z, z, float);
-DECLARE_SOA_COLUMN(CentT0C, centT0C, float);
-} // namespace lfv0he3
-DECLARE_SOA_TABLE(LFEvents, "AOD", "LFEVENT", o2::soa::Index<>, lfv0he3::Z, lfv0he3::CentT0C);
-
-namespace lfv0he3
-{
-DECLARE_SOA_INDEX_COLUMN(LFEvent, lfEvent); // Collision ID for the event
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(Mass, mass, float);
-DECLARE_SOA_COLUMN(CosPA, cosPA, float);
-DECLARE_SOA_COLUMN(DCAxy, dcaXY, float);
-DECLARE_SOA_COLUMN(DCAz, dcaZ, float);
-DECLARE_SOA_COLUMN(TPCnCls, tpcNCls, int);
-DECLARE_SOA_COLUMN(ITSClusterSizes, itsClusterSizes, uint32_t);
-DECLARE_SOA_COLUMN(NsigmaTPC, nSigmaTPC, float);
-DECLARE_SOA_COLUMN(DCAdaughters, dcaDaughters, float);
-DECLARE_SOA_COLUMN(DCAPVProton, dcaPVProton, float);
-DECLARE_SOA_COLUMN(DCAPVPion, dcaPVPion, float);
-DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);
-DECLARE_SOA_COLUMN(Sign, sign, int8_t);
-} // namespace lfv0he3
-DECLARE_SOA_TABLE(LFHe3, "AOD", "LFHE3V0", lfv0he3::LFEventId, lfv0he3::Pt, lfv0he3::Eta, lfv0he3::Phi, lfv0he3::DCAxy, lfv0he3::DCAz, lfv0he3::TPCnCls, lfv0he3::ITSClusterSizes, lfv0he3::NsigmaTPC, lfv0he3::Sign);
-DECLARE_SOA_TABLE(LFLambda, "AOD", "LFLAMBDA", lfv0he3::LFEventId, lfv0he3::Pt, lfv0he3::Eta, lfv0he3::Phi, lfv0he3::Mass, lfv0he3::CosPA, lfv0he3::DCAdaughters, lfv0he3::DCAPVProton, lfv0he3::DCAPVPion, lfv0he3::V0Radius, lfv0he3::Sign);
-} // namespace o2::aod
-
 namespace
 {
 constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
@@ -106,36 +75,13 @@ std::shared_ptr<TH2> hTPCnSigmaAll;
 std::shared_ptr<TH2> hTPCnSigmaHe3;
 std::shared_ptr<TH2> hArmenterosPodolanskiAll;
 std::shared_ptr<TH2> hArmenterosPodolanskiSelected;
-std::shared_ptr<TH2> hInvariantMass;
+std::shared_ptr<TH2> hInvariantMassUS;
+std::shared_ptr<TH2> hInvariantMassLS;
 
 }; // namespace
 
 using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullPr, aod::pidTPCFullPi>;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>;
-
-struct he3Candidate {
-  ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double>> momentum; // 4-momentum of the He3 candidate
-  float nSigmaTPC;                                                     // TPC nSigma for He3
-  float dcaXY;
-  float dcaZ;
-  int tpcNClsFound;         // Number of TPC clusters found
-  int itsNCls;              // Number of ITS clusters
-  uint32_t itsClusterSizes; // ITS cluster sizes
-  int8_t sign;              // Charge sign of the He3 candidate
-};
-
-struct lambdaCandidate {
-  ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double>> momentum;
-  float mass;           // Lambda mass
-  float cosPA;          // Cosine of pointing angle
-  float dcaV0Daughters; // DCA between V0 daughters
-  float dcaProtonToPV;  // DCA of the proton to primary vertex
-  float dcaPionToPV;    // DCA of the pion to primary vertex
-  float v0Radius;
-  float protonNSigmaTPC; // Proton TPC nSigma
-  float pionNSigmaTPC;
-  int8_t sign; // Charge sign of the Lambda candidate
-};
 
 struct he3LambdaAnalysis {
 
@@ -146,8 +92,8 @@ struct he3LambdaAnalysis {
   o2::vertexing::DCAFitterN<2> fitter;
 
   Produces<o2::aod::LFEvents> lfHe3V0Collision;
-  Produces<o2::aod::LFHe3> lfHe3;
-  Produces<o2::aod::LFLambda> lfLambda;
+  Produces<o2::aod::LFHe3_001> lfHe3;
+  Produces<o2::aod::LFLambda_001> lfLambda;
 
   // Configurables for event selection
   struct : ConfigurableGroup {
@@ -251,7 +197,8 @@ struct he3LambdaAnalysis {
     hArmenterosPodolanskiSelected = mRegistry.add<TH2>("hArmenterosPodolanskiSelected", "Armenteros-Podolanski Selected", {HistType::kTH2D, {{100, -1., 1.}, {100, 0., 0.5}}});
 
     constexpr double ConstituentsMass = o2::constants::physics::MassProton + o2::constants::physics::MassNeutron * 2 + o2::constants::physics::MassSigmaPlus;
-    hInvariantMass = mRegistry.add<TH2>("hInvariantMass", "Invariant Mass", {HistType::kTH2D, {{45, 1., 10}, {100, ConstituentsMass - 0.05, ConstituentsMass + 0.05}}});
+    hInvariantMassUS = mRegistry.add<TH2>("hInvariantMassUS", "Invariant Mass", {HistType::kTH2D, {{45, 1., 10}, {100, ConstituentsMass - 0.05, ConstituentsMass + 0.05}}});
+    hInvariantMassLS = mRegistry.add<TH2>("hInvariantMassLS", "Invariant Mass", {HistType::kTH2D, {{45, 1., 10}, {100, ConstituentsMass - 0.05, ConstituentsMass + 0.05}}});
 
     LOGF(info, "He3-Lambda analysis initialized");
   }
@@ -333,6 +280,7 @@ struct he3LambdaAnalysis {
       candidate.dcaXY = dcaInfo[0];
       candidate.dcaZ = dcaInfo[1];
       candidate.tpcNClsFound = track.tpcNClsFound();
+      candidate.tpcNClsPID = track.tpcNClsPID();
       candidate.itsNCls = track.itsNCls();
       candidate.itsClusterSizes = track.itsClusterSizes();
       candidate.sign = track.sign() > 0 ? 1 : -1;
@@ -429,27 +377,21 @@ struct he3LambdaAnalysis {
     lfHe3V0Collision(collision.posZ(), collision.centFT0C());
     for (const auto& he3 : he3Candidates) {
       lfHe3(lfHe3V0Collision.lastIndex(), he3.momentum.Pt(), he3.momentum.Eta(), he3.momentum.Phi(),
-            he3.dcaXY, he3.dcaZ, he3.tpcNClsFound, he3.itsClusterSizes, he3.nSigmaTPC, he3.sign);
+            he3.dcaXY, he3.dcaZ, he3.tpcNClsFound, he3.tpcNClsPID, he3.itsClusterSizes, he3.nSigmaTPC, he3.sign);
     }
     for (const auto& lambda : lambdaCandidates) {
       lfLambda(lfHe3V0Collision.lastIndex(), lambda.momentum.Pt(), lambda.momentum.Eta(), lambda.momentum.Phi(),
-               lambda.mass, lambda.cosPA, lambda.dcaV0Daughters, lambda.dcaProtonToPV, lambda.dcaPionToPV, lambda.v0Radius, lambda.sign);
+               lambda.mass, lambda.cosPA, lambda.dcaV0Daughters, lambda.dcaProtonToPV, lambda.dcaPionToPV, lambda.v0Radius, lambda.protonNSigmaTPC, lambda.pionNSigmaTPC, lambda.sign);
     }
 
     for (const auto& he3 : he3Candidates) {
       for (const auto& lambda : lambdaCandidates) {
         auto pairMomentum = lambda.momentum + he3.momentum; // Calculate invariant mass
-        hInvariantMass->Fill(pairMomentum.Pt(), pairMomentum.M());
+        (he3.sign * lambda.sign > 0 ? hInvariantMassLS : hInvariantMassUS)->Fill(pairMomentum.Pt(), pairMomentum.M());
       }
     }
   }
   PROCESS_SWITCH(he3LambdaAnalysis, processData, "Process data", true);
-
-  // void processDerived(o2::aod::LFEvents::iterator const& collision, o2::aod::LFHe3 const& he3s, o2::aod::LFLambda const& lambdas)
-  // {
-  //
-  // }
-  // PROCESS_SWITCH(he3LambdaAnalysis, processDerived, "Process derived", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

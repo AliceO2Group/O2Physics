@@ -131,7 +131,7 @@ struct JetPlanarFlowTask {
   }
   // jet pT, tau2/tau1, jetdR, track pt, phi', eta', dR, isInJet
 
-  Filter collisionFilter = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centrality >= centralityMin && aod::jcollision::centrality < centralityMax);
+  Filter collisionFilter = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centFT0M >= centralityMin && aod::jcollision::centFT0M < centralityMax);
 
   template <bool isMc, bool isAreaSubtracted, typename T, typename U, typename V>
   void fillHistograms(T const& collision, U const& jet, V const& tracks)

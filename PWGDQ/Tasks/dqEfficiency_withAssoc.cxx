@@ -1927,6 +1927,24 @@ struct AnalysisSameEventPairing {
 
                       float dileptonMass = VarManager::fgValues[VarManager::kMass];
                       if (dileptonMass > useMiniTree.fConfigMiniTreeMinMass && dileptonMass < useMiniTree.fConfigMiniTreeMaxMass) {
+                        // In the miniTree the positive daughter is positioned as first
+                        if (t1.sign() > 0) {
+                          dileptonMiniTreeRec(mcDecision,
+                                              VarManager::fgValues[VarManager::kMass],
+                                              VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kCentFT0C],
+                                              t1.reducedMCTrack().pt(), t1.reducedMCTrack().eta(), t1.reducedMCTrack().phi(),
+                                              t2.reducedMCTrack().pt(), t2.reducedMCTrack().eta(), t2.reducedMCTrack().phi(),
+                                              t1.pt(), t1.eta(), t1.phi(),
+                                              t2.pt(), t2.eta(), t2.phi());
+                        } else {
+                          dileptonMiniTreeRec(mcDecision,
+                                              VarManager::fgValues[VarManager::kMass],
+                                              VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kCentFT0C],
+                                              t2.reducedMCTrack().pt(), t2.reducedMCTrack().eta(), t2.reducedMCTrack().phi(),
+                                              t1.reducedMCTrack().pt(), t1.reducedMCTrack().eta(), t1.reducedMCTrack().phi(),
+                                              t2.pt(), t2.eta(), t2.phi(),
+                                              t2.pt(), t2.eta(), t2.phi());
+                        }
                         dileptonMiniTreeRec(mcDecision,
                                             VarManager::fgValues[VarManager::kMass],
                                             VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kCentFT0C],

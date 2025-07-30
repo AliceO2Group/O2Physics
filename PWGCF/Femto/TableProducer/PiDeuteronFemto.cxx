@@ -161,7 +161,7 @@ struct PiDeuteronFemto {
   Configurable<float> settingCutNsigmaTPCDe{"settingCutNsigmaTPCDe", 2.5f, "Value of the TPC Nsigma cut on De"};
   Configurable<float> settingCutNsigmaITSDe{"settingCutNsigmaITSDe", 2.5f, "Value of the ITD Nsigma cut on De"};
   Configurable<float> settingCutPinMinTOFPi{"settingCutPinMinTOFPi", 0.5f, "Minimum Pin to apply the TOF cut on Pions"};
-  Configurable<float> settingCutPinMinTOFITSDe{"settingCutPinMinTOFITSDe", 1.2f, "Minimum pT to apply the TOF ITS cut on De"};
+  Configurable<float> settingCutPinMinTOFITSDe{"settingCutPinMinTOFITSDe", 1.2f, "Minimum p to apply the TOF ITS cut on De"};
   Configurable<float> settingCutNsigmaTOFTPCDe{"settingCutNsigmaTOFTPCDe", 2.5f, "Value of the De TOF TPC Nsigma cut"};
   Configurable<float> settingCutNsigmaTOFTPCPi{"settingCutNsigmaTOFTPCPi", 3.0f, "Value of the Pion TOF TPC Nsigma cut"};
   Configurable<int> settingNoMixedEvents{"settingNoMixedEvents", 5, "Number of mixed events per event"};
@@ -180,6 +180,7 @@ struct PiDeuteronFemto {
 
   Configurable<bool> settingSaveUSandLS{"settingSaveUSandLS", true, "Save All Pairs"};
   Configurable<bool> settingFillMultiplicity{"settingFillMultiplicity", false, "Fill multiplicity table"};
+  Configurable<bool> settingUseBBcomputeDeNsigma{"settingUseBBcomputeDeNsigma", false, "Use BB params to compute De TPC Nsigma"};
 
   // Zorro
   Configurable<bool> settingSkimmedProcessing{"settingSkimmedProcessing", false, "Skimmed dataset processing"};
@@ -229,6 +230,7 @@ struct PiDeuteronFemto {
      {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
      {"hdcaxyDe", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hdcazDe", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+     {"hdcazDe_min", ";DCA_{z}-min (cm)", {HistType::kTH1F, {{20, -1.0f, 1.0f}}}},
      {"hNClsDeITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
      {"hNClsPiITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
      {"hDePitInvMass", "; M(De + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
@@ -239,14 +241,18 @@ struct PiDeuteronFemto {
      {"hDePhi", "phi distribution; phi(De)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
      {"hPiPhi", "phi distribution; phi(#pi)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
      {"h2dEdxDecandidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
-     {"h2NsigmaDeTPC", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+     {"h2dEdx", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
+     {"h2NsigmaDeTPC", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {200, -5.0f, 5.0f}}}},
+     {"h2NsigmaDeComb", "NsigmaDe TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(De)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {100, 0.0f, 5.0f}}}},
+     {"h2NsigmaPiComb", "NsigmaPi TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(#pi)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {100, 0.0f, 5.0f}}}},
      {"h2NsigmaDeTPC_preselection", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
      {"h2NsigmaDeTPC_preselecComp", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
      {"h2NSigmaDeITS_preselection", "NsigmaDe ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} De", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
-     {"h2NSigmaDeITS", "NsigmaDe ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} De", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
-     {"h2NsigmaPiTPC", "NsigmaPi TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+     {"h2NSigmaDeITS", "NsigmaDe ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} De", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {120, -3.0f, 3.0f}}}},
+     {"h2NsigmaPiTPC", "NsigmaPi TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
      {"h2NsigmaPiTPC_preselection", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-     {"h2NsigmaPiTOF", "NsigmaPi TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+     {"h2NsigmaPiTOF", "NsigmaPi TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+     {"h2NsigmaDeTOF", "NsigmaDe TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(De)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
      {"h2NsigmaPiTOF_preselection", "NsigmaPi TOF distribution; #iit{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
      {"hkStar_LS_M", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
      {"hkStar_LS_A", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
@@ -282,7 +288,7 @@ struct PiDeuteronFemto {
     for (int i = 0; i < numParticles; i++) {
       mBBparamsDe[i] = settingBetheBlochParams->get("De", Form("p%i", i));
     }
-    mBBparamsDe[5] = settingBetheBlochParams->get("De", "resolution"); // wdf?
+    mBBparamsDe[5] = settingBetheBlochParams->get("De", "resolution");
 
     std::vector<std::string> selectionLabels = {"All", "Track selection", "PID"};
     for (int i = 0; i < Selections::kAll; i++) {
@@ -396,21 +402,25 @@ struct PiDeuteronFemto {
   {
     auto tpcNSigmaPi = candidate.tpcNSigmaPi();
     mQaRegistry.fill(HIST("h2NsigmaPiTPC_preselection"), candidate.tpcInnerParam(), tpcNSigmaPi);
+    if (std::abs(candidate.pt()) < settingCutPiptMin || std::abs(candidate.pt()) > settingCutPiptMax)
+      return false;
     if (candidate.hasTOF() && candidate.tpcInnerParam() > settingCutPinMinTOFPi) {
       auto tofNSigmaPi = candidate.tofNSigmaPi();
+      auto combNsigma = std::sqrt(tofNSigmaPi * tofNSigmaPi + tpcNSigmaPi * tpcNSigmaPi);
 
       if (std::abs(tpcNSigmaPi) > settingCutNsigmaTPCPi) {
         return false;
       }
       mQaRegistry.fill(HIST("h2NsigmaPiTOF_preselection"), candidate.pt(), tofNSigmaPi);
-      if (std::sqrt(tofNSigmaPi * tofNSigmaPi + tpcNSigmaPi * tpcNSigmaPi) > settingCutNsigmaTOFTPCPi) {
+      if (combNsigma > settingCutNsigmaTOFTPCPi) {
         return false;
       }
-      mQaRegistry.fill(HIST("h2NsigmaPiTPC"), candidate.pt(), tpcNSigmaPi);
-      mQaRegistry.fill(HIST("h2NsigmaPiTOF"), candidate.pt(), tofNSigmaPi);
+      mQaRegistry.fill(HIST("h2NsigmaPiTPC"), candidate.sign() * candidate.pt(), tpcNSigmaPi);
+      mQaRegistry.fill(HIST("h2NsigmaPiTOF"), candidate.sign() * candidate.pt(), tofNSigmaPi);
+      mQaRegistry.fill(HIST("h2NsigmaPiComb"), candidate.sign() * candidate.pt(), combNsigma);
       return true;
     } else if (std::abs(tpcNSigmaPi) < settingCutNsigmaTPCPi) {
-      mQaRegistry.fill(HIST("h2NsigmaPiTPC"), candidate.pt(), tpcNSigmaPi);
+      mQaRegistry.fill(HIST("h2NsigmaPiTPC"), candidate.sign() * candidate.pt(), tpcNSigmaPi);
       return true;
     }
     return false;
@@ -428,35 +438,47 @@ struct PiDeuteronFemto {
   bool selectionPIDDe(const Ttrack& candidate)
   {
     float tpcInnerParam = candidate.tpcInnerParam();
+    mQaRegistry.fill(HIST("h2dEdx"), candidate.sign() * tpcInnerParam, candidate.tpcSignal());
 
-    if (tpcInnerParam < settingCutPinMinDe) {
+    if (std::abs(tpcInnerParam) < settingCutPinMinDe) {
       return false;
     }
+    float tpcNSigmaDe;
+    if (settingUseBBcomputeDeNsigma) {
+      tpcNSigmaDe = computeNSigmaDe(candidate);
+    } else {
+      tpcNSigmaDe = candidate.tpcNSigmaDe();
+    }
 
-    auto tpcNSigmaDe = computeNSigmaDe(candidate);
     mQaRegistry.fill(HIST("h2NsigmaDeTPC_preselection"), candidate.sign() * candidate.pt(), tpcNSigmaDe);
     mQaRegistry.fill(HIST("h2NsigmaDeTPC_preselecComp"), candidate.sign() * candidate.pt(), candidate.tpcNSigmaDe());
+    if (std::abs(candidate.pt()) < settingCutDeptMin || std::abs(candidate.pt()) > settingCutDeptMax)
+      return false;
     if (candidate.hasTOF() && candidate.tpcInnerParam() > settingCutPinMinTOFITSDe) {
       auto tofNSigmaDe = candidate.tofNSigmaDe();
-      if (std::abs(tpcNSigmaDe) > settingCutNsigmaTPCDe) {
+      auto combNsigma = std::sqrt(tofNSigmaDe * tofNSigmaDe + tpcNSigmaDe * tpcNSigmaDe);
+      if (combNsigma > settingCutNsigmaTOFTPCDe) {
         return false;
       }
-      if (std::sqrt(tofNSigmaDe * tofNSigmaDe + tpcNSigmaDe * tpcNSigmaDe) > settingCutNsigmaTOFTPCDe) {
+      mQaRegistry.fill(HIST("h2dEdxDecandidates"), candidate.sign() * tpcInnerParam, candidate.tpcSignal());
+      mQaRegistry.fill(HIST("h2NsigmaDeComb"), candidate.sign() * candidate.pt(), combNsigma);
+      mQaRegistry.fill(HIST("h2NsigmaDeTPC"), candidate.sign() * candidate.pt(), tpcNSigmaDe);
+      mQaRegistry.fill(HIST("h2NsigmaDeTOF"), candidate.sign() * candidate.pt(), tofNSigmaDe);
+      return true;
+    } else if (candidate.tpcInnerParam() <= settingCutPinMinTOFITSDe) {
+      if (std::abs(tpcNSigmaDe) > settingCutNsigmaTPCDe) {
         return false;
       }
       o2::aod::ITSResponse mResponseITS;
       auto itsnSigmaDe = mResponseITS.nSigmaITS<o2::track::PID::Deuteron>(candidate.itsClusterSizes(), candidate.p(), candidate.eta());
-
       mQaRegistry.fill(HIST("h2NSigmaDeITS_preselection"), candidate.sign() * candidate.pt(), itsnSigmaDe);
-      if (itsnSigmaDe < settingCutNsigmaITSDe) {
+      if (std::abs(itsnSigmaDe) > settingCutNsigmaITSDe) {
         return false;
       }
-      mQaRegistry.fill(HIST("h2dEdxDecandidates"), candidate.sign() * tpcInnerParam, candidate.tpcSignal());
       mQaRegistry.fill(HIST("h2NsigmaDeTPC"), candidate.sign() * candidate.pt(), tpcNSigmaDe);
       mQaRegistry.fill(HIST("h2NSigmaDeITS"), candidate.sign() * candidate.pt(), itsnSigmaDe);
-      return true;
-    } else if (std::abs(tpcNSigmaDe) < settingCutNsigmaTPCDe) {
-      mQaRegistry.fill(HIST("h2NsigmaDeTPC"), candidate.sign() * candidate.pt(), tpcNSigmaDe);
+      // mQaRegistry.fill(HIST("h2NsigmaDeComb"), candidate.sign() * candidate.pt(), combNsigma);
+      mQaRegistry.fill(HIST("h2dEdxDecandidates"), candidate.sign() * tpcInnerParam, candidate.tpcSignal());
       return true;
     }
     return false;
@@ -509,8 +531,7 @@ struct PiDeuteronFemto {
     }
 
     piDecand.momDe = std::array{trackDe.px(), trackDe.py(), trackDe.pz()};
-    for (int i = 0; i < numCoordinates; i++)
-      piDecand.momPi = std::array{trackPi.px(), trackPi.py(), trackPi.pz()};
+    piDecand.momPi = std::array{trackPi.px(), trackPi.py(), trackPi.pz()};
     float invMass = 0;
     invMass = RecoDecay::m(std::array{piDecand.momDe, piDecand.momPi}, std::array{o2::constants::physics::MassDeuteron, o2::constants::physics::MassPiPlus});
     if (settingCutInvMass > 0 && invMass > settingCutInvMass) {
@@ -701,6 +722,7 @@ struct PiDeuteronFemto {
     mQaRegistry.fill(HIST("hDePitInvMass"), piDecand.invMass);
     mQaRegistry.fill(HIST("hdcaxyDe"), piDecand.dcaxyDe);
     mQaRegistry.fill(HIST("hdcazDe"), piDecand.dcazDe);
+    mQaRegistry.fill(HIST("hdcazDe_min"), (abs(piDecand.dcazDe) - settingCutDeDCAzMin));
     mQaRegistry.fill(HIST("hNClsDeITS"), piDecand.nClsItsDe);
     mQaRegistry.fill(HIST("hNClsPiITS"), piDecand.nClsItsPi);
     mQaRegistry.fill(HIST("hisBkgEM"), piDecand.isBkgEM);
@@ -763,11 +785,6 @@ struct PiDeuteronFemto {
     float DeDCAxyMin = 0.015 + 0.0305 / TMath::Power(piDecand.recoPtDe(), 1.1);
     if (abs(piDecand.dcaxyDe) > DeDCAxyMin || abs(piDecand.dcazDe) > settingCutDeDCAzMin || abs(piDecand.dcaxyPi) > settingCutPiDCAxyMin || abs(piDecand.dcazPi) > settingCutPiDCAzMin)
       return;
-    if (std::abs(piDecand.recoPtPi()) < settingCutPiptMin || std::abs(piDecand.recoPtPi()) > settingCutPiptMax)
-      return;
-    if (std::abs(piDecand.recoPtDe()) < settingCutDeptMin || std::abs(piDecand.recoPtDe()) > settingCutDeptMax)
-      return;
-
     fillHistograms(piDecand);
 
     double kstar = computeKstar(piDecand);

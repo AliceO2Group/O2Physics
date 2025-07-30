@@ -92,6 +92,7 @@ struct PhotonConversionBuilder {
   Configurable<bool> moveTPCTracks{"moveTPCTracks", true, "Move TPC-only tracks under the collision assumption"};
   Configurable<bool> disableITSonlyTracks{"disableITSonlyTracks", false, "disable ITSonly tracks in V0 legs"};
   Configurable<bool> disableTPConlyTracks{"disableTPConlyTracks", false, "disable TPConly tracks in V0 legs"};
+  Configurable<bool> requireITShit{"requireITShit", false, "require ITS hit to V0 legs"};
 
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max chi2/NclsTPC"}; // default 4.0 + 1.0
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max chi2/NclsITS"}; // default 5.0 + 1.0
@@ -277,6 +278,10 @@ struct PhotonConversionBuilder {
     }
 
     if (disableTPConlyTracks && isTPConlyTrack(track)) {
+      return false;
+    }
+
+    if (requireITShit && !track.hasITS()) {
       return false;
     }
 

@@ -63,13 +63,3 @@ o2physics_add_dpl_workflow(skimmer-dalitz-ee
                     SOURCES skimmerDalitzEE.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(gamma-table-producer
-                    SOURCES gammaSelection.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(produce-meson-calo
-                    SOURCES produceMesonCalo.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
