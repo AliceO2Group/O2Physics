@@ -1301,18 +1301,18 @@ struct FlowGfwOmegaXi {
           registry.fill(HIST("QAhisto/Casc/hqadcaCascV0dauafter"), casc.dcaV0daughters());
         }
 
-        float weff_bac = 1;
-        float weff_pos = 1;
-        float weff_neg = 1;
-        float wacc_bac = 1;
-        float wacc_pos = 1;
-        float wacc_neg = 1;
+        float weffBac = 1;
+        float weffPos = 1;
+        float weffNeg = 1;
+        float waccBac = 1;
+        float waccPos = 1;
+        float waccNeg = 1;
         if (isOmega) {
           if (cfgDoAccEffCorr) {
             setCurrentParticleWeights(weff, wacc, casc, vtxz, 4);
-            setCurrentParticleWeights(weff_bac, wacc_bac, bachelor, vtxz, 0);
-            setCurrentParticleWeights(weff_pos, wacc_pos, posdau, vtxz, 0);
-            setCurrentParticleWeights(weff_neg, wacc_neg, negdau, vtxz, 0);
+            setCurrentParticleWeights(weffBac, waccBac, bachelor, vtxz, 0);
+            setCurrentParticleWeights(weffPos, waccPos, posdau, vtxz, 0);
+            setCurrentParticleWeights(weffNeg, waccNeg, negdau, vtxz, 0);
           }
           if (cfgDoLocDenCorr) {
             int phibin = -999;
@@ -1325,9 +1325,9 @@ struct FlowGfwOmegaXi {
           registry.fill(HIST("hEtaPhiVtxzPOIOmega"), casc.phi(), casc.eta(), vtxz, wacc);
           registry.fill(HIST("InvMassOmega"), casc.pt(), casc.mOmega(), casc.eta(), cent);
           fGFW->Fill(casc.eta(), fOmegaPtAxis->FindBin(casc.pt()) - 1 + ((fOmegaMass->FindBin(casc.mOmega()) - 1) * nOmegaPtBins), casc.phi(), wacc * weff * wloc, 4);
-          fGFW->Fill(bachelor.eta(), 1, bachelor.phi(), wacc_bac * weff_bac * wloc, 4096);
-          fGFW->Fill(posdau.eta(), 1, posdau.phi(), wacc_pos * weff_pos * wloc, 4096);
-          fGFW->Fill(negdau.eta(), 1, negdau.phi(), wacc_neg * weff_neg * wloc, 4096);
+          fGFW->Fill(bachelor.eta(), 1, bachelor.phi(), waccBac * weffBac * wloc, 4096);
+          fGFW->Fill(posdau.eta(), 1, posdau.phi(), waccPos * weffPos * wloc, 4096);
+          fGFW->Fill(negdau.eta(), 1, negdau.phi(), waccNeg * weffNeg * wloc, 4096);
 
           if (cfgOutputNUAWeights)
             fWeightsOmega->fill(casc.phi(), casc.eta(), vtxz, casc.pt(), cent, 0);
@@ -1335,9 +1335,9 @@ struct FlowGfwOmegaXi {
         if (isXi) {
           if (cfgDoAccEffCorr) {
             setCurrentParticleWeights(weff, wacc, casc, vtxz, 3);
-            setCurrentParticleWeights(weff_bac, wacc_bac, bachelor, vtxz, 0);
-            setCurrentParticleWeights(weff_pos, wacc_pos, posdau, vtxz, 0);
-            setCurrentParticleWeights(weff_neg, wacc_neg, negdau, vtxz, 0);
+            setCurrentParticleWeights(weffBac, waccBac, bachelor, vtxz, 0);
+            setCurrentParticleWeights(weffPos, waccPos, posdau, vtxz, 0);
+            setCurrentParticleWeights(weffNeg, waccNeg, negdau, vtxz, 0);
           }
           if (cfgDoLocDenCorr) {
             int phibin = -999;
@@ -1350,9 +1350,9 @@ struct FlowGfwOmegaXi {
           registry.fill(HIST("hEtaPhiVtxzPOIXi"), casc.phi(), casc.eta(), vtxz, wacc);
           registry.fill(HIST("InvMassXi"), casc.pt(), casc.mXi(), casc.eta(), cent);
           fGFW->Fill(casc.eta(), fXiPtAxis->FindBin(casc.pt()) - 1 + ((fXiMass->FindBin(casc.mXi()) - 1) * nXiPtBins), casc.phi(), wacc * weff * wloc, 2);
-          fGFW->Fill(bachelor.eta(), 1, bachelor.phi(), wacc_bac * weff_bac * wloc, 2048);
-          fGFW->Fill(posdau.eta(), 1, posdau.phi(), wacc_pos * weff_pos * wloc, 2048);
-          fGFW->Fill(negdau.eta(), 1, negdau.phi(), wacc_neg * weff_neg * wloc, 2048);
+          fGFW->Fill(bachelor.eta(), 1, bachelor.phi(), waccBac * weffBac * wloc, 2048);
+          fGFW->Fill(posdau.eta(), 1, posdau.phi(), waccPos * weffPos * wloc, 2048);
+          fGFW->Fill(negdau.eta(), 1, negdau.phi(), waccNeg * weffNeg * wloc, 2048);
 
           if (cfgOutputNUAWeights)
             fWeightsXi->fill(casc.phi(), casc.eta(), vtxz, casc.pt(), cent, 0);
