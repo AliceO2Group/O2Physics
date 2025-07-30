@@ -230,7 +230,7 @@ class pidTPCModule
     // read in configurations from the task where it's used
     pidTPCopts = external_pidtpcopts;
 
-    if(pidTPCopts.useCorrecteddEdx.value){ 
+    if (pidTPCopts.useCorrecteddEdx.value) {
       LOGF(info, "***************************************************");
       LOGF(info, " WARNING: YOU HAVE SWITCHED ON 'corrected dEdx!");
       LOGF(info, " This mode is still in development and it is meant");
