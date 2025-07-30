@@ -112,8 +112,9 @@ DECLARE_SOA_TABLE(FilterCollPos, "AOD", "FILTERCOLLPOS",
                   o2::aod::collision::Chi2,
                   o2::aod::collision::NumContrib,
                   o2::aod::collision::CollisionTime);
+DECLARE_SOA_TABLE(FiltTrackColIdx, "AOD", "FILTTRACKCOLIDX",
+                  o2::aod::track::CollisionId);
 DECLARE_SOA_TABLE(FilterTrack, "AOD", "FILTERTRACK",
-                  o2::aod::track::CollisionId,
                   aod::filtertracks::IsInsideBeamPipe,
                   o2::aod::track::TrackType,
                   o2::aod::track::X,
@@ -166,6 +167,7 @@ DECLARE_SOA_TABLE(GenParticles, "AOD", "GENPARTICLES",
 struct FilterTracks {
   const static int nStudiedParticlesMc = 3;
 
+  Produces<aod::FiltTrackColIdx> filteredTracksCollIdx;
   Produces<aod::FilterTrackExtr> filteredTracksTableExtra;
   Produces<aod::FilterTrack> filteredTracksTable;
   Produces<aod::FiltTracExtDet> filteredTracksTableExtraDet;
@@ -182,7 +184,7 @@ struct FilterTracks {
   Configurable<int> trackPtSampling{"trackPtSampling", 0, "track sampling mode"};
   Configurable<bool> produceCollTableFull{"produceCollTableFull", false, "produce full collision table"};
   Configurable<bool> produceCollTableLite{"produceCollTableLite", false, "produce lite collision table"};
-  Configurable<bool> produceCollTableExtraLite{"produceCollTableExtraLite", true, "produce extra lite collision table"};
+  Configurable<int> produceCollTableExtraLite{"produceCollTableExtraLite", 2, "produce extra lite collision table"};
   Configurable<float> trackPtWeightLowPt{"trackPtWeightLowPt", 0.01f, "trackPtWeightLowPt"};
   Configurable<float> trackPtWeightMidPt{"trackPtWeightMidPt", 0.10f, "trackPtWeightMidPt"};
   Configurable<float> collFilterFraction{"collFilterFraction", 0.05f, "collFilterFraction"};
@@ -218,8 +220,9 @@ struct FilterTracks {
   void fillTableData(auto track)
   {
 
+    filteredTracksCollIdx(track.collisionId());
     filteredTracksTableExtra(track.pt(), track.eta(), track.sign(), track.dcaXY(), track.dcaZ(), track.sigmaDcaXY2(), track.sigmaDcaZ2(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr());
-    filteredTracksTable(track.collisionId(), track.isWithinBeamPipe() ? 1 : 0, track.trackType(), track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt());
+    filteredTracksTable(track.isWithinBeamPipe() ? 1 : 0, track.trackType(), track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt());
 
     filteredTracksTableExtraDet(track.itsClusterSizes(), track.itsChi2NCl(), track.tpcChi2NCl(), track.tpcNClsFound(), track.trackTime());
   }
@@ -302,19 +305,31 @@ struct FilterTracks {
     if (trackPtSampling == 0) {
       for (auto const& track : tracks) {
         fillTableData(track);
+        if (produceCollTableExtraLite == 2) {
+          filterCollPosTable(collision.posX(), collision.posY(), collision.posZ(), collision.chi2(), collision.numContrib(), collision.collisionTime());
+        };
       }
     } else {
       auto lowPtTracksThisColl = lowPtTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       for (auto const& track : lowPtTracksThisColl) {
         fillTableData(track);
+        if (produceCollTableExtraLite == 2) {
+          filterCollPosTable(collision.posX(), collision.posY(), collision.posZ(), collision.chi2(), collision.numContrib(), collision.collisionTime());
+        };
       }
       auto midPtTracksThisColl = midPtTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       for (auto const& track : midPtTracksThisColl) {
         fillTableData(track);
+        if (produceCollTableExtraLite == 2) {
+          filterCollPosTable(collision.posX(), collision.posY(), collision.posZ(), collision.chi2(), collision.numContrib(), collision.collisionTime());
+        };
       }
       auto highPtTracksThisColl = highPtTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       for (auto const& track : highPtTracksThisColl) {
         fillTableData(track);
+        if (produceCollTableExtraLite == 2) {
+          filterCollPosTable(collision.posX(), collision.posY(), collision.posZ(), collision.chi2(), collision.numContrib(), collision.collisionTime());
+        };
       }
     }
   }
@@ -325,7 +340,7 @@ struct FilterTracks {
       filterCollTable(collision.bcId(), collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ(), collision.flags(), collision.chi2(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
     if (produceCollTableLite)
       filterCollLiteTable(collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ(), collision.chi2(), collision.numContrib(), collision.collisionTime());
-    if (produceCollTableExtraLite)
+    if (produceCollTableExtraLite == 1)
       filterCollPosTable(collision.posX(), collision.posY(), collision.posZ(), collision.chi2(), collision.numContrib(), collision.collisionTime());
   }
   PROCESS_SWITCH(FilterTracks, processCollisions, "process collisions", true);
