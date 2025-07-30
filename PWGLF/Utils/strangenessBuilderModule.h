@@ -894,7 +894,7 @@ class BuilderModule
                 posTrackPar.setPID(o2::track::PID::Electron);
                 negTrackPar.setPID(o2::track::PID::Electron);
                 if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, pTrack, posTrackPar)) {
-                  return;
+                  continue;
                 }
               }
               if (isNegTPCOnly) {
@@ -902,7 +902,7 @@ class BuilderModule
                 posTrackPar.setPID(o2::track::PID::Electron);
                 negTrackPar.setPID(o2::track::PID::Electron);
                 if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, nTrack, negTrackPar)) {
-                  return;
+                  continue;
                 }
               }
             } // end TPC drift treatment
@@ -1370,7 +1370,8 @@ class BuilderModule
 
           auto const& collision = collisions.rawIteratorAt(v0.collisionId);
           if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, posTrack, posTrackPar)) {
-            return;
+            products.v0dataLink(-1, -1);
+            continue;
           }
         }
 
@@ -1382,7 +1383,8 @@ class BuilderModule
 
           auto const& collision = collisions.rawIteratorAt(v0.collisionId);
           if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, negTrack, negTrackPar)) {
-            return;
+            products.v0dataLink(-1, -1);
+            continue;
           }
         }
       }
@@ -1647,6 +1649,8 @@ class BuilderModule
             }
           } // enabled tables check
         } // constexpr requires check
+      } else {
+        products.v0dataLink(-1, -1);
       }
     }
 
