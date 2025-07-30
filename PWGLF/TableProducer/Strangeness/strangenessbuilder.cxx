@@ -1927,6 +1927,8 @@ struct StrangenessBuilder {
             }
           } // enabled tables check
         } // constexpr requires check
+      } else {
+        products.v0dataLink(-1, -1);
       }
     }
 
