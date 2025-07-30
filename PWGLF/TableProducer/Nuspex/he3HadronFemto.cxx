@@ -210,6 +210,7 @@ struct he3HadronFemto {
   Configurable<bool> settingSaveUSandLS{"settingSaveUSandLS", true, "Save All Pairs"};
   Configurable<bool> settingIsMC{"settingIsMC", false, "Run MC"};
   Configurable<bool> settingFillMultiplicity{"settingFillMultiplicity", false, "Fill multiplicity table"};
+  Configurable<bool> settingFillPrimariesAndMixedMc{"settingFillPrimariesAndMixedMc", false, "Fill primary MC tracks and mixed tracks (e.g. a primary track and one from Li4)"};
 
   // Zorro
   Configurable<bool> settingSkimmedProcessing{"settingSkimmedProcessing", false, "Skimmed dataset processing"};
@@ -1080,7 +1081,9 @@ struct he3HadronFemto {
           he3Hadcand.flags |= Flags::kMixedPair;
         }
 
-
+        if (settingFillPrimariesAndMixedMc && ((he3Hadcand.flags & Flags::kMixedPair) || he3Hadcand.flags == Flags::kBothPrimaries)) {
+          continue;
+        }
 
         if (!fillCandidateInfo(heTrack, prTrack, collBracket, collisions, he3Hadcand, tracks, /*mix*/ false)) {
           continue;
