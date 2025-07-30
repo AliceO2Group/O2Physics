@@ -158,8 +158,9 @@ struct HfCandidateSelectorXicToPKPi {
       if (applyMinMax == 1) {
         LOG(info) << "MinMax scaling will be applied";
         scaleType = 1;
-      } else
+      } else {
         LOG(info) << "No external preprocessing transformation will be applied";
+      }
     }
   }
 
