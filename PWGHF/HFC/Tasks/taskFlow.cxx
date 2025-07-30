@@ -59,7 +59,7 @@ using namespace o2::constants::math;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-static constexpr float kPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
+// static constexpr float kPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
 
 struct HfTaskFlow {
 
@@ -68,13 +68,13 @@ struct HfTaskFlow {
   Configurable<bool> centralityBinsForMc{"centralityBinsForMc", false, "false = OFF, true = ON for data like multiplicity/centrality bins for MC steps"};
   Configurable<float> mftMaxDCAxy{"mftMaxDCAxy", 2.0f, "Cut on dcaXY for MFT tracks"};
   Configurable<bool> doReferenceFlow{"doReferenceFlow", false, "Flag to know if reference flow should be done"};
-  Configurable<float> doTwoTrackCut{"doTwoTrackCut", -1, "Two track cut: -1 = off; >0 otherwise distance value (suggested: 0.02)"};
+  // Configurable<float> doTwoTrackCut{"doTwoTrackCut", -1, "Two track cut: -1 = off; >0 otherwise distance value (suggested: 0.02)"};
   Configurable<bool> processRun2{"processRun2", false, "Flag to run on Run 2 data"};
   Configurable<bool> processRun3{"processRun3", true, "Flag to run on Run 3 data"};
   Configurable<bool> processMc{"processMc", false, "Flag to run on MC"};
   Configurable<int> nMixedEvents{"nMixedEvents", 5, "Number of mixed events per event"};
-  Configurable<float> twoTrackCutMinRadius{"twoTrackCutMinRadius", 0.8f, "Two track cut : radius in m from which two tracks cuts are applied"};
-  //  configurables for collisions
+  // Configurable<float> twoTrackCutMinRadius{"twoTrackCutMinRadius", 0.8f, "Two track cut : radius in m from which two tracks cuts are applied"};
+  //   configurables for collisions
   Configurable<float> zVertexMax{"zVertexMax", 7.0f, "Accepted z-vertex range"};
   //  configurables for TPC tracks
   Configurable<float> etaTpcTrackMax{"etaTpcTrackMax", 0.8f, "max. eta of TPC tracks"};
@@ -97,7 +97,7 @@ struct HfTaskFlow {
   HfHelper hfHelper;
   SliceCache cache;
   Service<o2::framework::O2DatabasePDG> pdg;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  // Service<o2::ccdb::BasicCCDBManager> ccdb;
   std::vector<int> hfIndexCache;
 
   // =========================
