@@ -103,7 +103,7 @@ struct HfTaskElectronWeakBoson {
 
   Configurable<float> massZMin{"massZMin", 60.0, "Minimum Z mass (GeV/c^2)"};
   Configurable<float> massZMax{"massZMax", 120.0, "Maximum Z mass (GeV/c^2)"};
-  Configurable<float> ptEleCorrfac{"ptEleCorrfac", 1.0, "momenctum corrrection factor for decay electrons from Z boson"};
+  Configurable<float> ptEleCorrfac{"ptEleCorrfac", 1.0, "momentum corrrection factor for decay electrons from Z boson"};
 
   // flag for THn
   Configurable<bool> isTHnElectron{"isTHnElectron", true, "Enables THn for electrons"};
