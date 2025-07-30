@@ -23,24 +23,28 @@
 //
 //===============================================================
 
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Tools/StandardCCDBLoader.h"
+#include "Common/Tools/TrackPropagationModule.h"
+#include "Common/Tools/TrackTuner.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "CommonConstants/GeomConstants.h"
+#include "CommonUtils/NameConf.h"
+#include "DataFormatsCalibration/MeanVertexObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "CommonUtils/NameConf.h"
-#include "CCDB/CcdbApi.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
 #include "Framework/HistogramRegistry.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "CommonConstants/GeomConstants.h"
-#include "Common/Tools/TrackPropagationModule.h"
-#include "Common/Tools/StandardCCDBLoader.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/DCA.h"
+
+#include <string>
 
 // The Run 3 AO2D stores the tracks at the point of innermost update. For a track with ITS this is the innermost (or second innermost)
 // ITS layer. For a track without ITS, this is the TPC inner wall or for loopers in the TPC even a radius beyond that.
@@ -59,6 +63,9 @@ struct TrackPropagationTester {
   o2::common::TrackPropagationProducts trackPropagationProducts;
   o2::common::TrackPropagationConfigurables trackPropagationConfigurables;
 
+  // the track tuner object -> needs to be here as it inherits from ConfigurableGroup (+ has its own copy of ccdbApi)
+  TrackTuner trackTunerObj;
+
   // CCDB boilerplate declarations
   o2::framework::Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -76,14 +83,14 @@ struct TrackPropagationTester {
     ccdb->setURL(ccdburl.value);
 
     // task-specific
-    trackPropagation.init(trackPropagationConfigurables, registry, initContext);
+    trackPropagation.init(trackPropagationConfigurables, trackTunerObj, registry, initContext);
   }
 
   void processReal(aod::Collisions const& collisions, soa::Join<aod::StoredTracksIU, aod::TracksCovIU, aod::TracksExtra> const& tracks, aod::Collisions const&, aod::BCs const& bcs)
   {
     // task-specific
     ccdbLoader.initCCDBfromBCs(standardCCDBLoaderConfigurables, ccdb, bcs);
-    trackPropagation.fillTrackTables<false>(trackPropagationConfigurables, ccdbLoader, collisions, tracks, trackPropagationProducts, registry);
+    trackPropagation.fillTrackTables<false>(trackPropagationConfigurables, trackTunerObj, ccdbLoader, collisions, tracks, trackPropagationProducts, registry);
   }
   PROCESS_SWITCH(TrackPropagationTester, processReal, "Process Real Data", true);
 
@@ -91,7 +98,7 @@ struct TrackPropagationTester {
   void processMc(aod::Collisions const& collisions, soa::Join<aod::StoredTracksIU, aod::McTrackLabels, aod::TracksCovIU, aod::TracksExtra> const& tracks, aod::McParticles const&, aod::Collisions const&, aod::BCs const& bcs)
   {
     ccdbLoader.initCCDBfromBCs(standardCCDBLoaderConfigurables, ccdb, bcs);
-    trackPropagation.fillTrackTables<false>(trackPropagationConfigurables, ccdbLoader, collisions, tracks, trackPropagationProducts, registry);
+    trackPropagation.fillTrackTables<false>(trackPropagationConfigurables, trackTunerObj, ccdbLoader, collisions, tracks, trackPropagationProducts, registry);
   }
   PROCESS_SWITCH(TrackPropagationTester, processMc, "Process Monte Carlo", false);
 };

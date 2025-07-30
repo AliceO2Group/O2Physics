@@ -16,16 +16,22 @@
 #ifndef COMMON_TOOLS_TRACKPROPAGATIONMODULE_H_
 #define COMMON_TOOLS_TRACKPROPAGATIONMODULE_H_
 
-#include <memory>
-#include <cstdlib>
-#include <cmath>
-#include <array>
-#include <string>
+#include "TableHelper.h"
+
+#include "Common/Tools/TrackTuner.h"
+
+#include "DataFormatsCalibration/MeanVertexObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/Propagator.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/Configurable.h"
 #include "Framework/HistogramSpec.h"
-#include "Common/Tools/TrackTuner.h"
-#include "TableHelper.h"
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <memory>
+#include <string>
 
 //__________________________________________
 // track propagation module
@@ -81,7 +87,6 @@ class TrackPropagationModule
 
   // pointers to objs needed for operation
   std::shared_ptr<TH1> trackTunedTracks;
-  TrackTuner trackTunerObj;
 
   // Running variables
   std::array<float, 2> mDcaInfo;
@@ -91,7 +96,7 @@ class TrackPropagationModule
   o2::track::TrackParametrizationWithError<float> mTrackParCov;
 
   template <typename TConfigurableGroup, typename TInitContext, typename THistoRegistry>
-  void init(TConfigurableGroup const& cGroup, THistoRegistry& registry, TInitContext& initContext)
+  void init(TConfigurableGroup const& cGroup, TrackTuner& trackTunerObj, THistoRegistry& registry, TInitContext& initContext)
   {
     // Checking if the tables are requested in the workflow and enabling them
     fillTracks = isTableRequiredInWorkflow(initContext, "Tracks");
@@ -154,7 +159,7 @@ class TrackPropagationModule
   }
 
   template <bool isMc, typename TConfigurableGroup, typename TCCDBLoader, typename TCollisions, typename TTracks, typename TOutputGroup, typename THistoRegistry>
-  void fillTrackTables(TConfigurableGroup const& cGroup, TCCDBLoader const& ccdbLoader, TCollisions const& collisions, TTracks const& tracks, TOutputGroup& cursors, THistoRegistry& registry)
+  void fillTrackTables(TConfigurableGroup const& cGroup, TrackTuner& trackTunerObj, TCCDBLoader const& ccdbLoader, TCollisions const& collisions, TTracks const& tracks, TOutputGroup& cursors, THistoRegistry& registry)
   {
     if (!fillTracks) {
       return; // suppress everything
