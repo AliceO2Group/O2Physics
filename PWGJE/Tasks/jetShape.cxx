@@ -214,8 +214,8 @@ struct JetShapeTask {
         float preDeltaPhiBg1 = track.phi() - phiBg1;
         float preDeltaPhiBg2 = track.phi() - phiBg2;
 
-        float deltaPhiBg1 = RecoDecay::constrainAngle(preDeltaPhiBg1);
-        float deltaPhiBg2 = RecoDecay::constrainAngle(preDeltaPhiBg2);
+        float deltaPhiBg1 = RecoDecay::constrainAngle(preDeltaPhiBg1, -o2::constants::math::PI);
+        float deltaPhiBg2 = RecoDecay::constrainAngle(preDeltaPhiBg2, -o2::constants::math::PI);
 
         float distanceBg1 = std::sqrt(deltaEta * deltaEta + deltaPhiBg1 * deltaPhiBg1);
         float distanceBg2 = std::sqrt(deltaEta * deltaEta + deltaPhiBg2 * deltaPhiBg2);
@@ -320,8 +320,8 @@ struct JetShapeTask {
         // Calculate delta phi for background cones
         float preDeltaPhiBg1 = track.phi() - phiBg1;
         float preDeltaPhiBg2 = track.phi() - phiBg2;
-        float deltaPhiBg1 = RecoDecay::constrainAngle(preDeltaPhiBg1);
-        float deltaPhiBg2 = RecoDecay::constrainAngle(preDeltaPhiBg2);
+        float deltaPhiBg1 = RecoDecay::constrainAngle(preDeltaPhiBg1, -o2::constants::math::PI);
+        float deltaPhiBg2 = RecoDecay::constrainAngle(preDeltaPhiBg2, -o2::constants::math::PI);
 
         // Calculate distance to background cone axes
         // Note: deltaEta is the same for all cones at the same eta
