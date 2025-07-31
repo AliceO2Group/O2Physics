@@ -376,7 +376,6 @@ struct ExclusiveRhoTo4Pi {
   int numPiPlus = 2;
   int numPiMinus = 2;
   float zeroPointEight = 0.8;
-  std::vector<float> trackSelectionParams;
   // Derived Data
   Produces<aod::SignalData> sigFromData;
   Produces<aod::BkgroundData> bkgFromData;
@@ -440,14 +439,14 @@ struct ExclusiveRhoTo4Pi {
     histosData.add("vertexX", "Vertex X; Vertex X [cm]; Counts", kTH1F, {{2000, -0.05, 0.05}});
     histosData.add("vertexY", "Vertex Y; Vertex Y [cm]; Counts", kTH1F, {{2000, -0.05, 0.05}});
     histosData.add("vertexZ", "Vertex Z; Vertex Z [cm]; Counts", kTH1F, {{2000, -15, 15}});
-    histosData.add("GapSide", "Gap Side;Gap Side; Events", kTH1F, {{4, -1.5, 2.5}});
-    histosData.add("TrueGapSide", "True Gap Side; True Gap Side; Events", kTH1F, {{4, -1.5, 2.5}});
+    histosData.add("GapSide", "Gap Side;Gap Side; Events", kTH1F, {{4, 0, 4}});
+    histosData.add("TrueGapSide", "True Gap Side; True Gap Side; Events", kTH1F, {{4, 0, 4}});
     histosData.add("occupancy", "Occupancy; Occupancy; Counts", kTH1F, {{20000, 0, 20000}});
     // QA plots: tracks
-    histosData.add("dcaXY_all", "dcaXY; dcaXY [cm]; Counts", kTH1F, {{5000, -1, 1}});
-    histosData.add("dcaXY_pions", "dcaXY_pions; dcaXY of Pions [cm]; Counts", kTH1F, {{5000, -1, 1}});
-    histosData.add("dcaZ_all", "dcaZ; dcaZ [cm]; Counts", kTH1F, {{5000, -1, 1}});
-    histosData.add("dcaZ_pions", "dcaZ_pions; dcaZ of Pions [cm]; Counts", kTH1F, {{5000, -1, 1}});
+    histosData.add("dcaXY_all", "dcaXY; dcaXY [cm]; Counts", kTH1F, {{2000, -0.1, 0.1}});
+    histosData.add("dcaXY_pions", "dcaXY_pions; dcaXY of Pions [cm]; Counts", kTH1F, {{2000, -0.1, 0.1}});
+    histosData.add("dcaZ_all", "dcaZ; dcaZ [cm]; Counts", kTH1F, {{2000, -0.1, 0.1}});
+    histosData.add("dcaZ_pions", "dcaZ_pions; dcaZ of Pions [cm]; Counts", kTH1F, {{2000, -0.1, 0.1}});
     histosData.add("itsChi2NCl_all", "ITS Chi2/NCl; Chi2/NCl; Counts", kTH1F, {{250, 0, 50}});
     histosData.add("itsChi2_all", "ITS Chi2; ITS Chi2; Counts", kTH1F, {{500, 0, 50}});
     histosData.add("tpcChi2NCl_all", "TPC Chi2/NCl; Chi2/NCl; Counts", kTH1F, {{250, 0, 50}});
@@ -904,7 +903,7 @@ struct ExclusiveRhoTo4Pi {
     } // End of Analysis for non 0 charge events
   } // End of 4 Pion Analysis Process function for Pass5 Data
 
-  void processCounter(UDCollisions::iterator const& collision, UDtracks const& tracks)
+  void processEventCounter(UDCollisions::iterator const& collision, soa::Filtered<UDtracks> const& tracks)
   {
 
     histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 0);
@@ -977,6 +976,59 @@ struct ExclusiveRhoTo4Pi {
     std::vector<decltype(tracks.begin())> selectedPionPlusTracks;
     std::vector<decltype(tracks.begin())> selectedPionMinusTracks;
 
+    for (const auto& t0 : tracks) {
+      if (!isSelectedTrack(t0, pTcut, etaCut, dcaXYcut, dcaZcut, useITStracksOnly, useTPCtracksOnly, itsChi2NClsCut, tpcChi2NClsCut, tpcNClsFindableCut)) {
+        continue;
+      }
+      if (selectionPIDPion(t0, useTOF, nSigmaTPCcut, nSigmaTOFcut)) {
+        selectedPionTracks.push_back(t0);
+        if (t0.sign() == 1) {
+          selectedPionPlusTracks.push_back(t0);
+        }
+        if (t0.sign() == -1) {
+          selectedPionMinusTracks.push_back(t0);
+        }
+      } // End of Selection PID Pion
+    } // End of loop over tracks
+
+    int numSelectedPionTracks = static_cast<int>(selectedPionTracks.size());
+    int numPiPlusTracks = static_cast<int>(selectedPionPlusTracks.size());
+    int numPionMinusTracks = static_cast<int>(selectedPionMinusTracks.size());
+    // Events with 4 pions
+    if (numSelectedPionTracks != numFourPionTracks) {
+      return;
+    }
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 12);
+
+    // Selecting Events with net charge = 0
+    if (numPionMinusTracks == numPiMinus && numPiPlusTracks == numPiPlus) {
+      histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 13);
+      ROOT::Math::PxPyPzMVector p1(selectedPionPlusTracks[0].px(), selectedPionPlusTracks[0].py(), selectedPionPlusTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p2(selectedPionPlusTracks[1].px(), selectedPionPlusTracks[1].py(), selectedPionPlusTracks[1].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p3(selectedPionMinusTracks[0].px(), selectedPionMinusTracks[0].py(), selectedPionMinusTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p4(selectedPionMinusTracks[1].px(), selectedPionMinusTracks[1].py(), selectedPionMinusTracks[1].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p1234 = p1 + p2 + p3 + p4;
+
+      if ((p1234.Pt() < rhoPtCut) && (std::abs(p1234.Rapidity()) < rhoRapCut)) {
+        histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 14);
+        if ((rhoMassMin < p1234.M()) && (p1234.M() < rhoMassMax)) {
+          histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 15);
+        }
+      }
+    } // End of Zero Charge Events
+
+    if (numPionMinusTracks != numPiMinus && numPiPlusTracks != numPiPlus) {
+      histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 16);
+    } // End of Non Zero Charge Events
+
+  } // End of processCounter function
+
+  void processTrackCounter(soa::Filtered<UDCollisions>::iterator const& collision, UDtracks const& tracks)
+  {
+    // Check if the Event is reconstructed in UPC mode
+    if (ifCheckUPCmode && (collision.flags() != 1)) {
+      return;
+    }
     for (const auto& track : tracks) {
       histosCounter.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 0);
       ROOT::Math::PxPyPzMVector trackVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged);
@@ -1036,52 +1088,19 @@ struct ExclusiveRhoTo4Pi {
       // Selection PID Pion
       if (selectionPIDPion(track, useTOF, nSigmaTPCcut, nSigmaTOFcut)) {
         histosCounter.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 11);
-        selectedPionTracks.push_back(track);
         if (track.sign() == 1) {
           histosCounter.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 12);
-          selectedPionPlusTracks.push_back(track);
         }
         if (track.sign() == -1) {
           histosCounter.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 13);
-          selectedPionMinusTracks.push_back(track);
         }
       } // End of Selection PID Pion
     } // End of loop over tracks
-
-    int numSelectedPionTracks = static_cast<int>(selectedPionTracks.size());
-    int numPiPlusTracks = static_cast<int>(selectedPionPlusTracks.size());
-    int numPionMinusTracks = static_cast<int>(selectedPionMinusTracks.size());
-    // Events with 4 pions
-    if (numSelectedPionTracks != numFourPionTracks) {
-      return;
-    }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 12);
-
-    // Selecting Events with net charge = 0
-    if (numPionMinusTracks == numPiMinus && numPiPlusTracks == numPiPlus) {
-      histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 13);
-      ROOT::Math::PxPyPzMVector p1(selectedPionPlusTracks[0].px(), selectedPionPlusTracks[0].py(), selectedPionPlusTracks[0].pz(), o2::constants::physics::MassPionCharged);
-      ROOT::Math::PxPyPzMVector p2(selectedPionPlusTracks[1].px(), selectedPionPlusTracks[1].py(), selectedPionPlusTracks[1].pz(), o2::constants::physics::MassPionCharged);
-      ROOT::Math::PxPyPzMVector p3(selectedPionMinusTracks[0].px(), selectedPionMinusTracks[0].py(), selectedPionMinusTracks[0].pz(), o2::constants::physics::MassPionCharged);
-      ROOT::Math::PxPyPzMVector p4(selectedPionMinusTracks[1].px(), selectedPionMinusTracks[1].py(), selectedPionMinusTracks[1].pz(), o2::constants::physics::MassPionCharged);
-      ROOT::Math::PxPyPzMVector p1234 = p1 + p2 + p3 + p4;
-
-      if ((p1234.Pt() < rhoPtCut) && (std::abs(p1234.Rapidity()) < rhoRapCut)) {
-        histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 14);
-        if ((rhoMassMin < p1234.M()) && (p1234.M() < rhoMassMax)) {
-          histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 15);
-        }
-      }
-    } // End of Zero Charge Events
-
-    if (numPionMinusTracks != numPiMinus && numPiPlusTracks != numPiPlus) {
-      histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 16);
-    } // End of Non Zero Charge Events
-
   } // End of processCounter function
 
-  PROCESS_SWITCH(ExclusiveRhoTo4Pi, processData, "The Process for 4 Pion Analysis from data", true);
-  PROCESS_SWITCH(ExclusiveRhoTo4Pi, processCounter, "The Process for 4 Pion Analysis from data", true);
+  PROCESS_SWITCH(ExclusiveRhoTo4Pi, processData, "Data Analysis Function", true);
+  PROCESS_SWITCH(ExclusiveRhoTo4Pi, processEventCounter, "Event Counter Function", true);
+  PROCESS_SWITCH(ExclusiveRhoTo4Pi, processTrackCounter, "Track Counter Function", true);
 
   double cosThetaCollinsSoperFrame(ROOT::Math::PtEtaPhiMVector pair1, ROOT::Math::PtEtaPhiMVector pair2, ROOT::Math::PtEtaPhiMVector fourpion)
   {
@@ -1143,7 +1162,6 @@ struct ExclusiveRhoTo4Pi {
                        float tpcchi2nclscut,
                        float tpcnclsfindablecut)
   {
-
     ROOT::Math::PxPyPzMVector trackVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged);
     // pt cut
     if (trackVector.Pt() < ptcut) {
@@ -1187,6 +1205,7 @@ struct ExclusiveRhoTo4Pi {
     // All cuts passed
     return true;
   } // End of Track Selection function
+
 }; // End of Struct exclusiveRhoTo4Pi
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
