@@ -945,7 +945,7 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
     m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDeNClsIts);
-    if (!selectionPIDtpcDe(track)) {
+    if (std::abs(track.tpcNSigmaDe()) > desetting_nsigmatpc) {
       return;
     }
     m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDePIDtpc);
@@ -953,7 +953,7 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
     m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDePIDtof);
-    m_hAnalysis.fill(HIST("nSigmaTPCDe"), track.p() * track.sign(), computeNSigmaDe(track));
+    m_hAnalysis.fill(HIST("nSigmaTPCDe"), track.p() * track.sign(), track.tpcNSigmaDe());
     m_hAnalysis.fill(HIST("nSigmaITSDe"), track.p() * track.sign(), m_responseITS.nSigmaITS<o2::track::PID::Deuteron>(track.itsClusterSizes(), track.p(), track.eta()));
     m_hAnalysis.fill(HIST("nSigmaTOFDe"), track.p() * track.sign(), track.tofNSigmaDe());
     m_hAnalysis.fill(HIST("TOFmassDe"), track.p() * track.sign(), computeTOFmassDe<isMC>(track));
@@ -971,7 +971,7 @@ struct LfTreeCreatorClusterStudies {
       m_ClusterStudiesTableExtra(
         track.tpcInnerParam() * track.sign(), // pTPC_De,
         track.pidForTracking(),               // PIDinTrk_De,
-        computeNSigmaDe(track),               // TpcNSigma_De,
+        track.tpcNSigmaDe(),                  // TpcNSigma_De,
         track.tofNSigmaDe(),                  // TofNSigma_De,
         computeTOFmassDe<isMC>(track),        // TofMass_De,
         -999.f,                               // cosPA,
