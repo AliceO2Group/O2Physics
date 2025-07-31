@@ -90,9 +90,9 @@ struct JetFragmentation {
   Configurable<std::vector<float>> ptBinsAntiLambda{"ptBinsAntiLambda", {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0}, "AntiLambda pt Vals"};
 
   // NB: these must be one shorter than ptbin vectors!
-  Configurable<std::vector<float>> purityK0S{"purityK0S", {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "K0S purity per pt bin"};
-  Configurable<std::vector<float>> purityLambda{"purityLambda", {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "Lambda purity per pt bin"};
-  Configurable<std::vector<float>> purityAntiLambda{"purityAntiLambda", {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "AntiLambda purity per pt bin"};
+  Configurable<std::vector<float>> signalProbK0S{"signalProbK0S", {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "K0S signal probability per pt bin"};
+  Configurable<std::vector<float>> signalProbLambda{"signalProbLambda", {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "Lambda signal probability per pt bin"};
+  Configurable<std::vector<float>> signalProbAntiLambda{"signalProbAntiLambda", {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, "AntiLambda signal probability per pt bin"};
 
   Configurable<float> vertexZCut{"vertexZCut", 10.f, "vertex z cut"};
   Configurable<float> v0EtaMin{"v0EtaMin", -0.75, "minimum data V0 eta"};
@@ -786,8 +786,15 @@ struct JetFragmentation {
       registry.add("matching/jets/V0/missJetPtV0TrackProj", "Misses", HistType::kTH2D, {partJetPtAxis, partZAxis}, true);
 
       // Matching - Matched K0S
-      registry.add("matching/jets/V0/matchDetJetPtK0STrackProjPartJetPtK0STrackProj", "Matched", HistType::kTHnSparseD, {detJetPtAxis, detZAxis, partJetPtAxis, partZAxis}, true);
-      registry.add("matching/jets/V0/partJetPtK0SPtDetJetPtK0SPt", "matched jet Pt, K_{S}^{0} Pt", HistType::kTHnSparseD, {partJetPtAxis, v0PtAxis, detJetPtAxis, v0PtAxis}, true);
+      registry.add("matching/jets/V0/partJetPtK0SPtDetJetPtK0SPt", "Matched Pt and pt", HistType::kTHnSparseD, {partJetPtAxis, v0PtAxis, detJetPtAxis, v0PtAxis}, true);
+      registry.add("matching/jets/V0/partJetPtK0STrackProjDetJetPtK0STrackProj", "Matched pt and z", HistType::kTHnSparseD, {partJetPtAxis, partZAxis, detJetPtAxis, detZAxis}, true);
+
+      registry.add("matching/jets/V0/partJetPtK0SPtDetJetPtK0SPtRightCollision", "Matched Pt, right collision", HistType::kTHnSparseD, {partJetPtAxis, v0PtAxis, detJetPtAxis, v0PtAxis}, true);
+      registry.add("matching/jets/V0/partJetPtK0STrackProjDetJetPtK0STrackProjRightCollision", "Matched pt and z, right collision", HistType::kTHnSparseD, {partJetPtAxis, partZAxis, detJetPtAxis, detZAxis}, true);
+
+      registry.add("matching/jets/V0/partJetPtK0SPtDetJetPtK0SPtWrongCollision", "Matched Pt, wrong collision", HistType::kTHnSparseD, {partJetPtAxis, v0PtAxis, detJetPtAxis, v0PtAxis}, true);
+      registry.add("matching/jets/V0/partJetPtK0STrackProjDetJetPtK0STrackProjWrongCollision", "Matched pt and z, wrong collision", HistType::kTHnSparseD, {partJetPtAxis, partZAxis, detJetPtAxis, detZAxis}, true);
+
       // Matching - Matched K0S: pt
       registry.add("matching/jets/V0/partJetPtK0SPtDetJetPtK0SPtCtauLambda", "matched jet Pt, K^{0}_{S} Pt, Ctau #Lambda^{0}", HistType::kTHnSparseD, {partJetPtAxis, v0PtAxis, detJetPtAxis, v0PtAxis, v0CtauAxis}, true);
       registry.add("matching/jets/V0/partJetPtK0SPtDetJetPtK0SPtCtauAntiLambda", "matched jet Pt, K^{0}_{S} Pt, Ctau #bar{#Lambda}^{0}", HistType::kTHnSparseD, {partJetPtAxis, v0PtAxis, detJetPtAxis, v0PtAxis, v0CtauAxis}, true);
@@ -833,8 +840,15 @@ struct JetFragmentation {
       registry.add("matching/jets/V0/missJetPtK0STrackProj", "Misses", HistType::kTH2D, {partJetPtAxis, partZAxis}, true);
 
       // Matching - Matched Lambda
-      registry.add("matching/jets/V0/matchDetJetPtLambdaTrackProjPartJetPtLambdaTrackProj", "Matched", HistType::kTHnSparseD, {detJetPtAxis, detZAxis, partJetPtAxis, partZAxis}, true);
-      registry.add("matching/jets/V0/partJetPtLambdaPtDetJetPtLambdaPt", "matched jet Pt, #Lambda^{0} Pt", HistType::kTHnSparseD, {partJetPtAxis, v0PtAxis, detJetPtAxis, v0PtAxis}, true);
+      registry.add("matching/jets/V0/partJetPtLambdaPtDetJetPtLambdaPt", "matched Pt", HistType::kTHnSparseD, {partJetPtAxis, v0PtAxis, detJetPtAxis, v0PtAxis}, true);
+      registry.add("matching/jets/V0/partJetPtLambdaTrackProjDetJetPtLambdaTrackProj", "Matched pt and z", HistType::kTHnSparseD, {partJetPtAxis, partZAxis, detJetPtAxis, detZAxis}, true);
+
+      registry.add("matching/jets/V0/partJetPtLambdaPtDetJetPtLambdaPtRightCollision", "matched Pt, right collision", HistType::kTHnSparseD, {partJetPtAxis, v0PtAxis, detJetPtAxis, v0PtAxis}, true);
+      registry.add("matching/jets/V0/partJetPtLambdaTrackProjDetJetPtLambdaTrackProjRightCollision", "Matched pt and z, right collision", HistType::kTHnSparseD, {partJetPtAxis, partZAxis, detJetPtAxis, detZAxis}, true);
+
+      registry.add("matching/jets/V0/partJetPtLambdaPtDetJetPtLambdaPtWrongCollision", "matched Pt, Wrong collision", HistType::kTHnSparseD, {partJetPtAxis, v0PtAxis, detJetPtAxis, v0PtAxis}, true);
+      registry.add("matching/jets/V0/partJetPtLambdaTrackProjDetJetPtLambdaTrackProjWrongCollision", "Matched pt and z, Wrong collision", HistType::kTHnSparseD, {partJetPtAxis, partZAxis, detJetPtAxis, detZAxis}, true);
+
       // Matching - Matched Lambda: pt
       registry.add("matching/jets/V0/partJetPtLambdaPtDetJetPtLambdaPtCtauK0S", "matched jet Pt, #{K}^{0}_{S} Pt, Ctau #{K}^{0}_{S}", HistType::kTHnSparseD, {partJetPtAxis, v0PtAxis, detJetPtAxis, v0PtAxis, v0CtauAxis}, true);
       registry.add("matching/jets/V0/partJetPtLambdaPtDetJetPtLambdaPtCtauLambda", "matched jet Pt, #Lambda^{0} Pt, Ctau #Lambda^{0}", HistType::kTHnSparseD, {partJetPtAxis, v0PtAxis, detJetPtAxis, v0PtAxis, v0CtauAxis}, true);
@@ -883,8 +897,15 @@ struct JetFragmentation {
       registry.add("matching/jets/V0/missJetPtLambdaTrackProj", "Misses", HistType::kTH2D, {partJetPtAxis, partZAxis}, true);
 
       // Matching - Matched AntiLambda
-      registry.add("matching/jets/V0/matchDetJetPtAntiLambdaTrackProjPartJetPtAntiLambdaTrackProj", "Matched", HistType::kTHnSparseD, {detJetPtAxis, detZAxis, partJetPtAxis, partZAxis}, true);
-      registry.add("matching/jets/V0/partJetPtAntiLambdaPtDetJetPtAntiLambdaPt", "matched jet Pt, #bar{#Lambda}^{0} Pt", HistType::kTHnSparseD, {partJetPtAxis, v0PtAxis, detJetPtAxis, v0PtAxis}, true);
+      registry.add("matching/jets/V0/partJetPtAntiLambdaPtDetJetPtAntiLambdaPt", "matched Pt", HistType::kTHnSparseD, {partJetPtAxis, v0PtAxis, detJetPtAxis, v0PtAxis}, true);
+      registry.add("matching/jets/V0/partJetPtAntiLambdaTrackProjDetJetPtAntiLambdaTrackProj", "Matched pt and z", HistType::kTHnSparseD, {partJetPtAxis, partZAxis, detJetPtAxis, detZAxis}, true);
+
+      registry.add("matching/jets/V0/partJetPtAntiLambdaPtDetJetPtAntiLambdaPtRightCollision", "matched Pt, right collision", HistType::kTHnSparseD, {partJetPtAxis, v0PtAxis, detJetPtAxis, v0PtAxis}, true);
+      registry.add("matching/jets/V0/partJetPtAntiLambdaTrackProjDetJetPtAntiLambdaTrackProjRightCollision", "Matched pt and z, right collision", HistType::kTHnSparseD, {partJetPtAxis, partZAxis, detJetPtAxis, detZAxis}, true);
+
+      registry.add("matching/jets/V0/partJetPtAntiLambdaPtDetJetPtAntiLambdaPtWrongCollision", "matched Pt, Wrong collision", HistType::kTHnSparseD, {partJetPtAxis, v0PtAxis, detJetPtAxis, v0PtAxis}, true);
+      registry.add("matching/jets/V0/partJetPtAntiLambdaTrackProjDetJetPtAntiLambdaTrackProjWrongCollision", "Matched pt and z, Wrong collision", HistType::kTHnSparseD, {partJetPtAxis, partZAxis, detJetPtAxis, detZAxis}, true);
+
       // Matching - Matched AntiLambda: pt
       registry.add("matching/jets/V0/partJetPtAntiLambdaPtDetJetPtAntiLambdaPtCtauK0S", "matched jet Pt, #{K}^{0}_{S} Pt, Ctau #{K}^{0}_{S}", HistType::kTHnSparseD, {partJetPtAxis, v0PtAxis, detJetPtAxis, v0PtAxis, v0CtauAxis}, true);
       registry.add("matching/jets/V0/partJetPtAntiLambdaPtDetJetPtAntiLambdaPtCtauLambda", "matched jet Pt, #bar{#Lambda}^{0} Pt, Ctau #Lambda^{0}", HistType::kTHnSparseD, {partJetPtAxis, v0PtAxis, detJetPtAxis, v0PtAxis, v0CtauAxis}, true);
@@ -1106,17 +1127,17 @@ struct JetFragmentation {
     if (v0.isK0SCandidate()) {
       int ptBin = getPtBin(v0.pt(), ptBinsK0S);
       if (ptBin >= 0) {
-        purity = purityK0S->at(ptBin);
+        purity = signalProbK0S->at(ptBin);
       }
     } else if (v0.isLambdaCandidate()) {
       int ptBin = getPtBin(v0.pt(), ptBinsLambda);
       if (ptBin >= 0) {
-        purity = purityLambda->at(ptBin);
+        purity = signalProbLambda->at(ptBin);
       }
     } else if (v0.isAntiLambdaCandidate()) {
       int ptBin = getPtBin(v0.pt(), ptBinsAntiLambda);
       if (ptBin >= 0) {
-        purity = purityAntiLambda->at(ptBin);
+        purity = signalProbAntiLambda->at(ptBin);
       }
     }
     return purity;
@@ -1541,7 +1562,9 @@ struct JetFragmentation {
     double conePt[nCones] = {0., 0.};
     int nV0sinCone[nCones] = {0, 0};
     for (const auto& v0 : v0s) {
-      // Need to check if v0 passed jet finder selection/preselector cuts
+      if (v0.isRejectedCandidate())
+        continue;
+
       bool v0InCones = false;
       double dEta = v0.eta() - jet.eta();
       double dPhi[nCones] = {RecoDecay::constrainAngle(v0.phi() - conePhi[0], -constants::math::PI),
@@ -2123,6 +2146,7 @@ struct JetFragmentation {
   template <typename CollisionType, typename DetJetType, typename PartJetType, typename V0Type, typename ParticleType> // Reconstructed signal for in-jet V0s
   void fillMatchingV0FragHistograms(CollisionType const& collision, DetJetType const& detJet, PartJetType const& partJet, V0Type const& v0, ParticleType const& particle, double weight = 1.)
   {
+    bool correctCollision = (collision.mcCollisionId() == particle.mcCollisionId());
     double detTrackProj = getMomFrac(detJet, v0);
     double partTrackProj = getMomFrac(partJet, particle);
 
@@ -2158,8 +2182,15 @@ struct JetFragmentation {
     registry.fill(HIST("matching/jets/V0/partJetPtV0TrackProjDetJetPtV0TrackProjDCAd"), partJet.pt(), partTrackProj, detJet.pt(), detTrackProj, v0.dcaV0daughters(), weight);
 
     if (std::abs(particle.pdgCode()) == PDG_t::kK0Short) { // K0S
-      registry.fill(HIST("matching/jets/V0/matchDetJetPtK0STrackProjPartJetPtK0STrackProj"), detJet.pt(), detTrackProj, partJet.pt(), partTrackProj, weight);
       registry.fill(HIST("matching/jets/V0/partJetPtK0SPtDetJetPtK0SPt"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), weight);
+      registry.fill(HIST("matching/jets/V0/partJetPtK0STrackProjDetJetPtK0STrackProj"), partJet.pt(), partTrackProj, detJet.pt(), detTrackProj, weight);
+      if (correctCollision) {
+        registry.fill(HIST("matching/jets/V0/partJetPtK0SPtDetJetPtK0SPtRightCollision"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), weight);
+        registry.fill(HIST("matching/jets/V0/partJetPtK0STrackProjDetJetPtK0STrackProjRightCollision"), partJet.pt(), partTrackProj, detJet.pt(), detTrackProj, weight);
+      } else {
+        registry.fill(HIST("matching/jets/V0/partJetPtK0SPtDetJetPtK0SPtWrongCollision"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), weight);
+        registry.fill(HIST("matching/jets/V0/partJetPtK0STrackProjDetJetPtK0STrackProjWrongCollision"), partJet.pt(), partTrackProj, detJet.pt(), detTrackProj, weight);
+      }
 
       registry.fill(HIST("matching/jets/V0/partJetPtK0SPtDetJetPtK0SPtCtauLambda"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), ctauLambda, weight);
       registry.fill(HIST("matching/jets/V0/partJetPtK0SPtDetJetPtK0SPtCtauAntiLambda"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), ctauAntiLambda, weight);
@@ -2185,8 +2216,15 @@ struct JetFragmentation {
       registry.fill(HIST("matching/jets/V0/partJetPtK0STrackProjDetJetPtK0STrackProjDCAposneg"), partJet.pt(), partTrackProj, detJet.pt(), detTrackProj, v0.dcapostopv(), v0.dcanegtopv(), weight);
       registry.fill(HIST("matching/jets/V0/partJetPtK0STrackProjDetJetPtK0STrackProjDCAd"), partJet.pt(), partTrackProj, detJet.pt(), detTrackProj, v0.dcaV0daughters(), weight);
     } else if (particle.pdgCode() == PDG_t::kLambda0) { // Lambda
-      registry.fill(HIST("matching/jets/V0/matchDetJetPtLambdaTrackProjPartJetPtLambdaTrackProj"), detJet.pt(), detTrackProj, partJet.pt(), partTrackProj, weight);
       registry.fill(HIST("matching/jets/V0/partJetPtLambdaPtDetJetPtLambdaPt"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), weight);
+      registry.fill(HIST("matching/jets/V0/partJetPtLambdaTrackProjDetJetPtLambdaTrackProj"), partJet.pt(), partTrackProj, detJet.pt(), detTrackProj, weight);
+      if (correctCollision) {
+        registry.fill(HIST("matching/jets/V0/partJetPtLambdaPtDetJetPtLambdaPtRightCollision"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), weight);
+        registry.fill(HIST("matching/jets/V0/partJetPtLambdaTrackProjDetJetPtLambdaTrackProjRightCollision"), partJet.pt(), partTrackProj, detJet.pt(), detTrackProj, weight);
+      } else {
+        registry.fill(HIST("matching/jets/V0/partJetPtLambdaPtDetJetPtLambdaPtWrongCollision"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), weight);
+        registry.fill(HIST("matching/jets/V0/partJetPtLambdaTrackProjDetJetPtLambdaTrackProjWrongCollision"), partJet.pt(), partTrackProj, detJet.pt(), detTrackProj, weight);
+      }
 
       registry.fill(HIST("matching/jets/V0/partJetPtLambdaPtDetJetPtLambdaPtCtauLambda"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), ctauLambda, weight);
       registry.fill(HIST("matching/jets/V0/partJetPtLambdaPtDetJetPtLambdaPtCtauAntiLambda"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), ctauAntiLambda, weight);
@@ -2217,8 +2255,15 @@ struct JetFragmentation {
       registry.fill(HIST("matching/jets/V0/partJetPtLambdaPtDetJetPtLambdaPtLambdaReflection"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), v0.mK0Short(), v0.mLambda(), v0.mAntiLambda(), reflectedMass, weight);
       registry.fill(HIST("matching/jets/V0/partJetPtLambdaTrackProjDetJetPtLambdaTrackProjLambdaReflection"), partJet.pt(), partTrackProj, detJet.pt(), detTrackProj, v0.mK0Short(), v0.mLambda(), v0.mAntiLambda(), reflectedMass, weight);
     } else if (particle.pdgCode() == PDG_t::kLambda0Bar) { // AntiLambda
-      registry.fill(HIST("matching/jets/V0/matchDetJetPtAntiLambdaTrackProjPartJetPtAntiLambdaTrackProj"), detJet.pt(), detTrackProj, partJet.pt(), partTrackProj, weight);
       registry.fill(HIST("matching/jets/V0/partJetPtAntiLambdaPtDetJetPtAntiLambdaPt"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), weight);
+      registry.fill(HIST("matching/jets/V0/partJetPtAntiLambdaTrackProjDetJetPtAntiLambdaTrackProj"), partJet.pt(), partTrackProj, detJet.pt(), detTrackProj, weight);
+      if (correctCollision) {
+        registry.fill(HIST("matching/jets/V0/partJetPtAntiLambdaPtDetJetPtAntiLambdaPtRightCollision"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), weight);
+        registry.fill(HIST("matching/jets/V0/partJetPtAntiLambdaTrackProjDetJetPtAntiLambdaTrackProjRightCollision"), partJet.pt(), partTrackProj, detJet.pt(), detTrackProj, weight);
+      } else {
+        registry.fill(HIST("matching/jets/V0/partJetPtAntiLambdaPtDetJetPtAntiLambdaPtWrongCollision"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), weight);
+        registry.fill(HIST("matching/jets/V0/partJetPtAntiLambdaTrackProjDetJetPtAntiLambdaTrackProjWrongCollision"), partJet.pt(), partTrackProj, detJet.pt(), detTrackProj, weight);
+      }
 
       registry.fill(HIST("matching/jets/V0/partJetPtAntiLambdaPtDetJetPtAntiLambdaPtCtauLambda"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), ctauLambda, weight);
       registry.fill(HIST("matching/jets/V0/partJetPtAntiLambdaPtDetJetPtAntiLambdaPtCtauAntiLambda"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), ctauAntiLambda, weight);
@@ -2650,20 +2695,20 @@ struct JetFragmentation {
         if (v0.isRejectedCandidate())
           continue;
 
-        float purity = getV0SignalProb(v0);
+        float signalProb = getV0SignalProb(v0);
         nV0inJet++;
-        wV0inJet += purity;
+        wV0inJet += signalProb;
         if (v0.isK0SCandidate()) {
           nK0SinJet++;
-          wK0SinJet += purity;
+          wK0SinJet += signalProb;
         }
         if (v0.isLambdaCandidate()) {
           nLambdainJet++;
-          wLambdainJet += purity;
+          wLambdainJet += signalProb;
         }
         if (v0.isAntiLambdaCandidate()) {
           nAntiLambdainJet++;
-          wAntiLambdainJet += purity;
+          wAntiLambdainJet += signalProb;
         }
 
         fillDataV0FragHistograms(jcoll, jet, v0);
