@@ -633,6 +633,18 @@ class pidTPCModule
 
       // if corrected dE/dx is requested, correct it here on the spot and use that
       if (pidTPCopts.useCorrecteddEdx) {
+
+        //_________________________________________________________
+        // bypass TPC signal in case TracksQA information present
+        if constexpr (soa::is_table<TTracksQA>) {
+          tpcSignalToEvaluatePID = -999.f;
+          if (indexTrack2TrackQA[trk.globalIndex()] != -1) {
+            auto trackQA = tracksQA.rawIteratorAt(indexTrack2TrackQA[trk.globalIndex()]);
+            tpcSignalToEvaluatePID = trackQA.tpcdEdxNorm();
+          }
+        }
+        //_________________________________________________________
+
         double hadronicRate;
         int occupancy;
         if (trk.has_collision()) {
@@ -648,7 +660,7 @@ class pidTPCModule
           occupancy = 0;
         }
 
-        float fTPCSignal = trk.tpcSignal();
+        float fTPCSignal = tpcSignalToEvaluatePID;
         float fNormMultTPC = multTPC / 11000.;
 
         float fTrackOccN = occupancy / 1000.;
@@ -688,17 +700,6 @@ class pidTPCModule
 
         // change the signal used for PID
         tpcSignalToEvaluatePID = fTPCSignal / fTPCSignalN_CR1;
-
-        //_________________________________________________________
-        // bypass TPC signal in case TracksQA information present
-        if constexpr (soa::is_table<TTracksQA>) {
-          tpcSignalToEvaluatePID = -999.f;
-          if (indexTrack2TrackQA[trk.globalIndex()] != -1) {
-            auto trackQA = tracksQA.rawIteratorAt(indexTrack2TrackQA[trk.globalIndex()]);
-            tpcSignalToEvaluatePID = trackQA.tpcdEdxNorm();
-          }
-        }
-        //_________________________________________________________
 
         if (pidTPCopts.savedEdxsCorrected) {
           // populated cursor if requested or autodetected
