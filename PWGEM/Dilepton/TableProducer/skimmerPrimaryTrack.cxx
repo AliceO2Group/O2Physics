@@ -73,8 +73,8 @@ struct skimmerPrimaryTrack {
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
   Configurable<float> minpt{"minpt", 0.2, "min pt for ITS-TPC track"};
-  Configurable<float> maxpt{"maxpt", 3.0, "max pt for ITS-TPC track"};
-  Configurable<float> maxeta{"maxeta", 1.4, "eta acceptance"};
+  Configurable<float> maxpt{"maxpt", 5.0, "max pt for ITS-TPC track"};
+  Configurable<float> maxeta{"maxeta", 0.8, "eta acceptance"};
   Configurable<float> dca_xy_max{"dca_xy_max", 0.5, "max DCAxy in cm"};
   Configurable<float> dca_z_max{"dca_z_max", 0.5, "max DCAz in cm"};
 
