@@ -45,7 +45,7 @@ struct sigmaminustask {
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<float> cutNSigmaPi{"cutNSigmaPi", 4, "NSigmaTPCPion"};
-  Configurable<float> cutEtaMotherMC{"cutEtaMotherMC", 1.0f, "Eta cut for mother Sigma in MC"};
+  Configurable<float> cutRapMotherMC{"cutRapMotherMC", 1.0f, "Rapidity cut for mother Sigma in MC"};
 
   Configurable<bool> fillOutputTree{"fillOutputTree", true, "If true, fill the output tree with Kink candidates"};
 
@@ -153,7 +153,7 @@ struct sigmaminustask {
             if (piMother.globalIndex() != mcTrackSigma.globalIndex()) {
               continue;
             }
-            if (std::abs(mcTrackSigma.pdgCode()) != 3112) {
+            if (std::abs(mcTrackSigma.pdgCode()) != 3112 && std::abs(mcTrackSigma.pdgCode()) != 3222) {
               continue;
             }
             if (std::abs(mcTrackPiDau.pdgCode()) != 211 && std::abs(mcTrackPiDau.pdgCode()) != 2212) {
@@ -200,7 +200,7 @@ struct sigmaminustask {
 
     // Loop over all generated particles to fill MC histograms
     for (const auto& mcPart : particlesMC) {
-      if (std::abs(mcPart.pdgCode()) != 3112 || std::abs(mcPart.y()) > cutEtaMotherMC) { // only sigma mothers and rapidity cut
+      if ((std::abs(mcPart.pdgCode()) != 3112 && std::abs(mcPart.pdgCode()) != 3222) || std::abs(mcPart.y()) > cutRapMotherMC) { // only sigma mothers and rapidity cut
         continue;
       }
       if (!mcPart.has_daughters()) {
