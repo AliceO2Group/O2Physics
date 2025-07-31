@@ -380,9 +380,9 @@ struct tpcPid {
           auto stop_network_eval = std::chrono::high_resolution_clock::now();
           duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_eval - start_network_eval).count();
 
-          for (uint64_t k = 0; k < (in_batch_counter * output_dimensions); k += output_dimensions) {
+          for (uint64_t i = 0; i < (in_batch_counter * output_dimensions); i += output_dimensions) {
             for (int j = 0; j < output_dimensions; j++) {
-              network_prediction[k + j + fill_shift] = output_network[k + j];
+              network_prediction[i + j + fill_shift] = output_network[i + j];
             }
           }
           counter_track_props = 0;
