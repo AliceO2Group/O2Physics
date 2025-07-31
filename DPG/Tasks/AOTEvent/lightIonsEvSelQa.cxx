@@ -551,7 +551,7 @@ struct LightIonsEvSelQa {
 
       auto bcIndex = foundBC.globalIndex();
       // bool noNearbyActivity = (vPastActivity[bcIndex] == 0 && vFutureActivity[bcIndex] == 0);
-      bool noPastActivity = (vPastActivity[bcIndex] == 0 );
+      bool noPastActivity = (vPastActivity[bcIndex] == 0);
 
       // ### count tracks of different types
       int nPVtracks = 0;
