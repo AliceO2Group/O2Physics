@@ -266,8 +266,7 @@ struct HfTaskFlow {
     // TO-DO : do i have to separate event histograms between DATA and MC ?
     //  =========================
 
-    double nBinsEventSelection = EventSelectionStep::NEventSelectionSteps;
-    registry.add("Data/hEventCounter", "hEventCounter", {HistType::kTH1D, {{EventSelectionStep::NEventSelectionSteps, -0.5, -0.5 + nBinsEventSelection}}});
+    registry.add("Data/hEventCounter", "hEventCounter", {HistType::kTH1D, {{EventSelectionStep::NEventSelectionSteps, -0.5, -0.5 + static_cast<double>(EventSelectionStep::NEventSelectionSteps)}}});
     std::string labels[EventSelectionStep::NEventSelectionSteps];
     labels[EventSelectionStep::AllEvents] = "all";
     labels[EventSelectionStep::AfterEventSelection] = "after Physics selection";
@@ -277,8 +276,7 @@ struct HfTaskFlow {
       registry.get<TH1>(HIST("Data/hEventCounter"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
 
-    double nBinsMftTrackAmbiguity = MftTrackAmbiguityStep::NMftAmbiguitySteps;
-    registry.add("Data/TpcMft/hAmbiguityOfMftTracks", "hAmbiguityOfMftTracks", {HistType::kTH1D, {{MftTrackAmbiguityStep::NMftAmbiguitySteps, -0.5, -0.5 + nBinsMftTrackAmbiguity}}});
+    registry.add("Data/TpcMft/hAmbiguityOfMftTracks", "hAmbiguityOfMftTracks", {HistType::kTH1D, {{MftTrackAmbiguityStep::NMftAmbiguitySteps, -0.5, -0.5 + static_cast<double>(MftTrackAmbiguityStep::NMftAmbiguitySteps)}}});
     std::string labelsAmbiguityOfMftTracks[MftTrackAmbiguityStep::NMftAmbiguitySteps];
     labelsAmbiguityOfMftTracks[MftTrackAmbiguityStep::AllMftTracks] = "all MFT tracks";
     labelsAmbiguityOfMftTracks[MftTrackAmbiguityStep::AfterTrackSelection] = "MFT tracks after selection";
@@ -290,8 +288,7 @@ struct HfTaskFlow {
       registry.get<TH1>(HIST("Data/TpcMft/hAmbiguityOfMftTracks"))->GetXaxis()->SetBinLabel(iBin + 1, labelsAmbiguityOfMftTracks[iBin].data());
     }
 
-    double nBinsMftTrackSelection = MftTrackSelectionStep::NMftTrackSelectionSteps;
-    registry.add("Data/TpcMft/hMftTracksSelection", "hMftTracksSelection", {HistType::kTH1D, {{MftTrackSelectionStep::NMftTrackSelectionSteps, -0.5, -0.5 + nBinsMftTrackSelection}}});
+    registry.add("Data/TpcMft/hMftTracksSelection", "hMftTracksSelection", {HistType::kTH1D, {{MftTrackSelectionStep::NMftTrackSelectionSteps, -0.5, -0.5 + static_cast<double>(MftTrackSelectionStep::NMftTrackSelectionSteps)}}});
     std::string labelsMftTracksSelection[MftTrackSelectionStep::NMftTrackSelectionSteps];
     labelsMftTracksSelection[MftTrackSelectionStep::NoSelection] = "all MFT tracks";
     labelsMftTracksSelection[MftTrackSelectionStep::Eta] = "MFT tracks after eta selection";
