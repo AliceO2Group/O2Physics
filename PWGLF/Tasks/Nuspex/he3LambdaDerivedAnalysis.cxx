@@ -64,7 +64,7 @@ struct he3LambdaDerivedAnalysis {
     hNsigmaProton = mRegistry.add<TH2>("hNsigmaProton", "nSigma TPC for Proton", {HistType::kTH2D, {{100, -10., 10.}, {200, -5, 5.}}});
   }
 
-  void processSameEvent(o2::aod::LFEvents::iterator const& collision, o2::aod::LFHe3 const& he3s, o2::aod::LFLambda const& lambdas)
+  void processSameEvent(o2::aod::LFEvents::iterator const& collision, o2::aod::LFHe3_000 const& he3s, o2::aod::LFLambda_000 const& lambdas)
   {
     std::vector<he3Candidate> he3Candidates;
     he3Candidates.reserve(he3s.size());

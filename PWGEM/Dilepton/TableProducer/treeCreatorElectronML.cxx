@@ -651,7 +651,7 @@ struct TreeCreatorElectronML {
   }
   PROCESS_SWITCH(TreeCreatorElectronML, processSingleTrack, "produce ML input for single track level", false);
 
-  using MyFilteredCollisionsSkimmed = soa::Filtered<soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>>;
+  using MyFilteredCollisionsSkimmed = soa::Filtered<soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsXY, aod::EMMCEventLabels>>;
   using MyFilteredTracksMCSkimmed = soa::Filtered<soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronMCLabels, aod::EMPrimaryElectronEMEventIds>>;
   Preslice<MyFilteredTracksMCSkimmed> perCollisionSkimmed = aod::emprimaryelectron::emeventId;
 

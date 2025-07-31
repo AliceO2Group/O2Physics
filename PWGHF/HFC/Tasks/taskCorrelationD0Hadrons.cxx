@@ -801,7 +801,7 @@ struct HfTaskCorrelationD0Hadrons {
     float multiplicity = -1.;
     for (const auto& mcParticle : mcParticles) {
       // generated candidates
-      if (std::abs(mcParticle.pdgCode()) != Pdg::kD0) {
+      if (std::abs(mcParticle.pdgCode()) == Pdg::kD0) {
         auto mcCollision = mcParticle.template mcCollision_as<soa::Join<aod::McCollisions, aod::MultsExtraMC>>();
         multiplicity = mcCollision.multMCFT0A() + mcCollision.multMCFT0C(); // multFT0M = multFt0A + multFT0C
         hCandidates->Fill(kCandidateStepMcGenAll, mcParticle.pt(), multiplicity, mcParticle.originMcGen());

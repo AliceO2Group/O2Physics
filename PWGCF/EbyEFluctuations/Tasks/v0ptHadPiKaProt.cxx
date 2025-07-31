@@ -87,9 +87,11 @@ struct V0ptHadPiKaProt {
   Configurable<float> cfgCutEtaLeft{"cfgCutEtaLeft", 0.8f, "Left end of eta gap"};
   Configurable<float> cfgCutEtaRight{"cfgCutEtaRight", 0.8f, "Right end of eta gap"};
   Configurable<int> cfgNSubsample{"cfgNSubsample", 10, "Number of subsamples"};
-  Configurable<int> cfgCentralityChoice{"cfgCentralityChoice", 1, "Which centrality estimator? 0-->FT0M, 1-->FT0C"};
+  Configurable<int> cfgCentralityChoice{"cfgCentralityChoice", 1, "Which centrality estimator? 1-->FT0C, 2-->FT0A, 3-->FT0M, 4-->FV0A"};
   Configurable<bool> cfgEvSelkNoSameBunchPileup{"cfgEvSelkNoSameBunchPileup", true, "Pileup removal"};
   Configurable<bool> cfgUseGoodITSLayerAllCut{"cfgUseGoodITSLayerAllCut", true, "Remove time interval with dead ITS zone"};
+  Configurable<bool> cfgEvSelkNoITSROFrameBorder{"cfgEvSelkNoITSROFrameBorder", true, "ITSROFrame border event selection cut"};
+  Configurable<bool> cfgEvSelkNoTimeFrameBorder{"cfgEvSelkNoTimeFrameBorder", true, "TimeFrame border event selection cut"};
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -342,13 +344,23 @@ struct V0ptHadPiKaProt {
     if (cfgEvSelkNoSameBunchPileup && !(coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
       return;
     }
+    if (cfgEvSelkNoITSROFrameBorder && !(coll.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+      return;
+    }
+    if (cfgEvSelkNoTimeFrameBorder && !(coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))) {
+      return;
+    }
 
     // Centrality
     double cent = 0.0;
-    if (cfgCentralityChoice == 0)
+    if (cfgCentralityChoice == 1)
+      cent = coll.centFT0C();
+    else if (cfgCentralityChoice == 2)
+      cent = coll.centFT0A();
+    else if (cfgCentralityChoice == 3)
       cent = coll.centFT0M();
-    else if (cfgCentralityChoice == 1)
-      cent = coll.centFT0M();
+    else if (cfgCentralityChoice == 4)
+      cent = coll.centFV0A();
 
     histos.fill(HIST("hZvtx_after_sel"), coll.posZ());
     histos.fill(HIST("hCentrality"), cent);
@@ -483,7 +495,6 @@ struct V0ptHadPiKaProt {
         subSample[sampleIndex][0]->Fill(cent, fPtProfileHad->GetBinCenter(i + 1), (fPtProfileHad->GetBinContent(i + 1) / nSumEtaLeftHad));
         subSample[sampleIndex][1]->Fill(cent, fPtProfileHad->GetBinCenter(i + 1), ((fPtProfileHad->GetBinContent(i + 1) / nSumEtaLeftHad) * (pTsumEtaRightHad / nSumEtaRightHad)));
         subSample[sampleIndex][2]->Fill(cent, 0.5, ((pTsumEtaLeftHad / nSumEtaLeftHad) * (pTsumEtaRightHad / nSumEtaRightHad)));
-        ;
         subSample[sampleIndex][3]->Fill(cent, 0.5, (pTsumEtaLeftHad / nSumEtaLeftHad));
         subSample[sampleIndex][4]->Fill(cent, 0.5, (pTsumEtaRightHad / nSumEtaRightHad));
       }
@@ -500,7 +511,6 @@ struct V0ptHadPiKaProt {
         subSample[sampleIndex][5]->Fill(cent, fPtProfilePi->GetBinCenter(i + 1), (fPtProfilePi->GetBinContent(i + 1) / nSumEtaLeftPi));
         subSample[sampleIndex][6]->Fill(cent, fPtProfilePi->GetBinCenter(i + 1), ((fPtProfilePi->GetBinContent(i + 1) / nSumEtaLeftPi) * (pTsumEtaRightHad / nSumEtaRightHad)));
         subSample[sampleIndex][7]->Fill(cent, 0.5, ((pTsumEtaLeftHad / nSumEtaLeftHad) * (pTsumEtaRightHad / nSumEtaRightHad)));
-        ;
         subSample[sampleIndex][8]->Fill(cent, 0.5, (pTsumEtaLeftHad / nSumEtaLeftHad));
         subSample[sampleIndex][9]->Fill(cent, 0.5, (pTsumEtaRightHad / nSumEtaRightHad));
       }
@@ -517,7 +527,6 @@ struct V0ptHadPiKaProt {
         subSample[sampleIndex][10]->Fill(cent, fPtProfileKa->GetBinCenter(i + 1), (fPtProfileKa->GetBinContent(i + 1) / nSumEtaLeftKa));
         subSample[sampleIndex][11]->Fill(cent, fPtProfileKa->GetBinCenter(i + 1), ((fPtProfileKa->GetBinContent(i + 1) / nSumEtaLeftKa) * (pTsumEtaRightHad / nSumEtaRightHad)));
         subSample[sampleIndex][12]->Fill(cent, 0.5, ((pTsumEtaLeftHad / nSumEtaLeftHad) * (pTsumEtaRightHad / nSumEtaRightHad)));
-        ;
         subSample[sampleIndex][13]->Fill(cent, 0.5, (pTsumEtaLeftHad / nSumEtaLeftHad));
         subSample[sampleIndex][14]->Fill(cent, 0.5, (pTsumEtaRightHad / nSumEtaRightHad));
       }
@@ -533,7 +542,6 @@ struct V0ptHadPiKaProt {
         subSample[sampleIndex][15]->Fill(cent, fPtProfileProt->GetBinCenter(i + 1), (fPtProfileProt->GetBinContent(i + 1) / nSumEtaLeftProt));
         subSample[sampleIndex][16]->Fill(cent, fPtProfileProt->GetBinCenter(i + 1), ((fPtProfileProt->GetBinContent(i + 1) / nSumEtaLeftProt) * (pTsumEtaRightHad / nSumEtaRightHad)));
         subSample[sampleIndex][17]->Fill(cent, 0.5, ((pTsumEtaLeftHad / nSumEtaLeftHad) * (pTsumEtaRightHad / nSumEtaRightHad)));
-        ;
         subSample[sampleIndex][18]->Fill(cent, 0.5, (pTsumEtaLeftHad / nSumEtaLeftHad));
         subSample[sampleIndex][19]->Fill(cent, 0.5, (pTsumEtaRightHad / nSumEtaRightHad));
       }

@@ -838,7 +838,7 @@ struct UccZdc {
 
     // apply corrections
     if (applyEff || applyFD) {
-
+      nchMult = 0.;
       loadCorrections(foundBC.timestamp());
       if (!(cfg.hEfficiency && cfg.hFeedDown))
         return;
