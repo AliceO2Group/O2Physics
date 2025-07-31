@@ -54,6 +54,7 @@ using MyCollisionsMC_Cent_Qvec = soa::Join<MyCollisionsMC_Cent, MyQvectors>;
 struct CreateEMEventDilepton {
   Produces<o2::aod::EMBCs> embc;
   Produces<o2::aod::EMEvents> event;
+  Produces<o2::aod::EMEventsXY> eventXY;
   // Produces<o2::aod::EMEventsCov> eventcov;
   Produces<o2::aod::EMEventsMult> event_mult;
   Produces<o2::aod::EMEventsCent> event_cent;
@@ -188,8 +189,10 @@ struct CreateEMEventDilepton {
       registry.fill(HIST("hEventCounter"), 2);
 
       event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), bc.timestamp(),
-            collision.posX(), collision.posY(), collision.posZ(),
+            collision.posZ(),
             collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
+
+      eventXY(collision.posX(), collision.posY());
 
       // eventcov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
 
