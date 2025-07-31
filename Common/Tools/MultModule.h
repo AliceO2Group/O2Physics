@@ -452,8 +452,6 @@ class MultModule
       }
     }
 
-    opts = internalOpts;
-
     // dependency checker
     if (internalOpts.mEnabledTables[kCentFV0As] && !internalOpts.mEnabledTables[kFV0MultZeqs]) {
       internalOpts.mEnabledTables[kFV0MultZeqs] = 1;
@@ -502,6 +500,9 @@ class MultModule
     hVtxZFDDA = nullptr;
     hVtxZFDDC = nullptr;
     hVtxZNTracks = nullptr;
+
+    // pass to the outside
+    opts = internalOpts;
   }
 
   //__________________________________________________
