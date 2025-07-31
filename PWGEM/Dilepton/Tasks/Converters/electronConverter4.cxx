@@ -32,7 +32,7 @@ struct electronConverter4 {
   using MyElectrons002 = soa::Join<aod::EMPrimaryElectrons_002, aod::EMPrimaryElectronsCov_000>;
   void process002to004(MyElectrons002 const& tracks)
   {
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       float itsChi2NCl = (track.hasITS() && track.itsChi2NCl() > 0.f) ? track.itsChi2NCl() : -299.f;
       float tpcChi2NCl = (track.hasTPC() && track.tpcChi2NCl() > 0.f) ? track.tpcChi2NCl() : -299.f;
       float beta = track.hasTOF() ? track.beta() : -29.f;
@@ -92,7 +92,7 @@ struct electronConverter4 {
   using MyElectrons003 = soa::Join<aod::EMPrimaryElectrons_003, aod::EMPrimaryElectronsCov_000>;
   void process003to004(MyElectrons003 const& tracks)
   {
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       float itsChi2NCl = track.itsChi2NCl() > 0.f ? track.itsChi2NCl() : -299.f;
       float tpcChi2NCl = track.tpcChi2NCl() > 0.f ? track.tpcChi2NCl() : -299.f;
       float beta = track.hasTOF() ? track.beta() : -29.f;
