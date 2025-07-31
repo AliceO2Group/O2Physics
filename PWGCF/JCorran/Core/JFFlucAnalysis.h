@@ -155,7 +155,7 @@ class JFFlucAnalysis : public TNamed
       Double_t corrInv = 1.0;
       using JInputClassIter = typename JInputClass::iterator;
       if constexpr (std::experimental::is_detected<hasWeightEff, const JInputClassIter>::value)
-        corrInv /= track.weightEff();
+        corrInv *= track.weightEff();
       if constexpr (std::experimental::is_detected<hasSign, const JInputClassIter>::value)
         pht[HIST_THN_PTETA]->Fill(fCent, track.pt(), track.eta(), track.sign(), corrInv);
       else

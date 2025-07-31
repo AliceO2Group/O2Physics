@@ -84,7 +84,7 @@ class JQVectors : public std::conditional_t<gap, JQVectorsGapBase<Q, nh, nk>, JQ
           if constexpr (std::experimental::is_detected<hasWeightNUA, const JInputClassIter>::value)
             tf /= track.weightNUA();
           if constexpr (std::experimental::is_detected<hasWeightEff, const JInputClassIter>::value)
-            tf /= track.weightEff();
+            tf *= track.weightEff();
         }
       }
     }
