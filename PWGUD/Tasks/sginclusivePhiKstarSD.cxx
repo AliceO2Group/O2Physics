@@ -104,6 +104,7 @@ struct SginclusivePhiKstarSD {
 
   Configurable<bool> qa{"qa", true, ""};
   Configurable<bool> rapidityGap{"rapidityGap", true, ""};
+  Configurable<bool> exclusive{"exclusive", false, "for double gap side "};
 
   Configurable<bool> phi{"phi", true, ""};
   Configurable<bool> rho{"rho", true, ""};
@@ -124,9 +125,10 @@ struct SginclusivePhiKstarSD {
   // Configurable axes for histogram
   ConfigurableAxis dcaAxisConfig{"dcaAxisConfig", {600, -0.3f, 0.3f}, "DCAxy & DCAz axis"};
   ConfigurableAxis etaAxisConfig{"etaAxisConfig", {400, -1.0f, 1.0f}, "Pseudorapidity & Rapidity axis"};
-  ConfigurableAxis VrtxXAxisConfig{"VrtxXAxisConfig", {400, -0.1f, 0.1f}, "Vertex X axis"};
-  ConfigurableAxis VrtxYAxisConfig{"VrtxYAxisConfig", {200, -0.05f, 0.05f}, "Vertex Y axis"};
-  ConfigurableAxis VrtxZAxisConfig{"VrtxZAxisConfig", {600, -15.0f, 15.0f}, "Vertex Z axis"};
+  ConfigurableAxis vrtxXAxisConfig{"vrtxXAxisConfig", {400, -0.1f, 0.1f}, "Vertex X axis"};
+  ConfigurableAxis vrtxYAxisConfig{"vrtxYAxisConfig", {200, -0.05f, 0.05f}, "Vertex Y axis"};
+  ConfigurableAxis vrtxZAxisConfig{"vrtxZAxisConfig", {600, -15.0f, 15.0f}, "Vertex Z axis"};
+  //  ConfigurableAxis VrtxZAxisConfig{"VrtxZAxisConfig", {600, -15.0f, 15.0f}, "Vertex Z axis"};
 
   void init(InitContext const& context)
   {
@@ -135,9 +137,9 @@ struct SginclusivePhiKstarSD {
     AxisSpec dcazAxis = {dcaAxisConfig, "DCAz (cm)"};
     AxisSpec etaAxis = {etaAxisConfig, "#eta"};
     AxisSpec rapAxis = {etaAxisConfig, "y"};
-    AxisSpec VrtxXAxis = {VrtxXAxisConfig, "Vertex X (cm)"};
-    AxisSpec VrtxYAxis = {VrtxYAxisConfig, "Vertex Y (cm)"};
-    AxisSpec VrtxZAxis = {VrtxZAxisConfig, "Vertex Z (cm)"};
+    AxisSpec VrtxXAxis = {vrtxXAxisConfig, "Vertex X (cm)"};
+    AxisSpec VrtxYAxis = {vrtxYAxisConfig, "Vertex Y (cm)"};
+    AxisSpec VrtxZAxis = {vrtxZAxisConfig, "Vertex Z (cm)"};
 
     registry.add("GapSide", "Gap Side; Entries", kTH1F, {{4, -1.5, 2.5}});
     registry.add("TrueGapSide", "Gap Side; Entries", kTH1F, {{4, -1.5, 2.5}});
@@ -251,9 +253,6 @@ struct SginclusivePhiKstarSD {
       registry.add("hRap_ka", "Rapidity of selected Kaons; y; Counts", kTH1F, {rapAxis});
 
       if (rapidityGap) {
-        registry.add("mult_0", "mult0", kTH1F, {{150, 0, 150}});
-        registry.add("mult_1", "mult1", kTH1F, {{150, 0, 150}});
-        registry.add("mult_2", "mult2", kTH1F, {{150, 0, 150}});
         registry.add("event_rap_gap", "rap_gap", kTH1F, {{15, 0, 15.0}});
         registry.add("rap_mult1", "rap_mult1", kTH1F, {{150, 0, 150}});
         registry.add("rap_mult2", "rap_mult2", kTH1F, {{150, 0, 150}});
@@ -269,6 +268,10 @@ struct SginclusivePhiKstarSD {
     registry.add("gap_mult0", "Mult 0", kTH1F, {{100, 0.0, 100.0}});
     registry.add("gap_mult1", "Mult 1", kTH1F, {{100, 0.0, 100.0}});
     registry.add("gap_mult2", "Mult 2", kTH1F, {{100, 0.0, 100.0}});
+
+    registry.add("mult_0", "mult0", kTH1F, {{150, 0, 150}});
+    registry.add("mult_1", "mult1", kTH1F, {{150, 0, 150}});
+    registry.add("mult_2", "mult2", kTH1F, {{150, 0, 150}});
 
     // Multiplicity plot
     if (rapidityGap && phi) {
@@ -761,6 +764,15 @@ struct SginclusivePhiKstarSD {
         }
       }
     }
+    if (gapSide == 0) {
+      registry.fill(HIST("mult_0"), mult0);
+    }
+    if (gapSide == 1) {
+      registry.fill(HIST("mult_1"), mult1);
+    }
+    if (gapSide == 2) {
+      registry.fill(HIST("mult_2"), mult2);
+    }
     if (qa) {
       if (gapSide == 0) {
         registry.fill(HIST("V0A_0"), collision.totalFV0AmplitudeA());
@@ -768,7 +780,6 @@ struct SginclusivePhiKstarSD {
         registry.fill(HIST("FT0C_0"), collision.totalFT0AmplitudeC());
         registry.fill(HIST("ZDC_A_0"), collision.energyCommonZNA());
         registry.fill(HIST("ZDC_C_0"), collision.energyCommonZNC());
-        registry.fill(HIST("mult_0"), mult0);
       }
       if (gapSide == 1) {
         registry.fill(HIST("V0A_1"), collision.totalFV0AmplitudeA());
@@ -776,7 +787,6 @@ struct SginclusivePhiKstarSD {
         registry.fill(HIST("FT0C_1"), collision.totalFT0AmplitudeC());
         registry.fill(HIST("ZDC_A_1"), collision.energyCommonZNA());
         registry.fill(HIST("ZDC_C_1"), collision.energyCommonZNC());
-        registry.fill(HIST("mult_1"), mult1);
       }
       if (gapSide == 2) {
         registry.fill(HIST("V0A"), collision.totalFV0AmplitudeA());
@@ -784,7 +794,6 @@ struct SginclusivePhiKstarSD {
         registry.fill(HIST("FT0C"), collision.totalFT0AmplitudeC());
         registry.fill(HIST("ZDC_A"), collision.energyCommonZNA());
         registry.fill(HIST("ZDC_C"), collision.energyCommonZNC());
-        registry.fill(HIST("mult_2"), mult2);
       }
       if (rapidityGap) {
         if (trackgapC > 0 && trackgapA == 0 && trackextra == 0) {
@@ -1063,7 +1072,7 @@ struct SginclusivePhiKstarSD {
           if (gapSide == 1) {
             registry.fill(HIST("os_KK_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
           }
-          if (gapSide == 2) {
+          if (exclusive && gapSide == 2 && mult2 == 2) {
             registry.fill(HIST("os_KK_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
           }
         }
@@ -1075,7 +1084,7 @@ struct SginclusivePhiKstarSD {
           if (gapSide == 1) {
             registry.fill(HIST("os_KK_ls_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
           }
-          if (gapSide == 2) {
+          if (exclusive && gapSide == 2 && mult2 == 2) {
             registry.fill(HIST("os_KK_ls_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
           }
         }
@@ -1101,7 +1110,7 @@ struct SginclusivePhiKstarSD {
               if (gapSide == 1) {
                 registry.fill(HIST("os_KK_rot_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == 2) {
+              if (exclusive && gapSide == 2 && mult2 == 2) {
                 registry.fill(HIST("os_KK_rot_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
               }
             }
@@ -1114,9 +1123,9 @@ struct SginclusivePhiKstarSD {
         continue;
       if (t0.globalIndex() == t1.globalIndex())
         continue;
-      if (rho && selectionPIDProton(t0, useTof, nsigmaTpcCut, nsigmaTofCut) && selectionPIDPion1(t1)) {
+      if (rho && selectionPIDProton(t0, useTof, nsigmaTpcCut, nsigmaTofCut) && selectionPIDKaon1(t1)) {
         v0.SetCoordinates(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassProton);
-        v1.SetCoordinates(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
+        v1.SetCoordinates(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassKaonCharged);
         v01 = v0 + v1;
         // Opposite sign pairs
         if (t0.sign() != t1.sign()) {
@@ -1126,7 +1135,7 @@ struct SginclusivePhiKstarSD {
           if (gapSide == 1) {
             registry.fill(HIST("os_pp_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
           }
-          if (gapSide == 2) {
+          if (exclusive && gapSide == 2 && mult2 == 2) {
             registry.fill(HIST("os_pp_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
           }
         } // same sign pair
@@ -1137,7 +1146,7 @@ struct SginclusivePhiKstarSD {
           if (gapSide == 1) {
             registry.fill(HIST("os_pp_ls_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
           }
-          if (gapSide == 2) {
+          if (exclusive && gapSide == 2 && mult2 == 2) {
             registry.fill(HIST("os_pp_ls_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
           }
         }
@@ -1156,7 +1165,7 @@ struct SginclusivePhiKstarSD {
           if (gapSide == 1) {
             registry.fill(HIST("os_pk_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
           }
-          if (gapSide == 2) {
+          if (exclusive && gapSide == 2 && mult2 == 2) {
             registry.fill(HIST("os_pk_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
           }
         } // same sign pair
@@ -1167,7 +1176,7 @@ struct SginclusivePhiKstarSD {
           if (gapSide == 1) {
             registry.fill(HIST("os_pk_ls_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
           }
-          if (gapSide == 2) {
+          if (exclusive && gapSide == 2 && mult2 == 2) {
             registry.fill(HIST("os_pk_ls_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
           }
         }
@@ -1192,7 +1201,7 @@ struct SginclusivePhiKstarSD {
               if (gapSide == 1) {
                 registry.fill(HIST("os_pk_rot_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == 2) {
+              if (exclusive && gapSide == 2 && mult2 == 2) {
                 registry.fill(HIST("os_pk_rot_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
               }
             }
