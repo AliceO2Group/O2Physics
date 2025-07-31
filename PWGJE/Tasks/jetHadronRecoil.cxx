@@ -216,7 +216,6 @@ struct JetHadronRecoil {
     double phiTT = 0;
     double ptTT = 0;
     int trigNumber = 0;
-    int trackNumber = 0;
     int nTT = 0;
     double leadingPT = 0;
     double leadingTrackPt = 0;
@@ -359,7 +358,6 @@ struct JetHadronRecoil {
     double phiTT = 0;
     double ptTT = 0;
     int trigNumber = 0;
-    int partNumber = 0;
     int nTT = 0;
     double leadingPartPt = 0;
     double leadingJetPt = 0;
