@@ -478,8 +478,8 @@ struct FlowRunbyRun {
       th1sList[runNumber][hEventCountSpecific]->Fill(8.5);
 
     // V0A T0A 5 sigma cut
-    float NsigmaV0A = 5.; // 5 sigma cut
-    if (cfgEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > NsigmaV0A * fT0AV0ASigma->Eval(collision.multFT0A())))
+    float nSigma = 5.; // 5 sigma cut
+    if (cfgEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > nSigma * fT0AV0ASigma->Eval(collision.multFT0A())))
       return 0;
     if (cfgEvSelV0AT0ACut)
       th1sList[runNumber][hEventCountSpecific]->Fill(9.5);
