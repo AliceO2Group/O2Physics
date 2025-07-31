@@ -662,6 +662,7 @@ struct cascadeFlow {
     histos.add("hLambdaCandidate", "hLambdaCandidate", HistType::kTH1F, {{5, -0.5, 4.5}});
     histos.add("hCascadeSignal", "hCascadeSignal", HistType::kTH1F, {{6, -0.5, 5.5}});
     histos.add("hCascade", "hCascade", HistType::kTH1F, {{6, -0.5, 5.5}});
+    histos.add("hCascadeDauSel", "hCascadeDauSel", HistType::kTH1F, {{2, -0.5, 1.5}});
     histos.add("hLambdaDauSel", "hLambdaDauSel", HistType::kTH1F, {{3, -0.5, 2.5}});
     histos.add("hALambdaDauSel", "hALambdaDauSel", HistType::kTH1F, {{3, -0.5, 2.5}});
     histos.add("hXiPtvsCent", "hXiPtvsCent", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
@@ -901,11 +902,13 @@ struct cascadeFlow {
       auto bachExtra = casc.bachTrackExtra_as<DauTracks>();
 
       int counter = 0;
-      IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
+      bool isCascCandidate = 0;
+      isCascCandidate = IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
       histos.fill(HIST("hCascadeSignal"), counter);
 
       // PDG cascades
-      fillTrainingTable(coll, casc, pdgCode);
+      if (isCascCandidate)
+        fillTrainingTable(coll, casc, pdgCode); // I only store cascades that passed PID and track quality selections
     }
   }
 
@@ -967,8 +970,12 @@ struct cascadeFlow {
       auto bachExtra = casc.bachTrackExtra_as<DauTracks>();
 
       int counter = 0;
-      IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
+      bool isCascCandidate = 0;
+      isCascCandidate = IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
       histos.fill(HIST("hCascade"), counter);
+      histos.fill(HIST("hCascadeDauSel"), (int)isCascCandidate);
+      if (!isCascCandidate)
+        continue;
 
       // ML selections
       bool isSelectedCasc[2]{false, false};
@@ -1242,8 +1249,12 @@ struct cascadeFlow {
       auto bachExtra = casc.bachTrackExtra_as<DauTracks>();
 
       int counter = 0;
-      IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
+      bool isCascCandidate = 0;
+      isCascCandidate = IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
       histos.fill(HIST("hCascade"), counter);
+      histos.fill(HIST("hCascadeDauSel"), (int)isCascCandidate);
+      if (!isCascCandidate)
+        continue;
 
       // ML selections
       bool isSelectedCasc[nParticles]{false, false};
@@ -1682,8 +1693,12 @@ struct cascadeFlow {
       auto bachExtra = casc.bachTrackExtra_as<DauTracks>();
 
       int counter = 0;
-      IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
+      bool isCascCandidate = 0;
+      isCascCandidate = IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
       histos.fill(HIST("hCascade"), counter);
+      histos.fill(HIST("hCascadeDauSel"), (int)isCascCandidate);
+      if (!isCascCandidate)
+        continue;
 
       // ML selections
       bool isSelectedCasc[nParticles]{false, false};
@@ -1828,8 +1843,12 @@ struct cascadeFlow {
       auto bachExtra = casc.bachTrackExtra_as<DauTracks>();
 
       int counter = 0;
-      IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
+      bool isCascCandidate = 0;
+      isCascCandidate = IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
       histos.fill(HIST("hCascade"), counter);
+      histos.fill(HIST("hCascadeDauSel"), (int)isCascCandidate);
+      if (!isCascCandidate)
+        continue;
 
       // ML selections
       bool isSelectedCasc[nParticles]{false, false};
