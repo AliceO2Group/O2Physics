@@ -12,26 +12,26 @@
 /// \brief  Task for analysis of rho' in UPCs using UD tables (from SG producer).
 /// \author Cesar Ramirez, cesar.ramirez@cern.ch
 
-#include <string> // Para std::string
-#include <vector> // Para std::vector
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Math/Vector4D.h" // similiar to TLorentzVector (which is now legacy apparently)
-#include <random>
+#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
+#include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/DataModel/PIDResponse.h"
 
-#include "PWGUD/DataModel/UDTables.h"
-#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Math/Vector4D.h" // similiar to TLorentzVector (which is now legacy apparently)
+
+#include "random"
+#include <string> // Para std::string
+#include <vector> // Para std::vector
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using FullUDSgCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::SGCollisions>::iterator;
+using FullUDSgCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::SGCollisions, aod::UDCollisionSelExtras_003>::iterator;
 using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
 
 namespace o2::aod
@@ -86,6 +86,10 @@ DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);
 DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);
 DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float);
 DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float);
+DECLARE_SOA_COLUMN(IsChargeZero, isChargeZero, bool);
+
+DECLARE_SOA_COLUMN(OccupancyInTime, occupancyInTime, int);
+DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, double);
 
 } // namespace fourpi
 
@@ -94,7 +98,7 @@ DECLARE_SOA_TABLE(SYSTEMTREE, "AOD", "SystemTree", fourpi::RunNumber, fourpi::M,
                   fourpi::TotalFDDAmplitudeA, fourpi::TotalFDDAmplitudeC, fourpi::TimeFT0A, fourpi::TimeFT0C, fourpi::TimeFV0A, fourpi::TimeFDDA, fourpi::TimeFDDC,
                   fourpi::NumContrib, fourpi::Sign, fourpi::TrackPt, fourpi::TrackEta, fourpi::TrackPhi,
                   fourpi::TPCNSigmaEl, fourpi::TPCNSigmaPi, fourpi::TPCNSigmaKa, fourpi::TPCNSigmaPr, fourpi::TrackID, fourpi::IsReconstructedWithUPC,
-                  fourpi::TimeZNA, fourpi::TimeZNC, fourpi::EnergyCommonZNA, fourpi::EnergyCommonZNC);
+                  fourpi::TimeZNA, fourpi::TimeZNC, fourpi::EnergyCommonZNA, fourpi::EnergyCommonZNC, fourpi::IsChargeZero, fourpi::OccupancyInTime, fourpi::HadronicRate);
 } // namespace o2::aod
 
 struct upcRhoPrimeAnalysis {
@@ -113,8 +117,8 @@ struct upcRhoPrimeAnalysis {
   Configurable<double> tracksTpcNSigmaPiCut{"tracksTpcNSigmaPiCut", 3.0, "TPC nSigma pion cut"};
   Configurable<double> tracksDcaMaxCut{"tracksDcaMaxCut", 1.0, "max DCA cut on tracks"};
 
-  Configurable<double> systemMassMinCut{"systemMassMinCut", 0.5, "min M cut for reco system"};
-  Configurable<double> systemMassMaxCut{"systemMassMaxCut", 1.2, "max M cut for reco system"};
+  Configurable<double> systemMassMinCut{"systemMassMinCut", 0.8, "min M cut for reco system"};
+  Configurable<double> systemMassMaxCut{"systemMassMaxCut", 2.2, "max M cut for reco system"};
   Configurable<double> systemPtCut{"systemPtMaxCut", 0.1, "max pT cut for reco system"};
   Configurable<double> systemYCut{"systemYCut", 0.9, "rapiditiy cut for reco system"};
 
@@ -278,14 +282,14 @@ struct upcRhoPrimeAnalysis {
     double rapidity = system.Rapidity();
     double systemPhi = system.Phi() + o2::constants::math::PI;
 
-    if (nTracks == 4 && tracksTotalCharge(cutTracks) == 0) { // 4pi system
+    if (nTracks == 4) {
+      bool isChargeZero = (tracksTotalCharge(cutTracks) == 0);
 
       std::vector<float> vTrackPt, vTrackEta, vTrackPhi;
       std::vector<int> vSign, vTrackID;
       std::vector<float> vTpcNSigmaEl, vTpcNSigmaPi, vTpcNSigmaKa, vTpcNSigmaPr;
 
       for (size_t i = 0; i < cutTracks.size(); i++) {
-
         double tPt = cutTracks[i].pt();
         double tEta = eta(cutTracks[i].px(), cutTracks[i].py(), cutTracks[i].pz());
         double tPhi = phi(cutTracks[i].px(), cutTracks[i].py());
@@ -310,16 +314,17 @@ struct upcRhoPrimeAnalysis {
         isReconstructedWithUPC = false;
       }
 
-      systemTree(collision.runNumber(), mass, pT, rapidity, systemPhi, collision.posX(), collision.posY(), collision.posZ(), totalCharge,
-                 collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.timeFV0A(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
-                 collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), collision.timeFDDA(), collision.timeFDDC(),
-                 collision.numContrib(), vSign, vTrackPt, vTrackEta, vTrackPhi, vTpcNSigmaEl, vTpcNSigmaPi, vTpcNSigmaKa, vTpcNSigmaPr, vTrackID, isReconstructedWithUPC,
-                 collision.timeZNA(), collision.timeZNC(), collision.energyCommonZNA(), collision.energyCommonZNC());
-
-      // registry.fill(HIST("4pi/hM"), mass);
-      // registry.fill(HIST("4pi/hPt"), pT);
-      // registry.fill(HIST("4pi/hEta"), rapiditiy);
-      // registry.fill(HIST("4pi/hPhi"), system);
+      systemTree(collision.runNumber(), mass, pT, rapidity, systemPhi,
+                 collision.posX(), collision.posY(), collision.posZ(), totalCharge,
+                 collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.timeFV0A(),
+                 collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
+                 collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(),
+                 collision.timeFDDA(), collision.timeFDDC(), collision.numContrib(),
+                 vSign, vTrackPt, vTrackEta, vTrackPhi,
+                 vTpcNSigmaEl, vTpcNSigmaPi, vTpcNSigmaKa, vTpcNSigmaPr,
+                 vTrackID, isReconstructedWithUPC, collision.timeZNA(), collision.timeZNC(),
+                 collision.energyCommonZNA(), collision.energyCommonZNC(),
+                 isChargeZero, collision.occupancyInTime(), collision.hadronicRate());
     }
     // std::cout<<"Hello World"<<std::endl;
   }
