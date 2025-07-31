@@ -69,7 +69,7 @@ double ctpRateFetcher::fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* /*ccdb*/
     LOG(warn) << "Trigger class " << className << " not found in CTPConfiguration";
     return -1.;
   }
-  auto rate{mScalers->getRateGivenT(timeStamp * 1.e-3, classIndex, inputType)};
+  auto rate{mScalers->getRateGivenT(timeStamp * 1.e-3, classIndex, inputType, 1)};
   return pileUpCorrection(rate.second);
 }
 
@@ -77,7 +77,7 @@ double ctpRateFetcher::fetchCTPratesInputs(o2::ccdb::BasicCCDBManager* /*ccdb*/,
 {
   std::vector<ctp::CTPScalerRecordO2> recs = mScalers->getScalerRecordO2();
   if (recs[0].scalersInps.size() == 48) {
-    return pileUpCorrection(mScalers->getRateGivenT(timeStamp * 1.e-3, input, 7).second);
+    return pileUpCorrection(mScalers->getRateGivenT(timeStamp * 1.e-3, input, 7, 1).second);
   } else {
     LOG(error) << "Inputs not available";
     return -1.;
