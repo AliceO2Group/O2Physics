@@ -24,6 +24,7 @@ namespace o2::aod
 
 namespace hyperkink
 {
+DECLARE_SOA_COLUMN(MagPolarity, magPolarity, int8_t);                   //! Magnetic field polarity
 DECLARE_SOA_COLUMN(XPV, xPV, float);                                    //! Primary vertex of the candidate (x direction)
 DECLARE_SOA_COLUMN(YPV, yPV, float);                                    //! Primary vertex of the candidate (y direction)
 DECLARE_SOA_COLUMN(ZPV, zPV, float);                                    //! Primary vertex of the candidate (z direction)
@@ -82,6 +83,7 @@ DECLARE_SOA_COLUMN(UpdatePzMothPV, updatePzMothPV, float);      //! updated pz o
 
 DECLARE_SOA_TABLE(HypKinkCand, "AOD", "HYPKINKCANDS",
                   o2::soa::Index<>,
+                  hyperkink::MagPolarity,
                   hyperkink::XPV, hyperkink::YPV, hyperkink::ZPV,
                   hyperkink::XSV, hyperkink::YSV, hyperkink::ZSV,
                   hyperkink::IsMatter,
@@ -96,6 +98,7 @@ DECLARE_SOA_TABLE(HypKinkCand, "AOD", "HYPKINKCANDS",
 
 DECLARE_SOA_TABLE(MCHypKinkCand, "AOD", "MCHYPKINKCANDS",
                   o2::soa::Index<>,
+                  hyperkink::MagPolarity,
                   hyperkink::XPV, hyperkink::YPV, hyperkink::ZPV,
                   hyperkink::XSV, hyperkink::YSV, hyperkink::ZSV,
                   hyperkink::IsMatter,
