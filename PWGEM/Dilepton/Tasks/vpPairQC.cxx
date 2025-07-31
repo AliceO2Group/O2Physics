@@ -50,7 +50,7 @@ using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
 using MyCollision = MyCollisions::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronEMEventIds, aod::EMAmbiguousElectronSelfIds, aod::EMPrimaryElectronsPrefilterBit>;
+using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMEventIds, aod::EMAmbiguousElectronSelfIds, aod::EMPrimaryElectronsPrefilterBit>;
 using MyTrack = MyTracks::iterator;
 
 struct vpPairQC {
@@ -420,11 +420,6 @@ struct vpPairQC {
     if (track.sign() > 0) {
       fRegistry.fill(HIST("Track/positive/hs"), track.pt(), track.eta(), track.phi(), dca_3d, weight);
       fRegistry.fill(HIST("Track/positive/hQoverPt"), track.sign() / track.pt());
-      fRegistry.fill(HIST("Track/positive/hPResolution"), track.p(), sigmaP(track) / track.p());
-      fRegistry.fill(HIST("Track/positive/hPtResolution"), track.p(), sigmaPt(track) / track.pt());
-      fRegistry.fill(HIST("Track/positive/hThetaResolution"), track.p(), sigmaTheta(track));
-      fRegistry.fill(HIST("Track/positive/hEtaResolution"), track.p(), sigmaEta(track));
-      fRegistry.fill(HIST("Track/positive/hPhiResolution"), track.p(), sigmaPhi(track));
       fRegistry.fill(HIST("Track/positive/hDCAxyz"), track.dcaXY(), track.dcaZ());
       fRegistry.fill(HIST("Track/positive/hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
       fRegistry.fill(HIST("Track/positive/hDCAxyRes_Pt"), track.pt(), sqrt(track.cYY()) * 1e+4); // convert cm to um
@@ -457,11 +452,6 @@ struct vpPairQC {
     } else {
       fRegistry.fill(HIST("Track/negative/hs"), track.pt(), track.eta(), track.phi(), dca_3d, weight);
       fRegistry.fill(HIST("Track/negative/hQoverPt"), track.sign() / track.pt());
-      fRegistry.fill(HIST("Track/negative/hPResolution"), track.p(), sigmaP(track) / track.p());
-      fRegistry.fill(HIST("Track/negative/hPtResolution"), track.p(), sigmaPt(track) / track.pt());
-      fRegistry.fill(HIST("Track/negative/hThetaResolution"), track.p(), sigmaTheta(track));
-      fRegistry.fill(HIST("Track/negative/hEtaResolution"), track.p(), sigmaEta(track));
-      fRegistry.fill(HIST("Track/negative/hPhiResolution"), track.p(), sigmaPhi(track));
       fRegistry.fill(HIST("Track/negative/hDCAxyz"), track.dcaXY(), track.dcaZ());
       fRegistry.fill(HIST("Track/negative/hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
       fRegistry.fill(HIST("Track/negative/hDCAxyRes_Pt"), track.pt(), sqrt(track.cYY()) * 1e+4); // convert cm to um
