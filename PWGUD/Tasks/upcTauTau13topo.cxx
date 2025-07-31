@@ -1587,31 +1587,31 @@ struct TauTau13topo {
 
   } // end of init method
 
-  float eta(float px, float py, float pz)
-  // Just a simple function to return pseudorapidity
-  {
-    float arg = -2.; // outside valid range for std::atanh
-    float mom = std::sqrt(px * px + py * py + pz * pz);
-    if (mom != 0)
-      arg = pz / mom;
-    if (-1. < arg && arg < 1.)
-      return std::atanh(arg); // definition of eta
-    return -999.;
-  }
+  //  float eta(float px, float py, float pz)
+  //  // Just a simple function to return pseudorapidity
+  //  {
+  //    float arg = -2.; // outside valid range for std::atanh
+  //    float mom = std::sqrt(px * px + py * py + pz * pz);
+  //    if (mom != 0)
+  //      arg = pz / mom;
+  //    if (-1. < arg && arg < 1.)
+  //      return std::atanh(arg); // definition of eta
+  //    return -999.;
+  //  }
 
-  float phi(float px, float py)
-  // Just a simple function to return azimuthal angle from 0 to 2pi
-  {
-    if (px != 0)
-      return (std::atan2(py, px) + o2::constants::math::PI);
-    return -999.;
-  }
+  //  float phi(float px, float py)
+  //  // Just a simple function to return azimuthal angle from 0 to 2pi
+  //  {
+  //    if (px != 0)
+  //      return (std::atan2(py, px) + o2::constants::math::PI);
+  //    return -999.;
+  //  }
 
-  float pt(float px, float py)
-  // Just a simple function to return pt
-  {
-    return std::sqrt(px * px + py * py);
-  }
+  //  float pt(float px, float py)
+  //  // Just a simple function to return pt
+  //  {
+  //    return std::sqrt(px * px + py * py);
+  //  }
 
   float rapidity(float energy, float pz)
   // Just a simple function to return track rapidity
@@ -1630,17 +1630,11 @@ struct TauTau13topo {
     return angle;
   }
 
-  float invariantMass(float E, float px, float py, float pz)
-  // Just a simple function to return invariant mass
-  {
-    return std::sqrt(E * E - px * px - py * py - pz * pz);
-  }
-
-  float energy(float px, float py, float pz, float mass)
-  // Just a simple function to return energy
-  {
-    return std::sqrt(px * px + py * py + pz * pz + mass * mass);
-  }
+  //  float invariantMass(float E, float px, float py, float pz)
+  //  // Just a simple function to return invariant mass
+  //  {
+  //    return std::sqrt(E * E - px * px - py * py - pz * pz);
+  //  }
 
   //  float calculateDeltaPhi(TLorentzVector p, TLorentzVector p1)
   float calculateDeltaPhi(ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> p, ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> p1)
@@ -1696,8 +1690,10 @@ struct TauTau13topo {
   // helper function to calculate scalar asymmetry
   float scalarAsymMC(auto particle1, auto particle2)
   {
-    auto pt1 = pt(particle1.px(), particle1.py());
-    auto pt2 = pt(particle2.px(), particle2.py());
+    // auto pt1 = pt(particle1.px(), particle1.py());
+    auto pt1 = RecoDecay::pt(particle1.px(), particle1.py());
+    // auto pt2 = pt(particle2.px(), particle2.py());
+    auto pt2 = RecoDecay::pt(particle2.px(), particle2.py());
     auto delta = pt1 - pt2;
     return std::abs(delta) / (pt1 + pt2);
   }
@@ -1864,7 +1860,7 @@ struct TauTau13topo {
     } else {
       isGlobalTrack = false;
     }
-    if (std::abs(eta(track.px(), track.py(), track.pz())) < 0.8) {
+    if (std::abs(RecoDecay::eta(std::array<double, 3>{track.px(), track.py(), track.pz()})) < 0.8) {
       registry.get<TH1>(HIST("global/hTrackEfficiencyPVGlobal"))->Fill(8., 1.);
     } else {
       isGlobalTrack = false;
@@ -2143,7 +2139,7 @@ struct TauTau13topo {
     for (const auto& trk : PVContributors) {
       qtot += trk.sign();
       // p.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
-      p.SetXYZT(trk.px(), trk.py(), trk.pz(), energy(trk.px(), trk.py(), trk.pz(), MassPiPlus));
+      p.SetXYZT(trk.px(), trk.py(), trk.pz(), RecoDecay::e(trk.px(), trk.py(), trk.pz(), MassPiPlus));
       registry.get<TH1>(HIST("global/hTrackPtPV"))->Fill(p.Pt());
       if (std::abs(p.Eta()) < trkEtacut)
         nEtaIn15++; // 1.5 is a default
@@ -2218,7 +2214,8 @@ struct TauTau13topo {
     registry.get<TH1>(HIST("global1/hNTracksPV"))->Fill(PVContributors.size());
     for (const auto& trk : PVContributors) {
       // p.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
-      p.SetXYZT(trk.px(), trk.py(), trk.pz(), energy(trk.px(), trk.py(), trk.pz(), MassPiPlus));
+      // p.SetXYZT(trk.px(), trk.py(), trk.pz(), energy(trk.px(), trk.py(), trk.pz(), MassPiPlus));
+      p.SetXYZT(trk.px(), trk.py(), trk.pz(), RecoDecay::e(trk.px(), trk.py(), trk.pz(), MassPiPlus));
       registry.get<TH1>(HIST("global1/hTrackPtPV"))->Fill(p.Pt());
       registry.get<TH2>(HIST("global1/hTrackEtaPhiPV"))->Fill(p.Eta(), p.Phi());
     }
@@ -2388,14 +2385,14 @@ struct TauTau13topo {
 
     for (const auto& trk : PVContributors) {
       // p.SetXYZM(trk.px(), trk.py(), trk.pz(), MassElectron);
-      p.SetXYZT(trk.px(), trk.py(), trk.pz(), energy(trk.px(), trk.py(), trk.pz(), MassElectron));
+      p.SetXYZT(trk.px(), trk.py(), trk.pz(), RecoDecay::e(trk.px(), trk.py(), trk.pz(), MassElectron));
       for (const auto& trk1 : PVContributors) {
         if (trk.index() >= trk1.index())
           continue;
         if (trk1.hasTPC())
           nPiHasTPC[trk.index()]++;
         // p1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), MassElectron);
-        p1.SetXYZT(trk1.px(), trk1.py(), trk1.pz(), energy(trk1.px(), trk1.py(), trk1.pz(), MassElectron));
+        p1.SetXYZT(trk1.px(), trk1.py(), trk1.pz(), RecoDecay::e(trk1.px(), trk1.py(), trk1.pz(), MassElectron));
         invMass2El[(counterTmp < 3 ? counterTmp : 5 - counterTmp)][(counterTmp < 3 ? 0 : 1)] = (p + p1).mag2();
         gammaPair[(counterTmp < 3 ? counterTmp : 5 - counterTmp)][(counterTmp < 3 ? 0 : 1)] = (p + p1);
         registry.get<TH1>(HIST("control/cut0/hInvMass2ElAll"))->Fill((p + p1).mag2());
@@ -2412,7 +2409,7 @@ struct TauTau13topo {
     p.SetXYZT(0., 0., 0., 0.);
     for (const auto& trk : PVContributors) {
       // p1.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
-      p1.SetXYZT(trk.px(), trk.py(), trk.pz(), energy(trk.px(), trk.py(), trk.pz(), MassPiPlus));
+      p1.SetXYZT(trk.px(), trk.py(), trk.pz(), RecoDecay::e(trk.px(), trk.py(), trk.pz(), MassPiPlus));
       p += p1;
       scalarPtsum += trk.pt();
     } // end of loop over PVContributors
@@ -2441,9 +2438,9 @@ struct TauTau13topo {
 
       // inv mass of 3pi + 1e
       // p1.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
-      p1.SetXYZT(trk.px(), trk.py(), trk.pz(), energy(trk.px(), trk.py(), trk.pz(), MassPiPlus));
+      p1.SetXYZT(trk.px(), trk.py(), trk.pz(), RecoDecay::e(trk.px(), trk.py(), trk.pz(), MassPiPlus));
       // p2.SetXYZM(trk.px(), trk.py(), trk.pz(), MassElectron);
-      p2.SetXYZT(trk.px(), trk.py(), trk.pz(), energy(trk.px(), trk.py(), trk.pz(), MassElectron));
+      p2.SetXYZT(trk.px(), trk.py(), trk.pz(), RecoDecay::e(trk.px(), trk.py(), trk.pz(), MassElectron));
       mass3pi1e[counterTmp] = (p - p1 + p2).mag();
 
       v1.SetXYZ(trk.px(), trk.py(), trk.pz());
@@ -2492,7 +2489,7 @@ struct TauTau13topo {
       trkTimeRes[counterTmp] = trk.trackTimeRes();
 
       // p1.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
-      p1.SetXYZT(trk.px(), trk.py(), trk.pz(), energy(trk.px(), trk.py(), trk.pz(), MassPiPlus));
+      p1.SetXYZT(trk.px(), trk.py(), trk.pz(), RecoDecay::e(trk.px(), trk.py(), trk.pz(), MassPiPlus));
       tmpMomentum[counterTmp] = p1.P();
       tmpPt[counterTmp] = p1.Pt();
       tmpDedx[counterTmp] = trk.tpcSignal();
@@ -3608,7 +3605,7 @@ struct TauTau13topo {
               if (std::abs(rapidity(mother.e(), mother.pz())) > 0.9)
                 // if (std::abs(tmp.Rapidity()) > 0.9)
                 tauInRapidity = false;
-              if (std::abs(eta(mcParticle.px(), mcParticle.py(), mcParticle.pz())) > 0.9)
+              if (std::abs(RecoDecay::eta(std::array<double, 3>{mcParticle.px(), mcParticle.py(), mcParticle.pz()})) > 0.9)
                 // if (std::abs(tmp.Eta()) > 0.9)
                 partFromTauInEta = false;
 
@@ -3629,10 +3626,10 @@ struct TauTau13topo {
               }
               count++;
               if (collisions.size() > 0) {
-                registryMC.get<TH1>(HIST("globalMCrec/hMCetaGenCol"))->Fill(eta(mcParticle.px(), mcParticle.py(), mcParticle.pz()));
-                registryMC.get<TH1>(HIST("globalMCrec/hMCphiGenCol"))->Fill(phi(mcParticle.px(), mcParticle.py()));
+                registryMC.get<TH1>(HIST("globalMCrec/hMCetaGenCol"))->Fill(RecoDecay::eta(std::array<double, 3>{mcParticle.px(), mcParticle.py(), mcParticle.pz()}));
+                registryMC.get<TH1>(HIST("globalMCrec/hMCphiGenCol"))->Fill(RecoDecay::phi(mcParticle.px(), mcParticle.py()));
                 registryMC.get<TH1>(HIST("globalMCrec/hMCyGenCol"))->Fill(rapidity(mcParticle.e(), mcParticle.pz()));
-                registryMC.get<TH1>(HIST("globalMCrec/hMCptGenCol"))->Fill(pt(mcParticle.px(), mcParticle.py()));
+                registryMC.get<TH1>(HIST("globalMCrec/hMCptGenCol"))->Fill(RecoDecay::pt(mcParticle.px(), mcParticle.py()));
               }
             } // mother is tau
           } // has mothers
@@ -3719,13 +3716,13 @@ struct TauTau13topo {
     registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaAlphaEpi"))->Fill(deltaAlpha2);
     registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaAlphaEpi"))->Fill(deltaAlpha3);
     //
-    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiEpi"))->Fill(calculateDeltaPhi(phi(tmp1ProngMC.px(), tmp1ProngMC.py()), phi(tmpPion1MC.px(), tmpPion1MC.py())));
-    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiEpi"))->Fill(calculateDeltaPhi(phi(tmp1ProngMC.px(), tmp1ProngMC.py()), phi(tmpPion2MC.px(), tmpPion2MC.py())));
-    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiEpi"))->Fill(calculateDeltaPhi(phi(tmp1ProngMC.px(), tmp1ProngMC.py()), phi(tmpPion3MC.px(), tmpPion3MC.py())));
+    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiEpi"))->Fill(calculateDeltaPhi(RecoDecay::phi(tmp1ProngMC.px(), tmp1ProngMC.py()), RecoDecay::phi(tmpPion1MC.px(), tmpPion1MC.py())));
+    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiEpi"))->Fill(calculateDeltaPhi(RecoDecay::phi(tmp1ProngMC.px(), tmp1ProngMC.py()), RecoDecay::phi(tmpPion2MC.px(), tmpPion2MC.py())));
+    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiEpi"))->Fill(calculateDeltaPhi(RecoDecay::phi(tmp1ProngMC.px(), tmp1ProngMC.py()), RecoDecay::phi(tmpPion3MC.px(), tmpPion3MC.py())));
     //
-    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiPipi"))->Fill(calculateDeltaPhi(phi(tmpPion1MC.px(), tmpPion1MC.py()), phi(tmpPion2MC.px(), tmpPion2MC.py())));
-    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiPipi"))->Fill(calculateDeltaPhi(phi(tmpPion1MC.px(), tmpPion1MC.py()), phi(tmpPion3MC.px(), tmpPion3MC.py())));
-    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiPipi"))->Fill(calculateDeltaPhi(phi(tmpPion2MC.px(), tmpPion2MC.py()), phi(tmpPion3MC.px(), tmpPion3MC.py())));
+    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiPipi"))->Fill(calculateDeltaPhi(RecoDecay::phi(tmpPion1MC.px(), tmpPion1MC.py()), RecoDecay::phi(tmpPion2MC.px(), tmpPion2MC.py())));
+    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiPipi"))->Fill(calculateDeltaPhi(RecoDecay::phi(tmpPion1MC.px(), tmpPion1MC.py()), RecoDecay::phi(tmpPion3MC.px(), tmpPion3MC.py())));
+    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaPhiPipi"))->Fill(calculateDeltaPhi(RecoDecay::phi(tmpPion2MC.px(), tmpPion2MC.py()), RecoDecay::phi(tmpPion3MC.px(), tmpPion3MC.py())));
 
     //
     auto deltaAlphaPi1 = deltaAlpha(tmpPion1MC, tmpPion2MC);
@@ -3738,13 +3735,13 @@ struct TauTau13topo {
     float energyInCone = 0;
     float angleLimit = 0.5;
     if (deltaAlpha1 < angleLimit) {
-      energyInCone += pt(tmpPion1MC.px(), tmpPion1MC.py());
+      energyInCone += RecoDecay::pt(tmpPion1MC.px(), tmpPion1MC.py());
     }
     if (deltaAlpha2 < angleLimit) {
-      energyInCone += pt(tmpPion2MC.px(), tmpPion2MC.py());
+      energyInCone += RecoDecay::pt(tmpPion2MC.px(), tmpPion2MC.py());
     }
     if (deltaAlpha3 < angleLimit) {
-      energyInCone += pt(tmpPion3MC.px(), tmpPion3MC.py());
+      energyInCone += RecoDecay::pt(tmpPion3MC.px(), tmpPion3MC.py());
     }
     registryMC.get<TH1>(HIST("efficiencyMCEl/hMCvirtCal"))->Fill(energyInCone);
     //
@@ -3757,17 +3754,19 @@ struct TauTau13topo {
     registryMC.get<TH1>(HIST("efficiencyMCEl/hMCVector"))->Fill(vectorAsym(tmp1ProngMC, tmpPion3MC));
 
     // add eta phi
-    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCptEl"))->Fill(pt(tmp1ProngMC.px(), tmp1ProngMC.py()));
+    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCptEl"))->Fill(RecoDecay::pt(tmp1ProngMC.px(), tmp1ProngMC.py()));
 
     float px3pi = tmpPion1MC.px() + tmpPion2MC.px() + tmpPion3MC.px();
     float py3pi = tmpPion1MC.py() + tmpPion2MC.py() + tmpPion3MC.py();
     float pz3pi = tmpPion1MC.pz() + tmpPion2MC.pz() + tmpPion3MC.pz();
     float en3pi = tmpPion1MC.e() + tmpPion2MC.e() + tmpPion3MC.e();
 
-    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCpt4trk"))->Fill(pt(tmp1ProngMC.px() + px3pi, tmp1ProngMC.py() + py3pi));
-    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCinvmass4pi"))->Fill(invariantMass(tmp1ProngMC.e() + en3pi, tmp1ProngMC.px() + px3pi, tmp1ProngMC.py() + py3pi, tmp1ProngMC.pz() + pz3pi));
-    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCinvmass3pi"))->Fill(invariantMass(en3pi, px3pi, py3pi, pz3pi));
-    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaphi13"))->Fill(calculateDeltaPhi(phi(tmp1ProngMC.px(), tmp1ProngMC.py()), phi(px3pi, py3pi)));
+    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCpt4trk"))->Fill(RecoDecay::pt(tmp1ProngMC.px() + px3pi, tmp1ProngMC.py() + py3pi));
+    // registryMC.get<TH1>(HIST("efficiencyMCEl/hMCinvmass4pi"))->Fill(invariantMass(tmp1ProngMC.e() + en3pi, tmp1ProngMC.px() + px3pi, tmp1ProngMC.py() + py3pi, tmp1ProngMC.pz() + pz3pi));
+    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCinvmass4pi"))->Fill(RecoDecay::m(std::array<double, 3>{(tmp1ProngMC.px() + px3pi), (tmp1ProngMC.py() + py3pi), (tmp1ProngMC.pz() + pz3pi)}, (tmp1ProngMC.e() + en3pi)));
+    // registryMC.get<TH1>(HIST("efficiencyMCEl/hMCinvmass3pi"))->Fill(invariantMass(en3pi, px3pi, py3pi, pz3pi));
+    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCinvmass3pi"))->Fill(RecoDecay::m(std::array<double, 3>{px3pi, py3pi, pz3pi}, en3pi));
+    registryMC.get<TH1>(HIST("efficiencyMCEl/hMCdeltaphi13"))->Fill(calculateDeltaPhi(RecoDecay::phi(tmp1ProngMC.px(), tmp1ProngMC.py()), RecoDecay::phi(px3pi, py3pi)));
 
     // reconstructed event
     if (collisions.size() < 1)
@@ -3896,7 +3895,7 @@ struct TauTau13topo {
             nPVTracks++;
             trackCharge += track.sign();
             // if (std::abs(eta(track.px(),track.py(),track.pz())) >= trkEtacut) allInEtaAcceptance = false;
-            if (std::abs(eta(track.px(), track.py(), track.pz())) < trkEtacut)
+            if (std::abs(RecoDecay::eta(std::array<double, 3>{track.px(), track.py(), track.pz()})) < trkEtacut)
               nTrkInEtaRange++;
             if (track.pt() > 0.1)
               nTrkAbovePtThreshold++;
@@ -4062,20 +4061,20 @@ struct TauTau13topo {
               flagVcalPV[i] = true;
             }
           } // end of second loop
-          float tmpEtaData = eta(tmptrack.px(), tmptrack.py(), tmptrack.pz());
-          float tmpPhiData = phi(tmptrack.px(), tmptrack.py());
+          float tmpEtaData = RecoDecay::eta(std::array<double, 3>{tmptrack.px(), tmptrack.py(), tmptrack.pz()});
+          float tmpPhiData = RecoDecay::phi(tmptrack.px(), tmptrack.py());
           registryMC.get<TH2>(HIST("global1MCrec/hTrackEtaPhiPV"))->Fill(tmpEtaData, tmpPhiData);
           registryMC.get<TH1>(HIST("global1MCrec/hTrackPtPV"))->Fill(tmptrack.pt());
           // p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), MassPiPlus); // in case of ghost
-          p1.SetXYZT(v1.X(), v1.Y(), v1.Z(), energy(v1.X(), v1.Y(), v1.Z(), MassPiPlus)); // in case of ghost
+          p1.SetXYZT(v1.X(), v1.Y(), v1.Z(), RecoDecay::e(v1.X(), v1.Y(), v1.Z(), MassPiPlus)); // in case of ghost
 
           if (trackMCId[i] >= 0) {
             // p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), (std::abs(tmptrack.udMcParticle().pdgCode()) == 211 ? MassPiPlus : MassElectron));
             // p1.SetXYZT(v1.X(), v1.Y(), v1.Z(), energy(v1.X(), v1.Y(), v1.Z(), (std::abs(tmptrack.udMcParticle().pdgCode()) == 211 ? MassPiPlus : MassElectron)));
-            p1.SetXYZT(v1.X(), v1.Y(), v1.Z(), energy(v1.X(), v1.Y(), v1.Z(), (std::abs(tmptrack.udMcParticle().pdgCode()) == kPiPlus ? MassPiPlus : MassElectron))); // 211
-            float tmpPt = pt(tmptrack.udMcParticle().px(), tmptrack.udMcParticle().py());
-            float tmpEta = eta(tmptrack.udMcParticle().px(), tmptrack.udMcParticle().py(), tmptrack.udMcParticle().pz());
-            float tmpPhi = phi(tmptrack.udMcParticle().px(), tmptrack.udMcParticle().py());
+            p1.SetXYZT(v1.X(), v1.Y(), v1.Z(), RecoDecay::e(v1.X(), v1.Y(), v1.Z(), (std::abs(tmptrack.udMcParticle().pdgCode()) == kPiPlus ? MassPiPlus : MassElectron))); // 211
+            float tmpPt = RecoDecay::pt(tmptrack.udMcParticle().px(), tmptrack.udMcParticle().py());
+            float tmpEta = RecoDecay::eta(std::array<double, 3>{tmptrack.udMcParticle().px(), tmptrack.udMcParticle().py(), tmptrack.udMcParticle().pz()});
+            float tmpPhi = RecoDecay::phi(tmptrack.udMcParticle().px(), tmptrack.udMcParticle().py());
             registryMC.get<TH2>(HIST("global1MCrec/hpTGenRecTracksPV"))->Fill(tmptrack.pt(), tmpPt);
             registryMC.get<TH2>(HIST("global1MCrec/hDeltapTGenRecVsRecpTTracksPV"))->Fill(tmptrack.pt() - tmpPt, tmptrack.pt());
             registryMC.get<TH2>(HIST("global1MCrec/hEtaGenRecTracksPV"))->Fill(tmpEtaData, tmpEta);
@@ -4231,10 +4230,10 @@ struct TauTau13topo {
           // if (tmptrack.hasTOF()) trkHasTof[i] = true;
           v1.SetXYZ(tmptrack.px(), tmptrack.py(), tmptrack.pz());
           // p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), MassPiPlus); // in case of ghost
-          p1.SetXYZT(v1.X(), v1.Y(), v1.Z(), energy(v1.X(), v1.Y(), v1.Z(), MassPiPlus)); // in case of ghost
+          p1.SetXYZT(v1.X(), v1.Y(), v1.Z(), RecoDecay::e(v1.X(), v1.Y(), v1.Z(), MassPiPlus)); // in case of ghost
           if (trackMCId[i] >= 0) {
             // p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), (i == matchedElIndexToData ? MassElectron : MassPiPlus));
-            p1.SetXYZT(v1.X(), v1.Y(), v1.Z(), energy(v1.X(), v1.Y(), v1.Z(), (i == matchedElIndexToData ? MassElectron : MassPiPlus)));
+            p1.SetXYZT(v1.X(), v1.Y(), v1.Z(), RecoDecay::e(v1.X(), v1.Y(), v1.Z(), (i == matchedElIndexToData ? MassElectron : MassPiPlus)));
           }
 
           nSigmaEl[counterTmp] = tmptrack.tpcNSigmaEl();
@@ -5032,7 +5031,7 @@ struct TauTau13topo {
     for (const auto& trk : PVContributors) {
       qtot += trk.sign();
       // p.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
-      p.SetXYZT(trk.px(), trk.py(), trk.pz(), energy(trk.px(), trk.py(), trk.pz(), MassPiPlus));
+      p.SetXYZT(trk.px(), trk.py(), trk.pz(), RecoDecay::e(trk.px(), trk.py(), trk.pz(), MassPiPlus));
       if (std::abs(p.Eta()) < trkEtacut)
         nEtaIn15++; // 0.9 is a default
       if (trk.pt() > 0.1)
