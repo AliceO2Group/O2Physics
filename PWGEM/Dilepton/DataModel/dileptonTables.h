@@ -122,6 +122,8 @@ DECLARE_SOA_COLUMN(SpherocityPtUnWeighted, spherocity_ptunweighted, float); //! 
 DECLARE_SOA_COLUMN(NtrackSpherocity, ntspherocity, int);
 DECLARE_SOA_COLUMN(IsSelected, isSelected, bool);  //! MB event selection info
 DECLARE_SOA_COLUMN(IsEoI, isEoI, bool);            //! lepton or photon exists in MB event (not for CEFP)
+DECLARE_SOA_COLUMN(PosX, posX, float);             //! only for treeCreatetorML.cxx
+DECLARE_SOA_COLUMN(PosY, posY, float);             //! only for treeCreatetorML.cxx
 DECLARE_SOA_COLUMN(PosZint16, posZint16, int16_t); //! this is only to reduce data size
 DECLARE_SOA_DYNAMIC_COLUMN(PosZ, posZ, [](int16_t posZint16) -> float { return static_cast<float>(posZint16) * 0.1f; });
 
@@ -156,8 +158,16 @@ DECLARE_SOA_TABLE_VERSIONED(EMEvents_002, "AOD", "EMEVENT", 2, //!   Main event 
                             collision::PosX, collision::PosY, collision::PosZ,
                             collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emevent::Sel8<evsel::Selection>);
 
-using EMEvents = EMEvents_002;
+DECLARE_SOA_TABLE_VERSIONED(EMEvents_003, "AOD", "EMEVENT", 3, //!   Main event information table
+                            o2::soa::Index<>, emevent::CollisionId, bc::RunNumber, bc::GlobalBC, evsel::Alias, evsel::Selection, evsel::Rct, timestamp::Timestamp,
+                            collision::PosZ,
+                            collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emevent::Sel8<evsel::Selection>);
+
+using EMEvents = EMEvents_003;
 using EMEvent = EMEvents::iterator;
+
+DECLARE_SOA_TABLE(EMEventsXY, "AOD", "EMEVENTXY", emevent::PosX, emevent::PosY); // joinable to EMEvents, only for treeCreatetorML.cxx
+using EMEventXY = EMEventsXY::iterator;
 
 DECLARE_SOA_TABLE(EMEventsCov, "AOD", "EMEVENTCOV", //! joinable to EMEvents
                   collision::CovXX, collision::CovXY, collision::CovXZ, collision::CovYY, collision::CovYZ, collision::CovZZ, collision::Chi2, o2::soa::Marker<1>);
@@ -396,15 +406,60 @@ DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
 DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(AmbiguousElectrons, ambiguousElectrons);
 DECLARE_SOA_COLUMN(IsAssociatedToMPC, isAssociatedToMPC, bool); //! is associated to most probable collision
+DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);             //! is ambiguous
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                         //!
 DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);                 //!
 DECLARE_SOA_COLUMN(PrefilterBitDerived, pfbderived, uint16_t);  //!
-DECLARE_SOA_COLUMN(ITSNSigmaEl, itsNSigmaEl, float);            //!
-DECLARE_SOA_COLUMN(ITSNSigmaMu, itsNSigmaMu, float);            //!
-DECLARE_SOA_COLUMN(ITSNSigmaPi, itsNSigmaPi, float);            //!
-DECLARE_SOA_COLUMN(ITSNSigmaKa, itsNSigmaKa, float);            //!
-DECLARE_SOA_COLUMN(ITSNSigmaPr, itsNSigmaPr, float);            //!
-// DECLARE_SOA_COLUMN(TPCSignalMC, mcTunedtpcSignal, float);            //!
+
+DECLARE_SOA_COLUMN(ITSNSigmaEl, itsNSigmaEl, float); //!
+DECLARE_SOA_COLUMN(ITSNSigmaMu, itsNSigmaMu, float); //!
+DECLARE_SOA_COLUMN(ITSNSigmaPi, itsNSigmaPi, float); //!
+DECLARE_SOA_COLUMN(ITSNSigmaKa, itsNSigmaKa, float); //!
+DECLARE_SOA_COLUMN(ITSNSigmaPr, itsNSigmaPr, float); //!
+
+DECLARE_SOA_COLUMN(TPCSignalUINT16, tpcSignalUINT16, uint16_t);          //! 0 - +65535
+DECLARE_SOA_COLUMN(DeDxTunedMcUINT16, mcTunedTPCSignalUINT16, uint16_t); //! 0 - +65535
+DECLARE_SOA_COLUMN(ProbElBDT, probElBDT, float);                         //!
+// DECLARE_SOA_COLUMN(ProbEbdtUINT16, probEbdtUINT16, uint16_t);     //! 0 - +65535
+
+DECLARE_SOA_COLUMN(TPCChi2NClINT16, tpcChi2NClINT16, int16_t); //! -32768 - +32767
+DECLARE_SOA_COLUMN(ITSChi2NClINT16, itsChi2NClINT16, int16_t); //! -32768 - +32767
+
+DECLARE_SOA_COLUMN(BetaINT16, betaINT16, int16_t);       //! -32768 - +32767
+DECLARE_SOA_COLUMN(TOFChi2INT16, tofChi2INT16, int16_t); //! -32768 - +32767
+
+DECLARE_SOA_COLUMN(TPCNSigmaElINT16, tpcNSigmaElINT16, int16_t); //! -32768 - +32767
+DECLARE_SOA_COLUMN(TPCNSigmaMuINT16, tpcNSigmaMuINT16, int16_t); //! -32768 - +32767
+DECLARE_SOA_COLUMN(TPCNSigmaPiINT16, tpcNSigmaPiINT16, int16_t); //! -32768 - +32767
+DECLARE_SOA_COLUMN(TPCNSigmaKaINT16, tpcNSigmaKaINT16, int16_t); //! -32768 - +32767
+DECLARE_SOA_COLUMN(TPCNSigmaPrINT16, tpcNSigmaPrINT16, int16_t); //! -32768 - +32767
+
+DECLARE_SOA_COLUMN(TOFNSigmaElINT16, tofNSigmaElINT16, int16_t); //! -32768 - +32767
+DECLARE_SOA_COLUMN(TOFNSigmaMuINT16, tofNSigmaMuINT16, int16_t); //! -32768 - +32767
+DECLARE_SOA_COLUMN(TOFNSigmaPiINT16, tofNSigmaPiINT16, int16_t); //! -32768 - +32767
+DECLARE_SOA_COLUMN(TOFNSigmaKaINT16, tofNSigmaKaINT16, int16_t); //! -32768 - +32767
+DECLARE_SOA_COLUMN(TOFNSigmaPrINT16, tofNSigmaPrINT16, int16_t); //! -32768 - +32767
+
+DECLARE_SOA_DYNAMIC_COLUMN(TPCSignal, tpcSignal, [](uint16_t x) -> float { return static_cast<float>(x) * 1e-2; });
+DECLARE_SOA_DYNAMIC_COLUMN(DeDxTunedMc, mcTunedTPCSignal, [](uint16_t x) -> float { return static_cast<float>(x) * 1e-2; });
+// DECLARE_SOA_DYNAMIC_COLUMN(ProbEbdt, probEbdt, [](uint16_t x) -> float { return static_cast<float>(x) * 1e-4; });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCChi2NCl, tpcChi2NCl, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
+DECLARE_SOA_DYNAMIC_COLUMN(ITSChi2NCl, itsChi2NCl, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
+DECLARE_SOA_DYNAMIC_COLUMN(Beta, beta, [](int16_t x) -> float { return static_cast<float>(x) * 1e-3; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFChi2, tofChi2, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
+
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaEl, tpcNSigmaEl, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaMu, tpcNSigmaMu, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaPi, tpcNSigmaPi, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaKa, tpcNSigmaKa, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaPr, tpcNSigmaPr, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
+
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaEl, tofNSigmaEl, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaMu, tofNSigmaMu, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaPi, tofNSigmaPi, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaKa, tofNSigmaKa, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaPr, tofNSigmaPr, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
+
 DECLARE_SOA_DYNAMIC_COLUMN(Signed1Pt, signed1Pt, [](float pt, int8_t sign) -> float { return sign * 1. / pt; });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
@@ -549,11 +604,64 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectrons_003, "AOD", "EMPRIMARYEL", 3, //!
                             emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
                             emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);
 
-using EMPrimaryElectrons = EMPrimaryElectrons_003;
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectrons_004, "AOD", "EMPRIMARYEL", 4, //!
+                            o2::soa::Index<>, emprimaryelectron::CollisionId,
+                            emprimaryelectron::TrackId, emprimaryelectron::Sign,
+                            track::Pt, track::Eta, track::Phi,
+                            track::DcaXY, track::DcaZ, aod::track::CYY, aod::track::CZY, aod::track::CZZ,
+                            track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,
+                            emprimaryelectron::TPCChi2NClINT16, track::TPCInnerParam,
+                            emprimaryelectron::TPCSignalUINT16, emprimaryelectron::TPCNSigmaElINT16, emprimaryelectron::TPCNSigmaPiINT16, emprimaryelectron::TPCNSigmaKaINT16, emprimaryelectron::TPCNSigmaPrINT16,
+                            emprimaryelectron::BetaINT16, emprimaryelectron::TOFNSigmaElINT16, emprimaryelectron::TOFNSigmaPiINT16, emprimaryelectron::TOFNSigmaKaINT16, emprimaryelectron::TOFNSigmaPrINT16,
+                            track::ITSClusterSizes,
+                            emprimaryelectron::ITSChi2NClINT16, emprimaryelectron::TOFChi2INT16, track::DetectorMap,
+                            track::Tgl,
+                            emprimaryelectron::IsAssociatedToMPC, emprimaryelectron::IsAmbiguous, emprimaryelectron::ProbElBDT,
+                            emprimaryelectron::DeDxTunedMcUINT16,
+
+                            // dynamic column
+                            track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
+                            track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>, track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
+
+                            emprimaryelectron::TPCSignal<emprimaryelectron::TPCSignalUINT16>,
+                            emprimaryelectron::TPCChi2NCl<emprimaryelectron::TPCChi2NClINT16>,
+                            emprimaryelectron::ITSChi2NCl<emprimaryelectron::ITSChi2NClINT16>,
+                            emprimaryelectron::DeDxTunedMc<emprimaryelectron::DeDxTunedMcUINT16>,
+                            // emprimaryelectron::ProbEbdt<emprimaryelectron::ProbEbdtUINT16>,
+                            emprimaryelectron::Beta<emprimaryelectron::BetaINT16>,
+                            emprimaryelectron::TOFChi2<emprimaryelectron::TOFChi2INT16>,
+
+                            emprimaryelectron::TPCNSigmaEl<emprimaryelectron::TPCNSigmaElINT16>,
+                            emprimaryelectron::TPCNSigmaMu<emprimaryelectron::TPCNSigmaMuINT16>,
+                            emprimaryelectron::TPCNSigmaPi<emprimaryelectron::TPCNSigmaPiINT16>,
+                            emprimaryelectron::TPCNSigmaKa<emprimaryelectron::TPCNSigmaKaINT16>,
+                            emprimaryelectron::TPCNSigmaPr<emprimaryelectron::TPCNSigmaPrINT16>,
+                            emprimaryelectron::TOFNSigmaEl<emprimaryelectron::TOFNSigmaElINT16>,
+                            emprimaryelectron::TOFNSigmaMu<emprimaryelectron::TOFNSigmaMuINT16>,
+                            emprimaryelectron::TOFNSigmaPi<emprimaryelectron::TOFNSigmaPiINT16>,
+                            emprimaryelectron::TOFNSigmaKa<emprimaryelectron::TOFNSigmaKaINT16>,
+                            emprimaryelectron::TOFNSigmaPr<emprimaryelectron::TOFNSigmaPrINT16>,
+
+                            emprimaryelectron::Signed1Pt<track::Pt, emprimaryelectron::Sign>,
+                            emprimaryelectron::P<track::Pt, track::Eta>,
+                            emprimaryelectron::Px<track::Pt, track::Phi>,
+                            emprimaryelectron::Py<track::Pt, track::Phi>,
+                            emprimaryelectron::Pz<track::Pt, track::Eta>,
+                            emprimaryelectron::Theta<track::Tgl>,
+                            emprimaryelectron::MeanClusterSizeITS<track::ITSClusterSizes>,
+                            emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
+                            emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);
+
+using EMPrimaryElectrons = EMPrimaryElectrons_004;
 // iterators
 using EMPrimaryElectron = EMPrimaryElectrons::iterator;
 
-DECLARE_SOA_TABLE(EMPrimaryElectronsCov, "AOD", "EMPRIMARYELCOV", //!
+DECLARE_SOA_TABLE(EMPrimaryElectronsCov_000, "AOD", "EMPRIMARYELCOV", //!
                   aod::track::CYY,
                   aod::track::CZY,
                   aod::track::CZZ,
@@ -569,6 +677,27 @@ DECLARE_SOA_TABLE(EMPrimaryElectronsCov, "AOD", "EMPRIMARYELCOV", //!
                   aod::track::C1PtSnp,
                   aod::track::C1PtTgl,
                   aod::track::C1Pt21Pt2, o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectronsCov_001, "AOD", "EMPRIMARYELCOV", 1, //!
+                            aod::track::X,
+                            aod::track::Alpha,
+                            aod::track::Y,
+                            aod::track::Z,
+                            aod::track::Snp,
+                            aod::track::CSnpY,
+                            aod::track::CSnpZ,
+                            aod::track::CSnpSnp,
+                            aod::track::CTglY,
+                            aod::track::CTglZ,
+                            aod::track::CTglSnp,
+                            aod::track::CTglTgl,
+                            aod::track::C1PtY,
+                            aod::track::C1PtZ,
+                            aod::track::C1PtSnp,
+                            aod::track::C1PtTgl,
+                            aod::track::C1Pt21Pt2); // CYY, CZY, CZZ, Tgl are in the main electron table.
+
+using EMPrimaryElectronsCov = EMPrimaryElectronsCov_001;
 // iterators
 using EMPrimaryElectronCov = EMPrimaryElectronsCov::iterator;
 
@@ -694,9 +823,9 @@ DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);        //!
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
 DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
 // DECLARE_SOA_COLUMN(Sign, sign, int8_t);            //!
-DECLARE_SOA_COLUMN(TrackBit, trackBit, uint16_t); //!
-DECLARE_SOA_COLUMN(PtUINT16, ptuint16, uint16_t); //! 0 - 65536
-DECLARE_SOA_COLUMN(DcaZINT16, dcaZint16, int16_t); //! -32768 - +32768
+DECLARE_SOA_COLUMN(TrackBit, trackBit, uint16_t);  //!
+DECLARE_SOA_COLUMN(PtUINT16, ptuint16, uint16_t);  //! 0 - 65535
+DECLARE_SOA_COLUMN(DcaZINT16, dcaZint16, int16_t); //! -32768 - +32767
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](uint16_t ptuint16) -> float { return static_cast<float>(ptuint16) * 1e-4; });
 DECLARE_SOA_DYNAMIC_COLUMN(DcaZ, dcaZ, [](int16_t dcaZint16) -> float { return static_cast<float>(dcaZint16) * 1e-4; });
 // DECLARE_SOA_DYNAMIC_COLUMN(Signed1Pt, signed1Pt, [](float pt, int8_t sign) -> float { return sign * 1. / pt; });

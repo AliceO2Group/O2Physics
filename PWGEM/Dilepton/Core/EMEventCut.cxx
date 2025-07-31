@@ -65,7 +65,7 @@ void EMEventCut::SetRequireVertexITSTPC(bool flag)
 void EMEventCut::SetRequireVertexTOFmatched(bool flag)
 {
   mRequireVertexTOFmatched = flag;
-  LOG(info) << "EM Event Cut, require vertex reconstructed by ITS-TPC matched track: " << mRequireVertexTOFmatched;
+  LOG(info) << "EM Event Cut, require vertex reconstructed by ITS-TPC-TOF matched track: " << mRequireVertexTOFmatched;
 }
 
 void EMEventCut::SetRequireGoodZvtxFT0vsPV(bool flag)

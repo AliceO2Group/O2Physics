@@ -258,14 +258,15 @@ class DielectronCut : public TNamed
   }
 
   template <typename TTrack, typename TCollision>
-  bool PassPIDML(TTrack const& track, TCollision const& collision) const
+  bool PassPIDML(TTrack const&, TCollision const&) const
   {
+    return false;
     /*if (!PassTOFif(track)) { // Allows for pre-selection. But potentially dangerous if analyzers are not aware of it
       return false;
     }*/
-    std::vector<float> inputFeatures = mPIDMlResponse->getInputFeatures(track, collision);
-    float binningFeature = mPIDMlResponse->getBinningFeature(track, collision);
-    return mPIDMlResponse->isSelectedMl(inputFeatures, binningFeature);
+    // std::vector<float> inputFeatures = mPIDMlResponse->getInputFeatures(track, collision);
+    // float binningFeature = mPIDMlResponse->getBinningFeature(track, collision);
+    // return mPIDMlResponse->isSelectedMl(inputFeatures, binningFeature);
   }
 
   template <typename T>
