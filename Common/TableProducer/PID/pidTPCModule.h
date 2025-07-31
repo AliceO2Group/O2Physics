@@ -644,7 +644,7 @@ class pidTPCModule
           }
         }
         //_________________________________________________________
-        
+
         double hadronicRate;
         int occupancy;
         if (trk.has_collision()) {
