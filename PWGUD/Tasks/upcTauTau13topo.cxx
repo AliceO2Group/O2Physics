@@ -24,7 +24,8 @@
 // #include "TDatabasePDG.h" // not recommended in o2
 #include "Framework/O2DatabasePDGPlugin.h"
 
-#include "TLorentzVector.h"
+// #include "TLorentzVector.h"
+#include "Math/Vector4D.h"
 // #include "Common/DataModel/EventSelection.h"
 // #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -1635,7 +1636,14 @@ struct TauTau13topo {
     return std::sqrt(E * E - px * px - py * py - pz * pz);
   }
 
-  float calculateDeltaPhi(TLorentzVector p, TLorentzVector p1)
+  float energy(float px, float py, float pz, float mass)
+  // Just a simple function to return energy
+  {
+    return std::sqrt(px * px + py * py + pz * pz + mass * mass);
+  }
+  
+  //  float calculateDeltaPhi(TLorentzVector p, TLorentzVector p1)
+  float calculateDeltaPhi(ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> p, ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> p1)
   {
     //    float delta = p.Phi();
     float delta = RecoDecay::constrainAngle(p.Phi());
@@ -2124,7 +2132,8 @@ struct TauTau13topo {
     int nEtaIn15 = 0;
     int nITSbits = -1;
     int npT100 = 0;
-    TLorentzVector p;
+    //    TLorentzVector p;
+    ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> p;
     // auto const pionMass = MassPiPlus;
     // auto const electronMass = MassElectron;
     bool flagGlobalCheck = true;
@@ -2133,7 +2142,8 @@ struct TauTau13topo {
     // loop over PV contributors
     for (const auto& trk : PVContributors) {
       qtot += trk.sign();
-      p.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
+      // p.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
+      p.SetXYZT(trk.px(), trk.py(), trk.pz(), energy(trk.px(), trk.py(), trk.pz(), MassPiPlus));
       registry.get<TH1>(HIST("global/hTrackPtPV"))->Fill(p.Pt());
       if (std::abs(p.Eta()) < trkEtacut)
         nEtaIn15++; // 1.5 is a default
@@ -2207,7 +2217,8 @@ struct TauTau13topo {
     registry.get<TH1>(HIST("global1/hNTracks"))->Fill(dgtracks.size());
     registry.get<TH1>(HIST("global1/hNTracksPV"))->Fill(PVContributors.size());
     for (const auto& trk : PVContributors) {
-      p.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
+      // p.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
+      p.SetXYZT(trk.px(), trk.py(), trk.pz(), energy(trk.px(), trk.py(), trk.pz(), MassPiPlus));
       registry.get<TH1>(HIST("global1/hTrackPtPV"))->Fill(p.Pt());
       registry.get<TH2>(HIST("global1/hTrackEtaPhiPV"))->Fill(p.Eta(), p.Phi());
     }
@@ -2367,23 +2378,27 @@ struct TauTau13topo {
     // 12 34 | 01 23 |//1 //6 | 0 5 |counter<3?counter:5-counter counter<3?0:1
     // 13 24 | 02 13 |//2 //5 | 1 4 |
     // 14 23 | 03 12 |//3 //4 | 2 3 |
-    TLorentzVector p1, p2;
-    TLorentzVector gammaPair[3][2];
-    float invMass2El[3][2];
+    // TLorentzVector p1, p2;
+    ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> p1, p2;
+    // TLorentzVector gammaPair[3][2];
+    ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> gammaPair[3][2];
+    float invMass2El[3][2]; // inv. mass squared
     int counterTmp = 0;
     bool flagIMGam2ePV[4] = {true, true, true, true};
 
     for (const auto& trk : PVContributors) {
-      p.SetXYZM(trk.px(), trk.py(), trk.pz(), MassElectron);
+      // p.SetXYZM(trk.px(), trk.py(), trk.pz(), MassElectron);
+      p.SetXYZT(trk.px(), trk.py(), trk.pz(), energy(trk.px(), trk.py(), trk.pz(), MassElectron));
       for (const auto& trk1 : PVContributors) {
         if (trk.index() >= trk1.index())
           continue;
         if (trk1.hasTPC())
           nPiHasTPC[trk.index()]++;
-        p1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), MassElectron);
-        invMass2El[(counterTmp < 3 ? counterTmp : 5 - counterTmp)][(counterTmp < 3 ? 0 : 1)] = (p + p1).Mag2();
+        // p1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), MassElectron);
+	p1.SetXYZT(trk1.px(), trk1.py(), trk1.pz(), energy(trk1.px(), trk1.py(), trk1.pz(), MassElectron));
+        invMass2El[(counterTmp < 3 ? counterTmp : 5 - counterTmp)][(counterTmp < 3 ? 0 : 1)] = (p + p1).mag2();
         gammaPair[(counterTmp < 3 ? counterTmp : 5 - counterTmp)][(counterTmp < 3 ? 0 : 1)] = (p + p1);
-        registry.get<TH1>(HIST("control/cut0/hInvMass2ElAll"))->Fill((p + p1).Mag2());
+        registry.get<TH1>(HIST("control/cut0/hInvMass2ElAll"))->Fill((p + p1).mag2());
         counterTmp++;
         if ((p + p1).M() < 0.015) {
           flagIMGam2ePV[trk.index()] = false;
@@ -2393,15 +2408,17 @@ struct TauTau13topo {
     } // end of loop over PVContributors
 
     // first loop to add all the tracks together
-    p = TLorentzVector(0., 0., 0., 0.);
+    // p = TLorentzVector(0., 0., 0., 0.);
+    p.SetXYZT(0., 0., 0., 0.);
     for (const auto& trk : PVContributors) {
-      p1.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
+      // p1.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
+      p1.SetXYZT(trk.px(), trk.py(), trk.pz(), energy(trk.px(), trk.py(), trk.pz(), MassPiPlus));
       p += p1;
       scalarPtsum += trk.pt();
     } // end of loop over PVContributors
 
     float pttot = p.Pt();
-    float mass4pi = p.Mag();
+    float mass4pi = p.mag();
 
     TVector3 v1(0, 0, 0);
     TVector3 vtmp(0, 0, 0);
@@ -2423,9 +2440,11 @@ struct TauTau13topo {
       registry.get<TH1>(HIST("global/hTrkCheck"))->Fill(tmpTrkCheck);
 
       // inv mass of 3pi + 1e
-      p1.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
-      p2.SetXYZM(trk.px(), trk.py(), trk.pz(), MassElectron);
-      mass3pi1e[counterTmp] = (p - p1 + p2).Mag();
+      // p1.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
+      p1.SetXYZT(trk.px(), trk.py(), trk.pz(), energy(trk.px(), trk.py(), trk.pz(), MassPiPlus));
+      // p2.SetXYZM(trk.px(), trk.py(), trk.pz(), MassElectron);
+      p2.SetXYZT(trk.px(), trk.py(), trk.pz(), energy(trk.px(), trk.py(), trk.pz(), MassElectron));
+      mass3pi1e[counterTmp] = (p - p1 + p2).mag();
 
       v1.SetXYZ(trk.px(), trk.py(), trk.pz());
       for (const auto& trk1 : PVContributors) {
@@ -2472,14 +2491,15 @@ struct TauTau13topo {
       trkTime[counterTmp] = trk.trackTime();
       trkTimeRes[counterTmp] = trk.trackTimeRes();
 
-      p1.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
+      // p1.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
+      p1.SetXYZT(trk.px(), trk.py(), trk.pz(), energy(trk.px(), trk.py(), trk.pz(),MassPiPlus));
       tmpMomentum[counterTmp] = p1.P();
       tmpPt[counterTmp] = p1.Pt();
       tmpDedx[counterTmp] = trk.tpcSignal();
       tmpTofNsigmaEl[counterTmp] = trk.tofNSigmaEl();
 
       deltaPhiTmp = calculateDeltaPhi(p - p1, p1);
-      pi3invMass[counterTmp] = (p - p1).Mag();
+      pi3invMass[counterTmp] = (p - p1).mag();
       pi3pt[counterTmp] = (p - p1).Pt();
       pi3deltaPhi[counterTmp] = deltaPhiTmp;
       pi3assymav[counterTmp] = (p1.Pt() - (scalarPtsum - p1.Pt()) / 3.) / (p1.Pt() + (scalarPtsum - p1.Pt()) / 3.);
@@ -3342,7 +3362,8 @@ struct TauTau13topo {
         countGen++;
         if (mcParticle.isPhysicalPrimary()) {
           countBoth++;
-          if (mcParticle.pdgCode() != 22 && std::abs(mcParticle.pdgCode()) != 12 && std::abs(mcParticle.pdgCode()) != 14 && std::abs(mcParticle.pdgCode()) != 16 && mcParticle.pdgCode() != 130 && mcParticle.pdgCode() != 111) {
+          // if (mcParticle.pdgCode() != 22 && std::abs(mcParticle.pdgCode()) != 12 && std::abs(mcParticle.pdgCode()) != 14 && std::abs(mcParticle.pdgCode()) != 16 && mcParticle.pdgCode() != 130 && mcParticle.pdgCode() != 111) {
+	  if (mcParticle.pdgCode() != kGamma && std::abs(mcParticle.pdgCode()) != kNuE && std::abs(mcParticle.pdgCode()) != kNuMu && std::abs(mcParticle.pdgCode()) != kNuTau && mcParticle.pdgCode() != kK0Long && mcParticle.pdgCode() != kPi0) {
             countCharged++;
 
             registryMC.get<TH1>(HIST("globalMC/hMCetaGen"))->Fill(mcParticle.eta());
@@ -3352,7 +3373,8 @@ struct TauTau13topo {
 
             if (mcParticle.has_mothers()) {
               auto const& mother = mcParticle.mothers_first_as<aod::McParticles>();
-              if (std::abs(mother.pdgCode()) == 15) {
+              // if (std::abs(mother.pdgCode()) == 15) {
+	      if (std::abs(mother.pdgCode()) == kTauMinus) {
                 countChargedFromTau++;
               } // mother is tau
             } // mc particle has mother
@@ -3363,7 +3385,8 @@ struct TauTau13topo {
       //
       // tau+/-
       //
-      if (std::abs(mcParticle.pdgCode()) == 15) { // tau+/-
+      // if (std::abs(mcParticle.pdgCode()) == 15) { // tau+/-
+      if (std::abs(mcParticle.pdgCode()) == kTauMinus) { // 15 = tau+/-
         countTau++;
         if (countTau <= 2) {
           etaTau[countTau - 1] = mcParticle.eta();
@@ -3380,15 +3403,15 @@ struct TauTau13topo {
         if (mcParticle.has_daughters()) {
           for (const auto& daughter : mcParticle.daughters_as<aod::McParticles>()) {
             // pions from tau
-            if (std::abs(daughter.pdgCode()) == 211) { // 211 = pi+
+            if (std::abs(daughter.pdgCode()) == kPiPlus) { // 211 = pi+
               pionCounter++;
               tmpPionIndex = daughter.index(); // returns index of daughter of tau, not in the event, not in the MC particles
               if (std::abs(daughter.eta()) > 0.9)
                 partFromTauInEta = false;
             } // end of pion check
             // electron from tau
-            if (std::abs(daughter.pdgCode()) == 11) { // 11 = electron
-              if (daughter.pdgCode() == 11)
+            if (std::abs(daughter.pdgCode()) == kElectron) { // 11 = electron
+              if (daughter.pdgCode() == kElectron)
                 flagElPlusElMinus = true;
               registryMC.get<TH1>(HIST("electronMC/hMCeta"))->Fill(daughter.eta());
               registryMC.get<TH1>(HIST("electronMC/hMCphi"))->Fill(daughter.phi());
@@ -3403,8 +3426,8 @@ struct TauTau13topo {
                 partFromTauInEta = false;
             } // end of electron check
             // muon from tau
-            if (std::abs(daughter.pdgCode()) == 13) {
-              if (daughter.pdgCode() == 13)
+            if (std::abs(daughter.pdgCode()) == kMuonMinus) { // 13
+              if (daughter.pdgCode() == kMuonMinus) // 13
                 flagMuPlusMuMinus = true;
               muonFound = !muonFound;
               partPt = static_cast<float>(daughter.pt());
@@ -3420,7 +3443,7 @@ struct TauTau13topo {
             singlePionFound = true;
             singlePionIndex = tmpPionIndex;
             auto mcPartTmp = mcParticle.daughters_as<aod::McParticles>().begin() + singlePionIndex;
-            if (mcPartTmp.pdgCode() == -211)
+            if (mcPartTmp.pdgCode() == kPiMinus) // -211
               flagPiPlusPiMinus = true;
             partPt = static_cast<float>(mcPartTmp.pt());
             // motherOfSinglePionIndex = mcParticle.index();
@@ -3561,7 +3584,8 @@ struct TauTau13topo {
     bool tauInRapidity = true;
     bool partFromTauInEta = true;
 
-    TLorentzVector tmp(0., 0., 0., 0.);
+    // TLorentzVector tmp(0., 0., 0., 0.);
+    ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> tmp(0., 0., 0., 0.);
 
     // get reconstructed collisions associated to generated collision
     // auto const& collisions  = collisionsFull.sliceBy(colPerMcCollision, mcCollision.globalIndex());
@@ -3574,12 +3598,13 @@ struct TauTau13topo {
     for (const auto& mcParticle : mcParticles) {
       // LOGF(info, "<tautau13topo_MC> mcParticle pdg %d",  mcParticle.pdgCode());
       if (mcParticle.isPhysicalPrimary()) {
-        if (mcParticle.pdgCode() != 22 && std::abs(mcParticle.pdgCode()) != 12 && std::abs(mcParticle.pdgCode()) != 14 && std::abs(mcParticle.pdgCode()) != 16 && mcParticle.pdgCode() != 130 && mcParticle.pdgCode() != 111) {
+        // if (mcParticle.pdgCode() != 22 && std::abs(mcParticle.pdgCode()) != 12 && std::abs(mcParticle.pdgCode()) != 14 && std::abs(mcParticle.pdgCode()) != 16 && mcParticle.pdgCode() != 130 && mcParticle.pdgCode() != 111) {
+	if (mcParticle.pdgCode() != kGamma && std::abs(mcParticle.pdgCode()) != kNuE && std::abs(mcParticle.pdgCode()) != kNuMu && std::abs(mcParticle.pdgCode()) != kNuTau && mcParticle.pdgCode() != kK0Long && mcParticle.pdgCode() != kPi0) {
           if (mcParticle.has_mothers()) {
             auto const& mother = mcParticle.mothers_first_as<aod::UDMcParticles>();
             // LOGF(info, "<tautau13topo_MC> mcParticle has mother %d",mother.pdgCode());
             tmp.SetPxPyPzE(mother.px(), mother.py(), mother.pz(), mother.e());
-            if (std::abs(mother.pdgCode()) == 15) {
+            if (std::abs(mother.pdgCode()) == kTauMinus) { // 15
               if (std::abs(rapidity(mother.e(), mother.pz())) > 0.9)
                 // if (std::abs(tmp.Rapidity()) > 0.9)
                 tauInRapidity = false;
@@ -3587,10 +3612,10 @@ struct TauTau13topo {
                 // if (std::abs(tmp.Eta()) > 0.9)
                 partFromTauInEta = false;
 
-              if (std::abs(mcParticle.pdgCode()) == 11) {
+              if (std::abs(mcParticle.pdgCode()) == kElectron) { // 11
                 index1ProngMC = mcParticle.index();
                 is1ProngElectronMC = true;
-              } else if (std::abs(mcParticle.pdgCode()) == 13) {
+              } else if (std::abs(mcParticle.pdgCode()) == kMuonMinus) { // 13
                 index1ProngMC = mcParticle.index();
                 // is1ProngMuonMC = true;
               }
@@ -3638,10 +3663,10 @@ struct TauTau13topo {
       // // motherIndex[i] = (tmpMC.mothers_first_as<aod::UDMcParticles>()).globalIndex();
       // }
       int motherIndex1Pi = motherIndex[0];
-      int motherIndexNew = -1;
+      int motherIndexNew = 3; // was -1
       int nDifferences = 0;
       for (int i = 1; i < 4; i++) {
-        if (motherIndex1Pi != motherIndex[i]) { // the same mother index
+        if (motherIndex1Pi != motherIndex[i]) { // the same mother (tau) index
           nDifferences++;
           motherIndexNew = i;
         }
@@ -3654,7 +3679,7 @@ struct TauTau13topo {
       // if (!onlyPi) LOGF(info, "ERROR: should be 4 pions, but they are not!");
     } // end of special check for pi + 3pi
 
-    int index3ProngMC[3];
+    int index3ProngMC[3] = {0, 0, 0}; // initialised of request 
     if (index1ProngMC > 0) { // electron or muon case + 3pi
       int index3pi = 0;
       for (int i = 0; i < 4; i++) {
@@ -3673,7 +3698,8 @@ struct TauTau13topo {
     auto const& tmpPion2MC = mcParticles.begin() + index3ProngMC[1];
     auto const& tmpPion3MC = mcParticles.begin() + index3ProngMC[2];
 
-    if (std::abs(tmpPion1MC.pdgCode()) == 211 && std::abs(tmpPion2MC.pdgCode()) == 211 && std::abs(tmpPion3MC.pdgCode()) == 211)
+    //if (std::abs(tmpPion1MC.pdgCode()) == 211 && std::abs(tmpPion2MC.pdgCode()) == 211 && std::abs(tmpPion3MC.pdgCode()) == 211)
+    if (std::abs(tmpPion1MC.pdgCode()) == kPiPlus && std::abs(tmpPion2MC.pdgCode()) == kPiPlus && std::abs(tmpPion3MC.pdgCode()) == kPiPlus) // 211 211 211
       is3prong3PiMC = true;
 
     //
@@ -4003,8 +4029,10 @@ struct TauTau13topo {
         registryMC.get<TH1>(HIST("global1MCrec/hNTracks"))->Fill(groupedTracks.size());
         registryMC.get<TH1>(HIST("global1MCrec/hNTracksPV"))->Fill(nPVTracks);
 
-        TLorentzVector p, p1;
-        p.SetXYZM(0., 0., 0., 0.);
+        // TLorentzVector p, p1;
+	ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> p, p1;
+        // p.SetXYZM(0., 0., 0., 0.);
+	p.SetXYZT(0., 0., 0., 0.);
         TVector3 v1(0, 0, 0);
         TVector3 v2(0, 0, 0);
         float scalarPtsum = 0;
@@ -4038,10 +4066,13 @@ struct TauTau13topo {
           float tmpPhiData = phi(tmptrack.px(), tmptrack.py());
           registryMC.get<TH2>(HIST("global1MCrec/hTrackEtaPhiPV"))->Fill(tmpEtaData, tmpPhiData);
           registryMC.get<TH1>(HIST("global1MCrec/hTrackPtPV"))->Fill(tmptrack.pt());
-          p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), MassPiPlus); // in case of ghost
+          // p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), MassPiPlus); // in case of ghost
+	  p1.SetXYZT(v1.X(), v1.Y(), v1.Z(), energy(v1.X(), v1.Y(), v1.Z(), MassPiPlus)); // in case of ghost
 
           if (trackMCId[i] >= 0) {
-            p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), (std::abs(tmptrack.udMcParticle().pdgCode()) == 211 ? MassPiPlus : MassElectron));
+            // p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), (std::abs(tmptrack.udMcParticle().pdgCode()) == 211 ? MassPiPlus : MassElectron));
+	    // p1.SetXYZT(v1.X(), v1.Y(), v1.Z(), energy(v1.X(), v1.Y(), v1.Z(), (std::abs(tmptrack.udMcParticle().pdgCode()) == 211 ? MassPiPlus : MassElectron)));
+	    p1.SetXYZT(v1.X(), v1.Y(), v1.Z(), energy(v1.X(), v1.Y(), v1.Z(), (std::abs(tmptrack.udMcParticle().pdgCode()) == kPiPlus ? MassPiPlus : MassElectron))); // 211
             float tmpPt = pt(tmptrack.udMcParticle().px(), tmptrack.udMcParticle().py());
             float tmpEta = eta(tmptrack.udMcParticle().px(), tmptrack.udMcParticle().py(), tmptrack.udMcParticle().pz());
             float tmpPhi = phi(tmptrack.udMcParticle().px(), tmptrack.udMcParticle().py());
@@ -4156,7 +4187,7 @@ struct TauTau13topo {
         //
         // temporary control variables per event with combinatorics
         float pttot = p.Pt();
-        float mass4pi = p.Mag();
+        float mass4pi = p.mag();
         int counterTmp = 0;
 
         float nSigmaEl[4];
@@ -4199,9 +4230,11 @@ struct TauTau13topo {
           auto const tmptrack = groupedTracks.begin() + trackId[i];
           // if (tmptrack.hasTOF()) trkHasTof[i] = true;
           v1.SetXYZ(tmptrack.px(), tmptrack.py(), tmptrack.pz());
-          p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), MassPiPlus); // in case of ghost
+          // p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), MassPiPlus); // in case of ghost
+	  p1.SetXYZT(v1.X(), v1.Y(), v1.Z(), energy(v1.X(), v1.Y(), v1.Z(), MassPiPlus)); // in case of ghost
           if (trackMCId[i] >= 0) {
-            p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), (i == matchedElIndexToData ? MassElectron : MassPiPlus));
+            // p1.SetXYZM(v1.X(), v1.Y(), v1.Z(), (i == matchedElIndexToData ? MassElectron : MassPiPlus));
+	    p1.SetXYZT(v1.X(), v1.Y(), v1.Z(), energy(v1.X(), v1.Y(), v1.Z(), (i == matchedElIndexToData ? MassElectron : MassPiPlus)));
           }
 
           nSigmaEl[counterTmp] = tmptrack.tpcNSigmaEl();
@@ -4243,7 +4276,7 @@ struct TauTau13topo {
           tmpTofNsigmaEl[counterTmp] = tmptrack.tofNSigmaEl();
 
           deltaPhiTmp = calculateDeltaPhi(p - p1, p1);
-          pi3invMass[counterTmp] = (p - p1).Mag();
+          pi3invMass[counterTmp] = (p - p1).mag();
           pi3pt[counterTmp] = (p - p1).Pt();
           pi3deltaPhi[counterTmp] = deltaPhiTmp;
           pi3assymav[counterTmp] = (p1.Pt() - (scalarPtsum - p1.Pt()) / 3.) / (p1.Pt() + (scalarPtsum - p1.Pt()) / 3.);
@@ -4994,10 +5027,12 @@ struct TauTau13topo {
     int npT100 = 0;
     //    int qtot = 0;
     int8_t qtot = 0;
-    TLorentzVector p;
+    // TLorentzVector p;
+    ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> p;
     for (const auto& trk : PVContributors) {
       qtot += trk.sign();
-      p.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
+      // p.SetXYZM(trk.px(), trk.py(), trk.pz(), MassPiPlus);
+      p.SetXYZT(trk.px(), trk.py(), trk.pz(), energy(trk.px(), trk.py(), trk.pz(), MassPiPlus));
       if (std::abs(p.Eta()) < trkEtacut)
         nEtaIn15++; // 0.9 is a default
       if (trk.pt() > 0.1)
