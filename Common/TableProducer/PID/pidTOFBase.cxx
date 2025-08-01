@@ -20,10 +20,10 @@
 #include <vector>
 
 // O2 includes
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/AnalysisTask.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "TOFBase/EventTimeMaker.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/AnalysisTask.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <TOFBase/EventTimeMaker.h>
 
 // O2Physics includes
 #include "TableHelper.h"
@@ -34,8 +34,8 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/HistogramRegistry.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::framework;

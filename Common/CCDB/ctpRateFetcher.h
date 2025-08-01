@@ -12,7 +12,7 @@
 #ifndef COMMON_CCDB_CTPRATEFETCHER_H_
 #define COMMON_CCDB_CTPRATEFETCHER_H_
 
-#include "CCDB/BasicCCDBManager.h"
+#include <CCDB/BasicCCDBManager.h>
 
 #include <string>
 
