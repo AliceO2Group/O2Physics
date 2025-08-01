@@ -11,11 +11,11 @@
 
 #include "ctpRateFetcher.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsCTP/Configuration.h"
-#include "DataFormatsCTP/Scalers.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsCTP/Configuration.h>
+#include <DataFormatsCTP/Scalers.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
 
 #include <map>
 #include <string>

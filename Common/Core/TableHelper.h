@@ -18,9 +18,9 @@
 #ifndef COMMON_CORE_TABLEHELPER_H_
 #define COMMON_CORE_TABLEHELPER_H_
 
-#include "Framework/Configurable.h"
-#include "Framework/InitContext.h"
-#include "Framework/RunningWorkflowInfo.h"
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/RunningWorkflowInfo.h>
 
 #include <string>
 

@@ -24,9 +24,9 @@
 #include <utility>
 #include <vector>
 // ROOT includes
-#include "TFile.h"
-#include "TRandom.h"
-#include "TSystem.h"
+#include <TFile.h>
+#include <TRandom.h>
+#include <TSystem.h>
 
 // O2 includes
 #include "MetadataHelper.h"
@@ -39,13 +39,13 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Tools/ML/model.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
 
 using namespace o2;
 using namespace o2::framework;

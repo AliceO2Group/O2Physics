@@ -17,15 +17,15 @@
 #ifndef COMMON_CORE_FFITWEIGHTS_H_
 #define COMMON_CORE_FFITWEIGHTS_H_
 
-#include "TCollection.h"
-#include "TFile.h"
-#include "TH1D.h"
-#include "TH2D.h"
-#include "TH3D.h"
-#include "TMath.h"
-#include "TNamed.h"
-#include "TObjArray.h"
-#include "TString.h"
+#include <TCollection.h>
+#include <TFile.h>
+#include <TH1D.h>
+#include <TH2D.h>
+#include <TH3D.h>
+#include <TMath.h>
+#include <TNamed.h>
+#include <TObjArray.h>
+#include <TString.h>
 
 #include <algorithm>
 #include <complex>

@@ -19,8 +19,8 @@
 #ifndef COMMON_TOOLS_MULTIPLICITY_MULTCALIBRATOR_H_
 #define COMMON_TOOLS_MULTIPLICITY_MULTCALIBRATOR_H_
 
-#include "TH1D.h"
-#include "TNamed.h"
+#include <TH1D.h>
+#include <TNamed.h>
 
 #include <iostream>
 #include <map>

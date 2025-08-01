@@ -27,12 +27,12 @@
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DetectorsCommonDataFormats/AlignParam.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DetectorsCommonDataFormats/AlignParam.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
 
 #include <TComplex.h>
 #include <TH3F.h>

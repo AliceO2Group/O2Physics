@@ -17,11 +17,10 @@
 ///        These are the basic storage elements to be kept in the CCDB
 ///
 
-#include "PID/ParamBase.h"
+#include <Framework/Logger.h>
+#include <PID/ParamBase.h>
 
-#include "Framework/Logger.h"
-
-#include "TFile.h"
+#include <TFile.h>
 
 #include <vector>
 

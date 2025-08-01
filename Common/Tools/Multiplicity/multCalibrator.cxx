@@ -18,15 +18,15 @@
 //
 #include "multCalibrator.h"
 
-#include "TArrayF.h"
-#include "TArrayL64.h"
-#include "TDirectory.h"
-#include "TFile.h"
-#include "TH1D.h"
-#include "TH1F.h"
-#include "TList.h"
-#include "TProfile.h"
-#include "TStopwatch.h"
+#include <TArrayF.h>
+#include <TArrayL64.h>
+#include <TDirectory.h>
+#include <TFile.h>
+#include <TH1D.h>
+#include <TH1F.h>
+#include <TList.h>
+#include <TProfile.h>
+#include <TStopwatch.h>
 
 #include <iostream> // FIXME
 

@@ -24,16 +24,16 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/ConfigParamSpec.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TList.h"
+#include <TList.h>
 
 #include <algorithm>
 #include <map>

@@ -19,9 +19,9 @@
 
 #include "Common/Core/RecoDecay.h"
 
-#include "CommonConstants/MathConstants.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "ReconstructionDataFormats/Vertex.h"
+#include <CommonConstants/MathConstants.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/Vertex.h>
 
 #include <utility> // std::move
 
