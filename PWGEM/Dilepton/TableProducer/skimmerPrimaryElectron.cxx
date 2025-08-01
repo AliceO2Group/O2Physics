@@ -63,8 +63,6 @@ struct skimmerPrimaryElectron {
   Produces<aod::EMPrimaryElectrons> emprimaryelectrons;
   Produces<aod::EMPrimaryElectronsCov> emprimaryelectronscov;
 
-  // Produces<aod::EMPrimaryElectrons_004> emprimaryelectrons004;
-
   // Configurables
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
