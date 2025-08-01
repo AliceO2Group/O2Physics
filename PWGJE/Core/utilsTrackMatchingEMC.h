@@ -63,10 +63,6 @@ MatchResult matchTracksToCluster(
   const std::size_t nTracks = trackEta.size();
   MatchResult result;
 
-  result.matchIndexTrack.resize(nClusters);
-  result.matchDeltaPhi.resize(nClusters);
-  result.matchDeltaEta.resize(nClusters);
-
   if (nClusters == 0 || nTracks == 0) {
     // There are no jets, so nothing to be done.
     return result;
@@ -78,6 +74,10 @@ MatchResult matchTracksToCluster(
   if (trackPhi.size() != trackEta.size()) {
     throw std::invalid_argument("track collection eta and phi sizes don't match. Check the inputs.");
   }
+
+  result.matchIndexTrack.resize(nClusters);
+  result.matchDeltaPhi.resize(nClusters);
+  result.matchDeltaEta.resize(nClusters);
 
   // Build the KD-trees using vectors
   // We build two trees:
