@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file twoTrackResonanceQa.cxx
+/// \file femtounitedTwotrackresonanceQa.cxx
 /// \brief Tasks that reads the particle tables and fills QA histograms for vzeros
 /// \author Anton Riedel, TU München, anton.riedel@cern.ch
 
@@ -43,7 +43,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::femtounited;
 
-struct TwoTrackResonanceQa {
+struct FemtounitedTwotrackresonanceQa {
 
   // setup tables
   using Collisions = FUCols;
@@ -151,7 +151,7 @@ struct TwoTrackResonanceQa {
       phiHistManager.fill(phi, tracks);
     }
   };
-  PROCESS_SWITCH(TwoTrackResonanceQa, processPhis, "Process Phis", true);
+  PROCESS_SWITCH(FemtounitedTwotrackresonanceQa, processPhis, "Process Phis", true);
 
   void processRho0s(FilteredCollision const& col, Rho0s const& /*rho0s*/, Tracks const& tracks)
   {
@@ -161,7 +161,7 @@ struct TwoTrackResonanceQa {
       rho0HistManager.fill(rho0, tracks);
     }
   };
-  PROCESS_SWITCH(TwoTrackResonanceQa, processRho0s, "Process Rho0s", false);
+  PROCESS_SWITCH(FemtounitedTwotrackresonanceQa, processRho0s, "Process Rho0s", false);
 
   void processKstar0s(FilteredCollision const& col, Kstar0s const& /*kstar0s*/, Tracks const& tracks)
   {
@@ -171,13 +171,13 @@ struct TwoTrackResonanceQa {
       kstar0HistManager.fill(kstar0, tracks);
     }
   };
-  PROCESS_SWITCH(TwoTrackResonanceQa, processKstar0s, "Process Kstar0s", false);
+  PROCESS_SWITCH(FemtounitedTwotrackresonanceQa, processKstar0s, "Process Kstar0s", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<TwoTrackResonanceQa>(cfgc),
+    adaptAnalysisTask<FemtounitedTwotrackresonanceQa>(cfgc),
   };
   return workflow;
 }

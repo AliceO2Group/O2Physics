@@ -1,4 +1,4 @@
-// Copyright 2019-2024 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file pairTrackTrack.cxx
+/// \file femtounitedPairTrackTrack.cxx
 /// \brief Tasks that computes correlation between two tracks
 /// \author Anton Riedel, TU München, anton.riedel@cern.ch
 
@@ -45,7 +45,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::femtounited;
 
-struct PairTrackTrack {
+struct FemtounitedPairTrackTrack {
 
   // setup tables
   using Collisions = FUCols;
@@ -174,7 +174,7 @@ struct PairTrackTrack {
       pairprocesshelpers::processSameEvent(trackSlice1, trackSlice2, trackHistManager1, trackHistManager2, pairHistManagerSe, cprSe, pc);
     }
   }
-  PROCESS_SWITCH(PairTrackTrack, processSameEvent, "Enable processing same event processing", true);
+  PROCESS_SWITCH(FemtounitedPairTrackTrack, processSameEvent, "Enable processing same event processing", true);
 
   void processMixedEvent(FilteredCollisions const& cols, Tracks const& /*tracks*/)
   {
@@ -208,14 +208,14 @@ struct PairTrackTrack {
       }
     }
   }
-  PROCESS_SWITCH(PairTrackTrack, processMixedEvent, "Enable processing mixed event processing", true);
+  PROCESS_SWITCH(FemtounitedPairTrackTrack, processMixedEvent, "Enable processing mixed event processing", true);
 };
 
 WorkflowSpec
   defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<PairTrackTrack>(cfgc),
+    adaptAnalysisTask<FemtounitedPairTrackTrack>(cfgc),
   };
   return workflow;
 }

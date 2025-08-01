@@ -1,5 +1,4 @@
-// Copyright 2019-2024 CERN andhcopyright holders of ALICE O2.
-//
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -10,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file femtoUnitedProducer.cxx
+/// \file femtounitedProducer.cxx
 /// \brief Tasks that produces the all femto tables
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
@@ -75,7 +74,7 @@ using Run3PpCascades = CascDatas;
 } // namespace consumeddata
 } // namespace o2::analysis::femtounited
 
-struct FemtoUnitedProducer {
+struct FemtounitedProducer {
   SliceCache cache;
   // preslicing
   Preslice<Tracks> perColTracks = track::collisionId;
@@ -259,22 +258,22 @@ struct FemtoUnitedProducer {
     kstar0Sels.configure(confKstar0Bits, confKstarFilters, confResonanceDaughterFilters);
     kstarBar0Sels.configure(confKstar0Bits, confKstarFilters, confResonanceDaughterFilters);
 
-    trackSel.printSelections(trackselection::TrackSelsName, trackselection::TrackSelsToString);
+    trackSel.printSelections(trackselection::trackSelsName, trackselection::trackSelsToString);
 
     // tracks are produced by default
     if (ConfOptions.produceK0short.value || ConfOptions.produceLambda.value) {
       produceV0s = true;
-      k0shortSel.printSelections(v0selection::k0shortSelsName, v0selection::V0SelesNames);
-      lambdaSel.printSelections(v0selection::lambdaSelsName, v0selection::V0SelesNames);
-      antiLambdaSel.printSelections(v0selection::antiLambdaSelsName, v0selection::V0SelesNames);
+      k0shortSel.printSelections(v0selection::k0shortSelsName, v0selection::v0SelesNames);
+      lambdaSel.printSelections(v0selection::lambdaSelsName, v0selection::v0SelesNames);
+      antiLambdaSel.printSelections(v0selection::antiLambdaSelsName, v0selection::v0SelesNames);
     }
     if (ConfOptions.producePhi.value || ConfOptions.produceRho0.value || ConfOptions.produceKstar0.value) {
       produceResonances = true;
     }
     if (ConfOptions.produceXi.value || ConfOptions.produceOmega.value) {
       produceCascades = true;
-      xiSel.printSelections(cascadeselection::xiSelsName, cascadeselection::CascadeSelsNames);
-      omegaSel.printSelections(cascadeselection::omegaSelsName, cascadeselection::CascadeSelsNames);
+      xiSel.printSelections(cascadeselection::xiSelsName, cascadeselection::cascadeSelsNames);
+      omegaSel.printSelections(cascadeselection::omegaSelsName, cascadeselection::cascadeSelsNames);
     }
     if ((doprocessTracksRun3pp + doprocessTracksV0sRun3pp + doprocessTracksV0sCascadesRun3pp) > 1) {
       LOG(fatal) << "Only one process function can be activated.";
@@ -808,7 +807,7 @@ struct FemtoUnitedProducer {
       processTracks<modes::System::kPP_Run3, modes::Mode::kANALYSIS>(col, bcs, tracksWithItsPid);
     }
   }
-  PROCESS_SWITCH(FemtoUnitedProducer, processTracksRun3pp, "Process tracks", true);
+  PROCESS_SWITCH(FemtounitedProducer, processTracksRun3pp, "Process tracks", true);
 
   // process tracks and v0s
   void processTracksV0sRun3pp(Filtered<consumeddata::Run3PpCollisions>::iterator const& col,
@@ -825,7 +824,7 @@ struct FemtoUnitedProducer {
       processTracksV0s<modes::System::kPP_Run3, modes::Mode::kANALYSIS>(col, bcs, tracks, tracksWithItsPid, v0s);
     }
   };
-  PROCESS_SWITCH(FemtoUnitedProducer, processTracksV0sRun3pp, "Process tracks and v0s", false);
+  PROCESS_SWITCH(FemtounitedProducer, processTracksV0sRun3pp, "Process tracks and v0s", false);
 
   // process tracks, v0s and casacades
   void processTracksV0sCascadesRun3pp(Filtered<consumeddata::Run3PpCollisions>::iterator const& col,
@@ -843,11 +842,11 @@ struct FemtoUnitedProducer {
       processTracksV0sCascades<modes::System::kPP_Run3, modes::Mode::kANALYSIS>(col, bcs, tracks, tracksWithItsPid, v0s, cascades);
     }
   }
-  PROCESS_SWITCH(FemtoUnitedProducer, processTracksV0sCascadesRun3pp, "Provide Tracks, V0s and Cascades for Run3", false);
+  PROCESS_SWITCH(FemtounitedProducer, processTracksV0sCascadesRun3pp, "Provide Tracks, V0s and Cascades for Run3", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<FemtoUnitedProducer>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<FemtounitedProducer>(cfgc)};
   return workflow;
 }

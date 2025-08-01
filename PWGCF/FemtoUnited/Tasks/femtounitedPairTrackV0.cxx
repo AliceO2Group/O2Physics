@@ -1,4 +1,4 @@
-// Copyright 2019-2024 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file pairTrackV0.cxx
+/// \file femtounitedPairTrackV0.cxx
 /// \brief Tasks that computes correlation between tracks and lambdas
 /// \author Anton Riedel, TU München, anton.riedel@cern.ch
 
@@ -48,7 +48,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::femtounited;
 
-struct PairTrackV0 {
+struct FemtounitedPairTrackV0 {
 
   // setup tables
   using Collisions = FUCols;
@@ -196,7 +196,7 @@ struct PairTrackV0 {
     cprSe.setMagField(col.magField());
     pairprocesshelpers::processSameEvent(trackSlice, lambdaSlice, tracks, trackHistManager, lambdaHistManager, pairHistManagerSe, cprSe, pc);
   }
-  PROCESS_SWITCH(PairTrackV0, processLambdaSameEvent, "Enable processing same event processing for tracks and lambdas", true);
+  PROCESS_SWITCH(FemtounitedPairTrackV0, processLambdaSameEvent, "Enable processing same event processing for tracks and lambdas", true);
 
   void processLambdaMixedEvent(FilteredCollisions const& cols, Tracks const& tracks)
   {
@@ -214,7 +214,7 @@ struct PairTrackV0 {
         LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
     }
   }
-  PROCESS_SWITCH(PairTrackV0, processLambdaMixedEvent, "Enable processing mixed event processing for tracks and lambdas", true);
+  PROCESS_SWITCH(FemtounitedPairTrackV0, processLambdaMixedEvent, "Enable processing mixed event processing for tracks and lambdas", true);
 
   void processK0shortSameEvent(FilteredCollision const& col, Tracks const& tracks, K0shorts const& /*k0shorts*/)
   {
@@ -227,7 +227,7 @@ struct PairTrackV0 {
     cprSe.setMagField(col.magField());
     pairprocesshelpers::processSameEvent(trackSlice, k0shortSlice, tracks, trackHistManager, k0shortHistManager, pairHistManagerSe, cprSe, pc);
   }
-  PROCESS_SWITCH(PairTrackV0, processK0shortSameEvent, "Enable processing same event processing for tracks and k0shorts", false);
+  PROCESS_SWITCH(FemtounitedPairTrackV0, processK0shortSameEvent, "Enable processing same event processing for tracks and k0shorts", false);
 
   void processK0shortMixedEvent(FilteredCollisions const& cols, Tracks const& tracks)
   {
@@ -245,13 +245,13 @@ struct PairTrackV0 {
         LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
     }
   }
-  PROCESS_SWITCH(PairTrackV0, processK0shortMixedEvent, "Enable processing mixed event processing for tracks and k0shorts", false);
+  PROCESS_SWITCH(FemtounitedPairTrackV0, processK0shortMixedEvent, "Enable processing mixed event processing for tracks and k0shorts", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<PairTrackV0>(cfgc),
+    adaptAnalysisTask<FemtounitedPairTrackV0>(cfgc),
   };
   return workflow;
 }

@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file cascadeQa.cxx
+/// \file femtounitedCascadeQa.cxx
 /// \brief Tasks that reads the particle tables and fills QA histograms for vzeros
 /// \author Anton Riedel, TU München, anton.riedel@cern.ch
 
@@ -42,7 +42,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::femtounited;
 
-struct CascadeQa {
+struct FemtounitedCascadeQa {
 
   // setup tables
   using Collisions = FUCols;
@@ -138,7 +138,7 @@ struct CascadeQa {
       xiHistManager.fill(xi, tracks);
     }
   }
-  PROCESS_SWITCH(CascadeQa, processXis, "Process Xis", true);
+  PROCESS_SWITCH(FemtounitedCascadeQa, processXis, "Process Xis", true);
 
   void processOmegas(FilteredCollision const& col, Omegas const& /*omegas*/, Tracks const& tracks)
   {
@@ -148,13 +148,13 @@ struct CascadeQa {
       omegaHistManager.fill(omega, tracks);
     }
   }
-  PROCESS_SWITCH(CascadeQa, processOmegas, "Process Omegas", false);
+  PROCESS_SWITCH(FemtounitedCascadeQa, processOmegas, "Process Omegas", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<CascadeQa>(cfgc),
+    adaptAnalysisTask<FemtounitedCascadeQa>(cfgc),
   };
   return workflow;
 }

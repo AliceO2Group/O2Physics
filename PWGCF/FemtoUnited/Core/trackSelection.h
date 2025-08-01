@@ -23,6 +23,7 @@
 
 #include <cmath>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace o2::analysis::femtounited
@@ -171,8 +172,8 @@ enum TrackSels {
   kTrackSelsMax
 };
 
-const std::string TrackSelsName = std::string("Track Selection Object");
-const std::unordered_map<TrackSels, std::string> TrackSelsToString = {
+const char trackSelsName[] = "Track Selection Object";
+const std::unordered_map<TrackSels, std::string> trackSelsToString = {
   {kTPCnClsMin, "Min. number of TPC clusters"},
   {kTPCcRowsMin, "Min. number of crossed TPC rows"},
   {kTPCsClsMax, "Max. number of shared TPC clusters"},

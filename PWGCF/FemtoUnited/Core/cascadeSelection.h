@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <cmath>
 #include <string>
+#include <unordered_map>
 
 namespace o2::analysis::femtounited
 {
@@ -131,9 +132,9 @@ enum CascadeSels {
   kCascadeSelsMax
 };
 
-const std::string omegaSelsName = std::string("Omega Selection Object");
-const std::string xiSelsName = std::string("Xi Selection Object");
-const std::unordered_map<CascadeSels, std::string> CascadeSelsNames = {
+const char omegaSelsName[] = "Omega Selection Object";
+const char xiSelsName[] = "Xi Selection Object";
+const std::unordered_map<CascadeSels, std::string> cascadeSelsNames = {
   {kCascadeCpaMin, "Cascade CPA Min"},
   {kCascadeDcaDaughMax, "Cascade DCA Daughters Max"},
   {kCascadeTransRadMin, "Cascade Transverse Radius Min"},

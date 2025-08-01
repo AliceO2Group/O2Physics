@@ -1,5 +1,5 @@
-// Copyright 2019-2024 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.femtobaseder
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
@@ -41,11 +41,9 @@ DECLARE_SOA_COLUMN(LambdaDauDca, lambdaDauDca, float);             //! Lambda da
 DECLARE_SOA_COLUMN(LambdaTransRadius, lambdaTransRadius, float);   //! Lambda transvers radius
 DECLARE_SOA_COLUMN(LambdaDcaToPv, lambdaDcaToPv, float);           //! Lambda transvers radius
 
-// id columns for daughter lambda
-// DECLARE_SOA_INDEX_COLUMN_FULL(LambdaDaughter, lambdaDaughter, int32_t, FULambdas, "_LambdaDaughter"); //!
-
 // id columns for bachelor
-DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int32_t, FUTracks, "_Bachelor"); //!
+// following same style as strangeness tables were we do not store the id of the lambda, but its daughters
+DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int32_t, FUTracks, "_Bachelor"); //! bachelor id
 
 } // namespace femtocascades
 

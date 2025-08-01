@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <cmath>
 #include <string>
+#include <unordered_map>
 
 namespace o2::analysis::femtounited
 {
@@ -139,13 +140,10 @@ enum V0Seles {
   kV0SelsMax
 };
 
-#include <string>
-#include <unordered_map>
-
-const std::string lambdaSelsName = std::string("Lambda selection object");
-const std::string antiLambdaSelsName = std::string("AntiLambda selection object");
-const std::string k0shortSelsName = std::string("K0short selection object");
-const std::unordered_map<V0Seles, std::string> V0SelesNames = {
+const char lambdaSelsName[] = "Lambda selection object";
+const char antiLambdaSelsName[] = "AntiLambda selection object";
+const char k0shortSelsName[] = "K0short selection object";
+const std::unordered_map<V0Seles, std::string> v0SelesNames = {
   {kCpaMin, "Min. CPA (cosine pointing angle)"},
   {kDcaDaughMax, "Max. DCA of the daughters at decay vertex"},
   {kDecayVtxMax, "Max. distance of decay vertex in x,y,z"},

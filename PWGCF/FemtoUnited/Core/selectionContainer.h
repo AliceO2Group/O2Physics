@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file selectionContainer.h
-/// \brief SelectionContainer - small container holding selections of an observable
+/// \brief Defines the SelectionContainer class for managing selection criteria in analysis.
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
 #ifndef PWGCF_FEMTOUNITED_CORE_SELECTIONCONTAINER_H_
@@ -26,6 +26,7 @@
 #include <bitset>
 #include <cmath>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace o2::analysis::femtounited
@@ -45,7 +46,7 @@ enum LimitType { kUpperLimit,            ///< simple upper limit for the value, 
                  kAbsLowerFunctionLimit  ///< lower limit of an absolute value given by a function, e.g. |DCA_xy| < f(pt)
 };
 
-std::unordered_map<LimitType, std::string> LimitTypeAsStrings = {
+std::unordered_map<LimitType, std::string> limitTypeAsStrings = {
   {kUpperLimit, "Upper Limit"},
   {kAbsUpperLimit, "Absolute Upper Limit"},
   {kLowerLimit, "Lower Limit"},
@@ -58,9 +59,10 @@ std::unordered_map<LimitType, std::string> LimitTypeAsStrings = {
 
 }; // namespace limits
 
-/// Simple class for storing selections of a single observable
-/// \tparam T Data type used for the selection values (float/int/...)
-/// \tparam BitmaskType Compute number of selections from BitmaskType (should be some unsigned integer)
+/// \class SelectionContainer
+/// \brief Class for storing and evaluating multiple selection thresholds for a single observable.
+/// \tparam T Data type for selection values (mostly floats)
+/// \tparam BitmaskType Type used for bitmask storage (e.g., uint8_t, uint32_t).
 template <typename T, typename BitmaskType>
 class SelectionContainer
 {
@@ -68,10 +70,11 @@ class SelectionContainer
   /// Default constructor
   SelectionContainer() {}
 
-  /// Constructor
-  /// \param values Vector of values for the selection
-  /// \param limitType Type of limit of the selection
-  /// \param SkipLastBit Boolean whether to skip the last bit
+  /// \brief Constructor for static value-based selection.
+  /// \param SelectionValues Vector of values for the selection.
+  /// \param limitType Type of limit (from limits::LimitType).
+  /// \param SkipMostPermissiveBit Whether to skip the most permissive bit in the bitmask.
+  /// \param IsMinimalCut Whether this selection should be treated as a minimal required cut.
   SelectionContainer(std::vector<T> const& SelectionValues, limits::LimitType limitType, bool SkipMostPermissiveBit, bool IsMinimalCut)
     : mSelectionValues(SelectionValues),
       mLimitType(limitType),
@@ -89,13 +92,14 @@ class SelectionContainer
     sortSelections();
   }
 
-  /// Constructor
-  /// \param baseName base name for TF1 object
-  /// \param lowerLimit upper limit of the TF1 object
-  /// \param upperLimit lower limit of the TF1 object
-  /// \param function vector of strings for initializing of the TF1 object
-  /// \param limitType Type of limit of the selection
-  /// \param SkipLastBit Boolean whether to skip the last bit
+  /// \brief Constructor for function-based dynamic selection.
+  /// \param baseName Base name for TF1 functions.
+  /// \param lowerLimit Lower bound for TF1 domain.
+  /// \param upperLimit Upper bound for TF1 domain.
+  /// \param functions Vector of strings defining TF1 functions.
+  /// \param limitType Type of limit.
+  /// \param skipMostPermissiveBit Whether to skip the most permissive bit in the bitmask.
+  /// \param IsMinimalCut Whether this selection should be treated as a minimal required cut.
   SelectionContainer(std::string const& baseName, T lowerLimit, T upperLimit, std::vector<std::string> const& functions, limits::LimitType limitType, bool skipMostPermissiveBit, bool IsMinimalCut)
     : mLimitType(limitType),
       mSkipMostPermissiveBit(skipMostPermissiveBit),
@@ -118,10 +122,9 @@ class SelectionContainer
     }
   }
 
-  /// Destructor
   virtual ~SelectionContainer() = default;
 
-  /// Sort selections accroding to limit type
+  /// \brief Sort static selection values based on the limit type.
   void sortSelections()
   {
     switch (mLimitType) {
@@ -139,7 +142,8 @@ class SelectionContainer
     }
   }
 
-  // sort limit functions
+  /// \brief Sort selection functions based on evaluation at a given point.
+  /// \param value Point at which to evaluate the functions for ordering.
   void sortFunctions(T value)
   {
     switch (mLimitType) {
@@ -156,7 +160,8 @@ class SelectionContainer
     }
   }
 
-  // update the selection limits depending on the passed function
+  /// \brief Update selection limits using internal functions evaluated at a given value.
+  /// \param value Input value to evaluate functions at.
   void updateLimits(T value)
   {
     // functions are ordered so just add the values in the same order
@@ -165,20 +170,16 @@ class SelectionContainer
     }
   }
 
-  /// Check which selections are fulfilled
-  /// \param observable Value of the variable to be checked
+  /// \brief Evaluate which selection criteria are fulfilled for a given value.
+  /// \param value Value of the observable to evaluate.
   void evaluate(T value)
   {
     // better safe than sorry and reset the bitmask before you evaluate and set minimal selection to true
     mBitmask.reset();
-    // the values are ordered, from most loost to most tight, as soon as one comparison is not true, we can break out of the loop
+    // the values are ordered, from most loose to most tight, as soon as one comparison is not true, we can break out of the loop
     bool breakLoop = false;
     // iterate over all limits and set the corresponding bit if we pass the selection, otherwise break out as soon as we can
-    // only break if the observable is used for the minimal selection, for example
-    // an example, we configured |eta|<0.8 and  |nsigma_TPC_proton| < 3 and |nsigma_TPC_pion| < 3
-    // all tracks need to be within |eta|<0.8, so we mark is as minimal selection
-    // but the nsigma_TPC > 3 for proton hypothesis and we configured for protons and pions
-    // the tracks would still be valid to use
+    // only break if the observable is used for the minimal selection
     for (size_t i = 0; i < mSelectionValues.size(); i++) {
       switch (mLimitType) {
         case (limits::kUpperLimit):
@@ -230,8 +231,8 @@ class SelectionContainer
     }
   }
 
-  /// Return the bitmask of the selections
-  /// \return bitmask
+  /// \brief Retrieve the bitmask indicating which selections were passed.
+  /// \return Bitset representing passed selections.
   std::bitset<sizeof(BitmaskType) * CHAR_BIT> getBitmask() const
   {
     // if we do not skip the last bit, return full bitmask
@@ -244,8 +245,8 @@ class SelectionContainer
     }
   }
 
-  /// Check whether the minimal selection is fulfilled or not
-  /// \return Whether the selection is fulfilled or not
+  /// \brief Check whether the minimal cut condition is fulfilled.
+  /// \return True if minimal selection is fulfilled, false otherwise.
   bool passesAsMinimalCut() const
   {
     if (mIsMinimalCut) {
@@ -257,6 +258,8 @@ class SelectionContainer
     }
   }
 
+  /// \brief Check whether any optional cuts are fulfilled.
+  /// \return True if at least one optional cut is passed.
   bool passesAsOptionalCut() const
   {
     // if selection is marekd as minimal cut, we return false by default
@@ -268,15 +271,16 @@ class SelectionContainer
     }
   }
 
-  /// Return loosest selection value
-  ///  The values are ordered, the loosest value will be the first one
-  /// \return loosest selection
+  /// \brief Get the loosest (most permissive) selection value.
+  /// \return First (loosest) selection value.
   T getLoosestSelection() const { return mSelectionValues.at(0); }
 
-  /// Check whether  any selections are configured
+  /// \brief Check if there are any selection values configured.
+  /// \return True if no selections are configured.
   bool isEmpty() const { return mSelectionValues.empty(); }
 
-  /// Get shift for final bitmask
+  /// \brief Get the number of bits to shift for the final bitmask.
+  /// \return Number of bits to shift.
   int getShift() const
   {
     if (mSelectionValues.empty()) {
@@ -289,9 +293,20 @@ class SelectionContainer
     }
   }
 
-  std::string getLimitTypeAsString() const { return limits::LimitTypeAsStrings[mLimitType]; }
+  /// \brief Get string representation of the limit type.
+  /// \return String name of the limit type.
+  std::string getLimitTypeAsString() const { return limits::limitTypeAsStrings[mLimitType]; }
+
+  /// \brief Get a copy of all selection values.
+  /// \return Vector of selection values.
   std::vector<T> getSelectionValues() const { return mSelectionValues; }
+
+  /// \brief Check if this container is marked as minimal cut.
+  /// \return True if minimal cut, false otherwise.
   bool isMinimalCut() const { return mIsMinimalCut; }
+
+  /// \brief Check whether the most permissive bit is skipped.
+  /// \return True if skipped, false otherwise.
   bool skipMostPermissiveBit() const { return mSkipMostPermissiveBit; }
 
  private:

@@ -1,4 +1,4 @@
-// Copyright 2019-2024 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file v0Qa.cxx
+/// \file femtounitedV0Qa.cxx
 /// \brief QA task for v0s
 /// \author Anton Riedel, TU München, anton.riedel@cern.ch
 
@@ -42,7 +42,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::femtounited;
 
-struct V0Qa {
+struct FemtounitedV0Qa {
 
   // setup for collisions
   colhistmanager::CollisionHistManager<modes::Mode::kANALYSIS_QA> colHistManager;
@@ -136,7 +136,7 @@ struct V0Qa {
       k0shortHistManager.fill(k0short, tracks);
     }
   }
-  PROCESS_SWITCH(V0Qa, processK0short, "Process k0shorts", false);
+  PROCESS_SWITCH(FemtounitedV0Qa, processK0short, "Process k0shorts", false);
 
   void processLambda(FilteredCollision const& col, Lambdas const& /*lambdas*/, Tracks const& tracks)
   {
@@ -146,13 +146,13 @@ struct V0Qa {
       lambdaHistManager.fill(lambda, tracks);
     }
   }
-  PROCESS_SWITCH(V0Qa, processLambda, "Process lambdas", true);
+  PROCESS_SWITCH(FemtounitedV0Qa, processLambda, "Process lambdas", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<V0Qa>(cfgc),
+    adaptAnalysisTask<FemtounitedV0Qa>(cfgc),
   };
   return workflow;
 }

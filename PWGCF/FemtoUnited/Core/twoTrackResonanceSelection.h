@@ -366,20 +366,20 @@ class TwoTrackResonanceSelection : public BaseSelection<float, o2::aod::femtodat
   bool checkHypothesis()
   {
     if constexpr (o2::analysis::femtounited::modes::isEqual(reso, o2::analysis::femtounited::modes::TwoTrackResonance::kRho0)) {
-      return (this->passesOptionalCut(kPosDauTpcPion) || this->passesOptionalCut(kPosDauTofPion) || this->passesOptionalCut(kPosDauTpctofPion)) &&
-             (this->passesOptionalCut(kNegDauTpcPion) || this->passesOptionalCut(kNegDauTofPion) || this->passesOptionalCut(kNegDauTpctofPion));
+      return (this->passesOptionalSelection(kPosDauTpcPion) || this->passesOptionalSelection(kPosDauTofPion) || this->passesOptionalSelection(kPosDauTpctofPion)) &&
+             (this->passesOptionalSelection(kNegDauTpcPion) || this->passesOptionalSelection(kNegDauTofPion) || this->passesOptionalSelection(kNegDauTpctofPion));
     }
     if constexpr (o2::analysis::femtounited::modes::isEqual(reso, o2::analysis::femtounited::modes::TwoTrackResonance::kPhi)) {
-      return (this->passesOptionalCut(kPosDauTpcKaon) || this->passesOptionalCut(kPosDauTofKaon) || this->passesOptionalCut(kPosDauTpctofKaon)) &&
-             (this->passesOptionalCut(kNegDauTpcKaon) || this->passesOptionalCut(kNegDauTofKaon) || this->passesOptionalCut(kNegDauTpctofKaon));
+      return (this->passesOptionalSelection(kPosDauTpcKaon) || this->passesOptionalSelection(kPosDauTofKaon) || this->passesOptionalSelection(kPosDauTpctofKaon)) &&
+             (this->passesOptionalSelection(kNegDauTpcKaon) || this->passesOptionalSelection(kNegDauTofKaon) || this->passesOptionalSelection(kNegDauTpctofKaon));
     }
     if constexpr (o2::analysis::femtounited::modes::isEqual(reso, o2::analysis::femtounited::modes::TwoTrackResonance::kKstar0)) {
-      return (this->passesOptionalCut(kPosDauTpcKaon) || this->passesOptionalCut(kPosDauTofKaon) || this->passesOptionalCut(kPosDauTpctofKaon)) &&
-             (this->passesOptionalCut(kNegDauTpcPion) || this->passesOptionalCut(kNegDauTofPion) || this->passesOptionalCut(kNegDauTpctofPion));
+      return (this->passesOptionalSelection(kPosDauTpcKaon) || this->passesOptionalSelection(kPosDauTofKaon) || this->passesOptionalSelection(kPosDauTpctofKaon)) &&
+             (this->passesOptionalSelection(kNegDauTpcPion) || this->passesOptionalSelection(kNegDauTofPion) || this->passesOptionalSelection(kNegDauTpctofPion));
     }
     if constexpr (o2::analysis::femtounited::modes::isEqual(reso, o2::analysis::femtounited::modes::TwoTrackResonance::kKstarBar0)) {
-      return (this->passesOptionalCut(kPosDauTpcPion) || this->passesOptionalCut(kPosDauTofPion) || this->passesOptionalCut(kPosDauTpctofPion)) &&
-             (this->passesOptionalCut(kNegDauTpcKaon) || this->passesOptionalCut(kNegDauTofKaon) || this->passesOptionalCut(kNegDauTpctofKaon));
+      return (this->passesOptionalSelection(kPosDauTpcPion) || this->passesOptionalSelection(kPosDauTofPion) || this->passesOptionalSelection(kPosDauTpctofPion)) &&
+             (this->passesOptionalSelection(kNegDauTpcKaon) || this->passesOptionalSelection(kNegDauTofKaon) || this->passesOptionalSelection(kNegDauTpctofKaon));
     }
     return false;
   }

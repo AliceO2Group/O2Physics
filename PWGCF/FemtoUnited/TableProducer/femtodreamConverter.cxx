@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file femtoDreamConverter.cxx
+/// \file femtodreamConverter.cxx
 /// \brief converter task for femtoDream to femtoUnited
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
@@ -26,7 +26,7 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct FemtoDreamConverter {
+struct FemtodreamConverter {
 
   // femto collisions
   Produces<FUCols> outputCollisions;
@@ -88,6 +88,6 @@ struct FemtoDreamConverter {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<FemtoDreamConverter>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<FemtodreamConverter>(cfgc)};
   return workflow;
 }

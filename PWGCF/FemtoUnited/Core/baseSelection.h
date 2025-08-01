@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file baseSelection.h
-/// \brief Definition of the BaseSelection class
+/// \brief  Defines the BaseSelection class for managing and evaluating multiple selections over multiple observables.
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
 #ifndef PWGCF_FEMTOUNITED_CORE_BASESELECTION_H_
@@ -23,29 +23,37 @@
 #include <algorithm>
 #include <iomanip>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace o2::analysis::femtounited
 {
+
 /// \class BaseSelection
-/// \brief Base class to contain all cuts and assemble bitmask
-/// \tparam T Data type used for the selections (float/int/...)
-/// \tparam BitmaskType Compute size of the bitmask from BitmaskType
-/// \tparam NObservables Number of observables
+/// \brief Template class for managing selection criteria across multiple observables.
+///
+/// This class manages an array of SelectionContainer objects, each corresponding to a specific observable.
+/// It evaluates which selections are fulfilled, assembles a final bitmask, and tracks required vs. optional cuts.
+///
+/// \tparam T Type of observable values (mostly floats).
+/// \tparam BitmaskType Type used for internal bitmask operations (e.g., uint32_t, uint64_t).
+/// \tparam NumObservables Total number of observables handled.
 template <typename T, typename BitmaskType, size_t NumObservables>
 class BaseSelection
 {
  public:
-  /// Constructor
+  /// \brief Default constructor.
   BaseSelection() {}
 
-  /// Destructor
+  /// \brief Destructor
   virtual ~BaseSelection() = default;
 
-  /// Pass the Configurable of selection values in the analysis task to the selection class
-  /// \param configSelections Vector of configurables containing the values employed for the selection
-  /// \param Observable Observable to be employed for the selection
-  /// \param limitType Type of the selection limit
+  /// \brief Add a static-value based selection for a specific observable.
+  /// \param selectionValues Vector of threshold values.
+  /// \param observableIndex Index of the observable.
+  /// \param limitType Type of limit (from limits::LimitType).
+  /// \param skipMostPermissiveBit Whether to skip the loosest threshold in the bitmask.
+  /// \param isMinimalCut Whether this cut is mandatory or optional.
   void addSelection(std::vector<T> const& selectionValues, int observableIndex, limits::LimitType limitType, bool skipMostPermissiveBit, bool isMinimalCut)
   {
     if (static_cast<size_t>(observableIndex) >= NumObservables) {
@@ -57,15 +65,20 @@ class BaseSelection
     }
     // check if any cut is optional
     if (!isMinimalCut) {
-      mHasOptionalCuts = true;
+      mHasOptionalSelection = true;
     }
     mSelectionContainers.at(observableIndex) = SelectionContainer<T, BitmaskType>(selectionValues, limitType, skipMostPermissiveBit, isMinimalCut);
   }
 
-  /// Pass the Configurable of selection values in the analysis task to the selection class
-  /// \param configSelection Vector from configurable containing the values employed for the selection
-  /// \param observableType Observable to be employed for the selection
-  /// \param limitType Type of the selection limit
+  /// \brief Add a function-based selection for a specific observable.
+  /// \param baseName Base name for TF1 functions.
+  /// \param lowerLimit Lower bound for the TF1 domain.
+  /// \param upperLimit Upper bound for the TF1 domain.
+  /// \param selectionValues Function definitions as strings.
+  /// \param observableIndex Index of the observable.
+  /// \param limitType Type of limit.
+  /// \param skipMostPermissiveBit Whether to skip the loosest threshold in the bitmask.
+  /// \param isMinimalCut Whether this cut is mandatory or optional.
   void addSelection(std::string const& baseName, T lowerLimit, T upperLimit, std::vector<std::string> const& selectionValues, int observableIndex, limits::LimitType limitType, bool skipMostPermissiveBit, bool isMinimalCut)
   {
     if (static_cast<size_t>(observableIndex) >= NumObservables) {
@@ -78,20 +91,24 @@ class BaseSelection
     mSelectionContainers.at(observableIndex) = SelectionContainer<T, BitmaskType>(baseName, lowerLimit, upperLimit, selectionValues, limitType, skipMostPermissiveBit, isMinimalCut);
   }
 
+  /// \brief Update the limits of a function-based selection for a specific observable.
+  /// \param observable Index of the observable.
+  /// \param value Value at which to evaluate the selection functions.
   void updateLimits(int observable, T value) { mSelectionContainers.at(observable).updateLimits(value); }
 
+  /// \brief Reset the internal bitmask and evaluation flags before evaluating a new event.
   void reset()
   {
     mFinalBitmask.reset();
-    mPassesMinimalCuts = true;
+    mPassesMinimalSelections = true;
     // will be true if no optional cut as been defined and
     // will be set to false if we have optional cuts (but will be set to true in the case at least one optional cut succeeds)
-    mPassesOptionalCuts = !mHasOptionalCuts;
+    mPassesOptionalSelections = !mHasOptionalSelection;
   }
 
-  /// set bitmask for a given observable
-  /// \param observable Observable to be checked
-  /// \param value Value of the observable
+  /// \brief Evaluate a single observable against its configured selections.
+  /// \param observableIndex Index of the observable.
+  /// \param value Value of the observable.
   void evaluateObservable(int observableIndex, T value)
   {
     // if there are no selections configured, bail out
@@ -100,37 +117,41 @@ class BaseSelection
     }
     // if any previous observable did not pass minimal selections, there is no point in setting bitmask for other observables
     // minimal selection for each observable is computed after adding it
-    if (mPassesMinimalCuts == false) {
+    if (mPassesMinimalSelections == false) {
       return;
     }
     // set bitmask for given observable
     mSelectionContainers.at(observableIndex).evaluate(value);
     // check if minimal selction for this observable holds
     if (mSelectionContainers.at(observableIndex).passesAsMinimalCut() == false) {
-      mPassesMinimalCuts = false;
+      mPassesMinimalSelections = false;
     }
     // check if any optional selection holds
     if (mSelectionContainers.at(observableIndex).passesAsOptionalCut() == true) {
-      mPassesOptionalCuts = true;
+      mPassesOptionalSelections = true;
     }
   }
 
-  /// check if minimal Selections are passed
+  /// \brief Check if all required (minimal) and optional cuts are passed.
+  /// \return True if all required and at least one optional cut (if present) is passed.
   bool passesAllRequiredSelections() const
   {
-    return mPassesMinimalCuts && mPassesOptionalCuts;
+    return mPassesMinimalSelections && mPassesOptionalSelections;
   }
 
-  bool passesOptionalCut(int observableIndex) const
+  /// \brief Check if the optional selection for a specific observable is passed.
+  /// \param observableIndex Index of the observable.
+  /// \return True if at least one optional selection is fulfilled.
+  bool passesOptionalSelection(int observableIndex) const
   {
     return mSelectionContainers.at(observableIndex).passesAsOptionalCut();
   }
 
-  /// assemble final bitmask
+  /// \brief Assemble the global selection bitmask from individual observable selections.
   void assembleBitmask()
   {
     // if minimal selections are not passed, just set bitmask to 0
-    if (mPassesMinimalCuts == false) {
+    if (mPassesMinimalSelections == false) {
       mFinalBitmask.reset();
       return;
     }
@@ -147,11 +168,15 @@ class BaseSelection
     }
   }
 
+  /// \brief Retrieve the assembled bitmask as an integer value.
+  /// \return The combined selection bitmask.
   BitmaskType getBitmask() const { return static_cast<BitmaskType>(mFinalBitmask.to_ullong()); }
 
-#include <iomanip> // for setw, left
-#include <sstream>
-
+  /// \brief Print detailed information about all configured selections.
+  ///
+  /// \tparam MapType Type used in the observable name map (usually an enum or int).
+  /// \param objectName Name of the current object (e.g. particle species).
+  /// \param observableNames Map from observable index to human-readable names.
   template <typename MapType>
   void printSelections(const std::string& objectName, const std::unordered_map<MapType, std::string>& observableNames) const
   {
@@ -179,9 +204,9 @@ class BaseSelection
       const auto& values = container.getSelectionValues();
       bool skipMostPermissive = container.skipMostPermissiveBit();
 
-      constexpr int valWidth = 15;
-      constexpr int bitWidth = 20;
-      constexpr int maskWidth = 12;
+      int valWidth = 15;
+      int bitWidth = 20;
+      int maskWidth = 12;
 
       for (size_t j = 0; j < values.size(); ++j) {
         std::stringstream line;
@@ -214,9 +239,9 @@ class BaseSelection
   std::array<SelectionContainer<T, BitmaskType>, NumObservables> mSelectionContainers = {}; ///< Array containing all selections
   std::bitset<sizeof(BitmaskType) * CHAR_BIT> mFinalBitmask = {};                           ///< final bitmaks
   size_t mNSelections = 0;                                                                  ///< Number of selections
-  bool mPassesMinimalCuts = true;                                                           ///< Set to true if all minimal (mandatory) cuts are passed
-  bool mHasOptionalCuts = false;                                                            ///< Set to true if at least one cut is optional
-  bool mPassesOptionalCuts = true;                                                          ///< Set to true if at least one optional (non-mandatory) cut is passed
+  bool mPassesMinimalSelections = true;                                                     ///< Set to true if all minimal (mandatory) selections are passed
+  bool mHasOptionalSelection = false;                                                       ///< Set to true if at least one selections is optional
+  bool mPassesOptionalSelections = true;                                                    ///< Set to true if at least one optional (non-mandatory) selections is passed
 };
 } // namespace o2::analysis::femtounited
 

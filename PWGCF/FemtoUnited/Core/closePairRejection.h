@@ -26,9 +26,11 @@
 
 #include <array>
 #include <map>
+#include <memory>
 #include <numeric>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <vector>
 
 namespace o2::analysis::femtounited
@@ -255,7 +257,7 @@ class ClosePairRejection
 
   void setMagField(float magField)
   {
-    for (auto& [_, rejection] : mRejections) {
+    for (auto const& [_, rejection] : mRejections) {
       rejection->setMagField(magField);
     }
   }
@@ -410,118 +412,6 @@ class ClosePairRejection
   bool mIsActivated = true;
 };
 
-//  {
-//     mHistogramRegistry = registry;
-//
-//       mHistogramRegistry->add(analysisDir + GetHistNamev2(kRadius8, HistTable), GetHistDesc(kRadius8, HistTable), GetHistType(kRadius8, HistTable), {Specs[kRadius8]});
-//     }
-//
-//     // if constexpr (isFlagSet(mode, modes::Mode::kQA)) {
-//     // std::string qaDir = std::string(prefix) + std::string(QaDir);
-//     // }
-//   }
-//
-//   void activate(bool activate) { mIsActivated = activate; }
-//   bool isActivated() const { return mIsActivated; }
-//   void setMagField(float magField) { mMagField = magField; }
-//   void setLimits(float detaMax, float dphistarMax)
-//   {
-//     mDetaMax = detaMax;
-//     mDphistarMax = dphistarMax;
-//   };
-//
-// 	void reset(){
-//
-// 		mSameCharge = true;
-// 	}
-//
-//   template <typename T1, typename T2>
-//   void compute(T1 const& track1, T2 const& track2)
-//   {
-//     if (track1.sign() != track2.sign()) {
-//       mSameCharge = false;
-//       return;
-//     }
-//     // reset
-//     mSameCharge = true;
-//     mDphistar.fill(0.f);
-//     mDeta = track1.eta() - track2.eta();
-//     mDphi = track1.phi() - track2.phi();
-//     for (size_t i = 0; i < kTpcRadius.size(); i++) {
-//       auto dphi1 = utils::dphistar(mMagField, kTpcRadius.at(i), track1.sign(), track1.pt(), track1.phi());
-//       auto dphi2 = utils::dphistar(mMagField, kTpcRadius.at(i), track2.sign(), track2.pt(), track2.phi());
-//       if (dphi1 && dphi2) {
-//         mDphistar.at(i) = (dphi1.value() - dphi2.value());
-//       } else {
-//         mDphistar.at(i) = 0;
-//       }
-//     }
-//     mAverageDphistar = std::accumulate(mDphistar.begin(), mDphistar.end(), 0.f) / mDphistar.size();
-//   }
-//
-//   template <typename T1, typename T2>
-//   void setPair(T1 const& track1, T2 const& track2)
-//   {
-//     if constexpr (modes::isEqual(pair, modes::Pairs::kTrackTrack)) {
-//       this->compute(track1, track2);
-//     }
-//   }
-//
-//   template <typename T1, typename T2, typename T3>
-//   void setPair(T1 const& particle, T2 const& track, T3 const& /*tracks*/)
-//   {
-//     if constexpr (modes::isEqual(pair, modes::Pairs::kTrackV0) ||
-//                   modes::isEqual(pair, modes::Pairs::kTrackResonance)) {
-//
-//       auto posDaughter = particle.template posDau_as<T3>();
-//       auto negDaughter = particle.template negDau_as<T3>();
-//
-//       if (track.sign() == posDaughter.sign()) {
-//         this->compute(track, posDaughter);
-//       } else if (track.sign() == negDaughter.sign()) {
-//         this->compute(track, negDaughter);
-//       } else {
-//         LOG(warn) << "Invalid charge combination in close pair rejection";
-//       }
-//     }
-//   }
-//
-//   bool isClosePair() const { return mSameCharge || (std::hypot(mAverageDphistar / mDphistarMax, mDeta / mDetaMax) < 1.); }
-//
-//   void fill()
-//   {
-//     if constexpr (isFlagSet(mode, modes::Mode::kANALYSIS)) {
-//       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kAverage, HistTable)), mDeta, mAverageDphistar);
-//       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kRadius0, HistTable)), mDeta, mDphistar.at(0));
-//       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kRadius1, HistTable)), mDeta, mDphistar.at(1));
-//       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kRadius2, HistTable)), mDeta, mDphistar.at(2));
-//       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kRadius3, HistTable)), mDeta, mDphistar.at(3));
-//       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kRadius4, HistTable)), mDeta, mDphistar.at(4));
-//       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kRadius5, HistTable)), mDeta, mDphistar.at(5));
-//       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kRadius6, HistTable)), mDeta, mDphistar.at(6));
-//       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kRadius7, HistTable)), mDeta, mDphistar.at(7));
-//       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kRadius8, HistTable)), mDeta, mDphistar.at(8));
-//     }
-//     // to be implemented
-//     // if constexpr (isFlagSet(mode, modes::Mode::kQA)) {
-//     // }
-//   }
-//
-//  private:
-//   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
-//   float mMagField = 0.f;
-//
-//   float mDphi = 0.f;
-//   float mDphistarMax = 0.f;
-//   float mAverageDphistar = 0.f;
-//   std::array<float, kNradii> mDphistar = {};
-//
-//   float mDetaMax = 0.f;
-//   float mDeta = 0.f;
-//
-//   bool mIsActivated = false;
-//   bool mSameCharge = true;
-// };
 }; // namespace closepairrejection
 }; // namespace o2::analysis::femtounited
 #endif // PWGCF_FEMTOUNITED_CORE_CLOSEPAIRREJECTION_H_

@@ -1,4 +1,4 @@
-// Copyright 2019-2024 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file trackQa.cxx
+/// \file femtounitedTrackQa.cxx
 /// \brief QA task for tracks
 /// \author Anton Riedel, TU München, anton.riedel@cern.ch
 
@@ -40,7 +40,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::femtounited;
 
-struct TrackQa {
+struct FemtounitedTrackQa {
 
   // setup tables
   using Collisions = FUCols;
@@ -93,7 +93,7 @@ WorkflowSpec
   defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<TrackQa>(cfgc),
+    adaptAnalysisTask<FemtounitedTrackQa>(cfgc),
   };
   return workflow;
 }
