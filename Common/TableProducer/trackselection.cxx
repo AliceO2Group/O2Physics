@@ -19,8 +19,7 @@
 
 #include "Common/Core/TrackSelection.h"
 
-#include "TableHelper.h"
-
+#include "Common/Core/TableHelper.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
