@@ -1559,7 +1559,7 @@ struct cascadeFlow {
         else if (v0.mAntiLambda() > V0Configs.MinMassLambda && v0.mAntiLambda() < V0Configs.MaxMassLambda)
           chargeIndex = 1;
         else {
-	  chargeIndex = 2; //these are bkg candidates
+          chargeIndex = 2; // these are bkg candidates
           histos.fill(HIST("hLambdaCandidate"), 4);
         }
       }
@@ -1601,11 +1601,11 @@ struct cascadeFlow {
         pzs2Lambda = cosThetaStarProton[0] * std::sin(2 * (v0.phi() - psiT0C)) / lambdav2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda;
         cos2ThetaLambda = cosThetaStarProton[0] * cosThetaStarProton[0];
         cosThetaLambda = cosThetaStarProton[0] / cascadev2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda;
-      } else if (chargeIndex ==1) {
+      } else if (chargeIndex == 1) {
         pzs2Lambda = cosThetaStarProton[1] * std::sin(2 * (v0.phi() - psiT0C)) / lambdav2::AlphaLambda[1] / meanCos2ThetaProtonFromLambda;
         cos2ThetaLambda = cosThetaStarProton[1] * cosThetaStarProton[1];
         cosThetaLambda = cosThetaStarProton[1] / cascadev2::AlphaLambda[1] / meanCos2ThetaProtonFromLambda;
-      } else { //I treat these bkg candidates as Lambdas for the purpose of calculating Pz
+      } else { // I treat these bkg candidates as Lambdas for the purpose of calculating Pz
         pzs2Lambda = cosThetaStarProton[0] * std::sin(2 * (v0.phi() - psiT0C)) / lambdav2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda;
         cos2ThetaLambda = cosThetaStarProton[0] * cosThetaStarProton[0];
         cosThetaLambda = cosThetaStarProton[0] / cascadev2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda;
