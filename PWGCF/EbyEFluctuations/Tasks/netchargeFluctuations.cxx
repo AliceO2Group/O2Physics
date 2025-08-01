@@ -44,7 +44,7 @@
 #include "TProfile2D.h"
 #include "TRandom3.h"
 
-#include <cstring>
+#include <string>
 #include <vector> // Include for std::vector
 
 using namespace o2;
