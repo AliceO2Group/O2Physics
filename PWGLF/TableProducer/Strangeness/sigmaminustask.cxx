@@ -55,7 +55,8 @@ struct sigmaminustask {
   {
     // Axes
     const AxisSpec ptAxis{100, -10, 10, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec nSigmaPiAxis{100, -5, 5, "n#sigma_{#pi}"};
+    const AxisSpec nSigmaPiAxis{1000, -1000, 1000, "n#sigma_{#pi}"};
+    const AxisSpec nSigmaPrAxis{1000, -1000, 1000, "n#sigma_{p}"};
     const AxisSpec sigmaMassAxis{100, 1.1, 1.4, "m (GeV/#it{c}^{2})"};
     const AxisSpec xiMassAxis{100, 1.2, 1.6, "m_{#Xi} (GeV/#it{c}^{2})"};
     const AxisSpec pdgAxis{10001, -5000, 5000, "PDG code"};
@@ -63,23 +64,30 @@ struct sigmaminustask {
 
     const AxisSpec ptResolutionAxis{100, -0.5, 0.5, "#it{p}_{T}^{rec} - #it{p}_{T}^{gen} (GeV/#it{c})"};
     const AxisSpec massResolutionAxis{100, -0.1, 0.1, "m_{rec} - m_{gen} (GeV/#it{c}^{2})"};
-
+    const AxisSpec boolAxis{2, -0.5, 1.5, "Boolean value (0=false, 1=true)"};
     // Event selection
     rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
     // Sigma-minus reconstruction
     rSigmaMinus.add("h2MassSigmaMinusPt", "h2MassSigmaMinusPt", {HistType::kTH2F, {ptAxis, sigmaMassAxis}});
     rSigmaMinus.add("h2SigmaMassVsXiMass", "h2SigmaMassVsXiMass", {HistType::kTH2F, {xiMassAxis, sigmaMassAxis}});
-    rSigmaMinus.add("h2NSigmaPiPt", "h2NSigmaPiPt", {HistType::kTH2F, {ptAxis, nSigmaPiAxis}});
+    rSigmaMinus.add("h2NSigmaTPCPiPt", "h2NSigmaTPCPiPt", {HistType::kTH2F, {ptAxis, nSigmaPiAxis}});
 
     if (doprocessMC) {
       // Add MC histograms if needed
       rSigmaMinus.add("h2MassPtMCRec", "h2MassPtMCRec", {HistType::kTH2F, {ptAxis, sigmaMassAxis}});
       rSigmaMinus.add("h2MassPtMCGen", "h2MassPtMCGen", {HistType::kTH2F, {ptAxis, sigmaMassAxis}});
 
-      rSigmaMinus.add("h2MassResolution_minus", "h2MassResolution_minus", {HistType::kTH2F, {sigmaMassAxis, massResolutionAxis}});
-      rSigmaMinus.add("h2PtResolution_minus", "h2PtResolution_minus", {HistType::kTH2F, {ptAxis, ptResolutionAxis}});
-      rSigmaMinus.add("h2MassResolution_plus", "h2MassResolution_plus", {HistType::kTH2F, {sigmaMassAxis, massResolutionAxis}});
-      rSigmaMinus.add("h2PtResolution_plus", "h2PtResolution_plus", {HistType::kTH2F, {ptAxis, ptResolutionAxis}});
+      rSigmaMinus.add("h2MassResolution", "h2MassResolution", {HistType::kTH2F, {ptAxis, massResolutionAxis}});
+      rSigmaMinus.add("h2PtResolution", "h2PtResolution", {HistType::kTH2F, {ptAxis, ptResolutionAxis}});
+      
+      rSigmaMinus.add("h2NSigmaTOFPiPt", "h2NSigmaTOFPiPt", {HistType::kTH2F, {ptAxis, nSigmaPiAxis}});
+      rSigmaMinus.add("h2NSigmaTOFPrPt", "h2NSigmaTOFPrPt", {HistType::kTH2F, {ptAxis, nSigmaPrAxis}});
+
+      // BC ID comparison histograms
+      rSigmaMinus.add("hMcCollIdCoherence", "McCollId (coll == daug)", {HistType::kTH1F, {boolAxis}});
+      rSigmaMinus.add("h2CollId_BCId", "(McCollId coherence) vs (EvSelBC == McBC)", {HistType::kTH2F, {boolAxis, boolAxis}});
+      rSigmaMinus.add("h2BCId_comp1", "(BC == McBC) vs (BC == EvSelBC)", {HistType::kTH2F, {boolAxis, boolAxis}});
+      rSigmaMinus.add("h2BCId_comp2", "(McBC == EvSelBC) vs (BC == EvSelBC)", {HistType::kTH2F, {boolAxis, boolAxis}});
     }
   }
 
@@ -114,7 +122,7 @@ struct sigmaminustask {
   }
   PROCESS_SWITCH(sigmaminustask, processData, "Data processing", true);
 
-  void processMC(CollisionsFullMC const& collisions, aod::KinkCands const& KinkCands, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, aod::McCollisions const&, TracksFull const&)
+  void processMC(CollisionsFullMC const& collisions, aod::KinkCands const& KinkCands, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC,  TracksFull const&, aod::McCollisions const&)
   {
     for (const auto& collision : collisions) {
       if (std::abs(collision.posZ()) > cutzvertex || !collision.sel8()) {
@@ -136,9 +144,10 @@ struct sigmaminustask {
           continue;
         }
 
+        // histograms filled with all kink candidates
         rSigmaMinus.fill(HIST("h2MassSigmaMinusPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
         rSigmaMinus.fill(HIST("h2SigmaMassVsXiMass"), kinkCand.mXiMinus(), kinkCand.mSigmaMinus());
-        rSigmaMinus.fill(HIST("h2NSigmaPiPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tpcNSigmaPi());
+        rSigmaMinus.fill(HIST("h2NSigmaTPCPiPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tpcNSigmaPi());
 
         // do MC association
         auto mcLabSigma = trackLabelsMC.rawIteratorAt(mothTrack.globalIndex());
@@ -171,14 +180,25 @@ struct sigmaminustask {
             if (collision.has_mcCollision()) {
               mcCollisionIdCheck = collision.mcCollision().globalIndex() == mcTrackPiDau.mcCollisionId();
             }
+            // Check bunch crossing ID coherence
+            auto mcCollision = mcTrackPiDau.template mcCollision_as<aod::McCollisions>();
+            bool BCId_vs_MCBCId = collision.bcId() == mcCollision.bcId();
+            bool BCId_vs_EvSel = collision.bcId() == collision.foundBCId();
+            bool EvSel_vs_MCBCId = collision.foundBCId() == mcCollision.bcId();
+
+            rSigmaMinus.fill(HIST("hMcCollIdCoherence"), static_cast<int>(mcCollisionIdCheck));
+            rSigmaMinus.fill(HIST("h2CollId_BCId"), static_cast<int>(mcCollisionIdCheck), static_cast<int>(EvSel_vs_MCBCId));
+            rSigmaMinus.fill(HIST("h2BCId_comp1"), static_cast<int>(BCId_vs_MCBCId), static_cast<int>(BCId_vs_EvSel));
+            rSigmaMinus.fill(HIST("h2BCId_comp2"), static_cast<int>(EvSel_vs_MCBCId), static_cast<int>(BCId_vs_EvSel));
 
             rSigmaMinus.fill(HIST("h2MassPtMCRec"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
-            if (mcTrackSigma.pdgCode() > 0) {
-              rSigmaMinus.fill(HIST("h2MassResolution_plus"), kinkCand.mSigmaMinus(), kinkCand.mSigmaMinus() - MotherMassMC);
-              rSigmaMinus.fill(HIST("h2PtResolution_plus"), kinkCand.ptMoth(), kinkCand.ptMoth() - MotherpTMC);
-            } else {
-              rSigmaMinus.fill(HIST("h2MassResolution_minus"), kinkCand.mSigmaMinus(), kinkCand.mSigmaMinus() - MotherMassMC);
-              rSigmaMinus.fill(HIST("h2PtResolution_minus"), kinkCand.ptMoth(), kinkCand.ptMoth() - MotherpTMC);
+            rSigmaMinus.fill(HIST("h2MassResolution"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus() - MotherMassMC);
+            rSigmaMinus.fill(HIST("h2PtResolution"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.ptMoth() - MotherpTMC);
+            
+            if (std::abs(mcTrackPiDau.pdgCode()) == 211) {
+              rSigmaMinus.fill(HIST("h2NSigmaTOFPiPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tofNSigmaPi());
+            } else if (std::abs(mcTrackPiDau.pdgCode()) == 2212) {
+              rSigmaMinus.fill(HIST("h2NSigmaTOFPrPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tofNSigmaPr());
             }
 
             // fill the output table with Mc information
@@ -250,3 +270,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<sigmaminustask>(cfgc)};
 }
+
