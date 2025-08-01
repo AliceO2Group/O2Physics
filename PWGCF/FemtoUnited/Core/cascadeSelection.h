@@ -90,7 +90,7 @@ struct ConfOmegaBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};        \
   o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Cascade"}; \
   o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Cascade"}; \
-  o2::framework::Configurable<o2::aod::femtodatatypes::CascadeMaskType> mask{"mask", 6, "Bitmask for cascade selection"};
+  o2::framework::Configurable<o2::aod::femtodatatypes::CascadeMaskType> mask{"mask", 0, "Bitmask for cascade selection"};
 
 struct ConfXiSelection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("XiSelection");
@@ -131,36 +131,59 @@ enum CascadeSels {
   kCascadeSelsMax
 };
 
+const std::string omegaSelsName = std::string("Omega Selection Object");
+const std::string xiSelsName = std::string("Xi Selection Object");
+const std::unordered_map<CascadeSels, std::string> CascadeSelsNames = {
+  {kCascadeCpaMin, "Cascade CPA Min"},
+  {kCascadeDcaDaughMax, "Cascade DCA Daughters Max"},
+  {kCascadeTransRadMin, "Cascade Transverse Radius Min"},
+
+  {kLambdaCpaMin, "Lambda CPA Min"},
+  {kLambdaDcaDauMax, "Lambda DCA Daughter Max"},
+  {kLambdaTransRadMin, "Lambda Transverse Radius Min"},
+  {kLambdaDcaToPvMin, "Lambda DCA to PV Min"},
+
+  {kDauAbsEtaMax, "Daughter Abs Eta Max"},
+  {kDauTpcClsMin, "Daughter TPC Clusters Min"},
+  {kDauDcaMin, "Daughter DCA Min"},
+
+  {kBachelorTpcPion, "Bachelor TPC Pion PID"},
+  {kBachelorTpcKaon, "Bachelor TPC Kaon PID"},
+
+  {kPosDauTpc, "Positive Daughter TPC PID"},
+  {kNegDauTpc, "Negative Daughter TPC PID"},
+
+  {kCascadeSelsMax, "Cascade Selections Max"}};
+
 /// \class FemtoDreamTrackCuts
 /// \brief Cut class to contain and execute all cuts applied to tracks
+template <modes::Cascade cascadeType>
 class CascadeSelection : public BaseSelection<float, o2::aod::femtodatatypes::CascadeMaskType, kCascadeSelsMax>
 {
  public:
   CascadeSelection() {}
   virtual ~CascadeSelection() = default;
 
-  template <o2::analysis::femtounited::modes::Cascade cascade, typename T1, typename T2>
+  template <typename T1, typename T2>
   void configure(T1 const& config, T2 const& filter)
   {
-    if constexpr (o2::analysis::femtounited::modes::isFlagSet(cascade, o2::analysis::femtounited::modes::Cascade::kXi)) {
+    if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
       mXiMassLowerLimit = filter.massXiMin.value;
       mXiMassUpperLimit = filter.massXiMax.value;
       mOmegaMassLowerLimit = filter.rejectMassOmegaMin.value;
       mOmegaMassUpperLimit = filter.rejectMassOmegaMax.value;
-      mType = o2::analysis::femtounited::modes::Cascade::kXi;
-      this->addSelection(config.bachelorTpcPion.value, kBachelorTpcPion, limits::kAbsUpperLimit, false, false);
+      this->addSelection(config.bachelorTpcPion.value, kBachelorTpcPion, limits::kAbsUpperLimit, true, true);
     }
-    if constexpr (o2::analysis::femtounited::modes::isFlagSet(cascade, o2::analysis::femtounited::modes::Cascade::kOmega)) {
+    if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
       mOmegaMassLowerLimit = filter.massOmegaMin.value;
       mOmegaMassUpperLimit = filter.massOmegaMax.value;
       mXiMassLowerLimit = filter.rejectMassXiMin.value;
       mXiMassUpperLimit = filter.rejectMassXiMax.value;
-      mType = o2::analysis::femtounited::modes::Cascade::kOmega;
-      this->addSelection(config.bachelorTpcKaon.value, kBachelorTpcKaon, limits::kAbsUpperLimit, false, false);
+      this->addSelection(config.bachelorTpcKaon.value, kBachelorTpcKaon, limits::kAbsUpperLimit, true, true);
     }
 
-    this->addSelection(config.posDauTpc.value, kPosDauTpc, limits::kAbsUpperLimit, false, false);
-    this->addSelection(config.negDauTpc.value, kNegDauTpc, limits::kAbsUpperLimit, false, false);
+    this->addSelection(config.posDauTpc.value, kPosDauTpc, limits::kAbsUpperLimit, true, true);
+    this->addSelection(config.negDauTpc.value, kNegDauTpc, limits::kAbsUpperLimit, true, true);
 
     this->addSelection(config.cascadeCpaMin.value, kCascadeCpaMin, limits::kLowerLimit, true, true);
     this->addSelection(config.cascadeTransRadMin.value, kCascadeTransRadMin, limits::kLowerLimit, true, true);
@@ -225,19 +248,16 @@ class CascadeSelection : public BaseSelection<float, o2::aod::femtodatatypes::Ca
   };
 
   template <typename T>
-  bool checkHypothesis(T const& cascade)
+  bool checkHypothesis(T const& cascadeCandidate)
   {
-
-    if (mType == o2::analysis::femtounited::modes::Cascade::kXi) {
-      return (this->passesOptionalCut(kBachelorTpcPion) && this->passesOptionalCut(kPosDauTpc) && this->passesOptionalCut(kNegDauTpc)) && // check PID of bachelor and lambda daughters
-             (mXiMassLowerLimit < cascade.mXi() && mXiMassUpperLimit > cascade.mXi()) &&                                                  // inside xi mass window
-             (cascade.mOmega() < mOmegaMassLowerLimit || cascade.mOmega() > mOmegaMassUpperLimit);                                        // outside omega mass window
+    // no need to check PID of the bachelor/daughters here, they are set as minimal cuts
+    if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
+      return (mXiMassLowerLimit < cascadeCandidate.mXi() && mXiMassUpperLimit > cascadeCandidate.mXi()) &&           // inside xi mass window
+             (cascadeCandidate.mOmega() < mOmegaMassLowerLimit || cascadeCandidate.mOmega() > mOmegaMassUpperLimit); // outside omega mass window
     }
-
-    if (mType == o2::analysis::femtounited::modes::Cascade::kOmega) {
-      return (this->passesOptionalCut(kBachelorTpcKaon) && this->passesOptionalCut(kPosDauTpc) && this->passesOptionalCut(kNegDauTpc)) && // check PID of bachelor and lambda daughters
-             (mOmegaMassLowerLimit < cascade.mOmega() && mOmegaMassUpperLimit > cascade.mOmega()) &&                                      // inside omega mass window
-             (cascade.mXi() < mXiMassLowerLimit || cascade.mXi() > mXiMassUpperLimit);                                                    // outside xi mass window
+    if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
+      return (mOmegaMassLowerLimit < cascadeCandidate.mOmega() && mOmegaMassUpperLimit > cascadeCandidate.mOmega()) && // inside omega mass window
+             (cascadeCandidate.mXi() < mXiMassLowerLimit || cascadeCandidate.mXi() > mXiMassUpperLimit);               // outside xi mass window
     }
     return false;
   }
@@ -248,8 +268,6 @@ class CascadeSelection : public BaseSelection<float, o2::aod::femtodatatypes::Ca
 
   float mOmegaMassLowerLimit = 0.f;
   float mOmegaMassUpperLimit = 999.f;
-
-  o2::analysis::femtounited::modes::Cascade mType;
 };
 } // namespace cascadeselection
 } // namespace o2::analysis::femtounited

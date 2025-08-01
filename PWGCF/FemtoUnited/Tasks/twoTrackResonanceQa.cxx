@@ -45,11 +45,6 @@ using namespace o2::analysis::femtounited;
 
 struct TwoTrackResonanceQa {
 
-  struct : ConfigurableGroup {
-    std::string prefix = std::string("Options");
-    Configurable<bool> correlatedPlots{"correlatedPlots", false, "Enable multidimensional histogramms. High memory consumption."};
-  } Options;
-
   // setup tables
   using Collisions = FUCols;
   using Collision = Collisions::iterator;
@@ -65,7 +60,7 @@ struct TwoTrackResonanceQa {
   SliceCache cache;
 
   // setup for collisions
-  colhistmanager::CollisionHistManager colHistManager;
+  colhistmanager::CollisionHistManager<modes::Mode::kANALYSIS_QA> colHistManager;
   colhistmanager::ConfCollisionBinning confCollisionBinning;
   collisionselection::ConfCollisionSelection collisionSelection;
   Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
@@ -76,7 +71,13 @@ struct TwoTrackResonanceQa {
   Preslice<Phis> perColPhis = aod::femtobase::stored::collisionId;
 
   twotrackresonancehistmanager::ConfPhiBinning confPhiBinning;
-  twotrackresonancehistmanager::TwoTrackResonanceHistManager<twotrackresonancehistmanager::PrefixPhi1> phiHistManager;
+  twotrackresonancehistmanager::TwoTrackResonanceHistManager<
+    twotrackresonancehistmanager::PrefixPhi,
+    trackhistmanager::PrefixResonancePosDaughterQa,
+    trackhistmanager::PrefixResonanceNegDaughterQa,
+    modes::Mode::kANALYSIS_QA,
+    modes::TwoTrackResonance::kPhi>
+    phiHistManager;
 
   // setup for rho0s
   twotrackresonanceselection::ConfRho0Selection confRho0Selection;
@@ -84,7 +85,13 @@ struct TwoTrackResonanceQa {
   Preslice<Rho0s> perColRhos = aod::femtobase::stored::collisionId;
 
   twotrackresonancehistmanager::ConfRho0Binning confRho0Binning;
-  twotrackresonancehistmanager::TwoTrackResonanceHistManager<twotrackresonancehistmanager::PrefixRho1> rho0HistManager;
+  twotrackresonancehistmanager::TwoTrackResonanceHistManager<
+    twotrackresonancehistmanager::PrefixRho,
+    trackhistmanager::PrefixResonancePosDaughterQa,
+    trackhistmanager::PrefixResonanceNegDaughterQa,
+    modes::Mode::kANALYSIS_QA,
+    modes::TwoTrackResonance::kRho0>
+    rho0HistManager;
 
   //  setup for kstar0s
   twotrackresonanceselection::ConfKstar0Selection confKstar0Selection;
@@ -92,15 +99,19 @@ struct TwoTrackResonanceQa {
   Preslice<Kstar0s> perColKstars = aod::femtobase::stored::collisionId;
 
   twotrackresonancehistmanager::ConfKstar0Binning confKstar0Binning;
-  twotrackresonancehistmanager::TwoTrackResonanceHistManager<twotrackresonancehistmanager::PrefixKstar1> kstar0HistManager;
+  twotrackresonancehistmanager::TwoTrackResonanceHistManager<
+    twotrackresonancehistmanager::PrefixKstar,
+    trackhistmanager::PrefixResonancePosDaughterQa,
+    trackhistmanager::PrefixResonanceNegDaughterQa,
+    modes::Mode::kANALYSIS_QA,
+    modes::TwoTrackResonance::kKstar0>
+    kstar0HistManager;
 
   // setup for daughters
   trackhistmanager::ConfResonancePosDauBinning confPosDaughterBinning;
   trackhistmanager::ConfResonancePosDauQaBinning confPosDaughterQaBinning;
-  trackhistmanager::TrackHistManager<trackhistmanager::PrefixResonancePosDaughterQa> posDaughterManager;
   trackhistmanager::ConfResonanceNegDauBinning confNegDaughterBinning;
   trackhistmanager::ConfResonanceNegDauQaBinning confNegDaughterQaBinning;
-  trackhistmanager::TrackHistManager<trackhistmanager::PrefixResonanceNegDaughterQa> negDaughterManager;
 
   HistogramRegistry hRegistry{"ResonanceQA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -108,13 +119,10 @@ struct TwoTrackResonanceQa {
   {
     // create a map for histogram specs
     auto colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
-    colHistManager.init<modes::Mode::kANALYSIS_QA>(&hRegistry, colHistSpec);
+    colHistManager.init(&hRegistry, colHistSpec);
 
     auto posDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confPosDaughterBinning, confPosDaughterQaBinning);
-    posDaughterManager.init<modes::Mode::kANALYSIS_QA>(&hRegistry, posDaughterHistSpec);
-
     auto negDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confNegDaughterBinning, confNegDaughterQaBinning);
-    negDaughterManager.init<modes::Mode::kANALYSIS_QA>(&hRegistry, negDaughterHistSpec);
 
     if ((doprocessPhis + doprocessRho0s + doprocessKstar0s) > 1) {
       LOG(fatal) << "Only one process can be activated";
@@ -122,57 +130,45 @@ struct TwoTrackResonanceQa {
 
     if (doprocessPhis) {
       auto phiHistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceQaHistSpecMap(confPhiBinning);
-      phiHistManager.init<modes::Mode::kANALYSIS_QA>(&hRegistry, phiHistSpec);
+      phiHistManager.init(&hRegistry, phiHistSpec, posDaughterHistSpec, negDaughterHistSpec);
     }
     if (doprocessRho0s) {
       auto rho0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceQaHistSpecMap(confRho0Binning);
-      rho0HistManager.init<modes::Mode::kANALYSIS_QA>(&hRegistry, rho0HistSpec);
+      rho0HistManager.init(&hRegistry, rho0HistSpec, posDaughterHistSpec, negDaughterHistSpec);
     }
 
     if (doprocessKstar0s) {
       auto kstar0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceQaHistSpecMap(confKstar0Binning);
-      kstar0HistManager.init<modes::Mode::kANALYSIS_QA>(&hRegistry, kstar0HistSpec);
+      kstar0HistManager.init(&hRegistry, kstar0HistSpec, posDaughterHistSpec, negDaughterHistSpec);
     }
   };
 
-  void processPhis(FilteredCollision const& col, Phis const& /*phis*/, Tracks const& /*tracks*/)
+  void processPhis(FilteredCollision const& col, Phis const& /*phis*/, Tracks const& tracks)
   {
-    colHistManager.fill<modes::Mode::kANALYSIS_QA>(col);
+    colHistManager.fill(col);
     auto phiSlice = phiPartition->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
     for (auto const& phi : phiSlice) {
-      phiHistManager.fill<modes::Mode::kANALYSIS_QA, modes::TwoTrackResonance::kPhi>(phi);
-      auto posDaugther = phi.posDau_as<Tracks>();
-      posDaughterManager.fill<modes::Mode::kANALYSIS_QA>(posDaugther);
-      auto negDaugther = phi.negDau_as<Tracks>();
-      negDaughterManager.fill<modes::Mode::kANALYSIS_QA>(negDaugther);
+      phiHistManager.fill(phi, tracks);
     }
   };
   PROCESS_SWITCH(TwoTrackResonanceQa, processPhis, "Process Phis", true);
 
-  void processRho0s(FilteredCollision const& col, Rho0s const& /*rho0s*/, Tracks const& /*tracks*/)
+  void processRho0s(FilteredCollision const& col, Rho0s const& /*rho0s*/, Tracks const& tracks)
   {
-    colHistManager.fill<modes::Mode::kANALYSIS_QA>(col);
+    colHistManager.fill(col);
     auto rho0Slice = rho0Partition->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
     for (auto const& rho0 : rho0Slice) {
-      rho0HistManager.fill<modes::Mode::kANALYSIS_QA, modes::TwoTrackResonance::kRho0>(rho0);
-      auto posDaugther = rho0.posDau_as<Tracks>();
-      posDaughterManager.fill<modes::Mode::kANALYSIS_QA>(posDaugther);
-      auto negDaugther = rho0.negDau_as<Tracks>();
-      negDaughterManager.fill<modes::Mode::kANALYSIS_QA>(negDaugther);
+      rho0HistManager.fill(rho0, tracks);
     }
   };
   PROCESS_SWITCH(TwoTrackResonanceQa, processRho0s, "Process Rho0s", false);
 
-  void processKstar0s(FilteredCollision const& col, Kstar0s const& /*kstar0s*/, Tracks const& /*tracks*/)
+  void processKstar0s(FilteredCollision const& col, Kstar0s const& /*kstar0s*/, Tracks const& tracks)
   {
-    colHistManager.fill<modes::Mode::kANALYSIS_QA>(col);
+    colHistManager.fill(col);
     auto kstar0Slice = kstar0Partition->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
     for (auto const& kstar0 : kstar0Slice) {
-      kstar0HistManager.fill<modes::Mode::kANALYSIS_QA, modes::TwoTrackResonance::kKstar0>(kstar0);
-      auto posDaugther = kstar0.posDau_as<Tracks>();
-      posDaughterManager.fill<modes::Mode::kANALYSIS_QA>(posDaugther);
-      auto negDaugther = kstar0.negDau_as<Tracks>();
-      negDaughterManager.fill<modes::Mode::kANALYSIS_QA>(negDaugther);
+      kstar0HistManager.fill(kstar0, tracks);
     }
   };
   PROCESS_SWITCH(TwoTrackResonanceQa, processKstar0s, "Process Kstar0s", false);

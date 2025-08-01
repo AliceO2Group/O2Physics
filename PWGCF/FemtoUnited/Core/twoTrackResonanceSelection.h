@@ -46,7 +46,7 @@ struct ConfTwoTrackResonanceDaughterFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> posDauEtaMin{"posDauEtaMin", -0.9f, "Minimum eta for positive Daughter"};
   o2::framework::Configurable<float> posDauEtaMax{"posDauEtaMax", 0.9f, "Maximum eta for positive Daughter"};
   o2::framework::Configurable<float> negDauEtaMin{"negDauEtaMin", -0.9f, "Minimum eta for negative Daughter"};
-  o2::framework::Configurable<float> negDauEtaMax{"negDauEtaMax", 0.9f, "Maximum phi for negative Daughter"};
+  o2::framework::Configurable<float> negDauEtaMax{"negDauEtaMax", 0.9f, "Maximum eta for negative Daughter"};
   o2::framework::Configurable<float> posDauPhiMin{"posDauPhiMin", 0.f, "Minimum phi for positive Daughter"};
   o2::framework::Configurable<float> posDauPhiMax{"posDauPhiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi for positive Daughter"};
   o2::framework::Configurable<float> negDauPhiMin{"negDauPhiMin", 0.f, "Minimum phi for negative Daughter"};
@@ -134,12 +134,10 @@ struct ConfKstar0Bits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT"};                                                                                                \
   o2::framework::Configurable<float> etaMin{"etaMin", -0.9f, "Minimum eta"};                                                                                           \
   o2::framework::Configurable<float> etaMax{"etaMax", 0.9f, "Maximum eta"};                                                                                            \
-  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum eta"};                                                                                             \
+  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                                                                                             \
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                                                                \
   o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Resonance"};                                                       \
   o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Resonance"};                                                       \
-  o2::framework::Configurable<float> posDauPidThres{"posDauPidThres", 0.4f, "Momentum threshold for positive daughter above which TOF is required"};                   \
-  o2::framework::Configurable<float> negDauPidThres{"negDauPidThres", 0.4f, "Momentum threshold for negative daughter above which TOF is required"};                   \
   o2::framework::Configurable<o2::aod::femtodatatypes::TwoTrackResonanceMaskType> posDauMaskBelowThres{"posDauMaskBelowThres", 8u, "Bitmask for resonance selection"}; \
   o2::framework::Configurable<o2::aod::femtodatatypes::TwoTrackResonanceMaskType> posDauMaskAboveThres{"posDauMaskAboveThres", 4u, "Bitmask for resonance selection"}; \
   o2::framework::Configurable<o2::aod::femtodatatypes::TwoTrackResonanceMaskType> negDauMaskBelowThres{"negDauMaskBelowThres", 2u, "Bitmask for resonance selection"}; \
@@ -199,22 +197,19 @@ enum TwoTrackResonanceSels {
 
 /// \class FemtoDreamTrackCuts
 /// \brief Cut class to contain and execute all cuts applied to tracks
+template <o2::analysis::femtounited::modes::TwoTrackResonance reso>
 class TwoTrackResonanceSelection : public BaseSelection<float, o2::aod::femtodatatypes::TwoTrackResonanceMaskType, twotrackresonanceselection::kResonanceSelsMax>
 {
  public:
   TwoTrackResonanceSelection() {}
   virtual ~TwoTrackResonanceSelection() = default;
 
-  template <o2::analysis::femtounited::modes::TwoTrackResonance reso, typename T1, typename T2, typename T3>
+  template <typename T1, typename T2, typename T3>
   void configure(T1 const& config, T2 const& filter, T3 const& daughterFilter)
   {
-    if constexpr (o2::analysis::femtounited::modes::isFlagSet(reso, o2::analysis::femtounited::modes::TwoTrackResonance::kPhi)) {
+    if constexpr (o2::analysis::femtounited::modes::isEqual(reso, o2::analysis::femtounited::modes::TwoTrackResonance::kPhi)) {
       mPosDaughterMass = o2::constants::physics::MassKPlus;
       mNegDaughterMass = o2::constants::physics::MassKMinus;
-      mHasAntiParticle = false;
-      mType = o2::analysis::femtounited::modes::TwoTrackResonance::kPhi;
-
-      // negative and positive daughter are charged kaons
       this->addSelection(config.posDauTpcKaon.value, kPosDauTpcKaon, limits::kAbsUpperLimit, false, false);
       this->addSelection(config.posDauTofKaon.value, kPosDauTofKaon, limits::kAbsUpperLimit, false, false);
       this->addSelection(config.posDauTpctofKaon.value, kPosDauTpctofKaon, limits::kUpperLimit, false, false);
@@ -222,13 +217,9 @@ class TwoTrackResonanceSelection : public BaseSelection<float, o2::aod::femtodat
       this->addSelection(config.negDauTofKaon.value, kNegDauTofKaon, limits::kAbsUpperLimit, false, false);
       this->addSelection(config.negDauTpctofKaon.value, kNegDauTpctofKaon, limits::kUpperLimit, false, false);
     }
-    if constexpr (o2::analysis::femtounited::modes::isFlagSet(reso, o2::analysis::femtounited::modes::TwoTrackResonance::kRho0)) {
+    if constexpr (o2::analysis::femtounited::modes::isEqual(reso, o2::analysis::femtounited::modes::TwoTrackResonance::kRho0)) {
       mPosDaughterMass = o2::constants::physics::MassPiPlus;
       mNegDaughterMass = o2::constants::physics::MassPiMinus;
-      mHasAntiParticle = false;
-      mType = o2::analysis::femtounited::modes::TwoTrackResonance::kRho0;
-
-      // negative and positive daughter are charged pions
       this->addSelection(config.posDauTpcPion.value, kPosDauTpcPion, limits::kAbsUpperLimit, false, false);
       this->addSelection(config.posDauTofPion.value, kPosDauTofPion, limits::kAbsUpperLimit, false, false);
       this->addSelection(config.posDauTpctofPion.value, kPosDauTpctofPion, limits::kUpperLimit, false, false);
@@ -236,22 +227,22 @@ class TwoTrackResonanceSelection : public BaseSelection<float, o2::aod::femtodat
       this->addSelection(config.negDauTofPion.value, kNegDauTofPion, limits::kAbsUpperLimit, false, false);
       this->addSelection(config.negDauTpctofPion.value, kNegDauTpctofPion, limits::kUpperLimit, false, false);
     }
-    if constexpr (o2::analysis::femtounited::modes::isFlagSet(reso, o2::analysis::femtounited::modes::TwoTrackResonance::kKstar0)) {
+    if constexpr (o2::analysis::femtounited::modes::isEqual(reso, o2::analysis::femtounited::modes::TwoTrackResonance::kKstar0)) {
       mPosDaughterMass = o2::constants::physics::MassKPlus;
       mNegDaughterMass = o2::constants::physics::MassPiMinus;
-      mHasAntiParticle = true;
-      mType = o2::analysis::femtounited::modes::TwoTrackResonance::kKstar0;
-
-      // negative and positive daughter can be charge pions or kaons
-      this->addSelection(config.posDauTpcPion.value, kPosDauTpcPion, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.posDauTofPion.value, kPosDauTofPion, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.posDauTpctofPion.value, kPosDauTpctofPion, limits::kAbsUpperLimit, false, false);
       this->addSelection(config.posDauTpcKaon.value, kPosDauTpcKaon, limits::kAbsUpperLimit, false, false);
       this->addSelection(config.posDauTofKaon.value, kPosDauTofKaon, limits::kAbsUpperLimit, false, false);
       this->addSelection(config.posDauTpctofKaon.value, kPosDauTpctofKaon, limits::kAbsUpperLimit, false, false);
       this->addSelection(config.negDauTpcPion.value, kNegDauTpcPion, limits::kAbsUpperLimit, false, false);
       this->addSelection(config.negDauTofPion.value, kNegDauTofPion, limits::kAbsUpperLimit, false, false);
       this->addSelection(config.negDauTpctofPion.value, kNegDauTpctofPion, limits::kAbsUpperLimit, false, false);
+    }
+    if constexpr (o2::analysis::femtounited::modes::isEqual(reso, o2::analysis::femtounited::modes::TwoTrackResonance::kKstarBar0)) {
+      mPosDaughterMass = o2::constants::physics::MassPiPlus;
+      mNegDaughterMass = o2::constants::physics::MassKMinus;
+      this->addSelection(config.posDauTpcPion.value, kPosDauTpcPion, limits::kAbsUpperLimit, false, false);
+      this->addSelection(config.posDauTofPion.value, kPosDauTofPion, limits::kAbsUpperLimit, false, false);
+      this->addSelection(config.posDauTpctofPion.value, kPosDauTpctofPion, limits::kAbsUpperLimit, false, false);
       this->addSelection(config.negDauTpcKaon.value, kNegDauTpcKaon, limits::kAbsUpperLimit, false, false);
       this->addSelection(config.negDauTofKaon.value, kNegDauTofKaon, limits::kAbsUpperLimit, false, false);
       this->addSelection(config.negDauTpctofKaon.value, kNegDauTpctofKaon, limits::kAbsUpperLimit, false, false);
@@ -266,8 +257,8 @@ class TwoTrackResonanceSelection : public BaseSelection<float, o2::aod::femtodat
     mPhiMin = filter.phiMin.value;
     mPhiMax = filter.phiMax.value;
 
-    mPosDaughMinimalMomentumForTof = config.posDauMinMomentumForTof.value;
-    mNegDaughMinimalMomentumForTof = config.negDauMinMomentumForTof.value;
+    mPosDauMinimalMomentumForTof = config.posDauMinMomentumForTof.value;
+    mNegDauMinimalMomentumForTof = config.negDauMinMomentumForTof.value;
 
     this->addSelection(config.dauEtaMax.value, kDauEtaAbsMax, limits::kAbsUpperLimit, true, true);
     this->addSelection(config.dauTpcClustersMin.value, kDauTpcClusterMin, limits::kLowerLimit, true, true);
@@ -278,9 +269,9 @@ class TwoTrackResonanceSelection : public BaseSelection<float, o2::aod::femtodat
     this->addSelection(config.negDauPtMax.value, kNegDauPtMax, limits::kUpperLimit, true, true);
 
     this->addSelection(config.posDauDcaxyMax.name, daughterFilter.posDauPtMin.value, daughterFilter.posDauPtMax.value, config.posDauDcaxyMax.value, kPosDauDcaxyAbsMax, limits::kAbsUpperFunctionLimit, true, true);
-    this->addSelection(config.posDauDcaxyMax.name, daughterFilter.posDauPtMin.value, daughterFilter.posDauPtMax.value, config.posDauDcazMax.value, kPosDauDcaxyAbsMax, limits::kAbsUpperFunctionLimit, true, true);
+    this->addSelection(config.posDauDcazMax.name, daughterFilter.posDauPtMin.value, daughterFilter.posDauPtMax.value, config.posDauDcazMax.value, kPosDauDcazAbsMax, limits::kAbsUpperFunctionLimit, true, true);
 
-    this->addSelection(config.negDauDcazMax.name, daughterFilter.negDauPtMin.value, daughterFilter.negDauPtMax.value, config.negDauDcaxyMax.value, kNegDauDcaxyAbsMax, limits::kAbsUpperFunctionLimit, true, true);
+    this->addSelection(config.negDauDcaxyMax.name, daughterFilter.negDauPtMin.value, daughterFilter.negDauPtMax.value, config.negDauDcaxyMax.value, kNegDauDcaxyAbsMax, limits::kAbsUpperFunctionLimit, true, true);
     this->addSelection(config.negDauDcazMax.name, daughterFilter.negDauPtMin.value, daughterFilter.negDauPtMax.value, config.negDauDcazMax.value, kNegDauDcazAbsMax, limits::kAbsUpperFunctionLimit, true, true);
   };
 
@@ -297,85 +288,31 @@ class TwoTrackResonanceSelection : public BaseSelection<float, o2::aod::femtodat
     mPt = vecResonance.Pt();
     mEta = vecResonance.Eta();
     mPhi = RecoDecay::constrainAngle(vecResonance.Phi());
-
-    if (mHasAntiParticle) {
-      // switch daughter masses
-      ROOT::Math::PtEtaPhiMVector vecConjPosDaughter{posDaughter.pt(), posDaughter.eta(), posDaughter.phi(), mNegDaughterMass};
-      ROOT::Math::PtEtaPhiMVector vecConjNegDaughter{negDaughter.pt(), negDaughter.eta(), negDaughter.phi(), mPosDaughterMass};
-      ROOT::Math::PtEtaPhiMVector vecConjResonance = vecConjPosDaughter + vecConjNegDaughter;
-      mAntiMass = vecConjResonance.M();
-      mAntiPt = vecConjResonance.Pt();
-      mAntiEta = vecConjResonance.Eta();
-      mAntiPhi = RecoDecay::constrainAngle(vecConjResonance.Phi());
-    }
   }
 
-  bool hasAntiParticle() const { return mHasAntiParticle; }
-
-  bool checkFilters(bool checkParticle = true) const
+  bool checkFilters() const
   {
-    if (checkParticle) {
-      if (mMass < mMassMin || mMass > mMassMax ||
-          mPt < mPtMin || mPt > mPtMax ||
-          mEta < mEtaMin || mEta > mEtaMax ||
-          mPhi < mPhiMin || mPhi > mPhiMax) {
-        return false;
-      }
-    } else {
-      if (mAntiMass < mMassMin || mAntiMass > mMassMax ||
-          mAntiPt < mPtMin || mAntiPt > mPtMax ||
-          mAntiEta < mEtaMin || mAntiEta > mEtaMax ||
-          mAntiPhi < mPhiMin || mAntiPhi > mPhiMax) {
-        return false;
-      }
-    }
-    return true;
-  }
-  float getPt(bool checkParticle = true) const
-  {
-    if (checkParticle) {
-      return mPt;
-    } else {
-      return mAntiPt;
-    }
-  }
-  float getEta(bool checkParticle = true) const
-  {
-    if (checkParticle) {
-      return mEta;
-    } else {
-      return mAntiEta;
-    }
-  }
-  float getPhi(bool checkParticle = true) const
-  {
-    if (checkParticle) {
-      return mPhi;
-    } else {
-      return mAntiPhi;
-    }
-  }
-  float getMass(bool checkParticle = true) const
-  {
-    if (checkParticle) {
-      return mMass;
-    } else {
-      return mAntiMass;
-    }
+    return ((mMass > mMassMin && mMass < mMassMax) &&
+            (mPt > mPtMin && mPt < mPtMax) &&
+            (mEta > mEtaMin && mEta < mEtaMax) &&
+            (mPhi > mPhiMin && mPhi < mPhiMax));
   }
 
   template <typename T>
-  bool hasTofAboveThreshold(T const& positiveDaughter, T const& negativeDaughter, bool checkParticle = true) const
+  bool hasTofAboveThreshold(T const& positiveDaughter, T const& negativeDaughter)
   {
-    // if track momentum exceeds threshold, we require valid TOF info
-    if (checkParticle) {
-      return !(positiveDaughter.p() > mPosDaughMinimalMomentumForTof && !positiveDaughter.hasTOF()) &&
-             !(negativeDaughter.p() > mNegDaughMinimalMomentumForTof && !negativeDaughter.hasTOF());
-    } else {
-      return !(positiveDaughter.p() > mNegDaughMinimalMomentumForTof && !positiveDaughter.hasTOF()) && // for conjugate change limits for positive and negative daughter
-             !(negativeDaughter.p() > mPosDaughMinimalMomentumForTof && !negativeDaughter.hasTOF());
-    }
+    mPosDauMomAboveThres = positiveDaughter.p() > mPosDauMomAboveThres;
+    mNegDauMomAboveThres = negativeDaughter.p() > mNegDauMomAboveThres;
+    return !(mPosDauMomAboveThres && !positiveDaughter.hasTOF()) &&
+           !(mNegDauMomAboveThres && !negativeDaughter.hasTOF());
   }
+
+  float getPt() const { return mPt; }
+  float getEta() const { return mEta; }
+  float getPhi() const { return mPhi; }
+  float getMass() const { return mMass; }
+  bool getPosDauMomAboveThres() { return mPosDauMomAboveThres; }
+  bool getNegDauMomAboveThres() { return mNegDauMomAboveThres; }
 
   template <typename Tracks>
   void applySelections(Tracks const& posDaughter, Tracks const& negDaughter)
@@ -395,8 +332,8 @@ class TwoTrackResonanceSelection : public BaseSelection<float, o2::aod::femtodat
 
     this->updateLimits(kPosDauDcaxyAbsMax, posDaughter.pt());
     this->evaluateObservable(kPosDauDcaxyAbsMax, posDaughter.dcaXY());
-    this->updateLimits(kPosDauDcazAbsMax, negDaughter.pt());
-    this->evaluateObservable(kPosDauDcazAbsMax, negDaughter.dcaZ());
+    this->updateLimits(kPosDauDcazAbsMax, posDaughter.pt());
+    this->evaluateObservable(kPosDauDcazAbsMax, posDaughter.dcaZ());
 
     this->evaluateObservable(kPosDauTpcPion, posDaughter.tpcNSigmaPi());
     this->evaluateObservable(kPosDauTofPion, posDaughter.tofNSigmaPi());
@@ -426,24 +363,23 @@ class TwoTrackResonanceSelection : public BaseSelection<float, o2::aod::femtodat
     this->assembleBitmask();
   };
 
-  bool checkHypothesis(bool checkParticle = true)
+  bool checkHypothesis()
   {
-    if (mType == o2::analysis::femtounited::modes::TwoTrackResonance::kRho0) {
+    if constexpr (o2::analysis::femtounited::modes::isEqual(reso, o2::analysis::femtounited::modes::TwoTrackResonance::kRho0)) {
       return (this->passesOptionalCut(kPosDauTpcPion) || this->passesOptionalCut(kPosDauTofPion) || this->passesOptionalCut(kPosDauTpctofPion)) &&
              (this->passesOptionalCut(kNegDauTpcPion) || this->passesOptionalCut(kNegDauTofPion) || this->passesOptionalCut(kNegDauTpctofPion));
     }
-    if (mType == o2::analysis::femtounited::modes::TwoTrackResonance::kPhi) {
+    if constexpr (o2::analysis::femtounited::modes::isEqual(reso, o2::analysis::femtounited::modes::TwoTrackResonance::kPhi)) {
       return (this->passesOptionalCut(kPosDauTpcKaon) || this->passesOptionalCut(kPosDauTofKaon) || this->passesOptionalCut(kPosDauTpctofKaon)) &&
              (this->passesOptionalCut(kNegDauTpcKaon) || this->passesOptionalCut(kNegDauTofKaon) || this->passesOptionalCut(kNegDauTpctofKaon));
     }
-    if (mType == o2::analysis::femtounited::modes::TwoTrackResonance::kKstar0) {
-      if (checkParticle) {
-        return (this->passesOptionalCut(kPosDauTpcKaon) || this->passesOptionalCut(kPosDauTofKaon) || this->passesOptionalCut(kPosDauTpctofKaon)) &&
-               (this->passesOptionalCut(kNegDauTpcPion) || this->passesOptionalCut(kNegDauTofPion) || this->passesOptionalCut(kNegDauTpctofPion));
-      } else {
-        return (this->passesOptionalCut(kPosDauTpcPion) || this->passesOptionalCut(kPosDauTofPion) || this->passesOptionalCut(kPosDauTpctofPion)) &&
-               (this->passesOptionalCut(kNegDauTpcKaon) || this->passesOptionalCut(kNegDauTofKaon) || this->passesOptionalCut(kNegDauTpctofKaon));
-      }
+    if constexpr (o2::analysis::femtounited::modes::isEqual(reso, o2::analysis::femtounited::modes::TwoTrackResonance::kKstar0)) {
+      return (this->passesOptionalCut(kPosDauTpcKaon) || this->passesOptionalCut(kPosDauTofKaon) || this->passesOptionalCut(kPosDauTpctofKaon)) &&
+             (this->passesOptionalCut(kNegDauTpcPion) || this->passesOptionalCut(kNegDauTofPion) || this->passesOptionalCut(kNegDauTpctofPion));
+    }
+    if constexpr (o2::analysis::femtounited::modes::isEqual(reso, o2::analysis::femtounited::modes::TwoTrackResonance::kKstarBar0)) {
+      return (this->passesOptionalCut(kPosDauTpcPion) || this->passesOptionalCut(kPosDauTofPion) || this->passesOptionalCut(kPosDauTpctofPion)) &&
+             (this->passesOptionalCut(kNegDauTpcKaon) || this->passesOptionalCut(kNegDauTofKaon) || this->passesOptionalCut(kNegDauTpctofKaon));
     }
     return false;
   }
@@ -460,9 +396,6 @@ class TwoTrackResonanceSelection : public BaseSelection<float, o2::aod::femtodat
   float mAntiPhi = 0.f;
   float mAntiMass = 0.f;
 
-  bool mHasAntiParticle = false;
-  o2::analysis::femtounited::modes::TwoTrackResonance mType;
-
   // kinematic selections of the resonance
   float mMassMin = 0.f;
   float mMassMax = 6.f;
@@ -474,8 +407,10 @@ class TwoTrackResonanceSelection : public BaseSelection<float, o2::aod::femtodat
   float mPhiMax = o2::constants::math::TwoPI;
 
   // minimum momentum of the daughers to ask for tof information
-  float mPosDaughMinimalMomentumForTof = 99.f;
-  float mNegDaughMinimalMomentumForTof = 99.f;
+  float mPosDauMinimalMomentumForTof = 0.5f;
+  float mNegDauMinimalMomentumForTof = 0.5f;
+  bool mPosDauMomAboveThres = false;
+  bool mNegDauMomAboveThres = false;
 
   // daughter masses
   float mPosDaughterMass = 0.f;

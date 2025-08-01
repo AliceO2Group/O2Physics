@@ -42,11 +42,6 @@ using namespace o2::analysis::femtounited;
 
 struct TrackQa {
 
-  struct : ConfigurableGroup {
-    std::string prefix = std::string("Options");
-    Configurable<bool> correlatedPlots{"correlatedPlots", false, "Enable multidimensional histogramms. High memory consumption."};
-  } Options;
-
   // setup tables
   using Collisions = FUCols;
   using Collision = Collisions::iterator;
@@ -62,13 +57,13 @@ struct TrackQa {
   collisionselection::ConfCollisionSelection collisionSelection;
   Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
   colhistmanager::ConfCollisionBinning confCollisionBinning;
-  colhistmanager::CollisionHistManager colHistManager;
+  colhistmanager::CollisionHistManager<modes::Mode::kANALYSIS_QA> colHistManager;
 
   // setup tracks
   trackselection::ConfTrackSelection1 trackSelections;
   trackhistmanager::ConfTrackBinning1 confTrackBinning;
   trackhistmanager::ConfTrackQaBinning1 confTrackQaBinning;
-  trackhistmanager::TrackHistManager<trackhistmanager::PrefixTrackQa> trackHistManager;
+  trackhistmanager::TrackHistManager<trackhistmanager::PrefixTrackQa, modes::Mode::kANALYSIS_QA> trackHistManager;
 
   Partition<Tracks> trackPartition = MAKE_TRACK_PARTITION(trackSelections);
   Preslice<Tracks> perColReco = aod::femtobase::stored::collisionId;
@@ -79,17 +74,17 @@ struct TrackQa {
   {
     // create a map for histogram specs
     auto colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
-    colHistManager.init<modes::Mode::kANALYSIS_QA>(&hRegistry, colHistSpec);
+    colHistManager.init(&hRegistry, colHistSpec);
     auto trackHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confTrackBinning, confTrackQaBinning);
-    trackHistManager.init<modes::Mode::kANALYSIS_QA>(&hRegistry, trackHistSpec);
+    trackHistManager.init(&hRegistry, trackHistSpec);
   };
 
   void process(FilteredCollision const& col, Tracks const& /*tracks*/)
   {
-    colHistManager.fill<modes::Mode::kANALYSIS_QA>(col);
+    colHistManager.fill(col);
     auto trackSlice = trackPartition->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
     for (auto const& track : trackSlice) {
-      trackHistManager.fill<modes::Mode::kANALYSIS_QA>(track);
+      trackHistManager.fill(track);
     }
   }
 };

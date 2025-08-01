@@ -47,12 +47,12 @@
     (femtobase::stored::phi < selection.phiMax) &&                                      \
     (femtobase::stored::mass > selection.massMin) &&                                    \
     (femtobase::stored::mass < selection.massMax) &&                                    \
-    ifnode(femtotwotrackresonances::momentumPosDaughter < selection.posDauPidThres,     \
-           ncheckbit(femtotwotrackresonances::mask, selection.posDauMaskBelowThres),    \
-           ncheckbit(femtotwotrackresonances::mask, selection.posDauMaskAboveThres)) && \
-    ifnode(femtotwotrackresonances::momentumNegDaughter < selection.negDauPidThres,     \
-           ncheckbit(femtotwotrackresonances::mask, selection.negDauMaskBelowThres),    \
-           ncheckbit(femtotwotrackresonances::mask, selection.negDauMaskAboveThres))
+    ifnode(femtotwotrackresonances::posDauMomAboveThres,                                \
+           ncheckbit(femtotwotrackresonances::mask, selection.posDauMaskAboveThres),    \
+           ncheckbit(femtotwotrackresonances::mask, selection.posDauMaskBelowThres)) && \
+    ifnode(femtotwotrackresonances::negDauMomAboveThres,                                \
+           ncheckbit(femtotwotrackresonances::mask, selection.negDauMaskAboveThres),    \
+           ncheckbit(femtotwotrackresonances::mask, selection.negDauMaskBelowThres))
 
 // partition for kstars, they have distince antiparticle
 #define MAKE_RESONANCE_1_PARTITON(selection)                                                                 \
@@ -65,12 +65,12 @@
     (femtobase::stored::phi < selection.phiMax) &&                                                           \
     (femtobase::stored::mass > selection.massMin) &&                                                         \
     (femtobase::stored::mass < selection.massMax) &&                                                         \
-    ifnode(femtotwotrackresonances::momentumPosDaughter < selection.posDauPidThres,                          \
-           ncheckbit(femtotwotrackresonances::mask, selection.posDauMaskBelowThres),                         \
-           ncheckbit(femtotwotrackresonances::mask, selection.posDauMaskAboveThres)) &&                      \
-    ifnode(femtotwotrackresonances::momentumNegDaughter < selection.negDauPidThres,                          \
-           ncheckbit(femtotwotrackresonances::mask, selection.negDauMaskBelowThres),                         \
-           ncheckbit(femtotwotrackresonances::mask, selection.negDauMaskAboveThres))
+    ifnode(femtotwotrackresonances::posDauMomAboveThres,                                                     \
+           ncheckbit(femtotwotrackresonances::mask, selection.posDauMaskAboveThres),                         \
+           ncheckbit(femtotwotrackresonances::mask, selection.posDauMaskBelowThres)) &&                      \
+    ifnode(femtotwotrackresonances::negDauMomAboveThres,                                                     \
+           ncheckbit(femtotwotrackresonances::mask, selection.negDauMaskAboveThres),                         \
+           ncheckbit(femtotwotrackresonances::mask, selection.negDauMaskBelowThres))
 
 // partition for lambdas
 #define MAKE_LAMBDA_PARTITION(selection)                                                                     \

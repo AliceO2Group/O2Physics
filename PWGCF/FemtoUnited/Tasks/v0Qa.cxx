@@ -44,11 +44,9 @@ using namespace o2::analysis::femtounited;
 
 struct V0Qa {
 
-  struct : ConfigurableGroup {
-    std::string prefix = std::string("Options");
-    Configurable<bool> correlatedPlots{"correlatedPlots", false, "Enable multidimensional histogramms. High memory consumption."};
-  } Options;
-
+  // setup for collisions
+  colhistmanager::CollisionHistManager<modes::Mode::kANALYSIS_QA> colHistManager;
+  colhistmanager::ConfCollisionBinning confCollisionBinning;
   collisionselection::ConfCollisionSelection collisionSelection;
   Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
 
@@ -58,8 +56,6 @@ struct V0Qa {
 
   using FilteredCollisions = o2::soa::Filtered<Collisions>;
   using FilteredCollision = FilteredCollisions::iterator;
-
-  colhistmanager::ConfCollisionBinning confCollisionBinning;
 
   using Lambdas = o2::soa::Join<FULambdas, FULambdaMasks, FULambdaExtras>;
   using K0shorts = o2::soa::Join<FUK0shorts, FUK0shortMasks, FUK0shortExtras>;
@@ -75,7 +71,13 @@ struct V0Qa {
 
   v0histmanager::ConfLambdaBinning1 confLambdaBinning;
   v0histmanager::ConfLambdaQaBinning1 confLambdaQaBinning;
-  v0histmanager::V0HistManager<v0histmanager::PrefixLambdaQa> lambdaHistManager;
+  v0histmanager::V0HistManager<
+    v0histmanager::PrefixLambdaQa,
+    trackhistmanager::PrefixV0PosDaughterQa,
+    trackhistmanager::PrefixV0NegDaughterQa,
+    modes::Mode::kANALYSIS_QA,
+    modes::V0::kLambda>
+    lambdaHistManager;
 
   // setup for k0shorts
   v0selection::ConfK0shortSelection1 confK0shortSelection;
@@ -85,19 +87,20 @@ struct V0Qa {
 
   v0histmanager::ConfK0shortBinning1 confK0shortBinning;
   v0histmanager::ConfK0shortQaBinning1 confK0shortQaBinning;
-  v0histmanager::V0HistManager<v0histmanager::PrefixK0shortQa> k0shortHistManager;
+  v0histmanager::V0HistManager<
+    v0histmanager::PrefixK0shortQa,
+    trackhistmanager::PrefixV0PosDaughterQa,
+    trackhistmanager::PrefixV0NegDaughterQa,
+    modes::Mode::kANALYSIS_QA,
+    modes::V0::kK0short>
+    k0shortHistManager;
 
   // setup for daughters
   trackhistmanager::ConfV0PosDauBinning confV0PosDaughterBinning;
   trackhistmanager::ConfV0PosDauQaBinning confV0PosDaughterQaBinning;
-  trackhistmanager::TrackHistManager<trackhistmanager::PrefixV0PosDaughterQa> posDaughterManager;
 
   trackhistmanager::ConfV0NegDauBinning confV0NegDaughterBinning;
   trackhistmanager::ConfV0NegDauQaBinning confV0NegDaughterQaBinning;
-  trackhistmanager::TrackHistManager<trackhistmanager::PrefixV0NegDaughterQa> negDaughterManager;
-
-  // setup for collisions
-  colhistmanager::CollisionHistManager colHistManager;
 
   HistogramRegistry hRegistry{"FemtoV0Qa", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -105,13 +108,10 @@ struct V0Qa {
   {
     // create a map for histogram specs
     auto colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
-    colHistManager.init<modes::Mode::kANALYSIS_QA>(&hRegistry, colHistSpec);
+    colHistManager.init(&hRegistry, colHistSpec);
 
     auto posDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confV0PosDaughterBinning, confV0PosDaughterQaBinning);
-    posDaughterManager.init<modes::Mode::kANALYSIS_QA>(&hRegistry, posDaughterHistSpec);
-
     auto negDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confV0NegDaughterBinning, confV0NegDaughterQaBinning);
-    negDaughterManager.init<modes::Mode::kANALYSIS_QA>(&hRegistry, negDaughterHistSpec);
 
     if ((doprocessK0short + doprocessLambda) > 1) {
       LOG(fatal) << "Only one process can be activated";
@@ -119,39 +119,31 @@ struct V0Qa {
 
     if (doprocessLambda) {
       auto lambdaHistSpec = v0histmanager::makeV0QaHistSpecMap(confLambdaBinning, confLambdaQaBinning);
-      lambdaHistManager.init<modes::Mode::kANALYSIS_QA>(&hRegistry, lambdaHistSpec);
+      lambdaHistManager.init(&hRegistry, lambdaHistSpec, posDaughterHistSpec, negDaughterHistSpec);
     }
 
     if (doprocessK0short) {
       auto k0shortHistSpec = v0histmanager::makeV0QaHistSpecMap(confK0shortBinning, confK0shortQaBinning);
-      k0shortHistManager.init<modes::Mode::kANALYSIS_QA>(&hRegistry, k0shortHistSpec);
+      k0shortHistManager.init(&hRegistry, k0shortHistSpec, posDaughterHistSpec, negDaughterHistSpec);
     }
   };
 
-  void processK0short(FilteredCollision const& col, K0shorts const& /*lambdas*/, Tracks const& /*tracks*/)
+  void processK0short(FilteredCollision const& col, K0shorts const& /*k0shorts*/, Tracks const& tracks)
   {
-    colHistManager.fill<modes::Mode::kANALYSIS_QA>(col);
+    colHistManager.fill(col);
     auto k0shortSlice = k0shortPartition->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
     for (auto const& k0short : k0shortSlice) {
-      k0shortHistManager.fill<modes::Mode::kANALYSIS_QA, modes::V0::kK0short>(k0short);
-      auto posDaugther = k0short.posDau_as<Tracks>();
-      posDaughterManager.fill<modes::Mode::kANALYSIS_QA>(posDaugther);
-      auto negDaugther = k0short.negDau_as<Tracks>();
-      negDaughterManager.fill<modes::Mode::kANALYSIS_QA>(negDaugther);
+      k0shortHistManager.fill(k0short, tracks);
     }
   }
   PROCESS_SWITCH(V0Qa, processK0short, "Process k0shorts", false);
 
-  void processLambda(FilteredCollision const& col, Lambdas const& /*lambdas*/, Tracks const& /*tracks*/)
+  void processLambda(FilteredCollision const& col, Lambdas const& /*lambdas*/, Tracks const& tracks)
   {
-    colHistManager.fill<modes::Mode::kANALYSIS_QA>(col);
+    colHistManager.fill(col);
     auto lambdaSlice = lambdaPartition->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
     for (auto const& lambda : lambdaSlice) {
-      lambdaHistManager.fill<modes::Mode::kANALYSIS_QA, modes::V0::kLambda>(lambda);
-      auto posDaugther = lambda.posDau_as<Tracks>();
-      posDaughterManager.fill<modes::Mode::kANALYSIS_QA>(posDaugther);
-      auto negDaugther = lambda.negDau_as<Tracks>();
-      negDaughterManager.fill<modes::Mode::kANALYSIS_QA>(negDaugther);
+      lambdaHistManager.fill(lambda, tracks);
     }
   }
   PROCESS_SWITCH(V0Qa, processLambda, "Process lambdas", true);

@@ -36,23 +36,13 @@ constexpr bool isFlagSet(T value, T flag)
   return (static_cast<U>(value) & static_cast<U>(flag)) != 0;
 }
 
-// set a flag
+// check if flag is equal
 template <typename T>
-constexpr T setFlag(T value, T flag)
+constexpr bool isEqual(T lhs, T rhs)
 {
   using U = std::underlying_type_t<T>;
-  return static_cast<T>(static_cast<U>(value) | static_cast<U>(flag));
+  return static_cast<U>(lhs) == static_cast<U>(rhs);
 }
-
-// clear a flag
-template <typename T>
-constexpr T clearFlag(T value, T flag)
-{
-  using U = std::underlying_type_t<T>;
-  return static_cast<T>(static_cast<U>(value) & ~static_cast<U>(flag));
-}
-
-// #define BIT(n) (1 << n)
 
 enum class Mode : uint32_t {
   kANALYSIS = BIT(0),
@@ -78,27 +68,43 @@ enum class System : uint32_t {
 };
 
 enum class Track : o2::aod::femtodatatypes::TrackType {
-  kPrimaryTrack = BIT(0),
-  kV0Daughter = BIT(1),
-  kCascadeBachelor = BIT(2),
-  kResonanceDaughter = BIT(3),
+  kPrimaryTrack,
+  kV0Daughter,
+  kCascadeBachelor,
+  kResonanceDaughter
 };
 
 enum class V0 : o2::aod::femtodatatypes::V0Type {
-  kLambda = BIT(0),
-  kK0short = BIT(1),
+  kLambda,
+  kAntiLambda,
+  kK0short
 };
 
 enum class Cascade : o2::aod::femtodatatypes::CascadeType {
-  kXi = BIT(0),
-  kOmega = BIT(1),
+  kXi,
+  kOmega
 };
 
 // enum of supported resonances
 enum class TwoTrackResonance : o2::aod::femtodatatypes::TwoTrackResonanceType {
-  kRho0 = BIT(0),
-  kPhi = BIT(1),
-  kKstar0 = BIT(2)
+  kRho0,
+  kPhi,
+  kKstar0,
+  kKstarBar0
+};
+
+enum class Pairs : o2::aod::femtodatatypes::PairType {
+  kTrackTrack,
+  kTrackV0,
+  kTrackResonance,
+  kTrackCascade
+};
+
+enum class TrackPairs : o2::aod::femtodatatypes::PairType {
+  kTrackTrack,
+  kTrackPosDaughter,
+  kTrackNegDaughter,
+  kTrackBachelor
 };
 
 }; // namespace modes

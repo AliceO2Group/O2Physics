@@ -57,7 +57,7 @@ struct ConfV0Filters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> transRadMin{"transRadMin", {0.2f}, "Minimum transverse radius (cm)"};                                          \
   o2::framework::Configurable<std::vector<float>> transRadMax{"transRadMax", {100.f}, "Maximum transverse radius (cm)"};                                         \
   o2::framework::Configurable<std::vector<float>> decayVtxMax{"decayVtxMax", {100.f}, "Maximum distance in x,y,z of the decay vertex from primary vertex (cm)"}; \
-  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {0.8f}, "Minimum DCA of the daughters from primary vertex (cm)"};                 \
+  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {0.8f}, "Maximum |eta| for daughter tracks"};                                     \
   o2::framework::Configurable<std::vector<float>> dauDcaMin{"dauDcaMin", {0.05f}, "Minimum DCA of the daughters from primary vertex (cm)"};                      \
   o2::framework::Configurable<std::vector<float>> dauTpcClustersMin{"dauTpcClustersMin", {80.f}, "Minimum number of TPC clusters for daughter tracks"};
 
@@ -92,7 +92,7 @@ struct ConfK0shortBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};       \
   o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Lambda"}; \
   o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Lambda"}; \
-  o2::framework::Configurable<o2::aod::femtodatatypes::V0MaskType> mask{"mask", 6, "Bitmask for v0 selection"};
+  o2::framework::Configurable<o2::aod::femtodatatypes::V0MaskType> mask{"mask", 0, "Bitmask for v0 selection"};
 
 // base selection for analysis task for lambdas
 template <const char* Prefix>
@@ -102,7 +102,7 @@ struct ConfLambdaSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> sign{"sign", 1, "Sign of the Lambda (+1 for Lambda and -1 for Antilambda"};
 };
 
-// base selection for analysis task for k0Short
+// base selection for analysis task for k0short
 template <const char* Prefix>
 struct ConfK0shortSelection : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
@@ -120,14 +120,14 @@ using ConfK0shortSelection1 = ConfK0shortSelection<PrefixK0shortSelection1>;
 enum V0Seles {
   // selections for lambdas
   kCpaMin,      ///< Min. CPA (cosine pointing angle)
-  kDcaDaughMax, ///< Max. DCA of the daughers at decay vertex
+  kDcaDaughMax, ///< Max. DCA of the daughters at decay vertex
   kDecayVtxMax, ///< Max. distance of decay vertex in x,y,z
   kTransRadMin, ///< Min. transverse radius
   kTransRadMax, ///< max. transverse radius
 
-  // selection for daugther
+  // selection for daughter
   kDauAbsEtaMax, ///< Max. absolute pseudo rapidity
-  kDauDcaMin,    ///< Min. DCA of the positive daughers at primary vertex
+  kDauDcaMin,    ///< Min. DCA of the positive daughters at primary vertex
   kDauTpcClsMin, ///< Min. number of TPC clusters of positive daughter
 
   // pid selection for daughters
@@ -139,36 +139,64 @@ enum V0Seles {
   kV0SelsMax
 };
 
+#include <string>
+#include <unordered_map>
+
+const std::string lambdaSelsName = std::string("Lambda selection object");
+const std::string antiLambdaSelsName = std::string("AntiLambda selection object");
+const std::string k0shortSelsName = std::string("K0short selection object");
+const std::unordered_map<V0Seles, std::string> V0SelesNames = {
+  {kCpaMin, "Min. CPA (cosine pointing angle)"},
+  {kDcaDaughMax, "Max. DCA of the daughters at decay vertex"},
+  {kDecayVtxMax, "Max. distance of decay vertex in x,y,z"},
+  {kTransRadMin, "Min. transverse radius"},
+  {kTransRadMax, "Max. transverse radius"},
+
+  {kDauAbsEtaMax, "Max. absolute pseudo rapidity"},
+  {kDauDcaMin, "Min. DCA of the positive daughters at primary vertex"},
+  {kDauTpcClsMin, "Min. number of TPC clusters of positive daughter"},
+
+  {kPosDaughTpcPion, "TPC Pion PID for positive daughter"},
+  {kPosDaughTpcProton, "TPC Proton PID for positive daughter"},
+  {kNegDaughTpcPion, "TPC Pion PID for negative daughter"},
+  {kNegDaughTpcProton, "TPC Proton PID for negative daughter"}};
+
 /// \class FemtoDreamTrackCuts
 /// \brief Cut class to contain and execute all cuts applied to tracks
+template <o2::analysis::femtounited::modes::V0 v0Type>
 class V0Selection : public BaseSelection<float, o2::aod::femtodatatypes::V0MaskType, kV0SelsMax>
 {
  public:
   V0Selection() {}
   virtual ~V0Selection() = default;
 
-  template <o2::analysis::femtounited::modes::V0 v0, typename T1, typename T2>
+  template <typename T1, typename T2>
   void configure(T1 const& config, T2 const& filter)
   {
-    if constexpr (o2::analysis::femtounited::modes::isFlagSet(v0, o2::analysis::femtounited::modes::V0::kLambda)) {
+    if constexpr (o2::analysis::femtounited::modes::isEqual(v0Type, o2::analysis::femtounited::modes::V0::kLambda) ||
+                  o2::analysis::femtounited::modes::isEqual(v0Type, o2::analysis::femtounited::modes::V0::kAntiLambda)) {
       mMassLambdaLowerLimit = filter.massMinLambda.value;
       mMassLambdaUpperLimit = filter.massMaxLambda.value;
       mMassK0shortLowerLimit = filter.rejectMassMinK0short.value;
       mMassK0shortUpperLimit = filter.rejectMassMaxK0short.value;
-      mType = o2::analysis::femtounited::modes::V0::kLambda;
-      this->addSelection(config.posDauTpcPion.value, kPosDaughTpcPion, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.posDauTpcProton.value, kPosDaughTpcProton, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.negDauTpcPion.value, kNegDaughTpcPion, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.negDauTpcProton.value, kNegDaughTpcProton, limits::kAbsUpperLimit, false, false);
+
+      if constexpr (o2::analysis::femtounited::modes::isEqual(v0Type, o2::analysis::femtounited::modes::V0::kLambda)) {
+        this->addSelection(config.posDauTpcProton.value, kPosDaughTpcProton, limits::kAbsUpperLimit, true, true);
+        this->addSelection(config.negDauTpcPion.value, kNegDaughTpcPion, limits::kAbsUpperLimit, true, true);
+      }
+
+      if constexpr (o2::analysis::femtounited::modes::isEqual(v0Type, o2::analysis::femtounited::modes::V0::kAntiLambda)) {
+        this->addSelection(config.posDauTpcPion.value, kPosDaughTpcPion, limits::kAbsUpperLimit, true, true);
+        this->addSelection(config.negDauTpcProton.value, kNegDaughTpcProton, limits::kAbsUpperLimit, true, true);
+      }
     }
-    if constexpr (o2::analysis::femtounited::modes::isFlagSet(v0, o2::analysis::femtounited::modes::V0::kK0short)) {
+    if constexpr (o2::analysis::femtounited::modes::isEqual(v0Type, o2::analysis::femtounited::modes::V0::kK0short)) {
       mMassK0shortLowerLimit = filter.massMinK0short.value;
       mMassK0shortUpperLimit = filter.massMaxK0short.value;
       mMassLambdaLowerLimit = filter.rejectMassMinLambda.value;
       mMassLambdaUpperLimit = filter.rejectMassMaxLambda.value;
-      mType = o2::analysis::femtounited::modes::V0::kK0short;
-      this->addSelection(config.posDauTpcPion.value, kPosDaughTpcPion, limits::kAbsUpperLimit, false, false);
-      this->addSelection(config.negDauTpcPion.value, kNegDaughTpcPion, limits::kAbsUpperLimit, false, false);
+      this->addSelection(config.posDauTpcPion.value, kPosDaughTpcPion, limits::kAbsUpperLimit, true, true);
+      this->addSelection(config.negDauTpcPion.value, kNegDaughTpcPion, limits::kAbsUpperLimit, true, true);
     }
 
     this->addSelection(config.dcaDauMax.value, kDcaDaughMax, limits::kAbsUpperLimit, true, true);
@@ -176,29 +204,29 @@ class V0Selection : public BaseSelection<float, o2::aod::femtodatatypes::V0MaskT
     this->addSelection(config.transRadMin.value, kTransRadMin, limits::kLowerLimit, true, true);
     this->addSelection(config.transRadMax.value, kTransRadMax, limits::kUpperLimit, true, true);
     this->addSelection(config.dauAbsEtaMax.value, kDauAbsEtaMax, limits::kAbsUpperLimit, true, true);
-    this->addSelection(config.dauDcaMin.value, kDauDcaMin, limits::kLowerLimit, true, true);
+    this->addSelection(config.dauDcaMin.value, kDauDcaMin, limits::kAbsLowerFunctionLimit, true, true);
     this->addSelection(config.dauTpcClustersMin.value, kDauTpcClsMin, limits::kLowerLimit, true, true);
-  };
+  }
 
-  template <typename V0, typename Tracks>
-  void applySelections(V0 const& v0, Tracks const& /*tracks*/)
+  template <typename T1, typename T2>
+  void applySelections(T1 const& v0candidate, T2 const& /*tracks*/)
   {
     this->reset();
     // v0 selections
-    this->evaluateObservable(kCpaMin, v0.v0cosPA());
-    this->evaluateObservable(kDcaDaughMax, v0.dcaV0daughters());
+    this->evaluateObservable(kCpaMin, v0candidate.v0cosPA());
+    this->evaluateObservable(kDcaDaughMax, v0candidate.dcaV0daughters());
     // for decay vertex, the x,y and z coordinate have to be below a certain threshold
     // compare the largest of the 3 to the limit set by the bit
-    std::array<float, 3> decayCoordinates = {v0.x(), v0.y(), v0.z()};
+    std::array<float, 3> decayCoordinates = {std::fabs(v0candidate.x()), std::fabs(v0candidate.y()), std::fabs(v0candidate.z())};
     this->evaluateObservable(kDecayVtxMax, *std::max_element(decayCoordinates.begin(), decayCoordinates.end()));
-    this->evaluateObservable(kTransRadMin, v0.v0radius());
-    this->evaluateObservable(kTransRadMax, v0.v0radius());
+    this->evaluateObservable(kTransRadMin, v0candidate.v0radius());
+    this->evaluateObservable(kTransRadMax, v0candidate.v0radius());
 
     // daughter selection
     // for daughter selections, both have to fit the same track quality selection, so we store only one bit for both
-    // take largest/smallest from both daughters and evalute the observable with this value
-    auto posDaughter = v0.template posTrack_as<Tracks>();
-    auto negDaughter = v0.template negTrack_as<Tracks>();
+    // take largest/smallest from both daughters and evaluate the observable with this value
+    auto posDaughter = v0candidate.template posTrack_as<T2>();
+    auto negDaughter = v0candidate.template negTrack_as<T2>();
 
     std::array<float, 2> etaDaughters = {std::fabs(posDaughter.eta()), std::fabs(negDaughter.eta())};
     this->evaluateObservable(kDauAbsEtaMax, *std::max_element(etaDaughters.begin(), etaDaughters.end()));
@@ -216,40 +244,36 @@ class V0Selection : public BaseSelection<float, o2::aod::femtodatatypes::V0MaskT
     this->evaluateObservable(kNegDaughTpcProton, negDaughter.tpcNSigmaPr());
 
     this->assembleBitmask();
-  };
+  }
 
   template <typename T>
-  bool checkHypothesis(T const& v0, bool checkParticle = true)
+  bool checkHypothesis(T const& v0candidate) const
   {
-    if (mType == o2::analysis::femtounited::modes::V0::kLambda) {
-      if (checkParticle) {
-        return (this->passesOptionalCut(kNegDaughTpcPion) && this->passesOptionalCut(kPosDaughTpcProton)) && // check PID for daughters
-               (v0.mLambda() > mMassLambdaLowerLimit && v0.mLambda() < mMassLambdaUpperLimit) &&             // inside Lambda window
-               (v0.mK0Short() < mMassK0shortLowerLimit || v0.mK0Short() > mMassK0shortUpperLimit);           // outside K0short window
-      } else {
-        return (this->passesOptionalCut(kPosDaughTpcPion) && this->passesOptionalCut(kNegDaughTpcProton)) && // check PID for daughters
-               (v0.mAntiLambda() > mMassLambdaLowerLimit && v0.mAntiLambda() < mMassLambdaUpperLimit) &&     // inside AntiLambda window
-               (v0.mK0Short() < mMassK0shortLowerLimit || v0.mK0Short() > mMassK0shortUpperLimit);           // outside K0short window
-      }
+    // no need to check PID of the daughters here, they are set as minimal cuts
+    if constexpr (o2::analysis::femtounited::modes::isEqual(v0Type, o2::analysis::femtounited::modes::V0::kLambda)) {
+      return (v0candidate.mLambda() > mMassLambdaLowerLimit && v0candidate.mLambda() < mMassLambdaUpperLimit) &&   // inside Lambda window
+             (v0candidate.mK0Short() < mMassK0shortLowerLimit || v0candidate.mK0Short() > mMassK0shortUpperLimit); // outside K0short window
     }
-    if (mType == o2::analysis::femtounited::modes::V0::kK0short) {
-      return (this->passesOptionalCut(kPosDaughTpcPion) && this->passesOptionalCut(kNegDaughTpcPion)) && // check PID for daughters
-             (v0.mK0Short() > mMassK0shortLowerLimit && v0.mK0Short() < mMassK0shortUpperLimit) &&       // inside K0short window
-             (v0.mLambda() < mMassLambdaLowerLimit || v0.mLambda() > mMassLambdaUpperLimit) &&           // outside Lambda window
-             (v0.mAntiLambda() < mMassLambdaLowerLimit || v0.mAntiLambda() > mMassLambdaUpperLimit);     // outside AntiLambda window
+    if constexpr (o2::analysis::femtounited::modes::isEqual(v0Type, o2::analysis::femtounited::modes::V0::kAntiLambda)) {
+      return                                                                                                        // check PID for daughters
+        (v0candidate.mAntiLambda() > mMassLambdaLowerLimit && v0candidate.mAntiLambda() < mMassLambdaUpperLimit) && // inside AntiLambda window
+        (v0candidate.mK0Short() < mMassK0shortLowerLimit || v0candidate.mK0Short() > mMassK0shortUpperLimit);       // outside K0short window
+    }
+    if constexpr (o2::analysis::femtounited::modes::isEqual(v0Type, o2::analysis::femtounited::modes::V0::kK0short)) {
+      return (v0candidate.mK0Short() > mMassK0shortLowerLimit && v0candidate.mK0Short() < mMassK0shortUpperLimit) &&   // inside K0short window
+             (v0candidate.mLambda() < mMassLambdaLowerLimit || v0candidate.mLambda() > mMassLambdaUpperLimit) &&       // outside Lambda window
+             (v0candidate.mAntiLambda() < mMassLambdaLowerLimit || v0candidate.mAntiLambda() > mMassLambdaUpperLimit); // outside AntiLambda window
     }
     return false;
   }
 
  protected:
-  float mMassK0shortLowerLimit = 0.f;
-  float mMassK0shortUpperLimit = 99.f;
+  float mMassK0shortLowerLimit = 0.483f;
+  float mMassK0shortUpperLimit = 0.503f;
 
-  float mMassLambdaLowerLimit = 0.f;
-  float mMassLambdaUpperLimit = 99.f;
-
-  o2::analysis::femtounited::modes::V0 mType;
-};
+  float mMassLambdaLowerLimit = 1.105f;
+  float mMassLambdaUpperLimit = 1.125f;
+}; // namespace v0selection
 } // namespace v0selection
 } // namespace o2::analysis::femtounited
 #endif // PWGCF_FEMTOUNITED_CORE_V0SELECTION_H_

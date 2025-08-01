@@ -345,16 +345,13 @@ constexpr std::string_view PidDir = "PID/";
 /// \class FemtoDreamEventHisto
 /// \brief Class for histogramming event properties
 // template <femtomodes::Mode mode>
-template <const char* prefix>
+template <const char* prefix, modes::Mode mode>
 class TrackHistManager
 {
  public:
   /// Destructor
   virtual ~TrackHistManager() = default;
-  /// Initializes histograms for the task
-  /// \param registry Histogram registry to be passed
-  ///
-  template <modes::Mode mode>
+
   void init(o2::framework::HistogramRegistry* registry, std::map<TrackHist, std::vector<o2::framework::AxisSpec>> Specs)
   {
     mHistogramRegistry = registry;
@@ -431,7 +428,7 @@ class TrackHistManager
     }
   }
 
-  template <modes::Mode mode, typename T>
+  template <typename T>
   void fill(T const& track)
   {
     if constexpr (isFlagSet(mode, modes::Mode::kANALYSIS)) {

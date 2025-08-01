@@ -44,12 +44,6 @@ using namespace o2::analysis::femtounited;
 
 struct CascadeQa {
 
-  struct : ConfigurableGroup {
-    std::string prefix = std::string("Options");
-
-    Configurable<bool> correlatedPlots{"correlatedPlots", false, "Enable multidimensional histogramms. High memory consumption."};
-  } Options;
-
   // setup tables
   using Collisions = FUCols;
   using Collision = Collisions::iterator;
@@ -64,7 +58,7 @@ struct CascadeQa {
   SliceCache cache;
 
   // setup collisions
-  colhistmanager::CollisionHistManager colHistManager;
+  colhistmanager::CollisionHistManager<modes::Mode::kANALYSIS_QA> colHistManager;
   colhistmanager::ConfCollisionBinning confCollisionBinning;
   collisionselection::ConfCollisionSelection collisionSelection;
   Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
@@ -76,7 +70,14 @@ struct CascadeQa {
 
   cascadehistmanager::ConfXiBinning confXiBinning;
   cascadehistmanager::ConfXiQaBinning confXiQaBinning;
-  cascadehistmanager::CascadeHistManager<cascadehistmanager::PrefixXiQa> xiHistManager;
+  cascadehistmanager::CascadeHistManager<
+    cascadehistmanager::PrefixXiQa,
+    trackhistmanager::PrefixCascadeBachelorQa,
+    trackhistmanager::PrefixV0PosDaughterQa,
+    trackhistmanager::PrefixV0NegDaughterQa,
+    modes::Mode::kANALYSIS_QA,
+    modes::Cascade::kXi>
+    xiHistManager;
 
   // setup for omegas
   cascadeselection::ConfOmegaSelection confOmegaSelection;
@@ -85,7 +86,14 @@ struct CascadeQa {
 
   cascadehistmanager::ConfOmegaBinning confOmegaBinning;
   cascadehistmanager::ConfOmegaQaBinning confOmegaQaBinning;
-  cascadehistmanager::CascadeHistManager<cascadehistmanager::PrefixOmegaQa> omegaHistManager;
+  cascadehistmanager::CascadeHistManager<
+    cascadehistmanager::PrefixOmegaQa,
+    trackhistmanager::PrefixCascadeBachelorQa,
+    trackhistmanager::PrefixV0PosDaughterQa,
+    trackhistmanager::PrefixV0NegDaughterQa,
+    modes::Mode::kANALYSIS_QA,
+    modes::Cascade::kOmega>
+    omegaHistManager;
 
   // setup for daughters/bachelor
   trackhistmanager::ConfCascadePosDauBinning confPosDaughterBinning;
@@ -95,26 +103,17 @@ struct CascadeQa {
   trackhistmanager::ConfCascadeBachelorBinning confBachelorBinning;
   trackhistmanager::ConfCascadeBachelorQaBinning confBachelorQaBinning;
 
-  trackhistmanager::TrackHistManager<trackhistmanager::PrefixCascadePosDaughterQa> posDaughterManager;
-  trackhistmanager::TrackHistManager<trackhistmanager::PrefixCascadeNegDaughterQa> negDaughterManager;
-  trackhistmanager::TrackHistManager<trackhistmanager::PrefixCascadeBachelorQa> bachelorManager;
-
   HistogramRegistry hRegistry{"FemtoCascadeQA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
   {
     // create a map for histogram specs
     auto colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
-    colHistManager.init<modes::Mode::kANALYSIS>(&hRegistry, colHistSpec);
-
-    auto posDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confPosDaughterBinning, confPosDaughterQaBinning);
-    posDaughterManager.init<modes::Mode::kANALYSIS_QA>(&hRegistry, posDaughterHistSpec);
-
-    auto negDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confNegDaughterBinning, confNegDaughterQaBinning);
-    negDaughterManager.init<modes::Mode::kANALYSIS_QA>(&hRegistry, negDaughterHistSpec);
+    colHistManager.init(&hRegistry, colHistSpec);
 
     auto bachelorHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confBachelorBinning, confBachelorQaBinning);
-    bachelorManager.init<modes::Mode::kANALYSIS_QA>(&hRegistry, bachelorHistSpec);
+    auto posDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confPosDaughterBinning, confPosDaughterQaBinning);
+    auto negDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confNegDaughterBinning, confNegDaughterQaBinning);
 
     if ((doprocessXis + doprocessOmegas) > 1) {
       LOG(fatal) << "Only one process can be activated";
@@ -122,43 +121,31 @@ struct CascadeQa {
 
     if (doprocessXis) {
       auto xiHistSpec = cascadehistmanager::makeCascadeQaHistSpecMap(confXiBinning, confXiQaBinning);
-      xiHistManager.init<modes::Mode::kANALYSIS_QA>(&hRegistry, xiHistSpec);
+      xiHistManager.init(&hRegistry, xiHistSpec, bachelorHistSpec, posDaughterHistSpec, negDaughterHistSpec);
     }
 
     if (doprocessOmegas) {
       auto omegaHistSpec = cascadehistmanager::makeCascadeQaHistSpecMap(confOmegaBinning, confOmegaQaBinning);
-      omegaHistManager.init<modes::Mode::kANALYSIS_QA>(&hRegistry, omegaHistSpec);
+      omegaHistManager.init(&hRegistry, omegaHistSpec, bachelorHistSpec, posDaughterHistSpec, negDaughterHistSpec);
     }
   };
 
-  void processXis(FilteredCollision const& col, Xis const& /*xis*/, Tracks const& /*tracks*/)
+  void processXis(FilteredCollision const& col, Xis const& /*xis*/, Tracks const& tracks)
   {
-    colHistManager.fill<modes::Mode::kANALYSIS_QA>(col);
+    colHistManager.fill(col);
     auto xiSlice = xiPartition->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
     for (auto const& xi : xiSlice) {
-      xiHistManager.fill<modes::Mode::kANALYSIS_QA, modes::Cascade::kXi>(xi);
-      auto posDaugther = xi.posDau_as<Tracks>();
-      posDaughterManager.fill<modes::Mode::kANALYSIS_QA>(posDaugther);
-      auto negDaugther = xi.negDau_as<Tracks>();
-      negDaughterManager.fill<modes::Mode::kANALYSIS_QA>(negDaugther);
-      auto bachelor = xi.bachelor_as<Tracks>();
-      bachelorManager.fill<modes::Mode::kANALYSIS_QA>(bachelor);
+      xiHistManager.fill(xi, tracks);
     }
   }
   PROCESS_SWITCH(CascadeQa, processXis, "Process Xis", true);
 
-  void processOmegas(FilteredCollision const& col, Omegas const& /*omegas*/, Tracks const& /*tracks*/)
+  void processOmegas(FilteredCollision const& col, Omegas const& /*omegas*/, Tracks const& tracks)
   {
-    colHistManager.fill<modes::Mode::kANALYSIS_QA>(col);
+    colHistManager.fill(col);
     auto omegaSlice = omegaPartition->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
     for (auto const& omega : omegaSlice) {
-      omegaHistManager.fill<modes::Mode::kANALYSIS_QA, modes::Cascade::kOmega>(omega);
-      auto posDaugther = omega.posDau_as<Tracks>();
-      posDaughterManager.fill<modes::Mode::kANALYSIS_QA>(posDaugther);
-      auto negDaugther = omega.negDau_as<Tracks>();
-      negDaughterManager.fill<modes::Mode::kANALYSIS_QA>(negDaugther);
-      auto bachelor = omega.bachelor_as<Tracks>();
-      bachelorManager.fill<modes::Mode::kANALYSIS_QA>(bachelor);
+      omegaHistManager.fill(omega, tracks);
     }
   }
   PROCESS_SWITCH(CascadeQa, processOmegas, "Process Omegas", false);

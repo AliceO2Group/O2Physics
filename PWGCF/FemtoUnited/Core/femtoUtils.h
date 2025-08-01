@@ -147,15 +147,13 @@ inline float getMass(int pdgCode)
   return mass;
 }
 
-inline float dphistar(float magfield, float radius, float charge, float pt, float phi)
+inline std::optional<float> dphistar(float magfield, float radius, float sign, float pt, float phi)
 {
-  float arg = 0.3f * charge * magfield * radius * 0.01f / (2.f * pt);
-  // for very low pT particles, this value goes outside of range -1 to 1 at at large tpc radius; asin fails
+  float arg = 0.3f * sign * magfield * radius * 0.01f / (2.f * pt);
   if (std::fabs(arg) < 1.f) {
     return phi - std::asin(arg);
-  } else {
-    return 99.f;
   }
+  return std::nullopt;
 }
 
 }; // namespace utils

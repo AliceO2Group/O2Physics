@@ -30,8 +30,8 @@ namespace femtotwotrackresonances
 // columns for resonance bit masks
 DECLARE_SOA_COLUMN(Mask, mask, femtodatatypes::TwoTrackResonanceMaskType); //! Bitmask for resonance selections
 
-DECLARE_SOA_COLUMN(MomentumPosDaughter, momentumPosDaughter, float); //! Bitmask for resonance selections
-DECLARE_SOA_COLUMN(MomentumNegDaughter, momentumNegDaughter, float); //! Bitmask for resonance selections
+DECLARE_SOA_COLUMN(PosDauMomAboveThres, posDauMomAboveThres, bool); //! flag if positive daughter momentum is above momentum threshold to require TOF
+DECLARE_SOA_COLUMN(NegDauMomAboveThres, negDauMomAboveThres, bool); //! flag if negative daughter momentum is above momentum threshold to require TOF
 
 // id columns for resonance daughter tracks
 DECLARE_SOA_INDEX_COLUMN_FULL(PosDau, posDau, int32_t, FUTracks, "_PosDau"); //!
@@ -49,8 +49,8 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FUPhis_001, "FUPHIS", 1,
                                    femtobase::stored::Mass,
                                    femtotwotrackresonances::PosDauId,
                                    femtotwotrackresonances::NegDauId,
-                                   femtotwotrackresonances::MomentumPosDaughter,
-                                   femtotwotrackresonances::MomentumNegDaughter,
+                                   femtotwotrackresonances::PosDauMomAboveThres,
+                                   femtotwotrackresonances::NegDauMomAboveThres,
                                    femtobase::dynamic::P<femtobase::stored::Pt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Px<femtobase::stored::Pt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Py<femtobase::stored::Pt, femtobase::stored::Eta>,
@@ -71,8 +71,8 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FUKstars_001, "FUKSTARS", 1,
                                    femtobase::stored::Mass,
                                    femtotwotrackresonances::PosDauId,
                                    femtotwotrackresonances::NegDauId,
-                                   femtotwotrackresonances::MomentumPosDaughter,
-                                   femtotwotrackresonances::MomentumNegDaughter,
+                                   femtotwotrackresonances::PosDauMomAboveThres,
+                                   femtotwotrackresonances::NegDauMomAboveThres,
                                    femtobase::dynamic::Sign<femtobase::stored::SignedPt>,
                                    femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
                                    femtobase::dynamic::P<femtobase::stored::SignedPt, femtobase::stored::Eta>,
@@ -94,8 +94,8 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FURhos_001, "FURHOS", 1,
                                    femtobase::stored::Mass,
                                    femtotwotrackresonances::PosDauId,
                                    femtotwotrackresonances::NegDauId,
-                                   femtotwotrackresonances::MomentumPosDaughter,
-                                   femtotwotrackresonances::MomentumNegDaughter,
+                                   femtotwotrackresonances::PosDauMomAboveThres,
+                                   femtotwotrackresonances::NegDauMomAboveThres,
                                    femtobase::dynamic::P<femtobase::stored::Pt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Px<femtobase::stored::Pt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Py<femtobase::stored::Pt, femtobase::stored::Eta>,

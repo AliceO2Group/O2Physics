@@ -92,6 +92,7 @@ struct ConfCollisionBinning : o2::framework::ConfigurableGroup {
 
 /// \class FemtoDreamEventHisto
 /// \brief Class for histogramming event properties
+template <modes::Mode mode>
 class CollisionHistManager
 {
  public:
@@ -99,7 +100,6 @@ class CollisionHistManager
   virtual ~CollisionHistManager() = default;
   /// Initializes histograms for the task
   /// \param registry Histogram registry to be passed
-  template <modes::Mode mode>
   void init(o2::framework::HistogramRegistry* registry, std::map<ColHist, std::vector<o2::framework::AxisSpec>> Specs)
   {
     mHistogramRegistry = registry;
@@ -123,7 +123,7 @@ class CollisionHistManager
     }
   } // namespace o2::analysis::femtounited
 
-  template <modes::Mode mode, typename T>
+  template <typename T>
   void fill(T const& col)
   {
     if constexpr (isFlagSet(mode, modes::Mode::kANALYSIS)) {

@@ -44,7 +44,19 @@ enum LimitType { kUpperLimit,            ///< simple upper limit for the value, 
                  kLowerFunctionLimit,    ///< simple lower limit of a function value, e.g. DCA_xy < f(pt)
                  kAbsLowerFunctionLimit  ///< lower limit of an absolute value given by a function, e.g. |DCA_xy| < f(pt)
 };
-} // namespace limits
+
+std::unordered_map<LimitType, std::string> LimitTypeAsStrings = {
+  {kUpperLimit, "Upper Limit"},
+  {kAbsUpperLimit, "Absolute Upper Limit"},
+  {kLowerLimit, "Lower Limit"},
+  {kAbsLowerLimit, "Absolute Lower Limit"},
+  {kEqual, "Equal"},
+  {kUpperFunctionLimit, "Upper Function Limit"},
+  {kAbsUpperFunctionLimit, "Absolute Upper Function Limit"},
+  {kLowerFunctionLimit, "Lower Function Limit"},
+  {kAbsLowerFunctionLimit, "Absolute Lower Function Limit"}};
+
+}; // namespace limits
 
 /// Simple class for storing selections of a single observable
 /// \tparam T Data type used for the selection values (float/int/...)
@@ -277,13 +289,18 @@ class SelectionContainer
     }
   }
 
+  std::string getLimitTypeAsString() const { return limits::LimitTypeAsStrings[mLimitType]; }
+  std::vector<T> getSelectionValues() const { return mSelectionValues; }
+  bool isMinimalCut() const { return mIsMinimalCut; }
+  bool skipMostPermissiveBit() const { return mSkipMostPermissiveBit; }
+
  private:
-  std::vector<T> mSelectionValues{};                       ///< Values used for the selection
-  std::vector<TF1> mSelectionFunctions{};                  ///< Function used for the selection
-  limits::LimitType mLimitType;                            ///< Limit type of selection
-  std::bitset<sizeof(BitmaskType) * CHAR_BIT> mBitmask{0}; ///< bitmask for the observable
-  bool mSkipMostPermissiveBit = false;                     ///< whether to skip the last bit or not
-  bool mIsMinimalCut = false;                              ///< whether to use this observable for minimal selection or not
+  std::vector<T> mSelectionValues = {};                      ///< Values used for the selection
+  std::vector<TF1> mSelectionFunctions = {};                 ///< Function used for the selection
+  limits::LimitType mLimitType;                              ///< Limit type of selection
+  std::bitset<sizeof(BitmaskType) * CHAR_BIT> mBitmask = {}; ///< bitmask for the observable
+  bool mSkipMostPermissiveBit = false;                       ///< whether to skip the last bit or not
+  bool mIsMinimalCut = false;                                ///< whether to use this observable for minimal selection or not
 };
 
 } // namespace o2::analysis::femtounited

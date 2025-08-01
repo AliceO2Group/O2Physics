@@ -21,6 +21,7 @@
 #include "fairlogger/Logger.h"
 
 #include <algorithm>
+#include <iomanip>
 #include <string>
 #include <vector>
 
@@ -54,6 +55,10 @@ class BaseSelection
     if (mNSelections >= sizeof(BitmaskType) * CHAR_BIT) {
       LOG(fatal) << "Too many selections. At most " << sizeof(BitmaskType) * CHAR_BIT << " are supported";
     }
+    // check if any cut is optional
+    if (!isMinimalCut) {
+      mHasOptionalCuts = true;
+    }
     mSelectionContainers.at(observableIndex) = SelectionContainer<T, BitmaskType>(selectionValues, limitType, skipMostPermissiveBit, isMinimalCut);
   }
 
@@ -79,7 +84,9 @@ class BaseSelection
   {
     mFinalBitmask.reset();
     mPassesMinimalCuts = true;
-    mPassesOptionalCuts = false;
+    // will be true if no optional cut as been defined and
+    // will be set to false if we have optional cuts (but will be set to true in the case at least one optional cut succeeds)
+    mPassesOptionalCuts = !mHasOptionalCuts;
   }
 
   /// set bitmask for a given observable
@@ -140,16 +147,77 @@ class BaseSelection
     }
   }
 
-  BitmaskType getBitmask() const { return static_cast<BitmaskType>(mFinalBitmask.to_ulong()); }
+  BitmaskType getBitmask() const { return static_cast<BitmaskType>(mFinalBitmask.to_ullong()); }
+
+#include <iomanip> // for setw, left
+#include <sstream>
+
+  template <typename MapType>
+  void printSelections(const std::string& objectName, const std::unordered_map<MapType, std::string>& observableNames) const
+  {
+    LOG(info) << "**************************************** FemtoProducer ****************************************";
+    LOG(info) << objectName << "\n";
+
+    size_t globalBitIndex = 0; // Track absolute bit position across all containers
+
+    for (size_t idx = mSelectionContainers.size(); idx-- > 0;) {
+      const auto& container = mSelectionContainers[idx];
+      if (container.isEmpty()) {
+        continue;
+      }
+
+      std::string name = "[Unknown]";
+      auto key = static_cast<MapType>(idx);
+      if (observableNames.count(key)) {
+        name = observableNames.at(key);
+      }
+
+      LOG(info) << "Observable: " << name << " (index " << idx << ")";
+      LOG(info) << "  Limit type           : " << container.getLimitTypeAsString();
+      LOG(info) << "  Values (with bit indices and bitmask):";
+
+      const auto& values = container.getSelectionValues();
+      bool skipMostPermissive = container.skipMostPermissiveBit();
+
+      constexpr int valWidth = 15;
+      constexpr int bitWidth = 20;
+      constexpr int maskWidth = 12;
+
+      for (size_t j = 0; j < values.size(); ++j) {
+        std::stringstream line;
+        line << "    "
+             << std::left << std::setw(valWidth) << values[j];
+
+        if (skipMostPermissive && j == 0) {
+          line << std::setw(bitWidth) << "[no bit (skipped)]"
+               << std::setw(maskWidth) << "";
+        } else {
+          uint64_t bitmask = uint64_t{1} << globalBitIndex;
+          line << std::setw(bitWidth) << ("[bit " + std::to_string(globalBitIndex) + "]")
+               << " bitmask: " << bitmask;
+          ++globalBitIndex;
+        }
+
+        LOG(info) << line.str();
+      }
+
+      LOG(info) << "  Minimal cut          : " << (container.isMinimalCut() ? "yes" : "no");
+      LOG(info) << "  Skip most permissive : " << (skipMostPermissive ? "yes" : "no");
+      LOG(info) << "  Bitmask shift        : " << container.getShift();
+      LOG(info) << ""; // blank line between observables
+    }
+
+    LOG(info) << "***********************************************************************************************";
+  }
 
  protected:
-  std::array<SelectionContainer<T, BitmaskType>, NumObservables> mSelectionContainers; ///< Array containing all selections
-  std::bitset<sizeof(BitmaskType) * CHAR_BIT> mFinalBitmask;                           ///< final bitmaks
-  size_t mNSelections = 0;                                                             ///< Number of selections
-  bool mPassesMinimalCuts = true;                                                      ///< Set to true if all minimal (mandatory) cuts are passed
-  bool mPassesOptionalCuts = false;                                                    ///< Set to true if at least one optional (non-mandatory) cut is passed
+  std::array<SelectionContainer<T, BitmaskType>, NumObservables> mSelectionContainers = {}; ///< Array containing all selections
+  std::bitset<sizeof(BitmaskType) * CHAR_BIT> mFinalBitmask = {};                           ///< final bitmaks
+  size_t mNSelections = 0;                                                                  ///< Number of selections
+  bool mPassesMinimalCuts = true;                                                           ///< Set to true if all minimal (mandatory) cuts are passed
+  bool mHasOptionalCuts = false;                                                            ///< Set to true if at least one cut is optional
+  bool mPassesOptionalCuts = true;                                                          ///< Set to true if at least one optional (non-mandatory) cut is passed
 };
-
 } // namespace o2::analysis::femtounited
 
 #endif // PWGCF_FEMTOUNITED_CORE_BASESELECTION_H_

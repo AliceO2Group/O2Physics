@@ -1,5 +1,4 @@
-//
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -112,132 +111,11 @@ auto makePairHistSpecMap(const T1& confPairBinning, const T2& confObject1Binning
     {kPt2VsMt, {confObject2Binning.pt, confPairBinning.mt}}};
 };
 
-template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
-void processSameEvent(const T1& SliceParticle,
-                      T2& ParticleHistManager,
-                      T3& PairHistManager,
-                      T4& CprManager,
-                      T5& rng,
-                      bool randomize)
-{
-  // Fill single particle histograms
-  for (auto const& part : SliceParticle) {
-    ParticleHistManager.template fill<mode>(part);
-  }
-
-  std::uniform_real_distribution<float> dist(0.f, 1.f);
-
-  for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle))) {
-
-    // Close pair rejection
-    if (CprManager.isActivated()) {
-      CprManager.setPair(p1, p2);
-      if (CprManager.isClosePair()) {
-        continue;
-      }
-    }
-    CprManager.template fill<mode>();
-
-    // Randomize pair order if enabled
-    float threshold = 0.5f;
-    bool swapPair = randomize ? (dist(rng) > threshold) : false;
-    if (swapPair) {
-      PairHistManager.setPair(p2, p1);
-    } else {
-      PairHistManager.setPair(p1, p2);
-    }
-
-    PairHistManager.template fill<mode>();
-  }
-}
-
-template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
-void processSameEvent(const T1& SliceParticle1,
-                      const T2& SliceParticle2,
-                      T3& ParticleHistManager1,
-                      T4& ParticleHistManager2,
-                      T5& PairHistManager,
-                      T6& CprManager,
-                      T7& PcManager)
-{
-  // Fill single particle histograms
-  for (auto const& part : SliceParticle1) {
-    ParticleHistManager1.template fill<mode>(part);
-  }
-
-  for (auto const& part : SliceParticle2) {
-    ParticleHistManager2.template fill<mode>(part);
-  }
-
-  for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2))) {
-    // pair cleaning
-    if (!PcManager.template isCleanPair(p1, p2)) {
-      continue;
-    }
-    // Close pair rejection
-    if (CprManager.isActivated()) {
-      CprManager.setPair(p1, p2);
-      if (CprManager.isClosePair()) {
-        continue;
-      }
-    }
-    CprManager.template fill<mode>();
-    PairHistManager.setPair(p1, p2);
-    PairHistManager.template fill<mode>();
-  }
-}
-
-template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11>
-void processMixedEvent(T1& Collisions,
-                       T2& Partition1,
-                       T3& Partition2,
-                       T4& cache,
-                       T5& policy,
-                       T6& depth,
-                       T7& ParticleHistManager1,
-                       T8& ParticleHistManager2,
-                       T9& PairHistManager,
-                       T10& CprManager,
-                       T11& PcManager)
-{
-  for (auto const& [collision1, collision2] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions)) {
-    auto sliceParticle1 = Partition1->sliceByCached(o2::aod::femtobase::stored::collisionId, collision1.globalIndex(), cache);
-    auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtobase::stored::collisionId, collision2.globalIndex(), cache);
-    if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0) {
-      continue;
-    }
-
-    // Fill single particle histograms
-    for (auto const& part : sliceParticle1) {
-      ParticleHistManager1.template fill<mode>(part);
-    }
-
-    for (auto const& part : sliceParticle2) {
-      ParticleHistManager2.template fill<mode>(part);
-    }
-
-    for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(sliceParticle1, sliceParticle2))) {
-
-      // pair cleaning
-      if (!PcManager.template isCleanPair(p1, p2)) {
-        continue;
-      }
-      // Close pair rejection
-      if (CprManager.isActivated()) {
-        CprManager.setPair(p1, p2);
-        if (CprManager.isClosePair()) {
-          continue;
-        }
-      }
-      CprManager.template fill<mode>();
-      PairHistManager.setPair(p1, p2);
-      PairHistManager.template fill<mode>();
-    }
-  }
-}
-
 constexpr char PrefixTrackTrackSe[] = "TrackTrack/SE/";
 constexpr char PrefixTrackTrackMe[] = "TrackTrack/ME/";
+
+constexpr char PrefixTrackV0Se[] = "TrackV0/SE/";
+constexpr char PrefixTrackV0Me[] = "TrackV0/ME/";
 
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
@@ -245,7 +123,7 @@ constexpr std::string_view QaDir = "QA/";
 /// \class FemtoDreamEventHisto
 /// \brief Class for histogramming event properties
 // template <femtomodes::Mode mode>
-template <const char* prefix>
+template <const char* prefix, modes::Mode mode>
 class PairHistManager
 {
  public:
@@ -254,7 +132,6 @@ class PairHistManager
   /// Initializes histograms for the task
   /// \param registry Histogram registry to be passed
   ///
-  template <modes::Mode mode>
   void init(o2::framework::HistogramRegistry* registry, std::map<PairHist, std::vector<o2::framework::AxisSpec>> Specs)
   {
     mHistogramRegistry = registry;
@@ -285,7 +162,7 @@ class PairHistManager
   }
 
   template <typename T1, typename T2>
-  void setPair(T1 particle1, T2 particle2)
+  void setPair(const T1& particle1, const T2& particle2)
   {
     mTrack1 = ROOT::Math::PtEtaPhiMVector{particle1.pt(), particle1.eta(), particle1.phi(), mMass1};
     mTrack2 = ROOT::Math::PtEtaPhiMVector{particle2.pt(), particle2.eta(), particle2.phi(), mMass2};
@@ -304,7 +181,6 @@ class PairHistManager
     mKstar = boostPrf(track1).P();
   }
 
-  template <modes::Mode mode>
   void fill()
   {
     if constexpr (isFlagSet(mode, modes::Mode::kANALYSIS)) {

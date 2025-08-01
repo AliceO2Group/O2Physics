@@ -20,6 +20,7 @@
 #include "PWGCF/FemtoUnited/Core/histManager.h"
 #include "PWGCF/FemtoUnited/Core/modes.h"
 #include "PWGCF/FemtoUnited/DataModel/FemtoTracksDerived.h"
+#include "PWGCF/FemtoUnited/DataModel/FemtoV0sDerived.h"
 
 namespace o2::analysis::femtounited
 {
@@ -28,6 +29,7 @@ namespace paircleaner
 /// \class FemtoDreamEventHisto
 /// \brief Class for histogramming event properties
 // template <femtomodes::Mode mode>
+template <modes::Pairs pair>
 class PairCleaner
 {
  public:
@@ -35,10 +37,29 @@ class PairCleaner
   virtual ~PairCleaner() = default;
 
   template <typename T1, typename T2>
-  bool isCleanPair(T1 particle1, T2 particle2)
+  bool isCleanPair(const T1& particle1, const T2& particle2)
   {
-    if constexpr (std::is_same_v<T1, o2::aod::FUTracks::iterator> && std::is_same_v<T2, o2::aod::FUTracks::iterator>) {
+    if constexpr (modes::isEqual(pair, modes::Pairs::kTrackTrack)) {
       return particle1.globalIndex() != particle2.globalIndex();
+    }
+    return true;
+  };
+
+  template <typename T1, typename T2, typename T3>
+  bool isCleanPair(const T1& particle1, const T2& particle2, const T3& /*trackTable*/)
+  {
+    if constexpr (modes::isEqual(pair, modes::Pairs::kTrackV0) || modes::isEqual(pair, modes::Pairs::kTrackResonance)) {
+      auto posDaughter = particle2.template posDau_as<T3>();
+      auto negDaughter = particle2.template negDau_as<T3>();
+      return (particle1.globalIndex() != posDaughter.globalIndex() && particle1.globalIndex() != negDaughter.globalIndex());
+    }
+    if constexpr (modes::isEqual(pair, modes::Pairs::kTrackCascade)) {
+      auto posDaughter = particle2.template posDau_as<T3>();
+      auto negDaughter = particle2.template negDau_as<T3>();
+      auto bachelor = particle2.template bachelor_as<T3>();
+      return (particle1.globalIndex() != posDaughter.globalIndex() &&
+              particle1.globalIndex() != negDaughter.globalIndex() &&
+              particle1.globalIndex() != bachelor.globalIndex());
     }
     return true;
   };

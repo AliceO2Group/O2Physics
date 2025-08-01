@@ -29,7 +29,7 @@ using TrackMaskType = uint64_t;
 using TrackType = uint16_t;
 
 // datatypes for v0s
-using V0MaskType = uint32_t;
+using V0MaskType = uint16_t;
 using V0Type = uint8_t;
 
 // datatypes for two track resonances
@@ -38,8 +38,11 @@ using TwoTrackResonanceMaskType = uint64_t;
 using TwoTrackResonanceType = uint8_t;
 
 // datatypes for cascades
-using CascadeMaskType = uint32_t;
+using CascadeMaskType = uint16_t;
 using CascadeType = uint8_t;
+
+// datatypes for pairs
+using PairType = uint8_t;
 
 } // namespace femtodatatypes
 

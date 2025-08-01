@@ -50,10 +50,10 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> tpcSharedClusterFractionMax{"tpcSharedClusterFractionMax", {1.f}, "Maximum fraction of shared clusters in TPC"};
   o2::framework::Configurable<std::vector<float>> itsClustersMin{"itsClustersMin", {5.f}, "Minimum number of clusters in ITS"};
   o2::framework::Configurable<std::vector<float>> itsIbClustersMin{"itsIbClustersMin", {3.f}, "Minimum number of clusters in inner barrel (max 3) of ITS"};
-  o2::framework::Configurable<std::vector<std::string>> dcaxyMax{"dcaxyMax", {"0.0105+(0.035/x^(1.1))"}, "Maximum |dca_xy| as a function of pT"};
-  o2::framework::Configurable<std::vector<std::string>> dcazMax{"dcazMax", {"0.0105+(0.035/x^(1.1))"}, "Maximum |dca_z| as a function of pT"};
+  o2::framework::Configurable<std::vector<std::string>> dcaxyMax{"dcaxyMax", {"0.004+(0.013/x)"}, "Maximum |dca_xy| as a function of pT"};
+  o2::framework::Configurable<std::vector<std::string>> dcazMax{"dcazMax", {"0.004+(0.013/x))"}, "Maximum |dca_z| as a function of pT"};
 
-  o2::framework::Configurable<float> minMomentumForTof{"minMomentumForTof", 1.2f, "Minimum momentum to required TOF PID (all species)"};
+  o2::framework::Configurable<float> minMomentumForTof{"minMomentumForTof", 2.0f, "Minimum momentum to required TOF PID (all species)"};
 
   // track its pid cuts
   o2::framework::Configurable<std::vector<float>> itsElectron{"itsElectron", {}, "Maximum |nsigma| for electron PID"};
@@ -98,17 +98,17 @@ struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   std::string prefix = Prefix; // Unique prefix based on the template argument
   // configuration parameters
   o2::framework::Configurable<int> pdgCode{"pdgCode", 2212, "Track PDG code"};
-  o2::framework::Configurable<int> sign{"sign", 1, "Sign of the track (1 for positive particles and -1 for negative particles"};
+  o2::framework::Configurable<int> sign{"sign", 1, "Sign of the track (1 for positive tracks and -1 for negative tracks)"};
   // filters for kinematics
   o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT (GeV/c)"};
-  o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT (GeV/c)"};
-  o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};
-  o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};
+  o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT (GeV/c)"};
+  o2::framework::Configurable<float> etaMin{"etaMin", -0.9f, "Minimum eta"};
+  o2::framework::Configurable<float> etaMax{"etaMax", 0.9f, "Maximum eta"};
   o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};
   // track selection masks
-  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> maskLowMomentum{"maskLowMomentum", 1u, "Bitmask for selections below momentum threshold"};
-  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> maskHighMomentum{"maskHighMomentum", 2u, "Bitmask for selections above momentum threshold"};
+  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> maskLowMomentum{"maskLowMomentum", 2u, "Bitmask for selections below momentum threshold"};
+  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> maskHighMomentum{"maskHighMomentum", 1u, "Bitmask for selections above momentum threshold"};
   // momentum threshold for PID usage
   o2::framework::Configurable<float> pidThres{"pidThres", 1.2f, "Momentum threshold for using TPCTOF/TOF pid for tracks with large momentum (GeV/c)"};
 };
@@ -170,6 +170,49 @@ enum TrackSels {
 
   kTrackSelsMax
 };
+
+const std::string TrackSelsName = std::string("Track Selection Object");
+const std::unordered_map<TrackSels, std::string> TrackSelsToString = {
+  {kTPCnClsMin, "Min. number of TPC clusters"},
+  {kTPCcRowsMin, "Min. number of crossed TPC rows"},
+  {kTPCsClsMax, "Max. number of shared TPC clusters"},
+  {kTPCsClsFracMax, "Max. fractions of shared TPC clusters"},
+  {kITSnClsMin, "Min. number of ITS clusters"},
+  {kITSnClsIbMin, "Min. number of ITS clusters in the inner barrel"},
+  {kDCAxyMax, "Max. |DCA_xy| (cm) as a function of pT"},
+  {kDCAzMax, "Max. |DCA_z| (cm) as a function of pT"},
+
+  {kItsElectron, "ITS Electron PID"},
+  {kItsPion, "ITS Pion PID"},
+  {kItsKaon, "ITS Kaon PID"},
+  {kItsProton, "ITS Proton PID"},
+  {kItsDeuteron, "ITS Deuteron PID"},
+  {kItsTriton, "ITS Triton PID"},
+  {kItsHelium, "ITS He3 PID"},
+
+  {kTpcElectron, "TPC Electron PID"},
+  {kTpcPion, "TPC Pion PID"},
+  {kTpcKaon, "TPC Kaon PID"},
+  {kTpcProton, "TPC Proton PID"},
+  {kTpcDeuteron, "TPC Deuteron PID"},
+  {kTpcTriton, "TPC Triton PID"},
+  {kTpcHelium, "TPC He3 PID"},
+
+  {kTofElectron, "TOF Electron PID"},
+  {kTofPion, "TOF Pion PID"},
+  {kTofKaon, "TOF Kaon PID"},
+  {kTofProton, "TOF Proton PID"},
+  {kTofDeuteron, "TOF Deuteron PID"},
+  {kTofTriton, "TOF Triton PID"},
+  {kTofHelium, "TOF He3 PID"},
+
+  {kTpctofElectron, "TPC+TOF Electron PID"},
+  {kTpctofPion, "TPC+TOF Pion PID"},
+  {kTpctofKaon, "TPC+TOF Kaon PID"},
+  {kTpctofProton, "TPC+TOF Proton PID"},
+  {kTpctofDeuteron, "TPC+TOF Deuteron PID"},
+  {kTpctofTriton, "TPC+TOF Triton PID"},
+  {kTpctofHelium, "TPC+TOF He3 PID"}};
 
 /// \class FemtoDreamTrackCuts
 /// \brief Cut class to contain and execute all cuts applied to tracks
@@ -234,7 +277,7 @@ class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::Trac
     this->evaluateObservable(kTPCnClsMin, Track.tpcNClsFound());
     this->evaluateObservable(kTPCcRowsMin, Track.tpcNClsCrossedRows());
     this->evaluateObservable(kTPCsClsMax, Track.tpcNClsShared());
-    this->evaluateObservable(kTPCsClsMax, static_cast<float>(Track.tpcNClsShared()) / static_cast<float>(Track.tpcNClsFound()));
+    this->evaluateObservable(kTPCsClsFracMax, static_cast<float>(Track.tpcNClsShared()) / static_cast<float>(Track.tpcNClsFound()));
     this->evaluateObservable(kITSnClsMin, Track.itsNCls());
     this->evaluateObservable(kITSnClsIbMin, Track.itsNClsInnerBarrel());
 
@@ -292,7 +335,7 @@ class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::Trac
   }
 
  protected:
-  float mMinimalMomentumForTof = 99.f;
+  float mMinimalMomentumForTof = 2.f;
 };
 }; // namespace trackselection
 }; // namespace o2::analysis::femtounited
