@@ -75,8 +75,8 @@ using std::array;
 using namespace o2::aod::rctsel;
 
 using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
-using V0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs>;
-using CascadeCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascTOFPIDs>;
+using V0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>;
+using CascadeCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs>;
 
 struct strangenessderivedbinnedinfo {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
