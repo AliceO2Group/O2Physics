@@ -452,16 +452,6 @@ class MultModule
       }
     }
 
-    opts = internalOpts;
-
-    // list enabled tables
-    for (int i = 0; i < nTablesConst; i++) {
-      // printout to be improved in the future
-      if (internalOpts.mEnabledTables[i]) {
-        LOGF(info, " -~> Table enabled: %s, requested by %s", tableNames[i], listOfRequestors[i].Data());
-      }
-    }
-
     // dependency checker
     if (internalOpts.mEnabledTables[kCentFV0As] && !internalOpts.mEnabledTables[kFV0MultZeqs]) {
       internalOpts.mEnabledTables[kFV0MultZeqs] = 1;
@@ -488,6 +478,14 @@ class MultModule
       listOfRequestors[kPVMults].Append(Form("%s ", "dependency check"));
     }
 
+    // list enabled tables
+    for (int i = 0; i < nTablesConst; i++) {
+      // printout to be improved in the future
+      if (internalOpts.mEnabledTables[i]) {
+        LOGF(info, " -~> Table enabled: %s, requested by %s", tableNames[i], listOfRequestors[i].Data());
+      }
+    }
+
     // capture the need for PYTHIA calibration in Pb-Pb runs
     if (metadataInfo.isMC() && mRunNumber >= 544013 && mRunNumber <= 545367) {
       internalOpts.generatorName.value = "PYTHIA";
@@ -502,6 +500,9 @@ class MultModule
     hVtxZFDDA = nullptr;
     hVtxZFDDC = nullptr;
     hVtxZNTracks = nullptr;
+
+    // pass to the outside
+    opts = internalOpts;
   }
 
   //__________________________________________________

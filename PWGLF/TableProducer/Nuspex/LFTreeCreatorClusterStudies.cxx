@@ -241,6 +241,7 @@ struct LfTreeCreatorClusterStudies {
      {"photon_radiusV0", "Photon conversion radius (xy) V0; radius (cm); counts", {HistType::kTH1F, {{100, 0., 100.}}}},
      {"photon_conversion_position", "Photon conversion position; x (cm); y (cm)", {HistType::kTH2F, {{250, -5.f, 5.f}, {250, -5.f, 5.f}}}},
      {"photon_conversion_position_layer", "Photon conversion position (ITS layers); x (cm); y (cm)", {HistType::kTH2F, {{100, -5.f, 5.f}, {100, -5.f, 5.f}}}},
+     {"casc_dca_daughter_pairs", "DCA (xy) for cascade daughter pairs; DCAxy (cm); counts", {HistType::kTH1F, {{100, -0.1, 0.1}}}},
      {"Xi_vs_Omega", "Mass Xi vs Omega; mass Omega (GeV/#it{c}^{2}); mass Xi (GeV/#it{c}^{2})", {HistType::kTH2F, {{50, 1.f, 2.f}, {50, 1.f, 2.f}}}},
      {"massOmega", "Mass #Omega; signed #it{p}_{T} (GeV/#it{c}); mass (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {100, 1.62f, 1.72f}}}},
      {"massOmegaWithBkg", "Mass Omega with Background; mass Omega (GeV/#it{c}^{2}); counts", {HistType::kTH1F, {{100, 1.62f, 1.72f}}}},
@@ -420,6 +421,7 @@ struct LfTreeCreatorClusterStudies {
 
   bool qualitySelectionCascade(const double dcaCascDaughters, const double cosPA)
   {
+    m_hAnalysis.fill(HIST("casc_dca_daughter_pairs"), dcaCascDaughters);
     if (std::abs(dcaCascDaughters) > cascsetting_dcaCascDaughters) {
       return false;
     }
@@ -616,7 +618,7 @@ struct LfTreeCreatorClusterStudies {
   {
     float beta = o2::pid::tof::Beta::GetBeta(candidate);
     beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
-    return candidate.tpcInnerParam() * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
+    return candidate.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
   }
 
   // =========================================================================================================
@@ -816,6 +818,7 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
 
+    m_v0TrackParCovs.emplace_back(v0TrackParCov);
     float massV0 = fillHistogramsV0(massLambdaV0, massAntiLambdaV0, momMother, candidatePos, candidateNeg, alphaAP, qtAP, radiusV0, v0Bitmask);
     candidatePos.massMother = massV0;
     candidateNeg.massMother = massV0;
@@ -942,7 +945,7 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
     m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDeNClsIts);
-    if (!selectionPIDtpcDe(track)) {
+    if (std::abs(track.tpcNSigmaDe()) > desetting_nsigmatpc) {
       return;
     }
     m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDePIDtpc);
@@ -950,7 +953,7 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
     m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDePIDtof);
-    m_hAnalysis.fill(HIST("nSigmaTPCDe"), track.p() * track.sign(), computeNSigmaDe(track));
+    m_hAnalysis.fill(HIST("nSigmaTPCDe"), track.p() * track.sign(), track.tpcNSigmaDe());
     m_hAnalysis.fill(HIST("nSigmaITSDe"), track.p() * track.sign(), m_responseITS.nSigmaITS<o2::track::PID::Deuteron>(track.itsClusterSizes(), track.p(), track.eta()));
     m_hAnalysis.fill(HIST("nSigmaTOFDe"), track.p() * track.sign(), track.tofNSigmaDe());
     m_hAnalysis.fill(HIST("TOFmassDe"), track.p() * track.sign(), computeTOFmassDe<isMC>(track));
@@ -968,7 +971,7 @@ struct LfTreeCreatorClusterStudies {
       m_ClusterStudiesTableExtra(
         track.tpcInnerParam() * track.sign(), // pTPC_De,
         track.pidForTracking(),               // PIDinTrk_De,
-        computeNSigmaDe(track),               // TpcNSigma_De,
+        track.tpcNSigmaDe(),                  // TpcNSigma_De,
         track.tofNSigmaDe(),                  // TofNSigma_De,
         computeTOFmassDe<isMC>(track),        // TofMass_De,
         -999.f,                               // cosPA,
