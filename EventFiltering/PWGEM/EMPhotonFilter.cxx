@@ -12,16 +12,19 @@
 // \brief software trigger for EM photon
 // \author daiki.sekihata@cern.ch
 
-#include "Math/Vector4D.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/CaloClusters.h"
-#include "DataFormatsPHOS/TriggerRecord.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+
+#include "Common/DataModel/CaloClusters.h"
 #include "EventFiltering/filterTables.h"
+
+#include "DataFormatsPHOS/TriggerRecord.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Math/Vector4D.h"
 
 using namespace o2;
 using namespace o2::soa;
@@ -325,13 +328,10 @@ struct EMPhotonFilter {
     } // end of collision loop
   }
 
-  Filter PCMFilter = o2::aod::v0photonkf::dcaXYtopv < max_dcatopv_xy_v0 && o2::aod::v0photonkf::dcaZtopv < max_dcatopv_z_v0;
-  using filteredV0PhotonsKF = Filtered<aod::V0PhotonsKF>;
-
   Filter DalitzEEFilter = o2::aod::dalitzee::sign == 0; // analyze only uls
   using filteredDalitzEEs = Filtered<aod::DalitzEEs>;
 
-  void process_PCM(MyCollisions const& collisions, filteredV0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, filteredDalitzEEs const& dielectrons, MyPrimaryElectrons const& emprimaryelectrons)
+  void process_PCM(MyCollisions const& collisions, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, filteredDalitzEEs const& dielectrons, MyPrimaryElectrons const& emprimaryelectrons)
   {
     const uint8_t system = EM_Filter_PhotonType::kPCM;
     runFilter<system>(collisions, v0photons, nullptr, nullptr, v0legs, dielectrons, emprimaryelectrons);
@@ -351,7 +351,7 @@ struct EMPhotonFilter {
     runFilter<system>(collisions, nullptr, nullptr, clusters, nullptr, nullptr, nullptr);
   }
 
-  void process_PCM_PHOS(MyCollisions const& collisions, filteredV0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, filteredDalitzEEs const& dielectrons, MyPrimaryElectrons const& emprimaryelectrons, CluCandidates const& clusters)
+  void process_PCM_PHOS(MyCollisions const& collisions, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, filteredDalitzEEs const& dielectrons, MyPrimaryElectrons const& emprimaryelectrons, CluCandidates const& clusters)
   {
     const uint8_t system = EM_Filter_PhotonType::kPCM | EM_Filter_PhotonType::kPHOS;
     runFilter<system>(collisions, v0photons, clusters, nullptr, v0legs, dielectrons, emprimaryelectrons);

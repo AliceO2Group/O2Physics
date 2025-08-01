@@ -240,10 +240,10 @@ class DalitzEECut : public TNamed
   {
     switch (cut) {
       case DalitzEECuts::kTrackPtRange:
-        return track.pt() >= mMinTrackPt && track.pt() <= mMaxTrackPt;
+        return track.pt() > mMinTrackPt && track.pt() < mMaxTrackPt;
 
       case DalitzEECuts::kTrackEtaRange:
-        return track.eta() >= mMinTrackEta && track.eta() <= mMaxTrackEta;
+        return track.eta() > mMinTrackEta && track.eta() < mMaxTrackEta;
 
       case DalitzEECuts::kTPCNCls:
         return track.tpcNClsFound() >= mMinNClustersTPC;
@@ -255,19 +255,19 @@ class DalitzEECut : public TNamed
         return track.tpcCrossedRowsOverFindableCls() >= mMinNCrossedRowsOverFindableClustersTPC;
 
       case DalitzEECuts::kTPCFracSharedClusters:
-        return track.tpcFractionSharedCls() <= mMaxFracSharedClustersTPC;
+        return track.tpcFractionSharedCls() < mMaxFracSharedClustersTPC;
 
       case DalitzEECuts::kTPCChi2NDF:
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
 
       case DalitzEECuts::kDCA3Dsigma:
-        return mMinDca3D <= dca3DinSigma(track) && dca3DinSigma(track) <= mMaxDca3D; // in sigma for single leg
+        return mMinDca3D < dca3DinSigma(track) && dca3DinSigma(track) < mMaxDca3D; // in sigma for single leg
 
       case DalitzEECuts::kDCAxy:
-        return std::fabs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
+        return std::fabs(track.dcaXY()) < ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
 
       case DalitzEECuts::kDCAz:
-        return std::fabs(track.dcaZ()) <= mMaxDcaZ;
+        return std::fabs(track.dcaZ()) < mMaxDcaZ;
 
       case DalitzEECuts::kITSNCls:
         return mMinNClustersITS <= track.itsNCls() && track.itsNCls() <= mMaxNClustersITS;
@@ -283,7 +283,7 @@ class DalitzEECut : public TNamed
   // Setters
   void SetPairPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetPairYRange(float minY = -1e10f, float maxY = 1e10f);
-  void SetMeeRange(float min = 0.f, float max = 0.5);
+  void SetMeeRange(float min = 0.f, float max = 0.04);
   void SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut);
   void SelectPhotonConversion(bool flag);
 
