@@ -20,13 +20,13 @@
 #ifndef COMMON_CORE_COLLISIONASSOCIATION_H_
 #define COMMON_CORE_COLLISIONASSOCIATION_H_
 
-#include <vector>
+#include <CommonConstants/LHCConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+
 #include <memory>
 #include <utility>
-
-#include "CommonConstants/LHCConstants.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
+#include <vector>
 
 namespace o2::aod
 {
@@ -191,30 +191,30 @@ class CollisionAssociation
       for (auto& iterationWindow : trackIterationWindows) {
         bool iteratorMoved = false;
         const bool isAssignedTrackWindow = (iterationWindow.first != iterationWindow.second) ? iterationWindow.first.has_collision() : false;
-        for (auto track = iterationWindow.first; track != iterationWindow.second; ++track) {
-          int64_t trackBC = globalBC[track.filteredIndex()];
+        for (auto trackInWindow = iterationWindow.first; trackInWindow != iterationWindow.second; ++trackInWindow) {
+          int64_t trackBC = globalBC[trackInWindow.filteredIndex()];
           if (trackBC < 0) {
             continue;
           }
 
           // Optimization to avoid looping over the full track list each time. This builds on that tracks are sorted by BCs (which they should be because collisions are sorted by BCs)
-          const int64_t bcOffset = trackBC - (int64_t)collBC;
+          const int64_t bcOffset = trackBC - static_cast<int64_t>(collBC);
           if constexpr (isCentralBarrel) {
             // only for blocks with collision association
             if (isAssignedTrackWindow) {
               constexpr int margin = 200;
               if (!iteratorMoved && bcOffset > -bcOffsetMax - margin) {
-                iterationWindow.first.setCursor(track.filteredIndex());
+                iterationWindow.first.setCursor(trackInWindow.filteredIndex());
                 iteratorMoved = true;
-                LOGP(debug, "Moving iterator begin {}", track.filteredIndex());
+                LOGP(debug, "Moving iterator begin {}", trackInWindow.filteredIndex());
               } else if (bcOffset > bcOffsetMax + margin) {
-                LOGP(debug, "Stopping iterator {}", track.filteredIndex());
+                LOGP(debug, "Stopping iterator {}", trackInWindow.filteredIndex());
                 break;
               }
             }
           }
 
-          int64_t bcOffsetWindow = trackBCCache[track.filteredIndex()] - (int64_t)collBC;
+          int64_t bcOffsetWindow = trackBCCache[trackInWindow.filteredIndex()] - static_cast<int64_t>(collBC);
           if (std::abs(bcOffsetWindow) > bcOffsetMax) {
             continue;
           }
@@ -222,27 +222,27 @@ class CollisionAssociation
           float trackTime = 0;
           float trackTimeRes = 0;
           if constexpr (isCentralBarrel) {
-            if (mUsePvAssociation && track.isPVContributor()) {
-              trackTime = track.collision().collisionTime();        // if PV contributor, we assume the time to be the one of the collision
-              trackTimeRes = o2::constants::lhc::LHCBunchSpacingNS; // 1 BC
+            if (mUsePvAssociation && trackInWindow.isPVContributor()) {
+              trackTime = trackInWindow.collision().collisionTime(); // if PV contributor, we assume the time to be the one of the collision
+              trackTimeRes = o2::constants::lhc::LHCBunchSpacingNS;  // 1 BC
             } else {
-              trackTime = track.trackTime();
-              trackTimeRes = track.trackTimeRes();
+              trackTime = trackInWindow.trackTime();
+              trackTimeRes = trackInWindow.trackTimeRes();
             }
           } else {
-            trackTime = track.trackTime();
-            trackTimeRes = track.trackTimeRes();
+            trackTime = trackInWindow.trackTime();
+            trackTimeRes = trackInWindow.trackTimeRes();
           }
 
           const float deltaTime = trackTime - collTime + bcOffset * o2::constants::lhc::LHCBunchSpacingNS;
           float sigmaTimeRes2 = collTimeRes2 + trackTimeRes * trackTimeRes;
-          LOGP(debug, "collision time={}, collision time res={}, track time={}, track time res={}, bc collision={}, bc track={}, delta time={}", collTime, collision.collisionTimeRes(), track.trackTime(), track.trackTimeRes(), collBC, trackBC, deltaTime);
+          LOGP(debug, "collision time={}, collision time res={}, track time={}, track time res={}, bc collision={}, bc track={}, delta time={}", collTime, collision.collisionTimeRes(), trackInWindow.trackTime(), trackInWindow.trackTimeRes(), collBC, trackBC, deltaTime);
 
           float thresholdTime = 0.;
           if constexpr (isCentralBarrel) {
-            if (mUsePvAssociation && track.isPVContributor()) {
+            if (mUsePvAssociation && trackInWindow.isPVContributor()) {
               thresholdTime = trackTimeRes;
-            } else if (TESTBIT(track.flags(), o2::aod::track::TrackTimeResIsRange)) {
+            } else if (TESTBIT(trackInWindow.flags(), o2::aod::track::TrackTimeResIsRange)) {
               // the track time resolution is a range, not a gaussian resolution
               thresholdTime = trackTimeRes + mNumSigmaForTimeCompat * std::sqrt(collTimeRes2) + mTimeMargin;
             } else {
@@ -262,7 +262,7 @@ class CollisionAssociation
 
           if (std::abs(deltaTime) < thresholdTime) {
             const auto collIdx = collision.globalIndex();
-            const auto trackIdx = track.globalIndex();
+            const auto trackIdx = trackInWindow.globalIndex();
             LOGP(debug, "Filling track id {} for coll id {}", trackIdx, collIdx);
             association(collIdx, trackIdx);
             if (mFillTableOfCollIdsPerTrack) {
@@ -278,9 +278,9 @@ class CollisionAssociation
     // create reverse index track to collisions if enabled
     if (mFillTableOfCollIdsPerTrack) {
       std::vector<int> empty{};
-      for (const auto& track : tracksUnfiltered) {
+      for (const auto& trackUnfiltered : tracksUnfiltered) {
 
-        const auto trackId = track.globalIndex();
+        const auto trackId = trackUnfiltered.globalIndex();
         if (collsPerTrack[trackId] == nullptr) {
           reverseIndices(empty);
         } else {

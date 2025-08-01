@@ -16,13 +16,15 @@
 #ifndef COMMON_CORE_TRACKSELECTION_H_
 #define COMMON_CORE_TRACKSELECTION_H_
 
-#include <set>
-#include <vector>
-#include <utility>
-#include <string>
-#include "Framework/Logger.h"
 #include "Framework/DataTypes.h"
-#include "Rtypes.h"
+#include "Framework/Logger.h"
+
+#include <Rtypes.h>
+
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 class TrackSelection
 {

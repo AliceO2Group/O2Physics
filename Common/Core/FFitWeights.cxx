@@ -16,11 +16,11 @@
 
 #include "FFitWeights.h"
 
-#include <string>
-#include <cstdio>
-#include <vector>
-
 #include <TSpline.h>
+
+#include <cstdio>
+#include <string>
+#include <vector>
 
 ClassImp(FFitWeights)
 
@@ -111,7 +111,7 @@ void FFitWeights::addArray(TObjArray* targ, TObjArray* sour)
   }
 };
 
-void FFitWeights::qSelection(std::vector<int> nhv, std::vector<std::string> stv) /* only execute OFFLINE */
+void FFitWeights::qSelection(const std::vector<int>& nhv, const std::vector<std::string>& stv) /* only execute OFFLINE */
 {
   TObjArray* tar{nullptr};
 
