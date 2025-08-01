@@ -705,7 +705,7 @@ struct HfCandidateCreatorCharmResoReduced {
           }
         } else if constexpr (bachType == BachelorType::Track) { // Case: Track
           if (rejectPairsWithCommonDaughter) {
-            if (std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.globalIndex()) != dDaughtersIDs.end()) {
+            if (std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.trackId()) != dDaughtersIDs.end()) {
               continue;
             }
           }

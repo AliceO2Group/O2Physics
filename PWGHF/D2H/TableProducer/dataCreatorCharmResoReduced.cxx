@@ -173,6 +173,7 @@ struct HfDataCreatorCharmResoReduced {
 
   // QA histograms
   struct : ConfigurableGroup {
+    std::string prefix = "qa_plots";
     Configurable<bool> applyCutsForQaHistograms{"applyCutsForQaHistograms", true, "flag to apply cuts to QA histograms"};
     Configurable<float> cutMassDstarMin{"cutMassDstarMin", 0.143, "minimum mass for Dstar candidates"};
     Configurable<float> cutMassDstarMax{"cutMassDstarMax", 0.155, "maximum mass for Dstar candidates"};
@@ -929,6 +930,7 @@ struct HfDataCreatorCharmResoReduced {
         SETBIT(debugMcRec, hf_decay::hf_cand_reso::PartialMatchMc::D0Matched);
         origin = candCharmBach.originMcRec();
       }
+      flagTrack = getMatchingFlagTrack(bachelorTrack);
       if (hf_decay::hf_cand_2prong::daughtersD0Main.contains(static_cast<hf_decay::hf_cand_2prong::DecayChannelMain>(std::abs(flagCharmBach))) && flagTrack == hf_decay::hf_cand_reso::PartialMatchMc::PionMatched) {
         auto arrDaughtersReso = std::array{vecDaughtersReso[0], vecDaughtersReso[1], bachelorTrack};
         auto pdgCodesDzeroDaughters = hf_decay::hf_cand_2prong::daughtersD0Main.at(static_cast<hf_decay::hf_cand_2prong::DecayChannelMain>(std::abs(flagCharmBach)));
@@ -1436,7 +1438,8 @@ struct HfDataCreatorCharmResoReduced {
           } // end of DType switch
           // fill track table
           if (!selectedTracks.count(track.globalIndex())) {
-            hfTrackNoParam(indexHfReducedCollision,
+            hfTrackNoParam(track.globalIndex(),
+                           indexHfReducedCollision,
                            track.px(), track.py(), track.pz(), track.sign(),
                            track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                            track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
