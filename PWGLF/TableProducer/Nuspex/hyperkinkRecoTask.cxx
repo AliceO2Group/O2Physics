@@ -980,8 +980,6 @@ struct HyperkinkQa {
   Configurable<float> itsMaxChi2{"itsMaxChi2", 36, "max chi2 for ITS"};
   Configurable<float> minRatioTPCNCls{"minRatioTPCNCls", 0.8, "min ratio of TPC crossed rows to findable clusters"};
 
-  Preslice<aod::McParticles> permcCollision = o2::aod::mcparticle::mcCollisionId;
-
   // QA for mother track selection
   template <typename TTrack>
   bool motherTrackCheck(const TTrack& track, const std::shared_ptr<TH1> hist)
@@ -1095,142 +1093,140 @@ struct HyperkinkQa {
       genQAHist.fill(HIST("hMcCollCounter"), 0.5);
       if (isSelectedMCCollisions[mcCollision.globalIndex()]) { // Check that the event is reconstructed and that the reconstructed events pass the selection
         genQAHist.fill(HIST("hMcCollCounter"), 1.5);
-      } else {
-        if (skipRejectedEvents) {
+      }
+    }
+
+    for (const auto& mcparticle : particlesMC) {
+      if (std::abs(mcparticle.pdgCode()) != pdgMoth) {
+        continue;
+      }
+      auto mcCollision = mcparticle.mcCollision_as<aod::McCollisions>();
+      if (skipRejectedEvents && !isSelectedMCCollisions[mcCollision.globalIndex()]) {
+        continue;
+      }
+      bool isMatter = mcparticle.pdgCode() > 0;
+      genQAHist.fill(HIST("hGenHyperMothCounter"), 0.5);
+      genQAHist.fill(HIST("hGenHyperMothCounter"), isMatter ? 1.5 : 2.5);
+
+      // QA for decay channels
+      bool isKinkSignal = false;
+      if (hypoMoth == kHypertriton) {
+        auto dChannel = H3LDecay::getDecayChannel<aod::McParticles>(mcparticle, dauIDList);
+        if (dChannel == H3LDecay::k2bodyNeutral) {
+          genQAHist.fill(HIST("hGenHyperMothCounter"), isMatter ? 3.5 : 4.5);
+          isKinkSignal = true;
+        } else if (dChannel == H3LDecay::k2bodyCharged) {
+          genQAHist.fill(HIST("hGenHyperMothCounter"), isMatter ? 5.5 : 6.5);
+        } else if (dChannel == H3LDecay::k3bodyCharged) {
+          genQAHist.fill(HIST("hGenHyperMothCounter"), isMatter ? 7.5 : 8.5);
+        } else if (dChannel == H3LDecay::kNChannel) {
+          genQAHist.fill(HIST("hGenHyperMothCounter"), 9.5);
+          continue;
+        }
+      } else if (hypoMoth == kHyperhelium4sigma) {
+        auto dChannel = He4SDecay::getDecayChannel<aod::McParticles>(mcparticle, dauIDList);
+        if (dChannel == He4SDecay::k2body) {
+          genQAHist.fill(HIST("hGenHyperMothCounter"), isMatter ? 3.5 : 4.5);
+          isKinkSignal = true;
+        } else if (dChannel == He4SDecay::k3body_p) {
+          genQAHist.fill(HIST("hGenHyperMothCounter"), isMatter ? 5.5 : 6.5);
+        } else if (dChannel == He4SDecay::k3body_n) {
+          genQAHist.fill(HIST("hGenHyperMothCounter"), isMatter ? 7.5 : 8.5);
+        } else if (dChannel == He4SDecay::kNChannel) {
+          genQAHist.fill(HIST("hGenHyperMothCounter"), 9.5);
           continue;
         }
       }
 
-      const auto& dparticlesMC = particlesMC.sliceBy(permcCollision, mcCollision.globalIndex());
+      if (!isKinkSignal) {
+        continue;
+      }
+      recoQAHist.fill(HIST("hMothCounter"), 0);
 
-      for (const auto& mcparticle : dparticlesMC) {
-        if (std::abs(mcparticle.pdgCode()) != pdgMoth) {
-          continue;
-        }
-        bool isMatter = mcparticle.pdgCode() > 0;
-        genQAHist.fill(HIST("hGenHyperMothCounter"), 0.5);
-        genQAHist.fill(HIST("hGenHyperMothCounter"), isMatter ? 1.5 : 2.5);
+      genQAHist.fill(HIST("hEvtSelectedHyperMothCounter"), 0.5);
+      if (isSelectedMCCollisions[mcCollision.globalIndex()]) {
+        genQAHist.fill(HIST("hEvtSelectedHyperMothCounter"), 1.5);
+      }
 
-        // QA for decay channels
-        bool isKinkSignal = false;
-        if (hypoMoth == kHypertriton) {
-          auto dChannel = H3LDecay::getDecayChannel<aod::McParticles>(mcparticle, dauIDList);
-          if (dChannel == H3LDecay::k2bodyNeutral) {
-            genQAHist.fill(HIST("hGenHyperMothCounter"), isMatter ? 3.5 : 4.5);
-            isKinkSignal = true;
-          } else if (dChannel == H3LDecay::k2bodyCharged) {
-            genQAHist.fill(HIST("hGenHyperMothCounter"), isMatter ? 5.5 : 6.5);
-          } else if (dChannel == H3LDecay::k3bodyCharged) {
-            genQAHist.fill(HIST("hGenHyperMothCounter"), isMatter ? 7.5 : 8.5);
-          } else if (dChannel == H3LDecay::kNChannel) {
-            genQAHist.fill(HIST("hGenHyperMothCounter"), 9.5);
-            continue;
-          }
-        } else if (hypoMoth == kHyperhelium4sigma) {
-          auto dChannel = He4SDecay::getDecayChannel<aod::McParticles>(mcparticle, dauIDList);
-          if (dChannel == He4SDecay::k2body) {
-            genQAHist.fill(HIST("hGenHyperMothCounter"), isMatter ? 3.5 : 4.5);
-            isKinkSignal = true;
-          } else if (dChannel == He4SDecay::k3body_p) {
-            genQAHist.fill(HIST("hGenHyperMothCounter"), isMatter ? 5.5 : 6.5);
-          } else if (dChannel == He4SDecay::k3body_n) {
-            genQAHist.fill(HIST("hGenHyperMothCounter"), isMatter ? 7.5 : 8.5);
-          } else if (dChannel == He4SDecay::kNChannel) {
-            genQAHist.fill(HIST("hGenHyperMothCounter"), 9.5);
-            continue;
-          }
-        }
+      float svPos[3] = {-999, -999, -999};
+      std::vector<std::vector<float>> dauMom(kNDaughterType, std::vector<float>(3, -999.0f));
+      for (const auto& mcparticleDaughter : mcparticle.daughters_as<aod::McParticles>()) {
+        for (int type = 0; type < kNDaughterType; type++) {
+          if (std::abs(mcparticleDaughter.pdgCode()) == pdgDaug[type]) {
+            dauMom[type][0] = mcparticleDaughter.px();
+            dauMom[type][1] = mcparticleDaughter.py();
+            dauMom[type][2] = mcparticleDaughter.pz();
 
-        if (!isKinkSignal) {
-          continue;
-        }
-        recoQAHist.fill(HIST("hMothCounter"), 0);
+            if (type == kDaugCharged) {
+              svPos[0] = mcparticleDaughter.vx();
+              svPos[1] = mcparticleDaughter.vy();
+              svPos[2] = mcparticleDaughter.vz();
 
-        genQAHist.fill(HIST("hEvtSelectedHyperMothCounter"), 0.5);
-        if (isSelectedMCCollisions[mcCollision.globalIndex()]) {
-          genQAHist.fill(HIST("hEvtSelectedHyperMothCounter"), 1.5);
-        }
-
-        float svPos[3] = {-999, -999, -999};
-        std::vector<std::vector<float>> dauMom(kNDaughterType, std::vector<float>(3, -999.0f));
-        for (const auto& mcparticleDaughter : mcparticle.daughters_as<aod::McParticles>()) {
-          for (int type = 0; type < kNDaughterType; type++) {
-            if (std::abs(mcparticleDaughter.pdgCode()) == pdgDaug[type]) {
-              dauMom[type][0] = mcparticleDaughter.px();
-              dauMom[type][1] = mcparticleDaughter.py();
-              dauMom[type][2] = mcparticleDaughter.pz();
-
-              if (type == kDaugCharged) {
-                svPos[0] = mcparticleDaughter.vx();
-                svPos[1] = mcparticleDaughter.vy();
-                svPos[2] = mcparticleDaughter.vz();
-
-                // if daughter track is reconstructed
-                if (mcPartIndices[mcparticleDaughter.globalIndex()] != -1) {
-                  hDaugCounter->Fill(0.f);
-                  auto track = tracks.rawIteratorAt(mcPartIndices[mcparticleDaughter.globalIndex()]);
-                  float tpcNSigma = getTPCNSigma(track, pidTypeDaug);
-                  daughterTrackCheck(track, hDaugCounter, tpcNSigma);
-                  if (track.hasTPC()) {
-                    hDaugTPCNSigma->Fill(track.p() * track.sign(), tpcNSigma);
-                  }
+              // if daughter track is reconstructed
+              if (mcPartIndices[mcparticleDaughter.globalIndex()] != -1) {
+                hDaugCounter->Fill(0.f);
+                auto track = tracks.rawIteratorAt(mcPartIndices[mcparticleDaughter.globalIndex()]);
+                float tpcNSigma = getTPCNSigma(track, pidTypeDaug);
+                daughterTrackCheck(track, hDaugCounter, tpcNSigma);
+                if (track.hasTPC()) {
+                  hDaugTPCNSigma->Fill(track.p() * track.sign(), tpcNSigma);
                 }
               }
             }
           }
         }
+      }
 
-        genQAHist.fill(HIST("hGenHyperMothP"), mcparticle.p());
-        genQAHist.fill(HIST("hGenHyperMothPt"), mcparticle.pt());
-        float ct = RecoDecay::sqrtSumOfSquares(svPos[0] - mcparticle.vx(), svPos[1] - mcparticle.vy(), svPos[2] - mcparticle.vz()) * massMoth / mcparticle.p();
-        genQAHist.fill(HIST("hGenHyperMothCt"), ct);
-        float hypermothMCMass = RecoDecay::m(std::array{std::array{dauMom[kDaugCharged][0], dauMom[kDaugCharged][1], dauMom[kDaugCharged][2]}, std::array{dauMom[kDaugNeutral][0], dauMom[kDaugNeutral][1], dauMom[kDaugNeutral][2]}}, std::array{massChargedDaug, massNeutralDaug});
-        genQAHist.fill(HIST("hMcRecoInvMass"), hypermothMCMass);
+      genQAHist.fill(HIST("hGenHyperMothP"), mcparticle.p());
+      genQAHist.fill(HIST("hGenHyperMothPt"), mcparticle.pt());
+      float ct = RecoDecay::sqrtSumOfSquares(svPos[0] - mcparticle.vx(), svPos[1] - mcparticle.vy(), svPos[2] - mcparticle.vz()) * massMoth / mcparticle.p();
+      genQAHist.fill(HIST("hGenHyperMothCt"), ct);
+      float hypermothMCMass = RecoDecay::m(std::array{std::array{dauMom[kDaugCharged][0], dauMom[kDaugCharged][1], dauMom[kDaugCharged][2]}, std::array{dauMom[kDaugNeutral][0], dauMom[kDaugNeutral][1], dauMom[kDaugNeutral][2]}}, std::array{massChargedDaug, massNeutralDaug});
+      genQAHist.fill(HIST("hMcRecoInvMass"), hypermothMCMass);
 
-        // if mother track is reconstructed
-        if (mcPartIndices[mcparticle.globalIndex()] != -1) {
-          auto motherTrack = tracks.rawIteratorAt(mcPartIndices[mcparticle.globalIndex()]);
-          bool isGoodMother = motherTrackCheck(motherTrack, hMothCounter);
-          float svR = RecoDecay::sqrtSumOfSquares(svPos[0], svPos[1]);
-          float diffpt = mcparticle.pt() - 2 * motherTrack.pt();
+      // if mother track is reconstructed
+      if (mcPartIndices[mcparticle.globalIndex()] != -1) {
+        auto motherTrack = tracks.rawIteratorAt(mcPartIndices[mcparticle.globalIndex()]);
+        bool isGoodMother = motherTrackCheck(motherTrack, hMothCounter);
+        float svR = RecoDecay::sqrtSumOfSquares(svPos[0], svPos[1]);
+        float diffpt = mcparticle.pt() - 2 * motherTrack.pt();
 
-          recoQAHist.fill(HIST("h2TrueMotherDiffPtVsTrueSVR"), svR, diffpt);
-          recoQAHist.fill(HIST("h2TrueMotherDiffEtaVsTrueSVR"), svR, mcparticle.eta() - motherTrack.eta());
-          if (isGoodMother) {
-            recoQAHist.fill(HIST("h2GoodMotherDiffPtVsTrueSVR"), svR, diffpt);
+        recoQAHist.fill(HIST("h2TrueMotherDiffPtVsTrueSVR"), svR, diffpt);
+        recoQAHist.fill(HIST("h2TrueMotherDiffEtaVsTrueSVR"), svR, mcparticle.eta() - motherTrack.eta());
+        if (isGoodMother) {
+          recoQAHist.fill(HIST("h2GoodMotherDiffPtVsTrueSVR"), svR, diffpt);
+        }
+
+        // if mother track and charged daughters are all reconstructed
+        bool isDauReconstructed = mcPartIndices[dauIDList[0]] != -1;
+        if (isDauReconstructed) {
+          auto daughterTrack = tracks.rawIteratorAt(mcPartIndices[dauIDList[0]]);
+          bool isMoth = motherTrackCheck(motherTrack, hRecoMothCounter);
+          bool isDaug = daughterTrackCheck(daughterTrack, hRecoDaugCounter, getTPCNSigma(daughterTrack, pidTypeDaug));
+
+          recoQAHist.fill(HIST("hRecoCandidateCount"), 0.5);
+          recoQAHist.fill(HIST("hRecoMothCounter"), 0.5);
+          recoQAHist.fill(HIST("hMothITSCls"), motherTrack.itsNCls());
+          recoQAHist.fill(HIST("hRecoDaugCounter"), 0.5);
+          recoQAHist.fill(HIST("hMothIsPVContributer"), motherTrack.isPVContributor() ? 1.5 : 0.5);
+          recoQAHist.fill(HIST("hDaugIsPVContributer"), daughterTrack.isPVContributor() ? 1.5 : 0.5);
+
+          float itsNSigma = getITSNSigma(daughterTrack, itsResponse, pidTypeDaug);
+          if (daughterTrack.hasITS()) {
+            recoQAHist.fill(HIST("hDaugITSNSigma"), daughterTrack.sign() * daughterTrack.p(), itsNSigma);
+            recoQAHist.fill(HIST("hDaugITSCls"), daughterTrack.itsNCls());
           }
 
-          // if mother track and charged daughters are all reconstructed
-          bool isDauReconstructed = mcPartIndices[dauIDList[0]] != -1;
-          if (isDauReconstructed) {
-            auto daughterTrack = tracks.rawIteratorAt(mcPartIndices[dauIDList[0]]);
-            bool isMoth = motherTrackCheck(motherTrack, hRecoMothCounter);
-            bool isDaug = daughterTrackCheck(daughterTrack, hRecoDaugCounter, getTPCNSigma(daughterTrack, pidTypeDaug));
-
-            recoQAHist.fill(HIST("hRecoCandidateCount"), 0.5);
-            recoQAHist.fill(HIST("hRecoMothCounter"), 0.5);
-            recoQAHist.fill(HIST("hMothITSCls"), motherTrack.itsNCls());
-            recoQAHist.fill(HIST("hRecoDaugCounter"), 0.5);
-            recoQAHist.fill(HIST("hMothIsPVContributer"), motherTrack.isPVContributor() ? 1.5 : 0.5);
-            recoQAHist.fill(HIST("hDaugIsPVContributer"), daughterTrack.isPVContributor() ? 1.5 : 0.5);
-
-            float itsNSigma = getITSNSigma(daughterTrack, itsResponse, pidTypeDaug);
-            if (daughterTrack.hasITS()) {
-              recoQAHist.fill(HIST("hDaugITSNSigma"), daughterTrack.sign() * daughterTrack.p(), itsNSigma);
-              recoQAHist.fill(HIST("hDaugITSCls"), daughterTrack.itsNCls());
+          if (motherTrack.has_collision() && daughterTrack.has_collision()) {
+            recoQAHist.fill(HIST("hRecoCandidateCount"), 1.5);
+            if (motherTrack.collisionId() == daughterTrack.collisionId()) {
+              recoQAHist.fill(HIST("hRecoCandidateCount"), 2.5);
             }
+          }
 
-            if (motherTrack.has_collision() && daughterTrack.has_collision()) {
-              recoQAHist.fill(HIST("hRecoCandidateCount"), 1.5);
-              if (motherTrack.collisionId() == daughterTrack.collisionId()) {
-                recoQAHist.fill(HIST("hRecoCandidateCount"), 2.5);
-              }
-            }
-
-            if (isMoth && isDaug) {
-              recoQAHist.fill(HIST("hRecoCandidateCount"), 3.5);
-              recoQAHist.fill(HIST("hRecoDaugPVsITSNSigma"), daughterTrack.sign() * daughterTrack.p(), itsNSigma);
-            }
+          if (isMoth && isDaug) {
+            recoQAHist.fill(HIST("hRecoCandidateCount"), 3.5);
+            recoQAHist.fill(HIST("hRecoDaugPVsITSNSigma"), daughterTrack.sign() * daughterTrack.p(), itsNSigma);
           }
         }
       }
