@@ -103,6 +103,7 @@ struct HfTaskElectronWeakBoson {
 
   Configurable<float> massZMin{"massZMin", 60.0, "Minimum Z mass (GeV/c^2)"};
   Configurable<float> massZMax{"massZMax", 120.0, "Maximum Z mass (GeV/c^2)"};
+  Configurable<float> correctionPtElectron{"correctionPtElectron", 1.0, "momentum correction factor for decay electrons from Z boson"};
 
   // flag for THn
   Configurable<bool> isTHnElectron{"isTHnElectron", true, "Enables THn for electrons"};
@@ -195,6 +196,7 @@ struct HfTaskElectronWeakBoson {
     const AxisSpec axisEta{20, -1.0, 1.0, "#eta"};
     const AxisSpec axisPt{nBinsPt, 0, binPtmax, "p_{T}"};
     const AxisSpec axisNsigma{100, -5, 5, "N#sigma"};
+    const AxisSpec axisDedx{150, 0, 150, "dEdx"};
     const AxisSpec axisE{nBinsE, 0, binEmax, "Energy"};
     const AxisSpec axisM02{100, 0, 1, "M02"};
     const AxisSpec axisdPhi{100, -0.5, 0.5, "dPhi"};
@@ -245,7 +247,7 @@ struct HfTaskElectronWeakBoson {
     registry.add("hInvMassZeeUls", "invariant mass for Z ULS pair", kTH2F, {{axisPt}, {axisInvMassZ}});
     registry.add("hKfInvMassZeeLs", "invariant mass for Z LS pair KFp", kTH2F, {{axisPt}, {axisInvMassZ}});
     registry.add("hKfInvMassZeeUls", "invariant mass for Z ULS pair KFp", kTH2F, {{axisPt}, {axisInvMassZ}});
-    registry.add("hTHnElectrons", "electron info", HistType::kTHnSparseF, {axisPt, axisNsigma, axisM02, axisEop, axisIsoEnergy, axisIsoTrack});
+    registry.add("hTHnElectrons", "electron info", HistType::kTHnSparseF, {axisPt, axisNsigma, axisM02, axisEop, axisIsoEnergy, axisIsoTrack, axisEta, axisDedx});
     registry.add("hTHnTrMatch", "Track EMC Match", HistType::kTHnSparseF, {axisPt, axisdPhi, axisdEta});
 
     // Z-hadron correlation histograms
@@ -338,8 +340,8 @@ struct HfTaskElectronWeakBoson {
       KFPTrack kfpTrackAssEle = createKFPTrackFromTrack(track);
       KFParticle kfpAssEle(kfpTrackAssEle, pdgAss);
       // reco by RecoDecay
-      auto child1 = RecoDecayPtEtaPhi::pVector(kfpIsoEle.GetPt(), kfpIsoEle.GetEta(), kfpIsoEle.GetPhi());
-      auto child2 = RecoDecayPtEtaPhi::pVector(kfpAssEle.GetPt(), kfpAssEle.GetEta(), kfpAssEle.GetPhi());
+      auto child1 = RecoDecayPtEtaPhi::pVector(kfpIsoEle.GetPt() * correctionPtElectron, kfpIsoEle.GetEta(), kfpIsoEle.GetPhi());
+      auto child2 = RecoDecayPtEtaPhi::pVector(kfpAssEle.GetPt() * correctionPtElectron, kfpAssEle.GetEta(), kfpAssEle.GetPhi());
       double invMassEE = RecoDecay::m(std::array{child1, child2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
 
       // reco by KFparticle
@@ -556,7 +558,7 @@ struct HfTaskElectronWeakBoson {
             int trackCount = getIsolatedTrack(track.eta(), track.phi(), track.pt(), tracks) - 1;
 
             if (match.track_as<TrackEle>().pt() > ptTHnThresh && isTHnElectron) {
-              registry.fill(HIST("hTHnElectrons"), match.track_as<TrackEle>().pt(), match.track_as<TrackEle>().tpcNSigmaEl(), m02Emc, eop, isoEnergy, trackCount);
+              registry.fill(HIST("hTHnElectrons"), match.track_as<TrackEle>().pt(), match.track_as<TrackEle>().tpcNSigmaEl(), m02Emc, eop, isoEnergy, trackCount, track.eta(), track.tpcSignal());
             }
             // LOG(info) << "E/p" << eop;
             registry.fill(HIST("hEopNsigTPC"), match.track_as<TrackEle>().tpcNSigmaEl(), eop);
