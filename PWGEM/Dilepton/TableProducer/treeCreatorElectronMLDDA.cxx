@@ -119,10 +119,15 @@ struct TreeCreatorElectronMLDDA {
   Configurable<double> d_bz_input{"d_bz_input", -999, "bz field, -999 is automatic"};
   Configurable<int> useMatCorrType{"useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
 
-  Configurable<float> downscaling_electron{"downscaling_electron", 0.01, "down scaling factor to store electron"};
-  Configurable<float> downscaling_pion{"downscaling_pion", 0.01, "down scaling factor to store pion"};
-  Configurable<float> downscaling_kaon{"downscaling_kaon", 1.1, "down scaling factor to store kaon"};
-  Configurable<float> downscaling_proton{"downscaling_proton", 0.01, "down scaling factor to store proton"};
+  Configurable<float> downscaling_electron_highP{"downscaling_electron_highP", 1.1, "down scaling factor to store electron at high p"};
+  Configurable<float> downscaling_pion_highP{"downscaling_pion_highP", 1.1, "down scaling factor to store pion at high p"};
+  Configurable<float> downscaling_kaon_highP{"downscaling_kaon_highP", 1.1, "down scaling factor to store kaon at high p"};
+  Configurable<float> downscaling_proton_highP{"downscaling_proton_highP", 1.1, "down scaling factor to store proton at high p"};
+
+  Configurable<float> downscaling_electron_lowP{"downscaling_electron_lowP", 0.01, "down scaling factor to store electron at low p"};
+  Configurable<float> downscaling_pion_lowP{"downscaling_pion_lowP", 0.01, "down scaling factor to store pion at low p"};
+  Configurable<float> downscaling_kaon_lowP{"downscaling_kaon_lowP", 1.1, "down scaling factor to store kaon at low p"};
+  Configurable<float> downscaling_proton_lowP{"downscaling_proton_lowP", 0.01, "down scaling factor to store proton at low p"};
 
   Configurable<float> max_p_for_downscaling_electron{"max_p_for_downscaling_electron", 2.0, "max p to apply down scaling factor to store electron"};
   Configurable<float> max_p_for_downscaling_pion{"max_p_for_downscaling_pion", 2.0, "max p to apply down scaling factor to store pion"};
@@ -588,20 +593,44 @@ struct TreeCreatorElectronMLDDA {
     // float dcaZ = mDcaInfoCov.getZ();
 
     if (pidlabel == static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kElectron)) {
-      if (dist01(engine) > downscaling_electron && trackParCov.getP() < max_p_for_downscaling_electron) {
-        return;
+      if (trackParCov.getP() < max_p_for_downscaling_electron) {
+        if (dist01(engine) > downscaling_electron_lowP) {
+          return;
+        }
+      } else {
+        if (dist01(engine) > downscaling_electron_highP) {
+          return;
+        }
       }
     } else if (pidlabel == static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kPion)) {
-      if (dist01(engine) > downscaling_pion && trackParCov.getP() < max_p_for_downscaling_pion) {
-        return;
+      if (trackParCov.getP() < max_p_for_downscaling_pion) {
+        if (dist01(engine) > downscaling_pion_lowP) {
+          return;
+        }
+      } else {
+        if (dist01(engine) > downscaling_pion_highP) {
+          return;
+        }
       }
     } else if (pidlabel == static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kKaon)) {
-      if (dist01(engine) > downscaling_kaon && trackParCov.getP() < max_p_for_downscaling_kaon) {
-        return;
+      if (trackParCov.getP() < max_p_for_downscaling_kaon) {
+        if (dist01(engine) > downscaling_kaon_lowP) {
+          return;
+        }
+      } else {
+        if (dist01(engine) > downscaling_kaon_highP) {
+          return;
+        }
       }
     } else if (pidlabel == static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kProton)) {
-      if (dist01(engine) > downscaling_proton && trackParCov.getP() < max_p_for_downscaling_proton) {
-        return;
+      if (trackParCov.getP() < max_p_for_downscaling_proton) {
+        if (dist01(engine) > downscaling_proton_lowP) {
+          return;
+        }
+      } else {
+        if (dist01(engine) > downscaling_proton_highP) {
+          return;
+        }
       }
     }
 
