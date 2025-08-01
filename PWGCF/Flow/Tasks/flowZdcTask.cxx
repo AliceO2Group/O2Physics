@@ -553,16 +553,16 @@ struct FlowZdcTask {
     histos.fill(HIST("ZNASector"), sumZNA / cfgCollisionEnergy);
     histos.fill(HIST("ZNCSector"), sumZNC / cfgCollisionEnergy);
     histos.fill(HIST("ZN"), znA + znC);
-    histos.fill(HIST("ZNVsZEM"), sumZEMs, sumZNs);    
+    histos.fill(HIST("ZNVsZEM"), sumZEMs, sumZNs);
     histos.fill(HIST("ZNCVstdc"), tZNC, znC);
     histos.fill(HIST("ZNAVstdc"), tZNA, znA);
     histos.fill(HIST("ZPCVstdc"), tZPC, zpC);
     histos.fill(HIST("ZNVsFT0A"), aT0A / 100., sumZNs);
     histos.fill(HIST("ZNVsFT0C"), aT0C / 100., sumZNs);
-    histos.fill(HIST("ZNVsFT0M"), (aT0A + aT0C) / 100., sumZNs);      
+    histos.fill(HIST("ZNVsFT0M"), (aT0A + aT0C) / 100., sumZNs); 
 
     // Proton ZDC
-    if (!isOneNeutronFound || znA >= oneNeutron){
+    if (!isOneNeutronFound || znA >= oneNeutron) {
       histos.fill(HIST("ZPA"), zpA);
       histos.fill(HIST("ZPASector"), sumZPA / cfgCollisionEnergy);
       histos.fill(HIST("ZPAVstdc"), tZPA, zpA);
@@ -572,12 +572,12 @@ struct FlowZdcTask {
         histos.fill(HIST("pZPAvsFT0Ccent"), cent, zpA);
       }
     }
-    if (!isOneNeutronFound || znC >= oneNeutron){
+    if (!isOneNeutronFound || znC >= oneNeutron) {
       histos.fill(HIST("ZPC"), zpC);
       histos.fill(HIST("ZPCSector"), sumZPC / cfgCollisionEnergy);
       histos.fill(HIST("ZPCvsCent"), cent, zpC);
       if (std::isfinite(zpC) && !std::isnan(zpC) &&
-        cent >= minT0CcentCut && cent < maxT0CcentCut) {
+          cent >= minT0CcentCut && cent < maxT0CcentCut) {
         histos.fill(HIST("pZPCvsFT0Ccent"), cent, zpC);
       }
     }
