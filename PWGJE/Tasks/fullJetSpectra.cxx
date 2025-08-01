@@ -55,7 +55,6 @@ using namespace o2::framework::expressions;
 struct FullJetSpectra {
 
   HistogramRegistry registry;
-  // HistogramRegistry registryTrig;
 
   // MC Sample split configurables
   /*  Configurable<int> mcSplitSeed{"mcSplitSeed", 12345, "Seed for reproducible MC event splitting"};
@@ -68,8 +67,6 @@ struct FullJetSpectra {
   Configurable<float> centralityMax{"centralityMax", 999.0, "maximum centrality"};
   Configurable<bool> doEMCALEventWorkaround{"doEMCALEventWorkaround", false, "apply the workaround to read the EMC trigger bit by requiring a cell content in the EMCAL"};
   Configurable<bool> doMBGapTrigger{"doMBGapTrigger", true, "set to true only when using MB-Gap Trigger JJ MC to reject MB events at the collision and track level"};
-  // Configurable<bool> doMBMC{"doMBMC", false, "set to true only when using MB MC"};
-  // Configurable<bool> checkMcCollisionIsMatched{"checkMcCollisionIsMatched", false, "0: count whole MCcollisions, 1: select MCcollisions which only have their correspond collisions"};
 
   //Software Trigger configurables
   Configurable<bool> doSoftwareTriggerSelection{"doSoftwareTriggerSelection", false, "set to true when using triggered datasets"};
@@ -325,10 +322,6 @@ void init(o2::framework::InitContext&)
   particleSelection = static_cast<std::string>(particleSelections);
   jetRadiiValues = (std::vector<double>)jetRadii;
 
-  // if (doSoftwareTriggerSelection) {
-  //     zorroSummary.setObject(zorro.getZorroSummary());
-  // }
-
   /*  if (doMcClosure) {
   // randGen.SetSeed(mcSplitSeed);
   // randGen.SetSeed(static_cast<UInt_t>(std::time(nullptr)));
@@ -570,9 +563,7 @@ if (doprocessMBMCPCollisionsWithMultiplicity || doprocessMBMCPCollisionsWeighted
 
 // Label the histograms
 labelCollisionHistograms(registry);
-// labelCollisionHistograms(registryTrig);
 // labelMCSplitHistogram(registry);
-
 } // init
 
 // Initialize CCDB access and histogram registry for Zorro processing
@@ -1502,15 +1493,7 @@ for (auto const& jet : jets) {
   if (!isAcceptedPartJet<aod::JetParticles>(jet)) {
     continue;
   }
-  // if (checkMcCollisionIsMatched) { // basically checks if the same collisions are generated at the Part level as those at the Det level
-  //   auto collisionspermcpjet = collisions.sliceBy(CollisionsPerMCPCollision, jet.mcCollisionId());
-  //   if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelectionBits)) {
-  //     // Now here for every matched collision, I fill the corresponding jet histograms.
-  //     fillMCPHistograms(jet);
-  //   }
-  // } else {
     fillMCPHistograms(jet);
-  // }
 }
 }
 PROCESS_SWITCH(FullJetSpectra, processJetsMCP, "Full Jets at Particle Level", false);
@@ -1620,16 +1603,7 @@ for (auto const& jet : jets) {
   if (doMBGapTrigger && jet.eventWeight() == 1) {
     return;
   }
-
-  // if (checkMcCollisionIsMatched) {
-  //   auto collisionspermcpjet = collisions.sliceBy(CollisionsPerMCPCollision, jet.mcCollisionId());
-  //
-  //   if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelectionBits)) {
-  //     fillMCPHistograms(jet, jet.eventWeight());
-  //   }
-  // } else {
     fillMCPHistograms(jet, jet.eventWeight());
-  // }
 }
 }
 PROCESS_SWITCH(FullJetSpectra, processJetsMCPWeighted, "Full Jets at Particle Level on weighted events", false);
