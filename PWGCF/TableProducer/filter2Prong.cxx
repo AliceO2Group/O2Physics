@@ -251,7 +251,7 @@ struct Filter2Prong {
   }
   PROCESS_SWITCH(Filter2Prong, processMC, "Process MC 2-prong daughters", false);
 
-  void processMCGeneric(aod::McCollisions::iterator const&, aod::CFMcParticleRefs const& cfmcparticles)
+  void processMCGeneric(aod::McCollisions::iterator const&, aod::CFMcParticleRefs const& cfmcparticles, [[maybe_unused]] aod::McParticles const& mcparticles)
   {
     // The main filter outputs the primary MC particles. Here we just resolve the daughter indices that are needed for the efficiency matching.
     for (const auto& r : cfmcparticles) {
