@@ -1040,6 +1040,9 @@ struct AnalysisSameEventPairing {
 struct AnalysisDileptonTrack {
   Produces<aod::DileptonTrackCandidates> dileptontrackcandidatesList;
   OutputObj<THashList> fOutputList{"output"};
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::base::MatLayerCylSet* lut = nullptr;
+
   // TODO: For now this is only used to determine the position in the filter bit map for the hadron cut
   Configurable<string> fConfigTrackCuts{"cfgLeptonCuts", "", "Comma separated list of barrel track cuts"};
   Configurable<bool> fConfigFillCandidateTable{"cfgFillCandidateTable", false, "Produce a single flat tables with all relevant information dilepton-track candidates"};
