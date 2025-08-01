@@ -42,14 +42,13 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 using namespace o2::pwgem::photonmeson;
 
-// using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::EMEventsNgPCM>;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>;
 using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
 
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFbeta>;
 using MyTrack = MyTracks::iterator;
-using MyTracksMC = soa::Join<MyTracks, aod::McTrackLabels>;
+using MyTracksMC = soa::Join<MyTracks, aod::McTrackLabels, aod::mcTPCTuneOnData>;
 using MyTrackMC = MyTracksMC::iterator;
 
 struct skimmerPrimaryElectronFromDalitzEE {
@@ -131,6 +130,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
     fRegistry.add("Track/hTPCNcls2Nf", "TPC Ncls/Nfindable", kTH1F, {{200, 0, 2}}, false);
     fRegistry.add("Track/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
     fRegistry.add("Track/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
+    fRegistry.add("Track/hTPCdEdxMC", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
     fRegistry.add("Track/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     fRegistry.add("Track/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
 
@@ -209,7 +209,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
       return false;
     }
 
-    if (track.itsChi2NCl() > maxchi2its) {
+    if (track.itsChi2NCl() < 0.f || maxchi2its < track.itsChi2NCl()) {
       return false;
     }
 
@@ -225,7 +225,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
     }
 
     if (track.hasTPC()) {
-      if (track.tpcChi2NCl() > maxchi2tpc) {
+      if (track.tpcChi2NCl() < 0.f || maxchi2tpc < track.tpcChi2NCl()) {
         return false;
       }
 
@@ -307,17 +307,37 @@ struct skimmerPrimaryElectronFromDalitzEE {
     return true;
   }
 
-  template <typename TCollision, typename TTrack>
+  template <bool isMC, typename TCollision, typename TTrack>
   void fillTrackTable(TCollision const& collision, TTrack const& track)
   {
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), std::make_pair(collision.globalIndex(), track.globalIndex())) == stored_trackIds.end()) {
+      float mcTunedTPCSignal = 0.f;
+      if constexpr (isMC) {
+        mcTunedTPCSignal = track.mcTunedTPCSignal();
+        if (track.hasTPC()) {
+          mcTunedTPCSignal = track.mcTunedTPCSignal();
+        }
+      }
+
+      float itsChi2NCl = (track.hasITS() && track.itsChi2NCl() > 0.f) ? track.itsChi2NCl() : -299.f;
+      float tpcChi2NCl = (track.hasTPC() && track.tpcChi2NCl() > 0.f) ? track.tpcChi2NCl() : -299.f;
+      float beta = track.hasTOF() ? track.beta() : -29.f;
+      float tofNSigmaEl = track.hasTOF() ? track.tofNSigmaEl() : -299.f;
+      float tofNSigmaPi = track.hasTOF() ? track.tofNSigmaPi() : -299.f;
+      float tofChi2 = track.hasTOF() ? track.tofChi2() : -299.f;
+
+      float tpcSignal = track.hasTPC() ? track.tpcSignal() : 0.f;
+      float tpcNSigmaEl = track.hasTPC() ? track.tpcNSigmaEl() : -299.f;
+      float tpcNSigmaPi = track.hasTPC() ? track.tpcNSigmaPi() : -299.f;
+
       emprimaryelectrons(collision.globalIndex(), track.globalIndex(), track.sign(),
                          track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), track.cYY(), track.cZY(), track.cZZ(),
                          track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
-                         track.tpcChi2NCl(), track.tpcInnerParam(),
-                         track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaPi(),
-                         track.beta(), track.tofNSigmaEl(), track.tofNSigmaPi(),
-                         track.itsClusterSizes(), track.itsChi2NCl(), track.tofChi2(), track.detectorMap(), track.tgl());
+
+                         static_cast<int16_t>(tpcChi2NCl * 1e+2), track.tpcInnerParam(),
+                         static_cast<uint16_t>(tpcSignal * 1e+2), static_cast<int16_t>(tpcNSigmaEl * 1e+2), static_cast<int16_t>(tpcNSigmaPi * 1e+2),
+                         static_cast<int16_t>(beta * 1e+3), static_cast<int16_t>(tofNSigmaEl * 1e+2), static_cast<int16_t>(tofNSigmaPi * 1e+2),
+                         track.itsClusterSizes(), static_cast<int16_t>(itsChi2NCl * 1e+2), static_cast<int16_t>(tofChi2 * 1e+2), track.detectorMap(), track.tgl(), static_cast<uint16_t>(mcTunedTPCSignal * 1e+2));
 
       fRegistry.fill(HIST("Track/hPt"), track.pt());
       fRegistry.fill(HIST("Track/hEtaPhi"), track.phi(), track.eta());
@@ -337,6 +357,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
       fRegistry.fill(HIST("Track/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
       fRegistry.fill(HIST("Track/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
       fRegistry.fill(HIST("Track/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
+      fRegistry.fill(HIST("Track/hTPCdEdxMC"), track.tpcInnerParam(), mcTunedTPCSignal);
       fRegistry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
       fRegistry.fill(HIST("Track/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
 
@@ -405,8 +426,8 @@ struct skimmerPrimaryElectronFromDalitzEE {
         if (v12.M() > maxMee) { // don't store
           continue;
         }
-        fillTrackTable(collision, t1);
-        fillTrackTable(collision, t2);
+        fillTrackTable<isMC>(collision, t1);
+        fillTrackTable<isMC>(collision, t2);
       } // end of pairing
     } else { // LS
       for (auto& [t1, t2] : combinations(CombinationsStrictlyUpperIndexPolicy(tracks1, tracks2))) {
@@ -445,10 +466,6 @@ struct skimmerPrimaryElectronFromDalitzEE {
         continue;
       }
 
-      // if (collision.ngpcm() < 1) {
-      //   continue;
-      // }
-
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
 
@@ -474,10 +491,6 @@ struct skimmerPrimaryElectronFromDalitzEE {
       if (!collision.isSelected()) {
         continue;
       }
-
-      // if (collision.ngpcm() < 1) {
-      //   continue;
-      // }
 
       if (collision.swtaliastmp_raw() == 0) {
         continue;
@@ -515,10 +528,6 @@ struct skimmerPrimaryElectronFromDalitzEE {
       }
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
-
-      // if (collision.ngpcm() < 1) {
-      //   continue;
-      // }
 
       auto posTracks_per_coll = posTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracksMC->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
