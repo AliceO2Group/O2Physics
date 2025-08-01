@@ -89,6 +89,11 @@ struct sigmaminustask {
       rSigmaMinus.add("h2BCId_comp1", "(BC == McBC) vs (BC == EvSelBC)", {HistType::kTH2F, {boolAxis, boolAxis}});
       rSigmaMinus.add("h2BCId_comp2", "(McBC == EvSelBC) vs (BC == EvSelBC)", {HistType::kTH2F, {boolAxis, boolAxis}});
     }
+
+    if (doprocessFindable) {
+      // Add findable Sigma histograms
+      rSigmaMinus.add("h2MassPtFindable", "h2MassPtFindable", {HistType::kTH2F, {ptAxis, sigmaMassAxis}});
+    }
   }
 
   void processData(CollisionsFull::iterator const& collision, aod::KinkCands const& KinkCands, TracksFull const&)
@@ -263,6 +268,65 @@ struct sigmaminustask {
   }
 
   PROCESS_SWITCH(sigmaminustask, processMC, "MC processing", false);
+
+  void processFindable(TracksFull const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const&)
+  {
+    for (const auto& motherTrack : tracks) {
+
+      // Filter: ITS but no TPC (mother candidates)
+      if (!motherTrack.hasITS() || motherTrack.hasTPC()) {
+        continue;
+      }
+
+      // Check if mother is Sigma in MC
+      auto mcLabelMother = trackLabelsMC.rawIteratorAt(motherTrack.globalIndex());
+      if (!mcLabelMother.has_mcParticle()) {
+        continue;
+      }
+      auto mcMother = mcLabelMother.mcParticle_as<aod::McParticles>();
+      if (std::abs(mcMother.pdgCode()) != 3112 && std::abs(mcMother.pdgCode()) != 3222) {
+        continue;
+      }
+
+      for (const auto& daughterTrack : tracks) {
+        // Filter: ITS and TPC (daughter candidates)
+        if (!daughterTrack.hasITS() || !daughterTrack.hasTPC()) {
+          continue;
+        }
+        
+        auto mcLabelDaughter = trackLabelsMC.rawIteratorAt(daughterTrack.globalIndex());
+        if (!mcLabelDaughter.has_mcParticle()) {
+          continue;
+        }
+
+        // Check if daughter is pi/proton
+        auto mcDaughter = mcLabelDaughter.mcParticle_as<aod::McParticles>();
+        if (std::abs(mcDaughter.pdgCode()) != 211 && std::abs(mcDaughter.pdgCode()) != 2212) {
+          continue;
+        }
+        
+        // Verify the MC mother-daughter relationship
+        bool isValidPair = false;
+        if (mcDaughter.has_mothers()) {
+          for (const auto& mother : mcDaughter.mothers_as<aod::McParticles>()) {
+            if (mother.globalIndex() == mcMother.globalIndex()) {
+              isValidPair = true;
+              break;
+            }
+          }
+        }
+        
+        if (isValidPair) {
+          // All requirements satisfied: fill histogram
+          float mcMass = std::sqrt(mcMother.e() * mcMother.e() - mcMother.p() * mcMother.p());
+          int sigmaSign = mcMother.pdgCode() > 0 ? 1 : -1;
+          rSigmaMinus.fill(HIST("h2MassPtFindable"), sigmaSign * mcMother.pt(), mcMass);
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(sigmaminustask, processFindable, "Findable Sigma processing", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
