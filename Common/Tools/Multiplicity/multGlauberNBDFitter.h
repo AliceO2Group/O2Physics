@@ -12,12 +12,12 @@
 #ifndef COMMON_TOOLS_MULTIPLICITY_MULTGLAUBERNBDFITTER_H_
 #define COMMON_TOOLS_MULTIPLICITY_MULTGLAUBERNBDFITTER_H_
 
-#include "TF1.h"
-#include "TH1.h"
-#include "TH1D.h"
-#include "TH2.h"
-#include "TNamed.h"
-#include "TProfile.h"
+#include <TF1.h>
+#include <TH1.h>
+#include <TH1D.h>
+#include <TH2.h>
+#include <TNamed.h>
+#include <TProfile.h>
 
 #include <iostream>
 

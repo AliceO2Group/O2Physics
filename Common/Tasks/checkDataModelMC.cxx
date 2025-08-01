@@ -13,8 +13,8 @@
 /// \author
 /// \since
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
 #include <limits>
 #include <memory>

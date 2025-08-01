@@ -22,12 +22,12 @@
 #include <vector>
 
 // O2 includes
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "TOFBase/EventTimeMaker.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <TOFBase/EventTimeMaker.h>
 
 // O2Physics includes
 #include "CollisionTypeHelper.h"

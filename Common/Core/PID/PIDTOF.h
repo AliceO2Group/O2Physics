@@ -24,19 +24,19 @@
 #include <vector>
 
 // ROOT includes
-#include "Rtypes.h"
+#include <TF2.h>
+#include <TFile.h>
+#include <TGraph.h>
+#include <TMath.h>
 
-#include "TF2.h"
-#include "TFile.h"
-#include "TGraph.h"
-#include "TMath.h"
+#include <Rtypes.h>
 
 // O2 includes
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsTOF/ParameterContainers.h"
-#include "Framework/DataTypes.h"
-#include "Framework/Logger.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsTOF/ParameterContainers.h>
+#include <Framework/DataTypes.h>
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/PID.h>
 
 namespace o2::pid::tof
 {

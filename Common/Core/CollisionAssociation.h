@@ -20,9 +20,9 @@
 #ifndef COMMON_CORE_COLLISIONASSOCIATION_H_
 #define COMMON_CORE_COLLISIONASSOCIATION_H_
 
-#include "CommonConstants/LHCConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
+#include <CommonConstants/LHCConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
 
 #include <memory>
 #include <utility>
