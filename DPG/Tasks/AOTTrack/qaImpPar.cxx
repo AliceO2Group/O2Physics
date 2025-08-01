@@ -338,6 +338,7 @@ struct QaImpactPar {
     const AxisSpec trackNSigmaTOFProtonAxis{20, -10.f, 10.f, "Number of #sigma TOF proton"};
     AxisSpec trackPDGAxis{5, -1.5f, 3.5f, "species (-1: not matched, 0: unknown, 1: pi, 2: K, 3: p)"};
     if (fEnableNuclei) {
+      // AxisSpec trackPDGAxis{9, -1.5f, 7.5f, "species (-1: not matched, 0: unknown, 1: pi, 2: K, 3: p, 4: d, 5: t, 6: he3, 7: alpha)"};
       trackPDGAxis.nBins = 9;
       trackPDGAxis.binEdges[1] = 7.5;
       trackPDGAxis.title = "species (-1: not matched, 0: unknown, 1: pi, 2: K, 3: p, 4: d, 5: t, 6: he3, 7: alpha)";
