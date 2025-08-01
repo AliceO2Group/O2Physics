@@ -15,43 +15,43 @@
 //
 // \author Daiki Sekihata <daiki.sekihata@cern.ch>, Tokyo
 
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include <map>
-#include <iterator>
-#include <utility>
-#include <string>
-#include <set>
-#include <algorithm>
-#include <vector>
-#include <unordered_map>
-
-#include "Math/Vector4D.h"
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/Core/TableHelper.h"
-#include "Common/Core/TPCVDriftManager.h"
-
-#include "Tools/KFparticle/KFUtilities.h"
-
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TPCVDriftManager.h"
+#include "Common/Core/TableHelper.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Tools/KFparticle/KFUtilities.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include "Math/Vector4D.h"
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <iterator>
+#include <map>
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::soa;
@@ -66,13 +66,13 @@ using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 
 using MyTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullEl, aod::pidTPCFullPi>;
-using MyTracksIUMC = soa::Join<MyTracksIU, aod::McTrackLabels>;
+using MyTracksIUMC = soa::Join<MyTracksIU, aod::McTrackLabels, aod::mcTPCTuneOnData>;
 
 struct PhotonConversionBuilder {
   Produces<aod::V0PhotonsKF> v0photonskf;
-  // Produces<aod::V0PhotonsKFCov> v0photonskfcov;
   Produces<aod::V0Legs> v0legs;
-  Produces<aod::EMEventsNgPCM> events_ngpcm;
+  // Produces<aod::V0PhotonsKFCov> v0photonskfcov;
+  // Produces<aod::EMEventsNgPCM> events_ngpcm;
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -337,10 +337,10 @@ struct PhotonConversionBuilder {
     float px = kfp.GetPx();
     float py = kfp.GetPy();
     float cospaXY = RecoDecay::dotProd(std::array{lx, ly}, std::array{px, py}) / (RecoDecay::sqrtSumOfSquares(lx, ly) * RecoDecay::sqrtSumOfSquares(px, py));
-    if (cospaXY < -1.) {
-      return -1.;
-    } else if (cospaXY > 1.) {
-      return 1.;
+    if (cospaXY < -1.f) {
+      return -1.f;
+    } else if (cospaXY > 1.f) {
+      return 1.f;
     }
     return cospaXY;
   }
@@ -356,24 +356,38 @@ struct PhotonConversionBuilder {
     float pz = kfp.GetPz();
 
     float cospaRZ = RecoDecay::dotProd(std::array{lt, lz}, std::array{pt, pz}) / (RecoDecay::sqrtSumOfSquares(lt, lz) * RecoDecay::sqrtSumOfSquares(pt, pz));
-    if (cospaRZ < -1.) {
-      return -1.;
-    } else if (cospaRZ > 1.) {
-      return 1.;
+    if (cospaRZ < -1.f) {
+      return -1.f;
+    } else if (cospaRZ > 1.f) {
+      return 1.f;
     }
     return cospaRZ;
   }
 
-  template <typename TTrack, typename TShiftedTrack, typename TKFParticle>
+  template <bool isMC, typename TTrack, typename TShiftedTrack, typename TKFParticle>
   void fillTrackTable(TTrack const& track, TShiftedTrack const& shiftedtrack, TKFParticle const& kfp, const float dcaXY, const float dcaZ)
   {
+    float itsChi2NCl = (track.hasITS() && track.itsChi2NCl() > 0.f) ? track.itsChi2NCl() : -299.f;
+    float tpcChi2NCl = (track.hasTPC() && track.tpcChi2NCl() > 0.f) ? track.tpcChi2NCl() : -299.f;
+    float tpcSignal = track.hasTPC() ? track.tpcSignal() : 0.f;
+    float tpcNSigmaEl = track.hasTPC() ? track.tpcNSigmaEl() : -299.f;
+    float tpcNSigmaPi = track.hasTPC() ? track.tpcNSigmaPi() : -299.f;
+
+    float mcTunedTPCSignal = 0.f;
+    if constexpr (isMC) {
+      mcTunedTPCSignal = track.mcTunedTPCSignal();
+      if (track.hasTPC()) {
+        mcTunedTPCSignal = track.mcTunedTPCSignal();
+      }
+    }
+
     v0legs(track.collisionId(), track.globalIndex(), track.sign(),
-           kfp.GetPx(), kfp.GetPy(), kfp.GetPz(), dcaXY, dcaZ,
+           kfp.GetPx(), kfp.GetPy(), kfp.GetPz(), static_cast<int16_t>(dcaXY * 1e+2), static_cast<int16_t>(dcaZ * 1e+2),
            track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
-           track.tpcChi2NCl(), track.tpcInnerParam(), track.tpcSignal(),
-           track.tpcNSigmaEl(), track.tpcNSigmaPi(),
-           track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap(),
-           shiftedtrack.getX(), shiftedtrack.getY(), shiftedtrack.getZ(), shiftedtrack.getTgl());
+           static_cast<int16_t>(tpcChi2NCl * 1e+2), track.tpcInnerParam(), static_cast<uint16_t>(tpcSignal * 1e+2),
+           static_cast<int16_t>(tpcNSigmaEl * 1e+2), static_cast<int16_t>(tpcNSigmaPi * 1e+2),
+           track.itsClusterSizes(), static_cast<int16_t>(itsChi2NCl * 1e+2), track.detectorMap(), static_cast<uint16_t>(mcTunedTPCSignal * 1e+2),
+           static_cast<uint16_t>(shiftedtrack.getX() * 1e+2), static_cast<int16_t>(shiftedtrack.getY() * 1e+2), static_cast<int16_t>(shiftedtrack.getZ() * 1e+2), shiftedtrack.getTgl());
   }
 
   template <bool isMC, class TBCs, class TCollisions, class TTracks, typename TV0>
@@ -599,6 +613,11 @@ struct PhotonConversionBuilder {
       return;
     }
 
+    float chi2kf = gammaKF_DecayVtx.GetChi2() / gammaKF_DecayVtx.GetNDF();
+    if (chi2kf > 6e+3) { // protection for uint16.
+      return;
+    }
+
     // calculate DCAxy,z to PV
     float v0mom = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz());
     float length = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetX() - collision.posX(), gammaKF_DecayVtx.GetY() - collision.posY(), gammaKF_DecayVtx.GetZ() - collision.posZ());
@@ -639,8 +658,6 @@ struct PhotonConversionBuilder {
       registry.fill(HIST("V0/hCosPAXY_Rxy"), rxy, cospaXY_kf);
       registry.fill(HIST("V0/hCosPARZ_Rxy"), rxy, cospaRZ_kf);
 
-      float chi2kf = gammaKF_DecayVtx.GetChi2() / gammaKF_DecayVtx.GetNDF();
-
       for (auto& leg : {kfp_pos_DecayVtx, kfp_ele_DecayVtx}) {
         float legpt = RecoDecay::sqrtSumOfSquares(leg.GetPx(), leg.GetPy());
         float legeta = RecoDecay::eta(std::array{leg.GetPx(), leg.GetPy(), leg.GetPz()});
@@ -667,13 +684,14 @@ struct PhotonConversionBuilder {
       v0photonskf(collision.globalIndex(), v0.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
                   gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY(), gammaKF_DecayVtx.GetZ(),
                   gammaKF_PV.GetPx(), gammaKF_PV.GetPy(), gammaKF_PV.GetPz(),
-                  v0_sv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
-                  cospa_kf, cospaXY_kf, cospaRZ_kf, pca_kf, alpha, qt, chi2kf);
+                  static_cast<uint16_t>(v0_sv.M() * 1e+5), static_cast<int16_t>(dca_xy_v0_to_pv * 1e+2), static_cast<int16_t>(dca_z_v0_to_pv * 1e+2),
+                  static_cast<uint16_t>(cospa_kf * 5e+4), static_cast<uint16_t>(cospaXY_kf * 5e+4), static_cast<uint16_t>(cospaRZ_kf * 5e+4),
+                  static_cast<uint16_t>(pca_kf * 1e+4), static_cast<int16_t>(alpha * 1e+4), static_cast<uint16_t>(qt * 1e+5), static_cast<uint16_t>(chi2kf * 1e+1));
 
       // v0photonskfcov(gammaKF_PV.GetCovariance(9), gammaKF_PV.GetCovariance(14), gammaKF_PV.GetCovariance(20), gammaKF_PV.GetCovariance(13), gammaKF_PV.GetCovariance(19), gammaKF_PV.GetCovariance(18));
 
-      fillTrackTable(pos, pTrack, kfp_pos_DecayVtx, posdcaXY, posdcaZ); // positive leg first
-      fillTrackTable(ele, nTrack, kfp_ele_DecayVtx, eledcaXY, eledcaZ); // negative leg second
+      fillTrackTable<isMC>(pos, pTrack, kfp_pos_DecayVtx, posdcaXY, posdcaZ); // positive leg first
+      fillTrackTable<isMC>(ele, nTrack, kfp_ele_DecayVtx, eledcaXY, eledcaZ); // negative leg second
     } // end of fill table
   }
 
@@ -800,7 +818,7 @@ struct PhotonConversionBuilder {
           continue;
         }
       }
-      events_ngpcm(nv0_map[collision.globalIndex()]);
+      // events_ngpcm(nv0_map[collision.globalIndex()]);
     } // end of collision loop
 
     pca_map.clear();

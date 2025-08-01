@@ -662,6 +662,7 @@ struct cascadeFlow {
     histos.add("hLambdaCandidate", "hLambdaCandidate", HistType::kTH1F, {{5, -0.5, 4.5}});
     histos.add("hCascadeSignal", "hCascadeSignal", HistType::kTH1F, {{6, -0.5, 5.5}});
     histos.add("hCascade", "hCascade", HistType::kTH1F, {{6, -0.5, 5.5}});
+    histos.add("hCascadeDauSel", "hCascadeDauSel", HistType::kTH1F, {{2, -0.5, 1.5}});
     histos.add("hLambdaDauSel", "hLambdaDauSel", HistType::kTH1F, {{3, -0.5, 2.5}});
     histos.add("hALambdaDauSel", "hALambdaDauSel", HistType::kTH1F, {{3, -0.5, 2.5}});
     histos.add("hXiPtvsCent", "hXiPtvsCent", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
@@ -901,11 +902,13 @@ struct cascadeFlow {
       auto bachExtra = casc.bachTrackExtra_as<DauTracks>();
 
       int counter = 0;
-      IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
+      bool isCascCandidate = 0;
+      isCascCandidate = IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
       histos.fill(HIST("hCascadeSignal"), counter);
 
       // PDG cascades
-      fillTrainingTable(coll, casc, pdgCode);
+      if (isCascCandidate)
+        fillTrainingTable(coll, casc, pdgCode); // I only store cascades that passed PID and track quality selections
     }
   }
 
@@ -967,8 +970,12 @@ struct cascadeFlow {
       auto bachExtra = casc.bachTrackExtra_as<DauTracks>();
 
       int counter = 0;
-      IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
+      bool isCascCandidate = 0;
+      isCascCandidate = IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
       histos.fill(HIST("hCascade"), counter);
+      histos.fill(HIST("hCascadeDauSel"), (int)isCascCandidate);
+      if (!isCascCandidate)
+        continue;
 
       // ML selections
       bool isSelectedCasc[2]{false, false};
@@ -1242,8 +1249,12 @@ struct cascadeFlow {
       auto bachExtra = casc.bachTrackExtra_as<DauTracks>();
 
       int counter = 0;
-      IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
+      bool isCascCandidate = 0;
+      isCascCandidate = IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
       histos.fill(HIST("hCascade"), counter);
+      histos.fill(HIST("hCascadeDauSel"), (int)isCascCandidate);
+      if (!isCascCandidate)
+        continue;
 
       // ML selections
       bool isSelectedCasc[nParticles]{false, false};
@@ -1541,15 +1552,15 @@ struct cascadeFlow {
         histos.fill(HIST("hLambdaCandidate"), 2);
         if (v0.mLambda() > V0Configs.MinMassLambda && v0.mLambda() < V0Configs.MaxMassLambda && v0.mAntiLambda() > V0Configs.MinMassLambda && v0.mAntiLambda() < V0Configs.MaxMassLambda) {
           histos.fill(HIST("hLambdaCandidate"), 3);
-          continue; // in case of ambiguity between Lambda and AntiLambda, I skip the particle
+          continue; // in case of ambiguity between Lambda and AntiLambda, I skip the particle; checked to be zero in range 1.105 - 1.125
         }
         if (v0.mLambda() > V0Configs.MinMassLambda && v0.mLambda() < V0Configs.MaxMassLambda)
           chargeIndex = 0;
         else if (v0.mAntiLambda() > V0Configs.MinMassLambda && v0.mAntiLambda() < V0Configs.MaxMassLambda)
           chargeIndex = 1;
         else {
+          chargeIndex = 2; // these are bkg candidates
           histos.fill(HIST("hLambdaCandidate"), 4);
-          continue; // in case of ambiguity between Lambda and AntiLambda, I skip the particle
         }
       }
       if (!isSelectedV0[0] && !isSelectedV0[1])
@@ -1590,10 +1601,14 @@ struct cascadeFlow {
         pzs2Lambda = cosThetaStarProton[0] * std::sin(2 * (v0.phi() - psiT0C)) / lambdav2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda;
         cos2ThetaLambda = cosThetaStarProton[0] * cosThetaStarProton[0];
         cosThetaLambda = cosThetaStarProton[0] / cascadev2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda;
-      } else {
+      } else if (chargeIndex == 1) {
         pzs2Lambda = cosThetaStarProton[1] * std::sin(2 * (v0.phi() - psiT0C)) / lambdav2::AlphaLambda[1] / meanCos2ThetaProtonFromLambda;
         cos2ThetaLambda = cosThetaStarProton[1] * cosThetaStarProton[1];
         cosThetaLambda = cosThetaStarProton[1] / cascadev2::AlphaLambda[1] / meanCos2ThetaProtonFromLambda;
+      } else { // I treat these bkg candidates as Lambdas for the purpose of calculating Pz
+        pzs2Lambda = cosThetaStarProton[0] * std::sin(2 * (v0.phi() - psiT0C)) / lambdav2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda;
+        cos2ThetaLambda = cosThetaStarProton[0] * cosThetaStarProton[0];
+        cosThetaLambda = cosThetaStarProton[0] / cascadev2::AlphaLambda[0] / meanCos2ThetaProtonFromLambda;
       }
 
       histos.fill(HIST("hv2CEPvsFT0C"), coll.centFT0C(), v2CEP);
@@ -1682,8 +1697,12 @@ struct cascadeFlow {
       auto bachExtra = casc.bachTrackExtra_as<DauTracks>();
 
       int counter = 0;
-      IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
+      bool isCascCandidate = 0;
+      isCascCandidate = IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
       histos.fill(HIST("hCascade"), counter);
+      histos.fill(HIST("hCascadeDauSel"), (int)isCascCandidate);
+      if (!isCascCandidate)
+        continue;
 
       // ML selections
       bool isSelectedCasc[nParticles]{false, false};
@@ -1828,8 +1847,12 @@ struct cascadeFlow {
       auto bachExtra = casc.bachTrackExtra_as<DauTracks>();
 
       int counter = 0;
-      IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
+      bool isCascCandidate = 0;
+      isCascCandidate = IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
       histos.fill(HIST("hCascade"), counter);
+      histos.fill(HIST("hCascadeDauSel"), (int)isCascCandidate);
+      if (!isCascCandidate)
+        continue;
 
       // ML selections
       bool isSelectedCasc[nParticles]{false, false};

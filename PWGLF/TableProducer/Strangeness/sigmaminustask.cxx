@@ -114,7 +114,7 @@ struct sigmaminustask {
   }
   PROCESS_SWITCH(sigmaminustask, processData, "Data processing", true);
 
-  void processMC(CollisionsFullMC const& collisions, aod::KinkCands const& KinkCands, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, TracksFull const&)
+  void processMC(CollisionsFullMC const& collisions, aod::KinkCands const& KinkCands, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, aod::McCollisions const&, TracksFull const&)
   {
     for (const auto& collision : collisions) {
       if (std::abs(collision.posZ()) > cutzvertex || !collision.sel8()) {
@@ -167,8 +167,10 @@ struct sigmaminustask {
             float decayRadiusMC = std::sqrt(deltaXMother * deltaXMother + deltaYMother * deltaYMother);
 
             // Check coherence of MCcollision Id for daughter MCparticle and reconstructed collision
-            auto mcCollision = mcTrackPiDau.template mcCollision_as<aod::McCollisions>();
-            bool mcCollisionIdCheck = collision.mcCollisionId() == mcCollision.globalIndex();
+            bool mcCollisionIdCheck = false;
+            if (collision.has_mcCollision()) {
+              mcCollisionIdCheck = collision.mcCollision().globalIndex() == mcTrackPiDau.mcCollisionId();
+            }
 
             rSigmaMinus.fill(HIST("h2MassPtMCRec"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
             if (mcTrackSigma.pdgCode() > 0) {

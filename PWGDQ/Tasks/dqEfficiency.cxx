@@ -1040,9 +1040,18 @@ struct AnalysisSameEventPairing {
 struct AnalysisDileptonTrack {
   Produces<aod::DileptonTrackCandidates> dileptontrackcandidatesList;
   OutputObj<THashList> fOutputList{"output"};
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::base::MatLayerCylSet* lut = nullptr;
+
   // TODO: For now this is only used to determine the position in the filter bit map for the hadron cut
   Configurable<string> fConfigTrackCuts{"cfgLeptonCuts", "", "Comma separated list of barrel track cuts"};
   Configurable<bool> fConfigFillCandidateTable{"cfgFillCandidateTable", false, "Produce a single flat tables with all relevant information dilepton-track candidates"};
+  Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<bool> fCorrFullGeo{"cfgCorrFullGeo", false, "Use full geometry to correct for MCS effects in track propagation"};
+  Configurable<bool> fNoCorr{"cfgNoCorrFwdProp", false, "Do not correct for MCS effects in track propagation"};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+
   Filter eventFilter = aod::dqanalysisflags::isEventSelected == 1;
   // Filter dileptonFilter = aod::reducedpair::mass > 2.92f && aod::reducedpair::mass < 3.16f && aod::reducedpair::sign == 0;
   // Filter dileptonFilter = aod::reducedpair::mass > 2.6f && aod::reducedpair::mass < 3.5f && aod::reducedpair::sign == 0;
@@ -1073,6 +1082,21 @@ struct AnalysisDileptonTrack {
   {
     if (context.mOptions.get<bool>("processDummy")) {
       return;
+    }
+
+    ccdb->setURL(ccdburl.value);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
+    if (fNoCorr) {
+      VarManager::SetupFwdDCAFitterNoCorr();
+    } else if (fCorrFullGeo) {
+      if (!o2::base::GeometryManager::isGeometryLoaded()) {
+        ccdb->get<TGeoManager>(geoPath);
+      }
+    } else {
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+      VarManager::SetupMatLUTFwdDCAFitter(lut);
     }
 
     TString sigNamesStr = fConfigMCRecSignals.value;
