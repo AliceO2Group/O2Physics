@@ -577,9 +577,8 @@ struct EmcalCorrectionTask {
           // Adding -1 and later when filling the clusterID<->cellID table skip all cases where this is -1
           if (cellIndicesBC.size() < cellsBC.size()) {
             cellIndicesBC.reserve(cellsBC.size());
-            for (size_t iMissing = 0; iMissing < (cellsBC.size() - cellIndicesBC.size()); ++iMissing) {
-              cellIndicesBC.emplace_back(-1);
-            }
+            size_t nMissing = cellsBC.size() - cellIndicesBC.size();
+            cellIndicesBC.insert(cellIndicesBC.end(), nMissing, -1);
           }
           if (emcCrossTalkConf.createHistograms.value) {
             for (const auto& cell : cellsBC) {
@@ -877,10 +876,12 @@ struct EmcalCorrectionTask {
         mHistManager.fill(HIST("hClusterFCrossSigmaShortE"), cluster.E(), cluster.getFCross(), cluster.getM20());
       }
       if (indexMapPair && trackGlobalIndex) {
-        for (unsigned int iTrack = 0; iTrack < indexMapPair->matchIndexTrack[iCluster].size(); iTrack++) {
-          if (indexMapPair->matchIndexTrack[iCluster][iTrack] >= 0) {
-            LOG(debug) << "Found track " << (*trackGlobalIndex)[indexMapPair->matchIndexTrack[iCluster][iTrack]] << " in cluster " << cluster.getID();
-            matchedTracks(clusters.lastIndex(), (*trackGlobalIndex)[indexMapPair->matchIndexTrack[iCluster][iTrack]], indexMapPair->matchDeltaPhi[iCluster][iTrack], indexMapPair->matchDeltaEta[iCluster][iTrack]);
+        if (iCluster < indexMapPair->matchIndexTrack.size() && indexMapPair->matchIndexTrack.size() > 0) {
+          for (unsigned int iTrack = 0; iTrack < indexMapPair->matchIndexTrack[iCluster].size(); iTrack++) {
+            if (indexMapPair->matchIndexTrack[iCluster][iTrack] >= 0) {
+              LOG(debug) << "Found track " << (*trackGlobalIndex)[indexMapPair->matchIndexTrack[iCluster][iTrack]] << " in cluster " << cluster.getID();
+              matchedTracks(clusters.lastIndex(), (*trackGlobalIndex)[indexMapPair->matchIndexTrack[iCluster][iTrack]], indexMapPair->matchDeltaPhi[iCluster][iTrack], indexMapPair->matchDeltaEta[iCluster][iTrack]);
+            }
           }
         }
       }
