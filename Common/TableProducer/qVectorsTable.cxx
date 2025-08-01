@@ -19,12 +19,13 @@
 ///
 
 // C++/ROOT includes.
-#include <chrono>
-#include <string>
-#include <vector>
-#include <unordered_map>
 #include <TComplex.h>
 #include <TH3F.h>
+
+#include <chrono>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 // o2Physics includes.
 #include "Framework/AnalysisDataModel.h"
