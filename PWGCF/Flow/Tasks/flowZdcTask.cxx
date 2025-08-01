@@ -559,7 +559,7 @@ struct FlowZdcTask {
     histos.fill(HIST("ZPCVstdc"), tZPC, zpC);
     histos.fill(HIST("ZNVsFT0A"), aT0A / 100., sumZNs);
     histos.fill(HIST("ZNVsFT0C"), aT0C / 100., sumZNs);
-    histos.fill(HIST("ZNVsFT0M"), (aT0A + aT0C) / 100., sumZNs); 
+    histos.fill(HIST("ZNVsFT0M"), (aT0A + aT0C) / 100., sumZNs);
 
     // Proton ZDC
     if (!isOneNeutronFound || znA >= oneNeutron) {
