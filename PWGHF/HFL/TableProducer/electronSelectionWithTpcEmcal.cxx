@@ -468,8 +468,8 @@ struct HfElectronSelectionWithTpcEmcal {
         timeEmcCluster = emcCluster.time();
         cellEmcCluster = emcCluster.nCells();
 
-        deltaPhiMatch = matchTrack.trackPhiEmcal() - phiMatchEmcCluster;
-        deltaEtaMatch = matchTrack.trackEtaEmcal() - etaMatchEmcCluster;
+        deltaPhiMatch = ematchTrack.deltaPhi();
+        deltaEtaMatch = ematchTrack.deltaEta();
 
         // Track and EMCal cluster Matching
         if (std::abs(timeEmcCluster) > timeEmcClusterMax) {
