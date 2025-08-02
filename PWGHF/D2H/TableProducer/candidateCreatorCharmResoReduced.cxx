@@ -696,7 +696,7 @@ struct HfCandidateCreatorCharmResoReduced {
       bool alreadyCounted{false};
       for (const auto& candV0Tr : candsV0Tr) {
         if constexpr (bachType == BachelorType::V0) { // Case: V0
-          if (rejectPairsWithCommonDaughter && std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.prong0Id()) != dDaughtersIDs.end() || std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.prong1Id()) != dDaughtersIDs.end()) {
+          if (rejectPairsWithCommonDaughter && (std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.prong0Id()) != dDaughtersIDs.end() || std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.prong1Id()) != dDaughtersIDs.end())) {
             continue;
           }
           if (!isV0Selected(candV0Tr)) {
