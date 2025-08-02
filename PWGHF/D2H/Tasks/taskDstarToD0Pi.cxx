@@ -268,7 +268,7 @@ struct HfTaskDstarToD0Pi {
       bool isFileAvailable = ccdbApi.retrieveBlob(ccdbPathForWeight, ".", metadata, timestampCCDB, false, weightFileName);
       if (!isFileAvailable) {
         LOGF(fatal, "Failed to retrieve weight file from CCDB: %s", ccdbPathForWeight.value.c_str());
-        abort();
+        return;
       }
 
       if (isCentStudy) {
@@ -282,7 +282,7 @@ struct HfTaskDstarToD0Pi {
             hWeights[ithWeight] = reinterpret_cast<TH2F*>(weightFile->Get(histName.c_str()));
             if (!hWeights[ithWeight]) {
               LOGF(fatal, "Histogram %s not found in weight file!", histName.c_str());
-              abort();
+              return;
             }
             hWeights[ithWeight]->SetDirectory(0);
             hWeights[ithWeight]->SetName(("hWeight" + std::to_string(ithWeight + 1)).c_str());
@@ -291,7 +291,7 @@ struct HfTaskDstarToD0Pi {
           delete weightFile;
         } else {
           LOGF(fatal, "Failed to open weight file from CCDB: %s", weightFileName.value.c_str());
-          abort();
+          return;
         }
       }
     }
@@ -460,7 +460,7 @@ struct HfTaskDstarToD0Pi {
           float weightValue = 1.0;
           if (useWeight && (hWeights.size() < 1 || hWeights[0] == nullptr)) {
             LOGF(fatal, "Weight histograms are not initialized or empty. Check CCDB path or weight file.");
-            abort();
+            return;
           } else if (useWeight && isCentStudy) {
             for (int ithWeight = 0; ithWeight < nWeights; ++ithWeight) {
               if (centrality > centRangesForWeights.value[ithWeight] && centrality <= centRangesForWeights.value[ithWeight + 1]) {
@@ -600,7 +600,7 @@ struct HfTaskDstarToD0Pi {
         float weightValue = 1.0;
         if (useWeight && (hWeights.size() < 1 || hWeights[0] == nullptr)) {
           LOGF(fatal, "Weight histograms are not initialized or empty. Check CCDB path or weight file.");
-          abort();
+          return;
         } else if (useWeight && isCentStudy) {
           for (int ithWeight = 0; ithWeight < nWeights; ++ithWeight) {
             if (centFT0MGen > centRangesForWeights.value[ithWeight] && centFT0MGen <= centRangesForWeights.value[ithWeight + 1]) {
