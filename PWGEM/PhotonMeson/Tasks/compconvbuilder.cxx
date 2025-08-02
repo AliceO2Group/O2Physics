@@ -637,8 +637,7 @@ struct Convbuildercomp {
 
   void processLFV0sMC(MyStraCollisions const& stracollisions,
                       soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&,
-                      V0DerivedMCDatas const& strangeV0s,
-                      dauTracks const& tracks)
+                      V0DerivedMCDatas const& strangeV0s)
   {
 
     for (auto& collision : stracollisions) {
@@ -668,7 +667,6 @@ struct Convbuildercomp {
         }
 
         auto posTrack = v0.template posTrackExtra_as<dauTracks>();
-        auto negTrack = v0.template negTrackExtra_as<dauTracks>();
 
         fillV0Info<LFBuilder>(v0, v0MC, posTrack);
       }
@@ -730,7 +728,6 @@ struct Convbuildercomp {
   PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emmceventId;
 
   void processConvV0s(MyCollisions const& collisions,
-                      MyMCCollisions const& mccollisions,
                       aod::EMMCParticles const& mcparticles,
                       MyTracksIUMC const& tracks)
   {
@@ -798,7 +795,6 @@ struct Convbuildercomp {
     V0DerivedMCDatas const& lfV0s,
     MyMCV0Legs const&,
     aod::McParticles const& mcparticles,
-    aod::EMMCParticles const& emmcparticles,
     dauTracks const&)
   {
     std::unordered_map<int, int> trackToMcLabel;
@@ -865,8 +861,6 @@ struct Convbuildercomp {
         } else if (entry.emIt.has_value()) {
           // --- EM-only V0 ---
           auto& emV0 = *entry.emIt.value();
-          auto posmc = emV0.posTrack_as<MyMCV0Legs>()
-                         .emmcparticle_as<aod::EMMCParticles>();
           auto negmc = emV0.negTrack_as<MyMCV0Legs>()
                          .emmcparticle_as<aod::EMMCParticles>();
           fillV0Info<EMOnly>(emV0, mcphoton, negmc);
