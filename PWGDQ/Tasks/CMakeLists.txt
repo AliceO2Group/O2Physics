@@ -11,12 +11,12 @@
 
 o2physics_add_dpl_workflow(table-reader
                     SOURCES tableReader.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(table-reader-with-assoc
                     SOURCES tableReader_withAssoc.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::PWGDQCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::PWGDQCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(efficiency
