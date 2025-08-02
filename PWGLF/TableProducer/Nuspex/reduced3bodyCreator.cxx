@@ -16,8 +16,9 @@
 
 #include "TableHelper.h"
 
+#include "PWGLF/DataModel/LFPIDTOFGenericTables.h"
 #include "PWGLF/DataModel/Reduced3BodyTables.h"
-#include "PWGLF/DataModel/pidTOFGeneric.h"
+#include "PWGLF/Utils/pidTOFGeneric.h"
 
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/RecoDecay.h"
@@ -63,6 +64,8 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+
+o2::common::core::MetadataHelper metadataInfo;
 
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
 using FullTracksExtPIDIU = soa::Join<FullTracksExtIU, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe>;
@@ -112,14 +115,16 @@ struct reduced3bodyCreator {
 
   int mRunNumber;
   float mBz;
-  o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
+  // TOF response and input parameters
+  o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
+  o2::aod::pidtofgeneric::TOFCalibConfig mTOFCalibConfig; // TOF Calib configuration
 
   // tracked cluster size
   std::vector<int> fTrackedClSizeVector;
 
   HistogramRegistry registry{"registry", {}};
 
-  void init(InitContext&)
+  void init(InitContext& initContext)
   {
     mRunNumber = 0;
     zorroSummary.setObject(zorro.getZorroSummary());
@@ -129,6 +134,11 @@ struct reduced3bodyCreator {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+
+    // TOF PID parameters initialization
+    mTOFCalibConfig.metadataInfo = metadataInfo;
+    mTOFCalibConfig.inheritFromBaseTask(initContext);
+    mTOFCalibConfig.initSetup(mRespParamsV3, ccdb);
 
     fitter3body.setPropagateToPCA(true);
     fitter3body.setMaxR(200.); //->maxRIni3body
@@ -186,66 +196,8 @@ struct reduced3bodyCreator {
     KFParticle::SetField(mBz);
 #endif
 
-    // Initial TOF PID Paras, copied from PIDTOF.h
-    timestamp.value = bc.timestamp();
-    ccdb->setTimestamp(timestamp.value);
-    // Not later than now objects
-    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    // TODO: implement the automatic pass name detection from metadata
-    if (passName.value == "") {
-      passName.value = "unanchored"; // temporary default
-      LOG(warning) << "Passed autodetect mode for pass, not implemented yet, waiting for metadata. Taking '" << passName.value << "'";
-    }
-    LOG(info) << "Using parameter collection, starting from pass '" << passName.value << "'";
-
-    const std::string fname = paramFileName.value;
-    if (!fname.empty()) { // Loading the parametrization from file
-      LOG(info) << "Loading exp. sigma parametrization from file " << fname << ", using param: " << parametrizationPath.value;
-      if (1) {
-        o2::tof::ParameterCollection paramCollection;
-        paramCollection.loadParamFromFile(fname, parametrizationPath.value);
-        LOG(info) << "+++ Loaded parameter collection from file +++";
-        if (!paramCollection.retrieveParameters(mRespParamsV2, passName.value)) {
-          if (fatalOnPassNotAvailable) {
-            LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
-          } else {
-            LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
-          }
-        } else {
-          mRespParamsV2.setShiftParameters(paramCollection.getPars(passName.value));
-          mRespParamsV2.printShiftParameters();
-        }
-      } else {
-        mRespParamsV2.loadParamFromFile(fname.data(), parametrizationPath.value);
-      }
-    } else if (loadResponseFromCCDB) { // Loading it from CCDB
-      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << parametrizationPath.value << " for timestamp " << timestamp.value;
-      o2::tof::ParameterCollection* paramCollection = ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, timestamp.value);
-      paramCollection->print();
-      if (!paramCollection->retrieveParameters(mRespParamsV2, passName.value)) { // Attempt at loading the parameters with the pass defined
-        if (fatalOnPassNotAvailable) {
-          LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
-        } else {
-          LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
-        }
-      } else { // Pass is available, load non standard parameters
-        mRespParamsV2.setShiftParameters(paramCollection->getPars(passName.value));
-        mRespParamsV2.printShiftParameters();
-      }
-    }
-    mRespParamsV2.print();
-    if (timeShiftCCDBPath.value != "") {
-      if (timeShiftCCDBPath.value.find(".root") != std::string::npos) {
-        mRespParamsV2.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Pos", true);
-        mRespParamsV2.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Neg", false);
-      } else {
-        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/pos", timeShiftCCDBPath.value.c_str()), timestamp.value), true);
-        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/neg", timeShiftCCDBPath.value.c_str()), timestamp.value), false);
-      }
-    }
-
     fitter3body.setBz(mBz);
-    bachelorTOFPID.SetParams(mRespParamsV2);
+    mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, bc);
   }
 
   //------------------------------------------------------------------
@@ -388,7 +340,7 @@ struct reduced3bodyCreator {
       // TOF PID of bachelor must be calcualted here
       // ----------------------------------------------
       auto originalcol = daughter2.template collision_as<ColwithEvTimesMultsCents>();
-      double tofNSigmaBach = bachelorTOFPID.GetTOFNSigma(daughter2, originalcol, collision);
+      double tofNSigmaBach = bachelorTOFPID.GetTOFNSigma(mRespParamsV3, daughter2, originalcol, collision);
       // ----------------------------------------------
 
       // -------- save reduced track table with decay3body daughters ----------
@@ -469,6 +421,7 @@ struct reduced3bodyInitializer {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  metadataInfo.initMetadata(cfgc);
   return WorkflowSpec{
     adaptAnalysisTask<reduced3bodyInitializer>(cfgc),
     adaptAnalysisTask<reduced3bodyCreator>(cfgc),

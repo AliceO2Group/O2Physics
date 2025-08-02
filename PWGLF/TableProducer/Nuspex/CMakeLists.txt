@@ -96,7 +96,7 @@ o2physics_add_dpl_workflow(nuclei-flow-trees
 
 o2physics_add_dpl_workflow(hyperkink-reco-task
     SOURCES hyperkinkRecoTask.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::TOFBase
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(he3-lambda-analysis
