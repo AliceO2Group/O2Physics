@@ -267,8 +267,8 @@ struct HfTaskDstarToD0Pi {
       // Retrieve the file from CCDB
       bool isFileAvailable = ccdbApi.retrieveBlob(ccdbPathForWeight, ".", metadata, timestampCCDB, false, weightFileName);
       if (!isFileAvailable) {
-        LOGF(error, "Failed to retrieve weight file from CCDB: %s", ccdbPathForWeight.value.c_str());
-        return;
+        LOGF(fatal, "Failed to retrieve weight file from CCDB: %s", ccdbPathForWeight.value.c_str());
+        abort();
       }
 
       if (isCentStudy) {
@@ -281,7 +281,7 @@ struct HfTaskDstarToD0Pi {
             std::string histName = "hMult" + std::to_string(ithWeight + 1) + "_Weight";
             hWeights[ithWeight] = reinterpret_cast<TH2F*>(weightFile->Get(histName.c_str()));
             if (!hWeights[ithWeight]) {
-              LOGF(error, "Histogram %s not found in weight file!", histName.c_str());
+              LOGF(fatal, "Histogram %s not found in weight file!", histName.c_str());
               abort();
             }
             hWeights[ithWeight]->SetDirectory(0);
@@ -290,7 +290,7 @@ struct HfTaskDstarToD0Pi {
           weightFile->Close();
           delete weightFile;
         } else {
-          LOGF(error, "Failed to open weight file from CCDB: %s", weightFileName.value.c_str());
+          LOGF(fatal, "Failed to open weight file from CCDB: %s", weightFileName.value.c_str());
           abort();
         }
       }
@@ -459,7 +459,7 @@ struct HfTaskDstarToD0Pi {
         if (candDstarMcRec.isSelDstarToD0Pi()) { // if all selection passed
           float weightValue = 1.0;
           if (useWeight && (hWeights.size() < 1 || hWeights[0] == nullptr)) {
-            LOGF(error, "Weight histograms are not initialized or empty. Check CCDB path or weight file.");
+            LOGF(fatal, "Weight histograms are not initialized or empty. Check CCDB path or weight file.");
             abort();
           } else if (useWeight && isCentStudy) {
             for (int ithWeight = 0; ithWeight < nWeights; ++ithWeight) {
@@ -599,7 +599,7 @@ struct HfTaskDstarToD0Pi {
 
         float weightValue = 1.0;
         if (useWeight && (hWeights.size() < 1 || hWeights[0] == nullptr)) {
-          LOGF(error, "Weight histograms are not initialized or empty. Check CCDB path or weight file.");
+          LOGF(fatal, "Weight histograms are not initialized or empty. Check CCDB path or weight file.");
           abort();
         } else if (useWeight && isCentStudy) {
           for (int ithWeight = 0; ithWeight < nWeights; ++ithWeight) {
