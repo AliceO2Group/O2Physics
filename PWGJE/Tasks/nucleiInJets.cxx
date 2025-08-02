@@ -933,7 +933,6 @@ struct nucleiInJets {
             jetHist.fill(HIST("tracks/antiProton/h2TOFmass2antiProtonVsPt_jet"), massTOF * massTOF - MassProton * MassProton, trk.pt());
             jetHist.fill(HIST("tracks/antiProton/h2TofNsigmaantiProtonVsPt_jet"), trk.tofNSigmaPr(), trk.pt());
             jetHist.fill(HIST("tracks/antiProton/h3TpcNsigmaTofNsigmaantiProtonVsPt_jet"), trk.tpcNSigmaPr(), trk.tofNSigmaPr(), trk.pt());
-
             jetHist.fill(HIST("tracks/antiDeuteron/h2TOFmassantiDeuteronVsPt_jet"), massTOF, trk.pt());
             jetHist.fill(HIST("tracks/antiDeuteron/h2TOFmass2antiDeuteronVsPt_jet"), massTOF * massTOF - MassDeuteron * MassDeuteron, trk.pt());
             jetHist.fill(HIST("tracks/antiDeuteron/h2TofNsigmaantiDeuteronVsPt_jet"), trk.tofNSigmaDe(), trk.pt());
@@ -942,7 +941,6 @@ struct nucleiInJets {
             jetHist.fill(HIST("tracks/antiTriton/h2TOFmassantiTritonVsPt_jet"), massTOF, trk.pt());
             jetHist.fill(HIST("tracks/antiTriton/h2TOFmass2antiTritonVsPt_jet"), massTOF * massTOF - MassTriton * MassTriton, trk.pt());
             jetHist.fill(HIST("tracks/antiTriton/h2TofNsigmaantiTritonVsPt_jet"), trk.tofNSigmaTr(), trk.pt());
-
             jetHist.fill(HIST("tracks/antiHelium/h2TOFmassantiHeliumVsPt_jet"), massTOF, trk.pt());
             jetHist.fill(HIST("tracks/antiHelium/h2TOFmass2antiHeliumVsPt_jet"), massTOF * massTOF - MassHelium3 * MassHelium3, trk.pt());
             jetHist.fill(HIST("tracks/antiHelium/h2TofNsigmaantiHeliumVsPt_jet"), trk.tofNSigmaHe(), trk.pt());

@@ -154,13 +154,6 @@ struct LongrangeCorrelation {
     LOGF(info, "Offset for FV0-left: x = %.3f y = %.3f\n", (*offsetFV0)[0].getX(), (*offsetFV0)[0].getY());
     LOGF(info, "Offset for FV0-right: x = %.3f y = %.3f\n", (*offsetFV0)[1].getX(), (*offsetFV0)[1].getY());
 
-    auto hstat = histos.get<TH1>(HIST("QA/EventHist"));
-    auto* x = hstat->GetXaxis();
-    x->SetBinLabel(1, "All events");
-    x->SetBinLabel(2, "sel8");
-    x->SetBinLabel(3, "kNoSameBunchPileup"); // reject collisions in case of pileup with another collision in the same foundBC
-    x->SetBinLabel(4, "|vz|<10");
-
     std::vector<AxisSpec> corrAxis = {{axisSample, "Sample"},
                                       {axisVtxZ, "z-vtx (cm)"},
                                       {axisPtTrigger, "p_{T} (GeV/c)"},
@@ -176,6 +169,13 @@ struct LongrangeCorrelation {
     if (doprocessEventStat) {
       histos.add("QA/EventHist", "events", kTH1F, {axisEvent}, false);
       histos.add("QA/VtxZHist", "v_{z} (cm)", kTH1F, {axisVtxZ}, false);
+
+      auto hstat = histos.get<TH1>(HIST("QA/EventHist"));
+      auto* x = hstat->GetXaxis();
+      x->SetBinLabel(1, "All events");
+      x->SetBinLabel(2, "sel8");
+      x->SetBinLabel(3, "kNoSameBunchPileup"); // reject collisions in case of pileup with another collision in the same foundBC
+      x->SetBinLabel(4, "|vz|<10");
     }
 
     histos.add("Ft0aGlobal/SE/hMult", "", kTH1D, {axisMultiplicity});
