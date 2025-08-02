@@ -116,7 +116,7 @@ struct AnalysisTagAndProbe {
   OutputObj<THashList> fOutputList{"output"};
 
   struct : ConfigurableGroup {
-    Configurable<string> muon{"cfgMuonCuts", "", "Comma separated list of muon cuts"};
+    Configurable<std::string> muon{"cfgMuonCuts", "", "Comma separated list of muon cuts"};
     // TODO: Add pair cuts via JSON
   } fConfigCuts;
 
@@ -124,7 +124,7 @@ struct AnalysisTagAndProbe {
   Configurable<bool> fConfigQA{"cfgQA", true, "If true, fill output histograms"};
 
   struct : ConfigurableGroup {
-    Configurable<string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> grpMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
     Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
     Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
