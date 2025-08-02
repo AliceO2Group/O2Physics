@@ -406,7 +406,8 @@ struct HyperkinkRecoTask {
   // Configurable for event selection
   Configurable<bool> doEventCut{"doEventCut", true, "Apply event selection"};
   Configurable<float> maxZVertex{"maxZVertex", 10.0f, "Accepted z-vertex range (cm)"};
-  Configurable<float> cutNSigmaDaug{"cutNSigmaDaug", 5, "TPC NSigmaTPC cut for daughter tracks"};
+  Configurable<float> cutTPCNSigmaDaug{"cutTPCNSigmaDaug", 5, "TPC NSigma cut for daughter tracks"};
+  Configurable<float> cutTOFNSigmaDaug{"cutTOFNSigmaDaug", 1000, "TOF NSigma cut for daughter tracks"};
 
   // CCDB options
   Configurable<double> inputBz{"inputBz", -999, "bz field, -999 is automatic"};
@@ -651,7 +652,7 @@ struct HyperkinkRecoTask {
 
       auto daugTrack = kinkCand.trackDaug_as<FullTracksExtIU>();
       float tpcNSigmaDaug = getTPCNSigma(daugTrack, pidTypeDaug);
-      if (std::abs(tpcNSigmaDaug) > cutNSigmaDaug) {
+      if (std::abs(tpcNSigmaDaug) > cutTPCNSigmaDaug) {
         continue;
       }
       float invMass = RecoDecay::m(std::array{std::array{kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug()}, std::array{kinkCand.pxDaugNeut(), kinkCand.pyDaugNeut(), kinkCand.pzDaugNeut()}}, std::array{massChargedDaug, massNeutralDaug});
@@ -668,6 +669,9 @@ struct HyperkinkRecoTask {
       if (daugTrack.hasTOF() && daugTrack.has_collision()) {
         auto originalDaugCol = daugTrack.collision_as<CollisionsFull>();
         nSigmaTOF = getTOFNSigma<false>(mRespParamsV3, daugTrack, collision, originalDaugCol);
+      }
+      if (std::abs(nSigmaTOF) > cutTOFNSigmaDaug) {
+        continue;
       }
       hypkinkCand.nSigmaTOFDaug = nSigmaTOF;
 
@@ -756,7 +760,7 @@ struct HyperkinkRecoTask {
       }
 
       float tpcNSigmaDaug = getTPCNSigma(daugTrack, pidTypeDaug);
-      if (std::abs(tpcNSigmaDaug) > cutNSigmaDaug) {
+      if (std::abs(tpcNSigmaDaug) > cutTPCNSigmaDaug) {
         continue;
       }
       float invMass = RecoDecay::m(std::array{std::array{kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug()}, std::array{kinkCand.pxDaugNeut(), kinkCand.pyDaugNeut(), kinkCand.pzDaugNeut()}}, std::array{massChargedDaug, massNeutralDaug});
@@ -783,6 +787,9 @@ struct HyperkinkRecoTask {
           registry.fill(HIST("hDaugOldTOFNSigma_WrongCol"), defaultNSigmaTOF);
           registry.fill(HIST("hDaugNewTOFNSigma_WrongCol"), nSigmaTOF);
         }
+      }
+      if (std::abs(nSigmaTOF) > cutTOFNSigmaDaug) {
+        continue;
       }
       hypkinkCand.nSigmaTOFDaug = nSigmaTOF;
 
