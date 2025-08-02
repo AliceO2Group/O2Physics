@@ -182,6 +182,8 @@ struct lambdaTwoPartPolarization {
 
   ROOT::Math::PxPyPzMVector ProtonVec1, PionVec1, LambdaVec1, ProtonBoostedVec1, PionBoostedVec1;
   ROOT::Math::PxPyPzMVector ProtonVec2, PionVec2, LambdaVec2, ProtonBoostedVec2, PionBoostedVec2;
+  int V01Tag;
+  int V02Tag;
   double costhetastar1;
   double costhetastar2;
 
@@ -292,10 +294,12 @@ struct lambdaTwoPartPolarization {
       if (LambdaTag) {
         ProtonVec1 = ROOT::Math::PxPyPzMVector(v01.pxpos(), v01.pypos(), v01.pzpos(), massPr);
         PionVec1 = ROOT::Math::PxPyPzMVector(v01.pxneg(), v01.pyneg(), v01.pzneg(), massPi);
+        V01Tag = 0;
       }
       if (aLambdaTag) {
         ProtonVec1 = ROOT::Math::PxPyPzMVector(v01.pxneg(), v01.pyneg(), v01.pzneg(), massPr);
         PionVec1 = ROOT::Math::PxPyPzMVector(v01.pxpos(), v01.pypos(), v01.pzpos(), massPi);
+        V01Tag = 1;
       }
       LambdaVec1 = ProtonVec1 + PionVec1;
       LambdaVec1.SetM(massLambda);
@@ -337,10 +341,12 @@ struct lambdaTwoPartPolarization {
         if (LambdaTag) {
           ProtonVec2 = ROOT::Math::PxPyPzMVector(v02.pxpos(), v02.pypos(), v02.pzpos(), massPr);
           PionVec2 = ROOT::Math::PxPyPzMVector(v02.pxneg(), v02.pyneg(), v02.pzneg(), massPi);
+          V02Tag = 0;
         }
         if (aLambdaTag) {
           ProtonVec2 = ROOT::Math::PxPyPzMVector(v02.pxneg(), v02.pyneg(), v02.pzneg(), massPr);
           PionVec2 = ROOT::Math::PxPyPzMVector(v02.pxpos(), v02.pypos(), v02.pzpos(), massPi);
+          V02Tag = 1;
         }
         LambdaVec2 = ProtonVec2 + PionVec2;
         LambdaVec2.SetM(massLambda);
@@ -355,6 +361,10 @@ struct lambdaTwoPartPolarization {
         weight *= cfgAccCor ? 1.0 / AccMap->GetBinContent(AccMap->GetXaxis()->FindBin(v01.pt()), AccMap->GetYaxis()->FindBin(v01.yLambda())) : 1.;
         weight *= cfgEffCor ? 1.0 / EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v02.pt()), EffMap->GetYaxis()->FindBin(centrality)) : 1.;
         weight *= cfgAccCor ? 1.0 / AccMap->GetBinContent(AccMap->GetXaxis()->FindBin(v02.pt()), AccMap->GetYaxis()->FindBin(v02.yLambda())) : 1.;
+
+        if (V01Tag != V02Tag) {
+          weight *= -1.0;
+        }
 
         dphi = TVector2::Phi_0_2pi(v01.phi() - v02.phi());
         if (dphi > constants::math::PI * 1.5) {
