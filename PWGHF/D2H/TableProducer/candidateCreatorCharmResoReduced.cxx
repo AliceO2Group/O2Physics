@@ -102,23 +102,27 @@ struct HfCandidateCreatorCharmResoReduced {
   Produces<aod::Hf2PrTrkIds> rowCandidateResoIndices2PrTrks;
   // D Configurables
   struct : ConfigurableGroup {
+    std::string prefix = "dmesonsCuts";
     Configurable<std::vector<double>> binsPtD{"binsPtD", std::vector<double>{hf_cuts_d_daughter::vecBinsPt}, "pT bin limits for D daughter cuts"};
     Configurable<LabeledArray<double>> cutsD{"cutsD", {hf_cuts_d_daughter::Cuts[0], hf_cuts_d_daughter::NBinsPt, hf_cuts_d_daughter::NCutVars, hf_cuts_d_daughter::labelsPt, hf_cuts_d_daughter::labelsCutVar}, "D daughter selections"};
     Configurable<bool> keepSideBands{"keepSideBands", false, "flag to keep events from D meson sidebands for backgorund estimation"};
   } cfgDmesCuts;
   // V0 cuts configurables
   struct : ConfigurableGroup {
+    std::string prefix = "v0Cuts";
     Configurable<LabeledArray<double>> cutsV0{"cutsV0", {hf_cuts_v0_daughter::Cuts[0], hf_cuts_v0_daughter::NBinsPt, hf_cuts_v0_daughter::NCutVars, hf_cuts_v0_daughter::labelsPt, hf_cuts_v0_daughter::labelsCutVar}, "V0 daughter selections"};
     Configurable<std::vector<double>> binsPtV0{"binsPtV0", std::vector<double>{hf_cuts_v0_daughter::vecBinsPt}, "pT bin limits for V0 daughter cuts"};
     Configurable<int> v0Type{"v0Type", 0, "V0 type to be selected (0: K0s, 1: Lambda"};
   } cfgV0Cuts;
   // Track cuts configurables
   struct : ConfigurableGroup {
+    std::string prefix = "trackCuts";
     Configurable<LabeledArray<double>> cutsTrk{"cutsTrk", {hf_cuts_track_daughter::Cuts[0], hf_cuts_track_daughter::NCutVars, hf_cuts_track_daughter::labelsCutVar}, "Track daughter selections, set to -1 to disable cuts"};
     Configurable<int> massHypo{"massHypo", 1, "Mass Hypothesis for the track daughters (0: pion, 1: kaon, 2: proton)"};
   } cfgTrackCuts;
   // Mixed Event configurables
   struct : ConfigurableGroup {
+    std::string prefix = "mixedEvent";
     Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
     Configurable<int> numberEventsToSkip{"numberEventsToSkip", -1, "Number of events to Skip in ME process"};
     ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0., 45., 60., 75., 95, 250}, "event multiplicity pools (PV contributors for now)"};
@@ -126,6 +130,7 @@ struct HfCandidateCreatorCharmResoReduced {
   } cfgMixedEvent;
   // Histogram axes configurables
   struct : ConfigurableGroup {
+    std::string prefix = "histAxes";
     ConfigurableAxis axisPtD{"axisPtD", {100, 0., 50}, "#it{p}_{T} (GeV/#it{c})"};
     ConfigurableAxis axisPtV0{"axisPtV0", {100, 0., 50}, "#it{p}_{T} (GeV/#it{c})"};
     ConfigurableAxis axisPtReso{"axisPtReso", {100, 0., 50}, "#it{p}_{T} (GeV/#it{c})"};
@@ -691,10 +696,8 @@ struct HfCandidateCreatorCharmResoReduced {
       bool alreadyCounted{false};
       for (const auto& candV0Tr : candsV0Tr) {
         if constexpr (bachType == BachelorType::V0) { // Case: V0
-          if (rejectPairsWithCommonDaughter) {
-            if (std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.prong0Id()) != dDaughtersIDs.end() || std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.prong1Id()) != dDaughtersIDs.end()) {
-              continue;
-            }
+          if (rejectPairsWithCommonDaughter && (std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.prong0Id()) != dDaughtersIDs.end() || std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.prong1Id()) != dDaughtersIDs.end())) {
+            continue;
           }
           if (!isV0Selected(candV0Tr)) {
             continue;
@@ -704,10 +707,8 @@ struct HfCandidateCreatorCharmResoReduced {
             alreadyCounted = true;
           }
         } else if constexpr (bachType == BachelorType::Track) { // Case: Track
-          if (rejectPairsWithCommonDaughter) {
-            if (std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.globalIndex()) != dDaughtersIDs.end()) {
-              continue;
-            }
+          if (rejectPairsWithCommonDaughter && std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.trackId()) != dDaughtersIDs.end()) {
+            continue;
           }
           if (!isTrackSelected(candV0Tr)) {
             continue;

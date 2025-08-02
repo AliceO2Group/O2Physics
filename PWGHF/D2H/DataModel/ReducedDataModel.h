@@ -1274,6 +1274,7 @@ DECLARE_SOA_TABLE(HfRedVzeros, "AOD", "HFREDVZERO", //! Table with V0 candidate 
 DECLARE_SOA_TABLE(HfRedTrkNoParams, "AOD", "HFREDTRKNOPARAM", //! Table with tracks without track parameters for resonances reduced workflow
                   o2::soa::Index<>,
                   // Indices
+                  hf_track_index_reduced::TrackId,
                   hf_track_index_reduced::HfRedCollisionId,
                   // Static
                   hf_track_vars_reduced::Px,
