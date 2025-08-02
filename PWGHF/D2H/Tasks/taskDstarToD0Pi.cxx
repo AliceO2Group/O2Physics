@@ -71,8 +71,8 @@ struct HfTaskDstarToD0Pi {
   Configurable<double> yCandDstarGenMax{"yCandDstarGenMax", 0.5, "max. rapidity of Generator level Particle"};
   Configurable<bool> selectionFlagHfD0ToPiK{"selectionFlagHfD0ToPiK", true, "Selection Flag for HF flagged candidates"};
   Configurable<std::vector<double>> ptBins{"ptBins", std::vector<double>{hf_cuts_dstar_to_d0_pi::vecBinsPt}, "pT bin limits for Dstar"};
-  Configurable<double> lbSignalRegion{"lbSignalRegion", 0.142, "Lower bound of the signal region for Delta Invariant MassDstar"};
-  Configurable<double> ubSignalRegion{"ubSignalRegion", 0.15, "Upper bound of the signal region for Delta Invariant MassDstar"};
+  Configurable<double> deltaMassMin{"deltaMassMin", 0.142, "Lower bound of the signal region for Delta Invariant MassDstar"};
+  Configurable<double> deltaMassMax{"deltaMassMax", 0.15, "Upper bound of the signal region for Delta Invariant MassDstar"};
 
   o2::ccdb::CcdbApi ccdbApi;
   SliceCache cache;
@@ -282,7 +282,7 @@ struct HfTaskDstarToD0Pi {
             hWeights[ithWeight] = reinterpret_cast<TH2F*>(weightFile->Get(histName.c_str()));
             if (!hWeights[ithWeight]) {
               LOGF(error, "Histogram %s not found in weight file!", histName.c_str());
-              return;
+              abort();
             }
             hWeights[ithWeight]->SetDirectory(0);
             hWeights[ithWeight]->SetName(("hWeight" + std::to_string(ithWeight + 1)).c_str());
@@ -291,6 +291,7 @@ struct HfTaskDstarToD0Pi {
           delete weightFile;
         } else {
           LOGF(error, "Failed to open weight file from CCDB: %s", weightFileName.value.c_str());
+          abort();
         }
       }
     }
@@ -322,7 +323,6 @@ struct HfTaskDstarToD0Pi {
       auto nCandsCurrentCol = selectedCandsCurrentCol.size();
 
       if (nCandsCurrentCol > 0) {
-        // LOGF(debug, "size of selectedCandsCurrentCol: %d", nCandsCurrentCol);
         registry.fill(HIST("Efficiency/hNumPvContributorsCand"), nPVContributors, centrality);
       }
 
@@ -366,7 +366,7 @@ struct HfTaskDstarToD0Pi {
         auto signDstar = candDstar.signSoftPi();
         if (signDstar > 0) {
           auto deltaMDstar = std::abs(invDstar - invD0);
-          if (lbSignalRegion < deltaMDstar && deltaMDstar < ubSignalRegion) {
+          if (deltaMassMin < deltaMDstar && deltaMDstar < deltaMassMax) {
             nCandsSignalRegion++;
           }
 
@@ -389,7 +389,7 @@ struct HfTaskDstarToD0Pi {
           }
         } else if (signDstar < 0) {
           auto deltaMAntiDstar = std::abs(invAntiDstar - invD0Bar);
-          if (lbSignalRegion < deltaMAntiDstar && deltaMAntiDstar < ubSignalRegion) {
+          if (deltaMassMin < deltaMAntiDstar && deltaMAntiDstar < deltaMassMax) {
             nCandsSignalRegion++;
           }
 
@@ -428,11 +428,9 @@ struct HfTaskDstarToD0Pi {
   template <bool applyMl, typename T1>
   void runMcRecTaskDstar(T1 const& candsMcRecSel, CandDstarMcGen const& rowsMcPartilces)
   {
-    // LOGF(info, "Running MC Rec Task Dstar");
     int8_t signDstar = 0;
     // MC at Reconstruction level
     for (const auto& candDstarMcRec : candsMcRecSel) {
-      // LOGF(info, "MC Rec Dstar loop");
       auto ptDstarRecSig = candDstarMcRec.pt();
       auto yDstarRecSig = candDstarMcRec.y(constants::physics::MassDStar);
       if (yCandDstarRecoMax >= 0. && std::abs(yDstarRecSig) > yCandDstarRecoMax) {
@@ -442,7 +440,6 @@ struct HfTaskDstarToD0Pi {
       auto centrality = collision.centFT0M();                                                                     // 0-100%
       auto nPVContributors = collision.numContrib();                                                              // number of PV contributors
       if (std::abs(candDstarMcRec.flagMcMatchRec()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) { // if MC matching is successful at Reconstruction Level
-        // LOGF(info, "MC Rec Dstar loop MC Matched");
         // get MC Mother particle
         auto prong0 = candDstarMcRec.template prong0_as<aod::TracksWMc>();
         auto indexMother = RecoDecay::getMother(rowsMcPartilces, prong0.template mcParticle_as<CandDstarMcGen>(), o2::constants::physics::Pdg::kDStar, true, &signDstar, 2);
@@ -463,7 +460,7 @@ struct HfTaskDstarToD0Pi {
           float weightValue = 1.0;
           if (useWeight && (hWeights.size() < 1 || hWeights[0] == nullptr)) {
             LOGF(error, "Weight histograms are not initialized or empty. Check CCDB path or weight file.");
-            return;
+            abort();
           } else if (useWeight && isCentStudy) {
             for (int ithWeight = 0; ithWeight < nWeights; ++ithWeight) {
               if (centrality > centRangesForWeights.value[ithWeight] && centrality <= centRangesForWeights.value[ithWeight + 1]) {
@@ -603,7 +600,7 @@ struct HfTaskDstarToD0Pi {
         float weightValue = 1.0;
         if (useWeight && (hWeights.size() < 1 || hWeights[0] == nullptr)) {
           LOGF(error, "Weight histograms are not initialized or empty. Check CCDB path or weight file.");
-          return;
+          abort();
         } else if (useWeight && isCentStudy) {
           for (int ithWeight = 0; ithWeight < nWeights; ++ithWeight) {
             if (centFT0MGen > centRangesForWeights.value[ithWeight] && centFT0MGen <= centRangesForWeights.value[ithWeight + 1]) {
