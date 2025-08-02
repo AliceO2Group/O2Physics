@@ -161,6 +161,12 @@ o2physics_add_dpl_workflow(diphoton-hadron-mpc-pcmpcm
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
                     COMPONENT_NAME Analysis)
 
+
+o2physics_add_dpl_workflow(compconvbuilder
+                    SOURCES compconvbuilder.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(diphoton-hadron-mpc-pcmdalitzee
                     SOURCES diphotonHadronMPCPCMDalitzEE.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
