@@ -104,6 +104,7 @@ struct Kstarqa {
     Configurable<float> cfgTPCChi2NCl{"cfgTPCChi2NCl", 4.0, "TPC Chi2/NCl"};
     Configurable<bool> cfgUseITSTPCRefit{"cfgUseITSTPCRefit", false, "Require ITS Refit"};
     Configurable<bool> isNoCollInTimeRangeStandard{"isNoCollInTimeRangeStandard", false, "No collision in time range standard"};
+    Configurable<bool> isApplyPtDepDCAxyCut{"isApplyPtDepDCAxyCut", false, "Apply pT dependent DCAxy cut"};
 
     // cuts on mother
     Configurable<bool> isApplyCutsOnMother{"isApplyCutsOnMother", false, "Enable additional cuts on Kstar mother"};
@@ -419,8 +420,13 @@ struct Kstarqa {
         return false;
       if (std::abs(candidate.eta()) > selectionConfig.cfgCutEta)
         return false;
-      if (std::abs(candidate.dcaXY()) > selectionConfig.cfgCutDCAxy)
-        return false;
+      if (!selectionConfig.isApplyPtDepDCAxyCut) {
+        if (std::abs(candidate.dcaXY()) > selectionConfig.cfgCutDCAxy)
+          return false;
+      } else {
+        if (std::abs(candidate.dcaXY()) > (0.0105 + 0.035 / std::pow(candidate.pt(), 1.1)))
+          return false;
+      }
       if (std::abs(candidate.dcaZ()) > selectionConfig.cfgCutDCAz)
         return false;
       if (candidate.tpcCrossedRowsOverFindableCls() < selectionConfig.cfgRCRFC)
@@ -660,7 +666,7 @@ struct Kstarqa {
   using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::FT0Mults, aod::PVMults>;
 
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::McTrackLabels, aod::pidTOFbeta>>;
-  using EventMCGenerated = soa::Join<aod::McCollisions, aod::PVMults>; // aod::CentNGlobals, aod::CentNTPVs, aod::CentMFTs
+  using EventMCGenerated = soa::Join<aod::McCollisions, aod::MultsExtraMC>; // aod::CentNGlobals, aod::CentNTPVs, aod::CentMFTs
 
   //*********Varibles declaration***************
   float multiplicity{-1.0}, theta2;
@@ -829,13 +835,13 @@ struct Kstarqa {
     // if (!collision.sel8()) {
     //   return;
     // }
+    int occupancy = collision.trackOccupancyInTimeRange();
+    rEventSelection.fill(HIST("hOccupancy"), occupancy);
 
     if (!selectionEvent(collision, true)) {
       return;
     }
 
-    int occupancy = collision.trackOccupancyInTimeRange();
-    rEventSelection.fill(HIST("hOccupancy"), occupancy);
     multiplicity = -1;
 
     if (cSelectMultEstimator == kFT0M) {
@@ -1058,7 +1064,8 @@ struct Kstarqa {
 
   PROCESS_SWITCH(Kstarqa, processME, "Process Mixed event", true);
 
-  void processGen(EventMCGenerated::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
+  // void processGen(EventMCGenerated::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
+  void processGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
     rEventSelection.fill(HIST("eventsCheckGen"), 0.5);
 
@@ -1079,9 +1086,9 @@ struct Kstarqa {
     multiplicity = -1.0;
     // float impactParameter = mcCollision.impactParameter();
 
-    if (selectionConfig.isINELgt0 && !mcCollision.isInelGt0()) {
-      return;
-    }
+    // if (selectionConfig.isINELgt0 && !mcCollision.isInelGt0()) {
+    //   return;
+    // }
     rEventSelection.fill(HIST("eventsCheckGen"), 2.5);
 
     for (const auto& collision : collisions) {
@@ -1122,12 +1129,16 @@ struct Kstarqa {
 
     for (const auto& mcParticle : mcParticles) {
       if (std::abs(mcParticle.y()) < selectionConfig.rapidityMotherData && std::abs(mcParticle.pdgCode()) == o2::constants::physics::kK0Star892) {
+        // if (inelgt0MCgen) {
         hInvMass.fill(HIST("hAllKstarGenCollisisons"), multiplicity, mcParticle.pt());
+        // }
       }
     }
 
     const auto evtReconstructedAndSelected = std::find(selectedEvents.begin(), selectedEvents.end(), mcCollision.globalIndex()) != selectedEvents.end();
+    // if (inelgt0MCgen) {
     hInvMass.fill(HIST("hAllGenCollisions"), multiplicity);
+    // }
     if (!cAllGenCollisions && !evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
       return;
     }
@@ -1183,11 +1194,13 @@ struct Kstarqa {
   }
   PROCESS_SWITCH(Kstarqa, processGen, "Process Generated", false);
 
-  void processEvtLossSigLossMC(EventMCGenerated::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& recCollisions)
+  // void processEvtLossSigLossMC(EventMCGenerated::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& recCollisions)
+  void processEvtLossSigLossMC(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& recCollisions)
   {
-    if (selectionConfig.isINELgt0 && !mcCollision.isInelGt0()) {
-      return;
-    }
+    // if (selectionConfig.isINELgt0 && !mcCollision.isInelGt0()) {
+    //   return;
+    // }
+
     auto impactPar = mcCollision.impactParameter();
     hInvMass.fill(HIST("MCcorrections/hImpactParameterGen"), impactPar);
 
