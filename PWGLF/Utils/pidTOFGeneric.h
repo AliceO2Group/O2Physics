@@ -25,6 +25,9 @@
 
 #include "CommonDataFormat/InteractionRecord.h"
 
+#include <map>
+#include <string>
+
 namespace o2::aod
 {
 
