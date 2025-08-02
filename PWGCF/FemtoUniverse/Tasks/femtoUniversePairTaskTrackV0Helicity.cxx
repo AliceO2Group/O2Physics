@@ -97,6 +97,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   ConfigurableAxis confChildTempFitVarpTBins{"confChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
   Configurable<float> confHPtPart2{"confHPtPart2", 4.0f, "higher limit for pt of particle 2"};
   Configurable<float> confLPtPart2{"confLPtPart2", 0.3f, "lower limit for pt of particle 2"};
+  Configurable<int> confPDGCodeV0{"confPDGCodeV0", 3122, "V0 -- PDG code"};
   Configurable<int> confPDGCodePosChild{"confPDGCodePosChild", 2212, "Positive Child -- PDG code"};
   Configurable<int> confPDGCodeNegChild{"confPDGCodeNegChild", 211, "Negative Child -- PDG code"};
 
@@ -506,7 +507,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     /// Histogramming same event
     for (const auto& part : groupPartsTwo) {
       int pdgCode = static_cast<int>(part.pidCut());
-      if ((confV0Type1 == 0 && pdgCode != 3122) || (confV0Type1 == 1 && pdgCode != -3122))
+      if ((confV0Type1 == 0 && pdgCode != confPDGCodeV0) || (confV0Type1 == 1 && pdgCode != -confPDGCodeV0))
         continue;
       trackHistoPartTwo.fillQA<false, true>(part);
     }
@@ -532,7 +533,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
       if (static_cast<int>(p1.pidCut()) != confTrkPDGCodePartOne)
         continue;
       int pdgCode2 = static_cast<int>(p2.pidCut());
-      if ((confV0Type1 == 0 && pdgCode2 != 3122) || (confV0Type1 == 1 && pdgCode2 != -3122))
+      if ((confV0Type1 == 0 && pdgCode2 != confPDGCodeV0) || (confV0Type1 == 1 && pdgCode2 != -confPDGCodeV0))
         continue;
       // track cleaning
       if (confIsCPR.value) {
@@ -557,17 +558,17 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     /// Histogramming same event
     for (const auto& part : groupPartsTwo) {
       int pdgCode = static_cast<int>(part.pidCut());
-      if ((confV0Type1 == 0 && pdgCode != 3122) || (confV0Type1 == 1 && pdgCode != -3122))
+      if ((confV0Type1 == 0 && pdgCode != confPDGCodeV0) || (confV0Type1 == 1 && pdgCode != -confPDGCodeV0))
         continue;
       trackHistoPartTwo.fillQA<false, true>(part);
     }
 
     auto pairProcessFunc = [&](auto& p1, auto& p2) -> void {
       int pdgCode1 = static_cast<int>(p1.pidCut());
-      if ((confV0Type1 == 0 && pdgCode1 != 3122) || (confV0Type1 == 1 && pdgCode1 != -3122))
+      if ((confV0Type1 == 0 && pdgCode1 != confPDGCodeV0) || (confV0Type1 == 1 && pdgCode1 != -confPDGCodeV0))
         return;
       int pdgCode2 = static_cast<int>(p2.pidCut());
-      if ((confV0Type2 == 0 && pdgCode2 != 3122) || (confV0Type2 == 1 && pdgCode2 != -3122))
+      if ((confV0Type2 == 0 && pdgCode2 != confPDGCodeV0) || (confV0Type2 == 1 && pdgCode2 != -confPDGCodeV0))
         return;
       sameEventCont.setPair<false>(p1, p2, multCol, confUse3D);
     };
@@ -756,7 +757,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
         if (static_cast<int>(p1.pidCut()) != confTrkPDGCodePartOne)
           continue;
         int pdgCode2 = static_cast<int>(p2.pidCut());
-        if ((confV0Type1 == 0 && pdgCode2 != 3122) || (confV0Type1 == 1 && pdgCode2 != -3122))
+        if ((confV0Type1 == 0 && pdgCode2 != confPDGCodeV0) || (confV0Type1 == 1 && pdgCode2 != -confPDGCodeV0))
           continue;
         if (confIsCPR.value) {
           if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
@@ -796,10 +797,10 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         int pdgCode1 = static_cast<int>(p1.pidCut());
-        if ((confV0Type1 == 0 && pdgCode1 != 3122) || (confV0Type1 == 1 && pdgCode1 != -3122))
+        if ((confV0Type1 == 0 && pdgCode1 != confPDGCodeV0) || (confV0Type1 == 1 && pdgCode1 != -confPDGCodeV0))
           continue;
         int pdgCode2 = static_cast<int>(p2.pidCut());
-        if ((confV0Type2 == 0 && pdgCode2 != 3122) || (confV0Type2 == 1 && pdgCode2 != -3122))
+        if ((confV0Type2 == 0 && pdgCode2 != confPDGCodeV0) || (confV0Type2 == 1 && pdgCode2 != -confPDGCodeV0))
           continue;
         mixedEventCont.setPair<false>(p1, p2, multCol, confUse3D);
       }
