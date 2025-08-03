@@ -24,7 +24,7 @@
 #include <TObjArray.h>
 #include <TFile.h>
 #include <TH2F.h>
-//#include <TDatabasePDG.h> // FIXME
+// #include <TDatabasePDG.h> // FIXME
 #include <TPDGCode.h>     // FIXME
 
 #include <vector>
@@ -289,9 +289,9 @@ struct Chk892pp {
     histos.add("QA/before/VtxZ", "Centrality distribution", {HistType::kTH1D, {vtxzAxis}});
     histos.add("QA/before/hEvent", "Number of Events", HistType::kTH1F, {{1, 0.5, 1.5}});
 
-		if (BkgEstimationConfig.cfgFillRotBkg) {
-			histos.add("QA/RotBkg/hRotBkg", "Rotated angle of rotated background", HistType::kTH1F, {{360, 0.0, o2::constants::math::TwoPI}});
-		}
+    if (BkgEstimationConfig.cfgFillRotBkg) {
+      histos.add("QA/RotBkg/hRotBkg", "Rotated angle of rotated background", HistType::kTH1F, {{360, 0.0, o2::constants::math::TwoPI}});
+    }
 
     // Bachelor pion
     histos.add("QA/before/trkbpionDCAxy", "DCAxy distribution of bachelor pion candidates", HistType::kTH1D, {dcaxyAxis});
