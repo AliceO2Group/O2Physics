@@ -146,45 +146,45 @@ struct LightIonsEvSelQa {
     histos.add("noSpecSelections/hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
     histos.add("noSpecSelections/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
 
-    histos.add("noPileup/hBcColNoSel8", "", kTH1F, {axisBCs});
-    histos.add("noPileup/hBcTVX", "", kTH1F, {axisBCs});
-    histos.add("noPileup/hBcFT0", "", kTH1F, {axisBCs});
-    histos.add("noPileup/hBcFV0", "", kTH1F, {axisBCs});
-    histos.add("noPileup/hBcFDD", "", kTH1F, {axisBCs});
-    histos.add("noPileup/hBcZDC", "", kTH1F, {axisBCs});
-    histos.add("noPileup/hVtxFT0VsVtxCol", "", kTH2F, {axisVtxZ, axisVtxZ});
-    histos.add("noPileup/hVtxFT0MinusVtxColVsMultT0M", "", kTH2F, {axisVtxZ, axisMultT0M});
-    histos.add("noPileup/nTracksPV_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracks});
-    histos.add("noPileup/nTracksPV_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracks});
-    histos.add("noPileup/nTracksPV_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracks});
-    histos.add("noPileup/nTracksGlobal_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracksGlobal});
-    histos.add("noPileup/nTracksGlobal_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracksGlobal});
-    histos.add("noPileup/nTracksGlobal_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracksGlobal});
-    histos.add("noPileup/hTVXvsBcDiff", "", kTH1F, {axisBcDiff});
-    histos.add("noPileup/hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
-    histos.add("noPileup/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
+    histos.add("noPU/hBcColNoSel8", "", kTH1F, {axisBCs});
+    histos.add("noPU/hBcTVX", "", kTH1F, {axisBCs});
+    histos.add("noPU/hBcFT0", "", kTH1F, {axisBCs});
+    histos.add("noPU/hBcFV0", "", kTH1F, {axisBCs});
+    histos.add("noPU/hBcFDD", "", kTH1F, {axisBCs});
+    histos.add("noPU/hBcZDC", "", kTH1F, {axisBCs});
+    histos.add("noPU/hVtxFT0VsVtxCol", "", kTH2F, {axisVtxZ, axisVtxZ});
+    histos.add("noPU/hVtxFT0MinusVtxColVsMultT0M", "", kTH2F, {axisVtxZ, axisMultT0M});
+    histos.add("noPU/nTracksPV_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracks});
+    histos.add("noPU/nTracksPV_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracks});
+    histos.add("noPU/nTracksPV_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracks});
+    histos.add("noPU/nTracksGlobal_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracksGlobal});
+    histos.add("noPU/nTracksGlobal_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracksGlobal});
+    histos.add("noPU/nTracksGlobal_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracksGlobal});
+    histos.add("noPU/hTVXvsBcDiff", "", kTH1F, {axisBcDiff});
+    histos.add("noPU/hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
+    histos.add("noPU/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
 
-    histos.add("pvTOFmatched/hBcColNoSel8", "", kTH1F, {axisBCs});
-    histos.add("pvTOFmatched/hBcColNoSel8TOF", "", kTH1F, {axisBCs});
-    histos.add("pvTOFmatched/hBcTVX", "", kTH1F, {axisBCs});
-    histos.add("pvTOFmatched/hBcFT0", "", kTH1F, {axisBCs});
-    histos.add("pvTOFmatched/hBcFV0", "", kTH1F, {axisBCs});
-    histos.add("pvTOFmatched/hBcFDD", "", kTH1F, {axisBCs});
-    histos.add("pvTOFmatched/hBcZDC", "", kTH1F, {axisBCs});
-    histos.add("pvTOFmatched/hVtxFT0VsVtxCol", "", kTH2F, {axisVtxZ, axisVtxZ});
-    histos.add("pvTOFmatched/hVtxFT0MinusVtxColVsMultT0M", "", kTH2F, {axisVtxZ, axisMultT0M});
-    histos.add("pvTOFmatched/nTracksPV_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracks});
-    histos.add("pvTOFmatched/nTracksPV_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracks});
-    histos.add("pvTOFmatched/nTracksPV_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracks});
-    histos.add("pvTOFmatched/nTracksGlobal_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracksGlobal});
-    histos.add("pvTOFmatched/nTracksGlobal_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracksGlobal});
-    histos.add("pvTOFmatched/nTracksGlobal_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracksGlobal});
-    histos.add("pvTOFmatched/hTVXvsBcDiff", "", kTH1F, {axisBcDiff});
-    histos.add("pvTOFmatched/hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
-    histos.add("pvTOFmatched/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
+    histos.add("noPU_pvTOFmatched/hBcColNoSel8", "", kTH1F, {axisBCs});
+    // histos.add("noPU_pvTOFmatched/hBcColNoSel8TOF", "", kTH1F, {axisBCs});
+    histos.add("noPU_pvTOFmatched/hBcTVX", "", kTH1F, {axisBCs});
+    histos.add("noPU_pvTOFmatched/hBcFT0", "", kTH1F, {axisBCs});
+    histos.add("noPU_pvTOFmatched/hBcFV0", "", kTH1F, {axisBCs});
+    histos.add("noPU_pvTOFmatched/hBcFDD", "", kTH1F, {axisBCs});
+    histos.add("noPU_pvTOFmatched/hBcZDC", "", kTH1F, {axisBCs});
+    histos.add("noPU_pvTOFmatched/hVtxFT0VsVtxCol", "", kTH2F, {axisVtxZ, axisVtxZ});
+    histos.add("noPU_pvTOFmatched/hVtxFT0MinusVtxColVsMultT0M", "", kTH2F, {axisVtxZ, axisMultT0M});
+    histos.add("noPU_pvTOFmatched/nTracksPV_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracks});
+    histos.add("noPU_pvTOFmatched/nTracksPV_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracks});
+    histos.add("noPU_pvTOFmatched/nTracksPV_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracks});
+    histos.add("noPU_pvTOFmatched/nTracksGlobal_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracksGlobal});
+    histos.add("noPU_pvTOFmatched/nTracksGlobal_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracksGlobal});
+    histos.add("noPU_pvTOFmatched/nTracksGlobal_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracksGlobal});
+    histos.add("noPU_pvTOFmatched/hTVXvsBcDiff", "", kTH1F, {axisBcDiff});
+    histos.add("noPU_pvTOFmatched/hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
+    histos.add("noPU_pvTOFmatched/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
 
     histos.add("bcDiffCut/hBcColNoSel8", "", kTH1F, {axisBCs});
-    histos.add("bcDiffCut/hBcColNoSel8TOF", "", kTH1F, {axisBCs});
+    // histos.add("bcDiffCut/hBcColNoSel8TOF", "", kTH1F, {axisBCs});
     histos.add("bcDiffCut/hBcTVX", "", kTH1F, {axisBCs});
     histos.add("bcDiffCut/hBcFT0", "", kTH1F, {axisBCs});
     histos.add("bcDiffCut/hBcFV0", "", kTH1F, {axisBCs});
@@ -220,6 +220,24 @@ struct LightIonsEvSelQa {
     histos.add("narrowTimeVeto/hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
     histos.add("narrowTimeVeto/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
 
+    histos.add("strictTimeVeto/hBcColNoSel8", "", kTH1F, {axisBCs});
+    histos.add("strictTimeVeto/hBcTVX", "", kTH1F, {axisBCs});
+    histos.add("strictTimeVeto/hBcFT0", "", kTH1F, {axisBCs});
+    histos.add("strictTimeVeto/hBcFV0", "", kTH1F, {axisBCs});
+    histos.add("strictTimeVeto/hBcFDD", "", kTH1F, {axisBCs});
+    histos.add("strictTimeVeto/hBcZDC", "", kTH1F, {axisBCs});
+    histos.add("strictTimeVeto/hVtxFT0VsVtxCol", "", kTH2F, {axisVtxZ, axisVtxZ});
+    histos.add("strictTimeVeto/hVtxFT0MinusVtxColVsMultT0M", "", kTH2F, {axisVtxZ, axisMultT0M});
+    histos.add("strictTimeVeto/nTracksPV_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracks});
+    histos.add("strictTimeVeto/nTracksPV_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracks});
+    histos.add("strictTimeVeto/nTracksPV_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracks});
+    histos.add("strictTimeVeto/nTracksGlobal_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracksGlobal});
+    histos.add("strictTimeVeto/nTracksGlobal_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracksGlobal});
+    histos.add("strictTimeVeto/nTracksGlobal_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracksGlobal});
+    histos.add("strictTimeVeto/hTVXvsBcDiff", "", kTH1F, {axisBcDiff});
+    histos.add("strictTimeVeto/hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
+    histos.add("strictTimeVeto/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
+
     histos.add("noCollSameROF/hBcColNoSel8", "", kTH1F, {axisBCs});
     histos.add("noCollSameROF/hBcTVX", "", kTH1F, {axisBCs});
     histos.add("noCollSameROF/hBcFT0", "", kTH1F, {axisBCs});
@@ -238,41 +256,41 @@ struct LightIonsEvSelQa {
     histos.add("noCollSameROF/hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
     histos.add("noCollSameROF/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
 
-    histos.add("noPileup_LowMultCut/hBcColNoSel8", "", kTH1F, {axisBCs});
-    histos.add("noPileup_LowMultCut/hBcTVX", "", kTH1F, {axisBCs});
-    histos.add("noPileup_LowMultCut/hBcFT0", "", kTH1F, {axisBCs});
-    histos.add("noPileup_LowMultCut/hBcFV0", "", kTH1F, {axisBCs});
-    histos.add("noPileup_LowMultCut/hBcFDD", "", kTH1F, {axisBCs});
-    histos.add("noPileup_LowMultCut/hBcZDC", "", kTH1F, {axisBCs});
-    histos.add("noPileup_LowMultCut/hVtxFT0VsVtxCol", "", kTH2F, {axisVtxZ, axisVtxZ});
-    histos.add("noPileup_LowMultCut/hVtxFT0MinusVtxColVsMultT0M", "", kTH2F, {axisVtxZ, axisMultT0M});
-    histos.add("noPileup_LowMultCut/nTracksPV_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracks});
-    histos.add("noPileup_LowMultCut/nTracksPV_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracks});
-    histos.add("noPileup_LowMultCut/nTracksPV_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracks});
-    histos.add("noPileup_LowMultCut/nTracksGlobal_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracksGlobal});
-    histos.add("noPileup_LowMultCut/nTracksGlobal_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracksGlobal});
-    histos.add("noPileup_LowMultCut/nTracksGlobal_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracksGlobal});
-    histos.add("noPileup_LowMultCut/hTVXvsBcDiff", "", kTH1F, {axisBcDiff});
-    histos.add("noPileup_LowMultCut/hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
-    histos.add("noPileup_LowMultCut/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
+    histos.add("noPU_LowMultCut/hBcColNoSel8", "", kTH1F, {axisBCs});
+    histos.add("noPU_LowMultCut/hBcTVX", "", kTH1F, {axisBCs});
+    histos.add("noPU_LowMultCut/hBcFT0", "", kTH1F, {axisBCs});
+    histos.add("noPU_LowMultCut/hBcFV0", "", kTH1F, {axisBCs});
+    histos.add("noPU_LowMultCut/hBcFDD", "", kTH1F, {axisBCs});
+    histos.add("noPU_LowMultCut/hBcZDC", "", kTH1F, {axisBCs});
+    histos.add("noPU_LowMultCut/hVtxFT0VsVtxCol", "", kTH2F, {axisVtxZ, axisVtxZ});
+    histos.add("noPU_LowMultCut/hVtxFT0MinusVtxColVsMultT0M", "", kTH2F, {axisVtxZ, axisMultT0M});
+    histos.add("noPU_LowMultCut/nTracksPV_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracks});
+    histos.add("noPU_LowMultCut/nTracksPV_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracks});
+    histos.add("noPU_LowMultCut/nTracksPV_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracks});
+    histos.add("noPU_LowMultCut/nTracksGlobal_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracksGlobal});
+    histos.add("noPU_LowMultCut/nTracksGlobal_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracksGlobal});
+    histos.add("noPU_LowMultCut/nTracksGlobal_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracksGlobal});
+    histos.add("noPU_LowMultCut/hTVXvsBcDiff", "", kTH1F, {axisBcDiff});
+    histos.add("noPU_LowMultCut/hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
+    histos.add("noPU_LowMultCut/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
 
-    histos.add("noPileup_HighMultCloudCut/hBcColNoSel8", "", kTH1F, {axisBCs});
-    histos.add("noPileup_HighMultCloudCut/hBcTVX", "", kTH1F, {axisBCs});
-    histos.add("noPileup_HighMultCloudCut/hBcFT0", "", kTH1F, {axisBCs});
-    histos.add("noPileup_HighMultCloudCut/hBcFV0", "", kTH1F, {axisBCs});
-    histos.add("noPileup_HighMultCloudCut/hBcFDD", "", kTH1F, {axisBCs});
-    histos.add("noPileup_HighMultCloudCut/hBcZDC", "", kTH1F, {axisBCs});
-    histos.add("noPileup_HighMultCloudCut/hVtxFT0VsVtxCol", "", kTH2F, {axisVtxZ, axisVtxZ});
-    histos.add("noPileup_HighMultCloudCut/hVtxFT0MinusVtxColVsMultT0M", "", kTH2F, {axisVtxZ, axisMultT0M});
-    histos.add("noPileup_HighMultCloudCut/nTracksPV_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracks});
-    histos.add("noPileup_HighMultCloudCut/nTracksPV_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracks});
-    histos.add("noPileup_HighMultCloudCut/nTracksPV_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracks});
-    histos.add("noPileup_HighMultCloudCut/nTracksGlobal_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracksGlobal});
-    histos.add("noPileup_HighMultCloudCut/nTracksGlobal_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracksGlobal});
-    histos.add("noPileup_HighMultCloudCut/nTracksGlobal_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracksGlobal});
-    histos.add("noPileup_HighMultCloudCut/hTVXvsBcDiff", "", kTH1F, {axisBcDiff});
-    histos.add("noPileup_HighMultCloudCut/hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
-    histos.add("noPileup_HighMultCloudCut/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
+    histos.add("noPU_HighMultCloudCut/hBcColNoSel8", "", kTH1F, {axisBCs});
+    histos.add("noPU_HighMultCloudCut/hBcTVX", "", kTH1F, {axisBCs});
+    histos.add("noPU_HighMultCloudCut/hBcFT0", "", kTH1F, {axisBCs});
+    histos.add("noPU_HighMultCloudCut/hBcFV0", "", kTH1F, {axisBCs});
+    histos.add("noPU_HighMultCloudCut/hBcFDD", "", kTH1F, {axisBCs});
+    histos.add("noPU_HighMultCloudCut/hBcZDC", "", kTH1F, {axisBCs});
+    histos.add("noPU_HighMultCloudCut/hVtxFT0VsVtxCol", "", kTH2F, {axisVtxZ, axisVtxZ});
+    histos.add("noPU_HighMultCloudCut/hVtxFT0MinusVtxColVsMultT0M", "", kTH2F, {axisVtxZ, axisMultT0M});
+    histos.add("noPU_HighMultCloudCut/nTracksPV_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracks});
+    histos.add("noPU_HighMultCloudCut/nTracksPV_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracks});
+    histos.add("noPU_HighMultCloudCut/nTracksPV_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracks});
+    histos.add("noPU_HighMultCloudCut/nTracksGlobal_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracksGlobal});
+    histos.add("noPU_HighMultCloudCut/nTracksGlobal_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracksGlobal});
+    histos.add("noPU_HighMultCloudCut/nTracksGlobal_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracksGlobal});
+    histos.add("noPU_HighMultCloudCut/hTVXvsBcDiff", "", kTH1F, {axisBcDiff});
+    histos.add("noPU_HighMultCloudCut/hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
+    histos.add("noPU_HighMultCloudCut/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
 
     histos.add("badVzDiff/hBcColNoSel8", "", kTH1F, {axisBCs});
     histos.add("badVzDiff/hBcTVX", "", kTH1F, {axisBCs});
@@ -292,23 +310,23 @@ struct LightIonsEvSelQa {
     histos.add("badVzDiff/hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
     histos.add("badVzDiff/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
 
-    histos.add("goodVzDiff/hBcColNoSel8", "", kTH1F, {axisBCs});
-    histos.add("goodVzDiff/hBcTVX", "", kTH1F, {axisBCs});
-    histos.add("goodVzDiff/hBcFT0", "", kTH1F, {axisBCs});
-    histos.add("goodVzDiff/hBcFV0", "", kTH1F, {axisBCs});
-    histos.add("goodVzDiff/hBcFDD", "", kTH1F, {axisBCs});
-    histos.add("goodVzDiff/hBcZDC", "", kTH1F, {axisBCs});
-    histos.add("goodVzDiff/hVtxFT0VsVtxCol", "", kTH2F, {axisVtxZ, axisVtxZ});
-    histos.add("goodVzDiff/hVtxFT0MinusVtxColVsMultT0M", "", kTH2F, {axisVtxZ, axisMultT0M});
-    histos.add("goodVzDiff/nTracksPV_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracks});
-    histos.add("goodVzDiff/nTracksPV_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracks});
-    histos.add("goodVzDiff/nTracksPV_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracks});
-    histos.add("goodVzDiff/nTracksGlobal_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracksGlobal});
-    histos.add("goodVzDiff/nTracksGlobal_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracksGlobal});
-    histos.add("goodVzDiff/nTracksGlobal_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracksGlobal});
-    histos.add("goodVzDiff/hTVXvsBcDiff", "", kTH1F, {axisBcDiff});
-    histos.add("goodVzDiff/hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
-    histos.add("goodVzDiff/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
+    histos.add("noPU_goodVzDiff/hBcColNoSel8", "", kTH1F, {axisBCs});
+    histos.add("noPU_goodVzDiff/hBcTVX", "", kTH1F, {axisBCs});
+    histos.add("noPU_goodVzDiff/hBcFT0", "", kTH1F, {axisBCs});
+    histos.add("noPU_goodVzDiff/hBcFV0", "", kTH1F, {axisBCs});
+    histos.add("noPU_goodVzDiff/hBcFDD", "", kTH1F, {axisBCs});
+    histos.add("noPU_goodVzDiff/hBcZDC", "", kTH1F, {axisBCs});
+    histos.add("noPU_goodVzDiff/hVtxFT0VsVtxCol", "", kTH2F, {axisVtxZ, axisVtxZ});
+    histos.add("noPU_goodVzDiff/hVtxFT0MinusVtxColVsMultT0M", "", kTH2F, {axisVtxZ, axisMultT0M});
+    histos.add("noPU_goodVzDiff/nTracksPV_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracks});
+    histos.add("noPU_goodVzDiff/nTracksPV_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracks});
+    histos.add("noPU_goodVzDiff/nTracksPV_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracks});
+    histos.add("noPU_goodVzDiff/nTracksGlobal_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracksGlobal});
+    histos.add("noPU_goodVzDiff/nTracksGlobal_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracksGlobal});
+    histos.add("noPU_goodVzDiff/nTracksGlobal_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracksGlobal});
+    histos.add("noPU_goodVzDiff/hTVXvsBcDiff", "", kTH1F, {axisBcDiff});
+    histos.add("noPU_goodVzDiff/hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
+    histos.add("noPU_goodVzDiff/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
 
     histos.add("noPastActivity/hBcColNoSel8", "", kTH1F, {axisBCs});
     histos.add("noPastActivity/hBcTVX", "", kTH1F, {axisBCs});
@@ -346,23 +364,23 @@ struct LightIonsEvSelQa {
     histos.add("noFT0activityNearby/hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
     histos.add("noFT0activityNearby/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
 
-    histos.add("noPileup_cutByVzDiff_pvTOF_noFT0act/hBcColNoSel8", "", kTH1F, {axisBCs});
-    histos.add("noPileup_cutByVzDiff_pvTOF_noFT0act/hBcTVX", "", kTH1F, {axisBCs});
-    histos.add("noPileup_cutByVzDiff_pvTOF_noFT0act/hBcFT0", "", kTH1F, {axisBCs});
-    histos.add("noPileup_cutByVzDiff_pvTOF_noFT0act/hBcFV0", "", kTH1F, {axisBCs});
-    histos.add("noPileup_cutByVzDiff_pvTOF_noFT0act/hBcFDD", "", kTH1F, {axisBCs});
-    histos.add("noPileup_cutByVzDiff_pvTOF_noFT0act/hBcZDC", "", kTH1F, {axisBCs});
-    histos.add("noPileup_cutByVzDiff_pvTOF_noFT0act/hVtxFT0VsVtxCol", "", kTH2F, {axisVtxZ, axisVtxZ});
-    histos.add("noPileup_cutByVzDiff_pvTOF_noFT0act/hVtxFT0MinusVtxColVsMultT0M", "", kTH2F, {axisVtxZ, axisMultT0M});
-    histos.add("noPileup_cutByVzDiff_pvTOF_noFT0act/nTracksPV_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracks});
-    histos.add("noPileup_cutByVzDiff_pvTOF_noFT0act/nTracksPV_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracks});
-    histos.add("noPileup_cutByVzDiff_pvTOF_noFT0act/nTracksPV_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracks});
-    histos.add("noPileup_cutByVzDiff_pvTOF_noFT0act/nTracksGlobal_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracksGlobal});
-    histos.add("noPileup_cutByVzDiff_pvTOF_noFT0act/nTracksGlobal_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracksGlobal});
-    histos.add("noPileup_cutByVzDiff_pvTOF_noFT0act/nTracksGlobal_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracksGlobal});
-    histos.add("noPileup_cutByVzDiff_pvTOF_noFT0act/hTVXvsBcDiff", "", kTH1F, {axisBcDiff});
-    histos.add("noPileup_cutByVzDiff_pvTOF_noFT0act/hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
-    histos.add("noPileup_cutByVzDiff_pvTOF_noFT0act/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
+    histos.add("noPU_cutByVzDiff_pvTOF/hBcColNoSel8", "", kTH1F, {axisBCs});
+    histos.add("noPU_cutByVzDiff_pvTOF/hBcTVX", "", kTH1F, {axisBCs});
+    histos.add("noPU_cutByVzDiff_pvTOF/hBcFT0", "", kTH1F, {axisBCs});
+    histos.add("noPU_cutByVzDiff_pvTOF/hBcFV0", "", kTH1F, {axisBCs});
+    histos.add("noPU_cutByVzDiff_pvTOF/hBcFDD", "", kTH1F, {axisBCs});
+    histos.add("noPU_cutByVzDiff_pvTOF/hBcZDC", "", kTH1F, {axisBCs});
+    histos.add("noPU_cutByVzDiff_pvTOF/hVtxFT0VsVtxCol", "", kTH2F, {axisVtxZ, axisVtxZ});
+    histos.add("noPU_cutByVzDiff_pvTOF/hVtxFT0MinusVtxColVsMultT0M", "", kTH2F, {axisVtxZ, axisMultT0M});
+    histos.add("noPU_cutByVzDiff_pvTOF/nTracksPV_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracks});
+    histos.add("noPU_cutByVzDiff_pvTOF/nTracksPV_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracks});
+    histos.add("noPU_cutByVzDiff_pvTOF/nTracksPV_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracks});
+    histos.add("noPU_cutByVzDiff_pvTOF/nTracksGlobal_vs_V0A", "", kTH2F, {axisMultV0A, axisNtracksGlobal});
+    histos.add("noPU_cutByVzDiff_pvTOF/nTracksGlobal_vs_T0A", "", kTH2F, {axisMultFT0A, axisNtracksGlobal});
+    histos.add("noPU_cutByVzDiff_pvTOF/nTracksGlobal_vs_T0C", "", kTH2F, {axisMultFT0C, axisNtracksGlobal});
+    histos.add("noPU_cutByVzDiff_pvTOF/hTVXvsBcDiff", "", kTH1F, {axisBcDiff});
+    histos.add("noPU_cutByVzDiff_pvTOF/hColTimeResVsNcontrib", "", kTH2F, {axisNcontrib, axisColTimeRes});
+    histos.add("noPU_cutByVzDiff_pvTOF/hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
   }
 
   Preslice<FullTracksIU> perCollision = aod::track::collisionId;
@@ -416,6 +434,7 @@ struct LightIonsEvSelQa {
       double timeInterval = nTimeBins * timeBinWidthInSec;
 
       const AxisSpec axisSeconds{nTimeBins, 0, timeInterval, "seconds"};
+      histos.add("hSecondsCollisions/sel8", "", kTH1D, {axisSeconds});
       histos.add("hSecondsCollisions/noPU", "", kTH1D, {axisSeconds});
       histos.add("hSecondsCollisions/noPU_underLine", "", kTH1D, {axisSeconds});
       histos.add("hSecondsCollisions/noPU_grassOnTheRight", "", kTH1D, {axisSeconds});
@@ -583,7 +602,8 @@ struct LightIonsEvSelQa {
       // selection decisions:
       bool noPU = col.selection_bit(kNoSameBunchPileup);
       bool pvTOFmatched = col.selection_bit(kIsVertexTOFmatched);
-      bool narrowDeltaTimeVeto = col.selection_bit(kNoCollInTimeRangeNarrow);
+      bool narrowTimeVeto = col.selection_bit(kNoCollInTimeRangeNarrow);
+      bool strictTimeVeto = col.selection_bit(kNoCollInTimeRangeStrict);
       bool noCollSameROF = col.selection_bit(kNoCollInRofStrict);
       bool bcDiffCut = (bcToClosestTVXdiff == 0);
 
@@ -668,17 +688,6 @@ struct LightIonsEvSelQa {
         grassOnTheRight = true;
       }
 
-      // vs time
-      if (noPU) {
-        histos.fill(HIST("hSecondsCollisions/noPU"), secFromSOR);
-        if (underLine)
-          histos.fill(HIST("hSecondsCollisions/noPU_underLine"), secFromSOR);
-        if (grassOnTheRight)
-          histos.fill(HIST("hSecondsCollisions/noPU_grassOnTheRight"), secFromSOR);
-        if (!underLine && !grassOnTheRight)
-          histos.fill(HIST("hSecondsCollisions/noPU_good"), secFromSOR);
-      }
-
       // study bc diff:
       int nContributors = col.numContrib();
       float timeRes = col.collisionTimeRes();
@@ -692,10 +701,10 @@ struct LightIonsEvSelQa {
       histos.fill(HIST("noSpecSelections/hBcColNoSel8"), localBC);
 
       if (noPU) {
-        histos.fill(HIST("noPileup/hBcColNoSel8"), localBC);
+        histos.fill(HIST("noPU/hBcColNoSel8"), localBC);
       }
-      if (pvTOFmatched) {
-        histos.fill(HIST("pvTOFmatched/hBcColNoSel8"), localBC);
+      if (noPU && pvTOFmatched) {
+        histos.fill(HIST("noPU_pvTOFmatched/hBcColNoSel8"), localBC);
       }
       if (bcDiffCut) {
         histos.fill(HIST("bcDiffCut/hBcColNoSel8"), localBC);
@@ -709,42 +718,57 @@ struct LightIonsEvSelQa {
       if (badVzDiff) {
         histos.fill(HIST("badVzDiff/hBcColNoSel8"), localBC);
       }
-      if (!badVzDiff) {
-        histos.fill(HIST("goodVzDiff/hBcColNoSel8"), localBC);
+      if (noPU && !badVzDiff) {
+        histos.fill(HIST("noPU_goodVzDiff/hBcColNoSel8"), localBC);
       }
-      if (narrowDeltaTimeVeto) {
+      if (narrowTimeVeto) {
         histos.fill(HIST("narrowTimeVeto/hBcColNoSel8"), localBC);
+      }
+      if (strictTimeVeto) {
+        histos.fill(HIST("strictTimeVeto/hBcColNoSel8"), localBC);
       }
       if (noCollSameROF) {
         histos.fill(HIST("noCollSameROF/hBcColNoSel8"), localBC);
       }
       if (noPU && underLine) {
-        histos.fill(HIST("noPileup_LowMultCut/hBcColNoSel8"), localBC);
+        histos.fill(HIST("noPU_LowMultCut/hBcColNoSel8"), localBC);
       }
       if (noPU && grassOnTheRight) {
-        histos.fill(HIST("noPileup_HighMultCloudCut/hBcColNoSel8"), localBC);
+        histos.fill(HIST("noPU_HighMultCloudCut/hBcColNoSel8"), localBC);
       }
-      if (noPU && pvTOFmatched && !badVzDiff && noFT0activityNearby) { // noPileup_cutByVzDiff_pvTOF_noFT0act
-        histos.fill(HIST("noPileup_cutByVzDiff_pvTOF_noFT0act/hBcColNoSel8"), localBC);
+      if (noPU && pvTOFmatched && !badVzDiff) { // noPileup_cutByVzDiff_pvTOF_noFT0act
+        histos.fill(HIST("noPU_cutByVzDiff_pvTOF/hBcColNoSel8"), localBC);
       }
 
       // only here cut on sel8:
       if (!col.sel8())
         continue;
 
+      // vs time
+      histos.fill(HIST("hSecondsCollisions/sel8"), secFromSOR);
+      if (noPU) {
+        histos.fill(HIST("hSecondsCollisions/noPU"), secFromSOR);
+        if (underLine)
+          histos.fill(HIST("hSecondsCollisions/noPU_underLine"), secFromSOR);
+        if (grassOnTheRight)
+          histos.fill(HIST("hSecondsCollisions/noPU_grassOnTheRight"), secFromSOR);
+        if (!underLine && !grassOnTheRight)
+          histos.fill(HIST("hSecondsCollisions/noPU_good"), secFromSOR);
+      }
+
       histos.fill(HIST("noSpecSelections/hBcTVX"), localBC);
       histos.fill(HIST("noSpecSelections/hColBcDiffVsNcontrib"), nContributors, bcToClosestTVXdiff);
       histos.fill(HIST("noSpecSelections/hColTimeResVsNcontrib"), nContributors, timeRes);
 
       if (noPU) {
-        histos.fill(HIST("noPileup/hBcTVX"), localBC);
-        histos.fill(HIST("noPileup/hColBcDiffVsNcontrib"), nContributors, bcToClosestTVXdiff);
-        histos.fill(HIST("noPileup/hColTimeResVsNcontrib"), nContributors, timeRes);
+        histos.fill(HIST("noPU/hBcTVX"), localBC);
+        histos.fill(HIST("noPU/hColBcDiffVsNcontrib"), nContributors, bcToClosestTVXdiff);
+        histos.fill(HIST("noPU/hColTimeResVsNcontrib"), nContributors, timeRes);
       }
-      if (pvTOFmatched) {
-        histos.fill(HIST("pvTOFmatched/hBcTVX"), localBC);
-        histos.fill(HIST("pvTOFmatched/hColBcDiffVsNcontrib"), nContributors, bcToClosestTVXdiff);
-        histos.fill(HIST("pvTOFmatched/hColTimeResVsNcontrib"), nContributors, timeRes);
+      if (noPU && pvTOFmatched) {
+        histos.fill(HIST("noPU_pvTOFmatched/hBcTVX"), localBC);
+        histos.fill(HIST("noPU_pvTOFmatched/hColBcDiffVsNcontrib"), nContributors, bcToClosestTVXdiff);
+        histos.fill(HIST("noPU_pvTOFmatched/hColTimeResVsNcontrib"), nContributors, timeRes);
       }
       if (bcDiffCut) {
         histos.fill(HIST("bcDiffCut/hBcTVX"), localBC);
@@ -766,15 +790,20 @@ struct LightIonsEvSelQa {
         histos.fill(HIST("badVzDiff/hColBcDiffVsNcontrib"), nContributors, bcToClosestTVXdiff);
         histos.fill(HIST("badVzDiff/hColTimeResVsNcontrib"), nContributors, timeRes);
       }
-      if (!badVzDiff) {
-        histos.fill(HIST("goodVzDiff/hBcTVX"), localBC);
-        histos.fill(HIST("goodVzDiff/hColBcDiffVsNcontrib"), nContributors, bcToClosestTVXdiff);
-        histos.fill(HIST("goodVzDiff/hColTimeResVsNcontrib"), nContributors, timeRes);
+      if (noPU && !badVzDiff) {
+        histos.fill(HIST("noPU_goodVzDiff/hBcTVX"), localBC);
+        histos.fill(HIST("noPU_goodVzDiff/hColBcDiffVsNcontrib"), nContributors, bcToClosestTVXdiff);
+        histos.fill(HIST("noPU_goodVzDiff/hColTimeResVsNcontrib"), nContributors, timeRes);
       }
-      if (narrowDeltaTimeVeto) {
+      if (narrowTimeVeto) {
         histos.fill(HIST("narrowTimeVeto/hBcTVX"), localBC);
         histos.fill(HIST("narrowTimeVeto/hColBcDiffVsNcontrib"), nContributors, bcToClosestTVXdiff);
         histos.fill(HIST("narrowTimeVeto/hColTimeResVsNcontrib"), nContributors, timeRes);
+      }
+      if (strictTimeVeto) {
+        histos.fill(HIST("strictTimeVeto/hBcTVX"), localBC);
+        histos.fill(HIST("strictTimeVeto/hColBcDiffVsNcontrib"), nContributors, bcToClosestTVXdiff);
+        histos.fill(HIST("strictTimeVeto/hColTimeResVsNcontrib"), nContributors, timeRes);
       }
       if (noCollSameROF) {
         histos.fill(HIST("noCollSameROF/hBcTVX"), localBC);
@@ -782,19 +811,19 @@ struct LightIonsEvSelQa {
         histos.fill(HIST("noCollSameROF/hColTimeResVsNcontrib"), nContributors, timeRes);
       }
       if (noPU && underLine) {
-        histos.fill(HIST("noPileup_LowMultCut/hBcTVX"), localBC);
-        histos.fill(HIST("noPileup_LowMultCut/hColBcDiffVsNcontrib"), nContributors, bcToClosestTVXdiff);
-        histos.fill(HIST("noPileup_LowMultCut/hColTimeResVsNcontrib"), nContributors, timeRes);
+        histos.fill(HIST("noPU_LowMultCut/hBcTVX"), localBC);
+        histos.fill(HIST("noPU_LowMultCut/hColBcDiffVsNcontrib"), nContributors, bcToClosestTVXdiff);
+        histos.fill(HIST("noPU_LowMultCut/hColTimeResVsNcontrib"), nContributors, timeRes);
       }
       if (noPU && grassOnTheRight) {
-        histos.fill(HIST("noPileup_HighMultCloudCut/hBcTVX"), localBC);
-        histos.fill(HIST("noPileup_HighMultCloudCut/hColBcDiffVsNcontrib"), nContributors, bcToClosestTVXdiff);
-        histos.fill(HIST("noPileup_HighMultCloudCut/hColTimeResVsNcontrib"), nContributors, timeRes);
+        histos.fill(HIST("noPU_HighMultCloudCut/hBcTVX"), localBC);
+        histos.fill(HIST("noPU_HighMultCloudCut/hColBcDiffVsNcontrib"), nContributors, bcToClosestTVXdiff);
+        histos.fill(HIST("noPU_HighMultCloudCut/hColTimeResVsNcontrib"), nContributors, timeRes);
       }
-      if (noPU && pvTOFmatched && !badVzDiff && noFT0activityNearby) { // noPileup_cutByVzDiff_pvTOF_noFT0act
-        histos.fill(HIST("noPileup_cutByVzDiff_pvTOF_noFT0act/hBcTVX"), localBC);
-        histos.fill(HIST("noPileup_cutByVzDiff_pvTOF_noFT0act/hColBcDiffVsNcontrib"), nContributors, bcToClosestTVXdiff);
-        histos.fill(HIST("noPileup_cutByVzDiff_pvTOF_noFT0act/hColTimeResVsNcontrib"), nContributors, timeRes);
+      if (noPU && pvTOFmatched && !badVzDiff) { // noPileup_cutByVzDiff_pvTOF_noFT0act
+        histos.fill(HIST("noPU_cutByVzDiff_pvTOF/hBcTVX"), localBC);
+        histos.fill(HIST("noPU_cutByVzDiff_pvTOF/hColBcDiffVsNcontrib"), nContributors, bcToClosestTVXdiff);
+        histos.fill(HIST("noPU_cutByVzDiff_pvTOF/hColTimeResVsNcontrib"), nContributors, timeRes);
       }
 
       if (foundBC.has_ft0()) {
@@ -810,22 +839,22 @@ struct LightIonsEvSelQa {
         histos.fill(HIST("noSpecSelections/nTracksGlobal_vs_T0C"), multT0C, nGlobalTracks);
 
         if (noPU) {
-          histos.fill(HIST("noPileup/hBcFT0"), localBC);
-          histos.fill(HIST("noPileup/hVtxFT0VsVtxCol"), vZft0, vZ);
-          histos.fill(HIST("noPileup/hVtxFT0MinusVtxColVsMultT0M"), diffVz, multT0A + multT0C);
-          histos.fill(HIST("noPileup/nTracksPV_vs_T0A"), multT0A, nPVtracks);
-          histos.fill(HIST("noPileup/nTracksGlobal_vs_T0A"), multT0A, nGlobalTracks);
-          histos.fill(HIST("noPileup/nTracksPV_vs_T0C"), multT0C, nPVtracks);
-          histos.fill(HIST("noPileup/nTracksGlobal_vs_T0C"), multT0C, nGlobalTracks);
+          histos.fill(HIST("noPU/hBcFT0"), localBC);
+          histos.fill(HIST("noPU/hVtxFT0VsVtxCol"), vZft0, vZ);
+          histos.fill(HIST("noPU/hVtxFT0MinusVtxColVsMultT0M"), diffVz, multT0A + multT0C);
+          histos.fill(HIST("noPU/nTracksPV_vs_T0A"), multT0A, nPVtracks);
+          histos.fill(HIST("noPU/nTracksGlobal_vs_T0A"), multT0A, nGlobalTracks);
+          histos.fill(HIST("noPU/nTracksPV_vs_T0C"), multT0C, nPVtracks);
+          histos.fill(HIST("noPU/nTracksGlobal_vs_T0C"), multT0C, nGlobalTracks);
         }
-        if (pvTOFmatched) {
-          histos.fill(HIST("pvTOFmatched/hBcFT0"), localBC);
-          histos.fill(HIST("pvTOFmatched/hVtxFT0VsVtxCol"), vZft0, vZ);
-          histos.fill(HIST("pvTOFmatched/hVtxFT0MinusVtxColVsMultT0M"), diffVz, multT0A + multT0C);
-          histos.fill(HIST("pvTOFmatched/nTracksPV_vs_T0A"), multT0A, nPVtracks);
-          histos.fill(HIST("pvTOFmatched/nTracksGlobal_vs_T0A"), multT0A, nGlobalTracks);
-          histos.fill(HIST("pvTOFmatched/nTracksPV_vs_T0C"), multT0C, nPVtracks);
-          histos.fill(HIST("pvTOFmatched/nTracksGlobal_vs_T0C"), multT0C, nGlobalTracks);
+        if (noPU && pvTOFmatched) {
+          histos.fill(HIST("noPU_pvTOFmatched/hBcFT0"), localBC);
+          histos.fill(HIST("noPU_pvTOFmatched/hVtxFT0VsVtxCol"), vZft0, vZ);
+          histos.fill(HIST("noPU_pvTOFmatched/hVtxFT0MinusVtxColVsMultT0M"), diffVz, multT0A + multT0C);
+          histos.fill(HIST("noPU_pvTOFmatched/nTracksPV_vs_T0A"), multT0A, nPVtracks);
+          histos.fill(HIST("noPU_pvTOFmatched/nTracksGlobal_vs_T0A"), multT0A, nGlobalTracks);
+          histos.fill(HIST("noPU_pvTOFmatched/nTracksPV_vs_T0C"), multT0C, nPVtracks);
+          histos.fill(HIST("noPU_pvTOFmatched/nTracksGlobal_vs_T0C"), multT0C, nGlobalTracks);
         }
         if (bcDiffCut) {
           histos.fill(HIST("bcDiffCut/hBcFT0"), localBC);
@@ -845,14 +874,14 @@ struct LightIonsEvSelQa {
           histos.fill(HIST("badVzDiff/nTracksPV_vs_T0C"), multT0C, nPVtracks);
           histos.fill(HIST("badVzDiff/nTracksGlobal_vs_T0C"), multT0C, nGlobalTracks);
         }
-        if (!badVzDiff) {
-          histos.fill(HIST("goodVzDiff/hBcFT0"), localBC);
-          histos.fill(HIST("goodVzDiff/hVtxFT0VsVtxCol"), vZft0, vZ);
-          histos.fill(HIST("goodVzDiff/hVtxFT0MinusVtxColVsMultT0M"), diffVz, multT0A + multT0C);
-          histos.fill(HIST("goodVzDiff/nTracksPV_vs_T0A"), multT0A, nPVtracks);
-          histos.fill(HIST("goodVzDiff/nTracksGlobal_vs_T0A"), multT0A, nGlobalTracks);
-          histos.fill(HIST("goodVzDiff/nTracksPV_vs_T0C"), multT0C, nPVtracks);
-          histos.fill(HIST("goodVzDiff/nTracksGlobal_vs_T0C"), multT0C, nGlobalTracks);
+        if (noPU && !badVzDiff) {
+          histos.fill(HIST("noPU_goodVzDiff/hBcFT0"), localBC);
+          histos.fill(HIST("noPU_goodVzDiff/hVtxFT0VsVtxCol"), vZft0, vZ);
+          histos.fill(HIST("noPU_goodVzDiff/hVtxFT0MinusVtxColVsMultT0M"), diffVz, multT0A + multT0C);
+          histos.fill(HIST("noPU_goodVzDiff/nTracksPV_vs_T0A"), multT0A, nPVtracks);
+          histos.fill(HIST("noPU_goodVzDiff/nTracksGlobal_vs_T0A"), multT0A, nGlobalTracks);
+          histos.fill(HIST("noPU_goodVzDiff/nTracksPV_vs_T0C"), multT0C, nPVtracks);
+          histos.fill(HIST("noPU_goodVzDiff/nTracksGlobal_vs_T0C"), multT0C, nGlobalTracks);
         }
         if (noPastActivity) {
           histos.fill(HIST("noPastActivity/hBcFT0"), localBC);
@@ -872,7 +901,7 @@ struct LightIonsEvSelQa {
           histos.fill(HIST("noFT0activityNearby/nTracksPV_vs_T0C"), multT0C, nPVtracks);
           histos.fill(HIST("noFT0activityNearby/nTracksGlobal_vs_T0C"), multT0C, nGlobalTracks);
         }
-        if (narrowDeltaTimeVeto) {
+        if (narrowTimeVeto) {
           histos.fill(HIST("narrowTimeVeto/hBcFT0"), localBC);
           histos.fill(HIST("narrowTimeVeto/hVtxFT0VsVtxCol"), vZft0, vZ);
           histos.fill(HIST("narrowTimeVeto/hVtxFT0MinusVtxColVsMultT0M"), diffVz, multT0A + multT0C);
@@ -880,6 +909,15 @@ struct LightIonsEvSelQa {
           histos.fill(HIST("narrowTimeVeto/nTracksGlobal_vs_T0A"), multT0A, nGlobalTracks);
           histos.fill(HIST("narrowTimeVeto/nTracksPV_vs_T0C"), multT0C, nPVtracks);
           histos.fill(HIST("narrowTimeVeto/nTracksGlobal_vs_T0C"), multT0C, nGlobalTracks);
+        }
+        if (strictTimeVeto) {
+          histos.fill(HIST("strictTimeVeto/hBcFT0"), localBC);
+          histos.fill(HIST("strictTimeVeto/hVtxFT0VsVtxCol"), vZft0, vZ);
+          histos.fill(HIST("strictTimeVeto/hVtxFT0MinusVtxColVsMultT0M"), diffVz, multT0A + multT0C);
+          histos.fill(HIST("strictTimeVeto/nTracksPV_vs_T0A"), multT0A, nPVtracks);
+          histos.fill(HIST("strictTimeVeto/nTracksGlobal_vs_T0A"), multT0A, nGlobalTracks);
+          histos.fill(HIST("strictTimeVeto/nTracksPV_vs_T0C"), multT0C, nPVtracks);
+          histos.fill(HIST("strictTimeVeto/nTracksGlobal_vs_T0C"), multT0C, nGlobalTracks);
         }
         if (noCollSameROF) {
           histos.fill(HIST("noCollSameROF/hBcFT0"), localBC);
@@ -891,31 +929,31 @@ struct LightIonsEvSelQa {
           histos.fill(HIST("noCollSameROF/nTracksGlobal_vs_T0C"), multT0C, nGlobalTracks);
         }
         if (noPU && underLine) {
-          histos.fill(HIST("noPileup_LowMultCut/hBcFT0"), localBC);
-          histos.fill(HIST("noPileup_LowMultCut/hVtxFT0VsVtxCol"), vZft0, vZ);
-          histos.fill(HIST("noPileup_LowMultCut/hVtxFT0MinusVtxColVsMultT0M"), diffVz, multT0A + multT0C);
-          histos.fill(HIST("noPileup_LowMultCut/nTracksPV_vs_T0A"), multT0A, nPVtracks);
-          histos.fill(HIST("noPileup_LowMultCut/nTracksGlobal_vs_T0A"), multT0A, nGlobalTracks);
-          histos.fill(HIST("noPileup_LowMultCut/nTracksPV_vs_T0C"), multT0C, nPVtracks);
-          histos.fill(HIST("noPileup_LowMultCut/nTracksGlobal_vs_T0C"), multT0C, nGlobalTracks);
+          histos.fill(HIST("noPU_LowMultCut/hBcFT0"), localBC);
+          histos.fill(HIST("noPU_LowMultCut/hVtxFT0VsVtxCol"), vZft0, vZ);
+          histos.fill(HIST("noPU_LowMultCut/hVtxFT0MinusVtxColVsMultT0M"), diffVz, multT0A + multT0C);
+          histos.fill(HIST("noPU_LowMultCut/nTracksPV_vs_T0A"), multT0A, nPVtracks);
+          histos.fill(HIST("noPU_LowMultCut/nTracksGlobal_vs_T0A"), multT0A, nGlobalTracks);
+          histos.fill(HIST("noPU_LowMultCut/nTracksPV_vs_T0C"), multT0C, nPVtracks);
+          histos.fill(HIST("noPU_LowMultCut/nTracksGlobal_vs_T0C"), multT0C, nGlobalTracks);
         }
         if (noPU && grassOnTheRight) {
-          histos.fill(HIST("noPileup_HighMultCloudCut/hBcFT0"), localBC);
-          histos.fill(HIST("noPileup_HighMultCloudCut/hVtxFT0VsVtxCol"), vZft0, vZ);
-          histos.fill(HIST("noPileup_HighMultCloudCut/hVtxFT0MinusVtxColVsMultT0M"), diffVz, multT0A + multT0C);
-          histos.fill(HIST("noPileup_HighMultCloudCut/nTracksPV_vs_T0A"), multT0A, nPVtracks);
-          histos.fill(HIST("noPileup_HighMultCloudCut/nTracksGlobal_vs_T0A"), multT0A, nGlobalTracks);
-          histos.fill(HIST("noPileup_HighMultCloudCut/nTracksPV_vs_T0C"), multT0C, nPVtracks);
-          histos.fill(HIST("noPileup_HighMultCloudCut/nTracksGlobal_vs_T0C"), multT0C, nGlobalTracks);
+          histos.fill(HIST("noPU_HighMultCloudCut/hBcFT0"), localBC);
+          histos.fill(HIST("noPU_HighMultCloudCut/hVtxFT0VsVtxCol"), vZft0, vZ);
+          histos.fill(HIST("noPU_HighMultCloudCut/hVtxFT0MinusVtxColVsMultT0M"), diffVz, multT0A + multT0C);
+          histos.fill(HIST("noPU_HighMultCloudCut/nTracksPV_vs_T0A"), multT0A, nPVtracks);
+          histos.fill(HIST("noPU_HighMultCloudCut/nTracksGlobal_vs_T0A"), multT0A, nGlobalTracks);
+          histos.fill(HIST("noPU_HighMultCloudCut/nTracksPV_vs_T0C"), multT0C, nPVtracks);
+          histos.fill(HIST("noPU_HighMultCloudCut/nTracksGlobal_vs_T0C"), multT0C, nGlobalTracks);
         }
-        if (noPU && pvTOFmatched && !badVzDiff && noFT0activityNearby) { // noPileup_cutByVzDiff_pvTOF_noFT0act
-          histos.fill(HIST("noPileup_cutByVzDiff_pvTOF_noFT0act/hBcFT0"), localBC);
-          histos.fill(HIST("noPileup_cutByVzDiff_pvTOF_noFT0act/hVtxFT0VsVtxCol"), vZft0, vZ);
-          histos.fill(HIST("noPileup_cutByVzDiff_pvTOF_noFT0act/hVtxFT0MinusVtxColVsMultT0M"), diffVz, multT0A + multT0C);
-          histos.fill(HIST("noPileup_cutByVzDiff_pvTOF_noFT0act/nTracksPV_vs_T0A"), multT0A, nPVtracks);
-          histos.fill(HIST("noPileup_cutByVzDiff_pvTOF_noFT0act/nTracksGlobal_vs_T0A"), multT0A, nGlobalTracks);
-          histos.fill(HIST("noPileup_cutByVzDiff_pvTOF_noFT0act/nTracksPV_vs_T0C"), multT0C, nPVtracks);
-          histos.fill(HIST("noPileup_cutByVzDiff_pvTOF_noFT0act/nTracksGlobal_vs_T0C"), multT0C, nGlobalTracks);
+        if (noPU && pvTOFmatched && !badVzDiff) { // noPileup_cutByVzDiff_pvTOF_noFT0act
+          histos.fill(HIST("noPU_cutByVzDiff_pvTOF/hBcFT0"), localBC);
+          histos.fill(HIST("noPU_cutByVzDiff_pvTOF/hVtxFT0VsVtxCol"), vZft0, vZ);
+          histos.fill(HIST("noPU_cutByVzDiff_pvTOF/hVtxFT0MinusVtxColVsMultT0M"), diffVz, multT0A + multT0C);
+          histos.fill(HIST("noPU_cutByVzDiff_pvTOF/nTracksPV_vs_T0A"), multT0A, nPVtracks);
+          histos.fill(HIST("noPU_cutByVzDiff_pvTOF/nTracksGlobal_vs_T0A"), multT0A, nGlobalTracks);
+          histos.fill(HIST("noPU_cutByVzDiff_pvTOF/nTracksPV_vs_T0C"), multT0C, nPVtracks);
+          histos.fill(HIST("noPU_cutByVzDiff_pvTOF/nTracksGlobal_vs_T0C"), multT0C, nGlobalTracks);
         }
       }
 
@@ -924,14 +962,14 @@ struct LightIonsEvSelQa {
         histos.fill(HIST("noSpecSelections/nTracksPV_vs_V0A"), multV0A, nPVtracks);
         histos.fill(HIST("noSpecSelections/nTracksGlobal_vs_V0A"), multV0A, nGlobalTracks);
         if (noPU) {
-          histos.fill(HIST("noPileup/hBcFV0"), localBC);
-          histos.fill(HIST("noPileup/nTracksPV_vs_V0A"), multV0A, nPVtracks);
-          histos.fill(HIST("noPileup/nTracksGlobal_vs_V0A"), multV0A, nGlobalTracks);
+          histos.fill(HIST("noPU/hBcFV0"), localBC);
+          histos.fill(HIST("noPU/nTracksPV_vs_V0A"), multV0A, nPVtracks);
+          histos.fill(HIST("noPU/nTracksGlobal_vs_V0A"), multV0A, nGlobalTracks);
         }
-        if (pvTOFmatched) {
-          histos.fill(HIST("pvTOFmatched/hBcFV0"), localBC);
-          histos.fill(HIST("pvTOFmatched/nTracksPV_vs_V0A"), multV0A, nPVtracks);
-          histos.fill(HIST("pvTOFmatched/nTracksGlobal_vs_V0A"), multV0A, nGlobalTracks);
+        if (noPU && pvTOFmatched) {
+          histos.fill(HIST("noPU_pvTOFmatched/hBcFV0"), localBC);
+          histos.fill(HIST("noPU_pvTOFmatched/nTracksPV_vs_V0A"), multV0A, nPVtracks);
+          histos.fill(HIST("noPU_pvTOFmatched/nTracksGlobal_vs_V0A"), multV0A, nGlobalTracks);
         }
         if (bcDiffCut) {
           histos.fill(HIST("bcDiffCut/hBcFV0"), localBC);
@@ -943,10 +981,10 @@ struct LightIonsEvSelQa {
           histos.fill(HIST("badVzDiff/nTracksPV_vs_V0A"), multV0A, nPVtracks);
           histos.fill(HIST("badVzDiff/nTracksGlobal_vs_V0A"), multV0A, nGlobalTracks);
         }
-        if (!badVzDiff) {
-          histos.fill(HIST("goodVzDiff/hBcFV0"), localBC);
-          histos.fill(HIST("goodVzDiff/nTracksPV_vs_V0A"), multV0A, nPVtracks);
-          histos.fill(HIST("goodVzDiff/nTracksGlobal_vs_V0A"), multV0A, nGlobalTracks);
+        if (noPU && !badVzDiff) {
+          histos.fill(HIST("noPU_goodVzDiff/hBcFV0"), localBC);
+          histos.fill(HIST("noPU_goodVzDiff/nTracksPV_vs_V0A"), multV0A, nPVtracks);
+          histos.fill(HIST("noPU_goodVzDiff/nTracksGlobal_vs_V0A"), multV0A, nGlobalTracks);
         }
         if (noPastActivity) {
           histos.fill(HIST("noPastActivity/hBcFV0"), localBC);
@@ -958,10 +996,15 @@ struct LightIonsEvSelQa {
           histos.fill(HIST("noFT0activityNearby/nTracksPV_vs_V0A"), multV0A, nPVtracks);
           histos.fill(HIST("noFT0activityNearby/nTracksGlobal_vs_V0A"), multV0A, nGlobalTracks);
         }
-        if (narrowDeltaTimeVeto) {
+        if (narrowTimeVeto) {
           histos.fill(HIST("narrowTimeVeto/hBcFV0"), localBC);
           histos.fill(HIST("narrowTimeVeto/nTracksPV_vs_V0A"), multV0A, nPVtracks);
           histos.fill(HIST("narrowTimeVeto/nTracksGlobal_vs_V0A"), multV0A, nGlobalTracks);
+        }
+        if (strictTimeVeto) {
+          histos.fill(HIST("strictTimeVeto/hBcFV0"), localBC);
+          histos.fill(HIST("strictTimeVeto/nTracksPV_vs_V0A"), multV0A, nPVtracks);
+          histos.fill(HIST("strictTimeVeto/nTracksGlobal_vs_V0A"), multV0A, nGlobalTracks);
         }
         if (noCollSameROF) {
           histos.fill(HIST("noCollSameROF/hBcFV0"), localBC);
@@ -969,28 +1012,28 @@ struct LightIonsEvSelQa {
           histos.fill(HIST("noCollSameROF/nTracksGlobal_vs_V0A"), multV0A, nGlobalTracks);
         }
         if (noPU && underLine) {
-          histos.fill(HIST("noPileup_LowMultCut/hBcFV0"), localBC);
-          histos.fill(HIST("noPileup_LowMultCut/nTracksPV_vs_V0A"), multV0A, nPVtracks);
-          histos.fill(HIST("noPileup_LowMultCut/nTracksGlobal_vs_V0A"), multV0A, nGlobalTracks);
+          histos.fill(HIST("noPU_LowMultCut/hBcFV0"), localBC);
+          histos.fill(HIST("noPU_LowMultCut/nTracksPV_vs_V0A"), multV0A, nPVtracks);
+          histos.fill(HIST("noPU_LowMultCut/nTracksGlobal_vs_V0A"), multV0A, nGlobalTracks);
         }
         if (noPU && grassOnTheRight) {
-          histos.fill(HIST("noPileup_HighMultCloudCut/hBcFV0"), localBC);
-          histos.fill(HIST("noPileup_HighMultCloudCut/nTracksPV_vs_V0A"), multV0A, nPVtracks);
-          histos.fill(HIST("noPileup_HighMultCloudCut/nTracksGlobal_vs_V0A"), multV0A, nGlobalTracks);
+          histos.fill(HIST("noPU_HighMultCloudCut/hBcFV0"), localBC);
+          histos.fill(HIST("noPU_HighMultCloudCut/nTracksPV_vs_V0A"), multV0A, nPVtracks);
+          histos.fill(HIST("noPU_HighMultCloudCut/nTracksGlobal_vs_V0A"), multV0A, nGlobalTracks);
         }
-        if (noPU && pvTOFmatched && !badVzDiff && noFT0activityNearby) { // noPileup_cutByVzDiff_pvTOF_noFT0act
-          histos.fill(HIST("noPileup_cutByVzDiff_pvTOF_noFT0act/hBcFV0"), localBC);
-          histos.fill(HIST("noPileup_cutByVzDiff_pvTOF_noFT0act/nTracksPV_vs_V0A"), multV0A, nPVtracks);
-          histos.fill(HIST("noPileup_cutByVzDiff_pvTOF_noFT0act/nTracksGlobal_vs_V0A"), multV0A, nGlobalTracks);
+        if (noPU && pvTOFmatched && !badVzDiff) { // noPileup_cutByVzDiff_pvTOF_noFT0act
+          histos.fill(HIST("noPU_cutByVzDiff_pvTOF/hBcFV0"), localBC);
+          histos.fill(HIST("noPU_cutByVzDiff_pvTOF/nTracksPV_vs_V0A"), multV0A, nPVtracks);
+          histos.fill(HIST("noPU_cutByVzDiff_pvTOF/nTracksGlobal_vs_V0A"), multV0A, nGlobalTracks);
         }
       }
       if (foundBC.has_zdc()) {
         histos.fill(HIST("noSpecSelections/hBcZDC"), localBC);
         if (noPU) {
-          histos.fill(HIST("noPileup/hBcZDC"), localBC);
+          histos.fill(HIST("noPU/hBcZDC"), localBC);
         }
-        if (pvTOFmatched) {
-          histos.fill(HIST("pvTOFmatched/hBcZDC"), localBC);
+        if (noPU && pvTOFmatched) {
+          histos.fill(HIST("noPU_pvTOFmatched/hBcZDC"), localBC);
         }
         if (bcDiffCut) {
           histos.fill(HIST("bcDiffCut/hBcZDC"), localBC);
@@ -998,8 +1041,8 @@ struct LightIonsEvSelQa {
         if (badVzDiff) {
           histos.fill(HIST("badVzDiff/hBcZDC"), localBC);
         }
-        if (!badVzDiff) {
-          histos.fill(HIST("goodVzDiff/hBcZDC"), localBC);
+        if (noPU && !badVzDiff) {
+          histos.fill(HIST("noPU_goodVzDiff/hBcZDC"), localBC);
         }
         if (noPastActivity) {
           histos.fill(HIST("noPastActivity/hBcZDC"), localBC);
@@ -1007,20 +1050,23 @@ struct LightIonsEvSelQa {
         if (noFT0activityNearby) {
           histos.fill(HIST("noFT0activityNearby/hBcZDC"), localBC);
         }
-        if (narrowDeltaTimeVeto) {
+        if (narrowTimeVeto) {
           histos.fill(HIST("narrowTimeVeto/hBcZDC"), localBC);
+        }
+        if (strictTimeVeto) {
+          histos.fill(HIST("strictTimeVeto/hBcZDC"), localBC);
         }
         if (noCollSameROF) {
           histos.fill(HIST("noCollSameROF/hBcZDC"), localBC);
         }
         if (noPU && underLine) {
-          histos.fill(HIST("noPileup_LowMultCut/hBcZDC"), localBC);
+          histos.fill(HIST("noPU_LowMultCut/hBcZDC"), localBC);
         }
         if (noPU && grassOnTheRight) {
-          histos.fill(HIST("noPileup_HighMultCloudCut/hBcZDC"), localBC);
+          histos.fill(HIST("noPU_HighMultCloudCut/hBcZDC"), localBC);
         }
-        if (noPU && pvTOFmatched && !badVzDiff && noFT0activityNearby) { // noPileup_cutByVzDiff_pvTOF_noFT0act
-          histos.fill(HIST("noPileup_cutByVzDiff_pvTOF_noFT0act/hBcZDC"), localBC);
+        if (noPU && pvTOFmatched && !badVzDiff) { // noPileup_cutByVzDiff_pvTOF_noFT0act
+          histos.fill(HIST("noPU_cutByVzDiff_pvTOF/hBcZDC"), localBC);
         }
       }
 
@@ -1031,10 +1077,10 @@ struct LightIonsEvSelQa {
 
       histos.fill(HIST("noSpecSelections/hTVXvsBcDiff"), bcDiff);
       if (noPU) {
-        histos.fill(HIST("noPileup/hTVXvsBcDiff"), bcDiff);
+        histos.fill(HIST("noPU/hTVXvsBcDiff"), bcDiff);
       }
-      if (pvTOFmatched) {
-        histos.fill(HIST("pvTOFmatched/hTVXvsBcDiff"), bcDiff);
+      if (noPU && pvTOFmatched) {
+        histos.fill(HIST("noPU_pvTOFmatched/hTVXvsBcDiff"), bcDiff);
       }
       if (bcDiffCut) {
         histos.fill(HIST("bcDiffCut/hTVXvsBcDiff"), bcDiff);
@@ -1042,8 +1088,8 @@ struct LightIonsEvSelQa {
       if (badVzDiff) {
         histos.fill(HIST("badVzDiff/hTVXvsBcDiff"), bcDiff);
       }
-      if (!badVzDiff) {
-        histos.fill(HIST("goodVzDiff/hTVXvsBcDiff"), bcDiff);
+      if (noPU && !badVzDiff) {
+        histos.fill(HIST("noPU_goodVzDiff/hTVXvsBcDiff"), bcDiff);
       }
       if (noPastActivity) {
         histos.fill(HIST("noPastActivity/hTVXvsBcDiff"), bcDiff);
@@ -1051,20 +1097,23 @@ struct LightIonsEvSelQa {
       if (noFT0activityNearby) {
         histos.fill(HIST("noFT0activityNearby/hTVXvsBcDiff"), bcDiff);
       }
-      if (narrowDeltaTimeVeto) {
+      if (narrowTimeVeto) {
         histos.fill(HIST("narrowTimeVeto/hTVXvsBcDiff"), bcDiff);
+      }
+      if (strictTimeVeto) {
+        histos.fill(HIST("strictTimeVeto/hTVXvsBcDiff"), bcDiff);
       }
       if (noCollSameROF) {
         histos.fill(HIST("noCollSameROF/hTVXvsBcDiff"), bcDiff);
       }
       if (noPU && underLine) {
-        histos.fill(HIST("noPileup_LowMultCut/hTVXvsBcDiff"), bcDiff);
+        histos.fill(HIST("noPU_LowMultCut/hTVXvsBcDiff"), bcDiff);
       }
       if (noPU && grassOnTheRight) {
-        histos.fill(HIST("noPileup_HighMultCloudCut/hTVXvsBcDiff"), bcDiff);
+        histos.fill(HIST("noPU_HighMultCloudCut/hTVXvsBcDiff"), bcDiff);
       }
-      if (noPU && pvTOFmatched && !badVzDiff && noFT0activityNearby) { // noPileup_cutByVzDiff_pvTOF_noFT0act
-        histos.fill(HIST("noPileup_cutByVzDiff_pvTOF_noFT0act/hTVXvsBcDiff"), bcDiff);
+      if (noPU && pvTOFmatched && !badVzDiff) { // noPileup_cutByVzDiff_pvTOF_noFT0act
+        histos.fill(HIST("noPU_cutByVzDiff_pvTOF/hTVXvsBcDiff"), bcDiff);
       }
 
     } // end of collisions loop
