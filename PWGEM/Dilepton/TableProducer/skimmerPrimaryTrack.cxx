@@ -75,13 +75,13 @@ struct skimmerPrimaryTrack {
   Configurable<float> minpt{"minpt", 0.2, "min pt for ITS-TPC track"};
   Configurable<float> maxpt{"maxpt", 5.0, "max pt for ITS-TPC track"};
   Configurable<float> maxeta{"maxeta", 0.8, "eta acceptance"};
-  Configurable<float> dca_xy_max{"dca_xy_max", 0.5, "max DCAxy in cm"};
-  Configurable<float> dca_z_max{"dca_z_max", 0.5, "max DCAz in cm"};
+  Configurable<float> dca_xy_max{"dca_xy_max", 1.0, "max DCAxy in cm"};
+  Configurable<float> dca_z_max{"dca_z_max", 1.0, "max DCAz in cm"};
+  Configurable<float> max_frac_shared_clusters_tpc{"max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
 
   // Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
   // Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};
   // Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
-  // Configurable<float> max_frac_shared_clusters_tpc{"max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
   // Configurable<int> min_ncluster_its{"min_ncluster_its", 4, "min ncluster its"};
   // Configurable<int> min_ncluster_itsib{"min_ncluster_itsib", 1, "min ncluster itsib"};
   // Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
@@ -225,9 +225,9 @@ struct skimmerPrimaryTrack {
       return false;
     }
 
-    // if (track.tpcFractionSharedCls() > max_frac_shared_clusters_tpc) {
-    //   return false;
-    // }
+    if (track.tpcFractionSharedCls() > max_frac_shared_clusters_tpc) {
+      return false;
+    }
 
     o2::dataformats::DCA mDcaInfoCov;
     mDcaInfoCov.set(999, 999, 999, 999, 999);
@@ -317,7 +317,21 @@ struct skimmerPrimaryTrack {
         trackBit |= static_cast<uint16_t>(RefTrackBit::kFracSharedTPC07);
       }
 
-      emprimarytracks(collision.globalIndex(), track.globalIndex(), static_cast<uint16_t>(pt * 1e+4), eta, phi, dcaXY, static_cast<int16_t>(dcaZ * 1e+4), trackBit);
+      if (std::fabs(dcaZ) < 0.5) {
+        trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAz05cm);
+      }
+      if (std::fabs(dcaZ) < 0.3) {
+        trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAz03cm);
+      }
+
+      if (std::fabs(dcaXY) < 0.5) {
+        trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAxy05cm);
+      }
+      if (std::fabs(dcaXY) < 0.3) {
+        trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAxy03cm);
+      }
+
+      emprimarytracks(collision.globalIndex(), track.globalIndex(), track.sign(), pt, eta, phi, trackBit);
       // prmtrackeventidtmp(collision.globalIndex());
 
       stored_trackIds.emplace_back(std::pair<int, int>{collision.globalIndex(), track.globalIndex()});

@@ -140,11 +140,11 @@ class EMTrackCut : public TNamed
       case EMTrackCuts::kTrackPhiRange:
         return track.phi() > mMinTrackPhi && track.phi() < mMaxTrackPhi;
 
-      case EMTrackCuts::kDCAxy:
-        return std::fabs(track.dcaXY()) < ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
+        // case EMTrackCuts::kDCAxy:
+        //   return std::fabs(track.dcaXY()) < ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
 
-      case EMTrackCuts::kDCAz:
-        return std::fabs(track.dcaZ()) < mMaxDcaZ;
+        // case EMTrackCuts::kDCAz:
+        //   return std::fabs(track.dcaZ()) < mMaxDcaZ;
 
       case EMTrackCuts::kTrackBit: {
         // for (int i = 0; i < 10; i++) {
