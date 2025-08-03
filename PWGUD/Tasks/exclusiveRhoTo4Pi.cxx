@@ -44,6 +44,12 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+using PtEtaPhiMVector = ROOT::Math::PtEtaPhiMVector;
+using Boost = ROOT::Math::Boost;
+using XYZVectorF = ROOT::Math::XYZVectorF;
+using PxPyPzEVector = ROOT::Math::PxPyPzEVector;
+using PxPyPzMVector = ROOT::Math::PxPyPzMVector;
+
 namespace o2::aod
 {
 namespace branch
@@ -151,11 +157,15 @@ DECLARE_SOA_COLUMN(FourPionEta, fourPionEta, double);
 DECLARE_SOA_COLUMN(FourPionPhi, fourPionPhi, double);
 DECLARE_SOA_COLUMN(FourPionRapidity, fourPionRapidity, double);
 DECLARE_SOA_COLUMN(FourPionMass, fourPionMass, double);
-// Four Pion Phi Pair 1, Pair 2, CosTheta Pair 1, CosTheta Pair 2
+// Collin-Soper Angles
 DECLARE_SOA_COLUMN(FourPionPhiPair1, fourPionPhiPair1, double);
 DECLARE_SOA_COLUMN(FourPionPhiPair2, fourPionPhiPair2, double);
+DECLARE_SOA_COLUMN(FourPionPhiPair3, fourPionPhiPair3, double);
+DECLARE_SOA_COLUMN(FourPionPhiPair4, fourPionPhiPair4, double);
 DECLARE_SOA_COLUMN(FourPionCosThetaPair1, fourPionCosThetaPair1, double);
 DECLARE_SOA_COLUMN(FourPionCosThetaPair2, fourPionCosThetaPair2, double);
+DECLARE_SOA_COLUMN(FourPionCosThetaPair3, fourPionCosThetaPair3, double);
+DECLARE_SOA_COLUMN(FourPionCosThetaPair4, fourPionCosThetaPair4, double);
 } // namespace branch
 
 DECLARE_SOA_TABLE(SignalData, "AOD", "signalData",
@@ -262,8 +272,12 @@ DECLARE_SOA_TABLE(SignalData, "AOD", "signalData",
                   branch::FourPionMass,
                   branch::FourPionPhiPair1,
                   branch::FourPionPhiPair2,
+                  branch::FourPionPhiPair3,
+                  branch::FourPionPhiPair4,
                   branch::FourPionCosThetaPair1,
-                  branch::FourPionCosThetaPair2);
+                  branch::FourPionCosThetaPair2,
+                  branch::FourPionCosThetaPair3,
+                  branch::FourPionCosThetaPair4);
 
 DECLARE_SOA_TABLE(BkgroundData, "AOD", "bkgroundData",
                   branch::RunNumber,
@@ -376,6 +390,7 @@ struct ExclusiveRhoTo4Pi {
   int numPiPlus = 2;
   int numPiMinus = 2;
   float zeroPointEight = 0.8;
+  double mRho0 = 0.77526; // GeV/c^2
   // Run Numbers
   static int runNos[113];
   static int numRunNums;
@@ -530,20 +545,8 @@ struct ExclusiveRhoTo4Pi {
     histosData.add("fourpion_mass_non_0_charge_domA", "Invariant Mass Distribution of non 0 charge Events with PID Selection of Pi for p_{T} < 0.15 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {invMassAxis});       // pT < 0.15GeV
     histosData.add("fourpion_mass_non_0_charge_domB", "Invariant Mass Distribution of non 0 charge Events with PID Selection of Pi for 0.15< p_{T} < 0.80 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {invMassAxis}); // 0.15GeV < pT < 0.8GeV
     histosData.add("fourpion_mass_non_0_charge_domC", "Invariant Mass Distribution of non 0 charge Events with PID Selection of Pi for p_{T} > 0.80 GeV/c; m(#pi^{+}#pi^{-}#pi^{+}#pi^{-}) [GeV/c]", kTH1F, {invMassAxis});       // 0.8GeV < pT
-    // Collin Soper Theta and Phi
-    histosData.add("collin_soper_phi_1", "#phi Distribution; #phi; Events", kTH1F, {phiAxis});
-    histosData.add("collin_soper_phi_2", "#phi Distribution; #phi; Events", kTH1F, {phiAxis});
-    histosData.add("collin_soper_costheta_1", "#theta Distribution;cos(#theta); Counts", kTH1F, {cosThetaAxis});
-    histosData.add("collin_soper_costheta_2", "#theta Distribution;cos(#theta); Counts", kTH1F, {cosThetaAxis});
-    histosData.add("phi_vs_costheta_1", "Phi vs cosTheta; #phi; cos(#theta)", kTH2F, {phiAxis, cosThetaAxis});
-    histosData.add("phi_vs_costheta_2", "Phi vs cosTheta; #phi; cos(#theta)", kTH2F, {phiAxis, cosThetaAxis});
     // Collin Soper Theta and Phi after selection
-    histosData.add("collin_soper_phi_small_mass", "#phi Distribution; #phi; Events", kTH1F, {phiAxis});
-    histosData.add("collin_soper_phi_large_mass", "#phi Distribution; #phi; Events", kTH1F, {phiAxis});
-    histosData.add("collin_soper_costheta_small_mass", "#theta Distribution;cos(#theta); Counts", kTH1F, {cosThetaAxis});
-    histosData.add("collin_soper_costheta_large_mass", "#theta Distribution;cos(#theta); Counts", kTH1F, {cosThetaAxis});
-    histosData.add("phi_vs_costheta_small_mass", "Phi vs cosTheta for small mass; #phi; cos(#theta)", kTH2F, {phiAxis, cosThetaAxis});
-    histosData.add("phi_vs_costheta_large_mass", "Phi vs cosTheta for large mass; #phi; cos(#theta)", kTH2F, {phiAxis, cosThetaAxis});
+    histosData.add("CSphi_vs_CScosTheta", "Phi vs cosTheta for small mass; #phi; cos(#theta)", kTH2F, {phiAxis, cosThetaAxis});
     setHistBinLabels();
   } // End of init function
 
@@ -616,7 +619,7 @@ struct ExclusiveRhoTo4Pi {
     int numPionMinusTracks = static_cast<int>(selectedPionMinusTracks.size());
 
     for (int i = 0; i < numSelectedTracks; i++) {
-      ROOT::Math::PxPyPzMVector selectedTrackVector(selectedTracks[i].px(), selectedTracks[i].py(), selectedTracks[i].pz(), o2::constants::physics::MassPionCharged);
+      PxPyPzMVector selectedTrackVector(selectedTracks[i].px(), selectedTracks[i].py(), selectedTracks[i].pz(), o2::constants::physics::MassPionCharged);
       histosData.fill(HIST("pT_track_all"), selectedTrackVector.Pt());
       histosData.fill(HIST("eta_track_all"), selectedTrackVector.Eta());
       histosData.fill(HIST("phi_track_all"), selectedTrackVector.Phi());
@@ -637,7 +640,7 @@ struct ExclusiveRhoTo4Pi {
     } // End of loop over tracks with selection only
 
     for (int i = 0; i < numSelectedPionTracks; i++) {
-      ROOT::Math::PxPyPzMVector selectedPionTrackVector(selectedPionTracks[i].px(), selectedPionTracks[i].py(), selectedPionTracks[i].pz(), o2::constants::physics::MassPionCharged);
+      PxPyPzMVector selectedPionTrackVector(selectedPionTracks[i].px(), selectedPionTracks[i].py(), selectedPionTracks[i].pz(), o2::constants::physics::MassPionCharged);
 
       histosData.fill(HIST("pT_track_pions"), selectedPionTrackVector.Pt());
       histosData.fill(HIST("eta_track_pions"), selectedPionTrackVector.Eta());
@@ -679,12 +682,12 @@ struct ExclusiveRhoTo4Pi {
     // Selecting Events with net charge = 0
     if (numPionMinusTracks == numPiMinus && numPiPlusTracks == numPiPlus) {
 
-      ROOT::Math::PtEtaPhiMVector k1, k2, k3, k4, k1234, k13, k14, k23, k24;
+      PtEtaPhiMVector k1, k2, k3, k4, k1234, k13, k14, k23, k24;
 
-      ROOT::Math::PxPyPzMVector p1(selectedPionPlusTracks[0].px(), selectedPionPlusTracks[0].py(), selectedPionPlusTracks[0].pz(), o2::constants::physics::MassPionCharged);
-      ROOT::Math::PxPyPzMVector p2(selectedPionPlusTracks[1].px(), selectedPionPlusTracks[1].py(), selectedPionPlusTracks[1].pz(), o2::constants::physics::MassPionCharged);
-      ROOT::Math::PxPyPzMVector p3(selectedPionMinusTracks[0].px(), selectedPionMinusTracks[0].py(), selectedPionMinusTracks[0].pz(), o2::constants::physics::MassPionCharged);
-      ROOT::Math::PxPyPzMVector p4(selectedPionMinusTracks[1].px(), selectedPionMinusTracks[1].py(), selectedPionMinusTracks[1].pz(), o2::constants::physics::MassPionCharged);
+      PxPyPzMVector p1(selectedPionPlusTracks[0].px(), selectedPionPlusTracks[0].py(), selectedPionPlusTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      PxPyPzMVector p2(selectedPionPlusTracks[1].px(), selectedPionPlusTracks[1].py(), selectedPionPlusTracks[1].pz(), o2::constants::physics::MassPionCharged);
+      PxPyPzMVector p3(selectedPionMinusTracks[0].px(), selectedPionMinusTracks[0].py(), selectedPionMinusTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      PxPyPzMVector p4(selectedPionMinusTracks[1].px(), selectedPionMinusTracks[1].py(), selectedPionMinusTracks[1].pz(), o2::constants::physics::MassPionCharged);
 
       histosData.fill(HIST("pT_track_pions_contributed"), p1.Pt());
       histosData.fill(HIST("pT_track_pions_contributed"), p2.Pt());
@@ -711,7 +714,7 @@ struct ExclusiveRhoTo4Pi {
       k3.SetCoordinates(p3.Pt(), p3.Eta(), p3.Phi(), o2::constants::physics::MassPionCharged);
       k4.SetCoordinates(p4.Pt(), p4.Eta(), p4.Phi(), o2::constants::physics::MassPionCharged);
 
-      ROOT::Math::PxPyPzMVector p1234 = p1 + p2 + p3 + p4;
+      PxPyPzMVector p1234 = p1 + p2 + p3 + p4;
       k1234 = k1 + k2 + k3 + k4;
 
       k13 = k1 + k3;
@@ -725,10 +728,14 @@ struct ExclusiveRhoTo4Pi {
       histosData.fill(HIST("fourpion_rap_0_charge"), p1234.Rapidity());
       histosData.fill(HIST("fourpion_mass_0_charge"), p1234.M());
 
-      double fourPiPhiPair1 = phiCollinsSoperFrame(k13, k24, k1234);
-      double fourPiPhiPair2 = phiCollinsSoperFrame(k14, k23, k1234);
-      double fourPiCosThetaPair1 = cosThetaCollinsSoperFrame(k13, k24, k1234);
-      double fourPiCosThetaPair2 = cosThetaCollinsSoperFrame(k14, k23, k1234);
+      double fourPiPhiPair1 = collinSoperPhi(k13, k1234);
+      double fourPiPhiPair2 = collinSoperPhi(k14, k1234);
+      double fourPiPhiPair3 = collinSoperPhi(k23, k1234);
+      double fourPiPhiPair4 = collinSoperPhi(k24, k1234);
+      double fourPiCosThetaPair1 = collinSoperCosTheta(k13, k1234);
+      double fourPiCosThetaPair2 = collinSoperCosTheta(k14, k1234);
+      double fourPiCosThetaPair3 = collinSoperCosTheta(k23, k1234);
+      double fourPiCosThetaPair4 = collinSoperCosTheta(k24, k1234);
 
       sigFromData(
         // run number
@@ -783,7 +790,8 @@ struct ExclusiveRhoTo4Pi {
         // Four Mass
         p1234.M(),
         // Four Collins Soper Phi and CosTheta
-        fourPiPhiPair1, fourPiPhiPair2, fourPiCosThetaPair1, fourPiCosThetaPair2);
+        fourPiPhiPair1, fourPiPhiPair2, fourPiPhiPair3, fourPiPhiPair4,
+        fourPiCosThetaPair1, fourPiCosThetaPair2, fourPiCosThetaPair3, fourPiCosThetaPair4);
 
       histosCounter.fill(HIST("fourPionCounts_0c"), runIndex);
 
@@ -795,37 +803,30 @@ struct ExclusiveRhoTo4Pi {
         histosData.fill(HIST("fourpion_mass_0_charge_within_rap"), p1234.M());
         histosCounter.fill(HIST("fourPionCounts_0c_within_rap"), runIndex);
         if (p1234.Pt() < rhoPtCut) {
-          // Selected Four Pion Events
-          histosCounter.fill(HIST("fourPionCounts_0c_selected"), runIndex);
-          // Fill the Invariant Mass Histogram
-          histosData.fill(HIST("fourpion_mass_0_charge_domA"), p1234.M());
-          // Two Pion Masses
-          histosData.fill(HIST("twopion_mass_1"), (p1 + p3).M());
-          histosData.fill(HIST("twopion_mass_2"), (p1 + p4).M());
-          histosData.fill(HIST("twopion_mass_3"), (p2 + p3).M());
-          histosData.fill(HIST("twopion_mass_4"), (p2 + p4).M());
-          // Fill the Collins-Soper Frame histograms
-          histosData.fill(HIST("collin_soper_phi_1"), fourPiPhiPair1);
-          histosData.fill(HIST("collin_soper_phi_2"), fourPiPhiPair2);
-          histosData.fill(HIST("collin_soper_costheta_1"), fourPiCosThetaPair1);
-          histosData.fill(HIST("collin_soper_costheta_2"), fourPiCosThetaPair2);
-          histosData.fill(HIST("phi_vs_costheta_1"), fourPiPhiPair1, fourPiCosThetaPair1);
-          histosData.fill(HIST("phi_vs_costheta_2"), fourPiPhiPair2, fourPiCosThetaPair2);
-          // Small Mass CosTheta and Phi
-          if ((k13.M() + k24.M()) > (k14.M() + k23.M())) {
-            histosData.fill(HIST("collin_soper_phi_large_mass"), fourPiPhiPair1);
-            histosData.fill(HIST("collin_soper_costheta_large_mass"), fourPiCosThetaPair1);
-            histosData.fill(HIST("phi_vs_costheta_large_mass"), fourPiPhiPair1, fourPiCosThetaPair1);
-            histosData.fill(HIST("collin_soper_phi_small_mass"), fourPiPhiPair2);
-            histosData.fill(HIST("collin_soper_costheta_small_mass"), fourPiCosThetaPair2);
-            histosData.fill(HIST("phi_vs_costheta_small_mass"), fourPiPhiPair2, fourPiCosThetaPair2);
-          } else {
-            histosData.fill(HIST("collin_soper_phi_small_mass"), fourPiPhiPair1);
-            histosData.fill(HIST("collin_soper_costheta_small_mass"), fourPiCosThetaPair1);
-            histosData.fill(HIST("phi_vs_costheta_small_mass"), fourPiPhiPair1, fourPiCosThetaPair1);
-            histosData.fill(HIST("collin_soper_phi_large_mass"), fourPiPhiPair2);
-            histosData.fill(HIST("collin_soper_costheta_large_mass"), fourPiCosThetaPair2);
-            histosData.fill(HIST("phi_vs_costheta_large_mass"), fourPiPhiPair2, fourPiCosThetaPair2);
+          if (rhoMassMin < p1234.M() && p1234.M() < rhoMassMax) {
+            // Selected Four Pion Events
+            histosCounter.fill(HIST("fourPionCounts_0c_selected"), runIndex);
+            // Fill the Invariant Mass Histogram
+            histosData.fill(HIST("fourpion_mass_0_charge_domA"), p1234.M());
+            // Two Pion Masses
+            histosData.fill(HIST("twopion_mass_1"), (p1 + p3).M());
+            histosData.fill(HIST("twopion_mass_2"), (p1 + p4).M());
+            histosData.fill(HIST("twopion_mass_3"), (p2 + p3).M());
+            histosData.fill(HIST("twopion_mass_4"), (p2 + p4).M());
+            // Fill the Collins-Soper Frame histograms
+            double mDiff13 = std::abs((k13.M() - mRho0));
+            double mDiff14 = std::abs((k14.M() - mRho0));
+            double mDiff23 = std::abs((k23.M() - mRho0));
+            double mDiff24 = std::abs((k24.M() - mRho0));
+            if ((mDiff13 < mDiff14) && (mDiff13 < mDiff23) && (mDiff13 < mDiff24)) {
+              histosData.fill(HIST("CSphi_vs_CScosTheta"), fourPiPhiPair1, fourPiCosThetaPair1);
+            } else if ((mDiff14 < mDiff13) && (mDiff14 < mDiff23) && (mDiff14 < mDiff24)) {
+              histosData.fill(HIST("CSphi_vs_CScosTheta"), fourPiPhiPair2, fourPiCosThetaPair2);
+            } else if ((mDiff23 < mDiff13) && (mDiff23 < mDiff14) && (mDiff23 < mDiff24)) {
+              histosData.fill(HIST("CSphi_vs_CScosTheta"), fourPiPhiPair3, fourPiCosThetaPair3);
+            } else if ((mDiff24 < mDiff13) && (mDiff24 < mDiff14) && (mDiff24 < mDiff23)) {
+              histosData.fill(HIST("CSphi_vs_CScosTheta"), fourPiPhiPair4, fourPiCosThetaPair4);
+            }
           }
         }
         if (p1234.Pt() > rhoPtCut && p1234.Pt() < zeroPointEight) {
@@ -840,11 +841,11 @@ struct ExclusiveRhoTo4Pi {
     // Selecting Events with net charge != 0 for estimation of background
     if (numPionMinusTracks != numPiMinus && numPiPlusTracks != numPiPlus) {
 
-      ROOT::Math::PxPyPzMVector p1(selectedPionTracks[0].px(), selectedPionTracks[0].py(), selectedPionTracks[0].pz(), o2::constants::physics::MassPionCharged);
-      ROOT::Math::PxPyPzMVector p2(selectedPionTracks[1].px(), selectedPionTracks[1].py(), selectedPionTracks[1].pz(), o2::constants::physics::MassPionCharged);
-      ROOT::Math::PxPyPzMVector p3(selectedPionTracks[2].px(), selectedPionTracks[2].py(), selectedPionTracks[2].pz(), o2::constants::physics::MassPionCharged);
-      ROOT::Math::PxPyPzMVector p4(selectedPionTracks[3].px(), selectedPionTracks[3].py(), selectedPionTracks[3].pz(), o2::constants::physics::MassPionCharged);
-      ROOT::Math::PxPyPzMVector p1234 = p1 + p2 + p3 + p4;
+      PxPyPzMVector p1(selectedPionTracks[0].px(), selectedPionTracks[0].py(), selectedPionTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      PxPyPzMVector p2(selectedPionTracks[1].px(), selectedPionTracks[1].py(), selectedPionTracks[1].pz(), o2::constants::physics::MassPionCharged);
+      PxPyPzMVector p3(selectedPionTracks[2].px(), selectedPionTracks[2].py(), selectedPionTracks[2].pz(), o2::constants::physics::MassPionCharged);
+      PxPyPzMVector p4(selectedPionTracks[3].px(), selectedPionTracks[3].py(), selectedPionTracks[3].pz(), o2::constants::physics::MassPionCharged);
+      PxPyPzMVector p1234 = p1 + p2 + p3 + p4;
 
       histosData.fill(HIST("fourpion_pT_non_0_charge"), p1234.Pt());
       histosData.fill(HIST("fourpion_eta_non_0_charge"), p1234.Eta());
@@ -1006,7 +1007,7 @@ struct ExclusiveRhoTo4Pi {
     }
     for (const auto& track : tracks) {
       histosCounter.fill(HIST("TracksCounts_vs_runNo"), collision.runNumber(), 0);
-      ROOT::Math::PxPyPzMVector trackVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged);
+      PxPyPzMVector trackVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged);
       // is PV contributor
       if (track.isPVContributor() != useOnlyPVtracks) {
         continue;
@@ -1077,52 +1078,46 @@ struct ExclusiveRhoTo4Pi {
   PROCESS_SWITCH(ExclusiveRhoTo4Pi, processEventCounter, "Event Counter Function", true);
   PROCESS_SWITCH(ExclusiveRhoTo4Pi, processTrackCounter, "Track Counter Function", true);
 
-  double cosThetaCollinsSoperFrame(ROOT::Math::PtEtaPhiMVector pair1, ROOT::Math::PtEtaPhiMVector pair2, ROOT::Math::PtEtaPhiMVector fourpion)
-  {
-    double halfSqrtSnn = 2680.;
-    double massOfLead208 = 193.6823;
-    double momentumBeam = std::sqrt(halfSqrtSnn * halfSqrtSnn * 208 * 208 - massOfLead208 * massOfLead208);
-    ROOT::Math::PxPyPzEVector pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
-    ROOT::Math::PxPyPzEVector pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target
-    ROOT::Math::PtEtaPhiMVector v1 = pair1;
-    ROOT::Math::PtEtaPhiMVector v2 = pair2;
-    ROOT::Math::PtEtaPhiMVector v12 = fourpion;
-    // Boost to center of mass frame
-    ROOT::Math::Boost boostv12{v12.BoostToCM()};
-    ROOT::Math::XYZVectorF v1CM{(boostv12(v1).Vect()).Unit()};
-    ROOT::Math::XYZVectorF v2CM{(boostv12(v2).Vect()).Unit()};
-    ROOT::Math::XYZVectorF beam1CM{(boostv12(pProjCM).Vect()).Unit()};
-    ROOT::Math::XYZVectorF beam2CM{(boostv12(pTargCM).Vect()).Unit()};
-    // Axes
-    ROOT::Math::XYZVectorF zaxisCS{((beam1CM.Unit() - beam2CM.Unit()).Unit())};
-    double cosThetaCS = zaxisCS.Dot((v1CM));
-    return cosThetaCS;
-  }
-
-  double phiCollinsSoperFrame(ROOT::Math::PtEtaPhiMVector pair1, ROOT::Math::PtEtaPhiMVector pair2, ROOT::Math::PtEtaPhiMVector fourpion)
+  double collinSoperPhi(PtEtaPhiMVector twoPionVector, PtEtaPhiMVector fourPionVector)
   {
     // Half of the energy per pair of the colliding nucleons.
     double halfSqrtSnn = 2680.;
     double massOfLead208 = 193.6823;
     double momentumBeam = std::sqrt(halfSqrtSnn * halfSqrtSnn * 208 * 208 - massOfLead208 * massOfLead208);
-    ROOT::Math::PxPyPzEVector pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
-    ROOT::Math::PxPyPzEVector pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target
-    ROOT::Math::PtEtaPhiMVector v1 = pair1;
-    ROOT::Math::PtEtaPhiMVector v2 = pair2;
-    ROOT::Math::PtEtaPhiMVector v12 = fourpion;
+    PxPyPzEVector pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
+    PxPyPzEVector pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target
     // Boost to center of mass frame
-    ROOT::Math::Boost boostv12{v12.BoostToCM()};
-    ROOT::Math::XYZVectorF v1CM{(boostv12(v1).Vect()).Unit()};
-    ROOT::Math::XYZVectorF v2CM{(boostv12(v2).Vect()).Unit()};
-    ROOT::Math::XYZVectorF beam1CM{(boostv12(pProjCM).Vect()).Unit()};
-    ROOT::Math::XYZVectorF beam2CM{(boostv12(pTargCM).Vect()).Unit()};
+    Boost boosTo4PiCM{fourPionVector.BoostToCM()};
+    XYZVectorF twoPionVectorCM{(boosTo4PiCM(twoPionVector).Vect()).Unit()};
+    XYZVectorF beam1CM{(boosTo4PiCM(pProjCM).Vect()).Unit()};
+    XYZVectorF beam2CM{(boosTo4PiCM(pTargCM).Vect()).Unit()};
     // Axes
-    ROOT::Math::XYZVectorF zaxisCS{((beam1CM.Unit() - beam2CM.Unit()).Unit())};
-    ROOT::Math::XYZVectorF yaxisCS{(beam1CM.Cross(beam2CM)).Unit()};
-    ROOT::Math::XYZVectorF xaxisCS{(yaxisCS.Cross(zaxisCS)).Unit()};
-
-    double phi = std::atan2(yaxisCS.Dot(v1CM), xaxisCS.Dot(v1CM));
+    XYZVectorF zaxisCS{((beam1CM.Unit() - beam2CM.Unit()).Unit())};
+    XYZVectorF yaxisCS{(beam1CM.Cross(beam2CM)).Unit()};
+    XYZVectorF xaxisCS{(yaxisCS.Cross(zaxisCS)).Unit()};
+    double phi = std::atan2(yaxisCS.Dot(twoPionVectorCM), xaxisCS.Dot(twoPionVectorCM));
     return phi;
+  }
+
+  double collinSoperCosTheta(PtEtaPhiMVector twoPionVector, PtEtaPhiMVector fourPionVector)
+  {
+    // Half of the energy per pair of the colliding nucleons.
+    double halfSqrtSnn = 2680.;
+    double massOfLead208 = 193.6823;
+    double momentumBeam = std::sqrt(halfSqrtSnn * halfSqrtSnn * 208 * 208 - massOfLead208 * massOfLead208);
+    PxPyPzEVector pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
+    PxPyPzEVector pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target
+    // Boost to center of mass frame
+    Boost boosTo4PiCM{fourPionVector.BoostToCM()};
+    XYZVectorF twoPionVectorCM{(boosTo4PiCM(twoPionVector).Vect()).Unit()};
+    XYZVectorF beam1CM{(boosTo4PiCM(pProjCM).Vect()).Unit()};
+    XYZVectorF beam2CM{(boosTo4PiCM(pTargCM).Vect()).Unit()};
+    // Axes
+    XYZVectorF zaxisCS{((beam1CM.Unit() - beam2CM.Unit()).Unit())};
+    XYZVectorF yaxisCS{(beam1CM.Cross(beam2CM)).Unit()};
+    XYZVectorF xaxisCS{(yaxisCS.Cross(zaxisCS)).Unit()};
+    double cosThetaCS = zaxisCS.Dot(twoPionVectorCM);
+    return cosThetaCS;
   }
 
   template <typename T>
@@ -1137,7 +1132,7 @@ struct ExclusiveRhoTo4Pi {
                        float tpcchi2nclscut,
                        float tpcnclsfindablecut)
   {
-    ROOT::Math::PxPyPzMVector trackVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged);
+    PxPyPzMVector trackVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged);
     // pt cut
     if (trackVector.Pt() < ptcut) {
       return false;
