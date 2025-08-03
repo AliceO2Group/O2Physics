@@ -1238,14 +1238,15 @@ int ExclusiveRhoTo4Pi::numRunNums = 113;
 
 std::string ExclusiveRhoTo4Pi::eventLabels[12] = {
   "No Cuts", "UPC mode", "vtxITSTPC=1", "sbp=1", "itsROFb=1", "tfb=1",
-  "FT0A <= 50", "FT0C <= 50", "FV0A <= 50", "ZDC <= 0", "n PV Contrib = 4", "V_{z} < 10cm"};
+  "FT0A <= 50", "FT0C <= 50", "FV0A <= 50", "ZDC <= 0",
+  "n PV Contrib = 4", "V_{z} < 10cm"};
 
 int ExclusiveRhoTo4Pi::numEventCuts = 20;
 
 std::string ExclusiveRhoTo4Pi::trackLabels[14] = {
-  "No Cuts", "isPVContributor", "pT > 0.15 GeV/c", "|#eta| < 0.9", "DCA Z < 2 cm", "DCA XY cut",
-  "hasITS", "hasTPC", "itsChi2NCl < 36", "tpcChi2NCl < 4", "tpcNClsFindable < 70", "#pi tracks",
-  "#pi^{+} tracks", "#pi^{-} tracks"};
+  "No Cuts", "isPVContributor", "pT > 0.15 GeV/c", "|#eta| < 0.9", "DCA Z < 2 cm",
+  "DCA XY cut", "hasITS", "hasTPC", "itsChi2NCl < 36", "tpcChi2NCl < 4",
+  "tpcNClsFindable < 70", "#pi tracks", "#pi^{+} tracks", "#pi^{-} tracks"};
 
 int ExclusiveRhoTo4Pi::numTrackCuts = 14;
 
