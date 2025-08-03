@@ -259,16 +259,18 @@ struct strangenessderivedbinnedinfo {
 
   // Sqrt scaling function
   // Author: Marian Ivanov
-  int codeSqrtScaling(float val, float sigma0, float sigma1, int clampMin, int clampMax) {
+  int codeSqrtScaling(float val, float sigma0, float sigma1, int clampMin, int clampMax)
+  {
     float code_f = std::asinh((sigma1 * val) / sigma0) / sigma0;
     return std::clamp(static_cast<int>(std::round(code_f)), clampMin, clampMax);
   }
 
-  // Function to decode the sqrt scaling 
+  // Function to decode the sqrt scaling
   // Author: Marian Ivanov
-  float decodeSqrtScaling(int code, float sigma0, float sigma1, int clampMin, int clampMax) {
-      float code_f = static_cast<float>(code);
-      return (sigma0 / sigma1) * std::sinh(sigma0 * code_f);
+  float decodeSqrtScaling(int code, float sigma0, float sigma1, int clampMin, int clampMax)
+  {
+    float code_f = static_cast<float>(code);
+    return (sigma0 / sigma1) * std::sinh(sigma0 * code_f);
   }
 
   void init(InitContext const&)
@@ -506,7 +508,7 @@ struct strangenessderivedbinnedinfo {
     } else {
       centrality = collision.centFT0C();
       occupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
-      if(encodingOpts.useSqrtEncodingForOccupancy)
+      if (encodingOpts.useSqrtEncodingForOccupancy)
         occupancy = std::sqrt(occupancy);
     }
     histos.fill(HIST("hEventCentrality"), centrality);
