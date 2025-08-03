@@ -318,7 +318,6 @@ struct FullJetSpectra {
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(triggerMasks);
-    // triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(jetderiveddatautilities::JTriggerMasks);
     particleSelection = static_cast<std::string>(particleSelections);
     jetRadiiValues = (std::vector<double>)jetRadii;
 
@@ -634,63 +633,7 @@ struct FullJetSpectra {
     //     return false;
     //   }
     // }
-    /*  if (leadingTrackPtMin > kLeadingTrackPtMinThreshold) {
-    bool isMinleadingTrack = false;
-    for (const auto& constituent : jet.template tracks_as<T>()) {
-    if (constituent.pt() >= leadingTrackPtMin) {
-    isMinleadingTrack = true;
-    break;
-  }
-  }
 
-  if (!isMinleadingTrack) {
-  return false;
-  }
-  }
-  if (leadingTrackPtMax < kLeadingTrackPtMaxThreshold) {
-  bool isMaxleadingTrack = false;
-  for (const auto& constituent : jet.template tracks_as<T>()) {
-  if (constituent.pt() <= leadingTrackPtMax) {
-  isMaxleadingTrack = true;
-  break;
-  }
-  }
-
-  if (!isMaxleadingTrack) {
-  return false;
-  }
-  }
-
-  if (leadingClusterPtMin > kLeadingClusterPtMinThreshold) {
-  bool isMinleadingCluster = false;
-  for (const auto& cluster : jet.template clusters_as<S>()) {
-  double clusterpt = cluster.energy() / std::cosh(cluster.eta());
-  if (clusterpt >= leadingClusterPtMin) {
-  isMinleadingCluster = true;
-  break;
-  }
-  }
-
-  if (!isMinleadingCluster) {
-  return false;
-  }
-  }
-  if (leadingClusterPtMax < kLeadingClusterPtMaxThreshold) {
-  bool isMaxleadingCluster = false;
-  for (const auto& cluster : jet.template clusters_as<S>()) {
-  double clusterpt = cluster.energy() / std::cosh(cluster.eta());
-  if (clusterpt <= leadingClusterPtMax) {
-  isMaxleadingCluster = true;
-  break;
-  }
-  }
-
-  if (!isMaxleadingCluster) {
-  return false;
-  }
-  }
-  return true;
-  */
     // --- Track cuts: ALL tracks must satisfy 0.15 <= pT <= 200 or 150 GeV/c---
     if (leadingTrackPtMin > kLeadingTrackPtMinThreshold || leadingTrackPtMax < kLeadingTrackPtMaxThreshold) {
       bool hasValidTrack = false;
@@ -756,73 +699,6 @@ struct FullJetSpectra {
     }
     return true;
   }
-  /*
-  if (leadingTrackPtMin > kLeadingTrackPtMinThreshold) {
-  bool isMinleadingTrack = false;
-  for (const auto& constituent : jet.template tracks_as<aod::JetParticles>()) {
-  auto pdgParticle = pdgDatabase->GetParticle(constituent.pdgCode());
-  if (pdgParticle->Charge() != 0 && constituent.pt() >= leadingTrackPtMin) {
-  isMinleadingTrack = true;
-  break;
-  }
-  }
-
-  if (!isMinleadingTrack) {
-  return false;
-  }
-  }
-  //Leading track pt Max cut
-  if (leadingTrackPtMax < kLeadingTrackPtMaxThreshold) {
-  bool isMaxleadingTrack = false;
-  for (const auto& constituent : jet.template tracks_as<aod::JetParticles>()) {
-  auto pdgParticle = pdgDatabase->GetParticle(constituent.pdgCode());
-  if (pdgParticle->Charge() != 0 && constituent.pt() <= leadingTrackPtMax) {
-  isMaxleadingTrack = true;
-  break;
-  }
-  }
-
-  if (!isMaxleadingTrack) {
-  return false;
-  }
-  }
-  //Leading cluster pt Min cut
-  if (leadingClusterPtMin > kLeadingClusterPtMinThreshold) {
-  bool isMinleadingCluster = false;
-  for (const auto& constituent : jet.template clusters_as<aod::JetParticles>()) {
-  auto pdgParticle = pdgDatabase->GetParticle(constituent.pdgCode());
-  if (pdgParticle->Charge() == 0) {
-  double clusterPt = constituent.e() / std::cosh(constituent.eta());
-  if (clusterPt >= leadingClusterPtMin) {
-  isMinleadingCluster = true;
-  break;
-  }
-  }
-  }
-  if (!isMinleadingCluster) {
-  return false;
-  }
-  }
-  //Leading cluster pt Max cut
-  if (leadingClusterPtMax < kLeadingClusterPtMaxThreshold) {
-  bool isMaxleadingCluster = false;
-  for (const auto& constituent : jet.template clusters_as<aod::JetParticles>()) {
-  auto pdgParticle = pdgDatabase->GetParticle(constituent.pdgCode());
-  if (pdgParticle->Charge() == 0) {
-  double clusterPt = constituent.e() / std::cosh(constituent.eta());
-  if (clusterPt <= leadingClusterPtMax) {
-  isMaxleadingCluster = true;
-  break;
-  }
-  }
-  }
-  if (!isMaxleadingCluster) {
-  return false;
-  }
-  }
-  return true;
-  }
-  */
 
   template <typename T>
   void fillJetHistograms(T const& jet, float weight = 1.0)
@@ -1070,7 +946,7 @@ struct FullJetSpectra {
   void processJetsTriggeredData(soa::Filtered<EMCCollisionsTriggeredData>::iterator const& collision, FullJetTableDataJoined const& /*jets*/,
                                 aod::JetTracks const&, aod::JetClusters const&, aod::JBCs const&)
   {
-    bool eventAccepted = false;
+    // bool eventAccepted = false;
 
     registry.fill(HIST("hDetTrigcollisionCounter"), 0.5); // allDetTrigColl
 
@@ -1095,7 +971,7 @@ struct FullJetSpectra {
     }
     //- should this kTVX HW trigger be still in place??
     if (!collision.isAmbiguous() && jetderiveddatautilities::eventEMCAL(collision) && collision.alias_bit(kTVXinEMC)) {
-      eventAccepted = true;
+      // eventAccepted = true;
       registry.fill(HIST("hDetTrigcollisionCounter"), 4.5); // EMCreadoutDetTrigEventsWithkTVXinEMC
     }
     // split event selections based on selected triggers -
@@ -1106,20 +982,6 @@ struct FullJetSpectra {
     //  - how often you reject a higher pT trig because lower trigs were fired : 5 cases -> 2D hist as a funtn of jet pT
     //  - check how often the ChJet Trigs were fired for every fullJetTrig fired.(don't reject these events but only for QA)
 
-    /*if (!collision.isAmbiguous() && jetderiveddatautilities::eventEMCAL(collision) && jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::EMCALReadout)) {
-    registry.fill(HIST("hDetTrigcollisionCounter"), 4.5); // EMCreadoutDetTrigEventsWithMBTrigs
-    eventAccepted = true;
-  }
-
-  if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetFullLowPt)) {
-  registry.fill(HIST("hDetTrigcollisionCounter"), 6.5); // EMCAcceptedDetTrigCollWithLowFullJetTriggers
-  eventAccepted = true;
-  }
-  if (jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetFullHighPt)) {
-  registry.fill(HIST("hDetTrigcollisionCounter"), 7.5); // EMCAcceptedDetTrigCollWithHighFullJetTriggers
-  eventAccepted = true;
-  }
-  */
     // Get trigger status
     bool hasFullJetHighPt = jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetFullHighPt);
     bool hasFullJetLowPt = jetderiveddatautilities::selectTrigger(collision, jetderiveddatautilities::JTrigSel::JetFullLowPt);
@@ -1429,15 +1291,6 @@ struct FullJetSpectra {
       return;
     }
     registry.fill(HIST("hPartcollisionCounter"), 1.5); // McCollWithVertexZ
-    // if (collisions.size() < 1) {
-    //   return;
-    // }
-    // registry.fill(HIST("hPartcollisionCounter"), 2.5); // PartCollWithSize>1
-    //
-    // if (collisions.size() == 0) {
-    //   registry.fill(HIST("hPartcollisionCounter"), 3.5); // RejectedPartCollForDetCollWithSize0
-    //   return;
-    // }
 
     // outlier check: for every outlier jet, reject the whole event
     for (auto const& jet : jets) {
@@ -1535,15 +1388,6 @@ struct FullJetSpectra {
       return;
     }
     registry.fill(HIST("hPartcollisionCounter"), 1.5, mccollision.weight()); // McCollWithVertexZ
-    // if (collisions.size() < 1) {
-    //   return;
-    // }
-    // registry.fill(HIST("hPartcollisionCounter"), 2.5, mccollision.weight()); // PartCollWithSize>1
-    //
-    // if (collisions.size() == 0) {
-    //   registry.fill(HIST("hPartcollisionCounter"), 3.5, mccollision.weight()); // RejectedPartCollForDetCollWithSize0
-    //   return;
-    // }
 
     // outlier check: for every outlier jet, reject the whole event
     for (auto const& jet : jets) {
