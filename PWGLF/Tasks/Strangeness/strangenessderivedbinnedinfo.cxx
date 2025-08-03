@@ -287,7 +287,16 @@ struct strangenessderivedbinnedinfo {
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, +100.0f}});
     histos.add("hEventOccupancy", "hEventOccupancy", kTH1F, {axisOccupancy});
 
-    histos.add("h9dCentOccQoverPtMassRadiusPhiEtaPtArmV0AlphaV0", "h9dCentOccQoverPtMassRadiusPhiEtaPtArmV0AlphaV0", kTHnSparseF, {axisCentrality, axisOccupancy, axisPt, axisMass, axisRadius, axisPhi, axisEta, axisPtArmV0, axisAlphaV0});
+    histos.add("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc", "h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc", kTHnSparseF, {axisMass, axisPt, axisPhi, axisEta, axisPtArmV0, axisAlphaV0, axisRadius, axisCentrality, axisOccupancy});
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(0)->SetName("Invariant mass (GeV/#it{c}^{2})");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(1)->SetName("#it{p}_{T} (GeV/#it{c})");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(2)->SetName("#varphi (rad.)");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(3)->SetName("Pseudo-rapidity #it{#eta}");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(4)->SetName("V0 #it{p}_{T} Armenteros");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(5)->SetName("V0 #alpha Armenteros");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(6)->SetName("V0 radius (cm)");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(7)->SetName("Centrality (%)");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(8)->SetName("Occupancy");
 
     if (cfgSkimmedProcessing) {
       zorroSummary.setObject(zorro.getZorroSummary());
@@ -764,13 +773,13 @@ struct strangenessderivedbinnedinfo {
           continue; // skip V0s that are not standard
 
         if (analyseK0Short && isV0Selected(v0, collision, v0.yK0Short())) {
-          histos.fill(HIST("h9dCentOccQoverPtMassRadiusPhiEtaPtArmV0AlphaV0"), centrality, occupancy, v0.pt(), v0.mK0Short(), v0.v0radius(), v0.phi(), v0.eta(), v0.qtarm(), v0.alpha());
+          histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), v0.mK0Short(), v0.pt(), v0.phi(), v0.eta(), v0.qtarm(), v0.alpha(), v0.v0radius(), centrality, occupancy);
         }
         if (analyseLambda && isV0Selected(v0, collision, v0.yLambda())) {
-          histos.fill(HIST("h9dCentOccQoverPtMassRadiusPhiEtaPtArmV0AlphaV0"), centrality, occupancy, v0.pt(), v0.mLambda(), v0.v0radius(), v0.phi(), v0.eta(), v0.qtarm(), v0.alpha());
+          histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), v0.mLambda(), v0.pt(), v0.phi(), v0.eta(), v0.qtarm(), v0.alpha(), v0.v0radius(), centrality, occupancy);
         }
         if (analyseAntiLambda && isV0Selected(v0, collision, v0.yLambda())) {
-          histos.fill(HIST("h9dCentOccQoverPtMassRadiusPhiEtaPtArmV0AlphaV0"), centrality, occupancy, v0.pt(), v0.mAntiLambda(), v0.v0radius(), v0.phi(), v0.eta(), v0.qtarm(), v0.alpha());
+          histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), v0.mAntiLambda(), v0.pt(), v0.phi(), v0.eta(), v0.qtarm(), v0.alpha(), v0.v0radius(), centrality, occupancy);
         }
       } // end v0 loop
     }
@@ -783,10 +792,10 @@ struct strangenessderivedbinnedinfo {
           continue; // remove acceptance that's badly reproduced by MC / superfluous in future
 
         if (analyseXi && isCascadeSelected(cascade, collision, cascade.yXi())) {
-          histos.fill(HIST("h9dCentOccQoverPtMassRadiusPhiEtaPtArmV0AlphaV0"), centrality, occupancy, cascade.pt(), cascade.m(1), cascade.cascradius(), cascade.phi(), cascade.eta(), 0., 0.);
+          histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), cascade.m(1), cascade.pt(), cascade.phi(), cascade.eta(), 0., 0., cascade.cascradius(), centrality, occupancy);
         }
         if (analyseOmega && isCascadeSelected(cascade, collision, cascade.yOmega())) {
-          histos.fill(HIST("h9dCentOccQoverPtMassRadiusPhiEtaPtArmV0AlphaV0"), centrality, occupancy, cascade.pt(), cascade.m(2), cascade.cascradius(), cascade.phi(), cascade.eta(), 0., 0.);
+          histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), cascade.pt(), cascade.m(2), cascade.pt(), cascade.phi(), cascade.eta(), 0., 0., cascade.cascradius(), centrality, occupancy);
         }
       } // end cascade loop
     }
