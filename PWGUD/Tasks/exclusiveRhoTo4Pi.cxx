@@ -376,6 +376,9 @@ struct ExclusiveRhoTo4Pi {
   int numPiPlus = 2;
   int numPiMinus = 2;
   float zeroPointEight = 0.8;
+  // Run Numbers
+  static int runNos[113];
+  static int numRunNums;
   // Derived Data
   Produces<aod::SignalData> sigFromData;
   Produces<aod::BkgroundData> bkgFromData;
@@ -404,7 +407,7 @@ struct ExclusiveRhoTo4Pi {
   Configurable<bool> useTPCtracksOnly{"useTPCtracksOnly", true, "only use tracks with hit in TPC"};
   Configurable<float> itsChi2NClsCut{"itsChi2NClsCut", 36, "ITS Chi2NCls"};
   Configurable<float> tpcChi2NClsCut{"tpcChi2NClsCut", 4.0, "TPC Chi2NCls"};
-  Configurable<float> tpcNClsFindableCut{"tpcNClsFindableCut", 70, "Min TPC Findable Clusters"};
+  Configurable<int> tpcNClsFindableCut{"tpcNClsFindableCut", 70, "Min TPC Findable Clusters"};
   // Configurable PID parameters
   Configurable<bool> useTOF{"useTOF", true, "if track has TOF use TOF"};
   Configurable<float> nSigmaTPCcut{"nSigmaTPCcut", 3, "TPC cut"};
@@ -425,8 +428,14 @@ struct ExclusiveRhoTo4Pi {
   void init(InitContext const&)
   {
     // QA plots: Event and Track Counter
-    histosCounter.add("EventsCounts_vs_runNo", "Number of Selected 4-Pion Events per Run; Run Number; Number of Events", kTH2F, {{1355, 544013, 545367}, {20, 0, 20}});
-    histosCounter.add("TracksCounts_vs_runNo", "Number of Selected Tracks per Run; Run Number; Number of Tracks", kTH2F, {{1355, 544013, 545367}, {20, 0, 20}});
+    histosCounter.add("EventsCounts_vs_runNo", "Number of Selected 4-Pion Events per Run; Run Number; Number of Events", kTH2F, {{113, 0, 113}, {20, 0, 20}});
+    histosCounter.add("TracksCounts_vs_runNo", "Number of Selected Tracks per Run; Run Number; Number of Tracks", kTH2F, {{113, 0, 113}, {20, 0, 20}});
+    histosCounter.add("fourPionCounts_0c", "Four Pion Counts; Run Number; Events", kTH1F, {{113, 0, 113}});
+    histosCounter.add("fourPionCounts_0c_within_rap", "Four Pion Counts; Run Number; Events", kTH1F, {{113, 0, 113}});
+    histosCounter.add("fourPionCounts_0c_selected", "Four Pion Counts; Run Number; Events", kTH1F, {{113, 0, 113}});
+    histosCounter.add("fourPionCounts_n0c", "Four Pion Counts; Run Number; Events", kTH1F, {{113, 0, 113}});
+    histosCounter.add("fourPionCounts_n0c_within_rap", "Four Pion Counts; Run Number; Events", kTH1F, {{113, 0, 113}});
+    histosCounter.add("fourPionCounts_n0c_selected", "Four Pion Counts; Run Number; Events", kTH1F, {{113, 0, 113}});
     // QA plots: event selection
     histosData.add("UPCmode", "UPC mode; Events", kTH1F, {{5, 0, 5}});
     histosData.add("FT0A", "T0A amplitude", kTH1F, {{500, 0.0, 500.0}});
@@ -535,6 +544,7 @@ struct ExclusiveRhoTo4Pi {
     histosData.add("collin_soper_costheta_large_mass", "#theta Distribution;cos(#theta); Counts", kTH1F, {cosThetaAxis});
     histosData.add("phi_vs_costheta_small_mass", "Phi vs cosTheta for small mass; #phi; cos(#theta)", kTH2F, {phiAxis, cosThetaAxis});
     histosData.add("phi_vs_costheta_large_mass", "Phi vs cosTheta for large mass; #phi; cos(#theta)", kTH2F, {phiAxis, cosThetaAxis});
+    setHistBinLabels();
   } // End of init function
 
   //---------------------------------------------------------------------------------------------------------------------------------------------
@@ -546,6 +556,9 @@ struct ExclusiveRhoTo4Pi {
   Filter bcSelectionCuts = (o2::aod::udcollision::sbp == sbpCut) && (o2::aod::udcollision::itsROFb == itsROFbCut) && (o2::aod::udcollision::vtxITSTPC == vtxITSTPCcut) && (o2::aod::udcollision::tfb == tfbCut);
   // Track Cuts
   Filter onlyPVtracks = o2::aod::udtrack::isPVContributor == useOnlyPVtracks;
+  Filter tpcchi2nclsFilter = o2::aod::track::tpcChi2NCl <= tpcChi2NClsCut;
+  Filter itschi2nclsFilter = o2::aod::track::itsChi2NCl <= itsChi2NClsCut;
+  Filter tpcCuts = (nabs(o2::aod::pidtpc::tpcNSigmaPi) <= nSigmaTPCcut);
   //---------------------------------------------------------------------------------------------------------------------------------------------
 
   using UDtracks = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
@@ -553,6 +566,9 @@ struct ExclusiveRhoTo4Pi {
 
   void processData(soa::Filtered<UDCollisions>::iterator const& collision, soa::Filtered<UDtracks> const& tracks)
   {
+
+    int runIndex = getRunNumberIndex(collision.runNumber());
+
     // Check if the Event is reconstructed in UPC mode
     if (ifCheckUPCmode && (collision.flags() != 1)) {
       return;
@@ -769,13 +785,18 @@ struct ExclusiveRhoTo4Pi {
         // Four Collins Soper Phi and CosTheta
         fourPiPhiPair1, fourPiPhiPair2, fourPiCosThetaPair1, fourPiCosThetaPair2);
 
+      histosCounter.fill(HIST("fourPionCounts_0c"), runIndex);
+
       if (std::fabs(p1234.Rapidity()) < rhoRapCut) {
         histosData.fill(HIST("fourpion_pT_0_charge_within_rap"), p1234.Pt());
         histosData.fill(HIST("fourpion_eta_0_charge_within_rap"), p1234.Eta());
         histosData.fill(HIST("fourpion_phi_0_charge_within_rap"), p1234.Phi());
         histosData.fill(HIST("fourpion_rap_0_charge_within_rap"), p1234.Rapidity());
         histosData.fill(HIST("fourpion_mass_0_charge_within_rap"), p1234.M());
+        histosCounter.fill(HIST("fourPionCounts_0c_within_rap"), runIndex);
         if (p1234.Pt() < rhoPtCut) {
+          // Selected Four Pion Events
+          histosCounter.fill(HIST("fourPionCounts_0c_selected"), runIndex);
           // Fill the Invariant Mass Histogram
           histosData.fill(HIST("fourpion_mass_0_charge_domA"), p1234.M());
           // Two Pion Masses
@@ -884,14 +905,18 @@ struct ExclusiveRhoTo4Pi {
         // Four Mass
         p1234.M());
 
+      histosCounter.fill(HIST("fourPionCounts_n0c"), runIndex);
+
       if (std::fabs(p1234.Rapidity()) < rhoRapCut) {
         histosData.fill(HIST("fourpion_pT_non_0_charge_within_rap"), p1234.Pt());
         histosData.fill(HIST("fourpion_eta_non_0_charge_within_rap"), p1234.Eta());
         histosData.fill(HIST("fourpion_phi_non_0_charge_within_rap"), p1234.Phi());
         histosData.fill(HIST("fourpion_rap_non_0_charge_within_rap"), p1234.Rapidity());
         histosData.fill(HIST("fourpion_mass_non_0_charge_within_rap"), p1234.M());
+        histosCounter.fill(HIST("fourPionCounts_n0c_within_rap"), runIndex);
         if (p1234.Pt() < rhoPtCut) {
           histosData.fill(HIST("fourpion_mass_non_0_charge_domA"), p1234.M());
+          histosCounter.fill(HIST("fourPionCounts_n0c_selected"), runIndex);
         }
         if (p1234.Pt() > rhoPtCut && p1234.Pt() < zeroPointEight) {
           histosData.fill(HIST("fourpion_mass_non_0_charge_domB"), p1234.M());
@@ -903,124 +928,74 @@ struct ExclusiveRhoTo4Pi {
     } // End of Analysis for non 0 charge events
   } // End of 4 Pion Analysis Process function for Pass5 Data
 
-  void processEventCounter(UDCollisions::iterator const& collision, soa::Filtered<UDtracks> const& tracks)
+  void processEventCounter(UDCollisions::iterator const& collision)
   {
 
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 0);
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 0);
 
     // UPC mode
     if (ifCheckUPCmode && collision.flags() != 1) {
       return;
     }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 1);
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 1);
 
     // vtxITSTPC
     if (collision.vtxITSTPC() != vtxITSTPCcut) {
       return;
     }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 2);
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 2);
 
     // sbp
     if (collision.sbp() != sbpCut) {
       return;
     }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 3);
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 3);
 
     // itsROFb
     if (collision.itsROFb() != itsROFbCut) {
       return;
     }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 4);
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 4);
 
     // tfb
     if (collision.tfb() != tfbCut) {
       return;
     }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 5);
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 5);
 
     // FT0A
     if (collision.totalFT0AmplitudeA() > ft0aCut) {
       return;
     }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 6);
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 6);
     // FT0C
     if (collision.totalFT0AmplitudeC() > ft0cCut) {
       return;
     }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 7);
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 7);
     // FV0A
     if (collision.totalFV0AmplitudeA() > fv0Cut) {
       return;
     }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 8);
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 8);
 
     // ZDC
     if (collision.energyCommonZNA() > zdcCut || collision.energyCommonZNC() > zdcCut) {
       return;
     }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 9);
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 9);
 
     // numContributors
     if (collision.numContrib() != numPVContrib) {
       return;
     }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 10);
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 10);
 
     // vertexZ
     if (std::abs(collision.posZ()) > vZCut) {
       return;
     }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 11);
-
-    std::vector<decltype(tracks.begin())> selectedPionTracks;
-    std::vector<decltype(tracks.begin())> selectedPionPlusTracks;
-    std::vector<decltype(tracks.begin())> selectedPionMinusTracks;
-
-    for (const auto& t0 : tracks) {
-      if (!isSelectedTrack(t0, pTcut, etaCut, dcaXYcut, dcaZcut, useITStracksOnly, useTPCtracksOnly, itsChi2NClsCut, tpcChi2NClsCut, tpcNClsFindableCut)) {
-        continue;
-      }
-      if (selectionPIDPion(t0, useTOF, nSigmaTPCcut, nSigmaTOFcut)) {
-        selectedPionTracks.push_back(t0);
-        if (t0.sign() == 1) {
-          selectedPionPlusTracks.push_back(t0);
-        }
-        if (t0.sign() == -1) {
-          selectedPionMinusTracks.push_back(t0);
-        }
-      } // End of Selection PID Pion
-    } // End of loop over tracks
-
-    int numSelectedPionTracks = static_cast<int>(selectedPionTracks.size());
-    int numPiPlusTracks = static_cast<int>(selectedPionPlusTracks.size());
-    int numPionMinusTracks = static_cast<int>(selectedPionMinusTracks.size());
-    // Events with 4 pions
-    if (numSelectedPionTracks != numFourPionTracks) {
-      return;
-    }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 12);
-
-    // Selecting Events with net charge = 0
-    if (numPionMinusTracks == numPiMinus && numPiPlusTracks == numPiPlus) {
-      histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 13);
-      ROOT::Math::PxPyPzMVector p1(selectedPionPlusTracks[0].px(), selectedPionPlusTracks[0].py(), selectedPionPlusTracks[0].pz(), o2::constants::physics::MassPionCharged);
-      ROOT::Math::PxPyPzMVector p2(selectedPionPlusTracks[1].px(), selectedPionPlusTracks[1].py(), selectedPionPlusTracks[1].pz(), o2::constants::physics::MassPionCharged);
-      ROOT::Math::PxPyPzMVector p3(selectedPionMinusTracks[0].px(), selectedPionMinusTracks[0].py(), selectedPionMinusTracks[0].pz(), o2::constants::physics::MassPionCharged);
-      ROOT::Math::PxPyPzMVector p4(selectedPionMinusTracks[1].px(), selectedPionMinusTracks[1].py(), selectedPionMinusTracks[1].pz(), o2::constants::physics::MassPionCharged);
-      ROOT::Math::PxPyPzMVector p1234 = p1 + p2 + p3 + p4;
-
-      if ((p1234.Pt() < rhoPtCut) && (std::abs(p1234.Rapidity()) < rhoRapCut)) {
-        histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 14);
-        if ((rhoMassMin < p1234.M()) && (p1234.M() < rhoMassMax)) {
-          histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 15);
-        }
-      }
-    } // End of Zero Charge Events
-
-    if (numPionMinusTracks != numPiMinus && numPiPlusTracks != numPiPlus) {
-      histosCounter.fill(HIST("EventsCounts_vs_runNo"), collision.runNumber(), 16);
-    } // End of Non Zero Charge Events
-
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 11);
   } // End of processCounter function
 
   void processTrackCounter(soa::Filtered<UDCollisions>::iterator const& collision, UDtracks const& tracks)
@@ -1206,7 +1181,55 @@ struct ExclusiveRhoTo4Pi {
     return true;
   } // End of Track Selection function
 
+  int getRunNumberIndex(int runNumber)
+  {
+    for (int i = 0; i < numRunNums; ++i) {
+      if (runNos[i] == runNumber) {
+        return i;
+      }
+    }
+    return -1; // Not found
+  } // End of getRunNumberIndex function
+
+  void setHistBinLabels()
+  {
+    auto h1 = histosCounter.get<TH2>(HIST("EventsCounts_vs_runNo"));
+    auto h2 = histosCounter.get<TH2>(HIST("TracksCounts_vs_runNo"));
+    auto h3 = histosCounter.get<TH1>(HIST("fourPionCounts_0c"));
+    auto h4 = histosCounter.get<TH1>(HIST("fourPionCounts_0c_within_rap"));
+    auto h5 = histosCounter.get<TH1>(HIST("fourPionCounts_0c_selected"));
+    auto h6 = histosCounter.get<TH1>(HIST("fourPionCounts_n0c"));
+    auto h7 = histosCounter.get<TH1>(HIST("fourPionCounts_n0c_within_rap"));
+    auto h8 = histosCounter.get<TH1>(HIST("fourPionCounts_n0c_selected"));
+
+    for (int i = 0; i < numRunNums; ++i) {
+      h1->GetXaxis()->SetBinLabel(i + 1, std::to_string(runNos[i]).c_str());
+      h2->GetXaxis()->SetBinLabel(i + 1, std::to_string(runNos[i]).c_str());
+      h3->GetXaxis()->SetBinLabel(i + 1, std::to_string(runNos[i]).c_str());
+      h4->GetXaxis()->SetBinLabel(i + 1, std::to_string(runNos[i]).c_str());
+      h5->GetXaxis()->SetBinLabel(i + 1, std::to_string(runNos[i]).c_str());
+      h6->GetXaxis()->SetBinLabel(i + 1, std::to_string(runNos[i]).c_str());
+      h7->GetXaxis()->SetBinLabel(i + 1, std::to_string(runNos[i]).c_str());
+      h8->GetXaxis()->SetBinLabel(i + 1, std::to_string(runNos[i]).c_str());
+    }
+  } // end of setHistBinLabels function
+
 }; // End of Struct exclusiveRhoTo4Pi
+
+int ExclusiveRhoTo4Pi::runNos[113] = {
+  544013, 544028, 544032, 544091, 544095, 544098, 544116, 544121, 544122, 544123,
+  544124, 544184, 544185, 544389, 544390, 544391, 544392, 544451, 544454, 544474,
+  544475, 544476, 544477, 544490, 544491, 544492, 544508, 544510, 544511, 544512,
+  544514, 544515, 544518, 544548, 544549, 544550, 544551, 544564, 544565, 544567,
+  544568, 544580, 544582, 544583, 544585, 544614, 544640, 544652, 544653, 544672,
+  544674, 544692, 544693, 544694, 544696, 544739, 544742, 544754, 544767, 544794,
+  544795, 544797, 544813, 544868, 544886, 544887, 544896, 544911, 544913, 544914,
+  544917, 544931, 544947, 544961, 544963, 544964, 544968, 544991, 544992, 545004,
+  545008, 545009, 545041, 545042, 545044, 545047, 545060, 545062, 545063, 545064,
+  545066, 545086, 545103, 545117, 545171, 545184, 545185, 545210, 545222, 545223,
+  545246, 545249, 545262, 545289, 545291, 545294, 545295, 545296, 545311, 545312,
+  545332, 545345, 545367};
+int ExclusiveRhoTo4Pi::numRunNums = 113;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
