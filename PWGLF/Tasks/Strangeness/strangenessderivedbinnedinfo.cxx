@@ -313,14 +313,14 @@ struct strangenessderivedbinnedinfo {
     histos.add("hEventOccupancy", "hEventOccupancy", kTH1F, {axisOccupancy});
 
     histos.add("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc", "h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc", kTHnSparseF, {axisMass, axisPt, axisPhi, axisEta, axisPtArmV0, axisAlphaV0, axisRadius, axisCentrality, axisOccupancy});
-    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(0)->SetName("Invariant mass (GeV/#it{c}^{2})");
-    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(1)->SetName("#it{p}_{T} (GeV/#it{c})");
-    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(2)->SetName("#varphi (rad.)");
-    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(3)->SetName("Pseudo-rapidity #it{#eta}");
-    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(4)->SetName("V0 #it{p}_{T} Armenteros");
-    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(5)->SetName("V0 #alpha Armenteros");
-    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(6)->SetName("V0 radius (cm)");
-    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(7)->SetName("Centrality (%)");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(0)->SetName("Mass");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(1)->SetName("Pt");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(2)->SetName("Phi");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(3)->SetName("Eta");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(4)->SetName("V0PtArm");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(5)->SetName("V0Alpha");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(6)->SetName("Radius");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(7)->SetName("Centrality");
     histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(8)->SetName("Occupancy");
 
     if (cfgSkimmedProcessing) {
