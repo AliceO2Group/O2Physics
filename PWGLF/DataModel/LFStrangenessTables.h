@@ -26,6 +26,7 @@
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/DataTypes.h>
+#include <ReconstructionDataFormats/DecayNBodyIndex.h>
 
 #include <array>
 #include <cmath>
@@ -710,24 +711,24 @@ DECLARE_SOA_DYNAMIC_COLUMN(PFracNeg, pfracneg,
 // Calculated on the fly with mass assumption + dynamic tables
 DECLARE_SOA_DYNAMIC_COLUMN(MLambda, mLambda, //! mass under lambda hypothesis
                            [](int v0type, float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float {
-                             if (v0type == 1) {
-                               return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
+                             if ((v0type & (0x1 << o2::dataformats::V0Index::kPhotonOnly)) != 0) {
+                               return 0.0f; // provide mass only if NOT a photon with TPC-only tracks (special handling)
                              };
-                             return 0.0f; // do not provide valid mass if TPC-only
+                             return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(MAntiLambda, mAntiLambda, //! mass under antilambda hypothesis
                            [](int v0type, float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float {
-                             if (v0type == 1) {
-                               return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
+                             if ((v0type & (0x1 << o2::dataformats::V0Index::kPhotonOnly)) != 0) {
+                               return 0.0f; // provide mass only if NOT a photon with TPC-only tracks (special handling)
                              };
-                             return 0.0f; // do not provide valid mass if TPC-only
+                             return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(MK0Short, mK0Short, //! mass under K0short hypothesis
                            [](int v0type, float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float {
-                             if (v0type == 1) {
-                               return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
+                             if ((v0type & (0x1 << o2::dataformats::V0Index::kPhotonOnly)) != 0) {
+                               return 0.0f; // provide mass only if NOT a photon with TPC-only tracks (special handling)
                              };
-                             return 0.0f; // do not provide valid mass if TPC-only
+                             return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(MLambda_unchecked, mLambda_unchecked, //! mass under lambda hypothesis without v0 type check (will include TPC only and potentially duplicates! use with care)
                            [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float {
@@ -799,12 +800,12 @@ DECLARE_SOA_DYNAMIC_COLUMN(PositiveEta, positiveeta, //! positive daughter eta
 DECLARE_SOA_DYNAMIC_COLUMN(PositivePhi, positivephi, //! positive daughter phi
                            [](float PxPos, float PyPos) -> float { return RecoDecay::phi(PxPos, PyPos); });
 
-DECLARE_SOA_DYNAMIC_COLUMN(IsStandardV0, isStandardV0, //! is standard V0
-                           [](uint8_t V0Type) -> bool { return V0Type == 1; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsStandardV0, isStandardV0, //! is standard V0 - note: photons excluded via '=='
+                           [](uint8_t V0Type) -> bool { return V0Type == o2::dataformats::V0Index::kStandaloneV0; });
 DECLARE_SOA_DYNAMIC_COLUMN(IsPhotonTPConly, isPhotonTPConly, //! is tpc-only photon V0
-                           [](uint8_t V0Type) -> bool { return V0Type & (1 << 1); });
+                           [](uint8_t V0Type) -> bool { return V0Type & (1 << o2::dataformats::V0Index::kPhotonOnly); });
 DECLARE_SOA_DYNAMIC_COLUMN(IsCollinear, isCollinear, //! is collinear V0
-                           [](uint8_t V0Type) -> bool { return V0Type & (1 << 2); });
+                           [](uint8_t V0Type) -> bool { return V0Type & (1 << o2::dataformats::V0Index::kCollinear); });
 
 DECLARE_SOA_DYNAMIC_COLUMN(RapidityMC, rapidityMC, //! rapidity (0:K0, 1:L, 2:Lbar)
                            [](float PxMC, float PyMC, float PzMC, int value) -> float {
