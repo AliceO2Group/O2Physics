@@ -729,7 +729,7 @@ struct Convbuildercomp {
   PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emmceventId;
 
   void processConvV0s(MyCollisions const& collisions,
-                      MyMCCollisions const& mccollisions,
+                      MyMCCollisions const& mccollision,
                       aod::EMMCParticles const& mcparticles,
                       MyTracksIUMC const& tracks)
   {
