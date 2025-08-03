@@ -81,7 +81,7 @@ using MyStraCollision = MyStraCollisions::iterator;
 using MyTracksIUMC = soa::Join<aod::TracksIU, aod::McTrackLabels>;
 using MyMCParticles = aod::McParticles;
 
-using V0DerivedMCDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0Indices, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0CoreMCLabels, aod::V0LambdaMLScores, aod::V0AntiLambdaMLScores, aod::V0GammaMLScores>;
+using V0DerivedMCDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0Indices, aod::V0MCMothers, aod::V0CoreMCLabels, aod::V0GammaMLScores>;
 
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
@@ -637,7 +637,8 @@ struct Convbuildercomp {
 
   void processLFV0sMC(MyStraCollisions const& stracollisions,
                       soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&,
-                      V0DerivedMCDatas const& strangeV0s)
+                      V0DerivedMCDatas const& strangeV0s,
+                      dauTracks const&)
   {
 
     for (auto& collision : stracollisions) {
@@ -728,6 +729,7 @@ struct Convbuildercomp {
   PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emmceventId;
 
   void processConvV0s(MyCollisions const& collisions,
+                      MyMCCollisions const&,
                       aod::EMMCParticles const& mcparticles,
                       MyTracksIUMC const& tracks)
   {
@@ -785,15 +787,15 @@ struct Convbuildercomp {
     }
   }
 
-  Preslice<MyV0Photons> perEMCollision = aod::v0photonkf::emeventId;
-
   void processMatchCategories(
     MyCollisions const& collisions,
+    aod::EMMCEvents const&,
     MyTracksIUMC const& tracksgen,
     MyV0Photons const& emV0s,
     soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&,
     V0DerivedMCDatas const& lfV0s,
     MyMCV0Legs const&,
+    aod::EMMCParticles const&,
     aod::McParticles const& mcparticles,
     dauTracks const&)
   {
@@ -811,7 +813,7 @@ struct Convbuildercomp {
 
       fillEventInfo<1, EMBuilder>(collision);
 
-      auto emSlice = emV0s.sliceBy(perEMCollision, collision.globalIndex());
+      auto emSlice = emV0s.sliceBy(perCollision, collision.globalIndex());
       auto lfSlice = lfV0s.sliceBy(perCollisionMCDerived, collision.globalIndex());
 
       using EMIt = decltype(emSlice.begin());
