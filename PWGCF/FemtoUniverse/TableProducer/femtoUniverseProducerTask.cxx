@@ -38,6 +38,8 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPMagField.h"
@@ -59,6 +61,7 @@
 #include <algorithm>
 #include <experimental/type_traits>
 #include <set>
+#include <string>
 #include <vector>
 
 using namespace o2;
@@ -138,31 +141,35 @@ struct FemtoUniverseProducerTask {
   Configurable<bool> confStoreMCmothers{"confStoreMCmothers", false, "MC truth: Fill with not only primary particles and store mothers' PDG in tempFitVar."};
   Configurable<bool> confFillCollExt{"confFillCollExt", false, "Option to fill collision extended table"};
 
+  /// Event filtering (used for v0-cascade analysis)
+  Configurable<std::string> zorroMask{"zorroMask", "", "zorro trigger class to select on (empty: none)"};
+
   /// Event cuts
   FemtoUniverseCollisionSelection colCuts;
-  Configurable<bool> confEvtUseTPCmult{"confEvtUseTPCmult", false, "Use multiplicity based on the number of tracks with TPC information"};
-  Configurable<float> confEvtZvtx{"confEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
-  Configurable<bool> confEvtTriggerCheck{"confEvtTriggerCheck", true, "Evt sel: check for trigger"};
-  Configurable<int> confEvtTriggerSel{"confEvtTriggerSel", kINT7, "Evt sel: trigger"};
-  Configurable<bool> confEvtOfflineCheck{"confEvtOfflineCheck", false, "Evt sel: check for offline selection"};
-  Configurable<bool> confIsActivateV0{"confIsActivateV0", false, "Activate filling of V0 into femtouniverse tables"};
-  Configurable<bool> confActivateSecondaries{"confActivateSecondaries", false, "Fill secondary MC gen particles that were reconstructed"};
-  Configurable<bool> confIsActivateCascade{"confIsActivateCascade", false, "Activate filling of Cascade into femtouniverse tables"};
-  Configurable<bool> confIsActivatePhi{"confIsActivatePhi", false, "Activate filling of Phi into femtouniverse tables"};
-  Configurable<bool> confIsActiveD0{"confIsActiveD0", false, "Activate filling FU tables for D0/D0bar mesons"};
-  Configurable<bool> confMCTruthAnalysisWithPID{"confMCTruthAnalysisWithPID", true, "1: take only particles with specified PDG, 0: all particles (for MC Truth)"};
-  Configurable<std::vector<int>> confMCTruthPDGCodes{"confMCTruthPDGCodes", std::vector<int>{211, -211, 2212, -2212, 333}, "PDG of particles to be stored"};
-  Configurable<float> confCentFT0Min{"confCentFT0Min", 0.f, "Min CentFT0 value for centrality selection"};
-  Configurable<float> confCentFT0Max{"confCentFT0Max", 200.f, "Max CentFT0 value for centrality selection"};
-  Configurable<bool> confEvIsGoodZvtxFT0vsPV{"confEvIsGoodZvtxFT0vsPV", true, "Require kIsGoodZvtxFT0vsPV selection on Events."};
-  Configurable<bool> confEvNoSameBunchPileup{"confEvNoSameBunchPileup", true, "Require kNoSameBunchPileup selection on Events."};
-  Configurable<bool> confIsUsePileUp{"confIsUsePileUp", true, "Required for choosing whether to run the pile-up cuts"};
-  Configurable<bool> confEvIsVertexITSTPC{"confEvIsVertexITSTPC", true, "Require kIsVertexITSTPC selection on Events"};
-  Configurable<int> confTPCOccupancyMin{"confTPCOccupancyMin", 0, "Minimum value for TPC Occupancy selection"};
-  Configurable<int> confTPCOccupancyMax{"confTPCOccupancyMax", 500, "Maximum value for TPC Occupancy selection"};
-
-  Filter customCollCentFilter = (aod::cent::centFT0C > confCentFT0Min) &&
-                                (aod::cent::centFT0C < confCentFT0Max);
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<bool> confEvtUseTPCmult{"confEvtUseTPCmult", false, "Use multiplicity based on the number of tracks with TPC information"};
+    Configurable<float> confEvtZvtx{"confEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
+    Configurable<bool> confEvtTriggerCheck{"confEvtTriggerCheck", true, "Evt sel: check for trigger"};
+    Configurable<int> confEvtTriggerSel{"confEvtTriggerSel", kINT7, "Evt sel: trigger"};
+    Configurable<bool> confEvtOfflineCheck{"confEvtOfflineCheck", false, "Evt sel: check for offline selection"};
+    Configurable<bool> confIsActivateV0{"confIsActivateV0", false, "Activate filling of V0 into femtouniverse tables"};
+    Configurable<bool> confActivateSecondaries{"confActivateSecondaries", false, "Fill secondary MC gen particles that were reconstructed"};
+    Configurable<bool> confIsActivateCascade{"confIsActivateCascade", false, "Activate filling of Cascade into femtouniverse tables"};
+    Configurable<bool> confIsActivatePhi{"confIsActivatePhi", false, "Activate filling of Phi into femtouniverse tables"};
+    Configurable<bool> confIsActiveD0{"confIsActiveD0", false, "Activate filling FU tables for D0/D0bar mesons"};
+    Configurable<bool> confMCTruthAnalysisWithPID{"confMCTruthAnalysisWithPID", true, "1: take only particles with specified PDG, 0: all particles (for MC Truth)"};
+    Configurable<std::vector<int>> confMCTruthPDGCodes{"confMCTruthPDGCodes", std::vector<int>{211, -211, 2212, -2212, 333}, "PDG of particles to be stored"};
+    Configurable<float> confCentFT0Min{"confCentFT0Min", 0.f, "Min CentFT0 value for centrality selection"};
+    Configurable<float> confCentFT0Max{"confCentFT0Max", 200.f, "Max CentFT0 value for centrality selection"};
+    Configurable<bool> confEvIsGoodZvtxFT0vsPV{"confEvIsGoodZvtxFT0vsPV", true, "Require kIsGoodZvtxFT0vsPV selection on Events."};
+    Configurable<bool> confEvNoSameBunchPileup{"confEvNoSameBunchPileup", true, "Require kNoSameBunchPileup selection on Events."};
+    Configurable<bool> confIsUsePileUp{"confIsUsePileUp", true, "Required for choosing whether to run the pile-up cuts"};
+    Configurable<bool> confEvIsVertexITSTPC{"confEvIsVertexITSTPC", true, "Require kIsVertexITSTPC selection on Events"};
+    Configurable<int> confTPCOccupancyMin{"confTPCOccupancyMin", 0, "Minimum value for TPC Occupancy selection"};
+    Configurable<int> confTPCOccupancyMax{"confTPCOccupancyMax", 500, "Maximum value for TPC Occupancy selection"};
+  } ConfGeneral;
+  Filter customCollCentFilter = (aod::cent::centFT0C > ConfGeneral.confCentFT0Min) &&
+                                (aod::cent::centFT0C < ConfGeneral.confCentFT0Max);
 
   // just sanity check to make sure in case there are problems in conversion or
   // MC production it does not affect results
@@ -201,7 +208,6 @@ struct FemtoUniverseProducerTask {
   // V0
   FemtoUniverseV0Selection v0Cuts;
   struct : o2::framework::ConfigurableGroup {
-    // Configurable<bool> confIsFillV0s{"confIsFillV0s", false, "Choice to fill V0s"}; //Commented: not used configurable
     Configurable<std::vector<float>> confV0Sign{FemtoUniverseV0Selection::getSelectionName(femto_universe_v0_selection::kV0Sign, "ConfV0"), std::vector<float>{-1, 1}, FemtoUniverseV0Selection::getSelectionHelper(femto_universe_v0_selection::kV0Sign, "V0 selection: ")};
     Configurable<std::vector<float>> confV0PtMin{FemtoUniverseV0Selection::getSelectionName(femto_universe_v0_selection::kV0pTMin, "ConfV0"), std::vector<float>{0.3f, 0.4f, 0.5f}, FemtoUniverseV0Selection::getSelectionHelper(femto_universe_v0_selection::kV0pTMin, "V0 selection: ")};
     Configurable<std::vector<float>> confV0PtMax{FemtoUniverseV0Selection::getSelectionName(femto_universe_v0_selection::kV0pTMax, "ConfV0"), std::vector<float>{3.3f, 3.4f, 3.5f}, FemtoUniverseV0Selection::getSelectionHelper(femto_universe_v0_selection::kV0pTMax, "V0 selection: ")};
@@ -250,7 +256,6 @@ struct FemtoUniverseProducerTask {
   // CASCADE
   FemtoUniverseCascadeSelection cascadeCuts;
   struct : o2::framework::ConfigurableGroup {
-    // Configurable<bool> confIsFillCascades{"confIsFillCascades", false, "Choice to fill cascades"}; //Commented: not used configurable
     Configurable<std::vector<float>> confCascSign{FemtoUniverseCascadeSelection::getSelectionName(femto_universe_cascade_selection::kCascadeSign, "ConfCasc"), std::vector<float>{-1, 1}, FemtoUniverseCascadeSelection::getSelectionHelper(femto_universe_cascade_selection::kCascadeSign, "Cascade selection: ")};
     Configurable<std::vector<float>> confCascPtMin{FemtoUniverseCascadeSelection::getSelectionName(femto_universe_cascade_selection::kCascadepTMin, "ConfCasc"), std::vector<float>{0.3f, 0.4f, 0.5f}, FemtoUniverseCascadeSelection::getSelectionHelper(femto_universe_cascade_selection::kCascadepTMin, "Cascade selection: ")};
     Configurable<std::vector<float>> confCascPtMax{FemtoUniverseCascadeSelection::getSelectionName(femto_universe_cascade_selection::kCascadepTMax, "ConfCasc"), std::vector<float>{3.3f, 3.4f, 3.5f}, FemtoUniverseCascadeSelection::getSelectionHelper(femto_universe_cascade_selection::kCascadepTMax, "Cascade selection: ")};
@@ -284,10 +289,6 @@ struct FemtoUniverseProducerTask {
     Configurable<float> confXiInvMassUpLimit{"confXiInvMassUpLimit", 1.40, "Upper limit of the Xi invariant mass"};
     Configurable<float> confOmegaInvMassLowLimit{"confOmegaInvMassLowLimit", 1.60, "Lower limit of the Omega invariant mass"};
     Configurable<float> confOmegaInvMassUpLimit{"confOmegaInvMassUpLimit", 1.80, "Upper limit of the Omega invariant mass"};
-
-    // Configurable<bool> confCascRejectCompetingMass{"confCascRejectCompetingMass", false, "Switch on to reject Omegas (for Xi) or Xis (for Omegas)"};
-    // Configurable<float> confCascInvCompetingMassLowLimit{"confCascInvCompetingMassLowLimit", 1.66, "Lower limit of the cascade invariant mass for competing mass rejection"};
-    // Configurable<float> confCascInvCompetingMassUpLimit{"confCascInvCompetingMassUpLimit", 1.68, "Upper limit of the cascade invariant mass for competing mass rejection"};
   } ConfCascadeSelection;
 
   // PHI
@@ -463,15 +464,29 @@ struct FemtoUniverseProducerTask {
     return mask;
   }
 
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+  int mRunNumberZorro = 0;
+
+  HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry cascadeQaRegistry{"CascadeQAHistos", {}, OutputObjHandlingPolicy::QAObject};
+
+  void initZorro(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (mRunNumberZorro == bc.runNumber())
+      return;
+
+    zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), zorroMask.value);
+    zorro.populateHistRegistry(qaRegistry, bc.runNumber());
+    mRunNumberZorro = bc.runNumber();
+  }
+
   /// \todo should we add filter on min value pT/eta of V0 and daughters?
   /*Filter v0Filter = (nabs(aod::v0data::x) < V0DecVtxMax.value) &&
                     (nabs(aod::v0data::y) < V0DecVtxMax.value) &&
                     (nabs(aod::v0data::z) < V0DecVtxMax.value);*/
   // (aod::v0data::v0radius > V0TranRadV0Min.value); to be added, not working
   // for now do not know why
-
-  HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
-  HistogramRegistry cascadeQaRegistry{"CascadeQAHistos", {}, OutputObjHandlingPolicy::QAObject};
 
   int mRunNumber = 0;
   float mMagField;
@@ -489,7 +504,9 @@ struct FemtoUniverseProducerTask {
            "Please choose one.");
     }
 
-    colCuts.setCuts(confEvtZvtx, confEvtTriggerCheck, confEvtTriggerSel, confEvtOfflineCheck, confIsRun3, confCentFT0Min, confCentFT0Max);
+    zorroSummary.setObject(zorro.getZorroSummary());
+
+    colCuts.setCuts(ConfGeneral.confEvtZvtx, ConfGeneral.confEvtTriggerCheck, ConfGeneral.confEvtTriggerSel, ConfGeneral.confEvtOfflineCheck, confIsRun3, ConfGeneral.confCentFT0Min, ConfGeneral.confCentFT0Max);
     colCuts.init(&qaRegistry);
 
     trackCuts.setSelection(ConfTrkSelection.confTrkCharge, femto_universe_track_selection::kSign, femto_universe_selection::kEqual);
@@ -514,7 +531,7 @@ struct FemtoUniverseProducerTask {
     /// different type!
     // v0Cuts.setSelection(ConfV0Selection->getRow(0),
     // femto_universe_v0_selection::kDecVtxMax, femto_universe_selection::kAbsUpperLimit);
-    if (confIsActivateV0) {
+    if (ConfGeneral.confIsActivateV0) {
       // initializing for V0
       v0Cuts.setSelection(ConfV0Selection.confV0Sign, femto_universe_v0_selection::kV0Sign, femto_universe_selection::kEqual);
       v0Cuts.setSelection(ConfV0Selection.confV0PtMin, femto_universe_v0_selection::kV0pTMin, femto_universe_selection::kLowerLimit);
@@ -557,7 +574,7 @@ struct FemtoUniverseProducerTask {
       // }
     }
 
-    if (confIsActivateCascade) {
+    if (ConfGeneral.confIsActivateCascade) {
       // initializing for cascades
       cascadeCuts.setSelection(ConfCascadeSelection.confCascSign, femto_universe_cascade_selection::kCascadeSign, femto_universe_selection::kEqual);
       cascadeCuts.setSelection(ConfCascadeSelection.confCascPtMin, femto_universe_cascade_selection::kCascadepTMin, femto_universe_selection::kLowerLimit);
@@ -604,13 +621,9 @@ struct FemtoUniverseProducerTask {
       cascadeCuts.init<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kV0Child, aod::femtouniverseparticle::ParticleType::kCascadeBachelor, aod::femtouniverseparticle::CutContainerType>(&cascadeQaRegistry);
       // invmass cuts
       cascadeCuts.setInvMassLimits(ConfCascadeSelection.confXiInvMassLowLimit, ConfCascadeSelection.confOmegaInvMassLowLimit, ConfCascadeSelection.confXiInvMassUpLimit, ConfCascadeSelection.confOmegaInvMassUpLimit);
-
-      /*if (ConfCascadeSelection.confCascRejectCompetingMass) {
-        cascadeCuts.setCompetingInvMassLimits(ConfCascadeSelection.confCascInvCompetingMassLowLimit, ConfCascadeSelection.confCascInvCompetingMassUpLimit);
-      }*/
     }
 
-    if (confIsActivatePhi) {
+    if (ConfGeneral.confIsActivatePhi) {
       // initializing for Phi meson
       phiCuts.init<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kPhiChild, aod::femtouniverseparticle::CutContainerType>(&qaRegistry);
     }
@@ -891,7 +904,7 @@ struct FemtoUniverseProducerTask {
                                      /// FemtoUniverseRun2 is defined V0M/2
       multNtr = col.multTracklets();
     }
-    if (confEvtUseTPCmult) {
+    if (ConfGeneral.confEvtUseTPCmult) {
       multNtr = col.multTPC();
     }
 
@@ -903,11 +916,19 @@ struct FemtoUniverseProducerTask {
     if (!colCuts.isSelected(col)) {
       return false;
     }
-    if (!confIsUsePileUp) {
+
+    if (zorroMask.value != "") {
+      auto bc = col.template bc_as<aod::BCsWithTimestamps>();
+      initZorro(bc);
+      if (!zorro.isSelected(col.template bc_as<aod::BCsWithTimestamps>().globalBC()))
+        return false;
+    }
+
+    if (!ConfGeneral.confIsUsePileUp) {
       outputCollision(vtxZ, mult, multNtr, confDoSpher ? colCuts.computeSphericity(col, tracks) : 2, mMagField);
       colCuts.fillQA(col);
       return true;
-    } else if ((!confEvNoSameBunchPileup || col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!confEvIsGoodZvtxFT0vsPV || col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (!confEvIsVertexITSTPC || col.selection_bit(aod::evsel::kIsVertexITSTPC))) {
+    } else if ((!ConfGeneral.confEvNoSameBunchPileup || col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!ConfGeneral.confEvIsGoodZvtxFT0vsPV || col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (!ConfGeneral.confEvIsVertexITSTPC || col.selection_bit(aod::evsel::kIsVertexITSTPC))) {
       outputCollision(vtxZ, mult, multNtr, confDoSpher ? colCuts.computeSphericity(col, tracks) : 2, mMagField);
       colCuts.fillQA(col);
       return true;
@@ -930,7 +951,7 @@ struct FemtoUniverseProducerTask {
                                      /// FemtoUniverseRun2 is defined V0M/2
       multNtr = col.multTracklets();
     }
-    if (confEvtUseTPCmult) {
+    if (ConfGeneral.confEvtUseTPCmult) {
       multNtr = col.multTPC();
     }
 
@@ -942,11 +963,11 @@ struct FemtoUniverseProducerTask {
     if (!colCuts.isSelected(col)) {
       return false;
     }
-    if (!confIsUsePileUp) {
+    if (!ConfGeneral.confIsUsePileUp) {
       outputCollision(vtxZ, mult, multNtr, confDoSpher ? colCuts.computeSphericity(col, tracks) : 2, mMagField);
       colCuts.fillQA(col);
       return true;
-    } else if ((!confEvNoSameBunchPileup || col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!confEvIsGoodZvtxFT0vsPV || col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (!confEvIsVertexITSTPC || col.selection_bit(aod::evsel::kIsVertexITSTPC))) {
+    } else if ((!ConfGeneral.confEvNoSameBunchPileup || col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!ConfGeneral.confEvIsGoodZvtxFT0vsPV || col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (!ConfGeneral.confEvIsVertexITSTPC || col.selection_bit(aod::evsel::kIsVertexITSTPC))) {
       outputCollision(vtxZ, mult, multNtr, confDoSpher ? colCuts.computeSphericity(col, tracks) : 2, mMagField);
       colCuts.fillQA(col);
       return true;
@@ -963,7 +984,7 @@ struct FemtoUniverseProducerTask {
       float mult = confIsRun3 ? c.multFV0M() : 0.5 * (c.multFV0M());
       int multNtr = confIsRun3 ? c.multNTracksPV() : c.multTracklets();
 
-      if (std::abs(vtxZ) > confEvtZvtx) {
+      if (std::abs(vtxZ) > ConfGeneral.confEvtZvtx) {
         continue;
       }
 
@@ -1009,7 +1030,7 @@ struct FemtoUniverseProducerTask {
     // in case of trigger run - store such collisions but don't store any
     // particle candidates for such collisions
 
-    if (!colCuts.isSelectedRun3(col) || (occupancy < confTPCOccupancyMin || occupancy > confTPCOccupancyMax)) {
+    if (!colCuts.isSelectedRun3(col) || (occupancy < ConfGeneral.confTPCOccupancyMin || occupancy > ConfGeneral.confTPCOccupancyMax)) {
       return false;
     } else {
       if (col.selection_bit(aod::evsel::kNoSameBunchPileup) &&
@@ -1031,7 +1052,7 @@ struct FemtoUniverseProducerTask {
   {
     const auto vtxZ = col.posZ();
 
-    if (std::abs(vtxZ) > confEvtZvtx) {
+    if (std::abs(vtxZ) > ConfGeneral.confEvtZvtx) {
       return false;
     } else {
       outputCollision(vtxZ, 0, 0, 2, mMagField);
@@ -1710,15 +1731,15 @@ struct FemtoUniverseProducerTask {
 
       uint32_t pdgCode = static_cast<uint32_t>(particle.pdgCode());
 
-      if (confMCTruthAnalysisWithPID) {
+      if (ConfGeneral.confMCTruthAnalysisWithPID) {
         bool pass = false;
-        std::vector<int> tmpPDGCodes = confMCTruthPDGCodes; // necessary due to some features of the Configurable
+        std::vector<int> tmpPDGCodes = ConfGeneral.confMCTruthPDGCodes; // necessary due to some features of the Configurable
         for (auto const& pdg : tmpPDGCodes) {
           if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
             if (pdgCode == 333) { // && (recoMcIds && recoMcIds->get().contains(particle.globalIndex()))) { // ATTENTION: all Phi mesons are NOT primary particles
               pass = true;
             } else {
-              if (confStoreMCmothers || particle.isPhysicalPrimary() || (confActivateSecondaries && recoMcIds && recoMcIds->get().contains(particle.globalIndex())))
+              if (confStoreMCmothers || particle.isPhysicalPrimary() || (ConfGeneral.confActivateSecondaries && recoMcIds && recoMcIds->get().contains(particle.globalIndex())))
                 pass = true;
             }
           }
@@ -1746,7 +1767,7 @@ struct FemtoUniverseProducerTask {
         continue;
       }
 
-      if (confIsActivateCascade)
+      if (ConfGeneral.confIsActivateCascade)
         childIDs.push_back(0);
       outputParts(outputCollision.lastIndex(),
                   particle.pt(),
@@ -1775,7 +1796,7 @@ struct FemtoUniverseProducerTask {
       childIDs[0] = 0;
       childIDs[1] = 0;
       auto minDaughs = 2ul;
-      if (confIsActivateCascade) {
+      if (ConfGeneral.confIsActivateCascade) {
         childIDs.push_back(0);
         minDaughs = 3ul;
       }
@@ -1836,9 +1857,9 @@ struct FemtoUniverseProducerTask {
 
       uint32_t pdgCode = static_cast<uint32_t>(particle.pdgCode());
 
-      if (confMCTruthAnalysisWithPID) {
+      if (ConfGeneral.confMCTruthAnalysisWithPID) {
         bool pass = false;
-        std::vector<int> tmpPDGCodes = confMCTruthPDGCodes; // necessary due to some features of the Configurable
+        std::vector<int> tmpPDGCodes = ConfGeneral.confMCTruthPDGCodes; // necessary due to some features of the Configurable
         for (auto const& pdg : tmpPDGCodes) {
           if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
             if (pdgCode == 333) { // && (recoMcIds && recoMcIds->get().contains(particle.globalIndex()))) { // ATTENTION: all Phi mesons are NOT primary particles
@@ -1846,7 +1867,7 @@ struct FemtoUniverseProducerTask {
             } else if (pdgCode == 421) {
               pass = true;
             } else {
-              if (particle.isPhysicalPrimary() || (confActivateSecondaries && recoMcIds && recoMcIds->get().contains(particle.globalIndex())))
+              if (particle.isPhysicalPrimary() || (ConfGeneral.confActivateSecondaries && recoMcIds && recoMcIds->get().contains(particle.globalIndex())))
                 pass = true;
             }
           }
@@ -1860,7 +1881,7 @@ struct FemtoUniverseProducerTask {
         tmpIDtrack.push_back(particle.globalIndex());
         continue;
       }
-      if (confIsActiveD0) {
+      if (ConfGeneral.confIsActiveD0) {
 
         auto mcD0origin = aod::femtouniverseparticle::ParticleType::kMCTruthTrack;
         float ptGenB = -1;
@@ -1957,10 +1978,10 @@ struct FemtoUniverseProducerTask {
     const auto colcheck = fillCollisions<isMC>(col, tracks);
     if (colcheck) {
       fillTracks<isMC>(tracks);
-      if (confIsActivateV0) {
+      if (ConfGeneral.confIsActivateV0) {
         fillV0<isMC>(col, fullV0s, tracks);
       }
-      if (confIsActivatePhi) {
+      if (ConfGeneral.confIsActivatePhi) {
         fillPhi<isMC>(col, tracks);
       }
     }
@@ -2016,10 +2037,10 @@ struct FemtoUniverseProducerTask {
     const auto colcheck = fillCollisions<false>(col, tracks);
     if (colcheck) {
       fillTracks<false>(tracks);
-      if (confIsActivateV0) {
+      if (ConfGeneral.confIsActivateV0) {
         fillV0<false>(col, fullV0s, tracks);
       }
-      if (confIsActivateCascade) {
+      if (ConfGeneral.confIsActivateCascade) {
         fillCascade<false>(col, fullCascades, tracks);
       }
     }
