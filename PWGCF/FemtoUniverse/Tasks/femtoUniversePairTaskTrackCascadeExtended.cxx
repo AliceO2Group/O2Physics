@@ -308,7 +308,6 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       const auto& negChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
       const auto& bachelor = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
 
-
       //  nSigma selection for daughter and bachelor tracks
       if (part.sign() < 0) {
         if (std::abs(posChild.tpcNSigmaPr()) > confNSigmaTPCProton) {
