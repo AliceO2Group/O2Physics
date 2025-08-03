@@ -19,11 +19,13 @@
 ///
 
 // C++/ROOT includes.
-#include <chrono>
-#include <string>
-#include <vector>
 #include <TComplex.h>
 #include <TH3F.h>
+
+#include <chrono>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 // o2Physics includes.
 #include "Framework/AnalysisDataModel.h"
@@ -78,6 +80,9 @@ struct qVectorsTable {
 
   Configurable<float> cfgMinPtOnTPC{"cfgMinPtOnTPC", 0.15, "minimum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
   Configurable<float> cfgMaxPtOnTPC{"cfgMaxPtOnTPC", 5., "maximum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
+  Configurable<float> cfgEtaMax{"cfgEtaMax", 0.8, "Maximum pseudorapidiy for charged track"};
+  Configurable<float> cfgEtaMin{"cfgEtaMin", -0.8, "Minimum pseudorapidiy for charged track"};
+
   Configurable<int> cfgCorrLevel{"cfgCorrLevel", 4, "calibration step: 0 = no corr, 1 = gain corr, 2 = rectr, 3 = twist, 4 = full"};
   Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2, 3}, "Modulation of interest"};
   Configurable<float> cfgMaxCentrality{"cfgMaxCentrality", 100.f, "max. centrality for Q vector calibration"};
@@ -437,7 +442,10 @@ struct qVectorsTable {
         continue;
       }
       histosQA.fill(HIST("ChTracks"), trk.pt(), trk.eta(), trk.phi(), cent);
-      if (std::abs(trk.eta()) > 0.8) {
+      if (trk.eta() > cfgEtaMax) {
+        continue;
+      }
+      if (trk.eta() < cfgEtaMin) {
         continue;
       }
       qVectTPCall[0] += trk.pt() * std::cos(trk.phi() * nmode);
