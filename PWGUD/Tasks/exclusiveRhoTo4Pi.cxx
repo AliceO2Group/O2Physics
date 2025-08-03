@@ -36,6 +36,7 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <string>
 #include <vector>
 
 using namespace std;
@@ -394,10 +395,10 @@ struct ExclusiveRhoTo4Pi {
   // Run Numbers
   static int runNos[113];
   static int numRunNums;
-  static std::string eventLabels[12];
-  static std::string trackLabels[14];
-  static int numTrackCuts;
-  static int numEventCuts;
+  // static std::string eventLabels[12];
+  // static std::string trackLabels[14];
+  // static int numTrackCuts;
+  // static int numEventCuts;
   // Derived Data
   Produces<aod::SignalData> sigFromData;
   Produces<aod::BkgroundData> bkgFromData;
@@ -1191,6 +1192,20 @@ struct ExclusiveRhoTo4Pi {
 
   void setHistBinLabels()
   {
+
+    std::string eventLabels[12] = {
+      "No Cuts", "UPC mode", "vtxITSTPC=1", "sbp=1", "itsROFb=1", "tfb=1",
+      "FT0A <= 50", "FT0C <= 50", "FV0A <= 50", "ZDC <= 0",
+      "n PV Contrib = 4", "V_{z} < 10cm"};
+
+    int numEventCuts = 12;
+
+    std::string trackLabels[14] = {
+      "No Cuts", "isPVContributor", "pT > 0.15 GeV/c", "|#eta| < 0.9", "DCA Z < 2 cm",
+      "DCA XY cut", "hasITS", "hasTPC", "itsChi2NCl < 36", "tpcChi2NCl < 4",
+      "tpcNClsFindable < 70", "#pi tracks", "#pi^{+} tracks", "#pi^{-} tracks"};
+    int numTrackCuts = 14;
+
     auto h1 = histosCounter.get<TH2>(HIST("EventsCounts_vs_runNo"));
     auto h2 = histosCounter.get<TH2>(HIST("TracksCounts_vs_runNo"));
     auto h3 = histosCounter.get<TH1>(HIST("fourPionCounts_0c"));
@@ -1236,19 +1251,21 @@ int ExclusiveRhoTo4Pi::runNos[113] = {
 
 int ExclusiveRhoTo4Pi::numRunNums = 113;
 
-std::string ExclusiveRhoTo4Pi::eventLabels[12] = {
-  "No Cuts", "UPC mode", "vtxITSTPC=1", "sbp=1", "itsROFb=1", "tfb=1",
-  "FT0A <= 50", "FT0C <= 50", "FV0A <= 50", "ZDC <= 0",
-  "n PV Contrib = 4", "V_{z} < 10cm"};
+// std::string ExclusiveRhoTo4Pi::eventLabels[12] = {
+//         "No Cuts","UPC mode","vtxITSTPC=1","sbp=1","itsROFb=1","tfb=1",
+//         "FT0A <= 50","FT0C <= 50","FV0A <= 50","ZDC <= 0",
+//         "n PV Contrib = 4","V_{z} < 10cm"
+// };
 
-int ExclusiveRhoTo4Pi::numEventCuts = 20;
+// int ExclusiveRhoTo4Pi::numEventCuts = 20;
 
-std::string ExclusiveRhoTo4Pi::trackLabels[14] = {
-  "No Cuts", "isPVContributor", "pT > 0.15 GeV/c", "|#eta| < 0.9", "DCA Z < 2 cm",
-  "DCA XY cut", "hasITS", "hasTPC", "itsChi2NCl < 36", "tpcChi2NCl < 4",
-  "tpcNClsFindable < 70", "#pi tracks", "#pi^{+} tracks", "#pi^{-} tracks"};
-
-int ExclusiveRhoTo4Pi::numTrackCuts = 14;
+// std::string ExclusiveRhoTo4Pi::trackLabels[14] = {
+//         "No Cuts","isPVContributor","pT > 0.15 GeV/c","|#eta| < 0.9","DCA Z < 2 cm",
+//         "DCA XY cut","hasITS","hasTPC","itsChi2NCl < 36","tpcChi2NCl < 4",
+//         "tpcNClsFindable < 70","#pi tracks","#pi^{+} tracks","#pi^{-} tracks"
+// };
+//
+// int ExclusiveRhoTo4Pi::numTrackCuts = 14;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
