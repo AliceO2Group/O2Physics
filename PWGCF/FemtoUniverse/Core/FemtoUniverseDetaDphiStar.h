@@ -413,10 +413,9 @@ class FemtoUniverseDetaDphiStar
     }
   }
 
-
   ///  Check if pair is close or not
   template <typename Part>
-  bool isClosePairFrac(Part const& part1, Part const& part2, float lmagfield, uint8_t ChosenEventType, bool IsDphiAvgOrDist, float DistMax, float FracMax)
+  bool isClosePairAtITS(Part const& part1, Part const& part2, float lmagfield, uint8_t ChosenEventType)
   {
     magfield = lmagfield;
 
@@ -428,8 +427,7 @@ class FemtoUniverseDetaDphiStar
         return false;
       }
       auto deta = part1.eta() - part2.eta();
-      auto dphiAvg = averagePhiStar(part1, part2, 0);
-      auto distfrac = averagePhiStarFrac(part1, part2, DistMax);
+      auto dphiAvg = part1.phi() - part2.phi();
       if (ChosenEventType == femto_universe_container::EventType::same) {
         histdetadpisame[0][0]->Fill(deta, dphiAvg);
       } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
@@ -438,37 +436,18 @@ class FemtoUniverseDetaDphiStar
         LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
       }
 
-      if (IsDphiAvgOrDist) {
-        if (std::pow(dphiAvg, 2) / std::pow(cutDeltaPhiStarMax, 2) + std::pow(deta, 2) / std::pow(cutDeltaEtaMax, 2) < 1.) {
-          return true;
-        } else {
-          if (ChosenEventType == femto_universe_container::EventType::same) {
-            histdetadpisame[0][1]->Fill(deta, dphiAvg);
-          } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
-            histdetadpimixed[0][1]->Fill(deta, dphiAvg);
-          } else {
-            LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
-          }
-          return false;
-        }
+      if (std::pow(dphiAvg, 2) / std::pow(cutDeltaPhiStarMax, 2) + std::pow(deta, 2) / std::pow(cutDeltaEtaMax, 2) < 1.) {
+        return true;
       } else {
-        if (distfrac > FracMax) {
-          return true;
+        if (ChosenEventType == femto_universe_container::EventType::same) {
+          histdetadpisame[0][1]->Fill(deta, dphiAvg);
+        } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
+          histdetadpimixed[0][1]->Fill(deta, dphiAvg);
         } else {
-          if (ChosenEventType == femto_universe_container::EventType::same) {
-            histdetadpisame[0][1]->Fill(deta, dphiAvg);
-          } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
-            histdetadpimixed[0][1]->Fill(deta, dphiAvg);
-          } else {
-            LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
-          }
-          return false;
+          LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
         }
+        return false;
       }
-
-    } else {
-      LOG(fatal) << "FemtoUniversePairCleaner: Combination of objects not defined - quitting!";
-      return false;
     }
   }
 
