@@ -1686,7 +1686,7 @@ struct HfTrackIndexSkimCreator {
   /// \param cutStatus is a 2D array with outcome of each selection (filled only in debug mode)
   /// \param isSelected ia s bitmap with selection outcome
   template <typename T1, typename T2, typename T3, typename T4>
-  void applySelections2Prong(const T1& pVecCand, const T2& secVtx, const T3& primVtx, T4& cutStatus, int& isSelected)
+  void applySelection2Prong(const T1& pVecCand, const T2& secVtx, const T3& primVtx, T4& cutStatus, int& isSelected)
   {
     if (config.debug || isSelected > 0) {
 
@@ -2294,7 +2294,7 @@ struct HfTrackIndexSkimCreator {
                   pvCoord2Prong[1] = pvRefitCoord2Prong[1];
                   pvCoord2Prong[2] = pvRefitCoord2Prong[2];
                 }
-                applySelections2Prong(pVecCandProng2, secondaryVertex2, pvCoord2Prong, cutStatus2Prong, isSelected2ProngCand);
+                applySelection2Prong(pVecCandProng2, secondaryVertex2, pvCoord2Prong, cutStatus2Prong, isSelected2ProngCand);
                 if (is2ProngCandidateGoodFor3Prong && config.do3Prong == 1) {
                   is2ProngCandidateGoodFor3Prong = isTwoTrackVertexSelectedFor3Prongs(secondaryVertex2, pvCoord2Prong, df2);
                 }
