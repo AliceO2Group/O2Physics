@@ -306,20 +306,20 @@ struct HfTaskFlow {
     // DATA : event histograms for TPC-TPC h-h same event
     registry.add("Data/TpcTpc/HadronHadron/SameEvent/hMultiplicity", "hMultiplicity", {HistType::kTH1F, {axisMultiplicity}});
     registry.add("Data/TpcTpc/HadronHadron/SameEvent/hVtxZ", "hVtxZ", {HistType::kTH1F, {axisVertex}});
-    registry.add("Data/TpcTpc/HadronHadron/SameEvent/hEventCountSame", "bin", {HistType::kTH1F, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
+    registry.add("Data/TpcTpc/HadronHadron/SameEvent/hEventCountSame", "bin", {HistType::kTH1D, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
 
     // DATA : associated particles histograms for TPC-TPC h-h same event
     registry.add("Data/TpcTpc/HadronHadron/SameEvent/hPt", "pT", {HistType::kTH1F, {axisPt}});
-    registry.add("Data/TpcTpc/HadronHadron/SameEvent/hEta", "eta", {HistType::kTH1F, {axisEtaTpc}});
-    registry.add("Data/TpcTpc/HadronHadron/SameEvent/hPhi", "phi", {HistType::kTH1F, {axisPhi}});
-    registry.add("Data/TpcTpc/HadronHadron/SameEvent/hYields", "multiplicity vs pT vs eta", {HistType::kTH3F, {axisMultiplicity, axisPt, axisEtaTpc}});
-    registry.add("Data/TpcTpc/HadronHadron/SameEvent/hEtaPhi", "multiplicity vs eta vs phi", {HistType::kTH3F, {axisMultiplicity, axisEtaTpc, axisPhi}});
+    registry.add("Data/TpcTpc/HadronHadron/SameEvent/hEta", "eta", {HistType::kTH1D, {axisEtaTpc}});
+    registry.add("Data/TpcTpc/HadronHadron/SameEvent/hPhi", "phi", {HistType::kTH1D, {axisPhi}});
+    registry.add("Data/TpcTpc/HadronHadron/SameEvent/hYields", "multiplicity vs pT vs eta", {HistType::kTH3D, {axisMultiplicity, axisPt, axisEtaTpc}});
+    registry.add("Data/TpcTpc/HadronHadron/SameEvent/hEtaPhi", "multiplicity vs eta vs phi", {HistType::kTH3D, {axisMultiplicity, axisEtaTpc, axisPhi}});
 
     // Katarina had this :
-    registry.add("Data/TpcTpc/HadronHadron/SameEvent/hVzEta", "eta vs. Vz", {HistType::kTH2F, {axisEtaTpc, axisVertex}});
+    registry.add("Data/TpcTpc/HadronHadron/SameEvent/hVzEta", "eta vs. Vz", {HistType::kTH2D, {axisEtaTpc, axisVertex}});
 
     // DATA : event mixing histograms for TPC-TPC h-h mixed event
-    registry.add("Data/TpcTpc/HadronHadron/MixedEvent/hEventCountMixing", "bin", {HistType::kTH1F, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
+    registry.add("Data/TpcTpc/HadronHadron/MixedEvent/hEventCountMixing", "bin", {HistType::kTH1D, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
 
     //  =========================
     //      DATA : histograms for TPC-TPC HF-h case for 2PRONG
@@ -327,43 +327,43 @@ struct HfTaskFlow {
 
     // DATA : event histograms for TPC-TPC HF-h same event
     registry.add("Data/TpcTpc/HfHadron/SameEvent/hPt", "pT", {HistType::kTH1F, {axisPt}});
-    registry.add("Data/TpcTpc/HfHadron/SameEvent/hEta", "eta", {HistType::kTH1F, {axisEtaTpc}});
-    registry.add("Data/TpcTpc/HfHadron/SameEvent/hPhi", "phi", {HistType::kTH1F, {axisPhi}});
-    registry.add("Data/TpcTpc/HfHadron/SameEvent/hYields", "multiplicity vs pT vs eta", {HistType::kTH3F, {axisMultiplicity, axisPt, axisEtaTpc}});
-    registry.add("Data/TpcTpc/HfHadron/SameEvent/hEtaPhi", "multiplicity vs eta vs phi", {HistType::kTH3F, {axisMultiplicity, axisEtaTpc, axisPhi}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hEta", "eta", {HistType::kTH1D, {axisEtaTpc}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hPhi", "phi", {HistType::kTH1D, {axisPhi}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hYields", "multiplicity vs pT vs eta", {HistType::kTH3D, {axisMultiplicity, axisPt, axisEtaTpc}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hEtaPhi", "multiplicity vs eta vs phi", {HistType::kTH3D, {axisMultiplicity, axisEtaTpc, axisPhi}});
 
-    registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hEventCountSame", "bin", {HistType::kTH1F, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
-    registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hEta", "eta", {HistType::kTH1F, {axisEtaTpc}});
-    registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hPhi", "phi", {HistType::kTH1F, {axisPhi}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hEventCountSame", "bin", {HistType::kTH1D, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hEta", "eta", {HistType::kTH1D, {axisEtaTpc}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hPhi", "phi", {HistType::kTH1D, {axisPhi}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {axisMultiplicity}});
-    registry.add("Data/TpcTpc/HfHadron/MixedEvent/hEventCountHFMixing", "bin", {HistType::kTH1F, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
+    registry.add("Data/TpcTpc/HfHadron/MixedEvent/hEventCountHFMixing", "bin", {HistType::kTH1D, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
 
     // DATA : trigger particles (candidates) histograms for TPC-TPC D0-h same event
     registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hPtCandidate", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hPtProng0", "2-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hPtProng1", "2-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
-    registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hMassVsPt", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisMass, axisPt}});
-    registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hMassVsPtVsMult", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2}); p_{T}; multiplicity", {HistType::kTH3F, {axisMass, axisPt, axisMultiplicity}});
-    registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {axisMass}});
-    registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hEtaCandVsPt", "2-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {axisEtaTpc, axisPt}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hMassVsPt", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisMass, axisPt}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hMassVsPtVsMult", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2}); p_{T}; multiplicity", {HistType::kTH3D, {axisMass, axisPt, axisMultiplicity}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {axisMass}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hEtaCandVsPt", "2-prong candidates;candidate #it{#eta};entries", {HistType::kTH2D, {axisEtaTpc, axisPt}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hSelectionStatus", "2-prong candidates;selection status;entries", {HistType::kTH2F, {{5, -0.5, 4.5}, axisPt}});
 
     //  =========================
     //      DATA : histograms for TPC-TPC HF-h case for 3PRONG
     //  ===================
 
-    registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hEventCountSame", "bin", {HistType::kTH1F, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
-    registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMassVsPt", "3-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisMass, axisPt}});
-    registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMass", "3-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {axisMass}});
-    registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMassVsPtVsMult", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}; multiplicity", {HistType::kTH3F, {axisMass, axisPt, axisMultiplicity}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hEventCountSame", "bin", {HistType::kTH1D, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMassVsPt", "3-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisMass, axisPt}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMass", "3-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {axisMass}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMassVsPtVsMult", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}; multiplicity", {HistType::kTH3D, {axisMass, axisPt, axisMultiplicity}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {axisMultiplicity}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPtProng0", "3-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPtProng1", "3-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPtProng2", "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
-    registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hEta", "3-prong candidates;#it{#eta};entries", {HistType::kTH1F, {axisEtaTpc}});
-    registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPhi", "3-prong candidates;#it{#Phi};entries", {HistType::kTH1F, {axisPhi}});
-    registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hEtaVsPt", "3-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {axisEtaTpc, axisPt}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hEta", "3-prong candidates;#it{#eta};entries", {HistType::kTH1D, {axisEtaTpc}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPhi", "3-prong candidates;#it{#Phi};entries", {HistType::kTH1D, {axisPhi}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hEtaVsPt", "3-prong candidates;candidate #it{#eta};entries", {HistType::kTH2D, {axisEtaTpc, axisPt}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPhiVsPt", "3-prong candidates;candidate #it{#Phi};entries", {HistType::kTH2F, {axisPhi, axisPt}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hSelectionStatus", "3-prong candidates;selection status;entries", {HistType::kTH2F, {{5, -0.5, 4.5}, axisPt}});
 
@@ -372,75 +372,75 @@ struct HfTaskFlow {
     //  =========================
 
     // DATA : trigger particles (TPC tracks) histograms for TPC-MFT h-h same event
-    registry.add("Data/TpcMft/HadronHadron/SameEvent/hEventCountSame", "bin", {HistType::kTH1F, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
-    registry.add("Data/TpcMft/HadronHadron/SameEvent/hEtaPhiTPC", "multiplicity vs eta vs phi in TPC", {HistType::kTH3F, {axisMultiplicity, axisEtaTpc, axisPhi}});
-    registry.add("Data/TpcMft/HadronHadron/SameEvent/hEtaTPC", "etaTPC", {HistType::kTH1F, {axisEtaTpc}});
-    registry.add("Data/TpcMft/HadronHadron/SameEvent/hPhiTPC", "phiTPC", {HistType::kTH1F, {axisPhi}});
+    registry.add("Data/TpcMft/HadronHadron/SameEvent/hEventCountSame", "bin", {HistType::kTH1D, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
+    registry.add("Data/TpcMft/HadronHadron/SameEvent/hEtaPhiTPC", "multiplicity vs eta vs phi in TPC", {HistType::kTH3D, {axisMultiplicity, axisEtaTpc, axisPhi}});
+    registry.add("Data/TpcMft/HadronHadron/SameEvent/hEtaTPC", "etaTPC", {HistType::kTH1D, {axisEtaTpc}});
+    registry.add("Data/TpcMft/HadronHadron/SameEvent/hPhiTPC", "phiTPC", {HistType::kTH1D, {axisPhi}});
     registry.add("Data/TpcMft/HadronHadron/SameEvent/hPtTPC", "pT", {HistType::kTH1F, {axisPt}});
-    registry.add("Data/TpcMft/HadronHadron/SameEvent/hYieldsTPC", "multiplicity vs pT vs eta", {HistType::kTH3F, {axisMultiplicity, axisPt, axisEtaTpc}});
+    registry.add("Data/TpcMft/HadronHadron/SameEvent/hYieldsTPC", "multiplicity vs pT vs eta", {HistType::kTH3D, {axisMultiplicity, axisPt, axisEtaTpc}});
     registry.add("Data/TpcMft/HadronHadron/SameEvent/hMultiplicityTPC", "multiplicity;multiplicity;entries", {HistType::kTH1F, {axisMultiplicity}});
 
     // DATA : associated particles (MFT tracks) histograms for TPC-MFT h-h same event
     registry.add("Data/TpcMft/HadronHadron/SameEvent/hEtaPhiMFT", "multiplicity vs eta vs phi in MFT", {HistType::kTH3F, {axisMultiplicity, axisEtaMft, axisPhi}});
-    registry.add("Data/TpcMft/HadronHadron/SameEvent/hEtaMFT", "etaMFT", {HistType::kTH1F, {axisEtaMft}});
-    registry.add("Data/TpcMft/HadronHadron/SameEvent/hPhiMFT", "phiMFT", {HistType::kTH1F, {axisPhi}});
+    registry.add("Data/TpcMft/HadronHadron/SameEvent/hEtaMFT", "etaMFT", {HistType::kTH1D, {axisEtaMft}});
+    registry.add("Data/TpcMft/HadronHadron/SameEvent/hPhiMFT", "phiMFT", {HistType::kTH1D, {axisPhi}});
     registry.add("Data/TpcMft/HadronHadron/SameEvent/hPtMFT", "pT", {HistType::kTH1F, {axisPt}});
-    registry.add("Data/TpcMft/HadronHadron/SameEvent/hYieldsMFT", "multiplicity vs pT vs eta", {HistType::kTH3F, {axisMultiplicity, axisPt, axisEtaMft}});
+    registry.add("Data/TpcMft/HadronHadron/SameEvent/hYieldsMFT", "multiplicity vs pT vs eta", {HistType::kTH3D, {axisMultiplicity, axisPt, axisEtaMft}});
 
     // DATA : histograms for TPC-MFT h-h event mixing for events QA
-    registry.add("Data/TpcMft/HadronHadron/MixedEvent/hEventCountMixing", "bin", {HistType::kTH1F, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
+    registry.add("Data/TpcMft/HadronHadron/MixedEvent/hEventCountMixing", "bin", {HistType::kTH1D, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
 
     //  =========================
     //      DATA : histograms for TPC-MFT HF-h case FOR 2PRONG
     //  =========================
 
     // DATA : trigger particles (candidates) histograms for TPC-MFT HF-h same event
-    registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hEventCountSame", "bin", {HistType::kTH1F, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hEventCountSame", "bin", {HistType::kTH1D, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hEtaPhiCandidate", "multiplicity vs eta vs phi in TPC", {HistType::kTH3F, {axisMultiplicity, axisEtaMft, axisPhi}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hEtaCandidate", "etaTPC", {HistType::kTH1F, {axisEtaTpc}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hPhiCandidate", "phiTPC", {HistType::kTH1F, {axisPhi}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hYieldsCandidate", "multiplicity vs pT vs eta", {HistType::kTH3F, {axisMultiplicity, axisPt, axisEtaTpc}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hEtaCandidate", "etaTPC", {HistType::kTH1D, {axisEtaTpc}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hPhiCandidate", "phiTPC", {HistType::kTH1D, {axisPhi}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hYieldsCandidate", "multiplicity vs pT vs eta", {HistType::kTH3D, {axisMultiplicity, axisPt, axisEtaTpc}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hMultiplicityCandidate", "multiplicity;multiplicity;entries", {HistType::kTH1F, {axisMultiplicity}});
 
     // DATA : trigger particles (candidates) histograms for TPC-MFT HF-h same event
     registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hPtCandidate", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hPtProng0", "2-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hPtProng1", "2-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hMassVsPt", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisMass, axisPt}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {axisMass}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hMassVsPtVsMult", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2}); p_{T}; multiplicity", {HistType::kTH3F, {axisMass, axisPt, axisMultiplicity}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hEtaCandVsPt", "2-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {axisEtaTpc, axisPt}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hMassVsPt", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisMass, axisPt}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {axisMass}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hMassVsPtVsMult", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2}); p_{T}; multiplicity", {HistType::kTH3D, {axisMass, axisPt, axisMultiplicity}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hEtaCandVsPt", "2-prong candidates;candidate #it{#eta};entries", {HistType::kTH2D, {axisEtaTpc, axisPt}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/2Prong/hSelectionStatus", "2-prong candidates;selection status;entries", {HistType::kTH2F, {{5, -0.5, 4.5}, axisPt}});
 
     // DATA : associated particles (MFT tracks) histograms for TPC-MFT h-h same event
-    registry.add("Data/TpcMft/HfHadron/SameEvent/hEtaPhiMFT", "multiplicity vs eta vs phi in MFT", {HistType::kTH3F, {axisMultiplicity, axisEtaMft, axisPhi}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/hEtaMFT", "etaMFT", {HistType::kTH1F, {axisEtaMft}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/hPhiMFT", "phiMFT", {HistType::kTH1F, {axisPhi}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hEtaPhiMFT", "multiplicity vs eta vs phi in MFT", {HistType::kTH3D, {axisMultiplicity, axisEtaMft, axisPhi}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hEtaMFT", "etaMFT", {HistType::kTH1D, {axisEtaMft}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hPhiMFT", "phiMFT", {HistType::kTH1D, {axisPhi}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/hPtMFT", "pT", {HistType::kTH1F, {axisPt}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/hYieldsMFT", "multiplicity vs pT vs eta", {HistType::kTH3F, {axisMultiplicity, axisPt, axisEtaMft}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hYieldsMFT", "multiplicity vs pT vs eta", {HistType::kTH3D, {axisMultiplicity, axisPt, axisEtaMft}});
 
     // DATA : histograms for TPC-MFT h-h event mixing for events QA
-    registry.add("Data/TpcMft/HfHadron/MixedEvent/hEventCountMixing", "bin", {HistType::kTH1F, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
+    registry.add("Data/TpcMft/HfHadron/MixedEvent/hEventCountMixing", "bin", {HistType::kTH1D, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
 
     //  =========================
     //      DATA : histograms for TPC-MFT HF-h case FOR 3PRONG
     //  =========================
 
-    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hEventCountSame", "bin", {HistType::kTH1F, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hYieldsCandidate", "multiplicity vs pT vs eta", {HistType::kTH3F, {axisMultiplicity, axisPt, axisEtaTpc}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hEventCountSame", "bin", {HistType::kTH1D, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hYieldsCandidate", "multiplicity vs pT vs eta", {HistType::kTH3D, {axisMultiplicity, axisPt, axisEtaTpc}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hMultiplicityCandidate", "multiplicity;multiplicity;entries", {HistType::kTH1F, {axisMultiplicity}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hEtaPhiCandidate", "multiplicity vs eta vs phi in TPC", {HistType::kTH3F, {axisMultiplicity, axisEtaTpc, axisPhi}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hEtaPhiCandidate", "multiplicity vs eta vs phi in TPC", {HistType::kTH3D, {axisMultiplicity, axisEtaTpc, axisPhi}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hMassVsPt", "3-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisMass, axisPt}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hMass", "3-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {axisMass}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hMassVsPtVsMult", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}; multiplicity", {HistType::kTH3F, {axisMass, axisPt, axisMultiplicity}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hMass", "3-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {axisMass}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hMassVsPtVsMult", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}; multiplicity", {HistType::kTH3D, {axisMass, axisPt, axisMultiplicity}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hPtProng0", "3-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hPtProng1", "3-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hPtProng2", "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hEta", "3-prong candidates;#it{#eta};entries", {HistType::kTH1F, {axisEtaTpc}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hPhi", "3-prong candidates;#it{#Phi};entries", {HistType::kTH1F, {axisPhi}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hEtaVsPt", "3-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {axisEtaTpc, axisPt}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hPhiVsPt", "3-prong candidates;candidate #it{#Phi};entries", {HistType::kTH2F, {axisPhi, axisPt}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hEta", "3-prong candidates;#it{#eta};entries", {HistType::kTH1D, {axisEtaTpc}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hPhi", "3-prong candidates;#it{#Phi};entries", {HistType::kTH1D, {axisPhi}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hEtaVsPt", "3-prong candidates;candidate #it{#eta};entries", {HistType::kTH2D, {axisEtaTpc, axisPt}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hPhiVsPt", "3-prong candidates;candidate #it{#Phi};entries", {HistType::kTH2D, {axisPhi, axisPt}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hSelectionStatus", "3-prong candidates;selection status;entries", {HistType::kTH2F, {{5, -0.5, 4.5}, axisPt}});
 
     //  =========================
@@ -449,12 +449,12 @@ struct HfTaskFlow {
     //  =========================
 
     // All MFT tracks
-    registry.add("Data/TpcMft/kCFStepAll/hEta", "eta", {HistType::kTH1F, {axisEtaMft}});
-    registry.add("Data/TpcMft/kCFStepAll/hPhi", "phi", {HistType::kTH1F, {axisPhi}});
+    registry.add("Data/TpcMft/kCFStepAll/hEta", "eta", {HistType::kTH1D, {axisEtaMft}});
+    registry.add("Data/TpcMft/kCFStepAll/hPhi", "phi", {HistType::kTH1D, {axisPhi}});
 
     // Only non-ambiguous MFT tracks
-    registry.add("Data/TpcMft/kCFStepTracked/hEta", "eta", {HistType::kTH1F, {axisEtaMft}});
-    registry.add("Data/TpcMft/kCFStepTracked/hPhi", "phi", {HistType::kTH1F, {axisPhi}});
+    registry.add("Data/TpcMft/kCFStepTracked/hEta", "eta", {HistType::kTH1D, {axisEtaMft}});
+    registry.add("Data/TpcMft/kCFStepTracked/hPhi", "phi", {HistType::kTH1D, {axisPhi}});
 
     //  =========================
     //      MC : histograms for TPC-TPC h-h case
