@@ -117,9 +117,7 @@ struct JflucWeightsLoader {
         delete pfeff;
         pfeff = 0;
         LOGF(fatal, "Efficiency correction weights file not found: %s", cfgPathEffWeights.value.substr(8).c_str());
-      }
-      //
-      if (!(pheff = pfeff->Get<THnF>("ccdb_object"))) {
+      } else if (!(pheff = pfeff->Get<THnF>("ccdb_object"))) {
         LOGF(warning, "Efficiency correction histogram not found.");
       } else {
         LOGF(info, "Loaded efficiency correction histogram locally.");
