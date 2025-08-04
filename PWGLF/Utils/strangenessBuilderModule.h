@@ -1338,6 +1338,12 @@ class BuilderModule
     for (size_t iv0 = 0; iv0 < v0List.size(); iv0++) {
       const auto& v0 = v0List[sorted_v0[iv0]];
 
+      if (!v0BuilderOpts.generatePhotonCandidates.value && v0.v0Type > 1) {
+        // skip photons if not requested
+        products.v0dataLink(-1, -1);
+        continue;
+      }
+
       if (!baseOpts.mEnabledTables[kV0CoresBase] && v0Map[iv0] == -2) {
         // this v0 hasn't been used by cascades and we're not generating V0s, so skip it
         products.v0dataLink(-1, -1);
