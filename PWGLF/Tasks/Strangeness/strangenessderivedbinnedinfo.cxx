@@ -267,7 +267,7 @@ struct strangenessderivedbinnedinfo {
 
   // Function to decode the sqrt scaling
   // Author: Marian Ivanov
-  float decodeSqrtScaling(int code, float sigma0, float sigma1, int clampMin, int clampMax)
+  float decodeSqrtScaling(int code, float sigma0, float sigma1)
   {
     float code_f = static_cast<float>(code);
     return (sigma0 / sigma1) * std::sinh(sigma0 * code_f);
@@ -802,7 +802,7 @@ struct strangenessderivedbinnedinfo {
           continue; // skip V0s that are not standard
 
         float pT = encodingOpts.useSqrtScalingForEncodingPt ? codeSqrtScaling(v0.pt(), encodingOpts.sqrtScalingParameters->get("sigma0"), encodingOpts.sqrtScalingParameters->get("sigma1"), encodingOpts.sqrtScalingParameters->get("clampMin"), encodingOpts.sqrtScalingParameters->get("clampMax")) : v0.pt();
-        float decayRadius = encodingOpts.useSqrtEncodingForRadius ? decayRadius = std::sqrt(v0.v0radius()) : v0.v0radius();
+        float decayRadius = encodingOpts.useSqrtEncodingForRadius ? std::sqrt(v0.v0radius()) : v0.v0radius();
 
         if (analyseK0Short && isV0Selected(v0, collision, v0.yK0Short())) {
           histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), v0.mK0Short(), pT, v0.phi(), v0.eta(), v0.qtarm(), v0.alpha(), decayRadius, centrality, occupancy);
@@ -824,7 +824,7 @@ struct strangenessderivedbinnedinfo {
           continue; // remove acceptance that's badly reproduced by MC / superfluous in future
 
         float pT = encodingOpts.useSqrtScalingForEncodingPt ? codeSqrtScaling(cascade.pt(), encodingOpts.sqrtScalingParameters->get("sigma0"), encodingOpts.sqrtScalingParameters->get("sigma1"), encodingOpts.sqrtScalingParameters->get("clampMin"), encodingOpts.sqrtScalingParameters->get("clampMax")) : cascade.pt();
-        float decayRadius = encodingOpts.useSqrtEncodingForRadius ? decayRadius = std::sqrt(cascade.cascradius()) : cascade.cascradius();
+        float decayRadius = encodingOpts.useSqrtEncodingForRadius ? std::sqrt(cascade.cascradius()) : cascade.cascradius();
 
         if (analyseXi && isCascadeSelected(cascade, collision, cascade.yXi())) {
           histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), cascade.m(1), pT, cascade.phi(), cascade.eta(), 0., 0., decayRadius, centrality, occupancy);
