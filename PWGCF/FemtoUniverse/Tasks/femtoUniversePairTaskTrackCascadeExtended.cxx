@@ -54,7 +54,6 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   ConfigurableAxis confChildTempFitVarBins{"confChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
   Configurable<float> confCascInvMassLowLimit{"confCascInvMassLowLimit", 1.315, "Lower limit of the Casc invariant mass"};
   Configurable<float> confCascInvMassUpLimit{"confCascInvMassUpLimit", 1.325, "Upper limit of the Casc invariant mass"};
-  Configurable<float> confCascTranRad{"confCascTranRad", 0.5, "Cascade transverse radius"};
 
   Configurable<float> confNSigmaTPCPion{"confNSigmaTPCPion", 4, "NSigmaTPCPion"};
   Configurable<float> confNSigmaTPCProton{"confNSigmaTPCProton", 4, "NSigmaTPCProton"};
@@ -299,29 +298,17 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     }
   }
 
-  void processCascades([[maybe_unused]] const FilteredFDCollision& col, const FemtoFullParticles& parts, const aod::FDCascParticles& fdcascs)
+  void processCascadeQA([[maybe_unused]] const FilteredFDCollision& col, const FemtoFullParticles& parts, const aod::FDCascParticles& fdcascs)
   {
-    // auto groupCascs = cascs->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    //  const int multCol = col.multNtr();
-
     for (const auto& casc : fdcascs) {
       const auto& part = casc.fdParticle_as<FemtoFullParticles>();
       rXiQA.fill(HIST("hMassXi"), part.mLambda());
-
-      // if (!invMCascade(casc.mLambda(), casc.mAntiLambda()))
-      //   continue;
 
       const auto& posChild = parts.iteratorAt(part.globalIndex() - 3 - parts.begin().globalIndex());
       const auto& negChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
       const auto& bachelor = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
 
-      // if (casc.transRadius() < confCascTranRad)
-      //   continue;
-      // std::cout<<std::endl;
-      // std::cout<<"TYPE:"<<std::endl;
-      // std::cout<<casc.partType()<<std::endl;
       //  nSigma selection for daughter and bachelor tracks
-
       if (part.sign() < 0) {
         if (std::abs(posChild.tpcNSigmaPr()) > confNSigmaTPCProton) {
           continue;
@@ -356,13 +343,9 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       rXiQA.fill(HIST("hDcaBachtoPV"), casc.dcabachtopv());
       rXiQA.fill(HIST("hDcaV0toPV"), casc.dcav0topv());
       rXiQA.fill(HIST("hInvMpT"), part.pt(), part.mLambda());
-
-      posChildHistos.fillQA<false, true>(posChild);
-      negChildHistos.fillQA<false, true>(negChild);
-      bachHistos.fillQABase<false, true>(bachelor, HIST("hBachelor"));
     }
   }
-  PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processCascades, "Enable processing cascades", false);
+  PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processCascadeQA, "Enable processing cascades", false);
 
   template <class T>
   using hasSigma = decltype(std::declval<T&>().tpcNSigmaStorePr());
@@ -382,11 +365,6 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     for (const auto& part : groupPartsTwo) {
       if (!invMCascade(part.mLambda(), part.mAntiLambda(), confCascType1)) /// mLambda stores Xi mass, mAntiLambda stores Omega mass
         continue;
-
-      if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value)
-        cascQAHistos.fillQA<false, true>(part);
-      else
-        cascQAHistos.fillQA<false, false>(part);
 
       const auto& posChild = parts.iteratorAt(part.globalIndex() - 3 - parts.begin().globalIndex());
       const auto& negChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
@@ -408,6 +386,11 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
         if ((!confCheckTOFBachelorOnly && ((posChild.pidCut() & (8u << CascChildTable[confCascType1][0])) == 0 || (negChild.pidCut() & (8u << CascChildTable[confCascType1][1])) == 0)) || (bachelor.pidCut() & (8u << CascChildTable[confCascType1][2])) == 0)
           continue;
+
+        if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value)
+          cascQAHistos.fillQA<false, true>(part);
+        else
+          cascQAHistos.fillQA<false, false>(part);
 
         posChildHistos.fillQA<false, false>(posChild);
         negChildHistos.fillQA<false, false>(negChild);

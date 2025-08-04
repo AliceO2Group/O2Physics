@@ -55,6 +55,7 @@ DECLARE_SOA_COLUMN(ItsClusterSizesMoth, itsClusterSizesMoth, uint32_t); //! ITS 
 DECLARE_SOA_COLUMN(ItsClusterSizesDaug, itsClusterSizesDaug, uint32_t); //! ITS cluster size of the daughter track
 DECLARE_SOA_COLUMN(NSigmaTPCDaug, nSigmaTPCDaug, float);                //! Number of tpc sigmas of the daughter track
 DECLARE_SOA_COLUMN(NSigmaITSDaug, nSigmaITSDaug, float);                //! Number of ITS sigmas of the daughter track
+DECLARE_SOA_COLUMN(NSigmaTOFDaug, nSigmaTOFDaug, float);                //! Number of TOF sigmas of the daughter track
 
 DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                   //! bool: true for hyperhelium4signal
 DECLARE_SOA_COLUMN(IsSignalReco, isSignalReco, bool);           //! bool: true if the signal is reconstructed
@@ -94,7 +95,7 @@ DECLARE_SOA_TABLE(HypKinkCand, "AOD", "HYPKINKCANDS",
                   hyperkink::PxDaugSV, hyperkink::PyDaugSV, hyperkink::PzDaugSV,
                   hyperkink::DcaMothPv, hyperkink::DcaDaugPv, hyperkink::DcaKinkTopo,
                   hyperkink::ItsChi2Moth, hyperkink::ItsClusterSizesMoth, hyperkink::ItsClusterSizesDaug,
-                  hyperkink::NSigmaTPCDaug, hyperkink::NSigmaITSDaug);
+                  hyperkink::NSigmaTPCDaug, hyperkink::NSigmaITSDaug, hyperkink::NSigmaTOFDaug);
 
 DECLARE_SOA_TABLE(MCHypKinkCand, "AOD", "MCHYPKINKCANDS",
                   o2::soa::Index<>,
@@ -109,7 +110,7 @@ DECLARE_SOA_TABLE(MCHypKinkCand, "AOD", "MCHYPKINKCANDS",
                   hyperkink::PxDaugSV, hyperkink::PyDaugSV, hyperkink::PzDaugSV,
                   hyperkink::DcaMothPv, hyperkink::DcaDaugPv, hyperkink::DcaKinkTopo,
                   hyperkink::ItsChi2Moth, hyperkink::ItsClusterSizesMoth, hyperkink::ItsClusterSizesDaug,
-                  hyperkink::NSigmaTPCDaug, hyperkink::NSigmaITSDaug,
+                  hyperkink::NSigmaTPCDaug, hyperkink::NSigmaITSDaug, hyperkink::NSigmaTOFDaug,
                   hyperkink::IsSignal, hyperkink::IsSignalReco, hyperkink::IsCollReco, hyperkink::IsSurvEvSelection,
                   hyperkink::TrueXSV, hyperkink::TrueYSV, hyperkink::TrueZSV,
                   hyperkink::TruePxMothPV, hyperkink::TruePyMothPV, hyperkink::TruePzMothPV,
