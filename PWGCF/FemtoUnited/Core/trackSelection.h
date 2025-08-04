@@ -34,7 +34,7 @@ namespace trackselection
 struct ConfTrackFilters : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("TrackFilters");
   // kinematic cuts for filtering tracks
-  o2::framework::Configurable<float> ptMin{"ptMin", 0.15f, "Minimum pT"};
+  o2::framework::Configurable<float> ptMin{"ptMin", 0.2f, "Minimum pT"};
   o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT"};
   o2::framework::Configurable<float> etaMin{"etaMin", -0.9f, "Minimum eta"};
   o2::framework::Configurable<float> etaMax{"etaMax", 0.9f, "Maximum eta"};
@@ -51,8 +51,8 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> tpcSharedClusterFractionMax{"tpcSharedClusterFractionMax", {1.f}, "Maximum fraction of shared clusters in TPC"};
   o2::framework::Configurable<std::vector<float>> itsClustersMin{"itsClustersMin", {5.f}, "Minimum number of clusters in ITS"};
   o2::framework::Configurable<std::vector<float>> itsIbClustersMin{"itsIbClustersMin", {3.f}, "Minimum number of clusters in inner barrel (max 3) of ITS"};
-  o2::framework::Configurable<std::vector<std::string>> dcaxyMax{"dcaxyMax", {"0.004+(0.013/x)"}, "Maximum |dca_xy| as a function of pT"};
-  o2::framework::Configurable<std::vector<std::string>> dcazMax{"dcazMax", {"0.004+(0.013/x))"}, "Maximum |dca_z| as a function of pT"};
+  o2::framework::Configurable<std::vector<std::string>> dcaxyMax{"dcaxyMax", {"0.004 + 0.013*TMath::Power(x, -1)"}, "Maximum |dca_xy| as a function of pT. Has to be a valid TForumal, where x=pt"};
+  o2::framework::Configurable<std::vector<std::string>> dcazMax{"dcazMax", {"0.004 + 0.013*TMath::Power(x, -1)"}, "Maximum |dca_z| as a function of pT. Has to be a valid TForumal, where x=pt"};
 
   o2::framework::Configurable<float> minMomentumForTof{"minMomentumForTof", 2.0f, "Minimum momentum to required TOF PID (all species)"};
 
@@ -101,7 +101,7 @@ struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> pdgCode{"pdgCode", 2212, "Track PDG code"};
   o2::framework::Configurable<int> sign{"sign", 1, "Sign of the track (1 for positive tracks and -1 for negative tracks)"};
   // filters for kinematics
-  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT (GeV/c)"};
+  o2::framework::Configurable<float> ptMin{"ptMin", 0.2f, "Minimum pT (GeV/c)"};
   o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT (GeV/c)"};
   o2::framework::Configurable<float> etaMin{"etaMin", -0.9f, "Minimum eta"};
   o2::framework::Configurable<float> etaMax{"etaMax", 0.9f, "Maximum eta"};

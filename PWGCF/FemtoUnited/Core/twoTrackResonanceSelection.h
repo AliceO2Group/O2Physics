@@ -39,9 +39,9 @@ namespace twotrackresonanceselection
 
 struct ConfTwoTrackResonanceDaughterFilters : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("TwoTrackResonanceDaughterFilter");
-  o2::framework::Configurable<float> posDauPtMin{"posDauPtMin", 0.f, "Minimum pT for positive Daughter"};
+  o2::framework::Configurable<float> posDauPtMin{"posDauPtMin", 0.2f, "Minimum pT for positive Daughter"};
   o2::framework::Configurable<float> posDauPtMax{"posDauPtMax", 6.f, "Maximum pT for positive Daughter"};
-  o2::framework::Configurable<float> negDauPtMin{"negDauPtMin", 0.f, "Minimum pT for negative Daughter"};
+  o2::framework::Configurable<float> negDauPtMin{"negDauPtMin", 0.2f, "Minimum pT for negative Daughter"};
   o2::framework::Configurable<float> negDauPtMax{"negDauPtMax", 6.f, "Maximum pT for negative Daughter"};
   o2::framework::Configurable<float> posDauEtaMin{"posDauEtaMin", -0.9f, "Minimum eta for positive Daughter"};
   o2::framework::Configurable<float> posDauEtaMax{"posDauEtaMax", 0.9f, "Maximum eta for positive Daughter"};
@@ -56,7 +56,7 @@ struct ConfTwoTrackResonanceDaughterFilters : o2::framework::ConfigurableGroup {
 template <const char* Prefix>
 struct ConfTwoTrackResonanceFilters : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
-  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};
+  o2::framework::Configurable<float> ptMin{"ptMin", 0.2f, "Minimum pT"};
   o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT"};
   o2::framework::Configurable<float> etaMin{"etaMin", -0.9f, "Minimum eta"};
   o2::framework::Configurable<float> etaMax{"etaMax", 0.9f, "Maximum eta"};
@@ -65,26 +65,27 @@ struct ConfTwoTrackResonanceFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> massMin{"massMin", 0.f, "Minimum invariant mass for Resonance"};
   o2::framework::Configurable<float> massMax{"massMax", 6.f, "Maximum invariant mass for Resonance"};
 };
-constexpr const char PrefixRhoFilters[] = "RhoFilters1";
+constexpr const char PrefixRhoFilters[] = "Rho0Filters1";
 constexpr const char PrefixPhiFilters[] = "PhiFilters1";
-constexpr const char PrefixKstarFilters[] = "KstarFilters1";
+constexpr const char PrefixKstarFilters[] = "Kstar0Filters1";
 using ConfRhoFilters = ConfTwoTrackResonanceFilters<PrefixRhoFilters>;
 using ConfPhiFilters = ConfTwoTrackResonanceFilters<PrefixPhiFilters>;
 using ConfKstarFilters = ConfTwoTrackResonanceFilters<PrefixKstarFilters>;
 
-#define TWOTRACKRESONANCE_DEFAULT_BITS                                                                                                                        \
-  o2::framework::Configurable<std::vector<float>> dauEtaMax{"dauEtaMax", {0.8f}, "Maximum |eta| "};                                                           \
-  o2::framework::Configurable<std::vector<float>> dauTpcClustersMin{"dauTpcClustersMin", {90.f}, "Minimum number of clusters in TPC"};                        \
-  o2::framework::Configurable<std::vector<float>> posDauPtMin{"posDauPtMin", {0.f}, "Minimum pT of positive daughter "};                                      \
-  o2::framework::Configurable<std::vector<float>> posDauPtMax{"posDauPtMax", {6.f}, "Maximum pT of the positive daughter"};                                   \
-  o2::framework::Configurable<std::vector<std::string>> posDauDcaxyMax{"posDauDcaxyMax", {"0.0105+(0.035/x^(1.1))"}, "Maximum |dca_xy| as a function of pT"}; \
-  o2::framework::Configurable<std::vector<std::string>> posDauDcazMax{"posDauDcazMax", {"0.0105+(0.035/x^(1.1))"}, "Maximum |dca_z| as a function of pT"};    \
-  o2::framework::Configurable<std::vector<float>> negDauPtMin{"negDauPtMin", {0.f}, "Minimum pT of negative daughter "};                                      \
-  o2::framework::Configurable<std::vector<float>> negDauPtMax{"negDauPtMax", {6.f}, "Maximum pT of the negative daughter"};                                   \
-  o2::framework::Configurable<std::vector<std::string>> negDauDcaxyMax{"negDauDcaxyMax", {"0.0105+(0.035/x^(1.1))"}, "Maximum |dca_xy| as a function of pT"}; \
-  o2::framework::Configurable<std::vector<std::string>> negDauDcazMax{"negDauDcazMax", {"0.0105+(0.035/x^(1.1))"}, "Maximum |dca_z| as a function of pT"};    \
-  o2::framework::Configurable<float> posDauMinMomentumForTof{"posDauMinMomentumForTof", 0.4f, "Minimum momentum to required TOF PID (positive daughers)"};    \
-  o2::framework::Configurable<float> negDauMinMomentumForTof{"negDauMinMomentumForTof", 0.4f, "Minimum momentum to required TOF PID (negative daughers)"};
+#define TWOTRACKRESONANCE_DEFAULT_BITS(posThres, negThres)                                                                                                               \
+  o2::framework::Configurable<std::vector<float>>                                                                                                                        \
+    dauEtaMax{"dauEtaMax", {0.8f}, "Maximum |eta| "};                                                                                                                    \
+  o2::framework::Configurable<std::vector<float>> dauTpcClustersMin{"dauTpcClustersMin", {90.f}, "Minimum number of clusters in TPC"};                                   \
+  o2::framework::Configurable<std::vector<float>> posDauPtMin{"posDauPtMin", {0.2f}, "Minimum pT of positive daughter "};                                                \
+  o2::framework::Configurable<std::vector<float>> posDauPtMax{"posDauPtMax", {6.f}, "Maximum pT of the positive daughter"};                                              \
+  o2::framework::Configurable<std::vector<std::string>> posDauDcaxyMax{"posDauDcaxyMax", {"0.004 + 0.013*TMath::Power(x, -1)"}, "Maximum |dca_xy| as a function of pT"}; \
+  o2::framework::Configurable<std::vector<std::string>> posDauDcazMax{"posDauDcazMax", {"0.004 + 0.013*TMath::Power(x, -1)"}, "Maximum |dca_z| as a function of pT"};    \
+  o2::framework::Configurable<std::vector<float>> negDauPtMin{"negDauPtMin", {0.2f}, "Minimum pT of negative daughter "};                                                \
+  o2::framework::Configurable<std::vector<float>> negDauPtMax{"negDauPtMax", {6.f}, "Maximum pT of the negative daughter"};                                              \
+  o2::framework::Configurable<std::vector<std::string>> negDauDcaxyMax{"negDauDcaxyMax", {"0.004 + 0.013*TMath::Power(x, -1)"}, "Maximum |dca_xy| as a function of pT"}; \
+  o2::framework::Configurable<std::vector<std::string>> negDauDcazMax{"negDauDcazMax", {"0.004 + 0.013*TMath::Power(x, -1)"}, "Maximum |dca_z| as a function of pT"};    \
+  o2::framework::Configurable<float> posDauMinMomentumForTof{"posDauMinMomentumForTof", posThres, "Minimum momentum to required TOF PID (positive daughers)"};           \
+  o2::framework::Configurable<float> negDauMinMomentumForTof{"negDauMinMomentumForTof", negThres, "Minimum momentum to required TOF PID (negative daughers)"};
 
 #define TWOTRACKRESONANCE_PIONPID_BITS                                                                                                                      \
   o2::framework::Configurable<std::vector<float>> posDauItsPion{"posDauItsPion", {}, "Maximum |nsimga_Pion| ITS for positive daughter tracks"};             \
@@ -108,19 +109,19 @@ using ConfKstarFilters = ConfTwoTrackResonanceFilters<PrefixKstarFilters>;
 
 struct ConfPhiBits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("PhiBits");
-  TWOTRACKRESONANCE_DEFAULT_BITS
+  TWOTRACKRESONANCE_DEFAULT_BITS(0.4, 0.4)
   TWOTRACKRESONANCE_KAONPID_BITS
 };
 
 struct ConfRho0Bits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("Rho0Bits");
-  TWOTRACKRESONANCE_DEFAULT_BITS
+  TWOTRACKRESONANCE_DEFAULT_BITS(0.5, 0.5)
   TWOTRACKRESONANCE_PIONPID_BITS
 };
 
 struct ConfKstar0Bits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("Kstar0Bits");
-  TWOTRACKRESONANCE_DEFAULT_BITS
+  TWOTRACKRESONANCE_DEFAULT_BITS(0.5, 0.4)
   TWOTRACKRESONANCE_PIONPID_BITS
   TWOTRACKRESONANCE_KAONPID_BITS
 };

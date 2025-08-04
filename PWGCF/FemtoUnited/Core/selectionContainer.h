@@ -100,7 +100,13 @@ class SelectionContainer
   /// \param limitType Type of limit.
   /// \param skipMostPermissiveBit Whether to skip the most permissive bit in the bitmask.
   /// \param IsMinimalCut Whether this selection should be treated as a minimal required cut.
-  SelectionContainer(std::string const& baseName, T lowerLimit, T upperLimit, std::vector<std::string> const& functions, limits::LimitType limitType, bool skipMostPermissiveBit, bool IsMinimalCut)
+  SelectionContainer(std::string const& baseName,
+                     T lowerLimit,
+                     T upperLimit,
+                     std::vector<std::string> const& functions,
+                     limits::LimitType limitType,
+                     bool skipMostPermissiveBit,
+                     bool IsMinimalCut)
     : mLimitType(limitType),
       mSkipMostPermissiveBit(skipMostPermissiveBit),
       mIsMinimalCut(IsMinimalCut)
@@ -109,7 +115,9 @@ class SelectionContainer
       LOG(fatal) << "Too many selections for single a observable. Limit is " << sizeof(BitmaskType) * CHAR_BIT;
     }
     for (std::size_t i = 0; i < functions.size(); i++) {
-      mSelectionFunctions.emplace_back((baseName + std::to_string(i)).c_str(), functions.at(i).c_str(), lowerLimit, upperLimit);
+      const std::string& func = functions.at(i);
+      const std::string& safeFunc = func.empty() ? "0.1" : func; // in case string is empty, set to constant value of 0.1
+      mSelectionFunctions.emplace_back((baseName + std::to_string(i)).c_str(), safeFunc.c_str(), lowerLimit, upperLimit);
     }
     // functions for selection are not necessarily ordered correctly
     // use value at midpoint to order them
@@ -300,6 +308,10 @@ class SelectionContainer
   /// \brief Get a copy of all selection values.
   /// \return Vector of selection values.
   std::vector<T> getSelectionValues() const { return mSelectionValues; }
+
+  /// \brief Get a copy of all selection values.
+  /// \return Vector of selection values.
+  std::vector<TF1> getSelectionFunction() const { return mSelectionFunctions; }
 
   /// \brief Check if this container is marked as minimal cut.
   /// \return True if minimal cut, false otherwise.

@@ -79,7 +79,14 @@ class BaseSelection
   /// \param limitType Type of limit.
   /// \param skipMostPermissiveBit Whether to skip the loosest threshold in the bitmask.
   /// \param isMinimalCut Whether this cut is mandatory or optional.
-  void addSelection(std::string const& baseName, T lowerLimit, T upperLimit, std::vector<std::string> const& selectionValues, int observableIndex, limits::LimitType limitType, bool skipMostPermissiveBit, bool isMinimalCut)
+  void addSelection(std::string const& baseName,
+                    T lowerLimit,
+                    T upperLimit,
+                    std::vector<std::string> const& selectionValues,
+                    int observableIndex,
+                    limits::LimitType limitType,
+                    bool skipMostPermissiveBit,
+                    bool isMinimalCut)
   {
     if (static_cast<size_t>(observableIndex) >= NumObservables) {
       LOG(fatal) << "Observable is not valid. Observable (index) has to be smaller than " << NumObservables;
@@ -183,7 +190,7 @@ class BaseSelection
     LOG(info) << "**************************************** FemtoProducer ****************************************";
     LOG(info) << objectName << "\n";
 
-    size_t globalBitIndex = 0; // Track absolute bit position across all containers
+    size_t globalBitIndex = 0; // Tracks bit position across all containers
 
     for (size_t idx = mSelectionContainers.size(); idx-- > 0;) {
       const auto& container = mSelectionContainers[idx];
@@ -191,44 +198,43 @@ class BaseSelection
         continue;
       }
 
-      std::string name = "[Unknown]";
-      auto key = static_cast<MapType>(idx);
-      if (observableNames.count(key)) {
-        name = observableNames.at(key);
-      }
+      const MapType key = static_cast<MapType>(idx);
+      const std::string& name = observableNames.count(key) ? observableNames.at(key) : "[Unknown]";
 
       LOG(info) << "Observable: " << name << " (index " << idx << ")";
       LOG(info) << "  Limit type           : " << container.getLimitTypeAsString();
-      LOG(info) << "  Values (with bit indices and bitmask):";
+      LOG(info) << "  Minimal cut          : " << (container.isMinimalCut() ? "yes" : "no");
+      LOG(info) << "  Skip most permissive : " << (container.skipMostPermissiveBit() ? "yes" : "no");
+      LOG(info) << "  Bitmask shift        : " << container.getShift();
+      LOG(info) << "  Selections           : ";
 
       const auto& values = container.getSelectionValues();
-      bool skipMostPermissive = container.skipMostPermissiveBit();
+      const auto& functions = container.getSelectionFunction();
+      const bool useFunctions = !functions.empty();
+      const size_t numSelections = useFunctions ? functions.size() : values.size();
+      const bool skipMostPermissive = container.skipMostPermissiveBit();
 
-      int valWidth = 15;
-      int bitWidth = 20;
-      int maskWidth = 12;
+      constexpr int valWidth = 20;
+      constexpr int bitWidth = 30;
 
-      for (size_t j = 0; j < values.size(); ++j) {
+      for (size_t j = 0; j < numSelections; ++j) {
         std::stringstream line;
-        line << "    "
-             << std::left << std::setw(valWidth) << values[j];
 
+        // Selection string (either value or function)
+        const std::string& sel = useFunctions ? std::string(functions[j].GetFormula()->GetExpFormula().Data()) : std::to_string(values[j]);
+        line << "    " << std::left << std::setw(valWidth) << sel;
+
+        // Bitmask
         if (skipMostPermissive && j == 0) {
-          line << std::setw(bitWidth) << "[no bit (skipped)]"
-               << std::setw(maskWidth) << "";
+          line << std::setw(bitWidth) << "-> loosest minimal selection, no bit saved";
         } else {
-          uint64_t bitmask = uint64_t{1} << globalBitIndex;
-          line << std::setw(bitWidth) << ("[bit " + std::to_string(globalBitIndex) + "]")
-               << " bitmask: " << bitmask;
-          ++globalBitIndex;
+          const uint64_t bitmask = uint64_t{1} << globalBitIndex++;
+          line << std::setw(bitWidth) << ("-> bitmask: " + std::to_string(bitmask));
         }
 
         LOG(info) << line.str();
       }
 
-      LOG(info) << "  Minimal cut          : " << (container.isMinimalCut() ? "yes" : "no");
-      LOG(info) << "  Skip most permissive : " << (skipMostPermissive ? "yes" : "no");
-      LOG(info) << "  Bitmask shift        : " << container.getShift();
       LOG(info) << ""; // blank line between observables
     }
 

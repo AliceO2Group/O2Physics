@@ -33,7 +33,7 @@ using V0MaskType = uint16_t;
 using V0Type = uint8_t;
 
 // datatypes for two track resonances
-using TwoTrackResonanceMaskType = uint64_t;
+using TwoTrackResonanceMaskType = uint32_t;
 // two track resonance types
 using TwoTrackResonanceType = uint8_t;
 
