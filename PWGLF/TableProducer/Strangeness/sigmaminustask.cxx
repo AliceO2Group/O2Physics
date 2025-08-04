@@ -55,22 +55,29 @@ struct sigmaminustask {
   {
     // Axes
     const AxisSpec ptAxis{100, -10, 10, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec nSigmaPiAxis{1000, -1000, 1000, "n#sigma_{#pi}"};
-    const AxisSpec nSigmaPrAxis{1000, -1000, 1000, "n#sigma_{p}"};
+    const AxisSpec nSigmaPiAxis{60, -30, 30, "n#sigma_{#pi}"};
+    const AxisSpec nSigmaPrAxis{60, -30, 30, "n#sigma_{p}"};
     const AxisSpec sigmaMassAxis{100, 1.1, 1.4, "m (GeV/#it{c}^{2})"};
     const AxisSpec xiMassAxis{100, 1.2, 1.6, "m_{#Xi} (GeV/#it{c}^{2})"};
     const AxisSpec pdgAxis{10001, -5000, 5000, "PDG code"};
     const AxisSpec vertexZAxis{100, -15., 15., "vrtx_{Z} [cm]"};
+    const AxisSpec dcaMothAxis{100, 0, 1, "DCA [cm]"};
+    const AxisSpec dcaDaugAxis{200, 0, 20, "DCA [cm]"};
 
     const AxisSpec ptResolutionAxis{100, -0.5, 0.5, "#it{p}_{T}^{rec} - #it{p}_{T}^{gen} (GeV/#it{c})"};
     const AxisSpec massResolutionAxis{100, -0.1, 0.1, "m_{rec} - m_{gen} (GeV/#it{c}^{2})"};
+
     const AxisSpec boolAxis{2, -0.5, 1.5, "Boolean value (0=false, 1=true)"};
+    const AxisSpec filtersAxis{10, -0.5, 9.5, "Filter index"};
+
     // Event selection
     rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
     // Sigma-minus reconstruction
     rSigmaMinus.add("h2MassSigmaMinusPt", "h2MassSigmaMinusPt", {HistType::kTH2F, {ptAxis, sigmaMassAxis}});
     rSigmaMinus.add("h2SigmaMassVsXiMass", "h2SigmaMassVsXiMass", {HistType::kTH2F, {xiMassAxis, sigmaMassAxis}});
     rSigmaMinus.add("h2NSigmaTPCPiPt", "h2NSigmaTPCPiPt", {HistType::kTH2F, {ptAxis, nSigmaPiAxis}});
+    rSigmaMinus.add("h2DCAMothPt", "h2DCAMothPt", {HistType::kTH2F, {ptAxis, dcaMothAxis}});
+    rSigmaMinus.add("h2DCADaugPt", "h2DCADaugPt", {HistType::kTH2F, {ptAxis, dcaDaugAxis}});
 
     if (doprocessMC) {
       // Add MC histograms if needed
@@ -93,6 +100,7 @@ struct sigmaminustask {
     if (doprocessFindable) {
       // Add findable Sigma histograms
       rSigmaMinus.add("h2MassPtFindable", "h2MassPtFindable", {HistType::kTH2F, {ptAxis, sigmaMassAxis}});
+      rSigmaMinus.add("hFilterIndex", "hFilterIndex", {HistType::kTH1F, {filtersAxis}});
     }
   }
 
@@ -113,6 +121,8 @@ struct sigmaminustask {
       rSigmaMinus.fill(HIST("h2MassSigmaMinusPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
       rSigmaMinus.fill(HIST("h2SigmaMassVsXiMass"), kinkCand.mXiMinus(), kinkCand.mSigmaMinus());
       rSigmaMinus.fill(HIST("h2NSigmaPiPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tpcNSigmaPi());
+      rSigmaMinus.fill(HIST("h2DCAMothPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.dcaMothPv());
+      rSigmaMinus.fill(HIST("h2DCADaugPt"), kinkCand.mothSign() * kinkCand.ptDaug(), kinkCand.dcaDaugPv());
 
       if (fillOutputTree) {
         outputDataTable(kinkCand.xDecVtx(), kinkCand.yDecVtx(), kinkCand.zDecVtx(),
@@ -199,7 +209,9 @@ struct sigmaminustask {
             rSigmaMinus.fill(HIST("h2MassPtMCRec"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
             rSigmaMinus.fill(HIST("h2MassResolution"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus() - MotherMassMC);
             rSigmaMinus.fill(HIST("h2PtResolution"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.ptMoth() - MotherpTMC);
-            
+            rSigmaMinus.fill(HIST("h2DCAMothPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.dcaMothPv());
+            rSigmaMinus.fill(HIST("h2DCADaugPt"), kinkCand.mothSign() * kinkCand.ptDaug(), kinkCand.dcaDaugPv());
+
             if (std::abs(mcTrackPiDau.pdgCode()) == 211) {
               rSigmaMinus.fill(HIST("h2NSigmaTOFPiPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tofNSigmaPi());
             } else if (std::abs(mcTrackPiDau.pdgCode()) == 2212) {
@@ -272,12 +284,6 @@ struct sigmaminustask {
   void processFindable(TracksFull const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const&)
   {
     for (const auto& motherTrack : tracks) {
-
-      // Filter: ITS but no TPC (mother candidates)
-      if (!motherTrack.hasITS() || motherTrack.hasTPC()) {
-        continue;
-      }
-
       // Check if mother is Sigma in MC
       auto mcLabelMother = trackLabelsMC.rawIteratorAt(motherTrack.globalIndex());
       if (!mcLabelMother.has_mcParticle()) {
@@ -289,17 +295,11 @@ struct sigmaminustask {
       }
 
       for (const auto& daughterTrack : tracks) {
-        // Filter: ITS and TPC (daughter candidates)
-        if (!daughterTrack.hasITS() || !daughterTrack.hasTPC()) {
-          continue;
-        }
-        
+        // Check if daughter is pi/proton
         auto mcLabelDaughter = trackLabelsMC.rawIteratorAt(daughterTrack.globalIndex());
         if (!mcLabelDaughter.has_mcParticle()) {
           continue;
         }
-
-        // Check if daughter is pi/proton
         auto mcDaughter = mcLabelDaughter.mcParticle_as<aod::McParticles>();
         if (std::abs(mcDaughter.pdgCode()) != 211 && std::abs(mcDaughter.pdgCode()) != 2212) {
           continue;
@@ -315,13 +315,58 @@ struct sigmaminustask {
             }
           }
         }
-        
-        if (isValidPair) {
-          // All requirements satisfied: fill histogram
-          float mcMass = std::sqrt(mcMother.e() * mcMother.e() - mcMother.p() * mcMother.p());
-          int sigmaSign = mcMother.pdgCode() > 0 ? 1 : -1;
-          rSigmaMinus.fill(HIST("h2MassPtFindable"), sigmaSign * mcMother.pt(), mcMass);
+        if (!isValidPair) {
+          continue; 
         }
+
+        float mcMass = std::sqrt(mcMother.e() * mcMother.e() - mcMother.p() * mcMother.p());
+        int sigmaSign = mcMother.pdgCode() > 0 ? 1 : -1;
+        rSigmaMinus.fill(HIST("h2MassPtFindable"), sigmaSign * mcMother.pt(), mcMass);
+
+        // Define filter index and progressively apply kinkbuilder cuts to track pairs
+        int filterIndex = 0;
+        rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
+
+        // 1 - tracks with right ITS, TPC, TOF signals
+        if (motherTrack.has_collision() && motherTrack.hasITS() && !motherTrack.hasTPC() && !motherTrack.hasTOF() &&
+            daughterTrack.hasITS() && daughterTrack.hasTPC()) {
+          filterIndex += 1;
+          rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
+        } else {
+          continue; 
+        }
+        
+        // 2, 3 - mother track ITS properties
+        if (motherTrack.itsNCls() < 6 &&
+            motherTrack.itsNClsInnerBarrel() == 3 && motherTrack.itsChi2NCl() < 36) {
+          filterIndex += 1;
+          rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
+        }
+        if (filterIndex > 1 && motherTrack.pt() > 0.5) {
+          filterIndex += 1;
+          rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
+        } else {
+          continue; // Skip if mother track does not pass ITS cuts
+        }
+
+        // 4 - daughter track ITS+TPC properties
+        if (daughterTrack.itsNClsInnerBarrel() == 0 && daughterTrack.itsNCls() < 4 &&
+            daughterTrack.tpcNClsCrossedRows() > 0.8 * daughterTrack.tpcNClsFindable() && daughterTrack.tpcNClsFound() > 80) {
+          filterIndex += 1;
+          rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
+        } else {
+          continue; // Skip if daughter track does not pass ITS+TPC cuts
+        }
+        
+        // 5 - geometric cuts 
+        if (std::abs(motherTrack.eta()) < 1.0 && std::abs(daughterTrack.eta()) < 1.0 &&
+            std::abs(motherTrack.phi() - daughterTrack.phi()) < 100.0) {
+          filterIndex += 1;
+          rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
+        } else {
+          continue; // Skip if geometric cuts are not satisfied
+        }
+        
       }
     }
   }
@@ -334,4 +379,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<sigmaminustask>(cfgc)};
 }
-
