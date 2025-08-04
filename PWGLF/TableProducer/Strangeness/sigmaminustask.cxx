@@ -51,6 +51,8 @@ struct sigmaminustask {
 
   Preslice<aod::KinkCands> mPerCol = aod::track::collisionId;
 
+  float radToDeg = o2::constants::math::Rad2Deg;
+
   void init(InitContext const&)
   {
     // Axes
@@ -281,7 +283,7 @@ struct sigmaminustask {
 
   PROCESS_SWITCH(sigmaminustask, processMC, "MC processing", false);
 
-  void processFindable(TracksFull const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const&)
+  void processFindable(TracksFull const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const&, CollisionsFullMC const&)
   {
     for (const auto& motherTrack : tracks) {
       // Check if mother is Sigma in MC
@@ -321,7 +323,7 @@ struct sigmaminustask {
 
         float mcMass = std::sqrt(mcMother.e() * mcMother.e() - mcMother.p() * mcMother.p());
         int sigmaSign = mcMother.pdgCode() > 0 ? 1 : -1;
-        rSigmaMinus.fill(HIST("h2MassPtFindable"), sigmaSign * mcMother.pt(), mcMass);
+        rSigmaMinus.fill(HIST("h2MassPtFindable"), sigmaSign * motherTrack.pt(), mcMass);
 
         // Define filter index and progressively apply kinkbuilder cuts to track pairs
         int filterIndex = 0;
@@ -346,7 +348,7 @@ struct sigmaminustask {
           filterIndex += 1;
           rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
         } else {
-          continue; // Skip if mother track does not pass ITS cuts
+          continue; 
         }
 
         // 4 - daughter track ITS+TPC properties
@@ -355,16 +357,29 @@ struct sigmaminustask {
           filterIndex += 1;
           rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
         } else {
-          continue; // Skip if daughter track does not pass ITS+TPC cuts
+          continue; 
         }
         
-        // 5 - geometric cuts 
-        if (std::abs(motherTrack.eta()) < 1.0 && std::abs(daughterTrack.eta()) < 1.0 &&
-            std::abs(motherTrack.phi() - daughterTrack.phi()) < 100.0) {
+        // 5 - geometric cuts: eta
+        if (std::abs(motherTrack.eta()) < 1.0 && std::abs(daughterTrack.eta()) < 1.0) {
           filterIndex += 1;
           rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
         } else {
-          continue; // Skip if geometric cuts are not satisfied
+          continue; 
+        }
+        // 6 - geometric cuts: phi
+        if (std::abs(motherTrack.phi() - daughterTrack.phi()) * radToDeg < 100.0) {
+          filterIndex += 1;
+          rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
+        } else {
+          continue; 
+        }
+
+        // 7 - collision selection
+        auto collision = motherTrack.template collision_as<CollisionsFullMC>();
+        if (!(std::abs(collision.posZ()) > cutzvertex || !collision.sel8())) {
+          filterIndex += 1;
+          rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
         }
         
       }
