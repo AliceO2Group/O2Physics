@@ -7284,7 +7284,7 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
 
       return binaryCfg;
 
-    // MultiClass
+      // MultiClass
     } else if (typeStr == "MultiClass") {
       dqmlcuts::MultiClassBdtScoreConfig multiCfg;
       multiCfg.inputFeatures = namesInputFeatures;
@@ -7323,10 +7323,10 @@ int o2::aod::dqmlcuts::getMlBinIndex(double cent, double pt,
                                      const std::vector<std::pair<double, double>>& binsCent,
                                      const std::vector<std::pair<double, double>>& binsPt)
 {
-  LOG(debug) << "Searching for Ml bin index for cent: " << cent << ", pt: " << pt; //here
+  LOG(debug) << "Searching for Ml bin index for cent: " << cent << ", pt: " << pt;
   for (size_t i = 0; i < binsCent.size(); ++i) {
     if (cent >= binsCent[i].first && cent < binsCent[i].second && pt >= binsPt[i].first && pt < binsPt[i].second) {
-      LOG(debug) << " - Found at index: " << i; //here
+      LOG(debug) << " - Found at index: " << i;
       return static_cast<int>(i);
     }
   }

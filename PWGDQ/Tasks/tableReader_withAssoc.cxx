@@ -15,13 +15,13 @@
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
 #include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/CutsLibrary.h"
+#include "PWGDQ/Core/DQMlResponse.h"
 #include "PWGDQ/Core/HistogramManager.h"
 #include "PWGDQ/Core/HistogramsLibrary.h"
 #include "PWGDQ/Core/MixingHandler.h"
 #include "PWGDQ/Core/MixingLibrary.h"
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGDQ/Core/DQMlResponse.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TableHelper.h"
@@ -1770,7 +1770,6 @@ struct AnalysisSameEventPairing {
             if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelPID) > 0) {
               if (fConfigML.applyBDT) {
                 std::vector<float> dqInputFeatures = dqMlResponse.getInputFeatures(t1, t2, VarManager::fgValues);
-                LOG(debug) << "Input features size: " << dqInputFeatures.size();
 
                 if (dqInputFeatures.empty()) {
                   LOG(fatal) << "Input features for ML selection are empty! Please check your configuration.";
