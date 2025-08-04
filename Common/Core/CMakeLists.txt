@@ -14,6 +14,7 @@ o2physics_add_library(AnalysisCore
         OrbitRange.cxx
         PID/ParamBase.cxx
         PID/PIDTOF.cxx
+        PID/PIDTOFService.cxx
         CollisionAssociation.cxx
         TrackSelectionDefaults.cxx
         EventPlaneHelper.cxx
@@ -34,6 +35,7 @@ o2physics_target_root_dictionary(AnalysisCore
         PID/DetectorResponse.h
         PID/PIDTOF.h
         PID/TPCPIDResponse.h
+        PID/PIDTOFService.h
         CollisionTypeHelper.h
         FFitWeights.h
         LINKDEF AnalysisCoreLinkDef.h)
