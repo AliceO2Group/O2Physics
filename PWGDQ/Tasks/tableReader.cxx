@@ -1134,10 +1134,10 @@ struct AnalysisSameEventPairing {
 
     if (applyBDT) {
       // BDT cuts via JSON
-      std::vector<double> binsPtMl;
+      std::vector<double> binsMl;
       o2::framework::LabeledArray<double> cutsMl;
       std::vector<int> cutDirMl;
-      int nClassesMl = 1; // 1 for binary BDT, 3 for multiclass BDT
+      int nClassesMl = 1;
       std::vector<std::string> namesInputFeatures;
       std::vector<std::string> onnxFileNames;
 
@@ -1145,23 +1145,31 @@ struct AnalysisSameEventPairing {
 
       if (std::holds_alternative<dqmlcuts::BinaryBdtScoreConfig>(config)) {
         auto& cfg = std::get<dqmlcuts::BinaryBdtScoreConfig>(config);
-        binsPtMl = cfg.binsPt;
+        binsMl = cfg.binsMl;
         nClassesMl = 1;
         cutsMl = cfg.cutsMl;
         cutDirMl = cfg.cutDirs;
         namesInputFeatures = cfg.inputFeatures;
         onnxFileNames = cfg.onnxFiles;
+        dqMlResponse.setBinsCent(cfg.binsCent);
+        dqMlResponse.setBinsPt(cfg.binsPt);
+        dqMlResponse.setCentType(cfg.centType);
+        LOG(info) << "Using BDT cuts for binary classification";
       } else {
         auto& cfg = std::get<dqmlcuts::MultiClassBdtScoreConfig>(config);
-        binsPtMl = cfg.binsPt;
+        binsMl = cfg.binsMl;
         nClassesMl = 3;
         cutsMl = cfg.cutsMl;
         cutDirMl = cfg.cutDirs;
         namesInputFeatures = cfg.inputFeatures;
         onnxFileNames = cfg.onnxFiles;
+        dqMlResponse.setBinsCent(cfg.binsCent);
+        dqMlResponse.setBinsPt(cfg.binsPt);
+        dqMlResponse.setCentType(cfg.centType);
+        LOG(info) << "Using BDT cuts for multiclass classification";
       }
 
-      dqMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      dqMlResponse.configure(binsMl, cutsMl, cutDirMl, nClassesMl);
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdburl);
         dqMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
@@ -1172,7 +1180,7 @@ struct AnalysisSameEventPairing {
       dqMlResponse.init();
     }
 
-    if (context.mOptions.get<bool>("processDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEESkimmedNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToEESkimmedWithCov") || context.mOptions.get<bool>("processDecayToEESkimmedWithCovNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToEEVertexingSkimmed") || context.mOptions.get<bool>("processVnDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEEPrefilterSkimmed") || context.mOptions.get<bool>("processDecayToEEPrefilterSkimmedNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToEESkimmedWithColl") || context.mOptions.get<bool>("processDecayToEESkimmedWithCollNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToPiPiSkimmed") || context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processDecayToEESkimmedBDT")) {
+    if (context.mOptions.get<bool>("processDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEESkimmedNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToEESkimmedWithCov") || context.mOptions.get<bool>("processDecayToEESkimmedWithCovNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToEEVertexingSkimmed") || context.mOptions.get<bool>("processVnDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEEPrefilterSkimmed") || context.mOptions.get<bool>("processDecayToEEPrefilterSkimmedNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToEESkimmedWithColl") || context.mOptions.get<bool>("processDecayToEESkimmedWithCollNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToPiPiSkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
       TString cutNames = fConfigTrackCuts.value;
       if (!cutNames.IsNull()) { // if track cuts
         std::unique_ptr<TObjArray> objArray(cutNames.Tokenize(","));
@@ -1456,8 +1464,29 @@ struct AnalysisSameEventPairing {
             return;
           }
 
-          // isSelectedBDT = dqMlResponse.isSelectedMl(dqInputFeatures, VarManager::fgValues[VarManager::kPt]);
-          isSelectedBDT = dqMlResponse.isSelectedMl(dqInputFeatures, VarManager::fgValues[VarManager::kPt], outputMlPsi2ee);
+          int modelIndex = -1;
+          const auto& binsCent = dqMlResponse.getBinsCent();
+          const auto& binsPt = dqMlResponse.getBinsPt();
+          const std::string& centType = dqMlResponse.getCentType();
+
+          if ("kCentFT0C" == centType) {
+            modelIndex = o2::aod::dqmlcuts::getMlBinIndex(VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kPt], binsCent, binsPt);
+          } else if ("kCentFT0A" == centType) {
+            modelIndex = o2::aod::dqmlcuts::getMlBinIndex(VarManager::fgValues[VarManager::kCentFT0A], VarManager::fgValues[VarManager::kPt], binsCent, binsPt);
+          } else if ("kCentFT0M" == centType) {
+            modelIndex = o2::aod::dqmlcuts::getMlBinIndex(VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kPt], binsCent, binsPt);
+          } else {
+            LOG(fatal) << "Unknown centrality estimation type: " << centType;
+            return;
+          }
+
+          if (modelIndex < 0) {
+            LOG(debug) << "Ml index is negative! This means that the centrality/pt is not in the range of the model bins.";
+            continue;
+          }
+
+          LOG(debug) << "Model index: " << modelIndex << ", pT: " << VarManager::fgValues[VarManager::kPt] << ", centrality (kCentFT0C): " << VarManager::fgValues[VarManager::kCentFT0C];
+          isSelectedBDT = dqMlResponse.isSelectedMl(dqInputFeatures, modelIndex, outputMlPsi2ee);
           VarManager::FillBdtScore(outputMlPsi2ee); // TODO: check if this is needed or not
         }
 
@@ -1678,13 +1707,6 @@ struct AnalysisSameEventPairing {
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
     runSameEventPairing<false, VarManager::kDecayToEE, gkEventFillMap, gkTrackFillMapWithColl>(event, tracks, tracks);
   }
-  void processDecayToEESkimmedBDT(soa::Filtered<MyEventsSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
-  {
-    // Reset the fValues array
-    VarManager::ResetValues(0, VarManager::kNVars);
-    VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
-    runSameEventPairing<false, VarManager::kDecayToEE, gkEventFillMap, gkTrackFillMap>(event, tracks, tracks);
-  }
   void processDecayToMuMuSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyMuonTracksSelected> const& muons)
   {
     // Reset the fValues array
@@ -1789,7 +1811,6 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEEPrefilterSkimmedNoTwoProngFitter, "Run electron-electron pairing, with skimmed tracks and prefilter from AnalysisPrefilterSelection but no two prong fitter", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmedWithColl, "Run electron-electron pairing, with skimmed tracks and with collision information", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmedWithCollNoTwoProngFitter, "Run electron-electron pairing, with skimmed tracks and with collision information but no two prong fitter", false);
-  PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmedBDT, "Run electron-electron pairing, with skimmed tracks and BDT selection", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToMuMuSkimmed, "Run muon-muon pairing, with skimmed muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToMuMuSkimmedWithMult, "Run muon-muon pairing, with skimmed muons and multiplicity", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToMuMuVertexingSkimmed, "Run muon-muon pairing and vertexing, with skimmed muons", false);

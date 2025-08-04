@@ -24,90 +24,88 @@
 #include <unordered_map>
 #include <vector>
 
-// Fill the map of available input features
-// the key is the feature's name (std::string)
-// the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP(FEATURE)                                  \
-  {                                                        \
-    #FEATURE, static_cast<uint8_t>(InputFeatures::FEATURE) \
-  }
-
 namespace o2::analysis
 {
 
-enum class InputFeatures : uint8_t { // refer to DielectronsAll
-  fMass = 0,
-  fPt,
-  fEta,
-  fPhi,
-  fPt1,
-  fITSChi2NCl1,
-  fTPCNClsCR1,
-  fTPCNClsFound1,
-  fTPCChi2NCl1,
-  fDcaXY1,
-  fDcaZ1,
-  fTPCNSigmaEl1,
-  fTPCNSigmaPi1,
-  fTPCNSigmaPr1,
-  fTOFNSigmaEl1,
-  fTOFNSigmaPi1,
-  fTOFNSigmaPr1,
-  fPt2,
-  fITSChi2NCl2,
-  fTPCNClsCR2,
-  fTPCNClsFound2,
-  fTPCChi2NCl2,
-  fDcaXY2,
-  fDcaZ2,
-  fTPCNSigmaEl2,
-  fTPCNSigmaPi2,
-  fTPCNSigmaPr2,
-  fTOFNSigmaEl2,
-  fTOFNSigmaPi2,
-  fTOFNSigmaPr2,
+enum class InputFeatures : uint8_t { // refer to DielectronsAll, TODO: add more features if needed
+  kMass = 0,
+  kPt,
+  kEta,
+  kPhi,
+  kPt1,
+  kITSChi2NCl1,
+  kTPCNClsCR1,
+  kTPCNClsFound1,
+  kTPCChi2NCl1,
+  kDcaXY1,
+  kDcaZ1,
+  kTPCNSigmaEl1,
+  kTPCNSigmaPi1,
+  kTPCNSigmaPr1,
+  kTOFNSigmaEl1,
+  kTOFNSigmaPi1,
+  kTOFNSigmaPr1,
+  kPt2,
+  kITSChi2NCl2,
+  kTPCNClsCR2,
+  kTPCNClsFound2,
+  kTPCChi2NCl2,
+  kDcaXY2,
+  kDcaZ2,
+  kTPCNSigmaEl2,
+  kTPCNSigmaPi2,
+  kTPCNSigmaPr2,
+  kTOFNSigmaEl2,
+  kTOFNSigmaPi2,
+  kTOFNSigmaPr2
 };
 
 static const std::map<InputFeatures, std::string> gFeatureNameMap = {
-  {InputFeatures::fMass, "fMass"},
-  {InputFeatures::fPt, "fPt"},
-  {InputFeatures::fEta, "fEta"},
-  {InputFeatures::fPhi, "fPhi"},
-  {InputFeatures::fPt1, "fPt1"},
-  {InputFeatures::fITSChi2NCl1, "fITSChi2NCl1"},
-  {InputFeatures::fTPCNClsCR1, "fTPCNClsCR1"},
-  {InputFeatures::fTPCNClsFound1, "fTPCNClsFound1"},
-  {InputFeatures::fTPCChi2NCl1, "fTPCChi2NCl1"},
-  {InputFeatures::fDcaXY1, "fDcaXY1"},
-  {InputFeatures::fDcaZ1, "fDcaZ1"},
-  {InputFeatures::fTPCNSigmaEl1, "fTPCNSigmaEl1"},
-  {InputFeatures::fTPCNSigmaPi1, "fTPCNSigmaPi1"},
-  {InputFeatures::fTPCNSigmaPr1, "fTPCNSigmaPr1"},
-  {InputFeatures::fTOFNSigmaEl1, "fTOFNSigmaEl1"},
-  {InputFeatures::fTOFNSigmaPi1, "fTOFNSigmaPi1"},
-  {InputFeatures::fTOFNSigmaPr1, "fTOFNSigmaPr1"},
-  {InputFeatures::fPt2, "fPt2"},
-  {InputFeatures::fITSChi2NCl2, "fITSChi2NCl2"},
-  {InputFeatures::fTPCNClsCR2, "fTPCNClsCR2"},
-  {InputFeatures::fTPCNClsFound2, "fTPCNClsFound2"},
-  {InputFeatures::fTPCChi2NCl2, "fTPCChi2NCl2"},
-  {InputFeatures::fDcaXY2, "fDcaXY2"},
-  {InputFeatures::fDcaZ2, "fDcaZ2"},
-  {InputFeatures::fTPCNSigmaEl2, "fTPCNSigmaEl2"},
-  {InputFeatures::fTPCNSigmaPi2, "fTPCNSigmaPi2"},
-  {InputFeatures::fTPCNSigmaPr2, "fTPCNSigmaPr2"},
-  {InputFeatures::fTOFNSigmaEl2, "fTOFNSigmaEl2"},
-  {InputFeatures::fTOFNSigmaPi2, "fTOFNSigmaPi2"},
-  {InputFeatures::fTOFNSigmaPr2, "fTOFNSigmaPr2"}};
+  {InputFeatures::kMass, "kMass"},
+  {InputFeatures::kPt, "kPt"},
+  {InputFeatures::kEta, "kEta"},
+  {InputFeatures::kPhi, "kPhi"},
+  {InputFeatures::kPt1, "kPt1"},
+  {InputFeatures::kITSChi2NCl1, "kITSChi2NCl1"},
+  {InputFeatures::kTPCNClsCR1, "kTPCNClsCR1"},
+  {InputFeatures::kTPCNClsFound1, "kTPCNClsFound1"},
+  {InputFeatures::kTPCChi2NCl1, "kTPCChi2NCl1"},
+  {InputFeatures::kDcaXY1, "kDcaXY1"},
+  {InputFeatures::kDcaZ1, "kDcaZ1"},
+  {InputFeatures::kTPCNSigmaEl1, "kTPCNSigmaEl1"},
+  {InputFeatures::kTPCNSigmaPi1, "kTPCNSigmaPi1"},
+  {InputFeatures::kTPCNSigmaPr1, "kTPCNSigmaPr1"},
+  {InputFeatures::kTOFNSigmaEl1, "kTOFNSigmaEl1"},
+  {InputFeatures::kTOFNSigmaPi1, "kTOFNSigmaPi1"},
+  {InputFeatures::kTOFNSigmaPr1, "kTOFNSigmaPr1"},
+  {InputFeatures::kPt2, "kPt2"},
+  {InputFeatures::kITSChi2NCl2, "kITSChi2NCl2"},
+  {InputFeatures::kTPCNClsCR2, "kTPCNClsCR2"},
+  {InputFeatures::kTPCNClsFound2, "kTPCNClsFound2"},
+  {InputFeatures::kTPCChi2NCl2, "kTPCChi2NCl2"},
+  {InputFeatures::kDcaXY2, "kDcaXY2"},
+  {InputFeatures::kDcaZ2, "kDcaZ2"},
+  {InputFeatures::kTPCNSigmaEl2, "kTPCNSigmaEl2"},
+  {InputFeatures::kTPCNSigmaPi2, "kTPCNSigmaPi2"},
+  {InputFeatures::kTPCNSigmaPr2, "kTPCNSigmaPr2"},
+  {InputFeatures::kTOFNSigmaEl2, "kTOFNSigmaEl2"},
+  {InputFeatures::kTOFNSigmaPi2, "kTOFNSigmaPi2"},
+  {InputFeatures::kTOFNSigmaPr2, "kTOFNSigmaPr2"}};
 
 template <typename TypeOutputScore = float>
 class DQMlResponse : public MlResponse<TypeOutputScore>
 {
  public:
-  /// Default constructor
   DQMlResponse() = default;
-  /// Default destructor
   virtual ~DQMlResponse() = default;
+
+  void setBinsCent(const std::vector<std::pair<double, double>>& bins) { binsCent = bins; }
+  void setBinsPt(const std::vector<std::pair<double, double>>& bins) { binsPt = bins; }
+  void setCentType(std::string& type) { centType = type; }
+
+  const std::vector<std::pair<double, double>>& getBinsCent() const { return binsCent; }
+  const std::vector<std::pair<double, double>>& getBinsPt() const { return binsPt; }
+  const std::string& getCentType() const { return centType; }
 
   /// Method to get the input features vector needed for ML inference
   /// \return inputFeatures vector
@@ -116,98 +114,126 @@ class DQMlResponse : public MlResponse<TypeOutputScore>
                                       const T2& t2,
                                       const TValues& fg) const
   {
-    using Accessor = std::function<float(const T1&, const T2&, const TValues&)>;
-    static const std::unordered_map<std::string, Accessor> featureMap{
-      {"fMass", [](auto const&, auto const&, auto const& v) { return v[VarManager::kMass]; }},
-      {"fPt", [](auto const&, auto const&, auto const& v) { return v[VarManager::kPt]; }},
-      {"fEta", [](auto const&, auto const&, auto const& v) { return v[VarManager::kEta]; }},
-      {"fPhi", [](auto const&, auto const&, auto const& v) { return v[VarManager::kPhi]; }},
-
-      {"fPt1", [](auto const& t1, auto const&, auto const&) { return t1.pt(); }},
-      {"fITSChi2NCl1", [](auto const& t1, auto const&, auto const&) { return t1.itsChi2NCl(); }},
-      {"fTPCNClsCR1", [](auto const& t1, auto const&, auto const&) { return t1.tpcNClsCrossedRows(); }},
-      {"fTPCNClsFound1", [](auto const& t1, auto const&, auto const&) { return t1.tpcNClsFound(); }},
-      {"fTPCChi2NCl1", [](auto const& t1, auto const&, auto const&) { return t1.tpcChi2NCl(); }},
-      {"fDcaXY1", [](auto const& t1, auto const&, auto const&) { return t1.dcaXY(); }},
-      {"fDcaZ1", [](auto const& t1, auto const&, auto const&) { return t1.dcaZ(); }},
-      {"fTPCNSigmaEl1", [](auto const& t1, auto const&, auto const&) { return t1.tpcNSigmaEl(); }},
-      {"fTPCNSigmaPi1", [](auto const& t1, auto const&, auto const&) { return t1.tpcNSigmaPi(); }},
-      {"fTPCNSigmaPr1", [](auto const& t1, auto const&, auto const&) { return t1.tpcNSigmaPr(); }},
-      {"fTOFNSigmaEl1", [](auto const& t1, auto const&, auto const&) { return t1.tofNSigmaEl(); }},
-      {"fTOFNSigmaPi1", [](auto const& t1, auto const&, auto const&) { return t1.tofNSigmaPi(); }},
-      {"fTOFNSigmaPr1", [](auto const& t1, auto const&, auto const&) { return t1.tofNSigmaPr(); }},
-
-      {"fPt2", [](auto const&, auto const& t2, auto const&) { return t2.pt(); }},
-      {"fITSChi2NCl2", [](auto const&, auto const& t2, auto const&) { return t2.itsChi2NCl(); }},
-      {"fTPCNClsCR2", [](auto const&, auto const& t2, auto const&) { return t2.tpcNClsCrossedRows(); }},
-      {"fTPCNClsFound2", [](auto const&, auto const& t2, auto const&) { return t2.tpcNClsFound(); }},
-      {"fTPCChi2NCl2", [](auto const&, auto const& t2, auto const&) { return t2.tpcChi2NCl(); }},
-      {"fDcaXY2", [](auto const&, auto const& t2, auto const&) { return t2.dcaXY(); }},
-      {"fDcaZ2", [](auto const&, auto const& t2, auto const&) { return t2.dcaZ(); }},
-      {"fTPCNSigmaEl2", [](auto const&, auto const& t2, auto const&) { return t2.tpcNSigmaEl(); }},
-      {"fTPCNSigmaPi2", [](auto const&, auto const& t2, auto const&) { return t2.tpcNSigmaPi(); }},
-      {"fTPCNSigmaPr2", [](auto const&, auto const& t2, auto const&) { return t2.tpcNSigmaPr(); }},
-      {"fTOFNSigmaEl2", [](auto const&, auto const& t2, auto const&) { return t2.tofNSigmaEl(); }},
-      {"fTOFNSigmaPi2", [](auto const&, auto const& t2, auto const&) { return t2.tofNSigmaPi(); }},
-      {"fTOFNSigmaPr2", [](auto const&, auto const& t2, auto const&) { return t2.tofNSigmaPr(); }}};
-
     std::vector<float> dqInputFeatures;
     dqInputFeatures.reserve(MlResponse<TypeOutputScore>::mCachedIndices.size());
 
     for (auto idx : MlResponse<TypeOutputScore>::mCachedIndices) {
       auto enumIdx = static_cast<InputFeatures>(idx);
-      const auto& name = gFeatureNameMap.at(enumIdx);
+      auto mapIdx = gFeatureNameMap.find(enumIdx);
+      if (mapIdx == gFeatureNameMap.end()) {
+        LOG(fatal) << "Unknown InputFeatures index: " << static_cast<int>(enumIdx);
+      }
 
-      auto acc = featureMap.find(name);
-      if (acc == featureMap.end()) {
-        LOG(error) << "Missing accessor for " << name;
-        continue;
+      const auto& name = mapIdx->second;
+      if (name == "kMass") {
+        dqInputFeatures.push_back(fg[VarManager::fgVarNamesMap["kMass"]]);
+      } else if (name == "kPt") {
+        dqInputFeatures.push_back(fg[VarManager::fgVarNamesMap["kPt"]]);
+      } else if (name == "kEta") {
+        dqInputFeatures.push_back(fg[VarManager::fgVarNamesMap["kEta"]]);
+      } else if (name == "kPhi") {
+        dqInputFeatures.push_back(fg[VarManager::fgVarNamesMap["kPhi"]]);
+      } else if (name == "kPt1") {
+        dqInputFeatures.push_back(t1.pt());
+      } else if (name == "kITSChi2NCl1") {
+        dqInputFeatures.push_back(t1.itsChi2NCl());
+      } else if (name == "kTPCNClsCR1") {
+        dqInputFeatures.push_back(t1.tpcNClsCrossedRows());
+      } else if (name == "kTPCNClsFound1") {
+        dqInputFeatures.push_back(t1.tpcNClsFound());
+      } else if (name == "kTPCChi2NCl1") {
+        dqInputFeatures.push_back(t1.tpcChi2NCl());
+      } else if (name == "kDcaXY1") {
+        dqInputFeatures.push_back(t1.dcaXY());
+      } else if (name == "kDcaZ1") {
+        dqInputFeatures.push_back(t1.dcaZ());
+      } else if (name == "kTPCNSigmaEl1") {
+        dqInputFeatures.push_back(t1.tpcNSigmaEl());
+      } else if (name == "kTPCNSigmaPi1") {
+        dqInputFeatures.push_back(t1.tpcNSigmaPi());
+      } else if (name == "kTPCNSigmaPr1") {
+        dqInputFeatures.push_back(t1.tpcNSigmaPr());
+      } else if (name == "kTOFNSigmaEl1") {
+        dqInputFeatures.push_back(t1.tofNSigmaEl());
+      } else if (name == "kTOFNSigmaPi1") {
+        dqInputFeatures.push_back(t1.tofNSigmaPi());
+      } else if (name == "kTOFNSigmaPr1") {
+        dqInputFeatures.push_back(t1.tofNSigmaPr());
+      } else if (name == "kPt2") {
+        dqInputFeatures.push_back(t2.pt());
+      } else if (name == "kITSChi2NCl2") {
+        dqInputFeatures.push_back(t2.itsChi2NCl());
+      } else if (name == "kTPCNClsCR2") {
+        dqInputFeatures.push_back(t2.tpcNClsCrossedRows());
+      } else if (name == "kTPCNClsFound2") {
+        dqInputFeatures.push_back(t2.tpcNClsFound());
+      } else if (name == "kTPCChi2NCl2") {
+        dqInputFeatures.push_back(t2.tpcChi2NCl());
+      } else if (name == "kDcaXY2") {
+        dqInputFeatures.push_back(t2.dcaXY());
+      } else if (name == "kDcaZ2") {
+        dqInputFeatures.push_back(t2.dcaZ());
+      } else if (name == "kTPCNSigmaEl2") {
+        dqInputFeatures.push_back(t2.tpcNSigmaEl());
+      } else if (name == "kTPCNSigmaPi2") {
+        dqInputFeatures.push_back(t2.tpcNSigmaPi());
+      } else if (name == "kTPCNSigmaPr2") {
+        dqInputFeatures.push_back(t2.tpcNSigmaPr());
+      } else if (name == "kTOFNSigmaEl2") {
+        dqInputFeatures.push_back(t2.tofNSigmaEl());
+      } else if (name == "kTOFNSigmaPi2") {
+        dqInputFeatures.push_back(t2.tofNSigmaPi());
+      } else if (name == "kTOFNSigmaPr2") {
+        dqInputFeatures.push_back(t2.tofNSigmaPr());
       } else {
-        dqInputFeatures.push_back(acc->second(t1, t2, fg));
+        LOG(fatal) << "Missing accessor for feature: " << name;
       }
     }
+    LOG(debug) << "Total features collected: " << dqInputFeatures.size();
     return dqInputFeatures;
   }
 
  protected:
+  std::vector<std::pair<double, double>> binsCent;
+  std::vector<std::pair<double, double>> binsPt;
+  std::string centType;
+
   void setAvailableInputFeatures()
   {
     MlResponse<TypeOutputScore>::mAvailableInputFeatures = {
-      FILL_MAP(fMass),
-      FILL_MAP(fPt),
-      FILL_MAP(fEta),
-      FILL_MAP(fPhi),
-      FILL_MAP(fPt1),
-      FILL_MAP(fITSChi2NCl1),
-      FILL_MAP(fTPCNClsCR1),
-      FILL_MAP(fTPCNClsFound1),
-      FILL_MAP(fTPCChi2NCl1),
-      FILL_MAP(fDcaXY1),
-      FILL_MAP(fDcaZ1),
-      FILL_MAP(fTPCNSigmaEl1),
-      FILL_MAP(fTPCNSigmaPi1),
-      FILL_MAP(fTPCNSigmaPr1),
-      FILL_MAP(fTOFNSigmaEl1),
-      FILL_MAP(fTOFNSigmaPi1),
-      FILL_MAP(fTOFNSigmaPr1),
-      FILL_MAP(fPt2),
-      FILL_MAP(fITSChi2NCl2),
-      FILL_MAP(fTPCNClsCR2),
-      FILL_MAP(fTPCNClsFound2),
-      FILL_MAP(fTPCChi2NCl2),
-      FILL_MAP(fDcaXY2),
-      FILL_MAP(fDcaZ2),
-      FILL_MAP(fTPCNSigmaEl2),
-      FILL_MAP(fTPCNSigmaPi2),
-      FILL_MAP(fTPCNSigmaPr2),
-      FILL_MAP(fTOFNSigmaEl2),
-      FILL_MAP(fTOFNSigmaPi2),
-      FILL_MAP(fTOFNSigmaPr2)};
+      {"kMass", static_cast<uint8_t>(InputFeatures::kMass)},
+      {"kPt", static_cast<uint8_t>(InputFeatures::kPt)},
+      {"kEta", static_cast<uint8_t>(InputFeatures::kEta)},
+      {"kPhi", static_cast<uint8_t>(InputFeatures::kPhi)},
+      {"kPt1", static_cast<uint8_t>(InputFeatures::kPt1)},
+      {"kITSChi2NCl1", static_cast<uint8_t>(InputFeatures::kITSChi2NCl1)},
+      {"kTPCNClsCR1", static_cast<uint8_t>(InputFeatures::kTPCNClsCR1)},
+      {"kTPCNClsFound1", static_cast<uint8_t>(InputFeatures::kTPCNClsFound1)},
+      {"kTPCChi2NCl1", static_cast<uint8_t>(InputFeatures::kTPCChi2NCl1)},
+      {"kDcaXY1", static_cast<uint8_t>(InputFeatures::kDcaXY1)},
+      {"kDcaZ1", static_cast<uint8_t>(InputFeatures::kDcaZ1)},
+      {"kTPCNSigmaEl1", static_cast<uint8_t>(InputFeatures::kTPCNSigmaEl1)},
+      {"kTPCNSigmaPi1", static_cast<uint8_t>(InputFeatures::kTPCNSigmaPi1)},
+      {"kTPCNSigmaPr1", static_cast<uint8_t>(InputFeatures::kTPCNSigmaPr1)},
+      {"kTOFNSigmaEl1", static_cast<uint8_t>(InputFeatures::kTOFNSigmaEl1)},
+      {"kTOFNSigmaPi1", static_cast<uint8_t>(InputFeatures::kTOFNSigmaPi1)},
+      {"kTOFNSigmaPr1", static_cast<uint8_t>(InputFeatures::kTOFNSigmaPr1)},
+      {"kPt2", static_cast<uint8_t>(InputFeatures::kPt2)},
+      {"kITSChi2NCl2", static_cast<uint8_t>(InputFeatures::kITSChi2NCl2)},
+      {"kTPCNClsCR2", static_cast<uint8_t>(InputFeatures::kTPCNClsCR2)},
+      {"kTPCNClsFound2", static_cast<uint8_t>(InputFeatures::kTPCNClsFound2)},
+      {"kTPCChi2NCl2", static_cast<uint8_t>(InputFeatures::kTPCChi2NCl2)},
+      {"kDcaXY2", static_cast<uint8_t>(InputFeatures::kDcaXY2)},
+      {"kDcaZ2", static_cast<uint8_t>(InputFeatures::kDcaZ2)},
+      {"kTPCNSigmaEl2", static_cast<uint8_t>(InputFeatures::kTPCNSigmaEl2)},
+      {"kTPCNSigmaPi2", static_cast<uint8_t>(InputFeatures::kTPCNSigmaPi2)},
+      {"kTPCNSigmaPr2", static_cast<uint8_t>(InputFeatures::kTPCNSigmaPr2)},
+      {"kTOFNSigmaEl2", static_cast<uint8_t>(InputFeatures::kTOFNSigmaEl2)},
+      {"kTOFNSigmaPi2", static_cast<uint8_t>(InputFeatures::kTOFNSigmaPi2)},
+      {"kTOFNSigmaPr2", static_cast<uint8_t>(InputFeatures::kTOFNSigmaPr2)}};
   }
 };
 
 } // namespace o2::analysis
-
-#undef FILL_MAP
 
 #endif // PWGDQ_CORE_DQMLRESPONSE_H_

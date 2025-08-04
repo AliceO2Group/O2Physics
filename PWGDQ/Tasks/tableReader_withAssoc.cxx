@@ -1293,7 +1293,7 @@ struct AnalysisSameEventPairing {
   void init(o2::framework::InitContext& context)
   {
     LOG(info) << "Starting initialization of AnalysisSameEventPairing (idstoreh)";
-    fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCovWithMultExtra") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlySkimmedBDT");
+    fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCovWithMultExtra") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmedNoCov");
     fEnableBarrelMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmed");
     fEnableMuonHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmedMultExtra") || context.mOptions.get<bool>("processMixingMuonSkimmed");
     fEnableMuonMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingMuonSkimmed");
@@ -1335,10 +1335,10 @@ struct AnalysisSameEventPairing {
 
     if (fConfigML.applyBDT) {
       // BDT cuts via JSON
-      std::vector<double> binsPtMl;
+      std::vector<double> binsMl;
       o2::framework::LabeledArray<double> cutsMl;
       std::vector<int> cutDirMl;
-      int nClassesMl = 1; // 1 for binary BDT, 3 for multiclass BDT
+      int nClassesMl = 1;
       std::vector<std::string> namesInputFeatures;
       std::vector<std::string> onnxFileNames;
 
@@ -1346,23 +1346,31 @@ struct AnalysisSameEventPairing {
 
       if (std::holds_alternative<dqmlcuts::BinaryBdtScoreConfig>(config)) {
         auto& cfg = std::get<dqmlcuts::BinaryBdtScoreConfig>(config);
-        binsPtMl = cfg.binsPt;
+        binsMl = cfg.binsMl;
         nClassesMl = 1;
         cutsMl = cfg.cutsMl;
         cutDirMl = cfg.cutDirs;
         namesInputFeatures = cfg.inputFeatures;
         onnxFileNames = cfg.onnxFiles;
+        dqMlResponse.setBinsCent(cfg.binsCent);
+        dqMlResponse.setBinsPt(cfg.binsPt);
+        dqMlResponse.setCentType(cfg.centType);
+        LOG(info) << "Using BDT cuts for binary classification";
       } else {
         auto& cfg = std::get<dqmlcuts::MultiClassBdtScoreConfig>(config);
-        binsPtMl = cfg.binsPt;
+        binsMl = cfg.binsMl;
         nClassesMl = 3;
         cutsMl = cfg.cutsMl;
         cutDirMl = cfg.cutDirs;
         namesInputFeatures = cfg.inputFeatures;
         onnxFileNames = cfg.onnxFiles;
+        dqMlResponse.setBinsCent(cfg.binsCent);
+        dqMlResponse.setBinsPt(cfg.binsPt);
+        dqMlResponse.setCentType(cfg.centType);
+        LOG(info) << "Using BDT cuts for multiclass classification";
       }
 
-      dqMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      dqMlResponse.configure(binsMl, cutsMl, cutDirMl, nClassesMl);
       if (fConfigML.loadModelsFromCCDB) {
         fCCDBApi.init(fConfigCCDB.url);
         dqMlResponse.setModelPathsCCDB(onnxFileNames, fCCDBApi, fConfigML.modelPathsCCDB, fConfigML.timestampCCDB);
@@ -1762,14 +1770,36 @@ struct AnalysisSameEventPairing {
             if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelPID) > 0) {
               if (fConfigML.applyBDT) {
                 std::vector<float> dqInputFeatures = dqMlResponse.getInputFeatures(t1, t2, VarManager::fgValues);
+                LOG(debug) << "Input features size: " << dqInputFeatures.size();
 
                 if (dqInputFeatures.empty()) {
                   LOG(fatal) << "Input features for ML selection are empty! Please check your configuration.";
                   return;
                 }
 
-                // isSelectedBDT = dqMlResponse.isSelectedMl(dqInputFeatures, VarManager::fgValues[VarManager::kPt]);
-                isSelectedBDT = dqMlResponse.isSelectedMl(dqInputFeatures, VarManager::fgValues[VarManager::kPt], outputMlPsi2ee);
+                int modelIndex = -1;
+                const auto& binsCent = dqMlResponse.getBinsCent();
+                const auto& binsPt = dqMlResponse.getBinsPt();
+                const std::string& centType = dqMlResponse.getCentType();
+
+                if ("kCentFT0C" == centType) {
+                  modelIndex = o2::aod::dqmlcuts::getMlBinIndex(VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kPt], binsCent, binsPt);
+                } else if ("kCentFT0A" == centType) {
+                  modelIndex = o2::aod::dqmlcuts::getMlBinIndex(VarManager::fgValues[VarManager::kCentFT0A], VarManager::fgValues[VarManager::kPt], binsCent, binsPt);
+                } else if ("kCentFT0M" == centType) {
+                  modelIndex = o2::aod::dqmlcuts::getMlBinIndex(VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kPt], binsCent, binsPt);
+                } else {
+                  LOG(fatal) << "Unknown centrality estimation type: " << centType;
+                  return;
+                }
+
+                if (modelIndex < 0) {
+                  LOG(info) << "Ml index is negative! This means that the centrality/pt is not in the range of the model bins.";
+                  continue;
+                }
+
+                LOG(debug) << "Model index: " << modelIndex << ", pT: " << VarManager::fgValues[VarManager::kPt] << ", centrality (kCentFT0C): " << VarManager::fgValues[VarManager::kCentFT0C];
+                isSelectedBDT = dqMlResponse.isSelectedMl(dqInputFeatures, modelIndex, outputMlPsi2ee);
                 VarManager::FillBdtScore(outputMlPsi2ee); // TODO: check if this is needed or not
               }
 
@@ -2225,13 +2255,6 @@ struct AnalysisSameEventPairing {
     runSameEventPairing<false, VarManager::kDecayToEE, gkEventFillMapWithQvectorCentr, gkTrackFillMap>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
-  void processBarrelOnlySkimmedBDT(MyEventsVtxCovSelected const& events,
-                                   soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
-                                   MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
-  {
-    runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
-  }
-
   void processMuonOnlySkimmed(MyEventsVtxCovSelected const& events,
                               soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
@@ -2275,7 +2298,6 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlySkimmedNoCov, "Run barrel only pairing (no covariances), with skimmed tracks and with collision information", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlySkimmedNoCovWithMultExtra, "Run barrel only pairing (no covariances), with skimmed tracks, with collision information, with MultsExtra", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithQvectorCentrSkimmedNoCov, "Run barrel only pairing (no covariances), with skimmed tracks, with Qvector from central framework", false);
-  PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlySkimmedBDT, "Run electron-electron pairing, with skimmed tracks and BDT selection", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmed, "Run muon only pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmedMultExtra, "Run muon only pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingAllSkimmed, "Run all types of mixed pairing, with skimmed tracks/muons", false);
