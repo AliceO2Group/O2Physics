@@ -838,8 +838,6 @@ struct HyperkinkRecoTask {
 
         hypkinkCand.isSignal = true;
         hypkinkCand.isSignalReco = true;
-        hypkinkCand.isCollReco = true;
-        hypkinkCand.isSurvEvSelection = true;
         fillCandidateMCInfo(hypkinkCand, mcMothTrack, mcDaugTrack, mcNeutTrack);
         mcPartIndices.push_back(mcMothTrack.globalIndex());
 
@@ -849,6 +847,9 @@ struct HyperkinkRecoTask {
         registry.fill(HIST("hDCAXYMothToRecSV"), dcaInfo[0]);
         registry.fill(HIST("hDCAZMothToRecSV"), dcaInfo[1]);
       }
+
+      hypkinkCand.isCollReco = true;
+      hypkinkCand.isSurvEvSelection = true;
 
       outputMCTable(
         mBz > 0 ? 1 : -1,
