@@ -53,6 +53,7 @@
 
 #include "Math/Vector4D.h"
 #include "TRandom3.h"
+#include <TMCProcess.h>
 
 #include <algorithm>
 #include <cmath>
@@ -988,6 +989,7 @@ struct nucleiSpectra {
         if (particle.isPhysicalPrimary()) {
           flags |= kIsPhysicalPrimary;
           nuclei::hGenNuclei[iS][particle.pdgCode() < 0]->Fill(1., particle.pt());
+          // antinuclei from B hadrons are classified as physical primaries
           if (particle.has_mothers()) {
             for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
               if (std::find(nuclei::hfMothCodes.begin(), nuclei::hfMothCodes.end(), std::abs(motherparticle.pdgCode())) != nuclei::hfMothCodes.end()) {
@@ -998,7 +1000,10 @@ struct nucleiSpectra {
               }
             }
           }
-        } else if (particle.has_mothers()) {
+        } else if (particle.getProcess() == TMCProcess::kPDecay) {
+          if (!particle.has_mothers()) {
+            continue; // skip secondaries from weak decay without mothers
+          }
           flags |= kIsSecondaryFromWeakDecay;
           for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
             motherPdgCode = motherparticle.pdgCode();
