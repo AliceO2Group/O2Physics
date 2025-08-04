@@ -65,13 +65,12 @@ DECLARE_SOA_COLUMN(KShortMass, kShortMass, float);                 //! KShort Ma
 DECLARE_SOA_COLUMN(PionBachPx, pionBachPx, float);                 //! Bachelor Pion Px
 DECLARE_SOA_COLUMN(PionBachPy, pionBachPy, float);                 //! Bachelor Pion Py
 DECLARE_SOA_COLUMN(PionBachPz, pionBachPz, float);                 //! Bachelor Pion Pz
-                                                   // DECLARE_SOA_COLUMN(PionBachSign, pionBachSign, int);               //! Bachelor Pion Sign
-DECLARE_SOA_COLUMN(PionBachTPC, pionBachTPC, float);     //! Bachelor Pion nsigmatpc
-DECLARE_SOA_COLUMN(PionBachTOFHit, pionBachTOFHit, int); //! Bachelor Pion tof hit availability
-DECLARE_SOA_COLUMN(PionBachTOF, pionBachTOF, float);     //! Bachelor Pion nsigmatof
-DECLARE_SOA_COLUMN(PionBachIndex, pionBachIndex, int);   //! Bachelor Pion index
-DECLARE_SOA_COLUMN(PionIndex1, pionIndex1, int);         //! Daughter Pion index1
-DECLARE_SOA_COLUMN(PionIndex2, pionIndex2, int);         //! Daughter Pion index2
+DECLARE_SOA_COLUMN(PionBachTPC, pionBachTPC, float);               //! Bachelor Pion nsigmatpc
+DECLARE_SOA_COLUMN(PionBachTOFHit, pionBachTOFHit, int);           //! Bachelor Pion tof hit availability
+DECLARE_SOA_COLUMN(PionBachTOF, pionBachTOF, float);               //! Bachelor Pion nsigmatof
+DECLARE_SOA_COLUMN(PionBachIndex, pionBachIndex, int);             //! Bachelor Pion index
+DECLARE_SOA_COLUMN(PionIndex1, pionIndex1, int);                   //! Daughter Pion index1
+DECLARE_SOA_COLUMN(PionIndex2, pionIndex2, int);                   //! Daughter Pion index2
 } // namespace kshortpionpair
 DECLARE_SOA_TABLE(KShortTracks, "AOD", "KSHORTTRACK",
                   o2::soa::Index<>,
