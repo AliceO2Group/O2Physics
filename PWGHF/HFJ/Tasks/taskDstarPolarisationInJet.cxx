@@ -186,6 +186,7 @@ struct TaskPolarisationDstarInJet {
     const AxisSpec thnAxisCharge{configThnAxisCharge, "charge"};
     const AxisSpec thnAxisProjection{configThnAxisProjection, "z_{||}"};
     const AxisSpec thnAxisJetPt{configThnAxisJetPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec thnAxisSelFlag{2, -0.5f, 1.5f, "Sel flag"};
 
     auto invMassBins = thnAxisInvMass.binEdges;
     minInvMass = invMassBins.front();
@@ -204,50 +205,50 @@ struct TaskPolarisationDstarInJet {
     std::vector<AxisSpec> thnRecPromptAxes = thnRecDataAxes;
     std::vector<AxisSpec> thnRecNonPromptAxes = thnRecDataAxes;
 
-    // Data histos
-    if (activateTHnSparseCosThStarHelicity) {
-      registry.add("hHelicity", "THn for polarisation studies with cosThStar ", HistType::kTHnSparseF, thnRecDataAxes);
-    }
-    if (activateTHnSparseCosThStarProduction) {
-      registry.add("hProduction", "THn for polarisation studies with cosThStar w.r.t. production axis", HistType::kTHnSparseF, thnRecDataAxes);
-    }
-    if (activateTHnSparseCosThStarJetAxis) {
-      thnRecDataAxes.insert(thnRecDataAxes.end(), {thnAxisProjection, thnAxisJetPt});
-      registry.add("hJetAxis", "THn for polarisation studies with cosThStar w.r.t. jet axis", HistType::kTHnSparseF, thnRecDataAxes);
-    }
+    if (doprocessDstar || doprocessDstarWithMl) {
+      // Data histos
+      if (activateTHnSparseCosThStarHelicity) {
+        registry.add("hHelicity", "THn for polarisation studies with cosThStar ", HistType::kTHnSparseF, thnRecDataAxes);
+      }
+      if (activateTHnSparseCosThStarProduction) {
+        registry.add("hProduction", "THn for polarisation studies with cosThStar w.r.t. production axis", HistType::kTHnSparseF, thnRecDataAxes);
+      }
+      if (activateTHnSparseCosThStarJetAxis) {
+        thnRecDataAxes.insert(thnRecDataAxes.end(), {thnAxisProjection, thnAxisJetPt});
+        registry.add("hJetAxis", "THn for polarisation studies with cosThStar w.r.t. jet axis", HistType::kTHnSparseF, thnRecDataAxes);
+      }
+    } else if (doprocessDstarMc || doprocessDstarMcWithMl) {
+      // MC Reco histos
+      thnRecPromptAxes.push_back(thnAxisDauToMuons);
+      thnRecNonPromptAxes.insert(thnRecNonPromptAxes.end(), {thnAxisPtB, thnAxisDauToMuons});
+      if (activateTHnSparseCosThStarHelicity) {
+        registry.add("hRecoPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores -- reco prompt signal", HistType::kTHnSparseF, thnRecPromptAxes);
+        registry.add("hRecoNonPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores -- reco non-prompt signal", HistType::kTHnSparseF, thnRecNonPromptAxes);
+        if (activatePartRecoDstar) {
+          registry.add("hPartRecoPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores -- partially reco prompt signal", HistType::kTHnSparseF, thnRecPromptAxes);
+          registry.add("hPartRecoNonPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores -- partially reco non-prompt signal" , HistType::kTHnSparseF, thnRecNonPromptAxes);
+        }
+      }
+      if (activateTHnSparseCosThStarProduction) {
+        registry.add("hRecoPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores -- reco prompt signal", HistType::kTHnSparseF, thnRecPromptAxes);
+        registry.add("hRecoNonPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores -- reco non-prompt signal", HistType::kTHnSparseF, thnRecNonPromptAxes);
+        if (activatePartRecoDstar) {
+          registry.add("hPartRecoPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores -- partially reco prompt signal", HistType::kTHnSparseF, thnRecPromptAxes);
+          registry.add("hPartRecoNonPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores -- partially reco non-prompt signal", HistType::kTHnSparseF, thnRecNonPromptAxes);
+        }
+      }
+      if (activateTHnSparseCosThStarJetAxis) {
+        thnRecPromptAxes.insert(thnRecPromptAxes.end(), {thnAxisProjection, thnAxisJetPt});
+        thnRecNonPromptAxes.insert(thnRecNonPromptAxes.end(), {thnAxisProjection, thnAxisJetPt});
+        registry.add("hRecoPromptJetAxis", "THn for polarisation studies with cosThStar w.r.t. jet axis and BDT scores -- reco prompt signal", HistType::kTHnSparseF, thnRecPromptAxes);
+        registry.add("hRecoNonPromptJetAxis", "THn for polarisation studies with cosThStar w.r.t. jet axis and BDT scores -- reco non-prompt signal", HistType::kTHnSparseF, thnRecNonPromptAxes);
+        if (activatePartRecoDstar) {
+          registry.add("hPartRecoPromptJetAxis", "THn for polarisation studies with cosThStar w.r.t. jet axis and BDT scores -- partially reco prompt signal", HistType::kTHnSparseF, thnRecPromptAxes);
+          registry.add("hPartRecoNonPromptJetAxis", "THn for polarisation studies with cosThStar w.r.t. jet axis and BDT scores -- partially reco non-prompt signal", HistType::kTHnSparseF, thnRecNonPromptAxes);
+        }
+      } 
 
-    // MC Reco histos
-    thnRecPromptAxes.push_back(thnAxisDauToMuons);
-    thnRecNonPromptAxes.insert(thnRecNonPromptAxes.end(), {thnAxisPtB, thnAxisDauToMuons});
-    if (activateTHnSparseCosThStarHelicity) {
-      registry.add("hRecoPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores -- reco prompt signal", HistType::kTHnSparseF, thnRecPromptAxes);
-      registry.add("hRecoNonPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores -- reco non-prompt signal", HistType::kTHnSparseF, thnRecNonPromptAxes);
-      if (activatePartRecoDstar) {
-        registry.add("hPartRecoPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores -- partially reco prompt signal", HistType::kTHnSparseF, thnRecPromptAxes);
-        registry.add("hPartRecoNonPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores -- partially reco non-prompt signal" , HistType::kTHnSparseF, thnRecNonPromptAxes);
-      }
-    }
-    if (activateTHnSparseCosThStarProduction) {
-      registry.add("hRecoPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores -- reco prompt signal", HistType::kTHnSparseF, thnRecPromptAxes);
-      registry.add("hRecoNonPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores -- reco non-prompt signal", HistType::kTHnSparseF, thnRecNonPromptAxes);
-      if (activatePartRecoDstar) {
-        registry.add("hPartRecoPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores -- partially reco prompt signal", HistType::kTHnSparseF, thnRecPromptAxes);
-        registry.add("hPartRecoNonPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores -- partially reco non-prompt signal", HistType::kTHnSparseF, thnRecNonPromptAxes);
-      }
-    }
-    if (activateTHnSparseCosThStarJetAxis) {
-      thnRecPromptAxes.insert(thnRecPromptAxes.end(), {thnAxisProjection, thnAxisJetPt});
-      thnRecNonPromptAxes.insert(thnRecNonPromptAxes.end(), {thnAxisProjection, thnAxisJetPt});
-      registry.add("hRecoPromptJetAxis", "THn for polarisation studies with cosThStar w.r.t. jet axis and BDT scores -- reco prompt signal", HistType::kTHnSparseF, thnRecPromptAxes);
-      registry.add("hRecoNonPromptJetAxis", "THn for polarisation studies with cosThStar w.r.t. jet axis and BDT scores -- reco non-prompt signal", HistType::kTHnSparseF, thnRecNonPromptAxes);
-      if (activatePartRecoDstar) {
-        registry.add("hPartRecoPromptJetAxis", "THn for polarisation studies with cosThStar w.r.t. jet axis and BDT scores -- partially reco prompt signal", HistType::kTHnSparseF, thnRecPromptAxes);
-        registry.add("hPartRecoNonPromptJetAxis", "THn for polarisation studies with cosThStar w.r.t. jet axis and BDT scores -- partially reco non-prompt signal", HistType::kTHnSparseF, thnRecNonPromptAxes);
-      }
-    } 
-
-    // MC Gen histos
-    if (doprocessDstarMc || doprocessDstarMcWithMl) {
+      // MC Gen histos
       std::vector<AxisSpec> thnGenPromptAxes = {thnAxisPt, thnAxisY, thnAxisCosThetaStar, thnAxisDausAcc, thnAxisCharge};
       std::vector<AxisSpec> thnGenNonPromptAxes = {thnAxisPt, thnAxisY, thnAxisCosThetaStar, thnAxisPtB, thnAxisDausAcc, thnAxisCharge};
 
@@ -698,30 +699,6 @@ struct TaskPolarisationDstarInJet {
     }
   };
 
-  /// prongTracks is the vector of daughter tracks
-  /// etaMin is the minimum eta
-  /// nItsClsMin is the minumum number of clusters in ITS
-  /// nTpcClsMin is the minumum number of clusters in TPC
-  template <typename Trk>
-  void getTrackingInfos(std::vector<Trk> const& prongTracks, float& etaMin, int& nItsClsMin, int& nTpcClsMin)
-  {
-    etaMin = 10.f;
-    nItsClsMin = 10;
-    nTpcClsMin = 1000;
-
-    for (const auto& track : prongTracks) {
-      if (std::abs(track.eta()) < etaMin) {
-        etaMin = std::abs(track.eta());
-      }
-      if (track.itsNCls() < nItsClsMin) {
-        nItsClsMin = track.itsNCls();
-      }
-      if (track.tpcNClsCrossedRows() < nTpcClsMin) {
-        nTpcClsMin = track.tpcNClsCrossedRows();
-      }
-    }
-  }
-
   /// \param candidates are the selected candidates
   /// \param bkgRotationId is the id for the background rotation
   /// \param particles are the generated particles
@@ -808,7 +785,6 @@ struct TaskPolarisationDstarInJet {
           outputMl[2] = candidate.mlScores()[2];
         }
       } 
-
       if (invMassCharmHadForSparse < minInvMass || invMassCharmHadForSparse > maxInvMass) {
         continue;
       }
@@ -831,19 +807,9 @@ struct TaskPolarisationDstarInJet {
       if (!isCandidateInSignalRegion) { // it could be that only one mass hypothesis is in signal region
         isCandidateInSignalRegion = isInSignalRegion<channel>(invMassCharmHadForSparse);
       }
-
-      float absEtaTrackMin{-1.f};
-      int numItsClsMin{-1}, numTpcClsMin{-1};
-
-      if (activateTrackingSys) {
-        // const auto& hfBase = static_cast<const o2::aod::hf_track_index::Prong0Id&>(candidate);
-        auto trackProng0 = candidate.template prong0_as<Trk>();
-        auto trackProng1 = candidate.template prong1_as<Trk>();
-        if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
-          auto trackProng2 = candidate.template prong2_as<Trk>();
-          getTrackingInfos(std::vector{trackProng0, trackProng1, trackProng2}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
-        } 
-      }
+      float absEtaTrackMin = candidate.absEtaTrackMin();
+      int numItsClsMin = candidate.numItsClsMin();
+      int numTpcClsMin = candidate.numTpcClsMin();
 
       // helicity
       ROOT::Math::XYZVector helicityVec = fourVecMother.Vect();
@@ -851,8 +817,6 @@ struct TaskPolarisationDstarInJet {
       // production
       ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(pyCharmHad, -pxCharmHad, 0.f);
       float cosThetaStarProduction = -10.f;
-      // beam axis
-      ROOT::Math::XYZVector beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
       // jet axis
       ROOT::Math::XYZVector jetaxisVec = fourVecJetCM.Vect();
       float cosThetaStarJet = -10.f;
@@ -864,7 +828,6 @@ struct TaskPolarisationDstarInJet {
       if constexpr (doMc) {
         nMuons = candidate.nTracksDecayed();
       }
-
       if (activateTHnSparseCosThStarHelicity) {
         // helicity
         cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(helicityVec.Mag2());
@@ -885,100 +848,6 @@ struct TaskPolarisationDstarInJet {
     return isCandidateInSignalRegion;
   }
 
-  /// \param mcParticle is the Mc particle
-  /// \param mcParticles is the table of Mc particles
-  template <charm_polarisation::DecayChannel channel, typename Jet, typename Part, typename Particles>
-  void runMcGenPolarisationAnalysis(Jet const& jet, Part const& mcParticle, Particles const& mcParticles)
-  {
-    int8_t origin{RecoDecay::OriginType::None};
-    std::vector<int> listDaughters{};
-    float massDau{0.f}, massCharmHad{0.f};
-    bool areDauInAcc{true};
-    int8_t charge = -99;
-    bool partRecoDstar{false};
-    if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
-      partRecoDstar = TESTBIT(std::abs(mcParticle.flagMcMatchGen()), aod::hf_cand_dstar::DecayType::DstarToD0PiPi0) && TESTBIT(std::abs(mcParticle.flagMcMatchGenCharm()), aod::hf_cand_dstar::DecayType::D0ToPiKPi0);
-      bool signalDstar = TESTBIT(std::abs(mcParticle.flagMcMatchGen()), aod::hf_cand_dstar::DecayType::DstarToD0Pi) && TESTBIT(std::abs(mcParticle.flagMcMatchGenCharm()), aod::hf_cand_dstar::DecayType::D0ToPiK);
-
-      if (!signalDstar && (!activatePartRecoDstar || !partRecoDstar)) { // this particle is not signal and not partially reconstructed signal, skip
-        return;
-      }
-      origin = mcParticle.originMcGen();
-      if (origin == RecoDecay::OriginType::NonPrompt) {
-        auto bHadMother = mcParticles.rawIteratorAt(mcParticle.idxBhadMotherPart() - mcParticles.offset());
-        int pdgBhadMother = std::abs(bHadMother.pdgCode());
-        // For unknown reasons there are charm hadrons coming directly from beauty diquarks without an intermediate B-hadron which have an unreasonable correlation between the pT of the charm hadron and the beauty mother. We also remove charm hadrons from quarkonia.
-        if (pdgBhadMother == 5101 || pdgBhadMother == 5103 || pdgBhadMother == 5201 || pdgBhadMother == 5203 || pdgBhadMother == 5301 || pdgBhadMother == 5303 || pdgBhadMother == 5401 || pdgBhadMother == 5403 || pdgBhadMother == 5503 || pdgBhadMother == 553 || pdgBhadMother == 555 || pdgBhadMother == 553 || pdgBhadMother == 557) {
-          return;
-        }
-        ptBhadMother = bHadMother.pt();
-      }
-
-      std::array<int, 2> dauPdgs = {kPiPlus, o2::constants::physics::Pdg::kD0};
-      RecoDecay::getDaughters(mcParticle, &listDaughters, dauPdgs, 1);
-      massDau = massPi;
-      massCharmHad = massDstar;
-    } 
-    float rapidity = mcParticle.y();
-    if (std::abs(rapidity) > 1.f) { // we do not keep particles with |y| > 1
-      return;
-    }
-
-    float pxCharmHad = mcParticle.px();
-    float pyCharmHad = mcParticle.py();
-    float pzCharmHad = mcParticle.pz();
-    float ptCharmHad = mcParticle.pt();
-
-    float pxDau{-1000.f}, pyDau{-1000.f}, pzDau{-1000.f};
-    for (const auto& dauIdx : listDaughters) {
-      auto dauPart = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
-      if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
-        if (std::abs(dauPart.pdgCode()) == kPiPlus) {
-          pxDau = dauPart.px();
-          pyDau = dauPart.py();
-          pzDau = dauPart.pz();
-          if (areDauInAcc) {
-            areDauInAcc = isDaughterInAcceptance(dauPart, 0.1, 0.8);
-          }
-        } else if (areDauInAcc) { // check also D0 daughters
-          std::vector<int> listDaughtersD0{};
-          std::array<int, 2> dauPdgsD0 = {kPiPlus, -kKPlus};
-          RecoDecay::getDaughters(mcParticle, &listDaughtersD0, dauPdgsD0, 1);
-          for (const auto& dauIdxD0 : listDaughtersD0) {
-            auto dauPartD0 = mcParticles.rawIteratorAt(dauIdxD0 - mcParticles.offset());
-            if (areDauInAcc) {
-              areDauInAcc = isDaughterInAcceptance(dauPartD0, 0.3, 0.8);
-            }
-          }
-        }
-      }
-    }
-
-    ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(pxDau, pyDau, pzDau, massDau);
-    ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(pxCharmHad, pyCharmHad, pzCharmHad, massCharmHad);
-    ROOT::Math::Boost boost{fourVecMother.BoostToCM()};
-    ROOT::Math::PxPyPzMVector fourVecDauCM = boost(fourVecDau);
-    ROOT::Math::XYZVector threeVecDauCM = fourVecDauCM.Vect();
-    ROOT::Math::PxPyPzMVector fourVecJet = ROOT::Math::PxPyPzMVector(jet.px(), jet.py(), jet.pz(), jet.mass());
-    ROOT::Math::PxPyPzMVector fourVecJetCM = boost(fourVecJet);
-
-    if (activateTHnSparseCosThStarHelicity) {
-      ROOT::Math::XYZVector helicityVec = fourVecMother.Vect();
-      float cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(helicityVec.Mag2());
-      fillGenHistos<charm_polarisation::CosThetaStarType::Helicity>(ptCharmHad, rapidity, cosThetaStarHelicity, origin, ptBhadMother, areDauInAcc, charge, partRecoDstar);
-    }
-    if (activateTHnSparseCosThStarProduction) {
-      ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(pyCharmHad, -pxCharmHad, 0.f);
-      float cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(normalVec.Mag2());
-      fillGenHistos<charm_polarisation::CosThetaStarType::Production>(ptCharmHad, rapidity, cosThetaStarProduction, origin, ptBhadMother, areDauInAcc, charge, partRecoDstar);
-    }
-    if (activateTHnSparseCosThStarJetAxis) {
-      ROOT::Math::XYZVector jetaxisVec = fourVecJetCM.Vect();
-      float cosThetaStarJet = jetaxisVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(jetaxisVec.Mag2());
-      fillGenHistos<charm_polarisation::CosThetaStarType::JetAxis>(ptCharmHad, rapidity, cosThetaStarJet, origin, ptBhadMother, areDauInAcc, charge, partRecoDstar);
-    }
-  }
-
   /////////////////////////
   //   Dstar analysis   ///
   /////////////////////////
@@ -991,17 +860,13 @@ struct TaskPolarisationDstarInJet {
   {
     for (const auto& collision : collisions) {
       if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
-      return;
+        continue;
       }
       auto thisCollId = collision.globalIndex();
-      int nCands{0}, nCandsInSignalRegion{0};
       auto groupedDstarjets = jets.sliceBy(dstarJetsPerCollision, thisCollId);
       for (const auto& jet : groupedDstarjets){
         for (const auto& dstarCandidate : jet.candidates_as<aod::CandidatesDstarData>()){
-          nCands++;
-          if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false>(jet, dstarCandidate, 0, tracks)) {
-            nCandsInSignalRegion++;
-          }
+          runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false>(jet, dstarCandidate, 0, tracks);
           for (int iRotation{1}; iRotation <= nBkgRotations; ++iRotation) {
             runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false>(jet, dstarCandidate, iRotation, tracks);
           }
@@ -1020,19 +885,15 @@ struct TaskPolarisationDstarInJet {
   {
     for (const auto& collision : collisions) {
       if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
-      return;
+        continue;
       }
       auto thisCollId = collision.globalIndex();
-      int nCands{0}, nCandsInSignalRegion{0}; 
       auto groupedDstarJets = jets.sliceBy(dstarJetsPerCollision, thisCollId);
-      for (const auto& jet : jets){
+      for (const auto& jet : groupedDstarJets){
         for (const auto& dstarCandidate : jet.candidates_as<aod::CandidatesDstarData>()){
-          nCands++;
-          if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false>(jet, dstarCandidate, 0, tracks)) {
-            nCandsInSignalRegion++;
-          }
+          runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false>(jet, dstarCandidate, 0, tracks);
           for (int iRotation{1}; iRotation <= nBkgRotations; ++iRotation) {
-            runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false>(jet, dstarCandidate, iRotation, tracks);
+            runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false>(jet, dstarCandidate, iRotation, tracks);
           }
           break; // hf jet should have only one Dstar candidate but for safety
         }
@@ -1045,7 +906,7 @@ struct TaskPolarisationDstarInJet {
   void processDstarMc(aod::JetMcCollisions const& mcCollisions,
                       aod::JetCollisions const& collisions,
                       JetMCDTable const& mcdJets,
-                      JetMCPTable const& mcpJets,
+                      JetMCPTable const&,
                       aod::CandidatesDstarMCD const&,
                       aod::CandidatesDstarMCP const&,
                       TracksWithExtra const& tracks)
@@ -1056,26 +917,13 @@ struct TaskPolarisationDstarInJet {
         if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
           continue;
         }
-
-        int nCands{0}, nCandsInSignalRegion{0};
         const auto dstarMcDJetsPerCollision = mcdJets.sliceBy(dstarMCDJetsPerCollisionPreslice, collision.globalIndex());
         for (const auto& mcdJet : dstarMcDJetsPerCollision){
           for (const auto& mcdDstarCand : mcdJet.candidates_as<aod::CandidatesDstarMCD>()){
-            nCands++;
             if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, true>(mcdJet, mcdDstarCand, 0, tracks)) {
-              nCandsInSignalRegion++;
             }
             break;
           }
-        }
-      }
-      
-      const auto dstarMcpJetsPerMcCollision = mcpJets.sliceBy(dstarMCPJetsPerMCCollisionPreslice, collision.globalIndex());
-      for (const auto& mcpJet : dstarMcpJetsPerMcCollision){
-        const auto mcpDstarCands = mcpJet.candidates_as<aod::CandidatesDstarMCP>();
-        for (const auto& mcpDstarCand : mcpDstarCands){
-          runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi>(mcpJet, mcpDstarCand, mcpDstarCands);
-          break;
         }
       }
     }
@@ -1086,7 +934,7 @@ struct TaskPolarisationDstarInJet {
   void processDstarMcWithMl(aod::JetMcCollisions const& mcCollisions,
                       aod::JetCollisions const& collisions,
                       JetMCDTable const& mcdJets,
-                      JetMCPTable const& mcpJets,
+                      JetMCPTable const&,
                       aod::CandidatesDstarMCD const&,
                       aod::CandidatesDstarMCP const&,
                       TracksWithExtra const& tracks)
@@ -1097,25 +945,12 @@ struct TaskPolarisationDstarInJet {
         if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
           continue;
         }
-        
-        int nCands{0}, nCandsInSignalRegion{0};
-
-        const auto dstarmcdJetsPerCollision = mcdjets.sliceBy(dstarMCDJetsPerCollisionPreslice, collision.globalIndex());
-        for (const auto& mcdjet : dstarmcdJetsPerCollision){
-          for (const auto& mcddstarcand : mcdjet.candidates_as<aod::CandidatesDstarMCD>()){
-            nCands++;
-            if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, true>(mcdjet, mcddstarcand, 0, tracks)) {
-              nCandsInSignalRegion++;
+        const auto dstarMcdJetsPerCollision = mcdJets.sliceBy(dstarMCDJetsPerCollisionPreslice, collision.globalIndex());
+        for (const auto& mcdJet : dstarMcdJetsPerCollision){
+          for (const auto& mcdDstarCand : mcdJet.candidates_as<aod::CandidatesDstarMCD>()){
+            if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, true>(mcdJet, mcdDstarCand, 0, tracks)) {
             }   
           }
-        }
-      }
-
-      const auto dstarMcpJetsPerMcCollision = mcpJets.sliceBy(dstarMCPJetsPerMCCollisionPreslice, collision.globalIndex());
-      for (const auto& mcpJet : dstarMcpJetsPerMcCollision){
-        const auto mcpDstarCands = mcpJet.candidates_as<aod::CandidatesDstarMCP>();
-        for (const auto& mcpDstarCand : mcpDstarCands){
-          runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi>(mcpJet, mcpDstarCand, mcpDstarCands);
         }
       }
     }

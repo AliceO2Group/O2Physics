@@ -356,6 +356,9 @@ DECLARE_SOA_COLUMN(PtProngPi1, ptProngPi1, float);                              
 DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);                         //! distance of the secondary vertex from the z axis
 // D*± → D0(bar) π±
 DECLARE_SOA_COLUMN(SignProng1, signProng1, int8_t);
+DECLARE_SOA_COLUMN(AbsEtaTrackMin, absEtaTrackMin, float);
+DECLARE_SOA_COLUMN(NumItsClsMin, numItsClsMin, int);
+DECLARE_SOA_COLUMN(NumTpcClsMin, numTpcClsMin, int);
 // TOF
 DECLARE_SOA_COLUMN(NSigTofKa0, nSigTofKa0, float);
 DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float);
@@ -963,6 +966,9 @@ DECLARE_SOA_TABLE_STAGED(HfDstarPars, "HFDSTPAR", //! Table with candidate prope
                          hf_cand_par::NSigTpcPi1,
                          hf_cand_par::NSigTofPi1,
                          hf_cand_par::NSigTpcTofPi1,
+                         hf_cand_par::AbsEtaTrackMin,
+                         hf_cand_par::NumItsClsMin,
+                         hf_cand_par::NumTpcClsMin,
                          o2::soa::Marker<MarkerDstar>);
 
 DECLARE_SOA_TABLE_STAGED(HfDstarParD0s, "HFDSTPARD0", //! Table with candidate properties used for selection
