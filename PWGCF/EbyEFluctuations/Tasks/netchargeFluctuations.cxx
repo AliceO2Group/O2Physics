@@ -198,6 +198,9 @@ struct NetchargeFluctuations {
     histogramRegistry.add("delta_eta/cent", "Centrality", kTH1F, {cent1Axis});
     histogramRegistry.add("delta_eta/track_eta", "eta", kTH1F, {etaAxis});
     histogramRegistry.add("delta_eta/pos", "delta_eta vs fpos", kTProfile, {deltaEtaAxis});
+    histogramRegistry.add("delta_eta/nch", "delta_eta vs nch", kTProfile, {deltaEtaAxis});
+    histogramRegistry.add("delta_eta/nchTotal", "delta_eta vs nchTotal", kTProfile, {deltaEtaAxis});
+    histogramRegistry.add("delta_eta/nchCor", "delta_eta vs nchCor", kTProfile, {deltaEtaAxis});
     histogramRegistry.add("delta_eta/neg", "delta_eta vs fneg", kTProfile, {deltaEtaAxis});
     histogramRegistry.add("delta_eta/termp", "delta_eta vs termp", kTProfile, {deltaEtaAxis});
     histogramRegistry.add("delta_eta/termn", "delta_eta vs termn", kTProfile, {deltaEtaAxis});
@@ -260,7 +263,6 @@ struct NetchargeFluctuations {
 
     if (std::abs(coll.posZ()) > vertexZcut)
       return false;
-
     if constexpr (run == kRun3) {
       if (cSel8Trig && !coll.sel8()) {
         return false;
@@ -346,7 +348,7 @@ struct NetchargeFluctuations {
     return true;
   }
 
-  double getEfficiency(double pt, double eta, TH2D* hEff)
+  double getEfficiency(float pt, float eta, TH2D* hEff)
   {
     if (!hEff) {
       LOGF(error, "Efficiency histogram is null — check CCDB loading.");
@@ -568,10 +570,17 @@ struct NetchargeFluctuations {
       return;
     histogramRegistry.fill(HIST("delta_eta/cent"), cent);
 
-    int fpos = 0, fneg = 0, posneg = 0, termn = 0, termp = 0;
+    int fpos = 0, fneg = 0, posneg = 0, termn = 0, termp = 0, nch = 0, nchCor = 0, nchTotal = 0;
     for (const auto& track : tracks) {
+      nchTotal += 1;
       if (!selTrack(track))
         continue;
+      nch += 1;
+      double eff = getEfficiency(track.pt(), track.eta(), efficiency);
+      if (eff < threshold)
+        continue;
+      double weight = 1.0 / eff;
+      nchCor += weight;
       double eta = track.eta();
       if (eta < deta1 || eta > deta2)
         continue;
@@ -589,6 +598,9 @@ struct NetchargeFluctuations {
 
     float deltaEtaWidth = deta2 - deta1 + 1e-5f;
 
+    histogramRegistry.fill(HIST("delta_eta/nchTotal"), deltaEtaWidth, nchTotal);
+    histogramRegistry.fill(HIST("delta_eta/nch"), deltaEtaWidth, nch);
+    histogramRegistry.fill(HIST("delta_eta/nchCor"), deltaEtaWidth, nchCor);
     histogramRegistry.fill(HIST("delta_eta/pos"), deltaEtaWidth, fpos);
     histogramRegistry.fill(HIST("delta_eta/neg"), deltaEtaWidth, fneg);
     histogramRegistry.fill(HIST("delta_eta/termp"), deltaEtaWidth, termp);
