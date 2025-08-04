@@ -65,6 +65,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   // configurations for correlation part
   Configurable<int> confTrackChoicePartOne{"confTrackChoicePartOne", 0, "0:Proton, 1:Pion, 2:Kaon"};
   Configurable<int> confTrkPDGCodePartOne{"confTrkPDGCodePartOne", 2212, "Particle 1 (Track) - PDG code"};
+  Configurable<int> confCascPDGCodePartTwo{"confCascPDGCodePartTwo", 3312, "Particle 2 (Cascade) - PDG code"};
   Configurable<int> confCascType1{"confCascType1", 0, "select one of the Cascades (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for track-cascade combination"};
   Configurable<int> confCascType2{"confCascType2", 0, "select one of the Cascades (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for cascade-cascade combination"};
   Configurable<bool> confIsCPR{"confIsCPR", false, "Close Pair Rejection"};
@@ -291,6 +292,9 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
     sameEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
     mixedEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
+    sameEventCont.setPDGCodes(confTrkPDGCodePartOne, confCascPDGCodePartTwo);
+    mixedEventCont.setPDGCodes(confTrkPDGCodePartOne, confCascPDGCodePartTwo);
+
     pairCleaner.init(&qaRegistry);
     pairCleanerCasc.init(&qaRegistry);
     if (confIsCPR.value) {
