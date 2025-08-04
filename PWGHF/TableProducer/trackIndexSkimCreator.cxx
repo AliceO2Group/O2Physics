@@ -3367,7 +3367,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
   } config;
 
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
-  o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
@@ -3427,14 +3426,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
     df2.setMinRelChi2Change(config.minRelChi2Change);
     df2.setUseAbsDCA(config.useAbsDCA);
     df2.setWeightedFinalPCA(config.useWeightedFinalPCA);
-
-    df3.setPropagateToPCA(config.propagateToPCA);
-    df3.setMaxR(config.maxR);
-    df3.setMaxDZIni(config.maxDZIni);
-    df3.setMinParamChange(config.minParamChange);
-    df3.setMinRelChi2Change(config.minRelChi2Change);
-    df3.setUseAbsDCA(config.useAbsDCA);
-    df3.setWeightedFinalPCA(config.useWeightedFinalPCA);
 
     ccdb->setURL(config.ccdbUrl);
     ccdb->setCaching(true);
@@ -3563,9 +3554,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
       df2.setBz(magneticField);
       df2.setRefitWithMatCorr(config.refitWithMatCorr);
-
-      df3.setBz(magneticField);
-      df3.setRefitWithMatCorr(config.refitWithMatCorr);
 
       // cascade loop
       auto thisCollId = collision.globalIndex();
@@ -3803,7 +3791,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
               // reconstruct Xic with DCAFitter
               int nVtxFrom3ProngFitterXiHyp = 0;
               try {
-                nVtxFrom3ProngFitterXiHyp = df3.process(trackCascXi, trackParVarCharmBachelor1, trackParVarPion2);
+                // Use only bachelor tracks for vertex reconstruction because the Xi track has large uncertainties.
+                nVtxFrom3ProngFitterXiHyp = df2.process(trackParVarCharmBachelor1, trackParVarPion2);
               } catch (...) {
                 if (config.fillHistograms) {
                   registry.fill(HIST("hFitterStatusXi3Prong"), 1);
@@ -3816,16 +3805,15 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
               if (nVtxFrom3ProngFitterXiHyp > 0) {
 
-                df3.propagateTracksToVertex();
+                df2.propagateTracksToVertex();
 
-                if (df3.isPropagateTracksToVertexDone()) {
+                if (df2.isPropagateTracksToVertexDone()) {
 
                   std::array<float, 3> pVec1 = {0.};
                   std::array<float, 3> pVec2 = {0.};
-                  std::array<float, 3> pVec3 = {0.};
-                  df3.getTrack(0).getPxPyPzGlo(pVec1); // take the momentum at the Xic vertex
-                  df3.getTrack(1).getPxPyPzGlo(pVec2);
-                  df3.getTrack(2).getPxPyPzGlo(pVec3);
+                  std::array<float, 3> pVec3 = pVecCasc;
+                  df2.getTrack(0).getPxPyPzGlo(pVec1); // take the momentum at the Xic vertex
+                  df2.getTrack(1).getPxPyPzGlo(pVec2);
                   float ptXic3Prong = RecoDecay::pt(pVec1, pVec2, pVec3);
 
                   std::array<std::array<float, 3>, 3> arr3Mom = {pVec1, pVec2, pVec3};
@@ -3844,7 +3832,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
                     registry.fill(HIST("hMassXicPlusToXiPiPi"), mass3Prong);
                     registry.fill(HIST("hPtCutsXicPlusToXiPiPi"), ptXic3Prong);
                   }
-                } else if (df3.isPropagationFailure()) {
+                } else if (df2.isPropagationFailure()) {
                   LOGF(info, "Exception caught: failed to propagate tracks (3prong) to charm baryon decay vtx");
                 }
               }
