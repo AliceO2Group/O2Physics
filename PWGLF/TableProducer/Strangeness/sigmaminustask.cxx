@@ -18,9 +18,11 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 
+#include "Common/Core/trackUtilities.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/PID.h"
+#include "ReconstructionDataFormats/Track.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -41,6 +43,7 @@ struct sigmaminustask {
   // Histograms are defined with HistogramRegistry
   HistogramRegistry rEventSelection{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rSigmaMinus{"sigmaminus", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rFindable{"findable", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
@@ -65,9 +68,11 @@ struct sigmaminustask {
     const AxisSpec vertexZAxis{100, -15., 15., "vrtx_{Z} [cm]"};
     const AxisSpec dcaMothAxis{100, 0, 1, "DCA [cm]"};
     const AxisSpec dcaDaugAxis{200, 0, 20, "DCA [cm]"};
+    const AxisSpec radiusAxis{100, -1, 40, "Decay radius [cm]"};
 
-    const AxisSpec ptResolutionAxis{100, -0.5, 0.5, "#it{p}_{T}^{rec} - #it{p}_{T}^{gen} (GeV/#it{c})"};
-    const AxisSpec massResolutionAxis{100, -0.1, 0.1, "m_{rec} - m_{gen} (GeV/#it{c}^{2})"};
+    const AxisSpec ptResolutionAxis{100, -2, 2, "(#it{p}_{T}^{rec} - #it{p}_{T}^{gen}) / #it{p}_{T}^{gen}"};
+    const AxisSpec massResolutionAxis{100, -2, 2, "(m_{rec} - m_{gen}) / m_{gen}"};
+    const AxisSpec radiusResolutionAxis{100, -2, 2, "(r_{rec} - r_{gen}) / r_{gen}"};
 
     const AxisSpec boolAxis{2, -0.5, 1.5, "Boolean value (0=false, 1=true)"};
     const AxisSpec filtersAxis{10, -0.5, 9.5, "Filter index"};
@@ -101,8 +106,11 @@ struct sigmaminustask {
 
     if (doprocessFindable) {
       // Add findable Sigma histograms
-      rSigmaMinus.add("h2MassPtFindable", "h2MassPtFindable", {HistType::kTH2F, {ptAxis, sigmaMassAxis}});
-      rSigmaMinus.add("hFilterIndex", "hFilterIndex", {HistType::kTH1F, {filtersAxis}});
+      rFindable.add("h2MassPtFindableAll", "h2MassPtFindableAll", {HistType::kTH2F, {ptAxis, sigmaMassAxis}});
+      rFindable.add("hFilterIndex", "hFilterIndex", {HistType::kTH1F, {filtersAxis}});
+      rFindable.add("h2MCRadiusFilterIndex", "h2RadiusFilterIndex", {HistType::kTH2F, {filtersAxis, radiusAxis}});
+      rFindable.add("h2RecRadiusFilterIndex", "h2RecRadiusFilterIndex", {HistType::kTH2F, {filtersAxis, radiusAxis}});
+
     }
   }
 
@@ -191,6 +199,7 @@ struct sigmaminustask {
             float deltaXMother = mcTrackPiDau.vx() - piMother.vx();
             float deltaYMother = mcTrackPiDau.vy() - piMother.vy();
             float decayRadiusMC = std::sqrt(deltaXMother * deltaXMother + deltaYMother * deltaYMother);
+            float decayRadiusRec = std::sqrt(kinkCand.xDecVtx() * kinkCand.xDecVtx() + kinkCand.yDecVtx() * kinkCand.yDecVtx());
 
             // Check coherence of MCcollision Id for daughter MCparticle and reconstructed collision
             bool mcCollisionIdCheck = false;
@@ -209,10 +218,11 @@ struct sigmaminustask {
             rSigmaMinus.fill(HIST("h2BCId_comp2"), static_cast<int>(EvSel_vs_MCBCId), static_cast<int>(BCId_vs_EvSel));
 
             rSigmaMinus.fill(HIST("h2MassPtMCRec"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
-            rSigmaMinus.fill(HIST("h2MassResolution"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus() - MotherMassMC);
-            rSigmaMinus.fill(HIST("h2PtResolution"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.ptMoth() - MotherpTMC);
+            rSigmaMinus.fill(HIST("h2MassResolution"), kinkCand.mothSign() * kinkCand.ptMoth(), (kinkCand.mSigmaMinus() - MotherMassMC) / MotherMassMC);
+            rSigmaMinus.fill(HIST("h2PtResolution"), kinkCand.mothSign() * kinkCand.ptMoth(), (kinkCand.ptMoth() - MotherpTMC) / MotherpTMC);
+            rSigmaMinus.fill(HIST("h2RadiusResolution"), kinkCand.mothSign() * kinkCand.ptMoth(), (decayRadiusRec - decayRadiusMC) / decayRadiusMC);
             rSigmaMinus.fill(HIST("h2DCAMothPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.dcaMothPv());
-            rSigmaMinus.fill(HIST("h2DCADaugPt"), kinkCand.mothSign() * kinkCand.ptDaug(), kinkCand.dcaDaugPv());
+            rSigmaMinus.fill(HIST("h2DCADaugPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.dcaDaugPv());
 
             if (std::abs(mcTrackPiDau.pdgCode()) == 211) {
               rSigmaMinus.fill(HIST("h2NSigmaTOFPiPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tofNSigmaPi());
@@ -283,7 +293,7 @@ struct sigmaminustask {
 
   PROCESS_SWITCH(sigmaminustask, processMC, "MC processing", false);
 
-  void processFindable(TracksFull const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const&, CollisionsFullMC const&)
+  void processFindable(TracksFull const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::KinkCands const& kinkCands, aod::McParticles const&, CollisionsFullMC const&)
   {
     for (const auto& motherTrack : tracks) {
       // Check if mother is Sigma in MC
@@ -367,15 +377,23 @@ struct sigmaminustask {
         } else {
           continue; 
         }
-        // 6 - geometric cuts: phi
-        if (std::abs(motherTrack.phi() - daughterTrack.phi()) * radToDeg < 100.0) {
+        // 6 - geometric cuts: phi difference
+        if (std::abs(motherTrack.phi() - daughterTrack.phi()) * radToDeg < 50.0) {
           filterIndex += 1;
           rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
         } else {
           continue; 
         }
-
-        // 7 - collision selection
+        // 7 - geometric cuts: z difference
+        o2::track::TrackParCov trackParCovMoth = getTrackParCov(motherTrack);
+        o2::track::TrackParCov trackParCovDaug = getTrackParCov(daughterTrack);
+        if (std::abs(trackParCovMoth.getZ() - trackParCovDaug.getZ()) < 20.0) {
+          filterIndex += 1;
+          rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
+        } else {
+          continue; 
+        }
+        // 8 - collision selection
         auto collision = motherTrack.template collision_as<CollisionsFullMC>();
         if (!(std::abs(collision.posZ()) > cutzvertex || !collision.sel8())) {
           filterIndex += 1;
@@ -394,3 +412,12 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<sigmaminustask>(cfgc)};
 }
+
+// Next steps:
+// 0. Resolution histograms should have relative values, not absolute OK
+// 1. New h2 with genRadius (recRadius) vs FilterIndex
+// 2. Get recRadius through a map on kinkCands, put a negative value if the candidate is not reconstructed
+// 2.1 Consider adding step in filters with the cuts on radius 
+// 2.2 Add h2 of radius resolution vs pt
+// 3. Rewrite the findable method using maps to avoid the nested loop
+// 4. For generated h2, avoid mass axis, use a bool axis to easily distinguish sigma minus and sigma plus
