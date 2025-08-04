@@ -41,6 +41,7 @@ enum class swtAliases : int { // software trigger aliases for EM
   kSingleMuLow,
   kSingleMuHigh,
   kDiMuon,
+  kHighFt0cFv0Mult,
   kNaliases
 };
 
@@ -54,6 +55,7 @@ const std::unordered_map<std::string, int> aliasLabels = {
   {"fSingleMuLow", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuLow)},
   {"fSingleMuHigh", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuHigh)},
   {"fDiMuon", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiMuon)},
+  {"fHighFt0cFv0Mult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighFt0cFv0Mult)},
 };
 } // namespace pwgem::dilepton::swt
 
