@@ -555,7 +555,7 @@ struct lambdaAnalysis_pb {
   {
 
     auto mult = collision.cent();
-    histos.fill(HIST("Event/h1d_ft0_mult_percentile"), mult);
+    histos.fill(HIST("Event/h1d_ft0_mult_percentile"), mult, 100);
     fillDataHistos<false, true>(tracks, tracks, mult);
 
     // get MC pT-spectra
