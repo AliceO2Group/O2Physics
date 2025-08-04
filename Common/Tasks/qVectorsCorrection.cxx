@@ -545,23 +545,28 @@ struct qVectorsCorrection {
     if (cfgAddEvtSel) {
       switch (cfgEvtSel) {
         case 0: // Sel8
-          if (!qVec.sel8()) return;
+          if (!qVec.sel8())
+            return;
           break;
         case 1: // PbPb standard
-          if (!qVec.sel8() || !qVec.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !qVec.selection_bit(aod::evsel::kNoSameBunchPileup)) return;
+          if (!qVec.sel8() || !qVec.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !qVec.selection_bit(aod::evsel::kNoSameBunchPileup))
+            return;
           break;
         case 2: // PbPb with pileup
           if (!qVec.sel8() || !qVec.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) ||
-            !qVec.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !qVec.selection_bit(aod::evsel::kNoSameBunchPileup)) return;
+              !qVec.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !qVec.selection_bit(aod::evsel::kNoSameBunchPileup))
+            return;
           break;
         case 3: // Small systems (OO, NeNe, pp)
-          if (!qVec.sel8() || !qVec.selection_bit(aod::evsel::kNoSameBunchPileup)) return;
+          if (!qVec.sel8() || !qVec.selection_bit(aod::evsel::kNoSameBunchPileup))
+            return;
           break;
         default:
           LOGF(warning, "Event selection flag was not found, continuing without basic event selections!\n");
       }
       // Check occupancy
-      if (qVec.trackOccupancyInTimeRange() > cfgMaxOccupancy || qVec.trackOccupancyInTimeRange() < cfgMinOccupancy) return;
+      if (qVec.trackOccupancyInTimeRange() > cfgMaxOccupancy || qVec.trackOccupancyInTimeRange() < cfgMinOccupancy)
+        return;
     }
 
     for (uint i = 0; i < cfgnMods->size(); i++) {
