@@ -548,9 +548,43 @@ struct MultiplicitySelector {
   PROCESS_SWITCH(MultiplicitySelector, processMCGen, "Select MC particle count as multiplicity", false);
 };
 
+struct MultiplicitySetBuilder {
+  Produces<aod::CFMultiplicitySets> output;
+  std::vector<float> multiplicities{};
+
+  enum MultiplicityEstimators : uint8_t {
+    kCentFT0C = BIT(0),
+    kMultFV0A = BIT(1),
+    kMultNTracksPV = BIT(2),
+    kMultNTracksGlobal = BIT(3),
+  };
+
+  O2_DEFINE_CONFIGURABLE(cfgEstimatorBitMask, uint16_t, 0, "BitMask for multiplicity estimators to be included in the CFMultiplicitySet tables.");
+
+  using CollisionWithCents = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::PVMults, aod::FV0Mults, aod::MultsGlobal>;
+  void processEstimators([[maybe_unused]] CollisionWithCents const& cents, aod::CFCollRefs const& cfcollisions)
+  {
+    for (const auto& cfcollision : cfcollisions) {
+      const auto& collision = cfcollision.collision_as<CollisionWithCents>();
+      multiplicities.clear();
+      if (cfgEstimatorBitMask & kCentFT0C)
+        multiplicities.push_back(collision.centFT0C());
+      if (cfgEstimatorBitMask & kMultFV0A)
+        multiplicities.push_back(collision.multFV0A());
+      if (cfgEstimatorBitMask & kMultNTracksPV)
+        multiplicities.push_back(collision.multNTracksPV());
+      if (cfgEstimatorBitMask & kMultNTracksGlobal)
+        multiplicities.push_back(collision.multNTracksGlobal());
+      output(multiplicities);
+    }
+  }
+  PROCESS_SWITCH(MultiplicitySetBuilder, processEstimators, "Process auxiliary multiplicity/centrality estimators", false);
+};
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<FilterCF>(cfgc),
-    adaptAnalysisTask<MultiplicitySelector>(cfgc)};
+    adaptAnalysisTask<MultiplicitySelector>(cfgc),
+    adaptAnalysisTask<MultiplicitySetBuilder>(cfgc)};
 }
