@@ -158,6 +158,22 @@ void storeGammasInVector(C clusters, V v0s, std::vector<Photon>& vPhotons, std::
     vPhotons.push_back(Photon::fromPxPyPz(v0.px(), v0.py(), v0.pz()));
 }
 
+/// \brief Store photons from EMC clusters in a vector and possibly add a eta and phi offset for alignment of EMCal clusters
+template <typename C>
+void storeGammasInVector(C clusters, std::vector<Photon>& vPhotons, std::array<float, 20> EMCEtaShift, std::array<float, 20> EMCPhiShift)
+{
+  vPhotons.clear();
+  for (const auto& cluster : clusters) {
+    float eta = cluster.eta();
+    float phi = cluster.phi();
+    int smNumber = getSMNumber(eta, phi);
+    // LOG(info) << "Shifting in sm " << smNumber << ", eta/phi = " << eta << " / " << phi << " to eta/phi = " << eta + EMCEtaShift[getSMNumber(eta, phi)] << " / " << phi + EMCPhiShift[getSMNumber(eta, phi)];
+    eta += EMCEtaShift[smNumber];
+    phi += EMCPhiShift[smNumber];
+    vPhotons.push_back(Photon::fromEtaPhiEnergy(eta, phi, cluster.e()));
+  }
+}
+
 /// \brief Reconstruct light neutral mesons from photons and fill them into the vGGs vector
 void reconstructGGs(std::vector<Photon> vPhotons, std::vector<GammaGammaPair>& vGGs)
 {

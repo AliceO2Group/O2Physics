@@ -83,42 +83,12 @@ void momTotXYZ(std::array<float, 3>& momA, std::array<float, 3> const& momB, std
     momA[i] = momB[i] + momC[i];
   }
 }
-float invMass2Body(std::array<float, 3> const& momA, std::array<float, 3> const& momB, std::array<float, 3> const& momC, float const& massB, float const& massC)
-{
-  float p2B = momB[0] * momB[0] + momB[1] * momB[1] + momB[2] * momB[2];
-  float p2C = momC[0] * momC[0] + momC[1] * momC[1] + momC[2] * momC[2];
-  float eB = std::sqrt(p2B + massB * massB);
-  float eC = std::sqrt(p2C + massC * massC);
-  float eA = eB + eC;
-  float massA = std::sqrt(eA * eA - momA[0] * momA[0] - momA[1] * momA[1] - momA[2] * momA[2]);
-  return massA;
-}
 float alphaAP(std::array<float, 3> const& momA, std::array<float, 3> const& momB, std::array<float, 3> const& momC)
 {
   float momTot = std::sqrt(std::pow(momA[0], 2.) + std::pow(momA[1], 2.) + std::pow(momA[2], 2.));
   float lQlPos = (momB[0] * momA[0] + momB[1] * momA[1] + momB[2] * momA[2]) / momTot;
   float lQlNeg = (momC[0] * momA[0] + momC[1] * momA[1] + momC[2] * momA[2]) / momTot;
   return (lQlPos - lQlNeg) / (lQlPos + lQlNeg);
-}
-float etaFromMom(std::array<float, 3> const& momA, std::array<float, 3> const& momB)
-{
-  if (std::sqrt((1.f * momA[0] + 1.f * momB[0]) * (1.f * momA[0] + 1.f * momB[0]) +
-                (1.f * momA[1] + 1.f * momB[1]) * (1.f * momA[1] + 1.f * momB[1]) +
-                (1.f * momA[2] + 1.f * momB[2]) * (1.f * momA[2] + 1.f * momB[2])) -
-        (1.f * momA[2] + 1.f * momB[2]) <
-      static_cast<float>(1e-7)) {
-    if ((1.f * momA[2] + 1.f * momB[2]) < 0.f)
-      return -100.f;
-    return 100.f;
-  }
-  return 0.5f * std::log((std::sqrt((1.f * momA[0] + 1.f * momB[0]) * (1.f * momA[0] + 1.f * momB[0]) +
-                                    (1.f * momA[1] + 1.f * momB[1]) * (1.f * momA[1] + 1.f * momB[1]) +
-                                    (1.f * momA[2] + 1.f * momB[2]) * (1.f * momA[2] + 1.f * momB[2])) +
-                          (1.f * momA[2] + 1.f * momB[2])) /
-                         (std::sqrt((1.f * momA[0] + 1.f * momB[0]) * (1.f * momA[0] + 1.f * momB[0]) +
-                                    (1.f * momA[1] + 1.f * momB[1]) * (1.f * momA[1] + 1.f * momB[1]) +
-                                    (1.f * momA[2] + 1.f * momB[2]) * (1.f * momA[2] + 1.f * momB[2])) -
-                          (1.f * momA[2] + 1.f * momB[2])));
 }
 float calculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
 {
@@ -208,6 +178,7 @@ struct EbyeMaker {
   float dBz;
   uint8_t nTrackletsColl;
   uint8_t nTracksColl;
+  uint8_t nChPartGen;
 
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {kBetheBlochDefault[0], 2, 6, particleNamesPar, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for deuteron"};
@@ -584,8 +555,9 @@ struct EbyeMaker {
     for (const auto& track : tracks) {
       if (track.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet && std::abs(track.eta()) < trklEtaMax && !(doprocessRun3 || doprocessMcRun3)) { // tracklet
         nTrackletsColl++;
+      } else if (std::abs(track.eta()) < trklEtaMax && track.itsNCls() > 3 && (doprocessRun3 || doprocessMcRun3)) { // ITS only + global tracks
+        nTrackletsColl++;
       }
-
       if (!selectTrack(track)) {
         continue;
       }
@@ -599,8 +571,8 @@ struct EbyeMaker {
         continue;
       }
       histos.fill(HIST("QA/tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
-
-      nTracksColl++;
+      if (trackPt > ptMin[0] && trackPt < ptMax[0])
+        nTracksColl++;
 
       for (int iP{0}; iP < kNpart; ++iP) {
         if (trackPt < ptMin[iP] || trackPt > ptMax[iP]) {
@@ -705,7 +677,7 @@ struct EbyeMaker {
           continue;
         }
 
-        auto etaV0 = etaFromMom(momPos, momNeg);
+        auto etaV0 = RecoDecay::eta(momV0);
         if (std::abs(etaV0) > etaMax) {
           continue;
         }
@@ -714,8 +686,8 @@ struct EbyeMaker {
         bool matter = alpha > 0;
         auto massPos = matter ? o2::constants::physics::MassProton : o2::constants::physics::MassPionCharged;
         auto massNeg = matter ? o2::constants::physics::MassPionCharged : o2::constants::physics::MassProton;
-        auto mLambda = invMass2Body(momV0, momPos, momNeg, massPos, massNeg);
-        auto mK0Short = invMass2Body(momV0, momPos, momNeg, o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged);
+        auto mLambda = RecoDecay::m(std::array<std::array<float, 3>, 2>{momPos, momNeg}, std::array<double, 2>{massPos, massNeg});
+        auto mK0Short = RecoDecay::m(std::array<std::array<float, 3>, 2>{momPos, momNeg}, std::array<double, 2>{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
 
         // pid selections
         float nSigmaTPCPos = getCustomTPCPID(posTrack, massPos);
@@ -871,6 +843,7 @@ struct EbyeMaker {
 
   void fillMcGen(aod::McParticles const& mcParticles, aod::McTrackLabels const& /*mcLab*/, uint64_t const& collisionId)
   {
+    nChPartGen = 0u;
     auto mcParticlesThisCollision = mcParticles.sliceBy(perCollisionMcParts, collisionId);
     for (const auto& mcPart : mcParticlesThisCollision) {
       auto genEta = mcPart.eta();
@@ -880,6 +853,9 @@ struct EbyeMaker {
       if ((((mcPart.flags() & 0x8) || (mcPart.flags() & 0x2)) && (doprocessMcRun2 || doprocessMiniMcRun2)) || ((mcPart.flags() & 0x1) && !doprocessMiniMcRun2))
         continue;
       auto pdgCode = mcPart.pdgCode();
+      auto genPt = std::hypot(mcPart.px(), mcPart.py());
+      if ((std::abs(pdgCode) == PDG_t::kPiPlus || std::abs(pdgCode) == PDG_t::kElectron || std::abs(pdgCode) == PDG_t::kMuonMinus || std::abs(pdgCode) == PDG_t::kKPlus || std::abs(pdgCode) == PDG_t::kProton) && mcPart.isPhysicalPrimary() && genPt > ptMin[0] && genPt < ptMax[0])
+        nChPartGen++;
       if (std::abs(pdgCode) == PDG_t::kLambda0) {
         if (!mcPart.isPhysicalPrimary() && !mcPart.has_mothers())
           continue;
@@ -893,7 +869,6 @@ struct EbyeMaker {
         if (!foundPr) {
           continue;
         }
-        auto genPt = std::hypot(mcPart.px(), mcPart.py());
         CandidateV0 candV0;
         candV0.genpt = genPt;
         candV0.geneta = mcPart.eta();
@@ -951,7 +926,7 @@ struct EbyeMaker {
       histos.fill(HIST("QA/PvMultVsCent"), centrality, collision.numContrib());
       fillRecoEvent(collision, tracks, v0TableThisCollision, centrality);
 
-      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, 0x0, centrality, nTracksColl);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, nTrackletsColl, centrality, nTracksColl);
 
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
@@ -1130,7 +1105,7 @@ struct EbyeMaker {
       fillMcEvent(collision, tracks, v0TableThisCollision, centrality, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
-      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, 0x0, centrality, nTracksColl);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), nChPartGen, nTrackletsColl, centrality, nTracksColl);
 
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         int selMask = -1;
@@ -1245,7 +1220,7 @@ struct EbyeMaker {
       fillMcEvent(collision, tracks, v0TableThisCollision, centrality, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
-      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, nTrackletsColl, centrality, nTracksColl);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), nChPartGen, nTrackletsColl, centrality, nTracksColl);
 
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         int selMask = -1;

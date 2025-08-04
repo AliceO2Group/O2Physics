@@ -35,6 +35,7 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
 #include "CommonConstants/GeomConstants.h"
+#include "CommonConstants/MathConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "CommonUtils/NameConf.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
@@ -142,7 +143,7 @@ struct OnTheFlyTofPid {
   void init(o2::framework::InitContext& initContext)
   {
     pRandomNumberGenerator.SetSeed(0); // fully randomize
-    if (simConfig.magneticField.value < 0.0001f) {
+    if (simConfig.magneticField.value < o2::constants::math::Epsilon) {
       LOG(info) << "Getting the magnetic field from the on-the-fly tracker task";
       if (!getTaskOptionValue(initContext, "on-the-fly-tracker", simConfig.magneticField, false)) {
         LOG(fatal) << "Could not get Bz from on-the-fly-tracker task";
@@ -230,33 +231,33 @@ struct OnTheFlyTofPid {
 
       std::string particleNames[kParticles] = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}"};
       std::string particleNames2[kParticles] = {"Elec", "Muon", "Pion", "Kaon", "Prot"};
-      for (int i_true = 0; i_true < kParticles; i_true++) {
+      for (int iTrue = 0; iTrue < kParticles; iTrue++) {
         auto addHistogram = [&](const std::string& name, const AxisSpec& axis) {
           return histos.add<TH2>(name, "", kTH2F, {axisMomentum, axis});
         };
 
-        const AxisSpec axisTrackTimeRes{plotsConfig.nBinsTimeRes, 0.0f, +200.0f, "Track time resolution - " + particleNames[i_true] + " (ps)"};
-        h2dInnerTimeResTrack[i_true] = addHistogram("iTOF/res/h2dInnerTimeResTrack" + particleNames2[i_true] + "VsP", axisTrackTimeRes);
-        h2dOuterTimeResTrack[i_true] = addHistogram("oTOF/res/h2dOuterTimeResTrack" + particleNames2[i_true] + "VsP", axisTrackTimeRes);
-        const AxisSpec axisTotalTimeRes{plotsConfig.nBinsTimeRes, 0.0f, +200.0f, "Total time resolution - " + particleNames[i_true] + " (ps)"};
-        h2dInnerTimeResTotal[i_true] = addHistogram("iTOF/res/h2dInnerTimeResTotal" + particleNames2[i_true] + "VsP", axisTotalTimeRes);
-        h2dOuterTimeResTotal[i_true] = addHistogram("oTOF/res/h2dOuterTimeResTotal" + particleNames2[i_true] + "VsP", axisTotalTimeRes);
-        for (int i_hyp = 0; i_hyp < kParticles; i_hyp++) {
-          std::string nameTitleInner = "h2dInnerNsigmaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis";
-          std::string nameTitleOuter = "h2dOuterNsigmaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis";
-          std::string nameTitleInnerDelta = "h2dInnerDeltaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis";
-          std::string nameTitleOuterDelta = "h2dOuterDeltaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis";
+        const AxisSpec axisTrackTimeRes{plotsConfig.nBinsTimeRes, 0.0f, +200.0f, "Track time resolution - " + particleNames[iTrue] + " (ps)"};
+        h2dInnerTimeResTrack[iTrue] = addHistogram("iTOF/res/h2dInnerTimeResTrack" + particleNames2[iTrue] + "VsP", axisTrackTimeRes);
+        h2dOuterTimeResTrack[iTrue] = addHistogram("oTOF/res/h2dOuterTimeResTrack" + particleNames2[iTrue] + "VsP", axisTrackTimeRes);
+        const AxisSpec axisTotalTimeRes{plotsConfig.nBinsTimeRes, 0.0f, +200.0f, "Total time resolution - " + particleNames[iTrue] + " (ps)"};
+        h2dInnerTimeResTotal[iTrue] = addHistogram("iTOF/res/h2dInnerTimeResTotal" + particleNames2[iTrue] + "VsP", axisTotalTimeRes);
+        h2dOuterTimeResTotal[iTrue] = addHistogram("oTOF/res/h2dOuterTimeResTotal" + particleNames2[iTrue] + "VsP", axisTotalTimeRes);
+        for (int iHyp = 0; iHyp < kParticles; iHyp++) {
+          std::string nameTitleInner = "h2dInnerNsigmaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis";
+          std::string nameTitleOuter = "h2dOuterNsigmaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis";
+          std::string nameTitleInnerDelta = "h2dInnerDeltaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis";
+          std::string nameTitleOuterDelta = "h2dOuterDeltaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis";
           const AxisSpec axisX{plotsConfig.doSeparationVsPt.value ? axisPt : axisMomentum};
-          const AxisSpec axisNsigmaCorrect{plotsConfig.nBinsNsigmaCorrectSpecies, plotsConfig.minNsigmaRange, plotsConfig.maxNsigmaRange, "N#sigma - True " + particleNames[i_true] + " vs " + particleNames[i_hyp] + " hypothesis"};
-          const AxisSpec axisDeltaCorrect{plotsConfig.nBinsDeltaCorrectSpecies, plotsConfig.minDeltaRange, plotsConfig.maxDeltaRange, "#Delta - True " + particleNames[i_true] + " vs " + particleNames[i_hyp] + " hypothesis"};
-          const AxisSpec axisNsigmaWrong{plotsConfig.nBinsNsigmaWrongSpecies, plotsConfig.minNsigmaRange, plotsConfig.maxNsigmaRange, "N#sigma -  True " + particleNames[i_true] + " vs " + particleNames[i_hyp] + " hypothesis"};
-          const AxisSpec axisDeltaWrong{plotsConfig.nBinsDeltaWrongSpecies, plotsConfig.minDeltaRange, plotsConfig.maxDeltaRange, "#Delta - True " + particleNames[i_true] + " vs " + particleNames[i_hyp] + " hypothesis"};
-          const AxisSpec axisNSigma{i_true == i_hyp ? axisNsigmaCorrect : axisNsigmaWrong};
-          const AxisSpec axisDelta{i_true == i_hyp ? axisDeltaCorrect : axisDeltaWrong};
-          h2dInnerNsigmaTrue[i_true][i_hyp] = histos.add<TH2>("iTOF/nsigma/h2dInnerNsigmaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis", "", kTH2F, {axisX, axisNSigma});
-          h2dOuterNsigmaTrue[i_true][i_hyp] = histos.add<TH2>("oTOF/nsigma/h2dOuterNsigmaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis", "", kTH2F, {axisX, axisNSigma});
-          h2dInnerDeltaTrue[i_true][i_hyp] = histos.add<TH2>("iTOF/delta/h2dInnerDeltaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis", "", kTH2F, {axisX, axisDelta});
-          h2dOuterDeltaTrue[i_true][i_hyp] = histos.add<TH2>("oTOF/delta/h2dOuterDeltaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis", "", kTH2F, {axisX, axisDelta});
+          const AxisSpec axisNsigmaCorrect{plotsConfig.nBinsNsigmaCorrectSpecies, plotsConfig.minNsigmaRange, plotsConfig.maxNsigmaRange, "N#sigma - True " + particleNames[iTrue] + " vs " + particleNames[iHyp] + " hypothesis"};
+          const AxisSpec axisDeltaCorrect{plotsConfig.nBinsDeltaCorrectSpecies, plotsConfig.minDeltaRange, plotsConfig.maxDeltaRange, "#Delta - True " + particleNames[iTrue] + " vs " + particleNames[iHyp] + " hypothesis"};
+          const AxisSpec axisNsigmaWrong{plotsConfig.nBinsNsigmaWrongSpecies, plotsConfig.minNsigmaRange, plotsConfig.maxNsigmaRange, "N#sigma -  True " + particleNames[iTrue] + " vs " + particleNames[iHyp] + " hypothesis"};
+          const AxisSpec axisDeltaWrong{plotsConfig.nBinsDeltaWrongSpecies, plotsConfig.minDeltaRange, plotsConfig.maxDeltaRange, "#Delta - True " + particleNames[iTrue] + " vs " + particleNames[iHyp] + " hypothesis"};
+          const AxisSpec axisNSigma{iTrue == iHyp ? axisNsigmaCorrect : axisNsigmaWrong};
+          const AxisSpec axisDelta{iTrue == iHyp ? axisDeltaCorrect : axisDeltaWrong};
+          h2dInnerNsigmaTrue[iTrue][iHyp] = histos.add<TH2>("iTOF/nsigma/h2dInnerNsigmaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis", "", kTH2F, {axisX, axisNSigma});
+          h2dOuterNsigmaTrue[iTrue][iHyp] = histos.add<TH2>("oTOF/nsigma/h2dOuterNsigmaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis", "", kTH2F, {axisX, axisNSigma});
+          h2dInnerDeltaTrue[iTrue][iHyp] = histos.add<TH2>("iTOF/delta/h2dInnerDeltaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis", "", kTH2F, {axisX, axisDelta});
+          h2dOuterDeltaTrue[iTrue][iHyp] = histos.add<TH2>("oTOF/delta/h2dOuterDeltaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis", "", kTH2F, {axisX, axisDelta});
         }
       }
     }

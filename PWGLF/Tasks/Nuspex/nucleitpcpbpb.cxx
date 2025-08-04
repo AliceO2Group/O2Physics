@@ -111,6 +111,9 @@ struct NucleitpcPbPb {
   Configurable<bool> cfgRigidityCorrection{"cfgRigidityCorrection", false, "apply rigidity correction"};
   // Track Selection Cuts
   Configurable<float> cfgCutEta{"cfgCutEta", 0.9f, "Eta range for tracks"};
+  Configurable<bool> cfgetaRequire{"cfgetaRequire", true, "eta cut require"};
+  Configurable<bool> cfgetaRequireMC{"cfgetaRequireMC", true, "eta cut require for generated particles"};
+  Configurable<bool> cfgrapidityRequireMC{"cfgrapidityRequireMC", true, "rapidity cut require for generated particles"};
   Configurable<bool> cfgUsePVcontributors{"cfgUsePVcontributors", true, "use tracks that are PV contibutors"};
   Configurable<bool> cfgITSrequire{"cfgITSrequire", true, "Additional cut on ITS require"};
   Configurable<bool> cfgTPCrequire{"cfgTPCrequire", true, "Additional cut on TPC require"};
@@ -146,6 +149,9 @@ struct NucleitpcPbPb {
   Configurable<float> centcut{"centcut", 80.0f, "centrality cut"};
   Configurable<float> cfgCutRapidity{"cfgCutRapidity", 0.5f, "Rapidity range"};
   Configurable<float> cfgZvertex{"cfgZvertex", 10, "Min Z Vertex"};
+  Configurable<bool> cfgZvertexRequire{"cfgZvertexRequire", true, "Pos Z cut require"};
+  Configurable<bool> cfgZvertexRequireMC{"cfgZvertexRequireMC", true, "Pos Z cut require for generated particles"};
+  Configurable<bool> cfgsel8Require{"cfgsel8Require", true, "sel8 cut require"};
   Configurable<float> cfgITSnsigma{"cfgITSnsigma", 5, "Max ITS nsigma value"};
   Configurable<float> cfgtpcNClsFound{"cfgtpcNClsFound", 100.0f, "min. no. of tpcNClsFound"};
   Configurable<float> cfgitsNCls{"cfgitsNCls", 2.0f, "min. no. of itsNCls"};
@@ -232,6 +238,7 @@ struct NucleitpcPbPb {
 
     if (doprocessMC) {
       histomc.add("histVtxZgen", "histVtxZgen", kTH1F, {axisVtxZ});
+      histomc.add("ImptParameter", "ImptParameter", kTH1F, {axisImpt});
       histomc.add("histEtagen", "histEtagen", kTH1F, {axiseta});
       histomc.add("histPtgenHe3", "histPtgenHe3", kTH1F, {ptAxis});
       histomc.add("histPtgenAntiHe3", "histPtgenAntiHe3", kTH1F, {ptAxis});
@@ -266,7 +273,7 @@ struct NucleitpcPbPb {
         continue;
       if (!track.passedTPCRefit() && cfgPassedTPCRefit)
         continue;
-      if (std::abs(track.eta()) > cfgCutEta)
+      if (std::abs(track.eta()) > cfgCutEta && cfgetaRequire)
         continue;
       for (size_t i = 0; i < primaryParticles.size(); i++) {
         if (std::abs(getRapidity(track, i)) > cfgCutRapidity && cfgRapidityRequire)
@@ -326,12 +333,12 @@ struct NucleitpcPbPb {
         if ((getRigidity(track) > cfgTrackPIDsettings->get(i, "TOFrequiredabove") && (tofMasses < cfgTrackPIDsettings->get(i, "minTOFmass") || tofMasses > cfgTrackPIDsettings->get(i, "maxTOFmass"))) && cfgmassRequire)
           continue;
         fillhmass(track, i);
+        if (cfgRequirebetaplot) {
+          histos.fill(HIST("Tofsignal"), getRigidity(track) * track.sign(), o2::pid::tof::Beta::GetBeta(track));
+        }
+        filldedx(track, nParticles);
       }
       histos.fill(HIST("histeta"), track.eta());
-      if (cfgRequirebetaplot) {
-        histos.fill(HIST("Tofsignal"), getRigidity(track), o2::pid::tof::Beta::GetBeta(track));
-      }
-      filldedx(track, nParticles);
     } // track loop
   }
   //----------------------------------------------------------------------------------------------------------------
@@ -380,18 +387,19 @@ struct NucleitpcPbPb {
     mcCollInfos.resize(mcCollisions.size());
     // ----------------------------- Generated particles loop -----------------------------
     for (auto const& mcColl : mcCollisions) {
-      if (std::abs(mcColl.posZ()) > cfgZvertex)
+      if (std::abs(mcColl.posZ()) > cfgZvertex && cfgZvertexRequireMC)
         continue;
       histomc.fill(HIST("histVtxZgen"), mcColl.posZ());
+      histomc.fill(HIST("ImptParameter"), mcColl.impactParameter());
       for (auto const& mcParticle : particlesMC) {
         if (mcParticle.mcCollisionId() != mcColl.globalIndex())
           continue;
         if (!mcParticle.isPhysicalPrimary())
           continue;
         int pdgCode = mcParticle.pdgCode();
-        if (std::abs(mcParticle.y()) > cfgCutRapidity)
+        if (std::abs(mcParticle.y()) > cfgCutRapidity && cfgrapidityRequireMC)
           continue;
-        if (std::abs(mcParticle.eta()) > cfgCutEta)
+        if (std::abs(mcParticle.eta()) > cfgCutEta && cfgetaRequireMC)
           continue;
         histomc.fill(HIST("histEtagen"), mcParticle.eta());
         float ptScaled = mcParticle.pt();
@@ -415,9 +423,11 @@ struct NucleitpcPbPb {
       initCCDB(bc);
       collHasCandidate = false;
       histomc.fill(HIST("histNevReco"), 0.5);
-      collPassedEvSel = collision.sel8() && std::abs(collision.posZ()) < cfgZvertex;
+      if (std::abs(collision.posZ()) > cfgZvertex && cfgZvertexRequire)
+        continue;
+      collPassedEvSel = collision.sel8();
       occupancy = collision.trackOccupancyInTimeRange();
-      if (!collPassedEvSel)
+      if (!collPassedEvSel && cfgsel8Require)
         continue;
       histomc.fill(HIST("histNevReco"), 1.5);
       histomc.fill(HIST("histVtxZReco"), collision.posZ());
@@ -456,7 +466,7 @@ struct NucleitpcPbPb {
           continue;
         if (!track.passedTPCRefit() && cfgPassedTPCRefit)
           continue;
-        if (std::abs(track.eta()) > cfgCutEta)
+        if (std::abs(track.eta()) > cfgCutEta && cfgetaRequire)
           continue;
         if (!matchedMCParticle.isPhysicalPrimary())
           continue;
@@ -519,52 +529,52 @@ struct NucleitpcPbPb {
           if ((getRigidity(track) > cfgTrackPIDsettings->get(i, "TOFrequiredabove") && (tofMasses < cfgTrackPIDsettings->get(i, "minTOFmass") || tofMasses > cfgTrackPIDsettings->get(i, "maxTOFmass"))) && cfgmassRequire)
             continue;
           fillhmass(track, i);
-        }
-        histos.fill(HIST("histeta"), track.eta());
-        if (cfgRequirebetaplot) {
-          histos.fill(HIST("Tofsignal"), getRigidity(track), o2::pid::tof::Beta::GetBeta(track));
-        }
-        filldedx(track, nParticles);
-        /*----------------------------------------------------------------------------------------------------------------*/
-        float ptReco;
-        setTrackParCov(track, mTrackParCov);
-        mTrackParCov.setPID(track.pidForTracking());
-        ptReco = (std::abs(pdg) == particlePdgCodes.at(4) || std::abs(pdg) == particlePdgCodes.at(5)) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
-        if (pdg == -particlePdgCodes.at(5) && cfgmccorrectionhe4Require) {
-          ptReco = ptReco + 0.00765 + 0.503791 * std::exp(-1.10517 * ptReco);
-        }
+          if (cfgRequirebetaplot) {
+            histos.fill(HIST("Tofsignal"), getRigidity(track) * track.sign(), o2::pid::tof::Beta::GetBeta(track));
+          }
+          filldedx(track, nParticles);
+          /*----------------------------------------------------------------------------------------------------------------*/
+          float ptReco;
+          mTrackParCov.setPID(track.pidForTracking());
+          ptReco = (std::abs(pdg) == particlePdgCodes.at(4) || std::abs(pdg) == particlePdgCodes.at(5)) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
+          if (pdg == -particlePdgCodes.at(5) && cfgmccorrectionhe4Require) {
+            ptReco = ptReco + 0.00765 + 0.503791 * std::exp(-1.10517 * ptReco);
+          }
 
-        if (pdg == -particlePdgCodes.at(4) && cfgmccorrectionhe4Require) {
-          int pidGuess = track.pidForTracking();
-          int antitriton = 6;
-          if (pidGuess == antitriton) {
-            ptReco = ptReco - 0.464215 + 0.195771 * ptReco - 0.0183111 * ptReco * ptReco;
-            //  LOG(info) << "we have he3" << pidGuess;
+          if (pdg == -particlePdgCodes.at(4) && cfgmccorrectionhe4Require) {
+            int pidGuess = track.pidForTracking();
+            int antitriton = 6;
+            if (pidGuess == antitriton) {
+              ptReco = ptReco - 0.464215 + 0.195771 * ptReco - 0.0183111 * ptReco * ptReco;
+              //  LOG(info) << "we have he3" << pidGuess;
+            }
+          }
+          float ptGen = matchedMCParticle.pt();
+          float deltaPt = ptReco - ptGen;
+
+          if (pdg == -particlePdgCodes.at(4)) {
+            histomc.fill(HIST("histDeltaPtVsPtGen"), ptReco, deltaPt);
+            histomc.fill(HIST("histPIDtrack"), ptReco, track.pidForTracking());
+          }
+          if (pdg == -particlePdgCodes.at(5)) {
+            histomc.fill(HIST("histDeltaPtVsPtGenHe4"), ptReco, deltaPt);
+          }
+          if (pdg == particlePdgCodes.at(4)) {
+            histomc.fill(HIST("histPtRecoHe3"), ptReco);
+          } else if (pdg == -particlePdgCodes.at(4)) {
+            histomc.fill(HIST("histPtRecoAntiHe3"), ptReco);
+          } else if (pdg == particlePdgCodes.at(5)) {
+            histomc.fill(HIST("histPtRecoHe4"), ptReco);
+          } else if (pdg == -particlePdgCodes.at(5)) {
+            histomc.fill(HIST("histPtRecoAntiHe4"), ptReco);
           }
         }
-        float ptGen = matchedMCParticle.pt();
-        float deltaPt = ptReco - ptGen;
-
-        if (pdg == -particlePdgCodes.at(4)) {
-          histomc.fill(HIST("histDeltaPtVsPtGen"), ptReco, deltaPt);
-          histomc.fill(HIST("histPIDtrack"), ptReco, track.pidForTracking());
-        }
-        if (pdg == -particlePdgCodes.at(5)) {
-          histomc.fill(HIST("histDeltaPtVsPtGenHe4"), ptReco, deltaPt);
-        }
-        if (pdg == particlePdgCodes.at(4)) {
-          histomc.fill(HIST("histPtRecoHe3"), ptReco);
-        } else if (pdg == -particlePdgCodes.at(4)) {
-          histomc.fill(HIST("histPtRecoAntiHe3"), ptReco);
-        } else if (pdg == particlePdgCodes.at(5)) {
-          histomc.fill(HIST("histPtRecoHe4"), ptReco);
-        } else if (pdg == -particlePdgCodes.at(5)) {
-          histomc.fill(HIST("histPtRecoAntiHe4"), ptReco);
-        }
+        histos.fill(HIST("histeta"), track.eta());
+        /*----------------------------------------------------------------------------------------------------------------*/
       } // Track loop
     } // Collision loop
   }
-  PROCESS_SWITCH(NucleitpcPbPb, processMC, "MC reco+gen analysis", true);
+  PROCESS_SWITCH(NucleitpcPbPb, processMC, "MC reco+gen analysis", false);
   //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
@@ -673,9 +683,9 @@ struct NucleitpcPbPb {
     mTrackParCov.setPID(track.pidForTracking());
     ptMomn = (species == he3 || species == he4) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
     if (track.sign() > 0) {
-      hmass[2 * species]->Fill(ptMomn, massDiff * massDiff);
+      hmass[2 * species]->Fill(ptMomn, massDiff);
     } else if (track.sign() < 0) {
-      hmass[2 * species + 1]->Fill(ptMomn, massDiff * massDiff);
+      hmass[2 * species + 1]->Fill(ptMomn, massDiff);
     }
   }
   //----------------------------------------------------------------------------------------------------------------

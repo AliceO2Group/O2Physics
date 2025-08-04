@@ -57,7 +57,14 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <deque>
+#include <iostream>
+#include <iterator>
+#include <set> // <<< CHANGED: for dedup sets
 #include <string>
+#include <type_traits>
+#include <unordered_map> // <<< CHANGED: for seenMap
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -83,14 +90,19 @@ struct lambdapolsp {
   Configurable<bool> globalpt{"globalpt", true, "select tracks based on pt global vs tpc"};
   Configurable<bool> cqvas{"cqvas", false, "change q vectors after shift correction"};
   Configurable<int> useprofile{"useprofile", 3, "flag to select profile vs Sparse"};
-  Configurable<int> QxyNbins{"QxyNbins", 100, "Number of bins in QxQy histograms"};
-  Configurable<float> lbinQxy{"lbinQxy", -5.0, "lower bin value in QxQy histograms"};
-  Configurable<float> hbinQxy{"hbinQxy", 5.0, "higher bin value in QxQy histograms"};
   Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 1000, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
   Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", 0, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
   Configurable<int> sys{"sys", 1, "flag to select systematic source"};
   Configurable<bool> dosystematic{"dosystematic", false, "flag to perform systematic study"};
   Configurable<bool> needetaaxis{"needetaaxis", false, "flag to use last axis"};
+  struct : ConfigurableGroup {
+    Configurable<bool> doRandomPsi{"doRandomPsi", true, "randomize psi"};
+    Configurable<bool> doRandomPsiAC{"doRandomPsiAC", true, "randomize psiAC"};
+    Configurable<bool> doRandomPhi{"doRandomPhi", true, "randomize phi"};
+    Configurable<double> etaMix{"etaMix", 0.1, "eta difference in mixing"};
+    Configurable<double> ptMix{"ptMix", 0.1, "pt difference in mixing"};
+    Configurable<double> phiMix{"phiMix", 0.1, "phi difference in mixing"};
+  } randGrp;
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 50.0f, "Accepted maximum Centrality"};
@@ -132,24 +144,26 @@ struct lambdapolsp {
   Configurable<std::string> ConfAccPathL{"ConfAccPathL", "Users/p/prottay/My/Object/From379780/Fulldata/NewPbPbpass4_28032025/acccorrL", "Path to acceptance correction for Lambda"};
   Configurable<std::string> ConfAccPathAL{"ConfAccPathAL", "Users/p/prottay/My/Object/From379780/Fulldata/NewPbPbpass4_28032025/acccorrAL", "Path to acceptance correction for AntiLambda"};
 
-  // Configurable<int> CentNbins{"CentNbins", 16, "Number of bins in cent histograms"};
-  // Configurable<float> lbinCent{"lbinCent", 0.0, "lower bin value in cent histograms"};
-  // Configurable<float> hbinCent{"hbinCent", 80.0, "higher bin value in cent histograms"};
-  Configurable<int> SANbins{"SANbins", 20, "Number of bins in costhetastar"};
-  Configurable<float> lbinSA{"lbinSA", -1.0, "lower bin value in costhetastar histograms"};
-  Configurable<float> hbinSA{"hbinSA", 1.0, "higher bin value in costhetastar histograms"};
-  Configurable<int> PolNbins{"PolNbins", 20, "Number of bins in polarisation"};
-  Configurable<float> lbinPol{"lbinPol", -1.0, "lower bin value in #phi-#psi histograms"};
-  Configurable<float> hbinPol{"hbinPol", 1.0, "higher bin value in #phi-#psi histograms"};
-  Configurable<int> IMNbins{"IMNbins", 100, "Number of bins in invariant mass"};
-  Configurable<float> lbinIM{"lbinIM", 1.0, "lower bin value in IM histograms"};
-  Configurable<float> hbinIM{"hbinIM", 1.2, "higher bin value in IM histograms"};
-  Configurable<int> resNbins{"resNbins", 50, "Number of bins in reso"};
-  Configurable<float> lbinres{"lbinres", 0.0, "lower bin value in reso histograms"};
-  Configurable<float> hbinres{"hbinres", 10.0, "higher bin value in reso histograms"};
-  Configurable<int> spNbins{"spNbins", 2000, "Number of bins in sp"};
-  Configurable<float> lbinsp{"lbinsp", -1.0, "lower bin value in sp histograms"};
-  Configurable<float> hbinsp{"hbinsp", 1.0, "higher bin value in sp histograms"};
+  struct : ConfigurableGroup {
+    Configurable<int> QxyNbins{"QxyNbins", 100, "Number of bins in QxQy histograms"};
+    Configurable<float> lbinQxy{"lbinQxy", -5.0, "lower bin value in QxQy histograms"};
+    Configurable<float> hbinQxy{"hbinQxy", 5.0, "higher bin value in QxQy histograms"};
+    Configurable<int> PolNbins{"PolNbins", 20, "Number of bins in polarisation"};
+    Configurable<float> lbinPol{"lbinPol", -1.0, "lower bin value in #phi-#psi histograms"};
+    Configurable<float> hbinPol{"hbinPol", 1.0, "higher bin value in #phi-#psi histograms"};
+    Configurable<int> IMNbins{"IMNbins", 100, "Number of bins in invariant mass"};
+    Configurable<float> lbinIM{"lbinIM", 1.0, "lower bin value in IM histograms"};
+    Configurable<float> hbinIM{"hbinIM", 1.2, "higher bin value in IM histograms"};
+    Configurable<int> resNbins{"resNbins", 50, "Number of bins in reso"};
+    Configurable<float> lbinres{"lbinres", 0.0, "lower bin value in reso histograms"};
+    Configurable<float> hbinres{"hbinres", 10.0, "higher bin value in reso histograms"};
+    Configurable<int> spNbins{"spNbins", 2000, "Number of bins in sp"};
+    Configurable<float> lbinsp{"lbinsp", -1.0, "lower bin value in sp histograms"};
+    Configurable<float> hbinsp{"hbinsp", 1.0, "higher bin value in sp histograms"};
+    // Configurable<int> CentNbins{"CentNbins", 16, "Number of bins in cent histograms"};
+    // Configurable<float> lbinCent{"lbinCent", 0.0, "lower bin value in cent histograms"};
+    // Configurable<float> hbinCent{"hbinCent", 80.0, "higher bin value in cent histograms"};
+  } binGrp;
   /*
   ConfigurableAxis configcentAxis{"configcentAxis", {VARIABLE_WIDTH, 0.0, 10.0, 40.0, 80.0}, "Cent V0M"};
   ConfigurableAxis configthnAxispT{"configthnAxisPt", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0, 100.0}, "#it{p}_{T} (GeV/#it{c})"};
@@ -171,6 +185,11 @@ struct lambdapolsp {
     ConfigurableAxis configthnAxisPol{"configthnAxisPol", {VARIABLE_WIDTH, -1.0, -0.6, -0.2, 0, 0.2, 0.4, 0.8}, "Pol"};
     ConfigurableAxis configbinAxis{"configbinAxis", {VARIABLE_WIDTH, -0.8, -0.4, -0.2, 0, 0.2, 0.4, 0.8}, "BA"};
   } axisGrp;
+  struct : ConfigurableGroup {
+    ConfigurableAxis axisVertex{"axisVertex", {5, -10, 10}, "vertex axis for bin"};
+    ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {8, 0, 80}, "multiplicity percentile for bin"};
+    Configurable<int> nMix{"nMix", 5, "number of event mixing"};
+  } meGrp;
 
   RCTFlagsChecker rctChecker;
 
@@ -182,12 +201,11 @@ struct lambdapolsp {
 
     rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
-    AxisSpec thnAxisres{resNbins, lbinres, hbinres, "Reso"};
-    AxisSpec thnAxisInvMass{IMNbins, lbinIM, hbinIM, "#it{M} (GeV/#it{c}^{2})"};
-    AxisSpec thnAxisCosThetaStar{SANbins, lbinSA, hbinSA, "SA"};
-    // AxisSpec centAxis = {CentNbins, lbinCent, hbinCent, "V0M (%)"};
-    AxisSpec spAxis = {spNbins, lbinsp, hbinsp, "Sp"};
-    AxisSpec qxZDCAxis = {QxyNbins, lbinQxy, hbinQxy, "Qx"};
+    AxisSpec thnAxisres{binGrp.resNbins, binGrp.lbinres, binGrp.hbinres, "Reso"};
+    AxisSpec thnAxisInvMass{binGrp.IMNbins, binGrp.lbinIM, binGrp.hbinIM, "#it{M} (GeV/#it{c}^{2})"};
+    AxisSpec spAxis = {binGrp.spNbins, binGrp.lbinsp, binGrp.hbinsp, "Sp"};
+    // AxisSpec qxZDCAxis = {binGrp.QxyNbins, binGrp.lbinQxy, binGrp.hbinQxy, "Qx"};
+    //  AxisSpec centAxis = {CentNbins, lbinCent, hbinCent, "V0M (%)"};
 
     std::vector<AxisSpec> runaxes = {thnAxisInvMass, axisGrp.configthnAxispT, axisGrp.configthnAxisPol, axisGrp.configcentAxis};
     if (needetaaxis)
@@ -480,6 +498,7 @@ struct lambdapolsp {
     }
 
     // check TPC tracking properties
+
     if (posTrackExtra.tpcNClsCrossedRows() < cfgTPCcluster || negTrackExtra.tpcNClsCrossedRows() < cfgTPCcluster) {
       return false;
     }
@@ -581,10 +600,14 @@ struct lambdapolsp {
                       double psiZDCC, double psiZDCA, double psiZDC, double centrality,
                       double candmass, double candpt, float desbinvalue, double acvalue)
   {
+    TRandom3 randPhi(0);
 
     ROOT::Math::Boost boost{particle.BoostToCM()};
     auto fourVecDauCM = boost(daughter);
     auto phiangle = TMath::ATan2(fourVecDauCM.Py(), fourVecDauCM.Px());
+    if (randGrp.doRandomPhi) {
+      phiangle = randPhi.Uniform(0, 2 * TMath::Pi());
+    }
     auto phiminuspsiC = GetPhiInRange(phiangle - psiZDCC);
     auto phiminuspsiA = GetPhiInRange(phiangle - psiZDCA);
     auto phiminuspsi = GetPhiInRange(phiangle - psiZDC);
@@ -1327,6 +1350,441 @@ struct lambdapolsp {
     // lastRunNumber = currentRunNumber;
   }
   PROCESS_SWITCH(lambdapolsp, processDerivedData, "Process derived data", false);
+
+  // Processing Event Mixing
+  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+  BinningType colBinning{{meGrp.axisVertex, meGrp.axisMultiplicityClass}, true};
+  Preslice<v0Candidates> tracksPerCollisionV0Mixed = o2::aod::v0data::straCollisionId; // for derived data only
+
+  void processDerivedDataMixed(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraZDCSP> const& collisions, v0Candidates const& V0s, dauTracks const&)
+  {
+    TRandom3 randGen(0);
+
+    for (auto& [collision1, collision2] : selfCombinations(colBinning, meGrp.nMix, -1, collisions, collisions)) {
+
+      if (collision1.index() == collision2.index()) {
+        continue;
+      }
+
+      if (!collision1.sel8()) {
+        continue;
+      }
+      if (!collision2.sel8()) {
+        continue;
+      }
+
+      if (!collision1.triggereventsp()) { // provided by StraZDCSP
+        continue;
+      }
+      if (!collision2.triggereventsp()) { // provided by StraZDCSP
+        continue;
+      }
+
+      if (rctCut.requireRCTFlagChecker && !rctChecker(collision1)) {
+        continue;
+      }
+      if (rctCut.requireRCTFlagChecker && !rctChecker(collision2)) {
+        continue;
+      }
+
+      if (additionalEvSel && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+      if (additionalEvSel && (!collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+      if (additionalEvSel2 && (collision1.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision1.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+        continue;
+      }
+      if (additionalEvSel2 && (collision2.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision2.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+        continue;
+      }
+      if (additionalEvSel3 && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (additionalEvSel3 && (!collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (additionalEvSel4 && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+      if (additionalEvSel4 && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+
+      auto centrality = collision1.centFT0C();
+      auto qxZDCA = collision2.qxZDCA();
+      auto qxZDCC = collision2.qxZDCC();
+      auto qyZDCA = collision2.qyZDCA();
+      auto qyZDCC = collision2.qyZDCC();
+      auto psiZDCC = collision2.psiZDCC();
+      auto psiZDCA = collision2.psiZDCA();
+      double modqxZDCA;
+      double modqyZDCA;
+      double modqxZDCC;
+      double modqyZDCC;
+
+      modqxZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Cos(psiZDCA);
+      modqyZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Sin(psiZDCA);
+      modqxZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Cos(psiZDCC);
+      modqyZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Sin(psiZDCC);
+
+      auto psiZDC = TMath::ATan2((modqyZDCC - modqyZDCA), (modqxZDCC - modqxZDCA)); // full event plane from collision 2
+      auto groupV0 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision1.index());
+
+      histos.fill(HIST("hCentrality"), centrality);
+
+      if (randGrp.doRandomPsi) {
+        psiZDC = randGen.Uniform(0, 2 * TMath::Pi());
+      }
+      if (randGrp.doRandomPsiAC) {
+        psiZDCA = randGen.Uniform(0, 2 * TMath::Pi());
+        psiZDCC = randGen.Uniform(0, 2 * TMath::Pi());
+      }
+
+      histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
+      histos.fill(HIST("hpResSin"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA - psiZDCC))));
+
+      for (const auto& v0 : groupV0) {
+
+        bool LambdaTag = isCompatible(v0, 0);
+        bool aLambdaTag = isCompatible(v0, 1);
+        if (!LambdaTag && !aLambdaTag)
+          continue;
+        if (!SelectionV0(collision1, v0))
+          continue;
+        if (LambdaTag) {
+          Proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
+          AntiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
+          Lambdadummy = Proton + AntiPion;
+        }
+        if (aLambdaTag) {
+          AntiProton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
+          Pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
+          AntiLambdadummy = AntiProton + Pion;
+        }
+        if (shouldReject(LambdaTag, aLambdaTag, Lambdadummy, AntiLambdadummy)) {
+          continue;
+        }
+        if (TMath::Abs(v0.eta()) > 0.8)
+          continue;
+        int taga = LambdaTag;
+        int tagb = aLambdaTag;
+
+        if (LambdaTag) {
+          Lambda = Proton + AntiPion;
+          tagb = 0;
+          double acvalue = 1.0;
+          fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mLambda(), v0.pt(), v0.eta(), acvalue);
+        }
+
+        tagb = aLambdaTag;
+        if (aLambdaTag) {
+          AntiLambda = AntiProton + Pion;
+          taga = 0;
+          double acvalue = 1.0;
+          fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mAntiLambda(), v0.pt(), v0.eta(), acvalue);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(lambdapolsp, processDerivedDataMixed, "Process mixed event using derived data", false);
+
+  void processDerivedDataMixed2(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraZDCSP> const& collisions, v0Candidates const& V0s, dauTracks const&)
+  {
+    TRandom3 randGen(0);
+
+    for (auto& [collision1, collision2] : selfCombinations(colBinning, meGrp.nMix, -1, collisions, collisions)) {
+
+      if (collision1.index() == collision2.index()) {
+        continue;
+      }
+
+      if (!collision1.sel8()) {
+        continue;
+      }
+      if (!collision2.sel8()) {
+        continue;
+      }
+
+      if (!collision1.triggereventsp()) { // provided by StraZDCSP
+        continue;
+      }
+      if (!collision2.triggereventsp()) { // provided by StraZDCSP
+        continue;
+      }
+
+      if (rctCut.requireRCTFlagChecker && !rctChecker(collision1)) {
+        continue;
+      }
+      if (rctCut.requireRCTFlagChecker && !rctChecker(collision2)) {
+        continue;
+      }
+
+      if (additionalEvSel && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+      if (additionalEvSel && (!collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+      if (additionalEvSel2 && (collision1.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision1.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+        continue;
+      }
+      if (additionalEvSel2 && (collision2.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision2.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+        continue;
+      }
+      if (additionalEvSel3 && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (additionalEvSel3 && (!collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (additionalEvSel4 && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+      if (additionalEvSel4 && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+
+      auto centrality = collision1.centFT0C();
+      auto qxZDCA = collision1.qxZDCA();
+      auto qxZDCC = collision1.qxZDCC();
+      auto qyZDCA = collision1.qyZDCA();
+      auto qyZDCC = collision1.qyZDCC();
+      auto psiZDCC = collision1.psiZDCC();
+      auto psiZDCA = collision1.psiZDCA();
+      double modqxZDCA;
+      double modqyZDCA;
+      double modqxZDCC;
+      double modqyZDCC;
+
+      modqxZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Cos(psiZDCA);
+      modqyZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Sin(psiZDCA);
+      modqxZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Cos(psiZDCC);
+      modqyZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Sin(psiZDCC);
+
+      auto psiZDC = TMath::ATan2((modqyZDCC - modqyZDCA), (modqxZDCC - modqxZDCA)); // full event plane from collision 2
+
+      histos.fill(HIST("hCentrality"), centrality);
+      histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
+      histos.fill(HIST("hpResSin"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA - psiZDCC))));
+
+      // V0s from collision1 to match kinematics
+      auto v0sCol1 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision1.index());
+      // V0s from collision2 to test
+      auto v0sCol2 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision2.index());
+
+      for (const auto& v0_2 : v0sCol2) {
+
+        bool LambdaTag = isCompatible(v0_2, 0);
+        bool aLambdaTag = isCompatible(v0_2, 1);
+        if (!LambdaTag && !aLambdaTag)
+          continue;
+        if (!SelectionV0(collision2, v0_2))
+          continue;
+        if (LambdaTag) {
+          Proton = ROOT::Math::PxPyPzMVector(v0_2.pxpos(), v0_2.pypos(), v0_2.pzpos(), massPr);
+          AntiPion = ROOT::Math::PxPyPzMVector(v0_2.pxneg(), v0_2.pyneg(), v0_2.pzneg(), massPi);
+          Lambdadummy = Proton + AntiPion;
+        }
+        if (aLambdaTag) {
+          AntiProton = ROOT::Math::PxPyPzMVector(v0_2.pxneg(), v0_2.pyneg(), v0_2.pzneg(), massPr);
+          Pion = ROOT::Math::PxPyPzMVector(v0_2.pxpos(), v0_2.pypos(), v0_2.pzpos(), massPi);
+          AntiLambdadummy = AntiProton + Pion;
+        }
+        if (shouldReject(LambdaTag, aLambdaTag, Lambdadummy, AntiLambdadummy)) {
+          continue;
+        }
+        if (TMath::Abs(v0_2.eta()) > 0.8)
+          continue;
+
+        // Check if lambda kinematics from collision2 matches with collision1
+        bool matched = false;
+        for (const auto& v0_1 : v0sCol1) {
+          bool LambdaTag1 = isCompatible(v0_1, 0);
+          bool aLambdaTag1 = isCompatible(v0_1, 1);
+          if (!LambdaTag1 && !aLambdaTag1)
+            continue;
+          if (!SelectionV0(collision1, v0_1))
+            continue;
+          if (TMath::Abs(v0_1.eta()) > 0.8)
+            continue;
+
+          double deta = std::abs(v0_1.eta() - v0_2.eta());
+          double dpt = std::abs(v0_1.pt() - v0_2.pt());
+          double dphi = RecoDecay::constrainAngle(v0_1.phi() - v0_2.phi(), 0.0);
+          if (deta < randGrp.etaMix && dpt < randGrp.ptMix && dphi < randGrp.phiMix && ((v0_1.eta() * v0_2.eta()) > 0.0)) {
+            matched = true;
+            break;
+          }
+        }
+        if (!matched)
+          continue;
+
+        int taga = LambdaTag;
+        int tagb = aLambdaTag;
+
+        if (LambdaTag) {
+          Lambda = Proton + AntiPion;
+          tagb = 0;
+          double acvalue = 1.0;
+          fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, psiZDC, centrality, v0_2.mLambda(), v0_2.pt(), v0_2.eta(), acvalue);
+        }
+
+        tagb = aLambdaTag;
+        if (aLambdaTag) {
+          AntiLambda = AntiProton + Pion;
+          taga = 0;
+          double acvalue = 1.0;
+          fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0_2.mAntiLambda(), v0_2.pt(), v0_2.eta(), acvalue);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(lambdapolsp, processDerivedDataMixed2, "Process mixed event2 using derived data", false);
+
+  void processDerivedDataMixedFIFO(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraZDCSP> const& collisions, v0Candidates const& V0s, dauTracks const&)
+  {
+
+    auto nBins = colBinning.getAllBinsCount();
+    std::vector<std::deque<int>> eventPools(nBins); // Pool per bin holding just event indices
+
+    for (auto& collision1 : collisions) {
+
+      if (!collision1.sel8()) {
+        continue;
+      }
+      if (!collision1.triggereventsp()) { // provided by StraZDCSP
+        continue;
+      }
+      if (rctCut.requireRCTFlagChecker && !rctChecker(collision1)) {
+        continue;
+      }
+
+      if (additionalEvSel && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+      if (additionalEvSel2 && (collision1.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision1.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+        continue;
+      }
+      if (additionalEvSel3 && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (additionalEvSel4 && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+
+      int bin = colBinning.getBin(std::make_tuple(collision1.posZ(), collision1.centFT0C()));
+      auto groupV0_evt1 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision1.index());
+      float centrality = collision1.centFT0C();
+      auto qxZDCA = collision1.qxZDCA();
+      auto qxZDCC = collision1.qxZDCC();
+      auto qyZDCA = collision1.qyZDCA();
+      auto qyZDCC = collision1.qyZDCC();
+      auto psiZDCC = collision1.psiZDCC();
+      auto psiZDCA = collision1.psiZDCA();
+      double modqxZDCA;
+      double modqyZDCA;
+      double modqxZDCC;
+      double modqyZDCC;
+
+      if (bin < 0)
+        continue;
+      modqxZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Cos(psiZDCA);
+      modqyZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Sin(psiZDCA);
+      modqxZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Cos(psiZDCC);
+      modqyZDCC = TMath::Sqrt((qxZDCC * qxZDCC) + (qyZDCC * qyZDCC)) * TMath::Sin(psiZDCC);
+
+      auto psiZDC = TMath::ATan2((modqyZDCC - modqyZDCA), (modqxZDCC - modqxZDCA)); // full event plane from collision
+
+      histos.fill(HIST("hCentrality"), centrality);
+      histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
+
+      // For deduplication of (v0_evt1, v0_evt2) pairs per mixed event
+      std::unordered_map<int, std::set<std::pair<int, int>>> seenMap;
+
+      // Loop over Λ candidates in collision1 (keep psi from here)
+
+      for (auto& v0_evt1 : groupV0_evt1) {
+        if (!SelectionV0(collision1, v0_evt1))
+          continue;
+        bool LambdaTag1 = isCompatible(v0_evt1, 0);
+        bool aLambdaTag1 = isCompatible(v0_evt1, 1);
+        ROOT::Math::PxPyPzMVector proton1, pion1, antiproton1, antipion1, LambdaTag1dummy, AntiLambdaTag1dummy;
+        if (LambdaTag1) {
+          proton1 = {v0_evt1.pxpos(), v0_evt1.pypos(), v0_evt1.pzpos(), massPr};
+          antipion1 = {v0_evt1.pxneg(), v0_evt1.pyneg(), v0_evt1.pzneg(), massPi};
+          LambdaTag1dummy = proton1 + antipion1;
+        }
+        if (aLambdaTag1) {
+          antiproton1 = {v0_evt1.pxneg(), v0_evt1.pyneg(), v0_evt1.pzneg(), massPr};
+          pion1 = {v0_evt1.pxpos(), v0_evt1.pypos(), v0_evt1.pzpos(), massPi};
+          AntiLambdaTag1dummy = antiproton1 + pion1;
+        }
+        if (shouldReject(LambdaTag1, aLambdaTag1, LambdaTag1dummy, AntiLambdaTag1dummy)) {
+          continue;
+        }
+        if (TMath::Abs(v0_evt1.eta()) > 0.8)
+          continue;
+
+        // Loop over all FIFO pool events (mixed events) for this centrality bin
+        int nMixedEvents = 0;
+        for (auto it = eventPools[bin].rbegin(); it != eventPools[bin].rend() && nMixedEvents < meGrp.nMix; ++it, ++nMixedEvents) {
+          int collision2idx = *it;
+          if (collision1.index() == collision2idx)
+            continue;
+          auto groupV0_evt2 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision2idx);
+
+          // Now loop over Λ candidates in collision2 to randomize proton phi* (randomize decay angle)
+          for (auto& v0_evt2 : groupV0_evt2) {
+            if (!SelectionV0(collision1, v0_evt2))
+              continue;
+            bool LambdaTag2 = isCompatible(v0_evt2, 0);
+            bool aLambdaTag2 = isCompatible(v0_evt2, 1);
+            if (!LambdaTag2 && !aLambdaTag2)
+              continue;
+
+            // Deduplicate (v0_evt1, v0_evt2) pairs per collision2idx
+            auto key = std::make_pair(v0_evt1.index(), v0_evt2.index());
+            if (!seenMap[collision2idx].insert(key).second)
+              continue;
+
+            ROOT::Math::PxPyPzMVector proton_mix, antiproton_mix, pion_mix, antipion_mix, LambdaTag2dummy, AntiLambdaTag2dummy;
+            if (LambdaTag2) {
+              proton_mix = {v0_evt2.pxpos(), v0_evt2.pypos(), v0_evt2.pzpos(), massPr};
+              antipion_mix = {v0_evt2.pxneg(), v0_evt2.pyneg(), v0_evt2.pzneg(), massPi};
+              LambdaTag2dummy = proton_mix + antipion_mix;
+            }
+            if (aLambdaTag2) {
+              antiproton_mix = {v0_evt2.pxneg(), v0_evt2.pyneg(), v0_evt2.pzneg(), massPr};
+              pion_mix = {v0_evt2.pxpos(), v0_evt2.pypos(), v0_evt2.pzpos(), massPi};
+              AntiLambdaTag2dummy = antiproton_mix + pion_mix;
+            }
+            if (shouldReject(LambdaTag2, aLambdaTag2, LambdaTag2dummy, AntiLambdaTag2dummy)) {
+              continue;
+            }
+            if (TMath::Abs(v0_evt2.eta()) > 0.8)
+              continue;
+            if (LambdaTag1) {
+              double acvalue = 1.0;
+              fillHistograms(1, 0, LambdaTag1dummy, proton_mix, psiZDCC, psiZDCA, psiZDC, centrality, v0_evt1.mLambda(), v0_evt1.pt(), v0_evt1.eta(), acvalue);
+            }
+            if (aLambdaTag1) {
+              double acvalue = 1.0;
+              fillHistograms(0, 1, AntiLambdaTag1dummy, antiproton_mix, psiZDCC, psiZDCA, psiZDC, centrality, v0_evt1.mAntiLambda(), v0_evt1.pt(), v0_evt1.eta(), acvalue);
+            }
+          }
+        }
+      }
+      // After processing all mixes, add current event V0s to pool for future mixing
+      eventPools[bin].push_back(collision1.index());
+      // Keep only N last events in FIFO queue
+      if (static_cast<int>(eventPools[bin].size()) > meGrp.nMix) {
+        eventPools[bin].pop_front();
+      }
+    }
+  }
+  PROCESS_SWITCH(lambdapolsp, processDerivedDataMixedFIFO, "Process mixed event using derived data with FIFO method", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

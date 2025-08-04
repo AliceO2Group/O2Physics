@@ -145,4 +145,14 @@ o2physics_add_dpl_workflow(kink-pika
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(he3-lambda-derived-analysis
+    SOURCES he3LambdaDerivedAnalysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(dedx-pid-analysis
+                    SOURCES dedxPidAnalysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 endif()

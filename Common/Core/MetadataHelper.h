@@ -8,8 +8,6 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-///
 /// \file   TableHelper.h
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Utility to handle the metadata from the AOD
@@ -69,7 +67,5 @@ struct MetadataHelper {
 };
 
 } // namespace o2::common::core
-
-using MetadataHelper = o2::common::core::MetadataHelper; // Alias for the MetadataHelper
 
 #endif // COMMON_CORE_METADATAHELPER_H_
