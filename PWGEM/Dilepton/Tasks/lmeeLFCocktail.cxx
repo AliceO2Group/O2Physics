@@ -14,16 +14,18 @@
 /// \analysis task for lmee light flavour cocktail
 /// \author Daniel Samitz, <daniel.samitz@cern.ch>, SMI Vienna
 
-#include <map>
-#include <vector>
-#include <string>
-
-#include "Math/Vector4D.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Math/Vector4D.h"
+
+#include <map>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -74,6 +76,10 @@ struct lmeelfcocktail {
   Configurable<float> fConfigMinDPhi{"cfgMinDPhi", 0.2, "minimum dphi"};
 
   Configurable<float> fConfigMaxEta{"cfgMaxEta", 0.8, "maxium |eta|"};
+  Configurable<float> fConfigMinPhi{"cfgMinPhi", 0.f, "min phi for single track"};
+  Configurable<float> fConfigMaxPhi{"cfgMaxPhi", 6.3, "max phi for single track"};
+  Configurable<bool> fConfigMirrorPhi{"cfgMirrorPhi", false, "mirror the phi cut around Pi, min and max phi should be in 0-Pi"};
+  Configurable<bool> fConfigRejectPhi{"cfgRejectPhi", false, "reject the phi interval"};
   Configurable<float> fConfigMinPt{"cfgMinPt", 0.2, "minium pT"};
   Configurable<float> fConfigMaxPt{"cfgMaxPt", 8.0, "maximum pT"};
   Configurable<float> fConfigMinOpAng{"cfgMinOpAng", 0, "minimum opening angle"};
@@ -114,6 +120,15 @@ struct lmeelfcocktail {
       return false;
     if (fabs(p1.Eta()) > fConfigMaxEta)
       return false;
+    if (!fConfigMirrorPhi) {
+      bool is_in_phi_range = p1.Phi() > fConfigMinPhi && p1.Phi() < fConfigMaxPhi;
+      return fConfigRejectPhi ? !is_in_phi_range : is_in_phi_range;
+    } else {
+      double minTrackPhiMirror = fConfigMinPhi + TMath::Pi();
+      double maxTrackPhiMirror = fConfigMaxPhi + TMath::Pi();
+      bool is_in_phi_range = (p1.Phi() > fConfigMinPhi && p1.Phi() < fConfigMaxPhi) || (p1.Phi() > minTrackPhiMirror && p1.Phi() < maxTrackPhiMirror);
+      return fConfigRejectPhi ? !is_in_phi_range : is_in_phi_range;
+    }
     return true;
   }
 
