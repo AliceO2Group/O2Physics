@@ -93,10 +93,10 @@ struct flowJNUACreation {
   void init(InitContext const&)
   {
     // Add histomanager here
-    histManager.SetHistRegistryQA(&qaHistRegistry);
-    histManager.SetDebugLog(false);
-    histManager.SetObtainNUA(true);
-    histManager.CreateHistQA();
+    histManager.setHistRegistryQA(&qaHistRegistry);
+    histManager.setDebugLog(false);
+    histManager.setObtainNUA(true);
+    histManager.createHistQA();
 
     // Add CCDB access here
     ccdb->setURL(cfgCCDB.cfgURL);
@@ -131,13 +131,13 @@ struct flowJNUACreation {
     if (cent < 0. || cent > 70.) {
       return;
     }
-    Int_t cBin = histManager.GetCentBin(cent);
+    Int_t cBin = histManager.getCentBin(cent);
     int nTracks = tracks.size();
 
     for (auto& track : tracks) {
-      histManager.FillTrackQA<1>(track, cBin, 1., 1., coll.posZ());
+      histManager.fillTrackQA<1>(track, cBin, 1., 1., coll.posZ());
     }
-    histManager.FillEventQA<1>(coll, cBin, cent, nTracks);
+    histManager.fillEventQA<1>(coll, cBin, cent, nTracks);
 
     LOGF(info, "Collision analysed. Next...");
   }

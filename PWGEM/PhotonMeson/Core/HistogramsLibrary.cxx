@@ -9,28 +9,25 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Contact: daiki.sekihata@cern.ch
-//
-#include <iostream>
-#include <memory>
-#include <fstream>
-using namespace std;
+/// \file HistogramsLibrary.cxx
+/// \brief Small histogram library for photon and meson analysis.
+/// \author D. Sekihata, daiki.sekihata@cern.ch
 
-#include <TObject.h>
-#include <TObjArray.h>
-#include <THashList.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TH3F.h>
-#include <TProfile.h>
-#include <TProfile2D.h>
-#include <TProfile3D.h>
-#include <THn.h>
-#include <THnSparse.h>
-#include <TIterator.h>
-#include <TClass.h>
-#include "Framework/Logger.h"
 #include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
+
+#include <Framework/Logger.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <THashList.h>
+#include <THnSparse.h>
+#include <TString.h>
+
+#include <string_view>
+
+#include <math.h>
+
+using namespace std;
 
 void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const char* histClass, const char* subGroup)
 {
@@ -184,7 +181,7 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
       list->Add(new TH2F("hEtaRec_DeltaEta", "photon #eta resolution;#eta^{rec} of conversion point;#eta^{rec} - #eta^{gen}", 400, -2, +2, 400, -1.0f, 1.0f));
       list->Add(new TH2F("hEtaRec_DeltaPhi", "photon #varphi resolution;#eta^{rec} of conversion point;#varphi^{rec} - #varphi^{gen} (rad.)", 400, -2, +2, 400, -1.0f, 1.0f));
     } // end of mc
-  }   // end of V0
+  } // end of V0
 
   if (TString(histClass).Contains("Dalitz")) {
     THnSparseF* hs_dilepton_uls_same = nullptr;
@@ -576,7 +573,7 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
       hs_conv_point_mix->Sumw2();
       list->Add(hs_conv_point_mix);
     } // end of pair
-  }   // end of material budget study
+  } // end of material budget study
 
   if (TString(histClass) == "Generated") {
     list->Add(new TH1F("hCollisionCounter", "hCollisionCounter", 5, 0.5f, 5.5f));

@@ -11,18 +11,27 @@
 
 o2physics_add_library(ALICE3Core
                       SOURCES TOFResoALICE3.cxx
+                              TrackUtilities.cxx
                               DelphesO2TrackSmearer.cxx
-                      PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
+                      PUBLIC_LINK_LIBRARIES O2::Framework
+                                            O2Physics::AnalysisCore)
 
 o2physics_target_root_dictionary(ALICE3Core
                       HEADERS TOFResoALICE3.h
+                              TrackUtilities.h
                               DelphesO2TrackSmearer.h
                       LINKDEF ALICE3CoreLinkDef.h)
 
 o2physics_add_library(FastTracker
                       SOURCES FastTracker.cxx
-                      PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
+                              DetLayer.cxx
+                              DelphesO2LutWriter.cxx
+                      PUBLIC_LINK_LIBRARIES O2::Framework
+                                            O2Physics::AnalysisCore
+                                            O2Physics::ALICE3Core)
 
 o2physics_target_root_dictionary(FastTracker
                       HEADERS FastTracker.h
+                              DetLayer.h
+                              DelphesO2LutWriter.h
                       LINKDEF FastTrackerLinkDef.h)

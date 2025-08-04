@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -130,6 +130,21 @@ class FemtoDreamCollisionSelection
       auto postrack = V0.template posTrack_as<T>();
       auto negtrack = V0.template negTrack_as<T>();
       if (V0Cuts.isSelectedMinimal(col, V0, postrack, negtrack)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  template <typename C, typename Casc, typename CascC, typename T>
+  bool isCollisionWithoutTrkCasc(C const& col, Casc const& Cascades, CascC& CascadeCuts, T const& /*Tracks*/)
+  {
+    // check if there is no selected Cascade
+    for (auto const& Cascade : Cascades) {
+      auto postrack = Cascade.template posTrack_as<T>();
+      auto negtrack = Cascade.template negTrack_as<T>();
+      auto bachtrack = Cascade.template bachelor_as<T>();
+      if (CascadeCuts.isSelectedMinimal(col, Cascade, postrack, negtrack, bachtrack)) {
         return false;
       }
     }

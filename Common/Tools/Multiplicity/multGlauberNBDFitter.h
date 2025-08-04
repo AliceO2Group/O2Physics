@@ -75,7 +75,7 @@ class multGlauberNBDFitter : public TNamed
   Double_t ContinuousNBD(Double_t n, Double_t mu, Double_t k);
 
   //For estimating Npart, Ncoll in multiplicity bins
-  void CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCollProf, TH2F* lNPart2DPlot, TH2F* lNColl2DPlot, TH1F* hPercentileMap);
+  void CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCollProf, TH2F* lNPart2DPlot, TH2F* lNColl2DPlot, TH1F* hPercentileMap, Double_t lLoRange = -1, Double_t lHiRange = -1);
 
   //void    Print(Option_t *option="") const;
 

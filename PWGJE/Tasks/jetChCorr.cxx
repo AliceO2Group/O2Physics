@@ -14,38 +14,35 @@
 /// Mriganka Mouli Mondal <mriganka.mouli.mondal@cern.ch>    originally modified from  Nima Zardoshti <nima.zardoshti@cern.ch>
 //
 
-#include <vector>
-#include <TMath.h>
-#include <TPDGCode.h>
-#include <TRandom.h>
-#include <TVector2.h>
-#include <TVector3.h>
-#include <TLorentzVector.h>
-
-#include "fastjet/PseudoJet.hh"
-#include "fastjet/ClusterSequenceArea.hh"
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/JetSubstructure.h"
-#include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetFinder.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
 
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+
+#include <TMath.h>
+#include <TMathBase.h>
+#include <TVector3.h>
+
+#include "fastjet/ClusterSequenceArea.hh"
+#include "fastjet/PseudoJet.hh"
+#include <fastjet/JetDefinition.hh>
+
+#include <cmath>
+#include <utility>
+#include <vector>
 
 // #include "PWGLF/DataModel/LFResonanceTables.h"
 
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace std;
 using namespace o2;

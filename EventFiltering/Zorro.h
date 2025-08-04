@@ -9,23 +9,30 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Zero Obstacles Results Retriever for Offline trigger selections
+
+///
+/// \file Zorro.h
+/// \brief Zero Obstacles Results Retriever for Offline trigger selections
+/// \author M Puccio
+///
 
 #ifndef EVENTFILTERING_ZORRO_H_
 #define EVENTFILTERING_ZORRO_H_
 
+#include "ZorroHelper.h"
+#include "ZorroSummary.h"
+
+#include <CommonDataFormat/IRFrame.h>
+#include <Framework/HistogramRegistry.h>
+
+#include <TH1.h>
+#include <TH2.h>
+
 #include <bitset>
-#include <memory>
+#include <cstdint>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include "TH1D.h"
-#include "TH2D.h"
-#include "CommonDataFormat/IRFrame.h"
-#include "Framework/HistogramRegistry.h"
-#include "ZorroHelper.h"
-#include "ZorroSummary.h"
 
 namespace o2
 {
@@ -54,9 +61,10 @@ class Zorro
   std::vector<int> getTOIcounters() const { return mTOIcounts; }
   std::vector<bool> getTriggerOfInterestResults(uint64_t bcGlobalId, uint64_t tolerance = 100);
   std::vector<bool> getTriggerOfInterestResults() const;
+  int getNTOIs() const { return mTOIs.size(); }
 
-  void setCCDBpath(std::string path) { mBaseCCDBPath = path; }
-  void setBaseCCDBPath(std::string path) { mBaseCCDBPath = path; }
+  void setCCDBpath(const std::string& path) { mBaseCCDBPath = path; }
+  void setBaseCCDBPath(const std::string& path) { mBaseCCDBPath = path; }
   void setBCtolerance(int tolerance) { mBCtolerance = tolerance; }
 
   ZorroSummary* getZorroSummary() { return &mZorroSummary; }
@@ -70,8 +78,8 @@ class Zorro
   int mRunNumber = 0;
   std::pair<int64_t, int64_t> mRunDuration;
   int64_t mOrbitResetTimestamp = 0;
-  TH1* mAnalysedTriggers;           /// Accounting for all triggers in the current run
-  TH1* mAnalysedTriggersOfInterest; /// Accounting for triggers of interest in the current run
+  TH1* mAnalysedTriggers = nullptr;           /// Accounting for all triggers in the current run
+  TH1* mAnalysedTriggersOfInterest = nullptr; /// Accounting for triggers of interest in the current run
 
   std::vector<int> mRunNumberHistos;
   std::vector<TH1*> mAnalysedTriggersList;           /// Per run histograms

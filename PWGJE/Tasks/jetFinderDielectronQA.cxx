@@ -15,6 +15,16 @@
 
 #include "PWGJE/Tasks/jetFinderHFQA.cxx"
 
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
+
+#include <Framework/AnalysisTask.h>
+#include <Framework/ConfigContext.h>
+#include <Framework/DataProcessorSpec.h>
+#include <Framework/runDataProcessing.h>
+
+#include <vector>
+
 using JetFinderDielectronQATask = JetFinderHFQATask<aod::DielectronChargedJets, aod::DielectronChargedJetConstituents, aod::DielectronChargedJetsMatchedToDielectronChargedEventWiseSubtractedJets, aod::CandidatesDielectronData, aod::DielectronChargedMCDetectorLevelJets, aod::DielectronChargedMCDetectorLevelJetConstituents, aod::DielectronChargedMCDetectorLevelJetsMatchedToDielectronChargedMCParticleLevelJets, aod::DielectronChargedMCDetectorLevelJetEventWeights, aod::CandidatesDielectronMCD, aod::DielectronChargedMCParticleLevelJets, aod::DielectronChargedMCParticleLevelJetConstituents, aod::DielectronChargedMCParticleLevelJetsMatchedToDielectronChargedMCDetectorLevelJets, aod::DielectronChargedMCParticleLevelJetEventWeights, aod::DielectronChargedEventWiseSubtractedJets, aod::DielectronChargedEventWiseSubtractedJetConstituents, aod::DielectronChargedEventWiseSubtractedJetsMatchedToDielectronChargedJets, aod::CandidatesDielectronMCP, aod::JTrackDielectronSubs, aod::BkgDielectronRhos>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -11,7 +11,7 @@
 
 o2physics_add_dpl_workflow(task-electron-weak-boson
                     SOURCES taskElectronWeakBoson.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-muon-charm-beauty-separation
@@ -19,8 +19,18 @@ o2physics_add_dpl_workflow(task-muon-charm-beauty-separation
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-single-electron
+                    SOURCES taskSingleElectron.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-single-muon
                     SOURCES taskSingleMuon.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(task-single-muon-mult
+                    SOURCES taskSingleMuonMult.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

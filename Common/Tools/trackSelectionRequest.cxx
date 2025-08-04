@@ -108,6 +108,14 @@ int trackSelectionRequest::getMinTPCCrossedRowsOverFindable() const
 {
   return minTPCcrossedrowsoverfindable;
 }
+void trackSelectionRequest::setMaxTPCFractionSharedCls(float maxTPCFractionSharedCls_)
+{
+  maxTPCFractionSharedCls = maxTPCFractionSharedCls_;
+}
+int trackSelectionRequest::getMaxTPCFractionSharedCls() const
+{
+  return maxTPCFractionSharedCls;
+}
 void trackSelectionRequest::setRequireITS(bool requireITS_)
 {
   requireITS = requireITS_;
@@ -159,6 +167,8 @@ void trackSelectionRequest::CombineWithLogicalOR(trackSelectionRequest const& lT
     minTPCcrossedrows = lTraSelRe.getMinTPCCrossedRows();
   if (lTraSelRe.getMinTPCCrossedRowsOverFindable() < minTPCcrossedrowsoverfindable)
     minTPCcrossedrowsoverfindable = lTraSelRe.getMinTPCCrossedRowsOverFindable();
+  if (lTraSelRe.getMaxTPCFractionSharedCls() > maxTPCFractionSharedCls)
+    maxTPCFractionSharedCls = lTraSelRe.getMaxTPCFractionSharedCls();
 
   if (lTraSelRe.getRequireITS() == false)
     requireITS = false;
@@ -205,6 +215,8 @@ void trackSelectionRequest::PrintSelections() const
   LOGF(info, "Minimum TPC clusters ...................: %i", minTPCclusters);
   LOGF(info, "Minimum TPC crossed rows ...............: %i", minTPCcrossedrows);
   LOGF(info, "Minimum TPC crossed rows over findable .: %.3f", minTPCcrossedrowsoverfindable);
+  LOGF(info, "Max Fraction of TPC Shared Clusters ....: %.3f", maxTPCFractionSharedCls);
+
   LOGF(info, "Require ITS ............................: %i", requireITS);
   LOGF(info, "Minimum ITS clusters ...................: %i", minITSclusters);
   LOGF(info, "Max ITS chi2/clu  ......................: %.3f", maxITSChi2percluster);

@@ -13,31 +13,34 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include <TRandom3.h>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "RecoDecay.h"
 
 #include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-
-#include "PWGJE/DataModel/Jet.h"
-
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
+#include "PWGJE/Core/JetHFUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
 
-#include "EventFiltering/filterTables.h"
+#include "Framework/ASoA.h"
+#include "Framework/HistogramRegistry.h"
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+
+#include <TMath.h>
+#include <TMathBase.h>
+#include <TRandom3.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <string>
+#include <type_traits>
+#include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -68,7 +71,9 @@ struct JetFinderHFQATask {
   Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
   Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
   Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
+  Configurable<float> pTHatAbsoluteMin{"pTHatAbsoluteMin", -99.0, "minimum value of pTHat"};
   Configurable<float> randomConeR{"randomConeR", 0.4, "size of random Cone for estimating background fluctuations"};
+  Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "flag to choose to reject min. bias gap events; jet-level rejection applied at the jet finder level, here rejection is applied for collision and track process functions"};
 
   HfHelper hfHelper;
   std::vector<bool> filledJetR_Both;
@@ -79,7 +84,7 @@ struct JetFinderHFQATask {
   std::vector<bool> filledJetHFR_High;
   std::vector<double> jetRadiiValues;
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
   int trackSelection = -1;
 
   std::vector<double> jetPtBins;
@@ -87,7 +92,7 @@ struct JetFinderHFQATask {
 
   void init(o2::framework::InitContext&)
   {
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
     jetRadiiValues = (std::vector<double>)jetRadii;
@@ -480,14 +485,17 @@ struct JetFinderHFQATask {
   using JetTableMCPMatchedWeightedJoined = soa::Join<JetTableMCD, JetConstituentTableMCP, JetMatchingTableMCPMCD, JetTableMCPWeighted>;
 
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
-  Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centrality >= centralityMin && aod::jcollision::centrality < centralityMax);
+  Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centFT0M >= centralityMin && aod::jcollision::centFT0M < centralityMax);
 
   // Filter candidateCutsD0 = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar);
   // Filter candidateCutsLc = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPiPK);
   // Filter candidateCutsBplus = (aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= selectionFlagBplus);
 
   PresliceOptional<soa::Filtered<JetTracksDataSub>> perD0CandidateTracks = aod::bkgd0::candidateId;
+  PresliceOptional<soa::Filtered<JetTracksDataSub>> perDplusCandidateTracks = aod::bkgdplus::candidateId;
+  PresliceOptional<soa::Filtered<JetTracksDataSub>> perDstarCandidateTracks = aod::bkgdstar::candidateId;
   PresliceOptional<soa::Filtered<JetTracksDataSub>> perLcCandidateTracks = aod::bkglc::candidateId;
+  PresliceOptional<soa::Filtered<JetTracksDataSub>> perB0CandidateTracks = aod::bkgb0::candidateId;
   PresliceOptional<soa::Filtered<JetTracksDataSub>> perBplusCandidateTracks = aod::bkgbplus::candidateId;
   PresliceOptional<soa::Filtered<JetTracksDataSub>> perDielectronCandidateTracks = aod::bkgdielectron::candidateId;
 
@@ -526,7 +534,7 @@ struct JetFinderHFQATask {
   {
 
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
-    if (jet.pt() > pTHatMaxMCD * pTHat) {
+    if (jet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {
       return;
     }
     registry.fill(HIST("h_jet_phat_weighted"), pTHat, weight);
@@ -655,7 +663,7 @@ struct JetFinderHFQATask {
   {
 
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
-    if (jet.pt() > pTHatMaxMCP * pTHat) {
+    if (jet.pt() > pTHatMaxMCP * pTHat || pTHat < pTHatAbsoluteMin) {
       return;
     }
     registry.fill(HIST("h_jet_phat_part_weighted"), pTHat, weight);
@@ -697,7 +705,7 @@ struct JetFinderHFQATask {
   {
 
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
-    if (jetBase.pt() > pTHatMaxMCD * pTHat) {
+    if (jetBase.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {
       return;
     }
     auto candidateBasePt = 0.0;
@@ -929,12 +937,16 @@ struct JetFinderHFQATask {
   template <typename T, typename U>
   void fillTrackHistograms(T const& collision, U const& tracks, float weight = 1.0)
   {
+    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
+    if (pTHat < pTHatAbsoluteMin) {
+      return;
+    }
     for (auto const& track : tracks) {
       if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
         continue;
       }
-      registry.fill(HIST("h3_centrality_track_pt_track_phi"), collision.centrality(), track.pt(), track.phi(), weight);
-      registry.fill(HIST("h3_centrality_track_pt_track_eta"), collision.centrality(), track.pt(), track.eta(), weight);
+      registry.fill(HIST("h3_centrality_track_pt_track_phi"), collision.centFT0M(), track.pt(), track.phi(), weight);
+      registry.fill(HIST("h3_centrality_track_pt_track_eta"), collision.centFT0M(), track.pt(), track.eta(), weight);
       registry.fill(HIST("h3_track_pt_track_eta_track_phi"), track.pt(), track.eta(), track.phi(), weight);
     }
   }
@@ -943,7 +955,7 @@ struct JetFinderHFQATask {
   void randomCone(T const& collision, U const& jets, V const& candidates, M const& tracks)
   {
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     for (auto const& candidate : candidates) {
@@ -960,7 +972,7 @@ struct JetFinderHFQATask {
           }
         }
       }
-      registry.fill(HIST("h2_centrality_rhorandomcone"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * candidate.rho());
+      registry.fill(HIST("h2_centrality_rhorandomcone"), collision.centFT0M(), randomConePt - M_PI * randomConeR * randomConeR * candidate.rho());
 
       // removing the leading jet from the random cone
       if (jets.size() > 0) { // if there are no jets in the acceptance (from the jetfinder cuts) then there can be no leading jet
@@ -988,7 +1000,7 @@ struct JetFinderHFQATask {
           }
         }
       }
-      registry.fill(HIST("h2_centrality_rhorandomconewithoutleadingjet"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * candidate.rho());
+      registry.fill(HIST("h2_centrality_rhorandomconewithoutleadingjet"), collision.centFT0M(), randomConePt - M_PI * randomConeR * randomConeR * candidate.rho());
       break; // currently only fills it for the first candidate in the event (not pT ordered). Jet is pT ordered so results for excluding leading jet might not be as expected
     }
   }
@@ -1007,7 +1019,7 @@ struct JetFinderHFQATask {
       if (!isAcceptedJet<aod::JetTracks, CandidateTableData>(jet)) {
         continue;
       }
-      fillHistograms<typename JetTableDataJoined::iterator, CandidateTableData>(jet, collision.centrality());
+      fillHistograms<typename JetTableDataJoined::iterator, CandidateTableData>(jet, collision.centFT0M());
     }
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsData, "jet finder HF QA data", false);
@@ -1025,7 +1037,7 @@ struct JetFinderHFQATask {
         continue;
       }
       auto const candidate = jet.template candidates_first_as<soa::Join<CandidateTableData, BkgRhoTable>>();
-      fillRhoAreaSubtractedHistograms<typename JetTableDataJoined::iterator, CandidateTableData>(jet, collision.centrality(), candidate.rho());
+      fillRhoAreaSubtractedHistograms<typename JetTableDataJoined::iterator, CandidateTableData>(jet, collision.centFT0M(), candidate.rho());
     }
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsRhoAreaSubData, "jet finder HF QA for rho-area subtracted jets", false);
@@ -1043,7 +1055,7 @@ struct JetFinderHFQATask {
         continue;
       }
       auto const candidate = jet.template candidates_first_as<soa::Join<CandidateTableMCD, BkgRhoTable>>();
-      fillRhoAreaSubtractedHistograms<typename JetTableMCDJoined::iterator, CandidateTableMCD>(jet, collision.centrality(), candidate.rho());
+      fillRhoAreaSubtractedHistograms<typename JetTableMCDJoined::iterator, CandidateTableMCD>(jet, collision.centFT0M(), candidate.rho());
     }
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsRhoAreaSubMCD, "jet finder HF QA for rho-area subtracted mcd jets", false);
@@ -1057,7 +1069,7 @@ struct JetFinderHFQATask {
       if (!isAcceptedJet<JetTracksDataSub, CandidateTableData>(jet)) {
         continue;
       }
-      fillEventWiseConstituentSubtractedHistograms<typename JetTableDataSubJoined::iterator, CandidateTableData, JetTracksDataSub>(jet, collision.centrality());
+      fillEventWiseConstituentSubtractedHistograms<typename JetTableDataSubJoined::iterator, CandidateTableData, JetTracksDataSub>(jet, collision.centFT0M());
     }
   }
   PROCESS_SWITCH(JetFinderHFQATask, processEvtWiseConstSubJetsData, "jet finder HF QA for eventwise constituent-subtracted jets data", false);
@@ -1088,7 +1100,7 @@ struct JetFinderHFQATask {
       if (!isAcceptedJet<aod::JetTracks, CandidateTableMCD>(jet)) {
         continue;
       }
-      fillHistograms<typename JetTableMCDJoined::iterator, CandidateTableMCD>(jet, collision.centrality());
+      fillHistograms<typename JetTableMCDJoined::iterator, CandidateTableMCD>(jet, collision.centFT0M());
     }
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsMCD, "jet finder HF QA mcd", false);
@@ -1102,7 +1114,7 @@ struct JetFinderHFQATask {
       if (!isAcceptedJet<aod::JetTracks, CandidateTableMCD>(jet)) {
         continue;
       }
-      fillHistograms<typename JetTableMCDWeightedJoined::iterator, CandidateTableMCD>(jet, collision.centrality(), jet.eventWeight());
+      fillHistograms<typename JetTableMCDWeightedJoined::iterator, CandidateTableMCD>(jet, collision.centFT0M(), jet.eventWeight());
     }
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsMCDWeighted, "jet finder HF QA mcd on weighted events", false);
@@ -1173,6 +1185,9 @@ struct JetFinderHFQATask {
 
   void processMCCollisionsWeighted(aod::JetMcCollision const& collision)
   {
+    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
     registry.fill(HIST("h_collision_eventweight_part"), collision.weight());
   }
   PROCESS_SWITCH(JetFinderHFQATask, processMCCollisionsWeighted, "collision QA for weighted events", false);
@@ -1187,7 +1202,7 @@ struct JetFinderHFQATask {
       return;
     }
     registry.fill(HIST("h_collision_trigger_events"), 1.5); // all events with z vertex cut
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("h_collision_trigger_events"), 2.5); // events with sel8()
@@ -1353,7 +1368,7 @@ struct JetFinderHFQATask {
       return;
     }
     registry.fill(HIST("h_collision_hftrigger_events"), 1.5); // all events with z vertex cut
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("h_collision_hftrigger_events"), 2.5); // events with sel8()
@@ -1463,13 +1478,16 @@ struct JetFinderHFQATask {
   void processTracks(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                      soa::Filtered<aod::JetTracks> const& tracks)
   {
+    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
     registry.fill(HIST("h_collisions"), 0.5);
-    registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 0.5);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    registry.fill(HIST("h2_centrality_collisions"), collision.centFT0M(), 0.5);
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
-    registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 1.5);
+    registry.fill(HIST("h2_centrality_collisions"), collision.centFT0M(), 1.5);
     fillTrackHistograms(collision, tracks);
   }
   PROCESS_SWITCH(JetFinderHFQATask, processTracks, "QA for charged tracks", false);
@@ -1479,9 +1497,12 @@ struct JetFinderHFQATask {
                              soa::Filtered<aod::JetTracks> const& tracks)
   {
     float eventWeight = collision.mcCollision().weight();
+    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h_collisions_weighted"), 0.5, eventWeight);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
@@ -1494,14 +1515,17 @@ struct JetFinderHFQATask {
                         CandidateTableData const& candidates,
                         soa::Filtered<JetTracksDataSub> const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     for (auto const& candidate : candidates) {
 
-      for (auto const& track : jetcandidateutilities::slicedPerCandidate(tracks, candidate, perD0CandidateTracks, perLcCandidateTracks, perBplusCandidateTracks, perDielectronCandidateTracks)) {
-        registry.fill(HIST("h3_centrality_track_pt_track_phi_eventwiseconstituentsubtracted"), collision.centrality(), track.pt(), track.phi());
-        registry.fill(HIST("h3_centrality_track_pt_track_eta_eventwiseconstituentsubtracted"), collision.centrality(), track.pt(), track.eta());
+      for (auto const& track : jetcandidateutilities::slicedPerCandidate(tracks, candidate, perD0CandidateTracks, perDplusCandidateTracks, perDstarCandidateTracks, perLcCandidateTracks, perB0CandidateTracks, perBplusCandidateTracks, perDielectronCandidateTracks)) {
+        registry.fill(HIST("h3_centrality_track_pt_track_phi_eventwiseconstituentsubtracted"), collision.centFT0M(), track.pt(), track.phi());
+        registry.fill(HIST("h3_centrality_track_pt_track_eta_eventwiseconstituentsubtracted"), collision.centFT0M(), track.pt(), track.eta());
         registry.fill(HIST("h3_track_pt_track_eta_track_phi_eventwiseconstituentsubtracted"), track.pt(), track.eta(), track.phi());
       }
       break; // currently only fills it for the first candidate in the event (not pT ordered)
@@ -1511,7 +1535,10 @@ struct JetFinderHFQATask {
 
   void processRho(aod::JetCollision const& collision, soa::Join<CandidateTableData, BkgRhoTable> const& candidates, soa::Filtered<aod::JetTracks> const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     for (auto const& candidate : candidates) {
@@ -1521,11 +1548,11 @@ struct JetFinderHFQATask {
           nTracks++;
         }
       }
-      registry.fill(HIST("h2_centrality_ntracks"), collision.centrality(), nTracks);
+      registry.fill(HIST("h2_centrality_ntracks"), collision.centFT0M(), nTracks);
       registry.fill(HIST("h2_ntracks_rho"), nTracks, candidate.rho());
       registry.fill(HIST("h2_ntracks_rhom"), nTracks, candidate.rhoM());
-      registry.fill(HIST("h2_centrality_rho"), collision.centrality(), candidate.rho());
-      registry.fill(HIST("h2_centrality_rhom"), collision.centrality(), candidate.rhoM());
+      registry.fill(HIST("h2_centrality_rho"), collision.centFT0M(), candidate.rho());
+      registry.fill(HIST("h2_centrality_rhom"), collision.centFT0M(), candidate.rhoM());
       break; // currently only fills it for the first candidate in the event (not pT ordered)
     }
   }
@@ -1539,6 +1566,9 @@ struct JetFinderHFQATask {
 
   void processRandomConeMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision, JetTableMCDJoined const& jets, soa::Join<CandidateTableMCD, BkgRhoTable> const& candidates, soa::Filtered<aod::JetTracks> const& tracks)
   {
+    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
     randomCone(collision, jets, candidates, tracks);
   }
   PROCESS_SWITCH(JetFinderHFQATask, processRandomConeMCD, "QA for random cone estimation of background fluctuations in mcd", false);
@@ -1546,12 +1576,15 @@ struct JetFinderHFQATask {
   void processCandidates(soa::Filtered<aod::JetCollisions>::iterator const& collision, CandidateTableData const& candidates)
   {
 
+    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
     for (auto const& candidate : candidates) {
       registry.fill(HIST("h_candidate_invmass"), jetcandidateutilities::getCandidateInvariantMass(candidate));
       registry.fill(HIST("h_candidate_pt"), candidate.pt());
       registry.fill(HIST("h_candidate_y"), candidate.y());
     }
-    registry.fill(HIST("h2_centrality_ncandidates"), collision.centrality(), candidates.size());
+    registry.fill(HIST("h2_centrality_ncandidates"), collision.centFT0M(), candidates.size());
   }
   PROCESS_SWITCH(JetFinderHFQATask, processCandidates, "HF candidate QA", false);
 };

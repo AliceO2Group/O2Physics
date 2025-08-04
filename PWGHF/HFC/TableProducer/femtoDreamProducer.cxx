@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -14,37 +14,57 @@
 /// \author Ravindra Singh, GSI, ravindra.singh@cern.ch
 /// \author Biao Zhang, Heidelberg University, biao.zhang@cern.ch
 
-#include <string>
-#include <vector>
-#include "CCDB/BasicCCDBManager.h"
-
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/Propagator.h"
-
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "PWGCF/FemtoDream/Core/femtoDreamCollisionSelection.h"
+#include "PWGCF/DataModel/FemtoDerived.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
-
+#include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/HfMlResponseLcToPKPi.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
-#include "PWGHF/Core/CentralityEstimation.h"
+
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <TH1.h>
+#include <TMCProcess.h>
+
+#include <array>
+#include <chrono>
+#include <cstdint>
+#include <numeric>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
+using namespace o2::analysis;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::femtoDream;
 using namespace o2::hf_evsel;
@@ -52,12 +72,19 @@ using namespace o2::hf_centrality;
 
 // event types
 enum Event : uint8_t {
-  kAll = 0,
-  kRejEveSel,
-  kRejNoTracksAndCharm,
-  kTrackSelected,
-  kCharmSelected,
-  kPairSelected
+  All = 0,
+  RejEveSel,
+  RejNoTracksAndCharm,
+  TrackSelected,
+  CharmSelected,
+  PairSelected
+};
+
+// ml modes
+enum MlMode : uint8_t {
+  NoMl = 0,
+  FillMlFromSelector,
+  FillMlFromNewBDT
 };
 
 struct HfFemtoDreamProducer {
@@ -81,6 +108,11 @@ struct HfFemtoDreamProducer {
   Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+
+  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"EventFiltering/PWGHF/BDTLc"}, "Paths of models on CCDB"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_LcToPKPi.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   // Configurable<bool> isForceGRP{"isForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
 
@@ -108,37 +140,46 @@ struct HfFemtoDreamProducer {
   Configurable<std::vector<float>> trkTPCsCls{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kTPCsClsMax, "trk"), std::vector<float>{0.1f, 160.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kTPCsClsMax, "Track selection: ")};
   Configurable<std::vector<float>> trkITSnclsIbMin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kITSnClsIbMin, "trk"), std::vector<float>{-1.f, 1.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kITSnClsIbMin, "Track selection: ")};
   Configurable<std::vector<float>> trkITSnclsMin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kITSnClsMin, "trk"), std::vector<float>{-1.f, 2.f, 4.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kITSnClsMin, "Track selection: ")};
+  // ML inference
+  Configurable<int> applyMlMode{"applyMlMode", 1, "None: 0, BDT model from Lc selector: 1, New BDT model on Top of Lc selector: 2"};
+  Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
+  Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
+  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
 
-  using CandidateLc = soa::Join<aod::HfCand3Prong, aod::HfSelLc>;
-  using CandidateLcMc = soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>;
+  FemtoDreamTrackSelection trackCuts;
+
+  HfHelper hfHelper;
+  o2::analysis::HfMlResponseLcToPKPi<float> hfMlResponse;
+  std::vector<float> outputMlPKPi = {};
+  std::vector<float> outputMlPiKP = {};
+  o2::ccdb::CcdbApi ccdbApi;
+  o2::hf_evsel::HfEventSelection hfEvSel;
+  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
+  o2::base::MatLayerCylSet* lut;
+  // if (doPvRefit){ lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));} //! may be it useful, will check later
+
+  float magField;
+  int runNumber;
+  using CandidateLc = soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc>;
+  using CandidateLcMc = soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc, aod::HfCand3ProngMcRec>;
 
   using FemtoFullCollision = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator;
   using FemtoFullCollisionMc = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
   using FemtoFullMcgenCollisions = soa::Join<aod::McCollisions, o2::aod::MultsExtraMC>;
   using FemtoFullMcgenCollision = FemtoFullMcgenCollisions::iterator;
-  using FemtoHFTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
+  using FemtoHFTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
   using FemtoHFTrack = FemtoHFTracks::iterator;
   using FemtoHFMcTracks = soa::Join<aod::McTrackLabels, FemtoHFTracks>;
   using FemtoHFMcTrack = FemtoHFMcTracks::iterator;
 
   using GeneratedMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
 
-  FemtoDreamTrackSelection trackCuts;
-
   Filter filterSelectCandidateLc = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry TrackRegistry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
-
-  HfHelper hfHelper;
-  o2::hf_evsel::HfEventSelection hfEvSel;
-
-  float magField;
-  int runNumber;
-
-  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
-  o2::base::MatLayerCylSet* lut;
-  // if (doPvRefit){ lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));} //! may be it useful, will check later
+  HistogramRegistry trackRegistry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
   {
@@ -147,18 +188,18 @@ struct HfFemtoDreamProducer {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
 
-    int CutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
-    TrackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
+    int cutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
+    trackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{cutBits + 1, -0.5, cutBits + 0.5}});
 
     // event QA histograms
-    constexpr int kEventTypes = kPairSelected + 1;
+    constexpr int kEventTypes = PairSelected + 1;
     std::string labels[kEventTypes];
-    labels[Event::kAll] = "All events";
-    labels[Event::kRejEveSel] = "rejected by event selection";
-    labels[Event::kRejNoTracksAndCharm] = "rejected by no tracks and charm";
-    labels[Event::kTrackSelected] = "with tracks ";
-    labels[Event::kCharmSelected] = "with charm hadrons ";
-    labels[Event::kPairSelected] = "with pairs";
+    labels[Event::All] = "All events";
+    labels[Event::RejEveSel] = "rejected by event selection";
+    labels[Event::RejNoTracksAndCharm] = "rejected by no tracks and charm";
+    labels[Event::TrackSelected] = "with tracks ";
+    labels[Event::CharmSelected] = "with charm hadrons ";
+    labels[Event::PairSelected] = "with pairs";
 
     static const AxisSpec axisEvents = {kEventTypes, 0.5, kEventTypes + 0.5, ""};
     qaRegistry.add("hEventQA", "Events;;entries", HistType::kTH1F, {axisEvents});
@@ -181,7 +222,7 @@ struct HfFemtoDreamProducer {
     trackCuts.setSelection(trkPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
     trackCuts.setPIDSpecies(trkPIDspecies);
     trackCuts.setnSigmaPIDOffset(trkPIDnSigmaOffsetTPC, trkPIDnSigmaOffsetTOF);
-    trackCuts.init<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild, aod::femtodreamparticle::cutContainerType>(&qaRegistry, &TrackRegistry);
+    trackCuts.init<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild, aod::femtodreamparticle::cutContainerType>(&qaRegistry, &trackRegistry);
 
     runNumber = 0;
     magField = 0.0;
@@ -194,6 +235,18 @@ struct HfFemtoDreamProducer {
 
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
+
+    if (applyMlMode == FillMlFromNewBDT) {
+      hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdbUrl);
+        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+      } else {
+        hfMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      hfMlResponse.init();
+    }
   }
 
   /// Function to retrieve the nominal magnetic field in kG (0.1T) and convert it directly to T
@@ -228,9 +281,12 @@ struct HfFemtoDreamProducer {
                      particle.tofNSigmaKa(),
                      particle.tofNSigmaPr(),
                      particle.tofNSigmaDe(),
-                     -999.,
-                     -999.,
-                     -999., -999., -999., -999., -999., -999.);
+                     -999., -999., -999., -999.,
+                     -999., -999., -999., -999.,
+                     -999., -999., -999., -999.,
+                     -999., -999., -999., -999.,
+                     -999., -999., -999., -999.,
+                     -999., -999., -999.);
   }
 
   template <typename CollisionType, typename ParticleType>
@@ -242,11 +298,12 @@ struct HfFemtoDreamProducer {
       auto pdgCode = particleMc.pdgCode();
       int particleOrigin = 99;
       int pdgCodeMother = -1;
+      constexpr int GenFromTransport = -1; // -1 if a particle produced during transport
       // get list of mothers, but it could be empty (for example in case of injected light nuclei)
       auto motherparticlesMc = particleMc.template mothers_as<aod::McParticles>();
       // check pdg code
       // if this fails, the particle is a fake
-      if (abs(pdgCode) == abs(trkPDGCode.value)) {
+      if (std::abs(pdgCode) == std::abs(trkPDGCode.value)) {
         // check first if particle is from pile up
         // check if the collision associated with the particle is the same as the analyzed collision by checking their Ids
         if ((col.has_mcCollision() && (particleMc.mcCollisionId() != col.mcCollisionId())) || !col.has_mcCollision()) {
@@ -258,7 +315,7 @@ struct HfFemtoDreamProducer {
           // particle is from a decay -> getProcess() == 4
           // particle is generated during transport -> getGenStatusCode() == -1
           // list of mothers is not empty
-        } else if (particleMc.getProcess() == 4 && particleMc.getGenStatusCode() == -1 && !motherparticlesMc.empty()) {
+        } else if (particleMc.getProcess() == TMCProcess::kPDecay && particleMc.getGenStatusCode() == GenFromTransport && !motherparticlesMc.empty()) {
           // get direct mother
           auto motherparticleMc = motherparticlesMc.front();
           pdgCodeMother = motherparticleMc.pdgCode();
@@ -266,7 +323,7 @@ struct HfFemtoDreamProducer {
           // check if particle is material
           // particle is from inelastic hadronic interaction -> getProcess() == 23
           // particle is generated during transport -> getGenStatusCode() == -1
-        } else if (particleMc.getProcess() == 23 && particleMc.getGenStatusCode() == -1) {
+        } else if (particleMc.getProcess() == TMCProcess::kPHInhelastic && particleMc.getGenStatusCode() == GenFromTransport) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
           // cross check to see if we missed a case
         } else {
@@ -311,7 +368,7 @@ struct HfFemtoDreamProducer {
     // std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
     bool fIsTrackFilled = false;
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       /// if the most open selection criteria are not fulfilled there is no
       /// point looking further at the track
       if (!trackCuts.isSelectedMinimal(track)) {
@@ -320,7 +377,7 @@ struct HfFemtoDreamProducer {
 
       trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild, true>(track);
       // the bit-wise container of the systematic variations is obtained
-      auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
+      auto cutContainer = trackCuts.getCutContainer<false, aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
 
       // track global index
       outputPartsIndex(track.globalIndex());
@@ -369,18 +426,18 @@ struct HfFemtoDreamProducer {
 
     const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(col, mult, ccdb, qaRegistry);
 
-    qaRegistry.fill(HIST("hEventQA"), 1 + Event::kAll);
+    qaRegistry.fill(HIST("hEventQA"), 1 + Event::All);
 
     /// monitor the satisfied event selections
     hfEvSel.fillHistograms(col, rejectionMask, mult);
     if (rejectionMask != 0) {
       /// at least one event selection not satisfied --> reject the candidate
-      qaRegistry.fill(HIST("hEventQA"), 1 + Event::kRejEveSel);
+      qaRegistry.fill(HIST("hEventQA"), 1 + Event::RejEveSel);
       return;
     }
 
     if (isNoSelectedTracks(col, tracks, trackCuts) && sizeCand <= 0) {
-      qaRegistry.fill(HIST("hEventQA"), 1 + Event::kRejNoTracksAndCharm);
+      qaRegistry.fill(HIST("hEventQA"), 1 + Event::RejNoTracksAndCharm);
       return;
     }
 
@@ -392,58 +449,81 @@ struct HfFemtoDreamProducer {
     // Filling candidate properties
     rowCandCharmHad.reserve(sizeCand);
     bool isTrackFilled = false;
+    bool isSelectedMlLcToPKPi = true;
+    bool isSelectedMlLcToPiKP = true;
     for (const auto& candidate : candidates) {
-      std::array<float, 3> outputMlPKPi{-1., -1., -1.};
-      std::array<float, 3> outputMlPiKP{-1., -1., -1.};
-      if constexpr (useCharmMl) {
-        /// fill with ML information
-        /// BDT index 0: bkg score; BDT index 1: prompt score; BDT index 2: non-prompt score
-        if (candidate.mlProbLcToPKPi().size() > 0) {
-          outputMlPKPi.at(0) = candidate.mlProbLcToPKPi()[0]; /// bkg score
-          outputMlPKPi.at(1) = candidate.mlProbLcToPKPi()[1]; /// prompt score
-          outputMlPKPi.at(2) = candidate.mlProbLcToPKPi()[2]; /// non-prompt score
-        }
-        if (candidate.mlProbLcToPiKP().size() > 0) {
-          outputMlPiKP.at(0) = candidate.mlProbLcToPiKP()[0]; /// bkg score
-          outputMlPiKP.at(1) = candidate.mlProbLcToPiKP()[1]; /// prompt score
-          outputMlPiKP.at(2) = candidate.mlProbLcToPiKP()[2]; /// non-prompt score
-        }
-      }
+      outputMlPKPi = {-1.0f, -1.0f, -1.0f};
+      outputMlPiKP = {-1.0f, -1.0f, -1.0f};
       auto trackPos1 = candidate.template prong0_as<TrackType>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.template prong1_as<TrackType>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.template prong2_as<TrackType>(); // positive daughter (negative for the antiparticles)
 
+      if constexpr (useCharmMl) {
+        /// fill with ML information
+        /// BDT index 0: bkg score; BDT index 1: prompt score; BDT index 2: non-prompt score
+        if (applyMlMode == FillMlFromSelector) {
+          if (candidate.mlProbLcToPKPi().size() > 0) {
+            outputMlPKPi.at(0) = candidate.mlProbLcToPKPi()[0]; /// bkg score
+            outputMlPKPi.at(1) = candidate.mlProbLcToPKPi()[1]; /// prompt score
+            outputMlPKPi.at(2) = candidate.mlProbLcToPKPi()[2]; /// non-prompt score
+          }
+          if (candidate.mlProbLcToPiKP().size() > 0) {
+            outputMlPiKP.at(0) = candidate.mlProbLcToPiKP()[0]; /// bkg score
+            outputMlPiKP.at(1) = candidate.mlProbLcToPiKP()[1]; /// prompt score
+            outputMlPiKP.at(2) = candidate.mlProbLcToPiKP()[2]; /// non-prompt score
+          }
+        } else if (applyMlMode == FillMlFromNewBDT) {
+          isSelectedMlLcToPKPi = false;
+          isSelectedMlLcToPiKP = false;
+          if (candidate.mlProbLcToPKPi().size() > 0) {
+            std::vector<float> inputFeaturesLcToPKPi = hfMlResponse.getInputFeatures(candidate, true);
+            isSelectedMlLcToPKPi = hfMlResponse.isSelectedMl(inputFeaturesLcToPKPi, candidate.pt(), outputMlPKPi);
+          }
+          if (candidate.mlProbLcToPiKP().size() > 0) {
+            std::vector<float> inputFeaturesLcToPiKP = hfMlResponse.getInputFeatures(candidate, false);
+            isSelectedMlLcToPiKP = hfMlResponse.isSelectedMl(inputFeaturesLcToPiKP, candidate.pt(), outputMlPKPi);
+          }
+          if (!isSelectedMlLcToPKPi && !isSelectedMlLcToPiKP)
+            continue;
+        } else {
+          LOGF(fatal, "Please check your Ml configuration!!");
+        }
+      }
+      auto bc = col.template bc_as<aod::BCsWithTimestamps>();
+      int64_t timeStamp = bc.timestamp();
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
                            float BDTScoreBkg,
                            float BDTScorePrompt,
                            float BDTScoreFD) {
         if (FunctionSelection >= 1){
-                rowCandCharmHad(
-                    outputCollision.lastIndex(),
-                    trackPos1.sign() + trackNeg.sign() + trackPos2.sign(),
-                    trackPos1.globalIndex(),
-                    trackNeg.globalIndex(),
-                    trackPos2.globalIndex(),
-                    trackPos1.pt(),
-                    trackNeg.pt(),
-                    trackPos2.pt(),
-                    trackPos1.eta(),
-                    trackNeg.eta(),
-                    trackPos2.eta(),
-                    trackPos1.phi(),
-                    trackNeg.phi(),
-                    trackPos2.phi(),
-                    1 << CandFlag,
-                    BDTScoreBkg,
-                    BDTScorePrompt,
-                    BDTScoreFD);
+          rowCandCharmHad(
+            outputCollision.lastIndex(),
+            timeStamp,
+            trackPos1.sign() + trackNeg.sign() + trackPos2.sign(),
+            trackPos1.globalIndex(),
+            trackNeg.globalIndex(),
+            trackPos2.globalIndex(),
+            trackPos1.pt(),
+            trackNeg.pt(),
+            trackPos2.pt(),
+            trackPos1.eta(),
+            trackNeg.eta(),
+            trackPos2.eta(),
+            trackPos1.phi(),
+            trackNeg.phi(),
+            trackPos2.phi(),
+            1 << CandFlag,
+            BDTScoreBkg,
+            BDTScorePrompt,
+            BDTScoreFD);
 
-                // Row for MC candidate charm hadron (if constexpr isMc)
-                if constexpr (isMc) {
-                  rowCandMcCharmHad(
-                    candidate.flagMcMatchRec(),
-                    candidate.originMcRec());}
+          // Row for MC candidate charm hadron (if constexpr isMc)
+          if constexpr (isMc) {
+            rowCandMcCharmHad(
+              candidate.flagMcMatchRec(),
+              candidate.originMcRec());
+          }
       } };
 
       fillTable(0, candidate.isSelLcToPKPi(), outputMlPKPi.at(0), outputMlPKPi.at(1), outputMlPKPi.at(2));
@@ -458,17 +538,17 @@ struct HfFemtoDreamProducer {
     aod::femtodreamcollision::BitMaskType bitTrack = 0;
     if (isTrackFilled) {
       bitTrack |= 1 << 0;
-      qaRegistry.fill(HIST("hEventQA"), 1 + Event::kTrackSelected);
+      qaRegistry.fill(HIST("hEventQA"), 1 + Event::TrackSelected);
     }
 
     aod::femtodreamcollision::BitMaskType bitCand = 0;
     if (sizeCand > 0) {
       bitCand |= 1 << 0;
-      qaRegistry.fill(HIST("hEventQA"), 1 + Event::kCharmSelected);
+      qaRegistry.fill(HIST("hEventQA"), 1 + Event::CharmSelected);
     }
 
     if (isTrackFilled && (sizeCand > 0))
-      qaRegistry.fill(HIST("hEventQA"), 1 + Event::kPairSelected);
+      qaRegistry.fill(HIST("hEventQA"), 1 + Event::PairSelected);
 
     rowMasks(static_cast<aod::femtodreamcollision::BitMaskType>(bitTrack),
              static_cast<aod::femtodreamcollision::BitMaskType>(bitCand),
@@ -497,7 +577,7 @@ struct HfFemtoDreamProducer {
     // Filling particle properties
     rowCandCharmHadGen.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
         rowCandCharmHadGen(
           particle.mcCollisionId(),
           particle.flagMcMatchGen(),

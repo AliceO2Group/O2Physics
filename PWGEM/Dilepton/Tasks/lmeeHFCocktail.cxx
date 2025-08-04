@@ -76,7 +76,6 @@ const char* stageNames[Nstages] = {"gen", "meas", "meas_and_acc"};
 template <typename T>
 void doQuark(T& p, std::vector<std::shared_ptr<TH1>> hRapQuark, float ptMin, float etaMax, int pdg)
 {
-  float weight[Nstages] = {p.weight(), p.efficiency() * p.weight(), p.efficiency() * p.weight()};
   float pt[Nstages] = {p.pt(), p.ptSmeared(), p.ptSmeared()};
   float eta[Nstages] = {p.eta(), p.etaSmeared(), p.etaSmeared()};
   float cut_pt[Nstages] = {0., 0., ptMin};
@@ -84,11 +83,11 @@ void doQuark(T& p, std::vector<std::shared_ptr<TH1>> hRapQuark, float ptMin, flo
   for (int i = 0; i < Nstages; i++) {
     if (pt[i] > cut_pt[i] && fabs(eta[i]) < cut_eta[i]) {
       if (pdg == 4)
-        hRapQuark[i]->Fill(p.cQuarkRap(), weight[i]);
+        hRapQuark[i]->Fill(p.cQuarkRap());
       else if (pdg == 5)
-        hRapQuark[i]->Fill(p.bQuarkRap(), weight[i]);
+        hRapQuark[i]->Fill(p.bQuarkRap());
       else
-        hRapQuark[i]->Fill(999., weight[i]);
+        hRapQuark[i]->Fill(999.);
     }
   }
 }
@@ -161,26 +160,63 @@ struct MyConfigs : ConfigurableGroup {
 
 struct lmeehfcocktailprefilter {
 
+  HistogramRegistry registry{"registry", {}};
+  std::vector<std::shared_ptr<TH1>> hRapQuark;
   Produces<o2::aod::HfTable> hfTable;
+  ConfigurableAxis fConfigRapBins{"cfgRapBins", {200, -10.f, 10.f}, "Quark rapidity binning"};
+
+  void init(o2::framework::InitContext&)
+  {
+    const int Nchannels = 2;
+    const char* typeNamesSingle[Nchannels] = {"b", "c"};
+    const char* typeTitlesSingle[Nchannels] = {"b", "c"};
+
+    AxisSpec rap_axis = {fConfigRapBins, "y_{b}"};
+
+    // quark histograms
+    for (int i = 0; i < Nchannels; i++) {
+      hRapQuark.push_back(registry.add<TH1>(Form("Quark_Rap_%s", typeNamesSingle[i]), Form("Rap Quark %s", typeTitlesSingle[i]), HistType::kTH1F, {rap_axis}, true));
+    }
+  }
+
   void process(aod::McParticles const& mcParticles)
   {
     for (auto const& p : mcParticles) {
+      // Look at quarks which fragment
+      if (abs(p.pdgCode()) == 5 || abs(p.pdgCode()) == 4) {
+        bool foundhadrons = kFALSE;
+        if (p.has_daughters()) {
+          const auto& daughtersSlice = p.daughters_as<aod::McParticles>();
+          for (auto& d : daughtersSlice) {
+            int pdgfragment = d.pdgCode();
+            if (static_cast<int>(abs(pdgfragment) / 100.) == abs(p.pdgCode()) || static_cast<int>(abs(pdgfragment) / 1000.) == abs(p.pdgCode())) {
+              foundhadrons = kTRUE;
+            }
+          }
+        }
+        if (foundhadrons) {
+          if (abs(p.pdgCode()) == 4)
+            hRapQuark[1]->Fill(p.y());
+          else if (abs(p.pdgCode()) == 5)
+            hRapQuark[0]->Fill(p.y());
+        }
+      }
 
+      // Look at electrons
       if (abs(p.pdgCode()) != 11 || o2::mcgenstatus::getHepMCStatusCode(p.statusCode()) != 1 || !p.has_mothers()) {
         hfTable(EFromHFType::kNoE, -1, -1, -1, -1, -1, -1, -999., -999.);
         continue;
       }
 
       int mother_pdg = mcParticles.iteratorAt(p.mothersIds()[0]).pdgCode();
-      bool direct_charm_mother = abs(mother_pdg) < 1e+9 && (std::to_string(mother_pdg)[std::to_string(mother_pdg).length() - 3] == '4' || std::to_string(mother_pdg)[std::to_string(mother_pdg).length() - 4] == '4');
-      if (abs(mother_pdg) == 443) {
-        direct_charm_mother = false; // we don't want JPsi here
-      }
+      // Mother is an open-charm hadon (meson or baryon) expected to decay semi-leptonicly
+      bool direct_charm_mother = ((std::abs(mother_pdg) >= 400) && (std::abs(mother_pdg) <= 439)) || ((std::abs(mother_pdg) >= 4000) && (std::abs(mother_pdg) <= 4399));
       int cHadronId = -1;
       if (direct_charm_mother) {
         cHadronId = p.mothersIds()[0];
       }
-      bool direct_beauty_mother = abs(mother_pdg) < 1e+9 && (std::to_string(mother_pdg)[std::to_string(mother_pdg).length() - 3] == '5' || std::to_string(mother_pdg)[std::to_string(mother_pdg).length() - 4] == '5');
+      // Mother is an open-beuaty hadron (meson or baryon) expected to decay semi-leptonicly
+      bool direct_beauty_mother = ((std::abs(mother_pdg) >= 500) && (std::abs(mother_pdg) <= 549)) || ((std::abs(mother_pdg) >= 5000) && (std::abs(mother_pdg) <= 5499));
       int bHadronId = IsFromBeauty(p, mcParticles);
 
       int bQuarkId = -1;

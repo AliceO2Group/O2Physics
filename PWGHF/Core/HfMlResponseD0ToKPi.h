@@ -17,14 +17,15 @@
 #ifndef PWGHF_CORE_HFMLRESPONSED0TOKPI_H_
 #define PWGHF_CORE_HFMLRESPONSED0TOKPI_H_
 
-#include <map>
-#include <string>
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponse.h"
+
+#include "Tools/ML/MlResponse.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+
+#include <cstdint>
+#include <vector>
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)
@@ -99,6 +100,22 @@
     break;                                                              \
   }
 
+// Variation of CHECK_AND_FILL_VEC_D0_SIGNED(OBJECT, FEATURE, GETTER1, GETTER2)
+// where GETTER1 and GETTER2 are methods of the OBJECT, the variable
+// is filled depending on whether it is a D0 or a D0bar
+// and INDEX is the index of the vector
+#define CHECK_AND_FILL_VEC_D0_ML(OBJECT, FEATURE, GETTER1, GETTER2, INDEX) \
+  case static_cast<uint8_t>(InputFeaturesD0ToKPi::FEATURE): {              \
+    if constexpr (usingMl) {                                               \
+      if (pdgCode == o2::constants::physics::kD0) {                        \
+        inputFeatures.emplace_back(OBJECT.GETTER1()[INDEX]);               \
+      } else {                                                             \
+        inputFeatures.emplace_back(OBJECT.GETTER2()[INDEX]);               \
+      }                                                                    \
+    }                                                                      \
+    break;                                                                 \
+  }
+
 namespace o2::analysis
 {
 enum class InputFeaturesD0ToKPi : uint8_t {
@@ -140,6 +157,9 @@ enum class InputFeaturesD0ToKPi : uint8_t {
   nSigTpcTofKaExpKa,
   maxNormalisedDeltaIP,
   impactParameterProduct,
+  bdtOutputBkg,
+  bdtOutputNonPrompt,
+  bdtOutputPrompt,
   cosThetaStar,
   cpa,
   cpaXY,
@@ -160,7 +180,7 @@ class HfMlResponseD0ToKPi : public HfMlResponse<TypeOutputScore>
   /// Method to get the input features vector needed for ML inference
   /// \param candidate is the D0 candidate
   /// \return inputFeatures vector
-  template <typename T1>
+  template <bool usingMl = false, typename T1>
   std::vector<float> getInputFeatures(T1 const& candidate, int const& pdgCode)
   {
     std::vector<float> inputFeatures;
@@ -183,10 +203,6 @@ class HfMlResponseD0ToKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_D0_FULL(candidate, nSigTpcKa0, /*getter*/ nSigTpcKa0);
         CHECK_AND_FILL_VEC_D0_FULL(candidate, nSigTpcPi1, /*getter*/ nSigTpcPi1);
         CHECK_AND_FILL_VEC_D0_FULL(candidate, nSigTpcKa1, /*getter*/ nSigTpcKa1);
-        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcPiExpPi, tpcNSigmaPi);
-        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcKaExpPi, tpcNSigmaKa);
-        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcPiExpKa, tpcNSigmaPi);
-        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcKaExpKa, tpcNSigmaKa);
         CHECK_AND_FILL_VEC_D0_SIGNED(candidate, nSigTpcPiExpPi, nSigTpcPi0, nSigTpcPi1);
         CHECK_AND_FILL_VEC_D0_SIGNED(candidate, nSigTpcKaExpPi, nSigTpcKa0, nSigTpcKa1);
         CHECK_AND_FILL_VEC_D0_SIGNED(candidate, nSigTpcPiExpKa, nSigTpcPi1, nSigTpcPi0);
@@ -196,10 +212,6 @@ class HfMlResponseD0ToKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_D0_FULL(candidate, nSigTofKa0, /*getter*/ nSigTofKa0);
         CHECK_AND_FILL_VEC_D0_FULL(candidate, nSigTofPi1, /*getter*/ nSigTofPi1);
         CHECK_AND_FILL_VEC_D0_FULL(candidate, nSigTofKa1, /*getter*/ nSigTofKa1);
-        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTofPiExpPi, tofNSigmaPi);
-        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTofKaExpPi, tofNSigmaKa);
-        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTofPiExpKa, tofNSigmaPi);
-        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTofKaExpKa, tofNSigmaKa);
         CHECK_AND_FILL_VEC_D0_SIGNED(candidate, nSigTofPiExpPi, nSigTofPi0, nSigTofPi1);
         CHECK_AND_FILL_VEC_D0_SIGNED(candidate, nSigTofKaExpPi, nSigTofKa0, nSigTofKa1);
         CHECK_AND_FILL_VEC_D0_SIGNED(candidate, nSigTofPiExpKa, nSigTofPi1, nSigTofPi0);
@@ -209,14 +221,14 @@ class HfMlResponseD0ToKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_D0_FULL(candidate, nSigTpcTofKa0, tpcTofNSigmaKa0);
         CHECK_AND_FILL_VEC_D0_FULL(candidate, nSigTpcTofPi1, tpcTofNSigmaPi1);
         CHECK_AND_FILL_VEC_D0_FULL(candidate, nSigTpcTofKa1, tpcTofNSigmaKa1);
-        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcTofPiExpPi, tpcTofNSigmaPi);
-        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcTofKaExpPi, tpcTofNSigmaKa);
-        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcTofPiExpKa, tpcTofNSigmaPi);
-        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcTofKaExpKa, tpcTofNSigmaKa);
         CHECK_AND_FILL_VEC_D0_SIGNED(candidate, nSigTpcTofPiExpPi, tpcTofNSigmaPi0, tpcTofNSigmaPi1);
         CHECK_AND_FILL_VEC_D0_SIGNED(candidate, nSigTpcTofKaExpPi, tpcTofNSigmaKa0, tpcTofNSigmaKa1);
         CHECK_AND_FILL_VEC_D0_SIGNED(candidate, nSigTpcTofPiExpKa, tpcTofNSigmaPi1, tpcTofNSigmaPi0);
         CHECK_AND_FILL_VEC_D0_SIGNED(candidate, nSigTpcTofKaExpKa, tpcTofNSigmaKa1, tpcTofNSigmaKa0);
+
+        CHECK_AND_FILL_VEC_D0_ML(candidate, bdtOutputBkg, mlProbD0, mlProbD0bar, 0);
+        CHECK_AND_FILL_VEC_D0_ML(candidate, bdtOutputNonPrompt, mlProbD0, mlProbD0bar, 1);
+        CHECK_AND_FILL_VEC_D0_ML(candidate, bdtOutputPrompt, mlProbD0, mlProbD0bar, 2);
 
         CHECK_AND_FILL_VEC_D0(maxNormalisedDeltaIP);
         CHECK_AND_FILL_VEC_D0_FULL(candidate, impactParameterProduct, impactParameterProduct);
@@ -273,6 +285,10 @@ class HfMlResponseD0ToKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_D0(nSigTpcTofKaExpPi),
       FILL_MAP_D0(nSigTpcTofPiExpKa),
       FILL_MAP_D0(nSigTpcTofKaExpKa),
+      // ML variables
+      FILL_MAP_D0(bdtOutputBkg),
+      FILL_MAP_D0(bdtOutputNonPrompt),
+      FILL_MAP_D0(bdtOutputPrompt),
 
       FILL_MAP_D0(maxNormalisedDeltaIP),
       FILL_MAP_D0(impactParameterProduct),
@@ -291,5 +307,6 @@ class HfMlResponseD0ToKPi : public HfMlResponse<TypeOutputScore>
 #undef CHECK_AND_FILL_VEC_D0_HFHELPER
 #undef CHECK_AND_FILL_VEC_D0_HFHELPER_SIGNED
 #undef CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED
+#undef CHECK_AND_FILL_VEC_D0_ML
 
 #endif // PWGHF_CORE_HFMLRESPONSED0TOKPI_H_

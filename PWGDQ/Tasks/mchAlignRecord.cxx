@@ -14,62 +14,61 @@
 ///
 /// \author Chi ZHANG, CEA-Saclay, chi.zhang@cern.ch
 
-#include <gsl/span>
-#include <cmath>
-#include <string>
-#include <unordered_map>
-#include <vector>
-#include <iostream>
+#include "PWGDQ/Core/VarManager.h"
 
+#include "Common/DataModel/EventSelection.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/LHCConstants.h"
+#include "CommonUtils/NameConf.h"
+#include "DataFormatsMCH/Cluster.h"
+#include "DataFormatsMCH/TrackMCH.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GRPGeomHelper.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "DetectorsCommonDataFormats/AlignParam.h"
+#include "DetectorsCommonDataFormats/DetID.h"
+#include "DetectorsCommonDataFormats/DetectorNameConf.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/CallbackService.h"
+#include "Framework/Logger.h"
 #include "Framework/runDataProcessing.h"
+#include "MCHAlign/Aligner.h"
+#include "MCHBase/TrackerParam.h"
+#include "MCHGeometryTransformer/Transformations.h"
+#include "MCHTracking/Track.h"
+#include "MCHTracking/TrackExtrap.h"
+#include "MCHTracking/TrackFitter.h"
+#include "MCHTracking/TrackParam.h"
+#include "ReconstructionDataFormats/TrackMCHMID.h"
 
 #include <TCanvas.h>
+#include <TChain.h>
 #include <TDatabasePDG.h>
 #include <TF1.h>
 #include <TFile.h>
+#include <TGraph.h>
+#include <TGraphErrors.h>
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TLegend.h>
+#include <TLine.h>
 #include <TMatrixD.h>
 #include <TParameter.h>
 #include <TSystem.h>
 #include <TTree.h>
 #include <TTreeReader.h>
 #include <TTreeReaderValue.h>
-#include <TChain.h>
-#include <TGraph.h>
-#include <TGraphErrors.h>
-#include <TLine.h>
-#include <TSystem.h>
 
-#include "CommonConstants/LHCConstants.h"
-#include "CommonUtils/NameConf.h"
-#include "Common/DataModel/EventSelection.h"
-#include "PWGDQ/Core/VarManager.h"
-
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/GRPGeomHelper.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/Logger.h"
-#include "Framework/CallbackService.h"
-#include "CCDB/BasicCCDBManager.h"
-
-#include "MCHGeometryTransformer/Transformations.h"
-#include "DataFormatsMCH/Cluster.h"
-#include "DataFormatsMCH/TrackMCH.h"
-#include "MCHTracking/Track.h"
-#include "MCHTracking/TrackExtrap.h"
-#include "MCHTracking/TrackParam.h"
-#include "MCHTracking/TrackFitter.h"
-#include "MCHBase/TrackerParam.h"
-#include "ReconstructionDataFormats/TrackMCHMID.h"
-#include "MCHAlign/Aligner.h"
-#include "DetectorsCommonDataFormats/AlignParam.h"
-#include "DetectorsCommonDataFormats/DetID.h"
-#include "DetectorsCommonDataFormats/DetectorNameConf.h"
+#include <cmath>
+#include <gsl/span>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -104,13 +103,32 @@ struct mchAlignRecordTask {
   map<int, math_utils::Transform3D> transformNew;
   mch::geo::TransformationCreator transformation;
 
-  Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  Configurable<string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<string> fFixChamber{"fix-chamber", "", "Fixing chamber"};
+  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> fFixChamber{"fix-chamber", "", "Fixing chamber"};
   Configurable<bool> fDoNewGeo{"do-realign", false, "Transform to a given new geometry"};
   Configurable<bool> fDoEvaluation{"do-evaluation", false, "Enable storage of residuals"};
-  Configurable<string> fConfigNewGeoFile{"new-geo", "o2sim_geometry-aligned.root", "New geometry for transformation"};
+  Configurable<std::string> fConfigNewGeoFile{"new-geo", "o2sim_geometry-aligned.root", "New geometry for transformation"};
+  Configurable<double> fAllowedVarX{"variation-x", 2.0, "Allowed variation for x axis in cm"};
+  Configurable<double> fAllowedVarY{"variation-y", 0.3, "Allowed variation for y axis in cm"};
+  Configurable<double> fAllowedVarPhi{"variation-phi", 0.002, "Allowed variation for phi axis in rad"};
+  Configurable<double> fAllowedVarZ{"variation-z", 2.0, "Allowed variation for z axis in cm"};
+  Configurable<double> cfgSigmaX{"cfgSigmaX", 1000., "Sigma cut along X"};
+  Configurable<double> cfgSigmaY{"cfgSigmaY", 1000., "Sigma cut along Y"};
+  Configurable<double> cfgChamberResolutionX{"cfgChamberResolutionX", 0.4, "Chamber resolution along X configuration for refit"}; // 0.4cm pp, 0.2cm PbPb
+  Configurable<double> cfgChamberResolutionY{"cfgChamberResolutionY", 0.4, "Chamber resolution along Y configuration for refit"}; // 0.4cm pp, 0.2cm PbPb
+  Configurable<double> cfgSigmaCutImprove{"cfgSigmaCutImprove", 6., "Sigma cut for track improvement"};
+  struct : ConfigurableGroup {
+    Configurable<std::vector<int>> cfgDetElem{"cfgDetElem",
+                                              {},
+                                              "List of DetElem to be fixed"};
+    Configurable<std::vector<int>> cfgParMask{"cfgParMask",
+                                              {},
+                                              "List of param mask for d.o.f to be fixed"};
+  } fFixDetElem;
+
+  Preslice<aod::FwdTrkCl> perMuon = aod::fwdtrkcl::fwdtrackId;
 
   void init(InitContext& ic)
   {
@@ -122,27 +140,41 @@ struct mchAlignRecordTask {
 
     // Configuration for alignment object
     mAlign.SetDoEvaluation(fDoEvaluation.value);
-    mAlign.SetAllowedVariation(0, 2.0);
-    mAlign.SetAllowedVariation(1, 0.3);
-    mAlign.SetAllowedVariation(2, 0.002);
-    mAlign.SetAllowedVariation(3, 2.0);
+    mAlign.SetAllowedVariation(0, fAllowedVarX.value);
+    mAlign.SetAllowedVariation(1, fAllowedVarY.value);
+    mAlign.SetAllowedVariation(2, fAllowedVarPhi.value);
+    mAlign.SetAllowedVariation(3, fAllowedVarZ.value);
+    mAlign.SetSigmaXY(cfgSigmaX.value, cfgSigmaY.value);
 
     // Configuration for track fitter
     const auto& trackerParam = o2::mch::TrackerParam::Instance();
     trackFitter.setBendingVertexDispersion(trackerParam.bendingVertexDispersion);
-    trackFitter.setChamberResolution(trackerParam.chamberResolutionX, trackerParam.chamberResolutionY);
+    trackFitter.setChamberResolution(cfgChamberResolutionX.value, cfgChamberResolutionY.value);
     trackFitter.smoothTracks(true);
     trackFitter.useChamberResolution();
-    mImproveCutChi2 = 2. * trackerParam.sigmaCutForImprovement * trackerParam.sigmaCutForImprovement;
+    mImproveCutChi2 = 2. * cfgSigmaCutImprove.value * cfgSigmaCutImprove.value;
 
     // Configuration for chamber fixing
-    auto chambers = fFixChamber.value;
-    for (std::size_t i = 0; i < chambers.length(); ++i) {
-      if (chambers[i] == ',')
-        continue;
-      int chamber = chambers[i] - '0';
-      LOG(info) << Form("%s%d", "Fixing chamber: ", chamber);
-      mAlign.FixChamber(chamber);
+    TString chambersString = fFixChamber.value;
+    std::unique_ptr<TObjArray> objArray(chambersString.Tokenize(","));
+    if (objArray->GetEntries() > 0) {
+      for (int iVar = 0; iVar < objArray->GetEntries(); ++iVar) {
+        LOG(info) << Form("%s%d", "Fixing chamber: ", std::stoi(objArray->At(iVar)->GetName()));
+        mAlign.FixChamber(std::stoi(objArray->At(iVar)->GetName()));
+      }
+    }
+
+    // Configuration for DE fixing with given axes
+    auto DEs = fFixDetElem.cfgDetElem.value;
+    auto Masks = fFixDetElem.cfgParMask.value;
+    if (DEs.size() > 0) {
+      if (DEs.size() != Masks.size()) {
+        LOG(fatal) << "Inconsistent size of mask list.";
+      }
+      for (int i = 0; i < static_cast<int>(DEs.size()); i++) {
+        LOG(info) << Form("%s%d%s%d", "Fixing DE: ", DEs.at(i), " with mask: ", Masks.at(i));
+        mAlign.FixDetElem(DEs.at(i), Masks.at(i));
+      }
     }
 
     // Init for output saving
@@ -304,13 +336,9 @@ struct mchAlignRecordTask {
         continue;
       }
 
+      auto clustersSliced = clusters.sliceBy(perMuon, track.globalIndex()); // Slice clusters by muon id
       // Loop over attached clusters
-      for (auto const& cluster : clusters) {
-
-        if (cluster.template fwdtrack_as<TTracks>() != track) {
-          continue;
-        }
-
+      for (auto const& cluster : clustersSliced) {
         clIndex += 1;
 
         mch::Cluster* mch_cluster = new mch::Cluster();

@@ -14,25 +14,30 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 //
 
-#include <MathUtils/Utils.h>
+#include "JetDerivedDataUtilities.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/runDataProcessing.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/Logger.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/Core/JetUtilities.h"
-#include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/Core/JetSubstructureUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisTask.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/detail/TypeTruncation.h>
+
+#include <TMath.h>
+
 #include "fastjet/contrib/AxesDefinition.hh"
-#include "fastjet/contrib/MeasureDefinition.hh"
+
+#include <cstdint>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -106,7 +111,7 @@ struct JetPlanarFlowTask {
   Configurable<float> zCutSD{"zCutSD", 0.10, "SoftDrop z cut"};
 
   int trackSelection = -1;
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
   std::string particleSelection;
 
   uint32_t precisionMask;
@@ -120,13 +125,13 @@ struct JetPlanarFlowTask {
   void init(o2::framework::InitContext&)
   {
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     particleSelection = static_cast<std::string>(particleSelections);
     precisionMask = 0xFFFFFC00;
   }
   // jet pT, tau2/tau1, jetdR, track pt, phi', eta', dR, isInJet
 
-  Filter collisionFilter = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centrality >= centralityMin && aod::jcollision::centrality < centralityMax);
+  Filter collisionFilter = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centFT0M >= centralityMin && aod::jcollision::centFT0M < centralityMax);
 
   template <bool isMc, bool isAreaSubtracted, typename T, typename U, typename V>
   void fillHistograms(T const& collision, U const& jet, V const& tracks)
@@ -282,7 +287,7 @@ struct JetPlanarFlowTask {
                               soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
                               aod::JetTracks const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     for (auto const& jet : jets) {
@@ -300,7 +305,7 @@ struct JetPlanarFlowTask {
                                                soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
                                                aod::JetTracks const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     for (auto const& jet : jets) {
@@ -318,7 +323,7 @@ struct JetPlanarFlowTask {
                                           soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents> const& jets,
                                           aod::JetTracksSub const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     for (auto const& jet : jets) {
@@ -336,7 +341,7 @@ struct JetPlanarFlowTask {
                              soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets,
                              aod::JetTracks const& tracks)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     for (auto const& jet : jets) {

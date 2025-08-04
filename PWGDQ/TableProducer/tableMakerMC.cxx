@@ -87,8 +87,8 @@ using MyMftTracks = soa::Join<aod::MFTTracks, aod::McMFTTrackLabels>;
 
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 using MyEventsWithMults = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::McCollisionLabels>;
-using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::McCollisionLabels>;
-using MyEventsWithCentAndMults = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults, aod::MultsExtra, aod::McCollisionLabels>;
+using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::McCollisionLabels>;
+using MyEventsWithCentAndMults = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms, aod::Mults, aod::MultsExtra, aod::McCollisionLabels>;
 
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
 constexpr static uint32_t gkEventFillMapWithMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult;
@@ -444,17 +444,17 @@ struct TableMakerMC {
         eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO],
                       collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
                       collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(), collision.multNTracksPV(),
-                      collision.centFT0C());
+                      collision.centFT0C(), collision.centFT0A(), collision.centFT0M());
       } else if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMult) > 0) {
         eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO],
                       collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
                       collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(), collision.multNTracksPV(),
-                      -1);
+                      -1, -1, -1);
       } else if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionCent) > 0) {
         eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO],
-                      -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, collision.centFT0C());
+                      -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, collision.centFT0C(), collision.centFT0A(), collision.centFT0M());
       } else {
-        eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO], -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+        eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO], -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
       }
       eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
       eventInfo(collision.globalIndex());
@@ -468,7 +468,8 @@ struct TableMakerMC {
       eventMClabels(fEventLabels.find(mcCollision.globalIndex())->second, collision.mcMask());
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0) {
         multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
-               collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(), collision.trackOccupancyInTimeRange());
+               collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(),
+               collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
         multAll(collision.multAllTracksTPCOnly(), collision.multAllTracksITSTPC(),
                 0, 0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0.0, 0.0, 0.0, 0.0);
       }
@@ -761,10 +762,6 @@ struct TableMakerMC {
           for (auto& cut : fMuonCuts) {
             if (cut.IsSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (uint8_t(1) << i);
-              if (fConfigQA) {
-                fHistMan->FillHistClass(Form("Muons_%s", cut.GetName()), VarManager::fgValues);
-              }
-              (reinterpret_cast<TH1I*>(fStatsList->At(2)))->Fill(static_cast<float>(i));
             }
             i++;
           }
@@ -813,7 +810,6 @@ struct TableMakerMC {
           for (auto& cut : fMuonCuts) {
             if (cut.IsSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (uint8_t(1) << i);
-              fHistMan->FillHistClass(Form("Muons_%s", cut.GetName()), VarManager::fgValues);
               if (fIsAmbiguous && isAmbiguous == 1) {
                 fHistMan->FillHistClass(Form("Ambiguous_Muons_%s", cut.GetName()), VarManager::fgValues);
               }
@@ -835,6 +831,7 @@ struct TableMakerMC {
             if (sig.CheckSignal(true, mctrack)) {
               mcflags |= (static_cast<uint16_t>(1) << i);
               if (fDoDetailedQA) {
+                j = 0;
                 for (auto& cut : fMuonCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
                     fHistMan->FillHistClass(Form("Muons_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth
@@ -1082,17 +1079,17 @@ struct TableMakerMC {
         eventExtended(collision.bc().globalBC(), collision.bc().triggerMask(), 0, triggerAliases, VarManager::fgValues[VarManager::kCentVZERO],
                       collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
                       collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(), collision.multNTracksPV(),
-                      collision.centFT0C());
+                      collision.centFT0C(), collision.centFT0A(), collision.centFT0M());
       } else if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMult) > 0) {
         eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO],
                       collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
                       collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(), collision.multNTracksPV(),
-                      -1);
+                      -1, -1, -1);
       } else if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionCent) > 0) {
         eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO],
-                      -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, collision.centFT0C());
+                      -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, collision.centFT0C(), collision.centFT0A(), collision.centFT0M());
       } else {
-        eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO], -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+        eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO], -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
       }
       eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
       eventInfo(collision.globalIndex());
@@ -1324,10 +1321,6 @@ struct TableMakerMC {
           for (auto& cut : fMuonCuts) {
             if (cut.IsSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (uint8_t(1) << i);
-              if (fConfigQA) {
-                fHistMan->FillHistClass(Form("Muons_%s", cut.GetName()), VarManager::fgValues);
-              }
-              (reinterpret_cast<TH1I*>(fStatsList->At(2)))->Fill(static_cast<float>(i));
             }
             i++;
           }
@@ -1395,6 +1388,7 @@ struct TableMakerMC {
             if (sig.CheckSignal(true, mctrack)) {
               mcflags |= (static_cast<uint16_t>(1) << i);
               if (fDoDetailedQA) {
+                j = 0;
                 for (auto& cut : fMuonCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
                     fHistMan->FillHistClass(Form("Muons_%s_%s", cut.GetName(), sig.GetName()), VarManager::fgValues); // fill the reconstructed truth

@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -22,12 +22,14 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamCollisionSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamV0Selection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamCascadeSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -102,6 +104,7 @@ struct femtoDreamProducerTask {
   Produces<aod::FDExtMCLabels> outputPartsExtMCLabels;
 
   Configurable<bool> ConfIsDebug{"ConfIsDebug", true, "Enable Debug tables"};
+  Configurable<bool> ConfUseItsPid{"ConfUseItsPid", false, "Enable Debug tables"};
   Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or pilot"};
   Configurable<bool> ConfIsForceGRP{"ConfIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
   /// Event cuts
@@ -168,6 +171,7 @@ struct femtoDreamProducerTask {
   Configurable<std::vector<float>> ConfChildPIDnSigmaMax{"ConfChildPIDnSigmaMax", std::vector<float>{5.f, 4.f}, "V0 Child sel: Max. PID nSigma TPC"};
   Configurable<std::vector<int>> ConfChildPIDspecies{"ConfChildPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton}, "V0 Child sel: Particles species for PID"};
 
+  // Resonances
   Configurable<float> ConfResoInvMassLowLimit{"ConfResoInvMassLowLimit", 1.011461, "Lower limit of the Reso invariant mass"};
   Configurable<float> ConfResoInvMassUpLimit{"ConfResoInvMassUpLimit", 1.027461, "Upper limit of the Reso invariant mass"};
   Configurable<std::vector<float>> ConfDaughterCharge{"ConfDaughterCharge", std::vector<float>{1, -1}, "Reso Daughter sel: Charge"};
@@ -190,6 +194,16 @@ struct femtoDreamProducerTask {
                     (nabs(aod::v0data::z) < V0DecVtxMax.value);*/
   // (aod::v0data::v0radius > V0TranRadV0Min.value); to be added, not working
   // for now do not know why
+
+  /// General options
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<float> ConfTrkMinChi2PerClusterTPC{"ConfTrkMinChi2PerClusterTPC", 0.f, "Lower limit for chi2 of TPC; currently for testing only"};
+    Configurable<float> ConfTrkMaxChi2PerClusterTPC{"ConfTrkMaxChi2PerClusterTPC", 1000.f, "Upper limit for chi2 of TPC; currently for testing only"};
+    Configurable<float> ConfTrkMaxChi2PerClusterITS{"ConfTrkMaxChi2PerClusterITS", 1000.0f, "Minimal track selection: max allowed chi2 per ITS cluster"}; // 36.0 is default
+    Configurable<bool> ConfTrkTPCRefit{"ConfTrkTPCRefit", false, "True: require TPC refit"};
+    Configurable<bool> ConfTrkITSRefit{"ConfTrkITSRefit", false, "True: require ITS refit"};
+
+  } OptionTrackSpecialSelections;
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry TrackRegistry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -214,6 +228,12 @@ struct femtoDreamProducerTask {
 
     int CutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
     TrackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
+    TrackRegistry.add("AnalysisQA/Chi2ITSTPCperCluster", "; ITS_Chi2; TPC_Chi2", kTH2F, {{100, 0, 50}, {100, 0, 20}});
+    TrackRegistry.add("AnalysisQA/RefitITSTPC", "; ITS_Refit; TPC_Refit", kTH2F, {{2, 0, 2}, {2, 0, 2}});
+    TrackRegistry.add("AnalysisQA/getGenStatusCode", "; Bit; Entries", kTH1F, {{200, 0, 200}});
+    TrackRegistry.add("AnalysisQA/getProcess", "; Bit; Entries", kTH1F, {{200, 0, 200}});
+    TrackRegistry.add("AnalysisQA/Mother", "; Bit; Entries", kTH1F, {{4000, -4000, 4000}});
+    TrackRegistry.add("AnalysisQA/Particle", "; Bit; Entries", kTH1F, {{4000, -4000, 4000}});
     V0Registry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
     ResoRegistry.add("AnalysisQA/Reso/InvMass", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.8, 1.5}});
     ResoRegistry.add("AnalysisQA/Reso/InvMass_selected", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.8, 1.5}});
@@ -274,6 +294,7 @@ struct femtoDreamProducerTask {
       v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfChildTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
       v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfChildDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
       v0Cuts.setChildCuts(femtoDreamV0Selection::kPosTrack, ConfChildPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
+
       v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfChildCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
       v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfChildEtaMax, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
       v0Cuts.setChildCuts(femtoDreamV0Selection::kNegTrack, ConfChildTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
@@ -350,47 +371,89 @@ struct femtoDreamProducerTask {
     }
   }
 
-  template <bool isTrackOrV0, typename ParticleType>
+  template <bool isTrackOrV0, bool hasItsPid, typename ParticleType>
   void fillDebugParticle(ParticleType const& particle)
   {
     if constexpr (isTrackOrV0) {
-      outputDebugParts(particle.sign(),
-                       (uint8_t)particle.tpcNClsFound(),
-                       particle.tpcNClsFindable(),
-                       (uint8_t)particle.tpcNClsCrossedRows(),
-                       particle.tpcNClsShared(),
-                       particle.tpcInnerParam(),
-                       particle.itsNCls(),
-                       particle.itsNClsInnerBarrel(),
-                       particle.dcaXY(),
-                       particle.dcaZ(),
-                       particle.tpcSignal(),
-                       particle.tpcNSigmaEl(),
-                       particle.tpcNSigmaPi(),
-                       particle.tpcNSigmaKa(),
-                       particle.tpcNSigmaPr(),
-                       particle.tpcNSigmaDe(),
-                       particle.tpcNSigmaTr(),
-                       particle.tpcNSigmaHe(),
-                       particle.tofNSigmaEl(),
-                       particle.tofNSigmaPi(),
-                       particle.tofNSigmaKa(),
-                       particle.tofNSigmaPr(),
-                       particle.tofNSigmaDe(),
-                       particle.tofNSigmaTr(),
-                       particle.tofNSigmaHe(),
-                       -999., -999., -999., -999., -999., -999.);
+      if constexpr (hasItsPid) {
+        outputDebugParts(particle.sign(),
+                         (uint8_t)particle.tpcNClsFound(),
+                         particle.tpcNClsFindable(),
+                         (uint8_t)particle.tpcNClsCrossedRows(),
+                         particle.tpcNClsShared(),
+                         particle.tpcInnerParam(),
+                         particle.itsNCls(),
+                         particle.itsNClsInnerBarrel(),
+                         particle.dcaXY(),
+                         particle.dcaZ(),
+                         particle.tpcSignal(),
+                         particle.tpcNSigmaEl(),
+                         particle.tpcNSigmaPi(),
+                         particle.tpcNSigmaKa(),
+                         particle.tpcNSigmaPr(),
+                         particle.tpcNSigmaDe(),
+                         particle.tpcNSigmaTr(),
+                         particle.tpcNSigmaHe(),
+                         particle.tofNSigmaEl(),
+                         particle.tofNSigmaPi(),
+                         particle.tofNSigmaKa(),
+                         particle.tofNSigmaPr(),
+                         particle.tofNSigmaDe(),
+                         particle.tofNSigmaTr(),
+                         particle.tofNSigmaHe(),
+                         o2::analysis::femtoDream::itsSignal(particle),
+                         particle.itsNSigmaEl(),
+                         particle.itsNSigmaPi(),
+                         particle.itsNSigmaKa(),
+                         particle.itsNSigmaPr(),
+                         particle.itsNSigmaDe(),
+                         particle.itsNSigmaTr(),
+                         particle.itsNSigmaHe(),
+                         -999., -999., -999., -999., -999., -999.,
+                         -999., -999., -999., -999., -999., -999., -999.);
+      } else {
+        outputDebugParts(particle.sign(),
+                         (uint8_t)particle.tpcNClsFound(),
+                         particle.tpcNClsFindable(),
+                         (uint8_t)particle.tpcNClsCrossedRows(),
+                         particle.tpcNClsShared(),
+                         particle.tpcInnerParam(),
+                         particle.itsNCls(),
+                         particle.itsNClsInnerBarrel(),
+                         particle.dcaXY(),
+                         particle.dcaZ(),
+                         particle.tpcSignal(),
+                         particle.tpcNSigmaEl(),
+                         particle.tpcNSigmaPi(),
+                         particle.tpcNSigmaKa(),
+                         particle.tpcNSigmaPr(),
+                         particle.tpcNSigmaDe(),
+                         particle.tpcNSigmaTr(),
+                         particle.tpcNSigmaHe(),
+                         particle.tofNSigmaEl(),
+                         particle.tofNSigmaPi(),
+                         particle.tofNSigmaKa(),
+                         particle.tofNSigmaPr(),
+                         particle.tofNSigmaDe(),
+                         particle.tofNSigmaTr(),
+                         particle.tofNSigmaHe(),
+                         -999., -999., -999., -999., -999., -999., -999., -999.,
+                         -999., -999., -999., -999., -999., -999.,
+                         -999., -999., -999., -999., -999., -999., -999.);
+      }
     } else {
-      outputDebugParts(-999., -999., -999., -999., -999., -999., -999.,
-                       -999., -999., -999., -999., -999., -999., -999.,
-                       -999., -999., -999., -999., -999., -999., -999.,
-                       -999., -999., -999., -999.,
+      outputDebugParts(-999.,                                                         // sign
+                       -999., -999., -999., -999., -999., -999., -999., -999., -999., // track properties (DCA, NCls, crossed rows, etc.)
+                       -999., -999., -999., -999., -999., -999., -999., -999.,        // TPC PID (TPC signal + particle hypothesis)
+                       -999., -999., -999., -999., -999., -999., -999.,               // TOF PID
+                       -999., -999., -999., -999., -999., -999., -999., -999.,        // ITS PID
                        particle.dcaV0daughters(),
                        particle.v0radius(),
                        particle.x(),
                        particle.y(),
                        particle.z(),
-                       particle.mK0Short());
+                       particle.mK0Short(),
+                       -999., -999., -999., -999., -999., -999., -999.); // Cascade properties
     }
   }
 
@@ -401,11 +464,14 @@ struct femtoDreamProducerTask {
       // get corresponding MC particle and its info
       auto particleMC = particle.mcParticle();
       auto pdgCode = particleMC.pdgCode();
+      TrackRegistry.fill(HIST("AnalysisQA/Particle"), pdgCode);
       int particleOrigin = 99;
       int pdgCodeMother = -1;
       // get list of mothers, but it could be empty (for example in case of injected light nuclei)
       auto motherparticlesMC = particleMC.template mothers_as<aod::McParticles>();
       // check pdg code
+      TrackRegistry.fill(HIST("AnalysisQA/getGenStatusCode"), particleMC.getGenStatusCode());
+      TrackRegistry.fill(HIST("AnalysisQA/getProcess"), particleMC.getProcess());
       // if this fails, the particle is a fake
       if (abs(pdgCode) == abs(ConfTrkPDGCode.value)) {
         // check first if particle is from pile up
@@ -423,6 +489,7 @@ struct femtoDreamProducerTask {
           // get direct mother
           auto motherparticleMC = motherparticlesMC.front();
           pdgCodeMother = motherparticleMC.pdgCode();
+          TrackRegistry.fill(HIST("AnalysisQA/Mother"), pdgCodeMother);
           particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
           // check if particle is material
           // particle is from inelastic hadronic interaction -> getProcess() == 23
@@ -463,8 +530,8 @@ struct femtoDreamProducerTask {
       outputCollsMCLabels(-1);
     }
   }
-  template <bool isMC, bool useCentrality, bool analysePbPb, typename V0Type, typename TrackType, typename CollisionType>
-  void fillCollisionsAndTracksAndV0(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
+  template <bool isMC, bool hasItsPid, bool useCentrality, bool analysePbPb, typename V0Type, typename TrackType, typename TrackTypeWithItsPid, typename CollisionType>
+  void fillCollisionsAndTracksAndV0(CollisionType const& col, TrackType const& tracks, TrackTypeWithItsPid const& tracksWithItsPid, V0Type const& fullV0s)
   {
     // If triggering is enabled, select only events which were triggered wit our triggers
     if (ConfEnableTriggerSelection) {
@@ -518,17 +585,34 @@ struct femtoDreamProducerTask {
 
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
-    std::vector<typename TrackType::iterator> Daughter1, Daughter2;
+    std::vector<typename TrackTypeWithItsPid::iterator> Daughter1, Daughter2;
 
-    for (auto& track : tracks) {
+    for (auto& track : tracksWithItsPid) {
       /// if the most open selection criteria are not fulfilled there is no
       /// point looking further at the track
+      trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild, 0>(track);
+
+      if (track.tpcChi2NCl() < OptionTrackSpecialSelections.ConfTrkMinChi2PerClusterTPC || track.tpcChi2NCl() > OptionTrackSpecialSelections.ConfTrkMaxChi2PerClusterTPC) {
+        continue;
+      }
+      if (track.itsChi2NCl() > OptionTrackSpecialSelections.ConfTrkMaxChi2PerClusterITS) {
+        continue;
+      }
+      if ((OptionTrackSpecialSelections.ConfTrkTPCRefit && !track.hasTPC()) || (OptionTrackSpecialSelections.ConfTrkITSRefit && !track.hasITS())) {
+        continue;
+      }
+
       if (!trackCuts.isSelectedMinimal(track)) {
         continue;
       }
-      trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild>(track);
+
+      TrackRegistry.fill(HIST("AnalysisQA/Chi2ITSTPCperCluster"), track.itsChi2NCl(), track.tpcChi2NCl());
+      TrackRegistry.fill(HIST("AnalysisQA/RefitITSTPC"), track.hasITS(), track.hasTPC());
+
+      trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild, 1>(track);
       // the bit-wise container of the systematic variations is obtained
-      auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
+      std::array<o2::aod::femtodreamparticle::cutContainerType, 2> cutContainer;
+      cutContainer = trackCuts.getCutContainer<hasItsPid, aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
 
       // now the table is filled
       outputParts(outputCollision.lastIndex(),
@@ -541,7 +625,7 @@ struct femtoDreamProducerTask {
                   track.dcaXY(), childIDs, 0, 0);
       tmpIDtrack.push_back(track.globalIndex());
       if (ConfIsDebug.value) {
-        fillDebugParticle<true>(track);
+        fillDebugParticle<true, hasItsPid>(track);
       }
 
       if constexpr (isMC) {
@@ -577,6 +661,7 @@ struct femtoDreamProducerTask {
 
     if (ConfIsActivateV0.value) {
       for (auto& v0 : fullV0s) {
+
         auto postrack = v0.template posTrack_as<TrackType>();
         auto negtrack = v0.template negTrack_as<TrackType>();
         ///\tocheck funnily enough if we apply the filter the
@@ -652,9 +737,9 @@ struct femtoDreamProducerTask {
                     v0.mLambda(),
                     v0.mAntiLambda());
         if (ConfIsDebug.value) {
-          fillDebugParticle<true>(postrack); // QA for positive daughter
-          fillDebugParticle<true>(negtrack); // QA for negative daughter
-          fillDebugParticle<false>(v0);      // QA for v0
+          fillDebugParticle<true, false>(postrack); // QA for positive daughter
+          fillDebugParticle<true, false>(negtrack); // QA for negative daughter
+          fillDebugParticle<false, false>(v0);      // QA for v0
         }
         if constexpr (isMC) {
           fillMCParticle(col, v0, o2::aod::femtodreamparticle::ParticleType::kV0);
@@ -714,12 +799,15 @@ struct femtoDreamProducerTask {
                         tempPhi.M(),
                         tempPhi.M());
             if (ConfIsDebug.value) {
-              fillDebugParticle<true>(Daughter1.at(iDaug1)); // QA for positive daughter
-              fillDebugParticle<true>(Daughter2.at(iDaug2)); // QA for negative daughter
-              outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999.,
-                               -999., -999., -999., -999., -999., -999., -999., -999.,
-                               -999., -999., -999., -999., -999., -999., -999., -999.,
-                               -999., -999. - 999., -999., -999., -999., -999., -999.); // QA for Reso
+              fillDebugParticle<true, false>(Daughter1.at(iDaug1));                           // QA for positive daughter
+              fillDebugParticle<true, false>(Daughter2.at(iDaug2));                           // QA for negative daughter
+              outputDebugParts(-999.,                                                         // sign
+                               -999., -999., -999., -999., -999., -999., -999., -999., -999., // track properties (DCA, NCls, crossed rows, etc.)
+                               -999., -999., -999., -999., -999., -999., -999., -999.,        // TPC PID (TPC signal + particle hypothesis)
+                               -999., -999., -999., -999., -999., -999., -999.,               // TOF PID
+                               -999., -999., -999., -999., -999., -999., -999., -999.,        // ITS PID
+                               -999., -999., -999., -999., -999., -999.,                      // V0 properties
+                               -999., -999., -999., -999., -999., -999., -999.);              // Cascade properties
             }
           }
         }
@@ -736,7 +824,13 @@ struct femtoDreamProducerTask {
     // get magnetic field for run
     initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisionsAndTracksAndV0<false, true, false>(col, tracks, fullV0s);
+    auto tracksWithItsPid = soa::Attach<aod::FemtoFullTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa,
+                                        aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
+    if (ConfUseItsPid.value) {
+      fillCollisionsAndTracksAndV0<false, true, true, false>(col, tracks, tracksWithItsPid, fullV0s);
+    } else {
+      fillCollisionsAndTracksAndV0<false, false, true, false>(col, tracks, tracks, fullV0s);
+    }
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processData,
                  "Provide experimental data", true);
@@ -750,21 +844,32 @@ struct femtoDreamProducerTask {
     // get magnetic field for run
     initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisionsAndTracksAndV0<false, false, false>(col, tracks, fullV0s);
+    auto tracksWithItsPid = soa::Attach<aod::FemtoFullTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa,
+                                        aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
+    if (ConfUseItsPid.value) {
+      fillCollisionsAndTracksAndV0<false, true, false, false>(col, tracks, tracksWithItsPid, fullV0s);
+    } else {
+      fillCollisionsAndTracksAndV0<false, false, false, false>(col, tracks, tracks, fullV0s);
+    }
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processData_noCentrality,
                  "Provide experimental data without centrality information", false);
 
-  void
-    processData_CentPbPb(aod::FemtoFullCollision_CentPbPb const& col,
-                         aod::BCsWithTimestamps const&,
-                         aod::FemtoFullTracks const& tracks,
-                         o2::aod::V0Datas const& fullV0s)
+  void processData_CentPbPb(aod::FemtoFullCollision_CentPbPb const& col,
+                            aod::BCsWithTimestamps const&,
+                            aod::FemtoFullTracks const& tracks,
+                            o2::aod::V0Datas const& fullV0s)
   {
     // get magnetic field for run
     initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisionsAndTracksAndV0<false, true, true>(col, tracks, fullV0s);
+    auto tracksWithItsPid = soa::Attach<aod::FemtoFullTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa,
+                                        aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
+    if (ConfUseItsPid.value) {
+      fillCollisionsAndTracksAndV0<false, true, true, true>(col, tracks, tracksWithItsPid, fullV0s);
+    } else {
+      fillCollisionsAndTracksAndV0<false, false, true, true>(col, tracks, tracks, fullV0s);
+    }
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processData_CentPbPb,
                  "Provide experimental data with centrality information for PbPb collisions", false);
@@ -779,7 +884,7 @@ struct femtoDreamProducerTask {
     // get magnetic field for run
     initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisionsAndTracksAndV0<true, true, false>(col, tracks, fullV0s);
+    fillCollisionsAndTracksAndV0<false, false, true, false>(col, tracks, tracks, fullV0s);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processMC, "Provide MC data", false);
 
@@ -793,7 +898,7 @@ struct femtoDreamProducerTask {
     // get magnetic field for run
     initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisionsAndTracksAndV0<true, false, false>(col, tracks, fullV0s);
+    fillCollisionsAndTracksAndV0<true, false, false, false>(col, tracks, tracks, fullV0s);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processMC_noCentrality, "Provide MC data without requiring a centrality calibration", false);
 
@@ -807,7 +912,7 @@ struct femtoDreamProducerTask {
     // get magnetic field for run
     initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisionsAndTracksAndV0<true, true, true>(col, tracks, fullV0s);
+    fillCollisionsAndTracksAndV0<true, false, true, true>(col, tracks, tracks, fullV0s);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processMC_CentPbPb, "Provide MC data with centrality information for PbPb collisions", false);
 };

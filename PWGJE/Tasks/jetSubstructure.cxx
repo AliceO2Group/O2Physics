@@ -14,32 +14,43 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 //
 
-#include "fastjet/PseudoJet.hh"
-#include "fastjet/ClusterSequenceArea.hh"
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetSubstructure.h"
-#include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetUtilities.h"
-#include "PWGJE/Core/JetSubstructureUtilities.h"
 
+#include "RecoDecay.h"
+
+#include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetFinder.h"
+#include "PWGJE/Core/JetSubstructureUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TMath.h>
+
+#include "fastjet/ClusterSequenceArea.hh"
+#include "fastjet/PseudoJet.hh"
+#include <fastjet/JetDefinition.hh>
+
+#include <cmath>
+#include <cstdint>
+#include <utility>
+#include <vector>
+
+#include <math.h>
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-#include "Framework/runDataProcessing.h"
 
 struct JetSubstructureTask {
   Produces<aod::CJetSSs> jetSubstructureDataTable;
@@ -47,10 +58,21 @@ struct JetSubstructureTask {
   Produces<aod::CMCPJetSSs> jetSubstructureMCPTable;
   Produces<aod::CEWSJetSSs> jetSubstructureDataSubTable;
 
+  Produces<aod::ChargedSPs> jetSplittingsDataTable;
+  Produces<aod::ChargedMCDetectorLevelSPs> jetSplittingsMCDTable;
+  Produces<aod::ChargedMCParticleLevelSPs> jetSplittingsMCPTable;
+  Produces<aod::ChargedEventWiseSubtractedSPs> jetSplittingsDataSubTable;
+
+  Produces<aod::ChargedPRs> jetPairsDataTable;
+  Produces<aod::ChargedMCDetectorLevelPRs> jetPairsMCDTable;
+  Produces<aod::ChargedMCParticleLevelPRs> jetPairsMCPTable;
+  Produces<aod::ChargedEventWiseSubtractedPRs> jetPairsDataSubTable;
+
   Configurable<float> zCut{"zCut", 0.1, "soft drop z cut"};
   Configurable<float> beta{"beta", 0.0, "soft drop beta"};
   Configurable<float> kappa{"kappa", 1.0, "angularity kappa"};
   Configurable<float> alpha{"alpha", 1.0, "angularity alpha"};
+  Configurable<bool> doPairBkg{"doPairBkg", true, "save bkg pairs"};
   Configurable<float> pairConstituentPtMin{"pairConstituentPtMin", 1.0, "pt cut off for constituents going into pairs"};
 
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -63,10 +85,21 @@ struct JetSubstructureTask {
   std::vector<float> ptSubLeadingVec;
   std::vector<float> thetaVec;
   std::vector<float> nSub;
-  std::vector<float> pairPtVec;
-  std::vector<float> pairEnergyVec;
-  std::vector<float> pairThetaVec;
+  std::vector<float> pairJetPtVec;
+  std::vector<float> pairJetEnergyVec;
+  std::vector<float> pairJetThetaVec;
+  std::vector<float> pairJetPerpCone1PtVec;
+  std::vector<float> pairJetPerpCone1EnergyVec;
+  std::vector<float> pairJetPerpCone1ThetaVec;
+  std::vector<float> pairPerpCone1PerpCone1PtVec;
+  std::vector<float> pairPerpCone1PerpCone1EnergyVec;
+  std::vector<float> pairPerpCone1PerpCone1ThetaVec;
+  std::vector<float> pairPerpCone1PerpCone2PtVec;
+  std::vector<float> pairPerpCone1PerpCone2EnergyVec;
+  std::vector<float> pairPerpCone1PerpCone2ThetaVec;
   float angularity;
+  float leadingConstituentPt;
+  float perpConeRho;
 
   HistogramRegistry registry;
 
@@ -88,8 +121,12 @@ struct JetSubstructureTask {
     jetReclusterer.algorithm = fastjet::JetAlgorithm::cambridge_algorithm;
   }
 
-  template <bool isMCP, bool isSubtracted, typename T>
-  void jetReclustering(T const& jet)
+  Preslice<aod::JetTracks> TracksPerCollision = aod::jtrack::collisionId;
+  Preslice<aod::JetTracksSub> TracksPerCollisionDataSub = aod::bkgcharged::collisionId;
+  Preslice<aod::JetParticles> ParticlesPerMcCollision = aod::jmcparticle::mcCollisionId;
+
+  template <bool isMCP, bool isSubtracted, typename T, typename U>
+  void jetReclustering(T const& jet, U& splittingTable)
   {
     energyMotherVec.clear();
     ptLeadingVec.clear();
@@ -110,6 +147,15 @@ struct JetSubstructureTask {
       if (parentSubJet1.perp() < parentSubJet2.perp()) {
         std::swap(parentSubJet1, parentSubJet2);
       }
+      std::vector<int32_t> tracks;
+      std::vector<int32_t> candidates;
+      std::vector<int32_t> clusters;
+      for (const auto& constituent : sorted_by_pt(parentSubJet2.constituents())) {
+        if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::track)) {
+          tracks.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
+        }
+      }
+      splittingTable(jet.globalIndex(), tracks, clusters, candidates, parentSubJet2.perp(), parentSubJet2.eta(), parentSubJet2.phi(), 0);
       auto z = parentSubJet2.perp() / (parentSubJet1.perp() + parentSubJet2.perp());
       auto theta = parentSubJet1.delta_R(parentSubJet2);
       energyMotherVec.push_back(daughterSubJet.e());
@@ -150,24 +196,108 @@ struct JetSubstructureTask {
     }
   }
 
-  template <typename T, typename U>
-  void jetPairing(T const& jet, U const& /*tracks*/)
+  template <bool isMC, typename T, typename U, typename V, typename M>
+  void jetPairing(T const& jet, U const& tracks, V const& slicer, M& pairTable)
   {
-    pairPtVec.clear();
-    pairEnergyVec.clear();
-    pairThetaVec.clear();
+    pairJetPtVec.clear();
+    pairJetEnergyVec.clear();
+    pairJetThetaVec.clear();
     std::vector<typename U::iterator> tracksVec;
+    std::vector<int32_t> tracksVecIds;
     for (auto const& constituent : jet.template tracks_as<U>()) {
       if (constituent.pt() >= pairConstituentPtMin) {
         tracksVec.push_back(constituent);
+        tracksVecIds.push_back(constituent.globalIndex());
       }
     }
     if (tracksVec.size() >= 1) {
       for (typename std::vector<typename U::iterator>::size_type track1Index = 0; track1Index < tracksVec.size(); track1Index++) {
-        for (typename std::vector<typename U::iterator>::size_type track2Index = 0; track2Index < tracksVec.size(); track2Index++) {
-          pairPtVec.push_back(tracksVec.at(track1Index).pt() * tracksVec.at(track2Index).pt());
-          pairEnergyVec.push_back(tracksVec.at(track1Index).energy() * tracksVec.at(track2Index).energy());
-          pairThetaVec.push_back(jetutilities::deltaR(tracksVec.at(track1Index), tracksVec.at(track2Index)));
+        for (typename std::vector<typename U::iterator>::size_type track2Index = track1Index + 1; track2Index < tracksVec.size(); track2Index++) {
+          pairJetPtVec.push_back(tracksVec.at(track1Index).pt() * tracksVec.at(track2Index).pt());
+          pairJetEnergyVec.push_back(2.0 * tracksVec.at(track1Index).energy() * tracksVec.at(track2Index).energy());
+          pairJetThetaVec.push_back(jetutilities::deltaR(tracksVec.at(track1Index), tracksVec.at(track2Index)));
+          pairTable(jet.globalIndex(), tracksVecIds.at(track1Index), tracksVecIds.at(track2Index), -1, -1);
+        }
+      }
+    }
+
+    pairJetPerpCone1PtVec.clear();
+    pairJetPerpCone1EnergyVec.clear();
+    pairJetPerpCone1ThetaVec.clear();
+    pairPerpCone1PerpCone1PtVec.clear();
+    pairPerpCone1PerpCone1EnergyVec.clear();
+    pairPerpCone1PerpCone1ThetaVec.clear();
+    pairPerpCone1PerpCone2PtVec.clear();
+    pairPerpCone1PerpCone2EnergyVec.clear();
+    pairPerpCone1PerpCone2ThetaVec.clear();
+
+    int32_t collisionId = -1;
+    if constexpr (!isMC) {
+      collisionId = jet.collisionId();
+    } else {
+      collisionId = jet.mcCollisionId();
+    }
+    auto tracksPerCollision = tracks.sliceBy(slicer, collisionId);
+
+    float perpCone1Phi = RecoDecay::constrainAngle<float, float>(jet.phi() + (M_PI / 2.));
+    float perpCone2Phi = RecoDecay::constrainAngle<float, float>(jet.phi() - (M_PI / 2.));
+    float perpCone1Pt = 0.0;
+    float perpCone2Pt = 0.0;
+    std::vector<typename U::iterator> tracksPerpCone1Vec;
+    std::vector<typename U::iterator> tracksPerpCone2Vec;
+    for (auto const& track : tracksPerCollision) {
+      float deltaPhi1 = track.phi() - perpCone1Phi;
+      deltaPhi1 = RecoDecay::constrainAngle<float, float>(deltaPhi1, -M_PI);
+      float deltaPhi2 = track.phi() - perpCone2Phi;
+      deltaPhi2 = RecoDecay::constrainAngle<float, float>(deltaPhi2, -M_PI);
+      float deltaEta = jet.eta() - track.eta();
+
+      if (TMath::Sqrt((deltaPhi1 * deltaPhi1) + (deltaEta * deltaEta)) <= jet.r() / 100.0) {
+        if (track.pt() >= pairConstituentPtMin) {
+          tracksPerpCone1Vec.push_back(track);
+        }
+        perpCone1Pt += track.pt();
+      }
+      if (TMath::Sqrt((deltaPhi2 * deltaPhi2) + (deltaEta * deltaEta)) <= jet.r() / 100.0) {
+        if (track.pt() >= pairConstituentPtMin) {
+          tracksPerpCone2Vec.push_back(track);
+        }
+        perpCone2Pt += track.pt();
+      }
+    }
+    perpConeRho = (perpCone1Pt + perpCone2Pt) / (2 * M_PI * (jet.r() / 100.0) * (jet.r() / 100.0)); // currently done per jet - could be better to do for leading jet if pushing to very low pT
+    if (doPairBkg) {
+      if (tracksVec.size() >= 1 && tracksPerpCone1Vec.size() >= 1) {
+        for (typename std::vector<typename U::iterator>::size_type track1Index = 0; track1Index < tracksVec.size(); track1Index++) {
+          for (typename std::vector<typename U::iterator>::size_type track2Index = 0; track2Index < tracksPerpCone1Vec.size(); track2Index++) {
+            pairJetPerpCone1PtVec.push_back(tracksVec.at(track1Index).pt() * tracksPerpCone1Vec.at(track2Index).pt());
+            pairJetPerpCone1EnergyVec.push_back(2.0 * tracksVec.at(track1Index).energy() * tracksPerpCone1Vec.at(track2Index).energy());
+            float dPhi = RecoDecay::constrainAngle(tracksVec.at(track1Index).phi() - (tracksPerpCone1Vec.at(track2Index).phi() - (M_PI / 2.)), -M_PI);
+            float dEta = tracksVec.at(track1Index).eta() - tracksPerpCone1Vec.at(track2Index).eta();
+            pairJetPerpCone1ThetaVec.push_back(std::sqrt(dEta * dEta + dPhi * dPhi));
+          }
+        }
+      }
+
+      if (tracksPerpCone1Vec.size() >= 1) {
+        for (typename std::vector<typename U::iterator>::size_type track1Index = 0; track1Index < tracksPerpCone1Vec.size(); track1Index++) {
+          for (typename std::vector<typename U::iterator>::size_type track2Index = track1Index + 1; track2Index < tracksPerpCone1Vec.size(); track2Index++) {
+            pairPerpCone1PerpCone1PtVec.push_back(tracksPerpCone1Vec.at(track1Index).pt() * tracksPerpCone1Vec.at(track2Index).pt());
+            pairPerpCone1PerpCone1EnergyVec.push_back(2.0 * tracksPerpCone1Vec.at(track1Index).energy() * tracksPerpCone1Vec.at(track2Index).energy());
+            pairPerpCone1PerpCone1ThetaVec.push_back(jetutilities::deltaR(tracksPerpCone1Vec.at(track1Index), tracksPerpCone1Vec.at(track2Index)));
+          }
+        }
+      }
+
+      if (tracksPerpCone1Vec.size() >= 1 && tracksPerpCone2Vec.size() >= 1) {
+        for (typename std::vector<typename U::iterator>::size_type track1Index = 0; track1Index < tracksPerpCone1Vec.size(); track1Index++) {
+          for (typename std::vector<typename U::iterator>::size_type track2Index = 0; track2Index < tracksPerpCone2Vec.size(); track2Index++) {
+            pairPerpCone1PerpCone2PtVec.push_back(tracksPerpCone1Vec.at(track1Index).pt() * tracksPerpCone2Vec.at(track2Index).pt());
+            pairPerpCone1PerpCone2EnergyVec.push_back(2.0 * tracksPerpCone1Vec.at(track1Index).energy() * tracksPerpCone2Vec.at(track2Index).energy());
+            float dPhi = RecoDecay::constrainAngle((tracksPerpCone1Vec.at(track1Index).phi() - (M_PI / 2.)) - (tracksPerpCone2Vec.at(track2Index).phi() + (M_PI / 2.)), -M_PI);
+            float dEta = tracksPerpCone1Vec.at(track1Index).eta() - tracksPerpCone2Vec.at(track2Index).eta();
+            pairPerpCone1PerpCone2ThetaVec.push_back(std::sqrt(dEta * dEta + dPhi * dPhi));
+          }
         }
       }
     }
@@ -177,24 +307,28 @@ struct JetSubstructureTask {
   void jetSubstructureSimple(T const& jet, U const& /*tracks*/)
   {
     angularity = 0.0;
+    leadingConstituentPt = 0.0;
     for (auto& constituent : jet.template tracks_as<U>()) {
+      if (constituent.pt() >= leadingConstituentPt) {
+        leadingConstituentPt = constituent.pt();
+      }
       angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent), alpha);
     }
     angularity /= (jet.pt() * (jet.r() / 100.f));
   }
 
-  template <bool isSubtracted, typename T, typename U, typename V>
-  void analyseCharged(T const& jet, U const& tracks, V& outputTable)
+  template <bool isSubtracted, typename T, typename U, typename V, typename M, typename N, typename O>
+  void analyseCharged(T const& jet, U const& tracks, V const& trackSlicer, M& outputTable, N& splittingTable, O& pairTable)
   {
     jetConstituents.clear();
     for (auto& jetConstituent : jet.template tracks_as<U>()) {
       fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
     }
     nSub = jetsubstructureutilities::getNSubjettiness(jet, tracks, tracks, tracks, 2, fastjet::contrib::CA_Axes(), true, zCut, beta);
-    jetReclustering<false, isSubtracted>(jet);
-    jetPairing(jet, tracks);
+    jetReclustering<false, isSubtracted>(jet, splittingTable);
+    jetPairing<false>(jet, tracks, trackSlicer, pairTable);
     jetSubstructureSimple(jet, tracks);
-    outputTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairPtVec, pairEnergyVec, pairThetaVec, angularity);
+    outputTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairJetPtVec, pairJetEnergyVec, pairJetThetaVec, pairJetPerpCone1PtVec, pairJetPerpCone1EnergyVec, pairJetPerpCone1ThetaVec, pairPerpCone1PerpCone1PtVec, pairPerpCone1PerpCone1EnergyVec, pairPerpCone1PerpCone1ThetaVec, pairPerpCone1PerpCone2PtVec, pairPerpCone1PerpCone2EnergyVec, pairPerpCone1PerpCone2ThetaVec, angularity, leadingConstituentPt, perpConeRho);
   }
 
   void processDummy(aod::JetTracks const&)
@@ -205,21 +339,21 @@ struct JetSubstructureTask {
   void processChargedJetsData(soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>::iterator const& jet,
                               aod::JetTracks const& tracks)
   {
-    analyseCharged<false>(jet, tracks, jetSubstructureDataTable);
+    analyseCharged<false>(jet, tracks, TracksPerCollision, jetSubstructureDataTable, jetSplittingsDataTable, jetPairsDataTable);
   }
   PROCESS_SWITCH(JetSubstructureTask, processChargedJetsData, "charged jet substructure", false);
 
   void processChargedJetsEventWiseSubData(soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents>::iterator const& jet,
                                           aod::JetTracksSub const& tracks)
   {
-    analyseCharged<true>(jet, tracks, jetSubstructureDataSubTable);
+    analyseCharged<true>(jet, tracks, TracksPerCollisionDataSub, jetSubstructureDataSubTable, jetSplittingsDataSubTable, jetPairsDataSubTable);
   }
   PROCESS_SWITCH(JetSubstructureTask, processChargedJetsEventWiseSubData, "eventwise-constituent subtracted charged jet substructure", false);
 
   void processChargedJetsMCD(typename soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>::iterator const& jet,
                              aod::JetTracks const& tracks)
   {
-    analyseCharged<false>(jet, tracks, jetSubstructureMCDTable);
+    analyseCharged<false>(jet, tracks, TracksPerCollision, jetSubstructureMCDTable, jetSplittingsMCDTable, jetPairsMCDTable);
   }
   PROCESS_SWITCH(JetSubstructureTask, processChargedJetsMCD, "charged jet substructure", false);
 
@@ -231,10 +365,10 @@ struct JetSubstructureTask {
       fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::track), pdg->Mass(jetConstituent.pdgCode()));
     }
     nSub = jetsubstructureutilities::getNSubjettiness(jet, particles, particles, particles, 2, fastjet::contrib::CA_Axes(), true, zCut, beta);
-    jetReclustering<true, false>(jet);
-    jetPairing(jet, particles);
+    jetReclustering<true, false>(jet, jetSplittingsMCPTable);
+    jetPairing<true>(jet, particles, ParticlesPerMcCollision, jetPairsMCPTable);
     jetSubstructureSimple(jet, particles);
-    jetSubstructureMCPTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairPtVec, pairEnergyVec, pairThetaVec, angularity);
+    jetSubstructureMCPTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairJetPtVec, pairJetEnergyVec, pairJetThetaVec, pairJetPerpCone1PtVec, pairJetPerpCone1EnergyVec, pairJetPerpCone1ThetaVec, pairPerpCone1PerpCone1PtVec, pairPerpCone1PerpCone1EnergyVec, pairPerpCone1PerpCone1ThetaVec, pairPerpCone1PerpCone2PtVec, pairPerpCone1PerpCone2EnergyVec, pairPerpCone1PerpCone2ThetaVec, angularity, leadingConstituentPt, perpConeRho);
   }
   PROCESS_SWITCH(JetSubstructureTask, processChargedJetsMCP, "charged jet substructure on MC particle level", false);
 };

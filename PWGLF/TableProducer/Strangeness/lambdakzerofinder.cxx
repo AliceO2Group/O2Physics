@@ -429,17 +429,10 @@ struct lambdakzerofinderQa {
   PROCESS_SWITCH(lambdakzerofinderQa, processRun2, "Process Run 2 data", false);
 };
 
-/// Extends the v0data table with expression columns
-struct lambdakzeroinitializer {
-  Spawns<aod::V0Cores> v0cores;
-  void init(InitContext const&) {}
-};
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<lambdakzeroprefilter>(cfgc, TaskName{"lf-lambdakzeroprefilter"}),
     adaptAnalysisTask<lambdakzerofinder>(cfgc, TaskName{"lf-lambdakzerofinder"}),
-    adaptAnalysisTask<lambdakzerofinderQa>(cfgc, TaskName{"lf-lambdakzerofinderQA"}),
-    adaptAnalysisTask<lambdakzeroinitializer>(cfgc, TaskName{"lf-lambdakzeroinitializer"})};
+    adaptAnalysisTask<lambdakzerofinderQa>(cfgc, TaskName{"lf-lambdakzerofinderQA"})};
 }

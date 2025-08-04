@@ -16,12 +16,22 @@
 ///
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdint>
 
 using namespace o2;
 using namespace o2::framework;
@@ -255,16 +265,16 @@ struct HfTreeCreatorDstarToD0Pi {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
-  using CandDstarWSelFlag = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi>>;
-  using CandDstarWSelFlagMcRec = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfCandDstarMcRec>>;
+  using CandDstarWSelFlag = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstarsWPid, aod::HfSelDstarToD0Pi>>;
+  using CandDstarWSelFlagMcRec = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstarsWPid, aod::HfSelDstarToD0Pi, aod::HfCandDstarMcRec>>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
   using CandDstarMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandDstarMcGen>>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
-  Filter filterMcGenMatching = nabs(aod::hf_cand_dstar::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
+  Filter filterMcGenMatching = nabs(aod::hf_cand_dstar::flagMcMatchGen) == static_cast<int8_t>(hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi);
 
-  Partition<CandDstarWSelFlagMcRec> reconstructedCandSig = nabs(aod::hf_cand_dstar::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
-  Partition<CandDstarWSelFlagMcRec> reconstructedCandBkg = nabs(aod::hf_cand_dstar::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
+  Partition<CandDstarWSelFlagMcRec> reconstructedCandSig = nabs(aod::hf_cand_dstar::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi);
+  Partition<CandDstarWSelFlagMcRec> reconstructedCandBkg = nabs(aod::hf_cand_dstar::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi);
 
   void init(InitContext const&)
   {
@@ -295,7 +305,6 @@ struct HfTreeCreatorDstarToD0Pi {
 
     TracksWPid::iterator prong0;
     TracksWPid::iterator prong1;
-    auto prongSoftPi = candidate.template prongPi_as<TracksWPid>();
 
     float massD0{-1.f};
     float massDStar{-1.f};
@@ -360,24 +369,24 @@ struct HfTreeCreatorDstarToD0Pi {
         impParameterNormalisedProng0,
         impParameterNormalisedProng1,
         candidate.normalisedImpParamSoftPi(),
-        prong0.tpcNSigmaPi(),
-        prong0.tpcNSigmaKa(),
-        prong0.tofNSigmaPi(),
-        prong0.tofNSigmaKa(),
-        prong0.tpcTofNSigmaPi(),
-        prong0.tpcTofNSigmaKa(),
-        prong1.tpcNSigmaPi(),
-        prong1.tpcNSigmaKa(),
-        prong1.tofNSigmaPi(),
-        prong1.tofNSigmaKa(),
-        prong1.tpcTofNSigmaPi(),
-        prong1.tpcTofNSigmaKa(),
-        prongSoftPi.tpcNSigmaPi(),
-        prongSoftPi.tpcNSigmaKa(),
-        prongSoftPi.tofNSigmaPi(),
-        prongSoftPi.tofNSigmaKa(),
-        prongSoftPi.tpcTofNSigmaPi(),
-        prongSoftPi.tpcTofNSigmaKa(),
+        candidate.nSigTpcPi0(),
+        candidate.nSigTpcKa0(),
+        candidate.nSigTofPi0(),
+        candidate.nSigTofKa0(),
+        candidate.tpcTofNSigmaPi0(),
+        candidate.tpcTofNSigmaKa0(),
+        candidate.nSigTpcPi1(),
+        candidate.nSigTpcKa1(),
+        candidate.nSigTofPi1(),
+        candidate.nSigTofKa1(),
+        candidate.tpcTofNSigmaPi1(),
+        candidate.tpcTofNSigmaKa1(),
+        candidate.nSigTpcPi2(),
+        candidate.nSigTpcKa2(),
+        candidate.nSigTofPi2(),
+        candidate.nSigTofKa2(),
+        candidate.tpcTofNSigmaPi2(),
+        candidate.tpcTofNSigmaKa2(),
         massD0,
         candidate.ptD0(),
         candidate.etaD0(),
@@ -429,24 +438,24 @@ struct HfTreeCreatorDstarToD0Pi {
         candidate.errorImpactParameter0(),
         candidate.errorImpactParameter1(),
         candidate.errorImpParamSoftPi(),
-        prong0.tpcNSigmaPi(),
-        prong0.tpcNSigmaKa(),
-        prong0.tofNSigmaPi(),
-        prong0.tofNSigmaKa(),
-        prong0.tpcTofNSigmaPi(),
-        prong0.tpcTofNSigmaKa(),
-        prong1.tpcNSigmaPi(),
-        prong1.tpcNSigmaKa(),
-        prong1.tofNSigmaPi(),
-        prong1.tofNSigmaKa(),
-        prong1.tpcTofNSigmaPi(),
-        prong1.tpcTofNSigmaKa(),
-        prongSoftPi.tpcNSigmaPi(),
-        prongSoftPi.tpcNSigmaKa(),
-        prongSoftPi.tofNSigmaPi(),
-        prongSoftPi.tofNSigmaKa(),
-        prongSoftPi.tpcTofNSigmaPi(),
-        prongSoftPi.tpcTofNSigmaKa(),
+        candidate.nSigTpcPi0(),
+        candidate.nSigTpcKa0(),
+        candidate.nSigTofPi0(),
+        candidate.nSigTofKa0(),
+        candidate.tpcTofNSigmaPi0(),
+        candidate.tpcTofNSigmaKa0(),
+        candidate.nSigTpcPi1(),
+        candidate.nSigTpcKa1(),
+        candidate.nSigTofPi1(),
+        candidate.nSigTofKa1(),
+        candidate.tpcTofNSigmaPi1(),
+        candidate.tpcTofNSigmaKa1(),
+        candidate.nSigTpcPi2(),
+        candidate.nSigTpcKa2(),
+        candidate.nSigTofPi2(),
+        candidate.nSigTofKa2(),
+        candidate.tpcTofNSigmaPi2(),
+        candidate.tpcTofNSigmaKa2(),
         massD0,
         candidate.ptD0(),
         candidate.pD0(),

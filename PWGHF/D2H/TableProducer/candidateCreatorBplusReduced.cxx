@@ -14,20 +14,33 @@
 ///
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/V0.h"
-
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
+
+#include <TH1.h>
+
+#include <array>
+#include <cmath>
+#include <memory>
+#include <numeric>
+#include <stdexcept>
 
 using namespace o2;
 using namespace o2::aod;
@@ -198,8 +211,8 @@ struct HfCandidateCreatorBplusReduced {
           }
         }
       } // pi loop
-    }   // D0 loop
-  }     // end runCandidateCreation
+    } // D0 loop
+  } // end runCandidateCreation
 
   void processData(HfRedCollisionsWithExtras const& collisions,
                    soa::Join<aod::HfRed2Prongs, aod::HfRed2ProngsCov> const& candsD,
@@ -291,10 +304,11 @@ struct HfCandidateCreatorBplusReducedExpressions {
         if ((rowD0PiMcRec.prong0Id() != candBplus.prong0Id()) || (rowD0PiMcRec.prong1Id() != candBplus.prong1Id())) {
           continue;
         }
-        rowBplusMcRec(rowD0PiMcRec.flagMcMatchRec(), rowD0PiMcRec.flagWrongCollision(), rowD0PiMcRec.debugMcRec(), rowD0PiMcRec.ptMother());
+        rowBplusMcRec(rowD0PiMcRec.flagMcMatchRec(), -1 /*channel*/, rowD0PiMcRec.flagWrongCollision(), rowD0PiMcRec.debugMcRec(), rowD0PiMcRec.ptMother());
         filledMcInfo = true;
         if constexpr (checkDecayTypeMc) {
           rowBplusMcCheck(rowD0PiMcRec.pdgCodeBeautyMother(),
+                          rowD0PiMcRec.pdgCodeCharmMother(),
                           rowD0PiMcRec.pdgCodeProng0(),
                           rowD0PiMcRec.pdgCodeProng1(),
                           rowD0PiMcRec.pdgCodeProng2());
@@ -302,9 +316,9 @@ struct HfCandidateCreatorBplusReducedExpressions {
         break;
       }
       if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the D0-Pi creator
-        rowBplusMcRec(0, -1, -1, -1.f);
+        rowBplusMcRec(0, -1, -1, -1, -1.f);
         if constexpr (checkDecayTypeMc) {
-          rowBplusMcCheck(-1, -1, -1, -1);
+          rowBplusMcCheck(-1, -1, -1, -1, -1);
         }
       }
     }

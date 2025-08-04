@@ -40,24 +40,23 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
-MetadataHelper metadataInfo;
+o2::common::core::MetadataHelper metadataInfo;
 
 static constexpr int nCases = 2;
-static constexpr int nParameters = 9;
+static constexpr int nParameters = 12;
 static const std::vector<std::string> casesNames{"Data", "MC"};
 static const std::vector<std::string> parameterNames{"RespITSPar1", "RespITSPar2", "RespITSPar3",
                                                      "RespITSPar1_Z2", "RespITSPar2_Z2", "RespITSPar3_Z2",
-                                                     "ResolutionPar1", "ResolutionPar2", "ResolutionPar3"};
-static constexpr float defaultParameters[nCases][nParameters]{{0.903, 2.014, 2.440,
-                                                               2.8752, 1.1246, 5.0259,
-                                                               0.2431, -0.3293, 1.533},
-                                                              {0.903, 2.014, 2.440,
-                                                               2.8752, 1.1246, 5.0259,
-                                                               0.2431, -0.3293, 1.533}};
+                                                     "ResolutionPar1", "ResolutionPar2", "ResolutionPar3",
+                                                     "ResolutionPar1_Z2", "ResolutionPar2_Z2", "ResolutionPar3_Z2"};
+
+static constexpr float defaultParameters[nCases][nParameters] = {
+  {1.18941, 1.53792, 1.69961, 2.35117, 1.80347, 5.14355, 1.94669e-01, -2.08616e-01, 1.30753, 0.09, -999., -999.},
+  {1.63806, 1.58847, 2.52275, 2.66505, 1.48405, 6.90453, 1.40487e-01, -4.31078e-01, 1.50052, 0.09, -999., -999.}};
 
 /// Task to produce the ITS PID information for each particle species
 /// The parametrization is: [p0/(bg)**p1 + p2] being bg = p/m. Different parametrizations are used for He3 and Alpha particles.
-/// The resolution depends on the bg and is modelled with an erf function: p0*TMath::Erf((bg-p1)/p2)
+/// The resolution depends on the bg and is modelled with an erf function: p0*TMath::Erf((bg-p1)/p2). If p1/p2 is -999, the resolution is set to p0.
 struct itsPid {
 
   Configurable<LabeledArray<float>> itsParams{"itsParams",
@@ -81,16 +80,19 @@ struct itsPid {
       ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
       LOG(fatal) << "Not implemented yet";
     } else {
-      const char* key = metadataInfo.isMC() ? "MC" : "Data";
-      o2::aod::ITSResponse::setParameters(itsParams->get(key, "RespITSPar1"),
-                                          itsParams->get(key, "RespITSPar2"),
-                                          itsParams->get(key, "RespITSPar3"),
-                                          itsParams->get(key, "RespITSPar1_Z2"),
-                                          itsParams->get(key, "RespITSPar2_Z2"),
-                                          itsParams->get(key, "RespITSPar3_Z2"),
-                                          itsParams->get(key, "ResolutionPar1"),
-                                          itsParams->get(key, "ResolutionPar2"),
-                                          itsParams->get(key, "ResolutionPar3"));
+      const char* dataType = metadataInfo.isMC() ? "MC" : "Data";
+      o2::aod::ITSResponse::setParameters(itsParams->get(dataType, "RespITSPar1"),
+                                          itsParams->get(dataType, "RespITSPar2"),
+                                          itsParams->get(dataType, "RespITSPar3"),
+                                          itsParams->get(dataType, "RespITSPar1_Z2"),
+                                          itsParams->get(dataType, "RespITSPar2_Z2"),
+                                          itsParams->get(dataType, "RespITSPar3_Z2"),
+                                          itsParams->get(dataType, "ResolutionPar1"),
+                                          itsParams->get(dataType, "ResolutionPar2"),
+                                          itsParams->get(dataType, "ResolutionPar3"),
+                                          itsParams->get(dataType, "ResolutionPar1_Z2"),
+                                          itsParams->get(dataType, "ResolutionPar2_Z2"),
+                                          itsParams->get(dataType, "ResolutionPar3_Z2"));
     }
   }
 

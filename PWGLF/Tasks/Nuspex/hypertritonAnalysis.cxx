@@ -218,7 +218,7 @@ struct hypertritonAnalysis {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
 
     evselstats[kEvSelAll]++;
     if (event_sel8_selection && !collision.sel8()) {
@@ -324,7 +324,7 @@ struct hypertritonAnalysis {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
 
     evselstats[kEvSelAll]++;
     if (event_sel8_selection && !collision.sel8()) {

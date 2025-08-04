@@ -17,7 +17,7 @@
 #endif()
 
 find_path(KFPARTICLE_INCLUDE_DIR KFParticle.h
-        PATH_SUFFIXES "include"
+        PATH_SUFFIXES "include" "include/KFParticle"
         HINTS "$ENV{KFPARTICLE_ROOT}")
 find_library(KFPARTICLE_LIBPATH "KFParticle"
         PATH_SUFFIXES "lib"
