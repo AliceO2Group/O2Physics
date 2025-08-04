@@ -1395,7 +1395,7 @@ class BuilderModule
         }
       }
 
-      if (!straHelper.buildV0Candidate(v0.collisionId, pvX, pvY, pvZ, posTrack, negTrack, posTrackPar, negTrackPar, v0.isCollinearV0, baseOpts.mEnabledTables[kV0Covs], true)) {
+      if (!straHelper.buildV0Candidate(v0.collisionId, pvX, pvY, pvZ, posTrack, negTrack, posTrackPar, negTrackPar, v0.isCollinearV0, baseOpts.mEnabledTables[kV0Covs], v0BuilderOpts.generatePhotonCandidates)) {
         products.v0dataLink(-1, -1);
         continue;
       }
