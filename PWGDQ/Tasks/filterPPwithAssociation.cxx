@@ -11,44 +11,48 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
-#include <iostream>
-#include <vector>
-#include <map>
-#include <string>
-#include <memory>
-#include <cstring>
-#include <TH1.h>
-#include <THashList.h>
-#include <TString.h>
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/DataTypes.h"
-#include "Framework/runDataProcessing.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
+#include "PWGDQ/Core/AnalysisCompositeCut.h"
+#include "PWGDQ/Core/AnalysisCut.h"
+#include "PWGDQ/Core/CutsLibrary.h"
+#include "PWGDQ/Core/HistogramManager.h"
+#include "PWGDQ/Core/HistogramsLibrary.h"
+#include "PWGDQ/Core/VarManager.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/Core/CollisionAssociation.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "EventFiltering/filterTables.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGDQ/Core/VarManager.h"
-#include "PWGDQ/Core/HistogramManager.h"
-#include "PWGDQ/Core/AnalysisCut.h"
-#include "PWGDQ/Core/AnalysisCompositeCut.h"
-#include "PWGDQ/Core/HistogramsLibrary.h"
-#include "PWGDQ/Core/CutsLibrary.h"
+
+#include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
-#include "Common/Core/CollisionAssociation.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "Field/MagneticField.h"
-#include "TGeoGlobalMagField.h"
-#include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Field/MagneticField.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/DataTypes.h"
+#include "Framework/runDataProcessing.h"
+
+#include "TGeoGlobalMagField.h"
+#include <TH1.h>
+#include <THashList.h>
+#include <TString.h>
+
+#include <cstring>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 using std::cout;
 using std::endl;
@@ -83,9 +87,9 @@ DECLARE_SOA_COLUMN(IsDQBarrelSelected, isDQBarrelSelected, uint32_t);
 DECLARE_SOA_COLUMN(IsDQMuonSelected, isDQMuonSelected, uint32_t);
 DECLARE_SOA_COLUMN(IsDQEMuBarrelSelected, isDQEMuBarrelSelected, uint32_t); // for electron-muon pair
 DECLARE_SOA_COLUMN(IsDQEMuMuonSelected, isDQEMuMuonSelected, uint32_t);     // for electron-muon pair
-DECLARE_SOA_INDEX_COLUMN(Collision, collision); //! Collision index
-DECLARE_SOA_INDEX_COLUMN(Track, track);         //! Track index
-DECLARE_SOA_INDEX_COLUMN(FwdTrack, fwdtrack);   //! FwdTrack index
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                             //! Collision index
+DECLARE_SOA_INDEX_COLUMN(Track, track);                                     //! Track index
+DECLARE_SOA_INDEX_COLUMN(FwdTrack, fwdtrack);                               //! FwdTrack index
 } // namespace dqppfilter
 
 DECLARE_SOA_TABLE(DQEventCuts, "AOD", "DQEVENTCUTS", dqppfilter::IsDQEventSelected);
@@ -160,7 +164,7 @@ struct DQEventSelectionTask {
       fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
       DefineHistograms(fHistMan, "Event_BeforeCuts;Event_AfterCuts;", fConfigHistClasses.value); // define all histograms
-      VarManager::SetUseVars(fHistMan->GetUsedVars());                 // provide the list of required variables so that VarManager knows what to fill
+      VarManager::SetUseVars(fHistMan->GetUsedVars());                                           // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
   }
@@ -210,8 +214,8 @@ struct DQBarrelTrackSelection {
   Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
   Configurable<std::string> fConfigHistClasses{"cfgHistClasses", "its,tpcpid,dca", "If true, fill QA histograms"};
   Configurable<bool> fPropTrack{"cfgPropTrack", true, "Propgate tracks to associated collision to recalculate DCA and momentum vector"};
-  Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
+  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
 
@@ -266,7 +270,7 @@ struct DQBarrelTrackSelection {
       }
 
       DefineHistograms(fHistMan, cutNames.Data(), fConfigHistClasses.value); // define all histograms
-      VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
+      VarManager::SetUseVars(fHistMan->GetUsedVars());                       // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
 
       // CCDB configuration
@@ -384,7 +388,7 @@ struct DQMuonsSelection {
   Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
   Configurable<std::string> fConfigHistClasses{"cfgHistClasses", "muon", "If true, fill QA histograms"};
   Configurable<bool> fPropMuon{"cfgPropMuon", false, "Propgate muon tracks through absorber"};
-  Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
 
@@ -441,7 +445,7 @@ struct DQMuonsSelection {
       }
 
       DefineHistograms(fHistMan, cutNames.Data(), fConfigHistClasses.value); // define all histograms
-      VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
+      VarManager::SetUseVars(fHistMan->GetUsedVars());                       // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
   }
@@ -530,7 +534,7 @@ struct DQFilterPPTask {
   Configurable<std::string> fConfigFilterLsMuonsPairs{"cfgWithMuonLS", "false", "Comma separated list of booleans for each trigger, If true, also select like sign (--/++) muon pairs"};
   Configurable<std::string> fConfigFilterLsElectronMuonsPairs{"cfgWithElectronMuonLS", "false", "Comma separated list of booleans for each trigger, If true, also select like sign (--/++) muon pairs"};
   Configurable<bool> fPropMuon{"cfgPropMuon", false, "Propgate muon tracks through absorber"};
-  Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
 
@@ -539,21 +543,21 @@ struct DQFilterPPTask {
 
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
-  int fNBarrelCuts;                                    // number of barrel selections
-  int fNMuonCuts;                                      // number of muon selections
-  int fNElectronMuonCuts;                              // number of electron-muon selections
-  std::vector<bool> fBarrelRunPairing;                 // bit map on whether the selections require pairing (barrel)
-  std::vector<bool> fMuonRunPairing;                   // bit map on whether the selections require pairing (muon)
-  std::vector<bool> fElectronMuonRunPairing;           // bit map on whether the selections require pairing (e-mu)
-  std::vector<int> fBarrelNreqObjs;                    // minimal number of tracks/pairs required (barrel)
-  std::vector<int> fMuonNreqObjs;                      // minimal number of tracks/pairs required (muon)
-  std::vector<int> fElectronMuonNreqObjs;              // minimal number of electron-muon pairs required
-  std::map<int, AnalysisCompositeCut> fBarrelPairCuts; // map of barrel pair cuts
-  std::map<int, AnalysisCompositeCut> fMuonPairCuts;   // map of muon pair cuts
+  int fNBarrelCuts;                                          // number of barrel selections
+  int fNMuonCuts;                                            // number of muon selections
+  int fNElectronMuonCuts;                                    // number of electron-muon selections
+  std::vector<bool> fBarrelRunPairing;                       // bit map on whether the selections require pairing (barrel)
+  std::vector<bool> fMuonRunPairing;                         // bit map on whether the selections require pairing (muon)
+  std::vector<bool> fElectronMuonRunPairing;                 // bit map on whether the selections require pairing (e-mu)
+  std::vector<int> fBarrelNreqObjs;                          // minimal number of tracks/pairs required (barrel)
+  std::vector<int> fMuonNreqObjs;                            // minimal number of tracks/pairs required (muon)
+  std::vector<int> fElectronMuonNreqObjs;                    // minimal number of electron-muon pairs required
+  std::map<int, AnalysisCompositeCut> fBarrelPairCuts;       // map of barrel pair cuts
+  std::map<int, AnalysisCompositeCut> fMuonPairCuts;         // map of muon pair cuts
   std::map<int, AnalysisCompositeCut> fElectronMuonPairCuts; // map of electron-muon pair cuts
-  std::map<int, TString> fBarrelPairHistNames;         // map with names of the barrel pairing histogram directories
-  std::map<int, TString> fMuonPairHistNames;           // map with names of the muon pairing histogram directories
-  std::map<int, TString> fElectronMuonPairHistNames;   // map with names of the electron-muon pairing histogram directories
+  std::map<int, TString> fBarrelPairHistNames;               // map with names of the barrel pairing histogram directories
+  std::map<int, TString> fMuonPairHistNames;                 // map with names of the muon pairing histogram directories
+  std::map<int, TString> fElectronMuonPairHistNames;         // map with names of the electron-muon pairing histogram directories
 
   std::map<uint64_t, uint64_t> fFiltersMap;           // map of filters for events that passed at least one filter
   std::map<uint64_t, std::vector<bool>> fCEFPfilters; // map of CEFP filters for events that passed at least one filter
@@ -771,7 +775,7 @@ struct DQFilterPPTask {
           if (objCountersBarrel[i] > 1) { // pairing has to be enabled and at least two tracks are needed
             pairingMask |= (static_cast<uint32_t>(1) << i);
           }
-          objCountersBarrel[i] = 0; // reset counters for selections where pairing is needed (count pairs instead)
+          objCountersBarrel[i] = 0;    // reset counters for selections where pairing is needed (count pairs instead)
           taggedCollisions[i].clear(); // empty the list of tagged collisions if pairing is needed (so we count just events with pairs or containing selected pair legs)
         }
       }
@@ -848,7 +852,7 @@ struct DQFilterPPTask {
           if (objCountersMuon[i] > 1) {
             pairingMask |= (static_cast<uint32_t>(1) << i);
           }
-          objCountersMuon[i] = 0; // reset counters for selections where pairing is needed (count pairs instead)
+          objCountersMuon[i] = 0;                     // reset counters for selections where pairing is needed (count pairs instead)
           taggedCollisions[i + fNBarrelCuts].clear(); // empty the list of tagged collisions if pairing is needed (so we count just events with pairs or containing selected pair legs)
         }
       }

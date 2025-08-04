@@ -62,7 +62,7 @@ struct HStrangeCorrelation {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // event filtering
-  Configurable<string> zorroMask{"zorroMask", "", "zorro trigger class to select on (empty: none)"};
+  Configurable<std::string> zorroMask{"zorroMask", "", "zorro trigger class to select on (empty: none)"};
 
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
