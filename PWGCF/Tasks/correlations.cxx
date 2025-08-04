@@ -84,7 +84,7 @@ struct CorrelationTask {
   O2_DEFINE_CONFIGURABLE(cfgTwoTrackCutMinRadius, float, 0.8f, "Two track cut: radius in m from which two track cuts are applied");
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, int, 0, "0 = OFF and 1 = ON for local efficiency");
   O2_DEFINE_CONFIGURABLE(cfgCentBinsForMC, int, 0, "0 = OFF and 1 = ON for data like multiplicity/centrality bins for MC steps");
-  O2_DEFINE_CONFIGURABLE(cfgTrackBitMask, uint8_t, 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task");
+  O2_DEFINE_CONFIGURABLE(cfgTrackBitMask, uint16_t, 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task");
   // Suggested values: Photon: 0.004; K0 and Lambda: 0.005
   Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {kCfgPairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
 
