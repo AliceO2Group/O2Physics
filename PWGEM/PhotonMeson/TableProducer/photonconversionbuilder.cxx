@@ -65,7 +65,7 @@ using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>;
 using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 
-using MyTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullEl, aod::pidTPCFullPi>;
+using MyTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullEl, aod::pidTPCFullPi>;
 using MyTracksIUMC = soa::Join<MyTracksIU, aod::McTrackLabels, aod::mcTPCTuneOnData>;
 
 struct PhotonConversionBuilder {
@@ -367,27 +367,18 @@ struct PhotonConversionBuilder {
   template <bool isMC, typename TTrack, typename TShiftedTrack, typename TKFParticle>
   void fillTrackTable(TTrack const& track, TShiftedTrack const& shiftedtrack, TKFParticle const& kfp, const float dcaXY, const float dcaZ)
   {
-    float itsChi2NCl = (track.hasITS() && track.itsChi2NCl() > 0.f) ? track.itsChi2NCl() : -299.f;
-    float tpcChi2NCl = (track.hasTPC() && track.tpcChi2NCl() > 0.f) ? track.tpcChi2NCl() : -299.f;
-    float tpcSignal = track.hasTPC() ? track.tpcSignal() : 0.f;
-    float tpcNSigmaEl = track.hasTPC() ? track.tpcNSigmaEl() : -299.f;
-    float tpcNSigmaPi = track.hasTPC() ? track.tpcNSigmaPi() : -299.f;
-
     float mcTunedTPCSignal = 0.f;
     if constexpr (isMC) {
       mcTunedTPCSignal = track.mcTunedTPCSignal();
-      if (track.hasTPC()) {
-        mcTunedTPCSignal = track.mcTunedTPCSignal();
-      }
     }
 
     v0legs(track.collisionId(), track.globalIndex(), track.sign(),
-           kfp.GetPx(), kfp.GetPy(), kfp.GetPz(), static_cast<int16_t>(dcaXY * 1e+2), static_cast<int16_t>(dcaZ * 1e+2),
+           kfp.GetPx(), kfp.GetPy(), kfp.GetPz(), dcaXY, dcaZ,
            track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
-           static_cast<int16_t>(tpcChi2NCl * 1e+2), track.tpcInnerParam(), static_cast<uint16_t>(tpcSignal * 1e+2),
-           static_cast<int16_t>(tpcNSigmaEl * 1e+2), static_cast<int16_t>(tpcNSigmaPi * 1e+2),
-           track.itsClusterSizes(), static_cast<int16_t>(itsChi2NCl * 1e+2), track.detectorMap(), static_cast<uint16_t>(mcTunedTPCSignal * 1e+2),
-           static_cast<uint16_t>(shiftedtrack.getX() * 1e+2), static_cast<int16_t>(shiftedtrack.getY() * 1e+2), static_cast<int16_t>(shiftedtrack.getZ() * 1e+2), shiftedtrack.getTgl());
+           track.tpcChi2NCl(), track.tpcInnerParam(), track.tpcSignal(),
+           track.tpcNSigmaEl(), track.tpcNSigmaPi(),
+           track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap(), mcTunedTPCSignal,
+           shiftedtrack.getX(), shiftedtrack.getY(), shiftedtrack.getZ());
   }
 
   template <bool isMC, class TBCs, class TCollisions, class TTracks, typename TV0>
@@ -684,9 +675,9 @@ struct PhotonConversionBuilder {
       v0photonskf(collision.globalIndex(), v0.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
                   gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY(), gammaKF_DecayVtx.GetZ(),
                   gammaKF_PV.GetPx(), gammaKF_PV.GetPy(), gammaKF_PV.GetPz(),
-                  static_cast<uint16_t>(v0_sv.M() * 1e+5), static_cast<int16_t>(dca_xy_v0_to_pv * 1e+2), static_cast<int16_t>(dca_z_v0_to_pv * 1e+2),
-                  static_cast<uint16_t>(cospa_kf * 5e+4), static_cast<uint16_t>(cospaXY_kf * 5e+4), static_cast<uint16_t>(cospaRZ_kf * 5e+4),
-                  static_cast<uint16_t>(pca_kf * 1e+4), static_cast<int16_t>(alpha * 1e+4), static_cast<uint16_t>(qt * 1e+5), static_cast<uint16_t>(chi2kf * 1e+1));
+                  v0_sv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
+                  cospa_kf, cospaXY_kf, cospaRZ_kf,
+                  pca_kf, alpha, qt, chi2kf);
 
       // v0photonskfcov(gammaKF_PV.GetCovariance(9), gammaKF_PV.GetCovariance(14), gammaKF_PV.GetCovariance(20), gammaKF_PV.GetCovariance(13), gammaKF_PV.GetCovariance(19), gammaKF_PV.GetCovariance(18));
 

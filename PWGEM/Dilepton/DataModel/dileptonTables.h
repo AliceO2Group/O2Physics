@@ -412,6 +412,7 @@ DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);             //! is ambiguous
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                         //!
 DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);                 //!
 DECLARE_SOA_COLUMN(PrefilterBitDerived, pfbderived, uint16_t);  //!
+DECLARE_SOA_COLUMN(ProbElBDT, probElBDT, float);                //!
 
 DECLARE_SOA_COLUMN(ITSNSigmaEl, itsNSigmaEl, float); //!
 DECLARE_SOA_COLUMN(ITSNSigmaMu, itsNSigmaMu, float); //!
@@ -419,55 +420,13 @@ DECLARE_SOA_COLUMN(ITSNSigmaPi, itsNSigmaPi, float); //!
 DECLARE_SOA_COLUMN(ITSNSigmaKa, itsNSigmaKa, float); //!
 DECLARE_SOA_COLUMN(ITSNSigmaPr, itsNSigmaPr, float); //!
 
-DECLARE_SOA_COLUMN(TPCSignalUINT16, tpcSignalUINT16, uint16_t);          //! 0 - +65535
-DECLARE_SOA_COLUMN(DeDxTunedMcUINT16, mcTunedTPCSignalUINT16, uint16_t); //! 0 - +65535
-DECLARE_SOA_COLUMN(ProbElBDT, probElBDT, float);                         //!
-// DECLARE_SOA_COLUMN(ProbEbdtUINT16, probEbdtUINT16, uint16_t);     //! 0 - +65535
-
-DECLARE_SOA_COLUMN(TPCChi2NClINT16, tpcChi2NClINT16, int16_t); //! -32768 - +32767
-DECLARE_SOA_COLUMN(ITSChi2NClINT16, itsChi2NClINT16, int16_t); //! -32768 - +32767
-
-DECLARE_SOA_COLUMN(BetaINT16, betaINT16, int16_t);       //! -32768 - +32767
-DECLARE_SOA_COLUMN(TOFChi2INT16, tofChi2INT16, int16_t); //! -32768 - +32767
-
-DECLARE_SOA_COLUMN(TPCNSigmaElINT16, tpcNSigmaElINT16, int16_t); //! -32768 - +32767
-DECLARE_SOA_COLUMN(TPCNSigmaMuINT16, tpcNSigmaMuINT16, int16_t); //! -32768 - +32767
-DECLARE_SOA_COLUMN(TPCNSigmaPiINT16, tpcNSigmaPiINT16, int16_t); //! -32768 - +32767
-DECLARE_SOA_COLUMN(TPCNSigmaKaINT16, tpcNSigmaKaINT16, int16_t); //! -32768 - +32767
-DECLARE_SOA_COLUMN(TPCNSigmaPrINT16, tpcNSigmaPrINT16, int16_t); //! -32768 - +32767
-
-DECLARE_SOA_COLUMN(TOFNSigmaElINT16, tofNSigmaElINT16, int16_t); //! -32768 - +32767
-DECLARE_SOA_COLUMN(TOFNSigmaMuINT16, tofNSigmaMuINT16, int16_t); //! -32768 - +32767
-DECLARE_SOA_COLUMN(TOFNSigmaPiINT16, tofNSigmaPiINT16, int16_t); //! -32768 - +32767
-DECLARE_SOA_COLUMN(TOFNSigmaKaINT16, tofNSigmaKaINT16, int16_t); //! -32768 - +32767
-DECLARE_SOA_COLUMN(TOFNSigmaPrINT16, tofNSigmaPrINT16, int16_t); //! -32768 - +32767
-
-DECLARE_SOA_DYNAMIC_COLUMN(TPCSignal, tpcSignal, [](uint16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-DECLARE_SOA_DYNAMIC_COLUMN(DeDxTunedMc, mcTunedTPCSignal, [](uint16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-// DECLARE_SOA_DYNAMIC_COLUMN(ProbEbdt, probEbdt, [](uint16_t x) -> float { return static_cast<float>(x) * 1e-4; });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCChi2NCl, tpcChi2NCl, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-DECLARE_SOA_DYNAMIC_COLUMN(ITSChi2NCl, itsChi2NCl, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-DECLARE_SOA_DYNAMIC_COLUMN(Beta, beta, [](int16_t x) -> float { return static_cast<float>(x) * 1e-3; });
-DECLARE_SOA_DYNAMIC_COLUMN(TOFChi2, tofChi2, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-
-DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaEl, tpcNSigmaEl, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaMu, tpcNSigmaMu, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaPi, tpcNSigmaPi, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaKa, tpcNSigmaKa, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaPr, tpcNSigmaPr, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-
-DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaEl, tofNSigmaEl, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaMu, tofNSigmaMu, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaPi, tofNSigmaPi, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaKa, tofNSigmaKa, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaPr, tofNSigmaPr, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-
 DECLARE_SOA_DYNAMIC_COLUMN(Signed1Pt, signed1Pt, [](float pt, int8_t sign) -> float { return sign * 1. / pt; });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, [](float tgl) -> float { return M_PI_2 - std::atan(tgl); });
+DECLARE_SOA_DYNAMIC_COLUMN(Tgl, tgl, [](float eta) -> float { return std::tan(M_PI_2 - 2 * std::atan(std::exp(-eta))); });
 DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITS, meanClusterSizeITS, [](uint32_t itsClusterSizes) -> float {
   int total_cluster_size = 0, nl = 0;
   for (unsigned int layer = 0; layer < 7; layer++) {
@@ -612,14 +571,12 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectrons_004, "AOD", "EMPRIMARYEL", 4, //!
                             track::Pt, track::Eta, track::Phi,
                             track::DcaXY, track::DcaZ, aod::track::CYY, aod::track::CZY, aod::track::CZZ,
                             track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,
-                            emprimaryelectron::TPCChi2NClINT16, track::TPCInnerParam,
-                            emprimaryelectron::TPCSignalUINT16, emprimaryelectron::TPCNSigmaElINT16, emprimaryelectron::TPCNSigmaPiINT16, emprimaryelectron::TPCNSigmaKaINT16, emprimaryelectron::TPCNSigmaPrINT16,
-                            emprimaryelectron::BetaINT16, emprimaryelectron::TOFNSigmaElINT16, emprimaryelectron::TOFNSigmaPiINT16, emprimaryelectron::TOFNSigmaKaINT16, emprimaryelectron::TOFNSigmaPrINT16,
-                            track::ITSClusterSizes,
-                            emprimaryelectron::ITSChi2NClINT16, emprimaryelectron::TOFChi2INT16, track::DetectorMap,
-                            track::Tgl,
+                            track::TPCChi2NCl, track::TPCInnerParam,
+                            track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
+                            pidtofbeta::Beta, pidtof::TOFNSigmaEl,                                         /*pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,*/
+                            track::ITSClusterSizes, track::ITSChi2NCl, track::TOFChi2, track::DetectorMap, /*track::Tgl,*/
                             emprimaryelectron::IsAssociatedToMPC, emprimaryelectron::IsAmbiguous, emprimaryelectron::ProbElBDT,
-                            emprimaryelectron::DeDxTunedMcUINT16,
+                            mcpidtpc::DeDxTunedMc,
 
                             // dynamic column
                             track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
@@ -630,31 +587,12 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectrons_004, "AOD", "EMPRIMARYEL", 4, //!
                             track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
                             track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>, track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
 
-                            emprimaryelectron::TPCSignal<emprimaryelectron::TPCSignalUINT16>,
-                            emprimaryelectron::TPCChi2NCl<emprimaryelectron::TPCChi2NClINT16>,
-                            emprimaryelectron::ITSChi2NCl<emprimaryelectron::ITSChi2NClINT16>,
-                            emprimaryelectron::DeDxTunedMc<emprimaryelectron::DeDxTunedMcUINT16>,
-                            // emprimaryelectron::ProbEbdt<emprimaryelectron::ProbEbdtUINT16>,
-                            emprimaryelectron::Beta<emprimaryelectron::BetaINT16>,
-                            emprimaryelectron::TOFChi2<emprimaryelectron::TOFChi2INT16>,
-
-                            emprimaryelectron::TPCNSigmaEl<emprimaryelectron::TPCNSigmaElINT16>,
-                            emprimaryelectron::TPCNSigmaMu<emprimaryelectron::TPCNSigmaMuINT16>,
-                            emprimaryelectron::TPCNSigmaPi<emprimaryelectron::TPCNSigmaPiINT16>,
-                            emprimaryelectron::TPCNSigmaKa<emprimaryelectron::TPCNSigmaKaINT16>,
-                            emprimaryelectron::TPCNSigmaPr<emprimaryelectron::TPCNSigmaPrINT16>,
-                            emprimaryelectron::TOFNSigmaEl<emprimaryelectron::TOFNSigmaElINT16>,
-                            emprimaryelectron::TOFNSigmaMu<emprimaryelectron::TOFNSigmaMuINT16>,
-                            emprimaryelectron::TOFNSigmaPi<emprimaryelectron::TOFNSigmaPiINT16>,
-                            emprimaryelectron::TOFNSigmaKa<emprimaryelectron::TOFNSigmaKaINT16>,
-                            emprimaryelectron::TOFNSigmaPr<emprimaryelectron::TOFNSigmaPrINT16>,
-
                             emprimaryelectron::Signed1Pt<track::Pt, emprimaryelectron::Sign>,
                             emprimaryelectron::P<track::Pt, track::Eta>,
                             emprimaryelectron::Px<track::Pt, track::Phi>,
                             emprimaryelectron::Py<track::Pt, track::Phi>,
                             emprimaryelectron::Pz<track::Pt, track::Eta>,
-                            emprimaryelectron::Theta<track::Tgl>,
+                            emprimaryelectron::Tgl<track::Eta>,
                             emprimaryelectron::MeanClusterSizeITS<track::ITSClusterSizes>,
                             emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
                             emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);

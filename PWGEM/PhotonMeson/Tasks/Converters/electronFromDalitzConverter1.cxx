@@ -32,17 +32,6 @@ struct electronFromDalitzConverter1 {
   void process(aod::EMPrimaryElectronsFromDalitz_000 const& tracks)
   {
     for (const auto& track : tracks) {
-      float itsChi2NCl = track.itsChi2NCl() > 0.f ? track.itsChi2NCl() : -299.f;
-      float tpcChi2NCl = track.tpcChi2NCl() > 0.f ? track.tpcChi2NCl() : -299.f;
-      float beta = track.hasTOF() ? track.beta() : -29.f;
-      float tofNSigmaEl = track.hasTOF() ? track.tofNSigmaEl() : -299.f;
-      float tofNSigmaPi = track.hasTOF() ? track.tofNSigmaPi() : -299.f;
-      float tofChi2 = track.hasTOF() ? track.tofChi2() : -299.f;
-
-      float tpcSignal = track.hasTPC() ? track.tpcSignal() : 0.f;
-      float tpcNSigmaEl = track.hasTPC() ? track.tpcNSigmaEl() : -299.f;
-      float tpcNSigmaPi = track.hasTPC() ? track.tpcNSigmaPi() : -299.f;
-
       electron_001(track.collisionId(),
                    track.trackId(),
                    track.sign(),
@@ -58,21 +47,18 @@ struct electronFromDalitzConverter1 {
                    track.tpcNClsFindableMinusFound(),
                    track.tpcNClsFindableMinusCrossedRows(),
                    track.tpcNClsShared(),
-
-                   static_cast<int16_t>(tpcChi2NCl * 1e+2),
+                   track.tpcChi2NCl(),
                    track.tpcInnerParam(),
-                   static_cast<uint16_t>(tpcSignal * 1e+2),
-                   static_cast<int16_t>(tpcNSigmaEl * 1e+2),
-                   static_cast<int16_t>(tpcNSigmaPi * 1e+2),
-                   static_cast<int16_t>(beta * 1e+3),
-                   static_cast<int16_t>(tofNSigmaEl * 1e+2),
-                   static_cast<int16_t>(tofNSigmaPi * 1e+2),
+                   track.tpcSignal(),
+                   track.tpcNSigmaEl(),
+                   track.tpcNSigmaPi(),
+                   track.beta(),
+                   track.tofNSigmaEl(),
                    track.itsClusterSizes(),
-                   static_cast<int16_t>(itsChi2NCl * 1e+2),
-                   static_cast<int16_t>(tofChi2 * 1e+2),
+                   track.itsChi2NCl(),
+                   track.tofChi2(),
                    track.detectorMap(),
-                   track.tgl(),
-                   0);
+                   0.f);
 
     } // end of track loop
   } // end of process

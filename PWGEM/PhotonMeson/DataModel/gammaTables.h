@@ -124,37 +124,11 @@ DECLARE_SOA_COLUMN(Px, px, float);                 //! Px at SV
 DECLARE_SOA_COLUMN(Py, py, float);                 //! Py at SV
 DECLARE_SOA_COLUMN(Pz, pz, float);                 //! Pz at SV
 
-DECLARE_SOA_COLUMN(DcaXYINT16, dcaXYINT16, int16_t); //! -32768 - +32767
-DECLARE_SOA_COLUMN(DcaZINT16, dcaZINT16, int16_t);   //! -32768 - +32767
-
-DECLARE_SOA_COLUMN(XUINT16, xUINT16, uint16_t); //! 0 - +65535
-DECLARE_SOA_COLUMN(YINT16, yINT16, int16_t);    //! 0 - +65535
-DECLARE_SOA_COLUMN(ZINT16, zINT16, int16_t);    //! -32768 - +32767
-
-DECLARE_SOA_COLUMN(TPCSignalUINT16, tpcSignalUINT16, uint16_t);          //! 0 - +65535
-DECLARE_SOA_COLUMN(DeDxTunedMcUINT16, mcTunedTPCSignalUINT16, uint16_t); //! 0 - +65535
-DECLARE_SOA_COLUMN(TPCChi2NClINT16, tpcChi2NClINT16, int16_t);           //! -32768 - +32767
-DECLARE_SOA_COLUMN(ITSChi2NClINT16, itsChi2NClINT16, int16_t);           //! -32768 - +32767
-DECLARE_SOA_COLUMN(TPCNSigmaElINT16, tpcNSigmaElINT16, int16_t);         //! -32768 - +32767
-DECLARE_SOA_COLUMN(TPCNSigmaPiINT16, tpcNSigmaPiINT16, int16_t);         //! -32768 - +32767
-DECLARE_SOA_DYNAMIC_COLUMN(TPCSignal, tpcSignal, [](uint16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-DECLARE_SOA_DYNAMIC_COLUMN(DeDxTunedMc, mcTunedTPCSignal, [](uint16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCChi2NCl, tpcChi2NCl, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-DECLARE_SOA_DYNAMIC_COLUMN(ITSChi2NCl, itsChi2NCl, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaEl, tpcNSigmaEl, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaPi, tpcNSigmaPi, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-
-DECLARE_SOA_DYNAMIC_COLUMN(X, x, [](uint16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-DECLARE_SOA_DYNAMIC_COLUMN(Y, y, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-DECLARE_SOA_DYNAMIC_COLUMN(Z, z, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-
-DECLARE_SOA_DYNAMIC_COLUMN(DcaXY, dcaXY, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-DECLARE_SOA_DYNAMIC_COLUMN(DcaZ, dcaZ, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float px, float py, float pz) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float px, float py, float pz) -> float { return RecoDecay::eta(std::array{px, py, pz}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float px, float py) -> float { return RecoDecay::phi(px, py); });
+DECLARE_SOA_DYNAMIC_COLUMN(Tgl, tgl, [](float px, float py, float pz) -> float { return std::tan(M_PI_2 - 2 * std::atan(std::exp(-RecoDecay::eta(std::array{px, py, pz})))); });
 DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITS, meanClusterSizeITS, [](uint32_t itsClusterSizes) -> float {
   int total_cluster_size = 0, nl = 0;
   for (unsigned int layer = 0; layer < 7; layer++) {
@@ -230,20 +204,20 @@ DECLARE_SOA_TABLE(V0Legs_000, "AOD", "V0LEG", //!
 DECLARE_SOA_TABLE_VERSIONED(V0Legs_001, "AOD", "V0LEG", 1, //!
                             o2::soa::Index<>, v0leg::CollisionId, v0leg::TrackId, v0leg::Sign,
                             v0leg::Px, v0leg::Py, v0leg::Pz,
-                            v0leg::DcaXYINT16, v0leg::DcaZINT16,
+                            track::DcaXY, track::DcaZ,
                             track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,
-                            v0leg::TPCChi2NClINT16, track::TPCInnerParam,
-                            v0leg::TPCSignalUINT16, v0leg::TPCNSigmaElINT16, v0leg::TPCNSigmaPiINT16,
-                            track::ITSClusterSizes, v0leg::ITSChi2NClINT16, track::DetectorMap, v0leg::DeDxTunedMcUINT16,
-                            v0leg::XUINT16, v0leg::YINT16, v0leg::ZINT16, track::Tgl,
+                            track::TPCChi2NCl, track::TPCInnerParam,
+                            track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi,
+                            track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap,
+                            mcpidtpc::DeDxTunedMc,
+                            track::X, track::Y, track::Z,
 
                             // dynamic column
                             v0leg::P<v0leg::Px, v0leg::Py, v0leg::Pz>,
                             v0leg::Pt<v0leg::Px, v0leg::Py>,
                             v0leg::Eta<v0leg::Px, v0leg::Py, v0leg::Pz>,
                             v0leg::Phi<v0leg::Px, v0leg::Py>,
-                            v0leg::DcaXY<v0leg::DcaXYINT16>,
-                            v0leg::DcaZ<v0leg::DcaZINT16>,
+                            v0leg::Tgl<v0leg::Px, v0leg::Py, v0leg::Pz>,
 
                             track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                             track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
@@ -254,16 +228,7 @@ DECLARE_SOA_TABLE_VERSIONED(V0Legs_001, "AOD", "V0LEG", 1, //!
                             track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>, track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
                             v0leg::MeanClusterSizeITS<track::ITSClusterSizes>,
                             v0leg::MeanClusterSizeITSib<track::ITSClusterSizes>,
-                            v0leg::MeanClusterSizeITSob<track::ITSClusterSizes>,
-                            v0leg::TPCSignal<v0leg::TPCSignalUINT16>,
-                            v0leg::DeDxTunedMc<v0leg::DeDxTunedMcUINT16>,
-                            v0leg::TPCChi2NCl<v0leg::TPCChi2NClINT16>,
-                            v0leg::ITSChi2NCl<v0leg::ITSChi2NClINT16>,
-                            v0leg::TPCNSigmaEl<v0leg::TPCNSigmaElINT16>,
-                            v0leg::TPCNSigmaPi<v0leg::TPCNSigmaPiINT16>,
-                            v0leg::X<v0leg::XUINT16>,
-                            v0leg::Y<v0leg::YINT16>,
-                            v0leg::Z<v0leg::ZINT16>);
+                            v0leg::MeanClusterSizeITSob<track::ITSClusterSizes>);
 
 using V0Legs = V0Legs_001;
 
@@ -283,20 +248,6 @@ DECLARE_SOA_TABLE(EMEventsWeight, "AOD", "EMEVENTWEIGHT", //! table contanint th
                   emevent::Weight);
 using EMEventWeight = EMEventsWeight::iterator;
 
-namespace oldv0photonkf
-{
-DECLARE_SOA_COLUMN(MGamma, mGamma, float);             //! invariant mass of dielectron at SV
-DECLARE_SOA_COLUMN(DCAxyToPV, dcaXYtopv, float);       //! DCAxy of V0 to PV
-DECLARE_SOA_COLUMN(DCAzToPV, dcaZtopv, float);         //! DCAz of V0 to PV
-DECLARE_SOA_COLUMN(CosPA, cospa, float);               //!
-DECLARE_SOA_COLUMN(CosPAXY, cospaXY, float);           //!
-DECLARE_SOA_COLUMN(CosPARZ, cospaRZ, float);           //!
-DECLARE_SOA_COLUMN(PCA, pca, float);                   //!
-DECLARE_SOA_COLUMN(Alpha, alpha, float);               //!
-DECLARE_SOA_COLUMN(QtArm, qtarm, float);               //!
-DECLARE_SOA_COLUMN(ChiSquareNDF, chiSquareNDF, float); //! Chi2 / NDF of the reconstructed V0
-} // namespace oldv0photonkf
-
 namespace v0photonkf
 {
 DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);                             //!
@@ -310,17 +261,17 @@ DECLARE_SOA_COLUMN(Vz, vz, float);                                      //! seco
 DECLARE_SOA_COLUMN(Px, px, float);                                      //! px for photon kf
 DECLARE_SOA_COLUMN(Py, py, float);                                      //! py for photon kf
 DECLARE_SOA_COLUMN(Pz, pz, float);                                      //! pz for photon kf
-DECLARE_SOA_COLUMN(MGammaUINT16, mGammaUINT16, uint16_t);               //! invariant mass of dielectron at SV
 
-DECLARE_SOA_COLUMN(DCAxyToPVINT16, dcaXYtopvINT16, int16_t);          //! DCAxy of V0 to PV
-DECLARE_SOA_COLUMN(DCAzToPVINT16, dcaZtopvINT16, int16_t);            //! DCAz of V0 to PV
-DECLARE_SOA_COLUMN(CosPAUINT16, cospaUINT16, uint16_t);               //! cosine of pointing angle in 3D
-DECLARE_SOA_COLUMN(CosPAXYUINT16, cospaXYUINT16, uint16_t);           //! cosine of pointing angle in XY
-DECLARE_SOA_COLUMN(CosPARZUINT16, cospaRZUINT16, uint16_t);           //! cosine of pointing angle in RZ
-DECLARE_SOA_COLUMN(PCAUINT16, pcaUINT16, uint16_t);                   //! distance between 2 legs at point of closest approach
-DECLARE_SOA_COLUMN(AlphaINT16, alphaINT16, int16_t);                  //! longitudinal momentum asymmetry
-DECLARE_SOA_COLUMN(QtArmUINT16, qtarmUINT16, uint16_t);               //! qT
-DECLARE_SOA_COLUMN(ChiSquareNDFUINT16, chiSquareNDFUINT16, uint16_t); //! Chi2 / NDF of the reconstructed V0
+DECLARE_SOA_COLUMN(MGamma, mGamma, float);             //! invariant mass of dielectron at SV
+DECLARE_SOA_COLUMN(DCAxyToPV, dcaXYtopv, float);       //! DCAxy of V0 to PV
+DECLARE_SOA_COLUMN(DCAzToPV, dcaZtopv, float);         //! DCAz of V0 to PV
+DECLARE_SOA_COLUMN(CosPA, cospa, float);               //!
+DECLARE_SOA_COLUMN(CosPAXY, cospaXY, float);           //!
+DECLARE_SOA_COLUMN(CosPARZ, cospaRZ, float);           //!
+DECLARE_SOA_COLUMN(PCA, pca, float);                   //!
+DECLARE_SOA_COLUMN(Alpha, alpha, float);               //!
+DECLARE_SOA_COLUMN(QtArm, qtarm, float);               //!
+DECLARE_SOA_COLUMN(ChiSquareNDF, chiSquareNDF, float); //! Chi2 / NDF of the reconstructed V0
 
 DECLARE_SOA_COLUMN(SigmaPx2, sigmaPx2, float);                 //! error^2 of px in covariant matrix
 DECLARE_SOA_COLUMN(SigmaPy2, sigmaPy2, float);                 //! error^2 of py in covariant matrix
@@ -329,18 +280,6 @@ DECLARE_SOA_COLUMN(SigmaPxPy, sigmaPxPy, float);               //! error of px x
 DECLARE_SOA_COLUMN(SigmaPyPz, sigmaPyPz, float);               //! error of py x pz in covariant matrix
 DECLARE_SOA_COLUMN(SigmaPzPx, sigmaPzPx, float);               //! error of pz x px in covariant matrix
 DECLARE_SOA_COLUMN(PrefilterBitDerived, pfbderived, uint16_t); //!
-
-DECLARE_SOA_DYNAMIC_COLUMN(DCAxyToPV, dcaXYtopv, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-DECLARE_SOA_DYNAMIC_COLUMN(DCAzToPV, dcaZtopv, [](int16_t x) -> float { return static_cast<float>(x) * 1e-2; });
-
-DECLARE_SOA_DYNAMIC_COLUMN(MGamma, mGamma, [](uint16_t x) -> float { return static_cast<float>(x) * 1e-5; });
-DECLARE_SOA_DYNAMIC_COLUMN(CosPA, cospa, [](uint16_t x) -> float { return static_cast<float>(x) * 2e-5; });
-DECLARE_SOA_DYNAMIC_COLUMN(CosPAXY, cospaXY, [](uint16_t x) -> float { return static_cast<float>(x) * 2e-5; });
-DECLARE_SOA_DYNAMIC_COLUMN(CosPARZ, cospaRZ, [](uint16_t x) -> float { return static_cast<float>(x) * 2e-5; });
-DECLARE_SOA_DYNAMIC_COLUMN(PCA, pca, [](uint16_t x) -> float { return static_cast<float>(x) * 1e-4; });
-DECLARE_SOA_DYNAMIC_COLUMN(Alpha, alpha, [](int16_t x) -> float { return static_cast<float>(x) * 1e-4; });
-DECLARE_SOA_DYNAMIC_COLUMN(QtArm, qtarm, [](uint16_t x) -> float { return static_cast<float>(x) * 1e-5; });
-DECLARE_SOA_DYNAMIC_COLUMN(ChiSquareNDF, chiSquareNDF, [](uint16_t x) -> float { return static_cast<float>(x) * 1e-1; });
 
 DECLARE_SOA_DYNAMIC_COLUMN(E, e, [](float px, float py, float pz, float m = 0) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz, m); }); //! energy of v0 photn, mass to be given as argument when getter is called!
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
@@ -353,11 +292,11 @@ DECLARE_SOA_TABLE(V0PhotonsKF_000, "AOD", "V0PHOTONKF", //!
                   o2::soa::Index<>, v0photonkf::CollisionId, v0photonkf::V0Id, v0photonkf::PosTrackId, v0photonkf::NegTrackId,
                   v0photonkf::Vx, v0photonkf::Vy, v0photonkf::Vz,
                   v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz,
-                  oldv0photonkf::MGamma,
-                  oldv0photonkf::DCAxyToPV, oldv0photonkf::DCAzToPV,
-                  oldv0photonkf::CosPA, oldv0photonkf::CosPAXY, oldv0photonkf::CosPARZ, oldv0photonkf::PCA,
-                  oldv0photonkf::Alpha, oldv0photonkf::QtArm,
-                  oldv0photonkf::ChiSquareNDF,
+                  v0photonkf::MGamma,
+                  v0photonkf::DCAxyToPV, v0photonkf::DCAzToPV,
+                  v0photonkf::CosPA, v0photonkf::CosPAXY, v0photonkf::CosPARZ, v0photonkf::PCA,
+                  v0photonkf::Alpha, v0photonkf::QtArm,
+                  v0photonkf::ChiSquareNDF,
 
                   // dynamic column
                   v0photonkf::E<v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz>,
@@ -371,11 +310,11 @@ DECLARE_SOA_TABLE_VERSIONED(V0PhotonsKF_001, "AOD", "V0PHOTONKF", 1, //!
                             o2::soa::Index<>, v0photonkf::CollisionId, v0photonkf::V0Id, v0photonkf::PosTrackId, v0photonkf::NegTrackId,
                             v0photonkf::Vx, v0photonkf::Vy, v0photonkf::Vz,
                             v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz,
-                            v0photonkf::MGammaUINT16,
-                            v0photonkf::DCAxyToPVINT16, v0photonkf::DCAzToPVINT16,
-                            v0photonkf::CosPAUINT16, v0photonkf::CosPAXYUINT16, v0photonkf::CosPARZUINT16, v0photonkf::PCAUINT16,
-                            v0photonkf::AlphaINT16, v0photonkf::QtArmUINT16,
-                            v0photonkf::ChiSquareNDFUINT16,
+                            v0photonkf::MGamma,
+                            v0photonkf::DCAxyToPV, v0photonkf::DCAzToPV,
+                            v0photonkf::CosPA, v0photonkf::CosPAXY, v0photonkf::CosPARZ, v0photonkf::PCA,
+                            v0photonkf::Alpha, v0photonkf::QtArm,
+                            v0photonkf::ChiSquareNDF,
 
                             // dynamic column
                             v0photonkf::E<v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz>,
@@ -383,18 +322,7 @@ DECLARE_SOA_TABLE_VERSIONED(V0PhotonsKF_001, "AOD", "V0PHOTONKF", 1, //!
                             v0photonkf::Eta<v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz>,
                             v0photonkf::Phi<v0photonkf::Px, v0photonkf::Py>,
                             v0photonkf::P<v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz>,
-                            v0photonkf::V0Radius<v0photonkf::Vx, v0photonkf::Vy>,
-
-                            v0photonkf::MGamma<v0photonkf::MGammaUINT16>,
-                            v0photonkf::DCAxyToPV<v0photonkf::DCAxyToPVINT16>,
-                            v0photonkf::DCAzToPV<v0photonkf::DCAzToPVINT16>,
-                            v0photonkf::CosPA<v0photonkf::CosPAUINT16>,
-                            v0photonkf::CosPAXY<v0photonkf::CosPAXYUINT16>,
-                            v0photonkf::CosPARZ<v0photonkf::CosPARZUINT16>,
-                            v0photonkf::PCA<v0photonkf::PCAUINT16>,
-                            v0photonkf::Alpha<v0photonkf::AlphaINT16>,
-                            v0photonkf::QtArm<v0photonkf::QtArmUINT16>,
-                            v0photonkf::ChiSquareNDF<v0photonkf::ChiSquareNDFUINT16>);
+                            v0photonkf::V0Radius<v0photonkf::Vx, v0photonkf::Vy>);
 
 using V0PhotonsKF = V0PhotonsKF_001;
 
@@ -446,20 +374,12 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectronsFromDalitz_001, "AOD", "EMPRIMARYE
                             o2::soa::Index<>, emprimaryelectron::CollisionId,
                             emprimaryelectron::TrackId, emprimaryelectron::Sign,
                             track::Pt, track::Eta, track::Phi, track::DcaXY, track::DcaZ, track::CYY, track::CZY, track::CZZ,
-
-                            // track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,
-                            // track::TPCChi2NCl, track::TPCInnerParam,
-                            // track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi,
-                            // pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaPi,
-                            // track::ITSClusterSizes, track::ITSChi2NCl, track::TOFChi2, track::DetectorMap, track::Tgl,
-
                             track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,
-                            emprimaryelectron::TPCChi2NClINT16, track::TPCInnerParam,
-                            emprimaryelectron::TPCSignalUINT16, emprimaryelectron::TPCNSigmaElINT16, emprimaryelectron::TPCNSigmaPiINT16,
-                            emprimaryelectron::BetaINT16, emprimaryelectron::TOFNSigmaElINT16, emprimaryelectron::TOFNSigmaPiINT16,
-                            track::ITSClusterSizes,
-                            emprimaryelectron::ITSChi2NClINT16, emprimaryelectron::TOFChi2INT16, track::DetectorMap, track::Tgl,
-                            emprimaryelectron::DeDxTunedMcUINT16,
+                            track::TPCChi2NCl, track::TPCInnerParam,
+                            track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi,
+                            pidtofbeta::Beta, pidtof::TOFNSigmaEl,
+                            track::ITSClusterSizes, track::ITSChi2NCl, track::TOFChi2, track::DetectorMap,
+                            mcpidtpc::DeDxTunedMc,
 
                             // dynamic column
                             track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
@@ -468,26 +388,14 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectronsFromDalitz_001, "AOD", "EMPRIMARYE
                             track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                             track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
                             track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
-                            track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>,
-                            track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
-
-                            emprimaryelectron::TPCSignal<emprimaryelectron::TPCSignalUINT16>,
-                            emprimaryelectron::TPCChi2NCl<emprimaryelectron::TPCChi2NClINT16>,
-                            emprimaryelectron::ITSChi2NCl<emprimaryelectron::ITSChi2NClINT16>,
-                            emprimaryelectron::DeDxTunedMc<emprimaryelectron::DeDxTunedMcUINT16>,
-                            emprimaryelectron::Beta<emprimaryelectron::BetaINT16>,
-                            emprimaryelectron::TOFChi2<emprimaryelectron::TOFChi2INT16>,
-
-                            emprimaryelectron::TPCNSigmaEl<emprimaryelectron::TPCNSigmaElINT16>,
-                            emprimaryelectron::TPCNSigmaPi<emprimaryelectron::TPCNSigmaPiINT16>,
-                            emprimaryelectron::TOFNSigmaEl<emprimaryelectron::TOFNSigmaElINT16>,
-                            emprimaryelectron::TOFNSigmaPi<emprimaryelectron::TOFNSigmaPiINT16>,
+                            track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>, track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
 
                             emprimaryelectron::Signed1Pt<track::Pt, emprimaryelectron::Sign>,
                             emprimaryelectron::P<track::Pt, track::Eta>,
                             emprimaryelectron::Px<track::Pt, track::Phi>,
                             emprimaryelectron::Py<track::Pt, track::Phi>,
                             emprimaryelectron::Pz<track::Pt, track::Eta>,
+                            emprimaryelectron::Tgl<track::Eta>,
                             emprimaryelectron::MeanClusterSizeITS<track::ITSClusterSizes>,
                             emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
                             emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);

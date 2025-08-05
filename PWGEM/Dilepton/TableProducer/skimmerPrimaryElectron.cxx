@@ -51,8 +51,8 @@ using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>;
 using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
 
 using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
-                           aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                           aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
+                           aod::pidTPCFullEl, /*aod::pidTPCFullMu,*/ aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                           aod::pidTOFFullEl, /*aod::pidTOFFullMu,*/ aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 using MyTrack = MyTracks::iterator;
 using MyTracksMC = soa::Join<MyTracks, aod::McTrackLabels, aod::mcTPCTuneOnData>;
 using MyTrackMC = MyTracksMC::iterator;
@@ -161,13 +161,13 @@ struct skimmerPrimaryElectron {
       fRegistry.add("Track/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
       fRegistry.add("Track/hTPCdEdxMC", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
       fRegistry.add("Track/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-      fRegistry.add("Track/hTPCNsigmaMu", "TPC n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+      // fRegistry.add("Track/hTPCNsigmaMu", "TPC n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTPCNsigmaKa", "TPC n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTPCNsigmaPr", "TPC n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTOFbeta", "TOF beta;p_{pv} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {240, 0, 1.2}}, false);
       fRegistry.add("Track/hTOFNsigmaEl", "TOF n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-      fRegistry.add("Track/hTOFNsigmaMu", "TOF n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+      // fRegistry.add("Track/hTOFNsigmaMu", "TOF n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTOFNsigmaPi", "TOF n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTOFNsigmaKa", "TOF n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTOFNsigmaPr", "TOF n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
@@ -367,43 +367,6 @@ struct skimmerPrimaryElectron {
       }
     }
 
-    // these are necessary cuts for converting float into int16_t.
-    if (track.hasTPC()) {
-      if (std::fabs(track.tpcNSigmaEl()) > 300.f) {
-        return false;
-      }
-      if (std::fabs(track.tpcNSigmaPi()) > 300.f) {
-        return false;
-      }
-      if (std::fabs(track.tpcNSigmaKa()) > 300.f) {
-        return false;
-      }
-      if (std::fabs(track.tpcNSigmaPr()) > 300.f) {
-        return false;
-      }
-      if (track.tpcSignal() > 600.f) {
-        return false;
-      }
-      if constexpr (isMC) {
-        if (track.mcTunedTPCSignal() > 600.f) {
-          return false;
-        }
-      }
-    }
-    if (track.hasTOF()) {
-      if (std::fabs(track.tofNSigmaEl()) > 300.f) {
-        return false;
-      }
-      if (std::fabs(track.tofNSigmaPi()) > 300.f) {
-        return false;
-      }
-      if (std::fabs(track.tofNSigmaKa()) > 300.f) {
-        return false;
-      }
-      if (std::fabs(track.tofNSigmaPr()) > 300.f) {
-        return false;
-      }
-    }
     return true;
   }
 
@@ -491,37 +454,20 @@ struct skimmerPrimaryElectron {
       bool isAssociatedToMPC = collision.globalIndex() == track.collisionId();
       float mcTunedTPCSignal = 0.f;
       if constexpr (isMC) {
-        if (track.hasTPC()) {
-          mcTunedTPCSignal = track.mcTunedTPCSignal();
-        }
+        mcTunedTPCSignal = track.mcTunedTPCSignal();
       }
-
-      float itsChi2NCl = (track.hasITS() && track.itsChi2NCl() > 0.f) ? track.itsChi2NCl() : -299.f;
-      float tpcChi2NCl = (track.hasTPC() && track.tpcChi2NCl() > 0.f) ? track.tpcChi2NCl() : -299.f;
-      float beta = track.hasTOF() ? track.beta() : -29.f;
-      float tofNSigmaEl = track.hasTOF() ? track.tofNSigmaEl() : -299.f;
-      float tofNSigmaPi = track.hasTOF() ? track.tofNSigmaPi() : -299.f;
-      float tofNSigmaKa = track.hasTOF() ? track.tofNSigmaKa() : -299.f;
-      float tofNSigmaPr = track.hasTOF() ? track.tofNSigmaPr() : -299.f;
-      float tofChi2 = track.hasTOF() ? track.tofChi2() : -299.f;
-
-      float tpcSignal = track.hasTPC() ? track.tpcSignal() : 0.f;
-      float tpcNSigmaEl = track.hasTPC() ? track.tpcNSigmaEl() : -299.f;
-      float tpcNSigmaPi = track.hasTPC() ? track.tpcNSigmaPi() : -299.f;
-      float tpcNSigmaKa = track.hasTPC() ? track.tpcNSigmaKa() : -299.f;
-      float tpcNSigmaPr = track.hasTPC() ? track.tpcNSigmaPr() : -299.f;
 
       emprimaryelectrons(collision.globalIndex(), track.globalIndex(), track.sign(),
                          pt_recalc, eta_recalc, phi_recalc,
                          dcaXY, dcaZ, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
                          track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
-                         static_cast<int16_t>(tpcChi2NCl * 1e+2), track.tpcInnerParam(),
-                         static_cast<uint16_t>(tpcSignal * 1e+2), static_cast<int16_t>(tpcNSigmaEl * 1e+2), static_cast<int16_t>(tpcNSigmaPi * 1e+2), static_cast<int16_t>(tpcNSigmaKa * 1e+2), static_cast<int16_t>(tpcNSigmaPr * 1e+2),
-                         static_cast<int16_t>(beta * 1e+3), static_cast<int16_t>(tofNSigmaEl * 1e+2), static_cast<int16_t>(tofNSigmaPi * 1e+2), static_cast<int16_t>(tofNSigmaKa * 1e+2), static_cast<int16_t>(tofNSigmaPr * 1e+2),
+                         track.tpcChi2NCl(), track.tpcInnerParam(),
+                         track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                         track.beta(), track.tofNSigmaEl(), /*track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),*/
                          track.itsClusterSizes(),
-                         static_cast<int16_t>(itsChi2NCl * 1e+2), static_cast<int16_t>(tofChi2 * 1e+2), track.detectorMap(),
-                         trackParCov.getTgl(),
-                         isAssociatedToMPC, false, 1.f, static_cast<uint16_t>(mcTunedTPCSignal * 1e+2));
+                         track.itsChi2NCl(), track.tofChi2(), track.detectorMap(),
+                         // trackParCov.getTgl(),
+                         isAssociatedToMPC, false, 1.f, mcTunedTPCSignal);
 
       emprimaryelectronscov(
         trackParCov.getX(),
@@ -597,13 +543,13 @@ struct skimmerPrimaryElectron {
         fRegistry.fill(HIST("Track/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
         fRegistry.fill(HIST("Track/hTPCdEdxMC"), track.tpcInnerParam(), mcTunedTPCSignal);
         fRegistry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
-        fRegistry.fill(HIST("Track/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
+        // fRegistry.fill(HIST("Track/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
         fRegistry.fill(HIST("Track/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
         fRegistry.fill(HIST("Track/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
         fRegistry.fill(HIST("Track/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
         fRegistry.fill(HIST("Track/hTOFbeta"), trackParCov.getP(), track.beta());
         fRegistry.fill(HIST("Track/hTOFNsigmaEl"), track.tpcInnerParam(), track.tofNSigmaEl());
-        fRegistry.fill(HIST("Track/hTOFNsigmaMu"), track.tpcInnerParam(), track.tofNSigmaMu());
+        // fRegistry.fill(HIST("Track/hTOFNsigmaMu"), track.tpcInnerParam(), track.tofNSigmaMu());
         fRegistry.fill(HIST("Track/hTOFNsigmaPi"), track.tpcInnerParam(), track.tofNSigmaPi());
         fRegistry.fill(HIST("Track/hTOFNsigmaKa"), track.tpcInnerParam(), track.tofNSigmaKa());
         fRegistry.fill(HIST("Track/hTOFNsigmaPr"), track.tpcInnerParam(), track.tofNSigmaPr());

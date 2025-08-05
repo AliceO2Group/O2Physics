@@ -44,26 +44,19 @@ struct pcmConverter1 {
         v0.px(),
         v0.py(),
         v0.pz(),
-        static_cast<uint16_t>(v0.mGamma() * 1e+5),
-        static_cast<int16_t>(v0.dcaXYtopv() * 1e+2),
-        static_cast<int16_t>(v0.dcaZtopv() * 1e+2),
-        static_cast<uint16_t>(v0.cospa() * 1e+4),
-        static_cast<uint16_t>(v0.cospaXY() * 1e+4),
-        static_cast<uint16_t>(v0.cospaRZ() * 1e+4),
-        static_cast<uint16_t>(v0.pca() * 1e+4),
-        static_cast<int16_t>(v0.alpha() * 1e+4),
-        static_cast<uint16_t>(v0.qtarm() * 1e+5),
-        static_cast<uint16_t>(v0.chiSquareNDF() * 1e+2));
+        v0.mGamma(),
+        v0.dcaXYtopv(),
+        v0.dcaZtopv(),
+        v0.cospa(),
+        v0.cospaXY(),
+        v0.cospaRZ(),
+        v0.pca(),
+        v0.alpha(),
+        v0.qtarm(),
+        v0.chiSquareNDF());
     } // end of v0 loop
 
     for (auto& v0leg : v0legs) {
-
-      float itsChi2NCl = (v0leg.hasITS() && v0leg.itsChi2NCl() > 0.f) ? v0leg.itsChi2NCl() : -299.f;
-      float tpcChi2NCl = (v0leg.hasTPC() && v0leg.tpcChi2NCl() > 0.f) ? v0leg.tpcChi2NCl() : -299.f;
-      float tpcSignal = v0leg.hasTPC() ? v0leg.tpcSignal() : 0.f;
-      float tpcNSigmaEl = v0leg.hasTPC() ? v0leg.tpcNSigmaEl() : -299.f;
-      float tpcNSigmaPi = v0leg.hasTPC() ? v0leg.tpcNSigmaPi() : -299.f;
-
       v0leg_001(
         v0leg.collisionId(),
         v0leg.trackId(),
@@ -71,25 +64,24 @@ struct pcmConverter1 {
         v0leg.px(),
         v0leg.py(),
         v0leg.pz(),
-        static_cast<int16_t>(v0leg.dcaXY() * 1e+2),
-        static_cast<int16_t>(v0leg.dcaZ() * 1e+2),
+        v0leg.dcaXY(),
+        v0leg.dcaZ(),
         v0leg.tpcNClsFindable(),
         v0leg.tpcNClsFindableMinusFound(),
         v0leg.tpcNClsFindableMinusCrossedRows(),
         v0leg.tpcNClsShared(),
-        static_cast<int16_t>(tpcChi2NCl * 1e+2),
+        v0leg.tpcChi2NCl(),
         v0leg.tpcInnerParam(),
-        static_cast<uint16_t>(tpcSignal * 1e+2),
-        static_cast<int16_t>(tpcNSigmaEl * 1e+2),
-        static_cast<int16_t>(tpcNSigmaPi * 1e+2),
+        v0leg.tpcSignal(),
+        v0leg.tpcNSigmaEl(),
+        v0leg.tpcNSigmaPi(),
         v0leg.itsClusterSizes(),
-        static_cast<int16_t>(itsChi2NCl * 1e+2),
+        v0leg.itsChi2NCl(),
         v0leg.detectorMap(),
-        static_cast<uint16_t>(0),
-        static_cast<uint16_t>(v0leg.x() * 1e+2),
-        static_cast<int16_t>(v0leg.y() * 1e+2),
-        static_cast<int16_t>(v0leg.z() * 1e+2),
-        v0leg.tgl());
+        0.f,
+        v0leg.x(),
+        v0leg.y(),
+        v0leg.z());
     } // end of v0leg loop
   } // end of process
 };
