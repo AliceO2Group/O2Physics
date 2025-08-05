@@ -556,8 +556,7 @@ DECLARE_SOA_TABLE(HfRedSoftPiPid, "AOD", "HFREDSOFTPIPID",
                   hf_track_vars_reduced::HasTOF,
                   hf_track_vars_reduced::HasTPC,
                   hf_cand_dstar::TPCTOFNSigmaPiSoftPi<hf_cand_dstar::TPCNSigmaPiSoftPi, hf_cand_dstar::TOFNSigmaPiSoftPi>,
-                  hf_cand_dstar::TPCTOFNSigmaKaSoftPi<hf_cand_dstar::TPCNSigmaKaSoftPi, hf_cand_dstar::TOFNSigmaKaSoftPi>
-)
+                  hf_cand_dstar::TPCTOFNSigmaKaSoftPi<hf_cand_dstar::TPCNSigmaKaSoftPi, hf_cand_dstar::TOFNSigmaKaSoftPi>)
 
 namespace hf_track_index_reduced
 {
@@ -568,7 +567,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(SoftPi, softPi, int, HfRedSoftPiBases, ""); //! Re
 // to call DECLARE_SOA_INDEX_COLUMN_FULL later on
 DECLARE_SOA_TABLE(HfRedDStars, "AOD", "HFREDDSTAR", //! Table with 2prong candidate information for reduced workflow
                   o2::soa::Index<>,
-                  hf_track_index_reduced::Prong0Id, hf_track_index_reduced::Prong1Id, hf_track_index_reduced::Prong2Id, 
+                  hf_track_index_reduced::Prong0Id, hf_track_index_reduced::Prong1Id, hf_track_index_reduced::Prong2Id,
                   hf_track_index_reduced::SoftPiId, hf_track_index_reduced::HfRedCollisionId,
                   HFTRACKPAR_COLUMNS,
                   hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex,
@@ -767,7 +766,7 @@ namespace hf_cand_b0_reduced
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3Prongs, "_0");    //! Prong0 index
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1"); //! Prong1 index
-DECLARE_SOA_INDEX_COLUMN_FULL(ProngDStar, prongDStar, int, HfRedDStars, ""); //! ProngDStar index
+DECLARE_SOA_INDEX_COLUMN_FULL(ProngDStar, prongDStar, int, HfRedDStars, "");     //! ProngDStar index
 DECLARE_SOA_INDEX_COLUMN_FULL(ProngSoftPi, prongSoftPi, int, HfRedB0SoftPi, ""); //! ProngSoftPi index
 DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);             //! Bkg ML score of the D daughter
 DECLARE_SOA_COLUMN(Prong0MlScorePrompt, prong0MlScorePrompt, float);       //! Prompt ML score of the D daughter

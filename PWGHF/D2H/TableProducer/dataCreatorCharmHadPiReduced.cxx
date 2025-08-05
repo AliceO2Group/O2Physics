@@ -1412,7 +1412,7 @@ struct HfDataCreatorCharmHadPiReduced {
             tables.hfCand2ProngMl(mlScores[0], mlScores[1], mlScores[2], mlScores[3], mlScores[4], mlScores[5]);
           }
         } else if constexpr (decChannel == DecayChannel::B0ToDstarPi) {
-          tables.hfCandDStar(charmHadDauTracks[0].globalIndex(), charmHadDauTracks[1].globalIndex(), charmHadDauTracks[2].globalIndex(), 
+          tables.hfCandDStar(charmHadDauTracks[0].globalIndex(), charmHadDauTracks[1].globalIndex(), charmHadDauTracks[2].globalIndex(),
                              indexHfCandCharm, indexHfReducedCollision,
                              trackParCovCharmHad.getX(), trackParCovCharmHad.getAlpha(),
                              trackParCovCharmHad.getY(), trackParCovCharmHad.getZ(), trackParCovCharmHad.getSnp(),

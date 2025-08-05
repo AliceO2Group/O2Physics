@@ -202,7 +202,7 @@ struct HfTaskB0Reduced {
 
   void init(InitContext&)
   {
-    std::array<bool, 6> processFuncData{doprocessDataDplusPi, doprocessDataDplusPiWithDmesMl, doprocessDataDplusPiWithB0Ml, 
+    std::array<bool, 6> processFuncData{doprocessDataDplusPi, doprocessDataDplusPiWithDmesMl, doprocessDataDplusPiWithB0Ml,
                                         doprocessDataDstarPi, doprocessDataDstarPiWithDmesMl};
     if ((std::accumulate(processFuncData.begin(), processFuncData.end(), 0)) > 1) {
       LOGP(fatal, "Only one process function for data can be enabled at a time.");
@@ -228,9 +228,9 @@ struct HfTaskB0Reduced {
     const AxisSpec axisPtPi{100, 0.f, 10.f};
 
     std::string dMesSpecie{""};
-    std::array<bool, 9> processFuncDplusPi = {doprocessDataDplusPi, doprocessDataDplusPiWithDmesMl, doprocessDataDplusPiWithB0Ml, 
-                                              doprocessMcDplusPi, doprocessMcDplusPiWithDecayTypeCheck, doprocessMcDplusPiWithDmesMl, 
-                                              doprocessMcDplusPiWithDmesMlAndDecayTypeCheck, doprocessMcDplusPiWithB0Ml, 
+    std::array<bool, 9> processFuncDplusPi = {doprocessDataDplusPi, doprocessDataDplusPiWithDmesMl, doprocessDataDplusPiWithB0Ml,
+                                              doprocessMcDplusPi, doprocessMcDplusPiWithDecayTypeCheck, doprocessMcDplusPiWithDmesMl,
+                                              doprocessMcDplusPiWithDmesMlAndDecayTypeCheck, doprocessMcDplusPiWithB0Ml,
                                               doprocessMcDplusPiWithB0MlAndDecayTypeCheck};
     if ((std::accumulate(processFuncDplusPi.begin(), processFuncDplusPi.end(), 0)) > 1) {
       dMesSpecie += "D^{#minus}";

@@ -120,7 +120,6 @@ struct HfCandidateCreatorB0Reduced {
     df3.setUseAbsDCA(useAbsDCA);
     df3.setWeightedFinalPCA(useWeightedFinalPCA);
 
-
     // histograms
     if (doprocessDataDplusPi || doprocessDataDplusPiWithDmesMl) {
       registry.add("hMassB0ToDPi", "2-prong candidates;inv. mass (B^{0} #rightarrow D^{#minus}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#minus}#pi^{#plus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 3., 8.}}});
@@ -145,10 +144,10 @@ struct HfCandidateCreatorB0Reduced {
   /// \param invMass2DPiMax maximum B0 invariant-mass
   template <bool withDmesMl, typename Cands, typename Pions, typename Coll>
   void runCandidateCreationDStar(Coll const& collision,
-                            Cands const& candsDThisColl,
-                            Pions const& tracksPionThisCollision,
-                            const float& invMass2DPiMin,
-                            const float& invMass2DPiMax)
+                                 Cands const& candsDThisColl,
+                                 Pions const& tracksPionThisCollision,
+                                 const float& invMass2DPiMin,
+                                 const float& invMass2DPiMax)
   {
     auto primaryVertex = getPrimaryVertex(collision);
     auto covMatrixPV = primaryVertex.getCov();
@@ -164,7 +163,7 @@ struct HfCandidateCreatorB0Reduced {
       std::array<float, 3> pVecSoftPi = softPi.pVector();
       auto trackParCovSoftPi = getTrackParCov(softPi);
       std::array<float, 3> pVecD = RecoDecay::sumOfVec(pVecD0, pVecSoftPi);
-      
+
       for (const auto& trackPion : tracksPionThisCollision) {
         // this track is among daughters
         if (trackPion.trackId() == candD.prong0Id() || trackPion.trackId() == candD.prong1Id() || trackPion.trackId() == candD.prong2Id()) {
@@ -173,7 +172,7 @@ struct HfCandidateCreatorB0Reduced {
 
         auto trackParCovPi = getTrackParCov(trackPion);
         std::array<float, 3> pVecPion = trackPion.pVector();
-        
+
         // compute invariant mass square and apply selection
         auto invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecSoftPi, pVecPion}, std::array{massDstar, massPi, massPi});
         if ((invMass2DPi < invMass2DPiMin) || (invMass2DPi > invMass2DPiMax)) {

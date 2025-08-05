@@ -2240,7 +2240,7 @@ DECLARE_SOA_TABLE(HfCandB0Base, "AOD", "HFCANDB0BASE",
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(HfCandB0Ext, HfCandB0Base, "HFCANDB0EXT",
                                 hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz);
-                                
+
 DECLARE_SOA_TABLE(HfCandB0Prongs, "AOD", "HFCANDB0PRONGS",
                   hf_cand_b0::Prong0Id, hf_track_index::Prong1Id);
 
