@@ -316,30 +316,15 @@ struct skimmerPrimaryElectronFromDalitzEE {
     float mcTunedTPCSignal = 0.f;
     if constexpr (isMC) {
       mcTunedTPCSignal = track.mcTunedTPCSignal();
-      if (track.hasTPC()) {
-        mcTunedTPCSignal = track.mcTunedTPCSignal();
-      }
     }
-
-    float itsChi2NCl = (track.hasITS() && track.itsChi2NCl() > 0.f) ? track.itsChi2NCl() : -299.f;
-    float tpcChi2NCl = (track.hasTPC() && track.tpcChi2NCl() > 0.f) ? track.tpcChi2NCl() : -299.f;
-    float beta = track.hasTOF() ? track.beta() : -29.f;
-    float tofNSigmaEl = track.hasTOF() ? track.tofNSigmaEl() : -299.f;
-    float tofNSigmaPi = track.hasTOF() ? track.tofNSigmaPi() : -299.f;
-    float tofChi2 = track.hasTOF() ? track.tofChi2() : -299.f;
-
-    float tpcSignal = track.hasTPC() ? track.tpcSignal() : 0.f;
-    float tpcNSigmaEl = track.hasTPC() ? track.tpcNSigmaEl() : -299.f;
-    float tpcNSigmaPi = track.hasTPC() ? track.tpcNSigmaPi() : -299.f;
 
     emprimaryelectrons(collision.globalIndex(), track.globalIndex(), track.sign(),
                        track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), track.cYY(), track.cZY(), track.cZZ(),
                        track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
-
-                       static_cast<int16_t>(tpcChi2NCl * 1e+2), track.tpcInnerParam(),
-                       static_cast<uint16_t>(tpcSignal * 1e+2), static_cast<int16_t>(tpcNSigmaEl * 1e+2), static_cast<int16_t>(tpcNSigmaPi * 1e+2),
-                       static_cast<int16_t>(beta * 1e+3), static_cast<int16_t>(tofNSigmaEl * 1e+2), static_cast<int16_t>(tofNSigmaPi * 1e+2),
-                       track.itsClusterSizes(), static_cast<int16_t>(itsChi2NCl * 1e+2), static_cast<int16_t>(tofChi2 * 1e+2), track.detectorMap(), track.tgl(), static_cast<uint16_t>(mcTunedTPCSignal * 1e+2));
+                       track.tpcChi2NCl(), track.tpcInnerParam(),
+                       track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaPi(),
+                       track.beta(), track.tofNSigmaEl(),
+                       track.itsClusterSizes(), track.itsChi2NCl(), track.tofChi2(), track.detectorMap(), mcTunedTPCSignal);
   }
 
   template <bool isMC, typename TTrack>
@@ -348,9 +333,6 @@ struct skimmerPrimaryElectronFromDalitzEE {
     float mcTunedTPCSignal = 0.f;
     if constexpr (isMC) {
       mcTunedTPCSignal = track.mcTunedTPCSignal();
-      if (track.hasTPC()) {
-        mcTunedTPCSignal = track.mcTunedTPCSignal();
-      }
     }
 
     fRegistry.fill(HIST("Track/hPt"), track.pt());
