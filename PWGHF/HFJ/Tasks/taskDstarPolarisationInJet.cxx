@@ -59,7 +59,7 @@ enum DecayChannel : uint8_t {
 } // namespace charm_polarisation
 } // namespace o2::aod
 
-struct HfTaskPolarisationDstarInJet {
+struct HfTaskDstarPolarisationInJet {
 
   float massPi{0.f};
   float massProton{0.f};
@@ -846,7 +846,7 @@ struct HfTaskPolarisationDstarInJet {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskPolarisationDstarInJet, processDstar, "Process Dstar candidates without ML", true);
+  PROCESS_SWITCH(HfTaskDstarPolarisationInJet, processDstar, "Process Dstar candidates without ML", true);
 
   // Dstar with ML cuts
   void processDstarWithMl(aod::JetCollisions const& collisions,
@@ -870,7 +870,7 @@ struct HfTaskPolarisationDstarInJet {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskPolarisationDstarInJet, processDstarWithMl, "Process Dstar candidates with ML", false);
+  PROCESS_SWITCH(HfTaskDstarPolarisationInJet, processDstarWithMl, "Process Dstar candidates with ML", false);
 
   // Dstar in MC with rectangular cuts
   void processDstarMc(aod::JetMcCollisions const& mcCollisions,
@@ -894,7 +894,7 @@ struct HfTaskPolarisationDstarInJet {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskPolarisationDstarInJet, processDstarMc, "Process Dstar candidates in MC without ML", false);
+  PROCESS_SWITCH(HfTaskDstarPolarisationInJet, processDstarMc, "Process Dstar candidates in MC without ML", false);
 
   // Dstar in MC with ML cuts
   void processDstarMcWithMl(aod::JetMcCollisions const& mcCollisions,
@@ -917,10 +917,10 @@ struct HfTaskPolarisationDstarInJet {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskPolarisationDstarInJet, processDstarMcWithMl, "Process Dstar candidates in MC with ML", false);
+  PROCESS_SWITCH(HfTaskDstarPolarisationInJet, processDstarMcWithMl, "Process Dstar candidates in MC with ML", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfTaskPolarisationDstarInJet>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskDstarPolarisationInJet>(cfgc)};
 }
