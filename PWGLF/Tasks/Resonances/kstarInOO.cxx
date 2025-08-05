@@ -41,12 +41,12 @@
 
 #include <RtypesCore.h>
 
+#include <iostream>
 #include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
-#include <iostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -60,7 +60,7 @@ using namespace o2::framework::expressions;
 struct kstarInOO {
   SliceCache cache;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
-  HistogramRegistry OOhistos{"OOhistos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   //==================================
   //||
@@ -125,42 +125,42 @@ struct kstarInOO {
     const AxisSpec MinvAxis = {cfgMinvNBins, cfgMinvMin, cfgMinvMax};
 
     if (cfgEventCutQA) {
-      OOhistos.add("hPosZ_BC", "hPosZ_Bc", kTH1F, {{100, 0.0, 15.0}});
-      OOhistos.add("hPosZ_AC", "hPosZ_AC", kTH1F, {{100, 0.0, 15.0}});
+      histos.add("hPosZ_BC", "hPosZ_Bc", kTH1F, {{100, 0.0, 15.0}});
+      histos.add("hPosZ_AC", "hPosZ_AC", kTH1F, {{100, 0.0, 15.0}});
     }
 
     if (cfgTrackCutQA) {
-      // OOhistos.add("h_rawpT", "h_rawpT", kTH1F, {{1000, 0.0, 10.0}});
-      // OOhistos.add("h_rawpT_Kaon", "h_rawpT_Kaon", kTH1F, {{1000, 0.0, 10.0}});
-      // OOhistos.add("h_rawpT_Pion", "h_rawpT_Pion", kTH1F, {{1000, 0.0, 10.0}});
-      // OOhistos.add("h_eta", "h_eta", kTH1F, {axisEta});
-      // OOhistos.add("h_phi", "h_phi", kTH1F, {axisPhi});
+      // histos.add("h_rawpT", "h_rawpT", kTH1F, {{1000, 0.0, 10.0}});
+      // histos.add("h_rawpT_Kaon", "h_rawpT_Kaon", kTH1F, {{1000, 0.0, 10.0}});
+      // histos.add("h_rawpT_Pion", "h_rawpT_Pion", kTH1F, {{1000, 0.0, 10.0}});
+      // histos.add("h_eta", "h_eta", kTH1F, {axisEta});
+      // histos.add("h_phi", "h_phi", kTH1F, {axisPhi});
 
-      OOhistos.add("QA_nSigma_pion_TPC", "QA_nSigma_pion_TPC", {HistType::kTH2F, {PtAxis, PIDAxis}});
-      OOhistos.add("QA_nSigma_pion_TOF", "QA_nSigma_pion_TOF", {HistType::kTH2F, {PtAxis, PIDAxis}});
-      OOhistos.add("QA_pion_TPC_TOF", "QA_pion_TPC_TOF", {HistType::kTH2F, {PIDAxis, PIDAxis}});
-      OOhistos.add("QA_nSigma_kaon_TPC_BC", "QA_nSigma_kaon_TPC_BC", {HistType::kTH2F, {PtAxis, PIDAxis}});
-      OOhistos.add("QA_nSigma_kaon_TOF_BC", "QA_nSigma_kaon_TOF_BC", {HistType::kTH2F, {PtAxis, PIDAxis}});
-      OOhistos.add("QA_kaon_TPC_TOF_BC", "QA_kaon_TPC_TOF_BC", {HistType::kTH2F, {PIDAxis, PIDAxis}});
+      histos.add("QA_nSigma_pion_TPC", "QA_nSigma_pion_TPC", {HistType::kTH2F, {PtAxis, PIDAxis}});
+      histos.add("QA_nSigma_pion_TOF", "QA_nSigma_pion_TOF", {HistType::kTH2F, {PtAxis, PIDAxis}});
+      histos.add("QA_pion_TPC_TOF", "QA_pion_TPC_TOF", {HistType::kTH2F, {PIDAxis, PIDAxis}});
+      histos.add("QA_nSigma_kaon_TPC_BC", "QA_nSigma_kaon_TPC_BC", {HistType::kTH2F, {PtAxis, PIDAxis}});
+      histos.add("QA_nSigma_kaon_TOF_BC", "QA_nSigma_kaon_TOF_BC", {HistType::kTH2F, {PtAxis, PIDAxis}});
+      histos.add("QA_kaon_TPC_TOF_BC", "QA_kaon_TPC_TOF_BC", {HistType::kTH2F, {PIDAxis, PIDAxis}});
 
-      OOhistos.add("QA_nSigma_kaon_TPC_AC", "QA_nSigma_kaon_TPC_AC", {HistType::kTH2F, {PtAxis, PIDAxis}});
-      OOhistos.add("QA_nSigma_kaon_TOF_AC", "QA_nSigma_kaon_TOF_AC", {HistType::kTH2F, {PtAxis, PIDAxis}});
-      OOhistos.add("QA_kaon_TPC_TOF_AC", "QA_kaon_TPC_TOF_AC", {HistType::kTH2F, {PIDAxis, PIDAxis}});
+      histos.add("QA_nSigma_kaon_TPC_AC", "QA_nSigma_kaon_TPC_AC", {HistType::kTH2F, {PtAxis, PIDAxis}});
+      histos.add("QA_nSigma_kaon_TOF_AC", "QA_nSigma_kaon_TOF_AC", {HistType::kTH2F, {PtAxis, PIDAxis}});
+      histos.add("QA_kaon_TPC_TOF_AC", "QA_kaon_TPC_TOF_AC", {HistType::kTH2F, {PIDAxis, PIDAxis}});
     }
 
     // MC histos
-    OOhistos.add("hMC_USS", "hMC_USS", kTHnSparseF, {cfgCentAxis, PtAxis, MinvAxis});
-    OOhistos.add("hMC_LSS", "hMC_LSS", kTHnSparseF, {cfgCentAxis, PtAxis, MinvAxis});
-    OOhistos.add("hMC_USS_Mix", "hMC_USS_Mix", kTHnSparseF, {cfgCentAxis, PtAxis, MinvAxis});
-    OOhistos.add("hMC_LSS_Mix", "hMC_LSS_Mix", kTHnSparseF, {cfgCentAxis, PtAxis, MinvAxis});
+    histos.add("hMC_USS", "hMC_USS", kTHnSparseF, {cfgCentAxis, PtAxis, MinvAxis});
+    histos.add("hMC_LSS", "hMC_LSS", kTHnSparseF, {cfgCentAxis, PtAxis, MinvAxis});
+    histos.add("hMC_USS_Mix", "hMC_USS_Mix", kTHnSparseF, {cfgCentAxis, PtAxis, MinvAxis});
+    histos.add("hMC_LSS_Mix", "hMC_LSS_Mix", kTHnSparseF, {cfgCentAxis, PtAxis, MinvAxis});
 
-    // OOhistos.add("hMC_pt_Pion", "hMC_pt_Pion", kTH1F, {PtAxis});
-    // OOhistos.add("hMC_pt_Kaon", "hMC_pt_Kaon", kTH1F, {PtAxis});
-    // OOhistos.add("hMC_pt_Proton", "hMC_pt_Proton", kTH1F, {PtAxis});
+    // histos.add("hMC_pt_Pion", "hMC_pt_Pion", kTH1F, {PtAxis});
+    // histos.add("hMC_pt_Kaon", "hMC_pt_Kaon", kTH1F, {PtAxis});
+    // histos.add("hMC_pt_Proton", "hMC_pt_Proton", kTH1F, {PtAxis});
 
     // Event Histograms
-    OOhistos.add("nEvents_MC", "nEvents_MC", kTH1F, {{4, 0.0, 4.0}});
-    OOhistos.add("nEvents_MC_Mix", "nEvents_MC_Mix", kTH1F, {{4, 0.0, 4.0}});
+    histos.add("nEvents_MC", "nEvents_MC", kTH1F, {{4, 0.0, 4.0}});
+    histos.add("nEvents_MC_Mix", "nEvents_MC_Mix", kTH1F, {{4, 0.0, 4.0}});
 
   } // end of init
 
@@ -188,7 +188,7 @@ struct kstarInOO {
   bool eventSelection(const EventType event)
   {
     if (cfg_Event_CutQA)
-      OOhistos.fill(HIST("hPosZ_BC"), event.posZ());
+      histos.fill(HIST("hPosZ_BC"), event.posZ());
 
     if (!event.sel8())
       return false;
@@ -206,7 +206,7 @@ struct kstarInOO {
       return false;
 
     if (cfgEventCutQA)
-      OOhistos.fill(HIST("hPosZ_AC"), event.posZ());
+      histos.fill(HIST("hPosZ_AC"), event.posZ());
 
     return true;
   };
@@ -259,9 +259,9 @@ struct kstarInOO {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
     // TPC
     if (cfg_Track_CutQA) {
-      OOhistos.fill(HIST("QA_nSigma_kaon_TPC_BC"), candidate.pt(), candidate.tpcNSigmaKa());
-      OOhistos.fill(HIST("QA_nSigma_kaon_TOF_BC"), candidate.pt(), candidate.tofNSigmaKa());
-      OOhistos.fill(HIST("QA_kaon_TPC_TOF_BC"), candidate.tpcNSigmaKa(), candidate.tofNSigmaKa());
+      histos.fill(HIST("QA_nSigma_kaon_TPC_BC"), candidate.pt(), candidate.tpcNSigmaKa());
+      histos.fill(HIST("QA_nSigma_kaon_TOF_BC"), candidate.pt(), candidate.tofNSigmaKa());
+      histos.fill(HIST("QA_kaon_TPC_TOF_BC"), candidate.tpcNSigmaKa(), candidate.tofNSigmaKa());
     }
     if (std::abs(candidate.tpcNSigmaKa()) < cfgTrackTPCPIDnSig)
       tpcPIDPassed = true;
@@ -278,9 +278,9 @@ struct kstarInOO {
     // TPC & TOF
     if (tpcPIDPassed && tofPIDPassed) {
       if (cfgTrackCutQA) {
-        OOhistos.fill(HIST("QA_nSigma_kaon_TPC_AC"), candidate.pt(), candidate.tpcNSigmaKa());
-        OOhistos.fill(HIST("QA_nSigma_kaon_TOF_AC"), candidate.pt(), candidate.tofNSigmaKa());
-        OOhistos.fill(HIST("QA_kaon_TPC_TOF_AC"), candidate.tpcNSigmaKa(), candidate.tofNSigmaKa());
+        histos.fill(HIST("QA_nSigma_kaon_TPC_AC"), candidate.pt(), candidate.tpcNSigmaKa());
+        histos.fill(HIST("QA_nSigma_kaon_TOF_AC"), candidate.pt(), candidate.tofNSigmaKa());
+        histos.fill(HIST("QA_kaon_TPC_TOF_AC"), candidate.tpcNSigmaKa(), candidate.tofNSigmaKa());
       }
       return true;
     }
@@ -293,9 +293,9 @@ struct kstarInOO {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
     // TPC
     if (cfg_Track_CutQA) {
-      OOhistos.fill(HIST("QA_nSigma_pion_TPC"), candidate.pt(), candidate.tpcNSigmaPi());
-      OOhistos.fill(HIST("QA_nSigma_pion_TOF"), candidate.pt(), candidate.tofNSigmaPi());
-      OOhistos.fill(HIST("QA_pion_TPC_TOF"), candidate.tpcNSigmaPi(), candidate.tofNSigmaPi());
+      histos.fill(HIST("QA_nSigma_pion_TPC"), candidate.pt(), candidate.tpcNSigmaPi());
+      histos.fill(HIST("QA_nSigma_pion_TOF"), candidate.pt(), candidate.tofNSigmaPi());
+      histos.fill(HIST("QA_pion_TPC_TOF"), candidate.tpcNSigmaPi(), candidate.tofNSigmaPi());
     }
 
     if (std::abs(candidate.tpcNSigmaPi()) < cfgTrackTPCPIDnSig)
@@ -336,15 +336,15 @@ struct kstarInOO {
       double conjugate = trk1.sign() * trk2.sign();
       if (!IsMix) {
         if (conjugate < 0) {
-          OOhistos.fill(HIST("hMC_USS"), centrality, KstarPt, Minv);
+          histos.fill(HIST("hMC_USS"), centrality, KstarPt, Minv);
         } else if (conjugate > 0) {
-          OOhistos.fill(HIST("hMC_LSS"), centrality, KstarPt, Minv);
+          histos.fill(HIST("hMC_LSS"), centrality, KstarPt, Minv);
         }
       } else {
         if (conjugate < 0) {
-          OOhistos.fill(HIST("hMC_USS_Mix"), centrality, KstarPt, Minv);
+          histos.fill(HIST("hMC_USS_Mix"), centrality, KstarPt, Minv);
         } else if (conjugate > 0) {
-          OOhistos.fill(HIST("hMC_LSS_Mix"), centrality, KstarPt, Minv);
+          histos.fill(HIST("hMC_LSS_Mix"), centrality, KstarPt, Minv);
         }
       }
     }
@@ -387,14 +387,14 @@ struct kstarInOO {
     if (cDebugLevel > 0) {
       nEvents_MC++;
       if ((nEvents_MC + 1) % 10000 == 0) {
-        double histmem = OOhistos.getSize();
+        double histmem = histos.getSize();
         std::cout << histmem << std::endl;
         std::cout << "process_SameEvent_MC: " << nEvents_MC << std::endl;
       }
     }
 
     auto goodEv = eventSelection(collision);
-    OOhistos.fill(HIST("nEvents_MC"), 0.5);
+    histos.fill(HIST("nEvents_MC"), 0.5);
     if (!goodEv)
       return;
 
@@ -408,7 +408,7 @@ struct kstarInOO {
     if (!INELgt0)
       return;
 
-    OOhistos.fill(HIST("nEvents_MC"), 1.5);
+    histos.fill(HIST("nEvents_MC"), 1.5);
     TrackSlicing_MC(collision, tracks, collision, tracks, false);
 
   } // processSameEvents_MC
@@ -435,12 +435,12 @@ struct kstarInOO {
       }
       auto goodEv1 = eventSelection(collision1);
       auto goodEv2 = eventSelection(collision2);
-      OOhistos.fill(HIST("nEvents_MC_Mix"), 0.5);
+      histos.fill(HIST("nEvents_MC_Mix"), 0.5);
 
       if (!goodEv1 || !goodEv2)
         continue;
 
-      OOhistos.fill(HIST("nEvents_MC_Mix"), 1.5);
+      histos.fill(HIST("nEvents_MC_Mix"), 1.5);
 
       TrackSlicing_MC(collision1, tracks1, collision2, tracks2, true);
     } // mixing
