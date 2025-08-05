@@ -253,9 +253,6 @@ struct alice3multicharmTable {
 
     thisXiCCcandidate.mass = RecoDecay::m(array{array{thisXiCCcandidate.prong0mom[0], thisXiCCcandidate.prong0mom[1], thisXiCCcandidate.prong0mom[2]}, array{thisXiCCcandidate.prong1mom[0], thisXiCCcandidate.prong1mom[1], thisXiCCcandidate.prong1mom[2]}}, array{mass0, mass1});
 
-    std::cout << thisXiCCcandidate.mass << std::endl;
-    std::cout << o2::constants::physics::kXiCCPlusPlus << std::endl;
-    std::cout << std::endl;
     if (std::fabs(thisXiCCcandidate.mass - o2::constants::physics::MassXiCCPlusPlus) > massWindowXiCC) {
       return false;
     }
